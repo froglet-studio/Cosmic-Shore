@@ -37,6 +37,11 @@ Shader "Custom/OmniChargeEdgesShader"
         [Header(Vertex Terminals)]
         _NodeRadius        ("Node Radius (model radii)", Range(0.002, 0.1)) = 0.011
         _NodeIntensity     ("Node Intensity", Range(0, 8))      = 3.5
+
+        // The discharge's clock. Negative (the default, every shipped material) runs on the scene's _Time.y. A
+        // display that animates while the game is paused (the Elemental Converter on the Ark screen, where the
+        // menu runs at timeScale 0 and _Time.y stands still) writes its own seconds here through a property block.
+        [HideInInspector] _ArcClock ("Arc Clock (seconds; negative = scene time)", Float) = -1
     }
 
     SubShader
@@ -84,6 +89,7 @@ Shader "Custom/OmniChargeEdgesShader"
                 float  _ArcShimmer;
                 float  _NodeRadius;
                 float  _NodeIntensity;
+                float  _ArcClock;
             CBUFFER_END
 
             #include "Assets/_Graphics/Materials/Graphs/ChargeCrystal.hlsl"
@@ -139,7 +145,7 @@ Shader "Custom/OmniChargeEdgesShader"
                 UNITY_SETUP_INSTANCE_ID(input);
 
                 float3 color = ChargeCrystalDischarge(
-                    input.bary, input.edgeH, input.edgeSeed, _Time.y,
+                    input.bary, input.edgeH, input.edgeSeed, (_ArcClock >= 0.0 ? _ArcClock : _Time.y),
                     _BrightColor.rgb, _ArcCoreColor.rgb, _ArcIntensity,
                     _ArcWidth, _ArcLength, _ArcSpeed, _ArcDuty, _ArcJitter, _ArcShimmer,
                     _NodeRadius, _NodeIntensity);

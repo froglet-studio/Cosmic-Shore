@@ -602,7 +602,7 @@ namespace CosmicShore.Gameplay
             if (Time.time < _farCheckAt) return _farScale;
             _farCheckAt = Time.time + FarCheckSeconds;
             int n = 0;
-            var cam = Camera.main;
+            var cam = CameraManager.ViewCamera;   // not Camera.main: in flight that is the menu's static camera
             if (cam) _farPilots[n++] = ToN(cam.transform.position);
             int hits = Physics.OverlapSphereNonAlloc(_centre, _reach + _cfg.FarMargin, s_farOverlap, _vesselMask);
             for (int h = 0; h < hits && n < _farPilots.Length; h++)

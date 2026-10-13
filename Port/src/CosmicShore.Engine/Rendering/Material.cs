@@ -73,6 +73,41 @@ namespace CosmicShore.Engine
         /// <summary>True when this shader's source declares the property.</summary>
         public bool DeclaresProperty(int nameID) => Declared?.ContainsKey(nameID) == true;
 
+        static System.Func<string, IReadOnlyCollection<string>> s_hdrCatalog;
+        HashSet<int> _hdr;
+        int _hdrGeneration = -1;
+
+        /// <summary>
+        /// Port hook: the names of a shader's [HDR] colour properties (a Shader Graph colour in HDR
+        /// mode, a ShaderLab property tagged [HDR]); null when the source is unknown. Set by the
+        /// content layer. Their stored values are linear (see <see cref="ColorSpaceRules"/>).
+        /// </summary>
+        public static System.Func<string, IReadOnlyCollection<string>> HdrColorCatalog
+        {
+            get => s_hdrCatalog;
+            set { s_hdrCatalog = value; s_catalogGeneration++; }
+        }
+
+        /// <summary>Port: the source declares the property as a Color (HDR or not).</summary>
+        public bool IsColorProperty(int nameID) => Declared is { } d && d.TryGetValue(nameID, out var v) && v is Color;
+
+        /// <summary>Port: the source declares the property as an [HDR] Color.</summary>
+        public bool IsHdrColorProperty(int nameID)
+        {
+            if (_hdrGeneration != s_catalogGeneration)
+            {
+                _hdrGeneration = s_catalogGeneration;
+                _hdr = null;
+                var names = s_hdrCatalog?.Invoke(name);
+                if (names != null)
+                {
+                    _hdr = new HashSet<int>();
+                    foreach (var n in names) _hdr.Add(PropertyToID(n));
+                }
+            }
+            return _hdr != null && _hdr.Contains(nameID);
+        }
+
         /// <summary>The declared default of a property (float, Color, Vector4; null for textures).</summary>
         public bool TryGetDefault(int nameID, out object value)
         {
@@ -119,8 +154,13 @@ namespace CosmicShore.Engine
         /// material knows when a runtime SetFloat/SetColor/shader swap must be re-read.</summary>
         public int Revision { get; private set; }
 
-        readonly Dictionary<int, Color> _colors = new();
         readonly Dictionary<int, float> _floats = new();
+        /// <summary>
+        /// Colours and vectors share one store, as in the original (a .mat saves both under
+        /// m_Colors), each value in its PROPERTY's space: sRGB for a plain Color property, linear
+        /// for an [HDR] Color property, raw for a Vector. So SetColor / SetVector / GetColor /
+        /// GetVector and the renderer agree whichever wrote last.
+        /// </summary>
         readonly Dictionary<int, Vector4> _vectors = new();
         readonly Dictionary<int, int> _ints = new();
 
@@ -137,33 +177,62 @@ namespace CosmicShore.Engine
         {
             shader = source.shader;
             name = source.name + " (Instance)";
-            foreach (var kv in source._colors) _colors[kv.Key] = kv.Value;
             foreach (var kv in source._floats) _floats[kv.Key] = kv.Value;
             foreach (var kv in source._vectors) _vectors[kv.Key] = kv.Value;
             foreach (var kv in source._ints) _ints[kv.Key] = kv.Value;
             foreach (var keyword in source._keywords) _keywords.Add(keyword);
             foreach (var kv in source._textures) _textures[kv.Key] = kv.Value;
             foreach (var kv in source._textureST) _textureST[kv.Key] = kv.Value;
-            renderQueue = source.renderQueue;
+            _renderQueue = source._renderQueue;
             Revision++;
         }
 
+        /// <summary>Original contract: the shader's [MainColor] property (URP's _BaseColor), else _Color.</summary>
         public Color color
         {
-            get => GetColor(ColorId);
-            set => SetColor(ColorId, value);
+            get => GetColor(shader?.MainColorId ?? ColorId);
+            set => SetColor(shader?.MainColorId ?? ColorId, value);
         }
 
-        public void SetColor(string propertyName, Color value) { _colors[Shader.PropertyToID(propertyName)] = value; Revision++; }
-        public void SetColor(int nameID, Color value) { _colors[nameID] = value; Revision++; }
+        /// <summary>
+        /// Original contract: the colour is sRGB. An [HDR] colour property stores linear values, so
+        /// the value is converted on the way in (and back in <see cref="GetColor(int)"/>); a plain
+        /// colour is stored as given and converted when the GPU reads it.
+        /// </summary>
+        public void SetColor(string propertyName, Color value) => SetColor(Shader.PropertyToID(propertyName), value);
+        public void SetColor(int nameID, Color value)
+        {
+            var v = new Vector4(value.r, value.g, value.b, value.a);
+            _vectors[nameID] = shader is not null && shader.IsHdrColorProperty(nameID) ? ColorSpaceRules.Linear(v) : v;
+            Revision++;
+        }
         public Color GetColor(string propertyName) => GetColor(Shader.PropertyToID(propertyName));
         public Color GetColor(int nameID)
         {
-            if (_colors.TryGetValue(nameID, out var v)) return v;
-            if (shader is not null && shader.TryGetDefault(nameID, out var d))
-                return d switch { Color c => c, Vector4 w => new Color(w.x, w.y, w.z, w.w), float f => new Color(f, f, f, f), _ => Color.white };
-            return Color.white;
+            Vector4 v;
+            if (!_vectors.TryGetValue(nameID, out v))
+            {
+                if (shader is null || !shader.TryGetDefault(nameID, out var d)) return Color.white;
+                if (d is float f) return new Color(f, f, f, f);
+                v = d switch { Color c => new Vector4(c.r, c.g, c.b, c.a), Vector4 w => w, _ => Vector4.one };
+            }
+            if (shader is not null && shader.IsHdrColorProperty(nameID)) v = ColorSpaceRules.Gamma(v);
+            return new Color(v.x, v.y, v.z, v.w);
         }
+
+        /// <summary>
+        /// Port helper: the value the GPU receives for a colour or vector property in Unity's linear
+        /// colour space — a plain Color property's stored sRGB value converted to linear, an [HDR]
+        /// colour or a vector as stored. The renderer binds every material colour through this.
+        /// </summary>
+        public Vector4 GetShaderVector(int nameID)
+        {
+            var v = GetVector(nameID);
+            return shader is not null && shader.IsColorProperty(nameID) && !shader.IsHdrColorProperty(nameID) ? ColorSpaceRules.Linear(v) : v;
+        }
+
+        /// <summary>Port helper: <see cref="GetShaderVector"/> as a colour.</summary>
+        public Color GetShaderColor(int nameID) { var v = GetShaderVector(nameID); return new Color(v.x, v.y, v.z, v.w); }
 
         public void SetFloat(string propertyName, float value) { _floats[Shader.PropertyToID(propertyName)] = value; Revision++; }
         public void SetFloat(int nameID, float value) { _floats[nameID] = value; Revision++; }
@@ -200,10 +269,11 @@ namespace CosmicShore.Engine
         public Vector4 GetTextureScaleOffset(string propertyName)
             => _textureST.TryGetValue(Shader.PropertyToID(propertyName), out var v) ? v : new Vector4(1f, 1f, 0f, 0f);
 
+        /// <summary>Original contract: the shader's [MainTexture] property (URP's _BaseMap), else _MainTex.</summary>
         public Texture mainTexture
         {
-            get => GetTexture("_MainTex") ?? GetTexture("_BaseMap");
-            set => SetTexture("_MainTex", value);
+            get => GetTexture(MainTextureName) ?? GetTexture("_MainTex") ?? GetTexture("_BaseMap");
+            set => SetTexture(MainTextureName, value);
         }
 
         public void SetInt(string propertyName, int value) { _ints[Shader.PropertyToID(propertyName)] = value; Revision++; }
@@ -213,9 +283,19 @@ namespace CosmicShore.Engine
 
         readonly HashSet<string> _keywords = new();
 
-        /// <summary>Render queue (original default 2000/Geometry; transparency setup code writes 3000+).</summary>
-        int _renderQueue = 2000;
-        public int renderQueue { get => _renderQueue; set { _renderQueue = value; Revision++; } }
+        /// <summary>
+        /// Original contract: the material's own queue, or the shader's (<see cref="Shader.renderQueue"/>)
+        /// while it has none (-1, a .mat's m_CustomRenderQueue: -1). Setting -1 returns to the shader's.
+        /// </summary>
+        int _renderQueue = -1;
+        public int renderQueue
+        {
+            get => _renderQueue >= 0 ? _renderQueue : shader?.renderQueue ?? 2000;
+            set { _renderQueue = value < 0 ? -1 : value; Revision++; }
+        }
+
+        /// <summary>Port: the material carries its own queue (not the shader's).</summary>
+        public bool HasCustomRenderQueue => _renderQueue >= 0;
 
         public void EnableKeyword(string keyword) { if (_keywords.Add(keyword)) Revision++; }
         public void DisableKeyword(string keyword) { if (_keywords.Remove(keyword)) Revision++; }
@@ -234,8 +314,7 @@ namespace CosmicShore.Engine
         /// <summary>Port helper: true only when this material carries its own value (the renderer's classification reads this).</summary>
         public bool HasStoredProperty(string propertyName) => HasStoredProperty(Shader.PropertyToID(propertyName));
         public bool HasStoredProperty(int nameID)
-            => _colors.ContainsKey(nameID) || _floats.ContainsKey(nameID)
-            || _vectors.ContainsKey(nameID) || _ints.ContainsKey(nameID);
+            => _floats.ContainsKey(nameID) || _vectors.ContainsKey(nameID) || _ints.ContainsKey(nameID);
 
         /// <summary>
         /// Interpolate this material's properties between <paramref name="start"/> and
@@ -246,11 +325,6 @@ namespace CosmicShore.Engine
         {
             if (start is null || end is null) return;
             t = Mathf.Clamp01(t);
-
-            var colorKeys = new HashSet<int>(start._colors.Keys);
-            colorKeys.UnionWith(end._colors.Keys);
-            foreach (var key in colorKeys)
-                _colors[key] = Color.Lerp(start.GetColor(key), end.GetColor(key), t);
 
             var floatKeys = new HashSet<int>(start._floats.Keys);
             floatKeys.UnionWith(end._floats.Keys);

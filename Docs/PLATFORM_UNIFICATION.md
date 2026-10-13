@@ -1,11 +1,13 @@
 # One codebase for Windows, iOS and Android — diagnosis and plan
 
-**Status (2026-10-05): diagnosis (§1) and inventory (§2) done. Steps 2 (touch controls), 3 (device
-tiers), 4 (render tier), 5 (content tier) and 6 (platform-agnostic fixes) landed on this branch,
-awaiting editor/device verification (`Docs/UNITY_VERIFICATION_CHECKLIST.md`, top five entries). The
-whole branch's runtime C# compiles with 0 project errors against real Unity references
-(`Tools/Build/unity_refcompile`, §3.7). Device measurements are
-deferred, not a gate (owner's call).**
+**Status (2026-10-08): diagnosis (§1) and inventory (§2) done. Steps 2 (touch controls), 3 (device
+tiers), 4 (render tier), 5 (content tier) and 6 (platform-agnostic fixes) are in bleeding-edge
+(PR #977, merged 2026-10-06). Step 1 (Android build plumbing) and the store-readiness settings
+(§3.9) follow on `claude/serene-edison-lfv24f`. All of it awaits editor/device verification
+(`Docs/UNITY_VERIFICATION_CHECKLIST.md`, the six `claude/serene-edison-lfv24f` entries). The
+runtime C# compiles with 0 project errors against real Unity references
+(`Tools/Build/unity_refcompile`, §3.7). Device measurements are deferred, not a gate (owner's
+call).**
 
 ### Decisions recorded (2026-10-05, project owner)
 
@@ -470,6 +472,78 @@ fixed on this branch before the PR:
 - **Tooling (task suggested):** `unity_refcompile --config editor` false positives, recorded in its README.
   Fixed 2026-10-08: the editor config now compiles Editor-folder scripts as a separate
   Assembly-CSharp-Editor (no more false CS0118), and the tool runs on any .NET SDK from 8.0 up.
+
+### 3.9 Store readiness (2026-10-08) and Step 1
+
+The owner got admin access to the Google Play Console and App Store Connect. The console walkthrough
+lives in a shared doc, *Cosmic Shore — Google Play & App Store setup guide*, written for whoever
+does the clicking. This section records what the **repo** side changed and why. Owner decisions:
+production iOS id, ARM64-only Android, and bring the two Gradle commits across.
+
+| Change | Where | Why |
+|---|---|---|
+| iOS bundle id `com.FrogletGames.CosmicShore.dev` → **`com.FrogletGames.CosmicShore`** | `ProjectSettings.asset` | Froglet's paid Apple team now exists, which was the trigger `Docs/IOS_BUILD.md` §1 set for the flip. |
+| ~~The free sideload `.ipa` is always rewritten to `.dev`~~ **Retired 2026-10-13** with the free-Apple-ID path and its workflow. TestFlight is the only iOS distribution path, and nothing uses `.dev` now (`Docs/IOS_BUILD.md` §1) | (workflow deleted) | That path signed with free Apple IDs. A personal team that registers the production id locks the store app out, which is the reason the test id existed. |
+| Android `AndroidTargetSdkVersion` 35 → **36** | `ProjectSettings.asset` | Play has required API 36 for new apps and updates since 31 Aug 2026. Under 36, Android 16 forces large-screen resizing on every app *except games*. The manifest's `appCategory` must read `game`: check the first bundle (setup guide §4.1). |
+| `AndroidTargetArchitectures` 3 → **2** (ARM64 only); EDM4U `androidAbis` to match | `ProjectSettings.asset`, `AndroidResolverDependencies.xml` | §2.1. It drops phones with a 32-bit-only userland. |
+| TailGlider keystore path and alias cleared | `ProjectSettings.asset` | Pointed at a file on one developer's PC that belongs to another game. Each build machine selects the Cosmic Shore upload key instead (`androidUseCustomKeystore` was already 0). |
+| Gradle templates: namespace and NDK lines **outside** the EDM4U block; Unity Ads dependency removed | `Assets/Plugins/Android/*.gradle`, `AndroidResolverDependencies.xml` | Step 1's two commits, cherry-picked. Unity Ads was the source of the R8 `WorkDatabase_Impl` launch crash, so `AndroidMinifyRelease` stays **1** and the strip's keep rules are not ported. |
+| **`com.unity.purchasing` 4.12.2 uninstalled** (manifest + lock); `BillingMode.json` deleted; `UnityPurchasingSettings` off | `Packages/`, `Assets/Resources/`, `UnityConnectSettings.asset` | **A dependency change, flagged.** It was installed and referenced by no code or asmdef; `IAPManager` is a web checkout, and the commerce surfaces are de-scoped. Its Play Billing library would have shipped in every bundle, and Play warns on outdated billing versions. |
+| Legacy Unity Analytics off (`UnityAnalyticsSettings` enabled + initialize-on-startup → 0) | `UnityConnectSettings.asset` | The engine-level service started at boot, **before** the consent screen, and nothing calls its API. UGS Analytics (the consented one, `com.unity.services.analytics`) is a separate package and is untouched. |
+| `ITSAppUsesNonExemptEncryption = NO` written into every iOS build | `Assets/_Scripts/Editor/Build/IosExportCompliancePostprocess.cs` | Stops App Store Connect holding each build at "Missing Compliance". The declaration: HTTPS + Relay DTLS, standard algorithms, in support of gameplay, under the EAR Cat. 5 Pt. 2 Note 4 games exclusion. **The company owns this answer**; delete the file to answer per upload instead. |
+| NativeShare's photo-library purpose string: the plugin default ("The app requires access to Photos to save media to it.") → a specific one naming paintings and screenshots | `ProjectSettings/NativeShare.json` (the plugin's own settings file; its iOS post-process writes `NSPhotoLibraryUsageDescription` / `NSPhotoLibraryAddUsageDescription` from it) | App Review 5.1.1 rejects purpose strings that don't say what the access is for. |
+| Apple Team ID `9959RFD7XD` + Automatically Sign on; **TestFlight from GitHub Actions** (2026-10-12) | `ProjectSettings.asset`, `.github/workflows/ios-testflight.yml`, `Tools/iOS/set_manual_signing.rb`, `Tools/iOS/asc_api_key_json.py` (manual dispatch only) | Iggy's paid membership is active to 16 Aug 2027, and nobody on the team has a Mac. The job compiles a Windows-made Xcode export on a free `macos-26` runner (Xcode 26, which uploads require), signs it with the company's distribution certificate and uploads it. Setup and secrets: `Docs/IOS_BUILD.md` §2 Path C. **Run 4 (2026-10-12) uploaded the first build to TestFlight**, on the team API key. Run 3 had failed at the upload because `ASC_KEY_P8` held the key body without its BEGIN/END lines; the job now accepts that shape. Run 5 (2026-10-12) uploaded the phone-menu fix the same way. |
+
+**Found and left open** (setup guide §5):
+
+- **Nice Vibrations' `liblofelt_sdk.so` is 4 KB-aligned** (`readelf -lW`: LOAD align `0x1000`). FMOD's
+  arm64 libraries are `0x4000`. Play blocks updates that lack 16 KB support from **1 Feb 2027**.
+- **No report or block for player names** (App Review 1.2).
+- **Under-13 players keep the social features** (COPPA).
+- **Account deletion exists only as a web link.**
+- **The privacy, support and deletion pages are not live yet.**
+- ~~**Unity Engine diagnostics is on.**~~ Off 2026-10-13: `UnityConnectSettings.asset`
+  `InsightsSettings.m_EngineDiagnosticsEnabled` is 0. The consent gate (`CrashReportingService`)
+  never covered it. Cloud Diagnostics crash reporting is unchanged.
+- ~~**`com.unity.mobile.notifications` is installed and unused.**~~ Removed 2026-10-13, along with
+  `com.unity.feature.mobile`, the other way it came in. Android Logcat stays as a direct dependency
+  at 1.4.7, the version the feature resolved. `ProjectSettings/NotificationsSettings.asset` and the
+  old `Assets/Unity Assests/Editor/com.unity.mobile.notifications/` settings asset are deleted.
+- **iPad:**
+  - ~~At 4:3, the match-height canvases lose a quarter of their width.~~ Fixed 2026-10-12: the 13
+    without `AdaptiveCanvasScaler` use Expand. That is identical at 16:9 and wider, and matches
+    width below; most of them are the vessel HUDs.
+  - ~~Cameras hold vertical field of view.~~ Fixed 2026-10-12: `CameraAspectFit` puts every
+    on-screen game camera on a 16:9 overscan gate. Narrower screens keep the 16:9 width and gain
+    height; 16:9 and wider are unchanged.
+  - The iOS 27 SDK will stop honouring `UIRequiresFullScreen` (TN3192). Still open.
+
+**Debt this branch created or walked past** (rows, not fixes; each needs its own change):
+
+- ~~**The two iOS workflows duplicate their download-and-extract steps.**~~ Gone 2026-10-13: the
+  free-Apple-ID workflow was deleted, so `ios-testflight.yml` holds the only copy.
+- **`IAPManager` is a dormant web checkout.**
+  - What it is: `Assets/_Scripts/System/IAPManager.cs` sends players to a browser checkout.
+    Commerce is switched off (`CommerceAvailability.asset`).
+  - Why it mattered: on mobile it would break Apple guideline 3.1.1 and Play's billing policy the
+    day someone switched it on. Fenced 2026-10-13: the browser checkout opens only in
+    `UNITY_STANDALONE` builds. iOS and Android builds refuse it at `OpenCheckout` whatever
+    `CommerceAvailability` says (`CommerceDeScopeTests.CheckoutIsFencedToDesktopBuilds`).
+  - Before deleting it: ask whether the desktop or Steam build still wants it. Re-grep its callers
+    at that time; don't rely on an old claim that it's unused.
+- **The TestFlight upload credentials need locking down (flagged 2026-10-12).** Any repo writer
+  could, in principle, write a workflow that leaks a repository secret. The plan is in
+  `Docs/IOS_BUILD.md` Path C, "Security follow-up":
+  - the team API key, which is done;
+  - the personal Apple-ID route, removed from the job on 2026-10-13 (delete its secrets if any
+    were added);
+  - a `testflight` Environment limited to bleeding-edge, with a reviewer. The job names it since
+    2026-10-13; the Environment's rules and deleting the repository-level copies are repo settings;
+  - branch protection.
+- **CLAUDE.md says "No automated CI/CD pipeline is currently configured", which is stale.**
+  `.github/workflows/` holds `unity-ci.yml`, `bleeding-edge-guard.yml`, `ios-testflight.yml` and
+  the Amoebius ones. `Docs/BUILD_AND_DELIVERY.md` §10 is the current picture.
+
 ---
 
 ## 4. Step plan
@@ -479,7 +553,7 @@ Each step is its own PR into bleeding-edge, and each leaves Windows unchanged un
 | # | Step | Touches | Windows | iOS | Android |
 |---|---|---|---|---|---|
 | 0 | **Measure** (deferred, not a gate). Development builds on the Samsung and the iPhone; `DiagnosticsHUD` bound verdict + main-thread ms; Garrett's branch on the same Samsung; exact model. | nothing | — | — | — |
-| 1 | **Android build plumbing.** Your two Gradle commits (`0f6b38ba5`, `359ad3d1b`; the namespace fix lives OUTSIDE the EDM4U block, the durable version of the same fix Garrett made inside it). Then decide: ARM64-only, R8 minify + Garrett's `proguard-user.txt` keep rules (the WorkManager crash came from Unity Ads, which your branch removes). Graphics APIs stay Auto (decided). | ProjectSettings (Android only), `Assets/Plugins/Android/*` | none | none | builds |
+| 1 | ✅ *(landed 2026-10-08 on the follow-up branch, unverified in editor; see §3.9)* **Android build plumbing.** Your two Gradle commits (`0f6b38ba5`, `359ad3d1b`; the namespace fix lives OUTSIDE the EDM4U block, the durable version of the same fix Garrett made inside it). Then decide: ARM64-only, R8 minify + Garrett's `proguard-user.txt` keep rules (the WorkManager crash came from Unity Ads, which your branch removes). Graphics APIs stay Auto (decided). | ProjectSettings (Android only), `Assets/Plugins/Android/*` | none | none | builds |
 | 2 | ✅ *(landed on this branch, unverified in editor)* **Touch controls into bleeding-edge, ungated.** `TouchInputStrategy` (physical-size stick + dead zone, one-thumb mirror, re-zero on lift, throttle carry, events on lift only, 75/25 curve) + touch-only vessel tuning (`touchNoseResponse`, gated to the local human pilot) + the ability-dispatch hardening (§2.2). Not the Squirrel `boostLoopEvent` clear, and not the gamepad half of the binary-drift change (reverted at ship review, §2.2). | `Controller/IO`, `VesselTransformer`, Squirrel/Butterfly prefabs | none intended: the touch changes are touch-only; the ability-subscription reconcile runs on every device and only re-asserts the subscription the pause state already implies | **new controls** | **new controls** |
 | 3 | ✅ *(landed on this branch, unverified in editor; see §3.4)* **Device tier foundation.** `DeviceTierClassifier`, `PlatformProfileSO` ×3, dev override, a `CSLogChannel` for it, and a mobile branch in `SettingsAutoDetector` that reads the tier. `Desktop` profile = today's behaviour. | `System/`, `Controller/Settings` | identical | correct tier | correct tier |
 | 4 | ✅ *(landed on this branch, unverified in editor; see §3.5)* **Render tier.** MobileLow: HDR off, 4x MSAA, baked sky, membrane capped at 642 capsules, fold-gate window capped at 0.5 — each a `PlatformProfileSO` field. Everywhere: the fold-gate window renders only its footprint. | `_Graphics`, profile, `CapsuleMembrane`, `FoldGatePortalView` | fold-gate footprint only | none | per `MobileLow` |

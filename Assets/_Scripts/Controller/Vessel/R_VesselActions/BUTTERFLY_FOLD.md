@@ -638,6 +638,9 @@ and leaves them as elemental crystals at the surface of the wormhole."*
   the entry point and thrown radially out (`ElementalCrystalEjector.ShedOntoSphere`). The Butterfly
   never pays, its domain never pays, and an unreadable pilot rides free (positive evidence only,
   vessel skill §4.ac). `WormholeTollTests` pins all four.
+- **It scores** (2026-10-10). A toll is a scored combat hit for the Butterfly (Debuff class), raised
+  once on the Butterfly's machine and warded exactly like the take: PvP is petals only, and a petal
+  taken is always a scored hit (`Docs/WORMHOLES.md` §5).
 
 **Why the petals stay at the ENTRY mouth.** The rival comes out of the far mouth, so the spill is
 behind them — the price is real, not something they scoop back up on the way out. It sits on the

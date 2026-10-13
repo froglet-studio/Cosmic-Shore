@@ -6,7 +6,7 @@ namespace CosmicShore.Core
 {
     /// <summary>
     /// Persists captain progression (XP, level, unlock/encounter state) to UGS Cloud Save.
-    /// Replaces the disabled PlayFab CaptainManager + XpHandler system.
+    /// Replaces the disabled backend behind the CaptainManager + XpHandler system.
     ///
     /// JSON example:
     /// {

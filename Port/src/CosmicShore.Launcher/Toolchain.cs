@@ -47,18 +47,22 @@ namespace CosmicShore.Launcher
         }
 
         /// <summary>
-        /// Blender and Maya: SETTINGS' paths go out as PRISMA_BLENDER / PRISMA_MAYAPY to every process
-        /// Prisma starts (cs-asset converts .blend/.ma/.mb through them), then the same search cs-asset does.
+        /// Blender and Maya: SETTINGS' paths go out as AMOEBIUS_BLENDER / AMOEBIUS_MAYAPY to every process
+        /// Amoebius starts (cs-asset converts .blend/.ma/.mb through them), then the same search cs-asset does.
         /// Separate from <see cref="Detect"/>: asking Blender its version takes a second or more.
         /// </summary>
         public void DetectDcc(LauncherSettings s)
         {
-            Environment.SetEnvironmentVariable("PRISMA_BLENDER", string.IsNullOrWhiteSpace(s.BlenderPath) ? null : s.BlenderPath.Trim());
-            Environment.SetEnvironmentVariable("PRISMA_MAYAPY", string.IsNullOrWhiteSpace(s.MayaPyPath) ? null : s.MayaPyPath.Trim());
-            Blender = Prisma.DccLocator.FindBlender();
-            BlenderVersion = Blender == null ? null : Prisma.DccLocator.BlenderVersion(Blender);
-            MayaPy = Prisma.DccLocator.FindMayaPy();
-            MayaVersion = MayaPy == null ? null : Prisma.DccLocator.MayaVersion(MayaPy);
+            // Under the variables' names before the rename too: a branch from before it reads those.
+            foreach (var prefix in new[] { "AMOEBIUS_", "PRISMA_" })
+            {
+                Environment.SetEnvironmentVariable(prefix + "BLENDER", string.IsNullOrWhiteSpace(s.BlenderPath) ? null : s.BlenderPath.Trim());
+                Environment.SetEnvironmentVariable(prefix + "MAYAPY", string.IsNullOrWhiteSpace(s.MayaPyPath) ? null : s.MayaPyPath.Trim());
+            }
+            Blender = Amoebius.DccLocator.FindBlender();
+            BlenderVersion = Blender == null ? null : Amoebius.DccLocator.BlenderVersion(Blender);
+            MayaPy = Amoebius.DccLocator.FindMayaPy();
+            MayaVersion = MayaPy == null ? null : Amoebius.DccLocator.MayaVersion(MayaPy);
         }
 
         static string? FindGit(string configured)

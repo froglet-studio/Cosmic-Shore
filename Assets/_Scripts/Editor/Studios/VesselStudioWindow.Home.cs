@@ -12,8 +12,8 @@ namespace CosmicShore.Editor.Studios
     /// <summary>
     /// The Vessel Studio HOME: the web hub's front page (<c>Docs/Studios/VesselStudio/index.html</c>) in Unity, read
     /// from the same files, so a studio added to <c>studios.json</c> shows up here with nothing else to change. Its cards
-    /// are the hub's (/vessel-studio D34): the text, the spec rows and the buttons all come from <c>studios.json</c>
-    /// (<c>cardActions</c>: Open studio, PLAY IN ENGINE, TUNE IN UNITY, OPEN LIVE IN BROWSER, the same order as Amoebius's
+    /// are the hub's (/vessel-studio D35): the text, the spec rows and the buttons all come from <c>studios.json</c>
+    /// (<c>cardActions</c>: Open studio, PLAY IN ENGINE, OPEN LIVE IN BROWSER, the same order as Amoebius's
     /// VESSEL STUDIO page), never spelled here; <c>parity_gate.py</c> checks it. The
     /// colours are the studio's (<c>studio-theme.js</c>: the Stoat's night tokens and amber chrome; card accents from
     /// <c>studio-domains.js</c>), not the editor skin's: this page is a studio page.
@@ -39,7 +39,6 @@ namespace CosmicShore.Editor.Studios
         public sealed class StudioEntry
         {
             public string id, name, file, kind, chip, summary, accent, docs, engineMode, engineNote, preview;
-            public bool tuner;
             public SpecRow[] spec;
         }
 
@@ -61,9 +60,9 @@ namespace CosmicShore.Editor.Studios
 
         /// <summary>
         /// The card's buttons for <paramref name="s"/> on Unity, from the catalog's <c>cardActions</c> in their order (the same
-        /// rule as Amoebius's <c>StudioCatalog.Applies</c>). <paramref name="hasTuner"/>: Unity has the studio's tuning page. Pure, tested.
+        /// rule as Amoebius's <c>StudioCatalog.Applies</c>). Unity has no tuner (/vessel-studio D33). Pure, tested.
         /// </summary>
-        public static List<CardButton> CardButtons(Catalog cat, StudioEntry s, bool hasTuner)
+        public static List<CardButton> CardButtons(Catalog cat, StudioEntry s)
         {
             var list = new List<CardButton>();
             foreach (var a in cat?.cardActions ?? Array.Empty<CardAction>())
@@ -72,7 +71,6 @@ namespace CosmicShore.Editor.Studios
                 bool here = Array.IndexOf((a.on ?? "").Split(','), "unity") >= 0;
                 string why = !here ? "Not in Unity." :
                     a.needs == "engineMode" && string.IsNullOrEmpty(s.engineMode) ? "This vessel has no game mode in the engine yet." :
-                    a.needs == "tuner" && !(s.tuner && hasTuner) ? "No Unity tuning page for this vessel yet." :
                     a.needs == "mirror" && string.IsNullOrEmpty(cat.mirror) ? "No live mirror in the catalog." : null;
                 list.Add(new CardButton(a.id, a.label.ToUpperInvariant(), why == null, why ?? a.tip ?? ""));   // capitals, as the hub's CSS shows them
             }
@@ -180,21 +178,6 @@ namespace CosmicShore.Editor.Studios
             catch (FormatException) { return Look.Accent; }
         }
 
-        string StudioName(string id)
-        {
-            if (_catalog?.studios != null)
-                foreach (var s in _catalog.studios)
-                    if (s.id == id) return s.name;
-            return id ?? "";
-        }
-
-        void OpenStudio(string id)
-        {
-            if (_catalog?.studios != null)
-                foreach (var s in _catalog.studios)
-                    if (s.id == id) { OpenPage(s.file); return; }
-        }
-
         static void OpenPage(string file)
         {
             string path = StudioPath(file);
@@ -203,13 +186,12 @@ namespace CosmicShore.Editor.Studios
                 EditorUtility.DisplayDialog("Vessel Studio", $"{StudioDir}/{file} is not in this checkout. Pull Ys-bleeding-edge.", "OK");
                 return;
             }
-            LaunchPrisma.OpenStudio(file);   // the build of this checkout, served by Amoebius (/vessel-studio D33)
+            LaunchAmoebius.OpenStudio(file);   // the build of this checkout, served by Amoebius (/vessel-studio D34)
         }
 
-        /// <summary>Keeps the previews moving: a repaint at most 30 times a second, and only on the home page.</summary>
+        /// <summary>Keeps the previews moving: a repaint at most 30 times a second.</summary>
         void Animate()
         {
-            if (!string.IsNullOrEmpty(_view)) return;
             double now = EditorApplication.timeSinceStartup;
             if (now - _lastFrame < FrameSeconds) return;
             _lastFrame = now;
@@ -246,7 +228,7 @@ namespace CosmicShore.Editor.Studios
             if (Button(ref bx, y, "CLAUDE.AI ARTIFACT", Look.Accent, false, "The one Vessel Studio artifact: Ask, shared requests, the decision log and Sync live there"))
                 Application.OpenURL(_catalog?.web ?? StudioUrl);
             if (Button(ref bx, y, "AMOEBIUS", Look.Accent, false, "Amoebius's VESSEL STUDIO page: PLAY IN ENGINE flies the game's own vessel"))
-                EditorApplication.delayCall += LaunchPrisma.OpenAmoebiusStudiosPage;
+                EditorApplication.delayCall += LaunchAmoebius.OpenAmoebiusStudiosPage;
             y += 26f + 26f;
 
             if (_homeError != null)
@@ -292,7 +274,7 @@ namespace CosmicShore.Editor.Studios
 
             const string foot = "A studio opens in its own window: this checkout's build, served by Amoebius, so it looks and plays exactly as on claude.ai " +
                                 "(Unity has no web view, so it is an Edge or Chrome app window), with Sync, Ask, Requests and Decisions working. " +
-                                "TUNE IN UNITY puts a studio's tabs over the vessel's real assets, live while you play. The cards are the web hub's (studios.json).";
+                                "The cards are the web hub's (studios.json). The artifact is the one source of truth: its numbers reach the game through /artifact-to-unity, never a second set of tabs here.";
             float fh = Look.Note.CalcHeight(new GUIContent(foot), cw);
             GUI.Label(new Rect(x, y, cw, fh), foot, Look.Note);
             y += fh + 28f;
@@ -337,7 +319,7 @@ namespace CosmicShore.Editor.Studios
         {
             float inner = w - 2f * Pad;
             return Pad + PreviewHeight + 12f + 32f + 26f + Look.Body.CalcHeight(new GUIContent(s.summary ?? ""), inner) + 10f + SpecHeight(s, inner)
-                   + 14f + ButtonRows(CardButtons(_catalog, s, Tuners.ContainsKey(s.id)), inner) * (ButtonH + 6f) + Pad;
+                   + 14f + ButtonRows(CardButtons(_catalog, s), inner) * (ButtonH + 6f) + Pad;
         }
 
         void DrawCard(Rect r, StudioEntry s)
@@ -379,7 +361,7 @@ namespace CosmicShore.Editor.Studios
             }
 
             // the card's buttons (studios.json cardActions, every one in its place) sit on the card's floor, so cards in a row line up
-            var buttons = CardButtons(_catalog, s, Tuners.ContainsKey(s.id));
+            var buttons = CardButtons(_catalog, s);
             int rows = ButtonRows(buttons, w);
             float by = r.yMax - Pad - rows * (ButtonH + 6f) + 6f, bx = x;
             var btnRow = new Rect(x, by, w, r.yMax - Pad - by);   // a disabled button's click is not the card's
@@ -401,8 +383,7 @@ namespace CosmicShore.Editor.Studios
             switch (id)
             {
                 case "open": OpenPage(s.file); break;
-                case "engine": EditorApplication.delayCall += LaunchPrisma.OpenAmoebiusStudiosPage; break;   // Amoebius's VESSEL STUDIO page: PLAY IN ENGINE there
-                case "tune": _view = s.id; GUIUtility.ExitGUI(); break;
+                case "engine": EditorApplication.delayCall += LaunchAmoebius.OpenAmoebiusStudiosPage; break;   // Amoebius's VESSEL STUDIO page: PLAY IN ENGINE there
                 case "live":
                     var m = _catalog?.mirror ?? "";
                     Application.OpenURL((m.EndsWith("/") ? m : m + "/") + (s.file == (_catalog?.hub ?? "index.html") ? "" : Uri.EscapeDataString(s.file)));

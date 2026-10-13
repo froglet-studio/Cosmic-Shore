@@ -40,7 +40,7 @@ namespace CosmicShore.Engine.Networking
     }
 
     /// <summary>
-    /// The network simulator: Unity's Network Simulator for Prisma. Settings come from
+    /// The network simulator: Unity's Network Simulator for Amoebius. Settings come from
     /// <c>COSMIC_SHORE_NET_SIM</c> at launch and from <c>do netsim SPEC</c> (or the MCP tool <c>net_sim</c>) while
     /// the game runs; every transport the driver opens reads them live through <see cref="SimulatedTransport"/>.
     ///

@@ -304,6 +304,10 @@ namespace CosmicShore.Content.Shaders
         /// <summary>A Texture2D property's default when unset: 0 white, 1 black, 2 grey, 3 bump.</summary>
         public int DefaultTextureType;
         public bool Exposed;
+        /// <summary>A colour property's mode: 0 Default (sRGB), 1 HDR (linear).</summary>
+        public int ColorMode;
+        /// <summary>Set as the main colour / texture (the generated [MainColor] / [MainTexture]).</summary>
+        public bool IsMainColor, IsMainTexture;
 
         internal static SgProperty From(string id, JsonElement e)
         {
@@ -319,6 +323,9 @@ namespace CosmicShore.Content.Shaders
                 Guid = e.TryGetProperty("m_Guid", out var g) ? ShaderGraphAsset.Str(g, "m_GuidSerialized") : null,
                 Value = e.TryGetProperty("m_Value", out var v) ? v : default,
                 DefaultTextureType = ShaderGraphAsset.Int(e, "m_DefaultType"),
+                ColorMode = ShaderGraphAsset.Int(e, "m_ColorMode"),
+                IsMainColor = ShaderGraphAsset.Bool(e, "isMainColor"),
+                IsMainTexture = ShaderGraphAsset.Bool(e, "isMainTexture"),
                 Exposed = ShaderGraphAsset.Bool(e, "m_GeneratePropertyBlock", true),
             };
         }

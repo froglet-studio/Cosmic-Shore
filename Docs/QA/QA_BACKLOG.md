@@ -191,7 +191,7 @@ last 100 lines of `Player.log` for any failure.
 compile fix). **Why a gate, and why separate from the Windows build:** iOS is a fresh
 IL2CPP target that has never produced a running build; a platform-only compile error is
 invisible in the Editor and on the Windows player.
-1. Produce an **iOS build** (or take the unsigned ipa this branch's CI produced). Record
+1. Produce an **iOS build** (or install the latest TestFlight build). Record
    whether the build itself completes.
 2. Install and launch on an iOS device. Sign in and reach `Menu_Main`.
 3. Read the device log afterwards.
@@ -353,7 +353,9 @@ double-fire (pop *and* destroy in one contact); the two markers stay sub-ms and
 **FAIL:** skims only at the box · gap false-positives · pop-then-destroy · any prism
 that cannot be hit at all · marker spikes or a rising `Physics.SendEvents` train.
 
-### QA-EDITMODE-TESTS ⬜ — run the test suites that were written but never executed
+### QA-EDITMODE-TESTS 🔴 — run the test suites that were written but never executed
+**Last QA:** FAIL on `5ba3e941` (2026-10-12, akouroshm) — EditMode Run All: **2685 pass, 35 fail** (total ~2720 — far above the item's stale "≈762" expectation, which is now corrected in the item body). All **11** named step-4 suites are GREEN. The 35 failures span 14 suites, several entirely red (FollowHeightScale 6/6, RaceRankToastDriver 7/7, RearViewLaw 5/5, SparrowCombatTier 3/3, PartyInviteSystem 3/3) — a whole-suite-red pattern that usually means a shared regression or stale assertions, not 35 independent bugs. Full list in DT-003; screenshot attached: evidence/2026-10-12-akouroshm/QA-EDITMODE-TESTS-35-failures.webp
+
 **Source:** PRs #659, #639, #627, #641, #668, #651, #673 + **#688/#690** (all 61 NUnit
 files were **moved under `Editor/` folders** so they stop shipping into the player, and
 `Assembly-CSharp-Editor` was given `InternalsVisibleTo`). That move touched 105 files
@@ -361,8 +363,9 @@ and has never been run — a suite that silently stops compiling now looks like 
 failures".
 
 1. **Window ▸ General ▸ Test Runner ▸ EditMode ▸ Run All.**
-2. Record the **total test count** as well as pass/fail. The move preserved 762 `[Test]`
-   methods — a total far below that means suites are missing, not passing.
+2. Record the **total test count** as well as pass/fail. The suite has grown well past its
+   original 762 `[Test]` methods — **~2720 as of 2026-10-12** — so a total materially below
+   ~2700 means suites are missing (not compiling into the editor assembly), not passing.
 3. Record every failing test by name and assertion message.
 4. Specifically confirm these suites are present and green: `CellSpawnFormationTests`,
    `SkimmerSwingKinematicsTests`, `ShieldShellMathTests`, `VesselElementalMorphTests`,
@@ -370,10 +373,11 @@ failures".
    `GeometryUtilsTests`, `PrismOcclusionCoverageTests`, `DisplayNameValidatorTests`,
    `ShipModifierTests`.
 
-**PASS:** all EditMode tests green, the total is ≈762, and all eleven suites appear.
+**PASS:** all EditMode tests green, the total is **~2720** (or higher as the suite grows),
+and all eleven named suites appear.
 **FAIL:** any red test (record the name + assertion message), a suite that does not
 appear at all (it did not compile into the editor assembly), or a total materially
-below 762.
+below ~2700.
 
 ### QA-AUDIT-TOOLS 🔴 — run every FrogletTools auditor and record its verdict
 **Last QA:** FAIL on `88478a6d` (2026-10-09, akouroshm) — Auditors ran without throwing, but several report beyond the known exceptions. Audit Vessel Skimmers: **6 faults** (known exception is Serpent only). Validate Lifeform Crystals: **34 warnings**. Measure Cell Environment Baselines: **1 warning**. Game Mode Prefab Kit Validate: **75 warnings**. Pending Tool Changes: **~11 uncommitted files**. Ability Rows / Elemental Morphs / Speed Tunnel / Corridor Radii / Cell-Owned Visuals / Occlusion Corridor: ran clean. NOTE: the item's step 10 is STALE — End Game Conditions correctly shows Wildlife Liberation **30** (the mode was re-targeted 250 to 30) and Dog Fight 120; 30 is right, so that line is a doc bug in this item, not a tool fault (fixed in the item body).
@@ -1198,7 +1202,9 @@ roll so violent it reads as a loss of control.
 **Report the feel:** `rollDegrees` (60) is a single inspector value — say whether it
 wants to be larger or smaller.
 
-### QA-SPARROW-PROJECTILE-POOL ⬜ — async-refilled pooled projectiles are injected
+### QA-SPARROW-PROJECTILE-POOL 🔴 — async-refilled pooled projectiles are injected
+**Last QA:** FAIL on `5ba3e941` (2026-10-12, akouroshm) — Full-auto shots have launch sound; **the skyburst missiles have NO launch sound**. Both shot types still interact with prisms (live colliders), and no NullReferenceException was reported. So this is specifically a missing missile launch SFX, not a dud projectile or a pool/injection crash. Likely an empty/unwired `EventReference` on the skyburst launch path (per the FMOD exposed-field convention, an empty slot ships silent).
+
 
 **Source:** PR #606. The failure mode is *silent duds* seconds after spawn.
 1. Spawn a Sparrow (any mode or freestyle) and fire full-auto for ~30 s.
@@ -4576,14 +4582,6 @@ a protected branch is refused; the pre-staged file **stays staged and out of the
 **FAIL:** anything else riding along in the commit, a protected-branch push succeeding,
 or the pre-staged file being swept in.
 
-### QA-FLORA-LEAFSIZE ⬜ — garden flora still grow leaves at the authored size
-**Source:** PR #656 (a duplicate declaration removed after a semantic merge conflict).
-1. Confirm zero compile errors.
-2. Freestyle → Cell Selector → **Hesperides**; look at leaf size on grown flora.
-
-**PASS:** compiles clean and leaves grow at the authored size.
-**FAIL:** compile error, or leaves that are obviously too big/small/absent.
-
 ### QA-NET-PRESENCE-PARTY 🟡 — party/presence regression pass, and the fault-rate numbers
 **Source:** PR #666 + `Docs/PartySystem/BUGS.md` + `Docs/PresenceSystem/BUGS.md`
 (**refreshed 2026-10-05:** this item used to say "B2/B3/B5 open" — all three are closed
@@ -4653,7 +4651,6 @@ is always free. Earlier written instructions wrongly listed Scurry among the loc
 do not file that as a defect. Modes 28, 29, 32, 33, 34, 36, 37, 38 and 43 **do** lock.
 Progress is also **not saved between sessions** yet — quit and the unlocks reset. That is
 deliberate, so treat any gate-off test as a single-session test.
-
 
 ### QA-TOY-ELEMENT-CHARGER ⬜ — the Element Charger toy grants elements to your vessel
 **Source:** PR #913. New freestyle toy, authored headless and never compiled. Reference:
@@ -4999,6 +4996,33 @@ cheapest four in play: **Squirrel** skim energy per hit rises with Charge; **Urc
 rises with Charge; **Sparrow** turret prism z-stretch rises with Mass; **Scarab** forged ball size
 rises with Space (×4 at Space 10). **PASS = each still responds to its element.**
 **FAIL = any one stopped responding** — name which, because each has a different home.
+
+### QA-P2-BENCH-DEPTH-PRISMS ⬜ — measure what the omni and Mass crystals cost per frame
+**Source:** branch `cece/determined-ride-rqzaeo` (2026-10-13, not merged yet): new READER tool
+`CrystalDepthPrismBenchmarkWindow`. Reference: `Docs/Studios/OMNI_SHEPARD_LAB.md`, round 10 "Performance".
+**For Yash** (the designer asked for it on his list). The engineering work that follows
+(property-block dirty-check, distance LOD, the leaving-prism pass, Space-squares freeze) is blocked on
+these numbers: the project rule is profile first. This item's deliverable is data.
+
+1. Open the project in Unity and wait until it finishes importing.
+2. Make a new empty scene: **File ▸ New Scene**, pick **Basic (URP)**, press **Create**. It must have a
+   **Main Camera** and nothing else.
+3. Press **Play**.
+4. Open **FrogletTools ▸ Performance ▸ Crystal Depth Prism Benchmark**.
+5. Set **Crystals** to **Both**. Leave **Warm-up frames** at 120 and **Sample frames** at 600.
+6. Press **Run N = 10 / 50 / 200**. Wait until three results appear in the window (about a minute).
+7. Set **Crystals** to **Omni Only** and press **N = 50 only**. Wait for the result.
+8. Set **Crystals** to **Mass Only** and press **N = 50 only**. Wait for the result.
+9. Press **Copy report** and paste the text into your results.
+10. Open any C# script, type `GetComponent<Renderer>().SetShaderUserValue(` and note whether the editor
+    recognises it (no red underline) or not.
+
+**PASS:** the report shows five runs, and every line has numbers (no "not found" on **Depth prisms**,
+**Draw calls** or **Main thread**), plus your answer for step 10.
+**FAIL:** the window shows an error dialog · the crystals do not appear in a ring in front of the camera ·
+**Depth prisms** reads "no samples" (the crystals never ran) · a run never finishes.
+**Known, do not fail on:** **Space squares** or **Flip wave** reading "no samples" in the **Mass Only**
+run (the Mass crystal has neither) · the last line listing no SRP counters.
 
 ---
 

@@ -63,8 +63,9 @@ namespace CosmicShore.AssetTool
                     "schema" => Scripts.Schema(pos.Skip(1).ToList()),
                     "serialization-audit" => SerializationAudit.Run(pos.Skip(1).ToList(), opts.ContainsKey("json")),
                     "shadergraph-census" => ShaderCensus.Run(opts),
+                    "shadergraph-glsl" => ShaderGlsl.Run(Need(pos, 2)[1]),
                     "addall" => Scripts.AddAll(),
-                    // Prisma's editor pages (TOOLS, DATA, MODELS) read these; JSON on stdout.
+                    // Amoebius's editor pages (TOOLS, DATA, MODELS) read these; JSON on stdout.
                     "tools" => EditorData.Tools(),
                     "datasets" => EditorData.Datasets(),
                     "dataset" => EditorData.Dataset(Need(pos, 2)[1]),
@@ -109,7 +110,9 @@ namespace CosmicShore.AssetTool
 @"cs-asset — edit Unity scenes, prefabs and assets without the Unity Editor
 
   roundtrip [path...]                       verify parse -> write is byte-identical (default: all of Assets/)
-  serialization-audit [path...] [--json]    every script field Unity reads that Prisma drops (and the reverse)
+  serialization-audit [path...] [--json]    every script field Unity reads that Amoebius drops (and the reverse)
+  shadergraph-glsl <file>                   the GLSL a .shadergraph (or a hand-translated .shader) draws with,
+                                            its render state and its approximations
   shadergraph-census [--json PATH]          Shader Graph compiler coverage: node types, custom functions, each
                                             shader's route (family / compiled / missing); writes Port/parity/shaders.json
   list   <file>                             GameObjects and their hierarchy paths
@@ -134,7 +137,7 @@ namespace CosmicShore.AssetTool
                                             removals). Writes the prefab AND this file
   schema [path...]                          check the component serializer against every saved script
 
-Editor data (JSON on stdout, what Prisma's TOOLS / DATA / MODELS pages read):
+Editor data (JSON on stdout, what Amoebius's TOOLS / DATA / MODELS pages read):
   tools                                     every FrogletTools menu item: category, importance, description, source
   datasets                                  every ScriptableObject .asset, grouped by script type
   dataset <file.asset>                      its fields: value, kind, type, header, tooltip, range (edit with set)

@@ -44,11 +44,18 @@ The cannon spends Energy (index 0). (Index 1, Ammo, belongs to the trigger bombs
 the cost. Dig In (Button1) accelerates regeneration; Rush (Button2) spends from
 the same pool.
 
-## Knockback & self-propulsion
+## Self-propulsion (no knockback on other vessels)
 
-Grizzly blasts carry the strongest knock-back in the game
-(`VesselImpulseByExplosionEffectSO`, wired into the Grizzly AOE prefab's
-explosion impactor container):
+**Since 2026-10-10 a Grizzly blast moves only the Grizzly that fired it.** It used to
+shove every vessel in its radius, and Garrett retired that with every other non-petal PvP
+effect: the only thing one pilot may do to another is take their petals, as a scored hit
+(`Docs/claude/IMPACT_EFFECTS_AND_AUDIO.md` § "PvP is petals only"). So an opponent
+caught in the blast loses petals and the Grizzly scores: `VesselCombatHitByGrizzlyBlast`
+(a `VesselCombatHitByExplosionEffectSO`, class `MissileBlast`, 20 points = 2 petals per
+element ejected along the blast, 0.5 s per-victim latch) sits in
+`GrizzlyExplosionImpactorDataContainer` next to the impulse effect. It admits through
+`CombatHitDrain.TryAdmit` under the `Explosion` ward, so a warded pilot is neither scored on
+nor robbed. `VesselImpulseByExplosionEffectSO` (the same container) is self-launch only:
 
 - Detonations pass `AffectSelfOverride = true`, so the shooter's own vessel is a
   valid impact pair — riding your own shockwave is the class's movement identity.

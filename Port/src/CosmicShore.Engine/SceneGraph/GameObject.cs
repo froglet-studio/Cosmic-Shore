@@ -11,6 +11,7 @@ namespace CosmicShore.Engine
     public sealed partial class GameObject : Object
     {
         readonly List<Component> _components = new();
+        internal List<Component> ComponentList => _components;
 
         public Transform transform { get; private set; }
 

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Threading.Tasks;
 using CosmicShore.Engine.Rendering;
+using CosmicShore.Engine.InputSystem.Controls;
 
 namespace CosmicShore.Engine
 {
@@ -306,7 +307,7 @@ namespace CosmicShore.Engine
         public static bool graphicsMultiThreaded => false;
         public static bool supportsComputeShaders { get; set; }
         /// <summary>
-        /// Storage buffers readable in the vertex stage. Prisma renders with GL 3.3 / GL ES 3.0, which
+        /// Storage buffers readable in the vertex stage. Amoebius renders with GL 3.3 / GL ES 3.0, which
         /// have none, so this is 0 - what Unity reports on such a device. Code that draws from a
         /// <see cref="GraphicsBuffer"/> in a vertex shader checks it and takes its own fallback.
         /// </summary>

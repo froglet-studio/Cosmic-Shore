@@ -1,0 +1,785 @@
+using System;
+using System.Collections.Generic;
+
+// Pure C# - no UnityEngine - so the same file compiles and RUNS headless against the Omni Combine Lab
+// (Tools/Build/omni_combine_parity/). The Unity side (OmniCombinePlayer) parses the JSON with
+// JsonUtility and copies the positions this writes into its meshes.
+namespace CosmicShore.Utility
+{
+    // ------------------------------------------------------------------ data (JsonUtility schema)
+    // Authored by Tools/Build/author_omni_combine_asset.py into
+    // Assets/_SO_Assets/Environment/OmniCombine/OmniCombineData.json, in Unity's axes. Field names are the
+    // JSON keys: do not rename one without re-running the generator.
+
+    [Serializable] public sealed class OmniCombineData
+    {
+        public string source;
+        public string[] order;
+        public OmniCombineMeshData omni;
+        public OmniCombineCrystalData[] crystals;
+        public OmniCombineSquaresData squares;
+        public OmniCombineDepthData depth;
+        public OmniCombineFlipData flip;
+        public OmniCombineArcData arcs;
+        public OmniCombineTumbleData tumble;
+        public OmniCombineSpinData spin;
+        /// <summary>Row-major 3x3: turns the game's OmniCrystalTriangles.asset onto this omni's triangle plates.</summary>
+        public float[] omniTriangleRotation;
+    }
+
+    [Serializable] public sealed class OmniCombineMeshData
+    {
+        public float[] verts;
+        public int[] tris;
+        public int[] plate;
+        /// <summary>Per omni plate: the index into <see cref="OmniCombineData.order"/> of the element that lands there.</summary>
+        public int[] plateOwner;
+    }
+
+    [Serializable] public sealed class OmniCombineCrystalData
+    {
+        public string element;
+        public float[] basis;
+        public int[] tris;
+        public int[] plate;
+        /// <summary>Per plate: the omni plate it lands on (Charge 5 and Mass 3 share one).</summary>
+        public int[] plateSite;
+        public float[] offset;
+        /// <summary>Mass: stage units per unit of the game's MassCrystalPrisms mesh this crystal IS (0 for the art file's).</summary>
+        public float meshScale;
+        /// <summary>Per vertex: where it lands in the omni (Charge/Mass wedges, Time's rigid pose, Space's Key 1).</summary>
+        public float[] final;
+        /// <summary>Charge/Mass: the pose after each petal's back sucks in (Mass: the basis).</summary>
+        public float[] stage1;
+        /// <summary>Charge/Mass: per plate, the site axis the petals untwist about, and by how many degrees.</summary>
+        public float[] plateAxis;
+        public float[] plateTwist;
+        /// <summary>Time: per plate, the rigid turn onto its slot (w, x, y, z).</summary>
+        public float[] plateQuat;
+        public OmniCombineIdleData idle;
+    }
+
+    [Serializable] public sealed class OmniCombineIdleData
+    {
+        public float fps;
+        public string[] names;
+        public OmniCombineDeltaData[] keys;
+        /// <summary>Frame-major, one weight per key.</summary>
+        public float[] weights;
+    }
+
+    [Serializable] public sealed class OmniCombineDeltaData { public float[] delta; }
+
+    [Serializable] public sealed class OmniCombineSquaresData
+    {
+        public float fps;
+        public OmniCombineSquareKeyData[] keys;
+        public float[] weights;
+    }
+
+    [Serializable] public sealed class OmniCombineSquareKeyData
+    {
+        public int[] verts;
+        public float[] delta;
+    }
+
+    [Serializable] public sealed class OmniCombineDepthData
+    {
+        public float open, seal, power, omniReach, omniSizeStart, massReach, massSizeStart;
+        /// <summary>The thickness baked into MassCrystalPrisms / OmniCrystalTriangles. The combine morphs the THIN
+        /// prisms the art's plates are and the converter thickens them in the shader, so a landed Mass prism
+        /// matches the triangle mesh it hands off to.</summary>
+        public float massThickness, omniThickness;
+    }
+
+    [Serializable] public sealed class OmniCombineFlipData
+    {
+        public float loop, first, stagger;
+        public OmniCombineFlipCurves lead, later;
+    }
+
+    /// <summary>Each curve is flat (time, value) pairs; an empty one evaluates to the curve's rest value.</summary>
+    [Serializable] public sealed class OmniCombineFlipCurves { public float[] flip, scale, dip, slide; }
+
+    [Serializable] public sealed class OmniCombineArcData { public float speed, length, duty; }
+
+    [Serializable] public sealed class OmniCombineTumbleData { public float speed; public float[] direction; }
+
+    [Serializable] public sealed class OmniCombineSpinData { public float cycleSpeed, pause; }
+
+    // ------------------------------------------------------------------ the knobs one play reads
+    /// <summary>
+    /// One combine's choreography. The defaults are the Omni Combine Lab's round-2 SHIPPED values
+    /// (Docs/Studios/OMNI_COMBINE_LAB.md); <c>OmniCombineTuningSO</c> draws a fresh set per play.
+    /// </summary>
+    public struct OmniCombineParams
+    {
+        public int Seed;
+        /// <summary>Seconds the four idle, each doing its own effect, before the first sets off.</summary>
+        public double Lead;
+        /// <summary>0 the art file's row, 1 a ring, 2 a tetrahedron.</summary>
+        public int Layout;
+        /// <summary>Start distance in omni radii.</summary>
+        public double Spread;
+        /// <summary>Turn of the whole start layout about the vertical, radians (the lab has none).</summary>
+        public double LayoutYaw;
+        public double Stagger, Flight, Ease, Arc, Swirl, Tumble;
+        public double MorphStart, MorphLength, SiteSpread, Suck, EffectFade;
+        /// <summary>Offset added to the flip wave, spin and squares clocks, so two plays never flip in step.</summary>
+        public double EffectPhase;
+        /// <summary>The Mass prisms' depth effect is drawn by the game's depth-prism shader (the converter), not
+        /// moved here on the CPU (the lab, whose stateless model this core otherwise reproduces).</summary>
+        public bool ShaderDepth;
+        /// <summary>The Charge crystal turns as it idles (the lab's port of JustRotate on CrystalCharge.prefab). The
+        /// converter turns it off (designer, 2026-10-13: "a vestigial rotation that we don't want").</summary>
+        public bool IdleTumble;
+
+        public static OmniCombineParams LabDefault => new OmniCombineParams
+        {
+            Seed = 7, Lead = 2.5, Layout = 2, Spread = 3, LayoutYaw = 0,
+            Stagger = 1.2, Flight = 4.6, Ease = 2, Arc = 0.4, Swirl = 0, Tumble = 0.25,
+            MorphStart = 0.1, MorphLength = 0.8, SiteSpread = 0.5, Suck = 0.35, EffectFade = 0.7, EffectPhase = 0,
+            IdleTumble = true,
+        };
+    }
+
+    /// <summary>
+    /// The four elemental crystals idling with their own effects, flying in one after another and turning
+    /// into their shares of the omni crystal, which then wakes with all four effects - the Omni Combine Lab's
+    /// <c>pose</c> / <c>omniPose</c> (Docs/Studios/OmniCombineLab.html), ported line for line so a seed plays
+    /// the same combine in both. Every number it reads comes from the generated data; nothing here is tuned.
+    ///
+    /// Pure and stateless: the pose at time t is a function of (t, params, the camera's direction), so a
+    /// scrub, a replay and the headless parity test all agree.
+    /// </summary>
+    public sealed class OmniCombineCore
+    {
+        public const int Space = 0, Charge = 1, Mass = 2, Time = 3;
+        /// <summary>The designer's order (2026-10-13): Space lays the negative space, Time locks in last.</summary>
+        public static readonly string[] Order = { "Space", "Charge", "Mass", "Time" };
+        /// <summary>The lab's seeding order (its data order), kept so one seed means one combine everywhere.</summary>
+        static readonly int[] RngOrder = { Charge, Mass, Space, Time };
+        const int TimeFlipSalt = 11, OmniFlipSalt = 23;
+        readonly double[] _slerp = new double[4];
+
+        public readonly OmniCombineData Data;
+        public readonly double OmniRadius;
+        readonly CrystalModel[] _crystals = new CrystalModel[4];
+        readonly Plate[] _omniPlates;
+        readonly FlipRig _timeRig, _omniRig;
+        readonly D3 _tumbleAxis;
+        readonly double _tumbleSpeed;
+        readonly double[] _squareWeights, _spinWeights;
+
+        // per-seed draws
+        int _seededWith = int.MinValue;
+        readonly D3[] _tumbleAxes = new D3[4];
+
+        public OmniCombineCore(OmniCombineData data)
+        {
+            Data = data ?? throw new ArgumentNullException(nameof(data));
+            if (data.crystals == null || data.crystals.Length != 4)
+                throw new ArgumentException("the combine needs exactly four crystals");
+            for (int k = 0; k < 4; k++)
+            {
+                var c = Array.Find(data.crystals, x => x.element == Order[k])
+                        ?? throw new ArgumentException($"no {Order[k]} crystal in the combine data");
+                _crystals[k] = new CrystalModel(k, c);
+            }
+            var ov = data.omni.verts;
+            for (int i = 0; i < ov.Length; i += 3)
+                OmniRadius = Math.Max(OmniRadius, Math.Sqrt(ov[i] * ov[i] + ov[i + 1] * ov[i + 1] + ov[i + 2] * ov[i + 2]));
+            _omniPlates = Plate.Of(ov, data.omni.plate);
+            _timeRig = new FlipRig(_crystals[Time].Plates, AllPlates(_crystals[Time].Plates.Length));
+            var omniTime = new List<int>();
+            for (int p = 0; p < _omniPlates.Length; p++) if (data.omni.plateOwner[p] == Time) omniTime.Add(p);
+            _omniRig = new FlipRig(_omniPlates, omniTime.ToArray());
+            var dir = data.tumble.direction;
+            _tumbleAxis = new D3(dir[0], dir[1], dir[2]).Unit;
+            _tumbleSpeed = data.tumble.speed * Math.PI / 180;
+            _squareWeights = new double[data.squares.keys.Length];
+            var idle = _crystals[Space].Data.idle;
+            _spinWeights = new double[idle?.keys?.Length ?? 0];
+        }
+
+        public int VertexCount(int element) => _crystals[element].N;
+        public OmniCombineCrystalData CrystalData(int element) => _crystals[element].Data;
+        public int StartVertexCount(bool omni) => (omni ? _omniRig : _timeRig).Axes.Length;
+        public int[] RingSizes(bool omni, int start)
+        {
+            var rig = omni ? _omniRig : _timeRig;
+            var sizes = new List<int>();
+            foreach (var step in rig.Plans[start].Values)
+            {
+                while (sizes.Count <= step.Ring) sizes.Add(0);
+                sizes[step.Ring]++;
+            }
+            return sizes.ToArray();
+        }
+
+        public static double Departs(int element, in OmniCombineParams p) => p.Lead + element * p.Stagger;
+        public static double MorphEnds(in OmniCombineParams p) => p.Lead + 3 * p.Stagger + p.Flight;
+
+        /// <summary>
+        /// Every vertex of every crystal at combine time <paramref name="t"/>, in the stage's frame:
+        /// <paramref name="positions"/>[element] holds xyz per vertex (sized by <see cref="VertexCount"/>).
+        /// <paramref name="effect"/>[element] is how strongly that crystal's idle effect still runs (1 while
+        /// it waits, 0 once it has set off) - the Unity side fades the Charge discharge by it.
+        /// <paramref name="towardCamera"/> is the unit direction from the stage centre to the camera.
+        /// </summary>
+        public void Pose(double t, in OmniCombineParams p, D3 towardCamera, float[][] positions, float[] effect) =>
+            Pose(t, p, towardCamera, positions, effect, null, null);
+
+        /// <summary>As above, also writing each crystal's flight centre (<paramref name="centres"/>, 3 per crystal) and
+        /// how far each of its plates has morphed (<paramref name="plateMorph"/>[element][plate], 0..1).</summary>
+        public void Pose(double t, in OmniCombineParams p, D3 towardCamera, float[][] positions, float[] effect,
+                         float[] centres, float[][] plateMorph)
+        {
+            Seed(p.Seed);
+            double te = t + p.EffectPhase;
+            for (int k = 0; k < 4; k++)
+            {
+                var c = _crystals[k];
+                var outPos = positions[k];
+                double t0 = Departs(k, p), u = Clamp01((t - t0) / p.Flight), e = EaseIO(u, p.Ease);
+                double fxIdle = 1 - Smooth((t - t0) / p.EffectFade);
+                effect[k] = (float)Math.Max(0, fxIdle);
+                D3 s = StartOf(k, p), centre;
+                double left = 1 - e;
+                centre = RotAxis(D3.Up, p.Swirl * 2 * Math.PI * left, s * left);
+                centre = new D3(centre.X, centre.Y + p.Arc * s.Length * Math.Sin(Math.PI * e), centre.Z);
+                double ang = p.Tumble * 2 * Math.PI * left;
+                double mS = Math.Min(p.MorphStart, 1 - p.MorphLength);
+                bool idleSpin = c.Data.idle != null && c.Data.idle.keys != null && c.Data.idle.keys.Length > 0 && fxIdle > 0;
+                if (idleSpin) SpinWeights(te, c.Data.idle.names, _spinWeights);
+                // Charge tumbles while it idles; the accumulated turn unwinds over the flight so it lands in the omni's frame.
+                // Only the turn modulo a whole turn unwinds (the same pose), so a long wait never spins it back for laps.
+                double spin = k == Charge && p.IdleTumble ? (_tumbleSpeed * Math.Min(t, t0)) % (2 * Math.PI) * (1 - e) : 0;
+                for (int q = 0; q < c.Plates.Length; q++)
+                {
+                    var pl = c.Plates[q];
+                    double start = mS + p.SiteSpread * c.PlateR[q] * (1 - p.MorphLength - mS);
+                    double w = Smooth((u - start) / p.MorphLength);
+                    if (plateMorph != null) plateMorph[k][q] = (float)w;
+                    Flip flip = default;
+                    double seatScale = 1;
+                    D3 seatLift = default;
+                    if (fxIdle > 0 && k == Time) flip = FlipPose(_timeRig, q, pl, te, TimeFlipSalt, fxIdle);
+                    if (fxIdle > 0 && k == Mass && !p.ShaderDepth)
+                    {
+                        double sd = SeatOf(pl.Dir, towardCamera);
+                        seatScale = 1 + (Data.depth.massSizeStart - 1) * (1 - sd) * fxIdle;
+                        seatLift = pl.C * ((Data.depth.massReach - 1) * (1 - sd) * fxIdle);
+                    }
+                    foreach (int i in pl.Idx)
+                    {
+                        D3 b = V(c.Data.basis, i);
+                        if (idleSpin)
+                            for (int key = 0; key < _spinWeights.Length; key++)
+                                b += V(c.Data.idle.keys[key].delta, i) * (_spinWeights[key] * fxIdle);
+                        if (flip.Valid) b = ApplyFlip(flip, pl, b);
+                        if (seatScale != 1) b = pl.C + (b - pl.C) * seatScale + seatLift;
+                        D3 v;
+                        switch (k)
+                        {
+                            case Time:
+                            {
+                                var rq = SlerpIdentity(c.Quat[q], w, _slerp);
+                                var cc = D3.Lerp(pl.C, c.FinalCentre[q], w);
+                                v = cc + QuatRotate(rq, b - pl.C);
+                                break;
+                            }
+                            case Charge:
+                            {
+                                double s1 = Smooth(w / p.Suck), s2 = Smooth((w - p.Suck) / (1 - p.Suck));
+                                var v1 = D3.Lerp(b, b + (V(c.Data.stage1, i) - V(c.Data.basis, i)), s1);
+                                v = D3.Lerp(RotAxis(c.Axis[q], c.Twist[q] * s2, v1), V(c.Data.final, i), s2);
+                                break;
+                            }
+                            case Mass:
+                                v = D3.Lerp(RotAxis(c.Axis[q], c.Twist[q] * w, b), V(c.Data.final, i), w);
+                                break;
+                            default:
+                                v = D3.Lerp(b, V(c.Data.final, i), w);
+                                break;
+                        }
+                        if (spin != 0) v = RotAxis(_tumbleAxis, spin, v);
+                        if (ang != 0) v = RotAxis(_tumbleAxes[k], ang, v);
+                        v += centre;
+                        outPos[3 * i] = (float)v.X;
+                        outPos[3 * i + 1] = (float)v.Y;
+                        outPos[3 * i + 2] = (float)v.Z;
+                    }
+                }
+                if (centres != null)
+                {
+                    centres[3 * k] = (float)centre.X;
+                    centres[3 * k + 1] = (float)centre.Y;
+                    centres[3 * k + 2] = (float)centre.Z;
+                }
+            }
+        }
+
+        /// <summary>
+        /// The finished omni at time <paramref name="t"/> doing its four effects, ramped in by
+        /// <paramref name="fx"/> (0 = the still omni every crystal landed on): the flip wave on its rhombi,
+        /// the squares weave, the depth prisms on its triangles. (The discharge on its pentagons is the
+        /// shader's.) Writes xyz per omni vertex.
+        /// </summary>
+        public void OmniPose(double t, in OmniCombineParams p, double fx, D3 towardCamera, float[] positions)
+        {
+            var ov = Data.omni.verts;
+            Array.Copy(ov, positions, ov.Length);
+            if (fx <= 0) return;
+            double te = t + p.EffectPhase;
+            SquaresWeights(te, Data.squares, _squareWeights);
+            for (int k = 0; k < Data.squares.keys.Length; k++)
+            {
+                var key = Data.squares.keys[k];
+                double w = _squareWeights[k] * fx;
+                for (int n = 0; n < key.verts.Length; n++)
+                {
+                    int j = key.verts[n];
+                    positions[3 * j] += (float)(key.delta[3 * n] * w);
+                    positions[3 * j + 1] += (float)(key.delta[3 * n + 1] * w);
+                    positions[3 * j + 2] += (float)(key.delta[3 * n + 2] * w);
+                }
+            }
+            for (int q = 0; q < _omniPlates.Length; q++)
+            {
+                var pl = _omniPlates[q];
+                int owner = Data.omni.plateOwner[q];
+                if (owner == Time)
+                {
+                    var f = FlipPose(_omniRig, q, pl, te, OmniFlipSalt, fx);
+                    if (!f.Valid) continue;
+                    foreach (int i in pl.Idx) Write(positions, i, ApplyFlip(f, pl, V(ov, i)));
+                }
+                else if (owner == Mass && !p.ShaderDepth)
+                {
+                    double s = SeatOf(pl.Dir, towardCamera);
+                    double sc = 1 + (Data.depth.omniSizeStart - 1) * (1 - s) * fx;
+                    var lift = pl.C * ((Data.depth.omniReach - 1) * (1 - s) * fx);
+                    foreach (int i in pl.Idx) Write(positions, i, pl.C + (V(ov, i) - pl.C) * sc + lift);
+                }
+            }
+        }
+
+        // ------------------------------------------------------------------ the four effects
+        // Mass: each prism rides its column by depth (stateless "sealed by depth"; the game's ratchet keeps state).
+        double SeatOf(D3 dir, D3 towardCamera)
+        {
+            double d = D3.Dot(dir, towardCamera);
+            double e = Clamp01((d - Data.depth.open) / (Data.depth.seal - Data.depth.open));
+            return Math.Pow(e * e * (3 - 2 * e), Data.depth.power);
+        }
+
+        // Space: SpaceCrystalAnimator's 5-point spin then 3-point spin, each two half keys over 1/cycleSpeed s, then a pause.
+        void SpinWeights(double t, string[] names, double[] into)
+        {
+            var sp = Data.spin;
+            double per = 1 / sp.cycleSpeed + sp.pause;
+            double n = Math.Floor(t / per), ph = (t - n * per) * sp.cycleSpeed;
+            bool five = ((long)n & 1) == 0;
+            double w1 = ph < 1 ? Clamp01(2 * ph) : 0, w2 = ph < 1 ? Clamp01(2 * ph - 1) : 0;
+            for (int k = 0; k < into.Length; k++)
+                into[k] = names[k].StartsWith("5Point", StringComparison.Ordinal) == five
+                    ? (names[k].Contains("1st") ? w1 : w2)
+                    : 0;
+        }
+
+        // The omni's squares weave (CrystalSpaceSquaresSO.WeightsAt): linear between frames, held across a jump.
+        static void SquaresWeights(double t, OmniCombineSquaresData sq, double[] into)
+        {
+            int nk = sq.keys.Length, frames = sq.weights.Length / nk;
+            double fp = ((t * sq.fps) % frames + frames) % frames;
+            int i0 = (int)Math.Floor(fp), i1 = (i0 + 1) % frames;
+            double a = fp - i0;
+            for (int k = 0; k < nk; k++)
+                if (Math.Abs(sq.weights[i1 * nk + k] - sq.weights[i0 * nk + k]) > 0.5) a = 0;
+            for (int k = 0; k < nk; k++)
+                into[k] = sq.weights[i0 * nk + k] + (sq.weights[i1 * nk + k] - sq.weights[i0 * nk + k]) * a;
+        }
+
+        // Time: the flip wave as the game plans it (FlipWave.Plan, TimeCrystalFlipWaveProfile.asset).
+        struct Flip { public bool Valid; public D3 Axis, Shift; public double Angle, Scale; }
+
+        static double CurveAt(float[] keys, double t, double empty)
+        {
+            if (keys == null || keys.Length < 2) return empty;
+            if (t <= keys[0]) return keys[1];
+            for (int i = 2; i + 1 < keys.Length; i += 2)
+                if (t <= keys[i])
+                {
+                    double t0 = keys[i - 2], v0 = keys[i - 1], t1 = keys[i], v1 = keys[i + 1];
+                    return v0 + (v1 - v0) * (t - t0) / (t1 - t0);
+                }
+            return keys[keys.Length - 1];
+        }
+
+        /// <summary>A new start vertex every loop, drawn from the other eleven (CrystalFlipWave.LateUpdate), seeded.
+        /// Each loop's start follows from the last, so the rig carries the walk forward from the loop it last
+        /// answered instead of replaying it from loop 0 (which grew without bound while the converter idles).</summary>
+        static int FlipStart(FlipRig rig, long loopIndex, int salt)
+        {
+            int n = rig.Axes.Length;
+            if (rig.StartLoop < 0 || loopIndex < rig.StartLoop)
+            {
+                rig.StartLoop = 0;
+                rig.Start = (int)Math.Floor(Hash(salt, 0) * n);
+            }
+            for (long k = rig.StartLoop + 1; k <= loopIndex; k++)
+                rig.Start = (rig.Start + 1 + (int)Math.Floor(Hash(salt, (int)k) * (n - 1))) % n;
+            rig.StartLoop = Math.Max(rig.StartLoop, loopIndex);
+            return rig.Start;
+        }
+
+        Flip FlipPose(FlipRig rig, int p, Plate pl, double t, int salt, double fx)
+        {
+            var fl = Data.flip;
+            long loop = (long)Math.Floor(t / fl.loop);
+            double local = t - loop * fl.loop;
+            var step = rig.Plans[FlipStart(rig, loop, salt)][p];
+            double tk = local - (fl.first + fl.stagger * step.Ring);
+            if (tk < 0) return default;
+            var cv = step.Ring == 0 ? fl.lead : fl.later;
+            return new Flip
+            {
+                Valid = true,
+                Axis = step.Axis,
+                Angle = Math.PI * CurveAt(cv.flip, tk, 0) * fx,
+                Scale = 1 + (CurveAt(cv.scale, tk, 1) - 1) * fx,
+                Shift = (step.Toward * CurveAt(cv.slide, tk, 0) + pl.Dir * -CurveAt(cv.dip, tk, 0)) * (pl.Reach * fx),
+            };
+        }
+
+        static D3 ApplyFlip(in Flip f, Plate pl, D3 b) => pl.C + f.Shift + RotAxis(f.Axis, f.Angle, b - pl.C) * f.Scale;
+
+        // ------------------------------------------------------------------ layout and seeding
+        D3 StartOf(int k, in OmniCombineParams p)
+        {
+            double d = p.Spread * OmniRadius;
+            D3 s;
+            if (p.Layout == 0) s = V(_crystals[k].Data.offset, 0) * (p.Spread / 3);
+            else if (p.Layout == 1)
+            {
+                double a = k * Math.PI / 2 + Math.PI / 4;
+                s = new D3(Math.Cos(a) * d, 0, Math.Sin(a) * d);
+            }
+            else
+            {
+                double kk = d / Math.Sqrt(3);
+                s = k switch
+                {
+                    0 => new D3(kk, kk, kk),
+                    1 => new D3(kk, -kk, -kk),
+                    2 => new D3(-kk, kk, -kk),
+                    _ => new D3(-kk, -kk, kk),
+                };
+            }
+            return p.LayoutYaw != 0 ? RotAxis(D3.Up, p.LayoutYaw, s) : s;
+        }
+
+        void Seed(int seed)
+        {
+            if (seed == _seededWith) return;
+            _seededWith = seed;
+            var rnd = new Mulberry32(seed);
+            foreach (int k in RngOrder)
+            {
+                var c = _crystals[k];
+                double z = 2 * rnd.Next() - 1, a = 2 * Math.PI * rnd.Next(), s = Math.Sqrt(1 - z * z);
+                _tumbleAxes[k] = new D3(s * Math.Cos(a), z, s * Math.Sin(a));
+                var siteR = new Dictionary<int, double>();
+                for (int q = 0; q < c.Plates.Length; q++)
+                {
+                    int key = k == Charge || k == Mass ? c.Data.plateSite[q] : q;
+                    if (!siteR.TryGetValue(key, out double r)) siteR[key] = r = rnd.Next();
+                    c.PlateR[q] = r;
+                }
+            }
+        }
+
+        // ------------------------------------------------------------------ models
+        sealed class CrystalModel
+        {
+            public readonly OmniCombineCrystalData Data;
+            public readonly int N;
+            public readonly Plate[] Plates;
+            public readonly D3[] FinalCentre, Axis;
+            public readonly double[] Twist, PlateR;
+            public readonly double[][] Quat;
+
+            public CrystalModel(int element, OmniCombineCrystalData d)
+            {
+                Data = d;
+                N = d.basis.Length / 3;
+                if (d.final == null || d.final.Length != d.basis.Length || d.plate.Length != N)
+                    throw new ArgumentException($"{d.element}: basis, final and plate disagree on the vertex count");
+                Plates = Plate.Of(d.basis, d.plate);
+                PlateR = new double[Plates.Length];
+                FinalCentre = new D3[Plates.Length];
+                for (int q = 0; q < Plates.Length; q++)
+                {
+                    D3 sum = default;
+                    foreach (int i in Plates[q].Idx) sum += V(d.final, i);
+                    FinalCentre[q] = sum * (1.0 / Plates[q].Idx.Length);
+                }
+                if (element == Charge || element == Mass)
+                {
+                    if (d.stage1 == null || d.stage1.Length != d.basis.Length || d.plateAxis == null || d.plateAxis.Length != 3 * Plates.Length)
+                        throw new ArgumentException($"{d.element}: the wedge morph needs stage1, plateAxis and plateTwist");
+                    Axis = new D3[Plates.Length];
+                    Twist = new double[Plates.Length];
+                    for (int q = 0; q < Plates.Length; q++)
+                    {
+                        Axis[q] = V(d.plateAxis, q);
+                        Twist[q] = d.plateTwist[q] * Math.PI / 180;
+                    }
+                }
+                if (element == Time)
+                {
+                    if (d.plateQuat == null || d.plateQuat.Length != 4 * Plates.Length)
+                        throw new ArgumentException("Time: the rigid lock-in needs a quaternion per rhombus");
+                    Quat = new double[Plates.Length][];
+                    for (int q = 0; q < Plates.Length; q++)
+                        Quat[q] = new double[] { d.plateQuat[4 * q], d.plateQuat[4 * q + 1], d.plateQuat[4 * q + 2], d.plateQuat[4 * q + 3] };
+                }
+            }
+        }
+
+        /// <summary>A connected component: its centre, outward direction, long diagonal and half its length.</summary>
+        sealed class Plate
+        {
+            public int[] Idx;
+            public D3 C, Dir, Diag;
+            public double Reach;
+
+            public static Plate[] Of(float[] points, int[] plateIds)
+            {
+                int np = 0;
+                foreach (int p in plateIds) np = Math.Max(np, p + 1);
+                var lists = new List<int>[np];
+                for (int p = 0; p < np; p++) lists[p] = new List<int>();
+                for (int i = 0; i < plateIds.Length; i++) lists[plateIds[i]].Add(i);
+                var plates = new Plate[np];
+                for (int p = 0; p < np; p++)
+                {
+                    var idx = lists[p].ToArray();
+                    D3 c = default;
+                    var rad = new double[idx.Length];
+                    double lo = double.MaxValue, hi = double.MinValue;
+                    for (int k = 0; k < idx.Length; k++)
+                    {
+                        var v = V(points, idx[k]);
+                        c += v;
+                        rad[k] = v.Length;
+                        lo = Math.Min(lo, rad[k]);
+                        hi = Math.Max(hi, rad[k]);
+                    }
+                    c *= 1.0 / idx.Length;
+                    double mid = (hi + lo) / 2;
+                    var outer = new List<int>();
+                    for (int k = 0; k < idx.Length; k++) if (rad[k] > mid) outer.Add(idx[k]);
+                    // the outline of the outer face, ordered round its centre (the lab's order, so its diagonal
+                    // comes out with the same sign and the flip rig lists its start vertices in the same order)
+                    D3 oc = default;
+                    foreach (int i in outer) oc += V(points, i);
+                    oc *= 1.0 / outer.Count;
+                    var n = c.Unit;
+                    var r1 = (V(points, outer[0]) - oc).Unit;
+                    var r2 = D3.Cross(n, r1);
+                    var keys = new double[outer.Count];
+                    var sorted = outer.ToArray();
+                    for (int k = 0; k < sorted.Length; k++)
+                    {
+                        var dv = V(points, sorted[k]) - oc;
+                        keys[k] = Math.Atan2(D3.Dot(dv, r2), D3.Dot(dv, r1));
+                    }
+                    Array.Sort(keys, sorted);
+                    double best = 0;
+                    var ax = new D3(1, 0, 0);
+                    foreach (int a in sorted)
+                        foreach (int b in sorted)
+                        {
+                            var dv = V(points, a) - V(points, b);
+                            double l = dv.Length;
+                            if (l > best) { best = l; ax = dv * (1 / l); }
+                        }
+                    plates[p] = new Plate { Idx = idx, C = c, Dir = n, Diag = ax, Reach = best / 2 };
+                }
+                return plates;
+            }
+        }
+
+        readonly struct FlipStep
+        {
+            public readonly int Ring;
+            public readonly D3 Axis, Toward;
+            public FlipStep(int ring, D3 axis, D3 toward) { Ring = ring; Axis = axis; Toward = toward; }
+        }
+
+        /// <summary>
+        /// The flip wave's possible start vertices and, per start, each rhombus's ring and turn. A rhombus's centre
+        /// is a two-fold axis; the five-fold vertices at the ends of its long diagonal lie atan(1/phi) = 31.72 deg
+        /// away along it (rhombic triacontahedron); the 60 candidates cluster to 12. Rings: heights within 0.05.
+        /// </summary>
+        sealed class FlipRig
+        {
+            public readonly D3[] Axes;
+            public readonly Dictionary<int, FlipStep>[] Plans;
+            /// <summary>The flip walk's last answered loop and its start vertex (<see cref="FlipStart"/>).</summary>
+            public long StartLoop = -1;
+            public int Start;
+
+            public FlipRig(Plate[] plates, int[] ids)
+            {
+                double a5 = Math.Atan(1 / ((1 + Math.Sqrt(5)) / 2)), near = Math.Cos(4 * Math.PI / 180);
+                var axes = new List<D3>();
+                foreach (int p in ids)
+                    foreach (int sgn in new[] { 1, -1 })
+                    {
+                        var u = (plates[p].Dir * Math.Cos(a5) + plates[p].Diag * (sgn * Math.Sin(a5))).Unit;
+                        if (!axes.Exists(x => D3.Dot(x, u) > near)) axes.Add(u);
+                    }
+                Axes = axes.ToArray();
+                Plans = new Dictionary<int, FlipStep>[Axes.Length];
+                for (int s = 0; s < Axes.Length; s++)
+                {
+                    var start = Axes[s];
+                    var hs = new double[ids.Length];
+                    for (int k = 0; k < ids.Length; k++) hs[k] = D3.Dot(plates[ids[k]].Dir, start);
+                    var sortedH = (double[])hs.Clone();
+                    Array.Sort(sortedH);
+                    Array.Reverse(sortedH);
+                    var levels = new List<double>();
+                    foreach (double h in sortedH) if (levels.Count == 0 || levels[levels.Count - 1] - h > 0.05) levels.Add(h);
+                    var plan = new Dictionary<int, FlipStep>();
+                    for (int k = 0; k < ids.Length; k++)
+                    {
+                        var pl = plates[ids[k]];
+                        double h = hs[k];
+                        int ring = 0;
+                        for (int i = 0; i < levels.Count; i++) if (Math.Abs(levels[i] - h) < Math.Abs(levels[ring] - h)) ring = i;
+                        var toward = (start - pl.Dir * h).Unit;
+                        var lng = pl.Diag;
+                        var sht = D3.Cross(pl.Dir, lng).Unit;
+                        var axis = Math.Abs(D3.Dot(lng, toward)) < Math.Abs(D3.Dot(sht, toward)) ? lng : sht;
+                        if (D3.Dot(D3.Cross(axis, pl.Dir), toward) > 0) axis = axis * -1;
+                        plan[ids[k]] = new FlipStep(ring, axis, toward);
+                    }
+                    Plans[s] = plan;
+                }
+            }
+        }
+
+        static int[] AllPlates(int n)
+        {
+            var ids = new int[n];
+            for (int i = 0; i < n; i++) ids[i] = i;
+            return ids;
+        }
+
+        // ------------------------------------------------------------------ maths (the lab's, in doubles)
+        static D3 V(float[] a, int i) => new D3(a[3 * i], a[3 * i + 1], a[3 * i + 2]);
+
+        static void Write(float[] a, int i, D3 v)
+        {
+            a[3 * i] = (float)v.X;
+            a[3 * i + 1] = (float)v.Y;
+            a[3 * i + 2] = (float)v.Z;
+        }
+
+        public static double Clamp01(double x) => x < 0 ? 0 : x > 1 ? 1 : x;
+
+        public static double Smooth(double x)
+        {
+            x = Clamp01(x);
+            return x * x * (3 - 2 * x);
+        }
+
+        static double EaseIO(double u, double k)
+        {
+            u = Clamp01(u);
+            return u < 0.5 ? 0.5 * Math.Pow(2 * u, k) : 1 - 0.5 * Math.Pow(2 * (1 - u), k);
+        }
+
+        /// <summary>Rodrigues: <paramref name="v"/> turned <paramref name="ang"/> radians about the unit <paramref name="axis"/>.</summary>
+        static D3 RotAxis(D3 axis, double ang, D3 v)
+        {
+            double c = Math.Cos(ang), s = Math.Sin(ang), d = D3.Dot(axis, v);
+            return v * c + D3.Cross(axis, v) * s + axis * (d * (1 - c));
+        }
+
+        static D3 QuatRotate(double[] q, D3 v)
+        {
+            var u = new D3(q[1], q[2], q[3]);
+            var t = D3.Cross(u, v) * 2;
+            return v + t * q[0] + D3.Cross(u, t);
+        }
+
+        /// <summary>The fraction <paramref name="t"/> of the turn <paramref name="q"/>, from no turn, written into
+        /// <paramref name="into"/> (reused per vertex: Pose runs every frame).</summary>
+        static double[] SlerpIdentity(double[] q, double t, double[] into)
+        {
+            double w = Math.Max(-1, Math.Min(1, q[0])), ang = 2 * Math.Acos(Math.Abs(w)), s = Math.Sin(ang / 2), sgn = w < 0 ? -1 : 1;
+            if (s < 1e-6)
+            {
+                into[0] = 1;
+                into[1] = into[2] = into[3] = 0;
+                return into;
+            }
+            double a = ang * t / 2, k = Math.Sin(a) / s;
+            into[0] = Math.Cos(a);
+            into[1] = q[1] * sgn * k;
+            into[2] = q[2] * sgn * k;
+            into[3] = q[3] * sgn * k;
+            return into;
+        }
+
+        /// <summary>The lab's integer hash, bit for bit (Math.imul / &gt;&gt;&gt; semantics).</summary>
+        public static double Hash(int a, int b)
+        {
+            unchecked
+            {
+                int h = a * 374761393 ^ b * 668265263;
+                h = (h ^ (int)((uint)h >> 13)) * 1274126177;
+                return (uint)(h ^ (int)((uint)h >> 16)) / 4294967296.0;
+            }
+        }
+
+        /// <summary>The lab's mulberry32, bit for bit.</summary>
+        public sealed class Mulberry32
+        {
+            int _a;
+            public Mulberry32(int seed) { _a = seed; }
+
+            public double Next()
+            {
+                unchecked
+                {
+                    _a += 0x6D2B79F5;
+                    int t = (_a ^ (int)((uint)_a >> 15)) * (1 | _a);
+                    t = (t + (t ^ (int)((uint)t >> 7)) * (61 | t)) ^ t;
+                    return (uint)(t ^ (int)((uint)t >> 14)) / 4294967296.0;
+                }
+            }
+        }
+    }
+
+    /// <summary>A double-precision 3-vector for <see cref="OmniCombineCore"/> (the lab computes in doubles).</summary>
+    public readonly struct D3
+    {
+        public readonly double X, Y, Z;
+        public D3(double x, double y, double z) { X = x; Y = y; Z = z; }
+        public static readonly D3 Up = new D3(0, 1, 0);
+        public double Length => Math.Sqrt(X * X + Y * Y + Z * Z);
+        public D3 Unit { get { double l = Length; return l > 0 ? this * (1 / l) : this; } }
+        public static D3 operator +(D3 a, D3 b) => new D3(a.X + b.X, a.Y + b.Y, a.Z + b.Z);
+        public static D3 operator -(D3 a, D3 b) => new D3(a.X - b.X, a.Y - b.Y, a.Z - b.Z);
+        public static D3 operator *(D3 a, double s) => new D3(a.X * s, a.Y * s, a.Z * s);
+        public static double Dot(D3 a, D3 b) => a.X * b.X + a.Y * b.Y + a.Z * b.Z;
+        public static D3 Cross(D3 a, D3 b) => new D3(a.Y * b.Z - a.Z * b.Y, a.Z * b.X - a.X * b.Z, a.X * b.Y - a.Y * b.X);
+        public static D3 Lerp(D3 a, D3 b, double t) => a + (b - a) * t;
+    }
+}

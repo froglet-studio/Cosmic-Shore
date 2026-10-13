@@ -1,10 +1,10 @@
 # STOAT — the slingshot vessel (prototype, 2026-10-08)
 
-> **SUPERSEDED ON THE TRIGGERS, 2026-10-09.** The Stoat now flies the round-15 **field dipole** and
-> **pathfinder** — `STOAT_DIPOLE.md`. LT/RT are bound to `StoatDipoleLeft/RightAction`; the orbit sling
-> below keeps its code, assets and `StoatSlingExecutor` on the prefab, unbound and inert, so rebinding
-> `StoatSlingLeft/RightAction` restores it. The hull, the stop on X, the class and the registration
-> described here are unchanged.
+> **2026-10-13 — ITS OWN VESSEL.** The orbit sling below is back as **TIME MODE** (B switches Mass and Time;
+> `STOAT_DIPOLE.md` §1a–§1b), now with a **timed** release: the whole kick a quarter-turn round, a fifth outside the
+> window. Mass mode flies the round-15 **field dipole** (`STOAT_DIPOLE.md`). The Squirrel prefab this was cloned from
+> is gone from it: §4's "kept as prototype debt" paragraph is resolved (stage 6 of the generator), and §6's open slots
+> are designed and shipped (`STOAT_DIPOLE.md` §5). Read STOAT_DIPOLE.md first; this file is the orbit's own record.
 
 > **Naming.** Player-facing, the Stoat lays **WORMHOLES**: an **attractor** (pulls) and a
 > **repulsor** (pushes), an attractor–repulsor pair. In code they are still the black-hole system's
@@ -14,10 +14,13 @@
 > the Black Hole tool's Pair style button, or `blackhole style drift|crystal`).
 > What the Stoat flies with today is the PLACEHOLDER: the pull, the lens, the pass-through.
 
-`VesselClassType.Stoat = 14`. A two-thumb hull whose ONE ability lays an **attractor–repulsor wormhole pair**
+`VesselClassType.Stoat = 15`. A two-thumb hull whose ONE ability lays an **attractor–repulsor wormhole pair**
 across itself and lets gravity do the rest: the hull falls toward the attractor and is shoved off
 the repulsor, and that asymmetric push is the **slingshot**. Its second input is the Sparrow's
 **stop**, verbatim — because the Stoat slings from a standstill.
+
+**Size (2026-10-13):** the root Transform is scaled **0.8** (`author_stoat_assets.py` stage 5, `HULL_SCALE`):
+the drawn hull, its colliders and skimmers shrink together; `WarpFieldVesselScaler` keeps it as the rest scale.
 
 Status: **PROTOTYPE.** The prefab is a text clone of the Squirrel's (same flight model, colliders,
 HUD and camera) with the Squirrel's bindings replaced and its model HIDDEN: the drawn hull is the
@@ -147,12 +150,12 @@ through the base class's lerp (the Butterfly lesson: it eats a slow periodic mot
 | `Executors/StoatSlingExecutor.cs` | the per-vessel state: the two squeezes (live + deepest), the orbit, the last pair; lays the pair on press, flies the orbit, slings on release (`SpawnPair(held)`, `LetGo`) |
 | `StoatSlingMath.cs` | the pure maths |
 | `_SO_Assets/VesselActions/Stoat/` | `StoatSlingConfig`, `StoatSlingLeftAction` (side 0), `StoatSlingRightAction` (side 1), `StoatHoldAction` (stationaryMode 1 = Sparrow) |
-| `Resources/ElementalAbilityMaps/Stoat.asset` | Space = Slingshot (Input 2), Time = Hold Still (Input 6), Charge and Mass open — see §6 |
-| `_Prefabs/Spacevessels/Stoat.prefab` | authored by `Tools/Build/author_stoat_assets.py` from `Squirrel.prefab` (§4) |
+| `Resources/ElementalAbilityMaps/Stoat.asset` | all four authored since 2026-10-13 — Space = Field Dipole, Time = Pathfinder / Time Mode, Charge = Ripple, Mass = Mass / Time Mode (`STOAT_DIPOLE.md` §5) |
+| `_Prefabs/Spacevessels/Stoat.prefab` | authored by `Tools/Build/author_stoat_assets.py`: cloned once from `Squirrel.prefab` (§4), its own vessel since stage 6 |
 | `StoatHullForm.cs`, `StoatHullBuilder.cs` (Vessel/) | the plated hull: pure geometry + morphs, and the emitter (§2.1) |
 | `StoatLopeMath.cs`, `StoatAnimation.cs` (Animation/) | the lope (pure) and the puppetry + morph plumbing (§2.2) |
 | `Tools/Build/stoat_hull_harness/` | compiles and RUNS the shipped hull form offline; `--obj` exports it |
-| `Tools/Build/author_stoat_assets.py` | the generator + `--check` + `--self-test` (ten negative controls); stage 2 authors the hull and the animation swap |
+| `Tools/Build/author_stoat_assets.py` | the generator + `--check` + `--self-test` (22 negative controls); stage 2 authors the hull and the animation swap, stage 6 the own-vessel pass |
 | `Docs/Studios/StoatFlightStudio.html` | the web studio: fly the Stoat on a gamepad, sling either wormhole style, compare them, log decisions (`Docs/Studios/README.md`; live copy with the shared log: https://claude.ai/artifact/Busc3KW6DmVzbsiA2qxoHc) |
 
 **Why the hold is sampled per frame, not read at release — and why the PEAK slings.** The release
@@ -165,16 +168,16 @@ whose scripted pad releases the way a thumb does. `StoatSlingMath.Peak` keeps th
 (`StoatSlingTests.Peak_KeepsTheDeepestSqueezeThroughTheLetGo`).
 
 **One pair per Stoat.** A new sling annihilates THIS hull's previous pair first (never the tool's or
-another hull's), so a pilot can chain nudges without exhausting `BlackHoleConfig.maxBlackHoles` (4 —
-two pairs fleet-wide). A refused sling (no room) is a verbose log on the `BlackHole` channel, not an
-error.
+another hull's), so a pilot can chain nudges without exhausting `BlackHoleConfig.maxBlackHoles` (16 —
+eight pairs fleet-wide since 2026-10-12; it was 4, and two AIs holding pairs refused the player's). A refused sling
+(no room) is a verbose log on the `BlackHole` channel, not an error, and keeps asking while the trigger is held.
 
 ## 4. The prefab — what the generator changed and what it kept
 
 `Stoat.prefab` is `Squirrel.prefab` with exactly these edits (the whole diff is the generator's
 `build_clone`; `--check` re-asserts every one of them on the SHIPPED file):
 
-- root GameObject `m_Name` and `VesselStatus._name` → Stoat; `vesselType: 14` (the prefab's ADDRESS
+- root GameObject `m_Name` and `VesselStatus._name` → Stoat; `vesselType: 15` (the prefab's ADDRESS
   in the container — `check_vessel_prefab_container.py`).
 - **A fresh Netcode identity.** A disk copy keeps the donor's `GlobalObjectIdHash`, and Netcode keys
   its prefab table on that number alone, so the Squirrel or the Stoat would silently never spawn
@@ -193,20 +196,20 @@ error.
   `VesselPrismController`, no seed assembler, the fleet's `stationaryModeChanged` and
   `OnMiniGameTurnEnd` channels — the guids the Sparrow carries, `check_vessel_shared_channels.py`)
   added on the `ShipActions` object and in `ActionExecutorRegistry._executors`.
-- **`SO_Class_Stoat`** (stage 3; Class 14, owned from the start, the Squirrel's icons as
+- **`SO_Class_Stoat`** (stage 3; Class 15, owned from the start, the Squirrel's icons as
   placeholders) in `SO_Classlist_All` and `SO_Classlist_Classes` — what a card's Vessels list and
   the hangar name a hull by (CONTRACT.md §1.9); `arcade_mode_lib.VESSELS` knows it.
 - Registered in `Vessel Prefab Container.asset` and `DefaultNetworkPrefabs.asset`;
-  `ToyVesselRoster.Default` lists it; `EnumIntegrityTests` locks 14 (and the count, which had not
-  been bumped for the Butterfly).
+  `ToyVesselRoster.Default` lists it; `EnumIntegrityTests` locks 15 (the Thresher took 14) and the
+  count, 17 (it had not been bumped for the Butterfly).
 
-Kept, deliberately, as prototype debt: the Squirrel's model (hidden — its renderers off, its colliders
-live, so the Stoat's hit box is still the Squirrel's ~4 u box, not the 8 u body), HUD variant and four ability ICONS (the
-row will show the Squirrel's art until `author_hull_ability_rows.py` / the icon pass runs for the
-Stoat), its two executors (`SquirrelTubeActionExecutor` and the seed executor — unbound, inert), its
-camera settings SO until 2026-10-10 (now its own `StoatCameraSettingsSO`, the studio's chase camera —
-`STOAT_DIPOLE.md` §3a; far clip 12000, `check_vessel_camera_farclip.py`), its telemetry (the default,
-`VesselTelemetryBootstrapper` has no Stoat case). **The clone is a spent one-shot once committed**:
+**No longer kept (stage 6, 2026-10-13).** The prototype debt this paragraph listed — the Squirrel's hidden model and
+its ~4 u hit box, its HUD variant and icons, its tube and drift-trail executors, its camera settings, its telemetry, its
+containers — is gone. The Stoat has its own hit box sized to its hull (`StoatBody` / `StoatHitbox`), two jets on its
+hips, `StoatHUDVariant`, `StoatCameraSettingsSO` (the same chase, clean keys: the studio's chase camera since
+2026-10-10, `STOAT_DIPOLE.md` §3a; far clip 12000, `check_vessel_camera_farclip.py`), `Stoat*ImpactorDataContainer`
+(no Squirrel element gates), `StoatAIBoostPolicy` and `DefaultVesselTelemetry`. The full list is the generator's
+docstring and `check_stage6`. **The clone is a spent one-shot once committed**:
 `author_stoat_assets.py` clones only while `Stoat.prefab` is absent and otherwise stands down and
 validates the shipped file, so Squirrel drift can never silently re-author the Stoat.
 
@@ -233,19 +236,14 @@ validates the shipped file, so Squirrel drift can never silently re-author the S
 
 ## 6. Design status — what is approved and what is not
 
-The user's brief (2026-10-08) fixed: the name, one Space ability that spawns the black–white pair on
-the trigger's side with hold = size, a Sparrow-style stop, and the pair's drift-and-annihilate life.
-The element PLACEMENT of the stop (Time — rate/mobility) and the Space-scaled number (the half-gap —
-reach) are this prototype's choices and are recorded in the map as such; Charge and Mass are
-**open design slots**, with the proposals (Charge → the slung strength; Mass → something the squeeze
-does not already own) written into `Stoat.asset` and not implemented. No level-5 upgrade exists for
-either authored ability — the row reports them LOCKED rather than green, by design.
+**All four abilities and all four level-5s are designed and shipped** (2026-10-13): Space = Field Dipole (L5
+Accretion), Time = Pathfinder / Time Mode (L5 Foresight), Charge = Ripple (L5 Siphon), Mass = Mass / Time Mode (L5
+Armoured Wake). The decisions and their wording are in `Docs/ElementalAbilitySystem/FLEET_MAPS.md` ▸ Stoat; the
+mechanics in `STOAT_DIPOLE.md` §1a–§1e and §5.
 
 ## 7. Not yet
 
-The ability row's icons and hints; the pair's
-network replication (the press/release edges round-trip, so a peer lays its OWN copy of the pair at
-the replicated pose, but the two copies are not one object); the annihilation / birth feel
-(`Docs/BLACK_HOLE.md` §11 "Not yet"); a touch binding (the executor
-answers the autopilot's squeeze, nothing presses for it); the "everything destructible" extension of
-the black hole itself.
+The pair's network replication (the press/release edges round-trip, so a peer lays its OWN copy of an orbit pair at
+the replicated pose, but the two copies are not one object); a touch binding (Steam is the target; the executors answer
+the autopilot's squeeze, nothing presses for a touch pilot); the mode as replicated STATE rather than replicated presses
+(`STOAT_DIPOLE.md` §8 D6); final art for the four ability icons (placeholders) and FMOD events (every slot ships empty).

@@ -2,12 +2,12 @@ using System;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using Prisma.Bisect;
+using Amoebius.Bisect;
 
 namespace CosmicShore.Tests
 {
     /// <summary>
-    /// prisma_bisect (ROADMAP C1b): how a candidate is judged, and reading the answer back from a
+    /// amoebius_bisect (ROADMAP C1b): how a candidate is judged, and reading the answer back from a
     /// real <c>git bisect run</c> limited to Port/ - a planted regression three commits back, a
     /// commit outside Port/ that must never be tested, and a candidate that cannot be judged.
     /// </summary>

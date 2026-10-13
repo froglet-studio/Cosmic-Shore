@@ -28,7 +28,7 @@ TERMS = (r'vessels?', r'hulls?', r'vessel ?studio', r'studios?', r'ai ?pilots?',
 PATTERN = re.compile(r'\b(?:' + '|'.join(VESSELS + TERMS) + r')\b', re.IGNORECASE)
 
 NOTICE = ('Vessel work: the team tests vessels and their AI visually in the Vessel Studio first (' + STUDIO +
-          '). The /vessel-studio skill has the rules for building its panels.')
+          '), the one source of truth; /artifact-to-unity clones it into the game.')
 CONTEXT = (
     'This prompt is about vessel work. Before changing a vessel, its AI, its play styles or how it flies, '
     'RECOMMEND the Vessel Studio to the person in one line: the single claude.ai artifact ' + STUDIO + ' where '
@@ -36,8 +36,9 @@ CONTEXT = (
     'which studio page fits (squirrel, stoat, or a new one for this vessel). Load the /vessel-studio skill for '
     'anything about a studio page, its panels (Scene / Game / AI / Play Style Config, Input, Vessel Config), the '
     'universal AI race panel, cameras, difficulties, intensity ladders, domains or publishing; load /vessel '
-    'for the Unity side. Never publish a second studio artifact. If the work has nothing to do with vessels, '
-    'ignore this note.')
+    'for the Unity side. The artifact is the ONE source of truth: to bring something from it into the game, load '
+    '/artifact-to-unity (it clones the artifact\'s numbers and features; Unity never gets its own tuning tabs). '
+    'Never publish a second studio artifact. If the work has nothing to do with vessels, ignore this note.')
 
 
 def wants_nudge(prompt):

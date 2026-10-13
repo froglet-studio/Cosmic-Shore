@@ -21,7 +21,7 @@ the last ring of the last lap wins (golf: finish time).
 round-15 ×0.4): its triggers hold one sink–source pair open 250 u ahead, the difference pulling the
 poles apart sideways and the sum lengthways, and its **pathfinder** draws the line it will fly. While
 the poles **warp** that line — bend it 3° or more, or send it through the wormhole — it turns lime and
-the hull flies down it faster: ×2 at rest, ×3 at Time 5, ×4 at Time 10. The line is the line; only
+the hull flies down it faster: ×2.5 at rest, ×3.75 at Time 5, ×5 at Time 10. The line is the line; only
 the time it takes changes. That is the race: **every second you are not warped, you are flying at
 cruise.**
 
@@ -70,6 +70,8 @@ nose and at least 300 u away (the wormhole line, warped), or the trigger on the 
 it is up to 75° off (the field turns it in), holds for 4 s at a 0.8 squeeze and lets go, at most
 every 2 s — both edges through the **replicated** press path. It is a turning and boosting aid, not a
 racing line; a human reading the pathfinder beats it.
+
+**Both modes since 2026-10-13** (`R_VesselActions/STOAT_DIPOLE.md` §1a): the autopilot also switches the Stoat's MODE — `StoatModeExecutor` presses B for it, through the replicated path, to fly Time mode's orbit when its target is ≥ 70° off the nose (the orbit is the tighter turn) and back to Mass mode, and the dipole above, once the target is within 35°; at most every 3 s, never mid-squeeze (`StoatModeAction` § Autopilot). In Time mode it slings with `StoatSlingExecutor.AutopilotSling`.
 
 ## 4. Known limit — two pairs at a time
 

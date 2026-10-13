@@ -5,13 +5,13 @@ using System.Linq;
 using System.Numerics;
 using System.Threading.Tasks;
 using ImGuiNET;
-using Prisma;
+using Amoebius;
 
 namespace CosmicShore.Launcher
 {
     /// <summary>
     /// macOS-style notifications (banners top right, a notification center under the bell), the
-    /// clean-ups Prisma offers but never does unasked (a stale git lock, stale build outputs, low
+    /// clean-ups Amoebius offers but never does unasked (a stale git lock, stale build outputs, low
     /// disk, errors from the last run), and the first-run tour.
     /// </summary>
     public sealed partial class LauncherApp
@@ -40,7 +40,7 @@ namespace CosmicShore.Launcher
             }
         }
 
-        void NotifyRun(PrismaTracks.IngestResult r)
+        void NotifyRun(AmoebiusTracks.IngestResult r)
         {
             var run = r.Run;
             if (run.Crashed)
@@ -59,9 +59,9 @@ namespace CosmicShore.Launcher
                     {
                         _chats.New();
                         _page = Page.Chat;
-                        SendChat("Clean up the new problems from my last play run (prisma_tracks has them with counts):\n" +
+                        SendChat("Clean up the new problems from my last play run (amoebius_tracks has them with counts):\n" +
                                  string.Join("\n", problems.Take(8).Select(i => $"- [{i.Kind}] {i.Message}")) +
-                                 "\nFix the ones whose cause is in the game, prove each fix, and suggest the rest as board items.", (ClaudeChat.Mode)_s.ChatMode);
+                                 "\nFix the ones whose cause is in the game, prove each fix, and suggest the rest as board items.", ChatModeNow);
                     }),
                     ("REVIEW", () => { _page = Page.Tracks; _tracksTab = 0; }));
             }
@@ -75,7 +75,7 @@ namespace CosmicShore.Launcher
 
         bool? _lastOkSeen;
 
-        /// <summary>Looks for things Prisma can clean up. It only ever offers; the user decides.</summary>
+        /// <summary>Looks for things Amoebius can clean up. It only ever offers; the user decides.</summary>
         void RunDoctor()
         {
             try
@@ -90,7 +90,7 @@ namespace CosmicShore.Launcher
                             ("CLEAN UP", () => { try { File.Delete(lockFile); Notify("Lock removed", "Updates work again.", NoteKind.Success); } catch (Exception e) { Notify("Could not remove the lock", e.Message, NoteKind.Error); } }),
                             ("NOT NOW", () => { }));
                 }
-                // 2. low disk where Prisma keeps its workspace, versions and builds
+                // 2. low disk where Amoebius keeps its workspace, versions and builds
                 var drive = new DriveInfo(Path.GetPathRoot(LauncherSettings.DataDir)!);
                 if (drive.IsReady && drive.AvailableFreeSpace < 3L << 30)
                     Notify($"Low disk space: {drive.AvailableFreeSpace / (double)(1L << 30):0.0} GB free",
@@ -280,7 +280,7 @@ namespace CosmicShore.Launcher
                 "Froglet's own engine for Cosmic Shore. It builds the game from source, runs it, records every run, and has an agent powered by Claude. Here is a one-minute tour.",
                 () => null),
             new TourStep("Play", "Pick a branch and press START: Amoebius fetches it, builds it and runs the game. Every play session is recorded when you close the game.", () => Rail(Page.Play), Page.Play),
-            new TourStep("Build", "Phone builds: an Android APK, or an iOS .ipa built on GitHub's Mac for Sideloadly.", () => Rail(Page.Build), Page.Build),
+            new TourStep("Build", "Phone builds: an Android APK, or an iOS Xcode project (TestFlight is the route onto a phone).", () => Rail(Page.Build), Page.Build),
             new TourStep("Project", "Amoebius's own Player, Scenes and Quality settings. Empty fields follow Unity's.", () => Rail(Page.Project), Page.Project),
             new TourStep("Amoebius Agent", "Powered by Claude. It works on the game, starting from what your last runs recorded. Sign in with your Claude plan, pick a model, plan first or let it edit.", () => Rail(Page.Chat), Page.Chat),
             new TourStep("Tracks", "Every run's performance per scene, the modes and vessels you used, audio, and every problem with when it was first and last seen.", () => Rail(Page.Tracks), Page.Tracks),

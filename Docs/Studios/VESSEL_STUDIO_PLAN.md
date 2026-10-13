@@ -25,7 +25,7 @@ https://claude.ai/artifact/3igBJJbNvJjsfJoBJnAMPa is the only studio artifact.
 | **Studio agent** | `index.html` § Studio agent | **Ask** (Claude answers with the vessel's spec, through the claude.ai viewer) and **Development requests** (stored in the artifact's database, collection `requests`; a Claude Code session reads them with `ArtifactData`). **Copy as agent prompt** for Amoebius's AGENT page. |
 | **Amoebius VESSEL STUDIO page** (STUDIOS until 2026-10-09) | `Port/src/CosmicShore.Launcher/LauncherApp.Studios.cs`, `StudioCatalog.cs`, `ArtifactLibrary.cs`; doc `Port/docs/LAUNCHER.md` § VESSEL STUDIO | **Works** (built and screenshotted headless). One card per studio from `studios.json`: OPEN (browser), AGENT (an Amoebius Agent chat on that studio), DOCS; plus OPEN HUB, WEB LINK, FOLDER, UPDATE FROM ARTIFACT. Below the studios, the ARTIFACTS library (`Docs/Artifacts/`, `/amoebius-artifact`). |
 | **OPEN IN AMOEBIUS / PLAY IN ENGINE** (2026-10-09, `claude/peaceful-rubin-hhw49n`) | `LauncherApp.Studios.cs`, `StudioCatalog.cs`, `CosmicShore.Player/ArcadeAutoStart.cs` | **Built and checked on Linux** (`PRISMA_TEST_STEPS.md`). The studio opens as its own app window that knows it is in Amoebius (`#prisma`). The Stoat's PLAY IN ENGINE boots the game and opens Slingshot by itself (`--arcade Slingshot`); the real Stoat flies and slings in Amoebius. The engine gained what this branch's black-hole code needed to compile there (transform jobs, render-graph and `CommandBuffer` API, `Controls.ButtonControl`, `SerializeField`, a GLSL `PrismGravityWarpDeform`). The lens pass is compiled, not drawn. |
-| **Unity entry** | `Assets/_Scripts/Editor/LaunchPrisma.cs` | **FrogletTools ▸ Vessels ▸ Vessel Studio** opens the Vessel Studio HOME in Unity (`Studios/VesselStudioWindow`: the hub's heading and one card per `studios.json` studio with the hub's own looping preview); a card opens that studio from the checkout in its own app window (`LaunchPrisma.OpenStudioWindow`): the same pages, tabs and options as the claude.ai artifact, with no build. **FrogletTools ▸ Amoebius ▸ Vessel Studio Page** opens Amoebius on its VESSEL STUDIO page (PLAY IN ENGINE). Editor-only, owned by the port. |
+| **Unity entry** | `Assets/_Scripts/Editor/LaunchAmoebius.cs` | **FrogletTools ▸ Vessels ▸ Vessel Studio** opens the Vessel Studio HOME in Unity (`Studios/VesselStudioWindow`: the hub's heading and one card per `studios.json` studio with the hub's own looping preview); a card opens that studio built from the checkout and served by Amoebius, with Sync, Ask and Decisions working (`LaunchAmoebius.OpenStudio`, /vessel-studio D34): the same pages, tabs and options as the claude.ai artifact, with no build. **FrogletTools ▸ Amoebius ▸ Vessel Studio Page** opens Amoebius on its VESSEL STUDIO page (PLAY IN ENGINE). Editor-only, owned by the port. |
 | Amoebius phone player | `Port/src/CosmicShore.Mobile` | Runs the game itself on Android/iOS; touch feeds the game's own `TouchInputStrategy`. **No device run yet** (`Port/docs/milestones.json` C8). |
 | Amoebius web build | — | **Does not exist.** Amoebius's player is .NET + OpenGL; a browser build is an engine milestone (§4). |
 
@@ -49,17 +49,15 @@ Both stay. A decision made in a web studio lands in the game; the game studio th
 front page drawn in Unity (`VesselStudioWindow.Home.cs`): the "Vessel Studio" heading, one card per studio in
 `studios.json` with the hub's looping preview (`StudioPreviews.cs`, line for line the hub's canvas code, drawn on the CPU
 in well under a millisecond), and the fleet without a studio yet. **OPEN STUDIO** (or a click anywhere on the card)
-opens that studio's page from the checkout in its own Edge/Chrome app window: the artifact's own files, so it looks and
-plays exactly as on claude.ai (Unity has no web view, so the studio is never an IMGUI copy). **TUNE IN UNITY**, on a
-studio that has a Unity page, opens
-(`Assets/_Scripts/Editor/Studios/VesselStudioWindow.cs`) the web studio's six tabs (Scene Config · Game Config ·
-AI Config · Play Style Config · Input · Vessel Config) over the vessel's REAL assets: a slider per field with its own
-tooltip, live while the game plays (the configs are read every frame; the camera asset is re-applied to the cameras
-flying with it), and a **studio** button beside each row that shows the web studio's value (read from the studio's
-own `SHIPPED` block) and adopts it in one click: green when Unity matches, amber when not. No inspector. Its edits are
-recorded on the change ledger and shipped by the ship panel at the bottom (Validate & Push). The generator seeds the
-tuning assets once and leaves their numbers to this window. The Stoat's page is the first; a vessel adds its own page
-of rows over its own assets.
+opens that studio built from the checkout and served by Amoebius (D34) in its own window: the artifact's own build, so it looks and
+plays exactly as on claude.ai (Unity has no web view, so the studio is never an IMGUI copy).
+**The artifact is the one source of truth; Unity is its clone (the user, 2026-10-10, `/vessel-studio` D33).** Unity
+has NO tuning tabs of its own: the "Vessel Studio (in Unity)" tuner, whose hand-kept rows and names differed from the
+artifact's, was removed. Everything is made and decided in the artifact (a value becomes a decision when someone
+presses **Record** in the studio's decision log), then cloned into the game with **`/artifact-to-unity`**:
+`Tools/Build/studio_to_unity.py` writes the artifact's numbers into the vessel's config assets through a per-vessel
+map (`Tools/Build/studio_to_unity/<vessel>.json`; the Stoat's has 37 rows, all matching on 2026-10-10), and new
+features are ported line for line into C# with tests whose golden numbers come from the page itself.
 
 ## 3. Platforms
 
@@ -103,9 +101,11 @@ Amoebius runs it unchanged with the real graphics, and Unity runs the very same 
 
 ### Steps, in order
 
-1. **Tie the parameters (no new UI).** A script exports every vessel's tuning assets to
-   `Docs/Studios/VesselStudio/<vessel>.params.json`; the web studio loads its defaults from that file instead of its own
-   `SHIPPED` copy; a gate fails when the two disagree. (Today the Unity window shows the web studio's value per row.)
+1. **Tie the parameters (no new UI). DONE 2026-10-10, the other way round:** the ARTIFACT is the one source of truth
+   (the user, 2026-10-10), so the numbers flow artifact -> game, never back. `Tools/Build/studio_to_unity.py` writes
+   the page's `SHIPPED` values and the decision log's recorded settings into the vessel's assets through
+   `Tools/Build/studio_to_unity/<vessel>.json`; `--check` fails when an asset drifts from the artifact. The
+   `/artifact-to-unity` skill runs it (and ports new features).
 2. **Tie the mechanics.** Parity tests feed identical inputs to the JavaScript and the C#: the dipole step
    (`fieldSubstep` vs `StoatDipoleMath.Step`), the path prediction (`fieldPath` vs `PredictPath`), the AI's lay /
    let-go rules. Node runs the page's functions, a dotnet harness runs the C#; a difference fails.
@@ -117,17 +117,17 @@ Amoebius runs it unchanged with the real graphics, and Unity runs the very same 
    `ServerPlayerVesselInitializerWithAI` driven by the Players list (domain, difficulty, play style), the three cameras
    (the Third Eye rig's pose maths moved to runtime), simulation speed, auto-restart, and the idle takeover (D31) as an
    AI Config switch.
-5. **The studio panel (runtime, dev-only).** The six tabs over the vessel's real assets, declared as DATA: a
-   `VesselStudioProfileSO` per vessel listing its rows (asset, field, label, studio key), which is what
-   `VesselStudioWindow` hard-codes today. Every row writes the live asset, so the next frame flies it. Built in uGUI with
+5. **The studio panel (runtime, dev-only).** The ARTIFACT'S six tabs, cloned exactly: its rows, labels, groups and
+   order GENERATED from the page's own `SPEC` rows plus `Tools/Build/studio_to_unity/<vessel>.json`, never a hand-kept
+   list (the hand-kept Unity tuner drifted from the artifact and was removed on 2026-10-10 at the user's request). Every row writes the live asset, so the next frame flies it. Built in uGUI with
    the game's look, so it renders in Unity and Amoebius alike.
 6. **Saving.** In the Unity editor a Save writes through `AssetDatabase`; in Amoebius it writes the asset YAML through
    the engine's asset tool (`cs-asset set`, what EDITOR ▸ DATA already uses). Then Amoebius's GIT page commits and pushes
    only those files.
 7. **Launch.** Amoebius's VESSEL STUDIO page gains PLAY IN STUDIO: `--scene VesselStudio --studio-vessel Stoat`. Unity
    opens the same scene from FrogletTools ▸ Vessels.
-8. **Retire the Unity window** (`VesselStudioWindow`) once steps 4-7 work: the studio scene is then the one tuning
-   surface for both engines.
+8. **The Unity window's tuner is retired (2026-10-10).** `VesselStudioWindow` is the studio HOME only (a card opens
+   the artifact's own page); tuning happens in the artifact and reaches the game through `/artifact-to-unity`.
 
 Rules that hold throughout: the AI stays input-only; difficulty edits belief, never the stick; the studio scene and
 panel are development-only and never ship; the web studio remains the sketchpad, the Amoebius studio the final check.
@@ -156,6 +156,6 @@ panel are development-only and never ship; the web studio remains the sketchpad,
 ## 7. Branches
 
 The studio work lives on **`vessel-studio`**, cut from `claude/peaceful-rubin-hhw49n` (where the Stoat and
-its web studio live). The Amoebius changes are confined to `Port/` plus `LaunchPrisma.cs` (the one Unity file
+its web studio live). The Amoebius changes are confined to `Port/` plus `LaunchAmoebius.cs` (the one Unity file
 the port owns), so they can go to bleeding-edge as their own port PR; the studio pages are docs, which Unity
 never reads.

@@ -32,6 +32,12 @@ namespace CosmicShore.Engine.UI
             (handler, data) => handler.OnEndDrag((PointerEventData)data);
         public static EventFunction<IScrollHandler> scrollHandler { get; } =
             (handler, data) => handler.OnScroll((PointerEventData)data);
+        public static EventFunction<IInitializePotentialDragHandler> initializePotentialDrag { get; } =
+            (handler, data) => handler.OnInitializePotentialDrag((PointerEventData)data);
+        public static EventFunction<IDropHandler> dropHandler { get; } =
+            (handler, data) => handler.OnDrop((PointerEventData)data);
+        public static EventFunction<IUpdateSelectedHandler> updateSelectedHandler { get; } =
+            (handler, data) => handler.OnUpdateSelected(data);
         public static EventFunction<ISelectHandler> selectHandler { get; } =
             (handler, data) => handler.OnSelect(data);
         public static EventFunction<IDeselectHandler> deselectHandler { get; } =

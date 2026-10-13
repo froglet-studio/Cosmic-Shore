@@ -9,7 +9,7 @@ namespace CosmicShore.Engine.Networking
 {
     /// <summary>
     /// What this process's netcode sent and received: Unity's Runtime Network Stats Monitor and the
-    /// counting half of its Network Profiler, for Prisma (docs/MULTIPLAYER.md §6.4).
+    /// counting half of its Network Profiler, for Amoebius (docs/MULTIPLAYER.md §6.4).
     ///
     /// Counts are of whole frames as the driver hands them to the transport (the payload, without the
     /// transport's own framing), per peer, per message kind and per RPC method. Round-trip time comes
@@ -190,7 +190,7 @@ namespace CosmicShore.Engine.Networking
         {
             if (frames <= 0) return "[net] capture: frames must be > 0";
             s_capturePath = string.IsNullOrWhiteSpace(path)
-                ? Path.Combine(Path.GetTempPath(), $"prisma-net-{Environment.ProcessId}-{DateTime.UtcNow:yyyyMMddHHmmss}.json")
+                ? Path.Combine(Path.GetTempPath(), $"amoebius-net-{Environment.ProcessId}-{DateTime.UtcNow:yyyyMMddHHmmss}.json")
                 : Path.GetFullPath(path);
             s_capture = new List<object>(frames);
             s_captureFrames = frames;
@@ -205,7 +205,7 @@ namespace CosmicShore.Engine.Networking
             try
             {
                 Directory.CreateDirectory(Path.GetDirectoryName(s_capturePath)!);
-                File.WriteAllText(s_capturePath, JsonSerializer.Serialize(new { kind = "prisma-net-capture", version = 1, frames, summary = Summary() },
+                File.WriteAllText(s_capturePath, JsonSerializer.Serialize(new { kind = "amoebius-net-capture", version = 1, frames, summary = Summary() },
                     new JsonSerializerOptions { WriteIndented = true }));
                 Console.WriteLine($"[net] capture written: {frames.Count} frames -> {s_capturePath}");
             }

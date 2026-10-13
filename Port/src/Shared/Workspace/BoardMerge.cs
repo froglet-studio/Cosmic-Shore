@@ -5,11 +5,11 @@ using System.Linq;
 using System.Reflection;
 using System.Text.Json.Serialization;
 
-namespace Prisma.Workspace
+namespace Amoebius.Workspace
 {
     /// <summary>
-    /// Three-way merge of two boards, card by card, matched by <see cref="PrismaBoard.Item.Uid"/>.
-    /// The ancestor is what this board last read or wrote (<c>PrismaBoard.Base</c>):
+    /// Three-way merge of two boards, card by card, matched by <see cref="AmoebiusBoard.Item.Uid"/>.
+    /// The ancestor is what this board last read or wrote (<c>AmoebiusBoard.Base</c>):
     /// <list type="bullet">
     /// <item>A card only the other side changed takes their version, copied into this board's own
     /// object so references the app holds stay live.</item>
@@ -24,9 +24,9 @@ namespace Prisma.Workspace
     /// </summary>
     public static class BoardMerge
     {
-        public static string Json(PrismaBoard.Item item) => BoardJson.Serialize(item);
+        public static string Json(AmoebiusBoard.Item item) => BoardJson.Serialize(item);
 
-        public static Dictionary<string, string> Snapshot(PrismaBoard board)
+        public static Dictionary<string, string> Snapshot(AmoebiusBoard board)
         {
             Backfill(board);
             var map = new Dictionary<string, string>();
@@ -38,7 +38,7 @@ namespace Prisma.Workspace
         /// Gives every card a Uid. A card from before Uids gets one derived from its key and creation
         /// time, so every writer that reads the same old file derives the same Uid.
         /// </summary>
-        public static void Backfill(PrismaBoard board)
+        public static void Backfill(AmoebiusBoard board)
         {
             foreach (var i in board.Items)
                 if (string.IsNullOrWhiteSpace(i.Uid))
@@ -46,16 +46,16 @@ namespace Prisma.Workspace
         }
 
         /// <summary>Merges <paramref name="theirs"/> (what the store holds now) into <paramref name="mine"/>.</summary>
-        public static void Merge(PrismaBoard mine, PrismaBoard theirs)
+        public static void Merge(AmoebiusBoard mine, AmoebiusBoard theirs)
         {
             Backfill(mine);
             Backfill(theirs);
             var baseMap = mine.Base;
-            var theirMap = new Dictionary<string, PrismaBoard.Item>();
+            var theirMap = new Dictionary<string, AmoebiusBoard.Item>();
             foreach (var t in theirs.Items) theirMap.TryAdd(t.Uid, t);
             var myUids = new HashSet<string>(mine.Items.Select(i => i.Uid));
 
-            var result = new List<PrismaBoard.Item>();
+            var result = new List<AmoebiusBoard.Item>();
             foreach (var m in mine.Items)
             {
                 baseMap.TryGetValue(m.Uid, out var b);
@@ -107,7 +107,7 @@ namespace Prisma.Workspace
         }
 
         /// <summary>The largest number among keys with this prefix ("B-", "T-"), or 0.</summary>
-        public static int MaxNumber(IEnumerable<PrismaBoard.Item> items, string prefix)
+        public static int MaxNumber(IEnumerable<AmoebiusBoard.Item> items, string prefix)
         {
             int max = 0;
             foreach (var i in items)
@@ -115,11 +115,11 @@ namespace Prisma.Workspace
             return max;
         }
 
-        static readonly PropertyInfo[] Stored = typeof(PrismaBoard.Item).GetProperties(BindingFlags.Public | BindingFlags.Instance)
+        static readonly PropertyInfo[] Stored = typeof(AmoebiusBoard.Item).GetProperties(BindingFlags.Public | BindingFlags.Instance)
             .Where(p => p.CanRead && p.CanWrite && p.GetCustomAttribute<JsonIgnoreAttribute>() == null).ToArray();
 
         /// <summary>Copies every stored field of <paramref name="from"/> into <paramref name="to"/> (computed views like Type/State follow their stored names).</summary>
-        public static void CopyInto(PrismaBoard.Item to, PrismaBoard.Item from)
+        public static void CopyInto(AmoebiusBoard.Item to, AmoebiusBoard.Item from)
         {
             foreach (var p in Stored) p.SetValue(to, p.GetValue(from));
         }

@@ -38,14 +38,14 @@ namespace CosmicShore.Player
         static bool s_realtime = RealtimePacer.RequestedByEnvironment;
 
         /// <summary>
-        /// Quality from the engine's own Project Settings (Port/ProjectSettings/PrismaProject.json),
+        /// Quality from the engine's own Project Settings (Port/ProjectSettings/AmoebiusProject.json),
         /// before environment variables and arguments, which override it for one run.
         /// </summary>
         static void ApplyProjectQuality()
         {
             var root = CosmicShore.Content.AssetDatabase.FindProjectRoot();
             if (root == null) return;
-            var q = Prisma.PrismaProjectSettings.Load(root).Quality;
+            var q = Amoebius.AmoebiusProjectSettings.Load(root).Quality;
             if (q.Msaa is { } m) CosmicShore.Render.RenderQuality.Msaa = m;
             if (q.RenderScale is { } s) CosmicShore.Render.RenderQuality.RenderScale = s;
             if (q.Anisotropy is { } a) CosmicShore.Render.RenderQuality.Anisotropy = a;
@@ -282,7 +282,7 @@ namespace CosmicShore.Player
         }
 
         /// <summary>
-        /// The owner's one-command proof that UGS Relay works from Prisma (docs/MULTIPLAYER.md §6.8): two UGS
+        /// The owner's one-command proof that UGS Relay works from Amoebius (docs/MULTIPLAYER.md §6.8): two UGS
         /// players (each keeps its session token in this profile's folder, so repeated runs reuse the same two),
         /// a host allocation and join code, a join, a connection through the relay and timed frames both ways.
         /// Exit 0 = PASS. It creates players in the live project on its first run, so it runs only when asked.

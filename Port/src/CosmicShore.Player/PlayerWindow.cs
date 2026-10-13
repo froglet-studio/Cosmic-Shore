@@ -25,6 +25,7 @@ namespace CosmicShore.Player
         FrameTarget _scene3d;
         SceneRenderer _sceneRenderer;
         SkyboxPass _skybox;
+        EnvironmentLighting _environment;
         PostPass _post;
         readonly CosmicShore.Engine.Rendering.VolumeStack _volumes = new();
         UguiRenderer _ui;
@@ -146,11 +147,13 @@ namespace CosmicShore.Player
             _sceneRenderer = new SceneRenderer(_gl, _textures);
             if (CheckShaders)
             {
-                Environment.ExitCode = ShaderCheck.Run((g, es) => GraphProgramCache.TryLink(_gl, g, es));
+                Environment.ExitCode = ShaderCheck.Run((g, es) => GraphProgramCache.TryLink(_gl, g, es), (d, es) => UguiRenderer.TryLinkCustom(_gl, d, es));
                 _window.Close();
                 return;
             }
             _skybox = new SkyboxPass(_gl);
+            _environment = new EnvironmentLighting(_gl);
+            _sceneRenderer.EnvironmentLight = _environment;
             _post = new PostPass(_gl);
             if (SessionReport.Enabled && GpuTimer.Supported) _gpu = new GpuTimer(_gl, "textures", "clear", "sky", "collect", "post", "ui", "present", "opaque", "transparent");
             _textures.External = t => t is RenderTexture rt && _rt.TryGetValue(rt, out var target) ? target.Out.Color : 0u;
@@ -322,11 +325,14 @@ namespace CosmicShore.Player
             {
                 post = PostSettings.For(cam, _volumes);
                 _gpu?.Begin(2);
+                _environment.Update(_skybox);
+                BeginCamera(cam);
                 _skybox.Draw(cam);
                 _gpu?.Begin(3);
                 _sceneRenderer.GpuPass = _gpu == null ? null : _gpuSceneSplit ??= p => _gpu.Begin(7 + p);
                 _sceneRenderer.Render(cam, sw, sh);
                 _sceneRenderer.GpuPass = null;
+                EndCamera(cam);
                 float tanY = MathF.Tan(cam.fieldOfView * 0.5f * MathF.PI / 180f);
                 post.TanHalfFovY = tanY;
                 post.TanHalfFovX = tanY * cam.aspect;
@@ -334,7 +340,20 @@ namespace CosmicShore.Player
             else post.Panini = false;
             _gpu?.Begin(4);
             _scene3d.Resolve();
-            _post.Draw(_scene3d.Color, w, h, _frame.Fbo, post);
+            _post.Draw(_scene3d.Color, sw, sh, w, h, _frame.Fbo, post);
+        }
+
+        /// <summary>URP's per-camera callbacks around a camera's draw (RenderPipelineManager); a throwing subscriber is logged, the frame goes on.</summary>
+        static void BeginCamera(Camera cam)
+        {
+            try { CosmicShore.Engine.Rendering.RenderPipelineManager.RaiseBeginCamera(cam); }
+            catch (Exception e) { Debug.LogException(e); }
+        }
+
+        static void EndCamera(Camera cam)
+        {
+            try { CosmicShore.Engine.Rendering.RenderPipelineManager.RaiseEndCamera(cam); }
+            catch (Exception e) { Debug.LogException(e); }
         }
 
         /// <summary>The camera that draws to the screen: Camera.main, else the deepest enabled camera with no target texture.</summary>
@@ -369,8 +388,11 @@ namespace CosmicShore.Player
                 var c = cam.backgroundColor;
                 _gl.ClearColor(ColorSpace.ToLinear(c.r), ColorSpace.ToLinear(c.g), ColorSpace.ToLinear(c.b), c.a);
                 _gl.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit | ClearBufferMask.StencilBufferBit);
+                _environment.Update(_skybox);
+                BeginCamera(cam);
                 if (cam.clearFlags == CameraClearFlags.Skybox) _skybox.Draw(cam);
                 _sceneRenderer.Render(cam, w, h);
+                EndCamera(cam);
                 var settings = PostSettings.For(cam, _volumes);
                 float tanY = MathF.Tan(cam.fieldOfView * 0.5f * MathF.PI / 180f);
                 settings.TanHalfFovY = tanY;

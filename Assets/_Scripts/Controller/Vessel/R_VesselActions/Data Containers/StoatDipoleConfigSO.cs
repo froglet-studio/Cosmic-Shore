@@ -9,12 +9,15 @@ namespace CosmicShore.ScriptableObjects
     /// Every number of the Stoat's FIELD DIPOLE (Space) and PATHFINDER (Time)
     /// (<c>R_VesselActions/STOAT_DIPOLE.md</c>), ported from the Stoat Flight Studio's round-15 row
     /// (<c>Docs/Studios/StoatFlightStudio.html</c>, the <c>ft*</c> parameters). The defaults ARE that
-    /// row; units are world units and seconds, the studio's own (its cruise is the Stoat's 60 u/s).
+    /// row, retuned in play on 2026-10-13 (weaker, smaller poles; a stronger boost; a denser, depth-cued
+    /// path — STOAT_DIPOLE.md §8); units are world units and seconds, the studio's own (its cruise is the
+    /// Stoat's 60 u/s).
     ///
     /// <para><b>The dipole.</b> A squeeze lays one sink–source pair <see cref="AheadDistance"/> in front of
     /// the hull, the poles together, in the frame the hull had then. The triggers' DIFFERENCE pulls the
     /// poles apart sideways (the sink on the deeper trigger's side), their SUM lengthways (the sink always
-    /// the nearer). Ease off and they come back together; let go of both and they meet and annihilate.
+    /// the nearer). Ease off and they come back together; LET GO of either trigger and the pair is gone at
+    /// once, and every press lays a fresh one — a pair is never recovered.
     /// The poles' strength and size are fixed by this file — and by Space (<see cref="PoleSize"/>) — so
     /// the only thing a trigger changes is the separation, the dipole moment.</para>
     ///
@@ -53,12 +56,20 @@ namespace CosmicShore.ScriptableObjects
         [SerializeField, Range(0.5f, 30f)] float followRate = 6f;
 
         [Header("Poles (fixed — only their separation moves)")]
-        [Tooltip("The sink's gravitational parameter GM, u³/s² (the studio's strength 6 × its 20000 per strength). " +
-                 "Authored as GM, not as a BlackHoleConfig strength, so the shipped gmPerStrength cannot rescale it.")]
-        [SerializeField, Min(0f)] float poleGM = 120000f;
+        [Tooltip("The sink's gravitational parameter GM, u³/s² (the studio's 120000; 60000, 40000, then 50000 on 2026-10-13: the pull, the " +
+                 "path's bend and the prisms' tidal stretch all scale with it). Authored as GM, not as a BlackHoleConfig strength, so " +
+                 "the shipped gmPerStrength cannot rescale it.")]
+        [SerializeField, Min(0f)] float poleGM = 50000f;
 
-        [Tooltip("Each pole's event-horizon radius, world units (ftHorizon).")]
-        [SerializeField, Min(0.1f)] float poleHorizon = 3.5f;
+        [Tooltip("Each pole's event-horizon radius, world units — the hole's drawn size, and with it the lens and the tidal warp's reach " +
+                 "(the studio's 3.5; 1.17, 1.75, then 2.1 on 2026-10-13). BlackHoleConfig.minHorizonRadius floors it, so keep that below this.")]
+        [SerializeField, Min(0.1f)] float poleHorizon = 2.1f;
+
+        [Tooltip("The sink's pull on the OWNER's flight (and the pathfinder) is softened over a core this many sink horizons wide: " +
+                 "GM·r/(r²+ε²)^1.5, the source's own law, instead of the steep GM/(r−r_s)². How hard a pass bends then grows smoothly " +
+                 "with how near it goes — a wide, forgiving band of warped lines instead of nothing-or-everything in the last few " +
+                 "units (measured 2026-10-13). 0 = the steep law.")]
+        [SerializeField, Range(0f, 40f)] float sinkSofteningHorizons = 14f;
 
         [Tooltip("Space is size: a multiplier on both poles' horizon AND their GM (a bigger hole is a heavier one). Read live on the owner, replicated to peers as the horizon.")]
         [SerializeField] ElementalFloat poleSize = ElementalFloat.Multiplier(1f, 2f, Element.Space, 1f);
@@ -72,11 +83,36 @@ namespace CosmicShore.ScriptableObjects
         [Tooltip("The ceiling on the field's acceleration, u/s² (dpAccelCap).")]
         [SerializeField, Min(1f)] float accelerationCap = 3000f;
 
+        [Tooltip("Seconds a released pair takes to SLAM together: the poles accelerate into each other from where they were let go " +
+                 "and their fields neutralize as they close (BlackHole.Amplitude: gravity, tides and the lens fall at full size), " +
+                 "annihilating where they meet.")]
+        [SerializeField, Range(0.05f, 2f)] float annihilateSeconds = 0.3f;
+
         [Tooltip("Seconds the sink takes to grow to full strength after a squeeze lays it (bornS).")]
         [SerializeField, Range(0.05f, 5f)] float sinkGrowSeconds = 0.9f;
 
         [Tooltip("Seconds the source takes to grow in (whInS); it starts at 55% of this, so a fresh pair pulls before it pushes.")]
         [SerializeField, Range(0.05f, 5f)] float sourceGrowSeconds = 1.1f;
+
+        [Tooltip("Black hole sinks back to a point (s) (dieS). The pair's annihilation: both poles shrink to a point along " +
+                 "1 − smoothstep(t / dieS) while the gravitational wave and the white hole's light leave (Docs/BLACK_HOLE.md §5.2). " +
+                 "The studio's knob, kept for /artifact-to-unity: in the game a release now SLAMS the poles together over " +
+                 "annihilateSeconds and neutralizes them (StoatDipoleExecutor.StepCollapses), and the waves leave where they meet.")]
+        [SerializeField, Range(0.05f, 4f)] float dieSeconds = 0.7f;
+
+        [Tooltip("Size (× the black hole) (whSizeX): the white hole's horizon as a multiple of the black hole's — the lens " +
+                 "draws its core this much bigger or smaller.")]
+        [SerializeField, Range(0.3f, 3f)] float sourceSizeX = 1f;
+        [Header("Fly-through zone (the sink takes a hull that loops it)")]
+        [Tooltip("Radius of the fly-through ZONE around the sink, world units at pole size 1 (Space scales it with the poles; 90, " +
+                 "then 135 with the 1.5× bigger, softened poles — the smallest that holds a stick-held orbit at 60 u/s). " +
+                 "The drawn horizon is tiny; inside this zone a hull whose heading has turned throughDegrees toward the sink goes " +
+                 "through and out of the source. Leaving the zone clears the count. 0 = only the horizon carries you through.")]
+        [SerializeField, Min(0f)] float throughZoneRadius = 135f;
+
+        [Tooltip("How far the heading must turn toward the sink inside the zone to go through, degrees. A U-turn round the " +
+                 "attractive pole (180°) stays yours; a loop past this is taken through. Turning away unwinds it.")]
+        [SerializeField, Range(90f, 720f)] float throughDegrees = 200f;
 
         [Header("Flight in the field (the owner's)")]
         [Tooltip("The fastest the field may turn the nose, radians per second (dpTurnCap).")]
@@ -103,9 +139,18 @@ namespace CosmicShore.ScriptableObjects
         [Tooltip("A creature whose centre comes within this many sink horizons is swallowed (killed, its body suctioned into the sink).")]
         [SerializeField, Range(1f, 10f)] float faunaSwallowHorizons = 1.5f;
 
+        [Header("Accretion (Space level 5)")]
+        [Tooltip("SPACE level 5 — Accretion: every prism the sink swallows grows BOTH poles (horizon and GM) by this share of " +
+                 "their size, held until the pair annihilates. Gated on the replicated Space unlock bit; the grown size " +
+                 "reaches peers as the replicated horizon.")]
+        [SerializeField, Range(0f, 0.5f)] float accretionPerPrism = 0.04f;
+        [Tooltip("The most accretion can add, as a share of the poles' size (1 = a fed pair grows to twice its size).")]
+        [SerializeField, Range(0f, 4f)] float accretionMax = 1f;
+
         [Header("Pathfinder (Time)")]
-        [Tooltip("How far ahead the path is run, world units (ftLength).")]
-        [SerializeField, Range(50f, 2000f)] float pathLength = 600f;
+        [Tooltip("How far ahead the path is run, world units (the studio's ftLength 600, doubled 2026-10-13 so a held turn shows " +
+                 "two or three windings of its helix). Prediction cost scales with it.")]
+        [SerializeField, Range(50f, 2000f)] float pathLength = 1200f;
 
         [Tooltip("World units between two predicted points (ftStep).")]
         [SerializeField, Range(0.5f, 20f)] float pathStep = 3f;
@@ -122,9 +167,9 @@ namespace CosmicShore.ScriptableObjects
         [Tooltip("The poles must bend the path at least this much, degrees, to WARP it (ftWarpDeg). A pass through the wormhole always does.")]
         [SerializeField, Range(0f, 90f)] float warpDegrees = 3f;
 
-        [Tooltip("Time is rate: the warp boost, a multiple of the hull's flight clock while the path is warped — 2× at rest, " +
-                 "the studio's 3× at level 5, 4× at level 10, floored at 1 (never a slow-down).")]
-        [SerializeField] ElementalFloat boost = ElementalFloat.Multiplier(2f, 4f, Element.Time, 1f);
+        [Tooltip("Time is rate: the warp boost, a multiple of the hull's flight clock while the path is warped — 2.5× at rest, " +
+                 "3.75× at level 5, 5× at level 10 (the studio's 2→4, raised a quarter on 2026-10-13), floored at 1 (never a slow-down).")]
+        [SerializeField] ElementalFloat boost = ElementalFloat.Multiplier(2.5f, 5f, Element.Time, 1f);
 
         [Tooltip("How fast the boost arrives, per second (ftRise).")]
         [SerializeField, Range(0.1f, 60f)] float boostRise = 20f;
@@ -135,8 +180,16 @@ namespace CosmicShore.ScriptableObjects
         [Tooltip("Dot diameter on screen, pixels at 1080p (ftDotPx).")]
         [SerializeField, Range(0.5f, 20f)] float dotPixels = 4f;
 
-        [Tooltip("Space between two dots, in dot diameters (ftDotGap).")]
-        [SerializeField, Range(0f, 40f)] float dotGap = 10f;
+        [Tooltip("Space between two dots, in dot diameters (the studio's ftDotGap 10, cut to a third then to 2.5 on 2026-10-13). " +
+                 "Measured at each dot's own depth-scaled size, so the far path packs tighter on screen.")]
+        [SerializeField, Range(0f, 40f)] float dotGap = 2.5f;
+
+        [Tooltip("Depth: a dot's size follows sqrt(nearest dot's depth / its depth), floored at this share of " +
+                 "dotPixels — the far end of the path is drawn smaller, as it is seen. 1 = every dot the same size.")]
+        [SerializeField, Range(0.1f, 1f)] float dotDepthMinScale = 0.75f;
+
+        [Tooltip("Depth: how much of a dot's opacity the far end of the path loses (0 = none). Rides the same depth scale.")]
+        [SerializeField, Range(0f, 1f)] float dotDepthFade = 0.15f;
 
         [Tooltip("Draw the path as dots placed IN THE SCENE along the 3D path (they recede with depth, pass behind " +
                  "prisms and bend through the lens). Off = the flat screen overlay (Dot Pixels, Dot Gap), the studio's 2D line.")]
@@ -156,6 +209,16 @@ namespace CosmicShore.ScriptableObjects
 
         [Tooltip("The path's colour while the poles warp it (lime).")]
         [SerializeField] Color warpedColor = new(157f / 255f, 1f, 46f / 255f, 1f);
+
+        [Header("Foresight (Time level 5)")]
+        [Tooltip("TIME level 5 — Foresight: the pathfinder also draws the predicted paths of the nearest rival vessels, " +
+                 "in their domain colours — each flown forward on the turn and speed it is holding right now. Gated on " +
+                 "the replicated Time unlock bit; drawn for the local pilot only.")]
+        [SerializeField, Range(50f, 1500f)] float foresightLength = 500f;
+        [Tooltip("Rivals further than this are not drawn, world units.")]
+        [SerializeField, Range(100f, 5000f)] float foresightRange = 1500f;
+        [Tooltip("At most this many rivals' paths are drawn (the nearest).")]
+        [SerializeField, Range(1, 6)] int foresightMaxRivals = 3;
 
         [Header("Autopilot")]
         [Tooltip("The autopilot's squeeze on each trigger it pulls, 0..1. The studio's aiWarpQ: 1 (a full squeeze) " +
@@ -221,11 +284,17 @@ namespace CosmicShore.ScriptableObjects
         public float PoleGM => poleGM;
         public float PoleHorizon => poleHorizon;
         public ElementalFloat PoleSize => poleSize;
+        public float SinkSofteningHorizons => sinkSofteningHorizons;
+        public float AnnihilateSeconds => annihilateSeconds;
         public float SourcePush => sourcePush;
         public float SourceSofteningHorizons => sourceSofteningHorizons;
         public float AccelerationCap => accelerationCap;
         public float SinkGrowSeconds => sinkGrowSeconds;
         public float SourceGrowSeconds => sourceGrowSeconds;
+        public float DieSeconds => dieSeconds;
+        public float SourceSizeX => sourceSizeX;
+        public float ThroughZoneRadius => throughZoneRadius;
+        public float ThroughDegrees => throughDegrees;
         public float TurnCap => turnCap;
         public float Grip => grip;
         public float GravitySpeedCeilingCruises => gravitySpeedCeilingCruises;
@@ -233,6 +302,8 @@ namespace CosmicShore.ScriptableObjects
         public float DomainTintAmount => domainTintAmount;
         public float CrystalStripShare => crystalStripShare;
         public float FaunaSwallowHorizons => faunaSwallowHorizons;
+        public float AccretionPerPrism => Mathf.Max(0f, accretionPerPrism);
+        public float AccretionMax => Mathf.Max(0f, accretionMax);
         public float PathLength => pathLength;
         public float PathStep => pathStep;
         public float PathNoseOffset => pathNoseOffset;
@@ -248,8 +319,13 @@ namespace CosmicShore.ScriptableObjects
         public float WorldDotSize => worldDotSize;
         public float WorldDotSpacing => worldDotSpacing;
         public float WorldDotMinPixels => worldDotMinPixels;
+        public float DotDepthMinScale => dotDepthMinScale;
+        public float DotDepthFade => dotDepthFade;
         public Color OpenColor => openColor;
         public Color WarpedColor => warpedColor;
+        public float ForesightLength => foresightLength;
+        public float ForesightRange => foresightRange;
+        public int ForesightMaxRivals => Mathf.Clamp(foresightMaxRivals, 1, 6);
         public float AutopilotHold01 => autopilotHold01;
         public float AutopilotMinDistance => autopilotMinDistance;
         public float AutopilotHoldSeconds => autopilotHoldSeconds;
@@ -264,6 +340,14 @@ namespace CosmicShore.ScriptableObjects
         public EventReference OpenEvent => openEvent;
         public EventReference AnnihilateEvent => annihilateEvent;
         public EventReference WarpEvent => warpEvent;
+
+        /// <summary>
+        /// Time's one number as a RATIO: the boost at the pilot's live Time level over the boost at rest (1 at rest, 2 at
+        /// level 10). The pathfinder's warp boost IS <see cref="Boost"/>; Time mode's timed slingshot reads this ratio, so
+        /// both of the Stoat's speed-ups move with the one Time parameter (one parameter per element).
+        /// </summary>
+        public float BoostRatio(IVesselStatus status) =>
+            Mathf.Max(1f, boost.EvaluateLive(status) / Mathf.Max(1e-3f, boost.EvaluateAtNormalizedLevel(0f)));
 
         /// <summary>The flight settings one step of field flight reads (the prediction and the flight share them).</summary>
         public StoatDipoleMath.FlightSettings Flight(float cruise) => new()
