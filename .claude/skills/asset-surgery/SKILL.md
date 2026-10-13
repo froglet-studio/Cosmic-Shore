@@ -1100,6 +1100,11 @@ references, m_Script classes). What cost time on the first runs (2026-10-06 to 1
   the same file as an `m_Script` is a package script. Measured 2026-10-13 on
   `claude/serpent-mass-seed-wall`: 3 findings, all 3 false. The fix belongs in the tool (index guids
   from `git ls-tree` plus the refcompile package cache), not in a habit.
+- **`check_generated_assets.py` reports a guid-KEEPING RENAME as a `[deleted]` reference.** `git mv a.png b.png`
+  with its `.meta` keeps the guid, so every reference still resolves — but the audit sees `a.png` deleted since the
+  base and reports `b.png.meta: references a.png (guid …), deleted since the base`. The file it names IS the owner
+  now. Confirm with `grep -c "^guid: <g>$"` over the `.meta` set (exactly one owner, the new path) and call it out
+  as the tool's false positive (Thresher Heavy Iron → Mass Mode icon, 2026-10-13).
 - **`check_generated_assets.py` reports only findings that are NEW against the base's copy of the
   asset — so a negative control must inject a defect the BASE never had.** Re-adding a key you just
   removed (a retired field's `minExplosionScale: 60`, still present in the base asset) is suppressed
