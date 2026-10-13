@@ -634,7 +634,7 @@ The main menu is built as a **five-panel horizontal filmstrip** (screens slide l
 | 3 | `PORT` (3) | `PortScreen` | `LeaderboardsMenu` | ❌ **disabled** |
 | 4 | `PROFILE` (5) | `ProfileScreen` | `ProfileScreen` + `QuestTrackView` | ✅ |
 
-- `ScreenSwitcher.disabledScreens` = `{ARK, PORT}`. Navigating to a disabled screen silently does nothing; left/right paging skips over them.
+- `ScreenSwitcher.disabledScreens` = `{ARK, PORT}` at the audit (ARK reopened 2026-10-13 as the Elemental Converter). Navigating to a disabled screen silently does nothing; left/right paging skips over them.
 - The `STORE` enum value (0) is **not in the screens list at all** — the store content lives on the GameObject named `ArkScreen`. "ARK" and "Store" are the same (disabled) screen.
 - **Net player experience: Hangar ← Home → Profile**, with Arcade and Settings as modals on top.
 

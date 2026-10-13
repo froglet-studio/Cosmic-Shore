@@ -345,6 +345,22 @@ namespace CosmicShore.Gameplay
                 _followOffset.y * _followHeightScale,
                 RearView && !PlacementAnchor.HasValue ? -_followOffset.z : _followOffset.z);
 
+        private bool _warpClipActive;
+
+        /// <summary>
+        /// Near clip = the settings' near plane × the warp at the framed point, while a field warps
+        /// it; restored to the settings' value once it no longer does. A field-free session never
+        /// touches the plane, so ApplySettings / Activate stay its only writers there.
+        /// </summary>
+        private void ApplyWarpToNearClip(float warp)
+        {
+            bool warped = !Mathf.Approximately(warp, 1f);
+            if (!warped && !_warpClipActive) return;
+            float authoredNear = _currentSettings ? _currentSettings.nearClipPlane : 0.3f;
+            Camera.nearClipPlane = Mathf.Max(0.001f, authoredNear * warp);
+            _warpClipActive = warped;
+        }
+
         // --- Camera Shake ---
         private float _shakeTimeRemaining;
         private float _shakeDuration;
@@ -389,6 +405,14 @@ namespace CosmicShore.Gameplay
             if (_lastTargetPos == Vector3.zero)
                 _lastTargetPos = followPoint;
 
+            // Warp field (Docs/WARP_FIELD.md): the camera sits at a warp-sized distance and clips
+            // at a warp-sized near plane, so a vessel shrinking toward a field's centre keeps the
+            // same framing — the near field gives nothing away and the far field grows. Applied at
+            // the point of use like FollowHeightScale, never by writing _followOffset, which every
+            // settings re-apply and zoom ability owns. Exactly 1 with no field.
+            float warp = WarpFieldRuntime.ScaleAt(followPoint);
+            ApplyWarpToNearClip(warp);
+
             Vector3 shipDelta = followPoint - _lastTargetPos;
 
             // Teleport guard: on a kickoff park / fresh spawn the follow target jumps a long way in one
@@ -402,7 +426,7 @@ namespace CosmicShore.Gameplay
             // vessel asks for one (MaxFollowTurnRate).
             Quaternion rotation = StepFollowFrame(Time.deltaTime);
             Vector3 frameUp = rotation * Vector3.up;
-            Vector3 desiredPos = followPoint + rotation * EffectiveOffset;
+            Vector3 desiredPos = followPoint + rotation * (EffectiveOffset * warp);
 
             if (teleported)
             {

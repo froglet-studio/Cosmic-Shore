@@ -66,6 +66,8 @@ SCENE_FOR_MODE = {
     61: 'MinigameSirocco',
     62: 'MinigameGrizzlyCharge',
     63: 'MinigameGrizzlyTime',
+    64: 'MinigameSlingshot',
+    65: 'MinigameWarpline',
 }
 
 

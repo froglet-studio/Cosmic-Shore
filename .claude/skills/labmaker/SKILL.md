@@ -143,7 +143,7 @@ node .claude/skills/labmaker/verify_lab.cjs --self-test        # the gate's own 
 It opens the page in headless Chromium (pre-installed; never `playwright install`) at 1600×900 and
 as an iPhone 13, and fails on:
 
-- any console or page error;
+- any console or page error, or a WebGL fault (`INVALID_*`, a program that failed to link), which Chromium logs only as a warning (L-STU-16);
 - a desktop layout taller or wider than the window, including one CLIPPED by `overflow:hidden`
   (L-STU-13), or a phone page that scrolls sideways;
 - a missing `__lab` hook, or a hook that throws when called with no arguments;

@@ -185,7 +185,7 @@ MonoBehaviour:
   abilityLockups: {fileID: 0}
   animSettings: {fileID: 0}
   ballHeatGauge: {fileID: 7700000000000001203}
-  chainOutGauge: {fileID: 7700000000000001213}
+  energyGauge: {fileID: 7700000000000001213}
   chainColor: {r: 0.75, g: 0.75, b: 0.78, a: 1}
 --- !u!224 &7475086108544464464 stripped
 RectTransform:
@@ -502,7 +502,7 @@ GameObject:
   - component: {fileID: 7700000000000001212}
   - component: {fileID: 7700000000000001213}
   m_Layer: 5
-  m_Name: ChainOutGauge
+  m_Name: EnergyGauge
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0

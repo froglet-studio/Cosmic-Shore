@@ -40,7 +40,7 @@ public interface IScreen
 | Screen | Class | Extends `IScreen` | Init Pattern |
 |---|---|---|---|
 | Home | `HomeScreen` | No | `Start()` |
-| Arcade (ARK) | `ArcadeScreen` | No | `Start()` |
+| Ark (ARK) — the Elemental Converter (2026-10-13; the arcade moved to `ModalWindows.ARCADE`) | `ElementalConverterView` (+ the disabled legacy `StoreScreen`) | Yes | `OnScreenEnter()` → idle crystals; CONVERT plays the omni combine (`Docs/Studios/OMNI_COMBINE_LAB.md` § In the game) |
 | Store | `StoreScreen` (extends `View`) | No | `Start()` + `OnEnable()` events |
 | Port (Leaderboards) | `LeaderboardsMenu` | Yes | `OnScreenEnter()` → `LoadView()` |
 | Hangar | `HangarScreen` | Yes | `OnScreenEnter()` → `LoadView()` |
