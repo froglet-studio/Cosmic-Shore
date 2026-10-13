@@ -584,7 +584,7 @@ inputs are the contract until they do.
   - the C1 session stopped and the transcript said so;
   - the board task (T-4 in the screenshot) listed every tool call the run made;
   - the checkpoint got its note;
-  - the banner offered CONTINUE. See `docs/architecture/amoebius_milestone_stopped.png`.
+  - the banner offered CONTINUE.
 - `milestones.json` is now written without `'`-style escaping. The verification run exposed
   that older bug.
 
