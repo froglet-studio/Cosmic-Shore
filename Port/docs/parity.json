@@ -17,7 +17,7 @@
     "shaders": {
       "Faithful": 0,
       "Approximate": 63,
-      "Missing": 20
+      "Missing": 21
     }
   },
   "subsystems": [
@@ -957,6 +957,13 @@
       "status": "Approximate",
       "why": "hand translation (Content/Shaders/Hand); frames not yet compared per shader (C2); approximate nodes: CrystalMorph",
       "test": "HandShaderTests, --check-shaders"
+    },
+    {
+      "path": "Assets/_Graphics/Materials/Shaders/OmniDepthPrismShader.shader",
+      "name": "Custom/OmniDepthPrismShader",
+      "status": "Missing",
+      "why": "generic material-family fallback",
+      "test": ""
     },
     {
       "path": "Assets/_Graphics/Materials/Shaders/OmniShepardFresnelShader.shader",

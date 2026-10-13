@@ -9,7 +9,7 @@ Last parity run against Unity goldens: 2026-10-07 (boot-menu, random, skimrace-f
 | | Faithful | Approximate | Missing |
 |---|---|---|---|
 | Subsystems | 0 | 27 | 5 |
-| Shaders | 0 | 63 | 20 |
+| Shaders | 0 | 63 | 21 |
 
 ## Subsystems
 
@@ -118,6 +118,7 @@ Last parity run against Unity goldens: 2026-10-07 (boot-menu, random, skimrace-f
 | CosmicShore/HyperSeaSkybox | `Assets/_Graphics/Materials/Shaders/HyperSeaSkybox.shader` | Approximate | skybox pass (Render/SkyboxPass.cs, HyperSeaSkyboxGlsl.cs); frames not yet compared per shader (C2) |
 | Custom/OmniChargeEdgesShader | `Assets/_Graphics/Materials/Shaders/OmniChargeEdgesShader.shader` | Missing | hand-written .shader: no translation yet |
 | Custom/OmniCrystalFresnelShader | `Assets/_Graphics/Materials/Shaders/OmniCrystalFresnelShader.shader` | Approximate | hand translation (Content/Shaders/Hand); frames not yet compared per shader (C2); approximate nodes: CrystalMorph |
+| Custom/OmniDepthPrismShader | `Assets/_Graphics/Materials/Shaders/OmniDepthPrismShader.shader` | Missing | generic material-family fallback |
 | Custom/OmniShepardFresnelShader | `Assets/_Graphics/Materials/Shaders/OmniShepardFresnelShader.shader` | Approximate | hand translation (Content/Shaders/Hand); frames not yet compared per shader (C2) |
 | Shapes_Shader_Pack | `Assets/_Graphics/Materials/Shaders/Shapes_Shader_ST.shader` | Missing | hand-written .shader: no translation yet |
 | Custom/SpreadFresnelShader | `Assets/_Graphics/Materials/Shaders/SpreadFresnelShader.shader` | Approximate | hand translation (Content/Shaders/Hand); frames not yet compared per shader (C2) |
