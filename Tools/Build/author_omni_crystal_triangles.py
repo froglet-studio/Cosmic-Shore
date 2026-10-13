@@ -135,7 +135,6 @@ FADE_IN_GUID = "318b4eb62a2693f4e98368eb975997cd"
 # materials are clones of the elemental crystals' LimeCrystalFresnelMaterial /
 # BlueCrystalFresnelMateriall - same colours and spread - moved onto that shader.
 OMNI_SHADER_GUID = "554d96e9b67505208a3fbf0acb165350"           # OmniCrystalFresnelShader.shader
-TONE_SHADER_GUID = "b55e562cd5045859607550ce7ba8267f"           # OmniShepardFresnelShader.shader
 MAT_DIR = "Assets/_Graphics/Materials/CrystalMaterials"
 BODY_DONORS = [("OmniCrystalBody", "LimeCrystalFresnelMaterial"),
                ("OmniCrystalBodyInactive", "BlueCrystalFresnelMateriall")]
@@ -152,7 +151,6 @@ MAT_BODY_EXPLODING = "383f21e8586fd7243a19e1d0f26110d0"  # CrystalMaterial: the 
 # triangles fall in from outside the crystal and land on its surface, brightening as they arrive
 # (alpha 0.05 at the outer edge, 1.05 - 1/OUTER_REACH at the surface).
 OUTER_REACH = 2.0
-SHEPARD_PERIOD = 3                       # the Mass crystal's shell period (author_mass_crystal_look.py's tone materials)
 
 # The "Breathe" look (Omni Shepard Lab round 4, shipped 2026-10-10..12) and the stationary rim are RETIRED with
 # their eight OmniShepardTriangles* materials (2026-10-13, refactor row F2): no crystal or material set names them,
@@ -232,19 +230,6 @@ def _sub1(text, pattern, repl, label):
     if n != 1:
         raise SystemExit(f"material clone: {label} not found exactly once")
     return out
-
-
-def _tone_material(name, body_name, body_text, start, stop, scale_distance, queue):
-    """A tone-shell material: the body material (same colours) moved onto the tone shader (the Mass crystal's
-    retired shells, author_mass_crystal_look.py; the omni's breathing shells went 2026-10-13)."""
-    t = _sub1(body_text, rf"^  m_Name: {re.escape(body_name)}$", f"  m_Name: {name}", name + " m_Name")
-    t = _sub1(t, r"^  m_Shader: \{fileID: 4800000, guid: \w+, type: 3\}",
-              f"  m_Shader: {{fileID: 4800000, guid: {TONE_SHADER_GUID}, type: 3}}", name + " m_Shader")
-    t = _sub1(t, r"^  m_CustomRenderQueue: .*$", f"  m_CustomRenderQueue: {queue}", name + " queue")
-    t = _sub1(t, r"^  stringTagMap: \{\}$", "  stringTagMap:\n    RenderType: Transparent", name + " tags")
-    floats = (f"    - _Opacity: 1\n    - _Period: {SHEPARD_PERIOD}\n"
-              f"    - _ScaleDistance: {scale_distance}\n    - _Start: {start}\n    - _Stop: {stop}\n")
-    return _sub1(t, r"^    m_Floats:\n", lambda m: m.group(0) + floats, name + " m_Floats")
 
 
 def depth_material(name, body_name, body_text, thickness, top_height, split_unit):

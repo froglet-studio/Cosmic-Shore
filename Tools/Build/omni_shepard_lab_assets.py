@@ -51,12 +51,6 @@ MASS_FBX = os.path.join(ROOT, "Assets", "_Models", "MassCrystalExport1_8-21-25.f
 # The Space element's squares on the omni, baked from the artist's CrystalsRaw_V2.blend by
 # Tools/Build/bake_omni_space_squares.py (the .blend is kept by the art team, not in this repo).
 SPACE_SQUARES = os.path.join(ROOT, "Docs", "Studios", "data", "omni_space_squares.json")
-MASS_PREFAB = os.path.join(ROOT, "Assets", "_Prefabs", "Environment", "CrystalMass.prefab")
-# The Mass crystal's four shells, in crystalModels order (Tools/Build/author_mass_crystal_look.py SHELLS).
-MASS_SHELLS = [("innerShell", "ActiveMassCrystalMaterial", "BlueMassCrystalMaterial"),
-               ("secondShell", "ActiveMassCrystalMaterial 1", "BlueMassCrystalMaterial 1"),
-               ("easedShell", "ActiveMassCrystalMaterial 2", "BlueMassCrystalMaterial 2"),
-               ("outerShell", "ActiveMassCrystalMaterial 3", "BlueMassCrystalMaterial 3")]
 SHEPARD_SHADER_GUID = "b55e562cd5045859607550ce7ba8267f"   # OmniShepardFresnelShader.shader
 DEPTH_SHADER = os.path.join(ROOT, "Assets", "_Graphics", "Materials", "Shaders", "OmniDepthPrismShader.shader")
 DEPTH_PROFILE = os.path.join(ROOT, "Assets", "_SO_Assets", "Environment", "CrystalDepthPrismProfile.asset")
@@ -312,7 +306,7 @@ def body_mesh():
 
 
 def mass_crystal():
-    """The Mass crystal as it ships: 60 triangular prisms (MassCrystalExport1), four shells of them."""
+    """The Mass crystal's 60 triangular prisms (MassCrystalExport1), as Unity imports them."""
     nodes = fbx_binary.read(MASS_FBX)
     nodes = nodes[0] if isinstance(nodes, tuple) else nodes
 
@@ -365,22 +359,11 @@ def mass_crystal():
         centre.append(tuple(sum(c[a] for c in corners) / len(corners) for a in range(3)))
     if len(plates) != 60:
         raise SystemExit(f"MassCrystalExport1: expected 60 triangular prisms, found {len(plates)}")
-    pre = read(MASS_PREFAB)
-    shells = []
-    for name, active, inactive in MASS_SHELLS:
-        L = shepard_layer(os.path.join(MATS, active + ".mat"))
-        Li = shepard_layer(os.path.join(MATS, inactive + ".mat"))
-        L["inactiveBright"], L["inactiveDark"] = Li["bright"], Li["dark"]
-        L["material"] = active
-        L["queue"] = int(re.search(r"m_CustomRenderQueue: (-?\d+)", read(os.path.join(MATS, active + ".mat"))).group(1))
-        # Since round 8 the shells are retired; the prism renderer kept the inner shell's transform.
-        m = (re.search(r"m_Name: " + re.escape(name) + r"\n(?:.*\n)*?--- !u!4 [^\n]*\nTransform:\n(?:.*\n)*?  m_LocalScale: \{x: ([0-9.]+)", pre)
-             or re.search(r"m_Name: " + re.escape(MASS_DEPTH_MAT) + r"\n(?:.*\n)*?--- !u!4 [^\n]*\nTransform:\n(?:.*\n)*?  m_LocalScale: \{x: ([0-9.]+)", pre))
-        L["localScale"] = float(m.group(1)) if m else 1.0
-        shells.append(L)
     r5 = lambda v: round(v, 5)
     return {
-        "shells": [{k: (round(v, 6) if isinstance(v, float) else v) for k, v in L.items()} for L in shells],
+        # The four old shells (shipped until round 8) are retired with their eight materials (2026-10-13, refactor
+        # row F3); the page pins their values in RETIRED.massShells.
+        "shells": [],
         "mesh": {"p": [r5(c) for q in pos for c in q], "n": [round(c, 4) for q in nrm for c in q],
                  "plates": plates, "c": [r5(c) for q in centre for c in q]},
     }
@@ -501,6 +484,9 @@ def self_test():
     check("the page pins the retired Breathe layers (3, one shared band, 1/3 of a trip apart) and the Classic rim",
           pinned is not None and len(pinned["layers"]) == 3 and pinned["rimRetired"] is not None
           and all(abs(x["phaseOffset"] - i / 3) < 1e-5 and x["start"] == 1.0 and x["stop"] == 0.5 for i, x in enumerate(pinned["layers"])))
+    check("the page pins the Mass crystal's four old shells (three banded, the outer one static)",
+          pinned is not None and len(pinned.get("massShells", [])) == 4
+          and [x["scaleDistance"] for x in pinned["massShells"]] == [1.0, 1.0, 1.0, 0.0])
     dp = d["depth"]
     check("the crystal ships the Depth ratchet: an OmniDepthPrisms slot, the Mass prisms and the profile",
           dp is not None and dp["mass"] is not None and dp["omni"]["material"] == "OmniDepthPrisms")

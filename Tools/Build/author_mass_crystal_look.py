@@ -11,10 +11,10 @@ prisms baked SEATED and 6.25 thick - grown inward, BAKED INTO the mesh since 202
 `MassDepthPrisms[Inactive].mat` (`OmniDepthPrismShader`), driven by `CrystalDepthPrisms` with the omni's profile;
 `to_prisms()` deletes the other three shells (their consumers reference only the root objects - swept)
 and is idempotent. The shell materials below stay authored; the husk keeps `ExplodingMassCrystalMaterial`.
-NOTE (pre-existing, 2026-10-12): the eight shell materials were since re-saved by the Unity Editor
-(sorted properties, keywords), so `--check` reports them as DRIFT; that is editor normalisation of the
-retired materials, not a change in look. Re-running this script without `--check` rewrites them in the
-generator's order - harmless, but noisy.
+SINCE 2026-10-13 (refactor row F3): the eight old shell materials are RETIRED, with SpawnedSegments.prefab (an
+orphaned snapshot, their only consumer). They had drifted from this script (the Editor had re-saved them at 2x the
+HDR colours) and kept `--check` red for every branch; it is green again and fails on a real change. The lab pins
+their values. The history below describes the looks the prisms replaced.
 
 The Mass crystal was four nested shells of `MassCrystalExport1_8-21-25.fbx` running the Shepard
 tone (each shell's scale sweeps a band once per period, alpha = (1.05 - s) * _Opacity). Before
@@ -58,46 +58,24 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import hashlib  # noqa: E402
 
 import author_omni_crystal_triangles as OMNI  # noqa: E402
-from author_omni_crystal_triangles import _donor, _tone_material, MAT_DIR, ROOT  # noqa: E402
+from author_omni_crystal_triangles import MAT_DIR, ROOT  # noqa: E402
 
 CRYSTAL_MASS_GUID = "cccc6ba7985893f43841fccfbb53dc71"     # CrystalMass.prefab
 SHEPARD_GRAPH_GUID = "71fa822036d425446afa6c9c07046aef"    # ShepardGraph.shadergraph
 SPACE_ANIMATOR_GUID = "445bd9b09ae11aa40a872cdb1a636881"   # SpaceCrystalAnimator.cs
 SPACE_MESH_GUID = "39e205c7c7716094991df8c57e3e0753"       # spacecrystalanim.fbx
 
-ACTIVE_DONOR = "LimeCrystalFresnelMaterial"     # a free Space/Time crystal's pair
-INACTIVE_DONOR = "BlueCrystalFresnelMateriall"  # an embedded Space/Time heart's pair
+# The four old shells' Shepard materials (Active/BlueMassCrystalMaterial[ 1-3]) are RETIRED (2026-10-13, refactor row
+# F3): no crystal drew them after round 8, and their only asset consumer was SpawnedSegments.prefab, an orphaned
+# snapshot nothing referenced (both deleted). The lab pins their values in its RETIRED constant. Each Mass husk
+# keeps its shatter: these ShepardGraph materials, carried verbatim from the shells' earlier look.
+EXPLODING = ["ExplodingMassCrystalMaterial", "ExplodingMassCrystalMaterial 1",
+             "ExplodingMassCrystalMaterial 2", "ExplodingMassCrystalMaterial 3"]
 
-# Fresnel contrast, tuned from play (2026-10-08: "the inactive was too white, not enough blue; the
-# active was too lime, not enough dark"). The shells are SEE-THROUGH, so their back faces show, and
-# on SpreadFresnelShader's ramp a back face is always at the bright end: measured by compiling the
-# shader's fragment with clang over a sphere, 76% of every back face read bright (26% of the
-# front). _FaceForward measures N.V on the camera side, so every face is dark at its centre front
-# or back; _RimPower 3 then pulls the bright colour out to the silhouette - about a quarter bright
-# on both sides. Both are OmniShepardFresnelShader opt-ins, inert at the defaults the omni uses.
-RIM_POWER = 3
-FACE_FORWARD = 1
-
-# Colour pairs. Free (lime) keeps the Space/Time pair exactly, so the three free elementals stay one
-# lime family; the curve above is what makes it read dark. Embedded (blue) leaves the blue-white
-# pair for a saturated blue over a deeper navy: the same hue family, less white, more depth.
-ACTIVE_COLORS = None  # the donor's own _BrightColor / _DarkColor
-INACTIVE_COLORS = ("{r: 0.2, g: 0.4, b: 1, a: 1}", "{r: 0, g: 0.005, b: 0.18, a: 1}")
-
-# One row per shell, in crystalModels order: (shell, active, inactive, exploding, start, stop,
-# scale distance, queue). The bands, scaling and draw order are the Mass crystal's own, unchanged.
-SHELLS = [
-    ("innerShell",  "ActiveMassCrystalMaterial",   "BlueMassCrystalMaterial",   "ExplodingMassCrystalMaterial",   0.33, 0,    1, 2999),
-    ("secondShell", "ActiveMassCrystalMaterial 1", "BlueMassCrystalMaterial 1", "ExplodingMassCrystalMaterial 1", 0.66, 0.33, 1, 3000),
-    ("easedShell",  "ActiveMassCrystalMaterial 2", "BlueMassCrystalMaterial 2", "ExplodingMassCrystalMaterial 2", 1,    0.66, 1, 3001),
-    ("outerShell",  "ActiveMassCrystalMaterial 3", "BlueMassCrystalMaterial 3", "ExplodingMassCrystalMaterial 3", 1.03, 0.98, 0, 3001),
-]
-
-# Prefabs whose crystalModels are the Mass shells, and the husks whose authored material is one.
+# The Mass crystal prefabs, and the husks whose authored material is the inner exploding material.
 MASS_CRYSTAL_PREFABS = [
     "Assets/_Prefabs/Environment/CrystalMass.prefab",
     "Assets/_Prefabs/Environment/ActiveCrystalMass.prefab",
-    "Assets/_Prefabs/Environment/Spawners/SpawnedSegments.prefab",
 ]
 HUSK_PREFABS = [
     "Assets/_Prefabs/Environment/MassDandruff.prefab",
@@ -237,60 +215,8 @@ def mat_rel(name):
     return f"{MAT_DIR}/{name}.mat"
 
 
-def fmt(x):
-    return str(x)
-
-
-def _sub1(text, pattern, repl, label):
-    out, n = re.subn(pattern, repl, text, count=1, flags=re.M)
-    if n != 1:
-        raise SystemExit(f"mass material: {label} not found exactly once")
-    return out
-
-
-def _contrast(text, name, colors):
-    """The tone material plus the Mass crystal's fresnel contrast (and, optionally, its own pair)."""
-    text = _sub1(text, r"^    - _Opacity: 1\n",
-                 lambda m: m.group(0) + f"    - _FaceForward: {FACE_FORWARD}\n", name + " _FaceForward")
-    text = _sub1(text, r"^    - _ReceiveShadows: .*\n",
-                 lambda m: m.group(0) + f"    - _RimPower: {RIM_POWER}\n", name + " _RimPower")
-    if colors:
-        text = _sub1(text, r"^    - _BrightColor: \{.*\}$", f"    - _BrightColor: {colors[0]}", name + " _BrightColor")
-        text = _sub1(text, r"^    - _DarkColor: \{.*\}$", f"    - _DarkColor: {colors[1]}", name + " _DarkColor")
-    return text
-
-
-def material_texts():
-    active, inactive = _donor(ACTIVE_DONOR), _donor(INACTIVE_DONOR)
-    out = {}
-    for _shell, act, ina, _exp, start, stop, scale, queue in SHELLS:
-        out[mat_rel(act)] = _contrast(
-            _tone_material(act, ACTIVE_DONOR, active, fmt(start), fmt(stop), scale, queue), act, ACTIVE_COLORS)
-        out[mat_rel(ina)] = _contrast(
-            _tone_material(ina, INACTIVE_DONOR, inactive, fmt(start), fmt(stop), scale, queue), ina, INACTIVE_COLORS)
-    return out
-
-
 def guid_ref(guid):
     return f"{{fileID: 2100000, guid: {guid}, type: 2}}"
-
-
-def repoint_exploding(text):
-    """Every explodingMaterial that names a shell's ACTIVE material names its exploding one."""
-    for _shell, act, _ina, exp, *_ in SHELLS:
-        text = text.replace(f"explodingMaterial: {guid_ref(guid_of(mat_rel(act)))}",
-                            f"explodingMaterial: {guid_ref(guid_of(mat_rel(exp)))}")
-    return text
-
-
-def repoint_husk(text):
-    """A husk's authored material is the innermost shell's exploding material (HandleImpact
-    replaces it per pickup; this is only what the pooled renderer holds between pickups)."""
-    exp0 = guid_ref(guid_of(mat_rel(SHELLS[0][3])))
-    for _shell, act, ina, *_ in SHELLS:
-        for name in (act, ina):
-            text = text.replace(f"  - {guid_ref(guid_of(mat_rel(name)))}\n", f"  - {exp0}\n")
-    return text
 
 
 # ── the space-mesh swap on a nested CrystalMass ──
@@ -393,14 +319,18 @@ def read(rel):
 def invariant_errors(want):
     """What must hold of the authored output, independent of how it got there."""
     errs = []
-    exploding = {guid_of(mat_rel(row[3])) for row in SHELLS}
+    exploding = {guid_of(mat_rel(name)) for name in EXPLODING}
     for rel in MASS_CRYSTAL_PREFABS:
         text = want.get(rel, read(rel))
         for g in re.findall(r"explodingMaterial: \{fileID: 2100000, guid: (\w+), type: 2\}", text):
             if g not in exploding:
                 errs.append(f"{rel}: explodingMaterial {g} is not an ExplodingMassCrystalMaterial "
                             f"(the husk's shatter needs ShepardGraph's _velocity)")
-    for _shell, _act, _ina, exp, *_ in SHELLS:
+    for rel in HUSK_PREFABS:
+        husk = {f"guid: {g}," for g in exploding}
+        if not any(h in read(rel) for h in husk):
+            errs.append(f"{rel}: its renderer names no ExplodingMassCrystalMaterial, so the husk cannot shatter")
+    for exp in EXPLODING:
         if f"guid: {SHEPARD_GRAPH_GUID}," not in read(mat_rel(exp)):
             errs.append(f"{mat_rel(exp)} is not on ShepardGraph, so the husk cannot shatter")
     for rel in lifeform_prefabs():
@@ -423,17 +353,13 @@ def main():
                     help="verify the shipped assets match what this script would author")
     args = ap.parse_args()
 
-    want = dict(material_texts())
-    want[MASS_PRISM_MESH] = mass_prism_mesh_text()
+    want = {MASS_PRISM_MESH: mass_prism_mesh_text()}
     want[MASS_PRISM_MESH + ".meta"] = MASS_PRISM_META
     for rel, text in depth_material_texts().items():
         want[rel] = text
         want[rel + ".meta"] = material_meta(rel)
     for rel in MASS_CRYSTAL_PREFABS:
-        text = repoint_exploding(read(rel))
-        want[rel] = to_prisms(text, PRISM_PREFABS[rel]) if rel in PRISM_PREFABS else text
-    for rel in HUSK_PREFABS:
-        want[rel] = repoint_husk(read(rel))
+        want[rel] = to_prisms(read(rel), PRISM_PREFABS[rel])
     for rel in lifeform_prefabs():
         text, n = strip_space_swap(read(rel))
         if n:
