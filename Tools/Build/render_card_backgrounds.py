@@ -1046,7 +1046,19 @@ def accents(s, layers, stage, cam, pal, R, card_path):
             # the cavitation PLATE: a swept disc (a very flat cone) off a Scarab's dash
             p = [R * 0.35, R * 0.05, R * 0.3]
             cone(v_add(p, [0, -R * 0.004, 0]), v_add(p, [0, R * 0.004, 0]), 88, RUBY, 0.28, 1.0)
-    elif s in ("SkimRace", "Scurry"):
+    elif s == "SkimRace":
+        # The race is ringed: each pilot's crystal is a RaceGateRing (24 u mouth) in its owner's
+        # domain, standing square across the track at the crystal's anchor + jitter. The harness
+        # stands them on the track's own MARKER blocks (the waypoints carrying a crystal anchor),
+        # facing along each block's pose - the track tangent - the way the COURSE cards' gates
+        # face along their course. Jitter is the scene CrystalManager's anchorJitterRadius.
+        track = next(l for l in layers if l["kind"] == "generator")
+        track["markerRings"] = {
+            "pick": SKIMRACE_RING_ANCHORS, "R": 24.0, "r": 24.0 * 0.12, "seed": stable_seed(s + "/rings"),
+            "jitter": crystal_jitter(card_path),
+            "styles": [{"domain": d, "tier": SUPER, "emissive": domain_signal(pal, d, 0.9)}
+                       for d in (JADE, RUBY, GOLD)]}
+    elif s == "Scurry":
         for k in range(10):
             crystal(jitter(1.0), span * 0.015)
     elif s == "Joust":
@@ -1076,6 +1088,22 @@ def accents(s, layers, stage, cam, pal, R, card_path):
         p = jitter(0.2)
         for k in range(22):
             glow(v_add(p, v_mul(rng.unit(), span * 0.08 * rng.u())), span * 0.008, GOLD, 1.2, 0.6)
+
+
+# Which of the intensity-2 track's ten crystal anchors (marker blocks, in lap order) carry a staged
+# ring: the handful inside the shot (5 sits on the frame's corner, 6-9 fall outside it), painted
+# Jade / Ruby / Gold in turn - one crystal per pilot.
+SKIMRACE_RING_ANCHORS = [0, 1, 2, 3, 4]
+
+
+def crystal_jitter(card_path):
+    """anchorJitterRadius off the mode scene's CrystalManager - the shell a crystal spawns on."""
+    scene = re.search(r"^  SceneName: (.*)$", read(card_path), re.M).group(1).strip()
+    text = read(next((ROOT / "Assets/_Scenes").rglob(f"{scene}.unity")))
+    m = re.search(r"^  anchorJitterRadius: ([-0-9.e]+)$", text, re.M)
+    if not m:
+        raise AssertionError(f"{scene}: no CrystalManager.anchorJitterRadius")
+    return float(m.group(1))
 
 
 def gate_race_controller(card_path):
