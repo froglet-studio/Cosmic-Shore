@@ -470,7 +470,8 @@ prefab, `DriftAudioController`, jets and tails.
 - **Analog triggers (2026-10-13), open items.** (1) The launch sight no longer zooms: LT is at a full pull
   whenever the launch view is up — the zoom needs a new input (decision needed). (2) A keyboard, mouse or
   touch press is a full pull, so those players always slam (the stop curve and the 2/s rigidity slew are
-  what keep a slam smooth). (3) Depths do not replicate (§7). (4) One frame where the hook hands over to the
+  what keep a slam smooth). With RT unheld the chain rests SLACK on every device, not rigid at rest length
+  as the digital Thresher's did. (3) Depths do not replicate (§7). (4) One frame where the hook hands over to the
   elastic orbit still dips the turn rate (~128 → 75 → 133 °/s), worth 2 200–3 900 °/s² on the catch column;
   blending the hook's per-frame step into the orbit's chord is the next lab round. (5) Dropping the winch: a
   towed ball reaches only ~33 u with RT released (the winch let it out to 140 u).
@@ -587,6 +588,26 @@ slack), then `smashSpeed`, `explosionDiameter`, then `crack` / `reelSpinCap`. Ca
 
 ## Follow-ups
 
+### Refactor rows (2026-10-13 analog-trigger ship pass, `cece/zealous-johnson-gopp6t` — rows only)
+
+- **Two input models live side by side in the solver (debt CREATED, deliberate).** `analogTriggers` is on
+  in the asset and off in the class defaults, so the digital Plant/winch path stays compiled, tested
+  (`ThresherChainSolverTests`, 908 lines) and pinned by parity while the analog one ships. Measure:
+  `grep -c "Analog" ThresherChainSolver.cs` → 48; `grep -n "\.Analog\b"` over the solver and executor → 17
+  branch sites. Blocking question: once A1–A8 pass in the editor, is the digital scheme retired (delete the
+  branches, re-point the 56 digital tests at the analog defaults) or kept as an accessibility option?
+- **`_payOut` / `_plantHeld` are now fallback depths under analog (debt CREATED).** `PollTriggers` reads
+  them only when the input reports no depth, so the edge bindings still drive keyboard, touch and remote
+  replicas. Retiring the digital path (row above) leaves them as exactly that, and they should be renamed
+  to say it (`_rtPressed`, `_ltPressed`).
+- **The launch sight's zoom code is unreachable under analog (debt CREATED).** `zoomDepth = analog ? 0f : …`
+  feeds `ThresherCameraFraming.ZoomTarget`, so `sightZoomDeadzone`/`sightZoomResponse` and the zoom half
+  of the Time-petal window do nothing in the shipped config (6 sites: `grep -n "SightZoom\|ZoomTarget"`
+  over the executor and `ThresherConfigSO.cs`). Blocked on design: §9 analog item (1), the new zoom input.
+- **The `Winch` ability label names the retired mechanic (debt MADE VISIBLE).** RT is now rigidity, but
+  `Thresher.asset` still labels the Space ability `Winch` (the description is updated). A label change is a
+  design call shown on the HUD card; left as is.
+
 ### Refactor rows (2026-10-13 ship pass — rows only, nothing here was changed)
 
 - **`TickExit` re-derives the follow camera's pose (debt CREATED).** `ThresherExecutor.TickExit`
@@ -605,7 +626,7 @@ slack), then `smashSpeed`, `explosionDiameter`, then `crack` / `reelSpinCap`. Ca
   (debt MADE VISIBLE).** `ScopePipView.Label` defaults to `"SerpentScope"`, and both classes' docs
   narrate the Serpent's rounds; a third consumer would want them under a neutral name. Rows only:
   renaming a component class in a prefab is a guid-preserving `git mv` plus a doc sweep (`/refactor`).
-- **The checklist carries five Thresher entries for one branch.** Each round added one; rounds 1–4 are
+- **The checklist carries six Thresher entries across two branches.** Each round added one (rounds 1–5 on `cece/wonderful-hypatia-4b323s`, the analog triggers on `cece/zealous-johnson-gopp6t`); rounds 1–4 are
   marked partly superseded. When the branch is verified in the editor, collapse them into one 🟢 entry.
 
 ### Refactor rows (2026-10-10 ship pass — rows only, nothing here was changed)
