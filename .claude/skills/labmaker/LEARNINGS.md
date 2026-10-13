@@ -267,6 +267,20 @@ Entries are grouped by family; within a family, the newest goes at the bottom.
 - Evidence: `RETIRED` in the page; `omni_shepard_lab_assets.py` `"shells": []`; commits for F2/F3 on the branch.
 - Promoted: no
 
+### L-STU-29 — A mechanic play-tuned in Unity leaves its lab describing a vessel that no longer ships
+- Lab: Stoat Flight Studio · Branch: `cece/fervent-hypatia-rg4why` (the Stoat ported from `claude/peaceful-rubin-hhw49n`) · Date: 2026-10-13
+- What happened: after the port, four rounds of play feedback were applied directly to `StoatDipoleConfig` and `StoatDipoleMath`: smaller then bigger poles, a third of the GM, a softened sink, a slam-and-neutralize release, a fly-through zone, and a denser, depth-cued path. None of it went back into the studio, which still models round 15. Nothing fails: the studio reads its own row, so it looks healthy while describing a different vessel.
+- Do instead: when a lab's mechanic is tuned in the game rather than in the lab, put a "diverged on <date>, re-read <SO>" note on the CATALOG row in the same branch. The next studio round then starts by re-reading the shipped SO (the lab contract's "a reader of the shipped numbers") instead of its own constants.
+- Evidence: CATALOG row; `STOAT_DIPOLE.md` §1 (each number's history); `Docs/UNITY_VERIFICATION_CHECKLIST.md`, the four 2026-10-13 Stoat entries.
+- Promoted: no
+
+### L-STU-30 — A predicted path must fly the hull's RESPONSE, not its stick — measure the gap against the real follow
+- Lab: Stoat Flight Studio → Unity pathfinder · Branch: `cece/fervent-hypatia-rg4why` · Date: 2026-10-13
+- What happened: the studio's `fieldPath`, ported as `StoatDipoleMath.PredictPath`, turns a body at the stick's rate at once and holds its speed. In Unity, `VesselTransformer` turns a COMMAND that the hull slerps after at `RotationFollowRate` (1.5 /s), and eases speed to `CurrentThrottleTarget` at the same rate. Play report: "the vessel doesn't take the path". Measured headless (the shipped math against a frame-stepped model of the transformer), the instant line was 15–73 u off the hull's real path within 3 s of starting a held turn. The `HullResponse` model is within 2 u.
+- Do instead: before trusting a lab's predictor in the game, step the GAME's integrator (command + follow + speed ease) beside it and report the worst gap over a few seconds of a held input from rest. Give the lab the same response model, or its line is a promise the game breaks.
+- Evidence: `ThePrediction_EasesIntoATurnTheWayTheHullDoes` (StoatDipoleTests); `STOAT_DIPOLE.md` § Time.
+- Promoted: no
+
 ---
 
 ## NCA — swarm / neural-CA research rigs (Tools/NCA)

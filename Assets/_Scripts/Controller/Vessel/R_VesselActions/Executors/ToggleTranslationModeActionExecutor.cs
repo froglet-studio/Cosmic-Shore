@@ -100,6 +100,14 @@ namespace CosmicShore.Gameplay
      
      
 
+        /// <summary>
+        /// Leave the stance now, if in it — the same exit a mini-game turn end takes (through the
+        /// controller, so the replicated flag clears on every peer, prism spawning resumed,
+        /// <c>stationaryModeChanged</c> raised). The Stoat's sling calls it: a slung wormhole pair
+        /// is a launch, and a hull held in the stance would ignore the pull (STOAT.md §1).
+        /// </summary>
+        public void EndStance() => End();
+
         void End()
         {
             if (_status == null) return;
