@@ -312,8 +312,16 @@ namespace CosmicShore.Data
         // flies it faster (Time scales the boost). See _Scripts/Controller/Arcade/WARPLINE.md.
         Warpline = 65,
 
+        // SerpentCharge (66): the Serpent's CHARGE game - a sniper race through Rampage's cactus
+        // forest. Charge is the rifle's RECOVERY (12 s -> 5.4 s at Charge 10), so the arena is
+        // seeded with Charge crystals and every one a pilot collects is a faster next shot. A
+        // round pierces everything hostile in its 1.5 deg cone; a sniped rival PILOT is worth a
+        // stand of forest. First DOMAIN to the target wins (ScoringMetric.PrismsDestroyed with
+        // pilot snipes folded in). See _Scripts/Controller/Arcade/SERPENTCHARGE.md.
+        SerpentCharge = 66,
+
         // ADDING A MODE? Bump EnumIntegrityTests.GameModes_HasExpectedMemberCount (currently
-        // 61) in the same commit, and take the next free ID -- 7, 28, 29, 31 and 47 stay reserved
+        // 62) in the same commit, and take the next free ID -- 7, 28, 29, 31 and 47 stay reserved
         // forever.
         // That test is a deliberate tripwire, not an obstacle: it exists so a new member can
         // never land without someone confirming the ID is safe for saved selections.

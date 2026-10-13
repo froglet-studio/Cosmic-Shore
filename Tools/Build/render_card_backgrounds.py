@@ -686,6 +686,9 @@ CAMERAS = {
     # Warpline is Slingshot's circle cut into five long legs: shot from between the two Stoat cards'
     # angles so the pentagon does not read as Slingshot's octagon.
     "Warpline": (215, 36, 0.9, 42),
+    # Serpent Charge is the cactus forest's fifth card (Rampage / Bends / Bloomrush / Sirocco): high
+    # and from behind the shooter, so the tracer runs AWAY down the length of a stand.
+    "SerpentCharge": (65, 24, 0.7, 44),
 }
 
 # Pilots in the shot: (domain, radius fraction, tilt, start angle, sweep). None = generic trio.
@@ -819,7 +822,7 @@ def recipe(stem, card_path, pal, ends):
                 rows.append(prism(pt, fwd, v_norm(pt), key, dom))
         layers.append({"kind": "prisms", "rows": rows})
         nucleus()
-    elif s in ("Rampage", "Bends", "Bloomrush", "WreckingBall", "Tollway", "Sirocco"):
+    elif s in ("Rampage", "Bends", "Bloomrush", "WreckingBall", "Tollway", "Sirocco", "SerpentCharge"):
         tier = "MODEL"
         layers.append(forest_layer(facts, s, plant_size=R * (0.05 if s == "Tollway" else 0.06)))
         nucleus()
@@ -927,9 +930,9 @@ def recipe(stem, card_path, pal, ends):
         base = base or R
         cam["target"] = [c * base for c in point_frac]
         cam["radius"] = radius_frac * base
-    if s in ("Rampage", "Bends", "Bloomrush", "Sirocco"):
+    if s in ("Rampage", "Bends", "Bloomrush", "Sirocco", "SerpentCharge"):
         aim({"Rampage": (0.62, 0.0, 0.3), "Bends": (-0.35, 0.3, 0.55), "Bloomrush": (0.1, -0.45, -0.5),
-             "Sirocco": (-0.5, -0.25, -0.45)}[s], 0.36)
+             "Sirocco": (-0.5, -0.25, -0.45), "SerpentCharge": (0.2, 0.35, -0.6)}[s], 0.36)
         stage.update({"centre": cam["target"], "radius": cam["radius"] * 0.9})
     elif s == "Hijack":
         aim((0.55, 0.0, 0.55), 0.42, base=900)
@@ -1074,6 +1077,25 @@ def accents(s, layers, stage, cam, pal, R, card_path):
             glow(p, span * 0.006, JADE, 1.2, 0.6)
         glow(v_add(top, [0, -span * 0.3, 0]), span * 0.05, JADE, 0.9, 0.35)
         stage["vessels"] = vessels([(JADE, 0.25, 10, 30, 70), (RUBY, 0.3, -10, 200, 70)])
+    elif s == "SerpentCharge":
+        # The SNIPER ROUND: one long, thin tracer from a scoped Serpent straight down the length of
+        # a stand, the prisms it pierced bursting along the line, a flare where it stops, and the
+        # Charge crystals that buy the next round sooner. The cone is a glyph (wider than the
+        # rifle's 1.5 deg) - at card size the true one is a hairline.
+        tgt = jitter(0.25)
+        d = v_norm([-0.55, -0.12, 0.83])
+        apex = v_sub(tgt, v_mul(d, span * 0.6))
+        far = v_add(tgt, v_mul(d, span * 0.6))
+        cone(apex, far, 1.8, JADE, 0.7, 1.0)
+        glow(apex, span * 0.025, JADE, 1.4, 0.7)   # the muzzle
+        for k in range(36):
+            f = 0.35 + 0.65 * (k / 35)
+            p = v_add(v_add(apex, v_mul(v_sub(far, apex), f)), v_mul(rng.unit(), span * 0.025))
+            glow(p, span * rng.range(0.008, 0.016), JADE, 1.5, 0.75)
+        glow(far, span * 0.06, JADE, 1.6, 0.6)
+        for k in range(4):
+            crystal(jitter(0.85), span * 0.03, (1.4, 1.05, 0.25))
+        stage["vessels"] = vessels([(JADE, 0.3, 6, 140, 40), (RUBY, 0.32, -8, 300, 60)])
     elif s == "Sirocco":
         # An EROSION swath: a line of dust motes skimming low across the forest in one colour.
         a = jitter(0.6)

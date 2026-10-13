@@ -75,10 +75,11 @@ config entry's `everyN` says how often the total must cross a multiple before th
 | `TapestryPaintHint` (124) / `TapestryRaidHint` (125) | controller config (idle hints) | — |
 | `SiroccoLeadChanged` (126) | `SiroccoController` (after 20% of the target) | `{0}` domain, `{1}` prisms, `{2}` target |
 | `SiroccoDustHint` (127) | controller config (idle hint) | — |
-| `DomainRaceQuarter` (128) / `DomainRaceHalf` (129) / `DomainRaceLeadChanged` (130) / `DomainRaceHomeStretch` (131) / `DomainRaceFinalLap` (132) | `DomainRaceToasts`, ticked by `GateRaceController` (every gate race) and by `RampageController` / `SalvoController` / `HijackController` | `{0}` leading domain, `{1}` its score, `{2}` target, `{3}` its best single pilot |
+| `DomainRaceQuarter` (128) / `DomainRaceHalf` (129) / `DomainRaceLeadChanged` (130) / `DomainRaceHomeStretch` (131) / `DomainRaceFinalLap` (132) | `DomainRaceToasts`, ticked by `GateRaceController` (every gate race) and by `RampageController` / `SalvoController` / `HijackController` / `SerpentChargeController` | `{0}` leading domain, `{1}` its score, `{2}` target, `{3}` its best single pilot |
 | `AstroLeagueGoal` (133) / `AstroLeagueMatchPoint` (134) | `AstroLeagueController.AnnounceGoal_ClientRpc` | goal: `{0}` scorer, `{1}` their domain's goals, `{2}` goal limit; match point: `{0}` domain, same `{1}` `{2}` |
 | `AstroLeagueGoldenGoal` (135) | `AstroLeagueController.AnnounceOvertime_ClientRpc` | — |
 | `SalvoWingReload` (136) | `SalvoController.RefuelDomainMissiles_ClientRpc`, only when the domain fields 2+ pilots | `{0}` collector, `{1}` domain |
+| `SerpentChargeScopeHint` (137) | controller config (idle hint) | — |
 | `WildlifeCoreBreached` (56) | `WildlifeLiberationController` (server samples vessel positions; first pilot inside the 200u core cage, once a match) | `{0}` pilot, `{1}` domain |
 
 The Dog Fight (57-59), Bends (60-62), Cleave (50-52) and Wildlife Liberation (53-55)
@@ -121,6 +122,7 @@ recorded the joust locally when the post arrives, so the count includes the new 
 | `GameToastConfig_Dustup` | Dustup (59) | the quarter / half / lead-change milestones, one idle hint (get ABOVE a rival — the dust hangs below you) |
 | `GameToastConfig_Tapestry` | Tapestry (60) | the lead-change beat, two idle hints (Mass mode paints a wide wake that is score; behind? Dust mode raids their painting) |
 | `GameToastConfig_Sirocco` | Sirocco (61) | `{0} has eroded {1} prisms` (`everyN` 100), the lead-change beat, one idle hint (Dust mode, low and long over the forest) |
+| `GameToastConfig_SerpentCharge` | Serpent Charge (66) | `{0} sniped a rival pilot!` (82 — `DebuffHitsLanded` rose, which IS a pilot snipe here), `{0} has shot down {1} prisms` (`everyN` 200), the quarter / half / lead-change / home-stretch race beats, one idle hint (scope, line up a stand, fire), `Comeback system is on` |
 | `GameToastConfig_Undertow` | Undertow (55) | `{0} dragged a rival through the undertow!` (every bend), `{0} has drowned {1} creatures` (`everyN` 3), the quarter / half / lead-change milestones, an idle dash hint, `Comeback system is on` — authored by `author_undertow_assets.py` |
 | `GameToastConfig_Rampage` | Rampage (2) | `{0} has smashed {1} prisms` (`everyN` 250), the quarter / half / lead-change race beats, `Comeback system is on` |
 | `GameToastConfig_Cleave` | Cleave (39) | `{0} has cut {1} prisms` (`everyN` 200), the quarter / half / lead-change milestones the controller posts (50-52), `Comeback system is on` |

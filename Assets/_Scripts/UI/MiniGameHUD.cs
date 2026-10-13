@@ -509,6 +509,11 @@ namespace CosmicShore.UI
                     // the densest standing hostile stand - the point Sirocco's AI erosion runs
                     // steer to. NOT Rampage's crystal: here the crystal is a pickup, not the weapon.
                     return CreateProviderComponent<HostileMassObjectiveProvider>("ObjectiveProvider_Sirocco");
+                case GameModes.SerpentCharge:
+                    // Same provider, same forest: the densest standing hostile stand is the
+                    // fattest line a round can be put down - and the region Serpent Charge's AI
+                    // samples its firing lines from, so the arrow and the bots agree.
+                    return CreateProviderComponent<HostileMassObjectiveProvider>("ObjectiveProvider_SerpentCharge");
                 case GameModes.WildlifeLiberation:
                     // The nearest living creature, any colour - wildlife is quarry whatever it
                     // wears, and fauna are client-local, so this peer's registry IS what the

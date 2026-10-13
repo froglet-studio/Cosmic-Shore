@@ -186,6 +186,11 @@ namespace CosmicShore.Data
         // only when the domain fields a WINGMAN to reload - the mode's reason to play together.
         SalvoWingReload = 136,
 
+        // Serpent Charge. The hint takes no args: hold the scope (left trigger), put the reticle
+        // down the LENGTH of a stand, fire (right trigger). Posted by the toast system's idle
+        // timer, not by the controller.
+        SerpentChargeScopeHint = 137,
+
         // END-OF-GAME LOBBY. Shared across every multiplayer mode, so 100+ rather than crowding
         // the per-mode blocks. {0} = player name, {1} = how many have asked so far, {2} = how many
         // humans are in the match.

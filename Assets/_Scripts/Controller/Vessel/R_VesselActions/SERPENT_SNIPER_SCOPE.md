@@ -195,6 +195,18 @@ of the no-imposed-decay law.
 sword. Anything relying on "only the Rhino can open super-shielded mass" — an arena whose rails or
 lining are super-shielded for exactly that reason — should be re-checked against a Serpent.
 
+## Where the rifle is the whole game: Serpent Charge
+
+`GameModes.SerpentCharge = 66` (`_Scripts/Controller/Arcade/SERPENTCHARGE.md`) is the Serpent's
+Charge game, built entirely on this weapon. It is a sniper race through Rampage's forest. In that
+mode the round's pilot strip (`hitClass: 2`, Debuff) is **priced at 60 prisms**, and its AI holds
+the scope latched for the whole match. A held scope makes the cloak decline, so AI Serpents never
+cloak in that mode. The AI also scores candidate lines with this executor's own
+`RangeUnits` / `ConeHalfAngleDegrees` / `MinPathRadius`. **So a change to the cone, the range, the
+pierce budget or the hit class is a Serpent Charge balance change too.** The generator asserts the
+four facts the mode rests on (Debuff class, unlimited pierce, a non-zero strip, a same-victim window
+under the fastest cooldown) and fails if any of them moves.
+
 ## Tuning knobs
 
 `Assets/_SO_Assets/VesselActions/Serpent/SniperScopeAction.asset`
@@ -241,7 +253,7 @@ for the retired Steady Eye bleed; round 4 removed the bleed and the field with i
 | `…/R_VesselActions/Data Containers/SniperScopeActionSO.cs` | **new** — Space ability config |
 | `…/R_VesselActions/Data Containers/SniperShotActionSO.cs` | **new** — Charge ability config |
 | `…/R_VesselActions/Executors/SniperScopeActionExecutor.cs` | **new** — scope state, zoom drive, `IsScoped`; **+** (round 9) passes the shot's range through to the overlay |
-| `…/R_VesselActions/Executors/SniperShotActionExecutor.cs` | **new** — hitscan, cooldown, super-shield teardown, tracer; **+** (round 9) `RangeUnits`, the anchor the flight view's reticle is projected at |
+| `…/R_VesselActions/Executors/SniperShotActionExecutor.cs` | **new** — hitscan, cooldown, super-shield teardown, tracer; **+** (round 9) `RangeUnits`, the anchor the flight view's reticle is projected at; **+** (Serpent Charge, 2026-10-13) `MinPathRadius`, so the mode's marksman AI scores candidate lines with the round's exact cone |
 | `…/R_VesselActions/Executors/SniperBeam.cs` | **new** — the pooled domain-coloured tracer + impact flare |
 | `…/R_VesselActions/Executors/SniperScopeOverlay.cs` | **new** — the eyepiece, the reticle inside it and the recharge ring around it; **+** (round 9) a second reticle over the FLIGHT view, and `ReticleRadiusPixels` generalised into the shared `ReticlePixels` both draw through |
 | `…/R_VesselActions/Executors/SniperScopeDiagnostics.cs` | **new** (round 6) — warn-once reporting for a system whose failure mode is a blank screen; **+** (round 9) `NoGameCamera`, which stands the flight reticle down and leaves the eyepiece alone |

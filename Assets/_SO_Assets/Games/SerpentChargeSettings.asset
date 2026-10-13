@@ -1,0 +1,68 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0e9d95125dc2104f6a59bbc96cf7f454, type: 3}
+  m_Name: SerpentChargeSettings
+  m_EditorClassIdentifier:
+  chargeCrystalsPerWave: 10
+  chargeCrystalWaveSeconds: 40
+  crystalScatterInnerRadius: 320
+  crystalScatterOuterRadius: 1000
+  crystalScatterSeed: 66
+  aiSolveSecondsByIntensity:
+  - 1.6
+  - 1.1
+  - 0.75
+  - 0.5
+  aiCandidateLinesByIntensity:
+  - 6
+  - 10
+  - 16
+  - 24
+  aiAimJitterDegreesByIntensity:
+  - 2.5
+  - 1.5
+  - 0.75
+  - 0.25
+  aiReactionSecondsByIntensity:
+  - 1
+  - 0.6
+  - 0.3
+  - 0.12
+  aiFireFractionByIntensity:
+  - 0.5
+  - 0.6
+  - 0.7
+  - 0.8
+  aiPatienceSecondsByIntensity:
+  - 2.5
+  - 3
+  - 3.5
+  - 4
+  aiPilotHuntRangeByIntensity:
+  - 0
+  - 1200
+  - 2000
+  - 2800
+  aiChargeDetourRangeByIntensity:
+  - 0
+  - 450
+  - 700
+  - 1000
+  aiTickSeconds: 0.1
+  aiMinShotValue: 8
+  aiMinAimDistance: 250
+  aiStandSampleRadius: 260
+  aiAheadSampleDistance: 900
+  aiAheadSampleRadius: 450
+  aiTurnPenaltyFloor: 0.35
+  aiDetourMinCooldownSeconds: 2.5
+  aiScopeRetrySeconds: 1

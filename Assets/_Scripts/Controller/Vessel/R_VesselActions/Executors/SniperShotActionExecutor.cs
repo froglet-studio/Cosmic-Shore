@@ -138,6 +138,11 @@ namespace CosmicShore.Gameplay
         /// </summary>
         public float RangeUnits => config != null ? config.RangeUnits : 3000f;
 
+        /// <summary>The cone's radius floor near the muzzle - the third number the round's volume
+        /// is built from. Exposed so a caller that PREDICTS a shot (Serpent Charge's marksman AI
+        /// scores candidate lines) asks exactly the cone <see cref="ResolveShot"/> will fire.</summary>
+        public float MinPathRadius => config != null ? config.MinPathRadius : 6f;
+
         /// <summary>
         /// The firing pilot's domain colour. One resolver for the tracer and the reticle, so the
         /// mark the pilot aims with and the mark the shot leaves can never disagree about whose

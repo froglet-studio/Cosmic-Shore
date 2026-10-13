@@ -72,6 +72,15 @@ namespace CosmicShore.Data
                     primary = Element.Mass;
                     secondary = Element.Space;
                     return true;
+
+                // WORKING PILOTS OVER, then destruction. Serpent Charge is scored on
+                // PrismsDestroyed (which alone reads as Space) but it is the Serpent's CHARGE game:
+                // the rifle's rate is Charge, and a sniped rival pilot is the most valuable thing a
+                // round can pass through - so the card leads with Charge and says Space second.
+                case GameModes.SerpentCharge:
+                    primary = Element.Charge;
+                    secondary = Element.Space;
+                    return true;
             }
 
             if (metric.HasValue) return TryElementForMetric(metric.Value, out primary);
