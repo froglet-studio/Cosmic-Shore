@@ -369,6 +369,7 @@ namespace CosmicShore.Gameplay
                         if (hole != null && hole.PrismCapture == BlackHole.PrismCaptureRule.Vanish)
                         {
                             RemoveAt(i, clearComponent: true);
+                            hole.CapturedCount++;
                             p.Vanish(hole.CaptureOwnerName);
                             CapturedTotal++;
                             CapturedThisSecond++;
@@ -386,10 +387,12 @@ namespace CosmicShore.Gameplay
                                 : BlackHolePairMath.ExitPosition(_points[i], hole.transform.position,
                                     throat.transform.position, throat.HorizonRadius, throat.transform.position - hole.transform.position);
                             p.NotifyPositionChanged();
+                            hole.CapturedCount++;
                             ThroatTransitsTotal++;
                             break;
                         }
                         Transform sink = hole != null ? hole.transform : p.transform;
+                        if (hole != null) hole.CapturedCount++;
                         RemoveAt(i, clearComponent: true);
                         // Devastate: a shield is not an answer to a singularity. The suction's
                         // sink is the hole's own transform, so the debris converges on it as it

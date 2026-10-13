@@ -200,6 +200,13 @@ namespace CosmicShore.Gameplay
         public float CrystalStripShare { get; set; }
 
         /// <summary>
+        /// Prisms this hole has CAPTURED since it was born — vanished at its horizon, consumed, or carried through
+        /// it as a throat (counted by <see cref="BlackHoleGravityField"/> on every peer that simulates the prism). An
+        /// owner reads the growth (the Stoat's Space-5 Accretion, <c>R_VesselActions/STOAT_DIPOLE.md</c>).
+        /// </summary>
+        public int CapturedCount { get; internal set; }
+
+        /// <summary>
         /// Radius of the wormhole mouth seated at this hole's centre (world units; 0 = none). The
         /// lens treats it as solid: a bent ray that lands on it falls back to the sky, so the mouth
         /// is seen only where it is — in place of the shadow — and never smeared into the rings.
