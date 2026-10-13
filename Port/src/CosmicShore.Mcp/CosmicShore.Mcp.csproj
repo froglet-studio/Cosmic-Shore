@@ -13,7 +13,9 @@
   <ItemGroup>
     <Compile Include="../Shared/AmoebiusTracks.cs" Link="Shared/AmoebiusTracks.cs" />
     <Compile Include="../Shared/AmoebiusBoard.cs" Link="Shared/AmoebiusBoard.cs" />
+    <Compile Include="../Shared/Workspace/*.cs" Link="Shared/Workspace/%(Filename)%(Extension)" />
     <Compile Include="../Shared/ParityDiff.cs" Link="Shared/ParityDiff.cs" />
     <Compile Include="../Shared/Bisect.cs" Link="Shared/Bisect.cs" />
+    <Compile Include="../Shared/MultiplayerRun.cs" Link="Shared/MultiplayerRun.cs" />
   </ItemGroup>
 </Project>

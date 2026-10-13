@@ -15,7 +15,7 @@ namespace CosmicShore.Core
     /// rosters, so one key serves both.</para>
     ///
     /// <para>Two halves, written by two different authorities. The HOST TERMS (intensity, domain
-    /// count, the AI placements) are decided by the launch authority and written only on a
+    /// count, the AI placements, the AI difficulty) are decided by the launch authority and written only on a
     /// launch it performed; the PILOT CHOICE (own domain, own hull) is every player's own and is
     /// written on every ready press, host and guest alike. A guest therefore never overwrites
     /// the host terms it merely watched (<see cref="WithPilotChoice"/> keeps them), and a host
@@ -45,6 +45,13 @@ namespace CosmicShore.Core
         /// </summary>
         public List<Domains> AIDomains;
 
+        /// <summary>
+        /// How well the AI flies, as the host launched it. 0 = never written (every record saved
+        /// before difficulty existed reads as 0), which <see cref="AIDifficultyRules.Resolve(AIDifficulty)"/>
+        /// turns into the default. Saved for every card, read only where the card offers it.
+        /// </summary>
+        public AIDifficulty AIDifficulty;
+
         /// <summary>The local pilot's own domain pick. <see cref="Domains.Blue"/> = never written.</summary>
         public Domains Domain;
 
@@ -69,12 +76,14 @@ namespace CosmicShore.Core
         /// because the host is also a pilot and just pressed Start.</summary>
         public readonly LaunchPreference WithHostTerms(int intensity, int domainCount,
                                                        IList<Domains> aiDomains,
+                                                       AIDifficulty aiDifficulty,
                                                        Domains domain, VesselClassType vessel)
         {
             var next = WithPilotChoice(domain, vessel);
             next.Intensity    = intensity;
             next.DomainCount  = domainCount;
             next.AIDomains    = aiDomains != null ? new List<Domains>(aiDomains) : new List<Domains>();
+            next.AIDifficulty = aiDifficulty;
             next.HasHostTerms = true;
             return next;
         }

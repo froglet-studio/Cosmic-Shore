@@ -1,4 +1,5 @@
 using UnityEngine;
+using CosmicShore.Utility;
 
 namespace CosmicShore.Gameplay
 {
@@ -50,7 +51,7 @@ namespace CosmicShore.Gameplay
             float arc = 0f;
             for (int i = n - 1; i >= 0; i--)
                 arc += Vector3.Distance(points[i], points[i + 1]);
-            float effectiveSpeed = Mathf.Max(speed, arc / life, 0.01f);
+            float effectiveSpeed = MathfNoAlloc.Max(speed, arc / life, 0.01f);
             float back = 0f;
             age[n] = 0f;
             for (int i = n - 1; i >= 0; i--)

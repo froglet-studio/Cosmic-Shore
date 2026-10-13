@@ -14,6 +14,12 @@ permanently-latched init race, a gauge bound to a meter that never raises events
 drift within the branch itself. This skill exists so that never happens again. Follow it
 exactly.
 
+> **See it before you change it: the Vessel Studio.** If the task changes how a vessel FLIES or FEELS, its AI, its
+> difficulty, its play styles or its cameras, recommend the Vessel Studio first
+> (https://claude.ai/artifact/3igBJJbNvJjsfJoBJnAMPa) and load **`/vessel-studio`**. The team decides those questions
+> by playing and watching there, then ports the settled numbers here once (its D13). A vessel with no studio yet
+> gets one by `/vessel-studio` §2. This skill stays the contract for the Unity side.
+
 ## 1. The contract (what every vessel is)
 
 > **Four abilities, each mapped to one of the four elements, each with a level-5 upgrade, each
@@ -1045,6 +1051,64 @@ objects no-ops off the server (`Docs/claude/MULTIPLAYER_AND_SOCIAL.md`).
   real path within 3 s of starting a held turn (measured 2026-10-13, `StoatDipoleMath.HullResponse` fixed it
   to within 2 u). Seed the predictor from `CommandedRotation`, the follow rate and the throttle target, and
   pin it with a test against a frame-stepped model of the transformer (`StoatDipoleTests` has one).
+
+### 4.ad Porting a vessel from its studio — the settings, the CAMERA, and the AI's hand-over
+
+The studio (`/vessel-studio`) is where a vessel's numbers are decided; the Unity port is a COPY of them, and
+the Stoat's first port (2026-10-10) showed the three places a copy goes wrong. Do all three, every port:
+
+1. **Every studio number lands in the vessel's config SO, and the ARTIFACT owns it.** The generator SEEDS the
+   tuning assets once (and checks they exist with the right script); from then on their numbers come from the Vessel
+   Studio artifact, written by **`/artifact-to-unity`** (`Tools/Build/studio_to_unity.py`, `--check` for drift). Tune
+   in the artifact, press Record, clone; never tune those fields in Unity. (Asserting the numbers in the generator made every live tweak fail
+   its gate.) Before that seeding existed the rule read:
+   The Stoat's is `Tools/Build/author_stoat_assets.py` (its "vessel creation tool": the prefab, the class
+   asset, the registrations, the dipole config and the camera asset, each `--check`ed). An asset edited
+   by hand drifts from the generator, and the next re-run silently puts the old numbers back. Map each studio
+   row to its field and record the map in the vessel's doc (`STOAT_DIPOLE.md` §1: `ftAhead` → `aheadDistance`,
+   `ftStrength × 20,000` → `poleGM`, `ftTurnScale` → the prefab's turn rates ×0.4, `aiWarpQ` →
+   `autopilotHold01`, …). A studio number that the Unity side deliberately maps to an ELEMENT LEVEL (the
+   Stoat's boost: the studio's 3× is Time level 5, 2× at rest, 4× at 10) is a design decision, not a
+   drift; say so in the tooltip, and do not "fix" it to the studio's flat value.
+2. **The camera is part of the vessel.** A cloned prefab keeps its donor's `VesselCameraCustomizer.settings`,
+   so the Stoat flew on the Squirrel's camera (flat, 17 u straight behind, looking at the hull) and read as
+   "the camera is off". Give the vessel its OWN `CameraSettingsSO` at the studio's chase framing:
+   `followOffset` = the studio's chase offset with z negated (three.js forward is −z), and
+   `lookAheadDistance` / `lookAheadLift` = the studio's look point (`hull + fwd·N + up·M`). Both are 0 on
+   every other vessel, which keeps the camera aimed at the hull exactly as before. Port the studio's
+   **easing** too (`chaseEaseRate`: the studio's chase closes on its target at 7/s, so the hull swings in the
+   frame through a turn; a hard-attached camera reads as "off" beside it). **Never override the player's FOV**
+   (a graphics setting, `DisplayGraphicsSettings`, default 90, re-applied on every change). Instead set
+   `framingFieldOfView` to the studio's FOV (68): the camera moves nearer by tan(68°/2)/tan(fov/2) and turns
+   its look so the hull reads the same size AND sits at the same height on screen at whatever FOV the player
+   chose (`CustomCameraController.FramedLook`, `CameraLookAheadTests`). A per-vessel FOV was tried first and
+   reverted: `CameraSettingsApplier` re-applies the player's value on every settings change.
+4. **The studio's look has no owner tint.** A slung hole's `DomainTintAmount` filled the black hole's shadow
+   with the owner's dark domain colour (it read as JADE, not black). The studio draws a pure black shadow, a
+   warm photon ring and a white-hot core; the Stoat's config ships the tint at 0, and the lens draws the ring
+   (`BlackHoleConfig.photonRingGlow` / `photonRingWidth`, the studio's `bhRingGlow` / `bhRingWidth`).
+3. **An autopilot that PRESSES an input must RELEASE it when it hands the hull back.** The lava lamp flies
+   the menu vessel on AI and hands it to you when you click. The Stoat's autopilot ran only while the AI
+   flew, so a pair it was holding stayed pressed forever: the menu's pair stayed open and its field flung
+   the hull from the first frame of freestyle (what looked like "a black hole spawned at the centre, the
+   camera off the vessel"). Any executor whose autopilot holds a replicated press needs a hand-back path
+   (`StoatDipoleExecutor.HandBackAiHold`): on the frame `AutoPilotEnabled` goes false with the AI's press
+   still held, stop it through the same replicated path it was pressed with.
+5. **Port a studio's LOOK the way the studio draws it, and prove it against the page's own code.** The black and
+   white hole lens was first rebuilt in Unity a different way (one ray-traced lens sphere per hole); two faults
+   came from that design and no tuning could reach them: the pair's overlapping spheres painted over each other,
+   and the sphere's skybox swap drew a disc round every hole in lava lamp. The fix was the studio's own structure
+   (`lensMat`: ONE screen pass summing every hole), ported line for line (`BlackHoleLens.shader`,
+   `BlackHoleLens.ScreenWells`). `Tools/Shaders/verify_black_hole_lens.py` extracts the page's GLSL and
+   `setLensUniforms` JavaScript and runs them beside the shipped HLSL and C# — copy that shape (extract, translate
+   mechanically, compare, plus a negative control) for any studio visual you port.
+
+Prove the port in Amoebius before handing it over (the `/amoebius` loop; `Port/CLAUDE.md`): set the menu hull
+to the vessel (`Menu_Main.unity` `menuVesselClass`, reverted after), wait for the AI to use its ability,
+click into freestyle, then read the camera (`get "CM PlayerCam" CustomCameraController _followOffset`), the
+live holes or placed objects (`do eval …Registry.Count`) and a screenshot. Amoebius compiles the game
+live, so a missing engine API (the boot fix's `MissingReferenceException`) shows up there first; that gap
+belongs in `Port/src/CosmicShore.Engine`, its own commit.
 
 ## 5. Audit, then hand back verification (you cannot run Unity; the human is the gate)
 

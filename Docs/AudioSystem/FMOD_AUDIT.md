@@ -41,7 +41,7 @@ exercised by the findings below:
    once and then goes silent by design, so a missing bank is a *quiet* failure in the player — check
    for the single report, not for a stream of errors.
 2. **Live Update is OFF in the shipped build.** §1 and the 2026-08-21 rounds in
-   `Docs/PERFORMANCE_OPTIMIZATION.md` pin a wedged Live Update socket as the cause of the editor's
+   `Docs/archive/PERFORMANCE_LOG_2026.md` pin a wedged Live Update socket as the cause of the editor's
    play-exit hang; it must not ship enabled.
 3. **The three audio sliders persist across a restart.** This is §1.0 — the dominant defect in this
    whole audit, and the one most likely to regress, because the failure mode is that *binding* the
@@ -176,7 +176,7 @@ instance played its first frame from the world origin and tripped FMOD's editor 
 ### 1.6 Console noise that is authoring, not code (errors → Charles)
 
 - `boostActivateEvent` is wired to `event:/SFX/Oneshots/Gameplay sfx/Boost Activate`, which
-  **loops**. `FMODOneShotVolumeHelper` refuses it (by design, `PERFORMANCE_OPTIMIZATION.md §0.4`)
+  **loops**. `FMODOneShotVolumeHelper` refuses it (by design, `Docs/archive/PERFORMANCE_LOG_2026.md §0.4`)
   and logs one `LogError` per session. The boost is silent until the loop region is removed.
 - `driftStartEvent`, `driftEndEvent`, `creatureBlockHitEvent` on `AudioSystem` are unwired → one
   warning each, first time the category fires. Drift is covered by `DriftAudioController`;

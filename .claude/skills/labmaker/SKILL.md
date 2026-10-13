@@ -122,7 +122,7 @@ reads as a promise about the game.
 - **Editor layout, no page scroll**: stage in the middle, a right dock with a tab per settings
   group, a bottom dock for Runs / Scorecard / Decisions / About. Below 900 px the docks stack.
 - **Platform detection is answered once at load**: a native host sets `window.__labHost = {shell, device}`
-  (Amoebius uses `#amoebius` because a file page cannot be handed a variable); otherwise phone =
+  (Amoebius opens the page with a host hash, still the pre-rename `#prisma`; `studio-ide.js` also accepts `#amoebius`; a hash because a file page cannot be handed a variable); otherwise phone =
   mobile UA / iPadOS-as-Mac / coarse-pointer-only. A touchscreen laptop is a PC. Give a manual
   Layout override.
 - **Phones**: real fullscreen needs a gesture (request it on the first touch); portrait gets a way
@@ -153,7 +153,8 @@ as an iPhone 13, and fails on:
 - a missing `__lab` hook, or a hook that throws when called with no arguments;
 - a `SPEC` key absent from `SHIPPED`, or a shipped value outside its slider range;
 - a manual clock that does not advance;
-- a non-deterministic `runBatch`;
+- a non-deterministic `runBatch`, within one page or across two page loads (a load-time `Math.random` that reaches the
+  batch is invisible to two calls in one page; L-GEN-9);
 - a blank 2D stage.
 
 It writes `desktop.png` and `phone.png`. **Read the screenshots**: the gate cannot see an overlap.
@@ -269,6 +270,8 @@ Each has an entry in `LEARNINGS.md` with the evidence.
 - **A threat the pilots never meet scores 0.** Give it a local reason to be where pilots go (L-ECO-7).
 - **Hot-path sorting in a grid query** (`Array.from().sort()`) cost 13 of 18 ms. Use
   generation-stamped marks (L-ECO-8).
+- **A prediction is not light.** A path, an aim line or a ghost drawn in the 3D scene goes through the lens pass and
+  gets bent and doubled round a black hole. Draw it on the HUD after the lens (L-STU-53).
 - **A design hole looks like a skilled AI.** The best play was a 0° "tap sling" because the kick
   ignored how far round the hull went. When the AI's best play looks like a cheat, it is a design
   question for the human, not an AI bug (L-STU-3).

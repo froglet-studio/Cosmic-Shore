@@ -149,7 +149,7 @@ The Menu_Main scene uses a `ScreenSwitcher` that manages horizontal sliding navi
 ### Architecture Audits
 
 - **[Bootstrap Scene Audit](./Assets/_Scripts/System/Bootstrap/BOOTSTRAP_AUDIT.md)** — All 16 root GameObjects, execution order map, applied fixes, and deferred refactoring issues
-- **[Prism Performance Audit](./Assets/_Scripts/Game/Prisms/PRISM_PERFORMANCE_AUDIT.md)** — Per-prism component stack, Jobs+Burst optimizations, and remaining main-thread bottlenecks
+- **[Performance — State, History & Plan](./Docs/PERFORMANCE_OPTIMIZATION.md)** — where performance stands, what was done, the ranked lever list, and how to measure (raw evidence frozen in `Docs/archive/PERFORMANCE_LOG_2026.md`)
 
 ### Project Structure
 

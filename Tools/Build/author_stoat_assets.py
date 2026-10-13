@@ -143,6 +143,13 @@ PATHFINDER_EXECUTOR_SCRIPT = DIPOLE_SCRIPTS[1][1]
 DIPOLE_CONFIG_SCRIPT = DIPOLE_SCRIPTS[2][1]
 DIPOLE_ACTION_SCRIPT = DIPOLE_SCRIPTS[3][1]
 DIPOLE_CONFIG = "c6ae04d75c934a21aae1b3607d52cb84"
+# Stage 5: the studio's chase camera (StoatFlightStudio.html cameraStep: 6.5 up, 21 behind, looking 40 past the
+# nose and 3 up). Before it the Stoat flew on the Squirrel's camera asset: flat, 17 straight behind.
+CAMERA_DIR = os.path.join(ROOT, "Assets", "_SO_Assets", "Camera")
+CAMERA_ASSET = os.path.join(CAMERA_DIR, "StoatCameraSettingsSO.asset")
+CAMERA_GUID = "2fb2a0bb0eaf4bd1863fdf55490fa869"   # = CAMERA_SETTINGS (stage 6); the seeded studio camera
+CAMERA_SCRIPT = "fd4e6f3597f7439ba7333b35a3a9e164"
+SQUIRREL_CAMERA_GUID = "3c3fc507fffc4f5e86ab043ee7543cd2"
 DIPOLE_LEFT = "9eacf723b796418caecfe237336b9985"
 DIPOLE_RIGHT = "62ce60a32bef4c70b42fd1f7cd9896ff"
 
@@ -616,6 +623,7 @@ def dipole_config_asset() -> str:
     return (so_header(DIPOLE_CONFIG_SCRIPT, "StoatDipoleConfig") +
             "  holdExponent: 1.5\n"
             "  holdRampSeconds: 1.5\n"
+            "  keySqueeze: 0.5\n"   # the studio's dpKeySqueeze
             "  aheadDistance: 250\n"
             "  sidewaysMax: 200\n"
             "  lengthwaysMax: 120\n"
@@ -630,13 +638,15 @@ def dipole_config_asset() -> str:
             "  annihilateSeconds: 0.3\n"
             "  sinkGrowSeconds: 0.9\n"
             "  sourceGrowSeconds: 1.1\n"
+            "  dieSeconds: 0.7\n"
+            "  sourceSizeX: 1\n"
             "  throughZoneRadius: 135\n"
             "  throughDegrees: 200\n"
             "  turnCap: 12\n"
             "  grip: 0.5\n"
             "  gravitySpeedCeilingCruises: 4\n"
             "  gravityFadeSeconds: 2\n"
-            "  domainTintAmount: 0.7\n"
+            "  domainTintAmount: 0\n"   # the studio draws no tint: a black shadow, a white core
             "  crystalStripShare: 1\n"
             "  faunaSwallowHorizons: 1.5\n"
             "  accretionPerPrism: 0.04\n"
@@ -654,15 +664,26 @@ def dipole_config_asset() -> str:
             "  dotGap: 2.5\n"
             "  dotDepthMinScale: 0.75\n"
             "  dotDepthFade: 0.15\n"
+            "  dotsInWorld: 1\n"          # the path in the scene, denser than the studio's 2D line (the user, 2026-10-10)
+            "  worldDotSize: 0.7\n"
+            "  worldDotSpacing: 3\n"
+            "  worldDotMinPixels: 2.5\n"
             f"  openColor: {color(150 / 255, 166 / 255, 194 / 255)}\n"
             f"  warpedColor: {color(157 / 255, 1, 46 / 255)}\n"
             "  foresightLength: 500\n"
             "  foresightRange: 1500\n"
             "  foresightMaxRivals: 3\n"
-            "  autopilotHold01: 0.8\n"
+            "  autopilotHold01: 1\n"
             "  autopilotMinDistance: 300\n"
             "  autopilotHoldSeconds: 4\n"
-            "  autopilotIntervalSeconds: 2\n" +
+            "  autopilotIntervalSeconds: 2\n"
+            # the studio's path-watching field AI (aiWarpQ 1 above, aiNear, aiLimeWait)
+            "  autopilotWatchPath: 1\n"
+            "  autopilotLetGoNear: 60\n"
+            "  autopilotDrySeconds: 0.5\n"
+            "  autopilotMinHoldSeconds: 0.8\n"
+            "  autopilotMaxHoldSeconds: 15\n"
+            "  autopilotRelaySeconds: 0.25\n" +
             empty_event("openEvent") + empty_event("annihilateEvent") + empty_event("warpEvent"))
 
 
@@ -765,6 +786,43 @@ def apply_dipole(text: str) -> str:
     return text[:t.start()] + block + text[t.end():]
 
 
+def camera_asset() -> str:
+    return ("%YAML 1.1\n%TAG !u! tag:unity3d.com,2011:\n--- !u!114 &11400000\nMonoBehaviour:\n"
+            "  m_ObjectHideFlags: 0\n  m_CorrespondingSourceObject: {fileID: 0}\n  m_PrefabInstance: {fileID: 0}\n"
+            "  m_PrefabAsset: {fileID: 0}\n  m_GameObject: {fileID: 0}\n  m_Enabled: 1\n  m_EditorHideFlags: 0\n"
+            f"  m_Script: {{fileID: 11500000, guid: {CAMERA_SCRIPT}, type: 3}}\n"
+            "  m_Name: StoatCameraSettingsSO\n  m_EditorClassIdentifier: \n"
+            "  mode: 0\n"
+            "  followOffset: {x: 0, y: 6.5, z: -21}\n"
+            "  lookAheadDistance: 40\n"
+            "  lookAheadLift: 3\n"
+            "  chaseEaseRate: 7\n"
+            "  framingFieldOfView: 68\n"
+            "  dynamicMinDistance: 10\n  dynamicMaxDistance: 40\n  followSmoothTime: 0.2\n  rotationSmoothTime: 5\n"
+            "  disableSmoothing: 0\n  nearClipPlane: 0.3\n  farClipPlane: 12000\n  enableAdaptiveZoom: 0\n"
+            "  adaptiveMaxDistance: 0\n  orthographicSize: 5\n")
+
+
+def camera_reference(guid: str) -> str:
+    return f"  settings: {{fileID: 11400000, guid: {guid}, type: 2}}\n  OnInitializePlayerCamera:"
+
+
+def apply_camera(text: str) -> str:
+    """Stage 5 on the committed prefab: VesselCameraCustomizer points at the Stoat's own camera asset. Idempotent."""
+    if camera_reference(CAMERA_GUID) in text:
+        return text
+    return replace_once(text, camera_reference(SQUIRREL_CAMERA_GUID), camera_reference(CAMERA_GUID),
+                        "VesselCameraCustomizer settings (the Squirrel's camera asset)")
+
+
+def seeded_assets() -> "dict[str, str]":
+    """The TUNING assets: {absolute path: the script guid they must carry}. This generator SEEDS them (writes them only
+    when absent) and then checks only that they exist with the right script. Their numbers belong to the Vessel Studio
+    ARTIFACT, the one source of truth: /artifact-to-unity writes them (Tools/Build/studio_to_unity.py, map
+    Tools/Build/studio_to_unity/stoat.json); asserting them here too would make two owners."""
+    return {os.path.join(ACTIONS, "StoatDipoleConfig.asset"): DIPOLE_CONFIG_SCRIPT, CAMERA_ASSET: CAMERA_SCRIPT}
+
+
 def dipole_files() -> "dict[str, str]":
     """Every non-prefab file stage 4 owns, {absolute path: content}."""
     out = {}
@@ -780,6 +838,8 @@ def dipole_files() -> "dict[str, str]":
                                  "  userData: \n"
                                  "  assetBundleName: \n"
                                  "  assetBundleVariant: \n")
+    out[CAMERA_ASSET] = camera_asset()
+    out[CAMERA_ASSET + ".meta"] = asset_meta(CAMERA_GUID)
     return out
 
 
@@ -1248,7 +1308,9 @@ def prune_skimmer_overrides(chunk: str) -> str:
         path = re.search(r"propertyPath: '?([A-Za-z_]+)", mod).group(1)
         return path not in stale
     head, rest = chunk.split("    m_Modifications:\n", 1)
-    mods_text, tail = re.match(r"((?:    - target:(?:.*\n)(?:      .*\n|        .*\n)*)*)(.*)", rest, re.S).groups()
+    # No re.S: with it, `.*\n` ran to the LAST newline, so `tail` came back empty and the instance lost
+    # m_RemovedComponents..m_SourcePrefab (Stoat.prefab's skimmer, 2026-10-13). The tail is taken with [\s\S] instead.
+    mods_text, tail = re.match(r"((?:    - target:.*\n(?:      .*\n|        .*\n)*)*)([\s\S]*)", rest).groups()
     mods = re.findall(r"    - target:.*\n(?:      .*\n|        .*\n)*", mods_text)
     mods = [m for m in mods if keep(m)]
     out = []
@@ -1396,18 +1458,6 @@ def overclock_asset() -> str:
     return so_header(OVERCLOCK_SCRIPT, "StoatOverclockByCrystalEffect") + "  seconds: 6\n"
 
 
-def camera_asset() -> str:
-    """The Squirrel's chase (the Stoat has flown on it since the prototype) under the Stoat's own name, written
-    with only the keys CameraSettingsSO still has (the Squirrel's asset carries seven retired ones)."""
-    return (so_header("fd4e6f3597f7439ba7333b35a3a9e164", "StoatCameraSettingsSO") +
-            "  followOffset: {x: 0, y: 0, z: -17}\n"
-            "  followSmoothTime: 0.2\n"
-            "  rotationSmoothTime: 5\n"
-            "  nearClipPlane: 0.3\n"
-            "  farClipPlane: 12000\n"
-            "  orthographicSize: 5\n")
-
-
 def vessel_container_asset() -> str:
     """The Squirrel's prism effects (the fleet's slow / damage / danger debuff / haptics - no element gates),
     and for crystals the haptics plus the Stoat's OVERCLOCK. Dropped: the Squirrel's omni explosion (Space-5
@@ -1440,7 +1490,7 @@ def stage6_files() -> "dict[str, str]":
         MODE_ACTION_PATH: mode_action_asset(), MODE_ACTION_PATH + ".meta": asset_meta(MODE_ACTION),
         RIPPLE_CONFIG_PATH: ripple_config_asset(), RIPPLE_CONFIG_PATH + ".meta": asset_meta(RIPPLE_CONFIG),
         OVERCLOCK_PATH: overclock_asset(), OVERCLOCK_PATH + ".meta": asset_meta(OVERCLOCK_EFFECT),
-        CAMERA_PATH: camera_asset(), CAMERA_PATH + ".meta": asset_meta(CAMERA_SETTINGS),
+        # CAMERA_PATH: not owned here - the studio's chase camera is a SEEDED tuning asset (seeded_assets, stage 4).
         VESSEL_CONTAINER_PATH: vessel_container_asset(), VESSEL_CONTAINER_PATH + ".meta": asset_meta(VESSEL_CONTAINER),
         SKIMMER_CONTAINER_PATH: skimmer_container_asset(), SKIMMER_CONTAINER_PATH + ".meta": asset_meta(SKIMMER_CONTAINER),
         AI_POLICY_PATH + ".meta": asset_meta(AI_BOOST_POLICY),
@@ -1537,6 +1587,12 @@ def check_stage6(files, prefab, errors):
     want(f"  boostPolicy: {{fileID: 11400000, guid: {AI_BOOST_POLICY}, type: 2}}\n" in prefab, "the AIPilot's boost policy is not the Stoat's")
     want("  singleTriggerDrift: 1\n" not in prefab and "  driftShieldsTrail: 1\n" not in prefab, "a Squirrel drift switch is still on")
     want("skimmerPrismStayEffectsSO" not in prefab and "blockStayEffects" not in prefab, "stale skimmer overrides are back")
+    # Every nested instance must close: a PrefabInstance with no m_SourcePrefab is unloadable (prune_skimmer_overrides
+    # under re.S once cut the skimmer's tail off, and PrefabInstanceEditingTests threw on it).
+    for inst in re.split(r"(?m)^(?=--- !u!)", prefab):
+        if inst.startswith("--- !u!1001 &"):
+            want("\n  m_SourcePrefab: {fileID: 100100000, guid: " in inst and "\n    m_RemovedComponents:" in inst,
+                 f"PrefabInstance {inst.split('&', 1)[1].split()[0]} has no m_RemovedComponents / m_SourcePrefab (truncated)")
     for inst, tr, side in JETS_KEPT:
         chunk = re.search(r"--- !u!1001 &%s\n(?:.*\n)*?  m_SourcePrefab:.*\n" % inst, prefab)
         want(chunk is not None and f"m_TransformParent: {{fileID: {HULL_TRANSFORM_ID}}}" in chunk.group(0)
@@ -1640,6 +1696,8 @@ def check(files: "dict[str, str]") -> "list[str]":
     want(f"  _shipGeometries:\n  - {{fileID: {HULL_GO_ID}}}\n" in prefab,
          "VesselCustomization does not paint the hull (the domain colour would land on the hidden Squirrel mesh)")
     want(animation_block() in prefab, "the root's VesselAnimation is not StoatAnimation with the user's lope")
+    want(camera_reference(CAMERA_GUID) in prefab,
+         "VesselCameraCustomizer does not use StoatCameraSettingsSO (the studio's chase camera)")
     want(MANTA_ANIMATION_SCRIPT not in prefab, "the Squirrel clone's MantaAnimationContoller is still on the prefab")
     want(f"  - component: {{fileID: {ANIMATION_ID}}}\n" in prefab, "the animation component left the root")
 
@@ -1676,10 +1734,18 @@ def check(files: "dict[str, str]") -> "list[str]":
         for label in ("Accretion", "Foresight", "Armoured Wake"):
             if f"    UpgradeLabel: {label}\n" not in mp:
                 errors.append(f"{rel_map}: the level-5 '{label}' is not declared")
+    seeded = seeded_assets()
     for path, want_text in dipole_files().items():
         rel = os.path.relpath(path, ROOT)
         if not os.path.exists(path[:-5]) and path.endswith(".cs.meta"):
             errors.append(f"{rel[:-5]} is missing (its .meta is authored here)")
+        if path in seeded:
+            text = files.get(rel)
+            if text is None:
+                errors.append(f"{rel} is missing - run without --check to seed it")
+            elif f"m_Script: {{fileID: 11500000, guid: {seeded[path]}, type: 3}}" not in text:
+                errors.append(f"{rel} does not carry its script (guid {seeded[path]})")
+            continue
         if files.get(rel) != want_text:
             errors.append(f"{rel} is missing or not as authored - run without --check")
     rel_class = os.path.relpath(CLASS_ASSET, ROOT)
@@ -1749,10 +1815,20 @@ def self_test() -> int:
     fires("hull scale reverted", lambda f: f.__setitem__(rel, f[rel].replace(root_scale_line(), "  m_LocalScale: {x: 1, y: 1, z: 1}\n", 1)))
     fires("turn rates reverted", lambda f: f.__setitem__(rel, f[rel].replace("  PitchScaler: 48\n", "  PitchScaler: 120\n", 1)))
     cfg = os.path.relpath(os.path.join(ACTIONS, "StoatDipoleConfig.asset"), ROOT)
-    fires("dipole config retuned by hand", lambda f: f.__setitem__(cfg, f.get(cfg, "").replace("  aheadDistance: 250\n", "  aheadDistance: 200\n")))
+    fires("dipole config's script swapped", lambda f: f.__setitem__(cfg, f.get(cfg, "").replace(DIPOLE_CONFIG_SCRIPT, "0" * 32)))
+    fires("dipole config deleted", lambda f: f.pop(cfg, None))
     fires("container entry missing", lambda f: f.__setitem__(os.path.relpath(CONTAINER, ROOT), f[os.path.relpath(CONTAINER, ROOT)].replace(container_entry(), "")))
     fires("network entry missing", lambda f: f.__setitem__(os.path.relpath(NETWORK_PREFABS, ROOT), f[os.path.relpath(NETWORK_PREFABS, ROOT)].replace(network_entry(), "")))
     fires("map lost the dipole's input", lambda f: f.__setitem__(os.path.relpath(MAP, ROOT), f[os.path.relpath(MAP, ROOT)].replace("    Input: 2\n", "    Input: 0\n")))
+    fires("camera back on the Squirrel's", lambda f: f.__setitem__(rel, f[rel].replace(camera_reference(CAMERA_GUID), camera_reference(SQUIRREL_CAMERA_GUID))))
+    cam = os.path.relpath(CAMERA_ASSET, ROOT)
+    fires("chase camera's script swapped", lambda f: f.__setitem__(cam, f.get(cam, "").replace(CAMERA_SCRIPT, "0" * 32)))
+    # a tuned number is NOT a finding: the Vessel Studio window owns it
+    tuned = dict(files); tuned[cfg] = tuned[cfg].replace("  aheadDistance: 250\n", "  aheadDistance: 200\n")
+    ok_tuned = not check(tuned)
+    print(f"  a number tuned in the Vessel Studio window passes: {'yes' if ok_tuned else 'NO'}")
+    ok &= ok_tuned
+    fires("container entry is the GameObject", lambda f: f.__setitem__(os.path.relpath(CONTAINER, ROOT), f[os.path.relpath(CONTAINER, ROOT)].replace(container_entry(), f"  - {{fileID: {ROOT_GO}, guid: {PREFAB_GUID}, type: 3}}\n")))
     fires("hull dropped", lambda f: f.__setitem__(rel, f[rel].replace(hull_blocks(), "")))
     fires("paint left on the Squirrel mesh", lambda f: f.__setitem__(rel, f[rel].replace(
         f"  _shipGeometries:\n  - {{fileID: {HULL_GO_ID}}}\n", f"  _shipGeometries:\n  - {{fileID: {SQUIRREL_MESH_GO}}}\n")))
@@ -1767,6 +1843,8 @@ def self_test() -> int:
     hud_rel = os.path.relpath(HUD_VARIANT_PATH, ROOT)
     fires("HUD row lost its Time gauge", lambda f: f.__setitem__(hud_rel, f.get(hud_rel, "").replace("  timeGauge: {fileID: 7700000000000001233}\n", "  timeGauge: {fileID: 0}\n")))
     vc = os.path.relpath(VESSEL_CONTAINER_PATH, ROOT)
+    fires("a nested instance truncated", lambda f: f.__setitem__(rel, re.sub(
+        r"(--- !u!1001 &7079694710114171170\n(?:.*\n)*?)    m_RemovedComponents: \[\]\n(?:.*\n)*?  m_SourcePrefab: .*\n", r"\1", f[rel], count=1)))
     fires("container regained the Squirrel's explosion", lambda f: f.__setitem__(vc, f.get(vc, "") + "  - {fileID: 11400000, guid: 384844202f49d274185594aa5a884572, type: 2}\n"))
     # stage 2 is idempotent: applying it to the shipped prefab changes nothing
     idem = apply_hull(files[rel]) == files[rel]
@@ -1777,6 +1855,9 @@ def self_test() -> int:
     ok &= idem
     idem = apply_scale(files[rel]) == files[rel]
     print(f"  stage 5 idempotent on the shipped prefab: {'yes' if idem else 'NO'}")
+    ok &= idem
+    idem = apply_camera(files[rel]) == files[rel]
+    print(f"  stage 5b (studio camera) idempotent on the shipped prefab: {'yes' if idem else 'NO'}")
     ok &= idem
     idem = apply_own_vessel(files[rel]) == files[rel]
     print(f"  stage 6 idempotent on the shipped prefab: {'yes' if idem else 'NO'}")
@@ -1814,6 +1895,11 @@ def main(argv) -> int:
             write(PREFAB, after)
             print(f"stage 5: the hull scaled to {HULL_SCALE} in {os.path.relpath(PREFAB, ROOT)}")
         before = after
+        after = apply_camera(before)
+        if after != before:
+            write(PREFAB, after)
+            print(f"stage 5b: the studio's chase camera wired into {os.path.relpath(PREFAB, ROOT)}")
+        before = after
         if not os.path.exists(HUD_VARIANT_PATH):
             with open(THRESHER_HUD_PATH, encoding="utf-8", newline="") as f:
                 write(HUD_VARIANT_PATH, hud_variant_from_donor(f.read().replace("\r\n", "\n")))
@@ -1844,6 +1930,8 @@ def main(argv) -> int:
             if os.path.exists(path):
                 with open(path, encoding="utf-8", newline="") as f:
                     old = f.read().replace("\r\n", "\n")
+            if path in seeded_assets() and old is not None:
+                continue   # a tuning asset: seeded once, its numbers are the Vessel Studio window's
             if old != text:
                 write(path, text)
                 print(f"stage 4: wrote {os.path.relpath(path, ROOT)}")

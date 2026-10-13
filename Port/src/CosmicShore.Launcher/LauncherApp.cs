@@ -24,7 +24,7 @@ namespace CosmicShore.Launcher
     /// </summary>
     public sealed partial class LauncherApp
     {
-        enum Page { Play, Build, Project, Chat, Options, Console, Tracks, Board, Git, Editor, Time }
+        enum Page { Play, Build, Project, Chat, Options, Console, Tracks, Board, Git, Editor, Time, Net, Studios }
 
         public sealed record Args(string? Screenshot, int Frames, string? Page, bool Offline, string? Auto = null, string? UpdatedFrom = null, int Tour = -1, string? ClonePathArg = null);
 
@@ -84,6 +84,8 @@ namespace CosmicShore.Launcher
             if (pageArg is { Length: > 1 } && int.TryParse(pageArg[1], out var tab)) { _projTab = tab; _edTab = tab; }
             if (pageArg is { Length: > 2 }) _edOpen = string.Join(":", pageArg.Skip(2)); // --page editor:1:Assets/x.asset opens that file (docs screenshots)
             if (pageArg is { Length: > 1 } && pageArg[1] == "usage") _usageOpen = true; // --page chat:usage (docs screenshots)
+            else if (pageArg is { Length: > 1 } && _page == Page.Studios && pageArg[1] == "artifacts") _artScrollFrames = 10; // --page studios:artifacts
+            else if (pageArg is { Length: > 1 } && _page == Page.Studios) _studioOpenAtStart = pageArg[1]; // --page studios:hub|stoat (Unity's Vessel Studio)
             else if (pageArg is { Length: > 1 }) { _open.Clear(); _open.Add(pageArg[1].ToUpperInvariant()); } // --page options:claude
             if (LauncherSettings.FirstRun) DetectExistingClone();
             for (int i = 0; i < _stars.Length; i++) _stars[i] = NewStar(randomDepth: true);
@@ -155,7 +157,7 @@ namespace CosmicShore.Launcher
                 Neon.Heading = io.Fonts.AddFontFromFileTTF(Font("Aldrich-Regular.ttf"), 24);
                 Neon.Title = io.Fonts.AddFontFromFileTTF(Font("Aldrich-Regular.ttf"), 30);
                 Neon.Hero = io.Fonts.AddFontFromFileTTF(Font("Aldrich-Regular.ttf"), 46);
-                Neon.Mono = io.Fonts.AddFontFromFileTTF(Font("RobotoMono-Regular.ttf"), 15);
+                Neon.Mono = io.Fonts.AddFontFromFileTTF(Font("RobotoMono-Regular.ttf"), 15, null, ranges);   // the studio cards' spec rows: – × ·
                 unsafe { io.NativePtr->FontDefault = Neon.Body.NativePtr; }
             });
             Neon.ApplyStyle();
@@ -171,6 +173,7 @@ namespace CosmicShore.Launcher
                 _toolsScanned = true;
                 _jobs.RefreshLocalState();
                 if (!_args.Offline) _jobs.LoadBranches();
+                ReportBoardLoad();
                 IngestSessions(notify: true); // runs that ended while Amoebius was closed are news too
                 RunDoctor();
                 // Only LOOK for a newer launcher; installing it is the user's call (UPDATE).
@@ -266,6 +269,7 @@ namespace CosmicShore.Launcher
             _imgui.Render();
 
             SaveProjectIfDirty(dt);
+            PollBoard(dt);
             _saveTimer += dt;
             if (_dirty && _saveTimer > 0.75) { _s.Save(); _dirty = false; _saveTimer = 0; }
 
@@ -307,6 +311,8 @@ namespace CosmicShore.Launcher
                 case Page.Git: DrawGit(contentA, contentB); break;
                 case Page.Editor: DrawEditor(contentA, contentB); break;
                 case Page.Time: DrawTime(contentA, contentB); break;
+                case Page.Studios: DrawStudios(contentA, contentB); break;
+                case Page.Net: DrawNet(contentA, contentB); break;
             }
             DrawStatusBar(size);
             ImGui.End();
@@ -410,7 +416,9 @@ namespace CosmicShore.Launcher
                 (Page.Chat, "AGENT", Neon.IconChat),
                 (Page.Git, "GIT", IconBranch),
                 (Page.Editor, "EDITOR", IconCube),
+                (Page.Studios, "VESSEL\nSTUDIO", IconStudio),
                 (Page.Time, "TIME", IconClock),
+                (Page.Net, "NET", IconNet),
                 (Page.Tracks, "TRACKS", IconTracks),
                 (Page.Board, "BOARD", IconBoard),
                 (Page.Options, "SETTINGS", Neon.IconGear),
@@ -442,7 +450,7 @@ namespace CosmicShore.Launcher
                 ImGui.PushFont(Neon.Small);
                 float tw = ImGui.CalcTextSize(it.name).X;
                 ImGui.PopFont();
-                dl.AddText(Neon.Small, 11, new Vector2((a.X + b.X - tw * 11f / 14f) * 0.5f, a.Y + 38), Neon.U(col), it.name);
+                dl.AddText(Neon.Small, 11, new Vector2((a.X + b.X - tw * 11f / 14f) * 0.5f, a.Y + (it.name.Contains('\n') ? 33 : 38)), Neon.U(col), it.name);   // a two-line name sits higher
                 int badge = RailBadge(it.page);
                 if (badge > 0 && !on)
                 {
@@ -554,7 +562,8 @@ namespace CosmicShore.Launcher
             Neon.Tooltip("Update: fetch the branch without starting");
             ImGui.SameLine(0, 8);
             if (Neon.IconButton("ws", Neon.IconFolder, 40, _ws.Exists)) OpenFolder(_ws.Dir);
-            Neon.Tooltip("Open the workspace folder");
+            Neon.Tooltip(_ws.Exists ? "Open the workspace folder: " + _ws.Dir
+                : "No workspace yet: Amoebius plays from its own copy of the repo, made the first time you press START.");
 
             // pipeline, only while launching
             if (_jobs.Busy && _jobs.JobName == "Start game") DrawPipeline(dl, new Vector2(x0, y + 62), colW);

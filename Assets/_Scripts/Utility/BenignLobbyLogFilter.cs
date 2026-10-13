@@ -11,7 +11,7 @@ namespace CosmicShore.Utility
     ///
     /// The SDK throws, catches, and logs this on its own event task
     /// (<c>LobbyChannel.HandleLobbyChanges</c>) before any of our awaits, so it cannot be
-    /// try/caught the way HostConnectionService.IsBenignLobbyPatcherError handles the same error
+    /// try/caught the way HostConnectionService's refresh catches handle the same error
     /// on its own refresh path. It reaches Unity through the <c>LogFormat</c> route
     /// (Debug.LogError / unityLogger.Log(LogType.Exception, e)) - NOT <c>LogException</c> - so we
     /// decorate Unity's global <see cref="ILogHandler"/> and drop the signature on both overrides;
@@ -40,7 +40,7 @@ namespace CosmicShore.Utility
 
             public void LogException(Exception exception, UnityEngine.Object context)
             {
-                if (IsBenignLobbyPatcherError(exception)) return;
+                if (UgsRequestPolicy.IsLobbyPatcherStaleIndex(exception)) return;
                 _inner.LogException(exception, context);
             }
 
@@ -55,19 +55,11 @@ namespace CosmicShore.Utility
                 _inner.LogFormat(logType, context, format, args);
             }
 
-            // Mirrors HostConnectionService.IsBenignLobbyPatcherError: an ArgumentOutOfRangeException
-            // whose stack passes through LobbyPatcher is unambiguously the SDK's stale-index patch.
-            // Our own code never calls LobbyPatcher, so the false-positive risk is nil.
-            private static bool IsBenignLobbyPatcherError(Exception e)
-            {
-                for (var current = e; current != null; current = current.InnerException)
-                {
-                    if (current is ArgumentOutOfRangeException
-                        && (current.StackTrace?.Contains("LobbyPatcher") ?? false))
-                        return true;
-                }
-                return false;
-            }
+            // The LobbyPatcher rule is UgsRequestPolicy.IsLobbyPatcherStaleIndex - the same test the
+            // refresh catches read through UgsRequestPolicy.Classify, so the console and the retry
+            // layer can never disagree about which exception is the SDK's stale-index patch. This
+            // filter deliberately keeps that NARROW rule rather than the whole Benign class: it
+            // decides what the console shows, and only the one shape has ever spammed it.
 
             // The SDK conveys the exception either as an Exception argument or pre-rendered into
             // the message string (whose ToString() carries the LobbyPatcher throw stack). Cover both.
@@ -76,7 +68,7 @@ namespace CosmicShore.Utility
                 if (args != null)
                 {
                     foreach (var a in args)
-                        if (a is Exception ex && IsBenignLobbyPatcherError(ex))
+                        if (a is Exception ex && UgsRequestPolicy.IsLobbyPatcherStaleIndex(ex))
                             return true;
                 }
 

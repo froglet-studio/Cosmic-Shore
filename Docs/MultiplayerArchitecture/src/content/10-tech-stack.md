@@ -11,7 +11,7 @@ Reflex for dependency injection.
 | Concern | Technology |
 |---|---|
 | Engine / pipeline | Unity 6 + URP 17.0.4 |
-| Replication | Unity **Netcode for GameObjects 2.5.0** |
+| Replication | Unity **Netcode for GameObjects 2.13.3** |
 | Sessions / Lobby / Relay / Friends / Auth | **Unity Gaming Services** (Multiplayer SDK) |
 | Async | **UniTask** (`com.cysharp.unitask`) — with the project's `.AsMainThread()` boundary helper |
 | Dependency injection | **Reflex 14.1.0** — `AppManager` is the root installer |
