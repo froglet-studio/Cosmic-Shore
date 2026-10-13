@@ -1,6 +1,6 @@
 # Omni Motion Lab
 
-A browser lab for the next round of the omni crystal's element effects (round 2: the squares glide; the Wandering arc). It covers four asks:
+A browser lab for the next round of the omni crystal's element effects (round 3: hop clear for Space and Time, bolder Mass that rises while hidden, the Wandering arc in the seams between the Charge blooms). It covers four asks:
 
 1. **Mass:** the triangle prisms seal fully once they cross into the camera's visible hemisphere.
 2. **Space:** the squares make two moves per loop instead of three. The two triangle steps become one smooth move.
@@ -14,6 +14,80 @@ The lab has styles, sliders for each ask, a beat timeline and a side-by-side omn
 - **Data:** the same block as the Omni Combine Lab, stamped into both pages by `python3 Tools/Build/omni_combine_lab_assets.py`. `--check` fails if either page is stale. The omni prism thickness is imported from `author_omni_crystal_triangles.DEPTH_THICKNESS`.
 - **Verify:** `node .claude/skills/labmaker/verify_lab.cjs Docs/Studios/OmniMotionLab.html`
 - **Hooks:** `window.__lab.runFullBatch()`, `runChargeBatch()`, `clipTimeline(p)`, `clipSelfTest()`, `beatsOf(p)`, `squaresAt(p, t)`, `wavesAt(p, t)`, `sealOf(p, D)`
+
+## Round 3 (2026-10-13): hop clear for Space and Time, bolder Mass, the arc in the seams
+
+The designer, after round 2:
+- "Rigid arc that hop clear is great. Only use that one for the rhombuses and the squares (Time and Space)."
+- "For Mass, sealing up once reaching the hemisphere hides the clipping very well, but it makes Mass more subtle. Let's increase how far out they go and how many of them are out, so we can see more coming in and notice them better."
+- "For Charge, the wandering arc is good, but it shouldn't run along edges. It should run in the space between the petal blooms (only the three short sides, never the longer side of the petals, so it never reaches the penta junction). It should never circle a petal. The arc should look more like the chain lightning arc, not a travelling light. When it dissipates it should be a smooth transition, not a sharp branching."
+
+**Space and Time.** "Rigid arcs that hop clear" (round 2's numbers) is the base of every round-3 style. Glide, low hop, the keys, rounded keys, the round-2 arc and four beats move to an **Archive** group on the Styles tab, superseded rather than deleted.
+
+**Mass: what capped "more out".**
+- Taller columns alone barely changed how many prisms you can see standing out: about 2 at a time, round 2 or 3× high.
+- The shipped ratchet holds a prism that is moving away sealed until it is deep behind (the reseat), so only the approaching quarter of the crystal is ever out.
+- Taller columns need a deeper reseat to stay hidden (a top at height h clears the silhouette while √(1 − d²) > 1/h), which cuts the count further.
+
+**New: rise while hidden** (Triangles tab, lab).
+- A prism may climb its column, at up to *Hidden rise rate* column-heights a second, whenever its column top at the new place is hidden behind the body. It is never seen rising.
+- Every hidden prism is then out, and the ones coming round the edge come in from the top.
+- Reseats become a fallback (reseat at −0.97).
+- In the game this is one ray-sphere test per column per frame in `CrystalDepthPrisms`, plus two profile fields.
+- Also new as sliders: *Column height* (`_Reach`) and *Size at the top* (`_PlateScaleStart`).
+
+**Scorecard columns added** (near 6.5 radii / far 25 radii):
+- *Prisms out, seen*: how many prisms stand out with their column top in view.
+- *Height seen*: their total height out, in plate radii, which is how far out × how many.
+- *Rises seen %*: must be 0.
+- *Reseats seen %*.
+- A planted control, "rise anywhere", lets prisms climb in plain view. It reads 100% rises seen, so the check is live.
+
+Sweep at the round-2 square settings, 40 s orbit (height seen near / far):
+
+| | descent from −0.88 | from −0.5 | from −0.25 |
+|---|---|---|---|
+| shipped ratchet, height 2 (round 2) | 1.19 / 1.28 | | |
+| rise while hidden, height 2 | 1.71 | 2.42 | 2.83 |
+| rise while hidden, height 3 | 3.74 | 4.94 | **5.67 / 5.31** |
+| rise while hidden, height 3.5 | 4.67 | 6.11 | 6.97 / 6.32 |
+
+No rise or reseat is seen anywhere in that sweep. A later descent (from −0.25) keeps the approaching prisms at the top until they are nearly round the edge, so you watch them come in.
+
+**Round-3 styles** (`runFullBatch`, deterministic):
+
+| Style | Overlap % | Visible clips % | Raised in view % | Prisms out, seen | Height seen | Rises / reseats seen |
+|---|---|---|---|---|---|---|
+| Shipped today | 86.9 | 66.7 | 100 | 10.7 / 11.2 (mostly the visible side, not flush) | 4.46 / 4.76 | 0 / 0 |
+| Round 2 pick: hop clear | 0 | 1.2 | 0 | 3 / 2.9 | 1.49 / 1.52 | 0 / 0 |
+| **Round 3** (height 3, top size 0.6, descent from −0.25, rise while hidden, seam arc) | 0 | 1.8 | 0 | **4.6 / 4.2** | **7.35 / 7.22** | 0 / 0 |
+| Round 3, Mass bolder (height 3.5, top size 0.75) | 0 | 5.4 | 0 | 4.8 / 4.2 | 9.32 / 8.89 | 0 / 0 |
+| Round 3 + a Charge beat | 0 | 0.6 | 0 | 4.6 / 4.2 | 7.35 / 7.22 | 0 / 0 |
+| Control: rise anywhere | 0 | 4.8 | 0 | 9.5 / 8.9 | 16.1 / 15.9 | **100** / 0 |
+
+The remaining clips are all Mass×Space at the limb, where a hopping square meets a prism standing out; they rise with column height.
+
+**Charge: the Wandering arc, rebuilt.**
+- **Where it runs:** a bloom is one Charge site (a pentagon on the omni, a five-petal flower on the Charge crystal). The seams between the 12 blooms form a dodecahedral net: 20 junctions where three blooms meet, 30 seams where two do.
+  - Each seam is traced in the gap between the two blooms' outlines, built from the petals' **short sides only**: 180 on the Charge crystal, 60 petals × 3. The long sides run in to the pentagon junction and are never used.
+  - The bolt sits 0.04 R above the outline.
+- **One journey:**
+  - a strike from the core up through a junction;
+  - then a random walk of 1 to (2 + 5 × Motion) seams, never straight back, and never a fifth seam round one bloom (that would circle it);
+  - each seam is struck in 0.07 s and holds 0.1–0.28 s, flickering and re-kinking about 18 times a second like Chain lightning;
+  - then an escape straight out from the last junction.
+- **Dissipation:** no branches. The whole bolt fades on a smooth curve over 0.9 s while it widens (×3.5), straightens (its kink drops 80%) and drifts outward, with a soft glow that grows and fades.
+- **Light:** petals beside the bolt glow by how near it runs to their short sides and how fresh that stretch is. On the omni, the falloff reaches across the squares between pentagons. Nothing moves; travel and clips are 0.
+- `seamFacts()`: 20 junctions and 30 seams on all three subjects.
+
+**Checked:**
+- `verify_lab.cjs` PASS.
+- `runFullBatch` byte-identical twice, and the planted rise control fires.
+- Contact sheets read for one journey on both subjects and close up on the Charge crystal: lit Y-junctions in the seams between blooms, and the escape fading out.
+
+**Not modelled (new):** "hidden" treats the body as a sphere. The real body has gaps, so a rise could show through one. The game's test should use the same ray-sphere, and play-testing should look for it.
+
+**Decision needed (designer):** column height (3 or 3.5), descent start, top size; the arc's speed, its number of seams, and whether it gets the Charge beat.
 
 ## Round 2 (2026-10-13): the squares glide, and the Wandering arc
 

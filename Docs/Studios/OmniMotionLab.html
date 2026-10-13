@@ -150,7 +150,7 @@
   // SHIPPED holds what the game does today; every key names where it came from. Keys prefixed by nothing but
   // marked "lab:" are proposals this lab adds; their SHIPPED value is the setting that reproduces today's game
   // (e.g. cadence 0 = the squares and the rhombi on their own clocks, as they ship).
-  const LAB = { name: 'Omni Motion Lab', branch: 'cece/sharp-fermi-yw38ky', round: 2, doc: 'Docs/Studios/OMNI_MOTION_LAB.md' };
+  const LAB = { name: 'Omni Motion Lab', branch: 'cece/sharp-fermi-yw38ky', round: 3, doc: 'Docs/Studios/OMNI_MOTION_LAB.md' };
   const FX = A.omniFx, ARC = FX.arcs, FLIP = FX.flip;
   const SHIPPED = {
     // ---- Mass: the triangle prisms (CrystalDepthPrismProfile.asset, OmniDepthPrisms.mat) ----
@@ -161,7 +161,11 @@
     depthFade: 0.6,               // CrystalDepthPrismProfile.reseatFadeSeconds
     triSealMode: 0,               // lab: 0 = seal at depthSeal as authored; 1 = seal at the camera's horizon (the visible hemisphere's edge)
     triMargin: 0.05,              // lab: with triSealMode 1, seal this much depth BEFORE the horizon
+    depthRise: 0,                 // lab: 1 = a prism may also climb its column while its column top is hidden by the body (never seen rising)
+    depthRiseRate: 1.5,           // lab: how fast a hidden prism climbs, in column-heights per second
     faceSplit: FX.depth.omni.faceSplit, // OmniDepthPrisms.mat _FaceSplit
+    depthReach: FX.depth.omni.reach,      // OmniDepthPrisms.mat _Reach: the top of a column, x the plate's own radius
+    depthSizeStart: FX.depth.omni.sizeStart, // OmniDepthPrisms.mat _PlateScaleStart: a prism's size at the top of its column
     thickness: FX.depth.omni.thickness, // author_omni_crystal_triangles.py DEPTH_THICKNESS (baked into the prism mesh, grows inward)
     // ---- Space: the squares (OmniSpaceSquares.asset <- CrystalsRaw_V2.blend Action.008) ----
     cadence: 0,                   // lab: 0 = shipped clocks (squares' 4.8 s art loop, Time's 2 s wave, independent); 1 = interleaved beats; 2 = two-move squares but Time on its own clock (control)
@@ -220,7 +224,7 @@
     { id: 'strike', name: 'Strike', fam: 'bolts', needs: ['bolts', 'bones'], blurb: 'Branching bolts come in from outside and strike pentagons, which are pressed in, flash, and crackle along their edges before they spring back.' },
     { id: 'web', name: 'Arc web', fam: 'bolts', needs: ['bolts'], blurb: 'Every pair of neighbouring pentagons is joined by a flickering arc between their nearest corners, netting the crystal in lightning; the pentagons breathe.' },
     { id: 'core', name: 'Tesla core', fam: 'field', needs: ['sprites', 'bolts', 'bones'], blurb: 'A glowing core inside the crystal fires bolts out through the pentagons into space; each pentagon kicks out as a bolt passes through it.' },
-    { id: 'journey', name: 'Wandering arc', fam: 'bolts', needs: ['bolts', 'sprites', 'shader'], blurb: 'Round 2, the designer\'s brief: ONE bolt leaves the core, traces the rim of a petal, arcs to another petal and traces that, a random number of times, then escapes outward like a lightning rod and branches into a fading radial spray, and a new one starts. Nothing moves: the petals light where the bolt has just been, and their neighbours catch some of it. Motion = how many hops it may make; Bolts = how many branches it dissipates into; Rate = its speed.' },
+    { id: 'journey', name: 'Wandering arc', fam: 'bolts', needs: ['bolts', 'sprites', 'shader'], blurb: 'Round 3: ONE bolt strikes up from the core through a gap, then crawls the seams BETWEEN the blooms (along the petals\' short sides only, never toward a pentagon\'s centre, never round a petal), seam by seam like chain lightning, a random number of times. Then it escapes straight out and softens, widens and fades away. Nothing moves: the petals beside the bolt light up. Motion = how many seams it may cross; Rate = its speed; Bolts = brightness.' },
   ];
   const SPEC = [
     ['Triangles', 'triSealMode', 0, 1, 1, 'Seal at the horizon', '0: as shipped, a prism is only fully seated at sealDepth (1 = facing the camera dead on), so prisms you can see are partly out of their holes. 1: seal once the prism\'s plate crosses into the camera\'s visible hemisphere (its horizon, r / D, which perspective puts slightly past 90 degrees), so every prism you can see is flush.'],
@@ -230,6 +234,10 @@
     ['Triangles', 'depthPower', 0.3, 3, 0.05, 'Profile curve', 'CrystalDepthPrismProfile.profilePower: the smoothstep is raised to this power.'],
     ['Triangles', 'depthSwap', -1, -0.5, 0.01, 'Reseat behind', 'CrystalDepthPrismProfile.reseatDepth: a prism going away reseats at the top of its column once it is this far behind.'],
     ['Triangles', 'depthFade', 0.05, 2, 0.05, 'Reseat fade (s)', 'CrystalDepthPrismProfile.reseatFadeSeconds.'],
+    ['Triangles', 'depthRise', 0, 1, 1, 'Rise while hidden', 'Lab: 0 = the shipped ratchet (a prism going away stays sealed until it is deep enough behind to reseat). 1 = a prism may also climb its column whenever its column top is hidden behind the body, so it is never seen rising. Every hidden prism is then out, and the ones coming round the edge come in from the top.'],
+    ['Triangles', 'depthRiseRate', 0.2, 6, 0.1, 'Hidden rise rate', 'Rise while hidden: column-heights per second a hidden prism climbs.'],
+    ['Triangles', 'depthReach', 1.2, 4, 0.05, 'Column height', 'OmniDepthPrisms.mat _Reach: how far out the top of a column stands, x the plate\'s radius. Higher reads from further away, and needs a deeper reseat to stay hidden (a column top clears the silhouette while sqrt(1 - d^2) > 1 / height).'],
+    ['Triangles', 'depthSizeStart', 0.2, 1, 0.05, 'Size at the top', 'OmniDepthPrisms.mat _PlateScaleStart: a prism\'s size at the top of its column (it grows to full size as it seals).'],
     ['Triangles', 'faceSplit', 0, 1, 0.05, 'Face split', 'OmniDepthPrisms.mat _FaceSplit: the faces part by this x the plate radius at the top of the column.'],
     ['Triangles', 'thickness', 1, 10, 0.25, 'Thickness', 'The omni prism mesh\'s thickness (author_omni_crystal_triangles.py, grows inward from the top face).'],
     ['Cadence', 'cadence', 0, 2, 1, 'Cadence', '0: as shipped - the squares loop their three moves every 4.8 s and the rhombi flip a wave every 2 s, on separate clocks, so they often move at once. 1: interleaved beats - squares (pentagon turn), Time wave, squares (triangle turn), Time wave - and nothing moves while another moves. 2 (control): the squares\' two moves, but Time keeps its own clock.'],
@@ -265,17 +273,25 @@
   ];
 
   const PROPOSAL = { triSealMode: 1, cadence: 1, sqTriDur: 2.4, triPath: 0 };
+  // Round 3's base: the designer's round-2 pick for Space and Time ("rigid arcs that hop clear"), bolder Mass, the seam arc.
+  const HOP_CLEAR = { pentPath: 1, triPath: 2, sqEase: 0, sqHop: 0, pentLift: 0.14, triLift: 1.5, triSide: 1.5 };
+  const R3 = Object.assign({}, PROPOSAL, HOP_CLEAR, { depthRise: 1, depthReach: 3, depthOpen: -0.25, depthSizeStart: 0.6, depthSwap: -0.97, chMode: 18 });
   const STYLES = [
     { id: 'shipped', name: 'Shipped today', blurb: 'The game as it is: prisms seal only when facing you, the squares move three times on their 4.8 s loop and the rhombi flip every 2 s on their own clock, the pentagons crawl.', v: {} },
-    { id: 'p1', name: 'Proposal: the brief, as keys', blurb: 'Prisms flush in the visible hemisphere; the squares make two moves (the art file\'s keys, the triangle move as one 2.4 s ease); a Time wave plays in each stop; nothing moves at once.', v: PROPOSAL },
-    { id: 'p2', name: 'Proposal: rigid arcs that hop clear', blurb: 'Each square turns as a rigid body (72 degrees round the pentagon, 120 degrees round the triangle) with a no-jolt ease, and hops just enough to clear every neighbour: 0.14 R on the pentagon turn, 1.5x the art file\'s Step1 lift with 1.5x its sideways step on the triangle turn. The hop reads as the square growing.', v: Object.assign({}, PROPOSAL, { pentPath: 1, triPath: 2, sqEase: 0, sqHop: 0, pentLift: 0.14, triLift: 1.5, triSide: 1.5 }) },
-    { id: 'glide', name: 'Proposal: glide (round 2)', blurb: 'Round 2: each square glides to the next place as one rigid turn ON the shell, with a no-jolt ease. It never changes size or distance from the centre. The cost: its edges slide about 2% R into the neighbours it passes, mostly under its own top face.', v: Object.assign({}, PROPOSAL, { pentPath: 1, triPath: 2, sqEase: 0, sqHop: 0, pentLift: 0, triLift: 0, triSide: 0 }) },
-    { id: 'lowhop', name: 'Proposal: low hop (round 2)', blurb: 'Between the two: half the clearing hop (0.07 R round the pentagon; the art file\'s Step1 lift and sideways step round the triangle). Fewer and shallower grazes, less growth.', v: Object.assign({}, PROPOSAL, { pentPath: 1, triPath: 2, sqEase: 0, sqHop: 0, pentLift: 0.07, triLift: 0.75, triSide: 1 }) },
-    { id: 'p3', name: 'Proposal: rounded keys', blurb: 'The art file\'s keys with Step2 overlapping Step1 by half, which rounds the corner at Step1 without new frames.', v: Object.assign({}, PROPOSAL, { triPath: 1, triOverlap: 0.5 }) },
-    { id: 'p5', name: 'Proposal: glide + wandering arc', blurb: 'The glide, with the round-2 Charge effect: one bolt from the core wanders petal to petal, tracing each rim, then escapes and sprays out. No petal moves.', v: Object.assign({}, PROPOSAL, { pentPath: 1, triPath: 2, sqEase: 0, pentLift: 0, triLift: 0, triSide: 0, chMode: 18 }) },
-    { id: 'p4', name: 'Proposal: four beats', blurb: 'Rigid arcs that hop clear, plus a Charge beat: the pentagons click (Stepper) only in their own slot, so all three clocked elements take turns.', v: Object.assign({}, PROPOSAL, { pentPath: 1, triPath: 2, sqEase: 0, pentLift: 0.14, triLift: 1.5, triSide: 1.5, chSlot: 1, chMode: 3, chStagger: 0.3 }) },
+    { id: 'r3', name: 'Round 3: hop clear, bolder Mass, seam arc', blurb: 'The designer\'s round-2 pick for Space and Time (rigid arcs that hop clear, a Time wave in each stop). Mass: columns 3x the plate radius, prisms climb back up whenever their column top is hidden (never seen rising), and descend late, from d = -0.25 to the horizon, so you see them come in. Charge: the Wandering arc, crawling the seams between the blooms.', v: R3 },
+    { id: 'r3-bold', name: 'Round 3, Mass bolder', blurb: 'Round 3 with columns 3.5x and bigger prisms at the top (0.75).', v: Object.assign({}, R3, { depthReach: 3.5, depthSizeStart: 0.75 }) },
+    { id: 'r3-mass2', name: 'Round 3 with round-2 Mass', blurb: 'Round 3, but Mass as round 2 had it (columns 2x, the shipped ratchet, descent from -0.88): the subtler look, to compare.', v: Object.assign({}, R3, { depthRise: 0, depthReach: 2, depthOpen: -0.88, depthSizeStart: 0.5, depthSwap: -0.87 }) },
+    { id: 'r3-beat', name: 'Round 3 + a Charge beat', blurb: 'Round 3 with the Charge beat on: one arc journey per beat, after the second Time wave.', v: Object.assign({}, R3, { chSlot: 1, chSlotDur: 2.4 }) },
+    { archive: true, id: 'p1', name: 'Proposal: the brief, as keys', blurb: 'Prisms flush in the visible hemisphere; the squares make two moves (the art file\'s keys, the triangle move as one 2.4 s ease); a Time wave plays in each stop; nothing moves at once.', v: PROPOSAL },
+    { id: 'p2', name: 'Round 2 pick: rigid arcs that hop clear', blurb: 'Each square turns as a rigid body (72 degrees round the pentagon, 120 degrees round the triangle) with a no-jolt ease, and hops just enough to clear every neighbour: 0.14 R on the pentagon turn, 1.5x the art file\'s Step1 lift with 1.5x its sideways step on the triangle turn. The hop reads as the square growing.', v: Object.assign({}, PROPOSAL, { pentPath: 1, triPath: 2, sqEase: 0, sqHop: 0, pentLift: 0.14, triLift: 1.5, triSide: 1.5 }) },
+    { archive: true, id: 'glide', name: 'Proposal: glide (round 2)', blurb: 'Round 2: each square glides to the next place as one rigid turn ON the shell, with a no-jolt ease. It never changes size or distance from the centre. The cost: its edges slide about 2% R into the neighbours it passes, mostly under its own top face.', v: Object.assign({}, PROPOSAL, { pentPath: 1, triPath: 2, sqEase: 0, sqHop: 0, pentLift: 0, triLift: 0, triSide: 0 }) },
+    { archive: true, id: 'lowhop', name: 'Proposal: low hop (round 2)', blurb: 'Between the two: half the clearing hop (0.07 R round the pentagon; the art file\'s Step1 lift and sideways step round the triangle). Fewer and shallower grazes, less growth.', v: Object.assign({}, PROPOSAL, { pentPath: 1, triPath: 2, sqEase: 0, sqHop: 0, pentLift: 0.07, triLift: 0.75, triSide: 1 }) },
+    { archive: true, id: 'p3', name: 'Proposal: rounded keys', blurb: 'The art file\'s keys with Step2 overlapping Step1 by half, which rounds the corner at Step1 without new frames.', v: Object.assign({}, PROPOSAL, { triPath: 1, triOverlap: 0.5 }) },
+    { archive: true, id: 'p5', name: 'Proposal: glide + wandering arc', blurb: 'The glide, with the round-2 Charge effect: one bolt from the core wanders petal to petal, tracing each rim, then escapes and sprays out. No petal moves.', v: Object.assign({}, PROPOSAL, { pentPath: 1, triPath: 2, sqEase: 0, pentLift: 0, triLift: 0, triSide: 0, chMode: 18 }) },
+    { archive: true, id: 'p4', name: 'Proposal: four beats', blurb: 'Rigid arcs that hop clear, plus a Charge beat: the pentagons click (Stepper) only in their own slot, so all three clocked elements take turns.', v: Object.assign({}, PROPOSAL, { pentPath: 1, triPath: 2, sqEase: 0, pentLift: 0.14, triLift: 1.5, triSide: 1.5, chSlot: 1, chMode: 3, chStagger: 0.3 }) },
     { id: 'ctl-clock', name: 'Control: two moves, Time on its own clock', control: true, blurb: 'The squares\' two moves, but the waves keep the shipped 2 s clock. Overlap must come back; if it does not, the scorecard is blind.', v: Object.assign({}, PROPOSAL, { cadence: 2 }) },
     { id: 'ctl-gap', name: 'Control: beats overlap', control: true, blurb: 'Cadence 1 with a gap of -0.5 s, so every beat starts before the last one ends. Overlap must be non-zero.', v: Object.assign({}, PROPOSAL, { gap: -0.5 }) },
+    { id: 'ctl-rise', name: 'Control: rise anywhere', control: true, blurb: 'Round 3, but prisms may climb their columns even in plain view (a planted defect). Rises seen must come back above 0, or the check is blind.', v: Object.assign({}, R3, { depthRise: 2 }) },
   ];
 
   const LS_KEY = 'lab:' + LAB.name + ':r1:P';
@@ -515,7 +531,9 @@
   const sealOf = (p, D) => (p.triSealMode > 0.5 ? Math.min(0.999, PLATE_R / Math.max(D, PLATE_R * 1.01) - p.triMargin) : p.depthSeal);
   const seatAt = (p, d, seal) => { const e = clamp01((d - p.depthOpen) / Math.max(seal - p.depthOpen, 1e-3)); return Math.pow(e * e * (3 - 2 * e), p.depthPower); };
   function depthStep(p, st, t, eyeLocal) {
-    const D = len(eyeLocal), c = unit(eyeLocal), seal = sealOf(p, D), key = [p.depthOpen, p.depthSeal, p.depthPower, p.depthSwap, p.depthFade, p.triSealMode, p.triMargin].join();
+    const D = len(eyeLocal), c = unit(eyeLocal), seal = sealOf(p, D), key = [p.depthOpen, p.depthSeal, p.depthPower, p.depthSwap, p.depthFade, p.triSealMode, p.triMargin, p.depthReach, p.depthSizeStart, p.depthRise, p.depthRiseRate].join();
+    // is the column top of plate pl, with its prism at place u, hidden behind the body from this camera?
+    st.hide = (pl, u) => hiddenBehindBody(columnTop(p, pl, u), eyeLocal);
     const n = IDS.Mass.length;
     if (!st.u || st.key !== key || !(t >= st.t) || t - st.t > 2) { st.u = new Float32Array(n); st.x = new Float32Array(n).fill(1); st.old = new Float32Array(n).fill(1); st.t = t; st.fresh = true; st.key = key; }
     const dt = t - st.t;
@@ -525,14 +543,16 @@
       if (st.fresh) { st.u[j] = seat; st.x[j] = 1; }
       else if (st.x[j] < 1) { st.x[j] = Math.min(1, st.x[j] + dt / Math.max(p.depthFade, 1e-3)); st.u[j] = seat; }
       else if (seat >= st.u[j]) st.u[j] = seat;
-      else if (d < p.depthSwap) { st.old[j] = st.u[j]; st.x[j] = 0; st.u[j] = seat; }
+      else if (p.depthRise > 0.5 && st.hide && (p.depthRise > 1.5 || st.hide(OP[q], Math.max(seat, st.u[j] - p.depthRiseRate * dt)))) { st.u[j] = Math.max(seat, st.u[j] - p.depthRiseRate * dt); (st.rises || (st.rises = [])).push(j); }
+      else if (d < p.depthSwap) { st.old[j] = st.u[j]; st.x[j] = 0; st.u[j] = seat; (st.events || (st.events = [])).push(j); }
     });
     st.t = t; st.fresh = false; st.seal = seal;
     return st;
   }
   // One prism at column place u (0 top .. 1 sealed): thickness grows inward from the top face, size and lift by place.
+  const columnTop = (p, pl, u) => add(mul(pl.c, 1 + (p.depthReach - 1) * (1 - u)), mul(pl.dir, pl.topH * (p.depthSizeStart + (1 - p.depthSizeStart) * u)));
   function prismVertex(p, pl, b, u) {
-    const D = FX.depth.omni, local = sub(b, pl.c), ld = dot(local, pl.dir);
+    const D = { reach: p.depthReach, sizeStart: p.depthSizeStart }, local = sub(b, pl.c), ld = dot(local, pl.dir);
     const thick = add(local, mul(pl.dir, (ld - pl.topH) * (p.thickness - 1)));
     const size = D.sizeStart + (1 - D.sizeStart) * u;
     return add(mul(pl.c, 1 + (D.reach - 1) * (1 - u)), mul(thick, size));
@@ -734,62 +754,77 @@
     return out;
   }
 
-  // ---- the wandering arc (round 2) ----
-  // A journey is one bolt's whole life, built from a seeded stream per cycle: core -> a petal's rim, one lap of it,
-  // an arc to another petal (10-80 degrees away, never straight back), a lap of that ... then an escape outward along
-  // the last petal's normal and a branching radial spray that fades. Pure function of (cycle, knobs): nothing moves.
-  const JT = { core: 0.2, lap: 0.5, hop: 0.24, esc: 0.16, diss: 0.8, trail: 0.4, linger: 0.55 };
-  function journeyMembers(U) {
-    if (U.jm) return U.jm;
-    const ms = [];
-    U.sites.forEach((S) => S.members.forEach((m) => ms.push(m)));
-    for (const m of ms) {
-      const c = unit(m.pl.c);
-      m.jNext = ms.filter((o) => { if (o === m) return false; const a = Math.acos(Math.max(-1, Math.min(1, dot(c, unit(o.pl.c))))) * 180 / Math.PI; return a > 10 && a < 80; });
-      // the rim, just proud of the petal's outer edge so the bolt sits on it
-      m.rim = m.pl.outer.map((i) => { const v = v3(U.src, i); return add(add(v, mul(sub(v, m.pl.c), 0.04)), mul(m.pl.dir, 0.012 * U.R)); });
+  // ---- the wandering arc (round 3: it crawls the SEAMS between the blooms) ----
+  // A bloom is one Charge site (a pentagon on the omni, a five-petal flower on the Charge crystal). The seams between the 12
+  // blooms form a dodecahedral net: 20 junctions where three blooms meet, 30 seams where two do. Each seam is traced in
+  // the gap between the two blooms' outlines, and an outline is made of the petals' SHORT sides only (the three back edges;
+  // the two long sides run in to the pentagon junction and are never used). So the arc never touches a bloom's centre and
+  // never circles a petal.
+  // One journey: a strike from the core up through a junction, then a random walk along seams (never straight back, never
+  // a fifth seam round one bloom), each seam struck in a flash and held flickering like chain lightning, then an escape
+  // straight out that softens, widens and fades (no branches). Seeded per journey: same t, same picture.
+  const JT = { strike: 0.07, dwellMin: 0.1, dwellMax: 0.28, fade: 0.85, diss: 0.9, lift: 0.04 };
+  function seamNet(U) {
+    if (U.seam) return U.seam;
+    const R = U.R, S = U.sites;
+    // the outline of each bloom: its petals' short sides (for a whole pentagon, its five edges)
+    const outline = S.map((st) => {
+      const segs = [];
+      for (const m of st.members) {
+        const o = m.pl.outer, n = o.length;
+        let tip = -1;
+        if (U.kind !== 'solid') { let best = -2; o.forEach((i, k) => { const d = dot(unit(v3(U.src, i)), st.a); if (d > best) { best = d; tip = k; } }); }
+        m.back = [];
+        for (let k = 0; k < n; k++) {
+          if (tip >= 0 && (k === tip || (k + 1) % n === tip)) continue;   // a long side: it runs to the pentagon junction
+          const a = v3(U.src, o[k]), b = v3(U.src, o[(k + 1) % n]); segs.push([a, b]); m.back.push(lerp3(a, b, 0.5));
+        }
+      }
+      return segs;
+    });
+    const nearestOn = (segs, q) => { let best = null, bd = Infinity; for (const [a, b] of segs) { const ab = sub(b, a), u = clamp01(dot(sub(q, a), ab) / Math.max(1e-9, dot(ab, ab))), p = add(a, mul(ab, u)), d = len(sub(p, q)); if (d < bd) { bd = d; best = p; } } return best; };
+    const rOut = S.reduce((s, st, i) => s + outline[i].reduce((a, [p]) => a + len(p), 0) / outline[i].length, 0) / S.length;
+    // the point in the gap among a set of blooms, nearest direction q
+    const gapPoint = (sites, q) => { const pts = sites.map((s) => nearestOn(outline[s], mul(q, rOut))), m = mul(pts.reduce(add, [0, 0, 0]), 1 / pts.length); return mul(unit(m), Math.max(...pts.map(len)) + JT.lift * R); };
+    const tris = [];
+    for (let s = 0; s < 12; s++) for (const t of NB[s]) for (const u of NB[s]) if (s < t && t < u && NB[t].includes(u)) tris.push([s, t, u]);
+    const nodes = tris.map((tr) => ({ sites: tr, p: gapPoint(tr, unit(tr.map((s) => SITE_AXES[s]).reduce(add, [0, 0, 0]))), edges: [] }));
+    const edges = [];
+    for (let i = 0; i < nodes.length; i++) for (let j = i + 1; j < nodes.length; j++) {
+      const sh = nodes[i].sites.filter((s) => nodes[j].sites.includes(s)); if (sh.length !== 2) continue;
+      const pts = [nodes[i].p], a = unit(nodes[i].p), b = unit(nodes[j].p);
+      for (let k = 1; k < 8; k++) pts.push(gapPoint(sh, unit(lerp3(a, b, k / 8))));
+      pts.push(nodes[j].p);
+      const e = { a: i, b: j, sites: sh, pts }; edges.push(e); nodes[i].edges.push(e); nodes[j].edges.push(e);
     }
-    return (U.jm = ms);
+    return (U.seam = { nodes, edges, outline });
   }
-  const nearestOf = (pts, q) => { let best = 0, bd = Infinity; pts.forEach((v, i) => { const d = len(sub(v, q)); if (d < bd) { bd = d; best = i; } }); return best; };
   function buildJourney(U, p, k) {
-    const ms = journeyMembers(U), rnd = mulberry32((Math.imul(k + 1, 2654435761) ^ Math.imul(U.kind.length + 3, 40503)) >>> 0);
+    const net = seamNet(U), rnd = mulberry32((Math.imul(k + 1, 2654435761) ^ Math.imul(U.kind.length + 3, 40503)) >>> 0);
     const sp = 1 / Math.max(0.05, p.chRate), R = U.R;
-    const maxHops = Math.max(1, Math.round(2 + 5 * p.chAmp)), hops = Math.floor(rnd() * (maxHops + 1));
-    const nodes = [{ p: [0, 0, 0], t: 0, jag: 0.3 }]; let t = 0;
-    const push = (pt, dt, jag) => { t += dt; nodes.push({ p: pt, t, jag }); };
-    let m = ms[Math.floor(rnd() * ms.length)], prev = null, entry = Math.floor(rnd() * m.rim.length);
-    for (let q = 1; q <= 5; q++) push(lerp3([0, 0, 0], m.rim[entry], q / 5), JT.core * sp / 5, 0.35);
-    const visited = [m];
-    for (let h = 0; h <= hops; h++) {
-      let next = null;
-      if (h < hops) { const opts = m.jNext.filter((o) => o !== prev); next = opts.length ? opts[Math.floor(rnd() * opts.length)] : null; }
-      const n = m.rim.length, dir = rnd() < 0.5 ? 1 : -1;
-      const exit = next ? nearestOf(m.rim, next.pl.c) : entry;
-      const steps = n + (((exit - entry) * dir) % n + n) % n;
-      for (let q = 1; q <= steps; q++) push(m.rim[((entry + dir * q) % n + n) % n], JT.lap * sp / n, 0.12);
-      if (!next) break;
-      const a = m.rim[exit], nEntry = nearestOf(next.rim, a), b = next.rim[nEntry], ang = Math.acos(Math.max(-1, Math.min(1, dot(unit(a), unit(b)))));
-      for (let q = 1; q <= 8; q++) { const u = q / 8; push(mul(unit(lerp3(unit(a), unit(b), u)), (len(a) + (len(b) - len(a)) * u) * (1 + 0.14 * Math.sin(Math.PI * u))), JT.hop * sp * Math.max(0.5, ang / (Math.PI / 3)) / 8, 0.35); }
-      prev = m; m = next; entry = nEntry; visited.push(m);
+    const maxHops = Math.max(1, Math.round(2 + 5 * p.chAmp)), legs = 1 + Math.floor(rnd() * maxHops);
+    const nodes = [{ p: [0, 0, 0], t: 0 }]; let t = 0;
+    // strike a polyline: its points arrive over JT.strike, then the bolt holds for a dwell
+    const strike = (pts, jag) => { const d = JT.strike * sp / pts.length; for (const q of pts) { t += d; nodes.push({ p: q, t, jag }); } t += (JT.dwellMin + (JT.dwellMax - JT.dwellMin) * rnd()) * sp; };
+    let at = Math.floor(rnd() * net.nodes.length);
+    strike([0.25, 0.5, 0.75, 1].map((u) => mul(net.nodes[at].p, u)), 0.45);   // from the core, out through a junction
+    let prev = null; const recent = [];
+    for (let leg = 0; leg < legs; leg++) {
+      let opts = net.nodes[at].edges.filter((e) => e !== prev);
+      // never a fifth seam round one bloom (that would circle it)
+      if (recent.length >= 4) { const common = recent[0].sites.filter((s) => recent.every((e) => e.sites.includes(s))); opts = opts.filter((e) => !e.sites.some((s) => common.includes(s))) ; if (!opts.length) opts = net.nodes[at].edges.filter((e) => e !== prev); }
+      const e = opts[Math.floor(rnd() * opts.length)], fwd = e.a === at;
+      strike((fwd ? e.pts : e.pts.slice().reverse()).slice(1), 0.4);
+      at = fwd ? e.b : e.a; prev = e; recent.push(e); if (recent.length > 4) recent.shift();
     }
-    // the escape: up out of the last petal's centre, along its normal
-    const c0 = add(m.pl.c, mul(m.pl.dir, 0.012 * R));
-    push(c0, 0.06 * sp, 0.2);
-    for (let q = 1; q <= 5; q++) push(add(c0, mul(m.pl.dir, R * 0.7 * q / 5)), JT.esc * sp / 5, 0.35);
-    const tip = nodes[nodes.length - 1].p, end = t;
-    // the spray it dissipates into: filaments fanned round the escape direction, some forking once
-    const nb = 4 + Math.round(4 * p.chBolts), branches = [], perp = perpTo(m.pl.dir);
-    for (let q = 0; q < nb; q++) {
-      const around = 2 * Math.PI * (q + rnd() * 0.7) / nb, tilt = (20 + 50 * rnd()) * Math.PI / 180;
-      const d = rotAxis(m.pl.dir, around, rotAxis(perp, tilt, m.pl.dir));
-      const fd = rotAxis(m.pl.dir, around + (rnd() - 0.5) * 1.2, rotAxis(perp, tilt + 0.4, m.pl.dir));
-      branches.push({ dir: d, len: 0.25 + 0.3 * rnd(), fork: rnd() < 0.6 ? { dir: fd, len: 0.12 + 0.18 * rnd() } : null, seed: k * 131 + q * 7 });
-    }
-    return { nodes, end, tip, last: m, visited, branches, hops, total: end + JT.diss * sp + (0.25 + 0.6 * rnd()) * sp };
+    // the escape: straight out from the last junction
+    const base = net.nodes[at].p, dir = unit(base);
+    strike([1, 2, 3, 4, 5].map((q) => add(base, mul(dir, R * 0.14 * q))), 0.4);
+    const end = t;
+    return { nodes, end, tip: nodes[nodes.length - 1].p, dir, legs, total: end + JT.diss * sp + (0.3 + 0.6 * rnd()) * sp };
   }
   const JCACHE = new Map();
-  function journeyCache(U, p) { const key = U.kind + '|' + p.chRate + '|' + p.chAmp + '|' + p.chBolts; let c = JCACHE.get(key); if (!c) { c = { starts: [0], built: new Map() }; JCACHE.set(key, c); } return c; }
+  function journeyCache(U, p) { const key = U.kind + '|' + p.chRate + '|' + p.chAmp; let c = JCACHE.get(key); if (!c) { c = { starts: [0], built: new Map() }; JCACHE.set(key, c); } return c; }
   function journeyOf(U, p, k) {
     const c = journeyCache(U, p); let j = c.built.get(k);
     if (!j) { j = buildJourney(U, p, k); c.built.set(k, j); if (c.built.size > 64) c.built.delete(c.built.keys().next().value); }
@@ -802,49 +837,39 @@
     return { J: journeyOf(U, p, lo), tl: t - c.starts[lo], k: lo };
   }
   function pathAt(J, tt) {
-    const N = J.nodes; if (tt <= 0) return N[0].p; if (tt >= J.end) return N[N.length - 1].p;
+    const N = J.nodes; if (tt <= 0) return N[0].p; if (tt >= N[N.length - 1].t) return N[N.length - 1].p;
     let lo = 0, hi = N.length - 1; while (hi - lo > 1) { const mid = (lo + hi) >> 1; if (N[mid].t <= tt) lo = mid; else hi = mid; }
-    return lerp3(N[lo].p, N[hi].p, (tt - N[lo].t) / Math.max(1e-6, N[hi].t - N[lo].t));
+    return lerp3(N[lo].p, N[hi].p, clamp01((tt - N[lo].t) / Math.max(1e-6, N[hi].t - N[lo].t)));
   }
   function journeyFx(U, p, cur, out, memFx) {
     const { J, tl, k } = cur, R = U.R, G = p.chGlow, Bd = p.chBolts, sp = 1 / Math.max(0.05, p.chRate);
-    const head = Math.min(tl, J.end), over = Math.max(0, tl - J.end), trail = JT.trail * sp, after = Math.exp(-over / 0.08);
-    // the bolt: the last `trail` seconds of the path, brightest at the head
-    if (after > 0.02) {
-      const t0 = Math.max(0, head - trail), pts = [[pathAt(J, t0), t0, 0.3]];
-      for (const nd of J.nodes) if (nd.t > t0 && nd.t < head) pts.push([nd.p, nd.t, nd.jag]);
-      pts.push([pathAt(J, head), head, 0.3]);
-      for (let i = 0; i + 1 < pts.length; i++) {
-        const age = head - (pts[i][1] + pts[i + 1][1]) / 2;
-        out.bolts.push({ pts: [pts[i][0], pts[i + 1][0]], I: 2.2 * Math.pow(Math.max(0, 1 - age / trail), 1.2) * after, jag: pts[i + 1][2], w: 1.8, seed: k * 977 + i + Math.floor(pts[i][1] * 50) });
-      }
-      out.sprites.push({ local: pts[pts.length - 1][0], size: R * 0.13, I: G * 1.6 * after });
+    const fadeT = JT.fade * sp, over = Math.max(0, tl - J.end), u = clamp01(over / (JT.diss * sp));
+    const gone = 1 - smooth(u);                       // the whole bolt fades out smoothly once it has escaped
+    if (gone <= 0.001) return;
+    const flick = Math.floor(tl * 18), N = J.nodes, lit = [];
+    for (let i = 0; i + 1 < N.length; i++) {
+      if (N[i].t > tl) break;
+      const reached = N[i + 1].t <= tl, b = reached ? N[i + 1].p : pathAt(J, tl);
+      const age = tl - (reached ? N[i + 1].t : tl), life = 1 - smooth(age / fadeT);
+      if (life <= 0.01) continue;
+      const escaping = i + 1 >= N.length - 5, rise = escaping ? mul(J.dir, R * 0.35 * u) : [0, 0, 0];   // the escape drifts out as it fades
+      const I = Bd * 2.4 * life * gone * (0.55 + 0.45 * hash(i * 31 + k, flick));
+      // dissipating: the bolt softens (less kink) and widens instead of branching
+      out.bolts.push({ pts: [add(N[i].p, rise), add(b, rise)], I, jag: (N[i + 1].jag || 0.4) * (1 - 0.8 * u), w: 2 * (1 + 2.5 * u), seed: k * 977 + i });
+      lit.push([b, life * gone]);
     }
-    if (tl < JT.core * sp * 1.6) out.sprites.push({ local: [0, 0, 0], size: R * 0.28, I: G * 1.1 * (1 - tl / (JT.core * sp * 1.6)) });
-    // the spray: filaments grow out of the tip fast, then fade; a soft glow widens with them
-    const u = over / (JT.diss * sp);
-    if (over > 0 && u < 1) {
-      const fade = (1 - u) * (1 - u), grow = smooth(Math.min(1, u * 3));
-      for (const br of J.branches) {
-        const e = add(J.tip, mul(br.dir, br.len * R * grow));
-        out.bolts.push({ pts: [J.tip, e], I: Bd * 1.3 * fade, jag: 0.45, w: 0.8, seed: br.seed + Math.floor(over * 25) });
-        if (br.fork && grow > 0.4) { const f0 = lerp3(J.tip, e, 0.55); out.bolts.push({ pts: [f0, add(f0, mul(br.fork.dir, br.fork.len * R * grow))], I: Bd * 0.9 * fade, jag: 0.45, w: 0.6, seed: br.seed + 3 + Math.floor(over * 25) }); }
-      }
-      out.sprites.push({ local: J.tip, size: R * (0.1 + 0.4 * u), I: G * 0.8 * fade });
-    }
-    // the light: each petal glows by how close the bolt has been to it lately (and its neighbours catch the edge of it)
-    const ms = journeyMembers(U);
-    for (const m of ms) {
+    if (tl < 0.35 * sp) out.sprites.push({ local: [0, 0, 0], size: R * 0.26, I: G * (1 - tl / (0.35 * sp)) });
+    if (over > 0) out.sprites.push({ local: add(J.tip, mul(J.dir, R * 0.35 * u)), size: R * (0.12 + 0.45 * u), I: G * 0.9 * gone * (1 - 0.5 * u) });
+    // the light: a petal glows by how near the bolt runs to its short sides, and how fresh that stretch of bolt is
+    for (const m of journeyMembers(U)) {
       let g = 0;
-      for (let a = 0; a <= 1.2; a += 0.04) {
-        const tt = head - a; if (tt < 0) break;
-        const P = pathAt(J, tt), d = len(sub(m.pl.c, P)) / (m.pl.bound * 1.25), w = Math.exp(-(a + over) / JT.linger) * Math.exp(-d * d);
-        if (w > g) g = w;
-      }
-      if (over > 0 && u < 1) { const d = len(sub(m.pl.c, J.last.pl.c)) / (J.last.pl.bound * 1.8); g = Math.max(g, (1 - u) * (1 - u) * Math.exp(-d * d)); }
-      if (g > 0.01) { const mf = memFx(m); mf.glow = G * 2.6 * g; mf.own = true; }
+      // the omni's pentagons sit apart (squares between), so the seam runs further from their edges: reach further
+      const sig = U.kind === 'crystal' ? m.pl.bound * 0.75 : U.sites[0].rs * 1.7;
+      for (const [q, w] of lit) for (const bp of m.back) { const d = len(sub(bp, q)) / sig, v = w * Math.exp(-d * d); if (v > g) g = v; }
+      if (g > 0.01) { const mf = memFx(m); mf.glow = G * 2.4 * g; mf.own = true; }
     }
   }
+  function journeyMembers(U) { if (!U.jm) { seamNet(U); U.jm = []; U.sites.forEach((S) => S.members.forEach((m) => U.jm.push(m))); } return U.jm; }
   // Pose one site's members: src -> pos (for the members' vertices). Returns the site transform for bolts/sprites.
   function siteXform(U, s, f) {
     const S = U.sites[s];
@@ -998,7 +1023,11 @@
   function chargeMoving(p, t) { if (!(p.chSlot > 0.5 && p.cadence === 1)) return false; return activeBeats(beatsOf(p), t, 'C').length > 0; }
   function measure(p, opts) {
     opts = opts || {};
-    const secs = opts.secs || 14, hz = opts.hz || 12, dist = 6.5 * OMNI_R, mi = modeOf(p), dt = 1 / hz;
+    const secs = opts.secs || 14, hz = opts.hz || 12, dist = (opts.dist || 6.5) * OMNI_R, mi = modeOf(p), dt = 1 / hz;
+    let outSeen = 0, reseats = 0, reseatsSeen = 0;
+    // a column's top (where a prism at place u stands), for "can the camera see it?"
+    const topOf = (pl, u) => columnTop(p, pl, u);
+    let outHeight = 0, risesSeen = 0, rises = 0;
     const st = {}, cats = {}, sqSizeRest = SQR.map((r) => OP[r.q].bound);
     let overlap = 0, raised = 0, stops = 0, minSize = 1, maxOff = 0, frames = 0, clipFrames = 0, chargeClipFrames = 0;
     // overlap and stops are timed at 120 Hz on the analytic clocks, over whole loops; the geometry at `hz` over `secs`
@@ -1007,7 +1036,11 @@
     for (let k = 0; k * (1 / 120) < span; k++) { const t = k / 120, a = squaresMoving(p, t), b = rhombiMoving(p, t); if (a && b) overlap += 1 / 120; if (wasMoving && !a) stops++; wasMoving = a; }
     for (let k = 0; k * dt < secs; k++) {
       const t = k * dt, eye = camAt(t, dist);
-      depthStep(p, st, t, eye);
+      st.events = []; st.rises = []; const before = st.u ? Float32Array.from(st.u) : null; depthStep(p, st, t, eye);
+      for (const j of st.rises) { rises++; if (before && !hiddenBehindBody(topOf(OP[IDS.Mass[j]], st.u[j]), eye)) risesSeen++; }
+      for (const j of st.events) { reseats++; if (k > 0 && !hiddenBehindBody(topOf(OP[IDS.Mass[j]], st.old[j]), eye)) reseatsSeen++; }
+      IDS.Mass.forEach((q, j) => { if (st.u[j] < 0.95 && !hiddenBehindBody(topOf(OP[q], st.u[j]), eye)) { outSeen++; outHeight += (p.depthReach - 1) * (1 - st.u[j]); } });
+      if (opts.depthOnly) { frames++; continue; }
       const fr = omniFrame(p, t, eye, st, mi); frames++;
       // squares' size
       for (let n = 0; n < SQR.length; n++) { const pl = OP[SQR[n].q], pts = pl.idx.map((i) => v3(fr.pos, i)), c = mul(pts.reduce(add, [0, 0, 0]), 1 / pts.length); minSize = Math.min(minSize, Math.max(...pts.map((x) => len(sub(x, c)))) / sqSizeRest[n]); maxOff = Math.max(maxOff, Math.abs(len(c) - len(pl.c)) / OMNI_R); }
@@ -1026,14 +1059,16 @@
     const clipCats = {}; for (const [k, v] of Object.entries(cats)) clipCats[k] = { pct: pct(v.frames.size), depthPct: +(100 * v.depth).toFixed(1) };
     return {
       overlapPct: +(100 * overlap / span).toFixed(1), stopsPerLoop: +(stops / nLoops).toFixed(2), loopS: +loopLen.toFixed(2), minSquareSize: +minSize.toFixed(3), squareOffShellPct: +(100 * maxOff).toFixed(1),
-      raisedVisiblePct: pct(raised), clipPct: opts.noClips ? null : pct(clipFrames), chargeClipPct: opts.noClips ? null : pct(chargeClipFrames), clipCats,
+      raisedVisiblePct: pct(raised), prismsOutSeen: +(outSeen / frames).toFixed(1), heightSeen: +(outHeight / frames).toFixed(2), risesSeenPct: rises ? +(100 * risesSeen / rises).toFixed(2) : 0, reseats, reseatsSeenPct: reseats ? +(100 * reseatsSeen / reseats).toFixed(1) : 0, clipPct: opts.noClips ? null : pct(clipFrames), chargeClipPct: opts.noClips ? null : pct(chargeClipFrames), clipCats,
     };
   }
   const styleParams = (st) => Object.assign({}, SHIPPED, st.v);
   function runBatch(opts) {
     opts = opts || {};
-    const rows = STYLES.map((st) => Object.assign({ style: st.name, id: st.id, control: !!st.control }, measure(styleParams(st), opts)));
-    rows.push(Object.assign({ style: 'Yours', id: 'yours', control: false }, measure(P, opts)));
+    // far: the same orbit at 25 radii (nearly orthographic), prisms only - where a reseat is easiest to catch
+    const far = (pp) => { const m = measure(pp, Object.assign({}, opts, { dist: 25, depthOnly: true })); return { reseatsSeenFarPct: m.reseatsSeenPct, prismsOutSeenFar: m.prismsOutSeen, heightSeenFar: m.heightSeen, risesSeenFarPct: m.risesSeenPct }; };
+    const rows = STYLES.filter((st) => !st.archive || opts.archive).map((st) => Object.assign({ style: st.name, id: st.id, control: !!st.control }, measure(styleParams(st), opts), far(styleParams(st))));
+    rows.push(Object.assign({ style: 'Yours', id: 'yours', control: false }, measure(P, opts), far(P)));
     return rows;
   }
   // Every Charge mode on the omni and on the crystal: does it clip its neighbours, how far do pentagons travel, how lit.
@@ -1364,11 +1399,13 @@
   function refreshStyles() { if (!stylesBox || !stylesBox.isConnected) return; for (const el of stylesBox.querySelectorAll('.style')) el.classList.toggle('on', el.dataset.id === currentStyle); }
   function stylesPanel() {
     const box = document.createElement('div'); box.className = 'styles'; stylesBox = box;
-    for (const st of STYLES) {
+    let archived = false;
+    for (const st of STYLES.filter((x) => !x.archive).concat(STYLES.filter((x) => x.archive))) {
+      if (st.archive && !archived) { archived = true; const h = document.createElement('h4'); h.textContent = 'Archive (rounds 1-2, superseded)'; box.appendChild(h); }
       const el = document.createElement('div'); el.className = 'style'; el.dataset.id = st.id;
       el.innerHTML = '<h3></h3><p></p><div class="chips"><button class="btn">Play this</button> <span class="pill"></span></div>';
       el.querySelector('h3').textContent = st.name; el.querySelector('p').textContent = st.blurb;
-      const pill = el.querySelector('.pill'); pill.textContent = st.control ? 'control' : st.id === 'shipped' ? 'shipped' : 'proposal';
+      const pill = el.querySelector('.pill'); pill.textContent = st.control ? 'control' : st.id === 'shipped' ? 'shipped' : st.archive ? 'archive' : 'proposal';
       if (st.control) pill.classList.add('ctl'); if (st.id === 'shipped') pill.classList.add('ship');
       el.querySelector('button').onclick = () => applyStyle(st);
       box.appendChild(el);
@@ -1421,12 +1458,12 @@
       box.querySelector('#scoreHint').textContent = 'Scoring...';
       setTimeout(() => {
         const rows = runBatch();
-        t.innerHTML = '<tr><th>Style</th><th title="Share of the time the squares and the rhombi move at once, over whole loops">Overlap %</th><th title="Times the squares come to rest per loop">Stops / loop</th><th>Loop s</th><th title="Smallest a square gets mid-move, x its own size">Min square size</th><th title="How far a square centre leaves the shell mid-move, % of the crystal radius. Reads as the square growing or shrinking.">Off shell % R</th><th title="Frames with a prism not flush in its hole while its plate faces the camera">Raised in view %</th><th title="Frames with a visible interpenetration between any two plates">Visible clips %</th><th>Clips by pair (% frames, deepest % R)</th></tr>';
+        t.innerHTML = '<tr><th>Style</th><th title="Share of the time the squares and the rhombi move at once, over whole loops">Overlap %</th><th title="Times the squares come to rest per loop">Stops / loop</th><th>Loop s</th><th title="Smallest a square gets mid-move, x its own size">Min square size</th><th title="How far a square centre leaves the shell mid-move, % of the crystal radius. Reads as the square growing or shrinking.">Off shell % R</th><th title="Frames with a prism not flush in its hole while its plate faces the camera">Raised in view %</th><th title="Prisms standing out of their holes whose column top the camera can see, on average (6.5 radii / 25 radii)">Prisms out, seen</th><th title="The total height those prisms stand out, in plate radii (6.5 radii / 25 radii): how far out x how many">Height seen</th><th title="Prisms seen moving UP their column (must be 0)">Rises seen %</th><th title="Reseats (a prism swapping back to the top of its column) the camera could see (6.5 radii / 25 radii)">Reseats seen %</th><th title="Frames with a visible interpenetration between any two plates">Visible clips %</th><th>Clips by pair (% frames, deepest % R)</th></tr>';
         for (const r of rows) {
           const tr = document.createElement('tr');
           cell(tr, r.style + (r.control ? ' (control)' : ''));
           cell(tr, r.overlapPct, 'num ' + (r.overlapPct > 0 ? 'bad' : 'good')); cell(tr, r.stopsPerLoop, 'num'); cell(tr, r.loopS, 'num');
-          cell(tr, r.minSquareSize, 'num ' + (r.minSquareSize < 0.97 ? 'bad' : 'good')); cell(tr, r.squareOffShellPct, 'num ' + (r.squareOffShellPct > 6 ? 'bad' : 'good')); cell(tr, r.raisedVisiblePct, 'num ' + (r.raisedVisiblePct > 0 ? 'bad' : 'good'));
+          cell(tr, r.minSquareSize, 'num ' + (r.minSquareSize < 0.97 ? 'bad' : 'good')); cell(tr, r.squareOffShellPct, 'num ' + (r.squareOffShellPct > 6 ? 'bad' : 'good')); cell(tr, r.raisedVisiblePct, 'num ' + (r.raisedVisiblePct > 0 ? 'bad' : 'good')); cell(tr, r.prismsOutSeen + ' / ' + r.prismsOutSeenFar, 'num'); cell(tr, r.heightSeen + ' / ' + r.heightSeenFar, 'num'); cell(tr, r.risesSeenPct + ' / ' + r.risesSeenFarPct, 'num ' + (r.risesSeenPct + r.risesSeenFarPct > 0 ? 'bad' : 'good')); cell(tr, r.reseatsSeenPct + ' / ' + r.reseatsSeenFarPct, 'num ' + (r.reseatsSeenPct + r.reseatsSeenFarPct > 2 ? 'bad' : 'good'));
           cell(tr, r.clipPct, 'num ' + (r.clipPct > 0 ? 'bad' : 'good'));
           cell(tr, Object.entries(r.clipCats).map(([k, v]) => k + ' ' + v.pct + '% / ' + v.depthPct).join('; ') || 'none');
           t.appendChild(tr);
@@ -1493,6 +1530,8 @@
     L.push('TRIANGLES (Mass)');
     if (p.triSealMode > 0.5) L.push('- Seal at the horizon: CrystalDepthPrisms computes the seal depth each frame as plateRadius / cameraDistance - ' + p.triMargin.toFixed(2) + ' (camera from CameraManager.ViewCamera, in the crystal\'s space) and passes it to DepthRatchet.Seat in place of sealDepth.', '  CrystalDepthPrismProfileSO: + bool sealAtHorizon, + float horizonMargin (' + p.triMargin.toFixed(2) + '). The profile is SHARED with the Mass crystal: it gets the same rule with its own plate radius.', '  DepthRatchetTests: add "a prism whose plate faces the camera is flush" under the orbiting-row test.');
     else L.push('- No change (seal at sealDepth ' + p.depthSeal + ').');
+    if (p.depthRise > 0.5) L.push('- Rise while hidden: in DepthRatchet.Step, a column whose seat is above its place may climb (at most ' + p.depthRiseRate + ' column-heights a second) when its column top at the new place is hidden by the body: one ray-sphere test per column against CameraManager.ViewCamera, in the crystal\'s space. + bool riseWhileHidden, + float riseRate on the profile. Reseats become a fallback (reseatDepth ' + p.depthSwap + ').');
+    if ('depthReach' in d || 'depthSizeStart' in d) L.push('- OmniDepthPrisms.mat: _Reach ' + p.depthReach + ', _PlateScaleStart ' + p.depthSizeStart + ' (author_omni_crystal_triangles.py). The culling bounds widen with _Reach.');
     for (const k of ['depthOpen', 'depthSwap', 'depthFade', 'depthPower']) if (k in d) L.push('- CrystalDepthPrismProfile.' + { depthOpen: 'openDepth', depthSwap: 'reseatDepth', depthFade: 'reseatFadeSeconds', depthPower: 'profilePower' }[k] + ' -> ' + p[k] + ' (author_omni_crystal_triangles.py DEPTH_PROFILE_VALUES)');
     L.push('', 'SQUARES (Space) + RHOMBI (Time)');
     if (p.cadence === 1) {
@@ -1552,7 +1591,7 @@
     LAB, SHIPPED, SPEC, P, PLATFORM, STYLES, CH_MODES, ASSETS: A, SQFIT,
     set manualClock(v) { manualClock = !!v; }, get manualClock() { return manualClock; },
     tick(dt, n) { n = n || 1; for (let i = 0; i < n; i++) simStep(dt == null ? 1 / 60 : dt); resize(); render(); },
-    reset, score: () => measure(P, { secs: 8, hz: 8 }), runBatch: (o) => runBatch(Object.assign({ secs: 10, hz: 8 }, o || {})), runFullBatch: runBatch, runChargeBatch, measure, clipSelfTest, clipTimeline, TRI_ART_LIFT: () => TRI_ART_LIFT,
+    reset, score: () => measure(P, { secs: 8, hz: 8 }), runBatch: (o) => runBatch(Object.assign({ secs: 10, hz: 8 }, o || {})), runFullBatch: runBatch, runChargeBatch, measure, clipSelfTest, clipTimeline, seamFacts: () => Object.fromEntries(Object.entries(UNITS).map(([k, U]) => { const n = seamNet(U); return [k, { junctions: n.nodes.length, seams: n.edges.length, outlineSegs: n.outline.reduce((a, o) => a + o.length, 0), worstGapLift: +Math.max(...n.edges.flatMap((e) => e.pts.map((q) => len(q) / U.R))).toFixed(3) }]; })), TRI_ART_LIFT: () => TRI_ART_LIFT,
     setParam, applyStyle, record, beatsOf, squaresAt, wavesAt, sealOf, compare: (s) => (s ? startCompare(s) : stopCompare()),
     setCamera(yaw, pitch) { cam.yaw = yaw; cam.pitch = pitch; },
     state: () => ({ t: sim.t, seed, style: currentStyle, chMode: CH_MODES[modeOf(P)].id, compare: compare ? compare.subject : null, beats: beatsOf(P), restClips: REST_CLIPS.length }),
