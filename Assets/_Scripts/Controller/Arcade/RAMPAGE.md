@@ -429,6 +429,17 @@ nucleus world radius **100** (`HalfNucleus.prefab` at scale 200).
 
 ### The forest
 
+**The forest plants in over the opening ~45 s** (`PLANTING_WINDOW_SECONDS` in
+`Tools/Build/rampage_intensity.py` → `SpawnProfileSO.FloraSpawnIntervalSeconds`, 2026-10-13: "too
+many plants seeded at once"). Every species' seeder plants its initial batch one plant per interval,
+all species in parallel. At interval 0 that meant one plant per frame, so intensity 2's 245 plants
+(43k prisms) arrived in about half a second and intensity 1's 335 in under a second. The interval is
+DERIVED per intensity as the window over the largest species' batch (Cacti): 0.35 / 0.47 / 0.74 /
+1.73 s at intensities 1-4. So every intensity fills over the same stretch, and a denser one plants
+faster rather than for longer. Only WHEN plants arrive changes: the floors, caps, prism sizes and
+volume ladder are untouched, nothing is culled, and every plant still grows in from its seed. Every
+mode on these four cells inherits it: Rampage, The Bends, Bloomrush, Sirocco, Serpent Charge.
+
 Five species, each with its own planting **band** (a min/max fraction of the membrane
 radius). Plants are drawn **volume-uniformly** inside the band, not on a shell, so density
 is even through the whole volume rather than crowded onto one radius:

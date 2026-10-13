@@ -168,6 +168,31 @@ FAUNA_SCALES = [1.0, 2.0, 3.0, 4.0]
 # untouched, so a plant still reaches its authored budget and still occupies its own volume.
 PRISM_SCALES = [1.60, 1.40, 1.20, 1.00]
 
+# The OPENING PLANTING is spread over this many seconds rather than landing in one burst
+# (2026-10-13, "too many plants seeded at once"). Every species' seeder plants its initial
+# batch one plant per SpawnProfileSO.FloraSpawnIntervalSeconds, all species in parallel; with
+# the interval at 0 each one planted a plant per FRAME, so intensity 2's 245 plants (43k
+# prisms) arrived in about half a second and intensity 1's 335 in under a second.
+#
+# The interval is DERIVED per intensity, never typed: the window divided by the largest
+# species' seeded plant count at that intensity, so the biggest batch (Cacti) finishes inside
+# the window at EVERY intensity and every forest fills over the same stretch of the opening -
+# a denser intensity plants faster rather than for longer. Smaller species finish earlier.
+#
+# It changes WHEN plants arrive, never how many: the seed floors, caps, prism sizes and the
+# volume ladder are untouched, and nothing is culled or popped (the seeder only ever ADDS, and
+# every plant still grows in from its seed - Docs/ECOSYSTEM.md 0, continuity of existence).
+PLANTING_WINDOW_SECONDS = 45.0
+
+
+def planting_interval(intensity: int) -> float:
+    """SpawnProfileSO.FloraSpawnIntervalSeconds for a 1-indexed intensity: the window over the
+    largest single-config seed batch. Borromean's row sums four configs, each of which seeds
+    its own quarter, so it is divided back down before it competes for 'largest'."""
+    rows = forest(intensity)[0]
+    biggest = max(n // MULTI_CONFIG.get(name, 1) for name, n, *_ in rows)
+    return round(PLANTING_WINDOW_SECONDS / max(1, biggest), 2)
+
 # CellConfigDataSO.NucleusPrefab per intensity, 1-indexed: (prefab scale, fileID, guid).
 # Intensity 4 keeps HalfNucleus, the nucleus Rampage has always run; 1-3 step up from it.
 #
@@ -630,7 +655,7 @@ MonoBehaviour:
   FloraExcludeLocalDomain: 0
   FloraSpawnVolumeCeiling: 12000
   FloraInitialDelaySeconds: 0
-  FloraSpawnIntervalSeconds: 0
+  FloraSpawnIntervalSeconds: {planting_interval(i)}
   FloraPopulationScale: {pop}
   FloraPlantBudgetScale: {budget}
   FloraPrismScale: {prism}
@@ -844,6 +869,20 @@ def main() -> int:
         "that was play-tested and nothing here may resize it"
     assert all(a > b for a, b in zip(PRISM_SCALES, PRISM_SCALES[1:])), \
         f"prism ladder is not strictly decreasing: {PRISM_SCALES}"
+
+    # Regression 2c-ii: the opening planting is STAGGERED at every intensity - a zero interval
+    # is the one-plant-per-frame burst this exists to prevent - and the largest batch lands
+    # inside the window (within one interval of rounding) everywhere, so no intensity's forest
+    # is still planting long after the others have finished.
+    for i in range(1, 5):
+        iv = planting_interval(i)
+        rows = forest(i)[0]
+        biggest = max(n // MULTI_CONFIG.get(name, 1) for name, n, *_ in rows)
+        assert iv > 0, f"intensity {i} plants its whole forest in one burst (interval 0)"
+        lasts = (biggest - 1) * iv   # no wait after the batch's last plant
+        assert 0.9 * PLANTING_WINDOW_SECONDS <= lasts <= 1.05 * PLANTING_WINDOW_SECONDS, \
+            f"intensity {i}'s largest batch ({biggest} plants, {iv}s apart = {lasts:.1f}s) does " \
+            f"not fill the {PLANTING_WINDOW_SECONDS:.0f}s planting window"
     assert NUCLEI[-1][2] == "1d3d15a174cc41388679c1487f53bced", \
         "intensity 4 must keep HalfNucleus, the nucleus Rampage has always run"
     assert all(a[0] > b[0] for a, b in zip(NUCLEI, NUCLEI[1:])), \

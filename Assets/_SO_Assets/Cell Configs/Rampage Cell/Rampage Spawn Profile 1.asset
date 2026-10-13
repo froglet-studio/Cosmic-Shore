@@ -15,7 +15,7 @@ MonoBehaviour:
   FloraExcludeLocalDomain: 0
   FloraSpawnVolumeCeiling: 12000
   FloraInitialDelaySeconds: 0
-  FloraSpawnIntervalSeconds: 0
+  FloraSpawnIntervalSeconds: 0.35
   FloraPopulationScale: 5.0
   FloraPlantBudgetScale: 1.0
   FloraPrismScale: 1.6
