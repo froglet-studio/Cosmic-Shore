@@ -183,6 +183,7 @@ throttle target (`DefaultMinimumSpeed 15 + 0.5 × DefaultThrottleScaler 110`).
 | `skid` / `skidSeconds` / `lockKeep` | 7 / 0.3 s / 1 | same | plant brake, duration, speed kept |
 | `lockSpin` / `lockMax` / `yank` | 220 /s² / 2.2 / 0.5 | 40.5 u/s² / 154 u/s / 0.5 | spin-up (× Time), cap (× Time), unlock yank |
 | `pivotSteer` | 45 °/s | 45 °/s | full-stick steering while planted (a rate, unscaled; 0 = sticks ignored) |
+| `hookTurnRate` / `hookReturnRate` | 300 °/s / 5 /s | same | hook-on: heading turns onto the orbit at most this fast; the swing-out's stretch is reeled back by a critically damped spring at this rate |
 | `windmillSpeed` | 1000 | 184.2 u/s | the omni-crystal windmill's sail speed (§2c) |
 
 Measured feel (`Tools/Build/thresher_chain_harness`, 60 Hz, rest levels; peak ball speed × smash):
@@ -275,8 +276,20 @@ the speed tunnel's (vessel rule 21) and is only READ. Dials in `ThresherConfigSO
 - **Spectate a spin — and AIM it from the launch point** (re-cut twice on 2026-10-13: the 1.8 rad/s
   threshold still made spectators sick, then the first aim camera watched from over the pivot).
   Once a planted orbit circles at `spectateSpinRate` **0.9 rad/s (~52 °/s)** or faster for
-  `spectateEngageSeconds` **0.1 s**, the camera detaches (`CustomCameraController.Spectate`, blending
-  over `spectateBlendSeconds` 0.6 s) to the **launch camera**:
+  `spectateEngageSeconds` **0.1 s**, the camera detaches (`CustomCameraController.Spectate`) to the
+  **launch camera**:
+  - **Smooth in and out** (round 5). Both transitions are driven on the executor's own clock between
+    poses that are NOT moving under it: ENTRY eases (SmoothStep, `spectateEnterSeconds` 0.9 s) from
+    the pose the camera was actually in when the spin was detected to the launch vantage; EXIT (the
+    launch, or the spin falling away) eases (`spectateExitSeconds` 0.8 s) from the vantage to the
+    chase pose computed from the hull's LIVE pose and the camera's own follow offset, then snaps the
+    follow frame to the hull (`SnapToTarget`) and releases the vantage. The camera's own blend
+    (`spectateBlendSeconds` 0.05 s) is only the hand-over at each end, where the two poses already
+    coincide. Before this, both edges were the camera's 0.6 s blend toward a MOVING target — on
+    entry the chase pose still spinning with the hull, on exit a turn-capped follow frame still
+    swinging onto the new heading — which is what read as rough.
+  - **The ship hooks on smoothly too** (`ThresherDials.hookTurnRate` 300 °/s, `hookReturnRate` 5/s):
+    see §4 "Lock".
   - **The launch point.** The aim names one point on the circle — the point whose tangent IS the aim
     (`ThresherChainSolver.LaunchRadial`: with travel normal N, the velocity at radial r is N × r, so
     the point is r = aim × N), on the circle the ship is ACTUALLY flying (its distance from the
@@ -303,7 +316,8 @@ the speed tunnel's (vessel rule 21) and is only READ. Dials in `ThresherConfigSO
     trajectory from the launch point, with its own crosshair, **zoomed by LT's depth** like the
     Serpent's scope — `ThresherCameraFraming.ZoomTarget` (depth past `sightZoomDeadzone` 0.25, so a
     light hold plants without zooming; the Plant engages at 5%), eased at `sightZoomResponse` 12/s
-    (only a binary key needs it), FOV `sightWideFieldOfView` 50° → `sightZoomFieldOfView` 12°. The
+    (only a binary key needs it), FOV `sightWideFieldOfView` 50° → `sightZoomFieldOfView` **6°** (doubled
+    from 12° on round 5: half the angle is twice the magnification at the zoomed end). The
     flight view is never magnified. Shared with the Serpent rather than copied: `ScopePipView` (the
     offscreen camera; gained an explicit-eye `Tick` and a `RenderAspect`) and `ScopePetalImage`
     (gained three virtual shape members; `TimePetalImage` overrides only those).
@@ -442,7 +456,10 @@ prefab, `DriftAudioController`, jets and tails.
     path; a crosshair sits at screen centre and flashes lime each time the ship is about to pass
     the point (the ship visibly crosses in front of the lens there). A Time-petal (diamond) window
     top-left shows the same path magnified; squeeze LT deeper and it zooms, ease off and it widens;
-    the main view never zooms. Hold RT while planted: the point stays on the ship's own circle. The ship sweeps through that point every lap. Stick right: the point slides round the
+    the main view never zooms. Hold RT while planted: the point stays on the ship's own circle.
+    **Smoothness (round 5):** planting from straight flight, the ship swings wide and curves onto the
+    orbit (no snap); the camera glides into the launch view over ~0.9 s with no wobble; on launch it
+    glides back behind the ship over ~0.8 s with no swing. Full zoom is twice as tight as before. The ship sweeps through that point every lap. Stick right: the point slides round the
     circle and the camera swings with it. Stick Y: the whole orbit tilts with the camera. Release LT
     anywhere in the lap — the ship keeps circling and leaves exactly from the point along the line;
     then the camera eases back behind it.
@@ -494,12 +511,14 @@ Each row carries its measurement; none blocks building on this branch.
   together (the HUD view also keeps its own `chainColor`). Pass the rate through
   `ThresherHUDController` from the config instead. Measure first: `grep -n colorBlendRate` → exactly
   two serialized definitions today.
-- **The hook-on is a 91° velocity snap in the SOLVER (debt MADE VISIBLE).** The camera cap (§5a)
-  hides it from the camera, but the hull still turns onto the orbit's tangent within a few frames
-  (`pivotFacingRate` 25/s), and a ship flying radially away from the ball has its heading replaced
-  outright. Whether hooking on should instead blend the velocity over ~0.2 s is a DESIGN call (it
-  changes where the orbit starts), not a cleanup. Measured by the scratch driver described in vessel
-  rule 43: 91.4°/frame reeled in, 67.3° let out.
+- **~~The hook-on is a 91° velocity snap in the SOLVER~~ — RESOLVED 2026-10-13 (round 5).** Garrett asked
+  for a smoother entry, which settled the design call: `BeginPivot` keeps the incoming heading and
+  `StepPivot` turns it onto the tangent at `hookTurnRate` 300 °/s (≤ 5° per frame at 60 Hz, measured
+  6.9° worst including the orbit's own curvature, against 91.4° before), letting the chain stretch so
+  the ship swings wide instead of stalling (flying straight away from the ball: ~15 u of stretch), and
+  reels the stretch back as a critically damped spring seeded with the swing-out's own radial speed
+  (an exponential reel-back stepped the radial speed and turned one frame by 47°).
+  `HookOn_TurnsOntoTheOrbitAtTheCappedRate_WithoutStalling` pins it; `IsHookingOn` reports it.
 - **`ThresherCameraFraming` lives in `ThresherChainSolver.cs` (minor).** It is there so the
   harness compiles it from its shipped path with no new wiring; 9 call sites, all in the executor.
   Split it into its own file only together with a `run.sh` change.

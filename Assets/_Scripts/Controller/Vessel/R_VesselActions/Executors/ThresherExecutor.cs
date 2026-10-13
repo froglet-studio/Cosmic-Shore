@@ -902,6 +902,11 @@ namespace CosmicShore.Gameplay
         bool _spectating;
         float _sightZoom01;
         ThresherLaunchSight _sight;
+        // The eased entry/exit: progress 0..1, the pose it started from, and whether we are easing OUT.
+        float _camEase;
+        Vector3 _easeFromPos;
+        Quaternion _easeFromRot = Quaternion.identity;
+        bool _exiting;
         float _spectateQualifyTime;
         // The AIM while spectating: where a release sends the ship, and the aim camera's "above".
         Vector3 _aimDir, _aimUp;
@@ -979,9 +984,13 @@ namespace CosmicShore.Gameplay
             if (!_spectating && qualifies && _spectateQualifyTime >= config.SpectateEngageSeconds)
                 BeginSpectate(ship.position);
             else if (_spectating && (!IsPivoting || spin < config.SpectateSpinRate * config.SpectateReleaseFraction))
-                EndSpectate();
+                EndSpectate(smooth: true);
 
-            if (!_spectating) return;
+            if (!_spectating)
+            {
+                if (_exiting) TickExit(dt);
+                return;
+            }
 
             // AIM. The sticks turn the launch direction in screen terms (right is right, the hull's
             // pitch sign up/down) until a release ARMS it; then the point is chosen and held.
@@ -999,14 +1008,16 @@ namespace CosmicShore.Gameplay
             // (shipped) no height offset: the trajectory is the screen centre - the crosshair.
             float follow = config.AimCameraDistance > 0f ? config.AimCameraDistance
                 : Mathf.Max(1f, Mathf.Abs(_cam.NeutralOffsetZ));
-            _cam.SpectateBlendSeconds = config.SpectateBlendSeconds;
-            _cam.Spectate = new CustomCameraController.SpectateView
-            {
-                Position = ThresherCameraFraming.LaunchCameraPosition(launch, _aimDir, _aimUp, follow,
-                    config.AimElevationDegrees),
-                LookAt = launch,
-                Up = _aimUp,
-            };
+            Vector3 eye = ThresherCameraFraming.LaunchCameraPosition(launch, _aimDir, _aimUp, follow,
+                config.AimElevationDegrees);
+            if (!SafeLookRotation.TryGet(launch - eye, _aimUp, out var look, this, logError: false))
+                look = _cam.transform.rotation;
+            // ENTER smoothly: ease from the pose the camera was ACTUALLY in when the spin was
+            // detected to the launch vantage, on this executor's own clock. The camera's blend only
+            // hands over (spectateBlendSeconds, short) from a vantage that starts exactly where the
+            // camera already is - so the still-spinning chase pose underneath never leaks in.
+            _camEase = Mathf.Min(1f, _camEase + dt / Mathf.Max(0.01f, config.SpectateEnterSeconds));
+            ShowVantage(_easeFromPos, _easeFromRot, eye, look, _camEase);
 
             // The launch sight: the crosshair (lime while the timing is right) and the Time-petal
             // zoom window down the same trajectory, zoomed by LT's depth alone.
@@ -1039,15 +1050,78 @@ namespace CosmicShore.Gameplay
             _aimDir = aim.normalized;
             _aimUp = normal;
             _sightZoom01 = 0f;
+            CaptureEaseStart();
+            _exiting = false;
             _spectating = true;
         }
 
-        void EndSpectate()
+        /// <summary>
+        /// Leave the launch view. <paramref name="smooth"/> (the launch, or the spin falling away):
+        /// keep holding a vantage and EASE it from where the camera is to the live chase pose behind
+        /// the hull (<see cref="TickExit"/>), then hand back to the follow camera once the two agree.
+        /// Otherwise (a teardown: disable, swap, lost pilot) drop the vantage at once.
+        /// </summary>
+        void EndSpectate(bool smooth = false)
         {
-            if (_spectating && _cam) _cam.Spectate = null;
             if (_spectating) _solver?.SteerOrbitPlane(Vector3.zero);   // the orbit's plane is the ship's again
             if (_sight) _sight.Hide();
+            bool was = _spectating;
             _spectating = false;
+            if (smooth && was && _cam)
+            {
+                CaptureEaseStart();
+                _exiting = true;
+                return;
+            }
+            _exiting = false;
+            if (_cam && (was || _cam.Spectate.HasValue)) _cam.Spectate = null;
+        }
+
+        /// <summary>
+        /// One frame of the eased EXIT: from the launch vantage the camera was holding to the chase
+        /// pose the follow camera will take behind the hull — computed from the hull's live pose and
+        /// the camera's own follow offset, so a hull still swinging onto its new heading is tracked,
+        /// not chased by a turn-capped frame. At the end the follow frame is snapped to the hull
+        /// (<see cref="CustomCameraController.SnapToTarget"/>) and the vantage released over the
+        /// short hand-over blend, between two poses that already coincide.
+        /// </summary>
+        void TickExit(float dt)
+        {
+            Transform target = _cam ? _cam.FollowTarget : null;
+            if (!target) { _exiting = false; if (_cam) _cam.Spectate = null; return; }
+            Vector3 offset = _cam.GetFollowOffset();
+            Vector3 eye = target.position + target.rotation * offset;
+            if (!SafeLookRotation.TryGet(target.position - eye, target.up, out var look, this, logError: false))
+                look = target.rotation;
+            _camEase = Mathf.Min(1f, _camEase + dt / Mathf.Max(0.01f, config.SpectateExitSeconds));
+            ShowVantage(_easeFromPos, _easeFromRot, eye, look, _camEase);
+            if (_camEase < 1f) return;
+            _cam.SnapToTarget();
+            _cam.SpectateBlendSeconds = config.SpectateBlendSeconds;
+            _cam.Spectate = null;
+            _exiting = false;
+        }
+
+        void CaptureEaseStart()
+        {
+            _easeFromPos = _cam.transform.position;
+            _easeFromRot = _cam.transform.rotation;
+            _camEase = 0f;
+        }
+
+        /// <summary>Hold the vantage at <c>SmoothStep(t)</c> of the way from one pose to another.</summary>
+        void ShowVantage(Vector3 fromPos, Quaternion fromRot, Vector3 toPos, Quaternion toRot, float t)
+        {
+            float w = Mathf.SmoothStep(0f, 1f, t);
+            Vector3 pos = Vector3.Lerp(fromPos, toPos, w);
+            Quaternion rot = Quaternion.Slerp(fromRot, toRot, w);
+            _cam.SpectateBlendSeconds = config.SpectateBlendSeconds;
+            _cam.Spectate = new CustomCameraController.SpectateView
+            {
+                Position = pos,
+                LookAt = pos + rot * Vector3.forward * 100f,
+                Up = rot * Vector3.up,
+            };
         }
 
         /// <summary>Hand the camera back: no vantage, and the prefab's own distance — unless
@@ -1056,7 +1130,7 @@ namespace CosmicShore.Gameplay
         void ReleaseCamera()
         {
             _spectateQualifyTime = 0f;
-            if (!_cam) { _cam = null; _spectating = false; _camWritten = float.NaN; if (_sight) _sight.Hide(); return; }
+            if (!_cam) { _cam = null; _spectating = false; _exiting = false; _camWritten = float.NaN; if (_sight) _sight.Hide(); return; }
             EndSpectate();
             _cam.MaxFollowTurnRate = 0f;
             float neutral = _cam.NeutralOffsetZ;

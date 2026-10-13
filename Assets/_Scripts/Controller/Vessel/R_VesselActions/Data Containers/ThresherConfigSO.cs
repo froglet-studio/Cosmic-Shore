@@ -182,8 +182,16 @@ namespace CosmicShore.Gameplay
         [Tooltip("How far behind the launch point the launch camera follows (world units). 0 = the hull's own " +
                  "chase distance (the camera settings' follow offset).")]
         [SerializeField, Min(0f)] float aimCameraDistance = 0f;
-        [Tooltip("Seconds to ease into the vantage and back out to the chase camera.")]
-        [SerializeField, Min(0f)] float spectateBlendSeconds = 0.6f;
+        [Tooltip("Seconds the camera EASES from wherever it is into the launch view once a spin is detected " +
+                 "(SmoothStep, on the executor's own clock, from a still start pose - so the spinning chase " +
+                 "pose never leaks into the move).")]
+        [SerializeField, Min(0.01f)] float spectateEnterSeconds = 0.9f;
+        [Tooltip("Seconds the camera EASES from the launch view back to the chase pose behind the hull after " +
+                 "the launch (or when the spin falls away), tracking the hull's live pose.")]
+        [SerializeField, Min(0.01f)] float spectateExitSeconds = 0.8f;
+        [Tooltip("The camera's own hand-over blend at either end of those eases (seconds). Short, because the " +
+                 "two poses it blends between already coincide.")]
+        [SerializeField, Min(0f)] float spectateBlendSeconds = 0.05f;
         [Tooltip("While spectating, full stick X swings the AIM (the path a release flies off along) at this " +
                  "rate (degrees/s). The launch point moves round the circle with it and the camera follows, so " +
                  "aiming IS turning the camera; stick Y tilts the whole orbit with the aim.")]
@@ -196,7 +204,7 @@ namespace CosmicShore.Gameplay
                  "constant: the window is never narrowed by speed or by the gameplay camera.")]
         [SerializeField, Range(5f, 120f)] float sightWideFieldOfView = 50f;
         [Tooltip("The window's field of view with LT pulled all the way (degrees) - the zoomed end.")]
-        [SerializeField, Range(1f, 90f)] float sightZoomFieldOfView = 12f;
+        [SerializeField, Range(1f, 90f)] float sightZoomFieldOfView = 6f;
         [Tooltip("LT depth below which the window does not zoom. The Plant engages at 5% depth, so this is a " +
                  "light hold that plants without zooming.")]
         [SerializeField, Range(0f, 0.9f)] float sightZoomDeadzone = 0.25f;
@@ -307,6 +315,8 @@ namespace CosmicShore.Gameplay
         public float SightZoomDeadzone => sightZoomDeadzone;
         public float SightZoomResponse => sightZoomResponse;
         public float SpectateBlendSeconds => spectateBlendSeconds;
+        public float SpectateEnterSeconds => spectateEnterSeconds;
+        public float SpectateExitSeconds => spectateExitSeconds;
         public float AimYawRate => aimYawRate;
         public float AimPitchRate => aimPitchRate;
         public float BallBodyCool => ballBodyCool;

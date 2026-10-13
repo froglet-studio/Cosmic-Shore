@@ -197,14 +197,17 @@ namespace CosmicShore.Tests
 
             Vector3 pos = Vector3.zero;
             Vector3 vel = Vector3.forward * s.CruiseSpeed;
-            for (int i = 0; i < 120; i++)
+            float slowest = float.MaxValue;
+            for (int i = 0; i < 240; i++)
             {
                 var r = solver.Step(pos, vel, false, s.CruiseSpeed, Dt);
                 vel = r.ShipVelocity;
                 pos += vel * Dt;
+                if (solver.Mode == ThresherMode.Pivot) slowest = Mathf.Min(slowest, vel.magnitude);
             }
             Assert.AreEqual(ThresherMode.Pivot, solver.Mode);
-            Assert.Greater(vel.magnitude, s.MinShipFraction * s.CruiseSpeed * 0.9f, "Radial entry must still orbit.");
+            Assert.Greater(slowest, s.MinShipFraction * s.CruiseSpeed * 0.9f, "Radial entry must still orbit - and never stall while it swings on.");
+            Assert.IsFalse(solver.IsHookingOn, "the hook-on swing has settled");
             Assert.LessOrEqual((pos - solver.Pivot).magnitude, solver.Length + 1e-2f, "The ship stays on the chain.");
         }
 
@@ -355,6 +358,41 @@ namespace CosmicShore.Tests
             Assert.AreEqual(2.2f * s.CruiseSpeed, s.LockMaxSpeed, 1e-4f);
         }
 
+        [Test]
+        public void HookOn_TurnsOntoTheOrbitAtTheCappedRate_WithoutStalling()
+        {
+            // The worst case the camera met: flying straight AWAY from a ball planted behind - the
+            // orbit's tangent is 90 deg off the heading. It used to be replaced in ONE frame.
+            var s = Defaults();
+            var solver = new ThresherChainSolver(s);
+            Vector3 pos = Vector3.zero, vel = Vector3.forward * s.CruiseSpeed;
+            solver.Reset(pos, Vector3.forward, vel);
+            solver.BallPosition = new Vector3(0f, 0f, -s.RestLength);
+            solver.BallVelocity = Vector3.zero;
+            solver.Plant();
+            float worstTurn = 0f, slowest = float.MaxValue;
+            bool wasPivot = false;
+            for (int i = 0; i < 240; i++)
+            {
+                Vector3 before = vel;
+                vel = solver.Step(pos, vel, false, s.CruiseSpeed, Dt).ShipVelocity;
+                pos += vel * Dt;
+                if (solver.Mode != ThresherMode.Pivot) continue;
+                if (wasPivot) worstTurn = Mathf.Max(worstTurn, AngleDeg(before, vel));
+                wasPivot = true;
+                slowest = Mathf.Min(slowest, vel.magnitude);
+            }
+            // A frame may turn by the hook-on cap PLUS the orbit's own circular step at the fastest
+            // spin it can reach (lockMax on the reeled-in chain) - nothing like the old one-frame snap.
+            float cap = s.HookTurnRate * Dt / Mathf.Deg2Rad;
+            float orbitStep = s.LockMaxSpeed / s.RestLength * Dt / Mathf.Deg2Rad;
+            Assert.LessOrEqual(worstTurn, cap + orbitStep + 0.5f,
+                $"no frame turns the ship past hookTurnRate x dt ({cap:F1} deg) + one orbit step ({orbitStep:F1}); it used to be ~91");
+            Assert.Greater(slowest, s.MinShipFraction * s.CruiseSpeed * 0.9f, "the swing-out never stalls the ship");
+            Assert.IsFalse(solver.IsHookingOn, "and it settles onto the chain's circle");
+            Assert.AreEqual(solver.Length, (pos - solver.Pivot).magnitude, 0.05f);
+        }
+
         // ------------------------------------------------------------ steering while planted
 
         /// <summary>Plant a ball abeam (orbit in the XZ plane, normal ±Y) and let the skid finish.</summary>
@@ -372,6 +410,13 @@ namespace CosmicShore.Tests
                 pos += vel * Dt;
             }
             Assert.AreEqual(ThresherMode.Pivot, solver.Mode, "setup: the skid must end in a pivot");
+            // ...and the hook-on swing must be over: these tests are about the steady orbit.
+            for (int i = 0; i < 240 && solver.IsHookingOn; i++)
+            {
+                vel = solver.Step(pos, vel, false, s.CruiseSpeed, Dt).ShipVelocity;
+                pos += vel * Dt;
+            }
+            Assert.IsFalse(solver.IsHookingOn, "setup: the hook-on settles within 4 s");
             return (solver, pos, vel);
         }
 
@@ -755,7 +800,7 @@ namespace CosmicShore.Tests
                 vel = solver.Step(pos, vel, false, s.CruiseSpeed, Dt).ShipVelocity;
                 pos += vel * Dt;
             }
-            for (int f = 0; f < 30; f++)
+            for (int f = 0; f < 240 && (f < 30 || solver.IsHookingOn); f++)
             {
                 vel = solver.Step(pos, vel, false, s.CruiseSpeed, Dt).ShipVelocity;
                 pos += vel * Dt;

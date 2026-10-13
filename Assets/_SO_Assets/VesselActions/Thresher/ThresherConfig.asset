@@ -40,6 +40,8 @@ MonoBehaviour:
     lockMax: 2.2
     yank: 0.5
     pivotSteer: 45
+    hookTurnRate: 300
+    hookReturnRate: 5
     windmillSpeed: 1000
   vesselHitPetals:
     Enabled: 1
@@ -121,11 +123,13 @@ MonoBehaviour:
   spectateReleaseFraction: 0.75
   aimElevationDegrees: 0
   aimCameraDistance: 0
-  spectateBlendSeconds: 0.6
+  spectateEnterSeconds: 0.9
+  spectateExitSeconds: 0.8
+  spectateBlendSeconds: 0.05
   aimYawRate: 180
   aimPitchRate: 120
   sightWideFieldOfView: 50
-  sightZoomFieldOfView: 12
+  sightZoomFieldOfView: 6
   sightZoomDeadzone: 0.25
   sightZoomResponse: 12
   ballBodyCool: 0.16

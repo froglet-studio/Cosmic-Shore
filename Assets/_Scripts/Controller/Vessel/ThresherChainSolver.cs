@@ -21,6 +21,9 @@ namespace CosmicShore.Gameplay
         public float SkidRate, SkidSeconds, LockKeep, LockSpinRate, LockMaxSpeed, Yank;
         /// <summary>Max rate (rad/s) at which full stick tilts a planted orbit's plane.</summary>
         public float PivotSteerRate;
+        /// <summary>Hook-on: the fastest the ship's heading turns onto the orbit (rad/s; 0 = snap),
+        /// and how fast (1/s) the chain reels back the stretch that swing-out took.</summary>
+        public float HookTurnRate, HookReturnRate;
         // Windmill (an omni crystal): the ball circles the SHIP at this speed for a while
         public float WindmillSpeed;
         // Reference
@@ -112,6 +115,12 @@ namespace CosmicShore.Gameplay
                  "the hull's free-flight 120 deg/s, so the spin stays the ship's and the stick steers it. " +
                  "0 = sticks ignored while planted. A rate, so not scaled.")]
         [SerializeField] float pivotSteer = 45f;
+        [Tooltip("Hook-on: when the plant catches, the ship's heading turns onto the orbit at most this fast " +
+                 "(degrees/s) instead of snapping (it used to turn up to 91 deg in ONE frame). The chain stretches " +
+                 "to let the ship swing wide while it turns. 0 = the old snap. A rate, so not scaled.")]
+        [SerializeField] float hookTurnRate = 300f;
+        [Tooltip("How fast the chain reels back the stretch the hook-on swing took (1/s, exponential).")]
+        [SerializeField] float hookReturnRate = 5f;
 
         [Header("Windmill (omni crystal)")]
         [Tooltip("Collecting an OMNI crystal throws the ball into a windmill: it circles the ship at this speed " +
@@ -153,6 +162,8 @@ namespace CosmicShore.Gameplay
                 LockMaxSpeed = lockMax * gameCruise,
                 Yank = Mathf.Max(0f, yank),
                 PivotSteerRate = Mathf.Max(0f, pivotSteer) * Mathf.Deg2Rad,
+                HookTurnRate = Mathf.Max(0f, hookTurnRate) * Mathf.Deg2Rad,
+                HookReturnRate = Mathf.Max(0f, hookReturnRate),
                 WindmillSpeed = Mathf.Max(0f, windmillSpeed) * k,
                 CruiseSpeed = gameCruise,
             };
@@ -240,6 +251,9 @@ namespace CosmicShore.Gameplay
         bool _wasSlack;
         float _windmillRadius;
         Vector3 _planeNormal;      // steered orbit plane (zero = leave the plane alone)
+        Vector3 _hookHeading;      // the ship's heading while it turns onto the orbit (zero = on it)
+        float _hookSlack;          // how far past the chain's length the hook-on swing is allowed
+        float _hookSlackSpeed;     // d(slack)/dt - the reel-back is a spring, so radial speed ramps
         Vector3 _launchAim;        // armed launch direction (zero = none armed)
         float _armedSeconds;       // how long the armed launch has been waiting
         float _perfectWindow;      // a launch this soon after arming is PERFECT...
@@ -247,6 +261,10 @@ namespace CosmicShore.Gameplay
 
         /// <summary>Seconds of windmill left; 0 outside <see cref="ThresherMode.Windmill"/>.</summary>
         public float WindmillTimeLeft { get; private set; }
+
+        /// <summary>The ship is still swinging onto the orbit after the plant caught (turning onto
+        /// the tangent, or reeling back the stretch that swing took).</summary>
+        public bool IsHookingOn => Mode == ThresherMode.Pivot && (_hookHeading.sqrMagnitude > 0.5f || _hookSlack > 0f);
 
         /// <summary>A launch is armed: the ship keeps orbiting until it reaches the launch point.</summary>
         public bool LaunchArmed => _launchAim.sqrMagnitude > 0.5f;
@@ -274,6 +292,9 @@ namespace CosmicShore.Gameplay
             WindmillTimeLeft = 0f;
             _planeNormal = Vector3.zero;
             _launchAim = Vector3.zero;
+            _hookHeading = Vector3.zero;
+            _hookSlack = 0f;
+            _hookSlackSpeed = 0f;
             IsTaut = true;
         }
 
@@ -298,6 +319,9 @@ namespace CosmicShore.Gameplay
             if (Mode == ThresherMode.Windmill) return;
             _launchAim = Vector3.zero;
             _planeNormal = Vector3.zero;
+            _hookHeading = Vector3.zero;
+            _hookSlack = 0f;
+            _hookSlackSpeed = 0f;
             if (Mode == ThresherMode.Pivot)
             {
                 BallVelocity = Vector3.ClampMagnitude(shipVelocity * Settings.Yank, Settings.MaxBallSpeed);
@@ -634,6 +658,12 @@ namespace CosmicShore.Gameplay
             Vector3 n = r.sqrMagnitude > 1e-8f ? r.normalized : Vector3.forward;
             Vector3 tangent = shipVelocity - n * Vector3.Dot(shipVelocity, n);
             _lockDirection = tangent.sqrMagnitude > 1e-6f ? tangent.normalized : AnyPerpendicular(n, shipVelocity);
+            // HOOK-ON: keep flying the way the ship was going and turn onto the orbit at a capped
+            // rate (StepPivot), rather than replacing the heading outright in one frame.
+            _hookHeading = Settings.HookTurnRate > 0f && shipVelocity.sqrMagnitude > 1e-6f
+                ? shipVelocity.normalized : Vector3.zero;
+            _hookSlack = 0f;
+            _hookSlackSpeed = 0f;
 
             // Keep the speed you hooked on with — but never hook on at a crawl: a pilot who plants
             // while flying straight AT the ball has no tangential speed at all, and a zero orbit
@@ -708,7 +738,19 @@ namespace CosmicShore.Gameplay
             Vector3 tangent = _lockDirection - n * Vector3.Dot(_lockDirection, n);
             tangent = tangent.sqrMagnitude > 1e-6f ? tangent.normalized : AnyPerpendicular(n, shipVelocity);
 
-            Vector3 next = shipPosition + tangent * (LockSpeed * dt);
+            // HOOK-ON: the heading chases the tangent at HookTurnRate; while it does, the chain
+            // stretches to let the ship swing wide (no clamp), and afterwards it reels the stretch
+            // back at HookReturnRate. The ship never stalls and never turns faster than the cap.
+            Vector3 heading = tangent;
+            bool hooking = _hookHeading.sqrMagnitude > 0.5f;
+            if (hooking)
+            {
+                _hookHeading = TurnTowards(_hookHeading, tangent, Settings.HookTurnRate * dt);
+                heading = _hookHeading;
+                if (Vector3.Dot(_hookHeading, tangent) > 0.99995f) _hookHeading = Vector3.zero;   // on the orbit
+            }
+
+            Vector3 next = shipPosition + heading * (LockSpeed * dt);
             Vector3 fromPivot = next - Pivot;
 
             // A steered plane (the aim camera): lay the step onto it, so the whole circle turns
@@ -720,9 +762,29 @@ namespace CosmicShore.Gameplay
             }
 
             float nextDist = fromPivot.magnitude;
-            IsTaut = nextDist >= Length;
+            if (hooking)
+            {
+                // The swing-out stretches it; remember how fast it is still swinging out, so the
+                // reel-back starts from that speed rather than from a standstill.
+                float stretch = Mathf.Max(0f, nextDist - Length);
+                _hookSlackSpeed = (stretch - _hookSlack) / dt;
+                _hookSlack = Mathf.Max(_hookSlack, stretch);
+            }
+            else if (_hookSlack > 0f)
+            {
+                // ...and it reels back as a CRITICALLY DAMPED spring: the radial speed ramps from
+                // the swing-out's own speed, never steps (an exponential reel-back stepped it, a
+                // one-frame 47 deg turn), and the stretch never overshoots below the chain's length.
+                float k = Mathf.Max(0.1f, Settings.HookReturnRate);
+                _hookSlackSpeed += (-k * k * _hookSlack - 2f * k * _hookSlackSpeed) * dt;
+                _hookSlack += _hookSlackSpeed * dt;
+                if (_hookSlack < 0.01f && Mathf.Abs(_hookSlackSpeed) < 0.5f) { _hookSlack = 0f; _hookSlackSpeed = 0f; }
+                _hookSlack = Mathf.Max(0f, _hookSlack);
+            }
+            float reach = Length + _hookSlack;
+            IsTaut = nextDist >= reach;
             if (IsTaut && nextDist > 1e-5f)
-                fromPivot *= Length / nextDist;
+                fromPivot *= reach / nextDist;
             next = Pivot + fromPivot;
 
             // The hull travels the CHORD so it lands exactly on the circle; the orbital speed is
@@ -757,6 +819,19 @@ namespace CosmicShore.Gameplay
             float across = Mathf.Clamp(Vector3.Dot(Vector3.ClampMagnitude(steer, 1f), b), -1f, 1f);
             float angle = across * Settings.PivotSteerRate * dt;
             _lockDirection = t * Mathf.Cos(angle) + b * Mathf.Sin(angle);
+        }
+
+        /// <summary>Turn unit vector <paramref name="from"/> toward unit <paramref name="to"/> by at
+        /// most <paramref name="maxRadians"/> (in the plane they span).</summary>
+        static Vector3 TurnTowards(Vector3 from, Vector3 to, float maxRadians)
+        {
+            float cos = Mathf.Clamp(Vector3.Dot(from, to), -1f, 1f);
+            float angle = Mathf.Acos(cos);
+            if (angle <= maxRadians || angle < 1e-5f) return to;
+            Vector3 perp = to - from * cos;
+            if (perp.sqrMagnitude < 1e-10f) perp = AnyPerpendicular(from, Vector3.up);
+            perp.Normalize();
+            return (from * Mathf.Cos(maxRadians) + perp * Mathf.Sin(maxRadians)).normalized;
         }
 
         static Vector3 AnyPerpendicular(Vector3 n, Vector3 hint)

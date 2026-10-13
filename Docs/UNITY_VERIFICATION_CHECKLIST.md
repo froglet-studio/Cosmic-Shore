@@ -65,6 +65,27 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Thresher round 5: smooth spin entry/exit, doubled sight zoom (`cece/wonderful-hypatia-4b323s`, 2026-10-13) — NOT EDITOR-VERIFIED
+
+**Landed** (`THRESHER.md` §4 Lock, §5a): (1) the camera's launch-view entry and exit are eased on the
+executor's clock between still / analytically tracked poses (`spectateEnterSeconds` 0.9, `spectateExitSeconds`
+0.8, hand-over `spectateBlendSeconds` 0.05; exit ends with `SnapToTarget`); (2) the solver's hook-on turns the
+heading onto the orbit at `hookTurnRate` 300 °/s with a stretch-and-spring reel-back instead of a one-frame snap
+(worst 6.9°/frame vs 91°); (3) `sightZoomFieldOfView` 12° → 6°.
+
+**Not opened in Unity.** Offline: `unity_refcompile` RESULT OK; `thresher_chain_harness` 57/57 (new hook-on test).
+
+**Verify in editor:**
+1. Tow the ball behind you and plant: the ship swings wide and curves onto the orbit, no snap; it does not
+   slow to a crawl. The camera glides into the launch view with no wobble.
+2. Release LT: the ship launches; the camera glides back behind it with no swing or pop at the end.
+3. Let the spin decay (pay out RT) until the view releases: same glide.
+4. Squeeze LT fully: the Time-petal window zooms about twice as far as before.
+5. Tuning if needed: `spectateEnterSeconds` / `spectateExitSeconds` (glide lengths), `hookTurnRate` (how fast the
+   ship swings on; higher = tighter, less stretch), `hookReturnRate` (how fast the stretch reels back).
+
+---
+
 ### 🔴 Thresher round 4: launch camera on the trajectory, crosshair, Time-petal zoom window (`cece/wonderful-hypatia-4b323s`, 2026-10-13) — NOT EDITOR-VERIFIED
 
 **Landed** (`R_VesselActions/THRESHER.md` §5a): the spectated-spin camera follows behind the launch point ON
