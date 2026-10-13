@@ -19,7 +19,7 @@ namespace Amoebius
     /// through its scene. <see cref="Verify"/> applies it after every ingest, so "fixed" is
     /// evidence, not a claim, and a fixed problem that comes back reopens its card.
     /// </summary>
-    public sealed class AmoebiusBoard
+    internal sealed class AmoebiusBoard
     {
         public enum Kind { Bug = 0, Task = 1 }
         public enum Status { Suggested = 0, Todo = 1, Doing = 2, Done = 3, Dismissed = 4 }

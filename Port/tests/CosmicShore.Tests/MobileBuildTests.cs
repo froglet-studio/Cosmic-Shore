@@ -239,17 +239,14 @@ public class PlayerDataBuilderTests : IDisposable
     {
         Asset("Assets/Scenes/Boot.unity", 1);
         Settings(("Assets/Scenes/Boot.unity", 1, true));
-        // The engine's settings file (AmoebiusProjectSettings is linked into two of the referenced
-        // assemblies, so the test writes and reads its JSON directly).
-        const string rel = "Port/ProjectSettings/AmoebiusProject.json";
-        var src = Path.Combine(_root, rel);
-        Directory.CreateDirectory(Path.GetDirectoryName(src)!);
-        File.WriteAllText(src, "{\"network\": {\"server\": \"play.example.org:47777\", \"key\": \"k\"}}");
+        new Amoebius.AmoebiusProjectSettings { Network = { Server = "play.example.org:47777", Key = "k" } }.Save(_root);
         var outDir = Path.Combine(_root, "out");
         new PlayerDataBuilder(_root).Build(outDir);
 
         // The phone reads it where the desktop player does: Port/ProjectSettings under its data root.
-        Assert.Equal(File.ReadAllText(src), File.ReadAllText(Path.Combine(outDir, rel)));
+        var network = Amoebius.AmoebiusProjectSettings.Load(outDir).Network;
+        Assert.Equal("play.example.org:47777", network.Server);
+        Assert.Equal("k", network.Key);
     }
 
     [Fact]
