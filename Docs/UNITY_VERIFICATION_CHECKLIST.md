@@ -6,14 +6,15 @@
 > into dev tasks. New unverified work does **not** get a section here — record it in the
 > PR body's *Verification status* section and the scan will pick it up.
 
-> ### ✅ Absorbed 2026-10-10: the `/qa-backlog` run for board item R2 read every open section here
+> ### Absorbed 2026-10-10, as of `48d84486f`: sections and steps added later are not yet items
 >
-> The full `/qa-backlog` refresh on `cece/nice-brahmagupta-ojclij` (scan covers `48d84486f`)
-> swept this file as the skill prescribes: all 29 open sections dated 2026-10-05 or later that had
-> no item, and the 25 older never-absorbed sections the 2026-09-11 count below describes, are now
-> items in `Docs/QA/QA_BACKLOG.md` (52 added that day, each `**Source:**` line naming its PR or
-> this file's section). The sections below stay as the detail record a tester may need; the
-> backlog is the list QA runs. A section here is closed by its item passing, not by hand.
+> The full `/qa-backlog` refresh on `cece/nice-brahmagupta-ojclij` swept this file as of `48d84486f`.
+> The 29 open sections dated 2026-10-05 or later that had no item, and the 25 older never-absorbed
+> sections the 2026-09-11 count below describes, became items in `Docs/QA/QA_BACKLOG.md` (52 added
+> that day). **Sections and steps added after `48d84486f` are NOT yet items**, including "Store
+> readiness" and this branch's own test plan (`Docs/BRANCH_TEST_PLAN_2026-10-12.md`). Run them from
+> here until the next `/qa-backlog` run absorbs them. A section here is closed by its item passing,
+> not by hand.
 
 > ### ⚠ The supersession is not finished — corrected 2026-09-11 (doc-drift sweep, item **R8**)
 >
@@ -76,211 +77,14 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ### 🔴 AI pilots, the join-failure notice, and the skimmer audit (`cece/nice-brahmagupta-ojclij`, 2026-10-10) — NOT EDITOR-VERIFIED
 
-**Landed** (each compile-proved with `Tools/Build/unity_refcompile`, player and editor configs, 0
-project errors; the Prisma live compile and its 1691-test engine suite green; no editor in the session):
+**Superseded by the reviewed test plan.** Every part of this branch was reviewed with adversarial
+verification and its confirmed findings fixed on 2026-10-12, which changed several steps that used
+to be here (the held toast became a toast-manager notice, Add Friend resolves names, the recent
+list is per account, the parity capture resets and can be cancelled, the training state evolves).
+The editor steps, with a PASS and a FAIL line each, are in `Docs/BRANCH_TEST_PLAN_2026-10-12.md`,
+one block per part. `Tools/Build/pick_branch_parts.py build` files exactly the picked parts' blocks
+here on the branch it builds, so a selective push carries its own steps.
 
-- `GameDataSO.IsGeneticTrainingSession` is the genetic trainer's own flag. `IsTraining` is practice
-  mode again (`Arcade.LaunchTrainingGame`, reached from the Hangar's training modal and the daily
-  challenge), and it no longer stands down `TrainingDeploymentService`, `TrainingAIDeploymentBridge`
-  or `SkimRaceAIDeployment.Claims` — every Hangar practice game used to suppress the Skim Race pilot
-  and the archive deployment by accident.
-- `PrismSensor` (the genome pilot's prism neighbourhood) reads `PrismSpatialIndex.QuerySphere`
-  instead of `Physics.OverlapSphereNonAlloc`, so it sees a prism during the 0.6 s its collider is
-  still off and is no longer truncated to 64 colliders.
-- `ToastChannel.ShowPrefixOrHold`: a failed party join's "Couldn't join - returned to your menu."
-  is parked on the channel asset across the Menu_Main reload and drained by the fresh scene's
-  `ToastService.OnEnable`.
-- `Tools/Build/audit_vessel_skimmers.py`, an offline twin of **FrogletTools ▸ Vessels ▸ Audit
-  Vessel Skimmers**, reproduces QA's six hulls (DT-002) and names the fault per hull.
-- `FriendsListPanel` gained the **Add Friend** section (R13 item 1): a display-name field, a Send
-  button and a status line on all four scene-placed `FriendListPanel`s in `Menu_Main`, written
-  with `cs-asset` (480 commands, round-trip byte-identical, serialization audit 0/0) and seen on
-  screen in Prisma; the send goes through `FriendsServiceFacade.SendFriendRequestByNameAsync`
-  behind the same 0.4 s anti-spam gate as Invite/Cancel/Kick.
-- **Recently played with** (R13 item 3): `RecentPlayersStore` remembers the other humans of every
-  completed multiplayer match (recorded from `GameDataSO.InvokeMiniGameEnd` on every peer; AI
-  seats and the local pilot excluded; de-duplicated by id, newest first, capped by
-  `Resources/RecentPlayersConfig.asset`, 20), as local JSON `recent_players.data`. The
-  `FriendsListPanel` gained a **RECENT** section between ADD FRIEND and REQUESTS on all four
-  scene-placed panels (`cs-asset`, round-trip byte-identical, serialization audit 0/0, no new
-  dangling refs): `RequestsInfo` rows in their new `RecentPlayer` shape, an add-friend button per
-  row through `FriendsServiceFacade.SendFriendRequestAsync(playerId)` behind the same gate and
-  status line, FRIENDS / REQUEST SENT shown instead of the button. The Online scroll view is now
-  210 tall and fraction-anchored. Edit-mode `RecentPlayersStoreTests` (20) cover the list shaping.
-  Seen on screen in Prisma with a seeded store.
-
-- The four vessel debuff/overtake effects' static per-vessel cooldown tables
-  (`Dictionary<ResourceSystem, float>`, never pruned) now share `VesselEffectCooldowns`, which
-  drops destroyed vessels the first time a new vessel is seen. Prisma's leak scan had measured the
-  overtake table alone holding 11,874 destroyed prisms after 10 Skim Race matches (each dead key
-  keeps its vessel and trail reachable). Edit-mode `VesselEffectCooldownsTests` (4).
-- Ready lights are an identity (R13 item 5): `ArcadeConfigSyncManager.SyncReady_ClientRpc` carries
-  the ready SET (owner client ids) with the expected head-count, every peer mirrors it
-  (`ReadyClients`, `OnReadySetChanged`), and `LobbySlotRow.SeatIsReady` lights a seat exactly when
-  its player pressed. Edit-mode `LobbySlotRowReadyTests` (5). `Docs/ArcadeLaunch/ARCHITECTURE.md`
-  §5.1 rewritten.
-
-- Four fire-and-forget delays in the arcade controllers are bound to their owner's lifetime
-  (`SkimRaceController.SpawnTrackEarly` 1.5 s, `NetworkScoreTracker.DelayAndSendResults` 0.5 s,
-  `MultiplayerMiniGameControllerBase.ExecuteSceneReloadReplay` 0.5 s and
-  `ResetServerRoundAfterDelay` 0.1 s): a match torn down inside the wait no longer keeps the dead
-  controller reachable or fires an RPC from it, and a cancelled reload puts `IsReplayReload` back.
-- **Dropping out of a match** (R13 item 6, 2026-10-10; the traces and findings are
-  `Docs/PartySystem/DROPPING_OUT.md`): a client's host-loss bounce now covers the screen and
-  unpauses BEFORE its 1 to 3 s teardown (`PartyInviteController.HandleHostLossAsync`), as the
-  deliberate Leave already did, so a dropped client no longer watches its own hull vanish with the
-  HUD up; the bounce notice is one neutral line for every cause the client cannot tell apart
-  ("Connection to the party was lost - returned to your menu.", `MultiplayerSetup`), replacing
-  "Host disconnected", which blamed the host for the player's own Wi-Fi; and the dead
-  `MultiplayerDomainGamesController.OnPlayerLeavingFromSession` override (it parsed a UGS player
-  id as a Netcode client id, never matched, and would have deleted the departed pilot's score) is
-  removed. Rejoin-in-progress and host migration stay cut. Compile-proved only:
-  `Tools/Build/unity_refcompile` player config `RESULT: OK - no errors in project code`, the
-  Prisma player build 0 errors, `check_console_logging.py` 0 problems, `validate_project.py`
-  PASSED.
-
-- The AI Training assets carry a Prisma-trained result: `Archive.asset`'s Squirrel_SkimRace_I4
-  entry is the winner of a 1,800-flight seat-balanced tournament (pop13, 221.4 against the old
-  entry's 47.2 in the same races, `Port/docs/AI_TRAINING.md` "Result: 7 generations"),
-  `SessionState.asset` is the generation-7 population, `Exports/SkimRace_Squirrel_I4.json` the
-  same genome. Written by the engine's UnityYamlWriter (`--train export`), never by hand. Skim
-  Race seats stay with the rule-based pilot while `DeployInNormalPlay` is on.
-
-- `BaseScoreTracker.OnDestroy` unsubscribes every scorer. A tracker destroyed without a turn end
-  (a quit, a host-loss bounce, a watchdog-ended training match) left `TimePlayedScoring`'s loop
-  running: it kept adding time score to the shared round stats every quarter second from the
-  menu, and its pending delay pinned the dead vessel and its trail (Prisma's leak scan: 12,623 ->
-  570 destroyed prisms reachable after 12 matches).
-
-- **An invite you miss is no longer gone** (R13 item 2, landed 2026-10-12;
-  `Docs/PartySystem/UI.md` "Invite inbox and badge"). `HostConnectionService` keeps every open
-  invite in an `IncomingInviteInbox` (one record per sender; it used to remember ONE, so two
-  friends inviting at once re-fired both on every refresh tick and a Decline dropped the other
-  sender's too). The popup's detail line says the invite waits in the friends list
-  ("2 invites waiting. Also in your friends list for N s") and the card moves on to the next open
-  invite when the shown one is answered or ends; a Decline answers one sender; the friends panel's
-  Requests rows list every open invite on open; a `PartyInviteBadge` (an `InviteBadge` child of all
-  four `ArcadeLobbyList`s, authored with `cs-asset`) counts the ones not yet seen there. The
-  recipient's lifetime, the row timer and the sender's outgoing timeout are one serialized value,
-  `HostConnectionService.outgoingInviteTimeoutSeconds` (60 s, default on `PartyServices.prefab`).
-  Proved without an editor: `unity_refcompile` player and editor configs 0 project errors, the
-  Prisma build 0 errors, `IncomingInviteInboxTests` 26/26 against Prisma's Live assembly (two
-  planted bugs each turned tests red: last-seen-only dedup made the two-sender test raise 6 times
-  instead of 2), `cs-asset roundtrip` byte-identical and `serialization-audit` 0 DROPPED / 0 EXTRA
-  on Menu_Main, the variant prefab and `PartyServices.prefab`, no new dangling local refs; seen in
-  Prisma with invites seeded into the directory-backed presence lobby (each raised once, the badge
-  at 2, both rows, a card Decline moving on with "Declined 'seed-Marlin'; 1 still open.").
-
-**Verify in editor:**
-1. Hangar ▸ a training (practice) game of Skim Race at intensity 1 with one AI seat: the AI
-   Squirrel flies the Skim Race pilot (the `[SkimRaceAI]` verbose line on the `AITraining` channel,
-   or simply: it collects crystals along the track). Before this branch it kept the legacy
-   `AIPilot`.
-2. FrogletTools ▸ AI Training ▸ Learn on `Scenario_HexRace`: the rollout runs (`IsGeneticTrainingSession`
-   true on `GameData.asset` while in Play), no second pilot is installed on an AI seat (one
-   `TrainingPilot`, `AIPilot` disabled), and leaving Play clears the flag (the play-mode hook).
-   `IsTraining` stays false throughout.
-3. Edit-mode: `AITrainingCoreTests`, `InputOnlyContractTests`, `SkimRaceAITests`
-   (`Deployment_ClaimsOnlyNormalSkimRaceAndRegatta` now also asserts a practice game claims the
-   pilot) and the new `ToastChannelHoldTests` — all green.
-4. A Learn rollout in a dense cell: `TrainingPilot`'s obstacle avoidance and skim policies react
-   to freshly laid trail (the pilot steers around a rail laid in front of it within a second of the
-   lay, which the collider-based scan could not see).
-5. Force a party join failure (accept an invite whose host has quit, or kill the host during the
-   accept): after the bounce, the fresh Menu_Main shows the "Couldn't join" toast once.
-6. Run **FrogletTools ▸ Vessels ▸ Audit Vessel Skimmers** and compare its six hulls and reasons with
-   `python3 Tools/Build/audit_vessel_skimmers.py`; a difference is a finding for DT-002. Same for
-   **Validation ▸ Validate Lifeform Crystals** against `audit_lifeform_crystals.py` (34 expected).
-7. Parity harness (`Assets/_Scripts/Utility/Replay`, `Editor/Parity`): edit-mode `ReplayFileTests`
-   (14) green; **FrogletTools ▸ Parity ▸ Capture Goldens** plays each `Port/parity/manifest.json`
-   case in Play mode and writes `Port/parity/goldens/<case>/{state,events,transforms}.jsonl` plus
-   `goldens/random/random_<seed>.json`; the `do` stream's `arcade SkimRace` / `start` / `ready`
-   verbs reach the match (the capture logs each verb on the `Parity` channel). A plain Play with
-   no replay and no env var must behave exactly as before (recorder, player and probe inert).
-8. Load Time Insights: arm **cold-boot** recording (the new toggle on the tab, or a dev build with
-   `-csmloadinsights-boot`), boot to the menu, and read `load_boot_*.txt`: every boot step named,
-   no large "Unattributed" remainder. Then one arcade launch: the connecting panel's dwell, the
-   arena-ready gate remainder and the peer wait appear as spans. A dev build with `-csmloadsweep`
-   produces `sweep_<stamp>.md` sorted worst-first (hand the full 124-cell run to H8).
-9. Skim Race intensity 4 with 2 and 3 AI seats (the §7 matrix): the AI seats now fly
-   `skimrace-v2-i4`; expect ~141 s first-finisher medians and the second seat finishing far more
-   often than before (sim: 5/40 → 39/40 every-seat-finished). 70 s is not expected.
-10. Menu_Main ▸ Arcade ▸ an empty party slot opens the friends panel: the ADD FRIEND bar sits
-    between ONLINE and REQUESTS with the field, the green add-friend glyph and an empty status
-    line, and nothing overlaps at 16:9 and 4:3 (the Online scroll view is now 280 tall). Type an
-    unknown name and press Send or Enter: one status line "Couldn't send to NAME: ..." and the
-    button comes back; a real display name of a second signed-in account: "Friend request sent",
-    the field clears, and the other account's REQUESTS row shows it. Offline: "Friends service
-    isn't ready". Two presses inside 0.4 s play one `OptionClick`. Repeat the look on the Arena,
-    Mission and Toybox copies (verified structurally only).
-11. Two signed-in accounts play one online match to the scoreboard (any mode; an AI seat or two as
-    well). Back in Menu_Main ▸ Arcade ▸ an empty party slot: the RECENT bar sits between ADD
-    FRIEND and REQUESTS on both machines, with exactly the OTHER human as a row ("PLAYED JUST
-    NOW", their name and avatar) and no AI and no self; `persistentDataPath/recent_players.data`
-    holds that one record. Press the row's green glyph: the status line reads "Friend request
-    sent to NAME.", the row flips to REQUEST SENT, and the other account's REQUESTS section shows
-    the request; after Accept both rows read FRIENDS. Play again with the same partner: still one
-    row, moved to the front. Nothing overlaps at 16:9 and 4:3 (Online now 210 tall, fraction
-    anchored; Recent and Requests show one row plus the top of the next and scroll). Repeat the
-    look on the Arena, Mission and Toybox copies. Edit-mode: `RecentPlayersStoreTests` green.
-12. Edit-mode `VesselEffectCooldownsTests` green (4 tests). Then a joust or a danger-prism debuff
-    still throttles at its asset's cooldown (one overtake buff per second on the same vessel) and
-    fires again after the window; a second match in the same editor session behaves the same (the
-    first match's vessels no longer gate anything).
-13. Ready identity, two or more players (MPPM or two machines): host opens a card with the
-    party in it; when the GUEST presses Ready, the guest's seat lights on every screen while the
-    host's own stays dark until the host presses, whatever the roster order; a guest who leaves
-    after pressing goes dark and the launch re-evaluates; closing the card and opening another
-    starts every light dark. Edit-mode `LobbySlotRowReadyTests` green (5). Maelstrom's lobby
-    count label is unchanged.
-14. Skim Race online, then Play Again: the fade, the reload and the fresh track still happen (the
-    bound delays are the same lengths); quit the match during the half-second fade: back in the
-    menu, the next launch is a normal start, not a replay reload (`GameData.IsReplayReload` false).
-15. Dropping out, host side (two machines, not MPPM; host + one client in any scored arcade
-    match, an AI seat or two as well). Client A pulls its network cable mid-turn: on the host,
-    A's hull sits frozen for about 30 s, then one toast "A left - AI has the ship" and the hull
-    flies again under AI; the turn and the scoreboard carry on; A's row keeps its score and A's
-    domain total includes it; the Party panel seat for A clears (note how long after the toast,
-    this is finding F6). Host returns the party to the menu: no ghost member, no stray AI vessel.
-    Repeat with A pressing pause ▸ LEAVE PARTY instead of pulling the cable: the same toast and
-    handover with no 30 s wait.
-16. Dropping out, client side (same setup). Pull the client's cable mid-turn with the pause menu
-    OPEN: after about 30 s the screen goes black BEFORE anything disappears from the arena (no
-    frame of the arena with the player's own hull missing and the HUD still up), then the
-    client's own Menu_Main with its autopilot vessel moving (timeScale restored) and exactly one
-    toast "Connection to the party was lost - returned to your menu." Then kill the HOST's
-    process while the client is in the match: the client gets the same black, menu and the same
-    wording (never "Host disconnected"). In the client's friends panel the host's row offers
-    Spectate while the host is still in the match and Join once the host is back in the menu.
-17. The AI Training assets import clean (no console error on `Archive.asset`, `SessionState.asset`):
-    FrogletTools > AI Training window shows the archive entry for Squirrel / Skim Race / intensity 4
-    with fitness 221.4, generation 7 and the "Port tournament 2026-10-10" note, and the session
-    state at generation 7 with 24 genomes; pressing Learn on the Skim Race scenario starts
-    generation 8, not 0. With `SkimRaceAIConfig_I4.DeployInNormalPlay` turned OFF for the test, an
-    arcade Skim Race at intensity 4 flies the archive genome on the AI seat (one `TrainingPilot`,
-    `AIPilot` disabled) and still collects crystals; turn the flag back on afterwards.
-18. A time-scored mode (Freestyle or any `ScoringModes.TimePlayed` card): quit to the menu
-    mid-turn through the pause menu, then watch `GameData.asset`'s RoundStatsList in the inspector
-    for ten seconds: no Score moves. Before this branch the time score kept climbing in the menu.
-    A normal turn end still stops the scorers (the end-of-game total is unchanged).
-19. Invite inbox, THREE signed-in accounts (two inviters, one invitee; machines or MPPM), Party
-    log channel on (FrogletTools > Toolbox > Logging). Invitee on the Home screen. Inviter A sends:
-    the bottom-left card shows A with "Also in your friends list for 60 s", one invite sound,
-    and hides after 3 s. Inviter B sends: the card shows B with "2 invites waiting. Also in your
-    friends list for N s"; for the next 30 s the console shows exactly ONE `[INVITE-RECV] New
-    invite` line per sender and the sound does not replay (before this branch both re-fired every
-    0.75-1.5 s tick). Invitee opens Arcade (do not open the friends panel): the yellow badge right
-    of PARTY reads 2, on the Arena, Mission and Toybox party panels too. Press an empty "+" slot:
-    REQUESTS lists BOTH invites, each with its seconds left (not a fresh 60), the badge is gone
-    and stays gone after closing the panel. Decline B's row: A's row stays, its Accept still works,
-    and the log reads `Declined '<B's id>'; 1 still open.` Accept A: the join completes as before
-    (real session id, `[HostConnectionService] Joined party`). Separately: with both invites on the
-    card, Decline on the CARD moves the card to the other invite instead of hiding it; let an
-    invite run 60 s unanswered and confirm the invitee's row and the inviter's PENDING row clear
-    within a few seconds of each other, and that the inviter can then invite again and it arrives
-    as new. Check the card's detail line fits its frame at 16:9 and 4:3, and the badge sits clear
-    of the PARTY word and the "Players Online" line on all four panels. Edit-mode
-    `IncomingInviteInboxTests` green (26).
 
 ---
 
@@ -377,29 +181,14 @@ dome. The joust's danger ring stays (arena danger prisms).
 
 ### 🔴 The heritable genome — `EvolutionSettings`, the ledger, the Evolution Monitor (`cece/friendly-goodall-woddjw`, 2026-10-09) — NOT EDITOR-VERIFIED
 
-**What landed.** `Docs/EVOLUTION.md`. A four-locus genome on `LifeformVariantPick`, mutated on every birth, expressed
-on fauna at lineage bind (speed band, graze radius, feeds per birth, provisioning, cohesion radius — never size or the
-heart), carried on the fauna spawn payload, recorded per cell in `EvolutionLedger`, drawn by
-**FrogletTools ▸ Ecology ▸ Evolution Monitor**. `CellConfigDataSO.Evolution.Enabled` is **false** in every shipped
-biome, so the shipped ecology is unchanged until a designer turns it on.
+**Superseded by the reviewed test plan.** Every part of this branch was reviewed with adversarial
+verification and its confirmed findings fixed on 2026-10-12, which changed several steps that used
+to be here (a worm split is a birth and expresses once, the ledger never reuses an id, the held toast became a toast-manager notice, Add Friend resolves names, the recent
+list is per account, the parity capture resets and can be cancelled, the training state evolves).
+The editor steps, with a PASS and a FAIL line each, are in `Docs/BRANCH_TEST_PLAN_2026-10-12.md`,
+one block per part. `Tools/Build/pick_branch_parts.py build` files exactly the picked parts' blocks
+here on the branch it builds, so a selective push carries its own steps.
 
-**What was proved without the Editor.** The game compiled through Prisma's live compile (0 errors) and booted
-Menu_Main headless with evolution off and with it temporarily on, identical error sets; the core compiled against
-netstandard2.1 / C# 9 with warnings as errors; 46 + 10 harness gates with 6 biting negative controls; 26 NUnit
-edit-mode tests under dotnet; the JS port exact against the C# golden. The Editor window was written against the
-`FrogletEditorPalette` API by reading it and has **not been compiled** (no `UnityEditor` here).
-
-**Run in the Editor (`Docs/EVOLUTION.md §9`, in this order):**
-- [ ] The project compiles; `LifeformGenomeTests` (26) green; the ecology suites unchanged.
-- [ ] Evolution off: Menu_Main freestyle plays as before, no new log line.
-- [ ] Evolution on (`Blob Cell Config ▸ Evolution ▸ Enabled`): the monitor shows species cards with the first wave,
-      generation 1 after a feed-fed birth, deaths by cause after a starvation or a shark kill; the `Ecology` channel
-      prints one census line per species per 30 s.
-- [ ] A child's gene bar sits near its parent's (±0.1), never a fresh founder spread.
-- [ ] `TempoPaceRange` 3 + `FounderSpread` 0.5 on the biome: visibly varied swimming speeds; off: uniform again.
-- [ ] A part-full newborn blooms in; a starved one withers extremities-first and drops its heart as before.
-- [ ] Host + client on a `NetworkSynced` species: the puppet's speed band matches the server's creature.
-- [ ] The monitor's Export JSON writes a file that opens.
 
 ---
 
