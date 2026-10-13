@@ -943,6 +943,14 @@ is levied there: putting it in `Transit` would have stripped petals on the owner
 every other peer's copy of that pilot. Each machine applies a pose exactly once (owner writes first,
 server re-broadcasts to everyone else), so a hook there fires once per machine.
 
+- **Anything that PREDICTS where a hull will go must fly the hull's response, not its stick** (the Stoat's
+  pathfinder, an AI's lead, an aim-assist line). `VesselTransformer` turns a COMMAND (`CommandedRotation`)
+  that the visible hull slerps after at `RotationFollowRate` (1.5 /s, a 0.67 s lag), and eases `speed` to
+  `CurrentThrottleTarget` at the same rate. A body that turns at the stick's rate at once is 15–73 u off the
+  real path within 3 s of starting a held turn (measured 2026-10-13, `StoatDipoleMath.HullResponse` fixed it
+  to within 2 u). Seed the predictor from `CommandedRotation`, the follow rate and the throttle target, and
+  pin it with a test against a frame-stepped model of the transformer (`StoatDipoleTests` has one).
+
 ## 5. Audit, then hand back verification (you cannot run Unity; the human is the gate)
 
 - **Run the out-of-editor gates FIRST, and name what each one covers.** In particular

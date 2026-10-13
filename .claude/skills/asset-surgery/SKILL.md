@@ -1115,6 +1115,19 @@ references, m_Script classes). What cost time on the first runs (2026-10-06 to 1
   must name the file and the key). Restore, then `git status --short` the paths. Both discriminated
   on their first try here.
 
+**`unity_refcompile`'s engine DLLs are REFERENCE assemblies: they bind, they do not RUN.** Calling
+`Vector3`/`Quaternion` from them in a harness throws `NullReferenceException` on the first operator, so
+a compile against them cannot execute the shipped maths. To RUN a pure-math class (a predictor, a field
+law, a layout routine), compile the SHIPPED file unmodified beside a ~60-line stub `namespace
+UnityEngine` (`Vector2`/`Vector3`/`Quaternion` with `AngleAxis`, `*`, `Slerp`, and `Mathf`). Then drive
+it from a scratch `Main`, and lift the test bodies out of the `[Test]` file with a ten-line NUnit
+`Assert` shim, so they run too. On 2026-10-13 this ran the Stoat's `StoatDipoleMath` and five of its
+edit-mode tests, and measured the bug a play report described: the instant path predictor was 15–73 u
+off a frame-stepped model of `VesselTransformer` within 3 s. Keep the stub in the scratchpad, never in
+the repo, and add members only as the compile asks for them. Also: `verify_black_hole_lens.py` needs
+`glslangValidator`; a root container gets it from `apt-get install -y glslang-tools` (after an
+`apt-get update`).
+
 **But a REAL type check of the files you actually wrote is still available, and it is worth the
 20 minutes** on new code (as opposed to a small edit inside a large existing file). Build a stub
 harness — the mcs recipe below, minus the desugaring — and hand Roslyn the .NET **reference pack**

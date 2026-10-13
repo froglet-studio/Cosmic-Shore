@@ -205,4 +205,22 @@ errors in project code). **Not run in the Editor** — `/verify-unity` was not a
 wrote it; filed in `Docs/UNITY_VERIFICATION_CHECKLIST.md`. Not yet measured in the game: the feel of
 the field flight against the transformer's nose follow (the studio turns the hull directly; here the
 field turns the hull and its command together, which keeps the follow's gap), and the per-frame cost
-of the prediction near the sink (≤ 96 substeps per 3 u step, ~200 steps).
+of the prediction near the sink (≤ 96 substeps per 3 u step, ~400 steps since the path went to 1200 u on
+2026-10-13 — profile `StoatPathfinderExecutor.Update` before anything else).
+
+Since the port (`cece/fervent-hypatia-rg4why`, 2026-10-13), four rounds of play tuning landed here
+(§1 tells each number's history). The pure maths behind each of them was RUN headless: the shipped
+`StoatDipoleMath` on a stub `UnityEngine` (`/asset-surgery` §4), the fly-through and sensitivity scenarios,
+and the new `StoatDipoleTests`. The lens change passed `verify_black_hole_lens.py`. The whole tree compiled
+against the Unity references, and none of it has been opened in the Editor.
+
+## 8. Debt and follow-ups (rows only — the 2026-10-13 ship pass)
+
+| # | Kind | Row | Measured |
+|---|---|---|---|
+| D1 | debt this branch carried | The round-1 **sling family** (`StoatSlingExecutor`, `StoatSlingActionSO`, `StoatSlingConfigSO`, `StoatSlingMath`, `StoatSlingConfig.asset` and its two action assets) is still on the prefab with its actions unbound, and is still named as live in two comments: `SlingshotController` (`StoatSlingExecutor.AutopilotSling`) and `BlackHoleVesselPull` ("its owner flies the orbit (StoatSlingExecutor)"). `STOAT.md` §1–§4 still describes the sling as the ability. Blocking question: does the studio want the sling kept as an alternate ability, or retired? If retired, remove it from the prefab through `author_stoat_assets.py` (it authors the executor) and delete the family. | `grep -rln StoatSling Assets/_Scripts --include=*.cs` → 10 files, 5 of them outside the family (2 comments, `BlackHoleConfigSO`, `BlackHoleToolTests`, `StoatDipoleExecutor`'s `Hold01` reuse — keep `StoatSlingMath.Hold01` or move it). |
+| D2 | debt walked past | **Two view-camera resolvers.** `BlackHoleLens.ViewCamera()` (the last base camera that rendered to screen) predates bleeding-edge's `CameraManager.ViewCamera` (`a315a308`, the active controller's camera), and both answer "which camera is the player looking through". The pathfinder tries the controller first and then falls back to the lens's resolver. Pick one; a third view-dependent effect will otherwise pick at random. | `grep -rn "BlackHoleLens.ViewCamera()"` → 10 call sites; `CameraManager.ViewCamera` → 8. |
+| D3 | debt this branch created | `StoatDipoleMath.ShouldAnnihilate` now gates a path that cannot be reached in normal play: since 2026-10-13 a release closes the pair at once (`Release` → `Close(annihilate: true)`), so the "let go of both and the poles fall together" branch runs only if a pole is left open with no trigger held. Keep it as a safety net or delete it along with its test. | one caller, `StoatDipoleExecutor.StepAuthority`; its doc still says "Let go of both triggers and the poles fall back together". |
+| D4 | debt walked past | The ported **Crystal Wormhole Cell** (`Cell Configs/Crystal Wormhole Cell/*`, `SpawnableCrystalWormhole.prefab`) is referenced by nothing outside its own folder. The source branch's Cell Selector entry was not ported, and its Black Hole cell no longer exists there. Report, not a fix: decide whether the cell should be selectable. | its config's guid appears in no `.unity`, `.prefab` or `.asset` outside its folder. |
+| D5 | report | The **Stoat Flight Studio** now describes a different vessel (labmaker CATALOG row, L-STU-29). The next studio round starts by re-reading `StoatDipoleConfig`. | — |
+

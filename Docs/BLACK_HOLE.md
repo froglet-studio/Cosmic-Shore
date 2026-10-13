@@ -834,6 +834,7 @@ A hole can carry its OWNER's rules on top of the physics, set every frame by who
 | `PrismCapture` = `Steal` | the same | a paired sink carries the prism through AND recolours it (`Prism.Steal(CaptureOwnerName, CaptureDomain, superSteal)`) |
 | `CrystalStripShare` | `BlackHoleCrystalStrip.Levy`, from `TeleportContinuity` | a rival vessel carried through the sink sheds that share of every element as crystals on the sink's side (the wormhole toll's shape: `AccrueElementalLoss`, conserving; the owner and teammates never pay) |
 | `DomainTint` / `DomainTintAmount` | `BlackHoleLens` → `_BHTint` | a sink's shadow is drawn toward the colour, a white hole's core glows in it |
+| `Amplitude` (2026-10-13) | `GM`, the tides (`BlackHoleWarp`), and — for a HORIZON hole — `BlackHoleLens` → `_BHStrength` | the field NEUTRALIZES at full size: pull and tides scale down, the lens's bend relaxes toward the straight ray and the shadow/core fade into the scene behind. The Stoat's released pair drives it to 0 as its poles slam together (`STOAT_DIPOLE.md` § "The annihilation"); 1 for every other horizon hole, so their look is unchanged. A smooth well already carried it in its bank strength. |
 
 `Default` keeps everything above exactly as §3 and §11 describe. The dipole's pair is NOT a registry
 `Pair` (its executor places both holes every frame and joins them as each other's `Throat`), so
