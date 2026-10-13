@@ -32,7 +32,7 @@ namespace CosmicShore.Core
             CSDebug.Log($"{nameof(QuestSystem)}.{nameof(CompleteQuest)} - Quest Completed - Shards to issue: {quest.ShardValue}");
 
             // Grant Reward
-            // TODO: Look for PlayerDataController
+            // TODO: no reward backend — the grant below was never wired.
             // CatalogManager.Instance.GrantCaptainXP(quest.ShardValue, ShipTypes.Manta, Element.Space);
 
             // Mark Granted

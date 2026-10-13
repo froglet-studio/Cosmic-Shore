@@ -118,7 +118,7 @@ namespace CosmicShore.Engine
         /// <summary>
         /// Original contract: a stable per-device id. Derived from the machine +
         /// user names — constant across runs on one machine, which is the only
-        /// property the ported PlayFabAccount.UniqueID read relies on.
+        /// property the game's PlayerProfile.UniqueID read relies on.
         /// </summary>
         public static string deviceUniqueIdentifier { get; } =
             $"{Environment.MachineName}-{Environment.UserName}".GetHashCode().ToString("x8");

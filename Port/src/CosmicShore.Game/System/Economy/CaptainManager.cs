@@ -1,15 +1,16 @@
-// Ported verbatim from Assets/_Scripts/System/Playfab/Economy/CaptainManager.cs
-// (CaptainManager unit 2026-07-10), replacing the Store-unit shell. Mechanical
-// substitutions only: UnityEngine → CosmicShore.Engine. Upstream posture kept
-// faithfully: OnEnable's "[PLAYFAB DISABLED]" early return is live behavior — the
-// XpHandler/CatalogManager event wiring below it is dead code upstream and is
-// carried commented here (avoids the CS0162 the upstream compile eats). All the
-// data lanes are LIVE: LoadCaptainsData building the roster from the serialized
-// SO_CaptainList, per-captain XP/Encountered/Unlocked/Level derivation over the
-// live XpHandler dictionaries + CatalogManager.Inventory, IssueXP accumulation,
-// the query surface, and the UpgradeXPRequirements ladder. One port-only rig
-// seam is retained from the shell era (documented at the member): the menushell
-// + tests author their captain roster through it.
+// Ported verbatim from Assets/_Scripts/System/Economy/CaptainManager.cs
+// (CaptainManager unit 2026-07-10; path follows upstream's move into
+// System/Economy/). Mechanical substitutions only: UnityEngine → CosmicShore.Engine.
+// Upstream posture kept faithfully: OnEnable wires nothing (captain management is
+// disabled upstream, pending its rebuild on UGS), so LoadCaptainsData runs only when
+// a caller drives it. All the data lanes are LIVE: LoadCaptainsData building the
+// roster from the serialized SO_CaptainList, per-captain XP/Encountered/Unlocked/Level
+// derivation over the live XpHandler dictionaries + CatalogManager.Inventory, IssueXP
+// accumulation, the query surface, and the UpgradeXPRequirements ladder. Upstream's
+// CSDebug.LogVerbose(CSLogChannel.CloudData) traces in IssueXP are omitted (the port's
+// CSDebug has no log channels; the channel is off by default upstream). One port-only
+// rig seam is retained from the shell era (documented at the member): the menushell +
+// tests author their captain roster through it.
 using CosmicShore.Core;
 using CosmicShore.Data;
 using CosmicShore.ScriptableObjects;
@@ -19,7 +20,6 @@ using System.Collections.Generic;
 using System.Linq;
 using CosmicShore.Engine;
 
-// TODO: Renamespace - not using playfab directly here
 namespace CosmicShore.Core
 {
     [System.Serializable]
@@ -74,22 +74,17 @@ namespace CosmicShore.Core
 
         void OnEnable()
         {
-            // [PLAYFAB DISABLED] Captain management will be rebuilt on UGS. Pending removal.
-            return;
-
-            // PORT Deviation (CaptainManager unit — the wiring below the upstream
-            // early return is dead code there; carried as source):
-            // XpHandler.OnCaptainDataLoaded += LoadCaptainsData;
-            //
-            // CatalogManager.OnLoadInventory += LoadCaptainsData;
-            // CatalogManager.OnInventoryChange += LoadCaptainsData;
+            // Disabled upstream: captain management will be rebuilt on UGS. Pending removal.
         }
 
         void OnDisable()
         {
+            // Teardown only. These are no-ops while OnEnable is disabled, but they must stay
+            // detaches: OnLoadInventory used to be a '+=' here, which subscribed this handler
+            // to a STATIC event on disable and leaked it for the rest of the process.
             XpHandler.OnCaptainDataLoaded -= LoadCaptainsData;
 
-            CatalogManager.OnLoadInventory += LoadCaptainsData;
+            CatalogManager.OnLoadInventory -= LoadCaptainsData;
             CatalogManager.OnInventoryChange -= LoadCaptainsData;
         }
 
@@ -138,12 +133,10 @@ namespace CosmicShore.Core
             if (invokeCallback)
                 OnLoadCaptainData?.Invoke();
 
-            CSDebug.Log($"LoadCaptainData - {captain.Name}, Level:{captain.Level}, XP:{captain.XP}, Unlocked:{captain.Unlocked}, Encountered:{captain.Encountered}");
         }
 
         public void IssueXP(string captainName, int amount)
         {
-            CSDebug.Log($"CaptainManager.IssueXP {captainName}, {amount}");
             IssueXP(GetCaptainByName(captainName), amount);
         }
 
@@ -152,8 +145,8 @@ namespace CosmicShore.Core
             captain.XP += amount;
             captainData.AllCaptains[captain.SO_Captain.Name].XP += amount;
 
-            // Save to Playfab
-            CSDebug.Log($"CaptainManager.IssueXP {captain.Name}, {amount}");
+            // Persisted by XpHandler below. XpHandler holds the tables in memory and nothing
+            // writes them to a server today.
             XpHandler.IssueXP(captain, amount);
         }
 
@@ -217,21 +210,18 @@ namespace CosmicShore.Core
         // ── Port-only rig seam (retained from the Store-unit shell; documented) ──
 
         /// <summary>
-        /// Seeds the roster for harness worlds the way the inspector + PlayFab
-        /// login would: authors the serialized SO_CaptainList from the models'
+        /// Seeds the roster for harness worlds the way the inspector + a loaded
+        /// save would: authors the serialized SO_CaptainList from the models'
         /// SO_Captains (so the verbatim GetCaptainSOByName / GetAllSOCaptains
-        /// lanes are live), lands the XpHandler dictionaries the login's
-        /// OnLoadCaptainXpData would have landed (seeded empty when absent, so
-        /// the live EncounterCaptain / IssueXP lanes work — e.g. buying a
-        /// captain routes AddToInventory → EncounterCaptain), and adopts the
-        /// caller-authored models VERBATIM into captainData (fixture
-        /// Unlocked/Encountered states preserved — the menushell Store rig owns
-        /// its captains' economy state).
+        /// lanes are live), lands the XpHandler tables through upstream's own
+        /// XpHandler.LoadCaptainXpData (seeded empty when absent, so the live
+        /// EncounterCaptain / IssueXP lanes work), and adopts the caller-authored
+        /// models VERBATIM into captainData (fixture Unlocked/Encountered states
+        /// preserved — the menushell Store rig owns its captains' economy state).
         /// </summary>
         internal void LoadLocalCaptains(IEnumerable<Captain> captains)
         {
-            XpHandler.ClassXpData ??= new Dictionary<VesselClassType, XpData>();
-            XpHandler.EncounteredCaptainsData ??= new Dictionary<VesselClassType, List<Element>>();
+            XpHandler.LoadCaptainXpData();
 
             captainData = new CaptainData();
             var soList = ScriptableObject.CreateInstance<SO_CaptainList>();
