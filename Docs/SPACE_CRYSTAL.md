@@ -127,9 +127,9 @@ call `KEY_SYSTEMS_AND_CONVENTIONS.md` records for the Charge crystal.
 material *variant* of `SpaceCrystalMaterial` whose only override is `_spread: 0.15`. Their look
 is unchanged, and colour edits to the parent still reach them.
 
-The Mass crystal's shells (`BlueMassCrystalMaterial*` / `ActiveMassCrystalMaterial*`) are on
-`OmniShepardFresnelShader` since 2026-10-08 — still a uniform scale pulse about the origin — and
-draw `MassCrystalExport1_8-21-25.fbx`, not this mesh.
+The Mass crystal's old shells (`BlueMassCrystalMaterial*` / `ActiveMassCrystalMaterial*`, a uniform scale pulse
+about the origin) were replaced by depth prisms on 2026-10-12 and their materials retired on 2026-10-13; the Mass
+draws `MassCrystalPrisms.asset` (made from `MassCrystalExport1_8-21-25.fbx`), not this mesh.
 
 If the breathing is wanted back, make it **radial** (a uniform scale, like `ShepardGraph`), never
 along face normals.

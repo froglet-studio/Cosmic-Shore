@@ -13,7 +13,11 @@ namespace CosmicShore.Gameplay
     /// it is replaced at the top of its column only once it is behind the crystal (<see cref="DepthRatchet"/>).
     ///
     /// Lives on the prisms' own renderer (the omni's <c>OmniCrystalTriangles</c>, the Mass crystal's
-    /// <c>MassDepthPrisms</c>), whose material is on <c>OmniDepthPrismShader</c>. Each frame it is visible it:
+    /// <c>MassDepthPrisms</c>), whose material is on <c>OmniDepthPrismShader</c>. On the first frame after it is
+    /// enabled it turns the crystal's models - every sibling under the crystal root that carries a renderer, itself
+    /// included, never the root - to the crystal's own random pose (<see cref="CrystalPoseJitter"/>, seeded from
+    /// the spawn position, lab round 10), so a field of crystals does not show one shared animation; the authored
+    /// pose comes back on disable. Each frame it is visible it:
     ///  1. steps every column's ratchet against the GAMEPLAY camera (<see cref="ViewCamera"/>), in the crystal's
     ///     own space - the pilot turning round a crystal is what runs the ratchet. The crystal itself holds
     ///     still (the lab's free turn was dropped on 2026-10-12);
@@ -54,6 +58,10 @@ namespace CosmicShore.Gameplay
         [SerializeField] bool cutBodyHoles;
 
         MeshRenderer prisms;
+        // The crystal's models (sibling prefab instances, so resolved, not serialized) and their authored poses.
+        readonly List<Transform> models = new();
+        readonly List<Pose> authored = new();
+        bool needsPose;
         Vector3[] plateDirections;
         DepthRatchet.Column[] columns;
         readonly Vector4[] state = new Vector4[MaxPlates];
@@ -80,6 +88,16 @@ namespace CosmicShore.Gameplay
             columns = new DepthRatchet.Column[plateDirections.Length];
             block = new MaterialPropertyBlock();
             WidenBounds(mesh);
+
+            // Taken once, so nothing parented to the crystal later (a capture effect) turns with it.
+            var root = transform.parent;
+            for (int i = 0; root && i < root.childCount; i++)
+            {
+                var child = root.GetChild(i);
+                if (!child.GetComponentInChildren<Renderer>(true)) continue;
+                models.Add(child);
+                authored.Add(new Pose(child.localPosition, child.localRotation));
+            }
         }
 
         void Start()
@@ -87,14 +105,10 @@ namespace CosmicShore.Gameplay
             if (!cutBodyHoles || !enabled) return;
             // Start, not Awake: CrystalFlipWave (on the crystal root) dresses the body in its skin twin in its own
             // Awake, and the cut keeps that twin's bones by cutting the mesh the body ends up drawing.
-            // Resolved, not serialized: the crystal's models are sibling prefab instances, which a reference
-            // inside this prefab cannot name.
             SkinnedMeshRenderer body = null;
             int found = 0;
-            var root = transform.parent;
-            for (int i = 0; root && i < root.childCount; i++)
+            foreach (var child in models)
             {
-                var child = root.GetChild(i);
                 if (child == transform) continue;
                 foreach (var skinned in child.GetComponentsInChildren<SkinnedMeshRenderer>(true))
                 {
@@ -110,12 +124,39 @@ namespace CosmicShore.Gameplay
             }
         }
 
-        /// <summary>A fresh (or re-pooled) crystal seats every column where its depth puts it.</summary>
-        void OnEnable() => fresh = true;
+        /// <summary>A fresh (or re-pooled) crystal seats every column where its depth puts it, and takes the pose of
+        /// wherever it now is.</summary>
+        void OnEnable()
+        {
+            fresh = true;
+            needsPose = true;
+        }
+
+        void OnDisable()
+        {
+            // Hand the authored pose back, so a pooled crystal or a capture copy starts from rest.
+            for (int i = 0; i < models.Count; i++)
+                if (models[i]) models[i].SetLocalPositionAndRotation(authored[i].position, authored[i].rotation);
+        }
+
+        /// <summary>
+        /// Turns every model about the crystal root's origin to this crystal's pose. Run on the first frame after
+        /// enable rather than in OnEnable, because a pooled crystal is enabled before it is moved to its spawn.
+        /// </summary>
+        void ApplyPose()
+        {
+            needsPose = false;
+            if (models.Count == 0 || profile.OrientationJitter <= 0f) return;
+            var root = transform.parent;
+            var pose = CrystalPoseJitter.Pose(CrystalPoseJitter.SeedOf(root ? root.position : transform.position), profile.OrientationJitter);
+            for (int i = 0; i < models.Count; i++)
+                if (models[i]) models[i].SetLocalPositionAndRotation(pose * authored[i].position, pose * authored[i].rotation);
+        }
 
         void LateUpdate()
         {
             using var _ = UpdateMarker.Auto();
+            if (needsPose) ApplyPose();
             // A crystal nobody can see does no work. Its ratchet follows depth, so it is right again the frame
             // it comes back into view.
             if (!prisms.isVisible) return;
@@ -145,34 +186,9 @@ namespace CosmicShore.Gameplay
             prisms.SetPropertyBlock(block);
         }
 
-        static Camera s_viewCamera;
-        static int s_viewCameraFrame = -1;
-
-        // Enter Play Mode keeps statics (domain reload is off): never serve last session's camera.
-        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
-        static void ResetViewCamera()
-        {
-            s_viewCamera = null;
-            s_viewCameraFrame = -1;
-        }
-
-        /// <summary>
-        /// The camera the pilot is looking through: the <see cref="CameraManager"/>'s active controller's camera
-        /// ("CM PlayerCam" in flight, the death or end camera after). NOT <c>Camera.main</c>: Bootstrap's
-        /// MainCamera-tagged "Camera" never moves with the vessel, and a ratchet run against it holds every prism
-        /// still - the prisms read frozen in game while the lab, which has one camera, looked right. Falls back to
-        /// <c>Camera.main</c> where no controller is active (the main menu, a test scene). Resolved once a frame
-        /// for every crystal.
-        /// </summary>
-        static Camera ViewCamera()
-        {
-            if (s_viewCameraFrame == Time.frameCount) return s_viewCamera;
-            s_viewCameraFrame = Time.frameCount;
-            var manager = CameraManager.Instance;
-            var controller = manager ? manager.GetActiveController() as CustomCameraController : null;
-            s_viewCamera = controller && controller.Camera && controller.Camera.isActiveAndEnabled ? controller.Camera : Camera.main;
-            return s_viewCamera;
-        }
+        /// <summary>The gameplay camera (<see cref="CameraManager.ViewCamera"/>), NOT <c>Camera.main</c>: a ratchet run
+        /// against Bootstrap's menu camera held every prism still (round 9).</summary>
+        static Camera ViewCamera() => CameraManager.ViewCamera;
 
         /// <summary>
         /// The mesh sits seated (place 1); the shader carries a prism out to <c>_Reach</c> times its radius at the

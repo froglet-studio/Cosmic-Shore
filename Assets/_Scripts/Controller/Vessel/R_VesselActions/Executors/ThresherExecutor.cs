@@ -1089,7 +1089,9 @@ namespace CosmicShore.Gameplay
         {
             Transform target = _cam ? _cam.FollowTarget : null;
             if (!target) { _exiting = false; if (_cam) _cam.Spectate = null; return; }
-            Vector3 offset = _cam.GetFollowOffset();
+            // The follow camera's own placement, warp field included (it scales the offset by
+            // WarpFieldRuntime.ScaleAt at the framed point), so the hand-over is between equal poses.
+            Vector3 offset = _cam.GetFollowOffset() * WarpFieldRuntime.ScaleAt(target.position);
             Vector3 eye = target.position + target.rotation * offset;
             if (!SafeLookRotation.TryGet(target.position - eye, target.up, out var look, this, logError: false))
                 look = target.rotation;
@@ -1505,7 +1507,7 @@ namespace CosmicShore.Gameplay
                 _comboLabel.fontSize = r * 2.2f * (1f + 0.08f * Mathf.Min(_combo, 12)) * _comboShownScale;
                 _comboLabel.color = ballColor;
                 _comboLabel.transform.position = ballPos + Vector3.up * (r * 3f);
-                var cam = Camera.main;
+                var cam = CameraManager.ViewCamera;   // the label faces the pilot's camera, not the menu's
                 if (cam)
                 {
                     Vector3 away = _comboLabel.transform.position - cam.transform.position;

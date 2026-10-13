@@ -1605,6 +1605,20 @@ namespace CosmicShore.Gameplay
             }
         }
 
+        /// <summary>
+        /// Destroyed where it stands with NO debris and NO sound: the prism crossed a black hole's horizon
+        /// and fell behind its shadow, so there is nothing left to see (the Stoat's dipole below its Space
+        /// upgrade, <c>R_VesselActions/STOAT_DIPOLE.md</c>). Everything the death MEANS is the ordinary
+        /// destruction's — the destroyed event scores it to <paramref name="playerName"/> and debits its
+        /// owner, the index frees its site, it stays restorable — only the effect is withheld. Shields are
+        /// no answer to a horizon (devastating).
+        /// </summary>
+        public void Vanish(string playerName)
+        {
+            if (destroyed) return;
+            SetupDestruction(Domain, playerName, devastate: true);
+        }
+
         public void Consume(Transform target, Domains domain, string playerName, bool devastate = false, bool byCreature = false)
         {
             // A consume carries no impact vector — only the suction sink — so the deflection

@@ -16,7 +16,7 @@ Navigation is driven by `ScreenSwitcher` (`Assets/_Scripts/UI/ScreenSwitcher.cs`
 STORE = 0, ARK = 1, HOME = 2, PORT = 3, HANGAR = 4, PROFILE = 5
 ```
 
-In `Menu_Main.unity` the `ScreenSwitcher.disabledScreens` list = **{ ARK, PORT }**. So:
+In `Menu_Main.unity` the `ScreenSwitcher.disabledScreens` list = **{ PORT }** (ARK reopened 2026-10-13 as the Elemental Converter). So:
 
 | Screen | State |
 |---|---|
@@ -24,7 +24,7 @@ In `Menu_Main.unity` the `ScreenSwitcher.disabledScreens` list = **{ ARK, PORT }
 | HANGAR | **Enabled** |
 | PROFILE | **Enabled** |
 | STORE | **Has no entry in `screens` at all** — see the note below |
-| ARK | **Locked** (intentional — stays as-is). **This is the screen that hosts `StoreScreen`** |
+| ARK | **Enabled — the Elemental Converter** (2026-10-13, designer). It still carries the disabled `StoreScreen` and its inactive `Scroll View`, so the store stays closed; its `OfflineUIGate` and mockup background are gone (`Tools/Build/author_elemental_converter.py`) |
 | PORT | **Locked** (intentional — stays as-is) |
 
 > ⚠ **`MenuScreens.STORE` is a dangling enum value.** `ScreenSwitcher.screens` contains
@@ -140,7 +140,7 @@ The Profile screen root exists (`screens` index 4 → `ProfileScreen`), but the 
    - `EpisodeScreen` (`Assets/_Scripts/UI/Screens/EpisodeScreen.cs`) — wire `episodeList` → `EpisodeList.asset`, `cardContainer`, `episodeCardPrefab` (`EpisodePrefab.prefab`), `supportUsButton`, `episodePanel`.
 
    (The XP track widget was removed — no XP UI to wire.)
-4. Leave `ScreenSwitcher.disabledScreens` as **{ ARK, PORT }**.
+4. Leave `ScreenSwitcher.disabledScreens` as **{ PORT }** (ARK hosts the Elemental Converter; a store would need its own screen or a share of ARK's).
 
 (The prior content lives in `Assets/_Prefabs/MIgration_Prefabs (DELETE LATER)/` — `Screens.prefab` / `UI.prefab` — if you need a reference for how it was assembled.)
 
@@ -265,7 +265,7 @@ with a reason. It is not the crystal loop above, and locking it costs the invite
 ### 6.5 The scene ALSO blocks most of this today — do not mistake that for the gate
 
 Independently of the code gates, `Menu_Main` currently has: `StoreScreen` with `m_Enabled: 0`, its
-content root `ArkScreen/Scroll View` inactive, `ARK` in `disabledScreens`, `HangarCaptainsView` under
+content root `ArkScreen/Scroll View` inactive (ARK itself reopened 2026-10-13 for the Elemental Converter), `HangarCaptainsView` under
 two inactive ancestors, and the `EpisodeScreen` panel inactive. Several gates are therefore
 **unreachable today**. They are kept deliberately: the scene state is not a decision anybody recorded
 and a single re-activation undoes it, whereas the config is.

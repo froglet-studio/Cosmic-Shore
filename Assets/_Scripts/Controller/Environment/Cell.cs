@@ -1367,6 +1367,7 @@ namespace CosmicShore.Gameplay
         void OnDisable()
         {
             ActiveCells.Remove(this);
+            WarpFieldRuntime.Release(this);
 
             if (gameData != null)
                 gameData.OnInitializeGame.OnRaised -= Initialize;
@@ -2026,6 +2027,11 @@ namespace CosmicShore.Gameplay
 
             if (spawnEnvironment && cellConfigData.EnvironmentPrefab != null && environment == null)
                 SpawnEnvironment();
+
+            // The config's warp field, centred on this cell. A satellite never owns it: the field
+            // rescales the PLAYER, and a satellite is a world beside the one they are in.
+            if (cellConfigData.WarpField && !IsSatellite && Application.isPlaying)
+                WarpFieldRuntime.Activate(this, cellConfigData.WarpField, transform);
 
             if (cellConfigData.NucleusPrefab == null || nucleus != null) return;
             nucleus = Instantiate(cellConfigData.NucleusPrefab, transform.position, Quaternion.identity);
@@ -2854,6 +2860,9 @@ namespace CosmicShore.Gameplay
             nucleus = null;
             if (spawnedCytoplasm) spawnedCytoplasm.transform.SetParent(rootT, true);
             spawnedCytoplasm = null;
+
+            // The retiring world's warp field eases out with it (a no-op if it had none).
+            WarpFieldRuntime.Release(this);
 
             return root;
         }

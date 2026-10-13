@@ -1115,6 +1115,19 @@ references, m_Script classes). What cost time on the first runs (2026-10-06 to 1
   must name the file and the key). Restore, then `git status --short` the paths. Both discriminated
   on their first try here.
 
+**`unity_refcompile`'s engine DLLs are REFERENCE assemblies: they bind, they do not RUN.** Calling
+`Vector3`/`Quaternion` from them in a harness throws `NullReferenceException` on the first operator, so
+a compile against them cannot execute the shipped maths. To RUN a pure-math class (a predictor, a field
+law, a layout routine), compile the SHIPPED file unmodified beside a ~60-line stub `namespace
+UnityEngine` (`Vector2`/`Vector3`/`Quaternion` with `AngleAxis`, `*`, `Slerp`, and `Mathf`). Then drive
+it from a scratch `Main`, and lift the test bodies out of the `[Test]` file with a ten-line NUnit
+`Assert` shim, so they run too. On 2026-10-13 this ran the Stoat's `StoatDipoleMath` and five of its
+edit-mode tests, and measured the bug a play report described: the instant path predictor was 15–73 u
+off a frame-stepped model of `VesselTransformer` within 3 s. Keep the stub in the scratchpad, never in
+the repo, and add members only as the compile asks for them. Also: `verify_black_hole_lens.py` needs
+`glslangValidator`; a root container gets it from `apt-get install -y glslang-tools` (after an
+`apt-get update`).
+
 **But a REAL type check of the files you actually wrote is still available, and it is worth the
 20 minutes** on new code (as opposed to a small edit inside a large existing file). Build a stub
 harness — the mcs recipe below, minus the desugaring — and hand Roslyn the .NET **reference pack**
@@ -4154,6 +4167,18 @@ never fold it into a fix for something else.
   idiom. So a new rule dropped into that tick inherits the local path for free, where its
   detonations silently no-op (each guarded on `IsServer`) while its RPC throws. Gate the whole
   rule on `IsSpawned && IsServer` rather than trusting the callees' own guards.
+- **A mesh whose vertex shader REBUILDS geometry from per-vertex data cannot be moved by a CPU
+  consumer that draws it on the same material - unless the shader's undriven path is the identity.**
+  `OmniDepthPrismShader` rebuilt every vertex from TEXCOORD2 (its prism's centre) and stretched it by
+  the material's `_Thickness` 6.25. `CrystalHullFusion` re-tessellates the crystal onto a vessel hull
+  and draws that copy on the crystal's own material, with TEXCOORD2 holding ITS data (discharge
+  heights, zero on filler vertices): the stretch ran against the wrong centres and blew the Mass
+  faces 36 mesh units apart, and `normalize(0)` made filler vertices NaN. Fix shape: bake every
+  shape parameter the shader applied into the mesh (the material ships the neutral value), make the
+  undriven branch return the vertex untouched without reading the per-vertex channel, and have the
+  consumer force undriven. Prove it with a formula identity (max |p - v| at float32) and a negative
+  control that leaves the parameter in (238 units). Grep for every renderer that borrows a
+  material's `sharedMaterials` before giving a shader per-vertex semantics.
 
 ### Bundled tool: `field_parity.py`
 
