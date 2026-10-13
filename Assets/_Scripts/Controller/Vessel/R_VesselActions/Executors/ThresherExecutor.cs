@@ -34,18 +34,23 @@ namespace CosmicShore.Gameplay
     /// <item><b>At smash speed</b> the ball goes RED and destroys every prism it hits — its own
     /// domain's included — and each hit sets off an explosion that does the same (the Grizzly's
     /// blast with <c>AffectSelfOverride</c> on). The ball ploughs on, keeping <c>plough</c>.</item>
-    /// <item><b>Charge L5 "Lit"</b>: a hot ball burns the LIT domain colour, its explosions spare
-    /// its own domain (domain-sparing lives in the explosion layer, per the fleet rule), and it
-    /// bounces off its own domain's prisms even when hot.</item>
+    /// <item><b>Space L5 "Breaker"</b>: a red ball's DIRECT hit destroys super-shielded prisms
+    /// (the sanctioned DeactivateShields → Damage(devastate) sequence).</item>
     /// </list>
     /// Every kill goes through <see cref="Prism.Damage"/> with the ball's own velocity as the impact
     /// vector — the Rhino sword's contact-velocity idea at its core — so shields pop and
     /// super-shields hold as for every other hull.
     ///
+    /// <b>Enemy vessels: petals only</b> (the LOCKED PvP rule). The ball's swept path and every chain
+    /// link reach an enemy hull; a contact is a scored <see cref="CombatHitClass.Strike"/> that
+    /// STEALS <c>vesselHitPetals</c> (Charge-scaled) petals per element through
+    /// <see cref="CombatHitDrain.TryAdmit"/>, decided on the machine that owns this hull. Nothing
+    /// else touches the victim. Charge L5 "Magnet" draws the free ball toward the nearest enemy hull.
+    ///
     /// <b>The chain slices and shields</b>, taut or slack. Every rival prism its links touch is
     /// <see cref="Prism.Slice"/>d along the plane the chain is sweeping, with debris at the touching
-    /// link's own velocity, and every prism of its OWN domain it touches is shielded. It skips
-    /// shielded rivals unless Space L5 "Reaper Chain" is active (then the first cut pops the shield).
+    /// link's own velocity, and every prism of its OWN domain it touches is shielded. A shielded rival
+    /// loses its shield to the first cut and dies to the next; super-shielded mass refuses.
     ///
     /// <b>The chain's kills charge the ball.</b> Every prism the chain slices banks
     /// <c>energyPerSlice</c> in the ball; the ball's next hit on a RIVAL prism releases the bank as
@@ -144,7 +149,7 @@ namespace CosmicShore.Gameplay
         public bool IsReady { get; private set; }
         public float BallSpeed => _solver?.BallSpeed ?? 0f;
         public Vector3 BallPosition => _solver?.BallPosition ?? transform.position;
-        /// <summary>The ball is at smash speed: red (or lit), destroys anything, explodes.</summary>
+        /// <summary>The ball is at smash speed: red, destroys anything, explodes.</summary>
         public bool IsHot => _solver != null && ThresherChainSolver.IsSmash(_solver.BallSpeed, _settings);
         /// <summary>Ball speed as a fraction of smash speed — the HUD heat gauge, and the ball's brightening.</summary>
         public float Gauge01 => _settings.SmashSpeed > 0f ? Mathf.Clamp01(BallSpeed / _settings.SmashSpeed) : 0f;
@@ -161,8 +166,16 @@ namespace CosmicShore.Gameplay
         public float Energy01 => config && config.EnergyMax > 0f ? Mathf.Clamp01(_energy / config.EnergyMax) : 0f;
         /// <summary>The bank as explosion RADIUS gained: 0 = a plain blast, 1 = the bank has bought the
         /// full <c>energyMaxDiameterScale</c>. The Space card's gauge.</summary>
-        public float EnergyRadius01 => config && config.EnergyMaxDiameterScale > 1f
-            ? Mathf.Clamp01((EnergyScale(_energy) - 1f) / (config.EnergyMaxDiameterScale - 1f)) : 0f;
+        public float EnergyRadius01
+        {
+            get
+            {
+                float cap = EnergyCap();
+                return cap > 1f ? Mathf.Clamp01((EnergyScale(_energy) - 1f) / (cap - 1f)) : 0f;
+            }
+        }
+        /// <summary>A release NOW would be perfect (the ship reaches the launch point inside the window).</summary>
+        public bool IsTimingPerfect { get; private set; }
         /// <summary>An aimed release is waiting for the ship to reach its launch point.</summary>
         public bool IsLaunchArmed => _solver != null && _solver.LaunchArmed;
         /// <summary>An omni crystal has the ball windmilling round the ship.</summary>
@@ -205,34 +218,34 @@ namespace CosmicShore.Gameplay
         /// <summary>The four element scalings, read live (never cached) and folded into this frame's
         /// settings. Read through <c>EvaluateReplicated</c>, not <c>EvaluateLive</c>: every peer
         /// simulates this ball, and element levels themselves do not replicate, so a remote copy
-        /// reading its own (empty) ResourceSystem would fly a different ball. Mass is volume, so the
-        /// ball's radius grows with the cube root of its mass.</summary>
+        /// reading its own (empty) ResourceSystem would fly a different ball. Only TIME lives in the
+        /// chain's settings (the spin-up rate and cap); Charge, Mass and Space are read where they
+        /// are spent (<see cref="TryHitVessel"/>, <see cref="LayTrailPrism"/>, <see cref="EnergyCap"/>).</summary>
         void ApplyElementScaling()
         {
             _settings = _baseSettings;
             if (!config || _status == null) return;
-            float mass = Mathf.Max(0.05f, config.BallMassMultiplier.EvaluateReplicated(_status));
-            float reach = Mathf.Max(0.05f, config.ChainReachMultiplier.EvaluateReplicated(_status));
             float spin = Mathf.Max(0.05f, config.SpinMultiplier.EvaluateReplicated(_status));
-            _settings.BallMass *= mass;
-            _settings.BallRadius *= Mathf.Pow(mass, 1f / 3f);
-            _settings.MaxLength = Mathf.Max(_settings.RestLength, _settings.MaxLength * reach);
             _settings.LockSpinRate *= spin;
             _settings.LockMaxSpeed *= spin;
             _solver.Settings = _settings;
         }
 
+        /// <summary>SPACE: the largest explosion-diameter multiplier the bank can buy.</summary>
+        float EnergyCap()
+            => config && _status != null ? Mathf.Max(1f, config.EnergyMaxDiameterScale.EvaluateReplicated(_status)) : 4f;
+
         // The four level-5 upgrades, each read through the replicated unlock bits at the moment
         // of use (a per-hit / per-release snapshot), never cached.
         R_VesselElementalAbilityHandler Abilities => _status?.ElementalAbilityHandler;
-        /// <summary>Charge L5 "Lit": the hot ball spares its own domain (explosion and contact).</summary>
-        bool LitActive => Abilities && Abilities.IsUpgradeActive(Element.Charge);
-        /// <summary>Mass L5 "Wrecker": a smash costs the ball no speed.</summary>
-        bool WreckerActive => Abilities && Abilities.IsUpgradeActive(Element.Mass);
-        /// <summary>Space L5 "Reaper Chain": the chain cuts while slack, and cuts shielded prisms.</summary>
-        bool ReaperActive => Abilities && Abilities.IsUpgradeActive(Element.Space);
-        /// <summary>Time L5 "Slingshot": the unlock yank is never weaker than smash speed.</summary>
-        bool SlingshotActive => Abilities && Abilities.IsUpgradeActive(Element.Time);
+        /// <summary>Charge L5 "Magnet": the free ball is drawn toward the nearest enemy vessel.</summary>
+        bool MagnetActive => Abilities && Abilities.IsUpgradeActive(Element.Charge);
+        /// <summary>Mass L5 "Armoured Trail": the prisms the ball lays in Mass Mode are laid shielded.</summary>
+        bool ArmouredTrailActive => Abilities && Abilities.IsUpgradeActive(Element.Mass);
+        /// <summary>Space L5 "Breaker": a red ball's direct hit destroys super-shielded prisms.</summary>
+        bool BreakerActive => Abilities && Abilities.IsUpgradeActive(Element.Space);
+        /// <summary>Time L5 "Perfect Release": a launch timed inside the window leaves with a boost.</summary>
+        bool PerfectReleaseActive => Abilities && Abilities.IsUpgradeActive(Element.Time);
 
         // ------------------------------------------------------------------ input edges
 
@@ -259,10 +272,12 @@ namespace CosmicShore.Gameplay
             // autopilot) it leaves on the orbit's tangent at once, as before.
             if (wasPivot && _spectating && _aimDir.sqrMagnitude > 0.5f)
             {
-                _solver.ArmLaunch(_aimDir, SlingshotActive);
+                // Everyone gets the timing window's no-wait launch; Time L5 adds the boost to it.
+                _solver.ArmLaunch(_aimDir, config ? config.PerfectWindowSeconds : 0f,
+                                  PerfectReleaseActive && config ? config.PerfectBoost : 1f);
                 return;   // the yank plays when the launch happens (StepChain)
             }
-            _solver.Release(_lastShipVelocity, slingshot: SlingshotActive);
+            _solver.Release(_lastShipVelocity);
             if (wasPivot) PlayAt(yankEvent, _lastShipPosition);
         }
 
@@ -337,6 +352,7 @@ namespace CosmicShore.Gameplay
             ApplyElementScaling();
             EnsureSeeded(shipPosition, shipVelocity);
 
+            if (MagnetActive) PullBallToEnemy(dt);
             var result = _solver.Step(shipPosition, shipVelocity, _payOut, shipCruise, dt, pivotSteer);
             _lastStepFrame = Time.frameCount;
             _lastShipPosition = shipPosition;
@@ -353,10 +369,14 @@ namespace CosmicShore.Gameplay
                 SweepBall(result.BallFrom, _solver.BallPosition);
                 if (_massMode) LayBallTrail(result.BallFrom, _solver.BallPosition, shipPosition);
             }
+            HitVesselsAlong(result.BallFrom, _solver.BallPosition, _settings.BallRadius, _solver.BallVelocity);
 
             _links.Step(shipPosition + result.ShipVelocity * dt, _solver.BallPosition, _solver.Length,
                         iterations: ThresherChainLinks.IterationsFor(_links.Count - 1));
             CutWithChain(dt);
+
+            IsTimingPerfect = _spectating && config && _solver.Mode == ThresherMode.Pivot &&
+                              _solver.SecondsToLaunchPoint(shipPosition, _aimDir) <= config.PerfectWindowSeconds;
 
             UpdateCombo(dt);
             IsReady = _payOut && _solver.Mode == ThresherMode.Free &&
@@ -423,8 +443,7 @@ namespace CosmicShore.Gameplay
             _hits.Sort((a, b) => a.t.CompareTo(b.t));
 
             Domains own = PilotDomain();
-            bool lit = LitActive;
-            bool wrecker = WreckerActive;
+            bool breaker = BreakerActive;
 
             _touchingNext.Clear();
             for (int i = 0; i < _hits.Count; i++)
@@ -450,23 +469,31 @@ namespace CosmicShore.Gameplay
                     continue;
                 }
 
-                if (ownDomain && (!hot || lit))
+                if (ownDomain && !hot)
                 {
-                    // Bounce: the ball never harms its own domain unless it is red-hot and unlit.
+                    // Bounce: the ball never harms its own domain unless it is red-hot.
                     Vector3 normal = at - prism.transform.position;
                     if (_solver.Bounce(at, normal)) PlayAt(bounceEvent, at);
                     break;   // the ball's path this frame ends at the bounce
                 }
 
                 Vector3 impact = _solver.BallVelocity * (config ? config.DebrisRestitution : 1f / 3f);
-                prism.Damage(impact, _status.Domain, _status.PlayerName,
-                             debrisSpeedLimit: config ? config.DebrisSpeedLimit : 200f);
-                _solver.RegisterHit(ThresherChainSolver.KeepAfterHit(speed, _settings, wrecker));
+                float debrisLimit = config ? config.DebrisSpeedLimit : 200f;
+                // Space L5 "Breaker": a red ball's direct hit breaks super-shielded mass, through the
+                // sanctioned sequence (shields off, then a devastating hit - Prism.Damage's own doc).
+                if (hot && breaker && prism.prismProperties is { IsSuperShielded: true })
+                {
+                    prism.DeactivateShields(impact, debrisLimit);
+                    prism.Damage(impact, _status.Domain, _status.PlayerName, devastate: true, debrisSpeedLimit: debrisLimit);
+                }
+                else
+                    prism.Damage(impact, _status.Domain, _status.PlayerName, debrisSpeedLimit: debrisLimit);
+                _solver.RegisterHit(ThresherChainSolver.KeepAfterHit(speed, _settings));
 
                 // A rival hit releases the chain's banked energy even below smash speed; a smash
                 // explodes anyway, and spends the bank on the way.
                 float banked = _energy;
-                bool exploded = (hot || (!ownDomain && banked > 0f)) && Explode(at, lit);
+                bool exploded = (hot || (!ownDomain && banked > 0f)) && Explode(at);
                 if (hot) OnSmash(at, speed, exploded, banked);
                 else if (exploded) OnEnergyBlast(at, banked);
                 else OnCrush(at);
@@ -502,7 +529,7 @@ namespace CosmicShore.Gameplay
 
         /// <summary>The explosion-diameter multiplier a bank of <paramref name="energy"/> buys.</summary>
         float EnergyScale(float energy)
-            => config ? Mathf.Min(config.EnergyMaxDiameterScale, 1f + config.EnergyDiameterPerUnit * Mathf.Max(0f, energy)) : 1f;
+            => config ? Mathf.Min(EnergyCap(), 1f + config.EnergyDiameterPerUnit * Mathf.Max(0f, energy)) : 1f;
 
         void Bank(float amount)
         {
@@ -565,9 +592,11 @@ namespace CosmicShore.Gameplay
             }
         }
 
+        /// <summary>One ball-trail prism. MASS sizes it (<c>massTrailScale</c>, every axis, read at
+        /// lay time); Mass L5 "Armoured Trail" lays it shielded (per-lay snapshot of the unlock bit).</summary>
         void LayTrailPrism(PrismEventChannelWithReturnSO channel, PrismType type, Vector3 pos, Quaternion rot)
         {
-            Vector3 scale = config.MassTrailPrismScale;
+            Vector3 scale = config.MassTrailPrismScale * Mathf.Max(0.1f, config.MassTrailScale.EvaluateReplicated(_status));
             var ret = channel.RaiseEvent(new PrismEventData
             {
                 ownDomain = _status.Domain,
@@ -582,11 +611,102 @@ namespace CosmicShore.Gameplay
             prism.ownerID = _status.PlayerName;
             prism.ChangeTeam(_status.Domain);
             prism.waitTime = config.MassTrailWaitTime;
+            if (ArmouredTrailActive) prism.prismProperties.IsShielded = true;   // Initialize applies it
             _ballTrail.Add(prism);
             prism.prismProperties.Index = (ushort)Mathf.Min(_ballTrail.TrailList.Count - 1, ushort.MaxValue);
             prism.Initialize(_status.PlayerName);
+            // A Mass-scaled prism is a stated size: admit it past the pool's scale window AFTER
+            // Initialize (whose reset re-clamps it), or a big one is trimmed with no error.
+            prism.AdmitTargetScale(scale);
+            prism.TargetScale = scale;
             // AFTER Initialize: pool-reuse reset clears trail membership (AssignTrail's contract).
             prism.AssignTrail(_ballTrail);
+        }
+
+        // ------------------------------------------------------------------ enemy vessels (petals only)
+
+        /// <summary>
+        /// Every ENEMY hull within <paramref name="radius"/> + <c>vesselHitRadius</c> of the segment
+        /// <paramref name="a"/>→<paramref name="b"/> takes a hit (<see cref="TryHitVessel"/>). The
+        /// ball's swept path and each chain link both come through here.
+        /// </summary>
+        void HitVesselsAlong(Vector3 a, Vector3 b, float radius, Vector3 velocity)
+        {
+            if (!config || _status == null || !_gameData || _gameData.Players == null) return;
+            float reach = radius + config.VesselHitRadius;
+            Vector3 ab = b - a;
+            float abLenSq = ab.sqrMagnitude;
+            var players = _gameData.Players;
+            for (int i = 0; i < players.Count; i++)
+            {
+                var victim = EnemyStatus(players[i]);
+                if (victim == null) continue;
+                Vector3 p = victim.Transform.position;
+                float t = abLenSq > 1e-8f ? Mathf.Clamp01(Vector3.Dot(p - a, ab) / abLenSq) : 0f;
+                if ((p - (a + ab * t)).sqrMagnitude > reach * reach) continue;
+                TryHitVessel(victim, velocity);
+            }
+        }
+
+        /// <summary>The player's vessel status if it is a live ENEMY of this pilot (another pilot,
+        /// another domain), else null.</summary>
+        IVesselStatus EnemyStatus(IPlayer player)
+        {
+            var victim = player?.Vessel?.VesselStatus;
+            if (victim == null || ReferenceEquals(victim, _status)) return null;
+            if (victim.Domain == _status.Domain || !victim.Transform) return null;
+            return victim;
+        }
+
+        /// <summary>
+        /// One contact on an enemy hull, under the LOCKED PvP rule: the ONLY thing it does is take
+        /// petals, as a scored combat hit. Decided on exactly one machine — the one that owns this
+        /// hull (every peer simulates the ball, so every peer sees the contact) — admitted through
+        /// <see cref="CombatHitDrain.TryAdmit"/> (a warded victim is neither scored on nor robbed;
+        /// <c>vesselHitCooldownSeconds</c> per victim), then a Strike-form STEAL of
+        /// <c>vesselHitPetals</c> (CHARGE) petals per element and the score on the stats channel.
+        /// </summary>
+        void TryHitVessel(IVesselStatus victim, Vector3 velocity)
+        {
+            if (!ElementalTransfer.IsDecidedHere(_status)) return;
+            if (_status.Player is { IsNetworkOwner: false }) return;
+            if (!CombatHitDrain.TryAdmit(victim, _status, CombatHitClass.Strike, config.VesselHitCooldownSeconds,
+                                         ElementalDebuffSources.VesselContact, out int superseded))
+                return;
+
+            float petals = Mathf.Max(0f, config.VesselHitPetals.EvaluateReplicated(_status));
+            ElementalTransfer.ApplyAllAuthoritative(CombatHitDrain.FormFor(CombatHitClass.Strike), victim, _status,
+                petals * CombatHitDrain.NormalizedPerLevel, velocity, ElementalDebuffSources.VesselContact);
+            config.OnCombatHitLanded.Raise(new CombatHitStats
+            {
+                ShooterName = _status.PlayerName,
+                VictimName = victim.PlayerName,
+                HitClass = CombatHitClass.Strike,
+                SupersededRank = superseded,
+            });
+        }
+
+        /// <summary>Charge L5 "Magnet": draw a free ball toward the nearest enemy hull within
+        /// <c>magnetRange</c>. It moves only OUR ball — never the other vessel (PvP is petals only).</summary>
+        void PullBallToEnemy(float dt)
+        {
+            if (!config || _status == null || !_gameData || _gameData.Players == null || _solver == null) return;
+            Vector3 ball = _solver.BallPosition;
+            float best = config.MagnetRange * config.MagnetRange;
+            Vector3 target = default;
+            bool found = false;
+            var players = _gameData.Players;
+            for (int i = 0; i < players.Count; i++)
+            {
+                var victim = EnemyStatus(players[i]);
+                if (victim == null) continue;
+                float d = (victim.Transform.position - ball).sqrMagnitude;
+                if (d >= best) continue;
+                best = d;
+                target = victim.Transform.position;
+                found = true;
+            }
+            if (found) _solver.AttractBall(target, config.MagnetAcceleration, dt);
         }
 
         void OnCrush(Vector3 at)
@@ -597,22 +717,20 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// The smash explosion. Unlit it destroys every domain's prisms (<c>AffectSelfOverride</c>
-        /// true, the Grizzly charged shot's setting); lit it spares the pilot's own domain — the
-        /// fleet's rule that domain-sparing lives in the EXPLOSION layer, never in Prism.Damage.
+        /// The smash explosion: it destroys every domain's prisms (<c>AffectSelfOverride</c> true, the
+        /// Grizzly charged shot's setting).
         /// Rate-limited so a hot ball through a row makes a string of blasts, not one per prism.
         /// The chain's banked energy rides the blast that actually goes off (its diameter ×
         /// <see cref="EnergyScale"/>) and is spent by it; a rate-limited hit keeps the bank for the
         /// next one. Returns true if an explosion was spawned.
         /// </summary>
-        bool Explode(Vector3 at, bool lit)
+        bool Explode(Vector3 at)
         {
             if (!config || config.SmashExplosions is not { Length: > 0 } || _status == null) return false;
             if (Time.time < _nextExplosionTime) return false;
             _nextExplosionTime = Time.time + config.ExplosionMinInterval;
 
-            float diameter = config.ExplosionDiameter * Mathf.Max(0.1f, config.ExplosionSizeMultiplier.EvaluateReplicated(_status))
-                             * EnergyScale(_energy);
+            float diameter = config.ExplosionDiameter * EnergyScale(_energy);
             _energy = 0f;
             Vector3 v = _solver.BallVelocity;
             var init = new AOEExplosion.InitializeStruct
@@ -624,7 +742,7 @@ namespace CosmicShore.Gameplay
                 MaxScale = diameter,
                 SpawnPosition = at,
                 SpawnRotation = v.sqrMagnitude > 1e-6f ? Quaternion.LookRotation(v) : Quaternion.identity,
-                AffectSelfOverride = !lit,
+                AffectSelfOverride = true,
             };
             ExplosionHelper.CreateExplosion(config.SmashExplosions, init, _impactor ? _impactor.DIContainer : null);
             return true;
@@ -635,23 +753,28 @@ namespace CosmicShore.Gameplay
         /// <summary>
         /// The chain, taut or slack: every RIVAL prism a link touches is sliced along the plane the
         /// chain is sweeping (and banks energy for the ball's next blast when it dies), and every
-        /// prism of the pilot's OWN domain it touches is shielded. Shielded rivals are skipped unless
-        /// Reaper Chain (Space L5) is active, when the first cut pops the shield. The fleet's
+        /// prism of the pilot's OWN domain it touches is shielded. A shielded rival loses its shield
+        /// to the first cut and dies to the next; super-shielded mass refuses. The fleet's
         /// own-fresh-trail grace applies to both: what this pilot laid moments ago is left alone.
+        /// Each link also reaches enemy HULLS (<see cref="HitVesselsAlong"/>).
         /// </summary>
         void CutWithChain(float dt)
         {
             if (!config || _status == null || _links == null) return;
+
+            var pts = _links.Points;
+            for (int s = 0; s < pts.Length - 1; s++)
+                HitVesselsAlong(pts[s], pts[s + 1], config.ChainCutRadius,
+                    0.5f * (_links.NodeVelocity(s, dt) + _links.NodeVelocity(s + 1, dt)));
+
             var index = PrismSpatialIndex.Instance;
             if (!index || !index.IsAvailable) return;
 
-            bool reaper = ReaperActive;
             Domains own = PilotDomain();
             float cut = config.ChainCutRadius;
             const float candidateExtent = 8f;
             _cutThisFrame.Clear();
 
-            var pts = _links.Points;
             int n = pts.Length;
             for (int s = 0; s < n - 1; s++)
             {
@@ -667,9 +790,9 @@ namespace CosmicShore.Gameplay
                     if (!prism || prism.destroyed || _cutThisFrame.Contains(prism)) continue;
                     var props = prism.prismProperties;
                     bool ownDomain = prism.Domain == own;
-                    // Nothing to do to armoured own mass, or to a shielded rival without Reaper Chain.
+                    // Nothing to do to armoured own mass, or to a super-shielded rival.
                     if (ownDomain && (props == null || props.IsShielded || props.IsSuperShielded)) continue;
-                    if (!ownDomain && !reaper && props != null && (props.IsShielded || props.IsSuperShielded)) continue;
+                    if (!ownDomain && props != null && props.IsSuperShielded) continue;
                     if (SelfTrailContactConfigSO.SuppressesSkimContact(prism, _status)) continue;
 
                     Vector3 centre = prism.transform.position;
@@ -868,7 +991,10 @@ namespace CosmicShore.Gameplay
             // The whole spin turns with the camera: the orbit is laid into the plane the aim lives in.
             _solver.SteerOrbitPlane(_aimUp);
 
-            _spectateRadius = ThresherCameraFraming.Ease(_spectateRadius, _solver.Length + ballRadius,
+            // Frame the circle the ship is ACTUALLY flying, not the chain's length: while the winch
+            // pays out, the chain is longer than the orbit until the ship swings out to it.
+            float orbitRadius = (ship.position - _solver.Pivot).magnitude;
+            _spectateRadius = ThresherCameraFraming.Ease(_spectateRadius, orbitRadius + ballRadius,
                 config.CameraZoomOutRate, config.CameraZoomInRate, dt);
             Vector3 launch = _solver.LaunchPoint(ship.position, _aimDir);
             _cam.SpectateBlendSeconds = config.SpectateBlendSeconds;
@@ -901,7 +1027,7 @@ namespace CosmicShore.Gameplay
 
             _aimDir = aim.normalized;
             _aimUp = normal;
-            _spectateRadius = _solver.Length;
+            _spectateRadius = outward.magnitude;
             _spectating = true;
         }
 
@@ -982,7 +1108,7 @@ namespace CosmicShore.Gameplay
             {
                 float heat = ThresherChainSolver.Heat01(_solver.BallSpeed, _settings);
                 emission = Mathf.Lerp(2.5f, 4f, heat);
-                return LitActive ? LitColor(domain) : DangerColor();
+                return DangerColor();
             }
             float g = Gauge01;
             emission = Mathf.Lerp(0.15f, 1.2f, g * g);
@@ -1064,7 +1190,7 @@ namespace CosmicShore.Gameplay
         MeshRenderer[] _ballRenderers;
         LineRenderer _chain;
         Vector3[] _chainDrawn;
-        LineRenderer _aimLine;
+        ScreenDotPath _aimDots;
         TrailRenderer _skid;
         TextMeshPro _comboLabel;
         MaterialPropertyBlock _mpb;
@@ -1110,12 +1236,6 @@ namespace CosmicShore.Gameplay
             _chain.alignment = LineAlignment.View;   // the fresnel tube is computed across a VIEW-aligned ribbon
             _chainMpb = new MaterialPropertyBlock();
 
-            // The launch path while aiming a spectated spin: a straight line from the launch point
-            // along the aim, in the CTA lime. Local pilot only (it is drawn from the camera's aim).
-            _aimLine = MakeLine("AimPath", lineMat, false);
-            _aimLine.positionCount = 2;
-            _aimLine.numCapVertices = 0;
-            _aimLine.enabled = false;
 
             var skidGo = new GameObject("SkidTrail");
             skidGo.transform.SetParent(_ball, false);
@@ -1186,12 +1306,15 @@ namespace CosmicShore.Gameplay
         {
             if (!active) _shownValid = false;   // re-shown at the live colours, not eased from stale ones
             if (_root) _root.SetActive(active);
+            if (!active && _aimDots) _aimDots.Hide();
         }
 
         void DestroyVisuals()
         {
             if (_root) Destroy(_root);
             _root = null;
+            if (_aimDots) _aimDots.DestroyOverlay();
+            _aimDots = null;
         }
 
         void UpdateVisuals()
@@ -1268,22 +1391,7 @@ namespace CosmicShore.Gameplay
             if (_chain.positionCount != written) _chain.positionCount = written;
             _chain.SetPositions(_chainDrawn);
 
-            if (_aimLine)
-            {
-                bool aiming = _spectating && IsLocalPilot();
-                _aimLine.enabled = aiming;
-                if (aiming)
-                {
-                    Color lime = ReadyColor();
-                    _aimLine.startColor = lime;
-                    _aimLine.endColor = new Color(lime.r, lime.g, lime.b, 0f);
-                    _aimLine.startWidth = config.AimLineWidth;
-                    _aimLine.endWidth = config.AimLineWidth * 0.5f;
-                    Vector3 launch = _solver.LaunchPoint(ship, _aimDir);
-                    _aimLine.SetPosition(0, launch);
-                    _aimLine.SetPosition(1, launch + _aimDir * config.AimLineLength);
-                }
-            }
+            DrawLaunchPath(ship);
 
             // Skid trail while planting.
             if (_skid)
@@ -1296,6 +1404,28 @@ namespace CosmicShore.Gameplay
             }
 
             DrawCombo(ballPos, r, dt, ballColor);
+        }
+
+        /// <summary>
+        /// The launch path while aiming a spectated spin, in the Stoat pathfinder's dots
+        /// (<see cref="ScreenDotPath"/>): from the launch point along the aim. White while a release
+        /// now would wait; the palette's CTA lime while it would be PERFECT (the ship reaches the
+        /// point inside <c>perfectWindowSeconds</c>). Local pilot only — it is drawn from the
+        /// camera's aim.
+        /// </summary>
+        void DrawLaunchPath(Vector3 ship)
+        {
+            bool aiming = _spectating && IsLocalPilot() && _cam && _cam.Camera;
+            if (!aiming)
+            {
+                if (_aimDots) _aimDots.Hide();
+                return;
+            }
+            if (!_aimDots) _aimDots = ScreenDotPath.Create(name);
+            Vector3 launch = _solver.LaunchPoint(ship, _aimDir);
+            Color tint = IsTimingPerfect ? ReadyColor().gamma : new Color(1f, 1f, 1f, 0.9f);
+            _aimDots.ShowSegment(_cam.Camera, launch, launch + _aimDir * config.AimLineLength, 24, tint,
+                config.AimDotPixels, config.AimDotGap);
         }
 
         void DrawCombo(Vector3 ballPos, float r, float dt, Color ballColor)

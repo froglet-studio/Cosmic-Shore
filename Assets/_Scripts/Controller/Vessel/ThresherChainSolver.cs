@@ -189,6 +189,9 @@ namespace CosmicShore.Gameplay
         /// reached its launch point and the ship left the orbit along <see cref="LaunchDirection"/>.</summary>
         public bool Launched;
         public Vector3 LaunchDirection;
+        /// <summary>The launch left inside the timing window (released so close to the launch point
+        /// that there was little to no wait) and took the perfect-release boost.</summary>
+        public bool Perfect;
     }
 
     /// <summary>
@@ -238,7 +241,9 @@ namespace CosmicShore.Gameplay
         float _windmillRadius;
         Vector3 _planeNormal;      // steered orbit plane (zero = leave the plane alone)
         Vector3 _launchAim;        // armed launch direction (zero = none armed)
-        bool _launchSlingshot;
+        float _armedSeconds;       // how long the armed launch has been waiting
+        float _perfectWindow;      // a launch this soon after arming is PERFECT...
+        float _perfectBoost;       // ...and leaves this many times faster (1 = no boost)
 
         /// <summary>Seconds of windmill left; 0 outside <see cref="ThresherMode.Windmill"/>.</summary>
         public float WindmillTimeLeft { get; private set; }
@@ -285,9 +290,8 @@ namespace CosmicShore.Gameplay
 
         /// <summary>Left trigger up: the ship flies off on its current velocity and, if the ball
         /// was the pivot, the ball is yanked after it at <see cref="ThresherChainSettings.Yank"/> of
-        /// the ship's speed. <paramref name="slingshot"/> is the Time level-5 upgrade: the yank is never weaker than
-        /// smash speed, so the ball leaves the pivot hot.</summary>
-        public void Release(Vector3 shipVelocity, bool slingshot = false)
+        /// the ship's speed.</summary>
+        public void Release(Vector3 shipVelocity)
         {
             // The windmill owns the ball until it runs out; a left-trigger release mid-windmill
             // (the trigger was held when the crystal was collected) must not cut it short.
@@ -296,10 +300,7 @@ namespace CosmicShore.Gameplay
             _planeNormal = Vector3.zero;
             if (Mode == ThresherMode.Pivot)
             {
-                Vector3 yank = shipVelocity * Settings.Yank;
-                if (slingshot && shipVelocity.sqrMagnitude > 1e-6f && yank.magnitude < Settings.SmashSpeed)
-                    yank = shipVelocity.normalized * Settings.SmashSpeed;
-                BallVelocity = Vector3.ClampMagnitude(yank, Settings.MaxBallSpeed);
+                BallVelocity = Vector3.ClampMagnitude(shipVelocity * Settings.Yank, Settings.MaxBallSpeed);
             }
             Mode = ThresherMode.Free;
             LockSpeed = 0f;
@@ -343,13 +344,50 @@ namespace CosmicShore.Gameplay
         /// circle whose tangent IS the aim (<see cref="LaunchRadial"/>), and leaves from there —
         /// so the pilot picks a point, and the timing is the solver's job. A re-arm replaces the aim;
         /// <see cref="Release"/> (or a windmill) disarms. Ignored unless planted.
-        /// <paramref name="slingshot"/> is the Time level-5 snapshot, as on <see cref="Release"/>.
+        /// A launch that leaves within <paramref name="perfectWindowSeconds"/> of being armed — the
+        /// trigger came up just before the launch point, so there was little to no wait — is
+        /// PERFECT and leaves <paramref name="perfectBoost"/> times faster (the Time level-5
+        /// snapshot; pass 1 for none).
         /// </summary>
-        public void ArmLaunch(Vector3 aim, bool slingshot)
+        public void ArmLaunch(Vector3 aim, float perfectWindowSeconds = 0f, float perfectBoost = 1f)
         {
             if (Mode != ThresherMode.Pivot || aim.sqrMagnitude < 1e-8f) return;
             _launchAim = aim.normalized;
-            _launchSlingshot = slingshot;
+            _armedSeconds = 0f;
+            _perfectWindow = Mathf.Max(0f, perfectWindowSeconds);
+            _perfectBoost = Mathf.Max(1f, perfectBoost);
+        }
+
+        /// <summary>
+        /// Seconds until the ship, circling at its current speed, reaches the launch point for
+        /// <paramref name="aim"/> — the wait an LT release NOW would cost. Infinity when there is no
+        /// launch point (not planted, or the aim is along the orbit's axis).
+        /// </summary>
+        public float SecondsToLaunchPoint(Vector3 shipPosition, Vector3 aim)
+        {
+            if (!LaunchRadial(shipPosition, aim, out Vector3 target)) return float.PositiveInfinity;
+            Vector3 r = shipPosition - Pivot;
+            float dist = r.magnitude;
+            if (dist < 1e-5f || LockSpeed <= 1e-4f) return float.PositiveInfinity;
+            Vector3 rh = r / dist;
+            Vector3 t = Vector3.Cross(OrbitNormal(shipPosition), rh);
+            float ahead = Mathf.Atan2(Vector3.Dot(target, t), Vector3.Dot(target, rh));
+            if (ahead < 0f) ahead += 2f * Mathf.PI;
+            return ahead * dist / LockSpeed;
+        }
+
+        /// <summary>
+        /// Pull a FREE ball toward <paramref name="target"/> at <paramref name="acceleration"/>
+        /// (u/s²) for one frame — the Charge level-5 attraction to enemy vessels. A planted ball is a
+        /// pivot and a windmill's ball is driven round its circle, so neither is pulled; the rope
+        /// still has the last word on where a free ball can go.
+        /// </summary>
+        public void AttractBall(Vector3 target, float acceleration, float dt)
+        {
+            if (Mode != ThresherMode.Free && Mode != ThresherMode.Skidding) return;
+            Vector3 to = target - BallPosition;
+            if (to.sqrMagnitude < 1e-6f || acceleration <= 0f || dt <= 0f) return;
+            BallVelocity = Vector3.ClampMagnitude(BallVelocity + to.normalized * (acceleration * dt), Settings.MaxBallSpeed);
         }
 
         /// <summary>The planted orbit's normal in its TRAVEL sense (velocity = normal × radial), or
@@ -379,10 +417,13 @@ namespace CosmicShore.Gameplay
             return true;
         }
 
-        /// <summary>The launch point on the planted circle for <paramref name="aim"/> (see
-        /// <see cref="LaunchRadial"/>); the pivot when there is none.</summary>
+        /// <summary>The launch point for <paramref name="aim"/> (see <see cref="LaunchRadial"/>) on
+        /// the circle the ship is ACTUALLY flying — its own distance from the pivot, never the
+        /// chain's length. While the winch pays out the chain is longer than the ship's orbit until
+        /// the ship swings out to it, and a point drawn on the chain's circle sat outside the ship's
+        /// path: the aim led to a circumference the ship was not on. The pivot when there is none.</summary>
         public Vector3 LaunchPoint(Vector3 shipPosition, Vector3 aim)
-            => LaunchRadial(shipPosition, aim, out var r) ? Pivot + r * Length : Pivot;
+            => LaunchRadial(shipPosition, aim, out var r) ? Pivot + r * (shipPosition - Pivot).magnitude : Pivot;
 
         // ------------------------------------------------------------------ the step
 
@@ -610,6 +651,7 @@ namespace CosmicShore.Gameplay
         bool TryLaunch(Vector3 shipPosition, float dt, ref ThresherStepResult result)
         {
             if (!LaunchArmed) return false;
+            _armedSeconds += dt;
             if (!LaunchRadial(shipPosition, _launchAim, out Vector3 target)) return false;
             Vector3 r = shipPosition - Pivot;
             float dist = r.magnitude;
@@ -623,13 +665,15 @@ namespace CosmicShore.Gameplay
             if (ahead > step) return false;
 
             Vector3 aim = _launchAim;
-            Vector3 velocity = aim * LockSpeed;
-            bool slingshot = _launchSlingshot;
-            Release(velocity, slingshot);   // Pivot -> Free, the yank, disarms
+            // PERFECT: the trigger came up inside the window before the point, so it barely waited.
+            bool perfect = _perfectWindow > 0f && _armedSeconds <= _perfectWindow;
+            Vector3 velocity = aim * (LockSpeed * (perfect ? _perfectBoost : 1f));
+            Release(velocity);   // Pivot -> Free, the yank, disarms
             result.ShipVelocity = velocity;
             result.BallFrom = BallPosition;
             result.Launched = true;
             result.LaunchDirection = aim;
+            result.Perfect = perfect;
             return true;
         }
 
@@ -756,13 +800,10 @@ namespace CosmicShore.Gameplay
         /// <summary>
         /// The fraction of its speed the ball keeps after destroying one prism: <c>PloughKeep</c>
         /// for a smash at smash speed rising to <c>PloughKeepHot</c> when white-hot (a hotter ball
-        /// ploughs further), <c>CrushKeep</c> below smash speed. <paramref name="wrecker"/> is the
-        /// Mass level-5 upgrade: a smash costs the ball nothing.
+        /// ploughs further), <c>CrushKeep</c> below smash speed.
         /// </summary>
-        public static float KeepAfterHit(float speed, in ThresherChainSettings s, bool wrecker = false)
-            => IsSmash(speed, s)
-                ? (wrecker ? 1f : Mathf.Lerp(s.PloughKeep, s.PloughKeepHot, Heat01(speed, s)))
-                : s.CrushKeep;
+        public static float KeepAfterHit(float speed, in ThresherChainSettings s)
+            => IsSmash(speed, s) ? Mathf.Lerp(s.PloughKeep, s.PloughKeepHot, Heat01(speed, s)) : s.CrushKeep;
 
         /// <summary>
         /// The ball bounces off a prism it must not destroy (its own domain's). It is put back at

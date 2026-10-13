@@ -1,4 +1,5 @@
 using CosmicShore.Data;
+using CosmicShore.ScriptableObjects;
 using UnityEngine;
 
 namespace CosmicShore.Gameplay
@@ -9,11 +10,13 @@ namespace CosmicShore.Gameplay
     /// scalings, the smash explosion, the chain cut, the impact feel, and the look. One asset per
     /// hull; read by <see cref="ThresherExecutor"/>. See <c>THRESHER.md</c>.
     ///
-    /// Element map (approved 2026-10-08; Mass Mode on A added 2026-10-13): CHARGE = the ball's
-    /// threat (explosion size; L5 "Lit"), MASS = the ball's weight and size, and the A-button Mass
-    /// Mode (L5 "Wrecker"), SPACE = the chain's reach (L5 "Reaper Chain"), TIME = the plant's spin
-    /// (L5 "Slingshot"). Every scaling is an <see cref="ElementalFloat"/> read through
-    /// <c>EvaluateReplicated</c> at the point of use.
+    /// Element map (re-cut 2026-10-13, round 3): CHARGE = petals the ball and chain take from an
+    /// enemy vessel per hit (L5 "Magnet": the free ball is drawn to enemy vessels), MASS = the size of
+    /// the prisms the ball lays in Mass Mode (L5 "Armoured Trail": they are laid shielded), SPACE =
+    /// the largest explosion the chain's banked energy can buy (L5 "Breaker": a red ball's direct hit
+    /// destroys super-shielded prisms), TIME = how fast the planted spin winds up to launch speed (L5
+    /// "Perfect Release": a release timed inside the window leaves with a boost). Every scaling is an
+    /// <see cref="ElementalFloat"/> read through <c>EvaluateReplicated</c> at the point of use.
     /// </summary>
     [CreateAssetMenu(fileName = "ThresherConfig", menuName = "ScriptableObjects/Vessel Actions/Thresher Config")]
     public sealed class ThresherConfigSO : ScriptableObject
@@ -22,23 +25,24 @@ namespace CosmicShore.Gameplay
         [SerializeField] ThresherDials dials = new ThresherDials();
 
         [Header("Elements")]
-        [Tooltip("CHARGE: multiplier on the smash explosion's diameter.")]
-        [SerializeField] ElementalFloat explosionSizeMultiplier = ElementalFloat.Multiplier(1f, 2f, Element.Charge, 0.5f);
-        [Tooltip("MASS: multiplier on the ball's mass (heavier tug, the same plough). The ball's radius " +
-                 "grows with the CUBE ROOT of it, because Mass is volume.")]
-        [SerializeField] ElementalFloat ballMassMultiplier = ElementalFloat.Multiplier(1f, 1.75f, Element.Mass, 0.5f);
-        [Tooltip("SPACE: multiplier on the let-out chain length (maxLen). The reeled-in length is fixed. The Space " +
-                 "card's gauge shows the chain's banked ENERGY (the explosion radius it has bought).")]
-        [SerializeField] ElementalFloat chainReachMultiplier = ElementalFloat.Multiplier(1f, 1.5f, Element.Space, 0.6f);
-        [Tooltip("TIME: multiplier on the planted orbit's spin-up rate AND its cap (lockSpin, lockMax).")]
+        [Tooltip("CHARGE: petals the ball or the chain takes from an ENEMY vessel per hit, on each element " +
+                 "(a scored Strike that STEALS them - the PvP-is-petals-only rule). 1 at rest -> 3 at full Charge.")]
+        [SerializeField] ElementalFloat vesselHitPetals = ElementalFloat.Multiplier(1f, 3f, Element.Charge, 0.5f);
+        [Tooltip("MASS: size multiplier (every axis) on the prisms the ball lays in Mass Mode (massTrailPrismScale).")]
+        [SerializeField] ElementalFloat massTrailScale = ElementalFloat.Multiplier(1f, 2f, Element.Mass, 0.5f);
+        [Tooltip("SPACE: the largest explosion-diameter multiplier the chain's banked energy can buy - the cap " +
+                 "of 1 + energyDiameterPerUnit x energy. 4 at rest -> 8 at full Space. The Space card's gauge " +
+                 "shows how much of it is banked.")]
+        [SerializeField] ElementalFloat energyMaxDiameterScale = ElementalFloat.Multiplier(4f, 8f, Element.Space, 2f);
+        [Tooltip("TIME: multiplier on the planted orbit's spin-up rate AND its cap (lockSpin, lockMax) - how fast " +
+                 "the spin winds up to launch speed.")]
         [SerializeField] ElementalFloat spinMultiplier = ElementalFloat.Multiplier(1f, 1.75f, Element.Time, 0.5f);
 
         [Header("Smash explosion (ball at or above smash speed)")]
-        [Tooltip("Explosion prefab(s) spawned where a smashing ball hits. Destroys every domain's prisms " +
-                 "(AffectSelfOverride true) until the Charge L5 'Lit' is active, when it spares the pilot's own " +
-                 "domain (AffectSelfOverride false) - the fleet's domain-sparing-in-the-explosion-layer rule.")]
+        [Tooltip("Explosion prefab(s) spawned where a smashing ball (or an energised hit) lands. Destroys every " +
+                 "domain's prisms (AffectSelfOverride true).")]
         [SerializeField] AOEExplosion[] smashExplosions;
-        [Tooltip("Explosion DIAMETER at rest Charge (world units); x explosionSizeMultiplier.")]
+        [Tooltip("Explosion DIAMETER with nothing banked (world units); x the energy multiplier.")]
         [SerializeField, Min(0f)] float explosionDiameter = 45f;
         [Tooltip("At most one explosion per this many seconds, so a hot ball ploughing a row makes a " +
                  "string of blasts rather than one per prism.")]
@@ -50,12 +54,11 @@ namespace CosmicShore.Gameplay
         [SerializeField, Min(0f)] float energyPerSlice = 1f;
         [Tooltip("Energy each prism the ball STEALS in Mass Mode adds - Mass Mode never releases energy, it banks it.")]
         [SerializeField, Min(0f)] float energyPerSteal = 0.5f;
-        [Tooltip("The most energy the ball can bank.")]
-        [SerializeField, Min(0f)] float energyMax = 30f;
-        [Tooltip("Each unit of banked energy adds this much to the explosion's diameter multiplier (1 + this x energy).")]
+        [Tooltip("The most energy the ball can bank. Enough to reach the full-Space explosion cap (70 x 0.1 + 1 = 8).")]
+        [SerializeField, Min(0f)] float energyMax = 70f;
+        [Tooltip("Each unit of banked energy adds this much to the explosion's diameter multiplier (1 + this x energy), " +
+                 "up to the Space-scaled energyMaxDiameterScale.")]
         [SerializeField, Min(0f)] float energyDiameterPerUnit = 0.1f;
-        [Tooltip("Cap on the energy diameter multiplier, so a full bank is a big blast and not an arena wipe.")]
-        [SerializeField, Min(1f)] float energyMaxDiameterScale = 4f;
         [Tooltip("How far the ball's rim leans toward the CTA lime at a FULL bank (0 = no cue, 1 = pure lime).")]
         [SerializeField, Range(0f, 1f)] float energyRimTint = 0.6f;
 
@@ -73,7 +76,27 @@ namespace CosmicShore.Gameplay
         [Header("Windmill (omni crystal)")]
         [Tooltip("Seconds the ball windmills round the ship after an omni crystal (speed: ThresherDials.windmillSpeed). " +
                  "A second crystal mid-windmill tops the clock back up.")]
-        [SerializeField, Min(0f)] float windmillSeconds = 6f;
+        [SerializeField, Min(0f)] float windmillSeconds = 12f;
+
+        [Header("Enemy vessels (Charge)")]
+        [Tooltip("The ball's swept sphere and the chain's cut width reach a vessel this much further (world units, " +
+                 "roughly a hull's radius).")]
+        [SerializeField, Min(0f)] float vesselHitRadius = 4f;
+        [Tooltip("Seconds before the ball or chain can score on the same enemy vessel again.")]
+        [SerializeField, Min(0f)] float vesselHitCooldownSeconds = 1f;
+        [Tooltip("Drag Event_CombatHitStats.asset - the channel StatsManager scores combat hits on. Fail-loud.")]
+        [SerializeField] ScriptableEventCombatHitStats onCombatHitLanded;
+        [Tooltip("Charge L5 'Magnet': a free ball is drawn toward the nearest enemy vessel within this range (world units).")]
+        [SerializeField, Min(0f)] float magnetRange = 150f;
+        [Tooltip("Charge L5 'Magnet': how hard the ball is drawn (u/s^2).")]
+        [SerializeField, Min(0f)] float magnetAcceleration = 220f;
+
+        [Header("Perfect release (Time)")]
+        [Tooltip("A release that leaves within this many seconds of LT coming up - i.e. timed just before the launch " +
+                 "point - is PERFECT. The launch line turns lime while a release now would be perfect.")]
+        [SerializeField, Min(0f)] float perfectWindowSeconds = 0.25f;
+        [Tooltip("Time L5 'Perfect Release': a perfect launch leaves this many times faster than the orbit.")]
+        [SerializeField, Min(1f)] float perfectBoost = 1.6f;
 
         [Header("Chain cut")]
         [Tooltip("The chain's cutting half-width (world units). It cuts RIVAL prisms it touches while taut; " +
@@ -167,8 +190,10 @@ namespace CosmicShore.Gameplay
         [SerializeField, Min(0f)] float aimPitchRate = 120f;
         [Tooltip("Length of the drawn launch path while aiming (world units), from the launch point along the aim.")]
         [SerializeField, Min(0f)] float aimLineLength = 150f;
-        [Tooltip("Width of the drawn launch path (world units).")]
-        [SerializeField, Min(0f)] float aimLineWidth = 1.2f;
+        [Tooltip("The launch path's dots: diameter in pixels at 1080p (the Stoat pathfinder's dotPixels).")]
+        [SerializeField, Range(0.5f, 20f)] float aimDotPixels = 4f;
+        [Tooltip("Space between two dots, in dot diameters (the Stoat pathfinder's dotGap).")]
+        [SerializeField, Range(0f, 40f)] float aimDotGap = 10f;
 
         [Header("Ball shading (ThresherBallFresnelShader: dull body, bright fresnel rim)")]
         [Tooltip("Body brightness (max channel) of a slow ball. Under the bloom threshold (0.2).")]
@@ -217,9 +242,9 @@ namespace CosmicShore.Gameplay
         [SerializeField, Min(0f)] float skidTrailSeconds = 0.6f;
 
         public ThresherDials Dials => dials;
-        public ElementalFloat ExplosionSizeMultiplier => explosionSizeMultiplier;
-        public ElementalFloat BallMassMultiplier => ballMassMultiplier;
-        public ElementalFloat ChainReachMultiplier => chainReachMultiplier;
+        public ElementalFloat VesselHitPetals => vesselHitPetals;
+        public ElementalFloat MassTrailScale => massTrailScale;
+        public ElementalFloat EnergyMaxDiameterScale => energyMaxDiameterScale;
         public ElementalFloat SpinMultiplier => spinMultiplier;
         public AOEExplosion[] SmashExplosions => smashExplosions;
         public float ExplosionDiameter => explosionDiameter;
@@ -228,13 +253,19 @@ namespace CosmicShore.Gameplay
         public float EnergyPerSteal => energyPerSteal;
         public float EnergyMax => energyMax;
         public float EnergyDiameterPerUnit => energyDiameterPerUnit;
-        public float EnergyMaxDiameterScale => energyMaxDiameterScale;
         public float EnergyRimTint => energyRimTint;
         public Vector3 MassTrailPrismScale => massTrailPrismScale;
         public float MassTrailSpacing => Mathf.Max(0.5f, massTrailSpacing);
         public int MassTrailMaxPerFrame => Mathf.Max(1, massTrailMaxPerFrame);
         public float MassTrailWaitTime => massTrailWaitTime;
         public float WindmillSeconds => windmillSeconds;
+        public float VesselHitRadius => vesselHitRadius;
+        public float VesselHitCooldownSeconds => vesselHitCooldownSeconds;
+        public ScriptableEventCombatHitStats OnCombatHitLanded => onCombatHitLanded;
+        public float MagnetRange => magnetRange;
+        public float MagnetAcceleration => magnetAcceleration;
+        public float PerfectWindowSeconds => perfectWindowSeconds;
+        public float PerfectBoost => perfectBoost;
         public float ChainCutRadius => chainCutRadius;
         public float ChainDebrisRestitution => chainDebrisRestitution;
         public float HitStopMinSeconds => hitStopMinSeconds;
@@ -265,7 +296,8 @@ namespace CosmicShore.Gameplay
         public float AimYawRate => aimYawRate;
         public float AimPitchRate => aimPitchRate;
         public float AimLineLength => aimLineLength;
-        public float AimLineWidth => aimLineWidth;
+        public float AimDotPixels => aimDotPixels;
+        public float AimDotGap => aimDotGap;
         public float BallBodyCool => ballBodyCool;
         public float BallBodyNearSmash => ballBodyNearSmash;
         public float BallBodyHot => ballBodyHot;

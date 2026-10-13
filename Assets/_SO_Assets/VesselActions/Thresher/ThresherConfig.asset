@@ -41,30 +41,30 @@ MonoBehaviour:
     yank: 0.5
     pivotSteer: 45
     windmillSpeed: 1000
-  explosionSizeMultiplier:
+  vesselHitPetals:
+    Enabled: 1
+    Value: 1
+    Min: 1
+    Max: 3
+    element: 1
+    UseFloor: 1
+    Floor: 0.5
+  massTrailScale:
     Enabled: 1
     Value: 1
     Min: 1
     Max: 2
-    element: 1
-    UseFloor: 1
-    Floor: 0.5
-  ballMassMultiplier:
-    Enabled: 1
-    Value: 1
-    Min: 1
-    Max: 1.75
     element: 2
     UseFloor: 1
     Floor: 0.5
-  chainReachMultiplier:
+  energyMaxDiameterScale:
     Enabled: 1
-    Value: 1
-    Min: 1
-    Max: 1.5
+    Value: 4
+    Min: 4
+    Max: 8
     element: 3
     UseFloor: 1
-    Floor: 0.6
+    Floor: 2
   spinMultiplier:
     Enabled: 1
     Value: 1
@@ -79,15 +79,21 @@ MonoBehaviour:
   explosionMinInterval: 0.08
   energyPerSlice: 1
   energyPerSteal: 0.5
-  energyMax: 30
+  energyMax: 70
   energyDiameterPerUnit: 0.1
-  energyMaxDiameterScale: 4
   energyRimTint: 0.6
   massTrailPrismScale: {x: 8, y: 0.75, z: 5.5}
   massTrailSpacing: 6
   massTrailMaxPerFrame: 3
   massTrailWaitTime: 0.3
-  windmillSeconds: 6
+  windmillSeconds: 12
+  vesselHitRadius: 4
+  vesselHitCooldownSeconds: 1
+  onCombatHitLanded: {fileID: 11400000, guid: 45fb43a0cddb5cc3cc4dc448df994152, type: 2}
+  magnetRange: 150
+  magnetAcceleration: 220
+  perfectWindowSeconds: 0.25
+  perfectBoost: 1.6
   chainCutRadius: 0.6
   chainDebrisRestitution: 0.5
   hitStopMinSeconds: 0.03
@@ -118,7 +124,8 @@ MonoBehaviour:
   aimYawRate: 180
   aimPitchRate: 120
   aimLineLength: 150
-  aimLineWidth: 1.2
+  aimDotPixels: 4
+  aimDotGap: 10
   ballBodyCool: 0.16
   ballBodyNearSmash: 0.4
   ballBodyHot: 0.5

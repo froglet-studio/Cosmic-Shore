@@ -35,16 +35,18 @@ SHARED map (`_inputEventShipActions`), so every device resolves it the same way.
 |---|---|---|---|---|
 | Below smash speed | your **domain** colour, brightening toward smash | **destroyed** (`Prism.Damage`); the ball keeps `crushKeep` of its speed | **bounces** off (restitution `bounce`) | none |
 | At / above smash speed | **red** (palette danger) | destroyed; the ball keeps `plough` → `ploughHot` | **destroyed** | **yes, destroys every domain** |
-| …with Charge L5 **Lit** | **lit** domain colour (shielded rim) | destroyed | **bounces** | **yes, spares your domain** |
+| …with Space L5 **Breaker** | red | destroyed — **super-shielded included** (direct hits) | destroyed (super-shielded too) | yes |
+
+(Charge L5 "Lit", which spared your own domain, was retired 2026-10-13 round 3 — rule 26; the hot
+ball is always red now.)
 
 - **Every kill goes through `Prism.Damage`** with the ball's own velocity as the impact vector (the
   Rhino sword's contact-velocity idea at its core: a point mass's contact velocity IS its velocity),
   so debris flies along the ball's path and shields behave exactly as for every other hull — a
   shielded prism pops on the first hit and dies on the next contact; a super-shield holds.
 - **The explosion** is the Grizzly's blast (`AOEGrizzlyExplosion.prefab`) spawned at the contact
-  through `ExplosionHelper`, **45 u** diameter × the Charge scaling (×2 at full Charge), `AffectSelfOverride` **on**
-  (all domains) unless Lit (then off — the fleet rule that domain-sparing lives in the EXPLOSION
-  layer, never in `Prism.Damage`). At most one per `explosionMinInterval` (0.08 s), so a hot ball
+  through `ExplosionHelper`, **45 u** diameter × the chain's energy multiplier (§2a), `AffectSelfOverride`
+  **on** (all domains). At most one per `explosionMinInterval` (0.08 s), so a hot ball
   through a row makes a string of blasts rather than one per prism. Its container is knock-back only
   (no scoring); an unlit blast near your own hull can knock you too.
 - **Sweep, not colliders**: the ball's path each frame is swept as a sphere through
@@ -55,9 +57,19 @@ SHARED map (`_inputEventShipActions`), so every device resolves it the same way.
   every peer). Every **rival** prism a link touches is `Prism.Slice`d along the plane the chain is
   sweeping, debris at that link's own velocity, and each kill banks energy (§2a); every
   **own-domain** prism it touches is **shielded** (`ActivateShield`, untimed; already-armoured mass
-  is left alone). It skips shielded rivals — **Space L5 Reaper Chain** makes it cut them (the first
-  cut pops the shield). Reaper Chain used to also mean "cuts while slack"; that half is now the base
-  (rule 26 — the map's `UpgradeDescription` says so).
+  is left alone). A shielded rival loses its shield to the first cut and dies to the next; a
+  super-shielded one refuses. (Space L5 Reaper Chain, which used to gate slack and shielded cuts,
+  was retired 2026-10-13 — both are the base now; rule 26.)
+- **Enemy vessels — petals only** (the LOCKED PvP rule, `Docs/claude/IMPACT_EFFECTS_AND_AUDIO.md`).
+  The ball's swept path and every chain link reach an enemy hull within `vesselHitRadius` 4 u (plus
+  the ball's radius / the chain's cut width). A contact is a scored **Strike** that **steals**
+  `vesselHitPetals` petals per element (**Charge**: 1 at rest → 3 at full) through
+  `CombatHitDrain.TryAdmit` (a warded pilot is neither scored on nor robbed; `vesselHitCooldownSeconds`
+  1 s per victim) and `ElementalTransfer.ApplyAllAuthoritative`, then raises `Event_CombatHitStats`.
+  It is decided only on the machine that owns this hull (`IsDecidedHere` + `IsNetworkOwner`), because
+  every peer simulates the ball. Nothing else touches the victim — no knock-back, no prism of theirs.
+  **Charge L5 "Magnet"** pulls a free ball toward the nearest enemy hull within `magnetRange` 150 u at
+  `magnetAcceleration` 220 u/s² (it moves only your ball).
 - **Own fresh trail**: the fleet's one rule (`SelfTrailContactConfigSO.SuppressesSkimContact`) — the
   ball and chain ignore prisms this pilot laid within the grace window (Mass Mode's ball trail
   included — it is stamped with the pilot's `ownerID`).
@@ -65,11 +77,12 @@ SHARED map (`_inputEventShipActions`), so every device resolves it the same way.
 ## 2a. Chain energy — the chain's kills charge the ball
 
 Every prism the chain **destroys** (a cut that only pops a shield banks nothing) banks
-`energyPerSlice` 1 in the ball, up to `energyMax` 30. The ball's next hit on a **rival** prism
+`energyPerSlice` 1 in the ball, up to `energyMax` 70. The ball's next hit on a **rival** prism
 releases the whole bank as an explosion **even below smash speed** — the same Grizzly blast as a
-smash, with the same Lit rule — and a smash's own explosion spends it too. The bank multiplies the
-diameter: `× min(energyMaxDiameterScale 4, 1 + energyDiameterPerUnit 0.1 × energy)`, on top of the
-Charge scaling (so 10 slices = ×2, 30 = ×4 → 180 u at rest Charge, 360 u at full). A hit that
+smash — and a smash's own explosion spends it too. The bank multiplies the diameter:
+`× min(energyMaxDiameterScale, 1 + energyDiameterPerUnit 0.1 × energy)`, where the cap is **Space**:
+×4 at rest → ×8 at full Space (floor ×2). So 10 slices = ×2 (90 u); 30 = ×4 (180 u, the rest-Space
+cap); 70 = ×8 (360 u) only at full Space. The **Space card** shows the bank as a fraction of that cap. A hit that
 lands inside `explosionMinInterval` keeps the bank for the next one. The ball's rim leans toward
 the CTA lime with the bank (`energyRimTint` 0.6 at full), so a charged ball reads before it hits.
 Own-domain bounces never spend it.
@@ -83,7 +96,9 @@ Own-domain bounces never spend it.
 | anything, at any speed | **never explodes** and never destroys — the bank is held, not spent | — |
 
 - **The ball lays a trail**: one prism of the pilot's domain per `massTrailSpacing` 6 u of the
-  ball's own travel, `massTrailPrismScale` (8, 0.75, 5.5), oriented along its path, through the
+  ball's own travel, `massTrailPrismScale` (8, 0.75, 5.5) × **Mass** (`massTrailScale` ×1 → ×2 on
+  every axis, admitted past the pool's scale window), oriented along its path; **Mass L5 "Armoured
+  Trail"** lays them **shielded**. Laid through the
   hull's OWN spawn channel and prism type (`VesselPrismController.PrismSpawnChannel` /
   `SpawnPrismType`), so it is ordinary conserved trail mass. Owed in distance, paid in whole
   prisms, at most `massTrailMaxPerFrame` 3 per frame with the excess dropped (rule 17). The prisms
@@ -97,7 +112,7 @@ Own-domain bounces never spend it.
 
 `ThresherWindmillByCrystalEffectSO`, the one entry added to `ThresherImpactorDataContainer.
 vesselCrystalEffects` (the OMNI list — elemental crystals dispatch elsewhere and still only level
-an element). For `windmillSeconds` 6 the ball circles the **ship** at `windmillSpeed` 1000 sandbox
+an element). For `windmillSeconds` **12** (doubled 2026-10-13) the ball circles the **ship** at `windmillSpeed` 1000 sandbox
 (184 u/s — between smash 129 and white-hot 240, so it is red-hot all the way round) in the plane
 ACROSS the ship's flight, like a windmill's sails, at the chain's length — the winch still works,
 so RT sizes the windmill. The ship flies on untouched; the ball eases onto the circle at the reel
@@ -107,17 +122,20 @@ go at the speed it has and the rope takes over. It sweeps and explodes exactly a
 steals/shields in Mass Mode). Runs on every peer: `VesselImpactor.ExecuteOmniCrystalImpact` is
 routed to all of them.
 
-## 3. Elements (approved 2026-10-08) — one parameter per element
+## 3. Elements (re-cut 2026-10-13, round 3, from Garrett's spec) — one parameter per element
 
 | Element | Ability | Scales (`ThresherConfigSO`, `EvaluateReplicated`) | Level 5 |
 |---|---|---|---|
-| Charge | **Wrecking Ball** (passive) | `explosionSizeMultiplier` ×1 → ×2 (floor ×0.5) | **Lit** — lit colour, explosions spare own domain, bounces own domain even hot |
-| Mass | **Mass Mode** (A, toggle; was the passive Heavy Iron until 2026-10-13) | `ballMassMultiplier` ×1 → ×1.75 on mass; radius × its cube root | **Wrecker** — a smash costs the ball no speed |
-| Space | **Winch** (RT) | `chainReachMultiplier` ×1 → ×1.5 on `maxLen` | **Reaper Chain** — cuts shielded rivals (slack cutting is now the base) |
-| Time | **Plant** (LT) | `spinMultiplier` ×1 → ×1.75 on spin-up rate and cap | **Slingshot** — unlock yank ≥ smash speed |
+| Charge | **Wrecking Ball** (passive) | `vesselHitPetals` 1 → 3 petals per element the ball or chain steals per enemy-vessel hit (floor 0.5) | **Magnet** — the free ball is drawn to enemy vessels |
+| Mass | **Mass Mode** (A, toggle) | `massTrailScale` ×1 → ×2 on the size of the ball's Mass Mode trail prisms (floor ×0.5) | **Armoured Trail** — those prisms are laid shielded |
+| Space | **Winch** (RT) | `energyMaxDiameterScale` ×4 → ×8, the largest blast the chain's bank can buy (floor ×2) | **Breaker** — a red ball's direct hit destroys super-shielded prisms |
+| Time | **Plant** (LT) | `spinMultiplier` ×1 → ×1.75 on spin-up rate and cap — how fast the spin winds up to launch speed | **Perfect Release** — a launch timed inside the window leaves ×1.6 faster |
 
-Upgrades are read through the replicated unlock bits at the moment of use (`LitActive`,
-`WreckerActive`, `ReaperActive`, `SlingshotActive`). The scalings use `EvaluateReplicated`, not
+Retired by this re-cut (rule 26 — each old gate is deleted, not left beside the new one): Charge
+"Lit", Mass "Wrecker" (and the ball's Mass-scaled weight/radius: the ball is now a fixed size),
+Space "Reaper Chain" (and the Space-scaled chain reach: `maxLen` is fixed), Time "Slingshot", and
+the Charge-scaled explosion size. Upgrades are read through the replicated unlock bits at the
+moment of use (`MagnetActive`, `ArmouredTrailActive`, `BreakerActive`, `PerfectReleaseActive`). The scalings use `EvaluateReplicated`, not
 `EvaluateLive`: every peer simulates the ball and element levels do not replicate.
 
 **One L5 per element (rule 26).** The hull is a Squirrel clone, and the Squirrel's containers gate
@@ -153,15 +171,15 @@ throttle target (`DefaultMinimumSpeed 15 + 0.5 × DefaultThrottleScaler 110`).
 
 | Dial | Sandbox | Game | Meaning |
 |---|---|---|---|
-| `restLen` / `maxLen` | 120 / 760 | 22.1 / 140.0 u | chain reeled in / let out (× Space, so 210 u at full Space) |
+| `restLen` / `maxLen` | 120 / 760 | 22.1 / 140.0 u | chain reeled in / let out (fixed since 2026-10-13; Space no longer scales it) |
 | `payOut` / `reelIn` | 1000 / 1800 /s | 184.2 / 331.6 u/s | winch rates (full let-out 0.64 s, full reel 0.36 s) |
 | `reelSpinCap` | 1.6 | 1.6 | spin multiplier cap per change |
-| `ballDrag` / `ballMass` / `tug` | 0.35 / 0.4 / 0.2 | same | drag (1/s), mass (× Mass), ship's share of the yank |
+| `ballDrag` / `ballMass` / `tug` | 0.35 / 0.4 / 0.2 | same | drag (1/s), mass, ship's share of the yank |
 | `minShip` / `crack` | 0.6 / 0.6 | same | tug floor; crack share |
 | `smashSpeed` / `whiteHotSpeed` | 700 / 1300 | 128.9 / 239.5 u/s | red-hot threshold; hottest (longest hit-stop, best plough) |
 | `plough` / `ploughHot` / `crushKeep` | 0.9 / 0.97 / 0.85 | same | speed kept per kill: hot, white-hot, below smash |
 | `bounce` | 0.6 | 0.6 | restitution off own-domain prisms |
-| `ballR` / `maxBall` | 17 / 2600 | 3.13 u / 478.9 u/s | swept radius (× ∛Mass); speed cap |
+| `ballR` / `maxBall` | 17 / 2600 | 3.13 u / 478.9 u/s | swept radius; speed cap |
 | `skid` / `skidSeconds` / `lockKeep` | 7 / 0.3 s / 1 | same | plant brake, duration, speed kept |
 | `lockSpin` / `lockMax` / `yank` | 220 /s² / 2.2 / 0.5 | 40.5 u/s² / 154 u/s / 0.5 | spin-up (× Time), cap (× Time), unlock yank |
 | `pivotSteer` | 45 °/s | 45 °/s | full-stick steering while planted (a rate, unscaled; 0 = sticks ignored) |
@@ -272,12 +290,22 @@ the speed tunnel's (vessel rule 21) and is only READ. Dials in `ThresherConfigSO
     nose-down sign) and the **orbit plane tilts with it** (`ThresherChainSolver.SteerOrbitPlane`
     lays each pivot step into the plane ⟂ the aim's axis, keeping the spin's sense). `PivotSteer`
     returns zero while `IsAiming`.
-  - **A lime line** (`aimLineLength` 150 u, `aimLineWidth` 1.2) runs from the launch point along the
-    aim: the path the ship will fly.
+  - **The launch path is the Stoat pathfinder's dotted line** (`ScreenDotPath`, a screen-space
+    overlay with the pathfinder's disc, dark rim, spacing rule and fade; `aimDotPixels` 4,
+    `aimDotGap` 10, `aimLineLength` 150 u) from the launch point along the aim. It is **white while a
+    release would wait** and turns the palette's **CTA lime while the timing is right** — while the
+    ship will reach the launch point within `perfectWindowSeconds` 0.25 s (`IsTimingPerfect`,
+    `ThresherChainSolver.SecondsToLaunchPoint`). The launch point and the camera's framing use the
+    circle the ship is ACTUALLY flying (its distance from the pivot), never the chain's length: while
+    RT pays out, the chain runs ahead of the orbit, and the first cut drew the point on that bigger
+    circle — the aim led to a circumference the ship was not on yet, and a release then fired from
+    somewhere else and was hauled back by the rope.
   - **The release is timed for you.** LT up ARMS the launch (`ThresherChainSolver.ArmLaunch`): the
     ship keeps circling and leaves from the chosen point, along the aim, on the frame it would
     otherwise carry past it (the angle still to go is within that frame's angular step) — at most one
-    lap later (≈ 2 s at 3 rad/s, ≈ 7 s at the 0.9 threshold). The aim is held once armed. The ball is
+    lap later (≈ 2 s at 3 rad/s, ≈ 7 s at the 0.9 threshold). Released inside the lime window the wait
+    is little to none, and with **Time L5 "Perfect Release"** that launch leaves `perfectBoost` ×1.6
+    faster than the orbit (`ThresherStepResult.Perfect`). The aim is held once armed. The ball is
     yanked along the aim; the transformer faces the hull along it (`TryConsumeReleaseDirection`) and
     grip puts the momentum on the nose. Re-pressing LT while armed does not cancel it (re-releasing
     re-arms with the same aim).
@@ -349,6 +377,12 @@ prefab, `DriftAudioController`, jets and tails.
   (or the plant) heats it. Shorten `maxLen` if a let-out whip should work on its own.
 - The chase camera can sit well back (up to ~240 u at full Space) whenever the chain is out and the
   ball trails behind; the ball then sits low in the frame, between the lens and the hull.
+- **Vessel hits are decided on the owner of the Thresher**, from that machine's copy of the ball;
+  a peer whose copy has drifted by a frame sees a hit it did not simulate (the score and the petals
+  still arrive through the authoritative path). Untested in MPPM.
+- **`ScreenDotPath` duplicates the Stoat's `StoatPathfinderDots`** (unmerged branch
+  `claude/peaceful-rubin-hhw49n`) — a verbatim port of its spacing rule and look. When the Stoat
+  lands, make its pathfinder draw through `ScreenDotPath` (keeping only its warp/loop alphas).
 - **The aimed launch is decided on the OWNER.** The aim, the steered plane and the armed launch are
   the local pilot's camera state and do not replicate. The hull's pose does, but a remote peer runs
   the plain release the moment LT comes up, so its copy of the ball is let go while the replicated
@@ -372,13 +406,18 @@ prefab, `DriftAudioController`, jets and tails.
    on release the ball goes red, destroys everything including your own trail, each hit a blast
    (string, not per prism), first hit with a hit-stop, debris along its path, `x2, x3…` counter.
 4. **Chain**: sweep the chain — taut OR slack — through rival prisms: they are sliced; through your
-   own older trail: those prisms gain shields; shielded rival prisms are skipped (without Reaper).
+   own older trail: those prisms gain shields; a shielded rival loses its shield, then dies on the next pass.
 5. **Plant**: hold LT — skid (trail), orbit, spin-up; RT up winds in. Release: fly off on the tangent,
    ball yanked after you. Planting straight at the ball still orbits. While planted, the sticks
    steer the orbit (45 °/s, under half the normal turn rate) without changing its speed.
-6. **Upgrades** (FrogletTools element tools or crystals to L5): Charge — hot ball lit, blasts spare
-   your trail, bounces off it; Mass — a hot ball keeps its speed through a row; Space — chain pops
-   rival shields and cuts them; Time — releasing a slow orbit still throws a red ball.
+6. **Upgrades** (FrogletTools element tools or crystals to L5): Charge (Magnet) — the free ball
+   curves toward a nearby enemy vessel; Mass (Armoured Trail) — Mass Mode's trail prisms arrive
+   shielded; Space (Breaker) — a red ball smashes a super-shielded prism (the Skim Race track's
+   stellated ones are a good test); Time (Perfect Release) — release while the dotted line is lime
+   and the ship launches visibly faster than the orbit. Levels below 5: Charge more petals per
+   vessel hit, Mass bigger trail prisms, Space a bigger maximum blast, Time a faster spin-up.
+16. **Enemy vessels**: hit an AI/rival hull with the ball or the chain — they lose petals and you
+    score a Strike (once per second per victim); nothing else happens to them.
 7. **Other vessels**: Squirrel, Dolphin, Scarab fly unchanged.
 8. **MPPM two clients**: the guest sees the host's ball and chain; a host hit-stop does not freeze
    the guest, and the host's camera zoom/spectate never moves the guest's camera.
@@ -390,8 +429,10 @@ prefab, `DriftAudioController`, jets and tails.
    let-out ball does not pump the camera in and out. Fly another vessel afterwards: its camera is
    at its own distance and hard-attached.
 11. **Launch camera** (2026-10-13): plant and let it spin — the camera lifts off much sooner than
-    before (≈ 52 °/s) to sit behind a point on the circle, looking down a lime line that starts
-    there. The ship sweeps through that point every lap. Stick right: the point slides round the
+    before (≈ 52 °/s) to sit behind a point on the circle, looking down a DOTTED line (the Stoat's
+    dots) that starts there and flashes lime each time the ship is about to pass the point. Hold RT
+    while planted: the point stays on the ship's own circle as it swings out (no jump to a bigger
+    circle). The ship sweeps through that point every lap. Stick right: the point slides round the
     circle and the camera swings with it. Stick Y: the whole orbit tilts with the camera. Release LT
     anywhere in the lap — the ship keeps circling and leaves exactly from the point along the line;
     then the camera eases back behind it.
@@ -406,18 +447,19 @@ prefab, `DriftAudioController`, jets and tails.
     it lays a trail of your prisms behind it. Slice rival prisms with the chain meanwhile (bank
     grows). Press A again, then hit a rival prism: one big blast.
 15. **Windmill**: fly through an omni crystal — the ball whips round the ship across your flight
-    path, red-hot, for ~6 s, smashing anything it crosses; RT changes its radius. An elemental
+    path, red-hot, for ~12 s, smashing anything it crosses; RT changes its radius. An elemental
     crystal does NOT do this.
 10. **Ball and chain look**: the ball is a dark body with a bright rim in your domain colour (no
     ring round it); its studs flash as it rolls, and stay legible (no backwards strobe) when white
-    hot; it brightens toward smash speed, turns red and blooms when hot, lit-blue with Charge L5.
+    hot; it brightens toward smash speed, turns red and blooms when hot.
     The chain reads as a round iron tube with a domain-coloured rim, brighter while taut, easing to
     lime at READY — no colour ever flickers; each change is a quick blend.
 
 Tuning order if it feels wrong: `maxLen` vs the hull's turn rate (whether the ball swings or falls
 slack), then `smashSpeed`, `explosionDiameter`, then `crack` / `reelSpinCap`. Camera: `spectateSpinRate`
 (when it detaches), `aimYawRate` / `aimElevationDegrees` (how the aim feels), then `cameraZoomInRate`
-(how lazily it comes home). Energy: `energyDiameterPerUnit` / `energyMaxDiameterScale`. Mass Mode:
+(how lazily it comes home), `perfectWindowSeconds` / `perfectBoost` (the timing reward). Energy:
+`energyDiameterPerUnit` / `energyMaxDiameterScale`. Vessel hits: `vesselHitPetals`, `magnetRange`. Mass Mode:
 `massTrailSpacing` (trail density). Windmill: `windmillSeconds`, `windmillSpeed`.
 
 ## Follow-ups

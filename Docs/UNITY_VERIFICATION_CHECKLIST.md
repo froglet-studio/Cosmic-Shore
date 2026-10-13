@@ -65,6 +65,41 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Thresher round 3: element re-cut, vessel petal hits, dotted launch path with perfect window, snap-back fix (`cece/wonderful-hypatia-4b323s`, 2026-10-13) — NOT EDITOR-VERIFIED
+
+**Landed** (`R_VesselActions/THRESHER.md` §2, §2a–2c, §3, §5a):
+- **Snap-back fix**: the launch point and the launch camera use the ship's ACTUAL orbit radius, not the
+  chain length (which runs ahead while RT pays out).
+- **Element re-cut** (rule 26 — old gates deleted): Charge = petals stolen per enemy-vessel hit 1→3
+  (L5 **Magnet**: free ball drawn to enemy vessels); Mass = Mass Mode trail prism size ×1→×2 (L5
+  **Armoured Trail**: laid shielded); Space = largest energy blast ×4→×8 (L5 **Breaker**: red ball's
+  direct hit destroys super-shielded prisms); Time = spin-up rate/cap (L5 **Perfect Release**: ×1.6
+  launch when released inside the 0.25 s window). Retired: Lit, Wrecker, Reaper Chain, Slingshot,
+  Charge-scaled explosion, Mass-scaled ball, Space-scaled chain reach.
+- **Enemy vessels**: ball sweep + every chain link reach enemy hulls; a contact is a Strike through
+  `CombatHitDrain.TryAdmit` that steals petals and raises `Event_CombatHitStats` (wired on
+  `ThresherConfig.asset`), decided on the Thresher owner's machine. PvP-is-petals-only respected.
+- **Launch path** = `ScreenDotPath`, a port of the Stoat's `StoatPathfinderDots` (unmerged branch);
+  white, lime while a release would be perfect.
+- **Windmill** 6 → 12 s. Chain cuts shielded rivals (first cut pops) since Reaper is gone.
+
+**Not opened in Unity.** Offline: `thresher_chain_harness` 55/55 (new: perfect vs late launch, wait
+prediction and launch point on the ship's own circle while paying out, magnet pulls only a free ball).
+
+**Verify in editor:**
+1. Plant, hold RT so the chain pays out: the dotted line's start stays on the ship's path (no jump
+   outward); release LT — the ship launches from the point without being yanked back.
+2. Watch the dots flash lime as the ship nears the point each lap; release while lime → near-instant
+   launch; with Time L5 it leaves visibly faster.
+3. Ball/chain into an AI or rival vessel: their petals drop, a Strike scores (Broadside/Dogfight-style
+   scoring), at most once a second per victim; they are not pushed. Charge L5: the free ball bends
+   toward a nearby enemy.
+4. Mass Mode trail: bigger prisms at high Mass; shielded at Mass L5. Space L5: a red ball breaks a
+   super-shielded (stellated) prism. Space level: a full bank's blast grows with Space.
+5. Omni crystal: windmill lasts ~12 s.
+
+---
+
 ### 🔴 Thresher round 2: chain always slices + shields own, Space card = banked energy, launch-point camera with timed release (`cece/wonderful-hypatia-4b323s`, 2026-10-13) — NOT EDITOR-VERIFIED
 
 **Landed** (`R_VesselActions/THRESHER.md` §2, §5, §5a), on top of the entry below (which it partly supersedes — its step 1 now reads as here):

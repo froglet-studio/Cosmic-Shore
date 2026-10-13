@@ -287,15 +287,6 @@ namespace CosmicShore.Tests
         }
 
         [Test]
-        public void Wrecker_SmashCostsNothing_ButACrushStillDoes()
-        {
-            var s = Defaults();
-            Assert.AreEqual(1f, ThresherChainSolver.KeepAfterHit(s.SmashSpeed, s, wrecker: true), 1e-6f);
-            Assert.AreEqual(s.CrushKeep, ThresherChainSolver.KeepAfterHit(s.SmashSpeed * 0.5f, s, wrecker: true), 1e-6f,
-                "Mass 5 is about SMASHING; below smash speed the ball pays as usual.");
-        }
-
-        [Test]
         public void Bounce_ReflectsOnlyTheInwardComponent()
         {
             var s = Defaults();
@@ -318,19 +309,6 @@ namespace CosmicShore.Tests
             Assert.IsFalse(solver.Bounce(Vector3.zero, Vector3.forward),
                 "A contact that lasts several frames must bounce once, not every frame.");
             Assert.AreEqual(5f, solver.BallVelocity.z, 1e-6f);
-        }
-
-        [Test]
-        public void Slingshot_ReleasesTheBallAtLeastAtSmashSpeed()
-        {
-            var s = Defaults();
-            var p = new Pilot(s, s.CruiseSpeed);
-            p.Solver.Plant();
-            p.Fly(0.5f, 0f, payOut: false);
-            Assert.AreEqual(ThresherMode.Pivot, p.Solver.Mode);
-            Vector3 slow = p.Forward * (s.CruiseSpeed * 0.5f);   // yank alone would be far under smash
-            p.Solver.Release(slow, slingshot: true);
-            Assert.AreEqual(s.SmashSpeed, p.Solver.BallSpeed, 1e-3f);
         }
 
         [Test]
@@ -638,7 +616,7 @@ namespace CosmicShore.Tests
             Assert.IsTrue(solver.LaunchRadial(pos, aim, out Vector3 radial));
             Vector3 launchPoint = solver.Pivot + radial * solver.Length;
 
-            solver.ArmLaunch(aim, slingshot: false);
+            solver.ArmLaunch(aim);
             Assert.IsTrue(solver.LaunchArmed);
             int frames = 0;
             ThresherStepResult r = default;
@@ -677,6 +655,83 @@ namespace CosmicShore.Tests
             Assert.Less(Mathf.Abs(Vector3.Dot((pos - solver.Pivot).normalized, target)), 0.05f, "the ship circles in the steered plane");
             Assert.AreEqual(ThresherMode.Pivot, solver.Mode, "steering the plane never drops the plant");
             Assert.AreEqual(solver.Length, (pos - solver.Pivot).magnitude, 0.5f, "on the chain's length");
+        }
+
+        [Test]
+        public void Launch_PerfectTimingLeavesWithTheBoost_ALateOneDoesNot()
+        {
+            var s = Defaults();
+            const float window = 0.25f, boost = 1.6f;
+
+            // PERFECT: wait until the launch point is a few frames ahead, then arm.
+            var a = new ThresherChainSolver(s);
+            PlantFrom(a, s, out Vector3 pa, out Vector3 va);
+            Vector3 aim = Vector3.right;
+            for (int f = 0; f < 2000 && a.SecondsToLaunchPoint(pa, aim) > 0.1f; f++)
+            {
+                va = a.Step(pa, va, false, s.CruiseSpeed, Dt).ShipVelocity;
+                pa += va * Dt;
+            }
+            float orbit = a.LockSpeed;
+            a.ArmLaunch(aim, window, boost);
+            ThresherStepResult ra = default;
+            for (int f = 0; f < 2000 && !ra.Launched; f++) { ra = a.Step(pa, va, false, s.CruiseSpeed, Dt); va = ra.ShipVelocity; pa += va * Dt; }
+            Assert.IsTrue(ra.Launched && ra.Perfect, "released just before the point: perfect");
+            Assert.AreEqual(orbit * boost, ra.ShipVelocity.magnitude, orbit * 0.05f, "a perfect launch takes the boost");
+
+            // LATE: arm just AFTER the point, so the ship has a whole lap to go.
+            var b = new ThresherChainSolver(s);
+            PlantFrom(b, s, out Vector3 pb, out Vector3 vb);
+            for (int f = 0; f < 2000 && b.SecondsToLaunchPoint(pb, aim) > 0.05f; f++)
+            { vb = b.Step(pb, vb, false, s.CruiseSpeed, Dt).ShipVelocity; pb += vb * Dt; }
+            for (int f = 0; f < 6; f++) { vb = b.Step(pb, vb, false, s.CruiseSpeed, Dt).ShipVelocity; pb += vb * Dt; }
+            b.ArmLaunch(aim, window, boost);
+            ThresherStepResult rb = default;
+            float lastOrbit = b.LockSpeed;
+            for (int f = 0; f < 4000 && !rb.Launched; f++)
+            {
+                lastOrbit = b.LockSpeed;
+                rb = b.Step(pb, vb, false, s.CruiseSpeed, Dt);
+                vb = rb.ShipVelocity;
+                pb += vb * Dt;
+            }
+            Assert.IsTrue(rb.Launched, "a late release still launches, a lap later");
+            Assert.IsFalse(rb.Perfect, "a release that waits a lap is not perfect");
+            Assert.AreEqual(lastOrbit, rb.ShipVelocity.magnitude, lastOrbit * 0.02f, "and leaves at the orbit's speed, no boost");
+        }
+
+        [Test]
+        public void Launch_SecondsToPointMatchesTheWaitAndThePointIsOnTheShipsOwnCircle()
+        {
+            var s = Defaults();
+            var solver = new ThresherChainSolver(s);
+            PlantFrom(solver, s, out Vector3 pos, out Vector3 vel);
+            Vector3 aim = Vector3.right;
+            float predicted = solver.SecondsToLaunchPoint(pos, aim);
+            Assert.Less(predicted, 2f * Mathf.PI * solver.Length / solver.LockSpeed + 1e-3f, "never more than a lap");
+            float shipRadius = (pos - solver.Pivot).magnitude;
+            Assert.AreEqual(shipRadius, (solver.LaunchPoint(pos, aim) - solver.Pivot).magnitude, 1e-3f,
+                "the launch point sits on the circle the ship is flying, not the chain's length");
+
+            // Pay the chain out: the chain grows past the ship's orbit, the point must not follow it.
+            for (int f = 0; f < 10; f++) { vel = solver.Step(pos, vel, true, s.CruiseSpeed, Dt).ShipVelocity; pos += vel * Dt; }
+            Assert.Greater(solver.Length, (pos - solver.Pivot).magnitude + 1f, "the chain runs ahead of the orbit while paying out");
+            Assert.AreEqual((pos - solver.Pivot).magnitude, (solver.LaunchPoint(pos, aim) - solver.Pivot).magnitude, 1e-3f);
+        }
+
+        [Test]
+        public void Magnet_PullsAFreeBallOnly()
+        {
+            var s = Defaults();
+            var solver = new ThresherChainSolver(s);
+            solver.Reset(Vector3.zero, Vector3.forward, Vector3.zero);
+            Vector3 target = solver.BallPosition + new Vector3(50f, 0f, 0f);
+            solver.AttractBall(target, 100f, 0.1f);
+            Assert.AreEqual(10f, solver.BallVelocity.x, 1e-4f, "a free ball gains acceleration x dt toward the target");
+
+            PlantFrom(solver, s, out _, out _);
+            solver.AttractBall(target, 100f, 0.1f);
+            Assert.AreEqual(0f, solver.BallVelocity.magnitude, 1e-6f, "a planted ball is a pivot: it does not move");
         }
 
         /// <summary>Tow straight, then plant and run the skid out, so the solver is orbiting a pivot
