@@ -586,6 +586,15 @@ without plate centres, and (b) the three shipped materials match the lab's model
 look to 3e-6 on the real mesh. `Tools/Build/omni_shepard_lab_parity.cjs` shows the lab's shipped
 page draws exactly what the designer exported.
 
+**Since 2026-10-13 (Omni Motion Lab round 5) Charge's light is the FLUX ARC, not the edge crawl.**
+`OmniCrystalChargeArcs` (a plain child of `Crystal.prefab`, `CrystalChargeArcs` in Flux mode on
+`CrystalChargeArcsShader`) replaces `OmniCrystalChargeEdges`: a pentagon charges, an arc leaps to one 55-125 degrees
+away, forks onto its five corners at both ends with one thick beam between, and the next leaps on from the sink. Only
+those two pentagons light, in the body's bright colour mixed toward the arc core colour (`CrystalAccentTint` repaints
+it per domain). The Charge crystal wears the same component in SeamWalk mode, so the element keeps ONE look on both
+crystals. The paragraph below describes the crawl as it shipped from 2026-10-08 to 2026-10-13; its material
+(`OmniChargeEdges.mat`) still serves the Elemental Converter.
+
 **Charge's pentagons carry the charge crystal's EDGE DISCHARGE (2026-10-08).** The charge crystal's
 signature is its plasma crackling vertex to vertex along crease edges (`ChargeCrystal.hlsl`), so the
 omni's 12 pentagonal prisms now wear exactly that. `OmniCrystalChargeEdges.prefab` is the body's own

@@ -423,6 +423,7 @@ Entries are grouped by family; within a family, the newest goes at the bottom.
 - Evidence: `stepAnalog` and the analog `stepPivot` branch (`nSub`); round 2 "Found" 8.
 - Promoted: no (§8's fixed-timestep trap covers it)
 
+
 ### L-STU-46 — A float32 game clock ends a curve a frame before (or after) a float64 lab; end curves at 1 − ε, and expect a peak column to move
 - Lab: Thresher Plant Lab graduation (`ThresherChainSolver`, `parity.cjs`) · Branch: `cece/zealous-johnson-gopp6t` · Date: 2026-10-13
 - What happened: the analog hook ends at `u = hookT / hookSeconds >= 1`. Adding 1/60 thirty times is 0.49999997 in C# float32 and 0.5000000000000001 in JS float64, so the game's hook ran one frame longer than the lab's, and parity diverged from 1e-3 u to a mode mismatch within 50 frames. Ending every curve at `u >= 1 − 1e-4` on both sides fixed parity, and it moved the lab's analog catch column ~20% (2 620 → 3 183 °/s²), because a peak column reads the one frame where two models hand over.
@@ -435,6 +436,13 @@ Entries are grouped by family; within a family, the newest goes at the bottom.
 - What happened: all ten analog tests passed on their first run. Planting two mutations showed that the full-pull test caught a near-instant stop, but the ambiguous-plant test still passed with the turn-direction rule removed: its one scripted flight never produced the case the rule exists for (a sideways velocity that disagrees with the turn). A sweep over 80 turn patterns produced it (`(-90,-60,20)`), and with the sweep the rule's deletion fails.
 - Do instead: for every test written for a lab finding, delete or break the line it guards and run it once. If it still passes, the scenario does not reach the case; sweep the scenario until it does, and assert that the sweep produced enough qualifying cases.
 - Evidence: `AmbiguousPlant_OrbitsInTheFlightPlane_TheWayTheShipIsTurning` (the sweep and its `ambiguous > 10` guard).
+- Promoted: no
+
+### L-STU-48 — A "worst error" over zero matched samples is 0: gate every max-error check on its sample count
+- Lab: Omni Motion Lab round 5 graduation · Branch: `cece/sharp-fermi-yw38ky` · Date: 2026-10-13
+- What happened: the graduation harness checked that the triangle turn with the art file's own lift and side step passes through the art's Step1 key, as the worst distance over matched vertices. The first run printed PASS with worst 0. No vertex had matched: the anchor set is mirror-symmetric, so the matcher tried both x signs and the hit count never reached a full match, leaving the max at its initial 0. Breaking on the first FULL match (x as written, the same as the baker) gave the real result, 1.97e-6 R.
+- Do instead: report the sample count beside every max/mean error, and fail the check when it is zero or short of the expected count. A tolerance check that can pass on an empty set is not a check.
+- Evidence: `Tools/Build/omni_turns_harness/Program.cs` ("anchors with x 1: 1440 body vertices matched"); the round-5 graduation section of `Docs/Studios/OMNI_MOTION_LAB.md`.
 - Promoted: no
 
 ## NCA — swarm / neural-CA research rigs (Tools/NCA)

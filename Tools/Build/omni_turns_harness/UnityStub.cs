@@ -1,4 +1,4 @@
-// The slice of UnityEngine the omni turns harness compiles the SHIPPED CrystalSpaceSquares / RhombusSkinBaker /
+// The slice of UnityEngine the omni turns harness (and the charge arcs harness, which shares this file) compiles the SHIPPED CrystalSpaceSquares / RhombusSkinBaker /
 // OmniCrystalCadence against: value maths exactly as Unity defines it, and a Mesh that stores what it is given
 // (blend shapes included) so a test can read the frames back. Behaviours are inert shells.
 using System;
@@ -24,6 +24,14 @@ namespace UnityEngine
         public static float Repeat(float t, float l) => t - (float)Math.Floor(t / l) * l;
         public static int RoundToInt(float v) => (int)Math.Round(v, MidpointRounding.ToEven);
         public static int FloorToInt(float v) => (int)Math.Floor(v);
+        public const float Deg2Rad = (float)(Math.PI / 180.0);
+        public const float Rad2Deg = (float)(180.0 / Math.PI);
+        public static float Round(float v) => (float)Math.Round(v, MidpointRounding.ToEven);
+        public static float Floor(float v) => (float)Math.Floor(v);
+        public static float Exp(float v) => (float)Math.Exp(v);
+        public static float Atan2(float y, float x) => (float)Math.Atan2(y, x);
+        public static float Clamp(float v, float a, float b) => v < a ? a : v > b ? b : v;
+        public static int Clamp(int v, int a, int b) => v < a ? a : v > b ? b : v;
     }
 
     public struct Vector3
@@ -40,6 +48,7 @@ namespace UnityEngine
         public static Vector3 Cross(Vector3 a, Vector3 b) => new(a.y * b.z - a.z * b.y, a.z * b.x - a.x * b.z, a.x * b.y - a.y * b.x);
         public static Vector3 Scale(Vector3 a, Vector3 b) => new(a.x * b.x, a.y * b.y, a.z * b.z);
         public static float Distance(Vector3 a, Vector3 b) => (a - b).magnitude;
+        public static Vector3 Lerp(Vector3 a, Vector3 b, float t) => a + (b - a) * Mathf.Clamp01(t);
         public static float Angle(Vector3 a, Vector3 b) { float d = Dot(a.normalized, b.normalized); d = d > 1f ? 1f : d < -1f ? -1f : d; return (float)(Math.Acos(d) * 180.0 / Math.PI); }
         public static Vector3 operator +(Vector3 a, Vector3 b) => new(a.x + b.x, a.y + b.y, a.z + b.z);
         public static Vector3 operator -(Vector3 a, Vector3 b) => new(a.x - b.x, a.y - b.y, a.z - b.z);
@@ -64,6 +73,7 @@ namespace UnityEngine
     {
         public float x, y, z, w;
         public Vector4(float x, float y, float z, float w) { this.x = x; this.y = y; this.z = z; this.w = w; }
+        public static implicit operator Vector3(Vector4 v) => new(v.x, v.y, v.z);
     }
 
     public struct Quaternion

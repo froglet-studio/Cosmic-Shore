@@ -65,6 +65,53 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Omni Motion Lab round 5 graduated: Mass horizon seal + rise while hidden, Space/Time cadence with rigid square turns, Charge seam walk + chained flux arcs (`cece/sharp-fermi-yw38ky`, 2026-10-13) — NOT EDITOR-VERIFIED
+
+`/verify-unity` was not run: the session had no Unity Editor and no `unity` CLI. What did run: `unity_refcompile`
+(player and editor configs, no errors in project code), `crystal_depth_harness` (14/14), `omni_turns_harness` (all pass,
+incl. a stretched-key negative control) and `charge_arcs_harness` (23 checks, two negative controls), all on the shipped
+C# against the real FBX meshes, and every generator `--check` that touches these assets.
+
+**What landed:**
+- **Mass** (`CrystalDepthPrismProfile`, shared by the omni and the Mass crystal): the seal depth is the camera's
+  horizon (`plateRadius / cameraDistance − 0.05`); a prism climbs its column only while its column top is hidden
+  behind the body (ray–sphere at 0.936 × plate radius); columns 3× tall, 0.6 size at the top (`_Reach`,
+  `_PlateScaleStart` on `OmniDepthPrisms*` and `MassDepthPrisms*`); descent from −0.25; reseat −0.97.
+- **Space + Time** (omni): `OmniCrystalCadence` on the `Crystal.prefab` root (`OmniCrystalCadence.asset`): pentagon
+  turn 1.733 s → wave 1.8 s → triangle turn 2.4 s → wave, 0.15 s gaps, 8.33 s cycle, a per-crystal phase.
+  `CrystalSpaceSquares` fits each square's turn to the art file's keys at runtime and writes two new blend shapes
+  ("Squares Pentagon Turn", "Squares Triangle Turn", 24 frames each) into the shaped twin, with the squares, rhombi and
+  pentagons 1.1× thick. `CrystalFlipWave` plays one cued wave per wave beat when the root has a cadence.
+- **Charge**: `CrystalChargeArcs` (+ `CrystalChargeArcsShader`, `CrystalChargeArcsProfile.asset`). The omni's
+  `OmniCrystalChargeArcs` child (Flux) replaces `OmniCrystalChargeEdges` (prefab deleted; `OmniChargeEdges.mat` stays
+  for the Elemental Converter). `CrystalCharge.prefab` gets a `ChargeCrystalArcs` child (SeamWalk) that holds the
+  shell's `_ArcIntensity` / `_NodeIntensity` at 0 through a property block (the material, and the hull fusion that
+  copies it, keep the crawl).
+
+**Verify in editor:**
+1. Compile, then run the EditMode tests: `DepthRatchetTests`, `CrystalDepthPrismTests`, `CrystalSpaceSquaresTests`,
+   `CrystalFlipWaveTests`, `TeamCrystalMaterialTests`, `CrystalChargeArcsTests` (new).
+2. Open a scene with omni crystals and play. Orbit one: no prism is ever part-way out on the side you can see; prisms
+   on the far side stand tall and come round the edge from the top; none is ever seen rising.
+3. Watch an omni for ~10 s: squares turn round a pentagon (one smooth hop), a Time wave, squares turn round a triangle
+   (one smooth 120° move, hopping out and stepping sideways), a wave — never squares and rhombi at once, and no square
+   shrinks mid-move. Two omnis side by side should be out of step.
+4. The omni's Charge: one pentagon lights, an arc leaps to a pentagon 55–125° away, forks onto all five corners at
+   both ends, one thick beam between; the next arc leaves from where the last landed. Check the thick middle reads as
+   a glowing tube under the game's bloom (`_BoltIntensity` / `_GlowIntensity` on `OmniChargeArcs.mat` to tune).
+5. A Charge crystal: no edge crawl on the shell; one bolt walks the seams between the blooms forever, petals lighting
+   beside it. Collect it with a vessel that fuses crystals into its hull: the fused hull still crackles (crawl kept).
+6. A team omni (Skim Race track / the Dolphin's TeamCrystal): the lit pentagons wear the domain colour.
+7. Profiler: `CrystalChargeArcs.LateUpdate`, `CrystalDepthPrisms.LateUpdate`, `CrystalSpaceSquares` with a field of
+   omnis in view (the arcs mesh is rebuilt per visible crystal per frame; the squares' twin gains 48 blend frames).
+
+**Flagged for the designer:** the Mass crystal shares the profile, so it now seals at the horizon, rises while hidden
+and has the taller columns too. The Charge crystal still tumbles (`JustRotate`, 20°/s). `CrystalChargeDandruff.prefab`
+keeps the crawl (it is not the Charge crystal).
+
+**First-pass tuning:** profile values are the lab's (`ChargeArcSettings.Lab`, `OmniCrystalCadence.asset`); the bolt and
+glow intensities start at 1 with no HDR boost — expect to raise them once bloom is seen.
+
 ### 🔴 Rhino Space-5 "Breaker" — the sword cuts shielded prisms in one slice (`cece/magical-meitner-56obj5`, 2026-10-13) — NOT EDITOR-VERIFIED
 
 **What landed:** `RhinoSkimmerDamagePrismEffectSO.breakerElement` (authored `Space`). While
