@@ -73,8 +73,6 @@ starts by measuring use in `Assets/`, and anything the game doesn't touch stays 
 13. **UI parity loose ends (2026-10-13 pass).** The menus now follow uGUI's rules (layout
     messages, dimension changes, ScrollRect/Slider/Scrollbar ports, clone anchors, canvas text).
     Still open:
-    - A grey square a user saw in a gameplay HUD did not reproduce in Salvo. Find the mode, then
-      `game_ui_at` the square.
     - The Profile quest track opens on its last card. `QuestTrackView` snaps once, a frame after
       load, while progression briefly reads every mode as unlocked. That is game-side timing to
       compare with Unity's.
