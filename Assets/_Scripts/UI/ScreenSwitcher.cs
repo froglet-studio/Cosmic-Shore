@@ -638,7 +638,7 @@ namespace CosmicShore.UI
                 NavigateTo(MenuScreens.HOME, false);
             }
 
-            // Every NavigateTo guard (freestyle, host-only ARK, a disabled screen) can refuse the
+            // Every NavigateTo guard (freestyle, a disabled screen) can refuse the
             // first navigation. The strip still needs a screen to rest on, and HOME is the one the
             // menu opens on.
             if (currentScreen < 0)

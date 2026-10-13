@@ -75,8 +75,8 @@ the player and editor configs with 0 errors in project code, and the console-log
 **What landed**
 
 1. **`ScreenSwitcher` (the menu filmstrip).**
-   - The strip is wrapped at `Start` in a runtime `Screens Viewport`. This is a full-stretch child
-     of `Safe Area` carrying a `RectMask2D`.
+   - The strip is wrapped at `Start` in a runtime `Screens Viewport`: a full-canvas child of the
+     root canvas, carrying a `RectMask2D`, placed just before `Safe Area` (item 8).
    - The panel width is read from that viewport, not from `Screens`. The ContentSizeFitter on
      `Screens` zeroes its width after the first layout pass, so the old self-read fell back to the
      canvas width.
@@ -118,9 +118,10 @@ the player and editor configs with 0 errors in project code, and the console-log
    16:9 physical-camera gate with Overscan. Below 16:9 (iPad 4:3, 16:10) the 16:9 width is kept
    and height is gained; 16:9 and wider are unchanged. Tests: `CameraAspectFitTests`, including
    Unity's projection matrix at 4:3, 16:9 and 21:9.
-10. **The 12 match-height canvases** without `AdaptiveCanvasScaler` use Expand: the 9 vessel
-    `ShipHUDContainer`s, `VesselHUDContainer`, `Duel Cell Stats Canvas` and `FTUE_Canvas`.
-    Identical at 16:9 and wider; matches width below 16:9.
+10. **The 13 match-height canvases** without `AdaptiveCanvasScaler` use Expand: the 10 vessel
+    `ShipHUDContainer`s (Stoat included, which arrived in the bleeding-edge merge),
+    `VesselHUDContainer`, `Duel Cell Stats Canvas` and `FTUE_Canvas`. Identical at 16:9 and
+    wider; matches width below 16:9.
 11. **The Arcade, Mission, Toybox and Arena windows fill the safe area below the NavBar.**
     - They were fixed 1920 × 908.7 rects, centred, which is the whole screen under the nav bar
       only at 1920 × 1080. On a phone they floated 47 units in from each side, overlapped the
@@ -138,8 +139,8 @@ the player and editor configs with 0 errors in project code, and the console-log
    - Page through every screen with L1/R1 and with the nav bar. Each screen lands exactly in the
      safe area.
    - Resize the Game view mid-session. The current screen re-fits within a frame.
-2. In the Hierarchy at runtime, `Safe Area/Screens Viewport/Screens` exists, and there is exactly
-   one `Screens Viewport`.
+2. In the Hierarchy at runtime, `UI_Refactored/Screens Viewport/Screens` exists, just before
+   `Safe Area`, and there is exactly one `Screens Viewport`.
 3. Quit while on HANGAR, then re-enter Play. HANGAR is shown full-width, and its vessel grid is
    populated.
 4. On a device or Simulator, tap cards in the Arcade grid, the leaderboard and the friends list
@@ -180,8 +181,9 @@ the player and editor configs with 0 errors in project code, and the console-log
 - **Controls list can never scroll.** The ArcadeGameConfigureModal list has both axes off.
 - **Quest track snap ignores the finger.** Its 0.6 s snap tween is not killed when a new drag
   starts. Inertia is off, so it only snaps after an elastic bounce.
-- **Hub modals overlap the NavBar.** The Arcade, Mission, Toybox and Arena modals overlap it by
-  38 units in the iPhone safe rect (9 on desktop).
+- **Hub modals overlap the NavBar by 9 units.** That is how the Arcade, Mission, Toybox and Arena
+  modals are authored at 1920 × 1080 (NavBar 180.4 tall, modal top 171.3 below the safe top).
+  Item 11 made it the same 9 on every display; it was about 37 on an iPhone.
 - **`PartyInviteNotificationPanel` sits outside `Safe Area`.**
 - **`DeviceOrientationHandler` locks LandscapeLeft for the session**, even though
   `SafeAreaFitter`'s docs assume auto-rotation between the two landscapes.

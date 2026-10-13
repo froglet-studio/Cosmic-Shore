@@ -516,7 +516,7 @@ The in-game Settings modal additionally exposes a resolution dropdown (built fro
 
 ### How the menu lays out across aspect ratios
 
-`ScreenSwitcher` (`Assets/_Scripts/UI/ScreenSwitcher.cs`, 1,047 lines) arranges the menu screens as a **horizontal filmstrip**: on `Start()` each screen panel is anchored to the left edge, stretched vertically, sized to exactly one viewport width (read live from the canvas rect, so it tracks the actual aspect), and offset by its index. Navigation slides the whole strip with a hand-rolled smoothstep coroutine (not DOTween). Since 2026-10-12 the panel width is read from the strip's clipped viewport (`Screens Viewport`, inside the safe area), the slide is in `anchoredPosition`, and the layout re-runs when the viewport width changes (see "What the application changed" above).
+`ScreenSwitcher` (`Assets/_Scripts/UI/ScreenSwitcher.cs`, 1,047 lines) arranges the menu screens as a **horizontal filmstrip**: on `Start()` each screen panel is anchored to the left edge, stretched vertically, sized to exactly one viewport width (read live from the canvas rect, so it tracks the actual aspect), and offset by its index. Navigation slides the whole strip with a hand-rolled smoothstep coroutine (not DOTween). Since 2026-10-12 the strip sits in a full-canvas `Screens Viewport` and each screen gets a full-screen slot, with its content in the safe rect inside it; the slide is in `anchoredPosition`, and the layout re-runs when the slot width or the safe insets change (see "What the application changed" above).
 
 The menu root also carries a `PhoneFlipDetector` and per-screen `FlipUI` components responding to device flip.
 
