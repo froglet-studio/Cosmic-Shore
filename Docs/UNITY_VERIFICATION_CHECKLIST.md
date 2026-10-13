@@ -65,6 +65,30 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Stoat dipole retune: smaller, weaker poles; release kills the pair; depth-cued denser dots; stronger boost (`cece/fervent-hypatia-rg4why`, 2026-10-13) — NOT EDITOR-VERIFIED
+
+Play feedback on the port, applied (`R_VesselActions/STOAT_DIPOLE.md` §1, §3). Numbers on
+`StoatDipoleConfig.asset` (and its generator): `poleHorizon` 3.5 → **1.17** (a third of the diameter),
+`poleGM` 120 000 → **60 000**, `boost` ×2→×4 → **×2.5→×5**, `dotGap` 10 → **3.33**, new
+`dotDepthMinScale` 0.35 / `dotDepthFade` 0.5. `BlackHoleConfig.minHorizonRadius` 1.5 → **1** — fleet-wide:
+it floored the new 1.17 u horizon back up; only a hole smaller than 1.5 u is affected.
+
+1. **Release.** Squeeze RT, let go: the pair is gone that frame (no glide back together); squeeze again
+   at once: a NEW pair 250 u ahead, never the old one. Hold LT, then press RT: a fresh pair replaces
+   LT's. Let go of one of two held triggers: the pair is gone; the still-held one lays nothing until
+   re-pressed. Both triggers on the same frame (and the AI's presses): one pair, not two.
+2. **Size and strength.** The black (domain-dark) and white (domain-light) holes are about a third of
+   the diameter they were; the lens around them and the prisms' stretch are visibly weaker; the path
+   still turns lime when a pole is placed beside it (if it rarely does now, lower `warpDegrees` before
+   raising `poleGM`). Flying through the sink is a smaller target — say if it has become impossible.
+3. **Dots.** Three times as dense; the nearest dots full size, shrinking and fading toward the far end;
+   a path climbing or diving away reads as depth. No dot flickers sub-pixel at the far end.
+4. **Boost.** Lime path: noticeably faster than before (×2.5 at rest).
+5. **Peers** (2 players): a re-press shows the peer a new pair at the new place, not the old pair
+   sliding there (the serial now rides `NetStoatDipoleSource.w`).
+
+---
+
 ### 🔴 The Stoat in the vessel selector + Slingshot / Warpline in the arcade (ported from `claude/peaceful-rubin-hhw49n`, 2026-10-13) — NOT EDITOR-VERIFIED
 
 The Stoat slice of `claude/peaceful-rubin-hhw49n` (black holes, warp field, crystal wormhole, the Stoat,

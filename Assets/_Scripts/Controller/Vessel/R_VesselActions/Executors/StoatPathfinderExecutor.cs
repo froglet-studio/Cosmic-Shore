@@ -130,7 +130,7 @@ namespace CosmicShore.Gameplay
             if (!_dots) return;
             var color = _path.Warped ? config.WarpedColor : config.OpenColor;
             _dots.Show(cam, _points, _path.Count, _jumps, _path.JumpCount, _path.Warped ? _path.LoopIndex : -1, color,
-                config.DotPixels, config.DotGap, _path.Warped);
+                config.DotPixels, config.DotGap, _path.Warped, config.DotDepthMinScale, config.DotDepthFade);
         }
 
         void HideDots()

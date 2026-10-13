@@ -589,7 +589,7 @@ def so_header(script_guid: str, name: str) -> str:
 
 
 def dipole_config_asset() -> str:
-    """StoatDipoleConfig: the studio's shipped round-15 row (StoatDipoleConfigSO's initializers)."""
+    """StoatDipoleConfig: the studio's round-15 row as retuned in play on 2026-10-13 (StoatDipoleConfigSO's initializers)."""
     return (so_header(DIPOLE_CONFIG_SCRIPT, "StoatDipoleConfig") +
             "  holdExponent: 1.5\n"
             "  holdRampSeconds: 1.5\n"
@@ -597,8 +597,8 @@ def dipole_config_asset() -> str:
             "  sidewaysMax: 200\n"
             "  lengthwaysMax: 120\n"
             "  followRate: 6\n"
-            "  poleGM: 120000\n"
-            "  poleHorizon: 3.5\n"
+            "  poleGM: 60000\n"
+            "  poleHorizon: 1.1666666\n"
             "  poleSize:\n" + elemental(1, 1, 2, 3, 1) +
             "  sourcePush: 1\n"
             "  sourceSofteningHorizons: 2\n"
@@ -618,11 +618,13 @@ def dipole_config_asset() -> str:
             "  loopMargin: 8\n"
             "  minLoop: 60\n"
             "  warpDegrees: 3\n"
-            "  boost:\n" + elemental(2, 2, 4, 4, 1) +
+            "  boost:\n" + elemental(2.5, 2.5, 5, 4, 1) +
             "  boostRise: 20\n"
             "  boostFadeSeconds: 0.6\n"
             "  dotPixels: 4\n"
-            "  dotGap: 10\n"
+            "  dotGap: 3.3333333\n"
+            "  dotDepthMinScale: 0.35\n"
+            "  dotDepthFade: 0.5\n"
             f"  openColor: {color(150 / 255, 166 / 255, 194 / 255)}\n"
             f"  warpedColor: {color(157 / 255, 1, 46 / 255)}\n"
             "  autopilotHold01: 0.8\n"

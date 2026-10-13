@@ -15,8 +15,9 @@ namespace CosmicShore.Gameplay
     /// trigger's side), their SUM lengthways (the sink always the nearer, so a pilot shoots into the sink
     /// and out of the source). The poles' strength and size never follow the triggers — only their
     /// separation does — and Space sizes them (<see cref="StoatDipoleConfigSO.PoleSize"/>). Ease off and
-    /// they come back together; let go of both and they meet and annihilate. So there is only ever one
-    /// pair, and only while it is held.
+    /// they come back together. LET GO of a trigger and the pair is gone at once — annihilated where it
+    /// stands, never recoverable — and every PRESS lays a fresh pair (both triggers pressed on one frame lay
+    /// one). So there is only ever one pair, and only while it is held.
     ///
     /// <para><b>What the pair is.</b> Two of the black-hole system's own holes (<see cref="BlackHoleRegistry.Spawn"/>,
     /// a Sink and a Source joined as each other's <see cref="BlackHole.Throat"/>), placed by this executor
@@ -85,6 +86,9 @@ namespace CosmicShore.Gameplay
         bool _publishedOpen;
         readonly InputEvents?[] _boundInput = new InputEvents?[2];
         readonly List<ShipActionSO> _bindScratch = new();
+        int _openedFrame = -1;
+        int _serial;         // the authority's pair count, published so peers re-lay on every fresh pair
+        float _peerSerial;   // the serial of the pair a peer's copy shows
         float _aiLastPairTime = float.NegativeInfinity;
         float _aiReleaseAt = float.PositiveInfinity;
         bool _aiHoldingLeft, _aiHoldingRight;
@@ -133,7 +137,10 @@ namespace CosmicShore.Gameplay
                                  "Wire Assets/_SO_Assets/VesselActions/Stoat/StoatDipoleConfig.asset on the prefab.");
         }
 
-        /// <summary>Trigger PRESS: open the pair (or join the one the other trigger opened). The simulating machine only.</summary>
+        /// <summary>
+        /// Trigger PRESS: lay a FRESH pair — always, replacing any pair still open (the other trigger's). Both
+        /// triggers pressed on the same frame lay one pair between them. The simulating machine only.
+        /// </summary>
         public void BeginHold(Side side)
         {
             if (config == null || _status == null || !MantaStingActionExecutor.IsSimAuthority(_status)) return;
@@ -142,15 +149,22 @@ namespace CosmicShore.Gameplay
             _holds[i].Holding = true;
             _holds[i].HeldFor = 0f;
             _holds[i].Live = _status.AutoPilotEnabled ? config.AutopilotHold01 : 0f;
-            if (!IsOpen) Open();
+            if (!IsOpen || _openedFrame != Time.frameCount) Open();
         }
 
-        /// <summary>Trigger RELEASE: this trigger's share of the separation goes; with both let go the poles close and annihilate.</summary>
+        /// <summary>
+        /// Trigger RELEASE: the pair is gone at once, annihilated where it stands — there is no closing glide to
+        /// catch it in, so a pair can never be recovered. A trigger still held keeps its squeeze but lays
+        /// nothing until it is pressed again.
+        /// </summary>
         public void Release(Side side)
         {
             int i = (int)side;
+            bool wasHolding = _holds[i].Holding;
             _holds[i].Holding = false;
             _holds[i].Live = 0f;
+            if (wasHolding && _status != null && MantaStingActionExecutor.IsSimAuthority(_status) && (_sink || _source))
+                Close(annihilate: true);
         }
 
         // ------------------------------------------------------------------ the pair
@@ -159,12 +173,14 @@ namespace CosmicShore.Gameplay
         {
             var hull = _status.Transform;
             if (!hull) return;
-            Close(annihilate: false);
+            Close(annihilate: IsOpen);
             _middle = hull.position + hull.forward * config.AheadDistance;
             _right = hull.right;
             _forward = hull.forward;
             _separation = default;
             if (!Spawn(_middle, _middle)) return;
+            _openedFrame = Time.frameCount;
+            _serial++;
             PlayOneShot(config.OpenEvent);
             // The pair is a launch: leave the hold-still stance, which would otherwise pin the hull.
             if (_status.IsTranslationRestricted && TryGetComponent<ActionExecutorRegistry>(out var registry))
@@ -331,7 +347,8 @@ namespace CosmicShore.Gameplay
             var handler = _status.ActionHandler;
             if (!handler || !handler.IsSpawned) return;
             Vector4 sink = handler.NetStoatDipoleSink.Value;
-            Vector3 source = handler.NetStoatDipoleSource.Value;
+            Vector4 published = handler.NetStoatDipoleSource.Value;
+            var source = new Vector3(published.x, published.y, published.z);
             float horizon = sink.w;
             if (horizon <= 0f)
             {
@@ -339,7 +356,13 @@ namespace CosmicShore.Gameplay
                 return;
             }
             var sinkAt = new Vector3(sink.x, sink.y, sink.z);
-            if (!IsOpen && !Spawn(sinkAt, source)) return;
+            // A fresh pair (a new serial) is laid fresh, where it is — never the old copy slid across.
+            if (IsOpen && !Mathf.Approximately(published.w, _peerSerial)) Close(annihilate: true);
+            if (!IsOpen)
+            {
+                if (!Spawn(sinkAt, source)) return;
+                _peerSerial = published.w;
+            }
             float k = 1f - Mathf.Exp(-PeerFollowRate * dt);
             _sink.transform.position = Vector3.Lerp(_sink.transform.position, sinkAt, k);
             _source.transform.position = Vector3.Lerp(_source.transform.position, source, k);
@@ -355,7 +378,8 @@ namespace CosmicShore.Gameplay
             if (!handler || !handler.IsSpawned || !handler.IsOwner || !IsOpen) return;
             var s = _sink.transform.position;
             handler.NetStoatDipoleSink.Value = new Vector4(s.x, s.y, s.z, Mathf.Max(0.05f, _sink.HorizonRadius));
-            handler.NetStoatDipoleSource.Value = _source.transform.position;
+            var src = _source.transform.position;
+            handler.NetStoatDipoleSource.Value = new Vector4(src.x, src.y, src.z, _serial);
             _publishedOpen = true;
         }
 

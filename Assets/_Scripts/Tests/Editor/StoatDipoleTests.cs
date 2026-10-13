@@ -166,6 +166,29 @@ namespace CosmicShore.Tests
         }
 
         [Test]
+        public void TheDots_PackTighterWithDepth_AndShrinkToTheFloor()
+        {
+            // Two segments of 100 px: the first at full size, the second at half (twice as deep, squared).
+            var screen = new[] { new Vector2(0f, 0f), new Vector2(100f, 0f), new Vector2(200f, 0f) };
+            var visible = new[] { true, true, true };
+            var scale = new[] { 1f, 1f, 0.5f };
+            var dots = new Vector2[64];
+            var src = new int[64];
+            int n = StoatDipoleMath.LayDots(screen, visible, null, scale, 3, 20f, dots, src);
+            Assert.AreEqual(20f, dots[1].x - dots[0].x, 1e-3f, "near: the authored spacing");
+            Assert.AreEqual(10f, dots[n - 1].x - dots[n - 2].x, 1e-3f, "far: the spacing of a half-size dot");
+
+            int plain = StoatDipoleMath.LayDots(screen, visible, null, 3, 20f, dots, src);
+            int unscaled = StoatDipoleMath.LayDots(screen, visible, null, null, 3, 20f, dots, src);
+            Assert.AreEqual(plain, unscaled, "no scales = the screen-even layout, unchanged");
+
+            Assert.AreEqual(1f, StoatDipoleMath.DepthScale(40f, 40f, 0.35f), 1e-5f, "the nearest dot is full size");
+            Assert.AreEqual(0.5f, StoatDipoleMath.DepthScale(160f, 40f, 0.35f), 1e-5f, "four times as deep: half size");
+            Assert.AreEqual(0.35f, StoatDipoleMath.DepthScale(4000f, 40f, 0.35f), 1e-5f, "far: floored");
+            Assert.AreEqual(1f, StoatDipoleMath.DepthScale(20f, 40f, 0.35f), 1e-5f, "never larger than the nearest");
+        }
+
+        [Test]
         public void TheSink_StripsARival_NeverItsOwnerOrATeammate()
         {
             Assert.IsTrue(BlackHoleCrystalStrip.OwesStrip(1f, false, true, CosmicShore.Data.Domains.Ruby, CosmicShore.Data.Domains.Jade));

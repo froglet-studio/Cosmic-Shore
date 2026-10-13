@@ -16,10 +16,17 @@ trigger's side — and their **sum** pulls them apart lengthways, the sink alway
 |---|---|---|
 | one full | 200 u, 60 u | the sink to that side, a slight diagonal |
 | both full | 0, 120 u | the sink dead ahead, the source 120 u beyond it |
-| let go of both | → 0 | the poles fall together and **annihilate** when the horizons touch |
+| let go of either | — | the pair **annihilates at once**, where it stands — it cannot be caught again |
+
+**Every press lays a fresh pair** (replacing any pair the other trigger still holds; both triggers
+pressed on one frame lay one). There is no closing glide: a released pair is gone the same frame, and a
+trigger still held after the other is let go keeps its squeeze but lays nothing until it is pressed
+again (2026-10-13, play feedback: "when I let go I should have no chance of recovering those poles").
 
 The poles' strength and size never follow the triggers — only their separation (the dipole moment)
-does. Space sizes them: horizon **3.5 u** and GM **120 000** at rest, ×1 → ×2 at level 10
+does. Space sizes them: horizon **1.17 u** and GM **60 000** at rest (a third of the studio's 3.5 u and
+half its 120 000, 2026-10-13 — the holes are drawn a third the diameter, and the pull, the path's bend,
+the lens and the prisms' tidal stretch all weaken with them), ×1 → ×2 at level 10
 (`StoatDipoleConfigSO.poleSize`, read live on the owner, replicated as the horizon). The sink grows in
 over 0.9 s, the source over 1.1 s (from 55%), so a fresh pair pulls before it pushes.
 
@@ -34,11 +41,15 @@ you had before the dive.
 **Time — the Pathfinder (passive).** Every frame the hull's own flight is run forward 600 u on the
 inputs it holds (`StoatDipoleMath.PredictPath`, the studio's `fieldPath`: the same `Step`, the held
 steering rates, through the wormhole) and drawn for the pilot as dots from 8 u ahead of the nose:
-4 px dots, 10 diameters apart, **blue-grey** while open. When the poles **warp** the path at all — it
+4 px dots, 3⅓ diameters apart (a third of the studio's 10), **blue-grey** while open. The dots carry
+**depth**: each is sized `sqrt(nearest dot's depth / its depth)` (`StoatDipoleMath.DepthScale`, floored
+at 0.35), its gap is measured in its own diameters, and it fades by up to half toward the far end
+(`dotDepthMinScale`, `dotDepthFade`), so a path climbing away reads as going away. When the poles **warp** the path at all — it
 bends ≥ 3°, or goes through the wormhole — it turns **lime** and the hull flies down it faster: a warp of
 the hull's own flight clock (`VesselTransformer.FlightTimeScale`), so the path stays the path and only
-arrives sooner. The boost rises at 20 /s and fades over 0.6 s. **Time is rate:** ×2 at rest, ×3 at level 5
-(the studio's number), ×4 at level 10 (`StoatDipoleConfigSO.boost`, floored at 1). A path that comes back
+arrives sooner. The boost rises at 20 /s and fades over 0.6 s. **Time is rate:** ×2.5 at rest, ×3.75 at
+level 5, ×5 at level 10 (`StoatDipoleConfigSO.boost`, floored at 1; the studio's ×2 → ×4 raised a quarter
+on 2026-10-13). A path that comes back
 within 8 u of itself (at least 60 u on) ends there — the loop that would cross your own trail.
 
 **The base turn is ×0.4** (pitch / yaw 48 °/s, roll 52 — the studio's `ftTurnScale`): the hull leans on its
@@ -74,7 +85,9 @@ vanish happens AT the horizon, inside the shadow the lens draws, so nothing is s
 
 The simulating machine (`MantaStingActionExecutor.IsSimAuthority`: the owner, the host for an AI)
 reads the triggers, places the poles and publishes them on `R_VesselActionHandler.NetStoatDipoleSink`
-(xyz + horizon) / `NetStoatDipoleSource` — the `NetEchoSightShape` precedent: the separation is two
+(xyz + horizon) / `NetStoatDipoleSource` (xyz + the pair's serial in w: a press can close one pair and
+open the next inside one tick, so a peer re-lays its copy when the serial changes instead of sliding the
+old pair across) — the `NetEchoSightShape` precedent: the separation is two
 analog triggers no peer receives, and the size is Space-scaled on an unreplicated level. Every peer
 lays its own copy of the pair from those and nothing else, and applies the owner's rules to it (the
 upgrade bit, the name and the domain are replicated). The boost and the field flight run where the hull
@@ -109,7 +122,7 @@ Audio slots ship **empty** (`openEvent`, `annihilateEvent`, `warpEvent` on the c
 | Element | Ability | Input | L5 upgrade |
 |---|---|---|---|
 | **Space** | Field Dipole — pole size ×1 → ×2 | LT / RT | **Theft** — swallowed prisms are stolen, not destroyed (`IsUpgradeActive(Space)`) |
-| **Time** | Pathfinder — warp boost ×2 → ×4 | passive | open — proposals below |
+| **Time** | Pathfinder — warp boost ×2.5 → ×5 | passive | open — proposals below |
 | **Charge** | open — proposals below | — | — |
 | **Mass** | open — proposals below | — | — |
 

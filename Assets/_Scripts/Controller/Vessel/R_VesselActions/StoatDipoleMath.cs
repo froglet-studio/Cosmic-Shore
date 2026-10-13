@@ -318,7 +318,18 @@ namespace CosmicShore.Gameplay
         /// segment each came from, for its fade.
         /// </summary>
         public static int LayDots(Vector2[] screen, bool[] visible, bool[] breakBefore, int count, float spacing,
-            Vector2[] dots, int[] sourceIndex)
+            Vector2[] dots, int[] sourceIndex) =>
+            LayDots(screen, visible, breakBefore, null, count, spacing, dots, sourceIndex);
+
+        /// <summary>
+        /// <see cref="LayDots(Vector2[], bool[], bool[], int, float, Vector2[], int[])"/> with DEPTH: each
+        /// point's <paramref name="scale"/> (its dot's size as a share of the nearest dot's, from
+        /// <see cref="DepthScale"/>) scales the spacing walked along the segment that ends at it, so a far
+        /// stretch of path packs its smaller dots as tightly, in their own diameters, as a near one. Null =
+        /// every point at scale 1.
+        /// </summary>
+        public static int LayDots(Vector2[] screen, bool[] visible, bool[] breakBefore, float[] scale, int count,
+            float spacing, Vector2[] dots, int[] sourceIndex)
         {
             if (screen == null || dots == null || count <= 0) return 0;
             spacing = Mathf.Max(0.5f, spacing);
@@ -330,20 +341,22 @@ namespace CosmicShore.Gameplay
             {
                 if (visible != null && !visible[i]) { have = false; continue; }
                 var p = screen[i];
+                float step = Mathf.Max(0.5f, spacing * (scale != null ? Mathf.Max(0f, scale[i]) : 1f));
                 if (!have || (breakBefore != null && breakBefore[i]))
                 {
                     dots[n] = p;
                     if (sourceIndex != null) sourceIndex[n] = i;
                     n++;
                     have = true;
-                    carry = spacing;
+                    carry = step;
                     prev = p;
                     continue;
                 }
                 var d = p - prev;
                 float len = d.magnitude;
-                float t = carry;
-                for (; t <= len && n < dots.Length; t += spacing)
+                // A segment that shrinks the step cuts the distance still owed to the next dot with it.
+                float t = Mathf.Min(carry, step);
+                for (; t <= len && n < dots.Length; t += step)
                 {
                     dots[n] = prev + d * (t / Mathf.Max(len, 1e-6f));
                     if (sourceIndex != null) sourceIndex[n] = i;
@@ -353,6 +366,18 @@ namespace CosmicShore.Gameplay
                 prev = p;
             }
             return n;
+        }
+
+        /// <summary>
+        /// A dot's depth cue: its size as a share of the nearest dot's, <c>sqrt(nearDepth / depth)</c> — gentler
+        /// than true perspective, so the cue keeps changing over the whole path instead of bottoming out a
+        /// few dots from the nose — clamped to [<paramref name="minScale"/>, 1].
+        /// </summary>
+        public static float DepthScale(float depth, float nearDepth, float minScale)
+        {
+            float lo = Mathf.Clamp01(minScale);
+            if (depth <= 1e-4f || nearDepth <= 1e-4f) return 1f;
+            return Mathf.Clamp(Mathf.Sqrt(nearDepth / depth), lo, 1f);
         }
 
         // ------------------------------------------------------------------ the boost

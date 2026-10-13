@@ -902,7 +902,7 @@ above is unbound, so Slingshot is now flown on the dipole too.
 (`SlingshotCourse.ForIntensity` into the shared `HeadlongCircuit`) with **five** rings a lap, two laps
 (10), flown on the field dipole: the triggers hold a sink–source pair open ahead, the **pathfinder**
 draws the path the hull will fly, and while the poles warp it the line is lime and the hull flies it
-×2 → ×4 faster (Time scales the boost, a warp of the hull's own flight clock,
+×2.5 → ×5 faster (Time scales the boost, a warp of the hull's own flight clock,
 `VesselTransformer.FlightTimeScale`). Long legs, so every leg is a pair laid and ridden. Metric 9,
 golf; `warplineGateTarget`; `RaceGateObjectiveProvider`; comeback 0.45. Generator
 `author_warpline_assets.py` (donor: Slingshot's scene). See `_Scripts/Controller/Arcade/WARPLINE.md`.

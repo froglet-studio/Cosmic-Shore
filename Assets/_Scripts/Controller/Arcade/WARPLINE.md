@@ -21,7 +21,7 @@ the last ring of the last lap wins (golf: finish time).
 round-15 ×0.4): its triggers hold one sink–source pair open 250 u ahead, the difference pulling the
 poles apart sideways and the sum lengthways, and its **pathfinder** draws the line it will fly. While
 the poles **warp** that line — bend it 3° or more, or send it through the wormhole — it turns lime and
-the hull flies down it faster: ×2 at rest, ×3 at Time 5, ×4 at Time 10. The line is the line; only
+the hull flies down it faster: ×2.5 at rest, ×3.75 at Time 5, ×5 at Time 10. The line is the line; only
 the time it takes changes. That is the race: **every second you are not warped, you are flying at
 cruise.**
 

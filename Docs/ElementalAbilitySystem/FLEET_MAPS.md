@@ -66,7 +66,7 @@ day after the channel it referred to had been deleted.
 | Rhino | 2/4 | 3/4 | 0/4 |
 | **Butterfly** | **4/4** | **4/4** | **4/4** | *(added 2026-09-22 — code + map only; its prefab is built by `FrogletTools ▸ Vessels ▸ Create Butterfly Vessel` and is NOT on the branch yet, so the tool cannot see it until that has been run)* |
 | **Thresher** | **4/4** | **4/4** | **4/4** | *(added 2026-10-08, measured on the branch — prototype; see `R_VesselActions/THRESHER.md`)* |
-| **Stoat** | 2/4 | 2/4 | 1/4 | *(re-cut 2026-10-09 — the round-15 FIELD DIPOLE: Space = Field Dipole on the triggers (pole size ×1→×2, L5 **Theft**: swallowed prisms are stolen, not destroyed), Time = Pathfinder, passive (warp boost ×2→×4, no L5 yet); Charge and Mass are open with proposals in §2 ▸ Stoat and `R_VesselActions/STOAT_DIPOLE.md` §6)* |
+| **Stoat** | 2/4 | 2/4 | 1/4 | *(re-cut 2026-10-09 — the round-15 FIELD DIPOLE: Space = Field Dipole on the triggers (pole size ×1→×2, L5 **Theft**: swallowed prisms are stolen, not destroyed), Time = Pathfinder, passive (warp boost ×2.5→×5 since 2026-10-13, no L5 yet); Charge and Mass are open with proposals in §2 ▸ Stoat and `R_VesselActions/STOAT_DIPOLE.md` §6)* |
 
 Everything the tool still flags is a **design gap, not a wiring bug** — three rows: the Rhino's
 Charge and Space, and the Serpent's Mass. The full list, with what each one would cost to fill, is
@@ -564,7 +564,7 @@ lifeform wither, danger skim bonus). The Thresher runs forked containers
 
 Approved and shipped: **Space = Field Dipole** (LT/RT; Space sizes both poles ×1 → ×2), **L5 Theft**
 (swallowed prisms are stolen into the owner's domain; below it they vanish), **Time = Pathfinder**
-(passive; Time scales the warp boost ×2 → ×4). Open, proposals only (full tables and reasons in
+(passive; Time scales the warp boost ×2.5 → ×5, raised from ×2 → ×4 on 2026-10-13). Open, proposals only (full tables and reasons in
 `_Scripts/Controller/Vessel/R_VesselActions/STOAT_DIPOLE.md` §6):
 
 | Slot | Recommended proposal | Alternatives |
