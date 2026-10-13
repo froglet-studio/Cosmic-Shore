@@ -176,6 +176,20 @@ the hull. Platform additions: `VesselPrismController.ThicknessMultiplier`, `Blac
    hierarchy: `StoatHull` (with two `VesselJet`s under it), `StoatBody`, `StoatHitbox`, `StoatHUDVariant` under the
    HUD holder, no `SquirrelShip_*` / `SquirrelHUDVariant`. The HUD controller is `StoatHUDController` with its view and
    four executors wired. Re-save it: the diff should be Unity's own key ordering only.
+   **The skimmer (repaired 2026-10-13, `claude/brave-feynman-g71arn`).** Stage 6 as first merged cut the nested
+   `Components/Skimmer.prefab` instance (`align skimmer`) off after its overrides: no `m_SourcePrefab`, so nothing can
+   resolve it, and the Stoat most likely flew with no Skimmer (`VesselStatus._nearFieldSkimmer`,
+   `VesselPrismController.skimmer` null; inferred, not seen in Unity). Now: `align skimmer` is an ordinary instance of
+   `Skimmer.prefab`, not a Missing Prefab. **FrogletTools > Vessels > Audit Vessel Skimmers** prints
+   `NearFieldSkimmer: 'align skimmer' OK` for the Stoat. Broken, it would have printed `(none) — this vessel has no
+   skimmer at all` (read from the audit's code), which it does NOT count as a fault, so read the Stoat's line rather
+   than the total. In flight, skim along a prism trail: the forcefield crackle (lightning arcs on the skimmer sphere
+   where it touches prisms) is the visible signal; the container's other prism effect, the haptic, is a no-op in the
+   desktop editor. Headless proof: `author_stoat_assets.py --check` (new gate: every nested instance ends with
+   `m_SourcePrefab`) / `--self-test` (26 negative controls, incl. the broken shape), and Amoebius's
+   `PrefabGraph` resolves both stripped skimmer objects with 0 warnings (the broken prefab gave `missing source prefab`);
+   an offline replica of the skimmer audit's checks on that graph reads `'align skimmer' OK` (layer 7, active to the
+   root, trigger sphere, Rigidbody, ImpactCollider, crackle controller + overlay, Stoat container with 2 prism effects).
 2. **Fly it (lava lamp / Vessel Changer).** The hull is hit where it is drawn — fly a danger prism through the nose
    and through the tail tip (the box spans the nose to the tail root); the jets sit at the hips and plume backward
    (they were sideways before: the Squirrel's `DriftJet`). Clean console.

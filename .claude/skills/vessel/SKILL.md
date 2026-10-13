@@ -727,6 +727,13 @@ applies to new abilities, new resources on the meter list, and anything that add
     file), never by deleting line ranges: `author_stoat_assets.py` stage 6 (`remove_instance`,
     `remove_gameobject_tree`, `dangling_refs`) is the reference, and it took the Stoat from 4,381 lines to 2,038 with
     zero dangling references. (Stoat own-vessel pass, 2026-10-13.)
+    **Gate each nested instance's SHAPE too, not only its references.** That same pass passed the reference gate and
+    shipped the skimmer instance cut off after its last modification, with no `m_SourcePrefab`: an `re.S` regex read
+    the document's tail as modifications (`STOAT_DIPOLE.md` §8 D13). Nothing resolves an instance with no source, nor
+    the stripped objects standing for it, and **Audit Vessel Skimmers** reports that as `(none)`, which it does not
+    count as a fault. `author_stoat_assets.broken_instances` is the gate (every `!u!1001` ends with its four override
+    lists, then `m_SourcePrefab`; every stripped object names its instance's source). Call it from any generator
+    that rewrites a nested instance.
 
 47. **A procedural hull with NON-CONVEX pieces needs a parity-ray winding test, and hinged SIBLINGS must be posed
     as a chain.** The Stoat harness checks winding as "every face points away from its piece's centroid" — exact for

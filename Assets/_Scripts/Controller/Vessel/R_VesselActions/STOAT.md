@@ -155,7 +155,7 @@ through the base class's lerp (the Butterfly lesson: it eats a slow periodic mot
 | `StoatHullForm.cs`, `StoatHullBuilder.cs` (Vessel/) | the plated hull: pure geometry + morphs, and the emitter (§2.1) |
 | `StoatLopeMath.cs`, `StoatAnimation.cs` (Animation/) | the lope (pure) and the puppetry + morph plumbing (§2.2) |
 | `Tools/Build/stoat_hull_harness/` | compiles and RUNS the shipped hull form offline; `--obj` exports it |
-| `Tools/Build/author_stoat_assets.py` | the generator + `--check` + `--self-test` (22 negative controls); stage 2 authors the hull and the animation swap, stage 6 the own-vessel pass |
+| `Tools/Build/author_stoat_assets.py` | the generator + `--check` + `--self-test` (26 negative controls); stage 2 authors the hull and the animation swap, stage 6 the own-vessel pass and gates every nested prefab instance (it must end with `m_SourcePrefab`, `STOAT_DIPOLE.md` §8 D13) |
 | `Docs/Studios/StoatFlightStudio.html` | the web studio: fly the Stoat on a gamepad, sling either wormhole style, compare them, log decisions (`Docs/Studios/README.md`; live copy with the shared log: https://claude.ai/artifact/Busc3KW6DmVzbsiA2qxoHc) |
 
 **Why the hold is sampled per frame, not read at release — and why the PEAK slings.** The release

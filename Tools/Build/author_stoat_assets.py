@@ -49,6 +49,11 @@ WHAT IT MAKES (`R_VesselActions/STOAT.md`)
     element gates), AI boost policy, the mode switch (StoatModeExecutor + StoatModeAction on B) and the
     Charge ripple (StoatRippleExecutor + StoatRippleConfig), and the omni crystal's Overclock. Bindings:
     each trigger carries its dipole AND its orbit asset (the mode decides), B the switch.
+    Repaired (one-shot, stands down once applied): the skimmer instance's tail - its four override lists
+    and m_SourcePrefab - which the first stage 6 run's prune cut off (eba0bf8752), leaving an instance,
+    and the Skimmer the vessel reads, that nothing can resolve. Gated: every nested prefab instance in the
+    prefab and its HUD variant ends the way Unity writes one, m_SourcePrefab last, and every stripped
+    object names its instance's source.
 
 THE CLONE IS A SPENT ONE-SHOT ONCE THE PREFAB IS COMMITTED (CLAUDE.md, "a spent one-shot must
 stand down, not abort"). Squirrel.prefab moves on; re-cloning it would silently re-author the
@@ -817,6 +822,8 @@ SQUIRREL_POOL_COMPONENT = "1907784425893164354"                         # NudgeS
 SQUIRREL_ALIGN_COMPONENT = "1244531863877960553"                        # ToggleAlignAction (inactive)
 JETS_KEPT = (("3003162917154485572", "2617076957950753345", -0.3), ("3287304896823774770", "2333430861380747575", 0.3))
 JETS_DROPPED = ("4407056506752009302", "6084043296942237368")
+SKIMMER_INSTANCE = "7079694710114171170"     # the nested Components/Skimmer.prefab ("align skimmer"), the hull's one skimmer
+SKIMMER_PREFAB = "6540c78597c2dcc468123b270169fc44"
 # The jets ride the hull (they lope with it): at the hips, pointing back. Plume dial, VESSEL_TAIL_AND_JETS.md 3:
 # (0.6, 0.6, 0.13) x |followOffset.z| / 20 = x0.85 at the Stoat's 17, divided back through the root's 0.8.
 JET_LOCAL_Y, JET_LOCAL_Z = -0.05, -2.15
@@ -1037,6 +1044,69 @@ def dangling_refs(text: str):
     return sorted(out)
 
 
+# A PrefabInstance document ends the way Unity writes one: its modifications, the four override lists (each `[]` or a
+# block of `- ` items), then m_SourcePrefab, last. Never re.S on these: under it `.*` runs to the document's end,
+# which is how eba0bf8752's prune read the skimmer's tail as modifications and dropped it. One modification is its
+# `- target:` line and every deeper-indented line after it; a blank line is a newline inside a multi-line value.
+MODS_START = re.compile(r"^    m_Modifications:(?: \[\])?\n", re.M)
+MOD_ENTRY = r"    - target:.*\n(?:      .*\n|\n)*"
+MOD_ENTRIES = re.compile(f"(?:{MOD_ENTRY})*")
+OVERRIDE_LIST = r".*\n(?:    - .*\n(?:      .*\n)*)*"
+INSTANCE_TAIL = re.compile(r"    m_RemovedComponents:" + OVERRIDE_LIST + r"    m_RemovedGameObjects:" + OVERRIDE_LIST +
+                           r"    m_AddedGameObjects:" + OVERRIDE_LIST + r"    m_AddedComponents:" + OVERRIDE_LIST +
+                           r"  m_SourcePrefab: \{fileID: 100100000, guid: ([0-9a-f]{32}), type: 3\}\n")
+
+
+def instance_tail(source_guid: str) -> str:
+    """The tail of a PrefabInstance that removes and adds nothing."""
+    return ("    m_RemovedComponents: []\n    m_RemovedGameObjects: []\n    m_AddedGameObjects: []\n    m_AddedComponents: []\n"
+            f"  m_SourcePrefab: {{fileID: 100100000, guid: {source_guid}, type: 3}}\n")
+
+
+def instance_source(chunk: str):
+    """A PrefabInstance document's source prefab guid - None unless the document ends the way Unity writes one."""
+    m = MODS_START.search(chunk)
+    if not m:
+        return None
+    tail = INSTANCE_TAIL.fullmatch(chunk, MOD_ENTRIES.match(chunk, m.end()).end())
+    return tail.group(1) if tail else None
+
+
+def broken_instances(text: str):
+    """Every nested prefab instance Unity cannot resolve, as (fileID, why). An instance with no m_SourcePrefab loads as
+    nothing, and so does every stripped object standing for one of its objects - eba0bf8752 shipped the skimmer that
+    way. A stripped object must also name its instance's source prefab."""
+    _, docs = split_docs(text)
+    out, source = [], {}
+    for k, chunk in docs:
+        if chunk.startswith("--- !u!1001 "):
+            source[k] = instance_source(chunk)
+            if source[k] is None and "\n  m_SourcePrefab: " not in chunk:
+                out.append((k, "is a nested prefab instance with no m_SourcePrefab - Unity resolves neither it nor its stripped objects"))
+            elif source[k] is None:
+                out.append((k, "is a nested prefab instance that does not end the way Unity writes one "
+                               "(four override lists, then m_SourcePrefab)"))
+    for k, chunk in docs:
+        if not chunk.split("\n", 1)[0].endswith(" stripped"):
+            continue
+        inst = re.search(r"  m_PrefabInstance: \{fileID: (-?\d+)\}", chunk)
+        named = re.search(r"  m_CorrespondingSourceObject: \{fileID: -?\d+, guid: ([0-9a-f]{32}),", chunk)
+        want = source.get(inst.group(1)) if inst else None
+        if want and named and named.group(1) != want:
+            out.append((k, f"is stripped from instance &{inst.group(1)} but names prefab {named.group(1)}, not its source {want}"))
+    return out
+
+
+def restore_instance_tail(chunk: str, source_guid: str) -> str:
+    """ONE-SHOT REPAIR, stands down once applied. eba0bf8752's prune (since fixed) cut the skimmer instance off after its
+    last modification: its four override lists, all empty, and its m_SourcePrefab. Re-running the prune cannot bring
+    them back, so this re-authors them as they stood before that commit, and only on that exact shape."""
+    m = MODS_START.search(chunk)
+    if not m or MOD_ENTRIES.match(chunk, m.end()).end() != len(chunk):
+        return chunk
+    return chunk + instance_tail(source_guid)
+
+
 def mb_header(fid, go, script, ident="") -> str:
     return (f"--- !u!114 &{fid}\n"
             "MonoBehaviour:\n"
@@ -1248,8 +1318,9 @@ def prune_skimmer_overrides(chunk: str) -> str:
         path = re.search(r"propertyPath: '?([A-Za-z_]+)", mod).group(1)
         return path not in stale
     head, rest = chunk.split("    m_Modifications:\n", 1)
-    mods_text, tail = re.match(r"((?:    - target:(?:.*\n)(?:      .*\n|        .*\n)*)*)(.*)", rest, re.S).groups()
-    mods = re.findall(r"    - target:.*\n(?:      .*\n|        .*\n)*", mods_text)
+    mods_text = MOD_ENTRIES.match(rest).group(0)
+    tail = rest[len(mods_text):]   # the override lists and m_SourcePrefab, kept whole
+    mods = re.findall(MOD_ENTRY, mods_text)
     mods = [m for m in mods if keep(m)]
     out = []
     for m in mods:
@@ -1328,6 +1399,8 @@ def apply_own_vessel(text: str) -> str:
                                                 f"{{fileID: 11400000, guid: {VESSEL_CONTAINER}, type: 2}}"))
     ai = get_doc(docs, AI_PILOT_ID)
     set_doc(docs, AI_PILOT_ID, set_field(ai, "boostPolicy", f"{{fileID: 11400000, guid: {AI_BOOST_POLICY}, type: 2}}"))
+    if get_doc(docs, SKIMMER_INSTANCE) is not None:
+        set_doc(docs, SKIMMER_INSTANCE, restore_instance_tail(get_doc(docs, SKIMMER_INSTANCE), SKIMMER_PREFAB))
     for k, chunk in docs:
         if "m_SourcePrefab: {fileID: 100100000, guid: " in chunk and "m_Name\n      value: align skimmer" in chunk:
             set_doc(docs, k, prune_skimmer_overrides(chunk))
@@ -1545,6 +1618,8 @@ def check_stage6(files, prefab, errors):
         want(f"--- !u!1001 &{inst}\n" not in prefab, f"the Squirrel's extra jet {inst} is still nested")
     dangling = dangling_refs(prefab)
     want(not dangling, f"dangling local references after the surgery: {dangling[:6]}")
+    for fid, why in broken_instances(prefab):
+        want(False, f"&{fid} {why}")
     reg = re.search(r"--- !u!114 &%s\n(?:.*\n)*?  _executors:\n((?:  - \{fileID: -?\d+\}\n)+)" % REGISTRY_ID, prefab)
     want(reg is not None and f"  - {{fileID: {MODE_EXECUTOR_ID}}}\n" in reg.group(1) and f"  - {{fileID: {RIPPLE_EXECUTOR_ID}}}\n" in reg.group(1),
          "the mode / ripple executors are not in the ActionExecutorRegistry")
@@ -1568,6 +1643,8 @@ def check_stage6(files, prefab, errors):
             errors.append("StoatHUDVariant.prefab: still names the Thresher's view or variant")
         if dangling_refs(hud):
             errors.append(f"StoatHUDVariant.prefab: dangling local references {dangling_refs(hud)[:4]}")
+        for fid, why in broken_instances(hud):
+            errors.append(f"StoatHUDVariant.prefab: &{fid} {why}")
     if not files.get(os.path.relpath(AI_POLICY_PATH, ROOT), "").count("  m_Name: StoatAIBoostPolicy\n"):
         errors.append(f"{os.path.relpath(AI_POLICY_PATH, ROOT)} is missing or misnamed")
     if not class_icons_ok(files):
@@ -1733,11 +1810,12 @@ def self_test() -> int:
     ok &= not base
     rel = os.path.relpath(PREFAB, ROOT)
 
-    def fires(label, mutate):
+    def fires(label, mutate, expect=""):
+        """`expect`: a phrase the finding must carry, so the control proves THIS check fired, not a neighbour."""
         nonlocal ok
         mutated = dict(files)
         mutate(mutated)
-        errs = check(mutated)
+        errs = [e for e in check(mutated) if expect in e]
         print(f"  negative control {label}: {'fires' if errs else 'MISSED'}")
         ok &= bool(errs)
 
@@ -1768,6 +1846,36 @@ def self_test() -> int:
     fires("HUD row lost its Time gauge", lambda f: f.__setitem__(hud_rel, f.get(hud_rel, "").replace("  timeGauge: {fileID: 7700000000000001233}\n", "  timeGauge: {fileID: 0}\n")))
     vc = os.path.relpath(VESSEL_CONTAINER_PATH, ROOT)
     fires("container regained the Squirrel's explosion", lambda f: f.__setitem__(vc, f.get(vc, "") + "  - {fileID: 11400000, guid: 384844202f49d274185594aa5a884572, type: 2}\n"))
+
+    def edit_doc(text, fid, edit):
+        head, docs = split_docs(text)
+        set_doc(docs, fid, edit(get_doc(docs, fid)))
+        return join_docs(head, docs)
+
+    def cut_after_overrides(chunk):   # eba0bf8752's shape: the document ends with its last modification
+        return chunk[:chunk.index("    m_RemovedComponents:")]
+    cut = edit_doc(files[rel], SKIMMER_INSTANCE, cut_after_overrides)
+    fires("skimmer cut after its overrides (eba0bf8752's shipped shape)", lambda f: f.__setitem__(rel, cut), "no m_SourcePrefab")
+    fires("an override list dropped from the skimmer", lambda f: f.__setitem__(rel, edit_doc(
+        f[rel], SKIMMER_INSTANCE, lambda c: c.replace("    m_AddedGameObjects: []\n", "", 1))), "does not end the way Unity writes one")
+    source_line = "  m_SourcePrefab: {{fileID: 100100000, guid: {}, type: 3}}\n".format
+    fires("skimmer restored onto another prefab (the jet's)", lambda f: f.__setitem__(rel, edit_doc(
+        f[rel], SKIMMER_INSTANCE, lambda c: c.replace(source_line(SKIMMER_PREFAB), source_line("55ceca573be662744948afc745f8840b")))),
+        "not its source")
+    fires("HUD variant's root instance lost m_SourcePrefab", lambda f: f.__setitem__(hud_rel, re.sub(
+        r"  m_SourcePrefab: .*\n", "", f.get(hud_rel, ""), count=1)), "no m_SourcePrefab")
+    # the one-shot repair: stage 6 restores the cut tail exactly (and stands down on the shipped prefab, below)
+    repaired = apply_own_vessel(cut) == files[rel]
+    print(f"  stage 6 restores the skimmer's cut tail: {'yes' if repaired else 'NO'}")
+    ok &= repaired
+    # a positive control: Unity writes a multi-line value with a blank line inside the modification - still the
+    # shape the gate accepts, and one the prune passes through whole
+    multi = edit_doc(files[rel], SKIMMER_INSTANCE, lambda c: c.replace("      value: align skimmer\n", "      value: 'align\n\n        skimmer'\n", 1))
+    passes = "value: 'align\n\n" in multi and not broken_instances(multi)
+    chunk = get_doc(split_docs(multi)[1], SKIMMER_INSTANCE)
+    passes &= prune_skimmer_overrides(chunk) == chunk
+    print(f"  a multi-line override value passes the gate and the prune: {'yes' if passes else 'NO'}")
+    ok &= passes
     # stage 2 is idempotent: applying it to the shipped prefab changes nothing
     idem = apply_hull(files[rel]) == files[rel]
     print(f"  stage 2 idempotent on the shipped prefab: {'yes' if idem else 'NO'}")
