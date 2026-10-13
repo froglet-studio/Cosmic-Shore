@@ -697,37 +697,38 @@ namespace CosmicShore.Tests
         }
 
         [Test]
-        public void Launch_PerfectTimingLeavesWithTheBoost_ALateOneDoesNot()
+        public void Launch_EveryAimedLaunchTakesTheBoost_HoweverLongItWaited()
         {
             var s = Defaults();
-            const float window = 0.25f, boost = 1.6f;
+            const float boost = 4.8f;   // ThresherConfig.asset launchBoost
+            Vector3 aim = Vector3.right;
 
-            // PERFECT: wait until the launch point is a few frames ahead, then arm.
+            // ARMED just before the point: barely waits, takes the boost.
             var a = new ThresherChainSolver(s);
             PlantFrom(a, s, out Vector3 pa, out Vector3 va);
-            Vector3 aim = Vector3.right;
             for (int f = 0; f < 2000 && a.SecondsToLaunchPoint(pa, aim) > 0.1f; f++)
             {
                 va = a.Step(pa, va, false, s.CruiseSpeed, Dt).ShipVelocity;
                 pa += va * Dt;
             }
             float orbit = a.LockSpeed;
-            a.ArmLaunch(aim, window, boost);
+            a.ArmLaunch(aim, boost);
             ThresherStepResult ra = default;
             for (int f = 0; f < 2000 && !ra.Launched; f++) { ra = a.Step(pa, va, false, s.CruiseSpeed, Dt); va = ra.ShipVelocity; pa += va * Dt; }
-            Assert.IsTrue(ra.Launched && ra.Perfect, "released just before the point: perfect");
-            Assert.AreEqual(orbit * boost, ra.ShipVelocity.magnitude, orbit * 0.05f, "a perfect launch takes the boost");
+            Assert.IsTrue(ra.Launched, "released just before the point: launches");
+            Assert.AreEqual(orbit * boost, ra.ShipVelocity.magnitude, orbit * 0.05f, "an aimed launch takes the boost");
 
-            // LATE: arm just AFTER the point, so the ship has a whole lap to go.
+            // ARMED just AFTER the point: a whole lap to wait, and STILL the boost - timing is not rewarded.
             var b = new ThresherChainSolver(s);
             PlantFrom(b, s, out Vector3 pb, out Vector3 vb);
             for (int f = 0; f < 2000 && b.SecondsToLaunchPoint(pb, aim) > 0.05f; f++)
             { vb = b.Step(pb, vb, false, s.CruiseSpeed, Dt).ShipVelocity; pb += vb * Dt; }
             for (int f = 0; f < 6; f++) { vb = b.Step(pb, vb, false, s.CruiseSpeed, Dt).ShipVelocity; pb += vb * Dt; }
-            b.ArmLaunch(aim, window, boost);
+            b.ArmLaunch(aim, boost);
             ThresherStepResult rb = default;
             float lastOrbit = b.LockSpeed;
-            for (int f = 0; f < 4000 && !rb.Launched; f++)
+            int waited = 0;
+            for (int f = 0; f < 4000 && !rb.Launched; f++, waited++)
             {
                 lastOrbit = b.LockSpeed;
                 rb = b.Step(pb, vb, false, s.CruiseSpeed, Dt);
@@ -735,8 +736,19 @@ namespace CosmicShore.Tests
                 pb += vb * Dt;
             }
             Assert.IsTrue(rb.Launched, "a late release still launches, a lap later");
-            Assert.IsFalse(rb.Perfect, "a release that waits a lap is not perfect");
-            Assert.AreEqual(lastOrbit, rb.ShipVelocity.magnitude, lastOrbit * 0.02f, "and leaves at the orbit's speed, no boost");
+            Assert.Greater(waited * Dt, 0.5f, "negative control: this release really did wait (most of a lap)");
+            Assert.AreEqual(lastOrbit * boost, rb.ShipVelocity.magnitude, lastOrbit * 0.05f,
+                "a launch that waited a lap leaves with the SAME boost");
+
+            // Unboosted (boost 1, the default): leaves at the orbit's own speed - the boost is the only multiplier.
+            var c = new ThresherChainSolver(s);
+            PlantFrom(c, s, out Vector3 pc, out Vector3 vc);
+            c.ArmLaunch(aim);
+            ThresherStepResult rc = default;
+            float cOrbit = c.LockSpeed;
+            for (int f = 0; f < 4000 && !rc.Launched; f++) { cOrbit = c.LockSpeed; rc = c.Step(pc, vc, false, s.CruiseSpeed, Dt); vc = rc.ShipVelocity; pc += vc * Dt; }
+            Assert.IsTrue(rc.Launched);
+            Assert.AreEqual(cOrbit, rc.ShipVelocity.magnitude, cOrbit * 0.02f, "boost 1 leaves at the orbit's speed");
         }
 
         [Test]
