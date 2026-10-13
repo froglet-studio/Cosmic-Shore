@@ -65,6 +65,61 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Android release build + pre-upload App Bundle check (`claude/serene-edison-lfv24f`, 2026-10-13) — NOT EDITOR-VERIFIED
+
+No editor and no `unity` CLI in the authoring session, so `/verify-unity` did NOT run. Out of
+editor:
+- **Compile:** `unity_refcompile --config editor` reports 0 errors in project code. The only gaps
+  are `NamedBuildTarget` calls, which are absent from the 2021.1 reference and also used by the
+  existing Windows pipeline.
+- **Tests:** `AndroidBundleCheck` and `AndroidBundleCheckTests` ran **9/9 under NUnit on .NET 8**,
+  against manifests linked by Google's `aapt2` 8.13.2. A reintroduced bug made one test fail.
+- **Gates:** the console-logging and conditional-compilation gates pass.
+
+**What landed** (full guide: `Docs/ANDROID_BUILD.md`)
+
+1. **FrogletTools > Build > Android App Bundle (Release)**
+   (`CosmicShoreBuildPipeline.Android.cs`, a `partial` of the Windows pipeline).
+   - It stops before building when any of these is true:
+     - Android Build Support is missing;
+     - the editor is not on Android;
+     - IL2CPP, ARM64 or API 36 is off;
+     - there is no upload key (from `CS_ANDROID_*` or Publishing Settings).
+   - Version code = minutes since 2026-01-01 UTC.
+   - `appCategory` is forced to `game` by reflection.
+   - Version, code, keystore fields, category and the App Bundle switch are restored afterwards.
+2. **`AndroidBundleCheck`** runs after every build. It writes `<aab>.check.txt` and shows a dialog.
+   **FrogletTools > Build > Check Android App Bundle…** runs it on any `.aab`.
+3. **`Tools/Build/check_android_signing_settings.py`**, wired into `unity-ci.yml`'s static job,
+   fails on a committed keystore path. It does fail on the pre-2026-10-08 TailGlider path.
+
+**Verify in editor**
+
+1. FrogletTools > Build shows both new items, and the Froglet Master Tool lists them under Build.
+2. **Refusals.** Each should show a dialog naming the fix, and build nothing:
+   - with the editor still on Windows: "not on Android";
+   - on Android with no keystore selected: "No upload key";
+   - after restarting the editor with a keystore selected: "not its passwords".
+3. **The build.** With the upload key selected and both passwords typed, build:
+   - the build succeeds;
+   - the dialog says "Ready to upload, with 1 warning(s)": `liblofelt_sdk.so` is not 16 KB-aligned;
+   - `Builds/Android/CosmicShore-0.2.0-<about 410000+>.aab` and its `.check.txt` exist;
+   - the report says package `com.FrogletGames.CosmicShore`, target 36, category `game`,
+     debuggable False, Signed: yes, ABIs: arm64-v8a.
+4. **Player Settings are put back.** `git status` shows no change to `ProjectSettings.asset`
+   beyond a keystore selection you made yourself. Bundle Version Code still reads 11.
+5. **The category.** If the log warned "Application Category is '…'; this build uses 'game'", set
+   Player Settings > Android > Other Settings > Application Category to Game. Then record what the
+   serialized `androidAppCategory` index became: the stored `3` is undocumented.
+6. **Batchmode** (`-buildTarget Android … -executeMethod …BuildAndroidRelease`) exits 0, and exits 1
+   with no keystore variables set.
+7. **Edit-mode tests:** `AndroidBundleCheckTests` passes in the Test Runner.
+8. **Play.** Upload the `.aab` to Internal testing (`ANDROID_BUILD.md` §5):
+   - Play accepts it with no signing, target-SDK or debuggable error;
+   - it installs from the tester link on the 4 GB Samsung and a flagship.
+
+---
+
 ### 🔴 Phone menu: screen strip lands inside the safe area, taps survive touch, no SetResolution on mobile (`claude/serene-edison-lfv24f`, 2026-10-12) — NOT EDITOR-VERIFIED
 
 Reported from the first TestFlight build on an iPhone, and reproduced by the tester in the Editor at

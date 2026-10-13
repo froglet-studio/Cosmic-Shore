@@ -224,6 +224,13 @@ jobs:
           python3 Tools/Build/check_console_logging.py --self-test
           python3 Tools/Build/check_console_logging.py
 
+      # A keystore selected in Publishing Settings is one machine's file (Docs/ANDROID_BUILD.md §1).
+      - name: Check no Android keystore path is committed
+        run: |
+          set -euo pipefail
+          python3 Tools/Build/check_android_signing_settings.py --self-test
+          python3 Tools/Build/check_android_signing_settings.py
+
       # .junie/skills must stay a symlink to .claude/skills (see AGENTS.md).
       - name: Check .junie/skills is a link, not a copy
         run: |

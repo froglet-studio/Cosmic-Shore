@@ -71,7 +71,10 @@ need and the failure only shows up at runtime in the player. Do not raise it wit
 ## 3. Building
 
 ### From the editor
-**Tools → Cosmic Shore → Build → Windows x64 (Release)**
+**FrogletTools → Build → Windows x64 (Release)**
+
+Android (a signed App Bundle for Google Play, checked before upload) is **FrogletTools → Build →
+Android App Bundle (Release)**; the whole Android path is in [`ANDROID_BUILD.md`](ANDROID_BUILD.md).
 
 ### From the command line
 ```bash
