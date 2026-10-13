@@ -12,9 +12,14 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8a0bad2a9045c675945ad5de8715aaa9, type: 3}
   m_Name: CrystalDepthPrismProfile
   m_EditorClassIdentifier: 
-  openDepth: -0.88
+  openDepth: -0.25
   sealDepth: 1
   profilePower: 1
-  reseatDepth: -0.87
+  reseatDepth: -0.97
   reseatFadeSeconds: 0.6
+  sealAtHorizon: 1
+  horizonMargin: 0.05
+  riseWhileHidden: 1
+  riseRate: 1.5
+  occluderRadius: 0.936
   orientationJitter: 1

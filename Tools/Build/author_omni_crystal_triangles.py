@@ -170,8 +170,10 @@ DEPTH_SHADER_GUID = hashlib.md5(b"CosmicShore/OmniCrystal/OmniDepthPrismShader.s
 DEPTH_NAME = "OmniDepthPrisms"
 MAT_DEPTH = mat_guid(DEPTH_NAME)
 MAT_DEPTH_INACTIVE = mat_guid(DEPTH_NAME + "Inactive")
-DEPTH_REACH = OUTER_REACH                # the top of a column, x the prism's seated radius (lab start / stop)
-DEPTH_PLATE_SCALE_START = 0.5            # a prism's size at the top of its column, x its seated size
+# Omni Motion Lab round 3 (shipped with round 5, 2026-10-13): taller columns and bigger prisms at the top, so the
+# Mass that the horizon seal had made subtle stands out again (it was OUTER_REACH 2 / 0.5).
+DEPTH_REACH = 3                          # the top of a column, x the prism's seated radius
+DEPTH_PLATE_SCALE_START = 0.6            # a prism's size at the top of its column, x its seated size
 DEPTH_THICKNESS = 8                      # the omni's pick (thickness grows INWARD, so a sealed prism is flush)
 DEPTH_THICKNESS_INWARD = 1
 # The thickness is BAKED INTO the prism mesh (thicken()) and the materials ship _Thickness 1, so the shader's
@@ -190,8 +192,14 @@ DEPTH_PROFILE_GUID = hashlib.md5(b"CosmicShore/Crystals/CrystalDepthPrismProfile
 # The free turn (15 deg/s about a 25-degree axis) was dropped 2026-10-12: the crystal holds still in game.
 # Round 10 (2026-10-13): reseat -0.87 (the far-range bound: -0.8 was seen once the camera moves) and a random pose
 # per crystal (orientationJitter 1, seeded from the spawn position by CrystalDepthPrisms).
-DEPTH_PROFILE_VALUES = [("openDepth", -0.88), ("sealDepth", 1), ("profilePower", 1), ("reseatDepth", -0.87),
-                        ("reseatFadeSeconds", 0.6), ("orientationJitter", 1)]
+# Omni Motion Lab rounds 1 and 3 (shipped with round 5, 2026-10-13): seal at the camera's horizon (every prism the camera
+# sees is flush, so none clips into the squares), rise while hidden (a prism climbs only while its column top is behind
+# the body, so every hidden prism stands out and none is seen rising), a later descent (open -0.25) and the reseat
+# pushed back to -0.97 now that it is a fallback. The Mass crystal shares this profile.
+DEPTH_PROFILE_VALUES = [("openDepth", -0.25), ("sealDepth", 1), ("profilePower", 1), ("reseatDepth", -0.97),
+                        ("reseatFadeSeconds", 0.6), ("sealAtHorizon", 1), ("horizonMargin", 0.05),
+                        ("riseWhileHidden", 1), ("riseRate", 1.5), ("occluderRadius", 0.936),
+                        ("orientationJitter", 1)]
 
 
 MAT_BODY = mat_guid("OmniCrystalBody")
@@ -314,6 +322,24 @@ SQUARES_SO_GUID = hashlib.md5(b"CosmicShore/Crystals/CrystalSpaceSquaresSO.cs").
 SQUARES_DRIVER_GUID = hashlib.md5(b"CosmicShore/Crystals/CrystalSpaceSquares.cs").hexdigest()
 SQUARES_PLAYBACK_SPEED = 1               # the art file's own 25 fps: a 4.8 s loop
 SQUARES_MATCH = 1e-4                     # CrystalSpaceSquaresBaker.MatchTolerance, x the body's radius
+
+# THE CADENCE since the Omni Motion Lab round 5 (decision 2026-10-13): the Space squares and the Time rhombi take turns
+# (pentagon turn, wave, triangle turn, wave, a gap between each) so they never move at once; each square turn is ONE
+# rigid turn that hops just clear of its neighbours (CrystalSpaceSquares fits it to the art file's own keys at runtime);
+# and the body's squares, rhombi and pentagons are drawn 10% thicker. OmniCrystalCadence on the Crystal root is the
+# clock; CrystalFlipWave (same root) and CrystalSpaceSquares (the body) ask it what to play.
+CADENCE_ASSET = "Assets/_SO_Assets/Environment/OmniCrystalCadence.asset"
+CADENCE_ASSET_GUID = hashlib.md5(b"CosmicShore/Crystals/OmniCrystalCadence.asset").hexdigest()
+CADENCE_SO_GUID = hashlib.md5(b"CosmicShore/Crystals/OmniCrystalCadenceSO.cs").hexdigest()
+CADENCE_GUID = hashlib.md5(b"CosmicShore/Crystals/OmniCrystalCadence.cs").hexdigest()
+OMNI_CADENCE_GUID = hashlib.md5(b"CosmicShore/Utility/OmniCadence.cs").hexdigest()
+FLIP_PROFILE = "Assets/_SO_Assets/Environment/TimeCrystalFlipWaveProfile.asset"
+CADENCE_COMPONENT = 3086241560104200051                     # OmniCrystalCadence on the Crystal root
+FLIP_WAVE_COMPONENT = 5535990081244205930                   # CrystalFlipWave on the Crystal root (preserved)
+SQUARES_PENTAGON_SECONDS = round(1.56 / 0.9, 3)             # the art file's 1.56 s, slowed 10% (round 4)
+CADENCE_VALUES = [("pentagonTurnSeconds", SQUARES_PENTAGON_SECONDS), ("triangleTurnSeconds", 2.4), ("gapSeconds", 0.15),
+                  ("waveActiveSeconds", None), ("waveSpeed", 1), ("pentagonLift", 0.14), ("triangleLift", 1.5),
+                  ("triangleSide", 1.5), ("framesPerTurn", 24), ("plateThickness", 1.1)]
 
 # Crystal.prefab: the four child slots, in crystalModels order. The stripped
 # Transform/GameObject ids are PRESERVED across this rewrite so the root's
@@ -1195,6 +1221,61 @@ GameObject:
 """
 
 
+def wave_active_seconds():
+    """Seconds a Time wave's rings move: the flip profile's loop less its lead-in (the profile's own contract is that
+    every ring lands inside the loop, so this is the span from the lead ring's start to the last ring's landing)."""
+    text = open(os.path.join(ROOT, FLIP_PROFILE)).read()
+    head = {k: float(v) for k, v in re.findall(r"^  (loopSeconds|firstRingStartSeconds): (\S+)$", text, re.M)}
+    if len(head) != 2:
+        raise SystemExit(f"{FLIP_PROFILE}: loopSeconds / firstRingStartSeconds not found")
+    return round(head["loopSeconds"] - head["firstRingStartSeconds"], 4)
+
+
+def cadence_text():
+    values = [(k, wave_active_seconds() if v is None else v) for k, v in CADENCE_VALUES]
+    fields = "".join(f"  {k}: {v}\n" for k, v in values)
+    return ("%YAML 1.1\n%TAG !u! tag:unity3d.com,2011:\n--- !u!114 &11400000\nMonoBehaviour:\n"
+            "  m_ObjectHideFlags: 0\n  m_CorrespondingSourceObject: {fileID: 0}\n"
+            "  m_PrefabInstance: {fileID: 0}\n  m_PrefabAsset: {fileID: 0}\n  m_GameObject: {fileID: 0}\n"
+            "  m_Enabled: 1\n  m_EditorHideFlags: 0\n"
+            f"  m_Script: {{fileID: 11500000, guid: {CADENCE_SO_GUID}, type: 3}}\n"
+            "  m_Name: OmniCrystalCadence\n  m_EditorClassIdentifier: \n" + fields)
+
+
+CADENCE_ASSET_META = f"""fileFormatVersion: 2
+guid: {CADENCE_ASSET_GUID}
+NativeFormatImporter:
+  externalObjects: {{}}
+  mainObjectFileID: 11400000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+"""
+
+CADENCE_DOC = re.compile(rf"^--- !u!114 &{CADENCE_COMPONENT}\nMonoBehaviour:\n(?:  .*\n)+", re.M)
+
+
+def with_cadence(head):
+    """The Crystal root's OmniCrystalCadence, authored into the part of Crystal.prefab this script otherwise preserves:
+    listed right after CrystalFlipWave on the root and serialized after it."""
+    doc = (f"--- !u!114 &{CADENCE_COMPONENT}\nMonoBehaviour:\n  m_ObjectHideFlags: 0\n"
+           "  m_CorrespondingSourceObject: {fileID: 0}\n  m_PrefabInstance: {fileID: 0}\n  m_PrefabAsset: {fileID: 0}\n"
+           "  m_GameObject: {fileID: 5535990081244205914}\n  m_Enabled: 1\n  m_EditorHideFlags: 0\n"
+           f"  m_Script: {{fileID: 11500000, guid: {CADENCE_GUID}, type: 3}}\n"
+           "  m_Name: \n  m_EditorClassIdentifier: \n"
+           f"  settings: {{fileID: 11400000, guid: {CADENCE_ASSET_GUID}, type: 2}}\n")
+    head = CADENCE_DOC.sub("", head)
+    entry = f"  - component: {{fileID: {CADENCE_COMPONENT}}}\n"
+    flip_entry = f"  - component: {{fileID: {FLIP_WAVE_COMPONENT}}}\n"
+    if entry not in head:
+        if head.count(flip_entry) != 1:
+            raise SystemExit(f"{CRYSTAL_PREFAB}: the root's CrystalFlipWave entry not found exactly once")
+        head = head.replace(flip_entry, flip_entry + entry)
+    if not head.endswith("\n"):
+        raise SystemExit(f"{CRYSTAL_PREFAB}: unexpected head")
+    return head + doc
+
+
 def crystal_children_text():
     """Crystal.prefab's child PrefabInstances: the four crystalModels slots in order, then the
     charge-edges overlay (a child, not a slot)."""
@@ -1278,7 +1359,7 @@ def build_crystal_prefab(existing):
         raise SystemExit(f"{CRYSTAL_PREFAB}: root m_Children (3-6 entries) not found")
     if n != 1:
         raise SystemExit(f"{CRYSTAL_PREFAB}: expected exactly one crystalModels block, found {n}")
-    return head + crystal_children_text()
+    return with_cadence(head) + crystal_children_text()
 
 
 # ── entry point ──────────────────────────────────────────────────────────────
@@ -1319,6 +1400,11 @@ def main():
         "Assets/_Scripts/Controller/Environment/Crystals/CrystalDepthPrisms.cs.meta": script_meta(DEPTH_PRISMS_GUID),
         "Assets/_Scripts/Controller/Environment/Crystals/CrystalDepthPrismProfileSO.cs.meta": script_meta(DEPTH_PROFILE_SO_GUID),
         "Assets/_Scripts/Utility/DepthRatchet.cs.meta": script_meta(DEPTH_RATCHET_GUID),
+        CADENCE_ASSET: cadence_text(),
+        CADENCE_ASSET + ".meta": CADENCE_ASSET_META,
+        "Assets/_Scripts/Controller/Environment/Crystals/OmniCrystalCadenceSO.cs.meta": script_meta(CADENCE_SO_GUID),
+        "Assets/_Scripts/Controller/Environment/Crystals/OmniCrystalCadence.cs.meta": script_meta(CADENCE_GUID),
+        "Assets/_Scripts/Utility/OmniCadence.cs.meta": script_meta(OMNI_CADENCE_GUID),
     }
     for path, text in material_texts().items():
         want[path] = text

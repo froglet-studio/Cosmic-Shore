@@ -96,8 +96,8 @@ Material:
     m_Floats:
     - _DepthDriven: 0
     - _FaceSplit: 0.5
-    - _PlateScaleStart: 0.5
-    - _Reach: 2.0
+    - _PlateScaleStart: 0.6
+    - _Reach: 3
     - _SplitUnit: 0.302105
     - _Thickness: 1
     - _ThicknessInward: 1

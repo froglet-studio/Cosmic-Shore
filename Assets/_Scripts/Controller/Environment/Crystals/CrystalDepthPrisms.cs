@@ -21,6 +21,9 @@ namespace CosmicShore.Gameplay
     ///  1. steps every column's ratchet against the GAMEPLAY camera (<see cref="ViewCamera"/>), in the crystal's
     ///     own space - the pilot turning round a crystal is what runs the ratchet. The crystal itself holds
     ///     still (the lab's free turn was dropped on 2026-10-12);
+    ///     The seal sits at the camera's horizon (<see cref="CrystalDepthPrismProfileSO.SealAtHorizon"/>), so every
+    ///     prism the camera can see is flush, and a prism may climb its column while its column top is hidden behind
+    ///     the body (<see cref="CrystalDepthPrismProfileSO.RiseWhileHidden"/>) - Omni Motion Lab rounds 1 and 3;
     ///  2. writes the columns to the renderer's property block (<c>_DepthState[plate]</c> = place, fade,
     ///     leaving place) with <c>_DepthDriven</c> 1, composing with any other writer's block
     ///     (<see cref="Crystal"/>'s tint and dissolve).
@@ -42,6 +45,7 @@ namespace CosmicShore.Gameplay
         static readonly int ReachID = Shader.PropertyToID("_Reach");
         static readonly int FaceSplitID = Shader.PropertyToID("_FaceSplit");
         static readonly int SplitUnitID = Shader.PropertyToID("_SplitUnit");
+        static readonly int PlateScaleStartID = Shader.PropertyToID("_PlateScaleStart");
 
         /// <summary>The shader's <c>_DepthState</c> array length. A mesh with more plates is refused.</summary>
         public const int MaxPlates = 60;
@@ -63,6 +67,9 @@ namespace CosmicShore.Gameplay
         readonly List<Pose> authored = new();
         bool needsPose;
         Vector3[] plateDirections;
+        Vector3[] plateCentres;      // seated, mesh space (TEXCOORD2)
+        float[] topHeights;          // each prism's top face above its centre, along its direction
+        float plateRadius;           // the plates' mean centre radius: the horizon and the occluder are measured by it
         DepthRatchet.Column[] columns;
         readonly Vector4[] state = new Vector4[MaxPlates];
         MaterialPropertyBlock block;
@@ -79,7 +86,8 @@ namespace CosmicShore.Gameplay
                 return;
             }
             var mesh = TryGetComponent<MeshFilter>(out var filter) ? filter.sharedMesh : null;
-            if (!PlateDirections.TryGet(mesh, out plateDirections, out var problem))
+            if (!PlateDirections.TryGet(mesh, out plateDirections, out var problem)
+                || !PlateDirections.TryGetShape(mesh, out plateCentres, out topHeights, out plateRadius, out problem))
             {
                 CSDebug.LogError($"CrystalDepthPrisms on '{name}': {problem}. Re-run the generator that bakes this mesh. The prisms will sit sealed and still.", this);
                 enabled = false;
@@ -163,19 +171,39 @@ namespace CosmicShore.Gameplay
 
             var cam = ViewCamera();
             if (!cam) return;
-            Vector3 toCamera = transform.InverseTransformPoint(cam.transform.position);
-            if (toCamera.sqrMagnitude < 1e-8f) return;
-            toCamera.Normalize();
+            Vector3 eye = transform.InverseTransformPoint(cam.transform.position);
+            float distance = eye.magnitude;
+            if (distance < 1e-4f) return;
+            Vector3 toCamera = eye / distance;
 
             float now = Time.time, dt = fresh ? 0f : Mathf.Max(0f, now - lastStep);
             lastStep = now;
+            float seal = profile.SealFor(plateRadius, distance);
+            bool rise = profile.RiseWhileHidden && !fresh;
+            var material = rise ? prisms.sharedMaterial : null;
+            float reach = material && material.HasProperty(ReachID) ? material.GetFloat(ReachID) : 1f;
+            float sizeAtTop = material && material.HasProperty(PlateScaleStartID) ? material.GetFloat(PlateScaleStartID) : 1f;
+            float occluder = profile.OccluderRadius * plateRadius;
             for (int j = 0; j < columns.Length; j++)
             {
                 float depth = Vector3.Dot(plateDirections[j], toCamera);
-                float seat = profile.Seat(depth);
-                columns[j] = fresh
-                    ? DepthRatchet.Column.At(seat)
-                    : DepthRatchet.Step(columns[j], depth, seat, dt, profile.ReseatDepth, profile.ReseatFadeSeconds);
+                float seat = profile.Seat(depth, seal);
+                if (fresh)
+                {
+                    columns[j] = DepthRatchet.Column.At(seat);
+                }
+                else
+                {
+                    bool hidden = false;
+                    float target = 0f;
+                    if (rise && seat < columns[j].Place && columns[j].Fade >= 1f)
+                    {
+                        target = DepthRatchet.RiseTarget(columns[j], seat, dt, profile.RiseRate);
+                        hidden = DepthRatchet.HiddenBehindBody(
+                            DepthRatchet.ColumnTop(plateCentres[j], plateDirections[j], topHeights[j], target, reach, sizeAtTop), eye, occluder);
+                    }
+                    columns[j] = DepthRatchet.Step(columns[j], depth, seat, dt, profile.ReseatDepth, profile.ReseatFadeSeconds, hidden, target);
+                }
                 state[j] = new Vector4(columns[j].Place, columns[j].Fade, columns[j].LeavingPlace, 0f);
             }
             fresh = false;
@@ -210,9 +238,55 @@ namespace CosmicShore.Gameplay
         static class PlateDirections
         {
             static readonly Dictionary<Mesh, Vector3[]> s_cache = new();
+            static readonly Dictionary<Mesh, (Vector3[] centres, float[] tops, float radius)> s_shape = new();
 
             [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
-            static void ResetCache() => s_cache.Clear();
+            static void ResetCache()
+            {
+                s_cache.Clear();
+                s_shape.Clear();
+            }
+
+            /// <summary>
+            /// Each plate's seated centre, its prism's top face height above that centre (along the plate's direction),
+            /// and the plates' mean centre radius - what the horizon seal and the hidden-rise test measure with. Read
+            /// once per mesh; call after <see cref="TryGet"/> succeeded.
+            /// </summary>
+            public static bool TryGetShape(Mesh mesh, out Vector3[] centres, out float[] tops, out float radius, out string problem)
+            {
+                if (s_shape.TryGetValue(mesh, out var shape))
+                {
+                    (centres, tops, radius) = shape;
+                    problem = null;
+                    return true;
+                }
+                var directions = s_cache[mesh];
+                var plates = new List<Vector4>();
+                mesh.GetUVs(2, plates);
+                var verts = mesh.vertices;
+                int count = directions.Length;
+                centres = new Vector3[count];
+                tops = new float[count];
+                for (int j = 0; j < count; j++) tops[j] = float.NegativeInfinity;
+                for (int i = 0; i < plates.Count; i++)
+                {
+                    int j = Mathf.RoundToInt(plates[i].w);
+                    var centre = new Vector3(plates[i].x, plates[i].y, plates[i].z);
+                    centres[j] = centre;
+                    tops[j] = Mathf.Max(tops[j], Vector3.Dot(verts[i] - centre, directions[j]));
+                }
+                radius = 0f;
+                foreach (var c in centres) radius += c.magnitude;
+                radius /= count;
+                if (radius <= 0f)
+                {
+                    problem = $"mesh '{mesh.name}' has its plate centres at the origin";
+                    return false;
+                }
+                s_shape[mesh] = (centres, tops, radius);
+                problem = null;
+                return true;
+            }
 
             public static bool TryGet(Mesh mesh, out Vector3[] directions, out string problem)
             {
