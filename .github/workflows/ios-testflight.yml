@@ -323,7 +323,10 @@ jobs:
             archive 2>&1 | tee "$WORK/archive.log" | grep -E '(error|\*\* ARCHIVE)' || true
           if ! grep -q '\*\* ARCHIVE SUCCEEDED \*\*' "$WORK/archive.log"; then
             echo "::error::xcodebuild archive failed. Last 80 lines:"
-            tail -80 "$WORK/archive.log"
+            # The tail can include build-phase environment dumps (a Unity symbol-upload token
+            # among them), and this job log is public: blank credential-shaped exports.
+            tail -80 "$WORK/archive.log" \
+              | sed -E 's/(export [A-Za-z0-9_]*(TOKEN|SECRET|PASSWORD|PASSWD|API_KEY|PRIVATE_KEY)[A-Za-z0-9_]*\\?=).*/\1***/'
             exit 1
           fi
 
@@ -434,6 +437,24 @@ jobs:
         if: steps.gate.outputs.upload == 'none'
         run: |
           echo "Signed and checked, not uploaded: no upload credentials are set (Docs/IOS_BUILD.md Path C, step 4)." >> "$GITHUB_STEP_SUMMARY"
+
+      # xcodebuild prints every build-phase script's environment into archive.log, and Unity's
+      # symbol-upload phase carries USYM_UPLOAD_AUTH_TOKEN there. The logs below are a public
+      # artifact on this repo, so blank every token/secret/password-shaped export first. If a
+      # value survives the scrub, the log is dropped rather than published.
+      - name: Scrub credentials from the build logs
+        if: always()
+        shell: bash
+        run: |
+          pattern='(export [A-Za-z0-9_]*(TOKEN|SECRET|PASSWORD|PASSWD|API_KEY|PRIVATE_KEY)[A-Za-z0-9_]*\\?=)'
+          for f in ios-work/archive.log ios-work/export.log; do
+            [ -f "$f" ] || continue
+            sed -E -i '' "s/${pattern}.*/\\1***/" "$f"
+            if grep -Eq "${pattern}[^*]" "$f"; then
+              echo "::warning::$f still holds a credential-shaped value after scrubbing; not uploading it."
+              rm -f "$f"
+            fi
+          done
 
       - name: Keep the build logs
         if: always()
