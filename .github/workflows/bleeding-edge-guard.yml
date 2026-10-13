@@ -379,6 +379,8 @@ jobs:
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
           SHA: ${{ github.sha }}
           ACTOR: ${{ github.actor }}
+          # Through env, not pasted into the script: a dispatch can name any branch.
+          REF_NAME: ${{ github.ref_name }}
         run: |
           set -euo pipefail
 
@@ -440,7 +442,7 @@ jobs:
           Open the run above for the failing output. A compile break prints its
           \`error CS\` lines inline and attaches the full editor log as an artifact.
 
-          This issue closes itself automatically when ${{ github.ref_name }} next verifies clean.
+          This issue closes itself automatically when $REF_NAME next verifies clean.
           EOF
           )
 
@@ -517,7 +519,7 @@ jobs:
 
       - name: Fix and open a PR against the guarded branch
         if: steps.key.outputs.have == 'true'
-        uses: anthropics/claude-code-action@v1
+        uses: anthropics/claude-code-action@1d6de8cb0c237e7c15e9e1bdf973826ebae490cc # v1 — pinned to a commit; re-pin deliberately
         with:
           # Both are passed; the action ignores whichever is empty. See the
           # credential check above for which one bills where.
