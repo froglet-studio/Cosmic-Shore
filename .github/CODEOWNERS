@@ -1,0 +1,5 @@
+# Changes to workflows, CI and this file need a review from one of these people. Agent sessions push
+# as Shombith03, so that account is deliberately not an owner: the reviewer must be someone else.
+# This only blocks a merge once branch protection on bleeding-edge turns on "Require review from
+# Code Owners".
+/.github/ @gradies @YsKhan61
