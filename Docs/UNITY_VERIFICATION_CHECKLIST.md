@@ -87,6 +87,9 @@ heading onto the orbit at `hookTurnRate` 300 °/s with a stretch-and-spring reel
 ---
 
 ### 🔴 Thresher round 4: launch camera on the trajectory, crosshair, Time-petal zoom window (`cece/wonderful-hypatia-4b323s`, 2026-10-13) — NOT EDITOR-VERIFIED
+> **Partly superseded by the later Thresher rounds above (2026-10-13)** — verify the NEWEST Thresher
+> entry first; where this one disagrees with it (camera, launch path, element upgrades), the newer one is the design.
+
 
 **Landed** (`R_VesselActions/THRESHER.md` §5a): the spectated-spin camera follows behind the launch point ON
 the trajectory at the hull's chase distance with no height offset (`aimElevationDegrees` 0); the dotted
@@ -116,6 +119,9 @@ touched:** `ScopePipView` (+explicit-eye `Tick`, `RenderAspect`, `Label`; defaul
 ---
 
 ### 🔴 Thresher round 3: element re-cut, vessel petal hits, dotted launch path with perfect window, snap-back fix (`cece/wonderful-hypatia-4b323s`, 2026-10-13) — NOT EDITOR-VERIFIED
+> **Partly superseded by the later Thresher rounds above (2026-10-13)** — verify the NEWEST Thresher
+> entry first; where this one disagrees with it (camera, launch path, element upgrades), the newer one is the design.
+
 
 **Landed** (`R_VesselActions/THRESHER.md` §2, §2a–2c, §3, §5a):
 - **Snap-back fix**: the launch point and the launch camera use the ship's ACTUAL orbit radius, not the
@@ -151,6 +157,9 @@ prediction and launch point on the ship's own circle while paying out, magnet pu
 ---
 
 ### 🔴 Thresher round 2: chain always slices + shields own, Space card = banked energy, launch-point camera with timed release (`cece/wonderful-hypatia-4b323s`, 2026-10-13) — NOT EDITOR-VERIFIED
+> **Partly superseded by the later Thresher rounds above (2026-10-13)** — verify the NEWEST Thresher
+> entry first; where this one disagrees with it (camera, launch path, element upgrades), the newer one is the design.
+
 
 **Landed** (`R_VesselActions/THRESHER.md` §2, §5, §5a), on top of the entry below (which it partly supersedes — its step 1 now reads as here):
 - **Chain**: slices rival prisms taut OR slack, and shields own-domain prisms it touches (fresh own trail
@@ -177,6 +186,9 @@ point along the aim; steered plane carries the orbit; launch-camera pose). `unit
 ---
 
 ### 🔴 Thresher: earlier spectate + stick AIM, smooth 24-link chain, chain energy, Mass Mode (A), omni windmill (`cece/wonderful-hypatia-4b323s`, 2026-10-13) — NOT EDITOR-VERIFIED
+> **Partly superseded by the later Thresher rounds above (2026-10-13)** — verify the NEWEST Thresher
+> entry first; where this one disagrees with it (camera, launch path, element upgrades), the newer one is the design.
+
 
 **Landed** (`R_VesselActions/THRESHER.md` §1, §2a–2c, §5, §5a):
 - **Spectate sooner** (`spectateSpinRate` 1.8 → 0.9 rad/s, engage 0.2 → 0.1 s) to an **aim camera**

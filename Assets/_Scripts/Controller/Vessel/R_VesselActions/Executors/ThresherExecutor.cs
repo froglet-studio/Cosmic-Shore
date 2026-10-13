@@ -153,16 +153,9 @@ namespace CosmicShore.Gameplay
         public bool IsHot => _solver != null && ThresherChainSolver.IsSmash(_solver.BallSpeed, _settings);
         /// <summary>Ball speed as a fraction of smash speed — the HUD heat gauge, and the ball's brightening.</summary>
         public float Gauge01 => _settings.SmashSpeed > 0f ? Mathf.Clamp01(BallSpeed / _settings.SmashSpeed) : 0f;
-        /// <summary>How far the chain is let out, 0 (reeled in) to 1 (let out to its current reach).</summary>
-        public float ChainOut01 => _solver == null || _settings.MaxLength <= _settings.RestLength ? 0f
-            : Mathf.Clamp01((_solver.Length - _settings.RestLength) / (_settings.MaxLength - _settings.RestLength));
         /// <summary>The planted orbit's speed as a fraction of its cap; 0 when not planted.</summary>
         public float Spin01 => IsPivoting && _settings.LockMaxSpeed > 0f ? Mathf.Clamp01(_solver.LockSpeed / _settings.LockMaxSpeed) : 0f;
         public int Combo => _combo;
-        /// <summary>Mass Mode (A): the ball steals, shields and lays a trail, and banks its energy.</summary>
-        public bool IsMassMode => _massMode;
-        /// <summary>Energy banked by the chain's kills (and Mass Mode steals) for the next explosion.</summary>
-        public float Energy => _energy;
         public float Energy01 => config && config.EnergyMax > 0f ? Mathf.Clamp01(_energy / config.EnergyMax) : 0f;
         /// <summary>The bank as explosion RADIUS gained: 0 = a plain blast, 1 = the bank has bought the
         /// full <c>energyMaxDiameterScale</c>. The Space card's gauge.</summary>
@@ -176,10 +169,6 @@ namespace CosmicShore.Gameplay
         }
         /// <summary>A release NOW would be perfect (the ship reaches the launch point inside the window).</summary>
         public bool IsTimingPerfect { get; private set; }
-        /// <summary>An aimed release is waiting for the ship to reach its launch point.</summary>
-        public bool IsLaunchArmed => _solver != null && _solver.LaunchArmed;
-        /// <summary>An omni crystal has the ball windmilling round the ship.</summary>
-        public bool IsWindmilling => _solver != null && _solver.Mode == ThresherMode.Windmill;
         /// <summary>The local pilot is spectating a planted spin and the sticks aim the release, not the orbit.</summary>
         public bool IsAiming => _spectating;
         /// <summary>The ball's colour this frame (LINEAR; a UI consumer converts with .gamma).</summary>

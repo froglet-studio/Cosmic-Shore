@@ -20,7 +20,7 @@ in the sandbox's units and scaled to this game by one factor (§4), so the two r
 | **RT hold** (Winch) | `RightStickAction` (1) | `OnlyRightStickAction` (11) | Let chain out (`payOut`) up to `maxLen` × the Space scaling: longer reach, slower whip. |
 | **RT release** | | | Chain reels in fast (`reelIn`) conserving spin — **the crack**. The chain turns **lime** (the palette's CTA colour, a quick ease, never a flicker) while releasing now would reach smash speed (READY). |
 | **LT hold** (Plant) | `LeftStickAction` (2) | `OnlyLeftStickAction` (12) | The ball skids to a stop (`skidSeconds`, still destructive) and becomes a pivot; the ship swings round it, faster every lap. RT up winds you in and spins you faster; RT held lets you out. The sticks keep a **low-sensitivity** say: they steer your path round the ball at `pivotSteer` 45 °/s (under half of free flight's 120), never the spin. |
-| **LT release** | | | Fly off along the orbit's tangent — or, while the camera spectates the spin, straight along the **aim** the sticks have set (§5a), the instant LT comes up; the ball is yanked after you (`yank`). |
+| **LT release** | | | Fly off along the orbit's tangent — or, while the camera spectates the spin, along the **aim** the sticks have set (§5a): the ship keeps circling and leaves from the launch point whose tangent is the aim (at most a lap later; no wait inside the lime window); the ball is yanked after you (`yank`). |
 | **A press** (Mass Mode) | `Button1Action` (6), shared map | `Button1Action` (on-screen button) | **Toggle** Mass Mode (§2b). The release is ignored (rule 37). |
 
 The trigger bindings use the Squirrel's InputEvents slots, so no input plumbing changed. Keyboard:
@@ -387,7 +387,7 @@ frame of drift. Untested in MPPM.
 | `_SO_Assets/VesselActions/Thresher/ThresherMassModeAction.asset` | `ThresherActionSO` `control: MassMode`, bound to `Button1Action` in the prefab's shared map (§2b) |
 | `_Graphics/Materials/Shaders/ThresherBallFresnelShader.shader`, `_Graphics/Materials/ThresherBallMaterial.mat` | The ball's fresnel look (§5) |
 | `_Graphics/Materials/Shaders/ThresherChainFresnelShader.shader`, `_Graphics/Materials/ThresherChainMaterial.mat` | The chain's fresnel tube (§5) |
-| `Tests/Editor/ThresherChainSolverTests.cs`, `Tools/Build/thresher_chain_harness/` | 56 tests (solver, planted steering, windmill, chain smoothing, camera framing, reach envelope, launch camera on the trajectory, sight zoom, armed + perfect launch, steered plane, magnet); offline runner + feel table. `Tests/Editor/TimePetalGeometryTests.cs`: the traced Time petal |
+| `Tests/Editor/ThresherChainSolverTests.cs`, `Tools/Build/thresher_chain_harness/` | 56 tests (solver, planted steering, hook-on, windmill, chain smoothing, camera framing, reach envelope, launch camera on the trajectory, sight zoom, armed + perfect launch, steered plane, magnet); offline runner + feel table. `Tests/Editor/TimePetalGeometryTests.cs`: the traced Time petal |
 
 Registered in `Vessel Prefab Container`, `DefaultNetworkPrefabs` (own `GlobalObjectIdHash`
 1887398589), `ToyVesselRoster.Default`, `CrystalHullFusionConfig` (reuses the Squirrel's bakes —
@@ -421,66 +421,53 @@ prefab, `DriftAudioController`, jets and tails.
 
 ## In-editor verification
 
+Current as of round 5 (2026-10-13). `Docs/UNITY_VERIFICATION_CHECKLIST.md` keeps one entry per round.
+
 1. **Toy Box > Vessel Changer → Thresher.** The hull swaps in with a ball 22 u behind on a chain, in
-   front of the camera; the HUD shows the four Thresher icons and petal bars. Console clean.
+   front of the camera; the HUD shows the four Thresher icons (Wrecking Ball · Mass Mode · Winch ·
+   Plant) and petal bars. Console clean.
 2. **Slow ball**: tow gently into a RIVAL trail — prisms are destroyed, no explosion, the ball is in
    your domain colour. Into your OWN older trail — the ball bounces off, nothing breaks.
 3. **Whip**: hold RT ~1 s, turn hard ~1 s, snap back briefly, release. The chain eases to lime first;
    on release the ball goes red, destroys everything including your own trail, each hit a blast
    (string, not per prism), first hit with a hit-stop, debris along its path, `x2, x3…` counter.
-4. **Chain**: sweep the chain — taut OR slack — through rival prisms: they are sliced; through your
-   own older trail: those prisms gain shields; a shielded rival loses its shield, then dies on the next pass.
-5. **Plant**: hold LT — skid (trail), orbit, spin-up; RT up winds in. Release: fly off on the tangent,
-   ball yanked after you. Planting straight at the ball still orbits. While planted, the sticks
-   steer the orbit (45 °/s, under half the normal turn rate) without changing its speed.
-6. **Upgrades** (FrogletTools element tools or crystals to L5): Charge (Magnet) — the free ball
-   curves toward a nearby enemy vessel; Mass (Armoured Trail) — Mass Mode's trail prisms arrive
-   shielded; Space (Breaker) — a red ball smashes a super-shielded prism (the Skim Race track's
-   stellated ones are a good test); Time (Perfect Release) — release while the crosshair is lime
-   and the ship launches visibly faster than the orbit. Levels below 5: Charge more petals per
-   vessel hit, Mass bigger trail prisms, Space a bigger maximum blast, Time a faster spin-up.
-16. **Enemy vessels**: hit an AI/rival hull with the ball or the chain — they lose petals and you
-    score a Strike (once per second per victim); nothing else happens to them.
-7. **Other vessels**: Squirrel, Dolphin, Scarab fly unchanged.
-8. **MPPM two clients**: the guest sees the host's ball and chain; a host hit-stop does not freeze
-   the guest, and the host's camera zoom/spectate never moves the guest's camera.
-9. **Camera**: let the chain out and swing it — the camera pulls back at once so the ball never
-   leaves the frame; reel in and it drifts back to its usual distance over a couple of seconds.
-   Plant reeled in — the camera lifts off to a still vantage over the orbit and you watch the ship
-   spin; release LT and it eases back behind the hull. Planting never whips the camera round — the
-   hull visibly swings onto the orbit inside a camera that turns smoothly after it. Swinging a
-   let-out ball does not pump the camera in and out. Fly another vessel afterwards: its camera is
-   at its own distance and hard-attached.
-11. **Launch camera** (2026-10-13, round 4): plant and let it spin — the camera moves to follow
-    behind a point on the circle at chase distance with NO height offset, looking along the launch
-    path; a crosshair sits at screen centre and flashes lime each time the ship is about to pass
-    the point (the ship visibly crosses in front of the lens there). A Time-petal (diamond) window
-    top-left shows the same path magnified; squeeze LT deeper and it zooms, ease off and it widens;
-    the main view never zooms. Hold RT while planted: the point stays on the ship's own circle.
-    **Smoothness (round 5):** planting from straight flight, the ship swings wide and curves onto the
-    orbit (no snap); the camera glides into the launch view over ~0.9 s with no wobble; on launch it
-    glides back behind the ship over ~0.8 s with no swing. Full zoom is twice as tight as before. The ship sweeps through that point every lap. Stick right: the point slides round the
-    circle and the camera swings with it. Stick Y: the whole orbit tilts with the camera. Release LT
-    anywhere in the lap — the ship keeps circling and leaves exactly from the point along the line;
-    then the camera eases back behind it.
-12. **Smooth chain**: let the chain out and swing it slack — it curves smoothly, no visible kinks
-    at link joints; taut it is a straight line.
-13. **Chain energy**: slice a few rival prisms with the chain — the ball's rim leans lime and the
-    SPACE card's gauge fills toward lime. Tow
-    the SLOW ball (domain colour, below smash) into a rival prism — it explodes, bigger the more
-    you sliced; the rim and the Space gauge empty. Bounce off your own trail — no explosion, rim stays lime.
-14. **Mass Mode**: press A — the ball turns your lit colour. Swing it through a rival trail: prisms
-    change to your domain (no explosions, even red-hot); through your own trail: they gain shields;
-    it lays a trail of your prisms behind it. Slice rival prisms with the chain meanwhile (bank
-    grows). Press A again, then hit a rival prism: one big blast.
-15. **Windmill**: fly through an omni crystal — the ball whips round the ship across your flight
-    path, red-hot, for ~12 s, smashing anything it crosses; RT changes its radius. An elemental
-    crystal does NOT do this.
-10. **Ball and chain look**: the ball is a dark body with a bright rim in your domain colour (no
-    ring round it); its studs flash as it rolls, and stay legible (no backwards strobe) when white
-    hot; it brightens toward smash speed, turns red and blooms when hot.
-    The chain reads as a round iron tube with a domain-coloured rim, brighter while taut, easing to
-    lime at READY — no colour ever flickers; each change is a quick blend.
+4. **Chain**: let the chain out and swing it slack — it curves smoothly, no kinks; taut it is
+   straight. Sweep it, taut OR slack, through rival prisms: sliced (a shielded one loses its shield,
+   then dies on the next pass); through your own older trail: shields appear.
+5. **Chain energy**: slice a few rival prisms — the ball's rim leans lime and the SPACE card's gauge
+   fills. Tow the slow ball into a rival prism — it explodes, bigger the more you sliced; rim and
+   gauge empty. Bounce off your own trail — no blast, nothing spent.
+6. **Mass Mode** (A): the ball turns your lit colour. Through a rival trail: prisms flip to your
+   domain (no blasts, even red-hot); through your own: shields; it lays a trail of your prisms. Press
+   A again, hit a rival prism: one big blast.
+7. **Plant and spin** (LT): from straight flight with the ball behind, the ship swings wide and
+   curves onto the orbit (no snap, no stall); RT up winds in and spins faster.
+8. **Launch view**: once it spins, the camera glides (~0.9 s, no wobble) to sit level behind a point
+   on the circle, looking along the launch path; a crosshair at screen centre flashes lime as the ship
+   is about to pass the point. Stick X slides the point round the circle; stick Y tilts the whole
+   orbit with the camera. Hold RT: the point stays on the ship's own circle.
+9. **Sight**: a Time-petal (diamond) window top-left shows the path magnified with its own crosshair;
+   squeeze LT deeper to zoom (to 6°), ease to a light hold to widen; the main view never zooms.
+10. **Launch**: release LT anywhere in the lap — the ship leaves exactly from the point along the
+    crosshair; released while lime, almost no wait. The camera glides back behind the ship (~0.8 s, no
+    swing, no pop). Let a spin decay instead (pay out RT): the same glide.
+11. **Windmill**: fly through an OMNI crystal — the ball whips red-hot round the ship across your flight
+    path for ~12 s; RT changes its radius. An elemental crystal does not.
+12. **Enemy vessels**: hit an AI/rival hull with the ball or the chain — they lose petals and you score
+    a Strike (once a second per victim); nothing else happens to them.
+13. **Upgrades** (FrogletTools element tools or crystals to L5): Charge (Magnet) — the free ball curves
+    toward a nearby enemy; Mass (Armoured Trail) — Mass Mode's trail prisms arrive shielded; Space
+    (Breaker) — a red ball smashes a super-shielded prism; Time (Perfect Release) — a release while lime
+    launches visibly faster. Below 5: more petals per hit, bigger trail prisms, bigger max blast, faster
+    spin-up.
+14. **Other vessels**: Squirrel, Dolphin, Scarab fly unchanged; the **Serpent's** scope eyepiece looks
+    exactly as before (it shares `ScopePipView` / `ScopePetalImage` with the Thresher's sight).
+15. **MPPM two clients**: the guest sees the host's ball, chain, windmill and Mass Mode trail; a host
+    hit-stop does not freeze the guest; the host's camera never moves the guest's. Expect the guest's
+    copy of the ball to look off for up to a lap during an aimed launch (§9).
+16. **Ball and chain look**: a dark ball with a bright rim in your domain colour; studs legible when
+    white hot; red and blooming when hot. The chain a round iron tube, rim brighter while taut, lime at
+    READY — every colour change a quick blend, never a flicker.
 
 Tuning order if it feels wrong: `maxLen` vs the hull's turn rate (whether the ball swings or falls
 slack), then `smashSpeed`, `explosionDiameter`, then `crack` / `reelSpinCap`. Camera: `spectateSpinRate`
@@ -490,6 +477,27 @@ slack), then `smashSpeed`, `explosionDiameter`, then `crack` / `reelSpinCap`. Ca
 `massTrailSpacing` (trail density). Windmill: `windmillSeconds`, `windmillSpeed`.
 
 ## Follow-ups
+
+### Refactor rows (2026-10-13 ship pass — rows only, nothing here was changed)
+
+- **`TickExit` re-derives the follow camera's pose (debt CREATED).** `ThresherExecutor.TickExit`
+  computes `target.position + target.rotation × (GetFollowOffset() × WarpFieldRuntime.ScaleAt(...))`
+  to ease toward the pose `CustomCameraController.LateUpdate` will take — a second copy of a
+  formula that is private there (`EffectiveOffset`), and already incomplete: it omits
+  `FollowHeightScale` and the rear-view flip, and it needed patching mid-merge when the base added
+  the warp factor. Fix: a public `CustomCameraController.FollowPoseFor(...)` the camera itself uses,
+  and the executor calls. Measure: `grep -n "EffectiveOffset" Assets/_Scripts/Controller/Camera/CustomCameraController.cs`
+  → the camera's own uses; `grep -n "GetFollowOffset" ThresherExecutor.cs` → the copy. Note
+  `RearViewLawTests` counts `rotation * EffectiveOffset` sites in the camera source.
+- **`ThresherHUDView.chainColor` names the energy gauge's empty colour (debt CREATED).** The Space card
+  became the energy gauge (`energyGauge`, FormerlySerializedAs `chainOutGauge`) but its empty-state
+  colour field kept the name `chainColor`. Rename with `[FormerlySerializedAs("chainColor")]`.
+- **`ScopePipView` / `ScopePetalImage` are now shared by two vessels and still read as the Serpent's
+  (debt MADE VISIBLE).** `ScopePipView.Label` defaults to `"SerpentScope"`, and both classes' docs
+  narrate the Serpent's rounds; a third consumer would want them under a neutral name. Rows only:
+  renaming a component class in a prefab is a guid-preserving `git mv` plus a doc sweep (`/refactor`).
+- **The checklist carries five Thresher entries for one branch.** Each round added one; rounds 1–4 are
+  marked partly superseded. When the branch is verified in the editor, collapse them into one 🟢 entry.
 
 ### Refactor rows (2026-10-10 ship pass — rows only, nothing here was changed)
 

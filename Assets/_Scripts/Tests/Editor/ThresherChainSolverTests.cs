@@ -603,20 +603,6 @@ namespace CosmicShore.Tests
         }
 
         [Test]
-        public void Spectate_VantageFramesTheOrbitFromTheTiltedAxis()
-        {
-            Vector3 pivot = new Vector3(10f, -4f, 30f);
-            Vector3 normal = Vector3.up, outward = Vector3.right;
-            float radius = 40f, tilt = 25f;
-            Vector3 p = ThresherCameraFraming.SpectatePosition(pivot, normal, outward, radius, HalfV, tilt, Margin);
-            Vector3 off = p - pivot;
-            Assert.AreEqual(radius * Margin / Mathf.Tan(HalfV), off.magnitude, 1e-3f, "the whole orbit circle fits the narrower FOV");
-            float fromAxis = Mathf.Acos(Mathf.Clamp(Vector3.Dot(off.normalized, normal), -1f, 1f)) / Mathf.Deg2Rad;
-            Assert.AreEqual(tilt, fromAxis, 1e-2f);
-            Assert.Greater(Vector3.Dot(off, outward), 0f, "it leans toward the side the ship detached on");
-        }
-
-        [Test]
         public void Spectate_ShippedThresholdDetachesEveryCappedOrbit()
         {
             // spectateSpinRate ships at 0.9 rad/s (ThresherConfigSO; halved from 1.8 on 2026-10-13

@@ -1031,8 +1031,8 @@ namespace CosmicShore.Gameplay
     /// <summary>
     /// The camera arithmetic the Thresher needs, pure so it is tested rather than eyeballed: how
     /// far back a chase camera must sit to keep the ball in frame, the asymmetric ease toward that
-    /// distance (out fast, back in slowly), and where to put a still camera that WATCHES a fast
-    /// planted orbit instead of riding it.
+    /// distance (out fast, back in slowly), and the launch camera and sight of a spectated planted
+    /// orbit (its pose, the aim's stick response, the zoom).
     /// </summary>
     public static class ThresherCameraFraming
     {
@@ -1118,23 +1118,6 @@ namespace CosmicShore.Gameplay
         /// <summary>Angular speed (rad/s) of a planted orbit.</summary>
         public static float SpinRate(float orbitSpeed, float radius)
             => radius > 1e-3f ? orbitSpeed / radius : 0f;
-
-        /// <summary>
-        /// A still vantage that frames a whole orbit of radius <paramref name="radius"/> round
-        /// <paramref name="pivot"/>: on the orbit plane's <paramref name="normal"/>, tilted by
-        /// <paramref name="tiltDegrees"/> toward <paramref name="outward"/> (a unit vector in the
-        /// plane), far enough that the circle fits the narrower half-angle with
-        /// <paramref name="margin"/> to spare.
-        /// </summary>
-        public static Vector3 SpectatePosition(Vector3 pivot, Vector3 normal, Vector3 outward, float radius,
-                                               float halfFovRad, float tiltDegrees, float margin)
-        {
-            float tan = Mathf.Max(0.05f, Mathf.Tan(halfFovRad));
-            float d = radius * Mathf.Max(1f, margin) / tan;
-            float a = tiltDegrees * Mathf.Deg2Rad;
-            Vector3 dir = normal.normalized * Mathf.Cos(a) + outward.normalized * Mathf.Sin(a);
-            return pivot + dir.normalized * d;
-        }
 
         /// <summary>
         /// The LAUNCH camera of a spectated orbit: it follows behind the launch point ON the launch
