@@ -124,6 +124,14 @@ namespace CosmicShore.ScriptableObjects
         [Tooltip("A creature whose centre comes within this many sink horizons is swallowed (killed, its body suctioned into the sink).")]
         [SerializeField, Range(1f, 10f)] float faunaSwallowHorizons = 1.5f;
 
+        [Header("Accretion (Space level 5)")]
+        [Tooltip("SPACE level 5 — Accretion: every prism the sink swallows grows BOTH poles (horizon and GM) by this share of " +
+                 "their size, held until the pair annihilates. Gated on the replicated Space unlock bit; the grown size " +
+                 "reaches peers as the replicated horizon.")]
+        [SerializeField, Range(0f, 0.5f)] float accretionPerPrism = 0.04f;
+        [Tooltip("The most accretion can add, as a share of the poles' size (1 = a fed pair grows to twice its size).")]
+        [SerializeField, Range(0f, 4f)] float accretionMax = 1f;
+
         [Header("Pathfinder (Time)")]
         [Tooltip("How far ahead the path is run, world units (the studio's ftLength 600, doubled 2026-10-13 so a held turn shows " +
                  "two or three windings of its helix). Prediction cost scales with it.")]
@@ -174,6 +182,16 @@ namespace CosmicShore.ScriptableObjects
         [Tooltip("The path's colour while the poles warp it (lime).")]
         [SerializeField] Color warpedColor = new(157f / 255f, 1f, 46f / 255f, 1f);
 
+        [Header("Foresight (Time level 5)")]
+        [Tooltip("TIME level 5 — Foresight: the pathfinder also draws the predicted paths of the nearest rival vessels, " +
+                 "in their domain colours — each flown forward on the turn and speed it is holding right now. Gated on " +
+                 "the replicated Time unlock bit; drawn for the local pilot only.")]
+        [SerializeField, Range(50f, 1500f)] float foresightLength = 500f;
+        [Tooltip("Rivals further than this are not drawn, world units.")]
+        [SerializeField, Range(100f, 5000f)] float foresightRange = 1500f;
+        [Tooltip("At most this many rivals' paths are drawn (the nearest).")]
+        [SerializeField, Range(1, 6)] int foresightMaxRivals = 3;
+
         [Header("Autopilot")]
         [Tooltip("The autopilot's squeeze on each trigger it pulls, 0..1.")]
         [SerializeField, Range(0f, 1f)] float autopilotHold01 = 0.8f;
@@ -222,6 +240,8 @@ namespace CosmicShore.ScriptableObjects
         public float DomainTintAmount => domainTintAmount;
         public float CrystalStripShare => crystalStripShare;
         public float FaunaSwallowHorizons => faunaSwallowHorizons;
+        public float AccretionPerPrism => Mathf.Max(0f, accretionPerPrism);
+        public float AccretionMax => Mathf.Max(0f, accretionMax);
         public float PathLength => pathLength;
         public float PathStep => pathStep;
         public float PathNoseOffset => pathNoseOffset;
@@ -237,6 +257,9 @@ namespace CosmicShore.ScriptableObjects
         public float DotDepthFade => dotDepthFade;
         public Color OpenColor => openColor;
         public Color WarpedColor => warpedColor;
+        public float ForesightLength => foresightLength;
+        public float ForesightRange => foresightRange;
+        public int ForesightMaxRivals => Mathf.Clamp(foresightMaxRivals, 1, 6);
         public float AutopilotHold01 => autopilotHold01;
         public float AutopilotMinDistance => autopilotMinDistance;
         public float AutopilotHoldSeconds => autopilotHoldSeconds;
@@ -244,6 +267,14 @@ namespace CosmicShore.ScriptableObjects
         public EventReference OpenEvent => openEvent;
         public EventReference AnnihilateEvent => annihilateEvent;
         public EventReference WarpEvent => warpEvent;
+
+        /// <summary>
+        /// Time's one number as a RATIO: the boost at the pilot's live Time level over the boost at rest (1 at rest, 2 at
+        /// level 10). The pathfinder's warp boost IS <see cref="Boost"/>; Time mode's timed slingshot reads this ratio, so
+        /// both of the Stoat's speed-ups move with the one Time parameter (one parameter per element).
+        /// </summary>
+        public float BoostRatio(IVesselStatus status) =>
+            Mathf.Max(1f, boost.EvaluateLive(status) / Mathf.Max(1e-3f, boost.EvaluateAtNormalizedLevel(0f)));
 
         /// <summary>The flight settings one step of field flight reads (the prediction and the flight share them).</summary>
         public StoatDipoleMath.FlightSettings Flight(float cruise) => new()
