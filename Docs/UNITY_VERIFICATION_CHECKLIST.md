@@ -65,6 +65,122 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Rhino Space-5 "Breaker" — the sword cuts shielded prisms in one slice (`cece/magical-meitner-56obj5`, 2026-10-13) — NOT EDITOR-VERIFIED
+
+**What landed:** `RhinoSkimmerDamagePrismEffectSO.breakerElement` (authored `Space`). While
+`IsUpgradeActive(Space)`, a SHIELDED prism's shield is shed and its core cut in the same sword hit;
+below the upgrade the first hit pops the shield and the second kills, as before. Super-shielded
+mass is unchanged (energized blade only). The map's Space entry names the upgrade; its ability slot
+stays open.
+
+**Verify:** (1) Rhino below Space 5: slice a shielded prism — shield pops, prism survives; slice
+again — it dies. (2) Raise Space to 5 (comeback or the element charger toy): one slice sheds the
+shield and cuts the prism; the sword banks energy for the kill. (3) Super-shielded prism at Space 5
+with a non-energized blade still binds. (4) MPPM two clients: with the upgrade active on one Rhino,
+both clients see the prism die in one slice.
+
+### 🔴 Rhino hull plough — rammed prisms are shoved aside, not destroyed (`cece/magical-meitner-56obj5`, 2026-10-13) — NOT EDITOR-VERIFIED
+
+**What landed:** `RhinoPloughPrismEffectSO` replaces `VesselDamagePrismEffect` in
+`RhinoImpactorDataContainer` only. A prism the Rhino's HULL touches is moved sideways to its own side
+of the centreline until it clears the hull (+ a speed-scaled throw, ≤ 30 u); super-shielded prisms
+only jiggle. The sword is unchanged. No `unity` binary was available, so `/verify-unity` did not run;
+the out-of-editor reference compile did (see the commit).
+
+**Verify:** the seven steps in `Assets/_Scripts/Controller/Vessel/R_VesselActions/RHINO_PLOUGH.md`
+§ "In-editor verification" — plough not destroy, wider at boost, shielded/super-shielded, Cleave AI
+still scores with the sword, danger debuff still lands, no snap-back, MPPM sides agree.
+
+**First-pass tuning** (`RhinoPloughPrismEffect.asset`): `clearanceMargin` 1 u ·
+`throwSecondsOfSpeed` 0.04 s · `maxThrowDistance` 30 u · `slideSeconds` 0.25 s.
+
+### 🔴 The Stoat becomes its own vessel: Mass / Time modes, the 90° slingshot, the Ripple, Accretion, Foresight, own HUD (`cece/zen-fermat-wu03hr`, 2026-10-13) — NOT EDITOR-VERIFIED
+
+`R_VesselActions/STOAT_DIPOLE.md` §1a–§1e, §5, §8; `STOAT.md` §4, §6. No editor and no `unity` CLI in the authoring
+session, so `/verify-unity` did NOT run. Headless proof: `unity_refcompile` player + editor (0 project errors),
+`author_stoat_assets.py --check` / `--self-test` (22 negative controls, stages 2–6 idempotent, 0 dangling local refs),
+the peer-press harness (0 divergences), the icon / card generators' `--check`, `element_ability_table.py Stoat` (4/4,
+0 disagreements) and the repo gates. `StoatRippleTests`' assertions were RUN headless (the shipped `StoatRippleMath` / `StoatSlingMath` on the hull
+harness's math stub: 29 of 29 pass); the NUnit suites (`StoatRippleTests`, the edited `StoatSlingTests` /
+`CrystalHullFusionBakeTests`) compile in the editor config but were not run in an editor. `StoatRipple.shader` compiles against the URP mock only (`Tools/Shaders/verify_stoat_ripple.py`), not real URP.
+
+**What landed:** the Squirrel model / HUD / controller / telemetry / executors / audio / camera / containers removed from
+`Stoat.prefab` (stage 6) and replaced by the Stoat's own (`StoatBody` + `StoatHitbox` colliders, two hip jets,
+`StoatHUDVariant`, `StoatCameraSettingsSO`, `Stoat*ImpactorDataContainer`, `StoatAIBoostPolicy`); B switches Mass mode
+(dipole + thick trail) and Time mode (the orbit, its kick timed to 90°); the Charge ripple on every annihilation;
+Space 5 Accretion, Time 5 Foresight, Charge 5 Siphon, Mass 5 Armoured Wake; the omni Overclock; card icons rendered from
+the hull. Platform additions: `VesselPrismController.ThicknessMultiplier`, `BlackHole.CapturedCount`,
+`BlackHoleRegistry.PairMet`.
+
+1. **Open `Stoat.prefab`.** No Missing script, no Missing reference anywhere (the surgery removed ~2,300 lines). The
+   hierarchy: `StoatHull` (with two `VesselJet`s under it), `StoatBody`, `StoatHitbox`, `StoatHUDVariant` under the
+   HUD holder, no `SquirrelShip_*` / `SquirrelHUDVariant`. The HUD controller is `StoatHUDController` with its view and
+   four executors wired. Re-save it: the diff should be Unity's own key ordering only.
+2. **Fly it (lava lamp / Vessel Changer).** The hull is hit where it is drawn — fly a danger prism through the nose
+   and through the tail tip (the box spans the nose to the tail root); the jets sit at the hips and plume backward
+   (they were sideways before: the Squirrel's `DriftJet`). Clean console.
+3. **Mass mode (spawn).** The trail is visibly THICK (×3 height at Mass 0). LT/RT lay the dipole as before. Raise Mass
+   to 10 (toolbox): ×6. At Mass 5 the trail arrives shielded.
+4. **B → Time mode.** The trail thins over ~0.8 s; the HUD's Mass card empties. LT: an attractor appears on the left,
+   the hull circles it; the dots become the orbit ahead and go lime as you pass ~75°. Release in the lime: a clear
+   kick (the whole one). Release at once (tap): a small one. B again mid-orbit: the pair is let go with NO kick.
+5. **The Ripple.** In Mass mode squeeze both triggers wide and let go: where the poles meet, a ring of bent space
+   expands (~0.9 s), a thin domain-coloured rim at its front, then fades. Within it a rival (an AI) loses one petal of
+   each element as crystals around it (watch its flowers); a creature inside dies. Your own prisms are untouched. A
+   Time-mode orbit pair throws one when it closes after the slingshot. Two clients (MPPM): both see the ripple; the
+   rival's petals drop on both.
+6. **Level 5s (toolbox, raise each to 5).** Space: prisms the sink swallows come out of the source in your domain and
+   the poles visibly grow with each one, resetting when the pair dies. Time: thin dotted lines ahead of the three
+   nearest rivals in their colours, bending as they turn. Charge: the ripple's stripped petals land in YOUR flowers.
+   Mass: Mass-mode prisms shielded.
+7. **Omni crystal.** Collect one: 6 s of lime line and full boost whether or not the poles warp the path.
+8. **AI (Slingshot / Warpline with bots).** AI Stoats switch to Time mode for wide turns and orbit (B is pressed for
+   them); they return to Mass mode on the straights.
+9. **Card art / HUD.** The Stoat's card in the Arena / hangar is its own render (gold, green accents), not the
+   Squirrel's. The four-card row: Ripple · Modes · Field Dipole · Pathfinder icons, each with its gauge.
+
+| Knob | Where | Ships |
+|---|---|---|
+| Mass-mode thickness / blend | `StoatModeAction` `massModeThickness`, `blendSeconds` | ×3 → ×6, 0.8 s |
+| AI mode switching | `StoatModeAction` `autopilotTimeModeDegrees`, `…IntervalSeconds` | 70°, 3 s |
+| The 90° window | `StoatSlingConfig` `sweetSpotDegrees` / `HalfWidth` / `Falloff`, `missKickShare` | 90°, ±15°, 30°, 0.2 |
+| Ripple reach | `StoatRippleConfig` `radiusPerSeparation`, `minRadius`, `maxRadius`, `reach` | 0.6, 30, 160, ×1 → ×2 |
+| Ripple look | `StoatRippleConfig` `expandSeconds`, `fadeSeconds`, `bandWidth`, `bend`, `chromaticSplit`, `rimGlow` | 0.9, 0.5, 0.12, 0.025, 0.12, 1.6 |
+| Ripple bite | `StoatRippleConfig` `petalsPerElement`, `shedSpeed` | 1, 8 |
+| Accretion | `StoatDipoleConfig` `accretionPerPrism`, `accretionMax` | 0.04, 1 |
+| Foresight | `StoatDipoleConfig` `foresightLength`, `foresightRange`, `foresightMaxRivals` | 500, 1500, 3 |
+| Hit box / jets | `author_stoat_assets.py` `BODY_BOX_*`, `TRIGGER_BOX_SIZE`, `JET_*` | (1.2, 1.4, 7.0), (1.6, 1.8, 7.6) |
+
+### 🔴 Scarab balls: overload at 5 per Scarab, 3× blast radius, blast runs on every peer (`cece/happy-ride-f7op1j`, 2026-10-13) — NOT EDITOR-VERIFIED
+
+No `unity` CLI in the authoring session, so `/verify-unity` did not run. Compiled headless with
+`Tools/Build/unity_refcompile` (player config) instead — see the commit message for its result.
+
+| Knob | Was → Now | Where it lives |
+|---|---|---|
+| Cell overload: loose balls one Scarab (domain) may have in a cell | **3 any-domain (limit 4) → 5 per domain**, the 6th detonates the whole cell | `AstroLeagueBall.cellBallLimit` (prefab uses the C# default; Astro League scene 4 → 5) |
+| Nucleus overload: balls one Scarab (domain) may bank | **3 any-domain → 5 per domain**, the 6th detonates | `ScarabNucleusFieldConfigSO.nucleusEntryLimit` (`Resources/ScarabNucleusFieldConfig.asset`) |
+| Nucleus-overload blast, × ball radius | **2 → 6** | `ScarabNucleusFieldConfigSO.detonationRadiusScale` (same asset) |
+| Cell-overload blast, × ball radius | **2 → 6** | `AstroLeagueBall.cellOverloadRadiusScale` C# default. The Astro League scene's match ball keeps its serialized 2 |
+| Seeded (embedded) balls per domain | unchanged, 3 | `maxEmbeddedPerDomain` |
+
+**Behaviour change:** the ball's domain blast (`SpawnDomainBlast`) used to spawn on the server only.
+Prisms are simulated per peer, so a client never saw opposing prisms destroyed or their shields
+popped. It now spawns from `Detonate_ClientRpc` on every peer; ball kicks stay server-only
+(`RequestBlast` from a vessel-less blast on a client is a no-op).
+
+1. Compile clean; `ScarabNucleusFieldConfig` shows embedded 3 / entry 5 / radius 6.
+2. One Scarab, one cell: forge balls. Five sit loose; the sixth detonates all of them.
+3. Two Scarabs on different domains in one cell: each can hold five; either one's sixth detonates
+   every loose ball in the cell, the other domain's included.
+4. Nucleus: bank five of one domain's balls; the sixth overloads.
+5. **MPPM, two peers:** a ball detonating next to an opposing domain's trail destroys those prisms
+   and pops shielded ones (not super-shielded) **on both the host and the client**. Own-domain
+   prisms are drawn lit, not destroyed. Ball kicks from the blast are not doubled.
+6. Particle burst and camera shake scale with the radius multiplier (`Detonate_ClientRpc`), so both
+   are 3× what they were. Check the shake isn't nauseating. If it is, cap the shake factor there
+   rather than shrinking the blast.
+
 ### 🔴 EditMode triage of the 14 failures new on 2026-10-13 (`claude/compassionate-hopper-rqat4d`, 2026-10-13) — NOT EDITOR-VERIFIED
 
 No editor and no `unity` CLI in the authoring session, so `/verify-unity` did NOT run. The full per-suite record (verdict, cause, commit) is `Docs/QA/DEV_TASKS.md` DT-003. Offline proof: `unity_refcompile` player + editor configs 0 errors in project code (a planted CS0103 failed the editor config); headless runs of the real RearViewLaw / FollowHeightScale / SpeedTunnelLaw test files against the real camera controller and law source (red on bleeding-edge, green here, mutants red); `slingshot_course_harness` 1,600/1,600; `author_stoat` / `author_slingshot` / `author_warpline` / `author_wormholes --check`, `render_card_backgrounds --check` (33/33) and `author_card_backgrounds --strict`.

@@ -44,6 +44,8 @@ MonoBehaviour:
   domainTintAmount: 0.7
   crystalStripShare: 1
   faunaSwallowHorizons: 1.5
+  accretionPerPrism: 0.04
+  accretionMax: 1
   pathLength: 1200
   pathStep: 3
   pathNoseOffset: 8
@@ -66,6 +68,9 @@ MonoBehaviour:
   dotDepthFade: 0.15
   openColor: {r: 0.5882353, g: 0.6509804, b: 0.7607843, a: 1}
   warpedColor: {r: 0.6156863, g: 1, b: 0.1803922, a: 1}
+  foresightLength: 500
+  foresightRange: 1500
+  foresightMaxRivals: 3
   autopilotHold01: 0.8
   autopilotMinDistance: 300
   autopilotHoldSeconds: 4

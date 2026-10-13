@@ -27,8 +27,9 @@ namespace CosmicShore.Gameplay
     /// rules the sink carries its owner's:</para>
     /// <list type="bullet">
     /// <item><b>Prisms</b> it captures VANISH (destroyed at the horizon, no debris) — or, with the Space
-    /// upgrade (level 5, replicated <c>IsUpgradeActive</c>), are STOLEN: carried out of the source in the
-    /// owner's domain (<see cref="BlackHole.PrismCapture"/>).</item>
+    /// upgrade (level 5 "Accretion", replicated <c>IsUpgradeActive</c>), are STOLEN: carried out of the source in the
+    /// owner's domain (<see cref="BlackHole.PrismCapture"/>), and every one swallowed GROWS both poles until the pair
+    /// annihilates (<see cref="StoatDipoleConfigSO.AccretionPerPrism"/>).</item>
     /// <item><b>Fauna</b> that come within <see cref="StoatDipoleConfigSO.FaunaSwallowHorizons"/> of it are
     /// killed, their bodies suctioned into it (<see cref="Fauna.Predated(string, Transform)"/>, on the fauna's
     /// simulating machine).</item>
@@ -44,6 +45,10 @@ namespace CosmicShore.Gameplay
     /// <c>fieldSubstep</c>, the same law the pathfinder predicts with — turns the hull (and its command,
     /// so the nose's follow is undisturbed) and carries the field's gravity speed along the nose, on the
     /// hull's own flight clock (<see cref="VesselTransformer.FlightTimeScale"/>, the pathfinder's boost).</para>
+    ///
+    /// <para><b>Modes.</b> The triggers lay the dipole in MASS mode only (<see cref="StoatModeExecutor"/>); in Time
+    /// mode they fly the orbit slingshot. Every annihilation — a release, a fresh press over a live pair — throws the
+    /// Charge ripple from the meeting point (<see cref="StoatRippleExecutor"/>), on every peer from its own copy.</para>
     ///
     /// <para><b>Network.</b> The simulating machine (<see cref="MantaStingActionExecutor.IsSimAuthority"/>)
     /// owns the pair: it reads the triggers, places the poles and publishes them
@@ -84,6 +89,7 @@ namespace CosmicShore.Gameplay
             public BlackHole Sink, Source;
             public Vector3 Middle, SinkFrom, SourceFrom;
             public float Age;
+            public float Separation;   // the poles' distance when let go — the ripple's reach (Charge)
         }
 
         readonly List<Collapse> _collapses = new();
@@ -105,6 +111,11 @@ namespace CosmicShore.Gameplay
         int _openedFrame = -1;
         int _serial;         // the authority's pair count, published so peers re-lay on every fresh pair
         float _peerSerial;   // the serial of the pair a peer's copy shows
+        int _capturedAtOpen;  // the sink's capture count when this pair opened (Accretion counts from it)
+        float _accretion;     // Space 5: the share the poles have grown by from what the sink swallowed
+        StoatModeExecutor _mode;
+        StoatRippleExecutor _ripple;
+        bool _resolvedSiblings;
         float _aiLastPairTime = float.NegativeInfinity;
         float _aiReleaseAt = float.PositiveInfinity;
         bool _aiHoldingLeft, _aiHoldingRight;
@@ -113,6 +124,14 @@ namespace CosmicShore.Gameplay
         /// <summary>True while this hull's pair is open on this machine.</summary>
         public bool IsOpen => _sink && _source && !_sink.IsDespawning && !_source.IsDespawning;
         public bool IsHolding(Side side) => _holds[(int)side].Holding;
+        /// <summary>True while either trigger holds this executor's squeeze.</summary>
+        public bool IsHoldingAny => _holds[0].Holding || _holds[1].Holding;
+        /// <summary>Space 5's growth as a share of its ceiling, 0..1 (the HUD's Space card; 0 without the upgrade).</summary>
+        public float Accretion01 => config && config.AccretionMax > 0f ? Mathf.Clamp01(_accretion / config.AccretionMax) : 0f;
+        /// <summary>The ripple a let-go would throw right now, as a share of its largest (the HUD's Charge card).</summary>
+        public float RippleCharge01 => IsOpen && _ripple && _ripple.Config
+            ? Mathf.Clamp01(_ripple.Config.BaseRadius(_separation.Magnitude) / Mathf.Max(1f, _ripple.Config.BaseRadius(float.MaxValue)))
+            : 0f;
         /// <summary>The live separation in the pair's own frame (the authority's; zero on a peer).</summary>
         public StoatDipoleMath.Separation Separation => _separation;
         /// <summary>The sink (black hole) of the open pair, or null.</summary>
@@ -145,6 +164,7 @@ namespace CosmicShore.Gameplay
         public override void Initialize(IVesselStatus shipStatus)
         {
             _status = shipStatus;
+            _resolvedSiblings = false;
             _holds[0] = default;
             _holds[1] = default;
             Close(annihilate: false);
@@ -164,6 +184,9 @@ namespace CosmicShore.Gameplay
         public void BeginHold(Side side)
         {
             if (config == null || _status == null || !MantaStingActionExecutor.IsSimAuthority(_status)) return;
+            // The triggers lay the dipole in MASS mode only; in Time mode they fly the orbit (StoatSlingExecutor).
+            ResolveSiblings();
+            if (_mode && !_mode.IsMassMode) return;
             int i = (int)side;
             if (_holds[i].Holding) return;
             _holds[i].Holding = true;
@@ -187,6 +210,23 @@ namespace CosmicShore.Gameplay
                 Close(annihilate: true);
         }
 
+        /// <summary>A mode switch: both triggers let go here (the pair annihilates where it stands, the authority's).</summary>
+        public void ReleaseAll()
+        {
+            Release(Side.Left);
+            Release(Side.Right);
+        }
+
+        /// <summary>The siblings this executor hands to — the mode switch and the ripple — resolved once per init.</summary>
+        void ResolveSiblings()
+        {
+            if (_resolvedSiblings) return;
+            _resolvedSiblings = true;
+            if (!TryGetComponent<ActionExecutorRegistry>(out var registry)) return;
+            _mode = registry.Get<StoatModeExecutor>();
+            _ripple = registry.Get<StoatRippleExecutor>();
+        }
+
         // ------------------------------------------------------------------ the pair
 
         void Open()
@@ -198,7 +238,9 @@ namespace CosmicShore.Gameplay
             _right = hull.right;
             _forward = hull.forward;
             _separation = default;
+            _accretion = 0f;
             if (!Spawn(_middle, _middle)) return;
+            _capturedAtOpen = _sink.CapturedCount;
             _openedFrame = Time.frameCount;
             _serial++;
             PlayOneShot(config.OpenEvent);
@@ -213,7 +255,7 @@ namespace CosmicShore.Gameplay
         bool Spawn(Vector3 sinkAt, Vector3 sourceAt)
         {
             // A collapsing pair holds two of the holes; a fresh press outranks it, oldest first.
-            while (!BlackHoleRegistry.CanSpawn(2) && _collapses.Count > 0) FinishCollapse(0);
+            while (!BlackHoleRegistry.CanSpawn(2) && _collapses.Count > 0) FinishCollapse(0, detonate: true);
             if (!BlackHoleRegistry.CanSpawn(2))
             {
                 CSDebug.LogVerbose(CSLogChannel.BlackHole,
@@ -255,6 +297,7 @@ namespace CosmicShore.Gameplay
                 _collapses.Add(new Collapse
                 {
                     Sink = _sink, Source = _source, Middle = 0.5f * (sinkAt + sourceAt), SinkFrom = sinkAt, SourceFrom = sourceAt,
+                    Separation = Vector3.Distance(sinkAt, sourceAt),
                 });
             }
             else
@@ -267,6 +310,7 @@ namespace CosmicShore.Gameplay
             _separation = default;
             _winding = 0f;
             _zoneScale = 0f;
+            _accretion = 0f;
             PublishClosed();
         }
 
@@ -283,7 +327,7 @@ namespace CosmicShore.Gameplay
                 var c = _collapses[i];
                 if (!c.Sink || !c.Source || c.Sink.IsDespawning || c.Source.IsDespawning)
                 {
-                    FinishCollapse(i);
+                    FinishCollapse(i, detonate: false);
                     continue;
                 }
                 c.Age += dt;
@@ -296,15 +340,22 @@ namespace CosmicShore.Gameplay
                 if (remaining <= 0f)
                 {
                     PlayOneShot(config.AnnihilateEvent, c.Middle);
-                    FinishCollapse(i);
+                    FinishCollapse(i, detonate: true);
                 }
             }
         }
 
-        void FinishCollapse(int index)
+        /// <summary>
+        /// A released pair is gone. <paramref name="detonate"/>: it ANNIHILATED (met, or was cut short by a fresh press
+        /// needing its holes) — the meeting point throws the Charge ripple (<see cref="StoatRippleExecutor"/>), on every
+        /// peer from its own copy. A teardown or a pole lost under us throws nothing.
+        /// </summary>
+        void FinishCollapse(int index, bool detonate)
         {
             var c = _collapses[index];
             _collapses.RemoveAt(index);
+            ResolveSiblings();
+            if (detonate && _ripple) _ripple.Detonate(c.Middle, c.Separation);
             // Amplitude 0 before the despawn: the despawn's own ease (a shrinking horizon) is then invisible.
             if (c.Sink) { c.Sink.Amplitude = 0f; if (!c.Sink.IsDespawning) c.Sink.BeginDespawn(); }
             if (c.Source) { c.Source.Amplitude = 0f; if (!c.Source.IsDespawning) c.Source.BeginDespawn(); }
@@ -339,6 +390,19 @@ namespace CosmicShore.Gameplay
             }
         }
 
+        /// <summary>
+        /// Space 5 — Accretion: what the sink has swallowed since this pair opened grows both poles, up to the config's
+        /// ceiling, for as long as the pair lives. Gated on the replicated unlock bit; the authority's size reaches every
+        /// peer as the published horizon.
+        /// </summary>
+        float StepAccretion()
+        {
+            var abilities = _status.ElementalAbilityHandler;
+            if (!_sink || !abilities || !abilities.IsUpgradeActive(Element.Space)) return 1f;
+            _accretion = Mathf.Min(config.AccretionMax, (_sink.CapturedCount - _capturedAtOpen) * config.AccretionPerPrism);
+            return 1f + _accretion;
+        }
+
         /// <summary>The poles' horizon and GM this frame: fixed, Space-sized, grown in after a fresh squeeze.</summary>
         void SizePoles(float size)
         {
@@ -362,6 +426,7 @@ namespace CosmicShore.Gameplay
         void Update()
         {
             if (config == null || _status == null) return;
+            ResolveSiblings();
             float dt = Time.deltaTime;
             if (_collapses.Count > 0) StepCollapses(dt);
             if (MantaStingActionExecutor.IsSimAuthority(_status)) StepAuthority(dt);
@@ -396,7 +461,7 @@ namespace CosmicShore.Gameplay
                 StoatDipoleMath.PolePositions(_middle, _right, _forward, _separation, out var sinkAt, out var sourceAt);
                 _sink.transform.position = sinkAt;
                 _source.transform.position = sourceAt;
-                SizePoles(config.PoleSize.EvaluateLive(_status));
+                SizePoles(config.PoleSize.EvaluateLive(_status) * StepAccretion());
                 if (StoatDipoleMath.ShouldAnnihilate(held, _separation.Magnitude, _sink.HorizonRadius, _source.HorizonRadius))
                     Close(annihilate: true);
                 else
@@ -409,7 +474,7 @@ namespace CosmicShore.Gameplay
             }
 
             FlyField(dt);
-            if (autopilot) Autopilot();
+            if (autopilot && (!_mode || _mode.IsMassMode)) Autopilot();
         }
 
         float Live(Side side) => _holds[(int)side].Holding ? _holds[(int)side].Live : 0f;
@@ -663,7 +728,7 @@ namespace CosmicShore.Gameplay
         void OnDisable()
         {
             Close(annihilate: false);
-            while (_collapses.Count > 0) FinishCollapse(0);
+            while (_collapses.Count > 0) FinishCollapse(0, detonate: false);
             _holds[0] = default;
             _holds[1] = default;
             _boundInput[0] = null;

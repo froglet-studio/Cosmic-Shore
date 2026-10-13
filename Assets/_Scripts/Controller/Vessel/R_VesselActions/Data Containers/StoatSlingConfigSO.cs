@@ -66,6 +66,23 @@ namespace CosmicShore.ScriptableObjects
         [Tooltip("Seconds the boost takes to fade.")]
         [SerializeField, Range(0.1f, 5f)] float slingBoostSeconds = 1.5f;
 
+        [Header("Timing (Time mode — the 90° slingshot)")]
+        [Tooltip("The release a quarter-turn round the attractor pays the full kick: degrees of orbit swept at the centre of the " +
+                 "window (the playtest's 90°, 2026-10-13 — out on a tangent square to the heading you came in on).")]
+        [SerializeField, Range(10f, 360f)] float sweetSpotDegrees = 90f;
+
+        [Tooltip("Degrees either side of the sweet spot that still pay the WHOLE kick.")]
+        [SerializeField, Range(0f, 90f)] float sweetSpotHalfWidth = 15f;
+
+        [Tooltip("Degrees past the full window over which the kick eases (smoothstep) down to the miss share.")]
+        [SerializeField, Range(1f, 180f)] float sweetSpotFalloff = 30f;
+
+        [Tooltip("Share of the kick a release OUTSIDE the window still gets (0 = the timing is everything).")]
+        [SerializeField, Range(0f, 1f)] float missKickShare = 0.2f;
+
+        [Tooltip("Played on every peer when a release lands inside the full window. Ships empty until a sound is chosen.")]
+        [SerializeField] EventReference sweetSpotEvent;
+
         [Header("Life")]
         [Tooltip("How fast the two holes CLOSE on each other once let go (u/s); they annihilate where the horizons touch.")]
         [SerializeField, Range(0f, 200f)] float driftSpeed = 40f;
@@ -126,5 +143,15 @@ namespace CosmicShore.ScriptableObjects
         public float AiSlingMinDistance => Mathf.Max(0f, aiSlingMinDistance);
         public EventReference HoldStartEvent => holdStartEvent;
         public EventReference SlingEvent => slingEvent;
+        public float SweetSpotDegrees => Mathf.Clamp(sweetSpotDegrees, 10f, 360f);
+        public float SweetSpotHalfWidth => Mathf.Clamp(sweetSpotHalfWidth, 0f, 90f);
+        public float SweetSpotFalloff => Mathf.Clamp(sweetSpotFalloff, 1f, 180f);
+        public float MissKickShare => Mathf.Clamp01(missKickShare);
+        public EventReference SweetSpotEvent => sweetSpotEvent;
+        /// <summary>The swept angle past which the orbit's drawn arc stops: the far edge of the falloff.</summary>
+        public float SweetSpotEndDegrees => SweetSpotDegrees + SweetSpotHalfWidth + SweetSpotFalloff;
+        /// <summary>How well a release after <paramref name="sweptDegrees"/> of orbit is timed, 0..1.</summary>
+        public float SweetSpot(float sweptDegrees) =>
+            StoatSlingMath.SweetSpot(sweptDegrees, SweetSpotDegrees, SweetSpotHalfWidth, SweetSpotFalloff);
     }
 }

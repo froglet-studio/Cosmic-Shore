@@ -78,6 +78,15 @@ The press and release RPCs carry the device as one byte; a release resolves with
 `Tools/Build/peer_press_harness/run.py` runs the shipped handler as two machines over every shipped
 vessel's maps (`R_VesselActions/SQUIRREL_DRIFT.md` §11).
 
+**Prism damage does not replicate — a blast that should break mass must run on EVERY peer.**
+Trail and flora prisms are simulated per peer, and nothing sends a prism's destruction or shield pop
+over the wire. Vessel blasts get this for free (the ability re-executes everywhere, above); a blast
+spawned by a SERVER-owned object does not. The Scarab ball's domain blast was spawned inside a
+`…Server` method until 2026-10-13, so it destroyed opposing prisms on the host and on no client. The
+shape that works: the server resolves what only it knows (size, domain) and ships it in a
+`ClientRpc` that spawns the AOE on every peer (`AstroLeagueBall.Detonate_ClientRpc`); anything the
+blast does to NETWORKED objects (ball kicks) must already no-op off the server.
+
 **`IPlayer.IsLocalUser` vs `IPlayer.IsLocalPilot`.** `IsLocalUser` (= `IsMultiplayerOwner`) is the networked path's "locally-owned, non-AI player". `IsLocalPilot` is broader by exactly one case: the legacy NON-NETWORKED single-player spawn path (`PlayerSpawner` → `InitializeForSinglePlayerMode`, used today only by the `BenchmarkStressTest` scene) never network-spawns its Player, so `IsSpawned` is false there and `IsLocalUser` reports false for a human. **Anything that must hold in EVERY game mode binds on `IsLocalPilot`**, so a mode cannot escape a platform system by choosing the other spawn path — the prism occlusion corridor is the reference case.
 
 **Player identity resolution** (`Player.OnNetworkSpawn()`):

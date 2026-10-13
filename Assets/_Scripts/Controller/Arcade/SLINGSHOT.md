@@ -5,6 +5,10 @@
 > is `StoatDipoleExecutor.Autopilot`. The target and the rule are unchanged; the course was re-cut on
 > 2026-10-13 for the dipole round's 48°/s turn (§2). The Stoat's
 > time race on the same circuit is **Warpline** (`WARPLINE.md`).
+>
+> **And its orbit is back as Time mode since 2026-10-13** (`R_VesselActions/STOAT_DIPOLE.md` §1a–§1b): B switches; the
+> orbit's release is now TIMED (the whole kick a quarter-turn round). The AI below runs again, in Time mode, and the
+> autopilot switches modes itself (≥ 70° off the nose → Time, within 35° → Mass).
 
 The **Stoat-only circuit race**. A closed loop of eight switch rings is cut through the barren race
 cell; every pilot flies **two laps** of it in order, and the first **DOMAIN** whose **LEAD RUNNER**

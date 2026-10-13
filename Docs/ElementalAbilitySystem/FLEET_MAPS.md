@@ -7,7 +7,8 @@ remake; its superseded "Reaper Ray" table is kept below as history); their rows 
 record, not a proposal, and are not to be re-litigated from the superseded tables kept beside
 them. The **Serpent's Charge and Space rows joined that set on 2026-09-16** (the scope + rifle
 re-cut; its Mass row and its Time L5 are still proposals). The level-5 upgrades for the **Rhino**
-are still **PROPOSALS for Garrett to mark up** — none are implemented. Approve/edit per row; implementation follows the Sparrow pattern (per-shot/per-use
+are still **PROPOSALS for Garrett to mark up**, except **Space 5, Breaker**, approved and shipped
+2026-10-13 (one-slice shielded cuts on the sword). Approve/edit per row; implementation follows the Sparrow pattern (per-shot/per-use
 snapshot, gated on `IsUpgradeActive(element)` in the executor, replicated unlock bits, no new
 fundamentals).
 
@@ -63,13 +64,13 @@ day after the channel it referred to had been deleted.
 | Manta | 4/4 | 4/4 | 3/4 |
 | Serpent | 3/4 | 3/4 | 2/4 |
 | Scarab | 4/4 | 4/4 | 2/4 |
-| Rhino | 2/4 | 3/4 | 0/4 |
+| Rhino | 2/4 | 3/4 | 1/4 | *(Space L5 **Breaker** landed 2026-10-13 on an element whose ABILITY slot is still open — the tool counts the gate and prints no detail for an undesigned row)* |
 | **Butterfly** | **4/4** | **4/4** | **4/4** | *(added 2026-09-22 — code + map only; its prefab is built by `FrogletTools ▸ Vessels ▸ Create Butterfly Vessel` and is NOT on the branch yet, so the tool cannot see it until that has been run)* |
 | **Thresher** | **4/4** | **4/4** | **4/4** | *(added 2026-10-08, measured on the branch — prototype; see `R_VesselActions/THRESHER.md`)* |
-| **Stoat** | 2/4 | 2/4 | 1/4 | *(re-cut 2026-10-09 — the round-15 FIELD DIPOLE: Space = Field Dipole on the triggers (pole size ×1→×2, L5 **Theft**: swallowed prisms are stolen, not destroyed), Time = Pathfinder, passive (warp boost ×2.5→×5 since 2026-10-13, no L5 yet); Charge and Mass are open with proposals in §2 ▸ Stoat and `R_VesselActions/STOAT_DIPOLE.md` §6)* |
+| **Stoat** | **4/4** | **4/4** | **4/4** | *(own vessel 2026-10-13 — Space = Field Dipole (L5 **Accretion**, Theft fused in), Time = Pathfinder / Time Mode (L5 **Foresight**), Charge = **Ripple** (L5 **Siphon**), Mass = **Mass / Time Mode** on B (L5 **Armoured Wake**); `R_VesselActions/STOAT_DIPOLE.md` §1a–§1e, §5)* |
 
 Everything the tool still flags is a **design gap, not a wiring bug** — three rows: the Rhino's
-Charge and Space, and the Serpent's Mass. The full list, with what each one would cost to fill, is
+Charge and Space (Space has its L5, Breaker, but still no ability or scaling), and the Serpent's Mass. The full list, with what each one would cost to fill, is
 **`FLEET_GAPS.md`**.
 
 **Re-run the tool rather than reading this table** — it is a transcription and it went stale
@@ -323,7 +324,7 @@ Time→charge fill rate / "Instant Draw".
 |---|---|---|
 | Charge | *(open)* → propose: forcefield shrink rate (the authored-but-dead `GrowSkimmerAction.shrinkRate` Charge mapping, 6→2) | **Unyielding Field** — forcefield no longer shrinks on prism hits, only on crystal timeout |
 | Mass | trail slab max size | **Armored Slabs** — grown slabs arrive shielded (the "arrive shielded" shape; on the Sparrow this lives on **MASS** 5 — it spent 2026-08 rounds 4–6 on Space 5 and was returned by sign-off on 2026-08-13) |
-| Space | *(open)* → propose: forcefield max size | **Breaker** — ramming destroys shielded prisms in one hit (devastate on ram) |
+| Space | *(open)* → propose: forcefield max size | **Breaker** — APPROVED + SHIPPED (Garrett, 2026-10-13): the **sword** cuts a SHIELDED prism in one slice instead of two — the shield sheds and the core is cut in the same hit (`RhinoSkimmerDamagePrismEffectSO.breakerElement`, gated on `IsUpgradeActive(Space)`). Super-shielded mass still needs an energized blade. Replaces the old "devastate on ram" proposal: the hull ploughs since 2026-10-13 (`R_VesselActions/RHINO_PLOUGH.md`) |
 | Time | **ramp wind-up rate** (`accelerationPerSecond` ×2.5 at level 10, ×0.5 at −5 — "Ramp Spool", LIVE since Broadside's playtest) | *(open)* — the row is FILLED, the upgrade is not. The old proposal here was "slab growth rate → **Fast Pour**"; it is retired rather than moved, because Time now owns the ramp and one element owns one parameter |
 
 ### Serpent — scope + rifle (was "Wall-Weaver") — CHARGE + SPACE APPROVED + SHIPPED
@@ -564,21 +565,25 @@ lifeform wither, danger skim bonus). The Thresher runs forked containers
 (`ThresherImpactorDataContainer`, `ThresherSkimmerImpactorDataContainer`,
 `ThresherSkimmerBoostPrismEffect`) without them, and its skimmer's Space scaling is off.
 
-### Stoat — the field dipole + pathfinder (round 15) — SPACE + TIME APPROVED (2026-10-09)
+### Stoat — the field dipole + pathfinder (round 15) — ALL FOUR APPROVED + SHIPPED (2026-10-13)
 
-Approved and shipped: **Space = Field Dipole** (LT/RT; Space sizes both poles ×1 → ×2), **L5 Theft**
-(swallowed prisms are stolen into the owner's domain; below it they vanish), **Time = Pathfinder**
-(passive; Time scales the warp boost ×2.5 → ×5, raised from ×2 → ×4 on 2026-10-13). Open, proposals only (full tables and reasons in
-`_Scripts/Controller/Vessel/R_VesselActions/STOAT_DIPOLE.md` §6):
+Approved 2026-10-09: **Space = Field Dipole** (LT/RT; Space sizes both poles ×1 → ×2), **Time = Pathfinder**
+(passive; Time scales the warp boost ×2.5 → ×5). The rest was decided by Garrett on 2026-10-13 against the
+proposals below, and shipped the same day (`_Scripts/Controller/Vessel/R_VesselActions/STOAT_DIPOLE.md` §1a–§1e):
 
-| Slot | Recommended proposal | Alternatives |
+| Slot | Proposed | **Decided (2026-10-13)** |
 |---|---|---|
-| Mass ability | **Accretion** — what the sink swallows grows the pair until it annihilates; Mass scales the growth per unit volume | Ballast on X (heavy = bends less, falls faster); trail prism size |
-| Charge ability | **Annihilation blast** — letting go detonates the pair where the poles meet, radius = the separation at release; Charge scales it | Throat shear (the sink→source line cuts prisms) |
-| Omni crystal | **Overclock** — 6 s of full boost, warped or not | Lodestone (loose crystals fall into the sink and come out toward you); the Sparrow's 8 s debuff ward |
-| Time L5 | **Slipstream** — every hole warps your path (rivals' pairs, environmental holes) | Foresight (rivals' predicted paths drawn) |
-| Charge L5 | **Pair production** (with the blast) — destroyed prisms return in your domain | — |
-| Mass L5 | **Event horizon** (with Accretion) — an accreted pair swallows shielded prisms and strips a grazing rival | — |
+| Mass ability | Accretion; Ballast on X; trail size | **Mass / Time Mode** on B: Mass mode = the dipole + a THICK trail (Mass ×3 → ×6 height); Time mode = the round-4 auto-orbit slingshot back on the triggers, its kick TIMED to a 90° release. "Accretion is great for a space ability and upgrade" — it moved to Space 5 |
+| Charge ability | Annihilation blast; throat shear | **Ripple** — the blast, re-scoped: "charge should always be focused on anti vessel/fauna gameplay … only kill fauna and strip elements from vessels … a cool space time ripple". No prisms. Charge scales its reach ×1 → ×2 |
+| Omni crystal | **Overclock**; Lodestone; ward | **Overclock** (the recommendation, 6 s of full boost) |
+| Time L5 | Slipstream; Foresight | **Foresight** — rivals' predicted paths, in their domain colours |
+| Charge L5 | Pair production (prisms) | **Siphon** — the ripple's stripped petals come to the Stoat (anti-vessel, per the Charge brief; pair production was a prism effect) |
+| Mass L5 | Event horizon (with Accretion) | **Armoured Wake** — Mass-mode prisms arrive shielded (the Butterfly's Mass-mode L5 shape) |
+| Space L5 | Theft (shipped) | **Accretion**, with Theft fused in: swallowed prisms are stolen AND grow the poles (rule 28: one element, one L5) |
+
+Claude's calls inside those decisions, each recorded in STOAT_DIPOLE.md and open to retune: the 90° window's width
+(±15°, 30° falloff, a fifth of the kick outside it), the Mass-mode thickness numbers, the ripple's reach formula and
+its one petal per element, B as the mode button, Siphon and Armoured Wake as the two L5s the brief left open.
 
 ## 3. Implementation notes for approved rows
 

@@ -19,6 +19,7 @@ only** — the rejection covers NORMAL damage gating, not the hardened-target ri
 |---|---|---|
 | Normal prism | any | **SLICED** — cut along the plane the blade swept through it; the halves part, open and dissolve from the cut face (§ "The slice"). Falls back to the ordinary explosion, debris thrown at the **contact velocity** (below), whenever the slice cannot be drawn |
 | Shielded prism | any | Shield pops, prism survives (standard `Prism.Damage` semantics) |
+| Shielded prism, **Breaker** active (SPACE level 5) | any | **One slice**: the shield sheds AND the core is cut in the same hit (`breakerElement`, gated on `IsUpgradeActive(Space)`; Garrett, 2026-10-13). Restorable like any ordinary sword kill — Breaker sheds the shield first rather than devastating. Super-shielded mass is unaffected |
 | **Super-shielded prism** | **ENERGIZED** | **POPPED**: `DeactivateShields()` (stellation shatter + SFX) then `Slice(devastate: true)` (the armour shatters, the core is CUT; unrestorable) — the sanctioned mass-conserving teardown, same sequence as `AstroLeagueArena.ClearEdgeLining`. `Prism.Damage` alone hard-ignores super-shielded prisms, which is why the shields must drop first. |
 | **Super-shielded prism** | not energized | **BINDS** — no recoil, no spin. The blade sticks in the armour: a dim **denied spark**, the prism **jiggles**, a **punish thud**, and while the blade stays inside the vessel's **rotation rate is dragged down** and the pilot feels a **grind** (§ "Binding"). The prism survives. |
 

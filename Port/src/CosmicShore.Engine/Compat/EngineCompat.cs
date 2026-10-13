@@ -850,15 +850,17 @@ namespace CosmicShore.Engine
 
         static void RemapField(object target, FieldInfo field, Dictionary<object, object> map)
         {
-            // Value types (and therefore primitives/enums/structs) can't hold scene
-            // references and were already value-copied by CopyFields.
-            if (field.FieldType.IsValueType) return;
+            // Primitives, enums and reference-free structs were already value-copied by CopyFields.
+            // A struct that holds references (a [Serializable] binding of icons, say) is remapped
+            // like a plain class: Unity inlines it and points its references at the clone.
+            if (field.FieldType.IsValueType && !StructMayHoldReferences(field.FieldType)) return;
 
             object value = field.GetValue(target);
             if (value is null) return;
 
             object replacement = RemapValue(value, map, depth: 0);
-            if (!ReferenceEquals(replacement, value))
+            // A struct comes back as the same (edited) box, so it is always written back.
+            if (field.FieldType.IsValueType || !ReferenceEquals(replacement, value))
                 field.SetValue(target, replacement);
         }
 
@@ -869,6 +871,9 @@ namespace CosmicShore.Engine
         ///   • engine Object outside the tree (other scene objects, ScriptableObject
         ///     assets) → kept, shared by design;
         ///   • string → kept (immutable);
+        ///   • struct holding references (directly or through a nested struct) → a copy with
+        ///     those references rerun through these rules, as Unity inlines a serialized struct;
+        ///     a reference-free struct (math types, enums, primitives) is a plain value copy;
         ///   • rank-1 array / <see cref="List{T}"/> / <see cref="Dictionary{TKey,TValue}"/>
         ///     → NEW container, elements rerun through these same rules (the original
         ///     engine never shares a mutable container instance between a template and its
@@ -925,6 +930,8 @@ namespace CosmicShore.Engine
                     return CloneHashSetValue((IEnumerable)value, setType, map, depth);
 
                 default:
+                    if (value.GetType().IsValueType)
+                        return StructMayHoldReferences(value.GetType()) ? RemapStruct(value, map, depth) : value;
                     if (!IsInlinePlainClass(value.GetType()))
                         return value;
                     if (depth >= MaxPlainObjectDepth)
@@ -937,8 +944,8 @@ namespace CosmicShore.Engine
         {
             Type elementType = array.GetType().GetElementType();
 
-            // Value-type/string elements can't reference the tree — a shallow clone IS the value copy.
-            if (elementType.IsValueType || elementType == typeof(string))
+            // String and reference-free struct elements can't reference the tree — a shallow clone IS the value copy.
+            if ((elementType.IsValueType && !StructMayHoldReferences(elementType)) || elementType == typeof(string))
                 return (Array)array.Clone();
 
             var copy = Array.CreateInstance(elementType, array.Length);
@@ -977,7 +984,7 @@ namespace CosmicShore.Engine
             object copy = Activator.CreateInstance(setType, new[] { comparer });
             MethodInfo add = setType.GetMethod("Add")!;
 
-            bool remapElements = !elementType.IsValueType && elementType != typeof(string);
+            bool remapElements = (!elementType.IsValueType || StructMayHoldReferences(elementType)) && elementType != typeof(string);
             foreach (var element in set)
             {
                 object item = element is not null && remapElements
@@ -992,14 +999,52 @@ namespace CosmicShore.Engine
         {
             Type elementType = listType.GetGenericArguments()[0];
 
-            // Value-type/string elements can't reference the tree — List<T>(IEnumerable<T>) IS the value copy.
-            if (elementType.IsValueType || elementType == typeof(string))
+            // String and reference-free struct elements can't reference the tree — List<T>(IEnumerable<T>) IS the value copy.
+            if ((elementType.IsValueType && !StructMayHoldReferences(elementType)) || elementType == typeof(string))
                 return (IList)Activator.CreateInstance(listType, list);
 
             var copy = (IList)Activator.CreateInstance(listType, list.Count);
             foreach (var element in list)
                 copy.Add(element is null ? null : RemapValue(element, map, depth));
             return copy;
+        }
+
+        static readonly System.Collections.Concurrent.ConcurrentDictionary<Type, bool> s_StructHoldsReferences = new();
+
+        /// <summary>
+        /// True for a struct with a reference-typed field anywhere inside it (directly or through
+        /// a nested struct): the original engine serializes such a struct inline and Instantiate
+        /// points its references at the clone, exactly as for a plain class. Primitives, enums,
+        /// framework structs and the engine's math types hold no references and copy as values.
+        /// </summary>
+        static bool StructMayHoldReferences(Type type) => type.IsValueType && s_StructHoldsReferences.GetOrAdd(type, static t =>
+        {
+            if (t.IsPrimitive || t.IsEnum || t.Namespace is "System" || (t.Namespace?.StartsWith("System.", StringComparison.Ordinal) ?? false))
+                return false;
+            foreach (var field in t.GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic))
+            {
+                var ft = field.FieldType;
+                if (ft == t) continue;
+                if (!ft.IsValueType ? ft != typeof(string) : StructMayHoldReferences(ft)) return true;
+            }
+            return false;
+        });
+
+        /// <summary>A boxed struct with its reference fields rerun through <see cref="RemapValue"/> (nested structs likewise).</summary>
+        static object RemapStruct(object boxed, Dictionary<object, object> map, int depth)
+        {
+            // GetValue handed us a fresh box, so writing its fields does not touch the source.
+            foreach (var field in boxed.GetType().GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic))
+            {
+                var ft = field.FieldType;
+                if (ft.IsValueType ? !StructMayHoldReferences(ft) : ft == typeof(string)) continue;
+                if (typeof(Delegate).IsAssignableFrom(ft)) continue;
+                object value = field.GetValue(boxed);
+                if (value is null) continue;
+                object replacement = RemapValue(value, map, depth);
+                if (ft.IsValueType || !ReferenceEquals(replacement, value)) field.SetValue(boxed, replacement);
+            }
+            return boxed;
         }
 
         /// <summary>
@@ -1034,7 +1079,8 @@ namespace CosmicShore.Engine
             {
                 foreach (var field in t.GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.DeclaredOnly))
                 {
-                    if (field.FieldType.IsValueType) continue; // memberwise copy already value-copied it
+                    // The memberwise copy already value-copied it, unless it is a struct holding references.
+                    if (field.FieldType.IsValueType && !StructMayHoldReferences(field.FieldType)) continue;
 
                     if (typeof(Delegate).IsAssignableFrom(field.FieldType))
                     {
@@ -1046,7 +1092,7 @@ namespace CosmicShore.Engine
                     if (value is null) continue;
 
                     object replacement = RemapValue(value, map, depth);
-                    if (!ReferenceEquals(replacement, value))
+                    if (field.FieldType.IsValueType || !ReferenceEquals(replacement, value))
                         field.SetValue(clone, replacement);
                 }
             }
