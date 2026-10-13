@@ -5371,7 +5371,7 @@ GameObject:
   - component: {fileID: 463934964198145821}
   - component: {fileID: 1093134953004808438}
   m_Layer: 5
-  m_Name: kit_hex_fill 88
+  m_Name: kit_hex_fill 66
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -5394,7 +5394,7 @@ RectTransform:
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 0, y: 1}
   m_AnchoredPosition: {x: 318, y: -614}
-  m_SizeDelta: {x: 88, y: 76}
+  m_SizeDelta: {x: 66, y: 57}
   m_Pivot: {x: 0, y: 1}
 --- !u!222 &463934964198145821
 CanvasRenderer:
@@ -5446,7 +5446,7 @@ GameObject:
   - component: {fileID: 1069111004787786413}
   - component: {fileID: 348882284773695717}
   m_Layer: 5
-  m_Name: kit_hex_fill 132
+  m_Name: kit_hex_fill 88
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -5468,8 +5468,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 430, y: -614}
-  m_SizeDelta: {x: 132, y: 114}
+  m_AnchoredPosition: {x: 408, y: -614}
+  m_SizeDelta: {x: 88, y: 76}
   m_Pivot: {x: 0, y: 1}
 --- !u!222 &1069111004787786413
 CanvasRenderer:
@@ -5544,7 +5544,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 0, y: -736}
+  m_AnchoredPosition: {x: 0, y: -700}
   m_SizeDelta: {x: 240, y: 18}
   m_Pivot: {x: 0, y: 1}
 --- !u!222 &1052184032493989876
@@ -5697,7 +5697,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 250, y: -736}
+  m_AnchoredPosition: {x: 250, y: -700}
   m_SizeDelta: {x: 44, y: 38}
   m_Pivot: {x: 0, y: 1}
 --- !u!222 &623288797565844292
@@ -5750,7 +5750,7 @@ GameObject:
   - component: {fileID: 784882615763155259}
   - component: {fileID: 821879604601905293}
   m_Layer: 5
-  m_Name: kit_hex_line1 88
+  m_Name: kit_hex_line1 66
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -5772,8 +5772,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 318, y: -736}
-  m_SizeDelta: {x: 88, y: 76}
+  m_AnchoredPosition: {x: 318, y: -700}
+  m_SizeDelta: {x: 66, y: 57}
   m_Pivot: {x: 0, y: 1}
 --- !u!222 &784882615763155259
 CanvasRenderer:
@@ -5825,7 +5825,7 @@ GameObject:
   - component: {fileID: 727524393855580970}
   - component: {fileID: 61652806503371194}
   m_Layer: 5
-  m_Name: kit_hex_line1 132
+  m_Name: kit_hex_line1 88
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -5847,8 +5847,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 430, y: -736}
-  m_SizeDelta: {x: 132, y: 114}
+  m_AnchoredPosition: {x: 408, y: -700}
+  m_SizeDelta: {x: 88, y: 76}
   m_Pivot: {x: 0, y: 1}
 --- !u!222 &727524393855580970
 CanvasRenderer:
@@ -5923,7 +5923,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 0, y: -858}
+  m_AnchoredPosition: {x: 0, y: -786}
   m_SizeDelta: {x: 240, y: 18}
   m_Pivot: {x: 0, y: 1}
 --- !u!222 &306717422843701864
@@ -6076,7 +6076,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 250, y: -858}
+  m_AnchoredPosition: {x: 250, y: -786}
   m_SizeDelta: {x: 44, y: 38}
   m_Pivot: {x: 0, y: 1}
 --- !u!222 &976699345504484150
@@ -6129,7 +6129,7 @@ GameObject:
   - component: {fileID: 433025988530259134}
   - component: {fileID: 481164827279051278}
   m_Layer: 5
-  m_Name: kit_hex_line2 88
+  m_Name: kit_hex_line2 66
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -6151,8 +6151,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 318, y: -858}
-  m_SizeDelta: {x: 88, y: 76}
+  m_AnchoredPosition: {x: 318, y: -786}
+  m_SizeDelta: {x: 66, y: 57}
   m_Pivot: {x: 0, y: 1}
 --- !u!222 &433025988530259134
 CanvasRenderer:
@@ -6204,7 +6204,7 @@ GameObject:
   - component: {fileID: 780116705543399612}
   - component: {fileID: 257777904598149705}
   m_Layer: 5
-  m_Name: kit_hex_line2 132
+  m_Name: kit_hex_line2 88
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -6226,8 +6226,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 430, y: -858}
-  m_SizeDelta: {x: 132, y: 114}
+  m_AnchoredPosition: {x: 408, y: -786}
+  m_SizeDelta: {x: 88, y: 76}
   m_Pivot: {x: 0, y: 1}
 --- !u!222 &780116705543399612
 CanvasRenderer:
@@ -6302,7 +6302,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 0, y: -980}
+  m_AnchoredPosition: {x: 0, y: -872}
   m_SizeDelta: {x: 240, y: 18}
   m_Pivot: {x: 0, y: 1}
 --- !u!222 &86644669218759208
@@ -6455,7 +6455,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 250, y: -980}
+  m_AnchoredPosition: {x: 250, y: -872}
   m_SizeDelta: {x: 16, y: 14}
   m_Pivot: {x: 0, y: 1}
 --- !u!222 &232423621793888711
@@ -6508,7 +6508,7 @@ GameObject:
   - component: {fileID: 466425554477730758}
   - component: {fileID: 568544244235347963}
   m_Layer: 5
-  m_Name: kit_hex_handle 32
+  m_Name: kit_hex_handle 24
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -6530,8 +6530,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 290, y: -980}
-  m_SizeDelta: {x: 32, y: 28}
+  m_AnchoredPosition: {x: 290, y: -872}
+  m_SizeDelta: {x: 24, y: 21}
   m_Pivot: {x: 0, y: 1}
 --- !u!222 &466425554477730758
 CanvasRenderer:
@@ -6583,7 +6583,7 @@ GameObject:
   - component: {fileID: 141392390323209678}
   - component: {fileID: 382524733461914010}
   m_Layer: 5
-  m_Name: kit_hex_handle 48
+  m_Name: kit_hex_handle 32
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -6605,8 +6605,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 346, y: -980}
-  m_SizeDelta: {x: 48, y: 42}
+  m_AnchoredPosition: {x: 338, y: -872}
+  m_SizeDelta: {x: 32, y: 28}
   m_Pivot: {x: 0, y: 1}
 --- !u!222 &141392390323209678
 CanvasRenderer:
@@ -6681,7 +6681,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 0, y: -1034}
+  m_AnchoredPosition: {x: 0, y: -910}
   m_SizeDelta: {x: 240, y: 18}
   m_Pivot: {x: 0, y: 1}
 --- !u!222 &975895958655791763
@@ -6812,7 +6812,7 @@ GameObject:
   - component: {fileID: 137965329784862926}
   - component: {fileID: 228467996003886646}
   m_Layer: 5
-  m_Name: kit_banner_cap_left 80
+  m_Name: kit_banner_cap_left 60
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -6834,7 +6834,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 250, y: -1034}
+  m_AnchoredPosition: {x: 250, y: -910}
   m_SizeDelta: {x: 28, y: 56}
   m_Pivot: {x: 0, y: 1}
 --- !u!222 &137965329784862926
@@ -6887,7 +6887,7 @@ GameObject:
   - component: {fileID: 1021186391577750320}
   - component: {fileID: 811612323357133645}
   m_Layer: 5
-  m_Name: kit_banner_body 80
+  m_Name: kit_banner_body 60
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -6909,8 +6909,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 278, y: -1034}
-  m_SizeDelta: {x: 80, y: 56}
+  m_AnchoredPosition: {x: 278, y: -910}
+  m_SizeDelta: {x: 60, y: 56}
   m_Pivot: {x: 0, y: 1}
 --- !u!222 &1021186391577750320
 CanvasRenderer:
@@ -6962,7 +6962,7 @@ GameObject:
   - component: {fileID: 1086856160267580675}
   - component: {fileID: 492088512468924242}
   m_Layer: 5
-  m_Name: kit_banner_cap_right 80
+  m_Name: kit_banner_cap_right 60
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -6984,7 +6984,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 358, y: -1034}
+  m_AnchoredPosition: {x: 338, y: -910}
   m_SizeDelta: {x: 28, y: 56}
   m_Pivot: {x: 0, y: 1}
 --- !u!222 &1086856160267580675
@@ -7037,7 +7037,7 @@ GameObject:
   - component: {fileID: 88258390600447244}
   - component: {fileID: 521104456618421656}
   m_Layer: 5
-  m_Name: kit_banner_cap_left 160
+  m_Name: kit_banner_cap_left 120
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -7059,7 +7059,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 410, y: -1034}
+  m_AnchoredPosition: {x: 390, y: -910}
   m_SizeDelta: {x: 28, y: 56}
   m_Pivot: {x: 0, y: 1}
 --- !u!222 &88258390600447244
@@ -7112,7 +7112,7 @@ GameObject:
   - component: {fileID: 1050176009899140293}
   - component: {fileID: 697037159183470368}
   m_Layer: 5
-  m_Name: kit_banner_body 160
+  m_Name: kit_banner_body 120
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -7134,8 +7134,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 438, y: -1034}
-  m_SizeDelta: {x: 160, y: 56}
+  m_AnchoredPosition: {x: 418, y: -910}
+  m_SizeDelta: {x: 120, y: 56}
   m_Pivot: {x: 0, y: 1}
 --- !u!222 &1050176009899140293
 CanvasRenderer:
@@ -7187,7 +7187,7 @@ GameObject:
   - component: {fileID: 157891164046939957}
   - component: {fileID: 1014040995229685560}
   m_Layer: 5
-  m_Name: kit_banner_cap_right 160
+  m_Name: kit_banner_cap_right 120
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -7209,7 +7209,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 598, y: -1034}
+  m_AnchoredPosition: {x: 538, y: -910}
   m_SizeDelta: {x: 28, y: 56}
   m_Pivot: {x: 0, y: 1}
 --- !u!222 &157891164046939957
@@ -7262,7 +7262,7 @@ GameObject:
   - component: {fileID: 900304583263001966}
   - component: {fileID: 1148047923346448210}
   m_Layer: 5
-  m_Name: kit_banner_cap_left 240
+  m_Name: kit_banner_cap_left 200
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -7284,7 +7284,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 650, y: -1034}
+  m_AnchoredPosition: {x: 590, y: -910}
   m_SizeDelta: {x: 28, y: 56}
   m_Pivot: {x: 0, y: 1}
 --- !u!222 &900304583263001966
@@ -7337,7 +7337,7 @@ GameObject:
   - component: {fileID: 610497638476421178}
   - component: {fileID: 960995818133386449}
   m_Layer: 5
-  m_Name: kit_banner_body 240
+  m_Name: kit_banner_body 200
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -7359,8 +7359,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 678, y: -1034}
-  m_SizeDelta: {x: 240, y: 56}
+  m_AnchoredPosition: {x: 618, y: -910}
+  m_SizeDelta: {x: 200, y: 56}
   m_Pivot: {x: 0, y: 1}
 --- !u!222 &610497638476421178
 CanvasRenderer:
@@ -7412,7 +7412,7 @@ GameObject:
   - component: {fileID: 928770368994622579}
   - component: {fileID: 52905396078488907}
   m_Layer: 5
-  m_Name: kit_banner_cap_right 240
+  m_Name: kit_banner_cap_right 200
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -7434,7 +7434,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 918, y: -1034}
+  m_AnchoredPosition: {x: 818, y: -910}
   m_SizeDelta: {x: 28, y: 56}
   m_Pivot: {x: 0, y: 1}
 --- !u!222 &928770368994622579

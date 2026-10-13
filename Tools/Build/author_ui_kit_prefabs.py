@@ -912,7 +912,7 @@ def build_scene():
     for name, size in (("kit_hex_fill", (88, 76)), ("kit_hex_line1", (88, 76)),
                        ("kit_hex_line2", (88, 76)), ("kit_hex_handle", (32, 28))):
         w0, h0 = size
-        widths = (w0 * 0.5, w0, w0 * 1.5)
+        widths = (w0 * 0.5, w0 * 0.75, w0)       # three sizes, uniform scale (a hexagon cannot slice)
         lab = left.child(Node(f"{name}_lab", name, rect((0, 1), None, (0, y), (240, 18), (0, 1))))
         lab.add("cr", 222, canvas_renderer()).add("tmp", 114, tmp(name, "Label", tok("NeutralLightest"), "left")) \
             .add("kt", 114, kit_text("Label", "NeutralLightest"))
@@ -922,12 +922,12 @@ def build_scene():
             n = left.child(Node(f"{name}_{i}", f"{name} {int(w)}", rect((0, 1), None, (x, y), (w, h), (0, 1))))
             n.add("cr", 222, canvas_renderer()).add("img", 114, image(tok("TextLight"), kit_sprite(name)))
             x += w + 24
-        y -= h0 * 1.5 + 8 if name != "kit_hex_handle" else h0 * 1.5 + 12
+        y -= h0 + 10
     lab = left.child(Node("banner_lab", "kit_banner_*", rect((0, 1), None, (0, y), (240, 18), (0, 1))))
     lab.add("cr", 222, canvas_renderer()).add("tmp", 114, tmp("kit_banner_*", "Label", tok("NeutralLightest"), "left")) \
         .add("kt", 114, kit_text("Label", "NeutralLightest"))
     x = 250
-    for i, w in enumerate((80, 160, 240)):
+    for i, w in enumerate((60, 120, 200)):
         for part, pw, dx in (("kit_banner_cap_left", 28, 0), ("kit_banner_body", w, 28), ("kit_banner_cap_right", 28, 28 + w)):
             n = left.child(Node(f"banner_{i}_{part}", f"{part} {w}", rect((0, 1), None, (x + dx, y), (pw, 56), (0, 1))))
             alpha = 0.5 if "cap" in part else 1.0
