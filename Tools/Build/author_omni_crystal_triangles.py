@@ -181,6 +181,12 @@ DEPTH_REACH = OUTER_REACH                # the top of a column, x the prism's se
 DEPTH_PLATE_SCALE_START = 0.5            # a prism's size at the top of its column, x its seated size
 DEPTH_THICKNESS = 8                      # the omni's pick (thickness grows INWARD, so a sealed prism is flush)
 DEPTH_THICKNESS_INWARD = 1
+# The thickness is BAKED INTO the prism mesh (thicken()) and the materials ship _Thickness 1, so the shader's
+# vertex stage is the identity on a sealed prism: CrystalHullFusion moves this mesh's vertices on the CPU and
+# draws them on the crystal's own material, and a thickness left in the shader stretched every moved vertex
+# from a plate centre it had left behind (x5.25 on the Mass, measured 2026-10-13). The lab still reads the
+# thickness: omni_shepard_lab_assets.py measures it off the shipped mesh.
+MATERIAL_THICKNESS = 1
 DEPTH_FACE_SPLIT = 0.5                   # the faces part by half a plate radius at the top of the column
 DEPTH_PRISMS_GUID = hashlib.md5(b"CosmicShore/Crystals/CrystalDepthPrisms.cs").hexdigest()
 DEPTH_PROFILE_SO_GUID = hashlib.md5(b"CosmicShore/Crystals/CrystalDepthPrismProfileSO.cs").hexdigest()
@@ -302,9 +308,9 @@ def material_texts():
     out[RIM_NAME + "Inactive"] = _tone_material(RIM_NAME + "Inactive", "OmniCrystalBodyInactive", body_inactive, *RIM_BAND, 0, RIM_QUEUE)
     out[CHARGE_MAT_NAME] = charge_material_text(body)
     top_h, split = prism_shape(bake_tri_mesh()[0])
-    out[DEPTH_NAME] = depth_material(DEPTH_NAME, "OmniCrystalBody", body, DEPTH_THICKNESS, top_h, split)
+    out[DEPTH_NAME] = depth_material(DEPTH_NAME, "OmniCrystalBody", body, MATERIAL_THICKNESS, top_h, split)
     out[DEPTH_NAME + "Inactive"] = depth_material(DEPTH_NAME + "Inactive", "OmniCrystalBodyInactive", body_inactive,
-                                                  DEPTH_THICKNESS, top_h, split)
+                                                  MATERIAL_THICKNESS, top_h, split)
     return {f"{MAT_DIR}/{n}.mat": t for n, t in out.items()}
 
 
@@ -607,8 +613,34 @@ def prism_shape(verts):
     return round(sum(tops) / len(tops), 6), round(sum(radii) / len(radii), 6)
 
 
+def thicken(verts, thickness):
+    """A baked prism mesh with each prism stretched along its column to `thickness`, INWARD from its top face -
+    OmniDepthPrismShader's _Thickness term (with _ThicknessInward 1), applied once here instead of every frame:
+    local += dir * (dot(local, dir) - top) * (thickness - 1). The top face does not move, so a sealed prism stays
+    flush with the body; normals are unchanged (the shader never turned them either). The top height is the RAW
+    mesh's, the same for every plate (prism_shape fails loud otherwise)."""
+    # The shader parts each face along its own normal with no sign test, which is right only while every
+    # normal faces out of its prism (measured 2026-10-13: min n.(v - c) is 0.038 on the omni, 0.018 on the Mass).
+    for p, n, _uv, c in verts:
+        if sum(n[k] * (p[k] - c[k]) for k in range(3)) <= 0:
+            raise SystemExit(f"prism normal {n} at {p} faces INTO its prism (centre {c[:3]}): OmniDepthPrismShader's "
+                             "face split would part that face inward")
+    if thickness == 1:
+        return verts
+    top, _ = prism_shape(verts)
+    out = []
+    for p, n, uv, c in verts:
+        r = math.sqrt(sum(x * x for x in c[:3]))
+        d = [x / r for x in c[:3]]
+        local = [p[k] - c[k] for k in range(3)]
+        along = (sum(local[k] * d[k] for k in range(3)) - top) * (thickness - 1)
+        out.append([tuple(p[k] + d[k] * along for k in range(3)), n, uv, c])
+    return out
+
+
 def tri_mesh_text():
-    return prism_mesh_text(*bake_tri_mesh(), "OmniCrystalTriangles")
+    verts, tangents, indices = bake_tri_mesh()
+    return prism_mesh_text(thicken(verts, DEPTH_THICKNESS), tangents, indices, "OmniCrystalTriangles")
 
 
 def prism_mesh_text(verts, tangents, indices, name):
@@ -1313,7 +1345,7 @@ def main():
     print(f"prism localScale: {shell_scale}  (the mesh SEATED on the crystal's triangles; the top of a column "
           f"is {DEPTH_REACH}x out)")
     top_h, split = prism_shape(bake_tri_mesh()[0])
-    print(f"depth prisms: thickness {DEPTH_THICKNESS} inward (top face {top_h} above the plate centre), "
+    print(f"depth prisms: thickness {DEPTH_THICKNESS} inward, baked into the mesh (top face {top_h} above the plate centre), "
           f"face split {DEPTH_FACE_SPLIT} x plate radius {split}; profile {dict(DEPTH_PROFILE_VALUES)}")
 
     want = {

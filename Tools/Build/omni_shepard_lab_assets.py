@@ -16,7 +16,12 @@ calls "shipped" comes from here:
   OmniShepardTrianglesRim.mat         the static outer shell
   OmniCrystalBody{,Inactive}.mat      the body's colours
   OmniCrystalTriangles.prefab         the shells' local scale (0.892...)
-  OmniCrystalTriangles.asset          the 20-plate triangle mesh (positions, normals, indices)
+  OmniCrystalTriangles.asset          the 20-plate triangle mesh (normals, indices, plate centres) and, since
+                                      2026-10-13, the thickness BAKED into it (the materials carry _Thickness 1);
+                                      the lab's positions are the raw triangles it was baked from
+                                      (MassCrystalExport3ExpandedTri FBX via author_omni_crystal_triangles.py),
+                                      and the asset must be exactly that raw mesh stretched by the measured thickness
+  MassCrystalPrisms.asset             the Mass prisms, read only for the thickness baked into them
   OmniCrystalExport1_8-21-25.fbx      the body mesh and its authored normals (UnitScaleFactor 100 + useFileScale -> scale 1;
                                       its frame matches the triangle mesh: at _Stop 0.5 every plate
                                       lands within 0.01 local units of the body face behind it)
@@ -60,6 +65,7 @@ DEPTH_PROFILE = os.path.join(ROOT, "Assets", "_SO_Assets", "Environment", "Cryst
 # The squares as the game plays them (round 9): the lab's default speed is the asset's.
 SQUARES_ASSET = os.path.join(ROOT, "Assets", "_SO_Assets", "Environment", "OmniSpaceSquares.asset")
 MASS_DEPTH_MAT = "MassDepthPrisms"
+MASS_PRISMS = os.path.join(ROOT, "Assets", "_Models", "MassCrystalPrisms.asset")
 # The Breathe tone layers, shipped rounds 4-7 and retired from Crystal.prefab by the Depth ratchet (round 8):
 # still authored (OriginalMaterialSet's slots 2-3), so the lab keeps its Breathe styles on their real numbers.
 BREATHE_MATERIALS = [("OmniShepardTriangles 0", "OmniShepardTrianglesInactive 0"),
@@ -151,6 +157,60 @@ def depth_material(name):
             "faceSplit": f["_FaceSplit"], "splitUnit": f["_SplitUnit"], "bright": c["_BrightColor"], "dark": c["_DarkColor"]}
 
 
+def asset_prisms(path):
+    """(position, TEXCOORD2 xyzw) per vertex of a native prism mesh asset, through its own channel table."""
+    t = read(path)
+    vd = bytes.fromhex(re.search(r"_typelessdata: ([0-9a-f]+)", t).group(1))
+    n = int(re.search(r"m_VertexCount: (\d+)", t).group(1))
+    chans = [tuple(int(x) for x in c) for c in re.findall(
+        r"- stream: (\d+)\n\s+offset: (\d+)\n\s+format: (\d+)\n\s+dimension: (\d+)",
+        t.split("m_Channels:")[1].split("m_DataSize")[0])]
+    stride = len(vd) // n
+    if chans[6][3] != 4:
+        raise SystemExit(f"{os.path.basename(path)}: TEXCOORD2 is not (plate centre xyz, plate index)")
+    return [(struct.unpack_from("<3f", vd, i * stride + chans[0][1]), struct.unpack_from("<4f", vd, i * stride + chans[6][1]))
+            for i in range(n)]
+
+
+def baked_thickness(path, raw, shipped=None):
+    """The thickness a generator BAKED into a shipped prism mesh (since 2026-10-13; the materials carry _Thickness 1,
+    so hull fusion can move the vertices): every prism's depth along its column in the asset over its depth in `raw`,
+    the generator's unbaked vertices in the same order. Fails unless the ratio is one number for every prism AND the
+    asset is exactly `raw` stretched by it, inward from the top face - the shader's own _Thickness term."""
+    shipped = shipped if shipped is not None else asset_prisms(path)
+    if len(shipped) != len(raw):
+        raise SystemExit(f"{os.path.basename(path)}: {len(shipped)} vertices, the raw prisms have {len(raw)}")
+    spans = {}
+    for (q, c), (p, _n, _uv, rc) in zip(shipped, raw):
+        if max(abs(c[k] - rc[k]) for k in range(4)) > 1e-5:
+            raise SystemExit(f"{os.path.basename(path)}: plate data differs from the raw prisms'")
+        r = math.sqrt(sum(x * x for x in c[:3]))
+        d = [x / r for x in c[:3]]
+        a = sum((p[k] - c[k]) * d[k] for k in range(3))
+        b = sum((q[k] - c[k]) * d[k] for k in range(3))
+        lo = spans.setdefault(int(round(c[3])), [9e9, -9e9, 9e9, -9e9])
+        lo[0], lo[1], lo[2], lo[3] = min(lo[0], a), max(lo[1], a), min(lo[2], b), max(lo[3], b)
+    ratios = [(s[3] - s[2]) / (s[1] - s[0]) for s in spans.values()]
+    if max(ratios) - min(ratios) > 1e-4 * max(ratios):
+        raise SystemExit(f"{os.path.basename(path)}: prisms are stretched by different amounts ({min(ratios)}..{max(ratios)})")
+    thickness = round(sum(ratios) / len(ratios), 4)
+    import author_omni_crystal_triangles as gen
+    worst = max(max(abs(q[k] - p[k]) for k in range(3))
+                for (q, _c), (p, *_rest) in zip(shipped, gen.thicken(raw, thickness)))
+    if worst > 1e-5:
+        raise SystemExit(f"{os.path.basename(path)}: not the raw prisms stretched by {thickness} (off by {worst:.2e})")
+    return thickness
+
+
+def raw_prisms(crystal):
+    """The unbaked prisms a generator stretches into a shipped mesh: (position, normal, uv, plate) per vertex."""
+    if crystal == "omni":
+        import author_omni_crystal_triangles as gen
+        return gen.bake_tri_mesh()[0]
+    import author_mass_crystal_look as gen
+    return gen.mass_prism_mesh()[0]
+
+
 def depth_look():
     """The shipped Depth ratchet (round 8): Crystal.prefab's prism slot material, the Mass crystal's, and the
     profile they share. None while the crystal still ships tone layers."""
@@ -162,6 +222,11 @@ def depth_look():
     if omni is None:
         return None
     mass = depth_material(MASS_DEPTH_MAT)
+    # The lab's thickness is the one the crystal draws at: the bake times anything left on the material (both
+    # stretch inward from the same top face, so they multiply).
+    omni["thickness"] = round(omni["thickness"] * baked_thickness(TRI_MESH, raw_prisms("omni")), 6)
+    if mass:
+        mass["thickness"] = round(mass["thickness"] * baked_thickness(MASS_PRISMS, raw_prisms("Mass")), 6)
     prof = {k: float(v) for k, v in re.findall(r"^  (\w+): (-?[0-9.eE+-]+)$", read(DEPTH_PROFILE), re.M)}
     keys = ["openDepth", "sealDepth", "profilePower", "reseatDepth", "reseatFadeSeconds"]
     missing = [k for k in keys if k not in prof]
@@ -186,8 +251,13 @@ def tri_mesh():
     has_centre = len(chans) > 6 and chans[6][3] in (3, 4) and chans[6][2] == 0   # (centre xyz[, plate index])
     idx = list(struct.unpack("<%dH" % (len(ib) // 2), ib))
     pos, nrm, cen = [], [], []
+    # Positions are the RAW triangles (float32, exactly as the generator's bake writes them): the shipped asset
+    # carries the depth prisms' thickness baked in, which the lab applies itself (depth_look checks the bake).
+    raw = raw_prisms("omni")
+    if len(raw) != n:
+        raise SystemExit(f"OmniCrystalTriangles.asset has {n} vertices, the raw triangles {len(raw)}")
     for i in range(n):
-        pos.append(struct.unpack_from("<3f", vd, i * stride + chans[0][1]))
+        pos.append(struct.unpack("<3f", struct.pack("<3f", *raw[i][0])))
         nrm.append(struct.unpack_from("<3f", vd, i * stride + chans[1][1]))
         cen.append(struct.unpack_from("<3f", vd, i * stride + chans[6][1]) if has_centre else (0.0, 0.0, 0.0))
     # Plates: connected components over shared vertex POSITIONS (the mesh is split per face).
@@ -479,6 +549,21 @@ def self_test():
         check("a non-Shepard material is refused", False)
     except SystemExit:
         check("a non-Shepard material is refused", True)
+    # Planted defects in the thickness bake: the lab must read the thickness the crystal draws at, or refuse.
+    raw = raw_prisms("Mass")
+    shipped = asset_prisms(MASS_PRISMS)
+    check("the Mass prisms carry thickness 6.25 baked in", baked_thickness(MASS_PRISMS, raw) == 6.25)
+    unbaked = [(p, c) for (p, _n, _uv, _c), (_q, c) in zip(raw, shipped)]
+    check("an unbaked mesh reads thickness 1 (the lab would show the bake missing)", baked_thickness(MASS_PRISMS, raw, unbaked) == 1)
+    for name, bent in (("one prism stretched by a different amount",
+                        [((q[0] * 1.1, q[1] * 1.1, q[2] * 1.1) if round(c[3]) == 0 else q, c) for q, c in shipped]),
+                       ("one vertex moved off the stretch", [((q[0] + 1e-3, q[1], q[2]) if i == 7 else q, c)
+                                                            for i, (q, c) in enumerate(shipped)])):
+        try:
+            baked_thickness(MASS_PRISMS, raw, bent)
+            check(f"a bake with {name} is refused", False)
+        except SystemExit:
+            check(f"a bake with {name} is refused", True)
     sq = d["squares"]
     if sq is not None:
         check("space squares: three keys on the 60 square plates (480 corners each), 120 frames",

@@ -6,8 +6,9 @@ Authors the MASS crystal's look: one geometry, one motion, and the elemental cry
 
 SINCE 2026-10-12 (Omni Shepard Lab round 8, the "Depth ratchet"): the four shells are retired. The inner
 shell of `CrystalMass` / `ActiveCrystalMass` is the ONE prism renderer: `MassCrystalPrisms.asset` (the 60
-prisms baked SEATED, TEXCOORD2 = plate centre + index) on `MassDepthPrisms[Inactive].mat`
-(`OmniDepthPrismShader`, thickness 6.25 inward), driven by `CrystalDepthPrisms` with the omni's profile;
+prisms baked SEATED and 6.25 thick - grown inward, BAKED INTO the mesh since 2026-10-13 so the materials ship
+`_Thickness 1` and hull fusion can move the vertices - TEXCOORD2 = plate centre + index) on
+`MassDepthPrisms[Inactive].mat` (`OmniDepthPrismShader`), driven by `CrystalDepthPrisms` with the omni's profile;
 `to_prisms()` deletes the other three shells (their consumers reference only the root objects - swept)
 and is idempotent. The shell materials below stay authored; the husk keeps `ExplodingMassCrystalMaterial`.
 NOTE (pre-existing, 2026-10-12): the eight shell materials were since re-saved by the Unity Editor
@@ -137,7 +138,8 @@ def mass_prism_mesh():
 
 
 def mass_prism_mesh_text():
-    return OMNI.prism_mesh_text(*mass_prism_mesh(), "MassCrystalPrisms")
+    verts, tangents, indices = mass_prism_mesh()
+    return OMNI.prism_mesh_text(OMNI.thicken(verts, MASS_DEPTH_THICKNESS), tangents, indices, "MassCrystalPrisms")
 
 
 MASS_PRISM_META = OMNI.TRI_MESH_META.replace(OMNI.TRI_MESH_GUID, MASS_PRISM_GUID)
@@ -150,9 +152,9 @@ def depth_material_texts():
     top_h, split = OMNI.prism_shape(mass_prism_mesh()[0])
     return {
         mat_rel(MASS_DEPTH_NAME): OMNI.depth_material(MASS_DEPTH_NAME, "OmniCrystalBody", body,
-                                                      MASS_DEPTH_THICKNESS, top_h, split),
+                                                      OMNI.MATERIAL_THICKNESS, top_h, split),
         mat_rel(MASS_DEPTH_NAME + "Inactive"): OMNI.depth_material(MASS_DEPTH_NAME + "Inactive", "OmniCrystalBodyInactive",
-                                                                   body_inactive, MASS_DEPTH_THICKNESS, top_h, split),
+                                                                   body_inactive, OMNI.MATERIAL_THICKNESS, top_h, split),
     }
 
 

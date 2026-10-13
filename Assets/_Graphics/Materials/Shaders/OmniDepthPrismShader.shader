@@ -7,14 +7,18 @@
 // it is come per plate from CrystalDepthPrisms, which steps the ratchet against the camera and writes
 // _DepthState[plate] = (u, fade, leaving prism's u, 0) and _DepthDriven = 1 through a property block. The plate
 // index and centre are baked into TEXCOORD2 (xyz centre, w index). Undriven (_DepthDriven 0: a husk, a codex
-// model, a material without its driver) every prism draws sealed and solid - the whole crystal at rest.
+// model, a material without its driver, a hull fusion's faces) the vertex stage is the IDENTITY - the mesh draws
+// exactly as authored, every prism sealed and solid, the whole crystal at rest - and reads nothing from
+// TEXCOORD2. CrystalHullFusion depends on that: it draws its own re-tessellated copy of the crystal on this
+// material with the vertices moved onto a hull and TEXCOORD2 holding its discharge heights (zero on filler).
 //
-// The mesh is authored SEATED: at u = 1 a vertex is exactly where the mesh has it. Toward the top of the column
-// the prism moves out along its centre direction to _Reach x its radius, shrinks to _PlateScaleStart of its
-// size, and its five faces part along their own normals by _FaceSplit plate radii (_SplitUnit = one plate
-// radius in mesh units). _Thickness stretches each prism along its column; with _ThicknessInward 1 it grows
-// from its top face (_TopHeight above the plate centre) into the crystal, so a sealed prism stays flush with
-// the body at any thickness.
+// The mesh is authored SEATED, its thickness BAKED IN (the generators stretch each prism inward from its top
+// face; the materials ship _Thickness 1): at u = 1 a vertex is exactly where the mesh has it. Toward the top
+// of the column the prism moves out along its centre direction to _Reach x its radius, shrinks to
+// _PlateScaleStart of its size, and its five faces part along their own normals by _FaceSplit plate radii
+// (_SplitUnit = one plate radius in mesh units). _Thickness (the lab's dial, 1 as shipped) stretches each
+// prism further along its column; with _ThicknessInward 1 it grows from its top face (_TopHeight above the
+// plate centre) into the crystal, so a sealed prism stays flush with the body at any thickness.
 //
 // Two passes draw the two prisms a column can hold at once: the arriving one (pass 0, u = x of the state) and,
 // during a reseat, the leaving one fading out in its hole (pass 1, u = z). They dither on COMPLEMENTARY pixels
@@ -88,10 +92,23 @@ Shader "Custom/OmniDepthPrismShader"
             float k = lerp(_Reach, 1.0, u);
             float3 local = vertex - centre;
             local += dir * (dot(local, dir) - _TopHeight * _ThicknessInward) * (_Thickness - 1.0);
+            // Each face parts along its own normal. The meshes' normals all face out of their prism (thicken() in
+            // author_omni_crystal_triangles.py asserts it), so no sign test: on a baked-thick Mass prism a test
+            // against the plate centre flips for the outward face's deep corners and tears the face in two.
             float3 fn = normalize(normal);
-            local += fn * sign(dot(fn, vertex - centre)) * _FaceSplit * _SplitUnit * (1.0 - u);
+            local += fn * _FaceSplit * _SplitUnit * (1.0 - u);
             float ls = k * lerp(_PlateScaleStart, 1.0, u);
             return dir * rr * k + local * ls;
+        }
+
+        // One vertex of the arriving (leaving 0) or leaving (1) prism: xyz where it draws, w how solid it is.
+        // Undriven it is the mesh as authored - no plate data read, so any vertex anywhere draws where it is.
+        float4 PrismPose(float3 vertex, float3 normal, float4 plate, float4 st, float driven, float leaving)
+        {
+            if (driven <= 0.5) return float4(vertex, leaving > 0.5 ? 0.0 : 1.0);
+            float u = leaving > 0.5 ? st.z : st.x;
+            float alpha = leaving > 0.5 ? 1.0 - st.y : st.y;
+            return float4(DepthPrismPosition(vertex, normal, plate.xyz, u), alpha);
         }
 
         struct appdata
@@ -112,13 +129,11 @@ Shader "Custom/OmniDepthPrismShader"
         v2f DepthPrismVert(appdata v, float leaving)
         {
             v2f o;
-            float4 st = _DepthState[(int)(v.plate.w + 0.5)];
-            bool driven = _DepthDriven > 0.5;
-            float u = driven ? (leaving > 0.5 ? st.z : st.x) : 1.0;
-            o.alpha = driven ? (leaving > 0.5 ? 1.0 - st.y : st.y) : (leaving > 0.5 ? 0.0 : 1.0);
-
-            float3 p = DepthPrismPosition(v.vertex.xyz, v.normal, v.plate.xyz, u);
-            v.vertex.xyz = SpreadFresnelDisplace(p, v.normal);
+            // Clamped: undriven, TEXCOORD2.w is whatever the mesh carries (a fusion's discharge heights).
+            float4 st = _DepthState[clamp((int)(v.plate.w + 0.5), 0, 59)];
+            float4 pose = PrismPose(v.vertex.xyz, v.normal, v.plate, st, _DepthDriven, leaving);
+            o.alpha = pose.w;
+            v.vertex.xyz = SpreadFresnelDisplace(pose.xyz, v.normal);
             o.vertex = UnityObjectToClipPos(v.vertex);
             o.worldNormal = normalize(mul((float3x3)UNITY_MATRIX_M, v.normal));
             o.worldPos = mul(unity_ObjectToWorld, v.vertex).xyz;

@@ -99,7 +99,7 @@ Material:
     - _PlateScaleStart: 0.5
     - _Reach: 2.0
     - _SplitUnit: 0.236983
-    - _Thickness: 8
+    - _Thickness: 1
     - _ThicknessInward: 1
     - _TopHeight: 0.038038
     - _AlphaClip: 0

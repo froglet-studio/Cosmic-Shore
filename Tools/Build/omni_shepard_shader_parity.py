@@ -127,9 +127,16 @@ def mesh_vertices(zero_centres=False):
     stride = len(vd) // n
     if not (chans[6][3] in (3, 4) and chans[6][2] == 0):   # (centre xyz[, plate index]) since round 8
         raise SystemExit("OmniCrystalTriangles.asset has no float TEXCOORD2 (plate centre) - re-run author_omni_crystal_triangles.py")
+    # The Breathe look (shipped rounds 4-7) drew the RAW triangles. Since 2026-10-13 the asset carries the depth
+    # prisms' thickness baked in, so positions come from the generator's unbaked bake, as float32 - exactly the
+    # bytes the asset held before (omni_shepard_lab_assets.py checks the asset is that mesh, stretched).
+    import author_omni_crystal_triangles as gen
+    raw = gen.bake_tri_mesh()[0]
+    if len(raw) != n:
+        raise SystemExit(f"OmniCrystalTriangles.asset has {n} vertices, the raw triangles {len(raw)}")
     out = []
     for i in range(n):
-        p = struct.unpack_from("<3f", vd, i * stride + chans[0][1])
+        p = struct.unpack("<3f", struct.pack("<3f", *raw[i][0]))
         nm = struct.unpack_from("<3f", vd, i * stride + chans[1][1])
         c = (0.0, 0.0, 0.0) if zero_centres else struct.unpack_from("<3f", vd, i * stride + chans[6][1])
         out.append(p + nm + c)
