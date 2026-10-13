@@ -5,8 +5,8 @@ This branch holds thirteen independent contributions ("parts" A to M), made betw
 reviewed on its own by an independent reviewer with two adversarial verifiers; the 58 confirmed
 findings were then fixed on this branch, each fix set reviewed again adversarially (section 4 lists
 the fixes per part). Nothing here has been run in the Unity Editor: no `unity` CLI was available,
-so the `/verify-unity` gate did not run for any C# change on this branch. This document is what to test there, part by part, and how to push only the parts
-that pass.
+so the `/verify-unity` gate did not run for any C# change on this branch. This document is what to
+test there, part by part, and how to push only the parts that pass.
 
 - **Section 1** sets up the editor once.
 - **Section 2** lists what was already proven without Unity.
@@ -21,7 +21,7 @@ you saw, and the Console's first red line.
 ## 1. Set up once
 
 1. `git fetch origin && git checkout cece/nice-brahmagupta-ojclij`. The branch already contains
-   `bleeding-edge` as of 2026-10-12 (`cadc7012a`).
+   `bleeding-edge` as of 2026-10-13 (`512238b6d`, the omni and Mass crystal ship pass).
 2. Open the project in Unity 6000.3.17f1 and wait for the import and compile to finish. Open the
    Console, click **Clear**, and wait for the next domain reload. **PASS:** 0 red errors.
    **FAIL:** any compile error; note the file and line.
@@ -46,14 +46,49 @@ you saw, and the Console's first red line.
 
 ## 2. Already proven without Unity
 
-Measured on the final branch head, 2026-10-12. "Reference compile" is
+Measured on the final branch head, 2026-10-13. "Reference compile" is
 `Tools/Build/unity_refcompile/run.sh`: the project's C# compiled against Unity 6's real reference
 assemblies and package sources, in the player (IL2CPP release) and editor configurations. "Prisma"
 is the repository's own engine under `Port/`, which compiles `Assets/_Scripts` live and runs the game
 headless. None of this replaces the editor: it proves the code compiles and the logic runs, not that
 scenes, prefabs and the Inspector behave.
 
-_Pending: the final gate run on the integrated head._
+**The integrated branch** (`48fda32ff` plus the two Prisma fixes below), 2026-10-13:
+
+| Check | Result |
+|---|---|
+| Unity reference compile, player (IL2CPP release) and editor configs | 0 errors in project code, both |
+| The bleeding-edge guard's static job, every step run locally | 0 steps failed |
+| `validate_project.py` and its self-test; conditional compilation; console logging | pass |
+| Both audit twins' self-tests; the AI/replay input-only gate | pass |
+| Every asset generator's `--check` (30 generators) | 0 failures |
+| Evolution harness, Darwin Lab build check, lab verifier, C#/JS parity gate | pass |
+| `pick_branch_parts.py check` | every commit is in a part; every part has steps |
+| Prisma player build | 0 errors |
+| Prisma engine tests | 1,727 passed, 0 failed (one failure, `MobileLinkTests`, was found here and fixed: the phone build now links `BotProfile.cs`) |
+| Prisma AssetTool tests | 25 passed |
+| Prisma parity scoreboard `--check` | current (it was stale after bleeding-edge's crystal pass; regenerated) |
+
+**Each part built the way you would push it**: `pick_branch_parts.py build <part>` on `origin/bleeding-edge` `512238b6d` (dependencies added by the tool), then the same checks on the result. "Validate project" is the one guard step that fails without part A: `bleeding-edge` fails it on its own today (2 editor-in-runtime errors, the Port/ false positives A fixes), so every row without A shows 1 failed step and nothing else.
+
+| Build | Parts | Commits | Player compile | Editor compile | Prisma build | Guard static steps failed | Prisma tests | Notes |
+|---|---|---|---|---|---|---|---|---|
+| A | A | 12 | OK | OK | 0 errors | 0 | 1691 passed, 0 failed | The guard's static job passes with A alone. |
+| B | B | 2 | - | - | - | 1 (Validate project) | - |  |
+| C | C | 2 | - | - | - | 1 (Validate project) | - |  |
+| D | D | 9 | - | - | - | 1 (Validate project) | - | Carries the QA backlog by 3-way merge; warns that its items describe A, E, F, G, H, J. |
+| E | E | 7 | OK | OK | 0 errors | 1 (Validate project) | 1691 passed, 0 failed |  |
+| F | F | 3 | - | - | - | 1 (Validate project) | - | Drops H's two folder metas. |
+| G | E M G | 14 | OK | OK | 0 errors | 1 (Validate project) | 1693 passed, 0 failed | Adds E and M. |
+| H | M H | 11 | OK | OK | 0 errors | 1 (Validate project) | 1693 passed, 0 failed | Adds M. |
+| I | M H I | 23 | OK | OK | 0 errors | 1 (Validate project) | 1727 passed, 0 failed | Adds H and M. |
+| J | J | 15 | OK | OK | 0 errors | 1 (Validate project) | - |  |
+| K | K | 5 | OK | OK | 0 errors | 1 (Validate project) | 1691 passed, 0 failed |  |
+| L | L | 9 | OK | OK | 0 errors | 1 (Validate project) | - | Carries the lab catalogue row by 3-way merge. |
+| M | M | 2 | OK | OK | 0 errors | 1 (Validate project) | 1693 passed, 0 failed | Port only: files no checklist section. |
+| all 13 | A B C D E F M G H I J K L | 91 | OK | OK | 0 errors | 0 | 1727 passed, 0 failed | Every part at once; the guard's static job passes. |
+
+No build stopped on a code or asset conflict. Documentation conflicts resolve as section 5 describes; the one real loss they caused (L's Darwin Lab catalogue row) is now carried.
 
 ## 3. The parts at a glance
 
@@ -71,7 +106,7 @@ _Pending: the final gate run on the integrated head._
 | J | Multiplayer QoL: friends, recent players, ready lights, dropping out, invite inbox | Yes: Menu_Main's friends panels, the lobby, the party layer. | Medium | - | After the two-account steps pass. |
 | K | Leak and lifetime fixes | Yes: effect cooldown tables, score trackers, four delayed tasks. | Low | - | Any time after its steps pass. |
 | L | Heritable genome (evolution), off by default | One always-on change: 4 extra bytes in the fauna network spawn payload. Everything else is off unless a biome enables it. | Low (off), with one network caveat | - | After its steps pass and the LOCKED rule is signed off. |
-| M | Prisma engine APIs the parity probe compiles against | No. Port/ only. | Very low | - | Any time; first of M, H, I. |
+| M | Prisma engine APIs the game's new code compiles against | No. Port/ only. | Very low | - | Any time; first of M, H, I. |
 
 ## 4. The parts
 
@@ -92,7 +127,8 @@ _Pending: the final gate run on the integrated head._
 **Risks.**
 
 - The generator gate compares generated assets byte for byte. From now on an Inspector edit to any of the 660+ generator-owned assets (an arcade card, a cell config, a Skim Race AI config, a lifeform heart) turns `bleeding-edge` red; so does Unity reserializing them after a new serialized field or an editor upgrade. *High likelihood, and intended. It changes the team's workflow: designers change the generator, not the asset. Announce it with the push.*
-- The audit self-tests read live game assets as fixtures. A gameplay change that moves one (Squirrel's skimmer, the Physarum config) fails the guard. *Medium. After the fix a moved fixture prints a one-line 'fixture moved' failure instead of a traceback.*
+- The audit self-tests now use hand-written Unity-shaped fixtures, so a YAML quirk only real files carry shows up only in the live report CI prints beside them (informational, not a gate). *Low.*
+- `validate_project.py`'s lexer reads one line at a time: text after the closing quote of a verbatim string that spans lines is not checked (the old regex had the same blind spot). *Low: four runtime files carry such strings and nothing follows their closing quotes.*
 
 **Fixed after review.**
 
@@ -735,7 +771,7 @@ Before you start: FrogletTools > Toolbox > Logging, set the log level to All so 
 
 | | |
 |---|---|
-| Commits | 10: 8bd90dbe4 e03b31341 1fcb52135 1ea3d23b5 441fafc47 6bf9e5a0c 2c915676c 7ad2ef887 ca79890d2 a8a904c5c |
+| Commits | 12: 8bd90dbe4 e03b31341 1fcb52135 1ea3d23b5 441fafc47 6bf9e5a0c 2c915676c 7ad2ef887 ca79890d2 a8a904c5c 0594f0dd9 62189bdb3 |
 | Ships to players | No. Unity never compiles Port/. |
 | Risk | Low |
 | Needs | parts H, M; Needs H and M (its parity runner uses the game's replay types). |
@@ -1128,7 +1164,7 @@ Facts every step relies on: there is no `Blob Cell Config`. Menu_Main boots **Ga
     - **FAIL:** any Cell Config or Fauna Config still modified. Do not commit it: it would turn evolution on, or add an evolution block, in a shipped biome.
 <!-- /steps:L -->
 
-### Part M: Prisma engine APIs the parity probe compiles against
+### Part M: Prisma engine APIs the game's new code compiles against
 
 | | |
 |---|---|
@@ -1138,9 +1174,9 @@ Facts every step relies on: there is no `Blob Cell Config`. Menu_Main boots **Ga
 | Needs | None. |
 | Push | Any time; first of M, H, I. |
 
-**What it does.** One commit: the engine counterparts of three Unity APIs the parity probe (part H) uses: FMOD event description callbacks and a bank list, `Time.captureFramerate`, and the `AOT.MonoPInvokeCallback` attribute.
+**What it does.** Two commits: the engine counterparts of the Unity APIs the parity probe (part H) uses (FMOD event description callbacks and a bank list, `Time.captureFramerate`, the `AOT.MonoPInvokeCallback` attribute), and `Application.CanStreamedLevelBeLoaded` answered from the build list, which part G's load sweep calls.
 
-**Benefit.** Lets H land as a Unity-only push and I as a Port-only push, as Port/CLAUDE.md asks. Measured: bleeding-edge + M builds in Prisma, and bleeding-edge + M + H builds too.
+**Benefit.** Lets H and G land as Unity-only pushes and I as a Port-only push, as Port/CLAUDE.md asks. Measured: bleeding-edge + M's first commit builds in Prisma, and so does bleeding-edge + that commit + H.
 
 **Risks.**
 
@@ -1191,9 +1227,12 @@ What `build` does for you:
   carries and nothing else.
 - It drops a folder `.meta` whose folder the branch does not carry (F's commit carries two of H's).
 - When D is picked, it 3-way merges this branch's QA backlog changes onto `bleeding-edge`'s current
-  backlog, because a plain pick would keep the base's copy and drop the whole refresh.
-- It stops on any code or asset conflict. None existed on 2026-10-12, so one means `bleeding-edge`
-  moved; resolve it in the worktree it names.
+  backlog, because a plain pick would keep the base's copy and drop the whole refresh. When L is
+  picked, it does the same for the lab catalogue, where L's Darwin Lab row collides with the base's
+  newest row.
+- A branch of only Port/ parts (M, I) files no checklist section, so it stays inside `Port/`.
+- It stops on any code or asset conflict. None existed on 2026-10-13 against `512238b6d` (section 2),
+  so one means `bleeding-edge` moved; resolve it in the worktree it names.
 
 ### Suggested order
 
