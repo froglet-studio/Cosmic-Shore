@@ -39,6 +39,12 @@ public class SO_Vessel : ScriptableObject
     [SerializeField] public List<SO_ArcadeGame> Games;
     [SerializeField] public List<SO_TrainingGame> TrainingGames;
 
+    [Header("Pilots & Artifacts")]
+    [Tooltip("What this hull can do, named so pilots and artifacts can say what they need " +
+             "(Docs/PILOTS_AND_ARTIFACTS.md §4). A squad slot only offers the pilots and artifacts " +
+             "whose required keywords this list contains.")]
+    [SerializeField] List<VesselKeyword> keywords = new();
+
     [Header("Gameplay Parameters")]
     [SerializeField] public GameplayParameter gameplayParameter1 = new GameplayParameter("Casual", "Challenging", .5f);
     [SerializeField] public GameplayParameter gameplayParameter2 = new GameplayParameter("Relaxing", "Thrilling", .5f);
@@ -92,6 +98,12 @@ public class SO_Vessel : ScriptableObject
     /// mutates isLocked at runtime and the editor writes that mutation back into the asset.
     /// </summary>
     public bool OwnedFromStart => ownedFromStart;
+
+    /// <summary>
+    /// The <see cref="VesselKeyword"/>s this hull satisfies; see
+    /// <see cref="CosmicShore.ScriptableObjects.PilotArtifactCatalogSO"/>.
+    /// </summary>
+    public IReadOnlyList<VesselKeyword> Keywords => keywords;
 
     /// <summary>
     /// Unlocks this vessel at runtime. In builds the change is lost on restart (by design until UGS sync).
