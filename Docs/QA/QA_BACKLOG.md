@@ -4574,6 +4574,33 @@ rises with Charge; **Sparrow** turret prism z-stretch rises with Mass; **Scarab*
 rises with Space (×4 at Space 10). **PASS = each still responds to its element.**
 **FAIL = any one stopped responding** — name which, because each has a different home.
 
+### QA-P2-BENCH-DEPTH-PRISMS ⬜ — measure what the omni and Mass crystals cost per frame
+**Source:** branch `cece/determined-ride-rqzaeo` (2026-10-13, not merged yet): new READER tool
+`CrystalDepthPrismBenchmarkWindow`. Reference: `Docs/Studios/OMNI_SHEPARD_LAB.md`, round 10 "Performance".
+**For Yash** (the designer asked for it on his list). The engineering work that follows
+(property-block dirty-check, distance LOD, the leaving-prism pass, Space-squares freeze) is blocked on
+these numbers: the project rule is profile first. This item's deliverable is data.
+
+1. Open the project in Unity and wait until it finishes importing.
+2. Make a new empty scene: **File ▸ New Scene**, pick **Basic (URP)**, press **Create**. It must have a
+   **Main Camera** and nothing else.
+3. Press **Play**.
+4. Open **FrogletTools ▸ Performance ▸ Crystal Depth Prism Benchmark**.
+5. Set **Crystals** to **Both**. Leave **Warm-up frames** at 120 and **Sample frames** at 600.
+6. Press **Run N = 10 / 50 / 200**. Wait until three results appear in the window (about a minute).
+7. Set **Crystals** to **Omni Only** and press **N = 50 only**. Wait for the result.
+8. Set **Crystals** to **Mass Only** and press **N = 50 only**. Wait for the result.
+9. Press **Copy report** and paste the text into your results.
+10. Open any C# script, type `GetComponent<Renderer>().SetShaderUserValue(` and note whether the editor
+    recognises it (no red underline) or not.
+
+**PASS:** the report shows five runs, and every line has numbers (no "not found" on **Depth prisms**,
+**Draw calls** or **Main thread**), plus your answer for step 10.
+**FAIL:** the window shows an error dialog · the crystals do not appear in a ring in front of the camera ·
+**Depth prisms** reads "no samples" (the crystals never ran) · a run never finishes.
+**Known, do not fail on:** **Space squares** or **Flip wave** reading "no samples" in the **Mass Only**
+run (the Mass crystal has neither) · the last line listing no SRP counters.
+
 ---
 
 ## Not covered by this list
