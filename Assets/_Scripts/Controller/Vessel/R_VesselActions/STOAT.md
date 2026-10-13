@@ -150,12 +150,12 @@ through the base class's lerp (the Butterfly lesson: it eats a slow periodic mot
 | `Executors/StoatSlingExecutor.cs` | the per-vessel state: the two squeezes (live + deepest), the orbit, the last pair; lays the pair on press, flies the orbit, slings on release (`SpawnPair(held)`, `LetGo`) |
 | `StoatSlingMath.cs` | the pure maths |
 | `_SO_Assets/VesselActions/Stoat/` | `StoatSlingConfig`, `StoatSlingLeftAction` (side 0), `StoatSlingRightAction` (side 1), `StoatHoldAction` (stationaryMode 1 = Sparrow) |
-| `Resources/ElementalAbilityMaps/Stoat.asset` | Space = Slingshot (Input 2), Time = Hold Still (Input 6), Charge and Mass open — see §6 |
-| `_Prefabs/Spacevessels/Stoat.prefab` | authored by `Tools/Build/author_stoat_assets.py` from `Squirrel.prefab` (§4) |
+| `Resources/ElementalAbilityMaps/Stoat.asset` | all four authored since 2026-10-13 — Space = Field Dipole, Time = Pathfinder / Time Mode, Charge = Ripple, Mass = Mass / Time Mode (`STOAT_DIPOLE.md` §5) |
+| `_Prefabs/Spacevessels/Stoat.prefab` | authored by `Tools/Build/author_stoat_assets.py`: cloned once from `Squirrel.prefab` (§4), its own vessel since stage 6 |
 | `StoatHullForm.cs`, `StoatHullBuilder.cs` (Vessel/) | the plated hull: pure geometry + morphs, and the emitter (§2.1) |
 | `StoatLopeMath.cs`, `StoatAnimation.cs` (Animation/) | the lope (pure) and the puppetry + morph plumbing (§2.2) |
 | `Tools/Build/stoat_hull_harness/` | compiles and RUNS the shipped hull form offline; `--obj` exports it |
-| `Tools/Build/author_stoat_assets.py` | the generator + `--check` + `--self-test` (ten negative controls); stage 2 authors the hull and the animation swap |
+| `Tools/Build/author_stoat_assets.py` | the generator + `--check` + `--self-test` (22 negative controls); stage 2 authors the hull and the animation swap, stage 6 the own-vessel pass |
 | `Docs/Studios/StoatFlightStudio.html` | the web studio: fly the Stoat on a gamepad, sling either wormhole style, compare them, log decisions (`Docs/Studios/README.md`; live copy with the shared log: https://claude.ai/artifact/Busc3KW6DmVzbsiA2qxoHc) |
 
 **Why the hold is sampled per frame, not read at release — and why the PEAK slings.** The release

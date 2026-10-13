@@ -60,6 +60,8 @@ it is up to 75° off (the field turns it in), holds for 4 s at a 0.8 squeeze and
 every 2 s — both edges through the **replicated** press path. It is a turning and boosting aid, not a
 racing line; a human reading the pathfinder beats it.
 
+**Both modes since 2026-10-13** (`R_VesselActions/STOAT_DIPOLE.md` §1a): the autopilot also switches the Stoat's MODE — `StoatModeExecutor` presses B for it, through the replicated path, to fly Time mode's orbit when its target is ≥ 70° off the nose (the orbit is the tighter turn) and back to Mass mode, and the dipole above, once the target is within 35°; at most every 3 s, never mid-squeeze (`StoatModeAction` § Autopilot). In Time mode it slings with `StoatSlingExecutor.AutopilotSling`.
+
 ## 4. Known limit — two pairs at a time
 
 The black-hole budget is four holes (`BlackHolePhysics.NativeWells.Capacity`, the lens's well bank), so
