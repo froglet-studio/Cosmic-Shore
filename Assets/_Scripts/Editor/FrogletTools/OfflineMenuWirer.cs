@@ -84,7 +84,8 @@ namespace CosmicShore.Editor.Froglet
             new("FriendsListPanel",             false),
             new("ArcadeLobbyList",              false),
             new("LeaderboardsMenu",             true),   // PortScreen - must stay navigable
-            new("StoreScreen",                  true),   // ArkScreen  - must stay navigable
+            // Not StoreScreen: its ArkScreen host is the Elemental Converter now, a local animation that
+            // works offline (Tools/Build/author_elemental_converter.py removed that gate).
         };
 
         [MenuItem("FrogletTools/Interface/Wire Offline Menu Surfaces")]

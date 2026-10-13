@@ -250,3 +250,102 @@ fade/shrink question goes away for them.
 - The end size.
 - Graduation needs the elemental meshes re-exported from this file (or the targets re-solved against the
   shipped meshes), and Space's kites reconciled with the squares.
+
+## In the game (2026-10-13): the Elemental Converter on the Ark screen
+
+**The decision:** "the goal will be to get the effects smoothly keeping a continuity as they go from
+individual crystal to combined omnicrystal. we can keep each animation separate and slow because each
+movement is hypnotic and beautiful ... if it renders in game each time then we can have a few parameters that
+it randomizes through a range so it never views it exactly the same each time. give me a elemental converter
+in app shell. place it in the ark which you will need to reactivate. for now it should just play this
+animation when i use it."
+
+**What plays.** Menu_Main's Ark screen is open again. It shows the four crystals idling with their own
+effects and a CONVERT button. A press sends them in from exactly where they are (the press only sets the
+lead to "now"), Space, Charge, Mass, Time, each landing as the next sets off. The omni then dithers in over
+the landed plates (0.6 s) and wakes its four effects (0.7 s). A second press plays a new combine. The camera
+circles slowly and frames what is on stage NOW, eased over 1.6 s, so it dollies in as each crystal lands and
+ends close on the omni.
+
+| Piece | Where | What it is |
+|---|---|---|
+| `OmniCombineCore` | `Assets/_Scripts/Utility/` | The lab's `pose` / `omniPose`, flip rig, seeding and hash, ported line for line to pure C# (doubles, no UnityEngine) |
+| `OmniCombineData.json` | `Assets/_SO_Assets/Environment/OmniCombine/` | The lab's data block in Unity's axes and a JsonUtility schema (`Tools/Build/author_omni_combine_asset.py`, `--check`, `--self-test` 8/8) |
+| `OmniCombineConfigSO` / `OmniCombineConfig.asset` | `Controller/Environment/Crystals/`, same folder | The data, the materials, and the per-play RANGES (`Tools/Build/author_elemental_converter.py`) |
+| `OmniCombinePlayer` | `Controller/Environment/Crystals/` | Builds the meshes and writes them every frame |
+| `ElementalConverterView` | `Assets/_Scripts/UI/Elements/` | The Ark screen: an off-screen stage, a hand-stepped camera, the picture, the title and CONVERT |
+
+**Separate, slow, and never the same twice.** The game's defaults differ from the lab's in one way: the
+next crystal sets off as the last one lands (stagger 0.95 to 1.05 of the flight), so each animation plays on
+its own. Every press draws, from `OmniCombineConfig.asset`:
+- lead 2.2 to 3.2 s;
+- start distance 2.7 to 3.3 radii;
+- the whole layout turned 0 to 360°;
+- flight 4.4 to 5.4 s;
+- arc 0.25 to 0.55;
+- swirl ±0.15 turns;
+- tumble 0.15 to 0.35 turns;
+- site spread 0.35 to 0.65;
+- Charge's suck share 0.3 to 0.4;
+- a fresh seed (each crystal's tumble axis, each site's morph delay, the flip wave's start vertices);
+- a random phase on the flip, spin and squares clocks.
+
+From the press to the omni fully awake takes about 19 to 24 s.
+
+**How the effects carry across.**
+- **Idle:** each crystal's idle effect is the lab's, read from the game's own numbers, and fades as it sets
+  off.
+- **Hand-off:** the omni appears ON TOP of the landed plates before it moves anything, so there is no frame
+  where a plate is missing. Its four effects then ramp in from rest.
+- **Materials:** Space, Mass and Time wear `OmniCrystalBody`, the omni's own body material and the same lime
+  pair every elemental crystal ships in, so those plates do not change look at the hand-off. Charge wears
+  `ChargeCrystalMaterial`, so its pentagons do change from the Charge body to the omni body as the omni
+  dithers over them.
+
+**How it was proved without an editor.**
+- `Tools/Build/omni_combine_parity/run.sh` compiles the shipped `OmniCombineCore.cs` in .NET and runs it
+  against the lab page's own `__lab.pose` / `omniPose` in headless Chromium: worst vertex 7e-7, across 14
+  crystal times and 5 omni times, seed 7.
+- Two planted defects fail it (a flip salt off by one: 0.7 off; the lab's seeding order: 2.5 off).
+- The same run plays the shipped Unity-frame asset and checks:
+  - every crystal reaches its target;
+  - Time locks in 9e-6 off its rigid pose;
+  - CONVERT after a 300 s wait moves nothing;
+  - after a 1000 s wait, Charge moves at most 0.039 omni radii a frame.
+- `unity_refcompile` player and editor configs: 0 errors in project code. The negative controls fire on the
+  view, the player, the test file and ScreenSwitcher.
+- Not opened in Unity: `Docs/UNITY_VERIFICATION_CHECKLIST.md` has the steps.
+
+**Found**
+1. **Unity's FBX import is a REFLECTION, and the Charge crystal is chiral.** Blender (x, y, z) becomes
+   Unity (−x, z, −y), with determinant −1. Positions map with M, but a rotation AXIS maps with −M (a
+   pseudovector), and so does a quaternion's vector part. A straight copy of the lab's data would have
+   untwisted every petal the wrong way. The generator re-proves both rotations in the written frame (the best
+   rotation about each site axis against the baked twist; Time's lock-in against its rigid pose). Mapping
+   the axis as an ordinary vector is its negative control.
+2. **A wedge does not land on a vertex.** Charge's and Mass's targets put the tip at a face's CENTRE and the
+   backs along its SIDES. The first landing check measured every crystal against the nearest omni vertex,
+   and "failed" Charge by 0.39. Space and Time are checked against vertices; the wedges are checked against
+   their targets and the tiling gate.
+3. **The art data shares a slab's corners across its faces.** Drawn welded, the crystals would shade smooth.
+   Worse, the game's discharge bake decides a crease by "two triangles that do NOT share raw vertices", so a
+   welded Charge crystal has no creases and no discharge. The player groups each plate's triangles into
+   faces (the bake's own 20°) and gives each face its own corners. That gives 420 Charge faces (60 × 7) and
+   724 on the omni.
+4. **The Charge tumble accumulates while the four wait.** The lab unwinds the whole accumulated turn over
+   the flight; after a minute's wait that is twenty laps backwards in five seconds. The core takes the turn
+   modulo a whole turn: the same pose, at most one turn to unwind.
+5. **ARK was never just closed.** Two arcade rules still pointed at it:
+   - it was host-only in a party;
+   - an arcade card pulled a party guest onto it (`FollowHostToArcadeScreen`).
+
+   That second rule was a no-op only because ARK was disabled. Opening ARK without removing both would
+   have dragged every guest onto the converter whenever the host opened a card.
+
+**Not modelled / next**
+- **Mass:** it is drawn with the shell material and the lab's CPU depth model, not the game's depth-prism
+  shader (that needs per-plate UV2 the art mesh does not carry).
+- **Space:** its idle spin is the art file's, on squares, not the shipped kites.
+- **The economy:** the converter does not yet spend elemental crystals or credit omni crystals; no such
+  balances exist yet.
+- **The meshes:** the shipped elemental meshes still differ from the art file's.

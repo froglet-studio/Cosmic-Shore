@@ -65,6 +65,58 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Elemental Converter on the Ark screen: the omni combine plays in the app shell (`cece/eager-rubin-km7qyn`, 2026-10-13) — NOT EDITOR-VERIFIED
+
+**Landed** (`Docs/Studios/OMNI_COMBINE_LAB.md` § "In the game"; generators
+`author_omni_combine_asset.py --check` and `author_elemental_converter.py --check`):
+- **The Ark screen is open.** Menu_Main's `ScreenSwitcher.disabledScreens` is `[PORT]` (was `[ARK, PORT]`).
+  ArkScreen's "SQUAD" mockup Image is switched off and its `OfflineUIGate` is removed (the converter works
+  offline). ARK is no longer host-only, and an arcade card no longer pulls a party guest onto it
+  (`FollowHostToArcadeScreen` is gone: ARK stopped being the arcade long ago).
+- **`ElementalConverter`** (child of ArkScreen, `ElementalConverterView`) builds a picture, a title and a
+  CONVERT button in code, and renders an off-screen stage (y −150000) through a hand-stepped camera that
+  adopts the game camera's image, on unscaled time, only while ARK is the active screen.
+- **`OmniCombinePlayer`** builds the four crystals and the omni from the art file's geometry
+  (`OmniCombineData.json`) and moves them every frame with `OmniCombineCore`, the lab's pose ported line
+  for line. Charge wears `ChargeCrystalMaterial` with the game's discharge bake run on its mesh; Space,
+  Mass and Time wear `OmniCrystalBody` (Mass's depth-prism material needs per-plate UV data this mesh does
+  not carry); the omni's pentagons get the `OmniChargeEdges` overlay. Every press draws a new
+  choreography from `OmniCombineConfig.asset`'s ranges.
+
+**Not opened in Unity** (no editor / `unity` CLI in the session). Offline: `unity_refcompile` player and
+editor 0 errors in project code, negative-controlled on the new view, the player, the new test file and
+ScreenSwitcher. `Tools/Build/omni_combine_parity/run.sh` runs the shipped `OmniCombineCore.cs` against the
+lab's own `pose`/`omniPose` (worst vertex 7e-7 over 14 crystal times and 5 omni times, seed 7) and against
+the shipped Unity-frame asset (every crystal reaches its target; Time locks in 9e-6 off its rigid pose,
+which proves the quaternion conversion; CONVERT after a 300 s wait moves nothing; Charge after a 1000 s
+wait moves at most 0.039 omni radii a frame). Two mutations (a flip salt, the seeding order) fail it.
+`OmniCombineTests` (9 edit-mode tests) has NOT run.
+
+**Verify in editor:**
+1. Run the edit-mode tests in `OmniCombineTests`.
+2. Play Menu_Main. The nav bar's Ark link is no longer greyed out. Press it: the screen shows "ELEMENTAL
+   CONVERTER", the four crystals fading in and idling with their own effects (Time's flip wave, Space's
+   spin, Charge's discharge and tumble, Mass's prisms riding by depth), the camera slowly circling, and a
+   CONVERT button above the nav bar. If the picture is black or the crystals are white silhouettes, the
+   offscreen camera lost post-processing (`OffscreenCameraSetup`).
+3. Press CONVERT. Space flies in and blends into its squares; then Charge (each petal's back sucks in,
+   then the five untwist and flatten into the pentagon); then Mass (three wedges per triangle); then Time
+   locks in rigidly. Each lands as the next sets off. The omni then dithers in over the landed plates and
+   wakes its four effects (flip wave, squares weave, depth prisms, discharge on the pentagons). The camera
+   eases in as each crystal lands (it frames what is on stage now, over 1.6 s), ending close on the omni.
+4. Press CONVERT again: a new combine, visibly different (layout turned, arcs, tumble, timing).
+5. Leave the screen and come back: the four are idling again. The picture is not rendered off-screen
+   (Profiler: no `ElementalConverterCamera` render while on HOME).
+6. Party: as a guest, the Ark link opens the converter; when the host opens an arcade card the guest is
+   NOT moved to the Ark screen.
+7. Offline (airplane mode): the Ark screen is fully bright and the converter plays.
+8. Console: no `OmniCombinePlayer` / `CrystalEdgeArcMeshBaker` error. Watch for: Charge with no discharge
+   (the bake found no crease), black or inside-out faces (winding), seams at the hand-off.
+9. Look for: back-face culling on the Charge crystal (its shader is `Cull Back`); the scale of the
+   shells' `_Spread` push at `omniWorldRadius` 4; whether 1280-px picture is sharp enough.
+
+---
+
 ### 🔴 Omni + Mass crystals: still crystals, ratchet on the gameplay camera, Space squares on the omni body (`cece/eager-rubin-km7qyn`, 2026-10-12) — NOT EDITOR-VERIFIED
 
 **Landed** (`Docs/Studios/OMNI_SHEPARD_LAB.md` round 9, `Docs/PALETTE.md §2.10`; generator

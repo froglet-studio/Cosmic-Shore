@@ -274,6 +274,20 @@ Entries are grouped by family; within a family, the newest goes at the bottom.
 - Evidence: `flipRig()` in `Docs/Studios/OmniCombineLab.html`.
 - Promoted: no
 
+### L-STU-30 — Graduate a lab by PORTING its pose function and running the port against the page
+- Lab: Omni Combine Lab → the Elemental Converter · Branch: `cece/eager-rubin-km7qyn` · Date: 2026-10-13
+- What happened: the lab's `pose` (flight, four idle effects, three derived morphs, seeded RNG, an integer hash) was ported to pure C# and compiled in .NET beside a driver that loads the page in headless Chromium and asks `__lab.pose` / `omniPose` for the same times, seed and camera. The first run matched to 7e-7 per vertex. Planting a wrong flip salt or a different seeding order failed it by 0.7 and 2.5.
+- Do instead: when a lab graduates, keep its pose a PURE function (time, params, camera → vertices), port it with no engine types, and hold the port to the page with a parity harness that compiles the shipped file in place. Port the RNG bit for bit (mulberry32, Math.imul, >>>) and keep the lab's draw ORDER, or one seed means two films.
+- Evidence: `Tools/Build/omni_combine_parity/` (`run.sh`, `Driver.cs`, `lab_poses.cjs`); `Assets/_Scripts/Utility/OmniCombineCore.cs`.
+- Promoted: no
+
+### L-STU-31 — A lab drawn in a right-handed frame graduates through a REFLECTION: map rotation axes as pseudovectors
+- Lab: Omni Combine Lab → the Elemental Converter · Branch: `cece/eager-rubin-km7qyn` · Date: 2026-10-13
+- What happened: the lab draws Blender's data as (x, z, −y), a rotation. Unity's FBX import is (−x, z, −y), a reflection. Positions map with M, but the per-site twist axes and Time's quaternions must map with det(M)·M = −M, or every rotation runs the wrong way round. That matters on a chiral shape (the Charge petals untwist −13.1°). Axes the runtime derives from geometry through a cross product (the flip wave's) come out right on their own.
+- Do instead: in the generator, re-prove every rotation in the frame it writes: a best-fit rotation about each axis against the baked angle, and a rigid replay against the baked pose. Make "map the axis like a position" the negative control.
+- Evidence: `Tools/Build/author_omni_combine_asset.py` (`axis_map`, `validate`, `--self-test`).
+- Promoted: no
+
 ---
 
 ## NCA — swarm / neural-CA research rigs (Tools/NCA)
