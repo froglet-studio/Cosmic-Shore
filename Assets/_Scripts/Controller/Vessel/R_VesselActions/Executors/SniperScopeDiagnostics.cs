@@ -169,10 +169,10 @@ namespace CosmicShore.Gameplay
             Reason.Unusable =>
                 $"the instrument ticked but cannot be seen: {detail}",
             Reason.NoGameCamera =>
-                "there is no perspective Camera.main to project the flight view's reticle " +
-                "through, so only the eyepiece's reticle is drawn. The eyepiece itself is " +
-                "unaffected. If this fires in a gameplay scene, something has disabled or " +
-                "untagged the gameplay camera.",
+                "there is no perspective view camera (CameraManager.ViewCamera) to project the " +
+                "flight view's reticle through, so only the eyepiece's reticle is drawn. The " +
+                "eyepiece itself is unaffected. If this fires in a gameplay scene, no camera " +
+                "controller is active and Camera.main is missing or orthographic.",
             _ => "unknown reason.",
         };
     }

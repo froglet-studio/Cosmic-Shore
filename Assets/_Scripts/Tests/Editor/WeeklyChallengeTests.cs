@@ -555,13 +555,17 @@ namespace CosmicShore.Tests
             var shipped = Resources.Load<WeeklyChallengeCatalogSO>(WeeklyChallengeCatalogSO.ResourcePath);
             if (shipped == null) Assert.Ignore("No shipped catalog.");
 
-            var lists = Resources.FindObjectsOfTypeAll<SO_GameList>();
-            if (lists == null || lists.Length == 0) Assert.Ignore("No SO_GameList loaded in this test session.");
+            // Every list ASSET, loaded here: FindObjectsOfTypeAll only sees lists something else happened
+            // to load, so the verdict used to depend on which tests ran first (skipped when none had,
+            // red when another test had loaded only lists without these cards).
+            string[] guids = UnityEditor.AssetDatabase.FindAssets("t:" + nameof(SO_GameList));
+            Assert.IsNotEmpty(guids, "No SO_GameList asset in the project.");
 
             var modes = new HashSet<GameModes>();
-            foreach (var list in lists)
+            foreach (string guid in guids)
             {
-                if (list.Games == null) continue;
+                var list = UnityEditor.AssetDatabase.LoadAssetAtPath<SO_GameList>(UnityEditor.AssetDatabase.GUIDToAssetPath(guid));
+                if (list == null || list.Games == null) continue;
                 foreach (var game in list.Games)
                     if (game) modes.Add(game.Mode);
             }

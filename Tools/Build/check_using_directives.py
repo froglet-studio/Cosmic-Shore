@@ -119,8 +119,22 @@ STRING = re.compile(r'"(?:\\.|[^"\\])*"|\$@?"(?:[^"]|"")*"')
 DIRECTIVE_TEXT = re.compile(r"^[ \t]*#[ \t]*(?:region|endregion|error|warning)\b.*?$", re.M)
 
 
+# Comments and strings in ONE left-to-right pass: whichever opens first wins. Stripping comments first read the
+# `//` inside "https://..." as a comment, which ate the closing quote and turned the NEXT string's text (a menu path
+# "FrogletTools/...") into code, reporting a missing using for a type the file never mentions.
+CODE_TEXT = re.compile(
+    r"//[^\n]*|/\*.*?\*/"                      # comments
+    r"|\$?@\$?\"(?:[^\"]|\"\")*\""                # verbatim (and interpolated verbatim) strings
+    r"|\$?\"(?:\\.|[^\"\\\n])*\""                 # regular (and interpolated) strings
+    r"|'(?:\\.|[^'\\\n])'",                       # char literals, so '"' opens nothing
+    re.S)
+
+
 def strip(src: str) -> str:
-    return STRING.sub('""', COMMENT.sub(" ", DIRECTIVE_TEXT.sub(" ", src)))
+    def repl(m):
+        t = m.group(0)
+        return " " if t.startswith("/") else ('""' if t[0] in '"$@' else "' '")
+    return CODE_TEXT.sub(repl, DIRECTIVE_TEXT.sub(" ", src))
 
 
 def index_declarations():
@@ -244,6 +258,8 @@ def self_test():
          "present using is silent"),
         ("namespace CosmicShore.Utility { class A { WidgetSO w; } }", 0,
          "own namespace is silent"),
+        ('namespace CosmicShore.Gameplay { class A { const string U = "https://x.y/z";\n[M("WidgetSO/x")] void F() {} } }', 0,
+         "a // inside a string is not a comment, so the next string stays a string"),
         ('namespace CosmicShore.Gameplay { class A { string s = "WidgetSO"; } }', 0,
          "a name inside a STRING is not a reference"),
         ("namespace CosmicShore.Gameplay { class A { /* WidgetSO */ int x; } }", 0,

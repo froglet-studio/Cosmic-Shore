@@ -1,5 +1,5 @@
 """studio_cards.py - the Vessel Studio card model: what a studio card shows and does, read from the web hub and from
-studios.json (/vessel-studio D34). The hub (Docs/Studios/VesselStudio/index.html) is the look; studios.json carries the
+studios.json (/vessel-studio D35). The hub (Docs/Studios/VesselStudio/index.html) is the look; studios.json carries the
 same card fields for the native homes (Amoebius's VESSEL STUDIO page, Unity's studio home), which draw only what it says.
 parity_gate.py fails when the two disagree; bake_previews.cjs writes the preview thumbnails the native homes show.
 
@@ -10,7 +10,7 @@ import hashlib, html, json, os, re, sys
 from html.parser import HTMLParser
 
 DIR = 'Docs/Studios/VesselStudio'
-ACTION_IDS = ['open', 'engine', 'tune', 'live']   # the card's buttons, in this order on every surface that has them
+ACTION_IDS = ['open', 'engine', 'live']   # the card's buttons, in this order on every surface that has them
 HOSTS = {'web', 'amoebius', 'unity'}
 
 

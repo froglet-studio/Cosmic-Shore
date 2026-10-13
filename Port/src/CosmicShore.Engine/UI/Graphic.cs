@@ -79,6 +79,18 @@ namespace CosmicShore.Engine.UI
 
         protected override void OnEnable() => SetAllDirty();
 
+        /// <summary>Leaving a layout: the one it leaves re-lays out (original contract).</summary>
+        protected override void OnBeforeTransformParentChanged()
+        {
+            if (IsActive()) LayoutRebuilder.MarkLayoutForRebuild(rectTransform);
+        }
+
+        /// <summary>Joining a layout: the one it joins re-lays out (original contract).</summary>
+        protected override void OnTransformParentChanged()
+        {
+            if (IsActive()) SetAllDirty();
+        }
+
         // ── Mesh generation (the uGUI OnPopulateMesh contract) ──────────────────
 
         static Texture2D s_WhiteTexture;

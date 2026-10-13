@@ -1,6 +1,6 @@
 <title>Vessel Studio</title>
 <!-- Vessel Studio hub (Docs/Studios/VesselStudio/). Pick a vessel, its studio opens. This folder's build
-     (build_artifact.py) is what claude.ai, the live mirror and Amoebius (served on 127.0.0.1, /vessel-studio D33) open. Plan:
+     (build_artifact.py) is what claude.ai, the live mirror and Amoebius (served on 127.0.0.1, /vessel-studio D34) open. Plan:
      Docs/Studios/VESSEL_STUDIO_PLAN.md. -->
 <style>
   /* Layout: a hangar wall. Vessel bays across the top (the thing you came for), then where the studio
@@ -222,7 +222,7 @@
       renderReqs(snap.docs.map((d) => Object.assign({ id: d.id }, d.data())));
     }, (err) => { $('reqState').textContent = 'The request list is unavailable (' + (err && err.code || 'error') + ').'; });
   })();
-  function offline() {   // the mirror or a plain file: no backend here (claude.ai and Amoebius give one, D33); the same options, one click away
+  function offline() {   // the mirror or a plain file: no backend here (claude.ai and Amoebius give one, D34); the same options, one click away
     const link = () => (window.VesselStudioTheme ? VesselStudioTheme.artifactLink() : document.createTextNode(''));
     $('askBtn').disabled = true; $('askState').textContent = 'Asking works in the claude.ai artifact and in Amoebius (OPEN IN AMOEBIUS):'; $('askState').appendChild(link());
     $('reqBtn').disabled = true; $('reqState').textContent = 'Requests are filed in the claude.ai artifact and in Amoebius (or copy this one as an agent prompt):'; $('reqState').appendChild(link());

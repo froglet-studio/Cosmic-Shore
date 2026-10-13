@@ -18,7 +18,7 @@ Port/parity/
 
 | What | How |
 |---|---|
-| Diff the engine against the Unity goldens | `engine_parity` (MCP), or `prisma-mcp --call engine_parity '{}'` |
+| Diff the engine against the Unity goldens | `engine_parity` (MCP), or `amoebius-mcp --call engine_parity '{}'` |
 | Determinism (engine vs engine, run twice) | `engine_parity {"against":"self"}` |
 | Against a hand-made golden (a planted difference) | `engine_parity {"golden_dir":"..."}` |
 | With frames | `engine_parity {"frames":true}` (a window; xvfb-run on a display-less Linux) |

@@ -23,6 +23,12 @@ namespace CosmicShore.Engine
         public Action<MonoBehaviour> LateUpdate;
         public Action<MonoBehaviour> OnDisable;
         public Action<MonoBehaviour> OnDestroy;
+        // The hierarchy messages (TransformMessages): a parent's child list, or an object's parent, changed.
+        public Action<MonoBehaviour> TransformChildrenChanged;
+        public Action<MonoBehaviour> BeforeTransformParentChanged;
+        public Action<MonoBehaviour> TransformParentChanged;
+        // The rect changed size or shape (RectDimensionWatch). UIBehaviour's empty virtual does not count.
+        public Action<MonoBehaviour> RectTransformDimensionsChange;
         public Action<MonoBehaviour, Collider> TriggerEnter;
         public Action<MonoBehaviour, Collider> TriggerExit;
         public Action<MonoBehaviour, Collider> TriggerStay;
@@ -50,6 +56,10 @@ namespace CosmicShore.Engine
                 LateUpdate = Find(type, "LateUpdate"),
                 OnDisable = Find(type, "OnDisable"),
                 OnDestroy = Find(type, "OnDestroy"),
+                TransformChildrenChanged = Find(type, "OnTransformChildrenChanged"),
+                BeforeTransformParentChanged = Find(type, "OnBeforeTransformParentChanged"),
+                TransformParentChanged = Find(type, "OnTransformParentChanged"),
+                RectTransformDimensionsChange = Find(type, "OnRectTransformDimensionsChange", typeof(UI.UIBehaviour)),
                 TriggerEnter = FindTrigger(type, "OnTriggerEnter"),
                 TriggerExit = FindTrigger(type, "OnTriggerExit"),
                 TriggerStay = FindTrigger(type, "OnTriggerStay"),
@@ -63,10 +73,10 @@ namespace CosmicShore.Engine
             return hooks;
         }
 
-        static Action<MonoBehaviour> Find(Type type, string methodName)
+        static Action<MonoBehaviour> Find(Type type, string methodName, Type emptyBase = null)
         {
             // Most-derived declaration wins (same as the original engine's message dispatch).
-            for (Type t = type; t != null && t != typeof(MonoBehaviour); t = t.BaseType)
+            for (Type t = type; t != null && t != typeof(MonoBehaviour) && t != emptyBase; t = t.BaseType)
             {
                 MethodInfo method = t.GetMethod(
                     methodName,

@@ -5,7 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 
-namespace Prisma.Workspace
+namespace Amoebius.Workspace
 {
     /// <summary>What a store held: the board's text, or null when there is none yet.</summary>
     public readonly record struct BoardRead(string? Text);
@@ -30,7 +30,7 @@ namespace Prisma.Workspace
     }
 
     /// <summary>
-    /// board.json in a folder (Prisma's tracks folder by default). Writes go to a temporary file
+    /// board.json in a folder (Amoebius's tracks folder by default). Writes go to a temporary file
     /// in the same folder and are then moved over board.json. An unreadable board is copied to
     /// <c>board.json.corrupt-yyyyMMdd-HHmmss</c> once (an identical copy is not made twice).
     /// Writers serialise on <c>board.json.lock</c>.
@@ -136,7 +136,7 @@ namespace Prisma.Workspace
         public string? Stamp() { lock (_gate) return Text == null ? null : $"{_version}:{Text.Length}:{Text.GetHashCode()}"; }
         public IDisposable Lock() { Monitor.Enter(_gate); return new Release(_gate); }
 
-        /// <summary>Another writer replaces the text (what an agent's prisma-mcp does to board.json).</summary>
+        /// <summary>Another writer replaces the text (what an agent's amoebius-mcp does to board.json).</summary>
         public void Replace(string text) => Write(text);
 
         sealed class Release : IDisposable

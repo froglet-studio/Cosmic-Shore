@@ -126,25 +126,6 @@ namespace CosmicShore.Engine.UI
         public bool allowSwitchOff { get => m_AllowSwitchOff; set => m_AllowSwitchOff = value; }
     }
 
-    /// <summary>Scroll bar (original contract: Scrollbar) — data surface for the scroll views the menu authors.</summary>
-    public class Scrollbar : Selectable
-    {
-        public enum Direction { LeftToRight = 0, RightToLeft = 1, BottomToTop = 2, TopToBottom = 3 }
-
-        [SerializeField] RectTransform m_HandleRect;
-        [SerializeField] Direction m_Direction;
-        [SerializeField] float m_Value;
-        [SerializeField] float m_Size = 0.2f;
-        [SerializeField] int m_NumberOfSteps;
-        public UnityEvent<float> onValueChanged = new();
-
-        public RectTransform handleRect { get => m_HandleRect; set => m_HandleRect = value; }
-        public Direction direction { get => m_Direction; set => m_Direction = value; }
-        public float value { get => m_Value; set { m_Value = Mathf.Clamp01(value); onValueChanged.Invoke(m_Value); } }
-        public float size { get => m_Size; set => m_Size = Mathf.Clamp01(value); }
-        public int numberOfSteps { get => m_NumberOfSteps; set => m_NumberOfSteps = value; }
-    }
-
     /// <summary>
     /// Keeps a RectTransform at an aspect ratio, width / height (original contract:
     /// AspectRatioFitter, from its documented modes):
@@ -167,6 +148,8 @@ namespace CosmicShore.Engine.UI
         Vector2 _parentSize = new(float.NaN, float.NaN);
 
         void OnEnable() => SetDirty();
+        void OnTransformParentChanged() => SetDirty();
+        void OnRectTransformDimensionsChange() => SetDirty();
 
         void Update()
         {
@@ -213,8 +196,24 @@ namespace CosmicShore.Engine.UI
         }
     }
 
-    /// <summary>Per-event listener table (original contract: EventTrigger).</summary>
-    public class EventTrigger : MonoBehaviour
+    /// <summary>The event an <see cref="EventTrigger"/> entry answers (original contract: EventTriggerType, serialized as its number).</summary>
+    public enum EventTriggerType
+    {
+        PointerEnter = 0, PointerExit = 1, PointerDown = 2, PointerUp = 3, PointerClick = 4, Drag = 5, Drop = 6,
+        Scroll = 7, UpdateSelected = 8, Select = 9, Deselect = 10, Move = 11, InitializePotentialDrag = 12,
+        BeginDrag = 13, EndDrag = 14, Submit = 15, Cancel = 16,
+    }
+
+    /// <summary>
+    /// Per-event listener table (original contract: EventTrigger). Like Unity's it receives EVERY
+    /// event-system event, and runs the entries whose eventID matches: so a nav link wired to
+    /// PointerClick switches the screen, and (as in Unity) it also takes the drag and scroll an
+    /// ancestor ScrollRect would otherwise get.
+    /// </summary>
+    public class EventTrigger : MonoBehaviour,
+        IPointerEnterHandler, IPointerExitHandler, IPointerDownHandler, IPointerUpHandler, IPointerClickHandler,
+        IInitializePotentialDragHandler, IBeginDragHandler, IDragHandler, IEndDragHandler, IDropHandler, IScrollHandler,
+        IUpdateSelectedHandler, ISelectHandler, IDeselectHandler, IMoveHandler, ISubmitHandler, ICancelHandler
     {
         [Serializable]
         public class TriggerEvent : UnityEvent<BaseEventData> { }
@@ -222,12 +221,40 @@ namespace CosmicShore.Engine.UI
         [Serializable]
         public class Entry
         {
-            public int eventID;
+            public EventTriggerType eventID = EventTriggerType.PointerClick;
             public TriggerEvent callback = new();
         }
 
         [SerializeField] List<Entry> m_Delegates = new();
         public List<Entry> triggers { get => m_Delegates; set => m_Delegates = value; }
+
+        void Run(EventTriggerType id, BaseEventData eventData)
+        {
+            if (m_Delegates == null) return;
+            for (int i = 0; i < m_Delegates.Count; i++)
+            {
+                var entry = m_Delegates[i];
+                if (entry != null && entry.eventID == id) entry.callback?.Invoke(eventData);
+            }
+        }
+
+        public virtual void OnPointerEnter(PointerEventData eventData) => Run(EventTriggerType.PointerEnter, eventData);
+        public virtual void OnPointerExit(PointerEventData eventData) => Run(EventTriggerType.PointerExit, eventData);
+        public virtual void OnPointerDown(PointerEventData eventData) => Run(EventTriggerType.PointerDown, eventData);
+        public virtual void OnPointerUp(PointerEventData eventData) => Run(EventTriggerType.PointerUp, eventData);
+        public virtual void OnPointerClick(PointerEventData eventData) => Run(EventTriggerType.PointerClick, eventData);
+        public virtual void OnInitializePotentialDrag(PointerEventData eventData) => Run(EventTriggerType.InitializePotentialDrag, eventData);
+        public virtual void OnBeginDrag(PointerEventData eventData) => Run(EventTriggerType.BeginDrag, eventData);
+        public virtual void OnDrag(PointerEventData eventData) => Run(EventTriggerType.Drag, eventData);
+        public virtual void OnEndDrag(PointerEventData eventData) => Run(EventTriggerType.EndDrag, eventData);
+        public virtual void OnDrop(PointerEventData eventData) => Run(EventTriggerType.Drop, eventData);
+        public virtual void OnScroll(PointerEventData eventData) => Run(EventTriggerType.Scroll, eventData);
+        public virtual void OnUpdateSelected(BaseEventData eventData) => Run(EventTriggerType.UpdateSelected, eventData);
+        public virtual void OnSelect(BaseEventData eventData) => Run(EventTriggerType.Select, eventData);
+        public virtual void OnDeselect(BaseEventData eventData) => Run(EventTriggerType.Deselect, eventData);
+        public virtual void OnMove(AxisEventData eventData) => Run(EventTriggerType.Move, eventData);
+        public virtual void OnSubmit(BaseEventData eventData) => Run(EventTriggerType.Submit, eventData);
+        public virtual void OnCancel(BaseEventData eventData) => Run(EventTriggerType.Cancel, eventData);
     }
 
     /// <summary>Drop-shadow mesh effect (original contract: Shadow).</summary>

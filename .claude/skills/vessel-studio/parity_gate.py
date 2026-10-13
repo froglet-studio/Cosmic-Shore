@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""parity_gate.py - the Vessel Studio is ONE thing everywhere it opens (/vessel-studio D33).
+"""parity_gate.py - the Vessel Studio is ONE thing everywhere it opens (/vessel-studio D34).
 
 Every surface (the claude.ai artifact, the live mirror, Amoebius's OPEN IN AMOEBIUS / OPEN IN BROWSER, Unity's
 FrogletTools > Vessels > Vessel Studio through Amoebius) must open the SAME build_artifact.py output, and the pages must
@@ -33,13 +33,13 @@ build_artifact.py --check runs the page checks on every build.
 import argparse, hashlib, json, os, re, shutil, subprocess, sys, tempfile, urllib.request
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-import studio_cards  # noqa: E402  the card model (/vessel-studio D34)
+import studio_cards  # noqa: E402  the card model (/vessel-studio D35)
 
 DIR = 'Docs/Studios/VesselStudio'
 STOAT_SRC = 'Docs/Studios/StoatFlightStudio.html'
 LAUNCHER_STUDIOS = 'Port/src/CosmicShore.Launcher/LauncherApp.Studios.cs'
 LAUNCHER_CATALOG = 'Port/src/CosmicShore.Launcher/StudioCatalog.cs'
-UNITY_LAUNCH = 'Assets/_Scripts/Editor/LaunchPrisma.cs'
+UNITY_LAUNCH = 'Assets/_Scripts/Editor/LaunchAmoebius.cs'
 UNITY_WINDOW = 'Assets/_Scripts/Editor/Studios/VesselStudioWindow.cs'
 UNITY_HOME = 'Assets/_Scripts/Editor/Studios/VesselStudioWindow.Home.cs'
 TAG = '<script src="sync.js"></script>'
@@ -88,15 +88,15 @@ def page_checks(folder, pages=None, shared=None, label='', basic=True):
             if 'studio-theme.js"' not in text:
                 errs.append(f'{label}{f}: does not load studio-theme.js (the one look and the one host helper)')
         if HOST_TEXT.search(text):
-            errs.append(f'{label}{f}: names the host on the page (hostTag / "Running on Amoebius"): every surface looks the same (D33)')
+            errs.append(f'{label}{f}: names the host on the page (hostTag / "Running on Amoebius"): every surface looks the same (D34)')
         if not helper and SHELL_TEXT.search(text):
-            errs.append(f'{label}{f}: text or layout depends on the host shell: only the device may shape the page (D33)')
+            errs.append(f'{label}{f}: text or layout depends on the host shell: only the device may shape the page (D34)')
         if not helper and HOST_DETECT.search(text):
-            errs.append(f'{label}{f}: reads the host itself: use VesselStudioTheme.host() (one helper, D33)')
+            errs.append(f'{label}{f}: reads the host itself: use VesselStudioTheme.host() (one helper, D34)')
         if not helper and RAW_GL.search(text):
-            errs.append(f'{label}{f}: creates THREE.WebGLRenderer directly: use VesselStudioTheme.renderer() so a page without WebGL still loads (D33)')
+            errs.append(f'{label}{f}: creates THREE.WebGLRenderer directly: use VesselStudioTheme.renderer() so a page without WebGL still loads (D34)')
         if HIDE_ON_HOST.search(text):
-            errs.append(f'{label}{f}: hides a control when there is (no) backend: keep it visible, say what it needs (D30/D33)')
+            errs.append(f'{label}{f}: hides a control when there is (no) backend: keep it visible, say what it needs (D30/D34)')
     return errs
 
 
@@ -147,9 +147,9 @@ def entry_checks(root):
     if os.path.exists(p):
         t = read(p)
         if 'OpenStudioWindow(' in t or re.search(r'Application\.OpenURL\([^)]*(file:|Docs/Studios|path)', t):
-            errs.append(f'{UNITY_HOME}: a card opens the studio page as a file: LaunchPrisma.OpenStudio (served by Amoebius)')
-        if 'LaunchPrisma.OpenStudio(' not in t:
-            errs.append(f'{UNITY_HOME}: OPEN STUDIO does not go through LaunchPrisma.OpenStudio')
+            errs.append(f'{UNITY_HOME}: a card opens the studio page as a file: LaunchAmoebius.OpenStudio (served by Amoebius)')
+        if 'LaunchAmoebius.OpenStudio(' not in t:
+            errs.append(f'{UNITY_HOME}: OPEN STUDIO does not go through LaunchAmoebius.OpenStudio')
     p = os.path.join(root, UNITY_WINDOW)
     if os.path.exists(p):
         t = read(p)
@@ -159,7 +159,7 @@ def entry_checks(root):
 
 
 def card_checks(root, natives=True):
-    """The studio cards are the hub's everywhere (D34): studios.json carries the hub's card text, the baked previews
+    """The studio cards are the hub's everywhere (D35): studios.json carries the hub's card text, the baked previews
     are current, and both native homes draw their cards from studios.json, never from their own copy."""
     if not os.path.exists(os.path.join(root, DIR, 'studios.json')) or not os.path.exists(os.path.join(root, DIR, 'index.html')):
         return []
@@ -189,14 +189,10 @@ def card_checks(root, natives=True):
                 errs.append(f'{rel}: the studio card spells "{lab}" itself: take the label from studios.json cardActions')
         if not re.search(r'[Ff]leet', t):
             errs.append(f'{rel}: no fleet list (studios.json "fleet")')
-    p = os.path.join(root, UNITY_WINDOW)
-    if os.path.exists(p):
-        m = re.search(r'Tuners\s*=\s*new\(\)\s*\{([^}]*)\}', read(p))
-        if m:
-            unity = set(re.findall(r'\["(\w+)"\]', m.group(1)))
-            listed = {x.get('id') for x in cat.get('studios', []) if x.get('tuner')}
-            if unity != listed:
-                errs.append(f'{UNITY_WINDOW}: Unity tunes {sorted(unity)}, studios.json marks {sorted(listed)} "tuner": TUNE IN UNITY must match')
+    # D33: Unity has no tuner of its own; no card may offer one
+    if any(a.get('needs') == 'tuner' or a.get('id') == 'tune' for a in cat.get('cardActions', [])) or \
+            any('tuner' in x for x in cat.get('studios', [])):
+        errs.append('studios.json: a card offers a Unity tuner (TUNE IN UNITY / "tuner"): Unity has none, the artifact is the one source of truth (D33)')
     return errs
 
 
@@ -214,10 +210,10 @@ def cards_self_test():
                '<span class="open">Open studio &rarr;</span></a></div><div class="fleet"><span>Manta</span></div>'
                '<p class="lede hint">No studio yet.</p><script>\n  // ---- bay previews: x ----\n  preview();\n  // ---- the studio agent ----\n</script>')
         acts = [{'id': 'open', 'label': 'Open studio →', 'on': 'web,amoebius,unity'}, {'id': 'engine', 'label': 'PLAY IN ENGINE', 'on': 'amoebius,unity', 'needs': 'engineMode'},
-                {'id': 'tune', 'label': 'TUNE IN UNITY', 'on': 'unity', 'needs': 'tuner'}, {'id': 'live', 'label': 'OPEN LIVE IN BROWSER', 'on': 'amoebius,unity', 'needs': 'mirror'}]
+                {'id': 'live', 'label': 'OPEN LIVE IN BROWSER', 'on': 'amoebius,unity', 'needs': 'mirror'}]
         cat = {'lede': 'Pick a vessel.', 'cardActions': acts, 'fleet': ['Manta'], 'fleetNote': 'No studio yet.',
                'studios': [{'id': 'a', 'name': 'Alpha', 'file': 'a.html', 'chip': 'built · round 1', 'summary': 'The first one.',
-                            'spec': [{'k': 'Speed', 'v': '60 u/s'}], 'accent': 'jade', 'preview': 'previews/a.png', 'tuner': True}]}
+                            'spec': [{'k': 'Speed', 'v': '60 u/s'}], 'accent': 'jade', 'preview': 'previews/a.png'}]}
         w(f'{DIR}/index.html', hub)
         w(f'{DIR}/studios.json', json.dumps(cat, ensure_ascii=False))
         w(f'{DIR}/previews/a.png', b'png', binary=True)
@@ -230,7 +226,6 @@ def cards_self_test():
                       '            foreach (var b in CardButtons(_catalog, s)) Button(b.Label);\n        }\n        string[] _fleet;\n')
         w(LAUNCHER_STUDIOS, good_amo)
         w(UNITY_HOME, good_unity)
-        w(UNITY_WINDOW, 'static readonly Dictionary<string, X> Tuners = new() { ["a"] = Tabs };')
         clean = card_checks(tmp)
         if clean:
             bad.append('a clean card tree failed: ' + '; '.join(clean))
@@ -251,8 +246,8 @@ def cards_self_test():
         expect('a summary that drifted from the hub', cj, cat_with(studio={'summary': 'Something else.'}), 'summary')
         expect('a chip that drifted', cj, cat_with(studio={'chip': 'old'}), 'chip')
         expect('a spec row that drifted', cj, cat_with(studio={'spec': [{'k': 'Speed', 'v': '70 u/s'}]}), 'spec rows')
-        expect('actions out of order', cj, cat_with(cardActions=[acts[1], acts[0], acts[2], acts[3]]), 'in that order')
-        expect('another open label', cj, cat_with(cardActions=[dict(acts[0], label='Open'), acts[1], acts[2], acts[3]]), 'open action')
+        expect('actions out of order', cj, cat_with(cardActions=[acts[1], acts[0], acts[2]]), 'in that order')
+        expect('another open label', cj, cat_with(cardActions=[dict(acts[0], label='Open'), acts[1], acts[2]]), 'open action')
         expect('a fleet that drifted', cj, cat_with(fleet=['Manta', 'Rhino']), 'fleet')
         expect('a missing preview', cj, cat_with(studio={'preview': 'previews/none.png'}), 'missing')
         expect('a stale preview', f'{DIR}/previews/previews.json', json.dumps({'source': 'old'}), 're-bake' if False else 'baked')
@@ -263,7 +258,7 @@ def cards_self_test():
         expect('Unity buttons only named in a comment', UNITY_HOME, good_unity.replace('foreach (var a in cat.cardActions)', '// cardActions\n            foreach (var a in Mine)'), 'does not take its buttons')
         expect('Unity spelling a label', UNITY_HOME, good_unity.replace('Button(b.Label);', 'Button(b.Label); Button("OPEN STUDIO ▸");'), 'spells "OPEN STUDIO"')
         expect('Unity without the spec', UNITY_HOME, good_unity.replace('Rows(s.spec);', ''), 'spec')
-        expect('a tuner the catalog does not list', UNITY_WINDOW, 'static readonly Dictionary<string, X> Tuners = new() { ["a"] = Tabs, ["b"] = Tabs };', 'TUNE IN UNITY must match')
+        expect('a card offering a Unity tuner', cj, cat_with(studio={'tuner': True}), 'Unity tuner')
     finally:
         shutil.rmtree(tmp, ignore_errors=True)
     return bad
@@ -438,7 +433,7 @@ def self_test():
         w(LAUNCHER_STUDIOS, 'string? _studioOpenAtStart;\n        List<PageAction> StudioActions(StudioCatalog cat)\n        {\n            new("OPEN IN AMOEBIUS", true, "", () => OpenServedStudio(t.File, window: true)),\n        }\n')
         w(LAUNCHER_CATALOG, 'public static List<string> AppWindowArgs(string url, string p) { "--app=" + url, }')
         w(UNITY_LAUNCH, 'internal static void OpenStudio(string file)\n        {\n            if (RunningServer() is { } s) { OpenAppWindow(s + file); return; } // server.json\n            _openPage = "studios:" + file; Launch();\n        }\n')
-        w(UNITY_HOME, 'static void OpenPage(string file) { LaunchPrisma.OpenStudio(file); }')
+        w(UNITY_HOME, 'static void OpenPage(string file) { LaunchAmoebius.OpenStudio(file); }')
         w(UNITY_WINDOW, '[MenuItem("FrogletTools/Vessels/Vessel Studio", false, 0)] Application.OpenURL(StudioUrl);')
         clean = page_checks(os.path.join(tmp, DIR)) + entry_checks(tmp)
         if clean:
@@ -464,7 +459,7 @@ def self_test():
         expect('an app window on a file URI', LAUNCHER_CATALOG, 'AppWindowArgs(string pagePath, string p) { "--app=" + PageUri(pagePath), }', 'file URI', ec)
         expect('#prisma file pages', LAUNCHER_CATALOG, 'PageUri(string p) => new Uri(p).AbsoluteUri + "#prisma";', '#prisma', ec)
         expect('Unity opening a studio without Amoebius', UNITY_LAUNCH, 'internal static void OpenStudio(string file)\n        {\n            OpenStudioWindow(file);\n        }\n', 'through Amoebius', ec)
-        expect('a home card opening the page as a file', UNITY_HOME, 'static void OpenPage(string file) { LaunchPrisma.OpenStudioWindow(StudioPath(file)); }', 'as a file', ec)
+        expect('a home card opening the page as a file', UNITY_HOME, 'static void OpenPage(string file) { LaunchAmoebius.OpenStudioWindow(StudioPath(file)); }', 'as a file', ec)
         # built: a page changed in the build
         subprocess.run(['git', 'init', '-q', tmp], check=True)
         subprocess.run(['git', '-C', tmp, '-c', 'user.email=t@t', '-c', 'user.name=t', 'add', '-A'], check=True)

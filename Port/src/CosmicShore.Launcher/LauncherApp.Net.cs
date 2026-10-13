@@ -9,7 +9,7 @@ using ImGuiNET;
 namespace CosmicShore.Launcher
 {
     /// <summary>
-    /// NET: Prisma's built-in multiplayer tools (docs/MULTIPLAYER.md §6), the counterpart of Unity's
+    /// NET: Amoebius's built-in multiplayer tools (docs/MULTIPLAYER.md §6), the counterpart of Unity's
     /// Multiplayer Play Mode, Network Simulator and Runtime Network Stats Monitor. PLAYERS starts two
     /// to four game windows on this PC (a party is four) that find each other through one fresh session
     /// folder, each optionally on a simulated line. LIVE shows each player's role, traffic and RTT once a
@@ -80,7 +80,7 @@ namespace CosmicShore.Launcher
 
             ImGui.SetCursorScreenPos(a + new Vector2(16, 252));
             Label("Each player's line (network simulator)");
-            while (_s.MpSims.Count < Prisma.MultiplayerRun.MaxPlayers) _s.MpSims.Add("");
+            while (_s.MpSims.Count < Amoebius.MultiplayerRun.MaxPlayers) _s.MpSims.Add("");
             for (int i = 0; i < _s.MpPlayers; i++)
             {
                 dl.AddText(Neon.Strong, 14, a + new Vector2(16, 280 + i * 38), Neon.U(Neon.Ink), $"P{i + 1}");
@@ -183,7 +183,7 @@ namespace CosmicShore.Launcher
             _jobs.Log.Add(LogKind.Info, $"[port {port}] {verb}");
             _ = Task.Run(async () =>
             {
-                var r = await Prisma.MultiplayerRun.Command(port, "do", verb);
+                var r = await Amoebius.MultiplayerRun.Command(port, "do", verb);
                 var text = (r["output"]?.ToString() ?? "").Trim();
                 if (text.Length > 0) _jobs.Log.Add(LogKind.Output, $"[port {port}] {text.Split('\n').Last()}");
             });
@@ -204,10 +204,10 @@ namespace CosmicShore.Launcher
                 {
                     await Task.WhenAll(players.Select(async p =>
                     {
-                        var st = await Prisma.MultiplayerRun.Command(p.port, "state");
+                        var st = await Amoebius.MultiplayerRun.Command(p.port, "state");
                         if (st["ok"]?.GetValue<bool>() != true) { _netLive[p.player] = "booting..."; return; }
-                        var net = await Prisma.MultiplayerRun.Command(p.port, "do", "net json");
-                        var line = Prisma.MultiplayerRun.NetLine(net["output"]?.ToString() ?? "");
+                        var net = await Amoebius.MultiplayerRun.Command(p.port, "do", "net json");
+                        var line = Amoebius.MultiplayerRun.NetLine(net["output"]?.ToString() ?? "");
                         _netLive[p.player] = $"{st["scene"]}  ·  " + (line.Length > 0 ? line : "not connected");
                     }));
                 }

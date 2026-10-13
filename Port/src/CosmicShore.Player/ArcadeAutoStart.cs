@@ -5,7 +5,7 @@ namespace CosmicShore.Player
 {
     /// <summary>
     /// <c>--arcade MODE</c>: once the game reaches the main menu, open that arcade card and press its Start,
-    /// the way a player does (the card's own modal, through <see cref="Inspector.Arcade"/>). Prisma's STUDIOS
+    /// the way a player does (the card's own modal, through <see cref="Inspector.Arcade"/>). Amoebius's STUDIOS
     /// page uses it for PLAY IN ENGINE: the game's own vessel in its own mode, one click from the studio.
     /// It never skips the menu or the first-run prompts (a new profile still answers them), and the pilot
     /// presses Ready in the race as usual.

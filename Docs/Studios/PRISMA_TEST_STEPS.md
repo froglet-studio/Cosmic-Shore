@@ -27,9 +27,9 @@ the studio until they are ported (`STOAT_SIM_LAB_PLAN.md` §5, and the vessel-co
 1. VESSEL STUDIO ▸ pick **STOAT** ▸ **OPEN IN AMOEBIUS**. A window opens with no browser chrome.
    - **Pass:** its address (hover the window title or press Ctrl+L in a browser) is `http://127.0.0.1:<port>/<token>/stoat.html#amoebius`,
      and the line under the card says **Serving <branch> @ <commit>**. The top bar reads **Running on PC (mouse / trackpad)**,
-     exactly as on claude.ai and the live mirror (no host label, /vessel-studio D33).
+     exactly as on claude.ai and the live mirror (no host label, /vessel-studio D34).
    - With no Edge or Chrome installed, it opens in your default browser instead (same address).
-1b. **Sync, Ask, Decisions work here** (D33).
+1b. **Sync, Ask, Decisions work here** (D34).
    - **Sync** (bottom right) ▸ the top line reads **Showing froglet-studio/cosmic-shore @ <branch> · <commit>**; the session box
      already holds `amoebius-local`. Under Merge, From `vessel-studio`, Into `Ys-bleeding-edge`, **Compare**. **Pass:** the
      console prints "a vs b: N ahead, M behind" and the commits (needs Python 3). Merge into `Ys-bleeding-edge` is refused
@@ -119,8 +119,8 @@ the studio until they are ported (`STOAT_SIM_LAB_PLAN.md` §5, and the vessel-co
 | The game's edit-mode tests on Amoebius | 352 / 352 pass (before and after the merges) |
 | `--arcade Slingshot` (headless) | Bootstrap → Authentication → Menu_Main → card → Start → `MinigameSlingshot` at frame 258 (re-run after the merges: same) |
 | Live run (xvfb, control port) | Menu, the Slingshot card, Ready, GO, the Stoat flying; one RT sling gave "2 live, 34 bodies, 2 stretching" |
-| VESSEL STUDIO page (screenshot) | Since D34: the hub's cards (preview, name, chip, summary, spec), each with Open studio → · PLAY IN ENGINE · TUNE IN UNITY (disabled: Unity only) · OPEN LIVE IN BROWSER, then the fleet without a studio. |
-| `stoat.html#prisma` (before D33) | Read "Amoebius · PC"; since D33 every surface reads "PC (...)", the page is served by Amoebius from the build |
+| VESSEL STUDIO page (screenshot) | Since D35: the hub's cards (preview, name, chip, summary, spec), each with Open studio → · PLAY IN ENGINE · OPEN LIVE IN BROWSER, then the fleet without a studio. |
+| `stoat.html#prisma` (before D34) | Read "Amoebius · PC"; since D34 every surface reads "PC (...)", the page is served by Amoebius from the build |
 
 **Not checked here:** a real Windows PC. Edge's app window, a GPU, and a gamepad through the app window all
 need your first run.

@@ -199,7 +199,7 @@
   // ---- the platform, answered once at load (/vessel-studio D9, D26) ----
   // A studio never asks "play on phone?": it detects the device and opens that device's interface only.
   // A host (Amoebius) may say it: window.__studioHost = { shell, device } or the page hash #amoebius; the one helper that
-  // reads it is VesselStudioTheme.host() (D33). Only the device shapes the interface; nothing visible names the host.
+  // reads it is VesselStudioTheme.host() (D34). Only the device shapes the interface; nothing visible names the host.
   // Phone = a mobile browser (UA, userAgentData, iPadOS posing as a Mac) or a touch-only screen; a touchscreen
   // laptop still has a fine pointer, so it is a PC. Sets body.dev-pc / body.dev-phone for CSS.
   function platform() {

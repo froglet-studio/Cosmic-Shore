@@ -1,7 +1,7 @@
 using System;
 using System.IO;
 using System.Linq;
-using Prisma;
+using Amoebius;
 
 namespace CosmicShore.Tests
 {

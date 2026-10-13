@@ -402,8 +402,8 @@ sphere manufactures the mode's signature screamer for novices. It lands the mode
 SCARAB.md §4.2-§4.5 left open (multi-ball via `AstroLeagueBall.Live` + `ScarabBallForge.OnForged`
 adoption, per-ball attribution via a forger/last-toucher ledger, and a ball ceiling) and fixed
 the forged ball's unreplicated `SetSizeScale` (`n_SizeScale`). **That ceiling is per CELL and
-lives on the BALL, not on the mode** — `AstroLeagueBall.cellBallLimit` (4): when a further loose
-ball enters a cell, every loose ball in it detonates regardless of domain, the arriving one
+lives on the BALL, not on the mode** — `AstroLeagueBall.cellBallLimit` (5 per Scarab, counted by domain): when one
+Scarab's sixth loose ball enters a cell, every loose ball in it detonates regardless of domain, the arriving one
 included, announced by `CellOverload_ClientRpc` so it is ONE networked event on every peer and
 using the same per-ball detonation as the nucleus overload below; embedded/hidden balls do not
 count, and nothing is ever culled on a clock. It replaced a per-DOMAIN cap enforced at FORGE
@@ -907,6 +907,33 @@ launch was tripled (2026-10-08): every old leg was shorter than one launch's ~30
 **autopilot bomb-jump** (fire, freeze 18 u ahead, fly past, detonate it behind, via replicated
 presses), and `Grizzly.prefab`'s `AIPilot` was serialized DISABLED, so no AI Grizzly had ever
 steered — Grizzly Charge's bots included. See `_Scripts/Controller/Arcade/GRIZZLYTIME.md`.
+
+`Slingshot(64)` is the **Stoat-only circuit race** — Redline's shape (`GateRaceController`, the
+shared `HeadlongCircuit` solver, laps, golf on finish time) cut for the Stoat (`VesselClassType.Stoat
+= 15`, `R_VesselActions/STOAT.md`): a 60 u/s hull on a flat 120°/s turn (a 29 u pivot) with **no
+speed of its own past cruise** — the barren race cell has nothing to skim. Its speed is its ability:
+LT/RT sling an **attractor–repulsor wormhole pair** across the hull (attractor on the trigger's side,
+squeeze = size), whose pull adds up to 90 u/s (150 u/s on a 72 u circle). The pull moves **only the
+Stoat that slung it** (`BlackHole.OwnerVessel`, ELEMENTAL_ECONOMY §9). A sling is a THROW, so a ring
+asks where the pull will have put you. Eight gates on a 600 u circle, **two laps (16)**; intensity
+tightens and lifts the turns and closes the mouth 48 → 26 u, measured over 400 seeds by
+`Tools/Build/slingshot_course_harness` and asserted by `SlingshotCourseTests`. The autopilot slings
+through the replicated press path (`StoatSlingExecutor.AutopilotSling`). Generator
+`author_slingshot_assets.py` (donor: Redline's scene); the Stoat's class asset, prefab and hull come
+from `author_stoat_assets.py`. See `_Scripts/Controller/Arcade/SLINGSHOT.md`. Authored headless —
+not yet run in the editor. **Since 2026-10-09 the Stoat's triggers are the round-15 FIELD DIPOLE**
+(`R_VesselActions/STOAT_DIPOLE.md`) and its autopilot is `StoatDipoleExecutor.Autopilot`; the sling
+above is unbound, so Slingshot is now flown on the dipole too.
+
+`Warpline(65)` is the **Stoat's TIME race** — Slingshot's shape and Slingshot's cut
+(`SlingshotCourse.ForIntensity` into the shared `HeadlongCircuit`) with **five** rings a lap, two laps
+(10), flown on the field dipole: the triggers hold a sink–source pair open ahead, the **pathfinder**
+draws the path the hull will fly, and while the poles warp it the line is lime and the hull flies it
+×2.5 → ×5 faster (Time scales the boost, a warp of the hull's own flight clock,
+`VesselTransformer.FlightTimeScale`). Long legs, so every leg is a pair laid and ridden. Metric 9,
+golf; `warplineGateTarget`; `RaceGateObjectiveProvider`; comeback 0.45. Generator
+`author_warpline_assets.py` (donor: Slingshot's scene). See `_Scripts/Controller/Arcade/WARPLINE.md`.
+Authored headless — not yet run in the editor.
 
 `WreckingBall(54)` (display name "Wrecking Ball") is the **Scarab-only demolition race** —
 Rampage's analog for the hull whose weapons are a BALL and a PLATE. A sphere court (Scramble's:

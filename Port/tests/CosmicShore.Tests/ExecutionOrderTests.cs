@@ -116,7 +116,7 @@ public class ExecutionOrderTests
     [Fact]
     public void AssetDatabase_ReadsExecutionOrderFromScriptMetas()
     {
-        var root = Path.Combine(Path.GetTempPath(), "prisma-exec-" + Guid.NewGuid().ToString("N"));
+        var root = Path.Combine(Path.GetTempPath(), "amoebius-exec-" + Guid.NewGuid().ToString("N"));
         var assets = Path.Combine(root, "Assets");
         Directory.CreateDirectory(assets);
         try

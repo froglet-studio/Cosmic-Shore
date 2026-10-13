@@ -8,7 +8,7 @@ namespace CosmicShore.Launcher
     /// <summary>
     /// Every agent conversation, the way Claude Code keeps sessions: each chat has its own transcript,
     /// its own CLI session to resume, its own context, and can run while another one does. They are
-    /// kept in chats/ID.json and come back when Prisma starts. One is shown at a time (<see cref="Active"/>).
+    /// kept in chats/ID.json and come back when Amoebius starts. One is shown at a time (<see cref="Active"/>).
     /// </summary>
     public sealed class ChatStore
     {
@@ -34,7 +34,7 @@ namespace CosmicShore.Launcher
                 foreach (var f in Directory.GetFiles(ClaudeChat.ChatsDir, "*.json").Where(f => !Path.GetFileName(f).StartsWith("mcp-")))
                     if (ClaudeChat.Load(f, s, tools, Cli) is { } c)
                     {
-                        // Milestone sessions no longer run in Prisma (engine work happens in Claude Code
+                        // Milestone sessions no longer run in Amoebius (engine work happens in Claude Code
                         // at the repository root): their old chats are cleared on the first start.
                         if (c.CurrentScope == ClaudeChat.Scope.Milestone) { c.Delete(); continue; }
                         _all.Add(c); wire(c);

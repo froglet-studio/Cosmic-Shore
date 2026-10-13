@@ -5,7 +5,7 @@ namespace CosmicShore.Engine.Networking
 {
     /// <summary>
     /// Unity Relay's message protocol, as its documentation publishes it for "an alternative engine or
-    /// networking solution" (docs/MULTIPLAYER.md §6.7). Written for Prisma; no Unity code is used.
+    /// networking solution" (docs/MULTIPLAYER.md §6.7). Written for Amoebius; no Unity code is used.
     ///
     /// Every message starts with a 4-byte header: the signature bytes DA 72, the version (0) and the type.
     /// Facts the published page leaves open, settled by how Unity's shipped transport behaves on the wire:

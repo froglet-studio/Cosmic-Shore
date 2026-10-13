@@ -1,4 +1,4 @@
-// bake_previews.cjs - the hub's live card previews as PNG thumbnails for the native homes (/vessel-studio D34).
+// bake_previews.cjs - the hub's live card previews as PNG thumbnails for the native homes (/vessel-studio D35).
 //
 // The web hub (Docs/Studios/VesselStudio/index.html) draws each studio card's preview live on a 2D canvas. Amoebius's
 // VESSEL STUDIO page (ImGui) and Unity's studio home show the same card, so they show this picture of it: the hub's own

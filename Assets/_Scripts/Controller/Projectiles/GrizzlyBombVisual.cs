@@ -167,7 +167,6 @@ namespace CosmicShore.Gameplay
         float _ringPhase;
         bool _frozen;
         bool _live;
-        Camera _camera;
 
         // The lit wake: a short ring buffer of where the bomb has been.
         const int WakeSamples = 16;
@@ -194,7 +193,6 @@ namespace CosmicShore.Gameplay
             _ringPhase = 0f;
             _frozen = false;
             _live = true;
-            _camera = Camera.main;
             _wakeHead = 0;
             _wakeCount = 0;
 
@@ -324,9 +322,11 @@ namespace CosmicShore.Gameplay
         void LateUpdate()
         {
             if (!_live) return;
-            if (!_camera) _camera = Camera.main;
-            if (!_camera) return;
-            var facing = _camera.transform.rotation;   // billboards
+            // The camera the player looks through, every frame (it changes to the death cam mid-flight); not
+            // Camera.main, which in flight is the menu's static camera, so the billboards faced nobody.
+            var camera = CameraManager.ViewCamera;
+            if (!camera) return;
+            var facing = camera.transform.rotation;   // billboards
             if (halo) halo.rotation = facing;
             if (ring) ring.rotation = facing;
         }

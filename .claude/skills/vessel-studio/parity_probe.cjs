@@ -1,4 +1,4 @@
-// parity_probe.cjs - what each URL shows, for parity_gate.py --render (/vessel-studio D33).
+// parity_probe.cjs - what each URL shows, for parity_gate.py --render (/vessel-studio D34).
 //   node .claude/skills/vessel-studio/parity_probe.cjs URL [URL ...]   -> JSON { url: inventory } on stdout
 // The inventory is what must be the same on every surface: visible tabs, buttons, selects, section titles and the Sync
 // panel, plus any page error. Status lines (askState, reqState, logStatus, decNote) say what is enabled and may differ.

@@ -26,18 +26,54 @@ namespace CosmicShore.Engine
         public static string globalRenderPipeline { get; set; } = "UniversalPipeline";
         public int maximumLOD { get; set; } = int.MaxValue;
         public bool isSupported => true;
-        public int renderQueue => 2000;
         public int passCount => 1;
+
+        /// <summary>
+        /// Original contract: the queue the shader's SubShader tags ask for (Geometry, 2000, when
+        /// untagged). A compiled graph's comes from its target: Transparent 3000, an alpha-clipped
+        /// one AlphaTest 2450.
+        /// </summary>
+        public int renderQueue
+        {
+            get
+            {
+                if (s_sourceInfo?.Invoke(name) is { Queue: >= 0 } info) return info.Queue;
+                if (Guid != null && GraphProgram is { Ok: true } g)
+                    return g.Queue >= 0 ? g.Queue : g.Transparent ? 3000 : g.AlphaClip ? 2450 : 2000;
+                return 2000;
+            }
+        }
+
+        static Func<string, ShaderSourceInfo> s_sourceInfo;
+
+        /// <summary>
+        /// Port hook: what a shader's source says beyond its properties (main colour and texture,
+        /// queue tag); null when the source is unknown. Set by the content layer.
+        /// </summary>
+        public static Func<string, ShaderSourceInfo> SourceInfoCatalog
+        {
+            get => s_sourceInfo;
+            set { s_sourceInfo = value; s_catalogGeneration++; }
+        }
+
+        /// <summary>Port: the property <see cref="Material.color"/> addresses: the one tagged [MainColor], else _Color.</summary>
+        public int MainColorId => s_sourceInfo?.Invoke(name)?.MainColor is { } c ? PropertyToID(c) : s_colorId;
+
+        /// <summary>Port: the property <see cref="Material.mainTexture"/> addresses: the one tagged [MainTexture], else _MainTex.</summary>
+        public string MainTextureName => s_sourceInfo?.Invoke(name)?.MainTexture ?? "_MainTex";
+
+        static readonly int s_colorId = PropertyToID("_Color");
 
         public static void SetGlobalFloat(string name, float value) => GlobalFloats[PropertyToID(name)] = value;
         public static void SetGlobalFloat(int nameID, float value) => GlobalFloats[nameID] = value;
         public static void SetGlobalInt(string name, int value) => GlobalFloats[PropertyToID(name)] = value;
         public static void SetGlobalInt(int nameID, int value) => GlobalFloats[nameID] = value;
         public static void SetGlobalInteger(int nameID, int value) => GlobalFloats[nameID] = value;
-        public static void SetGlobalVector(string name, Vector4 value) => GlobalVectors[PropertyToID(name)] = value;
-        public static void SetGlobalVector(int nameID, Vector4 value) => GlobalVectors[nameID] = value;
-        public static void SetGlobalColor(string name, Color value) => GlobalColors[PropertyToID(name)] = value;
-        public static void SetGlobalColor(int nameID, Color value) => GlobalColors[nameID] = value;
+        public static void SetGlobalVector(string name, Vector4 value) => SetGlobalVector(PropertyToID(name), value);
+        public static void SetGlobalVector(int nameID, Vector4 value) { GlobalVectors[nameID] = value; GlobalColors.Remove(nameID); }
+        /// <summary>Original contract: an alias of SetGlobalVector — no colour-space conversion, one slot per name.</summary>
+        public static void SetGlobalColor(string name, Color value) => SetGlobalColor(PropertyToID(name), value);
+        public static void SetGlobalColor(int nameID, Color value) { GlobalColors[nameID] = value; GlobalVectors[nameID] = new Vector4(value.r, value.g, value.b, value.a); }
         public static void SetGlobalMatrix(string name, Matrix4x4 value) => GlobalMatrices[PropertyToID(name)] = value;
         public static void SetGlobalMatrix(int nameID, Matrix4x4 value) => GlobalMatrices[nameID] = value;
         public static void SetGlobalTexture(string name, Texture value) => GlobalTextures[PropertyToID(name)] = value;
@@ -67,7 +103,8 @@ namespace CosmicShore.Engine
         public static int GetGlobalInt(int nameID) => (int)GetGlobalFloat(nameID);
         public static Vector4 GetGlobalVector(string name) => GetGlobalVector(PropertyToID(name));
         public static Vector4 GetGlobalVector(int nameID) => GlobalVectors.TryGetValue(nameID, out var v) ? v : Vector4.zero;
-        public static Color GetGlobalColor(int nameID) => GlobalColors.TryGetValue(nameID, out var v) ? v : Color.clear;
+        public static Color GetGlobalColor(int nameID)
+            => GlobalColors.TryGetValue(nameID, out var v) ? v : GlobalVectors.TryGetValue(nameID, out var w) ? new Color(w.x, w.y, w.z, w.w) : Color.clear;
         public static Matrix4x4 GetGlobalMatrix(int nameID) => GlobalMatrices.TryGetValue(nameID, out var v) ? v : Matrix4x4.identity;
         public static Texture GetGlobalTexture(int nameID) => GlobalTextures.TryGetValue(nameID, out var v) ? v : null;
         public static Vector4[] GetGlobalVectorArray(int nameID) => GlobalVectorArrays.TryGetValue(nameID, out var v) ? v : null;
@@ -125,17 +162,21 @@ namespace CosmicShore.Engine
         public float[] GetFloatArray(int nameID) => _floatArrays.TryGetValue(nameID, out var a) ? a : null;
         public Vector4[] GetVectorArray(int nameID) => _vectorArrays.TryGetValue(nameID, out var a) ? a : null;
 
+        /// <summary>Original contract: the main texture's (<see cref="Shader.MainTextureName"/>) offset.</summary>
         public Vector2 mainTextureOffset
         {
-            get { var st = GetTextureScaleOffset("_MainTex"); return new Vector2(st.z, st.w); }
-            set { var st = GetTextureScaleOffset("_MainTex"); SetTextureScaleOffset("_MainTex", new Vector4(st.x, st.y, value.x, value.y)); }
+            get { var st = GetTextureScaleOffset(MainTextureName); return new Vector2(st.z, st.w); }
+            set { var n = MainTextureName; var st = GetTextureScaleOffset(n); SetTextureScaleOffset(n, new Vector4(st.x, st.y, value.x, value.y)); }
         }
 
+        /// <summary>Original contract: the main texture's (<see cref="Shader.MainTextureName"/>) tiling.</summary>
         public Vector2 mainTextureScale
         {
-            get { var st = GetTextureScaleOffset("_MainTex"); return new Vector2(st.x, st.y); }
-            set { var st = GetTextureScaleOffset("_MainTex"); SetTextureScaleOffset("_MainTex", new Vector4(value.x, value.y, st.z, st.w)); }
+            get { var st = GetTextureScaleOffset(MainTextureName); return new Vector2(st.x, st.y); }
+            set { var n = MainTextureName; var st = GetTextureScaleOffset(n); SetTextureScaleOffset(n, new Vector4(value.x, value.y, st.z, st.w)); }
         }
+
+        string MainTextureName => shader?.MainTextureName ?? "_MainTex";
 
         public void SetTextureOffset(string name, Vector2 value) { var st = GetTextureScaleOffset(name); SetTextureScaleOffset(name, new Vector4(st.x, st.y, value.x, value.y)); }
         public void SetTextureScale(string name, Vector2 value) { var st = GetTextureScaleOffset(name); SetTextureScaleOffset(name, new Vector4(value.x, value.y, st.z, st.w)); }
@@ -160,7 +201,6 @@ namespace CosmicShore.Engine
         public void CopyPropertiesFromMaterial(Material mat)
         {
             if (mat is null) return;
-            foreach (var kv in mat._colors) _colors[kv.Key] = kv.Value;
             foreach (var kv in mat._floats) _floats[kv.Key] = kv.Value;
             foreach (var kv in mat._vectors) _vectors[kv.Key] = kv.Value;
             foreach (var kv in mat._ints) _ints[kv.Key] = kv.Value;

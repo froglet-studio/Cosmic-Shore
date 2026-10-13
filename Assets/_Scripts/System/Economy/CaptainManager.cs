@@ -7,7 +7,6 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 
-// TODO: Renamespace - not using playfab directly here
 namespace CosmicShore.Core
 {
     [System.Serializable]

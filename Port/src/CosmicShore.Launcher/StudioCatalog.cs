@@ -6,7 +6,7 @@ using System.Text.Json;
 namespace CosmicShore.Launcher
 {
     /// <summary>
-    /// The Vessel Studio catalog, <c>Docs/Studios/VesselStudio/studios.json</c> in Prisma's workspace: which
+    /// The Vessel Studio catalog, <c>Docs/Studios/VesselStudio/studios.json</c> in Amoebius's workspace: which
     /// vessel studios exist, the page that opens each, and the web link that also works on a phone. Read
     /// only; the STUDIOS page lists it. A branch without the file simply has no studios.
     /// </summary>
@@ -23,7 +23,7 @@ namespace CosmicShore.Launcher
         public const string DefaultWeb = "https://claude.ai/artifact/3igBJJbNvJjsfJoBJnAMPa";
         public const string DefaultMirror = "https://yskhan61.github.io/vessel-studio/";
 
-        /// <param name="EngineMode">An arcade mode (a <c>GameModes</c> name) PLAY IN ENGINE opens in the Prisma player: the game's own vessel.</param>
+        /// <param name="EngineMode">An arcade mode (a <c>GameModes</c> name) PLAY IN ENGINE opens in the Amoebius player: the game's own vessel.</param>
         /// <param name="EngineNote">What that engine run is, in a line (it may differ from the studio's design).</param>
         public sealed record Studio(string Id, string Name, string File, string Kind, string Summary, string? Docs, string? EngineMode = null, string? EngineNote = null);
 
@@ -142,9 +142,9 @@ namespace CosmicShore.Launcher
         public static string PagePath(string workspaceDir, string file) => Path.Combine(workspaceDir, RelativeDir, file);
 
         /// <summary>
-        /// OPEN IN PRISMA: the studio as its own window, with no browser tabs or address bar. Chromium-based browsers
-        /// have an app mode (<c>--app=URL</c>); a profile of Prisma's own keeps that window separate from the user's
-        /// browser and its layout remembered between opens. The page gets <c>#prisma</c>, so it says it runs in Prisma.
+        /// OPEN IN AMOEBIUS: the studio as its own window, with no browser tabs or address bar. Chromium-based browsers
+        /// have an app mode (<c>--app=URL</c>); a profile of Amoebius's own keeps that window separate from the user's
+        /// browser and its layout remembered between opens. The page gets <c>#prisma</c> (the engine's earlier name, which the studio pages match), so it says it runs in Amoebius.
         /// The candidates are where Edge (always on Windows 10/11) and Chrome install; none found means the plain browser.
         /// </summary>
         public static IEnumerable<string> AppBrowserCandidates()
@@ -182,7 +182,7 @@ namespace CosmicShore.Launcher
             "--no-default-browser-check",
         };
 
-        /// <summary>The page as a file URI that tells it it is running in Prisma (<c>#prisma</c>).</summary>
+        /// <summary>The page as a file URI that tells it it is running in Amoebius (<c>#prisma</c>).</summary>
         public static string PageUri(string pagePath) => new Uri(Path.GetFullPath(pagePath)).AbsoluteUri + "#prisma";
 
         /// <summary>The player arguments PLAY IN ENGINE adds: open the studio's arcade mode from the main menu.</summary>

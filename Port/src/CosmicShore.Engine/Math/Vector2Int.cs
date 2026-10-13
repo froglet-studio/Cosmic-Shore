@@ -18,6 +18,10 @@ namespace CosmicShore.Engine
 
         public static Vector2Int zero => new(0, 0);
         public static Vector2Int one => new(1, 1);
+        public static Vector2Int up => new(0, 1);
+        public static Vector2Int down => new(0, -1);
+        public static Vector2Int left => new(-1, 0);
+        public static Vector2Int right => new(1, 0);
 
         public int this[int index]
         {

@@ -12,7 +12,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5ed6020622a095b42a99f1ebc9515ad6, type: 3}
   m_Name: VesselImpulseByExplosionEffect
   m_EditorClassIdentifier: 
-  knockbackMultiplier: 1
   selfLaunchMultiplier: 1.5
   impulseDuration: 1
   selfLaunchUnplants: 1

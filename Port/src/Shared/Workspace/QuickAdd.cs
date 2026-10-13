@@ -5,13 +5,13 @@ using System.Globalization;
 using System.Linq;
 using System.Text.RegularExpressions;
 
-namespace Prisma.Workspace
+namespace Amoebius.Workspace
 {
     /// <summary>What one quick-add line asked for. Fields not mentioned stay null or empty.</summary>
     public sealed class QuickAddResult
     {
         public string Title { get; set; } = "";
-        public PrismaBoard.Kind Type { get; set; } = PrismaBoard.Kind.Task;
+        public AmoebiusBoard.Kind Type { get; set; } = AmoebiusBoard.Kind.Task;
         public int? Priority { get; set; }
         public List<string> Tags { get; } = new();
         public string? Assignee { get; set; }
@@ -62,7 +62,7 @@ namespace Prisma.Workspace
                 text = text[..dw.Index];
             }
             text = text.Trim();
-            if (text.StartsWith("bug:", StringComparison.OrdinalIgnoreCase)) { r.Type = PrismaBoard.Kind.Bug; text = text[4..]; }
+            if (text.StartsWith("bug:", StringComparison.OrdinalIgnoreCase)) { r.Type = AmoebiusBoard.Kind.Bug; text = text[4..]; }
             else if (text.StartsWith("task:", StringComparison.OrdinalIgnoreCase)) { text = text[5..]; }
 
             var today = DateOnly.FromDateTime(now);

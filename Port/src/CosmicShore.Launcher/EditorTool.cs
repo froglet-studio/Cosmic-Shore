@@ -11,7 +11,7 @@ namespace CosmicShore.Launcher
     /// <summary>
     /// The EDITOR page's engine: <c>cs-asset</c> built from the workspace's own source (so it reads
     /// the checkout it shows, with that branch's scripts), run per request with JSON on stdout.
-    /// It is built once per Prisma session (incrementally, and again on REBUILD); every call after
+    /// It is built once per Amoebius session (incrementally, and again on REBUILD); every call after
     /// that is a short process run.
     /// </summary>
     public sealed class EditorTool

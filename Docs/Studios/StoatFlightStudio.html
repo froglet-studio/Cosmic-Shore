@@ -720,7 +720,7 @@
 
   // ================= renderer =================
   const canvas = $('stage'), hud = $('hud'), hctx = hud.getContext('2d');
-  // without WebGL the stage says so and every tab and panel still loads (VesselStudioTheme.renderer, D33)
+  // without WebGL the stage says so and every tab and panel still loads (VesselStudioTheme.renderer, D34)
   const renderer = VesselStudioTheme.renderer(THREE, { canvas, antialias: false, powerPreference: 'high-performance' });
   renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.5));
   const scene = new THREE.Scene();
@@ -2048,12 +2048,12 @@
   // ================= platform =================
   // Two questions: which HOST runs the studio (shell: 'web' or 'amoebius') and on what DEVICE. A native
   // host (Amoebius, which serves this page with #amoebius, or one that sets window.__studioHost = { shell, device }) is read by
-  // the one shared helper, VesselStudioTheme.host() (D33); only the DEVICE shapes the interface, nothing visible names the host. The device decides the controls: a PC flies
+  // the one shared helper, VesselStudioTheme.host() (D34); only the DEVICE shapes the interface, nothing visible names the host. The device decides the controls: a PC flies
   // with a gamepad or keyboard, a phone (or tablet) with the touch sticks and trigger handles. The Layout select
   // overrides the guess for this browser (e.g. to preview the phone layout on a PC).
   const PLAT_KEY = 'stoat-studio-layout';
   function detectPlatform() {
-    // The host is read by the one shared helper (VesselStudioTheme.host(), D33): Amoebius serves this page with #amoebius.
+    // The host is read by the one shared helper (VesselStudioTheme.host(), D34): Amoebius serves this page with #amoebius.
     const host = VesselStudioTheme.host();
     const ua = navigator.userAgent || '', mq = (q) => { try { return window.matchMedia(q).matches; } catch (e) { return false; } };
     const uaMobile = (navigator.userAgentData && navigator.userAgentData.mobile === true) || /Android|iPhone|iPad|iPod|Mobile|Silk|Kindle|Opera Mini/i.test(ua)

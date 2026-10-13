@@ -62,6 +62,14 @@ member at different offsets auto-merge into a `CS0102` that only Unity will find
    defect.
 3. Same trap in docs: two branches both claiming `§4.6` merges clean and produces a
    document with two of them. Renumber yours and fix every inbound reference.
+4. **A set-wide edit misses members the base added.** If the branch applied one change to
+   every member of a set ("every vessel HUD canvas", "every mode scene"), re-run the sweep
+   that found the set after the merge. The new member merges with no conflict and no
+   compile error, because nothing in it touches your files. One branch moved nine vessel
+   `ShipHUDContainer` canvases to Expand for the iPad; the base meanwhile added the Stoat, so
+   after the merge it was the one vessel HUD still losing a quarter of its width at 4:3.
+   Re-sweep with the same query (`m_ScreenMatchMode: 0` with match 1), not a re-read of the
+   list in your commit message.
 
 ## D4. Asset integrity (any branch that touched serialized assets)
 

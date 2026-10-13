@@ -103,11 +103,11 @@ namespace CosmicShore.Build
         public List<(string Path, string Guid)> EnabledScenes()
             => EngineSettings.BuildScenes(Unity).Where(s => s.Enabled).Select(s => (s.Path, s.Guid)).ToList();
 
-        /// <summary>The engine's own Project Settings (Port/ProjectSettings/PrismaProject.json); unset fields inherit Unity's.</summary>
-        Prisma.PrismaProjectSettings EngineSettings => _engineSettings ??= Prisma.PrismaProjectSettings.Load(_project);
-        Prisma.PrismaProjectSettings? _engineSettings;
-        Prisma.PrismaProjectSettings.UnityDefaults Unity => _unity ??= new(_project);
-        Prisma.PrismaProjectSettings.UnityDefaults? _unity;
+        /// <summary>The engine's own Project Settings (Port/ProjectSettings/AmoebiusProject.json); unset fields inherit Unity's.</summary>
+        Amoebius.AmoebiusProjectSettings EngineSettings => _engineSettings ??= Amoebius.AmoebiusProjectSettings.Load(_project);
+        Amoebius.AmoebiusProjectSettings? _engineSettings;
+        Amoebius.AmoebiusProjectSettings.UnityDefaults Unity => _unity ??= new(_project);
+        Amoebius.AmoebiusProjectSettings.UnityDefaults? _unity;
 
         /// <summary>Every guid the build ships, from Unity's three roots.</summary>
         public HashSet<string> Reachable(Report report)

@@ -92,7 +92,7 @@
     var st = document.createElement('style'); st.id = 'vessel-studio-theme'; st.textContent = CSS; head.appendChild(st);
   }
   install();
-  // ---- the one artifact (/vessel-studio section 0, D33): every page is the same page wherever it is opened (claude.ai,
+  // ---- the one artifact (/vessel-studio section 0, D34): every page is the same page wherever it is opened (claude.ai,
   // the live mirror, Amoebius, Unity through Amoebius). Sync, Ask, Requests and the shared log work where a backend
   // gives window.claude (the claude.ai viewer, or Amoebius's studio server); elsewhere (the mirror, a file) they say so
   // and link to the artifact, so no option is ever missing, only one click away.
@@ -103,7 +103,7 @@
     a.textContent = label || 'open it in the claude.ai artifact'; a.style.marginLeft = '6px';
     return a;
   }
-  // ---- the host, answered ONCE for every page (D33): { shell: 'web' | 'amoebius' | <what a host sets>, device? }.
+  // ---- the host, answered ONCE for every page (D34): { shell: 'web' | 'amoebius' | <what a host sets>, device? }.
   // A host may say it with window.__studioHost = { shell, device } or the page hash #amoebius (#prisma: the old name).
   // Only behaviour may depend on it (the device decides the controls); nothing visible names the host.
   function host() {
@@ -111,7 +111,7 @@
     if (h && typeof h === 'object') return { shell: h.shell === 'prisma' ? 'amoebius' : (h.shell || 'web'), device: h.device };
     return /(^|[#&])(amoebius|prisma)\b/i.test(location.hash) ? { shell: 'amoebius' } : { shell: 'web' };
   }
-  // ---- the 3D stage without WebGL (D33): a machine with hardware acceleration off (or none) still gets every tab, panel
+  // ---- the 3D stage without WebGL (D34): a machine with hardware acceleration off (or none) still gets every tab, panel
   // and setting; the stage says why it is dark. Returns THREE's renderer, or a stand-in whose calls do nothing.
   function renderer(THREE, opts) {
     try { return new THREE.WebGLRenderer(opts); }

@@ -57,7 +57,7 @@ namespace CosmicShore.Launcher
 
         /// <summary>A rectangle with its top-left and bottom-right corners cut - the game's UI shape.</summary>
         /// <summary>
-        /// Prisma's panel shape: macOS's continuous rounded rectangle, sized from the old chamfer
+        /// Amoebius's panel shape: macOS's continuous rounded rectangle, sized from the old chamfer
         /// cut so every caller keeps its proportions (a bigger cut is a rounder corner).
         /// </summary>
         public static void ChamferPath(ImDrawListPtr dl, Vector2 a, Vector2 b, float cut)
@@ -68,7 +68,7 @@ namespace CosmicShore.Launcher
 
         public static float Radius(float cut, Vector2 a, Vector2 b) => Math.Min(cut * 1.35f + 2f, Math.Min(b.X - a.X, b.Y - a.Y) * 0.5f);
 
-        /// <summary>Prisma's mark: a faceted Cosmic Shore crystal in cyan and magenta, gently breathing.</summary>
+        /// <summary>Amoebius's mark: a faceted Cosmic Shore crystal in cyan and magenta, gently breathing.</summary>
         public static void PrismIcon(ImDrawListPtr dl, Vector2 c, float size, float alpha = 1f, float t = 0f)
         {
             float w = size * 0.32f, h = size * 0.52f;

@@ -134,21 +134,6 @@ namespace CosmicShore.Editor.Studios
             catch (FormatException) { return Look.Accent; }
         }
 
-        string StudioName(string id)
-        {
-            if (_catalog?.studios != null)
-                foreach (var s in _catalog.studios)
-                    if (s.id == id) return s.name;
-            return id ?? "";
-        }
-
-        void OpenStudio(string id)
-        {
-            if (_catalog?.studios != null)
-                foreach (var s in _catalog.studios)
-                    if (s.id == id) { OpenPage(s.file); return; }
-        }
-
         static void OpenPage(string file)
         {
             string path = StudioPath(file);
@@ -157,13 +142,12 @@ namespace CosmicShore.Editor.Studios
                 EditorUtility.DisplayDialog("Vessel Studio", $"{StudioDir}/{file} is not in this checkout. Pull Ys-bleeding-edge.", "OK");
                 return;
             }
-            LaunchPrisma.OpenStudioWindow(path);
+            LaunchAmoebius.OpenStudioWindow(path);
         }
 
-        /// <summary>Keeps the previews moving: a repaint at most 30 times a second, and only on the home page.</summary>
+        /// <summary>Keeps the previews moving: a repaint at most 30 times a second.</summary>
         void Animate()
         {
-            if (!string.IsNullOrEmpty(_view)) return;
             double now = EditorApplication.timeSinceStartup;
             if (now - _lastFrame < FrameSeconds) return;
             _lastFrame = now;
@@ -202,7 +186,7 @@ namespace CosmicShore.Editor.Studios
             if (Button(ref bx, y, "CLAUDE.AI ARTIFACT", Look.Accent, false, "The one Vessel Studio artifact: Ask, shared requests, the decision log and Sync live there"))
                 Application.OpenURL(_catalog?.web ?? StudioUrl);
             if (Button(ref bx, y, "AMOEBIUS", Look.Accent, false, "Amoebius's VESSEL STUDIO page: PLAY IN ENGINE flies the game's own vessel"))
-                EditorApplication.delayCall += LaunchPrisma.OpenAmoebiusStudiosPage;
+                EditorApplication.delayCall += LaunchAmoebius.OpenAmoebiusStudiosPage;
             y += 26f + 26f;
 
             if (_homeError != null)
@@ -248,7 +232,7 @@ namespace CosmicShore.Editor.Studios
 
             const string foot = "A studio opens in its own window: the artifact's own pages from this checkout, so it looks and plays exactly as on claude.ai " +
                                 "(Unity has no web view, so it is an Edge or Chrome app window). Ask, shared requests, the decision log and Sync need claude.ai; " +
-                                "each page links there. Tune in Unity puts a studio's six tabs over the vessel's real assets, live while you play.";
+                                "each page links there. The artifact is the one source of truth: its numbers reach the game through /artifact-to-unity, never a second set of tabs here.";
             float fh = Look.Note.CalcHeight(new GUIContent(foot), cw);
             GUI.Label(new Rect(x, y, cw, fh), foot, Look.Note);
             y += fh + 28f;
@@ -287,15 +271,9 @@ namespace CosmicShore.Editor.Studios
             float by = r.yMax - Pad - 26f, bx = x;
             if (Button(ref bx, by, "OPEN STUDIO ▸", accent, true, $"Open the {s.name} studio (the artifact's own page, from this checkout) in its own window"))
                 OpenPage(s.file);
-            if (Tuners.ContainsKey(s.id) &&
-                Button(ref bx, by, "TUNE IN UNITY", accent, false, $"The {s.name} studio's six tabs over the vessel's real assets, live while you play"))
-            {
-                _view = s.id;
-                GUIUtility.ExitGUI();
-            }
             if (!string.IsNullOrEmpty(s.engineMode) &&
                 Button(ref bx, by, "PLAY IN ENGINE", accent, false, (s.engineNote ?? "") + " Opens Amoebius's VESSEL STUDIO page: pick " + s.name + ", then PLAY IN ENGINE."))
-                EditorApplication.delayCall += LaunchPrisma.OpenAmoebiusStudiosPage;
+                EditorApplication.delayCall += LaunchAmoebius.OpenAmoebiusStudiosPage;
 
             // the whole card opens the studio, as on the web hub (drawn after the buttons, so they keep their clicks)
             if (GUI.Button(r, GUIContent.none, GUIStyle.none)) OpenPage(s.file);
