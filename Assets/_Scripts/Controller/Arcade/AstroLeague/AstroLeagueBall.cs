@@ -2598,7 +2598,7 @@ namespace CosmicShore.Gameplay
         /// <summary>
         /// Server: blow the ball up where it stands with an explosion <paramref name="radiusScale"/>×
         /// its own radius, then spend it. This is the nucleus overload detonation (SCARAB.md §4.6) —
-        /// the burst and shake scale with the blast so a 2× explosion reads as one, and the ball leaves
+        /// the burst and shake scale with the blast so a 6× explosion reads as one, and the ball leaves
         /// through the same detonate-then-despawn beat as a scored ball (continuity of existence: it
         /// bursts and fades, it never blinks out).
         /// </summary>

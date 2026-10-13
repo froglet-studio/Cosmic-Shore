@@ -1402,9 +1402,18 @@ spawns an `AOEExplosion` carrying the BALL's domain and that domain's `AOEExplos
 blast wears the ball's colour. The rest is stock `ExplosionImpactor` behaviour with the shipped
 `affectSelf = false, destructive = true` flags: own-domain prisms are drawn LIT in the blast's
 domain colour (`Docs/LIT.md`; they took a temporary shield until 2026-09) (the
-no-perceived-clipping rule) and other domains are destroyed. It is flagged `AnnonymousExplosion`
-because no vessel made it — which is also what keeps the damage path from dereferencing a null
-pilot.
+no-perceived-clipping rule) and other domains are destroyed — a shielded one sheds its shield
+instead (`Prism.Damage`, non-devastating), a super-shielded one deflects the blast. It is flagged
+`AnnonymousExplosion` because no vessel made it — which is also what keeps the damage path from
+dereferencing a null pilot.
+
+**The blast spawns on EVERY peer, from `Detonate_ClientRpc`, not on the server.** Prisms are
+simulated per peer and nothing replicates a prism's destruction, which is why every vessel blast
+already runs everywhere. Until 2026-10-13 the ball's blast was spawned server-side only, so a
+detonation destroyed and popped opposing prisms on the host and left every client's copy standing.
+The server resolves the blast's diameter (from the ball's authoritative size) and domain and ships
+both in the RPC. Ball KICKS from the blast stay server-authoritative on their own:
+`AstroLeagueBall.RequestBlast` from a vessel-less blast on a client does nothing.
 
 **A STUDDING BALL IS JUST A BALL. `n_Embedded` IS BOOKKEEPING, NOT A PHYSICS STATE.** That is the
 whole specification, and it is the third design this state has had — the first two were both
