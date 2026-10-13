@@ -876,7 +876,9 @@ the authoring session, so `/verify-unity` did NOT run. Out of editor:
    - iOS `com.FrogletGames.CosmicShore` (was `.dev`).
    - Android target API 36 (was 35), ARM64 only (was ARMv7 + ARM64).
    - The TailGlider keystore path and alias cleared.
-2. **`ios-unsigned-ipa.yml`** rewrites the sideload `.ipa`'s `CFBundleIdentifier` to `.dev`.
+2. ~~**`ios-unsigned-ipa.yml`** rewrites the sideload `.ipa`'s `CFBundleIdentifier` to `.dev`.~~
+   **Retired 2026-10-13:** the free-Apple-ID path and its workflow were removed; TestFlight is the
+   only iOS distribution path.
 3. **Gradle templates:** namespace and NDK lines outside the EDM4U block; Unity Ads gone (two commits
    cherry-picked).
 4. **IAP removed:** `com.unity.purchasing` uninstalled, `BillingMode.json` deleted, the Purchasing
@@ -909,8 +911,9 @@ the authoring session, so `/verify-unity` did NOT run. Out of editor:
      bundle id `com.FrogletGames.CosmicShore`, and both photo-library purpose strings reading
      "Cosmic Shore saves the paintings and screenshots…" (from `ProjectSettings/NativeShare.json`).
    - Archive and upload to TestFlight. The build appears **without** a "Missing Compliance" flag.
-6. Path A: run `ios-unsigned-ipa.yml` once. Its log prints `com.FrogletGames.CosmicShore.dev`, and
-   Sideloadly installs it with a free Apple ID.
+6. ~~Path A: run `ios-unsigned-ipa.yml` once. Its log prints `com.FrogletGames.CosmicShore.dev`, and
+   Sideloadly installs it with a free Apple ID.~~ **Retired 2026-10-13** with Path A; nothing to
+   verify.
 7. Windows: a Release build from `FrogletTools ▸ Build` still succeeds, and the game runs unchanged.
    Nothing here touches Standalone settings, but the package removal re-resolves every platform.
 8. **Path C (2026-10-12):** after the one-time setup in `Docs/IOS_BUILD.md` §2 Path C, run **iOS
