@@ -1,5 +1,9 @@
-# Changes to workflows, CI and this file need a review from one of these people. Agent sessions push
-# as Shombith03, so that account is deliberately not an owner: the reviewer must be someone else.
-# This only blocks a merge once branch protection on bleeding-edge turns on "Require review from
-# Code Owners".
-/.github/ @gradies @YsKhan61
+# Changes to workflows, CI and this file need a review from one of these people. Workflow files can
+# hand repository secrets to whatever they run, so every change gets a second person.
+#
+# GitHub never lets a PR's author approve it, so a change authored by any owner still needs one of
+# the others. Agent sessions currently act on GitHub as Shombith03; giving them their own account is
+# a planned follow-up, so a human owner's approval always means a human read the change.
+#
+# This only blocks a merge while the "Protect trunks" ruleset requires review from Code Owners.
+/.github/ @Shombith03 @FenrysUnchained @gradies @YsKhan61
