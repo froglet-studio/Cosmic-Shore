@@ -1,9 +1,19 @@
-# Stoat — the Field Dipole (Space) and the Pathfinder (Time)
+# Stoat — the Field Dipole (Space), the Pathfinder (Time), the Mode switch (Mass) and the Ripple (Charge)
 
 The round-15 Stoat, ported from the Stoat Flight Studio's field trajectory
-(`Docs/Studios/StoatFlightStudio.html`, the `ft*` row; `Docs/Studios/README.md` round 15). It replaces the
-round-4 orbit sling (`STOAT.md`) on the triggers: the sling's code and assets stay in the tree,
-unbound, so rebinding `StoatSlingLeft/RightAction` restores it.
+(`Docs/Studios/StoatFlightStudio.html`, the `ft*` row; `Docs/Studios/README.md` round 15), and since
+**2026-10-13 its own vessel**: all four abilities and all four level-5 upgrades authored, and nothing of the
+Squirrel it was cloned from left on the prefab (§1a–§1e, §4). The round-4 orbit sling (`STOAT.md`) is back
+as **Time mode**.
+
+**Quick read — the four abilities.**
+
+| Element | Ability | Input | What Space / Time / Charge / Mass scales | Level 5 |
+|---|---|---|---|---|
+| **Space** | Field Dipole (Mass mode's triggers) | LT / RT | the pair's reach: pole size ×1 → ×2 (and the orbit's radius ×1 → ×1.4 in Time mode) | **Accretion** — swallowed prisms are stolen and grow the poles |
+| **Time** | Pathfinder (passive) + Time mode's timed slingshot | — | the boost: warp ×2.5 → ×5, and the slingshot's kick by the same ratio | **Foresight** — rivals' predicted paths |
+| **Charge** | Ripple (passive, on every annihilation) | — | the ripple's reach ×1 → ×2 | **Siphon** — stripped petals come to you |
+| **Mass** | Mass / Time Mode | B | Mass mode's trail thickness ×3 → ×6 | **Armoured Wake** — Mass-mode prisms arrive shielded |
 
 ## 1. How it flies
 
@@ -16,29 +26,74 @@ trigger's side — and their **sum** pulls them apart lengthways, the sink alway
 |---|---|---|
 | one full | 200 u, 60 u | the sink to that side, a slight diagonal |
 | both full | 0, 120 u | the sink dead ahead, the source 120 u beyond it |
-| let go of both | → 0 | the poles fall together and **annihilate** when the horizons touch |
+| let go of either | → 0 | the poles **slam together** and **neutralize** — never caught again |
+
+**Every press lays a fresh pair** (replacing any pair the other trigger still holds; both triggers
+pressed on one frame lay one), and a released pair is gone from your hands at once: a trigger still held
+after the other is let go keeps its squeeze but lays nothing until it is pressed again (2026-10-13, play
+feedback: "when I let go I should have no chance of recovering those poles").
+
+**The annihilation (2026-10-13).** Released, the pair belongs to no trigger: its poles accelerate into
+each other from where they were let go (`StoatDipoleMath.SlamRemaining`, `1 − (t/T)²` over
+`annihilateSeconds` = 0.3 s, so they hit at full speed) and both holes' `BlackHole.Amplitude` falls with
+the separation — a dipole's field IS its separation — so their pull, their tides on prisms and their lens
+cancel as the poles meet. The lens follows the amplitude at the holes' FULL size (`_BHStrength` in
+`BlackHoleLens.shader`: the bend relaxes toward straight, the dark shadow and the light core fade into the
+scene behind them), so two opposing fields neutralize into nothing instead of two warps shrinking. The
+holes despawn at amplitude 0, where the despawn's own shrink is invisible. The owner's flight ignores a
+released pair. Every peer runs the same slam on its copy (`StepCollapses`). A press while a pair is still
+slamming takes the budget from it, oldest first.
 
 The poles' strength and size never follow the triggers — only their separation (the dipole moment)
-does. Space sizes them: horizon **3.5 u** and GM **120 000** at rest, ×1 → ×2 at level 10
+does. Space sizes them: horizon **2.1 u** and GM **50 000** at rest (the studio's 3.5 u and 120 000;
+cut to 1.17 u / 60 000, then 1.75 u / 40 000 "a bit bigger and weaker", then on 2026-10-13 "a little bigger
+and a little more powerful"), ×1 → ×2 at level 10
 (`StoatDipoleConfigSO.poleSize`, read live on the owner, replicated as the horizon). The sink grows in
 over 0.9 s, the source over 1.1 s (from 55%), so a fresh pair pulls before it pushes.
 
-**The field** is the studio's: the sink's Paczyński–Wiita pull `GM/(r − r_s)²`, the source's softened
-push `GM·r/(r² + ε²)^1.5` (ε = 2 source horizons), the sum capped at 3000 u/s². One step of flight in it
+**The field** on the owner's flight and the pathfinder: the sink's pull **softened over a 14-horizon core**
+(`sinkSofteningHorizons`; ε = 29.4 u at rest) — `GM·r/(r² + ε²)^1.5`, the source's own law — and the
+source's push `GM·r/(r² + ε²)^1.5` (ε = 2 source horizons), the sum capped at 3000 u/s². The studio's
+steep Paczyński–Wiita `GM/(r − r_s)²` made a near pass all-or-nothing: measured unsteered at 30 u/s,
+offsets 8 u apart bent 2°, 63°, 166°, 179°, 150°, 71°…; softened, the same passes bend smoothly 29° → 141°
+→ 75° across 0–120 u at the shipped 2.1 u / 50 000 (9° → 25° → 12° at 60 u/s), the widest forgiving band of
+warped lines of the candidates tried (prisms and rival
+vessels still feel the platform's own law). One step of flight in it
 (`StoatDipoleMath.Step`, the studio's `fieldSubstep`) turns the nose by the field's perpendicular part
 (capped at 12 rad/s) and carries a **gravity speed** along the nose from its parallel part (gripped back
 toward cruise at 0.5 /s, ceiling 4 × cruise). Fly into the sink's horizon and you come out of the source
-at the point reflection of where you went in (`BlackHolePairMath.ExitPosition`), with the gravity speed
-you had before the dive.
+on the side opposite to where you went in, just outside its horizon (`StoatDipoleMath.ExitPoint`), with
+the gravity speed you had before the dive.
+
+**The fly-through ZONE (2026-10-13).** The drawn horizon is small, so the sink also takes a hull that
+LOOPS it: within **135 u** of the sink (× the poles' size, `throughZoneRadius`; 90 before the poles grew
+1.5×) every turn of the heading is counted — toward the sink adds, away subtracts, floored at 0, cleared on
+leaving the zone — and at **200°** (`throughDegrees`) you go through (`StoatDipoleMath.WindThrough`, shared
+by the flight and the pathfinder, so the line shows it). A U-turn round the attractive pole is yours; a
+loop past 200° is taken. Measured headless on the shipped field: at 60 u/s a pilot holding the sink abeam
+turns ~180° and flies out, steers out of it, or keeps orbiting and is taken at 200°; at 30 u/s steering
+out after 170° escapes, a centred stick lets the pole carry you past 200°, and letting go always frees you.
+135 u is the smallest zone that holds a stick-held orbit at 60 u/s (at 90 it left the zone and reset).
 
 **Time — the Pathfinder (passive).** Every frame the hull's own flight is run forward 600 u on the
 inputs it holds (`StoatDipoleMath.PredictPath`, the studio's `fieldPath`: the same `Step`, the held
-steering rates, through the wormhole) and drawn for the pilot as dots from 8 u ahead of the nose:
-4 px dots, 10 diameters apart, **blue-grey** while open. When the poles **warp** the path at all — it
+steering rates, through the wormhole) and drawn for the pilot as dots from 8 u ahead of the nose. Since
+2026-10-13 it flies the hull the way `VesselTransformer` does (`StoatDipoleMath.HullResponse`): the stick
+turns the COMMAND and the hull slerps after it at `RotationFollowRate` (1.5 /s), and the engine eases to
+`CurrentThrottleTarget` at the same rate. The first port turned the body at the stick's rate at once and
+held its speed, which put the drawn line 15–75 u off the hull's real path within 3 s of starting a turn
+(measured headless) — "the vessel doesn't take the path". The line runs **1200 u** (two to three windings
+of a held helix):
+4 px dots, 2.5 diameters apart (the studio's 10, cut on 2026-10-13), **blue-grey** while open. The dots
+carry a light **depth** cue: each is sized `sqrt(nearest dot's depth / its depth)`
+(`StoatDipoleMath.DepthScale`, floored at 0.75), its gap is measured in its own diameters, and it fades
+by up to 15% toward the far end (`dotDepthMinScale`, `dotDepthFade`) — light enough that the far windings
+of a helix stay legible behind the near ones. When the poles **warp** the path at all — it
 bends ≥ 3°, or goes through the wormhole — it turns **lime** and the hull flies down it faster: a warp of
 the hull's own flight clock (`VesselTransformer.FlightTimeScale`), so the path stays the path and only
-arrives sooner. The boost rises at 20 /s and fades over 0.6 s. **Time is rate:** ×2 at rest, ×3 at level 5
-(the studio's number), ×4 at level 10 (`StoatDipoleConfigSO.boost`, floored at 1). A path that comes back
+arrives sooner. The boost rises at 20 /s and fades over 0.6 s. **Time is rate:** ×2.5 at rest, ×3.75 at
+level 5, ×5 at level 10 (`StoatDipoleConfigSO.boost`, floored at 1; the studio's ×2 → ×4 raised a quarter
+on 2026-10-13). A path that comes back
 within 8 u of itself (at least 60 u on) ends there — the loop that would cross your own trail.
 
 **The base turn is ×0.4** (pitch / yaw 48 °/s, roll 52 — the studio's `ftTurnScale`): the hull leans on its
@@ -59,6 +114,119 @@ pair was circled went **7.43 → 0.66 laps** at I2 and **3.23 → 0.60** at I3 (
 0.77), race times unchanged within a second (58.5 → 59.6 s, 51.8 → 51.5 s). After a capped let-go it waits the full `autopilotIntervalSeconds` rather than the 0.25 s relay, so
 the next pair is not laid while the hull is still turning out of the last one. A pass by the sink sweeps
 under 180°, so the cap never cuts one short (`StoatDipoleTests.OrbitCap_*`).
+
+## 1a. The modes — B switches Mass and Time (Mass, 2026-10-13)
+
+The design call: *"a mass mode that puts out a thicker trail and uses the current behavior. then it can switch to
+a time mode where it restores the auto orbit behavior we were testing before that boosted players if they timed the
+orbit near 90 degree orbit rotation."*
+
+| | Mass mode (the default) | Time mode |
+|---|---|---|
+| **LT / RT** | the Field Dipole (§1) | the orbit slingshot (§1b, `STOAT.md` §1) |
+| **The trail** | THICK: the prism's height × `massModeThickness` (Mass ×3 → ×6, read at the REPLICATED level) | as authored |
+| **Mass 5** | every prism arrives SHIELDED (Armoured Wake) | — |
+
+**B** (`InputEvents.Button2Action`; R on a keyboard) flips the mode (`StoatModeActionSO` → `StoatModeExecutor.Toggle`).
+It is a press with no release semantics (vessel rule 37). Both trigger assets ride each trigger (`StoatDipoleLeft/
+RightAction` AND `StoatSlingLeft/RightAction`); each executor stands aside outside its own mode, so the binding never
+changes and the peer-press harness sees one ordinary binding. **A switch lets go of whatever the triggers held** — the
+dipole annihilates where it stands (and throws its ripple), an orbit is let go WITHOUT its kick — and a trigger still
+held after the switch does nothing until it is pressed again.
+
+**Where it runs.** Every peer: the press round-trips like every ability press, and the mode both routes the trigger
+presses that follow and decides the trail every peer lays (the Butterfly's `SpreadWingsActionExecutor` shape).
+The thickness eases over `blendSeconds` (0.8 s) and is written every frame to
+`VesselPrismController.ThicknessMultiplier` — a new sibling of `WidthMultiplier`, admitted past the pool's scale
+window the same way (`AdmitTargetScale` after `Initialize`).
+
+**The autopilot switches too** (never assume an AI can use a human's input): Time mode when its target is
+≥ `autopilotTimeModeDegrees` (70°) off the nose — an orbit is a tight turn — and back to Mass mode within half of it,
+at most every 3 s, never while a trigger is held, through the replicated press.
+
+## 1b. Time mode — the 90° slingshot
+
+The round-4 orbit (`StoatSlingExecutor`, `STOAT.md` §1, unchanged): press lays the attractor beside you at the radius
+the squeeze asks for and the hull circles it; release slings you out along the tangent. What is new is that the
+**release is timed**:
+
+```
+kick = SlingBoost(speed, deepest squeeze) × lerp(missKickShare, 1, SweetSpot(degrees swept)) × Time's boost ratio
+SweetSpot = 1 within ±15° of 90°, smoothstep down to 0 over the next 30° either side
+```
+
+So a release a quarter-turn round (out on a tangent square to the heading you came in on) pays the whole kick; a tap
+release (0°) or a half orbit (180°) pays a fifth (`missKickShare` 0.2). The studio measured the problem this answers
+(`STOAT_SIM_LAB_PLAN.md` §2, the `dpKickSweep` slider): with the kick un-earned the best play was caught-and-release at
+0°. **Time is the boost**: the kick scales by `StoatDipoleConfigSO.BoostRatio` — the warp boost's own ratio to its rest
+value, ×1 → ×2 — so Time's one parameter moves both of the Stoat's speed-ups. A kick past the shared 100 u/s
+displacement ceiling raises the cap for its own life (`ModifyVelocity(…, ceiling)`, vessel §4.ab2).
+
+**The cue.** While you orbit, the pathfinder's line becomes the REST OF THE ORBIT, to the far edge of the window
+(`StoatSlingMath.OrbitArc`), blue-grey easing toward lime as the window nears and **lime inside it**. The HUD's Time
+card fills toward the sweet spot and turns lime in the window. `sweetSpotEvent` (empty) plays on a timed release.
+
+## 1c. The Ripple — Charge, passive
+
+The design call: *"charge should always be focused on anti vessel/fauna gameplay. the explosion is cool but it should
+only kill fauna and strip elements from vessels. and it should look like a cool space time ripple."*
+
+**Every annihilation** of this hull's pair throws a ripple from where the poles met: a dipole let go (or replaced by a
+fresh press, or cut short by the hole budget), the orbit's pair closing after its slingshot (`BlackHoleRegistry.PairMet`,
+new), or a fresh orbit press over a live pair. Its front expands with an ease-out over `expandSeconds` (0.9 s) to
+
+```
+radius = clamp(separation at the let-go × 0.6, 30, 160) × Charge (×1 → ×2, at the REPLICATED level)
+```
+
+so a pair held wide is a wide ripple — the dipole moment becomes the threat. As the front sweeps over them:
+
+| reached by the front | what happens |
+|---|---|
+| a **rival vessel** | stripped of **one whole petal of every element** it holds (`ResourceSystem.AccrueElementalLoss`, classed `ElementalDebuffSources.Explosion`, so a ward against blasts stops it), shed as crystals around it — with **Charge 5 — Siphon** the petals go straight to the Stoat (`GrantPetals`) |
+| a **creature** | killed (`Fauna.Predated`, the platform's death: heart released, mass conserved) on the fauna's simulating machine |
+| a **prism**, the owner, a teammate | nothing |
+
+Each victim is struck once per ripple. **Where it runs:** every peer, from its own copy of the pair (each peer's copy
+collapses / meets); the strip runs on each peer's copy of the rival's petals, the per-peer stance the wormhole toll and
+the sink's own crystal strip take, with Charge and Siphon read off replicated state so every peer sweeps the same sphere.
+
+**The picture** (`StoatRipple` + `StoatRipple.shader`): a back-faced sphere drawn by the black-hole lens pass
+(`LightMode = BlackHoleLens`) from its copy of the camera colour. Per pixel, the view ray's closest approach to the
+centre picks the ring the shell projects to; within a band either side the ray is BENT — toward the centre outside the
+front (the scene pushed out), away inside it (pulled in), a derivative-of-Gaussian profile — with a red / blue split
+and a thin rim in the owner domain's light colour, fading after the front settles. A ripple holds the lens pass open
+(`BlackHoleLensPass.Acquire`) so it draws whether or not a hole is still live. Stated limits: no depth test (an opaque in
+front of the band is bent with the background for the wave's ~1 s); a camera inside the front sees nothing.
+
+## 1d. The HUD — four cards, four gauges
+
+`StoatHUDVariant.prefab` (a true variant of `VesselHUDPrefab`, copied once from the Thresher's: authored petal bars, a
+four-card row on known fileIDs), `StoatHUDView`, `StoatHUDController` (every signal polled from the Stoat's OWN
+executors, serialized on the prefab — rule 14):
+
+| Card | Icon | Gauge |
+|---|---|---|
+| Charge | Ripple | the ripple a let-go would throw NOW, as a share of the largest |
+| Mass | Mass / Time Mode | the switch: full in Mass mode, empty in Time mode, eased between |
+| Space | Field Dipole | Space-5 Accretion: how far the open pair has grown |
+| Time | Pathfinder | Mass mode: the warp boost on; Time mode: progress to the 90° sweet spot, lime in the window |
+
+The icons are placeholders (`Tools/Build/author_stoat_icon_placeholders.py`, `--check`); the card icons on
+`SO_Class_Stoat` are renders of the Stoat's own hull (`Tools/Build/render_stoat_card_icon.py`, `--check`).
+
+## 1e. Space 5 Accretion, Time 5 Foresight, the omni crystal
+
+- **Accretion (Space 5, with Theft fused in — rule 28).** Prisms the sink takes are STOLEN (unchanged: out of the
+  source in your domain) and every one grows BOTH poles `accretionPerPrism` (4%) of their size, to `accretionMax` (×2),
+  until the pair annihilates. Counted off the sink's new `BlackHole.CapturedCount` (the gravity field counts every
+  capture: vanish, consume, throat transit), on the authority; peers see the grown size as the published horizon.
+- **Foresight (Time 5).** The pathfinder also draws the paths of the `foresightMaxRivals` (3) nearest rivals within
+  `foresightRange` (1500 u), `foresightLength` (500 u) long, in their domain colours: each flown forward on the turn
+  and speed it is holding NOW — its rotation's change since last frame, in its own axes — through the same
+  `StoatDipoleMath.PredictPath`. Rivals rescanned once a second. Local pilot only; presentation only.
+- **Overclock (the omni crystal, proposal O1).** `StoatOverclockByCrystalEffectSO`, the only Stoat entry in
+  `vesselCrystalEffects`: 6 s in which the boost holds full and the line stays lime, warped or not.
 
 ## 2. What the sink takes
 
@@ -89,7 +257,9 @@ vanish happens AT the horizon, inside the shadow the lens draws, so nothing is s
 
 The simulating machine (`MantaStingActionExecutor.IsSimAuthority`: the owner, the host for an AI)
 reads the triggers, places the poles and publishes them on `R_VesselActionHandler.NetStoatDipoleSink`
-(xyz + horizon) / `NetStoatDipoleSource` — the `NetEchoSightShape` precedent: the separation is two
+(xyz + horizon) / `NetStoatDipoleSource` (xyz + the pair's serial in w: a press can close one pair and
+open the next inside one tick, so a peer re-lays its copy when the serial changes instead of sliding the
+old pair across) — the `NetEchoSightShape` precedent: the separation is two
 analog triggers no peer receives, and the size is Space-scaled on an unreplicated level. Every peer
 lays its own copy of the pair from those and nothing else, and applies the owner's rules to it (the
 upgrade bit, the name and the domain are replicated). The boost and the field flight run where the hull
@@ -163,28 +333,38 @@ map `Tools/Build/studio_to_unity/stoat.json`).
 
 | | |
 |---|---|
-| Maths (pure, tested) | `StoatDipoleMath.cs` — `StoatDipoleTests` |
-| Placement + field flight + owner rules + AI | `Executors/StoatDipoleExecutor.cs` |
-| Pathfinder + boost + dots | `Executors/StoatPathfinderExecutor.cs`, `StoatPathfinderDots.cs` (screen overlay, after the lens) |
-| Config | `Data Containers/StoatDipoleConfigSO.cs` → `_SO_Assets/VesselActions/Stoat/StoatDipoleConfig.asset` |
-| Triggers | `Data Containers/StoatDipoleActionSO.cs` → `StoatDipoleLeftAction` / `StoatDipoleRightAction` |
-| Platform hooks | `VesselTransformer.FlightTimeScale`, `BlackHole.PrismCapture` / `CrystalStripShare` / `DomainTint`, `Prism.Vanish`, `BlackHoleCrystalStrip`, `R_VesselActionHandler.NetStoatDipole*` |
-| Prefab + assets | `Tools/Build/author_stoat_assets.py` stages 4-5 (`--check`, `--self-test`) |
-| Camera | `_SO_Assets/Camera/StoatCameraSettingsSO.asset` (stage 5) |
-| Arcade | `Arcade/WARPLINE.md` (the Time race), `Arcade/SLINGSHOT.md` (now flown on the dipole) |
+| Maths (pure, tested) | `StoatDipoleMath.cs` — `StoatDipoleTests`; `StoatSlingMath.cs` (+ `SweetSpot`, `TimedKick`, `OrbitArc`) and `StoatRippleMath.cs` — `StoatRippleTests`, `StoatSlingTests` |
+| Placement + field flight + owner rules + Accretion + AI | `Executors/StoatDipoleExecutor.cs` |
+| Time mode's orbit + timed slingshot + AI | `Executors/StoatSlingExecutor.cs` |
+| The mode switch + thick trail + AI switching | `Executors/StoatModeExecutor.cs`, `Data Containers/StoatModeActionSO.cs` → `StoatModeAction.asset` |
+| The ripple | `Executors/StoatRippleExecutor.cs`, `StoatRipple.cs`, `Data Containers/StoatRippleConfigSO.cs` → `StoatRippleConfig.asset`, `_Graphics/Materials/Graphs/StoatRipple.shader` (`Tools/Shaders/verify_stoat_ripple.py`), `Resources/StoatRipple.mat` |
+| Pathfinder + boost + dots + Foresight + Overclock | `Executors/StoatPathfinderExecutor.cs`, `StoatPathfinderDots.cs` (screen overlay, after the lens), `ImpactEffects/…/StoatOverclockByCrystalEffectSO.cs` |
+| Config | `Data Containers/StoatDipoleConfigSO.cs` → `_SO_Assets/VesselActions/Stoat/StoatDipoleConfig.asset` (+ Accretion, Foresight), `StoatSlingConfig.asset` (+ the timing window) |
+| Triggers | `StoatDipoleLeft/RightAction` + `StoatSlingLeft/RightAction` on each trigger; `StoatHoldAction` on X; `StoatModeAction` on B |
+| HUD | `UI/Controller/StoatHUDController.cs`, `UI/View/StoatHUDView.cs`, `_Prefabs/UI Elements/VesselHUD/StoatHUDVariant.prefab`, `_Graphics/Icons/AbilityIcons/Stoat/` |
+| Own assets | `StoatCameraSettingsSO` (`_SO_Assets/Camera/StoatCameraSettingsSO.asset`, stage 5), `StoatImpactorDataContainer`, `StoatSkimmerImpactorDataContainer`, `StoatAIBoostPolicy`, `CardImages/Stoat(_Inactive).png` |
+| Platform hooks | `VesselTransformer.FlightTimeScale`, `VesselPrismController.ThicknessMultiplier`, `BlackHole.PrismCapture` / `CrystalStripShare` / `DomainTint` / `CapturedCount`, `BlackHoleRegistry.PairMet`, `Prism.Vanish`, `BlackHoleCrystalStrip`, `R_VesselActionHandler.NetStoatDipole*` |
+| Prefab + assets | `Tools/Build/author_stoat_assets.py` stages 4, 5 and 6 (`--check`, `--self-test`) |
+| Arcade | `Arcade/WARPLINE.md` (the Time race), `Arcade/SLINGSHOT.md` (flown on the dipole; the AI uses both modes) |
 
-Audio slots ship **empty** (`openEvent`, `annihilateEvent`, `warpEvent` on the config).
+Audio slots ship **empty**: `openEvent`, `annihilateEvent`, `warpEvent` (dipole config), `holdStartEvent`, `slingEvent`,
+`sweetSpotEvent` (sling config), `massModeEvent`, `timeModeEvent` (mode action), `rippleEvent`, `stripEvent` (ripple config).
 
 ## 5. Element map
 
-| Element | Ability | Input | L5 upgrade |
-|---|---|---|---|
-| **Space** | Field Dipole — pole size ×1 → ×2 | LT / RT | **Theft** — swallowed prisms are stolen, not destroyed (`IsUpgradeActive(Space)`) |
-| **Time** | Pathfinder — warp boost ×2 → ×4 | passive | open — proposals below |
-| **Charge** | open — proposals below | — | — |
-| **Mass** | open — proposals below | — | — |
+| Element | Ability | Input | Scales | L5 upgrade (gate) |
+|---|---|---|---|---|
+| **Space** | Field Dipole | LT / RT (Mass mode) | pole size ×1 → ×2; orbit radius ×1 → ×1.4 in Time mode | **Accretion** (+ Theft) — `StoatDipoleExecutor` `IsUpgradeActive(Space)` |
+| **Time** | Pathfinder / Time Mode | passive | warp boost ×2.5 → ×5; the timed kick by its ratio | **Foresight** — `StoatPathfinderExecutor` `IsUpgradeActive(Time)` |
+| **Charge** | Ripple | passive | the ripple's reach ×1 → ×2 | **Siphon** — `StoatRippleConfigSO.Siphons` `IsUpgradeActive(Charge)` |
+| **Mass** | Mass / Time Mode | B | Mass-mode trail thickness ×3 → ×6 | **Armoured Wake** — `StoatModeActionSO.ShieldsInMassMode` `IsUpgradeActive(Mass)` |
 
-## 6. Proposals (NOT implemented — mark up)
+`python3 Tools/Build/element_ability_table.py Stoat` reads 4/4 · 4/4 · 4/4, 0 disagreements. `halfGapHorizons` (Space)
+is read only by the crystal pair style (`BlackHoleConfig.crystalPairs`), off by default. The forked containers carry
+none of the Squirrel's element gates (rule 26): its omni explosion / crystal morph / Crystal Joust / steal / overtake /
+boost-meter skim are gone, so no element grants a second, undocumented upgrade.
+
+## 6. Proposals (as written 2026-10-09 — DECIDED 2026-10-13, see `FLEET_MAPS.md` ▸ Stoat for what was chosen)
 
 Every row below is a proposal awaiting sign-off, per the vessel skill's design gate. Each keeps the
 fleet's element conventions (Space = reach, Time = rate, Charge = threat, Mass = size) and one
@@ -229,4 +409,40 @@ errors in project code). **Not run in the Editor** — `/verify-unity` was not a
 wrote it; filed in `Docs/UNITY_VERIFICATION_CHECKLIST.md`. Not yet measured in the game: the feel of
 the field flight against the transformer's nose follow (the studio turns the hull directly; here the
 field turns the hull and its command together, which keeps the follow's gap), and the per-frame cost
-of the prediction near the sink (≤ 96 substeps per 3 u step, ~200 steps).
+of the prediction near the sink (≤ 96 substeps per 3 u step, ~400 steps since the path went to 1200 u on
+2026-10-13 — profile `StoatPathfinderExecutor.Update` before anything else).
+
+Since the port (`cece/fervent-hypatia-rg4why`, 2026-10-13), four rounds of play tuning landed here
+(§1 tells each number's history). The pure maths behind each of them was RUN headless: the shipped
+`StoatDipoleMath` on a stub `UnityEngine` (`/asset-surgery` §4), the fly-through and sensitivity scenarios,
+and the new `StoatDipoleTests`. The lens change passed `verify_black_hole_lens.py`. The whole tree compiled
+against the Unity references, and none of it has been opened in the Editor.
+
+**The own-vessel pass (2026-10-13, this branch)** added §1a–§1e and stage 6 of the generator. Verified headless:
+`unity_refcompile` player + editor configs (0 errors in project code), `author_stoat_assets.py --check` / `--self-test`
+(22 negative controls; stages 2–6 idempotent; no dangling local reference after the surgery), the peer-press harness
+(1050 human + 1050 AI presses, 0 divergences, with both trigger assets on each trigger and B bound),
+`author_stoat_icon_placeholders.py --check`, `render_stoat_card_icon.py --check`, `element_ability_table.py Stoat`
+(4/4, 0 disagreements) and the repo's logging / conditional / abstract-member / switch / using / network-hash /
+container / channel / far-clip / class-icon / elemental-float gates. `StoatRippleTests`' assertions were RUN headless (the shipped `StoatRippleMath` / `StoatSlingMath` on the hull
+harness's math stub: 29 of 29 pass); the NUnit suites (`StoatRippleTests`, the edited `StoatSlingTests` /
+`CrystalHullFusionBakeTests`) compile in the editor config but were not run in an editor. The
+ripple shader compiles in both stages against the lens verifier's URP mock (`Tools/Shaders/verify_stoat_ripple.py`, with
+a negative control); the real-URP DXC compile was not available. **Not opened in the Editor** — `Docs/UNITY_VERIFICATION_CHECKLIST.md`.
+
+## 8. Debt and follow-ups (rows only — the 2026-10-13 ship pass)
+
+| # | Kind | Row | Measured |
+|---|---|---|---|
+| D1 | **resolved 2026-10-13** | The round-1 **sling family** was left on the prefab unbound with the question "kept or retired?". Decided: **kept, as Time mode** (§1a–§1b). Its actions ride both triggers beside the dipole's; the two comments that named it as live (`SlingshotController`, `BlackHoleVesselPull`) are true again. | `grep -rln StoatSling Assets/_Scripts --include=*.cs` — every hit is live code. |
+| D2 | debt walked past | **Two view-camera resolvers.** `BlackHoleLens.ViewCamera()` (the last base camera that rendered to screen) predates bleeding-edge's `CameraManager.ViewCamera` (`a315a308`, the active controller's camera), and both answer "which camera is the player looking through". The pathfinder tries the controller first and then falls back to the lens's resolver. Pick one; a third view-dependent effect will otherwise pick at random. | `grep -rn "BlackHoleLens.ViewCamera()"` → 10 call sites; `CameraManager.ViewCamera` → 8. |
+| D3 | debt this branch created | `StoatDipoleMath.ShouldAnnihilate` now gates a path that cannot be reached in normal play: since 2026-10-13 a release closes the pair at once (`Release` → `Close(annihilate: true)`), so the "let go of both and the poles fall together" branch runs only if a pole is left open with no trigger held. Keep it as a safety net or delete it along with its test. | one caller, `StoatDipoleExecutor.StepAuthority`; its doc still says "Let go of both triggers and the poles fall back together". |
+| D4 | **resolved 2026-10-13** | The ported **Crystal Wormhole Cell** was referenced by nothing outside its own folder: the port skipped the source branch's Cell Selector entry believing it named a deleted Black Hole cell, but that cell was RENAMED to the Crystal Wormhole Cell with its guid kept (`eb902588`, `R100`), so the entry named this very config. `Docs/CRYSTAL_WORMHOLE.md` and `CrystalWormholeTests` both say it is selectable; Menu_Main's `Cell.CellConfigs[13]` is restored byte-for-byte from the source branch (DT-003). | `grep -c dc10d5b4b02b4bd2a0890b2679ce32aa Assets/_Scenes/Menu_Main.unity` → 1. |
+| D5 | report | The **Stoat Flight Studio** now describes a different vessel (labmaker CATALOG row, L-STU-29). The next studio round starts by re-reading `StoatDipoleConfig`. | — |
+| D6 | debt this branch created | **The mode is not replicated state, only replicated presses.** Every peer flips on the replicated B press (the Butterfly's mode does the same), so a peer that JOINS after the owner switched starts its copy in Mass mode and routes that Stoat's trigger presses (and lays its trail) as Mass mode until the owner switches again. A `NetworkVariable<byte>` on `R_VesselActionHandler` beside `NetStoatDipoleSink` would fix it for both hulls. | late join only; the peer-press harness's 920 late-joiner releases are of presses, not of mode state |
+| D7 | report | **The ripple bends what is in front of it.** `StoatRipple.shader` has no depth test (the lens has one, because the lens's sphere is centred on a hole the scene can be in front of); an opaque between the camera and the band is bent with the background for the wave's ~1 s. Add the lens's `SampleSceneDepth` test if it reads wrong in play — it needs the depth texture the lens switches on only while a hole lives. | — |
+| D8 | report | **Four holes, two pairs** (§3) now covers BOTH modes: a Time-mode orbit pair counts against the same budget as a dipole. Unchanged in kind, wider in reach. | `BlackHoleConfig.maxBlackHoles` 4 |
+| D9 | report | The Stoat's **hull-fusion entries ship with no bake** since its last model left the asset: the fusion solves on a worker at runtime (`CrystalHullFusion.Prewarm`, the Scarab's path onto its visible procedural hull), and `CrystalHullFusionBakeTests` skips a runtime-generated hull instead of demanding a bake keyed to a mesh the vessel never draws. | `RuntimeGeneratedHull` in the test |
+| D10 | debt this branch widened | **The Stoat's sim-authority test lives on another vessel's executor.** Every Stoat executor asks `MantaStingActionExecutor.IsSimAuthority(status)` whether it is the simulating machine — a general rule (the owner; the host for an AI) homed on the Manta's sting. This branch added a fourth caller (`StoatModeExecutor`). Shape: a helper on the wrong class (`/refactor` §3). Move it to a vessel-level home (`IVesselStatus` / a static `VesselAuthority`) and repoint every caller. | `grep -rln "MantaStingActionExecutor.IsSimAuthority" Assets/_Scripts --include=*.cs` → 4 files, all four Stoat executors (the Manta's own uses are unqualified) |
+| D11 | walked past | **`check_enum_member_references.py` is red on bleeding-edge**, not on this branch: `GameCanvasUnifier.cs(920): 'Placement' has no member 'Capture'`, the enum it resolved being `CrystalFlipWaveBenchmarkWindow.cs`'s — likely two same-named enums rather than a missing member. Confirmed identical on `390c2467` (exit 1) before any Stoat change. | `python3 Tools/Build/check_enum_member_references.py; echo $?` → 1 on base and branch |
+| D12 | walked past, FIXED here | `Tools/Build/peer_press_harness` could not compile on bleeding-edge: its `UnityEngine` stub had no `Vector4`, which the Stoat port's `NetStoatDipoleSink/Source` added to `R_VesselActionHandler`. One stub line; the harness now runs (1050 + 1050 presses, 0 divergences). | `python3 Tools/Build/peer_press_harness/run.py --self-test` → was COMPILE FAILED, now passes |

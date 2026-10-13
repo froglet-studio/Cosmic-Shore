@@ -5,9 +5,7 @@ namespace CosmicShore.Core
 {
     public class PlayerProfile
     {
-        public string UniqueID => SystemInfo.deviceUniqueIdentifier;
         public string AvatarUrl { get; set; }
-        public string Email { get; set; }
         public string DisplayName { get; set; }
         public bool IsNewlyCreated { get; set; }
         public int ProfileIconId

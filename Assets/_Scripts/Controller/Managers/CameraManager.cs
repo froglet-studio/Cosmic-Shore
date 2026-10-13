@@ -393,6 +393,41 @@ namespace CosmicShore.Gameplay
 
         public ICameraController GetActiveController() => _activeController;
 
+        static Camera s_viewCamera;
+        static int s_viewCameraFrame = -1;
+
+        // Enter Play Mode keeps statics (domain reload is off): never serve last session's camera.
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        static void ResetViewCamera()
+        {
+            s_viewCamera = null;
+            s_viewCameraFrame = -1;
+        }
+
+        /// <summary>
+        /// The camera the player is looking through: the active controller's camera ("CM PlayerCam" in flight,
+        /// the death or end camera after), falling back to <c>Camera.main</c> where no controller is active (the
+        /// main menu and its lava lamp, a test scene). Resolved once a frame. Use it for anything that depends
+        /// on where the viewer is - a billboard, a projection onto the screen, a distance LOD.
+        ///
+        /// NOT <c>Camera.main</c> in flight: Bootstrap's MainCamera-tagged "Camera" (the menu's Cinemachine brain,
+        /// with the AudioListener) stays enabled and never follows the vessel, while "CM PlayerCam" is untagged.
+        /// A view-dependent effect that read <c>Camera.main</c> measured everything from a point that never moved
+        /// (the depth prisms froze, Omni Shepard Lab round 9; refactor row F4 swept the rest, 2026-10-13).
+        /// </summary>
+        public static Camera ViewCamera
+        {
+            get
+            {
+                if (s_viewCameraFrame == Time.frameCount) return s_viewCamera;
+                s_viewCameraFrame = Time.frameCount;
+                var manager = Instance;
+                var controller = manager ? manager.GetActiveController() as CustomCameraController : null;
+                s_viewCamera = controller && controller.Camera && controller.Camera.isActiveAndEnabled ? controller.Camera : Camera.main;
+                return s_viewCamera;
+            }
+        }
+
         /// <summary>
         /// Deactivates all managed cameras (player, death, end) without activating a replacement.
         /// Used by the menu to hand control to the scene camera driven by MainMenuCameraController.

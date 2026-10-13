@@ -1,20 +1,15 @@
 // Ported verbatim from Assets/_Scripts/System/Xp/XpHandler.cs (CaptainManager unit
-// 2026-07-10), replacing the struct-only extraction (XpHandler.Structs.cs, absorbed —
-// upstream declares XpData in this file). Mechanical substitutions: UnityEngine →
-// CosmicShore.Engine. The LOCAL lanes are live: the ClassXpData /
-// EncounteredCaptainsData dictionaries, IssueXP's per-element accumulation,
-// EncounterCaptain's dedupe + add, GetCaptainXP's reads, and the
-// OnCaptainDataLoaded fan-out. The PlayFab persistence + pull-processing lanes
-// (PlayerDataController.GetPlayerData / UpdatePlayerData sends over
-// Newtonsoft-serialized payloads; OnLoadCaptainXpData + the GetUserDataResult
-// converters) are carried as commented source — upstream they are inert too
-// ("[PLAYFAB DISABLED]" posture: the send callbacks never fire).
+// 2026-07-10; re-synced to upstream's current shape), replacing the struct-only
+// extraction (XpHandler.Structs.cs, absorbed — upstream declares XpData in this
+// file). Mechanical substitutions: UnityEngine → CosmicShore.Engine. The
+// [RuntimeInitializeOnLoadMethod] ResetStatics is data-only per port convention
+// (RuntimeInitialize.cs). Upstream's CSDebug.LogVerbose(CSLogChannel.CloudData)
+// trace in IssueXP is omitted (the port's CSDebug has no log channels; the
+// channel is off by default upstream).
 using System;
 using System.Collections.Generic;
 using CosmicShore.Core;
 using CosmicShore.ScriptableObjects;
-// PORT Deviation (PlayFab arc — restore with the persistence lanes below): using Newtonsoft.Json;
-// PORT Deviation (PlayFab arc — restore with the persistence lanes below): using PlayFab.ClientModels;
 using CosmicShore.Engine;
 using CosmicShore.Utility;
 using CosmicShore.Data;
@@ -50,16 +45,6 @@ namespace CosmicShore.Core
         public static Action OnCaptainDataLoaded;
 
         /// <summary>
-        /// Captain Xp key for querying data from PlayFab data storage, not used for PlayFab API calls now.
-        /// </summary>
-        private const string ClassXpKey = "ClassXP";
-
-        /// <summary>
-        /// Encountered Captains key for querying data from PlayFab data storage, not used for PlayFab API calls now.
-        /// </summary>
-        private const string EncounteredCaptainsKey = "EncounteredCaptains";
-
-        /// <summary>
         /// Class Xp Data
         /// Used for storing Captain Xp Data for each Vessel type.
         /// </summary>
@@ -71,24 +56,31 @@ namespace CosmicShore.Core
         /// </summary>
         public static Dictionary<VesselClassType, List<Element>> EncounteredCaptainsData;
 
+        // The ClassXpData == null guard is the only refetch trigger — a stale dict means
+        // session 2 never reloads XP. The bare delegate is publicly assignable and never cleared.
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        static void ResetStatics()
+        {
+            ClassXpData = null;
+            EncounteredCaptainsData = null;
+            OnCaptainDataLoaded = null;
+        }
+
         /// <summary>
-        /// A wrapper to get player data for now.
+        /// Was a wrapper around a player-data fetch from a backend the game no longer uses.
+        /// Captain progression is owned by UGS CloudSave now (<c>CaptainProgressCloudData</c>),
+        /// so there is nothing to pull here and the in-memory tables below are the whole of this
+        /// type's state.
         /// </summary>
         public static void LoadCaptainXpData()
         {
-            if (ClassXpData == null)
-            {
-                // For now we don't pass any keys, pull all player data and query locally.
-                // PORT Deviation (PlayFab arc): PlayerDataController.Instance.GetPlayerData();
-                // — the PlayFab pull that would answer through OnLoadCaptainXpData below.
-                // Inert upstream ("[PLAYFAB DISABLED]"); rigs seed the dictionaries directly.
-            }
+            ClassXpData ??= new();
+            EncounteredCaptainsData ??= new();
+            OnCaptainDataLoaded?.Invoke();
         }
 
         public static void IssueXP(Captain captain, int amount)
         {
-            CSDebug.Log($"XPHandler.IssueXP {captain.Name}, {amount}");
-
             if (!ClassXpData.ContainsKey(captain.Vessel.Class))
                 ClassXpData.Add(captain.Vessel.Class, new XpData (0, 0, 0, 0));
 
@@ -99,17 +91,7 @@ namespace CosmicShore.Core
             xpData.Charge += captain.PrimaryElement == Element.Charge ? amount : 0;
             ClassXpData[captain.Vessel.Class] = xpData;
 
-            // TODO: Security - Move to cloud script and store in internal data
-            // PORT Deviation (PlayFab arc — the persistence send; its OnCaptainDataLoaded
-            // callback never fires upstream with PlayFab inert):
-            // var dataContent = new Dictionary<string, string>
-            // {
-            //     { ClassXpKey, JsonConvert.SerializeObject(ClassXpData) }
-            // };
-            //
-            // PlayerDataController.Instance.UpdatePlayerData(dataContent, OnCaptainDataLoaded);
-            //
-            // CSDebug.Log($"IssueXP Success - {JsonConvert.SerializeObject(ClassXpData)}");
+            OnCaptainDataLoaded?.Invoke();
         }
 
         public static void EncounterCaptain(Captain captain)
@@ -125,16 +107,7 @@ namespace CosmicShore.Core
                 EncounteredCaptainsData[captain.Vessel.Class] = new() { captain.PrimaryElement };
             }
 
-            // TODO: Security && Portability - Move to cloud script and store in internal data
-            // PORT Deviation (PlayFab arc — the persistence send; see IssueXP):
-            // var dataContent = new Dictionary<string, string>
-            // {
-            //     { EncounteredCaptainsKey, JsonConvert.SerializeObject(EncounteredCaptainsData) }
-            // };
-            //
-            // PlayerDataController.Instance.UpdatePlayerData(dataContent, OnCaptainDataLoaded);
-            //
-            // CSDebug.Log($"Encounter Captain Success - {JsonConvert.SerializeObject(EncounteredCaptainsData)}");
+            OnCaptainDataLoaded?.Invoke();
         }
 
 
@@ -153,27 +126,9 @@ namespace CosmicShore.Core
             return 0;
         }
 
-        // PORT Deviation (PlayFab arc — the pull-processing seam: GetUserDataResult +
-        // the Newtonsoft converters arrive with the PlayFab surface; carried as source):
-        //
-        // /// <summary>
-        // /// Process user data result upon pulling player data, convert the result to Class Xp Data, and log them in the console.
-        // /// </summary>
-        // /// <param name="result">Query result for player data</param>
-        // public static void OnLoadCaptainXpData(GetUserDataResult result)
-        // {
-        //     ClassXpData = ConvertResultToCaptainXpData(result);
-        //     EncounteredCaptainsData = ConvertResultToEncounteredCaptainData(result);
-        //
-        //     foreach (var key in ClassXpData.Keys)
-        //         CSDebug.Log($"OnLoadCaptainXpData - ClassXpData.ShipClassXpData.Keys: {key}");
-        //
-        //     CSDebug.Log($"OnLoadCaptainXpData - Custom Data: {result.CustomData}");
-        //
-        //     OnCaptainDataLoaded?.Invoke();
-        // }
-        //
-        // static Dictionary<VesselClassType, XpData> ConvertResultToCaptainXpData(GetUserDataResult result) { ... }
-        // static Dictionary<VesselClassType, List<Element>> ConvertResultToEncounteredCaptainData(GetUserDataResult result) { ... }
+        // Three parsers lived here — OnLoadCaptainXpData and the two ConvertResultTo* helpers
+        // that turned the old backend's user-data blob into the tables above. Their only caller
+        // was a player-data controller whose prefab is in no scene, so they were unreachable.
+        // Removed with that backend; persistence belongs to UGS CloudSave.
     }
 }

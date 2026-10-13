@@ -13,7 +13,13 @@ exit 2 = offline with no cache.
 First run ~10 min (the fetch, then ~2 min compiling ~90 assemblies). Later runs take ~30 s: package
 assemblies are compiled once, player-mode, into a cache keyed by input fingerprint and shared by every
 config and worktree, and only Assets assemblies recompile. Runs that share a cache or `TMPDIR` take
-turns (a lock), so starting several at once is safe.
+turns (a lock), so starting several at once is safe **once the cache is fetched**. The lock is taken by
+`build.py`, and `run.sh` runs `fetch.py` before it unlocked, so two runs starting on a COLD cache race
+their `git clone`s into the same package directories (`fatal: destination path ... already exists`,
+reported as `UNAVAILABLE`). The half-cloned packages then fail with thousands of errors, which surface as
+project errors (seen 2026-10-13: three parallel runs, `6390 error(s) in project code` on a tree
+that compiles clean). Recovery: `rm -rf "$CACHE"/packages "$CACHE"/git "$CACHE"/tools` and run once,
+alone. Until the lock moves into `run.sh`, start ONE run on a cold cache and fan out after it.
 Needs a .NET SDK, **8.0 or newer** (8.0 and 10.0 both verified), under `DOTNET_ROOT` (`run.sh` falls
 back to `$HOME/.dotnet`); the helper tools are built for the newest runtime + reference pack it holds.
 
@@ -42,7 +48,7 @@ green editor run is weaker evidence than a green player run.
 
 A small re-implementation of Unity's script pipeline (`build.py`):
 
-1. **Discovers every `.asmdef`/`.asmref`** in the fetched package sources and `Assets/`, evaluates
+1. **Discovers every `.asmdef`/`.asmref`** in the fetched package sources and `Assets/`. Only packages that `Packages/packages-lock.json` still lists count: the cache outlives a removal, and a stale package would keep satisfying references the project can no longer make (seen 2026-10-08, when `com.unity.purchasing` was uninstalled). It evaluates
    `includePlatforms`/`excludePlatforms` (WindowsStandalone64), `defineConstraints`,
    `versionDefines`, `overrideReferences`/`precompiledReferences`/`autoReferenced`, name and GUID
    references.

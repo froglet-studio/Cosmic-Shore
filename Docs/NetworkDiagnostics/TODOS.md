@@ -41,9 +41,7 @@ read per tick.
 |---|---|
 | `Assets/_Scripts/System/AuthenticationServiceFacade.cs` | `SignInAnonymouslyAsync` catches — would distinguish offline auth from quota/UGS errors |
 | `Assets/_Scripts/System/FriendsServiceFacade.cs` | Friend-request, presence-set catches — UGS Friends service can drop the same way |
-| `Assets/_Scripts/System/Playfab/Authentication/*.cs` (legacy, deprecated) | Lower priority — auth is moving to UGS |
 | `Assets/_Scripts/System/Instrumentation/CSAnalyticsManager.cs` | Analytics upload catches |
-| `Assets/_Scripts/Integrations/PlayFabSDK/*` | PlayFab catalog / inventory / leaderboard catches |
 | `Assets/_Scripts/System/IAPManager.cs` | Purchase failure paths |
 
 **Pattern.** Identical to the party-side decoration — one appended log

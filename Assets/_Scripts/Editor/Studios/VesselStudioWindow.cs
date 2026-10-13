@@ -8,7 +8,7 @@ namespace CosmicShore.Editor.Studios
     /// <summary>
     /// The Vessel Studio in Unity (<c>Docs/Studios/VESSEL_STUDIO_PLAN.md</c>, <c>/vessel-studio</c> D32 and D33): the
     /// studio HOME, the web hub's front page drawn in Unity (<c>VesselStudioWindow.Home.cs</c>). A card opens that
-    /// studio's page from this checkout in its own app window (<see cref="LaunchPrisma.OpenStudioWindow"/>): the
+    /// studio's page from this checkout in its own app window (<see cref="LaunchAmoebius.OpenStudioWindow"/>): the
     /// artifact's own files, so every tab, parameter and graphic is the artifact's.
     ///
     /// <para><b>No tuning UI of its own.</b> The artifact is the one source of truth for a studio's parameters (the

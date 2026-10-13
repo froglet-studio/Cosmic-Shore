@@ -31,14 +31,30 @@ MonoBehaviour:
       than a local level read, because it decides how much mass dies and every peer has to
       agree.'
   - Element: 2
-    AbilityLabel: (open design slot)
-    AbilityDescription: Mass mapping not yet designed for the Serpent.
-    Input: 0
+    AbilityLabel: Seed Wall
+    AbilityDescription: 'Stopping (the turret stance) or cloaking leaves a seed prism that pulls
+      loose prisms into a self-assembling wall around itself, stealing an
+      opponent''s prisms as they land. The pattern is a symmetric herringbone of 2:1 bricks with
+      a square hole at every cell, spaced so that once shielded the octahedral bricks point long
+      vertex at short vertex with a gap between. Mass sets the SIZE and SPACING of the bricks together (SeedWallActionSO.massSizeMultiplierAtFull,
+      x1 at rest to x2 at Mass 10, floored at x0.5), snapshotted when the seed is placed. The
+      wall steals from its EDGE: loose prisms within reach of an open site beside a brick are
+      pulled in, so it grows toward the mass around it and creeps along trails rather than as a
+      circle. Space sets that steal reach (x1 at rest to x2 at Space 10). The stance''s seed is
+      shielded and its wall grows only while you stay stopped; fly again and it stands as it
+      is. The cloak''s seed is SUPER-SHIELDED and its wall keeps growing until that super-shield
+      breaks; kill a seed and its wall stops. Every crystal you collect fires a beam at each of
+      your growing walls and ripples a shield through it.'
+    Input: 7
     UnlockLevel: 5
     RelockBelowLevel: 4
     LatchPolicy: 0
-    UpgradeLabel: 
-    UpgradeDescription: 
+    UpgradeLabel: Lockdown
+    UpgradeDescription: 'A crystal collected while Lockdown is active locks up every live wall
+      you own: every square hole is sealed with a flat DANGER panel, a thin crack short of the
+      shields around it, and so is each hole the wall completes as it keeps growing. Later
+      crystals re-shield the wall and replace any panel that was shot out. Read from the
+      replicated unlock bit when the crystal lands.'
   - Element: 3
     AbilityLabel: Scope
     AbilityDescription: 'Hold the left trigger and a magnified view down your own nose opens in
@@ -55,7 +71,8 @@ MonoBehaviour:
     UpgradeDescription: 'One more magnification step. Deep Focus multiplies the scope''s zoom
       depth by 1.6 and divides its floor by the same number, so the extra reach is actually
       reachable instead of running into a ceiling the upgrade cannot pass - 22 degrees at full
-      zoom at rest becomes 13.8, and Space 10 reaches 6.9.'
+      zoom at rest becomes 13.8, and Space 10 reaches 6.9. It also lets your seed walls steal an
+      opponent''s SHIELDED prisms from their edge, which they otherwise leave alone.'
   - Element: 4
     AbilityLabel: Solid Fuel Pellets
     AbilityDescription: 'Each press burns one solid fuel pellet - a fixed quarter of the fuel

@@ -36,6 +36,8 @@ namespace CosmicShore.Gameplay
             PrismLit.ColorSet = _dataContainer.ColorSet;
         }
 
+        static Material CloneOrNull(Material material) => material ? new Material(material) : null;
+
         SO_MaterialSet GenerateDomainMaterialSet(DomainColorSet colorSet, Domains domain, string domainName)
         {
             SO_MaterialSet materialSet = ScriptableObject.CreateInstance<SO_MaterialSet>();
@@ -45,16 +47,15 @@ namespace CosmicShore.Gameplay
             materialSet.ShipMaterial = new Material(_dataContainer.BaseMaterialSet.ShipMaterial);
             materialSet.BlockMaterial = new Material(_dataContainer.BaseMaterialSet.BlockMaterial);
             materialSet.TransparentBlockMaterial = new Material(_dataContainer.BaseMaterialSet.TransparentBlockMaterial);
-            materialSet.CrystalMaterial = new Material(_dataContainer.BaseMaterialSet.CrystalMaterial);
-            materialSet.CrystalMaterial1 = new Material(_dataContainer.BaseMaterialSet.CrystalMaterial1);
-            materialSet.CrystalMaterial2 = new Material(_dataContainer.BaseMaterialSet.CrystalMaterial2);
-            materialSet.CrystalMaterial3 = new Material(_dataContainer.BaseMaterialSet.CrystalMaterial3);
-            // Slot 4 is optional (only the omni crystal has a fifth model), so a base set that
-            // does not author it must not throw here - new Material(null) would take down every
-            // domain's whole material set with it.
-            materialSet.CrystalMaterial4 = _dataContainer.BaseMaterialSet.CrystalMaterial4
-                ? new Material(_dataContainer.BaseMaterialSet.CrystalMaterial4)
-                : null;
+            // Crystal slots are optional: the base set authors one per omni crystal model (body, depth prisms) and
+            // leaves the rest EMPTY (the retired tone/rim slots were emptied 2026-10-13 - cloning them made nine
+            // material instances per domain set that no crystal drew). An empty slot must not throw here:
+            // new Material(null) would take down every domain's whole material set with it.
+            materialSet.CrystalMaterial = CloneOrNull(_dataContainer.BaseMaterialSet.CrystalMaterial);
+            materialSet.CrystalMaterial1 = CloneOrNull(_dataContainer.BaseMaterialSet.CrystalMaterial1);
+            materialSet.CrystalMaterial2 = CloneOrNull(_dataContainer.BaseMaterialSet.CrystalMaterial2);
+            materialSet.CrystalMaterial3 = CloneOrNull(_dataContainer.BaseMaterialSet.CrystalMaterial3);
+            materialSet.CrystalMaterial4 = CloneOrNull(_dataContainer.BaseMaterialSet.CrystalMaterial4);
             materialSet.ExplodingBlockMaterial = new Material(_dataContainer.BaseMaterialSet.ExplodingBlockMaterial);
             materialSet.ShieldedBlockMaterial = new Material(_dataContainer.BaseMaterialSet.ShieldedBlockMaterial);
             materialSet.TransparentShieldedBlockMaterial = new Material(_dataContainer.BaseMaterialSet.TransparentShieldedBlockMaterial);
@@ -83,26 +84,19 @@ namespace CosmicShore.Gameplay
             PaintPrismTier(materialSet.SuperShieldedBlockMaterial, materialSet.TransparentSuperShieldedBlockMaterial,
                            colorSet, domain, PrismKind.SuperShielded);
 
-            materialSet.CrystalMaterial.SetColor("_BrightCrystalColor", colorSet.BrightCrystalColor);
-            materialSet.CrystalMaterial.SetColor("_DullCrystalColor", colorSet.DullCrystalColor);
-            materialSet.CrystalMaterial1.SetColor("_BrightCrystalColor", colorSet.BrightCrystalColor);
-            materialSet.CrystalMaterial1.SetColor("_DullCrystalColor", colorSet.DullCrystalColor);
-            materialSet.CrystalMaterial2.SetColor("_BrightCrystalColor", colorSet.BrightCrystalColor);
-            materialSet.CrystalMaterial2.SetColor("_DullCrystalColor", colorSet.DullCrystalColor);
-            materialSet.CrystalMaterial3.SetColor("_BrightCrystalColor", colorSet.BrightCrystalColor);
-            materialSet.CrystalMaterial3.SetColor("_DullCrystalColor", colorSet.DullCrystalColor);
-
             // The omni crystal's body and Shepard triangles are on the Spread Fresnel shader family,
             // which names its pair _BrightColor (silhouette) / _DarkColor (facing). The domain crystal
             // pair maps onto it one-to-one - Dull is authored black on Jade/Ruby/Gold, exactly the
             // lime body's near-black face - so a team omni is the lime omni in its domain's colour.
             // SetColor on a material without the property is a no-op, so the ShepardGraph-era
-            // materials and the _BrightCrystalColor writes above are unaffected.
+            // materials, which name theirs _Bright/_DullCrystalColor, take the first pair instead.
             foreach (var crystal in new[] { materialSet.CrystalMaterial, materialSet.CrystalMaterial1,
                                             materialSet.CrystalMaterial2, materialSet.CrystalMaterial3,
                                             materialSet.CrystalMaterial4 })
             {
                 if (!crystal) continue;
+                crystal.SetColor("_BrightCrystalColor", colorSet.BrightCrystalColor);
+                crystal.SetColor("_DullCrystalColor", colorSet.DullCrystalColor);
                 crystal.SetColor("_BrightColor", colorSet.BrightCrystalColor);
                 crystal.SetColor("_DarkColor", colorSet.DullCrystalColor);
             }

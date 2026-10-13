@@ -366,6 +366,115 @@ void CrystalMorphNormal_float(vec3 Normal, vec4 Target, float Clock, vec3 Morph,
 }
 
 // ---------------------------------------------------------------------------------------------
+// Assets/_Graphics/Materials/Graphs/ChargeCrystal.hlsl (the charge crystal's edge discharge)
+// Bolts crackle vertex to vertex along the baked crease edges: TEXCOORD1 barycentrics, TEXCOORD2
+// heights to each edge in model-radius fractions (negative = a triangulation diagonal, no bolt),
+// TEXCOORD3 per-edge seeds (>= 1 = traversed against the edge's canonical direction). An unbaked
+// mesh (sum of barycentrics 0) contributes nothing.
+// ---------------------------------------------------------------------------------------------
+float sgChargeHash11(float p)
+{
+  p = fract(p * 0.1031);
+  p *= p + 33.33;
+  p *= p + p;
+  return fract(p);
+}
+
+float sgChargeValueNoise(float x)
+{
+  float i = floor(x);
+  float f = fract(x);
+  f = f * f * (3.0 - 2.0 * f);
+  return mix(sgChargeHash11(i), sgChargeHash11(i + 1.0), f);
+}
+
+float sgChargeFBM(float x)
+{
+  float v = 0.0, a = 0.5, fq = 1.0;
+  for (int o = 0; o < 3; o++) { v += a * (sgChargeValueNoise(x * fq) * 2.0 - 1.0); fq *= 2.13; a *= 0.5; }
+  return v;
+}
+
+// Negative for fragments this frame's screen-door coverage drops (FadeIn's _opacity).
+float sgChargeCoverageClip(float opacity, vec2 positionSS)
+{
+  if (opacity >= 1.0) return 1.0;
+  float n = fract(52.9829189 * fract(dot(positionSS, vec2(0.06711056, 0.00583715))));
+  return opacity - (n * 0.998 + 0.001);
+}
+
+void ChargeCrystalArcs_float(vec3 bary, vec3 edgeH, vec3 edgeSeed, float time,
+  float arcWidth, float arcLength, float arcSpeed, float arcDuty, float arcJitter, float arcShimmer, float nodeRadius,
+  out float Arc, out float Heat, out float Node)
+{
+  Arc = 0.0; Heat = 0.0; Node = 0.0;
+  if (bary.x + bary.y + bary.z < 0.5) return;
+  vec3 h = abs(edgeH);
+  vec3 d = bary * h;
+  float dmin = min(d.x, min(d.y, d.z));
+  float dmax = max(d.x, max(d.y, d.z));
+  float dmid = d.x + d.y + d.z - dmin - dmax;
+  Node = exp(-(dmid * dmid) / max(nodeRadius * nodeRadius, 1e-8));
+  float w2 = max(arcWidth * arcWidth, 1e-8);
+  float l2 = max(arcLength * arcLength, 1e-8);
+  for (int i = 0; i < 3; i++)
+  {
+    if (edgeH[i] <= 0.0) continue;
+    float s = edgeSeed[i];
+    float flipped = s >= 1.0 ? 1.0 : 0.0;
+    s = fract(s);
+    int j = (i + 1) % 3;
+    int k = (i + 2) % 3;
+    float t = bary[k] / max(bary[j] + bary[k], 1e-5);
+    t = mix(t, 1.0 - t, flipped);
+    float wobble = sgChargeFBM(t * 9.0 + s * 57.31 + time * 3.1);
+    float jitter = (0.5 + 0.5 * wobble) * arcJitter * arcWidth;
+    float dd = abs(d[i] - jitter);
+    float core = exp(-(dd * dd) / w2);
+    float rate = arcSpeed * (0.55 + 0.9 * s);
+    float phase = time * rate + s * 13.7;
+    float span = 1.0 + 2.0 * arcLength;
+    float head = fract(phase) * span - arcLength;
+    float dt = t - head;
+    float along = exp(-(dt * dt) / l2);
+    float fire = step(arcDuty, sgChargeHash11(floor(phase) * 1.37 + s * 91.7));
+    float shim = arcShimmer * (0.35 + 0.65 * sg_saturate(sgChargeFBM(t * 11.0 + time * 2.3 + s * 29.0) * 0.5 + 0.5));
+    float amp = max(along * fire, shim);
+    Arc = max(Arc, core * amp);
+    Heat = max(Heat, core * along * fire);
+  }
+  Node *= Arc;
+}
+
+vec3 sgChargeCrystalDischarge(vec3 bary, vec3 edgeH, vec3 edgeSeed, float time, vec3 brightColor, vec3 arcCoreColor,
+  float arcIntensity, float arcWidth, float arcLength, float arcSpeed, float arcDuty, float arcJitter, float arcShimmer,
+  float nodeRadius, float nodeIntensity)
+{
+  float arc, heat, node;
+  ChargeCrystalArcs_float(bary, edgeH, edgeSeed, time, arcWidth, arcLength, arcSpeed, arcDuty, arcJitter, arcShimmer, nodeRadius, arc, heat, node);
+  vec3 arcColor = mix(brightColor, arcCoreColor, sg_saturate(heat * heat));
+  return arcColor * (arc * arcIntensity) + arcCoreColor * (node * nodeIntensity);
+}
+
+// The charge crystal's whole surface: flat facets lit by a fixed world key, a theme-pair rim,
+// a rim emission and the discharge on top.
+vec3 sgChargeCrystalSurface(vec3 normalWS, vec3 viewDirWS, vec3 bary, vec3 edgeH, vec3 edgeSeed, float time,
+  vec4 dullColor, vec4 brightColor, vec3 keyDirWS, float facetAmbient, float rimPower, float rimStrength, float emissionStrength,
+  vec3 arcCoreColor, float arcIntensity, float arcWidth, float arcLength, float arcSpeed, float arcDuty, float arcJitter,
+  float arcShimmer, float nodeRadius, float nodeIntensity)
+{
+  vec3 N = normalize(normalWS);
+  vec3 V = normalize(viewDirWS);
+  float facet = mix(facetAmbient, 1.0, abs(dot(N, normalize(keyDirWS))));
+  float fresnel = pow(sg_saturate(1.0 - sg_saturate(dot(N, V))), rimPower);
+  vec3 body = mix(dullColor.rgb, brightColor.rgb, sg_saturate(fresnel * rimStrength)) * facet;
+  vec3 emissive = brightColor.rgb * (emissionStrength * fresnel);
+  vec3 discharge = sgChargeCrystalDischarge(bary, edgeH, edgeSeed, time, brightColor.rgb, arcCoreColor, arcIntensity,
+    arcWidth, arcLength, arcSpeed, arcDuty, arcJitter, arcShimmer, nodeRadius, nodeIntensity);
+  return body + emissive + discharge;
+}
+
+// ---------------------------------------------------------------------------------------------
 // Assets/_Graphics/Materials/Graphs/PrismCradle.hlsl (02815910e1a7418bb18c430341747719)
 // The Urchin's drape: vertices inside a riding hull's reach slide along their radius onto it.
 // ---------------------------------------------------------------------------------------------
@@ -431,6 +540,97 @@ void PrismCradleDeform_float(vec3 Position, vec3 Normal, out vec3 OutPosition, o
   float nr = dot(nW, bestDir);
   vec3 nNew = bestDir * (nr / ra) + (nW - bestDir * nr) / rb;
   if (!(dot(nNew, nNew) > 1e-12)) nNew = bestDir * (nr >= 0.0 ? 1.0 : -1.0);
+  vec3 outPos = (sg_WorldToObject * vec4(pNew, 1.0)).xyz;
+  vec3 outNrm = nNew * mat3(sg_ObjectToWorld);
+  float outNrmLenSq = dot(outNrm, outNrm);
+  if (!(dot(outPos, outPos) < 1e12) || !(outNrmLenSq > 1e-12)) return;
+  OutPosition = outPos;
+  OutNormal = outNrm * inversesqrt(outNrmLenSq);
+}
+
+// ---------------------------------------------------------------------------------------------
+// Assets/_Graphics/Materials/Graphs/PrismGravityWarp.hlsl
+// Spaghettification: a prism within a hole's reach is stretched along the line to it and squeezed
+// across it (log-stretch GM*tau^2/r^3, volume conserved), one affine map about the prism's centre.
+// The bank is BlackHoleWarp.cs's per-frame globals; Params.y (live slots) 0 means no hole is live.
+// ---------------------------------------------------------------------------------------------
+uniform vec4 _PrismGravityWarpCentre[4];
+uniform vec4 _PrismGravityWarpWeight[4];
+#ifndef SG_HAS_PrismGravityWarpParams
+uniform vec4 _PrismGravityWarpParams;
+#endif
+
+float sgPrismGravityWarpWindow(float s, float reach)
+{
+  if (s >= reach) return 0.0;
+  float u = sg_saturate(2.0 * s / reach - 1.0);
+  return 1.0 - u * u * (3.0 - 2.0 * u);
+}
+
+float sgPrismGravityWarpCeiling(float eps, float ceiling)
+{
+  float x = min(eps / ceiling, 1e4);
+  float x2 = x * x;
+  return ceiling * x * inversesqrt(sqrt(1.0 + x2 * x2));
+}
+
+float sgPrismGravityWarpTide(float d, float rs, float k, float reach)
+{
+  float r = max(d, rs);
+  return k / (r * r * r) * sgPrismGravityWarpWindow(d - rs, reach);
+}
+
+float sgPrismGravityWarpTideSoft(float d, float rs, float k, float reach, float softening)
+{
+  if (!(softening > 0.0)) return sgPrismGravityWarpTide(d, rs, k, reach);
+  float q = d * d + softening * softening;
+  return k / (q * sqrt(q)) * sgPrismGravityWarpWindow(max(d - rs, 0.0), reach);
+}
+
+void PrismGravityWarpDeform_float(vec3 Position, vec3 Normal, out vec3 OutPosition, out vec3 OutNormal)
+{
+  OutPosition = Position;
+  OutNormal = Normal;
+  int count = int(_PrismGravityWarpParams.y);
+  if (count <= 0) return;
+  float nLenSq = dot(Normal, Normal);
+  if (!(nLenSq > 1e-8)) return;
+  vec3 nObj = Normal * inversesqrt(nLenSq);
+  vec3 nW = nObj * mat3(sg_WorldToObject);
+  float nwLenSq = dot(nW, nW);
+  if (!(nwLenSq > 1e-12) || !(nwLenSq < 1e12)) return;
+  nW *= inversesqrt(nwLenSq);
+  vec3 c = sg_ObjectToWorld[3].xyz;
+  float bestTide = 0.0;
+  vec3 bestDir = vec3(0.0, 0.0, 1.0);
+  for (int i = 0; i < 4; i++)
+  {
+    if (i >= count) break;
+    vec4 slot = _PrismGravityWarpCentre[i];
+    vec4 weight = _PrismGravityWarpWeight[i];
+    float k = weight.x;
+    float reach = weight.y;
+    if (!(abs(k) > 0.0) || !(slot.w > 0.0) || !(reach > 0.0)) continue;
+    vec3 rad = c - slot.xyz;
+    float d = length(rad);
+    if (!(d > 1e-4)) continue;
+    if (d - slot.w >= reach) continue;
+    float tide = sgPrismGravityWarpTideSoft(d, slot.w, k, reach, weight.z);
+    if (abs(tide) <= abs(bestTide)) continue;
+    bestTide = tide;
+    bestDir = rad / d;
+  }
+  if (!(abs(bestTide) > 0.0)) return;
+  float ceiling = max(_PrismGravityWarpParams.x, 1e-3);
+  float eps = sign(bestTide) * sgPrismGravityWarpCeiling(abs(bestTide), ceiling);
+  float radial = exp(eps);
+  float across = exp(-0.5 * eps);
+  vec3 pW = (sg_ObjectToWorld * vec4(Position, 1.0)).xyz;
+  vec3 q = pW - c;
+  float qr = dot(q, bestDir);
+  vec3 pNew = c + bestDir * (qr * radial) + (q - bestDir * qr) * across;
+  float nr = dot(nW, bestDir);
+  vec3 nNew = bestDir * (nr / radial) + (nW - bestDir * nr) / across;
   vec3 outPos = (sg_WorldToObject * vec4(pNew, 1.0)).xyz;
   vec3 outNrm = nNew * mat3(sg_ObjectToWorld);
   float outNrmLenSq = dot(outNrm, outNrm);
@@ -709,92 +909,4 @@ void VesselVisionShade_float(vec3 PositionWS, vec3 NormalWS, vec4 Tint, vec3 Bas
     }
   }
   Color = mix(BaseColor, cel, amount * max(breakup, rim01));
-}
-
-// ---- PrismGravityWarp.hlsl (Docs/BLACK_HOLE.md section 5): the black hole's tidal stretch of a prism ----
-// A line-for-line port of PrismGravityWarpDeform_float: the strongest hole's tide at the prism's centre,
-// eased into the ceiling, applied as a volume-conserving stretch about the centre, with the normal carried
-// through the inverse transpose. HLSL mul(v, M) is GLSL v * M; mul(M, v) is M * v. While the engine
-// publishes no warp bank (_PrismGravityWarpParams.y = 0) every vertex passes through untouched.
-#define PRISM_GRAVITY_WARP_SLOTS 4
-uniform vec4 _PrismGravityWarpCentre[PRISM_GRAVITY_WARP_SLOTS];  // xyz world centre, w horizon radius
-uniform vec4 _PrismGravityWarpWeight[PRISM_GRAVITY_WARP_SLOTS];  // x GM tau^2, y reach, z softening
-uniform vec4 _PrismGravityWarpParams;                            // (ln max stretch, liveSlotCount, 0, 0)
-
-float PrismGravityWarpWindow(float s, float reach)
-{
-  if (s >= reach) return 0.0;
-  float u = sg_saturate(2.0 * s / reach - 1.0);
-  return 1.0 - u * u * (3.0 - 2.0 * u);
-}
-
-float PrismGravityWarpCeiling(float eps, float ceiling)
-{
-  float x = min(eps / ceiling, 1e4);
-  float x2 = x * x;
-  return ceiling * x * inversesqrt(sqrt(1.0 + x2 * x2));
-}
-
-float PrismGravityWarpTide(float d, float rs, float k, float reach)
-{
-  float r = max(d, rs);
-  return k / (r * r * r) * PrismGravityWarpWindow(d - rs, reach);
-}
-
-float PrismGravityWarpTideSoft(float d, float rs, float k, float reach, float softening)
-{
-  if (!(softening > 0.0)) return PrismGravityWarpTide(d, rs, k, reach);
-  float q = d * d + softening * softening;
-  return k / (q * sqrt(q)) * PrismGravityWarpWindow(max(d - rs, 0.0), reach);
-}
-
-void PrismGravityWarpDeform_float(vec3 Position, vec3 Normal, out vec3 OutPosition, out vec3 OutNormal)
-{
-  OutPosition = Position;
-  OutNormal = Normal;
-  int count = int(_PrismGravityWarpParams.y);
-  if (count <= 0) return;
-  float nLenSq = dot(Normal, Normal);
-  if (!(nLenSq > 1e-8)) return;
-  vec3 nObj = Normal * inversesqrt(nLenSq);
-  vec3 nW = nObj * mat3(sg_WorldToObject);
-  float nwLenSq = dot(nW, nW);
-  if (!(nwLenSq > 1e-12) || !(nwLenSq < 1e12)) return;
-  nW *= inversesqrt(nwLenSq);
-  vec3 c = (sg_ObjectToWorld * vec4(0.0, 0.0, 0.0, 1.0)).xyz;
-  float bestTide = 0.0;
-  vec3 bestDir = vec3(0.0, 0.0, 1.0);
-  for (int i = 0; i < PRISM_GRAVITY_WARP_SLOTS; i++)
-  {
-    if (i >= count) break;
-    vec4 slot = _PrismGravityWarpCentre[i];
-    vec4 weight = _PrismGravityWarpWeight[i];
-    float k = weight.x, reach = weight.y;
-    if (!(abs(k) > 0.0) || !(slot.w > 0.0) || !(reach > 0.0)) continue;
-    vec3 rad = c - slot.xyz;
-    float d = length(rad);
-    if (!(d > 1e-4)) continue;
-    if (d - slot.w >= reach) continue;
-    float tide = PrismGravityWarpTideSoft(d, slot.w, k, reach, weight.z);
-    if (abs(tide) <= abs(bestTide)) continue;
-    bestTide = tide;
-    bestDir = rad / d;
-  }
-  if (!(abs(bestTide) > 0.0)) return;
-  float ceiling = max(_PrismGravityWarpParams.x, 1e-3);
-  float eps = sign(bestTide) * PrismGravityWarpCeiling(abs(bestTide), ceiling);
-  float radial = exp(eps);
-  float across = exp(-0.5 * eps);
-  vec3 pW = (sg_ObjectToWorld * vec4(Position, 1.0)).xyz;
-  vec3 q = pW - c;
-  float qr = dot(q, bestDir);
-  vec3 pNew = c + bestDir * (qr * radial) + (q - bestDir * qr) * across;
-  float nr = dot(nW, bestDir);
-  vec3 nNew = bestDir * (nr / radial) + (nW - bestDir * nr) / across;
-  vec3 outPos = (sg_WorldToObject * vec4(pNew, 1.0)).xyz;
-  vec3 outNrm = nNew * mat3(sg_ObjectToWorld);
-  float outNrmLenSq = dot(outNrm, outNrm);
-  if (!(dot(outPos, outPos) < 1e12) || !(outNrmLenSq > 1e-12)) return;
-  OutPosition = outPos;
-  OutNormal = outNrm * inversesqrt(outNrmLenSq);
 }

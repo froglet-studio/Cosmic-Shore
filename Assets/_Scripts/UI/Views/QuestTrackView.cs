@@ -155,6 +155,11 @@ namespace CosmicShore.UI
         {
             if (progressBarSlider == null || questList == null) return;
             progressBarSlider.interactable = false;
+            // Display only. A non-interactable Slider is still an enabled drag handler, and the
+            // event system gives a drag to the nearest enabled one, so a finger that landed on the
+            // bar never reached the track's ScrollRect (the wheel takes another path, which is why
+            // only touch showed it). Disabled, it still draws and its value still tweens.
+            progressBarSlider.enabled = false;
             progressBarSlider.wholeNumbers = true;
             progressBarSlider.minValue = 0;
             progressBarSlider.maxValue = questList.Quests.Count;
@@ -427,6 +432,8 @@ namespace CosmicShore.UI
         {
             if (ghostSlider == null || questList == null) return;
             ghostSlider.interactable = false;
+            // Display only; see ConfigureSlider.
+            ghostSlider.enabled = false;
             ghostSlider.wholeNumbers = true;
             ghostSlider.minValue = 0;
             ghostSlider.maxValue = questList.Quests.Count;

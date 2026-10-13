@@ -6,10 +6,15 @@ namespace CosmicShore.Gameplay
 {
     /// <summary>
     /// The Butterfly's <b>Scale Dust</b>, pilot half — CHARGE. An opposing pilot caught inside the
-    /// wings takes a temporary, decaying debuff on every element through the standardized
-    /// <see cref="ResourceSystem.ApplyElementalEffect"/>. The skimmer sibling of
-    /// <see cref="VesselElementalDebuffByExplosionEffectSO"/>, same decay, same per-victim
-    /// anti-spam.
+    /// dust has petals STOLEN off every element (<see cref="ElementalTransferForm.Steal"/>, the
+    /// contact form), through <see cref="IContactPetalTake.TakeFrom"/>.
+    ///
+    /// <para><b>Since 2026-10-10 the take runs only through the reporter.</b> A scored hit and a
+    /// petal theft are one event, so the container's <see cref="VesselCombatHitBySkimmerEffectSO"/>
+    /// admits and scores the contact and calls <see cref="TakeFrom"/>. Before, this effect applied
+    /// its own temporary, decaying debuff on its own cooldown: a dusting scored, the debuff decayed
+    /// back in four seconds, and no petal changed hands. <c>Execute</c> now only plays the bite's
+    /// sound.</para>
     ///
     /// <para>Per the design philosophy, elementals are the single system that governs all buffing
     /// and debuffing — a vessel that wants to weaken a pilot reaches for that fundamental rather
@@ -33,7 +38,7 @@ namespace CosmicShore.Gameplay
     [CreateAssetMenu(
         fileName = "VesselElementalDebuffBySkimmerEffect",
         menuName = "ScriptableObjects/Impact Effects/Vessel - Skimmer/VesselElementalDebuffBySkimmerEffectSO")]
-    public class VesselElementalDebuffBySkimmerEffectSO : VesselSkimmerEffectsSO
+    public class VesselElementalDebuffBySkimmerEffectSO : VesselSkimmerEffectsSO, IContactPetalTake
     {
         [Header("Debuff Settings")]
         [Tooltip("Signed level change applied to every element the dust drains (negative = " +
@@ -44,7 +49,9 @@ namespace CosmicShore.Gameplay
                  "Tools/Build/author_combat_debuff_magnitudes.py.")]
         [SerializeField] float debuffMagnitude = -0.3333333f;
 
-        [Tooltip("Seconds over which the temporary debuff decays back to baseline.")]
+        [Tooltip("UNUSED at runtime since the dust became a steal (2026-10-10): a transfer is " +
+                 "permanent and has nothing to decay. Kept because the authoring tool reads it " +
+                 "to price sustained pressure.")]
         [SerializeField] float debuffDuration = 4f;
 
         [Tooltip("Which elements the dust drains. All four: the dust is a whole-pilot effect, " +
@@ -73,9 +80,8 @@ namespace CosmicShore.Gameplay
         [SerializeField, Min(1f)] float upgradeBiteMultiplier = 2f;
 
         [Header("Anti-Spam")]
-        [Tooltip("Minimum seconds between dust debuffs on the same vessel. A skimmer sphere " +
-                 "overlaps a hull for many frames and a hull is several colliders, so a non-zero " +
-                 "window is effectively mandatory here.")]
+        [Tooltip("Minimum seconds between dust BITE SOUNDS on the same vessel. The take itself " +
+                 "is rate-limited by the reporter's latch window, which is what the score uses.")]
         [SerializeField, Min(0f)] float cooldown = 1f;
 
         // Per-vessel anti-spam, keyed on the victim's ResourceSystem — the same shape the
@@ -105,32 +111,47 @@ namespace CosmicShore.Gameplay
             if (victim.Domain == pilot.Domain) return;
 
             var rs = victim.ResourceSystem;
-            if (rs == null || elements == null) return;
+            if (rs == null) return;
 
             float now = Time.time;
             if (_lastEffectTime.TryGetValue(rs, out var lastTime) && now - lastTime < cooldown)
                 return;
             _lastEffectTime[rs] = now;
 
-            // Per-hit snapshot of the upgrade, read through the REPLICATED unlock bit rather
-            // than a raw local level read: the drain lands on the VICTIM's machine as well as
-            // the attacker's, and two peers disagreeing about how hard it bit is two different
-            // element levels for the same pilot.
-            float magnitude = debuffMagnitude * BiteScale(pilot);
-            var abilities = pilot.ElementalAbilityHandler;
-            if (upgradeElement != Element.None && abilities != null
-                && abilities.IsUpgradeActive(upgradeElement))
-                magnitude *= Mathf.Max(1f, upgradeBiteMultiplier);
-
-            for (int i = 0; i < elements.Length; i++)
-                rs.ApplyElementalEffect(elements[i], magnitude, debuffDuration,
-                                        ElementalDebuffSources.VesselContact);
+            // The PETALS are not taken here: see TakeFrom, which the reporter calls for an
+            // admitted hit. This keeps only the sound every peer should hear.
 
             // The bite's voice. Its slot lives on the Butterfly's dust capsule
             // (ButterflyDustField), beside the SkimmerImpactor doing the sweeping; any other
             // adopter of this effect has no such component and stays silent here.
             if (impactee.TryGetComponent(out ButterflyDustField dust))
                 dust.PlayScaleDustBite(impactor.transform.position);
+        }
+
+        /// <summary>
+        /// Steal this dusting's bite off <paramref name="victim"/>. Per-hit snapshot of the
+        /// Charge scale and the level-5 upgrade, both read through REPLICATED state so the size of
+        /// a take never depends on which copy of the pilot a machine is looking at. Called only by
+        /// <see cref="VesselCombatHitBySkimmerEffectSO"/>, on the pilot's owner, for an admitted
+        /// hit; the victim's owner settles it.
+        /// </summary>
+        public void TakeFrom(IVesselStatus victim, IVesselStatus attacker, VesselImpactor impactor,
+                             SkimmerImpactor impactee)
+        {
+            if (victim == null || attacker == null || elements == null) return;
+
+            float magnitude = debuffMagnitude * BiteScale(attacker);
+            var abilities = attacker.ElementalAbilityHandler;
+            if (upgradeElement != Element.None && abilities != null
+                && abilities.IsUpgradeActive(upgradeElement))
+                magnitude *= Mathf.Max(1f, upgradeBiteMultiplier);
+            if (magnitude >= 0f) return;
+
+            // The magnitude is authored negative because it reads as a debuff; a transfer takes a
+            // positive amount. Classed VesselContact, the ward the reporter's gate asked about.
+            ElementalTransfer.ApplyAuthoritative(ElementalTransferForm.Steal, victim, attacker,
+                                                 ElementalTransfer.MaskOf(elements), -magnitude,
+                                                 Vector3.zero, ElementalDebuffSources.VesselContact);
         }
 
         /// <summary>The element-scaled bite multiplier, at the pilot's replicated level.</summary>

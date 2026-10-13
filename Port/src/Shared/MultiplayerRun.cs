@@ -13,10 +13,10 @@ using System.Threading.Tasks;
 
 #nullable enable
 
-namespace Prisma
+namespace Amoebius
 {
     /// <summary>
-    /// Prisma's Multiplayer Play Mode: starts one to four players of the game as separate processes
+    /// Amoebius's Multiplayer Play Mode: starts one to four players of the game as separate processes
     /// that find each other through one fresh session folder (docs/MULTIPLAYER.md §6.5). Each player
     /// has its own profile (save folder), control port, log, and optionally its own simulated line
     /// and session faults. The Launcher's MULTIPLAYER panel and the MCP <c>net_*</c> tools both drive it.
@@ -103,7 +103,7 @@ namespace Prisma
             string relay = RelayMode(o.Relay);
             var run = new MultiplayerRun { Started = DateTime.Now };
             string stamp = DateTime.Now.ToString("yyyyMMdd-HHmmss");
-            run.WorkDir = o.WorkDir ?? Path.Combine(Path.GetTempPath(), "prisma-multiplayer", stamp);
+            run.WorkDir = o.WorkDir ?? Path.Combine(Path.GetTempPath(), "amoebius-multiplayer", stamp);
             run.NetDir = Path.Combine(run.WorkDir, "sessions");
             // Everything is checked before the first process starts, so a refused run leaves nothing behind.
             var profiles = new List<string>();

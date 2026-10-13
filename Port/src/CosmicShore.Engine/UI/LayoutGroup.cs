@@ -153,6 +153,16 @@ namespace CosmicShore.Engine.UI
 
         void OnEnable() => SetDirty();
         void OnDisable() => SetDirty();
+        /// <summary>A child added, removed or reordered: lay the group out again (original contract).</summary>
+        void OnTransformChildrenChanged() => SetDirty();
+
+        // A root group re-lays out when its own rect changes size (a parent stretching, a script resizing it).
+        void OnRectTransformDimensionsChange()
+        {
+            if (isRootLayoutGroup) SetDirty();
+        }
+
+        bool isRootLayoutGroup => transform.parent is not { } parent || parent.GetComponent<ILayoutGroup>() == null;
 
         /// <summary>Queues this group's layout root for a rebuild at the end of the frame.</summary>
         protected void SetDirty()

@@ -15,6 +15,12 @@ namespace CosmicShore.Engine.InputSystem.UI
 
         public InputActionAsset actionsAsset { get; set; }
         public bool deselectOnBackgroundClick = true;
+
+        /// <summary>UI scroll units per wheel notch (original default 6).</summary>
+        public float scrollDeltaPerTick = 6f;
+
+        /// <summary>What the mouse device reports for one wheel notch.</summary>
+        const float ScrollWheelDeltaPerTick = 120f;
         public float moveRepeatDelay = 0.5f, moveRepeatRate = 0.1f;
 
         /// <summary>When true the module polls <see cref="Mouse.current"/>; the client may drive the synthetic API directly instead.</summary>
@@ -36,8 +42,10 @@ namespace CosmicShore.Engine.InputSystem.UI
             if (p != _last) { PointerMove(p); _last = p; }
             if (down && !_wasDown) PointerDown(p);
             else if (!down && _wasDown) PointerUp(p);
+            // The mouse reports a wheel notch as 120 (Windows' unit, which the window backend
+            // mirrors); the UI takes scrollDeltaPerTick (6) per notch, as Input System 1.14 does.
             var scroll = mouse.scroll.ReadValue();
-            if (scroll != Vector2.zero) Scroll(scroll, p);
+            if (scroll != Vector2.zero) Scroll(scroll / ScrollWheelDeltaPerTick * scrollDeltaPerTick, p);
             _wasDown = down;
         }
 

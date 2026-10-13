@@ -306,6 +306,13 @@ namespace CosmicShore.Gameplay
             return wormhole;
         }
 
+        /// <summary>
+        /// Raised when a let-go pair's horizons MEET and it annihilates there (not for an <see cref="Annihilate"/> called
+        /// from outside): the pair, and where they met. The Stoat's orbit slingshot throws its Charge ripple from it
+        /// (<c>StoatSlingExecutor</c>). Every peer raises it for its own copy of the pair.
+        /// </summary>
+        public static event System.Action<Pair, Vector3> PairMet;
+
         /// <summary>Annihilate a pair now: both holes ease out together. The pair is forgotten.</summary>
         public static void Annihilate(Pair pair)
         {
@@ -354,7 +361,9 @@ namespace CosmicShore.Gameplay
                 if (BlackHolePairMath.HaveMet(pair.HalfGap, rs) || (pair.DriftSpeed <= 0f && pair.CloseAge >= pair.Lifetime))
                 {
                     CSDebug.LogVerbose(CSLogChannel.BlackHole, $"[BlackHole] pair #{pair.Black.Id}/#{pair.White.Id} annihilated after {pair.Age:F1} s");
+                    var met = 0.5f * (pair.Black.transform.position + pair.White.transform.position);
                     Annihilate(pair);
+                    PairMet?.Invoke(pair, met);
                     continue;
                 }
                 BlackHolePairMath.Positions(pair.Midpoint, pair.Axis, pair.HalfGap, out var blackPos, out var whitePos);
@@ -502,6 +511,7 @@ namespace CosmicShore.Gameplay
             _warpHoles.Clear();
             _stale.Clear();
             _pairs.Clear();
+            PairMet = null;
             _nextId = 1;
             _configResolved = false;
             _driver = null;

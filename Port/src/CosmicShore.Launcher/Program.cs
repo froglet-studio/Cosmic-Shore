@@ -24,7 +24,7 @@ namespace CosmicShore.Launcher
         }
 
         /// <summary>
-        /// Prisma [--page play|build|options|console] [--screenshot out.png --frames N] [--offline] [--auto play|update|android|ios|claude-install|launcher-update:REV] [--updated FROM]
+        /// Amoebius [--page play|build|options|console] [--screenshot out.png --frames N] [--offline] [--auto play|update|android|ios|claude-install|launcher-update:REV] [--updated FROM]
         /// The flags exist for docs and tests: a scripted run renders N frames, saves a screenshot and exits.
         /// </summary>
         [STAThread]

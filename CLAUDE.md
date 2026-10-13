@@ -22,8 +22,8 @@ This file holds only the rules every session needs. Everything else moved verbat
   Sections: Documentation Index
 - [`Docs/claude/ARCHITECTURE_CORE.md`](Docs/claude/ARCHITECTURE_CORE.md): SOAP, threading, bootstrap, auth/session flow, Reflex DI, input strategy.
   Sections: Architecture Patterns; ScriptableObject Config Separation; SOAP — Scriptable Object Architecture Pattern (Primary Architecture); Threading & Main-Thread Affinity; Bootstrap & Scene Flow; Authentication & Session Flow; Dependency Injection (Reflex); Input Strategy Pattern
-- [`Docs/claude/IMPACT_EFFECTS_AND_AUDIO.md`](Docs/claude/IMPACT_EFFECTS_AND_AUDIO.md): Impact effects architecture; the LOCKED FMOD exposed-field convention.
-  Sections: Impact Effects Architecture; Audio (FMOD) — every sound is an exposed, editable field (LOCKED convention)
+- [`Docs/claude/IMPACT_EFFECTS_AND_AUDIO.md`](Docs/claude/IMPACT_EFFECTS_AND_AUDIO.md): Impact effects architecture; the LOCKED PvP-is-petals-only rule; the LOCKED FMOD exposed-field convention.
+  Sections: Impact Effects Architecture; PvP is petals only (LOCKED, Garrett 2026-10-10); Audio (FMOD) — every sound is an exposed, editable field (LOCKED convention)
 - [`Docs/MULTIPLAYER_START_HERE.md`](Docs/MULTIPLAYER_START_HERE.md): **Read first for ANY multiplayer work (Unity or Amoebius).** What the owner wants, the standing rules, where everything is, current state, the owner's hand-test list, and the ordered next steps.
   Sections: What the owner wants; Rules every session keeps; Where everything is; Where things stand; What the owner tests by hand; What comes next, in order; How a session starts here
 - [`Docs/claude/MULTIPLAYER_AND_SOCIAL.md`](Docs/claude/MULTIPLAYER_AND_SOCIAL.md): Netcode, player spawning, party/invite lobby, friends, AI backfill, SkimRace — the party-docs table routes every UGS call to `UgsRequestPolicy` and the invite/resilience review, lists the pinned multiplayer package versions and the protocol-version rule.

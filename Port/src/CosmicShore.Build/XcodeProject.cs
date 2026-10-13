@@ -355,7 +355,7 @@ fi
 echo ""Cosmic Shore built with .NET into $DEST""
 ";
 
-        static string Readme(Settings s) => $@"Cosmic Shore - iOS Xcode project (Prisma)
+        static string Readme(Settings s) => $@"Cosmic Shore - iOS Xcode project (Amoebius)
 
 Like Unity's iOS build, this folder is an Xcode project. Finish it on a Mac:
 

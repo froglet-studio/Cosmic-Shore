@@ -320,7 +320,7 @@ namespace CosmicShore.Launcher
             SendChat(ArtifactLibrary.ImportPrompt(url, id), ClaudeChat.Mode.Edit);
         }
 
-        /// <summary>OPEN IN PRISMA: the page in an app-mode window of Edge or Chrome, or the default browser when neither is installed.</summary>
+        /// <summary>OPEN IN AMOEBIUS: the page in an app-mode window of Edge or Chrome, or the default browser when neither is installed.</summary>
         static void OpenStudioWindow(string pagePath)
         {
             string profile = Path.Combine(LauncherSettings.DataDir, "studio-window");

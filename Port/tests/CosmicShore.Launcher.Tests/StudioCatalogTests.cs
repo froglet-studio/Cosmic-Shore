@@ -180,7 +180,7 @@ namespace CosmicShore.Launcher.Tests
         }
 
         [Fact]
-        public void AppWindowArgs_OpenThePageAsAnAppThatKnowsItIsInPrisma()
+        public void AppWindowArgs_OpenThePageAsAnAppThatKnowsItIsInAmoebius()
         {
             string page = Path.Combine(Path.GetTempPath(), "VesselStudio", "stoat.html"), profile = Path.Combine(Path.GetTempPath(), "studio-window");
             var args = StudioCatalog.AppWindowArgs(page, profile);

@@ -236,6 +236,13 @@ MonoBehaviours is a normal pattern.
 
 Only the first can stop a build. A check that cries wolf gets switched off.
 
+The two C# checks read only what Unity compiles: `Assets/` and embedded packages
+under `Packages/`. `Port/` (Prisma, the .NET port) and the dotnet harnesses under
+`Tools/` never reach a player, so a `UnityEditor` there is not a finding. Prisma
+matches Shader Graph JSON whose type is the string
+`"UnityEditor.ShaderGraph.GraphData"`; while the checker scanned the whole
+repository, that string held bleeding-edge red (2026-10-13).
+
 Run it yourself before pushing anything structural:
 
 ```bash
@@ -325,22 +332,32 @@ build" all depend on it.
 ### R4. Nothing actually compiles before the UGS build
 
 **The problem.** `unity-ci.yml` is written but inert, because no runner is
-configured. Check 1 catches mechanical errors; only a real compile catches the
-rest. Today the first true compile of a cycle is the UGS build itself.
+configured — the self-hosted runner was removed on 2026-10-13 and
+`UNITY_RUNNER_LABEL` deleted. Check 1 catches mechanical errors; only a real
+compile catches the rest. Today the first true compile of a cycle is the UGS
+build itself.
 
 **The fix.**
 
-1. Register the existing build box as a self-hosted runner. Best fit: no license
-   activation, no minute costs, and `Library/` stays warm so builds are
-   incremental. Alternatives in `Docs/BUILD_AND_DELIVERY.md` §10.
-2. Set repository variables `UNITY_RUNNER_LABEL` and `UNITY_PATH`. Both
-   `unity-ci.yml` and `build-branch-ci.yml` pick them up with no edits.
+1. Attach a runner on a dedicated, isolated machine or VM that meets the rule
+   below, using the runbook in `Docs/BUILD_AND_DELIVERY.md` §10.2. Self-hosted
+   is still the best fit: no license secrets, no minute costs, and `Library/`
+   stays warm so builds are incremental. Alternatives in §10 of that file.
+2. Set repository variables `UNITY_RUNNER_LABEL` and `UNITY_PATH`.
+   `unity-ci.yml`, `bleeding-edge-guard.yml` and `build-branch-ci.yml` all pick
+   them up with no edits.
 3. Once the edit-mode suite is green, set `BUILD_PROMOTION_REQUIRES_GREEN=true`
    so a red commit cannot be promoted at all.
 
-> **This repository is public.** Do not attach a self-hosted runner without first
-> requiring approval for outside-contributor workflow runs, or a fork PR can run
-> arbitrary code on the build machine.
+> **This repository is public.** A self-hosted runner runs any workflow that
+> requests its label — from any branch a writer pushes or any fork pull request
+> — so no workflow's triggers protect it. It may only be an isolated machine or
+> VM holding no credentials, signing material, personal accounts or browser
+> sessions, never anyone's everyday PC, with its service on a dedicated
+> low-privilege local account; and before it goes live, fork pull request
+> approval must be set to **Require approval for all external contributors** and
+> the default branches protected. Full rule: `Docs/BUILD_AND_DELIVERY.md` §10
+> *Security*.
 
 **Effort:** a day, mostly runner setup.
 
@@ -386,7 +403,7 @@ bug to fix.
 | `.github/workflows/build-branch-ci.yml` | Verifies what landed on `build/**`, autofix |
 | `.github/workflows/unity-ci.yml` | Tiered compile verification (inert, needs a runner) |
 | `Tools/CI/validate_project.py` | The static checks |
-| `Tools/CI/test_validate_project.py` | Self-test for the above, 16 cases |
+| `Tools/CI/test_validate_project.py` | Self-test for the above, 25 cases |
 
 ### Settings
 

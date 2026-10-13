@@ -56,7 +56,7 @@ namespace CosmicShore.Launcher
         bool _remoteChecking;
 
         /// <summary>
-        /// True when Prisma's own copy is not at the tip of the branch it plays: the editor tools
+        /// True when Amoebius's own copy is not at the tip of the branch it plays: the editor tools
         /// and the game would run older code than GitHub has.
         /// </summary>
         public bool Behind(string branch) =>
@@ -199,56 +199,8 @@ namespace CosmicShore.Launcher
             return true;
         });
 
-        /// <summary>The BUILD page's iOS button, in whichever mode SETTINGS chose.</summary>
-        public void BuildIos()
-        {
-            if (_s.Ios == IosMode.GitHub) BuildIosOnGitHub();
-            else BuildPhone(ios: true);
-        }
-
-        public string? IosRunUrl { get; private set; }
-
-        /// <summary>No Mac: GitHub's free macOS runner compiles the .ipa from the branch; we download it.</summary>
-        public void BuildIosOnGitHub() => Start("Build iOS on GitHub", async ct =>
-        {
-            IosRunUrl = null;
-            Step("Signing in to GitHub");
-            if (_tools.Git == null) _tools.Detect(_s);
-            var token = _ws.GitHubApiToken();
-            if (token == null)
-            {
-                Log.Add(LogKind.Error, "No GitHub sign-in found. Sign in with GitHub Desktop, or paste a token in SETTINGS > Source (Actions: read & write).");
-                return false;
-            }
-            var gh = new GitHubActions(_s.RemoteUrl, token);
-            Step("Starting the Mac build for " + _s.Branch);
-            long run = await gh.Start(_s.Branch, _s.DebugBuild, Log, ct);
-            IosRunUrl = gh.RunUrl;
-            Log.Add(LogKind.Command, "GitHub run: " + gh.RunUrl);
-            string last = "";
-            while (true)
-            {
-                await Task.Delay(10000, ct);
-                GitHubActions.RunState st;
-                try { st = await gh.Poll(run, ct); }
-                catch (Exception ex) when (ex is not OperationCanceledException) { Log.Add(LogKind.Warn, "poll: " + ex.Message); continue; }
-                Step("Mac: " + st.Step, st.Total > 0 ? (float)st.Done / st.Total : -1);
-                if (st.Step != last) { Log.Add(LogKind.Output, "mac> " + st.Step); last = st.Step; }
-                if (st.Status != "completed") continue;
-                if (st.Conclusion != "success")
-                {
-                    Log.Add(LogKind.Error, $"The Mac build {st.Conclusion}. Open the run for the log: {gh.RunUrl}");
-                    return false;
-                }
-                break;
-            }
-            Step("Downloading the .ipa");
-            var outDir = Path.Combine(_ws.Exists ? _ws.Dir : LauncherSettings.DataDir, "Builds", "iOS");
-            var ipa = await gh.DownloadIpa(run, outDir, ct);
-            LastArtifact = ipa;
-            Log.Add(LogKind.Success, $"Built {ipa} - open it in Sideloadly to sign and install it on your iPhone.");
-            return true;
-        });
+        /// <summary>The BUILD page's iOS button: an Xcode project, or on a Mac a signed .ipa.</summary>
+        public void BuildIos() => BuildPhone(ios: true);
 
         public void BuildPhone(bool ios) => Start(ios ? "Build iOS" : "Build Android", async ct =>
         {
@@ -342,7 +294,7 @@ namespace CosmicShore.Launcher
             return true;
         }
 
-        string BuildStamp(string cfg) => Path.Combine(Path.GetDirectoryName(PlayerExeFor(cfg))!, ".prisma-built-from");
+        string BuildStamp(string cfg) => Path.Combine(Path.GetDirectoryName(PlayerExeFor(cfg))!, ".amoebius-built-from");
 
         /// <summary>What the workspace holds right now: its commit, or null when it has unsaved changes (then nothing is "already built").</summary>
         string? BuiltFrom() => _ws.PendingChanges() == 0 ? _ws.HeadSha() : null;

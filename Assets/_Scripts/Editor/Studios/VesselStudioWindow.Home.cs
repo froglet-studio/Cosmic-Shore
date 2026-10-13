@@ -142,7 +142,7 @@ namespace CosmicShore.Editor.Studios
                 EditorUtility.DisplayDialog("Vessel Studio", $"{StudioDir}/{file} is not in this checkout. Pull Ys-bleeding-edge.", "OK");
                 return;
             }
-            LaunchPrisma.OpenStudioWindow(path);
+            LaunchAmoebius.OpenStudioWindow(path);
         }
 
         /// <summary>Keeps the previews moving: a repaint at most 30 times a second.</summary>
@@ -186,7 +186,7 @@ namespace CosmicShore.Editor.Studios
             if (Button(ref bx, y, "CLAUDE.AI ARTIFACT", Look.Accent, false, "The one Vessel Studio artifact: Ask, shared requests, the decision log and Sync live there"))
                 Application.OpenURL(_catalog?.web ?? StudioUrl);
             if (Button(ref bx, y, "AMOEBIUS", Look.Accent, false, "Amoebius's VESSEL STUDIO page: PLAY IN ENGINE flies the game's own vessel"))
-                EditorApplication.delayCall += LaunchPrisma.OpenAmoebiusStudiosPage;
+                EditorApplication.delayCall += LaunchAmoebius.OpenAmoebiusStudiosPage;
             y += 26f + 26f;
 
             if (_homeError != null)
@@ -273,7 +273,7 @@ namespace CosmicShore.Editor.Studios
                 OpenPage(s.file);
             if (!string.IsNullOrEmpty(s.engineMode) &&
                 Button(ref bx, by, "PLAY IN ENGINE", accent, false, (s.engineNote ?? "") + " Opens Amoebius's VESSEL STUDIO page: pick " + s.name + ", then PLAY IN ENGINE."))
-                EditorApplication.delayCall += LaunchPrisma.OpenAmoebiusStudiosPage;
+                EditorApplication.delayCall += LaunchAmoebius.OpenAmoebiusStudiosPage;
 
             // the whole card opens the studio, as on the web hub (drawn after the buttons, so they keep their clicks)
             if (GUI.Button(r, GUIContent.none, GUIStyle.none)) OpenPage(s.file);

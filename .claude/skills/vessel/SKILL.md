@@ -652,6 +652,88 @@ applies to new abilities, new resources on the meter list, and anything that add
     Before sizing anything against a fresnel-shaded body, read the material's `_Spread`; absent means
     one unit. (Grizzly trigger bombs, 2026-10-08.)
 
+42. **A vessel made by COPYING another prefab on disk inherits four things that are silently
+    wrong, and the registration list is longer than the setup tool's.** The Thresher (2026-10-08) is
+    a YAML clone of the Squirrel and hit each one:
+    - **`GlobalObjectIdHash`** is the source's verbatim, so only one of the two can ever spawn
+      (Netcode keys on the hash alone). Compute it as
+      `XXHash32("GlobalObjectId_V1-1-<prefab guid>-<NetworkObject fileID>-0")` (verify by
+      reproducing the source's shipped hash first) and zero
+      `InScenePlacedSourceGlobalObjectIdHash`. Gate: `Tools/Build/check_network_prefab_hashes.py`.
+    - **`DefaultNetworkPrefabs.asset`** keys by the root GAMEOBJECT fileID; the prefab container
+      keys by the root TRANSFORM. Same object, different ids.
+    - **Tests that enumerate `VesselClassType`** fail for a new member with no data:
+      `CrystalHullFusionConfigTests` needs four `CrystalHullFusionConfig` entries (a hull that
+      draws the source's mesh may reuse the source's bakes — `Matches` keys on mesh + tuning),
+      `EnumIntegrityTests` counts members (it was already one behind when the Thresher landed), and
+      `OneThumbVesselCoverageTests` must be told a new transformer type exists or it skips the hull.
+      `grep -rln "GetValues(typeof(VesselClassType))" Assets/_Scripts` before committing.
+    - **Stale keys travel with the copy.** The Squirrel's camera asset carried seven fields
+      `CameraSettingsSO` no longer has; `Tools/Build/check_generated_assets.py` (after
+      `unity_refcompile`) reports them. To tell inherited findings from introduced ones, commit an
+      untouched copy of the source in a base worktree, audit it, and diff the two finding lists.
+
+43. **The fleet's chase camera is HARD-ATTACHED, so any hull rotation faster than a stick can make
+    is a camera whip.** Every vessel camera asset ships `CameraMode.FixedCamera`, which sets
+    `_disableRotationLerp`: the camera's pose is the hull's rotation × the offset, the same frame.
+    A mechanic that rotates the hull itself — snapping onto an orbit tangent, a tug that turns the
+    nose, a fling that faces the velocity — therefore swings the WORLD on screen. The Thresher's
+    plant (2026-10-09) turned the hull up to **91° in one frame** and read as the camera "getting
+    whipped around"; the rope's own tug, the suspect, peaked at only 85–131 °/s. Two lessons:
+    - **Measure the hull's per-frame turn before guessing.** Copy the transformer's velocity→nose
+      logic into a scratch driver over the pure solver (the Thresher harness's stubs compile it in
+      seconds) and record max degrees/frame per scenario. The answer pointed at a different line
+      than intuition did.
+    - **Cap the camera's FOLLOW FRAME, not the hull.** `CustomCameraController.MaxFollowTurnRate`
+      (default 0 = hard-attached) `RotateTowards`s the frame at most N °/s. Set it above every
+      stick rate (the Thresher uses 240) and ordinary flying is bit-for-bit unchanged; only snaps
+      are spread. Slowing the hull instead changes gameplay — a fling bends by exactly the nose's
+      lag. `RearViewLawTests` counts `rotation * EffectiveOffset` pose sites in the camera SOURCE
+      (exactly two), so keep the follow-frame local named `rotation` and keep the teleport path
+      from adding a third site.
+
+44. **A camera blend toward a MOVING pose reads as rough however long you make it — drive the
+    transition yourself between poses that are not moving under you, and hand over only where
+    they coincide.** `CustomCameraController.Spectate` blends the settled follow pose toward a
+    vantage over `SpectateBlendSeconds`, which is correct and was still the Thresher's "make it
+    smoother" report (2026-10-13): on ENTRY the follow pose underneath was still spinning with a
+    planted hull, on EXIT a turn-capped follow frame (rule 43) was still swinging onto the new
+    heading — so both blends chased a target that moved during them. The fix is on the caller's
+    clock: capture the camera's ACTUAL pose, ease (SmoothStep) your own vantage from it to the
+    destination — a still vantage going in; the follow pose COMPUTED from the hull's live pose and
+    the camera's own offset going out — then `SnapToTarget()` and release with a near-zero
+    hand-over blend between two equal poses. Two traps: a computed follow pose must use the SAME
+    formula the camera does (the warp field made it `EffectiveOffset * WarpFieldRuntime.ScaleAt`,
+    merged in mid-branch — a duplicated formula drifts silently; see THRESHER.md's refactor rows),
+    and never ease from `transform` read AFTER shake, or the start pose carries the shake.
+
+45. **A hull snap is a VELOCITY snap first — cap the turn, let the constraint stretch, and reel
+    the stretch back with a SPRING, never an exponential.** Rule 43 hides a one-frame hull turn
+    from the camera; it does not make the motion smooth. The Thresher's plant replaced the ship's
+    heading with the orbit tangent in one frame (91°). Capping the heading's turn rate (300 °/s)
+    is half the fix, and it STALLS the ship if the constraint holds — a ship flying radially away
+    from the pivot, clamped to the rope, has nowhere to go. So let the constraint stretch while
+    the heading turns (the ship swings wide, ~15 u), then reel the stretch back. An
+    exponential reel-back steps the radial speed from 0 to `rate × stretch` in one frame — that
+    was a single **47°** frame in the measurement — while a critically damped spring seeded with
+    the swing-out's own radial speed ramps it (worst 6.9°/frame, which is the orbit's own
+    curvature). Measure per-frame heading change in the pure solver (rule 43's scratch driver)
+    before and after; `HookOn_TurnsOntoTheOrbitAtTheCappedRate_WithoutStalling` is the template.
+
+46. **Removing a CLONED DONOR'S model is four removals, not one — and the model is never only a mesh.** A hull
+    built as a text clone that hides its donor's model (the Stoat over the Squirrel's FBX; the Scarab over the
+    Sparrow's) still leans on that model for: (a) the **hit box** — the donor's colliders and `ImpactCollider` were
+    ADDED to the model's GameObjects, so they go with it and must be re-authored at the new hull's size; (b) the
+    **jet mounts** — the jets are parented to the donor's bones and usually carry a donor-specific steering
+    component (the Squirrel's `DriftJet` turns its plume SIDEWAYS every frame unless drifting); (c) the **hull-fusion
+    bakes**, keyed to the donor's mesh — with no model left the hull is generated at runtime and the fusion solves on a
+    worker (`CrystalHullFusion.Prewarm`), so the entries ship with no bake; (d) the **nested-instance plumbing** —
+    `m_AddedGameObjects` entries naming objects you are KEEPING must be detached before the instance is deleted.
+    Do it as a document-level pass with a reference-integrity gate (every local `{fileID}` names a document in the
+    file), never by deleting line ranges: `author_stoat_assets.py` stage 6 (`remove_instance`,
+    `remove_gameobject_tree`, `dangling_refs`) is the reference, and it took the Stoat from 4,381 lines to 2,038 with
+    zero dangling references. (Stoat own-vessel pass, 2026-10-13.)
+
 ### 4.x Placing prisms from a vessel ability — shield sizing
 
 An ability that BUILDS with prisms (the Scarab's switch dais, the Urchin's track, a boost ring)
@@ -684,6 +766,29 @@ inherits two traps that have each cost a round-trip:
   free, with nothing to warn you. Re-derive the clearance whenever you re-pose one, and compute
   its silhouette as the projected hull of its eight spike tips rather than a hard-coded octagon,
   which is only the outline of an AXIS-ALIGNED sun.
+
+### 4.x1 MOVING a live prism from an impact effect (the Rhino plough, 2026-10-13)
+
+An effect that relocates a prism it touched, rather than destroying it, uses the platform's mover
+contract — the one `ThreatGrove.PoseAndFly` and `BuilderPrismWorld.Settle` already follow — and
+copying only half of it fails silently:
+
+- **Set the transform to the END pose, then `Prism.NotifyPositionChanged()`** — the spatial index,
+  the shield shell's pose and the companion render entity all track the transform only through
+  that call. Skip it and AOE queries, growth probes and the shell keep the old position.
+- **Animate with `PrismRenderService.StampFlight`, never per-frame transform writes.** The visual
+  walks in from the start while gameplay is already final; the stamp's velocity is
+  `delta × π / (2T)` (its full vector is `v·2T/π`). Then `EncapsulateBoundsPoint` the START in
+  object space, or the sliding visual frustum-culls against its resting box.
+- **Keep `prismProperties.position` in step** (the sibling mover does) even though nothing reads it.
+- **Make the move idempotent.** A multi-collider hull, or the shell tier plus the box tier, reports
+  one contact more than once in a frame; a move written as "+N" applies twice. Write it as "land
+  at X unless already there" (`RhinoPlough.LateralShove`).
+- **Super-shielded mass answers through `Prism.AbsorbSuperShieldHit`** and does not move — that is
+  the immovable tier, and arena edge linings are built from it.
+- **Removing a destroy is a SCORING change wherever that vessel is mandatory.** The plough stopped
+  hull rams counting in Cleave (Rhino-only, scored on destruction) — check the mono-vessel modes'
+  scoring the same way rule 31 asks of a defensive ability.
 
 ### 4.x2 A `[Range]` on a vessel action's SO is a drawer, not a constraint
 
@@ -801,6 +906,14 @@ every time: *"I don't see the pip."*
   - **A corner sharper than a right angle needs a MITER, not a bisector.** An antialiasing feather
     offset along the bisector is `sin(theta/2)` too thin at the point — at a 72-degree apex that is
     41% — and the apex is exactly where the eye lands first.
+- **Not every petal is square — the window's rect AND its render target take the petal's
+  aspect.** The Charge petal's bounding box is square to 0.5%, so the Serpent's eyepiece got away
+  with a square everything. The Time petal (traced off `time_petal.png`, 2026-10-13) is an exact
+  rhombus with 72° tips and width / height = tan 36° = 0.727: positions-are-UVs then needs a 0.727
+  rect AND a 0.727 render target (`ScopePipView.RenderAspect`), and its inradius and miters must be
+  computed in TRUE proportions (x scaled by the aspect), or the feather and the round marks skew.
+  Measure a sprite with coverage-weighted row edges and a line fit per edge; the residual (≤0.05 px
+  here) is what tells you the shape really is a polygon.
 - **Derive a shape's constants from its outline, never transcribe them.** `ScopePetalGeometry`
   computes inradius, circumradius and area in a static constructor by walking its own edges, so
   re-tracing the sprite moves the picture, the frame, the reticle cap and the recharge ring
@@ -909,6 +1022,22 @@ is levied there: putting it in `Transit` would have stripped petals on the owner
 every other peer's copy of that pilot. Each machine applies a pose exactly once (owner writes first,
 server re-broadcasts to everyone else), so a hook there fires once per machine.
 
+**The same rule for BLASTS: an AOE spawned by a server-owned object must be spawned on every peer.**
+Prism destruction and shield pops are per-peer and never replicate. A vessel's own blast re-executes
+everywhere with the press; a payload the vessel MADE (a forged ball, a mine, a seeded body) usually
+lives on the server, and an AOE spawned from its `…Server` method breaks mass on the host only. The
+Scarab ball shipped that way until 2026-10-13. Resolve size and domain on the server, spawn from a
+`ClientRpc` (`AstroLeagueBall.Detonate_ClientRpc`), and make sure the blast's effect on NETWORKED
+objects no-ops off the server (`Docs/claude/MULTIPLAYER_AND_SOCIAL.md`).
+
+- **Anything that PREDICTS where a hull will go must fly the hull's response, not its stick** (the Stoat's
+  pathfinder, an AI's lead, an aim-assist line). `VesselTransformer` turns a COMMAND (`CommandedRotation`)
+  that the visible hull slerps after at `RotationFollowRate` (1.5 /s, a 0.67 s lag), and eases `speed` to
+  `CurrentThrottleTarget` at the same rate. A body that turns at the stick's rate at once is 15–73 u off the
+  real path within 3 s of starting a held turn (measured 2026-10-13, `StoatDipoleMath.HullResponse` fixed it
+  to within 2 u). Seed the predictor from `CommandedRotation`, the follow rate and the throttle target, and
+  pin it with a test against a frame-stepped model of the transformer (`StoatDipoleTests` has one).
+
 ### 4.ad Porting a vessel from its studio — the settings, the CAMERA, and the AI's hand-over
 
 The studio (`/vessel-studio`) is where a vessel's numbers are decided; the Unity port is a COPY of them, and
@@ -960,7 +1089,7 @@ the Stoat's first port (2026-10-10) showed the three places a copy goes wrong. D
    `setLensUniforms` JavaScript and runs them beside the shipped HLSL and C# — copy that shape (extract, translate
    mechanically, compare, plus a negative control) for any studio visual you port.
 
-Prove the port in Amoebius before handing it over (the `/prisma` loop; `Port/CLAUDE.md`): set the menu hull
+Prove the port in Amoebius before handing it over (the `/amoebius` loop; `Port/CLAUDE.md`): set the menu hull
 to the vessel (`Menu_Main.unity` `menuVesselClass`, reverted after), wait for the AI to use its ability,
 click into freestyle, then read the camera (`get "CM PlayerCam" CustomCameraController _followOffset`), the
 live holes or placed objects (`do eval …Registry.Count`) and a screenshot. Amoebius compiles the game

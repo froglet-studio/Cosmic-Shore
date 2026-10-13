@@ -60,8 +60,9 @@ namespace CosmicShore.Tests
         [Test]
         public void TheSlungCircleIsTheCruisePivotScaledBySpeed()
         {
-            Assert.AreEqual(60f / (120f * Mathf.Deg2Rad), SlingshotCourse.CruiseRadius, 0.05f);
-            Assert.AreEqual(150f / (120f * Mathf.Deg2Rad), SlingshotCourse.FullSlingRadius, 0.05f);
+            // 60 u/s cruise and 150 u/s slung (cruise + the 90 u/s pull ceiling) on the shipped flat 48°/s turn.
+            Assert.AreEqual(60f / (48f * Mathf.Deg2Rad), SlingshotCourse.CruiseRadius, 0.05f);
+            Assert.AreEqual(150f / (48f * Mathf.Deg2Rad), SlingshotCourse.FullSlingRadius, 0.05f);
         }
 
         [Test]

@@ -17,9 +17,15 @@ namespace CosmicShore.Core
     /// <see cref="ApplyConsent"/>. Nothing else should touch <see cref="CrashReportHandler"/>.
     ///
     /// The service itself is enabled per-project in Project Settings > Services > Cloud Diagnostics
-    /// (ProjectSettings: <c>enableCrashReportAPI</c> + <c>CrashReportingSettings.m_Enabled</c>).
+    /// (ProjectSettings: <c>enableCrashReportAPI</c> + <c>CrashReportingSettings.m_EnableCloudDiagnosticsReporting</c>).
     /// With the service disabled these calls are harmless no-ops, so this code is safe to ship
     /// either way.
+    ///
+    /// Unity's separate Engine Diagnostics service (<c>UnityConnectSettings.asset</c>
+    /// <c>InsightsSettings.m_EngineDiagnosticsEnabled</c>) is NOT covered by this consent gate:
+    /// this class arms and disarms <see cref="CrashReportHandler"/> capture only. So that service is
+    /// turned off in the project settings. Turning it back on would let it report without the
+    /// player's consent.
     /// </summary>
     public static class CrashReportingService
     {

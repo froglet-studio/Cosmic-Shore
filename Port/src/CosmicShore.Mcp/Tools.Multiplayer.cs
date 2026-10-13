@@ -5,7 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Text.Json.Nodes;
 using System.Threading.Tasks;
-using Prisma;
+using Amoebius;
 
 namespace CosmicShore.Mcp
 {

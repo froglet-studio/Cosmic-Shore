@@ -14,11 +14,11 @@ namespace CosmicShore.Launcher.Tests
 {
     static class Setup
     {
-        public static readonly string Data = Path.Combine(Path.GetTempPath(), "prisma-launcher-tests-" + Environment.ProcessId);
+        public static readonly string Data = Path.Combine(Path.GetTempPath(), "amoebius-launcher-tests-" + Environment.ProcessId);
 
-        /// <summary>Everything the launcher writes goes to a scratch folder, never the real Prisma data.</summary>
+        /// <summary>Everything the launcher writes goes to a scratch folder, never the real Amoebius data.</summary>
         [ModuleInitializer]
-        internal static void Init() => Environment.SetEnvironmentVariable("PRISMA_DATA_DIR", Data);
+        internal static void Init() => Environment.SetEnvironmentVariable("AMOEBIUS_DATA_DIR", Data);
 
         public static string Git(string dir, params string[] args)
         {
@@ -218,9 +218,9 @@ namespace CosmicShore.Launcher.Tests
             Assert.Contains("+TWO", git.Diff(a).Result);
 
             var log = new LogBuffer();
-            Assert.Null(git.Commit("prisma/fix-score", "fix: score", "Tester", "t@example.com", log).Result);
+            Assert.Null(git.Commit("amoebius/fix-score", "fix: score", "Tester", "t@example.com", log).Result);
             st = git.Last!;
-            Assert.Equal("prisma/fix-score", st.Branch);
+            Assert.Equal("amoebius/fix-score", st.Branch);
             Assert.Empty(st.Changes);
             Assert.Equal(1, st.Ahead);
             Assert.True(st.Log[0].Unpushed);
@@ -229,9 +229,9 @@ namespace CosmicShore.Launcher.Tests
             Assert.Null(git.Push(log).Result);
             st = git.Last!;
             Assert.Equal(0, st.Ahead);
-            Assert.Equal("origin/prisma/fix-score", st.Upstream);
-            Assert.Equal("fix: score", Setup.Git(bare, "log", "-1", "--format=%s", "prisma/fix-score"));
-            Assert.Equal("https://github.com/froglet-studio/Cosmic-Shore/compare/bleeding-edge...prisma%2Ffix-score?expand=1", git.PullRequestUrl("prisma/fix-score", "bleeding-edge"));
+            Assert.Equal("origin/amoebius/fix-score", st.Upstream);
+            Assert.Equal("fix: score", Setup.Git(bare, "log", "-1", "--format=%s", "amoebius/fix-score"));
+            Assert.Equal("https://github.com/froglet-studio/Cosmic-Shore/compare/bleeding-edge...amoebius%2Ffix-score?expand=1", git.PullRequestUrl("amoebius/fix-score", "bleeding-edge"));
         }
 
         [Fact]
@@ -271,7 +271,7 @@ namespace CosmicShore.Launcher.Tests
         [Fact]
         public void Worktree_fetches_from_the_configured_repository_when_the_clones_origin_lacks_the_branch()
         {
-            string root = Path.Combine(Path.GetTempPath(), "prisma-wt-" + Guid.NewGuid().ToString("N")[..8]);
+            string root = Path.Combine(Path.GetTempPath(), "amoebius-wt-" + Guid.NewGuid().ToString("N")[..8]);
             string canon = Path.Combine(root, "canon.git"), fork = Path.Combine(root, "fork.git"), src = Path.Combine(root, "src"), clone = Path.Combine(root, "Cosmic-Shore");
             Directory.CreateDirectory(src);
             Setup.Git(root, "init", "-q", "--bare", canon);
@@ -302,7 +302,7 @@ namespace CosmicShore.Launcher.Tests
         }
 
         [Theory]
-        [InlineData("prisma/fix-score", true)]
+        [InlineData("amoebius/fix-score", true)]
         [InlineData("has space", false)]
         [InlineData("a..b", false)]
         [InlineData("-x", false)]
@@ -311,12 +311,12 @@ namespace CosmicShore.Launcher.Tests
 
         /// <summary>
         /// TOOLS > BUILD: a TOOL chat may write only cs-asset, its tests and the native-tools
-        /// registry - the Unity project and every other part of Prisma are denied.
+        /// registry - the Unity project and every other part of Amoebius are denied.
         /// </summary>
         [Fact]
         public void A_tool_chat_may_edit_only_cs_asset_its_tests_and_the_registry()
         {
-            var root = Path.Combine(Path.GetTempPath(), "prisma-tooldeny-" + Guid.NewGuid().ToString("N")[..8]);
+            var root = Path.Combine(Path.GetTempPath(), "amoebius-tooldeny-" + Guid.NewGuid().ToString("N")[..8]);
             try
             {
                 foreach (var d in new[] { "Assets", "Port/src/CosmicShore.AssetTool", "Port/src/CosmicShore.Engine", "Port/tests/CosmicShore.AssetTool.Tests",
@@ -340,7 +340,7 @@ namespace CosmicShore.Launcher.Tests
         [Fact]
         public void The_native_tools_registry_reads_entries_and_skips_bad_ones()
         {
-            var file = Path.Combine(Path.GetTempPath(), "prisma-native-" + Guid.NewGuid().ToString("N")[..8] + ".json");
+            var file = Path.Combine(Path.GetTempPath(), "amoebius-native-" + Guid.NewGuid().ToString("N")[..8] + ".json");
             try
             {
                 File.WriteAllText(file, """
@@ -362,6 +362,121 @@ namespace CosmicShore.Launcher.Tests
                 if (File.Exists(shipped)) LauncherApp.LoadNativeTools(shipped);
             }
             finally { File.Delete(file); }
+        }
+    }
+
+    public class UpgradeTests
+    {
+        /// <summary>A worktree made beside the clone under the engine's earlier name stays in use (it may hold the agent's edits).</summary>
+        [Fact]
+        public void A_worktree_made_under_the_engines_earlier_name_stays_in_use()
+        {
+            var clone = Path.Combine(Setup.Data, "upgrade", "Cosmic-Shore");
+            Directory.CreateDirectory(clone);
+            var s = new LauncherSettings { Workspace = WorkspaceMode.WorktreeOfMyClone, MyClonePath = clone };
+            var ws = new Workspace(s, new Toolchain());
+            Assert.Equal(clone + "-amoebius", ws.Dir);
+
+            Directory.CreateDirectory(clone + "-prisma");
+            File.WriteAllText(Path.Combine(clone + "-prisma", ".git"), "gitdir: elsewhere\n");
+            Assert.Equal(clone + "-prisma", ws.Dir);
+
+            Directory.CreateDirectory(Path.Combine(clone + "-amoebius", ".git"));
+            Assert.Equal(clone + "-amoebius", ws.Dir);
+        }
+
+        [Fact]
+        public void A_settings_file_naming_the_retired_GitHub_iOS_mode_still_loads_with_everything_else_kept()
+        {
+            var file = Path.Combine(LauncherSettings.DataDir, "launcher.json");
+            var saved = File.Exists(file) ? File.ReadAllText(file) : null;
+            try
+            {
+                File.WriteAllText(file, "{\"Branch\":\"cece/old-tester\",\"Ios\":\"GitHub\"}");
+                var s = LauncherSettings.Load();
+                Assert.Equal("cece/old-tester", s.Branch);       // not reset to defaults
+                Assert.Equal(OperatingSystem.IsMacOS() ? IosMode.ThisMac : IosMode.Xcode, s.Ios);
+            }
+            finally
+            {
+                if (saved != null) File.WriteAllText(file, saved); else File.Delete(file);
+            }
+        }
+
+        [Fact]
+        public void Secrets_move_out_of_launcher_json_into_the_credential_store()
+        {
+            var file = Path.Combine(LauncherSettings.DataDir, "launcher.json");
+            var saved = File.Exists(file) ? File.ReadAllText(file) : null;
+            try
+            {
+                File.WriteAllText(file, "{\"Branch\":\"x\",\"GitHubToken\":\"ghp_test_123\",\"AnthropicApiKey\":\"sk-ant-test-456\",\"ChatMode\":2}");
+                var s = LauncherSettings.Load();
+                Assert.Equal("ghp_test_123", s.GitHubToken);
+                Assert.Equal("sk-ant-test-456", s.AnthropicApiKey);
+                Assert.Equal(1, s.ChatMode);                         // a saved AUTO comes back as EDIT
+                var json = File.ReadAllText(file);
+                Assert.DoesNotContain("ghp_test_123", json);         // rewritten without them
+                Assert.DoesNotContain("sk-ant-test-456", json);
+                Assert.Equal("ghp_test_123", SecretStore.Get(SecretStore.GitHubToken));
+
+                // A changed secret goes to the store on Save, never back into the file.
+                s.AnthropicApiKey = "sk-ant-changed";
+                s.Save();
+                Assert.DoesNotContain("sk-ant-changed", File.ReadAllText(file));
+                Assert.Equal("sk-ant-changed", LauncherSettings.Load().AnthropicApiKey);
+            }
+            finally
+            {
+                SecretStore.Set(SecretStore.GitHubToken, null);
+                SecretStore.Set(SecretStore.AnthropicApiKey, null);
+                if (saved != null) File.WriteAllText(file, saved); else File.Delete(file);
+            }
+            Assert.Null(SecretStore.Get(SecretStore.GitHubToken));
+        }
+
+        [Fact]
+        public void Auto_runs_without_permission_checks_only_for_a_chat_the_user_opted_in()
+        {
+            if (OperatingSystem.IsWindows()) return; // the fake CLI is a shell script
+            var dir = Path.Combine(Setup.Data, "fake-claude");
+            Directory.CreateDirectory(dir);
+            var argsFile = Path.Combine(dir, "args.txt");
+            var fake = Path.Combine(dir, "claude");
+            File.WriteAllText(fake, "#!/bin/sh\nprintf '%s\\n' \"$@\" > \"" + argsFile + "\"\necho '{\"type\":\"result\",\"subtype\":\"success\"}'\n");
+            File.SetUnixFileMode(fake, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
+            var s = new LauncherSettings { ClaudePath = fake };
+            var chat = new ChatStore(s, new Toolchain(), _ => { }).New();
+
+            string ModeSent(ClaudeChat.Mode mode)
+            {
+                File.Delete(argsFile);
+                chat.Send("hi", dir, mode);
+                for (int i = 0; i < 200 && (chat.Busy || !File.Exists(argsFile)); i++) System.Threading.Thread.Sleep(25);
+                var a = File.ReadAllLines(argsFile);
+                return a[Array.IndexOf(a, "--permission-mode") + 1];
+            }
+
+            Assert.False(chat.AutoAllowed);
+            Assert.Equal("acceptEdits", ModeSent(ClaudeChat.Mode.Auto));      // not opted in: EDIT
+            chat.AutoAllowed = true;
+            Assert.Equal("bypassPermissions", ModeSent(ClaudeChat.Mode.Auto));
+            Assert.Equal("plan", ModeSent(ClaudeChat.Mode.Plan));
+        }
+
+        [Fact]
+        public void Project_settings_fall_back_to_the_file_under_the_engines_earlier_name()
+        {
+            var root = Path.Combine(Setup.Data, "upgrade", "project");
+            var legacy = Path.Combine(root, "Port", "ProjectSettings", "PrismaProject.json");
+            Directory.CreateDirectory(Path.GetDirectoryName(legacy)!);
+            File.WriteAllText(legacy, "{\"quality\":{\"msaa\":8}}");
+            Assert.Equal(8, Amoebius.AmoebiusProjectSettings.Load(root).Quality.Msaa);
+
+            // Once saved under the new name, that one wins.
+            new Amoebius.AmoebiusProjectSettings { Quality = { Msaa = 2 } }.Save(root);
+            Assert.True(File.Exists(Amoebius.AmoebiusProjectSettings.PathIn(root)));
+            Assert.Equal(2, Amoebius.AmoebiusProjectSettings.Load(root).Quality.Msaa);
         }
     }
 }
