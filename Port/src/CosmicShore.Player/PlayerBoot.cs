@@ -167,7 +167,13 @@ namespace CosmicShore.Player
         {
             Loop.Tick(step);
             CosmicShore.Engine.Audio.Fmod.RuntimeManager.Update();
+            // Application.Quit() anywhere in the frame (the settings panel's QUIT GAME): as in Unity,
+            // the quit happens at the frame's end, and a wantsToQuit handler may still cancel it.
+            if (Application.QuitRequested && Application.RunQuitSequence()) QuitNow = true;
         }
+
+        /// <summary>The game quit (<see cref="Application.Quit()"/>) and nothing cancelled it: the host closes now.</summary>
+        public bool QuitNow { get; private set; }
 
         public void Dispose()
         {

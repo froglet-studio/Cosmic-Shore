@@ -110,6 +110,9 @@ namespace CosmicShore.Player
             _window.Update += OnUpdate;
             _window.Render += OnRender;
             _window.Run();
+            // The window was closed (its close button, Alt+F4, or the game's own quit): the game hears
+            // OnApplicationQuit and Application.quitting once either way, as in a Unity player.
+            if (_boot?.Loop != null) Application.RunQuitSequence(cancellable: false);
             SessionReport.Write("window closed");
             _boot?.Dispose();
             _inputBridge?.Dispose();
@@ -160,6 +163,8 @@ namespace CosmicShore.Player
             Camera.RenderRequested = cam => { if (cam != null && cam.targetTexture != null) RenderToTexture(cam, force: true); };
 
             _inputBridge = new SilkInputBridge(_window);
+            // Alt+Tab and clicks elsewhere reach the game as OnApplicationFocus (the rumble stops, as in Unity).
+            if (_window is IWindow focusable) focusable.FocusChanged += Application.SetFocus;
             OnInput?.Invoke(_window);
             _script.EnsureDevices();
             // This device draws Entities Graphics entities (SceneRenderer's entity pass), so the
@@ -209,6 +214,7 @@ namespace CosmicShore.Player
             long t0 = System.Diagnostics.Stopwatch.GetTimestamp();
             CosmicShore.Engine.GameLoop.PhaseTiming = s_timing || SessionReport.Enabled;
             _boot.Tick(step);
+            if (_boot.QuitNow) _window.Close();
             ParityRun.AfterTick(_frameIndex);
             SessionReport.SimTime(System.Diagnostics.Stopwatch.GetElapsedTime(t0).TotalMilliseconds);
             if (s_timing && _frameIndex % 30 == 0)
