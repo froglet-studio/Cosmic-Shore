@@ -422,6 +422,37 @@ flare 1.5, illusion morph 0.6 s.
 
 ---
 
+### 🔴 Thresher analog triggers: LT brake / full-pull stop, RT chain rigidity (`cece/zealous-johnson-gopp6t`, 2026-10-13) — NOT EDITOR-VERIFIED
+
+**Landed** (`THRESHER.md` §1, §4a, §5a, §6, §7, §9; graduated from the Thresher Plant Lab round 2,
+`Docs/Studios/THRESHER_PLANT_LAB.md`): `ThresherConfig.asset` turns `dials.analogTriggers` on. LT's depth is a
+brake (a full pull stops the ball along an S-curve and the ship hooks on round the stopping ball); RT's depth is
+the chain's rigidity (released = slack bungee, pulled = rigid, slew 2/s; no winch); the launch view needs both at
+a full pull. Also on: `hullFollowsPlantedVelocity`, `releaseSpinDownSeconds` 0.3 (+ launch lead),
+`spectateCarrySeconds` 0.35, `cameraMaxFollowAngularAcceleration` 1500 (a new default-0
+`CustomCameraController.MaxFollowAngularAcceleration` seam), `spinEase` 0.4, `yank` 0. Code defaults stay digital.
+
+**Not opened in Unity.** Offline: `unity_refcompile` RESULT OK (player and editor configs);
+`thresher_chain_harness` 66/66 (56 digital + 10 analog, two of which were proved by planted mutations);
+`thresher_plant_lab/parity.cjs` PASS (lab page ↔ C# on 4 digital + 5 analog flights, 6 negative controls, asset ↔
+lab preset on 20 dials).
+
+**Verify in editor** (a gamepad; the steps are `THRESHER.md` § In-editor verification A1–A8):
+1. Toy Box > Vessel Changer → Thresher. Tow, squeeze LT to half: the ball slows, the ship curves round it, the
+   ball never stops. Squeeze fully: the ball eases to a stop (no snap) and the ship hooks on smoothly.
+2. RT released = slack (the ball swings out in a hard turn); squeeze RT while planted: the chain draws in over
+   ~0.5 s and the spin speeds up.
+3. Planted, LT full, RT full: the camera glides into the launch view without freezing; RT eased off: it glides out.
+4. Ease LT off: the ship leaves with the hull easing out of the spin, landing within a few degrees of the
+   crosshair's line.
+5. Keyboard / touch: a press plants as a full pull; RT released means slack.
+6. Squirrel / Dolphin / Serpent cameras unchanged.
+7. Tuning: `analogStopDecel` (stop snappiness), `analogAnchorCurve` (how much a partial LT swings the ship),
+   `chainSlackRate` / `chainRigidRate` (bungee vs rigid), `rigiditySlew` (the crack's violence),
+   `releaseSpinDownSeconds` / `releaseSpinDownMaxDegrees` (exit smoothness vs drift).
+
+---
+
 ### 🔴 Thresher round 5: smooth spin entry/exit, doubled sight zoom (`cece/wonderful-hypatia-4b323s`, 2026-10-13) — NOT EDITOR-VERIFIED
 
 **Landed** (`THRESHER.md` §4 Lock, §5a): (1) the camera's launch-view entry and exit are eased on the
