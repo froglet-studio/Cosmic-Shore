@@ -979,6 +979,14 @@ is levied there: putting it in `Transit` would have stripped petals on the owner
 every other peer's copy of that pilot. Each machine applies a pose exactly once (owner writes first,
 server re-broadcasts to everyone else), so a hook there fires once per machine.
 
+**The same rule for BLASTS: an AOE spawned by a server-owned object must be spawned on every peer.**
+Prism destruction and shield pops are per-peer and never replicate. A vessel's own blast re-executes
+everywhere with the press; a payload the vessel MADE (a forged ball, a mine, a seeded body) usually
+lives on the server, and an AOE spawned from its `…Server` method breaks mass on the host only. The
+Scarab ball shipped that way until 2026-10-13. Resolve size and domain on the server, spawn from a
+`ClientRpc` (`AstroLeagueBall.Detonate_ClientRpc`), and make sure the blast's effect on NETWORKED
+objects no-ops off the server (`Docs/claude/MULTIPLAYER_AND_SOCIAL.md`).
+
 - **Anything that PREDICTS where a hull will go must fly the hull's response, not its stick** (the Stoat's
   pathfinder, an AI's lead, an aim-assist line). `VesselTransformer` turns a COMMAND (`CommandedRotation`)
   that the visible hull slerps after at `RotationFollowRate` (1.5 /s, a 0.67 s lag), and eases `speed` to

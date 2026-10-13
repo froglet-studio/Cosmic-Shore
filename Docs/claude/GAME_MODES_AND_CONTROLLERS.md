@@ -402,8 +402,8 @@ sphere manufactures the mode's signature screamer for novices. It lands the mode
 SCARAB.md §4.2-§4.5 left open (multi-ball via `AstroLeagueBall.Live` + `ScarabBallForge.OnForged`
 adoption, per-ball attribution via a forger/last-toucher ledger, and a ball ceiling) and fixed
 the forged ball's unreplicated `SetSizeScale` (`n_SizeScale`). **That ceiling is per CELL and
-lives on the BALL, not on the mode** — `AstroLeagueBall.cellBallLimit` (4): when a further loose
-ball enters a cell, every loose ball in it detonates regardless of domain, the arriving one
+lives on the BALL, not on the mode** — `AstroLeagueBall.cellBallLimit` (5 per Scarab, counted by domain): when one
+Scarab's sixth loose ball enters a cell, every loose ball in it detonates regardless of domain, the arriving one
 included, announced by `CellOverload_ClientRpc` so it is ONE networked event on every peer and
 using the same per-ball detonation as the nucleus overload below; embedded/hidden balls do not
 count, and nothing is ever culled on a clock. It replaced a per-DOMAIN cap enforced at FORGE
