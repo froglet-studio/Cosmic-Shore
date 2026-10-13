@@ -81,6 +81,9 @@ namespace CosmicShore.Gameplay
         StoatDipoleMath.Separation _separation;
         float _age;
         float _gravitySpeed, _gravitySpeedFar;
+        float _winding;      // degrees the heading has turned toward the sink inside its fly-through zone
+        float _zoneScale;    // the poles' live size (Space × the sink's grow-in), which sizes the zone with them
+        Vector3 _lastForward; // the hull's heading at the end of the last frame's field flight (the winding's "before")
         int _lastTeleportCount;
         float _nextSwallow;
         bool _publishedOpen;
@@ -105,6 +108,8 @@ namespace CosmicShore.Gameplay
         public BlackHole Source => IsOpen ? _source : null;
         /// <summary>The field's gravity speed along the nose, u/s (the owner's flight).</summary>
         public float GravitySpeed => _gravitySpeed;
+        /// <summary>Degrees the heading has turned toward the sink inside its fly-through zone (the owner's flight).</summary>
+        public float Winding => _winding;
 
         /// <summary>The open pair as a field (what the pathfinder predicts through); false when closed.</summary>
         public bool TryGetField(out StoatDipoleMath.Field field)
@@ -118,6 +123,7 @@ namespace CosmicShore.Gameplay
                 Sink = _sink.transform.position, Source = _source.transform.position,
                 SinkGM = gm, SinkHorizon = rs, SourceGM = gmR, SourceHorizon = rsR,
                 SourceSoftening = config.SourceSofteningHorizons * rsR, AccelerationCap = config.AccelerationCap,
+                ThroughRadius = config.ThroughZoneRadius * _zoneScale, ThroughDegrees = config.ThroughDegrees,
             };
             return true;
         }
@@ -226,6 +232,8 @@ namespace CosmicShore.Gameplay
             _sink = null;
             _source = null;
             _separation = default;
+            _winding = 0f;
+            _zoneScale = 0f;
             PublishClosed();
             if (annihilate && wasOpen && config != null) PlayOneShot(config.AnnihilateEvent);
         }
@@ -264,6 +272,7 @@ namespace CosmicShore.Gameplay
         {
             float bornSink = Mathf.SmoothStep(0f, 1f, _age / Mathf.Max(0.01f, config.SinkGrowSeconds));
             float bornSource = Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(0.55f, 1f, _age / Mathf.Max(0.01f, config.SourceGrowSeconds)));
+            _zoneScale = size * bornSink;
             SetPole(_sink, config.PoleHorizon * size * bornSink, config.PoleGM * size * bornSink);
             SetPole(_source, config.PoleHorizon * size * bornSource, config.PoleGM * config.SourcePush * size * bornSource);
         }
@@ -418,6 +427,8 @@ namespace CosmicShore.Gameplay
 
             if (!TryGetField(out var field) || _status.IsTranslationRestricted || _status.IsStationary)
             {
+                _winding = 0f;
+                _lastForward = hull.forward;
                 _gravitySpeed *= Mathf.Exp(-kdt / Mathf.Max(0.05f, config.GravityFadeSeconds));
                 if (_status.IsTranslationRestricted || _status.IsStationary) _gravitySpeed = 0f;
                 if (Mathf.Abs(_gravitySpeed) > 1e-3f) transformer.TranslateShip(hull.forward * (_gravitySpeed * kdt));
@@ -426,18 +437,26 @@ namespace CosmicShore.Gameplay
 
             float engine = EngineSpeed();
             var flight = config.Flight(transformer.CruiseSpeed);
-            var body = new StoatDipoleMath.Body { Position = hull.position, Rotation = hull.rotation, GravitySpeed = _gravitySpeed };
+            var body = new StoatDipoleMath.Body
+            {
+                Position = hull.position, Rotation = hull.rotation, GravitySpeed = _gravitySpeed, Winding = _winding,
+            };
             int n = Mathf.Clamp(Mathf.CeilToInt(kdt / 0.004f), 1, 32);
             float h = kdt / n;
             bool through = false;
             for (int i = 0; i < n; i++)
             {
+                var before = body.Rotation * Vector3.forward;
                 StoatDipoleMath.Step(ref body, field, engine, h, flight);
                 float r = Vector3.Distance(body.Position, field.Sink);
                 if (r > 4f * field.SinkHorizon) _gravitySpeedFar = body.GravitySpeed;
                 if (r <= field.SinkHorizon) { through = true; break; }
+                // The steering's turn this frame counts toward the loop too: fold it into the first substep's "before".
+                if (i == 0) before = _lastForward.sqrMagnitude > 0.5f ? _lastForward : before;
+                if (StoatDipoleMath.WindThrough(ref body, before, field)) { through = true; break; }
             }
             _gravitySpeed = body.GravitySpeed;
+            _winding = body.Winding;
 
             // The field's turn, on the hull AND its command: the nose's follow toward the command keeps its gap.
             var turn = body.Rotation * Quaternion.Inverse(hull.rotation);
@@ -452,12 +471,13 @@ namespace CosmicShore.Gameplay
 
             if (through)
             {
-                var exit = BlackHolePairMath.ExitPosition(body.Position, field.Sink, field.Source, field.SourceHorizon,
-                    field.Source - field.Sink);
+                var exit = StoatDipoleMath.ExitPoint(body.Position, field, BlackHolePairMath.EmitRadiusFraction);
                 transformer.SetPose(new Pose(exit, hull.rotation));
                 _lastTeleportCount = transformer.TeleportCount;
                 _gravitySpeed = _gravitySpeedFar;
+                _winding = 0f;
             }
+            _lastForward = hull.forward;
         }
 
         /// <summary>The engine's own speed in the hull's flight-clock units (the published speed carries the warp).</summary>

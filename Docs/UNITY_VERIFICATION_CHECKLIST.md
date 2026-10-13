@@ -65,6 +65,26 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Stoat: the fly-through zone, a pathfinder that flies the hull's own response, lighter dot depth (`cece/fervent-hypatia-rg4why`, 2026-10-13) — NOT EDITOR-VERIFIED
+
+`R_VesselActions/STOAT_DIPOLE.md` §1. Proven headless (the shipped `StoatDipoleMath` on stub vectors):
+the winding rule at 30 / 60 u/s and four offsets, and the prediction against a frame-stepped model of
+`VesselTransformer` (≤ 2 u off over 3 s, where the first port's was 15–75 u off).
+
+1. **Path = flight.** No pair: hold a full yaw from straight flight and keep holding — the hull flies
+   down the dots, including the first second where it eases into the turn. Same with a pair held and
+   with the throttle changing (the line now leads the speed change too).
+2. **The zone.** One trigger, swing round the sink with the stick: up to ~180° you fly out (or let go);
+   keep looping and at ~200° you come out of the white hole. The dots show the jump (lime, a break)
+   before it happens. Fly past 40+ u off without steering: nothing. Tune `throughZoneRadius` (90) /
+   `throughDegrees` (200) on `StoatDipoleConfig`.
+3. **Dots.** Gap ~¾ of last round's; far dots barely smaller or dimmer; a held roll+yaw helix shows two
+   to three windings, the far ones readable.
+4. **Cost.** The path is now 1200 u (was 600): profile `StoatPathfinderExecutor.Update` near a sink; if
+   it shows, drop `pathLength` before `pathStep`.
+
+---
+
 ### 🔴 Stoat dipole retune: smaller, weaker poles; release kills the pair; depth-cued denser dots; stronger boost (`cece/fervent-hypatia-rg4why`, 2026-10-13) — NOT EDITOR-VERIFIED
 
 Play feedback on the port, applied (`R_VesselActions/STOAT_DIPOLE.md` §1, §3). Numbers on

@@ -35,16 +35,33 @@ push `GM·r/(r² + ε²)^1.5` (ε = 2 source horizons), the sum capped at 3000 u
 (`StoatDipoleMath.Step`, the studio's `fieldSubstep`) turns the nose by the field's perpendicular part
 (capped at 12 rad/s) and carries a **gravity speed** along the nose from its parallel part (gripped back
 toward cruise at 0.5 /s, ceiling 4 × cruise). Fly into the sink's horizon and you come out of the source
-at the point reflection of where you went in (`BlackHolePairMath.ExitPosition`), with the gravity speed
-you had before the dive.
+on the side opposite to where you went in, just outside its horizon (`StoatDipoleMath.ExitPoint`), with
+the gravity speed you had before the dive.
+
+**The fly-through ZONE (2026-10-13).** The drawn horizon is small (1.17 u), so the sink also takes a hull
+that LOOPS it: within **90 u** of the sink (× the poles' size, `throughZoneRadius`) every turn of the
+heading is counted — toward the sink adds, away subtracts, floored at 0, cleared on leaving the zone —
+and at **200°** (`throughDegrees`) you go through (`StoatDipoleMath.WindThrough`, shared by the flight
+and the pathfinder, so the line shows it). A U-turn round the attractive pole is yours; a loop past 200°
+is taken. Measured headless on the shipped field (60 000 GM): at 60 u/s a pilot holding the sink abeam
+turns 150–190° and flies out, and keeps orbiting → taken at 200°; an unsteered pass 20 u off is swung
+past 200° and taken, 40–85 u off bends < 110° and flies on. At 30 u/s the pole out-turns the 48 °/s
+stick, so the way out of a turn is to **let go** (the pair dies at once) between 180° and 200°.
 
 **Time — the Pathfinder (passive).** Every frame the hull's own flight is run forward 600 u on the
 inputs it holds (`StoatDipoleMath.PredictPath`, the studio's `fieldPath`: the same `Step`, the held
-steering rates, through the wormhole) and drawn for the pilot as dots from 8 u ahead of the nose:
-4 px dots, 3⅓ diameters apart (a third of the studio's 10), **blue-grey** while open. The dots carry
-**depth**: each is sized `sqrt(nearest dot's depth / its depth)` (`StoatDipoleMath.DepthScale`, floored
-at 0.35), its gap is measured in its own diameters, and it fades by up to half toward the far end
-(`dotDepthMinScale`, `dotDepthFade`), so a path climbing away reads as going away. When the poles **warp** the path at all — it
+steering rates, through the wormhole) and drawn for the pilot as dots from 8 u ahead of the nose. Since
+2026-10-13 it flies the hull the way `VesselTransformer` does (`StoatDipoleMath.HullResponse`): the stick
+turns the COMMAND and the hull slerps after it at `RotationFollowRate` (1.5 /s), and the engine eases to
+`CurrentThrottleTarget` at the same rate. The first port turned the body at the stick's rate at once and
+held its speed, which put the drawn line 15–75 u off the hull's real path within 3 s of starting a turn
+(measured headless) — "the vessel doesn't take the path". The line runs **1200 u** (two to three windings
+of a held helix):
+4 px dots, 2.5 diameters apart (the studio's 10, cut on 2026-10-13), **blue-grey** while open. The dots
+carry a light **depth** cue: each is sized `sqrt(nearest dot's depth / its depth)`
+(`StoatDipoleMath.DepthScale`, floored at 0.75), its gap is measured in its own diameters, and it fades
+by up to 15% toward the far end (`dotDepthMinScale`, `dotDepthFade`) — light enough that the far windings
+of a helix stay legible behind the near ones. When the poles **warp** the path at all — it
 bends ≥ 3°, or goes through the wormhole — it turns **lime** and the hull flies down it faster: a warp of
 the hull's own flight clock (`VesselTransformer.FlightTimeScale`), so the path stays the path and only
 arrives sooner. The boost rises at 20 /s and fades over 0.6 s. **Time is rate:** ×2.5 at rest, ×3.75 at

@@ -101,6 +101,63 @@ namespace CosmicShore.Tests
         }
 
         [Test]
+        public void TheZone_LetsA180TurnGo_ButTakesALoopPast200()
+        {
+            var field = Dipole(400f, 60000f, 3.5f / 3f);
+            field.ThroughRadius = 90f;
+            field.ThroughDegrees = 200f;
+            // A body circling the sink at 40 u, its heading turning toward the sink in 1° steps.
+            var b = new StoatDipoleMath.Body { Rotation = Quaternion.identity };
+            bool through = false;
+            int degrees = 0;
+            for (; degrees < 360 && !through; degrees++)
+            {
+                var before = b.Rotation * Vector3.forward;
+                b.Rotation = Quaternion.AngleAxis(-1f, Vector3.up) * b.Rotation;   // turning left, toward a sink on the left
+                b.Position = field.Sink + Quaternion.AngleAxis(-(degrees + 1), Vector3.up) * new Vector3(40f, 0f, 0f);
+                through = StoatDipoleMath.WindThrough(ref b, before, field);
+                if (degrees + 1 == 180) Assert.IsFalse(through, "a U-turn round the pole is the pilot's");
+            }
+            Assert.IsTrue(through);
+            Assert.AreEqual(200, degrees, 1, "taken through at the threshold");
+
+            // Turning AWAY unwinds; leaving the zone clears.
+            b.Winding = 150f;
+            var fwd = b.Rotation * Vector3.forward;
+            b.Rotation = Quaternion.AngleAxis(30f, Vector3.up) * b.Rotation;
+            StoatDipoleMath.WindThrough(ref b, fwd, field);
+            Assert.AreEqual(120f, b.Winding, 0.5f, "30° away takes 30° off");
+            b.Position = field.Sink + new Vector3(0f, 0f, 200f);
+            StoatDipoleMath.WindThrough(ref b, b.Rotation * Vector3.forward, field);
+            Assert.AreEqual(0f, b.Winding, "out of the zone: cleared");
+        }
+
+        [Test]
+        public void ThroughTheZone_YouComeOutAtTheSourcesMouth()
+        {
+            var field = Dipole(400f, 60000f, 3.5f / 3f);
+            var exit = StoatDipoleMath.ExitPoint(field.Sink + new Vector3(0f, 0f, 60f), field, 1.05f);
+            Assert.AreEqual(1.05f * field.SourceHorizon, Vector3.Distance(exit, field.Source), 1e-3f, "at the mouth, not 60 u out");
+            Assert.Less(Vector3.Dot(exit - field.Source, Vector3.forward), 0f, "on the opposite side (the point reflection)");
+        }
+
+        [Test]
+        public void ThePrediction_EasesIntoATurnTheWayTheHullDoes()
+        {
+            // VesselTransformer: the stick turns the command, the hull slerps after it at 1.5/s. A held 48°/s yaw from
+            // straight flight: after 1 s the hull has turned far less than 48°.
+            var start = new StoatDipoleMath.Body { Rotation = Quaternion.identity, Command = Quaternion.identity, HasCommand = true };
+            var response = new StoatDipoleMath.HullResponse { Enabled = true, NoseFollowRate = 1.5f, SpeedFollowRate = 1.5f, TargetSpeed = 60f };
+            var yaw = new Vector3(0f, 48f * Mathf.Deg2Rad, 0f);
+            var pts = new Vector3[512];
+            var eased = StoatDipoleMath.PredictPath(start, 60f, yaw, default, false, Flight, Path(), pts, new int[8], response);
+            var at60 = pts[Mathf.Min(eased.Count - 1, 20)];   // ~60 u on
+            var instant = StoatDipoleMath.PredictPath(start, 60f, yaw, default, false, Flight, Path(), pts, new int[8]);
+            var instant60 = pts[Mathf.Min(instant.Count - 1, 20)];
+            Assert.Less(Mathf.Abs(at60.x), Mathf.Abs(instant60.x), "the eased line bends later than the instant one");
+        }
+
+        [Test]
         public void WithThePortalShut_ThePathStopsAtTheHorizon()
         {
             var field = Dipole(71f);

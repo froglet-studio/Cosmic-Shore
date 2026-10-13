@@ -82,6 +82,12 @@ namespace CosmicShore.Gameplay
         {
             public Vector3 Sink, Source;
             public float SinkGM, SinkHorizon, SourceGM, SourceHorizon, SourceSoftening, AccelerationCap;
+            /// <summary>The fly-through ZONE around the sink, world units (0 = the horizon alone carries you through):
+            /// inside it, a heading that has turned <see cref="ThroughDegrees"/> toward the sink goes through
+            /// (<see cref="WindThrough"/>).</summary>
+            public float ThroughRadius;
+            /// <summary>How far the heading must turn toward the sink inside the zone to go through, degrees.</summary>
+            public float ThroughDegrees;
             public bool Exists => SinkGM > 0f || SourceGM > 0f;
         }
 
@@ -110,6 +116,28 @@ namespace CosmicShore.Gameplay
             public float GravitySpeed;
             /// <summary>Total radians the FIELD has turned this body (steering not counted) — the warp measure.</summary>
             public float Bend;
+            /// <summary>Degrees the heading has turned TOWARD the sink since it entered the fly-through zone
+            /// (<see cref="WindThrough"/>); 0 outside it.</summary>
+            public float Winding;
+            /// <summary>The steering COMMAND the hull's rotation chases (<c>VesselTransformer.CommandedRotation</c>),
+            /// when <see cref="HasCommand"/>: the field turns it with the hull, so the follow's gap is undisturbed.</summary>
+            public Quaternion Command;
+            public bool HasCommand;
+        }
+
+        /// <summary>
+        /// The hull's own response, for a prediction that flies it the way <c>VesselTransformer</c> does rather
+        /// than as a body that turns and speeds up the instant it is asked to: the stick turns the COMMAND, the
+        /// hull's rotation chases it at <see cref="NoseFollowRate"/> per second, and the engine's speed eases
+        /// toward <see cref="TargetSpeed"/> at <see cref="SpeedFollowRate"/> per second. Disabled = the old
+        /// instant model.
+        /// </summary>
+        public struct HullResponse
+        {
+            public bool Enabled;
+            public float NoseFollowRate;
+            public float TargetSpeed;
+            public float SpeedFollowRate;
         }
 
         /// <summary>The numbers one step of field flight reads.</summary>
@@ -148,7 +176,9 @@ namespace CosmicShore.Gameplay
                     var axis = Vector3.Cross(fwd, perp);
                     if (axis.sqrMagnitude > 1e-12f)
                     {
-                        body.Rotation = Quaternion.AngleAxis(angle * Mathf.Rad2Deg, axis.normalized) * body.Rotation;
+                        var turn = Quaternion.AngleAxis(angle * Mathf.Rad2Deg, axis.normalized);
+                        body.Rotation = turn * body.Rotation;
+                        if (body.HasCommand) body.Command = turn * body.Command;
                         body.Bend += angle;
                         fwd = body.Rotation * Vector3.forward;
                     }
@@ -158,15 +188,42 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// Through the wormhole (<c>BlackHoleVesselPull.TryCarryThrough</c>'s rule): a body inside the
-        /// sink's horizon comes out at the point reflection through the source, just outside the source's
-        /// horizon (<paramref name="exitGap"/> horizons), heading kept.
+        /// Through the wormhole: a body the sink takes — inside its horizon, or wound through its zone
+        /// (<see cref="WindThrough"/>) — comes out of the SOURCE, just outside its horizon
+        /// (<paramref name="exitGap"/> horizons) on the side opposite to where it went in (the point
+        /// reflection's direction), heading kept. Always at the source's mouth, however far out in the zone
+        /// the body was taken: the pass reads as going in one hole and out of the other.
         /// </summary>
         public static Vector3 ExitPoint(Vector3 position, in Field f, float exitGap)
         {
             var off = position - f.Sink;
-            float dist = Mathf.Max(off.magnitude, 1e-3f);
-            return f.Source - off * (Mathf.Max(dist, Mathf.Max(1f, exitGap) * f.SourceHorizon) / dist);
+            float dist = off.magnitude;
+            var dir = dist > 1e-4f ? off / dist : (f.Source - f.Sink).normalized;
+            return f.Source - dir * (Mathf.Max(1f, exitGap) * Mathf.Max(1e-3f, f.SourceHorizon));
+        }
+
+        /// <summary>
+        /// The fly-through ZONE (2026-10-13): the sink's drawn horizon is small, but the hole takes a hull that
+        /// LOOPS it. Inside <see cref="Field.ThroughRadius"/> of the sink every step's turn of the heading is
+        /// counted — toward the sink adds, away subtracts, floored at 0 — and once it reaches
+        /// <see cref="Field.ThroughDegrees"/> the body goes through. Leaving the zone clears it. So a pilot can
+        /// swing a 180° turn round the attractive pole and fly out of it, but one who would loop on past
+        /// ~200° is taken through instead. <paramref name="previousForward"/> is the heading before this step.
+        /// Returns true on the step the body goes through.
+        /// </summary>
+        public static bool WindThrough(ref Body body, Vector3 previousForward, in Field f)
+        {
+            if (f.ThroughRadius <= 0f || f.ThroughDegrees <= 0f) { body.Winding = 0f; return false; }
+            var toSink = f.Sink - body.Position;
+            if (toSink.sqrMagnitude > f.ThroughRadius * f.ThroughRadius) { body.Winding = 0f; return false; }
+            var fwd = body.Rotation * Vector3.forward;
+            float turned = Vector3.Angle(previousForward, fwd);
+            if (turned > 1e-4f)
+            {
+                float toward = Vector3.Dot(Vector3.Cross(previousForward, fwd), Vector3.Cross(previousForward, toSink));
+                body.Winding = Mathf.Max(0f, body.Winding + (toward >= 0f ? turned : -turned));
+            }
+            return body.Winding >= f.ThroughDegrees;
         }
 
         // ------------------------------------------------------------------ the pathfinder
@@ -208,7 +265,7 @@ namespace CosmicShore.Gameplay
         /// index of the first point after each pass (the line is not joined across one).
         /// </summary>
         public static PathResult PredictPath(Body start, float engineSpeed, Vector3 bodyAngularVelocity, in Field field, bool hasField,
-            in FlightSettings flight, in PathSettings s, Vector3[] points, int[] jumps)
+            in FlightSettings flight, in PathSettings s, Vector3[] points, int[] jumps, in HullResponse hullResponse = default)
         {
             var result = new PathResult { LoopIndex = -1 };
             if (points == null || points.Length < 2) return result;
@@ -224,10 +281,13 @@ namespace CosmicShore.Gameplay
             var fl = flight;
             float spin = bodyAngularVelocity.magnitude;
             var spinAxis = spin > 1e-6f ? bodyAngularVelocity / spin : Vector3.up;
+            var hull = hullResponse;
+            bool chase = hull.Enabled && body.HasCommand;
+            float engine = engineSpeed;
 
             bool StepBy(ref Body b, float dist)
             {
-                float v = Mathf.Max(5f, engineSpeed + b.GravitySpeed);
+                float v = Mathf.Max(5f, engine + b.GravitySpeed);
                 float t = dist / v;
                 int k = 1;
                 if (hasField)
@@ -241,13 +301,31 @@ namespace CosmicShore.Gameplay
                 float h = t / k;
                 for (int i = 0; i < k; i++)
                 {
-                    if (spin > 1e-6f) b.Rotation = b.Rotation * Quaternion.AngleAxis(spin * h * Mathf.Rad2Deg, spinAxis);
-                    Step(ref b, f, engineSpeed, h, fl);
+                    var before = b.Rotation * Vector3.forward;
+                    if (chase)
+                    {
+                        // VesselTransformer.RotateShip: roll, yaw, pitch turn the COMMAND about the hull's own axes,
+                        // then the hull slerps after it; AdvanceSpeed eases the engine toward its target.
+                        if (spin > 1e-6f)
+                        {
+                            var right = b.Rotation * Vector3.right;
+                            var up = b.Rotation * Vector3.up;
+                            var fwd = b.Rotation * Vector3.forward;
+                            b.Command = Quaternion.AngleAxis(bodyAngularVelocity.x * h * Mathf.Rad2Deg, right)
+                                      * Quaternion.AngleAxis(bodyAngularVelocity.y * h * Mathf.Rad2Deg, up)
+                                      * Quaternion.AngleAxis(bodyAngularVelocity.z * h * Mathf.Rad2Deg, fwd) * b.Command;
+                        }
+                        b.Rotation = Quaternion.Slerp(b.Rotation, b.Command, 1f - Mathf.Exp(-Mathf.Max(0f, hull.NoseFollowRate) * h));
+                        engine = Mathf.Lerp(engine, Mathf.Max(0f, hull.TargetSpeed), 1f - Mathf.Exp(-Mathf.Max(0f, hull.SpeedFollowRate) * h));
+                    }
+                    else if (spin > 1e-6f) b.Rotation = b.Rotation * Quaternion.AngleAxis(spin * h * Mathf.Rad2Deg, spinAxis);
+                    Step(ref b, f, engine, h, fl);
                     if (hasField)
                     {
                         float r = Vector3.Distance(b.Position, f.Sink);
                         if (r > 4f * f.SinkHorizon) gFar = b.GravitySpeed;
                         if (r <= f.SinkHorizon) return true;
+                        if (WindThrough(ref b, before, f)) return true;
                     }
                 }
                 return false;
@@ -269,6 +347,7 @@ namespace CosmicShore.Gameplay
                     if (!s.PortalOpen || n >= cap || jumps == null || result.JumpCount >= jumps.Length) { result.End = PathEnd.Hole; n++; break; }
                     body.Position = ExitPoint(body.Position, f, s.ExitGap);
                     body.GravitySpeed = gFar;
+                    body.Winding = 0f;
                     n++;
                     points[n] = body.Position;
                     jumps[result.JumpCount++] = n;

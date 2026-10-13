@@ -78,6 +78,16 @@ namespace CosmicShore.ScriptableObjects
         [Tooltip("Seconds the source takes to grow in (whInS); it starts at 55% of this, so a fresh pair pulls before it pushes.")]
         [SerializeField, Range(0.05f, 5f)] float sourceGrowSeconds = 1.1f;
 
+        [Header("Fly-through zone (the sink takes a hull that loops it)")]
+        [Tooltip("Radius of the fly-through ZONE around the sink, world units at pole size 1 (Space scales it with the poles). " +
+                 "The drawn horizon is tiny; inside this zone a hull whose heading has turned throughDegrees toward the sink goes " +
+                 "through and out of the source. Leaving the zone clears the count. 0 = only the horizon carries you through.")]
+        [SerializeField, Min(0f)] float throughZoneRadius = 90f;
+
+        [Tooltip("How far the heading must turn toward the sink inside the zone to go through, degrees. A U-turn round the " +
+                 "attractive pole (180°) stays yours; a loop past this is taken through. Turning away unwinds it.")]
+        [SerializeField, Range(90f, 720f)] float throughDegrees = 200f;
+
         [Header("Flight in the field (the owner's)")]
         [Tooltip("The fastest the field may turn the nose, radians per second (dpTurnCap).")]
         [SerializeField, Range(0.5f, 40f)] float turnCap = 12f;
@@ -103,8 +113,9 @@ namespace CosmicShore.ScriptableObjects
         [SerializeField, Range(1f, 10f)] float faunaSwallowHorizons = 1.5f;
 
         [Header("Pathfinder (Time)")]
-        [Tooltip("How far ahead the path is run, world units (ftLength).")]
-        [SerializeField, Range(50f, 2000f)] float pathLength = 600f;
+        [Tooltip("How far ahead the path is run, world units (the studio's ftLength 600, doubled 2026-10-13 so a held turn shows " +
+                 "two or three windings of its helix). Prediction cost scales with it.")]
+        [SerializeField, Range(50f, 2000f)] float pathLength = 1200f;
 
         [Tooltip("World units between two predicted points (ftStep).")]
         [SerializeField, Range(0.5f, 20f)] float pathStep = 3f;
@@ -134,16 +145,16 @@ namespace CosmicShore.ScriptableObjects
         [Tooltip("Dot diameter on screen, pixels at 1080p (ftDotPx).")]
         [SerializeField, Range(0.5f, 20f)] float dotPixels = 4f;
 
-        [Tooltip("Space between two dots, in dot diameters (a third of the studio's ftDotGap 10 since 2026-10-13). " +
+        [Tooltip("Space between two dots, in dot diameters (the studio's ftDotGap 10, cut to a third then to 2.5 on 2026-10-13). " +
                  "Measured at each dot's own depth-scaled size, so the far path packs tighter on screen.")]
-        [SerializeField, Range(0f, 40f)] float dotGap = 10f / 3f;
+        [SerializeField, Range(0f, 40f)] float dotGap = 2.5f;
 
         [Tooltip("Depth: a dot's size follows sqrt(nearest dot's depth / its depth), floored at this share of " +
                  "dotPixels — the far end of the path is drawn smaller, as it is seen. 1 = every dot the same size.")]
-        [SerializeField, Range(0.1f, 1f)] float dotDepthMinScale = 0.35f;
+        [SerializeField, Range(0.1f, 1f)] float dotDepthMinScale = 0.75f;
 
         [Tooltip("Depth: how much of a dot's opacity the far end of the path loses (0 = none). Rides the same depth scale.")]
-        [SerializeField, Range(0f, 1f)] float dotDepthFade = 0.5f;
+        [SerializeField, Range(0f, 1f)] float dotDepthFade = 0.15f;
 
         [Tooltip("The path's colour while it is open (blue-grey).")]
         [SerializeField] Color openColor = new(150f / 255f, 166f / 255f, 194f / 255f, 1f);
@@ -188,6 +199,8 @@ namespace CosmicShore.ScriptableObjects
         public float AccelerationCap => accelerationCap;
         public float SinkGrowSeconds => sinkGrowSeconds;
         public float SourceGrowSeconds => sourceGrowSeconds;
+        public float ThroughZoneRadius => throughZoneRadius;
+        public float ThroughDegrees => throughDegrees;
         public float TurnCap => turnCap;
         public float Grip => grip;
         public float GravitySpeedCeilingCruises => gravitySpeedCeilingCruises;

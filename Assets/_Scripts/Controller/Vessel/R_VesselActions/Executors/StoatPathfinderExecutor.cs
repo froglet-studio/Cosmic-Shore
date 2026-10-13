@@ -103,9 +103,22 @@ namespace CosmicShore.Gameplay
             var start = new StoatDipoleMath.Body
             {
                 Position = hull.position, Rotation = hull.rotation, GravitySpeed = _dipole ? _dipole.GravitySpeed : 0f,
+                Winding = _dipole ? _dipole.Winding : 0f,
+                Command = transformer.CommandedRotation, HasCommand = true,
+            };
+            // Fly the hull as the transformer does (the nose chasing the command, the speed easing to its target), not as
+            // a body that turns and speeds up the instant it is asked: the dots are where THIS hull will go.
+            float target = Mathf.Max(0f, transformer.CurrentThrottleTarget);
+            var response = new StoatDipoleMath.HullResponse
+            {
+                Enabled = true,
+                NoseFollowRate = VesselTransformer.RotationFollowRate,
+                SpeedFollowRate = VesselTransformer.RotationFollowRate,
+                // The target in the same units as `engine` (the published speed carries the speed multiplier and warp field).
+                TargetSpeed = target * transformer.SpeedMultiplier * WarpFieldRuntime.ScaleAt(hull.position),
             };
             _path = StoatDipoleMath.PredictPath(start, engine, SteeringRate(transformer), field, hasField,
-                config.Flight(transformer.CruiseSpeed), config.Path(), _points, _jumps);
+                config.Flight(transformer.CruiseSpeed), config.Path(), _points, _jumps, response);
         }
 
         /// <summary>
