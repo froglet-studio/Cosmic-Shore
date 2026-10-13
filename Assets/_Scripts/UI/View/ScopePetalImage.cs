@@ -36,6 +36,15 @@ namespace CosmicShore.UI
                  "the antialiasing.")]
         [SerializeField, Min(0f)] private float feather = 1.5f;
 
+        /// <summary>The petal's corners, CCW, normalised over its bounding box (positions = UVs).
+        /// The Charge petal here; a sibling petal overrides the three shape members and nothing
+        /// else (<see cref="TimePetalImage"/>).</summary>
+        protected virtual Vector2[] PetalOutline => ScopePetalGeometry.Outline;
+        /// <summary>The fan hub: the bounding box centre, inside the convex outline.</summary>
+        protected virtual Vector2 PetalCentre => ScopePetalGeometry.Centre;
+        /// <summary>The outward miter at corner <paramref name="i"/>, in the rect's own proportions.</summary>
+        protected virtual Vector2 PetalMiter(int i) => ScopePetalGeometry.OutwardMiter(i);
+
         protected override void OnPopulateMesh(VertexHelper vh)
         {
             vh.Clear();
@@ -43,7 +52,8 @@ namespace CosmicShore.UI
             var rect = GetPixelAdjustedRect();
             if (rect.width <= 0f || rect.height <= 0f) return;
 
-            var outline = ScopePetalGeometry.Outline;
+            var outline = PetalOutline;
+            Vector2 centre = PetalCentre;
             int n = outline.Length;
 
             Color32 solid = color;
@@ -52,7 +62,7 @@ namespace CosmicShore.UI
             // The fan's hub is the bounding box centre, which is the picture's optical centre and
             // is inside the (convex) petal - so the fan is a valid tessellation and the hub samples
             // the middle of the source.
-            vh.AddVert(ToRect(rect, ScopePetalGeometry.Centre), solid, ScopePetalGeometry.Centre);
+            vh.AddVert(ToRect(rect, centre), solid, centre);
 
             for (int i = 0; i < n; i++)
             {
@@ -60,7 +70,7 @@ namespace CosmicShore.UI
                 // The feather vertex repeats its corner's UV, so the fade is in ALPHA only and the
                 // picture does not stretch into the fringe.
                 Vector2 uv = p;
-                Vector2 outward = ScopePetalGeometry.OutwardMiter(i);
+                Vector2 outward = PetalMiter(i);
 
                 vh.AddVert(ToRect(rect, p), solid, uv);
                 vh.AddVert(ToRect(rect, p) + outward * feather, clear, uv);
