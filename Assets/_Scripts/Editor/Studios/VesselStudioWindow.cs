@@ -8,8 +8,14 @@ namespace CosmicShore.Editor.Studios
     /// <summary>
     /// The Vessel Studio in Unity (<c>Docs/Studios/VESSEL_STUDIO_PLAN.md</c>, <c>/vessel-studio</c> D32 and D33): the
     /// studio HOME, the web hub's front page drawn in Unity (<c>VesselStudioWindow.Home.cs</c>). A card opens that
-    /// studio's page from this checkout in its own app window (<see cref="LaunchAmoebius.OpenStudioWindow"/>): the
-    /// artifact's own files, so every tab, parameter and graphic is the artifact's.
+    /// studio built from this checkout and served by Amoebius in its own app window (<see cref="LaunchAmoebius.OpenStudio"/>): the
+    /// artifact's own build, so every tab, parameter and graphic is the artifact's.
+    ///
+    /// <para><b>Home</b> (what FrogletTools ▸ Vessels ▸ Vessel Studio opens): the web hub's front page, the "Vessel
+    /// Studio" heading and one card per studio in <c>Docs/Studios/VesselStudio/studios.json</c>, each with the hub's
+    /// own looping preview (<see cref="StudioPreviews"/>). A card opens THAT studio built from this checkout and served by
+    /// Amoebius (<see cref="LaunchAmoebius.OpenStudio"/>, /vessel-studio D34): the artifact's own build, so it looks and plays
+    /// exactly as on claude.ai, with Sync, Ask and Decisions working. Unity has no web view, so the studio itself is a browser app window, never an IMGUI copy.</para>
     ///
     /// <para><b>No tuning UI of its own.</b> The artifact is the one source of truth for a studio's parameters (the
     /// user, 2026-10-10). Unity never draws a second set of tabs over the assets; the artifact's numbers reach the
