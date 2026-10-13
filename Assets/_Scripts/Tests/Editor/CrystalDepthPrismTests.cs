@@ -29,68 +29,8 @@ namespace CosmicShore.Tests
             "Assets/_Prefabs/Environment/ActiveCrystalMass.prefab",
         };
 
-        // ------------------------------------------------------------------ the math
-
-        [Test]
-        public void Seat_IsTopBehindTheOpenDepth_SealedFromTheSealDepth_AndMonotonic()
-        {
-            Assert.AreEqual(0f, DepthRatchet.Seat(-1f, -0.88f, 1f, 1f), 1e-6f);
-            Assert.AreEqual(0f, DepthRatchet.Seat(-0.88f, -0.88f, 1f, 1f), 1e-6f);
-            Assert.AreEqual(1f, DepthRatchet.Seat(1f, -0.88f, 1f, 1f), 1e-6f);
-            float last = -1f;
-            for (float d = -1f; d <= 1f; d += 0.01f)
-            {
-                float seat = DepthRatchet.Seat(d, -0.88f, 1f, 1f);
-                Assert.GreaterOrEqual(seat, last - 1e-6f, $"seat fell at depth {d}");
-                last = seat;
-            }
-        }
-
-        /// <summary>
-        /// A column carried round and round the crystal (its depth a cosine of the turn), for several orbits that
-        /// pass behind and several that never do. Its place may FALL (rise up the column) only at the instant a
-        /// reseat starts, which only happens behind the reseat depth, and every reseat finishes its fade.
-        /// </summary>
-        [Test]
-        public void Ratchet_OnlyEverDescendsInView_AndReseatsOnlyBehind()
-        {
-            const float open = -0.88f, seal = 1f, reseat = -0.8f, fade = 0.6f, dt = 1f / 60f;
-            int reseats = 0;
-            foreach (float tilt in new[] { 0f, 0.3f, 0.6f, 0.95f })   // 0: passes straight behind; 0.95: never gets there
-            {
-                float Depth(float t) => Mathf.Cos(tilt) * Mathf.Cos(t * 0.6f) + Mathf.Sin(tilt) * 0.2f;
-                var c = DepthRatchet.Column.At(DepthRatchet.Seat(Depth(0f), open, seal, 1f));
-                for (float t = dt; t < 60f; t += dt)
-                {
-                    float depth = Depth(t), seat = DepthRatchet.Seat(depth, open, seal, 1f);
-                    var next = DepthRatchet.Step(c, depth, seat, dt, reseat, fade);
-                    bool started = c.Fade >= 1f && next.Fade < 1f;
-                    if (started)
-                    {
-                        reseats++;
-                        Assert.Less(depth, reseat, $"a reseat started in view (depth {depth}, tilt {tilt})");
-                        Assert.AreEqual(c.Place, next.LeavingPlace, 1e-6f, "the leaving prism must fade where the old one sat");
-                    }
-                    else if (next.Fade >= 1f && c.Fade >= 1f)
-                    {
-                        Assert.GreaterOrEqual(next.Place, c.Place - 1e-6f, $"a settled prism rose at depth {depth} (tilt {tilt})");
-                    }
-                    c = next;
-                }
-            }
-            Assert.Greater(reseats, 0, "no orbit ever reseated - the test would pass on a ratchet that never resets");
-        }
-
-        [Test]
-        public void Ratchet_ReseatFadeTakesItsSeconds()
-        {
-            var c = DepthRatchet.Step(DepthRatchet.Column.At(1f), -0.95f, 0f, 0f, -0.8f, 0.6f);
-            Assert.AreEqual(0f, c.Fade, "behind the reseat depth a sealed prism must start to reseat");
-            for (int i = 0; i < 29; i++) c = DepthRatchet.Step(c, -0.95f, 0f, 0.02f, -0.8f, 0.6f);
-            Assert.Less(c.Fade, 1f, "the fade finished early");
-            c = DepthRatchet.Step(c, -0.95f, 0f, 0.02f, -0.8f, 0.6f);
-            Assert.AreEqual(1f, c.Fade, 1e-4f, "the fade did not finish after 0.6 s");
-        }
+        // The ratchet's maths and the per-crystal pose live in DepthRatchetTests (no editor dependencies, so
+        // Tools/Build/crystal_depth_harness runs them headlessly).
 
         // ------------------------------------------------------------------ the holes
 

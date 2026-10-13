@@ -9,7 +9,7 @@ calls "shipped" comes from here:
   Crystal.prefab                      the root scale (10); the depth-prism slot (since round 8) or the
                                       OmniShepardTriangles tone layers it carried before
   OmniDepthPrisms.mat, MassDepthPrisms.mat   the SHIPPED look since round 8: the prisms' shape dials
-  CrystalDepthPrismProfile.asset      its depths, ratchet and free turn
+  CrystalDepthPrismProfile.asset      its depths, ratchet, and (round 10) the per-crystal pose amount
   OmniShepardTriangles {0,1,2}.mat    _Start / _Stop / _Period / _Opacity / _ScaleDistance, colours
                                       (the Breathe look, shipped rounds 4-7; read by name once retired)
   OmniShepardTrianglesInactive*.mat   the inactive (blue) palette
@@ -232,7 +232,9 @@ def depth_look():
     missing = [k for k in keys if k not in prof]
     if missing:
         raise SystemExit(f"CrystalDepthPrismProfile.asset lacks {missing}")
-    return {"omni": omni, "mass": mass, "profile": {k: prof[k] for k in keys}}
+    out = {k: prof[k] for k in keys}
+    out["orientationJitter"] = prof.get("orientationJitter", 0.0)   # round 10; absent = every crystal in its authored pose
+    return {"omni": omni, "mass": mass, "profile": out}
 
 
 def tri_mesh():

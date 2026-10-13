@@ -14,7 +14,8 @@ compare grid and shared likes. A trip chart, a scorecard and a "what it takes to
 - **Round-to-round parity:** `Tools/Build/omni_shepard_lab_parity.cjs <old.html> <new.html> [--old-set <recipe>] [--old-style id] [--new-style id]`
 - **Shader vs lab:** `Tools/Build/omni_shepard_shader_parity.py` (compiles the shipped HLSL with clang)
 - **Space squares (round 6):** `blender -b CrystalsRaw_V2.blend --python Tools/Build/bake_omni_space_squares.py -- Docs/Studios/data/omni_space_squares.json` (the `.blend` is the art team's, not in the repo); the extractor then maps it onto the body FBX
-- **What ships (since round 8):** the "Depth ratchet", see Round 8 below and `Docs/PALETTE.md` §2.10 ("Breathe" shipped rounds 4–7); since round 9 the crystal holds still and the body plays the Space squares
+- **What ships (since round 8):** the "Depth ratchet", see Round 8 below and `Docs/PALETTE.md` §2.10 ("Breathe" shipped rounds 4–7); since round 9 the crystal holds still and the body plays the Space squares; since round 10 every crystal takes its own random pose (seeded from its spawn position) and reseats at −0.87
+- **Ratchet + pose, headless:** `bash Tools/Build/crystal_depth_harness/run.sh`
 - **Shader vs lab (depth prisms):** `Tools/Build/omni_depth_prism_shader_parity.py` (since 2026-10-13 also the hull-fusion identity: undriven, any moved vertex draws where fusion put it)
 - **Field scorecard (round 10):** `window.__lab.runFieldBatch()` / `fieldScore(p)` / `fieldMetricsOf(p, kind, dist, subject)`
 
@@ -132,10 +133,38 @@ orientation (±0.02).
 - Field scorecard deterministic per seed; noise band as above.
 - Omni and Mass reseat sweep: `fieldMetricsOf(p, 1, dist, subject)`.
 
-**Decision needed (designer):**
-1. Which randomness ships: orientation, depth jitter, reseat jitter, or a combination.
-2. Whether the reseat moves to −0.87 (or −0.9 for margin) on both crystals. They share one profile.
-3. Whether the omni gets the same randomness as the Mass.
+**Decision (designer, 2026-10-13):** random orientation ships, the reseat moves to −0.87, and the omni gets the
+same treatment as the Mass (they share one profile).
+
+**What ships**
+
+| Piece | What changed |
+|---|---|
+| `CrystalPoseJitter.cs` (new, `Utility/`) | Pure maths. `SeedOf(spawn position)` quantizes to 1 cm and murmur-mixes, so every client poses the same crystal the same way with nothing networked. `Pose(seed, amount)` is a uniformly random rotation (Shoemake's quaternion from the first three draws of the lab's `mulberry32`, ported bit for bit), scaled toward identity about its own axis. JS twin: `shoemake()` / `poseOfSeed()`. |
+| `CrystalDepthPrisms.cs` | Gathers the crystal's models once in Awake: every sibling under the crystal root with a renderer, itself included, never the root (the round-8 free turn's rule). On the first frame after enable, it turns them about the root's origin to the crystal's pose. It waits for that frame because a pooled crystal is enabled before it is moved. The authored pose comes back on disable. The body search for the omni's holes reuses the same list. |
+| `CrystalDepthPrismProfileSO` / `.asset` (generated) | `reseatDepth` −0.8 → **−0.87**; new `orientationJitter` **1** (Header "Variety"). `author_omni_crystal_triangles.py` `DEPTH_PROFILE_VALUES`. |
+| `DepthRatchetTests.cs` (new) | The three pure ratchet tests moved here from `CrystalDepthPrismTests` (no editor dependencies), plus four new ones (seven methods, ten cases): the pose is identity at 0, the same for the same spawn and different one pickup along; it matches the lab at four seeds; it is uniform (4,000 spawns); and **a row of eight posed crystals under an orbiting camera keeps both promises**, with local depth equal to world depth to 1e-5. |
+| `Tools/Build/crystal_depth_harness/` (new) | Compiles the shipped `DepthRatchet.cs`, `CrystalPoseJitter.cs` and `DepthRatchetTests.cs` against a value-type `UnityEngine` stub and runs them with NUnitLite. |
+| Lab | `SHIPPED.jitOrient` is read from the profile, and the knob's chip is now "material values" (a profile value). The round-10 styles are re-based on the new Shipped: Every crystal alike, + depth jitter, + reseat jitter, + all jitter, Round 9. The field control is "every knob 0". |
+
+**After the pick** (`runFieldBatch()`, seed 7):
+
+| Style | Look r far | Look r near | Motion r far | Rises seen % | Reseats seen % | Reseats |
+|---|---|---|---|---|---|---|
+| Every knob 0 (control) | 0.61 | 0.17 | 0.93 | 0 | 0.6 | 668 |
+| **Shipped** (random pose, reseat −0.87) | **0.12** | **0.08** | 0.89 | 0 | **1.8** | 676 |
+| Round 9 (alike, reseat −0.8) | 0.60 | 0.17 | 0.90 | 0.1 | 73 | 3487 |
+
+The 1.8% is the −0.87 bound's thin margin: 13 of 676 reseats across the four runs, near-range cluster
+crystals seen at strong perspective. −0.9 would remove it at the cost of fewer reseats again.
+
+**Checked (ship)**
+- Graduation, pixels: the round-10 page with `{jitOrient 1, depthSwap −0.87}` applied equals the new Shipped,
+  0 px at all five times on the omni and the Mass. Negative control: the recipe without the pose changes
+  127k px. Classic is 0 px.
+- `crystal_depth_harness`: 10/10 headless. Mutants each fail: a ratchet that reseats 0.3 shallower (2 tests),
+  and a pose with the quaternion sign dropped (the lab-parity test).
+- Extractor `--check` OK, `--self-test` 16/16. Omni generator `--check` OK. `verify_lab.cjs` PASS.
 
 **Not modelled:** crystals hiding each other (only their own prisms hide a reseat), fog, LOD, culling,
 and a ratchet that skips frames on distant crystals.

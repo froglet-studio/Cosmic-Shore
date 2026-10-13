@@ -15,5 +15,6 @@ MonoBehaviour:
   openDepth: -0.88
   sealDepth: 1
   profilePower: 1
-  reseatDepth: -0.8
+  reseatDepth: -0.87
   reseatFadeSeconds: 0.6
+  orientationJitter: 1

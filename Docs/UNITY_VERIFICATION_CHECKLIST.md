@@ -65,6 +65,40 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Omni + Mass crystals: Mass hull fusion fixed (thickness baked in), a random pose per crystal, reseat −0.87 (`cece/determined-ride-rqzaeo`, 2026-10-13) — NOT EDITOR-VERIFIED
+
+**Landed** (`Docs/Studios/OMNI_SHEPARD_LAB.md` round 10, `Docs/PALETTE.md §2.10`; generators
+`author_omni_crystal_triangles.py --check`, `author_mass_crystal_look.py`):
+- **Mass hull fusion.** The prism meshes carry their thickness (omni 8, Mass 6.25), and the four depth
+  materials ship `_Thickness 1`. Undriven, `OmniDepthPrismShader` draws the mesh exactly as authored
+  (`PrismPose`). `CrystalHullFusion.Undrive` forces `_DepthDriven 0` on the faces it flies. The 13 Mass bakes
+  were re-baked against `MassCrystalPrisms.asset` (commit `99e70e31`, by the designer). **Played: Mass onto two
+  hulls OK, no STALE warning** (2026-10-13).
+- **A random pose per crystal**, seeded from the spawn position (`CrystalPoseJitter`). It turns the crystal's
+  models, never the root, on the first frame after enable, and restores them on disable. Omni and Mass.
+- **Reseat depth −0.87** (was −0.8), from the profile.
+- The face split has no sign test any more (every normal faces out; the generator asserts it).
+
+**Not opened in Unity by this session** (except the bake and fusion play above, run by the designer). Offline:
+`unity_refcompile` player and editor configs 0 errors in project code (negative-controlled, twice);
+`omni_depth_prism_shader_parity.py` 22/22 (lab at every place, fusion identity for three TEXCOORD2 cases;
+negative controls); DXC compiles both passes; `crystal_depth_harness` 10/10 (two mutants fail); lab graduation
+0 px.
+
+**Verify in editor:**
+1. A row of Mass pickups or a colony's hearts, seen from far away: neighbouring crystals show DIFFERENT columns
+   (each is turned its own way). Two clients see the same crystal turned the same way.
+2. Fly round an omni at range: no prism appears at the top of a column in view (reseats happen behind). Close
+   in, the far side still stands open with its faces parted.
+3. The omni's body turns WITH its prisms: the holes line up with the prisms, and the squares, rhombi and
+   charge edges all sit on the turned body.
+4. Collect an omni and a Mass. The husk bursts with thick prisms, matching the live crystal. Fusion (Scarab
+   forge, Squirrel ring, hull fusion) starts from the turned pose.
+5. A pooled crystal respawned elsewhere takes a new pose; nothing stays turned after it is collected.
+6. Console: no `CrystalDepthPrisms` errors.
+
+---
+
 ### 🔴 Omni + Mass crystals: still crystals, ratchet on the gameplay camera, Space squares on the omni body (`cece/eager-rubin-km7qyn`, 2026-10-12) — NOT EDITOR-VERIFIED
 
 **Landed** (`Docs/Studios/OMNI_SHEPARD_LAB.md` round 9, `Docs/PALETTE.md §2.10`; generator

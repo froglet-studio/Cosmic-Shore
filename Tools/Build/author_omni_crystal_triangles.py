@@ -195,8 +195,10 @@ DEPTH_PROFILE = "Assets/_SO_Assets/Environment/CrystalDepthPrismProfile.asset"
 DEPTH_PROFILE_GUID = hashlib.md5(b"CosmicShore/Crystals/CrystalDepthPrismProfile.asset").hexdigest()
 # CrystalDepthPrismProfileSO's fields, as the lab picked them (the SO's own defaults match).
 # The free turn (15 deg/s about a 25-degree axis) was dropped 2026-10-12: the crystal holds still in game.
-DEPTH_PROFILE_VALUES = [("openDepth", -0.88), ("sealDepth", 1), ("profilePower", 1), ("reseatDepth", -0.8),
-                        ("reseatFadeSeconds", 0.6)]
+# Round 10 (2026-10-13): reseat -0.87 (the far-range bound: -0.8 was seen once the camera moves) and a random pose
+# per crystal (orientationJitter 1, seeded from the spawn position by CrystalDepthPrisms).
+DEPTH_PROFILE_VALUES = [("openDepth", -0.88), ("sealDepth", 1), ("profilePower", 1), ("reseatDepth", -0.87),
+                        ("reseatFadeSeconds", 0.6), ("orientationJitter", 1)]
 
 
 def shepard_bands():
