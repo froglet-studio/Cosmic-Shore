@@ -592,8 +592,9 @@ page draws exactly what the designer exported.
 away, forks onto its five corners at both ends with one thick beam between, and the next leaps on from the sink. Only
 those two pentagons light, in the body's bright colour mixed toward the arc core colour (`CrystalAccentTint` repaints
 it per domain). The Charge crystal wears the same component in SeamWalk mode, so the element keeps ONE look on both
-crystals. The paragraph below describes the crawl as it shipped from 2026-10-08 to 2026-10-13; its material
-(`OmniChargeEdges.mat`) still serves the Elemental Converter.
+crystals. The paragraph below describes the crawl as it shipped from 2026-10-08 to 2026-10-13. Its material and shader
+(`OmniChargeEdges.mat`, `OmniChargeEdgesShader`) were deleted the same day, once the Elemental Converter moved to the
+flux arcs too.
 
 **Charge's pentagons carry the charge crystal's EDGE DISCHARGE (2026-10-08).** The charge crystal's
 signature is its plasma crackling vertex to vertex along crease edges (`ChargeCrystal.hlsl`), so the

@@ -333,6 +333,46 @@ shell material with the lab's stateless CPU depth model. Now:
     `_Thickness` for the morphing Mass prisms only; the triangle renderer draws its thick mesh as authored.
     Stretching about the top face composes by multiplying, so the landed Mass draws exactly the thick mesh.
 
+**Revision 4 (2026-10-13): the game's round-5 effects.** The designer: "now polish the elemental conversion
+animation in the app shell", straight after round 5 of the Omni Motion Lab graduated. The converter had kept every
+effect from before round 5, so what it showed no longer matched the game:
+- the Charge edge crawl on both the Charge crystal and the omni's pentagons;
+- the squares' three-key weave, which shrinks the squares mid-move;
+- a flip wave on its own 2 s clock, flipping while the squares moved;
+- Mass columns stepped without the horizon seal or the hidden rise. Against the new −0.25 / −0.97 profile this would
+  have shown far fewer prisms standing out than the game does.
+
+It now plays the game's round 5 through the game's own code:
+
+| What | In the converter | Shared with the game |
+|---|---|---|
+| Mass (waiting crystal, the omni's triangles) | columns stepped against the converter camera, sealed at the horizon, rising only while hidden | `CrystalDepthPrisms.StepColumns` (extracted from its `LateUpdate`) and `TryGetPlates` |
+| The Charge crystal, waiting | the **seam walk**, carried on the crystal's rigid frame (`OmniCombineCore.CrystalFrame`); its crawl held at 0. It fades as the crystal sets off and is gone before any petal morphs | `ChargeArcs`, `CrystalChargeArcsProfile.asset`, `ChargeCrystalArcs.mat` |
+| The woken omni's Charge | **chained flux arcs**; the first discharge starts charging as the omni wakes | the same core, `OmniChargeArcs.mat` |
+| The woken omni's Space and Time | the **cadence** (pentagon turn, wave, triangle turn, wave, 0.15 s gaps); each square turn ONE rigid hop; one **cued** flip wave per wave beat. The first beat starts once the omni is fully awake, so its first move is a whole pentagon turn | `OmniCrystalCadence.asset`, `OmniCadence`, `SquareTurnFit` (extracted from `CrystalSpaceSquares`' baker, so the blend shapes and the converter turn a square the same way), `OmniCombineCore.OmniPose`'s game-motion path |
+| Thicker plates | the omni's squares, rhombi and pentagons **swell from 1.0 to 1.1 as its effects wake**. The landed plates are the thin art plates, so the hand-off has no step | `OmniCombineMotion.Swell`, the same thickening the game's shaped twin applies |
+
+The lab path is untouched: `OmniCombineParams.GameMotion` is off in the lab defaults, and the parity harness still
+matches the lab to 7e-7. `OmniChargeEdges.mat` and `OmniChargeEdgesShader` are deleted (the converter was their last
+user).
+
+**Proved offline:**
+- `Tools/Build/converter_round5_harness` runs the shipped `OmniCombineCore`, `OmniCombineMotion`, `SquareTurnFit`,
+  `OmniCadence` and `ChargeArcs` on the shipped `OmniCombineData.json`. All 15 checks pass:
+  - all 60 squares fit the data's keys as rigid turns;
+  - full swell is 1.1× thick (3e-6), and the triangles do not move;
+  - a finished turn lands congruent (4e-5 R), and squares stay rigid mid-turn (2e-7 R);
+  - with no wave cued nothing moves; a cued wave lands every rhombus congruent (7e-6 R);
+  - `CrystalFrame` composed as the player composes it reproduces `Pose` (2.5e-7 R);
+  - both crystals read as Charge sites;
+  - the arc ends sit on the swelled pentagons (7e-7 R);
+  - the lab path ignores the new arguments.
+- Two negative controls fire: the keys out of order are refused, and the frame composed the other way round misses by
+  0.78 R.
+- `author_elemental_converter.py --self-test` had gone vacuous. The converter is now on the merge base, so its "base
+  scene" was already edited and two refusals never reached the code they guard. Both were red. It now edits the scene
+  from before the converter landed and asserts that it does; 11/11.
+
 **Picture quality (revision 2).** The first build rendered 1280 px along the picture's long edge and stretched
 it over the screen with no anti-aliasing: low resolution and jagged. It now renders at the picture's
 on-screen PIXEL size times 2 (an exact box filter on the way down), with 4× MSAA on the target. It uses the

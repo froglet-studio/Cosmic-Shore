@@ -26,7 +26,7 @@ namespace CosmicShore.Gameplay
         [SerializeField] TextAsset combineData;
 
         [Header("Materials")]
-        [Tooltip("The Charge crystal. ChargeCrystalMaterial: its discharge needs the edge bake, which the player runs on its own mesh.")]
+        [Tooltip("The Charge crystal's body. ChargeCrystalMaterial, with its edge crawl held at zero: the Charge light is the seam walk, as in play.")]
         [SerializeField] Material chargeMaterial;
         [Tooltip("The Space and Time crystals. OmniCrystalBody: the omni's own body material - the same lime pair every elemental crystal ships in - so those plates do not change look when the omni takes over.")]
         [SerializeField] Material shellMaterial;
@@ -34,8 +34,6 @@ namespace CosmicShore.Gameplay
         [SerializeField] Material massMaterial;
         [Tooltip("The finished omni crystal's body. OmniCrystalBody.")]
         [SerializeField] Material omniMaterial;
-        [Tooltip("The discharge on the omni's twelve pentagons. OmniChargeEdges (additive, drawn over the body).")]
-        [SerializeField] Material omniChargeEdgesMaterial;
         [Tooltip("The omni's triangles, as they are drawn in play: OmniDepthPrisms.")]
         [SerializeField] Material omniTrianglesMaterial;
 
@@ -44,6 +42,16 @@ namespace CosmicShore.Gameplay
         [SerializeField] Mesh omniTrianglesMesh;
         [Tooltip("How the Mass prisms and the omni's triangles ride their columns by depth: the profile CrystalDepthPrisms uses in play.")]
         [SerializeField] CrystalDepthPrismProfileSO depthProfile;
+
+        [Header("The game's round-5 effects (Omni Motion Lab)")]
+        [Tooltip("The woken omni's beats, square turns and plate thickness: OmniCrystalCadence.asset, the one the omni crystal plays in the game.")]
+        [SerializeField] OmniCrystalCadenceSO cadence;
+        [Tooltip("The Charge light's timing and brightness: CrystalChargeArcsProfile.asset, shared with the game.")]
+        [SerializeField] CrystalChargeArcsProfileSO chargeArcs;
+        [Tooltip("The Charge crystal's seam walk, while it waits: ChargeCrystalArcs (CrystalChargeArcsShader).")]
+        [SerializeField] Material chargeArcsMaterial;
+        [Tooltip("The woken omni's flux arcs: OmniChargeArcs (CrystalChargeArcsShader).")]
+        [SerializeField] Material omniArcsMaterial;
 
         [Header("Choreography - drawn per play from each range (min, max)")]
         [Tooltip("Seconds the four idle, each doing its own effect, before the first sets off.")]
@@ -91,11 +99,14 @@ namespace CosmicShore.Gameplay
         public Material ChargeMaterial => chargeMaterial;
         public Material ShellMaterial => shellMaterial;
         public Material OmniMaterial => omniMaterial;
-        public Material OmniChargeEdgesMaterial => omniChargeEdgesMaterial;
         public Material MassMaterial => massMaterial;
         public Material OmniTrianglesMaterial => omniTrianglesMaterial;
         public Mesh OmniTrianglesMesh => omniTrianglesMesh;
         public CrystalDepthPrismProfileSO DepthProfile => depthProfile;
+        public OmniCrystalCadenceSO Cadence => cadence;
+        public CrystalChargeArcsProfileSO ChargeArcs => chargeArcs;
+        public Material ChargeArcsMaterial => chargeArcsMaterial;
+        public Material OmniArcsMaterial => omniArcsMaterial;
         public float FadeInSeconds => fadeInSeconds;
         public float HandOffSeconds => handOffSeconds;
         public float OmniWorldRadius => omniWorldRadius;
@@ -125,6 +136,7 @@ namespace CosmicShore.Gameplay
                 Suck = Pick(suck),
                 EffectFade = effectFade,
                 EffectPhase = rng.NextDouble() * 100.0,
+                GameMotion = true,
             };
         }
 

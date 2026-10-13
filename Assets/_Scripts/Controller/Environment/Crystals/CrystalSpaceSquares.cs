@@ -358,7 +358,7 @@ namespace CosmicShore.Gameplay
             mesh.vertices = verts;
 
             // 2. each square's two turns, from the art file's keys (measured on the unthickened corners)
-            var squaresOf = new List<(List<int> idx, Vector3 centre, Vector3 pentAxis, float pentSign, Vector3 triAxis, float triSign, float lift, Vector3 side)>();
+            var squaresOf = new List<(List<int> idx, SquareTurnFit turn)>();
             float tolerance = 1e-3f * bodyRadius;
             foreach (var pair in members)
             {
@@ -371,20 +371,13 @@ namespace CosmicShore.Gameplay
                         return false;
                     }
                 PlateFrame(idx, rest, weldOf, welds, out var centre, out _);
-                if (!TryFitTurn(idx, rest, i => Offset(0, i), 72f, tolerance, out var pentAxis, out float pentSign, out problem)
-                    || !TryFitTurn(idx, rest, i => Offset(1, i) + Offset(2, i), 120f, tolerance, out var triAxis, out float triSign, out problem))
+                if (!SquareTurnFit.TryFit(idx, rest, centre, i => Offset(0, i), i => Offset(1, i), i => Offset(2, i), tolerance,
+                                       out var turn, out problem))
                 {
                     problem = $"mesh '{mesh.name}': {problem}";
                     return false;
                 }
-                var half = Quaternion.AngleAxis(triSign * 60f, triAxis) * centre;
-                var step1 = Vector3.zero;
-                foreach (int i in idx) step1 += rest[i] + Offset(1, i);
-                step1 /= idx.Count;
-                var t1 = step1 - half;
-                var outward = half.normalized;
-                float lift = Vector3.Dot(t1, outward);
-                squaresOf.Add((idx, centre, pentAxis, pentSign, triAxis, triSign, lift, t1 - outward * lift));
+                squaresOf.Add((idx, turn));
             }
             if (squaresOf.Count == 0)
             {
@@ -401,24 +394,13 @@ namespace CosmicShore.Gameplay
                 string shapeName = shape == 0 ? PentagonTurnName : TriangleTurnName;
                 for (int f = 1; f <= frames; f++)
                 {
-                    float e = (float)f / frames, hop = Mathf.Sin(Mathf.PI * e);
+                    float e = (float)f / frames;
                     System.Array.Clear(dv, 0, count);
                     System.Array.Clear(dn, 0, count);
                     foreach (var sq in squaresOf)
                     {
-                        Quaternion turn;
-                        Vector3 shift;
-                        if (shape == 0)
-                        {
-                            turn = Quaternion.AngleAxis(sq.pentSign * 72f * e, sq.pentAxis);
-                            shift = (turn * sq.centre).normalized * (turns.PentagonLift * bodyRadius * hop);
-                        }
-                        else
-                        {
-                            turn = Quaternion.AngleAxis(sq.triSign * 120f * e, sq.triAxis);
-                            var sideTurn = Quaternion.AngleAxis(sq.triSign * (120f * e - 60f), sq.triAxis);
-                            shift = (turn * sq.centre).normalized * (turns.TriangleLift * sq.lift * hop) + sideTurn * sq.side * (turns.TriangleSide * hop);
-                        }
+                        sq.turn.At(shape == 0, e, turns.PentagonLift * bodyRadius, turns.TriangleLift, turns.TriangleSide,
+                                   out var turn, out var shift);
                         foreach (int i in sq.idx)
                         {
                             dv[i] = turn * verts[i] + shift - verts[i];
@@ -450,48 +432,6 @@ namespace CosmicShore.Gameplay
                 if (p.magnitude > mid) { outer += p; no++; }
                 else { inner += p; ni++; }
             normal = no > 0 && ni > 0 ? (outer / no - inner / ni).normalized : Vector3.zero;
-        }
-
-        /// <summary>
-        /// The axis (through the crystal's centre) and sense of the rigid turn by <paramref name="degrees"/> that
-        /// <paramref name="offset"/> makes of a plate: every corner's offset is perpendicular to the axis, so the axis is
-        /// the cross product of the two most different offsets; the sense is whichever reproduces the offsets.
-        /// Refused when no sense reproduces every corner within <paramref name="tolerance"/>.
-        /// </summary>
-        static bool TryFitTurn(List<int> idx, Vector3[] rest, System.Func<int, Vector3> offset, float degrees, float tolerance,
-            out Vector3 axis, out float sign, out string problem)
-        {
-            axis = Vector3.zero;
-            sign = 1f;
-            int a = idx[0];
-            foreach (int i in idx) if (offset(i).sqrMagnitude > offset(a).sqrMagnitude) a = i;
-            Vector3 best = Vector3.zero;
-            foreach (int i in idx)
-            {
-                var c = Vector3.Cross(offset(a), offset(i));
-                if (c.sqrMagnitude > best.sqrMagnitude) best = c;
-            }
-            if (best.sqrMagnitude < 1e-16f)
-            {
-                problem = $"a square's key does not turn it (its offsets are parallel or zero)";
-                return false;
-            }
-            axis = best.normalized;
-            float bestError = float.MaxValue;
-            foreach (float s in new[] { 1f, -1f })
-            {
-                var turn = Quaternion.AngleAxis(s * degrees, axis);
-                float error = 0f;
-                foreach (int i in idx) error = Mathf.Max(error, (turn * rest[i] - (rest[i] + offset(i))).magnitude);
-                if (error < bestError) { bestError = error; sign = s; }
-            }
-            if (bestError > tolerance)
-            {
-                problem = $"a square's key is not a rigid {degrees}-degree turn about the crystal's centre (misses by {bestError:G3})";
-                return false;
-            }
-            problem = null;
-            return true;
         }
 
         /// <summary>

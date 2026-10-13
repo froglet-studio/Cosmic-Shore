@@ -14,6 +14,7 @@
     <Compile Include="UnityStub.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="../../../Assets/_Scripts/Utility/OmniCadence.cs" />
+    <Compile Include="../../../Assets/_Scripts/Utility/SquareTurnFit.cs" />
     <Compile Include="../../../Assets/_Scripts/Utility/RhombusSkinBaker.cs" />
     <Compile Include="../../../Assets/_Scripts/Controller/Environment/Crystals/OmniCrystalCadenceSO.cs" />
     <Compile Include="../../../Assets/_Scripts/Controller/Environment/Crystals/OmniCrystalCadence.cs" />

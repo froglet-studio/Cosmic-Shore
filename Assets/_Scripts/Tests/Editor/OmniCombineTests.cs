@@ -232,6 +232,34 @@ namespace CosmicShore.Tests
         }
 
         [Test]
+        public void RoundFive_TheOmnisSquaresFitTheirTurns_AndTheChargeLightReadsBothCrystals()
+        {
+            var data = LoadData();
+            var core = new OmniCombineCore(data);
+            Assert.IsTrue(OmniCombineMotion.TryFit(data, (float)core.OmniRadius, 1.1f, out var motion, out var problem), problem);
+            var offsets = motion.ThickOffset;
+            var turns = motion.Squares;
+            var corners = motion.SquareCorners;
+            Assert.AreEqual(60, turns.Length, "every square plate turns");
+            Assert.IsTrue(corners.All(c => c.Length == 8), "a square plate has eight corners");
+            // The thicker plates: each square, rhombus and pentagon grows about its own centre; the triangles do not.
+            for (int i = 0; i < data.omni.plate.Length; i++)
+            {
+                bool moved = offsets[3 * i] != 0f || offsets[3 * i + 1] != 0f || offsets[3 * i + 2] != 0f;
+                if (data.omni.plateOwner[data.omni.plate[i]] == OmniCombineCore.Mass) Assert.IsFalse(moved, $"triangle vertex {i} moved");
+            }
+            Assert.IsTrue(offsets.Any(x => x != 0f), "no plate grew");
+
+            var charge = core.CrystalData(OmniCombineCore.Charge);
+            var cv = Enumerable.Range(0, charge.basis.Length / 3).Select(i => new Vector3(charge.basis[3 * i], charge.basis[3 * i + 1], charge.basis[3 * i + 2])).ToArray();
+            Assert.IsTrue(ChargeSites.TryBuild(cv, charge.tris, 1f, out var blooms, out problem), problem);
+            Assert.AreEqual(ChargeSiteKind.Blooms, blooms.Kind);
+            var ov = Enumerable.Range(0, data.omni.verts.Length / 3).Select(i => new Vector3(data.omni.verts[3 * i], data.omni.verts[3 * i + 1], data.omni.verts[3 * i + 2])).ToArray();
+            Assert.IsTrue(ChargeSites.TryBuild(ov, data.omni.tris, 1.1f, out var pentagons, out problem), problem);
+            Assert.AreEqual(ChargeSiteKind.Pentagons, pentagons.Kind);
+        }
+
+        [Test]
         public void TheConfigIsWiredAndDrawsInsideItsRanges()
         {
             var config = AssetDatabase.LoadAssetAtPath<OmniCombineConfigSO>(ConfigPath);
@@ -240,7 +268,10 @@ namespace CosmicShore.Tests
             Assert.IsNotNull(config.ChargeMaterial);
             Assert.IsNotNull(config.ShellMaterial);
             Assert.IsNotNull(config.OmniMaterial);
-            Assert.IsNotNull(config.OmniChargeEdgesMaterial);
+            Assert.IsNotNull(config.Cadence, "the woken omni plays the game's cadence");
+            Assert.IsNotNull(config.ChargeArcs, "the Charge light is the game's");
+            Assert.IsNotNull(config.ChargeArcsMaterial);
+            Assert.IsNotNull(config.OmniArcsMaterial);
             Assert.IsNotNull(config.MassMaterial, "the Mass crystal draws with the game's depth-prism material");
             Assert.IsNotNull(config.OmniTrianglesMaterial);
             Assert.IsNotNull(config.OmniTrianglesMesh);
@@ -250,6 +281,7 @@ namespace CosmicShore.Tests
             for (int i = 0; i < 200; i++)
             {
                 var p = config.Draw(rng);
+                Assert.IsTrue(p.GameMotion, "the converter's omni moves as the game's does");
                 Assert.That(p.Flight, Is.InRange(4.4, 5.4));
                 Assert.That(p.Stagger / p.Flight, Is.InRange(0.95 - 1e-6, 1.05 + 1e-6), "each crystal sets off as the last lands");
                 Assert.That(p.Lead, Is.InRange(2.2, 3.2));

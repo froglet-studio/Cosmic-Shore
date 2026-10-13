@@ -172,46 +172,70 @@ namespace CosmicShore.Gameplay
             var cam = ViewCamera();
             if (!cam) return;
             Vector3 eye = transform.InverseTransformPoint(cam.transform.position);
-            float distance = eye.magnitude;
-            if (distance < 1e-4f) return;
-            Vector3 toCamera = eye / distance;
+            if (eye.sqrMagnitude < 1e-8f) return;
 
             float now = Time.time, dt = fresh ? 0f : Mathf.Max(0f, now - lastStep);
             lastStep = now;
-            float seal = profile.SealFor(plateRadius, distance);
-            bool rise = profile.RiseWhileHidden && !fresh;
-            var material = rise ? prisms.sharedMaterial : null;
+            var material = prisms.sharedMaterial;
             float reach = material && material.HasProperty(ReachID) ? material.GetFloat(ReachID) : 1f;
             float sizeAtTop = material && material.HasProperty(PlateScaleStartID) ? material.GetFloat(PlateScaleStartID) : 1f;
-            float occluder = profile.OccluderRadius * plateRadius;
+            StepColumns(columns, plateDirections, plateCentres, topHeights, plateRadius, eye, dt, fresh, profile, reach, sizeAtTop);
             for (int j = 0; j < columns.Length; j++)
-            {
-                float depth = Vector3.Dot(plateDirections[j], toCamera);
-                float seat = profile.Seat(depth, seal);
-                if (fresh)
-                {
-                    columns[j] = DepthRatchet.Column.At(seat);
-                }
-                else
-                {
-                    bool hidden = false;
-                    float target = 0f;
-                    if (rise && seat < columns[j].Place && columns[j].Fade >= 1f)
-                    {
-                        target = DepthRatchet.RiseTarget(columns[j], seat, dt, profile.RiseRate);
-                        hidden = DepthRatchet.HiddenBehindBody(
-                            DepthRatchet.ColumnTop(plateCentres[j], plateDirections[j], topHeights[j], target, reach, sizeAtTop), eye, occluder);
-                    }
-                    columns[j] = DepthRatchet.Step(columns[j], depth, seat, dt, profile.ReseatDepth, profile.ReseatFadeSeconds, hidden, target);
-                }
                 state[j] = new Vector4(columns[j].Place, columns[j].Fade, columns[j].LeavingPlace, 0f);
-            }
             fresh = false;
 
             prisms.GetPropertyBlock(block);
             block.SetVectorArray(DepthStateID, state);
             block.SetFloat(DepthDrivenID, 1f);
             prisms.SetPropertyBlock(block);
+        }
+
+        /// <summary>
+        /// Every column's ratchet against an eye at <paramref name="eye"/>, in the prisms' own space: the seat by depth
+        /// (sealed at the camera's horizon when the profile says so), the climb while hidden behind the body, the reseat
+        /// behind it. <paramref name="fresh"/> seats every column where its depth puts it. The one step this component
+        /// and the Elemental Converter (<c>OmniCombinePlayer</c>) share, so the converter's Mass is the game's.
+        /// </summary>
+        public static void StepColumns(DepthRatchet.Column[] columns, Vector3[] directions, Vector3[] centres, float[] tops,
+            float plateRadius, Vector3 eye, float dt, bool fresh, CrystalDepthPrismProfileSO profile, float reach, float sizeAtTop)
+        {
+            float distance = eye.magnitude;
+            if (distance < 1e-4f) return;
+            Vector3 toCamera = eye / distance;
+            float seal = profile.SealFor(plateRadius, distance);
+            bool rise = profile.RiseWhileHidden && !fresh;
+            float occluder = profile.OccluderRadius * plateRadius;
+            for (int j = 0; j < columns.Length; j++)
+            {
+                float depth = Vector3.Dot(directions[j], toCamera);
+                float seat = profile.Seat(depth, seal);
+                if (fresh)
+                {
+                    columns[j] = DepthRatchet.Column.At(seat);
+                    continue;
+                }
+                bool hidden = false;
+                float target = 0f;
+                if (rise && seat < columns[j].Place && columns[j].Fade >= 1f)
+                {
+                    target = DepthRatchet.RiseTarget(columns[j], seat, dt, profile.RiseRate);
+                    hidden = DepthRatchet.HiddenBehindBody(
+                        DepthRatchet.ColumnTop(centres[j], directions[j], tops[j], target, reach, sizeAtTop), eye, occluder);
+                }
+                columns[j] = DepthRatchet.Step(columns[j], depth, seat, dt, profile.ReseatDepth, profile.ReseatFadeSeconds, hidden, target);
+            }
+        }
+
+        /// <summary>A baked prism mesh's plates (TEXCOORD2: centre xyz, index w): each one's direction, seated centre and
+        /// top-face height, and the plates' mean centre radius. Read once per mesh and shared.</summary>
+        public static bool TryGetPlates(Mesh mesh, out Vector3[] directions, out Vector3[] centres, out float[] tops,
+            out float plateRadius, out string problem)
+        {
+            centres = null;
+            tops = null;
+            plateRadius = 0f;
+            return PlateDirections.TryGet(mesh, out directions, out problem)
+                && PlateDirections.TryGetShape(mesh, out centres, out tops, out plateRadius, out problem);
         }
 
         /// <summary>The gameplay camera (<see cref="CameraManager.ViewCamera"/>), NOT <c>Camera.main</c>: a ratchet run

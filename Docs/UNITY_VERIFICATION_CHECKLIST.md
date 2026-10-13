@@ -65,6 +65,41 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Elemental Converter polish: the game's round-5 effects in the omni combine (`cece/sharp-fermi-yw38ky`, 2026-10-13) — NOT EDITOR-VERIFIED
+
+`/verify-unity` was not run (no Unity Editor or `unity` CLI in the session). Offline: `unity_refcompile` player and
+editor, `converter_round5_harness` 15/15 (two negative controls), `omni_combine_parity` (lab parity 7e-7),
+`omni_turns_harness`, `crystal_depth_harness` 14/14, `author_elemental_converter.py --check` and `--self-test` 11/11.
+
+**What landed** (`Docs/Studios/OMNI_COMBINE_LAB.md`, revision 4):
+- The waiting Charge crystal plays the seam walk (crawl held at 0); the woken omni plays chained flux arcs.
+- The woken omni plays the game's cadence, rigid square turns and cued flip waves; its plates swell 1.0 → 1.1 as it
+  wakes.
+- Mass columns step with the game's `CrystalDepthPrisms.StepColumns` (horizon seal, hidden rise).
+- Refactors shared with the game:
+  - `CrystalDepthPrisms.StepColumns` / `TryGetPlates`;
+  - `SquareTurnFit` (from `CrystalSpaceSquares`' baker);
+  - `OmniCombineCore.CrystalFrame`.
+- `OmniChargeEdges.mat` and `OmniChargeEdgesShader` are deleted.
+
+**Verify in editor:**
+1. EditMode: `OmniCombineTests` (incl. the new `RoundFive_…`), `CrystalSpaceSquaresTests`, `CrystalDepthPrismTests`.
+2. Menu_Main → Ark. While the four wait:
+   - the Charge crystal shows one bolt walking the seams between its blooms, petals lighting beside it, and no edge
+     crawl;
+   - Mass shows tall columns standing out on its far side, coming round the edge from the top, never one visibly
+     rising, and the side facing you flush.
+3. CONVERT. The Charge bolt fades as the crystal sets off, before its petals start to fold. Each crystal lands as
+   before.
+4. The omni dithers in, then wakes:
+   - its plates thicken slightly (no pop);
+   - the first flux arc charges and leaps; each next arc leaves from where the last landed;
+   - once awake: squares turn round a pentagon in one smooth hop, a flip wave, a 120° triangle turn, a wave — never
+     squares and rhombi at once.
+5. Leave the Ark and come back, and press CONVERT twice: no `OmniCombinePlayer` errors in the console.
+6. Charge crystals and omnis in play are unchanged by this entry; it only moved shared code (`StepColumns`, `SquareTurnFit`).
+   Spot-check one of each.
+
 ### 🔴 Omni Motion Lab round 5 graduated: Mass horizon seal + rise while hidden, Space/Time cadence with rigid square turns, Charge seam walk + chained flux arcs (`cece/sharp-fermi-yw38ky`, 2026-10-13) — NOT EDITOR-VERIFIED
 
 `/verify-unity` was not run: the session had no Unity Editor and no `unity` CLI. What did run: `unity_refcompile`
@@ -83,8 +118,8 @@ C# against the real FBX meshes, and every generator `--check` that touches these
   ("Squares Pentagon Turn", "Squares Triangle Turn", 24 frames each) into the shaped twin, with the squares, rhombi and
   pentagons 1.1× thick. `CrystalFlipWave` plays one cued wave per wave beat when the root has a cadence.
 - **Charge**: `CrystalChargeArcs` (+ `CrystalChargeArcsShader`, `CrystalChargeArcsProfile.asset`). The omni's
-  `OmniCrystalChargeArcs` child (Flux) replaces `OmniCrystalChargeEdges` (prefab deleted; `OmniChargeEdges.mat` stays
-  for the Elemental Converter). `CrystalCharge.prefab` gets a `ChargeCrystalArcs` child (SeamWalk) that holds the
+  `OmniCrystalChargeArcs` child (Flux) replaces `OmniCrystalChargeEdges` (prefab deleted; its material and shader
+  followed once the Elemental Converter moved to the flux arcs, the entry above). `CrystalCharge.prefab` gets a `ChargeCrystalArcs` child (SeamWalk) that holds the
   shell's `_ArcIntensity` / `_NodeIntensity` at 0 through a property block (the material, and the hull fusion that
   copies it, keep the crawl).
 

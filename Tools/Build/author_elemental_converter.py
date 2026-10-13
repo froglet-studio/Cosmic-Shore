@@ -43,8 +43,11 @@ DATA_META = os.path.join(FOLDER, "OmniCombineData.json.meta")
 MATS = os.path.join(ROOT, "Assets", "_Graphics", "Materials", "CrystalMaterials")
 TRI_MESH = os.path.join(ROOT, "Assets", "_Models", "OmniCrystalTriangles.asset")
 DEPTH_PROFILE = os.path.join(ROOT, "Assets", "_SO_Assets", "Environment", "CrystalDepthPrismProfile.asset")
+CADENCE = os.path.join(ROOT, "Assets", "_SO_Assets", "Environment", "OmniCrystalCadence.asset")
+CHARGE_ARCS_PROFILE = os.path.join(ROOT, "Assets", "_SO_Assets", "Environment", "CrystalChargeArcsProfile.asset")
 SCRIPTS = {
     "OmniCombineCore": "Assets/_Scripts/Utility/OmniCombineCore.cs",
+    "OmniCombineMotion": "Assets/_Scripts/Utility/OmniCombineMotion.cs",
     "OmniCombineConfigSO": "Assets/_Scripts/Controller/Environment/Crystals/OmniCombineConfigSO.cs",
     "OmniCombinePlayer": "Assets/_Scripts/Controller/Environment/Crystals/OmniCombinePlayer.cs",
     "ElementalConverterView": "Assets/_Scripts/UI/Elements/ElementalConverterView.cs",
@@ -138,11 +141,15 @@ def config_asset(guids):
              f"  chargeMaterial: {mat('ChargeCrystalMaterial')}",
              f"  shellMaterial: {mat('OmniCrystalBody')}",
              f"  omniMaterial: {mat('OmniCrystalBody')}",
-             f"  omniChargeEdgesMaterial: {mat('OmniChargeEdges')}",
              f"  massMaterial: {mat('MassDepthPrisms')}",
              f"  omniTrianglesMaterial: {mat('OmniDepthPrisms')}",
              f"  omniTrianglesMesh: {{fileID: 4300000, guid: {meta_guid(TRI_MESH)}, type: 2}}",
-             f"  depthProfile: {{fileID: 11400000, guid: {meta_guid(DEPTH_PROFILE)}, type: 2}}"]
+             f"  depthProfile: {{fileID: 11400000, guid: {meta_guid(DEPTH_PROFILE)}, type: 2}}",
+             # Omni Motion Lab round 5 (2026-10-13): the woken omni and the Charge light are the game's.
+             f"  cadence: {{fileID: 11400000, guid: {meta_guid(CADENCE)}, type: 2}}",
+             f"  chargeArcs: {{fileID: 11400000, guid: {meta_guid(CHARGE_ARCS_PROFILE)}, type: 2}}",
+             f"  chargeArcsMaterial: {mat('ChargeCrystalArcs')}",
+             f"  omniArcsMaterial: {mat('OmniChargeArcs')}"]
     lines += [f"  {k}: {v}" for k, v in CONFIG_VALUES]
     return "\n".join(lines) + "\n"
 
@@ -271,8 +278,9 @@ def planned():
     if not os.path.exists(DATA_META):
         raise SystemExit("OmniCombineData.json is not authored: run Tools/Build/author_omni_combine_asset.py first")
     fields = set(serialized_fields(os.path.join(ROOT, SCRIPTS["OmniCombineConfigSO"])))
-    keys = {"combineData", "chargeMaterial", "shellMaterial", "omniMaterial", "omniChargeEdgesMaterial", "massMaterial",
-            "omniTrianglesMaterial", "omniTrianglesMesh", "depthProfile"} | {k for k, _ in CONFIG_VALUES}
+    keys = {"combineData", "chargeMaterial", "shellMaterial", "omniMaterial", "massMaterial",
+            "omniTrianglesMaterial", "omniTrianglesMesh", "depthProfile", "cadence", "chargeArcs", "chargeArcsMaterial",
+            "omniArcsMaterial"} | {k for k, _ in CONFIG_VALUES}
     if fields != keys:
         raise SystemExit(f"OmniCombineConfig keys and OmniCombineConfigSO's fields disagree: "
                          f"asset-only {sorted(keys - fields)}, script-only {sorted(fields - keys)}")
@@ -298,6 +306,21 @@ def base_scene(current):
         return current
 
 
+def unedited_scene():
+    """Menu_Main as it was before this tool first edited it: the parent of the oldest commit that added the converter.
+    Once the converter is on the merge base, base_scene() is ALREADY edited, every edit is a no-op, and the refusals
+    below would pass without ever reaching the code they guard (found 2026-10-13: two of them had gone red)."""
+    try:
+        log = subprocess.run(["git", "log", "--format=%H", "-S", f"--- !u!1 &{NEW_GO}", "--", "Assets/_Scenes/Menu_Main.unity"],
+                             cwd=ROOT, capture_output=True, text=True, check=True).stdout.split()
+        if not log:
+            return base_scene(read(SCENE))
+        return subprocess.run(["git", "show", f"{log[-1]}^:Assets/_Scenes/Menu_Main.unity"], cwd=ROOT, capture_output=True,
+                              text=True, check=True).stdout
+    except (subprocess.CalledProcessError, FileNotFoundError):
+        return base_scene(read(SCENE))
+
+
 def self_test():
     ok = True
 
@@ -312,8 +335,9 @@ def self_test():
             return False
         except SystemExit:
             return True
-    base = base_scene(read(SCENE))
+    base = unedited_scene()
     g = script_guids()["ElementalConverterView"]
+    check("the self-test edits a scene the converter is not in yet", f"--- !u!1 &{NEW_GO}\n" not in base)
     after = edit_scene(base, g)
     validate_scene(base, after, g)
     check("the base scene edits and validates", True)
@@ -329,7 +353,9 @@ def self_test():
     gated = base.replace(f"  disabledScreens: {DISABLED_BEFORE}\n", f"  disabledScreens: {DISABLED_BEFORE}\n  m_Extra: {{fileID: {ARK_GATE}}}\n", 1)
     check("an OfflineUIGate referenced from elsewhere is not removed", refused(lambda: edit_scene(gated, g)))
     out, _ = planned()
-    check("the config asset carries every OmniCombineConfigSO field", "omniChargeEdgesMaterial: {fileID: 2100000" in out[CONFIG])
+    check("the config asset carries every OmniCombineConfigSO field",
+          all(f"  {k}: {{fileID: " in out[CONFIG] for k in ("cadence", "chargeArcs", "chargeArcsMaterial", "omniArcsMaterial")))
+    check("the retired edge-crawl material is not wired", "omniChargeEdgesMaterial" not in out[CONFIG])
     sys.exit(0 if ok else 1)
 
 

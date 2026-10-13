@@ -55,8 +55,8 @@ and its shell's edge crawl is held at zero while it runs. Both draw on CrystalCh
 ChargeCrystalArcs.mat: the crystal's bright colour, ChargeCrystalMaterial's arc core colour) with one timing profile,
 CrystalChargeArcsProfile.asset. CrystalAccentTint paints the omni's from the body, so a team crystal's lit pentagons
 wear its domain colour. The edge-crawl overlay that came before (OmniCrystalChargeEdges.prefab: ChargeCrystal.hlsl's
-discharge on the pentagons' crease edges) is retired from the crystal; its material, OmniChargeEdges, still serves the
-Elemental Converter and is still cloned here from ChargeCrystalMaterial's arc dials.
+discharge on the pentagons' crease edges) is retired, with its OmniChargeEdges material and shader (the Elemental
+Converter moved to the flux arcs too, 2026-10-13).
 
 A team crystal: `ThemeManagerDataContainerSO.GetTeamCrystalMaterial(domain, material)` finds the base-set slot
 that holds a model's OWN default material and hands back that slot's domain clone (since 2026-10-13; it was by
@@ -206,30 +206,18 @@ DEPTH_PROFILE_VALUES = [("openDepth", -0.25), ("sealDepth", 1), ("profilePower",
 MAT_BODY = mat_guid("OmniCrystalBody")
 MAT_BODY_INACTIVE = mat_guid("OmniCrystalBodyInactive")
 
-# ── charge edges (the Elemental Converter's discharge on the pentagons; retired from the crystal 2026-10-13) ──
-CHARGE_SHADER_GUID = "fea45e80b3e94b3e34515f9ff6446e87"   # OmniChargeEdgesShader.shader
-CHARGE_MAT_NAME = "OmniChargeEdges"
-MAT_CHARGE = mat_guid(CHARGE_MAT_NAME)
-CHARGE_DONOR = "ChargeCrystalMaterial"                   # the charge crystal's own dials
+CHARGE_DONOR = "ChargeCrystalMaterial"                   # the charge crystal's own material: the arcs' core colour
 ACCENT_TINT_GUID = "599565cac0fff6c38bbe40a3fcc53207"    # CrystalAccentTint.cs
 TRUNC_OCTA_PREFAB = "Assets/_Prefabs/Environment/TrucatedOctahedron.prefab"
 BODY_PREFAB = "Assets/_Prefabs/Environment/OmniCrystalBody.prefab"
 BODY_PREFAB_GUID = hashlib.md5(b"CosmicShore/OmniCrystal/OmniCrystalBody.prefab").hexdigest()
 FLIP_WAVE_GUID = "c1b251f1ac8f4a15b1bc5681c1d6bcc5"          # CrystalFlipWave.cs
 FLIP_PROFILE_GUID = "7ae6c13f991929b01f383003cb5d9277"       # TimeCrystalFlipWaveProfile.asset
-# The shader's whole property set: (name, kind, source) - source is the material it is copied from.
-CHARGE_PROPS = [("_ArcCoreColor", "c", CHARGE_DONOR), ("_ArcDuty", "f", CHARGE_DONOR),
-                ("_ArcIntensity", "f", CHARGE_DONOR), ("_ArcJitter", "f", CHARGE_DONOR),
-                ("_ArcLength", "f", CHARGE_DONOR), ("_ArcShimmer", "f", CHARGE_DONOR),
-                ("_ArcSpeed", "f", CHARGE_DONOR), ("_ArcWidth", "f", CHARGE_DONOR),
-                ("_BrightColor", "c", "OmniCrystalBody"), ("_NodeIntensity", "f", CHARGE_DONOR),
-                ("_NodeRadius", "f", CHARGE_DONOR), ("_Spread", "c", "OmniCrystalBody")]
-
-
 # ── the Charge light (Omni Motion Lab round 5) ──
 ARCS_GUID = hashlib.md5(b"CosmicShore/Crystals/CrystalChargeArcs.cs").hexdigest()
 ARCS_PROFILE_SO_GUID = hashlib.md5(b"CosmicShore/Crystals/CrystalChargeArcsProfileSO.cs").hexdigest()
 ARCS_CORE_GUID = hashlib.md5(b"CosmicShore/Utility/ChargeArcs.cs").hexdigest()
+SQUARE_TURN_FIT_GUID = hashlib.md5(b"CosmicShore/Utility/SquareTurnFit.cs").hexdigest()   # the square turns' fit, shared
 ARCS_SHADER = "Assets/_Graphics/Materials/Shaders/CrystalChargeArcsShader.shader"
 ARCS_SHADER_GUID = hashlib.md5(b"CosmicShore/Crystals/CrystalChargeArcsShader.shader").hexdigest()
 ARCS_PROFILE = "Assets/_SO_Assets/Environment/CrystalChargeArcsProfile.asset"
@@ -288,10 +276,8 @@ def material_texts():
                   f"  m_Shader: {{fileID: 4800000, guid: {OMNI_SHADER_GUID}, type: 3}}", name + " m_Shader")
         out[name] = t
     body, body_inactive = out["OmniCrystalBody"], out["OmniCrystalBodyInactive"]
-    out[CHARGE_MAT_NAME] = charge_material_text(body)
-    out[OMNI_ARCS_MAT] = arcs_material_text(out[CHARGE_MAT_NAME], OMNI_ARCS_MAT, _saved(body, "_BrightColor", "c"))
-    out[CHARGE_ARCS_MAT] = arcs_material_text(out[CHARGE_MAT_NAME], CHARGE_ARCS_MAT,
-                                              _saved(_donor(CHARGE_DONOR), "_BrightCrystalColor", "c"))
+    out[OMNI_ARCS_MAT] = arcs_material_text(OMNI_ARCS_MAT, _saved(body, "_BrightColor", "c"))
+    out[CHARGE_ARCS_MAT] = arcs_material_text(CHARGE_ARCS_MAT, _saved(_donor(CHARGE_DONOR), "_BrightCrystalColor", "c"))
     top_h, split = prism_shape(bake_tri_mesh()[0])
     out[DEPTH_NAME] = depth_material(DEPTH_NAME, "OmniCrystalBody", body, MATERIAL_THICKNESS, top_h, split)
     out[DEPTH_NAME + "Inactive"] = depth_material(DEPTH_NAME + "Inactive", "OmniCrystalBodyInactive", body_inactive,
@@ -310,27 +296,11 @@ def _saved(text, name, kind):
     return m[0]
 
 
-def charge_material_text(body_text):
-    """OmniChargeEdges: ChargeCrystalMaterial's arc dials + the body's halo colour and spread, on
-    OmniChargeEdgesShader. Built from the charge material (donor-cloned for its header) with its
-    saved properties REPLACED by exactly the new shader's set, so no stale body property rides along."""
-    sources = {CHARGE_DONOR: _donor(CHARGE_DONOR), "OmniCrystalBody": body_text}
-    t = _sub1(sources[CHARGE_DONOR], rf"^  m_Name: {CHARGE_DONOR}$", f"  m_Name: {CHARGE_MAT_NAME}",
-              "charge m_Name")
-    t = _sub1(t, r"^  m_Shader: \{fileID: 4800000, guid: \w+, type: 3\}",
-              f"  m_Shader: {{fileID: 4800000, guid: {CHARGE_SHADER_GUID}, type: 3}}", "charge m_Shader")
-    floats = "".join(f"    - {n}: {_saved(sources[s], n, k)}\n" for n, k, s in CHARGE_PROPS if k == "f")
-    colors = "".join(f"    - {n}: {_saved(sources[s], n, k)}\n" for n, k, s in CHARGE_PROPS if k == "c")
-    t = _sub1(t, r"^    m_Floats:\n(?:    - .*\n)+", lambda _: "    m_Floats:\n" + floats, "charge m_Floats")
-    t = _sub1(t, r"^    m_Colors:\n(?:    - .*\n)+", lambda _: "    m_Colors:\n" + colors, "charge m_Colors")
-    return t
-
-
-def arcs_material_text(edges_text, name, bright):
+def arcs_material_text(name, bright):
     """A CrystalChargeArcsShader material: the crystal's bright colour (the lit faces' tint) and ChargeCrystalMaterial's
-    arc core colour (the bolts), at full intensity. Cloned from OmniChargeEdges for its header, with its saved
-    properties replaced by exactly the new shader's set."""
-    t = _sub1(edges_text, rf"^  m_Name: {CHARGE_MAT_NAME}$", f"  m_Name: {name}", name + " m_Name")
+    arc core colour (the bolts), at full intensity. Cloned from ChargeCrystalMaterial for its header, with its saved
+    properties replaced by exactly the new shader's set, so no stale property rides along."""
+    t = _sub1(_donor(CHARGE_DONOR), rf"^  m_Name: {CHARGE_DONOR}$", f"  m_Name: {name}", name + " m_Name")
     t = _sub1(t, r"^  m_Shader: \{fileID: 4800000, guid: \w+, type: 3\}",
               f"  m_Shader: {{fileID: 4800000, guid: {ARCS_SHADER_GUID}, type: 3}}", name + " m_Shader")
     core = _saved(_donor(CHARGE_DONOR), "_ArcCoreColor", "c")
@@ -1467,6 +1437,7 @@ def main():
         "Assets/_Scripts/Controller/Environment/Crystals/CrystalChargeArcs.cs.meta": script_meta(ARCS_GUID),
         "Assets/_Scripts/Controller/Environment/Crystals/CrystalChargeArcsProfileSO.cs.meta": script_meta(ARCS_PROFILE_SO_GUID),
         "Assets/_Scripts/Utility/ChargeArcs.cs.meta": script_meta(ARCS_CORE_GUID),
+        "Assets/_Scripts/Utility/SquareTurnFit.cs.meta": script_meta(SQUARE_TURN_FIT_GUID),
     }
     for path, text in material_texts().items():
         want[path] = text

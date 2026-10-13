@@ -133,6 +133,11 @@ namespace CosmicShore.Utility
         /// <summary>The Charge crystal turns as it idles (the lab's port of JustRotate on CrystalCharge.prefab). The
         /// converter turns it off (designer, 2026-10-13: "a vestigial rotation that we don't want").</summary>
         public bool IdleTumble;
+        /// <summary>The woken omni moves as the GAME's omni does (Omni Motion Lab round 5, the converter): no squares weave
+        /// here - the caller turns the squares on its cadence - and the flip wave plays only the wave the caller cues
+        /// (<see cref="OmniCombineCore.OmniPose(double, in OmniCombineParams, double, D3, float[], float[], double, long)"/>).
+        /// Off in the lab, so parity holds.</summary>
+        public bool GameMotion;
 
         public static OmniCombineParams LabDefault => new OmniCombineParams
         {
@@ -241,20 +246,13 @@ namespace CosmicShore.Utility
             {
                 var c = _crystals[k];
                 var outPos = positions[k];
-                double t0 = Departs(k, p), u = Clamp01((t - t0) / p.Flight), e = EaseIO(u, p.Ease);
+                double t0 = Departs(k, p), u = Clamp01((t - t0) / p.Flight);
                 double fxIdle = 1 - Smooth((t - t0) / p.EffectFade);
                 effect[k] = (float)Math.Max(0, fxIdle);
-                D3 s = StartOf(k, p), centre;
-                double left = 1 - e;
-                centre = RotAxis(D3.Up, p.Swirl * 2 * Math.PI * left, s * left);
-                centre = new D3(centre.X, centre.Y + p.Arc * s.Length * Math.Sin(Math.PI * e), centre.Z);
-                double ang = p.Tumble * 2 * Math.PI * left;
+                Frame(k, t, p, out var centre, out double spin, out double ang);
                 double mS = Math.Min(p.MorphStart, 1 - p.MorphLength);
                 bool idleSpin = c.Data.idle != null && c.Data.idle.keys != null && c.Data.idle.keys.Length > 0 && fxIdle > 0;
                 if (idleSpin) SpinWeights(te, c.Data.idle.names, _spinWeights);
-                // Charge tumbles while it idles; the accumulated turn unwinds over the flight so it lands in the omni's frame.
-                // Only the turn modulo a whole turn unwinds (the same pose), so a long wait never spins it back for laps.
-                double spin = k == Charge && p.IdleTumble ? (_tumbleSpeed * Math.Min(t, t0)) % (2 * Math.PI) * (1 - e) : 0;
                 for (int q = 0; q < c.Plates.Length; q++)
                 {
                     var pl = c.Plates[q];
@@ -326,14 +324,22 @@ namespace CosmicShore.Utility
         /// the squares weave, the depth prisms on its triangles. (The discharge on its pentagons is the
         /// shader's.) Writes xyz per omni vertex.
         /// </summary>
-        public void OmniPose(double t, in OmniCombineParams p, double fx, D3 towardCamera, float[] positions)
+        public void OmniPose(double t, in OmniCombineParams p, double fx, D3 towardCamera, float[] positions) =>
+            OmniPose(t, p, fx, towardCamera, positions, null, -1, -1);
+
+        /// <summary>As above; with <see cref="OmniCombineParams.GameMotion"/> the pose starts from <paramref name="rest"/>
+        /// (the omni's vertices as the caller draws them at rest - thicker plates; null = the data's) and the flip wave
+        /// plays wave <paramref name="wave"/>, <paramref name="waveSeconds"/> into the profile's own clock (a negative wave
+        /// holds every rhombus at rest), as <c>CrystalFlipWave</c> plays a cued wave.</summary>
+        public void OmniPose(double t, in OmniCombineParams p, double fx, D3 towardCamera, float[] positions,
+                             float[] rest, double waveSeconds, long wave)
         {
-            var ov = Data.omni.verts;
+            var ov = p.GameMotion && rest != null ? rest : Data.omni.verts;
             Array.Copy(ov, positions, ov.Length);
             if (fx <= 0) return;
             double te = t + p.EffectPhase;
-            SquaresWeights(te, Data.squares, _squareWeights);
-            for (int k = 0; k < Data.squares.keys.Length; k++)
+            if (!p.GameMotion) SquaresWeights(te, Data.squares, _squareWeights);
+            for (int k = 0; k < Data.squares.keys.Length && !p.GameMotion; k++)
             {
                 var key = Data.squares.keys[k];
                 double w = _squareWeights[k] * fx;
@@ -351,7 +357,9 @@ namespace CosmicShore.Utility
                 int owner = Data.omni.plateOwner[q];
                 if (owner == Time)
                 {
-                    var f = FlipPose(_omniRig, q, pl, te, OmniFlipSalt, fx);
+                    if (p.GameMotion && wave < 0) continue;
+                    var f = p.GameMotion ? FlipPoseAt(_omniRig, q, pl, wave, waveSeconds, OmniFlipSalt, fx)
+                                         : FlipPose(_omniRig, q, pl, te, OmniFlipSalt, fx);
                     if (!f.Valid) continue;
                     foreach (int i in pl.Idx) Write(positions, i, ApplyFlip(f, pl, V(ov, i)));
                 }
@@ -363,6 +371,34 @@ namespace CosmicShore.Utility
                     foreach (int i in pl.Idx) Write(positions, i, pl.C + (V(ov, i) - pl.C) * sc + lift);
                 }
             }
+        }
+
+        /// <summary>
+        /// The rigid part of crystal <paramref name="k"/>'s pose at <paramref name="t"/>: an UNMORPHED point v of its basis
+        /// is drawn at <c>RotAxis(tumbleAxis, tumble, RotAxis(spinAxis, spin, v)) + centre</c>, exactly as
+        /// <see cref="Pose(double, in OmniCombineParams, D3, float[][], float[], float[], float[][])"/> draws it. The
+        /// converter carries the Charge crystal's seam-walk light on it while the crystal waits.
+        /// </summary>
+        public void CrystalFrame(int k, double t, in OmniCombineParams p, out D3 centre, out D3 spinAxis, out double spin,
+                                 out D3 tumbleAxis, out double tumble)
+        {
+            Seed(p.Seed);
+            Frame(k, t, p, out centre, out spin, out tumble);
+            spinAxis = _tumbleAxis;
+            tumbleAxis = _tumbleAxes[k];
+        }
+
+        void Frame(int k, double t, in OmniCombineParams p, out D3 centre, out double spin, out double tumble)
+        {
+            double t0 = Departs(k, p), u = Clamp01((t - t0) / p.Flight), e = EaseIO(u, p.Ease);
+            D3 s = StartOf(k, p);
+            double left = 1 - e;
+            centre = RotAxis(D3.Up, p.Swirl * 2 * Math.PI * left, s * left);
+            centre = new D3(centre.X, centre.Y + p.Arc * s.Length * Math.Sin(Math.PI * e), centre.Z);
+            tumble = p.Tumble * 2 * Math.PI * left;
+            // Charge tumbles while it idles; the accumulated turn unwinds over the flight so it lands in the omni's frame.
+            // Only the turn modulo a whole turn unwinds (the same pose), so a long wait never spins it back for laps.
+            spin = k == Charge && p.IdleTumble ? (_tumbleSpeed * Math.Min(t, t0)) % (2 * Math.PI) * (1 - e) : 0;
         }
 
         // ------------------------------------------------------------------ the four effects
@@ -438,7 +474,13 @@ namespace CosmicShore.Utility
         {
             var fl = Data.flip;
             long loop = (long)Math.Floor(t / fl.loop);
-            double local = t - loop * fl.loop;
+            return FlipPoseAt(rig, p, pl, loop, t - loop * fl.loop, salt, fx);
+        }
+
+        /// <summary>Plate <paramref name="p"/> in wave <paramref name="loop"/>, <paramref name="local"/> seconds into it.</summary>
+        Flip FlipPoseAt(FlipRig rig, int p, Plate pl, long loop, double local, int salt, double fx)
+        {
+            var fl = Data.flip;
             var step = rig.Plans[FlipStart(rig, loop, salt)][p];
             double tk = local - (fl.first + fl.stagger * step.Ring);
             if (tk < 0) return default;

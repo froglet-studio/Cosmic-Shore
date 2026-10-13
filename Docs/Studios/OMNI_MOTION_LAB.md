@@ -48,6 +48,9 @@ its width in `CrystalChargeArcsShader`, and the thick middle as halo + body + ho
 **Not carried:** the lab's other 18 Charge effects and the Charge beat. The Mass crystal shares the depth profile, so it
 takes the round-3 Mass rules as well.
 
+**The Elemental Converter follows** (same day): its crystals and woken omni play all of the above, through the same code
+(`Docs/Studios/OMNI_COMBINE_LAB.md`, revision 4).
+
 ## Round 5 (2026-10-13): thicker plates, chained flux arcs
 
 The designer: "This is near perfect. Let's thicken the squares, rhombuses and pentagons (not the triangles) on the omni crystals by 10%. The omni crystal arcs should always use the previous sink as the new source, to keep a continuity of hopping arcs. When this translates to Unity, I hope the thick part of the beam looks better."
