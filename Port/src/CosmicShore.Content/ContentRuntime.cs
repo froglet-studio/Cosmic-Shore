@@ -79,6 +79,8 @@ namespace CosmicShore.Content
             ChainImporter(typeof(Material), r => r.Guid == AssetLoader.BuiltinExtraGuid ? BuiltinMaterials.ForFileId(r.FileId) : null);
             ShaderProperties = new Shaders.ShaderPropertyCatalog(Db);
             Shader.PropertyCatalog = ShaderProperties.For;
+            Shader.HdrColorCatalog = ShaderProperties.HdrColors;
+            Shader.SourceInfoCatalog = ShaderProperties.SourceInfo;
             ShaderGraphs = new Shaders.ShaderGraphCatalog(Db);
             Shader.GraphCompiler = ShaderGraphs.For;
             Shader.TextureByGuid = guid => Assets.Load<Texture>(new ObjRef(2800000, guid, 3));

@@ -30,12 +30,16 @@ namespace CosmicShore.Content.Shaders
             ["8efe19062b480f445801d12c6fca1ded"] = ("JetShader", "Assets/_Scripts/Game/Vessel/Animation/JetShader.shader"),
             ["e66cc995d379448caf38b18d87140dde"] = ("ForcefieldCrackleCapsule", "Assets/_Graphics/Materials/Graphs/ForcefieldCrackleCapsule.shader"),
             ["c451cf0afd834429a6f4e6652dad5b50"] = ("ProjectileChargeField", "Assets/_Graphics/Materials/Graphs/ProjectileChargeField.shader"),
+            ["fea45e80b3e94b3e34515f9ff6446e87"] = ("OmniChargeEdgesShader", "Assets/_Graphics/Materials/Shaders/OmniChargeEdgesShader.shader"),
+            ["3c26ca90a8014ba2894f6d3007b6fdae"] = ("ChargeCrystal", "Assets/_Graphics/Materials/Graphs/ChargeCrystal.shader"),
+            ["1b0aa366a170fb99b7d63b228298811a"] = ("Wormhole", "Assets/_Graphics/Materials/Graphs/Wormhole.shader"),
         };
 
         /// <summary>What a translation knowingly leaves out, by translation name (shown as the program's approximations).</summary>
         static readonly Dictionary<string, string> s_approximations = new(StringComparer.Ordinal)
         {
-            ["OmniCrystalFresnelShader"] = "CrystalMorph: the mesh's TEXCOORD2/3 morph targets are not in the graph template; drawn unmorphed",
+            ["OmniChargeEdgesShader"] = "Fog: the additive pass fades toward the fog colour, not toward black",
+            ["Wormhole"] = "Panorama: the partner's six-face capture is a texture array Prisma does not have (copyTextureSupport None, so the game never readies one); the void colour stands in",
         };
 
         public static bool Has(string guid) => guid != null && ByGuid.ContainsKey(guid);
@@ -120,6 +124,8 @@ namespace CosmicShore.Content.Shaders
             prog.ZWrite = lab.ZWrite switch { "On" => 1, "Off" => 0, _ => -1 };
             prog.Cull = lab.Cull switch { "Off" => 0, "Front" => 1, _ => 2 };
             prog.Queue = lab.Queue;
+            prog.OffsetFactor = lab.OffsetFactor;
+            prog.OffsetUnits = lab.OffsetUnits;
             foreach (var (what, value) in new[] { ("ZWrite", lab.ZWrite), ("Cull", lab.Cull) })
                 if (value != null && value.StartsWith("[", StringComparison.Ordinal))
                     prog.Approximations.Add($"{what} {value}: a property-driven value draws as the default");

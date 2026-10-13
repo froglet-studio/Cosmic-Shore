@@ -950,8 +950,8 @@
       "path": "Assets/_Graphics/Materials/Graphs/CageGraph.shadergraph",
       "guid": "6bb03b2998dc62b4b8f9964d5fe5c97e",
       "name": "Shader Graphs/CageGraph",
-      "route": "family",
-      "why": "hand-tuned family Cage",
+      "route": "compiled",
+      "why": "Shader Graph compiler",
       "approximations": []
     },
     {
@@ -966,8 +966,8 @@
       "path": "Assets/_Graphics/Materials/Graphs/ChargeCrystal.shader",
       "guid": "3c26ca90a8014ba2894f6d3007b6fdae",
       "name": "Shader Graphs/ChargeCrystal",
-      "route": "missing",
-      "why": "hand-written .shader: no translation yet",
+      "route": "hand",
+      "why": "hand translation (Content/Shaders/Hand)",
       "approximations": []
     },
     {
@@ -982,8 +982,8 @@
       "path": "Assets/_Graphics/Materials/Graphs/CrystalGraph.shadergraph",
       "guid": "11986b08af564954bb111977a5cf4dac",
       "name": "Shader Graphs/CrystalGraph",
-      "route": "family",
-      "why": "hand-tuned family Crystal",
+      "route": "compiled",
+      "why": "Shader Graph compiler",
       "approximations": []
     },
     {
@@ -1200,8 +1200,8 @@
       "path": "Assets/_Graphics/Materials/Graphs/SnowGraph.shadergraph",
       "guid": "85c2251bbb0f9b746807624041e02ff3",
       "name": "Shader Graphs/SnowGraph",
-      "route": "family",
-      "why": "hand-tuned family Snow",
+      "route": "compiled",
+      "why": "Shader Graph compiler",
       "approximations": []
     },
     {
@@ -1224,9 +1224,11 @@
       "path": "Assets/_Graphics/Materials/Graphs/SpindleGraph.shadergraph",
       "guid": "545a7b2ee58b90744bdb1c9e265a09f4",
       "name": "Shader Graphs/SpindleGraph",
-      "route": "family",
-      "why": "hand-tuned family Spindle",
-      "approximations": []
+      "route": "compiled",
+      "why": "Shader Graph compiler",
+      "approximations": [
+        "ObjectNode: world bounds are the object\u0027s origin"
+      ]
     },
     {
       "path": "Assets/_Graphics/Materials/Graphs/StarGraph.shadergraph",
@@ -1272,8 +1274,8 @@
       "path": "Assets/_Graphics/Materials/Graphs/VesselGraph.shadergraph",
       "guid": "0236447d5f06b0541a43756d85b5f222",
       "name": "Shader Graphs/VesselGraph",
-      "route": "family",
-      "why": "hand-tuned family Vessel",
+      "route": "compiled",
+      "why": "Shader Graph compiler",
       "approximations": []
     },
     {
@@ -1296,9 +1298,11 @@
       "path": "Assets/_Graphics/Materials/Graphs/Wormhole.shader",
       "guid": "1b0aa366a170fb99b7d63b228298811a",
       "name": "CosmicShore/Wormhole",
-      "route": "missing",
-      "why": "hand-written .shader: no translation yet",
-      "approximations": []
+      "route": "hand",
+      "why": "hand translation (Content/Shaders/Hand)",
+      "approximations": [
+        "Panorama: the partner\u0027s six-face capture is a texture array Prisma does not have (copyTextureSupport None, so the game never readies one); the void colour stands in"
+      ]
     },
     {
       "path": "Assets/_Graphics/Materials/Lifeform_World_Shader Graphs/CreatureTextureGraph.shadergraph",
@@ -1424,9 +1428,11 @@
       "path": "Assets/_Graphics/Materials/Shaders/OmniChargeEdgesShader.shader",
       "guid": "fea45e80b3e94b3e34515f9ff6446e87",
       "name": "Custom/OmniChargeEdgesShader",
-      "route": "missing",
-      "why": "hand-written .shader: no translation yet",
-      "approximations": []
+      "route": "hand",
+      "why": "hand translation (Content/Shaders/Hand)",
+      "approximations": [
+        "Fog: the additive pass fades toward the fog colour, not toward black"
+      ]
     },
     {
       "path": "Assets/_Graphics/Materials/Shaders/OmniCrystalFresnelShader.shader",
@@ -1434,9 +1440,7 @@
       "name": "Custom/OmniCrystalFresnelShader",
       "route": "hand",
       "why": "hand translation (Content/Shaders/Hand)",
-      "approximations": [
-        "CrystalMorph: the mesh\u0027s TEXCOORD2/3 morph targets are not in the graph template; drawn unmorphed"
-      ]
+      "approximations": []
     },
     {
       "path": "Assets/_Graphics/Materials/Shaders/OmniShepardFresnelShader.shader",
@@ -1514,8 +1518,8 @@
       "path": "Assets/_Graphics/Materials/Shaders/UI/VolumeDisplayShader.shader",
       "guid": "ed0cdfdab2e823445ac8df7052a701c8",
       "name": "Custom/VolumeDisplayShader",
-      "route": "missing",
-      "why": "hand-written .shader: no translation yet",
+      "route": "own",
+      "why": "uGUI renderer, translated UI shader (Render/UiCustomShaders.cs)",
       "approximations": []
     },
     {
