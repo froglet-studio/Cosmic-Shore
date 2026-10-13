@@ -39,8 +39,13 @@ namespace CosmicShore.UI
         [SerializeField] OmniCombineConfigSO config;
 
         [Header("Picture")]
-        [Tooltip("Pixels along the picture's longer edge.")]
-        [SerializeField, Range(256, 2048)] int resolution = 1280;
+        [Tooltip("Rendered pixels per SCREEN pixel along each edge. The picture is rendered at the size it is shown on " +
+                 "screen times this, then filtered down: 2 = four samples per pixel before MSAA.")]
+        [SerializeField, Range(1, 3)] int supersampling = 2;
+        [Tooltip("Hardware multisampling on top of the supersampling: 1 (off), 2, 4 or 8. Memory grows with it.")]
+        [SerializeField] int msaaSamples = 4;
+        [Tooltip("The render target's longest edge never exceeds this many pixels (a 4K screen at 2x would be 7680).")]
+        [SerializeField, Range(1024, 8192)] int maxTextureSize = 6144;
         [Tooltip("Vertical field of view of the stage camera, degrees.")]
         [SerializeField, Range(15f, 70f)] float fieldOfView = 34f;
         [Tooltip("Degrees per second the camera circles the combine.")]
@@ -61,10 +66,10 @@ namespace CosmicShore.UI
         [SerializeField] TMP_FontAsset font;
         [Tooltip("The button's size in canvas units.")]
         [SerializeField] Vector2 buttonSize = new(420f, 110f);
-        [Tooltip("How far the button sits above the bottom of this rect (clear of the nav bar).")]
-        [SerializeField] float buttonBottomOffset = 230f;
+        [Tooltip("How far the button sits above the bottom of this rect (the nav bar is at the TOP of the screen, above this rect).")]
+        [SerializeField] float buttonBottomOffset = 56f;
         [Tooltip("How far the title sits below the top of this rect.")]
-        [SerializeField] float titleTopOffset = 150f;
+        [SerializeField] float titleTopOffset = 36f;
         [Tooltip("The button's fill.")]
         [SerializeField] Color buttonColor = new(0.6f, 1f, 0.5f, 0.9f);
         [Tooltip("The button's and the title's text colour.")]
@@ -160,27 +165,49 @@ namespace CosmicShore.UI
             _camera.clearFlags = CameraClearFlags.Skybox;
             _camera.cullingMask = ~LayerMask.GetMask("UI");
             _camera.useOcclusionCulling = false;
-            OffscreenCameraSetup.AdoptGameCameraImage(_camera, postProcessing: true, antiAliasing: false, shadows: false);
-            _camera.allowMSAA = false;
+            // The picture is the whole screen and the point of it, so it takes every quality the game camera has and
+            // more: its post AA (SMAA High when the game has none), HDR, MSAA on the target and supersampling.
+            OffscreenCameraSetup.AdoptGameCameraImage(_camera, postProcessing: true, antiAliasing: true, shadows: false);
+            _camera.allowHDR = true;
+            _camera.allowMSAA = msaaSamples > 1;
             var data = _camera.GetUniversalAdditionalCameraData();
             if (data)
             {
                 data.requiresColorOption = CameraOverrideOption.Off;
                 data.requiresDepthOption = CameraOverrideOption.Off;
+                if (data.antialiasing == AntialiasingMode.None) data.antialiasing = AntialiasingMode.SubpixelMorphologicalAntiAliasing;
+                data.antialiasingQuality = AntialiasingQuality.High;
             }
             EnsureTarget();
             return true;
         }
 
-        /// <summary>A render target at the picture's own aspect (a square texture in a wide window stretches).</summary>
+        /// <summary>
+        /// A render target at the picture's on-screen PIXEL size times <see cref="supersampling"/> (never a fixed
+        /// resolution stretched over the screen), at the picture's own aspect. At 2x the RawImage's bilinear
+        /// sampling lands between four texels for every screen pixel, which is an exact box filter; above 2x the
+        /// target carries mips so the downsample stays filtered.
+        /// </summary>
         void EnsureTarget()
         {
             var r = _surface ? _surface.rectTransform.rect : new Rect(0, 0, 1, 1);
-            float w = Mathf.Max(1f, r.width), h = Mathf.Max(1f, r.height), k = resolution / Mathf.Max(w, h);
+            var canvas = _surface ? _surface.canvas : null;
+            float toPixels = canvas ? canvas.scaleFactor : 1f;
+            float w = Mathf.Max(1f, r.width * toPixels) * supersampling, h = Mathf.Max(1f, r.height * toPixels) * supersampling;
+            float k = Mathf.Min(1f, maxTextureSize / Mathf.Max(w, h));
             int tw = Mathf.Max(64, Mathf.RoundToInt(w * k)), th = Mathf.Max(64, Mathf.RoundToInt(h * k));
-            if (_target && _target.width == tw && _target.height == th) return;
+            int msaa = msaaSamples >= 8 ? 8 : msaaSamples >= 4 ? 4 : msaaSamples >= 2 ? 2 : 1;
+            if (_target && _target.width == tw && _target.height == th && _target.antiAliasing == msaa) return;
             ReleaseTarget();
-            _target = new RenderTexture(tw, th, 24) { name = "ElementalConverter", antiAliasing = 1 };
+            bool mips = supersampling > 2;
+            _target = new RenderTexture(tw, th, 24, RenderTextureFormat.ARGB32, RenderTextureReadWrite.sRGB)
+            {
+                name = "ElementalConverter",
+                antiAliasing = msaa,
+                useMipMap = mips,
+                autoGenerateMips = mips,
+                filterMode = mips ? FilterMode.Trilinear : FilterMode.Bilinear,
+            };
             _target.Create();
             if (_camera) _camera.targetTexture = _target;
             if (_surface) _surface.texture = _target;

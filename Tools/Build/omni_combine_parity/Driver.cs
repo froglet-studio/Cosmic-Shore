@@ -3,6 +3,7 @@
 // that disagrees by more than TOL. Usage: dotnet run -- <lab-frame data.json> <lab poses.json>
 using System;
 using System.IO;
+using System.Linq;
 using System.Text.Json;
 using CosmicShore.Utility;
 
@@ -136,6 +137,21 @@ static class Driver
             }
             Array.Copy(cur[1], prev, prev.Length);
         }
+        // The converter hands the Mass depth effect to the game's shader: the CPU pose must then ignore the camera,
+        // and at landing every crystal's centre is the omni's and every plate has fully morphed.
+        var sd = OmniCombineParams.LabDefault; sd.ShaderDepth = true;
+        var m1 = new float[4][]; var m2 = new float[4][]; var morph = new float[4][];
+        for (int k = 0; k < 4; k++) { m1[k] = new float[pos[k].Length]; m2[k] = new float[pos[k].Length]; morph[k] = new float[data.crystals[k].plate.Max() + 1]; }
+        core.Pose(1.0, sd, cam, m1, fx);
+        core.Pose(1.0, sd, new D3(-0.6, 0.1, -0.79).Unit, m2, fx);
+        double camGap = 0; for (int i = 0; i < m1[2].Length; i++) camGap = Math.Max(camGap, Math.Abs(m1[2][i] - m2[2][i]));
+        Console.WriteLine($"{(camGap == 0 ? "PASS" : "FAIL")} with ShaderDepth the Mass pose ignores the camera ({camGap:E1})");
+        if (camGap != 0) fails++;
+        var centres = new float[12];
+        core.Pose(OmniCombineCore.MorphEnds(sd), sd, cam, m1, fx, centres, morph);
+        double off = centres.Max(Math.Abs), least = morph.Min(a => a.Min());
+        Console.WriteLine($"{(off < 1e-6 && least == 1 ? "PASS" : "FAIL")} at landing every centre is the omni's ({off:E1}) and every plate has morphed ({least})");
+        if (!(off < 1e-6 && least == 1)) fails++;
         bool calm = step < 0.08 * core.OmniRadius;
         Console.WriteLine($"{(calm ? "PASS" : "FAIL")} Charge after a 1000 s wait moves at most {step / core.OmniRadius:F3} omni radii a frame");
         if (!calm) fails++;

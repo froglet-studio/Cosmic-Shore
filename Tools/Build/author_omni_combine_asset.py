@@ -45,6 +45,13 @@ FRAMES = {
     "unity": np.array([[-1, 0, 0], [0, 0, 1], [0, -1, 0]], dtype=float),
     "lab": np.array([[1, 0, 0], [0, 0, 1], [0, -1, 0]], dtype=float),
 }
+# The game's own Mass crystal and omni triangles (designer, 2026-10-13: "fix the mass crystal so it is consistent
+# with the gameplay, even if it means rebuilding"): the converter draws Mass with the mesh and depth-prism material
+# the game draws it with, and the omni's triangles as the game's depth prisms.
+MASS_MESH = os.path.join(ROOT, "Assets", "_Models", "MassCrystalPrisms.asset")
+TRI_MESH = os.path.join(ROOT, "Assets", "_Models", "OmniCrystalTriangles.asset")
+ALIGN_FIT = 2e-3      # plate-centre directions, game mesh vs the art file's, after the best rotation
+TRI_FIT = 1e-4        # every omni-triangle corner, game mesh vs the art omni, after its rotation
 TWIST_FIT = 8.0       # deg: the best rotation about a site axis vs the baked twist (Charge 0.02, Mass 5.5)
 RIGID_FIT = 1e-4      # the Time lock-in replayed in the new frame vs its baked rigid pose
 
@@ -84,6 +91,106 @@ def best_twist(P, F, a):
     return float(np.degrees(np.arctan2(s, c)))
 
 
+def read_mesh(path):
+    """A native Unity Mesh .asset: positions, normals, TEXCOORD2 (plate centre + index), indices."""
+    text = open(path, encoding="utf-8").read()
+    vc = int(re.search(r"m_VertexCount: (\d+)", text).group(1))
+    idx = np.frombuffer(bytes.fromhex(re.search(r"m_IndexBuffer: ([0-9a-f]+)", text).group(1)), dtype="<u2").astype(int)
+    raw = bytes.fromhex(re.search(r"_typelessdata: ([0-9a-f]+)", text).group(1))
+    a = np.frombuffer(raw, dtype="<f4").reshape(vc, len(raw) // vc // 4).astype(float)
+    if a.shape[1] != 16:
+        raise SystemExit(f"{os.path.relpath(path, ROOT)}: expected the 64-byte prism layout (pos, normal, tangent, uv0, uv2)")
+    return a[:, 0:3], a[:, 12:16], idx
+
+
+def align_directions(src, dst):
+    """The rotation carrying the unit directions `src` onto the set `dst` (icosahedral: any of the symmetric
+    solutions), found from one direction and its nearest neighbour; None if no rotation fits."""
+    j = int(np.argsort(-(src @ src[0]))[1])
+    frame = lambda n, i, k: (lambda a, b: np.stack([a, b, np.cross(a, b)]))(n[i], (n[k] - n[i] * (n[k] @ n[i])) / np.linalg.norm(n[k] - n[i] * (n[k] @ n[i])))
+    for i in range(len(dst)):
+        for k in range(len(dst)):
+            if k == i or abs(dst[i] @ dst[k] - src[0] @ src[j]) > ALIGN_FIT:
+                continue
+            R = frame(dst, i, k).T @ frame(src, 0, j)
+            if np.max(np.min(np.linalg.norm(dst[None] - (R @ src.T).T[:, None], axis=2), axis=1)) < ALIGN_FIT:
+                return R
+    return None
+
+
+def game_mass(d, M):
+    """`d` with its Mass crystal replaced by the GAME's (MassCrystalPrisms.asset - MassCrystalExport1's 60 prisms,
+    baked seated), turned and scaled onto the art file's Mass crystal, with the designer's wedge morph re-derived
+    on it. The game mesh is the art Mass crystal turned a quarter turn about Z at another scale (plate centres
+    agree to 4e-4) with thinner prisms, so every site keeps its three prisms. Returns (d, mesh scale)."""
+    pos, uv2, idx = read_mesh(MASS_MESH)
+    plate = np.round(uv2[:, 3]).astype(int)
+    key, corner, verts, vplate = {}, np.zeros(len(pos), int), [], []
+    for i, (p, q) in enumerate(zip(pos, plate)):
+        k = (q,) + tuple(np.round(p, 5))
+        if k not in key:
+            key[k] = len(verts)
+            verts.append(p)
+            vplate.append(q)
+        corner[i] = key[k]
+    G, vplate = np.array(verts), np.array(vplate)
+    art = next(c for c in d["crystals"] if c["element"] == "Mass")
+    B, ap = pts(art["basis"]) @ M.T, np.array(art["plate"])
+    n_art = ap.max() + 1
+    if vplate.max() + 1 != n_art or len(G) != len(B):
+        raise SystemExit(f"MassCrystalPrisms has {vplate.max() + 1} plates / {len(G)} corners; the art Mass crystal {n_art} / {len(B)}")
+    cA = np.array([B[ap == q].mean(axis=0) for q in range(n_art)])
+    cG = np.array([G[vplate == q].mean(axis=0) for q in range(n_art)])
+    nA, nG = cA / np.linalg.norm(cA, axis=1)[:, None], cG / np.linalg.norm(cG, axis=1)[:, None]
+    R = align_directions(nG, nA)
+    if R is None:
+        raise SystemExit("MassCrystalPrisms does not turn onto the art file's Mass crystal - its prisms moved")
+    match = np.argmin(np.linalg.norm(nA[None] - (R @ nG.T).T[:, None], axis=2), axis=1)
+    if len(set(match.tolist())) != n_art:
+        raise SystemExit("MassCrystalPrisms: two game prisms claim one art prism")
+    scale = float(np.linalg.norm(cA, axis=1).mean() / np.linalg.norm(cG, axis=1).mean())
+    worst = float(np.max(np.linalg.norm((R @ cG.T).T * scale - cA[match], axis=1)))
+    if worst > 1e-3:
+        raise SystemExit(f"MassCrystalPrisms' prism centres miss the art Mass crystal's by {worst:.1e}")
+    first = {}
+    for i, q in enumerate(art["plate"]):
+        first.setdefault(q, i)
+    out = json.loads(json.dumps(d))
+    c = next(x for x in out["crystals"] if x["element"] == "Mass")
+    c["basis"] = [float(x) for x in (((R @ G.T).T * scale) @ M).ravel()]     # Unity -> the lab's Blender frame
+    c["plate"] = [int(q) for q in vplate]
+    c["tris"] = [int(x) for x in corner[idx]]
+    c["lands"] = [art["lands"][first[int(match[q])]] for q in vplate]
+    c.pop("key1", None)
+    stage1, final, twists, plate_twist, plate_axis = lab.wedge_targets(out, "Mass")
+    c["stage1"], c["wedge"] = [float(x) for x in stage1.ravel()], [float(x) for x in final.ravel()]
+    c["plateTwist"], c["plateAxis"] = plate_twist, plate_axis
+    c["meshScale"] = scale
+    return out, scale
+
+
+def game_triangles(d, M):
+    """The rotation carrying the game's omni triangle prisms (OmniCrystalTriangles.asset) onto the art omni's
+    triangle plates, every corner within TRI_FIT: the converter draws the game's mesh, turned by it."""
+    pos, uv2, _ = read_mesh(TRI_MESH)
+    plate = np.round(uv2[:, 3]).astype(int)
+    O, op = pts(d["omni"]["verts"]) @ M.T, np.array(d["omni"]["plate"])
+    owner = d["omniFx"]["plateOwner"]
+    art = [q for q in range(op.max() + 1) if owner[q] == "Mass"]
+    cA = np.array([O[op == q].mean(axis=0) for q in art])
+    cG = np.array([np.unique(np.round(pos[plate == q], 6), axis=0).mean(axis=0) for q in range(plate.max() + 1)])
+    if len(cG) != len(cA):
+        raise SystemExit(f"OmniCrystalTriangles has {len(cG)} prisms; the omni {len(cA)} triangles")
+    R = align_directions(cG / np.linalg.norm(cG, axis=1)[:, None], cA / np.linalg.norm(cA, axis=1)[:, None])
+    if R is None:
+        raise SystemExit("OmniCrystalTriangles does not turn onto the omni's triangles")
+    corners = np.vstack([O[op == q] for q in art])
+    worst = float(max(np.min(np.linalg.norm(corners - x, axis=1)) for x in (R @ pos.T).T))
+    if worst > TRI_FIT:
+        raise SystemExit(f"OmniCrystalTriangles misses the omni's triangles by {worst:.2e}")
+    return R
+
+
 def convert(d, M, axis_m=None):
     """The lab's data in frame M, in the JsonUtility schema. `axis_m` overrides the axis map (self-test)."""
     A = axis_map(M) if axis_m is None else axis_m
@@ -98,6 +205,8 @@ def convert(d, M, axis_m=None):
         site = [d["omni"]["plate"][c["lands"][first[q]]] for q in range(len(first))]
         out = {"element": element, "basis": P(c["basis"]), "tris": c["tris"], "plate": c["plate"],
                "plateSite": site, "offset": r5(M @ np.asarray(c["offset"], dtype=float))}
+        if "meshScale" in c:
+            out["meshScale"] = round(float(c["meshScale"]), 6)
         if "wedge" in c:
             out["final"], out["stage1"] = P(c["wedge"]), P(c["stage1"])
             out["plateAxis"] = r5(np.asarray(c["plateAxis"], dtype=float) @ A.T)
@@ -137,6 +246,7 @@ def convert(d, M, axis_m=None):
         "arcs": {"speed": fx["arcs"]["speed"], "length": fx["arcs"]["length"], "duty": fx["arcs"]["duty"]},
         "tumble": {"speed": fx["chargeTumble"]["speed"], "direction": [float(x) for x in fx["chargeTumble"]["direction"]]},
         "spin": {"cycleSpeed": fx["spaceSpin"]["cycleSpeed"], "pause": fx["spaceSpin"]["pause"]},
+        "omniTriangleRotation": [round(float(x), 6) for x in np.asarray(d.get("triangleRotation", np.eye(3))).ravel()],
     }
 
 
@@ -189,8 +299,17 @@ def meta_folder(g):
     return f"fileFormatVersion: 2\nguid: {g}\nfolderAsset: yes\nDefaultImporter:\n  externalObjects: {{}}\n  userData: \n  assetBundleName: \n  assetBundleVariant: \n"
 
 
+def unity_data():
+    """The lab's data with the game's own Mass crystal and omni triangles (the shipped asset; the lab frame keeps
+    the art file's Mass crystal, so the parity harness still compares like with like)."""
+    M = FRAMES["unity"]
+    d, _ = game_mass(lab.build(), M)
+    d["triangleRotation"] = game_triangles(d, M)
+    return d
+
+
 def files(frame="unity"):
-    out = convert(lab.build(), FRAMES[frame])
+    out = convert(unity_data() if frame == "unity" else lab.build(), FRAMES[frame])
     validate(out)
     return {OUT: render(out), OUT + ".meta": meta_json(guid("OmniCombineData.json")),
             FOLDER + ".meta": meta_folder(guid("folder"))}, out
@@ -222,6 +341,32 @@ def self_test():
     check("a polar (unflipped) axis map is refused: Charge would twist the wrong way",
           refused(lambda: validate(convert(d, M, axis_m=M))))
     check("the designer's order is Space, Charge, Mass, Time", [c["element"] for c in out["crystals"]] == ORDER)
+    shipped = convert(unity_data(), M)
+    validate(shipped)
+    mass = shipped["crystals"][ORDER.index("Mass")]
+    check("the shipped Mass crystal is the game's MassCrystalPrisms (60 prisms, 480 triangles), its wedges re-proved",
+          len(mass["plate"]) == 360 and max(mass["plate"]) == 59 and len(mass["tris"]) == 1440 and 0.5 < mass["meshScale"] < 1)
+    R = np.array(shipped["omniTriangleRotation"]).reshape(3, 3)
+    check("the game's omni triangles turn onto the omni by a proper rotation", abs(np.linalg.det(R) - 1) < 1e-4)
+    def perturbed(path, plate_index, fn):
+        """read_mesh, with one prism of `path` moved by `fn` (a negative control)."""
+        real = read_mesh
+
+        def fake(p):
+            pos, uv2, idx = real(p)
+            if p == path:
+                pos = pos.copy()
+                sel = np.round(uv2[:, 3]).astype(int) == plate_index
+                pos[sel] = fn(pos[sel])
+            return pos, uv2, idx
+        return fake
+    global read_mesh
+    real_read = read_mesh
+    read_mesh = perturbed(TRI_MESH, 0, lambda q: q.mean(axis=0) + 0.95 * (q - q.mean(axis=0)))
+    check("a triangle mesh with one prism 5% small is refused", refused(lambda: game_triangles(unity_data(), M)))
+    read_mesh = perturbed(MASS_MESH, 7, lambda q: q + 0.05)
+    check("a Mass mesh with one prism moved is refused", refused(lambda: game_mass(lab.build(), M)))
+    read_mesh = real_read
     check("every omni plate has an owning element", all(0 <= o < 4 for o in out["omni"]["plateOwner"]))
     bad = convert(d, M)
     bad["crystals"][3]["final"] = bad["crystals"][3]["final"][:-3]

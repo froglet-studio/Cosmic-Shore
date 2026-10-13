@@ -41,6 +41,8 @@ FOLDER = os.path.join(ROOT, "Assets", "_SO_Assets", "Environment", "OmniCombine"
 CONFIG = os.path.join(FOLDER, "OmniCombineConfig.asset")
 DATA_META = os.path.join(FOLDER, "OmniCombineData.json.meta")
 MATS = os.path.join(ROOT, "Assets", "_Graphics", "Materials", "CrystalMaterials")
+TRI_MESH = os.path.join(ROOT, "Assets", "_Models", "OmniCrystalTriangles.asset")
+DEPTH_PROFILE = os.path.join(ROOT, "Assets", "_SO_Assets", "Environment", "CrystalDepthPrismProfile.asset")
 SCRIPTS = {
     "OmniCombineCore": "Assets/_Scripts/Utility/OmniCombineCore.cs",
     "OmniCombineConfigSO": "Assets/_Scripts/Controller/Environment/Crystals/OmniCombineConfigSO.cs",
@@ -136,7 +138,11 @@ def config_asset(guids):
              f"  chargeMaterial: {mat('ChargeCrystalMaterial')}",
              f"  shellMaterial: {mat('OmniCrystalBody')}",
              f"  omniMaterial: {mat('OmniCrystalBody')}",
-             f"  omniChargeEdgesMaterial: {mat('OmniChargeEdges')}"]
+             f"  omniChargeEdgesMaterial: {mat('OmniChargeEdges')}",
+             f"  massMaterial: {mat('MassDepthPrisms')}",
+             f"  omniTrianglesMaterial: {mat('OmniDepthPrisms')}",
+             f"  omniTrianglesMesh: {{fileID: 4300000, guid: {meta_guid(TRI_MESH)}, type: 2}}",
+             f"  depthProfile: {{fileID: 11400000, guid: {meta_guid(DEPTH_PROFILE)}, type: 2}}"]
     lines += [f"  {k}: {v}" for k, v in CONFIG_VALUES]
     return "\n".join(lines) + "\n"
 
@@ -265,7 +271,8 @@ def planned():
     if not os.path.exists(DATA_META):
         raise SystemExit("OmniCombineData.json is not authored: run Tools/Build/author_omni_combine_asset.py first")
     fields = set(serialized_fields(os.path.join(ROOT, SCRIPTS["OmniCombineConfigSO"])))
-    keys = {"combineData", "chargeMaterial", "shellMaterial", "omniMaterial", "omniChargeEdgesMaterial"} | {k for k, _ in CONFIG_VALUES}
+    keys = {"combineData", "chargeMaterial", "shellMaterial", "omniMaterial", "omniChargeEdgesMaterial", "massMaterial",
+            "omniTrianglesMaterial", "omniTrianglesMesh", "depthProfile"} | {k for k, _ in CONFIG_VALUES}
     if fields != keys:
         raise SystemExit(f"OmniCombineConfig keys and OmniCombineConfigSO's fields disagree: "
                          f"asset-only {sorted(keys - fields)}, script-only {sorted(fields - keys)}")

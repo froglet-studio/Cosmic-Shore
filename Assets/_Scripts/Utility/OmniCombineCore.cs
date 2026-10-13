@@ -23,6 +23,8 @@ namespace CosmicShore.Utility
         public OmniCombineArcData arcs;
         public OmniCombineTumbleData tumble;
         public OmniCombineSpinData spin;
+        /// <summary>Row-major 3x3: turns the game's OmniCrystalTriangles.asset onto this omni's triangle plates.</summary>
+        public float[] omniTriangleRotation;
     }
 
     [Serializable] public sealed class OmniCombineMeshData
@@ -43,6 +45,8 @@ namespace CosmicShore.Utility
         /// <summary>Per plate: the omni plate it lands on (Charge 5 and Mass 3 share one).</summary>
         public int[] plateSite;
         public float[] offset;
+        /// <summary>Mass: stage units per unit of the game's MassCrystalPrisms mesh this crystal IS (0 for the art file's).</summary>
+        public float meshScale;
         /// <summary>Per vertex: where it lands in the omni (Charge/Mass wedges, Time's rigid pose, Space's Key 1).</summary>
         public float[] final;
         /// <summary>Charge/Mass: the pose after each petal's back sucks in (Mass: the basis).</summary>
@@ -119,6 +123,9 @@ namespace CosmicShore.Utility
         public double MorphStart, MorphLength, SiteSpread, Suck, EffectFade;
         /// <summary>Offset added to the flip wave, spin and squares clocks, so two plays never flip in step.</summary>
         public double EffectPhase;
+        /// <summary>The Mass prisms' depth effect is drawn by the game's depth-prism shader (the converter), not
+        /// moved here on the CPU (the lab, whose stateless model this core otherwise reproduces).</summary>
+        public bool ShaderDepth;
 
         public static OmniCombineParams LabDefault => new OmniCombineParams
         {
@@ -211,7 +218,13 @@ namespace CosmicShore.Utility
         /// it waits, 0 once it has set off) - the Unity side fades the Charge discharge by it.
         /// <paramref name="towardCamera"/> is the unit direction from the stage centre to the camera.
         /// </summary>
-        public void Pose(double t, in OmniCombineParams p, D3 towardCamera, float[][] positions, float[] effect)
+        public void Pose(double t, in OmniCombineParams p, D3 towardCamera, float[][] positions, float[] effect) =>
+            Pose(t, p, towardCamera, positions, effect, null, null);
+
+        /// <summary>As above, also writing each crystal's flight centre (<paramref name="centres"/>, 3 per crystal) and
+        /// how far each of its plates has morphed (<paramref name="plateMorph"/>[element][plate], 0..1).</summary>
+        public void Pose(double t, in OmniCombineParams p, D3 towardCamera, float[][] positions, float[] effect,
+                         float[] centres, float[][] plateMorph)
         {
             Seed(p.Seed);
             double te = t + p.EffectPhase;
@@ -238,11 +251,12 @@ namespace CosmicShore.Utility
                     var pl = c.Plates[q];
                     double start = mS + p.SiteSpread * c.PlateR[q] * (1 - p.MorphLength - mS);
                     double w = Smooth((u - start) / p.MorphLength);
+                    if (plateMorph != null) plateMorph[k][q] = (float)w;
                     Flip flip = default;
                     double seatScale = 1;
                     D3 seatLift = default;
                     if (fxIdle > 0 && k == Time) flip = FlipPose(_timeRig, q, pl, te, TimeFlipSalt, fxIdle);
-                    if (fxIdle > 0 && k == Mass)
+                    if (fxIdle > 0 && k == Mass && !p.ShaderDepth)
                     {
                         double sd = SeatOf(pl.Dir, towardCamera);
                         seatScale = 1 + (Data.depth.massSizeStart - 1) * (1 - sd) * fxIdle;
@@ -288,6 +302,12 @@ namespace CosmicShore.Utility
                         outPos[3 * i + 2] = (float)v.Z;
                     }
                 }
+                if (centres != null)
+                {
+                    centres[3 * k] = (float)centre.X;
+                    centres[3 * k + 1] = (float)centre.Y;
+                    centres[3 * k + 2] = (float)centre.Z;
+                }
             }
         }
 
@@ -326,7 +346,7 @@ namespace CosmicShore.Utility
                     if (!f.Valid) continue;
                     foreach (int i in pl.Idx) Write(positions, i, ApplyFlip(f, pl, V(ov, i)));
                 }
-                else if (owner == Mass)
+                else if (owner == Mass && !p.ShaderDepth)
                 {
                     double s = SeatOf(pl.Dir, towardCamera);
                     double sc = 1 + (Data.depth.omniSizeStart - 1) * (1 - s) * fx;

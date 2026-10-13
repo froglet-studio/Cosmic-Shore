@@ -56,6 +56,33 @@ namespace CosmicShore.Tests
             Assert.AreEqual(240, core.VertexCount(OmniCombineCore.Time));
             Assert.AreEqual(960 * 3, data.omni.verts.Length);
             Assert.Greater(data.crystals[OmniCombineCore.Space].idle.keys.Length, 0, "the Space crystal's idle spin keys");
+            Assert.Greater(data.crystals[OmniCombineCore.Mass].meshScale, 0f, "the Mass crystal is the game's MassCrystalPrisms");
+            Assert.AreEqual(9, data.omniTriangleRotation.Length);
+        }
+
+        [Test]
+        public void TheGamesTrianglePrismsSitOnTheOmnisTriangles()
+        {
+            // The converter draws OmniCrystalTriangles.asset turned by the data's rotation; every corner must land on a
+            // corner of the omni's triangle plates (the art file's omni), through the very quaternion the player builds.
+            var data = LoadData();
+            var mesh = AssetDatabase.LoadAssetAtPath<Mesh>("Assets/_Models/OmniCrystalTriangles.asset");
+            Assert.IsNotNull(mesh);
+            var turn = OmniCombinePlayer.TriangleRotation(data.omniTriangleRotation);
+            var omni = data.omni.verts;
+            float worst = 0f;
+            foreach (var v in mesh.vertices)
+            {
+                var p = turn * v;
+                float nearest = float.MaxValue;
+                for (int j = 0; j < omni.Length; j += 3)
+                {
+                    if (data.omni.plateOwner[data.omni.plate[j / 3]] != OmniCombineCore.Mass) continue;
+                    nearest = Mathf.Min(nearest, Vector3.Distance(p, new Vector3(omni[j], omni[j + 1], omni[j + 2])));
+                }
+                worst = Mathf.Max(worst, nearest);
+            }
+            Assert.Less(worst, 1e-3f, "the game's triangle prisms do not sit on the omni's triangles");
         }
 
         [Test]
@@ -201,6 +228,11 @@ namespace CosmicShore.Tests
             Assert.IsNotNull(config.ShellMaterial);
             Assert.IsNotNull(config.OmniMaterial);
             Assert.IsNotNull(config.OmniChargeEdgesMaterial);
+            Assert.IsNotNull(config.MassMaterial, "the Mass crystal draws with the game's depth-prism material");
+            Assert.IsNotNull(config.OmniTrianglesMaterial);
+            Assert.IsNotNull(config.OmniTrianglesMesh);
+            Assert.IsTrue(config.OmniTrianglesMesh.isReadable, "the converter reads the triangles' plate centres");
+            Assert.IsNotNull(config.DepthProfile);
             var rng = new System.Random(3);
             for (int i = 0; i < 200; i++)
             {

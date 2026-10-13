@@ -28,12 +28,22 @@ namespace CosmicShore.Gameplay
         [Header("Materials")]
         [Tooltip("The Charge crystal. ChargeCrystalMaterial: its discharge needs the edge bake, which the player runs on its own mesh.")]
         [SerializeField] Material chargeMaterial;
-        [Tooltip("The Space, Mass and Time crystals. OmniCrystalBody: the omni's own body material - the same lime pair every elemental crystal ships in - so those three plates do not change look when the omni takes over. (Mass's in-game depth-prism material needs per-plate UV data this mesh does not carry.)")]
+        [Tooltip("The Space and Time crystals. OmniCrystalBody: the omni's own body material - the same lime pair every elemental crystal ships in - so those plates do not change look when the omni takes over.")]
         [SerializeField] Material shellMaterial;
+        [Tooltip("The Mass crystal, as it is drawn in play: MassDepthPrisms (the depth-prism shader). The crystal itself is the game's MassCrystalPrisms mesh, carried in the combine data.")]
+        [SerializeField] Material massMaterial;
         [Tooltip("The finished omni crystal's body. OmniCrystalBody.")]
         [SerializeField] Material omniMaterial;
         [Tooltip("The discharge on the omni's twelve pentagons. OmniChargeEdges (additive, drawn over the body).")]
         [SerializeField] Material omniChargeEdgesMaterial;
+        [Tooltip("The omni's triangles, as they are drawn in play: OmniDepthPrisms.")]
+        [SerializeField] Material omniTrianglesMaterial;
+
+        [Header("Depth prisms (the game's)")]
+        [Tooltip("The omni's triangle prisms: OmniCrystalTriangles.asset (Read/Write), turned onto the combine's omni by the rotation in the combine data.")]
+        [SerializeField] Mesh omniTrianglesMesh;
+        [Tooltip("How the Mass prisms and the omni's triangles ride their columns by depth: the profile CrystalDepthPrisms uses in play.")]
+        [SerializeField] CrystalDepthPrismProfileSO depthProfile;
 
         [Header("Choreography - drawn per play from each range (min, max)")]
         [Tooltip("Seconds the four idle, each doing its own effect, before the first sets off.")]
@@ -82,6 +92,10 @@ namespace CosmicShore.Gameplay
         public Material ShellMaterial => shellMaterial;
         public Material OmniMaterial => omniMaterial;
         public Material OmniChargeEdgesMaterial => omniChargeEdgesMaterial;
+        public Material MassMaterial => massMaterial;
+        public Material OmniTrianglesMaterial => omniTrianglesMaterial;
+        public Mesh OmniTrianglesMesh => omniTrianglesMesh;
+        public CrystalDepthPrismProfileSO DepthProfile => depthProfile;
         public float FadeInSeconds => fadeInSeconds;
         public float HandOffSeconds => handOffSeconds;
         public float OmniWorldRadius => omniWorldRadius;

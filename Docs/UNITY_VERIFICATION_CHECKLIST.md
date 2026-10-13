@@ -78,10 +78,17 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
   adopts the game camera's image, on unscaled time, only while ARK is the active screen.
 - **`OmniCombinePlayer`** builds the four crystals and the omni from the art file's geometry
   (`OmniCombineData.json`) and moves them every frame with `OmniCombineCore`, the lab's pose ported line
-  for line. Charge wears `ChargeCrystalMaterial` with the game's discharge bake run on its mesh; Space,
-  Mass and Time wear `OmniCrystalBody` (Mass's depth-prism material needs per-plate UV data this mesh does
-  not carry); the omni's pentagons get the `OmniChargeEdges` overlay. Every press draws a new
-  choreography from `OmniCombineConfig.asset`'s ranges.
+  for line. Charge wears `ChargeCrystalMaterial` with the game's discharge bake run on its mesh; Space and
+  Time wear `OmniCrystalBody`; the omni's pentagons get the `OmniChargeEdges` overlay. Every press draws a
+  new choreography from `OmniCombineConfig.asset`'s ranges.
+- **Revision 2 (same day, after the first look):**
+  - **Mass is the game's crystal:** `MassCrystalPrisms.asset` on `MassDepthPrisms.mat`, its columns
+    stepped by the game's ratchet and profile against the converter camera.
+  - **The omni's triangles are the game's:** `OmniCrystalTriangles.asset` on `OmniDepthPrisms.mat`, with
+    the body's holes cut.
+  - **The hand-off:** the depth shader's shape blends from Mass's to the triangles' as the prisms morph.
+  - **The picture** renders at screen pixels ×2, with 4× MSAA and SMAA.
+  - **The button** sits 56 units above the bottom (the nav bar is at the top).
 
 **Not opened in Unity** (no editor / `unity` CLI in the session). Offline: `unity_refcompile` player and
 editor 0 errors in project code, negative-controlled on the new view, the player, the new test file and
@@ -100,7 +107,9 @@ wait moves at most 0.039 omni radii a frame). Two mutations (a flip salt, the se
    CONVERT button above the nav bar. If the picture is black or the crystals are white silhouettes, the
    offscreen camera lost post-processing (`OffscreenCameraSetup`).
 3. Press CONVERT. Space flies in and blends into its squares; then Charge (each petal's back sucks in,
-   then the five untwist and flatten into the pentagon); then Mass (three wedges per triangle); then Time
+   then the five untwist and flatten into the pentagon); then Mass (while it waits it must look like a
+   Mass crystal in play: prisms riding their columns by depth as the camera circles, faces parting at the
+   back; as it flies they seal, then three wedges fold into each triangle); then Time
    locks in rigidly. Each lands as the next sets off. The omni then dithers in over the landed plates and
    wakes its four effects (flip wave, squares weave, depth prisms, discharge on the pentagons). The camera
    eases in as each crystal lands (it frames what is on stage now, over 1.6 s), ending close on the omni.
@@ -113,7 +122,9 @@ wait moves at most 0.039 omni radii a frame). Two mutations (a flip salt, the se
 8. Console: no `OmniCombinePlayer` / `CrystalEdgeArcMeshBaker` error. Watch for: Charge with no discharge
    (the bake found no crease), black or inside-out faces (winding), seams at the hand-off.
 9. Look for: back-face culling on the Charge crystal (its shader is `Cull Back`); the scale of the
-   shells' `_Spread` push at `omniWorldRadius` 4; whether 1280-px picture is sharp enough.
+   shells' `_Spread` push at `omniWorldRadius` 4; jaggies or softness in the picture (raise
+   `supersampling` to 3 or `msaaSamples` to 8 on `ElementalConverter`); a seam or pop where the omni's
+   triangles take over from the landed Mass wedges (there should be none).
 
 ---
 

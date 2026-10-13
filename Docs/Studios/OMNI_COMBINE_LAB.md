@@ -273,7 +273,7 @@ ends close on the omni.
 | `OmniCombineData.json` | `Assets/_SO_Assets/Environment/OmniCombine/` | The lab's data block in Unity's axes and a JsonUtility schema (`Tools/Build/author_omni_combine_asset.py`, `--check`, `--self-test` 8/8) |
 | `OmniCombineConfigSO` / `OmniCombineConfig.asset` | `Controller/Environment/Crystals/`, same folder | The data, the materials, and the per-play RANGES (`Tools/Build/author_elemental_converter.py`) |
 | `OmniCombinePlayer` | `Controller/Environment/Crystals/` | Builds the meshes and writes them every frame |
-| `ElementalConverterView` | `Assets/_Scripts/UI/Elements/` | The Ark screen: an off-screen stage, a hand-stepped camera, the picture, the title and CONVERT |
+| `ElementalConverterView` | `Assets/_Scripts/UI/Elements/` | The Ark screen: an off-screen stage, a hand-stepped camera (screen-pixel × 2 supersampling, 4× MSAA, SMAA), the picture, the title and CONVERT |
 
 **Separate, slow, and never the same twice.** The game's defaults differ from the lab's in one way: the
 next crystal sets off as the last one lands (stagger 0.95 to 1.05 of the flight), so each animation plays on
@@ -297,10 +297,42 @@ From the press to the omni fully awake takes about 19 to 24 s.
   off.
 - **Hand-off:** the omni appears ON TOP of the landed plates before it moves anything, so there is no frame
   where a plate is missing. Its four effects then ramp in from rest.
-- **Materials:** Space, Mass and Time wear `OmniCrystalBody`, the omni's own body material and the same lime
-  pair every elemental crystal ships in, so those plates do not change look at the hand-off. Charge wears
+- **Materials:** Space and Time wear `OmniCrystalBody`, the omni's own body material and the same lime pair
+  every elemental crystal ships in, so those plates do not change look at the hand-off. Charge wears
   `ChargeCrystalMaterial`, so its pentagons do change from the Charge body to the omni body as the omni
   dithers over them.
+
+**Mass is the game's own crystal (revision 2, 2026-10-13).** The designer asked for "the mass crystal so it is
+consistent with the gameplay, even if it means rebuilding". The first build drew the art file's Mass slabs in the
+shell material with the lab's stateless CPU depth model. Now:
+- **The mesh** is `MassCrystalPrisms.asset`, the 60 prisms the game draws. `author_omni_combine_asset.py`
+  reads its vertex buffer, finds it is the art file's Mass crystal turned a quarter turn about Z (plate
+  centres agree to 4e-4 after the turn and a 0.7355 scale; the prisms are thinner), and re-derives the wedge
+  morph on the GAME mesh with the lab's own `wedge_targets`. The untwist is 31.61° (31.51° on the art mesh).
+  The tiling gate passes.
+- **The look and the depth effect** are the game's: `MassDepthPrisms.mat` on `OmniDepthPrismShader`, each
+  column stepped by `DepthRatchet` with `CrystalDepthPrismProfile.asset` against the converter's camera, as
+  `CrystalDepthPrisms` does in play. The Mass object sits at the crystal's flight centre, so the columns
+  rise from the crystal's own centre. The effect ramps to sealed as the crystal sets off.
+- **The omni's triangles** are the game's `OmniCrystalTriangles.asset` on `OmniDepthPrisms.mat`, turned onto
+  the omni by a rotation the generator solves and gates (every corner within 1e-4; found at 2e-5). The body
+  has its 20 triangle holes cut, as `CrystalDepthPrisms` cuts them in play. When the omni wakes, its
+  triangles start riding their columns.
+- **The hand-off is exact by construction:**
+  - As each Mass prism morphs, its column centre (TEXCOORD2) slides from its own centre to its triangle's.
+  - The depth shader's shape (thickness, top-face height, plate radius, reach, split, start size) blends from
+    the Mass material's values to the triangles'. The Mass values are scaled from the game Mass mesh's units
+    into the stage's.
+  - So the three landed wedges extrude exactly as the omni's triangle prism does, and the shader's map is
+    affine per plate.
+
+**Picture quality (revision 2).** The first build rendered 1280 px along the picture's long edge and stretched
+it over the screen with no anti-aliasing: low resolution and jagged. It now renders at the picture's
+on-screen PIXEL size times 2 (an exact box filter on the way down), with 4× MSAA on the target. It uses the
+game camera's post AA, or SMAA High when the game has none, and HDR. All of these are inspector fields on
+`ElementalConverterView` (`supersampling`, `msaaSamples`, `maxTextureSize`). The CONVERT button sits 56 units
+above the bottom. The nav bar is at the TOP of the screen, so the first build's 230-unit clearance was
+guarding against nothing.
 
 **How it was proved without an editor.**
 - `Tools/Build/omni_combine_parity/run.sh` compiles the shipped `OmniCombineCore.cs` in .NET and runs it
@@ -342,10 +374,21 @@ From the press to the omni fully awake takes about 19 to 24 s.
    That second rule was a no-op only because ARK was disabled. Opening ARK without removing both would
    have dragged every guest onto the converter whenever the host opened a card.
 
+6. **The shipped elemental meshes ARE the art file's, turned.** Round 1 said Charge, Mass and Time "do NOT
+   match the shipped FBXs after a uniform scale", but it never tried a rotation.
+   - Mass is the art Mass turned a quarter turn about Z.
+   - The omni's triangle prisms are the art omni's turned by a five-fold rotation.
+   - Charge's plate directions align with the art Charge's under one proper rotation once Unity's x-flip
+     import is applied, and not without it, which is the chirality showing.
+   - Time aligns too, though its symmetry makes that weak evidence.
+
+   So the converter could put Charge and Time on their game meshes the same way Mass now is.
+
 **Not modelled / next**
-- **Mass:** it is drawn with the shell material and the lab's CPU depth model, not the game's depth-prism
-  shader (that needs per-plate UV2 the art mesh does not carry).
+- **Charge and Time:** they are still the art file's meshes (finding 6 says the game's would fit). Time wears
+  the omni body material, not its in-game Lime Fresnel on the rigged FBX.
 - **Space:** its idle spin is the art file's, on squares, not the shipped kites.
 - **The economy:** the converter does not yet spend elemental crystals or credit omni crystals; no such
   balances exist yet.
-- **The meshes:** the shipped elemental meshes still differ from the art file's.
+- **The Mass size:** the converter keeps the art file's relative sizes (Mass at 0.47 of the omni's radius). In
+  play the Mass crystal is 0.29 of the omni's.
