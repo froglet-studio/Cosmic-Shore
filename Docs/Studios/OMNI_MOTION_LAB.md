@@ -1,6 +1,6 @@
 # Omni Motion Lab
 
-A browser lab for the next round of the omni crystal's element effects (round 3: hop clear for Space and Time, bolder Mass that rises while hidden, the Wandering arc in the seams between the Charge blooms). It covers four asks:
+A browser lab for the next round of the omni crystal's element effects (round 4: the Charge crystal seam walk and the omni flux arc; round 3: hop clear for Space and Time, bolder Mass that rises while hidden, the Wandering arc in the seams between the Charge blooms). It covers four asks:
 
 1. **Mass:** the triangle prisms seal fully once they cross into the camera's visible hemisphere.
 2. **Space:** the squares make two moves per loop instead of three. The two triangle steps become one smooth move.
@@ -14,6 +14,62 @@ The lab has styles, sliders for each ask, a beat timeline and a side-by-side omn
 - **Data:** the same block as the Omni Combine Lab, stamped into both pages by `python3 Tools/Build/omni_combine_lab_assets.py`. `--check` fails if either page is stale. The omni prism thickness is imported from `author_omni_crystal_triangles.DEPTH_THICKNESS`.
 - **Verify:** `node .claude/skills/labmaker/verify_lab.cjs Docs/Studios/OmniMotionLab.html`
 - **Hooks:** `window.__lab.runFullBatch()`, `runChargeBatch()`, `clipTimeline(p)`, `clipSelfTest()`, `beatsOf(p)`, `squaresAt(p, t)`, `wavesAt(p, t)`, `sealOf(p, D)`
+
+## Round 4 (2026-10-13): seam walk on the Charge crystal, flux arc on the omni
+
+The designer, after round 3: "Give me an option that keeps everything the same, but:
+- for the Charge crystal, it just persists with a bolt randomly travelling through the triple junctions forever (no Tesla core or discharge);
+- for the omni crystal, slow down the pentagonal movement by 10%, and use a different effect similar to the dipole, but don't ripple the lit state; just light up the pentagon that is charging or discharging;
+- it should look good where it mates with the pentagon on both sides, smoothly fork to all 5 points of the pentagon at both ends, and keep the single thicker beam in the middle of each arc."
+
+**The option:** style **"Round 4: seam walk + flux arc"** is Round 3 with three changes:
+- the Charge crystal wears the Seam walk;
+- the omni wears the Flux arc;
+- the squares' pentagon turn is 1.56 s → **1.733 s** (10% slower).
+
+"The pentagonal movement" is read as the squares' turn round the pentagon, the only motion of that name; Mass's triangles move with the camera, not a clock.
+
+**New: the omni can wear its own Charge effect** (`chModeOmni`, Charge tab, "Same as the Charge crystal" by default). The split view labels each side with its effect. The gallery's Show button sets both back to one effect.
+
+**Seam walk (effect 19).** This is the round-3 arc's crawl with no start and no end.
+- One bolt walks the 30 seams between the 12 blooms forever, through the 20 triple junctions. It never goes straight back, and never takes a fifth seam round one bloom.
+- Each seam is struck in 0.07 s and held 0.1–0.28 s, flickering; the trail fades over 0.85 s.
+- The walk is one seeded infinite sequence, cached as it is needed, so any t gives the same picture.
+- No core, no escape, no discharge. The petals beside the bolt light.
+
+**Flux arc (effect 20).** Every 0.9 s (÷ Rate) a discharge starts:
+- **Charge:** a pentagon charges for 0.45 s, and only it lights.
+- **Strike:** an arc strikes in 0.06 s to a pentagon 55–125° away.
+- **Hold:** the arc holds 0.45 s while the sink lights.
+- **Fade:** both pentagons and the arc fade over 0.45 s.
+- **Nothing else:** no other pentagon lights (no ripple, no tumbling axis), and nothing moves.
+- **Shape:** the arc's centre runs on the great circle between the two pentagons, lifted by 0.16–0.46 of the radius depending on how far apart they are.
+- **The fork:** five strands leave the five corners of the source pentagon and merge smoothly into the centre over the first 30% of the arc, then split smoothly onto the sink's five corners over the last 30%. Between, the arc is one beam three times as thick as a strand.
+- **No crossing strands:** each strand is paired with the sink corner it would reach if the source pentagon were turned onto the sink. On the Charge crystal the "corners" are the bloom's five triple junctions.
+
+**Measured** (`runFullBatch` deterministic; `runChargeBatch` on the omni, 12 s):
+
+| | Overlap % | Loop s | Visible clips % | Height seen | Rises seen |
+|---|---|---|---|---|---|
+| Round 3 | 0 | 8.16 | 1.8 (Mass×Space, limb) | 7.35 / 7.22 | 0 |
+| Round 4 | 0 | 8.33 | 3.0 (Mass×Space, limb) | 7.35 / 7.22 | 0 |
+
+The slower pentagon turn spends longer in its hop, so a raised prism at the limb meets a hopping square in a few more frames.
+
+| Effect | Charge clips % | Travel % | Bolts / frame | Peak light |
+|---|---|---|---|---|
+| Seam walk | 0 | 0 | 28.7 | 0.92 |
+| Flux arc | 0 | 0 | 10.7 | 2.4 |
+
+**Checked:**
+- `verify_lab.cjs` PASS.
+- Close-up contact sheets read:
+  - the flux arc on the omni, a 12-frame cycle: only the source and sink light, the strands fork onto the corners and merge into the beam;
+  - the seam walk on the Charge crystal: continuous, with the petals along it lit.
+
+**Found:** the halo ribbon fanned into fins at every kink of the thick beam. Wide bolts now get a narrower halo (4× → 1.8× at the beam's width).
+
+**Decision needed (designer):** flux arc rate, hold and lift; whether the omni should also keep a quiet seam walk under the flux arcs.
 
 ## Round 3 (2026-10-13): hop clear for Space and Time, bolder Mass, the arc in the seams
 
