@@ -388,6 +388,20 @@ Entries are grouped by family; within a family, the newest goes at the bottom.
 - Evidence: `THRESHER_PLANT_LAB.md` "Frame rate"; `runBatch({ dt: 1/30 })`.
 - Promoted: no (L-ECO-4 is already §8)
 
+### L-STU-44 — Every handoff between two motion models is a one-frame jolt until it carries position, rate AND force across
+- Lab: Thresher Plant Lab round 2 (`Docs/Studios/ThresherPlantLab.html`) · Branch: `cece/zealous-johnson-gopp6t` · Date: 2026-10-13
+- What happened: the analog plant chains four models: towing on an elastic chain, a braking anchor, a kinematic hook, and an elastic orbit. Five of round 2's eight findings were seams between them, each found by probing a column's worst run frame by frame. A rigid chain yanked a ship flying away from its anchor (2 100 °/s). The hook restarted the turn from zero (−125 → 0 °/s). The hook's stretch was reeled back by the rigid chain in two frames (87 000 °/s²). A slack chain's outward pull switched on at once. The orbit direction was read from a near-zero sideways velocity, so it flipped mid-hook. Each fix made the next model start from the previous one's state: start the hook at the full pull, carry the incoming turn rate, start the elastic state at the ship's real stretch and radial speed, and ease the new force in.
+- Do instead: when a mechanic switches models, list for every handoff what the second model needs (position, velocity, turn rate, force) and seed it from the first. Probe the handoff frame of every pilot style, not just the default.
+- Evidence: `THRESHER_PLANT_LAB.md` round 2 "Found" 1–5; `stepPivot` analog branches, `anBeginStop`.
+- Promoted: no
+
+### L-STU-45 — A stiff spring in a lab is a frame-rate bug: sub-step it and say so in the graduation notes
+- Lab: Thresher Plant Lab round 2 · Branch: `cece/zealous-johnson-gopp6t` · Date: 2026-10-13
+- What happened: the rigid end of the elastic chain is a 30 rad/s spring. With semi-implicit Euler at 30 fps (ω·dt = 1, plus damping) it sat at the edge of stability. The 30 Hz scorecard read 65 000 °/s² on the wind-in, against 10 000 at 60 Hz. Sub-stepping (ω·h ≤ 0.15) made the two rates agree (8 900 vs 9 300). Only the second-frame-rate run showed it; the 60 Hz scorecard looked fine.
+- Do instead: whenever a lab adds a spring, give it sub-steps from the start, run the scorecard at 30 Hz as well as 60 Hz, and write "must be sub-stepped or integrated implicitly" into the graduation notes, because the game's frame time varies. (Recurrence of L-ECO-4 / L-STU-43.)
+- Evidence: `stepAnalog` and the analog `stepPivot` branch (`nSub`); round 2 "Found" 8.
+- Promoted: no (§8's fixed-timestep trap covers it)
+
 ## NCA — swarm / neural-CA research rigs (Tools/NCA)
 
 ### L-NCA-1 — The yardstick was wrong four times before the creatures were

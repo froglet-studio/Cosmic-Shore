@@ -13,14 +13,165 @@ instead of an instant stop?**
 - **The vessel:** `Assets/_Scripts/Controller/Vessel/R_VesselActions/THRESHER.md` (§4 Lock, §5a camera).
 
 Two chase views fly the **same** stick: **A** is always the shipped Thresher, **B** flies the approach
-picked in the Approach tab. The Traces tab plots ball speed, hull turn rate and camera turn rate for both
-over the last 7 s. The Scorecard runs every approach headless. Keys: A/D steer, Q (or Left Shift) holds
-LT, E (or Space) holds RT, R restarts, Tab swaps A/B in Single view. Autopilot (on at load) loops seeded
+picked in the Approach tab (it opens on round 2's **Analog triggers**). The Traces tab plots ball speed,
+hull turn rate, camera turn rate and B's triggers over the last 7 s. Each view shows its triggers as it
+reads them. The Scorecard runs every approach headless. Keys: A/D steer, hold Q (or Left Shift) for LT,
+hold E (or Space) for RT. A held key ramps its trigger over 0.35 s; a pad reads the real depth. R
+restarts, Tab swaps A/B in Single view. Autopilot (on at load) loops seeded
 plant cycles; any input takes over. Slow-mo plays at quarter speed.
 
 ---
 
+## Round 2 (2026-10-13), analog triggers
+
+**Input this round** (the decision log was empty; the designer's direction, verbatim in substance):
+both triggers analog. LT becomes a **brake** that only stops the ball on a **full pull**, so the stop's
+smoothness is in the player's hand. RT becomes the chain's **rigidity**, a range of elasticity the player
+controls, with the axis **flipped**: pull for rigid, release for slack. The camera switches to the launch
+view **only with the ball stopped and the chain fully rigid**, i.e. both triggers at a full pull.
+
+### What the scheme does (preset **Analog triggers**, dial `anScheme`)
+
+- **LT below a full pull** brakes the ball (`anBrake` 4/s × depth^`anBrakeCurve` 1.5) and hands more of
+  the chain's pull to the ship as the ball turns into an anchor (ship's share = the shipped 5.7% + the
+  rest × depth^`anAnchor` 2). A half pull already swings the ship round a sliding ball. Towing, braking
+  and planting are one continuous range.
+- **A full pull** (≥ `anFull` 0.97) stops whatever speed is left along an S-curve peaking at
+  `anStopDecel` 450 u/s². A slow squeeze has already shed most of it, so its stop is gentle. The ship's
+  hook starts at the same moment, round the stopping ball. Letting go means dropping below `anRelease`
+  0.9: hysteresis, so noise at the end of the trigger's travel cannot flicker the stop.
+- **RT is the chain's stiffness**: a one-sided spring at rest length whose natural frequency runs from
+  `elSlack` 1.2 rad/s (released, a soft bungee) to `elRigid` 30 rad/s (pulled, ~1 u of stretch at full
+  spin), on a log scale, with the chain's full 140 u as a stiff limit. There is no winch any more.
+  Released, the turns and the spin carry the ball (or a planted ship) out. Pulled, the chain reels it in
+  and the spin rises by angular momentum, so the old winch's let-out and crack fall out of the
+  elasticity. `elSlew` 2/s limits how fast the chain itself can stiffen (see Found).
+- **The camera** cuts to the launch vantage only when the ball has stopped AND the chain's actual
+  rigidity and LT are both at a full pull (plus the shipped spin-rate rule). Easing RT off below
+  `anRelease` hands it back. Easing LT off arms the aimed launch, as the shipped LT-up does.
+- Carried over from round 1: the spectate glide, the 1 500°/s² follow limit and the soft let-go
+  (`rlSpinDown` 0.3, `yank` 0; the elastic chain draws the ball up to speed).
+
+The left view (A) keeps the **shipped** controls. With a human at the sticks the same pull means
+different things on each side. The autopilot flies the same **intent** on both: "chain tight" is RT
+released on A and RT pulled on B.
+
+### Scorecard
+
+`runBatch()`, 6 seeds × 3 flights, 60 Hz, mean of each run's peak. **This round moved the measuring
+windows**: the catch window is 1.6 s, the wind-in comes 1.8 s after the press, and the release 2.7–3.7 s
+after it, so a feathered pull's stop falls inside the catch window. Every row was re-measured on the new
+windows; round 1's table below used the old ones. Analog rows name the pilot: **squeeze** (LT 0 → 1 in
+0.5 s, RT changes over 0.35 s), **slam** (both in one frame), **feather** (LT at half for 0.8 s, then
+full over 0.3 s).
+
+| Approach | Ball stop (u/s/frame) | Ball yank (u/s/frame) | Hull jolt, catch (°/s²) | Hull jolt, leave (°/s²) | Hull jolt, wind-in (°/s²) | Camera jolt (°/s²) | Ship jerk, catch (k u/s³) | Catch time (s) | Exit error (°) |
+|---|---|---|---|---|---|---|---|---|---|
+| Shipped | 24.4 | 129.3 | 6 132 | 65 096 | 59 229 | 14 400 | 20.8 | 0.95 | 0.5 |
+| **Analog triggers · squeeze** | 7.3 | 20.6 | 2 620 | 5 410 | 9 297 | 1 487 | 6.1 | 1.01 | 8.8 |
+| Analog triggers · slam | 7.5 | 24.8 | 3 264 | 4 841 | 11 005 | 1 500 | 5.7 | **0.53** | 6.7 |
+| Analog triggers · feather | 6.6 | **17.2** | **2 035** | **4 663** | 9 807 | 1 487 | **5.0** | 1.61 | 7.9 |
+| Analog only (shipped hook, camera, let-go) · squeeze | 7.3 | 89.4 | 6 139 | 43 169 | 9 566 | 13 246 | 17.8 | 0.84 | 2.4 |
+| Catch and swing (round 1) | 3.6 | 126.4 | 2 491 | 63 536 | 52 184 | 5 007 | 8.4 | 0.79 | 0.3 |
+| All smooth (round 1) | 3.6 | 50.4 | 2 443 | 12 759 | 33 498 | 1 785 | 7.4 | 0.78 | 9.2 |
+| *Hard pin* (control) | 50.6 | 125.2 | 6 132 | 63 166 | 62 384 | 14 400 | 20.8 | 0.70 | 0.4 |
+| *No plant* (control) | 0.4 | 0.7 | 52 | 7 | 902 | 439 | 0.1 | — | — |
+
+Worst single runs (Analog triggers): ball stop 7.5, hull catch 3 949 (slam), hull leave 10 990 (slam),
+wind-in 11 085 (slam), exit error 19.2° (feather). Shipped worst: 63.3, 6 134, 141 099, 77 112.
+
+**Noise band.** Seeds 7–12 reproduce the analog rows within about 3% (squeeze catch 2 683, leave 5 142,
+wind-in 9 333). **Frame rate.** At 30 Hz the analog rows hold or improve (squeeze catch 2 034, leave 4 247,
+wind-in 8 902), and every analog row still beats shipped on every jolt column. Ball stop and yank double,
+as a per-frame step does at half the rate.
+
+**Reading it.** Against shipped, the analog scheme cuts every jolt: the catch 2–3×, the leave 12–14×, the
+wind-in 5–6×, the camera ~10×, the ball yank 5–8×. The quick stop itself (7 u/s per frame) is the
+S-curve at its 450 u/s² peak; `anStopDecel` 300 gives round 1's ~5. The feathered pull is the smoothest
+catch (2 035), and the slam the fastest (0.53 s, faster than shipped's 0.95). With every other dial
+shipped ("Analog only"), the triggers alone fix the stop and the wind-in but not the leave or the camera,
+so those round-1 pieces are still needed. The cost is the exit drift of the soft let-go (7–9° mean).
+
+### Found
+
+Most of the round went into **handoffs**: each place where one motion model hands the ship to another
+was a one-frame jolt until it carried position, rate and force across. In the order found:
+
+1. **A full pull with a rigid chain whipped the hull at ~2 100°/s.** The ball becomes an anchor and the
+   stiff chain yanks back a ship flying straight away from it, reversing its velocity through near-zero.
+   Fix: the full pull starts the hook round the still-stopping ball (round 1's Catch and swing).
+2. **The S-curve hook restarted the turn from zero.** A ship already curving round a braking anchor
+   (−125°/s) stopped turning for a frame. Fix: the hook adds a carried turn that starts at the ship's own
+   incoming turn rate and fades out by the hook's end.
+3. **The hook's stretch was snapped back.** The hook lets the chain stretch ~9 u so the ship can swing
+   wide; a rigid chain then reeled that in within two frames (87 000°/s²). Fix: the reel-back starts at
+   the shipped `hookReturnRate` 5/s and ramps to the chain's own rate over 0.5 s, from where the ship
+   actually is.
+4. **A slack chain's outward pull switched on in one frame** when the hook ended. Fix: its target eases
+   in over 0.5 s.
+5. **Planting with the ball dead astern picks the orbit's direction from noise.** The sideways velocity
+   that `BeginPivot` reads is ~0, so its sign (or `AnyPerpendicular`'s world-axis fallback) decides which
+   way, and in which plane, the ship orbits. The carried turn tipped the heading across the radial line
+   and the orbit reversed mid-hook. Lab fix (analog only): when the ship is within 30° of straight away,
+   orbit in the hull's turning plane, in the direction it is already turning, and never flip the
+   direction once chosen. **This is a shipped behaviour** (planting after flying straight can pick an
+   arbitrary spin plane in 3D) and needs checking in the editor.
+6. **The planted hull lags its velocity by one frame (shipped).** `ThresherVesselTransformer.RotateShip`
+   runs before the move, so while planted the hull faces the previous frame's velocity, and on the frame
+   a plant begins it does not turn at all. Lab dial `hlPost` (on in the analog preset) turns the hull with
+   the frame's own velocity change, as towing already does. Graduates as a transformer change.
+7. **A slammed RT is the biggest jolt the scheme can make.** From slack to rigid in one frame, the chain
+   hauls a let-out ball in and the hull whips at 382 000°/s² on the wind-in. A rigidity slew limit
+   (`elSlew`) caps it: 1.5/s → 6 300, 3/s → 22 800 (slammed flights, letout-then-tightened, 6 seeds).
+   The preset uses 2/s (0.5 s from slack to rigid).
+8. **A stiff spring is a frame-rate bug.** A 30 rad/s chain at 30 fps sits at the edge of the
+   integrator's stability: the first 30 Hz run read 65 000°/s² on the wind-in against 10 000 at 60 Hz.
+   Fix: the chain is sub-stepped (ω × h ≤ 0.15). **A C# port must do the same** (or integrate the spring
+   implicitly), because the game's frame time varies.
+
+### Recommendation (a proposal, not a decision)
+
+The **Analog triggers** preset delivers the scheme as asked and is the smoothest thing the lab has
+scored. The next round should be **flown with a pad**: the scorecard's three pilots are scripts, and
+how a real thumb holds a half pull (the sliding anchor) is the open feel question.
+
+### Decision needed (designer)
+
+1. **The scheme:** is LT-brake / RT-rigidity (flipped) the direction? It removes the winch: chain length
+   is no longer chosen, it falls out of slack × speed. Measured with RT released (6 seeds): towing through
+   30–90°/s turns the ball reaches only 31–33 u (the shipped winch lets it out to 140 u), and a planted
+   orbit spins out to 72–79 u on average, 89–101 u at most. A towed ball can no longer be let out long
+   on purpose; if that matters, `elSlack` lower or a slack rest length longer than 22 u would restore it.
+2. **The sliding anchor:** how much a partial LT swings the ship (`anAnchor` 2; lower = the ball slows
+   before the ship feels it).
+3. **The final stop:** `anStopDecel` 450 (snappier) vs 300 (round 1's softness).
+4. **The crack:** keep the 2/s rigidity slew, or let a slammed RT crack as hard as it likes?
+5. **The let-go:** the soft let-go's 7–9° exit drift (carried from round 1).
+
+### Checked (round 2)
+
+- `parity.cjs`: the shipped path is untouched by the analog code. Same result as round 1: 1 224 frames,
+  0.80 × tolerance, all three planted controls caught.
+- `verify_lab.cjs`: PASS. Both screenshots read; the trigger gauges, the legend and the phone's touch
+  buttons were moved apart after the first read showed them overlapping.
+- Every analog jolt column was probed at its worst run, frame by frame (`window.__lab.runRows`, with a
+  probe that prints ±6 frames round each column's peak), until no single-frame step was left in the
+  catch, hook, handoff or leave. The eight items in Found are what those probes turned up.
+- Re-scored on seeds 7–12 and at 30 Hz (above).
+
+### Not modelled (added this round)
+
+- The elastic chain is a spring model the game does not have (the shipped chain is a hard max-distance
+  rope with a winch). Spin is conserved exactly (r × v) as the elastic radius changes; the shipped winch
+  spends spin by √(old/new) when paying out.
+- Keyboard and touch ramp a trigger over `inKeyRamp` 0.35 s; only a pad gives a real analog pull.
+
+---
+
 ## Round 1 (2026-10-13), the lab and the first scorecard
+
+*Round 1's numbers were taken on the round-1 windows (1 s catch window, wind-in 1.2 s after the press).
+Round 2 re-measured every row on its own windows; read the two tables apart.*
 
 ### What is jarring today (measured on the shipped model)
 

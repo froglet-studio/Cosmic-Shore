@@ -402,6 +402,12 @@ prefab, `DriftAudioController`, jets and tails.
   the spin stops dead and the ball is yanked. Measured, with seven smoothing approaches scored, in the
   **Thresher Plant Lab** (`Docs/Studios/ThresherPlantLab.html`, write-up
   `Docs/Studios/THRESHER_PLANT_LAB.md`). Not changed in the game until the designer picks.
+  Round 2 (analog triggers) also turned up two shipped issues, lab-measured and not yet checked in the
+  editor: (1) while planted, `ThresherVesselTransformer.RotateShip` runs before the move, so the hull faces
+  the PREVIOUS frame's velocity and does not turn at all on the frame a plant begins (a one-frame hitch);
+  (2) planting with the ball dead astern reads the orbit's direction from a near-zero sideways velocity in
+  `ThresherChainSolver.BeginPivot` (or `AnyPerpendicular`'s world-axis fallback), so the spin's direction
+  and plane can be arbitrary.
 - A turn throws the ball outward, so hits land on the side away from the turn.
 - With the chain let out the ball falls slack in any steady turn (0.38–0.54× smash): only the reel
   (or the plant) heats it. Shorten `maxLen` if a let-out whip should work on its own.
