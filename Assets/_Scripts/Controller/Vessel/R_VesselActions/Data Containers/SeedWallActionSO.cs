@@ -2,6 +2,7 @@ using CosmicShore.Core;
 using CosmicShore.Gameplay;
 using CosmicShore.ScriptableObjects;
 using UnityEngine;
+using UnityEngine.Serialization;
 using System.Linq;
 namespace CosmicShore.Gameplay
 {
@@ -43,12 +44,26 @@ namespace CosmicShore.Gameplay
         [Tooltip("Floor for the Mass multiplier, so a Mass deficit cannot collapse the wall.")]
         [SerializeField, Min(0.05f)] private float minMassSizeMultiplier = 0.5f;
 
-        [Header("Serpent lattice - growth")]
-        [Tooltip("Seconds between site claims while the seed is bonding.")]
-        [SerializeField, Min(0.01f)] private float siteClaimInterval = 0.15f;
-        [Tooltip("How far from an empty site the wall looks for a prism to pull into it, at the " +
-                 "resting Mass level (scaled by the same Mass multiplier as the bricks).")]
-        [SerializeField, Min(1f)] private float recruitRadius = 40f;
+        [Header("Serpent lattice - growth (steals from its edge)")]
+        [Tooltip("Seconds between steal sweeps. Each sweep is one spatial query and a few waves " +
+                 "of claims (SerpentWallStealPlanner); prisms in flight are steered every frame, " +
+                 "everything else waits for the next sweep.")]
+        [SerializeField, Min(0.05f)] private float stealSweepInterval = 0.3f;
+        [Tooltip("How far from an open EDGE site (one next to a brick) a loose prism can be and " +
+                 "still be stolen into it, at rest. Scaled by the Mass multiplier (the whole " +
+                 "wall's geometry scales with Mass) and by the live Space multiplier below.")]
+        [FormerlySerializedAs("recruitRadius")]
+        [SerializeField, Min(1f)] private float stealRadius = 40f;
+        [Tooltip("Steal-radius multiplier at Space 10 (x1 at rest), read live on every sweep. " +
+                 "Space is the wall's reach.")]
+        [SerializeField, Min(0.1f)] private float spaceStealRadiusMultiplierAtFull = 2f;
+        [Tooltip("Floor for the Space multiplier, so a Space deficit cannot stop the wall stealing.")]
+        [SerializeField, Min(0.05f)] private float minSpaceStealRadiusMultiplier = 0.5f;
+        [Tooltip("Most prisms one sweep may claim.")]
+        [SerializeField, Min(1)] private int maxStealsPerSweep = 48;
+        [Tooltip("Waves per sweep: each wave's new bricks open the next wave's edge, so one sweep " +
+                 "can creep this many rings along a trail.")]
+        [SerializeField, Min(1)] private int stealWavesPerSweep = 4;
         [Tooltip("Pull speed (units/s) for the Serpent's OWN domain's prisms.")]
         [SerializeField, Min(0.1f)] private float ownPullSpeed = 20f;
         [Tooltip("Pull speed (units/s) for an OPPONENT's prisms. They are stolen when they land: " +
@@ -90,8 +105,12 @@ namespace CosmicShore.Gameplay
         public float BrickDepth => brickDepth;
         public float MassSizeMultiplierAtFull => massSizeMultiplierAtFull;
         public float MinMassSizeMultiplier => minMassSizeMultiplier;
-        public float SiteClaimInterval => siteClaimInterval;
-        public float RecruitRadius => recruitRadius;
+        public float StealSweepInterval => stealSweepInterval;
+        public float StealRadius => stealRadius;
+        public float SpaceStealRadiusMultiplierAtFull => spaceStealRadiusMultiplierAtFull;
+        public float MinSpaceStealRadiusMultiplier => minSpaceStealRadiusMultiplier;
+        public int MaxStealsPerSweep => maxStealsPerSweep;
+        public int StealWavesPerSweep => stealWavesPerSweep;
         public float OwnPullSpeed => ownPullSpeed;
         public float OpponentPullSpeed => opponentPullSpeed;
         public float PullRotateRate => pullRotateRate;

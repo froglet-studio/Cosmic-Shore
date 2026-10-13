@@ -10,13 +10,22 @@ namespace CosmicShore.Gameplay
     /// The Serpent's seed wall: the MASS ability (design: R_VesselActions/SERPENT_SEED_WALL.md).
     ///
     /// Lives on the SEED, a super-shielded trail prism left behind by the cloak or by the stopped
-    /// stance. For as long as the seed lives it claims lattice sites outward from itself
-    /// (<see cref="SerpentWallLattice.GrowthOrder"/>) and pulls the nearest loose prism into each
-    /// one, reshaping it into a 2:1 brick. It never finishes: a site with nothing to pull is
-    /// tried again later, and a brick that is shot out frees its site to be refilled. Leaving the
-    /// stance or the cloak ending does not stop it. An opponent's prism is stolen when it lands,
-    /// which is the wall stealing along its edge. Destroying the seed ends the wall: a seed shot
-    /// the moment it is laid grows nothing.
+    /// stance. For as long as the seed lives it STEALS FROM ITS EDGE: every
+    /// <see cref="SeedWallActionSO.StealSweepInterval"/> it runs one sweep
+    /// (<see cref="SerpentWallStealPlanner"/>) that pairs the open sites next to its bricks with
+    /// the loose prisms in reach of them and pulls each into its site, reshaping it into a 2:1
+    /// brick. So the wall grows toward the mass around it, along a trail it is eating, rather
+    /// than as a uniform disc. It never finishes: a brick that is shot out reopens its site. Leaving
+    /// the stance or the cloak ending does not stop it. An opponent's prism is stolen when it
+    /// lands. Destroying the seed ends the wall: a seed shot the moment it is laid grows nothing.
+    ///
+    /// <para><b>Space is the wall's reach</b>, read live each sweep: the steal radius scales with
+    /// the owner's Space multiplier, and the Space upgrade lets the wall take an opponent's
+    /// SHIELDED prisms (without it they are left alone; super-shielded prisms never move).</para>
+    ///
+    /// <para><b>Cost.</b> One spatial query per sweep, a few waves of claims inside it, and
+    /// per-frame work only for the prisms still in flight. A standing brick is checked once a
+    /// sweep, not once a frame.</para>
     ///
     /// <para><b>The wall's SIZE is snapshotted at placement</b> (<see cref="Snapshot"/>): brick
     /// size and spacing from the Mass level. A wall keeps the size it was born with even if the
@@ -78,19 +87,23 @@ namespace CosmicShore.Gameplay
         Vector3 _origin;
         Quaternion _frame;
 
-        /// <summary>How many unfilled sites past the frontier are tried per claim.</summary>
-        const int ClaimWindow = 6;
-
-        // The growth order, extended on demand (the wall never runs out of sites), and each
-        // site's index in it, so a site freed behind the frontier pulls the frontier back.
-        readonly List<Vector2Int> _order = new();
-        readonly Dictionary<Vector2Int, int> _orderIndex = new();
-        int _frontier;
+        Quaternion _toWall;
         bool _panelsDirty;
-        float _nextClaimAt;
+        float _nextSweepAt;
         bool _growing;
+        int _maxRing;
 
         readonly Dictionary<Vector2Int, Member> _members = new();
+        // Sites holding a brick, standing or in flight, plus the seed's (0, 0): the planner's
+        // "filled" set, kept in step with _members so a sweep never rebuilds it.
+        readonly HashSet<Vector2Int> _filled = new();
+        // Members still flying to their site: the only bricks touched every frame.
+        readonly List<Member> _inFlight = new();
+
+        readonly SerpentWallStealPlanner _planner = new();
+        readonly List<Prism> _candidates = new();
+        readonly List<Vector3> _candidateLocal = new();
+        readonly List<SerpentWallStealPlanner.Claim> _claims = new();
         readonly Dictionary<Vector2Int, Panel> _panels = new();
 
         bool _locked;
@@ -133,11 +146,13 @@ namespace CosmicShore.Gameplay
             _seedBornAt = Prism.prismProperties != null ? Prism.prismProperties.TimeCreated : 0f;
             _origin = Prism.transform.position;
             _frame = Prism.transform.rotation;
-            _order.Clear();
-            _orderIndex.Clear();
-            _frontier = 0;
+            _toWall = Quaternion.Inverse(_frame);
             _panelsDirty = false;
+            _maxRing = 0;
             _members.Clear();
+            _inFlight.Clear();
+            _filled.Clear();
+            _filled.Add(Vector2Int.zero);
             _panels.Clear();
             _locked = false;
 
@@ -153,7 +168,7 @@ namespace CosmicShore.Gameplay
         {
             if (!_configured || !IsActive) return;
             _growing = true;
-            _nextClaimAt = Time.time;
+            _nextSweepAt = Time.time;
         }
 
         /// <summary>Deliberately nothing. The executor calls this when the stance is left or the
@@ -174,6 +189,8 @@ namespace CosmicShore.Gameplay
             foreach (var m in _members.Values)
                 if (m.Prism) s_claimed.Remove(m.Prism);
             _members.Clear();
+            _inFlight.Clear();
+            _filled.Clear();
             _panels.Clear();
             _growing = false;
             _configured = false;
@@ -193,10 +210,10 @@ namespace CosmicShore.Gameplay
 
             if (_growing && !IsActive) _growing = false;
 
-            if (_growing && Time.time >= _nextClaimAt)
+            if (_growing && Time.time >= _nextSweepAt)
             {
-                _nextClaimAt = Time.time + _shape.Config.SiteClaimInterval;
-                ClaimNextSite();
+                _nextSweepAt = Time.time + _shape.Config.StealSweepInterval;
+                Sweep();
             }
 
             // A Lockdown wall seals each hole as soon as its four bricks stand, not only on the
@@ -213,90 +230,89 @@ namespace CosmicShore.Gameplay
         // ---------------- Growth ----------------
 
         /// <summary>
-        /// Claim one site: the first unfilled one, from the frontier on, that has a loose prism in
-        /// reach. Sites with nothing in reach are left open and tried again on the next claim, so
-        /// the wall keeps growing as mass arrives instead of stopping.
+        /// One steal sweep: drop the bricks that were lost since the last one, gather the loose
+        /// prisms that could be in reach of the edge with a single spatial query, let the planner
+        /// pair them with edge sites, and send each claimed prism flying.
         /// </summary>
-        void ClaimNextSite()
+        void Sweep()
         {
-            EnsureOrder(_frontier + ClaimWindow);
-            while (_frontier < _order.Count && IsFilled(_order[_frontier])) _frontier++;
-            EnsureOrder(_frontier + ClaimWindow);
+            ReleaseLostBricks();
 
-            int tried = 0;
-            for (int k = _frontier; k < _order.Count && tried < ClaimWindow; k++)
-            {
-                var site = _order[k];
-                if (IsFilled(site)) continue;
-                tried++;
-
-                var candidate = FindRecruit(SitePosition(site));
-                if (!candidate) continue;
-
-                s_claimed.Add(candidate);
-                var brick = SerpentWallLattice.BrickScale(_shape.ShortSide, _shape.Depth);
-                candidate.AdmitTargetScale(brick);
-                candidate.TargetScale = brick;
-
-                _members[site] = new Member
-                {
-                    Prism = candidate,
-                    BornAt = candidate.prismProperties != null ? candidate.prismProperties.TimeCreated : 0f,
-                    Site = site,
-                    Landed = false,
-                };
-                return;
-            }
-        }
-
-        bool IsFilled(Vector2Int site) => _members.TryGetValue(site, out var m) && m.Prism;
-
-        /// <summary>Grow the order to at least <paramref name="count"/> sites. GrowthOrder's
-        /// prefix is stable, so the sites already claimed keep their places.</summary>
-        void EnsureOrder(int count)
-        {
-            if (_order.Count >= count) return;
-            var order = SerpentWallLattice.GrowthOrder(Mathf.Max(count, _order.Count * 2, 24));
-            for (int k = _order.Count; k < order.Count; k++)
-            {
-                _orderIndex[order[k]] = k;
-                _order.Add(order[k]);
-            }
-        }
-
-        /// <summary>A brick was lost: its site is open again, so growth looks there first.</summary>
-        void FreeSite(Vector2Int site)
-        {
-            if (_orderIndex.TryGetValue(site, out int k) && k < _frontier) _frontier = k;
-        }
-
-        Prism FindRecruit(Vector3 site)
-        {
             var index = PrismSpatialIndex.EnsureInstance();
-            if (index == null || !index.IsAvailable) return null;
+            if (index == null || !index.IsAvailable) return;
 
-            // The loose mass is the Serpent's own trail, which runs back from the SEED along the
-            // wall's normal, while the outer sites sit several shielded pitches (15 x Mass) out
-            // in the wall's plane. A radius about the site alone would leave every site further
-            // than that from the trail with nothing to pull and the wall would stop after one
-            // ring, so the reach grows with the site's distance from the seed: anything a site
-            // could reach, the seed's own neighbourhood included, is a candidate.
-            float radius = _shape.Config.RecruitRadius * _shape.MassMultiplier
-                           + Vector3.Distance(site, _origin);
-            int n = index.QuerySphere(site, radius, s_scratch);
-            Prism best = null;
-            float bestSqr = float.MaxValue;
+            var cfg = _shape.Config;
+            float space = ElementalScaling.Multiplier(_shape.Owner, Element.Space,
+                atFull: cfg.SpaceStealRadiusMultiplierAtFull, minMul: cfg.MinSpaceStealRadiusMultiplier);
+            float radius = cfg.StealRadius * _shape.MassMultiplier * space;
+            var abilities = _shape.Owner?.ElementalAbilityHandler;
+            bool takeShielded = abilities && abilities.IsUpgradeActive(Element.Space);
+
+            // Every edge site lies within one diagonal pitch of the outermost ring.
+            float queryRadius = (_maxRing + 1) * _pitch * 1.4143f + radius;
+            int n = index.QuerySphere(_origin, queryRadius, s_scratch);
+            _candidates.Clear();
+            _candidateLocal.Clear();
             for (int i = 0; i < n; i++)
             {
                 var p = s_scratch[i];
-                if (!IsRecruitable(p)) continue;
-                float sqr = (p.transform.position - site).sqrMagnitude;
-                if (sqr < bestSqr) { bestSqr = sqr; best = p; }
+                if (!IsRecruitable(p, takeShielded)) continue;
+                Vector3 local = _toWall * (p.transform.position - _origin);
+                if (Mathf.Abs(local.z) > radius) continue;
+                _candidates.Add(p);
+                _candidateLocal.Add(local);
             }
-            return best;
+            if (_candidates.Count == 0) return;
+
+            _planner.Plan(_filled, _candidateLocal, _pitch, radius,
+                cfg.MaxStealsPerSweep, cfg.StealWavesPerSweep, _claims);
+            foreach (var claim in _claims)
+                Recruit(claim.Site, _candidates[claim.Candidate]);
         }
 
-        bool IsRecruitable(Prism p)
+        void Recruit(Vector2Int site, Prism prism)
+        {
+            s_claimed.Add(prism);
+            var brick = SerpentWallLattice.BrickScale(_shape.ShortSide, _shape.Depth);
+            prism.AdmitTargetScale(brick);
+            prism.TargetScale = brick;
+
+            var member = new Member
+            {
+                Prism = prism,
+                BornAt = prism.prismProperties != null ? prism.prismProperties.TimeCreated : 0f,
+                Site = site,
+                Landed = false,
+            };
+            _members[site] = member;
+            _filled.Add(site);
+            _inFlight.Add(member);
+            _maxRing = Mathf.Max(_maxRing, SerpentWallLattice.Ring(site));
+        }
+
+        /// <summary>Standing bricks that were shot out, or recycled by the pool into someone
+        /// else's prism, since the last sweep: their sites reopen and become edge again.</summary>
+        void ReleaseLostBricks()
+        {
+            foreach (var m in _members.Values)
+                if (m.Prism && m.Landed && !IsAlive(m.Prism, m.BornAt))
+                    Release(m);
+        }
+
+        void Release(Member m)
+        {
+            s_claimed.Remove(m.Prism);
+            _filled.Remove(m.Site);
+            m.Prism = null;
+            m.Landed = false;
+        }
+
+        /// <summary>
+        /// Loose mass the wall may take: not a seed or anyone's super-shielded armour, not a
+        /// creature, not already another wall's. An opponent's SHIELDED prism only with the Space
+        /// upgrade (<paramref name="takeShielded"/>); the Serpent's own shielded prisms are its own.
+        /// </summary>
+        bool IsRecruitable(Prism p, bool takeShielded)
         {
             if (!p || p == Prism || p.destroyed || !p.IsCreationComplete) return false;
             if (s_claimed.Contains(p)) return false;
@@ -305,36 +321,31 @@ namespace CosmicShore.Gameplay
             if (p is HealthPrism) return false;
             var props = p.prismProperties;
             if (props == null || props.IsSuperShielded) return false;   // seeds and armour stay put
+            if (props.IsShielded && !takeShielded && p.Domain != _shape.Domain) return false;
             if (p.TryGetComponent<SerpentWallAssembler>(out var wall) && wall.IsActive) return false;
             return true;
         }
 
         void SteerMembers()
         {
-            if (_members.Count == 0) return;
+            if (_inFlight.Count == 0) return;
             float dt = Time.deltaTime;
             var cfg = _shape.Config;
 
-            foreach (var m in _members.Values)
+            for (int i = _inFlight.Count - 1; i >= 0; i--)
             {
-                if (!m.Prism) continue;
-                if (!IsAlive(m.Prism, m.BornAt))
+                var m = _inFlight[i];
+                if (!m.Prism || !IsAlive(m.Prism, m.BornAt))
                 {
-                    // Shot out, or recycled by the pool into someone else's prism: let it go, and
-                    // reopen the site so the wall rebuilds it.
-                    s_claimed.Remove(m.Prism);
-                    m.Prism = null;
-                    m.Landed = false;
-                    FreeSite(m.Site);
+                    // Shot down in flight, or recycled by the pool: the site is edge again.
+                    if (m.Prism) Release(m);
+                    RemoveInFlight(i);
                     continue;
                 }
 
                 var t = m.Prism.transform;
                 Vector3 target = SitePosition(m.Site);
                 Quaternion rot = SiteRotation(m.Site);
-
-                if (m.Landed) continue;
-
                 bool own = m.Prism.Domain == _shape.Domain;
                 float speed = own ? cfg.OwnPullSpeed : cfg.OpponentPullSpeed;
                 t.position = Vector3.MoveTowards(t.position, target, speed * dt);
@@ -344,11 +355,19 @@ namespace CosmicShore.Gameplay
                 {
                     t.SetPositionAndRotation(target, rot);
                     m.Landed = true;
+                    RemoveInFlight(i);
                     if (!own) m.Prism.Steal(_shape.PlayerName, _shape.Domain, true);
                     if (_locked) _panelsDirty = true;
                 }
                 m.Prism.NotifyPositionChanged();
             }
+        }
+
+        void RemoveInFlight(int i)
+        {
+            int last = _inFlight.Count - 1;
+            _inFlight[i] = _inFlight[last];
+            _inFlight.RemoveAt(last);
         }
 
         // ---------------- Crystals ----------------

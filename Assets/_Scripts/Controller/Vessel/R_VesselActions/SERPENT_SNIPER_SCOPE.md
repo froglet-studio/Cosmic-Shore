@@ -143,7 +143,9 @@ Two terms were removed to get here, and both were defensible when written:
 more magnification step. `upgradeZoomDepthMultiplier` (1.6) multiplies the zoom depth **and divides
 the floor by the same number**, so the extra reach is actually reachable instead of running into a
 ceiling the upgrade cannot pass — 22° at full zoom at rest becomes 13.8°, and Space 10 reaches
-6.9°.
+6.9°. Since 2026-10-13 the same upgrade also lets the Serpent's seed walls steal an opponent's
+SHIELDED prisms from their edge (Garrett; `SERPENT_SEED_WALL.md`, "Stealing"), and Space sets the
+walls' steal radius.
 
 ## The shot
 

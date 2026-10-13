@@ -118,6 +118,16 @@ ghost glow off the hull and fills the trail back in. `prismCloakTransparent` / `
 `pilotGhostAlpha` / `pilotTrailShade` retired. The shader has never been compiled: check the
 console for shader errors first. Re-test steps 1, 2 and 6.
 
+**Garrett's follow-up (2026-10-13):** restore the old wall's steal-from-the-edge instead of a uniform
+disc; Space sets the steal radius; the Space upgrade lets it steal shielded prisms; make it a
+performant routine that schedules a lot of theft with infrequent updates. Done:
+`SerpentWallStealPlanner` (pure, edit-mode tested) plans each sweep (every 0.3 s): one
+`PrismSpatialIndex.QuerySphere`, candidates bucketed by lattice cell, up to 4 waves of edge-site to
+nearest-prism matching, up to 48 claims. Only in-flight prisms are steered per frame. Steal radius
+= 40 x Mass x live Space multiplier (x2 at Space 10); opponents' shielded prisms only with
+`IsUpgradeActive(Space)` (Deep Focus). `siteClaimInterval` and `SerpentWallLattice.GrowthOrder`
+retired; `recruitRadius` renamed `stealRadius` (FormerlySerializedAs). Re-test step 1.
+
 **Not opened in Unity** (no editor in the session). Offline: see the PR for the `unity_refcompile`
 result.
 

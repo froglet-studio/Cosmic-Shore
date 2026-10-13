@@ -230,31 +230,5 @@ namespace CosmicShore.Tests
                 Assert.AreEqual(Mathf.Sin(rad), local.y, 1e-4f, $"angle {angle}");
             }
         }
-
-        [Test]
-        public void GrowthOrderPrefixIsStableSoTheWallCanGrowForever()
-        {
-            // The wall extends its order on demand; a reshuffled prefix would move bricks that
-            // already stand.
-            var small = SerpentWallLattice.GrowthOrder(40);
-            var large = SerpentWallLattice.GrowthOrder(400);
-            for (int k = 0; k < small.Count; k++) Assert.AreEqual(small[k], large[k], $"index {k}");
-            CollectionAssert.AllItemsAreUnique(large);
-            // And it is a disc: never a site further out before a nearer one.
-            for (int k = 1; k < large.Count; k++)
-                Assert.LessOrEqual(large[k - 1].sqrMagnitude, large[k].sqrMagnitude, $"index {k}");
-        }
-
-        [Test]
-        public void GrowthOrderIsADiscAroundTheSeed()
-        {
-            List<Vector2Int> order = SerpentWallLattice.GrowthOrder(8);
-            Assert.AreEqual(8, order.Count);
-            CollectionAssert.DoesNotContain(order, Vector2Int.zero);
-            // The first four are the seed's edge neighbours, before any diagonal.
-            for (int k = 0; k < 4; k++)
-                Assert.AreEqual(1, Mathf.Abs(order[k].x) + Mathf.Abs(order[k].y));
-            CollectionAssert.AllItemsAreUnique(order);
-        }
     }
 }

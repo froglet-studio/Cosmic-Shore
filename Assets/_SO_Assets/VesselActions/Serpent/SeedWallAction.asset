@@ -22,8 +22,12 @@ MonoBehaviour:
   brickDepth: 0.5
   massSizeMultiplierAtFull: 2
   minMassSizeMultiplier: 0.5
-  siteClaimInterval: 0.15
-  recruitRadius: 40
+  stealSweepInterval: 0.3
+  stealRadius: 40
+  spaceStealRadiusMultiplierAtFull: 2
+  minSpaceStealRadiusMultiplier: 0.5
+  maxStealsPerSweep: 48
+  stealWavesPerSweep: 4
   ownPullSpeed: 20
   opponentPullSpeed: 6
   pullRotateRate: 8

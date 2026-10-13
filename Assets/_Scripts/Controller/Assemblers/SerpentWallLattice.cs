@@ -1,4 +1,3 @@
-using System.Collections.Generic;
 using CosmicShore.Utility;
 using UnityEngine;
 
@@ -108,41 +107,6 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// The order the wall claims sites in: outward from the seed by distance, then by angle,
-        /// so it grows as a disc rather than a line. The seed (0, 0) is not included.
-        ///
-        /// <para>Its prefix is STABLE: <c>GrowthOrder(n)</c> is the first n entries of
-        /// <c>GrowthOrder(m)</c> for any m &gt; n, which is what lets the wall extend its order
-        /// forever without reshuffling sites it has already claimed. Only sites inside the disc
-        /// the search square fully contains are ranked; the square's corners, which a larger
-        /// square would out-rank with nearer sites outside it, wait for that larger square.</para>
-        /// </summary>
-        public static List<Vector2Int> GrowthOrder(int count)
-        {
-            var result = new List<Vector2Int>(Mathf.Max(0, count));
-            if (count <= 0) return result;
-
-            int radius = 1;
-            while (SitesWithin(radius) < count) radius++;
-
-            int r2 = radius * radius;
-            var all = new List<Vector2Int>((2 * radius + 1) * (2 * radius + 1));
-            for (int i = -radius; i <= radius; i++)
-            for (int j = -radius; j <= radius; j++)
-                if ((i != 0 || j != 0) && i * i + j * j <= r2) all.Add(new Vector2Int(i, j));
-
-            all.Sort((a, b) =>
-            {
-                int da = a.x * a.x + a.y * a.y, db = b.x * b.x + b.y * b.y;
-                if (da != db) return da.CompareTo(db);
-                return Mathf.Atan2(a.y, a.x).CompareTo(Mathf.Atan2(b.y, b.x));
-            });
-
-            for (int k = 0; k < count && k < all.Count; k++) result.Add(all[k]);
-            return result;
-        }
-
-        /// <summary>
         /// The in-plane footprint of brick (i, j) SUPER-shielded: the stellation's spike tips sit on
         /// the corners of the 3x box, so seen face-on it covers the whole 3x rectangle - a
         /// conservative outline (at the wall plane itself the stellation is only the rhombus).
@@ -158,16 +122,6 @@ namespace CosmicShore.Gameplay
             into[1] = c + new Vector2(-hx, hy);
             into[2] = c + new Vector2(-hx, -hy);
             into[3] = c + new Vector2(hx, -hy);
-        }
-
-        /// <summary>Sites other than the seed within Euclidean distance <paramref name="radius"/>.</summary>
-        static int SitesWithin(int radius)
-        {
-            int n = 0, r2 = radius * radius;
-            for (int i = -radius; i <= radius; i++)
-            for (int j = -radius; j <= radius; j++)
-                if ((i != 0 || j != 0) && i * i + j * j <= r2) n++;
-            return n;
         }
 
         /// <summary>Ring index used to stage the shield ripple: Chebyshev distance from the seed.</summary>
