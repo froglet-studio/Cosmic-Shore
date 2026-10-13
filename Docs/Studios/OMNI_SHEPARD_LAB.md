@@ -272,6 +272,22 @@ now (Found 3).
 3. **A decision that leaves out the view cannot say what was approved.** `snapshot()` recorded only
    the non-view knobs, so "Space squares on" was invisible in the log. It now records `view` as well.
 
+## Follow-ups F1–F4 closed (2026-10-13)
+
+| # | What was done | What the row got wrong, or what it missed |
+|---|---|---|
+| F1 | `ThemeManagerDataContainerSO.GetTeamCrystalMaterial(domain, material)` finds the base-set slot holding a model's OWN default material. `Crystal.ResolveActivationMaterial` and `ChangeDomain` use it through `TeamMaterialFor`. A model whose material is not in the set keeps its own. `TeamCrystalMaterialTests` covers a synthetic set, the shipped omni (slots 0 and 1) and the Mass models (−1). | Still latent, re-measured: `crystalPrefab` names only the omni (31 `Crystal.prefab`, 3 `BigCrystalVariant`). `ChangeDomain` also had no null check on the theme data; `TeamMaterialFor` has one. |
+| F2 | The eight `OmniShepardTriangles*` tone and rim materials are deleted. The lab pins their values in `RETIRED` (0 px against before on Shipped, Classic, Breathe and Breathe wave). The extractor and the Breathe parity tool read the pin. The generator stops authoring them and leaves `OriginalMaterialSet` slots 2–4 empty. `ThemeManager` clones only the slots that are set. | `OmniShepardTriangles 0`, the three `Inactive` and `RimInactive` were already unreferenced; only slots 2–4 named the other three. |
+| F3 | **Retired** (designer's call). The eight Mass shell materials are deleted with `SpawnedSegments.prefab`, and the lab pins them in `RETIRED.massShells` (0 px on the old-shells view and Mass glass). The Mass generator no longer authors them, and its spent exploding-material repoints stand down into an invariant. **Its `--check` exits 0 for the first time since round 8, and a planted change is named DRIFT.** | The drift was not a property re-order: the Editor-saved files carried **2× the generator's HDR colours** and the `_SCALEDISTANCE_ON` keyword, a deliberate brightening. Their "live" consumer `SpawnedSegments.prefab` was an orphan (1,008 baked Mass crystals, 0 references). |
+| F4 | `CameraManager.ViewCamera` returns the active controller's camera, else `Camera.main`, resolved once a frame; `CrystalDepthPrisms` uses it too. Five view-dependent reads that had round 9's bug now use it: `CellEcologyLod` (the LOD's camera "pilot"), `ThreatGrove` (its far-pilot sense), `GrizzlyBombVisual` (billboards; it also cached the camera at arm time, so a switch to the death cam left them facing the old one), the Thresher combo label, and `SniperScopeOverlay` (the flight reticle was projected through the menu camera). `MainMenuCameraController`'s comment is corrected. | 52 reads in 32 files, classified. **Already right:** `ObjectiveIndicator`, `WormholeView`, `PreGameCinematicController`, and `ShipAudioController` (FMOD listener first). **Menu-only, where `Camera.main` is the view:** toys, previews, screenshots, `ConnectingArenaPreview`. **Settings / tools:** `OffscreenCameraSetup`, the stress and explosion harnesses, training. **Left as rows:** `GraphicsSettingsApplier` applies anti-aliasing to `Camera.main` only, so "CM PlayerCam" never gets the setting; `CameraManager` paints the background of `Camera.main` on two of its three paths. |
+
+New rows found while closing these:
+- **R1:** no material uses `OmniShepardFresnelShader` any more (Prisma has a GLSL translation of it). Retire it
+  with `omni_shepard_shader_parity.py`, or keep it as the lab's Breathe reference.
+- **R2:** `ThemeManager.prefab` serializes `BaseMaterialSet: GreenMaterialSet` and `ColorSet`, which the script no
+  longer has (the live set comes from `ThemeManagerDataContainer.asset`). They are dead overrides.
+- **R3:** the anti-aliasing and background-colour reads above (F4, settings side).
+
 ## Follow-ups (refactor rows, measured at ship time 2026-10-12, round 9)
 
 Rows only: none of these is fixed on this branch.

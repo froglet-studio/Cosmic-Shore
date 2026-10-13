@@ -402,8 +402,9 @@ namespace CosmicShore.Gameplay
 
             if (!_cam)
             {
-                // Last resort - but never bind a CameraManager camera (CM PlayerCam is
-                // Camera.main during freestyle, and this rig must never drive it).
+                // Last resort - but never bind a CameraManager camera. Under CameraManager the
+                // MainCamera-tagged one is Bootstrap's Cinemachine-brain "Camera" (CM PlayerCam is
+                // untagged, so it is never Camera.main), and this rig must never drive either.
                 var main = Camera.main;
                 if (main && (!managerRoot || !main.transform.IsChildOf(managerRoot)))
                     _cam = main;

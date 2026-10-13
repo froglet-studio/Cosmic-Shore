@@ -186,34 +186,9 @@ namespace CosmicShore.Gameplay
             prisms.SetPropertyBlock(block);
         }
 
-        static Camera s_viewCamera;
-        static int s_viewCameraFrame = -1;
-
-        // Enter Play Mode keeps statics (domain reload is off): never serve last session's camera.
-        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
-        static void ResetViewCamera()
-        {
-            s_viewCamera = null;
-            s_viewCameraFrame = -1;
-        }
-
-        /// <summary>
-        /// The camera the pilot is looking through: the <see cref="CameraManager"/>'s active controller's camera
-        /// ("CM PlayerCam" in flight, the death or end camera after). NOT <c>Camera.main</c>: Bootstrap's
-        /// MainCamera-tagged "Camera" never moves with the vessel, and a ratchet run against it holds every prism
-        /// still - the prisms read frozen in game while the lab, which has one camera, looked right. Falls back to
-        /// <c>Camera.main</c> where no controller is active (the main menu, a test scene). Resolved once a frame
-        /// for every crystal.
-        /// </summary>
-        static Camera ViewCamera()
-        {
-            if (s_viewCameraFrame == Time.frameCount) return s_viewCamera;
-            s_viewCameraFrame = Time.frameCount;
-            var manager = CameraManager.Instance;
-            var controller = manager ? manager.GetActiveController() as CustomCameraController : null;
-            s_viewCamera = controller && controller.Camera && controller.Camera.isActiveAndEnabled ? controller.Camera : Camera.main;
-            return s_viewCamera;
-        }
+        /// <summary>The gameplay camera (<see cref="CameraManager.ViewCamera"/>), NOT <c>Camera.main</c>: a ratchet run
+        /// against Bootstrap's menu camera held every prism still (round 9).</summary>
+        static Camera ViewCamera() => CameraManager.ViewCamera;
 
         /// <summary>
         /// The mesh sits seated (place 1); the shader carries a prism out to <c>_Reach</c> times its radius at the

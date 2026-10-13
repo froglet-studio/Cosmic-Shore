@@ -1044,7 +1044,7 @@ namespace CosmicShore.Gameplay
                 _comboLabel.fontSize = r * 2.2f * (1f + 0.08f * Mathf.Min(_combo, 12)) * _comboShownScale;
                 _comboLabel.color = ballColor;
                 _comboLabel.transform.position = ballPos + Vector3.up * (r * 3f);
-                var cam = Camera.main;
+                var cam = CameraManager.ViewCamera;   // the label faces the pilot's camera, not the menu's
                 if (cam)
                 {
                     Vector3 away = _comboLabel.transform.position - cam.transform.position;
