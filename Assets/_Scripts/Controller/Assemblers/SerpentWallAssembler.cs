@@ -25,10 +25,9 @@ namespace CosmicShore.Gameplay
     /// <para><b>Crystals</b> (<see cref="SerpentWallShieldByCrystalEffectSO"/>, omni and every
     /// element) draw a beam from the crystal to every live super-shielded seed the collecting
     /// Serpent owns and ripple a shield through each wall, ring by ring. If the Serpent's Mass
-    /// upgrade (Lockdown) is active WHEN the crystal is collected, the wall also twists every brick
-    /// clockwise, which opens one parity of lattice cell and closes the other, and seals the open
-    /// cells with flat danger panels; cells the wall completes afterwards are sealed as they
-    /// close.</para>
+    /// upgrade (Lockdown) is active WHEN the crystal is collected, the wall also seals every
+    /// square hole with a flat danger panel, a crack's width short of the shields around it;
+    /// holes the wall completes afterwards are sealed as their fourth brick lands.</para>
     ///
     /// <para><b>Multiplayer.</b> Like the legacy wall and the Scarab switch, the wall is rebuilt
     /// independently on every peer from replicated inputs (the cloak and stance presses, the
@@ -94,10 +93,7 @@ namespace CosmicShore.Gameplay
         readonly Dictionary<Vector2Int, Member> _members = new();
         readonly Dictionary<Vector2Int, Panel> _panels = new();
 
-        float _twist, _twistFrom, _twistTo, _twistStartedAt;
-        bool _twisting, _locked;
-        int _openParity = -1;
-        float _panelSide, _panelAngle;
+        bool _locked;
         Coroutine _ripple;
 
         public override Prism Prism { get; set; }
@@ -143,9 +139,7 @@ namespace CosmicShore.Gameplay
             _panelsDirty = false;
             _members.Clear();
             _panels.Clear();
-            _twist = 0f;
-            _twisting = _locked = false;
-            _openParity = -1;
+            _locked = false;
 
             // The seed is site (0, 0) and keeps its own long axis up; it takes the brick shape too.
             var brick = SerpentWallLattice.BrickScale(shape.ShortSide, shape.Depth);
@@ -205,22 +199,12 @@ namespace CosmicShore.Gameplay
                 ClaimNextSite();
             }
 
-            // A Lockdown wall seals each open cell as soon as its four bricks stand, not only on
-            // the next crystal.
-            if (_panelsDirty && _locked && !_twisting)
+            // A Lockdown wall seals each hole as soon as its four bricks stand, not only on the
+            // next crystal.
+            if (_panelsDirty && _locked)
             {
                 _panelsDirty = false;
                 LayPanels();
-            }
-
-            if (_twisting)
-            {
-                float d = _shape.Config.LockTwistSeconds;
-                float t = d <= 0f ? 1f : Mathf.Clamp01((Time.time - _twistStartedAt) / d);
-                _twist = Mathf.Lerp(_twistFrom, _twistTo, t);
-                if (t >= 1f) _twisting = false;
-                Prism.transform.rotation = SiteRotation(Vector2Int.zero);
-                Prism.NotifyPositionChanged();
             }
 
             SteerMembers();
@@ -349,15 +333,7 @@ namespace CosmicShore.Gameplay
                 Vector3 target = SitePosition(m.Site);
                 Quaternion rot = SiteRotation(m.Site);
 
-                if (m.Landed)
-                {
-                    if (_twisting)
-                    {
-                        t.rotation = rot;
-                        m.Prism.NotifyPositionChanged();
-                    }
-                    continue;
-                }
+                if (m.Landed) continue;
 
                 bool own = m.Prism.Domain == _shape.Domain;
                 float speed = own ? cfg.OwnPullSpeed : cfg.OpponentPullSpeed;
@@ -429,7 +405,7 @@ namespace CosmicShore.Gameplay
 
             if (LockdownActive() && IsActive)
             {
-                if (!_locked) yield return Twist();
+                _locked = true;
                 LayPanels();
             }
             _ripple = null;
@@ -444,31 +420,10 @@ namespace CosmicShore.Gameplay
             return abilities && abilities.IsUpgradeActive(Element.Mass);
         }
 
-        IEnumerator Twist()
-        {
-            var cfg = _shape.Config;
-            _locked = true;
-            _twistFrom = _twist;
-            _twistTo = cfg.LockTwistDegrees;
-            _twistStartedAt = Time.time;
-            _twisting = true;
-
-            _openParity = SerpentWallLattice.OpeningParity(_shape.ShortSide, _twistTo);
-            if (_openParity >= 0)
-            {
-                var cell = _openParity == 0 ? Vector2Int.zero : new Vector2Int(1, 0);
-                (_panelSide, _panelAngle) =
-                    SerpentWallLattice.LargestClearSquare(cell.x, cell.y, _shape.ShortSide, _twistTo);
-            }
-
-            while (_twisting) yield return null;
-        }
-
-        /// <summary>Seal every open cell whose four corner bricks are standing. Re-run on each
-        /// crystal, so a panel that was shot out comes back with the next omni.</summary>
+        /// <summary>Seal every hole whose four corner bricks are standing. Re-run on each crystal,
+        /// so a panel that was shot out comes back with the next one.</summary>
         void LayPanels()
         {
-            if (_openParity < 0 || _panelSide <= 0f) return;
             var channel = _shape.Config.PrismSpawnChannel;
             if (channel == null)
             {
@@ -485,7 +440,6 @@ namespace CosmicShore.Gameplay
 
             foreach (var cell in cells)
             {
-                if (SerpentWallLattice.CellParity(cell.x, cell.y) != _openParity) continue;
                 if (!CornerStanding(cell.x, cell.y) || !CornerStanding(cell.x + 1, cell.y) ||
                     !CornerStanding(cell.x + 1, cell.y + 1) || !CornerStanding(cell.x, cell.y + 1))
                     continue;
@@ -513,10 +467,11 @@ namespace CosmicShore.Gameplay
         Prism LayPanel(PrismEventChannelWithReturnSO channel, Vector2Int cell)
         {
             Vector2 c = SerpentWallLattice.CellCenter(cell.x, cell.y, _pitch);
+            var (side, angle) = SerpentWallLattice.CellPanel(cell.x, cell.y, _shape.ShortSide,
+                _shape.Config.LockPanelClearance * _shape.ShortSide);
+            if (side <= 0f) return null;
             Vector3 pos = _origin + _frame * new Vector3(c.x, c.y, 0f);
-            Quaternion rot = SerpentWallLattice.PanelRotation(_frame, _panelAngle);
-            // A hair under the clear size, so a panel seals the cell without grinding its corners.
-            float side = _panelSide * 0.98f;
+            Quaternion rot = SerpentWallLattice.PanelRotation(_frame, angle);
             var scale = new Vector3(side, side, _shape.Config.LockPanelThickness);
 
             var ret = channel.RaiseEvent(new PrismEventData
@@ -556,7 +511,7 @@ namespace CosmicShore.Gameplay
         }
 
         Quaternion SiteRotation(Vector2Int site) =>
-            SerpentWallLattice.BrickRotation(_frame, site.x, site.y, _twist);
+            SerpentWallLattice.BrickRotation(_frame, site.x, site.y);
 
         static bool IsAlive(Prism p, float bornAt) =>
             p && !p.destroyed && p.gameObject.activeInHierarchy &&

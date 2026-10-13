@@ -14,10 +14,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   cooldownSeconds: 15
   seedWallSo: {fileID: 11400000, guid: 0617ae3be509fdb499c7f997becf1162, type: 2}
-  ghostShipMaterial: {fileID: 2100000, guid: 518e52d502934984ca138775b988fb4c, type: 2}
-  prismCloakTransparent: {fileID: 2100000, guid: 35264d3f23e33d44ebdec6d9cade218a,
-    type: 2}
-  prismCloakOpaque: {fileID: 0}
-  pilotGhostAlpha: 0.3
-  pilotTrailShade: 0.35
+  ghostShipMaterial: {fileID: 2100000, guid: d869d6858f044495b49c9bea24b82afa, type: 2}
+  gameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}
+  pilotTrailAlpha: 0.4
+  fadeInSeconds: 0.4
+  fadeOutSeconds: 0.7
+  transitionFlare: 1.5
   illusionMorphSeconds: 0.6

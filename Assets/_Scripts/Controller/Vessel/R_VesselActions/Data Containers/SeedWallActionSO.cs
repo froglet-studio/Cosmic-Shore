@@ -67,13 +67,11 @@ namespace CosmicShore.Gameplay
         [SerializeField, Min(0.01f)] private float beamWidth = 0.6f;
 
         [Header("Serpent lattice - Mass level 5: Lockdown")]
-        [Tooltip("Degrees every brick turns clockwise (seen from the Serpent's seat) on the first " +
-                 "omni crystal after a Mass-5 wall is placed. The twist opens one parity of cell " +
-                 "and closes the other; 15 opens the hole ~9% wider than at rest (about 20 is the peak). " +
-                 "Capped at SerpentWallLattice.MaxTwistDegrees, the most the shield gap is sized for.")]
-        [SerializeField, Range(1f, SerpentWallLattice.MaxTwistDegrees)] private float lockTwistDegrees = 15f;
-        [Tooltip("Seconds the twist takes to play out.")]
-        [SerializeField, Min(0f)] private float lockTwistSeconds = 0.4f;
+        [Tooltip("Crack left between each danger panel and the shielded bricks around its hole, " +
+                 "as a multiple of the brick's short side (so it scales with Mass). The panel's " +
+                 "sides run parallel to the shield edges, so the crack is the same width all round. " +
+                 "0.25 is 0.75 units at rest, a panel 10.6 across in a 12.1 hole.")]
+        [SerializeField, Range(0f, 1f)] private float lockPanelClearance = 0.25f;
         [Tooltip("Thickness of a danger panel along the wall normal.")]
         [SerializeField, Min(0.02f)] private float lockPanelThickness = 0.15f;
         [Tooltip("Spawns the danger panels. The same channel every vessel lays standalone prisms " +
@@ -100,8 +98,7 @@ namespace CosmicShore.Gameplay
         public float ShieldRippleStep => shieldRippleStep;
         public float BeamSeconds => beamSeconds;
         public float BeamWidth => beamWidth;
-        public float LockTwistDegrees => lockTwistDegrees;
-        public float LockTwistSeconds => lockTwistSeconds;
+        public float LockPanelClearance => lockPanelClearance;
         public float LockPanelThickness => lockPanelThickness;
         public PrismEventChannelWithReturnSO PrismSpawnChannel => prismSpawnChannel;
 

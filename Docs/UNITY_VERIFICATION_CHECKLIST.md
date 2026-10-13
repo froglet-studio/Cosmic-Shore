@@ -71,8 +71,8 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 seed now grows `SerpentWallAssembler`'s lattice (2:1 bricks, checkerboard orientation, pitch 5 x
 short so shielded octahedra - 3x the box's half-extents - point long vertex at short vertex with half a short side of air), Mass-scaled and snapshotted at
 placement. Omni crystals beam to every live seed (`SerpentWallShieldByCrystalEffectSO`) and ripple a
-shield through each wall; a Mass-5 wall twists 15 degrees and seals its opened holes with danger
-panels. Serpent map Mass row filled; HUD Mass slot bound to a placeholder icon.
+shield through each wall; a Mass-5 wall seals its holes with danger panels (it twisted first and
+panelled half of them, until the fourth playtest). Serpent map Mass row filled; HUD Mass slot bound to a placeholder icon.
 
 **Garrett's first playtest (2026-10-10):** the wall stopped after barely any growth and its prisms
 piled into each other. Cause: the pitch was fitted to the BOX (1.5 x short) but a shield draws 3x
@@ -103,14 +103,30 @@ translucent hull and a dimmed trail while others see neither; the illusion now c
 seed and the seed's stellation blooms; `Serpent Prism.prefab` and `Prism Interactive.prefab` were
 on the built-in cube and now use the 24-face prism mesh. Re-test steps 1, 2, 6 and 8.
 
+**Garrett's fourth playtest (2026-10-13):** drop the Lockdown twist and put same-size danger panels
+in every square hole, with a crack of clearance to the shielded bricks; and the cloak's ghost looked
+cheap: too dark, and it came back with a cut. Fixed: the twist is gone (`lockTwistDegrees` /
+`lockTwistSeconds` retired, `SerpentWallLattice` lost its twist maths); `SerpentWallLattice.CellPanel`
+sizes one panel for every hole, tilted so its sides run parallel to the four shield edges, shrunk by
+`lockPanelClearance` (0.25 x short) so the crack is even all round (edit-mode tests check it against
+a brute-force search). The pilot's hull now wears a new additive Fresnel shader
+(`_Graphics/Materials/Graphs/CloakGhost.shader` + `CloakGhost.mat`, domain-tinted at runtime) instead
+of a 30%-alpha dark-blue Lit material; the trail fades through the prism dither (BlockGraph `_Alpha`)
+to 0.4 for the pilot and 0 for everyone else instead of being darkened; the cloak fades in over
+0.4 s from a flash, and the reveal (0.7 s) builds a flash, swaps the hull back under it, fades a
+ghost glow off the hull and fills the trail back in. `prismCloakTransparent` / `prismCloakOpaque` /
+`pilotGhostAlpha` / `pilotTrailShade` retired. The shader has never been compiled: check the
+console for shader errors first. Re-test steps 1, 2 and 6.
+
 **Not opened in Unity** (no editor in the session). Offline: see the PR for the `unity_refcompile`
 result.
 
 **Verify in editor:** the eight steps in SERPENT_SEED_WALL.md § "Editor checks".
 
 **First-pass tuning:** `SeedWallAction.asset` - brick 3 x 6 x 0.5, Mass x2 at 10, claim every
-0.15 s, recruit radius 40, pull 20 / 6 u/s, ripple 0.08 s per ring, twist 15 degrees over 0.4 s,
-panel thickness 0.15.
+0.15 s, recruit radius 40, pull 20 / 6 u/s, ripple 0.08 s per ring, panel clearance 0.25 x short,
+panel thickness 0.15. `CloakSeedWallAction.asset` - pilot trail alpha 0.4, fade in 0.4 s, reveal 0.7 s,
+flare 1.5, illusion morph 0.6 s.
 
 ---
 

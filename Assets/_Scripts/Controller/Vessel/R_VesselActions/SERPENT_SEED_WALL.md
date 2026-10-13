@@ -14,14 +14,21 @@ The Serpent's stopped stance and its cloak are built to look like each other.
   that remove super-shields.
 - **Cloaking** (RT unscoped, `CloakSeedWallAction`) leaves the same super-shielded seed growing the
   same wall, plus an illusion of the hull frozen where it was, which reads as a Serpent that just
-  stopped. The real Serpent flies on, cloaked. Everyone else sees neither the hull nor its trail;
-  the pilot flying it sees a translucent hull (`pilotGhostAlpha` 0.3, a runtime clone of the ghost
-  material, which is authored fully clear) and their trail dimmed (`pilotTrailShade` 0.35 through
-  `Prism.SetColorShade`), so they know they are hidden without losing their own ship. When the
-  cloak ends the illusion collapses into the seed over `illusionMorphSeconds` (0.6 s: travels to
-  it, turns to its pose, shrinks to its size), and the seed's stellation blooms again as the
-  hull and trail reappear. (Until 2026-10-10 the executor's `IsLocalUser` was hard-wired true, so
-  the pilot got the invisible view, and the illusion vanished in place.)
+  stopped. The real Serpent flies on, cloaked. Everyone else sees neither the hull nor its trail.
+  The pilot flying it sees their hull as a glowing outline in their domain colour
+  (`CloakGhost.shader`: additive Fresnel rim, a faint fill and slow bands running nose to tail)
+  and their trail as a ghost of itself, drawn through the prism dither at `pilotTrailAlpha` (0.4),
+  so they know they are hidden without losing their own ship.
+- **No cuts.** The cloak fades in over `fadeInSeconds` (0.4 s): the trail dissolves (to 0.4 for
+  the pilot, to nothing for everyone else) and the pilot's hull settles from a flash
+  (`transitionFlare`) into its outline. When the cloak ends, the illusion collapses into the seed
+  over `illusionMorphSeconds` (0.6 s: travels to it, turns to its pose, shrinks to its size), then
+  the reveal runs over `fadeOutSeconds` (0.7 s): the pilot's ghost brightens into a flash, the hull
+  takes its own materials back under it (and reappears for everyone else) wrapped in a ghost glow
+  that fades off it, the seed's stellation blooms, and the trail fills back in until it is solid.
+  (Until 2026-10-10 `IsLocalUser` was hard-wired true, so the pilot got the invisible view. Until
+  2026-10-13 the pilot's hull was a 30%-alpha dark-blue Lit material and the trail was darkened,
+  which read as broken rather than cloaked, and everything snapped back in one frame.)
 
 So a seed with a Serpent next to it is either a stopped, invulnerable Serpent or a cloak decoy,
 and the wall gives nothing away about which. A seed shot immediately (the Sniper Shot at Charge 5,
@@ -37,7 +44,7 @@ The Serpent's trail is laid UNSHIELDED (Garrett, 2026-10-10; `Serpent.prefab` `V
 | Geometry | `SerpentWallLattice` (pure, tested by `SerpentWallLatticeTests`). |
 | Bricks | Aspect 2: short side x long side 2x short x depth. At rest 3 x 6 x 0.5, the Serpent trail's own `BaseScale`. |
 | Pattern | Checkerboard of orientations: site (i, j) is long-axis-up when i + j is even (the seed is (0, 0) and keeps its own up), long-axis-right when odd. A herringbone that is symmetric, with a square hole at every lattice cell, rather than a strict tiling. |
-| Spacing | Pitch = 5 x short (15 at rest). A shielded prism draws as the octahedron that circumscribes its box at 3x the box's half-extents (`OctahedronMeshGenerator.CIRCUMSCRIBING_SCALE`), whose cross-section in the wall plane is a rhombus. Each brick's LONG-axis vertex points at its neighbour's SHORT-axis vertex, where they would meet at 4.5 x short, and `SerpentWallLattice.ShieldGap` adds half a short side of air (1.5 at rest). The gap also clears the super-shielded seed, whose stellation covers the whole 3x box face-on, at every twist up to `MaxTwistDegrees` (25). The hole is a square of side 4 x short. Unshielded, the bricks stand well apart: that gap is the room the shield needs. (The first cut spaced them by the BOX, 1.5 x short, and shielded bricks interpenetrated into one clump; the second made the vertices meet exactly, and in play shielded bricks read as touching.) |
+| Spacing | Pitch = 5 x short (15 at rest). A shielded prism draws as the octahedron that circumscribes its box at 3x the box's half-extents (`OctahedronMeshGenerator.CIRCUMSCRIBING_SCALE`), whose cross-section in the wall plane is a rhombus. Each brick's LONG-axis vertex points at its neighbour's SHORT-axis vertex, where they would meet at 4.5 x short, and `SerpentWallLattice.ShieldGap` adds half a short side of air (1.5 at rest). The gap also clears the super-shielded seed, whose stellation covers the whole 3x box face-on. The hole is a square of side 4.02 x short, tilted 26.6 degrees (see Lockdown). Unshielded, the bricks stand well apart: that gap is the room the shield needs. (The first cut spaced them by the BOX, 1.5 x short, and shielded bricks interpenetrated into one clump; the second made the vertices meet exactly, and in play shielded bricks read as touching.) |
 | Growth | Every `siteClaimInterval` (0.15 s), for the seed's whole life, the first open site outward from the seed (a disc, by distance then angle) that has a loose prism within `recruitRadius` (40 x Mass multiplier) PLUS the site's distance from the seed pulls it into place and reshapes it; up to 6 open sites past the frontier are tried per claim. The loose mass is the trail running back from the seed, so a radius about the site alone would starve every site past the first ring. There is no brick limit (Garrett, 2026-10-10: "prism walls should continue growing indefinitely"): a site with nothing in reach is tried again later, and a brick that is shot out reopens its site. `SerpentWallLattice.GrowthOrder` has a stable prefix so the order extends forever without moving a standing brick. |
 | Stealing | The Serpent's own prisms fly in at `ownPullSpeed` (20 u/s), an opponent's at `opponentPullSpeed` (6 u/s), and an opponent's prism is stolen when it lands. Super-shielded prisms, other seeds and creature bodies (`HealthPrism`) are never recruited. |
 | Ends | Never on its own: leaving the stance or the cloak ending does not stop growth. The wall stops growing and answering crystals, and lets its bricks go as ordinary prisms, when the seed is destroyed or loses its super-shield. |
@@ -70,23 +77,21 @@ locks up, however old the wall is. (It was decided at placement until 2026-10-10
 before the upgrade never locked; the replicated unlock bit is read at crystal time instead, so
 every peer still agrees.)
 
-1. Every brick turns `lockTwistDegrees` (15) clockwise as seen from the Serpent's seat, over
-   `lockTwistSeconds` (0.4 s). Every lattice cell keeps four-fold symmetry, so it stays square,
-   but the two mirror-image kinds of cell go opposite ways: one parity closes and the other opens.
-   That is the checkerboard. A clockwise twist opens the ODD cells (i + j odd, counting the seed's
-   lower-left cell as even). At 15 degrees the open hole grows from 12.0 to 13.1 (short = 3) and
-   the closed one shrinks to 9.6; the opening peaks around 20 degrees. Neighbouring shields keep
-   clear air at every twist up to 25 degrees (`SerpentWallLatticeTests`). Bricks and panels are
-   turned only through `SerpentWallLattice.BrickRotation` / `PanelRotation`: the first build signed
-   the twist separately in the assembler, turned the bricks counter-clockwise against the maths,
-   and laid the panels in the cells that had closed.
-2. Each open cell whose four corner bricks are standing is sealed with a flat DANGER panel
-   (`lockPanelThickness` 0.15), the largest square that fits between the twisted bricks
-   (`SerpentWallLattice.LargestClearSquare`), laid through `EventOnSpawnPrismAndReturn` in the
-   Serpent's domain.
-3. Later crystals re-shield the wall and replace any panel that was shot out. The twist happens
-   once: "lock up" is a final state, not a ratchet. A locked wall keeps growing; new bricks land
-   already twisted, and each open cell is sealed as soon as its four bricks stand.
+1. Every square hole whose four corner bricks are standing is sealed with a flat DANGER panel
+   (`lockPanelThickness` 0.15), laid through `EventOnSpawnPrismAndReturn` in the Serpent's domain.
+2. Every panel is the same size (`SerpentWallLattice.CellPanel`). The hole's four sides are the
+   four shield edges facing it, so the panel is tilted to match them: 26.6 degrees
+   (`atan(1 / Aspect)`) in an even cell, the mirror angle in an odd one. It is shrunk by
+   `lockPanelClearance` (0.25 x short, 0.75 at rest: a 10.6 panel in a 12.1 hole) so an even crack
+   runs between the panel and every shielded brick around it; the wall reads as tiles with
+   cracks. `SerpentWallLatticeTests` checks the crack on all four sides and that a brute-force
+   search finds no bigger square.
+3. Later crystals re-shield the wall and replace any panel that was shot out. A locked wall keeps
+   growing, and each hole is sealed as soon as its fourth brick lands.
+
+Until 2026-10-13 Lockdown first TWISTED every brick 15 degrees, which closed half the holes and
+opened the other half, and panelled only the open half. Garrett dropped the twist for one panel
+size in every hole.
 
 ## Prism model
 
@@ -110,14 +115,17 @@ the legacy wall could.
    holes, alternating up/right, and it KEEPS growing after you fly off, for as long as there is
    trail in reach. Shoot a brick out: the site refills.
 2. Cloak near an opponent's trail: their prisms fly in slower and change colour as they land.
-   While cloaked you see your hull translucent and your trail dimmed; a second player sees
-   neither. When the cloak ends the illusion shrinks into the seed and the seed's spikes bloom.
+   The cloak fades in: your hull flashes and settles into a glowing outline in your domain
+   colour, and your trail dissolves to a dithered ghost; a second player sees the trail dissolve
+   to nothing and the hull gone. When the cloak ends the illusion shrinks into the seed, your
+   outline brightens, the hull comes back under a glow that fades off, the seed's spikes bloom
+   and the trail fills back in. Nothing snaps. Check the console for CloakGhost shader errors.
 3. Shoot the seed right after placing it: nothing grows.
 4. Collect an omni crystal with two live walls: a beam to each seed, then a shield ripple; the
    shielded diamonds point tip to tip with a visible gap, and the seed's spikes touch nothing.
 5. Raise Mass to 10, place a wall: bricks and spacing are twice the size.
-6. Place a wall, raise Mass to 5, then collect any crystal: the bricks twist, half the holes close and
-   the rest get red danger panels that fit without poking through. The panels go in the holes
-   that OPENED (the bigger ones), never the ones that closed.
+6. Place a wall, raise Mass to 5, then collect any crystal: nothing twists, and EVERY square hole
+   gets a red danger panel of the same size, tilted to match the diamonds around it, with an even
+   crack between the panel and each shielded brick.
 7. The HUD row shows the Seed Wall placeholder icon in the Mass slot.
 8. The wall's bricks and panels show the 24-face prism, not a plain cube.

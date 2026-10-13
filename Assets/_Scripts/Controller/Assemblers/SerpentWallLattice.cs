@@ -21,28 +21,23 @@ namespace CosmicShore.Gameplay
     /// side from the brick's centre. Each brick's LONG-axis vertex points at the neighbouring
     /// brick's SHORT-axis vertex, and the pitch leaves <see cref="ShieldGap"/> of air between them:
     /// <c>pitch = 3 x (long/2 + short/2) + gap</c>, which is <c>5 x short</c> at aspect 2. So the
-    /// wall is a lattice of diamonds that nearly touch once an omni crystal shields it, and widely
-    /// spaced plain bricks before. (The first cut used the BOX's half-extents and packed the bricks
-    /// three times too tight: shielded, they interpenetrated into one clump. The second made the
-    /// vertices meet exactly, and in play shielded bricks read as touching, and the super-shielded
-    /// seed, whose stellation reaches out to the corners of the 3x box, cut into its neighbours
-    /// once the Lockdown twist turned it.)</para>
+    /// wall is a lattice of diamonds that nearly touch once a crystal shields it, and widely spaced
+    /// plain bricks before. (The first cut used the BOX's half-extents and packed the bricks three
+    /// times too tight: shielded, they interpenetrated into one clump. The second made the vertices
+    /// meet exactly, and in play shielded bricks read as touching.)</para>
     ///
-    /// <para><b>The Mass-5 twist.</b> Turning every brick clockwise about its own centre by the
-    /// same angle keeps each cell square (every cell has four-fold symmetry) but changes its size,
-    /// and the two kinds of cell, which are mirror images, go opposite ways: one parity closes and
-    /// the other opens. That is the checkerboard. The open cells are sealed with flat danger panels
-    /// sized here by <see cref="LargestClearSquare"/>. The runtime turns bricks and panels ONLY
-    /// through <see cref="BrickRotation"/> and <see cref="PanelRotation"/>, which are where this
-    /// file's 2D angles meet Unity's quaternions: the first build signed them independently in the
-    /// assembler, twisted the bricks the opposite way to these maths, and so laid its panels in
-    /// the cells that had CLOSED.</para>
+    /// <para><b>The Mass-5 panels.</b> Every hole is the same square, tilted so its four sides lie
+    /// parallel to the four shield edges around it (<see cref="CellPanel"/>): the even cells one
+    /// way, the odd cells the mirror way. A panel a little smaller than the hole leaves an even
+    /// crack of <c>clearance</c> along every side. (Lockdown first TWISTED the bricks so half the
+    /// holes closed and panels went in the other half; Garrett dropped the twist on 2026-10-13 in
+    /// favour of one panel size in every hole, with cracks between.) The runtime turns
+    /// bricks and panels ONLY through <see cref="BrickRotation"/> and <see cref="PanelRotation"/>,
+    /// which are where this file's 2D angles meet Unity's quaternions.</para>
     ///
     /// Coordinates are wall-local: x along the seed's right, y along its up, in world units.
-    /// Angles are in degrees; a positive twist is CLOCKWISE seen from the Serpent's seat (looking
-    /// along the seed's forward), which is a NEGATIVE angle both in this file's counter-clockwise
-    /// 2D maths and for <c>Quaternion.AngleAxis</c> about forward: with x right and y up, a positive
-    /// AngleAxis about forward turns right toward up, which from the seat is counter-clockwise.
+    /// Angles are in degrees, counter-clockwise in the 2D maths, which is also
+    /// <c>Quaternion.AngleAxis</c> about the seed's forward (it turns right toward up).
     /// </summary>
     public static class SerpentWallLattice
     {
@@ -54,12 +49,8 @@ namespace CosmicShore.Gameplay
         public const float ShieldReach = OctahedronMeshGenerator.CIRCUMSCRIBING_SCALE;
 
         /// <summary>Air left between neighbouring shields, long vertex to short vertex, as a
-        /// multiple of the short side. Clears the super-shielded seed's stellation through the
-        /// whole <see cref="MaxTwistDegrees"/> range as well.</summary>
+        /// multiple of the short side. Clears the super-shielded seed's stellation as well.</summary>
         public const float ShieldGap = 0.5f;
-
-        /// <summary>Largest Lockdown twist the gap is sized for (the twist's authoring range).</summary>
-        public const float MaxTwistDegrees = 25f;
 
         /// <summary>Lattice pitch: the shield's reach along half the long axis plus half the short
         /// axis (where the two shields' vertices would meet), plus <see cref="ShieldGap"/>.</summary>
@@ -77,19 +68,15 @@ namespace CosmicShore.Gameplay
         public static Vector2 SiteCenter(int i, int j, float pitch) => new Vector2(i * pitch, j * pitch);
 
         /// <summary>
-        /// World rotation of brick (i, j) in a wall whose seed sits at <paramref name="frame"/>,
-        /// twisted CLOCKWISE (seen from the seat) by <paramref name="twistDegrees"/>. Local y is the
-        /// brick's long axis, so a long-axis-RIGHT site turns a quarter about forward. Agrees with
-        /// <see cref="Rhombus"/> by construction (SerpentWallLatticeTests pins it).
+        /// World rotation of brick (i, j) in a wall whose seed sits at <paramref name="frame"/>.
+        /// Local y is the brick's long axis, so a long-axis-RIGHT site turns a quarter about
+        /// forward. Agrees with <see cref="Rhombus"/> (SerpentWallLatticeTests pins it).
         /// </summary>
-        public static Quaternion BrickRotation(Quaternion frame, int i, int j, float twistDegrees)
-        {
-            Quaternion local = IsLongAxisUp(i, j) ? Quaternion.identity : Quaternion.AngleAxis(90f, Vector3.forward);
-            return Quaternion.AngleAxis(-twistDegrees, frame * Vector3.forward) * (frame * local);
-        }
+        public static Quaternion BrickRotation(Quaternion frame, int i, int j) =>
+            IsLongAxisUp(i, j) ? frame : frame * Quaternion.AngleAxis(90f, Vector3.forward);
 
         /// <summary>World rotation of a cell's panel at the in-plane angle
-        /// <see cref="LargestClearSquare"/> returned (counter-clockwise, this file's 2D maths).</summary>
+        /// <see cref="CellPanel"/> returned (counter-clockwise, this file's 2D maths).</summary>
         public static Quaternion PanelRotation(Quaternion frame, float angleDegrees) =>
             Quaternion.AngleAxis(angleDegrees, frame * Vector3.forward) * frame;
 
@@ -97,8 +84,28 @@ namespace CosmicShore.Gameplay
         public static Vector2 CellCenter(int i, int j, float pitch) =>
             new Vector2((i + 0.5f) * pitch, (j + 0.5f) * pitch);
 
-        /// <summary>Cells come in two mirror-image kinds; the twist opens one and closes the other.</summary>
-        public static int CellParity(int i, int j) => (i + j) & 1;
+        /// <summary>
+        /// The danger panel for cell (i, j): the square hole between its four shielded bricks,
+        /// shrunk so an even crack of <paramref name="clearance"/> (world units) runs along every
+        /// side. The hole's sides lie on the four shield edges facing the cell, which are parallel
+        /// in pairs and meet at right angles, so the panel is tilted to match:
+        /// <c>atan(1 / Aspect)</c> (26.6 degrees) in an even cell (i + j even) and the mirror angle in
+        /// an odd one. Every cell's panel is the same size. Returns side 0 when the clearance
+        /// leaves no room.
+        /// </summary>
+        public static (float side, float angleDegrees) CellPanel(int i, int j, float shortSide, float clearance)
+        {
+            // Distance from the cell centre to the edge of the lower-left brick's shield that faces
+            // it, worked in the even cell (brick long-axis up, rhombus Aspect*x + y = Reach*Aspect*short/2):
+            // ((Aspect + 1) * pitch/2 - Reach * Aspect * short/2) / sqrt(Aspect^2 + 1). The other
+            // three edges are the same distance by the cell's symmetry.
+            float pitch = Pitch(shortSide);
+            float apothem = ((Aspect + 1f) * pitch - ShieldReach * Aspect * shortSide)
+                            / (2f * Mathf.Sqrt(Aspect * Aspect + 1f));
+            float side = Mathf.Max(0f, 2f * (apothem - clearance));
+            float tilt = Mathf.Atan2(1f, Aspect) * Mathf.Rad2Deg;
+            return (side, ((i + j) & 1) == 0 ? tilt : 90f - tilt);
+        }
 
         /// <summary>
         /// The order the wall claims sites in: outward from the seed by distance, then by angle,
@@ -140,19 +147,17 @@ namespace CosmicShore.Gameplay
         /// the corners of the 3x box, so seen face-on it covers the whole 3x rectangle - a
         /// conservative outline (at the wall plane itself the stellation is only the rhombus).
         /// </summary>
-        public static void StellatedFootprint(int i, int j, float shortSide, float pitch, float twistDegrees,
-            Vector2[] into)
+        public static void StellatedFootprint(int i, int j, float shortSide, float pitch, Vector2[] into)
         {
             float halfLong = ShieldReach * shortSide * Aspect * 0.5f;
             float halfShort = ShieldReach * shortSide * 0.5f;
             bool up = IsLongAxisUp(i, j);
             float hx = up ? halfShort : halfLong, hy = up ? halfLong : halfShort;
             Vector2 c = SiteCenter(i, j, pitch);
-            float rad = -twistDegrees * Mathf.Deg2Rad;
-            into[0] = c + Rotate(new Vector2(hx, hy), rad);
-            into[1] = c + Rotate(new Vector2(-hx, hy), rad);
-            into[2] = c + Rotate(new Vector2(-hx, -hy), rad);
-            into[3] = c + Rotate(new Vector2(hx, -hy), rad);
+            into[0] = c + new Vector2(hx, hy);
+            into[1] = c + new Vector2(-hx, hy);
+            into[2] = c + new Vector2(-hx, -hy);
+            into[3] = c + new Vector2(hx, -hy);
         }
 
         /// <summary>Sites other than the seed within Euclidean distance <paramref name="radius"/>.</summary>
@@ -170,11 +175,9 @@ namespace CosmicShore.Gameplay
 
         /// <summary>
         /// The shielded cross-section of brick (i, j): a rhombus with vertices on the long and short
-        /// axes at the shield's reach, turned clockwise by <paramref name="twistDegrees"/> about its
-        /// own centre.
+        /// axes at the shield's reach.
         /// </summary>
-        public static void Rhombus(int i, int j, float shortSide, float pitch, float twistDegrees,
-            Vector2[] into)
+        public static void Rhombus(int i, int j, float shortSide, float pitch, Vector2[] into)
         {
             float halfLong = ShieldReach * shortSide * Aspect * 0.5f;
             float halfShort = ShieldReach * shortSide * 0.5f;
@@ -182,108 +185,10 @@ namespace CosmicShore.Gameplay
             Vector2 a = up ? new Vector2(0f, halfLong) : new Vector2(halfLong, 0f);
             Vector2 b = up ? new Vector2(halfShort, 0f) : new Vector2(0f, halfShort);
             Vector2 c = SiteCenter(i, j, pitch);
-            float rad = -twistDegrees * Mathf.Deg2Rad;
-            into[0] = c + Rotate(a, rad);
-            into[1] = c + Rotate(b, rad);
-            into[2] = c + Rotate(-a, rad);
-            into[3] = c + Rotate(-b, rad);
-        }
-
-        /// <summary>
-        /// The largest square that fits in cell (i, j) between its four twisted shielded bricks,
-        /// centred on the cell: its side and its in-plane angle (degrees, counter-clockwise in this
-        /// file's 2D maths). Searched over angle in <paramref name="angleStepDegrees"/> steps and
-        /// bisected on size; the cell has four-fold symmetry so 0..90 degrees covers every angle.
-        /// </summary>
-        public static (float side, float angleDegrees) LargestClearSquare(
-            int i, int j, float shortSide, float twistDegrees, float angleStepDegrees = 1f)
-        {
-            float pitch = Pitch(shortSide);
-            var bricks = new Vector2[4][];
-            int k = 0;
-            foreach (var s in new[] { (i, j), (i + 1, j), (i + 1, j + 1), (i, j + 1) })
-            {
-                bricks[k] = new Vector2[4];
-                Rhombus(s.Item1, s.Item2, shortSide, pitch, twistDegrees, bricks[k]);
-                k++;
-            }
-
-            Vector2 center = CellCenter(i, j, pitch);
-            var square = new Vector2[4];
-            float bestSide = 0f, bestAngle = 0f;
-            float step = Mathf.Max(0.1f, angleStepDegrees);
-            for (float deg = 0f; deg < 90f; deg += step)
-            {
-                float lo = 0f, hi = 3f * ShieldReach * shortSide;
-                for (int iter = 0; iter < 32; iter++)
-                {
-                    float mid = 0.5f * (lo + hi);
-                    Square(center, mid, deg, square);
-                    bool hit = false;
-                    for (int b = 0; b < 4 && !hit; b++) hit = Overlaps(square, bricks[b]);
-                    if (hit) hi = mid; else lo = mid;
-                }
-                if (lo > bestSide) { bestSide = lo; bestAngle = deg; }
-            }
-            return (bestSide, bestAngle);
-        }
-
-        /// <summary>
-        /// Which cell parity the twist OPENS (its clear square is larger than at rest), or -1 when
-        /// the twist is too small to open either.
-        /// </summary>
-        public static int OpeningParity(float shortSide, float twistDegrees)
-        {
-            float rest = LargestClearSquare(0, 0, shortSide, 0f).side;
-            float even = LargestClearSquare(0, 0, shortSide, twistDegrees).side;
-            float odd = LargestClearSquare(1, 0, shortSide, twistDegrees).side;
-            const float eps = 1e-3f;
-            if (even > rest + eps && even >= odd) return 0;
-            if (odd > rest + eps) return 1;
-            return -1;
-        }
-
-        static Vector2 Rotate(Vector2 v, float rad)
-        {
-            float c = Mathf.Cos(rad), s = Mathf.Sin(rad);
-            return new Vector2(v.x * c - v.y * s, v.x * s + v.y * c);
-        }
-
-        static void Square(Vector2 center, float side, float degrees, Vector2[] into)
-        {
-            float h = side * 0.5f, rad = degrees * Mathf.Deg2Rad;
-            into[0] = center + Rotate(new Vector2(h, h), rad);
-            into[1] = center + Rotate(new Vector2(-h, h), rad);
-            into[2] = center + Rotate(new Vector2(-h, -h), rad);
-            into[3] = center + Rotate(new Vector2(h, -h), rad);
-        }
-
-        /// <summary>Separating-axis test for two convex quads. Touching counts as clear.</summary>
-        static bool Overlaps(Vector2[] a, Vector2[] b) => !HasSeparatingAxis(a, a, b) && !HasSeparatingAxis(b, a, b);
-
-        static bool HasSeparatingAxis(Vector2[] edges, Vector2[] a, Vector2[] b)
-        {
-            const float eps = 1e-5f;
-            for (int e = 0; e < edges.Length; e++)
-            {
-                Vector2 d = edges[(e + 1) % edges.Length] - edges[e];
-                var axis = new Vector2(-d.y, d.x);
-                Project(a, axis, out float aMin, out float aMax);
-                Project(b, axis, out float bMin, out float bMax);
-                if (aMax <= bMin + eps || bMax <= aMin + eps) return true;
-            }
-            return false;
-        }
-
-        static void Project(Vector2[] poly, Vector2 axis, out float min, out float max)
-        {
-            min = max = Vector2.Dot(poly[0], axis);
-            for (int p = 1; p < poly.Length; p++)
-            {
-                float v = Vector2.Dot(poly[p], axis);
-                if (v < min) min = v;
-                if (v > max) max = v;
-            }
+            into[0] = c + a;
+            into[1] = c + b;
+            into[2] = c - a;
+            into[3] = c - b;
         }
     }
 }

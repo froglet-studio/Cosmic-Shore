@@ -9,7 +9,7 @@ namespace CosmicShore.Gameplay
     /// container) collected by a Serpent re-shields its seed walls: the crystal morphs into
     /// beams, one to every live super-shielded seed the Serpent owns, and a shield ripples
     /// through each wall from the seed outward. With the Mass upgrade active, each wall also
-    /// twists and seals its open cells with danger panels (<see cref="SerpentWallAssembler"/>, SERPENT_SEED_WALL.md).
+    /// seals every square hole with a danger panel (<see cref="SerpentWallAssembler"/>, SERPENT_SEED_WALL.md).
     ///
     /// Crystal effects are broadcast, so this runs on every peer against each peer's own copy of
     /// the walls, the same way the walls themselves are built.
