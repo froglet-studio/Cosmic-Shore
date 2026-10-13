@@ -78,6 +78,10 @@ namespace CosmicShore.Launcher
             _updater = new LauncherUpdater(_s, _tools, _ws);
             // A play session that ends is folded into the tracks, and Amoebius says what it found.
             _jobs.GameExited += () => Task.Run(async () => { await Task.Delay(2000); IngestSessions(notify: true); });
+            // The last run ended in an exception nothing caught: say what it was.
+            if (CrashLog.TakeLast(LauncherSettings.DataDir) is { } crash)
+                Notify("Amoebius closed unexpectedly last time", crash.Summary, NoteKind.Error,
+                    ("OPEN LOG", () => OpenFolder(LauncherSettings.DataDir)));
             if (args.Tour >= 0) _tour = args.Tour;
             var pageArg = args.Page?.Split(':');
             if (pageArg != null && Enum.TryParse<Page>(pageArg[0], true, out var p)) _page = p;

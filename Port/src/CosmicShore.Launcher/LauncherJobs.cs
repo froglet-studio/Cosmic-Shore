@@ -33,7 +33,11 @@ namespace CosmicShore.Launcher
         public float Progress { get; private set; } = -1;
         public bool? LastOk { get; private set; }
         public string? LastArtifact { get; private set; }
-        public bool GameRunning => _game is { HasExited: false };
+        /// <summary>
+        /// The game started from PLAY is still open. Read every frame by the UI thread, so it must never
+        /// throw: <see cref="Process.HasExited"/> does on a process that is not (or not yet) started.
+        /// </summary>
+        public bool GameRunning => ProcessRunner.IsRunning(_game);
         public CommitInfo? Commit { get; private set; }
         public List<string> Branches { get; private set; } = new();
         public bool BranchesLoading { get; private set; }
@@ -358,13 +362,17 @@ namespace CosmicShore.Launcher
             if (commit != null) psi.Environment["COSMIC_SHORE_COMMIT"] = commit;
             PruneSessions();
 
-            _game = new Process { StartInfo = psi, EnableRaisingEvents = true };
-            _game.OutputDataReceived += (_, e) => { if (e.Data != null) Log.Add(LogKind.Output, e.Data); };
-            _game.ErrorDataReceived += (_, e) => { if (e.Data != null) Log.Add(LogKind.Output, e.Data); };
-            _game.Exited += (_, _) => { Log.Add(LogKind.Info, $"Game closed (exit code {SafeExit(_game)})."); GameExited?.Invoke(); };
-            _game.Start();
-            _game.BeginOutputReadLine();
-            _game.BeginErrorReadLine();
+            // Published only once it has started: the UI reads GameRunning every frame, and on Windows
+            // Start can take seconds (the virus scanner checks a freshly built exe). A field holding
+            // an unstarted Process made HasExited throw on the UI thread, which closed Amoebius.
+            var game = new Process { StartInfo = psi, EnableRaisingEvents = true };
+            game.OutputDataReceived += (_, e) => { if (e.Data != null) Log.Add(LogKind.Output, e.Data); };
+            game.ErrorDataReceived += (_, e) => { if (e.Data != null) Log.Add(LogKind.Output, e.Data); };
+            game.Exited += (_, _) => { Log.Add(LogKind.Info, $"Game closed (exit code {SafeExit(game)})."); GameExited?.Invoke(); };
+            game.Start();
+            _game = game;
+            game.BeginOutputReadLine();
+            game.BeginErrorReadLine();
             Log.Add(LogKind.Success, "Game running. Have fun.");
             return true;
         }

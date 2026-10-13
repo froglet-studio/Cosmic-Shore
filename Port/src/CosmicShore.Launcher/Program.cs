@@ -53,6 +53,7 @@ namespace CosmicShore.Launcher
             }
             if (installTo != null) return LauncherUpdater.FinishInstall(installTo, waitPid, updatedFrom); // no window: swap and relaunch
             if (shot != null && frames <= 0) frames = 90;
+            CrashLog.Install();
             PreloadBundledNatives();
             new LauncherApp(new LauncherApp.Args(shot, frames, page, offline, auto, updatedFrom, tour, clone)).Run();
             return 0;

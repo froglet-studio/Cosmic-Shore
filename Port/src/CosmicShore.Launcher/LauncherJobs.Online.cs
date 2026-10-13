@@ -28,7 +28,7 @@ namespace CosmicShore.Launcher
 
         public bool ServerRunning
         {
-            get { lock (_serverLock) return _server is { HasExited: false }; }
+            get { lock (_serverLock) return ProcessRunner.IsRunning(_server); }
         }
 
         /// <summary>The addresses players on this network use, as the running server printed them.</summary>
@@ -48,7 +48,7 @@ namespace CosmicShore.Launcher
         {
             lock (_serverLock)
             {
-                if (_server is { HasExited: false }) return true;
+                if (ProcessRunner.IsRunning(_server)) return true;
                 if (!File.Exists(PlayerExe))
                 {
                     Log.Add(LogKind.Warn, "Start the game once first: the online server is the game's player run with --server, and it is not built yet.");

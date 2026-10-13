@@ -102,6 +102,13 @@ A branch can name the team's shared server for everyone: `Network.Server` (and `
 `Port/ProjectSettings/AmoebiusProject.json`. A player's own Server setting wins over it, and phone
 builds carry it (without it, a phone plays on its own).
 
+## When Amoebius itself closes unexpectedly
+
+An error nothing caught is written to `last-crash.txt` in the data folder (SETTINGS > TOOLCHAIN >
+DATA FOLDER), and the next Amoebius shows it as a notification with **OPEN LOG**; the file is then
+kept as `crash-<time>.txt`. Send that file with the report. (Before 2026-10-13 Amoebius closed every
+time PLAY started the game on Windows: it read the game's process before the process had started.)
+
 ## TRACKS - Amoebius's memory of every run
 
 ![TRACKS](architecture/amoebius_tracks.png)
