@@ -328,7 +328,8 @@ areas. Solved at edit time, exactness costs nothing anyone waits for.
   (`VesselImpactorDataContainerSO.OmniCrystalRetirement`), this uses a Resources table keyed by
   (vessel, element), because elemental collection runs on the skimmer path, which has no such
   slot. Worth unifying once a second hull or element shows which shape generalises.
-- **The Scarab's bake is misleading.** It is solved on the Sparrow model the Scarab hides at runtime
+- **The Scarab's bake is misleading, and so are the Stoat's (2026-10-13).** The Stoat's four entries reuse the
+  Squirrel's bakes on the Squirrel model it hides under `StoatHull`, the same shape. The Scarab's is solved on the Sparrow model the Scarab hides at runtime
   (`ScarabHullBuilder` draws a procedural hull), so the window reads CURRENT while the game always
   finds it stale and solves on the procedural body instead — and the stale warning tells the reader
   to re-run the tool, which cannot help. Either bake procedural hulls through

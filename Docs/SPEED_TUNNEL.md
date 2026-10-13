@@ -33,6 +33,11 @@ Three properties are load-bearing. Do not relitigate them.
   every speed source that exists or will exist — trigger boosts, constant-acceleration ramps,
   skim charges, throttle modifiers, crystal buffs — with nothing to bind and nothing to keep
   in step. An ability that makes you fast gets the visual for free and cannot forget to.
+  **Inside a warp field it is the FELT speed, `VesselStatus.Speed / s`** (`VesselSpeedTunnel.Tick`,
+  `Docs/WARP_FIELD.md` §2): a field multiplies world speed by `s` while shrinking hull, camera
+  and trail by the same `s`, so dividing it back out is the pilot's own frame. `s` is a
+  function of position, the same for every vessel there, and exactly 1 with no field, so the
+  mapping stays absolute. It is the one divisor the §2 gate admits.
 - **Home values are whatever the game is actually running with.** FOV home is captured from the
   live camera the frame the effect takes over, and Panini home is the profile's own state; the
   effect only ever moves DOWN from there and returns exactly. Never anchor either to a constant

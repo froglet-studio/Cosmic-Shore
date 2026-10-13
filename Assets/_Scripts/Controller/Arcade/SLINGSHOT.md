@@ -2,7 +2,8 @@
 
 > **Flown on the field dipole since 2026-10-09.** The Stoat's triggers now hold its round-15
 > sink–source pair (`R_VesselActions/STOAT_DIPOLE.md`), not the orbit sling §1 and §4 describe; its AI
-> is `StoatDipoleExecutor.Autopilot`. The course, the target and the rule are unchanged. The Stoat's
+> is `StoatDipoleExecutor.Autopilot`. The target and the rule are unchanged; the course was re-cut on
+> 2026-10-13 for the dipole round's 48°/s turn (§2). The Stoat's
 > time race on the same circuit is **Warpline** (`WARPLINE.md`).
 
 The **Stoat-only circuit race**. A closed loop of eight switch rings is cut through the barren race
