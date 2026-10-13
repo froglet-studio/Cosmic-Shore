@@ -126,6 +126,12 @@ An unattended run without a port: `--frames N --shot F:out.png --do "F:click X,Y
   username. `profile` in `game_start` picks a save slot (a new name is a first-time user; reuse a
   name to skip them). Never accept consent on the user's behalf unless asked. Offline (`COSMIC_SHORE_NET=off`) and silent
   (`COSMIC_SHORE_AUDIO=off`) are the MCP defaults.
+- **Multiplayer between games goes through Amoebius's online server** (lobby + relay,
+  `docs/ARCHITECTURE.md` §8). With networking on and no server named, the first game hosts one and
+  the others find it by LAN discovery; `COSMIC_SHORE_NET_SERVER=host[:port]` (`game_start` `server`)
+  names one, `CosmicShore --server` runs one alone. Every player needs their own profile
+  (`COSMIC_SHORE_PROFILE`): two games with one player id replace each other on the server. A match
+  starts only when every player presses the HUD's GO (the ReadyButton), not when GO appears.
 - **Under xvfb, rendering is software**: a few frames per second. `game_wait 600` is minutes.
   Use `headless: true` when you need no pictures - it ticks as fast as the CPU allows.
 - **Unity injects Reflex before Awake/OnEnable**, with the scene active. Bugs where a value

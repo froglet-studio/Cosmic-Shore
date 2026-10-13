@@ -54,5 +54,14 @@ checklist.
      rule (ugui 2.0), then fix the tests that pinned the approximation.
    Drive scrolling with `game_input` `scroll X,Y N` (wheel notches) and `drag X,Y X,Y F`.
 
+10. **Multiplayer runs two games.** Give each its own `profile` (two games with one player id
+   replace each other on the server) and `online: true`: the first game hosts Amoebius's online
+   server, the second finds it on the LAN (`server: "host:port"` names one, e.g. a
+   `CosmicShore --server`). In Menu_Main: ARCADE, the party panel's "+", then Invite (accept it in
+   the other game's REQUESTS) or Join on the row. Both press START GAME; the match begins when every
+   player presses the HUD's GO (the ReadyButton) - a GO that stays on screen is waiting for a press.
+   Check replication with `get "Manta(Clone)" NetworkObject OwnerClientId` and `Transform position`
+   on both games (`get` prints every match).
+
 Report what you saw (attach the screenshot path) and what you verified; say plainly if a check
 did not run.

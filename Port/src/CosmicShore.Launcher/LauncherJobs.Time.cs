@@ -304,6 +304,7 @@ namespace CosmicShore.Launcher
             psi.Environment["COSMIC_SHORE_PROJECT"] = _ws.Dir;
             if (!audio) psi.Environment["COSMIC_SHORE_AUDIO"] = "off";
             if (!network) psi.Environment["COSMIC_SHORE_NET"] = "off";
+            OnlineEnvironment(psi);
             if (_s.MobileRenderPath) psi.Environment["COSMIC_SHORE_GLES"] = "1";
             if (!string.IsNullOrWhiteSpace(profile)) psi.Environment["COSMIC_SHORE_PROFILE"] = profile;
             psi.Environment["COSMIC_SHORE_BRANCH"] = _s.Branch;

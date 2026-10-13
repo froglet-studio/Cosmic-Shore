@@ -22,7 +22,9 @@ namespace CosmicShore.Mobile
         {
             Console.WriteLine($"[mobile] {platform}: data {dataRoot}, saves {persistentPath}");
             Environment.SetEnvironmentVariable("COSMIC_SHORE_PROJECT", dataRoot);
-            // LAN party sessions live in the app's own sandbox (a phone has no shared folder).
+            // Sessions stay in the app's own sandbox unless the build names an online server
+            // (Port/ProjectSettings/AmoebiusProject.json, Network.Server): a phone does not probe the
+            // LAN or host a server by itself, so no local-network permission prompt appears.
             Environment.SetEnvironmentVariable("COSMIC_SHORE_NET_DIR", System.IO.Path.Combine(persistentPath, "sessions"));
             Application.platform = platform;
             Application.persistentDataPathOverride = persistentPath;

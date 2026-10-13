@@ -122,7 +122,7 @@ namespace CosmicShore.Launcher
             _window.Load += OnLoad;
             _window.Render += OnRender;
             _window.FramebufferResize += s => _gl?.Viewport(s);
-            _window.Closing += () => { _chats.StopAll(); _s.Save(); _imgui?.Dispose(); };
+            _window.Closing += () => { _chats.StopAll(); _jobs.StopServer(); _s.Save(); _imgui?.Dispose(); };
             _window.Run();
             _window.Dispose();
         }
@@ -544,7 +544,7 @@ namespace CosmicShore.Launcher
             ImGui.SameLine(0, 26);
             Toggle("Audio", () => _s.Audio, v => _s.Audio = v);
             ImGui.SameLine(0, 26);
-            Toggle("Online", () => _s.Network, v => _s.Network = v, "Party, Relay and cloud services");
+            Toggle("Online", () => _s.Network, v => _s.Network = v, "Play with others: parties and matches through an online server\n(SETTINGS > ONLINE picks it; by default one on this network)");
             ImGui.SameLine(0, 26);
             Toggle("Pull first", () => _s.PullBeforePlay, v => _s.PullBeforePlay = v, "Fetch the branch's newest commit on every START");
 
@@ -1031,10 +1031,11 @@ namespace CosmicShore.Launcher
                     _s.Resolution, v => _s.Resolution = v));
                 Row("", () => Toggle("Fullscreen", () => _s.Fullscreen, v => _s.Fullscreen = v, "F11 toggles in game"));
                 Row("", () => Toggle("Audio", () => _s.Audio, v => _s.Audio = v));
-                Row("", () => Toggle("Online services", () => _s.Network, v => _s.Network = v, "Party, Relay and cloud saves"));
+                Row("", () => Toggle("Online play", () => _s.Network, v => _s.Network = v, "Parties and matches with other players (ONLINE below picks the server)"));
                 Row("", () => Toggle("Pull before play", () => _s.PullBeforePlay, v => _s.PullBeforePlay = v));
                 Row("", () => Toggle("Phone render path", () => _s.MobileRenderPath, v => _s.MobileRenderPath = v, "OpenGL ES 3.0, exactly as a phone renders"));
             }
+            if (Section("ONLINE")) DrawOnlineSettings();
             if (Section("SOURCE"))
             {
                 Row("Repository", () => Text("##remote", "https://github.com/.../Cosmic-Shore.git", () => _s.RemoteUrl, v => _s.RemoteUrl = v));
@@ -1118,6 +1119,41 @@ namespace CosmicShore.Launcher
             var n = s.Replace("_Gameplay", "").Replace("Minigame", "").Replace("_", " ");
             n = System.Text.RegularExpressions.Regex.Replace(n, "(?<=[a-z])(?=[A-Z])", " ").Trim();
             return n.Length == 0 ? s : n;
+        }
+
+        /// <summary>
+        /// SETTINGS > ONLINE: which online server the games use (empty: one on this network, or the
+        /// first game hosts one), its key, and hosting the server on this PC for everyone else.
+        /// </summary>
+        void DrawOnlineSettings()
+        {
+            Row("Server", () =>
+            {
+                Text("##netserver", "automatic: a server on this network, else the first game hosts one", () => _s.NetServer, v => _s.NetServer = v);
+                Neon.Tooltip("host:port of an Amoebius online server, for playing over the internet\n" +
+                             "(port 47777 when left out). Empty: games find a server on the local network,\n" +
+                             "or the first game started hosts one for the others.");
+            });
+            Row("Server key", () =>
+            {
+                SecretField("##netkey", "only if the server has one", () => _s.NetKey, v => _s.NetKey = v);
+                Neon.Tooltip("The key the server was started with. Kept in " + SecretStore.Where + ", not in launcher.json.");
+            });
+            Row("", () => Toggle("Host the online server on this PC", () => _jobs.ServerRunning,
+                v => { if (v) _jobs.StartServer(); else _jobs.StopServer(); },
+                "Lobby and relay for every game on this network while the launcher is open.\n" +
+                "For players elsewhere, forward TCP " + _s.HostServerPort + " on your router to this PC\nand give them your public address."));
+            if (_jobs.ServerRunning)
+            {
+                Row("", () =>
+                {
+                    ImGui.PushFont(Neon.Small);
+                    var addresses = _jobs.ServerAddresses;
+                    ImGui.TextColored(Neon.Lime, addresses.Count > 0 ? "Players on this network use  " + string.Join("   ", addresses) : "Starting...");
+                    ImGui.TextColored(Neon.Dim, _jobs.ServerStatus);
+                    ImGui.PopFont();
+                });
+            }
         }
 
         bool Section(string name)
