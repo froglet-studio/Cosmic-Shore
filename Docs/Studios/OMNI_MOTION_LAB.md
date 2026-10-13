@@ -1,6 +1,6 @@
 # Omni Motion Lab
 
-A browser lab for the next round of the omni crystal's element effects. It covers four asks:
+A browser lab for the next round of the omni crystal's element effects (round 2: the squares glide; the Wandering arc). It covers four asks:
 
 1. **Mass:** the triangle prisms seal fully once they cross into the camera's visible hemisphere.
 2. **Space:** the squares make two moves per loop instead of three. The two triangle steps become one smooth move.
@@ -14,6 +14,64 @@ The lab has styles, sliders for each ask, a beat timeline and a side-by-side omn
 - **Data:** the same block as the Omni Combine Lab, stamped into both pages by `python3 Tools/Build/omni_combine_lab_assets.py`. `--check` fails if either page is stale. The omni prism thickness is imported from `author_omni_crystal_triangles.DEPTH_THICKNESS`.
 - **Verify:** `node .claude/skills/labmaker/verify_lab.cjs Docs/Studios/OmniMotionLab.html`
 - **Hooks:** `window.__lab.runFullBatch()`, `runChargeBatch()`, `clipTimeline(p)`, `clipSelfTest()`, `beatsOf(p)`, `squaresAt(p, t)`, `wavesAt(p, t)`, `sealOf(p, D)`
+
+## Round 2 (2026-10-13): the squares glide, and the Wandering arc
+
+The designer, after round 1:
+- "The pentagonal movement is great, but the triangular one is still not smooth, and they both seem to undergo more scale changes than necessary. It should look like each square is taking a smooth movement to the next location."
+- For Charge: one arc starts in the centre like Tesla core, circles a petal's perimeter, then arcs to another petal like Chain lightning or Dipole field. After a random number of hops it escapes like Lightning rod and branches into a dissipated look. No petal moves; petals light where the bolt is concentrated, and their neighbours catch some of it. Then it resets.
+
+**Squares: what was wrong with round 1's "hop clear".**
+- It lifted the squares 0.15 R (pentagon turn) and 0.44 R (triangle turn) off the shell, which reads as the square growing.
+- The triangle lift carried the art file's whole Step1 offset, sideways part included, at 2.3×, so the square wobbled sideways as it rose.
+- The shipped blend also changes the square's distance from the centre (it dips 11.8% R) and shrinks it to 0.85.
+
+**New on the page.**
+
+| Control | Values | What it does |
+|---|---|---|
+| *Ease* 0 | quintic smootherstep | no jolt as a move starts or stops |
+| *Hop profile* | sin / sin² / plateau | how the hop rises and falls over the move |
+| *Triangle turn lift* | × the art's radial lift (0.118 R) | lifts straight out from the centre |
+| *Triangle turn sideways* | × the art's sideways step | separate knob for the sideways part |
+| *Pentagon turn lift* | below 0 dives under | |
+| Scorecard *Off shell % R* | | how far a square's centre leaves the shell, which is what reads as a scale change |
+
+**Found.**
+1. **A rigid square cannot leave its place without grazing.** Squares sit edge to edge with the rhombi, so any slide along the shell pushes the leading edge in from the first frame.
+   - Clearing every neighbour takes about 0.14 R of hop on the pentagon turn, measured at 60 Hz counting hidden clips too.
+   - Radial-only lifts, sin², plateau profiles and dives under all clip more than a plain sin hop of the same height.
+2. **The art file's sideways step matters.** On the triangle turn, squares belonging to neighbouring triangles turn about different axes and would pass through each other mid-turn; the sideways part of Step1 steps round them. Sweep (clipping pair-frames at 30 Hz):
+
+   | | sideways 1 | 1.5 | 2 | 2.5 |
+   |---|---|---|---|---|
+   | lift 1 | 420 | 324 | 258 | 1065 |
+   | lift 1.5 | 90 | **9** | 78 | 105 |
+
+So there is a real trade between smoothness and clearance, to be decided by eye. Three styles:
+
+| Style | Off shell % R | Min size | Visible clips % (pairs) |
+|---|---|---|---|
+| Shipped today | 11.8 | 0.845 | 66.7 |
+| **Glide** (rigid turns on the shell, quintic, no lift) | **0** | 1 | 32.1 (Space×Time 2.2% R deep, Space×Space 2.3%, Mass×Space 1.1%) |
+| Low hop (0.07 R; tri 0.75 / 1) | 8.8 | 1 | 22.6 |
+| Hop clear (0.14 R; tri 1.5 / 1.5) | 17.7 | 1 | 1.2 (Mass×Space only: prisms standing raised at the limb) |
+
+All three: overlap 0, 2 stops per loop, prisms flush in view. Glide is the pure "smooth movement to the next location". Its grazes are the square's lower edge sliding into the side of the neighbour it passes, about a third of a plate's thickness. The clip metric counts any point not hidden behind the body, so it does not credit the square's own top face for hiding them.
+
+**The Wandering arc (Charge effect 18, style "glide + wandering arc").**
+- **Its life:** one bolt leaves the core, traces a petal's whole rim, and leaves from the rim point nearest its next petal. It arcs 10–80° over the surface to that petal (never straight back) and traces it too. That repeats 0 to (2 + 5 × Motion) times, so 0–7 at the default.
+- **The finish:** it escapes 0.7 R up the last petal's normal and bursts into 4 + 4 × Bolts filaments, about 60% of them forking once. They grow and fade over 0.8 s with a widening glow; then a short rest and a new journey.
+- **The look:**
+  - the bolt is its last 0.4 s of path, brightest at the head;
+  - each petal glows by how close the bolt passed and how recently (0.55 s), so the petal being traced burns and its neighbours catch the edge;
+  - the lit petal glows from its OWN centre, so its rim is brightest.
+- **Determinism:** every journey is seeded by its index, so the same t always gives the same picture.
+- **Footprint:** no petal moves (travel 0, clips 0). It needs bolts, sprites and a shader light, but no bones. With the Charge beat on, one journey plays per beat.
+
+**Checked:** `verify_lab.cjs` PASS. `runFullBatch` deterministic. A nine-frame contact sheet of one journey read on both subjects: core start, rim laps, hops, escape and spray.
+
+**Decision needed (designer):** glide, low hop or hop clear, judged by eye. Whether the Wandering arc is the Charge effect, and its rate, hop count and spray density.
 
 ## Round 1 (2026-10-13)
 
