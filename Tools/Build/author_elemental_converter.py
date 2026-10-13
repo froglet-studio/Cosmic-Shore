@@ -78,6 +78,7 @@ CONFIG_VALUES = [
     ("tumble", "{x: 0.15, y: 0.35}"),
     ("siteSpread", "{x: 0.35, y: 0.65}"),
     ("suck", "{x: 0.3, y: 0.4}"),
+    ("socketLift", "{x: 0.35, y: 0.6}"),
     ("layout", "2"),
     ("ease", "2"),
     ("morphStart", "0.1"),

@@ -33,6 +33,11 @@ namespace CosmicShore.Utility
         /// sink is drawn from.</summary>
         public float FluxGap, FluxCharge, FluxStrike, FluxHold, FluxFade, FluxFork, FluxMinDegrees, FluxMaxDegrees;
 
+        /// <summary>Flux arc: how far the five strands run off the arc's centre line between the forks (x the crystal's
+        /// radius), and how many whole turns the bundle makes about it.</summary>
+        public float FluxBundle;
+        public int FluxTurns;
+
         /// <summary>A bolt's core width (x the crystal's radius); how fast its plasma writhes (the smooth noise that bends
         /// it scrolls this many noise cells a second along the bolt); how fast its brightness breathes.</summary>
         public float CoreWidth, WritheSpeed, FlickerSpeed;
@@ -42,7 +47,7 @@ namespace CosmicShore.Utility
             Rate = 1f, Bolts = 1f, Glow = 1f,
             SeamStrike = 0.07f, SeamDwellMin = 0.1f, SeamDwellMax = 0.28f, SeamFade = 0.85f,
             FluxGap = 0.9f, FluxCharge = 0.45f, FluxStrike = 0.06f, FluxHold = 0.45f, FluxFade = 0.45f, FluxFork = 0.3f,
-            FluxMinDegrees = 55f, FluxMaxDegrees = 125f,
+            FluxMinDegrees = 55f, FluxMaxDegrees = 125f, FluxBundle = 0.016f, FluxTurns = 1,
             CoreWidth = 0.012f, WritheSpeed = 3f, FlickerSpeed = 4f,
         };
 
@@ -497,10 +502,9 @@ namespace CosmicShore.Utility
     }
 
     /// <summary>
-    /// One flux arc's path: a centre line that bows out between the two sites' axes, and five strands that fork off it
-    /// onto the source's corners over the first <c>fork</c> of the arc and onto the sink's over the last. Strand k at the
-    /// source is paired with the sink corner it would reach if the source were turned onto the sink, so no two strands
-    /// cross.
+    /// One flux arc's path: a centre line that bows out between the two sites' axes, and five strands round it - fanned onto
+    /// the source's corners over the first <c>fork</c> of the arc and onto the sink's over the last, a coaxial bundle
+    /// between. The corners are paired so the five keep their order round the arc, so no two strands cross.
     /// </summary>
     public sealed class ChargeFluxPath
     {
@@ -523,29 +527,71 @@ namespace CosmicShore.Utility
             sourceAxis = sites.Axes[source];
             sinkAxis = sites.Axes[sink];
             angle = Mathf.Acos(Mathf.Clamp(Vector3.Dot(sourceAxis, sinkAxis), -1f, 1f));
-            var turn = Quaternion.AngleAxis(angle * Mathf.Rad2Deg, Vector3.Cross(sourceAxis, sinkAxis).normalized);
-            SourceOffsets = new Vector3[cs.Length];
-            SinkOffsets = new Vector3[cs.Length];
-            var used = new bool[cd.Length];
-            for (int k = 0; k < cs.Length; k++)
-            {
-                var target = (turn * (cs[k] - a)).normalized;
-                int best = -1;
-                float bestDot = -2f;
-                for (int j = 0; j < cd.Length; j++)
-                {
-                    if (used[j]) continue;
-                    float d = Vector3.Dot(target, (cd[j] - b).normalized);
-                    if (d > bestDot) { bestDot = d; best = j; }
-                }
-                used[best] = true;
-                SourceOffsets[k] = cs[k] - a;
-                SinkOffsets[k] = cd[best] - b;
-            }
             bow = 0.16f + 0.3f * angle / Mathf.PI;
             sourceRadius = a.magnitude;
             sinkRadius = b.magnitude;
+            SourceOffsets = new Vector3[cs.Length];
+            SinkOffsets = new Vector3[cs.Length];
+            for (int k = 0; k < cs.Length; k++) SourceOffsets[k] = cs[k] - a;
+            BuildFrame();
+
+            // Pair each source corner with a sink corner so the five keep their ORDER round the arc: a coaxial bundle cannot
+            // reorder its strands without crossing them. (Turning the source onto the sink, the first pairing, reverses the
+            // order as seen along the arc - it leaves one face and enters the other - and every strand crossed mid-arc.)
+            // Both sets are sorted by angle round the arc in its own frame; of the five cyclic matchings, the one that turns
+            // the strands least and most alike.
+            int n = cs.Length;
+            var sourceAngles = new float[n];
+            var sinkAngles = new float[n];
+            for (int k = 0; k < n; k++) sourceAngles[k] = AngleIn(SourceOffsets[k], 0f);
+            for (int j = 0; j < n; j++) sinkAngles[j] = AngleIn(cd[j] - b, 1f);
+            var sourceOrder = new int[n];
+            var sinkOrder = new int[n];
+            for (int i = 0; i < n; i++) { sourceOrder[i] = i; sinkOrder[i] = i; }
+            System.Array.Sort(sourceOrder, (x, y) => sourceAngles[x].CompareTo(sourceAngles[y]));
+            System.Array.Sort(sinkOrder, (x, y) => sinkAngles[x].CompareTo(sinkAngles[y]));
+            int bestShift = 0;
+            float bestCost = float.MaxValue, bestMean = 0f;
+            for (int shift = 0; shift < n; shift++)
+            {
+                // the mean swing first, so every strand turns by about the same amount
+                float sum = 0f;
+                for (int i = 0; i < n; i++) sum += Wrap(sinkAngles[sinkOrder[(i + shift) % n]] - sourceAngles[sourceOrder[i]]);
+                float mean = sum / n, cost = mean * mean;
+                for (int i = 0; i < n; i++)
+                {
+                    float d = Wrap(sinkAngles[sinkOrder[(i + shift) % n]] - sourceAngles[sourceOrder[i]] - mean);
+                    cost += d * d;
+                }
+                if (cost < bestCost) { bestCost = cost; bestShift = shift; bestMean = mean; }
+            }
+            // Through the middle the five sit EXACTLY 2pi/5 apart and turn together by the mean swing; each blends from its
+            // true corner angle over the source fork and back out to its true sink angle over the sink fork (the corners,
+            // seen obliquely in the arc's frame, are not evenly spaced round it).
+            float step = 2f * Mathf.PI / n;
+            float sx = 0f, sy = 0f;
+            for (int i = 0; i < n; i++)
+            {
+                float rel = sourceAngles[sourceOrder[i]] - i * step;
+                sx += Mathf.Cos(rel);
+                sy += Mathf.Sin(rel);
+            }
+            float reference = Mathf.Atan2(sy, sx);
+            meanTurn = bestMean;
+            slotAngle = new float[n];
+            startOff = new float[n];
+            endOff = new float[n];
+            for (int i = 0; i < n; i++)
+            {
+                int k = sourceOrder[i], j = sinkOrder[(i + bestShift) % n];
+                SinkOffsets[k] = cd[j] - b;
+                slotAngle[k] = reference + i * step;
+                startOff[k] = Wrap(sourceAngles[k] - slotAngle[k]);
+                endOff[k] = Wrap(sinkAngles[j] - (slotAngle[k] + meanTurn));
+            }
         }
+
+        static float Wrap(float a) => a - 2f * Mathf.PI * Mathf.Round(a / (2f * Mathf.PI));
 
         /// <summary>The centre line at <paramref name="u"/> (0 at the source, 1 at the sink).</summary>
         public Vector3 Centre(float u)
@@ -554,11 +600,68 @@ namespace CosmicShore.Utility
             return dir * ((sourceRadius + (sinkRadius - sourceRadius) * u) * (1f + bow * Mathf.Sin(Mathf.PI * u)));
         }
 
-        /// <summary>Strand <paramref name="k"/> at <paramref name="u"/>: on the source's corner at 0, the centre line
-        /// through the middle, the sink's corner at 1.</summary>
-        public Vector3 Strand(int k, float u, float fork) =>
-            Centre(u) + SourceOffsets[k] * (1f - ChargeArcs.Smooth(u / fork))
-                      + SinkOffsets[k] * ChargeArcs.Smooth((u - (1f - fork)) / fork);
+        /// <summary>
+        /// Strand <paramref name="k"/> at <paramref name="u"/>: on the source's corner at 0, on its paired sink corner at 1,
+        /// and between the forks one of five COAXIAL filaments, <paramref name="bundle"/> off the centre line. Each keeps its
+        /// own angle round the line in a frame carried along it without twisting (rotation-minimizing): its source corner's
+        /// angle, turning smoothly into its sink corner's, plus the bundle's <paramref name="turns"/> whole turns (a braided
+        /// cable; whole turns, so each still lands on its own corner). The five stay 72 degrees apart, as the corners are,
+        /// so they never touch. One strand runs the whole arc: there is no separate beam and no seam.
+        /// </summary>
+        public Vector3 Strand(int k, float u, float fork, float bundle, int turns)
+        {
+            Frame(u, out var e1, out var e2);
+            float into = ChargeArcs.Smooth(u / fork), outOf = ChargeArcs.Smooth((u - (1f - fork)) / fork);
+            float theta = slotAngle[k] + meanTurn * ChargeArcs.Smooth(u)
+                        + 2f * Mathf.PI * turns * ChargeArcs.Smooth((u - fork) / Mathf.Max(1e-4f, 1f - 2f * fork))
+                        + startOff[k] * (1f - into) + endOff[k] * outOf;
+            var ring = (e1 * Mathf.Cos(theta) + e2 * Mathf.Sin(theta)) * bundle;
+            // the corner's own offset at each end, the ring between (fork <= 0.5, so the two ends never overlap)
+            var offset = SourceOffsets[k] * (1f - into) + ring * (into * (1f - outOf)) + SinkOffsets[k] * outOf;
+            return Centre(u) + offset;
+        }
+
+        // The rotation-minimizing frame along the centre line, sampled; and each strand's angle in it at the source and how
+        // far that angle turns to reach its sink corner.
+        const int FrameSamples = 128;
+        readonly Vector3[] frameTangent = new Vector3[FrameSamples + 1], frameE1 = new Vector3[FrameSamples + 1];
+        readonly float[] slotAngle, startOff, endOff;
+        readonly float meanTurn;
+
+        void BuildFrame()
+        {
+            for (int i = 0; i <= FrameSamples; i++)
+            {
+                float u = (float)i / FrameSamples;
+                frameTangent[i] = (Centre(Mathf.Min(1f, u + 0.002f)) - Centre(Mathf.Max(0f, u - 0.002f))).normalized;
+            }
+            var t0 = frameTangent[0];
+            var seed = SourceOffsets[0] - t0 * Vector3.Dot(SourceOffsets[0], t0);
+            if (seed.sqrMagnitude < 1e-12f) seed = Vector3.Cross(t0, Mathf.Abs(t0.x) < 0.9f ? new Vector3(1, 0, 0) : new Vector3(0, 1, 0));
+            frameE1[0] = seed.normalized;
+            for (int i = 1; i <= FrameSamples; i++)
+            {
+                var carried = Quaternion.FromToRotation(frameTangent[i - 1], frameTangent[i]) * frameE1[i - 1];
+                frameE1[i] = (carried - frameTangent[i] * Vector3.Dot(carried, frameTangent[i])).normalized;
+            }
+        }
+
+        void Frame(float u, out Vector3 e1, out Vector3 e2)
+        {
+            float x = Mathf.Clamp01(u) * FrameSamples;
+            int i = Mathf.Min((int)x, FrameSamples - 1);
+            float f = x - i;
+            var tangent = Vector3.Lerp(frameTangent[i], frameTangent[i + 1], f).normalized;
+            var a = Vector3.Lerp(frameE1[i], frameE1[i + 1], f);
+            e1 = (a - tangent * Vector3.Dot(a, tangent)).normalized;
+            e2 = Vector3.Cross(tangent, e1);
+        }
+
+        float AngleIn(Vector3 offset, float u)
+        {
+            Frame(u, out var e1, out var e2);
+            return Mathf.Atan2(Vector3.Dot(offset, e2), Vector3.Dot(offset, e1));
+        }
     }
 
     /// <summary>
@@ -852,13 +955,13 @@ namespace CosmicShore.Utility
     ///   runs to its short sides and how fresh that stretch of bolt is.
     ///   FLUX (the omni) - a pentagon charges (only it lights), an arc leaps to a pentagon 55-125 degrees away, which
     ///   lights as it takes the discharge; both fade, and the next discharge leaps on from the sink. At each end the arc
-    ///   forks smoothly onto the pentagon's five corners; through the middle it is one thick beam.
+    ///   is five strands, each ONE ribbon from a source corner to a sink corner: fanned onto the corners at each end, a
+    ///   coaxial bundle (a braided cable) between - no separate beam, no seam.
     ///
     /// JS twin: <c>seamWalkFx()</c>, <c>seamLight()</c> and <c>fluxFx()</c> in <c>Docs/Studios/OmniMotionLab.html</c>.
     /// </summary>
     public static class ChargeArcs
     {
-        const int FluxSteps = 24;
 
         public static float Smooth(float x)
         {
@@ -903,13 +1006,14 @@ namespace CosmicShore.Utility
         /// nothing before the strip's edge.</summary>
         public static float StripHalfWidth(float coreWidth, float width) => coreWidth * width * 2.2f;
 
-        static readonly List<Vector3> s_points = new(FluxSteps + 1);
+        static readonly List<Vector3> s_points = new(StrandSteps + 1);
         static readonly List<float> s_weights = new(128);
         static readonly List<float> s_coords = new(128);
         static readonly List<Vector4> s_lit = new(128);   // (point, life)
 
         // The looks, x the crystal's radius: how far each kind of bolt bends off its path.
-        const float SeamWobble = 0.02f, StrandWobble = 0.012f, BeamWobble = 0.025f;
+        const float SeamWobble = 0.02f, BundleWobble = 0.02f;
+        const int StrandSteps = 96;   // points along a flux strand: enough for a smooth helix through the bundle
 
         /// <summary>
         /// The seam walk at <paramref name="seconds"/>: ONE continuous plasma trail through every seam still lit, oldest
@@ -1002,19 +1106,16 @@ namespace CosmicShore.Utility
                 if (sinkLight > 0f) Light(sites, faceLight, discharge.Sink, settings.Glow * sinkLight);
                 if (intensity <= 0.01f) continue;
                 var path = sites.PathOf(discharge.Source, discharge.Sink);
-                int upto = Mathf.RoundToInt(grow * FluxSteps);
                 int seed = (int)(k * 53);
-                // five strands fork onto the corners at each end...
+                // Five strands, each ONE ribbon the whole way from its source corner to its sink corner: fanned onto the
+                // corners at each end, a coaxial bundle between. They share one noise seed, so the bundle bends as one and
+                // its five filaments stay coaxial while it writhes.
+                int steps = Mathf.RoundToInt(grow * StrandSteps);
                 for (int q = 0; q < path.SourceOffsets.Length; q++)
                 {
-                    StrandPoints(path, q, upto, fork, head: true);
-                    writer.Plasma(s_points, s_points.Count, null, null, intensity * 1.1f, 0.9f, StrandWobble, seed + q, seconds, settings, eye, sites.Radius);
-                    StrandPoints(path, q, upto, fork, head: false);
-                    writer.Plasma(s_points, s_points.Count, null, null, intensity * 1.1f, 0.9f, StrandWobble, seed + 7 + q, seconds, settings, eye, sites.Radius);
+                    StrandPoints(path, q, steps, fork, settings, sites.Radius);
+                    writer.Plasma(s_points, s_points.Count, null, null, intensity * 1.1f, 0.9f, BundleWobble, seed, seconds, settings, eye, sites.Radius);
                 }
-                // ...and are one thick beam between
-                BeamPoints(path, upto, fork);
-                writer.Plasma(s_points, s_points.Count, null, null, intensity * 1.6f, 3f, BeamWobble, seed + 31, seconds, settings, eye, sites.Radius);
                 drawn++;
             }
             return drawn;
@@ -1040,14 +1141,10 @@ namespace CosmicShore.Utility
                     || intensity <= 0.01f)
                     continue;
                 var path = sites.PathOf(discharge.Source, discharge.Sink);
-                int upto = Mathf.RoundToInt(grow * FluxSteps);
-                BeamPoints(path, upto, fork);
-                StrikeAlong(s_points, centres, radii, count, intensity * 1.6f, settings, strike);
+                int steps = Mathf.RoundToInt(grow * StrandSteps);
                 for (int q = 0; q < path.SourceOffsets.Length; q++)
                 {
-                    StrandPoints(path, q, upto, fork, head: true);
-                    StrikeAlong(s_points, centres, radii, count, intensity * 1.1f, settings, strike);
-                    StrandPoints(path, q, upto, fork, head: false);
+                    StrandPoints(path, q, steps, fork, settings, sites.Radius);
                     StrikeAlong(s_points, centres, radii, count, intensity * 1.1f, settings, strike);
                 }
             }
@@ -1099,24 +1196,14 @@ namespace CosmicShore.Utility
             return true;
         }
 
-        static void StrandPoints(ChargeFluxPath path, int q, int upto, float fork, bool head)
+        /// <summary>Strand <paramref name="q"/> from its source corner out to step <paramref name="steps"/> of
+        /// <see cref="StrandSteps"/> (how far the arc has grown), into <c>s_points</c>.</summary>
+        static void StrandPoints(ChargeFluxPath path, int q, int steps, float fork, in ChargeArcSettings settings, float radius)
         {
             s_points.Clear();
-            for (int i = 0; i <= upto; i++)
-            {
-                float u = (float)i / FluxSteps;
-                if (head ? u <= fork + 0.06f : u >= 1f - fork - 0.06f) s_points.Add(path.Strand(q, u, fork));
-            }
-        }
-
-        static void BeamPoints(ChargeFluxPath path, int upto, float fork)
-        {
-            s_points.Clear();
-            for (int i = 0; i <= upto; i++)
-            {
-                float u = (float)i / FluxSteps;
-                if (u >= fork - 0.04f && u <= 1f - fork + 0.04f) s_points.Add(path.Centre(u));
-            }
+            float bundle = settings.FluxBundle * radius;
+            for (int i = 0; i <= steps; i++)
+                s_points.Add(path.Strand(q, (float)i / StrandSteps, fork, bundle, settings.FluxTurns));
         }
 
         static void Light(ChargeSites sites, float[] faceLight, int site, float value)

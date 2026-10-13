@@ -49,9 +49,18 @@ namespace CosmicShore.Tests
             Assert.AreEqual(ChargeSiteKind.Pentagons, sites.Kind);
             Assert.IsTrue(sites.Corners.All(c => c.Length == 5));
             var path = sites.PathOf(0, sites.Neighbours[0][0]);
+            var settings = ChargeArcSettings.Lab;
+            float bundle = settings.FluxBundle * sites.Radius;
+            Vector3 At(int k, float u) => path.Strand(k, u, settings.FluxFork, bundle, settings.FluxTurns);
             for (int k = 0; k < 5; k++)
-                Assert.That(sites.Corners[0].Min(c => (path.Strand(k, 0f, 0.3f) - c).magnitude), Is.LessThan(1e-4f * sites.Radius),
+                Assert.That(sites.Corners[0].Min(c => (At(k, 0f) - c).magnitude), Is.LessThan(1e-4f * sites.Radius),
                     "a strand starts on a source corner");
+            // through the middle: five distinct filaments round the centre line, 72 degrees apart (one seamless bundle)
+            var mid = Enumerable.Range(0, 5).Select(k => At(k, 0.5f)).ToArray();
+            foreach (var p in mid) Assert.That((p - path.Centre(0.5f)).magnitude, Is.EqualTo(bundle).Within(0.15f * bundle));
+            for (int a = 0; a < 5; a++)
+                for (int b = a + 1; b < 5; b++)
+                    Assert.Greater((mid[a] - mid[b]).magnitude, 0.9f * 1.1756f * bundle, "two strands touch mid-arc");
         }
 
         [Test]

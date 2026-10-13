@@ -269,6 +269,7 @@ namespace CosmicShore.Tests
             {
                 var p = config.Draw(rng);
                 Assert.IsTrue(p.GameMotion, "the converter's omni moves as the game's does");
+                Assert.That(p.SocketLift, Is.InRange(0.35, 0.6), "every crystal but the first sockets in from outside");
                 Assert.That(p.Flight, Is.InRange(4.4, 5.4));
                 Assert.That(p.Stagger / p.Flight, Is.InRange(0.95 - 1e-6, 1.05 + 1e-6), "each crystal sets off as the last lands");
                 Assert.That(p.Lead, Is.InRange(2.2, 3.2));

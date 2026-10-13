@@ -145,7 +145,9 @@ static class Program
         Check("every discharge starts from the last one's sink", chainBreaks == 0, $"{chainBreaks}");
         Check("a discharge never leaps straight back", straightBack == 0, $"{straightBack}");
         Check("every leap is 55-125 degrees", badAngle == 0, $"{badAngle}");
-        float endErr = 0f, midErr = 0f; bool bijective = true;
+        float bundle = settings.FluxBundle * omni.Radius;
+        float endErr = 0f, radialErr = 0f, closest = float.MaxValue, sharpest = 0f, closestFlat = float.MaxValue;
+        bool bijective = true;
         for (int s = 0; s < 12; s++)
             for (int d = 0; d < 12; d++)
             {
@@ -154,19 +156,45 @@ static class Program
                 if (ang < 55f || ang > 125f) continue;
                 var path = omni.PathOf(s, d);
                 var sinkHits = new HashSet<int>();
+                Vector3 At(int k, float u, float b) => path.Strand(k, u, 0.3f, b, settings.FluxTurns);
                 for (int k = 0; k < 5; k++)
                 {
-                    endErr = Math.Max(endErr, omni.Corners[s].Min(c => (path.Strand(k, 0f, 0.3f) - c).magnitude));
-                    var atSink = path.Strand(k, 1f, 0.3f);
+                    endErr = Math.Max(endErr, omni.Corners[s].Min(c => (At(k, 0f, bundle) - c).magnitude));
+                    var atSink = At(k, 1f, bundle);
                     int hit = Enumerable.Range(0, 5).OrderBy(j => (omni.Corners[d][j] - atSink).magnitude).First();
                     endErr = Math.Max(endErr, (omni.Corners[d][hit] - atSink).magnitude);
                     sinkHits.Add(hit);
-                    midErr = Math.Max(midErr, (path.Strand(k, 0.5f, 0.3f) - path.Centre(0.5f)).magnitude);
+                    for (int i = 1; i < 96; i++)
+                    {
+                        Vector3 a0 = At(k, (i - 1) / 96f, bundle), a1 = At(k, i / 96f, bundle), a2 = At(k, (i + 1) / 96f, bundle);
+                        sharpest = Math.Max(sharpest, Vector3.Angle(a1 - a0, a2 - a1));
+                    }
                 }
                 bijective &= sinkHits.Count == 5;
+                for (int i = 0; i <= 96; i++)
+                {
+                    float u = i / 96f;
+                    var pts = Enumerable.Range(0, 5).Select(k => At(k, u, bundle)).ToArray();
+                    var flat = Enumerable.Range(0, 5).Select(k => At(k, u, 0f)).ToArray();
+                    for (int a = 0; a < 5; a++)
+                        for (int b = a + 1; b < 5; b++)
+                        {
+                            if ((pts[a] - pts[b]).magnitude < closest && Environment.GetEnvironmentVariable("STRAND_DEBUG") != null)
+                                Console.WriteLine($"  close s{s} d{d} u={u:F3} strands {a},{b}: {(pts[a] - pts[b]).magnitude / omni.Radius:E2} R; r0 {path.SourceOffsets[a].magnitude / omni.Radius:F3} {path.SourceOffsets[b].magnitude / omni.Radius:F3}");
+                            closest = Math.Min(closest, (pts[a] - pts[b]).magnitude);
+                            closestFlat = Math.Min(closestFlat, (flat[a] - flat[b]).magnitude);
+                        }
+                    if (u >= 0.35f && u <= 0.65f)
+                        foreach (var q in pts) radialErr = Math.Max(radialErr, Math.Abs(DistanceToCentreLine(path, q) - bundle) / bundle);
+                }
             }
         Check("each strand starts on a source corner and ends on a sink corner", endErr < 1e-4f * omni.Radius, $"worst {endErr / omni.Radius:E2} R");
-        Check("through the middle the five strands are one beam", midErr < 1e-5f * omni.Radius, $"worst {midErr / omni.Radius:E2} R");
+        Check("through the middle the five strands run coaxially at the bundle radius", radialErr < 0.1f, $"worst {radialErr:P1} off");
+        Check("no two strands ever cross: five distinct filaments the whole way", closest > 0.9f * 1.1756f * bundle,
+              $"closest {closest / omni.Radius:E2} R; the bundle's own spacing is {1.1756f * bundle / omni.Radius:E2} R");
+        Check("each strand bends smoothly corner to corner (no seam)", sharpest < 12f, $"sharpest turn {sharpest:F1} deg per step");
+        Check("negative control: with no bundle the five collapse onto one line", closestFlat < 1e-4f * omni.Radius,
+              $"closest {closestFlat / omni.Radius:E2} R");
         Check("the strands pair the corners one to one", bijective);
 
         var omniLight = new float[omni.Faces.Length];
@@ -332,6 +360,13 @@ static class Program
         bool refused = !ChargeSites.TryBuild(cp, keep.ToArray(), 1f, out _, out var why);
         Check("negative control: a crystal with a petal missing is refused", refused, why ?? "accepted");
         return Finish();
+    }
+
+    static float DistanceToCentreLine(ChargeFluxPath path, Vector3 p)
+    {
+        float best = float.MaxValue;
+        for (int i = 0; i < 400; i++) best = Math.Min(best, SegmentDistance(p, path.Centre(i / 400f), path.Centre((i + 1) / 400f)));
+        return best;
     }
 
     static float SegmentDistance(Vector3 p, Vector3 a, Vector3 b)

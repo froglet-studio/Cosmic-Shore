@@ -138,6 +138,12 @@ namespace CosmicShore.Utility
         /// (<see cref="OmniCombineCore.OmniPose(double, in OmniCombineParams, double, D3, float[], float[], double, long)"/>).
         /// Off in the lab, so parity holds.</summary>
         public bool GameMotion;
+        /// <summary>Every crystal but the first sockets in from OUTSIDE (designer, 2026-10-13: "the time crystal appeared to
+        /// come in from inside ... they should all (except the first) be separating more as if they are eating the whole
+        /// and then socketing into place from the outside"): each plate's centre rises from where it is to a shell this many
+        /// omni radii beyond its slot, travels round that shell to above its slot, and drops into it radially. Its shape
+        /// morph and its turn are untouched; only the path of its centre changes. 0 (the lab) = the straight path.</summary>
+        public double SocketLift;
 
         public static OmniCombineParams LabDefault => new OmniCombineParams
         {
@@ -269,6 +275,8 @@ namespace CosmicShore.Utility
                         seatScale = 1 + (Data.depth.massSizeStart - 1) * (1 - sd) * fxIdle;
                         seatLift = pl.C * ((Data.depth.massReach - 1) * (1 - sd) * fxIdle);
                     }
+                    bool socket = p.SocketLift > 0 && k > 0 && w > 0 && w < 1;
+                    D3 restSum = default, drawnSum = default;
                     foreach (int i in pl.Idx)
                     {
                         D3 b = V(c.Data.basis, i);
@@ -307,6 +315,28 @@ namespace CosmicShore.Utility
                         outPos[3 * i] = (float)v.X;
                         outPos[3 * i + 1] = (float)v.Y;
                         outPos[3 * i + 2] = (float)v.Z;
+                        if (socket)
+                        {
+                            restSum += b;
+                            drawnSum += v;
+                        }
+                    }
+                    if (socket)
+                    {
+                        // Where the plate's centre would be unmorphed (exactly where its straight path starts) and where it is
+                        // now; the socket path replaces the second, so a plate starts and lands exactly as before.
+                        double inv = 1.0 / pl.Idx.Length;
+                        D3 from = restSum * inv;
+                        if (spin != 0) from = RotAxis(_tumbleAxis, spin, from);
+                        if (ang != 0) from = RotAxis(_tumbleAxes[k], ang, from);
+                        from += centre;
+                        D3 shift = SocketPath(from, c.FinalCentre[q], w, p.SocketLift * OmniRadius) - drawnSum * inv;
+                        foreach (int i in pl.Idx)
+                        {
+                            outPos[3 * i] += (float)shift.X;
+                            outPos[3 * i + 1] += (float)shift.Y;
+                            outPos[3 * i + 2] += (float)shift.Z;
+                        }
                     }
                 }
                 if (centres != null)
@@ -399,6 +429,38 @@ namespace CosmicShore.Utility
             // Charge tumbles while it idles; the accumulated turn unwinds over the flight so it lands in the omni's frame.
             // Only the turn modulo a whole turn unwinds (the same pose), so a long wait never spins it back for laps.
             spin = k == Charge && p.IdleTumble ? (_tumbleSpeed * Math.Min(t, t0)) % (2 * Math.PI) * (1 - e) : 0;
+        }
+
+        /// <summary>
+        /// A plate's centre <paramref name="w"/> (0..1) of the way from <paramref name="start"/> into the slot at
+        /// <paramref name="slot"/> from OUTSIDE (<see cref="OmniCombineParams.SocketLift"/>): its radius from the omni's centre
+        /// eases to a shell <paramref name="lift"/> beyond the slot's while its direction turns (along the great circle) to
+        /// the slot's by 0.7; then it drops straight in along the slot's own direction. It never cuts through the omni to
+        /// get there, and its last approach is always radial, from outside.
+        /// </summary>
+        public static D3 SocketPath(D3 start, D3 slot, double w, double lift)
+        {
+            double r0 = start.Length, rf = slot.Length, rOut = rf + lift;
+            D3 d1 = slot.Unit, d0 = r0 > 1e-9 ? start * (1 / r0) : d1;
+            const double Over = 0.7;
+            double turn = Smooth(w / Over);
+            double r = w < Over ? r0 + (rOut - r0) * Smooth(w / 0.35) : rOut + (rf - rOut) * Smooth((w - Over) / (1 - Over));
+            return SlerpUnit(d0, d1, turn) * r;
+        }
+
+        static D3 SlerpUnit(D3 a, D3 b, double t)
+        {
+            double dot = Math.Max(-1, Math.Min(1, D3.Dot(a, b)));
+            double omega = Math.Acos(dot);
+            if (omega < 1e-6) return a;
+            if (Math.PI - omega < 1e-4)
+            {
+                // opposite: round any great circle (the one through the vertical, or failing that the x axis)
+                var axis = D3.Cross(a, Math.Abs(a.Y) < 0.9 ? D3.Up : new D3(1, 0, 0)).Unit;
+                return RotAxis(axis, omega * t, a);
+            }
+            double so = Math.Sin(omega);
+            return a * (Math.Sin((1 - t) * omega) / so) + b * (Math.Sin(t * omega) / so);
         }
 
         // ------------------------------------------------------------------ the four effects

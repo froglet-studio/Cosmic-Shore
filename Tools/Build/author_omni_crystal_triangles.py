@@ -48,8 +48,8 @@ with this look. (Breathe and the rim and their eight materials were retired on 2
 Charge owns the PENTAGONS. Since the Omni Motion Lab round 5 (2026-10-13) its light is CrystalChargeArcs on
 OmniCrystalChargeArcs, a plain child of Crystal.prefab (NOT a crystalModels slot - an overlay has no husk to burst and no
 team material to clone): chained FLUX ARCS - a pentagon charges, an arc leaps to one 55-125 degrees away, both fade, and
-the next leaps on from the sink; only those two pentagons light; the arc forks onto the five corners at each end and is
-one thick beam (halo, body, hot core) between. The Charge crystal (CrystalCharge.prefab, also authored here) gets the
+the next leaps on from the sink; only those two pentagons light; the arc is five strands, each one plasma ribbon from a
+source corner to a sink corner, fanned onto the corners at each end and running as one coaxial braided bundle between. The Charge crystal (CrystalCharge.prefab, also authored here) gets the
 same component as ChargeCrystalArcs in SEAM WALK mode - one bolt walking the seams between its twelve blooms forever -
 and its shell's edge crawl is held at zero while it runs. Both draw on CrystalChargeArcsShader (OmniChargeArcs.mat /
 ChargeCrystalArcs.mat: the crystal's bright colour, ChargeCrystalMaterial's arc core colour) with one timing profile,
@@ -230,7 +230,7 @@ ARCS_PROFILE_VALUES = [("rate", 1), ("boltIntensity", 1), ("glowIntensity", 1),
                        ("seamStrikeSeconds", 0.07), ("seamDwellMinSeconds", 0.1), ("seamDwellMaxSeconds", 0.28),
                        ("seamFadeSeconds", 0.85), ("fluxGapSeconds", 0.9), ("fluxChargeSeconds", 0.45),
                        ("fluxStrikeSeconds", 0.06), ("fluxHoldSeconds", 0.45), ("fluxFadeSeconds", 0.45), ("fluxFork", 0.3),
-                       ("fluxMinDegrees", 55), ("fluxMaxDegrees", 125), ("coreWidth", 0.012), ("writheSpeed", 3), ("flickerSpeed", 4)]
+                       ("fluxMinDegrees", 55), ("fluxMaxDegrees", 125), ("fluxBundle", 0.016), ("fluxTurns", 1), ("coreWidth", 0.012), ("writheSpeed", 3), ("flickerSpeed", 4)]
 # The omni's light: a plain child of Crystal.prefab (GameObject, Transform, MeshFilter, MeshRenderer, CrystalChargeArcs,
 # CrystalAccentTint). The Charge crystal's: a plain child of CrystalCharge.prefab (no tint: its body has no _BrightColor).
 OMNI_ARCS_IDS = (3086241560104200061, 3086241560104200062, 3086241560104200063, 3086241560104200064,

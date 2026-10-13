@@ -65,6 +65,34 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Converter crystals socket in from outside; flux arcs are five seamless coaxial strands (`cece/sharp-fermi-yw38ky`, 2026-10-13) — NOT EDITOR-VERIFIED
+
+`/verify-unity` was not run (no Unity Editor or `unity` CLI). What did run:
+- `unity_refcompile`, player and editor (the editor run caught a stale `Strand` call in `CrystalChargeArcsTests`,
+  fixed);
+- `converter_round5_harness`: socket checks, with the straight path as the negative control (Time 76% inside);
+- `charge_arcs_harness`: bundle checks, with no bundle as the negative control;
+- `omni_combine_parity` (lab 7e-7);
+- the converter self-test.
+
+**What landed** (`Docs/Studios/OMNI_COMBINE_LAB.md`, revision 6):
+- `OmniCombineParams.SocketLift`, drawn 0.35–0.6 per play: every crystal but Space flies its plates out to a shell
+  beyond the omni, round it, and radially into their slots.
+- `ChargeFluxPath.Strand`: five full-length strands, coaxial between the forks. The beam is retired; the corners are
+  paired by order round the arc. `CrystalChargeArcsProfile.fluxBundle` / `fluxTurns`.
+
+**Verify in editor:**
+1. Ark → CONVERT, watching Charge, Mass and Time:
+   - their plates spread out round the omni, beyond its surface (the omni being "eaten");
+   - then each drops into its slot from outside;
+   - nothing emerges from inside the omni;
+   - Space, first, is as before.
+2. The woken omni's flux arcs (and an omni in play): five filaments leave the source pentagon's corners, gather into a
+   thin braided cable that makes one turn on the way, and fan out onto the sink's five corners. There's no thicker
+   middle beam and no seam anywhere.
+3. Tuning: `fluxBundle` (how far apart the five run) and `fluxTurns` on `CrystalChargeArcsProfile`; `socketLift`
+   (min, max) on `OmniCombineConfig`.
+
 ### 🔴 Charge polish: one hue in the converter, flux arcs light the Mass columns they pass through, plasma bolts (`cece/sharp-fermi-yw38ky`, 2026-10-13) — NOT EDITOR-VERIFIED
 
 `/verify-unity` was not run (no Unity Editor or `unity` CLI). What did run:

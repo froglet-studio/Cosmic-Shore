@@ -53,7 +53,7 @@ namespace CosmicShore.Gameplay
         [Tooltip("Seconds the arc and both pentagons take to fade.")]
         [SerializeField, Range(0.05f, 2f)] float fluxFadeSeconds = 0.45f;
 
-        [Tooltip("The fraction of the arc at each end over which its five strands fork smoothly onto the pentagon's five corners; between, they are one thick beam.")]
+        [Tooltip("The fraction of the arc at each end over which its five strands fan smoothly onto the pentagon's five corners; between, they run on as one coaxial bundle (each strand one ribbon the whole way: no seam).")]
         [SerializeField, Range(0.05f, 0.5f)] float fluxFork = 0.3f;
 
         [Tooltip("The nearest a sink may be to its source, in degrees round the crystal.")]
@@ -61,6 +61,12 @@ namespace CosmicShore.Gameplay
 
         [Tooltip("The farthest a sink may be from its source, in degrees round the crystal.")]
         [SerializeField, Range(0f, 180f)] float fluxMaxDegrees = 125f;
+
+        [Tooltip("Between the forks the five strands run as one coaxial bundle: how far each runs off the arc's centre line, x the crystal's radius. Small enough to read as one cable, big enough to keep the five filaments apart.")]
+        [SerializeField, Range(0f, 0.1f)] float fluxBundle = 0.016f;
+
+        [Tooltip("Whole turns the bundle twists about its axis over the arc (a braided cable). Whole turns, so each strand still lands on its own sink corner.")]
+        [SerializeField, Range(0, 4)] int fluxTurns = 1;
 
         [Header("Bolts")]
         [Tooltip("A bolt's core width, x the crystal's radius (its glow is wider; the flux beam is 3 of these, a strand 0.9).")]
@@ -79,6 +85,7 @@ namespace CosmicShore.Gameplay
             SeamFade = seamFadeSeconds,
             FluxGap = fluxGapSeconds, FluxCharge = fluxChargeSeconds, FluxStrike = fluxStrikeSeconds, FluxHold = fluxHoldSeconds,
             FluxFade = fluxFadeSeconds, FluxFork = fluxFork, FluxMinDegrees = fluxMinDegrees, FluxMaxDegrees = Mathf.Max(fluxMinDegrees, fluxMaxDegrees),
+            FluxBundle = fluxBundle, FluxTurns = fluxTurns,
             CoreWidth = coreWidth, WritheSpeed = writheSpeed, FlickerSpeed = flickerSpeed,
         };
     }

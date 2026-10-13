@@ -589,7 +589,8 @@ page draws exactly what the designer exported.
 **Since 2026-10-13 (Omni Motion Lab round 5) Charge's light is the FLUX ARC, not the edge crawl.**
 `OmniCrystalChargeArcs` (a plain child of `Crystal.prefab`, `CrystalChargeArcs` in Flux mode on
 `CrystalChargeArcsShader`) replaces `OmniCrystalChargeEdges`: a pentagon charges, an arc leaps to one 55-125 degrees
-away, forks onto its five corners at both ends with one thick beam between, and the next leaps on from the sink. Only
+away, runs as five strands from corner to corner (fanned onto the five corners at both ends, one coaxial braided bundle
+between: no beam, no seam), and the next leaps on from the sink. Only
 those two pentagons light, in the body's bright colour mixed toward the arc core colour (`CrystalAccentTint` repaints
 it per domain). Every bolt is one continuous
 plasma ribbon after the Squirrel's skim crackle (`ForcefieldCrackle.hlsl`): a Gaussian glow running to a hot core in the

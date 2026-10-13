@@ -373,6 +373,40 @@ user).
   scene" was already edited and two refusals never reached the code they guard. Both were red. It now edits the scene
   from before the converter landed and asserts that it does; 11/11.
 
+**Revision 6 (2026-10-13): socket in from outside; five seamless strands.** The designer: "the time crystal appeared to
+come in from inside. they should all (except the first) be separating more as if they are eating the whole and then
+socketing into place from the outside. The 5 streams that touch the pentagon tip are great, but then there is an abrupt
+seam and then a different effect ... keep all 5 streams and have them connect from one to the other with as much
+coaxial definition as you can for that length instead of creating any seams at all."
+
+- **Socket from outside.** Space lands first, so the later crystals arrive near the centre. Time's plates moved
+  straight from there to their slots: outward, through the omni. The harness's negative control measures it at up to
+  76% inside the slot radius. Now, for every crystal but the first, each plate's CENTRE follows
+  `OmniCombineCore.SocketPath`:
+  - out to a shell `socketLift` (0.35–0.6, drawn per play) omni radii beyond its slot;
+  - round the omni on that shell, along the great circle, to above its slot;
+  - straight down into it.
+
+  Its shape morph and its turn are untouched. The path starts exactly where the unmorphed plate is and ends exactly in
+  the slot. Measured: no plate dips inside its slot radius, the last approach is within 0.1° of radial, the landings
+  are exact (7e-8 R), and Space is unchanged. The lab path (`SocketLift` 0) still matches the lab to 7e-7.
+- **Five seamless strands** (in play and here). The thick middle beam is gone. Each of the five strands is ONE plasma
+  ribbon from its source corner to its sink corner:
+  - fanned onto the corners at each end, as before;
+  - between, a coaxial bundle `fluxBundle` (0.016 R) off the centre line, the five exactly 72° apart;
+  - the bundle carried along the arc in a rotation-minimizing frame and making `fluxTurns` (1) whole turns, a braided
+    cable;
+  - all five bending on one shared noise, so they writhe together and stay coaxial.
+
+  Two things had to change for that:
+  - The corners are now paired by their ORDER round the arc. "Turn the source onto the sink" reverses that order as
+    seen along the arc, which leaves one face and enters the other, and every strand crossed mid-arc.
+  - Through the middle the five are evenly spaced, because the corners, seen obliquely, are not.
+
+  Measured on the real omni over every source-sink pair: closest approach between two strands 0.0182 R (the ring's own
+  spacing is 0.0188 R), landings 2e-7 R, sharpest bend 8° per step. With no bundle the five collapse onto one line,
+  which is the negative control.
+
 **Revision 5 (2026-10-13): one hue, conducting columns, plasma.** The designer: "the charge pentagons come in with the
 wrong hue ... unify the starting hue so the charge matches at base and still has the contrast with the lit state. detect
 when a charge effect will bolt through a mass column on the omni crystal and light it up appropriately instead of

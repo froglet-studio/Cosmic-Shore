@@ -166,11 +166,64 @@ static class Program
         core.OmniPose(13.3, lab, 1, cam, a2, swelled, 0.5, 3);
         Check("GameMotion off ignores the game-motion arguments (the lab path)", a1.SequenceEqual(a2));
 
+        // 8: every crystal but the first sockets in from OUTSIDE
+        var sp = OmniCombineParams.LabDefault;
+        sp.GameMotion = true; sp.ShaderDepth = true; sp.IdleTumble = false; sp.SocketLift = 0.5;
+        var straightP = sp; straightP.SocketLift = 0;
+        var (inside, approach, landed, spaceMoved) = SocketStats(core, data, sp);
+        Check("crystals 2-4: no plate comes in from inside (each stays at or beyond its slot's radius while it morphs)", inside[1] < 0.02f && inside[2] < 0.02f && inside[3] < 0.02f,
+              $"deepest below the slot radius: Charge {inside[1]:P1}, Mass {inside[2]:P1}, Time {inside[3]:P1}");
+        Check("crystals 2-4: the last approach is radial, from outside", approach < 10f, $"worst {approach:F1} deg off the slot's direction");
+        Check("every plate still lands exactly in its slot", landed < 1e-4f * R, $"worst {landed / R:E2} R");
+        Check("the first crystal (Space) is unchanged", spaceMoved == 0f, $"{spaceMoved:E2}");
+        var (insideStraight, _, _, _) = SocketStats(core, data, straightP);
+        Check("negative control: on the straight path Time comes in from inside (the reported fault)", insideStraight[3] > 0.1f,
+              $"Time reaches {insideStraight[3]:P0} inside its slot radius");
+
         // negative control: keys out of order
         var swappedData = JsonSerializer.Deserialize<OmniCombineData>(File.ReadAllText(args[0]), new JsonSerializerOptions { IncludeFields = true });
         (swappedData.squares.keys[0], swappedData.squares.keys[1]) = (swappedData.squares.keys[1], swappedData.squares.keys[0]);
         Check("negative control: square keys out of order are refused", !OmniCombineMotion.TryFit(swappedData, R, 1.1f, out _, out var why), why ?? "accepted");
         return Finish();
+    }
+
+    /// <summary>Over every frame of a play: how far (as a fraction of the slot radius) any plate of each crystal dips inside
+    /// its slot's radius while it morphs, the worst angle between a plate's last approach and its slot's direction, the
+    /// worst landing error, and how far Space moved relative to the straight path.</summary>
+    static (float[] inside, float approach, float landed, float spaceMoved) SocketStats(OmniCombineCore core, OmniCombineData data, OmniCombineParams p)
+    {
+        var straight = p; straight.SocketLift = 0;
+        var pos = Enumerable.Range(0, 4).Select(k => new float[3 * core.VertexCount(k)]).ToArray();
+        var posStraight = Enumerable.Range(0, 4).Select(k => new float[3 * core.VertexCount(k)]).ToArray();
+        var morph = Enumerable.Range(0, 4).Select(k => new float[core.CrystalData(k).plateSite.Length]).ToArray();
+        var effect = new float[4];
+        var inside = new float[4];
+        float approach = 0f, landed = 0f, spaceMoved = 0f;
+        var cam = new D3(0.2, 0.5, 1).Unit;
+        double end = OmniCombineCore.MorphEnds(p);
+        for (double t = 0; t <= end + 0.01; t += 1.0 / 60)
+        {
+            double tt = Math.Min(t, end);
+            core.Pose(tt, p, cam, pos, effect, null, morph);
+            core.Pose(tt, straight, cam, posStraight, effect);
+            for (int i = 0; i < pos[0].Length; i++) spaceMoved = Math.Max(spaceMoved, Math.Abs(pos[0][i] - posStraight[0][i]));
+            for (int k = 1; k < 4; k++)
+            {
+                var d = core.CrystalData(k);
+                foreach (var g in Enumerable.Range(0, d.plate.Length).GroupBy(i => d.plate[i]))
+                {
+                    int q = g.Key;
+                    var c = g.Aggregate(Vector3.zero, (acc, i) => acc + V(pos[k], i)) / g.Count();
+                    var slot = g.Aggregate(Vector3.zero, (acc, i) => acc + V(d.final, i)) / g.Count();
+                    float w = morph[k][q];
+                    if (w > 0f && w < 1f) inside[k] = Math.Max(inside[k], 1f - c.magnitude / slot.magnitude);
+                    if (w > 0.9f && w < 0.999f && (c - slot).magnitude > 1e-4f)
+                        approach = Math.Max(approach, Vector3.Angle(c - slot, slot));
+                    if (tt >= end) landed = Math.Max(landed, (c - slot).magnitude);
+                }
+            }
+        }
+        return (inside, approach, landed, spaceMoved);
     }
 
     static int Finish()

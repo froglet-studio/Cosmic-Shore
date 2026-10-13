@@ -16,7 +16,8 @@ namespace CosmicShore.Gameplay
     ///   the hull fusion that copies it - keeps its crawl).
     ///   FLUX (the omni) - a pentagon charges, an arc leaps to a pentagon 55-125 degrees away and lands, both fade, and the
     ///   next discharge leaps on from the one it landed on. Only those two pentagons light. At each end the arc forks
-    ///   smoothly onto the pentagon's five corners; through the middle it is one thick beam. Where the arc's path runs
+    ///   smoothly onto the pentagon's five corners, and the five run on as one coaxial bundle (a braided cable) between - each
+    ///   strand one ribbon the whole way, so there is no seam. Where the arc's path runs
     ///   through a raised Mass prism (the sibling <see cref="CrystalDepthPrisms"/>), that prism lights up while the arc
     ///   holds (<see cref="ChargeArcs.FluxStrikes"/>), so the bolt reads as conducting through it, not clipping.
     ///

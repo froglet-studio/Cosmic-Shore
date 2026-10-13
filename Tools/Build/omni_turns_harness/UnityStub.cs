@@ -51,6 +51,29 @@ namespace UnityEngine
         public static float Distance(Vector3 a, Vector3 b) => (a - b).magnitude;
         public static Vector3 Lerp(Vector3 a, Vector3 b, float t) => a + (b - a) * Mathf.Clamp01(t);
         public static Vector3 LerpUnclamped(Vector3 a, Vector3 b, float t) => a + (b - a) * t;
+        // Unity's: the direction turned by angle, the length interpolated (t clamped)
+        public static Vector3 Slerp(Vector3 a, Vector3 b, float t)
+        {
+            t = Mathf.Clamp01(t);
+            float la = a.magnitude, lb = b.magnitude;
+            if (la < 1e-9f || lb < 1e-9f) return Lerp(a, b, t);
+            Vector3 na = a / la, nb = b / lb;
+            float dot = Mathf.Clamp(Dot(na, nb), -1f, 1f);
+            float omega = (float)Math.Acos(dot);
+            Vector3 dir;
+            if (omega < 1e-5f) dir = Lerp(na, nb, t).normalized;
+            else
+            {
+                if (Math.PI - omega < 1e-4)
+                {
+                    var axis = Cross(na, Math.Abs(na.x) < 0.9f ? new Vector3(1, 0, 0) : new Vector3(0, 1, 0)).normalized;
+                    return Quaternion.AngleAxis((float)(omega * t * 180.0 / Math.PI), axis) * na * (la + (lb - la) * t);
+                }
+                float so = (float)Math.Sin(omega);
+                dir = na * ((float)Math.Sin((1 - t) * omega) / so) + nb * ((float)Math.Sin(t * omega) / so);
+            }
+            return dir * (la + (lb - la) * t);
+        }
         public static float Angle(Vector3 a, Vector3 b) { float d = Dot(a.normalized, b.normalized); d = d > 1f ? 1f : d < -1f ? -1f : d; return (float)(Math.Acos(d) * 180.0 / Math.PI); }
         public static Vector3 operator +(Vector3 a, Vector3 b) => new(a.x + b.x, a.y + b.y, a.z + b.z);
         public static Vector3 operator -(Vector3 a, Vector3 b) => new(a.x - b.x, a.y - b.y, a.z - b.z);

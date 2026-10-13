@@ -27,6 +27,8 @@ MonoBehaviour:
   fluxFork: 0.3
   fluxMinDegrees: 55
   fluxMaxDegrees: 125
+  fluxBundle: 0.016
+  fluxTurns: 1
   coreWidth: 0.012
   writheSpeed: 3
   flickerSpeed: 4
