@@ -14,8 +14,10 @@ compare grid and shared likes. A trip chart, a scorecard and a "what it takes to
 - **Round-to-round parity:** `Tools/Build/omni_shepard_lab_parity.cjs <old.html> <new.html> [--old-set <recipe>] [--old-style id] [--new-style id]`
 - **Shader vs lab:** `Tools/Build/omni_shepard_shader_parity.py` (compiles the shipped HLSL with clang)
 - **Space squares (round 6):** `blender -b CrystalsRaw_V2.blend --python Tools/Build/bake_omni_space_squares.py -- Docs/Studios/data/omni_space_squares.json` (the `.blend` is the art team's, not in the repo); the extractor then maps it onto the body FBX
-- **What ships (since round 8):** the "Depth ratchet", see Round 8 below and `Docs/PALETTE.md` §2.10 ("Breathe" shipped rounds 4–7); since round 9 the crystal holds still and the body plays the Space squares
-- **Shader vs lab (depth prisms):** `Tools/Build/omni_depth_prism_shader_parity.py`
+- **What ships (since round 8):** the "Depth ratchet", see Round 8 below and `Docs/PALETTE.md` §2.10 ("Breathe" shipped rounds 4–7); since round 9 the crystal holds still and the body plays the Space squares; since round 10 every crystal takes its own random pose (seeded from its spawn position) and reseats at −0.87
+- **Ratchet + pose, headless:** `bash Tools/Build/crystal_depth_harness/run.sh`
+- **Shader vs lab (depth prisms):** `Tools/Build/omni_depth_prism_shader_parity.py` (since 2026-10-13 also the hull-fusion identity: undriven, any moved vertex draws where fusion put it)
+- **Field scorecard (round 10):** `window.__lab.runFieldBatch()` / `fieldScore(p)` / `fieldMetricsOf(p, kind, dist, subject)`
 
 ## How the effect works (measured from the assets)
 
@@ -39,6 +41,166 @@ opaque body hides it.
 
 A fourth shell, `OmniShepardTrianglesRim`, does not scale (`_ScaleDistance` 0) and draws at alpha
 0.02–0.07: a faint static outer skin.
+
+## Round 10 (2026-10-13): a field of Mass crystals, per-crystal randomness, and reseats seen from far away
+
+The ask: many Mass crystals in parallel (lifeform hearts, rows of pickups) read like one shared
+animation. A crystal's columns are a pure function of the camera direction in its own space, so crystals
+that share an orientation and sit far from the camera show identical columns. Give the designer knobs
+that break that, each seeded per crystal, each keeping the ratchet's promises, and a number for "how
+alike neighbours look".
+
+Opened by reading the shared decision log: still the five entries from rounds 7–8. The designer
+confirmed the round-9 ship (round-8 recipe, no turn, squares at 1x) is the decision, so there is
+nothing to apply.
+
+**New on the page**
+- **View ▸ Field** (Off / Rows / Cluster), count, spacing, field camera distance. Each crystal has its
+  own pose, centre and ratchet. The shell shader gained `uOffset` (inert at 0).
+- **Vary tab** (lab-only, chip "needs code": C# and profile fields, no shader change):
+  - *Random orientation*: a uniformly random pose per crystal, scaled by the knob. The depth rule holds
+    exactly, because depth is read in each crystal's own space.
+  - *Per-prism depth jitter*: each prism's Top-of-column depth ± the knob, its Sealed-from depth up to
+    the knob lower.
+  - *Reseat depth jitter*: per crystal, only ever DEEPER than the dial. A shallower reseat is seen.
+  - *Reseat fade jitter*: per crystal, ± a fraction.
+- Every crystal draws from its own `mulberry32` stream in a fixed order and count, so one knob never
+  reshuffles another's. Every knob at 0 is the shipped crystal exactly (0 px, below).
+- **Scorecard ▸ Score the field**: 20 crystals, rows and a cluster, the camera orbiting 90° over 20 s
+  at 250 u (far) and 60 u (near). Every crystal ratchets at 15 Hz from a fresh state.
+  - *Look r*: each crystal rendered alone from its own camera direction (48×48), pixels correlated with
+    its two nearest neighbours over the pixels either covers.
+  - *Picture r*: the prism heights, matched by view direction.
+  - *Motion r*: those heights' change, i.e. moving in step.
+  - *Same-prism r*: matched by plate index.
+  - *Rises / Reseats seen %*: the promises, worst of the four runs.
+- Seven new styles: the four knobs, all three together, reseat −0.87, and random orientation + reseat −0.87.
+- The Ship-it tab names the depth profile values and the randomness fields.
+
+**Field scorecard** (`window.__lab.runFieldBatch()`, seed 7):
+
+| Style | Look r far | Look r near | Picture r far | Motion r far | Same-prism r far | Rises seen % | Reseats seen % | Reseats |
+|---|---|---|---|---|---|---|---|---|
+| **Shipped, every knob 0 (control)** | 0.60 | 0.17 | 0.99 | 0.90 | 0.99 | 0.1 | **73** | 3487 |
+| Random orientation | **0.12** | 0.08 | 0.97 | 0.87 | 0.01 | 0.1 | 71.3 | 3341 |
+| Per-prism depth jitter 0.15 | 0.50 | 0.15 | 0.99 | 0.89 | 0.99 | 0.2 | 52.9 | 3885 |
+| Reseat jitter 0.15, fade ±50% | 0.61 | 0.17 | 0.99 | 0.92 | 0.99 | 0 | 53.4 | 1330 |
+| All three | 0.11 | 0.08 | 0.96 | 0.88 | 0.01 | 0 | 28.3 | 1809 |
+| Reseat −0.87 | 0.61 | 0.17 | 0.99 | 0.93 | 0.99 | 0 | **0.6** | 668 |
+| Random orientation, reseat −0.87 | 0.12 | 0.08 | 0.97 | 0.89 | 0.01 | 0 | 1.8 | 676 |
+
+Noise band: seeds 7, 11 and 23 give look r far 0.58–0.60 for the control and 0.10–0.12 with random
+orientation (±0.02).
+
+- **Orientation is the knob that changes what you see**: look r far 0.60 → 0.12, and 0.17 → 0.08 near.
+- Per-prism depth jitter moves it a little (0.50). Reseat jitter does not move it at all.
+- **Picture r and motion r stay at 0.87–0.99 for every variant.** That is the depth rule doing its
+  job: every crystal shows its far side open and its near side sealed, and prisms drop as they come
+  toward you. No randomness that keeps the rule can change that, and none should.
+
+**Found**
+1. **The shipped reseat (−0.8) is seen once the camera moves round a still crystal**, on both crystals,
+   worst from far away. Measured with the field metric and one row of crystals:
+
+   | Reseat at | Omni 34 u | Omni 250 u | Mass 34 u | Mass 250 u |
+   |---|---|---|---|---|
+   | −0.75 | 25% | 70.5% | 32.9% | 82.8% |
+   | **−0.8 (shipped)** | 8.6% | 56.5% | 13.8% | 73% |
+   | −0.85 | 0 | 3.2% | 0 | 32.5% |
+   | **−0.87** | 0 | 0 | 0 | 0 |
+   | −0.9 | 0 | 0 | 0 | 0 |
+
+   Mechanism: a column top sits 2× the plate radius out (`_Reach` 2). Seen nearly orthographically from
+   far away, it clears the silhouette whenever √(1−d²) > body / top ≈ 0.5, which is every reseat
+   shallower than d ≈ −0.87. Round 7's "cliff near −0.75, 0% at −0.8" was measured at 34 u on a
+   crystal turning 15°/s, a different motion from a camera orbiting a still crystal.
+
+   The cost of going deeper: fewer reseats. The omni at 34 u reseats 209 times over the 20 s orbit at
+   −0.8 and 42 times at −0.87, so columns stay sealed longer until they pass far enough behind.
+2. **The single-crystal scorecard could no longer see a reseat.** Its 26 cameras are fixed, and since
+   round 9 the crystal does not turn, so the ratchet never reseats and "Births seen 0%" is true by
+   default. The field scorecard moves the camera; it is now the one that tests the promise.
+3. **The shader's face-split sign test is gone, in the game and in both lab twins** (`VS_SHELL`,
+   `vertexAt`). On the Mass prisms baked thick (§1 of this branch), the test flipped for the outward
+   face's deep corners. Every normal of both meshes faces out (min n·(v−c) is 0.038 on the omni and 0.018
+   on the Mass; the generator asserts it), so the test was always +1 on the lab's meshes.
+
+**Checked**
+- `verify_lab.cjs` PASS (desktop and phone; screenshots read).
+- Pixel parity against round 9 (`omni_shepard_lab_parity.cjs`): 0 px at all five times for Shipped,
+  Classic, Depth ratchet faces split and Sealed by depth faces split, and for Shipped and faces split on
+  the Mass. Negative control: random orientation on the Mass changes 127k pixels.
+- Field scorecard deterministic per seed; noise band as above.
+- Omni and Mass reseat sweep: `fieldMetricsOf(p, 1, dist, subject)`.
+
+**Decision (designer, 2026-10-13):** random orientation ships, the reseat moves to −0.87, and the omni gets the
+same treatment as the Mass (they share one profile).
+
+**What ships**
+
+| Piece | What changed |
+|---|---|
+| `CrystalPoseJitter.cs` (new, `Utility/`) | Pure maths. `SeedOf(spawn position)` quantizes to 1 cm and murmur-mixes, so every client poses the same pickup the same way with nothing networked (crystals are local and a pickup spawns at the same place everywhere; a lifeform's heart is posed from where its host stands on the frame it enables, so two clients can turn one heart differently, which is cosmetic). `Pose(seed, amount)` is a uniformly random rotation (Shoemake's quaternion from the first three draws of the lab's `mulberry32`, ported bit for bit), scaled toward identity about its own axis. JS twin: `shoemake()` / `poseOfSeed()`. |
+| `CrystalDepthPrisms.cs` | Gathers the crystal's models once in Awake: every sibling under the crystal root with a renderer, itself included, never the root (the round-8 free turn's rule). On the first frame after enable, it turns them about the root's origin to the crystal's pose. It waits for that frame because a pooled crystal is enabled before it is moved. The authored pose comes back on disable. The body search for the omni's holes reuses the same list. |
+| `CrystalDepthPrismProfileSO` / `.asset` (generated) | `reseatDepth` −0.8 → **−0.87**; new `orientationJitter` **1** (Header "Variety"). `author_omni_crystal_triangles.py` `DEPTH_PROFILE_VALUES`. |
+| `DepthRatchetTests.cs` (new) | The three pure ratchet tests moved here from `CrystalDepthPrismTests` (no editor dependencies), plus four new ones (seven methods, ten cases): the pose is identity at 0, the same for the same spawn and different one pickup along; it matches the lab at four seeds; it is uniform (4,000 spawns); and **a row of eight posed crystals under an orbiting camera keeps both promises**, with local depth equal to world depth to 1e-5. |
+| `Tools/Build/crystal_depth_harness/` (new) | Compiles the shipped `DepthRatchet.cs`, `CrystalPoseJitter.cs` and `DepthRatchetTests.cs` against a value-type `UnityEngine` stub and runs them with NUnitLite. |
+| Lab | `SHIPPED.jitOrient` is read from the profile, and the knob's chip is now "material values" (a profile value). The round-10 styles are re-based on the new Shipped: Every crystal alike, + depth jitter, + reseat jitter, + all jitter, Round 9. The field control is "every knob 0". |
+
+**After the pick** (`runFieldBatch()`, seed 7):
+
+| Style | Look r far | Look r near | Motion r far | Rises seen % | Reseats seen % | Reseats |
+|---|---|---|---|---|---|---|
+| Every knob 0 (control) | 0.61 | 0.17 | 0.93 | 0 | 0.6 | 668 |
+| **Shipped** (random pose, reseat −0.87) | **0.12** | **0.08** | 0.89 | 0 | **1.8** | 676 |
+| Round 9 (alike, reseat −0.8) | 0.60 | 0.17 | 0.90 | 0.1 | 73 | 3487 |
+
+The 1.8% is the −0.87 bound's thin margin: 13 of 676 reseats across the four runs, near-range cluster
+crystals seen at strong perspective. −0.9 would remove it at the cost of fewer reseats again.
+
+**Checked (ship)**
+- Graduation, pixels: the round-10 page with `{jitOrient 1, depthSwap −0.87}` applied equals the new Shipped,
+  0 px at all five times on the omni and the Mass. Negative control: the recipe without the pose changes
+  127k px. Classic is 0 px.
+- `crystal_depth_harness`: 10/10 headless. Mutants each fail: a ratchet that reseats 0.3 shallower (2 tests),
+  and a pose with the quaternion sign dropped (the lab-parity test).
+- Extractor `--check` OK, `--self-test` 16/16. Omni generator `--check` OK. `verify_lab.cjs` PASS.
+- Re-run at ship (2026-10-13, after F1–F4): `runFieldBatch()` reproduces the table above exactly; extractor
+  `--check` OK and `--self-test` 17/17 (F3 added one); `verify_lab.cjs` PASS and `--self-test` OK.
+
+**Not modelled:** crystals hiding each other (only their own prisms hide a reseat), fog, LOD, culling,
+and a ratchet that skips frames on distant crystals.
+
+## Performance (2026-10-13): the instrument exists, the numbers do not yet
+
+CLAUDE.md: profile first. A cloud session cannot profile, so this branch built the instrument and changed
+nothing on speculation. The designer chose to skip profiling for now and put the run on QA's list for Yash
+(`Docs/QA/QA_BACKLOG.md`, **QA-P2-BENCH-DEPTH-PRISMS**).
+
+**The instrument:** **FrogletTools ▸ Performance ▸ Crystal Depth Prism Benchmark**
+(`Assets/_Scripts/Utility/PerformanceBenchmark/Editor/CrystalDepthPrismBenchmarkWindow.cs`, a READER).
+- Spawns N omni and N Mass crystals (N = 10 / 50 / 200; omni only or Mass only for attribution) in a
+  ring, stripped to their visuals.
+- Orbits `Camera.main` outside the ring, looking in, so the ratchets run.
+- Reports median / p95 of the main thread, `CrystalDepthPrisms.LateUpdate`,
+  `CrystalSpaceSquares.LateUpdate`, `CrystalFlipWave.LateUpdate`, skinned-mesh update, draw calls,
+  SetPass calls, batches, shadow casters and triangles.
+- Lists every batch / SRP counter the Unity version exposes.
+
+**Before / after table:** empty until the benchmark runs.
+
+**What each candidate is, read from the code and assets (2026-10-13). Attack them in the order the numbers
+rank them:**
+
+| Candidate | Static facts | Blocked on |
+|---|---|---|
+| One draw per crystal (the property block breaks the SRP batcher) | **Moot as built.** `OmniDepthPrismShader` is `CGPROGRAM` with loose uniforms (no `UnityPerMaterial` CBUFFER) and a `float4 _DepthState[60]` array, so it is not SRP-batcher compatible with or without a block. A per-renderer value that keeps the batcher would first need the shader rewritten to HLSL with a `UnityPerMaterial` CBUFFER and the column state moved out of material properties (a shared `GraphicsBuffer` indexed per crystal). `Renderer.SetShaderUserValue` is not in the 6000.0.75 reference DLLs this session compiles against; the project is on 6000.3.17, which the QA item asks Yash to check. | draw-call and SetPass numbers |
+| The leaving pass draws every prism every frame | True. Pass 1 (`UniversalForward`) runs for every visible crystal; a column with no reseat collapses each leaving vertex to a point (alpha 0), so it costs a draw call and a vertex shade of the whole mesh (360 vertices on the omni, 1080 on the Mass). A per-renderer toggle cannot disable one pass of a shared material; the options are a second material without the pass, swapped while no column is reseating, or a single pass that draws the leaving prism only when its column is live. | draw calls / vertex cost |
+| Dirty-check the property block | **Not a pure saving.** `Crystal.ClearColorSetTint` writes a null block, which wipes `_DepthDriven` and `_DepthState`. A driver that skipped its write while no column changed would leave a still-camera crystal undriven (snapped sealed) until something moved. It needs a "block was wiped" check that costs less than the write it saves. | `CrystalDepthPrisms.LateUpdate` ms |
+| Distance LOD (step the ratchet every k frames, staggered; or sit undriven) | A far crystal stepping every k frames sees k× the dt per step. `DepthRatchet.Step` already takes dt, so the reseat fade stays timed. A crystal sitting undriven shows sealed, which is a visible change at range. | `CrystalDepthPrisms.LateUpdate` ms per crystal |
+| Prism shadows | **The prisms cast none:** the shader has no `ShadowCaster` pass. Their renderers still say `m_CastShadows 1` (omni prism prefab, Mass prefabs), so they are culled for the shadow pass for nothing. Setting it to 0 in both generators changes no pixel. | the "Shadow casters" counter |
+| Space squares beyond a distance | The body re-skins every visible frame regardless: the Time flip wave turns its bones every frame. Freezing the blend-shape weights saves only the blend-shape pass, not the skinning. The body also has `m_SkinnedMotionVectors 1`, an extra skinned output, and `m_UpdateWhenOffscreen 0` (good). | skinned-mesh ms |
+| F2: `ThemeManager` clones 9 unused material instances per domain set | See F2 (§4 of this branch): retired together with the tone/rim materials. | none (memory, not frame time) |
 
 ## Round 9 (2026-10-12): no free turn, the ratchet unfrozen, the Space squares ship
 
@@ -111,6 +273,26 @@ now (Found 3).
    the pinned Breathe look for every other base.
 3. **A decision that leaves out the view cannot say what was approved.** `snapshot()` recorded only
    the non-view knobs, so "Space squares on" was invisible in the log. It now records `view` as well.
+
+## Follow-ups F1–F4 closed (2026-10-13)
+
+| # | What was done | What the row got wrong, or what it missed |
+|---|---|---|
+| F1 | `ThemeManagerDataContainerSO.GetTeamCrystalMaterial(domain, material)` finds the base-set slot holding a model's OWN default material. `Crystal.ResolveActivationMaterial` and `ChangeDomain` use it through `TeamMaterialFor`. A model whose material is not in the set keeps its own. `TeamCrystalMaterialTests` covers a synthetic set, the shipped omni (slots 0 and 1) and the Mass models (−1). | Still latent, re-measured: `crystalPrefab` names only the omni (31 `Crystal.prefab`, 3 `BigCrystalVariant`). `ChangeDomain` also had no null check on the theme data; `TeamMaterialFor` has one. |
+| F2 | The eight `OmniShepardTriangles*` tone and rim materials are deleted. The lab pins their values in `RETIRED` (0 px against before on Shipped, Classic, Breathe and Breathe wave). The extractor and the Breathe parity tool read the pin. The generator stops authoring them and leaves `OriginalMaterialSet` slots 2–4 empty. `ThemeManager` clones only the slots that are set. | `OmniShepardTriangles 0`, the three `Inactive` and `RimInactive` were already unreferenced; only slots 2–4 named the other three. |
+| F3 | **Retired** (designer's call). The eight Mass shell materials are deleted with `SpawnedSegments.prefab`, and the lab pins them in `RETIRED.massShells` (0 px on the old-shells view and Mass glass). The Mass generator no longer authors them, and its spent exploding-material repoints stand down into an invariant. **Its `--check` exits 0 for the first time since round 8, and a planted change is named DRIFT.** | The drift was not a property re-order: the Editor-saved files carried **2× the generator's HDR colours** and the `_SCALEDISTANCE_ON` keyword, a deliberate brightening. Their "live" consumer `SpawnedSegments.prefab` was an orphan (1,008 baked Mass crystals, 0 references). |
+| F4 | `CameraManager.ViewCamera` returns the active controller's camera, else `Camera.main`, resolved once a frame; `CrystalDepthPrisms` uses it too. Five view-dependent reads that had round 9's bug now use it: `CellEcologyLod` (the LOD's camera "pilot"), `ThreatGrove` (its far-pilot sense), `GrizzlyBombVisual` (billboards; it also cached the camera at arm time, so a switch to the death cam left them facing the old one), the Thresher combo label, and `SniperScopeOverlay` (the flight reticle was projected through the menu camera). `MainMenuCameraController`'s comment is corrected. | 52 reads in 32 files, classified. **Already right:** `ObjectiveIndicator`, `WormholeView`, `PreGameCinematicController`, and `ShipAudioController` (FMOD listener first). **Menu-only, where `Camera.main` is the view:** toys, previews, screenshots, `ConnectingArenaPreview`. **Settings / tools:** `OffscreenCameraSetup`, the stress and explosion harnesses, training. **Left as rows:** `GraphicsSettingsApplier` applies anti-aliasing to `Camera.main` only, so "CM PlayerCam" never gets the setting; `CameraManager` paints the background of `Camera.main` on two of its three paths. |
+
+New rows found while closing these:
+- **R1:** no material uses `OmniShepardFresnelShader` any more (Prisma has a GLSL translation of it). Retire it
+  with `omni_shepard_shader_parity.py`, or keep it as the lab's Breathe reference.
+- **R2:** `ThemeManager.prefab` serializes `BaseMaterialSet: GreenMaterialSet` and `ColorSet`, which the script no
+  longer has (the live set comes from `ThemeManagerDataContainer.asset`). They are dead overrides.
+- **R3:** the anti-aliasing and background-colour reads above (F4, settings side).
+- **R4:** the Prisma port mirrors the OLD team lookup. `Port/src/CosmicShore.Game/.../ThemeManagerDataContainerSO.cs`
+  and its `Crystal.cs` still key the team crystal material by slot index, and `Port/src/CosmicShore.Client/SkimRaceTheme.cs`
+  names the deleted `OmniShepardTriangles*` materials, as labels only. Nothing in the port breaks (it does not
+  load these assets), but the mirror now disagrees with F1/F2. An engine session ports it.
 
 ## Follow-ups (refactor rows, measured at ship time 2026-10-12, round 9)
 

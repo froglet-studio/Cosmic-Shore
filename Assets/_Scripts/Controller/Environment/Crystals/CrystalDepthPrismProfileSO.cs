@@ -27,17 +27,22 @@ namespace CosmicShore.Gameplay
         [SerializeField, Range(0.3f, 3f)] float profilePower = 1f;
 
         [Header("Ratchet")]
-        [Tooltip("A prism going away stays where it got to until it is behind this depth - hidden by the crystal - and then reseats: it fades out in its hole while a new one fades in at the top of its column. The lab found a cliff near −0.75 on the omni: at −0.7 nearly every reseat is seen, at −0.8 none.")]
-        [SerializeField, Range(-1f, 0.5f)] float reseatDepth = -0.8f;
+        [Tooltip("A prism going away stays where it got to until it is behind this depth - hidden by the crystal - and then reseats: it fades out in its hole while a new one fades in at the top of its column. A column top stands 2x its plate radius out, so seen from far away (nearly orthographic) it clears the silhouette above about −0.87: the lab measured −0.8 seen on 56-73% of reseats at 250 u, −0.87 on none at any distance (round 10). Deeper = fewer reseats.")]
+        [SerializeField, Range(-1f, 0.5f)] float reseatDepth = -0.87f;
 
         [Tooltip("Seconds a reseat takes. The two prisms dither on complementary pixels, so it never shows a gap.")]
         [SerializeField, Min(0.05f)] float reseatFadeSeconds = 0.6f;
+
+        [Header("Variety")]
+        [Tooltip("Each crystal is turned to its own random pose, seeded from its spawn position (the same on every client; nothing networked): 0 = every crystal in its authored pose, 1 = uniformly random. Depth is read in the crystal's own space, so the rule holds exactly; without this, crystals far away all see the camera from the same direction and show the same columns (lab round 10: neighbours' images correlate 0.60 at 250 u, 0.12 with a pose each). Turns the crystal's models, never its root.")]
+        [SerializeField, Range(0f, 1f)] float orientationJitter = 1f;
 
         public float OpenDepth => openDepth;
         public float SealDepth => sealDepth;
         public float ProfilePower => profilePower;
         public float ReseatDepth => reseatDepth;
         public float ReseatFadeSeconds => reseatFadeSeconds;
+        public float OrientationJitter => orientationJitter;
 
         public float Seat(float depth) => CosmicShore.Utility.DepthRatchet.Seat(depth, openDepth, sealDepth, profilePower);
     }

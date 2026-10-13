@@ -4154,6 +4154,18 @@ never fold it into a fix for something else.
   idiom. So a new rule dropped into that tick inherits the local path for free, where its
   detonations silently no-op (each guarded on `IsServer`) while its RPC throws. Gate the whole
   rule on `IsSpawned && IsServer` rather than trusting the callees' own guards.
+- **A mesh whose vertex shader REBUILDS geometry from per-vertex data cannot be moved by a CPU
+  consumer that draws it on the same material - unless the shader's undriven path is the identity.**
+  `OmniDepthPrismShader` rebuilt every vertex from TEXCOORD2 (its prism's centre) and stretched it by
+  the material's `_Thickness` 6.25. `CrystalHullFusion` re-tessellates the crystal onto a vessel hull
+  and draws that copy on the crystal's own material, with TEXCOORD2 holding ITS data (discharge
+  heights, zero on filler vertices): the stretch ran against the wrong centres and blew the Mass
+  faces 36 mesh units apart, and `normalize(0)` made filler vertices NaN. Fix shape: bake every
+  shape parameter the shader applied into the mesh (the material ships the neutral value), make the
+  undriven branch return the vertex untouched without reading the per-vertex channel, and have the
+  consumer force undriven. Prove it with a formula identity (max |p - v| at float32) and a negative
+  control that leaves the parameter in (238 units). Grep for every renderer that borrows a
+  material's `sharedMaterials` before giving a shader per-vertex semantics.
 
 ### Bundled tool: `field_parity.py`
 
