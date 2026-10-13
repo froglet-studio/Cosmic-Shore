@@ -1386,6 +1386,8 @@ namespace CosmicShore.Gameplay
         int _comboShown;
 
         static Material s_lineMaterial, s_ballMaterial;
+        static Mesh s_ballMesh;
+        ThresherHullBuilder _hullBuilder;
         static readonly int BaseColorId = Shader.PropertyToID("_BaseColor");
         static readonly int ColorId = Shader.PropertyToID("_Color");
         static readonly int EmissionColorId = Shader.PropertyToID("_EmissionColor");
@@ -1402,16 +1404,17 @@ namespace CosmicShore.Gameplay
             _root = new GameObject($"ThresherVisuals::{name}");
             _mpb = new MaterialPropertyBlock();
 
-            // The ball: a heavy core plus six studs, so it reads as a chunky wrecking ball and its
-            // roll is visible.
+            // The ball: a faceted morning star (ThresherBallForm) — an 80-facet core and twelve spikes — so
+            // it reads as a heavy wrecking ball and its roll is visible. One shared mesh, one renderer.
             _ball = new GameObject("Ball").transform;
             _ball.SetParent(_root.transform, false);
-            var parts = new List<MeshRenderer>();
-            parts.Add(MakePrimitive(PrimitiveType.Sphere, _ball, Vector3.zero, Vector3.one, ballMat));
-            Vector3[] axes = { Vector3.right, Vector3.left, Vector3.up, Vector3.down, Vector3.forward, Vector3.back };
-            foreach (var a in axes)
-                parts.Add(MakePrimitive(PrimitiveType.Cube, _ball, a * 0.5f, Vector3.one * 0.32f, ballMat));
-            _ballRenderers = parts.ToArray();
+            var ballGo = new GameObject("MorningStar");
+            ballGo.transform.SetParent(_ball, false);
+            ballGo.AddComponent<MeshFilter>().sharedMesh = BallMesh();
+            var ballRenderer = ballGo.AddComponent<MeshRenderer>();
+            ballRenderer.sharedMaterial = ballMat;
+            ballRenderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+            _ballRenderers = new[] { ballRenderer };
 
             _chain = MakeLine("Chain", chainMaterial ? chainMaterial : lineMat, false);
             _chain.alignment = LineAlignment.View;   // the fresnel tube is computed across a VIEW-aligned ribbon
@@ -1434,17 +1437,33 @@ namespace CosmicShore.Gameplay
             if (TMP_Settings.defaultFontAsset) _comboLabel.font = TMP_Settings.defaultFontAsset;
         }
 
-        static MeshRenderer MakePrimitive(PrimitiveType type, Transform parent, Vector3 localPos, Vector3 localScale, Material mat)
+        /// <summary>This vessel's own shark hull, for the hitch the chain is drawn from. Resolved lazily and
+        /// retried until found (the hull is built in its own Awake); null on a hull without one, which then
+        /// draws the chain from the ship's centre as before.</summary>
+        bool TryHull(out ThresherHullBuilder hull)
         {
-            var go = GameObject.CreatePrimitive(type);
-            if (go.TryGetComponent(out Collider c)) Destroy(c);   // cosmetic: the sweep is the physics
-            go.transform.SetParent(parent, false);
-            go.transform.localPosition = localPos;
-            go.transform.localScale = localScale;
-            var mr = go.GetComponent<MeshRenderer>();
-            mr.sharedMaterial = mat;
-            mr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
-            return mr;
+            if (!_hullBuilder && _status != null && _status.Transform)
+                _hullBuilder = _status.Transform.GetComponentInChildren<ThresherHullBuilder>(true);
+            hull = _hullBuilder;
+            return hull;
+        }
+
+        /// <summary>The morning star, built once and shared by every Thresher (the geometry is identical; size
+        /// is the ball transform's scale). Static and never destroyed on purpose — one small mesh for the
+        /// session, not one per vessel.</summary>
+        static Mesh BallMesh()
+        {
+            if (s_ballMesh) return s_ballMesh;
+            var verts = new List<Vector3>();
+            var normals = new List<Vector3>();
+            var tris = new List<int>();
+            ThresherBallForm.Build(verts, normals, tris);
+            s_ballMesh = new Mesh { name = "ThresherMorningStar" };
+            s_ballMesh.SetVertices(verts);
+            s_ballMesh.SetNormals(normals);
+            s_ballMesh.SetTriangles(tris, 0);
+            s_ballMesh.RecalculateBounds();
+            return s_ballMesh;
         }
 
         LineRenderer MakeLine(string label, Material mat, bool loop)
@@ -1569,6 +1588,19 @@ namespace CosmicShore.Gameplay
             int drawn = ThresherChainLinks.SmoothedCount(_links.Count, config.ChainRenderSubdivisions);
             if (_chainDrawn == null || _chainDrawn.Length != drawn) _chainDrawn = new Vector3[drawn];
             int written = ThresherChainLinks.Smooth(_links.Points, config.ChainRenderSubdivisions, _chainDrawn);
+            // DRAWN from the hull's hitch ring at the tail fork (THRESHER.md §5b), the offset eased out over
+            // the first link so the curve leaves the ring without a kink. Drawing only: the gameplay chain,
+            // its sweep and its physics still hang from the ship's centre.
+            if (written > 1 && TryHull(out var hull))
+            {
+                Vector3 offset = hull.HitchWorldPosition - ship;
+                int span = Mathf.Min(written - 1, Mathf.Max(1, config.ChainRenderSubdivisions));
+                for (int i = 0; i <= span; i++)
+                {
+                    float f = 1f - i / (float)span;
+                    _chainDrawn[i] += offset * (f * f * (3f - 2f * f));
+                }
+            }
             if (_chain.positionCount != written) _chain.positionCount = written;
             _chain.SetPositions(_chainDrawn);
 

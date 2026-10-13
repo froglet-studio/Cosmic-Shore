@@ -65,6 +65,27 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 The Thresher becomes its own vessel: shark hull, swim, morning-star ball, icons (`cece/dazzling-hypatia-nmdhle`, 2026-10-13) — NOT EDITOR-VERIFIED
+
+**What landed** (`R_VesselActions/THRESHER.md` §5b): the Squirrel FBX is gone from `Thresher.prefab`; a procedural
+thresher-shark hull (`ThresherHullForm` / `ThresherHullBuilder`, element morphs per element) and its swim
+(`ThresherAnimation` / `ThresherSwimMath`, replacing the clone's `MantaAnimationContoller` on the same fileID) — the
+scythe tail beats as a wave, banks with the stick, curls toward a planted ball, flares the pectorals while the ball
+stops, cracks on a smash or launch; the chain is drawn from a hitch ring under the tail; the ball is a faceted
+morning star (`ThresherBallForm`) instead of a sphere + six cubes; new colliders (`ThresherBody`, `ThresherHitbox`)
+and two re-homed jets (no `DriftJet`); hull-fusion entries bake-free (runtime solve) and the four Squirrel-keyed
+bakes deleted; ability icons redrawn (`author_thresher_icons.py`; Heavy Iron → Mass Mode, guid kept); class card
+icons rendered from the hull (`render_thresher_card_icon.py`). All authored by `author_thresher_assets.py`.
+
+**Proved offline**: `thresher_hull_harness` (shipped forms RUN: winding by parity ray, morph bounds, tail chain
+never opens a joint, ball watertight); `author_thresher_assets.py --check` / `--self-test` (6 negative controls);
+`author_thresher_icons.py --check`; `render_thresher_card_icon.py --check`; `check_vessel_class_icons.py`;
+`unity_refcompile` (see the branch's commit message for the run). Nothing here has been seen in the editor.
+
+**Verify** — THRESHER.md "In-editor verification" H1–H10. First-pass tuning: `ThresherAnimation` (beat rate / swing /
+turn swing / whip curl / crack / bank), `ThresherHullBuilder` (every proportion), the hit box sizes in
+`author_thresher_assets.py` (`BODY_BOX_*`).
+
 ### 🔴 Rhino Space-5 "Breaker" — the sword cuts shielded prisms in one slice (`cece/magical-meitner-56obj5`, 2026-10-13) — NOT EDITOR-VERIFIED
 
 **What landed:** `RhinoSkimmerDamagePrismEffectSO.breakerElement` (authored `Space`). While

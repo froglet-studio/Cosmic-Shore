@@ -7,7 +7,11 @@ ball on a chain. Turn hard and the ball whips round; wind the chain out and let 
 ball cracks red-hot through everything. The **chain slices**, the **ball is always destructive**,
 and prisms are **binary** — there is no partial damage anywhere. The chain's kills **charge** the
 ball's next explosion; **A** switches to **Mass Mode**, where the ball builds instead of breaking;
-an **omni crystal** windmills the ball round the ship (§2a–2c, added 2026-10-13).
+an **omni crystal** windmills the ball round the ship (§2a–2c, added 2026-10-13). Since the
+own-vessel pass (2026-10-13, `cece/dazzling-hypatia-nmdhle`) it flies its **own hull** — a faceted
+thresher shark whose long scythe of a tail beats as it swims and cracks like a whip — tows a faceted
+**morning-star** ball, and wears finished icons (§5b). Its race is **Thresher Time**
+(`Controller/Arcade/THRESHERTIME.md`).
 
 The mechanic was prototyped in a 2D browser sandbox (cruise 380 u/s). Every chain dial is authored
 in the sandbox's units and scaled to this game by one factor (§4), so the two read side by side.
@@ -253,7 +257,9 @@ holds the lab page's solver to this C# frame by frame on 4 digital and 5 analog 
   `HapticController.PlaySkim(lerp(0.45, 1, heat))`. **Combo**: one world counter `x2, x3…` per whip.
 - **Audio** (all **shipped EMPTY**, LOCKED FMOD convention): `smashEvent`, `crushEvent`,
   `bounceEvent`, `sliceEvent`, `plantEvent`, `yankEvent` on `ThresherExecutor`.
-- **Look**: a studded ball that rolls (runtime-built: a sphere and six cube studs) on
+- **Look**: a studded ball that rolls — since 2026-10-13 a faceted **morning star**
+  (`ThresherBallForm`: an 80-facet core at the gameplay radius and twelve five-sided spikes on the
+  icosahedron's axes, one shared mesh, one renderer; it replaced a runtime sphere and six cube studs) on
   **`ThresherBallMaterial` / `ThresherBallFresnelShader`** — the game's own fresnel convention, a
   dull body under a bright rim, `lerp(_DarkColor, _BrightColor, (1 − N·V)^1.5)`. Power 1.5, not the
   crystals' 4, because the ball is a few units across and often 100+ u away: area-weighted the rim
@@ -286,7 +292,7 @@ holds the lab page's solver to this C# frame by frame on 4 digital and 5 analog 
   as noise; the change itself is the signal. The skid trail keeps `lineMaterial` (vertex colour).
 - **HUD** (`ThresherHUDController` / `ThresherHUDView`, `ThresherHUDVariant.prefab`, a variant of
   `VesselHUDPrefab`): the four-icon row Wrecking Ball · Mass Mode · Winch · Plant
-  (`Tools/Build/author_thresher_icon_placeholders.py`, `--check`), a **ball-heat gauge** on the
+  (`Tools/Build/author_thresher_icons.py`, `--check`; the art pass, §5b), a **ball-heat gauge** on the
   Charge card in the ball's colour and an **energy gauge** on the Space card (2026-10-13; it was the
   chain-out gauge): how much explosion RADIUS the chain's kills have banked
   (`ThresherExecutor.EnergyRadius01` = (energy scale − 1) / (`energyMaxDiameterScale` − 1)), iron
@@ -405,6 +411,66 @@ the speed tunnel's (vessel rule 21) and is only READ. Dials in `ThresherConfigSO
 - **Hand-back**: `OnDisable` / `OnDestroy` / losing local pilot / disabling `cameraFraming` clear
   the vantage and the follow-turn cap and restore the prefab's distance.
 
+## 5b. Its own vessel — the shark hull, the swim, the ball, the icons (2026-10-13)
+
+The Thresher was a text clone of the Squirrel and flew its model, its animation controller, its jets
+and a placeholder icon row. The own-vessel pass replaced every one of them. All of it is authored by
+script and proved offline; nothing is hand-edited YAML.
+
+**The hull** (`ThresherHullForm` — pure — emitted by `ThresherHullBuilder` on a `ThresherHull` child of
+the root, the `StoatHullForm`/`StoatHullBuilder` shape): a thresher shark cut from flat facets like the
+HyperSea's prisms. A six-sided fuselage lofted from a pointed snout through a girth station a third of
+the way back to a slim peduncle (4.4 u), a swept **dorsal** fin, two drooping **pectorals**, a small
+lower caudal lobe and — the animal's signature — an **upper caudal lobe as long as the body** (3.6 u),
+curving up and back like a scythe, in three hinged segments. The chain leaves through a **hitch** ring
+under the tail fork, so the ball reads as the end of the shark's whip (the executor DRAWS the chain from
+`ThresherHullBuilder.HitchWorldPosition`, eased over the first link; the gameplay chain still hangs from
+the ship's centre). Snout to scythe tip 8.1 u, 3.5 u across the pectorals — the Squirrel's size.
+**Domain colour** (material slot 1, painted by `VesselCustomization`): the dorsal, the eyes, the
+scythe's trailing **blade** (40% of its chord) and the hitch. **Element morphs** (one set of floats per
+element, baked base + four extremes like the Stoat's): Charge — the dorsal stands 1.8× and the blade
+widens; Mass — the body thickens 1.42× and the hitch swells; Space — the scythe draws out 1.45× (reach);
+Time — the pectorals spread 1.5× and sweep back.
+
+**The swim** (`ThresherAnimation`, on the root's VesselAnimation fileID; the beat is `ThresherSwimMath`,
+pure): the scythe beats side to side as a **travelling wave** (each segment 0.7 rad behind the last, the
+tip landing last), 0.55 → 1.1 beats/s from a standstill to cruise (110 u/s), the tip sweeping **±39°** —
+fleet-scale (vessel rule 24). The segments are siblings posed as ONE chain (`PoseChain`), so a curl never
+opens a joint. The stick banks the hull 22° into a turn, swings the tail 34° out of it and twists the
+pectorals like ailerons. The ball drives the rest, read off the vessel's own `ThresherExecutor`: planted
+(Pivot), the tail **curls toward the ball** (48° at the tip) and the hull **banks into the orbit** (34°),
+both growing with the spin; while the ball **stops** (Skidding) the pectorals **flare** down 40° like
+brakes; a new smash in the combo, the ball turning red-hot, or a launch **cracks** the tip 55° toward the
+ball and decays. Transforms only — the builder owns the vertices.
+
+**Colliders and jets**: the Squirrel FBX's two box colliders and `ImpactCollider` went with it;
+`ThresherBody` (box 1.6 × 1.4 × 5.2 + `ImpactCollider`, layer Default) and `ThresherHitbox` (trigger
+2.2 × 1.9 × 5.8, layer Ships) are the shark's. Two of the four jets ride the hull flanking the peduncle,
+pointing back, plume `(1.65, 1.65, 0.3575)` (the fleet formula `(0.6, 0.6, 0.13) × |followOffset.z| / 20`
+at the camera's 55); the Squirrel's sideways-steering `DriftJet` is gone from them; the other two are
+removed. **Hull fusion**: the hull is generated at runtime, so the four `CrystalHullFusionConfig`
+entries carry no bake and solve on a worker (`CrystalHullFusion.Prewarm`, the Stoat's path); the four
+Squirrel-keyed bakes were deleted.
+
+**Icons** (`Tools/Build/author_thresher_icons.py`, `--check`): bold white glyphs drawn at 8× and
+downsampled, the house language — Wrecking Ball (the morning star on its chain, cracking a prism, the
+whip's arcs behind it), **Mass Mode** (the ball laying a growing row of prisms — the Heavy Iron weight it
+wore was never what the ability does; the file was renamed `Thresher_MassMode.png` with its guid kept),
+Winch (a chain hauled round a drum), Plant (the ball as the pivot, the hull swinging on its orbit). The
+**card icons** (`SO_Class_Thresher.IconActive/IconInactive`, which reused the Wrecking Ball glyph) are now
+renders of the shark hull in the house card look (`Tools/Build/render_thresher_card_icon.py`, the
+Stoat's renderer).
+
+**Authored by** `Tools/Build/author_thresher_assets.py` (idempotent; `--check` validates the shipped
+prefab — no Squirrel FBX / DriftJet / Manta animation left, the hull, colliders, paint, animation and two
+jets wired, zero dangling local references, the fusion entries bake-free — and `--self-test` proves six
+negative controls fire). **Proved offline** by `Tools/Build/thresher_hull_harness` (Roslyn, the shipped
+`ThresherHullForm` / `ThresherSwimMath` / `ThresherBallForm` RUN against a math stub): every face of the
+hull and the ball wound outward (a parity-ray test inside each closed piece), the scythe continuous and
+3.6 u along its curve, every element moving the hull, blend at one weight = that extreme, baked bounds
+holding all 16 weight corners, the beating tail never opening a joint, the ball a core plus twelve evenly
+spread spikes. `ThresherHullFormTests` (edit mode) asserts the same.
+
 ## 6. Flight model hooks
 
 `ThresherVesselTransformer : VesselTransformer` overrides seams only, never `MoveShip`. Two seams
@@ -440,16 +506,22 @@ is the fix.
 | File | What |
 |---|---|
 | `Controller/Vessel/ThresherChainSolver.cs` | Pure physics, `ThresherDials` (the defaults), `ThresherChainLinks` |
+| `Controller/Vessel/ThresherHullForm.cs`, `ThresherHullBuilder.cs` | The shark hull: pure geometry + element morph set; the emitter (§5b) |
+| `Controller/Animation/ThresherAnimation.cs`, `ThresherSwimMath.cs` | The swim: tail wave, bank, pectorals, ball-driven curl / flare / crack (§5b) |
+| `Controller/Vessel/ThresherBallForm.cs` | The morning-star ball mesh (§5) |
+| `Tools/Build/author_thresher_assets.py`, `Tools/Build/thresher_hull_harness/` | The prefab pass (`--check`, `--self-test`); the offline geometry/swim/ball harness |
+| `Tools/Build/author_thresher_icons.py`, `Tools/Build/render_thresher_card_icon.py` | Ability icons; class card icons rendered from the hull |
+| `Tests/Editor/ThresherHullFormTests.cs` | Hull parts, accents, morphs, bounds, the tail chain, the ball |
 | `Controller/Vessel/ThresherVesselTransformer.cs` | Seam overrides |
 | `Controller/Vessel/VesselTransformer.cs` | + `ComputeExternalAcceleration`, `NoseConvergence` (default-off) |
 | `R_VesselActions/Executors/ThresherExecutor.cs` | Ball sweep, chain cut, explosions, upgrades, feedback, visuals |
 | `R_VesselActions/Data Containers/ThresherActionSO.cs` / `ThresherConfigSO.cs` | Trigger routing; every dial |
 | `UI/Controller/ThresherHUDController.cs`, `UI/View/ThresherHUDView.cs` | HUD pair |
-| `_Prefabs/Spacevessels/Thresher.prefab`, `_Prefabs/UI Elements/VesselHUD/ThresherHUDVariant.prefab` | Hull (Squirrel clone), HUD |
+| `_Prefabs/Spacevessels/Thresher.prefab`, `_Prefabs/UI Elements/VesselHUD/ThresherHUDVariant.prefab` | Hull (born a Squirrel clone; its own shark hull since 2026-10-13), HUD |
 | `_SO_Assets/VesselActions/Thresher/*.asset` | Config, Winch, Plant and Mass Mode actions |
 | `_SO_Assets/Effects/Effect Containers/{Vessel,Skimmer}Containers/Thresher*.asset`, `Skimmer Prism Effects/ThresherSkimmerBoostPrismEffect.asset` | Forked containers (§3) |
 | `Resources/ElementalAbilityMaps/Thresher.asset`, `_SO_Assets/Classes/SO_Class_Thresher.asset`, `_SO_Assets/Camera/ThresherCameraSettingsSO.asset` | Map, class, camera |
-| `_Graphics/Icons/AbilityIcons/Thresher/` | Placeholder icons |
+| `_Graphics/Icons/AbilityIcons/Thresher/`, `_Graphics/CardImages/Thresher*.png` | Ability icons (art pass); class card icons |
 | `R_VesselActions/Executors/ThresherLaunchSight.cs`, `UI/View/TimePetalGeometry.cs`, `UI/View/TimePetalImage.cs` | The launch sight: crosshair + Time-petal zoom window (§5a); reuses `Utility/ScopePipView.cs` and `UI/View/ScopePetalImage.cs` from the Serpent |
 | `Controller/Camera/CustomCameraController.cs` | + `Spectate` vantage seam (default null) and `MaxFollowTurnRate` follow-frame cap (default 0), §5a |
 | `ImpactEffects/EffectsSO/Vessel Crystal Effects/ThresherWindmillByCrystalEffectSO.cs`, `_SO_Assets/Effects/Vessel Crystal Effects/ThresherWindmillByCrystalEffect.asset` | The omni-crystal windmill (§2c), wired into `ThresherImpactorDataContainer.vesselCrystalEffects` |
@@ -461,9 +533,9 @@ is the fix.
 | `Tests/Editor/ThresherChainSolverTests.cs`, `Tools/Build/thresher_chain_harness/` | 56 tests (solver, planted steering, hook-on, windmill, chain smoothing, camera framing, reach envelope, launch camera on the trajectory, sight zoom, armed + perfect launch, steered plane, magnet); offline runner + feel table. `Tests/Editor/TimePetalGeometryTests.cs`: the traced Time petal |
 
 Registered in `Vessel Prefab Container`, `DefaultNetworkPrefabs` (own `GlobalObjectIdHash`
-1887398589), `ToyVesselRoster.Default`, `CrystalHullFusionConfig` (reuses the Squirrel's bakes —
-same hull mesh) and `SO_Classlist_All` / `_Classes`. Still the Squirrel's: the model, the skimmer
-prefab, `DriftAudioController`, jets and tails.
+1887398589), `ToyVesselRoster.Default`, `CrystalHullFusionConfig` (no bakes: a runtime hull, §5b) and
+`SO_Classlist_All` / `_Classes`. Still the Squirrel's: the skimmer prefab's tuning, `DriftAudioController`
+(class-gated to the Squirrel, so inert here) and the two `VesselTail` instances.
 
 ## 9. Known weaknesses
 
@@ -508,11 +580,33 @@ prefab, `DriftAudioController`, jets and tails.
   would invert that peer's Mass Mode until the next press (the same exposure every edge has).
 - The windmill and Mass Mode have **no FMOD events of their own** yet: the trail and shield reuse
   nothing, a steal plays `crushEvent`, an energy blast `smashEvent`.
-- Mass Mode's icon is still the Heavy Iron placeholder (a weight).
 - READY underestimates during fast snaps (it projects the current spin through a full reel and
   ignores the snap crack).
 
 ## In-editor verification
+
+**Own-vessel pass (2026-10-13, §5b; never opened in the editor):**
+
+H1. **Toy Box > Vessel Changer → Thresher**: a faceted shark, not the Squirrel — scythe tail curving up and
+    back, dorsal fin, the dorsal / eyes / scythe blade / hitch ring in your domain colour. No Squirrel mesh
+    anywhere (Hierarchy: `ThresherHull` with `ThresherPectoralL/R`, `ThresherTailBase`, `ThresherLobe0..2`).
+    Console clean (no "has no ThresherHullBuilder" warning).
+H2. **Swim**: hands off, the scythe beats slowly side to side, the tip landing last; at cruise it beats
+    faster and wider. No gap opens between the scythe's segments at any point of a beat.
+H3. **Stick**: a hard turn banks the hull into it, swings the tail out of it, twists the pectorals.
+H4. **Ball**: full LT — while the ball stops the pectorals flare down; planted, the tail curls toward the
+    ball and the hull banks into the orbit, harder as the spin builds. A smash (or a launch) flicks the
+    scythe's tip toward the ball. The chain is drawn from the ring under the tail fork, without a kink.
+H5. **The ball** is a spiked morning star, the spikes legible as it rolls; colours unchanged (§5).
+H6. **Elements** (FrogletTools element tools or crystals): Charge raises the dorsal and widens the blade,
+    Mass fattens the body, Space lengthens the scythe, Time spreads the pectorals — each eased in.
+H7. **Hit box**: ram a rival prism and another vessel head-on and from the side — contacts register as
+    before (the hit box is the shark's body, 1.6 × 1.4 × 5.2).
+H8. **Crystal hull fusion**: collect each element's crystal — its faces fly onto the SHARK hull (solved on a
+    worker at spawn), never onto an invisible Squirrel.
+H9. **HUD and Arcade**: the four row icons are the new glyphs (Mass Mode is the ball laying prisms, not a
+    weight); the vessel's card in the carousel / Toy Box is the gold shark render.
+H10. **Jets**: two plumes stream back from beside the tail base; none points sideways.
 
 Current as of round 5 (2026-10-13). `Docs/UNITY_VERIFICATION_CHECKLIST.md` keeps one entry per round.
 
