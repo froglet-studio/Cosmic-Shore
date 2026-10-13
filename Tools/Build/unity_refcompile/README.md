@@ -10,7 +10,7 @@ bash Tools/Build/unity_refcompile/run.sh --quiet-buckets       # count, don't li
 Exit 0 = **no compile error in project code**; exit 1 = errors, listed, with every one in a file
 changed since `origin/bleeding-edge` (committed or not, untracked included) tagged `[CHANGED-TONIGHT]`;
 exit 2 = offline with no cache.
-First run ~10 min (the fetch, then ~2 min compiling ~90 assemblies). Later runs take ~30 s: package
+First run ~10 min (the fetch, then ~2 min compiling ~100 assemblies). Later runs take ~30 s: package
 assemblies are compiled once, player-mode, into a cache keyed by input fingerprint and shared by every
 config and worktree, and only Assets assemblies recompile. Runs that share a cache or `TMPDIR` take
 turns (a lock), so starting several at once is safe.
@@ -27,10 +27,11 @@ Editor-folder type fails as it does in Unity. Only errors in the Editor-folder f
 `--changed-base`** gate: committed, uncommitted and untracked alike, so run it before you commit. The
 unchanged ones are compiled as context, so a changed tool binds against `FrogletTool`,
 `FrogletEditorPalette` and the rest, and their errors are listed separately (37 on bleeding-edge on
-2026-10-08, every one a reference-set artifact, see "Editor reference gaps" below). `Assembly-CSharp`
-never emits a DLL here, because the unfetchable-package files always fail it, so the editor assembly
-is **bound against its source** (`Diagnose --source-ref`): a runtime error is reported once, in the
-runtime file, not as missing types in the Editor files. The references are the newest
+2026-10-08, every one a reference-set artifact, see "Editor reference gaps" below). When
+`Assembly-CSharp` emits no DLL here (in any run that could not fetch the five registry-only packages,
+because their files always fail it), the editor assembly is **bound against its source**
+(`Diagnose --source-ref`): a runtime error is reported once, in the runtime file, not as missing types
+in the Editor files. The references are the newest
 **non-publicized `UnityEditor.dll` obtainable, 2021.1**, and the 6000.0 engine DLLs. Those engine
 DLLs are player builds, so their own `#if UNITY_EDITOR` members are missing: for example,
 `UIBehaviour.OnValidate` and `Reset` are reported as "unverified", not as errors. Packages stay
@@ -63,17 +64,40 @@ A small re-implementation of Unity's script pipeline (`build.py`):
    method-body error in every other file. `Diagnose` binds all bodies regardless. It names each
    compilation after its `-out:` file, as csc does, so `[InternalsVisibleTo("Assembly-CSharp-Editor")]`
    (`Assets/_Scripts/AssemblyInfo.cs`) applies. With `--source-ref <dep>.rsp` it binds against a
-   failed dependency's source instead of its (missing) DLL.
-7. Buckets the errors: **project errors** (the gate), **missing-type errors in files that `using` a
-   package that cannot be fetched**, **missing-type errors naming a type or namespace that a failed
-   package declares** or (editor config) an `EDITOR_REFERENCE_GAPS` entry, and (editor config)
-   **errors in Editor-folder files not changed since `--changed-base`**.
+   failed dependency's source instead of its (missing) DLL. Each error that is not itself an
+   unresolved name gets the unresolved types its expression involves appended, e.g.
+   `[unresolved types: IReadOnlyPlayer]`.
+7. Buckets the errors: **project errors** (the gate), **unobtainable** (below), **missing-type errors
+   naming a type or namespace that a failed package declares** or (editor config) an
+   `EDITOR_REFERENCE_GAPS` entry, and (editor config) **errors in Editor-folder files not changed since
+   `--changed-base`**.
+
+   **unobtainable** applies only when this run could not fetch the five packages needle-mirror does
+   not carry (Services.Multiplayer / Friends / Leaderboards, Multiplayer.Playmode / Widgets) from
+   packages.unity.com either. When fetch got them, they compile like any other package and the
+   bucket is `(none)`, with 0 errors. When it did not, the bucket takes an error only when it can
+   stem from one of them. A missing-name error (CS0246, CS0234, CS0103, CS1069, CS0012, CS0538) must
+   name a type, namespace or assembly that the committed `unobtainable_declarations.tsv` (below) says
+   they declare, which is the same test `names_failed_package` applies to a failed package. A cascade
+   (CS0165, CS0019, CS1061) must carry one of those types among its `[unresolved types: …]`. For
+   example, `p.Properties.TryGetValue(k, out var v) && int.TryParse(v.Value, out int n)`, with `p`
+   an unknown `IReadOnlyPlayer`, gives a CS0165 on `n`. Diagnose follows a `var` local that was
+   inferred from an unresolved expression back to its declaration. Every other error in those files
+   gates: a misspelled local or type, a missing member of a known type, and a real unassigned local.
+   Before 2026-10-08 the bucket took every one of those codes in any file that `using`d one of
+   the five namespaces, which covered 15 runtime files, the party services among them.
+   `python3 Tools/Build/unity_refcompile/build.py --self-test` checks the rule on fixtures, and
+   checks the snapshot against `packages-lock.json`. It takes about a second and needs no .NET SDK
+   and no cache.
 
 ## Where the references come from (fetched by `fetch.py`, cached, never committed)
 
 Cache: `${UNITY_REFCOMPILE_CACHE:-$TMPDIR/unity_refcompile_cache}` (~550 MB; files a compile does
 not read are pruned on fetch). Network needed once: `api.nuget.org` and `github.com` (read-only git
-clones). Offline with no cache → exit 2 with a message; offline with a cache → reuses it.
+clones), and `packages.unity.com` (which redirects to `cdn.packages.unity.com`) for the five packages
+needle-mirror lacks. Without that last host the run still works, and those five go to the
+`unobtainable` bucket (step 7). Offline with no cache → exit 2 with a message; offline with a cache →
+reuses it.
 
 | What | Source | Real or not |
 |---|---|---|
@@ -85,7 +109,7 @@ clones). Offline with no cache → exit 2 with a message; offline with a cache �
 | SRP Core / URP / URP-config / ShaderGraph / VFX | `Unity-Technologies/Graphics` branch `6000.0/staging` | real source, **17.0.x not the locked 17.3.0** (17.3 needs 6000.3-only engine API the references lack) |
 | Burst | needle-mirror `1.6.0-pre.2` | **substitute** for locked 1.8.29 (newest mirrored tag) |
 | `UnityEngine.UnityConsentModule` | `stubs/UnityEngine.UnityConsentModule.cs` (3 members Analytics uses) | **stub** — 6000.0.75 only type-forwards to it |
-| Services.Multiplayer / Friends / Leaderboards, Multiplayer.Playmode / Widgets | not mirrored anywhere reachable | **absent** — files that `using` them are bucketed, not gated |
+| Services.Multiplayer 1.1.8 / Friends 1.1.1 / Leaderboards 2.3.3, Multiplayer.Playmode 1.6.1 / Widgets 1.0.1 (not on needle-mirror) | the **Unity registry's own tarball** (`packages.unity.com`) at the locked version, sha1-checked against the registry's record, marked `.registry` in the cache | real source — or, where that host is blocked, **absent**: errors naming their types are bucketed, not gated (step 7) |
 
 ### Making the engine references honest (`Depublicize/`)
 
@@ -105,6 +129,22 @@ is compiled with the **6000.0.75** defines/versionDefines, matching the referenc
 code paths whose engine API the DLLs actually contain. A 6000.0→6000.3 engine gap can therefore only
 surface in Assets code, where a human judges it.
 
+### What the registry-only packages declare (`unobtainable_declarations.tsv`)
+
+This file lists the types and namespaces each registry-only package declares, at its locked version,
+with the tarball's sha1, for the assemblies Assets code references. They are read with
+`declared_names`, the same reading a failed package gets. A run that could not fetch these packages
+uses the file to tell a UGS name from a typo. It is generated, never hand-edited, by a run that DID
+fetch them:
+
+```
+bash Tools/Build/unity_refcompile/run.sh --write-declarations
+```
+
+Refresh it whenever `packages-lock.json` moves one of these packages. Until then the build prints a
+warning and `--self-test` fails. If a package is neither fetched nor in the file, the build prints a
+warning naming it, and errors that name its types gate. That fails loudly, never as a silent pass.
+
 ### Source patches (`source_patches.json`)
 
 Body-local edits to fetched package sources where a package head needs engine API newer than the
@@ -123,7 +163,12 @@ Does not prove:
 - Engine API added between 6000.0.75 and 6000.3.17 (would show as a false error, not a false pass);
   engine members whose accessibility changed in a way neither the 2021.1 oracle nor package code
   reveals (stay public: a possible false pass on use of an engine internal).
-- Code in files that `using` an unfetchable package, for errors that involve those types.
+- When packages.unity.com was blocked (the `unobtainable` bucket names packages): how project code
+  uses those five packages' types. For example, a wrong member, argument or overload on an `ISession`
+  is not reported, because the type itself is unresolved. Errors that do not involve those types still
+  gate. The bucket test goes by name, so a misspelling that happens to be a type those packages declare
+  is bucketed. When fetch reached the registry, the packages are real source and this item does not
+  apply.
 - ILPostProcessors (Netcode/Burst/Entities codegen after compile), Burst compilation, IL2CPP.
 - Package assemblies listed as "did not compile" (Purchasing.Stores/Codeless, InputSystem.ForUI) —
   dependents were compiled without them, and a project use of a type they declare is listed as
@@ -169,3 +214,12 @@ it gets an entry: add one only for documented Unity API, with the version that i
   reports `audited 0 added + 0 modified` and passes without having read your assets. Fix: reuse
   `changed_since()` and read changed assets from the working tree. The audit's base-relative
   "new findings only" filter needs the base blob, which `git show <merge-base>:<path>` still gives.
+- **Burst is still needle-mirror's `1.6.0-pre.2` substitute, although the locked `1.8.29` is now
+  reachable.** fetch.py falls back to packages.unity.com only when needle-mirror has NO tag for a
+  package. Burst has an older tag there, so `NEAREST_TAG` keeps substituting it. On 2026-10-08,
+  `curl -s https://packages.unity.com/com.unity.burst` listed 146 versions, 1.8.29 among them. Fix:
+  try the registry tarball at the locked version before `NEAREST_TAG`, and keep the substitute as the
+  fallback. Done when Burst compiles at 1.8.29 against the 6000.0 references with the player run
+  still at 0 project errors. If it needs engine API those references lack, keep the substitute and
+  say so here. SRP 17.3 and ugui 2.0 are builtin packages that the registry does not carry (checked
+  the same day), so they stay as they are.
