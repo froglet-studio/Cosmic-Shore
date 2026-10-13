@@ -11,7 +11,9 @@ namespace CosmicShore.Tests
     /// The Stoat's slingshot (<c>R_VesselActions/STOAT.md</c>): the pure arithmetic of a squeeze,
     /// and the shipped registration set read as text — the prefab, its bindings, the map and the
     /// two spawn lists — so a drift in any of them fails here rather than as a hull that spawns
-    /// nothing. The offline twin is <c>Tools/Build/author_stoat_assets.py --check</c>.
+    /// nothing. The triggers carry the field dipole since 2026-10-09 (<c>STOAT_DIPOLE.md</c>); the
+    /// sling's math and assets stay, unbound. The offline twin is
+    /// <c>Tools/Build/author_stoat_assets.py --check</c>.
     /// </summary>
     [TestFixture]
     public class StoatSlingTests
@@ -21,6 +23,8 @@ namespace CosmicShore.Tests
         const string Container = "Assets/_SO_Assets/Vessel Prefab Container.asset";
         const string NetworkPrefabs = "Assets/DefaultNetworkPrefabs.asset";
         const string PrefabGuid = "599b396ff054448db5bccc9307dfb4c9";
+        const string RootTransform = "5928382658856804067";
+        static string StoatClass => ((int)VesselClassType.Stoat).ToString();
 
         static string Read(string path)
         {
@@ -86,7 +90,7 @@ namespace CosmicShore.Tests
             // A nose with a radial part is first laid back onto the tangent.
             var skewed = StoatSlingMath.OrbitHeading(new Vector3(-0.3f, 0f, 1f).normalized, toCentre, 0f);
             Assert.AreEqual(0f, Vector3.Dot(skewed, toCentre), 1e-4f, "zero step = the tangent itself");
-            Assert.AreEqual(forward, StoatSlingMath.OrbitHeading(toCentre, toCentre, 0.2f), "no tangent: unchanged");
+            Assert.AreEqual(toCentre, StoatSlingMath.OrbitHeading(toCentre, toCentre, 0.2f), "no tangent: the nose comes back unchanged");
         }
 
         [Test]
@@ -169,7 +173,7 @@ namespace CosmicShore.Tests
             string text = Read(Prefab);
             var types = Regex.Matches(text, @"  vesselType: (-?\d+)\n");
             Assert.AreEqual(1, types.Count, "exactly one VesselStatus");
-            Assert.AreEqual("14", types[0].Groups[1].Value, "vesselType is the prefab's ADDRESS (CONTRACT.md §1)");
+            Assert.AreEqual(StoatClass, types[0].Groups[1].Value, "vesselType is the prefab's ADDRESS (CONTRACT.md §1)");
             StringAssert.Contains("  m_Name: Stoat\n", text);
             StringAssert.DoesNotContain("  _name: Squirrel\n", text);
 
@@ -180,14 +184,17 @@ namespace CosmicShore.Tests
         }
 
         [Test]
-        public void Prefab_BindsTheTriggersToTheSlingAndXToTheHold()
+        public void Prefab_BindsTheTriggersToTheDipoleAndXToTheHold()
         {
             string text = Read(Prefab);
             string block = Regex.Match(text, @"  _gamepadActionOverrides:\n(?:.*\n)*?(?=  _onButtonPressed:)").Value;
             Assert.IsNotEmpty(block, "gamepad override block");
-            StringAssert.Contains("  - InputEvent: 2\n    ShipActions:\n    - {fileID: 11400000, guid: 5c382e0def5b45d7b1230d75e8be082b, type: 2}\n", block, "LT → StoatSlingLeftAction");
-            StringAssert.Contains("  - InputEvent: 1\n    ShipActions:\n    - {fileID: 11400000, guid: 012d65baf31c49c496d38975eba8c0be, type: 2}\n", block, "RT → StoatSlingRightAction");
+            StringAssert.Contains("  - InputEvent: 2\n    ShipActions:\n    - {fileID: 11400000, guid: 9eacf723b796418caecfe237336b9985, type: 2}\n", block, "LT → StoatDipoleLeftAction");
+            StringAssert.Contains("  - InputEvent: 1\n    ShipActions:\n    - {fileID: 11400000, guid: 62ce60a32bef4c70b42fd1f7cd9896ff, type: 2}\n", block, "RT → StoatDipoleRightAction");
             StringAssert.Contains("  - InputEvent: 6\n    ShipActions:\n    - {fileID: 11400000, guid: 9b50ea11259b4b1aa750eea7f1d7f781, type: 2}\n", block, "X → StoatHoldAction");
+            // The sling is superseded on the triggers, not deleted: its actions stay authored and unbound.
+            StringAssert.DoesNotContain("guid: 5c382e0def5b45d7b1230d75e8be082b", block, "StoatSlingLeftAction must not be bound");
+            StringAssert.DoesNotContain("guid: 012d65baf31c49c496d38975eba8c0be", block, "StoatSlingRightAction must not be bound");
             StringAssert.Contains("  _touchActionOverrides: []\n", text, "no touch design yet — recorded in STOAT.md");
             // No DriftActionSO is bound, so the trigger analog the transformer still reads never drifts.
             StringAssert.DoesNotContain("guid: aa095c07c8cd0374698884d1a44dbdec", text, "the Squirrel's drift action must not ride the Stoat's triggers");
@@ -208,21 +215,24 @@ namespace CosmicShore.Tests
         }
 
         [Test]
-        public void Map_DeclaresTheSlingOnSpaceAndTheHoldOnTime()
+        public void Map_DeclaresTheDipoleOnSpaceAndThePathfinderOnTime()
         {
             string text = Read(Map);
-            StringAssert.Contains("  vesselClass: 14\n", text);
-            StringAssert.Contains("  - Element: 3\n    AbilityLabel: Slingshot\n", text);
-            StringAssert.Contains("    Input: 2\n", text, "the sling is on the triggers (LT; RT mirrors)");
-            StringAssert.Contains("  - Element: 4\n    AbilityLabel: Hold Still\n", text);
-            StringAssert.Contains("    Input: 6\n", text, "the hold is X (Button1), the Sparrow's binding");
+            StringAssert.Contains($"  vesselClass: {StoatClass}\n", text);
+            string Entry(int element) => Regex.Match(text, $@"  - Element: {element}\n(?:    .*\n)*?    Input: \d+\n").Value;
+            string space = Entry(3), time = Entry(4);
+            StringAssert.StartsWith("  - Element: 3\n    AbilityLabel: Field Dipole\n", space);
+            StringAssert.EndsWith("    Input: 2\n", space, "the dipole is on the triggers (LT; RT mirrors)");
+            StringAssert.StartsWith("  - Element: 4\n    AbilityLabel: Pathfinder\n", time);
+            StringAssert.EndsWith("    Input: 0\n", time, "the pathfinder is passive; X's hold sits outside the four abilities");
             Assert.AreEqual(4, Regex.Matches(text, @"  - Element: \d\n").Count, "one entry per element");
         }
 
         [Test]
         public void Prefab_IsOnBothSpawnLists()
         {
-            StringAssert.Contains($"  - {{fileID: 6417075533431866457, guid: {PrefabGuid}, type: 3}}\n", Read(Container), "Vessel Prefab Container");
+            // _shipPrefabs is a Transform[]: it names the root TRANSFORM, as every hull's entry does.
+            StringAssert.Contains($"  - {{fileID: {RootTransform}, guid: {PrefabGuid}, type: 3}}\n", Read(Container), "Vessel Prefab Container");
             StringAssert.Contains($"    Prefab: {{fileID: 6417075533431866457, guid: {PrefabGuid}, type: 3}}\n", Read(NetworkPrefabs), "DefaultNetworkPrefabs");
             StringAssert.Contains($"guid: {PrefabGuid}", Read(Prefab + ".meta"));
         }
