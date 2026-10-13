@@ -354,10 +354,20 @@ namespace CosmicShore.AssetTool.Tests
                 var models = Path.Combine(root, "Assets", "Models");
                 Directory.CreateDirectory(models);
                 File.WriteAllText(models + ".meta", "fileFormatVersion: 2\nguid: 0123456789abcdef0123456789abcdef\nfolderAsset: yes\nDefaultImporter:\n  externalObjects: {}\n");
-                foreach (var donor in new[] { "Assets/_Models/ChargeCrystalExport1_7-11-25.fbx", "Assets/_Models/Crystal.fbx", "Assets/_Models/MassCrystalExport1_8-21-25.fbx" })
+                // The donors are the game's own models, whose settings move with the game (the Mass
+                // crystal became readable in 1fd5b72529, 2026-10-08), so the copies' isReadable is pinned: the
+                // cleanest donor readable, the other two not, a majority that differs from it.
+                var donors = new (string Path, int Readable)[]
+                {
+                    ("Assets/_Models/ChargeCrystalExport1_7-11-25.fbx", 1),
+                    ("Assets/_Models/Crystal.fbx", 0),
+                    ("Assets/_Models/MassCrystalExport1_8-21-25.fbx", 0),
+                };
+                foreach (var (donor, readable) in donors)
                 {
                     File.Copy(Path.Combine(Root, donor), Path.Combine(models, Path.GetFileName(donor)));
-                    File.Copy(Path.Combine(Root, donor + ".meta"), Path.Combine(models, Path.GetFileName(donor) + ".meta"));
+                    var donorMeta = Regex.Replace(File.ReadAllText(Path.Combine(Root, donor + ".meta")), @"isReadable: \d", "isReadable: " + readable);
+                    File.WriteAllText(Path.Combine(models, Path.GetFileName(donor) + ".meta"), donorMeta);
                 }
                 var db = new AssetDatabase(root);
                 var r = JsonSerializer.SerializeToElement(CosmicShore.AssetTool.Program.ModelImport(db, Path.Combine(Root, "Assets/_Models/Orb.fbx"),

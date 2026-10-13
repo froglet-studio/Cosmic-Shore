@@ -5,6 +5,7 @@ using System.Linq;
 using CosmicShore.Engine;
 using CosmicShore.Engine.InputSystem;
 using EKey = CosmicShore.Engine.InputSystem.Key;
+using CosmicShore.Engine.InputSystem.Controls;
 
 namespace CosmicShore.Player
 {

@@ -697,6 +697,15 @@ namespace CosmicShore.Engine
                     if (component.gameObject.activeSelf) pendingActivation = cloned;
                     return cloned.GetComponent(component.GetType()) as T;
                 }
+                case Mesh mesh:
+                {
+                    // A deep copy (vertices, every UV channel, submeshes, skinning, blend shapes), as Unity's.
+                    var clone = new Mesh { name = mesh.name + "(Clone)" };
+                    mesh.CopyTo(clone);
+                    return clone as T;
+                }
+                case Material material:
+                    return new Material(material) { name = material.name + "(Clone)" } as T;
                 default:
                     throw new InvalidOperationException($"Instantiate: unsupported type {original.GetType().Name}");
             }

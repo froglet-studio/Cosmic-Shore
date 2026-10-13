@@ -54,6 +54,14 @@ namespace CosmicShore.Engine
         public static Action<Texture, RenderTexture, Material, int> BlitHook;
 
         /// <summary>
+        /// The render backend's replay of a <see cref="Rendering.CommandBuffer"/>'s recorded commands.
+        /// None is installed yet, so an executed buffer draws nothing (docs/ROADMAP.md lists the gap).
+        /// </summary>
+        public static Action<Rendering.CommandBuffer> ExecuteCommandBufferHook;
+
+        public static void ExecuteCommandBuffer(Rendering.CommandBuffer buffer) => ExecuteCommandBufferHook?.Invoke(buffer);
+
+        /// <summary>
         /// The render backend's GPU copy for <see cref="CopyTexture(Texture, int, int, Texture, int, int)"/>;
         /// null while no backend provides one, and then <see cref="SystemInfo.copyTextureSupport"/>
         /// reports None so callers take their fallback, as on a device without copy support.

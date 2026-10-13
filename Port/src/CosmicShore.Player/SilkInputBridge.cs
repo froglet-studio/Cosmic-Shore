@@ -7,6 +7,7 @@ using Silk.NET.Windowing;
 using EKey = CosmicShore.Engine.InputSystem.Key;
 using SKey = Silk.NET.Input.Key;
 using EVector2 = CosmicShore.Engine.Vector2;
+using CosmicShore.Engine.InputSystem.Controls;
 
 namespace CosmicShore.Player
 {

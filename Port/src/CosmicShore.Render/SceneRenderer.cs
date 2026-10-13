@@ -73,6 +73,9 @@ uniform float uClock;
 uniform vec4 uCradleCentre[4];   // _PrismCradleCentre: xyz hull centre, w hull radius
 uniform vec4 uCradleWeight[4];   // _PrismCradleWeight: x strength
 uniform vec4 uCradleParams;      // _PrismCradleParams: (drape reach, exponent, live slots, -)
+uniform vec4 uWarpCentre[4];     // _PrismGravityWarpCentre: xyz hole centre, w horizon radius
+uniform vec4 uWarpWeight[4];     // _PrismGravityWarpWeight: x GM*tau^2 (eased), y reach, z softening
+uniform vec4 uWarpParams;        // _PrismGravityWarpParams: (ln max stretch, live slots, -, -)
 uniform vec4 uSliceP0, uSliceP1, uSliceP2, uSliceP3; // PrismSlice material constants (see SetSliceUniforms)
 uniform int uFamily;
 // PrismCradle.hlsl, translated: the last vertex node of both prism graphs. Every vertex inside
@@ -123,6 +126,55 @@ void cradle(inout vec3 pW, inout vec3 nrm){
   vec3 nNew = bestDir * (nr / ra) + (nW - bestDir * nr) / rb;
   if (!(dot(nNew, nNew) > 1e-12)) nNew = bestDir * (nr >= 0.0 ? 1.0 : -1.0);
   if (!(dot(pNew, pNew) < 1e12)) return;
+  pW = pNew;
+  nrm = normalize(nNew);
+}
+// PrismGravityWarp.hlsl, translated: spaghettification, the node just before the cradle. A prism
+// within a hole's reach is stretched along the line to it (log-stretch GM*tau^2/r^3, eased into
+// ln(max stretch)) and squeezed across it, one affine map about the prism's centre c; the normal
+// through its inverse transpose. World space (equivalent: an affine map about c).
+float warpWindow(float s, float reach){
+  if (s >= reach) return 0.0;
+  float u = clamp(2.0 * s / reach - 1.0, 0.0, 1.0);
+  return 1.0 - u * u * (3.0 - 2.0 * u);
+}
+float warpTide(float d, float rs, float k, float reach, float soft){
+  if (soft > 0.0) { float q = d * d + soft * soft; return k / (q * sqrt(q)) * warpWindow(max(d - rs, 0.0), reach); }
+  float r = max(d, rs);
+  return k / (r * r * r) * warpWindow(d - rs, reach);
+}
+void gravityWarp(inout vec3 pW, inout vec3 nrm, vec3 c){
+  int count = int(uWarpParams.y);
+  if (count <= 0) return;
+  float nl = dot(nrm, nrm);
+  if (!(nl > 1e-12) || !(nl < 1e12)) return;
+  vec3 nW = nrm * inversesqrt(nl);
+  float bestTide = 0.0;
+  vec3 bestDir = vec3(0.0, 0.0, 1.0);
+  for (int i = 0; i < 4; i++) {
+    if (i >= count) break;
+    vec4 slot = uWarpCentre[i];
+    vec4 wt = uWarpWeight[i];
+    if (!(abs(wt.x) > 0.0) || !(slot.w > 0.0) || !(wt.y > 0.0)) continue;
+    vec3 rad = c - slot.xyz;
+    float d = length(rad);
+    if (!(d > 1e-4) || d - slot.w >= wt.y) continue;
+    float tide = warpTide(d, slot.w, wt.x, wt.y, wt.z);
+    if (abs(tide) <= abs(bestTide)) continue;
+    bestTide = tide;
+    bestDir = rad / d;
+  }
+  if (!(abs(bestTide) > 0.0)) return;
+  float ceiling = max(uWarpParams.x, 1e-3);
+  float x = min(abs(bestTide) / ceiling, 1e4);
+  float eps = sign(bestTide) * ceiling * x * inversesqrt(sqrt(1.0 + x * x * x * x));
+  float radial = exp(eps), across = exp(-0.5 * eps);
+  vec3 q = pW - c;
+  float qr = dot(q, bestDir);
+  vec3 pNew = c + bestDir * (qr * radial) + (q - bestDir * qr) * across;
+  float nr = dot(nW, bestDir);
+  vec3 nNew = bestDir * (nr / radial) + (nW - bestDir * nr) / across;
+  if (!(dot(pNew, pNew) < 1e12) || !(dot(nNew, nNew) > 1e-12)) return;
   pW = pNew;
   nrm = normalize(nNew);
 }
@@ -337,7 +389,7 @@ void main(){
   } else {
     w = M * vec4(p, 1.0);
     nrm = transpose(inverse(mat3(M))) * nO;
-    if (uPrismGraph != 0) { vec3 cw = w.xyz; cradle(cw, nrm); w.xyz = cw; }
+    if (uPrismGraph != 0) { vec3 cw = w.xyz; gravityWarp(cw, nrm, M[3].xyz); cradle(cw, nrm); w.xyz = cw; }
   }
   vWorld = w.xyz;
   vNormal = nrm;
@@ -1059,6 +1111,8 @@ void main(){
         };
         static readonly int IdCradleCentre = Shader.PropertyToID("_PrismCradleCentre"), IdCradleWeight = Shader.PropertyToID("_PrismCradleWeight"),
             IdCradleParams = Shader.PropertyToID("_PrismCradleParams");
+        static readonly int IdWarpCentre = Shader.PropertyToID("_PrismGravityWarpCentre"), IdWarpWeight = Shader.PropertyToID("_PrismGravityWarpWeight"),
+            IdWarpParams = Shader.PropertyToID("_PrismGravityWarpParams");
         static readonly int IdVisionTint = Shader.PropertyToID("_VesselVisionTint");
         static readonly int IdOccTarget = Shader.PropertyToID("_PrismOcclusionTarget"), IdOccParams = Shader.PropertyToID("_PrismOcclusionParams"), IdOccNear = Shader.PropertyToID("_PrismOcclusionNearRadius");
 
@@ -1134,6 +1188,10 @@ void main(){
             SetGlobalVec4Array("uCradleWeight", IdCradleWeight, 4);
             var cp = Shader.GetGlobalVector(IdCradleParams);
             _program.Set("uCradleParams", cp.x, cp.y, cp.z, cp.w);
+            SetGlobalVec4Array("uWarpCentre", IdWarpCentre, 4);
+            SetGlobalVec4Array("uWarpWeight", IdWarpWeight, 4);
+            var wp = Shader.GetGlobalVector(IdWarpParams);
+            _program.Set("uWarpParams", wp.x, wp.y, wp.z, wp.w);
             foreach (var (u, id) in s_visionGlobals)
             {
                 var v = Shader.GetGlobalVector(id);
