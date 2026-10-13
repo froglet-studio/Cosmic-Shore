@@ -2024,7 +2024,7 @@ the harness's 240 s wait. The cause was on the invitee's side:
   case.
 
 
-## B30 — A party guest's swapped-in vessel never moves, and the gap throws every 250 ms 🟡 (root-caused & fixed 2026-10-13; needs a two-machine playtest)
+## B30 — A party guest's swapped-in vessel never moves, and the gap throws every 250 ms 🟢 (root-caused & fixed 2026-10-13; playtest-confirmed by the owner 2026-10-13)
 
 **Report.** Join someone's lobby, change vessel (the vessel changer toy, or a mode preview's hull
 swap): the new ship sits still, and the console repeats
@@ -2059,6 +2059,8 @@ destroyed object. `DomainVolumeIndicator.ResolveCell` (4 Hz) and
   first pair being started twice is harmless.
 - `RestoreControlAfterSwap` waits out the whole swap. `IsSwapping` is bounded on both sides.
 - Both readers go through `VesselLiveness.IsAlive`. The gauge holds its last cell through the gap.
+
+**Verified 2026-10-13** by the owner's playtest: the guest's swapped-in vessel flies. Steps kept for regressions.
 
 **Verify (two machines or MPPM).** Host a party, join it from the second instance. On the guest:
 1. Change vessel from the menu (autopilot) state. The new hull must fly on autopilot at once.
