@@ -90,6 +90,9 @@ namespace CosmicShore.Gameplay
         static void Slide(Prism prism, Vector3 start, Vector3 end, float seconds)
         {
             prism.transform.position = end;
+            // Kept in step the way FullAutoBlockShoot's mover keeps it - nothing reads it today,
+            // but a cached position that lies is the next reader's bug.
+            if (prism.prismProperties != null) prism.prismProperties.position = end;
             prism.NotifyPositionChanged();
 
             Vector3 flight = end - start;

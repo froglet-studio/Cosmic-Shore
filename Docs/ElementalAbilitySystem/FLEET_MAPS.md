@@ -7,7 +7,8 @@ remake; its superseded "Reaper Ray" table is kept below as history); their rows 
 record, not a proposal, and are not to be re-litigated from the superseded tables kept beside
 them. The **Serpent's Charge and Space rows joined that set on 2026-09-16** (the scope + rifle
 re-cut; its Mass row and its Time L5 are still proposals). The level-5 upgrades for the **Rhino**
-are still **PROPOSALS for Garrett to mark up** — none are implemented. Approve/edit per row; implementation follows the Sparrow pattern (per-shot/per-use
+are still **PROPOSALS for Garrett to mark up**, except **Space 5, Breaker**, approved and shipped
+2026-10-13 (one-slice shielded cuts on the sword). Approve/edit per row; implementation follows the Sparrow pattern (per-shot/per-use
 snapshot, gated on `IsUpgradeActive(element)` in the executor, replicated unlock bits, no new
 fundamentals).
 
@@ -63,13 +64,13 @@ day after the channel it referred to had been deleted.
 | Manta | 4/4 | 4/4 | 3/4 |
 | Serpent | 3/4 | 3/4 | 2/4 |
 | Scarab | 4/4 | 4/4 | 2/4 |
-| Rhino | 2/4 | 3/4 | 0/4 |
+| Rhino | 2/4 | 3/4 | 1/4 | *(Space L5 **Breaker** landed 2026-10-13 on an element whose ABILITY slot is still open — the tool counts the gate and prints no detail for an undesigned row)* |
 | **Butterfly** | **4/4** | **4/4** | **4/4** | *(added 2026-09-22 — code + map only; its prefab is built by `FrogletTools ▸ Vessels ▸ Create Butterfly Vessel` and is NOT on the branch yet, so the tool cannot see it until that has been run)* |
 | **Thresher** | **4/4** | **4/4** | **4/4** | *(added 2026-10-08, measured on the branch — prototype; see `R_VesselActions/THRESHER.md`)* |
 | **Stoat** | 2/4 | 2/4 | 1/4 | *(re-cut 2026-10-09 — the round-15 FIELD DIPOLE: Space = Field Dipole on the triggers (pole size ×1→×2, L5 **Theft**: swallowed prisms are stolen, not destroyed), Time = Pathfinder, passive (warp boost ×2.5→×5 since 2026-10-13, no L5 yet); Charge and Mass are open with proposals in §2 ▸ Stoat and `R_VesselActions/STOAT_DIPOLE.md` §6)* |
 
 Everything the tool still flags is a **design gap, not a wiring bug** — three rows: the Rhino's
-Charge and Space, and the Serpent's Mass. The full list, with what each one would cost to fill, is
+Charge and Space (Space has its L5, Breaker, but still no ability or scaling), and the Serpent's Mass. The full list, with what each one would cost to fill, is
 **`FLEET_GAPS.md`**.
 
 **Re-run the tool rather than reading this table** — it is a transcription and it went stale

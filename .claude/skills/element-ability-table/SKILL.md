@@ -75,7 +75,7 @@ own parameter.
 
 | Flag | What it means |
 |---|---|
-| `OPEN DESIGN SLOT` | the map authors nothing. **Blocked on design, not wiring** — see the gate below. |
+| `OPEN DESIGN SLOT` | the map authors no ABILITY. **Blocked on design, not wiring** — see the gate below. **It can still carry a live L5**: the row is keyed off `AbilityLabel`, so an approved upgrade on an element with no ability yet (the Rhino's Space-5 Breaker, 2026-10-13) is COUNTED in the `L5 gates wired` total but its label and gate site are not printed. Read the map's `UpgradeLabel` before concluding the element has nothing. |
 | `UPGRADE IS PROSE` | `UpgradeLabel` is authored and no live gate is reachable |
 | `RETIRED CHANNEL PRESENT` | a generic map multiplier is still authored, or something still calls `handler.Multiplier(element)` |
 | `NO SCALING` | none of the four channels is live for this element |
