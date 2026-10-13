@@ -6,14 +6,12 @@ Bakes the omni crystal's SHIPPED Shepard-triangle numbers and meshes into the Om
 The lab is a READER of these assets, never their authority (/labmaker §2.1). Everything the page
 calls "shipped" comes from here:
 
-  Crystal.prefab                      the root scale (10); the depth-prism slot (since round 8) or the
-                                      OmniShepardTriangles tone layers it carried before
+  Crystal.prefab                      the root scale (10); the depth-prism slot (since round 8), or any
+                                      OmniShepardTriangles tone layer it carries (none since round 8)
   OmniDepthPrisms.mat, MassDepthPrisms.mat   the SHIPPED look since round 8: the prisms' shape dials
   CrystalDepthPrismProfile.asset      its depths, ratchet, and (round 10) the per-crystal pose amount
-  OmniShepardTriangles {0,1,2}.mat    _Start / _Stop / _Period / _Opacity / _ScaleDistance, colours
-                                      (the Breathe look, shipped rounds 4-7; read by name once retired)
-  OmniShepardTrianglesInactive*.mat   the inactive (blue) palette
-  OmniShepardTrianglesRim.mat         the static outer shell
+  (the retired Breathe layers and Classic rim are NOT read: their materials were retired 2026-10-13 and the
+   page pins their values in its RETIRED constant)
   OmniCrystalBody{,Inactive}.mat      the body's colours
   OmniCrystalTriangles.prefab         the shells' local scale (0.892...)
   OmniCrystalTriangles.asset          the 20-plate triangle mesh (normals, indices, plate centres) and, since
@@ -66,11 +64,9 @@ DEPTH_PROFILE = os.path.join(ROOT, "Assets", "_SO_Assets", "Environment", "Cryst
 SQUARES_ASSET = os.path.join(ROOT, "Assets", "_SO_Assets", "Environment", "OmniSpaceSquares.asset")
 MASS_DEPTH_MAT = "MassDepthPrisms"
 MASS_PRISMS = os.path.join(ROOT, "Assets", "_Models", "MassCrystalPrisms.asset")
-# The Breathe tone layers, shipped rounds 4-7 and retired from Crystal.prefab by the Depth ratchet (round 8):
-# still authored (OriginalMaterialSet's slots 2-3), so the lab keeps its Breathe styles on their real numbers.
-BREATHE_MATERIALS = [("OmniShepardTriangles 0", "OmniShepardTrianglesInactive 0"),
-                     ("OmniShepardTriangles 1", "OmniShepardTrianglesInactive 1"),
-                     ("OmniShepardTriangles 2", "OmniShepardTrianglesInactive 2")]
+# The Breathe tone layers (shipped rounds 4-7) and the static rim (Classic) are retired WITH their eight materials
+# (2026-10-13, refactor row F2): the page pins their last authored values in its RETIRED constant, outside the
+# generated block, and this script no longer reads them.
 BEGIN, END = "// <assets>", "// </assets>"
 
 
@@ -132,15 +128,6 @@ def crystal_layers():
         layer["inactiveBright"], layer["inactiveDark"] = inactive["bright"], inactive["dark"]
         (moving if layer["scaleDistance"] > 0.5 else rims).append(layer)
     root_scale = float(re.search(r"m_LocalScale: \{x: ([0-9.]+)", t).group(1))
-    if not moving:
-        # Since round 8 the crystal carries no tone layer: the Breathe layers are read by name.
-        for active, inactive in BREATHE_MATERIALS:
-            layer = shepard_layer(os.path.join(MATS, active + ".mat"))
-            layer["material"] = active
-            li = shepard_layer(os.path.join(MATS, inactive + ".mat"))
-            layer["inactiveBright"], layer["inactiveDark"] = li["bright"], li["dark"]
-            layer["retired"] = True
-            moving.append(layer)
     return moving, rims, root_scale
 
 
@@ -437,8 +424,6 @@ def space_squares(body_pts):
 
 def build():
     moving, rims, root_scale = crystal_layers()
-    if not moving:
-        raise SystemExit("Crystal.prefab carries no moving Shepard layer")
     tri_scale = float(re.search(r"m_LocalScale: \{x: ([0-9.]+)", read(TRI_PREFAB)).group(1))
     depth = depth_look()
     if depth:
@@ -448,13 +433,6 @@ def build():
     _, body_c, _ = mat_props(os.path.join(MATS, "OmniCrystalBody.mat"))
     _, body_ic, _ = mat_props(os.path.join(MATS, "OmniCrystalBodyInactive.mat"))
     pos, nrm, plates, cen = tri_mesh()
-    # The retired stationary rim (slot 4 until round 4): still authored, so the lab's Classic style can draw it.
-    rim_path = os.path.join(MATS, "OmniShepardTrianglesRim.mat")
-    rim_retired = shepard_layer(rim_path) if os.path.exists(rim_path) else None
-    if rim_retired:
-        rim_retired["material"] = "OmniShepardTrianglesRim"
-        ri = shepard_layer(os.path.join(MATS, "OmniShepardTrianglesRimInactive.mat"))
-        rim_retired["inactiveBright"], rim_retired["inactiveDark"] = ri["bright"], ri["dark"]
     bpos, btris, bnrm = body_mesh()
     r6 = lambda v: round(v, 6)
     r5 = lambda v: round(v, 5)
@@ -464,7 +442,6 @@ def build():
         "triScale": r6(tri_scale),
         "layers": [{k: (r6(v) if isinstance(v, float) else v) for k, v in L.items()} for L in moving],
         "rims": [{k: (r6(v) if isinstance(v, float) else v) for k, v in L.items()} for L in rims],
-        "rimRetired": {k: (r6(v) if isinstance(v, float) else v) for k, v in rim_retired.items()} if rim_retired else None,
         "body": {"bright": body_c["_BrightColor"], "dark": body_c["_DarkColor"],
                  "inactiveBright": body_ic["_BrightColor"], "inactiveDark": body_ic["_DarkColor"]},
         "triMesh": {
@@ -502,7 +479,7 @@ def summary(d):
              f"{dp['mass']['material'] if dp['mass'] else 'no Mass'} thickness {dp['mass']['thickness'] if dp['mass'] else '-'}, "
              f"open {dp['profile']['openDepth']} / seal {dp['profile']['sealDepth']} / reseat {dp['profile']['reseatDepth']}); "
              if dp else "")
-    return (ships + f"{len(L)} {'retired Breathe' if L and L[0].get('retired') else 'moving'} layers " + ", ".join(f"{x['material']} {x['start']}->{x['stop']} / {x['period']}s"
+    return (ships + f"{len(L)} moving layers{' (Breathe and Classic pinned in the page)' if not L else ' '}" + ", ".join(f"{x['material']} {x['start']}->{x['stop']} / {x['period']}s"
                                                    + (f" breathe phase {x['phaseOffset']}" if x['breathe'] else "") for x in L)
             + f"; {len(d['rims'])} rim; triScale {d['triScale']}; root {d['rootScale']}; "
             f"{len(d['triMesh']['plates'])} plates; body {len(d['bodyMesh']['i']) // 3} tris")
@@ -517,7 +494,13 @@ def self_test():
         print(("PASS  " if cond else "FAIL  ") + name)
         ok = ok and cond
     L = d["layers"]
-    check("three Breathe layers (Crystal.prefab's, or by name once retired)", len(L) == 3)
+    check("the crystal carries no Shepard tone layer (the Depth ratchet ships)", len(L) == 0)
+    page = read(LAB)
+    m = re.search(r"^  const RETIRED = (\{.*\});$", page, re.M)
+    pinned = json.loads(m.group(1)) if m else None
+    check("the page pins the retired Breathe layers (3, one shared band, 1/3 of a trip apart) and the Classic rim",
+          pinned is not None and len(pinned["layers"]) == 3 and pinned["rimRetired"] is not None
+          and all(abs(x["phaseOffset"] - i / 3) < 1e-5 and x["start"] == 1.0 and x["stop"] == 0.5 for i, x in enumerate(pinned["layers"])))
     dp = d["depth"]
     check("the crystal ships the Depth ratchet: an OmniDepthPrisms slot, the Mass prisms and the profile",
           dp is not None and dp["mass"] is not None and dp["omni"]["material"] == "OmniDepthPrisms")
@@ -527,7 +510,9 @@ def self_test():
         check("the shipped prisms are the lab's pick: omni thickness 8, Mass 6.25, inward, split 0.5, open -0.88, seal 1",
               dp["omni"]["thickness"] == 8 and dp["mass"]["thickness"] == 6.25 and dp["omni"]["thicknessInward"] == 1
               and dp["omni"]["faceSplit"] == 0.5 and dp["profile"]["openDepth"] == -0.88 and dp["profile"]["sealDepth"] == 1)
-    if L[0]["breathe"]:
+    if not L:
+        pass
+    elif L[0]["breathe"]:
         check("breathing layers share one band and sit 1/N of a trip apart",
               all(abs(x["start"] - L[0]["start"]) < 1e-6 and abs(x["stop"] - L[0]["stop"]) < 1e-6
                   and abs(x["phaseOffset"] - i / len(L)) < 1e-5 for i, x in enumerate(L)))

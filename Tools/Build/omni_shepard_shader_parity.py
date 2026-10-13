@@ -7,8 +7,9 @@ OmniCrystalTriangles.asset, then holds it against two references (/asset-surgery
      _Thickness 1) every vertex is v * ShepardBand(), the pre-round-4 formula, so the Mass crystal's
      shells (which author none of them) draw exactly as before. Checked on the real mesh WITH its
      plate centres and again with them zeroed (a mesh without TEXCOORD2).
-  2. LAB: with each shipped OmniShepardTriangles k.mat's own values, vert() matches the Omni
-     Shepard Lab's JS twin (window.__lab.vertexAt at the shipped settings, layer k) at several times.
+  2. LAB: with each Breathe layer's values (as the lab pins them in RETIRED; the OmniShepardTriangles k.mat
+     materials that carried them were retired 2026-10-13), vert() matches the Omni Shepard Lab's JS twin
+     (window.__lab.vertexAt at the Breathe style, layer k) at several times.
      The lab is driven headless through Playwright.
 
 Negative controls: the lab compared against a shader run with _Breathe forced off, and the inert
@@ -143,10 +144,19 @@ def mesh_vertices(zero_centres=False):
     return out
 
 
+# The Breathe layers' dials as the lab pins them (its RETIRED constant): their eight OmniShepardTriangles*
+# materials were retired on 2026-10-13 (refactor row F2), with these values. The shader keeps the dials.
+LAB_KEYS = {"_Start": "start", "_Stop": "stop", "_Period": "period", "_ScaleDistance": "scaleDistance",
+            "_Breathe": "breathe", "_PhaseOffset": "phaseOffset", "_PlateScaleStart": "plateScaleStart",
+            "_Thickness": "thickness"}
+
+
 def material(k):
-    t = open(os.path.join(MATS, f"OmniShepardTriangles {k}.mat")).read()
-    f = {a: float(b) for a, b in re.findall(r"^\s+- (_\w+): (-?[0-9.eE+-]+)\s*$", t, re.M)}
-    return [f.get(d, DEFAULTS.get(d, 0.0)) for d in DIALS]
+    m = re.search(r"^  const RETIRED = (\{.*\});$", open(LAB).read(), re.M)
+    if not m:
+        raise SystemExit("OmniShepardLab.html has no RETIRED constant (the pinned Breathe layers)")
+    layer = json.loads(m.group(1))["layers"][k]
+    return [float(layer[LAB_KEYS[d]]) for d in DIALS]
 
 
 def build(tmp):
@@ -233,7 +243,7 @@ def main():
         for k in range(len(lab)):
             dials = material(k)
             e = max_err(run(exe, tmp, verts, dials), lab[k])
-            check(f"OmniShepardTriangles {k}.mat matches the lab's shipped layer {k}", e < TOL, f"max |diff| {e:.2e} over {len(TIMES)} times x {len(verts)} vertices")
+            check(f"Breathe layer {k} (pinned in the lab) matches the lab's layer {k}", e < TOL, f"max |diff| {e:.2e} over {len(TIMES)} times x {len(verts)} vertices")
         dials = material(1); dials[4] = 0.0
         e = max_err(run(exe, tmp, verts, dials), lab[1])
         check("negative control: layer 1 with _Breathe off does NOT match", e > 1e-2, f"max |diff| {e:.2e}")

@@ -17,8 +17,10 @@ driven by `CrystalDepthPrisms` (`CrystalDepthPrismProfile.asset`, authored here 
 column over its own hole by its depth from the camera, faces parting at the top, thickness growing inward,
 and the crystal turning; `CrystalDepthPrisms` cuts the body's 20 triangle plates into the holes at runtime.
 The mesh's TEXCOORD2 carries (plate centre xyz, plate index). `OriginalMaterialSet.CrystalMaterial1` names
-`OmniDepthPrisms`; slots 2-4 still name the retired tone materials, which this script keeps authoring (the
-lab's Breathe styles read them). The history below describes the looks this one replaced.
+`OmniDepthPrisms`; slots 2-4 are EMPTY since 2026-10-13, when the eight retired tone/rim materials went (the lab
+pins their values in its RETIRED constant). Since round 10 the prisms carry their thickness in the mesh and
+`CrystalDepthPrismProfile` gives every crystal its own pose and the -0.87 reseat. The history below describes the
+looks this one replaced.
 
 Before this, `Crystal.prefab` ran the Shepard shader over FOUR copies of the
 WHOLE omni model, so the tone dragged the entire crystal - squares and pentagons
@@ -41,8 +43,7 @@ the three shells a third of a trip apart (_PhaseOffset 0, 1/3, 2/3); every trian
 size at the far end and full size on the surface (PLATE_SCALE_START), plates are 1.25x thick
 (PLATE_THICKNESS), and the shading is face-forward. The far end sits at alpha 0.05, so a
 breathing shell needs no rim to hide its turn: the stationary rim (once slot 4) was retired
-with this look. Its two materials are still authored, because OriginalMaterialSet's
-CrystalMaterial4 keeps pointing at the rim material and nothing reads index 4 any more.
+with this look. (Breathe and the rim and their eight materials were retired on 2026-10-13.)
 
 Charge owns the PENTAGONS, and its signature is the charge crystal's EDGE DISCHARGE
 (plasma crackling vertex to vertex along the crease edges). A sixth child,
@@ -56,9 +57,9 @@ material so a team crystal's bolts wear its domain colour. Its arc dials are clo
 ChargeCrystalMaterial (one look for one element - retune the charge crystal and --check
 names this material as drifted), its _BrightColor and _Spread from OmniCrystalBody.
 
-Four slots: `ThemeManagerDataContainerSO.GetTeamCrystalMaterial` answers indices 0..4
-(SO_MaterialSet.CrystalMaterial4 was added for the rim), so a team crystal paints every
-slot. Past 4 it still warns and reuses slot 0's material.
+A team crystal: `ThemeManagerDataContainerSO.GetTeamCrystalMaterial(domain, material)` finds the base-set slot
+that holds a model's OWN default material and hands back that slot's domain clone (since 2026-10-13; it was by
+model index, which would have put the omni body on a Mass crystal).
 
 WHAT THIS SCRIPT OWNS - the things that must not be typed by hand (the body and
 tone materials too; see the materials block below):
@@ -151,17 +152,11 @@ MAT_BODY_EXPLODING = "383f21e8586fd7243a19e1d0f26110d0"  # CrystalMaterial: the 
 # triangles fall in from outside the crystal and land on its surface, brightening as they arrive
 # (alpha 0.05 at the outer edge, 1.05 - 1/OUTER_REACH at the surface).
 OUTER_REACH = 2.0
-SHEPARD_PERIOD = 3                       # the Mass crystal's period (the retired rim keeps it)
-SHEPARD_QUEUES = [2999, 3000, 3001]      # the Mass shells' draw order, outermost band first
+SHEPARD_PERIOD = 3                       # the Mass crystal's shell period (author_mass_crystal_look.py's tone materials)
 
-# THE LOOK - "Breathe", picked in the Omni Shepard Lab (round 4). OmniShepardFresnelShader's opt-in
-# _Breathe / _PhaseOffset / _PlateScaleStart / _Thickness; the lab's recipe was
-# {period 3.5, direction breathe, sizeStart 0.5, thickness 1.25, faceForward 1, rimShell 0}.
-TONE_SHELLS = 3
-TONE_TRIP = 10.5                         # s, one round trip in and out (3 shells x the lab's 3.5 s)
-PLATE_SCALE_START = 0.5                  # a triangle's size at the far end, x its landed size
-PLATE_THICKNESS = 1.25                   # plates stretched along their outward direction
-FACE_FORWARD = 1                         # dark face centres front and back, bright edges only
+# The "Breathe" look (Omni Shepard Lab round 4, shipped 2026-10-10..12) and the stationary rim are RETIRED with
+# their eight OmniShepardTriangles* materials (2026-10-13, refactor row F2): no crystal or material set names them,
+# and the lab pins their values in Docs/Studios/OmniShepardLab.html's RETIRED constant.
 
 def mat_guid(name):
     return hashlib.md5(f"CosmicShore/OmniCrystal/{name}.mat".encode()).hexdigest()
@@ -201,30 +196,8 @@ DEPTH_PROFILE_VALUES = [("openDepth", -0.88), ("sealDepth", 1), ("profilePower",
                         ("reseatFadeSeconds", 0.6), ("orientationJitter", 1)]
 
 
-def shepard_bands():
-    """(start, stop, phase) per shell. Breathing, every shell spans the WHOLE trip, from s = 1 to
-    1/OUTER_REACH and back, and the shells differ only in their clock: a third of a trip apart."""
-    lo = round(1.0 / OUTER_REACH, 6)
-    return [(1.0, lo, round(k / TONE_SHELLS, 6)) for k in range(TONE_SHELLS)]
-
-
 MAT_BODY = mat_guid("OmniCrystalBody")
 MAT_BODY_INACTIVE = mat_guid("OmniCrystalBodyInactive")
-MAT_SHEPARD = [mat_guid(f"OmniShepardTriangles {i}") for i in range(3)]
-MAT_SHEPARD_INACTIVE = [mat_guid(f"OmniShepardTrianglesInactive {i}") for i in range(3)]
-MAT_RIM_INACTIVE = mat_guid("OmniShepardTrianglesRimInactive")
-
-# The STATIONARY rim shell - the Mass crystal's fourth shell, carried over. It never moves
-# (_ScaleDistance 0), so at the shell prefab's scale it sits exactly at s = 1, the radius where
-# each tone shell is born, and its band (1.03 -> 0.98) holds it at alpha 0.02..0.07 - the birth
-# alpha of the incoming shell (0.05). That is what hides the pop: a shell appearing at the outer
-# edge appears ON a faint copy of itself instead of out of nothing. An omni-only copy of
-# ActiveMassCrystalMaterial 3's motion values (band 1.03 -> 0.98, no scaling, queue 3001) on the
-# tone shader, so it wears the same colours as everything else.
-RIM_NAME = "OmniShepardTrianglesRim"
-RIM_BAND = (1.03, 0.98)
-RIM_QUEUE = 3001
-MAT_RIM = mat_guid(RIM_NAME)
 
 # ── charge edges (the pentagons) ──
 CHARGE_PREFAB = "Assets/_Prefabs/Environment/OmniCrystalChargeEdges.prefab"
@@ -261,22 +234,16 @@ def _sub1(text, pattern, repl, label):
     return out
 
 
-def _tone_material(name, body_name, body_text, start, stop, scale_distance, queue, look=None):
-    """A tone-shell material: the body material (same colours) moved onto the tone shader.
-    `look` (the breathing shells) adds the shader's opt-in motion/shape dials and their period."""
+def _tone_material(name, body_name, body_text, start, stop, scale_distance, queue):
+    """A tone-shell material: the body material (same colours) moved onto the tone shader (the Mass crystal's
+    retired shells, author_mass_crystal_look.py; the omni's breathing shells went 2026-10-13)."""
     t = _sub1(body_text, rf"^  m_Name: {re.escape(body_name)}$", f"  m_Name: {name}", name + " m_Name")
     t = _sub1(t, r"^  m_Shader: \{fileID: 4800000, guid: \w+, type: 3\}",
               f"  m_Shader: {{fileID: 4800000, guid: {TONE_SHADER_GUID}, type: 3}}", name + " m_Shader")
     t = _sub1(t, r"^  m_CustomRenderQueue: .*$", f"  m_CustomRenderQueue: {queue}", name + " queue")
     t = _sub1(t, r"^  stringTagMap: \{\}$", "  stringTagMap:\n    RenderType: Transparent", name + " tags")
-    if look is None:
-        floats = (f"    - _Opacity: 1\n    - _Period: {SHEPARD_PERIOD}\n"
-                  f"    - _ScaleDistance: {scale_distance}\n    - _Start: {start}\n    - _Stop: {stop}\n")
-    else:
-        floats = (f"    - _Breathe: 1\n    - _FaceForward: {FACE_FORWARD}\n    - _Opacity: 1\n"
-                  f"    - _Period: {TONE_TRIP}\n    - _PhaseOffset: {look}\n"
-                  f"    - _PlateScaleStart: {PLATE_SCALE_START}\n    - _ScaleDistance: {scale_distance}\n"
-                  f"    - _Start: {start}\n    - _Stop: {stop}\n    - _Thickness: {PLATE_THICKNESS}\n")
+    floats = (f"    - _Opacity: 1\n    - _Period: {SHEPARD_PERIOD}\n"
+              f"    - _ScaleDistance: {scale_distance}\n    - _Start: {start}\n    - _Stop: {stop}\n")
     return _sub1(t, r"^    m_Floats:\n", lambda m: m.group(0) + floats, name + " m_Floats")
 
 
@@ -301,13 +268,6 @@ def material_texts():
                   f"  m_Shader: {{fileID: 4800000, guid: {OMNI_SHADER_GUID}, type: 3}}", name + " m_Shader")
         out[name] = t
     body, body_inactive = out["OmniCrystalBody"], out["OmniCrystalBodyInactive"]
-    for i, (start, stop, phase) in enumerate(shepard_bands()):
-        out[f"OmniShepardTriangles {i}"] = _tone_material(
-            f"OmniShepardTriangles {i}", "OmniCrystalBody", body, start, stop, 1, SHEPARD_QUEUES[i], phase)
-        out[f"OmniShepardTrianglesInactive {i}"] = _tone_material(
-            f"OmniShepardTrianglesInactive {i}", "OmniCrystalBodyInactive", body_inactive, start, stop, 1, SHEPARD_QUEUES[i], phase)
-    out[RIM_NAME] = _tone_material(RIM_NAME, "OmniCrystalBody", body, *RIM_BAND, 0, RIM_QUEUE)
-    out[RIM_NAME + "Inactive"] = _tone_material(RIM_NAME + "Inactive", "OmniCrystalBodyInactive", body_inactive, *RIM_BAND, 0, RIM_QUEUE)
     out[CHARGE_MAT_NAME] = charge_material_text(body)
     top_h, split = prism_shape(bake_tri_mesh()[0])
     out[DEPTH_NAME] = depth_material(DEPTH_NAME, "OmniCrystalBody", body, MATERIAL_THICKNESS, top_h, split)
@@ -1299,10 +1259,15 @@ BASE_SET_FIELDS = ["CrystalMaterial", "CrystalMaterial1", "CrystalMaterial2", "C
 
 
 def build_base_material_set(existing):
+    """The base set names the omni's per-slot materials and nothing else: slots past the crystal's models are EMPTY
+    (since 2026-10-13; they named the retired breathing tone and rim materials, which ThemeManager cloned for every
+    domain although no crystal drew them)."""
     t = existing
-    for field, (default, _) in zip(BASE_SET_FIELDS, SLOT_MATERIALS):
-        line = f"  {field}: {{fileID: 2100000, guid: {default}, type: 2}}"
-        t, n = re.subn(rf"^  {field}: \{{fileID: \d+, guid: \w+,\s*\n?\s*type: 2\}}$", line, t,
+    slots = [f"{{fileID: 2100000, guid: {default}, type: 2}}" for default, _ in SLOT_MATERIALS]
+    slots += ["{fileID: 0}"] * (len(BASE_SET_FIELDS) - len(slots))
+    for field, ref in zip(BASE_SET_FIELDS, slots):
+        line = f"  {field}: {ref}"
+        t, n = re.subn(rf"^  {field}: \{{fileID: \d+(?:, guid: \w+,\s*\n?\s*type: 2)?\}}$", line, t,
                        count=1, flags=re.M)
         if n == 0:
             # A field the asset has never serialized (CrystalMaterial4) goes after its predecessor.
