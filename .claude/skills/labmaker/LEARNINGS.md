@@ -246,6 +246,20 @@ Entries are grouped by family; within a family, the newest goes at the bottom.
 - Evidence: `styleParams` and `snapshot()` in the page; `omni_shepard_lab_parity.cjs --old-style X --new-style X`.
 - Promoted: no
 
+### L-STU-26 — An art file can hold the END POSE of an animation and no motion: test shape keys against their targets, don't just list actions
+- Lab: Omni Combine Lab (`Docs/Studios/OmniCombineLab.html`) · Branch: `cece/eager-rubin-km7qyn` · Date: 2026-10-13
+- What happened: the designer asked whether `CrystalsRaw.blend` had "an animation where all four elemental crystals combine into one omnicrystal". A survey of actions found nothing: every action on those objects was empty (frames 0-0, no curves). The combine was there all the same, as data. Each elemental crystal carries one unanimated shape key (`Key 1`, value 0), and a KD-tree test of each key against the omni's vertices showed it lands that crystal's plates exactly on its share of the omni. Time and Space land 1:1, Mass 3 prisms per triangle, Charge 5 plates per pentagon, and together they cover all 960 vertices. The vertex counts were the clue: 240 + 480 + 120 + 120 = 960.
+- Do instead: when asked "is there an animation of X", also test every shape key and pose against the objects it could be heading for (nearest-vertex distance after the object offsets), and compare vertex counts across objects. Report "the end pose is authored, the motion is not" as its own answer, and bake the targets with a gate that refuses data that does not land.
+- Evidence: `Tools/Build/bake_omni_crystal_combine.py` (refuses unless every `Key 1` lands within 1e-3 and all omni vertices are covered); `OMNI_COMBINE_LAB.md` "What the art file has".
+- Promoted: no
+
+### L-STU-27 — A metric measured over the phase where the event is the POINT reads the same for every variant
+- Lab: Omni Combine Lab · Branch: `cece/eager-rubin-km7qyn` · Date: 2026-10-13
+- What happened: the first "clearance" column (how close two crystals' centres come in flight, x their combined radii) read 0.09-0.13 for every style, the controls included, because all four crystals converge on one centre and are SUPPOSED to overlap as they merge. Excluding the merge zone (inside 1.5 omni radii) made it discriminate: the art file's straight-line row 0.44, the proposals 1.75-3.29.
+- Do instead: before trusting a column, check it varies across the variants. If it doesn't, ask whether it is measuring the moment the design intends; restrict it to where the event is a fault.
+- Evidence: `measure()` (`MEET`) in the page; the round-1 scorecard in `OMNI_COMBINE_LAB.md`.
+- Promoted: no
+
 ---
 
 ## NCA — swarm / neural-CA research rigs (Tools/NCA)
