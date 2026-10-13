@@ -1573,7 +1573,7 @@ ranking suspects.
   (`PlayerLoopHelper` detects the disabled flag and re-inits); Netcode 2.5.0 —
   compatible (`NetworkUpdateLoop` re-registers at SubsystemRegistration, RPC
   tables use idempotent indexer writes); FMOD — explicit (`RuntimeManager`
-  tears down by name on this exact setting); DOTween, NativeShare, PlayFab SDK
+  tears down by name on this exact setting); DOTween, NativeShare
   — compatible. NiceVibrations holds static state with no reset (inert on
   desktop; revisit if mobile in-editor haptics testing ever matters).
 - **Editor asmdef split (item 2) — checked and CLOSED, not shipped.** The

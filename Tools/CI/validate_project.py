@@ -48,8 +48,6 @@ EXCLUDED_DIRS = {
 }
 EXCLUDED_PREFIXES = (
     "Assets/Plugins/",
-    "Assets/PlayFabSDK/",
-    "Assets/PlayFabEditorExtensions/",
     "Assets/NiceVibrations/",
     "Assets/ProfileAnalyzer/",
     "Assets/TextMesh Pro/",

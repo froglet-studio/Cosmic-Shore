@@ -256,8 +256,8 @@ loop; it is part of the invite build and it passes through none of the de-scoped
 consulting the de-scope.
 
 **The Hangar's *captain upgrade* is a different economy and IS de-scoped.** It is priced in the
-PlayFab catalog (`CatalogManager`), which `AuthenticationManager` — the legacy PlayFab auth — has to
-initialize, and that is inert since the UGS migration. So `GetCaptainUpgrade` returns null, the
+catalog (`CatalogManager`), which has had no backend since PlayFab was removed
+(`Docs/PLAYFAB_RETIREMENT.md`). So `GetCaptainUpgrade` returns null, the
 requirement checks never pass, and the upgrade *was already refusing* with a bare denied sting and no
 explanation. That is exactly the "reads as broken" state this item exists to fix, so it now refuses
 with a reason. It is not the crystal loop above, and locking it costs the invite build nothing.

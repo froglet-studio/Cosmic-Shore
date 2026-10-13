@@ -74,7 +74,7 @@ pack where it is?**
 
 * **For it:** the boundary becomes visible, the next audit is a directory listing, and "is this ours?"
   stops being a per-folder judgement call.
-* **Against it:** every move is a chance to break a `Resources/` path, several vendors (FMOD, PlayFab,
+* **Against it:** every move is a chance to break a `Resources/` path, several vendors (FMOD,
   EDM4U) document their own install path and re-importing an update will recreate the original
   location, and `Assets/Plugins/` is already Unity's conventional third-party home for exactly this.
 
@@ -84,7 +84,7 @@ re-create their own path alone**, documenting why each exception exists. Pick on
 reason; an undocumented convention is one the next importer will not follow.
 
 Whatever is chosen, **the surviving third-party folders after the removal pass** are the ones to
-place: FMOD, Obvious SOAP, DOTween, NativeShare, PlayFabSDK, PlayFabEditorExtensions, QuickScene Pro
+place: FMOD, Obvious SOAP, DOTween, NativeShare, QuickScene Pro
 (`YethGameDev`), EDM4U, `Analyzers`, `Samples`, and `Unity Assests` (TMP).
 
 ## Method

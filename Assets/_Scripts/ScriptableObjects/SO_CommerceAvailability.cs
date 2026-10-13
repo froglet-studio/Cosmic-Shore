@@ -4,7 +4,7 @@ using UnityEngine;
 namespace CosmicShore.ScriptableObjects
 {
     /// <summary>
-    /// A surface that would take the player's money, or spend a balance through the PlayFab
+    /// A surface that would take the player's money, or spend a balance through the
     /// catalog. Named here rather than per-screen so the posture below can be read by one lookup.
     /// </summary>
     public enum CommerceSurface
