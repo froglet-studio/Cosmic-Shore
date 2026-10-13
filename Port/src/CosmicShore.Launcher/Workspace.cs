@@ -288,20 +288,6 @@ namespace CosmicShore.Launcher
             }
         }
 
-        /// <summary>
-        /// A GitHub token for the API: the one typed in OPTIONS, else the password git's credential
-        /// helper (GitHub Desktop / Git Credential Manager) already stores for github.com.
-        /// </summary>
-        public string? GitHubApiToken()
-        {
-            if (!string.IsNullOrWhiteSpace(_s.GitHubToken)) return _s.GitHubToken.Trim();
-            var basic = CredentialFill(new Uri("https://github.com"));
-            if (basic == null) return null;
-            var pair = Encoding.UTF8.GetString(Convert.FromBase64String(basic));
-            int i = pair.IndexOf(':');
-            return i > 0 ? pair[(i + 1)..] : null;
-        }
-
         string? CredentialFill(Uri remote)
         {
             try

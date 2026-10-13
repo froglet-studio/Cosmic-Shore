@@ -164,7 +164,7 @@
       "id": "C8",
       "milestone": "M1",
       "title": "Platforms",
-      "exit": "(1) Windows real-machine pass. (2) Android device pass. (3) iOS sideload pass. (4) The backend plan for gate G6 (thin RHI with Metal, or wgpu-native) approved. (5) Steam Deck native Linux build",
+      "exit": "(1) Windows real-machine pass. (2) Android device pass. (3) iOS device pass (a Mac-signed build). (4) The backend plan for gate G6 (thin RHI with Metal, or wgpu-native) approved. (5) Steam Deck native Linux build",
       "weeks": 6,
       "dependsOn": [
         "C2",

@@ -123,24 +123,16 @@ fix is in progress.
 
 **Android** - APK (install directly) or AAB (Play Store). Options: CPU, keystore, debug.
 
-**iOS** - three ways, picked with the switch on the card:
+**iOS** - picked with the switch on the card:
 
 | Mode | Needs | Produces |
 |---|---|---|
-| **GITHUB** (default without a Mac) | a GitHub sign-in (GitHub Desktop is enough) | an unsigned `.ipa`, built on GitHub's free Mac and downloaded to `Builds/iOS` |
-| **XCODE** | nothing | `Builds/iOS/CosmicShore.xcodeproj` + player data, like Unity's iOS export |
+| **XCODE** (the default without a Mac) | nothing | `Builds/iOS/CosmicShore.xcodeproj` + player data, like Unity's iOS export |
 | **THIS MAC** | a Mac with Xcode | a signed `.ipa` |
 
-GITHUB mode runs `.github/workflows/amoebius-ios.yml` for the selected branch, shows each
-step of the Mac build in the status bar (15-25 minutes), then downloads the `.ipa`. Install it with
-**Sideloadly** and a free Apple ID - the same Windows steps as the Unity build
-(`Docs/IOS_BUILD.md` section 2, Path A, step 4). OPEN RUN shows the run on GitHub.
-
-Token: GitHub Desktop's sign-in works as-is. With a typed token (SETTINGS > Source) it needs
-**Actions: read & write** (fine-grained) or the `workflow` scope. Until the workflow is on the
-default branch, the launcher starts it by committing `Port/ios-build-request.txt` to your feature
-branch, which needs **Contents: read & write**. A `claude/**` branch never starts it by push
-(agent branches are excluded from CI); use Run workflow there.
+The GITHUB mode (an unsigned `.ipa` from GitHub's Mac, for Sideloadly) was retired on 2026-10-13
+with the game's free-Apple-ID sideload path: TestFlight is the only route onto a phone
+(`Docs/IOS_BUILD.md`). A settings file that still names it opens on XCODE.
 
 ## PROJECT - the engine's Project Settings
 
@@ -356,8 +348,7 @@ worktree already made as `<clone>-prisma` stays in use (it may hold the agent's 
 edits); `PrismaProject.json`, the `PRISMA_DATA_DIR` / `PRISMA_BLENDER` / `PRISMA_MAYAPY` variables
 and `prisma-session` reports are still read. An old launcher's UPDATE installs Amoebius over its own file,
 which keeps its old file name (the build leaves `Prisma.exe` and `FrogletLauncher.exe` copies for
-that updater to find; Amoebius's own updater deletes them),
-and the iOS build falls back to `prisma-ios.yml` on a branch from before the rename.
+that updater to find; Amoebius's own updater deletes them).
 
 ## Testing the launcher itself
 

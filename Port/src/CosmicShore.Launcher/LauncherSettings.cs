@@ -18,7 +18,11 @@ namespace CosmicShore.Launcher
     /// <summary>How the BUILD page makes an iPhone build.</summary>
     public enum IosMode
     {
-        /// <summary>GitHub's free Mac runner compiles an unsigned .ipa; Sideloadly signs it. No Mac needed.</summary>
+        /// <summary>
+        /// Retired 2026-10-13 with the free-Apple-ID sideload path (TestFlight is the only iOS route).
+        /// Kept so a launcher.json that names it still loads; <see cref="LauncherSettings.Load"/> reads it as
+        /// <see cref="Xcode"/> (<see cref="ThisMac"/> on a Mac).
+        /// </summary>
         GitHub = 0,
         /// <summary>An Xcode project to open on a Mac, like Unity's iOS export.</summary>
         Xcode = 1,
@@ -63,7 +67,9 @@ namespace CosmicShore.Launcher
         public bool DebugBuild { get; set; }
         public string KeystorePath { get; set; } = "";
         public string KeystoreAlias { get; set; } = "";
-        public IosMode Ios { get; set; } = OperatingSystem.IsMacOS() ? IosMode.ThisMac : IosMode.GitHub;
+        public IosMode Ios { get; set; } = DefaultIosMode;
+
+        static IosMode DefaultIosMode => OperatingSystem.IsMacOS() ? IosMode.ThisMac : IosMode.Xcode;
 
         // Claude
         // Look (SETTINGS > LOOK)
@@ -150,7 +156,11 @@ namespace CosmicShore.Launcher
             try
             {
                 if (File.Exists(FilePath))
-                    return JsonSerializer.Deserialize<LauncherSettings>(File.ReadAllText(FilePath), Json) ?? new();
+                {
+                    var s = JsonSerializer.Deserialize<LauncherSettings>(File.ReadAllText(FilePath), Json) ?? new();
+                    if (s.Ios == IosMode.GitHub) s.Ios = DefaultIosMode;
+                    return s;
+                }
             }
             catch (Exception)
             {

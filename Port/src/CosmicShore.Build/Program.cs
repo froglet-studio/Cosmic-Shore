@@ -9,7 +9,7 @@ namespace CosmicShore.Build
     ///
     ///   cs-build content  [--out DIR]                     player data only (what ships)
     ///   cs-build android  [--out FILE.apk|FILE.aab] [--debug] [--keystore K --alias A]
-    ///   cs-build ios      [--out DIR] [--unsigned] [--xcode]   Mac: an .ipa (--unsigned for Sideloadly); elsewhere / --xcode: an Xcode project
+    ///   cs-build ios      [--out DIR] [--xcode]   Mac: a signed .ipa; elsewhere / --xcode: an Xcode project
     ///
     /// Every target first writes the player data: the enabled build scenes, every Resources/
     /// asset and the preloaded assets, followed through their references — the same set Unity
@@ -65,7 +65,7 @@ namespace CosmicShore.Build
       like Unity's development builds. Needs the .NET 'android' workload and an Android SDK
       (cs-build installs the SDK on first use; set ANDROID_HOME to use your own).
 
-  cs-build ios [--out DIR] [--debug] [--unsigned] [--xcode]
+  cs-build ios [--out DIR] [--debug] [--xcode]
       Export an iOS project with the player data inside, then (on a Mac with Xcode)
       build it. Unity builds iOS the same way: export on any machine, build on a Mac.
 

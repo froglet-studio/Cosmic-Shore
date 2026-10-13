@@ -342,9 +342,10 @@ progress and CANCEL.
 
 ![Launcher BUILD](architecture/launcher_build.png)
 
-**Figure 9.** BUILD: one card per phone. Android builds an APK or AAB. iOS builds an unsigned
-`.ipa` on GitHub's free Mac (no Mac needed; install with Sideloadly), exports an Xcode project,
-or on a Mac builds a signed `.ipa`. Everything else is folded under *Options*.
+**Figure 9.** BUILD: one card per phone. Android builds an APK or AAB. iOS exports an Xcode
+project, or on a Mac builds a signed `.ipa` (the unsigned GitHub-Mac `.ipa` for Sideloadly was
+retired on 2026-10-13; TestFlight is the only route onto a phone). Everything else is folded under
+*Options*.
 
 ![Launcher PROJECT](architecture/launcher_project_1.png)
 

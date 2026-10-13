@@ -769,40 +769,24 @@ namespace CosmicShore.Launcher
 
             // iOS
             bool mac = OperatingSystem.IsMacOS();
-            string[] modes = mac ? new[] { "GITHUB", "XCODE", "THIS MAC" } : new[] { "GITHUB", "XCODE" };
-            if (!mac && _s.Ios == IosMode.ThisMac) _s.Ios = IosMode.GitHub;
-            string action = _s.Ios switch { IosMode.GitHub => "BUILD .IPA", IosMode.Xcode => "EXPORT XCODE", _ => "BUILD .IPA" };
+            // Xcode and This Mac only: TestFlight (ios-testflight.yml) is the one route onto a phone.
+            string[] modes = mac ? new[] { "XCODE", "THIS MAC" } : new[] { "XCODE" };
+            if (_s.Ios == IosMode.GitHub || (!mac && _s.Ios == IosMode.ThisMac)) _s.Ios = IosMode.Xcode;
+            string action = _s.Ios == IosMode.Xcode ? "EXPORT XCODE" : "BUILD .IPA";
             BuildCard(dl, ia, ib, Neon.Violet, "iOS", _s.Ios == IosMode.Xcode ? ".xcodeproj" : ".ipa",
                 () =>
                 {
-                    Segmented("iosmode", modes, (int)_s.Ios, i => _s.Ios = (IosMode)i, Neon.Violet);
-                    Neon.Tooltip(_s.Ios switch
-                    {
-                        IosMode.GitHub => "GitHub's free Mac compiles an unsigned .ipa from the branch.\nSign and install it with Sideloadly. No Mac needed.",
-                        IosMode.Xcode => "An Xcode project, like Unity's iOS export.\nOpen it on a Mac, pick a team, Run or Archive.",
-                        _ => "This Mac builds and signs the .ipa.",
-                    });
+                    Segmented("iosmode", modes, (int)_s.Ios - 1, i => _s.Ios = (IosMode)(i + 1), Neon.Violet);
+                    Neon.Tooltip(_s.Ios == IosMode.Xcode
+                        ? "An Xcode project, like Unity's iOS export.\nOpen it on a Mac, pick a team, Run or Archive."
+                        : "This Mac builds and signs the .ipa.");
                 },
                 ref _iosMore,
                 () =>
                 {
                     Toggle("Debug build", () => _s.DebugBuild, v => _s.DebugBuild = v);
-                    if (_s.Ios == IosMode.GitHub)
-                    {
-                        ImGui.PushFont(Neon.Small);
-                        ImGui.TextColored(Neon.Dim, "Uses your GitHub sign-in (or the token in SETTINGS).");
-                        ImGui.TextColored(Neon.Dim, "Takes ~15-25 min on GitHub's Mac.");
-                        ImGui.PopFont();
-                        if (SmallButton("SIDELOADLY", 160, true)) OpenUrl("https://sideloadly.io");
-                    }
                 },
                 action, can, () => _jobs.BuildIos(), _jobs.JobName.StartsWith("Build iOS"));
-
-            if (_jobs.IosRunUrl != null && _jobs.JobName.StartsWith("Build iOS"))
-            {
-                ImGui.SetCursorScreenPos(new Vector2(ia.X + 24, ib.Y - 44));
-                if (SmallButton("OPEN RUN", 140, true)) OpenUrl(_jobs.IosRunUrl);
-            }
         }
 
         /// <summary>One build target: name, its one choice, a primary button, the rest folded away, the result.</summary>
@@ -1058,7 +1042,7 @@ namespace CosmicShore.Launcher
                 Row("GitHub token", () =>
                 {
                     SecretField("##token", "optional", () => _s.GitHubToken, v => _s.GitHubToken = v);
-                    Neon.Tooltip("Only if git has no GitHub sign-in. iOS builds need Actions: read & write.\nStored only on this PC.");
+                    Neon.Tooltip("Only if git has no GitHub sign-in.\nStored only on this PC.");
                 });
                 Row("Workspace", () =>
                     Segmented("wsmode", new[] { "OWN COPY", "BESIDE MY CLONE" }, (int)_s.Workspace, i => _s.Workspace = (WorkspaceMode)i, Neon.Cyan));

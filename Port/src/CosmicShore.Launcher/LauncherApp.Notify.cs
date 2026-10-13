@@ -280,7 +280,7 @@ namespace CosmicShore.Launcher
                 "Froglet's own engine for Cosmic Shore. It builds the game from source, runs it, records every run, and has an agent powered by Claude. Here is a one-minute tour.",
                 () => null),
             new TourStep("Play", "Pick a branch and press START: Amoebius fetches it, builds it and runs the game. Every play session is recorded when you close the game.", () => Rail(Page.Play), Page.Play),
-            new TourStep("Build", "Phone builds: an Android APK, or an iOS .ipa built on GitHub's Mac for Sideloadly.", () => Rail(Page.Build), Page.Build),
+            new TourStep("Build", "Phone builds: an Android APK, or an iOS Xcode project (TestFlight is the route onto a phone).", () => Rail(Page.Build), Page.Build),
             new TourStep("Project", "Amoebius's own Player, Scenes and Quality settings. Empty fields follow Unity's.", () => Rail(Page.Project), Page.Project),
             new TourStep("Amoebius Agent", "Powered by Claude. It works on the game, starting from what your last runs recorded. Sign in with your Claude plan, pick a model, plan first or let it edit.", () => Rail(Page.Chat), Page.Chat),
             new TourStep("Tracks", "Every run's performance per scene, the modes and vessels you used, audio, and every problem with when it was first and last seen.", () => Rail(Page.Tracks), Page.Tracks),

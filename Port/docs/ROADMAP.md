@@ -33,7 +33,7 @@ starts by measuring use in `Assets/`, and anything the game doesn't touch stays 
 | Audio | FMOD Studio runtime, real banks, buses, VCAs | |
 | Networking | Netcode model over TCP; LAN parties work. **No internet relay, no real UGS** | PROGRESS §Known gaps 1 |
 | Performance | Heavy Bloomrush: collect 22-26 ms (was ~150 ms). Not yet at Unity's level on the GTX 1060 floor | PROGRESS §2 |
-| Platforms | Windows and Linux desktop; Android APK builds (no device run yet); iOS .ipa via GitHub CI (unsigned, Sideloadly) | |
+| Platforms | Windows and Linux desktop; Android APK builds (no device run yet); iOS Xcode project export and a signed .ipa on a Mac (the GitHub CI + Sideloadly route was retired 2026-10-13) | |
 | Tooling | Launcher (play, phone builds, Project Settings, Claude, tracks, board, milestones), `cs-asset` (scene/prefab writes, `serialization-audit`), `cs-build`, MCP server, session reports with CPU/GC per phase, `engine_smoke` | `docs/LAUNCHER.md` |
 | Tests | ~1,590 engine tests + 352 ported Unity EditMode tests | `dotnet test` |
 | Unity editor surface we'd replace | 300 editor scripts, 44 EditorWindows, 23 custom inspectors/drawers, **91 FrogletTools menu items** | scan of `Assets/**/Editor` |
@@ -78,7 +78,7 @@ starts by measuring use in `Assets/`, and anything the game doesn't touch stays 
 | **The game keeps moving in Unity.** Every day new scripts, Shader Graphs and packages land on bleeding-edge. | Parity is a moving target; the port can break on any push. | Parity CI (C1.3) on every push; a "port breakers" list reviewed weekly; new Unity APIs get engine support within a week. |
 | **The Steam Early Access release runs on Unity** (`Docs/STEAM_RELEASE_TASKS.md`; 3-week test cadence) | The engine is never on the launch's critical path. | The port never changes `Assets/` (`check_unity_isolation.py`). Engine work never blocks a Unity release. Switching the shipped build to the engine is a separate decision after M1. |
 | **Team capacity:** one developer plus Claude sessions | Throughput is bounded by review time, not typing. Claude plan usage limits cap long agent runs. | Parallel Claude sessions per checkpoint (one per row of the parity matrix); the launcher's session reports and `engine_smoke` keep each loop short. Assume ~2 checkpoint-weeks of output per calendar week. |
-| **Hardware access:** no Mac, no Android test phone yet, GTX 1060 is the floor | Phones and low-end performance go unverified. | iOS via GitHub macOS runners + Sideloadly (works today). Buy one mid-range Android phone (~$200). Profile on a GTX 1060 machine at each performance checkpoint (Steam task H8). |
+| **Hardware access:** no Mac, no Android test phone yet, GTX 1060 is the floor | Phones and low-end performance go unverified. | iOS needs a Mac (the GitHub macOS runner + Sideloadly route was retired 2026-10-13; TestFlight is the game's only iOS route). Buy one mid-range Android phone (~$200). Profile on a GTX 1060 machine at each performance checkpoint (Steam task H8). |
 | **Unity Gaming Services** (Auth, Cloud Save, Leaderboards, Lobby, Relay) | The port uses local stand-ins. UGS has REST APIs, but Relay speaks Unity Transport. | **Decision gate G2 (by 2026-12-15):** (a) UGS over REST plus our own Relay-compatible transport, or (b) Steam networking (Steamworks.NET, MIT) plus our own small backend. Recommendation: (b) for PC, because Steam is the launch platform; revisit phones later. |
 | **Steamworks** (3 scripts use it) | Achievements, overlay and authentication must work in the engine for a Steam build. | Steamworks.NET runs on any .NET. Wire it in C6. |
 | **FMOD licensing** | The engine ships FMOD's runtime. The license is per title, not per engine, so it carries over, but confirm. | Check the FMOD indie/commercial terms before any engine build ships (G3). |
@@ -122,7 +122,7 @@ C0 foundations (done Oct 6)
 | **C5** | **UI + text parity** | Every screen at 16:9, 21:9 and 4:3 matches Unity (SSIM >= 0.98). TMP rendering rewritten clean (legal) | 4 | C1 |
 | **C6** | **Online parity** | An `INetTransport` seam with TCP as its first transport (can start before G2); then 4 players over the internet in each multiplayer mode; Steam auth and achievements; cloud save and leaderboards on the chosen backend | 8 | G2 |
 | **C7** | **Performance parity** | On the GTX 1060: every mode at every intensity within 10% of Unity's frame time, and load times within the R7 target. Includes GPU timer queries in the session report, the `tasks` phase's allocations (279-728 KB/frame in Menu_Main, steady GC up to 1.9 ms/frame), jobs moved to `Parallel.For` only where a profile shows them, and a `SustainedLowLatency` A/B | 8 | C2 |
-| **C8** | **Platforms** | (1) Windows real-machine pass. (2) Android device pass. (3) iOS sideload pass. (4) The backend plan for gate G6 (thin RHI with Metal, or wgpu-native) approved. (5) Steam Deck native Linux build | 6 | C2, C7, G6 |
+| **C8** | **Platforms** | (1) Windows real-machine pass. (2) Android device pass. (3) iOS device pass (a Mac-signed build). (4) The backend plan for gate G6 (thin RHI with Metal, or wgpu-native) approved. (5) Steam Deck native Linux build | 6 | C2, C7, G6 |
 | **C9** | **Blind test (= M1)** | 10 players play both builds in random order; detection no better than chance (<= 60% correct) | 2 | all |
 
 ### M2 checkpoints

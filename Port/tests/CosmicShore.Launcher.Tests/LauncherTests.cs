@@ -348,6 +348,24 @@ namespace CosmicShore.Launcher.Tests
         }
 
         [Fact]
+        public void A_settings_file_naming_the_retired_GitHub_iOS_mode_still_loads_with_everything_else_kept()
+        {
+            var file = Path.Combine(LauncherSettings.DataDir, "launcher.json");
+            var saved = File.Exists(file) ? File.ReadAllText(file) : null;
+            try
+            {
+                File.WriteAllText(file, "{\"Branch\":\"cece/old-tester\",\"Ios\":\"GitHub\"}");
+                var s = LauncherSettings.Load();
+                Assert.Equal("cece/old-tester", s.Branch);       // not reset to defaults
+                Assert.Equal(OperatingSystem.IsMacOS() ? IosMode.ThisMac : IosMode.Xcode, s.Ios);
+            }
+            finally
+            {
+                if (saved != null) File.WriteAllText(file, saved); else File.Delete(file);
+            }
+        }
+
+        [Fact]
         public void Project_settings_fall_back_to_the_file_under_the_engines_earlier_name()
         {
             var root = Path.Combine(Setup.Data, "upgrade", "project");
