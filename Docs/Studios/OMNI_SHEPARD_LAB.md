@@ -140,7 +140,7 @@ same treatment as the Mass (they share one profile).
 
 | Piece | What changed |
 |---|---|
-| `CrystalPoseJitter.cs` (new, `Utility/`) | Pure maths. `SeedOf(spawn position)` quantizes to 1 cm and murmur-mixes, so every client poses the same crystal the same way with nothing networked. `Pose(seed, amount)` is a uniformly random rotation (Shoemake's quaternion from the first three draws of the lab's `mulberry32`, ported bit for bit), scaled toward identity about its own axis. JS twin: `shoemake()` / `poseOfSeed()`. |
+| `CrystalPoseJitter.cs` (new, `Utility/`) | Pure maths. `SeedOf(spawn position)` quantizes to 1 cm and murmur-mixes, so every client poses the same pickup the same way with nothing networked (crystals are local and a pickup spawns at the same place everywhere; a lifeform's heart is posed from where its host stands on the frame it enables, so two clients can turn one heart differently, which is cosmetic). `Pose(seed, amount)` is a uniformly random rotation (Shoemake's quaternion from the first three draws of the lab's `mulberry32`, ported bit for bit), scaled toward identity about its own axis. JS twin: `shoemake()` / `poseOfSeed()`. |
 | `CrystalDepthPrisms.cs` | Gathers the crystal's models once in Awake: every sibling under the crystal root with a renderer, itself included, never the root (the round-8 free turn's rule). On the first frame after enable, it turns them about the root's origin to the crystal's pose. It waits for that frame because a pooled crystal is enabled before it is moved. The authored pose comes back on disable. The body search for the omni's holes reuses the same list. |
 | `CrystalDepthPrismProfileSO` / `.asset` (generated) | `reseatDepth` −0.8 → **−0.87**; new `orientationJitter` **1** (Header "Variety"). `author_omni_crystal_triangles.py` `DEPTH_PROFILE_VALUES`. |
 | `DepthRatchetTests.cs` (new) | The three pure ratchet tests moved here from `CrystalDepthPrismTests` (no editor dependencies), plus four new ones (seven methods, ten cases): the pose is identity at 0, the same for the same spawn and different one pickup along; it matches the lab at four seeds; it is uniform (4,000 spawns); and **a row of eight posed crystals under an orbiting camera keeps both promises**, with local depth equal to world depth to 1e-5. |
@@ -165,6 +165,8 @@ crystals seen at strong perspective. −0.9 would remove it at the cost of fewer
 - `crystal_depth_harness`: 10/10 headless. Mutants each fail: a ratchet that reseats 0.3 shallower (2 tests),
   and a pose with the quaternion sign dropped (the lab-parity test).
 - Extractor `--check` OK, `--self-test` 16/16. Omni generator `--check` OK. `verify_lab.cjs` PASS.
+- Re-run at ship (2026-10-13, after F1–F4): `runFieldBatch()` reproduces the table above exactly; extractor
+  `--check` OK and `--self-test` 17/17 (F3 added one); `verify_lab.cjs` PASS and `--self-test` OK.
 
 **Not modelled:** crystals hiding each other (only their own prisms hide a reseat), fog, LOD, culling,
 and a ratchet that skips frames on distant crystals.

@@ -10,8 +10,10 @@ namespace CosmicShore.Utility
     /// to its own pose keeps the depth rule exact and breaks the sameness (measured: neighbours' rendered images
     /// correlate 0.60 at 250 u with every crystal alike, 0.12 with a random pose each).
     ///
-    /// Seeded from the SPAWN POSITION, so every client turns the same crystal the same way without anything on
-    /// the network, and a pooled crystal respawned somewhere else takes a new pose. Pure maths, no Unity state.
+    /// Seeded from the SPAWN POSITION, so every client turns a crystal spawned at the same place the same way
+    /// without anything on the network (a heart riding a lifeform is seeded wherever its host stands that frame,
+    /// so clients may disagree on it - cosmetic), and a pooled crystal respawned elsewhere takes a new pose.
+    /// Pure maths, no Unity state.
     ///
     /// JS twin: <c>instRandom()</c> / <c>jitterOf()</c> in <c>Docs/Studios/OmniShepardLab.html</c> (the lab
     /// seeds from the crystal's index instead; the stream and the rotation it draws are the same). Change one,
