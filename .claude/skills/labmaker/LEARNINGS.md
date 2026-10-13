@@ -336,6 +336,13 @@ Entries are grouped by family; within a family, the newest goes at the bottom.
 - Evidence: `_ArcClock` in `ChargeCrystal.shader` / `OmniChargeEdgesShader.shader`; `ElementalConverterView.StageOrigin`; `OmniCombineConfigSO.omniWorldRadius`.
 - Promoted: no
 
+### L-STU-38 — A graduated lab that reads ANOTHER generator's mesh breaks when that generator bakes something new into it
+- Lab: Omni Combine Lab → the Elemental Converter, `/ship` merge · Branch: `cece/eager-rubin-km7qyn` · Date: 2026-10-13
+- What happened: the converter's generator fits the game's `MassCrystalPrisms` / `OmniCrystalTriangles` onto the art file's plates. A parallel branch (Omni Shepard round 10) baked the prisms' thickness into those meshes and set the materials to `_Thickness 1`. The merge was clean; the generator's `--check` failed with "misses the omni's triangles by 5.33e-01". Had it not been gated, the converter would have drawn the Mass prisms thin, then double-thick at hand-off.
+- Do instead: when a lab's generator reads a mesh another generator owns, IMPORT that owner's constants (`author_omni_crystal_triangles.DEPTH_THICKNESS`, `author_mass_crystal_look.MASS_DEPTH_THICKNESS`); never copy the numbers. Undo the owner's transform exactly, and gate the inverse against something it cannot fake. Here the top face is fixed, so the mesh's highest corner must sit at the material's `_TopHeight`, and the thin triangles must land on the art omni within 1e-4. Add a negative control for a wrong constant. Re-run every such generator's `--check` after each merge of the base: the break shows there, not as a conflict.
+- Evidence: `read_prisms()` in `Tools/Build/author_omni_combine_asset.py` and its "wrong baked thickness is refused" self-test; `depth.massThickness` / `depth.omniThickness`; `OmniCombinePlayer.DepthShape.Of(..., baked)`. The recovered thin Mass matched the pre-bake data to 1e-5.
+- Promoted: no
+
 ---
 
 ## NCA — swarm / neural-CA research rigs (Tools/NCA)
