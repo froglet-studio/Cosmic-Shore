@@ -71,8 +71,9 @@ noise of the centreline.
   Rhino hull now raises none, which is accurate.
 - **`RHINO_SHIELD_SWIPE.md`**'s "parked sword == hull" debris parity no longer applies to the Rhino:
   its hull makes no debris.
-- **FLEET_MAPS.md**'s Rhino Space-5 proposal ("Breaker — ramming destroys shielded prisms") assumed a
-  destroying ram. It is still only a proposal; it needs re-cutting before anyone builds it.
+- **The Rhino's Space-5, Breaker**, was proposed as "ramming destroys shielded prisms". With no
+  destroying ram it was re-cut (Garrett, 2026-10-13) onto the sword: a shielded prism takes one
+  slice instead of two (`RHINO_ENERGY_SWORD.md`, `FLEET_MAPS.md`).
 
 ## In-editor verification
 

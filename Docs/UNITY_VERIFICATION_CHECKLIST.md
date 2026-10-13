@@ -65,6 +65,20 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Rhino Space-5 "Breaker" — the sword cuts shielded prisms in one slice (`cece/magical-meitner-56obj5`, 2026-10-13) — NOT EDITOR-VERIFIED
+
+**What landed:** `RhinoSkimmerDamagePrismEffectSO.breakerElement` (authored `Space`). While
+`IsUpgradeActive(Space)`, a SHIELDED prism's shield is shed and its core cut in the same sword hit;
+below the upgrade the first hit pops the shield and the second kills, as before. Super-shielded
+mass is unchanged (energized blade only). The map's Space entry names the upgrade; its ability slot
+stays open.
+
+**Verify:** (1) Rhino below Space 5: slice a shielded prism — shield pops, prism survives; slice
+again — it dies. (2) Raise Space to 5 (comeback or the element charger toy): one slice sheds the
+shield and cuts the prism; the sword banks energy for the kill. (3) Super-shielded prism at Space 5
+with a non-energized blade still binds. (4) MPPM two clients: with the upgrade active on one Rhino,
+both clients see the prism die in one slice.
+
 ### 🔴 Rhino hull plough — rammed prisms are shoved aside, not destroyed (`cece/magical-meitner-56obj5`, 2026-10-13) — NOT EDITOR-VERIFIED
 
 **What landed:** `RhinoPloughPrismEffectSO` replaces `VesselDamagePrismEffect` in
