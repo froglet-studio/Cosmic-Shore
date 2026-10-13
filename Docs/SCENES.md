@@ -76,6 +76,8 @@ stays, because the CoOp Wildlife Blitz scene runs on `OnlineDuelForTheCellContro
 | **MinigameRedline** | `_Scenes/Multiplayer Scenes/` | `Redline (53)` | `RedlineController` |
 | **MinigameGrizzlyCharge** | `_Scenes/Singleplayer Scenes/` | `GrizzlyCharge (62)` | `DogFightController` |
 | **MinigameGrizzlyTime** | `_Scenes/Multiplayer Scenes/` | `GrizzlyTime (63)` | `GrizzlyTimeController` |
+| **MinigameSlingshot** | `_Scenes/Multiplayer Scenes/` | `Slingshot (64)` | `SlingshotController` |
+| **MinigameWarpline** | `_Scenes/Multiplayer Scenes/` | `Warpline (65)` | `WarplineController` |
 | **MinigameRegatta** | `_Scenes/Multiplayer Scenes/` | `Regatta (56)` | `RegattaController` |
 | **MinigameBroadside** | `_Scenes/Multiplayer Scenes/` | `Broadside (57)` | `BroadsideController` |
 | **MinigameWaystation** | `_Scenes/Multiplayer Scenes/` | `Waystation (58)` | `WaystationController` |
@@ -311,6 +313,8 @@ MiniGameControllerBase (abstract, NetworkBehaviour)
 | 53 | `Redline` | MP | MinigameRedline | `RedlineController` (Manta circuit race — see `REDLINE.md`) |
 | 62 | `GrizzlyCharge` | MP | MinigameGrizzlyCharge | `DogFightController` (Grizzly proving ground — a Dog Fight clone in the Boneyard) |
 | 63 | `GrizzlyTime` | MP | MinigameGrizzlyTime | `GrizzlyTimeController` (Grizzly bomb-jump circuit race — see `GRIZZLYTIME.md`) |
+| 64 | `Slingshot` | MP | MinigameSlingshot | `SlingshotController` (Stoat wormhole-sling circuit race — see `SLINGSHOT.md`) |
+| 65 | `Warpline` | MP | MinigameWarpline | `WarplineController` (the Stoat's time race on the field dipole — see `WARPLINE.md`) |
 | 56 | `Regatta` | MP | MinigameRegatta | `RegattaController` (the ARENA race — every playable hull on a rail circuit; see `REGATTA.md`) |
 | 57 | `Broadside` | MP | MinigameBroadside | `BroadsideController` (the ARENA brawl — seven hulls, each with its own weapon, priced per VERB; see `BROADSIDE.md`) |
 | 58 | `Waystation` | MP | MinigameWaystation | `WaystationController` (Butterfly migration race — clusters you weave, folds between them; a teleport threads nothing. See `WAYSTATION.md`) |
@@ -564,7 +568,7 @@ Turn monitors determine when a turn ends. They are scene-placed components manag
 | `WildlifeKillTurnMonitor` | `TurnMonitors/` | A domain's summed creature kills reach the Wildlife Liberation target |
 | `DogFightPointTurnMonitor` | `TurnMonitors/` | A domain's summed gunnery points reach the Dog Fight target |
 | `SalvoPrismTurnMonitor` | `TurnMonitors/` | A domain's summed hostile-prism destruction reaches the Salvo target |
-| `RaceGateTurnMonitor` | `Arcade/Racing/` | A domain's LEAD RUNNER threads every gate of the course (Switchback, Headlong, Breakwater, Skein, Redline, Grizzly Time, Regatta, Waystation). Was `SwitchbackGateTurnMonitor` |
+| `RaceGateTurnMonitor` | `Arcade/Racing/` | A domain's LEAD RUNNER threads every gate of the course (Switchback, Headlong, Breakwater, Skein, Redline, Grizzly Time, Slingshot, Warpline, Regatta, Waystation). Was `SwitchbackGateTurnMonitor` |
 | `HijackStealTurnMonitor` | `TurnMonitors/` | A domain's summed prisms STOLEN reach the Hijack target |
 | `TollwayTollTurnMonitor` | `TurnMonitors/` | A domain's summed TOLLS reach the Tollway target |
 | `WreckingBallPrismTurnMonitor` | `TurnMonitors/` | A domain's summed hostile prisms destroyed (ball + plate) reach the Wrecking Ball target |

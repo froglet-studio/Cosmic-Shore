@@ -1,0 +1,33 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 718ab284216644d9bcac0c1b3c0330bd, type: 3}
+  m_Name: MouseOrbitCameraConfig
+  m_EditorClassIdentifier: Assembly-CSharp::CosmicShore.ScriptableObjects.MouseOrbitCameraConfigSO
+  panButton: 1
+  orbitButton: 0
+  zoomDragButton: 2
+  altTurnsPanIntoOrbit: 1
+  lockCursorWhileOrbiting: 1
+  panSpeed: 1
+  keyboardPanSpeed: 0.9
+  orbitDegreesPerPixel: 0.25
+  keyboardOrbitDegreesPerSecond: 90
+  minPitch: -85
+  maxPitch: 85
+  wheelZoomStep: 0.15
+  zoomTowardCursor: 1
+  dragZoomPerPixel: 0.006
+  minDistance: 5
+  maxDistance: 20000
+  smoothing: 14
+  fastMultiplier: 3
+  farClipMargin: 5000
