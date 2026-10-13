@@ -524,3 +524,88 @@ public class CloneDeepCopyTests
         Assert.Same(f.InTreePart, f.Rig.partList[0]);
     }
 }
+
+// A [Serializable] STRUCT holding references is inlined by the original engine like a plain class,
+// and Instantiate points those references at the clone. The port used to copy every struct as a
+// value, so a cloned vessel's HUD kept its ability-icon bindings (VesselHUDView.abilityIcons, a
+// List of structs) aimed at the TEMPLATE's icons: AbilityLockupView then pulled the template's
+// buttons into the clone's row and left the clone's own, gauge and all, at screen centre (the grey
+// square in the Thresher and Urchin freestyle HUDs, 2026-10-13).
+public class CloneStructReferenceTests
+{
+    [Serializable]
+    public struct IconBinding
+    {
+        public int element;
+        public Transform icon;
+        public Transform gauge;
+    }
+
+    [Serializable]
+    public struct Outer
+    {
+        public IconBinding inner;
+        public float weight;
+    }
+
+    [Serializable]
+    public class Holder
+    {
+        public IconBinding binding;
+    }
+
+    public class BindingView : MonoBehaviour
+    {
+        public List<IconBinding> list = new();
+        public IconBinding[] array = Array.Empty<IconBinding>();
+        public IconBinding single;
+        public Outer nested;
+        public Holder holder = new();
+        public Vector3 plainValue;
+    }
+
+    [Fact]
+    public void Instantiate_RemapsReferencesInsideStructs_InEveryShape()
+    {
+        using var loop = new GameLoop();
+        var root = new GameObject("Hud");
+        root.SetActive(false);
+        var icon = new GameObject("ChargeIcon").transform;
+        icon.SetParent(root.transform, false);
+        var gauge = new GameObject("Gauge").transform;
+        gauge.SetParent(root.transform, false);
+        var outside = new GameObject("Elsewhere").transform;
+
+        var view = root.AddComponent<BindingView>();
+        var binding = new IconBinding { element = 1, icon = icon, gauge = gauge };
+        view.list.Add(binding);
+        view.list.Add(new IconBinding { element = 2, icon = outside });
+        view.array = new[] { binding };
+        view.single = binding;
+        view.nested = new Outer { inner = binding, weight = 2f };
+        view.holder.binding = binding;
+        view.plainValue = new Vector3(1, 2, 3);
+
+        var clone = Object.Instantiate(root);
+        var cv = clone.GetComponent<BindingView>();
+        var cloneIcon = clone.transform.Find("ChargeIcon");
+        var cloneGauge = clone.transform.Find("Gauge");
+
+        Assert.Same(cloneIcon, cv.list[0].icon);
+        Assert.Same(cloneGauge, cv.list[0].gauge);
+        Assert.Equal(1, cv.list[0].element);
+        Assert.Same(outside, cv.list[1].icon);            // outside the tree: kept, as in Unity
+        Assert.Same(cloneIcon, cv.array[0].icon);
+        Assert.Same(cloneIcon, cv.single.icon);
+        Assert.Same(cloneGauge, cv.single.gauge);
+        Assert.Same(cloneIcon, cv.nested.inner.icon);
+        Assert.Equal(2f, cv.nested.weight);
+        Assert.Same(cloneIcon, cv.holder.binding.icon);
+        Assert.Equal(new Vector3(1, 2, 3), cv.plainValue);
+
+        // The template is untouched.
+        Assert.Same(icon, view.list[0].icon);
+        Assert.Same(icon, view.single.icon);
+        Assert.Same(icon, view.nested.inner.icon);
+    }
+}
