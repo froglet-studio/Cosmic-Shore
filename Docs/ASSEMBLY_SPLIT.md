@@ -136,7 +136,8 @@ the rename is what would have broken references.
 
 Verified before the boundary was drawn: no `internal` members, no `partial` types, no
 extension-method use crossing it; no Editor-only code in the folder; and the one other
-first-party asmdef (`CosmicShore.PlayFabTests`) uses no `Data` type.
+first-party asmdef at the time (`CosmicShore.PlayFabTests`, deleted since with PlayFab) used no
+`Data` type.
 
 **Known wart, not fixed here:** `RoundStats.cs` is a 900-line `NetworkBehaviour` filed under
 `Data/Enums/`. It is the only reason this assembly references Netcode at all. Relocating it is
@@ -222,7 +223,8 @@ Tests still live under `Editor/` folders and **that is still correct today** —
 What changes as the split proceeds: a test that touches **only extracted assemblies** can
 have a real test asmdef, referencing those assemblies plus the test-runner assemblies. That
 is a phase-2 win and should be taken per-suite as its dependencies come out, never as a
-project-wide flip. `CosmicShore.PlayFabTests` is already this shape and shows the pattern.
+project-wide flip. (`CosmicShore.PlayFabTests` was this shape until it was deleted with PlayFab;
+there is currently no suite in the tree that shows the pattern.)
 
 ---
 

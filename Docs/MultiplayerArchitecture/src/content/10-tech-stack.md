@@ -16,7 +16,7 @@ Reflex for dependency injection.
 | Async | **UniTask** (`com.cysharp.unitask`) — with the project's `.AsMainThread()` boundary helper |
 | Dependency injection | **Reflex 14.1.0** — `AppManager` is the root installer |
 | Cross-system state | **SOAP** (Obvious.Soap) — `ScriptableVariable` / `ScriptableEvent` |
-| Backend | PlayFab, Firebase, UGS (Analytics, CloudSave, Leaderboards) |
+| Backend | UGS (Analytics, CloudSave, Leaderboards) |
 
 ## The UGS services, in depth
 

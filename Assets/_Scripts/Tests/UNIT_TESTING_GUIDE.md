@@ -11,7 +11,7 @@
 | `EnumIntegrityTests` | `VesselClassType`, `Domains`, `GameModes`, `Element`, `ShipActions`, `ResourceType` | Unity serializes enums by int value. If someone reorders members, every SO/prefab/save silently points to the wrong value. |
 | `EnumIntegrityExtendedTests` | `CaptainLevel`, `CSLogLevel`, `InputEvents`, `ShipCameraOverrides`, `CrystalImpactEffects`, `TrailBlockImpactEffects`, `SkimmerStayEffects`, `ShipImpactEffects`, `UserActionType` | `CaptainLevel` maps to PlayFab IAP product IDs. A shift = wrong purchase applied. |
 | `ResourceCollectionTests` | `ResourceCollection` struct (Mass/Charge/Space/Time) | Flows through damage, scoring, ability costs. Constructor order bug = silent data corruption. |
-| `XpDataTests` | `XpData` struct | Serialized to JSON for PlayFab. Field reorder = XP assigned to wrong element. |
+| `XpDataTests` | `XpData` struct | Field reorder = XP assigned to wrong element. |
 | `PartyPlayerDataTests` | `PartyPlayerData` struct | SOAP event payload + HashSet/Dictionary key. Equality by PlayerId only. Break = party removal fails. |
 | `PartyInviteDataTests` | `PartyInviteData` struct | Invite payload through SOAP events. Field loss = failed party join. |
 | `ShipModifierTests` | `ShipThrottleModifier`, `ShipVelocityModifier` | Applied every frame. Constructor field swap = 2-second boost lasts 500 frames. |
@@ -58,10 +58,6 @@
 | `BenchmarkHistoryTests` | History persistence and retrieval. |
 | `BenchmarkReportTests` | Report formatting and output. |
 | `MetricDeltaTests` | Metric delta calculations between runs. |
-
-### PlayFab Tests — 1 file (stub)
-
-`PlayFabCatalogTests` — placeholder with trivial assert.
 
 ---
 
@@ -166,10 +162,9 @@ SO tests create instances in SetUp and DestroyImmediate in TearDown. No asset po
 | `CosmicShore.Tests.EditMode` | `Assets/_Scripts/Tests/EditMode/` (no .asmdef — compiles in default assembly) |
 | `CosmicShore.Bootstrap.Tests` | `Assets/_Scripts/System/Bootstrap/Tests/` (no .asmdef) |
 | `CosmicShore.Multiplayer.Tests` | `Assets/_Scripts/Controller/Multiplayer/Tests/` (no .asmdef) |
-| `CosmicShore.PlayFabTests` | `Assets/_Scripts/System/Playfab/PlayFabTests/` (has .asmdef) |
 | `CosmicShore.Benchmark.Tests` | `Assets/_Scripts/Utility/PerformanceBenchmark/Tests/Editor/` (no .asmdef) |
 
-Note: Most test directories compile in Unity's default assembly. Only `PlayFabTests` has an explicit `.asmdef`.
+Note: every test directory compiles in Unity's default assembly; none has an explicit `.asmdef`.
 
 ---
 
@@ -181,4 +176,3 @@ Note: Most test directories compile in Unity's default assembly. Only `PlayFabTe
 - **Vessel actions** — 40+ VesselActionSO types untested
 - **Input system** — IInputStrategy implementations, InputController strategy switching
 - **Pool system** — GenericPoolManager async buffer maintenance
-- **PlayFab tests** — placeholder only

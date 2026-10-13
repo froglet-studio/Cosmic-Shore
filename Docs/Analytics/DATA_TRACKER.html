@@ -168,7 +168,7 @@
   <div class="cat-header"><span class="cat-pill c-eng">D · Engagement &amp; Retention</span><span class="cat-title">Why the player comes back</span></div>
   <table class="t">
     <tr><th>Data</th><th>Store · writer</th><th>Updated when</th><th>Status</th></tr>
-    <tr><td class="k">Daily challenge (TicketBalance, GameMode, Intensity, HighScore, 3× reward tiers)</td><td class="w">PlayerPrefs + PlayFab (CatalogManager tickets, DailyRewardHandler) · DailyChallengeSystem</td><td>DEFERRED — coupled to the disabled PlayFab economy; revisit when PlayFab is reworked. Repo (DAILY_CHALLENGE) is wired and ready.</td><td><span class="st st-pending">DEFERRED</span></td></tr>
+    <tr><td class="k">Daily challenge (TicketBalance, GameMode, Intensity, HighScore, 3× reward tiers)</td><td class="w">PlayerPrefs (CatalogManager tickets, DailyRewardHandler) · DailyChallengeSystem</td><td>DEFERRED — coupled to the legacy economy, which has had no backend since PlayFab was removed; revisit when it moves to UGS. Repo (DAILY_CHALLENGE) is wired and ready.</td><td><span class="st st-pending">DEFERRED</span></td></tr>
     <tr><td class="k">Favorited minigames</td><td class="w">today: game_favorites.data (local file) → target: cloud · FavoriteSystem</td><td>Migration HELD for Unity review (no cloud key/model yet — folded into the held migration pass).</td><td><span class="st st-pending">migration held</span></td></tr>
     <tr><td class="k">Quest phase / completion</td><td class="w">QuestGraphRunner + FTUEEventManager (emits no analytics; QuestSystem/UserJourneySystem are deleted)</td><td>On matching UserAction (view screen, play game…)</td><td><span class="st st-planned">PLANNED · P2 (event only)</span></td></tr>
   </table>

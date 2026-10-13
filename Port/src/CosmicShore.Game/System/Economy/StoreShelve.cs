@@ -1,5 +1,6 @@
-// Ported from Assets/_Scripts/System/Playfab/Economy/StoreShelve.cs (Store unit
-// 2026-07-10) — verbatim; no using substitutions needed.
+// Ported from Assets/_Scripts/System/Economy/StoreShelve.cs (Store unit 2026-07-10;
+// path follows upstream's move into System/Economy/) — verbatim; no using
+// substitutions needed.
 using System;
 using System.Collections.Generic;
 

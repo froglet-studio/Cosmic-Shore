@@ -147,7 +147,7 @@ last 100 lines of `Player.log` for any failure.
 compile fix). **Why a gate, and why separate from the Windows build:** iOS is a fresh
 IL2CPP target that has never produced a running build; a platform-only compile error is
 invisible in the Editor and on the Windows player.
-1. Produce an **iOS build** (or take the unsigned ipa this branch's CI produced). Record
+1. Produce an **iOS build** (or install the latest TestFlight build). Record
    whether the build itself completes.
 2. Install and launch on an iOS device. Sign in and reach `Menu_Main`.
 3. Read the device log afterwards.
