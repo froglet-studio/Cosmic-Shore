@@ -65,6 +65,20 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 EditMode triage of the 14 failures new on 2026-10-13 (`claude/compassionate-hopper-rqat4d`, 2026-10-13) — NOT EDITOR-VERIFIED
+
+No editor and no `unity` CLI in the authoring session, so `/verify-unity` did NOT run. The full per-suite record (verdict, cause, commit) is `Docs/QA/DEV_TASKS.md` DT-003. Offline proof: `unity_refcompile` player + editor configs 0 errors in project code (a planted CS0103 failed the editor config); headless runs of the real RearViewLaw / FollowHeightScale / SpeedTunnelLaw test files against the real camera controller and law source (red on bleeding-edge, green here, mutants red); `slingshot_course_harness` 1,600/1,600; `author_stoat` / `author_slingshot` / `author_warpline` / `author_wormholes --check`, `render_card_backgrounds --check` (33/33) and `author_card_backgrounds --strict`.
+
+**What landed:** test fixes in StoatSlingTests, BlackHoleTests, WeeklyChallengeTests, OmniCombineTests, RearViewLawTests and FollowHeightScaleTests; the SpeedTunnel law gate (`SpeedTunnelLawSource`) now admits the warp field's `Speed / warp`; `SlingshotCourse.StoatTurnScaler` 120 → 48 (Slingshot and Warpline corners re-cut, both card backgrounds re-rendered); Menu_Main's Cell Selector lists the Crystal Wormhole cell again (`CellConfigs[13]`); four Stoat entries in `CrystalHullFusionConfig` that reuse the Squirrel's bakes.
+
+**Verify in editor**
+1. Test Runner ▸ EditMode ▸ Run All: expect the **23** failures DT-003's baseline names (24 if `CrystalHullFusionBakeTests.ShippedBakes_AreCurrent` is still red; if it is, paste its message into DT-003).
+2. Menu_Main ▸ fly the Cell Selector toy: the *Crystal Wormhole* mini-cell is offered, and picking it builds the cell (`Docs/CRYSTAL_WORMHOLE.md` §"Untested in the editor").
+3. Slingshot and Warpline at intensity 2 and 4 in a Stoat: every corner is makeable at cruise without the dipole (the floors are now 286 / 215 u against a 72 u cruise pivot). Then judge whether the wider course still asks for the poles. The constants were cut for the sling, and the dipole now flies the triggers.
+4. Crystal Wormhole cell in a Stoat: collect each elemental crystal and confirm the fusion plays (one stale warning per element is expected, as on the Scarab, `CRYSTAL_HULL_FUSION.md` §13).
+
+---
+
 ### 🔴 Phone menu: screen strip lands inside the safe area, taps survive touch, no SetResolution on mobile (`claude/serene-edison-lfv24f`, 2026-10-12) — NOT EDITOR-VERIFIED
 
 Reported from the first TestFlight build on an iPhone, and reproduced by the tester in the Editor at

@@ -206,8 +206,13 @@ namespace CosmicShore.Tests
             Assert.GreaterOrEqual(config.InfluenceRadius(20f), config.InfluenceRadius(10f));
             Assert.Greater(config.InfluenceRadius(10f), config.HorizonRadius(10f),
                 "the influence radius must enclose the horizon, or nothing can ever be admitted.");
-            Assert.LessOrEqual(config.InfluenceRadius(100000f), config.MaxInfluenceRadius,
+            // The cap bounds the PULL's reach: a typo in strength on a hole of ordinary size never queries past it.
+            Assert.LessOrEqual(config.InfluenceRadius(100000f, config.HorizonRadius(10f)), config.MaxInfluenceRadius,
                 "the influence radius is not capped — an operator's typo would query the whole arena every frame.");
+            // Only the horizon's own shell outranks the cap (BlackHoleConfigSO.InfluenceRadius, "never inside
+            // 1.5 horizons, even when that exceeds the cap"): a hole whose horizon is past the cap still pulls it.
+            Assert.AreEqual(1.5f * config.HorizonRadius(100000f), config.InfluenceRadius(100000f), 1f,
+                "past the cap, the influence radius must be exactly the 1.5-horizon shell, not the uncapped pull.");
         }
 
         [Test]

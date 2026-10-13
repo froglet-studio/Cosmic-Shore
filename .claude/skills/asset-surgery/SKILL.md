@@ -3449,6 +3449,14 @@ never fold it into a fix for something else.
   only when the base is byte-identical and the diff is purely additive (the Sparrow animator
   controller was; the Sparrow prefab was NOT — it had swapped the visible model, which trunk
   must not).
+- **A port that skips a hunk because "the asset it names is gone" must resolve the GUID, not the
+  name.** The Stoat port (`16b41b045`) left out the source branch's Cell Selector entry in
+  Menu_Main, reasoning that it named a "Black Hole cell" the branch no longer carried. That cell had
+  been RENAMED to the Crystal Wormhole Cell with its guid kept (`git log --name-status` shows
+  `R100`), so the entry named the very config the port brought over. The cell then sat selectable
+  by nothing until `CrystalWormholeTests` went red. Before dropping a hunk as dangling, grep the
+  hunk's `guid:` against the source branch's `.meta` files (`git grep <guid> <branch> -- '*.meta'`).
+  A hit means the reference is live, whatever the folder is called now.
 
 - **`$` in a .NET regex does NOT match before `\r`, so every line-anchored pattern
   fails on a Windows checkout.** In multiline mode `$` matches before the `\n` but
