@@ -35,6 +35,8 @@ namespace CosmicShore.Gameplay
             public float score;
             public List<float> collectionTimes = new();
             public string policy = "";
+            public string difficulty = "";   // the lobby AI difficulty this AI seat flew
+            public int mistakes;             // crystals it misjudged on purpose (Easy / Medium)
             public int recoveries;
             public int speedLossEvents;
             public int stallEvents;
@@ -93,6 +95,9 @@ namespace CosmicShore.Gameplay
 
         /// <summary>Also write a 10 Hz per-AI-seat trace (CSV) beside the results file.</summary>
         public bool TraceFrames;
+        // Each seat's record by player name: SampleSeats runs every frame for every player, and a
+        // List.Find with a lambda there allocated a closure per player per frame.
+        readonly Dictionary<string, SeatRecord> _seatByName = new();
         float _nextTrace;
         readonly System.Text.StringBuilder _trace = new();
 
@@ -155,11 +160,13 @@ namespace CosmicShore.Gameplay
                 startedUtc = DateTime.UtcNow.ToString("o", System.Globalization.CultureInfo.InvariantCulture),
             };
 
+            _seatByName.Clear();
             foreach (var p in _gameData.Players)
             {
                 if (p == null) continue;
                 var seat = new SeatRecord { name = p.Name, isAI = p.IsInitializedAsAI, domain = p.Domain.ToString() };
                 _race.seats.Add(seat);
+                _seatByName[p.Name] = seat;
                 _lastCount[p.Name] = p.RoundStats != null ? p.RoundStats.CrystalsCollected : 0;
                 var go = p.Vessel?.Transform != null ? p.Vessel.Transform.gameObject : null;
                 var pilot = go != null ? go.GetComponent<SkimRacePilot>() : null;
@@ -168,6 +175,7 @@ namespace CosmicShore.Gameplay
                     if (TraceFrames && _pilots.Count == 0) WriteProbe(p, pilot);
                     _pilots[p.Name] = pilot;
                     seat.policy = pilot.Config != null ? pilot.Config.PolicyVersion : "";
+                    seat.difficulty = AIDifficultyRules.Resolve(_gameData.RequestedAIDifficulty).ToString();
                     if (string.IsNullOrEmpty(_race.aiDomain)) _race.aiDomain = p.Domain.ToString();
                 }
             }
@@ -180,8 +188,7 @@ namespace CosmicShore.Gameplay
             foreach (var p in _gameData.Players)
             {
                 if (p == null) continue;
-                var seat = _race.seats.Find(s => s.name == p.Name);
-                if (seat == null) continue;
+                if (!_seatByName.TryGetValue(p.Name, out var seat)) continue;
                 int c = p.RoundStats != null ? p.RoundStats.CrystalsCollected : 0;
                 if (_lastCount.TryGetValue(p.Name, out int last) && c > last)
                     for (int k = last; k < c; k++) seat.collectionTimes.Add(now);
@@ -205,6 +212,7 @@ namespace CosmicShore.Gameplay
                 if (_pilots.TryGetValue(p.Name, out var pilot) && pilot != null && pilot.Driver != null)
                 {
                     seat.recoveries = pilot.Driver.Recoveries;
+                    seat.mistakes = pilot.Driver.Handicap != null ? pilot.Driver.Handicap.Mistakes : 0;
                     if (TraceFrames) NoteBoostReset(now, p, st, c, pilot);
                     if (TraceFrames && now >= _nextTrace) AppendTrace(now, p.Name, pilot);
                 }

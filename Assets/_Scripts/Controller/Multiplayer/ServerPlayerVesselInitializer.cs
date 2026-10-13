@@ -863,6 +863,7 @@ namespace CosmicShore.Gameplay
             CSDebug.LogVerbose(CSLogChannel.NetworkFlow,
                 $"[ServerVesselInit] Client {departedClientId} left mid-match - handing " +
                 $"'{player.NetName.Value}' to the AI so the ship stays in the arena and the score keeps counting.");
+            NetSessionRecorder.Mark("leaverToAI", player.NetName.Value.ToString());
 
             // Ownership: Netcode reassigns to the server under DontDestroyWithOwner, but say it
             // explicitly rather than depending on that - an object still owned by a client that no

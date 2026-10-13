@@ -534,10 +534,13 @@ Fix these DURING the migration (most disappear by construction under stamp+clock
     `d375b1129a0a4e29b505296c9e510bdc` lived only on its own `.meta` after
     `MinigameFreestyle.unity` was removed. Exclusive dependents deleted with
     it (`ShapeDrawingCrystalManager`, `EndShapeDetailHUD`, `ShapeScoreDisplay`,
-    `ShapeScoreData`). SOAP events `EventOnShapeGameModeStarted` /
-    `EventOnShapePrismReturnToPool` stay on live prism prefabs (inert; they
-    dump every listener to `Prism.ReturnToPool` — **never Raise them**; do not
-    strip the EventListeners). Do not reintroduce as a clock migration of
+    `ShapeScoreData`). SOAP event assets `EventOnShapeGameModeStarted` /
+    `EventOnShapePrismReturnToPool` are kept; their `EventListenerNoParam`
+    listeners on 8 prism prefabs were **stripped 2026-09** (they were only ever
+    raised by the deleted manager, and every prism instantiate paid to
+    serialize their UnityEvent lists — `Docs/archive/PERFORMANCE_LOG_2026.md` §0.11.6),
+    superseding the earlier "do not strip" note, which was a scope boundary
+    rather than a functional rule. Do not reintroduce as a clock migration of
     unreachable code.
 
 **Verified clean (no prism update path — do not re-audit)**: Rewind system, warp/flow

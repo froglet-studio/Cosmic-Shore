@@ -56,6 +56,7 @@ namespace CosmicShore.Gameplay
         bool _orbitLine;
         float _orbitTiming;
         StoatPathfinderDots _dots;
+        StoatPathfinderWorldDots _worldDots;
 
         /// <summary>One rival the Time-5 Foresight is drawing.</summary>
         sealed class Rival
@@ -211,6 +212,15 @@ namespace CosmicShore.Gameplay
         {
             var cam = ResolveCamera();
             if (!cam) { HideDots(); return; }
+            if (config.DotsInWorld)
+            {
+                if (_dots) _dots.Hide();
+                _worldDots ??= new StoatPathfinderWorldDots();
+                _worldDots.Draw(cam, _points, _path.Count, _jumps, _path.JumpCount,
+                    _path.Warped ? config.WarpedColor : config.OpenColor,
+                    config.WorldDotSize, config.WorldDotSpacing, config.WorldDotMinPixels);
+                return;
+            }
             if (!_dots) _dots = StoatPathfinderDots.Create(name);
             if (!_dots) return;
             if (_orbitLine)
@@ -372,6 +382,8 @@ namespace CosmicShore.Gameplay
         void OnDestroy()
         {
             if (_dots) Destroy(_dots.transform.root.gameObject);
+            _worldDots?.Dispose();
+            _worldDots = null;
             ClearForesight();
         }
     }

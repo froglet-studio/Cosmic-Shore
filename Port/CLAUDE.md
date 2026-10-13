@@ -4,6 +4,16 @@ The repository's root `CLAUDE.md` is about the Unity game. **This file is about 
 Amoebius, Froglet's own engine that runs the same game with no Unity. Both apply when you
 edit `Assets/_Scripts`, because the engine compiles those files live.
 
+**Name.** The engine is **Amoebius** (renamed from Prisma on 2026-10-09). The code followed on
+2026-10-12: `Amoebius.exe` and `Amoebius-Windows.zip`, `Library/Amoebius`, the `AMOEBIUS_*`
+environment variables, the `amoebius_*` MCP tools (server `amoebius-mcp`), the `/amoebius` skill, the
+`amoebius-*` workflows, class names (`AmoebiusBoard`, `AmoebiusTracks`), `AMOEBIUS001`, the data folder
+`%LOCALAPPDATA%/Amoebius`. Existing installs keep working: the old data folder is moved over, and
+`PrismaProject.json`, the `PRISMA_*` variables and `prisma-session` reports are still read. A few names
+still carry the old one (the `#prisma` page hash the studio pages read, `Tools/Build/prisma_party_scenarios/`,
+`docs/PRISMA_BOARD_SCHEDULER.md`); renaming those is its own change. The game's `Prism*` names are not
+the engine's and were never renamed.
+
 ## The one rule
 
 **The port never changes the Unity project.** Nothing under `Port/` is read by Unity, and the
@@ -39,6 +49,8 @@ the game uses that the engine lacks) belongs in `Port/src/CosmicShore.Engine` / 
 | `tests/` | `CosmicShore.Tests` (engine, xunit, ~70 s, no GPU) · `CosmicShore.Tests.Ported` (the game's EditMode tests) |
 | `docs/ARCHITECTURE.md` | How it all fits; read the section for the area you touch |
 | `docs/ROADMAP.md` | The milestones (gameplay parity, then Unity-free development), checkpoints, open gaps and ready prompts. Pick work from here |
+| `../Docs/MULTIPLAYER_START_HERE.md` | **Multiplayer's front door** (Unity and Amoebius): the owner's goals and rules, current state, the hand-test list, the ordered next steps. Read before `docs/MULTIPLAYER.md` |
+| `docs/MULTIPLAYER.md` | Online play and its test tools: licensing (why NGO's code is not used), backends (UGS from our engine, own servers, Steam), the network simulator, stats, faults, the MULTIPLAYER panel, the UDP transport, the relay (Unity Relay's protocol, our relay server) and UGS sign-in. Read before touching `Networking/` |
 | `docs/ARCHITECTURE_REVIEW_2026-10-06.md` | The architecture review's 20 items: what was checked, decided (with reasons) and measured. Read it before reopening one of those questions |
 
 ## Who works where
@@ -69,6 +81,13 @@ a **done when** criterion, the check that proves it: `amoebius_board_suggest` re
 that came from the tracks is verified by them (not seen in 3 runs through its scene marks it MET; a
 relapse reopens it). Tools: `amoebius_tracks` (read this before asking what is wrong), `amoebius_board`,
 `amoebius_board_suggest`. Code: `src/Shared/AmoebiusTracks.cs`, `src/Shared/AmoebiusBoard.cs`.
+Several writers share `board.json` (Amoebius.exe and every `amoebius-mcp`): a save re-reads it and merges
+card by card (`src/Shared/Workspace/BoardMerge.cs`, cards matched by `Uid`), Amoebius pulls other writers'
+changes in once a second, and an unreadable file is copied to `board.json.corrupt-*` before anything
+replaces it. The scheduler's UI-free logic (quick add, TODAY/UPCOMING queries, repeat rules) lives in
+`src/Shared/Workspace/` - linked into the launcher, the MCP server and the tests, never a project of its
+own (the launcher's UPDATE builds only `CosmicShore.Launcher`, `Shared` and `Directory.Build.props`).
+Details, the quick-add syntax, Windows test steps and the roadmap: `docs/PRISMA_BOARD_SCHEDULER.md`.
 
 ## The editor (M2): tools, data sets, models - not a hierarchy
 
@@ -92,7 +111,10 @@ With the **amoebius MCP server** (preferred - see below), the loop is tools:
 3. `game_start` - boots the real game with a control port (under xvfb on a display-less server).
 4. Look and act (and read `amoebius_tracks` first when chasing a reported problem): `game_screenshot`, `game_state`, `game_input` ("click X,Y", "type pilot",
    "key Enter", "hold W 60", "scroll X,Y -3", "drag X,Y X,Y 8"), `game_wait`, `game_find`, `game_hierarchy`, `game_get` /
-   `game_set`, `game_ui_at`, `game_dump_ui`, `game_logs`, `game_load_scene`.
+   `game_set`, `game_ui_at`, `game_dump_ui`, `game_logs`, `game_load_scene`. For multiplayer, the
+   `net_*` tools start and drive up to four players at once (`net_players`, `net_input`,
+   `net_command`, `net_sim`, `net_fault`, `net_stats`, `net_logs`, `net_scenario`;
+   `docs/MULTIPLAYER.md` §6.5).
 5. `game_stop`, then `engine_test` and `unity_isolation_check` before committing.
 
 When something that used to work is broken, `amoebius_bisect` (good, bad, check) finds the commit:
@@ -126,6 +148,12 @@ An unattended run without a port: `--frames N --shot F:out.png --do "F:click X,Y
   username. `profile` in `game_start` picks a save slot (a new name is a first-time user; reuse a
   name to skip them). Never accept consent on the user's behalf unless asked. Offline (`COSMIC_SHORE_NET=off`) and silent
   (`COSMIC_SHORE_AUDIO=off`) are the MCP defaults.
+- **Multiplayer between games goes through Amoebius's online server** (lobby + relay,
+  `docs/ARCHITECTURE.md` §8). With networking on and no server named, the first game hosts one and
+  the others find it by LAN discovery; `COSMIC_SHORE_NET_SERVER=host[:port]` (`game_start` `server`)
+  names one, `CosmicShore --server` runs one alone. Every player needs their own profile
+  (`COSMIC_SHORE_PROFILE`): two games with one player id replace each other on the server. A match
+  starts only when every player presses the HUD's GO (the ReadyButton), not when GO appears.
 - **Under xvfb, rendering is software**: a few frames per second. `game_wait 600` is minutes.
   Use `headless: true` when you need no pictures - it ticks as fast as the CPU allows.
 - **Unity injects Reflex before Awake/OnEnable**, with the scene active. Bugs where a value

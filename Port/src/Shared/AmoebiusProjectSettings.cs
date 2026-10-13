@@ -23,6 +23,7 @@ namespace Amoebius
         /// <summary>Null = Unity's EditorBuildSettings list. Otherwise the build list, in order (scene 0 boots).</summary>
         public List<SceneEntry>? Scenes { get; set; }
         public QualitySection Quality { get; set; } = new();
+        public NetworkSection Network { get; set; } = new();
 
         public sealed class PlayerSection
         {
@@ -53,6 +54,15 @@ namespace Amoebius
             public bool? VSync { get; set; }
             /// <summary>0 = unlimited (with vsync off).</summary>
             public int? TargetFps { get; set; }
+        }
+
+        /// <summary>Online play: which Amoebius online server this branch's games use (the team's shared one).</summary>
+        public sealed class NetworkSection
+        {
+            /// <summary>"host[:port]" of the online server; null finds one on the LAN (or a game hosts one). A player's own launcher setting wins.</summary>
+            public string? Server { get; set; }
+            /// <summary>The server's key, when it was started with one.</summary>
+            public string? Key { get; set; }
         }
 
         static readonly JsonSerializerOptions Json = new()

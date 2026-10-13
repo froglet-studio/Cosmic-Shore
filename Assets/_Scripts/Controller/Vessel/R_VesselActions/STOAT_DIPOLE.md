@@ -100,6 +100,21 @@ within 8 u of itself (at least 60 u on) ends there — the loop that would cross
 poles to turn, a held full turn draws a circle the pathfinder does not call warped, and the line is
 not twitchy on screen. **X** still holds the hull still (the Sparrow's stop), outside the four abilities.
 
+**The autopilot circles its sink at most ONCE** (2026-10-10). The path-watching hold keeps the poles open
+while they warp the predicted path — and a hull ORBITING its own sink keeps that path warped every frame,
+so the hold never dried out and ended only at `autopilotMaxHoldSeconds` (15 s): reported in play as the AI
+going round inside the black hole's shadow four, five, six times before it got out. The executor now sums
+the angle the hull sweeps round its sink (`StoatDipoleMath.SweptAround`, skipping a frame that went through
+the wormhole) and lets go so the lap ENDS at `autopilotMaxOrbitDegrees` (**360** = one lap, 0 = no cap), in
+either hold mode. "Ends" matters: the poles keep pulling until they close (`FollowRate`), and letting go AT
+360 left the hull another half lap round the closing pair, so the sweep still to come
+(`ClosingSeconds` × the smoothed orbit rate) is counted at the moment of the decision (`OrbitCapReached`).
+Measured in the Stoat Flight Studio (same AI, same closing law, Hard, one race per intensity): the most a
+pair was circled went **7.43 → 0.66 laps** at I2 and **3.23 → 0.60** at I3 (I1 and I4 never orbited: 0.55,
+0.77), race times unchanged within a second (58.5 → 59.6 s, 51.8 → 51.5 s). After a capped let-go it waits the full `autopilotIntervalSeconds` rather than the 0.25 s relay, so
+the next pair is not laid while the hull is still turning out of the last one. A pass by the sink sweeps
+under 180°, so the cap never cuts one short (`StoatDipoleTests.OrbitCap_*`).
+
 ## 1a. The modes — B switches Mass and Time (Mass, 2026-10-13)
 
 The design call: *"a mass mode that puts out a thicker trail and uses the current behavior. then it can switch to
@@ -251,13 +266,68 @@ upgrade bit, the name and the domain are replicated). The boost and the field fl
 flies. Known limits, the platform's own: the gravity field's prisms and the stripped crystals are
 local per peer (the wormhole toll's stance), so two peers can disagree on a prism at the horizon's edge.
 
-**The hole budget is FOUR, so only TWO Stoats can hold a pair at once.** `BlackHoleConfig.maxBlackHoles`
-is clamped to `BlackHolePhysics.NativeWells.Capacity` (4), which the lens shader's well bank is sized
-to. A third Stoat's squeeze is refused (`BlackHoleRegistry.CanSpawn`, a quiet verbose line), and each
-peer applies the budget to its own copies in its own order, so in a 3–4 Stoat race two peers can
-disagree on whose pair exists. This bites Warpline and Slingshot at 3+ Stoats; the round-4 sling had
-the same ceiling. Raising it is a lens/shader change (the bank and the well job together), not a
-config edit — logged as a follow-up, not done here.
+**The hole budget is 16 (2026-10-12; it was FOUR).** At four, only two Stoats could hold a pair at once, and in lava lamp
+or Slingshot with two AIs holding theirs the player's squeeze was silently refused ("sometimes my pair spawns, sometimes it
+doesn't"). `BlackHoleConfig.maxBlackHoles` is now 16 (`BlackHolePhysics.NativeWells.Capacity`); the prism tide shader
+draws the 4 holes nearest the camera and the lens the nearest 8. A squeeze refused for room keeps asking while the trigger
+is held, so it opens as soon as there is room. A hole that is annihilating has already left the count.
+
+## 3a. Ported from the studio: the settings map, the camera, the AI hand-over (2026-10-10)
+
+**Settings.** Every field-dipole row of the studio is in `StoatDipoleConfig.asset`, authored by
+`author_stoat_assets.py` (never by hand; `--check` fails a hand edit):
+
+| studio | Unity | value |
+|---|---|---|
+| `ftAhead`, `ftSepMax`, `ftSepLong`, `ftSepFollow` | `aheadDistance`, `sidewaysMax`, `lengthwaysMax`, `followRate` | 250, 200, 120, 6 |
+| `ftStrength` × 20,000, `ftHorizon`, `ftWhite` | `poleGM`, `poleHorizon`, `sourcePush` | 120 000, 3.5, 1 |
+| `dpAccelCap`, `dpTurnCap`, `ftGrip` | `accelerationCap`, `turnCap`, `grip` | 3000, 12, 0.5 |
+| `ftLength`, `ftStep`, `ftNose`, `ftMargin`, `ftMinLoop`, `ftWarpDeg`, `ftDotPx`, `ftDotGap` | `pathLength` … `dotGap` | 600, 3, 8, 8, 60, 3, 4, 10 |
+| `ftBoost`, `ftRise`, `ftFade` | `boost` (Time: 2 → **3 at level 5** → 4), `boostRise`, `boostFadeSeconds` | 3, 20, 0.6 |
+| `ftTurnScale` | the prefab's `PitchScaler` / `YawScaler` / `RollScaler` × 0.4 | 48 / 48 / 52 |
+| `ftSteer` 1, `ftTrail` 0 | the pathfinder flies the held steering and never tests laid trail | — |
+| `aiWarpQ`, `aiNear`, `aiLimeWait` | `autopilotHold01`, `autopilotLetGoNear`, `autopilotDrySeconds` | **1** (was 0.8), 60, 0.5 |
+
+**Camera.** The Stoat flies on its own `StoatCameraSettingsSO` (stage 5 of the generator): the studio's chase
+camera, 6.5 u up and 21 u behind (`followOffset (0, 6.5, -21)`), looking 40 u past the nose and 3 u up
+(`lookAheadDistance` / `lookAheadLift`, `CustomCameraController.LookPoint`), easing onto both at 7/s like the
+studio's (`chaseEaseRate`), framed for the studio's 68° (`framingFieldOfView`): the field of view stays the
+player's setting (90 by default), and the camera moves nearer (×0.67 at 90) and turns its look so the hull reads
+the same size and sits at the same height on screen as in the studio. Until 2026-10-10 it carried the
+Squirrel's camera (flat, 17 u straight behind, aimed at the hull).
+
+**The pair's look is the studio's.** `domainTintAmount` ships at **0**: the sink's shadow is black (at 0.7 it
+read as the owner's dark JADE) and the source's core white-hot. The lens draws the studio's warm photon ring at
+the shadow's edge (`BlackHoleConfig.photonRingGlow` 0.55, `photonRingWidth` 0.06).
+
+**The AI hands the hull back clean.** The lava lamp flies the menu Stoat on AI; its path-watching autopilot
+lays pairs there. When you click to fly, `StoatDipoleExecutor.HandBackAiHold` lets go of whatever the AI was
+pressing (through the replicated stop), so the AI's pair closes. Before it the press stayed held forever:
+the pair laid in the menu stayed open and its field flung your hull from the first frame of freestyle,
+which read as "a black hole spawned in the centre, the camera off the vessel".
+
+## 3b. The pair as the studio draws it, the key squeeze, the 3D path (2026-10-10)
+
+**Both poles always show.** The lens is the studio's own (`Docs/BLACK_HOLE.md` §5.1, 2026-10-10): every hole is drawn in
+ONE screen pass that sums their bends and samples the scene once, so neither pole can paint over the other, and nothing
+is swapped for the skybox, so no disc shows round a hole in lava lamp. (Each hole used to draw its own 30-horizon lens
+sphere; the poles sit 60-200 u apart, so the spheres overlapped and the one drawn last erased its partner.) Where the two
+holes overlap on screen, the black shadow is drawn over the white core, exactly as in the studio.
+
+**Where the poles go is the studio's**, checked line for line: laid `aheadDistance` ahead in the frame of the press,
+sideways = the triggers' difference (the black hole on the deeper side), lengthways = their sum (the black hole
+nearer), mirrored about the laid middle. What differed was a KEY: the studio squeezes a key to 0.5 at once
+(`dpKeySqueeze`), Unity ramped it 0 → 1 over 1.5 s, so on keys the poles sat on top of each other first and then
+opened wider than the studio's (200 u, not 70). `keySqueeze` 0.5 is the studio's.
+
+**The path is in the scene.** `StoatPathfinderWorldDots`: camera-facing discs every `worldDotSpacing` (3 u: denser
+than the studio's 2D line) along the 3D path, `worldDotSize` 0.7 u, never under `worldDotMinPixels` 2.5 px, one
+instanced draw on `Sprites/Default` (always included in builds). They recede, pass behind prisms and bend through
+the lens. `dotsInWorld` off brings back the studio's flat screen dots.
+
+**Tune it in the artifact, then clone it:** the Vessel Studio artifact's Stoat page is the one source of truth for these
+numbers; `/artifact-to-unity` writes them into `StoatDipoleConfig` and `BlackHoleConfig` (`Tools/Build/studio_to_unity.py`,
+map `Tools/Build/studio_to_unity/stoat.json`).
 
 ## 4. Files
 
@@ -269,12 +339,12 @@ config edit — logged as a follow-up, not done here.
 | The mode switch + thick trail + AI switching | `Executors/StoatModeExecutor.cs`, `Data Containers/StoatModeActionSO.cs` → `StoatModeAction.asset` |
 | The ripple | `Executors/StoatRippleExecutor.cs`, `StoatRipple.cs`, `Data Containers/StoatRippleConfigSO.cs` → `StoatRippleConfig.asset`, `_Graphics/Materials/Graphs/StoatRipple.shader` (`Tools/Shaders/verify_stoat_ripple.py`), `Resources/StoatRipple.mat` |
 | Pathfinder + boost + dots + Foresight + Overclock | `Executors/StoatPathfinderExecutor.cs`, `StoatPathfinderDots.cs` (screen overlay, after the lens), `ImpactEffects/…/StoatOverclockByCrystalEffectSO.cs` |
-| Config | `StoatDipoleConfig.asset` (+ Accretion, Foresight), `StoatSlingConfig.asset` (+ the timing window) |
+| Config | `Data Containers/StoatDipoleConfigSO.cs` → `_SO_Assets/VesselActions/Stoat/StoatDipoleConfig.asset` (+ Accretion, Foresight), `StoatSlingConfig.asset` (+ the timing window) |
 | Triggers | `StoatDipoleLeft/RightAction` + `StoatSlingLeft/RightAction` on each trigger; `StoatHoldAction` on X; `StoatModeAction` on B |
 | HUD | `UI/Controller/StoatHUDController.cs`, `UI/View/StoatHUDView.cs`, `_Prefabs/UI Elements/VesselHUD/StoatHUDVariant.prefab`, `_Graphics/Icons/AbilityIcons/Stoat/` |
-| Own assets | `StoatCameraSettingsSO`, `StoatImpactorDataContainer`, `StoatSkimmerImpactorDataContainer`, `StoatAIBoostPolicy`, `CardImages/Stoat(_Inactive).png` |
+| Own assets | `StoatCameraSettingsSO` (`_SO_Assets/Camera/StoatCameraSettingsSO.asset`, stage 5), `StoatImpactorDataContainer`, `StoatSkimmerImpactorDataContainer`, `StoatAIBoostPolicy`, `CardImages/Stoat(_Inactive).png` |
 | Platform hooks | `VesselTransformer.FlightTimeScale`, `VesselPrismController.ThicknessMultiplier`, `BlackHole.PrismCapture` / `CrystalStripShare` / `DomainTint` / `CapturedCount`, `BlackHoleRegistry.PairMet`, `Prism.Vanish`, `BlackHoleCrystalStrip`, `R_VesselActionHandler.NetStoatDipole*` |
-| Prefab + assets | `Tools/Build/author_stoat_assets.py` stages 4 and 6 (`--check`, `--self-test`) |
+| Prefab + assets | `Tools/Build/author_stoat_assets.py` stages 4, 5 and 6 (`--check`, `--self-test`) |
 | Arcade | `Arcade/WARPLINE.md` (the Time race), `Arcade/SLINGSHOT.md` (flown on the dipole; the AI uses both modes) |
 
 Audio slots ship **empty**: `openEvent`, `annihilateEvent`, `warpEvent` (dipole config), `holdStartEvent`, `slingEvent`,

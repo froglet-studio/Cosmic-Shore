@@ -70,8 +70,8 @@ namespace CosmicShore.Gameplay
         ///
         /// Written ONCE, for two callers: the per-frame Burst job (<c>SwarmPoseJob</c>, the glue) and the managed
         /// <see cref="Matrix"/>/<see cref="Matrices"/> the harness runs (R11d). So it is Burst-compilable plain C#: scalar
-        /// floats, field reads of the System.Numerics structs (no Vector3 method or operator), <see cref="MathF"/> only,
-        /// no managed reference, no allocation.
+        /// floats, field reads of the System.Numerics structs (no Vector3 method or operator), <see cref="KernelMath"/> only
+        /// (never MathF: Burst cannot find its internal calls), no managed reference, no allocation.
         /// </summary>
         public static void PoseMatrix(in SwarmInstance s, float alpha, float clock, float bloomTicks, Vector3 up, Vector3 upAlt,
                                       out SwarmPoseMatrix m)
@@ -84,16 +84,16 @@ namespace CosmicShore.Gameplay
             float fx = s.PrevFace.X + (s.CurFace.X - s.PrevFace.X) * alpha;
             float fy = s.PrevFace.Y + (s.CurFace.Y - s.PrevFace.Y) * alpha;
             float fz = s.PrevFace.Z + (s.CurFace.Z - s.PrevFace.Z) * alpha;
-            float fl = MathF.Sqrt(fx * fx + fy * fy + fz * fz);
-            if (fl < 1e-5f) { fx = s.CurFace.X; fy = s.CurFace.Y; fz = s.CurFace.Z; fl = MathF.Sqrt(fx * fx + fy * fy + fz * fz); }
+            float fl = KernelMath.Sqrt(fx * fx + fy * fy + fz * fz);
+            if (fl < 1e-5f) { fx = s.CurFace.X; fy = s.CurFace.Y; fz = s.CurFace.Z; fl = KernelMath.Sqrt(fx * fx + fy * fy + fz * fz); }
 
             // SwarmBasis: bz = face, bx = up x bz (upAlt when face ~ up), by = bz x bx
             float bzx, bzy, bzz;
             if (fl > 1e-5f) { bzx = fx / fl; bzy = fy / fl; bzz = fz / fl; } else { bzx = 0f; bzy = 0f; bzz = 1f; }
             float ux = up.X, uy = up.Y, uz = up.Z;
-            if (MathF.Abs(bzx * ux + bzy * uy + bzz * uz) > 0.98f) { ux = upAlt.X; uy = upAlt.Y; uz = upAlt.Z; }
+            if (KernelMath.Abs(bzx * ux + bzy * uy + bzz * uz) > 0.98f) { ux = upAlt.X; uy = upAlt.Y; uz = upAlt.Z; }
             float bxx = uy * bzz - uz * bzy, bxy = uz * bzx - ux * bzz, bxz = ux * bzy - uy * bzx;
-            float lx = MathF.Sqrt(bxx * bxx + bxy * bxy + bxz * bxz);
+            float lx = KernelMath.Sqrt(bxx * bxx + bxy * bxy + bxz * bxz);
             if (lx > 1e-6f) { bxx /= lx; bxy /= lx; bxz /= lx; } else { bxx = 1f; bxy = 0f; bxz = 0f; }
             float byx = bzy * bxz - bzz * bxy, byy = bzz * bxx - bzx * bxz, byz = bzx * bxy - bzy * bxx;
 

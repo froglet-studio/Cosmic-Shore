@@ -69,7 +69,26 @@ namespace CosmicShore.ScriptableObjects
                     continue;
                 }
 
-                if (!prefab.TryGetComponent(out IVesselStatus shipStatus))
+                // A slot can hold a reference Unity cannot use as a Transform but does not report
+                // as null: the Stoat's slot pointed at its prefab's GameObject instead of its root
+                // Transform, and touching it threw MissingReferenceException. That took down EVERY
+                // spawn, because every lookup walks every slot: the menu vessel never spawned and boot
+                // sat on "Host ready...". One broken slot is one missing hull, never all of them.
+                IVesselStatus shipStatus;
+                bool hasStatus;
+                try { hasStatus = prefab.TryGetComponent(out shipStatus); }
+                catch (MissingReferenceException)
+                {
+                    emptySlots++;
+                    CSDebug.LogError(
+                        $"[VesselPrefabContainer] Slot {i} holds a reference Unity cannot load as a " +
+                        "Transform (MissingReferenceException) - skipped. It must point at the vessel " +
+                        "prefab's ROOT Transform; a GameObject fileID in the asset is the usual cause. " +
+                        "Re-drag the prefab into the slot.", this);
+                    continue;
+                }
+
+                if (!hasStatus)
                 {
                     if (reportMissing)
                         CSDebug.LogWarning($"[VesselPrefabContainer] Slot {i} ({prefab.name}) has no " +

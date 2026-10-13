@@ -220,6 +220,15 @@ namespace CosmicShore.Build
 
             // ProjectSettings ships whole (the player reads build scenes, time, physics, graphics, tags).
             CopyTree(Path.Combine(_project, "ProjectSettings"), Path.Combine(outDir, "ProjectSettings"), hash);
+            // The engine's own settings too: the branch's online server (Network) reaches the phone build.
+            var engineSettings = Amoebius.AmoebiusProjectSettings.PathIn(_project);
+            if (File.Exists(engineSettings))
+            {
+                var dest = Amoebius.AmoebiusProjectSettings.PathIn(outDir);
+                Directory.CreateDirectory(Path.GetDirectoryName(dest)!);
+                File.Copy(engineSettings, dest, overwrite: true);
+                hash.AppendData(File.ReadAllBytes(engineSettings));
+            }
 
             // FMOD: the banks the Studio project built (sourceBankPath) and the header version.
             report.FmodHeaderVersion = FmodHeaderVersion();

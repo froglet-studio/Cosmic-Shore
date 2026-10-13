@@ -53,6 +53,17 @@ levels — and Time sets the warp boost, so it lands on the mode's axis).
 
 ## 3. AI
 
+**2026-10-10, ported from the Stoat Flight Studio (`/vessel-studio` D24):**
+- **AI difficulty.** The card now offers the lobby's Easy / Medium / Hard picker (`AIDifficultyRules.IsOfferedFor`).
+  `GateRaceController.ArmRacers` races Easy and Medium on `GateRaceHandicap`, the Skim Race's two mistakes applied to
+  rings, with the same numbers (`SkimRaceDifficultySO`): a ring noticed 0.5 / 0.25 s late (the AI flies straight on
+  until then), and 9.9% / 4.5% of rings misjudged (believed two ring-radii off to one side, flown past, turned back
+  for). Hard races the true course.
+- **The path-watching autopilot** (`StoatDipoleConfig` ▸ *Autopilot - watching the path*, on by default). The AI holds
+  its pair while the pathfinder says the path is WARPED, lets go as its target comes within 60 u or once the warp
+  has been off for 0.5 s, and lays the next pair 0.25 s later. In the studio this took Hard from 70-89 s to 49-59 s
+  over the four courses. Turn it off for the timed hold described below.
+
 An AI Stoat flies the platform's gate approach (commit 160 / lead 180 / through 120 u) and **lays
 pairs**: `StoatDipoleExecutor.Autopilot` pulls both triggers when its target is within 12° of the
 nose and at least 300 u away (the wormhole line, warped), or the trigger on the target's side when

@@ -20,11 +20,16 @@ namespace CosmicShore.Core
         bool _connected;
         bool _isRunning;
         CancellationTokenSource _cts;
+        readonly Func<bool> _isReachable;
 
-        public NetworkMonitor(NetworkMonitorDataVariable networkMonitorDataVariable)
+        /// <param name="isReachable">The reachability probe. Defaults to
+        /// <c>Application.internetReachability</c>; a test passes its own to drive
+        /// <see cref="Poll"/> through a network loss.</param>
+        public NetworkMonitor(NetworkMonitorDataVariable networkMonitorDataVariable, Func<bool> isReachable = null)
         {
             _networkMonitorDataVariable = networkMonitorDataVariable;
-            _connected = IsCurrentlyReachable(); // initialize current state
+            _isReachable = isReachable ?? IsCurrentlyReachable;
+            _connected = _isReachable(); // initialize current state
 
             if (_networkMonitorData != null)
             {
@@ -65,26 +70,36 @@ namespace CosmicShore.Core
         {
             while (!token.IsCancellationRequested)
             {
-                bool reachable = IsCurrentlyReachable();
-
-                if (!reachable && _connected)
-                {
-                    _connected = false;
-                    _networkMonitorData.IsOnline = false;
-                    _networkMonitorData.LastTransitionUnscaledTime = Time.unscaledTime;
-                    _networkMonitorData.OnNetworkLost?.Raise();
-                    CSDebug.LogVerbose(CSLogChannel.Boot, $"[NetworkMonitor] Online -> Offline (reach={Application.internetReachability}, t={Time.unscaledTime:F1}s)");
-                }
-                else if (reachable && !_connected)
-                {
-                    _connected = true;
-                    _networkMonitorData.IsOnline = true;
-                    _networkMonitorData.LastTransitionUnscaledTime = Time.unscaledTime;
-                    _networkMonitorData.OnNetworkFound?.Raise();
-                    CSDebug.LogVerbose(CSLogChannel.Boot, $"[NetworkMonitor] Offline -> Online (reach={Application.internetReachability}, t={Time.unscaledTime:F1}s)");
-                }
-
+                Poll();
                 await UniTask.Delay(TimeSpan.FromSeconds(intervalSeconds), DelayType.UnscaledDeltaTime, cancellationToken: token);
+            }
+        }
+
+        /// <summary>
+        /// One reachability check: raises <c>OnNetworkLost</c> / <c>OnNetworkFound</c> on a
+        /// transition and does nothing else. In particular it never touches the session - a network
+        /// that dies mid-session gets a notice (DisconnectNotice), never an in-place switch to a
+        /// loopback host (offline case 4, HARDENING_PLAN_STEAM_LAUNCH.md §4.1).
+        /// </summary>
+        internal void Poll()
+        {
+            bool reachable = _isReachable();
+
+            if (!reachable && _connected)
+            {
+                _connected = false;
+                _networkMonitorData.IsOnline = false;
+                _networkMonitorData.LastTransitionUnscaledTime = Time.unscaledTime;
+                _networkMonitorData.OnNetworkLost?.Raise();
+                CSDebug.LogVerbose(CSLogChannel.Boot, $"[NetworkMonitor] Online -> Offline (reach={Application.internetReachability}, t={Time.unscaledTime:F1}s)");
+            }
+            else if (reachable && !_connected)
+            {
+                _connected = true;
+                _networkMonitorData.IsOnline = true;
+                _networkMonitorData.LastTransitionUnscaledTime = Time.unscaledTime;
+                _networkMonitorData.OnNetworkFound?.Raise();
+                CSDebug.LogVerbose(CSLogChannel.Boot, $"[NetworkMonitor] Offline -> Online (reach={Application.internetReachability}, t={Time.unscaledTime:F1}s)");
             }
         }
 

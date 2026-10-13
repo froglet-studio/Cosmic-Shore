@@ -423,9 +423,10 @@ owned as §3.8 **#11** + §5 **C15**.
 - **Kept:** `ShapeDefinition` (painting toy), `SpawnableShapeBase` + spawnable
   shapes, `ShapeSign` / `ShapeCollisionTrigger` / `SpawnableShapeSign` /
   `ModeSelectTrigger`, `SegmentSpawner` (SkimRace live), SOAP events
-  `EventOnShapeGameModeStarted` / `EventOnShapePrismReturnToPool` (wired on
-  live prism prefabs to `Prism.ReturnToPool` — only the deleted manager
-  `Raise()`d them; **never Raise them**; do not strip the EventListeners).
+  `EventOnShapeGameModeStarted` / `EventOnShapePrismReturnToPool` (only the
+  deleted manager `Raise()`d them; their prism-prefab `EventListenerNoParam`
+  listeners were stripped 2026-09 for instantiate cost —
+  `Docs/archive/PERFORMANCE_LOG_2026.md` §0.11.6 — so raising them is now a no-op).
 - Do **not** re-open as a clock migration of unreachable code. Do **not**
   delete `ShapeDefinition`, the painting converter, the SOAP events, or
   `SegmentSpawner`. The painting toy is the successor (scoreless).

@@ -17,10 +17,14 @@
 // without the monitor mirror - so the helper degrades gracefully on test
 // harnesses that don't run AppManager.
 //
-// NOT a retry-control predicate. PartySessionService.IsTransientSessionException
-// is the source of truth for retry decisions; ClassifyException is purely for
-// log-line categorization. Keeping them separate prevents coupling log format
-// to retry policy.
+// NOT a retry-control predicate. UgsRequestPolicy.Classify is the source of truth
+// for retry decisions (one classifier for every UGS catch since 2026-10-06);
+// ClassifyException is purely for log-line categorization. Keeping them separate
+// prevents coupling log format to retry policy.
+//
+// The snapshot also carries UgsRequestTelemetry.Describe() - the rolling per-minute
+// request / read / 429 / retry counters - so every NetDiag line doubles as the
+// measurement the party layer's acceptance criteria are read from.
 // ─────────────────────────────────────────────────────────────────────────────
 
 using System;
@@ -52,7 +56,7 @@ namespace CosmicShore.Utility
         /// <summary>
         /// One-line catch-block snapshot of current network reachability and
         /// the monitor's most recent state transition.
-        /// <para>Example: <c>"reach=NotReachable|monitor=Offline|sinceChange=12.3s"</c>.</para>
+        /// <para>Example: <c>"reach=NotReachable|monitor=Offline|sinceChange=12.3s|ugs[req/min=12 reads/min=40 429/min=0 ...]"</c>.</para>
         /// <para>
         /// Reachability comes from <see cref="Application.internetReachability"/>.
         /// On real devices this is accurate. In the Unity Editor it can read
@@ -69,9 +73,9 @@ namespace CosmicShore.Utility
             {
                 string monitor = data.IsOnline ? "Online" : "Offline";
                 float since = Time.unscaledTime - data.LastTransitionUnscaledTime;
-                return $"reach={reach}|monitor={monitor}|sinceChange={since:F1}s";
+                return $"reach={reach}|monitor={monitor}|sinceChange={since:F1}s|{UgsRequestTelemetry.Describe()}";
             }
-            return $"reach={reach}|monitor=Uninitialized|sinceChange=N/A";
+            return $"reach={reach}|monitor=Uninitialized|sinceChange=N/A|{UgsRequestTelemetry.Describe()}";
         }
 
         /// <summary>
@@ -86,8 +90,8 @@ namespace CosmicShore.Utility
         /// </para>
         /// <para>
         /// This is for LOGS, not RETRY CONTROL.
-        /// <c>PartySessionService.IsTransientSessionException</c> remains the
-        /// source of truth for retry decisions.
+        /// <see cref="UgsRequestPolicy.Classify"/> is the source of truth for retry
+        /// decisions.
         /// </para>
         /// </summary>
         public static string ClassifyException(Exception e)

@@ -132,6 +132,16 @@ namespace CosmicShore.Engine
         public UnityException(string message, Exception innerException) : base(message, innerException) { }
     }
 
+    /// <summary>Original engine's "the object you reference was destroyed / cannot be loaded" exception. This
+    /// engine never throws it (a reference here is either a live object or null); game code catches it
+    /// (VesselPrefabContainer's slot guard), so the type must exist to compile.</summary>
+    public class MissingReferenceException : Exception
+    {
+        public MissingReferenceException() { }
+        public MissingReferenceException(string message) : base(message) { }
+        public MissingReferenceException(string message, Exception innerException) : base(message, innerException) { }
+    }
+
     public static partial class Application
     {
         public static bool isPlaying = true;
@@ -156,7 +166,7 @@ namespace CosmicShore.Engine
                 // COSMIC_SHORE_PROFILE runs a second install side by side (a second player on one machine).
                 string profile = Environment.GetEnvironmentVariable("COSMIC_SHORE_PROFILE");
                 string folder = string.IsNullOrWhiteSpace(profile) ? "CosmicShore" : "CosmicShore-" + profile.Trim();
-                string path = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), folder);
+                string path = LocalDataPath.Combine(folder);
                 Directory.CreateDirectory(path);
                 return path;
             }

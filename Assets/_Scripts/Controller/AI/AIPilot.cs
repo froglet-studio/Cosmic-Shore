@@ -132,15 +132,22 @@ namespace CosmicShore.Gameplay
                  "closing on. 0.5 is 60 degrees; 1 disables the guarantee.")]
         [SerializeField, Range(0f, 1f)] float breakOffClosingCosine = 0.5f;
         [Tooltip("Degrees swept around the objective, with no progress made, before the empirical " +
-                 "detector calls it an orbit. 540 is a lap and a half - enough that a wide but " +
-                 "genuine approach is never mistaken for one.")]
-        [SerializeField, Min(180f)] float orbitSweepDegrees = 540f;
+                 "detector calls it an orbit. 360 is ONE lap - the most a pilot may circle " +
+                 "something before it breaks off. A genuine approach still closes (the progress " +
+                 "gate below), so it is never mistaken for one.")]
+        [SerializeField, Min(180f)] float orbitSweepDegrees = 360f;
         [Tooltip("Closing to this fraction of the closest range achieved counts as real progress " +
                  "and clears the detector.")]
         [SerializeField, Range(0.1f, 0.999f)] float orbitProgressFraction = 0.9f;
-        [Tooltip("A range jump beyond this multiple of the closest approach is read as the " +
+        [Tooltip("A range jump beyond this multiple of the PREVIOUS FRAME's range is read as the " +
                  "objective having been REPLACED rather than as a manoeuvre, and resets the detector.")]
         [SerializeField, Min(1.05f)] float orbitTargetJumpFraction = 1.6f;
+        [Tooltip("Seconds a pilot leaves a crystal alone after giving up on it: either it circled " +
+                 "it for a full lap (the detector fired), or it already broke off it once and " +
+                 "would have to break off it AGAIN. Re-attacking the same spot from the same side " +
+                 "is what turned one orbit into four or five. Another eligible crystal is taken " +
+                 "instead; if it is the only one, the pilot keeps it and just re-attacks.")]
+        [SerializeField, Min(0f)] float orbitAbandonSeconds = 5f;
 
         /// <summary>
         /// Configure AI behavior at runtime (called after spawning for solo-play AI opponents).
@@ -215,6 +222,14 @@ namespace CosmicShore.Gameplay
         bool _extending;
         float _extendElapsed;
         OrbitDetector _orbitDetector;
+
+        // The objective this pilot last broke off from, so a SECOND break-off from the same one
+        // gives it up instead of re-attacking into the same orbit (see UpdateOrbitBreak), and the
+        // one it gave up and until when (honoured by UpdateCellContent).
+        CellItem _brokeOffObjective;
+        Vector3 _brokeOffPosition;
+        CellItem _abandonedObjective;
+        float _abandonedUntil;
 
         /// <summary>True while this pilot is flying a break-off instead of chasing its objective.</summary>
         public bool IsBreakingOrbit => _extending;
@@ -411,6 +426,21 @@ namespace CosmicShore.Gameplay
                 _eligibleDistances.Add(Vector3.Distance(item.transform.position, transform.position));
             }
 
+            // A crystal this pilot just gave up on (it circled it, or would have broken off it a
+            // second time) sits out for orbitAbandonSeconds - unless it is the only one there is,
+            // in which case a fresh attack on it beats loitering at the cell centre.
+            if (_abandonedObjective != null && Time.time < _abandonedUntil && _eligibleObjectives.Count > 1)
+            {
+                int abandoned = _eligibleObjectives.IndexOf(_abandonedObjective);
+                if (abandoned >= 0)
+                {
+                    _eligibleObjectives.RemoveAt(abandoned);
+                    _eligibleDistances.RemoveAt(abandoned);
+                }
+            }
+
+            var previousObjective = _objectiveItem;
+
             // The selection - which objective, and whether to abandon the one already committed to
             // - lives in AIObjectiveScoring so the shipped path is the one the tests cover. It is
             // not a formality: the original inline version compared a squared distance against a
@@ -425,6 +455,12 @@ namespace CosmicShore.Gameplay
                 Mathf.Abs(VesselStatus.Speed) * approachRunSeconds, objectiveSwitchImprovement);
 
             _objectiveItem = pick >= 0 ? _eligibleObjectives[pick] : null;
+
+            // A new objective is a new pursuit: sweep accumulated around the old one says nothing
+            // about it. The detector also notices the range jump itself, but not when the new
+            // crystal happens to sit at a similar range - say so explicitly.
+            if (_objectiveItem != previousObjective && !_extending)
+                _orbitDetector.Reset();
 
             if (_objectiveItem != null)
                 _targetPosition = _objectiveItem.transform.position;
@@ -993,9 +1029,42 @@ namespace CosmicShore.Gameplay
             _extending = true;
             _extendElapsed = 0f;
 
+            // Never a second lap on the same crystal. A full lap already flown (the detector) or a
+            // second break-off from the same objective means re-attacking it from here is how one
+            // orbit becomes five: the pilot comes back on the same arc and is trapped the same way.
+            // Give it up for a while and take another; the break-off itself still runs, because it
+            // is what gets the pilot out of the circle it is in.
+            if (_objectiveItem != null && !seekPlayers && _externalTargetProvider == null)
+            {
+                // Same instance AND same place: a pooled crystal respawned elsewhere is a new
+                // objective as far as reachability is concerned.
+                bool brokeOffHereBefore = _objectiveItem == _brokeOffObjective &&
+                    (_objectiveItem.transform.position - _brokeOffPosition).sqrMagnitude <
+                    objectiveCaptureRadius * objectiveCaptureRadius;
+
+                if (orbiting || brokeOffHereBefore)
+                    AbandonObjective();
+                else
+                {
+                    _brokeOffObjective = _objectiveItem;
+                    _brokeOffPosition = _objectiveItem.transform.position;
+                }
+            }
+
             // The sweep accumulated on the way IN says nothing about the pursuit that follows the
             // break-off, and leaving it would re-fire the detector immediately on re-attack.
             _orbitDetector.Reset();
+        }
+
+        void AbandonObjective()
+        {
+            _abandonedObjective = _objectiveItem;
+            _abandonedUntil = Time.time + orbitAbandonSeconds;
+            _brokeOffObjective = null;
+            // Drop the commitment first, or AIObjectiveScoring's hysteresis would hand the same
+            // crystal straight back.
+            _objectiveItem = null;
+            UpdateCellContent();
         }
 
         void EndOrbitBreak()
