@@ -13,9 +13,9 @@ MonoBehaviour:
   m_Name: ScarabNucleusFieldConfig
   m_EditorClassIdentifier:
   seedIntervalSeconds: 14
-  maxEmbeddedPerDomain: 3
+  maxEmbeddedPerDomain: 5
   embedSinkFraction: 0.4
   ballPrefab: {fileID: 7300000000000000017, guid: 1da0b7db01253067eaee1d6f9d1b2242, type: 3}
   nucleusEntryLimit: 3
-  detonationRadiusScale: 2
+  detonationRadiusScale: 6
   detonateAllLiveBalls: 1

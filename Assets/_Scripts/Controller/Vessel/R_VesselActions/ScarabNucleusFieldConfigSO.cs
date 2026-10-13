@@ -20,7 +20,7 @@ namespace CosmicShore.Gameplay
         [Tooltip("Most embedded (not yet knocked loose) balls one DOMAIN may have studding the " +
                  "nucleus at once. The clock PAUSES at the cap rather than culling anything — not " +
                  "creating mass is allowed, aging it out is not.")]
-        [Min(1)] public int maxEmbeddedPerDomain = 3;
+        [Min(1)] public int maxEmbeddedPerDomain = 5;
 
         [Tooltip("How far the ball sinks into the nucleus surface, as a fraction of its own radius. " +
                  "0 = sitting on the surface, 1 = fully swallowed. ~0.4 reads as embedded.")]
@@ -37,7 +37,7 @@ namespace CosmicShore.Gameplay
 
         [Tooltip("Explosion radius of the overload detonation, as a multiple of each ball's own " +
                  "radius.")]
-        [Min(0.1f)] public float detonationRadiusScale = 2f;
+        [Min(0.1f)] public float detonationRadiusScale = 6f;
 
         [Tooltip("ON: the overload detonates EVERY live ball (the authored spectacle). OFF: only the " +
                  "balls banked inside the nucleus. A dial for playtest, not a design fork.")]

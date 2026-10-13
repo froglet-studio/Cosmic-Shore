@@ -25,7 +25,7 @@ namespace CosmicShore.Gameplay
     ///     has left (AstroLeagueBall.TickNucleusDepartureServer) rather than each force announcing
     ///     it. Once dislodged it can never be seeded again: it is a ball, permanently.
     ///   • Bank one too many and the nucleus OVERLOADS: every ball detonates with an explosion
-    ///     twice its own radius. Feeding the core is the greedy line, and the greedy line has a
+    ///     six times its own radius. Feeding the core is the greedy line, and the greedy line has a
     ///     cliff.
     ///
     /// THE CONTAINMENT FOR BOTH DIRECTIONS IS THE BALL'S OWN — one nucleus surface ridden from

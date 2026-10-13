@@ -65,6 +65,21 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Scarab balls: 5 seeded per domain, 3× explosion radius (`cece/happy-ride-f7op1j`, 2026-10-13) — NOT EDITOR-VERIFIED
+
+Tuning only, no logic change. No `unity` CLI in the authoring session, so `/verify-unity` did not run.
+
+| Knob | Was → Now | Where it lives |
+|---|---|---|
+| Embedded balls one domain may stud the nucleus with | **3 → 5** | `ScarabNucleusFieldConfigSO.maxEmbeddedPerDomain` (`Resources/ScarabNucleusFieldConfig.asset`) |
+| Nucleus-overload blast, × ball radius | **2 → 6** | `ScarabNucleusFieldConfigSO.detonationRadiusScale` (same asset) |
+| Cell-overload blast, × ball radius | **2 → 6** | `AstroLeagueBall.cellOverloadRadiusScale` C# default (`AstroLeagueBall.prefab` does not serialize it). The Astro League scene's match ball keeps its serialized 2 |
+
+1. Compile clean; `ScarabNucleusFieldConfig` shows 5 / 6 in the inspector.
+2. Fly a Scarab in a cell with a nucleus for ~70 s: five balls of its domain embed, the sixth does not.
+3. Knock balls into the nucleus past `nucleusEntryLimit` (unchanged, 3): the overload blast is visibly 3× wider than before and clears own-domain-lit / other-domain prisms out to that radius.
+4. Particle burst and camera shake scale with the radius multiplier (`Detonate_ClientRpc`), so both are 3× what they were — check the shake isn't nauseating. If it is, cap the shake factor there rather than shrinking the blast.
+
 ### 🔴 EditMode triage of the 14 failures new on 2026-10-13 (`claude/compassionate-hopper-rqat4d`, 2026-10-13) — NOT EDITOR-VERIFIED
 
 No editor and no `unity` CLI in the authoring session, so `/verify-unity` did NOT run. The full per-suite record (verdict, cause, commit) is `Docs/QA/DEV_TASKS.md` DT-003. Offline proof: `unity_refcompile` player + editor configs 0 errors in project code (a planted CS0103 failed the editor config); headless runs of the real RearViewLaw / FollowHeightScale / SpeedTunnelLaw test files against the real camera controller and law source (red on bleeding-edge, green here, mutants red); `slingshot_course_harness` 1,600/1,600; `author_stoat` / `author_slingshot` / `author_warpline` / `author_wormholes --check`, `render_card_backgrounds --check` (33/33) and `author_card_backgrounds --strict`.

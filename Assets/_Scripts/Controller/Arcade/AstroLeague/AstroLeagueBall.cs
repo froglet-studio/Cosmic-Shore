@@ -70,11 +70,11 @@ namespace CosmicShore.Gameplay
         [SerializeField, Min(0)] int cellBallLimit = 4;
 
         [Tooltip("Explosion radius of a cell overload, as a multiple of each ball's own radius. " +
-                 "Kept EQUAL to ScarabNucleusFieldConfig.detonationRadiusScale (both 2) so the two " +
+                 "Kept EQUAL to ScarabNucleusFieldConfig.detonationRadiusScale (both 6) so the two " +
                  "'too many balls' events read as the same event - they are deliberately separate " +
                  "fields because one belongs to the ball and the other to a vessel ability, and a " +
                  "platform ball must not depend on a Scarab config to know how loudly to die.")]
-        [SerializeField, Min(0.1f)] float cellOverloadRadiusScale = 2f;
+        [SerializeField, Min(0.1f)] float cellOverloadRadiusScale = 6f;
 
         [Tooltip("Seconds between cell-membership checks. Cell.FindCellContaining is O(active " +
                  "cells) and its own docs say to call it at lifecycle points rather than per " +
