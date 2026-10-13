@@ -98,8 +98,10 @@ static class Program
             case "generator":
             {
                 var lays = new List<(SpawnPoint p, Domains d, PrismKind k)>();
-                RunGenerator(layer, Matrix.Identity, lays);
+                var markers = new List<SpawnPoint>();
+                RunGenerator(layer, Matrix.Identity, lays, markers);
                 foreach (var (p, d, k) in lays) AddPrism(scene, p, pal.For(d, k));
+                if (layer.TryGetProperty("markerRings", out var mr)) MarkerRings(mr, markers, scene, pal);
                 return lays.Count;
             }
             case "switchback":
@@ -384,7 +386,8 @@ static class Program
 
     static readonly Assembly Asm = typeof(Program).Assembly;
 
-    static void RunGenerator(JsonElement node, Matrix parent, List<(SpawnPoint, Domains, PrismKind)> sink)
+    static void RunGenerator(JsonElement node, Matrix parent, List<(SpawnPoint, Domains, PrismKind)> sink,
+        List<SpawnPoint> markerSink = null)
     {
         string typeName = node.GetProperty("type").GetString();
         var type = Asm.GetTypes().FirstOrDefault(t => t.Name == typeName || t.FullName == typeName);
@@ -421,7 +424,9 @@ static class Program
                 var bt = b.GetType();
                 var sp = new SpawnPoint((Vector3)bt.GetField("Position").GetValue(b), (Quaternion)bt.GetField("Rotation").GetValue(b),
                     (Vector3)bt.GetField("Scale").GetValue(b));
-                sink.Add((Xform(local, sp), domainOf((bool)bt.GetField("IsMarker").GetValue(b)), PrismKind.Plain));
+                bool marker = (bool)bt.GetField("IsMarker").GetValue(b);
+                sink.Add((Xform(local, sp), domainOf(marker), PrismKind.Plain));
+                if (marker) markerSink?.Add(Xform(local, sp));
             }
             return;
         }
@@ -450,6 +455,31 @@ static class Program
         foreach (var td in trails)
             foreach (var p in td.Points)
                 sink.Add((Xform(local, p), td.Domain, PrismKind.Plain));
+    }
+
+    /// <summary>Rings standing square across a track at its MARKER blocks - the waypoints that
+    /// carry a crystal anchor - each facing along the block's own pose (the track tangent, the
+    /// layout rule the track lays with), offset onto a seeded point of the jitter shell round it.
+    /// Spec: { pick: [marker index...], R, r, jitter, seed, styles: [material spec per ring] }.</summary>
+    static void MarkerRings(JsonElement spec, List<SpawnPoint> markers, Scene scene, Palette pal)
+    {
+        if (markers.Count == 0) { UnityEngine.Debug.LogError("markerRings: the generator laid no marker blocks"); return; }
+        var rng = new System.Random(spec.GetProperty("seed").GetInt32());
+        double R = spec.GetProperty("R").GetDouble(), r = spec.GetProperty("r").GetDouble();
+        double jitter = spec.TryGetProperty("jitter", out var je) ? je.GetDouble() : 0;
+        var styles = spec.GetProperty("styles").EnumerateArray().ToList();
+        int n = 0;
+        foreach (var ie in spec.GetProperty("pick").EnumerateArray())
+        {
+            var m = markers[ie.GetInt32() % markers.Count];
+            // CrystalManager.GetSpawnPointAroundAnchor: anchor + onUnitSphere * anchorJitterRadius.
+            V3 off;
+            do off = new V3(rng.NextDouble() * 2 - 1, rng.NextDouble() * 2 - 1, rng.NextDouble() * 2 - 1);
+            while (off.Len < 1e-3 || off.Len > 1);
+            var c = ToV(m.Position) + off.Norm * jitter;
+            scene.Ring(c, ToV(m.Rotation * Vector3.forward), R, r, MaterialFrom(styles[n % styles.Count], pal), 64, 10, false);
+            n++;
+        }
     }
 
     static SpawnPoint Xform(Matrix m, SpawnPoint p) =>
