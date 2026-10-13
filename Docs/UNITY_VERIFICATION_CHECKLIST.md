@@ -187,6 +187,16 @@ the player and editor configs with 0 errors in project code, and the console-log
 - **`PartyInviteNotificationPanel` sits outside `Safe Area`.**
 - **`DeviceOrientationHandler` locks LandscapeLeft for the session**, even though
   `SafeAreaFitter`'s docs assume auto-rotation between the two landscapes.
+- **The Elemental Converter's picture stops at the safe margins** (designer's call). ARK opened in
+  the bleeding-edge merge. `ElementalConverterView.BuildUi` stretches its `RawImage` "Picture" over
+  `ArkScreen`, which the strip lays out in the safe rect, and `SafeAreaBleed` copies only `Image`s.
+  On a notched phone the 3D picture is therefore inset by the margins. Decide whether it should
+  fill the screen before extending the bleed to `RawImage`.
+- **`ScreenSwitcher.EnsureStripViewport` trusts a pre-existing `Screens Viewport`.** If one is
+  ever authored in the scene, it returns before `_contentLayer` is set, so the safe insets read
+  as zero and no background bleeds. Today none is authored (`grep -c 'Screens Viewport'
+  Menu_Main.unity` = 0), so this is unreachable. Set `_contentLayer` before that return if it ever
+  becomes reachable.
 
 ---
 
