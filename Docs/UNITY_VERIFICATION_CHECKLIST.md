@@ -91,6 +91,66 @@ still detonates. (2) Chase camera: the hull sits low in frame with a look-ahead,
 (`/artifact-to-unity`). (3) Menu lava lamp: click to take over the Stoat while its AI holds a pair. The pair
 closes and does not fling you. (4) Thresher and Stoat both selectable; spawn each (enum 14/15).
 
+### 🔴 Thresher Time (66) — the Thresher-only circuit race, cut against its sling (`cece/dazzling-hypatia-nmdhle`, 2026-10-13) — NOT EDITOR-VERIFIED
+
+**What landed** (`_Scripts/Controller/Arcade/THRESHERTIME.md`): `GameModes.ThresherTime = 66`; `ThresherTimeController :
+GateRaceController` and `ThresherTimeCourse` (Grizzly Time's octagon on the shared `HeadlongCircuit`, cut against the
+Thresher's 229 u full-sling circle — the ball's 479 u/s ceiling on a flat 120 °/s turn), `ThresherTimeCourseTests`
+(14); end-condition target `thresherTimeGateTarget` 24 (SO field + Build twin + getter + `TryGetAuthoredTurnTarget` +
+the three build-baseline rows + `EndConditionOverridesWindow`), `MiniGameHUD` objective provider, `EnumIntegrityTests`
+61 → 62. Every asset authored by `Tools/Build/author_thresher_time_assets.py`: scene `MinigameThresherTime` (cloned from
+`MinigameGrizzlyTime`, fresh `GlobalObjectIdHash`es), card, scoring rule, toast config, preview, build-scene row,
+always-unlocked, both rosters. Card art `CardBackgrounds/ThresherTime.png` (`/cardart` COURSE tier). **No vessel file
+was edited.** AI Threshers never sling (AIPilot writes no trigger) and race at cruise.
+
+**Proved offline:** the course + test file compiled and RUN with Roslyn against the card-art Unity shim (14/14, 400
+seeds × 4 levels; three mutations watched failing); the §1 sling table measured on the shipped `ThresherChainSolver`;
+`author_thresher_time_assets.py --check` (watched failing on a mutated rule asset and a mutated scene block);
+`render_card_backgrounds.py --check`, `author_card_backgrounds.py --strict`, the arcade gates; `unity_refcompile`
+(see the branch's commit message). Nothing has been seen in the editor.
+
+**Verify:**
+1. **Compiles** — `ThresherTimeController`, `ThresherTimeCourse`, `EndConditionOverridesSO`, `EndConditionOverridesWindow`,
+   `MiniGameHUD`; Test Runner: `ThresherTimeCourseTests` (14), `EnumIntegrityTests` (62 modes).
+2. **Build Settings** — `MinigameThresherTime` is listed after `MinigameWarpline` (if the open Editor predates the pull,
+   FrogletTools ▸ Game Modes ▸ Reconcile Build Scene List).
+3. **Arcade card** — **Thresher Time** shows on a fresh account with its course-render background; the launch panel
+   pins the vessel to the Thresher; Test Flight opens the preview.
+4. **Intensity 1, 2 players** — eight rings bloom in a closed loop; the arrow points at your next gate; goal row 0/24.
+5. **Sling** — plant (LT full) at a corner, wind in (RT), let go on the next leg's line: a slack orbit held ~3 s then
+   wound in should leave at > 400 u/s and bleed to cruise in ~2 s. The gate you thread at that speed is CREDITED (the
+   detection clamp is 1600).
+6. **Lap wrap** — after gate 8 the lit ring returns to gate 1, goal row 8/24; the final-lap toast fires on lap 3.
+7. **Intensity 4** — a median lap is a triangle: two near-hairpins (~100–120 u) and a ~200 u corner.
+8. **AI** — add AI Threshers: they steer and thread rings at cruise, never plant, and finish.
+9. **MPPM two clients** — both see the same circuit; gate reports credited once; the winner is the domain whose lead
+   runner finished first.
+10. **End Game Conditions window** — shows the Thresher Time row (24) and the build-summary line.
+
+First-pass tuning: the course's floors / mouths (`ThresherTimeCourse.ForIntensity`), the AI approach (135 / 150 / 100 in
+the scene), comeback 0.3. Open design question: does slinging actually beat cruising (THRESHERTIME.md §8)?
+
+### 🔴 The Thresher becomes its own vessel: shark hull, swim, morning-star ball, icons (`cece/dazzling-hypatia-nmdhle`, 2026-10-13) — NOT EDITOR-VERIFIED
+
+**What landed** (`R_VesselActions/THRESHER.md` §5b): the Squirrel FBX is gone from `Thresher.prefab`; a procedural
+thresher-shark hull (`ThresherHullForm` / `ThresherHullBuilder`, element morphs per element) and its swim
+(`ThresherAnimation` / `ThresherSwimMath`, replacing the clone's `MantaAnimationContoller` on the same fileID) — the
+scythe tail beats as a wave, banks with the stick, curls toward a planted ball, flares the pectorals while the ball
+stops, cracks on a smash or launch; the chain is drawn from a hitch ring under the tail; the ball is a faceted
+morning star (`ThresherBallForm`) instead of a sphere + six cubes; new colliders (`ThresherBody`, `ThresherHitbox`)
+and two re-homed jets (no `DriftJet`); hull-fusion entries bake-free (runtime solve) and the four Squirrel-keyed
+bakes deleted; ability icons redrawn (`author_thresher_icons.py`; Heavy Iron → Mass Mode, guid kept); class card
+icons rendered from the hull (`render_thresher_card_icon.py`). All authored by `author_thresher_assets.py`.
+
+**Proved offline**: `thresher_hull_harness` (shipped forms RUN: winding by parity ray, morph bounds, tail chain
+never opens a joint, ball watertight); `author_thresher_assets.py --check` / `--self-test` (6 negative controls);
+`author_thresher_icons.py --check`; `render_thresher_card_icon.py --check`; `check_vessel_class_icons.py`;
+`unity_refcompile` (see the branch's commit message for the run). Nothing here has been seen in the editor.
+
+**Verify** — THRESHER.md "In-editor verification" H1–H10. First-pass tuning: `ThresherAnimation` (beat rate / swing /
+turn swing / whip curl / crack / bank), `ThresherHullBuilder` (every proportion), the hit box sizes in
+`author_thresher_assets.py` (`BODY_BOX_*`).
+
 ### 🔴 Rhino Space-5 "Breaker" — the sword cuts shielded prisms in one slice (`cece/magical-meitner-56obj5`, 2026-10-13) — NOT EDITOR-VERIFIED
 
 **What landed:** `RhinoSkimmerDamagePrismEffectSO.breakerElement` (authored `Space`). While

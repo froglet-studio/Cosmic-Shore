@@ -2,8 +2,9 @@
 """Author the Stoat ability row's PLACEHOLDER icon sprites.
 
 White silhouettes on a transparent 128 px canvas in the house icon language (the schema of
-Tools/Build/author_thresher_icon_placeholders.py, which this copies), multiply-tinted at
-runtime and replaced 1:1 by the art pass. Each names the ACT (R_VesselActions/STOAT_DIPOLE.md):
+the Thresher's placeholder tool, which this copied - retired 2026-10-13 when its art pass,
+Tools/Build/author_thresher_icons.py, landed: anti-aliased 8x renders, the model for this one's art
+pass), multiply-tinted at runtime and replaced 1:1 by the art pass. Each names the ACT (R_VesselActions/STOAT_DIPOLE.md):
 
   Charge  Ripple        two wavefronts thrown out of the point where a pair met
   Mass    Mass / Time   a thick slab of trail beside an orbit arrow (the B switch)

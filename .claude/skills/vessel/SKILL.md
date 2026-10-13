@@ -734,6 +734,20 @@ applies to new abilities, new resources on the meter list, and anything that add
     `remove_gameobject_tree`, `dangling_refs`) is the reference, and it took the Stoat from 4,381 lines to 2,038 with
     zero dangling references. (Stoat own-vessel pass, 2026-10-13.)
 
+47. **A procedural hull with NON-CONVEX pieces needs a parity-ray winding test, and hinged SIBLINGS must be posed
+    as a chain.** The Stoat harness checks winding as "every face points away from its piece's centroid" — exact for
+    convex pieces and wrong for a torus (a hitch ring's inner faces point AT the centroid) or a curved blade. The
+    Thresher's harness (`Tools/Build/thresher_hull_harness`) instead offsets a point a hair along each face's front
+    and counts ray crossings with the rest of its closed piece (odd = the face points inward), negative-controlled
+    with a flipped face. Second: parts the builder emits as SIBLINGS (so each carries its own mesh) but that read as
+    one limb — a tail in segments — open a gap at every joint the moment each rotates about its own pivot. Pose them
+    with one composition (`ThresherSwimMath.PoseChain`: joint k sits at joint k−1's ACCUMULATED rotation applied to
+    the rest offset) and assert in the harness that each segment's end, carried by its own pose, lands on the next
+    pivot over a full beat. Third: the second clone to drop its donor model reuses the first one's machinery —
+    `author_thresher_assets.py` IMPORTS `author_stoat_assets`'s document-model helpers (split_docs, remove_instance,
+    dangling_refs) rather than copying them; their error text still says "Stoat.prefab" (a refactor row in
+    THRESHER.md). (Thresher own-vessel pass, 2026-10-13.)
+
 ### 4.x Placing prisms from a vessel ability — shield sizing
 
 An ability that BUILDS with prisms (the Scarab's switch dais, the Urchin's track, a boost ring)
