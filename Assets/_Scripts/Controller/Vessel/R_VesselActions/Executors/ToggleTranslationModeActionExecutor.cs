@@ -73,13 +73,16 @@ namespace CosmicShore.Gameplay
             {
                 if (isOn)
                 {
-                    var seeded = seedAssemblerExecutor.StartSeed(stationarySeedConfig, status);
+                    // The stance's seed is held, not super-shielded: its wall steals until the
+                    // Serpent flies again (SERPENT_SEED_WALL.md, "The stance's wall").
+                    var seeded = seedAssemblerExecutor.StartSeed(stationarySeedConfig, status, heldByStance: true);
                     vesselPrismController?.StopSpawn();
                     if (seeded) seedAssemblerExecutor.BeginBonding();
                 }
                 else
                 {
                     vesselPrismController?.StartSpawn();
+                    seedAssemblerExecutor.ReleaseHeldWall();
                     seedAssemblerExecutor.StopSeedCompletely();
                 }
             }
@@ -114,7 +117,11 @@ namespace CosmicShore.Gameplay
             else _status.IsTranslationRestricted = false;
 
             vesselPrismController?.StartSpawn();
-            if (seedAssemblerExecutor) seedAssemblerExecutor.StopSeedCompletely();
+            if (seedAssemblerExecutor)
+            {
+                seedAssemblerExecutor.ReleaseHeldWall();
+                seedAssemblerExecutor.StopSeedCompletely();
+            }
 
             stationaryModeChanged?.Raise(false);
         }

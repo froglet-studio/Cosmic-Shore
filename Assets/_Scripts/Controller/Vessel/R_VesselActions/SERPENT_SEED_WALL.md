@@ -5,16 +5,17 @@ has run in the Unity Editor yet (see "Editor checks" at the end).
 
 ## The deception it serves
 
-The Serpent's stopped stance and its cloak are built to look like each other.
+The Serpent's stopped stance and its cloak both grow a wall from a seed with a Serpent beside it.
 
 - **Stopping** (B / R, `ToggleStationaryModeAction`) makes the Serpent the seed: it stops laying
-  trail, super-shields its latest prism and grows a wall from it. While
-  stopped it is immune to elemental debuffs (`VesselElementalImmunity`,
-  `WhileTranslationRestricted`), so it can bait and absorb the long-cooldown specialist abilities
-  that remove super-shields.
-- **Cloaking** (RT unscoped, `CloakSeedWallAction`) leaves the same super-shielded seed growing the
-  same wall, plus an illusion of the hull frozen where it was, which reads as a Serpent that just
-  stopped. The real Serpent flies on, cloaked. Everyone else sees neither the hull nor its trail.
+  trail, plain-shields its latest prism (`stanceShieldOnSeed`, never a super-shield) and grows a
+  wall from it **for as long as it stays stopped**. When it flies again the wall stops stealing and
+  answering crystals and stands as it is, exactly like a cloak wall whose super-shield was broken
+  (see "The stance's wall"). While stopped it is immune to elemental debuffs
+  (`VesselElementalImmunity`, `WhileTranslationRestricted`).
+- **Cloaking** (RT unscoped, `CloakSeedWallAction`) leaves a SUPER-shielded seed (`shieldOnSeed`)
+  growing the same wall, plus an illusion of the hull frozen where it was, which reads as a Serpent
+  that just stopped. The real Serpent flies on, cloaked. Everyone else sees neither the hull nor its trail.
   The pilot flying it sees their hull as a glowing outline in their domain colour
   (`CloakGhost.shader`: additive Fresnel rim, a faint fill and slow bands running nose to tail)
   and their trail as a ghost of itself, drawn through the prism dither at `pilotTrailAlpha` (0.4),
@@ -30,9 +31,23 @@ The Serpent's stopped stance and its cloak are built to look like each other.
   2026-10-13 the pilot's hull was a 30%-alpha dark-blue Lit material and the trail was darkened,
   which read as broken rather than cloaked, and everything snapped back in one frame.)
 
-So a seed with a Serpent next to it is either a stopped, invulnerable Serpent or a cloak decoy,
-and the wall gives nothing away about which. A seed shot immediately (the Sniper Shot at Charge 5,
-or an energized Rhino blade) grows nothing.
+So a seed with a Serpent next to it is either a stopped, debuff-immune Serpent or a cloak decoy.
+Since 2026-10-13 the seed itself tells them apart to an opponent who looks closely: only the
+cloak's seed carries the super-shield's stellation (Garrett: "that is only when it uses its cloak
+ability"). A seed shot immediately (the Sniper Shot at Charge 5, or an energized Rhino blade)
+grows nothing.
+
+### The stance's wall
+
+The stance seeds with `StartSeed(..., heldByStance: true)`. Its wall is HELD: `IsActive` is true
+while the seed lives and the hold stands, with no super-shield needed. Leaving the stance (or the
+turn ending, or the vessel going away) calls `ReleaseHeldWall`, which clears the hold. From then
+on the wall is inactive by the same rule that ends a cloak wall whose super-shield is broken: no
+sweeps, no crystal beam or ripple, no new Lockdown panels at the seed; the bricks stand, and those
+already in flight still land. The cloak finishing while the stance is held does not end the
+stance's wall, because the cloak's `StopBonding` is still deliberately a no-op. If the stance
+stops on a cloak wall's seed (nothing laid since), the seed keeps its super-shield (a plain shield
+never downgrades one) and the wall outlives the stance as a cloak wall.
 
 ## The wall
 
@@ -48,7 +63,7 @@ The Serpent's trail is laid UNSHIELDED (Garrett, 2026-10-10; `Serpent.prefab` `V
 | Growth | The wall STEALS FROM ITS EDGE (Garrett, 2026-10-13, restoring the legacy wall's behaviour): only an open site next to a brick (the seed included) can take a prism, and only one within the steal radius of that site. So the wall grows toward the mass beside it and creeps along a trail it is eating, not as a uniform disc. Every `stealSweepInterval` (0.3 s), for the seed's whole life, one sweep (`SerpentWallStealPlanner`) does a single spatial query, then up to `stealWavesPerSweep` (4) waves: each pairs every edge site with its nearest free prism in reach, grants nearest-first (one prism per site, one site per prism), and the new bricks open the next wave's edge, up to `maxStealsPerSweep` (48) per sweep. Per frame, only prisms still in flight are moved; standing bricks are checked once a sweep. There is no brick limit (Garrett, 2026-10-10): a brick that is shot out reopens its site as edge. With the Serpent stopped on its own trail, which runs back from the seed along the wall's normal, the edge only reaches the first prisms of it (about two rings at rest); after that the wall grows where loose mass passes its edge. |
 | Steal radius | `stealRadius` (40) x the Mass multiplier (the whole wall scales with Mass) x the owner's live Space multiplier (`spaceStealRadiusMultiplierAtFull`, x1 at rest to x2 at Space 10, floored at x0.5). Space is the wall's reach. |
 | Stealing | The Serpent's own prisms fly in at `ownPullSpeed` (20 u/s), an opponent's at `opponentPullSpeed` (6 u/s), and an opponent's prism is stolen when it lands. An opponent's SHIELDED prism is taken only while the Serpent's Space upgrade (Deep Focus) is active, read live each sweep; without it they are left alone. Super-shielded prisms, other seeds, another wall's bricks and creature bodies (`HealthPrism`) are never taken. |
-| Ends | Never on its own: leaving the stance or the cloak ending does not stop growth. The wall stops growing and answering crystals, and lets its bricks go as ordinary prisms, when the seed is destroyed or loses its super-shield. |
+| Ends | A cloak wall: never on its own, the cloak ending does not stop growth; it stops growing and answering crystals when its seed loses its super-shield. A stance wall: when the Serpent flies again (see "The stance's wall"). Either kind lets its bricks go as ordinary prisms when the seed is destroyed. |
 
 ### MASS sets size and spacing, at placement
 
@@ -58,7 +73,7 @@ placing vessel's own executor (`SeedAssemblerActionExecutor.SnapshotWallShape`, 
 shared by every Serpent) and **snapshotted into the wall**: the elemental state when the seed is
 placed decides how that wall assembles, and a later change in the pilot's Mass does not touch it.
 
-## Crystals re-shield every live wall
+## Crystals re-shield every active wall
 
 `SerpentWallShieldByCrystalEffectSO` sits in the Serpent's omni crystal effects AND all four
 elemental crystal lists (since 2026-10-10: the first playtest collected a crystal and nothing
@@ -66,8 +81,9 @@ happened, and in most modes the crystals on offer are elemental). When the Serpe
 crystal:
 
 1. The crystal morphs into beams: one `SniperBeam` tracer (the rifle's pooled, fading line, in the
-   Serpent's domain colour) from the crystal to **every** live super-shielded seed that Serpent
-   owns, flaring on the seed.
+   Serpent's domain colour) from the crystal to the seed of **every** active wall that Serpent
+   owns (each super-shielded cloak wall, and the stance's wall while it is stopped), flaring on
+   the seed.
 2. A shield ripples through each wall from the seed outward, one ring per `shieldRippleStep`
    (0.08 s). Bricks the Serpent no longer owns are skipped.
 
@@ -114,10 +130,13 @@ the legacy wall could.
 
 1. Stop (B / R) next to your own trail: 2:1 bricks form around the seed with square holes,
    alternating up/right. Fly a trail past the wall's edge: the wall reaches out and eats along it,
-   lopsided toward the mass rather than a circle, and keeps doing so after you fly off. Shoot a
-   brick out: the site refills. Raise Space: the edge reaches further. Pass an opponent's SHIELDED
-   trail: it is left alone without the Space upgrade and stolen with it.
-2. Cloak near an opponent's trail: their prisms fly in slower and change colour as they land.
+   lopsided toward the mass rather than a circle. The seed is plain-shielded, with no
+   stellation. Shoot a brick out: the site refills. Raise Space: the edge reaches further. Pass an
+   opponent's SHIELDED trail: it is left alone without the Space upgrade and stolen with it. Fly
+   off: the wall stops growing at once and stands; a crystal collected afterwards sends it no
+   beam.
+2. Cloak near an opponent's trail: the seed is super-shielded (stellated), and their prisms fly
+   in slower and change colour as they land. The wall keeps growing after the cloak ends.
    The cloak fades in: your hull flashes and settles into a glowing outline in your domain
    colour, and your trail dissolves to a dithered ghost; a second player sees the trail dissolve
    to nothing and the hull gone. When the cloak ends the illusion shrinks into the seed, your

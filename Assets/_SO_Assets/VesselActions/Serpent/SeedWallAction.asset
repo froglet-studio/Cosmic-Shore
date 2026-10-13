@@ -17,6 +17,7 @@ MonoBehaviour:
   requireExistingTrailBlock: 1
   assemblerType: 2
   shieldOnSeed: 2
+  stanceShieldOnSeed: 1
   bondingDepth: 50
   brickShortSide: 3
   brickDepth: 0.5

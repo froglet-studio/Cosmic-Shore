@@ -128,6 +128,14 @@ nearest-prism matching, up to 48 claims. Only in-flight prisms are steered per f
 `IsUpgradeActive(Space)` (Deep Focus). `siteClaimInterval` and `SerpentWallLattice.GrowthOrder`
 retired; `recruitRadius` renamed `stealRadius` (FormerlySerializedAs). Re-test step 1.
 
+**Garrett's stance follow-up (2026-10-13):** stopping must not lay a super-shielded seed (that is the
+cloak's alone); the stance's wall steals until the Serpent flies again, then behaves like a wall
+whose super-shield was destroyed. Done: the stance calls `StartSeed(..., heldByStance: true)`, which
+applies the new `stanceShieldOnSeed` (Shield; a SuperShield setting is clamped to Shield) and holds
+the wall; `SerpentWallAssembler.IsActive` is `seed alive && (held || super-shielded)`; leaving the
+stance, the turn ending or the executor's `End` calls `ReleaseHeldWall`. A plain shield no longer
+lands on an already super-shielded seed. Re-test steps 1 and 2.
+
 **Not opened in Unity** (no editor in the session). Offline: see the PR for the `unity_refcompile`
 result.
 

@@ -25,7 +25,13 @@ namespace CosmicShore.Gameplay
         [Header("Seeding Rules")]
         [SerializeField] private bool requireExistingTrailBlock = true;
         [SerializeField] private AssemblerKind assemblerType = AssemblerKind.Wall;
+        [Tooltip("The seed the CLOAK lays. Super-shielded: a cloak wall outlives the cloak and grows " +
+                 "until its seed's super-shield is broken.")]
         [SerializeField] private ShieldMode shieldOnSeed = ShieldMode.SuperShield;
+        [Tooltip("The seed the stopped STANCE lays. Never super-shielded (only the cloak lays one): a " +
+                 "stance wall grows while the Serpent stays stopped and ends, like a wall whose " +
+                 "super-shield was broken, when it flies again.")]
+        [SerializeField] private ShieldMode stanceShieldOnSeed = ShieldMode.Shield;
         [Tooltip("How many bricks the wall may claim, the seed excluded.")]
         [SerializeField] private int bondingDepth = 50;
 
@@ -99,6 +105,9 @@ namespace CosmicShore.Gameplay
         public bool RequireExistingTrailBlock => requireExistingTrailBlock;
         public AssemblerKind AssemblerType => assemblerType;
         public ShieldMode ShieldOnSeed => shieldOnSeed;
+        public ShieldMode StanceShieldOnSeed => stanceShieldOnSeed == ShieldMode.SuperShield
+            ? ShieldMode.Shield
+            : stanceShieldOnSeed;
         public int BondingDepth => bondingDepth;
 
         public float BrickShortSide => brickShortSide;

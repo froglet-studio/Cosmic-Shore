@@ -9,15 +9,22 @@ namespace CosmicShore.Gameplay
     /// <summary>
     /// The Serpent's seed wall: the MASS ability (design: R_VesselActions/SERPENT_SEED_WALL.md).
     ///
-    /// Lives on the SEED, a super-shielded trail prism left behind by the cloak or by the stopped
-    /// stance. For as long as the seed lives it STEALS FROM ITS EDGE: every
+    /// Lives on the SEED, a trail prism left behind by the cloak or by the stopped stance. For as
+    /// long as the wall is ACTIVE (<see cref="IsActive"/>) it STEALS FROM ITS EDGE: every
     /// <see cref="SeedWallActionSO.StealSweepInterval"/> it runs one sweep
     /// (<see cref="SerpentWallStealPlanner"/>) that pairs the open sites next to its bricks with
     /// the loose prisms in reach of them and pulls each into its site, reshaping it into a 2:1
     /// brick. So the wall grows toward the mass around it, along a trail it is eating, rather
-    /// than as a uniform disc. It never finishes: a brick that is shot out reopens its site. Leaving
-    /// the stance or the cloak ending does not stop it. An opponent's prism is stolen when it
-    /// lands. Destroying the seed ends the wall: a seed shot the moment it is laid grows nothing.
+    /// than as a uniform disc. It never finishes: a brick that is shot out reopens its site. An
+    /// opponent's prism is stolen when it lands. Destroying the seed ends the wall: a seed shot the
+    /// moment it is laid grows nothing.
+    ///
+    /// <para><b>Two kinds of wall, one rule for ending.</b> The CLOAK's seed is super-shielded and
+    /// its wall outlives the cloak: it is active until that super-shield is broken. The STANCE's
+    /// seed is never super-shielded (Garrett, 2026-10-13: the super-shield is the cloak's alone);
+    /// its wall is HELD, active while the Serpent stays stopped, and <see cref="ReleaseHold"/>
+    /// ends it when the Serpent flies again. Either way an ended wall stands where it is, stops
+    /// stealing and stops answering crystals.</para>
     ///
     /// <para><b>Space is the wall's reach</b>, read live each sweep: the steal radius scales with
     /// the owner's Space multiplier, and the Space upgrade lets the wall take an opponent's
@@ -32,7 +39,7 @@ namespace CosmicShore.Gameplay
     /// pilot's Mass moves afterwards.</para>
     ///
     /// <para><b>Crystals</b> (<see cref="SerpentWallShieldByCrystalEffectSO"/>, omni and every
-    /// element) draw a beam from the crystal to every live super-shielded seed the collecting
+    /// element) draw a beam from the crystal to the seed of every active wall the collecting
     /// Serpent owns and ripple a shield through each wall, ring by ring. If the Serpent's Mass
     /// upgrade (Lockdown) is active WHEN the crystal is collected, the wall also seals every
     /// square hole with a flat danger panel, a crack's width short of the shields around it;
@@ -57,6 +64,9 @@ namespace CosmicShore.Gameplay
             public float ShortSide;
             public float Depth;
             public float MassMultiplier;
+            /// <summary>The stopped stance's wall: active, without a super-shield, until
+            /// <see cref="ReleaseHold"/>.</summary>
+            public bool HeldByStance;
         }
 
         sealed class Member
@@ -107,6 +117,7 @@ namespace CosmicShore.Gameplay
         readonly Dictionary<Vector2Int, Panel> _panels = new();
 
         bool _locked;
+        bool _held;
         Coroutine _ripple;
 
         public override Prism Prism { get; set; }
@@ -116,9 +127,10 @@ namespace CosmicShore.Gameplay
         public IVesselStatus Owner => _shape.Owner;
         public Snapshot Shape => _shape;
 
-        /// <summary>The seed is alive (not destroyed, not recycled by the pool) and still
-        /// super-shielded. Only an active wall grows and answers a crystal.</summary>
-        public bool IsActive => IsSeedAlive && Prism.prismProperties is { IsSuperShielded: true };
+        /// <summary>The seed is alive (not destroyed, not recycled by the pool) and either still
+        /// super-shielded (the cloak's wall) or still held by the stopped stance. Only an active
+        /// wall grows and answers a crystal.</summary>
+        public bool IsActive => IsSeedAlive && (_held || Prism.prismProperties is { IsSuperShielded: true });
 
         bool IsSeedAlive =>
             Prism && !Prism.destroyed && Prism.gameObject.activeInHierarchy &&
@@ -135,7 +147,12 @@ namespace CosmicShore.Gameplay
         /// </summary>
         public void Configure(Snapshot shape)
         {
-            if (_configured && IsSeedAlive) return;
+            if (_configured && IsSeedAlive)
+            {
+                // The stance stopping on a live wall's seed holds that wall too.
+                _held |= shape.HeldByStance;
+                return;
+            }
 
             Prism = GetComponent<Prism>();
             if (!Prism || shape.Config == null) return;
@@ -155,6 +172,7 @@ namespace CosmicShore.Gameplay
             _filled.Add(Vector2Int.zero);
             _panels.Clear();
             _locked = false;
+            _held = shape.HeldByStance;
 
             // The seed is site (0, 0) and keeps its own long axis up; it takes the brick shape too.
             var brick = SerpentWallLattice.BrickScale(shape.ShortSide, shape.Depth);
@@ -171,11 +189,17 @@ namespace CosmicShore.Gameplay
             _nextSweepAt = Time.time;
         }
 
-        /// <summary>Deliberately nothing. The executor calls this when the stance is left or the
-        /// cloak ends, and the wall outlives both: it grows, and answers crystals, for as long as
-        /// its seed lives (Garrett, 2026-10-10: "prism walls should continue growing
-        /// indefinitely").</summary>
+        /// <summary>Deliberately nothing. The executor calls this when the cloak ends, and a cloak
+        /// wall outlives it: it grows, and answers crystals, until its seed's super-shield is
+        /// broken (Garrett, 2026-10-10: "prism walls should continue growing indefinitely"). The
+        /// stance's wall ends through <see cref="ReleaseHold"/> instead, so the cloak finishing
+        /// while the stance is held cannot end the stance's wall.</summary>
         public override void StopBonding() { }
+
+        /// <summary>The Serpent flies again: a stance wall stops stealing and answering crystals
+        /// and stands as it is, exactly like a cloak wall whose super-shield was broken. Bricks
+        /// already in flight still land.</summary>
+        public void ReleaseHold() => _held = false;
 
         void OnDisable() => Dissolve();
 
@@ -194,6 +218,7 @@ namespace CosmicShore.Gameplay
             _panels.Clear();
             _growing = false;
             _configured = false;
+            _held = false;
             if (_ripple != null) { StopCoroutine(_ripple); _ripple = null; }
         }
 
@@ -373,8 +398,9 @@ namespace CosmicShore.Gameplay
         // ---------------- Crystals ----------------
 
         /// <summary>
-        /// Every live, super-shielded wall seeded by <paramref name="owner"/> draws a beam from the
-        /// crystal and ripples a shield through its bricks. Returns how many walls answered.
+        /// Every active wall seeded by <paramref name="owner"/> (a super-shielded cloak wall, or the
+        /// stance's wall while the Serpent stays stopped) draws a beam from the crystal and ripples
+        /// a shield through its bricks. Returns how many walls answered.
         /// </summary>
         public static int ReshieldWallsOf(IVesselStatus owner, Vector3 crystalPosition, Color beamColour)
         {
