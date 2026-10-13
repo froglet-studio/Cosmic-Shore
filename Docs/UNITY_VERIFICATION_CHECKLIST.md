@@ -65,6 +65,17 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Stoat poles a little bigger and stronger: horizon 1.75 → 2.1 u, GM 40 000 → 50 000 (`cece/fervent-hypatia-rg4why`, 2026-10-13) — NOT EDITOR-VERIFIED
+
+`StoatDipoleConfig` only (+ its generator). Measured headless: the softened bend still rises and falls
+smoothly with pass distance, now peaking 141° at 30 u/s (was 128°) and 25° at 60 u/s, with a longer tail
+(75° at 120 u, was 54°); the fly-through zone (135 u) behaves as before (180° out, past 200° through).
+
+1. Holes ~20% wider than last round; passes bend a little harder and from a little further out.
+2. Re-check the slam/neutralize release and the 180°/200° loop rule still read right.
+
+---
+
 ### 🔴 Stoat: smaller hull; bigger, weaker, softened poles; releases slam and neutralize (`cece/fervent-hypatia-rg4why`, 2026-10-13) — NOT EDITOR-VERIFIED
 
 `R_VesselActions/STOAT_DIPOLE.md` §1, `STOAT.md`. Changed: `Stoat.prefab` root scale 0.8; `StoatDipoleConfig`

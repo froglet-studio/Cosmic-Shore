@@ -35,17 +35,19 @@ released pair. Every peer runs the same slam on its copy (`StepCollapses`). A pr
 slamming takes the budget from it, oldest first.
 
 The poles' strength and size never follow the triggers — only their separation (the dipole moment)
-does. Space sizes them: horizon **1.75 u** and GM **40 000** at rest (the studio's 3.5 u and 120 000;
-cut to 1.17 u / 60 000, then on 2026-10-13 "a bit bigger and weaker"), ×1 → ×2 at level 10
+does. Space sizes them: horizon **2.1 u** and GM **50 000** at rest (the studio's 3.5 u and 120 000;
+cut to 1.17 u / 60 000, then 1.75 u / 40 000 "a bit bigger and weaker", then on 2026-10-13 "a little bigger
+and a little more powerful"), ×1 → ×2 at level 10
 (`StoatDipoleConfigSO.poleSize`, read live on the owner, replicated as the horizon). The sink grows in
 over 0.9 s, the source over 1.1 s (from 55%), so a fresh pair pulls before it pushes.
 
 **The field** on the owner's flight and the pathfinder: the sink's pull **softened over a 14-horizon core**
-(`sinkSofteningHorizons`; ε = 24.5 u at rest) — `GM·r/(r² + ε²)^1.5`, the source's own law — and the
+(`sinkSofteningHorizons`; ε = 29.4 u at rest) — `GM·r/(r² + ε²)^1.5`, the source's own law — and the
 source's push `GM·r/(r² + ε²)^1.5` (ε = 2 source horizons), the sum capped at 3000 u/s². The studio's
 steep Paczyński–Wiita `GM/(r − r_s)²` made a near pass all-or-nothing: measured unsteered at 30 u/s,
-offsets 8 u apart bent 2°, 63°, 166°, 179°, 150°, 71°…; softened, the same passes bend smoothly 27° → 124°
-→ 54° across 0–120 u, the widest forgiving band of warped lines of the candidates tried (prisms and rival
+offsets 8 u apart bent 2°, 63°, 166°, 179°, 150°, 71°…; softened, the same passes bend smoothly 29° → 141°
+→ 75° across 0–120 u at the shipped 2.1 u / 50 000 (9° → 25° → 12° at 60 u/s), the widest forgiving band of
+warped lines of the candidates tried (prisms and rival
 vessels still feel the platform's own law). One step of flight in it
 (`StoatDipoleMath.Step`, the studio's `fieldSubstep`) turns the nose by the field's perpendicular part
 (capped at 12 rad/s) and carries a **gravity speed** along the nose from its parallel part (gripped back

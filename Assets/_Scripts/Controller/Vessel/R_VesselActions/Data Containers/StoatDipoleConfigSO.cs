@@ -51,14 +51,14 @@ namespace CosmicShore.ScriptableObjects
         [SerializeField, Range(0.5f, 30f)] float followRate = 6f;
 
         [Header("Poles (fixed — only their separation moves)")]
-        [Tooltip("The sink's gravitational parameter GM, u³/s² (the studio's 120000; 60000, then 40000 on 2026-10-13: the pull, the " +
+        [Tooltip("The sink's gravitational parameter GM, u³/s² (the studio's 120000; 60000, 40000, then 50000 on 2026-10-13: the pull, the " +
                  "path's bend and the prisms' tidal stretch all scale with it). Authored as GM, not as a BlackHoleConfig strength, so " +
                  "the shipped gmPerStrength cannot rescale it.")]
-        [SerializeField, Min(0f)] float poleGM = 40000f;
+        [SerializeField, Min(0f)] float poleGM = 50000f;
 
         [Tooltip("Each pole's event-horizon radius, world units — the hole's drawn size, and with it the lens and the tidal warp's reach " +
-                 "(the studio's 3.5; 1.17, then 1.75 on 2026-10-13). BlackHoleConfig.minHorizonRadius floors it, so keep that below this.")]
-        [SerializeField, Min(0.1f)] float poleHorizon = 1.75f;
+                 "(the studio's 3.5; 1.17, 1.75, then 2.1 on 2026-10-13). BlackHoleConfig.minHorizonRadius floors it, so keep that below this.")]
+        [SerializeField, Min(0.1f)] float poleHorizon = 2.1f;
 
         [Tooltip("The sink's pull on the OWNER's flight (and the pathfinder) is softened over a core this many sink horizons wide: " +
                  "GM·r/(r²+ε²)^1.5, the source's own law, instead of the steep GM/(r−r_s)². How hard a pass bends then grows smoothly " +

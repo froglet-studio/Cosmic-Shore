@@ -600,8 +600,8 @@ def dipole_config_asset() -> str:
             "  sidewaysMax: 200\n"
             "  lengthwaysMax: 120\n"
             "  followRate: 6\n"
-            "  poleGM: 40000\n"
-            "  poleHorizon: 1.75\n"
+            "  poleGM: 50000\n"
+            "  poleHorizon: 2.1\n"
             "  sinkSofteningHorizons: 14\n"
             "  poleSize:\n" + elemental(1, 1, 2, 3, 1) +
             "  sourcePush: 1\n"

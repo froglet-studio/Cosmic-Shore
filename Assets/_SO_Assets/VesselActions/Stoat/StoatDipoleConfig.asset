@@ -18,8 +18,8 @@ MonoBehaviour:
   sidewaysMax: 200
   lengthwaysMax: 120
   followRate: 6
-  poleGM: 40000
-  poleHorizon: 1.75
+  poleGM: 50000
+  poleHorizon: 2.1
   sinkSofteningHorizons: 14
   poleSize:
     Enabled: 1
