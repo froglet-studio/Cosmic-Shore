@@ -549,10 +549,14 @@ One parameter per element, each an `ElementalFloat` on `ThresherConfigSO` read w
 
 | Element | Ability (input) | Scales | Level 5 | Gated at |
 |---|---|---|---|---|
-| Charge | **Wrecking Ball** (passive) | smash-explosion diameter ×1 → ×2 | **Lit** — the hot ball burns the lit domain colour; its explosions spare the pilot's own domain (`AffectSelfOverride` off — domain-sparing in the explosion layer) and it bounces off own-domain mass even when hot | `ThresherExecutor.LitActive` |
-| Mass | **Heavy Iron** (passive) | ball mass ×1 → ×1.75 (radius by the cube root) | **Wrecker** — a smash costs the ball no speed (plough 1.0) | `ThresherExecutor.WreckerActive` |
-| Space | **Winch** (RT) | let-out chain length ×1 → ×1.5 | **Reaper Chain** — the chain cuts while slack, and cuts shielded prisms | `ThresherExecutor.ReaperActive` |
-| Time | **Plant** (LT) | orbit spin-up rate and cap ×1 → ×1.75 | **Slingshot** — the unlock yank is never weaker than smash speed | `ThresherExecutor.SlingshotActive` |
+| Charge | **Wrecking Ball** (passive) — the ball and chain also reach enemy vessels: a scored Strike that steals petals | petals stolen per enemy-vessel hit 1 → 3 per element | **Magnet** — the free ball is drawn toward the nearest enemy vessel | `ThresherExecutor.MagnetActive` |
+| Mass | **Mass Mode** (A, toggle) — the ball steals rival prisms, shields its own, lays a trail and banks the chain's energy instead of exploding | Mass Mode trail prism size ×1 → ×2 | **Armoured Trail** — those trail prisms are laid shielded | `ThresherExecutor.ArmouredTrailActive` |
+| Space | **Winch** (RT) — the chain, taut or slack, slices rivals and shields own mass; the Space card shows the banked explosion radius | largest blast the chain's bank can buy ×4 → ×8 diameter | **Breaker** — a red ball's direct hit destroys super-shielded prisms | `ThresherExecutor.BreakerActive` |
+| Time | **Plant** (LT) — a fast spin hands the camera to the launch view; LT up launches from the chosen point | orbit spin-up rate and cap ×1 → ×1.75 (how fast it winds up to launch) | **Perfect Release** — a launch timed inside the lime window leaves ×1.6 faster | `ThresherExecutor.PerfectReleaseActive` |
+
+Re-cut 2026-10-13 (round 3, Garrett's spec). Retired with their gates: Charge "Lit", Mass "Wrecker",
+Space "Reaper Chain", Time "Slingshot"; Charge no longer scales the explosion, Mass the ball's weight,
+or Space the chain's reach.
 
 **One L5 per element** (rule 26): the hull is a Squirrel clone, and the Squirrel's skimmer and
 vessel containers gate their own upgrades on Charge/Space/Time (steal, overtake, crystal blast,

@@ -157,6 +157,174 @@ flare 1.5, illusion morph 0.6 s.
 
 ---
 
+### 🔴 Thresher round 5: smooth spin entry/exit, doubled sight zoom (`cece/wonderful-hypatia-4b323s`, 2026-10-13) — NOT EDITOR-VERIFIED
+
+**Landed** (`THRESHER.md` §4 Lock, §5a): (1) the camera's launch-view entry and exit are eased on the
+executor's clock between still / analytically tracked poses (`spectateEnterSeconds` 0.9, `spectateExitSeconds`
+0.8, hand-over `spectateBlendSeconds` 0.05; exit ends with `SnapToTarget`); (2) the solver's hook-on turns the
+heading onto the orbit at `hookTurnRate` 300 °/s with a stretch-and-spring reel-back instead of a one-frame snap
+(worst 6.9°/frame vs 91°); (3) `sightZoomFieldOfView` 12° → 6°.
+
+**Not opened in Unity.** Offline: `unity_refcompile` RESULT OK; `thresher_chain_harness` 57/57 (new hook-on test).
+
+**Verify in editor:**
+1. Tow the ball behind you and plant: the ship swings wide and curves onto the orbit, no snap; it does not
+   slow to a crawl. The camera glides into the launch view with no wobble.
+2. Release LT: the ship launches; the camera glides back behind it with no swing or pop at the end.
+3. Let the spin decay (pay out RT) until the view releases: same glide.
+4. Squeeze LT fully: the Time-petal window zooms about twice as far as before.
+5. Tuning if needed: `spectateEnterSeconds` / `spectateExitSeconds` (glide lengths), `hookTurnRate` (how fast the
+   ship swings on; higher = tighter, less stretch), `hookReturnRate` (how fast the stretch reels back).
+
+---
+
+### 🔴 Thresher round 4: launch camera on the trajectory, crosshair, Time-petal zoom window (`cece/wonderful-hypatia-4b323s`, 2026-10-13) — NOT EDITOR-VERIFIED
+> **Partly superseded by the later Thresher rounds above (2026-10-13)** — verify the NEWEST Thresher
+> entry first; where this one disagrees with it (camera, launch path, element upgrades), the newer one is the design.
+
+
+**Landed** (`R_VesselActions/THRESHER.md` §5a): the spectated-spin camera follows behind the launch point ON
+the trajectory at the hull's chase distance with no height offset (`aimElevationDegrees` 0); the dotted
+line is gone (deleted `ScreenDotPath`) and `ThresherLaunchSight` draws a crosshair at screen centre (lime
+while the timing is right) plus a Time-petal zoom window top-left — a second camera down the trajectory
+from the launch point, zoomed by LT depth (deadzone 0.25, 50° → 12°). New `TimePetalGeometry` (rhombus
+traced off `time_petal.png`, aspect tan 36°) + `TimePetalImage : ScopePetalImage`. **Shared Serpent code
+touched:** `ScopePipView` (+explicit-eye `Tick`, `RenderAspect`, `Label`; defaults unchanged) and
+`ScopePetalImage` (outline/hub/miter now virtual, defaults identical).
+
+**Not opened in Unity.** Offline: `unity_refcompile` RESULT OK (0 errors in project code);
+`thresher_chain_harness` 56/56.
+
+**Verify in editor:**
+1. Thresher: plant and spin. The camera sits level behind a point on the circle looking along the launch
+   path; crosshair at screen centre; the ship crosses in front of it each lap and the crosshair flashes
+   lime just before. Release LT while lime → near-instant launch through the crosshair.
+2. A diamond-shaped (Time petal) window top-left shows the path magnified with its own crosshair. Squeeze LT
+   deeper → zooms in; ease to a light hold → widens; the main view never zooms. Keyboard (binary LT): full zoom.
+   If the window is ABSENT, check the Hierarchy for `[ThresherLaunchSight …]` / `ZoomWindow` and
+   `[ThresherSightCamera]`; if it is there but blank, the camera is the suspect, not the surface
+   (`TimePetalImage` is the Serpent's RawImage subclass).
+3. **Serpent regression**: hold LT on a Serpent — its Charge-petal eyepiece looks exactly as before
+   (square, same place, same reticle).
+4. The window and crosshair vanish the moment the ship launches, when the spin drops, and when you swap vessel.
+
+---
+
+### 🔴 Thresher round 3: element re-cut, vessel petal hits, dotted launch path with perfect window, snap-back fix (`cece/wonderful-hypatia-4b323s`, 2026-10-13) — NOT EDITOR-VERIFIED
+> **Partly superseded by the later Thresher rounds above (2026-10-13)** — verify the NEWEST Thresher
+> entry first; where this one disagrees with it (camera, launch path, element upgrades), the newer one is the design.
+
+
+**Landed** (`R_VesselActions/THRESHER.md` §2, §2a–2c, §3, §5a):
+- **Snap-back fix**: the launch point and the launch camera use the ship's ACTUAL orbit radius, not the
+  chain length (which runs ahead while RT pays out).
+- **Element re-cut** (rule 26 — old gates deleted): Charge = petals stolen per enemy-vessel hit 1→3
+  (L5 **Magnet**: free ball drawn to enemy vessels); Mass = Mass Mode trail prism size ×1→×2 (L5
+  **Armoured Trail**: laid shielded); Space = largest energy blast ×4→×8 (L5 **Breaker**: red ball's
+  direct hit destroys super-shielded prisms); Time = spin-up rate/cap (L5 **Perfect Release**: ×1.6
+  launch when released inside the 0.25 s window). Retired: Lit, Wrecker, Reaper Chain, Slingshot,
+  Charge-scaled explosion, Mass-scaled ball, Space-scaled chain reach.
+- **Enemy vessels**: ball sweep + every chain link reach enemy hulls; a contact is a Strike through
+  `CombatHitDrain.TryAdmit` that steals petals and raises `Event_CombatHitStats` (wired on
+  `ThresherConfig.asset`), decided on the Thresher owner's machine. PvP-is-petals-only respected.
+- **Launch path** = `ScreenDotPath`, a port of the Stoat's `StoatPathfinderDots` (unmerged branch);
+  white, lime while a release would be perfect.
+- **Windmill** 6 → 12 s. Chain cuts shielded rivals (first cut pops) since Reaper is gone.
+
+**Not opened in Unity.** Offline: `thresher_chain_harness` 55/55 (new: perfect vs late launch, wait
+prediction and launch point on the ship's own circle while paying out, magnet pulls only a free ball).
+
+**Verify in editor:**
+1. Plant, hold RT so the chain pays out: the dotted line's start stays on the ship's path (no jump
+   outward); release LT — the ship launches from the point without being yanked back.
+2. Watch the dots flash lime as the ship nears the point each lap; release while lime → near-instant
+   launch; with Time L5 it leaves visibly faster.
+3. Ball/chain into an AI or rival vessel: their petals drop, a Strike scores (Broadside/Dogfight-style
+   scoring), at most once a second per victim; they are not pushed. Charge L5: the free ball bends
+   toward a nearby enemy.
+4. Mass Mode trail: bigger prisms at high Mass; shielded at Mass L5. Space L5: a red ball breaks a
+   super-shielded (stellated) prism. Space level: a full bank's blast grows with Space.
+5. Omni crystal: windmill lasts ~12 s.
+
+---
+
+### 🔴 Thresher round 2: chain always slices + shields own, Space card = banked energy, launch-point camera with timed release (`cece/wonderful-hypatia-4b323s`, 2026-10-13) — NOT EDITOR-VERIFIED
+> **Partly superseded by the later Thresher rounds above (2026-10-13)** — verify the NEWEST Thresher
+> entry first; where this one disagrees with it (camera, launch path, element upgrades), the newer one is the design.
+
+
+**Landed** (`R_VesselActions/THRESHER.md` §2, §5, §5a), on top of the entry below (which it partly supersedes — its step 1 now reads as here):
+- **Chain**: slices rival prisms taut OR slack, and shields own-domain prisms it touches (fresh own trail
+  excepted). Reaper Chain (Space L5) is now just "cuts shielded rivals"; map text updated.
+- **Space card gauge** = banked explosion radius (`EnergyRadius01`), iron → lime; replaces the chain-out
+  gauge (`energyGauge`, FormerlySerializedAs `chainOutGauge`; GameObject renamed `EnergyGauge`).
+- **Launch camera**: centred on a launch point on the circle (the point whose tangent is the aim), behind
+  it looking down the path, `aimElevationDegrees` 25. Stick X slides the point round the circle; stick Y
+  tilts the orbit with the camera (`SteerOrbitPlane`). LT up ARMS the launch: the ship keeps circling and
+  leaves from that point along the aim (`ArmLaunch`), at most a lap later.
+
+**Not opened in Unity.** Offline: `thresher_chain_harness` 54/54 (new: armed launch leaves from the chosen
+point along the aim; steered plane carries the orbit; launch-camera pose). `unity_refcompile` RESULT OK (0 errors in project code).
+
+**Verify in editor:**
+1. Plant and spin: camera sits behind a point on the circle looking along a lime line; the ship sweeps
+   through the point each lap. Stick X moves the point round (camera follows); stick Y tilts the orbit.
+   Release LT mid-lap: the ship keeps going round and leaves exactly at the point along the line. Report
+   whether the wait feels too long at slow spins, and whether the camera is too close/far (`aimElevationDegrees`).
+2. Drag a SLACK chain through rival prisms → sliced; through your own older trail → shields appear.
+3. Space card fills toward lime as the chain kills; empties on the blast.
+4. MPPM: the guest's view of the host's ball during an armed launch (expected to look off for up to a lap — owner-only aim).
+
+---
+
+### 🔴 Thresher: earlier spectate + stick AIM, smooth 24-link chain, chain energy, Mass Mode (A), omni windmill (`cece/wonderful-hypatia-4b323s`, 2026-10-13) — NOT EDITOR-VERIFIED
+> **Partly superseded by the later Thresher rounds above (2026-10-13)** — verify the NEWEST Thresher
+> entry first; where this one disagrees with it (camera, launch path, element upgrades), the newer one is the design.
+
+
+**Landed** (`R_VesselActions/THRESHER.md` §1, §2a–2c, §5, §5a):
+- **Spectate sooner** (`spectateSpinRate` 1.8 → 0.9 rad/s, engage 0.2 → 0.1 s) to an **aim camera**
+  that looks down on the orbit from behind the launch direction; the sticks turn the aim (and the
+  camera) instead of tilting the orbit; a lime line shows the path; LT up flies off along it at once.
+- **Chain**: 24 gameplay links (was 12), drawn as a Catmull-Rom curve (6 segments per link).
+- **Chain energy**: each chain kill banks 1 (cap 30); the ball's next rival hit explodes even below
+  smash speed, diameter × (1 + 0.1 × bank, cap ×4). Rim leans lime with the bank.
+- **Mass Mode** (A = `Button1Action`, toggle; new `ThresherMassModeAction.asset` in the prefab's
+  shared map): the ball steals rivals, shields own, lays a trail through the hull's spawn channel,
+  never explodes, banks 0.5 per steal. The Mass map entry is now "Mass Mode", `Input: 6`.
+- **Windmill** (`ThresherWindmillByCrystalEffectSO` in `ThresherImpactorDataContainer.vesselCrystalEffects`):
+  an omni crystal makes the ball circle the ship red-hot across its flight for 6 s.
+
+**Not opened in Unity** (no editor / `unity` CLI in the session). Offline: `unity_refcompile` RESULT OK
+(0 errors in project code); `thresher_chain_harness` runs the shipped solver + test file, 52/52 pass
+(6 new: windmill radius/plane/heat/release/top-up, chain smoothing through every link, aim orthonormality
+and screen-right sign, aim vantage tilt/side, long-chain relaxation); `peer_press_harness` clean;
+`element_ability_table.py Thresher` 4/4 with Mass on `A / Space`.
+
+**Verify in editor** (Toy Box > Vessel Changer → Thresher; THRESHER.md § In-editor verification 11–15):
+1. Plant reeled in: the camera lifts off almost at once and looks DOWN with a lime line up the
+   screen from the ship. Stick right → line and camera swing right; pitch → up/down; the orbit does
+   NOT tilt. Release LT mid-spin → the ship leaves along the line immediately. Note any camera
+   whip on the release and whether stick-Y feels inverted (sign: the hull's nose-down convention).
+2. Swing a slack chain: no kinks at link joints. Taut: straight.
+3. Chain-slice rival prisms → ball rim leans lime. Slow ball into a rival prism → explosion sized by
+   the bank; rim resets. Own-trail bounce → no blast.
+4. Press A (gamepad A / Space): ball goes lit. Through rival trail → prisms flip to your domain, no
+   blasts even red-hot; through own trail → shields appear; a trail of your prisms follows the
+   ball. Press A again, hit a rival → one big blast. Console clean (no `[PrismSpawner]` errors).
+5. Fly through an OMNI crystal → ball windmills round the ship ~6 s, red-hot, smashing; RT resizes
+   it. An elemental crystal does not trigger it.
+6. MPPM two clients: guest sees the host's windmill and Mass Mode trail; host's aimed release
+   reaches the guest within a frame or two (the yank direction is owner-decided, see §9).
+
+**First-pass tuning** (all `ThresherConfig.asset`): `spectateSpinRate` 0.9, `spectateTiltDegrees` 30,
+`aimYawRate` 180 / `aimPitchRate` 120 °/s, `aimLineLength` 150; `chainLinks` 24, `chainRenderSubdivisions` 6;
+`energyPerSlice` 1, `energyPerSteal` 0.5, `energyMax` 30, `energyDiameterPerUnit` 0.1, `energyMaxDiameterScale` 4;
+`massTrailSpacing` 6, `massTrailPrismScale` (8, 0.75, 5.5), `massTrailMaxPerFrame` 3; `windmillSeconds` 6,
+`dials.windmillSpeed` 1000 (sandbox; 184 u/s).
+
+---
+
 ### 🔴 Elemental Converter on the Ark screen: the omni combine plays in the app shell (`cece/eager-rubin-km7qyn`, 2026-10-13) — NOT EDITOR-VERIFIED
 
 **Landed** (`Docs/Studios/OMNI_COMBINE_LAB.md` § "In the game"; generators
