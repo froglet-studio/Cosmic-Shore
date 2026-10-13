@@ -10,7 +10,7 @@ A browser lab for the next round of the omni crystal's element effects. It cover
 The lab has styles, sliders for each ask, a beat timeline and a side-by-side omni / Charge crystal view. A "compare every Charge effect" grid is on both subjects. There is also a headless collision scorecard and a shared decision log.
 
 - **Page (source):** `Docs/Studios/OmniMotionLab.html` (open it in Chrome, or use the live page)
-- **Live page:** see `.claude/skills/labmaker/CATALOG.md` (private until shared from its Share menu; decisions recorded there land in its `decisions` log)
+- **Live page:** https://claude.ai/artifact/7Q7uzP6Xc3dUWQ2QHky3uh (private until shared from its Share menu; decisions recorded there land in its `decisions` log)
 - **Data:** the same block as the Omni Combine Lab, stamped into both pages by `python3 Tools/Build/omni_combine_lab_assets.py`. `--check` fails if either page is stale. The omni prism thickness is imported from `author_omni_crystal_triangles.DEPTH_THICKNESS`.
 - **Verify:** `node .claude/skills/labmaker/verify_lab.cjs Docs/Studios/OmniMotionLab.html`
 - **Hooks:** `window.__lab.runFullBatch()`, `runChargeBatch()`, `clipTimeline(p)`, `clipSelfTest()`, `beatsOf(p)`, `squaresAt(p, t)`, `wavesAt(p, t)`, `sealOf(p, D)`
