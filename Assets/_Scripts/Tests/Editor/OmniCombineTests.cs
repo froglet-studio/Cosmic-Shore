@@ -130,7 +130,7 @@ namespace CosmicShore.Tests
         }
 
         [Test]
-        public void EveryCrystalButTheFirst_ArrivesFromTheCamerasSide_AndStillLands()
+        public void EveryCrystalButTheFirst_ArrivesFromTheCamerasSide_FollowingIt_AndStillLands()
         {
             var data = LoadData();
             var core = new OmniCombineCore(data);
@@ -150,9 +150,15 @@ namespace CosmicShore.Tests
                     core.CrystalFrame(k, t0, aimed, out var setsOff, out _, out _, out _, out _);
                     Assert.Less((setsOff - idle).Length, 1e-9, "a crystal sets off from exactly where it idles");
                     double tA = t0 + 0.97 * aimed.Flight;
-                    core.CrystalFrame(k, tA, aimed, out var arriving, out _, out _, out _, out _);
-                    double off = OmniCombineCore.WrapAngle(System.Math.Atan2(arriving.X, arriving.Z) - (cameraAzimuth + rate * tA));
-                    Assert.Less(System.Math.Abs(off), 12 * System.Math.PI / 180, $"{OmniCombineCore.Order[k]} does not arrive from the camera's side");
+                    // The player hands the play the live camera every frame; the approach follows it at any speed.
+                    foreach (double actual in new[] { rate, 2 * rate, 0.0 })
+                    {
+                        var live = aimed;
+                        live.CameraAzimuth = cameraAzimuth + actual * tA;
+                        core.CrystalFrame(k, tA, live, out var arriving, out _, out _, out _, out _);
+                        double off = OmniCombineCore.WrapAngle(System.Math.Atan2(arriving.X, arriving.Z) - live.CameraAzimuth);
+                        Assert.Less(System.Math.Abs(off), 12 * System.Math.PI / 180, $"{OmniCombineCore.Order[k]} does not arrive from the camera's side");
+                    }
                 }
                 var pos = Buffers(core);
                 core.Pose(OmniCombineCore.MorphEnds(aimed), aimed, Camera, pos, new float[4]);

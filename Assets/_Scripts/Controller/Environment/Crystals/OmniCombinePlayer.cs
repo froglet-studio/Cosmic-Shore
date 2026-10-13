@@ -350,18 +350,23 @@ namespace CosmicShore.Gameplay
             if (_cameraSeen) _core.FaceCamera(ref _params, _cameraAzimuth, _cameraTurnRate, _t);
         }
 
-        /// <summary>Follows the camera round the stage's vertical: its azimuth, and how fast that turns (eased, so one
-        /// uneven frame does not swing the next aim).</summary>
+        /// <summary>Follows the camera round the stage's vertical: its azimuth (unwrapped), handed to the play every frame
+        /// so the crystals' approach moves with it, and how fast it turns (eased, so one uneven frame does not swing the
+        /// next aim).</summary>
         void TrackCamera(D3 camDir, float dt)
         {
             double azimuth = System.Math.Atan2(camDir.X, camDir.Z);
             if (_cameraSeen && dt > 1e-4f)
             {
-                double rate = OmniCombineCore.WrapAngle(azimuth - _cameraAzimuth) / dt;
-                _cameraTurnRate += (rate - _cameraTurnRate) * (1 - System.Math.Exp(-dt / 0.5));
+                // Unwrapped: the count runs on past a whole turn, so a path following it never flips round.
+                double step = OmniCombineCore.WrapAngle(azimuth - OmniCombineCore.WrapAngle(_cameraAzimuth));
+                _cameraAzimuth += step;
+                _cameraTurnRate += (step / dt - _cameraTurnRate) * (1 - System.Math.Exp(-dt / 0.5));
             }
-            _cameraAzimuth = azimuth;
+            else if (!_cameraSeen) _cameraAzimuth = azimuth;
             _cameraSeen = true;
+            // Every crystal on its way in follows the camera round (OmniCombineParams.CameraAzimuth).
+            _params.CameraAzimuth = _cameraAzimuth;
         }
 
         /// <summary>Advances the play by <paramref name="dt"/> seconds and writes every mesh.

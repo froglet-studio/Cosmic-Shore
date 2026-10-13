@@ -183,7 +183,7 @@ static class Program
         {
             // the approach: aimed where the camera will be, starting from exactly where the crystal idles
             var rng = new System.Random(5);
-            float worstAim = 0f, worstStart = 0f, worstSpaceTurn = 0f;
+            float worstAim = 0f, worstStart = 0f, worstSpaceTurn = 0f, worstFollow = 0f, worstFrozen = 0f;
             float[] faced = new float[4], straightIn = new float[4];
             for (int play = 0; play < 24; play++)
             {
@@ -191,23 +191,40 @@ static class Program
                 double orbit0 = rng.NextDouble() * 2 * Math.PI, rate = 5 * Math.PI / 180;
                 D3 Cam(double t) => CameraAt(orbit0 + rate * t);
                 var aimed = pq;
-                core.FaceCamera(ref aimed, Azimuth(Cam(0)), rate, 0);
+                double az0 = Azimuth(Cam(0));
+                core.FaceCamera(ref aimed, az0, rate, 0);
+                // the camera the player hands it every frame: unwrapped, on the same count FaceCamera was aimed with
+                OmniCombineParams Live(OmniCombineParams q0, double t, double actualRate) { q0.CameraAzimuth = az0 + actualRate * t; return q0; }
                 worstSpaceTurn = Math.Max(worstSpaceTurn, (float)Math.Abs(aimed.ApproachTurn[0]));
                 for (int k = 1; k < 4; k++)
                 {
                     double t0 = OmniCombineCore.Departs(k, pq);
                     core.CrystalFrame(k, t0, pq, out var c0, out _, out _, out _, out _);
-                    core.CrystalFrame(k, t0, aimed, out var c1, out _, out _, out _, out _);
+                    core.CrystalFrame(k, t0, Live(aimed, t0, rate), out var c1, out _, out _, out _, out _);
                     worstStart = Math.Max(worstStart, (float)(c1 - c0).Length);
                     double tA = t0 + 0.97 * pq.Flight;
-                    core.CrystalFrame(k, tA, aimed, out var cA, out _, out _, out _, out _);
+                    core.CrystalFrame(k, tA, Live(aimed, tA, rate), out var cA, out _, out _, out _, out _);
                     worstAim = Math.Max(worstAim, (float)Math.Abs(OmniCombineCore.WrapAngle(Azimuth(cA) - Azimuth(Cam(tA)))));
+                    // the camera circling twice as fast as predicted, or stopping: the approach still moves with it
+                    foreach (double actual in new[] { 2 * rate, 0.0 })
+                    {
+                        core.CrystalFrame(k, tA, Live(aimed, tA, actual), out var cB, out _, out _, out _, out _);
+                        worstFollow = Math.Max(worstFollow, (float)Math.Abs(OmniCombineCore.WrapAngle(Azimuth(cB) - (az0 + actual * tA))));
+                    }
+                    // negative control: aimed once, not following (the camera's travel since the aim left out)
+                    var frozen = aimed; frozen.CameraAzimuth = az0;
+                    core.CrystalFrame(k, tA, frozen, out var cF, out _, out _, out _, out _);
+                    worstFrozen = Math.Max(worstFrozen, (float)Math.Abs(OmniCombineCore.WrapAngle(Azimuth(cF) - (az0 + 2 * rate * tA))));
                 }
-                var h1 = HiddenStats(core, aimed, Cam); var h0 = HiddenStats(core, pq, Cam);
+                var h1 = HiddenStats(core, aimed, Cam, t => az0 + rate * t); var h0 = HiddenStats(core, pq, Cam, t => az0 + rate * t);
                 for (int k = 1; k < 4; k++) { faced[k] += h1[k] / 24; straightIn[k] += h0[k] / 24; }
             }
             Check("every crystal but the first comes in from the camera's side", worstAim * 180 / Math.PI < 12f, $"worst {worstAim * 180 / Math.PI:F1} deg off the camera's azimuth as it arrives");
             Check("the turn starts at nothing: a crystal sets off from exactly where it idles", worstStart < 1e-9f * R, $"{worstStart:E2}");
+            Check("the approach moves with the camera: twice as fast as predicted, or stopped, it still arrives from the camera's side",
+                  worstFollow * 180 / Math.PI < 12f, $"worst {worstFollow * 180 / Math.PI:F1} deg");
+            Check("negative control: aimed once without following, a faster camera leaves it behind", worstFrozen * 180 / Math.PI > 30f,
+                  $"{worstFrozen * 180 / Math.PI:F0} deg off");
             Check("Space keeps its path", worstSpaceTurn == 0f);
             Check("rhombi under camera-facing holes are almost never inside the omni late in their morph",
                   faced[1] < 0.04f && faced[2] < 0.08f && faced[3] < 0.04f,
@@ -281,7 +298,7 @@ static class Program
 
     /// <summary>Per crystal, the share of late-morph frames (w 0.6..1) in which a plate whose hole faces the camera is
     /// inside the omni (more than 2% below its slot radius): the "coming in from inside" a viewer can see.</summary>
-    static float[] HiddenStats(OmniCombineCore core, OmniCombineParams p, Func<double, D3> cam)
+    static float[] HiddenStats(OmniCombineCore core, OmniCombineParams p, Func<double, D3> cam, Func<double, double> cameraAzimuth)
     {
         var pos = Enumerable.Range(0, 4).Select(k => new float[3 * core.VertexCount(k)]).ToArray();
         var morph = Enumerable.Range(0, 4).Select(k => new float[core.CrystalData(k).plateSite.Length]).ToArray();
@@ -291,6 +308,7 @@ static class Program
         for (double t = 0; t <= end; t += 1.0 / 30)
         {
             var toward = cam(t);
+            p.CameraAzimuth = cameraAzimuth(t);
             core.Pose(t, p, toward, pos, effect, null, morph);
             foreach (var pc in PlateCentres(core, pos, morph))
             {

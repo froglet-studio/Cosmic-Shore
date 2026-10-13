@@ -419,6 +419,15 @@ occluded or unnoticeable, but leaves the minimal transformations preserved."
   - The turn does stop camera-facing rhombi from rising out of their holes, which is what the designer saw on Time.
   - Charge and Mass already had the same turn as Time. They land into a sparse structure (Space only, then Space and
     Charge), so there is little landed geometry to hide them.
+- **Round 8: the approach moves with the camera** (designer: "optimize the camera side approach to move with the
+  camera").
+  - The aim is no longer fixed at CONVERT. Each frame the player hands the play the camera's unwrapped azimuth
+    (`OmniCombineParams.CameraAzimuth`), and every path turns by however far the camera has circled since it was aimed.
+  - `FaceCamera` still uses the expected orbit rate, but only to pick the shorter way round.
+  - Arrival is within 0.1° of the live camera, at the predicted rate, at twice it, or with the camera stopped.
+    Aimed once without following (the negative control), a faster camera leaves a crystal 162° behind.
+  - Ray-cast, the visible clipping is unchanged by this (Time 221/s, Mass 82/s, Charge 188/s, against 209, 91 and 187
+    straight in). Following guarantees the side a crystal arrives from, not what it hides.
 - **Cost.** A crystal that has to come round from the far side moves at up to 4.5 omni radii a second, against 1.9
   arriving straight in. Turning only to within a tolerance of the camera trades that speed straight back for visible
   clipping: at ±30° Time is inside 4% of the time, at ±60° 12%.

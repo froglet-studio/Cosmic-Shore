@@ -65,6 +65,21 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Converter: the camera-side approach moves with the camera (`cece/sharp-fermi-yw38ky`, 2026-10-13) — NOT EDITOR-VERIFIED
+
+`/verify-unity` was not run (no Unity Editor or `unity` CLI). What ran: `unity_refcompile` (player and editor), and
+`converter_round5_harness`, with "aimed once, not following" as the negative control (162° behind a faster camera).
+
+**What landed:** `OmniCombineParams.CameraAzimuth` and `ApproachCameraAzimuth`. `OmniCombinePlayer.TrackCamera` hands
+the play the camera's unwrapped azimuth every frame, and Charge, Mass and Time each keep turning with it until they
+land (`OmniCombineCore.FaceCamera`, revision 7, round 8).
+
+**Verify in editor:**
+1. Ark → CONVERT, then change the view's `orbitDegreesPerSecond` mid-play (or watch at the default 5°/s): each
+   crystal still comes in from the side facing you, wherever the camera has got to.
+2. The plates that pass through landed ones as a crystal enters the omni are NOT hidden by this. The ray-cast says
+   about 15% stay visible on any approach. Judge whether it reads as clipping.
+
 ### 🔴 Charge light: Mass columns light only when protracted; softer petals on the Charge crystal (`cece/sharp-fermi-yw38ky`, 2026-10-13) — NOT EDITOR-VERIFIED
 
 `/verify-unity` was not run (no Unity Editor or `unity` CLI). What did run:

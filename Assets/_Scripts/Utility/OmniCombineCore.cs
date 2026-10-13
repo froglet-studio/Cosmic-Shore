@@ -148,8 +148,18 @@ namespace CosmicShore.Utility
         /// none), so it arrives from the side the camera will be on and the rhombi that have to cross the omni do it behind
         /// it (designer, 2026-10-13: "the solution i want has all its clipping occluded"). The turn starts at nothing - a
         /// crystal sets off from exactly where it idles - and is complete by <see cref="OmniCombineCore.ApproachTurnEnds"/>
-        /// of its flight, well before its shell meets the omni. <see cref="OmniCombineCore.FaceCamera"/> sets it.</summary>
+        /// of its flight, well before its shell meets the omni. <see cref="OmniCombineCore.FaceCamera"/> sets it.
+        /// The turn MOVES WITH THE CAMERA (designer, 2026-10-13: "optimize the camera side approach to move with the
+        /// camera"): on top of it the path turns by however far the camera has circled since it was aimed
+        /// (<see cref="CameraAzimuth"/> - <see cref="ApproachCameraAzimuth"/>), so a crystal stays on the camera's side
+        /// all the way in, however fast or slow the camera goes.</summary>
         public double[] ApproachTurn;
+        /// <summary>The camera's azimuth about the stage's vertical when <see cref="ApproachTurn"/> was aimed (radians,
+        /// unwrapped: it keeps counting past a whole turn).</summary>
+        public double ApproachCameraAzimuth;
+        /// <summary>The camera's azimuth NOW, on the same unwrapped count; the caller sets it every frame. With
+        /// <see cref="ApproachTurn"/> null it is ignored.</summary>
+        public double CameraAzimuth;
 
         public static OmniCombineParams LabDefault => new OmniCombineParams
         {
@@ -419,7 +429,9 @@ namespace CosmicShore.Utility
             double t0 = Departs(k, p), u = Clamp01((t - t0) / p.Flight), e = EaseIO(u, p.Ease);
             D3 s = StartOf(k, p);
             double left = 1 - e;
-            double turn = p.ApproachTurn != null ? p.ApproachTurn[k] * Smooth(e / ApproachTurnEnds) : 0;
+            double turn = p.ApproachTurn != null
+                ? (p.ApproachTurn[k] + (p.CameraAzimuth - p.ApproachCameraAzimuth)) * Smooth(e / ApproachTurnEnds)
+                : 0;
             centre = RotAxis(D3.Up, p.Swirl * 2 * Math.PI * left + turn, s * left);
             centre = new D3(centre.X, centre.Y + p.Arc * s.Length * Math.Sin(Math.PI * e), centre.Z);
             tumble = p.Tumble * 2 * Math.PI * left;
@@ -432,9 +444,10 @@ namespace CosmicShore.Utility
         /// Sets <see cref="OmniCombineParams.ApproachTurn"/> so every crystal but the first arrives from the camera's side:
         /// a crystal coming in from one side has to bring the rhombi on its far side through the omni, and arriving from
         /// the camera's side puts them behind it. <paramref name="cameraAzimuth"/> is the camera's azimuth about the stage's
-        /// vertical (<c>atan2(x, z)</c> of the direction toward it) at play time <paramref name="now"/>, and it turns at
-        /// <paramref name="cameraRadiansPerSecond"/>, so each crystal is aimed where the camera will be as it arrives. Each
-        /// turn is the shorter way round. Space keeps its path.
+        /// vertical (<c>atan2(x, z)</c> of the direction toward it, unwrapped) at play time <paramref name="now"/>, and it
+        /// turns at <paramref name="cameraRadiansPerSecond"/>. From then on each path follows the live camera
+        /// (<see cref="OmniCombineParams.CameraAzimuth"/>); the rate only picks the shorter way round for the camera's
+        /// expected travel, so a crystal never sweeps the long way to meet it. Space keeps its path.
         /// </summary>
         public void FaceCamera(ref OmniCombineParams p, double cameraAzimuth, double cameraRadiansPerSecond, double now)
         {
@@ -444,10 +457,13 @@ namespace CosmicShore.Utility
                 // The swirl unwinds by the end, so a crystal arrives from its start's own azimuth.
                 D3 s = StartOf(k, p);
                 double arrives = Departs(k, p) + ArrivalAt * p.Flight;
-                double camera = cameraAzimuth + cameraRadiansPerSecond * (arrives - now);
-                turns[k] = WrapAngle(camera - Math.Atan2(s.X, s.Z));
+                double travel = cameraRadiansPerSecond * (arrives - now);
+                // Where the camera is expected to be as it arrives, met the shorter way; the live camera adds the travel.
+                turns[k] = WrapAngle(cameraAzimuth + travel - Math.Atan2(s.X, s.Z)) - travel;
             }
             p.ApproachTurn = turns;
+            p.ApproachCameraAzimuth = cameraAzimuth;
+            p.CameraAzimuth = cameraAzimuth;
         }
 
         /// <summary>An angle wrapped into (-pi, pi]: the shorter way round.</summary>
