@@ -1,20 +1,22 @@
 # iOS TestFlight - signs and uploads a build to TestFlight from a free GitHub-hosted Mac, so nobody
 # on the team needs a Mac. Docs/IOS_BUILD.md section 2, Path C, has the one-time setup.
 #
-# Like ios-unsigned-ipa.yml it does NOT run Unity. A Windows machine exports the Xcode project
+# It does NOT run Unity. A Windows machine exports the Xcode project
 # (Release, Development Build OFF), zips it and shares a link. This job compiles it with Xcode 26,
 # which Apple has required for uploads since 28 Apr 2026. It then signs with the company's
 # Apple Distribution certificate and App Store profile and uploads the .ipa to App Store Connect.
 #
-# Secrets (Settings -> Secrets and variables -> Actions -> New repository secret):
+# Secrets belong to the `testflight` Environment (Settings -> Environments -> testflight), which
+# only bleeding-edge may deploy from and which needs a reviewer's approval per run. Repository-level
+# copies would be readable by any workflow on any branch; keep none.
 #   IOS_RELEASE_EXPORT_URL       share link to the zipped Release Xcode export
 #   IOS_DIST_CERT_P12_BASE64     the Apple Distribution certificate + private key, .p12, base64
 #   IOS_DIST_CERT_PASSWORD       the .p12's password
 #   IOS_APPSTORE_PROFILE_BASE64  the App Store provisioning profile, base64
-#   Upload, ONE of:
-#     ASC_KEY_ID + ASC_ISSUER_ID + ASC_KEY_P8          App Store Connect API key (the .p8 text)
-#     APPLE_ID_EMAIL + APPLE_APP_SPECIFIC_PASSWORD + ASC_APP_ID [+ ASC_ITC_PROVIDER]
-#   With neither, the job still builds, signs and checks the .ipa, then stops before uploading.
+#   ASC_KEY_ID + ASC_ISSUER_ID + ASC_KEY_P8   App Store Connect team API key (the .p8 text)
+#   Without the three ASC_* secrets the job still builds, signs and checks the .ipa, then stops
+#   before uploading. (The personal Apple-ID upload route was removed on 2026-10-13: a team key
+#   is the only supported upload credential.)
 #
 # HOW TO RUN: Actions tab -> "iOS TestFlight" -> Run workflow. Manual only, on purpose: an upload is
 # a deliberate act, and a push trigger fired on every agent branch's first bleeding-edge merge
@@ -43,6 +45,9 @@ env:
 
 jobs:
   testflight:
+    # The secrets live in this Environment. Its deployment-branch rule and required reviewer are
+    # what keep a workflow copy on some other branch from reading them.
+    environment: testflight
     # Apple silicon with Xcode 26. Free and unlimited on a public repo.
     runs-on: macos-26
     timeout-minutes: 150
@@ -57,9 +62,6 @@ jobs:
           ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
           ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
           ASC_KEY_P8: ${{ secrets.ASC_KEY_P8 }}
-          APPLE_ID_EMAIL: ${{ secrets.APPLE_ID_EMAIL }}
-          APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
-          ASC_APP_ID: ${{ secrets.ASC_APP_ID }}
         run: |
           missing=""
           [ -n "$EXPORT_URL" ]   || missing="$missing IOS_RELEASE_EXPORT_URL"
@@ -73,12 +75,9 @@ jobs:
           if [ -n "$ASC_KEY_ID" ] && [ -n "$ASC_ISSUER_ID" ] && [ -n "$ASC_KEY_P8" ]; then
             echo "upload=apikey" >> "$GITHUB_OUTPUT"
             echo "Upload: App Store Connect API key."
-          elif [ -n "$APPLE_ID_EMAIL" ] && [ -n "$APPLE_APP_SPECIFIC_PASSWORD" ] && [ -n "$ASC_APP_ID" ]; then
-            echo "upload=appleid" >> "$GITHUB_OUTPUT"
-            echo "Upload: Apple ID with an app-specific password."
           else
             echo "upload=none" >> "$GITHUB_OUTPUT"
-            echo "::warning::No upload credentials (ASC_KEY_ID/ASC_ISSUER_ID/ASC_KEY_P8, or APPLE_ID_EMAIL/APPLE_APP_SPECIFIC_PASSWORD/ASC_APP_ID). The build will be signed and checked but not uploaded."
+            echo "::warning::No upload credentials (ASC_KEY_ID/ASC_ISSUER_ID/ASC_KEY_P8). The build will be signed and checked but not uploaded."
           fi
 
       # Only Tools/iOS is needed (the signing script). Sparse and blob-less: the full repository
@@ -105,7 +104,8 @@ jobs:
           echo "iOS SDK $(xcrun --sdk iphoneos --show-sdk-version)"
           df -h /
 
-      # Download and extract: kept identical to ios-unsigned-ipa.yml. Change both together.
+      # Download and extract. Only curl and the archive tools macOS ships: nothing is installed
+      # from a package index in this job before signing, except the hash-pinned Pillow below.
       - name: Download the Xcode project
         env:
           EXPORT_URL: ${{ secrets.IOS_RELEASE_EXPORT_URL }}
@@ -114,9 +114,8 @@ jobs:
           cd "$WORK"
           case "$EXPORT_URL" in
             *drive.google.com*|*docs.google.com*)
-              python3 -m pip install --quiet --break-system-packages gdown
-              python3 -m gdown --fuzzy "$EXPORT_URL" -O export.zip
-              ;;
+              echo "::error::Google Drive links are no longer supported (they needed an unpinned download tool in the signing job). Share the .zip from Dropbox, or any direct-download link."
+              exit 1 ;;
             *dropbox.com*)
               case "$EXPORT_URL" in
                 *dl=0*) URL=$(printf '%s' "$EXPORT_URL" | sed -e 's/dl=0/dl=1/') ;;
@@ -133,30 +132,16 @@ jobs:
           ls -lh export.zip
           KIND=$(file -b export.zip)
           case "$KIND" in
-            *RAR\ archive*)   echo "ARCHIVE_KIND=rar" >> "$GITHUB_ENV" ;;
-            *7-zip\ archive*) echo "ARCHIVE_KIND=7z" >> "$GITHUB_ENV" ;;
-            *[Zz]ip\ archive*) echo "ARCHIVE_KIND=zip" >> "$GITHUB_ENV" ;;
+            *[Zz]ip\ archive*) ;;
             *)
-              echo "::error::The link did not return an archive ($KIND). Use a direct-download or share link to the .zip / .rar / .7z itself."
+              echo "::error::The link did not return a .zip ($KIND). Zip the Xcode export (not .rar or .7z) and share a direct-download or share link to the .zip itself."
               exit 1 ;;
           esac
 
       - name: Unzip and restore executable bits
         run: |
           cd "$WORK"
-          export HOMEBREW_NO_AUTO_UPDATE=1 HOMEBREW_NO_INSTALL_CLEANUP=1
-          case "$ARCHIVE_KIND" in
-            zip)
-              ditto -x -k export.zip src || unzip -q export.zip -d src ;;
-            rar)
-              mv export.zip export.rar
-              brew install --quiet unar
-              unar -q -o src export.rar
-              rm -f export.rar ;;
-            7z)
-              brew install --quiet sevenzip
-              7zz x -y -bso0 -bsp0 -osrc export.zip ;;
-          esac
+          ditto -x -k export.zip src || unzip -q export.zip -d src
           rm -f export.zip
           PROJ_FILE=$(find src -maxdepth 4 -name 'Unity-iPhone.xcodeproj' -type d | head -1)
           if [ -z "$PROJ_FILE" ]; then
@@ -198,7 +183,10 @@ jobs:
           # App Store Connect refuses an app icon that has an alpha channel (ITMS-90717), even a
           # fully opaque one. The project's icon source (CSThumbApp.png) is RGBA, so flatten every
           # PNG in the exported AppIcon set onto an opaque background before the archive.
-          python3 -m pip install --quiet --break-system-packages Pillow
+          # Pinned by version and hash (Tools/iOS/requirements-icons.txt): this job later holds the
+          # signing key, so nothing unverified may be installed into its Python.
+          python3 -m pip install --quiet --break-system-packages --only-binary :all: \
+            --require-hashes -r Tools/iOS/requirements-icons.txt
           python3 - "$PROJ" <<'PY'
           import glob, os, sys
           from PIL import Image
@@ -289,7 +277,7 @@ jobs:
       - name: Switch the project to manual App Store signing
         run: |
           if ! ruby -e 'require "xcodeproj"' 2>/dev/null; then
-            gem install --user-install --no-document xcodeproj
+            gem install --user-install --no-document xcodeproj -v 1.28.1
           fi
           ruby Tools/iOS/set_manual_signing.rb "$PROJ/Unity-iPhone.xcodeproj" "$TEAM_ID" "$PROFILE_UUID" "$PROFILE_NAME" "Apple Distribution"
 
@@ -323,7 +311,10 @@ jobs:
             archive 2>&1 | tee "$WORK/archive.log" | grep -E '(error|\*\* ARCHIVE)' || true
           if ! grep -q '\*\* ARCHIVE SUCCEEDED \*\*' "$WORK/archive.log"; then
             echo "::error::xcodebuild archive failed. Last 80 lines:"
-            tail -80 "$WORK/archive.log"
+            # The tail can include build-phase environment dumps (a Unity symbol-upload token
+            # among them), and this job log is public: blank credential-shaped exports.
+            tail -80 "$WORK/archive.log" \
+              | sed -E 's/(export [A-Za-z0-9_]*(TOKEN|SECRET|PASSWORD|PASSWD|API_KEY|PRIVATE_KEY)[A-Za-z0-9_]*\\?=).*/\1***/'
             exit 1
           fi
 
@@ -405,35 +396,28 @@ jobs:
             --skip_submission true
           echo "Uploaded. The build appears under TestFlight once App Store Connect finishes processing it (5-30 minutes)." >> "$GITHUB_STEP_SUMMARY"
 
-      - name: Upload to TestFlight (Apple ID)
-        if: steps.gate.outputs.upload == 'appleid'
-        env:
-          FASTLANE_USER: ${{ secrets.APPLE_ID_EMAIL }}
-          FASTLANE_APPLE_APPLICATION_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
-          ASC_APP_ID: ${{ secrets.ASC_APP_ID }}
-          ASC_ITC_PROVIDER: ${{ secrets.ASC_ITC_PROVIDER }}
-          FASTLANE_SKIP_UPDATE_CHECK: '1'
-          FASTLANE_HIDE_CHANGELOG: '1'
-          LC_ALL: en_US.UTF-8
-          LANG: en_US.UTF-8
-        run: |
-          # fastlane uses the app-specific password only when apple_id (the app's numeric
-          # App Store Connect id) and skip_waiting_for_build_processing are both set.
-          PROVIDER_ARGS=()
-          if [ -n "$ASC_ITC_PROVIDER" ]; then PROVIDER_ARGS=(--itc_provider "$ASC_ITC_PROVIDER"); fi
-          fastlane pilot upload \
-            --ipa "$IPA" \
-            --username "$FASTLANE_USER" \
-            --apple_id "$ASC_APP_ID" \
-            --skip_waiting_for_build_processing true \
-            --skip_submission true \
-            "${PROVIDER_ARGS[@]}"
-          echo "Uploaded. The build appears under TestFlight once App Store Connect finishes processing it (5-30 minutes)." >> "$GITHUB_STEP_SUMMARY"
-
       - name: Upload skipped
         if: steps.gate.outputs.upload == 'none'
         run: |
           echo "Signed and checked, not uploaded: no upload credentials are set (Docs/IOS_BUILD.md Path C, step 4)." >> "$GITHUB_STEP_SUMMARY"
+
+      # xcodebuild prints every build-phase script's environment into archive.log, and Unity's
+      # symbol-upload phase carries USYM_UPLOAD_AUTH_TOKEN there. The logs below are a public
+      # artifact on this repo, so blank every token/secret/password-shaped export first. If a
+      # value survives the scrub, the log is dropped rather than published.
+      - name: Scrub credentials from the build logs
+        if: always()
+        shell: bash
+        run: |
+          pattern='(export [A-Za-z0-9_]*(TOKEN|SECRET|PASSWORD|PASSWD|API_KEY|PRIVATE_KEY)[A-Za-z0-9_]*\\?=)'
+          for f in ios-work/archive.log ios-work/export.log; do
+            [ -f "$f" ] || continue
+            sed -E -i '' "s/${pattern}.*/\\1***/" "$f"
+            if grep -Eq "${pattern}[^*]" "$f"; then
+              echo "::warning::$f still holds a credential-shaped value after scrubbing; not uploading it."
+              rm -f "$f"
+            fi
+          done
 
       - name: Keep the build logs
         if: always()

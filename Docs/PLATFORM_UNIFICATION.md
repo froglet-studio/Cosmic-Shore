@@ -483,7 +483,7 @@ production iOS id, ARM64-only Android, and bring the two Gradle commits across.
 | Change | Where | Why |
 |---|---|---|
 | iOS bundle id `com.FrogletGames.CosmicShore.dev` → **`com.FrogletGames.CosmicShore`** | `ProjectSettings.asset` | Froglet's paid Apple team now exists, which was the trigger `Docs/IOS_BUILD.md` §1 set for the flip. |
-| The free sideload `.ipa` is always rewritten to `.dev` | `.github/workflows/ios-unsigned-ipa.yml` | That path signs with free Apple IDs. A personal team that registers the production id locks the store app out, which is the reason the test id existed. Only the app's own `CFBundleIdentifier` moves, in the still-unsigned bundle. |
+| ~~The free sideload `.ipa` is always rewritten to `.dev`~~ **Retired 2026-10-13** with the free-Apple-ID path and its workflow. TestFlight is the only iOS distribution path, and nothing uses `.dev` now (`Docs/IOS_BUILD.md` §1) | (workflow deleted) | That path signed with free Apple IDs. A personal team that registers the production id locks the store app out, which is the reason the test id existed. |
 | Android `AndroidTargetSdkVersion` 35 → **36** | `ProjectSettings.asset` | Play has required API 36 for new apps and updates since 31 Aug 2026. Under 36, Android 16 forces large-screen resizing on every app *except games*. The manifest's `appCategory` must read `game`: check the first bundle (setup guide §4.1). |
 | `AndroidTargetArchitectures` 3 → **2** (ARM64 only); EDM4U `androidAbis` to match | `ProjectSettings.asset`, `AndroidResolverDependencies.xml` | §2.1. It drops phones with a 32-bit-only userland. |
 | TailGlider keystore path and alias cleared | `ProjectSettings.asset` | Pointed at a file on one developer's PC that belongs to another game. Each build machine selects the Cosmic Shore upload key instead (`androidUseCustomKeystore` was already 0). |
@@ -502,8 +502,13 @@ production iOS id, ARM64-only Android, and bring the two Gradle commits across.
 - **Under-13 players keep the social features** (COPPA).
 - **Account deletion exists only as a web link.**
 - **The privacy, support and deletion pages are not live yet.**
-- **Unity Engine diagnostics is on.**
-- **`com.unity.mobile.notifications` is installed and unused.**
+- ~~**Unity Engine diagnostics is on.**~~ Off 2026-10-13: `UnityConnectSettings.asset`
+  `InsightsSettings.m_EngineDiagnosticsEnabled` is 0. The consent gate (`CrashReportingService`)
+  never covered it. Cloud Diagnostics crash reporting is unchanged.
+- ~~**`com.unity.mobile.notifications` is installed and unused.**~~ Removed 2026-10-13, along with
+  `com.unity.feature.mobile`, the other way it came in. Android Logcat stays as a direct dependency
+  at 1.4.7, the version the feature resolved. `ProjectSettings/NotificationsSettings.asset` and the
+  old `Assets/Unity Assests/Editor/com.unity.mobile.notifications/` settings asset are deleted.
 - **iPad:**
   - ~~At 4:3, the match-height canvases lose a quarter of their width.~~ Fixed 2026-10-12: the 13
     without `AdaptiveCanvasScaler` use Expand. That is identical at 16:9 and wider, and matches
@@ -515,27 +520,28 @@ production iOS id, ARM64-only Android, and bring the two Gradle commits across.
 
 **Debt this branch created or walked past** (rows, not fixes; each needs its own change):
 
-- **The two iOS workflows duplicate their download-and-extract steps.**
-  `ios-testflight.yml` copies about 80 lines from `ios-unsigned-ipa.yml`, under a comment saying
-  "kept identical, change both". A composite action (`.github/actions/fetch-xcode-export`) would
-  give them one copy. It was left alone because Path A was run and verified on 2026-10-02 and
-  edits to it are not re-verified.
+- ~~**The two iOS workflows duplicate their download-and-extract steps.**~~ Gone 2026-10-13: the
+  free-Apple-ID workflow was deleted, so `ios-testflight.yml` holds the only copy.
 - **`IAPManager` is a dormant web checkout.**
   - What it is: `Assets/_Scripts/System/IAPManager.cs` sends players to a browser checkout.
     Commerce is switched off (`CommerceAvailability.asset`).
-  - Why it matters: on mobile it would break Apple guideline 3.1.1 and Play's billing policy the
-    day someone switched it on.
+  - Why it mattered: on mobile it would break Apple guideline 3.1.1 and Play's billing policy the
+    day someone switched it on. Fenced 2026-10-13: the browser checkout opens only in
+    `UNITY_STANDALONE` builds. iOS and Android builds refuse it at `OpenCheckout` whatever
+    `CommerceAvailability` says (`CommerceDeScopeTests.CheckoutIsFencedToDesktopBuilds`).
   - Before deleting it: ask whether the desktop or Steam build still wants it. Re-grep its callers
     at that time; don't rely on an old claim that it's unused.
 - **The TestFlight upload credentials need locking down (flagged 2026-10-12).** Any repo writer
   could, in principle, write a workflow that leaks a repository secret. The plan is in
   `Docs/IOS_BUILD.md` Path C, "Security follow-up":
   - the team API key, which is done;
-  - deleting the personal Apple-ID route's secrets, if any were added;
-  - a `testflight` Environment limited to bleeding-edge, with a reviewer;
+  - the personal Apple-ID route, removed from the job on 2026-10-13 (delete its secrets if any
+    were added);
+  - a `testflight` Environment limited to bleeding-edge, with a reviewer. The job names it since
+    2026-10-13; the Environment's rules and deleting the repository-level copies are repo settings;
   - branch protection.
 - **CLAUDE.md says "No automated CI/CD pipeline is currently configured", which is stale.**
-  `.github/workflows/` holds `unity-ci.yml`, `bleeding-edge-guard.yml`, the two iOS workflows and
+  `.github/workflows/` holds `unity-ci.yml`, `bleeding-edge-guard.yml`, `ios-testflight.yml` and
   the Prisma ones. `Docs/BUILD_AND_DELIVERY.md` §10 is the current picture.
 
 ---

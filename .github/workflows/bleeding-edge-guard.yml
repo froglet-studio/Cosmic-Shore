@@ -36,11 +36,21 @@ name: Bleeding-edge guard
 # not exist sits as a permanently pending check and GitHub only reaps it after
 # roughly 24 hours. Until that variable is set, only stage 1 runs and this
 # workflow cannot catch a compile break. See Docs/BUILD_AND_DELIVERY.md section 10.
+# That is the state today: the self-hosted runner was removed on 2026-10-13 and
+# the variable deleted, so the unity job skips until a runner is attached.
 #
-# SECURITY: this repository is public. This workflow is push-only on a branch
-# that requires write access, so a self-hosted runner attached here is not
-# reachable by fork pull requests. Do not add a pull_request trigger to this
-# file without first restricting outside-contributor runs.
+# SECURITY: this repository is public. Being push-only does NOT keep a
+# self-hosted runner away from untrusted code. This file also has
+# workflow_dispatch, so any writer can run it on their own branch, and any
+# workflow in any pushed branch or fork pull request can request the runner's
+# label whatever this file's triggers say: reachability belongs to the RUNNER,
+# not to a workflow. So a runner for UNITY_RUNNER_LABEL may only be an isolated
+# machine or VM holding no credentials, signing material, personal accounts or
+# browser sessions - never anyone's everyday PC - with its service on a
+# dedicated low-privilege local account, and only after fork pull request
+# approval is set to "Require approval for all external contributors" and the
+# default branches are protected. Docs/BUILD_AND_DELIVERY.md section 10
+# (Security) and the section 10.2 checklist.
 
 on:
   push:
@@ -379,6 +389,8 @@ jobs:
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
           SHA: ${{ github.sha }}
           ACTOR: ${{ github.actor }}
+          # Through env, not pasted into the script: a dispatch can name any branch.
+          REF_NAME: ${{ github.ref_name }}
         run: |
           set -euo pipefail
 
@@ -440,7 +452,7 @@ jobs:
           Open the run above for the failing output. A compile break prints its
           \`error CS\` lines inline and attaches the full editor log as an artifact.
 
-          This issue closes itself automatically when ${{ github.ref_name }} next verifies clean.
+          This issue closes itself automatically when $REF_NAME next verifies clean.
           EOF
           )
 
@@ -517,7 +529,7 @@ jobs:
 
       - name: Fix and open a PR against the guarded branch
         if: steps.key.outputs.have == 'true'
-        uses: anthropics/claude-code-action@v1
+        uses: anthropics/claude-code-action@1d6de8cb0c237e7c15e9e1bdf973826ebae490cc # v1 — pinned to a commit; re-pin deliberately
         with:
           # Both are passed; the action ignores whichever is empty. See the
           # credential check above for which one bills where.

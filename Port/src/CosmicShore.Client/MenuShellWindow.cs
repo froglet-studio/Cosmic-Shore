@@ -427,18 +427,24 @@ namespace CosmicShore.Client
         /// <summary>
         /// The REAL StoreScreen on the STORE panel (Store unit): crystal + ticket
         /// balances, the captain purchase grid, the daily-challenge ticket card, and
-        /// the purchase-confirmation modal — all running the CatalogManager's LOCAL
-        /// economy lanes (upstream's PlayFab lanes are inert there too). Fixture: a
-        /// 500-crystal wallet, three encountered captains priced 150/300/450, and
-        /// the 25-crystal ticket — seeded through the same internal landing lanes
-        /// the PlayFab callbacks funneled into.
+        /// the purchase-confirmation modal — all running upstream's local-only
+        /// CatalogManager. Fixture: a 500-crystal wallet, three encountered captains
+        /// priced 150/300/450, and the 25-crystal ticket, authored straight onto the
+        /// manager's public StoreShelve / Inventory and released through upstream's
+        /// own LoadAllCatalogItems. Upstream has no economy backend, so a confirmed
+        /// purchase takes the failure lane (the card returns to its price state) —
+        /// the same thing the shipped game does.
         /// </summary>
         void BuildStoreScreen(RectTransform panel, RectTransform canvasRect)
         {
             panel.gameObject.SetActive(false); // wire fields before OnEnable/Start
 
             // ── economy singletons + deterministic fixture ─────────────────────
-            CosmicShore.Core.CatalogManager.ResetLocalEconomy();
+            // Upstream resets these statics per domain load ([RuntimeInitializeOnLoadMethod],
+            // data-only here); a menu rebuild is this host's equivalent.
+            typeof(CosmicShore.Core.CatalogManager)
+                .GetMethod("ResetStatics", BindingFlags.NonPublic | BindingFlags.Static)!
+                .Invoke(null, null);
             var captainManagerGo = new GameObject("CaptainManager");
             var captainManager = captainManagerGo.AddComponent<CosmicShore.Core.CaptainManager>();
             new GameObject("DailyRewardHandler").AddComponent<CosmicShore.Core.DailyRewardHandler>();
@@ -500,11 +506,10 @@ namespace CosmicShore.Client
                     {
                         new() { ItemId = "crystal-omni", Amount = cost, UnitAmount = 1 },
                     },
-                    Amount = 1, // PlayFab inventory items carry >=1 — the over-purchase guard reads it
                 });
             }
 
-            shelveItems.Add(new CosmicShore.Core.VirtualItem
+            var ticket = new CosmicShore.Core.VirtualItem
             {
                 ItemId = "ticket-dc",
                 Name = "Daily Challenge Ticket",
@@ -516,11 +521,25 @@ namespace CosmicShore.Client
                     new() { ItemId = "crystal-omni", Amount = 25, UnitAmount = 1 },
                 },
                 Amount = 0,
-            });
+            };
+            shelveItems.Add(ticket);
 
             captainManager.LoadLocalCaptains(captains);
-            catalog.LoadLocalCatalog(shelveItems);
-            catalog.LoadLocalInventory(new List<CosmicShore.Core.VirtualItem> { crystal });
+            var shelve = CosmicShore.Core.CatalogManager.StoreShelve;
+            foreach (var item in shelveItems)
+            {
+                shelve.allItems[item.ItemId] = item;
+                (item.ContentType switch
+                {
+                    "Crystal" => shelve.crystals,
+                    "Captain" => shelve.captains,
+                    _ => shelve.tickets,
+                })[item.ItemId] = item;
+            }
+            shelve.DailyChallengeTicket = ticket;
+            CosmicShore.Core.CatalogManager.Inventory.crystals.Add(crystal);
+            CosmicShore.Core.CatalogManager.Inventory.allItems.Add(crystal);
+            catalog.LoadAllCatalogItems(); // CatalogLoaded → StoreScreen.Start's UpdateView lane
 
             // ── balances header (top right) ────────────────────────────────────
             TMP_Text MakeBalance(string balanceName, float anchorX)
@@ -798,11 +817,10 @@ namespace CosmicShore.Client
         /// <summary>
         /// The REAL LeaderboardsMenu on the PORT panel (Leaderboards unit): three
         /// game-select buttons, the vessel-class dropdown, and the high-score board.
-        /// Upstream's manager runs its "[PLAYFAB DISABLED]" offline lane, so the rows
-        /// come from the DataAccessor-cached lists — seeded here with a deterministic
-        /// fixture board per game (identical every boot → byte-stable captures). The
-        /// local pilot's PlayFabAccount.ID matches one seeded row, exercising the
-        /// player-highlight lane.
+        /// Upstream's screen has no backend (the manager it read was retired with the
+        /// backend it fronted), so the board renders its empty state — the same thing
+        /// the shipped game shows. The UGS auth variable is wired with a fixture pilot
+        /// id, standing in for the injection, so the highlight lane has its real input.
         /// </summary>
         void BuildLeaderboardsScreen(RectTransform panel)
         {
@@ -810,41 +828,9 @@ namespace CosmicShore.Client
 
             var gameList = EnsureGameList();
 
-            // The offline manager singleton the screen fetches through (upstream: a
-            // scene object with the NetworkMonitor variable serialized in).
-            if (CosmicShore.Core.LeaderboardManager.Instance == null)
-            {
-                var managerGo = new GameObject("LeaderboardManager");
-                managerGo.SetActive(false);
-                var manager = managerGo.AddComponent<CosmicShore.Core.LeaderboardManager>();
-                var netVariable = ScriptableObject.CreateInstance<CosmicShore.ScriptableObjects.NetworkMonitorDataVariable>();
-                netVariable.Value = new CosmicShore.ScriptableObjects.NetworkMonitorData
-                {
-                    OnNetworkFound = ScriptableObject.CreateInstance<CosmicShore.Engine.Soap.ScriptableEventNoParam>(),
-                    OnNetworkLost = ScriptableObject.CreateInstance<CosmicShore.Engine.Soap.ScriptableEventNoParam>(),
-                };
-                SetPrivateField(manager, "_networkMonitorDataVariable", netVariable);
-                managerGo.SetActive(true);
-            }
-
-            // Deterministic cached boards: five pilots per game, the local pilot on
-            // rank 3 (the screen paints that row cyan via PlayFabAccount.ID).
-            CosmicShore.Core.AuthenticationManager.PlayFabAccount.ID = "pilot-local";
-            string[] rivals = { "VELA", "CRUX", "YOU", "LYRA", "DRACO" };
-            foreach (var game in gameList.Games)
-            {
-                var entries = new List<CosmicShore.Core.LeaderboardManager.LeaderboardEntry>();
-                int baseScore = 120 + game.DisplayName.Length; // per-game flavor, constant
-                for (int i = 0; i < rivals.Length; i++)
-                    entries.Add(new CosmicShore.Core.LeaderboardManager.LeaderboardEntry(
-                        rivals[i] == "YOU" ? "YOU" : rivals[i],
-                        rivals[i] == "YOU" ? "pilot-local" : $"pilot-{rivals[i]}",
-                        baseScore - i * 7,
-                        i,
-                        avatarUrl: null));
-                CosmicShore.Utility.DataAccessor.Save(
-                    $"leaderboard_{game.Mode.ToString().ToUpper()}_DOLPHIN.data", entries);
-            }
+            // The [Inject]ed UGS auth variable (upstream: the DI root's asset).
+            var authData = ScriptableObject.CreateInstance<CosmicShore.ScriptableObjects.AuthenticationDataVariable>();
+            authData.Value = new CosmicShore.ScriptableObjects.AuthenticationData { PlayerId = "pilot-local" };
 
             // Game-select buttons (Image + Button per slot, the shape SelectGame reads).
             var gameRow = MakeChild("GameSelectionContainer", panel);
@@ -913,6 +899,7 @@ namespace CosmicShore.Client
             panel.gameObject.AddComponent<MenuAudio>(); // [RequireComponent] partner (engine doesn't auto-add)
             var leaderboards = panel.gameObject.AddComponent<LeaderboardsMenu>();
             SetPrivateField(leaderboards, "allGames", gameList);
+            SetPrivateField(leaderboards, "authenticationDataVariable", authData);
             SetPrivateField(leaderboards, "GameSelectionContainer", (Transform)gameRow);
             SetPrivateField(leaderboards, "HighScoresContainer", board.gameObject);
             SetPrivateField(leaderboards, "ShipClassSelection", dropdown);
