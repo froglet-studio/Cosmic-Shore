@@ -2,7 +2,8 @@ using UnityEngine;
 
 namespace CosmicShore.UI
 {
-    /// <summary>Colour roles carried by <see cref="UIThemeSO"/>. Chrome only — no team colours.</summary>
+    /// <summary>Colour roles carried by <see cref="UIThemeSO"/>. Chrome only — no team colours (the three
+    /// control roles share team hexes but name a UI job; see <see cref="UIThemeSO"/>).</summary>
     public enum UIColorToken
     {
         TextLight = 0,
@@ -15,6 +16,9 @@ namespace CosmicShore.UI
         NeutralLightest = 7,
         Cta = 8,
         Danger = 9,
+        ControlActive = 10,
+        Purchase = 11,
+        Tooltip = 12,
     }
 
     /// <summary>Motion durations from <c>Docs/STYLE_FOUNDATION.md</c> §7.</summary>
@@ -49,6 +53,9 @@ namespace CosmicShore.UI
         public static readonly Color NeutralLightest = new Color32(0x74, 0x7B, 0xAD, 0xFF);
         public static readonly Color Cta = new Color32(0x99, 0xFF, 0x80, 0xFF);
         public static readonly Color Danger = new Color32(0xFF, 0x4B, 0x3A, 0xFF);
+        public static readonly Color ControlActive = new Color32(0x00, 0xD4, 0xFF, 0xFF);
+        public static readonly Color Purchase = new Color32(0xFF, 0xAE, 0x00, 0xFF);
+        public static readonly Color Tooltip = new Color32(0xA6, 0x00, 0xFF, 0xFF);
 
         static readonly float[] DefaultSpacing = { 4f, 8f, 12f, 16f, 24f, 32f, 48f, 64f, 96f };
 
@@ -81,6 +88,9 @@ namespace CosmicShore.UI
                 case UIColorToken.NeutralLightest: return theme ? theme.neutralLightest : NeutralLightest;
                 case UIColorToken.Cta: return theme ? theme.cta : Cta;
                 case UIColorToken.Danger: return theme ? theme.danger : Danger;
+                case UIColorToken.ControlActive: return theme ? theme.controlActive : ControlActive;
+                case UIColorToken.Purchase: return theme ? theme.purchase : Purchase;
+                case UIColorToken.Tooltip: return theme ? theme.tooltip : Tooltip;
                 default: return theme ? theme.textLight : TextLight;
             }
         }

@@ -22,6 +22,9 @@ MonoBehaviour:
   neutralLightest: {r: 0.45490196, g: 0.48235294, b: 0.6784314, a: 1}
   cta: {r: 0.6, g: 1, b: 0.5019608, a: 1}
   danger: {r: 1, g: 0.29411766, b: 0.22745098, a: 1}
+  controlActive: {r: 0, g: 0.83137256, b: 1, a: 1}
+  purchase: {r: 1, g: 0.68235296, b: 0, a: 1}
+  tooltip: {r: 0.6509804, g: 0, b: 1, a: 1}
   spacing:
   - 4
   - 8
