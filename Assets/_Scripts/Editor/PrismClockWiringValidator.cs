@@ -65,6 +65,8 @@ namespace CosmicShore.Editor
         public const string SightHlslGuid = "c7d41a9e5b8f4e3ab216d0f97c4e8a52";
         /// <summary>PrismCradle.hlsl — the Urchin's cradle (§4.7.2), a file-scope global bank.</summary>
         public const string CradleHlslGuid = "02815910e1a7418bb18c430341747719";
+        /// <summary>PrismGravityWarp.hlsl — the black hole's tidal warp (§4.7.4), a file-scope global bank.</summary>
+        public const string GravityWarpHlslGuid = "81b7289b3d0a4dfcb88f06e135bf22be";
 
         /// PrismSway.hlsl — deliberately NOT PrismClockAnimation.hlsl. It `#include`s
         /// SpindleSway.hlsl so a health prism and the limb it is bolted to share the two
@@ -134,19 +136,39 @@ namespace CosmicShore.Editor
         // added it goes in FRONT of this one and the pair's order becomes part of this check: the
         // cradle closes mass onto a hull that is RESTING on it, so anything that would ripple the
         // vertices it has just closed onto the hull has to run before it, never after.
+        // The vertex-morph tail, in order: ... -> PrismGravityWarpDeform -> PrismCradleDeform -> blocks.
+        // The warp sits IMMEDIATELY BEFORE the cradle (the cradle must stay last — PrismCradle.hlsl's
+        // header says why), so the cradle's inputs are the warp's outputs and the warp's inputs are
+        // what used to feed the cradle.
         static readonly GraphEdgeCheck[] CradleEdges =
         {
             new GraphEdgeCheck
             {
                 InputFunction = "PrismCradleDeform", InputSlot = 0,
-                OutputFunction = "PrismSuctionConverge", OutputSlot = 3,
-                Description = "cradle Position fed by PrismSuctionConverge.OutPosition (the cradle is LAST on Position)",
+                OutputFunction = "PrismGravityWarpDeform", OutputSlot = 2,
+                Description = "cradle Position fed by PrismGravityWarpDeform.OutPosition (the cradle is LAST on Position)",
             },
             new GraphEdgeCheck
             {
                 InputFunction = "PrismCradleDeform", InputSlot = 1,
+                OutputFunction = "PrismGravityWarpDeform", OutputSlot = 3,
+                Description = "cradle Normal fed by PrismGravityWarpDeform.OutNormal (the cradle is LAST on Normal)",
+            },
+        };
+
+        static readonly GraphEdgeCheck[] GravityWarpEdges =
+        {
+            new GraphEdgeCheck
+            {
+                InputFunction = "PrismGravityWarpDeform", InputSlot = 0,
+                OutputFunction = "PrismSuctionConverge", OutputSlot = 3,
+                Description = "gravity warp Position fed by PrismSuctionConverge.OutPosition (the warp sits before the cradle)",
+            },
+            new GraphEdgeCheck
+            {
+                InputFunction = "PrismGravityWarpDeform", InputSlot = 1,
                 OutputFunction = "PrismJiggleClock", OutputSlot = 7,
-                Description = "cradle Normal fed by PrismJiggleClock.OutNormal (the cradle is LAST on Normal)",
+                Description = "gravity warp Normal fed by PrismJiggleClock.OutNormal (the warp sits before the cradle)",
             },
         };
 
@@ -235,11 +257,11 @@ namespace CosmicShore.Editor
                     "PrismShieldMorph", "PrismJiggleClock", "PrismSway",
                     "PrismBackFaceFade", "PrismDestructionSight",
                     "PrismSuctionClock", "PrismSuctionConverge",
-                    "PrismCradleDeform",
+                    "PrismGravityWarpDeform", "PrismCradleDeform",
                 },
                 UnexposedGlobals = DestructionSightGlobals,
-                EdgeChecks = Concat(Concat(Concat(BackFaceEdges("PrismOcclusionFade"), LiveSuctionEdges), SwayEdges), CradleEdges),
-                Purpose = "grow-in bloom (PrismGrowScale, vertex) + color/state transitions (PrismColorLerp, fragment) + ballistic flight (PrismFlightClock, vertex) + shield engage/shatter morph (PrismShieldMorph, vertex) + super-shield deflection jiggle (PrismJiggleClock, vertex) + living-mass sway (PrismSway, vertex) + cell-swap suction (PrismSuctionClock + PrismSuctionConverge, vertex) + Urchin cradle (PrismCradleDeform, vertex, §4.7.2 global bank) + back-face fade + destruction sight",
+                EdgeChecks = Concat(Concat(Concat(Concat(BackFaceEdges("PrismOcclusionFade"), LiveSuctionEdges), SwayEdges), GravityWarpEdges), CradleEdges),
+                Purpose = "grow-in bloom (PrismGrowScale, vertex) + color/state transitions (PrismColorLerp, fragment) + ballistic flight (PrismFlightClock, vertex) + shield engage/shatter morph (PrismShieldMorph, vertex) + super-shield deflection jiggle (PrismJiggleClock, vertex) + living-mass sway (PrismSway, vertex) + cell-swap suction (PrismSuctionClock + PrismSuctionConverge, vertex) + black-hole tidal warp (PrismGravityWarpDeform, vertex, §4.7.4 global bank) + Urchin cradle (PrismCradleDeform, vertex, §4.7.2 global bank) + back-face fade + destruction sight",
             },
             new GraphSpec
             {
@@ -271,11 +293,11 @@ namespace CosmicShore.Editor
                     "PrismFlightClock", "PrismShieldMorph", "PrismJiggleClock", "PrismSway",
                     "PrismErosionFade", "PrismBackFaceFade", "PrismDestructionSight",
                     "PrismSuctionClock", "PrismSuctionConverge",
-                    "PrismCradleDeform",
+                    "PrismGravityWarpDeform", "PrismCradleDeform",
                 },
                 UnexposedGlobals = DestructionSightGlobals,
-                EdgeChecks = Concat(Concat(Concat(Concat(ExplosionErosionEdges, BackFaceEdges("PrismOcclusionFadeDebris")), LiveSuctionEdges), SwayEdges), CradleEdges),
-                Purpose = "explosion debris flight/shatter/fade (PrismExplosionClock) + transparent live prism bloom/color/flight/shield morph/deflection/sway + cell-swap suction + Urchin cradle (§4.7.2) + UV0 erosion + back-face fade + destruction sight",
+                EdgeChecks = Concat(Concat(Concat(Concat(Concat(ExplosionErosionEdges, BackFaceEdges("PrismOcclusionFadeDebris")), LiveSuctionEdges), SwayEdges), GravityWarpEdges), CradleEdges),
+                Purpose = "explosion debris flight/shatter/fade (PrismExplosionClock) + transparent live prism bloom/color/flight/shield morph/deflection/sway + cell-swap suction + black-hole tidal warp (§4.7.4) + Urchin cradle (§4.7.2) + UV0 erosion + back-face fade + destruction sight",
             },
             new GraphSpec
             {
@@ -444,6 +466,8 @@ namespace CosmicShore.Editor
                     return "PrismDestructionSight.hlsl";
                 case "PrismCradleDeform":
                     return "PrismCradle.hlsl";
+                case "PrismGravityWarpDeform":
+                    return "PrismGravityWarp.hlsl";
                 case "PrismSway":
                     return "PrismSway.hlsl";
                 default:
@@ -464,6 +488,8 @@ namespace CosmicShore.Editor
                     return SightHlslGuid;
                 case "PrismCradleDeform":
                     return CradleHlslGuid;
+                case "PrismGravityWarpDeform":
+                    return GravityWarpHlslGuid;
                 case "PrismSway":
                     return SwayHlslGuid;
                 default:

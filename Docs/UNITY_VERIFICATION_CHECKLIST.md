@@ -65,6 +65,128 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 The Stoat in the vessel selector + Slingshot / Warpline in the arcade (ported from `claude/peaceful-rubin-hhw49n`, 2026-10-13) — NOT EDITOR-VERIFIED
+
+The Stoat slice of `claude/peaceful-rubin-hhw49n` (black holes, warp field, crystal wormhole, the Stoat,
+Slingshot, Warpline) brought onto bleeding-edge WITHOUT that branch's Prisma port, party/UGS, Skim Race AI,
+perf-diagnostics and studio work. Changes made in the port, to check first:
+
+1. **`VesselClassType.Stoat` is 15, not 14** — bleeding-edge's Thresher took 14 first. Every serialized
+   reference moved with it (`SO_Class_Stoat.Class`, `Stoat.prefab` `vesselType`,
+   `ElementalAbilityMaps/Stoat.asset`, both `ModePreview_*.asset` `Vessel`). Open `Stoat.prefab`: the
+   `VesselStatus` type must read **Stoat**, not Thresher.
+2. **`Vessel Prefab Container`** — the Stoat entry now references the prefab's root **Transform**
+   (fileID 5928382658856804067), like every other entry; the source branch pointed the `Transform[]` at
+   the GameObject. Expect the Stoat in the lava-lamp Vessel Changer and in Arcade launch panels.
+3. **Not ported**: the source branch's Black Hole cell entry on `Menu_Main`'s Cell Selector (it pointed
+   at a cell config that branch no longer carries).
+
+Then run the three entries below.
+
+---
+
+### 🔴 The Stoat's round-15 field dipole + pathfinder, and Warpline (`GameModes.Warpline = 65`) (`cece/magical-carson-9bdq8z`, 2026-10-09) — NOT EDITOR-VERIFIED
+
+`R_VesselActions/STOAT_DIPOLE.md`, `Arcade/WARPLINE.md`. `/verify-unity` was NOT available in the session
+that wrote this (no Editor, no `unity` binary). Proven offline: the headless refcompile (player config, 0
+errors in project code), `author_stoat_assets.py --check` / `--self-test` (every negative control fires,
+stage 4 idempotent), `author_warpline_assets.py --check` (+ watched fail), `author_slingshot_assets.py
+--check`, `render_card_backgrounds --check`, `author_card_backgrounds --strict`, the preview / switch-label /
+enum / using / logging / conditional-compilation gates. `StoatDipoleTests`, `EnumIntegrityTests` written,
+not run. Platform changes to watch beyond the Stoat: `VesselTransformer.FlightTimeScale` (base
+Pitch/Yaw/Roll/RotateShip/MoveShipVector now step on it — 1 for every other hull), `Prism.Vanish`,
+`BlackHole.PrismCapture` in `BlackHoleGravityField.ApplyVerdicts`, `BlackHoleCrystalStrip` from
+`TeleportContinuity`, two new owner-write NetworkVariables on `R_VesselActionHandler`.
+
+1. **Fly the Stoat (lava-lamp / any Stoat mode).** Expect: dots from just ahead of the nose, blue-grey,
+   evenly spaced (4 px, 10 diameters apart), not bent or doubled by a black hole (they are an overlay).
+   The hull turns at 48 °/s (×0.4). Hold a full stick turn: the dots draw a circle and STOP where it
+   closes, still blue-grey, no boost.
+2. **Squeeze RT.** Expect: a pair 250 u ahead; the sink (dark, toward your domain's dark colour) moves
+   right and slightly back, the source (bright, toward your light colour) left and on. Release: they fall
+   together and annihilate. Both triggers: the sink dead ahead, the source beyond. The dots bend through
+   the field; when they bend ≥ 3° or pass through the sink they turn LIME and you fly them faster (×2 at
+   rest, ×3 at Time 5, ×4 at Time 10) along the same line. Fly into the sink: you come out of the source.
+3. **What the sink takes.** Prisms pulled in vanish at the horizon (no debris); at Space 5 they come out of
+   the source in your domain. A creature within 1.5 horizons is killed and suctioned in. In a 2-player
+   match a rival who flies into your sink comes out of your source and its crystals are left on your
+   side of the sink; a teammate is not stripped; you never are.
+4. **Peers.** A remote player sees your pair where you hold it (it follows at the network tick); an AI
+   Stoat's pair is seen by everyone.
+5. **Arcade ▸ Warpline** (intensity 1–4): five rings a lap, two laps, golf; AI Stoats lay pairs (both
+   triggers dead ahead, one trigger into a turn). **Arcade ▸ Slingshot** now flies on the dipole too.
+6. **Hole budget.** With 3–4 Stoats (Warpline at 4 players), only two pairs can exist at once (the
+   4-hole cap); confirm a third squeeze lays nothing and that nothing errors. A known limit, not a bug.
+7. **Feel / cost.** Profile `StoatPathfinderExecutor.Update` near a sink (≤ 96 substeps per 3 u step). If
+   the field flight fights the nose follow, compare `StoatDipoleExecutor.FlyField` against the studio.
+   Tune on `StoatDipoleConfig` (the studio's `ft*` row).
+
+---
+
+### 🔴 Slingshot (`GameModes.Slingshot = 64`) + the Stoat's plated hull, lope and autopilot sling (`claude/peaceful-rubin-hhw49n`, 2026-10-08) — NOT EDITOR-VERIFIED
+
+`Arcade/SLINGSHOT.md`, `R_VesselActions/STOAT.md` §2.1–2.2. The Stoat's drawn hull is now its own
+procedural plated body (`StoatHullBuilder` on a `StoatHull` object; the Squirrel model's renderers
+off, colliders on) with the user's body-only bounding lope (`StoatAnimation`); its game is a two-lap
+Stoat-only circuit race in the barren race cell. Proven offline: `stoat_hull_harness`,
+`slingshot_course_harness` (1,600 courses), both generators' `--check` (+ watched fail), the card art
+(`render_card_backgrounds --check`, 32/32 wired), preview / game-list / switch-label / enum / using /
+logging gates, the offline refcompile. `StoatHullTests`, `SlingshotCourseTests` written, not run.
+
+1. **Vessel Changer → Stoat (lava-lamp).** Expect: a blue plated stoat (diamond plates, wedge head),
+   domain-coloured fins, eyes and tail crystal; NOT the Squirrel. It lopes every ~1.5 s (rises
+   nose-up, arches, lands bunched, legs reach) while the vessel's path and trail stay straight; the
+   spine bends into a stick turn and the tail swings out. Collect elements: Charge grows the fins and
+   crystal, Mass thickens it, Space lengthens it, Time lengthens the legs. Inspector on `StoatHull`:
+   right-click the builder ▸ Rebuild Hull previews it in edit mode.
+2. **Arcade ▸ Slingshot** (intensity 1–4). Expect: eight neutral rings round the nucleus, gate 0 above
+   the spawn ring; LT/RT throw a pair (attractor on the trigger's side); the pull drags only YOUR
+   Stoat; two laps; golf result. AI Stoats fly the gates and sling into turns (BlackHole verbose
+   channel: `[Stoat] Left sling` lines from AI hulls).
+3. **Rival's pair never moves you**: in a 2-player match, fly through another Stoat's pair — no pull.
+4. **Feel**: if the throw is weak or wild, tune `StoatSlingConfig` (`maxStrength`, `aheadHorizons`,
+   `halfGapHorizons`) first; `BlackHoleConfig.vesselPullScale` / `maxVesselPullSpeed` are fleet-wide.
+
+---
+
+### 🔴 The Stoat (`VesselClassType.Stoat = 15`): black–white hole slingshot on the triggers, the Sparrow's stop on X (`claude/peaceful-rubin-hhw49n`, 2026-10-08) — NOT EDITOR-VERIFIED
+
+`_Scripts/Controller/Vessel/R_VesselActions/STOAT.md`; the black hole itself (lens, pull, tides, white
+holes, pairs) is `Docs/BLACK_HOLE.md`, whose §0.1 lists ITS untested rows — none of that work has been
+run in the editor by its author either. `Stoat.prefab` is a text clone of `Squirrel.prefab` written by
+`Tools/Build/author_stoat_assets.py` (fresh Netcode `GlobalObjectIdHash`, computed the way
+`NetworkObject.OnValidate` does and proven against the Squirrel's own). Verified out of editor: the
+generator's `--check` and `--self-test` (seven negative controls), every vessel gate, the console /
+conditional-compilation / abstract-member gates, the generated-asset audit, the offline refcompile on
+all three configs; `StoatSlingTests` and the bumped `EnumIntegrityTests` are WRITTEN, not run.
+
+1. **Open `Stoat.prefab`.** Expect: no "missing script" on the `ShipActions` object (two added
+   components: `StoatSlingExecutor` with its config wired, `ToggleTranslationModeActionExecutor` with
+   the hull's own `VesselPrismController` and the two shared channels); `VesselStatus.vesselType` reads
+   **Stoat**; the `NetworkObject` keeps `GlobalObjectIdHash` unchanged on save (if it changes, the
+   generator's hash is wrong — report the number). Run `FrogletTools ▸ Vessels ▸ Audit Vessel Ability
+   Rows`: the row will show the SQUIRREL's icons (prototype debt, STOAT.md §4) — expected.
+2. **Run the edit-mode tests** `StoatSlingTests`, `EnumIntegrityTests`, `ToyVesselRosterCoverageTests`,
+   `OneThumbVesselCoverageTests`. The enum count is now asserted at 17 (Thresher took 14; the Stoat is 15).
+3. **Lava-lamp (Menu_Main), Vessel Changer → Stoat.** Expect: the Squirrel hull, flyable. Press **X**:
+   the hull stops translating and stops laying prisms; press again: moves. Hold **LT** ~1 s and release
+   (gamepad: the trigger's depth is the size; keyboard: Left Shift, 1.2 s = full): a black hole on the
+   LEFT and a white hole on the RIGHT, ahead, on the hull's horizontal; the hull is pulled toward the
+   black hole / shoved off the white one. **RT** / Right Shift mirrors it. A tap is a nudge (horizon
+   radius 4 u), a buried trigger the big swing (24 u). The pair drifts apart, stops at 2 s, falls back
+   and is gone at 4 s. A second sling while the first pair lives annihilates the first.
+4. **Console** (`BlackHole` channel ON in FrogletTools ▸ Toolbox ▸ Logging): one `[Stoat] Left sling:
+   hold … → strength …` line per sling; NO per-frame lines. With the channel off: nothing.
+5. **Game mode** (any arcade mode as the Stoat): the same, and `IsTranslationRestricted` replicates
+   (a party guest sees the stopped Stoat stopped). Pairs do NOT replicate (STOAT.md §7).
+
+**First-pass tuning** (`_SO_Assets/VesselActions/Stoat/StoatSlingConfig.asset`): `minStrength 2`,
+`maxStrength 12`, `holdExponent 1.5`, `aheadHorizons 2`, `halfGapHorizons 4→8 (Space)`, `driftSpeed 20`,
+`lifetime 4`. The ~90° swing is the design target, not a measured result — expect to move `maxStrength`
+and `aheadHorizons` first.
+
+---
+
 ### 🔴 Omni + Mass crystals: still crystals, ratchet on the gameplay camera, Space squares on the omni body (`cece/eager-rubin-km7qyn`, 2026-10-12) — NOT EDITOR-VERIFIED
 
 **Landed** (`Docs/Studios/OMNI_SHEPARD_LAB.md` round 9, `Docs/PALETTE.md §2.10`; generator

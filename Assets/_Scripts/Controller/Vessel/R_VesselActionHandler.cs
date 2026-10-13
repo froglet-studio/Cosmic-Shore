@@ -80,6 +80,27 @@ namespace CosmicShore.Gameplay
             NetworkVariableReadPermission.Everyone,
             NetworkVariableWritePermission.Owner);
 
+        /// <summary>
+        /// The Stoat's live FIELD DIPOLE (<c>R_VesselActions/STOAT_DIPOLE.md</c>): the sink's world
+        /// position in xyz and both poles' horizon radius in w, or <see cref="Vector4.zero"/> when the
+        /// pair is closed. With <see cref="NetStoatDipoleSource"/> it is the whole pair. Owner-write, for
+        /// the <see cref="NetEchoSightShape"/> reason: the poles' separation IS the analog squeeze of
+        /// two triggers, which no peer receives, and their size is Space-scaled on the owner's
+        /// unreplicated element level. Every peer draws, pulls, steals and kills with its own copy of
+        /// the pair, so every peer needs this. Written only while a pair is open (and zeroed when it
+        /// closes), so a hull that never carries the ability never dirties it.
+        /// </summary>
+        public NetworkVariable<Vector4> NetStoatDipoleSink = new(
+            Vector4.zero,
+            NetworkVariableReadPermission.Everyone,
+            NetworkVariableWritePermission.Owner);
+
+        /// <summary>The source (white hole) of <see cref="NetStoatDipoleSink"/>'s pair, world position.</summary>
+        public NetworkVariable<Vector3> NetStoatDipoleSource = new(
+            Vector3.zero,
+            NetworkVariableReadPermission.Everyone,
+            NetworkVariableWritePermission.Owner);
+
         [Header("Executors")]
         [SerializeField] ActionExecutorRegistry _executors;
 
