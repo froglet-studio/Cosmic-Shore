@@ -83,6 +83,10 @@ races headless in a few seconds.
 - **The yardstick will be wrong before the creature is.** Four of the swarm lab's worst findings
   were bugs in the metric (L-NCA-1). Plant a defect that the metric must catch before trusting a
   green number.
+- **One window per event, and read the worst run.** A column measured over a window that also holds a
+  second event measures that event, or reads the same for every variant (L-STU-32, L-STU-42). Before
+  quoting a scorecard, print the frames around each column's worst peak. A control that is not ~0, or a
+  column that sits exactly at a lab limit on every run, is a yardstick bug until shown otherwise.
 - **Skilled and rookie**: score with a skilled pilot AND a sloppy one (`aiNoise`). The Stoat's
   "Comet is the expert's style" (21% rookie catch rate against 88%) came only from the rookie
   column.

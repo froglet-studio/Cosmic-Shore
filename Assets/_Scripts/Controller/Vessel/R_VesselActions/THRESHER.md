@@ -396,6 +396,12 @@ prefab, `DriftAudioController`, jets and tails.
 
 ## 9. Known weaknesses
 
+- **The Plant (the Time ability) jolts in five places**, each a value that changes in one frame: the
+  ball is pinned at ~63 u/s (the taut rope cancels the skid), the hook snaps into a 300 °/s turn, the
+  spectate camera freezes mid-turn, the planted wind-in whips the hull to ~1 100 °/s, and on release
+  the spin stops dead and the ball is yanked. Measured, with seven smoothing approaches scored, in the
+  **Thresher Plant Lab** (`Docs/Studios/ThresherPlantLab.html`, write-up
+  `Docs/Studios/THRESHER_PLANT_LAB.md`). Not changed in the game until the designer picks.
 - A turn throws the ball outward, so hits land on the side away from the turn.
 - With the chain let out the ball falls slack in any steady turn (0.38–0.54× smash): only the reel
   (or the plant) heats it. Shorten `maxLen` if a let-out whip should work on its own.

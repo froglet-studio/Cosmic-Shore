@@ -69,6 +69,13 @@ Entries are grouped by family; within a family, the newest goes at the bottom.
 
 ---
 
+### L-GEN-7 — A parity gate against a float32 reference needs a tolerance that grows with distance, and planted controls to show it can still fail
+- Lab: Thresher Plant Lab (`Tools/Build/thresher_plant_lab/parity.cjs`) · Branch: `cece/zealous-johnson-gopp6t` · Date: 2026-10-13
+- What happened: the page's float64 port of `ThresherChainSolver` drifted from the C# solver (float32, compiled from its real path with the chain harness's stubs) by up to 0.06 u after ~600 u of a spun-up launch. The gap grew smoothly and never stepped, and the mode sequence matched on all 1 224 frames, so it was rounding, not a divergence. A fixed 0.02 u tolerance failed it; a per-coordinate relative tolerance failed it too, on a coordinate near zero while the ship was far from the origin. 0.02 u + 2·10⁻⁴ × the ship's distance from the origin passed at 0.80× of tolerance.
+- Do instead: before widening a parity tolerance, print the gap every N frames. Widen only if it grows smoothly with distance or time, and then scale it by that quantity, not by the coordinate itself. Keep planted dial changes in the gate (here a 7% skid change misses by 46×) to show the wider tolerance still fails a real change.
+- Evidence: `parity.cjs` (TOL, REL, the three negative controls).
+- Promoted: no
+
 ## STU — browser studios (Stoat Flight Studio, Vessel Studio)
 
 ### L-STU-1 — A lab's scripted input exposed a real game bug: the sling read the latest trigger sample, not the squeeze
@@ -293,7 +300,7 @@ Entries are grouped by family; within a family, the newest goes at the bottom.
 - What happened: the first "clearance" column (how close two crystals' centres come in flight, x their combined radii) read 0.09-0.13 for every style, the controls included, because all four crystals converge on one centre and are SUPPOSED to overlap as they merge. Excluding the merge zone (inside 1.5 omni radii) made it discriminate: the art file's straight-line row 0.44, the proposals 1.75-3.29.
 - Do instead: before trusting a column, check it varies across the variants. If it doesn't, ask whether it is measuring the moment the design intends; restrict it to where the event is a fault.
 - Evidence: `measure()` (`MEET`) in the page; the round-1 scorecard in `OMNI_COMBINE_LAB.md`.
-- Promoted: no
+- Promoted: §2.3 (recurred as L-STU-42)
 
 ### L-STU-33 — A nearest-vertex "lands" check passes a SWAPPED pair; fit the plate rigidly to catch it
 - Lab: Omni Combine Lab round 2 · Branch: `cece/eager-rubin-km7qyn` · Date: 2026-10-13
@@ -359,6 +366,27 @@ Entries are grouped by family; within a family, the newest goes at the bottom.
 - Promoted: no
 
 ---
+
+### L-STU-41 — When a constraint, not a dial, sets the value, no tuning of the dial fixes it: run the tuning-only variant as a control
+- Lab: Thresher Plant Lab (`Docs/Studios/ThresherPlantLab.html`) · Branch: `cece/zealous-johnson-gopp6t` · Date: 2026-10-13
+- What happened: the ask was "a quick deceleration instead of an instant stop". The shipped plant already HAS a deceleration (a 7/s skid for 0.3 s), but the C# reference trace showed the ball still doing 62.8 u/s when it was pinned: the taut rope re-imposes the ship's speed every frame, so the brake barely acts. A "Longer skid" variant (`skid` 12, `skidSeconds` 0.5, shipped dials only) moved the ball-stop column 24.4 → 23.4 u/s and cost 0.2 s of catch time. The fix had to move the ball kinematically and let the rope pay out (`bkMode`).
+- Do instead: when the request is "make X gentler" and X already has a gentleness dial, put a tuning-only variant in the scorecard first. If it doesn't move the column, find the constraint that overrides the dial before designing approaches.
+- Evidence: `THRESHER_PLANT_LAB.md` round 1 scorecard (Longer skid row); `Tools/Build/thresher_plant_lab/trace.sh` reference trace.
+- Promoted: no
+
+### L-STU-42 — Probe the worst run of a column frame by frame before trusting it; three of round 1's columns were the yardstick, not the approach
+- Lab: Thresher Plant Lab · Branch: `cece/zealous-johnson-gopp6t` · Date: 2026-10-13
+- What happened: three first-draft columns misled. (1) The catch window overlapped the scripted wind-in, so the No-plant control read 14 u/s of "ball stop" and the wind-in's 1 600 °/s hull whip masked the hook (L-STU-32 recurring: a window that spans a second event measures that event). (2) The first "rope give" spring could pull the ball but not brake it, so the ball overshot the ship and the hard rope snapped it at 596 u/s, and the approach read WORSE than shipped. (3) The lab's own camera limiter chattered at its cap (bang-bang around zero error), so the camera column read exactly 1 500 for every run. Each was found with one probe that runs every seed, finds the frame where the column peaks, and prints ±6 frames around it.
+- Do instead: before quoting a scorecard, open the worst run of each column at its peak frame. A column that equals a cap or limit on every run, or a control that is not ~0, is a yardstick bug until shown otherwise. Give the page a `runRows(overrides, seed, kind)` hook so the probe needs no copy of the model.
+- Evidence: `window.__lab.runRows` in the page; the three fixes in `THRESHER_PLANT_LAB.md` "Checked".
+- Promoted: §2.3 (with L-STU-32, now recurred in a second lab)
+
+### L-STU-43 — A frame-rate change can decide which frame a state cut lands on, and so whether a jolt exists
+- Lab: Thresher Plant Lab · Branch: `cece/zealous-johnson-gopp6t` · Date: 2026-10-13
+- What happened: the shipped spectate camera eases in from a pose captured at the cut, dropping the camera's turn: 14 400 °/s² at 60 Hz on every run. At 30 Hz the same column read 622 °/s², because the cut landed on the frame before the chase camera had started turning, so there was nothing to drop. Every other jolt column kept its ordering. (A recurrence of L-ECO-4, "a fixed timestep is a sample".)
+- Do instead: re-run the scorecard at a second frame rate and report any column whose ORDER changes. A one-frame race between two state changes is a finding in its own right; here it argued for carrying the camera's turn into the entry.
+- Evidence: `THRESHER_PLANT_LAB.md` "Frame rate"; `runBatch({ dt: 1/30 })`.
+- Promoted: no (L-ECO-4 is already §8)
 
 ## NCA — swarm / neural-CA research rigs (Tools/NCA)
 
