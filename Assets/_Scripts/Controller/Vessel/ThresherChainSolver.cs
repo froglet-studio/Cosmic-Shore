@@ -1062,30 +1062,36 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// The LAUNCH camera of a spectated orbit: centred on the launch point, looking DOWN the
-        /// launch trajectory. It sits behind <paramref name="launchPoint"/> along
-        /// −<paramref name="aim"/>, raised <paramref name="elevationDegrees"/> toward
-        /// <paramref name="aimUp"/> (the orbit's axis on the camera's side), far enough that the
-        /// whole circle — which lies to one side of the launch point, up to 2 ×
-        /// <paramref name="radius"/> across — fits the horizontal half-angle, and its depth the
-        /// vertical one, with <paramref name="margin"/>. Look at the launch point with aimUp as up.
+        /// The LAUNCH camera of a spectated orbit: it follows behind the launch point ON the launch
+        /// trajectory — <paramref name="distance"/> back along −<paramref name="aim"/>, raised
+        /// <paramref name="elevationDegrees"/> toward <paramref name="aimUp"/> (0 ships: no height
+        /// offset). At 0 the trajectory projects to the exact screen centre, which is what lets the
+        /// sight be a crosshair. Look along the aim with aimUp as up.
         /// </summary>
-        public static Vector3 LaunchCameraPosition(Vector3 launchPoint, Vector3 aim, Vector3 aimUp, float radius,
-                                                   float halfFovVerticalRad, float halfFovHorizontalRad,
-                                                   float elevationDegrees, float margin)
+        public static Vector3 LaunchCameraPosition(Vector3 launchPoint, Vector3 aim, Vector3 aimUp,
+                                                   float distance, float elevationDegrees)
         {
-            float m = Mathf.Max(1f, margin);
-            float tanH = Mathf.Max(0.05f, Mathf.Tan(halfFovHorizontalRad));
-            float tanV = Mathf.Max(0.05f, Mathf.Tan(halfFovVerticalRad));
-            float d = Mathf.Max(2f * radius * m / tanH, radius * m / tanV);
             float a = elevationDegrees * Mathf.Deg2Rad;
             Vector3 dir = -aim.normalized * Mathf.Cos(a) + aimUp.normalized * Mathf.Sin(a);
-            return launchPoint + dir.normalized * d;
+            return launchPoint + dir.normalized * Mathf.Max(0f, distance);
+        }
+
+        /// <summary>
+        /// The launch sight's zoom: trigger depth past <paramref name="deadzone"/>, remapped to 0..1
+        /// (the Serpent scope's rule, <c>SniperScopeActionExecutor.ResolveZoomTarget</c>). The
+        /// Plant engages at 5% depth, so a deadzone above that is a light hold that plants without
+        /// zooming and a deeper pull that zooms.
+        /// </summary>
+        public static float ZoomTarget(float triggerDepth, float deadzone)
+        {
+            float depth = Mathf.Clamp01(triggerDepth);
+            float dead = Mathf.Clamp(deadzone, 0f, 0.95f);
+            return depth <= dead ? 0f : Mathf.InverseLerp(dead, 1f, depth);
         }
 
         /// <summary>
         /// Turn the aim with the stick, in SCREEN terms for the launch camera (looking along the aim,
-        /// aimUp up, screen-right = aimUp × aim): stick X swings the aim right/left about
+        /// aimUp up, screen-right = aimUp × aim; the crosshair at screen centre is the aim): stick X swings the aim right/left about
         /// <paramref name="aimUp"/> at <paramref name="yawRate"/> (rad/s), stick Y pitches it at
         /// <paramref name="pitchRate"/> (rad/s) — positive Y pitches it DOWN, the hull's own
         /// nose-down sign, so the pilot's pitch inversion carries over. Pitch turns aim and aimUp

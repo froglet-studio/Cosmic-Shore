@@ -279,27 +279,36 @@ the speed tunnel's (vessel rule 21) and is only READ. Dials in `ThresherConfigSO
   over `spectateBlendSeconds` 0.6 s) to the **launch camera**:
   - **The launch point.** The aim names one point on the circle — the point whose tangent IS the aim
     (`ThresherChainSolver.LaunchRadial`: with travel normal N, the velocity at radial r is N × r, so
-    the point is r = aim × N). The camera is **centred on that point and looks down the launch
-    trajectory**: it sits behind it along −aim, raised `aimElevationDegrees` 25° toward the orbit's
-    axis, far enough that the whole circle (up to 2r to one side of the point) fits the width
-    (`ThresherCameraFraming.LaunchCameraPosition`), up = the orbit's axis. The aim starts as the way
-    the chase camera was facing, laid into the orbit plane, so the view direction carries across the cut.
+    the point is r = aim × N), on the circle the ship is ACTUALLY flying (its distance from the
+    pivot, never the chain's length). The camera **follows behind that point ON the launch
+    trajectory** (2026-10-13 round 4): the hull's own chase distance back along −aim
+    (`aimCameraDistance` 0 = the camera settings' follow offset, 55 u) with **no height offset**
+    (`aimElevationDegrees` 0), looking along the aim, up = the orbit's axis
+    (`ThresherCameraFraming.LaunchCameraPosition`). The orbit is seen edge-on and the ship sweeps
+    through the launch point in front of the lens every lap. The aim starts as the way the chase
+    camera was facing, laid into the orbit plane, so the view direction carries across the cut.
   - **The sticks aim, and the whole spin turns with the camera.** `ThresherCameraFraming.TurnAim`:
     stick X swings the aim at `aimYawRate` 180 °/s — the launch point slides round the circle and the
     camera swings with it; stick Y pitches aim and axis together at `aimPitchRate` 120 °/s (the hull's
     nose-down sign) and the **orbit plane tilts with it** (`ThresherChainSolver.SteerOrbitPlane`
     lays each pivot step into the plane ⟂ the aim's axis, keeping the spin's sense). `PivotSteer`
     returns zero while `IsAiming`.
-  - **The launch path is the Stoat pathfinder's dotted line** (`ScreenDotPath`, a screen-space
-    overlay with the pathfinder's disc, dark rim, spacing rule and fade; `aimDotPixels` 4,
-    `aimDotGap` 10, `aimLineLength` 150 u) from the launch point along the aim. It is **white while a
-    release would wait** and turns the palette's **CTA lime while the timing is right** — while the
-    ship will reach the launch point within `perfectWindowSeconds` 0.25 s (`IsTimingPerfect`,
-    `ThresherChainSolver.SecondsToLaunchPoint`). The launch point and the camera's framing use the
-    circle the ship is ACTUALLY flying (its distance from the pivot), never the chain's length: while
-    RT pays out, the chain runs ahead of the orbit, and the first cut drew the point on that bigger
-    circle — the aim led to a circumference the ship was not on yet, and a release then fired from
-    somewhere else and was hauled back by the rope.
+  - **The launch sight** (`ThresherLaunchSight`, round 4 — it replaced the dotted line, which
+    degenerates to a point once the camera is ON the trajectory). A **crosshair** at screen centre:
+    every point of the trajectory projects there. White while a release would wait; the palette's
+    **CTA lime while the timing is right** — the ship will reach the launch point within
+    `perfectWindowSeconds` 0.25 s (`IsTimingPerfect`, `ThresherChainSolver.SecondsToLaunchPoint`).
+    Beside it, a **zoom window shaped like the TIME petal** (the Plant is the Time ability), in the
+    Serpent eyepiece's slot (top-left, 45% of screen height): a second camera looking down the same
+    trajectory from the launch point, with its own crosshair, **zoomed by LT's depth** like the
+    Serpent's scope — `ThresherCameraFraming.ZoomTarget` (depth past `sightZoomDeadzone` 0.25, so a
+    light hold plants without zooming; the Plant engages at 5%), eased at `sightZoomResponse` 12/s
+    (only a binary key needs it), FOV `sightWideFieldOfView` 50° → `sightZoomFieldOfView` 12°. The
+    flight view is never magnified. Shared with the Serpent rather than copied: `ScopePipView` (the
+    offscreen camera; gained an explicit-eye `Tick` and a `RenderAspect`) and `ScopePetalImage`
+    (gained three virtual shape members; `TimePetalImage` overrides only those).
+    `TimePetalGeometry` is traced off `time_petal.png`: an exact rhombus, 72° at both tips,
+    width / height = tan 36° (0.727), so its render target is that aspect too.
   - **The release is timed for you.** LT up ARMS the launch (`ThresherChainSolver.ArmLaunch`): the
     ship keeps circling and leaves from the chosen point, along the aim, on the frame it would
     otherwise carry past it (the angle still to go is within that frame's angular step) — at most one
@@ -358,12 +367,13 @@ frame of drift. Untested in MPPM.
 | `_SO_Assets/Effects/Effect Containers/{Vessel,Skimmer}Containers/Thresher*.asset`, `Skimmer Prism Effects/ThresherSkimmerBoostPrismEffect.asset` | Forked containers (§3) |
 | `Resources/ElementalAbilityMaps/Thresher.asset`, `_SO_Assets/Classes/SO_Class_Thresher.asset`, `_SO_Assets/Camera/ThresherCameraSettingsSO.asset` | Map, class, camera |
 | `_Graphics/Icons/AbilityIcons/Thresher/` | Placeholder icons |
+| `R_VesselActions/Executors/ThresherLaunchSight.cs`, `UI/View/TimePetalGeometry.cs`, `UI/View/TimePetalImage.cs` | The launch sight: crosshair + Time-petal zoom window (§5a); reuses `Utility/ScopePipView.cs` and `UI/View/ScopePetalImage.cs` from the Serpent |
 | `Controller/Camera/CustomCameraController.cs` | + `Spectate` vantage seam (default null) and `MaxFollowTurnRate` follow-frame cap (default 0), §5a |
 | `ImpactEffects/EffectsSO/Vessel Crystal Effects/ThresherWindmillByCrystalEffectSO.cs`, `_SO_Assets/Effects/Vessel Crystal Effects/ThresherWindmillByCrystalEffect.asset` | The omni-crystal windmill (§2c), wired into `ThresherImpactorDataContainer.vesselCrystalEffects` |
 | `_SO_Assets/VesselActions/Thresher/ThresherMassModeAction.asset` | `ThresherActionSO` `control: MassMode`, bound to `Button1Action` in the prefab's shared map (§2b) |
 | `_Graphics/Materials/Shaders/ThresherBallFresnelShader.shader`, `_Graphics/Materials/ThresherBallMaterial.mat` | The ball's fresnel look (§5) |
 | `_Graphics/Materials/Shaders/ThresherChainFresnelShader.shader`, `_Graphics/Materials/ThresherChainMaterial.mat` | The chain's fresnel tube (§5) |
-| `Tests/Editor/ThresherChainSolverTests.cs`, `Tools/Build/thresher_chain_harness/` | 54 tests (solver, planted steering, windmill, chain smoothing, camera framing, reach envelope, launch camera, armed launch, steered plane); offline runner + feel table |
+| `Tests/Editor/ThresherChainSolverTests.cs`, `Tools/Build/thresher_chain_harness/` | 56 tests (solver, planted steering, windmill, chain smoothing, camera framing, reach envelope, launch camera on the trajectory, sight zoom, armed + perfect launch, steered plane, magnet); offline runner + feel table. `Tests/Editor/TimePetalGeometryTests.cs`: the traced Time petal |
 
 Registered in `Vessel Prefab Container`, `DefaultNetworkPrefabs` (own `GlobalObjectIdHash`
 1887398589), `ToyVesselRoster.Default`, `CrystalHullFusionConfig` (reuses the Squirrel's bakes —
@@ -380,9 +390,8 @@ prefab, `DriftAudioController`, jets and tails.
 - **Vessel hits are decided on the owner of the Thresher**, from that machine's copy of the ball;
   a peer whose copy has drifted by a frame sees a hit it did not simulate (the score and the petals
   still arrive through the authoritative path). Untested in MPPM.
-- **`ScreenDotPath` duplicates the Stoat's `StoatPathfinderDots`** (unmerged branch
-  `claude/peaceful-rubin-hhw49n`) — a verbatim port of its spacing rule and look. When the Stoat
-  lands, make its pathfinder draw through `ScreenDotPath` (keeping only its warp/loop alphas).
+- **The sight window is a second full render of the arena** at 30 Hz (`ScopePipView`), as the
+  Serpent's is, but only while a spin is spectated by the local pilot.
 - **The aimed launch is decided on the OWNER.** The aim, the steered plane and the armed launch are
   the local pilot's camera state and do not replicate. The hull's pose does, but a remote peer runs
   the plain release the moment LT comes up, so its copy of the ball is let go while the replicated
@@ -413,7 +422,7 @@ prefab, `DriftAudioController`, jets and tails.
 6. **Upgrades** (FrogletTools element tools or crystals to L5): Charge (Magnet) — the free ball
    curves toward a nearby enemy vessel; Mass (Armoured Trail) — Mass Mode's trail prisms arrive
    shielded; Space (Breaker) — a red ball smashes a super-shielded prism (the Skim Race track's
-   stellated ones are a good test); Time (Perfect Release) — release while the dotted line is lime
+   stellated ones are a good test); Time (Perfect Release) — release while the crosshair is lime
    and the ship launches visibly faster than the orbit. Levels below 5: Charge more petals per
    vessel hit, Mass bigger trail prisms, Space a bigger maximum blast, Time a faster spin-up.
 16. **Enemy vessels**: hit an AI/rival hull with the ball or the chain — they lose petals and you
@@ -428,11 +437,12 @@ prefab, `DriftAudioController`, jets and tails.
    hull visibly swings onto the orbit inside a camera that turns smoothly after it. Swinging a
    let-out ball does not pump the camera in and out. Fly another vessel afterwards: its camera is
    at its own distance and hard-attached.
-11. **Launch camera** (2026-10-13): plant and let it spin — the camera lifts off much sooner than
-    before (≈ 52 °/s) to sit behind a point on the circle, looking down a DOTTED line (the Stoat's
-    dots) that starts there and flashes lime each time the ship is about to pass the point. Hold RT
-    while planted: the point stays on the ship's own circle as it swings out (no jump to a bigger
-    circle). The ship sweeps through that point every lap. Stick right: the point slides round the
+11. **Launch camera** (2026-10-13, round 4): plant and let it spin — the camera moves to follow
+    behind a point on the circle at chase distance with NO height offset, looking along the launch
+    path; a crosshair sits at screen centre and flashes lime each time the ship is about to pass
+    the point (the ship visibly crosses in front of the lens there). A Time-petal (diamond) window
+    top-left shows the same path magnified; squeeze LT deeper and it zooms, ease off and it widens;
+    the main view never zooms. Hold RT while planted: the point stays on the ship's own circle. The ship sweeps through that point every lap. Stick right: the point slides round the
     circle and the camera swings with it. Stick Y: the whole orbit tilts with the camera. Release LT
     anywhere in the lap — the ship keeps circling and leaves exactly from the point along the line;
     then the camera eases back behind it.

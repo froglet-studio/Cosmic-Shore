@@ -43,10 +43,10 @@ MonoBehaviour:
     UpgradeDescription: 'A RED (smash-speed) ball''s direct hit destroys super-shielded prisms, through the sanctioned DeactivateShields -> Damage(devastate) sequence. Gated on IsUpgradeActive(Space) in ThresherExecutor.SweepBall (BreakerActive). (Until 2026-10-13 Space 5 was Reaper Chain.)'
   - Element: 4
     AbilityLabel: Plant
-    AbilityDescription: 'The LEFT trigger. Hold to skid the ball to a stop and swing round it, faster every lap (right trigger up winds you in and spins you faster). A fast spin hands the camera to the launch view: the sticks pick a launch point on the circle and releasing LT launches from it, along the dotted line, as the ship comes round. Time scales how fast the spin winds up to launch speed: ThresherConfigSO.spinMultiplier on the spin-up rate AND its cap, x1 at rest -> x1.75 at level 10 (floor x0.5).'
+    AbilityDescription: 'The LEFT trigger. Hold to skid the ball to a stop and swing round it, faster every lap (right trigger up winds you in and spins you faster). A fast spin hands the camera to the launch view: the sticks pick a launch point on the circle and releasing LT launches from it, through the crosshair, as the ship comes round; pulling LT deeper zooms the Time-petal sight window. Time scales how fast the spin winds up to launch speed: ThresherConfigSO.spinMultiplier on the spin-up rate AND its cap, x1 at rest -> x1.75 at level 10 (floor x0.5).'
     Input: 2
     UnlockLevel: 5
     RelockBelowLevel: 4
     LatchPolicy: 0
     UpgradeLabel: Perfect Release
-    UpgradeDescription: 'A release timed inside the window - the ship reaches the launch point within perfectWindowSeconds (0.25 s) of LT coming up, while the dotted line is lime - launches perfectBoost (x1.6) faster than the orbit. Gated on IsUpgradeActive(Time) in ThresherExecutor.EndPlant (PerfectReleaseActive -> ThresherChainSolver.ArmLaunch).'
+    UpgradeDescription: 'A release timed inside the window - the ship reaches the launch point within perfectWindowSeconds (0.25 s) of LT coming up, while the crosshair is lime - launches perfectBoost (x1.6) faster than the orbit. Gated on IsUpgradeActive(Time) in ThresherExecutor.EndPlant (PerfectReleaseActive -> ThresherChainSolver.ArmLaunch).'

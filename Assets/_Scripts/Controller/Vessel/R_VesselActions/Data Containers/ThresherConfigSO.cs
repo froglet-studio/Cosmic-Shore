@@ -176,10 +176,12 @@ namespace CosmicShore.Gameplay
         [Tooltip("Re-attach once the spin falls below this fraction of spectateSpinRate (or the plant " +
                  "is released). Below 1 so a spin hovering at the threshold does not flap.")]
         [SerializeField, Range(0f, 1f)] float spectateReleaseFraction = 0.75f;
-        [Tooltip("The launch camera sits behind the launch point and looks DOWN the launch trajectory from this " +
-                 "elevation above it (degrees, toward the orbit's axis on the camera's side). 0 = level with the " +
-                 "path; 90 = straight down on the launch point.")]
-        [SerializeField, Range(0f, 85f)] float aimElevationDegrees = 25f;
+        [Tooltip("The launch camera follows behind the launch point ON the trajectory, raised this far above it " +
+                 "(degrees). 0 (shipped) = no height offset: the trajectory is the screen centre, drawn as a crosshair.")]
+        [SerializeField, Range(0f, 85f)] float aimElevationDegrees = 0f;
+        [Tooltip("How far behind the launch point the launch camera follows (world units). 0 = the hull's own " +
+                 "chase distance (the camera settings' follow offset).")]
+        [SerializeField, Min(0f)] float aimCameraDistance = 0f;
         [Tooltip("Seconds to ease into the vantage and back out to the chase camera.")]
         [SerializeField, Min(0f)] float spectateBlendSeconds = 0.6f;
         [Tooltip("While spectating, full stick X swings the AIM (the path a release flies off along) at this " +
@@ -188,12 +190,19 @@ namespace CosmicShore.Gameplay
         [SerializeField, Min(0f)] float aimYawRate = 180f;
         [Tooltip("While spectating, full stick Y pitches the aim at this rate (degrees/s), the hull's own pitch sign.")]
         [SerializeField, Min(0f)] float aimPitchRate = 120f;
-        [Tooltip("Length of the drawn launch path while aiming (world units), from the launch point along the aim.")]
-        [SerializeField, Min(0f)] float aimLineLength = 150f;
-        [Tooltip("The launch path's dots: diameter in pixels at 1080p (the Stoat pathfinder's dotPixels).")]
-        [SerializeField, Range(0.5f, 20f)] float aimDotPixels = 4f;
-        [Tooltip("Space between two dots, in dot diameters (the Stoat pathfinder's dotGap).")]
-        [SerializeField, Range(0f, 40f)] float aimDotGap = 10f;
+
+        [Header("Launch sight - the Time-petal zoom window (local pilot only)")]
+        [Tooltip("The zoom window's vertical field of view with LT held lightly (degrees) - the wide end. A " +
+                 "constant: the window is never narrowed by speed or by the gameplay camera.")]
+        [SerializeField, Range(5f, 120f)] float sightWideFieldOfView = 50f;
+        [Tooltip("The window's field of view with LT pulled all the way (degrees) - the zoomed end.")]
+        [SerializeField, Range(1f, 90f)] float sightZoomFieldOfView = 12f;
+        [Tooltip("LT depth below which the window does not zoom. The Plant engages at 5% depth, so this is a " +
+                 "light hold that plants without zooming.")]
+        [SerializeField, Range(0f, 0.9f)] float sightZoomDeadzone = 0.25f;
+        [Tooltip("How fast the zoom chases the trigger (1/s). Its only job is ramping a BINARY trigger " +
+                 "(keyboard/mouse) - the Serpent scope's zoomResponse.")]
+        [SerializeField, Min(0.1f)] float sightZoomResponse = 12f;
 
         [Header("Ball shading (ThresherBallFresnelShader: dull body, bright fresnel rim)")]
         [Tooltip("Body brightness (max channel) of a slow ball. Under the bloom threshold (0.2).")]
@@ -292,12 +301,14 @@ namespace CosmicShore.Gameplay
         public float SpectateEngageSeconds => spectateEngageSeconds;
         public float SpectateReleaseFraction => spectateReleaseFraction;
         public float AimElevationDegrees => aimElevationDegrees;
+        public float AimCameraDistance => aimCameraDistance;
+        public float SightWideFieldOfView => sightWideFieldOfView;
+        public float SightZoomFieldOfView => sightZoomFieldOfView;
+        public float SightZoomDeadzone => sightZoomDeadzone;
+        public float SightZoomResponse => sightZoomResponse;
         public float SpectateBlendSeconds => spectateBlendSeconds;
         public float AimYawRate => aimYawRate;
         public float AimPitchRate => aimPitchRate;
-        public float AimLineLength => aimLineLength;
-        public float AimDotPixels => aimDotPixels;
-        public float AimDotGap => aimDotGap;
         public float BallBodyCool => ballBodyCool;
         public float BallBodyNearSmash => ballBodyNearSmash;
         public float BallBodyHot => ballBodyHot;

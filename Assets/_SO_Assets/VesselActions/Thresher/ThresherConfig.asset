@@ -119,13 +119,15 @@ MonoBehaviour:
   spectateSpinRate: 0.9
   spectateEngageSeconds: 0.1
   spectateReleaseFraction: 0.75
-  aimElevationDegrees: 25
+  aimElevationDegrees: 0
+  aimCameraDistance: 0
   spectateBlendSeconds: 0.6
   aimYawRate: 180
   aimPitchRate: 120
-  aimLineLength: 150
-  aimDotPixels: 4
-  aimDotGap: 10
+  sightWideFieldOfView: 50
+  sightZoomFieldOfView: 12
+  sightZoomDeadzone: 0.25
+  sightZoomResponse: 12
   ballBodyCool: 0.16
   ballBodyNearSmash: 0.4
   ballBodyHot: 0.5

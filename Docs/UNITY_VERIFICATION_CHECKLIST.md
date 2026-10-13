@@ -65,6 +65,35 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Thresher round 4: launch camera on the trajectory, crosshair, Time-petal zoom window (`cece/wonderful-hypatia-4b323s`, 2026-10-13) — NOT EDITOR-VERIFIED
+
+**Landed** (`R_VesselActions/THRESHER.md` §5a): the spectated-spin camera follows behind the launch point ON
+the trajectory at the hull's chase distance with no height offset (`aimElevationDegrees` 0); the dotted
+line is gone (deleted `ScreenDotPath`) and `ThresherLaunchSight` draws a crosshair at screen centre (lime
+while the timing is right) plus a Time-petal zoom window top-left — a second camera down the trajectory
+from the launch point, zoomed by LT depth (deadzone 0.25, 50° → 12°). New `TimePetalGeometry` (rhombus
+traced off `time_petal.png`, aspect tan 36°) + `TimePetalImage : ScopePetalImage`. **Shared Serpent code
+touched:** `ScopePipView` (+explicit-eye `Tick`, `RenderAspect`, `Label`; defaults unchanged) and
+`ScopePetalImage` (outline/hub/miter now virtual, defaults identical).
+
+**Not opened in Unity.** Offline: `unity_refcompile` RESULT OK (0 errors in project code);
+`thresher_chain_harness` 56/56.
+
+**Verify in editor:**
+1. Thresher: plant and spin. The camera sits level behind a point on the circle looking along the launch
+   path; crosshair at screen centre; the ship crosses in front of it each lap and the crosshair flashes
+   lime just before. Release LT while lime → near-instant launch through the crosshair.
+2. A diamond-shaped (Time petal) window top-left shows the path magnified with its own crosshair. Squeeze LT
+   deeper → zooms in; ease to a light hold → widens; the main view never zooms. Keyboard (binary LT): full zoom.
+   If the window is ABSENT, check the Hierarchy for `[ThresherLaunchSight …]` / `ZoomWindow` and
+   `[ThresherSightCamera]`; if it is there but blank, the camera is the suspect, not the surface
+   (`TimePetalImage` is the Serpent's RawImage subclass).
+3. **Serpent regression**: hold LT on a Serpent — its Charge-petal eyepiece looks exactly as before
+   (square, same place, same reticle).
+4. The window and crosshair vanish the moment the ship launches, when the spin drops, and when you swap vessel.
+
+---
+
 ### 🔴 Thresher round 3: element re-cut, vessel petal hits, dotted launch path with perfect window, snap-back fix (`cece/wonderful-hypatia-4b323s`, 2026-10-13) — NOT EDITOR-VERIFIED
 
 **Landed** (`R_VesselActions/THRESHER.md` §2, §2a–2c, §3, §5a):

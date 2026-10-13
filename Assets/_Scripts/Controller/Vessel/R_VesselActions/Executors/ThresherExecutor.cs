@@ -900,7 +900,8 @@ namespace CosmicShore.Gameplay
         float _camDistance;
         float _camWritten = float.NaN;   // the last distance this hull wrote (negative z)
         bool _spectating;
-        float _spectateRadius;
+        float _sightZoom01;
+        ThresherLaunchSight _sight;
         float _spectateQualifyTime;
         // The AIM while spectating: where a release sends the ship, and the aim camera's "above".
         Vector3 _aimDir, _aimUp;
@@ -991,21 +992,31 @@ namespace CosmicShore.Gameplay
             // The whole spin turns with the camera: the orbit is laid into the plane the aim lives in.
             _solver.SteerOrbitPlane(_aimUp);
 
-            // Frame the circle the ship is ACTUALLY flying, not the chain's length: while the winch
-            // pays out, the chain is longer than the orbit until the ship swings out to it.
-            float orbitRadius = (ship.position - _solver.Pivot).magnitude;
-            _spectateRadius = ThresherCameraFraming.Ease(_spectateRadius, orbitRadius + ballRadius,
-                config.CameraZoomOutRate, config.CameraZoomInRate, dt);
+            // The launch point sits on the circle the ship is ACTUALLY flying (LaunchPoint), not on
+            // the chain's length, which runs ahead of the orbit while the winch pays out.
             Vector3 launch = _solver.LaunchPoint(ship.position, _aimDir);
+            // Follow behind the launch point ON the trajectory, at the hull's own chase distance and
+            // (shipped) no height offset: the trajectory is the screen centre - the crosshair.
+            float follow = config.AimCameraDistance > 0f ? config.AimCameraDistance
+                : Mathf.Max(1f, Mathf.Abs(_cam.NeutralOffsetZ));
             _cam.SpectateBlendSeconds = config.SpectateBlendSeconds;
             _cam.Spectate = new CustomCameraController.SpectateView
             {
-                // Centred on the launch point, looking down the launch trajectory.
-                Position = ThresherCameraFraming.LaunchCameraPosition(launch, _aimDir, _aimUp, _spectateRadius,
-                    halfFovV, halfFovH, config.AimElevationDegrees, config.CameraFramingMargin),
+                Position = ThresherCameraFraming.LaunchCameraPosition(launch, _aimDir, _aimUp, follow,
+                    config.AimElevationDegrees),
                 LookAt = launch,
                 Up = _aimUp,
             };
+
+            // The launch sight: the crosshair (lime while the timing is right) and the Time-petal
+            // zoom window down the same trajectory, zoomed by LT's depth alone.
+            _sightZoom01 = Mathf.MoveTowards(_sightZoom01,
+                ThresherCameraFraming.ZoomTarget(input != null ? input.LeftTriggerAnalog : 0f, config.SightZoomDeadzone),
+                config.SightZoomResponse * dt);
+            if (!_sight) _sight = ThresherLaunchSight.Create(name);
+            _sight.Tick(launch, _aimDir, _aimUp,
+                Mathf.Lerp(config.SightWideFieldOfView, config.SightZoomFieldOfView, _sightZoom01),
+                IsTimingPerfect ? ReadyColor().gamma : new Color(1f, 1f, 1f, 0.9f));
         }
 
         /// <summary>Start aiming at the moment of detaching: the aim starts as the way the camera
@@ -1027,7 +1038,7 @@ namespace CosmicShore.Gameplay
 
             _aimDir = aim.normalized;
             _aimUp = normal;
-            _spectateRadius = outward.magnitude;
+            _sightZoom01 = 0f;
             _spectating = true;
         }
 
@@ -1035,6 +1046,7 @@ namespace CosmicShore.Gameplay
         {
             if (_spectating && _cam) _cam.Spectate = null;
             if (_spectating) _solver?.SteerOrbitPlane(Vector3.zero);   // the orbit's plane is the ship's again
+            if (_sight) _sight.Hide();
             _spectating = false;
         }
 
@@ -1044,7 +1056,7 @@ namespace CosmicShore.Gameplay
         void ReleaseCamera()
         {
             _spectateQualifyTime = 0f;
-            if (!_cam) { _cam = null; _spectating = false; _camWritten = float.NaN; return; }
+            if (!_cam) { _cam = null; _spectating = false; _camWritten = float.NaN; if (_sight) _sight.Hide(); return; }
             EndSpectate();
             _cam.MaxFollowTurnRate = 0f;
             float neutral = _cam.NeutralOffsetZ;
@@ -1190,7 +1202,6 @@ namespace CosmicShore.Gameplay
         MeshRenderer[] _ballRenderers;
         LineRenderer _chain;
         Vector3[] _chainDrawn;
-        ScreenDotPath _aimDots;
         TrailRenderer _skid;
         TextMeshPro _comboLabel;
         MaterialPropertyBlock _mpb;
@@ -1306,15 +1317,15 @@ namespace CosmicShore.Gameplay
         {
             if (!active) _shownValid = false;   // re-shown at the live colours, not eased from stale ones
             if (_root) _root.SetActive(active);
-            if (!active && _aimDots) _aimDots.Hide();
+            if (!active && _sight) _sight.Hide();
         }
 
         void DestroyVisuals()
         {
             if (_root) Destroy(_root);
             _root = null;
-            if (_aimDots) _aimDots.DestroyOverlay();
-            _aimDots = null;
+            if (_sight) Destroy(_sight.gameObject);
+            _sight = null;
         }
 
         void UpdateVisuals()
@@ -1391,7 +1402,6 @@ namespace CosmicShore.Gameplay
             if (_chain.positionCount != written) _chain.positionCount = written;
             _chain.SetPositions(_chainDrawn);
 
-            DrawLaunchPath(ship);
 
             // Skid trail while planting.
             if (_skid)
@@ -1404,28 +1414,6 @@ namespace CosmicShore.Gameplay
             }
 
             DrawCombo(ballPos, r, dt, ballColor);
-        }
-
-        /// <summary>
-        /// The launch path while aiming a spectated spin, in the Stoat pathfinder's dots
-        /// (<see cref="ScreenDotPath"/>): from the launch point along the aim. White while a release
-        /// now would wait; the palette's CTA lime while it would be PERFECT (the ship reaches the
-        /// point inside <c>perfectWindowSeconds</c>). Local pilot only — it is drawn from the
-        /// camera's aim.
-        /// </summary>
-        void DrawLaunchPath(Vector3 ship)
-        {
-            bool aiming = _spectating && IsLocalPilot() && _cam && _cam.Camera;
-            if (!aiming)
-            {
-                if (_aimDots) _aimDots.Hide();
-                return;
-            }
-            if (!_aimDots) _aimDots = ScreenDotPath.Create(name);
-            Vector3 launch = _solver.LaunchPoint(ship, _aimDir);
-            Color tint = IsTimingPerfect ? ReadyColor().gamma : new Color(1f, 1f, 1f, 0.9f);
-            _aimDots.ShowSegment(_cam.Camera, launch, launch + _aimDir * config.AimLineLength, 24, tint,
-                config.AimDotPixels, config.AimDotGap);
         }
 
         void DrawCombo(Vector3 ballPos, float r, float dt, Color ballColor)

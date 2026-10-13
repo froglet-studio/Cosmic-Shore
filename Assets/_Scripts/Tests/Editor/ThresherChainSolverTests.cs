@@ -590,19 +590,27 @@ namespace CosmicShore.Tests
         // ---------------------------------------------------------------- the aim camera
 
         [Test]
-        public void Aim_LaunchCameraSitsBehindTheLaunchPointLookingDownThePath()
+        public void Aim_LaunchCameraFollowsOnTheTrajectory_SoTheAimIsTheScreenCentre()
         {
             Vector3 launch = new Vector3(5f, 2f, -7f);
-            Vector3 aim = Vector3.forward, up = Vector3.up;
-            float radius = 30f, elevation = 25f;
-            float halfH = Mathf.Atan(Mathf.Tan(HalfV) * 16f / 9f);
-            Vector3 off = ThresherCameraFraming.LaunchCameraPosition(launch, aim, up, radius, HalfV, halfH, elevation, Margin) - launch;
-            Assert.Less(Vector3.Dot(off, aim), 0f, "behind the launch point, so it looks DOWN the trajectory");
-            Assert.Greater(Vector3.Dot(off, up), 0f, "raised over the orbit's plane");
-            float above = Mathf.Asin(Mathf.Clamp(Vector3.Dot(off.normalized, up), -1f, 1f)) / Mathf.Deg2Rad;
-            Assert.AreEqual(elevation, above, 1e-2f);
-            Assert.GreaterOrEqual(off.magnitude * Mathf.Tan(halfH) + 1e-3f, 2f * radius * Margin,
-                "far enough that the whole circle, up to 2r to one side of the launch point, fits the width");
+            Vector3 aim = new Vector3(1f, 0f, 1f).normalized, up = Vector3.up;
+            Vector3 eye = ThresherCameraFraming.LaunchCameraPosition(launch, aim, up, 55f, 0f);
+            Assert.AreEqual(55f, (eye - launch).magnitude, 1e-4f, "the hull's chase distance behind the launch point");
+            Assert.AreEqual(1f, Vector3.Dot((launch - eye).normalized, aim), 1e-6f,
+                "no height offset: the camera is ON the trajectory, so every point of it is the screen centre");
+            Vector3 raised = ThresherCameraFraming.LaunchCameraPosition(launch, aim, up, 55f, 20f);
+            Assert.AreEqual(20f, Mathf.Asin(Vector3.Dot((raised - launch).normalized, up)) / Mathf.Deg2Rad, 1e-3f,
+                "aimElevationDegrees still raises it, if a designer wants the old over-the-shoulder view back");
+        }
+
+        [Test]
+        public void Sight_ZoomIsTheTriggerDepthPastTheDeadzone()
+        {
+            Assert.AreEqual(0f, ThresherCameraFraming.ZoomTarget(0.06f, 0.25f), 0f, "a light hold plants (5%) without zooming");
+            Assert.AreEqual(0f, ThresherCameraFraming.ZoomTarget(0.25f, 0.25f), 0f);
+            Assert.AreEqual(0.5f, ThresherCameraFraming.ZoomTarget(0.625f, 0.25f), 1e-5f);
+            Assert.AreEqual(1f, ThresherCameraFraming.ZoomTarget(1f, 0.25f), 1e-6f, "a full pull (or a binary key) is full zoom");
+            Assert.AreEqual(1f, ThresherCameraFraming.ZoomTarget(3f, 0.25f), 1e-6f);
         }
 
         [Test]
