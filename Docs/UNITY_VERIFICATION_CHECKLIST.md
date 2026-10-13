@@ -65,6 +65,141 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Phone menu: screen strip lands inside the safe area, taps survive touch, no SetResolution on mobile (`claude/serene-edison-lfv24f`, 2026-10-12) — NOT EDITOR-VERIFIED
+
+Reported from the first TestFlight build on an iPhone, and reproduced by the tester in the Editor at
+4:3: on HOME the next screen covered the right third of the display. No editor and no `unity` CLI
+in the authoring session, so `/verify-unity` did NOT run. Out of editor, `unity_refcompile` compiles
+the player and editor configs with 0 errors in project code, and the console-logging gate passes.
+
+**What landed**
+
+1. **`ScreenSwitcher` (the menu filmstrip).**
+   - The strip is wrapped at `Start` in a runtime `Screens Viewport`: a full-canvas child of the
+     root canvas, carrying a `RectMask2D`, placed just before `Safe Area` (item 8).
+   - The panel width is read from that viewport, not from `Screens`. The ContentSizeFitter on
+     `Screens` zeroes its width after the first layout pass, so the old self-read fell back to the
+     canvas width.
+   - The strip's pivot is pinned to its left edge, and it slides by `anchoredPosition` instead of
+     an absolute `transform.position`.
+   - The strip re-lays out on the frame the viewport width changes. That covers the 4:3 case:
+     `AdaptiveCanvasScaler` flips the match after `Start`, and the canvas grows from 1440 to 1920
+     units.
+   - `Start` navigates from "no screen", so restoring HANGAR (serialized index 0) positions the
+     strip and builds the hangar grid.
+   - The empty `IDragHandler` / `IEndDragHandler` (bodies commented out) were removed. They took
+     drags from every button outside a scroll view and cancelled the tap.
+2. **`TouchDragThreshold` (new):** every EventSystem's `pixelDragThreshold` is scaled by
+   `Screen.dpi / 160`, never below the authored value. That is 10 → 29 px on a 460 ppi iPhone and
+   unchanged on a desktop. It runs at scene load. Tests: `TouchDragThresholdTests`.
+3. **`QuestTrackView`:** the two display-only progress Sliders are disabled, so a drag that starts
+   on the bar reaches the quest track's ScrollRect.
+4. **`Menu_Main.unity`:** Hangar `AbilitiesDescriptionScrollView` is `m_Horizontal: 0`. Its content
+   is exactly the viewport width, so horizontal scrolling could only rubber-band.
+5. **`GraphicsSettingsApplier.ApplyDisplay`** returns on `Application.isMobilePlatform`. It used to
+   call `Screen.SetResolution(Display.main.systemWidth, systemHeight)` at every boot.
+6. **`SceneTransitionModal`** hoists itself to the root canvas in `Awake`, just above the layer it
+   came from. Menu_Main nested it in `Safe Area/ModalWindows`. On a notched phone the open doors
+   rested just outside the inset rect and showed in the cutout margins as grey metal plates (seen
+   in the Device Simulator on every notch and Dynamic Island iPhone, and on the Pixel 5). Closed,
+   they left the margins uncovered. It is a no-op in GameCanvas, where the modal is already a root
+   child.
+7. **Home hub row** (`HomeScreen/Main_Menu_Panel/ButtonLayouts`) is MiddleCenter with zero padding.
+   It was MiddleLeft with 171 left padding, which only looked centred at 1920 wide; on a phone the
+   extra width all collected on the right. On desktop it moves 14 units to true centre.
+8. **Screens and backgrounds look like the desktop on a phone.** The strip moved to a full-canvas
+   viewport: one full-screen slot per screen, content in the safe rect inside it.
+   - `SafeAreaBleed` copies carry full-width background images out to the screen edges: Profile
+     `Background`, Hangar `GridPanel`/`DetailPanel`, the NavBar gradient and line, modal
+     backgrounds, and the 1920-wide hub modals.
+   - It replaces the earlier clip-to-safe-area, which left every screen a box with the 3D scene
+     leaking round the corners and the NavBar band short of the edges.
+9. **`CameraAspectFit`** puts every on-screen game camera (no RenderTexture, not orthographic) on a
+   16:9 physical-camera gate with Overscan. Below 16:9 (iPad 4:3, 16:10) the 16:9 width is kept
+   and height is gained; 16:9 and wider are unchanged. Tests: `CameraAspectFitTests`, including
+   Unity's projection matrix at 4:3, 16:9 and 21:9.
+10. **The 13 match-height canvases** without `AdaptiveCanvasScaler` use Expand: the 10 vessel
+    `ShipHUDContainer`s (Stoat included, which arrived in the bleeding-edge merge),
+    `VesselHUDContainer`, `Duel Cell Stats Canvas` and `FTUE_Canvas`. Identical at 16:9 and
+    wider; matches width below 16:9.
+11. **The Arcade, Mission, Toybox and Arena windows fill the safe area below the NavBar.**
+    - They were fixed 1920 × 908.7 rects, centred, which is the whole screen under the nav bar
+      only at 1920 × 1080. On a phone they floated 47 units in from each side, overlapped the
+      NavBar by 37 and ran 29 past the safe bottom.
+    - They are now stretch-anchored. The rect at 1920 × 1080 is identical, checked numerically.
+    - Their party panel is a "side panel": as tall as its parent and docked on an edge. Its frame
+      now bleeds out to the screen edge (`ScreenSwitcher.TryBleedSidePanel`); its content stays in
+      the safe area.
+
+**Verify in editor**
+
+1. Open Menu_Main in the **Device Simulator**. Use an iPhone with a notch or Dynamic Island,
+   landscape, and also a 4:3 iPad. Then check Game view at 4:3 and 16:9.
+   - HOME fills the safe area with no other screen showing at either edge.
+   - Page through every screen with L1/R1 and with the nav bar. Each screen lands exactly in the
+     safe area.
+   - Resize the Game view mid-session. The current screen re-fits within a frame.
+2. In the Hierarchy at runtime, `UI_Refactored/Screens Viewport/Screens` exists, just before
+   `Safe Area`, and there is exactly one `Screens Viewport`.
+3. Quit while on HANGAR, then re-enter Play. HANGAR is shown full-width, and its vessel grid is
+   populated.
+4. On a device or Simulator, tap cards in the Arcade grid, the leaderboard and the friends list
+   with a slightly moving finger. The taps register. Drag the Profile quest track starting on the
+   progress bar; it scrolls. The bar still animates on claim.
+5. Desktop windowed: change the resolution in Settings. `SetResolution` still applies
+   (`isMobilePlatform` is false there).
+6. In the Device Simulator on any notch or Dynamic Island iPhone, no grey plates show in the side
+   margins.
+   - Start a game from the menu: the transition doors close over the whole screen, margins
+     included, and open again.
+   - At runtime, `SceneTransitionModal` is a direct child of `UI_Refactored`, right after
+     `Safe Area`.
+7. HOME's four hub buttons are centred under the nav bar on a phone, an iPad and a 16:9 desktop.
+8. On a notch or Dynamic Island iPhone (Device Simulator), there are no 3D gaps at the sides,
+   the corners or the bottom.
+   - Profile and Hangar fill the screen edge to edge.
+   - The NavBar's dark band runs the full width.
+   - The Arcade, Mission, Toybox and Arena windows reach both edges.
+   - In each of those windows, the party panel's grey frame reaches the left screen edge behind the
+     notch, and its avatars and buttons stay clear of it.
+   - The window sits under the NavBar, as on desktop.
+   - Buttons and text stay inside the safe area.
+   - On a 16:9 desktop, the hierarchy has no `Safe Area Bleed` objects.
+9. iPad Air / Pro (4:3) in the Simulator:
+   - the menu's background flight shows the same width as on a 16:9 desktop, plus more top and
+     bottom, not zoomed in;
+   - in a match, the vessel HUD fits the screen width;
+   - `CameraAspectFitTests` passes in the Test Runner;
+   - tapping the menu crystal still hits it.
+
+**Found and left open** (not phone-only, or a designer's call):
+
+- **Scroll content heights never resize.** These leave a long blank scroll:
+  - weekly leaderboard content: 5608 units, 10 rows;
+  - friends lists: 1813;
+  - avatar grid: 1809.
+- **Controls list can never scroll.** The ArcadeGameConfigureModal list has both axes off.
+- **Quest track snap ignores the finger.** Its 0.6 s snap tween is not killed when a new drag
+  starts. Inertia is off, so it only snaps after an elastic bounce.
+- **Hub modals overlap the NavBar by 9 units.** That is how the Arcade, Mission, Toybox and Arena
+  modals are authored at 1920 × 1080 (NavBar 180.4 tall, modal top 171.3 below the safe top).
+  Item 11 made it the same 9 on every display; it was about 37 on an iPhone.
+- **`PartyInviteNotificationPanel` sits outside `Safe Area`.**
+- **`DeviceOrientationHandler` locks LandscapeLeft for the session**, even though
+  `SafeAreaFitter`'s docs assume auto-rotation between the two landscapes.
+- **The Elemental Converter's picture stops at the safe margins** (designer's call). ARK opened in
+  the bleeding-edge merge. `ElementalConverterView.BuildUi` stretches its `RawImage` "Picture" over
+  `ArkScreen`, which the strip lays out in the safe rect, and `SafeAreaBleed` copies only `Image`s.
+  On a notched phone the 3D picture is therefore inset by the margins. Decide whether it should
+  fill the screen before extending the bleed to `RawImage`.
+- **`ScreenSwitcher.EnsureStripViewport` trusts a pre-existing `Screens Viewport`.** If one is
+  ever authored in the scene, it returns before `_contentLayer` is set, so the safe insets read
+  as zero and no background bleeds. Today none is authored (`grep -c 'Screens Viewport'
+  Menu_Main.unity` = 0), so this is unreachable. Set `_contentLayer` before that return if it ever
+  becomes reachable.
+
+---
+
 ### 🔴 Serpent Mass: Seed Wall + Lockdown (`claude/serpent-mass-seed-wall`, 2026-10-09)
 
 **Landed** (`_Scripts/Controller/Vessel/R_VesselActions/SERPENT_SEED_WALL.md`): the stance and cloak

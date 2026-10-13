@@ -266,7 +266,7 @@ distribution certificate, and uploads it to TestFlight. Nobody needs a Mac.
    | `IOS_DIST_CERT_P12_BASE64` | Base64 of `cosmicshore-dist.p12` |
    | `IOS_DIST_CERT_PASSWORD` | Its password |
    | `IOS_APPSTORE_PROFILE_BASE64` | Base64 of the `.mobileprovision` |
-   | `ASC_KEY_ID`, `ASC_ISSUER_ID`, `ASC_KEY_P8` | API-key route: the two ids, and the `.p8` file's text (base64 also accepted) |
+   | `ASC_KEY_ID`, `ASC_ISSUER_ID`, `ASC_KEY_P8` | API-key route: the two ids, and the whole `.p8` file's text, BEGIN and END lines included. Base64 of the file, or only the lines between BEGIN and END, also work (`Tools/iOS/asc_api_key_json.py`) |
    | `APPLE_ID_EMAIL`, `APPLE_APP_SPECIFIC_PASSWORD`, `ASC_APP_ID`, optional `ASC_ITC_PROVIDER` | Apple ID route |
 
    With neither upload set, the job still builds, signs and checks the `.ipa`, then stops. That
@@ -300,15 +300,15 @@ distribution certificate, and uploads it to TestFlight. Nobody needs a Mac.
   contains that certificate.
 - The signed app is not a development build (`get-task-allow`).
 
-**Security follow-up (open, flagged 2026-10-12).** The first uploads use the Apple-ID route, which
-is **tied to one person's Apple ID**. Separately, anyone with write access to this repo could, in
+**Security follow-up (open, flagged 2026-10-12).** Anyone with write access to this repo could, in
 principle, write a workflow that leaks any repository secret; that holds for every secret, not just
 these. The plan:
 
-1. **Switch to a team API key.** The Account Holder presses **Request Access** once. An Admin then
-   creates a team API key (App Manager), and the job prefers it automatically.
-2. **Remove the personal route.** Delete `APPLE_ID_EMAIL`, `APPLE_APP_SPECIFIC_PASSWORD` and
-   `ASC_APP_ID`, and revoke the app-specific password.
+1. **Use a team API key.** Done on 2026-10-12. The Account Holder granted API access, and the
+   upload secrets are a team API key (App Manager), which the job prefers automatically.
+2. **Remove the personal route.** The Apple-ID route is **tied to one person's Apple ID**. If its
+   secrets were ever added, delete `APPLE_ID_EMAIL`, `APPLE_APP_SPECIFIC_PASSWORD`, `ASC_APP_ID`
+   and `ASC_ITC_PROVIDER`, and revoke the app-specific password.
 3. **Restrict the iOS secrets.** Move them into a GitHub **Environment** (`testflight`) that releases
    them only to runs on `bleeding-edge`, with a required reviewer, and add `environment: testflight`
    to the job.
@@ -317,6 +317,44 @@ these. The plan:
 The build number becomes `<Unity build>.<run number>` (14 → `14.52`), so every upload is unique.
 Nothing secret is printed. The signed `.ipa` is not kept as an artifact, because the repo is
 public; only the xcodebuild logs are kept, for 7 days.
+
+### Check layouts in the Device Simulator before building
+
+Window > General > Device Simulator. It reproduces each device's resolution, safe area and
+orientation in Play mode, so most layout bugs show here without a 30-minute TestFlight round trip.
+
+**Devices it ships with stop at the iPhone 13 Pro.** `com.unity.device-simulator.devices` is at
+1.0.0 here. Its latest, 1.0.1 (Oct 2025), has the same 82 devices, so updating the package adds
+nothing.
+
+**The current devices are project-local definitions** in `Assets/Editor/DeviceSimulator/`. The
+Simulator imports any `.device` file in the project, and an `Editor` folder keeps them out of
+builds. The set:
+
+| Device | Panel (px) | Landscape safe area (L/R inset, bottom) |
+|---|---|---|
+| iPhone 15 Pro | 1179 × 2556 | 177 px, 63 px |
+| iPhone 15 Pro Max | 1290 × 2796 | 177 px, 63 px |
+| iPhone 16 Pro | 1206 × 2622 | 186 px, 63 px |
+| iPhone 16 Pro Max | 1320 × 2868 | 186 px, 63 px |
+| iPhone 17 Pro | 1206 × 2622 | 186 px, 63 px |
+| iPhone 17 Pro Max | 1320 × 2868 | 186 px, 63 px |
+| iPad Pro 13-inch (M4) | 2064 × 2752 | none, 40 px |
+
+- Each has a portrait overlay with its Dynamic Island.
+- The insets are Apple's published safe areas in points, × 3: 59 pt for the 14 Pro–15 Pro Max
+  shape and 62 pt for the 16 Pro panels.
+- **The 17 Pro pair is assumed to match the 16 Pro panels.** Confirm on a device when one is
+  available.
+- `systemInfo` (RAM, GPU name) feeds the device-tier classifier. Simulator runs of these devices
+  classify as a modern iPhone does.
+
+**To add a device:**
+1. Copy the closest `.device` file.
+2. Change `friendlyName`, `width`/`height`, the four `orientations` safe areas (pixels, origin
+   bottom-left) and `systemInfo`.
+3. Give it a fresh GUID in its `.meta`.
+4. The overlay is optional, but a cutout is easier to judge with one.
 
 ### Code that compiles ONLY in an iOS player build
 

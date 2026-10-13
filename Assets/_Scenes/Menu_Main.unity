@@ -5020,10 +5020,10 @@ RectTransform:
   - {fileID: 1669693109}
   m_Father: {fileID: 6818916199485298600}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0.5, y: 0.5}
-  m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: -960.00006, y: -85.64325}
-  m_SizeDelta: {x: 1920.0001, y: 908.7134}
+  m_AnchorMin: {x: 0, y: 0}
+  m_AnchorMax: {x: 1, y: 1}
+  m_AnchoredPosition: {x: 0, y: -85.64325}
+  m_SizeDelta: {x: 0, y: -171.2866}
   m_Pivot: {x: 0, y: 0.5}
 --- !u!114 &159236444
 MonoBehaviour:
@@ -25195,10 +25195,10 @@ RectTransform:
   - {fileID: 745667877}
   m_Father: {fileID: 6818916199485298600}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0.5, y: 0.5}
-  m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: -960.00006, y: -85.64325}
-  m_SizeDelta: {x: 1920.0001, y: 908.7134}
+  m_AnchorMin: {x: 0, y: 0}
+  m_AnchorMax: {x: 1, y: 1}
+  m_AnchoredPosition: {x: 0, y: -85.64325}
+  m_SizeDelta: {x: 0, y: -171.2866}
   m_Pivot: {x: 0, y: 0.5}
 --- !u!114 &948404566
 MonoBehaviour:
@@ -46592,11 +46592,11 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.HorizontalLayoutGroup
   m_Padding:
-    m_Left: 171
+    m_Left: 0
     m_Right: 0
     m_Top: 0
     m_Bottom: 0
-  m_ChildAlignment: 3
+  m_ChildAlignment: 4
   m_Spacing: 100
   m_ChildForceExpandWidth: 0
   m_ChildForceExpandHeight: 0
@@ -60685,10 +60685,10 @@ RectTransform:
   - {fileID: 122070151}
   m_Father: {fileID: 6818916199485298600}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0.5, y: 0.5}
-  m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: -960.00006, y: -85.64325}
-  m_SizeDelta: {x: 1920.0001, y: 908.7134}
+  m_AnchorMin: {x: 0, y: 0}
+  m_AnchorMax: {x: 1, y: 1}
+  m_AnchoredPosition: {x: 0, y: -85.64325}
+  m_SizeDelta: {x: 0, y: -171.2866}
   m_Pivot: {x: 0, y: 0.5}
 --- !u!114 &2072797376
 MonoBehaviour:
@@ -71230,10 +71230,10 @@ RectTransform:
   - {fileID: 688672353}
   m_Father: {fileID: 6818916199485298600}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0.5, y: 0.5}
-  m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: -960.00006, y: -85.64325}
-  m_SizeDelta: {x: 1920.0001, y: 908.7134}
+  m_AnchorMin: {x: 0, y: 0}
+  m_AnchorMax: {x: 1, y: 1}
+  m_AnchoredPosition: {x: 0, y: -85.64325}
+  m_SizeDelta: {x: 0, y: -171.2866}
   m_Pivot: {x: 0, y: 0.5}
 --- !u!224 &461934434115840359
 RectTransform:
@@ -140693,7 +140693,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_Content: {fileID: 2108651155724165083}
-  m_Horizontal: 1
+  m_Horizontal: 0
   m_Vertical: 1
   m_MovementType: 1
   m_Elasticity: 0.1

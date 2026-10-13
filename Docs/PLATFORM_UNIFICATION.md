@@ -492,7 +492,7 @@ production iOS id, ARM64-only Android, and bring the two Gradle commits across.
 | Legacy Unity Analytics off (`UnityAnalyticsSettings` enabled + initialize-on-startup → 0) | `UnityConnectSettings.asset` | The engine-level service started at boot, **before** the consent screen, and nothing calls its API. UGS Analytics (the consented one, `com.unity.services.analytics`) is a separate package and is untouched. |
 | `ITSAppUsesNonExemptEncryption = NO` written into every iOS build | `Assets/_Scripts/Editor/Build/IosExportCompliancePostprocess.cs` | Stops App Store Connect holding each build at "Missing Compliance". The declaration: HTTPS + Relay DTLS, standard algorithms, in support of gameplay, under the EAR Cat. 5 Pt. 2 Note 4 games exclusion. **The company owns this answer**; delete the file to answer per upload instead. |
 | NativeShare's photo-library purpose string: the plugin default ("The app requires access to Photos to save media to it.") → a specific one naming paintings and screenshots | `ProjectSettings/NativeShare.json` (the plugin's own settings file; its iOS post-process writes `NSPhotoLibraryUsageDescription` / `NSPhotoLibraryAddUsageDescription` from it) | App Review 5.1.1 rejects purpose strings that don't say what the access is for. |
-| Apple Team ID `9959RFD7XD` + Automatically Sign on; **TestFlight from GitHub Actions** (2026-10-12) | `ProjectSettings.asset`, `.github/workflows/ios-testflight.yml`, `Tools/iOS/set_manual_signing.rb` (manual dispatch only) | Iggy's paid membership is active to 16 Aug 2027, and nobody on the team has a Mac. The job compiles a Windows-made Xcode export on a free `macos-26` runner (Xcode 26, which uploads require), signs it with the company's distribution certificate and uploads it. Setup and secrets: `Docs/IOS_BUILD.md` §2 Path C. **Not yet run.** |
+| Apple Team ID `9959RFD7XD` + Automatically Sign on; **TestFlight from GitHub Actions** (2026-10-12) | `ProjectSettings.asset`, `.github/workflows/ios-testflight.yml`, `Tools/iOS/set_manual_signing.rb`, `Tools/iOS/asc_api_key_json.py` (manual dispatch only) | Iggy's paid membership is active to 16 Aug 2027, and nobody on the team has a Mac. The job compiles a Windows-made Xcode export on a free `macos-26` runner (Xcode 26, which uploads require), signs it with the company's distribution certificate and uploads it. Setup and secrets: `Docs/IOS_BUILD.md` §2 Path C. **Run 4 (2026-10-12) uploaded the first build to TestFlight**, on the team API key. Run 3 had failed at the upload because `ASC_KEY_P8` held the key body without its BEGIN/END lines; the job now accepts that shape. Run 5 (2026-10-12) uploaded the phone-menu fix the same way. |
 
 **Found and left open** (setup guide §5):
 
@@ -505,12 +505,13 @@ production iOS id, ARM64-only Android, and bring the two Gradle commits across.
 - **Unity Engine diagnostics is on.**
 - **`com.unity.mobile.notifications` is installed and unused.**
 - **iPad:**
-  - At 4:3, the 13 match-height canvases lose a quarter of their width. Expand mode on handheld would
-    be identical at 16:9 and wider.
-  - Cameras hold vertical field of view.
-  - The iOS 27 SDK will stop honouring `UIRequiresFullScreen` (TN3192).
-
-  These are planned in guide §3, not changed blind.
+  - ~~At 4:3, the match-height canvases lose a quarter of their width.~~ Fixed 2026-10-12: the 13
+    without `AdaptiveCanvasScaler` use Expand. That is identical at 16:9 and wider, and matches
+    width below; most of them are the vessel HUDs.
+  - ~~Cameras hold vertical field of view.~~ Fixed 2026-10-12: `CameraAspectFit` puts every
+    on-screen game camera on a 16:9 overscan gate. Narrower screens keep the 16:9 width and gain
+    height; 16:9 and wider are unchanged.
+  - The iOS 27 SDK will stop honouring `UIRequiresFullScreen` (TN3192). Still open.
 
 **Debt this branch created or walked past** (rows, not fixes; each needs its own change):
 
@@ -526,11 +527,13 @@ production iOS id, ARM64-only Android, and bring the two Gradle commits across.
     day someone switched it on.
   - Before deleting it: ask whether the desktop or Steam build still wants it. Re-grep its callers
     at that time; don't rely on an old claim that it's unused.
-- **The TestFlight upload credentials need locking down (flagged 2026-10-12).** The first uploads
-  use the Apple-ID route, which is tied to one person's Apple ID. And any repo writer could, in
-  principle, write a workflow that leaks a repository secret. The plan is in `Docs/IOS_BUILD.md`
-  Path C, "Security follow-up": a team API key, deleting the personal route, a `testflight`
-  Environment limited to bleeding-edge with a reviewer, and branch protection.
+- **The TestFlight upload credentials need locking down (flagged 2026-10-12).** Any repo writer
+  could, in principle, write a workflow that leaks a repository secret. The plan is in
+  `Docs/IOS_BUILD.md` Path C, "Security follow-up":
+  - the team API key, which is done;
+  - deleting the personal Apple-ID route's secrets, if any were added;
+  - a `testflight` Environment limited to bleeding-edge, with a reviewer;
+  - branch protection.
 - **CLAUDE.md says "No automated CI/CD pipeline is currently configured", which is stale.**
   `.github/workflows/` holds `unity-ci.yml`, `bleeding-edge-guard.yml`, the two iOS workflows and
   the Prisma ones. `Docs/BUILD_AND_DELIVERY.md` §10 is the current picture.
