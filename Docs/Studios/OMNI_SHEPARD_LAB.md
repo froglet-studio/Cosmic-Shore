@@ -169,6 +169,37 @@ crystals seen at strong perspective. −0.9 would remove it at the cost of fewer
 **Not modelled:** crystals hiding each other (only their own prisms hide a reseat), fog, LOD, culling,
 and a ratchet that skips frames on distant crystals.
 
+## Performance (2026-10-13): the instrument exists, the numbers do not yet
+
+CLAUDE.md: profile first. A cloud session cannot profile, so this branch built the instrument and changed
+nothing on speculation. The designer chose to skip profiling for now and put the run on QA's list for Yash
+(`Docs/QA/QA_BACKLOG.md`, **QA-P2-BENCH-DEPTH-PRISMS**).
+
+**The instrument:** **FrogletTools ▸ Performance ▸ Crystal Depth Prism Benchmark**
+(`Assets/_Scripts/Utility/PerformanceBenchmark/Editor/CrystalDepthPrismBenchmarkWindow.cs`, a READER).
+- Spawns N omni and N Mass crystals (N = 10 / 50 / 200; omni only or Mass only for attribution) in a
+  ring, stripped to their visuals.
+- Orbits `Camera.main` outside the ring, looking in, so the ratchets run.
+- Reports median / p95 of the main thread, `CrystalDepthPrisms.LateUpdate`,
+  `CrystalSpaceSquares.LateUpdate`, `CrystalFlipWave.LateUpdate`, skinned-mesh update, draw calls,
+  SetPass calls, batches, shadow casters and triangles.
+- Lists every batch / SRP counter the Unity version exposes.
+
+**Before / after table:** empty until the benchmark runs.
+
+**What each candidate is, read from the code and assets (2026-10-13). Attack them in the order the numbers
+rank them:**
+
+| Candidate | Static facts | Blocked on |
+|---|---|---|
+| One draw per crystal (the property block breaks the SRP batcher) | **Moot as built.** `OmniDepthPrismShader` is `CGPROGRAM` with loose uniforms (no `UnityPerMaterial` CBUFFER) and a `float4 _DepthState[60]` array, so it is not SRP-batcher compatible with or without a block. A per-renderer value that keeps the batcher would first need the shader rewritten to HLSL with a `UnityPerMaterial` CBUFFER and the column state moved out of material properties (a shared `GraphicsBuffer` indexed per crystal). `Renderer.SetShaderUserValue` is not in the 6000.0.75 reference DLLs this session compiles against; the project is on 6000.3.17, which the QA item asks Yash to check. | draw-call and SetPass numbers |
+| The leaving pass draws every prism every frame | True. Pass 1 (`UniversalForward`) runs for every visible crystal; a column with no reseat collapses each leaving vertex to a point (alpha 0), so it costs a draw call and a vertex shade of the whole mesh (360 vertices on the omni, 1080 on the Mass). A per-renderer toggle cannot disable one pass of a shared material; the options are a second material without the pass, swapped while no column is reseating, or a single pass that draws the leaving prism only when its column is live. | draw calls / vertex cost |
+| Dirty-check the property block | **Not a pure saving.** `Crystal.ClearColorSetTint` writes a null block, which wipes `_DepthDriven` and `_DepthState`. A driver that skipped its write while no column changed would leave a still-camera crystal undriven (snapped sealed) until something moved. It needs a "block was wiped" check that costs less than the write it saves. | `CrystalDepthPrisms.LateUpdate` ms |
+| Distance LOD (step the ratchet every k frames, staggered; or sit undriven) | A far crystal stepping every k frames sees k× the dt per step. `DepthRatchet.Step` already takes dt, so the reseat fade stays timed. A crystal sitting undriven shows sealed, which is a visible change at range. | `CrystalDepthPrisms.LateUpdate` ms per crystal |
+| Prism shadows | **The prisms cast none:** the shader has no `ShadowCaster` pass. Their renderers still say `m_CastShadows 1` (omni prism prefab, Mass prefabs), so they are culled for the shadow pass for nothing. Setting it to 0 in both generators changes no pixel. | the "Shadow casters" counter |
+| Space squares beyond a distance | The body re-skins every visible frame regardless: the Time flip wave turns its bones every frame. Freezing the blend-shape weights saves only the blend-shape pass, not the skinning. The body also has `m_SkinnedMotionVectors 1`, an extra skinned output, and `m_UpdateWhenOffscreen 0` (good). | skinned-mesh ms |
+| F2: `ThemeManager` clones 9 unused material instances per domain set | See F2 (§4 of this branch): retired together with the tone/rim materials. | none (memory, not frame time) |
+
 ## Round 9 (2026-10-12): no free turn, the ratchet unfrozen, the Space squares ship
 
 After flying round 8, the designer wrote: "lets ditch the autorotation on the whole object for both
