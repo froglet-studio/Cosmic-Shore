@@ -43,7 +43,7 @@ namespace CosmicShore.Launcher
         /// </summary>
         string? StudioRoot => StudioCatalog.PickRoot(_ws.Dir, _ws.Exists, ClonePath, preferClone: !string.IsNullOrWhiteSpace(_args.ClonePathArg));
 
-        // ---------------------------------------------------------------- the studio server (/vessel-studio D33)
+        // ---------------------------------------------------------------- the studio server (/vessel-studio D34)
         //
         // Every way into the Vessel Studio opens the BUILD (build_artifact.py's output, StudioBuild) served over
         // http://127.0.0.1 by StudioServer, which also plays the claude.ai viewer's backend: Sync, Ask, Requests and
@@ -113,11 +113,11 @@ namespace CosmicShore.Launcher
             return _artLib;
         }
 
-        // ---------------------------------------------------------------- the page: the hub's cards (/vessel-studio D34)
+        // ---------------------------------------------------------------- the page: the hub's cards (/vessel-studio D35)
         //
         // The web hub's front page, natively: its lede, the hub's own actions, then one card per studio exactly as the hub
         // draws it (preview, name, chip, summary, spec rows) with the card's buttons from studios.json cardActions, in the
-        // same order on every card and in Unity's home: Open studio, PLAY IN ENGINE, TUNE IN UNITY, OPEN LIVE IN BROWSER.
+        // same order on every card and in Unity's home: Open studio, PLAY IN ENGINE, OPEN LIVE IN BROWSER.
         // A button that does not apply stays in its place, disabled, and says why. Nothing here spells a studio's text or a
         // card label: a studio added to studios.json (and the hub) shows up with no change here; parity_gate.py checks it.
 

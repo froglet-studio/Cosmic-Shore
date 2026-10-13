@@ -14,7 +14,7 @@ namespace CosmicShore.Launcher
     /// <c>decisions</c>, <c>jobs</c>, <c>requests</c>, <c>data/users/&lt;id&gt;</c>) kept as one JSON file per collection
     /// under the data dir (<c>studio/db/</c>). Same shapes, same query semantics as the pages use them: add, doc get /
     /// set / update / delete, and orderBy(field, dir).limit(n), where (as in Firestore) a document without the ordering
-    /// field is left out. Local to this computer: not shared with the artifact's store (/vessel-studio D33).
+    /// field is left out. Local to this computer: not shared with the artifact's store (/vessel-studio D34).
     /// </summary>
     public sealed class StudioStore
     {

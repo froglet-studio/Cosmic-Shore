@@ -48,9 +48,8 @@ If the user has recorded decisions in it, ask them to paste its "Copy log" outpu
    - `WormholeMouth` transit.
 
    Expect engine gaps here: `RenderPipelineManager.begin/endCameraRendering`, `ScriptableRenderPass`
-   with `RecordRenderGraph` (`BlackHoleLensPass`), a `CommandBuffer` drawing into the slices of a
-   Tex2DArray `RenderTexture` (`BlackHoleSky`), `Shader.SetGlobalVectorArray` banks (the smooth-well
-   lens and the `PrismGravityWarp` tides), and cameras rendering to textures (the mouths' exact view
+   with `RecordRenderGraph` (`BlackHoleLensPass`: a colour copy, then one full-screen `DrawProcedural` with a
+   `MaterialPropertyBlock` of vector arrays), `Shader.SetGlobalVectorArray` banks (the `PrismGravityWarp` tides), and cameras rendering to textures (the mouths' exact view
    and panorama). Fix gaps in the engine, smallest first.
 2. **A control surface an agent can drive.** If the control port and MCP cannot run the game's dev
    console, add a `console` command (`ControlServer.cs`) and a `game_console` MCP tool. Also add a way
@@ -65,11 +64,10 @@ If the user has recorded decisions in it, ask them to paste its "Copy log" outpu
    guid, and post-pass stages, following the C2a route. In priority order:
    1. The `PrismGravityWarp` tide deform, spliced before the cradle in `BlockGraph` and
       `ExplodingBlockGraph`, reading the global bank, with the softened tide for smooth wells.
-   2. The lens as a screen-space pass: the signed Schwarzschild trace from `BlackHoleLens.hlsl`
-      (port its maths once to GLSL), the shadow, the source's white core (unbent impact parameter
-      below 2.598 r_s), and the summed smooth-well deflection. Sample Amoebius's own HyperSea sky
-      instead of `BlackHoleSky`'s faces if that is simpler. `Tools/Shaders/verify_black_hole_lens.py`
-      lists the properties the trace must keep.
+   2. The lens, a screen-space pass (since 2026-10-10 it IS one, and it is the Vessel Studio's: `BlackHoleLens.shader`
+      + `.hlsl`, one full-screen triangle summing every hole; `Docs/BLACK_HOLE.md` §5.1). Translate it once to GLSL —
+      the studio's own GLSL in `StoatFlightStudio.html` (`lensMat`) is the same maths — and feed it
+      `BlackHoleLens.ScreenWells`. `Tools/Shaders/verify_black_hole_lens.py` proves the shipped lens against that GLSL.
    3. The seamless mouth (`Wormhole.shader` with `_SoftEdge`, `WormholeSeamless.mat`). It is listed
       as Missing in `Port/docs/PARITY.md`.
 

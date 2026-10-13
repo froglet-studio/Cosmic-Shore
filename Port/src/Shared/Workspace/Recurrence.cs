@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 
-namespace Prisma.Workspace
+namespace Amoebius.Workspace
 {
     /// <summary>
     /// A repeat rule, stored on a card as text:

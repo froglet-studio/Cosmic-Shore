@@ -7,7 +7,7 @@ using System.Text.Json;
 namespace CosmicShore.Launcher
 {
     /// <summary>
-    /// The Vessel Studio catalog, <c>Docs/Studios/VesselStudio/studios.json</c> in Prisma's workspace: which
+    /// The Vessel Studio catalog, <c>Docs/Studios/VesselStudio/studios.json</c> in Amoebius's workspace: which
     /// vessel studios exist, the page that opens each, and the web link that also works on a phone. Read
     /// only; the STUDIOS page lists it. A branch without the file simply has no studios.
     /// </summary>
@@ -24,11 +24,11 @@ namespace CosmicShore.Launcher
         public const string DefaultWeb = "https://claude.ai/artifact/3igBJJbNvJjsfJoBJnAMPa";
         public const string DefaultMirror = "https://yskhan61.github.io/vessel-studio/";
 
-        /// <param name="EngineMode">An arcade mode (a <c>GameModes</c> name) PLAY IN ENGINE opens in the Prisma player: the game's own vessel.</param>
+        /// <param name="EngineMode">An arcade mode (a <c>GameModes</c> name) PLAY IN ENGINE opens in the Amoebius player: the game's own vessel.</param>
         /// <param name="EngineNote">What that engine run is, in a line (it may differ from the studio's design).</param>
         public sealed record Studio(string Id, string Name, string File, string Kind, string Summary, string? Docs, string? EngineMode = null, string? EngineNote = null)
         {
-            /// <summary>The hub card's chip (<c>chip</c>, the hub's text exactly; /vessel-studio D34). Falls back to <see cref="Kind"/>.</summary>
+            /// <summary>The hub card's chip (<c>chip</c>, the hub's text exactly; /vessel-studio D35). Falls back to <see cref="Kind"/>.</summary>
             public string Chip { get; init; } = "";
             /// <summary>The rows under the summary on the hub card (<c>spec</c>: key, value).</summary>
             public IReadOnlyList<SpecRow> Spec { get; init; } = Array.Empty<SpecRow>();
@@ -36,25 +36,22 @@ namespace CosmicShore.Launcher
             public string? Preview { get; init; }
             /// <summary>The card colour: a domain key (studio-domains.js) or a #hex.</summary>
             public string? Accent { get; init; }
-            /// <summary>Unity has a TUNE IN UNITY page for it (<c>tuner</c>).</summary>
-            public bool Tuner { get; init; }
         }
 
         public sealed record SpecRow(string Key, string Value);
 
         /// <summary>
-        /// One button of the studio card (<c>cardActions</c>, D34): the same buttons in the same order on every native card.
+        /// One button of the studio card (<c>cardActions</c>, D35): the same buttons in the same order on every native card.
         /// <paramref name="On"/> is the hosts it works on (web, amoebius, unity); <paramref name="Needs"/> what the studio
-        /// must have (engineMode, tuner, mirror).
+        /// must have (engineMode, mirror). Unity has no tuner of its own (D33).
         /// </summary>
         public sealed record CardAction(string Id, string Label, IReadOnlySet<string> On, string? Needs, string? Tip);
 
-        /// <summary>The card's buttons when the catalog predates D34: the hub's open link and the native ones, in the D34 order.</summary>
+        /// <summary>The card's buttons when the catalog predates D35: the hub's open link and the native ones, in the D35 order.</summary>
         public static readonly IReadOnlyList<CardAction> DefaultCardActions = new[]
         {
             new CardAction("open", "Open studio →", new HashSet<string> { "web", "amoebius", "unity" }, null, null),
             new CardAction("engine", "PLAY IN ENGINE", new HashSet<string> { "amoebius", "unity" }, "engineMode", null),
-            new CardAction("tune", "TUNE IN UNITY", new HashSet<string> { "unity" }, "tuner", null),
             new CardAction("live", "OPEN LIVE IN BROWSER", new HashSet<string> { "amoebius", "unity" }, "mirror", null),
         };
 
@@ -66,16 +63,15 @@ namespace CosmicShore.Launcher
 
         /// <summary>
         /// Whether card button <paramref name="a"/> works for <paramref name="s"/> on <paramref name="host"/>, and if not, why:
-        /// a button that does not apply stays in its place, disabled, saying so (D34). Pure: the same answer on every host.
+        /// a button that does not apply stays in its place, disabled, saying so (D35). Pure: the same answer on every host.
         /// </summary>
         public (bool ok, string? why) Applies(CardAction a, Studio s, string host)
         {
             if (!a.On.Contains(host))
-                return (false, a.Id == "tune" ? "In Unity: FrogletTools > Vessels > Vessel Studio, this card." : "Not on " + host + ".");
+                return (false, "Not on " + host + ".");
             return a.Needs switch
             {
                 "engineMode" when string.IsNullOrEmpty(s.EngineMode) => (false, "This vessel has no game mode in the engine yet."),
-                "tuner" when !s.Tuner => (false, "No Unity tuning page for this vessel yet."),
                 "mirror" when Mirror == null => (false, "No live mirror in the catalog."),
                 _ => (true, null),
             };
@@ -141,7 +137,6 @@ namespace CosmicShore.Launcher
                         list.Add(new Studio(id, name, file, Str(s, "kind") ?? "", Str(s, "summary") ?? "", Str(s, "docs"), Str(s, "engineMode"), Str(s, "engineNote"))
                         {
                             Chip = Str(s, "chip") ?? Str(s, "kind") ?? "", Spec = spec, Preview = Str(s, "preview"), Accent = Str(s, "accent"),
-                            Tuner = s.TryGetProperty("tuner", out var tu) && tu.ValueKind == JsonValueKind.True,
                         });
                     }
                 }
@@ -227,7 +222,7 @@ namespace CosmicShore.Launcher
         public string LiveUrl(string file) => MirrorUrl(file) ?? (file == Hub ? DefaultMirror : DefaultMirror + Uri.EscapeDataString(file));
 
         /// <summary>
-        /// Which checkout the studio is built from (/vessel-studio D33). Started from Unity (<paramref name="preferClone"/>:
+        /// Which checkout the studio is built from (/vessel-studio D34). Started from Unity (<paramref name="preferClone"/>:
         /// FrogletTools passes <c>--clone</c>), the Unity checkout, so the studio shows the branch Unity has open. Otherwise
         /// Amoebius's workspace when it carries the catalog, else the user's own checkout, else whichever of the two exists.
         /// Null when there is neither.
@@ -298,7 +293,7 @@ namespace CosmicShore.Launcher
             return list;
         }
 
-        /// <summary>A page file as a file URI: only for the OTHER artifacts of the library; the Vessel Studio is always served (D33).</summary>
+        /// <summary>A page file as a file URI: only for the OTHER artifacts of the library; the Vessel Studio is always served (D34).</summary>
         public static string PageUri(string pagePath) => new Uri(Path.GetFullPath(pagePath)).AbsoluteUri;
 
         /// <summary>The player arguments PLAY IN ENGINE adds: open the studio's arcade mode from the main menu.</summary>

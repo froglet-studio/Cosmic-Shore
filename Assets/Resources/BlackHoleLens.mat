@@ -25,8 +25,7 @@ Material:
     m_TexEnvs: []
     m_Ints: []
     m_Floats:
-    - _BHHorizon: 1
-    m_Colors:
-    - _BHLens: {r: 30, g: 128, b: 1, a: 0.55}
+    - _BHWellCount: 0
+    m_Colors: []
   m_BuildTextureStacks: []
   m_AllowLocalizedText: 1

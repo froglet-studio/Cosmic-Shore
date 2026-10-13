@@ -6,7 +6,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Text.Json.Serialization.Metadata;
 
-namespace Prisma.Workspace
+namespace Amoebius.Workspace
 {
     /// <summary>
     /// How board.json is read and written. Reading is tolerant: unknown fields go to the
@@ -33,11 +33,11 @@ namespace Prisma.Workspace
         public static string Serialize<T>(T value) => JsonSerializer.Serialize(value, Options);
 
         /// <summary>Parses a board; false (with the reason) when the text is not one.</summary>
-        public static bool TryParse(string text, out PrismaBoard? board, out string? error)
+        public static bool TryParse(string text, out AmoebiusBoard? board, out string? error)
         {
             try
             {
-                board = JsonSerializer.Deserialize<PrismaBoard>(text, Options);
+                board = JsonSerializer.Deserialize<AmoebiusBoard>(text, Options);
                 if (board == null) { error = "the file holds no board (null)"; return false; }
                 board.Items = board.Items?.Where(i => i != null).ToList() ?? new();
                 BoardMerge.Backfill(board);

@@ -31,6 +31,17 @@ MonoBehaviour:
   slingBoostMin: 0.25
   slingBoostMax: 0.9
   slingBoostSeconds: 1.5
+  sweetSpotDegrees: 90
+  sweetSpotHalfWidth: 15
+  sweetSpotFalloff: 30
+  missKickShare: 0.2
+  sweetSpotEvent:
+    Guid:
+      Data1: 0
+      Data2: 0
+      Data3: 0
+      Data4: 0
+    Path: 
   driftSpeed: 40
   lifetime: 12
   minStrength: 2

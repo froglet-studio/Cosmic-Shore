@@ -12,7 +12,7 @@ using System.Threading.Tasks;
 namespace CosmicShore.Launcher
 {
     /// <summary>
-    /// The Vessel Studio's Sync jobs, run by Amoebius itself (/vessel-studio D33, SKILL.md section 5). The page writes a
+    /// The Vessel Studio's Sync jobs, run by Amoebius itself (/vessel-studio D34, SKILL.md section 5). The page writes a
     /// job into the <c>jobs</c> collection and "messages the session"; on claude.ai that is a Claude Code session, here it
     /// is this runner, which does what the skill tells a session to do: run <c>sync_job.py</c> in the studio checkout and
     /// write its log and result back into the job. The SAME limits as the skill, checked here before Python runs and again

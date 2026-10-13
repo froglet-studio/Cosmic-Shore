@@ -283,15 +283,16 @@ namespace CosmicShore.Gameplay
 
         /// <summary>
         /// A fixed-capacity, blittable view of the live wells so the job carries them by value
-        /// (a NativeArray would need its own safety handle per job; four float4-sized records do
-        /// not). Capacity mirrors <c>PRISM_GRAVITY_WARP_SLOTS</c> — a hole the shader cannot
-        /// warp around is not one the field should pull toward either.
+        /// (a NativeArray would need its own safety handle per job; sixteen float4-sized records do
+        /// not). Capacity = the hole budget's ceiling (<c>BlackHoleConfig.maxBlackHoles</c>): every pilot's pair pulls mass. It used to be 4, the prism warp bank's size, and a third
+        /// Stoat's squeeze was refused (2026-10-12: "with two AIs my pair sometimes doesn't spawn"). The warp bank
+        /// stays at 4 and draws the tides of the 4 holes nearest the camera (<c>BlackHoleWarp.Flush</c>).
         /// </summary>
         public struct NativeWells
         {
-            public const int Capacity = 4;
+            public const int Capacity = 16;
 
-            public Well W0, W1, W2, W3;
+            public Well W0, W1, W2, W3, W4, W5, W6, W7, W8, W9, W10, W11, W12, W13, W14, W15;
             public int Count;
 
             public Well this[int i]
@@ -303,7 +304,19 @@ namespace CosmicShore.Gameplay
                         case 0: return W0;
                         case 1: return W1;
                         case 2: return W2;
-                        default: return W3;
+                        case 3: return W3;
+                        case 4: return W4;
+                        case 5: return W5;
+                        case 6: return W6;
+                        case 7: return W7;
+                        case 8: return W8;
+                        case 9: return W9;
+                        case 10: return W10;
+                        case 11: return W11;
+                        case 12: return W12;
+                        case 13: return W13;
+                        case 14: return W14;
+                        default: return W15;
                     }
                 }
             }
@@ -316,7 +329,19 @@ namespace CosmicShore.Gameplay
                     case 0: W0 = w; break;
                     case 1: W1 = w; break;
                     case 2: W2 = w; break;
-                    default: W3 = w; break;
+                    case 3: W3 = w; break;
+                    case 4: W4 = w; break;
+                    case 5: W5 = w; break;
+                    case 6: W6 = w; break;
+                    case 7: W7 = w; break;
+                    case 8: W8 = w; break;
+                    case 9: W9 = w; break;
+                    case 10: W10 = w; break;
+                    case 11: W11 = w; break;
+                    case 12: W12 = w; break;
+                    case 13: W13 = w; break;
+                    case 14: W14 = w; break;
+                    default: W15 = w; break;
                 }
                 Count++;
             }

@@ -19,8 +19,12 @@ namespace CosmicShore.Core
     /// that in-game purchases go through the Steam Wallet, so an external web checkout is not a
     /// compliant option there. Needs the Steamworks SDK plus a small backend to call
     /// InitTxn/FinalizeTxn and verify the order.</item>
-    /// <item><b>Web checkout</b> - the existing <c>IAPManager</c> flow, valid on non-Steam
-    /// distribution only, and only once a backend verifies the order server-side.</item>
+    /// <item><b>Web checkout</b> - the existing <c>IAPManager</c> flow, valid only for non-Steam
+    /// DESKTOP distribution, and only once a backend verifies the order server-side.
+    /// <c>IAPManager</c> opens the browser checkout only in <c>UNITY_STANDALONE</c> builds and
+    /// refuses it on iOS and Android, where Apple App Review Guideline 3.1.1 and Google Play's
+    /// payments policy require the platform's own billing. A mobile build therefore needs its own
+    /// store-billing provider.</item>
     /// </list>
     /// </summary>
     public interface IEpisodeTokenPurchaseProvider

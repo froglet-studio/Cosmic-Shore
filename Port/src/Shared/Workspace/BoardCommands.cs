@@ -1,19 +1,19 @@
 #nullable enable
 using System;
 using System.Linq;
-using static Prisma.PrismaBoard;
+using static Amoebius.AmoebiusBoard;
 
-namespace Prisma.Workspace
+namespace Amoebius.Workspace
 {
     /// <summary>
     /// The scheduler's write side: every change a view makes goes through here, so each one
     /// stamps <c>Updated</c> the same way. That matters for merging, and later for sync and the activity feed.
-    /// Callers save the board afterwards (<see cref="PrismaBoard.Save(string?)"/>).
+    /// Callers save the board afterwards (<see cref="AmoebiusBoard.Save(string?)"/>).
     /// </summary>
     public static class BoardCommands
     {
         /// <summary>Adds a card from a quick-add line (<see cref="QuickAdd"/>). Null when the line has no title.</summary>
-        public static Item? AddFromQuickAdd(PrismaBoard board, string line, DateTime now, string source = "user", Status state = Status.Todo)
+        public static Item? AddFromQuickAdd(AmoebiusBoard board, string line, DateTime now, string source = "user", Status state = Status.Todo)
         {
             var q = QuickAdd.Parse(line, now);
             if (q.Title.Length == 0) return null;
@@ -55,7 +55,7 @@ namespace Prisma.Workspace
         /// day (and deadline, by the same gap) moved to the rule's next date after today or after its own
         /// date, whichever is later. Returns that new card, or null.
         /// </summary>
-        public static Item? Complete(PrismaBoard board, Item item, DateTime now, string? note = "done")
+        public static Item? Complete(AmoebiusBoard board, Item item, DateTime now, string? note = "done")
         {
             board.Move(item, Status.Done, note);
             if (!Recurrence.TryParse(item.Recurrence, out var rule)) return null;

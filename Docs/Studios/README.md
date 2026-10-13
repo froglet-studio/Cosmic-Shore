@@ -137,7 +137,7 @@ The AI holds one trigger, so it flies the diagonal placement. It never uses both
 - **Decision log not read this round.** The round-14 artifact belongs to an organization outside this login, so
   `ArtifactData` was refused. The new artifact's log (collection `decisions`) reads back empty.
 - **Verifier.** `verify_lab.cjs` passes on `StoatFlightStudio.html` and on the hub copy `VesselStudio/stoat.html`. Its
-  `--self-test` passes all six planted defects, including the new reload check (L-GEN-4).
+  `--self-test` passes all six planted defects, including the new reload check (L-GEN-9).
 - **Labmaker contract.** The page is now on it: `window.__lab` (= `__stoatStudio`) exposes `SHIPPED`, `SPEC`, `reset`,
   `state`, `score`, and a no-argument `runBatch` (L-STU-14).
 - **Layout.** Both round-14 faults are fixed: the 12 px clip at 1600 × 900, and the header's 103 px sideways scroll on

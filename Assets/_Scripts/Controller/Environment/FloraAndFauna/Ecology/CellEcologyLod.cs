@@ -88,7 +88,7 @@ namespace CosmicShore.Gameplay
             using (s_mTick.Auto()) Director.Tick(MacroDt);
         }
 
-        /// <summary>Every vessel in the cell (position + velocity), and the main camera as a pilot looking down its
+        /// <summary>Every vessel in the cell (position + velocity), and the view camera as a pilot looking down its
         /// forward axis - the research's visibility test uses the pilot's heading as its view, which a free-look camera
         /// does not share.</summary>
         void Sense(float now)
@@ -96,7 +96,9 @@ namespace CosmicShore.Gameplay
             _sensedAt = now;
             _nSensed = 0;
             s_seen.Clear();
-            var cam = Camera.main;
+            // The camera the player looks through (the menu camera on the home screen, the gameplay camera in
+            // flight) - Camera.main is the menu's static brain camera in flight.
+            var cam = CameraManager.ViewCamera;
             if (cam)
             {
                 Vector3 p = cam.transform.position, f = cam.transform.forward;

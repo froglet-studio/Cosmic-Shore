@@ -1,5 +1,5 @@
 <Project Sdk="Microsoft.NET.Sdk">
-  <!-- Prisma.exe's own logic that needs no window: chats and their persistence, plan usage,
+  <!-- Amoebius.exe's own logic that needs no window: chats and their persistence, plan usage,
        and the GIT page's git operations. -->
   <PropertyGroup>
     <IsPackable>false</IsPackable>

@@ -2,9 +2,9 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using static Prisma.PrismaBoard;
+using static Amoebius.AmoebiusBoard;
 
-namespace Prisma.Workspace
+namespace Amoebius.Workspace
 {
     /// <summary>
     /// The scheduler's read side. Pure functions of a board and "now" (the user's local clock).
@@ -13,7 +13,7 @@ namespace Prisma.Workspace
     public static class BoardQueries
     {
         /// <summary>Open cards whose deadline has passed: an earlier day, or today at a time already gone.</summary>
-        public static List<Item> Overdue(PrismaBoard board, DateTime now)
+        public static List<Item> Overdue(AmoebiusBoard board, DateTime now)
         {
             var today = DateOnly.FromDateTime(now);
             var clock = TimeOnly.FromDateTime(now);
@@ -27,7 +27,7 @@ namespace Prisma.Workspace
         /// What to do today: open cards planned or due today or earlier (carried over). Overdue first,
         /// then by time of day (untimed after timed), then priority, then key.
         /// </summary>
-        public static List<Item> Today(PrismaBoard board, DateTime now)
+        public static List<Item> Today(AmoebiusBoard board, DateTime now)
         {
             var today = DateOnly.FromDateTime(now);
             var clock = TimeOnly.FromDateTime(now);
@@ -47,7 +47,7 @@ namespace Prisma.Workspace
         /// The next <paramref name="days"/> days after today, one entry per day that has cards (in
         /// date order). A card sits on its planned day, or its deadline when it has no planned day.
         /// </summary>
-        public static List<(DateOnly Day, List<Item> Items)> Upcoming(PrismaBoard board, DateTime now, int days = 7)
+        public static List<(DateOnly Day, List<Item> Items)> Upcoming(AmoebiusBoard board, DateTime now, int days = 7)
         {
             var today = DateOnly.FromDateTime(now);
             var last = today.AddDays(days);
@@ -60,18 +60,18 @@ namespace Prisma.Workspace
         }
 
         /// <summary>Open cards with no day at all: the backlog.</summary>
-        public static List<Item> Unscheduled(PrismaBoard board) =>
+        public static List<Item> Unscheduled(AmoebiusBoard board) =>
             board.Items.Where(i => i.IsOpen && i.Day == null).OrderBy(i => i.Priority).ThenByDescending(i => i.Updated).ToList();
 
         /// <summary>Open cards carrying a tag (case-insensitive, with or without '#').</summary>
-        public static List<Item> Tagged(PrismaBoard board, string tag)
+        public static List<Item> Tagged(AmoebiusBoard board, string tag)
         {
             tag = tag.TrimStart('#').ToLowerInvariant();
             return board.Items.Where(i => i.IsOpen && i.Tags.Contains(tag)).OrderBy(i => i.Priority).ToList();
         }
 
         /// <summary>Minutes of estimated work planned for a day (cards without an estimate count 0).</summary>
-        public static int PlannedMinutes(PrismaBoard board, DateOnly day) =>
+        public static int PlannedMinutes(AmoebiusBoard board, DateOnly day) =>
             board.Items.Where(i => i.IsOpen && i.Day == day).Sum(i => i.EstimateMinutes ?? 0);
     }
 }

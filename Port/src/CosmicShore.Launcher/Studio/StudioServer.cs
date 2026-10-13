@@ -16,7 +16,7 @@ using System.Threading.Tasks;
 namespace CosmicShore.Launcher
 {
     /// <summary>
-    /// The Vessel Studio in Amoebius (/vessel-studio D33): a loopback web server that serves the studio BUILD
+    /// The Vessel Studio in Amoebius (/vessel-studio D34): a loopback web server that serves the studio BUILD
     /// (<see cref="StudioBuild"/>, the same bytes as claude.ai and the live mirror) and the backend the claude.ai viewer
     /// gives the artifact, behind the same <c>window.claude.use()</c> surface, so Sync, Ask, Requests and Decisions work
     /// here and the pages cannot tell the hosts apart except by what is enabled.
@@ -106,7 +106,7 @@ namespace CosmicShore.Launcher
 
         /// <summary>
         /// <c>&lt;data&gt;/studio/server.json</c>: where this server listens (pid, port, token, the checkout it builds), so Unity's
-        /// Vessel Studio home opens a studio on a running Amoebius instead of starting another (LaunchPrisma.OpenStudio).
+        /// Vessel Studio home opens a studio on a running Amoebius instead of starting another (LaunchAmoebius.OpenStudio).
         /// Under the user's own data folder, beside the launcher's settings; gone when Amoebius closes.
         /// </summary>
         public string ServerFile => Path.Combine(_o.DataDir, "server.json");

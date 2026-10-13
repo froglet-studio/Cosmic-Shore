@@ -22,7 +22,7 @@ MonoBehaviour:
   TrackSpawnablesByIntensity: []
   PreviewFauna: {fileID: 0}
   PreviewFaunaCount: 4
-  Vessel: 14
+  Vessel: 15
   ObjectiveText: Bend your path with your poles and ride the warp
   ObjectiveMetric: 9
   ObjectiveTarget: 0

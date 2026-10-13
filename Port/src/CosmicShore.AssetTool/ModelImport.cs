@@ -15,7 +15,7 @@ namespace CosmicShore.AssetTool
     /// file, plus a <c>.meta</c> with a fresh GUID and the ModelImporter settings the project's
     /// existing models share (the donor is the cleanest meta at the newest importer version, its
     /// tallied settings set to the majority value, every model-specific table emptied). It then
-    /// imports the model through Prisma's own importer, and with <c>--prefab</c> writes
+    /// imports the model through Amoebius's own importer, and with <c>--prefab</c> writes
     /// <c>NAME.prefab</c> nesting it and loads that prefab through the engine as the proof.
     /// </summary>
     static partial class Program

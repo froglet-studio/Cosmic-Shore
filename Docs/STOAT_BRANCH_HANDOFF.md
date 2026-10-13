@@ -99,7 +99,8 @@ gamepad works).
 **Amoebius:** `Docs/Studios/PRISMA_TEST_STEPS.md`, step by step.
 
 - In short: Unity ▸ **FrogletTools ▸ Vessels ▸ Vessel Studio** ▸ the STOAT card ▸ **OPEN STUDIO** (the studio),
-  **TUNE IN UNITY** (its six tabs over the real assets) or **PLAY IN ENGINE** (Amoebius: the game's own Stoat in Slingshot).
+  or **PLAY IN ENGINE** (Amoebius: the game's own Stoat in Slingshot). Its numbers come from the artifact through
+  `/artifact-to-unity`.
 
 **Headless, from a cloud session** (what the previous sessions ran):
 
@@ -132,7 +133,7 @@ against `window.__stoatStudio`. Its hooks:
 | 2026-10-09 | `vessel-studio` merged; the game made to compile in Amoebius; OPEN IN AMOEBIUS and PLAY IN ENGINE |
 | 2026-10-09 | `Ys-bleeding-edge` (247 commits) and `bleeding-edge` (7) merged; this handoff |
 | 2026-10-09 | `/vessel-studio` skill and the Sync panel (Refresh, merge then delete, shared decisions; a Claude session does the git work as jobs) |
-| 2026-10-09 | `cece/magical-carson-9bdq8z` merged: Stoat studio round 15 (the field trajectory), its Unity port (`R_VesselActions/STOAT_DIPOLE.md`: field dipole on Space, pathfinder on Time) and the **Warpline** mode (`GameModes.Warpline = 65`, `Arcade/WARPLINE.md`). Their lab lessons are `L-STU-20`…`24` (renumbered from 15–19, which this branch had already used) |
+| 2026-10-09 | `cece/magical-carson-9bdq8z` merged: Stoat studio round 15 (the field trajectory), its Unity port (`R_VesselActions/STOAT_DIPOLE.md`: field dipole on Space, pathfinder on Time) and the **Warpline** mode (`GameModes.Warpline = 65`, `Arcade/WARPLINE.md`). Their lab lessons are `L-STU-53`…`57` (renumbered from 15–19, then from 20–24 when bleeding-edge's own L-STU-15..47 came in on 2026-10-13, which this branch had already used) |
 | 2026-10-09 | `ai-system` merged: the Skim Race AI retunes across frame rates (I1/I2/I4, general `skimrace-v3`), staggered planner re-plans, Burst diagnostics (`burst` console command), the `Docs/AI_SYSTEM/` docs. Its own fix for the Burst `MathF` failure was dropped for this branch's `KernelMath` fix (same root cause) |
 
 Commit messages carry the detail: `git log --oneline origin/bleeding-edge..HEAD`.

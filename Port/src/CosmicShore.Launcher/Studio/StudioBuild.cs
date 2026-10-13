@@ -13,7 +13,7 @@ namespace CosmicShore.Launcher
     /// (index.html and every studio page from studios.json, studios.json, sync.js, the catalog's shared files and
     /// build.json), assembled from one git ref of the studio checkout. Amoebius serves exactly this folder
     /// (<see cref="StudioServer"/>), so OPEN IN AMOEBIUS shows the bytes claude.ai and the live mirror show, never the
-    /// raw repo pages over file:// (/vessel-studio D33). No Python needed to look at a studio.
+    /// raw repo pages over file:// (/vessel-studio D34). No Python needed to look at a studio.
     ///
     /// <para>Kept byte-identical to the Python build: <c>StudioBuildTests</c> builds the same ref both ways and compares
     /// every file (build.json by field), and <c>parity_gate.py</c> checks the served pages.</para>

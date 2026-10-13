@@ -90,6 +90,12 @@ namespace CosmicShore.Engine
         public Vector2 sensorSize = new(36f, 24f);
         public Vector2 lensShift;
         public float focalLength = 50f;
+
+        /// <summary>How a physical camera's sensor gate fits the screen (Unity's Camera.GateFitMode).</summary>
+        public enum GateFitMode { None = 0, Vertical = 1, Horizontal = 2, Fill = 3, Overscan = 4 }
+
+        /// <summary>The sensor gate's fit; it shapes the projection only when <see cref="usePhysicalProperties"/> is on.</summary>
+        public GateFitMode gateFit = GateFitMode.Horizontal;
         public bool stereoEnabled => false;
         public Matrix4x4 cullingMatrix => projectionMatrix * worldToCameraMatrix;
 
@@ -140,8 +146,33 @@ namespace CosmicShore.Engine
         {
             get => _projection ?? (orthographic
                 ? Matrix4x4.Ortho(-orthographicSize * aspect, orthographicSize * aspect, -orthographicSize, orthographicSize, nearClipPlane, farClipPlane)
-                : Matrix4x4.Perspective(fieldOfView, aspect, nearClipPlane, farClipPlane));
+                : PerspectiveForGate());
             set => _projection = value;
+        }
+
+        /// <summary>
+        /// The perspective projection. A physical camera fits its sensor (sensorSize, vertical field of
+        /// view <see cref="fieldOfView"/>) to the screen by <see cref="gateFit"/>: Vertical keeps the
+        /// sensor's height, Horizontal its width, Fill covers the screen with it, Overscan shows all of
+        /// it, None stretches it. Lens shift is not applied.
+        /// </summary>
+        Matrix4x4 PerspectiveForGate()
+        {
+            float a = aspect;
+            if (!usePhysicalProperties || gateFit == GateFitMode.Vertical || sensorSize.x <= 0f || sensorSize.y <= 0f)
+                return Matrix4x4.Perspective(fieldOfView, a, nearClipPlane, farClipPlane);
+            float sensorAspect = sensorSize.x / sensorSize.y;
+            if (gateFit == GateFitMode.None)
+                return Matrix4x4.Perspective(fieldOfView, sensorAspect, nearClipPlane, farClipPlane);
+            bool fitWidth = gateFit switch
+            {
+                GateFitMode.Horizontal => true,
+                GateFitMode.Fill => a > sensorAspect,
+                _ => a < sensorAspect, // Overscan
+            };
+            if (!fitWidth) return Matrix4x4.Perspective(fieldOfView, a, nearClipPlane, farClipPlane);
+            float halfTan = MathF.Tan(fieldOfView * Mathf.Deg2Rad * 0.5f) * sensorAspect / a;
+            return Matrix4x4.Perspective(2f * MathF.Atan(halfTan) * Mathf.Rad2Deg, a, nearClipPlane, farClipPlane);
         }
 
         public Matrix4x4 nonJitteredProjectionMatrix { get => projectionMatrix; set => projectionMatrix = value; }

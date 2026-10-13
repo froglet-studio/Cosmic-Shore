@@ -1,6 +1,6 @@
 {
   "mcpServers": {
-    "prisma": {
+    "amoebius": {
       "command": "dotnet",
       "args": ["run", "--project", "Port/src/CosmicShore.Mcp", "--"]
     }

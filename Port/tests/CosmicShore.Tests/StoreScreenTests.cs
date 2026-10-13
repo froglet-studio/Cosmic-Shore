@@ -13,15 +13,19 @@ using CosmicShore.UI;
 namespace CosmicShore.Tests;
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Store unit (2026-07-10) — the ported StoreScreen + PurchaseItemCard family +
-// PurchaseConfirmationModal over the CatalogManager's LOCAL economy lanes
-// (upstream runs "[PLAYFAB DISABLED]", so the local lanes ARE the live ones).
-// Covers: UpdateView populating captain cards (3-per-row, overflow row stays
-// off) + both balances; the full purchase flow card → modal → confirm →
-// local settlement (wallet deducted, captain inventoried + auto-encountered,
-// card flips to OWNED); the currency-change fan-out flipping now-unaffordable
-// cards to UNAVAILABLE; ticket purchase raising the ticket balance; and the
-// manager's over-purchase guard + element-filtered crystal balance.
+// Store unit (2026-07-10; re-synced 2026-10-13 when the port followed upstream in
+// retiring the economy backend) — the ported StoreScreen + PurchaseItemCard
+// family + PurchaseConfirmationModal over upstream's local-only CatalogManager.
+// The fixture authors the shelf and wallet straight onto the manager's public
+// StoreShelve / Inventory and releases them through upstream's own
+// LoadAllCatalogItems. Covers: UpdateView populating captain cards (3-per-row,
+// overflow row stays off) + both balances; the purchase flow card → modal →
+// confirm failing closed (no backend: wallet, inventory and ticket balance
+// unchanged, card and confirm button re-armed); the manager's purchase calls
+// running only their failure callback; the daily-reward claim crediting the
+// wallet and the currency fan-out restating every card's affordability; the
+// daily-ticket spend re-inventorying the ticket through the handler's
+// completion; and the element-filtered crystal balance.
 // ─────────────────────────────────────────────────────────────────────────────
 
 public class StoreScreenTests : IDisposable
@@ -40,11 +44,12 @@ public class StoreScreenTests : IDisposable
     readonly TMP_Text modalUnlockText;
     readonly PurchaseGameplayTicketCard ticketCard;
     readonly VirtualItem crystal;
+    readonly VirtualItem ticket;
 
     public StoreScreenTests()
     {
         loop = new GameLoop(nameof(StoreScreenTests));
-        CatalogManager.ResetLocalEconomy();
+        ResetCatalogStatics();
         ClearSingleton<CatalogManager>();
         ClearSingleton<CaptainManager>();
         ClearSingleton<DailyRewardHandler>();
@@ -66,15 +71,17 @@ public class StoreScreenTests : IDisposable
         catalogGo.SetActive(true);
 
         // Fixture: 500-crystal wallet, three encountered captains (150/300/450),
-        // the 25-crystal daily ticket. The crystal is ONE shared instance in
-        // shelve + inventory, exactly like the menushell fixture.
+        // the 25-crystal daily ticket. The crystal is ONE shared instance on the
+        // shelf + in the inventory, exactly like the menushell fixture.
         crystal = new VirtualItem
         {
             ItemId = "crystal-omni", Name = "Omni Crystal", ContentType = "Crystal",
             Tags = new List<string> { "Omni" }, Price = new List<ItemPrice>(), Amount = 500,
         };
         var captains = new List<Captain>();
-        var shelve = new List<VirtualItem> { crystal };
+        var shelve = CatalogManager.StoreShelve;
+        shelve.allItems[crystal.ItemId] = crystal;
+        shelve.crystals[crystal.ItemId] = crystal;
         (string name, VesselClassType cls, Element element, int cost)[] roster =
         {
             ("AURELIA", VesselClassType.Manta, Element.Space, 150),
@@ -93,23 +100,28 @@ public class StoreScreenTests : IDisposable
             soCaptain.Vessel = vessel;
             soCaptain.PrimaryElement = element;
             captains.Add(new Captain(soCaptain) { Encountered = true });
-            shelve.Add(new VirtualItem
+            var item = new VirtualItem
             {
                 ItemId = $"captain-{++index}", Name = name, Description = $"{name} desc",
                 ContentType = "Captain", Tags = new List<string>(),
                 Price = new List<ItemPrice> { new() { ItemId = "crystal-omni", Amount = cost, UnitAmount = 1 } },
-                Amount = 1, // PlayFab inventory items carry >=1 — the over-purchase guard reads it
-            });
+            };
+            shelve.allItems[item.ItemId] = item;
+            shelve.captains[item.ItemId] = item;
         }
-        shelve.Add(new VirtualItem
+        ticket = new VirtualItem
         {
             ItemId = "ticket-dc", Name = "Daily Challenge Ticket", ContentType = "Ticket",
             Tags = new List<string>(),
             Price = new List<ItemPrice> { new() { ItemId = "crystal-omni", Amount = 25, UnitAmount = 1 } },
-        });
+        };
+        shelve.allItems[ticket.ItemId] = ticket;
+        shelve.tickets[ticket.ItemId] = ticket;
+        shelve.DailyChallengeTicket = ticket;
+        CatalogManager.Inventory.crystals.Add(crystal);
+        CatalogManager.Inventory.allItems.Add(crystal);
         captainManager.LoadLocalCaptains(captains);
-        catalog.LoadLocalCatalog(shelve);
-        catalog.LoadLocalInventory(new List<VirtualItem> { crystal });
+        catalog.LoadAllCatalogItems(); // CatalogLoaded → StoreScreen.Start's UpdateView lane
 
         // ── modal rig ───────────────────────────────────────────────────────
         var audio = CosmicShore.Cli.AudioSystemRig.Create();
@@ -249,11 +261,20 @@ public class StoreScreenTests : IDisposable
     public void Dispose()
     {
         loop.Dispose();
-        CatalogManager.ResetLocalEconomy();
+        ResetCatalogStatics();
         ClearSingleton<CatalogManager>();
         ClearSingleton<CaptainManager>();
         ClearSingleton<DailyRewardHandler>();
     }
+
+    /// <summary>
+    /// Upstream's per-domain-load reset ([RuntimeInitializeOnLoadMethod], data-only in
+    /// this engine) — invoked directly so each rig starts from an empty shelf.
+    /// </summary>
+    static void ResetCatalogStatics()
+        => typeof(CatalogManager)
+            .GetMethod("ResetStatics", BindingFlags.NonPublic | BindingFlags.Static)!
+            .Invoke(null, null);
 
     static void ClearSingleton<T>() where T : Component
         => typeof(CosmicShore.Utility.SingletonPersistent<T>)
@@ -294,71 +315,95 @@ public class StoreScreenTests : IDisposable
     }
 
     [Fact]
-    public void PurchaseFlow_CardToModalToConfirm_SettlesLocally()
+    public void PurchaseFlow_CardToModalToConfirm_FailsClosed_WithNoBackend()
     {
         var aurelia = Card("AURELIA");
         aurelia.GetComponent<Button>().onClick.Invoke(); // OnClickBuy → modal armed
         Assert.Equal("to unlock AURELIA?", modalUnlockText.text);
 
-        confirmButton.onClick.Invoke(); // Confirm → Purchase → local settlement
-        Assert.Equal(350, catalog.GetCrystalBalance());
-        Assert.True(CatalogManager.Inventory.ContainsCaptain("AURELIA"));
-        // Owning a captain marks it encountered through the manager (upstream rule).
-        Assert.True(captainManager.GetCaptainByName("AURELIA").Encountered);
+        confirmButton.onClick.Invoke(); // Confirm → Purchase → PurchaseItem → failure lane
 
-        // The purchase juice runs on unscaled coroutines: modal-close wait 1.25s,
-        // card flip 0.25s + 0.5s — after ~2.5s the card shows OWNED.
+        // Nothing is spent or granted: there is no economy backend upstream.
+        Assert.Equal(500, catalog.GetCrystalBalance());
+        Assert.False(CatalogManager.Inventory.ContainsCaptain("AURELIA"));
+
+        // OnPurchaseFailed re-arms the card and the modal's confirm button.
+        Assert.True(confirmButton.enabled);
+        Assert.True(aurelia.GetComponent<Button>().enabled);
+        Assert.True(((Image)GetField(aurelia, "PriceButton")).gameObject.activeSelf);
+        Assert.False(((Image)GetField(aurelia, "PurchasedButton")).gameObject.activeSelf);
+
+        // No purchase juice runs: well past the old flip timing the card is unowned.
         Tick(160);
-        Assert.True(((Image)GetField(aurelia, "PurchasedButton")).gameObject.activeSelf);
-        Assert.False(((Image)GetField(aurelia, "PriceButton")).gameObject.activeSelf);
-        Assert.False(aurelia.GetComponent<Button>().enabled);
-
+        Assert.False(((Image)GetField(aurelia, "PurchasedButton")).gameObject.activeSelf);
         Tick(70);
-        Assert.Equal("350", crystalBalanceText.text);
+        Assert.Equal("500", crystalBalanceText.text);
     }
 
     [Fact]
-    public void CurrencyChange_FlipsUnaffordableCardsToUnavailable()
-    {
-        // Buy AURELIA (150) then KORVAX (300): wallet 500 → 50. SIRRA (450) must
-        // flip to UNAVAILABLE through the OnCurrencyBalanceChange fan-out.
-        Card("AURELIA").GetComponent<Button>().onClick.Invoke();
-        confirmButton.onClick.Invoke();
-        Tick(160);
-        Card("KORVAX").GetComponent<Button>().onClick.Invoke();
-        confirmButton.onClick.Invoke();
-        Tick(160);
-
-        Assert.Equal(50, catalog.GetCrystalBalance());
-        var sirra = Card("SIRRA");
-        Assert.True(((Image)GetField(sirra, "UnavailableButton")).gameObject.activeSelf);
-        Assert.False(((Image)GetField(sirra, "PriceButton")).gameObject.activeSelf);
-        Assert.False(sirra.GetComponent<Button>().enabled);
-    }
-
-    [Fact]
-    public void TicketPurchase_RaisesTicketBalance()
+    public void TicketPurchase_FailsClosed_TicketBalanceUnchanged()
     {
         ticketCard.GetComponent<Button>().onClick.Invoke();
         Assert.Equal("to unlock Daily Challenge Ticket?", modalUnlockText.text);
         confirmButton.onClick.Invoke();
 
-        Assert.Equal(475, catalog.GetCrystalBalance());
-        Assert.Equal(1, catalog.GetDailyChallengeTicketBalance());
+        Assert.Equal(500, catalog.GetCrystalBalance());
+        Assert.Equal(0, catalog.GetDailyChallengeTicketBalance());
+        Assert.True(confirmButton.enabled);
         Tick(160);
-        Assert.Equal("1", ticketBalanceText.text);
+        Assert.Equal("0", ticketBalanceText.text);
     }
 
     [Fact]
-    public void PurchaseItem_GuardsOverPurchase_AtMaxCount()
+    public void PurchaseCalls_RunOnlyTheFailureCallback()
     {
+        int succeeded = 0, failed = 0;
         var item = CatalogManager.StoreShelve.captains.Values.First(x => x.Name == "AURELIA");
-        catalog.PurchaseItem(item, item.Price[0], 1);
-        int balanceAfterFirst = catalog.GetCrystalBalance();
 
-        catalog.PurchaseItem(item, item.Price[0], 1); // maxCount 1 already owned
-        Assert.Equal(balanceAfterFirst, catalog.GetCrystalBalance());
-        Assert.Single(CatalogManager.Inventory.captains);
+        catalog.PurchaseItem(item, item.Price[0], 1, () => succeeded++, () => failed++);
+        catalog.PurchaseCaptainUpgrade(captainManager.GetCaptainByName("AURELIA"), () => succeeded++, () => failed++);
+
+        Assert.Equal((0, 2), (succeeded, failed));
+        Assert.Equal(500, catalog.GetCrystalBalance());
+        Assert.Empty(CatalogManager.Inventory.captains);
+    }
+
+    [Fact]
+    public void DailyRewardClaim_CreditsTheWallet_AndTheFanOutRestatesEveryCard()
+    {
+        // A wallet drawn down to 200 (authored, no event), then the daily claim:
+        // +DailyRewardAmount → 300 through RewardClaimed → OnCurrencyBalanceChange.
+        crystal.Amount = 200;
+        DailyRewardHandler.Instance.Claim();
+
+        Assert.Equal(200 + CatalogManager.DailyRewardAmount, catalog.GetCrystalBalance());
+
+        // 300 affords AURELIA (150) and KORVAX (300) but not SIRRA (450).
+        var korvax = Card("KORVAX");
+        Assert.True(((Image)GetField(korvax, "PriceButton")).gameObject.activeSelf);
+        Assert.True(korvax.GetComponent<Button>().enabled);
+        var sirra = Card("SIRRA");
+        Assert.True(((Image)GetField(sirra, "UnavailableButton")).gameObject.activeSelf);
+        Assert.False(((Image)GetField(sirra, "PriceButton")).gameObject.activeSelf);
+        Assert.False(sirra.GetComponent<Button>().enabled);
+
+        Tick(70); // the crystal-balance count-up
+        Assert.Equal("300", crystalBalanceText.text);
+    }
+
+    [Fact]
+    public void UseDailyChallengeTicket_SpendsOne_AndTheCompletionReinventoriesIt()
+    {
+        int inventoryChanges = 0;
+        CatalogManager.OnInventoryChange += () => inventoryChanges++;
+        ticket.Amount = 2;
+
+        catalog.UseDailyChallengeTicket();
+
+        Assert.Equal(1, ticket.Amount);
+        Assert.Contains(ticket, CatalogManager.Inventory.tickets);
+        Assert.Equal(1, catalog.GetDailyChallengeTicketBalance());
+        Assert.Equal(1, inventoryChanges);
     }
 
     [Fact]

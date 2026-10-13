@@ -15,6 +15,26 @@ MonoBehaviour:
   resourceIndex: 0
   enhancementsPerFullAmmo: 3
   requireExistingTrailBlock: 1
-  assemblerType: 0
+  assemblerType: 2
   shieldOnSeed: 2
+  stanceShieldOnSeed: 1
   bondingDepth: 50
+  brickShortSide: 3
+  brickDepth: 0.5
+  massSizeMultiplierAtFull: 2
+  minMassSizeMultiplier: 0.5
+  stealSweepInterval: 0.3
+  stealRadius: 40
+  spaceStealRadiusMultiplierAtFull: 2
+  minSpaceStealRadiusMultiplier: 0.5
+  maxStealsPerSweep: 48
+  stealWavesPerSweep: 4
+  ownPullSpeed: 20
+  opponentPullSpeed: 6
+  pullRotateRate: 8
+  shieldRippleStep: 0.08
+  beamSeconds: 0.35
+  beamWidth: 0.6
+  lockPanelClearance: 0.25
+  lockPanelThickness: 0.15
+  prismSpawnChannel: {fileID: 11400000, guid: 765004a68c88ffb439febbdf47d892db, type: 2}

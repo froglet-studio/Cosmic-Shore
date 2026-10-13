@@ -260,7 +260,7 @@ namespace CosmicShore.Launcher
         /// </summary>
         public void LaunchLocalPlayers(int players, string? scene, string size, IReadOnlyList<string>? sims = null, string? transport = null) => Start("Local multiplayer", async ct =>
         {
-            players = Math.Clamp(players, 2, Prisma.MultiplayerRun.MaxPlayers);
+            players = Math.Clamp(players, 2, Amoebius.MultiplayerRun.MaxPlayers);
             if (!await EnsureTools(ct)) return false;
             string cfg = _s.ReleaseBuild ? "Release" : "Debug";
             if (!await EnsurePlayerBuilt(ct, cfg)) return false;
@@ -269,7 +269,7 @@ namespace CosmicShore.Launcher
             var exe = PlayerExeFor(cfg);
             bool audio = _s.Audio && await _ws.FetchNatives(Log, ct);
             // A fresh session folder per run: no session a previous run left behind shows up as joinable.
-            LocalNetDir = Path.Combine(Path.GetTempPath(), "prisma-multiplayer", DateTime.Now.ToString("yyyyMMdd-HHmmss"), "sessions");
+            LocalNetDir = Path.Combine(Path.GetTempPath(), "amoebius-multiplayer", DateTime.Now.ToString("yyyyMMdd-HHmmss"), "sessions");
             Directory.CreateDirectory(LocalNetDir);
             bool relay = transport == "relay", ugs = transport == "ugs";
             if (ugs)

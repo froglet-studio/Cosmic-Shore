@@ -11,7 +11,7 @@
 | `EnumIntegrityTests` | `VesselClassType`, `Domains`, `GameModes`, `Element`, `ShipActions`, `ResourceType` | Unity serializes enums by int value. If someone reorders members, every SO/prefab/save silently points to the wrong value. |
 | `EnumIntegrityExtendedTests` | `CaptainLevel`, `CSLogLevel`, `InputEvents`, `ShipCameraOverrides`, `CrystalImpactEffects`, `TrailBlockImpactEffects`, `SkimmerStayEffects`, `ShipImpactEffects`, `UserActionType` | `CaptainLevel` maps to PlayFab IAP product IDs. A shift = wrong purchase applied. |
 | `ResourceCollectionTests` | `ResourceCollection` struct (Mass/Charge/Space/Time) | Flows through damage, scoring, ability costs. Constructor order bug = silent data corruption. |
-| `XpDataTests` | `XpData` struct | Serialized to JSON for PlayFab. Field reorder = XP assigned to wrong element. |
+| `XpDataTests` | `XpData` struct | Field reorder = XP assigned to wrong element. |
 | `PartyPlayerDataTests` | `PartyPlayerData` struct | SOAP event payload + HashSet/Dictionary key. Equality by PlayerId only. Break = party removal fails. |
 | `PartyInviteDataTests` | `PartyInviteData` struct | Invite payload through SOAP events. Field loss = failed party join. |
 | `ShipModifierTests` | `ShipThrottleModifier`, `ShipVelocityModifier` | Applied every frame. Constructor field swap = 2-second boost lasts 500 frames. |
@@ -58,10 +58,6 @@
 | `BenchmarkHistoryTests` | History persistence and retrieval. |
 | `BenchmarkReportTests` | Report formatting and output. |
 | `MetricDeltaTests` | Metric delta calculations between runs. |
-
-### PlayFab Tests — 1 file (stub)
-
-`PlayFabCatalogTests` — placeholder with trivial assert.
 
 ---
 
@@ -148,6 +144,12 @@ Two riders:
 - **`MainThreadDispatcher` is uninitialised in Edit Mode.** Its `Init` is `[RuntimeInitializeOnLoadMethod(BeforeSceneLoad)]`, so `IsOnMainThread` reports `false` and anything guarding on it (`SceneTransitionManager.SetFadeImmediate`) bails with a `Debug.LogError` — which the Test Framework counts as a failure on top of the assert. Call `EditModeLifecycle.EnsureMainThreadDispatcherInitialized()` in `SetUp`.
 - **`Object.Destroy` in Edit Mode logs an error; it does not throw and it does not destroy.** So a `try`/`catch` around it catches nothing and the unhandled error log fails the test on its own. Declare it up front with `LogAssert.Expect(LogType.Error, new Regex("Destroy may not be called from edit mode"))` — a regex, because the real message runs to a second line. This applies to any code path a test drives into a `Destroy`, not just `AppManager`'s duplicate guard.
 
+### Pattern: A test loads its own subject — never what the session happens to hold
+Two shapes made shipped tests order- or machine-dependent (DT-003, 2026-10-13), and both pass on the author's run:
+
+- **`Resources.FindObjectsOfTypeAll<T>()` returns only what is already LOADED.** `WeeklyChallengeTests.ShippedCatalog_EveryModeHasAnArcadeCard` read the game lists that way: it was `Assert.Ignore`d while nothing had loaded one, and it went red once some earlier test or the editor had loaded only lists that lacked the cards. Load every asset of the type yourself: `AssetDatabase.FindAssets("t:" + nameof(T))` → `LoadAssetAtPath`. Then an empty project is a real failure, not a skip.
+- **Normalise line endings before matching asset text.** `.gitattributes` is `* text=auto`, so a Windows checkout delivers `.unity` / `.prefab` / `.asset` with `\r\n`, and a needle ending in `"\n"` never matches there (`OmniCombineTests` shipped that way). Read with `File.ReadAllText(path).Replace("\r\n", "\n")`, and in a .NET regex write `\r?$`, because multiline `$` matches before `\n`, after any `\r`.
+
 ### Pattern: Mock Implementation of Interfaces
 `TestRoundStats` implements `IRoundStats` without Netcode dependency. Allows testing `Cleanup()` logic in pure C#.
 
@@ -166,10 +168,9 @@ SO tests create instances in SetUp and DestroyImmediate in TearDown. No asset po
 | `CosmicShore.Tests.EditMode` | `Assets/_Scripts/Tests/EditMode/` (no .asmdef — compiles in default assembly) |
 | `CosmicShore.Bootstrap.Tests` | `Assets/_Scripts/System/Bootstrap/Tests/` (no .asmdef) |
 | `CosmicShore.Multiplayer.Tests` | `Assets/_Scripts/Controller/Multiplayer/Tests/` (no .asmdef) |
-| `CosmicShore.PlayFabTests` | `Assets/_Scripts/System/Playfab/PlayFabTests/` (has .asmdef) |
 | `CosmicShore.Benchmark.Tests` | `Assets/_Scripts/Utility/PerformanceBenchmark/Tests/Editor/` (no .asmdef) |
 
-Note: Most test directories compile in Unity's default assembly. Only `PlayFabTests` has an explicit `.asmdef`.
+Note: every test directory compiles in Unity's default assembly; none has an explicit `.asmdef`.
 
 ---
 
@@ -181,4 +182,3 @@ Note: Most test directories compile in Unity's default assembly. Only `PlayFabTe
 - **Vessel actions** — 40+ VesselActionSO types untested
 - **Input system** — IInputStrategy implementations, InputController strategy switching
 - **Pool system** — GenericPoolManager async buffer maintenance
-- **PlayFab tests** — placeholder only

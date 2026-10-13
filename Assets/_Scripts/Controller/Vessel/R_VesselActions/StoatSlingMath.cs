@@ -127,6 +127,53 @@ namespace CosmicShore.Gameplay
         public static float SlingBoost(float speed, float peak01, float minFraction, float maxFraction) =>
             Mathf.Max(0f, speed) * Mathf.Lerp(Mathf.Max(0f, minFraction), Mathf.Max(0f, maxFraction), Mathf.Clamp01(peak01));
 
+        /// <summary>
+        /// How well a slingshot was TIMED (Time mode, <c>STOAT_DIPOLE.md</c> §1b): 1 inside the window
+        /// <paramref name="fullHalfWidth"/> degrees either side of <paramref name="centreDegrees"/> of orbit swept, easing
+        /// (smoothstep) to 0 over the next <paramref name="falloff"/> degrees on both sides. The playtest's sling paid best
+        /// for a release a quarter-turn round the attractor — out on a tangent square to the heading you came in on.
+        /// </summary>
+        public static float SweetSpot(float sweptDegrees, float centreDegrees, float fullHalfWidth, float falloff)
+        {
+            float off = Mathf.Abs(Mathf.Abs(sweptDegrees) - centreDegrees);
+            float full = Mathf.Max(0f, fullHalfWidth);
+            if (off <= full) return 1f;
+            float fall = Mathf.Max(1e-3f, falloff);
+            float t = Mathf.Clamp01((off - full) / fall);
+            return 1f - t * t * (3f - 2f * t);
+        }
+
+        /// <summary>
+        /// The slingshot's kick for a release: the squeeze's boost (<see cref="SlingBoost"/>) scaled by the timing —
+        /// <paramref name="missShare"/> of it for a release outside the window, all of it inside — and by Time's
+        /// <paramref name="rate"/> (the Stoat's boost ratio, ≥ 1).
+        /// </summary>
+        public static float TimedKick(float squeezeBoost, float sweetSpot01, float missShare, float rate) =>
+            Mathf.Max(0f, squeezeBoost) * Mathf.Lerp(Mathf.Clamp01(missShare), 1f, Mathf.Clamp01(sweetSpot01)) * Mathf.Max(1f, rate);
+
+        /// <summary>
+        /// The rest of the orbit, as points to draw (the pathfinder in Time mode): from the hull's angle round
+        /// <paramref name="centre"/> forward on the orbit's plane until <paramref name="sweptDegrees"/> reaches
+        /// <paramref name="untilDegrees"/>, every <paramref name="step"/> world units of arc. Returns the count written.
+        /// </summary>
+        public static int OrbitArc(Vector3 hull, Vector3 forward, Vector3 centre, float sweptDegrees, float untilDegrees,
+            float step, Vector3[] points)
+        {
+            if (points == null || points.Length == 0) return 0;
+            var radial = hull - centre;
+            float radius = radial.magnitude;
+            if (radius < 1e-3f) return 0;
+            var normal = Vector3.Cross(radial, forward);
+            if (normal.sqrMagnitude < 1e-8f) return 0;
+            normal.Normalize();
+            float remaining = Mathf.Max(0f, untilDegrees - Mathf.Abs(sweptDegrees));
+            float stepDegrees = Mathf.Max(0.05f, step / radius * Mathf.Rad2Deg);
+            int n = Mathf.Min(points.Length, Mathf.FloorToInt(remaining / stepDegrees) + 1);
+            for (int i = 0; i < n; i++)
+                points[i] = centre + Quaternion.AngleAxis(i * stepDegrees, normal) * radial;   // r rotates toward v about r × v
+            return n;
+        }
+
         /// <summary>Seconds an autopilot holds its squeeze to turn <paramref name="turnRadians"/> on an orbit of
         /// <paramref name="radius"/> at <paramref name="speed"/>: the arc over the speed.</summary>
         public static float AutopilotHoldSeconds(float turnRadians, float speed, float radius) =>

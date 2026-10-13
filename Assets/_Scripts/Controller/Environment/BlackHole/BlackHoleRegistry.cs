@@ -306,6 +306,13 @@ namespace CosmicShore.Gameplay
             return wormhole;
         }
 
+        /// <summary>
+        /// Raised when a let-go pair's horizons MEET and it annihilates there (not for an <see cref="Annihilate"/> called
+        /// from outside): the pair, and where they met. The Stoat's orbit slingshot throws its Charge ripple from it
+        /// (<c>StoatSlingExecutor</c>). Every peer raises it for its own copy of the pair.
+        /// </summary>
+        public static event System.Action<Pair, Vector3> PairMet;
+
         /// <summary>Annihilate a pair now: both holes ease out together. The pair is forgotten.</summary>
         public static void Annihilate(Pair pair)
         {
@@ -354,7 +361,9 @@ namespace CosmicShore.Gameplay
                 if (BlackHolePairMath.HaveMet(pair.HalfGap, rs) || (pair.DriftSpeed <= 0f && pair.CloseAge >= pair.Lifetime))
                 {
                     CSDebug.LogVerbose(CSLogChannel.BlackHole, $"[BlackHole] pair #{pair.Black.Id}/#{pair.White.Id} annihilated after {pair.Age:F1} s");
+                    var met = 0.5f * (pair.Black.transform.position + pair.White.transform.position);
                     Annihilate(pair);
+                    PairMet?.Invoke(pair, met);
                     continue;
                 }
                 BlackHolePairMath.Positions(pair.Midpoint, pair.Axis, pair.HalfGap, out var blackPos, out var whitePos);
@@ -437,14 +446,12 @@ namespace CosmicShore.Gameplay
 
             BlackHoleGravityField.Tick(_holes, config, dt);
             BlackHoleVesselPull.Tick(_holes, config, dt);
+            BlackHoleWaves.Tick(config);
             BlackHoleWarp.Flush(_warpHoles, config);
-            BlackHoleLens.PublishSmoothWells(_warpHoles);
-            BlackHoleLens.PublishHorizonHoles(_warpHoles);
-            // The lens reads the camera's opaque + depth copies; keep them on for EVERY enabled game
-            // camera while any lens is live (a vessel spawn, the death or end camera switch cameras).
+            // The lens reads the camera's depth texture; keep it on for EVERY enabled game camera while any lens
+            // is live (a vessel spawn, the death or end camera switch cameras). Each camera's lens pass reads the
+            // holes itself (BlackHoleLens.ScreenWells).
             BlackHoleLens.CameraSupport.Maintain();
-            // ...and the sky a ray bent off-screen sees: the scene's own skybox, kept current.
-            BlackHoleSky.Maintain(config);
 
             if (CSDebug.IsVerbose(CSLogChannel.BlackHole) && Time.unscaledTime >= _nextReport)
             {
@@ -504,6 +511,7 @@ namespace CosmicShore.Gameplay
             _warpHoles.Clear();
             _stale.Clear();
             _pairs.Clear();
+            PairMet = null;
             _nextId = 1;
             _configResolved = false;
             _driver = null;

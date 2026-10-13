@@ -38,7 +38,7 @@ players also reference Content, Render and Engine directly.
 | **CosmicShore.Mobile** | The Android/iOS player: the same `PlayerWindow` on an SDL GL ES view, with touch | same as Player |
 | **CosmicShore.AssetTool** | `cs-asset`: edit scenes, prefabs and assets from the command line | Content, Live, Compat |
 | **CosmicShore.Build** | `cs-build`: Unity-style player builds (player data, Android APK/AAB, iOS) | none (reads files only) |
-| **CosmicShore.Launcher** | `Prisma.exe`: pick a branch, fetch, build and play it; Android/iOS builds. Dear ImGui on Silk.NET | none (drives git, `dotnet`, `cs-build`) |
+| **CosmicShore.Launcher** | `Amoebius.exe`: pick a branch, fetch, build and play it; Android/iOS builds. Dear ImGui on Silk.NET | none (drives git, `dotnet`, `cs-build`) |
 | *Data, Game, Cli, Client* | **Legacy.** Early hand-ported gameplay, headless round drivers and "sprint" windows. The player does not use them; the tests still do | Engine |
 | Tests | `CosmicShore.Tests` (xunit, 1,568 tests); `CosmicShore.Tests.Ported` (the project's Unity EditMode tests, 352) | — |
 
@@ -70,7 +70,7 @@ Everything targets .NET 10 (`Directory.Build.props`). The solution is `Port/Cosm
    first line, `if (NetRpc.Intercept(this, "Name", args)) return;`. That one line routes the call
    over the network, or lets it run locally. An RPC it cannot intercept (a generic method, an
    attribute split over lines, Netcode 2's `[Rpc(SendTo...)]`) is reported as warning
-   **`PRISMA001`** at its file and line, never skipped silently: it would run locally instead of
+   **`AMOEBIUS001`** at its file and line, never skipped silently: it would run locally instead of
    over the network.
 4. **Maps back to the original file.** Each output starts with `#line 1 "<path under Assets/>"`
    and the rewrite keeps line numbers, so compiler errors, stack traces, debugger steps and
@@ -103,7 +103,7 @@ sits behind those names is first-party code.
 | Physics | Custom trigger physics. Overlap pairs with a Rigidbody on at least one side whose layers meet in the Layer Collision Matrix (Unity's rules) fire `OnTriggerEnter/Stay/Exit` on the collider's GameObject and its Rigidbody's, sweep-sorted, deterministic. Raycast, SphereCast, OverlapSphere/Capsule/Box and `Collider.ClosestPoint` are supported, and Rigidbodies integrate ballistically. Spheres, oriented boxes and capsules are exact; a mesh is the oriented box of its bounds. A contact pass resolves a dynamic Rigidbody's solid SPHERE against solid colliders and fires `OnCollision*` (the census in §13.1); there is no general solver | `Physics/ShapeMath.cs`, `Physics/ContactPass.cs`, `SceneGraph/TriggerPass*.cs`, `Compat/EngineCompat.cs` |
 | Animation | A Mecanim driver: layers, nested state machines, transitions, triggers, 1D/2D/direct blend trees, FBX and `.anim` clips | `Animation/` |
 | Input | The Input System (actions, maps, bindings, composites, devices). `TouchFeed` gives EnhancedTouch semantics on phones | `InputSystem/` |
-| UI | uGUI: anchors, layout groups, masks, `EventSystem` raycasting and navigation, `Selectable` / `Button` / `ScrollRect` / `InputField`. TMP layout builds SDF glyph quads | `UI/` |
+| UI | uGUI: anchors, layout groups, masks, `EventSystem` raycasting and navigation, `Selectable` / `Button` / `Slider` / `Scrollbar` / `ScrollRect` / `InputField`, ported rule for rule (a slider or scroll bar drives its fill and handle anchors, which Unity saves as zero; a scroll view rubber-bands, flings and remaps the wheel on a one-axis track). Rects are computed on read, so the hierarchy messages are sent from the transform calls that change it, and `OnRectTransformDimensionsChange` is found by comparing the watched rects before and after each layout solve (`RectDimensionWatch`). The canvas update runs `CanvasUpdateRegistry`'s Prelayout/Layout/PostLayout and graphic phases around the queued layout roots. TMP layout builds SDF glyph quads | `UI/`, `SceneGraph/TransformMessages.cs`, `SceneGraph/RectDimensionWatch.cs` |
 | DI and events | Reflex (`[Inject]`, installers, containers) and Obvious SOAP (variables, events, lists) | `Injection/`, `Soap/` |
 | Async | A frame-driven task scheduler; awaits resume on the game-loop thread | `Tasks/` |
 | Rendering data | `Mesh`, `Material`, `Camera`, `RenderTexture`, volumes, change tracking. **Data only:** the Render project draws | `Rendering/` |
@@ -178,14 +178,41 @@ exact same `GameLoop`.
 renderer, plus Entities Graphics entities. The game's `PrismRenderService` drives prism mass
 through those entities.
 
-**Shaders.** It does not run Unity's shaders. One uber-shader reproduces the project's material
-families: unlit, lit, the prism fresnel pair, snow, cage, Voronoi, crystal, additive and slice.
-The project's own HLSL is translated into GLSL inside it:
-- the prism clock animation and sway;
-- the occlusion corridor;
-- the destruction sight;
-- the vessel vision band;
-- the cradle and the slice.
+**Shaders.** Each material takes one route (the session report counts instances per route,
+`render.shaders`; `cs-asset shadergraph-census` lists every project shader's):
+- **family**: the scene uber-shader's hand-tuned code for the prism graphs (instancing, entity
+  overrides, the clock block), the slice and the forcefield. The project's own HLSL is translated
+  into it: the prism clock animation and sway, the occlusion corridor, the destruction sight, the
+  vessel vision band, the cradle and the slice.
+- **compiled**: every other Shader Graph, compiled node by node to GLSL (`Content/Shaders`) inside
+  `GraphProgramCache`'s template. `cs-asset shadergraph-glsl FILE` prints what it draws.
+- **hand**: a hand-written `.shader` translated in `Content/Shaders/Hand/*.glsl` (the crystals:
+  OmniCrystalFresnel, OmniChargeEdges, ChargeCrystal, OmniShepardFresnel, SpreadFresnel). They
+  read the mesh's TEXCOORD2/3 (attribute locations 10/11 in a graph draw) and honour `Offset`.
+- **builtin**: Unity's own shaders by name, each by its source's formula — Particles/Standard
+  Unlit (the vessel jets' flares), the legacy particle shaders, Sprites/Default, URP Unlit and
+  Particles/Unlit (family 9), URP Lit (family 1, below). Default-Line and Default-Particle are the
+  legacy Alpha Blended Premultiply shader.
+- **fallback**: anything else draws unlit (base colour x texture) and is reported once.
+
+**Colour space.** The project is Linear (`ColorSpaceRules`): a plain colour property is stored
+sRGB and reaches the GPU linearised (`Mathf.GammaToLinearSpace`, pow 2.2 above 1), an [HDR] one is
+stored linear and goes up as stored (`Material.SetColor` converts on the way in), vectors are raw,
+a property block's colour is linearised, `Shader.SetGlobalColor` is not, and particle, trail and
+line vertex colours are converted. `Material.color` / `mainTexture` address the shader's
+[MainColor] / [MainTexture] (URP's `_BaseColor` / `_BaseMap`), else `_Color` / `_MainTex`; a
+material's queue is the shader's (its `Queue` tag, or the graph target's) until it sets its own.
+
+**Lighting.** URP's Lit BRDF (`UrpLitGlsl`) for URP Lit materials and Lit graphs: the main light
+(the sun, else the brightest directional light; gameplay scenes have none, so none), the ambient
+probe and the default reflection from `EnvironmentLighting`. The probe follows the scene's ambient
+mode: Skybox projects the skybox (captured into a 128 cubemap) onto L2 spherical harmonics x
+ambient intensity, Flat is the sky colour, Trilight the gradient. Not drawn: additional lights,
+shadows, texture-driven metallic/smoothness, GGX-convolved reflection mips (box-filtered here),
+soft particles (no depth texture).
+
+**Cameras.** The player raises URP's `RenderPipelineManager.beginCameraRendering` /
+`endCameraRendering` around every camera it draws (the wormhole view depends on them).
 
 **Batching.** Opaque geometry is instanced per (mesh, submesh, material). Transparent geometry
 is sorted back to front. A per-instance "clock block" (15 vec4) rides in a texture buffer.
@@ -193,10 +220,13 @@ is sorted back to front. A per-instance "clock block" (15 vec4) rides in a textu
 **Culling.** Frustum culling uses cached bounding spheres. Vertex-animated debris is never culled.
 
 **Other passes:**
-- `SkyboxPass`: the HyperSea skybox, translated.
-- `PostPass`: bloom mip chain and Panini projection. The project authors no tonemapper.
+- `SkyboxPass`: the HyperSea skybox, translated (also drawn into the environment cubemap).
+- `PostPass`: URP 17.3's order and maths: the Panini projection, then the Gaussian bloom (gamma
+  threshold and knee, clamp, a 9-tap/5-tap pyramid of URP's depth, scatter, luminance-normalised
+  tint, the high-quality bicubic upsample), then the composite. The project authors no tonemapper.
 - `UguiRenderer` and `TmpTextRenderer`: canvases in hierarchy order, CanvasGroup alpha,
-  RectMask2D, stencil masks, SDF text.
+  RectMask2D, stencil masks, SDF text. A Graphic whose material names a translated UI shader
+  (`UiCustomShaders`: the HUD's team-volume gauge) draws with it; any other draws as UI/Default.
 - `PresentPass`.
 
 **GL ES (phones).** `GlCaps` translates every shader at the one compile point
@@ -314,7 +344,7 @@ Numbered badges mark what to click.
 
 ### 11.1 The launcher (start here)
 
-`Prisma.exe` (`Port/dist/Prisma-Windows.zip`) is the one file to give a tester.
+`Amoebius.exe` (`Port/dist/Amoebius-Windows.zip`) is the one file to give a tester.
 Full guide: `docs/LAUNCHER.md`.
 
 ![Launcher PLAY](architecture/launcher_play.png)
@@ -326,13 +356,14 @@ progress and CANCEL.
 
 ![Launcher BUILD](architecture/launcher_build.png)
 
-**Figure 9.** BUILD: one card per phone. Android builds an APK or AAB. iOS builds an unsigned
-`.ipa` on GitHub's free Mac (no Mac needed; install with Sideloadly), exports an Xcode project,
-or on a Mac builds a signed `.ipa`. Everything else is folded under *Options*.
+**Figure 9.** BUILD: one card per phone. Android builds an APK or AAB. iOS exports an Xcode
+project, or on a Mac builds a signed `.ipa` (the unsigned GitHub-Mac `.ipa` for Sideloadly was
+retired on 2026-10-13; TestFlight is the only route onto a phone). Everything else is folded under
+*Options*.
 
 ![Launcher PROJECT](architecture/launcher_project_1.png)
 
-**Figure 10.** PROJECT: the engine's own Project Settings (`Port/ProjectSettings/PrismaProject.json`),
+**Figure 10.** PROJECT: the engine's own Project Settings (`Port/ProjectSettings/AmoebiusProject.json`),
 so Unity's `ProjectSettings/` is never edited. PLAYER (names, version, bundle ids, build numbers),
 SCENES (Scenes In Build, shown), QUALITY (MSAA, render scale, filtering, vsync). Empty fields
 inherit Unity's values.
@@ -393,7 +424,7 @@ own touch controls.
 | `--size WxH` | Window size |
 | `--frames N` | Quit after N frames |
 | `--screenshot out.png` / `--shot F:path` | Capture frame F |
-| `--do "F:click X,Y"` · `type TEXT` · `key NAME` · `hold NAME N` · `pad BUTTON` | Scripted input (how these screenshots were made) |
+| `--do "F:click X,Y"` · `type TEXT` · `key NAME` · `hold NAME N` · `pad BUTTON` · `scroll X,Y N` (wheel notches) · `drag X,Y X,Y F` (press, move over F frames, release) | Scripted input (how these screenshots were made) |
 | `--do "F:inspect OBJECT Component"` · `eval Type.Member` | Print live state at frame F |
 | `--record DIR:FROM-TO` | Record frames (`tools/record_session.sh` makes a video) |
 | `--headless` · `--verbose` · `--seed S` | No window · every log channel · reproducible runs |
@@ -431,18 +462,18 @@ MCP server, so Claude Code drives the engine with tools: `engine_build`, `engine
 `unity_isolation_check`, `game_start` / `game_stop`, `game_screenshot` (returned as an image),
 `game_input`, `game_wait`, `game_find`, `game_hierarchy`, `game_get` / `game_set`, `game_ui_at`,
 `game_dump_ui`, `game_logs`, `game_load_scene`. On a server without a display it runs the game
-under `xvfb-run`. Connect it with `claude mcp add prisma -- dotnet run --project
+under `xvfb-run`. Connect it with `claude mcp add amoebius -- dotnet run --project
 Port/src/CosmicShore.Mcp --` or `claude --mcp-config Port/.mcp.json`; the launcher's CLAUDE page
 connects it on its own. `Port/CLAUDE.md` is the agent's guide.
 
 `--session-report PATH` makes the player write a JSON report when it closes or crashes (scenes,
 frame-time percentiles, distinct errors/warnings/exceptions, crash, branch and commit); the
-launcher passes one for every play session. Amoebius folds them into **tracks** (`src/Shared/PrismaTracks.cs`:
+launcher passes one for every play session. Amoebius folds them into **tracks** (`src/Shared/AmoebiusTracks.cs`:
 runs, per-scene performance, features, audio, problems grouped across runs) and keeps a task and
-bug **board** (`src/Shared/PrismaBoard.cs`) that it and its agents suggest items to. Two agent
+bug **board** (`src/Shared/AmoebiusBoard.cs`) that it and its agents suggest items to. Two agent
 scopes run in the app: the Amoebius Agent (the game; `Port/` is denied) and milestone sessions
-(the engine; the Unity project is denied). The MCP server exposes `prisma_tracks`, `prisma_board`
-and `prisma_board_suggest`. Where the engine is going: `docs/ROADMAP.md` and `docs/milestones.json`.
+(the engine; the Unity project is denied). The MCP server exposes `amoebius_tracks`, `amoebius_board`
+and `amoebius_board_suggest`. Where the engine is going: `docs/ROADMAP.md` and `docs/milestones.json`.
 
 ---
 
@@ -454,7 +485,7 @@ and `prisma_board_suggest`. Where the engine is going: `docs/ROADMAP.md` and `do
 | The project's own Unity tests | `dotnet test tests/CosmicShore.Tests.Ported`: 352 tests, verbatim |
 | File round-trip | `cs-asset roundtrip`: every YAML file parses and writes back byte-identical |
 | Loader vs Unity's serializer | `cs-asset serialization-audit`: every YAML key Unity reads, Amoebius reads too, and nothing more (exit 1 otherwise) |
-| RPC coverage | The source sync warns `PRISMA001` for any RPC it cannot intercept (0 today) |
+| RPC coverage | The source sync warns `AMOEBIUS001` for any RPC it cannot intercept (0 today) |
 | Run data | Every launcher play writes a session report (frame, CPU-per-phase, allocation, GC, audio, problems); Amoebius's tracks compare it with earlier runs |
 | Rendering | Scripted windowed runs with screenshots, under xvfb on Linux |
 | Shaders on phones | Every shader is translated and compiled by the Khronos GLSL ES reference compiler (`GlslEsTranslationTests`) |
@@ -473,6 +504,7 @@ and `prisma_board_suggest`. Where the engine is going: `docs/ROADMAP.md` and `do
 | Animation Rigging, Timeline, VFX Graph | Data only; they do not animate or emit |
 | GPU-buffer drawing | `GraphicsBuffer`/`ComputeBuffer` hold their data on the CPU, and `Graphics.RenderMeshPrimitives` (procedural instancing) draws nothing. The renderer is GL 3.3 / GL ES 3.0, so `SystemInfo.maxComputeBufferInputsVertex` is 0, as Unity reports on such a device. The swarm and substrate fauna check that and skip their member "hearts"; their bodies are prism entities, which Amoebius draws. The swarm cell itself (entered through the Cell Selector in Menu_Main) has not been flown in Amoebius yet |
 | Phones | Android APK builds, but has not been run on a device yet. iOS needs a Mac. Android audio needs `git lfs pull` |
+| Platform defines | `CosmicShore.Live` defines `DEVELOPMENT_BUILD` but no `UNITY_STANDALONE`, `UNITY_ANDROID` or `UNITY_IOS`, so game code behind those symbols is compiled out in every Amoebius build. One consequence is deliberate and fail-closed: `IAPManager`'s browser checkout, fenced to `UNITY_STANDALONE` since 2026-10-13 (store policy on phones), declines in Amoebius on every platform. Commerce is switched off in the game anyway. Defining the platform symbols would also switch on `MultiMouseService`, `PaintingShareExporter` and `InputController` paths, so it is a separate decision |
 | Branches | `CosmicShore.Live` compiles whatever `Assets/` is checked out. Run the port on the branch it was built for |
 | Legacy projects | Data, Game, Cli and Client are kept for their tests; new work goes into Engine, Content, Render or the players |
 

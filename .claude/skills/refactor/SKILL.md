@@ -198,6 +198,14 @@ never which prefab mentions it; and when a claim rests on a prefab override, che
 target script still declares that field. (CLAUDE.md records the same shape for the stale `Cell`
 overrides 12 scenes accumulated; this is it met from the effect side.)
 
+**The converse also holds: a reference NAMING a deleted type can still be live wiring.** A UnityEvent
+persistent call stores both `m_Target` (the object) and `m_TargetAssemblyTypeName` (a cached
+string), and Unity resolves the method on the TARGET's actual type. `ModalWindows.prefab` still
+named `_Scripts._Core.Playfab_Models.ProfileMenu`, a type deleted with PlayFab, but `m_Target` was
+the `ProfileModal` component, which still declares the method: the randomize-name button was live,
+and "remove everything PlayFab" would have broken it. Resolve `m_Target`'s script guid and check
+the method exists before calling a listener dead; the stale string heals on the prefab's next save.
+
 **3.12 A container emptied to nothing is a real change to state, not a neutral outcome.** Removing
 the last entry from a list is arithmetically the same edit as removing the second-to-last and
 behaviourally is not: `SlowExplosionImpactorDataContainer` held exactly one effect, so unwiring it

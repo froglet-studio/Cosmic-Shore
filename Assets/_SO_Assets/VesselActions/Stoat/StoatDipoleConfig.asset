@@ -19,8 +19,9 @@ MonoBehaviour:
   sidewaysMax: 200
   lengthwaysMax: 120
   followRate: 6
-  poleGM: 120000
-  poleHorizon: 3.5
+  poleGM: 50000
+  poleHorizon: 2.1
+  sinkSofteningHorizons: 14
   poleSize:
     Enabled: 1
     Value: 1
@@ -32,8 +33,13 @@ MonoBehaviour:
   sourcePush: 1
   sourceSofteningHorizons: 2
   accelerationCap: 3000
+  annihilateSeconds: 0.3
   sinkGrowSeconds: 0.9
   sourceGrowSeconds: 1.1
+  dieSeconds: 0.7
+  sourceSizeX: 1
+  throughZoneRadius: 135
+  throughDegrees: 200
   turnCap: 12
   grip: 0.5
   gravitySpeedCeilingCruises: 4
@@ -41,7 +47,9 @@ MonoBehaviour:
   domainTintAmount: 0
   crystalStripShare: 1
   faunaSwallowHorizons: 1.5
-  pathLength: 600
+  accretionPerPrism: 0.04
+  accretionMax: 1
+  pathLength: 1200
   pathStep: 3
   pathNoseOffset: 8
   loopMargin: 8
@@ -49,22 +57,27 @@ MonoBehaviour:
   warpDegrees: 3
   boost:
     Enabled: 1
-    Value: 2
-    Min: 2
-    Max: 4
+    Value: 2.5
+    Min: 2.5
+    Max: 5
     element: 4
     UseFloor: 1
     Floor: 1
   boostRise: 20
   boostFadeSeconds: 0.6
   dotPixels: 4
-  dotGap: 10
+  dotGap: 2.5
+  dotDepthMinScale: 0.75
+  dotDepthFade: 0.15
   dotsInWorld: 1
   worldDotSize: 0.7
   worldDotSpacing: 3
   worldDotMinPixels: 2.5
   openColor: {r: 0.5882353, g: 0.6509804, b: 0.7607843, a: 1}
   warpedColor: {r: 0.6156863, g: 1, b: 0.1803922, a: 1}
+  foresightLength: 500
+  foresightRange: 1500
+  foresightMaxRivals: 3
   autopilotHold01: 1
   autopilotMinDistance: 300
   autopilotHoldSeconds: 4

@@ -11,7 +11,7 @@ namespace CosmicShore.Launcher
     /// <summary>
     /// The Vessel Studio's <c>sample</c> (the hub's "Ask the studio agent") in Amoebius: one question to the Claude Code
     /// CLI Amoebius already runs for its AGENT page (same sign-in, model and API key settings), read-only (no edits, no
-    /// shell, no web), its text streamed back as it arrives (/vessel-studio D33).
+    /// shell, no web), its text streamed back as it arrives (/vessel-studio D34).
     /// </summary>
     public static class StudioAsk
     {

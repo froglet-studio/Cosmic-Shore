@@ -1,7 +1,7 @@
 /* Amoebius's Vessel Studio backend, as the claude.ai viewer gives it to the artifact: window.claude.use(name) for
    'db', 'user', 'sample' and 'mcp' (the Sync panel's "Claude Code Remote" session is Amoebius itself). Served by the
    launcher's loopback server (Port/src/CosmicShore.Launcher/Studio/StudioServer.cs) as the first script of every studio
-   page it serves; the studio files themselves are the published build, unchanged (/vessel-studio D33). */
+   page it serves; the studio files themselves are the published build, unchanged (/vessel-studio D34). */
 (() => {
   if (window.claude) return;
   // this script is <token>/.amoebius/bridge.js, so its own folder is the API's

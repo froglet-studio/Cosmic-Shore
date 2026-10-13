@@ -1,4 +1,5 @@
 using UnityEngine;
+using CosmicShore.Data;
 
 namespace CosmicShore.Gameplay
 {
@@ -7,7 +8,9 @@ namespace CosmicShore.Gameplay
     /// UNGATED — no stance, no cooldown; the ONE gated act is the super-shield pop:
     /// <list type="bullet">
     /// <item>Normal / shielded prism — standard damage on contact (a shielded prism loses its
-    /// shield, a normal prism explodes), exactly like the generic skimmer damage effect.</item>
+    /// shield, a normal prism explodes), exactly like the generic skimmer damage effect. Under
+    /// the SPACE level-5 upgrade, <b>Breaker</b>, a shielded prism takes ONE slice instead of two:
+    /// the shield sheds and the core is cut in the same hit (<see cref="breakerElement"/>).</item>
     /// <item>Super-shielded prism — POPPED only while the blade is ENERGIZED
     /// (<see cref="IRhinoSwordState.IsEnergized"/>, the hold-the-chop-stance ritual), via the
     /// sanctioned mass-conserving teardown (DeactivateShields → devastating Damage, the
@@ -56,6 +59,13 @@ namespace CosmicShore.Gameplay
                  "ordinary prism explosion. Photons only — damage, energy, stats and SFX are identical " +
                  "either way, and a slice the budget cannot afford falls back to the explosion.")]
         [SerializeField] private bool sliceDestroyedPrisms = true;
+
+        [Header("Breaker (level-5 upgrade)")]
+        [Tooltip("Element whose level-5 upgrade makes the blade cut a SHIELDED prism in one slice " +
+                 "instead of two: the shield sheds and the core is cut in the same hit. Gated on the " +
+                 "replicated unlock bit (IsUpgradeActive), snapshotted per hit. Super-shielded mass is " +
+                 "untouched by this - it still needs an energized blade. None disables Breaker.")]
+        [SerializeField] private Element breakerElement = Element.Space;
 
         [Header("Super-shielded prisms")]
         [Tooltip("True (v3, the energize ritual): popping a super-shielded prism requires the blade " +
@@ -149,6 +159,13 @@ namespace CosmicShore.Gameplay
                 return;
             }
 
+            // Breaker: shed a SHIELDED prism's shield first, so the ordinary cut below kills the
+            // core in the same hit instead of only popping the shield. Through IsUpgradeActive
+            // (the replicated unlock bit), not a raw level read - whether a prism survives is an
+            // outcome every peer has to agree on.
+            if (prism.prismProperties is { IsShielded: true } && BreakerActive(status))
+                ShedShield(prism, velocity);
+
             if (TryResolveCut(impactor, status, prism.transform.position, velocity, out var cutPoint, out var cutNormal))
             {
                 // The same impact vector and ceiling either branch below would hand Damage; only
@@ -185,10 +202,7 @@ namespace CosmicShore.Gameplay
             // + SFX. Each branch hands the shed the SAME vector and ceiling it hands the
             // devastating Damage below, so the shield's pieces and the prism's pieces fly on
             // identical terms — one effect, two meshes (Docs/PRISM_ANIMATION.md §4.8.1).
-            if (proportionalDebris)
-                prism.DeactivateShields(contactVelocity * restitution, debrisSpeedLimit);
-            else
-                prism.DeactivateShields(contactVelocity * inertia);
+            ShedShield(prism, contactVelocity);
 
             // The hardened prism itself is CUT, like every other prism the blade kills; its
             // stellation has already shattered above, so the armour bursts and the core slices.
@@ -211,6 +225,23 @@ namespace CosmicShore.Gameplay
                             devastate: true);
             else
                 prism.Damage(contactVelocity * inertia, status.Domain, status.PlayerName, devastate: true);
+        }
+
+        bool BreakerActive(IVesselStatus status)
+        {
+            if (breakerElement == Element.None) return false;
+            var abilities = status.ElementalAbilityHandler;
+            return abilities && abilities.IsUpgradeActive(breakerElement);
+        }
+
+        /// <summary>Drops a prism's shield (either tier) as explosion debris on the same terms
+        /// the kill that follows hands the core, and clears the shield flag synchronously.</summary>
+        void ShedShield(Prism prism, Vector3 contactVelocity)
+        {
+            if (proportionalDebris)
+                prism.DeactivateShields(contactVelocity * restitution, debrisSpeedLimit);
+            else
+                prism.DeactivateShields(contactVelocity * inertia);
         }
 
         /// <summary>

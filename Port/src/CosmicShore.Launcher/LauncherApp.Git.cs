@@ -8,7 +8,7 @@ using ImGuiNET;
 namespace CosmicShore.Launcher
 {
     /// <summary>
-    /// The GIT page: how an agent's edits (or your own) get from Prisma's workspace to GitHub.
+    /// The GIT page: how an agent's edits (or your own) get from Amoebius's workspace to GitHub.
     /// Left: where the workspace is, every change with which chat made it, and SAVE (commit to a
     /// branch, push, pull request). Right: the selected file's diff, then the recent history.
     /// </summary>
@@ -63,7 +63,7 @@ namespace CosmicShore.Launcher
         string SuggestedBranch()
         {
             var title = _chats.All.FirstOrDefault(c => !c.Empty && c.CurrentScope == ClaudeChat.Scope.Game)?.Title ?? "";
-            return "prisma/" + SourceControl.Slug(title.Length > 0 ? title : "changes");
+            return "amoebius/" + SourceControl.Slug(title.Length > 0 ? title : "changes");
         }
 
         string SuggestedMessage(SourceControl.State st)
@@ -71,7 +71,7 @@ namespace CosmicShore.Launcher
             var chats = st.Changes.SelectMany(c => _chats.EditorsOf(System.IO.Path.Combine(_ws.Dir, c.Path))).Distinct().ToList();
             var first = chats.FirstOrDefault()?.Title;
             bool engine = st.Changes.Any(c => c.Path.StartsWith("Port/"));
-            string head = first != null ? (engine ? "feat(prisma): " : "fix: ") + first : (engine ? "chore(prisma): " : "chore: ") + $"{st.Changes.Count} changes from Amoebius";
+            string head = first != null ? (engine ? "feat(amoebius): " : "fix: ") + first : (engine ? "chore(amoebius): " : "chore: ") + $"{st.Changes.Count} changes from Amoebius";
             var body = string.Join("\n", st.Changes.Take(12).Select(c => $"- {c.Path}"));
             return head + "\n\n" + body + (st.Changes.Count > 12 ? $"\n- ... and {st.Changes.Count - 12} more" : "");
         }
@@ -181,7 +181,7 @@ namespace CosmicShore.Launcher
             float fw = sb.X - sa.X - 36;
             ImGui.SetCursorScreenPos(sa + new Vector2(18, 40));
             ImGui.PushItemWidth(fw);
-            ImGui.InputTextWithHint("##gbranch", "branch, e.g. prisma/fix-score", ref _gitBranch, 120);
+            ImGui.InputTextWithHint("##gbranch", "branch, e.g. amoebius/fix-score", ref _gitBranch, 120);
             ImGui.PopItemWidth();
             Neon.Tooltip(SourceControl.ValidBranch(_gitBranch.Trim())
                 ? "The branch the commit goes on. A new name makes a new branch from where the workspace is."

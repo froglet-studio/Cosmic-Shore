@@ -5,6 +5,7 @@ namespace CosmicShore.Engine
     // Inspector/serialization marker attributes. Ported code keeps its annotations
     // verbatim; the engine's asset serializer and (future) inspector tooling read them.
 
+    // Named as Unity names it (not ...Attribute), so typeof(SerializeField) compiles; [SerializeField] still resolves.
     [AttributeUsage(AttributeTargets.Field)]
     public sealed class SerializeField : Attribute { }
 

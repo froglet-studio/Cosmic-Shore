@@ -144,7 +144,7 @@ namespace CosmicShore.Tests
                     Assert.Contains(path, NetStats.Command($"capture 3 {path}"));
                     for (int i = 0; i < 5; i++) NetDriver.EarlyUpdate();
                     var doc = JsonDocument.Parse(File.ReadAllText(path)).RootElement;
-                    Assert.Equal("prisma-net-capture", doc.GetProperty("kind").GetString());
+                    Assert.Equal("amoebius-net-capture", doc.GetProperty("kind").GetString());
                     Assert.Equal(3, doc.GetProperty("frames").GetArrayLength());
                     Assert.Equal("server", doc.GetProperty("summary").GetProperty("role").GetString());
                 }

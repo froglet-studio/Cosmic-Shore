@@ -70,6 +70,7 @@ namespace CosmicShore.Engine
             if (enabledRun) return;
             enabledRun = true;
             InvokeGuarded(hooks.OnEnable);
+            if (hooks.RectTransformDimensionsChange != null && enabledRun) RectDimensionWatch.Add(this);
             var loop = GameLoop.Current;
             loop.RegisterBehaviour(this);
             if (!started && !startQueued)
@@ -89,6 +90,7 @@ namespace CosmicShore.Engine
             if (s_traceDisable != null && GetType().Name.Contains(s_traceDisable, StringComparison.Ordinal))
                 Console.WriteLine($"[trace] OnDisable {GetType().Name} on '{name}' (activeInHierarchy={gameObject.activeInHierarchy}, destroyed={destroyedFlag})\n{Environment.StackTrace}");
             InvokeGuarded(hooks.OnDisable);
+            RectDimensionWatch.Remove(this);
             GameLoop.Current?.UnregisterBehaviour(this);
         }
 
@@ -275,6 +277,9 @@ namespace CosmicShore.Engine
         /// Exceptions in one behaviour's callback must not break the frame for everything
         /// else — same isolation contract as the original engine.
         /// </summary>
+        /// <summary>Delivers one hierarchy message (TransformMessages) with the same isolation as the lifecycle.</summary>
+        internal void SendMessageHook(Action<MonoBehaviour> hook) => InvokeGuarded(hook);
+
         void InvokeGuarded(Action<MonoBehaviour> hook)
         {
             if (hook is null) return;

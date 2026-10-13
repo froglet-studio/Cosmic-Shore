@@ -58,7 +58,7 @@ public class UnitySerializationRulesTests
         var s = Read("  publicField: 1.5\n  privateMarked: 2.5\n  <AutoLevel>k__BackingField: 0.75\n  oldName: 7\n");
         Assert.Equal(1.5f, s.publicField);
         Assert.Equal(2.5f, s.PrivateMarked);
-        Assert.Equal(0.75f, s.AutoLevel);        // was dropped: Prisma skipped every backing field
+        Assert.Equal(0.75f, s.AutoLevel);        // was dropped: Amoebius skipped every backing field
         Assert.Equal(7, s.renamed);
         Assert.True(s.afterDeserialize);          // was never called
     }

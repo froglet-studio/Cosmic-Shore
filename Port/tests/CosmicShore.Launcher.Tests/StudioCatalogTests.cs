@@ -162,7 +162,7 @@ namespace CosmicShore.Launcher.Tests
                 Catalog(ws);
                 Assert.Equal(ws, StudioCatalog.PickRoot(ws, true, clone));              // the workspace once it carries the studio
                 Assert.Equal(ws, StudioCatalog.PickRoot(ws, true, null));
-                // started from Unity (--clone): Unity's checkout and branch win over Amoebius's workspace (D33)
+                // started from Unity (--clone): Unity's checkout and branch win over Amoebius's workspace (D34)
                 Assert.Equal(clone, StudioCatalog.PickRoot(ws, true, clone, preferClone: true));
                 Assert.Equal(ws, StudioCatalog.PickRoot(ws, true, null, preferClone: true));
             }
@@ -209,7 +209,7 @@ namespace CosmicShore.Launcher.Tests
         {
             var u = StudioCatalog.PageUri(Path.Combine(Path.GetTempPath(), "Docs", "Artifacts", "x", "index.html"));
             Assert.StartsWith("file:///", u);
-            Assert.DoesNotContain("#", u);   // no host flag: the Vessel Studio is served (D33), never opened as a file
+            Assert.DoesNotContain("#", u);   // no host flag: the Vessel Studio is served (D34), never opened as a file
         }
 
         [Fact]
@@ -233,13 +233,12 @@ namespace CosmicShore.Launcher.Tests
           ""cardActions"": [
             { ""id"": ""open"", ""label"": ""Open studio \u2192"", ""on"": ""web,amoebius,unity"" },
             { ""id"": ""engine"", ""label"": ""PLAY IN ENGINE"", ""on"": ""amoebius,unity"", ""needs"": ""engineMode"" },
-            { ""id"": ""tune"", ""label"": ""TUNE IN UNITY"", ""on"": ""unity"", ""needs"": ""tuner"" },
             { ""id"": ""live"", ""label"": ""OPEN LIVE IN BROWSER"", ""on"": ""amoebius,unity"", ""needs"": ""mirror"" }
           ],
           ""studios"": [
             { ""id"": ""a"", ""name"": ""Alpha"", ""file"": ""a.html"", ""kind"": ""built"", ""chip"": ""built \u00b7 round 1"", ""summary"": ""s"",
               ""spec"": [ { ""k"": ""Cruise"", ""v"": ""60 u/s"" }, { ""k"": ""bad"" } ], ""preview"": ""previews/a.png"", ""accent"": ""jade"", ""engineMode"": ""SkimRace"" },
-            { ""id"": ""b"", ""name"": ""Beta"", ""file"": ""b.html"", ""kind"": ""design"", ""tuner"": true }
+            { ""id"": ""b"", ""name"": ""Beta"", ""file"": ""b.html"", ""kind"": ""design"" }
           ],
           ""fleet"": [ ""Manta"", ""Rhino"" ],
           ""fleetNote"": ""No studio yet.""
@@ -250,7 +249,7 @@ namespace CosmicShore.Launcher.Tests
         {
             var c = StudioCatalog.Parse(Cards);
             Assert.Equal("Pick a vessel.", c.Lede);
-            Assert.Equal(new[] { "open", "engine", "tune", "live" }, c.CardActions.Select(a => a.Id));
+            Assert.Equal(new[] { "open", "engine", "live" }, c.CardActions.Select(a => a.Id));
             Assert.Equal("Open studio →", c.CardActions[0].Label);
             Assert.Equal(new[] { "Manta", "Rhino" }, c.Fleet);
             Assert.Equal("No studio yet.", c.FleetNote);
@@ -259,16 +258,14 @@ namespace CosmicShore.Launcher.Tests
             Assert.Equal(new StudioCatalog.SpecRow("Cruise", "60 u/s"), Assert.Single(a.Spec));   // a row without its value is skipped
             Assert.Equal("previews/a.png", a.Preview);
             Assert.Equal("jade", a.Accent);
-            Assert.False(a.Tuner);
             Assert.Equal("design", c.Studios[1].Chip);   // no chip: the kind
-            Assert.True(c.Studios[1].Tuner);
         }
 
         [Fact]
-        public void Parse_WithoutCards_GivesTheD34Buttons()
+        public void Parse_WithoutCards_GivesTheD35Buttons()
         {
             var c = StudioCatalog.Parse(Good);
-            Assert.Equal(new[] { "open", "engine", "tune", "live" }, c.CardActions.Select(a => a.Id));
+            Assert.Equal(new[] { "open", "engine", "live" }, c.CardActions.Select(a => a.Id));
             Assert.Empty(c.Fleet);
         }
 
@@ -282,10 +279,7 @@ namespace CosmicShore.Launcher.Tests
             Assert.True(c.Applies(act["engine"], a, "amoebius").ok);
             var noMode = c.Applies(act["engine"], b, "amoebius");
             Assert.False(noMode.ok); Assert.Contains("no game mode", noMode.why);
-            var tune = c.Applies(act["tune"], b, "amoebius");
-            Assert.False(tune.ok); Assert.Contains("Unity", tune.why);   // Unity only: in its place, disabled, saying where
-            Assert.True(c.Applies(act["tune"], b, "unity").ok);
-            Assert.False(c.Applies(act["tune"], a, "unity").ok);         // no tuner for this vessel
+            Assert.DoesNotContain("tune", act.Keys);   // no Unity tuner (/vessel-studio D33)
             Assert.True(c.Applies(act["live"], a, "amoebius").ok);
             Assert.False(StudioCatalog.Parse(Good).Applies(act["live"], a, "amoebius").ok);   // no mirror
             Assert.False(c.Applies(act["engine"], a, "web").ok);
@@ -317,7 +311,7 @@ namespace CosmicShore.Launcher.Tests
         }
 
         /// <summary>
-        /// The shipped catalog's cards ARE the hub's (D34): the same studios in the same order, with the hub card's name, chip,
+        /// The shipped catalog's cards ARE the hub's (D35): the same studios in the same order, with the hub card's name, chip,
         /// summary, spec rows and open label, every preview baked, and the fleet. The page draws only the catalog, so this
         /// holds it to the hub (parity_gate.py checks the same from Python).
         /// </summary>
@@ -329,7 +323,7 @@ namespace CosmicShore.Launcher.Tests
             if (d == null) return;
             var dir = Path.Combine(d.FullName, StudioCatalog.RelativeDir);
             var json = File.ReadAllText(Path.Combine(dir, StudioCatalog.FileName));
-            if (!json.Contains("\"cardActions\"")) return;   // a branch from before the card fields (/vessel-studio D34)
+            if (!json.Contains("\"cardActions\"")) return;   // a branch from before the card fields (/vessel-studio D35)
             var cat = StudioCatalog.Load(d.FullName);
             string html = File.ReadAllText(Path.Combine(dir, "index.html"));
             static string Text(string s) => System.Text.RegularExpressions.Regex.Replace(System.Net.WebUtility.HtmlDecode(System.Text.RegularExpressions.Regex.Replace(s, "<[^>]+>", "")), @"\s+", " ").Trim();
