@@ -57,7 +57,7 @@ namespace CosmicShore.AssetTool
                 var rel = db.ProjectRelative(p);
                 string route, why, name = null;
                 var approx = new List<string>();
-                if (guid != null && MaterialFamilies.ByGuid.TryGetValue(guid, out var f)) { route = "family"; why = "hand-tuned family " + f.Kind; family++; }
+                if (guid != null && MaterialFamilies.ByGuid.TryGetValue(guid, out var f) && MaterialFamilies.WinsOverCompiled(f.Kind)) { route = "family"; why = "hand-tuned family " + f.Kind; family++; }
                 else if (p.EndsWith(".shadergraph", StringComparison.OrdinalIgnoreCase) && catalog.For(guid) is { } prog)
                 {
                     if (prog.Ok) { route = "compiled"; why = "Shader Graph compiler"; approx.AddRange(prog.Approximations); compiled++; }
@@ -98,11 +98,46 @@ namespace CosmicShore.AssetTool
             return unsupported.Count + unported.Count;
         }
 
-        /// <summary>Shaders a dedicated renderer draws (not a material program): TextMesh Pro's, the HyperSea skybox.</summary>
+        /// <summary>Shaders a dedicated renderer draws (not a material program): TextMesh Pro's, the HyperSea skybox, the translated UI shaders.</summary>
         static string OwnRenderer(string shaderName) =>
             shaderName == null ? null
             : shaderName.StartsWith("TextMeshPro/", StringComparison.Ordinal) ? "TextMesh Pro text renderer (Render/TmpTextRenderer.cs)"
             : shaderName == "CosmicShore/HyperSeaSkybox" ? "skybox pass (Render/SkyboxPass.cs, HyperSeaSkyboxGlsl.cs)"
+            : UiCustomShaders.ByName.ContainsKey(shaderName) ? "uGUI renderer, translated UI shader (Render/UiCustomShaders.cs)"
             : null;
+    }
+}
+
+namespace CosmicShore.AssetTool
+{
+    /// <summary>
+    /// <c>cs-asset shadergraph-glsl &lt;file.shadergraph|file.shader&gt;</c>: what the renderer draws a
+    /// shader with — the compiled graph (or hand translation) as GLSL against the template's
+    /// symbol contract, its render state and what it approximates. Read-only.
+    /// </summary>
+    static class ShaderGlsl
+    {
+        public static int Run(string path)
+        {
+            var root = AssetDatabase.FindProjectRoot() ?? throw new InvalidOperationException("no project root");
+            var db = new AssetDatabase(root);
+            var full = Path.GetFullPath(Path.IsPathRooted(path) ? path : Path.Combine(root, path));
+            var guid = db.GuidOf(full) ?? throw new InvalidOperationException($"{path}: not an asset with a .meta");
+            var prog = new ShaderGraphCatalog(db).For(guid);
+            if (prog == null) { Console.WriteLine($"{path}: no compiled program (not a graph, and no hand translation)"); return 1; }
+            Console.WriteLine($"// {prog.Name}  ({prog.AssetPath})");
+            Console.WriteLine($"// lit {prog.Lit}, transparent {prog.Transparent}, alpha mode {prog.AlphaMode}, alpha clip {prog.AlphaClip}, cull {prog.Cull}, zwrite {prog.ZWrite}, blend {prog.BlendSrc}/{prog.BlendDst}, queue {prog.Queue}");
+            foreach (var a in prog.Approximations) Console.WriteLine("// approximation: " + a);
+            if (!prog.Ok) { Console.WriteLine("// ERROR: " + prog.Error); return 1; }
+            Console.WriteLine("// ---- uniforms");
+            Console.Write(prog.Uniforms);
+            Console.WriteLine("// ---- functions");
+            Console.Write(prog.Functions);
+            Console.WriteLine("// ---- vertex");
+            Console.Write(prog.Vertex);
+            Console.WriteLine("// ---- fragment");
+            Console.Write(prog.Fragment);
+            return 0;
+        }
     }
 }

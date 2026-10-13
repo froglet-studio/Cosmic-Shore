@@ -6,10 +6,12 @@ using CosmicShore.Engine;
 namespace CosmicShore.Render
 {
     /// <summary>
-    /// The hand-tuned material families: the scene program's own translations of the hottest
-    /// shaders (prisms, vessels, crystals, spindles ...), keyed by the shader ASSET's guid so a
-    /// renamed graph keeps its family. These win over the Shader Graph compiler (the fast path);
-    /// everything else compiles from its graph, and a shader neither covers warns once.
+    /// The hand-tuned material families: the scene program's own translations of shaders, keyed by
+    /// the shader ASSET's guid so a renamed graph keeps its family. The prism graphs, the slice and
+    /// the forcefield win over the Shader Graph compiler (instanced, entity overrides, the clock
+    /// block: see <see cref="WinsOverCompiled"/>); the others (snow, cage, spindle, crystal, vessel)
+    /// are approximations kept only as the fallback when their graph does not compile, because a
+    /// compiled graph is the graph's own maths. A shader nothing covers warns once.
     /// </summary>
     public static class MaterialFamilies
     {
@@ -40,6 +42,10 @@ namespace CosmicShore.Render
             ["7056edc966584b3b99b6509922ebffe6"] = (Kind.PrismSlice, "Assets/_Graphics/Materials/Graphs/PrismSlice.shader"),
             ["0236447d5f06b0541a43756d85b5f222"] = (Kind.Vessel, "Assets/_Graphics/Materials/Graphs/VesselGraph.shadergraph"),
         };
+
+        /// <summary>True for the families the renderer draws even when the shader compiles: the prism graphs, the slice, the forcefield.</summary>
+        public static bool WinsOverCompiled(Kind kind)
+            => kind is Kind.BlockGraph or Kind.ExplodingBlockGraph or Kind.PrismSlice or Kind.Forcefield;
 
         /// <summary>The hand-tuned family of a shader, by guid (a shader with no asset has none).</summary>
         public static Kind For(Shader shader)
