@@ -682,6 +682,16 @@ slack), then `smashSpeed`, `explosionDiameter`, then `crack` / `reelSpinCap`. Ca
 
 ## Follow-ups
 
+### Refactor rows (2026-10-13 own-vessel ship pass, `cece/dazzling-hypatia-nmdhle` — rows only)
+
+| # | Kind | Row | Measured |
+|---|---|---|---|
+| T1 | debt created | `author_thresher_assets.py` imports `author_stoat_assets`'s document-model helpers, whose 11 error strings say "Stoat.prefab drifted" — a Thresher failure names the wrong file. Extract the helpers (split_docs, remove_instance, remove_gameobject_tree, dangling_refs, mb_header) into a shared `prefab_doc_lib.py` with a file-name parameter. | `grep -c "Stoat.prefab drifted" Tools/Build/author_stoat_assets.py` → 11 |
+| T2 | debt created | `ThresherHullForm` repeats `StoatHullForm`'s morph-set machinery (`MorphSet`, `BakeMorphSet`, `BlendPart`, `AssertSameTopology`) and flat-shaded primitives (`AddTri`, `AddQuad`, `AddOctahedron`) — the Scarab and Butterfly forms carry a third and fourth copy. One shared `ProceduralHullMorph` would hold them; the per-hull form keeps only its geometry and `ApplyElementExtreme`. | 152 of 587 non-blank lines of `ThresherHullForm.cs` are identical to `StoatHullForm.cs` modulo the class name (line-set comparison, 2026-10-13) |
+| T3 | debt walked past | Two Squirrel leftovers remain on `Thresher.prefab`: `DriftAudioController` and `ProximityBoostAudioController`, both `restrictToVesselClass: 1` / `targetVesselClass: 6` (Squirrel), so they disable themselves here; and the two `VesselTail` instances at (±4, 0, −12) authored for the Squirrel. The Stoat's stage 6 removed its pair of audio components; the Thresher's could go the same way, and its tails want sizing against the 55 u camera (`VESSEL_TAIL_AND_JETS.md` §3). | `grep -n "targetVesselClass" Thresher.prefab` → lines 1100, 1192, both 6 |
+| T4 | debt walked past | `MiniGameHUD.cs` ~984-993: a `<summary>` block for the goal-stack method sits directly above `EnsureSpectatorBadge`'s own `<summary>`, so the badge method carries two and the goal-stack method none (pre-existing; not in this branch's diff). | `/// </summary>` followed by `/// <summary>` at line 993 |
+| T5 | tool | `check_generated_assets.py` reports a guid-keeping rename (`Thresher_HeavyIron.png` → `Thresher_MassMode.png`) as a `[deleted]` reference. Resolve the referenced guid to its CURRENT owner before calling it deleted. | the audit's one finding on this branch (asset-surgery trap, 2026-10-13) |
+
 ### Refactor rows (2026-10-13 analog-trigger ship pass, `cece/zealous-johnson-gopp6t` — rows only)
 
 - **Two input models live side by side in the solver (debt CREATED, deliberate).** `analogTriggers` is on
