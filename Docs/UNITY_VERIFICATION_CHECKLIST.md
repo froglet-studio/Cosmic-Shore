@@ -65,6 +65,98 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Serpent Mass: Seed Wall + Lockdown (`claude/serpent-mass-seed-wall`, 2026-10-09)
+
+**Landed** (`_Scripts/Controller/Vessel/R_VesselActions/SERPENT_SEED_WALL.md`): the stance and cloak
+seed now grows `SerpentWallAssembler`'s lattice (2:1 bricks, checkerboard orientation, pitch 5 x
+short so shielded octahedra - 3x the box's half-extents - point long vertex at short vertex with half a short side of air), Mass-scaled and snapshotted at
+placement. The wall steals from its edge (`SerpentWallStealPlanner`), the cloak's super-shielded
+seed outlives the cloak, and the stance's plain-shielded seed grows only while the Serpent stays
+stopped. Any crystal beams to every active wall's seed (`SerpentWallShieldByCrystalEffectSO`) and
+ripples a shield through each wall; a Mass-5 wall seals its holes with danger panels (it twisted first and
+panelled half of them, until the fourth playtest). Serpent map Mass row filled; HUD Mass slot bound to a placeholder icon.
+
+**Garrett's first playtest (2026-10-10):** the wall stopped after barely any growth and its prisms
+piled into each other. Cause: the pitch was fitted to the BOX (1.5 x short) but a shield draws 3x
+the box, and the Serpent trail arrived pre-shielded, so every brick was an oversized octahedron
+packed into one clump. Fixed: pitch fitted to the shield (13.5 at rest), trail no longer shielded
+(`Serpent.prefab` `shielded` 0), and a site's recruit reach grows with its distance from the seed
+so outer rings still find trail to pull. Re-test steps 1, 4 and 6.
+
+**Garrett's second playtest (2026-10-10):** spacing much better, but shielded bricks still touched a
+little, and the danger panels went into the holes that CLOSED. Causes: the pitch made shield
+vertices meet exactly (and the super-shielded seed's stellation, which covers the whole 3x box
+face-on, cut into its neighbours once twisted); and the assembler signed its twist independently of
+the lattice maths, so the bricks turned counter-clockwise while the maths that picks the panel
+cells assumed clockwise. Fixed: `SerpentWallLattice.ShieldGap` adds half a short side (pitch 15 at
+rest), the twist is capped at 25 degrees (`MaxTwistDegrees`, the range that gap clears), and bricks
+and panels turn only through `SerpentWallLattice.BrickRotation` / `PanelRotation`, which edit-mode
+tests pin against the maths. Re-test steps 4 and 6.
+
+**Garrett's third playtest (2026-10-10):** spacing good, but with Mass upgraded a crystal brought no
+twist and no panels; walls stopped growing; the cloaked Serpent and its trail were invisible to
+their own pilot; the illusion vanished instead of becoming the seed; some wall prisms used an old
+model. Causes and fixes: Lockdown was snapshotted at placement and only omni crystals answered, so
+it is now read from the replicated Mass unlock bit at crystal time and every crystal (omni and all
+four elements) re-shields; growth was capped at 50 and stopped when the stance or cloak ended, so
+it now runs for the seed's whole life, retries empty sites and refills shot-out ones (stable
+`GrowthOrder` prefix); the cloak's `IsLocalUser` was hard-wired true, so the pilot now sees a
+translucent hull and a dimmed trail while others see neither; the illusion now collapses into the
+seed and the seed's stellation blooms; `Serpent Prism.prefab` and `Prism Interactive.prefab` were
+on the built-in cube and now use the 24-face prism mesh. Re-test steps 1, 2, 6 and 8.
+
+**Garrett's fourth playtest (2026-10-13):** drop the Lockdown twist and put same-size danger panels
+in every square hole, with a crack of clearance to the shielded bricks; and the cloak's ghost looked
+cheap: too dark, and it came back with a cut. Fixed: the twist is gone (`lockTwistDegrees` /
+`lockTwistSeconds` retired, `SerpentWallLattice` lost its twist maths); `SerpentWallLattice.CellPanel`
+sizes one panel for every hole, tilted so its sides run parallel to the four shield edges, shrunk by
+`lockPanelClearance` (0.25 x short) so the crack is even all round (edit-mode tests check it against
+a brute-force search). The pilot's hull now wears a new additive Fresnel shader
+(`_Graphics/Materials/Graphs/CloakGhost.shader` + `CloakGhost.mat`, domain-tinted at runtime) instead
+of a 30%-alpha dark-blue Lit material; the trail fades through the prism dither (BlockGraph `_Alpha`)
+to 0.4 for the pilot and 0 for everyone else instead of being darkened; the cloak fades in over
+0.4 s from a flash, and the reveal (0.7 s) builds a flash, swaps the hull back under it, fades a
+ghost glow off the hull and fills the trail back in. `prismCloakTransparent` / `prismCloakOpaque` /
+`pilotGhostAlpha` / `pilotTrailShade` retired. The shader has never been compiled: check the
+console for shader errors first. Re-test steps 1, 2 and 6.
+
+**Garrett's follow-up (2026-10-13):** restore the old wall's steal-from-the-edge instead of a uniform
+disc; Space sets the steal radius; the Space upgrade lets it steal shielded prisms; make it a
+performant routine that schedules a lot of theft with infrequent updates. Done:
+`SerpentWallStealPlanner` (pure, edit-mode tested) plans each sweep (every 0.3 s): one
+`PrismSpatialIndex.QuerySphere`, candidates bucketed by lattice cell, up to 4 waves of edge-site to
+nearest-prism matching, up to 48 claims. Only in-flight prisms are steered per frame. Steal radius
+= 40 x Mass x live Space multiplier (x2 at Space 10); opponents' shielded prisms only with
+`IsUpgradeActive(Space)` (Deep Focus). `siteClaimInterval` and `SerpentWallLattice.GrowthOrder`
+retired; `recruitRadius` renamed `stealRadius` (FormerlySerializedAs). Re-test step 1.
+
+**Garrett's stance follow-up (2026-10-13):** stopping must not lay a super-shielded seed (that is the
+cloak's alone); the stance's wall steals until the Serpent flies again, then behaves like a wall
+whose super-shield was destroyed. Done: the stance calls `StartSeed(..., heldByStance: true)`, which
+applies the new `stanceShieldOnSeed` (Shield; a SuperShield setting is clamped to Shield) and holds
+the wall; `SerpentWallAssembler.IsActive` is `seed alive && (held || super-shielded)`; leaving the
+stance, the turn ending or the executor's `End` calls `ReleaseHeldWall`. A plain shield no longer
+lands on an already super-shielded seed. Re-test steps 1 and 2.
+
+**Ship pass (2026-10-13):** an ended wall now releases shot-out bricks on its sweep cadence; a
+DESTROYED brick reopens its site (Unity's `if (prism)` had skipped it); a wall whose vessel is gone
+stops sweeping instead of throwing every 0.3 s; Lockdown reuses one cell set per landing. Re-test:
+despawn a Serpent with a cloak wall standing and check the console stays clean. Open rows:
+`Docs/ElementalAbilitySystem/BACKLOG.md`, "From the Serpent Seed Wall branch" (the stance wall is
+built only on the owner and server).
+
+**Not opened in Unity** (no editor in the session). Offline: see the PR for the `unity_refcompile`
+result.
+
+**Verify in editor:** the eight steps in SERPENT_SEED_WALL.md § "Editor checks".
+
+**First-pass tuning:** `SeedWallAction.asset` - brick 3 x 6 x 0.5, Mass x2 at 10, a steal sweep
+every 0.3 s (up to 48 claims in 4 waves), steal radius 40 (x2 at Space 10), pull 20 / 6 u/s, ripple 0.08 s per ring, panel clearance 0.25 x short,
+panel thickness 0.15. `CloakSeedWallAction.asset` - pilot trail alpha 0.4, fade in 0.4 s, reveal 0.7 s,
+flare 1.5, illusion morph 0.6 s.
+
+---
+
 ### 🔴 Thresher round 5: smooth spin entry/exit, doubled sight zoom (`cece/wonderful-hypatia-4b323s`, 2026-10-13) — NOT EDITOR-VERIFIED
 
 **Landed** (`THRESHER.md` §4 Lock, §5a): (1) the camera's launch-view entry and exit are eased on the

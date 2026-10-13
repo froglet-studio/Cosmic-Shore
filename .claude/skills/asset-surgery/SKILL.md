@@ -1088,6 +1088,18 @@ references, m_Script classes). What cost time on the first runs (2026-10-06 to 1
   `run.sh` just populated that folder — it looks for `csc.dll` under `$DOTNET_ROOT`, not under the
   cache. Export the same `DOTNET_ROOT`/`PATH`/`TMPDIR` you gave `run.sh`. It also audits only what
   is COMMITTED since the base (`audited 0 added + 0 modified` on an uncommitted tree is not a pass).
+- **In a SPARSE checkout, `check_generated_assets.py`'s `[guid]` findings are mostly the checkout,
+  not the asset.** `build_guid_index` walks `Assets/` on DISK, so every `.meta` outside the sparse
+  cone is invisible and a reference to it reads `resolves to no asset in Assets/`. A package script
+  that a generator ADDED is flagged the same way even though the docstring says package references
+  are "counted, not judged": the new `UnityEngine.UI.Image` components on `SerpentHUDVariant.prefab`
+  (`m_Script` guid `fe87c0e1cc204ed48ad3b37840f39efc`, the ugui Image) came back as findings, while
+  the 14 Images already in that prefab were suppressed as pre-existing. Resolve each `[guid]` line
+  before calling it a defect: `git grep -l <guid> HEAD -- '*.meta'` finds an asset the cone hides
+  (it found `_Models/Testing/Prism.asset`, guid `8f4a329b…`), and a guid already used elsewhere in
+  the same file as an `m_Script` is a package script. Measured 2026-10-13 on
+  `claude/serpent-mass-seed-wall`: 3 findings, all 3 false. The fix belongs in the tool (index guids
+  from `git ls-tree` plus the refcompile package cache), not in a habit.
 - **`check_generated_assets.py` reports only findings that are NEW against the base's copy of the
   asset — so a negative control must inject a defect the BASE never had.** Re-adding a key you just
   removed (a retired field's `minExplosionScale: 60`, still present in the base asset) is suppressed
