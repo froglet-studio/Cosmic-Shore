@@ -502,8 +502,13 @@ production iOS id, ARM64-only Android, and bring the two Gradle commits across.
 - **Under-13 players keep the social features** (COPPA).
 - **Account deletion exists only as a web link.**
 - **The privacy, support and deletion pages are not live yet.**
-- **Unity Engine diagnostics is on.**
-- **`com.unity.mobile.notifications` is installed and unused.**
+- ~~**Unity Engine diagnostics is on.**~~ Off 2026-10-13: `UnityConnectSettings.asset`
+  `InsightsSettings.m_EngineDiagnosticsEnabled` is 0. The consent gate (`CrashReportingService`)
+  never covered it. Cloud Diagnostics crash reporting is unchanged.
+- ~~**`com.unity.mobile.notifications` is installed and unused.**~~ Removed 2026-10-13, along with
+  `com.unity.feature.mobile`, the other way it came in. Android Logcat stays as a direct dependency
+  at 1.4.7, the version the feature resolved. `ProjectSettings/NotificationsSettings.asset` and the
+  old `Assets/Unity Assests/Editor/com.unity.mobile.notifications/` settings asset are deleted.
 - **iPad:**
   - ~~At 4:3, the match-height canvases lose a quarter of their width.~~ Fixed 2026-10-12: the 13
     without `AdaptiveCanvasScaler` use Expand. That is identical at 16:9 and wider, and matches
@@ -520,8 +525,10 @@ production iOS id, ARM64-only Android, and bring the two Gradle commits across.
 - **`IAPManager` is a dormant web checkout.**
   - What it is: `Assets/_Scripts/System/IAPManager.cs` sends players to a browser checkout.
     Commerce is switched off (`CommerceAvailability.asset`).
-  - Why it matters: on mobile it would break Apple guideline 3.1.1 and Play's billing policy the
-    day someone switched it on.
+  - Why it mattered: on mobile it would break Apple guideline 3.1.1 and Play's billing policy the
+    day someone switched it on. Fenced 2026-10-13: the browser checkout opens only in
+    `UNITY_STANDALONE` builds. iOS and Android builds refuse it at `OpenCheckout` whatever
+    `CommerceAvailability` says (`CommerceDeScopeTests.CheckoutIsFencedToDesktopBuilds`).
   - Before deleting it: ask whether the desktop or Steam build still wants it. Re-grep its callers
     at that time; don't rely on an old claim that it's unused.
 - **The TestFlight upload credentials need locking down (flagged 2026-10-12).** Any repo writer

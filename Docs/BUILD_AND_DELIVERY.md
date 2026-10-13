@@ -132,7 +132,7 @@ panel already exposes:
   an individual.
 
 Project settings changed to enable it: `enableCrashReportAPI: 1` and
-`CrashReportingSettings.m_Enabled: 1`.
+`CrashReportingSettings.m_EnableCloudDiagnosticsReporting: 1`. Unity Engine Diagnostics (`InsightsSettings.m_EngineDiagnosticsEnabled`) is off since 2026-10-13: it is project-level and the consent gate cannot cover it.
 
 > **In-editor check required:** confirm Cloud Diagnostics is enabled for the project in the Unity
 > Dashboard, then verify a forced exception appears in the dashboard from a playtest build.

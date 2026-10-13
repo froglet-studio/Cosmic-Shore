@@ -50,8 +50,8 @@ locations is a legitimate goal but it is a *package configuration* change, not a
 through the package's own settings UI and let it rewrite the references, or leave it alone.
 
 **`Assets/Unity Assests/` is a typo, and renaming it is the single riskiest move available.** It holds
-`TextMesh Pro/` (two `Resources/` folders, fleet-wide), `Adaptive Performance/` (above) and
-`Editor/com.unity.mobile.notifications/`. A rename is safe *for guid references* if the `.meta` files
+`TextMesh Pro/` (two `Resources/` folders, fleet-wide) and `Adaptive Performance/` (above). A
+rename is safe *for guid references* if the `.meta` files
 move with it, and **unsafe for anything that resolves by path** — the two TMP `Resources/` folders
 are exactly that. `Docs/LAUNCH_BLOCKER_INDEX.md` §C1 already records that `TMP Settings.asset`
 measures **zero** guid references and every text component in the game needs it, because TMP loads it
