@@ -325,6 +325,13 @@ shell material with the lab's stateless CPU depth model. Now:
     into the stage's.
   - So the three landed wedges extrude exactly as the omni's triangle prism does, and the shader's map is
     affine per plate.
+  - The game meshes carry their thickness (Mass 6.25, omni 8, baked by `thicken()` in
+    `author_omni_crystal_triangles.py`; the depth materials ship `_Thickness 1`). The combine morphs the THIN
+    prisms the art's plates are, so the generator takes the baked thickness back out of each mesh (gated: the
+    thin triangles must land on the art omni within 1e-4, and a wrong thickness is refused) and writes it to
+    the data (`depth.massThickness`, `depth.omniThickness`). The player multiplies it into the material's
+    `_Thickness` for the morphing Mass prisms only; the triangle renderer draws its thick mesh as authored.
+    Stretching about the top face composes by multiplying, so the landed Mass draws exactly the thick mesh.
 
 **Picture quality (revision 2).** The first build rendered 1280 px along the picture's long edge and stretched
 it over the screen with no anti-aliasing: low resolution and jagged. It now renders at the picture's

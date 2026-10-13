@@ -47,10 +47,11 @@ namespace CosmicShore.Gameplay
         // its own properties - a write a material has no property for is skipped:
         //   CHARGE  (ChargeCrystal)            tint _Dull/_BrightCrystalColor, dissolve _opacity,
         //                                      discharge _ArcIntensity/_ArcDuty.
-        //   MASS    (OmniShepardFresnelShader) colour _BrightColor/_DarkColor, dissolve _Opacity, and a
-        //                                      VERTEX scale band (_Start/_Stop/_ScaleDistance) that
-        //                                      scales the mesh about its object origin - the fusion's
-        //                                      origin is the hull, so the band is frozen (Adopt).
+        //   MASS    (OmniDepthPrismShader)     colour _BrightColor/_DarkColor, dissolve _Opacity, and a
+        //                                      per-plate column pose (_DepthState) read from TEXCOORD2,
+        //                                      which the fusion's mesh reuses for discharge heights - so
+        //                                      the faces draw UNDRIVEN (_DepthDriven 0), where the vertex
+        //                                      stage is the identity (Adopt).
         //   SPACE / TIME (SpreadFresnelShader) colour _BrightColor/_DarkColor, OPAQUE - no dissolve
         //                                      property, so the faces shrink into the skin instead.
         static readonly int OpacityId = Shader.PropertyToID("_opacity");
@@ -61,13 +62,7 @@ namespace CosmicShore.Gameplay
         static readonly int FresnelDarkId = Shader.PropertyToID("_DarkColor");
         static readonly int ArcIntensityId = Shader.PropertyToID("_ArcIntensity");
         static readonly int ArcDutyId = Shader.PropertyToID("_ArcDuty");
-        static readonly int BandStartId = Shader.PropertyToID("_Start");
-        static readonly int BandStopId = Shader.PropertyToID("_Stop");
-        static readonly int BandScaleId = Shader.PropertyToID("_ScaleDistance");
-
-        /// <summary>Where a Shepard band is frozen for a fusion: alpha = (1.05 - s), so 0.05 draws the
-        /// faces at full opacity, and the dissolve then rides <c>_Opacity</c>.</summary>
-        const float FrozenShepardBand = 0.05f;
+        static readonly int DepthDrivenId = Shader.PropertyToID("_DepthDriven");
 
         /// <summary>Levels each fan triangle of a face is cut into. 3 gives a pentagon 31 points and
         /// 45 triangles; every point still lands on the Squirrel's skin (measured). Part of a bake's
@@ -161,7 +156,7 @@ namespace CosmicShore.Gameplay
         Vector3 _crystalCentreStart;        // world, at collection
         Vector3 _carry;                     // world offset applied to every start this frame
 
-        Renderer[] _companions;             // crystal shells fading in place, then hidden
+        Renderer[] _companions;             // the crystal's overlays fading in place, then hidden
         MaterialPropertyBlock[] _companionBlocks;
         int[] _companionOpacityId;
         float[] _companionStartOpacity;
@@ -343,14 +338,14 @@ namespace CosmicShore.Gameplay
         ///
         ///   CHARGE - a MeshRenderer whose filter holds <see cref="CrystalEdgeArcs"/>' twin on an
         ///            instance; on a prefab the baker hands back the same cached twin.
-        ///   MASS   - four nested MeshRenderer shells of ONE mesh. Three ride a Shepard band that
-        ///            SHRINKS them (<c>_ScaleDistance</c> on); the outer one holds its size. The outer
-        ///            one is the body that flies (<see cref="ShellRank"/>); the other three fade in
-        ///            place (<see cref="IsCompanionShell"/>).
+        ///   MASS   - ONE MeshRenderer of 60 depth prisms (<c>MassCrystalPrisms.asset</c>, thickness baked
+        ///            in) on <c>OmniDepthPrismShader</c>; the fusion draws it undriven (see <see cref="Adopt"/>).
         ///   SPACE  - a SkinnedMeshRenderer spinning its blocks on blend shapes.
         ///   TIME   - a SkinnedMeshRenderer on a CHILD of the model, flipping its blocks on bones.
         ///   OMNI   - a SkinnedMeshRenderer whose rhombi were given bones at runtime; it draws
         ///            <see cref="RhombusSkinBaker"/>'s twin, read here as the FBX mesh it was skinned from.
+        ///            Its depth prisms (slot 1) do not fly: they fade in place (<see cref="IsCompanionOverlay"/>).
+        /// The first model with a renderer flies.
         /// </summary>
         public static bool TryResolveCrystal(Crystal crystal, out Mesh drawn, out Mesh source, out int plateCorners,
                                              out GameObject model, out Renderer renderer)
@@ -363,7 +358,6 @@ namespace CosmicShore.Gameplay
             if (models == null) return false;
 
             GameObject best = null;
-            int bestRank = int.MinValue;
             foreach (var data in models)
             {
                 var candidate = data?.model;
@@ -379,11 +373,9 @@ namespace CosmicShore.Gameplay
                 }
                 if (!candidateRenderer) continue;
 
-                int rank = ShellRank(candidateRenderer);
-                if (rank <= bestRank) continue;   // ties keep the first
                 best = candidate;
-                bestRank = rank;
                 renderer = candidateRenderer;
+                break;
             }
             if (!best) return false;
 
@@ -409,22 +401,9 @@ namespace CosmicShore.Gameplay
             return source != null;
         }
 
-        /// <summary>
-        /// Which crystal model flies: one whose shader holds its size (a Shepard shell with
-        /// <c>_ScaleDistance</c> off - the Mass crystal's big outer shell) beats an ordinary model,
-        /// which beats a shell whose band shrinks it. Every Mass shell is the same mesh, so the pick
-        /// never changes what a bake was solved against.
-        /// </summary>
-        static int ShellRank(Renderer renderer)
-        {
-            var material = renderer ? renderer.sharedMaterial : null;
-            if (!material || !material.HasProperty(BandScaleId)) return 1;
-            return material.GetFloat(BandScaleId) > 0.5f ? 0 : 2;
-        }
-
-        /// <summary>A crystal renderer that is NOT the one flying but can fade where it is - the
-        /// Mass crystal's three shrinking shells.</summary>
-        static bool IsCompanionShell(Renderer renderer, Renderer flying)
+        /// <summary>A crystal renderer that is NOT the one flying but can fade where it is - the omni's
+        /// depth prisms (their <c>_Opacity</c> dissolve) while its body flies.</summary>
+        static bool IsCompanionOverlay(Renderer renderer, Renderer flying)
         {
             if (!renderer || renderer == flying || !renderer.enabled) return false;
             var material = renderer.sharedMaterial;
@@ -806,13 +785,13 @@ namespace CosmicShore.Gameplay
 
                     // The crystal is now drawn by the fusion. It stays alive (hidden) so its owner can
                     // retire it when the faces are down - the pickup sound and the cell bookkeeping are its own.
-                    // Its other fadeable shells (the Mass crystal's three shrinking ones) stay where they are
+                    // Its other fadeable overlays (the omni's depth prisms) stay where they are
                     // and fade out while the faces fly; the tint block is the fusion's from here on.
                     crystal.BeginCaptureVisual();
                     var companions = new List<Renderer>();
                     foreach (var r in crystal.GetComponentsInChildren<Renderer>(true))
                     {
-                        if (IsCompanionShell(r, renderer)) companions.Add(r);
+                        if (IsCompanionOverlay(r, renderer)) companions.Add(r);
                         else if (r.enabled) { r.enabled = false; hidden.Add(r); }
                     }
                     fusion.AdoptCompanions(companions);
@@ -834,7 +813,7 @@ namespace CosmicShore.Gameplay
                 catch (Exception e)
                 {
                     foreach (var r in hidden) if (r) r.enabled = true;
-                    // The shells it had started fading are the crystal's again, not the fusion's to hide.
+                    // The overlays it had started fading are the crystal's again, not the fusion's to hide.
                     if (go && go.TryGetComponent<CrystalHullFusion>(out var failed)) failed._companions = null;
                     if (go) Destroy(go);
                     ReportFailure($"begin:{vesselStatus.VesselType}:{entry.element}",
@@ -874,14 +853,7 @@ namespace CosmicShore.Gameplay
             var material = source.sharedMaterial;
             bool Has(int id) => material && material.HasProperty(id);
 
-            // The Mass shells' band scales the mesh about the object origin every frame; this object's
-            // origin is the hull, so a live band would fling the faces across the sky. Pin it.
-            if (Has(BandScaleId)) _block.SetFloat(BandScaleId, 0f);
-            if (Has(BandStartId) && Has(BandStopId))
-            {
-                _block.SetFloat(BandStartId, FrozenShepardBand);
-                _block.SetFloat(BandStopId, FrozenShepardBand);
-            }
+            Undrive(_block, material);
 
             bool crystalPair = Has(DullId) && Has(BrightId);
             bool fresnelPair = !crystalPair && Has(FresnelBrightId) && Has(FresnelDarkId);
@@ -897,6 +869,19 @@ namespace CosmicShore.Gameplay
             _hasArcDuty = material && material.HasProperty(ArcDutyId);
             if (_hasArcIntensity) _baseArcIntensity = material.GetFloat(ArcIntensityId);
             if (_hasArcDuty) _baseArcDuty = material.GetFloat(ArcDutyId);
+        }
+
+        /// <summary>
+        /// A depth-prism crystal (the Mass) arrives with <see cref="CrystalDepthPrisms"/>' block: <c>_DepthDriven</c> 1
+        /// and its columns' state. Driven, <c>OmniDepthPrismShader</c> rebuilds every vertex from its plate's rest
+        /// centre in TEXCOORD2 - which the fusion's mesh holds discharge heights in, with the vertices moved onto
+        /// the hull - so a driven face draws tens of radii from where it was put (or NaN, on filler). Undriven the
+        /// vertex stage is the identity (the thickness is baked into the mesh), so every face draws where
+        /// <see cref="Frame"/> writes it. <c>Tools/Build/omni_depth_prism_shader_parity.py</c> proves both halves.
+        /// </summary>
+        internal static void Undrive(MaterialPropertyBlock block, Material material)
+        {
+            if (material && material.HasProperty(DepthDrivenId)) block.SetFloat(DepthDrivenId, 0f);
         }
 
         void AdoptCompanions(List<Renderer> companions)
@@ -917,7 +902,7 @@ namespace CosmicShore.Gameplay
             }
         }
 
-        /// <summary>The companion shells fade over the approach, the peel and the flight - gone by
+        /// <summary>The companion overlays fade over the approach, the peel and the flight - gone by
         /// the time the faces are down, which is when the crystal itself is retired.</summary>
         void FadeCompanions(float elapsed)
         {
@@ -926,11 +911,11 @@ namespace CosmicShore.Gameplay
             float keep = 1f - CrystalHullFusionConfigSO.Smooth(span > 0f ? elapsed / span : 1f);
             for (int c = 0; c < _companions.Length; c++)
             {
-                var shell = _companions[c];
-                if (!shell || !shell.enabled) continue;
-                if (keep <= 0f) { shell.enabled = false; continue; }
+                var overlay = _companions[c];
+                if (!overlay || !overlay.enabled) continue;
+                if (keep <= 0f) { overlay.enabled = false; continue; }
                 _companionBlocks[c].SetFloat(_companionOpacityId[c], _companionStartOpacity[c] * keep);
-                shell.SetPropertyBlock(_companionBlocks[c]);
+                overlay.SetPropertyBlock(_companionBlocks[c]);
             }
         }
 
@@ -1417,10 +1402,10 @@ namespace CosmicShore.Gameplay
             float opacity = phase == CrystalHullFusionConfigSO.Phase.Dissolve ? 1f - CrystalHullFusionConfigSO.EaseIn(u) : 1f;
 
             if (!_renderer) return;
-            // The block is OURS and persistent: Adopt seeded it with the crystal's own block and the
-            // frozen Shepard band. Re-reading it from the renderer each frame (as this once did) read
-            // back an EMPTY block on frame 0 and threw the freeze away - the Mass faces then rode a
-            // live band that scaled them about the hull's origin, and "shrank to a point".
+            // The block is OURS and persistent: Adopt seeded it with the crystal's own block and forced it
+            // undriven. Re-reading it from the renderer each frame (as this once did) read back an EMPTY
+            // block on frame 0 and threw Adopt's overrides away - the Mass faces then rode a vertex stage
+            // that moved them about the hull's origin, and "shrank to a point".
             if (_hasTint)
             {
                 Color dull = _startDull, bright = _startBright;
@@ -1444,10 +1429,10 @@ namespace CosmicShore.Gameplay
         void OnDestroy()
         {
             if (_mesh) Destroy(_mesh);
-            // A fusion cut short must not leave a half-faded shell hanging where the crystal was.
+            // A fusion cut short must not leave a half-faded overlay hanging where the crystal was.
             if (_companions != null)
-                foreach (var shell in _companions)
-                    if (shell) shell.enabled = false;
+                foreach (var overlay in _companions)
+                    if (overlay) overlay.enabled = false;
         }
 
         /// <summary>A fault is an ERROR, loud, once per key - with the stack, which is what finds it.</summary>

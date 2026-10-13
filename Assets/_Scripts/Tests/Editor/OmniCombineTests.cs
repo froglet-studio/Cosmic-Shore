@@ -63,17 +63,30 @@ namespace CosmicShore.Tests
         [Test]
         public void TheGamesTrianglePrismsSitOnTheOmnisTriangles()
         {
-            // The converter draws OmniCrystalTriangles.asset turned by the data's rotation; every corner must land on a
-            // corner of the omni's triangle plates (the art file's omni), through the very quaternion the player builds.
+            // The converter draws OmniCrystalTriangles.asset turned by the data's rotation; with its baked thickness
+            // taken back out (the inverse of the shader's _Thickness term, about the material's top face), every
+            // corner must land on a corner of the omni's triangle plates (the art file's omni), through the very
+            // quaternion the player builds. That thin prism is what the Mass crystal morphs into before hand-off.
             var data = LoadData();
-            var mesh = AssetDatabase.LoadAssetAtPath<Mesh>("Assets/_Models/OmniCrystalTriangles.asset");
+            var config = AssetDatabase.LoadAssetAtPath<OmniCombineConfigSO>(ConfigPath);
+            Assert.IsNotNull(config, $"{ConfigPath}: run Tools/Build/author_elemental_converter.py");
+            var mesh = config.OmniTrianglesMesh;
             Assert.IsNotNull(mesh);
+            float thickness = data.depth.omniThickness, top = config.OmniTrianglesMaterial.GetFloat("_TopHeight");
+            Assert.Greater(thickness, 0f);
+            var plates = new System.Collections.Generic.List<Vector4>();
+            mesh.GetUVs(2, plates);
+            var vertices = mesh.vertices;
             var turn = OmniCombinePlayer.TriangleRotation(data.omniTriangleRotation);
             var omni = data.omni.verts;
             float worst = 0f;
-            foreach (var v in mesh.vertices)
+            for (int i = 0; i < vertices.Length; i++)
             {
-                var p = turn * v;
+                var centre = (Vector3)plates[i];
+                var dir = centre.normalized;
+                float s = Vector3.Dot(vertices[i] - centre, dir);
+                float thin = (s + top * (thickness - 1f)) / thickness;
+                var p = turn * (vertices[i] - dir * ((thin - top) * (thickness - 1f)));
                 float nearest = float.MaxValue;
                 for (int j = 0; j < omni.Length; j += 3)
                 {

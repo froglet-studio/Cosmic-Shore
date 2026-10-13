@@ -35,6 +35,8 @@ import numpy as np
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import omni_combine_lab_assets as lab  # noqa: E402
+import author_mass_crystal_look as mass_look  # noqa: E402
+import author_omni_crystal_triangles as omni_tris  # noqa: E402
 
 ROOT = lab.ROOT
 FOLDER = os.path.join(ROOT, "Assets", "_SO_Assets", "Environment", "OmniCombine")
@@ -50,6 +52,12 @@ FRAMES = {
 # the game draws it with, and the omni's triangles as the game's depth prisms.
 MASS_MESH = os.path.join(ROOT, "Assets", "_Models", "MassCrystalPrisms.asset")
 TRI_MESH = os.path.join(ROOT, "Assets", "_Models", "OmniCrystalTriangles.asset")
+MATERIALS = os.path.join(ROOT, "Assets", "_Graphics", "Materials", "CrystalMaterials")
+# The prism meshes carry their thickness, stretched inward from the top face (thicken() in
+# author_omni_crystal_triangles.py); the combine morphs the THIN prisms the art file's plates are, and the
+# converter thickens them in the shader. Each mesh: (its thickness, the material carrying its raw top height).
+PRISMS = {MASS_MESH: (mass_look.MASS_DEPTH_THICKNESS, os.path.join(MATERIALS, "MassDepthPrisms.mat")),
+          TRI_MESH: (omni_tris.DEPTH_THICKNESS, os.path.join(MATERIALS, "OmniDepthPrisms.mat"))}
 ALIGN_FIT = 2e-3      # plate-centre directions, game mesh vs the art file's, after the best rotation
 TRI_FIT = 1e-4        # every omni-triangle corner, game mesh vs the art omni, after its rotation
 TWIST_FIT = 8.0       # deg: the best rotation about a site axis vs the baked twist (Charge 0.02, Mass 5.5)
@@ -103,6 +111,33 @@ def read_mesh(path):
     return a[:, 0:3], a[:, 12:16], idx
 
 
+def material_float(path, name):
+    m = re.search(rf"- {name}: (-?[0-9.e+-]+)", open(path, encoding="utf-8").read())
+    if not m:
+        raise SystemExit(f"{os.path.relpath(path, ROOT)} has no {name}")
+    return float(m.group(1))
+
+
+def read_prisms(path):
+    """read_mesh, with the baked thickness taken back out: each vertex returned to where the THIN prism has it,
+    the inverse of thicken() (s' - top = T (s - top) along the plate's column, s = the vertex's height above its
+    plate centre). The top face is fixed by thicken(), so the mesh's highest corner must sit at the material's
+    _TopHeight - which proves the thickness and top height are the ones the mesh was baked with."""
+    pos, uv2, idx = read_mesh(path)
+    thickness, material = PRISMS[path]
+    top = material_float(material, "_TopHeight")
+    if material_float(material, "_Thickness") != 1:
+        raise SystemExit(f"{os.path.relpath(material, ROOT)}: expected _Thickness 1 (the thickness lives in the mesh)")
+    c = uv2[:, :3]
+    d = c / np.linalg.norm(c, axis=1)[:, None]
+    s = np.einsum("ij,ij->i", pos - c, d)
+    if abs(s.max() - top) > 1e-4:
+        raise SystemExit(f"{os.path.relpath(path, ROOT)}: its top face sits {s.max():.6f} above its plates, the material "
+                         f"says {top:.6f} - the mesh was not baked with this thickness")
+    thin = (s + top * (thickness - 1)) / thickness
+    return pos - d * ((thin - top) * (thickness - 1))[:, None], uv2, idx, thickness
+
+
 def align_directions(src, dst):
     """The rotation carrying the unit directions `src` onto the set `dst` (icosahedral: any of the symmetric
     solutions), found from one direction and its nearest neighbour; None if no rotation fits."""
@@ -123,7 +158,7 @@ def game_mass(d, M):
     baked seated), turned and scaled onto the art file's Mass crystal, with the designer's wedge morph re-derived
     on it. The game mesh is the art Mass crystal turned a quarter turn about Z at another scale (plate centres
     agree to 4e-4) with thinner prisms, so every site keeps its three prisms. Returns (d, mesh scale)."""
-    pos, uv2, idx = read_mesh(MASS_MESH)
+    pos, uv2, idx, thickness = read_prisms(MASS_MESH)
     plate = np.round(uv2[:, 3]).astype(int)
     key, corner, verts, vplate = {}, np.zeros(len(pos), int), [], []
     for i, (p, q) in enumerate(zip(pos, plate)):
@@ -166,13 +201,14 @@ def game_mass(d, M):
     c["stage1"], c["wedge"] = [float(x) for x in stage1.ravel()], [float(x) for x in final.ravel()]
     c["plateTwist"], c["plateAxis"] = plate_twist, plate_axis
     c["meshScale"] = scale
+    c["thickness"] = thickness
     return out, scale
 
 
 def game_triangles(d, M):
     """The rotation carrying the game's omni triangle prisms (OmniCrystalTriangles.asset) onto the art omni's
     triangle plates, every corner within TRI_FIT: the converter draws the game's mesh, turned by it."""
-    pos, uv2, _ = read_mesh(TRI_MESH)
+    pos, uv2, _, thickness = read_prisms(TRI_MESH)
     plate = np.round(uv2[:, 3]).astype(int)
     O, op = pts(d["omni"]["verts"]) @ M.T, np.array(d["omni"]["plate"])
     owner = d["omniFx"]["plateOwner"]
@@ -188,7 +224,7 @@ def game_triangles(d, M):
     worst = float(max(np.min(np.linalg.norm(corners - x, axis=1)) for x in (R @ pos.T).T))
     if worst > TRI_FIT:
         raise SystemExit(f"OmniCrystalTriangles misses the omni's triangles by {worst:.2e}")
-    return R
+    return R, thickness
 
 
 def convert(d, M, axis_m=None):
@@ -240,7 +276,11 @@ def convert(d, M, axis_m=None):
                     "weights": [float(w) for row in sq["weights"] for w in row]},
         "depth": {"open": fx["depth"]["open"], "seal": fx["depth"]["seal"], "power": fx["depth"]["power"],
                   "omniReach": fx["depth"]["omni"]["reach"], "omniSizeStart": fx["depth"]["omni"]["sizeStart"],
-                  "massReach": fx["depth"]["mass"]["reach"], "massSizeStart": fx["depth"]["mass"]["sizeStart"]},
+                  "massReach": fx["depth"]["mass"]["reach"], "massSizeStart": fx["depth"]["mass"]["sizeStart"],
+                  # the thickness baked into each game prism mesh: the converter morphs the thin prisms and
+                  # thickens them in the shader, so the Mass's lands exactly on the triangle mesh's
+                  "massThickness": float(by["Mass"].get("thickness", 1)),
+                  "omniThickness": float(d.get("triangleThickness", 1))},
         "flip": {"loop": flip["loop"], "first": flip["first"], "stagger": flip["stagger"],
                  "lead": sets["leadRing"], "later": sets["laterRings"]},
         "arcs": {"speed": fx["arcs"]["speed"], "length": fx["arcs"]["length"], "duty": fx["arcs"]["duty"]},
@@ -304,7 +344,7 @@ def unity_data():
     the art file's Mass crystal, so the parity harness still compares like with like)."""
     M = FRAMES["unity"]
     d, _ = game_mass(lab.build(), M)
-    d["triangleRotation"] = game_triangles(d, M)
+    d["triangleRotation"], d["triangleThickness"] = game_triangles(d, M)
     return d
 
 
@@ -367,6 +407,10 @@ def self_test():
     read_mesh = perturbed(MASS_MESH, 7, lambda q: q + 0.05)
     check("a Mass mesh with one prism moved is refused", refused(lambda: game_mass(lab.build(), M)))
     read_mesh = real_read
+    real_tri = PRISMS[TRI_MESH]
+    PRISMS[TRI_MESH] = (real_tri[0] - 1, real_tri[1])
+    check("taking the wrong baked thickness out of the triangle mesh is refused", refused(lambda: game_triangles(unity_data(), M)))
+    PRISMS[TRI_MESH] = real_tri
     check("every omni plate has an owning element", all(0 <= o < 4 for o in out["omni"]["plateOwner"]))
     bad = convert(d, M)
     bad["crystals"][3]["final"] = bad["crystals"][3]["final"][:-3]

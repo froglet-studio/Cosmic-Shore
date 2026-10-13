@@ -24,7 +24,8 @@ namespace CosmicShore.Gameplay
     /// <c>OmniDepthPrisms</c>, turned onto the omni, and its body has their holes cut, as in play. As the Mass prisms
     /// morph, the depth shader's shape (thickness, top-face height, plate radius, reach, split) blends from the Mass
     /// material's to the omni triangles', and each wedge's column centre slides to its triangle's centre, so the three
-    /// landed wedges ARE the omni's triangle prism by the time it takes over.</para>
+    /// landed wedges ARE the omni's triangle prism by the time it takes over. The game meshes have their thickness
+    /// baked in; the combine's Mass prisms are the thin ones, so their thickness (from the data) goes on in the shader.</para>
     ///
     /// <para><b>Meshes are unwelded per triangle with one normal per FACE.</b> The art data shares a slab's
     /// corners between its faces; drawn welded, the crystals would shade smooth, and the Charge discharge -
@@ -63,7 +64,7 @@ namespace CosmicShore.Gameplay
         Mesh _omniEdgesMesh;
         DepthColumns _massColumns, _triColumns;
         MeshRenderer _triangles;
-        DepthShape _massShape, _triShape;
+        DepthShape _massShape, _triShape, _triThinShape;
         float[][] _poses, _morph;
         readonly float[] _centres = new float[12];
         readonly float[] _effect = new float[4];
@@ -126,7 +127,8 @@ namespace CosmicShore.Gameplay
                 return false;
             }
             var mass = _core.CrystalData(OmniCombineCore.Mass);
-            if (mass.meshScale <= 0f || data.omniTriangleRotation == null || data.omniTriangleRotation.Length != 9)
+            if (mass.meshScale <= 0f || data.omniTriangleRotation == null || data.omniTriangleRotation.Length != 9 ||
+                data.depth == null || data.depth.massThickness <= 0f || data.depth.omniThickness <= 0f)
             {
                 CSDebug.LogError("[OmniCombinePlayer] The combine data predates the game's Mass crystal: re-run " +
                                  "Tools/Build/author_omni_combine_asset.py.", config);
@@ -179,7 +181,8 @@ namespace CosmicShore.Gameplay
             foreach (var group in bySite.Values) foreach (int q in group) _massSites[q] = group.ToArray();
             _massColumns = new DepthColumns(massPlates);
             float meshUnit = mass.meshScale;   // stage units per MassCrystalPrisms unit
-            _massShape = DepthShape.Of(config.MassMaterial, meshUnit);
+            // The combine's Mass prisms are thin (the art's plates); the shader gives them the thickness the game mesh bakes.
+            _massShape = DepthShape.Of(config.MassMaterial, meshUnit, data.depth.massThickness);
 
             // The omni body, with its triangle holes cut (the depth prisms fill them, as CrystalDepthPrisms cuts them in play).
             _omniPose = new float[data.omni.verts.Length];
@@ -196,6 +199,8 @@ namespace CosmicShore.Gameplay
 
             // The omni's triangles: the game's own prisms, turned onto this omni.
             if (!BuildTriangles(config, data.omniTriangleRotation)) return false;
+            // What the Mass prisms morph toward: the triangles' shape on THIN prisms, i.e. with the mesh's baked thickness.
+            _triThinShape = DepthShape.Of(config.OmniTrianglesMaterial, 1f, data.depth.omniThickness);
 
             // The omni's twelve pentagons carry the discharge, baked from the omni's face-split rest mesh. The
             // pentagons never move (only the rhombi, squares and triangles do), so the bake is drawn as is.
@@ -239,7 +244,7 @@ namespace CosmicShore.Gameplay
             _triangles.sharedMaterial = config.OmniTrianglesMaterial;
             _triangles.shadowCastingMode = ShadowCastingMode.Off;
             _triangles.receiveShadows = false;
-            _triShape = DepthShape.Of(config.OmniTrianglesMaterial, 1f);
+            _triShape = DepthShape.Of(config.OmniTrianglesMaterial, 1f, 1f);
             var b = mesh.bounds;
             float radius = (b.extents.magnitude + b.center.magnitude) * Mathf.Max(1f, _triShape.Reach) + _triShape.FaceSplit * _triShape.SplitUnit * 2f;
             _triangles.localBounds = new Bounds(Vector3.zero, Vector3.one * 2f * radius);
@@ -381,7 +386,7 @@ namespace CosmicShore.Gameplay
             _massColumns.Directions = _massColumns.Directions ?? new Vector3[_massPlates.Length];
             for (int q = 0; q < _massPlates.Length; q++) _massColumns.Directions[q] = ((Vector3)_massPlates[q]).normalized;
             _massColumns.Step(piece.Renderer.transform.InverseTransformPoint(cameraWorld), dt, _config.DepthProfile, _effect[k]);
-            ApplyDepth(piece.Renderer, _massColumns, DepthShape.Lerp(_massShape, _triShape, morph), fadeIn);
+            ApplyDepth(piece.Renderer, _massColumns, DepthShape.Lerp(_massShape, _triThinShape, morph), fadeIn);
         }
 
         void ApplyDepth(Renderer r, DepthColumns columns, DepthShape shape, float opacity)
@@ -519,8 +524,10 @@ namespace CosmicShore.Gameplay
                 SizeStart = sizeStart;
             }
 
-            public static DepthShape Of(Material m, float unit) => new(
-                m.GetFloat(ThicknessID), m.GetFloat(TopHeightID) * unit, m.GetFloat(SplitUnitID) * unit,
+            /// <param name="baked">Thickness to add on top of the material's: the mesh's baked thickness when the
+            /// drawn prisms are the thin ones (stretching about the top face composes by multiplying).</param>
+            public static DepthShape Of(Material m, float unit, float baked) => new(
+                m.GetFloat(ThicknessID) * baked, m.GetFloat(TopHeightID) * unit, m.GetFloat(SplitUnitID) * unit,
                 m.GetFloat(ReachID), m.GetFloat(FaceSplitID), m.GetFloat(SizeStartID));
 
             public static DepthShape Lerp(in DepthShape a, in DepthShape b, float t) => new(

@@ -86,6 +86,10 @@ namespace CosmicShore.Utility
     [Serializable] public sealed class OmniCombineDepthData
     {
         public float open, seal, power, omniReach, omniSizeStart, massReach, massSizeStart;
+        /// <summary>The thickness baked into MassCrystalPrisms / OmniCrystalTriangles. The combine morphs the THIN
+        /// prisms the art's plates are and the converter thickens them in the shader, so a landed Mass prism
+        /// matches the triangle mesh it hands off to.</summary>
+        public float massThickness, omniThickness;
     }
 
     [Serializable] public sealed class OmniCombineFlipData

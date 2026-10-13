@@ -246,49 +246,69 @@ Entries are grouped by family; within a family, the newest goes at the bottom.
 - Evidence: `styleParams` and `snapshot()` in the page; `omni_shepard_lab_parity.cjs --old-style X --new-style X`.
 - Promoted: no
 
-### L-STU-26 — An art file can hold the END POSE of an animation and no motion: test shape keys against their targets, don't just list actions
+### L-STU-26 — A fixed-camera scorecard cannot test a stateful promise; score it under the motion the game has
+- Lab: Omni Shepard Lab, round 10 · Branch: `cece/determined-ride-rqzaeo` · Date: 2026-10-13
+- What happened: since round 9 the crystal holds still, and the scorecard's 26 cameras are fixed, so the depth ratchet never reseated and "births seen 0%" was true by default. A new field scorecard orbits the camera 90° over 20 s. It found the shipped reseat (−0.8) seen 73% of the time on the Mass at 250 u and 8.6–56.5% on the omni. Round 7's "0% at −0.8" had been measured at 34 u on a crystal TURNING 15°/s, a different motion. A sweep under the orbit put the bound at −0.87 (0% at both ranges), which matches the mechanism: seen nearly orthographically, a column top 2 radii out clears the silhouette when √(1−d²) > 0.5.
+- Do instead: when a promise depends on history (a ratchet, a hysteresis, a cooldown), the scorecard must move the thing the history is about. Re-measure a promise whenever the motion that produced its number changes, and derive the bound from the mechanism before trusting the sweep.
+- Evidence: `fieldMetricsOf` / `fieldScore` in `Docs/Studios/OmniShepardLab.html`; `OMNI_SHEPARD_LAB.md` "Round 10" Found 1–2 and the reseat table.
+- Promoted: no
+
+### L-STU-27 — "Do they look alike" is a PIXEL question: correlate rendered images, and measure the noise band first
+- Lab: Omni Shepard Lab, round 10 · Branch: `cece/determined-ride-rqzaeo` · Date: 2026-10-13
+- What happened: the ask was "a field of Mass crystals reads as one shared animation". Parameter-space metrics (prism heights matched by view direction, or by plate index) stayed at 0.87–0.99 for every variant, because the depth rule makes the same columns from the same direction whatever the knobs. Only a rendered-image metric separated them: each crystal drawn alone from its own camera direction at 48×48, pixels correlated with its nearest neighbours over the pixels either covers. Every crystal alike: 0.61 at 250 u; a random pose each: 0.12. Three seeds put the noise at ±0.02, so differences under ~0.05 were not called.
+- Do instead: when the ask is about what the eye sees, score the picture, not the parameters. Measure the metric's spread across seeds before ranking variants by it, and keep the parameter metrics as diagnostics of WHY (here: the depth rule holds; only the pose decorrelates).
+- Evidence: `snapLook` / `lookR` in the page; the "After the pick" table, reproduced exactly by `runFieldBatch()` at ship.
+- Promoted: no
+
+### L-STU-28 — Before deleting the assets a lab's old looks read, pin their values in the page
+- Lab: Omni Shepard Lab, round 10 + follow-ups · Branch: `cece/determined-ride-rqzaeo` · Date: 2026-10-13
+- What happened: the Breathe-era tone and rim materials and the Mass crystal's four shell materials were no longer drawn by the game, but the lab's pinned Breathe and Classic looks and its Mass "as shipped" view still read their values through the extractor. Deleting them first would have changed library styles that L-STU-25 says must draw 0 px. The values were copied into a `RETIRED` constant in the page (with the old names aliased to it), the extractor stopped reading the files and emits empty lists, and then the files were deleted. The parity checks that compared against the materials read `RETIRED` instead.
+- Do instead: retire in that order (pin, repoint the extractor and parity, delete), and name the pinned block as retired so no one mistakes it for a shipped value.
+- Evidence: `RETIRED` in the page; `omni_shepard_lab_assets.py` `"shells": []`; commits for F2/F3 on the branch.
+
+### L-STU-29 — An art file can hold the END POSE of an animation and no motion: test shape keys against their targets, don't just list actions
 - Lab: Omni Combine Lab (`Docs/Studios/OmniCombineLab.html`) · Branch: `cece/eager-rubin-km7qyn` · Date: 2026-10-13
 - What happened: the designer asked whether `CrystalsRaw.blend` had "an animation where all four elemental crystals combine into one omnicrystal". A survey of actions found nothing: every action on those objects was empty (frames 0-0, no curves). The combine was there all the same, as data. Each elemental crystal carries one unanimated shape key (`Key 1`, value 0), and a KD-tree test of each key against the omni's vertices showed it lands that crystal's plates exactly on its share of the omni. Time and Space land 1:1, Mass 3 prisms per triangle, Charge 5 plates per pentagon, and together they cover all 960 vertices. The vertex counts were the clue: 240 + 480 + 120 + 120 = 960.
 - Do instead: when asked "is there an animation of X", also test every shape key and pose against the objects it could be heading for (nearest-vertex distance after the object offsets), and compare vertex counts across objects. Report "the end pose is authored, the motion is not" as its own answer, and bake the targets with a gate that refuses data that does not land.
 - Evidence: `Tools/Build/bake_omni_crystal_combine.py` (refuses unless every `Key 1` lands within 1e-3 and all omni vertices are covered); `OMNI_COMBINE_LAB.md` "What the art file has".
 - Promoted: no
 
-### L-STU-27 — A metric measured over the phase where the event is the POINT reads the same for every variant
+### L-STU-30 — A metric measured over the phase where the event is the POINT reads the same for every variant
 - Lab: Omni Combine Lab · Branch: `cece/eager-rubin-km7qyn` · Date: 2026-10-13
 - What happened: the first "clearance" column (how close two crystals' centres come in flight, x their combined radii) read 0.09-0.13 for every style, the controls included, because all four crystals converge on one centre and are SUPPOSED to overlap as they merge. Excluding the merge zone (inside 1.5 omni radii) made it discriminate: the art file's straight-line row 0.44, the proposals 1.75-3.29.
 - Do instead: before trusting a column, check it varies across the variants. If it doesn't, ask whether it is measuring the moment the design intends; restrict it to where the event is a fault.
 - Evidence: `measure()` (`MEET`) in the page; the round-1 scorecard in `OMNI_COMBINE_LAB.md`.
 - Promoted: no
 
-### L-STU-28 — A nearest-vertex "lands" check passes a SWAPPED pair; fit the plate rigidly to catch it
+### L-STU-31 — A nearest-vertex "lands" check passes a SWAPPED pair; fit the plate rigidly to catch it
 - Lab: Omni Combine Lab round 2 · Branch: `cece/eager-rubin-km7qyn` · Date: 2026-10-13
 - What happened: round 1 validated every `Key 1` vertex as landing on an omni vertex within 1e-3, and all 960 were covered. Round 2 needed Time to lock in with no morph, so it fitted each rhombus rigidly (Kabsch). One rhombus had a residual of 0.061 against 0.0068 for the rest: its `Key 1` swaps corners 9 and 129 between the inner and outer faces. Both corners still land on AN omni vertex, so the per-vertex check and the coverage check both passed.
 - Do instead: when a target is a rigid plate's slot, check the plate's shape against its target as a whole (a rigid fit's residual, or its edge lengths), not each vertex against its nearest neighbour. Fit robustly, then report the outliers by name rather than letting them bend the fit.
 - Evidence: `time_rigid()` in `Tools/Build/omni_combine_lab_assets.py` (`artSlips`); the round-2 Found list in `Docs/Studios/OMNI_COMBINE_LAB.md`.
 - Promoted: no
 
-### L-STU-29 — An exploded shell has no shared vertices: derive its symmetry axes from the plates' own geometry
+### L-STU-32 — An exploded shell has no shared vertices: derive its symmetry axes from the plates' own geometry
 - Lab: Omni Combine Lab round 2 · Branch: `cece/eager-rubin-km7qyn` · Date: 2026-10-13
 - What happened: the game's flip wave starts at one of a triacontahedron's 12 five-fold vertices. On the lab's crystals, the plates are separate slabs that don't touch, so finding the vertices where five plates meet gave 60 candidates. Tilting each rhombus's outward axis by the solid's known face-to-vertex angle (atan(1/φ), along its long diagonal) and clustering within 4° gave exactly 12, and rings of 5/5/10/5/5, the same as `FlipWave.Plan`.
 - Do instead: on a separated-plate mesh, build axes from per-plate normals and the polyhedron's known angles, then assert the expected count (12, and the ring sizes) before you use them.
 - Evidence: `flipRig()` in `Docs/Studios/OmniCombineLab.html`.
 - Promoted: no
 
-### L-STU-30 — Graduate a lab by PORTING its pose function and running the port against the page
+### L-STU-33 — Graduate a lab by PORTING its pose function and running the port against the page
 - Lab: Omni Combine Lab → the Elemental Converter · Branch: `cece/eager-rubin-km7qyn` · Date: 2026-10-13
 - What happened: the lab's `pose` (flight, four idle effects, three derived morphs, seeded RNG, an integer hash) was ported to pure C# and compiled in .NET beside a driver that loads the page in headless Chromium and asks `__lab.pose` / `omniPose` for the same times, seed and camera. The first run matched to 7e-7 per vertex. Planting a wrong flip salt or a different seeding order failed it by 0.7 and 2.5.
 - Do instead: when a lab graduates, keep its pose a PURE function (time, params, camera → vertices), port it with no engine types, and hold the port to the page with a parity harness that compiles the shipped file in place. Port the RNG bit for bit (mulberry32, Math.imul, >>>) and keep the lab's draw ORDER, or one seed means two films.
 - Evidence: `Tools/Build/omni_combine_parity/` (`run.sh`, `Driver.cs`, `lab_poses.cjs`); `Assets/_Scripts/Utility/OmniCombineCore.cs`.
 - Promoted: no
 
-### L-STU-31 — A lab drawn in a right-handed frame graduates through a REFLECTION: map rotation axes as pseudovectors
+### L-STU-34 — A lab drawn in a right-handed frame graduates through a REFLECTION: map rotation axes as pseudovectors
 - Lab: Omni Combine Lab → the Elemental Converter · Branch: `cece/eager-rubin-km7qyn` · Date: 2026-10-13
 - What happened: the lab draws Blender's data as (x, z, −y), a rotation. Unity's FBX import is (−x, z, −y), a reflection. Positions map with M, but the per-site twist axes and Time's quaternions must map with det(M)·M = −M, or every rotation runs the wrong way round. That matters on a chiral shape (the Charge petals untwist −13.1°). Axes the runtime derives from geometry through a cross product (the flip wave's) come out right on their own.
 - Do instead: in the generator, re-prove every rotation in the frame it writes: a best-fit rotation about each axis against the baked angle, and a rigid replay against the baked pose. Make "map the axis like a position" the negative control.
 - Evidence: `Tools/Build/author_omni_combine_asset.py` (`axis_map`, `validate`, `--self-test`).
 - Promoted: no
 
-### L-STU-32 — "The shipped mesh does not match the art file" measured under SCALE only is not a finding: fit a rotation and the import's handedness first
+### L-STU-35 — "The shipped mesh does not match the art file" measured under SCALE only is not a finding: fit a rotation and the import's handedness first
 - Lab: Omni Combine Lab → the Elemental Converter, revision 2 · Branch: `cece/eager-rubin-km7qyn` · Date: 2026-10-13
 - What happened: round 1 compared the art file's elemental crystals with the shipped FBXs after a uniform scale and recorded "do NOT match (worst 0.07 of a radius); another export, or rotated". That kept the converter on the art file's Mass slabs and the shell material, and the designer saw a Mass crystal that did not look like the game's. Aligning plate-centre DIRECTIONS under a rotation showed the truth:
   - the game's `MassCrystalPrisms` is the art Mass crystal turned a quarter turn about Z (centres agree to 4e-4 at scale 0.7355);
@@ -300,14 +320,14 @@ Entries are grouped by family; within a family, the newest goes at the bottom.
 - Evidence: `align_directions`, `game_mass`, `game_triangles` in `Tools/Build/author_omni_combine_asset.py` (and its `--self-test` negative controls: one prism moved, one shrunk 5%).
 - Promoted: no
 
-### L-STU-33 — A lab's stand-in for a shipped effect must not graduate; drive the shipped shader with the lab's motion instead
+### L-STU-36 — A lab's stand-in for a shipped effect must not graduate; drive the shipped shader with the lab's motion instead
 - Lab: Omni Combine Lab → the Elemental Converter, revision 2 · Branch: `cece/eager-rubin-km7qyn` · Date: 2026-10-13
 - What happened: the lab models the Mass depth prisms with a stateless CPU "seat by depth", which was right for choosing a choreography. Ported as-is, the converter's Mass crystal looked nothing like the game's. The fix kept the lab's MOTION (flight, untwist, wedge morph) on the CPU and handed the EFFECT to the game's own `OmniDepthPrismShader` + `DepthRatchet`. Each plate's column centre (TEXCOORD2) moves with the morph, and the shader's shape uniforms blend between the two materials, so the hand-off to the omni's own depth prisms is exact by construction.
 - Do instead: when a lab approximates a shipped effect, mark it in the lab's not-modelled list, and on graduation plug the lab's geometry into the shipped shader/driver rather than porting the approximation. Make the core's stand-in a switch (`ShaderDepth`) so lab parity still holds.
 - Evidence: `OmniCombinePlayer.WriteMass` / `DepthColumns` / `DepthShape`; `OmniCombineParams.ShaderDepth`; the parity driver's "ShaderDepth ignores the camera" check.
 - Promoted: no
 
-### L-STU-34 — A graduated lab shown in a MENU inherits the menu's clock and the stage's float precision; neither shows up in the lab
+### L-STU-37 — A graduated lab shown in a MENU inherits the menu's clock and the stage's float precision; neither shows up in the lab
 - Lab: Omni Combine Lab → the Elemental Converter, revision 3 · Branch: `cece/eager-rubin-km7qyn` · Date: 2026-10-13
 - What happened: the converter's motion matched the lab to 7e-7, and on screen the discharge "was not working" and the whole crystal shimmered.
   - **The discharge:** `ScreenSwitcher` runs every menu screen but HOME at `Time.timeScale = 0`. The lab's CPU effects had been ported onto unscaled time, but the game's discharge SHADERS read `_Time.y`, so every bolt stood still.
