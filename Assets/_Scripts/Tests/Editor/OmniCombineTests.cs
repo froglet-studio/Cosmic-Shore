@@ -260,7 +260,9 @@ namespace CosmicShore.Tests
         [Test]
         public void TheArkScreenIsOpenAndCarriesTheConverter()
         {
-            var scene = System.IO.File.ReadAllText(ScenePath);
+            // Normalise CRLF first: the line-anchored needles below end in "\n", and a Windows
+            // checkout (text=auto) delivers the scene with "\r\n", so neither would ever match there.
+            var scene = System.IO.File.ReadAllText(ScenePath).Replace("\r\n", "\n");
             StringAssert.Contains("  disabledScreens: 03000000\n", scene, "ARK must be open (only PORT disabled)");
             var view = AssetDatabase.LoadAssetAtPath<MonoScript>("Assets/_Scripts/UI/Elements/ElementalConverterView.cs");
             Assert.IsNotNull(view);
