@@ -8,7 +8,8 @@
 // passed, 1 = a check failed (each failure is named), 2 = it could not run (bad args, no browser).
 //
 // What it checks (the contract in .claude/skills/labmaker/SKILL.md §3):
-//   1. loads with NO console errors / page errors, at desktop 1600×900 and an emulated phone
+//   1. loads with NO console errors / page errors / WebGL faults (reported by Chromium as warnings),
+//      at desktop 1600×900 and an emulated phone
 //   2. desktop: the layout fits the window — measured as scrollHeight vs clientHeight, so it also
 //      catches content CLIPPED by body{overflow:hidden}, which no scrollbar would show; phone: no
 //      horizontal scroll
@@ -18,8 +19,8 @@
 //   6. runBatch is deterministic: two calls give byte-identical rows
 //   7. the stage is not blank after ticking (the canvas has more than one colour)
 //
-// --self-test plants four defects into a copy of the template (a console error, a SHIPPED
-// value outside its range, a hook that throws, a non-deterministic batch) and requires the gate
+// --self-test plants five defects into a copy of the template (a console error, a SHIPPED
+// value outside its range, a hook that throws, a WebGL fault, a non-deterministic batch) and requires the gate
 // to name each one —
 // a gate that has only ever passed is not a gate.
 'use strict';
@@ -51,7 +52,12 @@ async function verify(file, outDir, browser) {
     const ctx = await browser.newContext(ctxOpts);
     const page = await ctx.newPage();
     const errors = [];
-    page.on('console', (m) => { if (m.type() === 'error') errors.push(m.text()); });
+    // Chromium reports a WebGL fault (a shader that fails to link, a draw with a dead program) as a
+    // console WARNING, and the page keeps running with that pass simply missing. The Omni Shepard Lab
+    // shipped round 1 that way: its shell program never linked and every shell was invisible
+    // (LEARNINGS L-STU-16). So WebGL INVALID_* / link warnings count as errors here.
+    const glFault = /WebGL: (INVALID_|CONTEXT_LOST)|program not (linked|valid)|shader compile|link failed/i;
+    page.on('console', (m) => { if (m.type() === 'error' || (m.type() === 'warning' && glFault.test(m.text()))) errors.push(m.text()); });
     page.on('pageerror', (e) => errors.push(String(e && e.message || e)));
     await page.goto(url, { waitUntil: 'load' });
     await page.waitForTimeout(400);
@@ -133,6 +139,7 @@ async function selfTest(browser, outRoot) {
     { name: 'console error', expect: /console\/page error/, edit: (s) => s.replace("'use strict';", "'use strict'; console.error('planted');") },
     { name: 'shipped out of range', expect: /outside its range/, edit: (s) => s.replace('damping: 0.4,', 'damping: 9,') },
     { name: 'hook throws', expect: /hook: runBatch\(\) threw/, edit: (s) => s.replace("opts = opts || {};", "opts = opts || {}; if (!opts.qs) throw new TypeError('planted: runBatch needs qs');") },
+    { name: 'webgl fault', expect: /console\/page error: .*WebGL/, edit: (s) => s.replace("'use strict';", "'use strict'; (function () { const g = document.createElement('canvas').getContext('webgl'); if (g) g.useProgram(g.createProgram()); })();") },
     { name: 'nondeterministic batch', expect: /not deterministic/, edit: (s) => s.replace("rows.push({ variant: va.name, caughtPct:", "rows.push({ jitter: Math.random(), variant: va.name, caughtPct:") },
   ];
   let ok = true;

@@ -202,6 +202,12 @@ applies to new abilities, new resources on the meter list, and anything that add
     nobody — `Docs/ElementalAbilitySystem/BACKLOG.md`. A pickup "with no vessel" is now a one-time
     `[CrystalMorph] [HullFusion]` warning, which is how this was found after four rounds of reading
     the prefabs had not found it.
+    **A skimmer that is SWITCHED OFF is no skimmer either.** The Butterfly's only skimmer was its
+    Dust-mode capsule, which `ButterflyDustField` disables in Mass mode — the spawn mode — so it
+    collected no elemental crystal at all while every audit read clean (the slot was assigned). A hull
+    whose skimmer is mode-gated needs an always-on crystal catcher: an initialised far-field sphere
+    with an EMPTY container (`ButterflyCrystalSkimmer`, `BUTTERFLY.md §3.1a`). Collection is the
+    crystal's side, so the catcher needs no effect, and empty lists make it inert to prisms and pilots.
 11b. **A skinned renderer's TRANSFORM is not its bind space — never size or aim anything off it.**
     `lossyScale`, `InverseTransformPoint` and `position` on a `SkinnedMeshRenderer` describe a node
     the bones may not agree with: the Sparrow model carries a node moved 185 units, the Manta family
@@ -640,6 +646,46 @@ applies to new abilities, new resources on the meter list, and anything that add
     Before sizing anything against a fresnel-shaded body, read the material's `_Spread`; absent means
     one unit. (Grizzly trigger bombs, 2026-10-08.)
 
+42. **A vessel made by COPYING another prefab on disk inherits four things that are silently
+    wrong, and the registration list is longer than the setup tool's.** The Thresher (2026-10-08) is
+    a YAML clone of the Squirrel and hit each one:
+    - **`GlobalObjectIdHash`** is the source's verbatim, so only one of the two can ever spawn
+      (Netcode keys on the hash alone). Compute it as
+      `XXHash32("GlobalObjectId_V1-1-<prefab guid>-<NetworkObject fileID>-0")` (verify by
+      reproducing the source's shipped hash first) and zero
+      `InScenePlacedSourceGlobalObjectIdHash`. Gate: `Tools/Build/check_network_prefab_hashes.py`.
+    - **`DefaultNetworkPrefabs.asset`** keys by the root GAMEOBJECT fileID; the prefab container
+      keys by the root TRANSFORM. Same object, different ids.
+    - **Tests that enumerate `VesselClassType`** fail for a new member with no data:
+      `CrystalHullFusionConfigTests` needs four `CrystalHullFusionConfig` entries (a hull that
+      draws the source's mesh may reuse the source's bakes — `Matches` keys on mesh + tuning),
+      `EnumIntegrityTests` counts members (it was already one behind when the Thresher landed), and
+      `OneThumbVesselCoverageTests` must be told a new transformer type exists or it skips the hull.
+      `grep -rln "GetValues(typeof(VesselClassType))" Assets/_Scripts` before committing.
+    - **Stale keys travel with the copy.** The Squirrel's camera asset carried seven fields
+      `CameraSettingsSO` no longer has; `Tools/Build/check_generated_assets.py` (after
+      `unity_refcompile`) reports them. To tell inherited findings from introduced ones, commit an
+      untouched copy of the source in a base worktree, audit it, and diff the two finding lists.
+
+43. **The fleet's chase camera is HARD-ATTACHED, so any hull rotation faster than a stick can make
+    is a camera whip.** Every vessel camera asset ships `CameraMode.FixedCamera`, which sets
+    `_disableRotationLerp`: the camera's pose is the hull's rotation × the offset, the same frame.
+    A mechanic that rotates the hull itself — snapping onto an orbit tangent, a tug that turns the
+    nose, a fling that faces the velocity — therefore swings the WORLD on screen. The Thresher's
+    plant (2026-10-09) turned the hull up to **91° in one frame** and read as the camera "getting
+    whipped around"; the rope's own tug, the suspect, peaked at only 85–131 °/s. Two lessons:
+    - **Measure the hull's per-frame turn before guessing.** Copy the transformer's velocity→nose
+      logic into a scratch driver over the pure solver (the Thresher harness's stubs compile it in
+      seconds) and record max degrees/frame per scenario. The answer pointed at a different line
+      than intuition did.
+    - **Cap the camera's FOLLOW FRAME, not the hull.** `CustomCameraController.MaxFollowTurnRate`
+      (default 0 = hard-attached) `RotateTowards`s the frame at most N °/s. Set it above every
+      stick rate (the Thresher uses 240) and ordinary flying is bit-for-bit unchanged; only snaps
+      are spread. Slowing the hull instead changes gameplay — a fling bends by exactly the nose's
+      lag. `RearViewLawTests` counts `rotation * EffectiveOffset` pose sites in the camera SOURCE
+      (exactly two), so keep the follow-frame local named `rotation` and keep the teleport path
+      from adding a third site.
+
 ### 4.x Placing prisms from a vessel ability — shield sizing
 
 An ability that BUILDS with prisms (the Scarab's switch dais, the Urchin's track, a boost ring)
@@ -896,6 +942,14 @@ Elemental levels are simulated per peer, so the rival toll (`WormholeMouth.LevyT
 is levied there: putting it in `Transit` would have stripped petals on the owner only and desynced
 every other peer's copy of that pilot. Each machine applies a pose exactly once (owner writes first,
 server re-broadcasts to everyone else), so a hook there fires once per machine.
+
+- **Anything that PREDICTS where a hull will go must fly the hull's response, not its stick** (the Stoat's
+  pathfinder, an AI's lead, an aim-assist line). `VesselTransformer` turns a COMMAND (`CommandedRotation`)
+  that the visible hull slerps after at `RotationFollowRate` (1.5 /s, a 0.67 s lag), and eases `speed` to
+  `CurrentThrottleTarget` at the same rate. A body that turns at the stick's rate at once is 15–73 u off the
+  real path within 3 s of starting a held turn (measured 2026-10-13, `StoatDipoleMath.HullResponse` fixed it
+  to within 2 u). Seed the predictor from `CommandedRotation`, the follow rate and the throttle target, and
+  pin it with a test against a frame-stepped model of the transformer (`StoatDipoleTests` has one).
 
 ## 5. Audit, then hand back verification (you cannot run Unity; the human is the gate)
 

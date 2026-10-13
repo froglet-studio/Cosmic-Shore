@@ -474,7 +474,7 @@ component and others get a new parent instead:
 | Orientation | **Landscape only** (auto-rotate between landscape L/R; portrait disabled) | Mobile |
 | Android max aspect | **2.1 (~18.9:9)** | Below modern 20:9 / 21:9 phones — devices wider than this letterbox or crop per OEM behavior |
 | Android min SDK | 28 (Android 9) | |
-| iOS target | 15.0, Universal (iPhone + iPad) | Bundle id is the TEST id `com.FrogletGames.CosmicShore.dev` (2026-10-02; was the legacy `com.FrogletGames.Tail-Glider`) — see `Docs/IOS_BUILD.md` §1 |
+| iOS target | 15.0, Universal (iPhone + iPad) | Bundle id is the production id `com.FrogletGames.CosmicShore` (2026-10-08; the TEST id `.dev` from 2026-10-02, still used by the free sideload `.ipa`; was the legacy `com.FrogletGames.Tail-Glider`) — see `Docs/IOS_BUILD.md` §1 |
 | Desktop default window | **1920×1080**, resizable, borderless fullscreen default | **Fixed 2026-09-11 (board item R5).** Was 1024×768 (4:3) and non-resizable — stale, as this audit suspected: the 4:3 default matched no canvas reference resolution. With `defaultIsNativeResolution: 1` these are the *windowed* size, not the initial fullscreen one. |
 | Color space | Linear | Matters for authoring UI colors (see `Docs/PALETTE.md`) |
 | Target frame rate | 60 (from `BootstrapConfigSO`), VSync 0 | |
@@ -602,7 +602,7 @@ The main menu is built as a **five-panel horizontal filmstrip** (screens slide l
 | 3 | `PORT` (3) | `PortScreen` | `LeaderboardsMenu` | ❌ **disabled** |
 | 4 | `PROFILE` (5) | `ProfileScreen` | `ProfileScreen` + `QuestTrackView` | ✅ |
 
-- `ScreenSwitcher.disabledScreens` = `{ARK, PORT}`. Navigating to a disabled screen silently does nothing; left/right paging skips over them.
+- `ScreenSwitcher.disabledScreens` = `{ARK, PORT}` at the audit (ARK reopened 2026-10-13 as the Elemental Converter). Navigating to a disabled screen silently does nothing; left/right paging skips over them.
 - The `STORE` enum value (0) is **not in the screens list at all** — the store content lives on the GameObject named `ArkScreen`. "ARK" and "Store" are the same (disabled) screen.
 - **Net player experience: Hangar ← Home → Profile**, with Arcade and Settings as modals on top.
 

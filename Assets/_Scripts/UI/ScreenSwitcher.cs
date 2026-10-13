@@ -151,7 +151,6 @@ namespace CosmicShore.UI
         [Inject] private Container _container;
 
         [Inject] private MenuFreestyleEventsContainerSO freestyleEvents;
-        [Inject] private HostConnectionDataSO hostConnectionData;
 
         [Header("Disabled Screens")]
         [Tooltip("Screens in this list are skipped during navigation and cannot be opened via buttons or controller input.\n" +
@@ -161,7 +160,7 @@ namespace CosmicShore.UI
                  "It is not the only source: a COMMERCE screen (the Store) is closed by " +
                  "Resources/CommerceAvailability instead, so the paid-EA conversion is one asset edit and " +
                  "carries its own reading (Unavailable rather than Locked). Do not author one in both.")]
-        [SerializeField] private List<MenuScreens> disabledScreens = new() { MenuScreens.PORT, MenuScreens.ARK };
+        [SerializeField] private List<MenuScreens> disabledScreens = new() { MenuScreens.PORT };
 
         [Tooltip("Reason a disabled screen's nav link gives when pressed. Empty leaves the refusal sting to " +
                  "speak alone. Deliberately generic: MenuScreens names (ARK, PORT) are internal.")]
@@ -1012,45 +1011,24 @@ namespace CosmicShore.UI
 
         private void NavigateTo(MenuScreens screen, bool animate = true)
         {
-            // Disabled is checked FIRST so a closed screen always explains itself. It used to sit
-            // below the host-only guard, which meant a party guest pressing ARK got the silent
-            // return from the wrong rule and no refusal at all.
+            // Disabled is checked FIRST so a closed screen always explains itself.
+            // (ARK used to be the arcade and was host-only in a party. It is the Elemental Converter now - a
+            // local animation every player may open - and the arcade lives in its own modal.)
             if (IsScreenDisabled(screen))
             {
                 RefuseDisabledScreen(screen);
                 return;
             }
 
-            // Arcade is host-only in multiplayer sessions
-            if (screen == MenuScreens.ARK && !IsHostOrSolo())
-                return;
-
             int index = GetIndexForScreen(screen);
             NavigateTo(index, animate);
         }
 
         /// <summary>
-        /// Take a party GUEST to the arcade screen because the HOST opened a card there - the one
-        /// sanctioned way past the host-only guard above.
-        ///
-        /// <para>That guard stops a guest BROWSING the arcade and launching their own game, which
-        /// is right; it also blocked the guest from ever standing on the screen the host is
-        /// driving them to, so the card modal opened over whatever screen they happened to be on.
-        /// Being pulled by the host is not the same act as navigating there, so this is a separate
-        /// entry point rather than a hole in the guard - nothing on a guest's own UI calls it.</para>
-        /// </summary>
-        public void FollowHostToArcadeScreen()
-        {
-            if (IsScreenDisabled(MenuScreens.ARK)) return;
-            if (ScreenIsActive(MenuScreens.ARK)) return;
-            NavigateTo(GetIndexForScreen(MenuScreens.ARK));
-        }
-
-        /// <summary>
-        /// The Arena counterpart of <see cref="FollowHostToArcadeScreen"/>: the host opened an
-        /// ARENA card, so the guest's app shell shows the Arena grid under the launch window the
-        /// same way the arcade screen sits under an arcade card. Host-driven only - nothing on the
-        /// guest's own UI calls it.
+        /// The host opened an ARENA card, so the guest's app shell shows the Arena grid under the
+        /// launch window. Host-driven only - nothing on the guest's own UI calls it. (An arcade card
+        /// has no counterpart: the arcade screen it used to follow to was ARK, which is now the
+        /// Elemental Converter, and a guest must not be pulled there.)
         /// </summary>
         public void FollowHostToArenaWindow()
         {
@@ -1114,13 +1092,6 @@ namespace CosmicShore.UI
             var pending = _pendingFreestyleExit;
             _pendingFreestyleExit = null;
             pending?.Invoke();
-        }
-
-        bool IsHostOrSolo()
-        {
-            if (hostConnectionData == null) return true;
-            if (hostConnectionData.PartyMembers == null || hostConnectionData.PartyMembers.Count <= 1) return true;
-            return hostConnectionData.IsPartyHost;
         }
 
         private void NavigateTo(int ScreenIndex, bool animate = true)

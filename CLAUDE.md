@@ -22,8 +22,8 @@ This file holds only the rules every session needs. Everything else moved verbat
   Sections: Documentation Index
 - [`Docs/claude/ARCHITECTURE_CORE.md`](Docs/claude/ARCHITECTURE_CORE.md): SOAP, threading, bootstrap, auth/session flow, Reflex DI, input strategy.
   Sections: Architecture Patterns; ScriptableObject Config Separation; SOAP — Scriptable Object Architecture Pattern (Primary Architecture); Threading & Main-Thread Affinity; Bootstrap & Scene Flow; Authentication & Session Flow; Dependency Injection (Reflex); Input Strategy Pattern
-- [`Docs/claude/IMPACT_EFFECTS_AND_AUDIO.md`](Docs/claude/IMPACT_EFFECTS_AND_AUDIO.md): Impact effects architecture; the LOCKED FMOD exposed-field convention.
-  Sections: Impact Effects Architecture; Audio (FMOD) — every sound is an exposed, editable field (LOCKED convention)
+- [`Docs/claude/IMPACT_EFFECTS_AND_AUDIO.md`](Docs/claude/IMPACT_EFFECTS_AND_AUDIO.md): Impact effects architecture; the LOCKED PvP-is-petals-only rule; the LOCKED FMOD exposed-field convention.
+  Sections: Impact Effects Architecture; PvP is petals only (LOCKED, Garrett 2026-10-10); Audio (FMOD) — every sound is an exposed, editable field (LOCKED convention)
 - [`Docs/claude/MULTIPLAYER_AND_SOCIAL.md`](Docs/claude/MULTIPLAYER_AND_SOCIAL.md): Netcode, player spawning, party/invite lobby, friends, AI backfill, SkimRace.
   Sections: Multiplayer / Netcode; Party / Invite Lobby System; Friend System; Player Count & AI Backfill Pipeline; SkimRace Game Mode
 - [`Docs/claude/FTUE_DIALOGUE_AI.md`](Docs/claude/FTUE_DIALOGUE_AI.md): The FTUE quest graph, dialogue system, AI opponent system.

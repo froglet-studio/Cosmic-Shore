@@ -1115,6 +1115,19 @@ references, m_Script classes). What cost time on the first runs (2026-10-06 to 1
   must name the file and the key). Restore, then `git status --short` the paths. Both discriminated
   on their first try here.
 
+**`unity_refcompile`'s engine DLLs are REFERENCE assemblies: they bind, they do not RUN.** Calling
+`Vector3`/`Quaternion` from them in a harness throws `NullReferenceException` on the first operator, so
+a compile against them cannot execute the shipped maths. To RUN a pure-math class (a predictor, a field
+law, a layout routine), compile the SHIPPED file unmodified beside a ~60-line stub `namespace
+UnityEngine` (`Vector2`/`Vector3`/`Quaternion` with `AngleAxis`, `*`, `Slerp`, and `Mathf`). Then drive
+it from a scratch `Main`, and lift the test bodies out of the `[Test]` file with a ten-line NUnit
+`Assert` shim, so they run too. On 2026-10-13 this ran the Stoat's `StoatDipoleMath` and five of its
+edit-mode tests, and measured the bug a play report described: the instant path predictor was 15–73 u
+off a frame-stepped model of `VesselTransformer` within 3 s. Keep the stub in the scratchpad, never in
+the repo, and add members only as the compile asks for them. Also: `verify_black_hole_lens.py` needs
+`glslangValidator`; a root container gets it from `apt-get install -y glslang-tools` (after an
+`apt-get update`).
+
 **But a REAL type check of the files you actually wrote is still available, and it is worth the
 20 minutes** on new code (as opposed to a small edit inside a large existing file). Build a stub
 harness — the mcs recipe below, minus the desugaring — and hand Roslyn the .NET **reference pack**
@@ -1468,6 +1481,24 @@ cannot fix it. Measure N·V on the camera side (`rim = 1 − |N·V|`, `_FaceForw
 defaults reproduce the old formula, and PROVE that with the harness (max |Δ| 6e-8) so every other
 material on the shader is untouched. Whenever a look complaint is "washed out" on a transparent
 mesh, count the back faces before touching a colour.
+
+### Technique: a FRESNEL TUBE on a LineRenderer, and sizing a rim for a SMALL object
+
+A `LineRenderer` (VIEW alignment) is a camera-facing ribbon — every normal faces the lens, so a mesh
+fresnel on it is flat. But a view-aligned ribbon IS a cylinder's silhouette, and across a unit
+cylinder seen side-on the surface at signed distance `x` from the axis has `N·V = sqrt(1 − x²)`
+exactly. `uv.y` runs 0..1 ACROSS a LineRenderer's width in every texture mode, so the fragment
+`x = 2·uv.y − 1; rim = pow(1 − sqrt(saturate(1 − x²)), p)` is the tube's true fresnel: one renderer,
+no mesh, no normals (`ThresherChainFresnelShader`, 2026-10-09). Drive its colours through a
+`MaterialPropertyBlock` on the LineRenderer, `Cull Off` (the ribbon flips winding over the lens axis).
+
+**Size the rim to the object's SCREEN size, not to the crystals' power 4.** Area-weighted over a
+sphere's disc the mean rim weight of `(1 − N·V)^p` is `2 / ((p+1)(p+2))`: **0.067 at p = 4** (a
+hairline — right for a crystal tens of units across), 0.229 at p = 1.5, more again below 1. A ball a
+few units across seen from 100+ units, or a chain a few pixels wide, needs p ≈ 1.5 / 0.8 or the rim
+is sub-pixel and the object reads as a flat dull blob. Check the choice with a numpy render of the
+fragment maths (sphere raycast or a ribbon strip) before committing — it is the cheapest honest look
+call without an editor.
 
 ### Technique: MEASURE a prefab's real size offline (transform tree + nested instances + FBX bounds)
 
@@ -4136,6 +4167,18 @@ never fold it into a fix for something else.
   idiom. So a new rule dropped into that tick inherits the local path for free, where its
   detonations silently no-op (each guarded on `IsServer`) while its RPC throws. Gate the whole
   rule on `IsSpawned && IsServer` rather than trusting the callees' own guards.
+- **A mesh whose vertex shader REBUILDS geometry from per-vertex data cannot be moved by a CPU
+  consumer that draws it on the same material - unless the shader's undriven path is the identity.**
+  `OmniDepthPrismShader` rebuilt every vertex from TEXCOORD2 (its prism's centre) and stretched it by
+  the material's `_Thickness` 6.25. `CrystalHullFusion` re-tessellates the crystal onto a vessel hull
+  and draws that copy on the crystal's own material, with TEXCOORD2 holding ITS data (discharge
+  heights, zero on filler vertices): the stretch ran against the wrong centres and blew the Mass
+  faces 36 mesh units apart, and `normalize(0)` made filler vertices NaN. Fix shape: bake every
+  shape parameter the shader applied into the mesh (the material ships the neutral value), make the
+  undriven branch return the vertex untouched without reading the per-vertex channel, and have the
+  consumer force undriven. Prove it with a formula identity (max |p - v| at float32) and a negative
+  control that leaves the parameter in (238 units). Grep for every renderer that borrows a
+  material's `sharedMaterials` before giving a shader per-vertex semantics.
 
 ### Bundled tool: `field_parity.py`
 
