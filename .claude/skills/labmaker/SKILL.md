@@ -229,6 +229,11 @@ For a research lab run as parallel autonomous sessions (the NCA and ecology prog
 | A design question | **Decision needed** in the write-up and the owning `Docs/` file. Never decided by the porter |
 | The lab itself, for designers | A hub entry (`Docs/Studios/VesselStudio/studios.json`), Amoebius's STUDIOS page, `FrogletTools ▸ Vessels ▸ Vessel Studio` |
 
+- **Port the pick's per-frame ENTRY POINT, not just its physics, and call it from both sides.** Thresholds,
+  slews and "when to switch" decisions that live in the lab's harness class escape a parity gate that only
+  measures the solver. Then add an asset-equals-preset check to the same gate, with a planted asset change that
+  must fail it (L-STU-35, L-GEN-8). Float32 engines end time-driven curves a frame apart from a float64 lab:
+  end them at `1 − ε` on both sides (L-STU-46).
 - **Do not import the lab into the game.** What crosses over is the numbers and the tests.
 - **Extract a shared shell when the SECOND lab needs it, not before** (the Vessel Studio plan §4).
 - Anything a port could not verify in the editor goes to `Docs/QA/QA_BACKLOG.md`

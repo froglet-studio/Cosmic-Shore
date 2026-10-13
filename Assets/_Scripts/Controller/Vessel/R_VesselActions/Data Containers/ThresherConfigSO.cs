@@ -199,6 +199,34 @@ namespace CosmicShore.Gameplay
         [Tooltip("While spectating, full stick Y pitches the aim at this rate (degrees/s), the hull's own pitch sign.")]
         [SerializeField, Min(0f)] float aimPitchRate = 120f;
 
+        [Header("Analog triggers (with dials.analogTriggers; Docs/Studios/THRESHER_PLANT_LAB.md round 2)")]
+        [Tooltip("Trigger depth that counts as a FULL pull: LT stops the ball here, and the launch camera needs both " +
+                 "triggers at least this deep (RT through the chain's slew-limited rigidity). Pads reach 1.0; 0.97 " +
+                 "leaves room for a worn trigger.")]
+        [SerializeField, Range(0.5f, 1f)] float fullPull = 0.97f;
+        [Tooltip("Once full, a trigger counts as let go only below this depth (hysteresis, so noise at the end of the " +
+                 "trigger's travel cannot flicker the stop or the camera).")]
+        [SerializeField, Range(0.3f, 0.99f)] float letGoBelow = 0.9f;
+        [Tooltip("While planted, also turn the hull with the frame's own velocity change after the move, as towing " +
+                 "does. Off (the old behaviour): RotateShip runs before the move, so the planted hull faces the " +
+                 "PREVIOUS frame's velocity and does not turn at all on the frame a plant begins - a one-frame hitch.")]
+        [SerializeField] bool hullFollowsPlantedVelocity = false;
+        [Tooltip("On leaving a planted orbit, wind the spin's turn down over this long instead of stopping it in one " +
+                 "frame (seconds; an aimed launch leaves early by the angle it will still turn, so it lands on the aim). " +
+                 "0 = the old dead stop.")]
+        [SerializeField, Min(0f)] float releaseSpinDownSeconds = 0f;
+        [Tooltip("The wind-down is shortened so it never turns the ship more than this past its line (degrees): a " +
+                 "fast spin then stops harder, a bigger cap is smoother but the exit drifts more.")]
+        [SerializeField, Range(1f, 90f)] float releaseSpinDownMaxDegrees = 30f;
+        [Tooltip("When a spin hands the camera to the launch view, keep the camera's own turn and glide it to a stop " +
+                 "over this long (seconds); the aim is where the glide ends. 0 = the old entry, which starts from a " +
+                 "still pose and stops a camera turning at up to cameraMaxFollowTurnRate in one frame.")]
+        [SerializeField, Min(0f)] float spectateCarrySeconds = 0f;
+        [Tooltip("The chase camera's follow frame may change its turn RATE at most this fast (deg/s^2), on top of the " +
+                 "cameraMaxFollowTurnRate cap, so it eases into and out of a turn instead of starting and stopping it " +
+                 "in one frame. 0 = the rate cap alone.")]
+        [SerializeField, Min(0f)] float cameraMaxFollowAngularAcceleration = 0f;
+
         [Header("Launch sight - the Time-petal zoom window (local pilot only)")]
         [Tooltip("The zoom window's vertical field of view with LT held lightly (degrees) - the wide end. A " +
                  "constant: the window is never narrowed by speed or by the gameplay camera.")]
@@ -315,6 +343,13 @@ namespace CosmicShore.Gameplay
         public float SightZoomDeadzone => sightZoomDeadzone;
         public float SightZoomResponse => sightZoomResponse;
         public float SpectateBlendSeconds => spectateBlendSeconds;
+        public float FullPull => fullPull;
+        public float LetGoBelow => Mathf.Min(letGoBelow, fullPull);
+        public bool HullFollowsPlantedVelocity => hullFollowsPlantedVelocity;
+        public float ReleaseSpinDownSeconds => releaseSpinDownSeconds;
+        public float ReleaseSpinDownMaxDegrees => releaseSpinDownMaxDegrees;
+        public float SpectateCarrySeconds => spectateCarrySeconds;
+        public float CameraMaxFollowAngularAcceleration => cameraMaxFollowAngularAcceleration;
         public float SpectateEnterSeconds => spectateEnterSeconds;
         public float SpectateExitSeconds => spectateExitSeconds;
         public float AimYawRate => aimYawRate;

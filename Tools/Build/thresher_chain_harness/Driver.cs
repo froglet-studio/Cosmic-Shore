@@ -15,7 +15,8 @@ public static class Driver
     public static int Main(string[] args)
     {
         int failed = 0, passed = 0;
-        foreach (var m in typeof(ThresherChainSolverTests).GetMethods(BindingFlags.Public | BindingFlags.Instance))
+        foreach (var type in new[] { typeof(ThresherChainSolverTests), typeof(ThresherAnalogTriggerTests) })
+        foreach (var m in type.GetMethods(BindingFlags.Public | BindingFlags.Instance))
         {
             var cases = m.GetCustomAttributes<TestCaseAttribute>().ToList();
             bool isTest = m.GetCustomAttribute<TestAttribute>() != null;
@@ -27,7 +28,7 @@ public static class Driver
                 try
                 {
                     var args2 = m.GetParameters().Select((p, i) => Convert.ChangeType(a[i], p.ParameterType)).ToArray();
-                    m.Invoke(new ThresherChainSolverTests(), args2);
+                    m.Invoke(Activator.CreateInstance(type), args2);
                     passed++; Console.WriteLine("PASS " + name);
                 }
                 catch (TargetInvocationException e) { failed++; Console.WriteLine("FAIL " + name + ": " + e.InnerException?.Message); }

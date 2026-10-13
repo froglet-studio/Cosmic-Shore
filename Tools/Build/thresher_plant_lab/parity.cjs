@@ -9,7 +9,8 @@
 //    page's own solver (window.__lab.parityTrace), so the gate measures exactly the code the page flies.
 // 3. Compares every frame: mode equal, ship and ball positions within TOL. Exit 1 on any mismatch.
 // 4. Negative controls: the page re-run with a planted change (skid 7 -> 7.5; yank 0.5 -> 0.55; hookTurnRate
-//    300 -> 290) MUST fail the same comparison - a gate that cannot see a 7% dial change is not a gate.
+//    300 -> 290; and on the analog path elRigid 30 -> 28, anStopDecel 450 -> 420, anAnchor 2 -> 2.2) MUST fail
+//    the same comparison - a gate that cannot see a 7% dial change is not a gate.
 'use strict';
 const fs = require('fs');
 const path = require('path');
@@ -18,7 +19,8 @@ const { chromium } = require('playwright');
 
 const ROOT = path.resolve(__dirname, '../../..');
 const PAGE = path.join(ROOT, 'Docs/Studios/ThresherPlantLab.html');
-const SCEN = JSON.parse(fs.readFileSync(path.join(__dirname, 'scenarios.json'), 'utf8')).scenarios;
+const SPEC = JSON.parse(fs.readFileSync(path.join(__dirname, 'scenarios.json'), 'utf8'));
+const SCEN = SPEC.scenarios, DIALS = SPEC.analogDials;
 // The C# side is float32 and the page float64, so rounding accumulates with distance flown: the gap grows
 // smoothly (never steps) to ~0.06 u after ~600 u of a spun-up launch. Tolerance = 0.02 u + 2e-4 x the ship's distance from the origin on that frame.
 // A 7% change to one dial (the negative controls) misses by 3 u or more.
@@ -56,18 +58,42 @@ function compare(ref, got) {
   page.on('pageerror', (e) => errors.push(e.message));
   await page.goto('file://' + PAGE);
   await page.waitForFunction(() => window.__lab && window.__lab.parityTrace);
-  const run = (over) => page.evaluate(([s, o]) => window.__lab.parityTrace(s, o), [SCEN, over]);
+  const run = (over) => page.evaluate(([s, o, a]) => window.__lab.parityTrace(s, o, a), [SCEN, over, DIALS]);
 
   let failed = 0;
   const main = compare(ref, await run(null));
-  console.log(`${main.ok ? 'PASS' : 'FAIL'} shipped path: ${main.frames} frames, worst diff ${main.worst.toFixed(2)} x tolerance at ${main.where}`);
+  console.log(`${main.ok ? 'PASS' : 'FAIL'} digital + analog paths (${SCEN.length} scenarios): ${main.frames} frames, worst diff ${main.worst.toFixed(2)} x tolerance at ${main.where}`);
   if (!main.ok) failed++;
-  for (const [label, over] of [['skid 7 -> 7.5', { skid: 7.5 }], ['yank 0.5 -> 0.55', { yank: 0.55 }], ['hookTurnRate 300 -> 290', { hookTurnRate: 290 }]]) {
+  for (const [label, over] of [['skid 7 -> 7.5', { skid: 7.5 }], ['yank 0.5 -> 0.55', { yank: 0.55 }], ['hookTurnRate 300 -> 290', { hookTurnRate: 290 }],
+                              ['analog: elRigid 30 -> 28', { elRigid: 28 }], ['analog: anStopDecel 450 -> 420', { anStopDecel: 420 }], ['analog: anAnchor 2 -> 2.2', { anAnchor: 2.2 }]]) {
     const c = compare(ref, await run(over));
     const caught = !c.ok;
     console.log(`${caught ? 'PASS' : 'FAIL'} negative control (${label}) ${caught ? 'is caught' : 'was NOT caught'}: worst ${c.worst === Infinity ? 'mode mismatch' : c.worst.toFixed(0) + ' x tolerance'}`);
     if (!caught) failed++;
   }
+  // 5. The ASSET is the record: ThresherConfig.asset's analog dials (game units) must equal the parity dials
+  //    above AND the lab's "Analog triggers" preset, so the page, the gate and the game cannot drift apart.
+  const asset = fs.readFileSync(path.join(ROOT, 'Assets/_SO_Assets/VesselActions/Thresher/ThresherConfig.asset'), 'utf8');
+  const field = (key) => { const m = asset.match(new RegExp('^\\s+' + key + ': ([-0-9.eE]+)\\s*$', 'm')); return m ? +m[1] : NaN; };
+  const k = field('gameCruise') / field('sandboxCruise');
+  const fromAsset = {
+    anScheme: field('analogTriggers'), anBrake: field('analogBrake'), anBrakeCurve: field('analogBrakeCurve'),
+    anAnchor: field('analogAnchorCurve'), anStopDecel: field('analogStopDecel') * k, elSlack: field('chainSlackRate'),
+    elRigid: field('chainRigidRate'), elDamp: field('chainDamping'), elCurve: field('rigidityCurve'), elSlew: field('rigiditySlew'),
+    hkSeconds: field('analogHookSeconds'), spEase: field('spinEase'), yank: field('yank'),
+    anFull: field('fullPull'), anRelease: field('letGoBelow'), hlPost: field('hullFollowsPlantedVelocity'),
+    rlSpinDown: field('releaseSpinDownSeconds'), rlSpinMaxDeg: field('releaseSpinDownMaxDegrees'),
+    cmCarry: field('spectateCarrySeconds'), cmAngAccel: field('cameraMaxFollowAngularAcceleration'),
+  };
+  const preset = await page.evaluate(() => Object.assign({}, window.__lab.SHIPPED, window.__lab.VARIANTS.find((v) => v.name === 'Analog triggers').v));
+  const near = (a, b) => Math.abs(a - b) <= 1e-3 * Math.max(1, Math.abs(a), Math.abs(b));
+  const off = [];
+  for (const [key, val] of Object.entries(fromAsset)) {
+    if (!near(val, preset[key])) off.push(`${key}: asset ${val} vs lab preset ${preset[key]}`);
+    if (key in DIALS && !near(val, DIALS[key])) off.push(`${key}: asset ${val} vs scenarios.json ${DIALS[key]}`);
+  }
+  console.log(off.length ? 'FAIL ThresherConfig.asset differs: ' + off.join('; ') : `PASS ThresherConfig.asset's ${Object.keys(fromAsset).length} analog dials equal the lab preset and the parity dials`);
+  if (off.length) failed++;
   if (errors.length) { console.log('FAIL page errors: ' + errors.join(' | ')); failed++; }
   await browser.close();
   process.exit(failed ? 1 : 0);

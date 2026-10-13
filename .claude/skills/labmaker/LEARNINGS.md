@@ -76,6 +76,13 @@ Entries are grouped by family; within a family, the newest goes at the bottom.
 - Evidence: `parity.cjs` (TOL, REL, the three negative controls).
 - Promoted: no
 
+### L-GEN-8 — Graduate through a SHARED per-frame entry point, and check the asset against the preset in the same gate
+- Lab: Thresher Plant Lab graduation · Branch: `cece/zealous-johnson-gopp6t` · Date: 2026-10-13
+- What happened: round 2's control logic (the trigger thresholds, the slew, when to stop and when to let go) lived in the lab's `Vessel` class, outside the solver the parity gate measured. Graduating it as `ThresherChainSolver.AnalogTriggers` and refactoring the lab to call the same method put the controls, not just the physics, under the frame-parity gate (5 analog flights). A third check in the same gate parses `ThresherConfig.asset` and requires its 20 analog dials to equal the lab's preset, so an asset retune that the lab does not follow (L-STU-29) fails a gate instead of drifting silently.
+- Do instead: when a lab graduates, move every per-frame decision the pick depends on into the ported module, call it from both sides, and add an asset-equals-preset check to the parity gate, with a planted asset change that must fail it.
+- Evidence: `parity.cjs` step 5; `analogTriggers` in the page.
+- Promoted: §7 (with L-STU-35)
+
 ## STU — browser studios (Stoat Flight Studio, Vessel Studio)
 
 ### L-STU-1 — A lab's scripted input exposed a real game bug: the sling read the latest trigger sample, not the squeeze
@@ -321,7 +328,7 @@ Entries are grouped by family; within a family, the newest goes at the bottom.
 - What happened: the lab's `pose` (flight, four idle effects, three derived morphs, seeded RNG, an integer hash) was ported to pure C# and compiled in .NET beside a driver that loads the page in headless Chromium and asks `__lab.pose` / `omniPose` for the same times, seed and camera. The first run matched to 7e-7 per vertex. Planting a wrong flip salt or a different seeding order failed it by 0.7 and 2.5.
 - Do instead: when a lab graduates, keep its pose a PURE function (time, params, camera → vertices), port it with no engine types, and hold the port to the page with a parity harness that compiles the shipped file in place. Port the RNG bit for bit (mulberry32, Math.imul, >>>) and keep the lab's draw ORDER, or one seed means two films.
 - Evidence: `Tools/Build/omni_combine_parity/` (`run.sh`, `Driver.cs`, `lab_poses.cjs`); `Assets/_Scripts/Utility/OmniCombineCore.cs`.
-- Promoted: no
+- Promoted: §7 (recurred as L-GEN-8)
 
 ### L-STU-36 — A lab drawn in a right-handed frame graduates through a REFLECTION: map rotation axes as pseudovectors
 - Lab: Omni Combine Lab → the Elemental Converter · Branch: `cece/eager-rubin-km7qyn` · Date: 2026-10-13
@@ -401,6 +408,20 @@ Entries are grouped by family; within a family, the newest goes at the bottom.
 - Do instead: whenever a lab adds a spring, give it sub-steps from the start, run the scorecard at 30 Hz as well as 60 Hz, and write "must be sub-stepped or integrated implicitly" into the graduation notes, because the game's frame time varies. (Recurrence of L-ECO-4 / L-STU-43.)
 - Evidence: `stepAnalog` and the analog `stepPivot` branch (`nSub`); round 2 "Found" 8.
 - Promoted: no (§8's fixed-timestep trap covers it)
+
+### L-STU-46 — A float32 game clock ends a curve a frame before (or after) a float64 lab; end curves at 1 − ε, and expect a peak column to move
+- Lab: Thresher Plant Lab graduation (`ThresherChainSolver`, `parity.cjs`) · Branch: `cece/zealous-johnson-gopp6t` · Date: 2026-10-13
+- What happened: the analog hook ends at `u = hookT / hookSeconds >= 1`. Adding 1/60 thirty times is 0.49999997 in C# float32 and 0.5000000000000001 in JS float64, so the game's hook ran one frame longer than the lab's, and parity diverged from 1e-3 u to a mode mismatch within 50 frames. Ending every curve at `u >= 1 − 1e-4` on both sides fixed parity, and it moved the lab's analog catch column ~20% (2 620 → 3 183 °/s²), because a peak column reads the one frame where two models hand over.
+- Do instead: when a lab will be ported to a float32 engine, end time-driven curves at `1 − ε` from the start. When a one-frame shift moves a scorecard column, treat that as a sign that the column is reading a hand-over seam, and say so rather than quoting the better number.
+- Evidence: `ThresherChainSolver.EndOfCurve`, `END_OF_CURVE` in the page; `THRESHER_PLANT_LAB.md` "Graduated".
+- Promoted: no
+
+### L-STU-47 — Mutate the code a new test guards before trusting it: one of ten graduation tests passed with its rule deleted
+- Lab: Thresher Plant Lab graduation (`ThresherAnalogTriggerTests`) · Branch: `cece/zealous-johnson-gopp6t` · Date: 2026-10-13
+- What happened: all ten analog tests passed on their first run. Planting two mutations showed that the full-pull test caught a near-instant stop, but the ambiguous-plant test still passed with the turn-direction rule removed: its one scripted flight never produced the case the rule exists for (a sideways velocity that disagrees with the turn). A sweep over 80 turn patterns produced it (`(-90,-60,20)`), and with the sweep the rule's deletion fails.
+- Do instead: for every test written for a lab finding, delete or break the line it guards and run it once. If it still passes, the scenario does not reach the case; sweep the scenario until it does, and assert that the sweep produced enough qualifying cases.
+- Evidence: `AmbiguousPlant_OrbitsInTheFlightPlane_TheWayTheShipIsTurning` (the sweep and its `ambiguous > 10` guard).
+- Promoted: no
 
 ## NCA — swarm / neural-CA research rigs (Tools/NCA)
 

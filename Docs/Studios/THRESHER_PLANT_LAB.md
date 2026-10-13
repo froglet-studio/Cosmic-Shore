@@ -22,6 +22,57 @@ plant cycles; any input takes over. Slow-mo plays at quarter speed.
 
 ---
 
+## Graduated (2026-10-13): the game ships Analog triggers
+
+The designer's call after round 2 was **"build this in Unity"**: the *Analog triggers* preset is now the
+Thresher (`THRESHER.md` §1, §4a). What crossed over is the model and the numbers, not the page:
+
+| Lab | Game |
+|---|---|
+| the analog solver branches (`stepAnalog`, `anBeginStop`, the carried hook, the elastic radius, sub-steps, the launch lead) | `ThresherChainSolver` (`Settings.Analog`), a line-for-line port |
+| `analogTriggers(...)`, the per-frame trigger entry point (the lab now calls it too) | `ThresherChainSolver.AnalogTriggers`, polled by `ThresherExecutor.PollTriggers` from `ThresherVesselTransformer.Update` |
+| `hlPost`, `rlSpinDown` / `rlSpinMaxDeg` | `ThresherVesselTransformer` (`hullFollowsPlantedVelocity`, `releaseSpinDownSeconds` / `MaxDegrees`) |
+| `cmCarry`, `cmAngAccel`, "both full" | `ThresherExecutor.UpdateCamera` / `BeginSpectate`; `CustomCameraController.MaxFollowAngularAcceleration` (default 0) |
+| the preset's numbers | `ThresherConfig.asset` (`dials.analogTriggers` on; the class defaults stay digital) |
+
+**Held together by `Tools/Build/thresher_plant_lab/parity.cjs`**: the page's solver against the C# on 4 digital
+and 5 analog scripted flights (2 733 frames, within 0.80 × tolerance; 6 planted dial changes all caught), and
+the asset's 20 analog dials against the lab preset (a one-unit change to `chainRigidRate` fails it). Edit-mode:
+`ThresherAnalogTriggerTests` (10; the full-pull and ambiguous-plant tests each failed a planted mutation
+before they were trusted).
+
+**Found while porting.**
+- **A float32 clock ends a curve a frame late.** Adding 1/60 thirty times is 0.49999997 in float32 and
+  0.5000000000000001 in float64, so `u >= 1` ended the hook a frame apart in the game and the lab, and parity
+  diverged. Both now end a curve at `u >= 1 − 1e-4` (`ThresherChainSolver.EndOfCurve`). That one-frame shift
+  moved the analog catch column ~20% (squeeze 2 620 → 3 183 °/s²): the hook's hand-over to the elastic orbit
+  still carries a one-frame turn-rate dip (128 → 75 → 133 °/s), and which frame it lands on sets the peak.
+  Still about half of shipped's 6 132; blending the hook's step into the orbit's chord is the next round.
+- **The pivot frame's hull and the 3D plane.** The lab is yaw-only; the game's ambiguous plant orbits in the
+  hull's own up plane (`AnalogBeginStop(..., shipUp)`), and the lab now uses the same signed-angle form about
+  an up vector so the two compute identically in the plane.
+- **Input.** `InputStatus` already carries trigger depths (gamepad real, keyboard and mouse 0/1, touch
+  none), so no input plumbing changed; a device that reports no depth, and every remote replica, reads a
+  press as a full pull. Depths do not replicate (`THRESHER.md` §7).
+- **The sight zoom is orphaned.** LT is fully pulled whenever the launch view is up, so it can no longer
+  zoom the Time-petal window; it stays wide (decision needed: a new input for the zoom).
+
+Scorecard after graduation (`runBatch`, 60 Hz, seeds 1–6; the round-2 table below was taken before the
+end-of-curve change):
+
+| Approach | Ball stop | Ball yank | Hull catch | Hull leave | Hull wind-in | Camera | Ship jerk | Catch time | Exit error |
+|---|---|---|---|---|---|---|---|---|---|
+| Digital (before) | 24.4 | 129.3 | 6 132 | 65 096 | 59 229 | 14 400 | 20.8 | 0.95 | 0.5 |
+| Analog triggers · squeeze | 7.3 | 20.7 | 3 183 | 5 456 | 9 322 | 1 487 | 6.1 | 0.99 | 8.3 |
+| Analog triggers · slam | 7.5 | 24.8 | 3 948 | 4 836 | 11 006 | 1 500 | 6.4 | 0.51 | 6.9 |
+| Analog triggers · feather | 6.6 | 17.2 | 2 197 | 4 659 | 9 706 | 1 487 | 5.0 | 1.59 | 8.3 |
+
+**Still open (designer):** the sight-zoom input; whether to keep the 2/s rigidity slew; whether a towed ball
+should still be able to let out long (it reaches ~33 u slack, the winch reached 140); the 7–9° exit drift.
+**Still open (engineering):** the hook → elastic hand-over dip; replicating the trigger depths.
+
+---
+
 ## Round 2 (2026-10-13), analog triggers
 
 **Input this round** (the decision log was empty; the designer's direction, verbatim in substance):

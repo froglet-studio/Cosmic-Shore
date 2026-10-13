@@ -112,7 +112,7 @@
     <button class="btn" id="auto">Autopilot</button>
     <button class="btn" id="slow">Slow-mo</button>
     <button class="btn" id="pause">Pause</button>
-    <button class="btn" id="resetAll">Shipped</button>
+    <button class="btn" id="resetAll">Digital</button>
     <span class="meta" id="platform"></span>
   </header>
   <div id="stageWrap"><canvas id="stage"></canvas>
@@ -129,6 +129,10 @@
   const D2R = Math.PI / 180, R2D = 180 / Math.PI;
 
   // ================= (1) LAB meta + the shipped numbers =================
+  // GRADUATED 2026-10-13: the game now ships the "Analog triggers" preset (ThresherConfig.asset turns
+  // dials.analogTriggers on; parity.cjs holds that asset equal to the preset, and this page's solver to the C#).
+  // SHIPPED below is the DIGITAL Thresher before it: the class defaults (ThresherDials field initializers), which
+  // the asset still uses for every non-analog dial. View A flies it, labelled "Digital (before)".
   const LAB = { name: 'Thresher Plant Lab', branch: 'cece/zealous-johnson-gopp6t', round: 2, doc: 'Docs/Studios/THRESHER_PLANT_LAB.md' };
   // Every shipped constant names where it was read from (2026-10-13). The dials asset is
   // Assets/_SO_Assets/VesselActions/Thresher/ThresherConfig.asset (ThresherConfigSO.dials = ThresherDials),
@@ -271,6 +275,8 @@
   const smooth = (u) => { u = clamp01(u); return u * u * (3 - 2 * u); };
   const wrap = (a) => { while (a > Math.PI) a -= 2 * Math.PI; while (a < -Math.PI) a += 2 * Math.PI; return a; };
   const yawOf = (v) => Math.atan2(v.x, v.z);
+  const sgn = (x) => (x < 0 ? -1 : 1);   // Mathf.Sign: 0 counts as positive
+  const signedAngle = (a, b, axis) => { const an = nrm(a), bn = nrm(b); return Math.atan2(dot(cross(an, bn), nrm(axis)), dot(an, bn)); };
   const rotY = (v, rad) => { const c = Math.cos(rad), s = Math.sin(rad); return v3(v.x * c + v.z * s, v.y, -v.x * s + v.z * c); };
   function anyPerp(n, hint) {
     let p = cross(n, sq(hint) > 1e-6 ? hint : v3(0, 1, 0));
@@ -320,6 +326,9 @@
     };
   }
   const FREE = 0, SKID = 1, PIVOT = 2;
+  // A clock that adds dt N times lands a hair short of N x dt in float32 (the game), so a curve ends at this,
+  // not at 1, on both sides (ThresherChainSolver.EndOfCurve); otherwise the two end a hook a frame apart.
+  const END_OF_CURVE = 1 - 1e-4;
   function brakeProfile(u, curve) {   // lab: fraction of the press speed SHED at u = t / brakeSeconds
     u = clamp01(u);
     if (curve === 0) return u;
@@ -451,7 +460,7 @@
       const an = this.S.Analog, u = this.brakeT / (an ? this.stopT : this.S.BrakeSeconds);
       this.BallVel = scl(this.brakeV0, 1 - brakeProfile(u, an ? 2 : this.S.BrakeCurve));
       this.Ball = add(this.Ball, scl(this.BallVel, dt));
-      return u >= 1;
+      return u >= END_OF_CURVE;
     }
     stepBrake(shipPos, shipVel, dt, res) {
       const done = this.advanceBrake(dt);
@@ -483,8 +492,21 @@
     // A full pull: the ball stops along an S-curve, and the ship starts its hook round the stopping ball at
     // once (round 1's "Catch and swing"). Without that the stiff chain yanks a ship flying straight away from
     // the ball back through zero speed and whips the hull round at ~2000 deg/s.
-    anBeginStop(shipPos, shipVel) {
+    // The per-frame trigger entry point, the same as ThresherChainSolver.AnalogTriggers in the game (which
+    // parity.cjs holds this page to): RT -> the chain's rigidity (slew-limited), LT -> the brake; a full pull
+    // starts the stop, falling below letGo while stopped or planted asks the caller to let go (returns 2).
+    analogTriggers(lt, rt, full, letGo, shipPos, shipVel, up, dt) {
+      if (!this.S.Analog) return 0;
+      this.ltIn = clamp01(lt); this.anFullPull = Math.min(1, Math.max(0.05, full));
+      rt = clamp01(rt);
+      this.rtIn = this.S.ElSlew > 0 ? moveTowards(this.rtIn, rt, this.S.ElSlew * Math.max(0, dt)) : rt;
+      if (this.Mode === FREE && this.ltIn >= full) { this.anBeginStop(shipPos, shipVel, up); return 1; }
+      if ((this.Mode === SKID || this.Mode === PIVOT) && this.ltIn < letGo && !this.LaunchArmed) return 2;
+      return 0;
+    }
+    anBeginStop(shipPos, shipVel, up) {
       if (this.Mode !== FREE) return;
+      up = up && sq(up) > 1e-6 ? nrm(up) : v3(0, 1, 0);
       this.Mode = SKID; this.brakeT = 0; this.brakeV0 = this.BallVel;
       this.stopT = Math.max(0.08, 1.5 * len(this.BallVel) / this.S.StopDecel);
       this.braking = true; this.beginPivot(shipPos, shipVel);
@@ -492,22 +514,22 @@
       const a = this.anPrevVel, b = this.anCurVel, dtIn = this.anDt || 0;
       // Which way round: planted nearly straight away from the ball (within 30 degrees), the sideways
       // velocity that picks the orbit's direction is noise, so orbit the way the ship is ALREADY turning.
-      const rh = nrm(sub(shipPos, this.Pivot)), v = nrm(shipVel), yawIn = a && b && dtIn ? wrap(yawOf(b) - yawOf(a)) / dtIn : 0;
+      const rh = nrm(sub(shipPos, this.Pivot)), v = nrm(shipVel), yawIn = a && b && dtIn ? signedAngle(a, b, up) / dtIn : 0;
       // (and when the sideways velocity is that small, its direction, or BeginPivot's AnyPerpendicular
-      // fallback, can tip the orbit out of the flight plane; orbit in the hull's own turning plane instead,
-      // world up in this yaw-only lab)
+      // fallback, can tip the orbit out of the flight plane; orbit in the hull's own turning plane instead -
+      // the hull's up, world up in this yaw-only lab)
       if (Math.abs(dot(v, rh)) > Math.cos(30 * D2R)) {
-        const flat = nrm(cross(v3(0, 1, 0), rh));
+        const flat = nrm(cross(up, rh));
         if (sq(flat) > 0.5) this.lockDir = dot(flat, this.lockDir) >= 0 ? flat : scl(flat, -1);
-        if (Math.abs(yawIn) > 5 * D2R && Math.sign(wrap(yawOf(this.lockDir) - yawOf(v))) !== Math.sign(yawIn)) this.lockDir = scl(this.lockDir, -1);
+        if (Math.abs(yawIn) > 5 * D2R && sgn(signedAngle(v, this.lockDir, up)) !== sgn(yawIn)) this.lockDir = scl(this.lockDir, -1);
       }
       // the ship's turn rate coming in, about the orbit normal (the hook starts from it)
       const N = cross(rh, this.lockDir);
-      this.anTurnIn = a && b && dtIn ? Math.atan2(dot(cross(nrm(a), nrm(b)), nrm(N)), dot(nrm(a), nrm(b))) / dtIn : 0;
+      this.anTurnIn = a && b && dtIn ? signedAngle(a, b, N) / dtIn : 0;
     }
     stepAnalog(shipPos, shipVel, shipCruise, dt, res) {
       const S = this.S, stopping = this.Mode === SKID, base = clamp01(S.Tug * S.BallMass / (1 + S.BallMass));
-      const depth = stopping ? 1 : clamp01(this.ltIn / S.AnFull);
+      const depth = stopping ? 1 : clamp01(this.ltIn / Math.max(1e-3, this.anFullPull || 1));
       const share = stopping ? 1 : base + (1 - base) * Math.pow(depth, S.AnchorCurve);
       res.BallFrom = this.Ball;
       // Sub-stepped so the stiffest spring in play stays well inside semi-implicit Euler's stable range
@@ -630,7 +652,7 @@
           const carry = this.anTurnIn * S.HookSeconds * (u - (u * u * u - u * u * u * u / 2)) * (1 - smooth(u));
           if (sq(N) > 0.5 && Math.abs(carry) > 1e-6) heading = nrm(add(scl(heading, Math.cos(carry)), scl(cross(N, heading), Math.sin(carry))));
           this.hookHeading = heading;
-          if (u >= 1) this.hookHeading = ZERO;
+          if (u >= END_OF_CURVE) this.hookHeading = ZERO;
         } else if (S.HookShape > 0) {                           // lab: S-curve hook
           this.hookT += dt;
           const w = smooth(this.hookT / S.HookSeconds);
@@ -729,10 +751,10 @@
         else if (!held && this.lt) { this.lt = false; this.endPlant(); }
       } else {
         // Round 2: LT depth is the brake, a FULL pull stops the ball; RT depth is the rigidity.
-        s.ltIn = lt; payOut = false;
-        s.rtIn = this.S.ElSlew > 0 ? moveTowards(s.rtIn, rt, this.S.ElSlew * dt) : rt;   // the chain's rigidity (slew-limited if set)
-        if (s.Mode === FREE && lt >= Q.anFull) { this.lt = true; s.anBeginStop(this.pos, this.lastShipVel); this.events.push('plant'); }
-        else if ((s.Mode === SKID || s.Mode === PIVOT) && lt < Q.anRelease && !s.LaunchArmed) { this.lt = false; this.endPlant(); }
+        payOut = false;
+        const edge = s.analogTriggers(lt, rt, Q.anFull, Q.anRelease, this.pos, this.lastShipVel, v3(0, 1, 0), dt);
+        if (edge === 1) { this.lt = true; this.events.push('plant'); }
+        else if (edge === 2) { this.lt = false; this.endPlant(); }
       }
 
       // ---- RotateShip ----
@@ -975,7 +997,7 @@
   // spectate glide and smooth follow, the soft let-go). The quick stop is the scheme's own full-pull stop.
   const ANALOG = { anScheme: 1, hlPost: 1, elSlew: 2, hkShape: 1, hkSeconds: 0.5, spEase: 0.4, rlSpinDown: 0.3, yank: 0, cmAngAccel: 1500, cmCarry: 0.35 };
   const VARIANTS = [
-    { name: 'Shipped', kind: 'baseline', v: {}, blurb: 'The game today: a 0.3 s skid the taut rope mostly cancels, then the ball is pinned in one frame; a flat 300 deg/s hook; the spin stops dead on release and the ball is yanked in one frame.' },
+    { name: 'Digital (before)', kind: 'baseline', v: {}, blurb: 'The Thresher until 2026-10-13 (the class defaults; SHIPPED below): a 0.3 s skid the taut rope mostly cancels, then the ball is pinned in one frame; a flat 300 deg/s hook; the spin stops dead on release and the ball is yanked in one frame.' },
     { name: 'Analog triggers', kind: 'round 2', pilot: 'squeeze', v: ANALOG, blurb: 'LT is a brake: a partial pull slows the ball and swings the ship round it like a sliding anchor; only a FULL pull stops it (an S-curve stop of whatever speed is left) and makes it the pivot. RT is the chain\'s rigidity: released = a slack bungee, pulled = rigid; pulling it in reels the ship in and spins it up. The camera switches to the launch view only with both at a full pull. With the eased hook (starting from the ship\'s own turn), the hull keeping up while planted, a 2/s rigidity slew, the spectate glide and the soft let-go.' },
     { name: 'Analog, slammed', kind: 'round 2', pilot: 'slam', v: ANALOG, scoreOnly: true, blurb: 'The analog scheme with both triggers slammed (0 to 1 in a frame), the way a digital habit pulls them.' },
     { name: 'Analog, feathered', kind: 'round 2', pilot: 'feather', v: ANALOG, scoreOnly: true, blurb: 'The analog scheme with LT held at half (a sliding anchor) for 0.8 s before the full pull.' },
@@ -1023,23 +1045,29 @@
   }
 
   // ---- parity hook: the chain harness's stand-in pilot, run on THIS page's solver (parity.cjs) ----
-  function parityTrace(scenarios, overrides) {
-    const Q = Object.assign({}, SHIPPED, overrides || {}), S = settingsFrom(Q), dt = 1 / 60, out = {};
+  function parityTrace(scenarios, overrides, analogDials) {
+    const dt = 1 / 60, out = {};
     for (const sc of scenarios) {
+      const Q = Object.assign({}, SHIPPED, sc.analog ? analogDials || {} : {}, overrides || {}), S = settingsFrom(Q);
       const solver = new Solver(S); let p = v3(0, 0, 0), f = v3(0, 0, 1), vv = S.CruiseSpeed; const cruise = S.CruiseSpeed;
       solver.reset(p, f, scl(f, vv)); let last = scl(f, vv); const rows = [];
       for (const st of sc.steps) {
         if (st.plant) solver.plant(p, last);
         if (st.release) solver.release(last);
         if (st.arm) solver.armLaunch(v3(st.arm[0], st.arm[1], st.arm[2]), 0, 1);
+        if (st.lead != null) solver.launchLead = st.lead;
         const n = Math.round(st.t / dt);
         for (let i = 0; i < n; i++) {
+          if (S.Analog) {   // the analog triggers, exactly as TraceDriver.cs drives ThresherChainSolver.AnalogTriggers
+            const edge = solver.analogTriggers(st.lt || 0, st.rt || 0, Q.anFull, Q.anRelease, p, last, v3(0, 1, 0), dt);
+            if (edge === 2) solver.release(last);
+          }
           f = rotY(f, st.yaw * D2R * dt);
           const th = vv + (cruise - vv) * 1.5 * dt;
           const r = solver.step(p, scl(f, th), st.pay, cruise, dt);
           if (solver.Mode === PIVOT) f = nrm(r.ShipVelocity); else if (r.Launched) f = nrm(r.ShipVelocity);
           vv = len(r.ShipVelocity); p = add(p, scl(r.ShipVelocity, dt)); last = r.ShipVelocity;
-          rows.push([solver.Mode, p.x, p.y, p.z, solver.Ball.x, solver.Ball.y, solver.Ball.z, solver.BallSpeed, solver.Length]);
+          rows.push([solver.Mode, p.x, p.y, p.z, solver.Ball.x, solver.Ball.y, solver.Ball.z, solver.BallSpeed, solver.Extent]);
         }
       }
       out[sc.name] = rows;
@@ -1159,15 +1187,15 @@
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     const w = W / dpr, h = H / dpr, draw = worldCam ? drawWorld : drawChase, phone = w < 700;
     if (split) {
-      if (phone) { draw(0, 0, w, h / 2 - 1, A, 'A · Shipped', css('--shipped')); draw(0, h / 2 + 1, w, h / 2 - 1, B, 'B · ' + currentName(), css('--trial')); }
-      else { draw(0, 0, w / 2 - 1, h, A, 'A · Shipped', css('--shipped')); draw(w / 2 + 1, 0, w / 2 - 1, h, B, 'B · ' + currentName(), css('--trial')); }
+      if (phone) { draw(0, 0, w, h / 2 - 1, A, 'A · Digital (before)', css('--shipped')); draw(0, h / 2 + 1, w, h / 2 - 1, B, 'B · ' + currentName(), css('--trial')); }
+      else { draw(0, 0, w / 2 - 1, h, A, 'A · Digital (before)', css('--shipped')); draw(w / 2 + 1, 0, w / 2 - 1, h, B, 'B · ' + currentName(), css('--trial')); }
       ctx.fillStyle = css('--line'); if (phone) ctx.fillRect(0, h / 2 - 1, w, 2); else ctx.fillRect(w / 2 - 1, 0, 2, h);
-    } else draw(0, 0, w, h, showA ? A : B, showA ? 'A · Shipped' : 'B · ' + currentName(), showA ? css('--shipped') : css('--trial'));
+    } else draw(0, 0, w, h, showA ? A : B, showA ? 'A · Digital (before)' : 'B · ' + currentName(), showA ? css('--shipped') : css('--trial'));
     if (paused) { ctx.font = '600 13px ' + css('--font-ui'); ctx.fillStyle = '#fff'; ctx.fillText('PAUSED', w / 2 - 24, h - 14); }
     drawTraces();
   }
   let showA = false;
-  function currentName() { const m = VARIANTS.find((va) => va.name === activePreset); const changed = Object.keys(diffOnly()).length; return m && sameAsPreset(m) ? m.name : (changed ? 'your settings' : 'Shipped'); }
+  function currentName() { const m = VARIANTS.find((va) => va.name === activePreset); const changed = Object.keys(diffOnly()).length; return m && sameAsPreset(m) ? m.name : (changed ? 'your settings' : 'Digital (before)'); }
 
   // ---- the recorder traces (bottom dock) ----
   function drawTraces() {
@@ -1351,7 +1379,7 @@
     const box = document.createElement('div'); box.className = 'about';
     box.innerHTML = `<p><b>${LAB.name}</b> · round ${LAB.round} · branch <code>${LAB.branch}</code> · write-up <code>${LAB.doc}</code></p>
 <p>The Thresher's Time ability is the <b>Plant</b> (LT): the ball stops and becomes a pivot, the ship swings round it, and LT up flings the ship off. Shipped, the ball is pinned in one frame while still doing about 63 u/s, the heading snaps into a 300°/s turn, and on release the spin stops dead and the ball is yanked to speed in one frame. A always flies the shipped model; B flies the approach you pick. The traces below the stage plot both.</p>
-<p><b>Round 2: analog triggers</b> (dial <code>anScheme</code>, preset <i>Analog triggers</i>). LT is a brake: a partial pull slows the ball and hands more of the chain\'s pull to the ship, so it swings round a sliding anchor; only a full pull stops the ball, along an S-curve, and makes it the pivot. RT is the chain\'s rigidity, flipped from the shipped winch: released is a slack bungee, pulled is rigid. Stiffening the chain pulls the ball (or a planted ship) in and spins it up by angular momentum, which is what the winch\'s let-out and crack were. The camera switches to the launch view only with both triggers at a full pull. The left view keeps the shipped controls, so with a human at the sticks the same pull means different things on each side; the autopilot flies the same intent on both.</p>\n<p><b>How faithful it is.</b> The chain is a line-for-line port of <code>ThresherChainSolver</code>, held to the C# solver frame by frame by <code>Tools/Build/thresher_plant_lab/parity.cjs</code>. Hull, grip, nose speed and the camera follow <code>ThresherVesselTransformer</code>, <code>VesselTransformer</code> (vector model) and <code>ThresherExecutor.UpdateCamera</code>, re-implemented here, not ported.</p>
+<p><b>Round 2: analog triggers</b> (dial <code>anScheme</code>, preset <i>Analog triggers</i>). LT is a brake: a partial pull slows the ball and hands more of the chain\'s pull to the ship, so it swings round a sliding anchor; only a full pull stops the ball, along an S-curve, and makes it the pivot. RT is the chain\'s rigidity, flipped from the shipped winch: released is a slack bungee, pulled is rigid. Stiffening the chain pulls the ball (or a planted ship) in and spins it up by angular momentum, which is what the winch\'s let-out and crack were. The camera switches to the launch view only with both triggers at a full pull. The left view keeps the shipped controls, so with a human at the sticks the same pull means different things on each side; the autopilot flies the same intent on both.</p>\n<p><b>Graduated (2026-10-13).</b> The game now ships the <i>Analog triggers</i> preset: <code>ThresherChainSolver</code> carries the analog path, <code>ThresherConfig.asset</code> turns it on, and <code>parity.cjs</code> holds this page's solver to the C# on both paths and the asset to the preset. View A is the digital Thresher from before.</p>\n<p><b>How faithful it is.</b> The chain is a line-for-line port of <code>ThresherChainSolver</code>, held to the C# solver frame by frame by <code>Tools/Build/thresher_plant_lab/parity.cjs</code>. Hull, grip, nose speed and the camera follow <code>ThresherVesselTransformer</code>, <code>VesselTransformer</code> (vector model) and <code>ThresherExecutor.UpdateCamera</code>, re-implemented here, not ported.</p>
 <p><b>What this lab does NOT model:</b></p>
 <ul>
 <li>Flight is in one plane: yaw only. Pitch, roll, planted steering (<code>pivotSteer</code>) and tilting the orbit with the aim are not modelled.</li>
@@ -1366,7 +1394,7 @@
   makeTabs('bottomTabs', 'bottomBody', [{ name: 'Traces', build: tracesPanel }, { name: 'Scorecard', build: scorecardPanel }, { name: 'Decisions', build: logPanel }, { name: 'About', build: aboutPanel }], 'lab:' + LAB.name + ':bottom');
 
   // ================= header controls =================
-  $('title').textContent = LAB.name; $('meta').textContent = 'round ' + LAB.round;
+  $('title').textContent = LAB.name; $('meta').textContent = 'round ' + LAB.round + ' · the game ships Analog triggers';
   const pressed = () => {
     $('viewSplit').setAttribute('aria-pressed', String(split)); $('viewSingle').setAttribute('aria-pressed', String(!split));
     $('camPilot').setAttribute('aria-pressed', String(!worldCam)); $('camWorld').setAttribute('aria-pressed', String(worldCam));
@@ -1381,7 +1409,7 @@
   $('auto').onclick = () => { autopilot = !autopilot; autoCycle = 0; reset(); pressed(); };
   $('slow').onclick = () => { slowmo = !slowmo; pressed(); };
   $('pause').onclick = () => { paused = !paused; pressed(); };
-  $('resetAll').onclick = () => { Object.assign(P, SHIPPED); activePreset = 'Shipped'; lsSet(LS_KEY, {}); reset(); refreshDiff(); };
+  $('resetAll').onclick = () => { Object.assign(P, SHIPPED); activePreset = 'Digital (before)'; lsSet(LS_KEY, {}); reset(); refreshDiff(); };
 
   // ================= input: keyboard, gamepad, touch — all into one input object =================
   const keys = new Set();

@@ -17,11 +17,25 @@ public static class TraceDriver
     public static int Main(string[] args)
     {
         var doc = JsonDocument.Parse(File.ReadAllText(args[0]));
-        var s = new ThresherDials().ToSettings();
+        var shipped = new ThresherDials().ToSettings();
+        var dials = doc.RootElement.GetProperty("analogDials");
+        float D(string key) => dials.GetProperty(key).GetSingle();
         var sb = new StringBuilder("{");
         bool firstScenario = true;
         foreach (var sc in doc.RootElement.GetProperty("scenarios").EnumerateArray())
         {
+            // Analog scenarios: the shipped class defaults with the lab's analog dials laid over them (the
+            // same mapping the lab's settingsFrom makes; parity.cjs checks these equal ThresherConfig.asset).
+            bool analog = sc.TryGetProperty("analog", out var an) && an.GetBoolean();
+            var s = shipped;
+            if (analog)
+            {
+                s.Analog = true;
+                s.BrakeMax = D("anBrake"); s.BrakeCurve = D("anBrakeCurve"); s.AnchorCurve = D("anAnchor");
+                s.StopDecel = D("anStopDecel"); s.ChainSlackRate = D("elSlack"); s.ChainRigidRate = D("elRigid");
+                s.ChainDamping = D("elDamp"); s.RigidityCurve = D("elCurve"); s.RigiditySlew = D("elSlew");
+                s.AnalogHookSeconds = D("hkSeconds"); s.SpinEase = D("spEase"); s.Yank = D("yank");
+            }
             var solver = new ThresherChainSolver(s);
             Vector3 p = Vector3.zero, f = Vector3.forward;
             float v = s.CruiseSpeed, cruise = s.CruiseSpeed;
@@ -39,9 +53,17 @@ public static class TraceDriver
                 if (st.TryGetProperty("release", out var rl) && rl.GetBoolean()) solver.Release(last);
                 if (st.TryGetProperty("arm", out var arm))
                     solver.ArmLaunch(new Vector3(arm[0].GetSingle(), arm[1].GetSingle(), arm[2].GetSingle()));
+                if (st.TryGetProperty("lead", out var lead)) solver.LaunchLeadRadians = lead.GetSingle();
+                float lt = st.TryGetProperty("lt", out var ltp) ? ltp.GetSingle() : 0f;
+                float rt = st.TryGetProperty("rt", out var rtp) ? rtp.GetSingle() : 0f;
                 int n = Mathf.RoundToInt(st.GetProperty("t").GetSingle() / Dt);
                 for (int i = 0; i < n; i++)
                 {
+                    if (analog)
+                    {
+                        var edge = solver.AnalogTriggers(lt, rt, D("anFull"), D("anRelease"), p, last, Vector3.up, Dt);
+                        if (edge == ThresherTriggerEdge.LetGo) solver.Release(last);
+                    }
                     f = Rot(f, yaw * Dt);
                     float th = v + (cruise - v) * 1.5f * Dt;
                     var r = solver.Step(p, f * th, pay, cruise, Dt);
@@ -53,7 +75,7 @@ public static class TraceDriver
                     sb.Append('[').Append((int)solver.Mode).Append(',')
                       .Append(F(p.x)).Append(',').Append(F(p.y)).Append(',').Append(F(p.z)).Append(',')
                       .Append(F(solver.BallPosition.x)).Append(',').Append(F(solver.BallPosition.y)).Append(',').Append(F(solver.BallPosition.z)).Append(',')
-                      .Append(F(solver.BallSpeed)).Append(',').Append(F(solver.Length)).Append(']');
+                      .Append(F(solver.BallSpeed)).Append(',').Append(F(solver.Extent)).Append(']');
                 }
             }
             sb.Append(']');
