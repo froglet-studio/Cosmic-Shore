@@ -340,6 +340,7 @@ namespace CosmicShore.Launcher
             psi.Environment["COSMIC_SHORE_PROJECT"] = _ws.Dir;
             if (!audio) psi.Environment["COSMIC_SHORE_AUDIO"] = "off";
             if (!_s.Network) psi.Environment["COSMIC_SHORE_NET"] = "off";
+            OnlineEnvironment(psi);
             if (_s.MobileRenderPath) psi.Environment["COSMIC_SHORE_GLES"] = "1";
             if (!string.IsNullOrWhiteSpace(_s.Profile)) psi.Environment["COSMIC_SHORE_PROFILE"] = _s.Profile.Trim();
             // Every play session leaves a report (scenes, frame times, errors) the CLAUDE page can hand to Claude.

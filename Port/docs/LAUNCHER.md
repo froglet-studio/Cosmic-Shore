@@ -37,7 +37,7 @@ Source: `Port/src/CosmicShore.Launcher` (C#, Dear ImGui on our own Silk.NET wind
 | **TIME** | Benchmarks (timed runs of scenes and replays that close themselves, with a results table against the last run) and local multiplayer (2-4 game windows that join each other) (below). |
 | **TRACKS** | Every play run: performance per scene, features used, audio, every problem over time (below). |
 | **BOARD** | Bugs and tasks, with Amoebius's suggestions (below). |
-| **SETTINGS** | Folded sections: Game, Source, Look, Claude, Advanced, Toolchain, About (versions). |
+| **SETTINGS** | Folded sections: Game, Online (below), Source, Look, Claude, Advanced, Toolchain, About (versions). |
 | **CONSOLE** | Every command the launcher ran and its output. COPY for a bug report. |
 
 ![PLAY](architecture/launcher_play.png)
@@ -76,9 +76,31 @@ from the history list. `Amoebius --auto bench:Menu_Main,MinigameSkimRace:600` ru
 benchmark unattended and closes Amoebius when it is saved.
 
 **MULTIPLAYER** opens 2, 3 or 4 game windows on this PC, each in its own save slot (`player1`,
-`player2` ...) with networking on and sound only in the first. They share one session folder, so
-a party or match hosted in one window shows up in the others: host in one, join from the rest.
-Start them at Bootstrap (log in, menu) or straight into a scene. **CLOSE** closes them all.
+`player2` ...) with networking on and sound only in the first. The first window hosts the online
+server (or they all use the one SETTINGS > ONLINE names), so a party or match hosted in one window
+shows up in the others: host in one, join from the rest. Start them at Bootstrap (log in, menu) or
+straight into a scene. **CLOSE** closes them all.
+
+## ONLINE - playing with other machines
+
+SETTINGS > ONLINE decides where every game this launcher starts finds the other players. Games meet
+through Amoebius's online server: the lobby (who is online, parties, invites) and the relay that
+carries a match between machines (`docs/ARCHITECTURE.md` §8).
+
+- **Server** empty (the default): on a local network nothing needs setting up. A game looks for a
+  server on the network; if there is none, the first game started hosts one and the others find it.
+- **Server** `host[:port]`: for players in different places. Everyone enters the same address, of a
+  machine that runs the server and is reachable from the internet (port 47777 when left out).
+- **Server key**: only when that server was started with a key. Kept in the OS credential store.
+- **Host the online server on this PC**: runs the server (the game's player with `--server`) while
+  Amoebius is open, independent of any game. Games on this network prefer it over one a game hosts,
+  and it lists the addresses players on this network use. For friends elsewhere, forward TCP 47777
+  on your router to this PC and give them your public address. Windows asks once whether CosmicShore
+  may use the network: allow it on private networks.
+
+A branch can name the team's shared server for everyone: `Network.Server` (and `Network.Key`) in
+`Port/ProjectSettings/AmoebiusProject.json`. A player's own Server setting wins over it, and phone
+builds carry it (without it, a phone plays on its own).
 
 ## TRACKS - Amoebius's memory of every run
 

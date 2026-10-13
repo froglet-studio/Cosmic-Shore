@@ -49,6 +49,8 @@ namespace CosmicShore.Player
 
         public static int Main(string[] args)
         {
+            // --server: the online server alone (lobby + relay), no window and no game.
+            if (ServerMode.Requested(args)) return ServerMode.Run(args);
             string scene = null, screenshot = null;
             int frames = -1, width = 1600, height = 900;
             bool headless = false, quiet = false, reportRender = false;

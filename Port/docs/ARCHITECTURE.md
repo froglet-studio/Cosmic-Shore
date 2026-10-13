@@ -108,7 +108,7 @@ sits behind those names is first-party code.
 | Async | A frame-driven task scheduler; awaits resume on the game-loop thread | `Tasks/` |
 | Rendering data | `Mesh`, `Material`, `Camera`, `RenderTexture`, volumes, change tracking. **Data only:** the Render project draws | `Rendering/` |
 | Audio | The FMOD Studio surface (`EventReference`, `EventInstance`, buses, VCAs). It runs silent on local state, or drives the real FMOD C API when a native backend is installed (which then also answers event descriptions: one-shot, snapshot, length). `RuntimeManager.EventRecorded` is the parity harness's FMOD channel (starts, restarts, stops, FMOD and Unity mixer snapshots); `FmodGuids` names GUID-only references from the build's `GUIDs.txt` | `Audio/` |
-| Networking | Netcode for GameObjects' model over a TCP transport (section 8) | `Networking/` |
+| Networking | Netcode for GameObjects' model over TCP, directly or through the online server's relay; the online server (lobby + relay) for players on any network (section 8) | `Networking/`, `Networking/Online/` |
 | Services | Authentication, Cloud Save, Friends, Leaderboards and Analytics, kept on local disk | `Services/` |
 
 *More:* `docs/ENGINE_CORE.md`.
@@ -243,7 +243,7 @@ is sorted back to front. A per-instance "clock block" (15 vec4) rides in a textu
 
 ![Network](architecture/network.png)
 
-**Figure 5.** Two instances party up and play together, on one machine or over a LAN.
+**Figure 5.** Players on any machine party up and play together through Amoebius's online server.
 
 **`NetDriver`** carries Netcode for GameObjects' model over TCP. Each frame is
 `[length][kind][payload]`, encoded by `NetWire`. It covers:
@@ -261,17 +261,68 @@ is sorted back to front. A per-instance "clock block" (15 vec4) rides in a textu
 (`Networking/Wire/INetTransport.cs`) through `NetDriver.TransportFactory`, and reads its events
 in `EarlyUpdate`. The contract is reliable, ordered, whole frames; events come only through `Poll`
 on the main thread; peer 0 is the server; a failed connect reports `Disconnected`; a listen on a
-taken port throws. TCP (`NetSocket`, `TcpTransportFactory`) is the first implementation and the
-default. An internet relay is the next one (C6, after gate G2). `NetTransportContractTests` runs
-the same checks against every implementation (TCP and the in-memory loopback the tests use), and
-`NetDriverTransportTests` drives the driver's handshake over both.
+taken port throws. TCP (`NetSocket`, `TcpTransportFactory`) is the direct transport; the online
+server's relay (`OnlineTransportFactory`) is the second. `NetTransportContractTests` runs the same
+checks against TCP, the relay and the in-memory loopback the tests use, and `NetDriverTransportTests`
+and `OnlineMultiplayerTests` drive the driver's handshake over them.
 
-**`DirectoryMultiplayerService`** stands in for the UGS Lobby + Relay. It keeps one JSON file per
-session in a shared folder: roster, per-player properties (the game's invite channel), heartbeat,
-host endpoint.
+**The online server** (`Networking/Online/`) is what the UGS Lobby and Relay are to the Unity
+build. One process holds every session (the presence lobby, parties, match sessions: a roster
+each, with the per-player properties the game invites through) and relays each joining client's
+netcode connection to its session's host, so nobody but the server needs a reachable address.
+- **Wire** (`OnlineWire`): one TCP port (47777). A connection opens with one JSON frame
+  ([int32 length][UTF-8 JSON]): `hello` makes it a game's control connection (lobby requests and
+  replies matched by request id, plus server events), `link-open` is a joining client's relay link,
+  `link-accept` the host's half, which the server asks for with a `link` event. Once paired, the
+  server copies bytes both ways untouched, so `NetSocket`'s own frames run end to end.
+- **Lobby rules** (`SessionRules`, `Wire/SessionRecords.cs`) are the ones the shared-folder backend
+  uses too: join refuses a gone host, a locked or a full session; a player silent for 30 s leaves
+  the roster; a refresh hands a host-less session to the next player; queries filter on the
+  indexed properties and hide private and locked sessions. Only the host may delete a session or
+  remove a player.
+- **Liveness** is the control connection: a connected player is alive; one whose connection drops
+  keeps its seats for the 30 s reconnect grace.
+- **Soft state.** A game that (re)connects re-asserts every session it holds before its own lobby
+  calls go through, so a server restart, or a move to another server, rebuilds the lobby from the
+  games themselves (the host keeps its seat; deleted sessions and removed players stay gone).
+- **Keys.** A server started with a key refuses games without it (`COSMIC_SHORE_NET_KEY`).
+
+**`OnlineMultiplayerService`** is the game's `MultiplayerService.Instance` when networking is on:
+every SDK call is a request to the server; `CreateSessionAsync` with Relay starts the
+NetworkManager as host (as the SDK's network handler does), and a join to a Relay session points
+the transport at `amoebius-relay:<session>` and starts the client. It keeps the connection up in
+the background (backoff, keep-alive, following a server that stood down) and lobby calls made
+while it is down wait for it, then fail with the `SessionException` the game's own retry and
+offline paths handle.
+
+**Which server.** `PlayerBoot` picks, in order:
+1. `COSMIC_SHORE_NET_SERVER` (the launcher's SETTINGS > ONLINE): `host[:port]` for internet play,
+   or `dir` for the shared-folder backend below;
+2. the branch's shared server, `Network.Server` in `Port/ProjectSettings/AmoebiusProject.json`
+   (packaged into phone builds too);
+3. **automatic** (empty): a UDP probe on 47777 (`OnlineDiscovery`) finds a server on the local
+   network; with none, the game hosts one itself (`OnlineServer.TryStartEmbedded`). The discovery
+   port is the election lock, so one machine hosts one server. Servers announce themselves every 3 s;
+   a server hosted inside a game stands down for a better one it hears (a standalone server, else
+   the older), after checking it can reach it and that the key is the same, telling its games to
+   move. Relay links already running keep running until they close. A server hosted by a game
+   lives in that game: when the game quits, another game takes over (hosts one and re-asserts its
+   sessions), but a match relayed through the old server ends with it. A standalone server does
+   not have that problem.
+
+`CosmicShore --server [PORT] [--key KEY] [--name NAME] [--no-discovery]` runs the server alone, with
+no window or content (`ServerMode`); the launcher's "Host the online server on this PC" runs exactly
+that. For players outside the LAN, forward the TCP port on the router to that machine, or run it on
+a machine with a public address, and give every game its address.
+
+**`DirectoryMultiplayerService`** is the earlier, single-machine backend: one JSON file per session
+in a folder every player can see (`COSMIC_SHORE_NET_DIR`), the host's TCP endpoint in the record and
+a direct connection. It stays for phone builds without a server (a phone does not probe the LAN or
+host a server, so iOS shows no local-network prompt) and for `COSMIC_SHORE_NET_SERVER=dir`.
 
 **Services** are local stand-ins:
-- Authentication: an anonymous id persisted per install.
+- Authentication: an anonymous id persisted per install (each player on one machine needs their own
+  `COSMIC_SHORE_PROFILE`; two games with one id replace each other on the server).
 - Cloud Save: a JSON file.
 - Friends: an empty friend book.
 - Leaderboards and Analytics: in memory.
@@ -414,11 +465,12 @@ own touch controls.
 | `--do "F:inspect OBJECT Component"` · `eval Type.Member` | Print live state at frame F |
 | `--record DIR:FROM-TO` | Record frames (`tools/record_session.sh` makes a video) |
 | `--headless` · `--verbose` · `--seed S` | No window · every log channel · reproducible runs |
+| `--server [PORT] [--key K]` | The online server alone: lobby and relay for other games, no window or content (section 8) |
 | `--train train\|replay\|eval` | The game's AI genetic training (`docs/AI_TRAINING.md`) |
 
 Environment variables:
 - `COSMIC_SHORE_AUDIO=off|wav:PATH|nrt` (`nrt`: the FMOD runtime and banks, no output, mixed only on the engine's tick; what `engine_parity` runs)
-- `COSMIC_SHORE_NET=off`
+- `COSMIC_SHORE_NET=off`; `COSMIC_SHORE_NET_SERVER=host[:port]|dir` (empty: automatic), `COSMIC_SHORE_NET_KEY`, `COSMIC_SHORE_NET_EMBED=0` (never host a server in this game)
 - `COSMIC_SHORE_PROFILE=b` (second install)
 - `COSMIC_SHORE_PROJECT=DIR` (use another project or packaged data)
 - `COSMIC_SHORE_GLES=1`
