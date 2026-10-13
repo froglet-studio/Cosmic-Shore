@@ -13,8 +13,9 @@ namespace CosmicShore.ScriptableObjects
         [SerializeField] public Material CrystalMaterial1;
         [SerializeField] public Material CrystalMaterial2;
         [SerializeField] public Material CrystalMaterial3;
-        [Tooltip("Crystal model slot 4 - the omni crystal's stationary Shepard rim " +
-                 "(Docs/PALETTE.md §2.10). Optional: a set without it simply has no slot 4.")]
+        [Tooltip("Crystal model slot 4 - was the omni crystal's stationary Shepard rim, retired " +
+                 "with its breathing look (Docs/PALETTE.md §2.10); no crystal asks for slot 4 now. " +
+                 "Optional: a set without it simply has no slot 4.")]
         [SerializeField] public Material CrystalMaterial4;
         [SerializeField] public Material ExplodingBlockMaterial;
         [SerializeField] public Material ShieldedBlockMaterial;
