@@ -65,6 +65,21 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Rhino hull plough — rammed prisms are shoved aside, not destroyed (`cece/magical-meitner-56obj5`, 2026-10-13) — NOT EDITOR-VERIFIED
+
+**What landed:** `RhinoPloughPrismEffectSO` replaces `VesselDamagePrismEffect` in
+`RhinoImpactorDataContainer` only. A prism the Rhino's HULL touches is moved sideways to its own side
+of the centreline until it clears the hull (+ a speed-scaled throw, ≤ 30 u); super-shielded prisms
+only jiggle. The sword is unchanged. No `unity` binary was available, so `/verify-unity` did not run;
+the out-of-editor reference compile did (see the commit).
+
+**Verify:** the seven steps in `Assets/_Scripts/Controller/Vessel/R_VesselActions/RHINO_PLOUGH.md`
+§ "In-editor verification" — plough not destroy, wider at boost, shielded/super-shielded, Cleave AI
+still scores with the sword, danger debuff still lands, no snap-back, MPPM sides agree.
+
+**First-pass tuning** (`RhinoPloughPrismEffect.asset`): `clearanceMargin` 1 u ·
+`throwSecondsOfSpeed` 0.04 s · `maxThrowDistance` 30 u · `slideSeconds` 0.25 s.
+
 ### 🔴 EditMode triage of the 14 failures new on 2026-10-13 (`claude/compassionate-hopper-rqat4d`, 2026-10-13) — NOT EDITOR-VERIFIED
 
 No editor and no `unity` CLI in the authoring session, so `/verify-unity` did NOT run. The full per-suite record (verdict, cause, commit) is `Docs/QA/DEV_TASKS.md` DT-003. Offline proof: `unity_refcompile` player + editor configs 0 errors in project code (a planted CS0103 failed the editor config); headless runs of the real RearViewLaw / FollowHeightScale / SpeedTunnelLaw test files against the real camera controller and law source (red on bleeding-edge, green here, mutants red); `slingshot_course_harness` 1,600/1,600; `author_stoat` / `author_slingshot` / `author_warpline` / `author_wormholes --check`, `render_card_backgrounds --check` (33/33) and `author_card_backgrounds --strict`.
