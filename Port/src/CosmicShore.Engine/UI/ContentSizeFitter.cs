@@ -41,6 +41,7 @@ namespace CosmicShore.Engine.UI
 
         void OnEnable() => SetDirty();
         void OnDisable() => SetDirty();
+        void OnRectTransformDimensionsChange() => SetDirty();
 
         protected void SetDirty()
         {

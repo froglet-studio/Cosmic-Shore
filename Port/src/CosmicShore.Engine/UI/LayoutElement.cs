@@ -38,6 +38,8 @@ namespace CosmicShore.Engine.UI
 
         void OnEnable() => SetDirty();
         void OnDisable() => SetDirty();
+        void OnBeforeTransformParentChanged() => SetDirty();
+        void OnTransformParentChanged() => SetDirty();
 
         /// <summary>
         /// The parent group re-solves when this element's opinion changes. Marks even while

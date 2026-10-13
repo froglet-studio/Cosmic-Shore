@@ -762,8 +762,16 @@ namespace CosmicShore.Engine
                 rect.anchorMin = sourceRect.anchorMin;
                 rect.anchorMax = sourceRect.anchorMax;
                 rect.pivot = sourceRect.pivot;
-                rect.anchoredPosition = sourceRect.anchoredPosition;
+                // The serialized values, as Unity copies them. Never through localPosition: the
+                // clone has no parent yet, so that setter would back-solve against a zero rect
+                // and bake the source parent's anchor reference point into anchoredPosition
+                // (every stretched child of a cloned card then sat off its anchors).
+                rect.anchoredPosition3D = sourceRect.anchoredPosition3D;
                 rect.sizeDelta = sourceRect.sizeDelta;
+            }
+            else
+            {
+                clone.transform.localPosition = source.transform.localPosition;
             }
 
             map[source] = clone;
@@ -771,7 +779,6 @@ namespace CosmicShore.Engine
 
             clone.layer = source.layer;
             clone.tag = source.tag;
-            clone.transform.localPosition = source.transform.localPosition;
             clone.transform.localRotation = source.transform.localRotation;
             clone.transform.localScale = source.transform.localScale;
 
