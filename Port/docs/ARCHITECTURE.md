@@ -410,7 +410,7 @@ own touch controls.
 | `--size WxH` | Window size |
 | `--frames N` | Quit after N frames |
 | `--screenshot out.png` / `--shot F:path` | Capture frame F |
-| `--do "F:click X,Y"` · `type TEXT` · `key NAME` · `hold NAME N` · `pad BUTTON` | Scripted input (how these screenshots were made) |
+| `--do "F:click X,Y"` · `type TEXT` · `key NAME` · `hold NAME N` · `pad BUTTON` · `scroll X,Y N` (wheel notches) · `drag X,Y X,Y F` (press, move over F frames, release) | Scripted input (how these screenshots were made) |
 | `--do "F:inspect OBJECT Component"` · `eval Type.Member` | Print live state at frame F |
 | `--record DIR:FROM-TO` | Record frames (`tools/record_session.sh` makes a video) |
 | `--headless` · `--verbose` · `--seed S` | No window · every log channel · reproducible runs |

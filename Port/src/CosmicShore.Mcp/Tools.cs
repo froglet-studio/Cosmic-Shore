@@ -134,7 +134,7 @@ namespace CosmicShore.Mcp
             Tool("game_state", "Active scene, frame, game time, window size, frame time, live behaviour count."),
             Tool("game_screenshot", "PNG of the next presented frame, returned as an image.",
                 new JsonObject { ["path"] = P("string", "also keep it at this path") }),
-            Tool("game_input", "Run one input/diagnostic action now, the same verbs as --do: 'click X,Y', 'move X,Y', 'type TEXT', 'key Enter', 'hold W 30', 'pad buttonSouth', 'inspect OBJ COMP', 'eval Type.Static.member', 'score', 'vessels', 'timescale 4'.",
+            Tool("game_input", "Run one input/diagnostic action now, the same verbs as --do: 'click X,Y', 'move X,Y', 'type TEXT', 'key Enter', 'hold W 30', 'pad buttonSouth', 'scroll X,Y -3' (wheel notches), 'drag X1,Y1 X2,Y2 8' (over 8 frames), 'inspect OBJ COMP', 'eval Type.Static.member', 'score', 'vessels', 'timescale 4'.",
                 new JsonObject { ["action"] = P("string", "the action") }, "action"),
             Tool("game_wait", "Let the game run N frames, then return (input needs a few frames to land; scene loads need more).",
                 new JsonObject { ["frames"] = P("integer", "frames to wait (default 60)") }),

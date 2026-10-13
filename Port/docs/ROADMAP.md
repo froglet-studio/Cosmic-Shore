@@ -70,6 +70,24 @@ starts by measuring use in `Assets/`, and anything the game doesn't touch stays 
 12. **Editor.** Everything in M2, scoped by the 2026-10-08 decision below: FrogletTools, data
     sets and models first; scene and hierarchy editing stay with the agent. The launcher's Dear
     ImGui shell (its EDITOR page) is where it grows.
+13. **UI parity loose ends (2026-10-13 pass).** The menus now follow uGUI's rules (layout
+    messages, dimension changes, ScrollRect/Slider/Scrollbar ports, clone anchors, canvas text).
+    Still open:
+    - A grey square a user saw in a gameplay HUD did not reproduce in Salvo. Find the mode, then
+      `game_ui_at` the square.
+    - The Profile quest track opens on its last card. `QuestTrackView` snaps once, a frame after
+      load, while progression briefly reads every mode as unlocked. That is game-side timing to
+      compare with Unity's.
+    - There is no manual layout editing. Hierarchy edits go through the agent and `cs-asset`
+      (item 12).
+    - The Live compile defines no `UNITY_STANDALONE`/`UNITY_ANDROID`/`UNITY_IOS`
+      (`docs/ARCHITECTURE.md` §13). Defining them per target would bring the game's platform
+      branches in; check first what `MultiMouseService` (Win32 raw input) needs.
+    - `RectTransformUtility.ScreenPointToLocalPointInRectangle` divides the offset from the pivot
+      by `lossyScale` and ignores rotation and the camera (`UI/RectTransformUtility.cs`). Unity
+      raycasts the point onto the rect's plane, then `InverseTransformPoint`s it. ScrollRect,
+      Slider and Scrollbar drags now go through it, so a rotated or world-space panel would drag
+      wrongly. The menus have neither today.
 
 ## External factors (and what each one changes)
 

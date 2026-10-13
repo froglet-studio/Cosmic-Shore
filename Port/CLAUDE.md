@@ -91,7 +91,7 @@ With the **amoebius MCP server** (preferred - see below), the loop is tools:
    game headless and answers PASS/FAIL with every error, exception and warning it logged.
 3. `game_start` - boots the real game with a control port (under xvfb on a display-less server).
 4. Look and act (and read `amoebius_tracks` first when chasing a reported problem): `game_screenshot`, `game_state`, `game_input` ("click X,Y", "type pilot",
-   "key Enter", "hold W 60"), `game_wait`, `game_find`, `game_hierarchy`, `game_get` /
+   "key Enter", "hold W 60", "scroll X,Y -3", "drag X,Y X,Y 8"), `game_wait`, `game_find`, `game_hierarchy`, `game_get` /
    `game_set`, `game_ui_at`, `game_dump_ui`, `game_logs`, `game_load_scene`.
 5. `game_stop`, then `engine_test` and `unity_isolation_check` before committing.
 

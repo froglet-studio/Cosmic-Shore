@@ -36,6 +36,23 @@ checklist.
    as a bug.
 8. **Before committing**: `engine_test`, then `unity_isolation_check` - the port must not change
    anything Unity reads. `game_stop` when done.
+9. **UI bugs: test at the user's size, not the reference size.** The launcher opens the game at
+   1600x900, and windows get resized. At 1920x1080 (the canvases' reference resolution) the scale
+   factor is exactly 1, so scale- and resize-dependent layout bugs disappear. Reproduce at
+   `game_start` size 1600x900, then `resize 1280x720` through the control port, before you call a
+   menu correct. Three traps cost a whole session (2026-10-13):
+   - **Unity saves DRIVEN RectTransform values as zero.** A slider's fill anchors, a scroll bar's
+     handle and a layout child's size read 0 in the scene YAML. The component that drives them
+     must run, or the bar draws empty. An all-zero rect in a scene usually means "driven", not
+     "broken data".
+   - **Never write a RectTransform's `localPosition` before it has its real parent.** The setter
+     back-solves `anchoredPosition` against the current parent rect, and a zero rect bakes the
+     anchor point into it. Stretched children then sit off their anchors (cloned cards).
+   - **Copy uGUI semantics, not approximations.** The old ScrollRect said vertical position 0 was
+     the top; Unity's 0 is the bottom, and the game relies on that (`verticalNormalizedPosition = 0`
+     means scroll a log to the newest line). When a component misbehaves, port Unity's rule for
+     rule (ugui 2.0), then fix the tests that pinned the approximation.
+   Drive scrolling with `game_input` `scroll X,Y N` (wheel notches) and `drag X,Y X,Y F`.
 
 Report what you saw (attach the screenshot path) and what you verified; say plainly if a check
 did not run.
