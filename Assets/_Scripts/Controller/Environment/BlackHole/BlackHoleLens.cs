@@ -43,6 +43,7 @@ namespace CosmicShore.Gameplay
         static readonly int TintId = Shader.PropertyToID("_BHTint");
         static readonly int ThroatId = Shader.PropertyToID("_BHThroat");
         static readonly int SmoothId = Shader.PropertyToID("_BHSmooth");
+        static readonly int StrengthId = Shader.PropertyToID("_BHStrength");
 
         /// <summary>A smooth well's lens sphere, in core widths: its bend is u·e^(−u²/2), gone by u = 4.</summary>
         const float SmoothLensRadius = 4f;
@@ -307,6 +308,10 @@ namespace CosmicShore.Gameplay
             // An owned hole's domain tint (BlackHole.DomainTint): the shadow's dark, the core's light. 0 = untinted.
             var tint = _hole.DomainTint;
             _block.SetVector(TintId, new Vector4(tint.r, tint.g, tint.b, smooth ? 0f : _hole.DomainTintAmount));
+            // A horizon hole's lens follows its Amplitude (1 for every hole but one being neutralized — the
+            // Stoat's annihilating pair): the bend and the shadow/core fade at full size. A smooth well's
+            // amplitude already rides its bank strength (PublishSmoothWells), so it is not applied twice.
+            _block.SetFloat(StrengthId, smooth ? 1f : Mathf.Clamp01(_hole.Amplitude));
             _renderer.SetPropertyBlock(_block);
         }
 

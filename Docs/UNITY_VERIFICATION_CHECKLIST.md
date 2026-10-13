@@ -65,6 +65,28 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Stoat: smaller hull; bigger, weaker, softened poles; releases slam and neutralize (`cece/fervent-hypatia-rg4why`, 2026-10-13) — NOT EDITOR-VERIFIED
+
+`R_VesselActions/STOAT_DIPOLE.md` §1, `STOAT.md`. Changed: `Stoat.prefab` root scale 0.8; `StoatDipoleConfig`
+`poleHorizon` 1.75, `poleGM` 40 000, new `sinkSofteningHorizons` 14 and `annihilateSeconds` 0.3,
+`throughZoneRadius` 135; `BlackHoleLens.shader` gains `_BHStrength` (fed from `BlackHole.Amplitude`, 1 for
+every other hole). Proven offline: the lens verifier (glslang compile + negative controls), refcompile,
+the generator's `--check`/`--self-test` (new stage 5 + its negative control), five StoatDipoleTests run
+headless.
+
+1. **Size.** The Stoat is visibly a bit smaller than last round; trail, camera and skimmer still sane.
+2. **Release.** Squeeze, let go: the two poles rush into each other (~0.3 s, accelerating) and, as they
+   close, the bending around both straightens and the dark and light discs fade — at their full size —
+   into nothing where they meet. NOT two shrinking warps. Re-press during the slam: a fresh pair appears
+   at once. A peer sees the same slam.
+3. **Poles / field.** Holes ~1.5× last round's diameter; passes near a pole bend smoothly and
+   predictably over a wide band of distances (no sudden all-or-nothing whip near the hole).
+4. **Zone.** At full speed a 180° swing round the pole flies out; keep looping and ~200° takes you
+   through. Slow: steer out or let go to leave.
+5. **Other holes unchanged**: the Black Hole tool's holes and the crystal wormhole look as before.
+
+---
+
 ### 🔴 Stoat: the fly-through zone, a pathfinder that flies the hull's own response, lighter dot depth (`cece/fervent-hypatia-rg4why`, 2026-10-13) — NOT EDITOR-VERIFIED
 
 `R_VesselActions/STOAT_DIPOLE.md` §1. Proven headless (the shipped `StoatDipoleMath` on stub vectors):

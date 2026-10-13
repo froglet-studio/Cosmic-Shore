@@ -74,6 +74,19 @@ namespace CosmicShore.Gameplay
         /// <summary>...and lays nothing for a target further off the nose than this.</summary>
         const float AutopilotMaxDegrees = 75f;
 
+        /// <summary>
+        /// A released pair on its way to nothing: the poles SLAM together from where they were let go, and their
+        /// fields neutralize as they close (<see cref="BlackHole.Amplitude"/> — gravity, tides and the lens fall
+        /// together at full size), annihilating where they meet. Owned by no trigger: it cannot be caught again.
+        /// </summary>
+        struct Collapse
+        {
+            public BlackHole Sink, Source;
+            public Vector3 Middle, SinkFrom, SourceFrom;
+            public float Age;
+        }
+
+        readonly List<Collapse> _collapses = new();
         readonly Hold[] _holds = new Hold[2];
         IVesselStatus _status;
         BlackHole _sink, _source;
@@ -123,6 +136,7 @@ namespace CosmicShore.Gameplay
                 Sink = _sink.transform.position, Source = _source.transform.position,
                 SinkGM = gm, SinkHorizon = rs, SourceGM = gmR, SourceHorizon = rsR,
                 SourceSoftening = config.SourceSofteningHorizons * rsR, AccelerationCap = config.AccelerationCap,
+                SinkSoftening = config.SinkSofteningHorizons * rs,
                 ThroughRadius = config.ThroughZoneRadius * _zoneScale, ThroughDegrees = config.ThroughDegrees,
             };
             return true;
@@ -198,6 +212,8 @@ namespace CosmicShore.Gameplay
 
         bool Spawn(Vector3 sinkAt, Vector3 sourceAt)
         {
+            // A collapsing pair holds two of the holes; a fresh press outranks it, oldest first.
+            while (!BlackHoleRegistry.CanSpawn(2) && _collapses.Count > 0) FinishCollapse(0);
             if (!BlackHoleRegistry.CanSpawn(2))
             {
                 CSDebug.LogVerbose(CSLogChannel.BlackHole,
@@ -224,18 +240,74 @@ namespace CosmicShore.Gameplay
             return true;
         }
 
+        /// <summary>
+        /// The pair leaves this hull's hands. <paramref name="annihilate"/>: the poles slam together and neutralize
+        /// (<see cref="StepCollapses"/>) — a release, a fresh press over it, the owner's close seen on a peer. Else
+        /// they are removed at once (a teardown, a budget loss).
+        /// </summary>
         void Close(bool annihilate)
         {
-            if (_sink && !_sink.IsDespawning) _sink.BeginDespawn();
-            if (_source && !_source.IsDespawning) _source.BeginDespawn();
-            bool wasOpen = _sink || _source;
+            bool live = _sink && !_sink.IsDespawning && _source && !_source.IsDespawning;
+            if (annihilate && live && config != null)
+            {
+                var sinkAt = _sink.transform.position;
+                var sourceAt = _source.transform.position;
+                _collapses.Add(new Collapse
+                {
+                    Sink = _sink, Source = _source, Middle = 0.5f * (sinkAt + sourceAt), SinkFrom = sinkAt, SourceFrom = sourceAt,
+                });
+            }
+            else
+            {
+                if (_sink && !_sink.IsDespawning) _sink.BeginDespawn();
+                if (_source && !_source.IsDespawning) _source.BeginDespawn();
+            }
             _sink = null;
             _source = null;
             _separation = default;
             _winding = 0f;
             _zoneScale = 0f;
             PublishClosed();
-            if (annihilate && wasOpen && config != null) PlayOneShot(config.AnnihilateEvent);
+        }
+
+        /// <summary>
+        /// Every released pair, one frame on: the poles accelerate into each other
+        /// (<see cref="StoatDipoleMath.SlamRemaining"/>) and both holes' amplitude falls with the separation — a
+        /// dipole's field IS its separation, so as the poles close the two fields cancel into nothing at the
+        /// holes' full size, rather than each shrinking away. Where they meet: the annihilation.
+        /// </summary>
+        void StepCollapses(float dt)
+        {
+            for (int i = _collapses.Count - 1; i >= 0; i--)
+            {
+                var c = _collapses[i];
+                if (!c.Sink || !c.Source || c.Sink.IsDespawning || c.Source.IsDespawning)
+                {
+                    FinishCollapse(i);
+                    continue;
+                }
+                c.Age += dt;
+                float remaining = StoatDipoleMath.SlamRemaining(c.Age, config.AnnihilateSeconds);
+                c.Sink.transform.position = c.Middle + (c.SinkFrom - c.Middle) * remaining;
+                c.Source.transform.position = c.Middle + (c.SourceFrom - c.Middle) * remaining;
+                c.Sink.Amplitude = remaining;
+                c.Source.Amplitude = remaining;
+                _collapses[i] = c;
+                if (remaining <= 0f)
+                {
+                    PlayOneShot(config.AnnihilateEvent, c.Middle);
+                    FinishCollapse(i);
+                }
+            }
+        }
+
+        void FinishCollapse(int index)
+        {
+            var c = _collapses[index];
+            _collapses.RemoveAt(index);
+            // Amplitude 0 before the despawn: the despawn's own ease (a shrinking horizon) is then invisible.
+            if (c.Sink) { c.Sink.Amplitude = 0f; if (!c.Sink.IsDespawning) c.Sink.BeginDespawn(); }
+            if (c.Source) { c.Source.Amplitude = 0f; if (!c.Source.IsDespawning) c.Source.BeginDespawn(); }
         }
 
         /// <summary>
@@ -291,6 +363,7 @@ namespace CosmicShore.Gameplay
         {
             if (config == null || _status == null) return;
             float dt = Time.deltaTime;
+            if (_collapses.Count > 0) StepCollapses(dt);
             if (MantaStingActionExecutor.IsSimAuthority(_status)) StepAuthority(dt);
             else StepPeer(dt);
 
@@ -577,17 +650,20 @@ namespace CosmicShore.Gameplay
         /// <summary>The transform <see cref="BlackHoleVesselPull"/> knows this vessel by (its <c>VesselStatus</c>'s).</summary>
         Transform OwnerTransform() => _status is Component c ? c.transform : _status.Transform;
 
-        void PlayOneShot(EventReference reference)
+        void PlayOneShot(EventReference reference) => PlayOneShot(reference, transform.position);
+
+        void PlayOneShot(EventReference reference, Vector3 at)
         {
             if (reference.IsNull) return;
             var audio = AudioSystem.Instance;
-            if (audio) audio.PlaySFXEvent(reference, transform.position);
+            if (audio) audio.PlaySFXEvent(reference, at);
         }
 
         // A vessel swap or despawn closes the pair at once and drops the squeeze.
         void OnDisable()
         {
             Close(annihilate: false);
+            while (_collapses.Count > 0) FinishCollapse(0);
             _holds[0] = default;
             _holds[1] = default;
             _boundInput[0] = null;

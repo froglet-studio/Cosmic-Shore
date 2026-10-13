@@ -16,37 +16,52 @@ trigger's side — and their **sum** pulls them apart lengthways, the sink alway
 |---|---|---|
 | one full | 200 u, 60 u | the sink to that side, a slight diagonal |
 | both full | 0, 120 u | the sink dead ahead, the source 120 u beyond it |
-| let go of either | — | the pair **annihilates at once**, where it stands — it cannot be caught again |
+| let go of either | → 0 | the poles **slam together** and **neutralize** — never caught again |
 
 **Every press lays a fresh pair** (replacing any pair the other trigger still holds; both triggers
-pressed on one frame lay one). There is no closing glide: a released pair is gone the same frame, and a
-trigger still held after the other is let go keeps its squeeze but lays nothing until it is pressed
-again (2026-10-13, play feedback: "when I let go I should have no chance of recovering those poles").
+pressed on one frame lay one), and a released pair is gone from your hands at once: a trigger still held
+after the other is let go keeps its squeeze but lays nothing until it is pressed again (2026-10-13, play
+feedback: "when I let go I should have no chance of recovering those poles").
+
+**The annihilation (2026-10-13).** Released, the pair belongs to no trigger: its poles accelerate into
+each other from where they were let go (`StoatDipoleMath.SlamRemaining`, `1 − (t/T)²` over
+`annihilateSeconds` = 0.3 s, so they hit at full speed) and both holes' `BlackHole.Amplitude` falls with
+the separation — a dipole's field IS its separation — so their pull, their tides on prisms and their lens
+cancel as the poles meet. The lens follows the amplitude at the holes' FULL size (`_BHStrength` in
+`BlackHoleLens.shader`: the bend relaxes toward straight, the dark shadow and the light core fade into the
+scene behind them), so two opposing fields neutralize into nothing instead of two warps shrinking. The
+holes despawn at amplitude 0, where the despawn's own shrink is invisible. The owner's flight ignores a
+released pair. Every peer runs the same slam on its copy (`StepCollapses`). A press while a pair is still
+slamming takes the budget from it, oldest first.
 
 The poles' strength and size never follow the triggers — only their separation (the dipole moment)
-does. Space sizes them: horizon **1.17 u** and GM **60 000** at rest (a third of the studio's 3.5 u and
-half its 120 000, 2026-10-13 — the holes are drawn a third the diameter, and the pull, the path's bend,
-the lens and the prisms' tidal stretch all weaken with them), ×1 → ×2 at level 10
+does. Space sizes them: horizon **1.75 u** and GM **40 000** at rest (the studio's 3.5 u and 120 000;
+cut to 1.17 u / 60 000, then on 2026-10-13 "a bit bigger and weaker"), ×1 → ×2 at level 10
 (`StoatDipoleConfigSO.poleSize`, read live on the owner, replicated as the horizon). The sink grows in
 over 0.9 s, the source over 1.1 s (from 55%), so a fresh pair pulls before it pushes.
 
-**The field** is the studio's: the sink's Paczyński–Wiita pull `GM/(r − r_s)²`, the source's softened
-push `GM·r/(r² + ε²)^1.5` (ε = 2 source horizons), the sum capped at 3000 u/s². One step of flight in it
+**The field** on the owner's flight and the pathfinder: the sink's pull **softened over a 14-horizon core**
+(`sinkSofteningHorizons`; ε = 24.5 u at rest) — `GM·r/(r² + ε²)^1.5`, the source's own law — and the
+source's push `GM·r/(r² + ε²)^1.5` (ε = 2 source horizons), the sum capped at 3000 u/s². The studio's
+steep Paczyński–Wiita `GM/(r − r_s)²` made a near pass all-or-nothing: measured unsteered at 30 u/s,
+offsets 8 u apart bent 2°, 63°, 166°, 179°, 150°, 71°…; softened, the same passes bend smoothly 27° → 124°
+→ 54° across 0–120 u, the widest forgiving band of warped lines of the candidates tried (prisms and rival
+vessels still feel the platform's own law). One step of flight in it
 (`StoatDipoleMath.Step`, the studio's `fieldSubstep`) turns the nose by the field's perpendicular part
 (capped at 12 rad/s) and carries a **gravity speed** along the nose from its parallel part (gripped back
 toward cruise at 0.5 /s, ceiling 4 × cruise). Fly into the sink's horizon and you come out of the source
 on the side opposite to where you went in, just outside its horizon (`StoatDipoleMath.ExitPoint`), with
 the gravity speed you had before the dive.
 
-**The fly-through ZONE (2026-10-13).** The drawn horizon is small (1.17 u), so the sink also takes a hull
-that LOOPS it: within **90 u** of the sink (× the poles' size, `throughZoneRadius`) every turn of the
-heading is counted — toward the sink adds, away subtracts, floored at 0, cleared on leaving the zone —
-and at **200°** (`throughDegrees`) you go through (`StoatDipoleMath.WindThrough`, shared by the flight
-and the pathfinder, so the line shows it). A U-turn round the attractive pole is yours; a loop past 200°
-is taken. Measured headless on the shipped field (60 000 GM): at 60 u/s a pilot holding the sink abeam
-turns 150–190° and flies out, and keeps orbiting → taken at 200°; an unsteered pass 20 u off is swung
-past 200° and taken, 40–85 u off bends < 110° and flies on. At 30 u/s the pole out-turns the 48 °/s
-stick, so the way out of a turn is to **let go** (the pair dies at once) between 180° and 200°.
+**The fly-through ZONE (2026-10-13).** The drawn horizon is small, so the sink also takes a hull that
+LOOPS it: within **135 u** of the sink (× the poles' size, `throughZoneRadius`; 90 before the poles grew
+1.5×) every turn of the heading is counted — toward the sink adds, away subtracts, floored at 0, cleared on
+leaving the zone — and at **200°** (`throughDegrees`) you go through (`StoatDipoleMath.WindThrough`, shared
+by the flight and the pathfinder, so the line shows it). A U-turn round the attractive pole is yours; a
+loop past 200° is taken. Measured headless on the shipped field: at 60 u/s a pilot holding the sink abeam
+turns ~180° and flies out, steers out of it, or keeps orbiting and is taken at 200°; at 30 u/s steering
+out after 170° escapes, a centred stick lets the pole carry you past 200°, and letting go always frees you.
+135 u is the smallest zone that holds a stick-held orbit at 60 u/s (at 90 it left the zone and reset).
 
 **Time — the Pathfinder (passive).** Every frame the hull's own flight is run forward 600 u on the
 inputs it holds (`StoatDipoleMath.PredictPath`, the studio's `fieldPath`: the same `Step`, the held

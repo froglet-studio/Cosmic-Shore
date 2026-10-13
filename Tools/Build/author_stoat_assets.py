@@ -75,6 +75,9 @@ REGISTRY_ID = "9105512684531825410"
 SLING_EXECUTOR_ID = "5137264980012345601"
 STOP_EXECUTOR_ID = "5137264980012345602"
 ROOT_TRANSFORM_ID = "5928382658856804067"
+# The whole hull's size (2026-10-13 play feedback: "a bit smaller") — the root Transform's uniform scale, so
+# the drawn hull, its colliders and skimmers shrink together. WarpFieldVesselScaler reads it as the rest scale.
+HULL_SCALE = 0.8
 # The procedural hull (stage 2): a StoatHull GameObject under the root, renderer-only like the
 # Scarab's ScarabHull, painted by VesselCustomization in place of the Squirrel mesh it hides.
 HULL_GO_ID = "5137264980012345610"
@@ -597,15 +600,17 @@ def dipole_config_asset() -> str:
             "  sidewaysMax: 200\n"
             "  lengthwaysMax: 120\n"
             "  followRate: 6\n"
-            "  poleGM: 60000\n"
-            "  poleHorizon: 1.1666666\n"
+            "  poleGM: 40000\n"
+            "  poleHorizon: 1.75\n"
+            "  sinkSofteningHorizons: 14\n"
             "  poleSize:\n" + elemental(1, 1, 2, 3, 1) +
             "  sourcePush: 1\n"
             "  sourceSofteningHorizons: 2\n"
             "  accelerationCap: 3000\n"
+            "  annihilateSeconds: 0.3\n"
             "  sinkGrowSeconds: 0.9\n"
             "  sourceGrowSeconds: 1.1\n"
-            "  throughZoneRadius: 90\n"
+            "  throughZoneRadius: 135\n"
             "  throughDegrees: 200\n"
             "  turnCap: 12\n"
             "  grip: 0.5\n"
@@ -692,6 +697,18 @@ def transformer_block(text: str):
     return re.search(r"--- !u!114 &%s\n(?:.*\n)*?(?=--- !u!)" % TRANSFORMER_ID, text)
 
 
+def root_scale_line() -> str:
+    return f"  m_LocalScale: {{x: {num(HULL_SCALE)}, y: {num(HULL_SCALE)}, z: {num(HULL_SCALE)}}}\n"
+
+
+def apply_scale(text: str) -> str:
+    """The root Transform's uniform scale = HULL_SCALE. Idempotent; re-checks its anchor."""
+    m = re.search(r"(--- !u!4 &%s\n(?:.*\n)*?)  m_LocalScale: \{[^}]*\}\n" % ROOT_TRANSFORM_ID, text)
+    if not m:
+        raise RuntimeError("Stoat.prefab drifted: the root Transform's m_LocalScale not found")
+    return text[:m.end(1)] + root_scale_line() + text[m.end():]
+
+
 def apply_dipole(text: str) -> str:
     """Stage 4 on the committed prefab: rebind the triggers, add the two executors, slow the base turn.
     Idempotent (re-applying it to its own output changes nothing); re-checks its own anchors."""
@@ -760,6 +777,8 @@ def check(files: "dict[str, str]") -> "list[str]":
     want(prefab.count("  m_Name: Stoat\n") == 1, "root GameObject is not named Stoat")
     want(prefab.count("  _name: Stoat\n") == 1, "VesselStatus._name is not Stoat")
     want("  m_Name: Squirrel\n" not in prefab and "  _name: Squirrel\n" not in prefab, "still named Squirrel somewhere")
+    root = re.search(r"--- !u!4 &%s\n(?:.*\n)*?(  m_LocalScale: \{[^}]*\}\n)" % ROOT_TRANSFORM_ID, prefab)
+    want(root is not None and root.group(1) == root_scale_line(), f"the root Transform is not scaled to {HULL_SCALE}")
     types = re.findall(r"  vesselType: (-?\d+)\n", prefab)
     want(types == [str(STOAT_CLASS_ID)], f"vesselType must be exactly one '{STOAT_CLASS_ID}', found {types}")
 
@@ -901,6 +920,7 @@ def self_test() -> int:
     fires("executor dropped from registry", lambda f: f.__setitem__(rel, f[rel].replace(f"  - {{fileID: {SLING_EXECUTOR_ID}}}\n", "", 1)))
     fires("left trigger unbound", lambda f: f.__setitem__(rel, f[rel].replace(f"    - {{fileID: 11400000, guid: {DIPOLE_LEFT}, type: 2}}\n", "", 1)))
     fires("pathfinder dropped from registry", lambda f: f.__setitem__(rel, f[rel].replace(f"  - {{fileID: {PATHFINDER_EXECUTOR_ID}}}\n", "", 1)))
+    fires("hull scale reverted", lambda f: f.__setitem__(rel, f[rel].replace(root_scale_line(), "  m_LocalScale: {x: 1, y: 1, z: 1}\n", 1)))
     fires("turn rates reverted", lambda f: f.__setitem__(rel, f[rel].replace("  PitchScaler: 48\n", "  PitchScaler: 120\n", 1)))
     cfg = os.path.relpath(os.path.join(ACTIONS, "StoatDipoleConfig.asset"), ROOT)
     fires("dipole config retuned by hand", lambda f: f.__setitem__(cfg, f.get(cfg, "").replace("  aheadDistance: 250\n", "  aheadDistance: 200\n")))
@@ -919,6 +939,9 @@ def self_test() -> int:
     ok &= idem
     idem = apply_dipole(files[rel]) == files[rel]
     print(f"  stage 4 idempotent on the shipped prefab: {'yes' if idem else 'NO'}")
+    ok &= idem
+    idem = apply_scale(files[rel]) == files[rel]
+    print(f"  stage 5 idempotent on the shipped prefab: {'yes' if idem else 'NO'}")
     ok &= idem
     print("self-test " + ("OK" if ok else "FAILED"))
     return 0 if ok else 1
@@ -947,6 +970,11 @@ def main(argv) -> int:
         if after != before:
             write(PREFAB, after)
             print(f"stage 4: the field dipole + pathfinder wired into {os.path.relpath(PREFAB, ROOT)}")
+        before = after
+        after = apply_scale(before)
+        if after != before:
+            write(PREFAB, after)
+            print(f"stage 5: the hull scaled to {HULL_SCALE} in {os.path.relpath(PREFAB, ROOT)}")
         for path, text in dipole_files().items():
             old = None
             if os.path.exists(path):

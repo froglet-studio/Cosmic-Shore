@@ -18,8 +18,9 @@ MonoBehaviour:
   sidewaysMax: 200
   lengthwaysMax: 120
   followRate: 6
-  poleGM: 60000
-  poleHorizon: 1.1666666
+  poleGM: 40000
+  poleHorizon: 1.75
+  sinkSofteningHorizons: 14
   poleSize:
     Enabled: 1
     Value: 1
@@ -31,9 +32,10 @@ MonoBehaviour:
   sourcePush: 1
   sourceSofteningHorizons: 2
   accelerationCap: 3000
+  annihilateSeconds: 0.3
   sinkGrowSeconds: 0.9
   sourceGrowSeconds: 1.1
-  throughZoneRadius: 90
+  throughZoneRadius: 135
   throughDegrees: 200
   turnCap: 12
   grip: 0.5

@@ -46,6 +46,7 @@ Shader "CosmicShore/BlackHoleLens"
         _BHWhite ("1 = a WHITE hole: its horizon disc emits a white-hot core", Float) = 0
         _BHCore ("White core (brightness HDR, sky mix, 0, 0)", Vector) = (4, 0.8, 0, 0)
         _BHTint ("Owner's domain tint: rgb = the domain's DARK colour on a sink's shadow, its LIGHT colour on a white core; a = how far (0 = the untinted look)", Vector) = (0, 0, 0, 0)
+        _BHStrength ("Field strength 0..1 (the hole's Amplitude): the bend relaxes toward straight and the shadow / core fade into the unbent scene, at FULL size", Float) = 1
     }
 
     SubShader
@@ -87,6 +88,7 @@ Shader "CosmicShore/BlackHoleLens"
                 float _BHWhite;
                 float4 _BHCore;
                 float4 _BHTint;
+                float _BHStrength;
             CBUFFER_END
 
             // The scene as the camera drew it up to the lens — opaques, skybox and transparents —
@@ -245,6 +247,9 @@ Shader "CosmicShore/BlackHoleLens"
                 {
                     // The smooth lens fades itself (Gaussian); the trace is faded toward the lens edge.
                     float3 dirOut = _BHSmooth > 0.0 ? bent : BlackHoleLensFadeDir(d, bent, b, lensR, _BHLens.w);
+                    // A field being NEUTRALIZED (the Stoat's sink and source annihilating, BlackHole.Amplitude):
+                    // the bend relaxes toward the straight ray at the lens's full size — it never shrinks away.
+                    dirOut = normalize(lerp(d, dirOut, saturate(_BHStrength)));
 
                     // The sky in that direction: the scene's own skybox (BlackHoleSky.cs).
                     float3 sky = BlackHoleSkyColour(dirOut);
@@ -273,6 +278,11 @@ Shader "CosmicShore/BlackHoleLens"
                     // The shadow: black, or an owned sink's domain DARK colour by _BHTint.a.
                     background = _BHTint.rgb * saturate(_BHTint.a);
                 }
+
+                // A neutralizing field's shadow and core fade into the scene behind them (the bend above relaxes
+                // with them), so a pair that annihilates cancels into nothing instead of shrinking away.
+                if (escaped < 0.5)
+                    background = lerp(BlackHoleSceneColour(pixelUV), background, saturate(_BHStrength));
 
                 // The bent scene, the shadow's black (a sink only), or a white hole's core.
                 return half4(background, 1.0);

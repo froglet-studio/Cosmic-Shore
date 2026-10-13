@@ -133,6 +133,38 @@ namespace CosmicShore.Tests
         }
 
         [Test]
+        public void TheSlam_ClosesFromRest_AndFieldAndDistanceReachNothingTogether()
+        {
+            Assert.AreEqual(1f, StoatDipoleMath.SlamRemaining(0f, 0.3f), 1e-6f, "let go: still apart, full strength");
+            Assert.AreEqual(0.75f, StoatDipoleMath.SlamRemaining(0.15f, 0.3f), 1e-5f, "half the time, a quarter of the way: accelerating");
+            Assert.AreEqual(0f, StoatDipoleMath.SlamRemaining(0.3f, 0.3f), 1e-6f, "they meet: nothing left");
+            Assert.AreEqual(0f, StoatDipoleMath.SlamRemaining(1f, 0.3f), 1e-6f);
+            float early = 1f - StoatDipoleMath.SlamRemaining(0.03f, 0.3f), late = StoatDipoleMath.SlamRemaining(0.27f, 0.3f);
+            Assert.Less(early, late, "the last tenth closes more than the first: they SLAM, not settle");
+        }
+
+        [Test]
+        public void TheSoftenedSink_BendsAPassSmoothly_WhereTheSteepLawJumps()
+        {
+            // The pull on a line of points walking in toward the sink: the softened law never exceeds its core's peak,
+            // the steep law blows up at the horizon.
+            var steep = Dipole(2000f, 40000f, 1.75f);
+            var soft = steep;
+            soft.SinkSoftening = 14f * 1.75f;
+            soft.AccelerationCap = steep.AccelerationCap = 1e9f;
+            float peakSoft = 0f, peakSteep = 0f;
+            for (float r = 2f; r <= 120f; r += 0.5f)
+            {
+                var p = steep.Sink + new Vector3(0f, 0f, r);
+                peakSoft = Mathf.Max(peakSoft, StoatDipoleMath.FieldAcceleration(p, soft).magnitude);
+                peakSteep = Mathf.Max(peakSteep, StoatDipoleMath.FieldAcceleration(p, steep).magnitude);
+            }
+            float coreMax = 40000f * 2f / (3f * Mathf.Sqrt(3f) * (24.5f * 24.5f));   // GM·r/(r²+ε²)^1.5 peaks at r = ε/√2
+            Assert.AreEqual(coreMax, peakSoft, 0.05f * coreMax, "the softened pull peaks at its core");
+            Assert.Greater(peakSteep, 50f * peakSoft, "the steep law is what made a near pass all-or-nothing");
+        }
+
+        [Test]
         public void ThroughTheZone_YouComeOutAtTheSourcesMouth()
         {
             var field = Dipole(400f, 60000f, 3.5f / 3f);

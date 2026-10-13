@@ -65,6 +65,20 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
+        /// A released pair's SLAM: the share of its separation (and of its fields' strength — a dipole's field is
+        /// its separation) left <paramref name="age"/> seconds after the release, closing from rest with constant
+        /// acceleration so the poles hit each other at full speed: <c>1 − (t/T)²</c>, 0 at
+        /// <paramref name="seconds"/> and after. Strength and distance fall together, so the two fields cancel
+        /// as the poles meet instead of either hole shrinking.
+        /// </summary>
+        public static float SlamRemaining(float age, float seconds)
+        {
+            if (seconds <= 1e-4f) return 0f;
+            float x = Mathf.Clamp01(age / seconds);
+            return 1f - x * x;
+        }
+
+        /// <summary>
         /// Let go of both triggers and the poles fall back together; the pair annihilates once their
         /// horizons touch (or they are within a unit, so a tap that never opened them ends at once).
         /// </summary>
@@ -82,6 +96,10 @@ namespace CosmicShore.Gameplay
         {
             public Vector3 Sink, Source;
             public float SinkGM, SinkHorizon, SourceGM, SourceHorizon, SourceSoftening, AccelerationCap;
+            /// <summary>The sink's pull softened over this core radius, world units (0 = the steep Paczyński–Wiita
+            /// GM/(r − r_s)²): GM·r/(r² + ε²)^1.5, the source's own law, so how hard a pass bends grows gently
+            /// with how near it goes instead of jumping from nothing to everything in the last few units.</summary>
+            public float SinkSoftening;
             /// <summary>The fly-through ZONE around the sink, world units (0 = the horizon alone carries you through):
             /// inside it, a heading that has turned <see cref="ThroughDegrees"/> toward the sink goes through
             /// (<see cref="WindThrough"/>).</summary>
@@ -95,9 +113,18 @@ namespace CosmicShore.Gameplay
         {
             var a = Vector3.zero;
             var toSink = f.Sink - p;
-            float r = toSink.magnitude + 1e-6f;
-            float x = Mathf.Max(r - f.SinkHorizon, 0.05f * Mathf.Max(f.SinkHorizon, 1e-3f));
-            a += toSink * (f.SinkGM / (x * x) / r);
+            if (f.SinkSoftening > 0f)
+            {
+                float es = f.SinkSoftening;
+                float qs = toSink.sqrMagnitude + es * es;
+                a += toSink * (f.SinkGM / (qs * Mathf.Sqrt(qs)));
+            }
+            else
+            {
+                float r = toSink.magnitude + 1e-6f;
+                float x = Mathf.Max(r - f.SinkHorizon, 0.05f * Mathf.Max(f.SinkHorizon, 1e-3f));
+                a += toSink * (f.SinkGM / (x * x) / r);
+            }
             var toSource = f.Source - p;
             float e = Mathf.Max(1e-3f, f.SourceSoftening);
             float q = toSource.sqrMagnitude + e * e;

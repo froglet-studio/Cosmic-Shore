@@ -19,6 +19,9 @@ across itself and lets gravity do the rest: the hull falls toward the attractor 
 the repulsor, and that asymmetric push is the **slingshot**. Its second input is the Sparrow's
 **stop**, verbatim — because the Stoat slings from a standstill.
 
+**Size (2026-10-13):** the root Transform is scaled **0.8** (`author_stoat_assets.py` stage 5, `HULL_SCALE`):
+the drawn hull, its colliders and skimmers shrink together; `WarpFieldVesselScaler` keeps it as the rest scale.
+
 Status: **PROTOTYPE.** The prefab is a text clone of the Squirrel's (same flight model, colliders,
 HUD and camera) with the Squirrel's bindings replaced and its model HIDDEN: the drawn hull is the
 Stoat's own **procedural plated body** with the user's **bounding lope** (§2.1, §2.2), both picked in

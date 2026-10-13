@@ -51,14 +51,20 @@ namespace CosmicShore.ScriptableObjects
         [SerializeField, Range(0.5f, 30f)] float followRate = 6f;
 
         [Header("Poles (fixed — only their separation moves)")]
-        [Tooltip("The sink's gravitational parameter GM, u³/s² (half the studio's 120000 since 2026-10-13: the pull, the path's bend " +
-                 "and the prisms' tidal stretch all scale with it). Authored as GM, not as a BlackHoleConfig strength, so the shipped " +
-                 "gmPerStrength cannot rescale it.")]
-        [SerializeField, Min(0f)] float poleGM = 60000f;
+        [Tooltip("The sink's gravitational parameter GM, u³/s² (the studio's 120000; 60000, then 40000 on 2026-10-13: the pull, the " +
+                 "path's bend and the prisms' tidal stretch all scale with it). Authored as GM, not as a BlackHoleConfig strength, so " +
+                 "the shipped gmPerStrength cannot rescale it.")]
+        [SerializeField, Min(0f)] float poleGM = 40000f;
 
         [Tooltip("Each pole's event-horizon radius, world units — the hole's drawn size, and with it the lens and the tidal warp's reach " +
-                 "(a third of the studio's 3.5 since 2026-10-13). BlackHoleConfig.minHorizonRadius floors it, so keep that below this.")]
-        [SerializeField, Min(0.1f)] float poleHorizon = 3.5f / 3f;
+                 "(the studio's 3.5; 1.17, then 1.75 on 2026-10-13). BlackHoleConfig.minHorizonRadius floors it, so keep that below this.")]
+        [SerializeField, Min(0.1f)] float poleHorizon = 1.75f;
+
+        [Tooltip("The sink's pull on the OWNER's flight (and the pathfinder) is softened over a core this many sink horizons wide: " +
+                 "GM·r/(r²+ε²)^1.5, the source's own law, instead of the steep GM/(r−r_s)². How hard a pass bends then grows smoothly " +
+                 "with how near it goes — a wide, forgiving band of warped lines instead of nothing-or-everything in the last few " +
+                 "units (measured 2026-10-13). 0 = the steep law.")]
+        [SerializeField, Range(0f, 40f)] float sinkSofteningHorizons = 14f;
 
         [Tooltip("Space is size: a multiplier on both poles' horizon AND their GM (a bigger hole is a heavier one). Read live on the owner, replicated to peers as the horizon.")]
         [SerializeField] ElementalFloat poleSize = ElementalFloat.Multiplier(1f, 2f, Element.Space, 1f);
@@ -72,6 +78,11 @@ namespace CosmicShore.ScriptableObjects
         [Tooltip("The ceiling on the field's acceleration, u/s² (dpAccelCap).")]
         [SerializeField, Min(1f)] float accelerationCap = 3000f;
 
+        [Tooltip("Seconds a released pair takes to SLAM together: the poles accelerate into each other from where they were let go " +
+                 "and their fields neutralize as they close (BlackHole.Amplitude: gravity, tides and the lens fall at full size), " +
+                 "annihilating where they meet.")]
+        [SerializeField, Range(0.05f, 2f)] float annihilateSeconds = 0.3f;
+
         [Tooltip("Seconds the sink takes to grow to full strength after a squeeze lays it (bornS).")]
         [SerializeField, Range(0.05f, 5f)] float sinkGrowSeconds = 0.9f;
 
@@ -79,10 +90,11 @@ namespace CosmicShore.ScriptableObjects
         [SerializeField, Range(0.05f, 5f)] float sourceGrowSeconds = 1.1f;
 
         [Header("Fly-through zone (the sink takes a hull that loops it)")]
-        [Tooltip("Radius of the fly-through ZONE around the sink, world units at pole size 1 (Space scales it with the poles). " +
+        [Tooltip("Radius of the fly-through ZONE around the sink, world units at pole size 1 (Space scales it with the poles; 90, " +
+                 "then 135 with the 1.5× bigger, softened poles — the smallest that holds a stick-held orbit at 60 u/s). " +
                  "The drawn horizon is tiny; inside this zone a hull whose heading has turned throughDegrees toward the sink goes " +
                  "through and out of the source. Leaving the zone clears the count. 0 = only the horizon carries you through.")]
-        [SerializeField, Min(0f)] float throughZoneRadius = 90f;
+        [SerializeField, Min(0f)] float throughZoneRadius = 135f;
 
         [Tooltip("How far the heading must turn toward the sink inside the zone to go through, degrees. A U-turn round the " +
                  "attractive pole (180°) stays yours; a loop past this is taken through. Turning away unwinds it.")]
@@ -194,6 +206,8 @@ namespace CosmicShore.ScriptableObjects
         public float PoleGM => poleGM;
         public float PoleHorizon => poleHorizon;
         public ElementalFloat PoleSize => poleSize;
+        public float SinkSofteningHorizons => sinkSofteningHorizons;
+        public float AnnihilateSeconds => annihilateSeconds;
         public float SourcePush => sourcePush;
         public float SourceSofteningHorizons => sourceSofteningHorizons;
         public float AccelerationCap => accelerationCap;
