@@ -42,6 +42,16 @@ namespace CosmicShore.Utility
         /// it scrolls this many noise cells a second along the bolt); how fast its brightness breathes.</summary>
         public float CoreWidth, WritheSpeed, FlickerSpeed;
 
+        /// <summary>Seam walk: x the light on the petals beside the bolt (on top of <see cref="Glow"/>). Low, so the plasma
+        /// reads over the petals it lights (designer, 2026-10-13: "tone down how much it lights up the charge petals so we
+        /// can see the plasma, more prominently").</summary>
+        public float SeamPetalGlow;
+
+        /// <summary>Flux arc: a Mass column lights where an arc passes through it only while it stands out of the omni
+        /// (designer, 2026-10-13: "they should only light when protracted (not retracted)"). Its strike fades in as its
+        /// protraction (1 - its column place) rises from the first to the second.</summary>
+        public float StrikeProtractionFrom, StrikeProtractionFull;
+
         public static ChargeArcSettings Lab => new()
         {
             Rate = 1f, Bolts = 1f, Glow = 1f,
@@ -49,6 +59,7 @@ namespace CosmicShore.Utility
             FluxGap = 0.9f, FluxCharge = 0.45f, FluxStrike = 0.06f, FluxHold = 0.45f, FluxFade = 0.45f, FluxFork = 0.3f,
             FluxMinDegrees = 55f, FluxMaxDegrees = 125f, FluxBundle = 0.016f, FluxTurns = 1,
             CoreWidth = 0.012f, WritheSpeed = 3f, FlickerSpeed = 4f,
+            SeamPetalGlow = 0.35f, StrikeProtractionFrom = 0.15f, StrikeProtractionFull = 0.45f,
         };
 
         /// <summary>Seconds per lab-second: every duration is divided by the rate.</summary>
@@ -1082,7 +1093,7 @@ namespace CosmicShore.Utility
                         g = Mathf.Max(g, lit.w * Mathf.Exp(-d * d));
                     }
                 }
-                if (g > 0.01f) faceLight[f] = settings.Glow * 2.4f * g;
+                if (g > 0.01f) faceLight[f] = settings.Glow * settings.SeamPetalGlow * 2.4f * g;
             }
             return s_points.Count;
         }
@@ -1129,6 +1140,44 @@ namespace CosmicShore.Utility
         /// prism's middle, nothing once it only grazes the edge.
         /// </summary>
         public static void FluxStrikes(ChargeSites sites, ChargeFluxChain chain, float seconds, in ChargeArcSettings settings,
+            Vector3[] centres, float[] radii, int count, float[] strike) =>
+            FluxStrikes(sites, chain, seconds, settings, centres, radii, null, null, null, count, strike);
+
+        /// <summary>
+        /// As above, for prisms that ride columns: each prism's column place (<paramref name="places"/>, 0 at the top ..
+        /// 1 sealed), where its column starts on the shell (<paramref name="seats"/>) and the radius of its body there
+        /// (<paramref name="seatRadii"/>). A prism lights only as far as it stands out (<see cref="StrikeGate"/>), and a
+        /// standing one lights when an arc crosses its COLUMN - anywhere from its seat up to the prism - since a prism
+        /// out of the shell stands above the arcs, which bow just over it.
+        /// </summary>
+        public static void FluxStrikes(ChargeSites sites, ChargeFluxChain chain, float seconds, in ChargeArcSettings settings,
+            Vector3[] centres, float[] radii, float[] places, Vector3[] seats, float[] seatRadii, int count, float[] strike)
+        {
+            s_seats = seats;
+            s_seatRadii = seatRadii;
+            try { FluxStrikesUngated(sites, chain, seconds, settings, centres, radii, count, strike); }
+            finally { s_seats = null; s_seatRadii = null; }
+            if (places == null) return;
+            for (int j = 0; j < count; j++)
+                if (strike[j] > 0f) strike[j] *= StrikeGate(places[j], settings);
+        }
+
+        // The columns the current FluxStrikes call tests along (null = each prism's body only). Main thread only, like
+        // the rest of this writer's scratch (s_points).
+        static Vector3[] s_seats;
+        static float[] s_seatRadii;
+        const int ColumnSamples = 8;
+
+        /// <summary>How much of a strike a prism at column place <paramref name="place"/> (0 top .. 1 sealed) shows: none
+        /// while it is retracted, all once it stands out (<see cref="ChargeArcSettings.StrikeProtractionFrom"/> ..
+        /// <see cref="ChargeArcSettings.StrikeProtractionFull"/>).</summary>
+        public static float StrikeGate(float place, in ChargeArcSettings settings)
+        {
+            float from = settings.StrikeProtractionFrom, full = Mathf.Max(from + 1e-4f, settings.StrikeProtractionFull);
+            return Smooth((1f - place - from) / (full - from));
+        }
+
+        static void FluxStrikesUngated(ChargeSites sites, ChargeFluxChain chain, float seconds, in ChargeArcSettings settings,
             Vector3[] centres, float[] radii, int count, float[] strike)
         {
             System.Array.Clear(strike, 0, count);
@@ -1158,10 +1207,21 @@ namespace CosmicShore.Utility
             {
                 float r = radii[j];
                 if (r <= 0f) continue;
-                float d = float.MaxValue;
-                for (int i = 0; i + 1 < path.Count; i++) d = Mathf.Min(d, DistanceToSegment(centres[j], path[i], path[i + 1]));
-                if (d >= r) continue;
-                float v = settings.Glow * 2.4f * intensity * (1f - Smooth((d / r - 0.6f) / 0.4f));
+                // How deep inside the body (or its column) the arc runs, as a fraction of the radius there: 0 on the axis.
+                float depth = float.MaxValue;
+                int samples = s_seats != null ? ColumnSamples : 0;
+                for (int c = 0; c <= samples; c++)
+                {
+                    float along = samples == 0 ? 1f : c / (float)samples;
+                    var p = samples == 0 ? centres[j] : Vector3.Lerp(s_seats[j], centres[j], along);
+                    float rr = samples == 0 ? r : Mathf.Lerp(s_seatRadii[j], r, along);
+                    if (rr <= 0f) continue;
+                    float d = float.MaxValue;
+                    for (int i = 0; i + 1 < path.Count; i++) d = Mathf.Min(d, DistanceToSegment(p, path[i], path[i + 1]));
+                    depth = Mathf.Min(depth, d / rr);
+                }
+                if (depth >= 1f) continue;
+                float v = settings.Glow * 2.4f * intensity * (1f - Smooth((depth - 0.6f) / 0.4f));
                 strike[j] = Mathf.Max(strike[j], v);
             }
         }

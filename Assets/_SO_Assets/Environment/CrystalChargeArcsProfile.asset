@@ -19,6 +19,7 @@ MonoBehaviour:
   seamDwellMinSeconds: 0.1
   seamDwellMaxSeconds: 0.28
   seamFadeSeconds: 0.85
+  seamPetalGlow: 0.35
   fluxGapSeconds: 0.9
   fluxChargeSeconds: 0.45
   fluxStrikeSeconds: 0.06
@@ -29,6 +30,8 @@ MonoBehaviour:
   fluxMaxDegrees: 125
   fluxBundle: 0.016
   fluxTurns: 1
+  strikeProtractionFrom: 0.15
+  strikeProtractionFull: 0.45
   coreWidth: 0.012
   writheSpeed: 3
   flickerSpeed: 4

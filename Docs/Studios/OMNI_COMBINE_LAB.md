@@ -408,6 +408,17 @@ occluded or unnoticeable, but leaves the minimal transformations preserved."
   - Landings are 7e-8 R. The spacing matches its formula to 6e-7 R.
   - Space is untouched.
   - The lab path (`SocketSpacing` 0, no turn) matches the lab to 7e-7.
+- **Correction, round 8.** The 0.5 / 6.5 / 0.6% figures above came from a proxy: a rhombus counted as visible if its
+  hole faces the camera. Ray-casting against every triangle actually drawn, the turn does NOT occlude the clipping.
+  - Intersections between an incoming crystal's triangles and the landed ones stay visible about 15% of the time on
+    every approach. Time: 208/s straight in, 212/s from the camera's side, 221/s along the camera's line of sight
+    (azimuth and elevation), 177/s from above. Arriving from behind is the best of them: 124/s for Time, 59 for Mass,
+    160 for Charge.
+  - The clipping is the crystal entering the omni and growing inside it, between 40% and 90% of its flight. Arriving
+    from the camera's side shows the entry, and arriving from behind shows the growth.
+  - The turn does stop camera-facing rhombi from rising out of their holes, which is what the designer saw on Time.
+  - Charge and Mass already had the same turn as Time. They land into a sparse structure (Space only, then Space and
+    Charge), so there is little landed geometry to hide them.
 - **Cost.** A crystal that has to come round from the far side moves at up to 4.5 omni radii a second, against 1.9
   arriving straight in. Turning only to within a tolerance of the camera trades that speed straight back for visible
   clipping: at ±30° Time is inside 4% of the time, at ±60° 12%.

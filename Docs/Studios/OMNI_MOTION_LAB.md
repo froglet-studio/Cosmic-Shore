@@ -50,7 +50,11 @@ takes the round-3 Mass rules as well.
 
 **After graduation (same day):**
 - every bolt is a continuous plasma ribbon modelled on the Squirrel's skim crackle;
-- a flux arc through a raised Mass column lights the prism (`_DepthState.w`, `_StrikeColor`);
+- a flux arc through a raised Mass column lights the prism (`_DepthState.w`, `_StrikeColor`):
+  - only while it stands out (`strikeProtractionFrom` 0.15 to `strikeProtractionFull` 0.45 of its column);
+  - tested along its whole column, from its seat up to the prism, since a raised prism stands above the arcs. Before
+    this, the arcs only ever reached prisms 10–20% out, which read as retracted ones lighting;
+- the seam walk lights the Charge crystal's petals at `seamPetalGlow` (0.35), so its plasma reads over them;
 - the converter's Charge crystal wears the omni's body hue (`OMNI_COMBINE_LAB.md`, revision 5).
 
 **The Elemental Converter follows** (same day): its crystals and woken omni play all of the above, through the same code

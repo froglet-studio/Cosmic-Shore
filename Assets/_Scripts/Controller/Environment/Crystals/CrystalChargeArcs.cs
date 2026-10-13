@@ -73,7 +73,8 @@ namespace CosmicShore.Gameplay
         Crystal crystal;
         CrystalDepthPrisms depthPrisms;   // the omni's Mass columns a flux arc can pass through
         Vector3[] prismCentres;
-        float[] prismRadii, prismStrike;
+        Vector3[] prismSeats;
+        float[] prismRadii, prismStrike, prismPlaces, prismSeatRadii;
 
         void Awake()
         {
@@ -151,7 +152,7 @@ namespace CosmicShore.Gameplay
             Upload();
         }
 
-        /// <summary>Lights every raised Mass prism a flux arc is passing through: each prism's body is carried from the
+        /// <summary>Lights every protracted Mass prism a flux arc is passing through: each prism's body is carried from the
         /// prisms' space into this one and tested against the arcs' paths.</summary>
         void StrikePrisms(float seconds)
         {
@@ -162,6 +163,9 @@ namespace CosmicShore.Gameplay
                 prismCentres = new Vector3[count];
                 prismRadii = new float[count];
                 prismStrike = new float[count];
+                prismPlaces = new float[count];
+                prismSeats = new Vector3[count];
+                prismSeatRadii = new float[count];
             }
             var from = depthPrisms.transform;
             float scale = from.lossyScale.x / Mathf.Max(1e-6f, transform.lossyScale.x);
@@ -170,8 +174,14 @@ namespace CosmicShore.Gameplay
                 depthPrisms.TryGetPrism(j, out var centre, out float radius);
                 prismCentres[j] = transform.InverseTransformPoint(from.TransformPoint(centre));
                 prismRadii[j] = radius * scale;
+                prismPlaces[j] = depthPrisms.PlaceOf(j);
+                depthPrisms.SeatOf(j, out var seat, out float seatRadius);
+                prismSeats[j] = transform.InverseTransformPoint(from.TransformPoint(seat));
+                prismSeatRadii[j] = seatRadius * scale;
             }
-            ChargeArcs.FluxStrikes(sites, chain, seconds, settings, prismCentres, prismRadii, count, prismStrike);
+            // Only a prism standing out of the omni lights, when an arc crosses its column; a retracted one stays dark.
+            ChargeArcs.FluxStrikes(sites, chain, seconds, settings, prismCentres, prismRadii, prismPlaces, prismSeats, prismSeatRadii,
+                                   count, prismStrike);
             System.Array.Copy(prismStrike, depthPrisms.Strike, count);
         }
 

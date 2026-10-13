@@ -252,6 +252,14 @@ namespace CosmicShore.Gameplay
         /// through it and drawn as a glow (<c>_DepthState.w</c>). Indexed like <see cref="TryGetPrism"/>.</summary>
         public float[] Strike => strike;
 
+        /// <summary>Prism <paramref name="j"/>'s column place: 0 at the top of its column (standing out) .. 1 sealed.</summary>
+        public float PlaceOf(int j) => columns[j].Place;
+
+        /// <summary>Where prism <paramref name="j"/>'s column starts: its body sealed in the shell (centre and radius, in this
+        /// object's space).</summary>
+        public void SeatOf(int j, out Vector3 centre, out float radius) =>
+            ColumnBody(plateCentres[j], plateBounds[j], 1f, reach, sizeAtTop, faceSplit * splitUnit, out centre, out radius);
+
         /// <summary>
         /// Where prism <paramref name="j"/> stands now, in this object's space: its plate centre carried up its column, and a
         /// radius that holds its whole body (its seated reach scaled as the shader scales it at its place, plus the faces'

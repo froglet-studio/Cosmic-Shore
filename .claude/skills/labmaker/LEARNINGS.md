@@ -649,5 +649,22 @@ Entries are grouped by family; within a family, the newest goes at the bottom.
   - When something unavoidable can't be made smaller, the viewer's camera is a design input. Put the crossing where
     the body itself hides it. This is the same move as the Mass "rise while hidden".
 - Evidence: `OmniCombineCore.FaceCamera`, `SocketSpacing`; `Tools/Build/converter_round5_harness` (camera-facing
-  rhombi inside 0.5 / 6.5 / 0.6% of late frames, against 24.6 / 19.0 / 33.0% arriving straight in).
+  rhombi inside 0.5 / 6.5 / 0.6% of late frames, against 24.6 / 19.0 / 33.0% arriving straight in). See L-STU-51: that
+  measure was a proxy, and the true one does not back the occlusion claim.
+- Promoted: no
+
+### L-STU-51 — "Occluded" means a ray from the camera hits something drawn first; a facing test is not that
+- Lab: Omni Combine Lab revision 7 → round 8 (the converter) · Branch: `cece/sharp-fermi-yw38ky` · Date: 2026-10-13
+- What happened: revision 7 shipped "arrive from the camera's side, so the clipping happens behind the omni". Its
+  evidence was a proxy, "a rhombus whose hole faces the camera is inside the omni", which fell from 33% to 0.6%. The
+  designer then asked for "the same treatment" on Charge and Mass, which already had it. Ray-casting from the
+  converter's camera against every triangle drawn showed visible plate-through-plate intersections at about 15% on
+  every approach: straight in, from the camera's side, along the line of sight, from above. From behind was best.
+  The clipping is the crystal entering the omni and growing inside it. The approach direction only trades which half
+  you see. A sparse structure (Charge lands on Space alone) has nothing to hide it behind.
+- Do instead: when the claim is "occluded" or "hidden", measure it with occlusion. Cast rays from the real camera
+  against the geometry actually drawn, at the moment it is drawn, and count the events the viewer would call the
+  fault: here, triangle-triangle intersections. Keep any facing or hemisphere test only as a fast pre-filter, and say
+  in the doc which one produced the number.
+- Evidence: the round-8 scratch ray-cast rig (`OMNI_COMBINE_LAB.md` revision 7, "Correction, round 8").
 - Promoted: no

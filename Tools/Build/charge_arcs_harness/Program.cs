@@ -113,6 +113,23 @@ static class Program
         Check("the seam walk never takes a fifth seam round one bloom", circles == 0, $"{circles}");
         Check("the seam walk lights only petals near the bolt", litFar == 0 && litFrames > 0, $"{litFrames} lit petal-frames, {litFar} far from the bolt");
         Check("the seam walk draws bolts", bolts > 0, $"{bolts}");
+        {
+            // the petals beside the bolt light at SeamPetalGlow of what they did, so the plasma reads over them
+            var dim = settings; var full = settings; full.SeamPetalGlow = 1f;
+            var wDim = new ChargeSeamWalker(charge, 9, 0f); var wFull = new ChargeSeamWalker(charge, 9, 0f);
+            var lDim = new float[charge.Faces.Length]; var lFull = new float[charge.Faces.Length];
+            var writer2 = new ChargeArcMeshWriter();
+            float peakDim = 0f, peakFull = 0f;
+            for (float t = 0f; t < 30f; t += 0.05f)
+            {
+                wDim.Advance(t, dim); wFull.Advance(t, full);
+                writer2.Clear(); ChargeArcs.SeamWalk(charge, wDim, t, dim, writer2, new Vector3(0.3f, 0.2f, 1f).normalized * charge.Radius * 6f, lDim);
+                writer2.Clear(); ChargeArcs.SeamWalk(charge, wFull, t, full, writer2, new Vector3(0.3f, 0.2f, 1f).normalized * charge.Radius * 6f, lFull);
+                peakDim = Math.Max(peakDim, lDim.Max()); peakFull = Math.Max(peakFull, lFull.Max());
+            }
+            Check("the petals beside the seam walk light at seamPetalGlow of full", peakFull > 0f && Math.Abs(peakDim / peakFull - settings.SeamPetalGlow) < 1e-3f,
+                  $"peak {peakDim:F2} vs {peakFull:F2} at full ({settings.SeamPetalGlow})");
+        }
         // negative control: a plain random walk (no fifth-seam rule) does circle
         var rnd = new System.Random(7); int at = 0, prev = -1, plainCircles = 0; var recent = new List<int>();
         for (int i = 0; i < 5000; i++)
@@ -349,6 +366,39 @@ static class Program
         float onValue = one[0];
         ChargeArcs.FluxStrikes(omni, plantChain, tHold, settings, off, r1, 1, one);
         Check("a prism on the beam lights; one well off it does not", onValue > 2f && one[0] == 0f, $"{onValue:F2} / {one[0]:F2}");
+        // Only a PROTRACTED prism lights (designer, 2026-10-13: "they should only light when protracted (not retracted)"):
+        // a standing prism is above every arc, so it lights when an arc crosses its COLUMN (seat .. prism); a retracted
+        // one never does. The same columns struck with places and columns, and the old way (body only, ungated).
+        {
+            var places = new float[omniTris.Count];
+            var seats = omniTris.Select(p => p.centre).ToArray();
+            var seatRadii = omniTris.Select(p => p.bound).ToArray();
+            var report = new List<string>();
+            int retractedLit = 0, standingLit = 0, retractedUngated = 0;
+            foreach (float u in new[] { 0.5f, 0.6f, 0.7f, 0.8f, 0.85f, 0.9f, 0.95f })
+            {
+                float k = 3f + (1f - 3f) * u, size = k * (0.6f + 0.4f * u);
+                var cUp = omniTris.Select(p => p.centre * k).ToArray();
+                var rUp = omniTris.Select(p => p.bound * size).ToArray();
+                Array.Fill(places, u);
+                var gChain = new ChargeFluxChain(omni, 5); var uChain = new ChargeFluxChain(omni, 5);
+                var ungated = new float[omniTris.Count];
+                int lit = 0, litUngated = 0;
+                for (float t = 0f; t < 120f; t += 0.05f)
+                {
+                    ChargeArcs.FluxStrikes(omni, gChain, t, settings, cUp, rUp, places, seats, seatRadii, cUp.Length, strike);
+                    ChargeArcs.FluxStrikes(omni, uChain, t, settings, cUp, rUp, cUp.Length, ungated);
+                    if (strike.Any(x => x > 0.01f)) lit++;
+                    if (ungated.Any(x => x > 0.01f)) litUngated++;
+                }
+                if (1f - u <= settings.StrikeProtractionFrom) { retractedLit += lit; retractedUngated += litUngated; }
+                if (1f - u >= settings.StrikeProtractionFull) standingLit += lit;
+                report.Add($"place {u:F2}: {lit}/{litUngated}");
+            }
+            Check("a retracted prism never lights, however close an arc passes", retractedLit == 0, string.Join(", ", report) + " (lit frames gated/ungated)");
+            Check("a protracted prism lights when an arc crosses its column", standingLit > 0, $"{standingLit} frames");
+            Check("negative control: ungated, retracted prisms do light", retractedUngated > 0, $"{retractedUngated} frames");
+        }
 
         // negative control: one petal missing is refused
         var keep = new List<int>();

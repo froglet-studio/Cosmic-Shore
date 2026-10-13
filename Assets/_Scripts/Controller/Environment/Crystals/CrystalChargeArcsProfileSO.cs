@@ -37,6 +37,9 @@ namespace CosmicShore.Gameplay
         [Tooltip("Seconds a struck seam takes to fade behind the bolt.")]
         [SerializeField, Range(0.05f, 3f)] float seamFadeSeconds = 0.85f;
 
+        [Tooltip("x the light on the petals beside the bolt (on top of glowIntensity). Low, so the plasma reads over the petals it lights.")]
+        [SerializeField, Range(0f, 2f)] float seamPetalGlow = 0.35f;
+
         [Header("Flux arcs (the omni)")]
         [Tooltip("Seconds between one discharge and the next. Each leaps on from the pentagon the last one landed on.")]
         [SerializeField, Range(0.2f, 5f)] float fluxGapSeconds = 0.9f;
@@ -68,6 +71,12 @@ namespace CosmicShore.Gameplay
         [Tooltip("Whole turns the bundle twists about its axis over the arc (a braided cable). Whole turns, so each strand still lands on its own sink corner.")]
         [SerializeField, Range(0, 4)] int fluxTurns = 1;
 
+        [Tooltip("A Mass column lights where an arc passes through it only while it stands out of the omni: its strike starts at this protraction (1 - its column place; 0 sealed, 1 at the top of its column)...")]
+        [SerializeField, Range(0f, 1f)] float strikeProtractionFrom = 0.15f;
+
+        [Tooltip("...and is full from this protraction up.")]
+        [SerializeField, Range(0f, 1f)] float strikeProtractionFull = 0.45f;
+
         [Header("Bolts")]
         [Tooltip("A bolt's core width, x the crystal's radius (its glow is wider; the flux beam is 3 of these, a strand 0.9).")]
         [SerializeField, Range(0.001f, 0.05f)] float coreWidth = 0.012f;
@@ -87,6 +96,8 @@ namespace CosmicShore.Gameplay
             FluxFade = fluxFadeSeconds, FluxFork = fluxFork, FluxMinDegrees = fluxMinDegrees, FluxMaxDegrees = Mathf.Max(fluxMinDegrees, fluxMaxDegrees),
             FluxBundle = fluxBundle, FluxTurns = fluxTurns,
             CoreWidth = coreWidth, WritheSpeed = writheSpeed, FlickerSpeed = flickerSpeed,
+            SeamPetalGlow = seamPetalGlow,
+            StrikeProtractionFrom = strikeProtractionFrom, StrikeProtractionFull = Mathf.Max(strikeProtractionFrom, strikeProtractionFull),
         };
     }
 }

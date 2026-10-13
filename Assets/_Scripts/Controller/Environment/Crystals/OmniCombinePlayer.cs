@@ -66,7 +66,8 @@ namespace CosmicShore.Gameplay
         Piece _omni;
         ArcLayer _chargeArcs, _omniArcs;
         Vector3[] _strikeCentres;
-        float[] _strikeRadii;
+        float[] _strikeRadii, _strikePlaces, _strikeSeatRadii;
+        Vector3[] _strikeSeats;
         ChargeSeamWalker _walker;
         ChargeFluxChain _chain;
         ChargeArcSettings _arcSettings;
@@ -552,7 +553,7 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// Lights every raised triangle prism a flux arc passes through (<see cref="ChargeArcs.FluxStrikes"/>), as
+        /// Lights every protracted triangle prism a flux arc passes through (<see cref="ChargeArcs.FluxStrikes"/>), as
         /// <see cref="CrystalChargeArcs"/> lights the omni's Mass columns in play: each prism's body, at its column's place,
         /// carried from the triangles' turned frame into the stage's (where the arcs are drawn).
         /// </summary>
@@ -563,11 +564,26 @@ namespace CosmicShore.Gameplay
             float split = _triShape.FaceSplit * _triShape.SplitUnit;
             for (int j = 0; j < c.Count; j++)
             {
-                CrystalDepthPrisms.ColumnBody(c.Centres[j], c.Bounds[j], c.Place(j), _triShape.Reach, _triShape.SizeStart, split,
+                CrystalDepthPrisms.ColumnBody(c.Centres[j], c.Bounds[j], c.State[j].x, _triShape.Reach, _triShape.SizeStart, split,
                                               out var centre, out _strikeRadii[j]);
                 _strikeCentres[j] = turn * centre;
             }
-            ChargeArcs.FluxStrikes(_omniArcs.Sites, _chain, seconds, settings, _strikeCentres, _strikeRadii, c.Count, c.Strike);
+            // Only a prism standing out lights, at its place as drawn (State.x, eased in with the omni's wake).
+            if (_strikePlaces == null || _strikePlaces.Length != c.Count)
+            {
+                _strikePlaces = new float[c.Count];
+                _strikeSeats = new Vector3[c.Count];
+                _strikeSeatRadii = new float[c.Count];
+            }
+            for (int j = 0; j < c.Count; j++)
+            {
+                _strikePlaces[j] = c.State[j].x;
+                CrystalDepthPrisms.ColumnBody(c.Centres[j], c.Bounds[j], 1f, _triShape.Reach, _triShape.SizeStart, split,
+                                              out var seat, out _strikeSeatRadii[j]);
+                _strikeSeats[j] = turn * seat;
+            }
+            ChargeArcs.FluxStrikes(_omniArcs.Sites, _chain, seconds, settings, _strikeCentres, _strikeRadii, _strikePlaces,
+                                   _strikeSeats, _strikeSeatRadii, c.Count, c.Strike);
         }
 
         static Vector3 ToVector(D3 d) => new((float)d.X, (float)d.Y, (float)d.Z);
