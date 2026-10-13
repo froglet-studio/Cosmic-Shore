@@ -109,6 +109,12 @@ namespace CosmicShore.Gameplay
                  "Charge crystal - a detour that outlasts the cooldown wastes a shot.")]
         [Min(0f)] public float aiDetourMinCooldownSeconds = 2.5f;
 
+        [Tooltip("Seconds of rifle reload that must remain before an AI lowers its scope to CLOAK " +
+                 "(lay a seed wall and vanish). It needs the scope down for one tick and up again " +
+                 "after aiScopeRetrySeconds, so this must comfortably exceed that, or the bot would " +
+                 "trade a ready rifle for a cloak.")]
+        [Min(0f)] public float aiCloakMinCooldownSeconds = 5f;
+
         [Tooltip("Seconds an AI waits for a scope press to round-trip before pressing again.")]
         [Min(0.1f)] public float aiScopeRetrySeconds = 1f;
 

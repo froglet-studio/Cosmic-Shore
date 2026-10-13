@@ -63,6 +63,9 @@ and it counts, but it is the slow way.
   prisms. A forest suits a piercing round because the value of a shot lives entirely in its angle.
 - **The scene** is a six-line delta from Sirocco's: identity guids, plus the four AI hulls going
   from Butterfly (13) to Serpent (7). The spawn ring is Rampage's own, 500 outside the nucleus.
+- **The forest PLANTS IN over the opening ~45 s** (2026-10-13, Rampage's own change, inherited).
+  It used to land one plant per frame, so intensity 2's 245 plants arrived in about half a second.
+  The final forest is unchanged. See `RAMPAGE.md` § "The forest".
 
 ## Charge crystals (the mode's economy)
 
@@ -86,8 +89,20 @@ scope is up. Without a driver every AI Serpent would fly the whole match unable 
 the Tollway rule's defect: an all-AI domain that cannot play. So every AI Serpent becomes a marksman.
 
 - **It holds the scope** with one replicated LT press (the scope is a latch) and re-presses only if
-  the latch did not take, for example if input was muted for the countdown. While it is held, the
-  cloak declines on its own, which retires AIPilot's blind cloak cycler without touching it.
+  the latch did not take, for example if input was muted for the countdown.
+- **It owns the right trigger, so it cloaks deliberately.** RT is the cloak unscoped and the rifle
+  scoped, so AIPilot's ability cycler is told to keep off the cloak
+  (`AIPilot.SuppressCycledAbility<CloakSeedWallActionSO>`; restored on disarm). Otherwise a cycler
+  press while the scope was up would fire the rifle. Once per reload, and only when at least
+  `aiCloakMinCooldownSeconds` (5) of it remains, the marksman does three things: it lowers its
+  scope, presses the cloak **through the replicated input**, and raises the scope again a second
+  later. Because the press is replicated, the hull vanishes, the trail fades and the seed wall is
+  laid on every machine.
+- **It cannot see a cloaked pilot.** A rival whose hull is cloaked
+  (`CloakSeedWallActionExecutor.IsCloaked`) is not a hunting target and is worth nothing in a
+  line the bot is weighing. A rival it was already hunting is dropped the moment they cloak, and
+  the bot flies to where it last saw them. A round fired for the forest can still catch a cloaked
+  pilot by accident, and that still pays.
 - **It plans the fattest line it can bring to bear.** It samples aim points from the densest
   hostile stand (`Cell.GetExplosionTarget`, the same question the objective arrow asks) and from
   the mass ahead of its nose. It scores each line **with the rifle's own query**: `QueryCone` at
@@ -135,6 +150,18 @@ on a thin line, hunts you across nearly the whole range and keeps its Charge top
 - **`ModeGenre`** gets a row of **Charge first, then Space**, with `ModeGenreTests` updated. The
   metric alone reads Space, but this is the Serpent's Charge game: the rifle's rate is Charge, and
   a pilot is the most valuable thing a round can pass through.
+- **AI cloaks reach every player** (2026-10-13). `AIAbility.ReplicateThroughInput` is a new
+  opt-in on AIPilot's ability cycler. When it is set, the entry presses the vessel's own control
+  through `PerformShipControllerActionsReplicated` instead of starting the ability locally on the
+  server. It is ticked on the Serpent's cloak entry, and it fixes the cloak in **every** mode that
+  flies AI Serpents: before, an AI cloak hid the hull, faded the trail and laid the seed on the
+  server only. `R_VesselActionHandler.TryGetInputForAsset` answers which control runs a given
+  authored asset. General rule: an AI press whose output rides no other replicated channel must
+  be replicated (that method's own doc states it).
+- **AIs do not track a cloaked pilot** (2026-10-13). `CloakSeedWallActionExecutor.IsCloaked` is
+  one predicate, true from cloak to reveal. AIPilot's platform player seeking (Joust, Dog Fight,
+  Broadside) skips a cloaked candidate and breaks an existing lock when its target cloaks, and the
+  marksman does the same. `AIPilot.SuppressCycledAbility<T>` lets a mode drive an ability itself.
 - **`SniperShotActionExecutor.MinPathRadius`** is a new read-only accessor, so a caller that
   *predicts* a shot asks exactly the cone the shot fires. General rule: an AI that scores its own
   options should score them with the weapon's own geometry, never a copy of its numbers.
@@ -169,8 +196,8 @@ filed in `Docs/UNITY_VERIFICATION_CHECKLIST.md`.
   fires every 12 s at rest, which puts a solo pilot at ~2.5 minutes. Play-test it.
 - **The pilot price (60) is a balance guess.** It is roughly one good line, so a duel can swing a
   match without the forest becoming irrelevant.
-- **A scoped AI never cloaks.** That is the price of holding the scope latched, which keeps the
-  rifle instantly available. It is a deliberate trade, and the bots are snipers here, not weavers.
+- **An AI cloaks at most once per reload**, and only in a reload of 5 s or more, because it must
+  lower its scope to do it. At rest that is every other shot or so (the cloak itself runs 15 s).
 - **Charge-crystal collection is per-peer** (see above). A client can see a crystal still standing
   that a remote pilot has already collected on its own machine, until the next wave replaces it.
 - **Rampage intensity 1 is the heaviest cell in any arcade mode and is not profiled.** That is

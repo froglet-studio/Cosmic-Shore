@@ -75,6 +75,28 @@ namespace CosmicShore.Gameplay
         /// </summary>
         private bool IsLocalUser => _status?.Player != null && _status.Player.IsLocalUser;
 
+        // Every vessel whose hull this cloak is hiding RIGHT NOW, on this machine. The press
+        // replicates (a human's RT, and an AI's through AIPilot's ReplicateThroughInput or Serpent
+        // Charge's marksman), so every peer runs the same cloak and every peer's set agrees.
+        static readonly HashSet<IVesselStatus> s_Cloaked = new();
+
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        static void ResetCloakedSet() => s_Cloaked.Clear();
+
+        /// <summary>
+        /// True while <paramref name="status"/>'s hull is hidden by its cloak - from the moment
+        /// the cloak starts until the reveal hands the hull its own materials back. An AI must
+        /// not TRACK a pilot it cannot see: <see cref="AIPilot"/>'s player seeking and Serpent
+        /// Charge's marksman both ask this and lose the target (it holds where it was last
+        /// seen). One predicate for every tracker, so "invisible" means the same thing to all of
+        /// them. False for null and for any vessel without a cloak.
+        /// </summary>
+        public static bool IsCloaked(IVesselStatus status) => status != null && s_Cloaked.Contains(status);
+
+        /// <summary>True when a press would start a cloak now: none running and the cooldown
+        /// spent. Read by an autopilot deciding whether a press is worth making.</summary>
+        public bool CanCloak => !_isRunning && Time.time >= _cooldownEndTime;
+
         /// <summary>How much of the trail stays drawn once cloaked: a ghost of it for the pilot,
         /// nothing for everyone else.</summary>
         private float TrailCloakedAlpha => _activeSo && IsLocalUser ? _activeSo.PilotTrailAlpha : 0f;
@@ -88,6 +110,7 @@ namespace CosmicShore.Gameplay
 
         void OnDestroy()
         {
+            if (_status != null) s_Cloaked.Remove(_status);
             if (_hullGhost) Destroy(_hullGhost);
             if (_revealGhost) Destroy(_revealGhost);
             foreach (var clone in _trailClones.Values)
@@ -106,6 +129,8 @@ namespace CosmicShore.Gameplay
 
         public override void Initialize(IVesselStatus shipStatus)
         {
+            // A re-init hands this executor to a different pilot; the last one is not cloaked here.
+            if (_status != null) s_Cloaked.Remove(_status);
             _status     = shipStatus;
             _controller = _status?.VesselPrismController;
 
@@ -331,6 +356,7 @@ namespace CosmicShore.Gameplay
             _shipOriginalShared = shipRenderer.sharedMaterials;
             _shipPrevEnabled    = shipRenderer.enabled;
             _shipCloaked        = true;
+            if (_status != null) s_Cloaked.Add(_status);
             SpawnSerpentGhost();
 
             if (IsLocalUser)
@@ -505,6 +531,7 @@ namespace CosmicShore.Gameplay
         private void RestoreShipImmediate()
         {
             DestroySerpentGhost();
+            if (_status != null) s_Cloaked.Remove(_status);
 
             // Only a hull this cloak changed: End() also runs at a turn end that had no cloak,
             // and must not write a never-captured "previous" state onto the hull.

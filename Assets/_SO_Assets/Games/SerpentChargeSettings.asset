@@ -65,4 +65,5 @@ MonoBehaviour:
   aiAheadSampleRadius: 450
   aiTurnPenaltyFloor: 0.35
   aiDetourMinCooldownSeconds: 2.5
+  aiCloakMinCooldownSeconds: 5
   aiScopeRetrySeconds: 1

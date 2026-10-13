@@ -65,6 +65,40 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 AI Serpents cloak for everyone, AIs lose cloaked pilots, the Rampage forest plants in over ~45 s (`cece/vibrant-archimedes-n3xn3x`, 2026-10-13) — NOT EDITOR-VERIFIED
+
+**What landed:**
+- **The AI cloak is now replicated.** `AIAbility.ReplicateThroughInput` is ticked on the Serpent
+  prefab's cloak entry, with `R_VesselActionHandler.TryGetInputForAsset` behind it.
+- **AIs lose cloaked pilots.** `CloakSeedWallActionExecutor.IsCloaked` is read by AIPilot's player
+  seeking and by Serpent Charge's marksman.
+- **The marksman cloaks itself.** It suppresses the cycler's cloak (`AIPilot.SuppressCycledAbility<T>`).
+- **The forest plants in over ~45 s.** `FloraSpawnIntervalSeconds` is now 0.35 / 0.47 / 0.74 /
+  1.73 on Rampage Spawn Profiles 1-4, authored by `rampage_intensity.py`. It was 0 (one plant per
+  frame).
+
+The change compiles clean against real Unity references (player + editor, with a negative control).
+
+**Verify in editor:**
+
+1. **An AI's cloak, seen from another machine.** Host a party with a second machine as a client, in
+   any mode with an AI Serpent (Serpent Charge, Brood Rush, Regatta). When the AI cloaks, the
+   CLIENT must lose its hull and its trail, and must see the seed and wall grow. Before this change
+   only the host did.
+2. **The same on the host.** In solo play vs AI, the AI's cloak must hide its hull and trail. It
+   should also no longer fire its rifle at random in Serpent Charge: the marksman owns RT there.
+3. **Lost tracking.** In Joust or Dog Fight there is no Serpent, so use Serpent Charge at intensity
+   4. Cloak (RT unscoped) while an AI is hunting you. Its nose should stop following you and carry
+   on to where you were, and its tracers should stop finding you until you reveal.
+4. **The forest.** Load Rampage at intensity 1 and 2. Plants should appear over the first ~45 s
+   instead of in one burst, and the forest should still reach its usual size. Check the first
+   seconds of the match for a smoother frame time.
+
+**Tuning:** `PLANTING_WINDOW_SECONDS` (45) in `rampage_intensity.py` (re-run with `--write`), and
+`aiCloakMinCooldownSeconds` (5) in `author_serpent_charge_assets.py`.
+
+---
+
 ### 🔴 Serpent Charge (`GameModes.SerpentCharge = 66`) — the Serpent's sniper race, with a marksman AI (`cece/vibrant-archimedes-n3xn3x`, 2026-10-13) — NOT EDITOR-VERIFIED
 
 **What landed:** a Serpent-only arcade card over Rampage's cactus forest

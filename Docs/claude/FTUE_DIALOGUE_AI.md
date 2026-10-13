@@ -74,6 +74,18 @@ Runtime-configurable AI opponents at `Assets/_Scripts/Controller/AI/`:
 - AI profiles used for score cards and multiplayer backfill
 - Configurable AI ship selection and behavior at runtime
 
+**An AI press whose output rides no other replicated channel must be REPLICATED**
+(`R_VesselActionHandler.PerformShipControllerActionsReplicated` states the rule). AIPilot runs on the
+server only, and its ability cycler starts abilities locally, which is right for motion (the
+transform replicates) and wrong for anything other players must SEE or that lays mass. Tick
+**`AIAbility.ReplicateThroughInput`** on such an entry, and the cycler presses the vessel's own
+control instead (`TryGetInputForAsset`). The Serpent's cloak is the first entry ticked (2026-10-13):
+before that an AI cloak hid the hull and trail on the server alone. A mode that drives an ability
+itself calls **`AIPilot.SuppressCycledAbility<T>()`** (and restores it on disarm), which Serpent
+Charge's marksman does for the cloak because RT is also its rifle. **An AI never tracks a cloaked
+pilot**: `CloakSeedWallActionExecutor.IsCloaked` is the one predicate, and AIPilot's player seeking
+skips such a candidate and breaks an existing lock.
+
 **A pursuing AI ORBITS anything inside its own minimum turn radius, and that is geometry rather
 than tuning** (`AI_ORBIT_BREAK.md`, `PursuitReachability`). A vessel at speed `v` with max turn
 rate `ω` cannot fly tighter than `R = v/ω`, so pure pursuit can never reach a target inside either

@@ -38,6 +38,23 @@ since 2026-10-13 only the cloak's seed carries the super-shield's stellation (Ga
 ability"). A seed shot immediately (the Sniper Shot at Charge 5, or an energized Rhino blade)
 grows nothing.
 
+### An AI's cloak, and what an AI may see (2026-10-13)
+
+**An AI Serpent's cloak used to run on the server only.** AIPilot's ability cycler started the cloak
+with a local `StartAction` on the machine the AI runs on, so every other player still saw the AI's
+hull and its trail. They also never got its seed wall, which is conserved mass laid on the server
+alone. The cycler entry for `CloakSeedWallAction` on `Serpent.prefab` is now authored
+**`ReplicateThroughInput: 1`**, so it presses RT through the replicated input exactly as a human's
+press travels, and every peer runs the same cloak. Serpent Charge's marksman drives the cloak
+itself, through the same replicated press (`SERPENTCHARGE.md`).
+
+**An AI does not track a cloaked pilot.** `CloakSeedWallActionExecutor.IsCloaked(status)` is true
+from the moment the hull is hidden until the reveal hands it its materials back. That is the one
+predicate every tracker asks: AIPilot's player seeking skips a cloaked candidate and breaks an
+existing lock, holding the last place it saw them, and the Serpent Charge marksman does the same.
+It is maintained on every peer because the press replicates. Anything new that picks a pilot to
+chase should ask it too.
+
 ### The stance's wall
 
 The stance seeds with `StartSeed(..., heldByStance: true)`. Its wall is HELD: `IsActive` is true

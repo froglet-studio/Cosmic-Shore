@@ -146,6 +146,7 @@ settings += """  aiTickSeconds: 0.1
   aiAheadSampleRadius: 450
   aiTurnPenaltyFloor: 0.35
   aiDetourMinCooldownSeconds: 2.5
+  aiCloakMinCooldownSeconds: 5
   aiScopeRetrySeconds: 1
 """
 g.emit_asset("Assets/_SO_Assets/Games/SerpentChargeSettings.asset", G_ASSET["SerpentChargeSettings"], settings)
@@ -320,6 +321,19 @@ if AI_LADDERS[2][1][3] >= cone:
     errors.append("intensity-4 aim jitter is not inside the rifle's cone - the hardest bot could not snipe")
 if max(AI_LADDERS[6][1]) > (field(shot, "rangeUnits") or 0):
     errors.append("a pilot-hunt range exceeds the rifle's reach")
+
+# The marksman lowers its scope to cloak and re-raises it aiScopeRetrySeconds later, so the cloak
+# window must comfortably exceed that or a bot would trade a ready rifle for a cloak; and it must
+# fit inside the RESTING reload or the bot never cloaks at all.
+if not (2 * 1.0 <= 5 < cooldown):
+    errors.append("aiCloakMinCooldownSeconds (5) must be >= 2x aiScopeRetrySeconds and under the resting reload")
+# The cloak only reaches other players if the AI's cycler presses it through the input - the
+# prefab's AIPilot entry for CloakSeedWallAction must carry ReplicateThroughInput: 1.
+CLOAK_ACTION = lib.existing_guid("Assets/_SO_Assets/VesselActions/Serpent/CloakSeedWallAction.asset")
+if not re.search(rf"  - Ability: {{fileID: 11400000, guid: {CLOAK_ACTION}, type: 2}}\n    Duration: [^\n]*\n"
+                 rf"    Cooldown: [^\n]*\n    ReplicateThroughInput: 1\n", prefab):
+    errors.append("Serpent.prefab's AIPilot cloak entry is not ReplicateThroughInput - an AI cloak "
+                  "would hide the hull and trail on the server only")
 
 # The scene: our identity in, the donor's out, four Serpent AI templates, Rampage's four cells.
 if scene is not None:

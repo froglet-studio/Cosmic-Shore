@@ -621,6 +621,45 @@ namespace CosmicShore.Gameplay
             => TryFindPressableAction(_shipControlActions, GetActiveOverrides(), out action, out inputEvent);
 
         /// <summary>
+        /// <see cref="TryGetInputForAction{T}"/> for one authored ASSET rather than a type: which
+        /// control, pressed now, runs exactly <paramref name="asset"/> on this vessel. Same
+        /// resolution (the active device's override map, then the shared entries it does not
+        /// shadow), so every answer is one <see cref="TryGetPressedActions"/> would honour.
+        ///
+        /// <para><see cref="AIPilot"/>'s ability cycler is the caller: an entry authored with
+        /// <c>AIAbility.ReplicateThroughInput</c> knows the ASSET it was authored with, not a type
+        /// to ask for, and two abilities of one type on one hull must not be confused for each
+        /// other. Same contract as its siblings - false (and a meaningless out) when this vessel
+        /// binds no control to the asset on its active device.</para>
+        /// </summary>
+        public bool TryGetInputForAsset(ShipActionSO asset, out InputEvents inputEvent)
+        {
+            var overrides = GetActiveOverrides();
+            if (asset != null && (TryFindAsset(overrides, null, asset, out inputEvent) ||
+                                  TryFindAsset(_shipControlActions, overrides, asset, out inputEvent)))
+                return true;
+            inputEvent = default;
+            return false;
+        }
+
+        static bool TryFindAsset(Dictionary<InputEvents, List<ShipActionSO>> map,
+                                 Dictionary<InputEvents, List<ShipActionSO>> shadowedBy,
+                                 ShipActionSO asset, out InputEvents inputEvent)
+        {
+            inputEvent = default;
+            if (map == null) return false;
+            foreach (var kv in map)
+            {
+                if (kv.Value == null) continue;
+                if (shadowedBy != null && IsBound(shadowedBy, kv.Key)) continue;
+                if (!kv.Value.Contains(asset)) continue;
+                inputEvent = kv.Key;
+                return true;
+            }
+            return false;
+        }
+
+        /// <summary>
         /// The resolution behind <see cref="TryGetBoundAction{T}"/>, over explicit maps:
         /// <paramref name="overrides"/> is the active device's override map
         /// (<see cref="OverridesFor"/>), or null when there is no device yet — in which case a press

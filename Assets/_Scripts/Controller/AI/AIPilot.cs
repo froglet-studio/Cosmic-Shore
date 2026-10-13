@@ -18,6 +18,15 @@ namespace CosmicShore.Gameplay
         public float Duration;
         public float Cooldown;
 
+        [Tooltip("Press this ability through the vessel's own INPUT, replicated (owner -> server -> " +
+                 "every peer), instead of starting it locally on the server where the AI runs. Tick it " +
+                 "for any ability whose output rides no other replicated channel: the Serpent's cloak " +
+                 "hides the hull, fades the trail and lays a seed, and a server-local start did all three " +
+                 "on the server only, so every other player still saw the AI and its trail. The rule is " +
+                 "R_VesselActionHandler.PerformShipControllerActionsReplicated's. Falls back to the local " +
+                 "start when the vessel binds no control to this ability.")]
+        public bool ReplicateThroughInput;
+
         // The authored asset this entry started as, captured before Initialize replaces
         // Ability with a per-AI instantiated copy - the copy can never match anything the
         // vessel's own binding maps hold, and StartAIPilot needs to ask exactly that
@@ -195,6 +204,7 @@ namespace CosmicShore.Gameplay
         // Live opponent the AI is chasing in player-seek (Joust) mode. Chosen by the
         // UpdatePlayerTarget coroutine; Update() reads its current position every frame.
         Transform _targetVesselTransform;
+        IVesselStatus _targetVesselStatus;   // the locked opponent's status, so a cloak can break the lock
         Vector3 _distance;
         bool LookingAtCrystal;
 
@@ -292,6 +302,38 @@ namespace CosmicShore.Gameplay
             _driftLookTargetProvider = source._driftLookTargetProvider;
             source._externalTargetProvider = null;
             source._driftLookTargetProvider = null;
+
+            // A suppression is a mode hook too (the mode drives that ability itself), so it follows
+            // the bot onto its new hull for the same reason the providers do.
+            _suppressedCycledAbilities.Clear();
+            _suppressedCycledAbilities.UnionWith(source._suppressedCycledAbilities);
+            source._suppressedCycledAbilities.Clear();
+        }
+
+        readonly HashSet<Type> _suppressedCycledAbilities = new();
+
+        /// <summary>
+        /// Keep the ability CYCLER's hands off every ability of type <typeparamref name="T"/> -
+        /// for a mode that drives that ability itself. Serpent Charge is the case: its marksman
+        /// owns the right trigger, which is the cloak unscoped and the rifle scoped, so a cycler
+        /// that pressed the cloak on its own clock would fire the rifle whenever the scope was up.
+        /// The cycler keeps its clock and simply skips the use, so <see cref="RestoreCycledAbility{T}"/>
+        /// resumes the authored rhythm. A mode MUST restore what it suppressed when it disarms.
+        /// </summary>
+        public void SuppressCycledAbility<T>() where T : ShipActionSO => _suppressedCycledAbilities.Add(typeof(T));
+
+        /// <summary>Undo <see cref="SuppressCycledAbility{T}"/>.</summary>
+        public void RestoreCycledAbility<T>() where T : ShipActionSO => _suppressedCycledAbilities.Remove(typeof(T));
+
+        bool IsCycledAbilitySuppressed(AIAbility action)
+        {
+            if (_suppressedCycledAbilities.Count == 0) return false;
+            var asset = action.SourceAsset ? action.SourceAsset : action.Ability;
+            if (!asset) return false;
+            var type = asset.GetType();
+            foreach (var suppressed in _suppressedCycledAbilities)
+                if (suppressed.IsAssignableFrom(type)) return true;
+            return false;
         }
 
         /// <summary>
@@ -539,6 +581,7 @@ namespace CosmicShore.Gameplay
             var myDomain = VesselStatus.Domain;
             float closestSqDist = Mathf.Infinity;
             Transform best = null;
+            IVesselStatus bestStatus = null;
 
             foreach (var player in gameData.Players)
             {
@@ -549,15 +592,20 @@ namespace CosmicShore.Gameplay
                 var candidate = player.Vessel.Transform;
                 if (candidate == null) continue; // destroyed vessel transform (Unity null)
 
+                // Nobody can see a cloaked pilot, so nobody's autopilot may pick one.
+                if (CloakSeedWallActionExecutor.IsCloaked(player.Vessel.VesselStatus)) continue;
+
                 var sqDist = Vector3.SqrMagnitude(candidate.position - transform.position);
                 if (sqDist < closestSqDist)
                 {
                     closestSqDist = sqDist;
                     best = candidate;
+                    bestStatus = player.Vessel.VesselStatus;
                 }
             }
 
             _targetVesselTransform = best;
+            _targetVesselStatus = bestStatus;
 
             if (best != null)
                 _targetPosition = best.position;
@@ -728,7 +776,18 @@ namespace CosmicShore.Gameplay
             // _targetVesselTransform is null (no opponent / destroyed) we keep the fallback target
             // the coroutine set (cell centre).
             if (seekPlayers && _targetVesselTransform != null)
-                _targetPosition = _targetVesselTransform.position;
+            {
+                // A pilot who CLOAKS is lost: drop the lock and hold the last place they were
+                // seen, and the re-scan (playerReacquireInterval) picks someone visible. Reading
+                // the live position of a hull nobody else can see would be the AI cheating.
+                if (CloakSeedWallActionExecutor.IsCloaked(_targetVesselStatus))
+                {
+                    _targetVesselTransform = null;
+                    _targetVesselStatus = null;
+                }
+                else
+                    _targetPosition = _targetVesselTransform.position;
+            }
 
             // External steering hook (e.g. Astro League ball striking) overrides all other
             // targeting when set - checked last so it always wins.
@@ -1128,13 +1187,50 @@ namespace CosmicShore.Gameplay
             yield return new WaitForSeconds(3);
             while (AutoPilotEnabled)
             {
-                action.Ability.StartAction(actionExecutorRegistry, VesselStatus);
-                _activeAbilities.Add(action);
+                // A mode that drives this ability itself has asked the cycler to keep off it
+                // (SuppressCycledAbility): skip the use, keep the clock.
+                bool use = !IsCycledAbilitySuppressed(action);
+                if (use)
+                {
+                    StartCycledAbility(action);
+                    _activeAbilities.Add(action);
+                }
                 yield return new WaitForSeconds(action.Duration);
-                _activeAbilities.Remove(action);
-                action.Ability.StopAction(actionExecutorRegistry, VesselStatus);
+                if (use)
+                {
+                    _activeAbilities.Remove(action);
+                    StopCycledAbility(action);
+                }
                 yield return new WaitForSeconds(action.Cooldown);
             }
+        }
+
+        // An entry authored ReplicateThroughInput presses the vessel's own control, replicated, so
+        // the ability runs on EVERY peer (resolved at press time - the device can change); any
+        // other entry, or one whose ability this vessel binds to no control, starts locally as it
+        // always has. The release resolves the same way, so a press and its release agree.
+        void StartCycledAbility(AIAbility action)
+        {
+            var handler = VesselStatus?.ActionHandler;
+            if (action.ReplicateThroughInput && handler != null &&
+                handler.TryGetInputForAsset(action.SourceAsset, out var input))
+            {
+                handler.PerformShipControllerActionsReplicated(input);
+                return;
+            }
+            action.Ability.StartAction(actionExecutorRegistry, VesselStatus);
+        }
+
+        void StopCycledAbility(AIAbility action)
+        {
+            var handler = VesselStatus?.ActionHandler;
+            if (action.ReplicateThroughInput && handler != null &&
+                handler.TryGetInputForAsset(action.SourceAsset, out var input))
+            {
+                handler.StopShipControllerActionsReplicated(input);
+                return;
+            }
+            action.Ability.StopAction(actionExecutorRegistry, VesselStatus);
         }
         
         #region Unused Methods

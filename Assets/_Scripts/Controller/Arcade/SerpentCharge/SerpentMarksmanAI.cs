@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using CosmicShore.Data;
+using CosmicShore.UI;
 using CosmicShore.Utility;
 using UnityEngine;
 
@@ -46,6 +47,16 @@ namespace CosmicShore.Gameplay
     /// (<c>CloakSeedWallActionSO</c> asks the scope), which retires AIPilot's blind cloak cycler
     /// for the match without touching it.</para>
     ///
+    /// <para><b>It cloaks, and it cannot see you when you do.</b> The right trigger is the cloak
+    /// unscoped and the rifle scoped, so the marksman owns it outright: it asks AIPilot's ability
+    /// cycler to keep off the cloak (<see cref="AIPilot.SuppressCycledAbility{T}"/>) and, once per
+    /// reload long enough to be worth it, lowers its scope, presses the cloak (replicated, so the
+    /// hull vanishes, the trail fades and the seed is laid on every machine) and raises the scope
+    /// again before the rifle is ready. And a rival whose hull is cloaked
+    /// (<see cref="CloakSeedWallActionExecutor.IsCloaked"/>) is not a target and not worth anything
+    /// in a line: the bot loses them where it last saw them, exactly as AIPilot's own player
+    /// seeking does.</para>
+    ///
     /// <para>Server-only, plain C#: the controller owns one, arms it when the turn starts, ticks it
     /// from Update on the server, and disarms it at the whistle, on replay and on despawn.</para>
     /// </summary>
@@ -56,7 +67,11 @@ namespace CosmicShore.Gameplay
             public IPlayer Player;
             public SniperScopeActionExecutor Scope;
             public SniperShotActionExecutor Shot;
+            public CloakSeedWallActionExecutor Cloak;
             public System.Random Rng;
+
+            // One cloak per reload: set when it presses the cloak, cleared when the rifle fires.
+            public bool CloakedThisReload;
 
             public bool ScopeHeld;
             public float ScopePressedAt = float.NegativeInfinity;
@@ -124,6 +139,9 @@ namespace CosmicShore.Gameplay
                 };
                 _marksmen.Add(m);
                 pilot.SetExternalTargetProvider(() => SteerPoint(m));
+                // The marksman owns the right trigger (cloak unscoped, rifle scoped) - see the
+                // class doc. Restored in Disarm.
+                pilot.SuppressCycledAbility<CloakSeedWallActionSO>();
             }
         }
 
@@ -140,7 +158,12 @@ namespace CosmicShore.Gameplay
                     status.ActionHandler.TryGetInputForAction<SniperScopeActionSO>(out var scopeInput))
                     status.ActionHandler.StopShipControllerActionsReplicated(scopeInput);
 
-                status.AIPilot?.ClearExternalTargetProvider();
+                var pilot = status.AIPilot;
+                if (pilot != null)
+                {
+                    pilot.ClearExternalTargetProvider();
+                    pilot.RestoreCycledAbility<CloakSeedWallActionSO>();
+                }
             }
             _marksmen.Clear();
         }
@@ -173,6 +196,15 @@ namespace CosmicShore.Gameplay
             if (!status.AutoPilotEnabled) return;
 
             if (!ResolveExecutors(m, status)) return;
+
+            // A hunted rival who cloaks is lost; the plan falls back to the forest next tick.
+            if (m.Quarry != null && CloakSeedWallActionExecutor.IsCloaked(m.Quarry.Vessel?.VesselStatus))
+            {
+                m.Quarry = null;
+                m.NextPlanAt = now;
+            }
+
+            if (TryCloak(m, handler, now)) return;
 
             EnsureScoped(m, handler, now);
 
@@ -213,7 +245,40 @@ namespace CosmicShore.Gameplay
             handler.StopShipControllerActionsReplicated(shotInput);
 
             m.ReadySince = -1f;
+            m.CloakedThisReload = false;
             m.NextPlanAt = now;   // the round just changed the arena - re-plan on the next tick
+        }
+
+        /// <summary>
+        /// The cloak, once per reload that leaves time for it: lower the scope, then (next tick,
+        /// once the latch is down - RT is the RIFLE while scoped) press the cloak through the
+        /// replicated input. Returns true while it is busy doing that, so the scope is not
+        /// re-raised under it; <see cref="EnsureScoped"/> raises it again afterwards, well inside
+        /// the reload.
+        /// </summary>
+        bool TryCloak(Marksman m, R_VesselActionHandler handler, float now)
+        {
+            if (m.Cloak == null || m.CloakedThisReload || !m.Cloak.CanCloak) return false;
+            if (m.Shot.CooldownRemaining < _settings.aiCloakMinCooldownSeconds) return false;
+
+            if (m.Scope.IsScoped || m.ScopeHeld)
+            {
+                if (handler.TryGetInputForAction<SniperScopeActionSO>(out var scopeInput))
+                    handler.StopShipControllerActionsReplicated(scopeInput);
+                m.ScopeHeld = false;
+                m.ScopePressedAt = now;   // EnsureScoped waits its retry interval before re-raising
+                return true;
+            }
+
+            // One attempt per reload whether or not it takes, so a refused press never stalls the
+            // scope.
+            m.CloakedThisReload = true;
+            if (handler.TryGetInputForAction<CloakSeedWallActionSO>(out var cloakInput))
+            {
+                handler.PerformShipControllerActionsReplicated(cloakInput);
+                handler.StopShipControllerActionsReplicated(cloakInput);
+            }
+            return true;
         }
 
         bool ResolveExecutors(Marksman m, IVesselStatus status)
@@ -226,6 +291,7 @@ namespace CosmicShore.Gameplay
             if (root == null) return false;
             m.Scope = root.GetComponentInChildren<SniperScopeActionExecutor>(true);
             m.Shot = root.GetComponentInChildren<SniperShotActionExecutor>(true);
+            m.Cloak = root.GetComponentInChildren<CloakSeedWallActionExecutor>(true);   // optional
             m.ScopeHeld = false;
             return m.Scope != null && m.Shot != null;
         }
@@ -297,6 +363,7 @@ namespace CosmicShore.Gameplay
                 {
                     var rival = players[i];
                     if (rival == null || rival.Domain == own) continue;
+                    if (CloakSeedWallActionExecutor.IsCloaked(rival.Vessel?.VesselStatus)) continue;
                     var rtf = rival.Vessel?.Transform;
                     if (rtf == null) continue;
 
@@ -420,6 +487,9 @@ namespace CosmicShore.Gameplay
             {
                 var rival = players[i];
                 if (rival == null || rival.Domain == own) continue;
+                // A cloaked pilot is invisible to the bot, so it is worth nothing in a line it is
+                // weighing - it may still be hit by a round fired for the forest, and that pays.
+                if (CloakSeedWallActionExecutor.IsCloaked(rival.Vessel?.VesselStatus)) continue;
                 var rtf = rival.Vessel?.Transform;
                 if (rtf == null) continue;
                 if (PrismSpatialIndex.ConeContains(rtf.position, origin, dir, reach, tanHalf, minRadius))
@@ -459,7 +529,7 @@ namespace CosmicShore.Gameplay
         {
             if (m.Detour != null) return m.Detour.position;
 
-            if (m.Quarry != null)
+            if (m.Quarry != null && !CloakSeedWallActionExecutor.IsCloaked(m.Quarry.Vessel?.VesselStatus))
             {
                 var qtf = m.Quarry.Vessel?.Transform;
                 if (qtf != null) return qtf.position + m.QuarryOffset;
