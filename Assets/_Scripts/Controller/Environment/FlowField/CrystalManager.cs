@@ -210,6 +210,10 @@ namespace CosmicShore.Gameplay
         /// <c>Instantiate</c> and never injected, so they reach it through their manager.</summary>
         public GameDataSO GameData => gameData;
 
+        /// <summary>The intensity this manager places crystals for (see <see cref="CurrentIntensity"/>).
+        /// Read by a <see cref="CrystalRaceRing"/> to size its mouth for the level.</summary>
+        public int Intensity => CurrentIntensity;
+
         /// <summary>
         /// A pilot threaded the race ring crystal <paramref name="crystalId"/>, which was standing
         /// at <paramref name="ringPosition"/> when it was threaded: run the crystal's half of the

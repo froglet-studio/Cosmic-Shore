@@ -59,11 +59,11 @@ namespace CosmicShore.Gameplay
         public List<CrystalModelData> CrystalModels => crystalModels;
 
         /// <summary>
-        /// False for a crystal that is deliberately drawn as something else and carries no crystal
-        /// model at all - Skim Race's race-ring crystals (<see cref="CrystalRaceRing"/>), whose
-        /// body is the ring. A retirement that animates the crystal's own body (the Squirrel's
-        /// morph) has nothing to carry for one and stands down quietly, rather than warning on
-        /// every pickup about a body that was never meant to exist.
+        /// False for a crystal authored with no crystal model at all (its pickup drawn by something
+        /// else entirely). A retirement that animates the crystal's own body (the Squirrel's morph)
+        /// has nothing to carry for one and stands down quietly, rather than warning on every
+        /// pickup about a body that was never meant to exist. (Skim Race's race-ring crystals DO
+        /// have one: the small omni crystal in the middle of the ring.)
         /// </summary>
         public bool HasBody => crystalModels is { Count: > 0 };
 

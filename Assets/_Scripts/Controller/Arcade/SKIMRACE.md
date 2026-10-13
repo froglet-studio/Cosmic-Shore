@@ -4,7 +4,7 @@
 
 SkimRace is a competitive crystal-collection racing mode for 1-4 players. Players race along a procedurally generated track, collecting crystals. The first player to collect all crystals wins; losers are ranked by crystals remaining. The mode supports solo play with AI opponents, multiplayer with friends, or mixed human+AI lobbies.
 
-**The crystals are drawn and collected as RACE RINGS** (since 2026-10-12, §7a) — the same `RaceGateRing` every gate race (Switchback, Redline, Headlong…) flies through, sized to the omni crystal it replaced, standing square across the track, painted the domain it belongs to and threaded by its mouth instead of touched. Everything else in this document still calls them crystals because, underneath, they still are: placement, respawn, replication, scoring, the HUD count, the comeback system, the AI target and the objective arrow are unchanged.
+**The crystals are drawn and collected as RACE RINGS** (since 2026-10-12, §7a) — the same `RaceGateRing` every gate race (Switchback, Redline, Headlong…) flies through, sized to the omni crystal it replaced at intensity 1 and 10% smaller in diameter per intensity above, standing square across the track, painted the domain it belongs to, with a small omni crystal in its middle (what says it pays an omni crystal's boost), and threaded by its mouth instead of touched. Everything else in this document still calls them crystals because, underneath, they still are: placement, respawn, replication, scoring, the HUD count, the comeback system, the AI target and the objective arrow are unchanged.
 
 **Key architectural facts:**
 
@@ -361,15 +361,19 @@ The end condition is **domain-aggregated**: the turn ends as soon as any active 
 ### 7a. The crystals are race rings
 
 Skim Race's `NetworkCrystalManager` spawns **`Assets/_Prefabs/Environment/SkimRaceRingCrystal.prefab`**
-(it spawned `BigCrystalVariant.prefab` until 2026-10-12). That prefab is a `Crystal` with **no crystal
-model and no collider**, its `TeamCrystalImpactor`, and a **`CrystalRaceRing`**
-(`_Scripts/Controller/Arcade/Racing/CrystalRaceRing.cs`), which draws the crystal as a `RaceGateRing`
-and turns a threading of its mouth into a pickup.
+(it spawned `BigCrystalVariant.prefab` until 2026-10-12). That prefab is a **variant of
+`BigCrystalVariant`** — the same omni crystal, `TeamCrystalImpactor` and Goal loop — with its root
+scaled down to **1.42**, its `SphereCollider` **disabled**, and a **`CrystalRaceRing`**
+(`_Scripts/Controller/Arcade/Racing/CrystalRaceRing.cs`) added, which raises a `RaceGateRing` around
+the crystal and turns a threading of its mouth into a pickup. The crystal still draws: it is the small
+omni crystal hanging in the middle of the ring, there to say *threading this pays what an omni crystal
+pays* (the boost).
 
 | Promise | How it is kept |
 |---|---|
 | **Same rings as the gate races** | `CrystalRaceRing` raises a `RaceGateRing` — the class Switchback/Redline/Headlong build their courses from — through `ToyFactory.AddSwitchRing`, the one builder every switch ring comes from. Same mesh, same prism material family, same bloom-in and wither-out. |
-| **Same size as the crystal** | Mouth radius **24 u** = `BigCrystalVariant`'s pickup sphere (`SphereCollider` r 1.2 × root scale 20), so the target a pilot has to hit is unchanged. Its visible body was smaller (circumradius 0.735 × 20 ≈ 14.7 u, Ø ≈ 29 u); the ring follows the switch law (*the drawn ring IS the trigger*), so it is drawn at the trigger's size. `SkimRaceRingCrystalTests.RingMouth_IsTheSizeOfTheCrystalItReplaced` reads both prefabs and holds the two equal. |
+| **Ring size by intensity** | At **intensity 1** the mouth radius is **24 u** = `BigCrystalVariant`'s pickup sphere (`SphereCollider` r 1.2 × root scale 20), so the target a pilot has to hit is the one the crystal had. Each intensity above 1 takes **10% of that diameter** off (`mouthShrinkPerIntensity`): **I1 24 · I2 21.6 · I3 19.2 · I4 16.8 u** radius (Ø 48 / 43.2 / 38.4 / 33.6), I4 30% smaller than I1 (`CrystalRaceRing.MouthRadiusFor`). The ring follows the switch law (*the drawn ring IS the trigger*). A ring re-raises if the intensity it was sized for changes (a client's intensity arrives over the network). `SkimRaceRingCrystalTests` reads both prefabs for the I1 number and pins the ladder. |
+| **The omni crystal in the middle** | The crystal's own models, root at **world scale 1.42** (`CrystalRaceRing.crystalWorldScale`, applied in `Awake`) — the size of a **level-1 elemental crystal**: one element level is a crystal at world scale 1 (`ElementalCrystalEjector.PetalCrystalWorldScale`), and the omni body is 0.72 u per unit of scale against the Charge body's 1.02 (the reference the elemental model corrections equalize to), so 1.02 / 0.72 = 1.42 → **≈ 2 u across**, in a 34–48 u ring. It wears its owner's domain crystal material, shatters on pickup and fades in at the next anchor exactly as the old crystal did, and the Squirrel's morph carries it onto the boost ring again. Purely visual — the omni pickup reads nothing from the crystal's size. `CrystalInTheRing_IsTheSizeOfALevelOneElementalCrystal` measures both meshes. |
 | **Same placement** | Unchanged: the crystal is still placed and respawned by `CrystalManager` (anchor + `Random.onUnitSphere × anchorJitterRadius`, next anchor on every pickup, one per player). The ring follows its crystal: when the crystal moves, the threaded ring withers where it stood and a new one blooms at the next anchor. |
 | **Square across the track** | The mouth faces the tangent of the LAID track at the ring's nearest point (`CrystalRaceRing.TrackAxisAt` over `SkimRaceCourse`, built once per match from the track prisms by `SkimRaceCourseSource`), so a pilot flying straight down the track looks into the open ring wherever the jitter put it. Crystals spawn on client-ready, often before the track is laid: such a ring raises on a placeholder axis and turns (`RaceGateRing.SetAxis`, no re-bloom) as soon as the lay finishes — behind the connecting panel, which the track's arena-build bracket holds. The course is never read mid-lay. |
 | **Domain rules** | The ring is painted the crystal's domain (`RaceGateRing.Owner` → `ToySwitchSignal.Domain`, the "belongs to" reading the Scarab's switch already uses outside the toybox). Only a pilot the crystal's `TeamCrystalImpactor` accepts (`OmniCrystalImpactor.AcceptsDomain`) is tested; any other pilot flies through with nothing happening on either side. Before, a wrong-domain hull touching a crystal was refused by the crystal but still ran the vessel half of the pickup (speed buff, boost ring); a ring does not do that. |
@@ -385,9 +389,9 @@ physics contact would have, through `ImpactorBase.AcceptImpacteeFromSweep`: the 
 has already MOVED (a teammate took it first) so nobody is credited for the next anchor. Credit,
 explode, respawn and stats are then the crystal's ordinary pickup path.
 
-**What else changed to make room for a bodyless crystal.** `Crystal.HasBody` (false for a ring
-crystal); `SquirrelCrystalMorph.Begin` stands down quietly for one (the boost ring is still laid —
-only the cage-to-ring morph has nothing to carry). The AI's `CrystalTrackObjective.CaptureRadius`
+**Other changes.** `Crystal.HasBody`, and `SquirrelCrystalMorph.Begin` stands down quietly for a
+crystal with no body (the first cut of the ring had none; today's carries the small omni crystal, so
+the morph runs). The AI's `CrystalTrackObjective.CaptureRadius`
 aims at `0.7 × mouth` for a ring crystal (Regatta's fraction), so it flies through the ring, not at
 its rim.
 
@@ -586,7 +590,7 @@ ugsStatsManager.ReportSkimRaceStats(
 | Crystal drawn + collected as a race ring (§7a) | `CrystalRaceRing.cs` | `_Scripts/Controller/Arcade/Racing/` |
 | The race ring itself (shared with every gate race) | `RaceGateRing.cs` | `_Scripts/Controller/Arcade/Racing/` |
 | Ring crystal prefab (spawned by the scene's `NetworkCrystalManager`) | `SkimRaceRingCrystal.prefab` | `_Prefabs/Environment/` |
-| Ring crystal tests (size, track orientation, domain, scene wiring) | `SkimRaceRingCrystalTests.cs` | `_Scripts/Tests/Editor/` |
+| Ring crystal tests (ring size by intensity, crystal size, track orientation, domain, scene wiring) | `SkimRaceRingCrystalTests.cs` | `_Scripts/Tests/Editor/` |
 | I4 "Relativity" generator (scene track + crystal anchors + preview bake; `--check`, `--report`) | `author_skimrace_relativity_track.py` | `Tools/Build/` |
 | I4 layout tests (on the baked preview prefab) | `SkimRaceRelativityTrackTests.cs` | `_Scripts/Tests/Editor/` |
 | End-game sequencer | `EndGameSequencer.cs` (shared) | `_Scripts/Utility/DataContainers/` |

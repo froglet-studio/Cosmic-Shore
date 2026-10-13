@@ -12,15 +12,17 @@ namespace CosmicShore.Tests
 {
     /// <summary>
     /// Skim Race's crystals are drawn and collected as race rings (<see cref="CrystalRaceRing"/>).
-    /// These pin the four promises that change made: the ring is the SIZE of the crystal it replaced,
-    /// it stands SQUARE across the track, it keeps the crystal's DOMAIN rule, and the scene actually
-    /// spawns it.
+    /// These pin the promises that change made: at intensity 1 the ring is the SIZE of the crystal it
+    /// replaced and it shrinks 10% of that diameter per intensity above, the omni crystal in its
+    /// middle is the size of a level-1 elemental crystal, it stands SQUARE across the track, it keeps
+    /// the crystal's DOMAIN rule, and the scene actually spawns it.
     /// </summary>
     public class SkimRaceRingCrystalTests
     {
         const string RingPrefabPath = "Assets/_Prefabs/Environment/SkimRaceRingCrystal.prefab";
         const string ReplacedCrystalPath = "Assets/_Prefabs/Environment/BigCrystalVariant.prefab";
         const string ScenePath = "Assets/_Scenes/Multiplayer Scenes/MinigameSkimRace.unity";
+        const string ChargeCrystalPath = "Assets/_Prefabs/Environment/CrystalCharge.prefab";
 
         readonly List<Object> _spawned = new();
 
@@ -42,17 +44,18 @@ namespace CosmicShore.Tests
         // ── Wiring ────────────────────────────────────────────────────────
 
         [Test]
-        public void RingPrefab_IsABodylessTeamCrystalWithItsRingWired()
+        public void RingPrefab_IsAnOmniTeamCrystalWithItsRingWired()
         {
             var prefab = LoadPrefab(RingPrefabPath);
 
             Assert.IsTrue(prefab.TryGetComponent(out Crystal crystal), "no Crystal on the ring prefab");
-            Assert.IsFalse(crystal.HasBody,
-                "the ring crystal must carry no crystal model - its body is the ring");
-            Assert.IsFalse(prefab.GetComponentInChildren<Collider>(true),
-                "a collider would collect the crystal by touch; the ring is collected by threading only");
-            Assert.IsFalse(prefab.GetComponentInChildren<Renderer>(true),
-                "a renderer on the prefab would draw something other than the ring");
+            Assert.IsTrue(crystal.HasBody,
+                "the ring carries a small omni crystal in its middle - the crystal's own models");
+            Assert.AreEqual(Element.Omni, crystal.crystalProperties.Element,
+                "the crystal in the ring must be an OMNI crystal - it pays what an omni crystal pays");
+            foreach (var col in prefab.GetComponentsInChildren<Collider>(true))
+                Assert.IsFalse(col.enabled,
+                    $"'{col.name}' would collect the crystal by touch; the ring is collected by threading only");
 
             // TeamCrystalImpactor, not the omni one: Skim Race's crystals are strictly per domain.
             Assert.IsTrue(prefab.TryGetComponent(out TeamCrystalImpactor impactor),
@@ -66,7 +69,7 @@ namespace CosmicShore.Tests
         }
 
         [Test]
-        public void RingMouth_IsTheSizeOfTheCrystalItReplaced()
+        public void RingMouth_AtIntensityOne_IsTheSizeOfTheCrystalItReplaced()
         {
             // The crystal's pickup sphere, in world units: what a pilot had to hit.
             var replaced = LoadPrefab(ReplacedCrystalPath);
@@ -76,8 +79,62 @@ namespace CosmicShore.Tests
             float crystalRadius = sphere.radius * Mathf.Max(Mathf.Abs(scale.x), Mathf.Abs(scale.y), Mathf.Abs(scale.z));
 
             var ring = LoadPrefab(RingPrefabPath).GetComponent<CrystalRaceRing>();
-            Assert.AreEqual(crystalRadius, ring.MouthRadius, 1e-3f,
-                "the ring's mouth must match the replaced crystal's pickup radius so the target size is unchanged");
+            var so = new SerializedObject(ring);
+            Assert.AreEqual(crystalRadius, so.FindProperty("intensityOneMouthRadius").floatValue, 1e-3f,
+                "the intensity-1 mouth must match the replaced crystal's pickup radius so the target size is unchanged");
+            Assert.AreEqual(0.1f, so.FindProperty("mouthShrinkPerIntensity").floatValue, 1e-5f,
+                "the ring loses 10% of its intensity-1 diameter per intensity above 1");
+        }
+
+        [Test]
+        public void RingMouth_ShrinksTenPercentOfItsDiameterPerIntensity()
+        {
+            Assert.AreEqual(24f, CrystalRaceRing.MouthRadiusFor(24f, 0.1f, 1), 1e-4f);
+            Assert.AreEqual(21.6f, CrystalRaceRing.MouthRadiusFor(24f, 0.1f, 2), 1e-4f);
+            Assert.AreEqual(19.2f, CrystalRaceRing.MouthRadiusFor(24f, 0.1f, 3), 1e-4f);
+            Assert.AreEqual(16.8f, CrystalRaceRing.MouthRadiusFor(24f, 0.1f, 4), 1e-4f,
+                "intensity 4 is 30% smaller than intensity 1");
+        }
+
+        /// <summary>
+        /// Half-extent of a crystal's BODY - its first model, the solid that is its silhouette - per
+        /// unit of the crystal's ROOT scale. The omni's other models are overlays (the Shepard
+        /// triangles' bounds cover their animated sweep, not what sits on screen), so the body is
+        /// the comparable number.
+        /// </summary>
+        static float BodyHalfExtentPerRootScale(Crystal crystal)
+        {
+            Assert.IsTrue(crystal.CrystalModels is { Count: > 0 } && crystal.CrystalModels[0]?.model,
+                $"'{crystal.name}' has no body model to measure");
+            var body = crystal.CrystalModels[0].model;
+            Mesh mesh = body.TryGetComponent(out MeshFilter mf) ? mf.sharedMesh
+                      : body.TryGetComponent(out SkinnedMeshRenderer smr) ? smr.sharedMesh : null;
+            Assert.IsNotNull(mesh, $"'{crystal.name}' body '{body.name}' draws no mesh");
+
+            var e = mesh.bounds.extents;
+            var s = body.transform.lossyScale;
+            float extent = Mathf.Max(Mathf.Abs(e.x * s.x), Mathf.Abs(e.y * s.y), Mathf.Abs(e.z * s.z));
+            return extent / Mathf.Abs(crystal.transform.lossyScale.x);
+        }
+
+        [Test]
+        public void CrystalInTheRing_IsTheSizeOfALevelOneElementalCrystal()
+        {
+            // One element level is one crystal at world scale 1 (ElementalCrystalEjector). The Charge
+            // model is the reference the other elements' model corrections are equalized to.
+            var charge = LoadPrefab(ChargeCrystalPath).GetComponent<Crystal>();
+            float levelOneHalfExtent = BodyHalfExtentPerRootScale(charge) * ElementalCrystalEjector.PetalCrystalWorldScale;
+            Assert.Greater(levelOneHalfExtent, 0f, "could not measure the Charge crystal's mesh");
+
+            var prefab = LoadPrefab(RingPrefabPath);
+            var ring = prefab.GetComponent<CrystalRaceRing>();
+            float omniHalfExtent = BodyHalfExtentPerRootScale(prefab.GetComponent<Crystal>()) * ring.CrystalWorldScale;
+
+            Assert.AreEqual(levelOneHalfExtent, omniHalfExtent, levelOneHalfExtent * 0.05f,
+                $"the omni crystal in the ring draws {omniHalfExtent * 2f:F2} u across; a level-1 elemental " +
+                $"crystal draws {levelOneHalfExtent * 2f:F2} u");
+            Assert.AreEqual(ring.CrystalWorldScale, prefab.transform.localScale.x, 1e-4f,
+                "the prefab's root scale should preview the size CrystalRaceRing applies at runtime");
         }
 
         [Test]

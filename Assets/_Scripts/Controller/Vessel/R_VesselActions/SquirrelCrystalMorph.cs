@@ -70,9 +70,8 @@ namespace CosmicShore.Gameplay
 
             var crystal = ResolveCrystal(origin);
 
-            // A bodyless crystal (a Skim Race race ring) is not a failure: there is no cage to
-            // carry, and its ring withers on its own. The boost ring is still laid by the sibling
-            // effect - only this animation stands down.
+            // A bodyless crystal is not a failure: there is no cage to carry. The boost ring is
+            // still laid by the sibling effect - only this animation stands down.
             if (crystal != null && !crystal.HasBody) return null;
 
             if (crystal == null)
