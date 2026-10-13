@@ -61,7 +61,9 @@ checklist.
    the other game's REQUESTS) or Join on the row. Both press START GAME; the match begins when every
    player presses the HUD's GO (the ReadyButton) - a GO that stays on screen is waiting for a press.
    Check replication with `get "Manta(Clone)" NetworkObject OwnerClientId` and `Transform position`
-   on both games (`get` prints every match).
+   on both games (`get` prints every match). Stop a stray game or server by PID
+   (`pgrep -x CosmicShore`), never `pkill -f 'CosmicShore ...'`: the pattern also matches the shell
+   running your command, so it kills that shell too.
 
 Report what you saw (attach the screenshot path) and what you verified; say plainly if a check
 did not run.
