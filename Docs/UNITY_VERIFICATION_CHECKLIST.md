@@ -428,6 +428,135 @@ keeps the crawl (it is not the Charge crystal).
 **First-pass tuning:** profile values are the lab's (`ChargeArcSettings.Lab`, `OmniCrystalCadence.asset`); the bolt and
 glow intensities start at 1 with no HDR boost — expect to raise them once bloom is seen.
 
+---
+
+### 🔴 From `cece/nice-brahmagupta-ojclij`: CI gates and offline audit tools; Steam dual-app uploader and Playtest runbook; Prisma engine APIs the game's new code compiles against (Port/ only) (`test/acm`, 2026-10-14) — NOT EDITOR-VERIFIED
+
+Picked by `Tools/Build/pick_branch_parts.py` from `cece/nice-brahmagupta-ojclij`. The steps are that branch's reviewed test plan (`Docs/BRANCH_TEST_PLAN_2026-10-12.md` there), one block per part this branch carries. Each step has a PASS and a FAIL line; record the result in the PR or in Docs/QA/.
+
+#### CI gates and offline audit tools
+
+1. **Terminal battery (no Unity).** Use a FULL checkout (a sparse one without PNG/FBX makes author_hijack, author_switchback and author_lifeform_heart_sizes fail for missing files). Run `git status` and confirm it is clean, then from the repo root paste:
+   `python3 Tools/CI/test_validate_project.py && python3 Tools/CI/validate_project.py && python3 Tools/Build/audit_vessel_skimmers.py --self-test && python3 Tools/Build/audit_vessel_skimmers.py && python3 Tools/Build/audit_lifeform_crystals.py --self-test && python3 Tools/Build/audit_lifeform_crystals.py && python3 Tools/Build/check_ai_no_state_writes.py --self-test && python3 Tools/Build/check_ai_no_state_writes.py --check && python3 Tools/Build/arcade_mode_lib.py --self-test && for f in Tools/Build/author_*_assets.py Tools/Build/author_skimrace_ai_config.py Tools/Build/author_lifeform_heart_sizes.py; do python3 "$f" --check || { echo "GATE RED: $f"; break; }; done`
+   - **PASS:** it finishes in about 2 minutes, and the output contains all of these:
+     - `34/34 passed` and `PASSED: nothing that blocks a build.`
+     - From the skimmer self-test: a `live tree: 6 fault(s) ... (informational, not asserted)` line, 15 lines starting `ok`, then `self-test: OK`.
+     - From the skimmer report: 14 hull blocks, then `Not audited (no VesselStatus on the prefab root; the editor skips these too):` with exactly nine `-- Components/...: no VesselStatus found` lines, then `6 fault(s); standing exceptions: Serpent`.
+     - From the lifeform self-test: 9 lines starting `ok`, then `self-test: OK`. The lifeform report ends with `32 warning(s)`.
+     - `self-test OK`, `ai-no-state-writes: OK`, and `self-test: OK` from arcade_mode_lib.
+     - Every generator's last line says OK, clean or match, and no line says `GATE RED`.
+   - **FAIL:** any line starting `FAIL`, `FAILED`, `DRIFT`, `Traceback` or `GATE RED`, or a fault count other than 6 or a warning count other than 32 (if so, the tree changed since this review: report it).
+
+2. **The editor-in-runtime gate catches a reference in an interpolation hole (negative control).** In a terminal, create `Assets/_Scripts/ProbeInterp.cs` containing exactly `public static class ProbeInterp { public static string S() => $"playing={UnityEditor.EditorApplication.isPlaying}"; }`. Run `python3 Tools/CI/validate_project.py; echo exit=$?`. Delete the file (and `Assets/_Scripts/ProbeInterp.cs.meta` if Unity was open and made one), then run the same command again.
+   - **PASS:** the first run prints `editor-in-runtime: 1 error(s)` naming `Assets/_Scripts/ProbeInterp.cs:1`, then `FAILED: ...` and `exit=1`. The second run prints `PASSED: nothing that blocks a build.` and `exit=0`.
+   - **FAIL:** the first run says `editor-in-runtime: clean` (the hole is still hidden), or the second run still fails (check `git status`; never commit the probe file).
+
+3. **CI dry run with no side effects.** Push the selective-push branch. On GitHub open Actions ▸ Unity CI ▸ Run workflow, set 'Use workflow from' to the branch and Tier to `static`, and run it. Open the `conditional-compilation` job. Do NOT use Run workflow on the Bleeding-edge guard for a feature branch: on failure it opens a '<branch> is broken' issue.
+   - **PASS:** the job is green, and these steps ran green: 'Audit vessel skimmers (offline)' (its log shows `self-test: OK` twice and the `Not audited` list), 'Check the AI and replay trees never write vessel state', and 'Check every asset generator against disk'. The job finishes in under about 5 minutes.
+   - **FAIL:** the job is red, one of those steps is missing or skipped, or the job times out.
+
+4. **Unity: Audit Vessel Skimmers against the twin.**
+   1. Open the project and click the Console's Clear button.
+   2. Run **FrogletTools ▸ Vessels ▸ Audit Vessel Skimmers**. When the dialog 'N fault(s) found ... File in Bug Ledger?' appears, click **Skip** (File writes issue files into the repo).
+   3. Open the Console message that starts 'Vessel skimmer audit'.
+   4. In a terminal run `python3 Tools/Build/audit_vessel_skimmers.py` and compare hull by hull.
+   - Differences that do not count: the editor names the slots NearFieldSkimmer/FarFieldSkimmer and the script names them `_nearFieldSkimmer`/`_farFieldSkimmer`. The script's trailing `Not audited` list of nine Components/ prefabs has no editor counterpart, because the editor skips those silently.
+   - **PASS:** both say 6 faults, with these `***` lines:
+     - Grizzly and Sparrow: `container 'SparrowSkimmerImpactorDataContainer' has no prism effects`.
+     - Scarab: `container 'ScarabSkimmerImpactorDataContainer' has no prism effects`.
+     - Rhino: `no trigger collider`.
+     - Urchin: `SkimmerImpactor has no effect container`.
+     - Serpent: `'VacuumSkimmer' is INACTIVE; no SkimmerImpactor; no ImpactCollider ...; no Rigidbody ...`.
+     - Both say OK for Butterfly (its far field 'crystal pickup only'), Dolphin, Manta, Squirrel and Thresher, and '(none)' for Falcon, Shrike and Termite.
+   - **FAIL:** a hull is in one list and not the other, a reason differs, or the totals differ. Paste both lists into DT-002 (Docs/QA/DEV_TASKS.md).
+
+5. **Unity: Validate Lifeform Crystals against the twin.** Click the Console's Clear button. Run **FrogletTools ▸ Validation ▸ Validate Lifeform Crystals** (the menu is Validation, not Ecology). Type `[LifeFormCrystal]` in the Console search box and count the warnings. In a terminal run `python3 Tools/Build/audit_lifeform_crystals.py` and compare.
+   - **PASS:** the editor shows exactly 34 `[LifeFormCrystal]` warnings:
+     - One for `Assets/_Prefabs/FloraAndFauna/Populations/Qfish.prefab` ('lifeform has NO crystal').
+     - The summary '1 issue(s) across 31 lifeform prefab(s)'.
+     - 31 'has no Variant tuning enabled' warnings for the same 31 config paths the script prints (6 Swarm Cell, WormColonyFaunaConfig, the NCA lizard, 10 Substrate, 13 Swarm Fauna/Bench).
+     - The summary '31 config(s) of 210 will render the platform default heart'.
+     - The script prints the same 32 finding lines plus '31 lifeform prefab(s)' and '210 lifeform config(s) checked'.
+   - **FAIL:** different paths, or different prefab or config counts. Console warnings that do not start with `[LifeFormCrystal]` do not count.
+
+6. **The generator gate catches an Inspector edit.** In the Project window select `Assets/Resources/SkimRaceAIConfig_I4.asset`, change any number in the Inspector, and use File ▸ Save Project. In a terminal run `python3 Tools/Build/author_skimrace_ai_config.py --check`. Undo with `git checkout -- Assets/Resources/SkimRaceAIConfig_I4.asset` and run the same `--check` again.
+   - **PASS:** the first run prints `DRIFT: Assets/Resources/SkimRaceAIConfig_I4.asset` and `--check FAILED: 1 asset(s) drifted`. After the undo it prints `--check OK`.
+   - **FAIL:** the first run says OK (the gate cannot see an Inspector edit), or the second still reports drift (check `git status`).
+
+7. **Prisma AssetTool tests (optional, no Unity).** From the repo root run `dotnet test Port/tests/CosmicShore.AssetTool.Tests -c Release`. This writes ignored bin/obj folders under Port/. It takes about 50 s on a cold build and about 12 s warm.
+   - **PASS:** `Passed! - Failed: 0, Passed: 25`.
+   - **FAIL:** any failed test, especially `A_new_model_gets_the_projects_import_settings_and_loads_inside_a_prefab`. If its message says 'two donor metas at the newest importer version tie on length', a donor meta changed; pick donors per the test's comment.
+
+8. **The autofix prompt lists every gate.** Open `.github/workflows/bleeding-edge-guard.yml` and search for `Reproduce first`.
+   - **PASS:** the list includes:
+     - `test_validate_project.py` and the four other validator `--self-test` lines.
+     - `check_console_logging.py --self-test` and plain `check_console_logging.py`.
+     - `audit_vessel_skimmers.py --self-test` and `audit_lifeform_crystals.py --self-test`.
+     - `check_ai_no_state_writes.py --self-test` and `--check`.
+     - `arcade_mode_lib.py --self-test` and the `author_*` loop.
+     - The paragraph that starts 'A generator that reports DRIFT, or a self-test that reports FAILED, is not one of the mechanical classes'.
+   - **FAIL:** any of those is missing.
+
+9. **After the push.** Open Actions ▸ Bleeding-edge guard ▸ the first run on bleeding-edge after the push.
+   - **PASS:** 'Static validation' is green with every step run and none skipped:
+     - Self-test the validators, Validate project, Check conditional compilation, Check console logging.
+     - The roster scenes and HUD checks.
+     - Audit vessel skimmers (offline), the AI/replay gate, the generator loop.
+     - The call-to-action, junie and prism shader wiring checks.
+     - The open 'bleeding-edge is broken' issue is closed by the Report status job. 'Unity compile' showing skipped is normal (no runner is configured).
+   - **FAIL:** red at any step. Red at 'Self-test the validators' or 'Validate project' points at this part's validate_project change; red later is a newly visible problem, so read the step log.
+
+#### Steam dual-app uploader and Playtest runbook
+
+1. Run `bash -n Tools/Steam/upload.sh && echo SYNTAX_OK`.
+   - **PASS:** prints SYNTAX_OK.
+   - **FAIL:** a syntax error or no output.
+2. Run `./Tools/Steam/upload.sh --help`.
+   - **PASS:** prints the comment block, including `--target base|playtest` and the Targets and Branch convention sections.
+   - **FAIL:** an error, no output, or shell code below `set -euo pipefail`.
+3. Refusal with no ids. Run `env -u STEAM_APPID -u STEAM_DEPOTID -u STEAM_PLAYTEST_APPID -u STEAM_PLAYTEST_DEPOTID ./Tools/Steam/upload.sh --target playtest --build-dir Builds/Windows64; echo exit=$?`, then repeat with `--target base` and with `--target Playtest`.
+   - **PASS:** playtest prints 'ERROR: STEAM_PLAYTEST_APPID is not set. Complete checklist A4 ...' and exit=1. Base prints 'ERROR: STEAM_APPID is not set. Complete checklist A2 ...' and exit=1. Capital P prints "ERROR: Unknown --target 'Playtest'" and exit=1.
+   - **FAIL:** any run reaches steamcmd, exits 0, or names the wrong item.
+4. Safe dry run. Paste: `mkdir -p /tmp/cs-steam/build /tmp/cs-steam/bin && touch /tmp/cs-steam/build/CosmicShore.exe && printf 'version=0.9.1\ncommit=abcdef0123456789\nconfiguration=release\n' > /tmp/cs-steam/build/build_manifest.txt && printf '#!/usr/bin/env bash\necho "STUB steamcmd $*"\n' > /tmp/cs-steam/bin/steamcmd && chmod +x /tmp/cs-steam/bin/steamcmd && unset STEAM_PASSWORD && export STEAMCMD=/tmp/cs-steam/bin/steamcmd STEAM_USER=test STEAM_APPID=100 STEAM_DEPOTID=101 STEAM_PLAYTEST_APPID=200 STEAM_PLAYTEST_DEPOTID=201`. Run `./Tools/Steam/upload.sh --target playtest --build-dir /tmp/cs-steam/build --branch internal --set-live`, then `grep -E '"appid"|"desc"|"setlive"' Tools/Steam/work/app_build.vdf; grep DepotID Tools/Steam/work/depot_build.vdf`. Never use real ids or a real steamcmd.
+   - **PASS:** no confirmation prompt appears. The summary shows 'target : playtest', 'app id : 200 (STEAM_PLAYTEST_APPID)', 'depot id : 201', 'set live : true' and 'description : Cosmic Shore 0.9.1 release abcdef01 [playtest] -> internal', then a 'STUB steamcmd +login test +run_app_build' line. The greps show appid "200", the [playtest] desc, setlive "internal" and depot 201.
+   - **FAIL:** a prompt appears, any 100 or 101 appears, setlive is not "internal", or anything other than the STUB line runs.
+5. Same terminal. Run the step 4 upload again WITHOUT `--set-live`, then repeat the greps.
+   - **PASS:** 'set live : false' and setlive "". This is the 'lands unassigned' case the docs now warn about.
+   - **FAIL:** setlive is non-empty without --set-live.
+6. Run `./Tools/Steam/upload.sh --target base --build-dir /tmp/cs-steam/build --branch internal --set-live` and repeat the greps.
+   - **PASS:** app id 100 (STEAM_APPID), depot 101, a description ending '[base] -> internal', setlive "internal", and the VDFs contain only 100 and 101.
+   - **FAIL:** any 200 or 201 appears, or the description lacks [base].
+7. Same-id refusal. Run `STEAM_PLAYTEST_APPID=100 ./Tools/Steam/upload.sh --target playtest --build-dir /tmp/cs-steam/build; echo exit=$?`, then `STEAM_PLAYTEST_DEPOTID=101 ./Tools/Steam/upload.sh --target playtest --build-dir /tmp/cs-steam/build; echo exit=$?`.
+   - **PASS:** the first prints 'ERROR: STEAM_APPID and STEAM_PLAYTEST_APPID are the same id ...' and the second 'ERROR: STEAM_DEPOTID and STEAM_PLAYTEST_DEPOTID are the same id ...'. Both exit 1 with no STUB line.
+   - **FAIL:** either run reaches the STUB line or exits 0.
+8. Default confirmation. Run `./Tools/Steam/upload.sh --target playtest --build-dir /tmp/cs-steam/build --branch default --set-live` three times: type 100 and Enter; then press Ctrl-D (or append `</dev/null`); then type 200 and Enter, followed by `grep setlive Tools/Steam/work/app_build.vdf`.
+   - **PASS:** every run shows '*** This will make the build LIVE on the default branch for every tester who has been granted Playtest access (the PLAYTEST app). ***' and 'Type the playtest app id (STEAM_PLAYTEST_APPID) to confirm:'. Runs 1 and 2 end 'Confirmation did not match STEAM_PLAYTEST_APPID. Aborted.' with no STUB line. Run 3 shows the STUB line and setlive "default".
+   - **FAIL:** a wrong id or Ctrl-D reaches the STUB line, the prompt names the base app, or run 3 aborts.
+9. Run `git status --short Tools/Steam`, then `rm -rf /tmp/cs-steam Tools/Steam/work` and close the terminal.
+   - **PASS:** git status prints nothing (work/ is git-ignored).
+   - **FAIL:** work/ or rendered .vdf files show as untracked or modified.
+10. Docs read-through by the owners, on GitHub. Shombith reads `Docs/STEAM_PLAYTEST_RUNBOOK.md` A4 step 6, the 'Branch model under two apps' table and its four consequences, and the 'Uploading to either app' block. Garrett reads 'The one irreversible step: the name' and the A6 template. Then read `Tools/Steam/README.md` 'Turning it on' and `Docs/BUILD_AND_DELIVERY.md` §0 (B7 row), §4 and §8 steps 9-11. Click every link.
+    - **PASS:** tables render. A4 step 6 creates a password-protected `internal` branch on the child app before uploading. Every internal upload command reads `--target ... --build-dir ... --branch internal --set-live`. B7 and §8 steps 9-11 run on the Playtest child app's `internal`, then set `default` live from App Admin. No line still says 'promote to beta' or B7 'during the closed playtest' without the Playtest-app routing. All in-repo links open, and the owners agree they can execute each A4 step.
+    - **FAIL:** a broken table or link, an internal upload without --set-live, a B5/B7 step routed through the base app's beta, or a step an owner cannot execute.
+11. DEFERRED until A2 and A4 are done in Steamworks. Create the password-protected `internal` branch on the Playtest child app. Build a Windows player with `Tools/Build/build_windows.sh`, export the real Playtest ids on the build machine (never commit them), and run `./Tools/Steam/upload.sh --target playtest --build-dir Builds/Windows64 --branch internal --set-live`. Open Steamworks > the Playtest child app > App Admin > Builds. Then, on a clean PC, install the child app, switch it to `internal` (Properties > Betas, enter the password) and launch it.
+    - **PASS:** a build whose description reads 'Cosmic Shore <version> release <8-char commit> [playtest] -> internal' is LIVE on `internal` on the CHILD app, not the base app. The installed game launches with a working Steam overlay (B7).
+    - **FAIL:** the build lands on the base app or sits unassigned, the description lacks [playtest], or steamcmd prints an error while the script still says 'Upload complete'.
+
+#### Prisma engine APIs the game's new code compiles against (Port/ only)
+
+No Unity: Port/ only, and nothing on `bleeding-edge` calls these APIs until part H lands.
+
+1. On the branch the pick tool builds for M, run `cd Port && dotnet build src/CosmicShore.Player -nologo -v q`.
+   **PASS:** `0 Error(s)`.
+   **FAIL:** any error.
+2. Run `COSMIC_SHORE_NET=off COSMIC_SHORE_AUDIO=off dotnet test tests/CosmicShore.Tests -nologo -v q` from `Port/`.
+   **PASS:** every test passes.
+   **FAIL:** any failure; record its name.
+3. Run `python3 Port/tools/check_unity_isolation.py` on that branch.
+   **PASS:** no file outside `Port/` is named.
+   **FAIL:** a Unity file is listed (the branch picked more than M).
+
+
 ### 🔴 Merge of bleeding-edge into Ys-bleeding-edge: the Stoat, the black hole lens and the chase camera combined (`Ys-bleeding-edge`, 2026-10-13) — NOT EDITOR-VERIFIED
 
 **What landed:** both branches had built on the same Stoat port, so these were merged by hand. The headless
