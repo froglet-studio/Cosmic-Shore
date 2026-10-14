@@ -65,7 +65,7 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
-### 🔴 Style-B menu redesign, item 1: the top nav in Menu_Main (`claude/new-session-76hnyc`, 2026-10-14) — NOT EDITOR-VERIFIED
+### 🟢 Style-B menu redesign, item 1: the top nav in Menu_Main (`claude/new-session-76hnyc`, 2026-10-14) — approved in editor 2026-10-14
 
 `Safe Area/NavBar` restyled to the approved Menu Redesign B boards (`Docs/MENU_REDESIGN_B.md` §10).
 Look and layout only: no navigation code changed. No editor and no `unity` CLI in the authoring
