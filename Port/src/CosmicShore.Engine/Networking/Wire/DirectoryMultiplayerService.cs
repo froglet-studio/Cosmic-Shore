@@ -90,22 +90,42 @@ namespace CosmicShore.Engine.Networking
 
         // ── IMultiplayerService ─────────────────────────────────────
 
-        public Task<ISession> CreateSessionAsync(SessionOptions options)
+        public async Task<ISession> CreateSessionAsync(SessionOptions options)
         {
             var nm = NetworkManager.Singleton;
             var rec = SessionRules.NewSession(options, SelfId, SessionRules.NowTicks);
             if (options?.UseRelay == true && nm != null)
             {
-                // The SDK's network handler brings the NetworkManager up as host before the create completes.
-                if (!nm.IsListening) nm.StartHost();
-                int port = NetDriver.ListenPort;
-                if (port > 0) { rec.RelayAddress = AdvertisedAddress(); rec.RelayPort = port; }
+                if (RelaySessions.Allocator is { } relay)
+                {
+                    // Through a relay (docs/MULTIPLAYER.md §6.7): allocate and get a join code first (web calls,
+                    // resumed on the main thread), then host; joiners find the code in the session record.
+                    if (!nm.IsListening)
+                    {
+                        var alloc = await relay.AllocateAsync(Math.Max(1, (options.MaxPlayers > 0 ? options.MaxPlayers : 4) - 1), RelaySessions.Region);
+                        await relay.CreateJoinCodeAsync(alloc);
+                        RelaySessions.HostWith(alloc);
+                        nm.StartHost();
+                    }
+                    if (NetDriver.IsServer && RelaySessions.HostingJoinCode is { Length: > 0 } code)
+                    {
+                        rec.RelayJoinCode = code;
+                        rec.RelayAddress = RelaySessions.RelayAddress;
+                    }
+                }
+                else
+                {
+                    // The SDK's network handler brings the NetworkManager up as host before the create completes.
+                    if (!nm.IsListening) nm.StartHost();
+                    int port = NetDriver.ListenPort;
+                    if (port > 0) { rec.RelayAddress = AdvertisedAddress(); rec.RelayPort = port; }
+                }
             }
             Locked(() => { Store(rec); return 0; });
-            return Task.FromResult<ISession>(new DirectorySession(this, rec, options?.UseRelay == true));
+            return new DirectorySession(this, rec, options?.UseRelay == true);
         }
 
-        public Task<ISession> JoinSessionByIdAsync(string sessionId, JoinSessionOptions options = null)
+        public async Task<ISession> JoinSessionByIdAsync(string sessionId, JoinSessionOptions options = null)
         {
             var rec = Locked(() =>
             {
@@ -115,19 +135,26 @@ namespace CosmicShore.Engine.Networking
                 Store(r);
                 return r;
             });
-            bool networked = rec.RelayPort > 0;
+            bool relayed = !string.IsNullOrEmpty(rec.RelayJoinCode);
+            bool networked = rec.RelayPort > 0 || relayed;
             if (networked && NetworkManager.Singleton is { } nm)
             {
                 if (nm.IsListening)
                     Debug.LogWarning("[Multiplayer] Joining a networked session while the NetworkManager is still running; shut it down first.");
                 else
                 {
+                    if (relayed)
+                    {
+                        var relay = RelaySessions.Allocator
+                            ?? throw new SessionException("This session is reached through a relay, and this player has none configured (COSMIC_SHORE_RELAY).", SessionError.NetworkSetupFailed);
+                        RelaySessions.JoinWith(await relay.JoinAsync(rec.RelayJoinCode));
+                    }
                     var t = nm.Transport;
-                    if (t != null) t.SetConnectionData(rec.RelayAddress, (ushort)rec.RelayPort);
+                    if (t != null) t.SetConnectionData(rec.RelayAddress, (ushort)(relayed ? 0 : rec.RelayPort));
                     nm.StartClient();
                 }
             }
-            return Task.FromResult<ISession>(new DirectorySession(this, rec, networked));
+            return new DirectorySession(this, rec, networked);
         }
 
         public Task<QuerySessionsResults> QuerySessionsAsync(QuerySessionsOptions options)

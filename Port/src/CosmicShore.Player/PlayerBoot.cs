@@ -104,6 +104,34 @@ namespace CosmicShore.Player
                 : $"[online] online server {options.Server}");
         }
 
+        /// <summary>
+        /// The session backend (<see cref="InstallSessions"/>), then the network test tools on top of it
+        /// (docs/MULTIPLAYER.md §6). With the session folder - the NET page, the party harness and MCP
+        /// net_players run on it - the transport is Froglet's UDP unless COSMIC_SHORE_NET_TRANSPORT=tcp,
+        /// and COSMIC_SHORE_RELAY sends sessions through a relay (§6.7-6.8). The online server carries
+        /// match traffic itself, so those two do not apply to it. The network simulator
+        /// (COSMIC_SHORE_NET_SIM, `do netsim`) and the session faults (COSMIC_SHORE_NET_FAULT,
+        /// `do netfault`) wrap whichever backend is in place.
+        /// </summary>
+        void InstallNetwork(string root)
+        {
+            InstallSessions();
+            if (Online == null)
+            {
+                var transport = CosmicShore.Engine.Networking.NetTransports.Select(Environment.GetEnvironmentVariable("COSMIC_SHORE_NET_TRANSPORT"));
+                Console.WriteLine($"[net] transport: {transport}");
+                if (UgsSetup.InstallRelay(root) is { } relayLine) Console.WriteLine(relayLine);
+            }
+            else
+            {
+                foreach (var name in new[] { "COSMIC_SHORE_NET_TRANSPORT", "COSMIC_SHORE_RELAY" })
+                    if (Environment.GetEnvironmentVariable(name) is { Length: > 0 } value)
+                        Console.WriteLine($"[net] {name}={value} ignored: the online server carries match traffic (it applies with the session folder)");
+            }
+            CosmicShore.Engine.Networking.NetSimulator.Install();
+            CosmicShore.Engine.Networking.NetFaults.Install();
+        }
+
         public void Start(string firstScene)
         {
             var root = AssetDatabase.FindProjectRoot()
@@ -115,8 +143,8 @@ namespace CosmicShore.Player
             // A real transport between players (TCP; COSMIC_SHORE_NET=off keeps one process).
             CosmicShore.Engine.Networking.NetDriver.Enabled = Environment.GetEnvironmentVariable("COSMIC_SHORE_NET") != "off";
             CosmicShore.Engine.Services.AuthenticationService.AnonymousIdProvider = AnonymousPlayerId;
-            // Sessions (lobby + relay): an online server for players on any machine (InstallSessions).
-            if (CosmicShore.Engine.Networking.NetDriver.Enabled) InstallSessions();
+            // Sessions (lobby + relay) and the network test tools on top of them (InstallNetwork).
+            if (CosmicShore.Engine.Networking.NetDriver.Enabled) InstallNetwork(root);
             // The game's own verbose log channels (CSDebug.VerboseChannels - the Froglet Toolbox
             // Logging tab in the editor): COSMIC_SHORE_LOG_CHANNELS=Party,Boot. Only a Debug
             // (development) build compiles LogVerbose in.

@@ -35,9 +35,14 @@ namespace CosmicShore.Engine.Networking
         public int MaxPlayers { get; set; }
         public bool IsLocked { get; set; }
         public bool IsPrivate { get; set; }
-        /// <summary>Shared-folder sessions: the host's TCP endpoint a join connects to.</summary>
+        /// <summary>Shared-folder sessions: the host's endpoint a join connects to.</summary>
         public string RelayAddress { get; set; }
         public int RelayPort { get; set; }
+        /// <summary>
+        /// Shared-folder sessions hosted through a relay (COSMIC_SHORE_RELAY, docs/MULTIPLAYER.md §6.7):
+        /// joiners join by this code instead of an address and port.
+        /// </summary>
+        public string RelayJoinCode { get; set; }
         /// <summary>Online sessions: the session carries a Relay network (joins connect through the server).</summary>
         public bool Relay { get; set; }
         public Dictionary<string, PropRecord> Properties { get; set; } = new();
