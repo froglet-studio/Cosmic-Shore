@@ -390,6 +390,76 @@ scenario set exists, a nightly `-csmbench` on S1–S6 with a budget per scenario
 | GC comes from Entities Graphics / prisms / the HUD / coroutines | Legacy path allocates more; empty scene allocates more; hidden overlay same; arithmetic 100× short | `§0.11`–`§0.11.3`, `§0.9` |
 | The stress cloud inflated the boot-world numbers | Reproduced without it | `§0.11.4` |
 
+### 3.6 The 2× plan: 100,000 prisms at 60+ fps on a phone (set 2026-10-14)
+
+**The ask.** The owner saw ~40k prisms under 60 fps and wants 100k at 60+ on a phone: at least
+twice today's performance. This section states what the record already proves, what it does not,
+and the order of work. Every number below is from §1.0, the archive or §3.3; nothing here is new
+measurement.
+
+**Why 40k prisms read under 60 fps — the prisms are not the cost.**
+
+| Fact | Evidence |
+|---|---|
+| 103,823 prisms on the instanced path: **122 fps, 4.8 ms CPU, 2.1 ms GPU** (lab, desktop editor) | archive §0.10 |
+| S4 Scurry i4 with **69,094** prisms: **74.8 fps**, 10.6 ms CPU — the most prisms of any scenario and the fastest | §1.0 |
+| S2 Lattice with 42,076 prisms: 38.6 fps, 21.4 ms CPU — but 89–93% of its draws are **not prisms** (2,401 transparent draws: ~40k spindle renderers, 4,189 snow objects, crystals); prisms are 23 opaque draws | §1.0, archive §0.11.4–5 |
+| S5 Wildlife Liberation with only 13,419 prisms: **19.8 fps**, 46 ms CPU — all script: UniTask continuations 20.2 ms, `LightFauna.Update` 13.1 ms, behaviour tick 12.7 ms | §1.0 |
+| Marginal cost per prism in a real world: 0.24–0.43 µs/frame on top of a **fixed ~10 ms** that is there at 0 prisms | archive §0.11.4 |
+| Collider-LOD sweep spikes **15.9 ms every 0.25 s** at ~69k prisms | L11 |
+
+So a scene "with 40k prisms" is slow because of what grows alongside them (spindles, snow, fauna,
+AI, the sweep) and a 10 ms floor, not because of the prism draw path, which is already near its
+limit. Doubling prism count on the instanced path costs ~2–4 ms; doubling the rest costs the frame.
+
+**What the record does NOT contain: a single phone measurement.** Every row above is a desktop
+editor. The only phone data are two anecdotes (`PLATFORM_UNIFICATION.md` §40–66): a 4 GB Samsung at
+~4 fps, an iPhone at 30–40 fps. Nobody has recorded which **prism path** a phone takes. The device
+gate (`EntitiesGraphicsSupportProbe`, `PRISM_ECS_MIGRATION.md` §8) drops every prism to the legacy
+MeshRenderer path — the **12.9× costlier** one — when compute shaders or the `SparseUploader`
+kernels are missing; `PRISM_ECS_MIGRATION.md` says BRG needs Vulkan/Metal and the Android build is
+Auto [Vulkan, GLES3]. A phone that lands on GLES3 may be running the path the lab measured at 14 fps
+for 100k prisms. That one unknown could be the whole "phone is slow" story, and it is a 10-minute test.
+
+**Three ceilings 100k on a phone must clear, in the order they bite:**
+
+1. **Which path** — legacy vs instanced is 12.9×. Nothing else matters until this is known per device.
+2. **Memory** — each prism is still a GameObject with 7 MonoBehaviours and a collider (~2–4 KB) plus a
+   ~375 B render entity; 103k prisms read 1.8 GB managed in the editor (`MEMORY_AUDIT.md`). A MobileLow
+   phone has < 5 GB total. 100k GameObject prisms will not fit; **L4 pure-entity prisms** is structural,
+   not optional, for this target.
+3. **GPU** — 100k × 24 tris = 2.4M prism tris/frame, 2.1 ms on a desktop GPU. A mid phone GPU is
+   ~10–20× slower: 20–40 ms. Fine on MobileHigh at 71% render scale, doubtful on MobileLow. And the
+   non-prism transparent load (spindles/snow overdraw) hits tile-based phone GPUs far harder than a desktop.
+
+**Definition of "2×" (so it can be passed or failed).** Two numbers, both on the same phone, same
+scenario, Release, `diag` 15 s, §4.7 protocol:
+- **A.** CPU busy ms at the §1.0 scenario set (S2 and S4 are the prism-heavy ones) — halve it.
+- **B.** The largest prism count that holds 60 fps p95 in S4 (the fastest prism-heavy scene) — double it,
+  on each tier device.
+
+**Order of work.** Each step ends in a measurement; the next step is chosen from it, not from this list.
+
+| Step | What | Owner | Proof |
+|---|---|---|---|
+| **0** | **Phone baseline.** Development build (Android Vulkan, Android GLES3 forced, iOS). On each: F7, `diag phone 15` in S2 and S4, `prisms 50000` then `diag`, `renderers`, and the HUD's prism path line. Pull `persistentDataPath/CosmicShore Diagnostics/*.json`. Two devices minimum: one MobileLow (Adreno 610 / Mali-G52 class), one MobileHigh | human + tool | `diag` JSONs committed under `Docs/perf/phone/`; `prismPath` field says `instanced` or `legacy` per device |
+| **1** | **Guarantee the instanced path on phone.** If step 0 shows `legacy` anywhere: decide GLES3 (drop it, or make the probe fall back to a cheap non-BRG instanced path) — the "biggest open product decision" in `PRISM_ECS_MIGRATION.md` §417. If `instanced` everywhere, this step is free | code | re-run step 0: every device `instanced` |
+| **2** | **Non-prism render load** (phone GPU): L1 spindles onto the instanced path keeping the alpha fade; L6 snow distance; cap transparent draws per tier. S2 is the scene | code | S2 `diag`: transparent draws and GPU ms halved on the MobileLow device |
+| **3** | **Script floor**: L8 fauna body-sync (gated on `Fauna.BodySync` ≥ 8 ms in S5 — Prisma reads 0.06 ms in Skim Race, so measure S5 first), L9 gunfight continuations, L11 slice the collider sweep, L5 spatial-index early-out, L3 GC (`PoolRefill` ~9 KB/frame lead) | code | S5 and S4 `diag`: CPU busy ms; no 15 ms sweep spike at 69k |
+| **4** | **L4 pure-entity prisms** — the structural change for 100k on a phone: no GameObject per prism, collider only within the 200 m LOD radius, data in chunks. Largest step; design exists (Checkpoint D) | code | 100k `prisms` cloud on the MobileHigh device: memory and fps recorded; S4 at 2× its prism count |
+| **5** | **Gate.** Nightly `-csmbench` on S1–S6 per tier (§3.4) plus the Prisma marker run as the no-editor allocation gate (§2, 10-09) | tooling | a regression fails a run |
+
+**Tests owed before any lever is built** (this is the list the owner asked for):
+1. Phone `diag` S2 + S4 + `prisms 50000` on a MobileLow and a MobileHigh device, Vulkan and GLES3 — the baseline and the path answer.
+2. Unity Release `burst` + `diag` + `prof` in Skim Race I2 — confirms the 10-08 Burst fix (still unmeasured) and the `PoolRefill` allocation lead.
+3. `prof` of S5 for `Fauna.BodySync` average — the L8 go/no-go.
+4. Memory reading in a build (not editor) at 50k and 100k prisms — sizes L4.
+5. S3 Rampage intensity 1 — still owed from §1.0.
+
+**What this plan refuses.** Re-keying prototypes, chunk locality, opaque snow/spindles, "prism draw
+calls are the cost" — all measured dead (§3.5). And no lever is built on a desktop number when the
+target is a phone: step 0 comes first.
+
 ---
 
 ## 4. How to measure — simply
