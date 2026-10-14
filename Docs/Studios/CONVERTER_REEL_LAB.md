@@ -134,7 +134,12 @@ idle effect on one clock that restarts with the loop, which is what cutting the 
   - Space, Charge, Mass and Time leave in that order;
   - the frame at 55.25 s and the frame at 0.01 s match.
 - The in-page exporter, run in headless Chromium: 20 frames encoded through WebCodecs and muxed to MP4 (313 KB). That Chromium build has no H.264 encoder (`avc1.*` not supported) and fell back to VP9. Desktop Chrome and Edge encode H.264, and the page says so when it falls back.
-- A headless render of the default look at 1080×1920, 60 fps, 2× supersampling plus MSAA, H.264 CRF 15. That is the
+- The headless render of the default look (`render_headless.cjs`, 12 resumable chunks, 3 browsers):
+  - the master is 1080×1920, 60 fps, 3,316 frames, 55.27 s, H.264 High CRF 15 (8.6 Mbps, 56 MiB);
+  - the share copy, a two-pass 4 Mbps encode of the master, is 26 MiB at SSIM 0.995 against the master;
+  - in the file, the change from the last frame to the first is 0.52 mean levels, against 0.31 between ordinary
+    neighbouring frames (the camera orbit keeps moving), and the chunk joins sit in the same range.
+  Neither file is in the repo: re-render with `render_headless.cjs`, or export from the page.
   delivered `converter-reel-1080x1920-60fps.mp4`.
 
 ## Found
