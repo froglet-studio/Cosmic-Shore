@@ -21,7 +21,7 @@ the fleet's one-thumb model (`SingleStickVesselTransformer`, via `BrittleStarVes
 | Speed Mode | **A** | Space | Select Speed Mode (press again: back to Cruise) |
 | Creation Mode | **B** | R | Select Creation Mode (press again: Cruise) |
 | Destruction Mode | **X** | Q / middle mouse | Select Destruction Mode (press again: Cruise) |
-| Fire (held) | **RT** | Right Shift / LMB | Shoot. Normal: one stream; Destruction: all five turrets |
+| Fire (held) | **RT** | Right Shift / LMB | Shoot one stream (outside Destruction Mode, which fires on its own) |
 | Aim / spread | **right stick** | P ; L ' (no aim on the mouse scheme) | Direction picks the turret (the ring turns to bring it round); deflection opens the spread |
 | Ring Detonation | **LT** | Left Shift / RMB | Throw the ring |
 
@@ -53,43 +53,55 @@ Modes are **exclusive**: one at a time, or **Cruise** (none). All three need the
 ## 3. The abilities (`BrittleStarExecutor`, tuning `BrittleStarConfigSO`)
 
 ### 3.1 Speed Mode — TIME
-- Cruise × `speedModeMultiplier` (**×1.6 at rest → ×2.2 at Time 10**, floored ×1.2). The multiplier scales the
-  transformer's throttle TARGET (`BrittleStarVesselTransformer.SpeedModeMultiplier`, one writer: the executor), so the
-  hull eases into the new speed through the fleet's `StepTowardTarget` and its turn rates follow `speed` as for a boost.
+- **×6 speed** (Garrett, 2026-10-14): cruise × `speedModeMultiplier` (**×6 at rest → ×8 at Time 10**, floored ×4) —
+  45 u/s → 270 u/s. The multiplier scales the transformer's throttle TARGET (`BrittleStarVesselTransformer.SpeedModeMultiplier`,
+  one writer: the executor), so the hull eases into the new speed through the fleet's `StepTowardTarget` and its turn
+  rates follow `speed` as for a boost (the Sparrow's `RotationThrottleScaler` 0.1: 84°/s at cruise, 107°/s at ×6).
   Not `BoostMultiplier` (rule 23: it ratchets) and not `IsBoosting` (every boost listener would react). The Sparrow
   block's Time-scaled `BoostSpeedMultiplier` is **off** on this hull — there is no boost, and a second Time dial would
   be undocumented.
 - "Speed mode increases the wavelength of the Brittle Star's volume production so as not to increase production output":
   `BrittleStarPrismController.SpacingMultiplier` stretches the base trail's delay by the same factor
-  (`speedModeSpacingFollow` = 1), so prisms per second hold. The pentagon's spacing stretches too.
+  (`speedModeSpacingFollow` = 1), so prisms per second hold — at ×6 the blocks are ~36 u apart. The corner trails'
+  spacing stretches too.
 
 ### 3.2 Creation Mode — MASS
-- The trail becomes a **pentagon of five blocks laid from the ring's points** (radius × `creationRadiusScale` 1.15),
-  each block tangent to the ring so the five read as a pentagon, **turning with the ring's firing rotation**. Every
-  `creationSpacing` (7 u) of path; at most 2 pentagons a frame, excess dropped (rule 17). Blocks are
-  `creationBlockSize` (3.2 × 1.6 × 5) × **`creationBlockScale` ×1 → ×1.8 at Mass 10** (`EvaluateReplicated`: every peer
-  lays the same size).
-- While Creation is on, the base spawner's pen is held up (`SetSpawnerPaused`, written on EDGES only, rule 48); the
-  pentagon lays only while the spawner is running (`VesselPrismController.SpawnerEnabled`, a read-only getter added for
-  this), above 3 u/s and not attached — the fleet spawner's own conditions.
+- **A trail behind each ring corner** (Garrett, 2026-10-14; the first cut laid a pentagon of slabs): five lines, one per
+  corner, each its own `Trail`, laid `creationOffset` 2 u behind the corner every `creationSpacing` 6 u of path (the
+  base trail's wavelength), each block's length along the path and its broad side tangent to the ring. They turn with
+  the ring's firing rotation, so aiming while building twists the five lines round each other. Blocks are
+  `creationBlockSize` (2.5 × 2.5 × 4.5) × **`creationBlockScale` ×1 → ×1.8 at Mass 10** (`EvaluateReplicated`: every
+  peer lays the same size). At most 3 blocks per corner a frame, spread back along the path, excess dropped (rule 17).
+- While Creation is on, the cockpit's own trail is replaced: the base spawner's pen is held up (`SetSpawnerPaused`,
+  written on EDGES only, rule 48). The corners lay only while the spawner is running
+  (`VesselPrismController.SpawnerEnabled`, a read-only getter added for this), above 3 u/s and not attached — the fleet
+  spawner's own conditions.
 
 ### 3.3 The base trail
 - "A single small block when not in creation mode": `BaseScale (2.5, 2.5, 4.5)`, wavelength 6, `prismType` Sparrow,
   laid 2 u behind the cockpit, skimmer clearance on.
 
-### 3.4 Shooting and Destruction Mode — SPACE
-- **Fire** (RT, held) owes fire in seconds and pays it in whole volleys (rule 17): `fireRate` 12 rounds/s **per stream**.
-- **Normal**: one stream, from the turret the right stick points at — the ring turns (`ringTurnRate` 540°/s, always the
-  short way round, never more than 36°) to bring the nearest point onto the aim — or from the **cockpit gun** with the
-  stick inside `aimDeadzone`. Ringless, only the cockpit gun is left.
-- **Destruction Mode**: all five turrets fire, rounds × `destructionProjectileScale` 1.5.
-- **Spread**: the stick's deflection past the deadzone opens a cone up to `maxSpreadDegrees` 16°; each round's
+### 3.4 Destruction Mode (the five arms) and shooting — SPACE
+- **Destruction Mode fires on its own: the FIVE ARMS** (Garrett, 2026-10-14). Every turret fires, unspread, at the
+  Sparrow's full-auto cadence (`destructionFireRate` 90 rounds/s each, `destructionProjectileSpeed` 1350 u/s, the
+  Sparrow's tracer at `destructionProjectileScale` 1) — "such a steady stream that they give the appearance of five arms,
+  hence the name brittle star". Spacing between rounds is speed / rate = 15 u, under the tracer's own ~20 u length, so
+  each arm reads as solid. The arms run while the mode is on and the trail is running (the turn's clock), and RT adds
+  nothing to them. Fire is owed in seconds and paid in whole volleys, capped at 4 per frame (rule 17).
+- **Fire (RT, held) outside Destruction Mode**: one stream at `fireRate` 12 rounds/s, 700 u/s, from the turret the right
+  stick points at — the ring turns (`ringTurnRate` 540°/s, always the short way round, never more than 36°) to bring the
+  nearest point onto the aim — or from the **cockpit gun** with the stick inside `aimDeadzone`. Ringless, only the
+  cockpit gun is left. The stick's deflection past the deadzone opens a cone up to `maxSpreadDegrees` 16°; each round's
   deflection is a pure hash of a per-shot serial (rule 18), so peers that agree on the shot count agree on every round.
 - Rounds are the Sparrow's pooled `SparrowProjectile` (friendly fire on — "players need to be careful not to destroy
   allied blocks" — swept prism and vessel hits, the fleet's scored `VesselCombatHitByBullet`), fired by a `Gun` on the
-  `BrittleStarTurrets` object. Speed 700, flight `projectileTime` 0.3 s × **`rangeMultiplier` ×1 → ×1.6 at Space 10**
-  ⇒ range = 700 × 2T/π = **134 u → 214 u** (rule 34: rounds decelerate). Size `projectileScale` 1.6 ×
+  `BrittleStarTurrets` object, whose pool is sized for the arms (240 / 640: up to 216 rounds alive at Space 10).
+- Flight `projectileTime` 0.3 s × **`rangeMultiplier` ×1 → ×1.6 at Space 10**, so the arms reach 1350 × 2T/π =
+  **258 u → 413 u** and RT's stream 134 u → 214 u (rule 34: rounds decelerate). Every round's size ×
   `projectileScaleMultiplier` (Charge, below).
+- **Cost to watch:** the arms are 450 rounds/s per hull (the Sparrow's held trigger is 180), each a swept prism query.
+  `destructionFireRate` is the knob if a match with several Brittle Stars profiles hot; below ~68/s the 15 u spacing
+  opens past the tracer's length and the arms start to read as dashes.
 
 ### 3.5 Ring Detonation — CHARGE
 - **LT throws the ring** forward at `ringLaunchSpeed` 240 u/s on top of the hull's velocity, spinning. It detonates on
@@ -122,7 +134,7 @@ The class document predates the rule *"no other pvp in the game … we should on
 | Document | Shipped |
 |---|---|
 | Shots "knock back enemy vessels, reducing their momentum", stacking per hit | Every round on an enemy hull is a **scored bullet hit** (petals ejected, 1 point). Nothing moves or slows the hull. |
-| Destruction Mode hits "disable enemy vessel mass production temporarily" | Retired (CONTROL tier). Destruction Mode's five streams of larger rounds take petals five times as fast. |
+| Destruction Mode hits "disable enemy vessel mass production temporarily" | Retired (CONTROL tier). Destruction Mode's five unbroken arms take petals five times as fast (`VesselCombatHitByBullet` still admits one hit per victim per 0.05 s — at most 20 hits, two petals, a second — however many rounds land). |
 | Ring blast: knocked back, momentum reduced, trail disabled | The blast prefab's own scored hit (`VesselCombatHitByGrizzlyBlast`, MissileBlast) and the plane wave's **MissileShockwave** hit, through `CombatHitDrain.TryAdmit` (a warded pilot is neither scored on nor robbed). |
 | Space (Hunter): "increased shot range and **nudge intensity**" | Range only — the nudge went with knockback. |
 | Friendly fire "accidentally disable allied mass production" | Friendly fire stays on **mass** (rounds and blasts break allied prisms); nothing touches an allied hull. |
@@ -140,9 +152,9 @@ a copy of `StoatHUDVariant` (same internal fileIDs, so the vessel's nesting bloc
 | Element | Ability | Input | The one dial | L5 |
 |---|---|---|---|---|
 | Charge | Ring Detonation | LT (2) | blasts ×1 → ×1.6, rounds ×1 → ×1.8 | **open** |
-| Mass | Creation Mode | B (7) | pentagon blocks ×1 → ×1.8 | **open** |
-| Space | Destruction Mode (+ Fire on RT) | X (8) | range ×1 → ×1.6 | **open** |
-| Time | Speed Mode | A (6) | speed ×1.6 → ×2.2 | **open** |
+| Mass | Creation Mode | B (7) | corner-trail blocks ×1 → ×1.8 | **open** |
+| Space | Destruction Mode (the five arms; + Fire on RT) | X (8) | range ×1 → ×1.6 | **open** |
+| Time | Speed Mode | A (6) | speed ×6 → ×8 | **open** |
 
 `element_ability_table.py BrittleStar`: abilities 4/4, scaling 4/4, L5 gates 0/4, **0 disagreements**.
 
@@ -152,8 +164,8 @@ open slots (empty `UpgradeLabel`). Proposals for Garrett to mark up (none implem
 | Element | Proposal A | Proposal B |
 |---|---|---|
 | Charge | **Chain Reaction** — the plane wave's ring sets off a second, smaller detonation where it ends | **Domain-Safe Ring** — the blast spares your own domain's mass (the Sparrow's Charge 5 shape) |
-| Mass | **Shielded Pentagon** — Creation Mode's blocks arrive shielded (the Stoat / Thresher Mass 5 shape) | **Second Ring** — Creation lays two concentric pentagons |
-| Space | **Piercing Rounds** — rounds pass through the first prism (the Sparrow's Space 5, `stopOnFirstPrismImpact`) | **Long Barrels** — Destruction Mode keeps the normal-mode range bonus ×1.25 |
+| Mass | **Shielded Corners** — the corner trails arrive shielded (the Stoat / Thresher Mass 5 shape) | **Webbing** — every fifth block bridges to the next corner, stitching the five lines into a tube |
+| Space | **Piercing Arms** — the arms' rounds pass through the first prism (the Sparrow's Space 5, `stopOnFirstPrismImpact`) | **Long Arms** — the arms' range ×1.25 |
 | Time | **Afterburner Ring** — a thrown ring inherits Speed Mode's speed and fuses later | **Quick Build** — the rebuild is instant |
 
 ## 6. AI (input-only)
@@ -208,13 +220,15 @@ identical on the Stoat and Sparrow and shared by all 16 vessel prefabs — inher
 
 | Knob | Asset | Shipped |
 |---|---|---|
-| `speedModeMultiplier` (Time) | `BrittleStarConfig` | 1.6 → 2.2, floor 1.2 |
+| `speedModeMultiplier` (Time) | `BrittleStarConfig` | 6 → 8, floor 4 |
 | `speedModeSpacingFollow` | `BrittleStarConfig` | 1 |
-| `creationBlockSize` / `creationBlockScale` (Mass) | `BrittleStarConfig` | (3.2, 1.6, 5) / 1 → 1.8 |
-| `creationSpacing` / `creationRadiusScale` | `BrittleStarConfig` | 7 u / 1.15 |
+| `creationBlockSize` / `creationBlockScale` (Mass) | `BrittleStarConfig` | (2.5, 2.5, 4.5) / 1 → 1.8 |
+| `creationSpacing` / `creationRadiusScale` / `creationOffset` | `BrittleStarConfig` | 6 u / 1 / 2 u |
 | `fireRate` / `projectileSpeed` / `projectileTime` | `BrittleStarConfig` | 12 /s / 700 / 0.3 s |
 | `rangeMultiplier` (Space) | `BrittleStarConfig` | 1 → 1.6 |
-| `projectileScale` / `projectileScaleMultiplier` (Charge) / `destructionProjectileScale` | `BrittleStarConfig` | 1.6 / 1 → 1.8 / 1.5 |
+| `projectileScale` / `projectileScaleMultiplier` (Charge) | `BrittleStarConfig` | 1.6 / 1 → 1.8 |
+| `destructionFireRate` / `destructionProjectileSpeed` / `destructionProjectileScale` (the arms) | `BrittleStarConfig` | 90 /s each / 1350 / 1 |
+| Round pool | `BrittleStar.prefab` turrets | 240 / max 640 |
 | `maxSpreadDegrees` / `aimDeadzone` / `ringTurnRate` | `BrittleStarConfig` | 16° / 0.25 / 540°/s |
 | `ringLaunchSpeed` / `ringFuseSeconds` | `BrittleStarConfig` | 240 u/s / 1.1 s |
 | `blastDiameter` / `blastScale` (Charge) | `BrittleStarConfig` | 60 / 1 → 1.6 |
@@ -239,12 +253,14 @@ None of that is a play test. In order:
    coloured nozzles and canopy, a cockpit flame; the hull leans into turns and the **outside** pods light as it banks.
    Console clean (no `[BrittleStar]` errors).
 2. **Trail**: fly straight; a single small block every ~6 u behind the cockpit.
-3. **A** (Speed): every thruster lights, the hull speeds up ~1.6×, the trail's blocks spread out (same blocks per second).
-   **A** again: back to Cruise.
-4. **B** (Creation): the trail becomes a pentagon of five blocks round your path, every ~7 u. Push the right stick
-   round: the ring turns and the pentagon turns with it.
-5. **RT**: one stream from the cockpit gun; with the right stick pushed, from the aimed turret; full deflection opens a
-   cone. **X** (Destruction) + RT: five streams of larger rounds. Shoot your own trail: it breaks (friendly fire).
+3. **A** (Speed): every thruster lights and the hull runs at **6×** (45 → 270 u/s); the trail's blocks spread out
+   (~36 u apart, same blocks per second). **A** again: back to Cruise.
+4. **B** (Creation): the cockpit's trail stops and five trails run behind the ring's five corners. Push the right stick
+   round: the ring turns and the five lines twist with it.
+5. **X** (Destruction): with no button held, five unbroken streams pour out of the five turrets — five arms. They should
+   read as solid lines, not dashes. Fly through mass: the arms cut it, your own included (friendly fire). **X** again:
+   they stop. **RT** outside it: one stream from the cockpit gun; with the right stick pushed, from the aimed turret;
+   full deflection opens a cone.
 6. **LT**: the ring flies off and blows on the first mass it touches — a big blast, then a flat wave across the ring's
    plane. The hull is now **ringless**: A/B/X do nothing, RT fires only the cockpit gun, the Ring card is empty.
 7. Collect a **crystal**: a new ring blooms out; collect another: the Ring card turns lime (charge stored). LT twice
@@ -257,7 +273,7 @@ None of that is a play test. In order:
 10. **AI**: an arcade/arena match with the Brittle Star in an AI seat: it fires at mass ahead, switches modes, takes
     Speed on straights, and throws its ring into clusters.
 11. **Multiplayer (MPPM, two clients)**: one pilot shoots the other: the victim loses petals and is **not** moved. Both
-    clients see the same mode, the same pentagon trail and the same ring rebuilds.
+    clients see the same mode, the same five corner trails and the same ring rebuilds.
 12. Run the edit-mode suite: `BrittleStarTests`, `EnumIntegrityTests`, `OneThumbVesselCoverageTests`,
     `ToyVesselRosterCoverageTests`, `CrystalHullFusionConfigTests`.
 

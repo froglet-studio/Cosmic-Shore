@@ -9,8 +9,8 @@ namespace CosmicShore.Gameplay
     /// by DISTANCE (a delay of wavelength / speed), so a faster hull lays more per second; stretching the delay by the
     /// speed the mode adds keeps the count per second where it was.
     ///
-    /// <para>Creation Mode's pentagon is not laid here: <see cref="BrittleStarExecutor"/> lays it from the ring's five
-    /// points and holds this spawner's pen up while it does.</para>
+    /// <para>Creation Mode's five corner trails are not laid here: <see cref="BrittleStarExecutor"/> lays one behind each
+    /// ring corner and holds this spawner's pen up while it does.</para>
     /// </summary>
     public class BrittleStarPrismController : VesselPrismController
     {

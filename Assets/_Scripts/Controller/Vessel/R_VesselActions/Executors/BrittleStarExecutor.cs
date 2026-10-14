@@ -18,13 +18,14 @@ namespace CosmicShore.Gameplay
     /// <list type="bullet">
     /// <item><b>Change Modes</b> (A / B / X): Speed, Creation or Destruction; pressing the selected mode again returns to
     /// Cruise. The modes need the support ring.</item>
-    /// <item><b>Speed Mode</b> (Time): the hull's cruise × <c>speedModeMultiplier</c>, every thruster lit, and the base
-    /// trail's spacing stretched so production per second does not rise.</item>
-    /// <item><b>Creation Mode</b> (Mass): the trail becomes a PENTAGON of blocks laid from the ring's five points, turning
-    /// with the ring's firing rotation.</item>
-    /// <item><b>Destruction Mode</b> (Space) and <b>Fire</b> (RT, held): one stream from the turret the right stick
-    /// points at (the cockpit gun with the stick centred), or all five turrets in Destruction Mode with larger rounds;
-    /// the stick's deflection opens the spread. Friendly fire is on (the round's prefab).</item>
+    /// <item><b>Speed Mode</b> (Time): the hull's cruise × <c>speedModeMultiplier</c> (×6), every thruster lit, and the
+    /// base trail's spacing stretched so production per second does not rise.</item>
+    /// <item><b>Creation Mode</b> (Mass): a trail behind EACH of the ring's five corners instead of the cockpit's one,
+    /// turning with the ring's firing rotation.</item>
+    /// <item><b>Destruction Mode</b> (Space): the FIVE ARMS — every turret fires on its own, unspread, at the Sparrow's
+    /// full-auto cadence, a stream steady enough to read as the brittle star's arms. <b>Fire</b> (RT, held) outside it:
+    /// one stream from the turret the right stick points at (the cockpit gun with the stick centred), the stick's
+    /// deflection opening the spread. Friendly fire is on (the round's prefab).</item>
     /// <item><b>Ring Detonation</b> (Charge, LT): throw the ring forward; it blows on contact or on its fuse — an
     /// all-domain blast, then a wave out in the ring's plane. A stored crystal charge rebuilds a new ring at once; with
     /// none the hull flies ringless, modes and all, until it collects a crystal.</item>
@@ -68,12 +69,15 @@ namespace CosmicShore.Gameplay
         int _aimedPoint = -1;        // the turret the stick points at, or -1 (the cockpit gun)
         bool _firing;
         float _fireOwed;
+        float _armsOwed;
         uint _shotSerial;
         bool _penHeld;
         float _creationOwed;
         Vector3 _lastHullPosition;
         bool _hasLastHullPosition;
-        readonly Trail _creationTrail = new();
+        // Creation Mode: one trail per ring corner (a Trail each, so every corner's line is its own ordered trail).
+        readonly Trail[] _cornerTrails =
+            { new Trail(), new Trail(), new Trail(), new Trail(), new Trail() };
 
         // Thrown rings and the plane waves they leave.
         struct Flight
@@ -162,10 +166,11 @@ namespace CosmicShore.Gameplay
             _aimedPoint = -1;
             _firing = false;
             _fireOwed = 0f;
+            _armsOwed = 0f;
             _shotSerial = 0;
             _creationOwed = 0f;
             _hasLastHullPosition = false;
-            _creationTrail.Clear();
+            for (int i = 0; i < _cornerTrails.Length; i++) _cornerTrails[i].Clear();
             _boundInputs.Clear();
             _aiHoldingFire = false;
             _aiSpeedWish = null;
@@ -340,7 +345,7 @@ namespace CosmicShore.Gameplay
             return hullT.TransformPoint(local);
         }
 
-        // ------------------------------------------------------------------ Creation Mode: the pentagon trail
+        // ------------------------------------------------------------------ Creation Mode: a trail behind each corner
 
         void UpdateCreation()
         {
@@ -366,7 +371,7 @@ namespace CosmicShore.Gameplay
             if (!creating || !hull || !prisms || !prisms.SpawnerEnabled) { _creationOwed = 0f; return; }
             if (_status.IsAttached || _status.Speed <= MinSpeedToLay) return;
 
-            // Speed Mode stretches the pentagon's wavelength too, so Overdrive does not double production.
+            // Speed Mode stretches the corner trails' wavelength too, so Overdrive does not multiply production.
             float spacing = config.CreationSpacing * (_status.VesselPrismController is BrittleStarPrismController bp
                 ? Mathf.Max(1f, bp.SpacingMultiplier) : 1f);
             _creationOwed += travelled;
@@ -375,18 +380,23 @@ namespace CosmicShore.Gameplay
             _creationOwed = Mathf.Min(_creationOwed - lays * spacing, spacing);   // excess DROPPED (rule 17)
             var channel = prisms.PrismSpawnChannel;
             if (!channel) return;
+            Vector3 course = _status.Course.sqrMagnitude > 1e-6f ? _status.Course.normalized : _status.Transform.forward;
             for (int k = 0; k < lays; k++)
+            {
+                // A frame that owes several blocks spreads them back along the path it flew, newest at the ring.
+                float back = config.CreationOffset + (lays - 1 - k) * spacing;
                 for (int i = 0; i < BrittleStarHullForm.Points; i++)
-                    LayCreationPrism(channel, prisms.SpawnPrismType, i);
+                    LayCornerPrism(channel, prisms.SpawnPrismType, i, course, back);
+            }
         }
 
-        /// <summary>One pentagon block at ring point <paramref name="index"/>: faces along the course with its broad
-        /// side tangent to the ring, so the five read as a pentagon. MASS sizes it, read at lay time.</summary>
-        void LayCreationPrism(PrismEventChannelWithReturnSO channel, PrismType type, int index)
+        /// <summary>One block of corner <paramref name="index"/>'s trail, <paramref name="back"/> behind the corner along
+        /// the course, its length along the path and its broad side tangent to the ring. MASS sizes it, read at lay time.</summary>
+        void LayCornerPrism(PrismEventChannelWithReturnSO channel, PrismType type, int index, Vector3 course, float back)
         {
-            Vector3 pos = RingPoint(index, config.CreationRadiusScale);
-            Vector3 course = _status.Course.sqrMagnitude > 1e-6f ? _status.Course : _status.Transform.forward;
-            Vector3 radial = Vector3.ProjectOnPlane(pos - HullPosition, course);
+            Vector3 corner = RingPoint(index, config.CreationRadiusScale);
+            Vector3 pos = corner - course * back;
+            Vector3 radial = Vector3.ProjectOnPlane(corner - HullPosition, course);
             if (radial.sqrMagnitude < 1e-6f) radial = _status.Transform.up;
             if (!SafeLookRotation.TryGet(course, radial.normalized, out var rot, this, logError: false)) return;
 
@@ -401,18 +411,19 @@ namespace CosmicShore.Gameplay
             });
             if (!ret.SpawnedObject || !ret.SpawnedObject.TryGetComponent(out Prism prism)) return;
 
+            var trail = _cornerTrails[index];
             prism.TargetScale = scale;
             prism.ownerID = _status.PlayerName;
             prism.ChangeTeam(_status.Domain);
             prism.waitTime = config.CreationWaitTime;
-            _creationTrail.Add(prism);
-            prism.prismProperties.Index = (ushort)Mathf.Min(_creationTrail.TrailList.Count - 1, ushort.MaxValue);
+            trail.Add(prism);
+            prism.prismProperties.Index = (ushort)Mathf.Min(trail.TrailList.Count - 1, ushort.MaxValue);
             prism.Initialize(_status.PlayerName);
             // A Mass-scaled prism is a stated size: admit it past the pool's scale window AFTER Initialize (whose
             // reset re-clamps it), or a big one is trimmed with no error.
             prism.AdmitTargetScale(scale);
             prism.TargetScale = scale;
-            prism.AssignTrail(_creationTrail);   // AFTER Initialize: pool reuse clears trail membership
+            prism.AssignTrail(trail);   // AFTER Initialize: pool reuse clears trail membership
         }
 
         void ReleasePen()
@@ -427,37 +438,51 @@ namespace CosmicShore.Gameplay
 
         void UpdateFire(float dt)
         {
-            if (!_firing || !gun || !hull) return;
-            float interval = 1f / Mathf.Max(0.01f, config.FireRate);
-            _fireOwed = Mathf.Min(_fireOwed + dt, interval * 3f);   // a hitch never discharges as a burst (rule 17)
-            int volleys = Mathf.FloorToInt(_fireOwed / interval);
-            if (volleys <= 0) return;
-            _fireOwed -= volleys * interval;
-
-            bool destruction = IsOn(Mode.Destruction);
+            if (!gun || !hull) return;
             float time = config.ProjectileTime * Mathf.Max(0.1f, config.RangeMultiplier.EvaluateReplicated(_status));
-            float scale = config.ProjectileScale * Mathf.Max(0.1f, config.ProjectileScaleMultiplier.EvaluateReplicated(_status))
-                          * (destruction ? config.DestructionProjectileScale : 1f);
-            float spread = BrittleStarRules.Spread01(AimStick(), config.AimDeadzone) * config.MaxSpreadDegrees;
+            float charge = Mathf.Max(0.1f, config.ProjectileScaleMultiplier.EvaluateReplicated(_status));
             Vector3 inherit = _status.Course * _status.Speed;
             Vector3 up = _status.Transform.up;
 
-            for (int v = 0; v < volleys; v++)
+            // DESTRUCTION MODE: the five arms. Every turret fires on its own, unspread, at the Sparrow's full-auto
+            // cadence, for as long as the mode is on and the trail is running (the turn's own clock) - a stream that
+            // steady reads as five arms reaching ahead of the ring, the brittle star's.
+            var prisms = _status.VesselPrismController;
+            if (IsOn(Mode.Destruction) && prisms && prisms.SpawnerEnabled)
             {
-                if (destruction)
-                    for (int i = 0; i < BrittleStarHullForm.Points; i++) FireFrom(hull.Muzzle(i), scale, time, spread, inherit, up);
-                else
-                    // Ringless, only the cockpit's own gun is left.
-                    FireFrom(hull.Muzzle(_ring.Mounted ? _aimedPoint : -1), scale, time, spread, inherit, up);
+                float armInterval = 1f / Mathf.Max(1f, config.DestructionFireRate);
+                _armsOwed = Mathf.Min(_armsOwed + dt, armInterval * 4f);   // a hitch never discharges as a burst (rule 17)
+                int volleys = Mathf.FloorToInt(_armsOwed / armInterval);
+                _armsOwed -= volleys * armInterval;
+                float armScale = config.DestructionProjectileScale * charge;
+                for (int v = 0; v < volleys; v++)
+                    for (int i = 0; i < BrittleStarHullForm.Points; i++)
+                        FireFrom(hull.Muzzle(i), config.DestructionProjectileSpeed, armScale, time, 0f, inherit, up);
+                if (volleys > 0) PlayAt(config.FireEvent, HullPosition);
+                return;   // the arms ARE the guns while they run; RT adds nothing to them
             }
+            _armsOwed = 0f;
+
+            // RT: one stream, from the aimed turret or the cockpit gun, its spread opened by the stick.
+            if (!_firing) return;
+            float interval = 1f / Mathf.Max(0.01f, config.FireRate);
+            _fireOwed = Mathf.Min(_fireOwed + dt, interval * 3f);
+            int shots = Mathf.FloorToInt(_fireOwed / interval);
+            if (shots <= 0) return;
+            _fireOwed -= shots * interval;
+            float scale = config.ProjectileScale * charge;
+            float spread = BrittleStarRules.Spread01(AimStick(), config.AimDeadzone) * config.MaxSpreadDegrees;
+            for (int v = 0; v < shots; v++)
+                // Ringless, only the cockpit's own gun is left.
+                FireFrom(hull.Muzzle(_ring.Mounted ? _aimedPoint : -1), config.ProjectileSpeed, scale, time, spread, inherit, up);
             PlayAt(config.FireEvent, HullPosition);
         }
 
-        void FireFrom(Transform muzzle, float scale, float time, float spread, Vector3 inherit, Vector3 up)
+        void FireFrom(Transform muzzle, float speed, float scale, float time, float spread, Vector3 inherit, Vector3 up)
         {
             if (!muzzle) return;
             Vector3 aim = BrittleStarRules.Deflect(_status.Transform.forward, up, spread, _shotSerial++);
-            gun.FireGun(muzzle, config.ProjectileSpeed, inherit, scale, true, time, 0f, FiringPatterns.Default, 0,
+            gun.FireGun(muzzle, speed, inherit, scale, true, time, 0f, FiringPatterns.Default, 0,
                         detachAfterSpawn: true, stopOnFirstPrismImpact: true, aimDirection: aim);
         }
 

@@ -68,7 +68,7 @@ day after the channel it referred to had been deleted.
 | **Butterfly** | **4/4** | **4/4** | **4/4** | *(added 2026-09-22 — code + map only; its prefab is built by `FrogletTools ▸ Vessels ▸ Create Butterfly Vessel` and is NOT on the branch yet, so the tool cannot see it until that has been run)* |
 | **Thresher** | **4/4** | **4/4** | **4/4** | *(added 2026-10-08, measured on the branch — prototype; see `R_VesselActions/THRESHER.md`)* |
 | **Stoat** | **4/4** | **4/4** | **4/4** | *(own vessel 2026-10-13 — Space = Field Dipole (L5 **Accretion**, Theft fused in), Time = Pathfinder / Time Mode (L5 **Foresight**), Charge = **Ripple** (L5 **Siphon**), Mass = **Mass / Time Mode** on B (L5 **Armoured Wake**); `R_VesselActions/STOAT_DIPOLE.md` §1a–§1e, §5)* |
-| **Brittle Star** | **4/4** | **4/4** | **0/4** | *(added 2026-10-14 from the Notion class document — Charge = Ring Detonation, Mass = Creation Mode, Space = Destruction Mode + Fire, Time = Speed Mode; the document names no level 5, so all four are OPEN, proposals below; `R_VesselActions/BRITTLE_STAR.md`)* |
+| **Brittle Star** | **4/4** | **4/4** | **0/4** | *(added 2026-10-14 from the Notion class document — Charge = Ring Detonation, Mass = Creation Mode (a trail per ring corner), Space = Destruction Mode (the five arms) + Fire, Time = Speed Mode (×6); the document names no level 5, so all four are OPEN, proposals below; `R_VesselActions/BRITTLE_STAR.md`)* |
 
 Everything the tool still flags is a **design gap, not a wiring bug** — three rows: the Rhino's
 Charge and Space (Space has its L5, Breaker, but still no ability or scaling), and the Serpent's Mass. The full list, with what each one would cost to fill, is
@@ -598,8 +598,8 @@ slots are open (empty `UpgradeLabel`) — proposals, NOT implemented, for mark-u
 | Slot | Proposal A | Proposal B |
 |---|---|---|
 | Charge L5 | **Chain Reaction** — the plane wave sets off a second, smaller detonation where it ends | **Domain-Safe Ring** — the blast spares your own domain's mass (the Sparrow's Charge 5 shape) |
-| Mass L5 | **Shielded Pentagon** — Creation Mode's blocks arrive shielded | **Second Ring** — Creation lays two concentric pentagons |
-| Space L5 | **Piercing Rounds** — rounds pass through the first prism (the Sparrow's Space 5) | **Long Barrels** — Destruction Mode range ×1.25 |
+| Mass L5 | **Shielded Corners** — the corner trails arrive shielded | **Webbing** — every fifth block bridges to the next corner |
+| Space L5 | **Piercing Arms** — the arms' rounds pass through the first prism (the Sparrow's Space 5) | **Long Arms** — the arms' range ×1.25 |
 | Time L5 | **Afterburner Ring** — a thrown ring inherits Speed Mode's speed and fuses later | **Quick Build** — instant ring rebuild |
 
 ## 3. Implementation notes for approved rows

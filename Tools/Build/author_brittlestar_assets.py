@@ -256,14 +256,15 @@ def turret_blocks() -> str:
             f"    poolManager: {{fileID: {POOL_ID}}}\n" +
             mb(POOL_ID, TURRETS_GO, POOL_SCRIPT) +
             f"  prefab: {SPARROW_ROUND}\n"
-            # Five streams x 12/s x ~0.2-0.3 s of flight: ~20 alive at once, doubled for Overdrive's headroom.
-            "  defaultCapacity: 60\n"
-            "  maxSize: 240\n"
+            # The five arms: 5 streams x 90 rounds/s x 0.3-0.48 s of flight (Space 0..10) = 135-216 rounds alive at
+            # once, plus RT's stream; the Sparrow's pool is 90/320 for its two.
+            "  defaultCapacity: 240\n"
+            "  maxSize: 640\n"
             "  enableBufferMaintenance: 1\n"
-            "  bufferSizeTarget: 60\n"
-            "  maxInstantiateRate: 60\n"
-            "  baseInstantiateRate: 20\n"
-            "  maxAddsPerFrame: 12\n")
+            "  bufferSizeTarget: 240\n"
+            "  maxInstantiateRate: 240\n"
+            "  baseInstantiateRate: 90\n"
+            "  maxAddsPerFrame: 32\n")
 
 
 def bindings() -> str:
@@ -464,13 +465,14 @@ def config_asset() -> str:
     g = lambda guid: f"{{fileID: 11400000, guid: {guid}, type: 2}}"
     return (header(SCRIPT["BrittleStarConfigSO"], "BrittleStarConfig") +
             "  modeBlendSeconds: 0.35\n"
-            "  speedModeMultiplier:\n" + ef(1.6, 1.6, 2.2, 4, 1.2) +
+            "  speedModeMultiplier:\n" + ef(6, 6, 8, 4, 4) +
             "  speedModeSpacingFollow: 1\n"
-            "  creationBlockSize: {x: 3.2, y: 1.6, z: 5}\n"
+            "  creationBlockSize: {x: 2.5, y: 2.5, z: 4.5}\n"
             "  creationBlockScale:\n" + ef(1, 1, 1.8, 2, 0.6) +
-            "  creationSpacing: 7\n"
-            "  creationRadiusScale: 1.15\n"
-            "  creationMaxPerFrame: 2\n"
+            "  creationSpacing: 6\n"
+            "  creationRadiusScale: 1\n"
+            "  creationOffset: 2\n"
+            "  creationMaxPerFrame: 3\n"
             "  creationWaitTime: 0.6\n"
             "  fireRate: 12\n"
             "  projectileSpeed: 700\n"
@@ -478,7 +480,9 @@ def config_asset() -> str:
             "  rangeMultiplier:\n" + ef(1, 1, 1.6, 3, 0.7) +
             "  projectileScale: 1.6\n"
             "  projectileScaleMultiplier:\n" + ef(1, 1, 1.8, 1, 0.6) +
-            "  destructionProjectileScale: 1.5\n"
+            "  destructionFireRate: 90\n"
+            "  destructionProjectileSpeed: 1350\n"
+            "  destructionProjectileScale: 1\n"
             "  maxSpreadDegrees: 16\n"
             "  aimDeadzone: 0.25\n"
             "  ringTurnRate: 540\n"
@@ -619,19 +623,20 @@ MAP_ENTRIES = (
      "Charge is threat - one dial: both blasts' size x1 -> x1.6 at level 10 (BrittleStarConfigSO.blastScale), and the "
      "rounds' size x1 -> x1.8 with it (projectileScaleMultiplier), the Rolling Thunder persona's two halves of one idea."),
     (2, "Creation Mode", 7,
-     "B. The trail becomes a PENTAGON of blocks laid from the ring's five points, turning with the ring's firing "
-     "rotation, instead of the single small block from the cockpit. Needs the ring. Mass is volume - one dial: the "
-     "pentagon's blocks x1 -> x1.8 at level 10 (BrittleStarConfigSO.creationBlockScale)."),
+     "B. A trail behind EACH of the ring's five corners instead of the single small block from the cockpit - five "
+     "lines that turn with the ring's firing rotation. Needs the ring. Mass is volume - one dial: the corner trails' "
+     "blocks x1 -> x1.8 at level 10 (BrittleStarConfigSO.creationBlockScale)."),
     (3, "Destruction Mode", 8,
-     "X, and Fire on RT (held). Normal fire is one stream, from the turret the right stick points at (the ring turns "
-     "to bring it round) or the cockpit gun with the stick centred; Destruction Mode fires all five turrets with larger "
-     "rounds. The stick's deflection opens the spread. Friendly fire is on. A round on a rival hull is a scored bullet "
-     "hit (petals only). Space is reach - one dial: the rounds' flight time, and so their range, x1 -> x1.6 at level 10 "
-     "(BrittleStarConfigSO.rangeMultiplier)."),
+     "X. The FIVE ARMS: while the mode is on, every turret fires on its own - unspread, at the Sparrow's full-auto "
+     "cadence (90 rounds/s each, 1350 u/s) - a stream steady enough to read as five arms reaching ahead of the ring. "
+     "Outside it, Fire on RT (held) is one stream from the turret the right stick points at (the ring turns to bring it "
+     "round) or the cockpit gun with the stick centred, the stick's deflection opening the spread. Friendly fire is on. "
+     "A round on a rival hull is a scored bullet hit (petals only). Space is reach - one dial: the rounds' flight time, "
+     "and so their range, x1 -> x1.6 at level 10 (BrittleStarConfigSO.rangeMultiplier)."),
     (4, "Speed Mode", 6,
-     "A. Ignite every thruster: the hull's cruise speed x1.6, and the base trail's spacing stretched by the same ratio "
+     "A. Ignite every thruster: the hull's cruise speed x6, and the base trail's spacing stretched by the same ratio "
      "so production per second does not rise. Needs the ring. A crystal collected with a charge already stored is "
-     "OVERDRIVE - all three modes at once for 6 s. Time is rate - one dial: Speed Mode's multiplier x1.6 -> x2.2 at "
+     "OVERDRIVE - all three modes at once for 6 s. Time is rate - one dial: Speed Mode's multiplier x6 -> x8 at "
      "level 10 (BrittleStarConfigSO.speedModeMultiplier)."),
 )
 

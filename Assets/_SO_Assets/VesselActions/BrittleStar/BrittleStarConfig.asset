@@ -15,14 +15,14 @@ MonoBehaviour:
   modeBlendSeconds: 0.35
   speedModeMultiplier:
     Enabled: 1
-    Value: 1.6
-    Min: 1.6
-    Max: 2.2
+    Value: 6
+    Min: 6
+    Max: 8
     element: 4
     UseFloor: 1
-    Floor: 1.2
+    Floor: 4
   speedModeSpacingFollow: 1
-  creationBlockSize: {x: 3.2, y: 1.6, z: 5}
+  creationBlockSize: {x: 2.5, y: 2.5, z: 4.5}
   creationBlockScale:
     Enabled: 1
     Value: 1
@@ -31,9 +31,10 @@ MonoBehaviour:
     element: 2
     UseFloor: 1
     Floor: 0.6
-  creationSpacing: 7
-  creationRadiusScale: 1.15
-  creationMaxPerFrame: 2
+  creationSpacing: 6
+  creationRadiusScale: 1
+  creationOffset: 2
+  creationMaxPerFrame: 3
   creationWaitTime: 0.6
   fireRate: 12
   projectileSpeed: 700
@@ -55,7 +56,9 @@ MonoBehaviour:
     element: 1
     UseFloor: 1
     Floor: 0.6
-  destructionProjectileScale: 1.5
+  destructionFireRate: 90
+  destructionProjectileSpeed: 1350
+  destructionProjectileScale: 1
   maxSpreadDegrees: 16
   aimDeadzone: 0.25
   ringTurnRate: 540

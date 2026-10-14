@@ -14,7 +14,7 @@ namespace CosmicShore.Gameplay
     /// thrusters should only engage as the vessel banks. When speed mode is turned on, all of the thrusters should engage
     /// at once." The pod flames on the OUTSIDE of a turn light with the stick; Speed Mode (and Overdrive) light all five.</item>
     /// <item><b>The firing rotation.</b> The support ring turns about the nose axis to bring the aimed turret round
-    /// (<see cref="BrittleStarExecutor.RingPhase"/>), and the Creation Mode pentagon turns with it.</item>
+    /// (<see cref="BrittleStarExecutor.RingPhase"/>), and Creation Mode's five corner trails turn with it.</item>
     /// <item><b>The ring's life.</b> Thrown, it is gone from the hull; rebuilt, it blooms back out from the cockpit
     /// (<see cref="BrittleStarExecutor.RingPresence01"/>) — continuity of existence, never a pop.</item>
     /// </list>
@@ -50,7 +50,7 @@ namespace CosmicShore.Gameplay
         [Header("Hull")]
         [Tooltip("Degrees the drawn hull leans into a full-stick turn (fleet-scale puppetry: vessel rule 24).")]
         [SerializeField] float bankDegrees = 28f;
-        [Tooltip("Degrees per second the ring idles round when nothing aims it (Creation Mode only — the pentagon turns).")]
+        [Tooltip("Degrees per second the ring idles round when nothing aims it (Creation Mode only — the corner trails twist).")]
         [SerializeField] float creationIdleSpin = 0f;
 
         BrittleStarHullBuilder _hull;

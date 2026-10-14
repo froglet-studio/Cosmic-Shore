@@ -14,8 +14,8 @@ namespace CosmicShore.Gameplay
     /// <list type="bullet">
     /// <item><b>Charge — Ring Detonation</b> (Rolling Thunder: "larger projectile size and larger AOE on support ring
     /// detonation"): <see cref="BlastScale"/> and <see cref="ProjectileScaleMultiplier"/>.</item>
-    /// <item><b>Mass — Creation Mode</b> (Fabricator: "increased block size in creation mode"):
-    /// <see cref="CreationBlockScale"/>.</item>
+    /// <item><b>Mass — Creation Mode</b> (Fabricator: "increased block size in creation mode"): a trail behind each of
+    /// the ring's five corners, <see cref="CreationBlockScale"/>.</item>
     /// <item><b>Space — Destruction Mode &amp; Shooting</b> (Hunter: "increased shot range"):
     /// <see cref="RangeMultiplier"/>. The document's "nudge intensity" is retired with knockback itself — see below.</item>
     /// <item><b>Time — Speed Mode</b> (Zephyr: "increased movement speed bonus in speed mode"):
@@ -27,7 +27,7 @@ namespace CosmicShore.Gameplay
     /// vessel any more: every hit on an enemy hull is a SCORED combat hit that moves petals, through the fleet's
     /// reporters (the bullet's <c>VesselCombatHitByBullet</c>, the blast's prefab container) and, for the ring's
     /// plane wave, <see cref="CombatHitDrain.TryAdmit"/> directly. Destruction Mode's "disable mass production" is
-    /// carried by what it can still do: five streams of larger rounds take petals five times as fast.</para>
+    /// carried by what it can still do: five unbroken streams take petals five times as fast.</para>
     /// </summary>
     [CreateAssetMenu(fileName = "BrittleStarConfig", menuName = "ScriptableObjects/Vessel Actions/Brittle Star Config")]
     public sealed class BrittleStarConfigSO : ScriptableObject
@@ -36,28 +36,30 @@ namespace CosmicShore.Gameplay
         [Header("Modes")]
         [Tooltip("Seconds a mode takes to come fully on or off (thrusters, trail, the HUD's switch).")]
         [SerializeField, Min(0.01f)] float modeBlendSeconds = 0.35f;
-        [Tooltip("TIME: Speed Mode's multiplier on the hull's cruise speed. The Zephyr's element.")]
-        [SerializeField] ElementalFloat speedModeMultiplier = ElementalFloat.Multiplier(1.6f, 2.2f, Element.Time, 1.2f);
+        [Tooltip("TIME: Speed Mode's multiplier on the hull's cruise speed (x6 at rest - Garrett, 2026-10-14). The Zephyr's element.")]
+        [SerializeField] ElementalFloat speedModeMultiplier = ElementalFloat.Multiplier(6f, 8f, Element.Time, 4f);
         [Tooltip("1 = Speed Mode stretches the base trail's spacing by exactly the speed it adds, so the hull lays the " +
                  "same prisms per second whatever its speed (the document: 'so as not to increase production output').")]
         [SerializeField, Range(0f, 1f)] float speedModeSpacingFollow = 1f;
 
-        [Header("Creation Mode (the pentagon trail)")]
-        [Tooltip("Each pentagon block's size (x across, y thick, z along), at Mass 0.")]
-        [SerializeField] Vector3 creationBlockSize = new(3.2f, 1.6f, 5f);
-        [Tooltip("MASS: the pentagon blocks' size multiplier. The Fabricator's element.")]
+        [Header("Creation Mode (a trail behind each ring corner)")]
+        [Tooltip("Each corner trail's block size (x across, y thick, z along the path), at Mass 0.")]
+        [SerializeField] Vector3 creationBlockSize = new(2.5f, 2.5f, 4.5f);
+        [Tooltip("MASS: the corner trails' block size multiplier. The Fabricator's element.")]
         [SerializeField] ElementalFloat creationBlockScale = ElementalFloat.Multiplier(1f, 1.8f, Element.Mass, 0.6f);
-        [Tooltip("World units between pentagons along the path.")]
-        [SerializeField, Min(0.5f)] float creationSpacing = 7f;
-        [Tooltip("How far out from the hull's axis the pentagon's blocks sit, as a multiple of the ring's radius.")]
-        [SerializeField, Min(0.2f)] float creationRadiusScale = 1.15f;
-        [Tooltip("Most pentagons one frame may lay; excess owed distance is DROPPED so a hitch never dumps a burst.")]
-        [SerializeField, Range(1, 4)] int creationMaxPerFrame = 2;
+        [Tooltip("World units between blocks along each corner's trail (the base trail's wavelength).")]
+        [SerializeField, Min(0.5f)] float creationSpacing = 6f;
+        [Tooltip("How far out from the hull's axis the corner trails are laid, as a multiple of the ring's radius (1 = on the corners).")]
+        [SerializeField, Min(0.2f)] float creationRadiusScale = 1f;
+        [Tooltip("How far behind the ring the corner trails are laid, world units (the base trail's offset).")]
+        [SerializeField, Min(0f)] float creationOffset = 2f;
+        [Tooltip("Most blocks one corner may lay in a frame; excess owed distance is DROPPED so a hitch never dumps a burst.")]
+        [SerializeField, Range(1, 8)] int creationMaxPerFrame = 3;
         [Tooltip("Seconds a freshly laid block's collider stays off, so the hull clears it.")]
         [SerializeField, Min(0f)] float creationWaitTime = 0.6f;
 
         // ------------------------------------------------------------------ shooting
-        [Header("Shooting (the five turrets and the cockpit gun)")]
+        [Header("Shooting (RT: one turret, or the cockpit gun)")]
         [Tooltip("Rounds per second from EACH stream.")]
         [SerializeField, Min(0.5f)] float fireRate = 12f;
         [Tooltip("Muzzle speed, u/s. Range = speed × 2T/π (Projectile's ease-out, vessel rule 34).")]
@@ -70,8 +72,15 @@ namespace CosmicShore.Gameplay
         [SerializeField, Min(0.1f)] float projectileScale = 1.6f;
         [Tooltip("CHARGE: the rounds' size multiplier. Rolling Thunder's element.")]
         [SerializeField] ElementalFloat projectileScaleMultiplier = ElementalFloat.Multiplier(1f, 1.8f, Element.Charge, 0.6f);
-        [Tooltip("Destruction Mode's extra round size (the document: 'larger projectiles from the turrets').")]
-        [SerializeField, Min(1f)] float destructionProjectileScale = 1.5f;
+        [Header("Destruction Mode (the five arms)")]
+        [Tooltip("Rounds per second from EACH of the five turrets while Destruction Mode is on. It fires on its own, with " +
+                 "no spread, at the Sparrow's full-auto cadence: a stream this steady reads as five ARMS - the brittle star's.")]
+        [SerializeField, Min(1f)] float destructionFireRate = 90f;
+        [Tooltip("The arms' muzzle speed, u/s (the Sparrow's full-auto: 1350). With the tracer's own length, this and the " +
+                 "fire rate decide whether the stream reads as solid: spacing = speed / rate (15 u at 1350 / 90).")]
+        [SerializeField, Min(10f)] float destructionProjectileSpeed = 1350f;
+        [Tooltip("The arms' round size, as a multiple of the round prefab's own (the Sparrow's tracer at 1).")]
+        [SerializeField, Min(0.1f)] float destructionProjectileScale = 1f;
         [Tooltip("Widest cone the right stick (or a touch drag) opens, in degrees off each muzzle's axis.")]
         [SerializeField, Range(0f, 45f)] float maxSpreadDegrees = 16f;
         [Tooltip("Right-stick deflection below this aims nowhere: normal fire comes from the cockpit gun.")]
@@ -162,6 +171,9 @@ namespace CosmicShore.Gameplay
         public float ProjectileScale => projectileScale;
         public ElementalFloat ProjectileScaleMultiplier => projectileScaleMultiplier;
         public float DestructionProjectileScale => destructionProjectileScale;
+        public float DestructionFireRate => destructionFireRate;
+        public float DestructionProjectileSpeed => destructionProjectileSpeed;
+        public float CreationOffset => creationOffset;
         public float MaxSpreadDegrees => maxSpreadDegrees;
         public float AimDeadzone => aimDeadzone;
         public float RingTurnRate => ringTurnRate;
