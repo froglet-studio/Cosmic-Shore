@@ -135,6 +135,16 @@ namespace CosmicShore.Core
         async UniTaskVoid RunAuthFlowAsync(CancellationToken ct)
         {
             HideAllPanels();
+
+            // The browser Toybox signs in to nothing (WebToybox): no cached session, no username
+            // step, no Relay. Straight to the single-player local host and Menu_Main.
+            if (WebToybox.IsBuild)
+            {
+                ShowLoading(WebToyboxLoadingText);
+                NavigateToMainMenu();
+                return;
+            }
+
             ShowLoading(IsOffline ? "No connection. Starting offline…" : "Signing in…");
 
             try
@@ -757,7 +767,8 @@ namespace CosmicShore.Core
             // because "the player has no network" and "UGS is having a bad day" deserve the
             // attempts.
             bool offlinePreferred = _offlineMode != null && _offlineMode.OfflinePreferred;
-            var plan = PlanBootNetwork(offlinePreferred, IsOffline, _offlineMode?.IsOfflineSession ?? false);
+            var plan = PlanBootNetwork(offlinePreferred, IsOffline, _offlineMode?.IsOfflineSession ?? false,
+                                       webToybox: WebToybox.IsBuild);
             bool attemptRelay = plan.AttemptRelay;
 
             if (offlinePreferred)
@@ -842,12 +853,11 @@ namespace CosmicShore.Core
                 // Counted: an unwanted offline start is the failure the request policy exists to prevent
                 // (Docs/MultiplayerArchitecture/REVIEW_INVITE_AND_RESILIENCE.md, B24).
                 if (plan.UnwantedFallback) UgsRequestTelemetry.Count(UgsRequestCounter.OfflineFallback);
+                string startingText = WebToybox.IsBuild ? WebToyboxLoadingText : "Starting offline…";
                 if (plan.UnwantedFallback)
                     await ShowOfflineNoticeAsync(ct);   // explains an UNWANTED offline start
-                else
-                    ShowLoading("Starting offline…");
 
-                ShowLoading("Starting offline…");
+                ShowLoading(startingText);
 
                 bool offlineReady;
                 try
@@ -929,11 +939,19 @@ namespace CosmicShore.Core
         /// make), when the device reports no network (they cannot succeed), or when an offline
         /// session is already live. A REACHABLE device whose UGS calls merely fail still walks the
         /// attempts - "no network" and "UGS is having a bad day" are different failures.
+        ///
+        /// <para>The browser Toybox (<paramref name="webToybox"/>) is offline by design: it never
+        /// attempts Relay and its local session is not a fallback, so it is neither counted nor
+        /// explained on screen.</para>
         /// </summary>
-        internal static BootNetworkPlan PlanBootNetwork(bool offlinePreferred, bool deviceOffline, bool offlineSessionLive) =>
+        internal static BootNetworkPlan PlanBootNetwork(bool offlinePreferred, bool deviceOffline, bool offlineSessionLive,
+                                                        bool webToybox = false) =>
             new BootNetworkPlan(
-                attemptRelay: !offlinePreferred && !deviceOffline && !offlineSessionLive,
-                unwantedFallback: !offlinePreferred);
+                attemptRelay: !webToybox && !offlinePreferred && !deviceOffline && !offlineSessionLive,
+                unwantedFallback: !webToybox && !offlinePreferred);
+
+        /// <summary>The loading line the browser Toybox shows while its local session starts.</summary>
+        const string WebToyboxLoadingText = "Starting the Toybox…";
 
         /// <summary>
         /// Resolves when <see cref="HostConnectionDataSO.OnHostConnectionEstablished"/> fires
