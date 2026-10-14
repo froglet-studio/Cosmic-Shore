@@ -8402,6 +8402,22 @@ PrefabInstance:
       propertyPath: m_fontColor32.rgba
       value: 4285554524
       objectReference: {fileID: 0}
+    - target: {fileID: 603778305782617562, guid: 38b791f47d5fe28562007c79421bfb37, type: 3}
+      propertyPath: m_SizeDelta.x
+      value: -23
+      objectReference: {fileID: 0}
+    - target: {fileID: 603778305782617562, guid: 38b791f47d5fe28562007c79421bfb37, type: 3}
+      propertyPath: m_AnchoredPosition.x
+      value: 11.5
+      objectReference: {fileID: 0}
+    - target: {fileID: 914354293841891569, guid: 38b791f47d5fe28562007c79421bfb37, type: 3}
+      propertyPath: m_IsActive
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 1000470681601717195, guid: 38b791f47d5fe28562007c79421bfb37, type: 3}
+      propertyPath: hoverToken
+      value: 7
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []

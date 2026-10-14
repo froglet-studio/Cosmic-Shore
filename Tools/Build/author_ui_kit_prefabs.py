@@ -462,6 +462,21 @@ def themed(token, alpha=1.0):
                                 f"  alpha: {f32(alpha)}\n")
 
 
+def hover_tint(token, text_keys, graphic_keys):
+    """KitHoverTint; targets are `node#comp` keys inside the same file."""
+    def body(ctx, go):
+        texts = [ctx.c(*k.split("#")) for k in text_keys]
+        graphics = [ctx.c(*k.split("#")) for k in graphic_keys]
+        return mono(go, kit_script("KitHoverTint"),
+                    f"  theme: {ref(11400000, THEME, 2)}\n  hoverToken: {TOKEN_INDEX[token]}\n"
+                    + refs_list("texts", texts) + refs_list("graphics", graphics))
+    return body
+
+
+# A locked top-nav tab insets its word by the lock glyph's visible width plus the 8-unit gap.
+LOCK_INSET = 23
+
+
 def layout_element(ignore=False, pw=-1, ph=-1):
     return lambda ctx, go: mono(go, LAYOUT_ELEMENT,
                                 f"  m_IgnoreLayout: {1 if ignore else 0}\n  m_MinWidth: -1\n  m_MinHeight: -1\n"
@@ -636,9 +651,19 @@ def build_hex_tile():
 
 def build_top_nav_tab():
     root = Node("root", "KitTopNavTab", rect(size=(140, 84)))
+    # The whole tab is the hit area (labels do not raycast): an invisible Image, culled by its
+    # CanvasRenderer, so the host's EventTrigger and the hover lift answer anywhere on the tab.
+    root.add("cr", 222, canvas_renderer()).add("img", 114, image((1.0, 1.0, 1.0, 0.0), raycast=True)) \
+        .add("hover", 114, hover_tint("TextLight", ["InactiveImage#kt"], []))
     inactive = root.child(Node("InactiveImage", "InactiveImage", STRETCH))
     inactive.add("cr", 222, canvas_renderer()).add("tmp", 114, tmp("TAB", "Button", tok("NeutralLightest"))) \
         .add("kt", 114, kit_text("Button", "NeutralLightest"))
+    # The locked look, off by default. A host's MenuAvailabilityView shows it as its lockedOverlay;
+    # the host also insets InactiveImage by LOCK_INSET so the word clears the glyph. The glyph's
+    # visible box is 59% x 64% of the sprite, so a 25-unit rect draws it about 15 x 16, as the board.
+    lock = root.child(Node("Lock", "Lock", rect((0, 0.5), None, (7.5, 0), (25, 25)), active=False))
+    lock.add("cr", 222, canvas_renderer()).add("img", 114, image(tok("InactiveLight"), chrome_sprite("chrome_lock"), preserve=True)) \
+        .add("th", 114, themed("InactiveLight"))
     active = root.child(Node("ActiveImage", "ActiveImage", STRETCH, active=False))
     # The label sizes itself to its text so the 2px underline beneath it spans the word, not the tab.
     alab = active.child(Node("ActiveImage/Label", "Label",
@@ -956,7 +981,11 @@ def build_scene():
                                          ("InactiveImage#tmp", "m_fontColor.r", tok("InactiveLight")[0], None),
                                          ("InactiveImage#tmp", "m_fontColor.g", tok("InactiveLight")[1], None),
                                          ("InactiveImage#tmp", "m_fontColor.b", tok("InactiveLight")[2], None),
-                                         ("InactiveImage#tmp", "m_fontColor32.rgba", col32(tok("InactiveLight")), None)]
+                                         ("InactiveImage#tmp", "m_fontColor32.rgba", col32(tok("InactiveLight")), None),
+                                         ("InactiveImage#rt", "m_SizeDelta.x", -LOCK_INSET, None),
+                                         ("InactiveImage#rt", "m_AnchoredPosition.x", LOCK_INSET / 2, None),
+                                         ("Lock#go", "m_IsActive", 1, None),
+                                         ("root#hover", "hoverToken", TOKEN_INDEX["NeutralLightest"], None)]
                                         if state == "locked" else [])))
         x += 140
     nav.children.append(Instance("KeyR", "KitKeycap", prefab_guid("KitKeycap"), "RT",
