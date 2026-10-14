@@ -32,6 +32,8 @@
     "studio-ide.js",
     "ai_race_panel.js",
     "studio-domains.js",
-    "studio-theme.js"
+    "studio-theme.js",
+    "studio-game.js",
+    "studio-new.js"
   ]
 }
