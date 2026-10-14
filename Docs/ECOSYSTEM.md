@@ -11505,7 +11505,7 @@ A heart is collected through `ElementalCrystalImpactor` + `ImpactCollider` on th
 standalone elemental prefabs in `Resources/ElementalCrystalSet` carry **neither** (`CrystalSpace`
 is `Crystal` + a trigger `SphereCollider` + audio), and lifeform prefabs add the pair as inspector
 overrides. Swept 2026-10-14: **six** lifeform prefabs never did — QuadFish, Clawfish, Nerve, Pine,
-Wall and oldWall flora (the other 26 do).
+Wall and oldWall flora (the other 25 lifeform hearts do).
 
 The skimmer's VACUUM (`SkimmerImpactor.OnTriggerStay`) only needs the `Crystal` on the trigger, so
 once death cleared `IsEmbedded` the heart was dragged after the vessel for as long as it stayed in
@@ -11516,7 +11516,7 @@ authored crystal of the wrong element with a set prefab and wires the pair onto 
 QuadFish authors a Space crystal. Charge, Mass and Time QuadFish were always collectable.
 
 **Fix:** both `EnsureElementalCrystal` overloads now run `WireCollection` on a crystal they KEEP.
-It is a no-op when an impactor is already present, so the 26 authored prefabs are unchanged. The
+It is a no-op when an impactor is already present, so the 25 prefabs that author it are unchanged. The
 same call makes the Space QuadFish's heart reachable by the crystal-joust chain, which also goes
 through the impactor. Authoring the pair on the six prefabs is still the clean shape; the runtime
 wiring is what makes "every lifeform drops a collectable crystal" hold regardless.
