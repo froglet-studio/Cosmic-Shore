@@ -102,6 +102,46 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
      waiting Time crystal: 1 → 0.00 R, 0.75 → 0.03 R, 0.6 → 0.17 R. 0.6 is the highest that clears it.
    - `socketSpacing` and `socketSeconds` for the others.
 
+### 🔴 Thresher: no trail while the crosshair is up; every aimed launch boosted ×4.8 (`cece/relaxed-dijkstra-g6ix3x`, 2026-10-13) — NOT EDITOR-VERIFIED
+
+**What landed** (`R_VesselActions/THRESHER.md` §5a, §9; `Controller/Arcade/THRESHERTIME.md` §3):
+- **Trail off under the crosshair.** `ThresherExecutor.LaunchViewUp` (the camera's old engage/release
+  rule, moved into `StepChain` so every peer simulates it) holds the hull's trail pen up
+  (`VesselPrismController.SetSpawnerPaused`, edges only) while the launch view is up. The owner's camera
+  now switches on the same edges, so crosshair on == trail off.
+- **Boost every aimed launch, not the timing.** `ThresherChainSolver.ArmLaunch(aim, boost)`: any launch
+  out of the crosshair view leaves `launchBoost` × the orbit's speed however long it waited. Time L5
+  "Perfect Release" (×1.6 inside a 0.25 s window) and its gate are retired; Time L5 is an OPEN slot.
+- **Tripled:** `perfectBoost` 1.6 → `launchBoost` **4.8** (`[FormerlySerializedAs]`; `perfectWindowSeconds`
+  → `launchCueSeconds`, now only the crosshair's lime cue).
+- **Thresher Time:** `maxPlausibleSpeed` 1600 → **4600** (2× the 2 299 u/s boosted ceiling sling). The
+  ladder is NOT re-cut (a design call, THRESHERTIME.md §3).
+
+**Proven headless:** the chain harness compiles and runs the shipped solver + suite (66/66; the new
+`Launch_EveryAimedLaunchTakesTheBoost_HoweverLongItWaited` goes red with the boost removed); the Plant
+Lab parity gate passes (default boost 1 is bit-identical); `author_thresher_time_assets.py --check` OK.
+The executor's trail/camera change is compiled by `unity_refcompile`, never run.
+
+**Verify in editor** (Toy Box > Vessel Changer > Thresher):
+1. Fly with a visible trail. Plant (LT full) and wind up (RT full) until the camera glides into the
+   launch view: the crosshair appears and from that moment **no new trail prisms** appear round the orbit.
+2. Release LT: the ship launches through the crosshair point and **visibly much faster** than the orbit
+   (×4.8); the trail resumes on the launch frame.
+3. Release LT a moment AFTER the lime flash (so the ship waits most of a lap): the launch is just as fast.
+4. Let a spin decay without launching (ease RT): the camera returns and the trail resumes.
+5. Plant without reaching the launch view (a slow orbit) and release: plain release at orbit speed,
+   trail never paused.
+6. Paint toy / a cell that pauses spawners: after a launch view the trail pen is not left stuck either way.
+7. MPPM two clients: the guest's copy of the host's Thresher also stops laying trail during the launch
+   view (no ring of prisms on one screen only).
+8. Thresher Time: a boosted launch credits the gates it threads (no "respawn" rejection).
+
+**First-pass tuning:** `ThresherConfig.asset` → `launchBoost` 4.8 (739 u/s off the 154 u/s spin cap; 2 299
+off the 479 sling ceiling). If it feels absurd at the ceiling, a cap on the boosted speed is the lever,
+not the multiplier.
+
+---
+
 ### 🔴 Converter: the crystals arrive at the camera's height, not from above it (`cece/sharp-fermi-yw38ky`, 2026-10-13) — NOT EDITOR-VERIFIED
 
 `/verify-unity` was not run (no Unity Editor or `unity` CLI). What ran:

@@ -75,8 +75,8 @@ No new ability, no cell of its own, no new scoring metric, and **no circuit gene
   Thresher's settings exactly as `GrizzlyTimeCourse` supplies the Grizzly's; the solver is untouched.
 - `RaceGateObjectiveProvider` (registered in `MiniGameHUD.CreateObjectiveProviderForGameMode`).
 - The Thresher's shipped kit, untouched — **no vessel file was edited for this mode**. The Plant is the
-  sling, the Winch is the wind-in, the ball smashes whatever a rival lays across the line, and Time L5
-  "Perfect Release" (×1.6, `perfectBoost`) is above the ladder (§3).
+  sling, the Winch is the wind-in, the ball smashes whatever a rival lays across the line, and the
+  aimed launch's boost (×4.8, `launchBoost`, every crosshair launch since 2026-10-13) is above the ladder (§3).
 
 ## 3. The cut — Grizzly Time's octagon, against the 229 u circle
 
@@ -100,9 +100,14 @@ Time's, re-measured against the Thresher's curve with the shipped solver compile
 - **Presentation caps** (50 / 70 / 72 / 76°) each sit over the level's measured worst half-turn
   (43.5 / 67.2 / 68.2 / 73.3°). `RadialSwing` 0.42 and the lateral swing are Headlong's.
 
-**Above the ladder, on purpose:** Time L5 "Perfect Release" multiplies an aimed, well-timed release by
-1.6, so a perfect ceiling sling leaves at **766 u/s** (`PerfectSlingSpeed`) on a 366 u circle — every
-corner of every level then costs some of it. The skim boost (a rival's trail, ×5 on the 110 u/s
+**Above the ladder — and now outrunning it (2026-10-13).** Every aimed launch (out of the crosshair
+view, THRESHER.md §5a) leaves at `launchBoost` **×4.8** the orbit's speed, whatever its timing, so a
+ceiling sling leaves at **2 299 u/s** (`BoostedSlingSpeed`) on a ~1 100 u circle — wider than the
+1 080 u course shell, so a boosted launch is thrown wide of every corner and spent on the leg, while a
+spin-cap launch (154 u/s orbit) leaves at 739 u/s on a ~350 u circle. Until that date the boost was
+Time L5's ×1.6 "Perfect Release" on a 0.25 s timing window (766 u/s ceiling, 366 u circle), which the
+ladder could absorb. **The ladder was not re-cut for the change** — whether the race keeps the boost,
+caps it, or is re-cut is a design call (THRESHER.md §9); only the detection clamp moved. The skim boost (a rival's trail, ×5 on the 110 u/s
 throttle span, 565 u/s) is the other channel past cruise; it depends on rivals, so nothing is cut
 against it. Time (`spinMultiplier` ×1 → ×1.75) raises the spin-up's own cap (154 → 270 u/s) and
 rate, so it reaches the ceiling sooner, not higher.
@@ -139,9 +144,9 @@ human who slings will beat it.
 | rings per lap / base circle | `ThresherTimeCourse.GatesPerLap` / `.BaseRadius` | **8** / **800** |
 | corner profile, spread, floor, mouth, presentation | `ThresherTimeCourse.ForIntensity` | §3 |
 | AI commit / lead / through | scene → `GateRaceController` | 135 / 150 / 100 |
-| detection clamp | scene → `maxPlausibleSpeed` | **1600** (2× the 766 u/s perfect sling) |
+| detection clamp | scene → `maxPlausibleSpeed` | **4600** (2× the 2 299 u/s boosted sling; 1600 before 2026-10-13) |
 | sling ceiling | `ThresherConfig.asset` → `dials.maxBall` × `gameCruise` / `sandboxCruise` | 2600 × 70 / 380 = 479 u/s |
-| spin-up cap / Perfect Release | `ThresherConfig.asset` → `dials.lockMax`, `perfectBoost` | 2.2 (× 70 = 154 u/s); 1.6 |
+| spin-up cap / aimed-launch boost | `ThresherConfig.asset` → `dials.lockMax`, `launchBoost` | 2.2 (× 70 = 154 u/s); 4.8 |
 | cruise / turn | `Thresher.prefab` → `DefaultMinimumSpeed` + `DefaultThrottleScaler`; `Pitch/YawScaler`, `RotationThrottleScaler` | 15 + 110; 120, 0 |
 | sling bleed rate | `VesselTransformer.LERP_AMOUNT` (C# const) | 1.5/s |
 | comeback rate | `ArcadeGameThresherTime.asset` | **0.3** (6 gates behind buys 1.8 levels) |
@@ -162,7 +167,7 @@ rule, the toast config (`GameToastConfig_ThresherTime`, Redline's race beats, re
 `GameToastLibrary`), the preview (`ModePreview_ThresherTime`, registered in `Resources/ModePreviewLibrary`), the
 build-scene row, the always-unlocked row, both rosters (`OrganicRematchGames` + `ArcadeGames`) and the
 end-condition target, and asserts the comeback rate, the lap arithmetic, the constants it shares with
-the C#, the HUD provider row, the detection clamp against the perfect sling, the AI approach against
+the C#, the HUD provider row, the detection clamp against the boosted sling, the AI approach against
 the cruise circle, the AI prefab state, the sling ceiling's dials and the toybox roster. `--check` diffs
 every file. `arcade_mode_lib.VESSELS` gained the Thresher.
 
