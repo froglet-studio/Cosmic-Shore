@@ -1,2 +1,4 @@
 bin/
 obj/
+# The root .gitignore drops *.csproj (Unity regenerates its own); this one is hand-written.
+!PartyStandIns.csproj
