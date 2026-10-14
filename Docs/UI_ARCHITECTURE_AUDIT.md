@@ -925,7 +925,9 @@ so every input that worked before is unchanged. `PlayerProfileTests` holds it.
 - Sort: favorited first, then alphabetical.
 - Card states: favorite star, **locked** (from the quest chain — lock overlay, grey tint, non-interactable), ~~call-to-action badge slot (never lit — §2.13)~~ **removed with the CTA surface, §2.13.1**.
 - Tap an unlocked card → `ArcadeGameConfigureModal` (§2.10.1). This is the primary path into a match.
-- A D-pad navigation grid (`ArcadeDPadNav`) covers the cards for gamepad.
+- A D-pad navigation grid (`ArcadeDPadNav`) covered the cards for gamepad. **Retired 2026-10-14**
+  (`Docs/MENU_REDESIGN_B.md` §12): it did nothing while its window was open and drove a hidden grid
+  while it was closed; the EventSystem navigates the cards now.
 
 **Loadout view — quick play with saved configs:**
 - **Four saved loadout slots** (persisted by `LoadoutSystem`); selecting one loads its four values.

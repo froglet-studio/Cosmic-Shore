@@ -128,6 +128,11 @@ planted unknown field on `KitGameCard` was caught.
    the guest's seat, the guest's seat reads "PILOT", and LEAVE PARTY appears. Pick a card each and
    check the pick avatars and your own card's Control Active border. Kick and leave behave as before.
 6. **Offline session:** the party panel is hidden and the explore area takes the full width.
+6b. **`ArcadeDPadNav` retired (all four windows):** with a gamepad connected, on HOME press the d-pad
+   and A with no window open: nothing in the (hidden) Arcade, Arena, Mission or Toy Box grid is
+   selected or opened, and HOME's own focus moves normally. Inside the Arena / Mission / Toy Box
+   windows the pad still moves between cards (automatic navigation, as before). Expect no
+   missing-script warning anywhere (the script and every component are gone).
 7. Narrow the Game view to 16:10 (1728x1080) and 4:3: the party panel stays 420 wide; cards shrink
    and long titles wrap to two lines; nothing overlaps.
 

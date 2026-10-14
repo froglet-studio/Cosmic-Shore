@@ -164,6 +164,14 @@ The order follows the brief's suggestion, adjusted to what the inventory found:
 | 10 | **Closed surfaces** | Port, Store, the Episodes panel and purchase confirmation. See decision D4. |
 | 11 | **Toasts** | |
 
+**Revised 2026-10-14 (the user's direction, after item 3 was built):**
+- **Mockups first, then the builds, then one editor pass.** Every remaining item's mockup goes on the
+  canvas before any of them is built; the builds follow in order; the in-editor testing of items 0-3
+  and of everything after happens once, at the very end. Until then a built item stays at `Built`.
+- **Home goes last.** The sequence is now 4 (game configure), 5 (Profile), 7 (Ark), 8 (Arena, Toy Box,
+  Mission), 9 (Settings, Credits), 10 (closed surfaces), 11 (toasts), then 6 (Home). The item numbers
+  stay as identifiers.
+
 ---
 
 ## 4. Reusable components (item 0)
@@ -290,8 +298,8 @@ Found while mapping the Hangar for item 2 (2026-10-14):
 - **Arcade (found mapping item 3):**
   - **The arcade grid is unreachable by gamepad past row 3.** `ArcadeDPadNav` returns while any
     modal is open, and the Arcade is a modal; its `ScrollToButton` is commented out, so the scroll
-    never follows focus either. **Fixed at item 3** (`KitScrollIntoView`); `ArcadeDPadNav` itself
-    is still attached and misbehaves while the window is closed (section 12).
+    never follows focus either. **Fixed at item 3** (`KitScrollIntoView`), and `ArcadeDPadNav` is
+    retired from all four windows (section 12).
   - **B with the friends overlay open closes the whole modal and leaves the overlay open** for the
     next visit. **Gone at item 3:** the lists live in the party panel, there is no overlay.
   - **The two close paths differ:** Back deactivates the object and jumps HOME; B animates out.
@@ -505,7 +513,7 @@ committed scene.
 ModalWindows/ArcadeScreenModal   [FlipUI, CanvasGroup, ArcadeScreen, ModalWindowManager, Animator, OfflineUIGate]
 |                                now stretches the whole safe area (it was inset 171 for the old nav)
 '- Arcade_Panel                  its old gradient Image is switched off; OfflineUIGate -> PartyPanel
-   '- Explore                    ArcadeExploreView + ArcadeDPadNav KEPT (four scene objects name the view)
+   '- Explore                    ArcadeExploreView KEPT (four scene objects name the view)
       '- ArcadeView              (prefab instance)
          |- NavDim               SurfaceBlack 0.75 over the 84-unit nav band
          |- Backdrop             SurfaceBlack below it
@@ -560,12 +568,17 @@ Not verified (no Unity editor in a cloud session): the editor look and layout at
 TMP widths, the gamepad flow, the party flows with a second client, and the Game Mode Prefab Kit
 Validate run. Steps are in `Docs/UNITY_VERIFICATION_CHECKLIST.md`.
 
+**`ArcadeDPadNav` is retired (approved 2026-10-14).** It returned while any modal was open - every
+moment its window was visible - and polled the pad directly the rest of the time: with a gamepad
+connected it `Select()`ed the hidden grid's first card at Start, moved a hidden selection on every
+d-pad press on HOME, and `buttonSouth` invoked that hidden card. `Tools/Build/retire_arcade_dpad_nav.py`
+(`--check`, `--self-test`) removed the component from the Arcade, Arena, Mission and Toy Box windows
+(and the dead `MIgration_Prefabs (DELETE LATER)/ArcadeScreen.prefab` copy) and the field from the
+three `ArcadeExploreView`s; `Assets/ArcadeDPadNav.cs` is deleted. In-window navigation is the
+EventSystem's; the Arcade's cards also scroll into view (`KitScrollIntoView`). The Arena, Mission and
+Toy Box grids are still legacy until item 8: the pad reaches their cards through automatic
+navigation, as it already did while those windows were open, but nothing scrolls their grids yet.
+
 Found while building item 3 (not fixed here):
-- **`ArcadeDPadNav` acts while the Arcade is CLOSED.** It returns while any modal is open, which is
-  every moment the Arcade is visible, and polls the pad directly the rest of the time: with a
-  gamepad connected it `Select()`s the hidden grid's first card at Start, moves a hidden selection on
-  every d-pad press on HOME, and `buttonSouth` invokes that hidden card. The Arena, Toy Box and Mission
-  carry their own copies. Recommendation: remove the component from all four windows (and null-guard
-  `ArcadeExploreView`'s three calls); the EventSystem plus `KitScrollIntoView` now does its job.
 - **`author_elemental_converter.py --check` fails at the branch base too** ("the document count moved
   by something other than +3 converter / -1 gate"): a spent one-shot gate, not this item's.

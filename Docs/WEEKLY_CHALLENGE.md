@@ -931,10 +931,11 @@ Fixed three ways, deliberately overlapping:
    relying on an attribute a later cleanup might remove.
 3. The card made **genuinely optional** in `PopulateGameSelectionList`. It already was eight lines
    later (`if (WeeklyChallengeCard) …Bind(this)`), so optional was the intent all along and the
-   unguarded line was simply the bug. It now takes the grid's first dpad row when it is present and
-   **no row at all** when it is not — an empty row is not equivalent, because `ArcadeDPadNav` clamps
-   a column into `row.Count - 1`, which is `-1` on an empty row and throws the moment the dpad walks
-   into it. The game rows are consequently **counted**, not `i + 1`.
+   unguarded line was simply the bug. It took the grid's first dpad row when it was present and
+   **no row at all** when it was not — an empty row is not equivalent, because `ArcadeDPadNav` clamped
+   a column into `row.Count - 1`, which is `-1` on an empty row and threw the moment the dpad walked
+   into it. (`ArcadeDPadNav` was retired on 2026-10-14, `Docs/MENU_REDESIGN_B.md` §12; the EventSystem
+   navigates the grid now, so the row bookkeeping went with it.)
 
 **General:** *renaming a serialized field is a data migration, not a refactor* — `FormerlySerializedAs`
 is the migration, and a `git mv` of the `.cs` + `.meta` protects only the guid, never the field

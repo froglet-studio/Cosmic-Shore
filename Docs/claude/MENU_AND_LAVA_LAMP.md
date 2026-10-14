@@ -113,8 +113,8 @@ stretches the safe area and holds one `ArcadeView` instance under `Arcade_Panel/
 by `Tools/Build/author_menu_arcade.py`): a dimmed nav band, the header with Back + B keycap
 (`ModalWindowCloseButton`, the same close as gamepad B), the PARTY panel on the left and the explore
 scroll - weekly challenge and Maelstrom feature cards, ALL GAMES, 28 `ArcadeGameCard`s
-(`KitGameCard`, a `GameCard` on a `KitTile`). `ArcadeExploreView` and `ArcadeDPadNav` stay on the
-scene's `Explore`; cards are the scroll's Selectables and `KitScrollIntoView` keeps the focused one
+(`KitGameCard`, a `GameCard` on a `KitTile`). `ArcadeExploreView` stays on the scene's `Explore`
+(`ArcadeDPadNav` is retired from every window); cards are the scroll's Selectables and `KitScrollIntoView` keeps the focused one
 visible. Sibling order is focus order: the cards come before the party panel and Back comes last.
 The party panel is `Main Menu Screens/Party/PartyPanel.prefab`: `ArcadeLobbyList` +
 `FriendsListPanel` (embedded) on one root, four `KitPartySlot` seats, Leave, then INVITES and ONLINE
