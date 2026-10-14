@@ -195,7 +195,7 @@
    "prisms": 464,
    "tier": "RUN",
    "track": "SkimRaceWaypointTrack",
-   "triangles": 13156
+   "triangles": 11876
   },
   "Slingshot": {
    "cell": "Skim Race Cell Config",
@@ -283,5 +283,5 @@
   768,
   510
  ],
- "source_hash": "dcbe27affae40dd4e964092cb98350539fe214daa2af38ae0698d33757ab3058"
+ "source_hash": "38207cfa46b7dc05411be1a044f9e2c757bda2740d2cae5bd210db1508edcf5f"
 }

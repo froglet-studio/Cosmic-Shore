@@ -1071,10 +1071,13 @@ def accents(s, layers, stage, cam, pal, R, card_path):
         # domain, standing square across the track at the crystal's anchor + jitter. The harness
         # stands them on the track's own MARKER blocks (the waypoints carrying a crystal anchor),
         # facing along each block's pose - the track tangent - the way the COURSE cards' gates
-        # face along their course. Jitter is the scene CrystalManager's anchorJitterRadius.
+        # face along their course. Jitter is the scene CrystalManager's anchorJitterRadius. The
+        # ring is drawn at a GLYPH scale (x3 the real 24 u mouth) - true size is a 5-8 px speck
+        # at card size; the position, facing and jitter stay true.
         track = next(l for l in layers if l["kind"] == "generator")
+        mouth = 24.0 * SKIMRACE_RING_GLYPH
         track["markerRings"] = {
-            "pick": SKIMRACE_RING_ANCHORS, "R": 24.0, "r": 24.0 * 0.12, "seed": stable_seed(s + "/rings"),
+            "pick": SKIMRACE_RING_ANCHORS, "R": mouth, "r": mouth * 0.12, "seed": stable_seed(s + "/rings"),
             "jitter": crystal_jitter(card_path),
             "styles": [{"domain": d, "tier": SUPER, "emissive": domain_signal(pal, d, 0.9)}
                        for d in (JADE, RUBY, GOLD)]}
@@ -1111,9 +1114,11 @@ def accents(s, layers, stage, cam, pal, R, card_path):
 
 
 # Which of the intensity-2 track's ten crystal anchors (marker blocks, in lap order) carry a staged
-# ring: the handful inside the shot (5 sits on the frame's corner, 6-9 fall outside it), painted
-# Jade / Ruby / Gold in turn - one crystal per pilot.
-SKIMRACE_RING_ANCHORS = [0, 1, 2, 3, 4]
+# ring: the handful inside the shot (5 sits on the frame's corner, 6-9 fall outside it; 1 is
+# clipped by the bottom edge and, at glyph scale, overlaps 2), painted Jade / Ruby / Gold in turn
+# - one crystal per pilot.
+SKIMRACE_RING_ANCHORS = [0, 2, 3, 4]
+SKIMRACE_RING_GLYPH = 3.0   # drawn mouth / real RaceGateRing mouth (24 u)
 
 
 def crystal_jitter(card_path):
