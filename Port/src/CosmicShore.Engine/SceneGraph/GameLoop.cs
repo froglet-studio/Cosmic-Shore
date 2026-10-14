@@ -71,6 +71,7 @@ namespace CosmicShore.Engine
                     "A GameLoop already exists. The engine runs exactly one loop per process — dispose the old one first.");
             Current = this;
             Time.Reset();
+            Application.ResetQuit();
             Physics.ResetSettings();
             // Fresh-world reset for static UI state (same rationale as Time.Reset):
             // loop disposal skips OnDisable, so the old world's registrations and

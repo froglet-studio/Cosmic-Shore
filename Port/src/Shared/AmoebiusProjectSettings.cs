@@ -1,3 +1,4 @@
+#nullable enable
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -13,9 +14,11 @@ namespace Amoebius
     /// <c>ProjectSettings/</c>. Every field is an OVERRIDE: null (or an absent file) inherits what
     /// Unity authors, so a fresh branch behaves exactly like the Unity project.
     ///
-    /// Compiled into the build tool, the player and the launcher (linked source, no dependencies).
+    /// Linked source (no dependencies) in cs-build, Content (whose copy the player reads) and the
+    /// launcher. Internal, like every src/Shared type: public copies would collide (CS0433) in a
+    /// project that references two of them, as the engine tests reference Content and cs-build.
     /// </summary>
-    public sealed class AmoebiusProjectSettings
+    internal sealed class AmoebiusProjectSettings
     {
         public const string RelativePath = "Port/ProjectSettings/AmoebiusProject.json";
 
@@ -56,13 +59,15 @@ namespace Amoebius
             public int? TargetFps { get; set; }
         }
 
-        /// <summary>Online play: which Amoebius online server this branch's games use (the team's shared one).</summary>
+        /// <summary>Online play (START ONLINE): UGS, as the Unity build uses it.</summary>
         public sealed class NetworkSection
         {
-            /// <summary>"host[:port]" of the online server; null finds one on the LAN (or a game hosts one). A player's own launcher setting wins.</summary>
-            public string? Server { get; set; }
-            /// <summary>The server's key, when it was started with one.</summary>
-            public string? Key { get; set; }
+            /// <summary>
+            /// The UGS environment Amoebius's players sign in to. Null means "amoebius": a separate environment
+            /// keeps Amoebius's lobbies out of the Unity build's (their netcode does not talk to each other), and it
+            /// has to exist in the UGS dashboard. "" means the project's default environment.
+            /// </summary>
+            public string? UgsEnvironment { get; set; }
         }
 
         static readonly JsonSerializerOptions Json = new()

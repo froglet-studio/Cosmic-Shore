@@ -21,12 +21,11 @@ checklist.
    and audio; `amoebius_board` the open bugs and tasks. Suggest what you find but won't fix now with
    `amoebius_board_suggest`, always with a `criterion`: the check that will prove it done. A card's
    "done when" is its acceptance test: run it and show the result before calling the work done.
-5. **Multiplayer: several players at once.** `net_players action=start players=N` (1-4, a party
-   is four) starts them over one session folder; `net_input` / `net_command` drive any of them,
-   `net_sim` gives each a bad line (latency, loss, a pulled cable), `net_fault` breaks the session
-   service, `net_stats` reads traffic and RTT. `relay=local` sends them through Froglet's relay
-   server as an internet game would; `relay=ugs` signs them in to the game's LIVE UGS project, so
-   only when the owner asks. `Docs/MULTIPLAYER_START_HERE.md` first, then `Port/docs/MULTIPLAYER.md`.
+5. **Multiplayer is UGS only.** START ONLINE (`game_start` `online: true`) signs in to the game's LIVE
+   UGS project and plays through UGS Lobby and Relay, as the Unity build does; START is offline. There
+   is no LAN play, local server or multi-player harness any more, so only start an online game when the
+   owner asks. Engine-side work is tested against stand-ins (`UgsMultiplayerTests`, `NetStackTests`).
+   `Docs/MULTIPLAYER_START_HERE.md` first, then `Port/docs/MULTIPLAYER.md` §6.10.
 6. **Inspect, don't guess.** `game_find` / `game_hierarchy` to locate objects, `game_get` to read
    live fields, `game_ui_at X,Y` for "what is that on screen", `game_dump_ui` for layout and
    anchors, `game_logs` for errors.
@@ -60,16 +59,31 @@ checklist.
      rule (ugui 2.0), then fix the tests that pinned the approximation.
    Drive scrolling with `game_input` `scroll X,Y N` (wheel notches) and `drag X,Y X,Y F`.
 
-10. **Multiplayer runs two games.** Give each its own `profile` (two games with one player id
-   replace each other on the server) and `online: true`: the first game hosts Amoebius's online
-   server, the second finds it on the LAN (`server: "host:port"` names one, e.g. a
-   `CosmicShore --server`). In Menu_Main: ARCADE, the party panel's "+", then Invite (accept it in
-   the other game's REQUESTS) or Join on the row. Both press START GAME; the match begins when every
-   player presses the HUD's GO (the ReadyButton) - a GO that stays on screen is waiting for a press.
-   Check replication with `get "Manta(Clone)" NetworkObject OwnerClientId` and `Transform position`
-   on both games (`get` prints every match). Stop a stray game or server by PID
-   (`pgrep -x CosmicShore`), never `pkill -f 'CosmicShore ...'`: the pattern also matches the shell
-   running your command, so it kills that shell too.
+11. **Multiplayer runs two games, online, with the owner's go-ahead.** Give each its own `profile`
+   (each is its own UGS player) and `online: true`; both sign in to UGS and meet in its Lobby. In
+   Menu_Main: ARCADE, the party panel's "+", then Invite (accept it in the other game's REQUESTS) or Join
+   on the row. Both press START GAME; the match begins when every player presses the HUD's GO (the
+   ReadyButton) - a GO that stays on screen is waiting for a press. Check replication with
+   `get "Manta(Clone)" NetworkObject OwnerClientId` and `Transform position` on both games (`get` prints
+   every match). Stop a stray game by PID (`pgrep -x CosmicShore`), never `pkill -f 'CosmicShore ...'`:
+   the pattern also matches the shell running your command, so it kills that shell too.
+
+12. **Traps from the UGS-online session (2026-10-14).**
+   - **Amoebius.exe and the game update separately.** START pulls and builds the GAME from the branch;
+     the launcher itself only changes through its own UPDATE (rail badge, or SETTINGS > ABOUT > CHECK /
+     INSTALL). A launcher feature you just pushed is invisible to a user who only pressed START: tell them
+     to update Amoebius, and read the PLAY page's own buttons in their screenshot to see which build they run.
+   - **A file the player window uses must also be linked into `CosmicShore.Mobile.csproj`.** The phone build
+     compiles the shared player sources by link; `MobileLinkTests` fails when one is missing (it caught
+     `XInputRumble.cs` and `PlayerDiagnostics.cs`). Add the `<Compile Include=... Link=...>` with the file.
+   - **Launcher screenshots under xvfb show a tooltip** wherever the pointer sits (the screen's centre).
+     Use a virtual screen much larger than the window (`xvfb-run -s "-screen 0 3400x2200x24"`) so the
+     pointer is off it.
+   - **Never assume the user's workspace path.** `%LOCALAPPDATA%\Amoebius\workspace` is only the default;
+     BESIDE MY CLONE puts it next to their clone. Prefer a launcher button over hand-run PowerShell.
+   - **F3 is Amoebius's diagnostics overlay** (`PlayerDiagnostics.cs`, ARCHITECTURE §11.3): read it in a
+     user's screenshot for fps, sign-in, lobby and ping before guessing. The game's own top-left panel (F7)
+     reported 60 fps while the game ran at 5-9, so trust F3's numbers.
 
 Report what you saw (attach the screenshot path) and what you verified; say plainly if a check
 did not run.

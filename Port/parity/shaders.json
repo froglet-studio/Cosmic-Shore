@@ -2,7 +2,7 @@
   "source": "cs-asset shadergraph-census",
   "graphs": 56,
   "subGraphs": 31,
-  "nodeInstances": 2810,
+  "nodeInstances": 2812,
   "nodeTypes": [
     {
       "type": "PropertyNode",
@@ -42,7 +42,7 @@
     },
     {
       "type": "CustomFunctionNode",
-      "instances": 74,
+      "instances": 76,
       "files": 11,
       "emitter": true
     },
@@ -696,6 +696,11 @@
       "ported": true
     },
     {
+      "function": "PrismGravityWarpDeform_float",
+      "calls": 2,
+      "ported": true
+    },
+    {
       "function": "PrismGrowScale_float",
       "calls": 2,
       "ported": true
@@ -939,6 +944,14 @@
       "approximations": []
     },
     {
+      "path": "Assets/_Graphics/Materials/Graphs/BlackHoleLens.shader",
+      "guid": "2d2b42dc95bb446eaeee676f88638e9d",
+      "name": "CosmicShore/BlackHoleLens",
+      "route": "missing",
+      "why": "hand-written .shader: no translation yet",
+      "approximations": []
+    },
+    {
       "path": "Assets/_Graphics/Materials/Graphs/BlockGraph.shadergraph",
       "guid": "bf8c159f627e64b439094797bff88611",
       "name": "Shader Graphs/BlockGraph",
@@ -968,6 +981,14 @@
       "name": "Shader Graphs/ChargeCrystal",
       "route": "hand",
       "why": "hand translation (Content/Shaders/Hand)",
+      "approximations": []
+    },
+    {
+      "path": "Assets/_Graphics/Materials/Graphs/CloakGhost.shader",
+      "guid": "3d37f897d98a45149820ed07d0873542",
+      "name": "CosmicShore/CloakGhost",
+      "route": "missing",
+      "why": "hand-written .shader: no translation yet",
       "approximations": []
     },
     {
@@ -1239,6 +1260,22 @@
       "approximations": []
     },
     {
+      "path": "Assets/_Graphics/Materials/Graphs/StoatPathDots.shader",
+      "guid": "5018e4b4020843ff80584518a4bdd471",
+      "name": "CosmicShore/StoatPathDots",
+      "route": "missing",
+      "why": "hand-written .shader: no translation yet",
+      "approximations": []
+    },
+    {
+      "path": "Assets/_Graphics/Materials/Graphs/StoatRipple.shader",
+      "guid": "bf0a069980a94aa6a78c30fa78bea1a7",
+      "name": "CosmicShore/StoatRipple",
+      "route": "missing",
+      "why": "hand-written .shader: no translation yet",
+      "approximations": []
+    },
+    {
       "path": "Assets/_Graphics/Materials/Graphs/SwarmMemberInstanced.shader",
       "guid": "887013231f4a269178623abc40fc1a02",
       "name": "CosmicShore/SwarmMemberInstanced",
@@ -1301,6 +1338,8 @@
       "route": "hand",
       "why": "hand translation (Content/Shaders/Hand)",
       "approximations": [
+        "Blend [_SrcBlend] [_DstBlend]: a property-driven blend draws as SrcAlpha OneMinusSrcAlpha",
+        "ZWrite [_ZWrite]: a property-driven value draws as the default",
         "Panorama: the partner\u0027s six-face capture is a texture array Amoebius does not have (copyTextureSupport None, so the game never readies one); the void colour stands in"
       ]
     },
@@ -1409,6 +1448,14 @@
       "approximations": []
     },
     {
+      "path": "Assets/_Graphics/Materials/Shaders/CrystalChargeArcsShader.shader",
+      "guid": "0979e966bf522ddf32cac152d0784867",
+      "name": "Custom/CrystalChargeArcsShader",
+      "route": "missing",
+      "why": "hand-written .shader: no translation yet",
+      "approximations": []
+    },
+    {
       "path": "Assets/_Graphics/Materials/Shaders/DistortionShader.shader",
       "guid": "f7e6f65b91ab2a34caa2107186b6b7d5",
       "name": "Custom/TransparentPerlinDistortion",
@@ -1425,21 +1472,19 @@
       "approximations": []
     },
     {
-      "path": "Assets/_Graphics/Materials/Shaders/OmniChargeEdgesShader.shader",
-      "guid": "fea45e80b3e94b3e34515f9ff6446e87",
-      "name": "Custom/OmniChargeEdgesShader",
-      "route": "hand",
-      "why": "hand translation (Content/Shaders/Hand)",
-      "approximations": [
-        "Fog: the additive pass fades toward the fog colour, not toward black"
-      ]
-    },
-    {
       "path": "Assets/_Graphics/Materials/Shaders/OmniCrystalFresnelShader.shader",
       "guid": "554d96e9b67505208a3fbf0acb165350",
       "name": "Custom/OmniCrystalFresnelShader",
       "route": "hand",
       "why": "hand translation (Content/Shaders/Hand)",
+      "approximations": []
+    },
+    {
+      "path": "Assets/_Graphics/Materials/Shaders/OmniDepthPrismShader.shader",
+      "guid": "37b2f57f9f40086be2bfd7f1092aa88c",
+      "name": "Custom/OmniDepthPrismShader",
+      "route": "missing",
+      "why": "hand-written .shader: no translation yet",
       "approximations": []
     },
     {
@@ -1478,6 +1523,22 @@
       "path": "Assets/_Graphics/Materials/Shaders/StaticSkyPanorama.shader",
       "guid": "ab68fa1bd374aa8ce953141437b86c68",
       "name": "CosmicShore/StaticSkyPanorama",
+      "route": "missing",
+      "why": "hand-written .shader: no translation yet",
+      "approximations": []
+    },
+    {
+      "path": "Assets/_Graphics/Materials/Shaders/ThresherBallFresnelShader.shader",
+      "guid": "7d96c7ee56024c89a1b91d83a532305b",
+      "name": "CosmicShore/ThresherBallFresnel",
+      "route": "missing",
+      "why": "hand-written .shader: no translation yet",
+      "approximations": []
+    },
+    {
+      "path": "Assets/_Graphics/Materials/Shaders/ThresherChainFresnelShader.shader",
+      "guid": "8766118338f04352bbc3c42846d6e586",
+      "name": "CosmicShore/ThresherChainFresnel",
       "route": "missing",
       "why": "hand-written .shader: no translation yet",
       "approximations": []

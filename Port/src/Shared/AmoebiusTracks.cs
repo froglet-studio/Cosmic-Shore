@@ -17,7 +17,7 @@ namespace Amoebius
     /// The Amoebius Agent gets <see cref="Memory"/> with every prompt, so it starts from what the
     /// last runs showed instead of rediscovering it. Linked into the launcher and the MCP server.
     /// </summary>
-    public sealed class AmoebiusTracks
+    internal sealed class AmoebiusTracks
     {
         public sealed class Run
         {
