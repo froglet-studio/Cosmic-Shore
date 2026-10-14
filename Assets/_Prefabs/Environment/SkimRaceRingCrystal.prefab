@@ -14,15 +14,15 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 6588436222817790493, guid: fced5b15da3ad1d41b4e3b7385609e37, type: 3}
       propertyPath: m_LocalScale.x
-      value: 1.42
+      value: 1.704
       objectReference: {fileID: 0}
     - target: {fileID: 6588436222817790493, guid: fced5b15da3ad1d41b4e3b7385609e37, type: 3}
       propertyPath: m_LocalScale.y
-      value: 1.42
+      value: 1.704
       objectReference: {fileID: 0}
     - target: {fileID: 6588436222817790493, guid: fced5b15da3ad1d41b4e3b7385609e37, type: 3}
       propertyPath: m_LocalScale.z
-      value: 1.42
+      value: 1.704
       objectReference: {fileID: 0}
     - target: {fileID: 6588436222817790464, guid: fced5b15da3ad1d41b4e3b7385609e37, type: 3}
       propertyPath: m_Enabled
@@ -78,8 +78,9 @@ MonoBehaviour:
   crystal: {fileID: 4438465387667581562}
   impactor: {fileID: 2738319705619830286}
   intensityOneMouthRadius: 24
-  mouthShrinkPerIntensity: 0.1
-  crystalWorldScale: 1.42
+  intensityFourMouthFraction: 0.5
+  levelOneCrystalScale: 1.42
+  crystalSizeMultiplier: 1.2
   bloomSeconds: 0.9
   retireSeconds: 0.4
   maxPlausibleSpeed: 400

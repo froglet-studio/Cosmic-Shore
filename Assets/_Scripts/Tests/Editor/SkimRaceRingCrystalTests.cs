@@ -13,8 +13,8 @@ namespace CosmicShore.Tests
     /// <summary>
     /// Skim Race's crystals are drawn and collected as race rings (<see cref="CrystalRaceRing"/>).
     /// These pin the promises that change made: at intensity 1 the ring is the SIZE of the crystal it
-    /// replaced and it shrinks 10% of that diameter per intensity above, the omni crystal in its
-    /// middle is the size of a level-1 elemental crystal, it stands SQUARE across the track, it keeps
+    /// replaced and at intensity 4 it is half that, with 2 and 3 at even steps between; the omni
+    /// crystal in its middle is 20% larger than a level-1 elemental crystal; it stands SQUARE across the track, it keeps
     /// the crystal's DOMAIN rule, and the scene actually spawns it.
     /// </summary>
     public class SkimRaceRingCrystalTests
@@ -82,18 +82,20 @@ namespace CosmicShore.Tests
             var so = new SerializedObject(ring);
             Assert.AreEqual(crystalRadius, so.FindProperty("intensityOneMouthRadius").floatValue, 1e-3f,
                 "the intensity-1 mouth must match the replaced crystal's pickup radius so the target size is unchanged");
-            Assert.AreEqual(0.1f, so.FindProperty("mouthShrinkPerIntensity").floatValue, 1e-5f,
-                "the ring loses 10% of its intensity-1 diameter per intensity above 1");
+            Assert.AreEqual(0.5f, so.FindProperty("intensityFourMouthFraction").floatValue, 1e-5f,
+                "the intensity-4 ring is half the size of the intensity-1 ring");
         }
 
         [Test]
-        public void RingMouth_ShrinksTenPercentOfItsDiameterPerIntensity()
+        public void RingMouth_HalvesByIntensityFourInEvenSteps()
         {
-            Assert.AreEqual(24f, CrystalRaceRing.MouthRadiusFor(24f, 0.1f, 1), 1e-4f);
-            Assert.AreEqual(21.6f, CrystalRaceRing.MouthRadiusFor(24f, 0.1f, 2), 1e-4f);
-            Assert.AreEqual(19.2f, CrystalRaceRing.MouthRadiusFor(24f, 0.1f, 3), 1e-4f);
-            Assert.AreEqual(16.8f, CrystalRaceRing.MouthRadiusFor(24f, 0.1f, 4), 1e-4f,
-                "intensity 4 is 30% smaller than intensity 1");
+            Assert.AreEqual(24f, CrystalRaceRing.MouthRadiusFor(24f, 0.5f, 1), 1e-4f);
+            Assert.AreEqual(20f, CrystalRaceRing.MouthRadiusFor(24f, 0.5f, 2), 1e-4f);
+            Assert.AreEqual(16f, CrystalRaceRing.MouthRadiusFor(24f, 0.5f, 3), 1e-4f);
+            Assert.AreEqual(12f, CrystalRaceRing.MouthRadiusFor(24f, 0.5f, 4), 1e-4f,
+                "intensity 4 is 50% of intensity 1");
+            Assert.AreEqual(12f, CrystalRaceRing.MouthRadiusFor(24f, 0.5f, 5), 1e-4f,
+                "an intensity past the ladder holds intensity 4's size");
         }
 
         /// <summary>
@@ -118,7 +120,7 @@ namespace CosmicShore.Tests
         }
 
         [Test]
-        public void CrystalInTheRing_IsTheSizeOfALevelOneElementalCrystal()
+        public void CrystalInTheRing_IsTwentyPercentLargerThanALevelOneElementalCrystal()
         {
             // One element level is one crystal at world scale 1 (ElementalCrystalEjector). The Charge
             // model is the reference the other elements' model corrections are equalized to.
@@ -128,11 +130,15 @@ namespace CosmicShore.Tests
 
             var prefab = LoadPrefab(RingPrefabPath);
             var ring = prefab.GetComponent<CrystalRaceRing>();
-            float omniHalfExtent = BodyHalfExtentPerRootScale(prefab.GetComponent<Crystal>()) * ring.CrystalWorldScale;
+            float omniPerScale = BodyHalfExtentPerRootScale(prefab.GetComponent<Crystal>());
 
-            Assert.AreEqual(levelOneHalfExtent, omniHalfExtent, levelOneHalfExtent * 0.05f,
-                $"the omni crystal in the ring draws {omniHalfExtent * 2f:F2} u across; a level-1 elemental " +
-                $"crystal draws {levelOneHalfExtent * 2f:F2} u");
+            // The reference scale really is level-1 size...
+            Assert.AreEqual(levelOneHalfExtent, omniPerScale * ring.LevelOneCrystalScale, levelOneHalfExtent * 0.05f,
+                $"at LevelOneCrystalScale the omni crystal draws {omniPerScale * ring.LevelOneCrystalScale * 2f:F2} u " +
+                $"across; a level-1 elemental crystal draws {levelOneHalfExtent * 2f:F2} u");
+            // ...and the crystal in the ring is 20% larger than that.
+            Assert.AreEqual(1.2f, ring.CrystalSizeMultiplier, 1e-4f);
+            Assert.AreEqual(levelOneHalfExtent * 1.2f, omniPerScale * ring.CrystalWorldScale, levelOneHalfExtent * 0.06f);
             Assert.AreEqual(ring.CrystalWorldScale, prefab.transform.localScale.x, 1e-4f,
                 "the prefab's root scale should preview the size CrystalRaceRing applies at runtime");
         }

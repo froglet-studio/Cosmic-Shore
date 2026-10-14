@@ -15,7 +15,7 @@ namespace CosmicShore.Gameplay
     /// replication, the pickup's credit and effects, the AI's target and the objective arrow all
     /// belong to the crystal and its manager, untouched. The crystal itself still draws - shrunk
     /// to a small omni crystal hanging in the middle of the ring
-    /// (<see cref="crystalWorldScale"/>), which is what says threading this ring pays what an
+    /// (<see cref="CrystalWorldScale"/>), which is what says threading this ring pays what an
     /// omni crystal pays - but its collider is off: this component draws the ring around it and
     /// turns a threading of the mouth into the same impactor pair a physics contact would have
     /// dispatched. A second course system beside the crystal one would have re-derived every one
@@ -63,18 +63,22 @@ namespace CosmicShore.Gameplay
                  "SkimRaceRingCrystalTests holds the two together.")]
         [SerializeField, Min(1f)] float intensityOneMouthRadius = 24f;
 
-        [Tooltip("Fraction of the intensity-1 diameter the ring loses per intensity above 1. " +
-                 "0.1 = intensity 2 is 90%, 3 is 80%, 4 is 70% of intensity 1.")]
-        [SerializeField, Range(0f, 0.3f)] float mouthShrinkPerIntensity = 0.1f;
+        [Tooltip("Ring size at INTENSITY 4 as a fraction of intensity 1. Intensities 2 and 3 fall " +
+                 "at even steps between: 0.5 gives 100% / 83.3% / 66.7% / 50% (radius 24 / 20 / 16 / 12 u).")]
+        [SerializeField, Range(0.1f, 1f)] float intensityFourMouthFraction = 0.5f;
 
         [Header("Crystal")]
-        [Tooltip("World scale of the omni crystal hanging in the middle of the ring. 1.42 renders it " +
-                 "the size of a LEVEL-1 elemental crystal: one element level is a crystal at world " +
-                 "scale 1 (ElementalCrystalEjector.PetalCrystalWorldScale), and the omni model is " +
-                 "0.72 per unit of scale against the Charge model's 1.02 (the reference the other " +
-                 "elements are corrected to), so 1.02 / 0.72 = 1.42. Purely visual - the omni pickup " +
-                 "reads nothing from the crystal's size. SkimRaceRingCrystalTests measures both meshes.")]
-        [SerializeField, Min(0.01f)] float crystalWorldScale = 1.42f;
+        [Tooltip("World scale at which the omni crystal in the middle of the ring is the size of a " +
+                 "LEVEL-1 elemental crystal: one element level is a crystal at world scale 1 " +
+                 "(ElementalCrystalEjector.PetalCrystalWorldScale), and the omni model is 0.72 per " +
+                 "unit of scale against the Charge model's 1.02 (the reference the other elements " +
+                 "are corrected to), so 1.02 / 0.72 = 1.42. A measured reference, not a tuning knob - " +
+                 "SkimRaceRingCrystalTests measures both meshes. Tune Crystal Size Multiplier instead.")]
+        [SerializeField, Min(0.01f)] float levelOneCrystalScale = 1.42f;
+
+        [Tooltip("The omni crystal's size relative to a level-1 elemental crystal. 1.2 = 20% larger. " +
+                 "Purely visual - the omni pickup reads nothing from the crystal's size.")]
+        [SerializeField, Min(0.01f)] float crystalSizeMultiplier = 1.2f;
 
         [Tooltip("Seconds a ring takes to bloom in at its new anchor. Detection is live at the full " +
                  "mouth from the first frame; only the drawing grows into it.")]
@@ -97,17 +101,22 @@ namespace CosmicShore.Gameplay
         /// intensity once the ring stands.</summary>
         public float MouthRadius => _ring ? _ring.Radius : intensityOneMouthRadius;
 
+        /// <summary>World scale at which the omni crystal is a level-1 elemental crystal's size.</summary>
+        public float LevelOneCrystalScale => levelOneCrystalScale;
+
+        /// <summary>The omni crystal's size relative to a level-1 elemental crystal.</summary>
+        public float CrystalSizeMultiplier => crystalSizeMultiplier;
+
         /// <summary>World scale of the omni crystal in the ring's middle.</summary>
-        public float CrystalWorldScale => crystalWorldScale;
+        public float CrystalWorldScale => levelOneCrystalScale * crystalSizeMultiplier;
 
         /// <summary>
-        /// The mouth radius at <paramref name="intensity"/>: the intensity-1 radius, less
-        /// <paramref name="shrinkPerIntensity"/> of it for every level above 1 - a diameter
-        /// reduction, which for a circle is the same fraction of the radius. Floored at a tenth
-        /// so a large step cannot close the ring.
+        /// The mouth radius at <paramref name="intensity"/>: the intensity-1 radius at intensity 1,
+        /// <paramref name="intensityFourFraction"/> of it at intensity 4, and even steps between -
+        /// the same fraction of the diameter, for a circle. Intensity is clamped to the 1-4 ladder.
         /// </summary>
-        public static float MouthRadiusFor(float intensityOneRadius, float shrinkPerIntensity, int intensity) =>
-            intensityOneRadius * Mathf.Max(0.1f, 1f - shrinkPerIntensity * (Mathf.Max(1, intensity) - 1));
+        public static float MouthRadiusFor(float intensityOneRadius, float intensityFourFraction, int intensity) =>
+            intensityOneRadius * Mathf.Lerp(1f, intensityFourFraction, (Mathf.Clamp(intensity, 1, 4) - 1) / 3f);
 
         /// <summary>The ring currently standing for this crystal, or null before it is raised.</summary>
         public RaceGateRing Ring => _ring;
@@ -168,7 +177,7 @@ namespace CosmicShore.Gameplay
 
             // World, not local: the manager the crystal is minted under could be scaled. Set in
             // Awake, which Instantiate runs before the crystal's Start reads its scale.
-            if (crystal) LifeFormCrystal.SetWorldScale(crystal, crystalWorldScale);
+            if (crystal) LifeFormCrystal.SetWorldScale(crystal, CrystalWorldScale);
         }
 
         void OnDestroy() => RetireRing();
@@ -195,7 +204,7 @@ namespace CosmicShore.Gameplay
         void SyncRing(CrystalManager manager)
         {
             Vector3 position = crystal.transform.position;
-            float radius = MouthRadiusFor(intensityOneMouthRadius, mouthShrinkPerIntensity, manager.Intensity);
+            float radius = MouthRadiusFor(intensityOneMouthRadius, intensityFourMouthFraction, manager.Intensity);
 
             // A changed radius re-raises too: a client's intensity arrives over the network, and
             // a ring raised before it landed would otherwise keep the wrong size all race.
