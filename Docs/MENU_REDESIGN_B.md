@@ -18,8 +18,11 @@ Work goes one item at a time, with three approval gates per item:
    in the editor.
 
 Out of scope:
-- The in-game HUD, GameCanvas, end-of-game screens and vessel HUDs, including Menu_Main's
-  freestyle `Game UI`. Heavy panels over the arena "eat the game" (STYLE_FOUNDATION §1).
+- ~~The in-game HUD, GameCanvas, end-of-game screens and vessel HUDs, including Menu_Main's
+  freestyle `Game UI`.~~ **Brought in scope 2026-10-14 as item 12** (the user's direction). Heavy
+  panels over the arena still "eat the game" (STYLE_FOUNDATION §1), and the vessel HUD's four-icon
+  ability row stays a LOCKED structure (`Docs/claude/VESSEL_HUD_AND_ELEMENTS.md`): item 12 restyles
+  the chrome around it, never its structure.
 - Gameplay, networking, and how screens are navigated. This work changes how screens look and how
   they are laid out, nothing else.
 
@@ -43,6 +46,7 @@ Legend: `Planned` ▸ `Mockup` ▸ `Mockup approved` ▸ `Built` ▸ `Approved i
 | 9 | Settings modal and Credits | Mockup approved (2026-10-14) | `Settings.dc.html` (interactive), `SettingsDisplay`, `SettingsPerformance`, `SettingsOther`, `Credits`, `SystemNotes` | |
 | 10 | Closed surfaces: Port (locked), Store (no slot), Episodes panel, purchase confirmation | Mockup approved (2026-10-14) | `ClosedSurfaces.dc.html`, `PurchaseConfirm` (blind), `SystemNotes` | |
 | 11 | Menu toasts | Mockup approved (2026-10-14) | `Toasts.dc.html` (interactive), `SystemNotes` | |
+| 12 | In-game UI: GameCanvas HUD chrome, scoreboard, ready / countdown / pause, in-match toasts, end-of-game screens, Menu_Main freestyle HUD | Planned (inventory running) | | |
 
 ---
 
