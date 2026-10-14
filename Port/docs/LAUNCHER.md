@@ -426,7 +426,14 @@ a chat changed files.
 **In GitHub Desktop:** with *Beside my clone* the workspace shares your clone, so a commit here
 is a local branch in GitHub Desktop at once (you can push from there). With the managed clone,
 push here, then **Fetch origin** in GitHub Desktop and pick the branch. Pushing from Amoebius uses
-git's own sign-in, or the GitHub token in SETTINGS > SOURCE (Contents: read & write).
+the GitHub token in SETTINGS > SOURCE (Contents: read & write) when one is pasted, otherwise git's own
+sign-in. Every git step runs with prompts off, and Git Credential Manager honours that too. So when
+GitHub refuses a push and no token is pasted, Amoebius pushes once more with prompts allowed. Git
+Credential Manager then opens its GitHub sign-in (browser or window, up to 5 minutes) and keeps the
+result for later pushes. GitHub Desktop's own git has no credential helper, and GitHub Desktop's
+sign-in is not shared with other programs. With only GitHub Desktop installed, install Git for
+Windows (it includes Git Credential Manager) or paste a token. The error names which case it was
+(`SourceControl.PushRefused`).
 
 **START never throws edits away.** With unsaved changes in the workspace, START plays them as
 they are and skips pulling the branch (the CONSOLE says so); UPDATE refuses until they are

@@ -78,6 +78,32 @@ namespace CosmicShore.Launcher.Tests
         }
     }
 
+    public class PushRefusalTests
+    {
+        static ProcessRunner.Result Err(string stderr) => new(128, "", stderr);
+
+        [Theory]
+        [InlineData("fatal: could not read Username for 'https://github.com': terminal prompts disabled")]
+        [InlineData("remote: Permission to froglet-studio/Cosmic-Shore.git denied to someone.\nfatal: unable to access 'https://github.com/froglet-studio/Cosmic-Shore.git/': The requested URL returned error: 403")]
+        [InlineData("remote: Invalid username or password.\nfatal: Authentication failed for 'https://github.com/froglet-studio/Cosmic-Shore.git/'")]
+        public void Sign_in_failures_count_as_refused(string stderr) => Assert.True(SourceControl.AuthRefused(Err(stderr)));
+
+        [Theory]
+        [InlineData(" ! [rejected]        x -> x (fetch first)\nerror: failed to push some refs to 'https://github.com/froglet-studio/Cosmic-Shore'")]
+        [InlineData(" ! [remote rejected] x -> x (protected branch hook declined)")]
+        public void A_rejected_ref_is_not_a_sign_in_problem(string stderr) => Assert.False(SourceControl.AuthRefused(Err(stderr)));
+
+        [Fact]
+        public void The_message_names_what_was_tried()
+        {
+            const string Url = "https://github.com/froglet-studio/Cosmic-Shore";
+            Assert.Contains("refused the token", SourceControl.PushRefused(true, false, "403", Url));
+            Assert.Contains("froglet-studio/Cosmic-Shore", SourceControl.PushRefused(true, false, "403", Url));
+            Assert.Contains("Git Credential Manager sign-in", SourceControl.PushRefused(false, true, "403", Url));
+            Assert.Contains("Install Git for Windows", SourceControl.PushRefused(false, false, "terminal prompts disabled", Url));
+        }
+    }
+
     public class ChatTests
     {
         static void Feed(ClaudeChat chat, string line) =>
