@@ -1,5 +1,7 @@
 # Vessel Studio — plan and platform map
 
+> **Where this is going:** `VESSEL_STUDIO_VISION.md` (the owner's goal: anyone can make a vessel; the building blocks B1-B9 and their order). This file is how the studio works today.
+
 **Goal.** One studio app: pick a vessel, its studio opens, and you test how it moves, what its abilities
 do and how its play-style types feel — from a phone, with no PC needed, and the same studio on a PC when
 you want more. The studio **lives in Amoebius** (Froglet's own engine, `Port/`), not inside Unity: Unity only
