@@ -1,0 +1,201 @@
+using CosmicShore.Data;
+using CosmicShore.ScriptableObjects;
+using FMODUnity;
+using UnityEngine;
+
+namespace CosmicShore.Gameplay
+{
+    /// <summary>
+    /// Every number the Brittle Star's executor reads (design: <c>R_VesselActions/BRITTLE_STAR.md</c>; the class
+    /// document is the Notion "Class - Brittle Star" page). One asset, wired directly on the executor (vessel rule 20),
+    /// shared by every Brittle Star and never written at runtime (rule 1).
+    ///
+    /// <para><b>One element per ability</b> (the four-icon row, charge → mass → space → time):
+    /// <list type="bullet">
+    /// <item><b>Charge — Ring Detonation</b> (Rolling Thunder: "larger projectile size and larger AOE on support ring
+    /// detonation"): <see cref="BlastScale"/> and <see cref="ProjectileScaleMultiplier"/>.</item>
+    /// <item><b>Mass — Creation Mode</b> (Fabricator: "increased block size in creation mode"):
+    /// <see cref="CreationBlockScale"/>.</item>
+    /// <item><b>Space — Destruction Mode &amp; Shooting</b> (Hunter: "increased shot range"):
+    /// <see cref="RangeMultiplier"/>. The document's "nudge intensity" is retired with knockback itself — see below.</item>
+    /// <item><b>Time — Speed Mode</b> (Zephyr: "increased movement speed bonus in speed mode"):
+    /// <see cref="SpeedModeMultiplier"/>.</item>
+    /// </list></para>
+    ///
+    /// <para><b>PvP is petals only (LOCKED, 2026-10-10).</b> The class document predates that rule and asks for shots
+    /// that knock enemies back, cut their momentum and disable their trail. None of that may touch another pilot's
+    /// vessel any more: every hit on an enemy hull is a SCORED combat hit that moves petals, through the fleet's
+    /// reporters (the bullet's <c>VesselCombatHitByBullet</c>, the blast's prefab container) and, for the ring's
+    /// plane wave, <see cref="CombatHitDrain.TryAdmit"/> directly. Destruction Mode's "disable mass production" is
+    /// carried by what it can still do: five streams of larger rounds take petals five times as fast.</para>
+    /// </summary>
+    [CreateAssetMenu(fileName = "BrittleStarConfig", menuName = "ScriptableObjects/Vessel Actions/Brittle Star Config")]
+    public sealed class BrittleStarConfigSO : ScriptableObject
+    {
+        // ------------------------------------------------------------------ modes
+        [Header("Modes")]
+        [Tooltip("Seconds a mode takes to come fully on or off (thrusters, trail, the HUD's switch).")]
+        [SerializeField, Min(0.01f)] float modeBlendSeconds = 0.35f;
+        [Tooltip("TIME: Speed Mode's multiplier on the hull's cruise speed. The Zephyr's element.")]
+        [SerializeField] ElementalFloat speedModeMultiplier = ElementalFloat.Multiplier(1.6f, 2.2f, Element.Time, 1.2f);
+        [Tooltip("1 = Speed Mode stretches the base trail's spacing by exactly the speed it adds, so the hull lays the " +
+                 "same prisms per second whatever its speed (the document: 'so as not to increase production output').")]
+        [SerializeField, Range(0f, 1f)] float speedModeSpacingFollow = 1f;
+
+        [Header("Creation Mode (the pentagon trail)")]
+        [Tooltip("Each pentagon block's size (x across, y thick, z along), at Mass 0.")]
+        [SerializeField] Vector3 creationBlockSize = new(3.2f, 1.6f, 5f);
+        [Tooltip("MASS: the pentagon blocks' size multiplier. The Fabricator's element.")]
+        [SerializeField] ElementalFloat creationBlockScale = ElementalFloat.Multiplier(1f, 1.8f, Element.Mass, 0.6f);
+        [Tooltip("World units between pentagons along the path.")]
+        [SerializeField, Min(0.5f)] float creationSpacing = 7f;
+        [Tooltip("How far out from the hull's axis the pentagon's blocks sit, as a multiple of the ring's radius.")]
+        [SerializeField, Min(0.2f)] float creationRadiusScale = 1.15f;
+        [Tooltip("Most pentagons one frame may lay; excess owed distance is DROPPED so a hitch never dumps a burst.")]
+        [SerializeField, Range(1, 4)] int creationMaxPerFrame = 2;
+        [Tooltip("Seconds a freshly laid block's collider stays off, so the hull clears it.")]
+        [SerializeField, Min(0f)] float creationWaitTime = 0.6f;
+
+        // ------------------------------------------------------------------ shooting
+        [Header("Shooting (the five turrets and the cockpit gun)")]
+        [Tooltip("Rounds per second from EACH stream.")]
+        [SerializeField, Min(0.5f)] float fireRate = 12f;
+        [Tooltip("Muzzle speed, u/s. Range = speed × 2T/π (Projectile's ease-out, vessel rule 34).")]
+        [SerializeField, Min(10f)] float projectileSpeed = 700f;
+        [Tooltip("Flight time at Space 0, seconds.")]
+        [SerializeField, Min(0.05f)] float projectileTime = 0.3f;
+        [Tooltip("SPACE: multiplier on the flight time (and so the range). The Hunter's element.")]
+        [SerializeField] ElementalFloat rangeMultiplier = ElementalFloat.Multiplier(1f, 1.6f, Element.Space, 0.7f);
+        [Tooltip("Round size multiplier on the projectile prefab's own size, at Charge 0.")]
+        [SerializeField, Min(0.1f)] float projectileScale = 1.6f;
+        [Tooltip("CHARGE: the rounds' size multiplier. Rolling Thunder's element.")]
+        [SerializeField] ElementalFloat projectileScaleMultiplier = ElementalFloat.Multiplier(1f, 1.8f, Element.Charge, 0.6f);
+        [Tooltip("Destruction Mode's extra round size (the document: 'larger projectiles from the turrets').")]
+        [SerializeField, Min(1f)] float destructionProjectileScale = 1.5f;
+        [Tooltip("Widest cone the right stick (or a touch drag) opens, in degrees off each muzzle's axis.")]
+        [SerializeField, Range(0f, 45f)] float maxSpreadDegrees = 16f;
+        [Tooltip("Right-stick deflection below this aims nowhere: normal fire comes from the cockpit gun.")]
+        [SerializeField, Range(0f, 0.9f)] float aimDeadzone = 0.25f;
+        [Tooltip("Degrees per second the support ring turns to bring the aimed turret round (the 'firing rotation').")]
+        [SerializeField, Min(0f)] float ringTurnRate = 540f;
+
+        // ------------------------------------------------------------------ ring detonation
+        [Header("Ring Detonation")]
+        [Tooltip("Launch speed of the ejected ring, u/s, on top of the hull's own velocity.")]
+        [SerializeField, Min(1f)] float ringLaunchSpeed = 240f;
+        [Tooltip("Seconds the ring flies before it detonates on its own.")]
+        [SerializeField, Min(0.05f)] float ringFuseSeconds = 1.1f;
+        [Tooltip("The ring detonates on touching any prism or enemy hull within this distance of its centre line, " +
+                 "as a multiple of the ring's radius.")]
+        [SerializeField, Min(0.1f)] float ringContactRadiusScale = 1f;
+        [Tooltip("Spin of the flying ring about its axis, degrees per second.")]
+        [SerializeField] float ringFlightSpin = 900f;
+        [Tooltip("The blast: an all-domain explosion (friendly fire — the document's 'destroying both enemy and allied mass').")]
+        [SerializeField] AOEExplosion[] blastExplosions;
+        [Tooltip("The blast's diameter at Charge 0, world units.")]
+        [SerializeField, Min(1f)] float blastDiameter = 60f;
+        [Tooltip("CHARGE: multiplier on both blasts' size. Rolling Thunder's element.")]
+        [SerializeField] ElementalFloat blastScale = ElementalFloat.Multiplier(1f, 1.6f, Element.Charge, 0.7f);
+        [Tooltip("The second blast — the wave that 'continues out in the plane of the ring' — reaches this multiple of the " +
+                 "first blast's radius.")]
+        [SerializeField, Min(1f)] float planeWaveReach = 2.5f;
+        [Tooltip("Half-thickness of the plane wave, world units (it is a disc, not a sphere).")]
+        [SerializeField, Min(0.5f)] float planeWaveHalfThickness = 6f;
+        [Tooltip("Seconds after the blast the plane wave leaves, and how long it takes to reach its full radius.")]
+        [SerializeField, Min(0f)] float planeWaveDelay = 0.12f;
+        [SerializeField, Min(0.05f)] float planeWaveSeconds = 0.45f;
+        [Tooltip("Seconds the cockpit takes to build a new ring once it has the resources.")]
+        [SerializeField, Min(0.05f)] float rebuildSeconds = 0.5f;
+        [Tooltip("Seconds of OVERDRIVE (all three modes at once) a crystal buys when a charge is already stored.")]
+        [SerializeField, Min(0.5f)] float overdriveSeconds = 6f;
+
+        [Header("Scored hits (PvP is petals only)")]
+        [Tooltip("The plane wave's hit on an enemy hull: its class (and so its price in petals).")]
+        [SerializeField] CombatHitClass planeWaveHitClass = CombatHitClass.MissileShockwave;
+        [Tooltip("Seconds before the same victim can be scored by this pilot's plane wave again.")]
+        [SerializeField, Min(0f)] float planeWaveHitCooldown = 0.5f;
+        [Tooltip("Shared combat-hit channel (StatsManager scores from it).")]
+        [SerializeField] ScriptableEventCombatHitStats onCombatHitLanded;
+
+        // ------------------------------------------------------------------ autopilot
+        [Header("Autopilot (input-only: the AI presses the same replicated controls a human does)")]
+        [Tooltip("Seconds between the AI's mode decisions.")]
+        [SerializeField, Min(0.2f)] float aiModeIntervalSeconds = 3f;
+        [Tooltip("Rival prisms on the line ahead that make the AI hold the trigger.")]
+        [SerializeField, Min(1)] int aiFireMinTargets = 2;
+        [Tooltip("Rival prisms on the line ahead that make the AI switch to Destruction Mode.")]
+        [SerializeField, Min(1)] int aiDestructionMinTargets = 8;
+        [Tooltip("Rival prisms near the line ahead that make the AI throw its ring.")]
+        [SerializeField, Min(1)] int aiDetonateMinTargets = 18;
+        [Tooltip("Degrees off the nose beyond which the AI's target is far enough round to want Speed Mode.")]
+        [SerializeField, Range(0f, 180f)] float aiSpeedModeDegrees = 50f;
+        [Tooltip("Shortest time the AI holds or releases the trigger.")]
+        [SerializeField, Min(0.05f)] float aiTriggerMinSeconds = 0.4f;
+
+        // ------------------------------------------------------------------ audio (exposed, shipped EMPTY)
+        [Header("Audio (FMOD — every slot ships empty until audio authors it)")]
+        [SerializeField] EventReference speedModeEvent;
+        [SerializeField] EventReference creationModeEvent;
+        [SerializeField] EventReference destructionModeEvent;
+        [SerializeField] EventReference modeOffEvent;
+        [SerializeField] EventReference fireEvent;
+        [SerializeField] EventReference ringLaunchEvent;
+        [SerializeField] EventReference ringBlastEvent;
+        [SerializeField] EventReference ringRebuildEvent;
+        [SerializeField] EventReference chargeStoredEvent;
+        [SerializeField] EventReference overdriveEvent;
+
+        // ------------------------------------------------------------------ accessors
+        public float ModeBlendSeconds => modeBlendSeconds;
+        public ElementalFloat SpeedModeMultiplier => speedModeMultiplier;
+        public float SpeedModeSpacingFollow => speedModeSpacingFollow;
+        public Vector3 CreationBlockSize => creationBlockSize;
+        public ElementalFloat CreationBlockScale => creationBlockScale;
+        public float CreationSpacing => creationSpacing;
+        public float CreationRadiusScale => creationRadiusScale;
+        public int CreationMaxPerFrame => creationMaxPerFrame;
+        public float CreationWaitTime => creationWaitTime;
+        public float FireRate => fireRate;
+        public float ProjectileSpeed => projectileSpeed;
+        public float ProjectileTime => projectileTime;
+        public ElementalFloat RangeMultiplier => rangeMultiplier;
+        public float ProjectileScale => projectileScale;
+        public ElementalFloat ProjectileScaleMultiplier => projectileScaleMultiplier;
+        public float DestructionProjectileScale => destructionProjectileScale;
+        public float MaxSpreadDegrees => maxSpreadDegrees;
+        public float AimDeadzone => aimDeadzone;
+        public float RingTurnRate => ringTurnRate;
+        public float RingLaunchSpeed => ringLaunchSpeed;
+        public float RingFuseSeconds => ringFuseSeconds;
+        public float RingContactRadiusScale => ringContactRadiusScale;
+        public float RingFlightSpin => ringFlightSpin;
+        public AOEExplosion[] BlastExplosions => blastExplosions;
+        public float BlastDiameter => blastDiameter;
+        public ElementalFloat BlastScale => blastScale;
+        public float PlaneWaveReach => planeWaveReach;
+        public float PlaneWaveHalfThickness => planeWaveHalfThickness;
+        public float PlaneWaveDelay => planeWaveDelay;
+        public float PlaneWaveSeconds => planeWaveSeconds;
+        public float RebuildSeconds => rebuildSeconds;
+        public float OverdriveSeconds => overdriveSeconds;
+        public CombatHitClass PlaneWaveHitClass => planeWaveHitClass;
+        public float PlaneWaveHitCooldown => planeWaveHitCooldown;
+        public ScriptableEventCombatHitStats OnCombatHitLanded => onCombatHitLanded;
+        public float AiModeIntervalSeconds => aiModeIntervalSeconds;
+        public int AiFireMinTargets => aiFireMinTargets;
+        public int AiDestructionMinTargets => aiDestructionMinTargets;
+        public int AiDetonateMinTargets => aiDetonateMinTargets;
+        public float AiSpeedModeDegrees => aiSpeedModeDegrees;
+        public float AiTriggerMinSeconds => aiTriggerMinSeconds;
+        public EventReference SpeedModeEvent => speedModeEvent;
+        public EventReference CreationModeEvent => creationModeEvent;
+        public EventReference DestructionModeEvent => destructionModeEvent;
+        public EventReference ModeOffEvent => modeOffEvent;
+        public EventReference FireEvent => fireEvent;
+        public EventReference RingLaunchEvent => ringLaunchEvent;
+        public EventReference RingBlastEvent => ringBlastEvent;
+        public EventReference RingRebuildEvent => ringRebuildEvent;
+        public EventReference ChargeStoredEvent => chargeStoredEvent;
+        public EventReference OverdriveEvent => overdriveEvent;
+    }
+}

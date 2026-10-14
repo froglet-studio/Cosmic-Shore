@@ -1,0 +1,72 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4b3f2a8c8f344355b16a4d4296ae3f98, type: 3}
+  m_Name: BrittleStar
+  m_EditorClassIdentifier:
+  vesselClass: 16
+  entries:
+  - Element: 1
+    AbilityLabel: Ring Detonation
+    AbilityDescription: 'LT. Eject the support ring and throw it forward (240 u/s on top of your own speed); it detonates
+      on touching any mass or a rival hull, or on its 1.1 s fuse, in an ALL-DOMAIN blast (your own and
+      your allies'' mass too), then a second wave runs out in the plane of the ring to 2.5x the
+      blast''s radius. A rival caught in either is scored on (petals only - nothing is moved). No
+      cooldown, only a ring: with a stored crystal charge a new ring is built at once (two in rapid
+      succession); without one you fly ringless and modeless until a crystal builds the next. Charge
+      is threat - one dial: both blasts'' size x1 -> x1.6 at level 10
+      (BrittleStarConfigSO.blastScale), and the rounds'' size x1 -> x1.8 with it
+      (projectileScaleMultiplier), the Rolling Thunder persona''s two halves of one idea.'
+    Input: 2
+    UnlockLevel: 5
+    RelockBelowLevel: 4
+    LatchPolicy: 0
+    UpgradeLabel: 
+    UpgradeDescription: 
+  - Element: 2
+    AbilityLabel: Creation Mode
+    AbilityDescription: 'B. The trail becomes a PENTAGON of blocks laid from the ring''s five points, turning with the
+      ring''s firing rotation, instead of the single small block from the cockpit. Needs the ring.
+      Mass is volume - one dial: the pentagon''s blocks x1 -> x1.8 at level 10
+      (BrittleStarConfigSO.creationBlockScale).'
+    Input: 7
+    UnlockLevel: 5
+    RelockBelowLevel: 4
+    LatchPolicy: 0
+    UpgradeLabel: 
+    UpgradeDescription: 
+  - Element: 3
+    AbilityLabel: Destruction Mode
+    AbilityDescription: 'X, and Fire on RT (held). Normal fire is one stream, from the turret the right stick points at
+      (the ring turns to bring it round) or the cockpit gun with the stick centred; Destruction Mode
+      fires all five turrets with larger rounds. The stick''s deflection opens the spread. Friendly
+      fire is on. A round on a rival hull is a scored bullet hit (petals only). Space is reach - one
+      dial: the rounds'' flight time, and so their range, x1 -> x1.6 at level 10
+      (BrittleStarConfigSO.rangeMultiplier).'
+    Input: 8
+    UnlockLevel: 5
+    RelockBelowLevel: 4
+    LatchPolicy: 0
+    UpgradeLabel: 
+    UpgradeDescription: 
+  - Element: 4
+    AbilityLabel: Speed Mode
+    AbilityDescription: 'A. Ignite every thruster: the hull''s cruise speed x1.6, and the base trail''s spacing stretched
+      by the same ratio so production per second does not rise. Needs the ring. A crystal collected
+      with a charge already stored is OVERDRIVE - all three modes at once for 6 s. Time is rate - one
+      dial: Speed Mode''s multiplier x1.6 -> x2.2 at level 10
+      (BrittleStarConfigSO.speedModeMultiplier).'
+    Input: 6
+    UnlockLevel: 5
+    RelockBelowLevel: 4
+    LatchPolicy: 0
+    UpgradeLabel: 
+    UpgradeDescription: 
