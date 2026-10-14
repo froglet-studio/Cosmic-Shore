@@ -81,8 +81,9 @@ platform-law) shaped the final rule set:
    manufactures the mode's signature moment — the multi-carom **bank goal** — which the
    controller celebrates by bounce count (`ScarabScrambleBankGoal` toast, "BANK x{n}").
 7. **The CELL overloads, never culls, and never silently.** A **CELL** holds at most
-   `AstroLeagueBall.cellBallLimit` (4) loose balls: when a fourth enters one, every loose
-   ball in that cell detonates **regardless of domain**, the arriving one included
+   `AstroLeagueBall.cellBallLimit` (5) loose balls **per Scarab** (counted by the ball's domain):
+   when one Scarab's sixth enters, every loose ball in that cell detonates **regardless of
+   domain**, the arriving one included
    (`TickCellMembershipServer` → `DetonateAllLooseInCellServer` → `CellOverload_ClientRpc`,
    so it is one networked event every peer sees, not N unrelated bursts). Nothing is expired
    on a clock (§15.5: an expiry would be an imposed clock) — the removal is caused by a
@@ -147,7 +148,7 @@ it off — but because Scramble's court *is* the nucleus, the two meet:
   mode-local suppression: the ability is platform behaviour and Scramble is not entitled to a
   private exception.
 - **The CELL overload detonates through the same shared path.** `TickCellMembershipServer` counts
-  the loose balls in the cell a ball just entered and, at `cellBallLimit`, calls
+  the arriving ball's domain's loose balls in the cell it just entered and, past `cellBallLimit`, calls
   `DetonateAllLooseInCellServer` — the same per-ball `DetonateWithRadiusServer` the nucleus
   overload uses — so a cell overload and a nucleus overload are indistinguishable on screen, which
   is the point: to a player they are the same mistake. The difference is scope: the nucleus

@@ -27,11 +27,13 @@ namespace UnityEngine
         public static Vector3 Cross(Vector3 a, Vector3 b) => new Vector3(a.y * b.z - a.z * b.y, a.z * b.x - a.x * b.z, a.x * b.y - a.y * b.x);
         public static Vector3 Lerp(Vector3 a, Vector3 b, float t) { t = t < 0 ? 0 : (t > 1 ? 1 : t); return a + (b - a) * t; }
         public static Vector3 ClampMagnitude(Vector3 v, float max) { float m = v.magnitude; return m > max ? v * (max / m) : v; }
+        public static Vector3 ProjectOnPlane(Vector3 v, Vector3 n) { float d = Dot(n, n); return d < 1e-15f ? v : v - n * (Dot(v, n) / d); }
         public override string ToString() => $"({x:F2},{y:F2},{z:F2})";
     }
     public static class Mathf
     {
         public const float Deg2Rad = (float)(Math.PI / 180.0);
+        public const float PI = (float)Math.PI;
         public static float Abs(float f) => f < 0 ? -f : f;
         public static float Max(float a, float b) => a > b ? a : b;
         public static int Max(int a, int b) => a > b ? a : b;
@@ -41,12 +43,16 @@ namespace UnityEngine
         public static float Lerp(float a, float b, float t) => a + (b - a) * Clamp01(t);
         public static float InverseLerp(float a, float b, float v) => a != b ? Clamp01((v - a) / (b - a)) : 0f;
         public static float Exp(float v) => (float)Math.Exp(v);
+        public static float Pow(float f, float p) => (float)Math.Pow(f, p);
+        public static int CeilToInt(float f) => (int)Math.Ceiling(f);
         public static float Sqrt(float v) => (float)Math.Sqrt(v);
         public static float Cos(float v) => (float)Math.Cos(v);
         public static float Sin(float v) => (float)Math.Sin(v);
         public static float Tan(float v) => (float)Math.Tan(v);
         public static float Atan(float v) => (float)Math.Atan(v);
         public static float Acos(float v) => (float)Math.Acos(v);
+        public static float Asin(float v) => (float)Math.Asin(v);
+        public static float Atan2(float y, float x) => (float)Math.Atan2(y, x);
         public static float Sign(float f) => f >= 0f ? 1f : -1f;
         public static float SmoothStep(float a, float b, float t) { t = Clamp01(t); t = t * t * (3f - 2f * t); return a + (b - a) * t; }
         public static int RoundToInt(float v) => (int)Math.Round(v);

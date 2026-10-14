@@ -134,7 +134,7 @@ TEXT_EXTENSIONS = (".cs", ".md", ".py", ".json")
 # Output directories are skipped by PATH instead (SKIP_PATHS), which is what they always were.
 SKIP_DIRS = {
     ".git", "Library", "Temp", "obj", "Logs",
-    "PlayFabSDK", "Wwise", "NiceVibrations", "Plugins", "Packages",
+    "Wwise", "NiceVibrations", "Plugins", "Packages",
 }
 
 # Repo-root-relative directories to skip whole. Anchored, so a same-named directory deeper in

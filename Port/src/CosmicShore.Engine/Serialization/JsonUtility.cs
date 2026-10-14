@@ -86,7 +86,7 @@ namespace CosmicShore.Engine
                     {
                         if (f.IsInitOnly || f.IsLiteral || f.IsNotSerialized) continue;
                         if (f.Name.Contains('<')) continue; // compiler-generated backing fields
-                        if (!f.IsPublic && f.GetCustomAttribute<SerializeFieldAttribute>() == null) continue;
+                        if (!f.IsPublic && f.GetCustomAttribute<SerializeField>() == null) continue;
                         if (!IsSerializableType(f.FieldType)) continue;
                         if (!seen.Add(f.Name)) continue;
                         list.Add(f);

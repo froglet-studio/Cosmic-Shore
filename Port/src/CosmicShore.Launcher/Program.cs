@@ -24,7 +24,7 @@ namespace CosmicShore.Launcher
         }
 
         /// <summary>
-        /// Prisma [--page play|build|options|console] [--screenshot out.png --frames N] [--offline] [--auto play|update|android|ios|claude-install|launcher-update:REV] [--updated FROM]
+        /// Amoebius [--page play|build|options|console] [--screenshot out.png --frames N] [--offline] [--auto play|play-online|update|android|ios|claude-install|launcher-update:REV] [--updated FROM]
         /// The flags exist for docs and tests: a scripted run renders N frames, saves a screenshot and exits.
         /// </summary>
         [STAThread]
@@ -53,6 +53,7 @@ namespace CosmicShore.Launcher
             }
             if (installTo != null) return LauncherUpdater.FinishInstall(installTo, waitPid, updatedFrom); // no window: swap and relaunch
             if (shot != null && frames <= 0) frames = 90;
+            CrashLog.Install();
             PreloadBundledNatives();
             new LauncherApp(new LauncherApp.Args(shot, frames, page, offline, auto, updatedFrom, tour, clone)).Run();
             return 0;

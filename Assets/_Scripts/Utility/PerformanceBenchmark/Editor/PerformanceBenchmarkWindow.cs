@@ -82,7 +82,7 @@ namespace CosmicShore.Utility.PerformanceBenchmark.Editor
         BenchmarkComparer.ComparisonResult comparisonResult;
         string comparisonText;
 
-        [MenuItem("FrogletTools/Performance Benchmark", false, 20)]
+        [MenuItem("FrogletTools/Performance/Performance Benchmark", false, 170)]
         [FrogletTool(FrogletToolCategory.Performance, Importance = 5,
             Description = "Frame-cost benchmark: score, hints, sweeps, load-time insights.")]
         public static void Open()

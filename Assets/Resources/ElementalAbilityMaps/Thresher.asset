@@ -16,37 +16,37 @@ MonoBehaviour:
   entries:
   - Element: 1
     AbilityLabel: Wrecking Ball
-    AbilityDescription: 'The ball itself - PASSIVE, always destructive, and its destruction is binary. Below smash speed it wears your DOMAIN colour, destroys rival prisms it touches and BOUNCES off your own domain''s. At smash speed it turns RED, destroys every prism it hits (yours included) and every hit sets off an explosion that does the same. Charge scales the explosion: ThresherConfigSO.explosionSizeMultiplier, x1 at rest -> x2 at level 10 (floor x0.5), on a 16-unit base diameter.'
+    AbilityDescription: 'The ball itself - PASSIVE, always destructive, and its destruction is binary. Below smash speed it wears your DOMAIN colour, destroys rival prisms it touches and BOUNCES off your own domain''s; at smash speed it turns RED, destroys every prism it hits (yours included) and every hit sets off an explosion. The ball and the chain also reach ENEMY VESSELS: each contact is a scored Strike that STEALS petals (the PvP-is-petals-only rule). Charge scales how many: ThresherConfigSO.vesselHitPetals, 1 petal per element at rest -> 3 at level 10 (floor 0.5).'
     Input: 0
     UnlockLevel: 5
     RelockBelowLevel: 4
     LatchPolicy: 0
-    UpgradeLabel: Lit
-    UpgradeDescription: 'The hot ball burns your LIT domain colour instead of red; its explosions spare your own domain''s prisms (AffectSelfOverride off - the fleet''s domain-sparing-in-the-explosion-layer rule) and it bounces off your own domain''s mass even when hot. Gated on IsUpgradeActive(Charge) in ThresherExecutor.'
+    UpgradeLabel: Magnet
+    UpgradeDescription: 'The free ball is drawn toward the nearest enemy vessel within magnetRange (150 u) at magnetAcceleration (220 u/s^2) - it moves only your ball, never the other vessel. Gated on IsUpgradeActive(Charge) in ThresherExecutor (MagnetActive -> PullBallToEnemy).'
   - Element: 2
-    AbilityLabel: Heavy Iron
-    AbilityDescription: 'The ball''s weight - PASSIVE. Mass scales the ball''s MASS (a heavier ball tugs the ship harder and swings with more momentum) and, because Mass is volume, its RADIUS with the cube root: ThresherConfigSO.ballMassMultiplier, x1 at rest -> x1.75 at level 10 (floor x0.5).'
-    Input: 0
+    AbilityLabel: Mass Mode
+    AbilityDescription: 'The A button TOGGLES Mass Mode: the ball builds instead of breaking. It STEALS the rival prisms it touches, SHIELDS your own, lays a trail of your prisms behind it and never explodes - and the energy the chain''s kills bank keeps building instead of being spent, so leaving Mass Mode makes the next rival hit a bigger blast. Mass scales the SIZE of the trail prisms the ball lays: ThresherConfigSO.massTrailScale on every axis of massTrailPrismScale, x1 at rest -> x2 at level 10 (floor x0.5).'
+    Input: 6
     UnlockLevel: 5
     RelockBelowLevel: 4
     LatchPolicy: 0
-    UpgradeLabel: Wrecker
-    UpgradeDescription: 'A smashing ball loses no speed: plough becomes 1.0, so a hot ball tears through a whole row at full speed. Below smash speed it still pays crushKeep. Gated on IsUpgradeActive(Mass) in ThresherExecutor (ThresherChainSolver.KeepAfterHit).'
+    UpgradeLabel: Armoured Trail
+    UpgradeDescription: 'The prisms the ball lays in Mass Mode are laid SHIELDED (per-lay snapshot). Gated on IsUpgradeActive(Mass) in ThresherExecutor.LayTrailPrism (ArmouredTrailActive).'
   - Element: 3
     AbilityLabel: Winch
-    AbilityDescription: 'The RIGHT trigger. Hold to let chain out (longer reach, slower whip); release and it reels in fast, conserving the ball''s spin - the crack. The chain SLICES rival prisms it touches while taut. Space scales the reach: ThresherConfigSO.chainReachMultiplier on maxLen, x1 at rest -> x1.5 at level 10 (floor x0.6).'
+    AbilityDescription: 'The RIGHT trigger is the chain''s RIGIDITY (analog): released, the chain is a slack bungee the turns and the spin carry the ball out on; pulled, it is rigid. Tightening reels the ball in and spins it up - the crack - and the chain eases to lime when a tighten now would crack it past smash speed. The chain, taut or slack, SLICES rival prisms it touches and SHIELDS your own; each kill banks energy for the ball''s next explosion (the Space card shows how much radius is banked). Space scales the LARGEST explosion the bank can buy: ThresherConfigSO.energyMaxDiameterScale, x4 diameter at rest -> x8 at level 10 (floor x2).'
     Input: 1
     UnlockLevel: 5
     RelockBelowLevel: 4
     LatchPolicy: 0
-    UpgradeLabel: Reaper Chain
-    UpgradeDescription: 'The chain cuts while slack too, and cuts shielded prisms (the first cut pops the shield). Gated on IsUpgradeActive(Space) in ThresherExecutor.CutWithChain.'
+    UpgradeLabel: Breaker
+    UpgradeDescription: 'A RED (smash-speed) ball''s direct hit destroys super-shielded prisms, through the sanctioned DeactivateShields -> Damage(devastate) sequence. Gated on IsUpgradeActive(Space) in ThresherExecutor.SweepBall (BreakerActive). (Until 2026-10-13 Space 5 was Reaper Chain.)'
   - Element: 4
     AbilityLabel: Plant
-    AbilityDescription: 'The LEFT trigger. Hold to skid the ball to a stop and swing round it on the chain, faster every lap (right trigger up winds you in and spins you faster); release to fly off with the ball yanked after you. Time scales the spin: ThresherConfigSO.spinMultiplier on the spin-up rate AND its cap, x1 at rest -> x1.75 at level 10 (floor x0.5).'
+    AbilityDescription: 'The LEFT trigger is a BRAKE (analog): a partial pull slows the ball and swings you round it like a sliding anchor; only a FULL pull stops it, smoothly, and makes it the pivot you orbit, faster every lap (pull RT to wind in and spin faster). With both triggers at a full pull the camera hands over to the launch view: the sticks pick a launch point on the circle and easing LT off launches from it, through the crosshair, as the ship comes round - always boosted (launchBoost x4.8), whatever the timing. Your hull lays no trail while the crosshair is up. Time scales how fast the spin winds up to launch speed: ThresherConfigSO.spinMultiplier on the spin-up rate AND its cap, x1 at rest -> x1.75 at level 10 (floor x0.5).'
     Input: 2
     UnlockLevel: 5
     RelockBelowLevel: 4
     LatchPolicy: 0
-    UpgradeLabel: Slingshot
-    UpgradeDescription: 'On release the ball is flung at no less than smash speed, so it leaves the pivot red-hot. Gated on IsUpgradeActive(Time) in ThresherExecutor.EndPlant (ThresherChainSolver.Release).'
+    UpgradeLabel: 
+    UpgradeDescription: 'OPEN since 2026-10-13 (design needed). Time 5 was "Perfect Release" (a launch timed inside a 0.25 s window left x1.6 faster); it retired when EVERY aimed launch out of the crosshair view took the boost (ThresherConfigSO.launchBoost, x4.8) - the crosshair move is rewarded, not the timing. No IsUpgradeActive(Time) gate remains.'

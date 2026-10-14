@@ -2,7 +2,7 @@
   "source": "cs-asset shadergraph-census",
   "graphs": 56,
   "subGraphs": 31,
-  "nodeInstances": 2810,
+  "nodeInstances": 2812,
   "nodeTypes": [
     {
       "type": "PropertyNode",
@@ -42,7 +42,7 @@
     },
     {
       "type": "CustomFunctionNode",
-      "instances": 74,
+      "instances": 76,
       "files": 11,
       "emitter": true
     },
@@ -696,6 +696,11 @@
       "ported": true
     },
     {
+      "function": "PrismGravityWarpDeform_float",
+      "calls": 2,
+      "ported": true
+    },
+    {
       "function": "PrismGrowScale_float",
       "calls": 2,
       "ported": true
@@ -939,6 +944,14 @@
       "approximations": []
     },
     {
+      "path": "Assets/_Graphics/Materials/Graphs/BlackHoleLens.shader",
+      "guid": "2d2b42dc95bb446eaeee676f88638e9d",
+      "name": "CosmicShore/BlackHoleLens",
+      "route": "missing",
+      "why": "hand-written .shader: no translation yet",
+      "approximations": []
+    },
+    {
       "path": "Assets/_Graphics/Materials/Graphs/BlockGraph.shadergraph",
       "guid": "bf8c159f627e64b439094797bff88611",
       "name": "Shader Graphs/BlockGraph",
@@ -950,8 +963,8 @@
       "path": "Assets/_Graphics/Materials/Graphs/CageGraph.shadergraph",
       "guid": "6bb03b2998dc62b4b8f9964d5fe5c97e",
       "name": "Shader Graphs/CageGraph",
-      "route": "family",
-      "why": "hand-tuned family Cage",
+      "route": "compiled",
+      "why": "Shader Graph compiler",
       "approximations": []
     },
     {
@@ -966,6 +979,14 @@
       "path": "Assets/_Graphics/Materials/Graphs/ChargeCrystal.shader",
       "guid": "3c26ca90a8014ba2894f6d3007b6fdae",
       "name": "Shader Graphs/ChargeCrystal",
+      "route": "hand",
+      "why": "hand translation (Content/Shaders/Hand)",
+      "approximations": []
+    },
+    {
+      "path": "Assets/_Graphics/Materials/Graphs/CloakGhost.shader",
+      "guid": "3d37f897d98a45149820ed07d0873542",
+      "name": "CosmicShore/CloakGhost",
       "route": "missing",
       "why": "hand-written .shader: no translation yet",
       "approximations": []
@@ -982,8 +1003,8 @@
       "path": "Assets/_Graphics/Materials/Graphs/CrystalGraph.shadergraph",
       "guid": "11986b08af564954bb111977a5cf4dac",
       "name": "Shader Graphs/CrystalGraph",
-      "route": "family",
-      "why": "hand-tuned family Crystal",
+      "route": "compiled",
+      "why": "Shader Graph compiler",
       "approximations": []
     },
     {
@@ -1200,8 +1221,8 @@
       "path": "Assets/_Graphics/Materials/Graphs/SnowGraph.shadergraph",
       "guid": "85c2251bbb0f9b746807624041e02ff3",
       "name": "Shader Graphs/SnowGraph",
-      "route": "family",
-      "why": "hand-tuned family Snow",
+      "route": "compiled",
+      "why": "Shader Graph compiler",
       "approximations": []
     },
     {
@@ -1224,9 +1245,11 @@
       "path": "Assets/_Graphics/Materials/Graphs/SpindleGraph.shadergraph",
       "guid": "545a7b2ee58b90744bdb1c9e265a09f4",
       "name": "Shader Graphs/SpindleGraph",
-      "route": "family",
-      "why": "hand-tuned family Spindle",
-      "approximations": []
+      "route": "compiled",
+      "why": "Shader Graph compiler",
+      "approximations": [
+        "ObjectNode: world bounds are the object\u0027s origin"
+      ]
     },
     {
       "path": "Assets/_Graphics/Materials/Graphs/StarGraph.shadergraph",
@@ -1234,6 +1257,22 @@
       "name": "Shader Graphs/StarGraph",
       "route": "compiled",
       "why": "Shader Graph compiler",
+      "approximations": []
+    },
+    {
+      "path": "Assets/_Graphics/Materials/Graphs/StoatPathDots.shader",
+      "guid": "5018e4b4020843ff80584518a4bdd471",
+      "name": "CosmicShore/StoatPathDots",
+      "route": "missing",
+      "why": "hand-written .shader: no translation yet",
+      "approximations": []
+    },
+    {
+      "path": "Assets/_Graphics/Materials/Graphs/StoatRipple.shader",
+      "guid": "bf0a069980a94aa6a78c30fa78bea1a7",
+      "name": "CosmicShore/StoatRipple",
+      "route": "missing",
+      "why": "hand-written .shader: no translation yet",
       "approximations": []
     },
     {
@@ -1272,8 +1311,8 @@
       "path": "Assets/_Graphics/Materials/Graphs/VesselGraph.shadergraph",
       "guid": "0236447d5f06b0541a43756d85b5f222",
       "name": "Shader Graphs/VesselGraph",
-      "route": "family",
-      "why": "hand-tuned family Vessel",
+      "route": "compiled",
+      "why": "Shader Graph compiler",
       "approximations": []
     },
     {
@@ -1296,9 +1335,13 @@
       "path": "Assets/_Graphics/Materials/Graphs/Wormhole.shader",
       "guid": "1b0aa366a170fb99b7d63b228298811a",
       "name": "CosmicShore/Wormhole",
-      "route": "missing",
-      "why": "hand-written .shader: no translation yet",
-      "approximations": []
+      "route": "hand",
+      "why": "hand translation (Content/Shaders/Hand)",
+      "approximations": [
+        "Blend [_SrcBlend] [_DstBlend]: a property-driven blend draws as SrcAlpha OneMinusSrcAlpha",
+        "ZWrite [_ZWrite]: a property-driven value draws as the default",
+        "Panorama: the partner\u0027s six-face capture is a texture array Amoebius does not have (copyTextureSupport None, so the game never readies one); the void colour stands in"
+      ]
     },
     {
       "path": "Assets/_Graphics/Materials/Lifeform_World_Shader Graphs/CreatureTextureGraph.shadergraph",
@@ -1405,6 +1448,14 @@
       "approximations": []
     },
     {
+      "path": "Assets/_Graphics/Materials/Shaders/CrystalChargeArcsShader.shader",
+      "guid": "0979e966bf522ddf32cac152d0784867",
+      "name": "Custom/CrystalChargeArcsShader",
+      "route": "missing",
+      "why": "hand-written .shader: no translation yet",
+      "approximations": []
+    },
+    {
       "path": "Assets/_Graphics/Materials/Shaders/DistortionShader.shader",
       "guid": "f7e6f65b91ab2a34caa2107186b6b7d5",
       "name": "Custom/TransparentPerlinDistortion",
@@ -1421,22 +1472,20 @@
       "approximations": []
     },
     {
-      "path": "Assets/_Graphics/Materials/Shaders/OmniChargeEdgesShader.shader",
-      "guid": "fea45e80b3e94b3e34515f9ff6446e87",
-      "name": "Custom/OmniChargeEdgesShader",
-      "route": "missing",
-      "why": "hand-written .shader: no translation yet",
-      "approximations": []
-    },
-    {
       "path": "Assets/_Graphics/Materials/Shaders/OmniCrystalFresnelShader.shader",
       "guid": "554d96e9b67505208a3fbf0acb165350",
       "name": "Custom/OmniCrystalFresnelShader",
       "route": "hand",
       "why": "hand translation (Content/Shaders/Hand)",
-      "approximations": [
-        "CrystalMorph: the mesh\u0027s TEXCOORD2/3 morph targets are not in the graph template; drawn unmorphed"
-      ]
+      "approximations": []
+    },
+    {
+      "path": "Assets/_Graphics/Materials/Shaders/OmniDepthPrismShader.shader",
+      "guid": "37b2f57f9f40086be2bfd7f1092aa88c",
+      "name": "Custom/OmniDepthPrismShader",
+      "route": "missing",
+      "why": "hand-written .shader: no translation yet",
+      "approximations": []
     },
     {
       "path": "Assets/_Graphics/Materials/Shaders/OmniShepardFresnelShader.shader",
@@ -1479,6 +1528,22 @@
       "approximations": []
     },
     {
+      "path": "Assets/_Graphics/Materials/Shaders/ThresherBallFresnelShader.shader",
+      "guid": "7d96c7ee56024c89a1b91d83a532305b",
+      "name": "CosmicShore/ThresherBallFresnel",
+      "route": "missing",
+      "why": "hand-written .shader: no translation yet",
+      "approximations": []
+    },
+    {
+      "path": "Assets/_Graphics/Materials/Shaders/ThresherChainFresnelShader.shader",
+      "guid": "8766118338f04352bbc3c42846d6e586",
+      "name": "CosmicShore/ThresherChainFresnel",
+      "route": "missing",
+      "why": "hand-written .shader: no translation yet",
+      "approximations": []
+    },
+    {
       "path": "Assets/_Graphics/Materials/Shaders/TrailViewerShader.shader",
       "guid": "20424d64830139e4d856f9eff8565409",
       "name": "Custom/ViewAngleBasedColorBlendHDR",
@@ -1514,8 +1579,8 @@
       "path": "Assets/_Graphics/Materials/Shaders/UI/VolumeDisplayShader.shader",
       "guid": "ed0cdfdab2e823445ac8df7052a701c8",
       "name": "Custom/VolumeDisplayShader",
-      "route": "missing",
-      "why": "hand-written .shader: no translation yet",
+      "route": "own",
+      "why": "uGUI renderer, translated UI shader (Render/UiCustomShaders.cs)",
       "approximations": []
     },
     {

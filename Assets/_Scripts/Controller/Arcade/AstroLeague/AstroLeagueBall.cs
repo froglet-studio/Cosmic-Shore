@@ -62,19 +62,21 @@ namespace CosmicShore.Gameplay
         public static readonly List<AstroLeagueBall> Live = new();
 
         [Header("Cell overload")]
-        [Tooltip("How many balls may be LOOSE IN ONE CELL at once. The ball whose arrival crosses " +
-                 "this count detonates every loose ball in that cell, ITSELF INCLUDED, regardless " +
-                 "of domain. 0 disables the rule. This is a property of BALLS, not of a mode: it " +
+        [Tooltip("How many balls ONE SCARAB may have LOOSE IN ONE CELL at once, counted by the " +
+                 "ball's domain (a forged ball is locked to its maker's). The arrival of one more " +
+                 "of that domain's balls detonates EVERY loose ball in the cell, ITSELF INCLUDED, " +
+                 "whatever its domain - so the greedy Scarab blows up its rivals' balls along with " +
+                 "its own. 0 disables the rule. This is a property of BALLS, not of a mode: it " +
                  "travels with the prefab into freestyle, the menu and any future mode, so no " +
                  "controller can forget to install it.")]
-        [SerializeField, Min(0)] int cellBallLimit = 4;
+        [SerializeField, Min(0)] int cellBallLimit = 5;
 
         [Tooltip("Explosion radius of a cell overload, as a multiple of each ball's own radius. " +
-                 "Kept EQUAL to ScarabNucleusFieldConfig.detonationRadiusScale (both 2) so the two " +
+                 "Kept EQUAL to ScarabNucleusFieldConfig.detonationRadiusScale (both 6) so the two " +
                  "'too many balls' events read as the same event - they are deliberately separate " +
                  "fields because one belongs to the ball and the other to a vessel ability, and a " +
                  "platform ball must not depend on a Scarab config to know how loudly to die.")]
-        [SerializeField, Min(0.1f)] float cellOverloadRadiusScale = 2f;
+        [SerializeField, Min(0.1f)] float cellOverloadRadiusScale = 6f;
 
         [Tooltip("Seconds between cell-membership checks. Cell.FindCellContaining is O(active " +
                  "cells) and its own docs say to call it at lifecycle points rather than per " +
@@ -2286,13 +2288,23 @@ namespace CosmicShore.Gameplay
 
         #region Juice (replicated to every peer)
 
+        /// <summary>
+        /// Every peer: the detonation beat. A positive <paramref name="blastDiameter"/> also spawns
+        /// the ball's DOMAIN BLAST here, on every peer, rather than on the server alone: prisms are
+        /// simulated per peer (nothing replicates a prism's destruction), which is why every
+        /// vessel blast already runs on every peer. A server-only blast destroyed and popped
+        /// opposing prisms on the host and left every client's copy of that mass standing. Its
+        /// ball kicks stay server-authoritative on their own — <see cref="RequestBlast"/> from a
+        /// vessel-less blast on a client does nothing.
+        /// </summary>
         [ClientRpc]
-        void Detonate_ClientRpc(Vector3 position, float radiusScale)
+        void Detonate_ClientRpc(Vector3 position, float radiusScale, float blastDiameter, Domains blastDomain)
         {
             float s = Mathf.Max(0.1f, radiusScale);
             EmitBurst(position, Vector3.up, Mathf.RoundToInt(settings.goalParticleBurst * s));
             ShakeCamera(settings.goalShakeIntensity * s, settings.goalShakeDuration, position);
             HapticController.PlayHaptic(HapticType.MineCollision);
+            if (blastDiameter > 0f) SpawnDomainBlast(position, blastDiameter, blastDomain);
         }
 
         /// <summary>
@@ -2437,6 +2449,21 @@ namespace CosmicShore.Gameplay
             return n;
         }
 
+        /// <summary>How many of <paramref name="domain"/>'s balls are loose in
+        /// <paramref name="cell"/> right now — one Scarab's share, the count
+        /// <see cref="cellBallLimit"/> is measured against.</summary>
+        public static int CountLooseInCell(Cell cell, Domains domain)
+        {
+            if (cell == null) return 0;
+            int n = 0;
+            for (int i = 0; i < Live.Count; i++)
+            {
+                var ball = Live[i];
+                if (ball != null && ball.LastHitDomain == domain && ball.IsLooseIn(cell)) n++;
+            }
+            return n;
+        }
+
         /// <summary>
         /// Server: detonate every ball loose in <paramref name="cell"/> - the ball that triggered
         /// the overload included, because by the time this runs it is loose like any other and
@@ -2458,7 +2485,7 @@ namespace CosmicShore.Gameplay
 
         /// <summary>
         /// Server: detect the moment this ball ENTERS a cell, and overload that cell if its arrival
-        /// is the one that crosses <see cref="cellBallLimit"/>.
+        /// puts its domain over <see cref="cellBallLimit"/> (5 per Scarab: the sixth detonates).
         ///
         /// Entry is a TRANSITION, not a position test, which is why the cell is cached: a ball
         /// already sitting in a crowded cell must not re-trigger every poll. All four ways in are
@@ -2488,8 +2515,10 @@ namespace CosmicShore.Gameplay
             _looseInCell = now;
             if (now == null) return false;
 
+            // PER SCARAB: only this ball's own domain is measured against the limit, but the
+            // overload below still takes every loose ball in the cell, whatever its domain.
+            if (CountLooseInCell(now, n_LastHitDomain.Value) <= cellBallLimit) return false;
             int loose = CountLooseInCell(now);
-            if (loose < cellBallLimit) return false;
 
             // ANNOUNCE FIRST, THEN DETONATE — the order is load-bearing, not style. A forged ball
             // is DESPAWNED by its own detonation (DetonateWithRadiusServer → DespawnIfForged), and
@@ -2504,7 +2533,7 @@ namespace CosmicShore.Gameplay
             CellOverload_ClientRpc(now.transform.position, loose);
             CSDebug.LogVerbose(CSLogChannel.ScarabNucleus,
                 $"[AstroLeagueBall] Cell overload — {loose} loose ball(s) detonating in {now.name} " +
-                $"(limit {cellBallLimit}, any domain).");
+                $"({n_LastHitDomain.Value} over its {cellBallLimit}-per-Scarab limit).");
 
             DetonateAllLooseInCellServer(now, cellOverloadRadiusScale);
             return true;
@@ -2517,7 +2546,7 @@ namespace CosmicShore.Gameplay
         public void DetonateServer()
         {
             if (!IsServer) return;
-            Detonate_ClientRpc(transform.position, 1f);
+            Detonate_ClientRpc(transform.position, 1f, 0f, n_LastHitDomain.Value);   // a goal is burst only, no blast
             SetHiddenServer(true);
         }
 
@@ -2569,7 +2598,7 @@ namespace CosmicShore.Gameplay
         /// <summary>
         /// Server: blow the ball up where it stands with an explosion <paramref name="radiusScale"/>×
         /// its own radius, then spend it. This is the nucleus overload detonation (SCARAB.md §4.6) —
-        /// the burst and shake scale with the blast so a 2× explosion reads as one, and the ball leaves
+        /// the burst and shake scale with the blast so a 6× explosion reads as one, and the ball leaves
         /// through the same detonate-then-despawn beat as a scored ball (continuity of existence: it
         /// bursts and fades, it never blinks out).
         /// </summary>
@@ -2577,8 +2606,10 @@ namespace CosmicShore.Gameplay
         {
             if (!IsServer) return;
             float scale = Mathf.Max(0.1f, radiusScale);
-            Detonate_ClientRpc(transform.position, scale);
-            SpawnDomainBlast(scale);
+            // MaxScale is a DIAMETER (the explosion mesh is a unit sphere grown by localScale),
+            // hence the ×2. Resolved here, where the ball's size is authoritative.
+            Detonate_ClientRpc(transform.position, scale, 2f * scale * BallWorldRadius(),
+                               n_LastHitDomain.Value);
             SetHiddenServer(true);
             DespawnIfForged();   // NOT ExpireServer: that would fire a second, unscaled burst
         }
@@ -2590,10 +2621,9 @@ namespace CosmicShore.Gameplay
         /// behaviour; it is what <c>ExplosionImpactor</c> already does with
         /// <c>affectSelf = false, destructive = true</c>, which every shipped blast prefab authors.
         ///
-        /// The blast radius is <paramref name="radiusScale"/>× the ball's own radius. MaxScale is a
-        /// DIAMETER (the explosion mesh is a unit sphere grown by localScale), hence the ×2.
+        /// Runs on EVERY peer (from <see cref="Detonate_ClientRpc"/>) — see that RPC for why.
         /// </summary>
-        void SpawnDomainBlast(float radiusScale)
+        void SpawnDomainBlast(Vector3 position, float diameter, Domains domain)
         {
             if (settings == null) return;
             var prefabs = settings.detonationExplosionPrefabs;
@@ -2601,13 +2631,13 @@ namespace CosmicShore.Gameplay
 
             var init = new AOEExplosion.InitializeStruct
             {
-                OwnDomain = n_LastHitDomain.Value,
+                OwnDomain = domain,
                 Vessel = null,
                 // No vessel made this blast, so nothing may be credited to a pilot for it.
                 AnnonymousExplosion = true,
-                MaxScale = 2f * radiusScale * BallWorldRadius(),
-                OverrideMaterial = ResolveDomainBlastMaterial(n_LastHitDomain.Value),
-                SpawnPosition = transform.position,
+                MaxScale = diameter,
+                OverrideMaterial = ResolveDomainBlastMaterial(domain),
+                SpawnPosition = position,
                 SpawnRotation = Quaternion.identity,
             };
 

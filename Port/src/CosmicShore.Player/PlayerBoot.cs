@@ -38,22 +38,33 @@ namespace CosmicShore.Player
             Console.WriteLine($"[player] verbose log channels: {field.GetValue(null)}");
         }
 
-        /// <summary>This install's anonymous player id: minted once and kept, like the real service's device identity.</summary>
+        static readonly object s_idLock = new();
+        static string s_playerId;
+
+        /// <summary>
+        /// This install's anonymous player id: minted once and kept, like the real service's device
+        /// identity. Read by the game's sign-in and by the online service's connector thread, so the
+        /// first read mints it under a lock and every later one returns the same id.
+        /// </summary>
         static string AnonymousPlayerId()
         {
-            var file = System.IO.Path.Combine(Application.persistentDataPath, "ugs-player-id");
-            try
+            lock (s_idLock)
             {
-                if (System.IO.File.Exists(file))
+                if (s_playerId != null) return s_playerId;
+                var file = System.IO.Path.Combine(Application.persistentDataPath, "ugs-player-id");
+                try
                 {
-                    var existing = System.IO.File.ReadAllText(file).Trim();
-                    if (existing.Length > 0) return existing;
+                    if (System.IO.File.Exists(file))
+                    {
+                        var existing = System.IO.File.ReadAllText(file).Trim();
+                        if (existing.Length > 0) return s_playerId = existing;
+                    }
+                    var id = Guid.NewGuid().ToString("N").Substring(0, 24);
+                    System.IO.File.WriteAllText(file, id);
+                    return s_playerId = id;
                 }
-                var id = Guid.NewGuid().ToString("N").Substring(0, 24);
-                System.IO.File.WriteAllText(file, id);
-                return id;
+                catch (Exception) { return "local-player"; }
             }
-            catch (Exception) { return "local-player"; }
         }
 
         public void Start(string firstScene)
@@ -64,13 +75,11 @@ namespace CosmicShore.Player
             Debug.Sink = Log;
             _audio = PlayerAudio.Start(root, Headless);
             CosmicShore.Engine.Networking.NetworkManager.EmulateNetcodeLifecycle = true;
-            // A real transport between players (TCP; COSMIC_SHORE_NET=off keeps one process).
+            // START ONLINE: UGS, as the Unity build plays (sign-in, Relay, Lobby: UgsSetup.InstallOnline, which builds the
+            // stack through NetStack - docs/MULTIPLAYER.md §6.9-6.10). START (COSMIC_SHORE_NET=off) keeps one offline process.
             CosmicShore.Engine.Networking.NetDriver.Enabled = Environment.GetEnvironmentVariable("COSMIC_SHORE_NET") != "off";
             CosmicShore.Engine.Services.AuthenticationService.AnonymousIdProvider = AnonymousPlayerId;
-            // Sessions (lobby + relay) through a directory every local/LAN player shares.
-            if (CosmicShore.Engine.Networking.NetDriver.Enabled)
-                CosmicShore.Engine.Networking.MultiplayerService.Instance =
-                    new CosmicShore.Engine.Networking.DirectoryMultiplayerService(CosmicShore.Engine.Networking.DirectoryMultiplayerService.DefaultDirectory);
+            if (CosmicShore.Engine.Networking.NetDriver.Enabled) UgsSetup.InstallOnline(root);
             // The game's own verbose log channels (CSDebug.VerboseChannels - the Froglet Toolbox
             // Logging tab in the editor): COSMIC_SHORE_LOG_CHANNELS=Party,Boot. Only a Debug
             // (development) build compiles LogVerbose in.
@@ -121,10 +130,17 @@ namespace CosmicShore.Player
         {
             Loop.Tick(step);
             CosmicShore.Engine.Audio.Fmod.RuntimeManager.Update();
+            // Application.Quit() anywhere in the frame (the settings panel's QUIT GAME): as in Unity,
+            // the quit happens at the frame's end, and a wantsToQuit handler may still cancel it.
+            if (Application.QuitRequested && Application.RunQuitSequence()) QuitNow = true;
         }
+
+        /// <summary>The game quit (<see cref="Application.Quit()"/>) and nothing cancelled it: the host closes now.</summary>
+        public bool QuitNow { get; private set; }
 
         public void Dispose()
         {
+            (CosmicShore.Engine.Networking.MultiplayerService.Instance as IDisposable)?.Dispose();
             Loop?.Dispose();
             PlayerAudio.Stop(_audio);
             _audio = null;

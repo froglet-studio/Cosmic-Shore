@@ -6,6 +6,19 @@
 
 The main menu uses a horizontal sliding panel system managed by `ScreenSwitcher`. Screen panels are laid out side-by-side and the container slides left/right to reveal each screen.
 
+How the strip is positioned (fixed 2026-10-12, after it broke on the first iPhone build and at 4:3):
+- It sits in a runtime `Screens Viewport`, a full-canvas `RectMask2D` child of the root canvas
+  placed just before `Safe Area`.
+- Each screen gets a full-screen SLOT, and its content is laid out in the safe rect within that
+  slot.
+- Full-width background images bleed to the slot edges (`SafeAreaBleed`). So do the NavBar band
+  and modal backgrounds. A notched phone therefore looks like the desktop.
+- The strip slides one slot per screen by `anchoredPosition`. Never set `transform.position`,
+  which is absolute screen pixels.
+- It re-lays out whenever the slot width or the safe insets change.
+
+Details: `Docs/UI_ARCHITECTURE_AUDIT.md` §1.3.
+
 #### IScreen Interface
 
 All menu screens that need lifecycle notifications implement `IScreen` (`Assets/_Scripts/UI/Interfaces/IScreen.cs`):
@@ -27,7 +40,7 @@ public interface IScreen
 | Screen | Class | Extends `IScreen` | Init Pattern |
 |---|---|---|---|
 | Home | `HomeScreen` | No | `Start()` |
-| Arcade (ARK) | `ArcadeScreen` | No | `Start()` |
+| Ark (ARK) — the Elemental Converter (2026-10-13; the arcade moved to `ModalWindows.ARCADE`) | `ElementalConverterView` (+ the disabled legacy `StoreScreen`) | Yes | `OnScreenEnter()` → idle crystals; CONVERT plays the omni combine (`Docs/Studios/OMNI_COMBINE_LAB.md` § In the game) |
 | Store | `StoreScreen` (extends `View`) | No | `Start()` + `OnEnable()` events |
 | Port (Leaderboards) | `LeaderboardsMenu` | Yes | `OnScreenEnter()` → `LoadView()` |
 | Hangar | `HangarScreen` | Yes | `OnScreenEnter()` → `LoadView()` |
@@ -213,7 +226,7 @@ The scored shape-drawing minigame (`ShapeDrawingManager` + `ShapeDrawingCrystalM
 
 **The painting toy is the successor** — scoreless connect-the-dots in the toybox (`PaintingToy` / `ShapeDefinition` via `PaintingDefinitionSO.sourceShape`).
 
-**Still in the tree:** `SegmentSpawner` (SkimRace live; also lays trail segments that can carry `ShapeCollisionTrigger`), `SpawnableShapeBase` + spawnable shapes, `ShapeSign` / `ShapeCollisionTrigger` / `SpawnableShapeSign` / `ModeSelectTrigger`, `ShapeDefinition`. SOAP events `EventOnShapeGameModeStarted` / `EventOnShapePrismReturnToPool` stay on live prism prefabs (inert — **never Raise them**; they dump every listener to `Prism.ReturnToPool`).
+**Still in the tree:** `SegmentSpawner` (SkimRace live; also lays trail segments that can carry `ShapeCollisionTrigger`), `SpawnableShapeBase` + spawnable shapes, `ShapeSign` / `ShapeCollisionTrigger` / `SpawnableShapeSign` / `ModeSelectTrigger`, `ShapeDefinition`. SOAP event ASSETS `EventOnShapeGameModeStarted` / `EventOnShapePrismReturnToPool` are kept but **nothing listens to them any more**: the `EventListenerNoParam` pairs that wired them to `Prism.ReturnToPool` on 8 prism prefabs were stripped (2026-09) because every lattice-flora growth step paid for serializing their UnityEvent lists in `Instantiate.Copy` (`Docs/archive/PERFORMANCE_LOG_2026.md` §0.11.6). Raising them is now a no-op; re-adding a listener to a PRISM prefab is re-adding that cost to every prism laid.
 
 #### Phase 3: Scoring & PlayerScoreCards (Deferred)
 

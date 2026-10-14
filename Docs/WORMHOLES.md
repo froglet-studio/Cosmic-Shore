@@ -10,6 +10,15 @@ playtested and confirmed the same day).
 > The idea was prototyped as a standalone "Wormhole" Cell Selector world, which was retired once the
 > fold carried it: there is no wormhole cell, and `Tools/Build/author_wormholes.py --check` asserts
 > none is listed in Menu_Main.
+>
+> **A second placer (2026-10-08):** the crystal wormhole (`Docs/CRYSTAL_WORMHOLE.md`) seats an untolled,
+> ownerless pair on its attractor and repulsor, drawn with `WormholeSeamless.mat` — the same shader with
+> `_SoftEdge > 0`: alpha-blended, its view dissolving into the world toward the silhouette, no rim. The
+> fold's `Wormhole.mat` keeps `_SoftEdge 0` (its hard sphere and domain rim, unchanged). It began as the
+> Black Hole cell, which seated the pair in the centres of its black hole and its white hole, each the
+> size of the black hole's shadow, so the sink's mouth was what the player saw where the shadow was
+> (`SpawnableBlackHole.SeatWormhole`, with the fold's material and view numbers); that cell is
+> superseded by the crystal wormhole (`Docs/BLACK_HOLE.md` §12).
 
 Files:
 

@@ -99,6 +99,13 @@ aimed with.
   near plane sized for a chase camera 250 units back clips away everything this one is close to.
   Its three sibling windows each derive their own for their own reasons.
 
+**Shared since 2026-10-13:** the Thresher's launch sight (`THRESHER.md` §5a) reuses `ScopePipView`
+(it gained `Tick(eye, rotation, fov)` for an eye that is not on a hull, `RenderAspect` for a
+non-square window, and `Label`; the nose-eye `Tick` is unchanged and the defaults reproduce the
+Serpent exactly) and `ScopePetalImage` (its outline, hub and miter are now three `protected
+virtual` members defaulting to `ScopePetalGeometry`; `TimePetalImage` overrides them for the Time
+petal). Change either with both instruments in mind.
+
 **What this retired:** `VesselFirstPersonView` is **deleted**, and `CustomCameraController` no
 longer carries `FirstPerson` / `FirstPersonOffset` or the rigid-attach branch. An unreferenced
 camera vantage bound at two `IsLocalPilot` sites is exactly the "unreferenced subsystem eventually
@@ -143,7 +150,9 @@ Two terms were removed to get here, and both were defensible when written:
 more magnification step. `upgradeZoomDepthMultiplier` (1.6) multiplies the zoom depth **and divides
 the floor by the same number**, so the extra reach is actually reachable instead of running into a
 ceiling the upgrade cannot pass — 22° at full zoom at rest becomes 13.8°, and Space 10 reaches
-6.9°.
+6.9°. Since 2026-10-13 the same upgrade also lets the Serpent's seed walls steal an opponent's
+SHIELDED prisms from their edge (Garrett; `SERPENT_SEED_WALL.md`, "Stealing"), and Space sets the
+walls' steal radius.
 
 ## The shot
 
@@ -1109,7 +1118,7 @@ prints the ring radius AND the mark's span for each view:
 | an unconditional `[SerpentScope]` warning | a named gate refused — the warning says which |
 | `ring 6 px` and it does not grow with the trigger | the zoom is not reaching `ReticlePixels` |
 | `Flight reticle STOOD DOWN` | no gameplay camera, or the aim point projected behind it |
-| both rings and marks printed and plausible | they are drawing and something is **over** them — `FrogletTools > Diagnostics > Report On-Screen UI`, in play mode |
+| both rings and marks printed and plausible | they are drawing and something is **over** them — `FrogletTools > UI > Report On-Screen UI`, in play mode |
 
 That last row is deliberately not a warning, for the reason this file already records: an
 unconditional "everything checks out" becomes a permanent false positive the day the real defect is
@@ -1183,7 +1192,7 @@ ring from 6 px to 82 and closes the one blind spot in the check that was suppose
 the next report can only be one of two things — *still nothing*, which now means the rings are not
 drawing at all and size was never the cause, or *there it is*. Either answer is progress; a fifth
 round of reading source would not be. `CSLogChannel.SerpentScope` in FrogletTools > Toolbox >
-Logging, and `FrogletTools > Diagnostics > Report On-Screen UI` in play mode, are still the
+Logging, and `FrogletTools > UI > Report On-Screen UI` in play mode, are still the
 separator — and note round 9a's console was being **flooded** by an unrelated per-frame
 `_PrismSightPeer*` array error, which is exactly the shape of thing that buries a once-per-session
 diagnostic line. That spam is fixed (see `Docs/LIT.md`), so the scope's own report is readable now
@@ -1423,7 +1432,7 @@ the cheaper-to-undo one switchable.**
   LOCKED cards (its designed state for an un-iconed vessel) with a dashed placeholder mark where
   the art goes. Since round 4 the Charge card's cooldown veil **does** draw on it, so the row
   reports the recharge; what is missing is the icon, which is art. Wiring real icons needs that art
-  plus an in-editor pass with **FrogletTools ▸ Vessels ▸ Wire Vessel Ability Row**.
+  plus an in-editor pass with **FrogletTools ▸ Vessels ▸ Wiring ▸ Wire Vessel Ability Row**.
 - **The scope window is a second render of the world**, and unlike the connecting panel's preview
   there is no gameplay camera to stand down — the player is flying with it. Paid for with a 512²
   target, no shadows, no AA, 30 Hz and a lifetime of exactly as long as the trigger is held;

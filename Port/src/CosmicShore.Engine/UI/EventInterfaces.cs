@@ -19,6 +19,9 @@ namespace CosmicShore.Engine.UI
     public interface IDragHandler : IEventSystemHandler { void OnDrag(PointerEventData eventData); }
     public interface IEndDragHandler : IEventSystemHandler { void OnEndDrag(PointerEventData eventData); }
     public interface IScrollHandler : IEventSystemHandler { void OnScroll(PointerEventData eventData); }
+    public interface IInitializePotentialDragHandler : IEventSystemHandler { void OnInitializePotentialDrag(PointerEventData eventData); }
+    public interface IDropHandler : IEventSystemHandler { void OnDrop(PointerEventData eventData); }
+    public interface IUpdateSelectedHandler : IEventSystemHandler { void OnUpdateSelected(BaseEventData eventData); }
 
     public interface ISelectHandler : IEventSystemHandler { void OnSelect(BaseEventData eventData); }
     public interface IDeselectHandler : IEventSystemHandler { void OnDeselect(BaseEventData eventData); }

@@ -231,6 +231,24 @@ public class VesselTransformer : MonoBehaviour
         protected float RollScalar => Mathf.Max(0f, ExternalTurnRateMultiplier);
 
         /// <summary>
+        /// The vessel's own FLIGHT CLOCK, as a multiple of real time — 1 = no effect. A time warp: the
+        /// hull flies the path it was already flying, only sooner. It scales every step of this class's
+        /// own flight together (the steering in Pitch/Yaw/Roll, the nose's follow toward the command, and
+        /// <c>MoveShipVector</c>'s grip, engine spool and travel), so the curvature of the path is
+        /// unchanged and only the rate along it moves; the published <c>VesselStatus.Speed</c> is the real
+        /// speed (× this). Overrides of those methods and the scalar model do not read it. Modifier
+        /// ageing stays on real time (a shove lasts as long as it lasts).
+        ///
+        /// <para>One writer at a time, the <see cref="ExternalTurnRateMultiplier"/> contract: the setter
+        /// hands it back at 1 and <see cref="ResetTransformer"/> clears it. Its one writer is the Stoat's
+        /// pathfinder boost (<c>StoatPathfinderExecutor</c>, <c>R_VesselActions/STOAT_DIPOLE.md</c>).</para>
+        /// </summary>
+        public float FlightTimeScale { get; set; } = 1f;
+
+        /// <summary>This frame's step of the vessel's own flight clock (<see cref="FlightTimeScale"/>).</summary>
+        protected float FlightDeltaTime => Time.deltaTime * Mathf.Max(0f, FlightTimeScale);
+
+        /// <summary>
         /// While true the transformer applies NO bank-into-turn — an ability owns the roll axis
         /// for its duration and is the only thing rolling the vessel. Default false; cleared by
         /// <see cref="ResetTransformer"/>, and every setter is responsible for clearing it (the
@@ -442,7 +460,7 @@ public class VesselTransformer : MonoBehaviour
         protected virtual void MoveRestricted()
         {
             if (velocityShift.sqrMagnitude <= 0f) return;
-            transform.position += velocityShift * Time.deltaTime;
+            transform.position += velocityShift * (WarpFieldRuntime.ScaleAt(transform.position) * Time.deltaTime);
         }
 
         // The multiplier this transformer last raised on boostChanged. NaN = raise on the next
@@ -488,6 +506,9 @@ public class VesselTransformer : MonoBehaviour
     
         public void ToggleActive(bool active) => isActive = active;
 
+        /// <summary>True while this transformer flies its hull (the machine that simulates it, outside a hold).</summary>
+        public bool IsActive => isActive;
+
         // ----------------------------- Reset State -----------------------------
         public virtual void ResetTransformer()
         {
@@ -506,6 +527,7 @@ public class VesselTransformer : MonoBehaviour
             // Movement
             BankIntoTurnSuppressed = false;   // an interrupted ability must not strand the roll axis
             ExternalTurnRateMultiplier = 1f;  // ...nor a slowed turn
+            FlightTimeScale = 1f;             // ...nor a warped clock
             velocityShift = Vector3.zero;
             _bodyFlaring = true;   // force one rest-state material write on the next pass
             _engineFlaring = true;
@@ -551,7 +573,7 @@ public class VesselTransformer : MonoBehaviour
                 : accumulatedRotation;
 
             transform.rotation = Quaternion.Slerp(
-                transform.rotation, target, NoseFollowFraction(target, Time.deltaTime));
+                transform.rotation, target, NoseFollowFraction(target, FlightDeltaTime));
         }
 
         /// <summary>
@@ -900,7 +922,7 @@ public class VesselTransformer : MonoBehaviour
         {
             if (InputStatus == null) return;
             accumulatedRotation = Quaternion.AngleAxis(
-                InputStatus.YSum * (speed * RotationThrottleScaler + PitchScaler) * TurnScalar * Time.deltaTime,
+                InputStatus.YSum * (speed * RotationThrottleScaler + PitchScaler) * TurnScalar * FlightDeltaTime,
                 transform.right) * accumulatedRotation;
         }
 
@@ -908,7 +930,7 @@ public class VesselTransformer : MonoBehaviour
         {
             if (InputStatus == null) return;
             accumulatedRotation = Quaternion.AngleAxis(
-                InputStatus.XSum * (speed * RotationThrottleScaler + YawScaler) * TurnScalar * Time.deltaTime,
+                InputStatus.XSum * (speed * RotationThrottleScaler + YawScaler) * TurnScalar * FlightDeltaTime,
                 transform.up) * accumulatedRotation;
         }
 
@@ -916,7 +938,7 @@ public class VesselTransformer : MonoBehaviour
         {
             if (InputStatus == null || BankIntoTurnSuppressed) return;
             accumulatedRotation = Quaternion.AngleAxis(
-                InputStatus.YDiff * (speed * RotationThrottleScaler + RollScaler) * RollScalar * Time.deltaTime,
+                InputStatus.YDiff * (speed * RotationThrottleScaler + RollScaler) * RollScalar * FlightDeltaTime,
                 transform.forward) * accumulatedRotation;
         }
 
@@ -1239,7 +1261,8 @@ public class VesselTransformer : MonoBehaviour
 
         void MoveShipVector()
         {
-            float dt = Time.deltaTime;
+            // The flight's own clock (a time warp scales the path's RATE, never its shape).
+            float dt = FlightDeltaTime;
             SeedVectorState();
             SyncExternalWrites();
 
@@ -1296,11 +1319,16 @@ public class VesselTransformer : MonoBehaviour
             if (toggleManualThrottle)
                 effectiveSpeed = Mathf.Lerp(0, effectiveSpeed, InputStatus.Throttle);
 
-            VesselStatus.Speed = effectiveSpeed;
+            // Warp field: see MoveShipScalar.
+            float warp = WarpFieldRuntime.ScaleAt(transform.position);
+            effectiveSpeed *= warp;
+
+            // The REAL speed: what the hull covers per second of the world's clock.
+            VesselStatus.Speed = effectiveSpeed * Mathf.Max(0f, FlightTimeScale);
             VesselStatus.Course = speedNow > 1e-4f ? _velocity / speedNow : transform.forward;
             _lastPublishedCourse = VesselStatus.Course;
 
-            transform.position += (effectiveSpeed * VesselStatus.Course + velocityShift) * dt;
+            transform.position += (effectiveSpeed * VesselStatus.Course + velocityShift * warp) * dt;
         }
 
         void MoveShipScalar()
@@ -1366,9 +1394,18 @@ public class VesselTransformer : MonoBehaviour
                 VesselStatus.Course = -VesselStatus.Course;
             }
 
+            // Warp field (Docs/WARP_FIELD.md): the vessel is warp-sized here, so it travels in
+            // warp-sized lengths — its output speed and its additive velocity channel (knockback,
+            // a black hole's pull) both scale, and in its own frame nothing changed. The internal
+            // `speed` stays unwarped: the turn scalers read it, and angles are scale-free. The
+            // PUBLISHED Speed is the warped world speed, which is what replicates and what the
+            // trail's wavelength timing divides by. Exactly 1 with no field.
+            float warp = WarpFieldRuntime.ScaleAt(transform.position);
+            effectiveSpeed *= warp;
+
             VesselStatus.Speed = effectiveSpeed;
 
-            transform.position += (effectiveSpeed * VesselStatus.Course + velocityShift) * Time.deltaTime;
+            transform.position += (effectiveSpeed * VesselStatus.Course + velocityShift * warp) * Time.deltaTime;
         }
 
         // ----------------------------- Modifiers -----------------------------
@@ -1508,5 +1545,13 @@ public class VesselTransformer : MonoBehaviour
         /// <summary>The ceiling every displacement shares unless a live one raises it
         /// (<see cref="ShipVelocityModifier.ceiling"/>), u/s.</summary>
         public float VelocityModifierCeiling => velocityModifierMax;
+
+        /// <summary>
+        /// The hull's unboosted full-throttle speed, u/s: <see cref="MinimumSpeed"/> + <see cref="ThrottleScaler"/>
+        /// (the fleet table's "cruise" for every hull whose speed comes from its throttle). A
+        /// yardstick for anything that must feel the same to a slow hull and a fast one — a black
+        /// hole's felt pull is measured in it (Docs/BLACK_HOLE.md §12).
+        /// </summary>
+        public float CruiseSpeed => Mathf.Max(0f, MinimumSpeed) + Mathf.Max(0f, ThrottleScaler);
     }
 }

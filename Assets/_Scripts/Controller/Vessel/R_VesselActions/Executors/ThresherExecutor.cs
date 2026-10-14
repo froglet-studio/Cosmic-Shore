@@ -34,18 +34,36 @@ namespace CosmicShore.Gameplay
     /// <item><b>At smash speed</b> the ball goes RED and destroys every prism it hits — its own
     /// domain's included — and each hit sets off an explosion that does the same (the Grizzly's
     /// blast with <c>AffectSelfOverride</c> on). The ball ploughs on, keeping <c>plough</c>.</item>
-    /// <item><b>Charge L5 "Lit"</b>: a hot ball burns the LIT domain colour, its explosions spare
-    /// its own domain (domain-sparing lives in the explosion layer, per the fleet rule), and it
-    /// bounces off its own domain's prisms even when hot.</item>
+    /// <item><b>Space L5 "Breaker"</b>: a red ball's DIRECT hit destroys super-shielded prisms
+    /// (the sanctioned DeactivateShields → Damage(devastate) sequence).</item>
     /// </list>
     /// Every kill goes through <see cref="Prism.Damage"/> with the ball's own velocity as the impact
     /// vector — the Rhino sword's contact-velocity idea at its core — so shields pop and
     /// super-shields hold as for every other hull.
     ///
-    /// <b>The chain slices.</b> While the chain is taut (or always, with Space L5 "Reaper Chain")
-    /// every rival prism its links touch is <see cref="Prism.Slice"/>d along the plane the chain is
-    /// sweeping, with debris at the touching link's own velocity. It never cuts its own domain, and
-    /// it skips shielded prisms unless Reaper Chain is active (then the first cut pops the shield).
+    /// <b>Enemy vessels: petals only</b> (the LOCKED PvP rule). The ball's swept path and every chain
+    /// link reach an enemy hull; a contact is a scored <see cref="CombatHitClass.Strike"/> that
+    /// STEALS <c>vesselHitPetals</c> (Charge-scaled) petals per element through
+    /// <see cref="CombatHitDrain.TryAdmit"/>, decided on the machine that owns this hull. Nothing
+    /// else touches the victim. Charge L5 "Magnet" draws the free ball toward the nearest enemy hull.
+    ///
+    /// <b>The chain slices and shields</b>, taut or slack. Every rival prism its links touch is
+    /// <see cref="Prism.Slice"/>d along the plane the chain is sweeping, with debris at the touching
+    /// link's own velocity, and every prism of its OWN domain it touches is shielded. A shielded rival
+    /// loses its shield to the first cut and dies to the next; super-shielded mass refuses.
+    ///
+    /// <b>The chain's kills charge the ball.</b> Every prism the chain slices banks
+    /// <c>energyPerSlice</c> in the ball; the ball's next hit on a RIVAL prism releases the bank as
+    /// an explosion even below smash speed (and a smash's own explosion spends it), its diameter
+    /// growing with the bank.
+    ///
+    /// <b>Mass Mode</b> (A, a toggle). The bank is never released: the ball STEALS the rival prisms
+    /// it touches (each steal banks <c>energyPerSteal</c>), SHIELDS its own domain's, lays a trail
+    /// of its own prisms behind it, and makes no explosion at any speed. Leave Mass Mode and the
+    /// next rival hit spends everything it banked.
+    ///
+    /// <b>Windmill</b> (an omni crystal, <see cref="ThresherWindmillByCrystalEffectSO"/>): for
+    /// <c>windmillSeconds</c> the ball circles the ship red-hot across its line of flight.
     ///
     /// <b>Networking: none of its own</b> (the Gibbon's shape). Press and release round-trip through
     /// <c>R_VesselActionHandler</c>, so every peer runs the same chain from the same inputs; a peer
@@ -92,6 +110,20 @@ namespace CosmicShore.Gameplay
         bool _seeded;
         bool _payOut;
         bool _plantHeld;
+        // Analog triggers: this frame's LT and RT depths (0..1), read by PollTriggers.
+        float _ltDepth, _rtDepth;
+        bool _launchedThisStep;
+        int _lastPollFrame = -1;
+        bool _massMode;
+        float _energy;
+        /// <summary>The launch direction the AIM camera chose for the pending plant release, taken
+        /// by the transformer on the release edge (<see cref="TryConsumeReleaseDirection"/>).</summary>
+        Vector3? _releaseDirection;
+
+        // Mass Mode: the ball's own trail. A container of our own so the prisms it lays are a ribbon
+        // (rideable, identity-testable) and never members of the hull's wake.
+        readonly Trail _ballTrail = new Trail();
+        float _trailOwed;
 
         int _lastStepFrame = -1;
         Vector3 _lastShipPosition;
@@ -114,6 +146,29 @@ namespace CosmicShore.Gameplay
         // ------------------------------------------------------------------ public surface
 
         public bool IsPivoting => _solver != null && _solver.Mode == ThresherMode.Pivot;
+        /// <summary>Every Thresher dial (the transformer reads its release and planted-hull seams here).</summary>
+        public ThresherConfigSO Config => config;
+        /// <summary>Analog triggers are on (<c>dials.analogTriggers</c>): LT is a brake, RT the chain's rigidity.</summary>
+        public bool AnalogTriggers => _settings.Analog;
+        /// <summary>An armed launch left the orbit in this frame's chain step.</summary>
+        public bool LaunchedThisStep => _launchedThisStep;
+        /// <summary>An aimed launch is armed and waiting for its launch point.</summary>
+        public bool LaunchArmed => _solver != null && _solver.LaunchArmed;
+        /// <summary>The planted orbit's spin: the axis it turns about (the orbit normal, travel sense) and its
+        /// rate (rad/s). False when not planted. The transformer winds this down on release.</summary>
+        public bool TryGetOrbitSpin(Vector3 shipPosition, out Vector3 axis, out float rate)
+        {
+            axis = Vector3.zero; rate = 0f;
+            if (!IsPivoting) return false;
+            axis = _solver.OrbitNormal(shipPosition);
+            float r = (shipPosition - _solver.Pivot).magnitude;
+            if (axis.sqrMagnitude < 0.5f || r < 1e-3f) return false;
+            rate = _solver.LockSpeed / r;
+            return true;
+        }
+        /// <summary>How far an armed launch leaves before its point (radians); the transformer sets it each
+        /// frame so a spin wound down after the launch lands on the aim.</summary>
+        public void SetLaunchLead(float radians) { if (_solver != null) _solver.LaunchLeadRadians = Mathf.Max(0f, radians); }
         public ThresherMode Mode => _solver?.Mode ?? ThresherMode.Free;
         /// <summary>True while a MULTIPLAYER hit-stop is holding this hull and its ball still.</summary>
         public bool IsVesselFrozen => Time.unscaledTime < _freezeUntilUnscaled;
@@ -121,16 +176,39 @@ namespace CosmicShore.Gameplay
         public bool IsReady { get; private set; }
         public float BallSpeed => _solver?.BallSpeed ?? 0f;
         public Vector3 BallPosition => _solver?.BallPosition ?? transform.position;
-        /// <summary>The ball is at smash speed: red (or lit), destroys anything, explodes.</summary>
+        /// <summary>The ball is at smash speed: red, destroys anything, explodes.</summary>
         public bool IsHot => _solver != null && ThresherChainSolver.IsSmash(_solver.BallSpeed, _settings);
         /// <summary>Ball speed as a fraction of smash speed — the HUD heat gauge, and the ball's brightening.</summary>
         public float Gauge01 => _settings.SmashSpeed > 0f ? Mathf.Clamp01(BallSpeed / _settings.SmashSpeed) : 0f;
-        /// <summary>How far the chain is let out, 0 (reeled in) to 1 (let out to its current reach).</summary>
-        public float ChainOut01 => _solver == null || _settings.MaxLength <= _settings.RestLength ? 0f
-            : Mathf.Clamp01((_solver.Length - _settings.RestLength) / (_settings.MaxLength - _settings.RestLength));
         /// <summary>The planted orbit's speed as a fraction of its cap; 0 when not planted.</summary>
         public float Spin01 => IsPivoting && _settings.LockMaxSpeed > 0f ? Mathf.Clamp01(_solver.LockSpeed / _settings.LockMaxSpeed) : 0f;
         public int Combo => _combo;
+        public float Energy01 => config && config.EnergyMax > 0f ? Mathf.Clamp01(_energy / config.EnergyMax) : 0f;
+        /// <summary>The bank as explosion RADIUS gained: 0 = a plain blast, 1 = the bank has bought the
+        /// full <c>energyMaxDiameterScale</c>. The Space card's gauge.</summary>
+        public float EnergyRadius01
+        {
+            get
+            {
+                float cap = EnergyCap();
+                return cap > 1f ? Mathf.Clamp01((EnergyScale(_energy) - 1f) / (cap - 1f)) : 0f;
+            }
+        }
+        /// <summary>A release NOW would barely wait: the ship reaches the launch point within
+        /// <c>launchCueSeconds</c>. The crosshair's lime cue only - every aimed launch takes the same boost.</summary>
+        public bool IsLaunchImminent { get; private set; }
+        /// <summary>The local pilot is spectating a planted spin and the sticks aim the release, not the orbit.</summary>
+        public bool IsAiming => _spectating;
+        /// <summary>
+        /// The launch view is up: a planted orbit spinning at <c>spectateSpinRate</c> or faster for
+        /// <c>spectateEngageSeconds</c>, with (analog) LT and the chain's rigidity at a full pull; it
+        /// drops when the plant ends, the spin falls under <c>spectateReleaseFraction</c> of the
+        /// threshold, or (analog, unarmed) the chain slackens. Simulated in <see cref="StepChain"/> on
+        /// EVERY peer from the chain's own state, so the trail it pauses agrees across machines; the
+        /// local pilot's camera (<see cref="UpdateCamera"/>) switches to the crosshair on exactly this
+        /// edge, so crosshair on == trail off.
+        /// </summary>
+        public bool LaunchViewUp { get; private set; }
         /// <summary>The ball's colour this frame (LINEAR; a UI consumer converts with .gamma).</summary>
         public Color BallColorNow => _shownValid ? _shownHue : config && _solver != null ? BallColor(out _) : Color.white;
         /// <summary>The READY lime (LINEAR).</summary>
@@ -138,6 +216,7 @@ namespace CosmicShore.Gameplay
 
         public override void Initialize(IVesselStatus shipStatus)
         {
+            ClearLaunchView();   // a re-init on a live hull (a vessel swap) hands back the old hull's pen first
             _status = shipStatus;
             _registry = GetComponentInParent<ActionExecutorRegistry>(true);
             _impactor = _status != null && _status.Transform ? _status.Transform.GetComponent<VesselImpactor>() : null;
@@ -145,6 +224,10 @@ namespace CosmicShore.Gameplay
             _seeded = false;
             _payOut = false;
             _plantHeld = false;
+            _massMode = false;
+            _energy = 0f;
+            _releaseDirection = null;
+            _trailOwed = 0f;
             _combo = 0;
             _touching.Clear();
             _touchingNext.Clear();
@@ -156,41 +239,41 @@ namespace CosmicShore.Gameplay
             _settings = _baseSettings;
             if (_solver == null) _solver = new ThresherChainSolver(_settings);
             else _solver.Settings = _settings;
-            int links = config ? config.ChainLinks : 12;
+            int links = config ? config.ChainLinks : 24;
             if (_links == null || _links.Count != links + 1) _links = new ThresherChainLinks(links);
         }
 
         /// <summary>The four element scalings, read live (never cached) and folded into this frame's
         /// settings. Read through <c>EvaluateReplicated</c>, not <c>EvaluateLive</c>: every peer
         /// simulates this ball, and element levels themselves do not replicate, so a remote copy
-        /// reading its own (empty) ResourceSystem would fly a different ball. Mass is volume, so the
-        /// ball's radius grows with the cube root of its mass.</summary>
+        /// reading its own (empty) ResourceSystem would fly a different ball. Only TIME lives in the
+        /// chain's settings (the spin-up rate and cap); Charge, Mass and Space are read where they
+        /// are spent (<see cref="TryHitVessel"/>, <see cref="LayTrailPrism"/>, <see cref="EnergyCap"/>).</summary>
         void ApplyElementScaling()
         {
             _settings = _baseSettings;
             if (!config || _status == null) return;
-            float mass = Mathf.Max(0.05f, config.BallMassMultiplier.EvaluateReplicated(_status));
-            float reach = Mathf.Max(0.05f, config.ChainReachMultiplier.EvaluateReplicated(_status));
             float spin = Mathf.Max(0.05f, config.SpinMultiplier.EvaluateReplicated(_status));
-            _settings.BallMass *= mass;
-            _settings.BallRadius *= Mathf.Pow(mass, 1f / 3f);
-            _settings.MaxLength = Mathf.Max(_settings.RestLength, _settings.MaxLength * reach);
             _settings.LockSpinRate *= spin;
             _settings.LockMaxSpeed *= spin;
             _solver.Settings = _settings;
         }
 
+        /// <summary>SPACE: the largest explosion-diameter multiplier the bank can buy.</summary>
+        float EnergyCap()
+            => config && _status != null ? Mathf.Max(1f, config.EnergyMaxDiameterScale.EvaluateReplicated(_status)) : 4f;
+
         // The four level-5 upgrades, each read through the replicated unlock bits at the moment
         // of use (a per-hit / per-release snapshot), never cached.
         R_VesselElementalAbilityHandler Abilities => _status?.ElementalAbilityHandler;
-        /// <summary>Charge L5 "Lit": the hot ball spares its own domain (explosion and contact).</summary>
-        bool LitActive => Abilities && Abilities.IsUpgradeActive(Element.Charge);
-        /// <summary>Mass L5 "Wrecker": a smash costs the ball no speed.</summary>
-        bool WreckerActive => Abilities && Abilities.IsUpgradeActive(Element.Mass);
-        /// <summary>Space L5 "Reaper Chain": the chain cuts while slack, and cuts shielded prisms.</summary>
-        bool ReaperActive => Abilities && Abilities.IsUpgradeActive(Element.Space);
-        /// <summary>Time L5 "Slingshot": the unlock yank is never weaker than smash speed.</summary>
-        bool SlingshotActive => Abilities && Abilities.IsUpgradeActive(Element.Time);
+        /// <summary>Charge L5 "Magnet": the free ball is drawn toward the nearest enemy vessel.</summary>
+        bool MagnetActive => Abilities && Abilities.IsUpgradeActive(Element.Charge);
+        /// <summary>Mass L5 "Armoured Trail": the prisms the ball lays in Mass Mode are laid shielded.</summary>
+        bool ArmouredTrailActive => Abilities && Abilities.IsUpgradeActive(Element.Mass);
+        /// <summary>Space L5 "Breaker": a red ball's direct hit destroys super-shielded prisms.</summary>
+        bool BreakerActive => Abilities && Abilities.IsUpgradeActive(Element.Space);
+        // Time L5: OPEN since 2026-10-13. "Perfect Release" (a timed aimed launch x1.6) retired when every
+        // aimed launch took the boost (LetGo) - its gate is deleted, not left beside the new rule (rule 26).
 
         // ------------------------------------------------------------------ input edges
 
@@ -201,16 +284,89 @@ namespace CosmicShore.Gameplay
         {
             if (_solver == null) return;
             _plantHeld = true;
-            _solver.Plant();
+            // Analog triggers: the press is only a fallback depth (a source with no analog channel, a remote
+            // replica); PollTriggers decides when the ball stops.
+            if (!_settings.Analog) _solver.Plant();
         }
 
         public void EndPlant()
         {
             if (_solver == null) return;
             _plantHeld = false;
+            if (_settings.Analog) return;   // PollTriggers lets go when LT falls below letGoBelow
+            LetGo();
+        }
+
+        /// <summary>
+        /// ANALOG TRIGGERS, once per frame before the hull moves (<see cref="ThresherVesselTransformer"/>; the
+        /// fallback step in <see cref="LateUpdate"/> otherwise). Reads the triggers' DEPTHS - from the input
+        /// when it reports one, else the press state as a full pull (touch, one-thumb mouse, and remote
+        /// replicas, which only see press and release) - and hands them to
+        /// <see cref="ThresherChainSolver.AnalogTriggers"/>: RT is the chain's rigidity, LT's depth brakes the
+        /// ball, a full pull stops it, and letting go below <c>letGoBelow</c> lets go (or arms the aimed
+        /// launch) exactly as the digital LT-up does.
+        /// </summary>
+        public void PollTriggers(Vector3 shipPosition, Vector3 shipUp, float dt)
+        {
+            if (_solver == null || !_settings.Analog || !_seeded || dt <= 0f) return;
+            if (_lastPollFrame == Time.frameCount) return;   // once per frame (the transformer, or the fallback)
+            _lastPollFrame = Time.frameCount;
+            var input = _status?.InputStatus;
+            float lt = input != null ? input.LeftTriggerAnalog : 0f;
+            float rt = input != null ? input.RightTriggerAnalog : 0f;
+            _ltDepth = lt > 1e-3f ? Mathf.Clamp01(lt) : (_plantHeld ? 1f : 0f);
+            _rtDepth = rt > 1e-3f ? Mathf.Clamp01(rt) : (_payOut ? 1f : 0f);
+            float full = config ? config.FullPull : 0.97f, letGo = config ? config.LetGoBelow : 0.9f;
+            var edge = _solver.AnalogTriggers(_ltDepth, _rtDepth, full, letGo, shipPosition, _lastShipVelocity, shipUp, dt);
+            if (edge == ThresherTriggerEdge.LetGo) LetGo();
+        }
+
+        /// <summary>LT up (digital) or below letGoBelow (analog).</summary>
+        void LetGo()
+        {
             bool wasPivot = _solver.Mode == ThresherMode.Pivot;
-            _solver.Release(_lastShipVelocity, slingshot: SlingshotActive);
+
+            // AIMED release: while the camera spectates, the aim names ONE point on the circle (the
+            // point whose tangent is the aim, centred on screen). Releasing ARMS the launch: the ship
+            // keeps circling and leaves from exactly that point, along the aim — the pilot picks the
+            // point, the solver does the timing. Unaimed (a slow orbit, a remote replica, the
+            // autopilot) it leaves on the orbit's tangent at once, as before.
+            if (wasPivot && _spectating && _aimDir.sqrMagnitude > 0.5f)
+            {
+                // EVERY aimed launch leaves launchBoost x the orbit's speed, however long it waits for
+                // its point: the crosshair move is the reward, not the timing.
+                _solver.ArmLaunch(_aimDir, config ? config.LaunchBoost : 1f);
+                return;   // the yank plays when the launch happens (StepChain)
+            }
+            _solver.Release(_lastShipVelocity);
             if (wasPivot) PlayAt(yankEvent, _lastShipPosition);
+        }
+
+        /// <summary>The aimed launch direction of the armed launch that just left the orbit, once; the
+        /// transformer faces the hull along it on the release edge (grip then puts the momentum on
+        /// the nose the same frame).</summary>
+        public bool TryConsumeReleaseDirection(out Vector3 direction)
+        {
+            direction = _releaseDirection ?? Vector3.zero;
+            bool has = _releaseDirection.HasValue;
+            _releaseDirection = null;
+            return has;
+        }
+
+        /// <summary>A (Mass Mode): toggle. Every peer runs the press, so every peer toggles.</summary>
+        public void ToggleMassMode()
+        {
+            _massMode = !_massMode;
+            _trailOwed = 0f;
+        }
+
+        /// <summary>An omni crystal: the ball windmills round the ship (<c>windmillSeconds</c>).
+        /// Run on every peer by the vessel crystal-effect dispatch.</summary>
+        public void StartWindmill()
+        {
+            if (_solver == null || !config || _status == null || _status.Transform == null) return;
+            if (!_seeded) EnsureSeeded(_status.Transform.position, _lastShipVelocity);
+            _solver.StartWindmill(_status.Transform.position, config.WindmillSeconds);
         }
 
         void OnEnable()
@@ -225,10 +381,14 @@ namespace CosmicShore.Gameplay
             // The release edge never arrives for a vessel whose input is paused or handed to the
             // autopilot, so a held trigger must not stay held across a disable.
             _payOut = false;
-            if (_plantHeld && _solver != null) _solver.Release(_lastShipVelocity);
+            if (_solver != null && (_plantHeld || _solver.LaunchArmed || _solver.Mode == ThresherMode.Pivot || _solver.Mode == ThresherMode.Skidding))
+                _solver.Release(_lastShipVelocity);
             _plantHeld = false;
+            _ltDepth = 0f; _rtDepth = 0f;
+            _releaseDirection = null;
             _freezeUntilUnscaled = 0f;
             _cts?.Cancel();
+            ClearLaunchView();
             ReleaseCamera();
             SetVisualsActive(false);
         }
@@ -256,23 +416,101 @@ namespace CosmicShore.Gameplay
             ApplyElementScaling();
             EnsureSeeded(shipPosition, shipVelocity);
 
-            var result = _solver.Step(shipPosition, shipVelocity, _payOut, shipCruise, dt, pivotSteer);
+            if (MagnetActive) PullBallToEnemy(dt);
+            // (analog: no winch; only the windmill still reads "let out", as the chain going slack)
+            bool payOut = _settings.Analog ? _solver.Rigidity < 0.5f : _payOut;
+            var result = _solver.Step(shipPosition, shipVelocity, payOut, shipCruise, dt, pivotSteer);
+            _launchedThisStep = result.Launched;
             _lastStepFrame = Time.frameCount;
             _lastShipPosition = shipPosition;
             _lastShipVelocity = result.ShipVelocity;
 
             if (result.Planted) PlayAt(plantEvent, _solver.Pivot);
+            if (result.Launched)
+            {
+                _releaseDirection = result.LaunchDirection;
+                PlayAt(yankEvent, shipPosition);
+            }
             if (_solver.Mode != ThresherMode.Pivot)
+            {
                 SweepBall(result.BallFrom, _solver.BallPosition);
+                if (_massMode) LayBallTrail(result.BallFrom, _solver.BallPosition, shipPosition);
+            }
+            HitVesselsAlong(result.BallFrom, _solver.BallPosition, _settings.BallRadius, _solver.BallVelocity);
 
-            _links.Step(shipPosition + result.ShipVelocity * dt, _solver.BallPosition, _solver.Length);
+            _links.Step(shipPosition + result.ShipVelocity * dt, _solver.BallPosition, _solver.Length,
+                        iterations: ThresherChainLinks.IterationsFor(_links.Count - 1));
             CutWithChain(dt);
 
+            UpdateLaunchView(dt);
+            IsLaunchImminent = _spectating && config && _solver.Mode == ThresherMode.Pivot &&
+                               _solver.SecondsToLaunchPoint(shipPosition, _aimDir) <= config.LaunchCueSeconds;
+
             UpdateCombo(dt);
-            IsReady = _payOut && _solver.Mode == ThresherMode.Free &&
+            // READY: tightening the chain now (analog: pulling RT to rigid; digital: releasing it) would crack
+            // the ball past smash speed - both reel the ball in to rest length by spin conservation.
+            bool ready = _settings.Analog ? _solver.Rigidity < (config ? config.FullPull : 0.97f) : _payOut;
+            IsReady = ready && _solver.Mode == ThresherMode.Free &&
                       _solver.PredictReelCrackSpeed(shipPosition, result.ShipVelocity)
                           >= _settings.SmashSpeed * (config ? config.ReadyMargin : 1f);
             return result.ShipVelocity;
+        }
+
+        // ------------------------------------------------------------------ the launch view
+
+        float _launchViewQualifyTime;   // how long the spin has qualified (the engage delay)
+        bool _trailPenHeld;             // this executor holds the hull's trail pen up
+
+        /// <summary>
+        /// Advance <see cref="LaunchViewUp"/> from this step's chain state and keep the hull's trail
+        /// off while it is up. Every input here is simulated on every peer (a remote copy reads each
+        /// press as a full pull, so its depths are 1 while held), so every machine pauses the same trail.
+        /// </summary>
+        void UpdateLaunchView(float dt)
+        {
+            bool up = LaunchViewUp;
+            if (!config) up = false;
+            else
+            {
+                float spin = IsPivoting ? ThresherCameraFraming.SpinRate(_solver.LockSpeed, _solver.Extent) : 0f;
+                // Analog triggers: only with the ball STOPPED and the chain fully RIGID - both triggers at a
+                // full pull (RT read as the chain's slew-limited rigidity) - and RT eased below letGoBelow
+                // drops it unless a launch is armed.
+                bool analog = _settings.Analog;
+                bool bothFull = !analog || (!_solver.IsBraking && _ltDepth >= config.FullPull && _solver.Rigidity >= config.FullPull);
+                bool slackened = analog && !_solver.LaunchArmed && _solver.Rigidity < config.LetGoBelow;
+                // Up only once the spin has held over the threshold for spectateEngageSeconds, so a tap of
+                // LT does not bob the camera toward the vantage and straight back down.
+                bool qualifies = IsPivoting && bothFull && config.SpectateSpinRate > 0f && spin >= config.SpectateSpinRate;
+                _launchViewQualifyTime = qualifies ? _launchViewQualifyTime + dt : 0f;
+                if (!up && qualifies && _launchViewQualifyTime >= config.SpectateEngageSeconds) up = true;
+                else if (up && (!IsPivoting || spin < config.SpectateSpinRate * config.SpectateReleaseFraction || slackened)) up = false;
+            }
+            LaunchViewUp = up;
+            HoldTrailPen(up);
+        }
+
+        /// <summary>Drop the launch view and hand the trail pen back (disable, re-init).</summary>
+        void ClearLaunchView()
+        {
+            LaunchViewUp = false;
+            _launchViewQualifyTime = 0f;
+            HoldTrailPen(false);
+        }
+
+        /// <summary>
+        /// The hull lays no trail while the launch view is up: a spin that circles in front of the
+        /// crosshair would otherwise wall its own launch path in prisms. Pen-up
+        /// (<see cref="VesselPrismController.SetSpawnerPaused"/>, the Fold's lever) only gates block
+        /// creation, never the spawn loop an ability owns. It is one last-writer flag shared with the
+        /// cell's spawner pause and the painting toys, so it is written on EDGES only, never per frame.
+        /// </summary>
+        void HoldTrailPen(bool held)
+        {
+            if (held == _trailPenHeld) return;
+            _trailPenHeld = held;
+            var trail = _status != null ? _status.VesselPrismController : null;
+            if (trail) trail.SetSpawnerPaused(held);
         }
 
         void EnsureSeeded(Vector3 shipPosition, Vector3 shipVelocity)
@@ -299,6 +537,7 @@ namespace CosmicShore.Gameplay
             {
                 Vector3 pos = _status.Transform.position;
                 Vector3 vel = _seeded ? (pos - _lastShipPosition) / Time.deltaTime : Vector3.zero;
+                PollTriggers(pos, _status.Transform.up, Time.deltaTime);
                 StepChain(pos, vel, _status.Speed, Time.deltaTime);
             }
 
@@ -333,8 +572,7 @@ namespace CosmicShore.Gameplay
             _hits.Sort((a, b) => a.t.CompareTo(b.t));
 
             Domains own = PilotDomain();
-            bool lit = LitActive;
-            bool wrecker = WreckerActive;
+            bool breaker = BreakerActive;
 
             _touchingNext.Clear();
             for (int i = 0; i < _hits.Count; i++)
@@ -352,39 +590,252 @@ namespace CosmicShore.Gameplay
                 bool hot = ThresherChainSolver.IsSmash(speed, _settings);
                 bool ownDomain = prism.Domain == own;
 
-                if (ownDomain && (!hot || lit))
+                if (_massMode)
                 {
-                    // Bounce: the ball never harms its own domain unless it is red-hot and unlit.
+                    // Mass Mode builds instead of breaking, at any speed: it shields its own and
+                    // steals the rival's, keeps all its speed, and never explodes.
+                    MassModeTouch(prism, ownDomain, at);
+                    continue;
+                }
+
+                if (ownDomain && !hot)
+                {
+                    // Bounce: the ball never harms its own domain unless it is red-hot.
                     Vector3 normal = at - prism.transform.position;
                     if (_solver.Bounce(at, normal)) PlayAt(bounceEvent, at);
                     break;   // the ball's path this frame ends at the bounce
                 }
 
                 Vector3 impact = _solver.BallVelocity * (config ? config.DebrisRestitution : 1f / 3f);
-                prism.Damage(impact, _status.Domain, _status.PlayerName,
-                             debrisSpeedLimit: config ? config.DebrisSpeedLimit : 200f);
-                _solver.RegisterHit(ThresherChainSolver.KeepAfterHit(speed, _settings, wrecker));
+                float debrisLimit = config ? config.DebrisSpeedLimit : 200f;
+                // Space L5 "Breaker": a red ball's direct hit breaks super-shielded mass, through the
+                // sanctioned sequence (shields off, then a devastating hit - Prism.Damage's own doc).
+                if (hot && breaker && prism.prismProperties is { IsSuperShielded: true })
+                {
+                    prism.DeactivateShields(impact, debrisLimit);
+                    prism.Damage(impact, _status.Domain, _status.PlayerName, devastate: true, debrisSpeedLimit: debrisLimit);
+                }
+                else
+                    prism.Damage(impact, _status.Domain, _status.PlayerName, debrisSpeedLimit: debrisLimit);
+                _solver.RegisterHit(ThresherChainSolver.KeepAfterHit(speed, _settings));
 
-                if (hot) OnSmash(at, speed, lit);
+                // A rival hit releases the chain's banked energy even below smash speed; a smash
+                // explodes anyway, and spends the bank on the way.
+                float banked = _energy;
+                bool exploded = (hot || (!ownDomain && banked > 0f)) && Explode(at);
+                if (hot) OnSmash(at, speed, exploded, banked);
+                else if (exploded) OnEnergyBlast(at, banked);
                 else OnCrush(at);
             }
 
             (_touching, _touchingNext) = (_touchingNext, _touching);
         }
 
-        void OnSmash(Vector3 at, float speed, bool lit)
+        void OnSmash(Vector3 at, float speed, bool exploded, float banked)
         {
             float heat = ThresherChainSolver.Heat01(speed, _settings);
             _combo++;
             _coolTime = 0f;
-            Explode(at, lit);
             PlayAt(smashEvent, at);
             if (!IsLocalPilot() || !config) return;
 
             if (_combo == 1)
                 HitStop(Mathf.Lerp(config.HitStopMinSeconds, config.HitStopMaxSeconds, heat));
-            Shake(Mathf.Lerp(config.ShakeMin, config.ShakeMax, heat) * (_combo == 1 ? 1f : 0.6f), config.ShakeSeconds);
+            float bank = exploded ? EnergyScale(banked) : 1f;
+            Shake(Mathf.Lerp(config.ShakeMin, config.ShakeMax, heat) * (_combo == 1 ? 1f : 0.6f) * bank, config.ShakeSeconds);
             HapticController.PlaySkim(Mathf.Lerp(config.HapticFloor01, 1f, heat));
+        }
+
+        /// <summary>A slow ball's rival hit that released the chain's bank: the blast's own beat.</summary>
+        void OnEnergyBlast(Vector3 at, float banked)
+        {
+            PlayAt(smashEvent, at);
+            if (!IsLocalPilot() || !config) return;
+            float scale = EnergyScale(banked);
+            Shake(config.ShakeMin * scale, config.ShakeSeconds);
+            HapticController.PlaySkim(Mathf.Clamp01(config.HapticFloor01 * scale));
+        }
+
+        /// <summary>The explosion-diameter multiplier a bank of <paramref name="energy"/> buys.</summary>
+        float EnergyScale(float energy)
+            => config ? Mathf.Min(EnergyCap(), 1f + config.EnergyDiameterPerUnit * Mathf.Max(0f, energy)) : 1f;
+
+        void Bank(float amount)
+        {
+            if (!config || amount <= 0f) return;
+            _energy = Mathf.Min(config.EnergyMax, _energy + amount);
+        }
+
+        /// <summary>Mass Mode's touch: shield own-domain mass (once — an already armoured prism is
+        /// left alone), steal rival mass (a shielded rival sheds its shield first and changes hands
+        /// on the next touch, the fleet's steal rule; super-shielded mass refuses).</summary>
+        void MassModeTouch(Prism prism, bool ownDomain, Vector3 at)
+        {
+            var props = prism.prismProperties;
+            if (ownDomain)
+            {
+                if (props == null || props.IsShielded || props.IsSuperShielded) return;
+                prism.ActivateShield();
+                return;
+            }
+            if (props != null && props.IsSuperShielded) return;
+            prism.Steal(_status.PlayerName, _status.Domain);
+            if (prism.Domain == _status.Domain) Bank(config ? config.EnergyPerSteal : 0f);
+            PlayAt(crushEvent, at);
+        }
+
+        /// <summary>
+        /// Mass Mode's trail: one prism of the pilot's domain per <c>massTrailSpacing</c> of the
+        /// ball's travel, laid along its path, through the SAME spawn channel and prism type the
+        /// hull's own trail uses (so it is ordinary, conserved trail mass). Owed in distance and paid
+        /// in whole prisms, capped per frame with the excess DROPPED (vessel rule 17's shape), so a
+        /// hitch never dumps a burst. Stamped with <c>ownerID</c>, so the fleet's own-fresh-trail
+        /// rule keeps the ball and chain from hitting what they just laid.
+        /// </summary>
+        void LayBallTrail(Vector3 from, Vector3 to, Vector3 shipPosition)
+        {
+            var spawner = _status?.VesselPrismController;
+            var channel = spawner ? spawner.PrismSpawnChannel : null;
+            if (!config || !channel) return;
+
+            Vector3 path = to - from;
+            float travelled = path.magnitude;
+            if (travelled < 1e-4f) return;
+            Vector3 dir = path / travelled;
+
+            float spacing = config.MassTrailSpacing;
+            _trailOwed += travelled;
+            int lays = Mathf.Min(Mathf.FloorToInt(_trailOwed / spacing), config.MassTrailMaxPerFrame);
+            if (lays <= 0) return;
+            _trailOwed = Mathf.Min(_trailOwed - lays * spacing, spacing);
+
+            Vector3 up = Vector3.ProjectOnPlane(shipPosition - to, dir);
+            if (up.sqrMagnitude < 1e-6f) up = Vector3.ProjectOnPlane(Vector3.up, dir);
+            if (!SafeLookRotation.TryGet(dir, up.normalized, out var rot, this, logError: false)) return;
+
+            for (int i = 0; i < lays; i++)
+            {
+                // Spread this frame's lays back along its path, newest at the ball.
+                Vector3 pos = Vector3.Lerp(from, to, (i + 1f) / lays);
+                LayTrailPrism(channel, spawner.SpawnPrismType, pos, rot);
+            }
+        }
+
+        /// <summary>One ball-trail prism. MASS sizes it (<c>massTrailScale</c>, every axis, read at
+        /// lay time); Mass L5 "Armoured Trail" lays it shielded (per-lay snapshot of the unlock bit).</summary>
+        void LayTrailPrism(PrismEventChannelWithReturnSO channel, PrismType type, Vector3 pos, Quaternion rot)
+        {
+            Vector3 scale = config.MassTrailPrismScale * Mathf.Max(0.1f, config.MassTrailScale.EvaluateReplicated(_status));
+            var ret = channel.RaiseEvent(new PrismEventData
+            {
+                ownDomain = _status.Domain,
+                Rotation = rot,
+                SpawnPosition = pos,
+                Scale = scale,
+                PrismType = type,
+            });
+            if (!ret.SpawnedObject || !ret.SpawnedObject.TryGetComponent(out Prism prism)) return;
+
+            prism.TargetScale = scale;
+            prism.ownerID = _status.PlayerName;
+            prism.ChangeTeam(_status.Domain);
+            prism.waitTime = config.MassTrailWaitTime;
+            if (ArmouredTrailActive) prism.prismProperties.IsShielded = true;   // Initialize applies it
+            _ballTrail.Add(prism);
+            prism.prismProperties.Index = (ushort)Mathf.Min(_ballTrail.TrailList.Count - 1, ushort.MaxValue);
+            prism.Initialize(_status.PlayerName);
+            // A Mass-scaled prism is a stated size: admit it past the pool's scale window AFTER
+            // Initialize (whose reset re-clamps it), or a big one is trimmed with no error.
+            prism.AdmitTargetScale(scale);
+            prism.TargetScale = scale;
+            // AFTER Initialize: pool-reuse reset clears trail membership (AssignTrail's contract).
+            prism.AssignTrail(_ballTrail);
+        }
+
+        // ------------------------------------------------------------------ enemy vessels (petals only)
+
+        /// <summary>
+        /// Every ENEMY hull within <paramref name="radius"/> + <c>vesselHitRadius</c> of the segment
+        /// <paramref name="a"/>→<paramref name="b"/> takes a hit (<see cref="TryHitVessel"/>). The
+        /// ball's swept path and each chain link both come through here.
+        /// </summary>
+        void HitVesselsAlong(Vector3 a, Vector3 b, float radius, Vector3 velocity)
+        {
+            if (!config || _status == null || !_gameData || _gameData.Players == null) return;
+            float reach = radius + config.VesselHitRadius;
+            Vector3 ab = b - a;
+            float abLenSq = ab.sqrMagnitude;
+            var players = _gameData.Players;
+            for (int i = 0; i < players.Count; i++)
+            {
+                var victim = EnemyStatus(players[i]);
+                if (victim == null) continue;
+                Vector3 p = victim.Transform.position;
+                float t = abLenSq > 1e-8f ? Mathf.Clamp01(Vector3.Dot(p - a, ab) / abLenSq) : 0f;
+                if ((p - (a + ab * t)).sqrMagnitude > reach * reach) continue;
+                TryHitVessel(victim, velocity);
+            }
+        }
+
+        /// <summary>The player's vessel status if it is a live ENEMY of this pilot (another pilot,
+        /// another domain), else null.</summary>
+        IVesselStatus EnemyStatus(IPlayer player)
+        {
+            var victim = player?.Vessel?.VesselStatus;
+            if (victim == null || ReferenceEquals(victim, _status)) return null;
+            if (victim.Domain == _status.Domain || !victim.Transform) return null;
+            return victim;
+        }
+
+        /// <summary>
+        /// One contact on an enemy hull, under the LOCKED PvP rule: the ONLY thing it does is take
+        /// petals, as a scored combat hit. Decided on exactly one machine — the one that owns this
+        /// hull (every peer simulates the ball, so every peer sees the contact) — admitted through
+        /// <see cref="CombatHitDrain.TryAdmit"/> (a warded victim is neither scored on nor robbed;
+        /// <c>vesselHitCooldownSeconds</c> per victim), then a Strike-form STEAL of
+        /// <c>vesselHitPetals</c> (CHARGE) petals per element and the score on the stats channel.
+        /// </summary>
+        void TryHitVessel(IVesselStatus victim, Vector3 velocity)
+        {
+            if (!ElementalTransfer.IsDecidedHere(_status)) return;
+            if (_status.Player is { IsNetworkOwner: false }) return;
+            if (!CombatHitDrain.TryAdmit(victim, _status, CombatHitClass.Strike, config.VesselHitCooldownSeconds,
+                                         ElementalDebuffSources.VesselContact, out int superseded))
+                return;
+
+            float petals = Mathf.Max(0f, config.VesselHitPetals.EvaluateReplicated(_status));
+            ElementalTransfer.ApplyAllAuthoritative(CombatHitDrain.FormFor(CombatHitClass.Strike), victim, _status,
+                petals * CombatHitDrain.NormalizedPerLevel, velocity, ElementalDebuffSources.VesselContact);
+            config.OnCombatHitLanded.Raise(new CombatHitStats
+            {
+                ShooterName = _status.PlayerName,
+                VictimName = victim.PlayerName,
+                HitClass = CombatHitClass.Strike,
+                SupersededRank = superseded,
+            });
+        }
+
+        /// <summary>Charge L5 "Magnet": draw a free ball toward the nearest enemy hull within
+        /// <c>magnetRange</c>. It moves only OUR ball — never the other vessel (PvP is petals only).</summary>
+        void PullBallToEnemy(float dt)
+        {
+            if (!config || _status == null || !_gameData || _gameData.Players == null || _solver == null) return;
+            Vector3 ball = _solver.BallPosition;
+            float best = config.MagnetRange * config.MagnetRange;
+            Vector3 target = default;
+            bool found = false;
+            var players = _gameData.Players;
+            for (int i = 0; i < players.Count; i++)
+            {
+                var victim = EnemyStatus(players[i]);
+                if (victim == null) continue;
+                float d = (victim.Transform.position - ball).sqrMagnitude;
+                if (d >= best) continue;
+                best = d;
+                target = victim.Transform.position;
+                found = true;
+            }
+            if (found) _solver.AttractBall(target, config.MagnetAcceleration, dt);
         }
 
         void OnCrush(Vector3 at)
@@ -395,18 +846,21 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// The smash explosion. Unlit it destroys every domain's prisms (<c>AffectSelfOverride</c>
-        /// true, the Grizzly charged shot's setting); lit it spares the pilot's own domain — the
-        /// fleet's rule that domain-sparing lives in the EXPLOSION layer, never in Prism.Damage.
+        /// The smash explosion: it destroys every domain's prisms (<c>AffectSelfOverride</c> true, the
+        /// Grizzly charged shot's setting).
         /// Rate-limited so a hot ball through a row makes a string of blasts, not one per prism.
+        /// The chain's banked energy rides the blast that actually goes off (its diameter ×
+        /// <see cref="EnergyScale"/>) and is spent by it; a rate-limited hit keeps the bank for the
+        /// next one. Returns true if an explosion was spawned.
         /// </summary>
-        void Explode(Vector3 at, bool lit)
+        bool Explode(Vector3 at)
         {
-            if (!config || config.SmashExplosions is not { Length: > 0 } || _status == null) return;
-            if (Time.time < _nextExplosionTime) return;
+            if (!config || config.SmashExplosions is not { Length: > 0 } || _status == null) return false;
+            if (Time.time < _nextExplosionTime) return false;
             _nextExplosionTime = Time.time + config.ExplosionMinInterval;
 
-            float diameter = config.ExplosionDiameter * Mathf.Max(0.1f, config.ExplosionSizeMultiplier.EvaluateReplicated(_status));
+            float diameter = config.ExplosionDiameter * EnergyScale(_energy);
+            _energy = 0f;
             Vector3 v = _solver.BallVelocity;
             var init = new AOEExplosion.InitializeStruct
             {
@@ -417,19 +871,30 @@ namespace CosmicShore.Gameplay
                 MaxScale = diameter,
                 SpawnPosition = at,
                 SpawnRotation = v.sqrMagnitude > 1e-6f ? Quaternion.LookRotation(v) : Quaternion.identity,
-                AffectSelfOverride = !lit,
+                AffectSelfOverride = true,
             };
             ExplosionHelper.CreateExplosion(config.SmashExplosions, init, _impactor ? _impactor.DIContainer : null);
+            return true;
         }
 
         // ------------------------------------------------------------------ the chain
 
+        /// <summary>
+        /// The chain, taut or slack: every RIVAL prism a link touches is sliced along the plane the
+        /// chain is sweeping (and banks energy for the ball's next blast when it dies), and every
+        /// prism of the pilot's OWN domain it touches is shielded. A shielded rival loses its shield
+        /// to the first cut and dies to the next; super-shielded mass refuses. The fleet's
+        /// own-fresh-trail grace applies to both: what this pilot laid moments ago is left alone.
+        /// Each link also reaches enemy HULLS (<see cref="HitVesselsAlong"/>).
+        /// </summary>
         void CutWithChain(float dt)
         {
             if (!config || _status == null || _links == null) return;
-            bool reaper = ReaperActive;
-            bool taut = _solver.Mode == ThresherMode.Pivot || _solver.IsTaut;
-            if (!taut && !reaper) return;
+
+            var pts = _links.Points;
+            for (int s = 0; s < pts.Length - 1; s++)
+                HitVesselsAlong(pts[s], pts[s + 1], config.ChainCutRadius,
+                    0.5f * (_links.NodeVelocity(s, dt) + _links.NodeVelocity(s + 1, dt)));
 
             var index = PrismSpatialIndex.Instance;
             if (!index || !index.IsAvailable) return;
@@ -439,7 +904,6 @@ namespace CosmicShore.Gameplay
             const float candidateExtent = 8f;
             _cutThisFrame.Clear();
 
-            var pts = _links.Points;
             int n = pts.Length;
             for (int s = 0; s < n - 1; s++)
             {
@@ -453,9 +917,11 @@ namespace CosmicShore.Gameplay
                 {
                     var prism = _candidates[i];
                     if (!prism || prism.destroyed || _cutThisFrame.Contains(prism)) continue;
-                    if (prism.Domain == own) continue;   // the chain never cuts its own domain
-                    if (!reaper && prism.prismProperties != null &&
-                        (prism.prismProperties.IsShielded || prism.prismProperties.IsSuperShielded)) continue;
+                    var props = prism.prismProperties;
+                    bool ownDomain = prism.Domain == own;
+                    // Nothing to do to armoured own mass, or to a super-shielded rival.
+                    if (ownDomain && (props == null || props.IsShielded || props.IsSuperShielded)) continue;
+                    if (!ownDomain && props != null && props.IsSuperShielded) continue;
                     if (SelfTrailContactConfigSO.SuppressesSkimContact(prism, _status)) continue;
 
                     Vector3 centre = prism.transform.position;
@@ -464,6 +930,13 @@ namespace CosmicShore.Gameplay
                     Vector3 onChain = a + ab * t;
                     if ((centre - onChain).sqrMagnitude > contact * contact) continue;
 
+                    _cutThisFrame.Add(prism);
+                    if (ownDomain)
+                    {
+                        prism.ActivateShield();
+                        continue;
+                    }
+
                     // The link's own velocity is the blade's: the chain point moves between the
                     // hull's velocity and the ball's (a lever arm), so the debris does too.
                     Vector3 v = Vector3.Lerp(_links.NodeVelocity(s, dt), _links.NodeVelocity(s + 1, dt), t);
@@ -471,9 +944,9 @@ namespace CosmicShore.Gameplay
                     if (cutNormal.sqrMagnitude < 1e-8f) cutNormal = Vector3.Cross(ab, Vector3.up);
                     if (cutNormal.sqrMagnitude < 1e-8f) cutNormal = Vector3.right;
 
-                    _cutThisFrame.Add(prism);
                     prism.Slice(v * config.ChainDebrisRestitution, _status.Domain, _status.PlayerName,
                                 onChain, cutNormal.normalized, debrisSpeedLimit: config.DebrisSpeedLimit);
+                    if (prism.destroyed) Bank(config.EnergyPerSlice);   // a cut that only popped a shield banks nothing
                     PlayAt(sliceEvent, onChain);
                 }
             }
@@ -556,9 +1029,18 @@ namespace CosmicShore.Gameplay
         float _camDistance;
         float _camWritten = float.NaN;   // the last distance this hull wrote (negative z)
         bool _spectating;
-        Vector3 _spectateNormal, _spectateOutward, _spectateUp;
-        float _spectateRadius;
-        float _spectateQualifyTime;
+        float _sightZoom01;
+        ThresherLaunchSight _sight;
+        // The eased entry/exit: progress 0..1, the pose it started from, and whether we are easing OUT.
+        float _camEase;
+        Vector3 _easeFromPos;
+        Quaternion _easeFromRot = Quaternion.identity;
+        bool _exiting;
+        // The AIM while spectating: where a release sends the ship, and the aim camera's "above".
+        Vector3 _aimDir, _aimUp;
+        // The camera's pose last frame (its turn rate at the spectate cut) and the carried turn rate (rad/s).
+        Quaternion _lastCamRotation = Quaternion.identity;
+        float _carryRate;
 
         /// <summary>
         /// The local pilot's camera, two jobs (<c>THRESHER.md</c> § Camera):
@@ -566,10 +1048,12 @@ namespace CosmicShore.Gameplay
         /// <item><b>Keep the ball in frame.</b> The chase distance is pulled back as far as the
         /// rendered ball needs (<see cref="ThresherCameraFraming.RequiredDistance"/>), FAST, and
         /// eased back toward the prefab's own distance SLOWLY — never nearer than it.</item>
-        /// <item><b>Spectate a fast spin.</b> Once a planted orbit circles faster than
-        /// <c>spectateSpinRate</c>, the camera blends to a still vantage over the orbit and watches
-        /// the ship spin rather than riding it; it re-attaches when the plant is released or the
-        /// spin falls back under the release fraction.</item>
+        /// <item><b>Spectate and AIM a spin.</b> Once a planted orbit circles faster than
+        /// <c>spectateSpinRate</c>, the camera stops riding the spinning hull and looks DOWN on the
+        /// orbit from over the shoulder of the launch path; the sticks then turn that aim (and the
+        /// camera with it) instead of tilting the orbit, a line shows the path, and releasing LT
+        /// flies the ship off along it at once (<see cref="EndPlant"/>). It re-attaches when the
+        /// plant is released or the spin falls back under the release fraction.</item>
         /// </list>
         /// Pose only, through <see cref="CustomCameraController.SetCameraDistance"/> and
         /// <see cref="CustomCameraController.Spectate"/>; FOV belongs to the speed tunnel and is
@@ -613,7 +1097,7 @@ namespace CosmicShore.Gameplay
             // tracked the ball round every swing (abeam 161 u, ahead 15 u at full let-out) and the
             // camera pumped in and out at the swing's rhythm; with it the distance follows the
             // winch, and the ball's own position only adds (a ball looped overhead).
-            need = Mathf.Max(need, ThresherCameraFraming.ReachDistance(_solver.Length,
+            need = Mathf.Max(need, ThresherCameraFraming.ReachDistance(_solver.Extent,
                 ballRadius, height, halfFovV, halfFovH, config.CameraFramingMargin, config.CameraMinAhead));
             float target = Mathf.Clamp(need, neutral, Mathf.Max(neutral, config.CameraMaxDistance));
             _camDistance = ThresherCameraFraming.Ease(_camDistance, target,
@@ -621,38 +1105,78 @@ namespace CosmicShore.Gameplay
             _camWritten = -_camDistance;
             _cam.SetCameraDistance(_camWritten);
             _cam.MaxFollowTurnRate = config.CameraMaxFollowTurnRate;
+            _cam.MaxFollowAngularAcceleration = config.CameraMaxFollowAngularAcceleration;
 
-            // Spectate.
-            float spin = IsPivoting ? ThresherCameraFraming.SpinRate(_solver.LockSpeed, _solver.Length) : 0f;
-            // Detach only once the spin has held over the threshold for spectateEngageSeconds, so a
-            // tap of LT does not bob the camera up toward the vantage and straight back down.
-            bool qualifies = IsPivoting && config.SpectateSpinRate > 0f && spin >= config.SpectateSpinRate;
-            _spectateQualifyTime = qualifies ? _spectateQualifyTime + dt : 0f;
-            if (!_spectating && qualifies && _spectateQualifyTime >= config.SpectateEngageSeconds)
-                BeginSpectate(ship.position);
-            else if (_spectating && (!IsPivoting || spin < config.SpectateSpinRate * config.SpectateReleaseFraction))
-                EndSpectate();
+            // Spectate: on the launch view's own edges (LaunchViewUp, simulated in StepChain), so the
+            // crosshair comes on exactly when the trail goes off.
+            bool analog = _settings.Analog;
+            if (!_spectating && LaunchViewUp)
+                BeginSpectate(ship.position, dt);
+            else if (_spectating && !LaunchViewUp)
+                EndSpectate(smooth: true);
 
-            if (!_spectating) return;
-            Vector3 pivot = _solver.Pivot;
-            FollowOrbitPlane(ship.position, pivot, dt);
-            _spectateRadius = ThresherCameraFraming.Ease(_spectateRadius, _solver.Length + ballRadius,
-                config.CameraZoomOutRate, config.CameraZoomInRate, dt);
-            _cam.SpectateBlendSeconds = config.SpectateBlendSeconds;
-            _cam.Spectate = new CustomCameraController.SpectateView
+            if (!_spectating)
             {
-                Position = ThresherCameraFraming.SpectatePosition(pivot, _spectateNormal, _spectateOutward,
-                    _spectateRadius, Mathf.Min(halfFovV, halfFovH), config.SpectateTiltDegrees, config.CameraFramingMargin),
-                LookAt = pivot,
-                Up = _spectateUp,
-            };
+                if (_exiting) TickExit(dt);
+                _lastCamRotation = _cam.transform.rotation;
+                return;
+            }
+
+            // AIM. The sticks turn the launch direction in screen terms (right is right, the hull's
+            // pitch sign up/down) until a release ARMS it; then the point is chosen and held.
+            var input = _status.InputStatus;
+            if (input != null && !_solver.LaunchArmed)
+                ThresherCameraFraming.TurnAim(ref _aimDir, ref _aimUp, input.XSum, input.YSum,
+                    config.AimYawRate * Mathf.Deg2Rad, config.AimPitchRate * Mathf.Deg2Rad, dt);
+            // The whole spin turns with the camera: the orbit is laid into the plane the aim lives in.
+            _solver.SteerOrbitPlane(_aimUp);
+
+            // The launch point sits on the circle the ship is ACTUALLY flying (LaunchPoint), not on
+            // the chain's length, which runs ahead of the orbit while the winch pays out.
+            Vector3 launch = _solver.LaunchPoint(ship.position, _aimDir);
+            // Follow behind the launch point ON the trajectory, at the hull's own chase distance and
+            // (shipped) no height offset: the trajectory is the screen centre - the crosshair.
+            float follow = config.AimCameraDistance > 0f ? config.AimCameraDistance
+                : Mathf.Max(1f, Mathf.Abs(_cam.NeutralOffsetZ));
+            Vector3 eye = ThresherCameraFraming.LaunchCameraPosition(launch, _aimDir, _aimUp, follow,
+                config.AimElevationDegrees);
+            if (!SafeLookRotation.TryGet(launch - eye, _aimUp, out var look, this, logError: false))
+                look = _cam.transform.rotation;
+            // ENTER smoothly: ease from the pose the camera was ACTUALLY in when the spin was
+            // detected to the launch vantage, on this executor's own clock. The camera's blend only
+            // hands over (spectateBlendSeconds, short) from a vantage that starts exactly where the
+            // camera already is - so the still-spinning chase pose underneath never leaks in.
+            _camEase = Mathf.Min(1f, _camEase + dt / Mathf.Max(0.01f, config.SpectateEnterSeconds));
+            // The carried turn (spectateCarrySeconds): the start pose keeps turning at the camera's own rate
+            // about the orbit's axis and glides to a stop, so a camera that was turning does not freeze.
+            Quaternion fromRot = _easeFromRot;
+            float carryT = config.SpectateCarrySeconds;
+            if (carryT > 0f && Mathf.Abs(_carryRate) > 1e-4f)
+            {
+                float u = Mathf.Clamp01(_camEase * config.SpectateEnterSeconds / carryT);
+                fromRot = Quaternion.AngleAxis(_carryRate * carryT * (u - (u * u * u - u * u * u * u * 0.5f)) * Mathf.Rad2Deg, _aimUp) * _easeFromRot;
+            }
+            ShowVantage(_easeFromPos, fromRot, eye, look, _camEase);
+            _lastCamRotation = _cam.transform.rotation;
+
+            // The launch sight: the crosshair (lime while a release would barely wait) and the Time-petal
+            // zoom window down the same trajectory, zoomed by LT's depth alone. (Analog triggers: LT is at a
+            // full pull whenever this view is up, so its depth cannot zoom; the window stays wide.)
+            float zoomDepth = analog ? 0f : (input != null ? input.LeftTriggerAnalog : 0f);
+            _sightZoom01 = Mathf.MoveTowards(_sightZoom01,
+                ThresherCameraFraming.ZoomTarget(zoomDepth, config.SightZoomDeadzone),
+                config.SightZoomResponse * dt);
+            if (!_sight) _sight = ThresherLaunchSight.Create(name);
+            _sight.Tick(launch, _aimDir, _aimUp,
+                Mathf.Lerp(config.SightWideFieldOfView, config.SightZoomFieldOfView, _sightZoom01),
+                IsLaunchImminent ? ReadyColor().gamma : new Color(1f, 1f, 1f, 0.9f));
         }
 
-        /// <summary>Freeze the vantage's frame at the moment of detaching: the orbit's axis on the
-        /// camera's own side of the plane (so it never flips to watch from underneath), the side
-        /// the ship was on, and the screen's up = the way the camera was facing, laid into the
-        /// plane — the ship's heading stays "up" across the cut.</summary>
-        void BeginSpectate(Vector3 shipPosition)
+        /// <summary>Start aiming at the moment of detaching: the aim starts as the way the camera
+        /// was facing laid into the orbit plane (so the launch camera looks the way the chase camera
+        /// did), and the aim's "above" is the orbit's axis on the camera's own side, so the launch
+        /// camera rises over the orbit rather than dropping under it.</summary>
+        void BeginSpectate(Vector3 shipPosition, float dt)
         {
             Vector3 pivot = _solver.Pivot;
             Vector3 outward = shipPosition - pivot;
@@ -661,39 +1185,99 @@ namespace CosmicShore.Gameplay
             normal.Normalize();
             if (Vector3.Dot(normal, _cam.transform.position - pivot) < 0f) normal = -normal;
 
-            Vector3 up = Vector3.ProjectOnPlane(_cam.transform.forward, normal);
-            if (up.sqrMagnitude < 1e-6f) up = outward;
+            Vector3 aim = Vector3.ProjectOnPlane(_cam.transform.forward, normal);
+            if (aim.sqrMagnitude < 1e-6f) aim = _lastShipVelocity;
+            if (aim.sqrMagnitude < 1e-6f) return;
 
-            _spectateNormal = normal;
-            _spectateOutward = outward.normalized;
-            _spectateUp = up.normalized;
-            _spectateRadius = _solver.Length;
+            _aimDir = aim.normalized;
+            _aimUp = normal;
+            // The carried turn: the camera's own turn rate about the orbit's axis, read off last frame's pose.
+            // The aim (and so the vantage) is where a turn at that rate gliding to a stop over
+            // spectateCarrySeconds ends - half the rate x the time further round.
+            _carryRate = 0f;
+            if (config.SpectateCarrySeconds > 0f && dt > 0f)
+            {
+                Vector3 was = Vector3.ProjectOnPlane(_lastCamRotation * Vector3.forward, normal);
+                Vector3 now = Vector3.ProjectOnPlane(_cam.transform.forward, normal);
+                if (was.sqrMagnitude > 1e-6f && now.sqrMagnitude > 1e-6f)
+                    _carryRate = Vector3.SignedAngle(was, now, normal) * Mathf.Deg2Rad / dt;
+                _aimDir = Quaternion.AngleAxis(_carryRate * config.SpectateCarrySeconds * 0.5f * Mathf.Rad2Deg, normal) * _aimDir;
+            }
+            _sightZoom01 = 0f;
+            CaptureEaseStart();
+            _exiting = false;
             _spectating = true;
         }
 
-        /// <summary>The pilot can tilt a planted orbit (<c>pivotSteer</c>), so the vantage leans
-        /// after the orbit's plane — slowly (<c>spectatePlaneFollowRate</c>), so a steady tilt reads
-        /// as the orbit turning in front of a still camera, never as the camera swinging. The axis
-        /// stays on the camera's side of the plane; outward and up are re-laid into it.</summary>
-        void FollowOrbitPlane(Vector3 shipPosition, Vector3 pivot, float dt)
+        /// <summary>
+        /// Leave the launch view. <paramref name="smooth"/> (the launch, or the spin falling away):
+        /// keep holding a vantage and EASE it from where the camera is to the live chase pose behind
+        /// the hull (<see cref="TickExit"/>), then hand back to the follow camera once the two agree.
+        /// Otherwise (a teardown: disable, swap, lost pilot) drop the vantage at once.
+        /// </summary>
+        void EndSpectate(bool smooth = false)
         {
-            Vector3 now = Vector3.Cross(shipPosition - pivot, _lastShipVelocity);
-            if (now.sqrMagnitude < 1e-6f) return;
-            now.Normalize();
-            if (Vector3.Dot(now, _spectateNormal) < 0f) now = -now;
-            float t = 1f - Mathf.Exp(-config.SpectatePlaneFollowRate * dt);
-            _spectateNormal = Vector3.Slerp(_spectateNormal, now, t).normalized;
-
-            Vector3 outward = Vector3.ProjectOnPlane(_spectateOutward, _spectateNormal);
-            if (outward.sqrMagnitude > 1e-6f) _spectateOutward = outward.normalized;
-            Vector3 up = Vector3.ProjectOnPlane(_spectateUp, _spectateNormal);
-            if (up.sqrMagnitude > 1e-6f) _spectateUp = up.normalized;
+            if (_spectating) _solver?.SteerOrbitPlane(Vector3.zero);   // the orbit's plane is the ship's again
+            if (_sight) _sight.Hide();
+            bool was = _spectating;
+            _spectating = false;
+            if (smooth && was && _cam)
+            {
+                CaptureEaseStart();
+                _exiting = true;
+                return;
+            }
+            _exiting = false;
+            if (_cam && (was || _cam.Spectate.HasValue)) _cam.Spectate = null;
         }
 
-        void EndSpectate()
+        /// <summary>
+        /// One frame of the eased EXIT: from the launch vantage the camera was holding to the chase
+        /// pose the follow camera will take behind the hull — computed from the hull's live pose and
+        /// the camera's own follow offset, so a hull still swinging onto its new heading is tracked,
+        /// not chased by a turn-capped frame. At the end the follow frame is snapped to the hull
+        /// (<see cref="CustomCameraController.SnapToTarget"/>) and the vantage released over the
+        /// short hand-over blend, between two poses that already coincide.
+        /// </summary>
+        void TickExit(float dt)
         {
-            if (_spectating && _cam) _cam.Spectate = null;
-            _spectating = false;
+            Transform target = _cam ? _cam.FollowTarget : null;
+            if (!target) { _exiting = false; if (_cam) _cam.Spectate = null; return; }
+            // The follow camera's own placement, warp field included (it scales the offset by
+            // WarpFieldRuntime.ScaleAt at the framed point), so the hand-over is between equal poses.
+            Vector3 offset = _cam.GetFollowOffset() * WarpFieldRuntime.ScaleAt(target.position);
+            Vector3 eye = target.position + target.rotation * offset;
+            if (!SafeLookRotation.TryGet(target.position - eye, target.up, out var look, this, logError: false))
+                look = target.rotation;
+            _camEase = Mathf.Min(1f, _camEase + dt / Mathf.Max(0.01f, config.SpectateExitSeconds));
+            ShowVantage(_easeFromPos, _easeFromRot, eye, look, _camEase);
+            if (_camEase < 1f) return;
+            _cam.SnapToTarget();
+            _cam.SpectateBlendSeconds = config.SpectateBlendSeconds;
+            _cam.Spectate = null;
+            _exiting = false;
+        }
+
+        void CaptureEaseStart()
+        {
+            _easeFromPos = _cam.transform.position;
+            _easeFromRot = _cam.transform.rotation;
+            _camEase = 0f;
+        }
+
+        /// <summary>Hold the vantage at <c>SmoothStep(t)</c> of the way from one pose to another.</summary>
+        void ShowVantage(Vector3 fromPos, Quaternion fromRot, Vector3 toPos, Quaternion toRot, float t)
+        {
+            float w = Mathf.SmoothStep(0f, 1f, t);
+            Vector3 pos = Vector3.Lerp(fromPos, toPos, w);
+            Quaternion rot = Quaternion.Slerp(fromRot, toRot, w);
+            _cam.SpectateBlendSeconds = config.SpectateBlendSeconds;
+            _cam.Spectate = new CustomCameraController.SpectateView
+            {
+                Position = pos,
+                LookAt = pos + rot * Vector3.forward * 100f,
+                Up = rot * Vector3.up,
+            };
         }
 
         /// <summary>Hand the camera back: no vantage, and the prefab's own distance — unless
@@ -701,10 +1285,10 @@ namespace CosmicShore.Gameplay
         /// settings landing first), in which case that write stands.</summary>
         void ReleaseCamera()
         {
-            _spectateQualifyTime = 0f;
-            if (!_cam) { _cam = null; _spectating = false; _camWritten = float.NaN; return; }
+            if (!_cam) { _cam = null; _spectating = false; _exiting = false; _camWritten = float.NaN; if (_sight) _sight.Hide(); return; }
             EndSpectate();
             _cam.MaxFollowTurnRate = 0f;
+            _cam.MaxFollowAngularAcceleration = 0f;
             float neutral = _cam.NeutralOffsetZ;
             if (neutral < 0f && _cam.GetCameraDistance() == _camWritten) _cam.SetCameraDistance(neutral);
             _cam = null;
@@ -755,11 +1339,18 @@ namespace CosmicShore.Gameplay
         Color BallColor(out float emission)
         {
             Domains domain = PilotDomain();
+            // Mass Mode never smashes, so it never shows red: a builder's ball wears its domain's
+            // LIT colour (it is armouring its own mass) at a steady glow.
+            if (_massMode)
+            {
+                emission = 1.5f;
+                return LitColor(domain);
+            }
             if (IsHot)
             {
                 float heat = ThresherChainSolver.Heat01(_solver.BallSpeed, _settings);
                 emission = Mathf.Lerp(2.5f, 4f, heat);
-                return LitActive ? LitColor(domain) : DangerColor();
+                return DangerColor();
             }
             float g = Gauge01;
             emission = Mathf.Lerp(0.15f, 1.2f, g * g);
@@ -777,8 +1368,23 @@ namespace CosmicShore.Gameplay
         /// </summary>
         void BallShade(out Color body, out Color rim)
         {
+            BallShadeForState(out body, out rim);
+            // The bank: the rim leans toward the CTA lime as the chain's kills charge the next
+            // explosion, so a charged ball is legible before it hits anything.
+            float e = Energy01;
+            if (e > 0f) rim = Color.Lerp(rim, WithMaxChannel(ReadyColor(), config.BallRimHot), e * config.EnergyRimTint);
+        }
+
+        void BallShadeForState(out Color body, out Color rim)
+        {
             Color hue = BallColor(out _);
             float g = Gauge01;
+            if (_massMode)
+            {
+                body = WithMaxChannel(hue, config.BallBodyNearSmash);
+                rim = WithMaxChannel(hue, config.BallRimHot);
+                return;
+            }
             if (IsHot)
             {
                 float heat = ThresherChainSolver.Heat01(_solver.BallSpeed, _settings);
@@ -825,6 +1431,7 @@ namespace CosmicShore.Gameplay
         Transform _ball;
         MeshRenderer[] _ballRenderers;
         LineRenderer _chain;
+        Vector3[] _chainDrawn;
         TrailRenderer _skid;
         TextMeshPro _comboLabel;
         MaterialPropertyBlock _mpb;
@@ -839,6 +1446,8 @@ namespace CosmicShore.Gameplay
         int _comboShown;
 
         static Material s_lineMaterial, s_ballMaterial;
+        static Mesh s_ballMesh;
+        ThresherHullBuilder _hullBuilder;
         static readonly int BaseColorId = Shader.PropertyToID("_BaseColor");
         static readonly int ColorId = Shader.PropertyToID("_Color");
         static readonly int EmissionColorId = Shader.PropertyToID("_EmissionColor");
@@ -855,20 +1464,22 @@ namespace CosmicShore.Gameplay
             _root = new GameObject($"ThresherVisuals::{name}");
             _mpb = new MaterialPropertyBlock();
 
-            // The ball: a heavy core plus six studs, so it reads as a chunky wrecking ball and its
-            // roll is visible.
+            // The ball: a faceted morning star (ThresherBallForm) — an 80-facet core and twelve spikes — so
+            // it reads as a heavy wrecking ball and its roll is visible. One shared mesh, one renderer.
             _ball = new GameObject("Ball").transform;
             _ball.SetParent(_root.transform, false);
-            var parts = new List<MeshRenderer>();
-            parts.Add(MakePrimitive(PrimitiveType.Sphere, _ball, Vector3.zero, Vector3.one, ballMat));
-            Vector3[] axes = { Vector3.right, Vector3.left, Vector3.up, Vector3.down, Vector3.forward, Vector3.back };
-            foreach (var a in axes)
-                parts.Add(MakePrimitive(PrimitiveType.Cube, _ball, a * 0.5f, Vector3.one * 0.32f, ballMat));
-            _ballRenderers = parts.ToArray();
+            var ballGo = new GameObject("MorningStar");
+            ballGo.transform.SetParent(_ball, false);
+            ballGo.AddComponent<MeshFilter>().sharedMesh = BallMesh();
+            var ballRenderer = ballGo.AddComponent<MeshRenderer>();
+            ballRenderer.sharedMaterial = ballMat;
+            ballRenderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+            _ballRenderers = new[] { ballRenderer };
 
             _chain = MakeLine("Chain", chainMaterial ? chainMaterial : lineMat, false);
             _chain.alignment = LineAlignment.View;   // the fresnel tube is computed across a VIEW-aligned ribbon
             _chainMpb = new MaterialPropertyBlock();
+
 
             var skidGo = new GameObject("SkidTrail");
             skidGo.transform.SetParent(_ball, false);
@@ -886,17 +1497,33 @@ namespace CosmicShore.Gameplay
             if (TMP_Settings.defaultFontAsset) _comboLabel.font = TMP_Settings.defaultFontAsset;
         }
 
-        static MeshRenderer MakePrimitive(PrimitiveType type, Transform parent, Vector3 localPos, Vector3 localScale, Material mat)
+        /// <summary>This vessel's own shark hull, for the hitch the chain is drawn from. Resolved lazily and
+        /// retried until found (the hull is built in its own Awake); null on a hull without one, which then
+        /// draws the chain from the ship's centre as before.</summary>
+        bool TryHull(out ThresherHullBuilder hull)
         {
-            var go = GameObject.CreatePrimitive(type);
-            if (go.TryGetComponent(out Collider c)) Destroy(c);   // cosmetic: the sweep is the physics
-            go.transform.SetParent(parent, false);
-            go.transform.localPosition = localPos;
-            go.transform.localScale = localScale;
-            var mr = go.GetComponent<MeshRenderer>();
-            mr.sharedMaterial = mat;
-            mr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
-            return mr;
+            if (!_hullBuilder && _status != null && _status.Transform)
+                _hullBuilder = _status.Transform.GetComponentInChildren<ThresherHullBuilder>(true);
+            hull = _hullBuilder;
+            return hull;
+        }
+
+        /// <summary>The morning star, built once and shared by every Thresher (the geometry is identical; size
+        /// is the ball transform's scale). Static and never destroyed on purpose — one small mesh for the
+        /// session, not one per vessel.</summary>
+        static Mesh BallMesh()
+        {
+            if (s_ballMesh) return s_ballMesh;
+            var verts = new List<Vector3>();
+            var normals = new List<Vector3>();
+            var tris = new List<int>();
+            ThresherBallForm.Build(verts, normals, tris);
+            s_ballMesh = new Mesh { name = "ThresherMorningStar" };
+            s_ballMesh.SetVertices(verts);
+            s_ballMesh.SetNormals(normals);
+            s_ballMesh.SetTriangles(tris, 0);
+            s_ballMesh.RecalculateBounds();
+            return s_ballMesh;
         }
 
         LineRenderer MakeLine(string label, Material mat, bool loop)
@@ -939,12 +1566,15 @@ namespace CosmicShore.Gameplay
         {
             if (!active) _shownValid = false;   // re-shown at the live colours, not eased from stale ones
             if (_root) _root.SetActive(active);
+            if (!active && _sight) _sight.Hide();
         }
 
         void DestroyVisuals()
         {
             if (_root) Destroy(_root);
             _root = null;
+            if (_sight) Destroy(_sight.gameObject);
+            _sight = null;
         }
 
         void UpdateVisuals()
@@ -1013,8 +1643,27 @@ namespace CosmicShore.Gameplay
             _chainMpb.SetColor(BrightColorId, chainRim);
             _chain.SetPropertyBlock(_chainMpb);
             _chain.startColor = _chain.endColor = chainRim;   // the vertex-colour fallback material
-            if (_chain.positionCount != _links.Count) _chain.positionCount = _links.Count;
-            _chain.SetPositions(_links.Points);
+            // Drawn as a smooth curve through the gameplay links (ThresherChainLinks.Smooth), so a
+            // slack chain bends instead of showing a kink at every link.
+            int drawn = ThresherChainLinks.SmoothedCount(_links.Count, config.ChainRenderSubdivisions);
+            if (_chainDrawn == null || _chainDrawn.Length != drawn) _chainDrawn = new Vector3[drawn];
+            int written = ThresherChainLinks.Smooth(_links.Points, config.ChainRenderSubdivisions, _chainDrawn);
+            // DRAWN from the hull's hitch ring at the tail fork (THRESHER.md §5b), the offset eased out over
+            // the first link so the curve leaves the ring without a kink. Drawing only: the gameplay chain,
+            // its sweep and its physics still hang from the ship's centre.
+            if (written > 1 && TryHull(out var hull))
+            {
+                Vector3 offset = hull.HitchWorldPosition - ship;
+                int span = Mathf.Min(written - 1, Mathf.Max(1, config.ChainRenderSubdivisions));
+                for (int i = 0; i <= span; i++)
+                {
+                    float f = 1f - i / (float)span;
+                    _chainDrawn[i] += offset * (f * f * (3f - 2f * f));
+                }
+            }
+            if (_chain.positionCount != written) _chain.positionCount = written;
+            _chain.SetPositions(_chainDrawn);
+
 
             // Skid trail while planting.
             if (_skid)
@@ -1044,7 +1693,7 @@ namespace CosmicShore.Gameplay
                 _comboLabel.fontSize = r * 2.2f * (1f + 0.08f * Mathf.Min(_combo, 12)) * _comboShownScale;
                 _comboLabel.color = ballColor;
                 _comboLabel.transform.position = ballPos + Vector3.up * (r * 3f);
-                var cam = Camera.main;
+                var cam = CameraManager.ViewCamera;   // the label faces the pilot's camera, not the menu's
                 if (cam)
                 {
                     Vector3 away = _comboLabel.transform.position - cam.transform.position;

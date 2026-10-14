@@ -8,7 +8,7 @@ using ImGuiNET;
 namespace CosmicShore.Launcher
 {
     /// <summary>
-    /// The GIT page: how an agent's edits (or your own) get from Prisma's workspace to GitHub.
+    /// The GIT page: how an agent's edits (or your own) get from Amoebius's workspace to GitHub.
     /// Left: where the workspace is, every change with which chat made it, and SAVE (commit to a
     /// branch, push, pull request). Right: the selected file's diff, then the recent history.
     /// </summary>
@@ -49,7 +49,7 @@ namespace CosmicShore.Launcher
             RefreshGit();
             if (c.LastRunEdits > 0 && _page != Page.Git)
                 Notify($"The agent changed {c.LastRunEdits} file{(c.LastRunEdits == 1 ? "" : "s")}",
-                    $"In \"{Trim(c.Title, 50)}\". They stay in Prisma's workspace until you commit them.", NoteKind.Info,
+                    $"In \"{Trim(c.Title, 50)}\". They stay in Amoebius's workspace until you commit them.", NoteKind.Info,
                     ("REVIEW", () => _page = Page.Git));
         }
 
@@ -63,7 +63,7 @@ namespace CosmicShore.Launcher
         string SuggestedBranch()
         {
             var title = _chats.All.FirstOrDefault(c => !c.Empty && c.CurrentScope == ClaudeChat.Scope.Game)?.Title ?? "";
-            return "prisma/" + SourceControl.Slug(title.Length > 0 ? title : "changes");
+            return "amoebius/" + SourceControl.Slug(title.Length > 0 ? title : "changes");
         }
 
         string SuggestedMessage(SourceControl.State st)
@@ -71,7 +71,7 @@ namespace CosmicShore.Launcher
             var chats = st.Changes.SelectMany(c => _chats.EditorsOf(System.IO.Path.Combine(_ws.Dir, c.Path))).Distinct().ToList();
             var first = chats.FirstOrDefault()?.Title;
             bool engine = st.Changes.Any(c => c.Path.StartsWith("Port/"));
-            string head = first != null ? (engine ? "feat(prisma): " : "fix: ") + first : (engine ? "chore(prisma): " : "chore: ") + $"{st.Changes.Count} changes from Prisma";
+            string head = first != null ? (engine ? "feat(amoebius): " : "fix: ") + first : (engine ? "chore(amoebius): " : "chore: ") + $"{st.Changes.Count} changes from Amoebius";
             var body = string.Join("\n", st.Changes.Take(12).Select(c => $"- {c.Path}"));
             return head + "\n\n" + body + (st.Changes.Count > 12 ? $"\n- ... and {st.Changes.Count - 12} more" : "");
         }
@@ -89,7 +89,7 @@ namespace CosmicShore.Launcher
         {
             var dl = ImGui.GetWindowDrawList();
             PageHeader(a, "GIT", _ws.Exists
-                ? $"Prisma's workspace  ·  {Trim(_ws.Dir, 70)}  ·  {(_s.Workspace == WorkspaceMode.WorktreeOfMyClone ? "a worktree of your clone" : "a clone Prisma manages")}"
+                ? $"Amoebius's workspace  ·  {Trim(_ws.Dir, 70)}  ·  {(_s.Workspace == WorkspaceMode.WorktreeOfMyClone ? "a worktree of your clone" : "a clone Amoebius manages")}"
                 : "No workspace yet: press START on PLAY once.");
             if (!_ws.Exists || _tools.Git == null) return;
             if ((DateTime.Now - _gitPolled).TotalSeconds > 4 && !_git.Busy) { _gitPolled = DateTime.Now; RefreshGit(); }
@@ -181,7 +181,7 @@ namespace CosmicShore.Launcher
             float fw = sb.X - sa.X - 36;
             ImGui.SetCursorScreenPos(sa + new Vector2(18, 40));
             ImGui.PushItemWidth(fw);
-            ImGui.InputTextWithHint("##gbranch", "branch, e.g. prisma/fix-score", ref _gitBranch, 120);
+            ImGui.InputTextWithHint("##gbranch", "branch, e.g. amoebius/fix-score", ref _gitBranch, 120);
             ImGui.PopItemWidth();
             Neon.Tooltip(SourceControl.ValidBranch(_gitBranch.Trim())
                 ? "The branch the commit goes on. A new name makes a new branch from where the workspace is."

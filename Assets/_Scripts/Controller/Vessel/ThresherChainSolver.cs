@@ -21,6 +21,29 @@ namespace CosmicShore.Gameplay
         public float SkidRate, SkidSeconds, LockKeep, LockSpinRate, LockMaxSpeed, Yank;
         /// <summary>Max rate (rad/s) at which full stick tilts a planted orbit's plane.</summary>
         public float PivotSteerRate;
+        /// <summary>Hook-on: the fastest the ship's heading turns onto the orbit (rad/s; 0 = snap),
+        /// and how fast (1/s) the chain reels back the stretch that swing-out took.</summary>
+        public float HookTurnRate, HookReturnRate;
+        // Windmill (an omni crystal): the ball circles the SHIP at this speed for a while
+        public float WindmillSpeed;
+        /// <summary>ANALOG TRIGGERS (Thresher Plant Lab round 2, <c>Docs/Studios/THRESHER_PLANT_LAB.md</c>).
+        /// Off: the shipped digital controls (LT plants, RT held lets chain out). On: LT's depth is a BRAKE
+        /// that stops the ball only at a full pull; RT's depth is the chain's RIGIDITY (pulled = rigid,
+        /// released = a slack bungee); there is no winch.</summary>
+        public bool Analog;
+        /// <summary>Analog: ball brake just short of a full pull (1/s), and the curve on the pull's depth.</summary>
+        public float BrakeMax, BrakeCurve;
+        /// <summary>Analog: the ship's share of the chain's pull = shipped share + the rest x depth^this.</summary>
+        public float AnchorCurve;
+        /// <summary>Analog: peak deceleration of the full-pull stop (u/s^2, game units).</summary>
+        public float StopDecel;
+        /// <summary>Analog: the chain's natural frequency released / fully pulled (rad/s), its damping
+        /// ratio, the curve on RT's depth, and the most its rigidity may change per second (0 = at once).</summary>
+        public float ChainSlackRate, ChainRigidRate, ChainDamping, RigidityCurve, RigiditySlew;
+        /// <summary>Analog: the hook's duration (an S-curve that carries the ship's incoming turn).</summary>
+        public float AnalogHookSeconds;
+        /// <summary>Seconds over which the planted spin-up fades in (0 = full rate from the first frame).</summary>
+        public float SpinEase;
         // Reference
         public float CruiseSpeed;
     }
@@ -110,6 +133,49 @@ namespace CosmicShore.Gameplay
                  "the hull's free-flight 120 deg/s, so the spin stays the ship's and the stick steers it. " +
                  "0 = sticks ignored while planted. A rate, so not scaled.")]
         [SerializeField] float pivotSteer = 45f;
+        [Tooltip("Hook-on: when the plant catches, the ship's heading turns onto the orbit at most this fast " +
+                 "(degrees/s) instead of snapping (it used to turn up to 91 deg in ONE frame). The chain stretches " +
+                 "to let the ship swing wide while it turns. 0 = the old snap. A rate, so not scaled.")]
+        [SerializeField] float hookTurnRate = 300f;
+        [Tooltip("How fast the chain reels back the stretch the hook-on swing took (1/s, exponential).")]
+        [SerializeField] float hookReturnRate = 5f;
+
+        [Header("Analog triggers (Thresher Plant Lab round 2)")]
+        [Tooltip("Off: the digital controls (LT plants; RT held lets chain out, released reels in). On: LT's DEPTH is a " +
+                 "brake that stops the ball only at a FULL pull; RT's DEPTH is the chain's rigidity (pulled = rigid, " +
+                 "released = a slack bungee) and there is no winch. Docs/Studios/THRESHER_PLANT_LAB.md round 2.")]
+        [SerializeField] bool analogTriggers = false;
+        [Tooltip("Analog: how hard the ball brakes just short of a full pull (1/s). A rate, so not scaled.")]
+        [SerializeField] float analogBrake = 4f;
+        [Tooltip("Analog: brake = depth^this x analogBrake. Above 1 the first part of the pull is gentle and the last part bites.")]
+        [SerializeField] float analogBrakeCurve = 1.5f;
+        [Tooltip("Analog: as LT deepens the braking ball becomes an anchor: the ship's share of the chain's pull = the " +
+                 "shipped tug share + the rest x depth^this, so a half pull already swings the ship round a sliding ball.")]
+        [SerializeField] float analogAnchorCurve = 2f;
+        [Tooltip("Analog: peak deceleration of the stop at a full pull (sandbox units/s^2; 2443 = 450 u/s^2 in game). " +
+                 "The stop takes 1.5 x the ball's speed / this, along an S-curve, so a slow squeeze stops gently.")]
+        [SerializeField] float analogStopDecel = 2442.857f;
+        [Tooltip("Analog: the chain's natural frequency with RT released (rad/s): a soft bungee. A rate, so not scaled.")]
+        [SerializeField] float chainSlackRate = 1.2f;
+        [Tooltip("Analog: the chain's natural frequency at a full RT pull (rad/s): ~1 u of stretch at full spin.")]
+        [SerializeField] float chainRigidRate = 30f;
+        [Tooltip("Analog: the chain's damping ratio (1 = critically damped).")]
+        [SerializeField] float chainDamping = 0.8f;
+        [Tooltip("Analog: rigidity = slack x (rigid/slack)^(depth^this), a log scale between the two.")]
+        [SerializeField] float rigidityCurve = 1f;
+        [Tooltip("Analog: the most the chain's rigidity may change per second, as a fraction of RT's travel - a SLAMMED " +
+                 "RT then pulls the ball in over 1/this s instead of in one frame. 0 = it follows the trigger at once.")]
+        [SerializeField] float rigiditySlew = 0f;
+        [Tooltip("Analog: the hook onto the orbit at a full pull, an S-curve that starts at the ship's own turn rate (s).")]
+        [SerializeField] float analogHookSeconds = 0.5f;
+        [Tooltip("Seconds over which the planted spin-up fades in (0 = full lockSpin from the first frame).")]
+        [SerializeField] float spinEase = 0f;
+
+        [Header("Windmill (omni crystal)")]
+        [Tooltip("Collecting an OMNI crystal throws the ball into a windmill: it circles the ship at this speed " +
+                 "(sandbox units/s; 1000 sits between smash 700 and white-hot 1300, so the windmill is red-hot " +
+                 "all the way round) in the plane across the ship's flight, at the chain's current length.")]
+        [SerializeField] float windmillSpeed = 1000f;
 
         /// <summary>Sandbox → game length/speed factor.</summary>
         public float Scale => sandboxCruise > 0f ? gameCruise / sandboxCruise : 1f;
@@ -145,7 +211,22 @@ namespace CosmicShore.Gameplay
                 LockMaxSpeed = lockMax * gameCruise,
                 Yank = Mathf.Max(0f, yank),
                 PivotSteerRate = Mathf.Max(0f, pivotSteer) * Mathf.Deg2Rad,
+                HookTurnRate = Mathf.Max(0f, hookTurnRate) * Mathf.Deg2Rad,
+                HookReturnRate = Mathf.Max(0f, hookReturnRate),
+                WindmillSpeed = Mathf.Max(0f, windmillSpeed) * k,
                 CruiseSpeed = gameCruise,
+                Analog = analogTriggers,
+                BrakeMax = Mathf.Max(0f, analogBrake),
+                BrakeCurve = Mathf.Max(0.1f, analogBrakeCurve),
+                AnchorCurve = Mathf.Max(0.1f, analogAnchorCurve),
+                StopDecel = Mathf.Max(1f, analogStopDecel * k),
+                ChainSlackRate = Mathf.Max(0.05f, chainSlackRate),
+                ChainRigidRate = Mathf.Max(0.1f, chainRigidRate),
+                ChainDamping = Mathf.Max(0f, chainDamping),
+                RigidityCurve = Mathf.Max(0.05f, rigidityCurve),
+                RigiditySlew = Mathf.Max(0f, rigiditySlew),
+                AnalogHookSeconds = Mathf.Max(0.02f, analogHookSeconds),
+                SpinEase = Mathf.Max(0f, spinEase),
             };
         }
     }
@@ -159,6 +240,20 @@ namespace CosmicShore.Gameplay
         Skidding = 1,
         /// <summary>The ball is planted in space and the SHIP swings round it.</summary>
         Pivot = 2,
+        /// <summary>An omni crystal: the ball circles the SHIP like a windmill's sails, across its
+        /// line of flight, for a while (<see cref="ThresherChainSolver.StartWindmill"/>).</summary>
+        Windmill = 3,
+    }
+
+    /// <summary>What <see cref="ThresherChainSolver.AnalogTriggers"/> decided this frame (analog triggers only).</summary>
+    public enum ThresherTriggerEdge
+    {
+        None = 0,
+        /// <summary>LT reached a full pull: the ball has started its stop and the ship its hook.</summary>
+        Stop = 1,
+        /// <summary>LT fell below the let-go depth while stopped or planted: the caller lets go (or arms the
+        /// aimed launch), exactly as the digital LT-up edge does.</summary>
+        LetGo = 2,
     }
 
     /// <summary>One frame's answer from <see cref="ThresherChainSolver.Step"/>.</summary>
@@ -173,6 +268,10 @@ namespace CosmicShore.Gameplay
         public bool Cracked;
         /// <summary>True on the frame the skid finished and the ball became the pivot.</summary>
         public bool Planted;
+        /// <summary>True on the frame an ARMED launch (<see cref="ThresherChainSolver.ArmLaunch"/>)
+        /// reached its launch point and the ship left the orbit along <see cref="LaunchDirection"/>.</summary>
+        public bool Launched;
+        public Vector3 LaunchDirection;
     }
 
     /// <summary>
@@ -219,6 +318,52 @@ namespace CosmicShore.Gameplay
         Vector3 _lockDirection;
         float _skidTime;
         bool _wasSlack;
+        float _windmillRadius;
+        Vector3 _planeNormal;      // steered orbit plane (zero = leave the plane alone)
+        Vector3 _hookHeading;      // the ship's heading while it turns onto the orbit (zero = on it)
+        float _hookSlack;          // how far past the chain's length the hook-on swing is allowed
+        float _hookSlackSpeed;     // d(slack)/dt - the reel-back is a spring, so radial speed ramps
+        Vector3 _launchAim;        // armed launch direction (zero = none armed)
+        float _launchBoost;        // the armed launch leaves this many times the orbit's speed (1 = none)
+
+        // Analog triggers (Settings.Analog). The lab's names are kept in comments so the port reads beside
+        // Docs/Studios/ThresherPlantLab.html, which Tools/Build/thresher_plant_lab/parity.cjs holds it to.
+        bool _braking;             // the pivot is the ball still stopping (lab: braking)
+        float _brakeT, _stopT;     // time into the full-pull stop, and its length
+        Vector3 _brakeV0;          // the ball's velocity when the stop began
+        Vector3 _hookStart;        // the heading the hook starts from
+        float _hookT;              // time into the analog hook
+        float _pivotAge;           // seconds since the pivot began (the spin-up fade-in)
+        float _turnIn;             // the ship's turn rate coming in, about the orbit normal (rad/s)
+        Vector3 _prevVel, _curVel; bool _hasVel; float _velDt;   // the last two towing velocities (the turn rate)
+        bool _wasHooking;          // the hook was running last frame (its end hands over to the elastic state)
+        float _sinceHook;          // seconds since the hook handed over
+        float _e0;                 // the stretch the hook left the ship at
+
+        /// <summary>Analog: LT's depth this frame (0..1).</summary>
+        public float LeftTriggerDepth { get; private set; }
+        /// <summary>Analog: the chain's rigidity this frame (0 = slack .. 1 = rigid), RT's depth after
+        /// <see cref="ThresherChainSettings.RigiditySlew"/>.</summary>
+        public float Rigidity { get; private set; }
+        /// <summary>Analog: the ball is still stopping (the pivot moves with it).</summary>
+        public bool IsBraking => _braking;
+        /// <summary>How far an ARMED launch leaves BEFORE its point (radians), so a spin wound down over the
+        /// next frames turns the ship onto the aim instead of past it. Set each frame by the transformer;
+        /// 0 = leave at the point along the aim (the shipped launch).</summary>
+        public float LaunchLeadRadians { get; set; }
+        /// <summary>How far out the chain reaches: the winch length, or (analog, planted) rest length plus
+        /// the elastic stretch.</summary>
+        public float Extent => Settings.Analog && Mode == ThresherMode.Pivot ? Length + _hookSlack : Length;
+
+        /// <summary>Seconds of windmill left; 0 outside <see cref="ThresherMode.Windmill"/>.</summary>
+        public float WindmillTimeLeft { get; private set; }
+
+        /// <summary>The ship is still swinging onto the orbit after the plant caught (turning onto
+        /// the tangent, or reeling back the stretch that swing took).</summary>
+        public bool IsHookingOn => Mode == ThresherMode.Pivot && (_hookHeading.sqrMagnitude > 0.5f || _hookSlack > 0f);
+
+        /// <summary>A launch is armed: the ship keeps orbiting until it reaches the launch point.</summary>
+        public bool LaunchArmed => _launchAim.sqrMagnitude > 0.5f;
 
         /// <summary>Fraction below full length at which the chain counts as SLACK for the crack.
         /// A chain riding taut frame after frame must not crack every frame; it has to go slack
@@ -240,7 +385,15 @@ namespace CosmicShore.Gameplay
             LockSpeed = 0f;
             _skidTime = 0f;
             _wasSlack = false;
+            WindmillTimeLeft = 0f;
+            _planeNormal = Vector3.zero;
+            _launchAim = Vector3.zero;
+            _hookHeading = Vector3.zero;
+            _hookSlack = 0f;
+            _hookSlackSpeed = 0f;
             IsTaut = true;
+            _braking = false; _hasVel = false; _wasHooking = false;
+            LeftTriggerDepth = 0f; Rigidity = 0f; LaunchLeadRadians = 0f;
         }
 
         // ------------------------------------------------------------------ lock edges
@@ -256,21 +409,143 @@ namespace CosmicShore.Gameplay
 
         /// <summary>Left trigger up: the ship flies off on its current velocity and, if the ball
         /// was the pivot, the ball is yanked after it at <see cref="ThresherChainSettings.Yank"/> of
-        /// the ship's speed. <paramref name="slingshot"/> is the Time level-5 upgrade: the yank is never weaker than
-        /// smash speed, so the ball leaves the pivot hot.</summary>
-        public void Release(Vector3 shipVelocity, bool slingshot = false)
+        /// the ship's speed.</summary>
+        public void Release(Vector3 shipVelocity)
         {
-            if (Mode == ThresherMode.Pivot)
+            // The windmill owns the ball until it runs out; a left-trigger release mid-windmill
+            // (the trigger was held when the crystal was collected) must not cut it short.
+            if (Mode == ThresherMode.Windmill) return;
+            _launchAim = Vector3.zero;
+            _planeNormal = Vector3.zero;
+            _hookHeading = Vector3.zero;
+            _hookSlack = 0f;
+            _hookSlackSpeed = 0f;
+            // (a ball let go while it is still stopping keeps its own speed; only a pinned ball is yanked)
+            if (Mode == ThresherMode.Pivot && !_braking)
             {
-                Vector3 yank = shipVelocity * Settings.Yank;
-                if (slingshot && shipVelocity.sqrMagnitude > 1e-6f && yank.magnitude < Settings.SmashSpeed)
-                    yank = shipVelocity.normalized * Settings.SmashSpeed;
-                BallVelocity = Vector3.ClampMagnitude(yank, Settings.MaxBallSpeed);
+                BallVelocity = Vector3.ClampMagnitude(shipVelocity * Settings.Yank, Settings.MaxBallSpeed);
             }
             Mode = ThresherMode.Free;
             LockSpeed = 0f;
             _wasSlack = false;
+            _braking = false;
         }
+
+        /// <summary>
+        /// An omni crystal: for <paramref name="seconds"/> the ball circles the SHIP at
+        /// <see cref="ThresherChainSettings.WindmillSpeed"/>, in the plane across the ship's line of
+        /// flight (a windmill's sails facing the wind), at the chain's length — the winch still
+        /// works, so the pilot sizes the windmill. A planted pivot is abandoned (the ship flies on at
+        /// its orbit velocity). Collecting another crystal mid-windmill tops the clock up, never
+        /// stacks it. When the clock runs out the ball is let go Free at the speed it has, and the
+        /// ordinary rope takes over.
+        /// </summary>
+        public void StartWindmill(Vector3 shipPosition, float seconds)
+        {
+            if (seconds <= 0f) return;
+            if (Mode != ThresherMode.Windmill)
+                _windmillRadius = Mathf.Max(1e-3f, (BallPosition - shipPosition).magnitude);
+            Mode = ThresherMode.Windmill;
+            LockSpeed = 0f;
+            _braking = false;
+            _launchAim = Vector3.zero;
+            _planeNormal = Vector3.zero;
+            WindmillTimeLeft = Mathf.Max(WindmillTimeLeft, seconds);
+        }
+
+        /// <summary>
+        /// Steer the planted orbit's PLANE: from the next step the ship's circle is laid into the
+        /// plane with this normal (either sign — the spin keeps its own sense), so turning the aim
+        /// camera turns the whole spin with it. Zero hands the plane back (only
+        /// <see cref="SteerPivot"/> leans it then). Each frame's change is small, so re-laying the
+        /// ship onto the new plane is a small move, never a jump.
+        /// </summary>
+        public void SteerOrbitPlane(Vector3 normal)
+            => _planeNormal = normal.sqrMagnitude > 1e-8f ? normal.normalized : Vector3.zero;
+
+        /// <summary>
+        /// ARM a launch along <paramref name="aim"/>: rather than leaving the orbit wherever the ship
+        /// is when the trigger comes up, it keeps circling until it reaches the one point of the
+        /// circle whose tangent IS the aim (<see cref="LaunchRadial"/>), and leaves from there —
+        /// so the pilot picks a point, and the timing is the solver's job. A re-arm replaces the aim;
+        /// <see cref="Release"/> (or a windmill) disarms. Ignored unless planted.
+        /// The launch leaves <paramref name="boost"/> times the orbit's speed however long it waited
+        /// for its point: the aimed launch is rewarded for being AIMED, never for its timing
+        /// (2026-10-13; pass 1 for none).
+        /// </summary>
+        public void ArmLaunch(Vector3 aim, float boost = 1f)
+        {
+            if (Mode != ThresherMode.Pivot || aim.sqrMagnitude < 1e-8f) return;
+            _launchAim = aim.normalized;
+            _launchBoost = Mathf.Max(1f, boost);
+        }
+
+        /// <summary>
+        /// Seconds until the ship, circling at its current speed, reaches the launch point for
+        /// <paramref name="aim"/> — the wait an LT release NOW would cost. Infinity when there is no
+        /// launch point (not planted, or the aim is along the orbit's axis).
+        /// </summary>
+        public float SecondsToLaunchPoint(Vector3 shipPosition, Vector3 aim)
+        {
+            if (!LaunchRadial(shipPosition, aim, out Vector3 target)) return float.PositiveInfinity;
+            Vector3 r = shipPosition - Pivot;
+            float dist = r.magnitude;
+            if (dist < 1e-5f || LockSpeed <= 1e-4f) return float.PositiveInfinity;
+            Vector3 rh = r / dist;
+            Vector3 t = Vector3.Cross(OrbitNormal(shipPosition), rh);
+            float ahead = Mathf.Atan2(Vector3.Dot(target, t), Vector3.Dot(target, rh));
+            if (ahead < 0f) ahead += 2f * Mathf.PI;
+            return ahead * dist / LockSpeed;
+        }
+
+        /// <summary>
+        /// Pull a FREE ball toward <paramref name="target"/> at <paramref name="acceleration"/>
+        /// (u/s²) for one frame — the Charge level-5 attraction to enemy vessels. A planted ball is a
+        /// pivot and a windmill's ball is driven round its circle, so neither is pulled; the rope
+        /// still has the last word on where a free ball can go.
+        /// </summary>
+        public void AttractBall(Vector3 target, float acceleration, float dt)
+        {
+            if (Mode != ThresherMode.Free && Mode != ThresherMode.Skidding) return;
+            Vector3 to = target - BallPosition;
+            if (to.sqrMagnitude < 1e-6f || acceleration <= 0f || dt <= 0f) return;
+            BallVelocity = Vector3.ClampMagnitude(BallVelocity + to.normalized * (acceleration * dt), Settings.MaxBallSpeed);
+        }
+
+        /// <summary>The planted orbit's normal in its TRAVEL sense (velocity = normal × radial), or
+        /// zero when not planted / degenerate.</summary>
+        public Vector3 OrbitNormal(Vector3 shipPosition)
+        {
+            if (Mode != ThresherMode.Pivot) return Vector3.zero;
+            Vector3 r = shipPosition - Pivot;
+            Vector3 n = Vector3.Cross(r, _lockDirection);
+            return n.sqrMagnitude > 1e-10f ? n.normalized : Vector3.zero;
+        }
+
+        /// <summary>
+        /// The unit radial (from the pivot) of the point on the planted circle where the ship's
+        /// velocity points along <paramref name="aim"/>: with travel normal N, velocity at radial r is
+        /// N × r, so that point is r = aim × N (aim laid into the orbit plane first). False when not
+        /// planted, or the aim is along the orbit's axis (it has no such point).
+        /// </summary>
+        public bool LaunchRadial(Vector3 shipPosition, Vector3 aim, out Vector3 radial)
+        {
+            radial = Vector3.zero;
+            Vector3 n = OrbitNormal(shipPosition);
+            if (n.sqrMagnitude < 0.5f) return false;
+            Vector3 a = Vector3.ProjectOnPlane(aim, n);
+            if (a.sqrMagnitude < 1e-6f) return false;
+            radial = Vector3.Cross(a.normalized, n).normalized;
+            return true;
+        }
+
+        /// <summary>The launch point for <paramref name="aim"/> (see <see cref="LaunchRadial"/>) on
+        /// the circle the ship is ACTUALLY flying — its own distance from the pivot, never the
+        /// chain's length. While the winch pays out the chain is longer than the ship's orbit until
+        /// the ship swings out to it, and a point drawn on the chain's circle sat outside the ship's
+        /// path: the aim led to a circumference the ship was not on. The pivot when there is none.</summary>
+        public Vector3 LaunchPoint(Vector3 shipPosition, Vector3 aim)
+            => LaunchRadial(shipPosition, aim, out var r) ? Pivot + r * (shipPosition - Pivot).magnitude : Pivot;
 
         // ------------------------------------------------------------------ the step
 
@@ -290,13 +565,23 @@ namespace CosmicShore.Gameplay
             var result = new ThresherStepResult { ShipVelocity = shipVelocity, BallFrom = BallPosition };
             if (dt <= 0f) return result;
 
+            if (Mode == ThresherMode.Windmill)
+            {
+                StepWindmill(shipPosition, shipVelocity, payOut, dt);
+                return result;   // the ship flies on untouched: the windmill pulls on nothing
+            }
+
             if (Mode == ThresherMode.Pivot)
             {
+                if (TryLaunch(shipPosition, dt, ref result)) return result;
                 SteerPivot(shipPosition, pivotSteer, dt);
-                result.ShipVelocity = StepPivot(shipPosition, shipVelocity, payOut, dt);
+                result.ShipVelocity = StepPivot(shipPosition, shipVelocity, payOut, dt, out bool stopped);
                 result.BallFrom = BallPosition;
+                result.Planted = stopped;
                 return result;
             }
+
+            if (Settings.Analog) return StepAnalog(shipPosition, shipVelocity, shipCruise, dt, result);
 
             // 1) LENGTH — the winch, with spin conservation on the change.
             float oldLength = Length;
@@ -367,6 +652,178 @@ namespace CosmicShore.Gameplay
             return result;
         }
 
+        // ------------------------------------------------------------------ analog triggers
+
+        /// <summary>
+        /// ANALOG TRIGGERS, once per frame before the move (Settings.Analog only). Takes the triggers'
+        /// depths (0..1): RT becomes the chain's <see cref="Rigidity"/> (at most
+        /// <see cref="ThresherChainSettings.RigiditySlew"/> per second), and LT's depth brakes the towed
+        /// ball. LT reaching <paramref name="fullPull"/> starts the stop (and the hook);
+        /// falling below <paramref name="letGoBelow"/> while stopped or planted asks the caller to let go.
+        /// <paramref name="shipUp"/> is the hull's up: an ambiguous plant orbits in the hull's turning plane.
+        /// </summary>
+        public ThresherTriggerEdge AnalogTriggers(float leftDepth, float rightDepth, float fullPull, float letGoBelow,
+                                                  Vector3 shipPosition, Vector3 shipVelocity, Vector3 shipUp, float dt)
+        {
+            if (!Settings.Analog) return ThresherTriggerEdge.None;
+            LeftTriggerDepth = Mathf.Clamp01(leftDepth);
+            AnalogFullPull = Mathf.Clamp(fullPull, 0.05f, 1f);
+            float rt = Mathf.Clamp01(rightDepth);
+            Rigidity = Settings.RigiditySlew > 0f ? Mathf.MoveTowards(Rigidity, rt, Settings.RigiditySlew * Mathf.Max(0f, dt)) : rt;
+            if (Mode == ThresherMode.Free && LeftTriggerDepth >= fullPull)
+            {
+                AnalogBeginStop(shipPosition, shipVelocity, shipUp);
+                return ThresherTriggerEdge.Stop;
+            }
+            if ((Mode == ThresherMode.Skidding || Mode == ThresherMode.Pivot) && LeftTriggerDepth < letGoBelow && !LaunchArmed)
+                return ThresherTriggerEdge.LetGo;
+            return ThresherTriggerEdge.None;
+        }
+
+        /// <summary>The chain's natural frequency (rad/s) at rigidity <paramref name="rigidity"/> (lab: ropeW).</summary>
+        public float ChainRate(float rigidity)
+            => Settings.ChainSlackRate * Mathf.Pow(Settings.ChainRigidRate / Settings.ChainSlackRate,
+                                                   Mathf.Pow(Mathf.Clamp01(rigidity), Settings.RigidityCurve));
+
+        /// <summary>The chain's pull per unit mass along it (>= 0: a chain cannot push): a damped spring past
+        /// rest length at the current rigidity, plus a stiff limit past the chain's full length (lab: tension).</summary>
+        float Tension(float dist, float radialSpeed)
+        {
+            float w = ChainRate(Rigidity), a = 0f;
+            if (dist > Settings.RestLength) a += w * w * (dist - Settings.RestLength) + 2f * Settings.ChainDamping * w * radialSpeed;
+            if (dist > Settings.MaxLength)
+            {
+                float wr = 2f * Settings.ChainRigidRate;
+                a += wr * wr * (dist - Settings.MaxLength) + 1.4f * wr * Mathf.Max(0f, radialSpeed);
+            }
+            return Mathf.Max(0f, a);
+        }
+
+        /// <summary>
+        /// A full pull: the ball stops along an S-curve, and the ship starts its hook round the STOPPING
+        /// ball at once. Without that the stiff chain yanks a ship flying straight away from the ball back
+        /// through zero speed and whips the hull round at ~2 000 deg/s (lab round 2, Found 1).
+        /// </summary>
+        void AnalogBeginStop(Vector3 shipPosition, Vector3 shipVelocity, Vector3 shipUp)
+        {
+            if (Mode != ThresherMode.Free) return;
+            Mode = ThresherMode.Skidding;
+            _brakeT = 0f;
+            _brakeV0 = BallVelocity;
+            _stopT = Mathf.Max(0.08f, 1.5f * BallVelocity.magnitude / Settings.StopDecel);
+            _braking = true;
+            BeginPivot(shipPosition, shipVelocity);
+            Length = Settings.RestLength;          // the chain's stretch is the hook's slack from here on
+
+            Vector3 up = shipUp.sqrMagnitude > 1e-6f ? shipUp.normalized : Vector3.up;
+            Vector3 rh = (shipPosition - Pivot).normalized, v = shipVelocity.normalized;
+            float turnUp = _hasVel && _velDt > 0f ? SignedAngle(_prevVel, _curVel, up) / _velDt : 0f;
+            // Which way round: planted nearly straight away from the ball (within 30 degrees) the sideways
+            // velocity that picks the orbit's direction is noise (and BeginPivot's AnyPerpendicular fallback
+            // can tip the orbit out of the flight plane), so orbit in the hull's own turning plane, the way
+            // the ship is ALREADY turning (lab round 2, Found 5).
+            if (Mathf.Abs(Vector3.Dot(v, rh)) > Mathf.Cos(30f * Mathf.Deg2Rad))
+            {
+                Vector3 flat = Vector3.Cross(up, rh).normalized;
+                if (flat.sqrMagnitude > 0.5f) _lockDirection = Vector3.Dot(flat, _lockDirection) >= 0f ? flat : -flat;
+                if (Mathf.Abs(turnUp) > 5f * Mathf.Deg2Rad && Mathf.Sign(SignedAngle(v, _lockDirection, up)) != Mathf.Sign(turnUp))
+                    _lockDirection = -_lockDirection;
+            }
+            // The ship's turn rate coming in, about the orbit normal: the hook starts from it.
+            Vector3 n = Vector3.Cross(rh, _lockDirection).normalized;
+            _turnIn = _hasVel && _velDt > 0f ? SignedAngle(_prevVel, _curVel, n) / _velDt : 0f;
+        }
+
+        /// <summary>Towing (and the first frame of a stop) with analog triggers: the chain is a spring,
+        /// sub-stepped so the stiffest spring in play stays inside semi-implicit Euler's stable range
+        /// (w x h &lt;= 0.15) at ANY frame rate - a rigid 30 rad/s chain at 30 fps is otherwise at the edge.</summary>
+        ThresherStepResult StepAnalog(Vector3 shipPosition, Vector3 shipVelocity, float shipCruise, float dt, ThresherStepResult result)
+        {
+            var s = Settings;
+            bool stopping = Mode == ThresherMode.Skidding;
+            float baseShare = ShipShare(s);
+            float depth = stopping ? 1f : Mathf.Clamp01(LeftTriggerDepth / Mathf.Max(1e-3f, AnalogFullPull));
+            float share = stopping ? 1f : baseShare + (1f - baseShare) * Mathf.Pow(depth, s.AnchorCurve);
+            result.BallFrom = BallPosition;
+
+            float wMax = Mathf.Max(ChainRate(Rigidity), (BallPosition - shipPosition).magnitude > s.MaxLength * 0.9f ? 2f * s.ChainRigidRate : 0f);
+            int steps = Mathf.Max(1, Mathf.CeilToInt(wMax * dt / 0.15f));
+            float h = dt / steps;
+            Vector3 shipP = shipPosition, ship = shipVelocity;
+            float dist = (BallPosition - shipPosition).magnitude;
+            for (int i = 0; i < steps; i++)
+            {
+                Vector3 d = BallPosition - shipP;
+                dist = d.magnitude;
+                Vector3 n = dist > 1e-5f ? d / dist : Vector3.zero;
+                float a = dist > 1e-5f ? Tension(dist, Vector3.Dot(BallVelocity - ship, n)) : 0f;
+                ship += n * (a * share * h);
+                if (stopping)
+                {
+                    _brakeT += h;
+                    BallVelocity = _brakeV0 * (1f - Smooth(_brakeT / _stopT));
+                }
+                else
+                {
+                    BallVelocity -= n * (a * (1f - share) * h);
+                    BallVelocity *= Mathf.Exp(-(s.BallDrag + Mathf.Pow(depth, s.BrakeCurve) * s.BrakeMax) * h);
+                    BallVelocity = Vector3.ClampMagnitude(BallVelocity, s.MaxBallSpeed);
+                }
+                BallPosition += BallVelocity * h;
+                shipP += ship * h;
+            }
+            // The transformer moves the hull by velocity x dt once, so hand it the sub-steps' mean velocity.
+            result.ShipVelocity = ApplyShipFloor(shipVelocity, (shipP - shipPosition) / dt, shipCruise);
+            _prevVel = _hasVel ? _curVel : shipVelocity;
+            _curVel = result.ShipVelocity;
+            _hasVel = true;
+            _velDt = dt;
+            IsTaut = dist > s.RestLength;
+            _wasSlack = false;
+            Length = Mathf.Min(s.MaxLength, Mathf.Max(s.RestLength, dist));
+            return result;
+        }
+
+        /// <summary>The full-pull depth a partial pull's brake and anchor curves are measured against (the
+        /// <c>fullPull</c> last passed to <see cref="AnalogTriggers"/>).</summary>
+        float AnalogFullPull = 1f;
+
+        /// <summary>Advance the full-pull stop one frame; true when the ball has come to rest (lab: advanceBrake).</summary>
+        bool AdvanceBrake(float dt)
+        {
+            _brakeT += dt;
+            float u = _brakeT / _stopT;
+            BallVelocity = _brakeV0 * (1f - Smooth(u));
+            BallPosition += BallVelocity * dt;
+            return u >= EndOfCurve;
+        }
+
+        /// <summary>A clock that adds dt N times lands a hair short of N x dt in float32 (30 x 1/60 =
+        /// 0.49999997), so "u &gt;= 1" ends a curve a frame late on one machine and on time on another; the
+        /// lab (float64) is held to this solver frame by frame, so both end a curve at this.</summary>
+        const float EndOfCurve = 1f - 1e-4f;
+
+        static float Smooth(float u) { u = Mathf.Clamp01(u); return u * u * (3f - 2f * u); }
+
+        /// <summary>Signed angle (radians) from <paramref name="a"/> to <paramref name="b"/> about <paramref name="axis"/>.</summary>
+        static float SignedAngle(Vector3 a, Vector3 b, Vector3 axis)
+        {
+            Vector3 an = a.normalized, bn = b.normalized;
+            return Mathf.Atan2(Vector3.Dot(Vector3.Cross(an, bn), axis.normalized), Vector3.Dot(an, bn));
+        }
+
+        /// <summary>A fraction <paramref name="w"/> of the way from unit <paramref name="a"/> to unit
+        /// <paramref name="b"/> along the great circle (lab: slerpUnit).</summary>
+        static Vector3 SlerpUnit(Vector3 a, Vector3 b, float w)
+        {
+            float c = Mathf.Clamp(Vector3.Dot(a, b), -1f, 1f), ang = Mathf.Acos(c);
+            if (ang < 1e-5f) return b;
+            Vector3 perp = b - a * c;
+            if (perp.sqrMagnitude < 1e-10f) perp = AnyPerpendicular(a, Vector3.up);
+            perp.Normalize();
+            return (a * Mathf.Cos(ang * w) + perp * Mathf.Sin(ang * w)).normalized;
+        }
+
         /// <summary>The ship's share of the rope's overshoot: inverse-mass weighting with the
         /// ship's mass taken as 1, scaled by <see cref="ThresherChainSettings.Tug"/> — the fraction of
         /// the yank the ship's engine fails to absorb.</summary>
@@ -421,71 +878,281 @@ namespace CosmicShore.Gameplay
             BallVelocity = shipVelocity + n * radial + tangential;
         }
 
+        // ------------------------------------------------------------------ the windmill
+
+        /// <summary>
+        /// One windmill frame. The ball's offset from the ship is laid into the plane across the
+        /// ship's velocity (parallel transport: the sails keep their phase as the ship turns), turned
+        /// about that velocity by <c>WindmillSpeed / radius × dt</c>, and put back at the radius,
+        /// which eases onto the chain's length at the reel rate so the ball is pulled onto the circle
+        /// rather than teleported there. The ball's velocity is what that move implies, so the sweep
+        /// and the heat colour see the real speed (ship velocity + the sails' tangential speed).
+        /// </summary>
+        void StepWindmill(Vector3 shipPosition, Vector3 shipVelocity, bool payOut, float dt)
+        {
+            Length = payOut
+                ? Mathf.Min(Settings.MaxLength, Length + Settings.PayOutRate * dt)
+                : Mathf.Max(Settings.RestLength, Length - Settings.ReelInRate * dt);
+            _windmillRadius = Mathf.MoveTowards(_windmillRadius, Length,
+                Mathf.Max(Settings.PayOutRate, Settings.ReelInRate) * dt);
+
+            Vector3 axis = shipVelocity.sqrMagnitude > 1e-6f ? shipVelocity.normalized
+                : (_lockDirection.sqrMagnitude > 1e-6f ? _lockDirection : Vector3.forward);
+            _lockDirection = axis;
+            Vector3 radial = Vector3.ProjectOnPlane(BallPosition - shipPosition, axis);
+            radial = radial.sqrMagnitude > 1e-8f ? radial.normalized : AnyPerpendicular(axis, Vector3.up);
+
+            float radius = Mathf.Max(1e-3f, _windmillRadius);
+            float angle = Settings.WindmillSpeed / radius * dt;
+            Vector3 sail = Vector3.Cross(axis, radial);   // the sails' direction of travel
+            Vector3 turned = (radial * Mathf.Cos(angle) + sail * Mathf.Sin(angle)).normalized;
+
+            Vector3 ballNext = shipPosition + shipVelocity * dt + turned * radius;
+            BallVelocity = Vector3.ClampMagnitude((ballNext - BallPosition) / dt, Settings.MaxBallSpeed);
+            BallPosition = ballNext;
+            IsTaut = true;
+
+            WindmillTimeLeft -= dt;
+            if (WindmillTimeLeft > 0f) return;
+            WindmillTimeLeft = 0f;
+            Mode = ThresherMode.Free;
+            _wasSlack = false;
+        }
+
         // ------------------------------------------------------------------ the pivot
 
         void BeginPivot(Vector3 shipPosition, Vector3 shipVelocity)
         {
             Mode = ThresherMode.Pivot;
             Pivot = BallPosition;
-            BallVelocity = Vector3.zero;
+            if (!_braking) BallVelocity = Vector3.zero;   // (analog: a stopping ball keeps moving)
 
             Vector3 r = shipPosition - Pivot;
             Vector3 n = r.sqrMagnitude > 1e-8f ? r.normalized : Vector3.forward;
             Vector3 tangent = shipVelocity - n * Vector3.Dot(shipVelocity, n);
             _lockDirection = tangent.sqrMagnitude > 1e-6f ? tangent.normalized : AnyPerpendicular(n, shipVelocity);
+            // HOOK-ON: keep flying the way the ship was going and turn onto the orbit at a capped
+            // rate (StepPivot), rather than replacing the heading outright in one frame.
+            _hookHeading = Settings.HookTurnRate > 0f && shipVelocity.sqrMagnitude > 1e-6f
+                ? shipVelocity.normalized : Vector3.zero;
+            _hookSlack = 0f;
+            _hookSlackSpeed = 0f;
 
             // Keep the speed you hooked on with — but never hook on at a crawl: a pilot who plants
             // while flying straight AT the ball has no tangential speed at all, and a zero orbit
             // is the stall this mechanic must never produce.
             LockSpeed = Mathf.Max(shipVelocity.magnitude * Settings.LockKeep,
                                   Settings.MinShipFraction * Settings.CruiseSpeed);
+            _hookStart = _hookHeading;
+            _hookT = 0f;
+            _pivotAge = 0f;
+            _wasHooking = true;
         }
 
-        Vector3 StepPivot(Vector3 shipPosition, Vector3 shipVelocity, bool payOut, float dt)
+        /// <summary>
+        /// An armed launch leaves on the frame the ship would otherwise carry PAST its launch point:
+        /// the angle still to go round (in the travel sense) is within this frame's angular step.
+        /// It leaves along the aim at the orbit's speed — the tangent there, by construction — and
+        /// the ball is yanked after it exactly as <see cref="Release"/> yanks it.
+        /// </summary>
+        bool TryLaunch(Vector3 shipPosition, float dt, ref ThresherStepResult result)
         {
-            BallPosition = Pivot;
-            BallVelocity = Vector3.zero;
+            if (!LaunchArmed) return false;
+            if (!LaunchRadial(shipPosition, _launchAim, out Vector3 target)) return false;
+            Vector3 r = shipPosition - Pivot;
+            float dist = r.magnitude;
+            if (dist < 1e-5f) return false;
+            Vector3 n = OrbitNormal(shipPosition);
+            Vector3 rh = r / dist;
+            Vector3 t = Vector3.Cross(n, rh);
+            float ahead = Mathf.Atan2(Vector3.Dot(target, t), Vector3.Dot(target, rh));
+            if (ahead < 0f) ahead += 2f * Mathf.PI;
+            float step = LockSpeed / Mathf.Max(1e-3f, dist) * dt;
+            float lead = Mathf.Max(0f, LaunchLeadRadians);
+            if (ahead > step + lead) return false;
+
+            Vector3 aim = _launchAim;
+            // Shipped: leave along the aim. With a LEAD (the transformer winds the spin down after the
+            // launch): leave along the chord this frame's orbit step would fly, and let the wind-down turn the
+            // heading onto the aim, so the velocity never steps.
+            Vector3 dir = lead > 0f
+                ? Vector3.Cross(n, rh * Mathf.Cos(step * 0.5f) + t.normalized * Mathf.Sin(step * 0.5f)).normalized
+                : aim;
+            Vector3 velocity = dir * (LockSpeed * Mathf.Max(1f, _launchBoost));
+            Release(velocity);   // Pivot -> Free, the yank, disarms
+            result.ShipVelocity = velocity;
+            result.BallFrom = BallPosition;
+            result.Launched = true;
+            result.LaunchDirection = aim;
+            return true;
+        }
+
+        Vector3 StepPivot(Vector3 shipPosition, Vector3 shipVelocity, bool payOut, float dt, out bool stopped)
+        {
+            stopped = false;
+            if (_braking)
+            {
+                // Analog: the pivot is the ball still stopping.
+                if (AdvanceBrake(dt)) { _braking = false; BallVelocity = Vector3.zero; stopped = true; }
+                Pivot = BallPosition;
+            }
+            else
+            {
+                BallPosition = Pivot;
+                BallVelocity = Vector3.zero;
+            }
+            _pivotAge += dt;
 
             Vector3 r = shipPosition - Pivot;
             float dist = r.magnitude;
             Vector3 n = dist > 1e-5f ? r / dist : Vector3.forward;
 
-            // Winch: right trigger UP winds you in (and spins you up, by conservation); held
-            // lets you out (and spends spin). Only a TAUT chain trades spin for length.
-            float oldLength = Length;
-            float newLength = payOut
-                ? Mathf.Min(Settings.MaxLength, oldLength + Settings.PayOutRate * dt)
-                : Mathf.Max(Settings.RestLength, oldLength - Settings.ReelInRate * dt);
-            bool taut = dist >= oldLength * (1f - SlackTolerance);
-            if (taut && newLength < oldLength && dist > newLength)
-                LockSpeed *= Mathf.Min(dist / newLength, Settings.ReelSpinCap);
-            else if (taut && newLength > oldLength)
-                LockSpeed *= Mathf.Sqrt(oldLength / newLength);
-            Length = newLength;
+            if (!Settings.Analog)   // (analog: no winch; the rigidity sets the radius below)
+            {
+                // Winch: right trigger UP winds you in (and spins you up, by conservation); held
+                // lets you out (and spends spin). Only a TAUT chain trades spin for length.
+                float oldLength = Length;
+                float newLength = payOut
+                    ? Mathf.Min(Settings.MaxLength, oldLength + Settings.PayOutRate * dt)
+                    : Mathf.Max(Settings.RestLength, oldLength - Settings.ReelInRate * dt);
+                bool taut = dist >= oldLength * (1f - SlackTolerance);
+                if (taut && newLength < oldLength && dist > newLength)
+                    LockSpeed *= Mathf.Min(dist / newLength, Settings.ReelSpinCap);
+                else if (taut && newLength > oldLength)
+                    LockSpeed *= Mathf.Sqrt(oldLength / newLength);
+                Length = newLength;
+            }
 
             // Spin-up: faster every lap, up to the cap. Conservation may carry you past the cap
             // (that IS the wind-in payoff); the spin-up simply stops adding once you are there.
+            // SpinEase fades the spin-up in from the pivot's first frame (0 = full rate at once).
+            float spinRate = Settings.LockSpinRate * (Settings.SpinEase > 0f ? Smooth(_pivotAge / Settings.SpinEase) : 1f);
             if (LockSpeed < Settings.LockMaxSpeed)
-                LockSpeed = Mathf.Min(Settings.LockMaxSpeed, LockSpeed + Settings.LockSpinRate * dt);
+                LockSpeed = Mathf.Min(Settings.LockMaxSpeed, LockSpeed + spinRate * dt);
             LockSpeed = Mathf.Min(LockSpeed, Settings.MaxBallSpeed);
 
             Vector3 tangent = _lockDirection - n * Vector3.Dot(_lockDirection, n);
             tangent = tangent.sqrMagnitude > 1e-6f ? tangent.normalized : AnyPerpendicular(n, shipVelocity);
 
-            Vector3 next = shipPosition + tangent * (LockSpeed * dt);
+            // HOOK-ON: the heading chases the tangent at HookTurnRate; while it does, the chain
+            // stretches to let the ship swing wide (no clamp), and afterwards it reels the stretch
+            // back at HookReturnRate. The ship never stalls and never turns faster than the cap.
+            Vector3 heading = tangent;
+            bool hooking = _hookHeading.sqrMagnitude > 0.5f;
+            if (hooking && Settings.Analog)
+            {
+                // Analog: an S-curve hook (zero turn rate at its start) PLUS a carried turn that starts at the
+                // ship's own incoming turn rate and fades out by the hook's end, so a ship already curving
+                // round a braking ball keeps curving instead of stopping its turn (lab round 2, Found 2).
+                _hookT += dt;
+                float u = Mathf.Clamp01(_hookT / Settings.AnalogHookSeconds);
+                Vector3 axis = OrbitNormal(shipPosition);
+                heading = SlerpUnit(_hookStart, tangent, Smooth(u));
+                float carry = _turnIn * Settings.AnalogHookSeconds * (u - (u * u * u - u * u * u * u / 2f)) * (1f - Smooth(u));
+                if (axis.sqrMagnitude > 0.5f && Mathf.Abs(carry) > 1e-6f)
+                    heading = (heading * Mathf.Cos(carry) + Vector3.Cross(axis, heading) * Mathf.Sin(carry)).normalized;
+                _hookHeading = heading;
+                if (u >= EndOfCurve) _hookHeading = Vector3.zero;
+            }
+            else if (hooking)
+            {
+                _hookHeading = TurnTowards(_hookHeading, tangent, Settings.HookTurnRate * dt);
+                heading = _hookHeading;
+                if (Vector3.Dot(_hookHeading, tangent) > 0.99995f) _hookHeading = Vector3.zero;   // on the orbit
+            }
+
+            Vector3 next = shipPosition + heading * (LockSpeed * dt);
             Vector3 fromPivot = next - Pivot;
+
+            // A steered plane (the aim camera): lay the step onto it, so the whole circle turns
+            // with the aim. The spin's sense is kept — only the plane moves.
+            if (_planeNormal.sqrMagnitude > 0.5f)
+            {
+                Vector3 laid = Vector3.ProjectOnPlane(fromPivot, _planeNormal);
+                if (laid.sqrMagnitude > 1e-8f) fromPivot = laid.normalized * fromPivot.magnitude;
+            }
+
             float nextDist = fromPivot.magnitude;
-            IsTaut = nextDist >= Length;
-            if (IsTaut && nextDist > 1e-5f)
-                next = Pivot + fromPivot * (Length / nextDist);
+            if (hooking)
+            {
+                // The swing-out stretches it; remember how fast it is still swinging out, so the
+                // reel-back starts from that speed rather than from a standstill.
+                float stretch = Mathf.Max(0f, nextDist - Length);
+                _hookSlackSpeed = (stretch - _hookSlack) / dt;
+                _hookSlack = Mathf.Max(_hookSlack, stretch);
+            }
+            else if (Settings.Analog)
+            {
+                StepElasticRadius(shipVelocity, n, dist, dt);
+            }
+            else if (_hookSlack > 0f)
+            {
+                // ...and it reels back as a CRITICALLY DAMPED spring: the radial speed ramps from
+                // the swing-out's own speed, never steps (an exponential reel-back stepped it, a
+                // one-frame 47 deg turn), and the stretch never overshoots below the chain's length.
+                float k = Mathf.Max(0.1f, Settings.HookReturnRate);
+                _hookSlackSpeed += (-k * k * _hookSlack - 2f * k * _hookSlackSpeed) * dt;
+                _hookSlack += _hookSlackSpeed * dt;
+                if (_hookSlack < 0.01f && Mathf.Abs(_hookSlackSpeed) < 0.5f) { _hookSlack = 0f; _hookSlackSpeed = 0f; }
+                _hookSlack = Mathf.Max(0f, _hookSlack);
+            }
+            float reach = Length + _hookSlack;
+            IsTaut = nextDist >= reach;
+            // (analog, once on the orbit: the ship rides the elastic radius, in or out)
+            if ((IsTaut || (Settings.Analog && !hooking)) && nextDist > 1e-5f)
+                fromPivot *= reach / nextDist;
+            next = Pivot + fromPivot;
 
             // The hull travels the CHORD so it lands exactly on the circle; the orbital speed is
             // kept in LockSpeed so the chord's tiny shortfall never accumulates into a stall.
             Vector3 velocity = (next - shipPosition) / dt;
             Vector3 n2 = (next - Pivot).sqrMagnitude > 1e-8f ? (next - Pivot).normalized : n;
             Vector3 t2 = velocity - n2 * Vector3.Dot(velocity, n2);
-            if (t2.sqrMagnitude > 1e-6f) _lockDirection = t2.normalized;
+            if (_planeNormal.sqrMagnitude > 0.5f) t2 = Vector3.ProjectOnPlane(t2, _planeNormal);
+            // (analog: the orbit's direction, once chosen, never flips - a heading swinging across the radial
+            // line mid-hook would otherwise reverse the tangent and the whole swing; lab round 2, Found 5)
+            if (t2.sqrMagnitude > 1e-6f && (!Settings.Analog || Vector3.Dot(t2, tangent) > 0f)) _lockDirection = t2.normalized;
             return velocity;
+        }
+
+        /// <summary>
+        /// Analog, once on the orbit: the stretch past rest length is the chain's ELASTIC state. It springs,
+        /// at the rigidity RT sets, toward the stretch where the orbit's outward pull balances the chain, and
+        /// spin is conserved as the radius changes: pull RT and the ship is reeled in and spins up; ease off
+        /// and it swings out and slows. Three hand-over rules keep it free of one-frame steps (lab round 2,
+        /// Found 3-4): it starts at the ship's REAL stretch and radial speed; its rate ramps from the shipped
+        /// hookReturnRate to the rigidity's own over 0.5 s; and its target eases in from where the hook left
+        /// the ship. Sub-stepped like <see cref="StepAnalog"/>.
+        /// </summary>
+        void StepElasticRadius(Vector3 shipVelocity, Vector3 n, float dist, float dt)
+        {
+            var s = Settings;
+            if (_wasHooking)
+            {
+                _hookSlack = Mathf.Max(0f, dist - Length);
+                _hookSlackSpeed = Vector3.Dot(shipVelocity, n);
+                _wasHooking = false;
+                _sinceHook = 0f;
+                _e0 = _hookSlack;
+            }
+            _sinceHook += dt;
+            float wRope = ChainRate(Rigidity), wBack = Mathf.Min(wRope, s.HookReturnRate);
+            float w = wBack + (wRope - wBack) * Smooth(_sinceHook / 0.5f);
+            float room = s.MaxLength - s.RestLength, r0 = Mathf.Max(1f, dist);
+            float eqFull = Mathf.Min(room, LockSpeed * LockSpeed / (r0 * w * w));
+            float eq = _e0 + (eqFull - _e0) * Smooth(_sinceHook / 0.5f);
+            float before = _hookSlack;
+            int steps = Mathf.Max(1, Mathf.CeilToInt(w * dt / 0.15f));
+            float h = dt / steps;
+            for (int i = 0; i < steps; i++)
+            {
+                _hookSlackSpeed += (w * w * (eq - _hookSlack) - 2f * s.ChainDamping * w * _hookSlackSpeed) * h;
+                _hookSlack += _hookSlackSpeed * h;
+                if (_hookSlack < 0f) { _hookSlack = 0f; _hookSlackSpeed = Mathf.Max(0f, _hookSlackSpeed); }
+                if (_hookSlack > room) { _hookSlack = room; _hookSlackSpeed = Mathf.Min(0f, _hookSlackSpeed); }
+            }
+            float rOld = s.RestLength + before, rNew = s.RestLength + _hookSlack;
+            LockSpeed = Mathf.Min(s.MaxBallSpeed, LockSpeed * Mathf.Min(s.ReelSpinCap, Mathf.Max(1f / s.ReelSpinCap, rOld / rNew)));
         }
 
         /// <summary>
@@ -510,6 +1177,19 @@ namespace CosmicShore.Gameplay
             float across = Mathf.Clamp(Vector3.Dot(Vector3.ClampMagnitude(steer, 1f), b), -1f, 1f);
             float angle = across * Settings.PivotSteerRate * dt;
             _lockDirection = t * Mathf.Cos(angle) + b * Mathf.Sin(angle);
+        }
+
+        /// <summary>Turn unit vector <paramref name="from"/> toward unit <paramref name="to"/> by at
+        /// most <paramref name="maxRadians"/> (in the plane they span).</summary>
+        static Vector3 TurnTowards(Vector3 from, Vector3 to, float maxRadians)
+        {
+            float cos = Mathf.Clamp(Vector3.Dot(from, to), -1f, 1f);
+            float angle = Mathf.Acos(cos);
+            if (angle <= maxRadians || angle < 1e-5f) return to;
+            Vector3 perp = to - from * cos;
+            if (perp.sqrMagnitude < 1e-10f) perp = AnyPerpendicular(from, Vector3.up);
+            perp.Normalize();
+            return (from * Mathf.Cos(maxRadians) + perp * Mathf.Sin(maxRadians)).normalized;
         }
 
         static Vector3 AnyPerpendicular(Vector3 n, Vector3 hint)
@@ -553,13 +1233,10 @@ namespace CosmicShore.Gameplay
         /// <summary>
         /// The fraction of its speed the ball keeps after destroying one prism: <c>PloughKeep</c>
         /// for a smash at smash speed rising to <c>PloughKeepHot</c> when white-hot (a hotter ball
-        /// ploughs further), <c>CrushKeep</c> below smash speed. <paramref name="wrecker"/> is the
-        /// Mass level-5 upgrade: a smash costs the ball nothing.
+        /// ploughs further), <c>CrushKeep</c> below smash speed.
         /// </summary>
-        public static float KeepAfterHit(float speed, in ThresherChainSettings s, bool wrecker = false)
-            => IsSmash(speed, s)
-                ? (wrecker ? 1f : Mathf.Lerp(s.PloughKeep, s.PloughKeepHot, Heat01(speed, s)))
-                : s.CrushKeep;
+        public static float KeepAfterHit(float speed, in ThresherChainSettings s)
+            => IsSmash(speed, s) ? Mathf.Lerp(s.PloughKeep, s.PloughKeepHot, Heat01(speed, s)) : s.CrushKeep;
 
         /// <summary>
         /// The ball bounces off a prism it must not destroy (its own domain's). It is put back at
@@ -570,7 +1247,7 @@ namespace CosmicShore.Gameplay
         /// </summary>
         public bool Bounce(Vector3 contact, Vector3 outwardNormal)
         {
-            if (Mode == ThresherMode.Pivot || outwardNormal.sqrMagnitude < 1e-8f) return false;
+            if (Mode == ThresherMode.Pivot || Mode == ThresherMode.Windmill || outwardNormal.sqrMagnitude < 1e-8f) return false;
             Vector3 n = outwardNormal.normalized;
             float into = Vector3.Dot(BallVelocity, n);
             if (into >= 0f) return false;
@@ -584,7 +1261,8 @@ namespace CosmicShore.Gameplay
         /// path order, so a long row costs the ball speed one prism at a time.</summary>
         public void RegisterHit(float keep)
         {
-            if (Mode == ThresherMode.Pivot) return;
+            // A planted ball has no speed to lose, and a windmill's ball is driven round its circle.
+            if (Mode == ThresherMode.Pivot || Mode == ThresherMode.Windmill) return;
             BallVelocity *= Mathf.Clamp01(keep);
         }
     }
@@ -658,13 +1336,61 @@ namespace CosmicShore.Gameplay
             Points[0] = hull;
             Points[n - 1] = ball;
         }
+
+        /// <summary>Verlet relaxation passes for a chain of <paramref name="links"/>: a max-distance
+        /// rope converges one link per pass, so a longer chain needs more of them or it reads as
+        /// stretched (and its middle sags) while the ends are already taut.</summary>
+        public static int IterationsFor(int links) => Mathf.Max(6, (links + 1) / 2);
+
+        /// <summary>Points a smoothed copy of <paramref name="points"/> needs at
+        /// <paramref name="subdivisions"/> drawn segments per link.</summary>
+        public static int SmoothedCount(int points, int subdivisions)
+            => points < 2 ? points : (points - 1) * Mathf.Max(1, subdivisions) + 1;
+
+        /// <summary>
+        /// The DRAWN chain: a uniform Catmull-Rom curve through the gameplay links, with
+        /// <paramref name="subdivisions"/> segments per link, written into <paramref name="output"/>
+        /// (length <see cref="SmoothedCount"/>). It passes through every link exactly, so the
+        /// drawn chain never strays from the one that cuts by more than the curve's bow between two
+        /// links; the end tangents mirror their neighbour so the pins are not kinked either.
+        /// Returns the number of points written.
+        /// </summary>
+        public static int Smooth(Vector3[] points, int subdivisions, Vector3[] output)
+        {
+            int n = points.Length;
+            int sub = Mathf.Max(1, subdivisions);
+            int count = SmoothedCount(n, sub);
+            if (output == null || output.Length < count) return 0;
+            if (n < 2)
+            {
+                for (int i = 0; i < n; i++) output[i] = points[i];
+                return n;
+            }
+
+            int w = 0;
+            for (int i = 0; i < n - 1; i++)
+            {
+                Vector3 p1 = points[i], p2 = points[i + 1];
+                Vector3 p0 = i > 0 ? points[i - 1] : 2f * p1 - p2;
+                Vector3 p3 = i + 2 < n ? points[i + 2] : 2f * p2 - p1;
+                for (int k = 0; k < sub; k++)
+                {
+                    float t = k / (float)sub, t2 = t * t, t3 = t2 * t;
+                    output[w++] = 0.5f * (2f * p1 + (p2 - p0) * t
+                                          + (2f * p0 - 5f * p1 + 4f * p2 - p3) * t2
+                                          + (3f * p1 - p0 - 3f * p2 + p3) * t3);
+                }
+            }
+            output[w++] = points[n - 1];
+            return w;
+        }
     }
 
     /// <summary>
     /// The camera arithmetic the Thresher needs, pure so it is tested rather than eyeballed: how
     /// far back a chase camera must sit to keep the ball in frame, the asymmetric ease toward that
-    /// distance (out fast, back in slowly), and where to put a still camera that WATCHES a fast
-    /// planted orbit instead of riding it.
+    /// distance (out fast, back in slowly), and the launch camera and sight of a spectated planted
+    /// orbit (its pose, the aim's stick response, the zoom).
     /// </summary>
     public static class ThresherCameraFraming
     {
@@ -752,20 +1478,66 @@ namespace CosmicShore.Gameplay
             => radius > 1e-3f ? orbitSpeed / radius : 0f;
 
         /// <summary>
-        /// A still vantage that frames a whole orbit of radius <paramref name="radius"/> round
-        /// <paramref name="pivot"/>: on the orbit plane's <paramref name="normal"/>, tilted by
-        /// <paramref name="tiltDegrees"/> toward <paramref name="outward"/> (a unit vector in the
-        /// plane), far enough that the circle fits the narrower half-angle with
-        /// <paramref name="margin"/> to spare.
+        /// The LAUNCH camera of a spectated orbit: it follows behind the launch point ON the launch
+        /// trajectory — <paramref name="distance"/> back along −<paramref name="aim"/>, raised
+        /// <paramref name="elevationDegrees"/> toward <paramref name="aimUp"/> (0 ships: no height
+        /// offset). At 0 the trajectory projects to the exact screen centre, which is what lets the
+        /// sight be a crosshair. Look along the aim with aimUp as up.
         /// </summary>
-        public static Vector3 SpectatePosition(Vector3 pivot, Vector3 normal, Vector3 outward, float radius,
-                                               float halfFovRad, float tiltDegrees, float margin)
+        public static Vector3 LaunchCameraPosition(Vector3 launchPoint, Vector3 aim, Vector3 aimUp,
+                                                   float distance, float elevationDegrees)
         {
-            float tan = Mathf.Max(0.05f, Mathf.Tan(halfFovRad));
-            float d = radius * Mathf.Max(1f, margin) / tan;
-            float a = tiltDegrees * Mathf.Deg2Rad;
-            Vector3 dir = normal.normalized * Mathf.Cos(a) + outward.normalized * Mathf.Sin(a);
-            return pivot + dir.normalized * d;
+            float a = elevationDegrees * Mathf.Deg2Rad;
+            Vector3 dir = -aim.normalized * Mathf.Cos(a) + aimUp.normalized * Mathf.Sin(a);
+            return launchPoint + dir.normalized * Mathf.Max(0f, distance);
+        }
+
+        /// <summary>
+        /// The launch sight's zoom: trigger depth past <paramref name="deadzone"/>, remapped to 0..1
+        /// (the Serpent scope's rule, <c>SniperScopeActionExecutor.ResolveZoomTarget</c>). The
+        /// Plant engages at 5% depth, so a deadzone above that is a light hold that plants without
+        /// zooming and a deeper pull that zooms.
+        /// </summary>
+        public static float ZoomTarget(float triggerDepth, float deadzone)
+        {
+            float depth = Mathf.Clamp01(triggerDepth);
+            float dead = Mathf.Clamp(deadzone, 0f, 0.95f);
+            return depth <= dead ? 0f : Mathf.InverseLerp(dead, 1f, depth);
+        }
+
+        /// <summary>
+        /// Turn the aim with the stick, in SCREEN terms for the launch camera (looking along the aim,
+        /// aimUp up, screen-right = aimUp × aim; the crosshair at screen centre is the aim): stick X swings the aim right/left about
+        /// <paramref name="aimUp"/> at <paramref name="yawRate"/> (rad/s), stick Y pitches it at
+        /// <paramref name="pitchRate"/> (rad/s) — positive Y pitches it DOWN, the hull's own
+        /// nose-down sign, so the pilot's pitch inversion carries over. Pitch turns aim and aimUp
+        /// together (the orbit plane tilts with it), so the aim can be swung anywhere on the sphere.
+        /// Both stay unit and perpendicular.
+        /// </summary>
+        public static void TurnAim(ref Vector3 aim, ref Vector3 aimUp, float stickX, float stickY,
+                                   float yawRate, float pitchRate, float dt)
+        {
+            float yaw = Mathf.Clamp(stickX, -1f, 1f) * yawRate * dt;
+            float pitch = Mathf.Clamp(stickY, -1f, 1f) * pitchRate * dt;
+
+            if (Mathf.Abs(yaw) > 0f)
+            {
+                Vector3 right = Vector3.Cross(aimUp, aim);
+                aim = aim * Mathf.Cos(yaw) + right * Mathf.Sin(yaw);
+            }
+            if (Mathf.Abs(pitch) > 0f)
+            {
+                Vector3 a = aim * Mathf.Cos(pitch) - aimUp * Mathf.Sin(pitch);
+                aimUp = aimUp * Mathf.Cos(pitch) + aim * Mathf.Sin(pitch);
+                aim = a;
+            }
+
+            // Re-orthonormalise: the aim is the authority, aimUp is laid perpendicular to it.
+            aim = aim.sqrMagnitude > 1e-8f ? aim.normalized : Vector3.forward;
+            aimUp = Vector3.ProjectOnPlane(aimUp, aim);
+            if (aimUp.sqrMagnitude < 1e-8f) aimUp = Vector3.Cross(aim, Vector3.right);
+            if (aimUp.sqrMagnitude < 1e-8f) aimUp = Vector3.Cross(aim, Vector3.forward);
+            aimUp.Normalize();
         }
     }
 }

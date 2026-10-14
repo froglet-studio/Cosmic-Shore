@@ -17,6 +17,10 @@
   <ItemGroup>
     <InternalsVisibleTo Include="CosmicShore.Tests" />
     <InternalsVisibleTo Include="CosmicShore.Client" />
+    <!-- The linked ../Shared types are internal, so these read Content's copy: the player (and the
+         phone player, also assembly CosmicShore) its AmoebiusProjectSettings, cs-asset's tests DccLocator. -->
+    <InternalsVisibleTo Include="CosmicShore" />
+    <InternalsVisibleTo Include="CosmicShore.AssetTool.Tests" />
   </ItemGroup>
 
   <ItemGroup>
@@ -24,7 +28,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Compile Include="../Shared/PrismaProjectSettings.cs" Link="Shared/PrismaProjectSettings.cs" />
+    <Compile Include="../Shared/AmoebiusProjectSettings.cs" Link="Shared/AmoebiusProjectSettings.cs" />
     <Compile Include="../Shared/DccLocator.cs" Link="Shared/DccLocator.cs" />
   </ItemGroup>
   <ItemGroup>

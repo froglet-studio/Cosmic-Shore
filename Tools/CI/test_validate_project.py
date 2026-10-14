@@ -54,6 +54,33 @@ EDITOR_CASES = [
      "#if UNITY_ANDROID\nusing UnityEditor;\n#endif\n", True),
 ]
 
+# (name, repo-relative path, source, should_be_flagged). Where a file sits
+# decides whether Unity compiles it at all, before any guard is read.
+LEAK = "using UnityEditor;\nclass A {}\n"
+# The literal shape that turned bleeding-edge red: Prisma's Shader Graph reader
+# matching the JSON m_Type string. Unity never compiles Port/.
+SG_TYPE = 'class G { bool V(string t) => t == "UnityEditor.ShaderGraph.GraphData"; }\n'
+PATH_CASES = [
+    ("Assets runtime script",
+     "Assets/_Scripts/Thing.cs", LEAK, True),
+    ("embedded package runtime",
+     "Packages/com.froglet.thing/Runtime/Thing.cs", LEAK, True),
+    ("Assets Editor folder",
+     "Assets/_Scripts/Editor/Thing.cs", LEAK, False),
+    # The token match stays deliberately conservative: location, not literal
+    # detection, is what exempts Port/.
+    ("literal in Assets still flagged",
+     "Assets/_Scripts/Thing.cs", SG_TYPE, True),
+    ("Prisma port source",
+     "Port/src/CosmicShore.Content/Shaders/Thing.cs", SG_TYPE, False),
+    ("Prisma port test",
+     "Port/tests/CosmicShore.Tests/Thing.cs", LEAK, False),
+    ("Tools dotnet harness",
+     "Tools/Build/thing_harness/UnityShim.cs", LEAK, False),
+    ("not a .cs file",
+     "Assets/_Scripts/Thing.txt", LEAK, False),
+]
+
 MONO_CASES = [
     ("name matches",
      "Thing.cs", "public class Thing : MonoBehaviour {}\n", False),
@@ -66,14 +93,19 @@ MONO_CASES = [
                  "class Helper : MonoBehaviour {}\n", False),
     ("not a MonoBehaviour",
      "Thing.cs", "public class Other : ScriptableObject {}\n", False),
+    # Prisma re-implements MonoBehaviour; its files follow .NET naming, not
+    # Unity's attach rule, and Unity never loads them.
+    ("Prisma port is not Unity",
+     "Port/src/CosmicShore.Engine/GameLoop.cs",
+     "class BehaviourOrderComparer : MonoBehaviour {}\n", False),
 ]
 
 
-def _write(src: str, name: str = "Thing.cs") -> tuple[Path, list[str]]:
+def _write(src: str, rel: str = "Assets/Thing.cs") -> tuple[Path, list[str]]:
     d = Path(tempfile.mkdtemp())
-    (d / "Assets").mkdir()
-    (d / "Assets" / name).write_text(src, encoding="utf-8")
-    return d, [f"Assets/{name}"]
+    (d / rel).parent.mkdir(parents=True, exist_ok=True)
+    (d / rel).write_text(src, encoding="utf-8")
+    return d, [rel]
 
 
 def main() -> int:
@@ -87,15 +119,23 @@ def main() -> int:
         failures += not ok
         print(f"  {'PASS' if ok else 'FAIL'}  {name:34} flagged={got} expected={expected}")
 
+    print("\neditor-in-runtime scope")
+    for name, rel, src, expected in PATH_CASES:
+        root, files = _write(src, rel)
+        got = bool(v.check_editor_in_runtime(root, files))
+        ok = got == expected
+        failures += not ok
+        print(f"  {'PASS' if ok else 'FAIL'}  {name:34} flagged={got} expected={expected}")
+
     print("\nmonobehaviour-name")
     for name, fname, src, expected in MONO_CASES:
-        root, files = _write(src, fname)
+        root, files = _write(src, fname if "/" in fname else f"Assets/{fname}")
         got = bool(v.check_monobehaviour_names(root, files))
         ok = got == expected
         failures += not ok
         print(f"  {'PASS' if ok else 'FAIL'}  {name:34} flagged={got} expected={expected}")
 
-    total = len(EDITOR_CASES) + len(MONO_CASES)
+    total = len(EDITOR_CASES) + len(PATH_CASES) + len(MONO_CASES)
     print(f"\n{total - failures}/{total} passed")
     return 1 if failures else 0
 

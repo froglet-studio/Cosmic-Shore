@@ -138,9 +138,17 @@ namespace CosmicShore.Launcher
             if (message.Length > 0) Add(ok ? ChatRole.System : ChatRole.Error, message);
         }
 
+        /// <summary>
+        /// AUTO (Claude Code with its permission checks off) for this chat, until Amoebius closes. Only
+        /// the user's confirmation sets it, and it is never saved: a restored chat starts without it.
+        /// </summary>
+        public bool AutoAllowed { get; set; }
+
         public void Send(string text, string workDir, Mode mode, string? extraDir = null)
         {
             if (Busy || string.IsNullOrWhiteSpace(text)) return;
+            // Permission checks are bypassed only for a chat the user opted in this session.
+            if (mode == Mode.Auto && !AutoAllowed) mode = Mode.Edit;
             if (Cli == null && Detect() == null) { Add(ChatRole.Error, "Claude Code is not installed."); return; }
             Add(ChatRole.User, text.Trim());
             if (Title.Length == 0) Title = TitleFrom(text);
@@ -151,52 +159,52 @@ namespace CosmicShore.Launcher
         }
 
         /// <summary>
-        /// The scope every launcher conversation runs under: this is Prisma's agent. It
+        /// The scope every launcher conversation runs under: this is Amoebius's agent. It
         /// works on Port/, reads Assets/ only as the game's input, and is refused (deny rules, which
         /// hold in every mode) any edit to what Unity reads.
         /// </summary>
         /// <summary>
-        /// Who the conversation is. GAME: the Prisma Agent, powered by Claude - it works on Cosmic
-        /// Shore (the game's code and content in Assets/) as it runs in Prisma, and never edits
-        /// Prisma itself. MILESTONE: a roadmap checkpoint session - engine work on Port/ toward a
+        /// Who the conversation is. GAME: the Amoebius Agent, powered by Claude - it works on Cosmic
+        /// Shore (the game's code and content in Assets/) as it runs in Amoebius, and never edits
+        /// Amoebius itself. MILESTONE: a roadmap checkpoint session - engine work on Port/ toward a
         /// milestone, which never edits the game. Deny rules enforce each side in every mode.
         /// </summary>
-        /// TOOL: builds one FrogletTools tool natively in Prisma (EDITOR > TOOLS > BUILD) - a cs-asset
-        /// command, its test and its registry entry, and nothing else of Prisma or the game.
+        /// TOOL: builds one FrogletTools tool natively in Amoebius (EDITOR > TOOLS > BUILD) - a cs-asset
+        /// command, its test and its registry entry, and nothing else of Amoebius or the game.
         public enum Scope { Game = 0, Milestone = 1, Tool = 2 }
 
         public Scope CurrentScope { get; }
         public string? Milestone { get; }
         public string? MilestoneTitle { get; }
 
-        // Every chat runs in Prisma's workspace, a checkout separate from the user's own clone. Its edits
+        // Every chat runs in Amoebius's workspace, a checkout separate from the user's own clone. Its edits
         // stay there until the user saves them on the GIT page, so the agent leaves git to them.
         const string WorkspaceNote =
-            " The checkout is Prisma's workspace, not the user's own clone: your edits stay here until the user reviews, commits and pushes them on Prisma's " +
+            " The checkout is Amoebius's workspace, not the user's own clone: your edits stay here until the user reviews, commits and pushes them on Amoebius's " +
             "GIT page. Do not commit, push or switch branches unless the user asks you to.";
 
         // Only what the user asks for: the tracks and the board are there to read when the question is about them,
         // not a standing order to go and fix whatever the last runs recorded.
         const string GameScope =
-            "You are the Prisma Agent, powered by Claude, running inside Prisma - Froglet's own engine - on a checkout of the Cosmic Shore repository. " +
-            "You work on the GAME: Cosmic Shore's code and content (Assets/), as it runs in Prisma. Follow the repository's root CLAUDE.md for game work. " +
-            "Do what the user asks and nothing more: do not go looking for other problems, and do not investigate Prisma (Port/) or its recorded problems unless the request is about them. " +
-            "You never change Prisma itself (Port/); engine work happens in Claude Code sessions at the repository root, so when a cause you meet is in the engine, say so in one line and carry on. " +
-            "When a request is about a bug, a crash, performance or a play run, prisma_tracks has every run Prisma recorded (performance per scene, features, audio, each problem " +
-            "with when it was first and last seen) and the prisma tools (engine_smoke, game_start, game_screenshot, game_logs ...) reproduce and prove a fix. " +
+            "You are the Amoebius Agent, powered by Claude, running inside Amoebius - Froglet's own engine - on a checkout of the Cosmic Shore repository. " +
+            "You work on the GAME: Cosmic Shore's code and content (Assets/), as it runs in Amoebius. Follow the repository's root CLAUDE.md for game work. " +
+            "Do what the user asks and nothing more: do not go looking for other problems, and do not investigate Amoebius (Port/) or its recorded problems unless the request is about them. " +
+            "You never change Amoebius itself (Port/); engine work happens in Claude Code sessions at the repository root, so when a cause you meet is in the engine, say so in one line and carry on. " +
+            "When a request is about a bug, a crash, performance or a play run, amoebius_tracks has every run Amoebius recorded (performance per scene, features, audio, each problem " +
+            "with when it was first and last seen) and the amoebius tools (engine_smoke, game_start, game_screenshot, game_logs ...) reproduce and prove a fix. " +
             "For data and models without Unity: asset_datasets / asset_dataset (ScriptableObject data sets; edit a field with cs-asset set), asset_model / " +
             "asset_model_preview (FBX as Unity imports it), asset_froglet_tools (the FrogletTools and their source). Scene and hierarchy edits go through cs-asset. " +
             "A board item's 'done when' is its acceptance test: run it and show the result before calling that work done. " +
-            "Keep replies short; the user reads them in Prisma's chat panel." + WorkspaceNote;
+            "Keep replies short; the user reads them in Amoebius's chat panel." + WorkspaceNote;
 
         string MilestoneScope() =>
-            $"You are running milestone {Milestone} ({MilestoneTitle}) inside Prisma, Froglet's own engine for Cosmic Shore, on a checkout of the Cosmic Shore repository. " +
-            "This session works on the ENGINE: Port/ (Prisma's source, tools, tests and docs). Read Port/CLAUDE.md and Port/docs/ROADMAP.md first; the checkpoint's " +
+            $"You are running milestone {Milestone} ({MilestoneTitle}) inside Amoebius, Froglet's own engine for Cosmic Shore, on a checkout of the Cosmic Shore repository. " +
+            "This session works on the ENGINE: Port/ (Amoebius's source, tools, tests and docs). Read Port/CLAUDE.md and Port/docs/ROADMAP.md first; the checkpoint's " +
             "exit criterion is in Port/docs/milestones.json. Assets/, Packages/ and ProjectSettings/ are the Unity project: read them as the game's input, never change them. " +
-            $"Prove every step with the prisma tools (engine_build, engine_test, engine_smoke, game_* ...). When the work moves the checkpoint, update {Milestone}'s entry in " +
+            $"Prove every step with the amoebius tools (engine_build, engine_test, engine_smoke, game_* ...). When the work moves the checkpoint, update {Milestone}'s entry in " +
             "Port/docs/milestones.json: status (todo, in-progress, done) and a dated note with the evidence. The exit criterion is the acceptance test: never set a " +
             "checkpoint to done until you have run that check and it passed, and put the command and its result in the note. Problems you find but do not fix go on " +
-            "the board with prisma_board_suggest, each with its own criterion. Keep replies short." + WorkspaceNote;
+            "the board with amoebius_board_suggest, each with its own criterion. Keep replies short." + WorkspaceNote;
 
         /// <summary>Where a TOOL chat may write: cs-asset, its tests, and the native-tools registry and recipes.</summary>
         public static readonly string[] ToolWritable =
@@ -205,7 +213,7 @@ namespace CosmicShore.Launcher
         };
 
         const string ToolScope =
-            "You are building one Unity editor tool (a FrogletTools menu item) NATIVELY for Prisma, Froglet's own engine for Cosmic Shore, so it runs without Unity. " +
+            "You are building one Unity editor tool (a FrogletTools menu item) NATIVELY for Amoebius, Froglet's own engine for Cosmic Shore, so it runs without Unity. " +
             "Read the tool's C# source (the user names it) and its docs, then implement the same job as a cs-asset command in Port/src/CosmicShore.AssetTool " +
             "(one file per tool under FrogletTools/, a case in Program.cs's command switch and a line in its usage text), working on the project files the way the " +
             "other cs-asset commands do (AssetDatabase, the YAML editor, ComponentSerializer, the prefab instance editor). Writers must go through the same editing " +
@@ -213,7 +221,7 @@ namespace CosmicShore.Launcher
             "when it writes). Register it in Port/tools/froglet-tools/tools.json as {\"menu\": the exact menu path, \"args\": the cs-asset arguments, " +
             "\"writes\": true|false, \"summary\": one line}, and add its recipe (what it checks or changes, how it maps to the Unity tool, what it cannot do) " +
             "to Port/tools/froglet-tools/README.md. Build (dotnet build Port/src/CosmicShore.AssetTool), run the test, then run the command once and show its output. " +
-            "Those three places are all you may change: never the game (Assets/, Packages/, ProjectSettings/) or the rest of Prisma. If the tool's job truly needs the " +
+            "Those three places are all you may change: never the game (Assets/, Packages/, ProjectSettings/) or the rest of Amoebius. If the tool's job truly needs the " +
             "running Unity editor (play mode, the scene view, an editor-only API with no file equivalent), say exactly why, do not build a half version, and stop. " +
             "Keep replies short." + WorkspaceNote;
 
@@ -285,7 +293,7 @@ namespace CosmicShore.Launcher
                 WireEngine(psi, psi.WorkingDirectory);
                 psi.ArgumentList.Add("--append-system-prompt");
                 psi.ArgumentList.Add(CurrentScope switch { Scope.Game => GameScope, Scope.Tool => ToolScope, _ => MilestoneScope() } + $"\n\nBranch: {_s.Branch}." + (mode == Mode.Plan
-                    ? " You are in PLAN mode: investigate (reading files and using the prisma tools is fine), then make your final message " +
+                    ? " You are in PLAN mode: investigate (reading files and using the amoebius tools is fine), then make your final message " +
                       "the plan itself - a short title line and numbered steps naming the files to change. The launcher shows that message as the plan " +
                       "with Approve buttons, so do not write plan files and do not ask how to submit it."
                     : ""));
@@ -354,7 +362,7 @@ namespace CosmicShore.Launcher
             {
                 ["mcpServers"] = new Dictionary<string, object>
                 {
-                    ["prisma"] = new Dictionary<string, object>
+                    ["amoebius"] = new Dictionary<string, object>
                     {
                         ["command"] = _tools.Dotnet,
                         ["args"] = new[] { "run", "--project", project, "--" },
@@ -369,7 +377,7 @@ namespace CosmicShore.Launcher
             psi.ArgumentList.Add(path);
             // Its tools build and run the game but edit no files, so every mode may use them.
             psi.ArgumentList.Add("--allowedTools");
-            psi.ArgumentList.Add("mcp__prisma");
+            psi.ArgumentList.Add("mcp__amoebius");
             return true;
         }
 
@@ -587,7 +595,7 @@ namespace CosmicShore.Launcher
         static string Describe(JsonElement toolUse)
         {
             string name = toolUse.TryGetProperty("name", out var n) ? n.GetString() ?? "tool" : "tool";
-            name = name.StartsWith("mcp__prisma__") ? name["mcp__prisma__".Length..] : name;
+            name = name.StartsWith("mcp__amoebius__") ? name["mcp__amoebius__".Length..] : name;
             if (!toolUse.TryGetProperty("input", out var input) || input.ValueKind != JsonValueKind.Object) return name;
             foreach (var key in new[] { "file_path", "path", "command", "pattern", "action", "url", "target", "text", "scene", "description" })
                 if (input.TryGetProperty(key, out var v) && v.ValueKind == JsonValueKind.String)

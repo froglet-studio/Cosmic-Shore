@@ -2,9 +2,24 @@
 
 > Moved verbatim from the root `CLAUDE.md`, which indexes every topic file. Paths in this file are relative to the repository root.
 
+> **Doing multiplayer work? Read `Docs/MULTIPLAYER_START_HERE.md` first:** the owner's goals and
+> rules, current state, the hand-test list and the ordered next steps, for Unity and Amoebius alike.
+
 ### Multiplayer / Netcode
 
-The game uses Unity Netcode for GameObjects (`com.unity.netcode.gameobjects` 2.5.0) for multiplayer. Key files in `Assets/_Scripts/Controller/Multiplayer/`:
+The game uses Unity Netcode for GameObjects (`com.unity.netcode.gameobjects` 2.13.3; the pinned versions live in `Packages/manifest.json`) for multiplayer. Key files in `Assets/_Scripts/Controller/Multiplayer/`:
+
+**Bump the protocol version with every change to what goes over the wire (rule, 2026-10-05).** Two
+builds that disagree about a replicated payload's layout - a `NetworkVariable` struct such as
+`ArcadeConfigSyncManager.LobbySnapshot`, the order or count of a behaviour's `NetworkVariable`s, an RPC
+signature - cannot play together, and with `EnsureNetworkVariableLengthSafety` off (the
+`NetworkManager` prefab's setting) a mismatch does not fail where it happens: the joiner reads the
+host's bytes out of step and the join dies later, silently - a party invite that "just does not get you
+into the lobby". So whoever changes a payload also raises `NetworkConfig.ProtocolVersion` in
+`Assets/_Prefabs/CORE/NetworkManager.prefab` (no scene overrides it; nothing sets it at runtime). Netcode
+then refuses a mismatched build at the connection request, and the HOST's console names it -
+`NetworkConfig mismatch`. History: **9** (2026-10-05) - `LobbySnapshot.AIDifficulty`, the lobby's AI
+difficulty (`Docs/ArcadeLaunch/ARCHITECTURE.md` §3.3). Two players testing a join must run the same build.
 
 - `ServerPlayerVesselInitializer` — core server-side vessel spawner. Listens for `OnPlayerNetworkSpawnedUlong` SOAP events, waits for NetworkVariables to sync (`preSpawnDelayMs`), spawns the vessel prefab via `VesselPrefabContainer`, injects DI with `GameObjectInjector.InjectRecursive()`, then delegates initialization to `ClientPlayerVesselInitializer`. Tracks processed players by `NetworkObjectId` (not `OwnerClientId`, since AI shares the host's). Uses `NetcodeHooks` (not direct `NetworkBehaviour` inheritance) for spawn/despawn hooks. `ProcessPreExistingPlayers()` catches host Player objects spawned before the initializer loaded. The spawner never shuts down the NetworkManager on despawn — under the eager-Relay design the network/Relay persists across all scene transitions and is torn down only by explicit party-leave (`PartyInviteController`) or transport failure (`MultiplayerSetup.OnTransportFailure`).
 - `ClientPlayerVesselInitializer` — common player-vessel pair initialization (extends `NetworkBehaviour`). Server path: called directly by `ServerPlayerVesselInitializer`. Client path: receives RPCs (`InitializeAllPlayersAndVessels_ClientRpc` for new clients, `InitializeNewPlayerAndVessel_ClientRpc` for existing clients). Queues pending `(playerNetId, vesselNetId)` pairs when RPCs arrive before objects replicate — resolved reactively via `OnPlayerNetworkSpawnedUlong` + `OnVesselNetworkSpawned` SOAP events (zero `WaitUntil` polling). `InitializePair()` calls `player.InitializeForMultiplayerMode(vessel)`, `vessel.Initialize(player)`, `ShipHelper.SetShipProperties()`, `gameData.AddPlayer()`, and fires `gameData.InvokeClientReady()` for the local user.
@@ -36,7 +51,7 @@ ClientPlayerVesselInitializer (NetworkBehaviour)
 └── Used by all ServerPlayerVesselInitializer variants
 
 PlayerSpawner / VesselSpawner (single-player, non-networked path)
-└── PlayerSpawnerAdapterBase → MiniGamePlayerSpawnerAdapter, VolumeTestPlayerSpawnerAdapter
+└── PlayerSpawnerAdapterBase → MiniGamePlayerSpawnerAdapter
 ```
 
 **Player (`NetworkBehaviour`) NetworkVariables:**
@@ -77,6 +92,15 @@ not via separately replicated state: a NetworkVariable and an RPC are not ordere
 The press and release RPCs carry the device as one byte; a release resolves with its press's device.
 `Tools/Build/peer_press_harness/run.py` runs the shipped handler as two machines over every shipped
 vessel's maps (`R_VesselActions/SQUIRREL_DRIFT.md` §11).
+
+**Prism damage does not replicate — a blast that should break mass must run on EVERY peer.**
+Trail and flora prisms are simulated per peer, and nothing sends a prism's destruction or shield pop
+over the wire. Vessel blasts get this for free (the ability re-executes everywhere, above); a blast
+spawned by a SERVER-owned object does not. The Scarab ball's domain blast was spawned inside a
+`…Server` method until 2026-10-13, so it destroyed opposing prisms on the host and on no client. The
+shape that works: the server resolves what only it knows (size, domain) and ships it in a
+`ClientRpc` that spawns the AOE on every peer (`AstroLeagueBall.Detonate_ClientRpc`); anything the
+blast does to NETWORKED objects (ball kicks) must already no-op off the server.
 
 **`IPlayer.IsLocalUser` vs `IPlayer.IsLocalPilot`.** `IsLocalUser` (= `IsMultiplayerOwner`) is the networked path's "locally-owned, non-AI player". `IsLocalPilot` is broader by exactly one case: the legacy NON-NETWORKED single-player spawn path (`PlayerSpawner` → `InitializeForSinglePlayerMode`, used today only by the `BenchmarkStressTest` scene) never network-spawns its Player, so `IsSpawned` is false there and `IsLocalUser` reports false for a human. **Anything that must hold in EVERY game mode binds on `IsLocalPilot`**, so a mode cannot escape a platform system by choosing the other spawn path — the prism occlusion corridor is the reference case.
 
@@ -340,7 +364,7 @@ Location: `_Prefabs/UI Elements/Panels/Party/`
 
 > **Stale reference:** this section used to point at a `Create Party Prefabs` editor tool. No such
 > `[MenuItem]` exists anywhere in the project — create the party prefabs by hand, or write the tool
-> under `FrogletTools/Interface/` (see `Docs/TOOLING.md`) if it is worth automating. SO data
+> under `FrogletTools/UI/` (see `Docs/TOOLING.md`) if it is worth automating. SO data
 > container references (`HostConnectionDataSO`, `FriendsDataSO`, `SO_ProfileIconList`) must be wired
 > manually in the inspector either way.
 
@@ -379,6 +403,9 @@ shared conventions are in `Docs/README.md`). Route by task:
 | Log / triage a bug | `Docs/PartySystem/BUGS.md` (B2/B3/B5/B7) · `Docs/PresenceSystem/BUGS.md` (B1/B4/B6) |
 | Pick up refactor work | `Docs/PartySystem/REFACTOR.md` · `Docs/PresenceSystem/REFACTOR.md` |
 | Read what was already tried (session history) | `Docs/PartySystem/MPPM_SESSION_LOG.md` |
+| Make or change ANY UGS call (lobby, session, relay, friends) | `Docs/MultiplayerArchitecture/REVIEW_INVITE_AND_RESILIENCE.md` (the 2026-10-06 review of invite/join, request discipline and disconnect resilience; Phases 0-1 landed 2026-10-07). Every UGS call goes through `UgsRequestPolicy.ExecuteAsync` - ONE failure classifier, request counters (`UgsRequestTelemetry`), no second retry filter (`UgsRequestPolicyTests`, `JoinTargetValidatorTests`). The PENDING acceptance handshake is deleted (`REFACTOR.md` D1); a join target is validated before the local host is torn down; transport timeouts nest inside the party join wait |
+| Bump or read the multiplayer package versions | `Packages/manifest.json` (NGO 2.13.3, Sessions 2.3.3, Transport 2.7.4, MPPM 2.0.2, Friends 1.3.0; `com.unity.multiplayer.widgets` removed). Any wire-format change bumps `NetworkConfig.ProtocolVersion` in `Assets/_Prefabs/CORE/NetworkManager.prefab` (§ Multiplayer / Netcode) |
+| The Skim Race card's AI difficulty row (host-only, replicated) | `LobbySnapshot.AIDifficulty`, `AIDifficultyRules`, `Docs/SKIM_RACE_AI.md` §10; the AI seats themselves: § Player Count & AI Backfill Pipeline below and `Docs/SKIM_RACE_AI.md` §13 |
 
 **Locked design (do not relitigate):** EAGER per-user Relay — every player
 hosts their own Relay-backed party session on entering `Menu_Main`. **Do not

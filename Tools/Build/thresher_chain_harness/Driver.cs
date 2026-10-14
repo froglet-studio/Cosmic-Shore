@@ -15,7 +15,8 @@ public static class Driver
     public static int Main(string[] args)
     {
         int failed = 0, passed = 0;
-        foreach (var m in typeof(ThresherChainSolverTests).GetMethods(BindingFlags.Public | BindingFlags.Instance))
+        foreach (var type in new[] { typeof(ThresherChainSolverTests), typeof(ThresherAnalogTriggerTests) })
+        foreach (var m in type.GetMethods(BindingFlags.Public | BindingFlags.Instance))
         {
             var cases = m.GetCustomAttributes<TestCaseAttribute>().ToList();
             bool isTest = m.GetCustomAttribute<TestAttribute>() != null;
@@ -27,7 +28,7 @@ public static class Driver
                 try
                 {
                     var args2 = m.GetParameters().Select((p, i) => Convert.ChangeType(a[i], p.ParameterType)).ToArray();
-                    m.Invoke(new ThresherChainSolverTests(), args2);
+                    m.Invoke(Activator.CreateInstance(type), args2);
                     passed++; Console.WriteLine("PASS " + name);
                 }
                 catch (TargetInvocationException e) { failed++; Console.WriteLine("FAIL " + name + ": " + e.InnerException?.Message); }
@@ -62,7 +63,7 @@ public static class Driver
         Console.WriteLine($"  same turn, NO snap (keep turning), release: {np / s.SmashSpeed:F2} / {nq / s.SmashSpeed:F2}");
 
         Console.WriteLine("\ncamera (offset 0,8,-55; 60 deg vFOV 16:9; margin 1.15) — chase distance needed, ball at length L");
-        Console.WriteLine("  where        rest    max    max x1.5 (Space)");
+        Console.WriteLine("  where        rest    max    max x1.5 (longer maxLen, if re-tuned)");
         float vh = 30f * Mathf.Deg2Rad, hh = Mathf.Atan(Mathf.Tan(vh) * 16f / 9f), rr = s.BallRadius * 1.25f;
         foreach (var (label, dir) in new[] { ("behind", Vector3.back), ("abeam", Vector3.right), ("ahead", Vector3.forward), ("overhead", Vector3.up) })
         {

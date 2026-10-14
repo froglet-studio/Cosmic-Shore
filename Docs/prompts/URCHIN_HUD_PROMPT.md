@@ -47,7 +47,7 @@ and the upgrades are named. This is a wiring and authoring task.
 
 ## The mechanical half is one click
 
-**FrogletTools > Vessels > Wire Vessel Ability Row** (`VesselAbilityRowWirer`) places the four
+**FrogletTools > Vessels > Wiring > Wire Vessel Ability Row** (`VesselAbilityRowWirer`) places the four
 buttons at the fleet-standard bands, creates a `{Element}Icon` in each, and binds `abilityIcons` in
 `AbilityDisplayOrder` — on any vessel, from nothing. It is idempotent (find-by-name, re-bind only)
 and never touches sprites, so it is a repair path as well as a bring-up path.
@@ -105,9 +105,9 @@ order matters. If you author a gauge, put it where it belongs and let the lockup
 
 1. `Assets/_Prefabs/UI Elements/VesselHUD/UrchinHUDVariant.prefab` exists and is referenced by
    `Urchin.prefab`, with no instance override shadowing it.
-2. **FrogletTools > Vessels > Audit Vessel Ability Rows** reports the Urchin at 4/4 icons, correct
+2. **FrogletTools > Vessels > Audits > Audit Vessel Ability Rows** reports the Urchin at 4/4 icons, correct
    order, uniform, with control chips drawn.
-3. **FrogletTools > Vessels > Audit Ability Lockups** passes for the Urchin.
+3. **FrogletTools > Vessels > Audits > Audit Ability Lockups** passes for the Urchin.
 4. Any gauge is bound through `AbilityIconBinding.gauge` on the object its existing drive site
    already writes, and any cooldown is pushed through `SetAbilityCooldown`.
 5. The tool's asset output is committed — run `/ship-tools` if a wirer was used, so the prefab

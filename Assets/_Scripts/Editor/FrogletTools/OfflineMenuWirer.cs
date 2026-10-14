@@ -84,15 +84,16 @@ namespace CosmicShore.Editor.Froglet
             new("FriendsListPanel",             false),
             new("ArcadeLobbyList",              false),
             new("LeaderboardsMenu",             true),   // PortScreen - must stay navigable
-            new("StoreScreen",                  true),   // ArkScreen  - must stay navigable
+            // Not StoreScreen: its ArkScreen host is the Elemental Converter now, a local animation that
+            // works offline (Tools/Build/author_elemental_converter.py removed that gate).
         };
 
-        [MenuItem("FrogletTools/Interface/Wire Offline Menu Surfaces")]
+        [MenuItem("FrogletTools/UI/Wire Offline Menu Surfaces", false, 231)]
         [FrogletTool(FrogletToolCategory.Interface, Importance = 4,
             Description = "Wire the online/offline lamp, its confirm bar, and the online-only UI gates into Menu_Main.")]
         static void Wire() => Run(regenerateIcons: false);
 
-        [MenuItem("FrogletTools/Interface/Wire Offline Menu Surfaces (Regenerate Icons)")]
+        [MenuItem("FrogletTools/UI/Wire Offline Menu Surfaces (Regenerate Icons)", false, 232)]
         [FrogletTool(FrogletToolCategory.Interface, Importance = 2,
             Description = "Same, but re-renders the offline icon set from scratch - use after changing the icon geometry.")]
         static void WireAndRegenerate() => Run(regenerateIcons: true);

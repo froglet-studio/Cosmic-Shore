@@ -160,8 +160,8 @@ namespace CosmicShore.Gameplay
             {
                 _warnedNoDust = true;
                 CSDebug.LogWarning($"[SpreadWingsActionExecutor] '{name}' has no ButterflyDustField " +
-                                   "— Dust mode will narrow the wake and do nothing else. Re-run " +
-                                   "FrogletTools > Vessels > Butterfly Vessel Setup.", this);
+                                   "— Dust mode will narrow the wake and do nothing else. Restore the " +
+                                   "ButterflyDustField on the prefab (see BUTTERFLY.md §4).", this);
             }
             if (dustField) dustField.SetActive(_dustMode);
         }

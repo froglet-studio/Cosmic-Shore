@@ -379,7 +379,7 @@ Not editor-verified — I cannot run Unity. Every step below is unrun. Mirrored 
 9. **MPPM, two clients.** Both on Sparrows, one at Time 5, one below. Confirm on **both** machines
    that only the Time-5 pilot resists the elemental drain while boosting — this is what the
    replicated `NetElementUnlocks` path buys, and a local-level read would pass step 6 and fail here.
-10. **Audit.** `FrogletTools > Vessels > Audit Vessel Ability Rows` — the Sparrow row must still
+10. **Audit.** `FrogletTools > Vessels > Audits > Audit Vessel Ability Rows` — the Sparrow row must still
     report 4/4 icons in charge → mass → space → time order.
 
 ## Follow-ups

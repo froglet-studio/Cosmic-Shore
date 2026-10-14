@@ -1088,6 +1088,23 @@ references, m_Script classes). What cost time on the first runs (2026-10-06 to 1
   `run.sh` just populated that folder — it looks for `csc.dll` under `$DOTNET_ROOT`, not under the
   cache. Export the same `DOTNET_ROOT`/`PATH`/`TMPDIR` you gave `run.sh`. It also audits only what
   is COMMITTED since the base (`audited 0 added + 0 modified` on an uncommitted tree is not a pass).
+- **In a SPARSE checkout, `check_generated_assets.py`'s `[guid]` findings are mostly the checkout,
+  not the asset.** `build_guid_index` walks `Assets/` on DISK, so every `.meta` outside the sparse
+  cone is invisible and a reference to it reads `resolves to no asset in Assets/`. A package script
+  that a generator ADDED is flagged the same way even though the docstring says package references
+  are "counted, not judged": the new `UnityEngine.UI.Image` components on `SerpentHUDVariant.prefab`
+  (`m_Script` guid `fe87c0e1cc204ed48ad3b37840f39efc`, the ugui Image) came back as findings, while
+  the 14 Images already in that prefab were suppressed as pre-existing. Resolve each `[guid]` line
+  before calling it a defect: `git grep -l <guid> HEAD -- '*.meta'` finds an asset the cone hides
+  (it found `_Models/Testing/Prism.asset`, guid `8f4a329b…`), and a guid already used elsewhere in
+  the same file as an `m_Script` is a package script. Measured 2026-10-13 on
+  `claude/serpent-mass-seed-wall`: 3 findings, all 3 false. The fix belongs in the tool (index guids
+  from `git ls-tree` plus the refcompile package cache), not in a habit.
+- **`check_generated_assets.py` reports a guid-KEEPING RENAME as a `[deleted]` reference.** `git mv a.png b.png`
+  with its `.meta` keeps the guid, so every reference still resolves — but the audit sees `a.png` deleted since the
+  base and reports `b.png.meta: references a.png (guid …), deleted since the base`. The file it names IS the owner
+  now. Confirm with `grep -c "^guid: <g>$"` over the `.meta` set (exactly one owner, the new path) and call it out
+  as the tool's false positive (Thresher Heavy Iron → Mass Mode icon, 2026-10-13).
 - **`check_generated_assets.py` reports only findings that are NEW against the base's copy of the
   asset — so a negative control must inject a defect the BASE never had.** Re-adding a key you just
   removed (a retired field's `minExplosionScale: 60`, still present in the base asset) is suppressed
@@ -1114,6 +1131,19 @@ references, m_Script classes). What cost time on the first runs (2026-10-06 to 1
   `[CHANGED-TONIGHT]`. For the asset audit, misspell one key in an asset you changed (the audit
   must name the file and the key). Restore, then `git status --short` the paths. Both discriminated
   on their first try here.
+
+**`unity_refcompile`'s engine DLLs are REFERENCE assemblies: they bind, they do not RUN.** Calling
+`Vector3`/`Quaternion` from them in a harness throws `NullReferenceException` on the first operator, so
+a compile against them cannot execute the shipped maths. To RUN a pure-math class (a predictor, a field
+law, a layout routine), compile the SHIPPED file unmodified beside a ~60-line stub `namespace
+UnityEngine` (`Vector2`/`Vector3`/`Quaternion` with `AngleAxis`, `*`, `Slerp`, and `Mathf`). Then drive
+it from a scratch `Main`, and lift the test bodies out of the `[Test]` file with a ten-line NUnit
+`Assert` shim, so they run too. On 2026-10-13 this ran the Stoat's `StoatDipoleMath` and five of its
+edit-mode tests, and measured the bug a play report described: the instant path predictor was 15–73 u
+off a frame-stepped model of `VesselTransformer` within 3 s. Keep the stub in the scratchpad, never in
+the repo, and add members only as the compile asks for them. Also: `verify_black_hole_lens.py` needs
+`glslangValidator`; a root container gets it from `apt-get install -y glslang-tools` (after an
+`apt-get update`).
 
 **But a REAL type check of the files you actually wrote is still available, and it is worth the
 20 minutes** on new code (as opposed to a small edit inside a large existing file). Build a stub
@@ -2137,6 +2167,47 @@ this repo that resolves types across the SOAP/Unity boundary without the editor,
 a signature that would have been an editor-only error: **`Obvious.Soap`'s `ScriptableList<T>`
 implements `IList<T>` and NOT `IReadOnlyList<T>`**, so the natural read-only parameter type
 does not accept one. Any helper taking a SOAP list must take `IList<T>`.
+
+### Technique: test a BINARY-FORMAT reader against the real tool's output, not hand-written bytes
+
+A reader for a format you did not author (a protobuf manifest, an ELF header, a signature
+block) is only proven against bytes the real producer wrote. Writing them by hand repeats your
+own understanding of the format back to you. Google's Android tools are reachable from this
+container, so `AndroidBundleCheck` (`Assets/_Scripts/Editor/Build/`) was proven against real
+output (claude/serene-edison-lfv24f, 2026-10-13):
+
+- **A real aapt2 protobuf manifest.** Download aapt2's Linux jar
+  (`dl.google.com/android/maven2/com/android/tools/build/aapt2/<ver>/aapt2-<ver>-linux.jar`) and
+  `android.jar` from `dl.google.com/android/repository/platform-36_r02.zip`, each unpacked into
+  its own empty folder. Then run
+  `aapt2 link --proto-format -I android.jar --manifest AndroidManifest.xml -o x.apk`. The
+  `AndroidManifest.xml` inside `x.apk` is the exact protobuf `XmlNode` an App Bundle carries.
+  Link a clean manifest and one that is wrong in every field you check.
+- **Real ELF alignments.** The repo's FMOD arm64 `.so` has LOAD alignment `0x4000` and Nice
+  Vibrations' `liblofelt_sdk.so` has `0x1000`. Confirm both with `readelf -lW` before relying on
+  them.
+- **Real signatures.** `keytool` and `jarsigner` are installed. Sign one fixture with a
+  release-named key and one with `CN=Android Debug`.
+
+Then build one fixture per verdict (good, unsigned, debug-signed, no 64-bit libraries, not a
+bundle) and require each verdict to differ. **That set caught a check that could never fire:**
+the "no arm64 libraries" error was gated on the list of libraries the check MEASURED, which held
+only 64-bit ones, so a 32-bit-only bundle passed. A check whose precondition is computed from the
+thing it looks for is always silent. Test the precondition on the raw input instead.
+
+### Trap: an SDK-style harness project compiles EVERY `.cs` under its folder
+
+`dotnet` project files glob `**/*.cs` by default, not only the files you `<Compile Include>`.
+A deliberately broken copy of the shipped file (a mutant for a negative control) left in the
+harness folder is compiled beside the real one. Every member then reports
+`CS0111 … already defines a member`, which reads exactly like the shipped file got duplicated.
+The repo file was fine; only the harness was wrong. Moving the mutant into its own folder is
+not enough on its own. If that folder's project also `<Compile Include>`s the mutant, the SDK
+stops with `NETSDK1022 Duplicate 'Compile' items` before any test runs, and a quiet grep for
+`Passed!|Failed!` then prints nothing, which a hurried reader takes as a pass. Give every harness
+project `<EnableDefaultCompileItems>false</EnableDefaultCompileItems>` and list its files.
+Check `git show HEAD:<file>` before believing a duplicate-member error in a harness. Read the
+test count line before believing a mutant run: no line means no run.
 
 ### Trap: you cannot see a PACKAGE API's SHAPE here, so a test written against one is a guess
 
@@ -3308,7 +3379,7 @@ never fold it into a fix for something else.
   a component), pointing at an EXISTING-type asset the game already loaded elsewhere — and an
   `IExplosionPrismPayload` seam on the impactor took the place of the container slot. When a new
   SO type is unavoidable, have the human open its first asset once before the playtest.
-- **The Prisma port is a real compile of `Assets/_Scripts`, available in about a minute.**
+- **The Amoebius port is a real compile of `Assets/_Scripts`, available in about a minute.**
   `Port/src/CosmicShore.Player` live-compiles the game's own source against the port's Unity API
   surface, so `dotnet build Port/src/CosmicShore.Player` binds method bodies — not the
   syntax-only Roslyn pass §0.05 of `/ship` warns about. No SDK in the container? `curl -sSL
@@ -3424,6 +3495,14 @@ never fold it into a fix for something else.
   only when the base is byte-identical and the diff is purely additive (the Sparrow animator
   controller was; the Sparrow prefab was NOT — it had swapped the visible model, which trunk
   must not).
+- **A port that skips a hunk because "the asset it names is gone" must resolve the GUID, not the
+  name.** The Stoat port (`16b41b045`) left out the source branch's Cell Selector entry in
+  Menu_Main, reasoning that it named a "Black Hole cell" the branch no longer carried. That cell had
+  been RENAMED to the Crystal Wormhole Cell with its guid kept (`git log --name-status` shows
+  `R100`), so the entry named the very config the port brought over. The cell then sat selectable
+  by nothing until `CrystalWormholeTests` went red. Before dropping a hunk as dangling, grep the
+  hunk's `guid:` against the source branch's `.meta` files (`git grep <guid> <branch> -- '*.meta'`).
+  A hit means the reference is live, whatever the folder is called now.
 
 - **`$` in a .NET regex does NOT match before `\r`, so every line-anchored pattern
   fails on a Windows checkout.** In multiline mode `$` matches before the `\n` but
@@ -4154,6 +4233,18 @@ never fold it into a fix for something else.
   idiom. So a new rule dropped into that tick inherits the local path for free, where its
   detonations silently no-op (each guarded on `IsServer`) while its RPC throws. Gate the whole
   rule on `IsSpawned && IsServer` rather than trusting the callees' own guards.
+- **A mesh whose vertex shader REBUILDS geometry from per-vertex data cannot be moved by a CPU
+  consumer that draws it on the same material - unless the shader's undriven path is the identity.**
+  `OmniDepthPrismShader` rebuilt every vertex from TEXCOORD2 (its prism's centre) and stretched it by
+  the material's `_Thickness` 6.25. `CrystalHullFusion` re-tessellates the crystal onto a vessel hull
+  and draws that copy on the crystal's own material, with TEXCOORD2 holding ITS data (discharge
+  heights, zero on filler vertices): the stretch ran against the wrong centres and blew the Mass
+  faces 36 mesh units apart, and `normalize(0)` made filler vertices NaN. Fix shape: bake every
+  shape parameter the shader applied into the mesh (the material ships the neutral value), make the
+  undriven branch return the vertex untouched without reading the per-vertex channel, and have the
+  consumer force undriven. Prove it with a formula identity (max |p - v| at float32) and a negative
+  control that leaves the parameter in (238 units). Grep for every renderer that borrows a
+  material's `sharedMaterials` before giving a shader per-vertex semantics.
 
 ### Bundled tool: `field_parity.py`
 

@@ -428,6 +428,7 @@ component and others get a new parent instead:
 | ″ | splash content | **Content.** `Status Text` sits at `y = -460` with height 92 → bottom edge at −506, i.e. 34 units off the screen bottom and inside the inset | New `Safe Area` layer inside `LoadingPanel` holding `Status Text`, `Loader`, `Button` |
 | `Canvas` (Authentication) | `Background` | **Full-bleed.** Full-stretch `Image` | no change |
 | ″ | `AuthPanel`, `UsernameSetupPanel`, `Status Text`, `Loader` | **Content.** `LoginStatusText` is anchored `(0.1, 0) → (0.9, 0.2)` — its lower edge *is* the screen bottom | New `Safe Area` layer holding all four |
+| Menu_Main `SceneTransitionModal` | `LeftDoor` / `RightDoor` | **Full-bleed.** A curtain. Its doors rest just outside the modal rect when open, so under the inset `Safe Area` they showed in the cutout margins as grey plates; closed, they left the margins uncovered | Hoisted to the root canvas in `SceneTransitionModal.Awake` (2026-10-12) |
 | Environment load veil (runtime) | `Backdrop` | **Full-bleed.** An occluding veil; strips of a half-built world showing under the notch is exactly what it exists to prevent | no change |
 | ″ | `Title`, `Progress` | **Content.** Both are full-stretch with centred text, so a long world name reaches the cutout | New `Safe Area` layer built in `EnvironmentLoadVeil.Awake` |
 | Privacy consent overlay (runtime) | `Scrim` | **Full-bleed.** Dims the game behind and swallows clicks | no change |
@@ -436,12 +437,45 @@ component and others get a new parent instead:
 
 #### What the application changed beyond attaching a component
 
-- **`ScreenSwitcher.GetViewportWidthInCanvasUnits` now reads the switcher's own rect, not the canvas
+- **`ScreenSwitcher.GetViewportWidthInCanvasUnits` read the switcher's own rect, not the canvas
   rect.** `LayoutScreensToViewport` sizes every menu screen panel to that width and offsets panel *i*
-  by `i × width`; reading the canvas rect would have left the filmstrip full canvas width inside a
+  by `i × width`. Reading the canvas rect would have left the filmstrip full canvas width inside a
   horizontally-inset `Screens`, so the *vertical* half of the safe area would have been respected
   and the horizontal half silently not. On desktop the fitter is a no-op and `Screens.rect ==
-  canvas.rect`, so the value is unchanged — this cannot regress a non-notched display.
+  canvas.rect`, so the value was unchanged.
+  - **Superseded 2026-10-12, after the first iPhone build.** `Screens` carries a ContentSizeFitter
+    (horizontal Min Size) that zeroes its own width on the first layout pass. The self-read
+    therefore saw the safe width in `Start` and the canvas width ever after. Navigation also
+    positioned the strip with `transform.position` (absolute screen pixels), so the safe-area
+    origin was ignored.
+  - On a Dynamic Island iPhone (2556 px wide, 177 px inset each side, 63 px at the bottom), the
+    result was:
+    - panels laid out 2202 px apart but slid 2556 px per step, so each navigation left the screen
+      another 354 px off;
+    - the whole strip shifted 177 px into the cutout and 63 px down;
+    - neighbouring screens visible in the margins, with nothing clipping them.
+  - **Fix** (`ScreenSwitcher`): the strip now sits in a runtime `Screens Viewport`, a
+    full-canvas `RectMask2D` child of the root canvas, placed just before `Safe Area` so screens
+    still draw under the NavBar and modals.
+    - Each screen gets a full-screen slot, with its content laid out in the safe rect inside that
+      slot.
+    - The strip's pivot is pinned to its left edge (so the fitter's zeroed width moves nothing),
+      and it slides one slot per screen by `anchoredPosition`.
+    - It re-lays out whenever the slot width or the safe insets change.
+  - **Backgrounds bleed** (`SafeAreaBleed`, same day). A first fix clipped everything to the safe
+    rect, which left every screen a box with the 3D scene showing round the notch, the corners and
+    the bottom, and the NavBar band stopping short of the edges.
+    - Full-width background images now get a copy that reaches the screen edge: in each screen,
+      in the NavBar, and in the modals, including 1920-wide panels centred in a wider safe area.
+    - The source keeps its rect and its raycast area; its CanvasRenderer alpha is 0.
+    - Only built when a display has margins, so a desktop never gets one.
+    - Full-height side panels docked on an edge also bleed out to that edge: the party panel of
+      the Arcade, Mission, Toybox and Arena windows.
+    - Those four windows were fixed 1920 × 908.7 rects and are now stretch-anchored. They fill the
+      safe area under the NavBar, with the same rect at 1920 × 1080.
+  - **Second bug fixed with it:** `currentScreen` is serialized as 0 (HANGAR), so restoring HANGAR
+    from the `ReturnToScreen` pref hit NavigateTo's "already on this screen" return. The strip was
+    never positioned and the hangar grid never built. `Start` now navigates from no screen.
 
 #### Known limitations (deliberate, recorded rather than solved)
 
@@ -453,11 +487,9 @@ component and others get a new parent instead:
 - **The split is made one level below each canvas root.** Panels that bundle their own dimmer with
   their own content are inset as a unit. Only the four full-screen scrims listed above were checked
   descendant-by-descendant.
-- **The menu filmstrip is laid out once, at `Start()`.** `LayoutScreensToViewport` has no
-  re-layout hook on resolution change (already recorded above), and the safe area now shares that
-  limitation: a landscape-left ↔ landscape-right flip moves the cutout to the other end and resizes
-  `Screens`, but the panels keep the width they were given at `Start`. Pre-existing, not introduced
-  here — the fix is a re-layout on `OnRectTransformDimensionsChange`, which belongs with T2.
+- ~~**The menu filmstrip is laid out once, at `Start()`.**~~ Fixed 2026-10-12: `ScreenSwitcher`
+  re-lays out the strip on the frame its viewport's width changes, whether from a desktop window
+  resize, a split view, or a change in the safe area.
 - **Nothing enforces §8's 24-unit minimum edge inset** on a future content layer — it is authored
   padding, which is what lets it survive the desktop no-op (see `Docs/UI_REDESIGN_TASKS.md` T1,
   queue item #3).
@@ -474,7 +506,7 @@ component and others get a new parent instead:
 | Orientation | **Landscape only** (auto-rotate between landscape L/R; portrait disabled) | Mobile |
 | Android max aspect | **2.1 (~18.9:9)** | Below modern 20:9 / 21:9 phones — devices wider than this letterbox or crop per OEM behavior |
 | Android min SDK | 28 (Android 9) | |
-| iOS target | 15.0, Universal (iPhone + iPad) | Bundle id is the production id `com.FrogletGames.CosmicShore` (2026-10-08; the TEST id `.dev` from 2026-10-02, still used by the free sideload `.ipa`; was the legacy `com.FrogletGames.Tail-Glider`) — see `Docs/IOS_BUILD.md` §1 |
+| iOS target | 15.0, Universal (iPhone + iPad) | Bundle id is the production id `com.FrogletGames.CosmicShore` (2026-10-08; the TEST id `.dev` from 2026-10-02, unused since the free-Apple-ID path was retired on 2026-10-13; was the legacy `com.FrogletGames.Tail-Glider`) — see `Docs/IOS_BUILD.md` §1 |
 | Desktop default window | **1920×1080**, resizable, borderless fullscreen default | **Fixed 2026-09-11 (board item R5).** Was 1024×768 (4:3) and non-resizable — stale, as this audit suspected: the 4:3 default matched no canvas reference resolution. With `defaultIsNativeResolution: 1` these are the *windowed* size, not the initial fullscreen one. |
 | Color space | Linear | Matters for authoring UI colors (see `Docs/PALETTE.md`) |
 | Target frame rate | 60 (from `BootstrapConfigSO`), VSync 0 | |
@@ -484,7 +516,7 @@ The in-game Settings modal additionally exposes a resolution dropdown (built fro
 
 ### How the menu lays out across aspect ratios
 
-`ScreenSwitcher` (`Assets/_Scripts/UI/ScreenSwitcher.cs`, 1,047 lines) arranges the menu screens as a **horizontal filmstrip**: on `Start()` each screen panel is anchored to the left edge, stretched vertically, sized to exactly one viewport width (read live from the canvas rect, so it tracks the actual aspect), and offset by its index. Navigation slides the whole strip with a hand-rolled smoothstep coroutine (not DOTween). ⚠ The layout runs once at `Start()` — no re-layout hook on resolution change was found, so a mid-session desktop window resize would leave the strip sized to the old viewport (UNVERIFIED at runtime, but no code path was found).
+`ScreenSwitcher` (`Assets/_Scripts/UI/ScreenSwitcher.cs`, 1,047 lines) arranges the menu screens as a **horizontal filmstrip**: on `Start()` each screen panel is anchored to the left edge, stretched vertically, sized to exactly one viewport width (read live from the canvas rect, so it tracks the actual aspect), and offset by its index. Navigation slides the whole strip with a hand-rolled smoothstep coroutine (not DOTween). Since 2026-10-12 the strip sits in a full-canvas `Screens Viewport` and each screen gets a full-screen slot, with its content in the safe rect inside it; the slide is in `anchoredPosition`, and the layout re-runs when the slot width or the safe insets change (see "What the application changed" above).
 
 The menu root also carries a `PhoneFlipDetector` and per-screen `FlipUI` components responding to device flip.
 
@@ -602,7 +634,7 @@ The main menu is built as a **five-panel horizontal filmstrip** (screens slide l
 | 3 | `PORT` (3) | `PortScreen` | `LeaderboardsMenu` | ❌ **disabled** |
 | 4 | `PROFILE` (5) | `ProfileScreen` | `ProfileScreen` + `QuestTrackView` | ✅ |
 
-- `ScreenSwitcher.disabledScreens` = `{ARK, PORT}`. Navigating to a disabled screen silently does nothing; left/right paging skips over them.
+- `ScreenSwitcher.disabledScreens` = `{ARK, PORT}` at the audit (ARK reopened 2026-10-13 as the Elemental Converter). Navigating to a disabled screen silently does nothing; left/right paging skips over them.
 - The `STORE` enum value (0) is **not in the screens list at all** — the store content lives on the GameObject named `ArkScreen`. "ARK" and "Store" are the same (disabled) screen.
 - **Net player experience: Hangar ← Home → Profile**, with Arcade and Settings as modals on top.
 

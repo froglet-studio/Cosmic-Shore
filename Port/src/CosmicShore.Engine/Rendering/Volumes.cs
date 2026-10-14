@@ -186,7 +186,6 @@ namespace CosmicShore.Engine.Rendering
         public MinFloatParameter clamp = new(65472f, 0f);
         public ColorParameter tint = new(Color.white);
         public BoolParameter highQualityFiltering = new(false);
-        public ClampedIntParameter skipIterations = new(1, 0, 16);
         public VolumeParameter<BloomDownscaleMode> downscale = new(BloomDownscaleMode.Half);
         public ClampedIntParameter maxIterations = new(6, 2, 8);
         public TextureParameter dirtTexture = new(null);
@@ -285,6 +284,10 @@ namespace CosmicShore.Engine.Rendering
         public bool fsrOverrideSharpness { get => m_FsrOverrideSharpness; set => m_FsrOverrideSharpness = value; }
         public float fsrSharpness { get => m_FsrSharpness; set => m_FsrSharpness = value; }
         public bool useSRPBatcher { get => m_UseSRPBatcher; set => m_UseSRPBatcher = value; }
+
+        ScriptableRenderer _renderer;
+        /// <summary>The pipeline's default renderer (the one a Scene view camera uses).</summary>
+        public ScriptableRenderer scriptableRenderer => _renderer ??= new ScriptableRenderer();
     }
 
     /// <summary>URP per-camera data (UniversalAdditionalCameraData).</summary>
@@ -307,6 +310,10 @@ namespace CosmicShore.Engine.Rendering
         public bool stopNaN { get; set; }
         public bool dithering { get; set; }
         public List<Camera> cameraStack { get; } = new();
+
+        ScriptableRenderer _renderer;
+        /// <summary>This camera's renderer: script-injected passes are enqueued on it.</summary>
+        public ScriptableRenderer scriptableRenderer => _renderer ??= new ScriptableRenderer();
     }
 
     public static class CameraExtensions

@@ -262,7 +262,8 @@ public class EngineUiNavigationTests : IDisposable
 
         scroll.velocity = new Vector2(0f, 300f);                   // the GameEventFeed fling
         loop.Tick(1f / 60f);
-        Assert.Equal(5f, content.anchoredPosition.y, 2);           // 300 × 1/60
+        // Unity decays first, then moves: 300 × 0.135^(1/60) × 1/60.
+        Assert.Equal(300f * MathF.Pow(0.135f, 1f / 60f) / 60f, content.anchoredPosition.y, 3);
         Assert.True(scroll.velocity.y < 300f);                     // decaying
 
         loop.Run(600, 1f / 60f);                                   // long tail
@@ -275,11 +276,16 @@ public class EngineUiNavigationTests : IDisposable
     {
         var (scroll, content) = MakeScrollView();
 
-        Assert.Equal(0f, scroll.verticalNormalizedPosition);
+        // Unity's convention: vertical 1 is the top (where a top-anchored list rests), 0 the bottom.
+        Assert.Equal(1f, scroll.verticalNormalizedPosition);
+        Assert.Equal(0f, scroll.horizontalNormalizedPosition);
 
         scroll.verticalNormalizedPosition = 0.5f;                  // half the 400 slack
         Assert.Equal(200f, content.anchoredPosition.y, 2);
         Assert.Equal(0.5f, scroll.verticalNormalizedPosition, 3);
+
+        scroll.verticalNormalizedPosition = 0f;                    // the bottom: a chat log's "newest"
+        Assert.Equal(400f, content.anchoredPosition.y, 2);
 
         scroll.horizontalNormalizedPosition = 1f;                  // full 200 slack left
         Assert.Equal(-200f, content.anchoredPosition.x, 2);

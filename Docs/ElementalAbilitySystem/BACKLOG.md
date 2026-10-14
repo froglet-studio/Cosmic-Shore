@@ -154,7 +154,7 @@ Mechanics reference: `_Scripts/Controller/Vessel/R_VesselActions/DOLPHIN_ENERGY_
 10. **Serpent's skimmer is dead.** `_nearFieldSkimmer` resolves to a `VacuumSkimmer` whose
     GameObject is INACTIVE *and* which carries no `SkimmerImpactor`/container. Same class of
     fault the Dolphin had; deliberately left untouched by that branch (different vessel).
-    Confirm with `FrogletTools > Vessels > Audit Vessel Skimmers`.
+    Confirm with `FrogletTools > Vessels > Audits > Audit Vessel Skimmers`.
 11. **`ExplosionImpactor.OnBlastResolved` is a static C# event.** CLAUDE.md's anti-patterns
     forbid static events for cross-system communication. It is presentation-only, has one
     self-filtering listener (the Dolphin HUD's prism tally), and subscribes/unsubscribes
@@ -255,7 +255,7 @@ Mechanics reference: `_Scripts/Controller/Vessel/R_VesselActions/DOLPHIN_ENERGY_
     dangling local reference in the file, present since before this branch. Same
     never-pruned-override rot CLAUDE.md documents for `Cell`: Unity retains modifications
     whose `propertyPath` no longer resolves. Fix by running
-    **FrogletTools > Vessels > Wire Elemental Petal Bars** on the Dolphin and re-saving the
+    **FrogletTools > Vessels > Wiring > Wire Elemental Petal Bars** on the Dolphin and re-saving the
     prefab, then re-check with the ability-row audit. Pre-existing; NOT caused by the shard
     toggle removal (verified: the base revision has the same dangling reference).
 24. **`ActionExecutorRegistry._executors` on the Dolphin holds an empty slot** (`{fileID: 0}`
@@ -636,3 +636,72 @@ Rows only, opened by the §3.6 pass; nothing here was changed on that branch.
   stop. Unmeasured — what to measure: two MPPM clients, fire bombs past a rival at decreasing miss
   distances, and record the distance below which the peers disagree. If that band is wide enough to
   see, route the stop through the owner (an RPC carrying the stop position, as the press replay does).
+
+## From the Serpent Seed Wall branch (`claude/serpent-mass-seed-wall`, 2026-10-13)
+
+Rows only, opened by the §3.6 pass. Fixed on the branch rather than filed: an ended wall now
+releases shot-out bricks, a destroyed brick reopens its site, a wall whose vessel is gone stops
+sweeping instead of throwing, and Lockdown no longer allocates per landing.
+
+- **[report, needs MPPM] The stance's wall is built only on the owner and the server.**
+  `ToggleTranslationModeActionExecutor.Toggle` returns at `if (!hasAuthority) return;` (`:66`,
+  re-grep) before seeding, so on a third peer the press arrives and no wall forms. The cloak's wall
+  has no such gate. The guard predates the branch and keeps `n_IsTranslationRestricted`
+  single-writer, so it cannot simply move. Unmeasured: three MPPM players, one Serpent stops beside
+  a trail; record whether the third player sees bricks fly. If not, seed the stance's wall from
+  `stationaryModeChanged` on every peer, and keep the press for the flag alone.
+- **[walked past] `Prism.TimeCreated` is stamped in `Awake` only** (`Prism.cs`
+  `InitializePrismProperties`, called from `Awake`; `RegisterProjectileCreated` for projectiles).
+  Every "same life" check that compares it (`SerpentWallAssembler.IsAlive`,
+  `BuilderPrismWorld.cs:122`) therefore misses a pooled prism REUSED between two checks, and only
+  catches one still sitting in the pool (`activeInHierarchy`). Measure first: log `TimeCreated`
+  before and after a trail prism's return and re-spawn. Fixing it in `Initialize` changes every
+  caller of that check, and `Initialize` may also run on a live prism (`LayPanel` calls it after
+  spawn), so that is the question to answer before moving the stamp.
+- **[walked past] `SeedAssemblerActionExecutor.GetLatestBlock` reads `Trail2` by reflection**
+  (`"Trail2"`, `BindingFlags.NonPublic`) although `VesselPrismController.SecondaryTrail` (`:140`)
+  exposes it publicly. Replace with the property.
+- **[walked past] `SeedAssemblerActionExecutor.StopSeedCompletely` swallows every exception**
+  from `StopBonding` (`catch { /* ignore */ }`, `:145`). No current assembler throws there;
+  delete the catch so a future one fails loud.
+- **[debt created] `SeedWallActionSO.bondingDepth` serves only the legacy Wall / Gyroid
+  assemblers, and no asset uses them.** `git grep -l bfaa15f5819f4a50bf81a9f9fedc9b92 HEAD --
+  '*.asset' '*.prefab'` returns one asset, `SeedWallAction.asset`, with `assemblerType: 2`
+  (SerpentLattice). Once nothing else will ever author a Wall/Gyroid seed, delete the field, the
+  `AssemblerKind.Wall/Gyroid` branches of `EnsureAssembler`, and `Depth` plumbing for it.
+- **[report, needs profiling] A wall's sweep radius never shrinks.** The query radius is
+  `(_maxRing + 1) * pitch * 1.4143 + radius` and `_maxRing` only grows, and a cloak wall is active
+  until its super-shield breaks, which in normal play is never. Profile a long match with several
+  cloak walls (`ProfilerMarker` around `SerpentWallAssembler.Sweep`) before deciding whether an
+  old wall should stop sweeping, or `_maxRing` should be recomputed from the standing bricks.
+
+## From the Rhino plough + Breaker branch (`cece/magical-meitner-56obj5`, 2026-10-13)
+
+Rows only, opened by the §3.6 pass. The plough's own open questions (re-plough hop, pile-ups,
+fauna snap-back, Cleave scoring) are in `R_VesselActions/RHINO_PLOUGH.md` § Follow-ups.
+
+- **[walked past] 35 prefab overrides still target `SkimmerImpactor`'s three retired effect
+  arrays.** `SkimmerImpactor.cs` comments out `vesselSkimmerEffectsSO` / `skimmerPrismEffectsSO` /
+  `skimmerCrystalEffectsSO` (`:14-16`) in favour of `skimmerImpactorDataContainer`, but Unity never
+  prunes an unresolvable modification. Measured with
+  `grep -cE "propertyPath: '?(skimmerPrismEffectsSO|vesselSkimmerEffectsSO|skimmerCrystalEffectsSO|skimmerPrismStayEffectsSO)" Assets/_Prefabs/Spacevessels/*.prefab`:
+  Dolphin 4, Rhino 7, Squirrel 8, Stoat 8, Thresher 8. They are inert, but they read as live wiring
+  (the Rhino's name `SkimmerDamagePrismEffect` on its sword, which it does not run). Delete them
+  through the prefab-drift path (`PrefabDriftFixer`), never by hand-editing the YAML.
+- **[walked past] An orphaned `[FormerlySerializedAs("shipSkimmerEffectsSO")]`** now sits on
+  `skimmerImpactorDataContainer` (`SkimmerImpactor.cs:12`). It belonged to the array the comment-out
+  retired, so it maps an old ARRAY key onto an object reference. Confirm no asset still carries
+  `shipSkimmerEffectsSO:` (`git grep -l "shipSkimmerEffectsSO:" -- '*.prefab' '*.asset' '*.unity'`),
+  then delete the attribute.
+- **[walked past, gate defect] `check_enum_member_references.py` is red on bleeding-edge itself.**
+  At merge base `77fa04c2` it reports `'Placement' has no member 'BodyRadius'` (and `TriggerRadius`,
+  `LookTarget`, `Position`) in `ElementChargerToy.cs`, `PaintingGalleryToy.cs` and `Toy.cs`, resolving
+  `Placement` to the nested enum in the editor-only `CrystalFlipWaveBenchmarkWindow.cs` (`BehindCamera`,
+  `InView`) instead of the toys' own type. A name collision across assemblies, not a defect in the
+  toys. While it stays red, every branch's run of it is noise; scope the lookup by assembly, or by
+  the enclosing type, and add the collision to `--self-test`.
+- **[made visible, tool] `element_ability_table.py` prints no L5 for an element whose ABILITY slot
+  is open.** `print_row` returns at the open-slot check (`:935`, re-grep) before the upgrade lines, so
+  the Rhino's Space-5 Breaker is counted (`L5 gates wired 1/4`) but never shown. Print the
+  `UpgradeLabel` and its gate sites for an open row too, so the table answers "what does Space 5 do on
+  the Rhino" without reading the map asset.

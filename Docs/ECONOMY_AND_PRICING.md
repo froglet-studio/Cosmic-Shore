@@ -220,7 +220,8 @@ purchases as well as the base app.
 **The consequence for the planned design:** selling episode tokens through an external web checkout
 (`Application.OpenURL` → Stripe/Froglet page) inside a Steam build is **not a compliant path**. It
 routes around the Steam Wallet and around Valve's revenue share. The existing `IAPManager`
-web-checkout flow is fine for a non-Steam distribution, and not fine for this one.
+web-checkout flow is fine for a non-Steam DESKTOP distribution, and not fine for this one. iOS and
+Android builds refuse it outright, since those stores require their own billing.
 
 Compliant options on Steam:
 

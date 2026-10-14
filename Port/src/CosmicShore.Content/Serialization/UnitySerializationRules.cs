@@ -36,7 +36,7 @@ namespace CosmicShore.Content.Serialization
             if (f.IsStatic || f.IsInitOnly || f.IsLiteral) return false;
             if (f.IsDefined(typeof(NonSerializedAttribute), false)) return false;
             if (f.IsDefined(typeof(SerializeReference), false)) return true;
-            bool marked = f.IsDefined(typeof(SerializeFieldAttribute), false);
+            bool marked = f.IsDefined(typeof(SerializeField), false);
             if (IsBackingField(f)) return marked && IsSerializableType(f.FieldType); // [field: SerializeField] on an auto-property
             if (f.Name.Contains('<')) return false;          // other compiler-generated fields
             return (f.IsPublic || marked) && IsSerializableType(f.FieldType);

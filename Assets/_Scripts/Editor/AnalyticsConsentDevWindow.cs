@@ -22,7 +22,7 @@ namespace CosmicShore.Editor.Froglet
     /// </summary>
     public class AnalyticsConsentDevWindow : EditorWindow
     {
-        [MenuItem("FrogletTools/Services/Analytics Consent (Dev)")]
+        [MenuItem("FrogletTools/Services/Analytics Consent (Dev)", false, 200)]
         [FrogletTool(FrogletToolCategory.Services, Importance = 5,
             Description = "Inspect the analytics consent gate and grant it on this machine for " +
                           "testing. Until it is granted, every event is dropped before reaching " +

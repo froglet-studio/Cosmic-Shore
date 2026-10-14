@@ -136,7 +136,8 @@ the rename is what would have broken references.
 
 Verified before the boundary was drawn: no `internal` members, no `partial` types, no
 extension-method use crossing it; no Editor-only code in the folder; and the one other
-first-party asmdef (`CosmicShore.PlayFabTests`) uses no `Data` type.
+first-party asmdef at the time (`CosmicShore.PlayFabTests`, deleted since with PlayFab) used no
+`Data` type.
 
 **Known wart, not fixed here:** `RoundStats.cs` is a 900-line `NetworkBehaviour` filed under
 `Data/Enums/`. It is the only reason this assembly references Netcode at all. Relocating it is
@@ -194,7 +195,7 @@ is the coupling, and re-pointing it at an interface is a design change, not a mo
 
 ### The EDITOR assembly is a separate axis, and it was already measured
 
-`Docs/PERFORMANCE_OPTIMIZATION.md` (Task 10) carries a file-by-file check of splitting
+`Docs/archive/PERFORMANCE_LOG_2026.md` (Task 10) carries a file-by-file check of splitting
 `Assembly-CSharp-Editor`, concluded independently of this work: of 168 editor files, 79 are
 tests that structurally cannot move, and of the remaining 89 only **26 (~17% of editor LOC)**
 are free of gameplay-type references. It was closed as not worth shipping *at that time*.
@@ -222,7 +223,8 @@ Tests still live under `Editor/` folders and **that is still correct today** —
 What changes as the split proceeds: a test that touches **only extracted assemblies** can
 have a real test asmdef, referencing those assemblies plus the test-runner assemblies. That
 is a phase-2 win and should be taken per-suite as its dependencies come out, never as a
-project-wide flip. `CosmicShore.PlayFabTests` is already this shape and shows the pattern.
+project-wide flip. (`CosmicShore.PlayFabTests` was this shape until it was deleted with PlayFab;
+there is currently no suite in the tree that shows the pattern.)
 
 ---
 

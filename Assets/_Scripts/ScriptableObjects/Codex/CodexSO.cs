@@ -220,7 +220,7 @@ namespace CosmicShore.ScriptableObjects
     /// because the codex is opened from more than one place (a menu screen, a toy, a pause panel)
     /// and a per-scene reference is a per-scene thing to forget.</para>
     ///
-    /// <para>Authored through <b>FrogletTools &gt; Interface &gt; Codex</b>,
+    /// <para>Authored through <b>FrogletTools &gt; UI &gt; Codex</b>,
     /// which harvests entries from the project's own assets and merges them in under the
     /// field-ownership contract on <see cref="CodexEntry"/>. Hand-editing this asset in the
     /// inspector is supported and survives a re-scan; that is the point of the contract.</para>

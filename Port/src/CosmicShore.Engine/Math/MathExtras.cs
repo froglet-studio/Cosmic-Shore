@@ -121,11 +121,18 @@ namespace CosmicShore.Engine
     public static partial class Mathf
     {
         /// <summary>sRGB transfer → linear (exact piecewise curve).</summary>
+        /// <summary>sRGB → linear: the sRGB curve up to 1, and a 2.2 power above it (HDR colour values).</summary>
         public static float GammaToLinearSpace(float value)
-            => value <= 0.04045f ? value / 12.92f : MathF.Pow((value + 0.055f) / 1.055f, 2.4f);
+            => value <= 0.04045f ? value / 12.92f
+             : value < 1f ? MathF.Pow((value + 0.055f) / 1.055f, 2.4f)
+             : MathF.Pow(value, 2.2f);
 
+        /// <summary>Linear → sRGB: the inverse of <see cref="GammaToLinearSpace"/> (0 for non-positive input).</summary>
         public static float LinearToGammaSpace(float value)
-            => value <= 0.0031308f ? value * 12.92f : 1.055f * MathF.Pow(value, 1f / 2.4f) - 0.055f;
+            => value <= 0f ? 0f
+             : value <= 0.0031308f ? value * 12.92f
+             : value < 1f ? 1.055f * MathF.Pow(value, 1f / 2.4f) - 0.055f
+             : MathF.Pow(value, 1f / 2.2f);
 
         public static bool IsPowerOfTwo(int value) => value > 0 && (value & (value - 1)) == 0;
         public static int ClosestPowerOfTwo(int value)

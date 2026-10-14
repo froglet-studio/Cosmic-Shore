@@ -1,3 +1,4 @@
+using CosmicShore.Core;
 using CosmicShore.Gameplay;
 using NUnit.Framework;
 using UnityEngine;
@@ -37,6 +38,9 @@ namespace CosmicShore.Tests
             settings.followOffset = followOffset;
 
             var cam = _cameraGo.AddComponent<CustomCameraController>();
+            // Edit Mode never calls Awake on a non-[ExecuteAlways] component, and Awake is the only
+            // place the controller resolves its Camera - see the same line in RearViewLawTests.Rig.
+            EditModeLifecycle.InvokeAwake(cam);
             cam.ApplySettings(settings);
             cam.SetFollowTarget(_shipGo.transform);
             return (cam, _shipGo.transform, settings);

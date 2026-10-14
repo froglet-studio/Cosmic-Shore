@@ -362,7 +362,7 @@ namespace CosmicShore.Gameplay
             if (!_wanderCfg.PrismPrefab)
                 CSDebug.LogWarning("[WanderToy] No prism prefab wired for Without Ark - scenes will " +
                                    "carry only crystals and lifeforms. Author the settings asset (or run " +
-                                   "FrogletTools > Scene Setup > Setup Freestyle Toybox) to wire one.");
+                                   "FrogletTools > Scenes > Setup Freestyle Toybox) to wire one.");
 
             EnsureBelt();
             EnsureWanderRun();

@@ -87,12 +87,14 @@ namespace CosmicShore.UI
         [Header("Network Sync")]
         [SerializeField] private ArcadeConfigSyncManager arcadeConfigSyncManager;
 
-        // D-pad navigation over the panel's own rows: 0=intensity, 1=player count, 2=domain count.
+        // D-pad navigation over the panel's own rows: 0=intensity, 1=AI difficulty (only on a card
+        // that offers it - MoveDpadFocusRow steps over it elsewhere), 2=player count, 3=domain count.
         int _dpadFocusRow;
         const int DpadRowIntensity = 0;
-        const int DpadRowPlayerCount = 1;
-        const int DpadRowDomainCount = 2;
-        const int DpadRowCount = 3;
+        const int DpadRowAIDifficulty = 1;
+        const int DpadRowPlayerCount = 2;
+        const int DpadRowDomainCount = 3;
+        const int DpadRowCount = 4;
 
         // Hard cap on the number of players/domains the game supports
         const int MaxSupportedPlayers = 12;
@@ -246,6 +248,7 @@ namespace CosmicShore.UI
                 arcadeConfigSyncManager.OnConfigOpenedOnClient += HandleConfigOpenedOnClient;
                 arcadeConfigSyncManager.OnConfigClosedOnClient += HandleConfigClosedOnClient;
                 arcadeConfigSyncManager.OnIntensityChangedOnClient += HandleIntensityChangedOnClient;
+                arcadeConfigSyncManager.OnAIDifficultyChangedOnClient += HandleAIDifficultyChangedOnClient;
                 arcadeConfigSyncManager.OnRosterChangedOnClient += HandleRosterChangedOnClient;
                 arcadeConfigSyncManager.OnAllyVesselCycleRequested += HandleAllyVesselCycleRequested;
                 arcadeConfigSyncManager.OnAllPlayersReady += HandleAllPlayersReady;
@@ -285,6 +288,7 @@ namespace CosmicShore.UI
                 arcadeConfigSyncManager.OnConfigOpenedOnClient -= HandleConfigOpenedOnClient;
                 arcadeConfigSyncManager.OnConfigClosedOnClient -= HandleConfigClosedOnClient;
                 arcadeConfigSyncManager.OnIntensityChangedOnClient -= HandleIntensityChangedOnClient;
+                arcadeConfigSyncManager.OnAIDifficultyChangedOnClient -= HandleAIDifficultyChangedOnClient;
                 arcadeConfigSyncManager.OnRosterChangedOnClient -= HandleRosterChangedOnClient;
                 arcadeConfigSyncManager.OnAllyVesselCycleRequested -= HandleAllyVesselCycleRequested;
                 arcadeConfigSyncManager.OnAllPlayersReady -= HandleAllPlayersReady;
@@ -326,8 +330,18 @@ namespace CosmicShore.UI
                 HandleDpadHorizontal(1);
         }
 
-        void MoveDpadFocusRow(int direction) =>
-            _dpadFocusRow = Mathf.Clamp(_dpadFocusRow + direction, 0, DpadRowCount - 1);
+        void MoveDpadFocusRow(int direction)
+        {
+            int next = Mathf.Clamp(_dpadFocusRow + direction, 0, DpadRowCount - 1);
+
+            // The difficulty row exists only on a card that offers it. Elsewhere step straight over
+            // it, so a pad behaves on every other card exactly as it did before the row existed
+            // rather than parking focus on a row nobody can see.
+            if (next == DpadRowAIDifficulty && !OffersAIDifficulty)
+                next = Mathf.Clamp(next + (direction < 0 ? -1 : 1), 0, DpadRowCount - 1);
+
+            _dpadFocusRow = next;
+        }
 
         void HandleDpadHorizontal(int direction)
         {
@@ -335,6 +349,9 @@ namespace CosmicShore.UI
             {
                 case DpadRowIntensity:
                     CycleIntensity(direction);
+                    break;
+                case DpadRowAIDifficulty:
+                    CycleAIDifficulty(direction);
                     break;
                 case DpadRowPlayerCount:
                     if (pcStepper)
@@ -542,6 +559,7 @@ namespace CosmicShore.UI
                     MinDomainsForGame, ComputeMaxDomainCount());
             InitializeGameMetaView(selectedGame);
             ApplyWeeklyChallengePresentation();
+            ApplyAIDifficultyPresentation();
             InitializeConfigControls(selectedGame);
             InitializeDefaultShipFromAvailable();
             RefreshVesselPicker();
@@ -655,7 +673,8 @@ namespace CosmicShore.UI
 
             if (launchAuthority)
                 LaunchPreferenceStore.SaveHostTerms(_selectedGame.Mode, config.Intensity,
-                                                    config.DomainCount, config.AIDomains, domain, vessel);
+                                                    config.DomainCount, config.AIDomains,
+                                                    config.AIDifficulty, domain, vessel);
             else
                 LaunchPreferenceStore.SavePilotChoice(_selectedGame.Mode, domain, vessel);
         }
@@ -757,6 +776,7 @@ namespace CosmicShore.UI
 
             _activePanel.OnKickAIRequested += HandleKickAIRequested;
             _activePanel.OnAddAIModeChanged += HandleAddAIModeChanged;
+            _activePanel.OnAIDifficultyPicked += HandleAIDifficultySelected;
             _activePanel.OnLeaderboardRequested += OpenWeeklyLeaderboard;
 
             if (_activePanel is ArenaLaunchPanel arena)
@@ -794,6 +814,7 @@ namespace CosmicShore.UI
 
             _activePanel.OnKickAIRequested -= HandleKickAIRequested;
             _activePanel.OnAddAIModeChanged -= HandleAddAIModeChanged;
+            _activePanel.OnAIDifficultyPicked -= HandleAIDifficultySelected;
             _activePanel.OnLeaderboardRequested -= OpenWeeklyLeaderboard;
 
             if (_activePanel is ArenaLaunchPanel arena)
@@ -1441,6 +1462,13 @@ namespace CosmicShore.UI
                 : LaunchPreferenceRules.ResolveIntensity(
                     rememberedIntensity, game.MinIntensity, game.MaxIntensity, maxUnlocked);
 
+            // The AI difficulty it was last launched with, or the default (Medium) the first time
+            // and for a record saved before difficulty existed. The weekly challenge pins it to
+            // the default like the rest of its terms: every player in a week faces the same ask.
+            config.AIDifficulty = _weeklyChallengeLocked
+                ? AIDifficultyRules.Default
+                : AIDifficultyRules.Resolve(remembered.HasHostTerms ? remembered.AIDifficulty : default);
+
             // Humans only: the card opens with no AI of the host's choosing (by design call,
             // 2026-08-27) - the host seats every further bot by hand through Add AI. Seats the
             // card's MINIMUM still owes beyond the humans are PLACED domain-balanced by
@@ -1935,6 +1963,69 @@ namespace CosmicShore.UI
             if (_activePanel) _activePanel.HandleIntensityChanged(intensity);
 
             if (changed) ArmPreviewForGame(_selectedGame, ResolvePreviewDefinition(_selectedGame.Mode));
+        }
+
+        /// <summary>
+        /// Whether this card shows the AI difficulty row: the mode's AI reads the setting
+        /// (<see cref="AIDifficultyRules.IsOfferedFor"/>), the active panel has the row, and it is
+        /// not the host's weekly challenge - whose terms are pinned, difficulty included. A guest
+        /// never runs a weekly challenge (it only mirrors a lobby), so the lock is read on the
+        /// host's side only.
+        /// </summary>
+        bool OffersAIDifficulty =>
+            _selectedGame != null && _activePanel && _activePanel.HasAIDifficultyRow &&
+            AIDifficultyRules.IsOfferedFor(_selectedGame.Mode) &&
+            (IsClientMode || !_weeklyChallengeLocked);
+
+        /// <summary>
+        /// Show the AI difficulty row on a card that offers it, lit on the config's value, and take
+        /// it down on every other card - passed either way, because the panel is a shared scene
+        /// object and a row shown for Skim Race must not survive onto the next card.
+        /// </summary>
+        void ApplyAIDifficultyPresentation()
+        {
+            if (!_activePanel || config == null) return;
+
+            bool offered = OffersAIDifficulty;
+            _activePanel.SetAIDifficultyAvailable(offered);
+            if (offered) _activePanel.ShowAIDifficulty(config.AIDifficulty);
+        }
+
+        /// <summary>
+        /// The host pressed a button on the AI difficulty row. Host only, like intensity; the new
+        /// value is replicated so every guest's row lights the same button, and it is remembered
+        /// with the rest of the host terms when the card launches.
+        /// </summary>
+        void HandleAIDifficultySelected(AIDifficulty difficulty)
+        {
+            if (_selectedGame == null || config == null) return;
+            if (IsClientMode) return;           // Only the host decides how the AI flies
+            if (!OffersAIDifficulty) return;    // Includes the weekly challenge, whose terms are pinned
+
+            difficulty           = AIDifficultyRules.Resolve(difficulty);
+            bool changed         = config.AIDifficulty != difficulty;
+            config.AIDifficulty  = difficulty;
+
+            if (_activePanel) _activePanel.ShowAIDifficulty(difficulty);
+
+            if (changed && arcadeConfigSyncManager)
+                arcadeConfigSyncManager.NotifyAIDifficultyChanged((int)difficulty);
+        }
+
+        /// <summary>The host changed the AI difficulty while this guest's lobby is open: mirror it.</summary>
+        void HandleAIDifficultyChangedOnClient(int difficulty)
+        {
+            if (!IsClientMode || _selectedGame == null || config == null) return;
+
+            config.AIDifficulty = AIDifficultyRules.Resolve(difficulty);
+            if (_activePanel) _activePanel.ShowAIDifficulty(config.AIDifficulty);
+        }
+
+        /// <summary>The gamepad's left/right on the difficulty row: one step easier or harder.</summary>
+        void CycleAIDifficulty(int direction)
+        {
+            if (config == null || !OffersAIDifficulty) return;
+            HandleAIDifficultySelected(AIDifficultyRules.Step(config.AIDifficulty, direction));
         }
 
         void HandlePlayerCountSelected(int playerCount)
@@ -2623,7 +2714,8 @@ namespace CosmicShore.UI
                     config.PlayerCount,
                     _selectedGame.MaxSeats,
                     CurrentPartyHumanCount,
-                    config.DomainCount);
+                    config.DomainCount,
+                    (int)config.AIDifficulty);
             }
 
             // Local: spawn chips (after the server reset to Jade) and refresh the tiles the panel
@@ -2916,7 +3008,7 @@ namespace CosmicShore.UI
             if (!window)
             {
                 CSDebug.LogWarning("[ArcadeConfigModal] No WeeklyChallengeLeaderboardModal in the " +
-                                 "scene - wire one on this modal, or run FrogletTools > Interface " +
+                                 "scene - wire one on this modal, or run FrogletTools > UI " +
                                  "> Wire Weekly Challenge Leaderboard.");
                 return;
             }
@@ -2983,10 +3075,14 @@ namespace CosmicShore.UI
             // Domain count - controls how many domains AI can be assigned to
             gameData.RequestedDomainCount = config.DomainCount;
 
+            // How well the AI flies. A card that does not offer the setting launches on the
+            // default, so a value remembered on a card nobody could see never reaches a match.
+            gameData.RequestedAIDifficulty = OffersAIDifficulty ? config.AIDifficulty : AIDifficultyRules.Default;
+
             CSDebug.LogVerbose(CSLogChannel.NetworkFlow, $"[FLOW-2] [ArcadeConfigModal] SyncAllGameDataForLaunch - " +
                       $"Scene={selectedGame.SceneName}, Mode={selectedGame.Mode}, IsMultiplayer={selectedGame.IsMultiplayer}, " +
                       $"HumanCount={humanCount}, ConfigPlayerCount={config.PlayerCount}, " +
-                      $"AIBackfill={gameData.RequestedAIBackfillCount}, " +
+                      $"AIBackfill={gameData.RequestedAIBackfillCount}, AIDifficulty={gameData.RequestedAIDifficulty}, " +
                       $"Vessel={gameData.selectedVesselClass.Value}, Intensity={gameData.SelectedIntensity.Value}");
 
             // gameData.ActiveSession IS HCS.PartySession (single backing field
@@ -3081,13 +3177,12 @@ namespace CosmicShore.UI
             // A guest who is FLYING cannot be shown anything. Freestyle is not just "the appshell
             // is on another screen": ScreenSwitcher.HandleEnterFreestyle has closed every modal,
             // faded the screens CanvasGroup out and handed the pad to the vessel; NavigateTo
-            // refuses outright (so FollowHostToArcadeScreen below is a no-op) and ModalWindowIn
+            // refuses outright and ModalWindowIn
             // refuses to open at all while that input gate is engaged. So the host's open landed,
             // drew nothing, and the guest kept flying while the party sat in a lobby - and because
             // the open is an EDGE, nothing ever delivered it again.
             //
-            // Being pulled into the host's card is exactly the kind of host-driven move
-            // FollowHostToArcadeScreen already exists for, so leaving freestyle is part of it. The
+            // Being pulled into the host's card is a host-driven move, so leaving freestyle is part of it. The
             // re-entry is deferred to the END of the exit transition, never the start: the start
             // event runs another CloseAllModals, which would close whatever we opened.
             if (Switcher && Switcher.IsInFreestyle)
@@ -3146,11 +3241,16 @@ namespace CosmicShore.UI
             config.DomainCount  = Mathf.Clamp(domainCount, MinDomainsForGame, MaxSupportedDomains);
             config.Intensity    = intensity;
             config.PlayerCount  = playerCount;
+            // Not carried by the open event: read off the lobby itself, which is the value that
+            // raised it (the open runs from the replicated snapshot, never ahead of it).
+            config.AIDifficulty = AIDifficultyRules.Resolve(
+                arcadeConfigSyncManager ? arcadeConfigSyncManager.CurrentLobby.AIDifficulty : 0);
 
             SelectLaunchPanel(game);
 
             BuildAvailableShips(game);
             InitializeGameMetaView(game);
+            ApplyAIDifficultyPresentation();
             InitializeConfigControls(game);
             InitializeDefaultShipFromAvailable();
             RefreshVesselPicker();
@@ -3159,18 +3259,12 @@ namespace CosmicShore.UI
             ApplyHostOnlyInteractability();
             ResetReadyUpUI();
 
-            // Move the APP SHELL to the screen the card belongs to first, so the card the host
-            // opened is drawn on it rather than over whatever the guest was looking at - and so
-            // closing the modal leaves them there instead of somewhere unrelated. An Arena card
-            // sits over the Arena grid; anything else over the arcade screen.
-            // ScreenSwitcher.NavigateTo refuses ARK for a guest on purpose (no browsing the
-            // arcade in someone else's party); FollowHostToArcadeScreen is the host-driven
-            // entry point past that guard, and nothing on the guest's own UI calls it.
-            if (Switcher)
-            {
-                if (_activePanel is ArenaLaunchPanel) Switcher.FollowHostToArenaWindow();
-                else                                  Switcher.FollowHostToArcadeScreen();
-            }
+            // Move the APP SHELL to the window the card belongs to first, so the card the host
+            // opened is drawn on it rather than over whatever the guest was looking at. An Arena card
+            // sits over the Arena grid. (An arcade card used to pull the guest to the ARK screen, back
+            // when ARK was the arcade; ARK is the Elemental Converter now, so an arcade card stays
+            // over whatever the guest has open.)
+            if (Switcher && _activePanel is ArenaLaunchPanel) Switcher.FollowHostToArenaWindow();
 
             // A panel with a window of its own (Arena, Maelstrom) opened it in SelectLaunchPanel;
             // this window is only the surface for the panels that are its children - the same

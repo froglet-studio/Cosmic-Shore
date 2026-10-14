@@ -467,6 +467,16 @@ namespace CosmicShore.UI
                     // Redline's answer on the Grizzly's circuit: identical neutral rings, so
                     // the per-viewer arrow is the only thing that names YOUR next gate.
                     return CreateProviderComponent<RaceGateObjectiveProvider>("ObjectiveProvider_GrizzlyTime");
+                case GameModes.Slingshot:
+                    // Redline's answer on the Stoat's circuit: identical neutral rings, so the
+                    // per-viewer arrow is the only thing that names YOUR next gate.
+                    return CreateProviderComponent<RaceGateObjectiveProvider>("ObjectiveProvider_Slingshot");
+                case GameModes.Warpline:
+                    // The same answer on the Stoat's warp circuit: neutral rings, a per-viewer arrow.
+                    return CreateProviderComponent<RaceGateObjectiveProvider>("ObjectiveProvider_Warpline");
+                case GameModes.ThresherTime:
+                    // Grizzly Time's answer on the Thresher's circuit: neutral rings, a per-viewer arrow.
+                    return CreateProviderComponent<RaceGateObjectiveProvider>("ObjectiveProvider_ThresherTime");
                 case GameModes.Regatta:
                     // Same provider once more: a lapped circuit of neutral rings. The rails are
                     // painted per DOMAIN and say which lane is yours; they say nothing about which

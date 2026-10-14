@@ -197,14 +197,17 @@ namespace CosmicShore.Tests
 
             Vector3 pos = Vector3.zero;
             Vector3 vel = Vector3.forward * s.CruiseSpeed;
-            for (int i = 0; i < 120; i++)
+            float slowest = float.MaxValue;
+            for (int i = 0; i < 240; i++)
             {
                 var r = solver.Step(pos, vel, false, s.CruiseSpeed, Dt);
                 vel = r.ShipVelocity;
                 pos += vel * Dt;
+                if (solver.Mode == ThresherMode.Pivot) slowest = Mathf.Min(slowest, vel.magnitude);
             }
             Assert.AreEqual(ThresherMode.Pivot, solver.Mode);
-            Assert.Greater(vel.magnitude, s.MinShipFraction * s.CruiseSpeed * 0.9f, "Radial entry must still orbit.");
+            Assert.Greater(slowest, s.MinShipFraction * s.CruiseSpeed * 0.9f, "Radial entry must still orbit - and never stall while it swings on.");
+            Assert.IsFalse(solver.IsHookingOn, "the hook-on swing has settled");
             Assert.LessOrEqual((pos - solver.Pivot).magnitude, solver.Length + 1e-2f, "The ship stays on the chain.");
         }
 
@@ -287,15 +290,6 @@ namespace CosmicShore.Tests
         }
 
         [Test]
-        public void Wrecker_SmashCostsNothing_ButACrushStillDoes()
-        {
-            var s = Defaults();
-            Assert.AreEqual(1f, ThresherChainSolver.KeepAfterHit(s.SmashSpeed, s, wrecker: true), 1e-6f);
-            Assert.AreEqual(s.CrushKeep, ThresherChainSolver.KeepAfterHit(s.SmashSpeed * 0.5f, s, wrecker: true), 1e-6f,
-                "Mass 5 is about SMASHING; below smash speed the ball pays as usual.");
-        }
-
-        [Test]
         public void Bounce_ReflectsOnlyTheInwardComponent()
         {
             var s = Defaults();
@@ -318,19 +312,6 @@ namespace CosmicShore.Tests
             Assert.IsFalse(solver.Bounce(Vector3.zero, Vector3.forward),
                 "A contact that lasts several frames must bounce once, not every frame.");
             Assert.AreEqual(5f, solver.BallVelocity.z, 1e-6f);
-        }
-
-        [Test]
-        public void Slingshot_ReleasesTheBallAtLeastAtSmashSpeed()
-        {
-            var s = Defaults();
-            var p = new Pilot(s, s.CruiseSpeed);
-            p.Solver.Plant();
-            p.Fly(0.5f, 0f, payOut: false);
-            Assert.AreEqual(ThresherMode.Pivot, p.Solver.Mode);
-            Vector3 slow = p.Forward * (s.CruiseSpeed * 0.5f);   // yank alone would be far under smash
-            p.Solver.Release(slow, slingshot: true);
-            Assert.AreEqual(s.SmashSpeed, p.Solver.BallSpeed, 1e-3f);
         }
 
         [Test]
@@ -377,6 +358,41 @@ namespace CosmicShore.Tests
             Assert.AreEqual(2.2f * s.CruiseSpeed, s.LockMaxSpeed, 1e-4f);
         }
 
+        [Test]
+        public void HookOn_TurnsOntoTheOrbitAtTheCappedRate_WithoutStalling()
+        {
+            // The worst case the camera met: flying straight AWAY from a ball planted behind - the
+            // orbit's tangent is 90 deg off the heading. It used to be replaced in ONE frame.
+            var s = Defaults();
+            var solver = new ThresherChainSolver(s);
+            Vector3 pos = Vector3.zero, vel = Vector3.forward * s.CruiseSpeed;
+            solver.Reset(pos, Vector3.forward, vel);
+            solver.BallPosition = new Vector3(0f, 0f, -s.RestLength);
+            solver.BallVelocity = Vector3.zero;
+            solver.Plant();
+            float worstTurn = 0f, slowest = float.MaxValue;
+            bool wasPivot = false;
+            for (int i = 0; i < 240; i++)
+            {
+                Vector3 before = vel;
+                vel = solver.Step(pos, vel, false, s.CruiseSpeed, Dt).ShipVelocity;
+                pos += vel * Dt;
+                if (solver.Mode != ThresherMode.Pivot) continue;
+                if (wasPivot) worstTurn = Mathf.Max(worstTurn, AngleDeg(before, vel));
+                wasPivot = true;
+                slowest = Mathf.Min(slowest, vel.magnitude);
+            }
+            // A frame may turn by the hook-on cap PLUS the orbit's own circular step at the fastest
+            // spin it can reach (lockMax on the reeled-in chain) - nothing like the old one-frame snap.
+            float cap = s.HookTurnRate * Dt / Mathf.Deg2Rad;
+            float orbitStep = s.LockMaxSpeed / s.RestLength * Dt / Mathf.Deg2Rad;
+            Assert.LessOrEqual(worstTurn, cap + orbitStep + 0.5f,
+                $"no frame turns the ship past hookTurnRate x dt ({cap:F1} deg) + one orbit step ({orbitStep:F1}); it used to be ~91");
+            Assert.Greater(slowest, s.MinShipFraction * s.CruiseSpeed * 0.9f, "the swing-out never stalls the ship");
+            Assert.IsFalse(solver.IsHookingOn, "and it settles onto the chain's circle");
+            Assert.AreEqual(solver.Length, (pos - solver.Pivot).magnitude, 0.05f);
+        }
+
         // ------------------------------------------------------------ steering while planted
 
         /// <summary>Plant a ball abeam (orbit in the XZ plane, normal ±Y) and let the skid finish.</summary>
@@ -394,6 +410,13 @@ namespace CosmicShore.Tests
                 pos += vel * Dt;
             }
             Assert.AreEqual(ThresherMode.Pivot, solver.Mode, "setup: the skid must end in a pivot");
+            // ...and the hook-on swing must be over: these tests are about the steady orbit.
+            for (int i = 0; i < 240 && solver.IsHookingOn; i++)
+            {
+                vel = solver.Step(pos, vel, false, s.CruiseSpeed, Dt).ShipVelocity;
+                pos += vel * Dt;
+            }
+            Assert.IsFalse(solver.IsHookingOn, "setup: the hook-on settles within 4 s");
             return (solver, pos, vel);
         }
 
@@ -580,30 +603,317 @@ namespace CosmicShore.Tests
         }
 
         [Test]
-        public void Spectate_VantageFramesTheOrbitFromTheTiltedAxis()
+        public void Spectate_ShippedThresholdDetachesEveryCappedOrbit()
         {
-            Vector3 pivot = new Vector3(10f, -4f, 30f);
-            Vector3 normal = Vector3.up, outward = Vector3.right;
-            float radius = 40f, tilt = 25f;
-            Vector3 p = ThresherCameraFraming.SpectatePosition(pivot, normal, outward, radius, HalfV, tilt, Margin);
-            Vector3 off = p - pivot;
-            Assert.AreEqual(radius * Margin / Mathf.Tan(HalfV), off.magnitude, 1e-3f, "the whole orbit circle fits the narrower FOV");
-            float fromAxis = Mathf.Acos(Mathf.Clamp(Vector3.Dot(off.normalized, normal), -1f, 1f)) / Mathf.Deg2Rad;
-            Assert.AreEqual(tilt, fromAxis, 1e-2f);
-            Assert.Greater(Vector3.Dot(off, outward), 0f, "it leans toward the side the ship detached on");
+            // spectateSpinRate ships at 0.9 rad/s (ThresherConfigSO; halved from 1.8 on 2026-10-13
+            // because riding the spin still made spectators sick). This pins what that means.
+            const float threshold = 0.9f;
+            var s = Defaults();
+            Assert.Greater(ThresherCameraFraming.SpinRate(s.CruiseSpeed, s.RestLength), threshold,
+                "planting reeled in at cruise spectates at once");
+            Assert.Greater(ThresherCameraFraming.SpinRate(s.LockMaxSpeed, s.MaxLength), threshold,
+                "even a fully let-out orbit spectates once it reaches its cap (1.1 rad/s; it was ridden at 1.8)");
+            Assert.Less(ThresherCameraFraming.SpinRate(s.MinShipFraction * s.CruiseSpeed, s.MaxLength), threshold,
+                "a let-out orbit hooked on at the crawl floor is still ridden until it spins up");
+            Assert.AreEqual(0f, ThresherCameraFraming.SpinRate(50f, 0f), 0f);
+        }
+
+        // ---------------------------------------------------------------- the aim camera
+
+        [Test]
+        public void Aim_LaunchCameraFollowsOnTheTrajectory_SoTheAimIsTheScreenCentre()
+        {
+            Vector3 launch = new Vector3(5f, 2f, -7f);
+            Vector3 aim = new Vector3(1f, 0f, 1f).normalized, up = Vector3.up;
+            Vector3 eye = ThresherCameraFraming.LaunchCameraPosition(launch, aim, up, 55f, 0f);
+            Assert.AreEqual(55f, (eye - launch).magnitude, 1e-4f, "the hull's chase distance behind the launch point");
+            Assert.AreEqual(1f, Vector3.Dot((launch - eye).normalized, aim), 1e-6f,
+                "no height offset: the camera is ON the trajectory, so every point of it is the screen centre");
+            Vector3 raised = ThresherCameraFraming.LaunchCameraPosition(launch, aim, up, 55f, 20f);
+            Assert.AreEqual(20f, Mathf.Asin(Vector3.Dot((raised - launch).normalized, up)) / Mathf.Deg2Rad, 1e-3f,
+                "aimElevationDegrees still raises it, if a designer wants the old over-the-shoulder view back");
         }
 
         [Test]
-        public void Spectate_ShippedThresholdCatchesATightPlantButNotALongCruisingOne()
+        public void Sight_ZoomIsTheTriggerDepthPastTheDeadzone()
         {
-            // spectateSpinRate ships at 1.8 rad/s (ThresherConfigSO); this pins what that means.
-            const float threshold = 1.8f;
+            Assert.AreEqual(0f, ThresherCameraFraming.ZoomTarget(0.06f, 0.25f), 0f, "a light hold plants (5%) without zooming");
+            Assert.AreEqual(0f, ThresherCameraFraming.ZoomTarget(0.25f, 0.25f), 0f);
+            Assert.AreEqual(0.5f, ThresherCameraFraming.ZoomTarget(0.625f, 0.25f), 1e-5f);
+            Assert.AreEqual(1f, ThresherCameraFraming.ZoomTarget(1f, 0.25f), 1e-6f, "a full pull (or a binary key) is full zoom");
+            Assert.AreEqual(1f, ThresherCameraFraming.ZoomTarget(3f, 0.25f), 1e-6f);
+        }
+
+        [Test]
+        public void Launch_LeavesFromThePointWhoseTangentIsTheAim_NotWhereTheTriggerCameUp()
+        {
             var s = Defaults();
-            Assert.Greater(ThresherCameraFraming.SpinRate(s.CruiseSpeed, s.RestLength), threshold,
-                "planting reeled in at cruise is already a dizzying spin");
-            Assert.Less(ThresherCameraFraming.SpinRate(s.LockMaxSpeed, s.MaxLength), threshold,
-                "a fully let-out orbit at its cap is slow enough to ride");
-            Assert.AreEqual(0f, ThresherCameraFraming.SpinRate(50f, 0f), 0f);
+            var solver = new ThresherChainSolver(s);
+            Vector3 pos, vel;
+            PlantFrom(solver, s, out pos, out vel);
+            Vector3 aim = Vector3.right;   // in the orbit's (horizontal) plane
+            Assert.IsTrue(solver.LaunchRadial(pos, aim, out Vector3 radial));
+            Vector3 launchPoint = solver.Pivot + radial * solver.Length;
+
+            solver.ArmLaunch(aim);
+            Assert.IsTrue(solver.LaunchArmed);
+            int frames = 0;
+            ThresherStepResult r = default;
+            for (; frames < 2000; frames++)
+            {
+                r = solver.Step(pos, vel, false, s.CruiseSpeed, Dt);
+                if (r.Launched) break;
+                vel = r.ShipVelocity;
+                pos += vel * Dt;
+            }
+            Assert.IsTrue(r.Launched, "an armed launch always comes round within a lap");
+            Assert.AreEqual(ThresherMode.Free, solver.Mode);
+            Assert.IsFalse(solver.LaunchArmed);
+            Assert.AreEqual(1f, Vector3.Dot(r.ShipVelocity.normalized, aim), 1e-4f, "it leaves exactly along the aim");
+            float lapStep = solver.Length * 0.08f;   // well under a frame's travel at orbit speed
+            Assert.Less((pos - launchPoint).magnitude, Mathf.Max(lapStep, r.ShipVelocity.magnitude * Dt * 1.5f),
+                "from the chosen point on the circle, within a frame's travel");
+            Assert.Greater(Vector3.Dot(solver.BallVelocity, aim), 0f, "the ball is yanked after it along the aim");
+        }
+
+        [Test]
+        public void Launch_SteeredPlaneTurnsTheWholeSpin()
+        {
+            var s = Defaults();
+            var solver = new ThresherChainSolver(s);
+            PlantFrom(solver, s, out Vector3 pos, out Vector3 vel);
+            // Tilt the plane 30 degrees about x, a little each frame, as the aim camera would.
+            for (int f = 0; f < 120; f++)
+            {
+                float a = Mathf.Min(1f, f / 60f) * 30f * Mathf.Deg2Rad;
+                solver.SteerOrbitPlane(new Vector3(0f, Mathf.Cos(a), -Mathf.Sin(a)));
+                vel = solver.Step(pos, vel, false, s.CruiseSpeed, Dt).ShipVelocity;
+                pos += vel * Dt;
+            }
+            Vector3 target = new Vector3(0f, Mathf.Cos(30f * Mathf.Deg2Rad), -Mathf.Sin(30f * Mathf.Deg2Rad));
+            Assert.Less(Mathf.Abs(Vector3.Dot((pos - solver.Pivot).normalized, target)), 0.05f, "the ship circles in the steered plane");
+            Assert.AreEqual(ThresherMode.Pivot, solver.Mode, "steering the plane never drops the plant");
+            Assert.AreEqual(solver.Length, (pos - solver.Pivot).magnitude, 0.5f, "on the chain's length");
+        }
+
+        [Test]
+        public void Launch_EveryAimedLaunchTakesTheBoost_HoweverLongItWaited()
+        {
+            var s = Defaults();
+            const float boost = 4.8f;   // ThresherConfig.asset launchBoost
+            Vector3 aim = Vector3.right;
+
+            // ARMED just before the point: barely waits, takes the boost.
+            var a = new ThresherChainSolver(s);
+            PlantFrom(a, s, out Vector3 pa, out Vector3 va);
+            for (int f = 0; f < 2000 && a.SecondsToLaunchPoint(pa, aim) > 0.1f; f++)
+            {
+                va = a.Step(pa, va, false, s.CruiseSpeed, Dt).ShipVelocity;
+                pa += va * Dt;
+            }
+            float orbit = a.LockSpeed;
+            a.ArmLaunch(aim, boost);
+            ThresherStepResult ra = default;
+            for (int f = 0; f < 2000 && !ra.Launched; f++) { ra = a.Step(pa, va, false, s.CruiseSpeed, Dt); va = ra.ShipVelocity; pa += va * Dt; }
+            Assert.IsTrue(ra.Launched, "released just before the point: launches");
+            Assert.AreEqual(orbit * boost, ra.ShipVelocity.magnitude, orbit * 0.05f, "an aimed launch takes the boost");
+
+            // ARMED just AFTER the point: a whole lap to wait, and STILL the boost - timing is not rewarded.
+            var b = new ThresherChainSolver(s);
+            PlantFrom(b, s, out Vector3 pb, out Vector3 vb);
+            for (int f = 0; f < 2000 && b.SecondsToLaunchPoint(pb, aim) > 0.05f; f++)
+            { vb = b.Step(pb, vb, false, s.CruiseSpeed, Dt).ShipVelocity; pb += vb * Dt; }
+            for (int f = 0; f < 6; f++) { vb = b.Step(pb, vb, false, s.CruiseSpeed, Dt).ShipVelocity; pb += vb * Dt; }
+            b.ArmLaunch(aim, boost);
+            ThresherStepResult rb = default;
+            float lastOrbit = b.LockSpeed;
+            int waited = 0;
+            for (int f = 0; f < 4000 && !rb.Launched; f++, waited++)
+            {
+                lastOrbit = b.LockSpeed;
+                rb = b.Step(pb, vb, false, s.CruiseSpeed, Dt);
+                vb = rb.ShipVelocity;
+                pb += vb * Dt;
+            }
+            Assert.IsTrue(rb.Launched, "a late release still launches, a lap later");
+            Assert.Greater(waited * Dt, 0.5f, "negative control: this release really did wait (most of a lap)");
+            Assert.AreEqual(lastOrbit * boost, rb.ShipVelocity.magnitude, lastOrbit * 0.05f,
+                "a launch that waited a lap leaves with the SAME boost");
+
+            // Unboosted (boost 1, the default): leaves at the orbit's own speed - the boost is the only multiplier.
+            var c = new ThresherChainSolver(s);
+            PlantFrom(c, s, out Vector3 pc, out Vector3 vc);
+            c.ArmLaunch(aim);
+            ThresherStepResult rc = default;
+            float cOrbit = c.LockSpeed;
+            for (int f = 0; f < 4000 && !rc.Launched; f++) { cOrbit = c.LockSpeed; rc = c.Step(pc, vc, false, s.CruiseSpeed, Dt); vc = rc.ShipVelocity; pc += vc * Dt; }
+            Assert.IsTrue(rc.Launched);
+            Assert.AreEqual(cOrbit, rc.ShipVelocity.magnitude, cOrbit * 0.02f, "boost 1 leaves at the orbit's speed");
+        }
+
+        [Test]
+        public void Launch_SecondsToPointMatchesTheWaitAndThePointIsOnTheShipsOwnCircle()
+        {
+            var s = Defaults();
+            var solver = new ThresherChainSolver(s);
+            PlantFrom(solver, s, out Vector3 pos, out Vector3 vel);
+            Vector3 aim = Vector3.right;
+            float predicted = solver.SecondsToLaunchPoint(pos, aim);
+            Assert.Less(predicted, 2f * Mathf.PI * solver.Length / solver.LockSpeed + 1e-3f, "never more than a lap");
+            float shipRadius = (pos - solver.Pivot).magnitude;
+            Assert.AreEqual(shipRadius, (solver.LaunchPoint(pos, aim) - solver.Pivot).magnitude, 1e-3f,
+                "the launch point sits on the circle the ship is flying, not the chain's length");
+
+            // Pay the chain out: the chain grows past the ship's orbit, the point must not follow it.
+            for (int f = 0; f < 10; f++) { vel = solver.Step(pos, vel, true, s.CruiseSpeed, Dt).ShipVelocity; pos += vel * Dt; }
+            Assert.Greater(solver.Length, (pos - solver.Pivot).magnitude + 1f, "the chain runs ahead of the orbit while paying out");
+            Assert.AreEqual((pos - solver.Pivot).magnitude, (solver.LaunchPoint(pos, aim) - solver.Pivot).magnitude, 1e-3f);
+        }
+
+        [Test]
+        public void Magnet_PullsAFreeBallOnly()
+        {
+            var s = Defaults();
+            var solver = new ThresherChainSolver(s);
+            solver.Reset(Vector3.zero, Vector3.forward, Vector3.zero);
+            Vector3 target = solver.BallPosition + new Vector3(50f, 0f, 0f);
+            solver.AttractBall(target, 100f, 0.1f);
+            Assert.AreEqual(10f, solver.BallVelocity.x, 1e-4f, "a free ball gains acceleration x dt toward the target");
+
+            PlantFrom(solver, s, out _, out _);
+            solver.AttractBall(target, 100f, 0.1f);
+            Assert.AreEqual(0f, solver.BallVelocity.magnitude, 1e-6f, "a planted ball is a pivot: it does not move");
+        }
+
+        /// <summary>Tow straight, then plant and run the skid out, so the solver is orbiting a pivot
+        /// in the horizontal plane (the ship flies along +z with the ball behind it).</summary>
+        static void PlantFrom(ThresherChainSolver solver, ThresherChainSettings s, out Vector3 pos, out Vector3 vel)
+        {
+            pos = Vector3.zero;
+            vel = new Vector3(0.6f, 0f, 1f).normalized * s.CruiseSpeed;
+            solver.Reset(pos, Vector3.forward, vel);
+            solver.Plant();
+            for (int f = 0; f < 120 && solver.Mode != ThresherMode.Pivot; f++)
+            {
+                vel = solver.Step(pos, vel, false, s.CruiseSpeed, Dt).ShipVelocity;
+                pos += vel * Dt;
+            }
+            for (int f = 0; f < 240 && (f < 30 || solver.IsHookingOn); f++)
+            {
+                vel = solver.Step(pos, vel, false, s.CruiseSpeed, Dt).ShipVelocity;
+                pos += vel * Dt;
+            }
+        }
+
+        [Test]
+        public void Aim_StickTurnsTheAimInScreenTermsAndStaysOrthonormal()
+        {
+            Vector3 aim = Vector3.forward, up = Vector3.up;
+            float rate = Mathf.PI;   // 180 deg/s
+            for (int f = 0; f < 30; f++) ThresherCameraFraming.TurnAim(ref aim, ref up, 1f, 0f, rate, rate, Dt);
+            // Screen-right for the aim camera is up x aim; from forward/up that is +x.
+            Assert.AreEqual(1f, Vector3.Dot(aim, Vector3.right), 1e-3f, "half a second of full right stick at 180 deg/s is a quarter turn to the RIGHT");
+            Assert.AreEqual(1f, Vector3.Dot(up, Vector3.up), 1e-4f, "yaw never tilts the camera's above");
+
+            aim = Vector3.forward; up = Vector3.up;
+            for (int f = 0; f < 15; f++) ThresherCameraFraming.TurnAim(ref aim, ref up, 0f, 1f, rate, rate, Dt);
+            Assert.Less(Vector3.Dot(aim, Vector3.up), -0.5f, "positive stick Y pitches the aim DOWN (the hull's nose-down sign)");
+
+            for (int f = 0; f < 200; f++) ThresherCameraFraming.TurnAim(ref aim, ref up, 0.7f, -0.4f, rate, rate, Dt);
+            Assert.AreEqual(1f, aim.magnitude, 1e-4f);
+            Assert.AreEqual(1f, up.magnitude, 1e-4f);
+            Assert.AreEqual(0f, Vector3.Dot(aim, up), 1e-4f, "aim and its camera-above stay perpendicular through any stick history");
+        }
+
+        // ---------------------------------------------------------------- the windmill
+
+        [Test]
+        public void Windmill_CirclesTheShipHotAcrossItsFlightThenLetsGo()
+        {
+            var s = Defaults();
+            var solver = new ThresherChainSolver(s);
+            Vector3 pos = Vector3.zero, vel = Vector3.forward * s.CruiseSpeed;
+            solver.Reset(pos, Vector3.forward, vel);
+            const float seconds = 2f;
+            solver.StartWindmill(pos, seconds);
+            Assert.AreEqual(ThresherMode.Windmill, solver.Mode);
+
+            float minSpeed = float.MaxValue, maxRadiusError = 0f, maxAlong = 0f;
+            int frames = Mathf.RoundToInt(seconds / Dt) - 2;
+            for (int f = 0; f < frames; f++)
+            {
+                var r = solver.Step(pos, vel, false, s.CruiseSpeed, Dt);
+                Assert.AreEqual(0f, (r.ShipVelocity - vel).magnitude, 1e-5f, "the windmill never pulls on the ship");
+                pos += vel * Dt;
+                Vector3 off = solver.BallPosition - pos;
+                if (f > 10) // past the ease onto the radius
+                {
+                    maxRadiusError = Mathf.Max(maxRadiusError, Mathf.Abs(off.magnitude - solver.Length));
+                    maxAlong = Mathf.Max(maxAlong, Mathf.Abs(Vector3.Dot(off, vel.normalized)));
+                    minSpeed = Mathf.Min(minSpeed, solver.BallSpeed);
+                }
+                if (f == frames / 2) solver.Release(vel);   // a left-trigger release mid-windmill
+            }
+            Assert.AreEqual(ThresherMode.Windmill, solver.Mode, "a release does not cut the windmill short");
+            Assert.Less(maxRadiusError, 0.05f, "the ball rides the chain's length");
+            Assert.Less(maxAlong, 0.05f, "in the plane ACROSS the ship's flight - a windmill's sails");
+            Assert.IsTrue(ThresherChainSolver.IsSmash(minSpeed, s), $"red-hot all the way round (slowest {minSpeed:F1} vs smash {s.SmashSpeed:F1})");
+
+            for (int f = 0; f < 10; f++) { solver.Step(pos, vel, false, s.CruiseSpeed, Dt); pos += vel * Dt; }
+            Assert.AreEqual(ThresherMode.Free, solver.Mode, "the clock runs out and the ball is let go");
+            Assert.AreEqual(0f, solver.WindmillTimeLeft, 0f);
+        }
+
+        [Test]
+        public void Windmill_SecondCrystalTopsUpNeverStacks()
+        {
+            var s = Defaults();
+            var solver = new ThresherChainSolver(s);
+            solver.Reset(Vector3.zero, Vector3.forward, Vector3.forward * s.CruiseSpeed);
+            solver.StartWindmill(Vector3.zero, 3f);
+            solver.StartWindmill(Vector3.zero, 3f);
+            Assert.AreEqual(3f, solver.WindmillTimeLeft, 1e-6f);
+            solver.StartWindmill(Vector3.zero, 1f);
+            Assert.AreEqual(3f, solver.WindmillTimeLeft, 1e-6f, "a shorter top-up never shortens it");
+        }
+
+        // ---------------------------------------------------------------- the drawn chain
+
+        [Test]
+        public void ChainSmoothing_PassesThroughEveryLinkAndBendsBetweenThem()
+        {
+            var pts = new[] { Vector3.zero, new Vector3(10f, 0f, 0f), new Vector3(10f, 10f, 0f), new Vector3(20f, 10f, 0f) };
+            const int sub = 6;
+            int count = ThresherChainLinks.SmoothedCount(pts.Length, sub);
+            Assert.AreEqual(19, count);
+            var outPts = new Vector3[count];
+            Assert.AreEqual(count, ThresherChainLinks.Smooth(pts, sub, outPts));
+            for (int i = 0; i < pts.Length; i++)
+                Assert.AreEqual(0f, (outPts[i * sub] - pts[i]).magnitude, 1e-4f, $"link {i} is on the drawn curve");
+
+            // The corner at link 1 is rounded: the drawn point just before it is off the straight segment.
+            Vector3 before = outPts[sub - 1];
+            Assert.Greater(Mathf.Abs(before.y), 1e-3f, "the curve bends into the corner instead of kinking at it");
+
+            // A straight chain stays straight.
+            var line = new[] { Vector3.zero, new Vector3(0f, 0f, 5f), new Vector3(0f, 0f, 10f) };
+            var lineOut = new Vector3[ThresherChainLinks.SmoothedCount(3, sub)];
+            ThresherChainLinks.Smooth(line, sub, lineOut);
+            foreach (var p in lineOut) { Assert.AreEqual(0f, p.x, 1e-4f); Assert.AreEqual(0f, p.y, 1e-4f); }
+        }
+
+        [Test]
+        public void ChainLinks_LongChainGetsEnoughRelaxationPasses()
+        {
+            Assert.AreEqual(6, ThresherChainLinks.IterationsFor(4));
+            Assert.AreEqual(12, ThresherChainLinks.IterationsFor(24));
+            var links = new ThresherChainLinks(24);
+            Vector3 hull = Vector3.zero, ball = new Vector3(0f, 0f, -40f);
+            links.Reset(hull, ball);
+            for (int f = 0; f < 30; f++) links.Step(hull, ball, 40f, iterations: ThresherChainLinks.IterationsFor(24));
+            for (int i = 0; i < links.Count; i++)
+                Assert.AreEqual(0f, links.Points[i].x * links.Points[i].x + links.Points[i].y * links.Points[i].y, 1e-3f,
+                    "a taut 24-link chain is a straight line");
         }
     }
 }

@@ -541,5 +541,15 @@ namespace CosmicShore.Engine.UI
     /// <summary>Canvas (UGUI) TextMeshPro component.</summary>
     public class TextMeshProUGUI : TMP_Text
     {
+        /// <summary>
+        /// Canvas text is always orthographic: TMP's Awake forces it whatever the scene serialized.
+        /// A label saved with <c>m_isOrthographic: 0</c> (made by a script or an older TMP) would
+        /// otherwise take the world-space font scale (x 0.1) and draw at a tenth of its size.
+        /// </summary>
+        protected override void Awake()
+        {
+            base.Awake();
+            m_isOrthographic = true;
+        }
     }
 }

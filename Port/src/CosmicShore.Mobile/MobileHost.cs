@@ -22,8 +22,7 @@ namespace CosmicShore.Mobile
         {
             Console.WriteLine($"[mobile] {platform}: data {dataRoot}, saves {persistentPath}");
             Environment.SetEnvironmentVariable("COSMIC_SHORE_PROJECT", dataRoot);
-            // LAN party sessions live in the app's own sandbox (a phone has no shared folder).
-            Environment.SetEnvironmentVariable("COSMIC_SHORE_NET_DIR", System.IO.Path.Combine(persistentPath, "sessions"));
+            // Online through UGS (Lobby + Relay), as the desktop's START ONLINE: nothing on the local network.
             Application.platform = platform;
             Application.persistentDataPathOverride = persistentPath;
             SystemInfo.deviceType = DeviceType.Handheld;   // the game's InputController picks touch on a handheld
