@@ -41,8 +41,13 @@ namespace CosmicShore.Launcher.Tests
 
     public class UsageTests
     {
-        // A real rate_limit_event from `claude -p --output-format stream-json --verbose` (Claude Code 2.1).
-        const string Event = """{"status":"allowed","resetsAt":1791424200,"rateLimitType":"five_hour","overageStatus":"rejected","isUsingOverage":false,"unifiedWindows":{"five_hour":{"utilization":0.07,"resetsAt":1791424200},"seven_day":{"utilization":0.31,"resetsAt":1792011600}}}""";
+        // A real rate_limit_event from `claude -p --output-format stream-json --verbose` (Claude Code 2.1),
+        // with its reset times moved to just ahead of now: a fixed date passes, and from then on the
+        // restart below correctly reads the window as reset (0) and the test fails on the calendar.
+        static readonly long FiveHourReset = DateTimeOffset.UtcNow.AddHours(5).ToUnixTimeSeconds();
+        static readonly long SevenDayReset = DateTimeOffset.UtcNow.AddDays(7).ToUnixTimeSeconds();
+        static readonly string Event = """{"status":"allowed","resetsAt":FIVE,"rateLimitType":"five_hour","overageStatus":"rejected","isUsingOverage":false,"unifiedWindows":{"five_hour":{"utilization":0.07,"resetsAt":FIVE},"seven_day":{"utilization":0.31,"resetsAt":SEVEN}}}"""
+            .Replace("FIVE", FiveHourReset.ToString()).Replace("SEVEN", SevenDayReset.ToString());
 
         [Fact]
         public void Plan_windows_read_from_rate_limit_event_and_survive_a_restart()
@@ -55,7 +60,7 @@ namespace CosmicShore.Launcher.Tests
             Assert.Equal("Current session", w[0].Label);
             Assert.Equal("Current week (all models)", w[1].Label);
             Assert.Equal(0.07, w[0].Utilization, 3);
-            Assert.Equal(DateTimeOffset.FromUnixTimeSeconds(1791424200), w[0].ResetsAt);
+            Assert.Equal(DateTimeOffset.FromUnixTimeSeconds(FiveHourReset), w[0].ResetsAt);
             Assert.Equal("allowed", cli.UsageStatus);
 
             var again = new ClaudeCli(new LauncherSettings());
