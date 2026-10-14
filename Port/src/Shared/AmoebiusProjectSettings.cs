@@ -1,3 +1,4 @@
+#nullable enable
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -13,9 +14,11 @@ namespace Amoebius
     /// <c>ProjectSettings/</c>. Every field is an OVERRIDE: null (or an absent file) inherits what
     /// Unity authors, so a fresh branch behaves exactly like the Unity project.
     ///
-    /// Compiled into the build tool, the player and the launcher (linked source, no dependencies).
+    /// Linked source (no dependencies) in cs-build, Content (whose copy the player reads) and the
+    /// launcher. Internal, like every src/Shared type: public copies would collide (CS0433) in a
+    /// project that references two of them, as the engine tests reference Content and cs-build.
     /// </summary>
-    public sealed class AmoebiusProjectSettings
+    internal sealed class AmoebiusProjectSettings
     {
         public const string RelativePath = "Port/ProjectSettings/AmoebiusProject.json";
 

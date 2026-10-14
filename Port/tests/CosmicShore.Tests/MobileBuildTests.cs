@@ -239,17 +239,12 @@ public class PlayerDataBuilderTests : IDisposable
     {
         Asset("Assets/Scenes/Boot.unity", 1);
         Settings(("Assets/Scenes/Boot.unity", 1, true));
-        // The engine's settings file (AmoebiusProjectSettings is linked into two of the referenced
-        // assemblies, so the test writes and reads its JSON directly).
-        const string rel = "Port/ProjectSettings/AmoebiusProject.json";
-        var src = Path.Combine(_root, rel);
-        Directory.CreateDirectory(Path.GetDirectoryName(src)!);
-        File.WriteAllText(src, "{\"network\": {\"ugsEnvironment\": \"amoebius\"}}");
+        new Amoebius.AmoebiusProjectSettings { Network = { UgsEnvironment = "staging" } }.Save(_root);
         var outDir = Path.Combine(_root, "out");
         new PlayerDataBuilder(_root).Build(outDir);
 
         // The phone reads it where the desktop player does: Port/ProjectSettings under its data root.
-        Assert.Equal(File.ReadAllText(src), File.ReadAllText(Path.Combine(outDir, rel)));
+        Assert.Equal("staging", Amoebius.AmoebiusProjectSettings.Load(outDir).Network.UgsEnvironment);
     }
 
     [Fact]

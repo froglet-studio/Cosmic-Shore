@@ -179,6 +179,11 @@ An unattended run without a port: `--frames N --shot F:out.png --do "F:click X,Y
 - **GL stays behind the render boundary**: only `CosmicShore.Render` (and the player window's
   present/read-back) may use the GL binding. `RenderBoundaryTests` fails otherwise, so a Metal or
   WebGPU backend later replaces one project.
+- **`src/Shared/**` is linked source, so its types are `internal`.** Every project that links a
+  file compiles its own copy, and public copies collide (CS0433) in a project that references two
+  of them (the engine tests reference Content and cs-build). A project that needs another
+  assembly's copy gets `InternalsVisibleTo` from that one assembly, as the player does from
+  Content; granted by two that link the same file, it hits CS0433 again.
 - **Debug vs Release**: Debug is a Unity development build (diagnostics overlay, logs); Release
   is the customer build. The MCP server runs Debug.
 - `--verbose` opens every `CSDebug` log channel; `game_logs grep` filters them.
