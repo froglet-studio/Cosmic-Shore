@@ -718,6 +718,31 @@ slack), then `smashSpeed`, `explosionDiameter`, then `crack` / `reelSpinCap`. Ca
 
 ## Follow-ups
 
+### Refactor rows (2026-10-14 crosshair-trail + launch-boost ship pass, `cece/relaxed-dijkstra-g6ix3x` — rows only)
+
+- **The trail pen is a fifth last-writer of one flag (debt CREATED).** `HoldTrailPen` writes
+  `VesselPrismController.SetSpawnerPaused`, a single bool also written by the Cell's spawner pause, the
+  painting runner, Arkway, the mode preview and the Fold. Written on edges only, so it never fights per
+  frame, but a launch view that ENDS while the cell holds the pen up releases the cell's hold (the Fold has
+  the same exposure, and `Cell.cs`'s own note says so). The fix is the `SetTierHold` shape: a per-owner
+  hold set (or a counted pen), so no holder can release another's. Measure:
+  `grep -rn "SetSpawnerPaused(" Assets/_Scripts --include=*.cs | grep -v "public void" | wc -l` → 11 call
+  sites in 6 files.
+- **The Plant Lab's `armLaunch` still has the retired timing window (debt CREATED).** The shipped solver is
+  `ArmLaunch(aim, boost)`; `Docs/Studios/ThresherPlantLab.html` still carries
+  `armLaunch(aim, perfectWindowSeconds, perfectBoost)` and a `res.Perfect`. Parity cannot see it: every
+  scenario arms with the default boost 1 (`TraceDriver.cs` calls `ArmLaunch(aim)`), so the gate passes
+  whatever the boost does. Port the lab's signature and add an armed-with-boost scenario to
+  `scenarios.json`. Measure: `grep -n "armLaunch(aim, perfectWindowSeconds" Docs/Studios/ThresherPlantLab.html`
+  → line 374.
+- **`UpdateCamera`'s docstring describes the round-1 camera (prose describing a deleted system, walked
+  past).** `ThresherExecutor.cs` ~1050: "looks DOWN on the orbit … a line shows the path, and releasing LT
+  flies the ship off along it at once". Since round 4 the camera sits ON the trajectory, the line is a
+  crosshair, and a release ARMS a launch that waits for its point. Rewrite it against §5a. Measure:
+  `grep -n "a line shows the path" ThresherExecutor.cs` → 1 hit.
+- **Time L5 is open (INCOMPLETENESS, a report, not debt).** Recorded in §9; a design question, not a
+  cleanup — do not fill it from this row.
+
 ### Refactor rows (2026-10-13 own-vessel ship pass, `cece/dazzling-hypatia-nmdhle` — rows only)
 
 | # | Kind | Row | Measured |

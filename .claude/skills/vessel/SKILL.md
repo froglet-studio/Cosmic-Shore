@@ -748,6 +748,19 @@ applies to new abilities, new resources on the meter list, and anything that add
     dangling_refs) rather than copying them; their error text still says "Stoat.prefab" (a refactor row in
     THRESHER.md). (Thresher own-vessel pass, 2026-10-13.)
 
+48. **A LOCAL-only presentation state must never gate a SIMULATED consequence — move the predicate into
+    the per-peer step and make the presentation follow its edges.** The Thresher's launch view was decided
+    inside the camera code (`_spectating`, the local pilot only), and "turn the trail off while the
+    crosshair is up" read as one line against it. On the owner, yes; but trail prisms are laid on EVERY
+    peer, and a guest's copy of the hull has no camera state, so it would lay a ring of prisms the owner
+    never laid. That is a permanent prismscape desync, not a visual glitch. The fix (2026-10-14) moved the
+    engage/release rule into `StepChain` as `LaunchViewUp`, built only from state every peer simulates
+    (the chain's spin, the triggers as replicated edges), and the camera switches on ITS edges, so
+    crosshair-on == trail-off holds by construction. Before keying a consequence to a camera, HUD or
+    input-depth state, ask whether a remote copy of this hull can see that state; if not, it has to be
+    computed somewhere that one can. A shared last-writer flag (`SetSpawnerPaused`) is written on EDGES,
+    never per frame, or it fights its other writers every frame.
+
 ### 4.x Placing prisms from a vessel ability — shield sizing
 
 An ability that BUILDS with prisms (the Scarab's switch dais, the Urchin's track, a boost ring)
