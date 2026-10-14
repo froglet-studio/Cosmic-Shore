@@ -315,7 +315,14 @@ every reply, so they appear after the first one and are remembered.
   SESSION, PARITY CHECK (compares one system with the Unity game, in plan mode).
 - **Commands**: `/new /clear /rename TITLE /usage /plan /edit /auto /model NAME /effort LEVEL /test /smoke /session`.
   Up arrow recalls earlier messages.
-- **Voice** (Windows): the microphone dictates into the box; the speaker reads replies aloud.
+- **Voice** (Windows): the microphone dictates into the box; the speaker reads replies aloud. Dictation
+  uses Windows' modern recognizer (`Windows.Media.SpeechRecognition`, the same online model as
+  Win + H), so it hears "Unity", "prism" and "vessel". It needs **Settings > Privacy & security >
+  Speech > Online speech recognition** on (and the microphone allowed for desktop apps). If either
+  is off, the mic falls back to the old offline System.Speech engine. The mic's tooltip names the
+  engine that is listening and, when it falls back, the setting that would fix it. The modern
+  recognizer exists only in a launcher built on Windows (`net10.0-windows10.0.19041.0`; elsewhere
+  the project stays `net10.0`), in `Voice.cs`.
 
 Runs the official **Claude Code** CLI in the workspace, so it reads (and, if allowed, edits) the
 branch you are building. If it is not installed, the page offers INSTALL: it downloads Claude Code
