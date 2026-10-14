@@ -61,6 +61,10 @@ namespace CosmicShore.Gameplay
         // Slice clears it again whether or not the hit destroyed the prism.
         Vector3 _sliceCutPoint;
         Vector3 _sliceCutNormal;
+        // Set transiently by DamageByCollision around its Damage call, the same way: this death is
+        // prism movement's collision at LEVEL 1, so the factory draws a COLLISION BURST
+        // (Docs/PRISM_ANIMATION.md §4.11) instead of the explosion when it can afford one.
+        bool _collisionBurst;
         public bool IsSmallest;
         public bool IsLargest;
         
@@ -1534,6 +1538,7 @@ namespace CosmicShore.Gameplay
                 Kind = kind,
                 SlicePoint = _sliceCutPoint,
                 SliceNormal = _sliceCutNormal,
+                CollisionBurst = _collisionBurst,
                 PrismType = PrismType.Explosion
             });
         }
@@ -1633,6 +1638,28 @@ namespace CosmicShore.Gameplay
             {
                 _sliceCutPoint = Vector3.zero;
                 _sliceCutNormal = Vector3.zero;
+            }
+        }
+
+        /// <summary>
+        /// <see cref="Damage"/>, delivered by prism movement's COLLISION rule (<see cref="PrismMotion"/>,
+        /// Docs/PRISM_MOTION.md): devastating, because an ordinary shield is no answer to a collision.
+        /// With <paramref name="burst"/> (LEVEL 1 of the ladder) the death is drawn as a collision burst
+        /// on the ultra-high-res prism (Docs/PRISM_ANIMATION.md §4.11) when the budget allows, the
+        /// ordinary explosion otherwise. Everything the death MEANS is Damage's, unchanged — the
+        /// super-shield gate included, so super-shielded mass still deflects and survives.
+        /// </summary>
+        public void DamageByCollision(Vector3 impactVector, Domains domain, string playerName, bool burst,
+                                      float debrisSpeedLimit)
+        {
+            _collisionBurst = burst;
+            try
+            {
+                Damage(impactVector, domain, playerName, devastate: true, debrisSpeedLimit: debrisSpeedLimit);
+            }
+            finally
+            {
+                _collisionBurst = false;
             }
         }
 

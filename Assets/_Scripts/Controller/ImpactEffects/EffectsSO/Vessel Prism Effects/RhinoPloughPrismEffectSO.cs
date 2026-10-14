@@ -93,7 +93,8 @@ namespace CosmicShore.Gameplay
             {
                 // Prism motion's collision rule: it stops where it met the other prism, and both go.
                 Place(prism, contact);
-                PrismMotion.Annihilate(prism, struck, (end - prismPos) / slideSeconds, status.Domain, status.PlayerName);
+                PrismMotion.Annihilate(prism, struck, (end - prismPos) / slideSeconds, status.Domain, status.PlayerName,
+                    PrismMotion.SingleMoverLevel());
                 return;
             }
 

@@ -509,6 +509,16 @@ where the obvious orthogonal projection overhangs every face slanted to the plan
 (`verify_prism_slice.py`) adds a second proof tier this family lacks: glslang front-end-compiles
 every pass of a hand-written `.shader`, plain and DOTS-instanced, against a URP mock.
 
+**A second neighbour: the COLLISION BURST** (`Docs/PRISM_ANIMATION.md` §4.11) — prism movement's
+level-1 death, also a STAMP on the slice's carrier, drawn on an UNWELDED variant of the mesh
+(`HighPolyPrismMesh.GetUnwelded`) so it can tear along any pattern. Two findings that transfer: **when a
+visual must be indistinguishable from another at a squint, share its ENVELOPE in code, not by tuning**
+(the burst calls the explosion's own flight resolver and life, and its fade value is
+`frac(piece + grain·noise)` — uniform whatever the noise, so coverage is EXACTLY the explosion's linear
+opacity); and **prove a derivative against the measured float-noise floor, not a fixed tolerance** — its
+bend-normal check first "failed" at 10⁻⁴ tilt that did not converge, which was coordinate rounding, and
+only a cheap-normal negative control (10⁻¹, plateauing) showed the gate could still fire.
+
 **Built and NOT shipped — a retirement record.** One other member reached playtest and was removed
 with everything that carried it. It is written down because the family inherits its findings, not
 because any of it is in the tree: **no code, asset, graph node, config, tool or gate refers to it**,

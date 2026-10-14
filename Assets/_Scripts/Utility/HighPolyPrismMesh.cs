@@ -53,6 +53,12 @@ namespace CosmicShore.Utility
         /// <summary>TEXCOORD1 — the per-face centroid. Mirrors <see cref="OctahedronMeshGenerator.FaceCentroidUVChannel"/>.</summary>
         public const int FaceCentroidUVChannel = 1;
 
+        /// <summary>
+        /// TEXCOORD2 on the UNWELDED variant only (<see cref="GetUnwelded"/>): the triangle's centroid
+        /// in face coordinates (xy, [0, 1]) and a per-triangle random (z, [0, 1)).
+        /// </summary>
+        public const int TriangleUVChannel = 2;
+
         /// <summary>Lowest subdivision worth swapping for: below this the mesh is barely denser than the prism.</summary>
         public const int MinSubdivision = 2;
 
@@ -63,6 +69,7 @@ namespace CosmicShore.Utility
         public const int MaxSubdivision = 32;
 
         static readonly Dictionary<int, Mesh> s_cache = new();
+        static readonly Dictionary<int, Mesh> s_unweldedCache = new();
 
         /// <summary>
         /// The shared subdivided prism for <paramref name="subdivision"/> quads per face axis,
@@ -81,6 +88,28 @@ namespace CosmicShore.Utility
             return mesh;
         }
 
+        /// <summary>
+        /// The same solid at the same density with every triangle owning its own three vertices —
+        /// the mesh a COLLISION BURST draws (<c>PrismCollisionBurst.hlsl</c>, Docs/PRISM_ANIMATION.md
+        /// §4.11). Unwelded is what lets the surface tear along any pattern a burst kind chooses
+        /// (shard borders, petal diagonals, ribbon seams) with no triangle stretched across the tear.
+        /// At rest it renders exactly as <see cref="Get"/> does: same positions, same hard per-face
+        /// normals, same UV0, TEXCOORD1 and tangents. It adds <see cref="TriangleUVChannel"/>, so every
+        /// vertex of a triangle makes the same choice of piece. Shared and cached like
+        /// <see cref="Get"/>; never mutate it.
+        /// </summary>
+        public static Mesh GetUnwelded(int subdivision)
+        {
+            subdivision = Mathf.Clamp(subdivision, MinSubdivision, MaxSubdivision);
+            if (s_unweldedCache.TryGetValue(subdivision, out var mesh) && mesh != null)
+                return mesh;
+
+            mesh = new Mesh { name = $"Prism_HighPoly_Unwelded_{subdivision}" };
+            PopulateUnwelded(mesh, subdivision);
+            s_unweldedCache[subdivision] = mesh;
+            return mesh;
+        }
+
         /// <summary>True if <paramref name="mesh"/> is one this cache built (identity, not shape).</summary>
         public static bool IsHighPoly(Mesh mesh)
         {
@@ -88,11 +117,112 @@ namespace CosmicShore.Utility
             foreach (var kv in s_cache)
                 if (ReferenceEquals(kv.Value, mesh))
                     return true;
+            foreach (var kv in s_unweldedCache)
+                if (ReferenceEquals(kv.Value, mesh))
+                    return true;
             return false;
         }
 
         /// <summary>Editor tooling: drop the cache so the next ask rebuilds.</summary>
-        public static void InvalidateCache() => s_cache.Clear();
+        public static void InvalidateCache()
+        {
+            s_cache.Clear();
+            s_unweldedCache.Clear();
+        }
+
+        /// <summary>
+        /// Rewrite <paramref name="mesh"/> as the unwelded subdivided prism (<see cref="GetUnwelded"/>):
+        /// the face grid of <see cref="Populate"/>, triangle for triangle in the same order and winding,
+        /// with three vertices per triangle.
+        /// </summary>
+        public static void PopulateUnwelded(Mesh mesh, int subdivision)
+        {
+            if (mesh == null) return;
+            int n = Mathf.Clamp(subdivision, MinSubdivision, MaxSubdivision);
+
+            int triCount = n * n * 2 * 6;
+            int vertCount = triCount * 3;
+            var verts = new Vector3[vertCount];
+            var norms = new Vector3[vertCount];
+            var tangents = new Vector4[vertCount];
+            var uvs = new List<Vector2>(vertCount);
+            var cents = new List<Vector3>(vertCount);
+            var tris = new List<Vector3>(vertCount);
+            var indices = new int[vertCount];
+
+            var corner = new Vector2[4];
+            int vi = 0;
+            int tri = 0;
+            for (int f = 0; f < 6; f++)
+            {
+                Vector3 nrm = FaceNormals[f];
+                Vector3 u = FaceU[f];
+                Vector3 v = FaceV[f];
+                Vector3 centre = nrm * HalfExtent;
+
+                for (int j = 0; j < n; j++)
+                for (int i = 0; i < n; i++)
+                {
+                    corner[0] = new Vector2((float)i / n, (float)j / n);
+                    corner[1] = new Vector2((float)(i + 1) / n, (float)j / n);
+                    corner[2] = new Vector2((float)(i + 1) / n, (float)(j + 1) / n);
+                    corner[3] = new Vector2((float)i / n, (float)(j + 1) / n);
+
+                    // (00,10,11) and (00,11,01): the welded mesh's two triangles, same winding.
+                    for (int t = 0; t < 2; t++, tri++)
+                    {
+                        Vector2 a = corner[0];
+                        Vector2 b = t == 0 ? corner[1] : corner[2];
+                        Vector2 c = t == 0 ? corner[2] : corner[3];
+                        Vector2 centroid = (a + b + c) / 3f;
+                        float random = TriangleRandom(f, tri);
+                        var triangle = new Vector3(centroid.x, centroid.y, random);
+
+                        AddVertex(a);
+                        AddVertex(b);
+                        AddVertex(c);
+
+                        void AddVertex(Vector2 uv)
+                        {
+                            verts[vi] = centre + u * ((uv.x - 0.5f) * 2f * HalfExtent)
+                                               + v * ((uv.y - 0.5f) * 2f * HalfExtent);
+                            norms[vi] = nrm;
+                            tangents[vi] = new Vector4(u.x, u.y, u.z, -1f);
+                            uvs.Add(uv);
+                            cents.Add(centre);
+                            tris.Add(triangle);
+                            indices[vi] = vi;
+                            vi++;
+                        }
+                    }
+                }
+            }
+
+            mesh.Clear();
+            mesh.indexFormat = vertCount > 65000
+                ? UnityEngine.Rendering.IndexFormat.UInt32
+                : UnityEngine.Rendering.IndexFormat.UInt16;
+            mesh.vertices = verts;
+            mesh.normals = norms;
+            mesh.triangles = indices;
+            mesh.SetUVs(FaceUVChannel, uvs);
+            mesh.SetUVs(FaceCentroidUVChannel, cents);
+            mesh.SetUVs(TriangleUVChannel, tris);
+            mesh.SetTangents(tangents);
+            mesh.RecalculateBounds();
+        }
+
+        /// <summary>A stable per-triangle random in [0, 1) — a sine hash of the indices, never a time-seeded RNG.</summary>
+        static float TriangleRandom(int face, int triangle)
+        {
+            float x = Mathf.Sin(triangle * 12.9898f + face * 78.233f) * 43758.5453f;
+            return x - Mathf.Floor(x);
+        }
+
+        // The face layout both variants share: u × v == n is Unity's front-facing winding.
+        static readonly Vector3[] FaceNormals = { Vector3.right, Vector3.left, Vector3.up, Vector3.down, Vector3.forward, Vector3.back };
+        static readonly Vector3[] FaceU = { Vector3.up,      Vector3.forward, Vector3.forward, Vector3.right,   Vector3.right, Vector3.up };
+        static readonly Vector3[] FaceV = { Vector3.forward, Vector3.up,      Vector3.right,   Vector3.forward, Vector3.up,    Vector3.right };
 
         /// <summary>
         /// Rewrite <paramref name="mesh"/> as the subdivided unit prism. Called once per
@@ -107,9 +237,9 @@ namespace CosmicShore.Utility
             // Six faces, each with its own copy of the grid so normals stay HARD at the edges —
             // the prism reads as a solid with flat faces and must go on doing so at rest.
             // u × v == n is Unity's front-facing winding for the (00,10,11)/(00,11,01) pair below.
-            Vector3[] fn = { Vector3.right, Vector3.left, Vector3.up, Vector3.down, Vector3.forward, Vector3.back };
-            Vector3[] fu = { Vector3.up,    Vector3.forward, Vector3.forward, Vector3.right, Vector3.right, Vector3.up };
-            Vector3[] fv = { Vector3.forward, Vector3.up,    Vector3.right,   Vector3.forward, Vector3.up,  Vector3.right };
+            Vector3[] fn = FaceNormals;
+            Vector3[] fu = FaceU;
+            Vector3[] fv = FaceV;
 
             int perFace = (n + 1) * (n + 1);
             int vertCount = perFace * 6;

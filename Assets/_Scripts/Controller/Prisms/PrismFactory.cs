@@ -289,6 +289,19 @@ namespace CosmicShore.Gameplay
                 return null;
             }
 
+            // A COLLISION BURST (prism movement's level 1, Docs/PRISM_ANIMATION.md §4.11) is tried
+            // next, on the same terms: it leaves on the explosion's own flight with the explosion's
+            // palette, and any refusal — the budget full, the config off — falls through to the
+            // ordinary explosion, so a collision never loses its visual.
+            if (configured && data.CollisionBurst &&
+                TryGetTeamColors(data.ownDomain, data.Kind, out var burstBright, out var burstDark) &&
+                CosmicShore.Utility.PrismCollisionBurst.TryRequest(
+                    data.SpawnPosition, data.Rotation, data.Scale,
+                    burstBright, burstDark, data.Velocity, data.DebrisSpeedLimit, data.Kind))
+            {
+                return null;
+            }
+
             // Batched pure-entity debris is the ONLY death-explosion carrier (D4).
             // The pool prefab stays the authored CONFIG source (mesh / material /
             // layer / clamp / duration). The factory never Get()s explosionPool

@@ -8858,3 +8858,22 @@ in Unity, and nothing has been seen in play.
 4. **Scoring**: both kinds of collision count for the Rhino's / Stoat's pilot.
 5. **Cost**: `prof` with a Stoat pair at ~250 bodies (`BoxContacts` on the main thread, well under 1 ms)
    and at a full body budget (`ContactJob` a small fraction of `IntegrateJob`).
+
+### 🔴 The collision burst — level 1's high-res death (same branch, 2026-10-14) — NOT EDITOR-VERIFIED
+
+`Docs/PRISM_ANIMATION.md` §4.11, `Docs/PRISM_MOTION.md` §3a. A hand-written shader
+(`PrismCollisionBurst.shader`), a new material, a new Resources config (`PrismMotionConfig`) and an
+unwelded mesh variant were authored out of the editor. Proven offline: `verify_prism_collision_burst.py`
+(executes the shipped HLSL; four negative controls fire; glslang compiles every pass against a URP
+mock), both reference-compile configs. **Import first**: the shader must import without errors (a
+rejected shader draws magenta); `PrismCollisionBurstTests` must pass.
+1. **Up close**: plough a few prisms into a trail (level 1). Each pair comes apart as shards with a
+   white-hot crack flash, petals curling open, ribbons peeling, or a glitter of triangles. The first
+   frame must be the prism itself (no pop); nothing culled while still on screen.
+2. **The squint test**: beside an ordinary explosion at play distance, squinting, the burst must travel
+   the same way, be the same size, fade over the same 7.5 s in the same colours. A kind that reads as a
+   different effect at a glance: set its weight to 0 in `PrismMotionConfig` rather than retuning the
+   envelope.
+3. **The ladder**: a dense Stoat field — past 64 bodies collisions explode plainly, past 256 the contact
+   goes to spheres; back down at 192 and 48. Overflow of the 48-burst budget explodes plainly, never
+   vanishes.

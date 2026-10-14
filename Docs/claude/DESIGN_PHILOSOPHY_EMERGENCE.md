@@ -76,8 +76,10 @@ ones.
   destroys BOTH** — scored to the force behind the motion, devastating (an ordinary shield is no
   answer); (2) **"runs into" means the two prisms go from apart to touching over the step** — as
   their exact oriented BOXES when few prisms move (a plough throw, a sparse field), as the SPHERES of
-  their volumes when many do (a dense field past `boxContactMaxBodies`); the count changes the
-  precision, never the rule. Neighbours already touching when the step begins — a trail falling
+  their volumes when many do — a three-level LADDER by moving count (`PrismMotionConfig`: level 1 ≤ 64
+  boxes + a high-res COLLISION BURST that squints as the explosion; level 2 ≤ 256 boxes + the explosion;
+  level 3 spheres + the explosion; down at three quarters of each line). The count changes the
+  precision and the look, never the rule. Neighbours already touching when the step begins — a trail falling
   together — are at rest, not a collision; (3) **super-shielded mass is
   the one survivor**: it is indestructible, so it deflects and only the mover goes, and no force
   moves it in the first place; (4) **the move is final the frame it is made** — collider, spatial

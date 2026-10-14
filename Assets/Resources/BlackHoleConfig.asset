@@ -22,7 +22,6 @@ MonoBehaviour:
   releaseSpeed: 0.75
   maxSubsteps: 8
   maxBodies: 6000
-  boxContactMaxBodies: 256
   maxBlackHoles: 16
   admissionInterval: 0.1
   pullVessels: 1

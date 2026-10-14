@@ -58,10 +58,11 @@ namespace CosmicShore.Gameplay
     /// <para><b>A body that runs into a prism destroys both</b> — prism movement's collision rule
     /// (<see cref="PrismMotion"/>, Docs/PRISM_MOTION.md). After the integration every body's step is
     /// swept against the index (static prisms where they stand, other bodies along their own step)
-    /// for its earliest contact — as its exact oriented BOX on the main thread while the body count
-    /// is within <see cref="BlackHoleConfigSO.BoxContactMaxBodies"/>, as the sphere of its volume in a
-    /// fourth Burst job (<see cref="PrismMotion.ContactJob"/>) past it. The main thread annihilates
-    /// each pair, scored to the hole that moved the body. Bodies already
+    /// for its earliest contact, at the ladder level the body count puts it on
+    /// (<see cref="PrismMotion.NextLevel"/>, <c>PrismMotionConfigSO</c>): its exact oriented BOX on the
+    /// main thread at levels 1 and 2 — with a collision burst on the ultra-high-res prism at level 1 —
+    /// and the sphere of its volume in a fourth Burst job (<see cref="PrismMotion.ContactJob"/>) at level
+    /// 3. The main thread annihilates each pair, scored to the hole that moved the body. Bodies already
     /// touching when the step began (a trail's neighbours falling together) are at rest, not a
     /// collision. A collision outranks a verdict on the same frame.</para>
     ///
@@ -113,8 +114,8 @@ namespace CosmicShore.Gameplay
         static NativeParallelHashMap<int, int> _bodyOfSlot;
         static NativeList<PrismMotion.Contact> _contacts;
 
-        // True while the body count has the contact pass on spheres (see UseSphereContacts).
-        static bool _sphereContacts;
+        // The ladder level the body count has the contact pass on (PrismMotion.NextLevel).
+        static PrismMotionLevel _level = PrismMotionLevel.Showcase;
 
         static readonly List<Prism> _query = new();
         static readonly List<Candidate> _candidates = new();
@@ -239,7 +240,8 @@ namespace CosmicShore.Gameplay
             // spheres of their volumes, in Burst beside the write-back.
             var index = PrismSpatialIndex.Instance;
             bool indexLive = index != null && index.IsAvailable;
-            bool spheres = UseSphereContacts(n, config.BoxContactMaxBodies);
+            _level = NextLevel(n);
+            bool spheres = _level == PrismMotionLevel.Bulk;
             var contacts = ScheduleContacts(index, indexLive, n, integrate, spheres);
             writeBack.Complete();
             contacts.Complete();
@@ -248,23 +250,19 @@ namespace CosmicShore.Gameplay
             if (indexLive)
                 index.UpdatePositionsBatch(_indexIds.AsArray(), _points, n);
 
-            ApplyContacts(index, dt);
+            ApplyContacts(index, dt, _level);
             ApplyVerdicts(index);
         }
 
         // ---------------- Prism motion: collisions ----------------
 
-        /// <summary>
-        /// Boxes while the body count is at or under <paramref name="boxMax"/>, spheres above it, and back to
-        /// boxes only at three quarters of it — so a count hovering at the line does not flip the contact
-        /// shape every frame. 0 = always spheres.
-        /// </summary>
-        static bool UseSphereContacts(int n, int boxMax)
+        /// <summary>The ladder level for <paramref name="n"/> bodies, from the level the last frame was at.</summary>
+        static PrismMotionLevel NextLevel(int n)
         {
-            if (boxMax <= 0) return _sphereContacts = true;
-            if (_sphereContacts) { if (n <= boxMax * 3 / 4) _sphereContacts = false; }
-            else if (n > boxMax) _sphereContacts = true;
-            return _sphereContacts;
+            var cfg = PrismMotionConfigSO.Instance;
+            int showcaseMax = cfg != null ? cfg.ShowcaseMaxMovers : PrismMotionConfigSO.DefaultShowcaseMaxMovers;
+            int boxMax = cfg != null ? cfg.BoxMaxMovers : PrismMotionConfigSO.DefaultBoxMaxMovers;
+            return PrismMotion.NextLevel(_level, n, showcaseMax, boxMax);
         }
 
         /// <summary>
@@ -330,7 +328,7 @@ namespace CosmicShore.Gameplay
         /// earlier contact this frame already destroyed, is a no-op. The destroyed bodies leave
         /// the ledger in <see cref="ApplyVerdicts"/>.
         /// </summary>
-        static void ApplyContacts(PrismSpatialIndex index, float dt)
+        static void ApplyContacts(PrismSpatialIndex index, float dt, PrismMotionLevel level)
         {
             if (_contacts.Length == 0 || index == null) return;
             for (int c = 0; c < _contacts.Length; c++)
@@ -352,7 +350,8 @@ namespace CosmicShore.Gameplay
                 bool owned = hole != null && !string.IsNullOrEmpty(hole.CaptureOwnerName);
                 PrismMotion.Annihilate(mover, struck, velocity,
                     owned ? hole.CaptureDomain : Domains.Blue,
-                    owned ? hole.CaptureOwnerName : ConsumerName);
+                    owned ? hole.CaptureOwnerName : ConsumerName,
+                    level);
                 CollisionsTotal++;
             }
             _contacts.Clear();
@@ -763,7 +762,7 @@ namespace CosmicShore.Gameplay
             CapturedThisSecond = 0;
             ThroatTransitsTotal = 0;
             CollisionsTotal = 0;
-            _sphereContacts = false;
+            _level = PrismMotionLevel.Showcase;
             DisposeLedger();
             DisposeOutputs();
         }

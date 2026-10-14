@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using CosmicShore.Data;
+using CosmicShore.ScriptableObjects;
 using Unity.Burst;
 using Unity.Collections;
 using Unity.Jobs;
@@ -8,6 +9,22 @@ using UnityEngine;
 
 namespace CosmicShore.Gameplay
 {
+    /// <summary>
+    /// What a mover can afford to spend on prism movement's collision rule, by how many prisms it moves
+    /// (<see cref="PrismMotion.NextLevel"/>, <c>PrismMotionConfigSO</c>). The RULE is the same at every
+    /// level; only its precision and its look change. Explicit values: a level is a tuning vocabulary.
+    /// </summary>
+    public enum PrismMotionLevel
+    {
+        /// <summary>Few movers: exact boxes, and each destroyed prism comes apart as a collision burst on
+        /// the ultra-high-res prism while the burst budget allows.</summary>
+        Showcase = 1,
+        /// <summary>More movers: exact boxes, the ordinary explosion.</summary>
+        Plain = 2,
+        /// <summary>Many movers: the spheres of the prisms' volumes in Burst, the ordinary explosion.</summary>
+        Bulk = 3,
+    }
+
     /// <summary>
     /// PRISM MOVEMENT, the fundamental (Docs/claude/DESIGN_PHILOSOPHY_EMERGENCE.md § "Prism movement",
     /// design + verification <c>Docs/PRISM_MOTION.md</c>): the one set of expectations every force that
@@ -19,16 +36,19 @@ namespace CosmicShore.Gameplay
     /// mass is the one exception: it is indestructible, so it deflects (<see cref="Prism.AbsorbSuperShieldHit"/>)
     /// and only the mover is destroyed. An ordinary shield is no answer to a collision (devastating).</para>
     ///
-    /// <para><b>The contact shape: boxes when few prisms move, spheres when many.</b> The exact shape is the
-    /// prism's own oriented BOX, swept over the step by the separating-axis test
-    /// (<see cref="EntersContact(in Box, float3, in Box, float3, out float)"/>, <see cref="TryFirstContact"/>):
-    /// main-thread, per mover, so it is what a mover uses while it moves few prisms — the Rhino plough
-    /// always (one prism per ram, <see cref="TrySweep"/>), the gravity field while its body count is at or
-    /// under <c>BlackHoleConfigSO.BoxContactMaxBodies</c>. Past that the gravity field switches to the
-    /// SPHERE of each prism's volume (<see cref="ContactRadius"/>, capped at <see cref="MaxContactRadius"/>),
-    /// tested for thousands of bodies at once in the Burst <see cref="ContactJob"/>. Both answer the same
-    /// question — apart at the start, touching during the step — so only the precision changes with the
-    /// count, never the rule.</para>
+    /// <para><b>The ladder: what a mover can afford, by how many prisms it moves</b>
+    /// (<see cref="PrismMotionLevel"/>, <see cref="NextLevel"/>, <c>PrismMotionConfigSO</c>).
+    /// LEVEL 1, Showcase (≤ 64 movers): the prism's own oriented BOX, swept over the step by the
+    /// separating-axis test (<see cref="EntersContact(in Box, float3, in Box, float3, out float)"/>,
+    /// <see cref="TryFirstContact"/>), and each destroyed prism comes apart as a COLLISION BURST on the
+    /// ultra-high-res prism (<c>PrismCollisionBurst</c>, Docs/PRISM_ANIMATION.md §4.11) while its budget
+    /// allows. LEVEL 2, Plain (≤ 256): boxes, the ordinary explosion. LEVEL 3, Bulk (above): the SPHERE of
+    /// each prism's volume (<see cref="ContactRadius"/>, capped at <see cref="MaxContactRadius"/>), tested
+    /// for thousands of bodies at once in the Burst <see cref="ContactJob"/>, the ordinary explosion. Each
+    /// line is crossed back downward at three quarters of it. The Rhino plough moves one prism per ram,
+    /// so it is always level 1 (<see cref="TrySweep"/>); the gravity field climbs with its body count.
+    /// Every level answers the same question — apart at the start, touching during the step — so only the
+    /// precision and the look change with the count, never the rule.</para>
     ///
     /// <para><b>Who it is scored to.</b> The force that moved the prism: the collision is the act of the
     /// vessel or field behind the motion, never a passive decay, so it stays inside "Mass is conserved"
@@ -107,13 +127,46 @@ namespace CosmicShore.Gameplay
         /// Super-shielded mass deflects and survives (<see cref="Prism.Damage"/>'s own gate); the mover
         /// is destroyed regardless.
         /// </summary>
-        public static void Annihilate(Prism mover, Prism struck, Vector3 closingVelocity, Domains domain, string playerName)
+        public static void Annihilate(Prism mover, Prism struck, Vector3 closingVelocity, Domains domain, string playerName,
+            PrismMotionLevel level)
         {
             Vector3 impact = closingVelocity * DebrisRestitution;
+            bool burst = level == PrismMotionLevel.Showcase;
             if (struck && !struck.destroyed)
-                struck.Damage(impact, domain, playerName, devastate: true, debrisSpeedLimit: DebrisSpeedLimit);
+                struck.DamageByCollision(impact, domain, playerName, burst, DebrisSpeedLimit);
             if (mover && !mover.destroyed)
-                mover.Damage(-impact, domain, playerName, devastate: true, debrisSpeedLimit: DebrisSpeedLimit);
+                mover.DamageByCollision(-impact, domain, playerName, burst, DebrisSpeedLimit);
+        }
+
+        // ------------------------------------------------------------------ the ladder
+
+        /// <summary>
+        /// The level a mover moving <paramref name="movers"/> prisms is at, from the level it was at
+        /// (<paramref name="current"/>): up at a ceiling, back down only at three quarters of it, so a count
+        /// hovering at a line does not flip every frame. LEVEL 1 (Showcase) at or under
+        /// <paramref name="showcaseMax"/>, LEVEL 2 (Plain) at or under <paramref name="boxMax"/>, LEVEL 3
+        /// (Bulk) above. <c>PrismMotionConfigSO</c> holds both ceilings.
+        /// </summary>
+        public static PrismMotionLevel NextLevel(PrismMotionLevel current, int movers, int showcaseMax, int boxMax)
+        {
+            if (movers > boxMax) return PrismMotionLevel.Bulk;
+            var level = current;
+            if (level == PrismMotionLevel.Showcase && movers > showcaseMax) level = PrismMotionLevel.Plain;
+            if (level == PrismMotionLevel.Bulk && movers <= boxMax * 3 / 4) level = PrismMotionLevel.Plain;
+            if (level == PrismMotionLevel.Plain && movers <= showcaseMax * 3 / 4) level = PrismMotionLevel.Showcase;
+            return level;
+        }
+
+        /// <summary>
+        /// The level for a mover that moves ONE prism at a time (the Rhino plough): Showcase unless the
+        /// config has turned level 1 off.
+        /// </summary>
+        public static PrismMotionLevel SingleMoverLevel()
+        {
+            var cfg = PrismMotionConfigSO.Instance;
+            int showcaseMax = cfg != null ? cfg.ShowcaseMaxMovers : PrismMotionConfigSO.DefaultShowcaseMaxMovers;
+            int boxMax = cfg != null ? cfg.BoxMaxMovers : PrismMotionConfigSO.DefaultBoxMaxMovers;
+            return NextLevel(PrismMotionLevel.Showcase, 1, showcaseMax, boxMax);
         }
 
         // ------------------------------------------------------------------ boxes (few movers)

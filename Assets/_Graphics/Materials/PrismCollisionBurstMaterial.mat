@@ -1,0 +1,48 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!21 &2100000
+Material:
+  serializedVersion: 8
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: PrismCollisionBurstMaterial
+  m_Shader: {fileID: 4800000, guid: 8c81436bbcb64574939e277dfd351312, type: 3}
+  m_Parent: {fileID: 0}
+  m_ModifiedSerializedProperties: 0
+  m_ValidKeywords: []
+  m_InvalidKeywords: []
+  m_LightmapFlags: 4
+  m_EnableInstancingVariants: 1
+  m_DoubleSidedGI: 0
+  m_CustomRenderQueue: -1
+  stringTagMap: {}
+  disabledShaderPasses: []
+  m_LockedProperties: 
+  m_SavedProperties:
+    serializedVersion: 3
+    m_TexEnvs: []
+    m_Ints: []
+    m_Floats:
+    - _DissolveNoiseScale: 0.55
+    - _EmberGlow: 2
+    - _EmberWhite: 0.5
+    - _FresnelPower: 3
+    - _InnerGlow: 1
+    m_Colors:
+    - _BrightColor: {r: 1, g: 1, b: 1, a: 1}
+    - _BurstCurl: {r: 0.7, g: 0.8, b: 5, a: 3}
+    - _BurstFade: {r: 0.35, g: 0.05, b: 0.035, a: 0.6}
+    - _BurstShape: {r: 0.55, g: 0.22, b: 0.3, a: 0.35}
+    - _DarkColor: {r: 0.2, g: 0.2, b: 0.2, a: 1}
+    - _HotColor: {r: 2.2, g: 2.2, b: 2.4, a: 1}
+    - _SliceAxis: {r: 0, g: 0, b: 0, a: 0}
+    - _SliceCentre: {r: 0, g: 0, b: 0, a: 1}
+    - _SliceDrift: {r: 0, g: 0, b: 0, a: 0}
+    - _SlicePivot: {r: 0, g: 0, b: 0, a: 0}
+    - _SlicePlane: {r: 0, g: 0, b: 0, a: 0}
+    - _SliceTiming: {r: 0, g: 7.5, b: 0, a: 0}
+    - _Spread: {r: 0, g: 0, b: 0, a: 0}
+  m_BuildTextureStacks: []
+  m_AllowLocalizedText: 1
