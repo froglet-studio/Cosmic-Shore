@@ -11,6 +11,7 @@ they say so and link to the artifact. Plan: `../VESSEL_STUDIO_PLAN.md`.
 |---|---|
 | `index.html` | The hub: one bay per studio, where each platform stands, and the **studio agent** (Ask, and Development requests). |
 | `squirrel.html` | **Squirrel Studio, round 2: AI sim lab** (2026-10-09). The racer on its shipped numbers, on the game's four Skim Race courses (I1–I4, read from `MinigameSkimRace.unity`). AI Squirrels at Easy / Medium / Hard (Hard is a simplified stand-in for `SkimRaceDriver`; Easy and Medium add `SkimRaceHandicap`'s two mistakes), your own hull flown by you or by the AI, chase / follow / free camera, 1–4× speed, auto-restart, "Show AI thinking", and a headless scorecard (every difficulty × course, three seeds). Six play-style types over its four element levels. |
+| `brittlestar.html` | **Brittle Star Studio, round 1: design studio** (2026-10-14). The Falcon reintroduced as the design document "Class - Brittle Star" describes it: a one-stick hull (the never-merged branch's `BrittleStar.prefab` numbers, or `Falcon.prefab`'s, picked in Vessel Config), three modes (Speed / Creation / Destruction), the five-turret gun (spread or convergence aim), Ring Detonation with the crystal charge and overdrive, a procedural pentagon hull with the four element looks, and the design's two minigames, Demolition Derby and Fauna Frenzy, at four intensities. Players list (D25), AI Easy / Medium / Hard with four persona brains, three cameras, phone play, and a scorecard of levels × intensities with two controls (no ring, no modes) plus a style table. Everything found about the vessel: `../BRITTLE_STAR.md`. |
 | `studios.json` + `previews/` | **The catalog and the card** (`/vessel-studio` D35): every studio, and its hub card as text (`chip`, `summary`, `spec`, `cardActions`, `fleet`) and as a picture (`previews/<id>.png`, baked from the hub's live canvas by `.claude/skills/vessel-studio/bake_previews.cjs`). Amoebius's VESSEL STUDIO page and Unity's studio home draw the hub's cards from it; `parity_gate.py` fails when it and `index.html` differ. |
 | `studio-look.js` | **The Vessel Studio look** (`/vessel-studio` D19): the Stoat's sky, stars, lights and drifting prism field, the crystal and the screen marker, as one file every studio loads. Listed under `shared` in `studios.json`. |
 | `studio-ide.js` | **The Vessel Studio editor layout** (`/vessel-studio` D8): the game view in the middle, every panel a tab in the right or bottom dock, pop-out windows, splitters, no page scroll. Listed under `shared` in `studios.json`. |
@@ -89,6 +90,25 @@ Read it as relative. The studio pilot finishes every course at every level withi
 on I1–I3 (it is faster on I4, where the game's pilot is conservative). Its difficulty gaps are smaller
 than the game's (game: Medium +14–19%, Easy +23–54%). It plans only ~100 u ahead, so a late notice rarely
 costs it, and it recovers from a missed crystal in ~2 s where the game's pilot loses ~10. The page says so.
+
+### Brittle Star scorecard, measured 2026-10-14 (median of seeds 11/22/33, seconds)
+
+Demolition Derby (5 crystals) and Fauna Frenzy (target mass 500 / 650 / 800 / 950), one AI Brittle Star alone, Balanced:
+
+| Game | Course | Easy | Medium | Hard | Hard, no ring | Hard, no modes |
+|---|---|---|---|---|---|---|
+| Derby | I1 | 29.1 | 27.8 | 28.5 | 28.5 | 94.3 |
+| Derby | I2 | 30.0 | 29.0 | 29.3 | 29.3 | 95.4 |
+| Derby | I3 | 30.9 | 31.4 | 30.7 | 30.7 | 95.9 |
+| Derby | I4 | 55.3 | 59.2 | 54.4 | 54.4 | 107.9 |
+| Frenzy | I1 | 19.1 | 19.0 | 19.9 | 19.9 | 150.8 |
+| Frenzy | I2 | 25.1 | 25.0 | 25.9 | 25.9 | DNF |
+| Frenzy | I3 | 32.1 | 33.4 | 33.5 | 33.5 | DNF |
+| Frenzy | I4 | 85.0 | 66.2 | 63.8 | 63.8 | DNF |
+
+The modes earn their place (no modes is 3× slower); the ring does not yet (overdrive pays more than a detonation, so the
+Hard pilot never rings); the AI levels separate on I4 only, because Destruction clears a Derby wall faster than the hull
+reaches it. The findings and what would change them: `../BRITTLE_STAR.md` §5.1.
 
 ## In Amoebius
 

@@ -84,6 +84,35 @@
       "docs": "Docs/Studios/STOAT_PLAY_STYLES.md",
       "engineNote": "The game's own Stoat in the Slingshot race (the round-4 orbit sling the game ships today, not the studio's dipole sling).",
       "engineMode": "Slingshot"
+    },
+    {
+      "id": "brittlestar",
+      "name": "Brittle Star",
+      "file": "brittlestar.html",
+      "kind": "design studio - round 1",
+      "chip": "design studio · round 1",
+      "summary": "The Falcon's comeback: a cockpit inside a pentagon of five engines and five guns. Swap Speed, Creation and Destruction modes, fire one stream or all five, and launch the support ring itself as a bomb. Demolition Derby and Fauna Frenzy at four intensities, AI rivals at Easy, Medium or Hard flying four element personas, and a scorecard that races every level and style.",
+      "spec": [
+        {
+          "k": "Modes",
+          "v": "Speed · Creation · Destruction"
+        },
+        {
+          "k": "Ring",
+          "v": "launch, detonate, a crystal rebuilds it"
+        },
+        {
+          "k": "Flight",
+          "v": "one stick · 35 u/s, 110 in Speed"
+        },
+        {
+          "k": "Games",
+          "v": "Demolition Derby · Fauna Frenzy"
+        }
+      ],
+      "preview": "previews/brittlestar.png",
+      "accent": "#7fd7ff",
+      "docs": "Docs/Studios/BRITTLE_STAR.md"
     }
   ],
   "fleet": [
@@ -97,7 +126,6 @@
     "Scarab",
     "Butterfly",
     "Termite",
-    "Falcon",
     "Shrike"
   ],
   "fleetNote": "No studio yet. Ask the studio agent below to start one; each needs the vessel's own numbers read from its assets first.",

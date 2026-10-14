@@ -126,9 +126,12 @@ Full-history forensics (`git fetch --unshallow`, 7,248 commits) plus code verifi
   verified present on that branch and absent from HEAD. Its commit message describes this exact
   crash. Cherry-pick it (BACKLOG Phase 0.1).
 - Related trap: `4861801bd` (in HEAD) fixed client-side vessel injection but explicitly does not
-  cover pool replenishment. And `origin/claude/falcon-brittlestar-reintro-oyx1q1` carries a
-  `maxSyncPrewarm=8` pool cap **without** `f1f278ab4` — merging it as-is would make the NRE fire
-  after ~8 shots, i.e. strictly worse.
+  cover pool replenishment. **Correction (2026-10-14):** this row used to say
+  `origin/claude/falcon-brittlestar-reintro-oyx1q1` carries a `maxSyncPrewarm=8` pool cap; no such
+  field exists on that branch, on `Bleeding-Edge-Reintroduce-Falcon` or on HEAD (`git grep
+  maxSyncPrewarm`). The branch prewarms `max(defaultCapacity, bufferSizeTarget)` = 100 and lacks the
+  injection fix, which HEAD now has (`ProjectilePoolManager.OnInstanceCreated`). The Brittle Star's
+  record: `Docs/Studios/BRITTLE_STAR.md`.
 
 ### #2 — Skyburst missiles become permanent duds via pooled collider state (CONFIRMED)
 

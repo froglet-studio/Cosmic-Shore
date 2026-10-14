@@ -24,7 +24,8 @@ ability (`/arenagame` §1).
 | Sparrow | 1: `HoldBoostAIPolicySO` | **Breakwater** (gate race), Dog Fight, Salvo, Wildlife Liberation | Broadside, Brood Rush, Maelstrom, Regatta, Scurry | — |
 | Rhino | none (autopilot ramps by the straight-stick gesture) | **Headlong** (gate race), Cleave | Astro League, Broadside, Brood Rush, Regatta | — |
 | Serpent | 1: `PelletBoostAIPolicySO` | none | Brood Rush, Regatta | — |
-| Termite, Falcon, Shrike | none (Falcon / Shrike classes are `_SO_Assets/_TEMP`) | none | none | Not a candidate |
+| Termite, Shrike | none (the Shrike class is `_SO_Assets/_TEMP`) | none | none | Not a candidate |
+| Falcon (the **Brittle Star**) | none in the game | none | none | **Design studio built** (2026-10-14, `brittlestar.html`, `../BRITTLE_STAR.md`): the design document's kit and minigames, ahead of the game |
 
 Every other `AutoPilotEnabled` read in the vessel code (Rhino sword FX, shield swipe, gun spray,
 zoom-out, drift trail, Pip) only skips human-only feedback while the autopilot flies; none of them is
@@ -64,7 +65,8 @@ same shape, built by hand).
 | 8 | **Scarab** | Scarab Scramble | Not a race: needs ball physics, goals and rings, a new studio shape. The juke planner is pure and tested, which helps | Goals per minute per difficulty; jukes that clear a defender; dash timing |
 | 9 | **Serpent** | Regatta (arena) | No home mode. Wait for the Regatta arena studio (every hull on one circuit), which this list builds toward | Lap time vs the fleet |
 
-Not planned: Termite, Falcon, Shrike (no card, no own AI). Revisit if a card arrives.
+Not planned: Termite, Shrike (no card, no own AI). Revisit if a card arrives. The Falcon got a design studio as the
+Brittle Star (2026-10-14) because its design document exists; the game side waits on that studio's decisions.
 
 **After the vessels: a Regatta arena studio.** Every hull above on the one shared circuit, using each
 studio's hull model. It is the fleet-wide balance question `regatta_balance.py` answers on paper today.
