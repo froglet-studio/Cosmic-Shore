@@ -65,11 +65,22 @@ namespace CosmicShore.Launcher
                     () => StudioRoot,
                     Ask: (prompt, onText, ct) => StudioAsk.Run(_chats.Cli.Cli ?? _chats.Cli.Detect(), prompt, StudioRoot ?? _ws.Dir,
                         _s.ClaudeModel, _s.AnthropicApiKey, onText, ct),
-                    Log: line => _jobs.Log.Add(LogKind.Info, line))).Start();
+                    Log: line => _jobs.Log.Add(LogKind.Info, line),
+                    // the hub's "+ New studio" (D36): the request becomes an AGENT chat here, on the UI thread
+                    Agent: (title, prompt) =>
+                    {
+                        _ui.Enqueue(() =>
+                        {
+                            _chats.New(title: title).Title = title;   // a reused blank chat takes the title too
+                            _page = Page.Chat;
+                            SendChat(prompt, ChatModeNow);
+                        });
+                        return true;
+                    })).Start();
         }
 
         /// <summary>Builds the studio from the checkout (if it changed) and opens <paramref name="file"/>: its own window, or the default browser.</summary>
-        void OpenServedStudio(string file, bool window)
+        void OpenServedStudio(string file, bool window, string? fragment = null)
         {
             if (_studioBusy) return;
             _studioBusy = true;
@@ -80,7 +91,7 @@ namespace CosmicShore.Launcher
                 {
                     var srv = StudioSrv();
                     var info = srv.EnsureBuilt();
-                    var url = srv.PageUrl(file);
+                    var url = srv.PageUrl(file, fragment);
                     if (window) OpenStudioWindow(url); else OpenUrl(url);
                     _studioMsg = $"Serving {info.Branch} @ {info.PathSha[..7]} \"{info.Subject}\" on 127.0.0.1:{srv.Port} (Sync, Ask and Decisions run in Amoebius).";
                 }
@@ -150,9 +161,11 @@ namespace CosmicShore.Launcher
 
             if (_studioOpenAtStart != null && cat.Error == null && root != null)
             {
-                var want = cat.Find(_studioOpenAtStart);
+                // "<id|file>[#word]": Unity's + card asks for index.html#new-studio (the + panel opens on load)
+                var parts = _studioOpenAtStart.Split('#', 2);
+                var want = cat.Find(parts[0]);
                 _studioOpenAtStart = null;
-                OpenServedStudio(want.File, window: true);
+                OpenServedStudio(want.File, window: true, fragment: parts.Length > 1 ? parts[1] : null);
             }
 
             // the hub's lede and the hub's own actions (the studio as a whole)

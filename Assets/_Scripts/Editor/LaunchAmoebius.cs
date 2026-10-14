@@ -90,15 +90,18 @@ namespace CosmicShore.Editor
         /// process alive) opens it at once in an app window; otherwise Amoebius starts with <c>--page studios:&lt;file&gt;</c>
         /// and opens it itself. The home's cards and OPEN THE HUB use it.
         /// </summary>
-        internal static void OpenStudio(string file)
+        /// <param name="fragment">A page-hash word after <c>#amoebius</c> (letters, digits, dashes): <c>new-studio</c>
+        /// opens the hub's "+ New studio" panel on load (/vessel-studio D36).</param>
+        internal static void OpenStudio(string file, string fragment = null)
         {
+            if (fragment != null && !System.Text.RegularExpressions.Regex.IsMatch(fragment, "^[A-Za-z0-9-]{1,40}$")) fragment = null;
             string served = RunningStudioServer();
             if (served != null)
             {
-                OpenStudioWindow(served + Uri.EscapeDataString(file) + "#amoebius");
+                OpenStudioWindow(served + Uri.EscapeDataString(file) + "#amoebius" + (fragment != null ? "&" + fragment : ""));
                 return;
             }
-            _openPage = "studios:" + file;
+            _openPage = "studios:" + file + (fragment != null ? "#" + fragment : "");
             Launch();
         }
 

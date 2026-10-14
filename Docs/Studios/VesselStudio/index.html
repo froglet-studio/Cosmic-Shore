@@ -49,7 +49,14 @@
   .spec b { color: var(--fg); font-weight: 500; }
 
   .fleet { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; }
-  .fleet span { font: 500 12px/1 var(--mono); padding: 6px 9px; border: 1px dashed var(--line); border-radius: 6px; color: var(--off); }
+  .fleet span, .fleet button { font: 500 12px/1 var(--mono); padding: 6px 9px; border: 1px dashed var(--line); border-radius: 6px; color: var(--off); background: transparent; }
+  .fleet button:hover { color: var(--fg); border-color: var(--accent); }
+  /* the "+ New studio" card (D36): a bay of its own, dashed, the + where the preview would be */
+  .bay.add { border-style: dashed; background: transparent; font: inherit; color: inherit; text-align: left; cursor: pointer; }
+  .bay.add > div { align-content: start; }
+  .bay.add .plus { height: 150px; border-radius: 8px; display: grid; place-items: center; background: #05060c;
+    font: 300 96px/1 var(--display); color: var(--accent); }
+  .bay.add:hover .plus { color: var(--fg); }
 
   .platforms { width: 100%; border-collapse: collapse; font-size: 14px; }
   .tablewrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 10px; }
@@ -111,11 +118,19 @@
         </div>
         <span class="open">Open studio &rarr;</span>
       </a>
+      <button type="button" class="bay add" id="newStudioCard" aria-haspopup="dialog">
+        <span class="plus" aria-hidden="true">+</span>
+        <div style="display:grid;gap:8px">
+          <div class="name"><b>New studio</b></div>
+          <p>Create a vessel or work on one of the fleet: its AI, how it flies, a mini-game of the game or a new one. Name the new ones, say what you want (by voice too), and Claude Code builds it on a new branch.</p>
+        </div>
+        <span class="open">Start &rarr;</span>
+      </button>
     </div>
     <div class="fleet" aria-label="Vessels without a studio yet">
       <span>Manta</span><span>Dolphin</span><span>Rhino</span><span>Serpent</span><span>Sparrow</span><span>Urchin</span><span>Grizzly</span><span>Scarab</span><span>Butterfly</span><span>Termite</span><span>Falcon</span><span>Shrike</span>
     </div>
-    <p class="lede hint" style="margin-top:8px">No studio yet. Ask the studio agent below to start one; each needs the vessel's own numbers read from its assets first.</p>
+    <p class="lede hint" style="margin-top:8px">No studio yet. Press a vessel, or <b>+ New studio</b>, to start one; each needs the vessel's own numbers read from its assets first.</p>
   </section>
 
   <section aria-labelledby="h-plat">
@@ -166,11 +181,22 @@
 </div>
 
 <script src="studio-domains.js"></script>
+<script src="studio-game.js"></script>   <!-- the game's vessels and mini-games (generated, game_catalog.py) -->
+<script src="studio-new.js"></script>    <!-- the + New studio panel (D36) -->
 <script>
   const DOM = (k) => VesselStudioDomains.get(k).color;   // the game's domain colours
 (function () {
   'use strict';
   const $ = (id) => document.getElementById(id);
+
+  // ---- + New studio (D36): the card opens the panel; a "no studio yet" chip opens it on that vessel ----
+  $('newStudioCard').addEventListener('click', () => VesselStudioNew.open());
+  document.querySelectorAll('.fleet span').forEach((sp) => {
+    const b = document.createElement('button'); b.type = 'button'; b.textContent = sp.textContent;
+    b.title = 'Start a studio for the ' + sp.textContent;
+    b.addEventListener('click', () => VesselStudioNew.open({ vessel: sp.textContent }));
+    sp.replaceWith(b);
+  });
 
   // ---- bay previews: a small looping flight per vessel (2D canvas, cheap on phones) ----
   const reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;

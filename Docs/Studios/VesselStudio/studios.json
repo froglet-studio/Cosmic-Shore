@@ -100,12 +100,14 @@
     "Falcon",
     "Shrike"
   ],
-  "fleetNote": "No studio yet. Ask the studio agent below to start one; each needs the vessel's own numbers read from its assets first.",
+  "fleetNote": "No studio yet. Press a vessel, or + New studio, to start one; each needs the vessel's own numbers read from its assets first.",
   "shared": [
     "studio-look.js",
     "studio-ide.js",
     "ai_race_panel.js",
     "studio-domains.js",
-    "studio-theme.js"
+    "studio-theme.js",
+    "studio-game.js",
+    "studio-new.js"
   ]
 }

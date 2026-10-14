@@ -1313,7 +1313,9 @@ C# was not compiled either.
   dot), the "no studio yet" fleet chips. Click a card: that studio opens through Amoebius (a running one, else Amoebius starts) in its own window,
   served from this checkout, looking exactly like the artifact. There is NO "Tune in Unity" button (removed 2026-10-10: the artifact is the one source of
   truth; `/artifact-to-unity` clones its numbers into the assets). No console errors while
-  the home animates; there is only ONE "Vessel Studio" item under FrogletTools ▸ Vessels.
+  the home animates; there is only ONE "Vessel Studio" item under FrogletTools ▸ Vessels. The last card is
+  **+ NEW STUDIO** (an amber + on a dark well, dashed-feel border on hover): clicking it, or START, opens the
+  Vessel Studio artifact in the browser (2026-10-14, D36).
   `author_stoat_assets.py` now seeds the tuning assets once.
 
 **Verify in editor**

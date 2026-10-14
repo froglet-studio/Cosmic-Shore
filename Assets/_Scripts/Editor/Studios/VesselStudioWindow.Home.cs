@@ -240,15 +240,22 @@ namespace CosmicShore.Editor.Studios
             // ---- the studios ----
             GUI.Label(new Rect(x, y, cw, 22f), "STUDIOS", Look.H2);
             y += 30f;
+            // every studio, then the "+ New studio" card (D36), as on the web hub
             var studios = _catalog?.studios ?? Array.Empty<StudioEntry>();
             int cols = Mathf.Max(1, Mathf.FloorToInt((cw + Gap) / (CardMinWidth + Gap)));
             float cardW = (cw - Gap * (cols - 1)) / cols;
-            for (int i = 0; i < studios.Length; i += cols)
+            int items = studios.Length + 1;
+            for (int i = 0; i < items; i += cols)
             {
                 float rowH = 0f;
-                for (int c = 0; c < cols && i + c < studios.Length; c++) rowH = Mathf.Max(rowH, CardHeight(studios[i + c], cardW));
-                for (int c = 0; c < cols && i + c < studios.Length; c++)
-                    DrawCard(new Rect(x + c * (cardW + Gap), y, cardW, rowH), studios[i + c]);
+                for (int c = 0; c < cols && i + c < items; c++)
+                    rowH = Mathf.Max(rowH, i + c < studios.Length ? CardHeight(studios[i + c], cardW) : AddCardHeight(cardW));
+                for (int c = 0; c < cols && i + c < items; c++)
+                {
+                    var r = new Rect(x + c * (cardW + Gap), y, cardW, rowH);
+                    if (i + c < studios.Length) DrawCard(r, studios[i + c]);
+                    else DrawAddCard(r);
+                }
                 y += rowH + Gap;
             }
 
@@ -377,6 +384,44 @@ namespace CosmicShore.Editor.Studios
             if (!btnRow.Contains(Event.current.mousePosition) && GUI.Button(r, GUIContent.none, GUIStyle.none)) OpenPage(s.file);
             EditorGUIUtility.AddCursorRect(r, MouseCursor.Link);
         }
+
+        const string AddBlurb = "Create a vessel or work on one of the fleet: its AI, how it flies, a mini-game of the game or a new one. " +
+                                "Name the new ones, say what you want (by voice too), and Claude Code builds it on a new branch.";
+
+        float AddCardHeight(float w) =>
+            Pad + PreviewHeight + 12f + 32f + Look.Body.CalcHeight(new GUIContent(AddBlurb), w - 2f * Pad) + 14f + 26f + Pad;
+
+        /// <summary>
+        /// The "+ New studio" card (D36): the web hub's panel picks the vessel and the mini-game, takes the request by
+        /// voice or text and sends it to Claude Code. From Unity it opens the hub as every studio opens here (D34: this
+        /// checkout's build, served by Amoebius) with the panel already up (<c>#amoebius&amp;new-studio</c>); there the
+        /// request becomes an AGENT chat in Amoebius. In the claude.ai artifact the same panel starts a cloud session.
+        /// </summary>
+        void DrawAddCard(Rect r)
+        {
+            var accent = Look.Accent;
+            bool hover = r.Contains(Event.current.mousePosition);
+            FrogletEditorPalette.DrawCard(r, hover ? Look.Panel : Look.Bg, hover ? accent : Look.Line);
+            float x = r.x + Pad, w = r.width - 2f * Pad, y = r.y + Pad;
+            var well = new Rect(x, y, w, PreviewHeight);
+            FrogletEditorPalette.DrawRect(well, Look.C("#05060c"));
+            float arm = Mathf.Min(70f, PreviewHeight * 0.42f), thick = 8f;   // the + drawn as two bars: no font has to have it
+            var c = well.center;
+            FrogletEditorPalette.DrawRect(new Rect(c.x - arm * 0.5f, c.y - thick * 0.5f, arm, thick), hover ? Look.Fg : accent);
+            FrogletEditorPalette.DrawRect(new Rect(c.x - thick * 0.5f, c.y - arm * 0.5f, thick, arm), hover ? Look.Fg : accent);
+            y += PreviewHeight + 12f;
+            GUI.Label(new Rect(x, y, w, 30f), "NEW STUDIO", Look.Tinted(Look.Name, accent));
+            y += 32f;
+            float bh = Look.Body.CalcHeight(new GUIContent(AddBlurb), w);
+            GUI.Label(new Rect(x, y, w, bh), AddBlurb, Look.Body);
+            float bx = x;
+            const string tip = "Opens the hub's + New studio panel (served by Amoebius from this checkout): pick the vessel and the mini-game, say what you want, and Create sends it to an Amoebius AGENT chat.";
+            if (Button(ref bx, r.yMax - Pad - 26f, "START ▸", accent, true, tip)) OpenNewStudio();
+            if (GUI.Button(r, new GUIContent("", tip), GUIStyle.none)) OpenNewStudio();
+            EditorGUIUtility.AddCursorRect(r, MouseCursor.Link);
+        }
+
+        void OpenNewStudio() => LaunchAmoebius.OpenStudio(_catalog?.hub ?? "index.html", "new-studio");
 
         void RunCardButton(string id, StudioEntry s)
         {
