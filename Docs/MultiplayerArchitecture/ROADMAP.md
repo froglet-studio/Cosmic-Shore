@@ -112,6 +112,13 @@ regression becomes un-bisectable.
    run **6000.3.17f1**. If they do not resolve it is 4 compile errors and reverting one
    manifest line. **This is the only compile risk left in the bump.**
 
+   **Answered in the editor, 2026-10-14:** they resolve. Unity's Script Updater kept offering to
+   rewrite both files on every import, which means the engine carries the old names as obsolete,
+   updatable API. The engine's names are `Unity.Multiplayer.PlayMode.CurrentPlayer.IsMainEditor` and
+   `.Tags` (`IReadOnlyList<string>`, the 6.3 LTS scripting reference). That rewrite is now committed in
+   both files (`using Unity.Multiplayer.PlayMode;`, `CurrentPlayer.Tags`, `.Count`), so the prompt
+   stops. `Port/` keeps its own `Unity.Multiplayer.Playmode` compat shim.
+
    QA item: **QA-NET-SDK-UPGRADE** (`../QA/QA_BACKLOG.md`, P0).
 
 2. **Run the 3-VP MPPM smoke** (`../PartySystem/TESTS.md` S-series + `../PresenceSystem/TESTS.md`

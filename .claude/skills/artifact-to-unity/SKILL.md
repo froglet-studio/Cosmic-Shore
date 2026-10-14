@@ -20,6 +20,9 @@ game. The artifact is the one source of truth for a studio's parameters, their n
   **Record** in the studio's decision log: that saves every changed value (`settings.changed`) to the shared log the
   clone reads. If the user tuned something and did not record it, ask them to press Record (or paste "Copy log").
 
+**Amoebius too** (`/vessel-studio` D37): a studio feature that shows on the hub (a card, a panel, a button) also lands on
+Amoebius's VESSEL STUDIO page and Unity's studio home in the same change; `parity_gate.py` holds the cards to it.
+
 Load `/vessel-studio` for the studio side (pages, publishing, the decision log) and `/vessel` + `/vessel-ai` for the
 Unity side (the vessel contract, input-only AI). This skill is the bridge between them.
 

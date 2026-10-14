@@ -67,7 +67,7 @@ These are on top of the root `CLAUDE.md`; they are decisions the owner has alrea
 | Amoebius's Launcher NET page (Multiplayer Play Mode for Amoebius) | `Port/docs/LAUNCHER.md` § NET |
 | Netcode, transports, simulator, stats, faults (code) | `Port/src/CosmicShore.Engine/Networking/Wire/` |
 
-## 4. Where things stand (2026-10-09)
+## 4. Where things stand (2026-10-14)
 
 ### Amoebius (our engine): built and tested
 
@@ -81,6 +81,13 @@ These are on top of the root `CLAUDE.md`; they are decisions the owner has alrea
 | 5 | Froglet's own UDP transport + unreliable channel; **the default** | Done. Party harness 14/14 clean, 14/14 on simulated 4G after the B29 fix |
 | 6 | Relay: Unity Relay's wire protocol under our UDP transport + Froglet's own relay server | Done. Party harness 14/14 through the relay, and 14/14 through it on simulated 4G (`Port/docs/MULTIPLAYER.md` §6.7) |
 | 7 | UGS sign-in for the relay (`COSMIC_SHORE_RELAY=ugs`), the one-step UGS relay check | Built and tested against local stand-ins; party harness via the UGS path on 4G: 14/14. **The live check waits for you (§5.3)** |
+| — | **Amoebius online server** (another session, PR #1080): Amoebius's own lobby + relay over TCP for games on different machines; SETTINGS > ONLINE, `CosmicShore --server` | Merged 2026-10-14. Games on the NET page, the party harness and MCP still run on the session folder, where Steps 1-7 apply |
+
+**2026-10-14: a merge had switched Steps 1, 3, 5, 6 and 7 off.** Merging PR #1080 into this branch
+took its side of `PlayerBoot`, `DirectoryMultiplayerService` and the transport contract whole: the
+transport fell back to TCP and `netsim`, `netfault`, RELAY and UGS RELAY did nothing, with every unit
+test still green. Restored (commit `cd26ca51`) and guarded by `NetworkWiringGuardTests`, which fails if a
+merge drops those lines again. **When you merge into this branch, run that test.**
 
 ### Unity game: the hardening programme
 
@@ -95,6 +102,17 @@ These are on top of the root `CLAUDE.md`; they are decisions the owner has alrea
 
 Open bugs that matter: **B29 Count case** (a party that just shrank reads as full; Block 5 cures
 it). The B29 Session case ("defect 5") is fixed but unverified in Unity.
+
+**Blocker for match testing in Amoebius (found 2026-10-14, not a network bug):** once a networked
+Bloomrush match starts, each player's scene fills with objects - 1.3k to 36k behaviours in 77 s, past
+200k later (mostly flora `Branch` objects beside the SnowChanger's ~4k `shard` motes) - frames drop to
+~4 per second, and since each frame advances game time 1/60 s the 8-second pre-game cinematic takes
+about two minutes of wall clock, so the Ready (GO) button does not appear within the party harness's
+3-minute wait. The same happens on TCP and on UDP, with and without the relay and the simulator, so
+it is not the network stack; it arrived with bleeding-edge content between 2026-10-09 (T4 passed in
+38 s) and 2026-10-14. The party harness stops at T4 (8/14: everything up to and including the match
+launch passes). Needs an ecology/performance session (`/ecology`); until then expect Amoebius
+matches to crawl after launch, and judge the lobby and party steps, not in-match ones.
 
 ## 5. What the owner tests by hand
 
@@ -133,6 +151,11 @@ choice) and a username the first time; later runs on the same profile skip them.
 
 Prerequisite for every test: **each virtual player has its own tag** (P2, P3, P4), or they share
 one UGS account (`Docs/PartySystem/TESTS.md` § prerequisites).
+
+**First, after pulling (MPPM 2.0, 2026-10-14):** let the project compile. Expect no "Script Updating
+Consent" dialog and no errors in `AuthenticationServiceFacade.cs` or `MultiplayerSetup.cs`; a clone still
+signs in on its own profile. If anyone clicked "Yes" on that dialog before pulling, discard their local
+rewrite of those two files first (checklist entry "No more Script Updating Consent prompt").
 
 Run in this order. The checklist entry named in the last column holds the exact steps.
 
@@ -185,15 +208,11 @@ P8), so this proves the game's traffic through UGS Relay, not discovery across n
 **After P8**, the same on two networks: two PCs (or a PC and a laptop on a phone hotspot) form a
 party through UGS Lobby and play a Bloomrush match through UGS Relay.
 
-**What you can already run across two networks, with no UGS involved** (Froglet's own relay;
-P6). On a machine both players can reach (a PC with a forwarded port, or any small server), run
-`CosmicShore --relay-server 7780 7781 <its public name or IP>` and open UDP 7780 and TCP 7781.
-On each player set `COSMIC_SHORE_RELAY=http://<that name>:7781` and
-`COSMIC_SHORE_NET_DIR` to a folder both can see (a shared drive). The session folder is still the
-lobby stand-in until P8, which is why it has to be shared. Do this only on a server you control,
-for a test: the relay's allocations endpoint has no authentication yet (`MULTIPLAYER.md` §6.7).
-This route has run on one machine (the harness), not yet across two real networks: whoever tries
-it first, record what happened here.
+**What you can already run across two networks, with no UGS involved:** the Amoebius online server
+(PR #1080, `Port/docs/LAUNCHER.md` § ONLINE). On one PC: SETTINGS > ONLINE > *Host the online server on
+this PC*, forward TCP 47777 on its router, and give the other player your public address; they enter it
+as *Server*. Both turn *online* on in PLAY and press START, then party up as in §5.1 step 2. This is Amoebius's own lobby and relay,
+not UGS: it proves play between two networks in our engine, and P8 is still what puts the lobby on UGS.
 
 ## 6. What comes next, in order
 
@@ -205,7 +224,7 @@ Each step has the check that proves it done. Update the state in §4 when a step
 |---|---|---|
 | ~~P6~~ | ~~**Relay.**~~ Done 2026-10-09 (§4). Unity Relay's protocol under our UDP transport, Froglet's relay server (same protocol, same REST shape), session integration, switches in every tool | Contract checks pass over `relay`/`sim-relay`; party harness 14/14 with every pilot through the relay |
 | P7 | **UGS Auth for the relay.** Built 2026-10-09: anonymous sign-in and session-token resume over REST, the `idToken` as UGS Relay's bearer, `COSMIC_SHORE_RELAY=ugs`, the one-step check, our relay's secret (§4) | ~~Unit tests against a local stand-in~~ (13/13, plus the CLI and the harness via the UGS path); **the owner's live check (§5.3) still to run** |
-| P8 | **UGS Lobby** as Amoebius's session service (create, query, join, heartbeat, player data, the presence lobby) | The party harness passes on the local stand-in; two Amoebius players on two networks form a party on real UGS |
+| P8 | **UGS Lobby** as Amoebius's session service (create, query, join, heartbeat, player data, the presence lobby), beside the Amoebius online server that PR #1080 added (the self-hosted lobby of `MULTIPLAYER.md` §4.2) | The party harness passes on the local stand-in; two Amoebius players on two networks form a party on real UGS |
 | P9 | **Less traffic.** `NetworkVariable` writes dominate (7:1 over transforms, `MULTIPLAYER.md` §6.4): batch per tick, send deltas | `net` shows the drop on the same scenario, with the harness still 14/14 |
 | P10 | Congestion control past the fixed window, measured on a real internet path | A 4-player match on two networks holds RTT and shows no resend storms in `net` |
 
