@@ -247,7 +247,7 @@ namespace CosmicShore.Gameplay
             // Wander: one toy, two choices - with an Ark (the Arkway voyage) or without one (the
             // Wanderway belt). Both need a prism prefab the code-built fallback can't supply: the
             // belt's scenes degrade to crystals + lifeforms and the Ark refuses to sail (with a
-            // warning) until the authored asset (FrogletTools > Scene Setup > Setup Freestyle
+            // warning) until the authored asset (FrogletTools > Scenes > Setup Freestyle
             // Toybox) wires the settings.
             box.AddToy(MakeDefault<WanderToyDefinitionSO>(
                 "wander", "Wander", "Leave the cell and go wandering - with an Ark, or without one.",

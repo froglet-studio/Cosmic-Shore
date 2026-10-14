@@ -67,71 +67,6 @@ namespace CosmicShore.Player
             }
         }
 
-        /// <summary>The online service when networking is on and sessions go through a server (not the shared folder).</summary>
-        public CosmicShore.Engine.Networking.OnlineMultiplayerService Online { get; private set; }
-
-        /// <summary>
-        /// Picks the lobby + relay backend. COSMIC_SHORE_NET_SERVER (the launcher's SETTINGS > ONLINE),
-        /// else the branch's shared server (Port/ProjectSettings/AmoebiusProject.json, Network.Server):
-        /// "host[:port]" uses that online server (internet play); "dir" keeps every session in a folder
-        /// on this machine (COSMIC_SHORE_NET_DIR, the pre-network backend - a phone build sets the
-        /// folder, so it stays on it unless the branch names a server); empty or "auto" finds an
-        /// Amoebius server on the LAN, or hosts one in this game.
-        /// </summary>
-        void InstallSessions()
-        {
-            var options = CosmicShore.Engine.Networking.OnlineClientOptions.FromEnvironment();
-            options.PlayerId = AnonymousPlayerId;
-            if (string.IsNullOrWhiteSpace(options.Server) && AssetDatabase.FindProjectRoot() is { } root)
-            {
-                var network = Amoebius.AmoebiusProjectSettings.Load(root).Network;
-                options.Server = network.Server;
-                if (string.IsNullOrEmpty(options.Key)) options.Key = network.Key;
-            }
-            var server = options.Server?.Trim();
-            bool folder = string.Equals(server, "dir", StringComparison.OrdinalIgnoreCase)
-                || (string.IsNullOrEmpty(server) && !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("COSMIC_SHORE_NET_DIR")));
-            if (folder)
-            {
-                var dir = CosmicShore.Engine.Networking.DirectoryMultiplayerService.DefaultDirectory;
-                CosmicShore.Engine.Networking.MultiplayerService.Instance = new CosmicShore.Engine.Networking.DirectoryMultiplayerService(dir);
-                Console.WriteLine($"[online] sessions in the folder {dir} (this machine only)");
-                return;
-            }
-            Online = CosmicShore.Engine.Networking.OnlineMultiplayerService.Install(options);
-            Console.WriteLine(options.Automatic
-                ? "[online] looking for an Amoebius server on the network (this game hosts one if there is none)"
-                : $"[online] online server {options.Server}");
-        }
-
-        /// <summary>
-        /// The session backend (<see cref="InstallSessions"/>), then the network test tools on top of it
-        /// (docs/MULTIPLAYER.md §6). With the session folder - the NET page, the party harness and MCP
-        /// net_players run on it - the transport is Froglet's UDP unless COSMIC_SHORE_NET_TRANSPORT=tcp,
-        /// and COSMIC_SHORE_RELAY sends sessions through a relay (§6.7-6.8). The online server carries
-        /// match traffic itself, so those two do not apply to it. The network simulator
-        /// (COSMIC_SHORE_NET_SIM, `do netsim`) and the session faults (COSMIC_SHORE_NET_FAULT,
-        /// `do netfault`) wrap whichever backend is in place.
-        /// </summary>
-        void InstallNetwork(string root)
-        {
-            InstallSessions();
-            if (Online == null)
-            {
-                var transport = CosmicShore.Engine.Networking.NetTransports.Select(Environment.GetEnvironmentVariable("COSMIC_SHORE_NET_TRANSPORT"));
-                Console.WriteLine($"[net] transport: {transport}");
-                if (UgsSetup.InstallRelay(root) is { } relayLine) Console.WriteLine(relayLine);
-            }
-            else
-            {
-                foreach (var name in new[] { "COSMIC_SHORE_NET_TRANSPORT", "COSMIC_SHORE_RELAY" })
-                    if (Environment.GetEnvironmentVariable(name) is { Length: > 0 } value)
-                        Console.WriteLine($"[net] {name}={value} ignored: the online server carries match traffic (it applies with the session folder)");
-            }
-            CosmicShore.Engine.Networking.NetSimulator.Install();
-            CosmicShore.Engine.Networking.NetFaults.Install();
-        }
-
         public void Start(string firstScene)
         {
             var root = AssetDatabase.FindProjectRoot()
@@ -140,11 +75,11 @@ namespace CosmicShore.Player
             Debug.Sink = Log;
             _audio = PlayerAudio.Start(root, Headless);
             CosmicShore.Engine.Networking.NetworkManager.EmulateNetcodeLifecycle = true;
-            // A real transport between players (TCP; COSMIC_SHORE_NET=off keeps one process).
+            // START ONLINE: UGS, as the Unity build plays (sign-in, Relay, Lobby: UgsSetup.InstallOnline, which builds the
+            // stack through NetStack - docs/MULTIPLAYER.md §6.9-6.10). START (COSMIC_SHORE_NET=off) keeps one offline process.
             CosmicShore.Engine.Networking.NetDriver.Enabled = Environment.GetEnvironmentVariable("COSMIC_SHORE_NET") != "off";
             CosmicShore.Engine.Services.AuthenticationService.AnonymousIdProvider = AnonymousPlayerId;
-            // Sessions (lobby + relay) and the network test tools on top of them (InstallNetwork).
-            if (CosmicShore.Engine.Networking.NetDriver.Enabled) InstallNetwork(root);
+            if (CosmicShore.Engine.Networking.NetDriver.Enabled) UgsSetup.InstallOnline(root);
             // The game's own verbose log channels (CSDebug.VerboseChannels - the Froglet Toolbox
             // Logging tab in the editor): COSMIC_SHORE_LOG_CHANNELS=Party,Boot. Only a Debug
             // (development) build compiles LogVerbose in.
@@ -195,13 +130,17 @@ namespace CosmicShore.Player
         {
             Loop.Tick(step);
             CosmicShore.Engine.Audio.Fmod.RuntimeManager.Update();
+            // Application.Quit() anywhere in the frame (the settings panel's QUIT GAME): as in Unity,
+            // the quit happens at the frame's end, and a wantsToQuit handler may still cancel it.
+            if (Application.QuitRequested && Application.RunQuitSequence()) QuitNow = true;
         }
+
+        /// <summary>The game quit (<see cref="Application.Quit()"/>) and nothing cancelled it: the host closes now.</summary>
+        public bool QuitNow { get; private set; }
 
         public void Dispose()
         {
-            // Leaves the online server (and stops the one this game hosted, if any).
-            Online?.Dispose();
-            Online = null;
+            (CosmicShore.Engine.Networking.MultiplayerService.Instance as IDisposable)?.Dispose();
             Loop?.Dispose();
             PlayerAudio.Stop(_audio);
             _audio = null;

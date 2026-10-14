@@ -130,7 +130,7 @@ namespace CosmicShore.Launcher
                     foreach (var proj in Directory.GetDirectories(Path.Combine(_ws.Dir, "Port", "src")))
                         foreach (var sub in new[] { "obj", "bin" })
                             try { var d = Path.Combine(proj, sub); if (Directory.Exists(d)) Directory.Delete(d, true); } catch { }
-                    _jobs.Play();
+                    _jobs.Play(_jobs.PlayingOnline);
                 })),
                 ("SHOW LOG", () => _page = Page.Console));
         }

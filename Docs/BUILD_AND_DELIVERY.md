@@ -72,7 +72,10 @@ need and the failure only shows up at runtime in the player. Do not raise it wit
 ## 3. Building
 
 ### From the editor
-**Tools → Cosmic Shore → Build → Windows x64 (Release)**
+**FrogletTools → Build → Windows x64 (Release)**
+
+Android (a signed App Bundle for Google Play, checked before upload) is **FrogletTools → Build →
+Android App Bundle (Release)**; the whole Android path is in [`ANDROID_BUILD.md`](ANDROID_BUILD.md).
 
 ### From the command line
 ```bash
@@ -225,6 +228,16 @@ Run top to bottom. Every step is either a command above or a box to tick.
   the first IL2CPP build to take considerably longer than a Mono one.
 - Cloud Diagnostics must also be switched on in the Unity Dashboard; the project-side settings are
   set but the service is per-project on the web side.
+- **`-buildVersion` on a Windows build is not put back** (found 2026-10-14 while adding the
+  Android build).
+  - The fact: `CosmicShoreBuildPipeline.Run` sets `PlayerSettings.bundleVersion` (`:83`; re-grep
+    before trusting the number) and leaves it. That one field is also Android's `versionName` and
+    iOS's `CFBundleShortVersionString`, so a Windows build stamped `0.2.1` dirties
+    `ProjectSettings.asset` and the next phone build ships `0.2.1` too.
+  - The Android build restores every Player Setting it touches
+    (`CosmicShoreBuildPipeline.Android.cs`).
+  - Open question, to settle before changing it: is the stamp meant to persist and be committed
+    as the release version (then say so in §3), or to be build-only like Android's?
 
 
 ---

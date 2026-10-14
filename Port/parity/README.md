@@ -112,8 +112,8 @@ inspector verb (`arcade`), so in Unity `ParityCapture` performs the same step th
 
 **Nondeterminism the PR must pin (measured 2026-10-08).** No `Random.InitState` at match start (178
 `UnityEngine.Random` draws in runtime code; only `SegmentSpawner`, `FlowFieldView` and `WarpFieldView`
-reseed, `ModePreviewPlantingModel` reseeds and restores); 7 unseeded `System.Random` (`AIPilot:1085`,
-`ToyShuffle`, `ProfileModal`, `ScreenshotDirector`, `AnimationRecorderWindow`, and `SpawnableBase` /
+reseed, `ModePreviewPlantingModel` reseeds and restores); 6 unseeded `System.Random` (`AIPilot:1085`,
+`ToyShuffle`, `ProfileModal`, `ScreenshotDirector`, and `SpawnableBase` /
 `SpawnableCord` when their seed is 0) take `DeterministicSession`'s seed; 10 `Guid.NewGuid` sites are
 identity only and must never reach a compared channel.
 

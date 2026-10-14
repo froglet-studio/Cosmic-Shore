@@ -236,7 +236,7 @@ namespace CosmicShore.Editor
         int _selected;
         string _report = string.Empty;
 
-        [MenuItem("FrogletTools/Vessels/Swap Vessel Rig", false, 21)]
+        [MenuItem("FrogletTools/Vessels/Wiring/Swap Vessel Rig", false, 255)]
         [FrogletTool(FrogletToolCategory.Vessels, Importance = 4,
             Description = "Move a vessel onto its rigged, element-morphing model — re-homes every " +
                           "gameplay volume onto its bone and mounts the jets on the nozzles.")]
@@ -478,7 +478,7 @@ namespace CosmicShore.Editor
                     FrogletToolChangeLedger.Record(ToolName, prefabPath);
                     log.AppendLine();
                     log.AppendLine($"WROTE {prefabPath}");
-                    log.AppendLine("Next: FrogletTools ▸ Vessels ▸ Audit Vessel Elemental Morphs (expect 4 " +
+                    log.AppendLine("Next: FrogletTools ▸ Vessels ▸ Audits ▸ Audit Vessel Elemental Morphs (expect 4 " +
                                    "shapes with NON-ZERO magnitude), then Audit Vessel Tails and Jets, then fly it.");
                 }
                 else

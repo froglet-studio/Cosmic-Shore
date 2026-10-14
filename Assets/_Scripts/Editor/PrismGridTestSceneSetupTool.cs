@@ -38,7 +38,7 @@ namespace CosmicShore.Editor
         const string ExplosionPrefabPath = "Assets/_Prefabs/Projectile/AOEExplosion.prefab";
         const string PrismManagersPrefabPath = "Assets/_Prefabs/Environment/PrismManagers.prefab";
 
-        [MenuItem("FrogletTools/Scene Setup/Setup Prism Grid Explosion Scene")]
+        [MenuItem("FrogletTools/Scenes/Setup Prism Grid Explosion Scene", false, 191)]
         [FrogletTool(FrogletToolCategory.SceneSetup, Importance = 2,
             Description = "Build the prism-grid explosion benchmark scene.")]
         static void SetupScene()
@@ -56,7 +56,7 @@ namespace CosmicShore.Editor
             EditorUtility.DisplayDialog("Setup Prism Grid Explosion Scene",
                 $"Config: {ConfigAssetPath}\nScene: {ScenePath}\n\n{report}\n\n" +
                 "Before pressing Play, disable Bootstrap auto-load:\n" +
-                "FrogletTools > Scene Setup > Testing Multiplayer> Do not load Bootstrap Scene on Play\n\n" +
+                "FrogletTools > Scenes > Testing Multiplayer> Do not load Bootstrap Scene on Play\n\n" +
                 "In Play mode: F7 shows the DiagnosticsHUD, F5 records a report to " +
                 "Documents/CosmicShore Diagnostics/.",
                 "OK");

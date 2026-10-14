@@ -5,7 +5,7 @@ namespace CosmicShore.ScriptableObjects
 {
     /// <summary>
     /// One (vessel, element) crystal fusion SOLVED AT EDIT TIME — written by
-    /// <b>FrogletTools > Vessels > Bake Crystal Hull Fusions</b> and referenced from its
+    /// <b>FrogletTools > Vessels > Wiring > Bake Crystal Hull Fusions</b> and referenced from its
     /// <see cref="CrystalHullFusionConfigSO.Entry"/>. With a current bake the game does no
     /// geometry at all: no cut, no hull projection, no worker thread — a pickup reads this asset,
     /// matches faces to patches and clones <see cref="TemplateMesh"/>. Record:

@@ -6,18 +6,16 @@ using CosmicShore.Engine.Networking;
 namespace CosmicShore.Tests
 {
     /// <summary>
-    /// The <see cref="INetTransport"/> contract, checked against every implementation: TCP, Froglet's
-    /// UDP transport, UDP through Froglet's relay server (Unity Relay's protocol, docs/MULTIPLAYER.md
-    /// §6.7), TCP through the online server's relay (<see cref="OnlineRelayTestFactory"/>), the
-    /// in-memory loopback, and each behind the network simulator on a bad line. A new transport joins
-    /// <see cref="Transports"/> and must pass the same checks.
+    /// The <see cref="INetTransport"/> contract, checked against every implementation: TCP, Froglet's UDP
+    /// transport, UDP through a Unity-Relay-protocol relay (<see cref="RelayTestFactory"/>), the in-memory
+    /// loopback, and each behind the network simulator. A new transport joins <see cref="Transports"/> and must pass the same checks.
     /// </summary>
     public class NetTransportContractTests : IDisposable
     {
         internal static readonly string[] TransportNames =
         {
-            "tcp", "loopback", "udp", "relay", "online-relay",
-            "sim-tcp", "sim-loopback", "sim-udp", "sim-relay", "sim-online-relay",
+            "tcp", "loopback", "udp", "relay",
+            "sim-tcp", "sim-loopback", "sim-udp", "sim-relay",
         };
 
         public static TheoryData<string> Transports => new(TransportNames);
@@ -35,17 +33,13 @@ namespace CosmicShore.Tests
         INetTransportFactory Make(string name)
         {
             if (name.StartsWith("sim-", StringComparison.Ordinal))
-                return new SimulatedTransportFactory(Make(name["sim-".Length..]), () => BadLine);
+                return new SimulatedTransportFactory(Make(name.Substring(4)), () => BadLine);
             switch (name)
             {
                 case "tcp": return new TcpTransportFactory();
                 case "loopback": return new LoopbackTransportFactory();
                 case "udp": return new UdpTransportFactory();
-                case "relay": return new RelayTestFactory(); // UDP through Froglet's relay server
-                case "online-relay":
-                    var online = new OnlineRelayTestFactory();
-                    _factories.Add(online);
-                    return online;
+                case "relay": return new RelayTestFactory();
                 default: throw new ArgumentException(name);
             }
         }
@@ -167,60 +161,6 @@ namespace CosmicShore.Tests
             using (var probe = f.Listen("127.0.0.1", 0)) port = probe.ListenPort;
             using var client = f.Connect("127.0.0.1", port, 1000);
             Next(client, NetEventKind.Disconnected);
-        }
-    }
-
-    /// <summary>
-    /// The relay as a plain transport factory, for the contract: a Listen is a host ("alice") whose
-    /// Relay-networked session is found by the listening port; a Connect to that port is another
-    /// player ("bob") joining it and connecting through the online server.
-    /// </summary>
-    /// <summary>TCP through the online server's relay: a host and a guest service on one in-process server.</summary>
-    sealed class OnlineRelayTestFactory : INetTransportFactory, IDisposable
-    {
-        readonly OnlineServer _server;
-        readonly OnlineMultiplayerService _host, _guest;
-        readonly Dictionary<int, string> _sessionByPort = new();
-
-        public OnlineRelayTestFactory()
-        {
-            _server = OnlineServer.Start(new OnlineServerOptions { Port = 0, Discovery = false, Log = _ => { } });
-            _host = Service("alice");
-            _guest = Service("bob");
-        }
-
-        OnlineMultiplayerService Service(string player)
-        {
-            var s = new OnlineMultiplayerService(new OnlineClientOptions
-            {
-                Server = $"127.0.0.1:{_server.Port}", PlayerId = () => player, AllowEmbeddedServer = false, Log = _ => { },
-            }) { DriveNetworkManager = false };
-            s.Start();
-            return s;
-        }
-
-        public INetTransport Listen(string address, int port)
-        {
-            var socket = new OnlineTransportFactory(_host).Listen(address, port);
-            var session = _host.CreateSessionAsync(new SessionOptions { MaxPlayers = 4 }.WithRelayNetwork()).GetAwaiter().GetResult();
-            _sessionByPort[socket.ListenPort] = session.Id;
-            return socket;
-        }
-
-        public INetTransport Connect(string address, int port, int timeoutMs)
-        {
-            if (!_sessionByPort.TryGetValue(port, out var sessionId))
-                return new OnlineTransportFactory(_guest).Connect(OnlineWire.RelayScheme + "nobody-hosts-this", 0, timeoutMs);
-            try { _guest.JoinSessionByIdAsync(sessionId).GetAwaiter().GetResult(); }
-            catch (SessionException) { /* the host is gone: the connect below reports it */ }
-            return new OnlineTransportFactory(_guest).Connect(OnlineWire.RelayScheme + sessionId, 0, timeoutMs);
-        }
-
-        public void Dispose()
-        {
-            _guest.Dispose();
-            _host.Dispose();
-            _server.Dispose();
         }
     }
 }

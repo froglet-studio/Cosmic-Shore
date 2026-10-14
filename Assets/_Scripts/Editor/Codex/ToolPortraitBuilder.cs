@@ -109,7 +109,7 @@ namespace CosmicShore.Editor.Codex
         /// cache with no hide flags, and borrowing it would leave a mesh behind in the editor after
         /// every bake. Tessellated FINER than the runtime's 12 × 6: that count is sized for a ring
         /// seen from a vessel in flight, and baked to a still picture drawn 330 px wide it read as
-        /// a dodecagon - "the icons look low-poly". Re-bake (FrogletTools > Interface > Codex) to
+        /// a dodecagon - "the icons look low-poly". Re-bake (FrogletTools > UI > Codex) to
         /// pick this up; the portraits are baked assets, not generated at runtime.
         /// </summary>
         static void AddRing(Transform parent, float radius, Material material,

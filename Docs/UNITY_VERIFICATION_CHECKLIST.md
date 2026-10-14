@@ -560,6 +560,69 @@ No Unity: Port/ only, and nothing on `bleeding-edge` calls these APIs until part
    **PASS:** no file outside `Port/` is named.
    **FAIL:** a Unity file is listed (the branch picked more than M).
 
+### 🔴 Android release build + pre-upload App Bundle check (`claude/serene-edison-lfv24f`, 2026-10-13) — NOT EDITOR-VERIFIED
+
+No editor and no `unity` CLI in the authoring session, so `/verify-unity` did NOT run. Out of
+editor:
+- **Compile:** `unity_refcompile --config editor` reports 0 errors in project code. The only gaps
+  are `NamedBuildTarget` calls, which are absent from the 2021.1 reference and also used by the
+  existing Windows pipeline.
+- **Tests:** `AndroidBundleCheck` and `AndroidBundleCheckTests` ran **9/9 under NUnit on .NET 8**,
+  against manifests linked by Google's `aapt2` 8.13.2. A reintroduced bug made one test fail.
+- **Gates:** the console-logging and conditional-compilation gates pass.
+
+**What landed** (full guide: `Docs/ANDROID_BUILD.md`)
+
+1. **FrogletTools > Build > Android App Bundle (Release)**
+   (`CosmicShoreBuildPipeline.Android.cs`, a `partial` of the Windows pipeline).
+   - It stops before building when any of these is true:
+     - Android Build Support is missing;
+     - the editor is not on Android;
+     - IL2CPP, ARM64 or API 36 is off;
+     - there is no upload key (from `CS_ANDROID_*` or Publishing Settings).
+   - Version code = minutes since 2026-01-01 UTC.
+   - `appCategory` is forced to `game` by reflection.
+   - **Native debug symbols** (added 2026-10-14, after Play warned on build 412826): Debug Symbols is
+     set to Symbol Table + Include In Bundle + Zip through `UserBuildSettings.DebugSymbols`, by
+     reflection, because that type exists only with Android Build Support installed. The check
+     warns when a bundle has native code and no `BUNDLE-METADATA/com.android.tools.build.debugsymbols/`
+     entries.
+   - Version, code, keystore fields, category, debug-symbol settings and the App Bundle switch are
+     restored afterwards.
+2. **`AndroidBundleCheck`** runs after every build. It writes `<aab>.check.txt` and shows a dialog.
+   **FrogletTools > Build > Check Android App Bundle…** runs it on any `.aab`.
+3. **`Tools/Build/check_android_signing_settings.py`**, wired into `unity-ci.yml`'s static job,
+   fails on a committed keystore path. It does fail on the pre-2026-10-08 TailGlider path.
+
+**Verify in editor**
+
+1. FrogletTools > Build shows both new items, and the Froglet Master Tool lists them under Build.
+2. **Refusals.** Each should show a dialog naming the fix, and build nothing:
+   - with the editor still on Windows: "not on Android";
+   - on Android with no keystore selected: "No upload key";
+   - after restarting the editor with a keystore selected: "not its passwords".
+3. **The build.** With the upload key selected and both passwords typed, build:
+   - the build succeeds;
+   - the dialog says "Ready to upload, with 1 warning(s)": `liblofelt_sdk.so` is not 16 KB-aligned;
+   - `Builds/Android/CosmicShore-0.2.0-<about 410000+>.aab` and its `.check.txt` exist;
+   - the report says package `com.FrogletGames.CosmicShore`, target 36, category `game`,
+     debuggable False, Signed: yes, ABIs: arm64-v8a, **Native debug symbols: in the bundle**;
+   - a `….symbols.zip` sits beside the `.aab`. If the log says "Could not turn on native debug
+     symbols", Unity renamed the enum values; send the message to Claude.
+4. **Player Settings are put back.** `git status` shows no change to `ProjectSettings.asset`
+   beyond a keystore selection you made yourself. Bundle Version Code still reads 11.
+5. **The category.** If the log warned "Application Category is '…'; this build uses 'game'", set
+   Player Settings > Android > Other Settings > Application Category to Game. Then record what the
+   serialized `androidAppCategory` index became: the stored `3` is undocumented.
+6. **Batchmode** (`-buildTarget Android … -executeMethod …BuildAndroidRelease`) exits 0, and exits 1
+   with no keystore variables set.
+7. **Edit-mode tests:** `AndroidBundleCheckTests` passes in the Test Runner.
+8. **Play.** Upload the `.aab` to Internal testing (`ANDROID_BUILD.md` §5):
+   - Play accepts it with no signing, target-SDK or debuggable error, and **no "debug symbols"
+     warning**;
+   - it installs from the tester link on the 4 GB Samsung and a flagship.
+
+---
 
 ### 🔴 Merge of bleeding-edge into Ys-bleeding-edge: the Stoat, the black hole lens and the chase camera combined (`Ys-bleeding-edge`, 2026-10-13) — NOT EDITOR-VERIFIED
 
@@ -1985,7 +2048,7 @@ effects as `OK (crystal pickup only)` instead of a fault. The nested-instance YA
 **Verify in editor**
 1. Open `Butterfly.prefab`: a `ButterflyCrystalSkimmer` child at the root, no missing-prefab /
    broken-reference warnings; `VesselStatus` → Far Field Skimmer = its Skimmer.
-2. `FrogletTools ▸ Vessels ▸ Audit Vessel Skimmers`: Butterfly far field `OK (crystal pickup only — no prism effects)`.
+2. `FrogletTools ▸ Vessels ▸ Audits ▸ Audit Vessel Skimmers`: Butterfly far field `OK (crystal pickup only — no prism effects)`.
 3. Freestyle, Butterfly, **Mass mode** (don't press RT): fly through an elemental crystal — it is
    snatched into the hull and the matching element's flower fills. Repeat in Dust mode.
 4. A crystal-scoring mode (e.g. Crystal Capture) with the Butterfly: pickups score.
@@ -2012,7 +2075,7 @@ too slow to see** (all the projection on the main thread during the pickup); the
 built once per hull on a worker thread at vessel spawn, and a pickup costs ~2 ms (doc §0, §9).
 
 **Bake (third push, 2026-10-08):** the fusion is now solved at EDIT TIME by
-**FrogletTools > Vessels > Bake Crystal Hull Fusions** into
+**FrogletTools > Vessels > Wiring > Bake Crystal Hull Fusions** into
 `Assets/_SO_Assets/CrystalHullFusion/Squirrel_Charge_HullFusionBake.asset`. **Baked and pushed
 (`22fba704`) and play-tested working.** Bake reads 60 × 31 points, 1,860/1,860 on the skin. Still
 open: steps 3–6 below (wing flap, other pairs unchanged, tests) and a Profiler read.
@@ -3228,11 +3291,11 @@ QA item: `QA-HULL-ABILITY-ROWS`.
 
 1. `RhinoHUDVariant`, `SerpentHUDVariant`, `ScarabHUDVariant` and `Serpent.prefab` import with no
    missing-reference or YAML errors; the `*-PLACEHOLDER.png` files import as Sprites.
-2. **FrogletTools > Vessels > Audit Vessel Ability Rows**: Rhino reports Mass and Time bound; Serpent
+2. **FrogletTools > Vessels > Audits > Audit Vessel Ability Rows**: Rhino reports Mass and Time bound; Serpent
    Charge, Space and Time bound; the only remaining lines are the open-design-slot / no-icon /
    no-UpgradeLabel lines for Rhino Charge/Space and Serpent Mass. A Serpent "pitch not uniform"
    (256/128) line is expected (the auditor skips the locked Mass slot).
-3. **FrogletTools > Vessels > Audit Ability Lockups**: no icon reported as not fitting its card.
+3. **FrogletTools > Vessels > Audits > Audit Ability Lockups**: no icon reported as not fitting its card.
 4. Rhino match: row reads LOCKED / Trail Slabs / LOCKED / Ramp Spool; the old bottom-right Rhino
    chrome stays retired; no `[VesselHUDView]` row warnings.
 5. Serpent: Sniper Shot (RT chip) / LOCKED / Scope (LT chip) / Pellets (A chip); fire the rifle and
@@ -4236,7 +4299,7 @@ difference; the icon generator's stroke math ported and rendered to ASCII to pro
 read as a check and a cross before any PNG is written; `check_conditional_compilation.py` clean.
 
 **▶ RUN THIS FIRST:** open `Menu_Main`, then
-**FrogletTools > Interface > Wire Offline Menu Surfaces**, then **SAVE THE SCENE**.
+**FrogletTools > UI > Wire Offline Menu Surfaces**, then **SAVE THE SCENE**.
 It adopts the existing `OnlineIndicator` / `QuestionBar` objects rather than replacing them, and
 reports anything it could not find. Commit its output via
 **FrogletTools > Build > Pending Tool Changes**.
@@ -4497,7 +4560,7 @@ Verify in play mode, per vessel: **Squirrel** (its AUTHORED flowers must be re-h
 `[ElementalBarsView] Created N petal(s) at RUNTIME` warning, which would mean the authored petals
 were abandoned), **Sparrow**, **Scarab** (hide/show the HUD, e.g. between turns, and confirm the
 Charge/Space icons keep their kerned size — this is the `OnDisable` fix), and **Dolphin** again.
-Then run **FrogletTools > Vessels > Audit Ability Lockups** and expect OK with four vessels listed.
+Then run **FrogletTools > Vessels > Audits > Audit Ability Lockups** and expect OK with four vessels listed.
 
 **Update — the lockup now owns the ROW.** Position, pitch, cell size, host scale and icon size are
 written from `Resources/AbilityLockupStyle` onto every vessel; per-prefab layout is no longer read.
@@ -4539,7 +4602,7 @@ Also verify **touch** on a device or the simulator: retiring the host's chrome d
 button's `targetGraphic` invisible rather than disabling it, because an absent graphic does not
 raycast. Every on-screen ability button must still respond.
 
-Then run **FrogletTools > Vessels > Audit Ability Lockups** (expect OK, with a `gauge on <element>`
+Then run **FrogletTools > Vessels > Audits > Audit Ability Lockups** (expect OK, with a `gauge on <element>`
 line per bound meter naming where it was authored) and the **`AbilityLockupStyleTests`** edit-mode
 suite (four new tests: gauge readability, locked-slot quietness, chip clearance, press-flash decay).
 
@@ -4732,7 +4795,7 @@ so the drift re-parenting still works). `VesselRigSwapper` now REFUSES a rig who
 the fleet's materials — the Rhino and Urchin rigs have the same empty `externalObjects` and would
 have reproduced this exactly.
 
-`FrogletTools ▸ Vessels ▸ Swap Vessel Rig` is new and, like every writer tool, **its output is the
+`FrogletTools ▸ Vessels ▸ Wiring ▸ Swap Vessel Rig` is new and, like every writer tool, **its output is the
 deliverable and it lands in your working tree, not on the branch** — so the swapped
 `Dolphin.prefab` is a separate commit from the tool that wrote it. The tool was written without a
 Unity CLI in the remote container, i.e. type-checked against transcribed stubs only, which is why
@@ -4780,7 +4843,7 @@ rather than merely disabled. Full table: `Docs/VESSEL_CONSTRUCTION_FOLLOWUP.md` 
 2. ✅ **Perform the swap.** Then open `Dolphin.prefab` and look at it: one skinned hull, no doubled
    geometry, the six engine pods showing open exhaust bells (the shipped hull's are sealed cones —
    that visible difference is the confirmation the rig is in).
-3. ✅ **`FrogletTools ▸ Vessels ▸ Audit Vessel Elemental Morphs`** — the Dolphin must report four
+3. ✅ **`FrogletTools ▸ Vessels ▸ Audits ▸ Audit Vessel Elemental Morphs`** — the Dolphin must report four
    element shapes **with non-zero magnitude**. Magnitude is the point: a rig can carry four
    correctly-named shapes that move nothing (Rhino's and Urchin's do), and before this branch the
    audit could not tell the difference. **Reported:** Mass 12.056%, Charge 4.314%, Space 3.140%,
@@ -6485,7 +6548,7 @@ re-check each line against the prefab rather than trusting the tick.*
    lands. Do the single-player steps first and treat the MPPM block as blocked, not as failing.
 7. **HUD row — authored by #973 (2026-10-06); verify it in the #973 entry.** `UrchinHUDVariant.prefab`
    binds the four `abilityIcons` in charge → mass → space → time order (placeholder sprites), with
-   the ammo fill on Charge and the binary riding indicator on Mass. Run **FrogletTools > Vessels > Audit Vessel Ability Rows**
+   the ammo fill on Charge and the binary riding indicator on Mass. Run **FrogletTools > Vessels > Audits > Audit Vessel Ability Rows**
    afterwards — Trail Rider's `Input = 0` will look like an unset field and is **correct** (it is
    passive; the map cannot distinguish the two).
 8. **Three `GunVesselTransformer` fields are not serialized on the prefab** — `throttleDeadband`
@@ -6654,7 +6717,7 @@ record: `_Scripts/Controller/Vessel/R_VesselActions/DOLPHIN_CRYSTAL_SEEDING.md` 
 - **HUD row re-cut**: Charge = new procedural `BlastProfileGraphic`; Mass = crystal recharge (pips
   deleted); Space = jaws + a widened prism tally; Time = the boost ring. Prefab YAML was
   hand-authored, and the row wirer was re-cut to the same layout and generalized fleet-wide as
-  `VesselAbilityRowWirer` (`FrogletTools > Vessels > Wire Vessel Ability Row`).
+  `VesselAbilityRowWirer` (`FrogletTools > Vessels > Wiring > Wire Vessel Ability Row`).
 - **Second pass (colour + subtraction).** The Charge profile crosses the shared palette's
   **grey → white** (idle → in use) instead of a bespoke warm colour. The Space **reach bar was
   dropped entirely** — that slot says angle and amount only. And `BlastProfileGraphic`'s outline
@@ -6687,7 +6750,7 @@ record: `_Scripts/Controller/Vessel/R_VesselActions/DOLPHIN_CRYSTAL_SEEDING.md` 
    (`BlastProfileGraphic` = `3d1c8a7e…`, `EchoSightVesselHighlighter` = `7a4e2f9c…`); the HUD prefab
    references the first by that GUID. If Unity re-mints either GUID on import, the Charge slot's
    profile binding breaks — check the `Profile` object on `DolphinHUDVariant` still has its script.
-2. **Run FrogletTools > Vessels > Audit Vessel Ability Rows.** Dolphin should report map complete,
+2. **Run FrogletTools > Vessels > Audits > Audit Vessel Ability Rows.** Dolphin should report map complete,
    4/4 icons, order ✅.
 3. Open `DolphinHUDVariant.prefab`: four slots left→right must be ProfileButton, CrystalButton,
    JawButton, DriftButton. `CrystalPip0/1` should be **gone**.
@@ -7957,7 +8020,7 @@ GameObject, a removed resource slot, and renamed serialized fields.
 8. **MPPM two clients**, both Sparrows, one at Time 5: both machines must agree
    on who resists the drain. This is the replicated-`NetElementUnlocks` path —
    a local level read would pass step 6 and fail here.
-9. `FrogletTools > Vessels > Audit Vessel Ability Rows` — Sparrow still 4/4 in
+9. `FrogletTools > Vessels > Audits > Audit Vessel Ability Rows` — Sparrow still 4/4 in
    charge → mass → space → time.
 
 **First-pass tuning** (starting points, not settled)
@@ -7986,7 +8049,7 @@ Mechanics + full knob list: `_Scripts/Controller/Vessel/R_VesselActions/DOLPHIN_
 
 **Verify in editor (highest risk first):**
 
-1. **Run `FrogletTools > Vessels > Audit Vessel Skimmers`.** Expect
+1. **Run `FrogletTools > Vessels > Audits > Audit Vessel Skimmers`.** Expect
    `Dolphin  NearFieldSkimmer: 'EnergySkimmer' OK`. This is the branch's headline fix —
    `VesselStatus._nearFieldSkimmer` pointed at a DISABLED legacy skimmer, so
    `Skimmer.Initialize` never reached the object whose trigger fires and
@@ -8293,7 +8356,7 @@ Verify in play mode, per vessel: **Squirrel** (its AUTHORED flowers must be re-h
 `[ElementalBarsView] Created N petal(s) at RUNTIME` warning, which would mean the authored petals
 were abandoned), **Sparrow**, **Scarab** (hide/show the HUD, e.g. between turns, and confirm the
 Charge/Space icons keep their kerned size — this is the `OnDisable` fix), and **Dolphin** again.
-Then run **FrogletTools > Vessels > Audit Ability Lockups** and expect OK with four vessels listed.
+Then run **FrogletTools > Vessels > Audits > Audit Ability Lockups** and expect OK with four vessels listed.
 
 **Update — the lockup now owns the ROW.** Position, pitch, cell size, host scale and icon size are
 written from `Resources/AbilityLockupStyle` onto every vessel; per-prefab layout is no longer read.
@@ -8335,7 +8398,7 @@ Also verify **touch** on a device or the simulator: retiring the host's chrome d
 button's `targetGraphic` invisible rather than disabling it, because an absent graphic does not
 raycast. Every on-screen ability button must still respond.
 
-Then run **FrogletTools > Vessels > Audit Ability Lockups** (expect OK, with a `gauge on <element>`
+Then run **FrogletTools > Vessels > Audits > Audit Ability Lockups** (expect OK, with a `gauge on <element>`
 line per bound meter naming where it was authored) and the **`AbilityLockupStyleTests`** edit-mode
 suite (four new tests: gauge readability, locked-slot quietness, chip clearance, press-flash decay).
 
@@ -8576,7 +8639,7 @@ so the drift re-parenting still works). `VesselRigSwapper` now REFUSES a rig who
 the fleet's materials — the Rhino and Urchin rigs have the same empty `externalObjects` and would
 have reproduced this exactly.
 
-`FrogletTools ▸ Vessels ▸ Swap Vessel Rig` is new and, like every writer tool, **its output is the
+`FrogletTools ▸ Vessels ▸ Wiring ▸ Swap Vessel Rig` is new and, like every writer tool, **its output is the
 deliverable and it lands in your working tree, not on the branch** — so the swapped
 `Dolphin.prefab` is a separate commit from the tool that wrote it. The tool was written without a
 Unity CLI in the remote container, i.e. type-checked against transcribed stubs only, which is why
@@ -8624,7 +8687,7 @@ rather than merely disabled. Full table: `Docs/VESSEL_CONSTRUCTION_FOLLOWUP.md` 
 2. ✅ **Perform the swap.** Then open `Dolphin.prefab` and look at it: one skinned hull, no doubled
    geometry, the six engine pods showing open exhaust bells (the shipped hull's are sealed cones —
    that visible difference is the confirmation the rig is in).
-3. ✅ **`FrogletTools ▸ Vessels ▸ Audit Vessel Elemental Morphs`** — the Dolphin must report four
+3. ✅ **`FrogletTools ▸ Vessels ▸ Audits ▸ Audit Vessel Elemental Morphs`** — the Dolphin must report four
    element shapes **with non-zero magnitude**. Magnitude is the point: a rig can carry four
    correctly-named shapes that move nothing (Rhino's and Urchin's do), and before this branch the
    audit could not tell the difference. **Reported:** Mass 12.056%, Charge 4.314%, Space 3.140%,

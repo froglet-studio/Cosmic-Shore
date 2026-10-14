@@ -47,7 +47,7 @@ namespace CosmicShore.Editor
         const string ConfigAssetPath = "Assets/Resources/VesselVisionShadingConfig.asset";
         const string ScriptRoot = "Assets/_Scripts";
 
-        [MenuItem("FrogletTools/Vessels/Validate Vessel Vision Band")]
+        [MenuItem("FrogletTools/Vessels/Audits/Validate Vessel Vision Band", false, 278)]
         [FrogletTool(FrogletToolCategory.Vessels, Importance = 5,
             Description = "Vessel vision band platform law - catches a vessel that silently cannot " +
                           "be picked out at range, and a severed per-vessel colour channel.")]
