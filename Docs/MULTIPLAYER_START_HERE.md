@@ -104,7 +104,7 @@ faults (`COSMIC_SHORE_NET_FAULT`, `do netfault`) and stats (`do net`).
 | 5 | Froglet's own UDP transport + unreliable channel; **the default** | Done |
 | 6 | Relay: Unity Relay's wire protocol under our UDP transport; Froglet's relay server (`FrogletRelayServer`) is the tests' stand-in for UGS Relay | Done |
 | 7 | UGS sign-in (anonymous + session-token resume), UGS Relay as that player, the one-step UGS CHECK | Built and tested against local stand-ins. **The live check waits for you (§5.3)** |
-| 8 | UGS Lobby as the session service; START / START ONLINE; `+ PLAYER 2`; F3 diagnostics | Built 2026-10-14 (`UgsMultiplayerTests` 6/6 on stand-ins); party harness on stand-ins: **8/14** (2026-10-14; everything up to the party's launch passes; the rest waits on Bloomrush's frame rate in Amoebius, `Tools/Build/prisma_party_scenarios/README.md` § State). **The live test waits for you (§5.3)** |
+| 8 | UGS Lobby as the session service; START / START ONLINE; `+ PLAYER 2`; F3 diagnostics | Built 2026-10-14 (`UgsMultiplayerTests` 6/6 on stand-ins); party harness on the stand-ins: **14/14** (2026-10-14, `Tools/Build/prisma_party_scenarios/README.md` § State). **The live test waits for you (§5.3)** |
 
 ### Unity game: the hardening programme
 
@@ -112,7 +112,7 @@ faults (`COSMIC_SHORE_NET_FAULT`, `do netfault`) and stats (`do net`).
 |---|---|---|
 | 1 | Observability (session record, NetDiag, `net` console) | Landed; needs MPPM confirmation |
 | 2 | Verify what landed | Owner's MPPM runs (§5.2) |
-| 3 | Test level: the five-process party scenarios | Landed (14/14 on Amoebius up to 2026-10-09). On the UGS stand-ins since 2026-10-14: 8/14, and the pre-port harness on the same container also stops at T4. The match runs at 2-5 fps headless (harness README § State) |
+| 3 | Test level: the five-process party scenarios | Landed. 14/14 on Amoebius, on the UGS stand-ins since 2026-10-14 |
 | 4 | Offline mode, seven cases | Landed (L1 tests); needs a player build pass |
 | 5 | **Push instead of poll — a launch blocker** (week one is 10-40 concurrent players) | Not started |
 | 6 | Reconnection grace | Not started |
@@ -220,7 +220,7 @@ is the owner's live test (§5.3).
 |---|---|---|
 | ~~P6~~ | ~~**Relay.**~~ Done 2026-10-09 (§4). Unity Relay's protocol under our UDP transport, Froglet's relay server (same protocol, same REST shape), session integration, switches in every tool | Contract checks pass over `relay`/`sim-relay`; party harness 14/14 with every pilot through the relay |
 | P7 | **UGS Auth.** Built 2026-10-09: anonymous sign-in and session-token resume over REST, the `idToken` as UGS Relay's (and Lobby's) bearer, the one-step UGS CHECK (§4) | ~~Unit tests against a local stand-in~~ (13/13); **the owner's UGS CHECK (§5.3 step 1) still to run** |
-| P8 | **UGS Lobby** as Amoebius's session service. Built 2026-10-14: START ONLINE is UGS only, `+ PLAYER 2`, F3 (§4) | The party harness passes on the local stand-ins (now **8/14** (2026-10-14; everything up to the party's launch passes; the rest waits on Bloomrush's frame rate in Amoebius, `Tools/Build/prisma_party_scenarios/README.md` § State)); **two profiles and then two PCs form a party and play a match on real UGS (§5.3 steps 2-3)** |
+| P8 | **UGS Lobby** as Amoebius's session service. Built 2026-10-14: START ONLINE is UGS only, `+ PLAYER 2`, F3 (§4) | ~~The party harness passes on the local stand-ins~~ (14/14, 2026-10-14); **two profiles and then two PCs form a party and play a match on real UGS (§5.3 steps 2-3)** |
 | P9 | **Less traffic.** `NetworkVariable` writes dominate (7:1 over transforms, `MULTIPLAYER.md` §6.4): batch per tick, send deltas | `net` shows the drop on the same scenario, with the harness still 14/14 |
 | P10 | Congestion control past the fixed window, measured on a real internet path | A 4-player match on two networks holds RTT and shows no resend storms in `net` |
 
@@ -240,7 +240,7 @@ is the owner's live test (§5.3).
    `dotnet build Port/src/CosmicShore.Player` (the .NET 10 SDK); test with
    `dotnet test Port/tests/CosmicShore.Tests`.
 4. Party logic: run `bash Tools/Build/prisma_party_scenarios/run.sh` before and after (~15 min,
-   14/14 is the target, 8/14 the 2026-10-14 state (README § State); add `COSMIC_SHORE_NET_SIM=4g` for the bad-line run). Every pilot signs in, allocates
+   14/14 expected; add `COSMIC_SHORE_NET_SIM=4g` for the bad-line run). Every pilot signs in, allocates
    and finds parties through local UGS stand-ins (sign-in, Relay, Lobby), as START ONLINE does on the
    real service. Never point a session's tests at the live UGS project: that is the owner's §5.3.
 5. Unity C#: follow §2's `/verify-unity` rule and add the checklist entry.

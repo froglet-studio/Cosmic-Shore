@@ -20,28 +20,28 @@ if the engine has no `UgsMultiplayerService`. The shared-folder sessions (`COSMI
 `COSMIC_SHORE_RELAY` / `--relay-server` it used before are gone from the engine, and so are its old
 `PRISMA_RELAY` switches: every pilot now goes through the relay, as every START ONLINE game does.
 
-## State on 2026-10-14: 8/14, blocked on the match's frame rate, not on the stand-ins
+## State on 2026-10-14: 14/14 on the UGS stand-ins
 
-Ported to the UGS stand-ins on 2026-10-14 and run on a 4-core cloud container against the UGS-only engine:
-**8/14**. T1, T5-accept, T2b, kick, leave, T2, T5-join and launch pass through the stand-ins (five
-sign-ins, one per pilot; every pilot booted `[net] stack: simulated > relay > udp; sessions: faults > ugs`,
-the relay forwarded the match). **T4 fails, and everything after it is `not run`.**
+Run on a 4-core cloud container against the UGS-only engine, at `5a4479cbf`: **14/14**, exit 0. Boot to
+five menus 75 s, the scenarios 158 s. Five sign-ins (one per pilot). Every pilot booted
+`[net] stack: simulated > relay > udp; sessions: faults > ugs`. The relay stand-in made 20 allocations,
+accepted 20 of 20 binds and forwarded 22,558 frames with 0 refused. The Lobby stand-in served 1,448
+calls and 58 heartbeats.
 
-That failure is not the port's. The pre-port harness on the pre-port engine (shared folder, same game
-code, same container) fails at exactly the same step with exactly the same error: **8/14**, T4,
-`timed out after 180s waiting for PilotB's Ready button to show`. Measured cause:
+Earlier the same day the harness stopped at T4 (8/14), and so did the pre-port harness on the pre-port
+engine. The cause was an engine gap, not the harness. Amoebius's `Renderer.isVisible` meant "enabled
+and active", so the crystals' visual-only effects never skipped an unseen crystal. In a grown
+Bloomrush arena (the Rampage cell, ~60k prisms by design), every Charge crystal rebuilt its arc mesh
+every frame: `CrystalChargeArcs.LateUpdate` took ~95% of the main thread, and a match ran at
+3.5-5 fps. With `isVisible` as Unity means it (`Port/src/CosmicShore.Engine/Rendering/RenderVisibility.cs`:
+drawn by a camera in the last rendered frame, so never headless), one pilot runs the grown arena at
+54-61 fps.
 
-- In the Bloomrush match each headless pilot runs at **~2.4 fps** with four matches on four cores,
-  and at **3.5-5.4 fps even alone, offline and uncontended**. The menu runs at ~58 fps.
-- The scene's live behaviour count keeps climbing: **~570,000-595,000 per pilot** a few minutes into the
-  match, rising by ~130 a frame (PilotB read 87,643 on entering it).
-- Headless ticks a fixed 1/60 s, so the 7.5 s pre-game cinematic takes ~190 s of wall time, past T4's
-  180 s wait. A local run that pressed Skip and allowed 8× every wait (not committed) got Ready shown
-  and counted on two pilots, but the host still had not counted the third press after 960 s.
-
-So T3, T6, net, T7 and T4-lobby are **not yet verified on the stand-ins**. They need a match that runs at
-playable speed in Amoebius first (profile the Bloomrush scene's object growth: `Docs/claude/SHADERS_AND_PERFORMANCE.md`).
-The last 14/14 was on the shared folder, before 2026-10-14 (`Port/docs/MULTIPLAYER.md` §6.7-6.8).
+**If T4 times out on the Ready button again, check the match's frame rate first.** Headless ticks a
+fixed 1/60 s, so a slow frame stretches the 7.5 s pre-game cinematic past T4's 180 s wait.
+`{"cmd":"state"}` on a pilot's control port gives `frame` and `behaviours`. `dotnet-trace collect -p
+PID --profile dotnet-sampled-thread-time` then `dotnet-trace report FILE topN --inclusive` names the
+hot path in a few minutes.
 
 ## What it does
 
