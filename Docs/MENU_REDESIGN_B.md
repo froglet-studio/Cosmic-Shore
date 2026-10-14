@@ -32,7 +32,7 @@ Legend: `Planned` ▸ `Mockup` ▸ `Mockup approved` ▸ `Built` ▸ `Approved i
 | # | Item | Status | Mockup board | Commits |
 |---|---|---|---|---|
 | 0 | Component kit: T7 sprites, Chakra Petch SemiBold (T5), type roles + `TabularText` (T6), theme components, kit prefabs, kit test scene | Built | `MenuKit.dc.html` | `3b36c361`, `fe108889`, `b0918296`, `908fc2d7`, `4cba49ee`, `e932eaf2` + docs |
-| 1 | Top nav (`Safe Area/NavBar`) | Mockup | `Main.dc.html` (interactive), `TopNavHover.dc.html`, `TopNavLocked.dc.html` on the Menu Redesign B canvas | |
+| 1 | Top nav (`Safe Area/NavBar`) | Built (mockup approved 2026-10-14; awaiting in-editor approval) | `Main.dc.html` (interactive), `TopNavHover.dc.html`, `TopNavLocked.dc.html` on the Menu Redesign B canvas | `8d6d2acb`, `99ef3ccd` + docs |
 | 2 | Hangar screen: grid, detail and the spend-crystals panel | Planned | | |
 | 3 | Arcade modal (`ArcadeScreenModal`): explore grid plus the party/friends panel | Planned | | |
 | 4 | Game configure: `ArcadeGameConfigureModal`, plus the Maelstrom and Arena configure windows and the weekly leaderboard | Planned | | |
@@ -103,6 +103,8 @@ Also present:
   `SetActive` sub-panel.
 
 ### 2.3 Top nav
+
+As measured before item 1. Section 10 has the nav as built.
 
 ```
 NavBar [CanvasGroup]  (ScreenSwitcher.NavBar)
@@ -298,7 +300,11 @@ How the later items use it:
   selection.
 - **A hex section tab** is a `KitHexNavTile`, which is a `KitTile` on hexagon sprites.
 - **A top-nav tab** is a `KitTopNavTab`. Its `InactiveImage` and `ActiveImage` children are what
-  `ScreenSwitcher.UpdateNavBar` already toggles, so the nav restyle needs no navigation code.
+  `ScreenSwitcher.UpdateNavBar` already toggles, so the nav restyle needs no navigation code. Its
+  root is the hit area and carries a `KitHoverTint`; its `Lock` child is the locked look, shown by a
+  host's `MenuAvailabilityView` (the host insets `InactiveImage` by 23 so the word clears it).
+- **A hover lift on something that is not a `KitButton`** (an EventTrigger tab, a keycap on a plain
+  Button) is a `KitHoverTint` listing the `KitText` / `KitThemedGraphic` targets to lift.
 - **Every label** carries `KitText` (§4 role + §11 token). Live numbers go through
   `KitText.SetText` so they get per-face `<mspace>`.
 - **Static chrome** carries `KitThemedGraphic`.
@@ -320,30 +326,54 @@ the Gate 1 measurement of `Menu_Main.unity`.
 | `ArcadeScreen/Group 1585.png` (card PLATE), `Rectangle 1127 (2).png` (card RIM) | 40 + 77 refs | `kit_sliver14_*`, `KitTile` | 3, 8 |
 | `HomeScreen/Play Button.png` (hub button plate) | 8 refs | `KitButton` Play/Opaque | 6 |
 | `{LEGACY}/Cut Frame Corner.png`, `Cut Frame Corner Glow.png` | 10 + 10 refs | `kit_sliver*` | as found |
-| NavBar `nav line*` (5), `Component 1/2.png` (L1/R1), `Polygon 165/166.png` (arrows) | NavBar | `KitTopNavTab`, `KitKeycap` | 1 |
+| NavBar art under `Design Assests/Menu_Main/R_Menu_Main/HomeScreen/`: `gradient.png`, `nav line.png` + `nav line (1)`-`(4)`, `Component 1/2.png` (L1/R1), `Polygon 165/166.png` (arrows), and the ten tab icons (`hangar`, `hangar (1)`, `Ark`, `arcade (2)`, `home`, `home (2)`, `Port`, `port (2)`, `Profile`, `store (1)`) | NavBar | `KitTopNavTab`, `KitKeycap`, band + rule | **1: done.** Menu_Main references none of the 20. Their only remaining consumers are the dead copies in `_Prefabs/MIgration_Prefabs (DELETE LATER)/` (`NavBar`, `Screens`, `ModalWindows`); delete the sprites with those prefabs. |
 | Button `ColorTint` transitions with literal colours | per screen | `KitButton` states from tokens | per item |
 
 
-## 10. Item 1: top nav (mockup, awaiting approval)
+## 10. Item 1: top nav (built; awaiting in-editor approval)
 
 Boards on the Menu Redesign B canvas: `Main.dc.html` (interactive: click a tab, click LT / RT, click
 PORT), `TopNavHover.dc.html` (HANGAR active, pointer over ARK) and `TopNavLocked.dc.html` (PORT
-pressed and refused).
+pressed and refused). Mockup approved 2026-10-14, with both open points settled as recommended:
+`UpdateNavBar` keeps its `SetActive` toggle, and the tabs do not become `Selectable`s.
 
-| Element | Mockup | Built from (at the build gate) |
-|---|---|---|
-| Band | 84 tall (was 180.35), `surfaceVeryDark` `00041F`, a 1 px `surfaceDark` `222645` bottom rule, tabs centred 56 apart | `NavBar` keeps its anchors and `CanvasGroup`; `NavBarGradient` and `NavBarLine` give way to the band fill and the rule |
-| Tabs | Text, not icons: HANGAR, ARK, HOME, PORT, PROFILE, in strip order (D1). Chakra Petch SemiBold 18, caps, 0.12 em tracking | Each `<X>Link` becomes a `KitTopNavTab` instance. Its `InactiveImage` / `ActiveImage` children stay in `NavInactiveImages` / `NavActiveImages`, so `UpdateNavBar` and the `EventTrigger` -> `OnClick<X>Nav` wiring are untouched |
-| Inactive tab | `neutralLightest` `747BAD`; hover `textLight` `E6E9FF` | `KitTopNavTab` inactive label |
-| Active tab | `controlActive` `00D4FF` text, 2 px `controlActive` underline (S9) | `KitTopNavTab` `ActiveImage` (label + underline) |
-| Locked tab (PORT) | `inactiveLight` `5C5F70`, padlock before the label; still pressable | The `MenuAvailabilityView` that `ScreenSwitcher` already ensures on the link, authored on the tab: `lockedOverlay` = `chrome_lock`, `label` = the tab label |
-| Refusal | "Not open yet." toast under the band for about 2.4 s | Unchanged: `MenuAvailabilityView` -> `ToastNotificationAPI.Show(disabledScreenMessage)`. The toast is drawn in style B on the board, but the toast itself is restyled at item 11, so until then the build shows today's toast |
-| LT / RT | Keycaps at each end of the strip, clickable; pressing steps one screen, skipping PORT | `KitKeycap` art on the existing `LeftArrrow` / `RightArrow` buttons, so `OnClickLeftArrow` / `OnClickRightArrow` stay wired. The `L1 Indicator` / `R1 Indicator` hint images retire (the keycaps carry the hint) |
+Generated by `Tools/Build/author_menu_topnav.py` (`--check`, `--self-test`); re-run it rather than
+editing the scene's nav by hand. Its migration (deleting the old subtree) stands down once that
+subtree is gone; the wiring checks run on every invocation, including `--check` against the scene
+as committed.
 
-Open points for the build gate, recorded rather than decided here:
-- **`UpdateNavBar` toggles the tab images with `SetActive`.** The brief says CanvasGroup alpha, never
-  `SetActive`. Item 1 changes look and layout only, so the plan is to leave that code alone and
-  restyle the objects it toggles. Converting it is a one-method change if you want it in item 1.
-- **The tabs are not `Selectable`s today** (gamepad reaches screens through LT / RT only). The
-  mockup's focus ring (`cta`, 2 px) appears only if they become `Selectable`, which is a navigation
-  change, so it is out of scope.
+```
+Safe Area/NavBar  [CanvasGroup]            84 tall (was 180.35), anchors unchanged
+|- Band           Image + KitThemedGraphic SurfaceVeryDark       (replaces NavBarGradient)
+|- Rule           Image + KitThemedGraphic SurfaceDark, 1 px     (replaces NavBarLine)
+'- NavBarButtons  HorizontalLayoutGroup, middle centre, spacing 56, 744 wide
+   |- LeftArrrow  Button -> OnClickLeftArrow (unchanged), transparent hit Image, KitHoverTint
+   |  '- Keycap   KitKeycap "LT"
+   |- HangarLink, ArkLink, HomeLink, PortLink, ProfileLink
+   |              KitTopNavTab instances; EventTrigger PointerClick -> OnClick<X>Nav added on each root
+   '- RightArrow  as LeftArrrow, "RT"
+```
+
+| Element | As built |
+|---|---|
+| Band | `NavBar` is 84 tall at the top of the safe area. The band is opaque `SurfaceVeryDark`, where the old gradient was about 90 % opaque over its top half, so it covers nothing that was readable before. It does not raycast (nor did the gradient). |
+| Tabs | `KitTopNavTab` instances, named as the old links. Width = the word, so the 56 gap is between words as on the board. `ScreenSwitcher.NavActiveImages` / `NavInactiveImages` point at each instance's `ActiveImage` / `InactiveImage`, so `UpdateNavBar` and `ResolveNavLinkObject` (which answers the image's parent, now the instance root) are unchanged. The saved state is HOME active, the screen the menu opens on. |
+| Hover | `KitHoverTint` (new, `Assets/_Scripts/UI/Kit/`): pointer-only lift to `TextLight` on the inactive word, restoring each target's own token on exit or disable. The kit tab carries it with a transparent hit Image on its root, so the whole tab answers the pointer. |
+| Locked PORT | An authored `MenuAvailabilityView` on the PORT instance (the one `MarkDisabledNavLinks` would otherwise add at runtime): `lockedOverlay` = the tab's `Lock` glyph (now part of `KitTopNavTab`, off by default), `label` = its inactive word, `unavailableLabelColor` = `InactiveLight`. Availability is authored **Available**: `disabledScreens` locks it at runtime, so emptying that list opens the tab with nothing else to change. In edit mode PORT therefore reads unlocked; the padlock and dim appear in Play mode. |
+| Refusal | Unchanged: `MenuAvailabilityView.TryPress` plays the Denied sting and shows "Not open yet." through `ToastNotificationAPI`. The toast keeps today's look until item 11. |
+| LT / RT | The same Buttons and `onClick` wiring, moved into the row as its first and last children. Their Image is now a transparent hit area and their transition is None; the `KitKeycap` child is the art, and `KitHoverTint` lifts its border and label to `TextLight` on hover. `L1 Indicator` / `R1 Indicator` are deleted. |
+| Per-tab line art | `ScreenSwitcher.NavBarLine` and `NavBarLineSprites` are emptied on purpose: the code already skips both when unset, and nothing in Menu_Main now references the retired sprites (section 9). |
+
+Deviations from the board, all small:
+- **Tab tracking** is the §4 Button role (0.08 em), not the board's 0.12 em. The spec wins.
+- **Locked PORT has no hover lift.** Its word's colour belongs to `MenuAvailabilityView`, so the
+  instance's `KitHoverTint` is disabled rather than fighting it.
+- **No focus ring on the tabs**, as agreed: they are not `Selectable`s. Gamepad moves through LT / RT,
+  unchanged.
+- **The lock and the dim use `SetActive` / literal colours inside `MenuAvailabilityView`**, existing
+  code left alone like `UpdateNavBar`. The literal is set to the `InactiveLight` value; the PORT
+  word's own colour is the kit default (`NeutralLightest`), driven externally on that one instance.
+
+Not verified (no Unity editor in a cloud session): the in-editor look, hover, pointer hit areas,
+TMP's real word widths against the generator's PIL estimate, and the FrogletTools > Game Modes >
+Game Mode Prefab Kit Validate run. Steps are in `Docs/UNITY_VERIFICATION_CHECKLIST.md`.

@@ -65,6 +65,61 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Style-B menu redesign, item 1: the top nav in Menu_Main (`claude/new-session-76hnyc`, 2026-10-14) — NOT EDITOR-VERIFIED
+
+`Safe Area/NavBar` restyled to the approved Menu Redesign B boards (`Docs/MENU_REDESIGN_B.md` §10).
+Look and layout only: no navigation code changed. No editor and no `unity` CLI in the authoring
+session, so `/verify-unity` and the Game Mode Prefab Kit Validate did NOT run. Offline:
+`unity_refcompile` player and editor configs report 0 project errors (a planted CS1061 in
+`KitHoverTint.cs` failed the gate first); `Tools/Build/author_menu_topnav.py --check` validates the
+committed wiring and `--self-test` catches all 7 planted defects; `check_generated_assets.py` reports
+only package-script guids on the new scene documents, and a planted unknown field on the PORT
+`MenuAvailabilityView` was caught.
+
+**What landed**
+
+1. `KitHoverTint` (`_Scripts/UI/Kit/`) - pointer-only hover lift for kit surfaces that are not
+   `KitButton`s.
+2. `KitTopNavTab.prefab` - its root is now the hit area and carries `KitHoverTint`; a `Lock` child
+   (off by default) is the locked look.
+3. `Menu_Main.unity` - NavBar 84 tall with a band and a 1 px rule; five `KitTopNavTab` instances
+   (HangarLink..ProfileLink) keep their `EventTrigger` -> `OnClick<X>Nav`; `LeftArrrow` /
+   `RightArrow` keep their Buttons and wear `KitKeycap` "LT" / "RT"; `L1` / `R1 Indicator`,
+   `NavBarGradient` and `NavBarLine` deleted; PORT has an authored `MenuAvailabilityView`.
+
+**Verify in editor**
+
+1. Let the project import and compile. Expect no console errors, in particular none naming
+   `KitHoverTint`, and no "missing prefab" or "missing script" warnings on Menu_Main load.
+2. Open `Assets/_Scenes/Menu_Main.unity`. In the Hierarchy, `UI_Refactored/Safe Area/NavBar` should
+   hold `Band`, `Rule`, `NavBarButtons`; under `NavBarButtons`: `LeftArrrow`, `HangarLink`, `ArkLink`,
+   `HomeLink`, `PortLink`, `ProfileLink`, `RightArrow`, the five links shown as prefab instances
+   (blue). Game view at 1920x1080: a thin dark band across the top with LT, HANGAR, ARK, HOME (Jade,
+   underlined), PORT, PROFILE, RT centred. Compare with `Main.dc.html` on
+   https://claude.ai/artifact/W8DBZaW6pu3L28egCjrKo2. In edit mode PORT reads like the other tabs;
+   its padlock and dim come from runtime state.
+3. Select `UI_Refactored/Safe Area/Screens` (it holds `ScreenSwitcher`): `Nav Active Images` / `Nav Inactive Images` list the
+   five links' `ActiveImage` / `InactiveImage` (none missing); `Nav Bar Line` is None and
+   `Nav Bar Line Sprites` is empty, on purpose.
+4. Run FrogletTools > Game Modes > Game Mode Prefab Kit > Validate (required before a scene commit).
+5. Enter Play mode from Bootstrap as usual and reach the menu (it opens on HOME).
+   - **Locked PORT**: grey word with a padlock to its left. Click it: the Denied sting plus the
+     "Not open yet." toast (today's toast look until item 11), and the screen does not change.
+   - **Mouse**: hover each unlocked tab - the grey word turns near-white and returns on exit; the
+     active tab stays Jade. Click HANGAR, ARK, PROFILE, HOME in turn: the screen changes, the Jade
+     word and underline move to the clicked tab. Hover the LT / RT keycaps: border and letters turn
+     near-white. Click RT from HOME: lands on PROFILE (PORT skipped); LT from PROFILE: back to HOME.
+   - **Whole tab is clickable**: click in the band just above or below a word - it still navigates.
+   - **Gamepad**: LT / RT step screens left / right, skipping PORT, exactly as before.
+   - **Freestyle round trip**: toggle freestyle and back. The nav hides and returns, and PORT is
+     still grey with its padlock.
+6. Narrow the Game view (or use a notch/safe-area simulator) - the row stays centred in the safe
+   area and nothing overlaps.
+7. Report any word that looks clipped or crowded: tab widths come from a PIL measurement of the
+   font, not TMP's own layout.
+
+---
+
 ### 🔴 Style-B menu redesign, item 0: the component kit (`claude/new-session-76hnyc`, 2026-10-13) — NOT EDITOR-VERIFIED
 
 The reusable kit every later style-B item is built from (`Docs/MENU_REDESIGN_B.md`). No editor and no

@@ -75,10 +75,23 @@ live in `Docs/MENU_REDESIGN_B.md`. Build new menu UI from the kit:
 - **Selectable tiles:** `KitTile` / `KitHexNavTile`.
 - **Labels:** `KitText`, a §4 role plus a §11 colour token.
 - **Static chrome:** `KitThemedGraphic`.
+- **Hover on a non-`KitButton` surface** (an EventTrigger tab, a keycap on a plain Button):
+  `KitHoverTint`.
 
 All of these are in `Assets/_Scripts/UI/Kit/` and `Assets/_Prefabs/UI Elements/Kit/`. Colours
 come from `UIThemeSO` tokens, never literals. The kit owns every interaction state, including the
 CTA gamepad focus ring.
+
+**The top nav is style B (item 1, 2026-10-14).** `Safe Area/NavBar` is an 84-tall band (`Band` +
+1 px `Rule`, both full width, so `SafeAreaBleed` takes them to the screen edges as it took the old
+gradient) with one centred row under `NavBarButtons`: the `LeftArrrow` Button wearing a `KitKeycap`
+"LT", five `KitTopNavTab` instances (`HangarLink`..`ProfileLink`, text labels, each with its
+`EventTrigger` -> `ScreenSwitcher.OnClick<X>Nav`), and `RightArrow` / "RT". `NavActiveImages` /
+`NavInactiveImages` point into the instances, so `UpdateNavBar` is unchanged; `NavBarLine` and
+`NavBarLineSprites` are deliberately empty. Locked PORT is drawn by an authored
+`MenuAvailabilityView` (padlock + dimmed word) that `disabledScreens` drives at runtime. The scene's
+nav is generated: change it through `Tools/Build/author_menu_topnav.py` (`--check`, `--self-test`),
+not by hand. Details: `Docs/MENU_REDESIGN_B.md` §10.
 
 #### Menu Screen Patterns to Follow
 
