@@ -653,6 +653,12 @@ the manual replay rig, `MouseOrbitCamera`, `Vessel.ToggleAIPilot`, `DeviceTier` 
   - A job sent to a session that has ended fails "could not be reached": press Start session.
 - **A files-form publish keeps the publishing view on the OLD files**: reload it. Refresh must
   re-inject the panel.
+- **`origin` is not always the repo** (2026-10-14). Amoebius runs Sync jobs in the user's own Unity checkout,
+  and a checkout cloned from a fork or a local copy has no studio branches on `origin`. Every Refresh failed
+  with "branch Ys-bleeding-edge does not exist on origin" while the branch was on GitHub. `sync_job.py` now
+  picks the remote that points at froglet-studio/Cosmic-Shore, or fetches the repo's URL directly into
+  `refs/remotes/froglet-studio/`. `status` returns that `ref` and Amoebius rebuilds from it
+  (`StudioJobs.FetchedRef`). Never write `origin/<branch>` in a job again: use `ref(b)`.
 - **A new artifact forks the data**: this is why §0 exists. Before anything else, check the artifact
   you are about to publish to is the one.
 - **The Write tool refuses a file it has not read in this session**: read first, and check `git log`.

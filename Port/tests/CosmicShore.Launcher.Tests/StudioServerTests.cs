@@ -225,6 +225,24 @@ namespace CosmicShore.Launcher.Tests
         }
 
         [Fact]
+        public void ARefreshRebuildsFromTheRefTheJobFetched_WhicheverRemoteThatWas()
+        {
+            // A checkout whose origin is a fork or a local copy: sync_job.py fetched through the repo's URL (2026-10-14).
+            var viaUrl = new JsonObject { ["ref"] = "refs/remotes/froglet-studio/Ys-bleeding-edge" };
+            Assert.Equal("refs/remotes/froglet-studio/Ys-bleeding-edge", StudioJobs.FetchedRef(viaUrl, "Ys-bleeding-edge"));
+            Assert.Equal("refs/remotes/upstream/cece/x", StudioJobs.FetchedRef(new JsonObject { ["ref"] = "refs/remotes/upstream/cece/x" }, "cece/x"));
+            // An older sync_job.py (no ref), a ref for another branch, or one that is not a remote-tracking ref: origin/<branch>.
+            Assert.Equal("origin/b", StudioJobs.FetchedRef(new JsonObject(), "b"));
+            Assert.Equal("origin/b", StudioJobs.FetchedRef(new JsonObject { ["ref"] = "refs/remotes/upstream/other" }, "b"));
+            Assert.Equal("origin/b", StudioJobs.FetchedRef(new JsonObject { ["ref"] = "HEAD;rm -rf ~/b" }, "b"));
+            // build.json names the branch, whichever remote it came through.
+            Assert.Equal("Ys-bleeding-edge", StudioBuild.BranchName("refs/remotes/froglet-studio/Ys-bleeding-edge"));
+            Assert.Equal("cece/x", StudioBuild.BranchName("refs/remotes/upstream/cece/x"));
+            Assert.Equal("cece/x", StudioBuild.BranchName("origin/cece/x"));
+            Assert.Equal("my/work", StudioBuild.BranchName("my/work"));
+        }
+
+        [Fact]
         public void TheArgsAreSyncJobPys_WithNoForceAnywhere()
         {
             Assert.True(StudioJobs.IsBranch("cece/magical-carson-9bdq8z"));

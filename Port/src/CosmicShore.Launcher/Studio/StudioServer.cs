@@ -186,11 +186,11 @@ namespace CosmicShore.Launcher
             }
         }
 
-        /// <summary>Refresh: serve origin/&lt;branch&gt;; true when the studio now shows a different studio commit.</summary>
-        bool Rebuild(string branch, string? pathSha)
+        /// <summary>Refresh: serve the ref the job fetched (<see cref="StudioJobs.FetchedRef"/>); true when the studio now shows a different studio commit.</summary>
+        bool Rebuild(string gitRef, string? pathSha)
         {
             var before = Current?.PathSha;
-            var info = EnsureBuilt("origin/" + branch);
+            var info = EnsureBuilt(gitRef);
             return info.PathSha != before;
         }
 
