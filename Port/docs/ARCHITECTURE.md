@@ -444,6 +444,12 @@ own touch controls.
 | 6 | Command box + **Run** | Type a registered command, e.g. `prisms 50000` (a stress test) or `prisms off` |
 | — | **F7** | Show or hide the panel |
 
+The readout's FPS and frame time come from `Time.unscaledDeltaTime`. Its CPU, GPU and bound verdict come from
+`FrameTimingManager`, which the engine measures on the wall clock (`src/CosmicShore.Engine/Rendering/FrameTimingManager.cs`).
+The game loop times each tick, and the player reports its draw CPU and GPU timer queries. In a normal run the two
+agree with F3. A scripted run (`--frames`) steps every game clock by 1/60 s, so there FPS and frame time read
+60 / 16.7 ms while the CPU and GPU rows show the real cost.
+
 **Amoebius's own diagnostics (F3, top right).** The game's panel above is the game's; F3 shows the engine's
 view of the same process (`src/CosmicShore.Player/PlayerDiagnostics.cs`), refreshed twice a second:
 
@@ -451,7 +457,7 @@ view of the same process (`src/CosmicShore.Player/PlayerDiagnostics.cs`), refres
 
 | Section | What it shows |
 |---|---|
-| FRAME | fps (green 55+, amber 30+, red below), frame time average / 1% worst / max over the last 240 frames; simulation and render CPU; GPU when the frame is timed (games the launcher starts); the game loop's phases |
+| FRAME | fps (green 55+, amber 30+, red below), frame time average / 1% worst / max over the last 240 frames; simulation and render CPU; GPU from timer queries (desktop GL; a GL ES context has none); the game loop's phases |
 | MEMORY | managed heap, process working set, allocation per frame, collections per generation and GC pause in the last half second |
 | SCENE | the active scene, resolution, draw calls and instances |
 | NETWORK | offline (START) or online (START ONLINE); the NetStack chain; the UGS sign-in (player id, or why it failed), project and environment; every lobby this player is in (code, host or member, seats, relay join code, properties) and the last Lobby error; the match role, relay code and region, traffic, and each peer's round trip (green under 80 ms, amber under 160); the network simulator and session faults when set |
