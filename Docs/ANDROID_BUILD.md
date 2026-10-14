@@ -198,6 +198,11 @@ Automating the upload is possible once the first one is in. It needs:
 
 Not set up; it is a follow-up.
 
+**Native debug symbols are not uploaded either**, so Play's crash reports (Android vitals, the
+pre-launch report) show unsymbolicated native frames. Unity 6 can write them into the bundle or
+beside it, but its API for that could not be verified offline, so the build does not set it. Also a
+follow-up.
+
 ## 7. When something goes wrong
 
 | Symptom | Fix |
