@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Revision-2 building blocks for the style-B menu generators (Docs/MENU_REDESIGN_B.md §13.4).
+Revision-2 building blocks for the style-B menu generators (Docs/MENU_REDESIGN_B.md section 13.4).
 
 Every item generator (author_menu_*.py) emits the SAME motion and surface vocabulary through this
 module, so a screen built in one item moves and reads like a screen built in another:
@@ -10,7 +10,7 @@ module, so a screen built in one item moves and reads like a screen built in ano
     spark_body(...)    KitSpark body: the travelling highlight, or a button sweep (pause > 0)
     shake() / drain()  KitShake / KitDrain bodies
     grid_node(...)     the blueprint grid backdrop (kit_grid, Tiled, Neutral Dark)
-    bracket_nodes(...) four corner brackets (kit_bracket, flipped by scale)
+    bracket_nodes(...) four corner brackets (kit_bracket, turned by z rotation)
     spark_line(...)    a 2 px route line that clips a KitSpark streak (RectMask2D)
 
 Library only - it writes nothing. `python3 Tools/Build/menu_b_motion.py --self-test` proves the bodies
