@@ -99,6 +99,13 @@ MASS_PRISM_MESH = "Assets/_Models/MassCrystalPrisms.asset"
 MASS_PRISM_GUID = hashlib.md5(b"CosmicShore/MassCrystal/MassCrystalPrisms.asset").hexdigest()
 MASS_DEPTH_THICKNESS = 6.25
 MASS_DEPTH_NAME = "MassDepthPrisms"
+# The Mass crystal's own column and split (designer, 2026-10-14: "bring the face separation down to 50% current and the
+# column height down to 75% current on the mass crystal effect of the mass crystal"). A column's height is how far its
+# top stands out past the seat, (_Reach - 1) x the plate's radius: the omni's 2 -> 1.5, so _Reach 3 -> 2.5. The faces
+# part by 0.5 -> 0.25 plate radii at the top. The omni's triangles keep the omni's (author_omni_crystal_triangles.py),
+# and in the converter the landing Mass prisms blend from these to theirs as they morph (OmniCombinePlayer.WriteMass).
+MASS_DEPTH_REACH = 1 + 0.75 * (OMNI.DEPTH_REACH - 1)
+MASS_DEPTH_FACE_SPLIT = 0.5 * OMNI.DEPTH_FACE_SPLIT
 PRISM_PREFABS = {   # prefab -> is its renderer authored in the free (lime) state
     "Assets/_Prefabs/Environment/CrystalMass.prefab": False,
     "Assets/_Prefabs/Environment/ActiveCrystalMass.prefab": True,
@@ -130,9 +137,11 @@ def depth_material_texts():
     top_h, split = OMNI.prism_shape(mass_prism_mesh()[0])
     return {
         mat_rel(MASS_DEPTH_NAME): OMNI.depth_material(MASS_DEPTH_NAME, "OmniCrystalBody", body,
-                                                      OMNI.MATERIAL_THICKNESS, top_h, split),
+                                                      OMNI.MATERIAL_THICKNESS, top_h, split,
+                                                      MASS_DEPTH_REACH, MASS_DEPTH_FACE_SPLIT),
         mat_rel(MASS_DEPTH_NAME + "Inactive"): OMNI.depth_material(MASS_DEPTH_NAME + "Inactive", "OmniCrystalBodyInactive",
-                                                                   body_inactive, OMNI.MATERIAL_THICKNESS, top_h, split),
+                                                                   body_inactive, OMNI.MATERIAL_THICKNESS, top_h, split,
+                                                                   MASS_DEPTH_REACH, MASS_DEPTH_FACE_SPLIT),
     }
 
 

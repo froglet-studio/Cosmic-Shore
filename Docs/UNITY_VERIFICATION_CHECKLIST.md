@@ -65,6 +65,43 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Mass crystal: slimmer column; converter crystals socket in once centred (`cece/beautiful-goodall-8cenn3`, 2026-10-14) — NOT EDITOR-VERIFIED
+
+`/verify-unity` was not run (no Unity Editor or `unity` CLI in the session). What ran:
+- `unity_refcompile`, player and editor: no errors in project code;
+- `converter_round5_harness`: all pass. Negative controls: Mass sealed in flight slides along the shell; raised to
+  the very top of its column it reaches the waiting Time crystal;
+- `omni_combine_parity`: lab 7e-7;
+- `omni_depth_prism_shader_parity.py`: the Mass's own column against the Omni Shepard Lab;
+- `--check` on every generator touched, `author_elemental_converter.py --self-test`, and `verify_lab.cjs` on the
+  Omni Shepard, Omni Combine and Omni Motion labs.
+
+**What landed** (`Docs/Studios/OMNI_COMBINE_LAB.md`, revision 8):
+- `MassDepthPrisms[Inactive].mat`: `_FaceSplit` 0.5 → 0.25 (50%). `_Reach` 3 → 2.5: the column stands 1.5 plate
+  radii past the seat instead of 2 (75%). This is the Mass crystal in play everywhere. The omni's triangles are
+  unchanged.
+- Converter, Charge and Time: the extra spacing (now 0.14–0.18) is held until the crystal is centred on the omni,
+  then comes down over `socketSeconds` (0.8–1.0 s).
+- Converter, Mass: its prisms fly in raised up the Mass crystal's own column (`massRaise` 0.6 of it) and come
+  straight down through their triangle holes once the crystal is centred. Their deepest point is 0.59 R above the
+  landed shell.
+- The play is 0.8–1.0 s longer: the omni waits for Time to socket in.
+
+**Verify in editor:**
+1. A Mass crystal in a game mode: as you fly round it, its raised prisms stand visibly shorter and their faces part
+   less than the omni's.
+2. Ark → CONVERT several times:
+   - Mass: as it sets off, its prisms rise and stay up while it flies in. Once it is centred they come straight
+     down into the holes, with none sliding through the Space or Charge plates beside them.
+   - Charge and Time: their plates hover a little wide until the crystal stops moving, then drop straight in.
+   - The omni dithers in only after Time has socketed.
+3. Mid-flight, the Mass prisms bound for the omni's far side pass through it on the way in (1.0% of prism-frames,
+   0.55% on the camera's half). Every far-bound plate of every crystal already does this. Judge whether it reads.
+4. Tuning, in `Tools/Build/author_elemental_converter.py`, then regenerate:
+   - `massRaise` is the Mass hold height, 1 = the very top of the column, as asked. Measured nearest approach to the
+     waiting Time crystal: 1 → 0.00 R, 0.75 → 0.03 R, 0.6 → 0.17 R. 0.6 is the highest that clears it.
+   - `socketSpacing` and `socketSeconds` for the others.
+
 ### 🔴 Thresher: no trail while the crosshair is up; every aimed launch boosted ×4.8 (`cece/relaxed-dijkstra-g6ix3x`, 2026-10-13) — NOT EDITOR-VERIFIED
 
 **What landed** (`R_VesselActions/THRESHER.md` §5a, §9; `Controller/Arcade/THRESHERTIME.md` §3):
@@ -188,7 +225,8 @@ land (`OmniCombineCore.FaceCamera`, revision 7, round 8).
    - Space, first, is as before.
 2. Watch for the swoop speed when a crystal starts on the far side; it's the cost of this choice.
 3. Tuning: `socketSpacing` (min, max) on `OmniCombineConfig`; `SettleFrom` (0.85) and `ApproachTurnEnds` (0.7) are
-   constants in `OmniCombineCore`.
+   constants in `OmniCombineCore`. (2026-10-14: `SettleFrom` retired; the spacing now holds until the crystal is
+   centred and settles over `socketSeconds`. See the Mass crystal entry above.)
 
 ### 🔴 Converter crystals socket in from outside; flux arcs are five seamless coaxial strands (`cece/sharp-fermi-yw38ky`, 2026-10-13) — NOT EDITOR-VERIFIED
 

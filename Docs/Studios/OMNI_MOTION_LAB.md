@@ -25,7 +25,7 @@ The designer: "let's graduate round 5 to unity". Everything below is generated b
 |---|---|---|
 | Mass | `triSealMode 1`, `triMargin 0.05` | `CrystalDepthPrismProfile.sealAtHorizon`, `horizonMargin`: `DepthRatchet.HorizonSealDepth` each frame |
 | Mass | `depthRise 1`, `depthRiseRate 1.5` | `riseWhileHidden`, `riseRate`, `occluderRadius 0.936`: `DepthRatchet.Step(..., riseTargetHidden)` with `HiddenBehindBody(ColumnTop(...))` |
-| Mass | `depthReach 3`, `depthSizeStart 0.6`, `depthOpen -0.25`, `depthSwap -0.97` | `_Reach 3`, `_PlateScaleStart 0.6` on the depth materials; `openDepth`, `reseatDepth` |
+| Mass | `depthReach 3`, `depthSizeStart 0.6`, `depthOpen -0.25`, `depthSwap -0.97` | `_Reach 3`, `_PlateScaleStart 0.6` on the depth materials (2026-10-14: the Mass crystal's own `MassDepthPrisms` is now `_Reach 2.5`, `_FaceSplit 0.25`; the omni's stay 3 / 0.5, `OMNI_COMBINE_LAB.md` revision 8); `openDepth`, `reseatDepth` |
 | Space + Time | `cadence 1`, `sqPentDur 1.733`, `sqTriDur 2.4`, gap 0.15 | `OmniCrystalCadence` (Crystal root) + `OmniCrystalCadence.asset`; `CrystalFlipWave` plays one cued wave per wave beat |
 | Space | `pentPath 1`, `triPath 2`, `sqEase 0`, `pentLift 0.14`, `triLift 1.5`, `triSide 1.5` | `CrystalSpaceSquares` fits each square's 72° and 120° turns to the art keys at runtime and writes them as two 24-frame blend shapes |
 | Space/Time/Charge | `plateThick 1.1` | the shaped twin thickens 8- and 10-corner plates 1.1×; the Charge arc ends sit on the thicker pentagons |

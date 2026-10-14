@@ -1136,6 +1136,23 @@ Machine validation covers structure and colorimetry; only a playtest covers *loo
 
 ## 7. Follow-ups
 
+- **Mass column and converter socketing (§2.10) — rows from the `cece/beautiful-goodall-8cenn3` ship pass, 2026-10-14
+  (`OMNI_COMBINE_LAB.md` revision 8).**
+  - **The converter harness transcribes `OmniCombinePlayer.WriteMass`'s column math.** Section 9's `MassColumns`
+    (`Tools/Build/converter_round5_harness/Program.cs`) re-derives each Mass prism the way `WriteMass` and
+    `OmniDepthPrismShader.DepthPrismPosition` draw it: the own → site column slide, the reach and size at the
+    column place, the thickness blending 6.25 → 8 with the mean morph. The clearance checks it gates (0.59 R above
+    the shell, 0.17 R off the Time crystal) are only as true as that copy. Nothing fails if `WriteMass` changes.
+    Fix: move the per-plate column centre and the column place into `OmniCombineCore` (pure, as
+    `MassColumnPlace` already is), and have both the player and the harness call it. Debt this branch created.
+  - **`massRaise` 0.6 is bounded by the Time crystal's start, and nothing re-measures it if the layout moves.**
+    The table in revision 8 holds only for `spread` 2.7–3.3 and the tetrahedron layout. The harness reads
+    `massRaise` from the shipped config but draws its own spread and arc ranges (`Program.cs` section 9), so a
+    retune of `spread` / `arc` on `OmniCombineConfig` is not seen. Read those ranges from the config asset too.
+    Debt this branch created.
+  - **The Mass prisms' framing reach is approximate.** `WriteMass` returns the farthest column TOP, not the farthest
+    vertex. The prism body and its face split stand a few hundredths of R beyond. The camera's `framing` margin covers
+    it today. A report, not a fix.
 - **Charge light and the converter (§2.10) — rows from the `cece/sharp-fermi-yw38ky` ship pass, 2026-10-14.**
   - **`ChargeArcs.FluxStrikes` hands the column seats to `StrikeAlong` through static scratch.** `s_seats` /
     `s_seatRadii` are set before `FluxStrikesUngated` and cleared in a `finally` (8 references in

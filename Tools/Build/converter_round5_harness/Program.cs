@@ -10,10 +10,17 @@
 //  6. the Charge light reads both combine crystals (12 blooms; 12 pentagons) and the flux arcs' ends sit on the
 //     pentagons as OmniCombineMotion swells them;
 //  7. the lab path is untouched: GameMotion off gives the lab's OmniPose (the parity harness holds the lab itself);
-//  8. every crystal but the first comes in with a bit of extra spacing that settles to nothing as it lands, and arrives
-//     from the camera's side (FaceCamera), so the rhombi that must cross the omni do it behind it.
+//  8. every crystal but the first comes in with a bit of extra spacing, held until it is centred on the omni and then
+//     settled to nothing over SocketSeconds, and arrives from the camera's side (FaceCamera), so the rhombi that must
+//     cross the omni do it behind it;
+//  9. the Mass prisms ride raised up their columns (OmniCombineConfig.massRaise, on MassDepthPrisms' own column) all the
+//     way in and come down them only once the crystal is centred (OmniCombineCore.MassColumnPlace): raised, every thick
+//     prism is wholly clear of the landed shell, socketing it comes straight down through its own hole, and it never
+//     reaches the waiting Time crystal.
 // Negative controls: the square keys out of order are refused; composing the frame the other way round fails check 5;
-// arriving straight in (no FaceCamera), Time's camera-facing rhombi come in from inside.
+// arriving straight in (no FaceCamera), Time's camera-facing rhombi come in from inside; the Mass prisms sealed as the
+// crystal sets off (the behaviour before 2026-10-14) cross the shell beside their holes; at the very top of their column
+// (raise 1) they reach into the waiting Time crystal.
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -171,12 +178,12 @@ static class Program
 
         // 8: a bit of extra spacing that settles, and every crystal but the first arriving from the camera's side
         var sp = OmniCombineParams.LabDefault;
-        sp.GameMotion = true; sp.ShaderDepth = true; sp.IdleTumble = false; sp.SocketSpacing = 0.1; sp.Stagger = sp.Flight;
+        sp.GameMotion = true; sp.ShaderDepth = true; sp.IdleTumble = false; sp.SocketSpacing = 0.16; sp.SocketSeconds = 0.9; sp.Stagger = sp.Flight;
         {
             // the spacing: a plate is pushed out along its slot by w * spacing * |slot| until it settles, and lands exactly
             var none = sp; none.SocketSpacing = 0;
             var (pushErr, landed, spaceMoved) = SpacingStats(core, sp, none);
-            Check("the extra spacing pushes each plate out along its slot by exactly w x spacing, and settles before it lands", pushErr < 1e-4f * R, $"worst {pushErr / R:E2} R");
+            Check("the extra spacing pushes each plate out along its slot by exactly w x spacing, held until the crystal is centred, then settles", pushErr < 1e-4f * R, $"worst {pushErr / R:E2} R");
             Check("every plate still lands exactly in its slot", landed < 1e-4f * R, $"worst {landed / R:E2} R");
             Check("the first crystal (Space) is untouched by the spacing", spaceMoved == 0f, $"{spaceMoved:E2}");
         }
@@ -247,6 +254,93 @@ static class Program
                   $"Charge {straightIn[1]:P1}, Mass {straightIn[2]:P1}, Time {straightIn[3]:P1}");
         }
 
+        // 9: the Mass prisms raised up their columns all the way in, and down them only once the crystal is centred
+        {
+            // The shipped dials: the Mass crystal's own column (MassDepthPrisms.mat) and the raise (OmniCombineConfig.asset).
+            string root = Path.GetDirectoryName(Path.GetDirectoryName(Path.GetDirectoryName(Path.GetDirectoryName(Path.GetFullPath(args[0])))));
+            float reach = Saved(Path.Combine(root, "_Graphics/Materials/CrystalMaterials/MassDepthPrisms.mat"), "_Reach");
+            float sizeStart = Saved(Path.Combine(root, "_Graphics/Materials/CrystalMaterials/MassDepthPrisms.mat"), "_PlateScaleStart");
+            float raise = Saved(Path.Combine(root, "_SO_Assets/Environment/OmniCombine/OmniCombineConfig.asset"), "massRaise");
+            if (Environment.GetEnvironmentVariable("RAISE") is string forced) raise = float.Parse(forced);
+            var shellOuter = new[] { OmniCombineCore.Space, OmniCombineCore.Charge }
+                .Max(k => Enumerable.Range(0, core.VertexCount(k)).Max(i => V(core.CrystalData(k).final, i).magnitude));
+            var rng = new System.Random(9);
+            float worstPlace = 0f, worstCentred = 0f, worstOnSlot = 0f, worstSocketed = 0f, newSocket = 0f;
+            float lowestBottom = float.MaxValue, nearestTime = float.MaxValue, nearestTimeSealed = float.MaxValue, nearestTimeTop = float.MaxValue;
+            double newOff = 0, oldOff = 0, newOffSeen = 0, oldOffSeen = 0, prismFrames = 0;
+            for (int play = 0; play < 24; play++)
+            {
+                var pq = sp; pq.LayoutYaw = rng.NextDouble() * 2 * Math.PI; pq.Swirl = rng.NextDouble() * 0.3 - 0.15; pq.Seed = rng.Next();
+                pq.SocketSeconds = 0.8 + 0.2 * rng.NextDouble();
+                pq.Stagger = pq.Flight * (0.95 + 0.1 * rng.NextDouble());
+                pq.Spread = 2.7 + 0.6 * rng.NextDouble();
+                pq.Arc = 0.25 + 0.3 * rng.NextDouble();
+                pq.MassRaise = raise;
+                // as the converter plays it: from the camera's side, following the camera round at the converter's rate
+                double orbit0 = rng.NextDouble() * 2 * Math.PI, rate = 5 * Math.PI / 180;
+                D3 Cam(double t) => CameraAt(orbit0 + rate * t);
+                double az0 = Azimuth(Cam(0));
+                core.FaceCamera(ref pq, az0, rate, 0);
+                pq.CameraElevation = 18 * Math.PI / 180;
+                double centred = OmniCombineCore.Centred(OmniCombineCore.Mass, pq);
+                // Held up its column from the moment the crystal sets off until it is centred.
+                for (double t = OmniCombineCore.Departs(OmniCombineCore.Mass, pq); t < centred; t += 1.0 / 30)
+                    worstPlace = Math.Max(worstPlace, (float)Math.Abs(OmniCombineCore.MassColumnPlace(t, pq) - (1 - raise)));
+                worstSocketed = Math.Max(worstSocketed, (float)(1 - OmniCombineCore.MassColumnPlace(centred + pq.SocketSeconds, pq)));
+                pq.CameraAzimuth = az0 + rate * centred;
+                core.CrystalFrame(OmniCombineCore.Mass, centred, pq, out var at, out _, out _, out _, out _);
+                worstCentred = Math.Max(worstCentred, (float)at.Length);
+                foreach (var c in MassColumns(core, pq, centred, reach, OmniCombineCore.MassColumnPlace(centred, pq), sizeStart, data))
+                {
+                    worstOnSlot = Math.Max(worstOnSlot, Vector3.Angle(c.column, c.slot));
+                    lowestBottom = Math.Min(lowestBottom, c.body.Min(v => v.magnitude));
+                }
+                // Through the flight and the socket:
+                //  - every prism at the shell's radius (its top within 0.85-1.15 of its slot's) and more than 2 deg off its own
+                //    hole's axis is going through the plates beside the hole, not the hole;
+                //  - how near any raised prism comes to the Time crystal (waiting, then setting off).
+                for (double t = OmniCombineCore.Departs(OmniCombineCore.Mass, pq) + pq.EffectFade; t <= centred + pq.SocketSeconds; t += 1.0 / 30)
+                {
+                    pq.CameraAzimuth = az0 + rate * t;
+                    var eye = V(Cam(t));
+                    var now = MassColumns(core, pq, t, reach, OmniCombineCore.MassColumnPlace(t, pq), sizeStart, data);
+                    var sealedNow = MassColumns(core, pq, t, reach, 1, sizeStart, data);
+                    var topNow = MassColumns(core, pq, t, reach, OmniCombineCore.SocketIn(OmniCombineCore.Mass, t, pq), sizeStart, data);
+                    var time = TimePose(core, pq, t);
+                    for (int j = 0; j < now.Count; j++)
+                    {
+                        prismFrames++;
+                        if (AtShell(now[j], out float off) && t >= centred) newSocket = Math.Max(newSocket, off);
+                        if (AtShell(now[j], out off) && off > 2f) { newOff++; if (Vector3.Dot(now[j].top.normalized, eye) > 0) newOffSeen++; }
+                        if (AtShell(sealedNow[j], out off) && off > 2f) { oldOff++; if (Vector3.Dot(sealedNow[j].top.normalized, eye) > 0) oldOffSeen++; }
+                        if ((now[j].top - time.centre).magnitude < time.radius + 2 * R)
+                            foreach (var v in now[j].body) foreach (var w in time.verts) nearestTime = Math.Min(nearestTime, (v - w).magnitude);
+                        if ((sealedNow[j].top - time.centre).magnitude < time.radius + 2 * R)
+                            foreach (var v in sealedNow[j].body) foreach (var w in time.verts) nearestTimeSealed = Math.Min(nearestTimeSealed, (v - w).magnitude);
+                        if ((topNow[j].top - time.centre).magnitude < time.radius + 2 * R)
+                            foreach (var v in topNow[j].body) foreach (var w in time.verts) nearestTimeTop = Math.Min(nearestTimeTop, (v - w).magnitude);
+                    }
+                }
+            }
+            Console.WriteLine($"INFO  the Mass column: reach {reach}, size at the top {sizeStart}; raise {raise}; the landed shell's outer radius {shellOuter / R:F3} R");
+            Check("the Mass prisms stay raised up their columns until the crystal is centred", worstPlace < 1e-6f, $"worst {worstPlace:E2} off the raise");
+            Check("the Mass crystal is centred on the omni when its prisms start down", worstCentred < 1e-9f * R, $"{worstCentred / R:E2} R off");
+            Check("and every column then runs straight down its own triangle's axis", worstOnSlot < 0.05f, $"worst {worstOnSlot:F3} deg");
+            Check("raised, centred, every thick Mass prism stands wholly clear of the landed shell, so all its sideways motion was above it",
+                  lowestBottom > shellOuter + 0.02f * R, $"deepest point {lowestBottom / R:F3} R, shell to {shellOuter / R:F3} R");
+            Check("the prisms are seated once the crystal has socketed in", worstSocketed < 1e-9f, $"{worstSocketed:E2}");
+            Check("socketing in, every Mass prism comes down straight through its own hole", newSocket < 0.5f, $"worst {newSocket:F2} deg off its hole's axis at the shell");
+            Check("a Mass prism is at the shell beside its hole far less often than when it sealed in flight", newOff < 0.35 * oldOff,
+                  $"{newOff / prismFrames:P2} of prism-frames ({newOffSeen / prismFrames:P2} on the camera's half), all mid-flight, as prisms bound for the far " +
+                  $"side pass through the omni; none while socketing");
+            Check("negative control: sealed as the crystal sets off (before 2026-10-14) they slide along the shell into their holes", oldOff > 0,
+                  $"{oldOff / prismFrames:P2} of prism-frames ({oldOffSeen / prismFrames:P2} on the camera's half)");
+            Check("a raised Mass prism never reaches the Time crystal", nearestTime > 0.05f * R,
+                  $"nearest {nearestTime / R:F2} R (sealed in flight: {nearestTimeSealed / R:F2} R)");
+            Check("negative control: at the very top of the column (raise 1) a prism reaches into the waiting Time crystal", nearestTimeTop < 0.05f * R,
+                  $"nearest {nearestTimeTop / R:F2} R");
+        }
+
         // negative control: keys out of order
         var swappedData = JsonSerializer.Deserialize<OmniCombineData>(File.ReadAllText(args[0]), new JsonSerializerOptions { IncludeFields = true });
         (swappedData.squares.keys[0], swappedData.squares.keys[1]) = (swappedData.squares.keys[1], swappedData.squares.keys[0]);
@@ -277,8 +371,83 @@ static class Program
         }
     }
 
+    /// <summary>The Mass prisms at <paramref name="t"/>, as OmniCombinePlayer.WriteMass and OmniDepthPrismShader draw them, in
+    /// the omni's frame: each plate's column (its centre sliding to its triangle's as it morphs, from the crystal's flight
+    /// centre), where its top puts the prism at column place <paramref name="place"/> on the Mass crystal's own column, the
+    /// prism's body there (the thin plate thickened inward from its top face by the thickness blending from the Mass prisms'
+    /// to the omni triangles' with the mean morph, then carried up the column and scaled, as DepthPrismPosition does; the
+    /// face split, at most a few hundredths of R, is left out), and its triangle's slot.</summary>
+    static List<(Vector3 column, Vector3 top, List<Vector3> body, Vector3 slot)> MassColumns(OmniCombineCore core, OmniCombineParams p, double t,
+                                                                                         float reach, double place, float sizeStart, OmniCombineData data)
+    {
+        var pos = Enumerable.Range(0, 4).Select(k => new float[3 * core.VertexCount(k)]).ToArray();
+        var morph = Enumerable.Range(0, 4).Select(k => new float[core.CrystalData(k).plateSite.Length]).ToArray();
+        var centres = new float[12];
+        core.Pose(Math.Min(t, OmniCombineCore.MorphEnds(p)), p, new D3(0.2, 0.5, 1).Unit, pos, new float[4], centres, morph);
+        int mk = OmniCombineCore.Mass;
+        var d = core.CrystalData(mk);
+        var centre = new Vector3(centres[3 * mk], centres[3 * mk + 1], centres[3 * mk + 2]);
+        int plates = d.plateSite.Length;
+        var sum = new Vector3[plates]; var cnt = new int[plates]; var slotSum = new Vector3[plates];
+        for (int i = 0; i < d.plate.Length; i++) { sum[d.plate[i]] += V(pos[mk], i) - centre; slotSum[d.plate[i]] += V(d.final, i); cnt[d.plate[i]]++; }
+        float w = morph[mk].Average();
+        float thickness = data.depth.massThickness + (data.depth.omniThickness - data.depth.massThickness) * w;
+        float k = (float)(reach + (1 - reach) * place), ls = k * (float)(sizeStart + (1 - sizeStart) * place);
+        var outList = new List<(Vector3, Vector3, List<Vector3>, Vector3)>();
+        for (int q = 0; q < plates; q++)
+        {
+            Vector3 site = Vector3.zero, slot = Vector3.zero; int n = 0;
+            for (int s = 0; s < plates; s++) if (d.plateSite[s] == d.plateSite[q]) { site += sum[s]; slot += slotSum[s]; n += cnt[s]; }
+            site /= n; slot /= n;
+            var own = sum[q] / cnt[q];
+            var c = Vector3.Lerp(own, site, morph[mk][q]);
+            var dir = c.normalized;
+            // the thin plate's top face: its farthest point along the column, above the column centre
+            float topH = 0f;
+            for (int i = 0; i < d.plate.Length; i++) if (d.plate[i] == q) topH = Math.Max(topH, Vector3.Dot(V(pos[mk], i) - centre - c, dir));
+            var body = new List<Vector3>();
+            for (int i = 0; i < d.plate.Length; i++)
+            {
+                if (d.plate[i] != q) continue;
+                var local = V(pos[mk], i) - centre - c;
+                local += dir * ((Vector3.Dot(local, dir) - topH) * (thickness - 1));
+                body.Add(centre + dir * (c.magnitude * k) + local * ls);
+            }
+            outList.Add((c, centre + c * k, body, slot));
+        }
+        return outList;
+    }
+
+    /// <summary>The Time crystal's vertices at <paramref name="t"/>, and the sphere round them.</summary>
+    static (List<Vector3> verts, Vector3 centre, float radius) TimePose(OmniCombineCore core, OmniCombineParams p, double t)
+    {
+        var pos = Enumerable.Range(0, 4).Select(k => new float[3 * core.VertexCount(k)]).ToArray();
+        core.Pose(Math.Min(t, OmniCombineCore.MorphEnds(p)), p, new D3(0.2, 0.5, 1).Unit, pos, new float[4]);
+        var verts = Enumerable.Range(0, core.VertexCount(OmniCombineCore.Time)).Select(i => V(pos[OmniCombineCore.Time], i)).ToList();
+        var centre = verts.Aggregate(Vector3.zero, (a, b) => a + b) / verts.Count;
+        return (verts, centre, verts.Max(v => (v - centre).magnitude));
+    }
+
+    /// <summary>A saved float on a Unity asset (a material's m_Floats row or a MonoBehaviour field).</summary>
+    static float Saved(string path, string name)
+    {
+        var m = System.Text.RegularExpressions.Regex.Match(File.ReadAllText(path), $@"^\s*-?\s*{name}: ([-0-9.eE]+)\s*$",
+                                                           System.Text.RegularExpressions.RegexOptions.Multiline);
+        if (!m.Success) throw new Exception($"{path}: no {name}");
+        return float.Parse(m.Groups[1].Value, System.Globalization.CultureInfo.InvariantCulture);
+    }
+
+    /// <summary>Whether a Mass prism's top is at the omni's shell (0.85-1.15 of its slot's radius), and how far off its own
+    /// hole's axis it is there (deg).</summary>
+    static bool AtShell((Vector3 column, Vector3 top, List<Vector3> body, Vector3 slot) c, out float off)
+    {
+        float r = c.top.magnitude / c.slot.magnitude;
+        off = Vector3.Angle(c.top, c.slot);
+        return r > 0.85f && r < 1.15f;
+    }
+
     /// <summary>Over a play: how far each plate's centre is from (the pose without spacing + its slot direction pushed out by
-    /// w x spacing x settle, carried by the crystal's turn), the worst landing error, and how far Space moved.</summary>
+    /// w x spacing x (1 - socketed in), carried by the crystal's turn), the worst landing error, and how far Space moved.</summary>
     static (float pushErr, float landed, float spaceMoved) SpacingStats(OmniCombineCore core, OmniCombineParams p, OmniCombineParams none)
     {
         var pos = Enumerable.Range(0, 4).Select(k => new float[3 * core.VertexCount(k)]).ToArray();
@@ -299,7 +468,7 @@ static class Program
             foreach (var pc in PlateCentres(core, pos, morph))
             {
                 core.CrystalFrame(pc.k, tt, p, out _, out var spinAxis, out double spin, out var tumbleAxis, out double tumble);
-                double w = pc.w, settle = OmniCombineCore.Smooth((w - OmniCombineCore.SettleFrom) / (1 - OmniCombineCore.SettleFrom));
+                double w = pc.w, settle = OmniCombineCore.SocketIn(pc.k, tt, p);
                 var push = Quaternion.AngleAxis((float)(tumble * 180 / Math.PI), V(tumbleAxis)) * (Quaternion.AngleAxis((float)(spin * 180 / Math.PI), V(spinAxis))
                            * (pc.slot * (float)(w * p.SocketSpacing * (1 - settle))));
                 pushErr = Math.Max(pushErr, (pc.centre - (plain[j].centre + push)).magnitude);
