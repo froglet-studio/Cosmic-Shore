@@ -32,17 +32,17 @@ Legend: `Planned` ▸ `Mockup` ▸ `Mockup approved` ▸ `Built` ▸ `Approved i
 | # | Item | Status | Mockup board | Commits |
 |---|---|---|---|---|
 | 0 | Component kit: T7 sprites, Chakra Petch SemiBold (T5), type roles + `TabularText` (T6), theme components, kit prefabs, kit test scene | Built | `MenuKit.dc.html` | `3b36c361`, `fe108889`, `b0918296`, `908fc2d7`, `4cba49ee`, `e932eaf2` + docs |
-| 1 | Top nav (`Safe Area/NavBar`) | Approved in editor (2026-10-14) | `Main.dc.html` (interactive), `TopNavHover.dc.html`, `TopNavLocked.dc.html` on the Menu Redesign B canvas | `8d6d2acb`, `99ef3ccd` + docs |
+| 1 | Top nav (`Safe Area/NavBar`) | Approved in editor (2026-10-14); **revision requested 2026-10-14**: translucent band, see §13.1 | `Main.dc.html` (interactive), `TopNavHover.dc.html`, `TopNavLocked.dc.html` on the Menu Redesign B canvas | `8d6d2acb`, `99ef3ccd` + docs |
 | 2 | Hangar screen: grid, detail and the spend-crystals panel | Approved in editor (2026-10-14) | `Hangar.dc.html` (interactive), `HangarLocked`, `HangarSpend`, `HangarShort`, `HangarNoArt`, `HangarNotes` on the Menu Redesign B canvas | `661a7f1f`, `7987b896`, `96c81faa` + docs |
 | 3 | Arcade modal (`ArcadeScreenModal`): explore grid plus the party/friends panel | Built | `Arcade.dc.html` (interactive), `ArcadeSolo`, `ArcadeNoFriends`, `ArcadePicks`, `ArcadeNotes` on the Menu Redesign B canvas | `f9b59fd4`, `75cd38e7`, `5cc56adb` + docs |
-| 4 | Game configure: `ArcadeGameConfigureModal`, plus the Maelstrom and Arena configure windows and the weekly leaderboard | Planned | | |
-| 5 | Profile screen, Profile modal (avatar / display name), Episodes entry | Planned | | |
-| 6 | Home screen: hub row, header, settings and freestyle buttons, invite popup | Planned | | |
-| 7 | Ark screen (Elemental Converter) | Planned | | |
-| 8 | Arena, Toy Box and Mission modals, and Toy configure | Planned | | |
-| 9 | Settings modal and Credits | Planned | | |
-| 10 | Closed surfaces: Port (locked), Store (no slot), Episodes panel, purchase confirmation | Planned | | |
-| 11 | Menu toasts | Planned | | |
+| 4 | Game configure: `ArcadeGameConfigureModal`, plus the Maelstrom and Arena configure windows and the weekly leaderboard | Mockup (revision 2) | `Configure.dc.html` (interactive), `ConfigureArena`, `ConfigureMaelstrom`, `ConfigureWeekly`, `ConfigureWeeklySpent`, `ConfigureGuest`, `ConfigureLocked`, `WeeklyLeaderboard` (interactive), `LeaderboardEmpty`, `ConfigureNotes` | |
+| 5 | Profile screen, Profile modal (avatar / display name), Episodes entry | Mockup | `Profile.dc.html` (interactive), `ProfileFresh`, `ProfileModal` (interactive), `ProfileName`, `ProfileNameError`, `ProfileNameTaken`, `ProfileNotes` | |
+| 6 | Home screen: hub row, header, settings and freestyle buttons, invite popup | Mockup | `Home.dc.html` (interactive), `HomeInvite`, `HomeFocus`, `HomeOffline`, `HomeNotes` | |
+| 7 | Ark screen (Elemental Converter) | Mockup | `Ark.dc.html` (interactive), `ArkConverting`, `ArkDone`, `ArkNotes` | |
+| 8 | Arena, Toy Box and Mission modals, and Toy configure | Mockup | `ToyBox.dc.html` (interactive), `ToyBoxClaimed`, `ArenaWindow`, `MissionWindow`, `ToyConfigure` (interactive), `ToyConfigurePaint`, `ToyConfigureSpawn`, `ToyConfigureDomain`, `ModesNotes` | |
+| 9 | Settings modal and Credits | Mockup | `Settings.dc.html` (interactive), `SettingsDisplay`, `SettingsPerformance`, `SettingsOther`, `Credits`, `SystemNotes` | |
+| 10 | Closed surfaces: Port (locked), Store (no slot), Episodes panel, purchase confirmation | Mockup | `ClosedSurfaces.dc.html`, `PurchaseConfirm` (blind), `SystemNotes` | |
+| 11 | Menu toasts | Mockup | `Toasts.dc.html` (interactive), `SystemNotes` | |
 
 ---
 
@@ -582,3 +582,71 @@ navigation, as it already did while those windows were open, but nothing scrolls
 Found while building item 3 (not fixed here):
 - **`author_elemental_converter.py --check` fails at the branch base too** ("the document count moved
   by something other than +3 converter / -1 gate"): a spent one-shot gate, not this item's.
+
+---
+
+## 13. Items 4-11: the mockup set (2026-10-14)
+
+Every remaining item is on the Menu Redesign B canvas, each with an interactive board, its state
+boards and a "what changes" notes board (the notes boards carry the full lists; this section keeps
+the decisions and the departures from the spec). Content is real: card, quest, toy, species and
+settings data were read from the shipped assets, and the art is the project's own (card
+backgrounds, codex portraits, hangar renders, the converter lab renders, the HOME reference render).
+Nothing here is built yet; the builds follow approval, in the order of §3.
+
+### 13.1 Two changes the user asked for on the canvas (2026-10-14)
+
+- **Configure, revision 2** ("too empty, no animation, no prettiness" on the first tree). The tree now
+  fills the panel: a numbered step gutter (01 Vessel, 02 Intensity, 03 Pilots) with value and hint,
+  150 px nodes, the hull's hangar render with its class description, intensity nodes with a numeral,
+  a rising bar meter and the unlock goal when locked, and per-domain seat columns with named chips. Open
+  seats carry "+ AI" for the host, which replaces the armed Add AI toggle (open for approval). Motion:
+  rise-in on open (panel token, 40 ms stagger capped at 8), the live route redrawing as a 2 px stroke and
+  bars growing on selection (std token), and an ambient layer - a spark on the live route, a floating
+  hull, a sweep on Start, a slow pan on the preview - that goes beyond §7 ("motion is short and
+  functional") and is listed for decision item by item.
+- **Translucent top nav** ("keep them transparent ... that thing from the old UI"). The band is Very Dark
+  at 60 % with a Neutral Light hairline at 70 %, so the menu scene shows through as it did under the old
+  `NavBarGradient`; every board now draws the scene behind the screen, with a Black veil from the nav
+  down. This revises item 1: the build sets the `Band` image's alpha (theme colour at 0.6), nothing else.
+
+### 13.2 Decisions requested
+
+| # | Item | Question | Drawn as |
+|---|---|---|---|
+| Q1 | 4 | Keep the ambient motion (route spark, floating hull, Start sweep, preview pan, breathing hint)? §7 allows only short, functional motion. | All on; each can be dropped alone. |
+| Q2 | 4 | "+ AI" in each domain's open seat instead of the armed Add AI toggle? | "+ AI" per column. |
+| Q3 | 4 | Podium medal colours have no tokens. | Gold (Light), Light, Gold (Dark). |
+| Q4 | 4 | Reward bands "4-20" and "20+" overlap at 20. | "4th - 20th", "21st and below". |
+| Q5 | 5 | Quest art is two legacy video stills; re-point each quest's Icon to its mode's card art? | Card art; Squirrel render for Vessel Hangar. |
+| Q6 | 5 | Show the profile's unused data (crystals, games, flight time, sessions)? | Not drawn. |
+| Q7 | 6 | Avatar and name open the profile window (today they only play a sound)? | They open it. |
+| Q8 | 8 | Wander's portrait is the conveyor still; Element Charger has none. | `tool_arkway`, `ethirion_omni`. |
+| Q9 | 11 | Toasts move to top centre and gain an optional kind (refusal, success, error, goal) for a leading glyph. | Top centre, glyphs drawn. |
+
+### 13.3 Departures from today's behaviour, by item (all listed on the notes boards)
+
+- **4:** Start explains a refusal ("Claim a hull to start.", "Played today - come back tomorrow.") and
+  Ready shows "Waiting for others..." (both labels were unwired); LEADERBOARD only on the weekly
+  challenge; the d-pad focus row and hidden steppers go; Arena draws the claimed hull's controls; the
+  locked-intensity toast matches the pressed level; Maelstrom's pool summary and format are wired;
+  the leaderboard's empty, loading and region states are wired and its rewards move inline.
+- **5:** one profile window with Avatar / Display name tabs (fixes both panels stacking); validation
+  messages shown (they only reached the log); Enter submits; five quest cards fit without scrolling.
+- **6:** Arcade is Home's one opaque button; hub focus ring; Online / Offline label wired; the lamp
+  only asks "Go offline?" (it also opened the profile window); the invite shows the real party count.
+- **7:** title below the nav; a converter bar naming the four elements with Ready / Merging / Merged;
+  CONVERT is Inactive mid-run (it restarted the sequence).
+- **8:** Arena cards show every seated hull; toy cards show their group; Back closes through the window
+  (Window Out plays); B steps out of a Toy configure branch before closing; Navigate drops its A binding.
+- **9:** Settings in hex tabs with section 10.7 / 10.8 controls, slider values shown, the restart notice
+  wired, "Custom" quality, label typos fixed, Credits authored as a row; Credits gets a real type
+  hierarchy and stick scrolling.
+- **10:** only the locked tab and entry states and their toasts are restyled (D4); purchase confirmation
+  drawn blind.
+- **11:** toasts hug their text (they render as 100 x 100 squares today) and stop blocking clicks.
+
+Content found on the way: Joust's card description is the placeholder "Joust joust joust"; Rhino and
+Stoat ability maps show "(open design slot)" rows; the Skim Race quest is still named "HEX RACE";
+Astro League's description says "Rhino only" while its card seats three hulls; Buckyball and Lion's
+Head have no painting art; Colorblind mode, Subtitles and Subtitle size have no consumer.
