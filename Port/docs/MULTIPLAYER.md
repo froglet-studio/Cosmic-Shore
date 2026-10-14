@@ -145,7 +145,7 @@ Relay cost nothing extra for a Steam game. Re-check
 | Transports | `Wire/INetTransport.cs` | Froglet's UDP (`UdpTransport`, the default, §6.6) directly or through a relay (§6.7); TCP (`NetSocket`); an in-memory loopback for tests |
 | Relay | `Wire/Relay/` | Unity Relay's protocol client and Froglet's own relay server (§6.7) |
 | UGS sign-in | `Wire/Ugs/UgsAuthentication.cs` | Anonymous sign-in and session-token resume over REST; feeds UGS Relay its bearer token (§6.8). Tested against local stand-ins; the live project waits for the owner |
-| Session service | `Wire/DirectoryMultiplayerService.cs` | One JSON file per session in `COSMIC_SHORE_NET_DIR` (the stand-in for UGS Lobby until P8); records an address and port, or a relay join code |
+| Session service | `Online/` (the online server) and `Wire/DirectoryMultiplayerService.cs` | Two stand-ins for UGS Lobby until P8, with one set of lobby rules (`SessionRules`). The online server (2026-10-13) is the default for players: lobby and relay between machines, found on the LAN or named. The shared folder (`COSMIC_SHORE_NET_DIR`) is what the NET page, `net_*` and the party harness use. Either records the relay join code when a relay is configured. How they combine: §6.9 |
 | Five-player scenario harness | `Tools/Build/prisma_party_scenarios/` | 14/14 directly, on simulated 4G, and through the relay. No engine patches since Step 0 |
 | Offline switch, per-instance profile | `COSMIC_SHORE_NET=off`, `COSMIC_SHORE_PROFILE=<name>` | Works |
 | Test tools | §6 | Network simulator, stats and capture, session faults, the Launcher's NET page, MCP `net_*` tools |
@@ -508,6 +508,30 @@ goes out and back twice). A failure names its step: `sign in` (project id, netwo
 Authentication settings), `allocate` / `join code` / `join` (Relay not enabled for the project, or
 rate limited: the status code says which), or `bind and connect` (UDP to the relay blocked).
 
+### 6.9 Putting it together: NetStack, and the online server
+
+The player builds its networking in one call, `NetStack.Install` (`Wire/NetStack.cs`), in the only order that works:
+
+1. the transport, `NetTransports.Select(COSMIC_SHORE_NET_TRANSPORT)`: UDP unless `tcp`;
+2. the relay `COSMIC_SHORE_RELAY` names, over it (`UgsSetup.InstallRelay`: a Froglet relay URL or `ugs`);
+3. the session service: the online server (`OnlineMultiplayerService`, which puts the server's own relay over
+   the transport chosen beneath it) or the shared folder (`DirectoryMultiplayerService`);
+4. the network simulator around the whole transport chain, and session faults around the service.
+
+The player prints the result at boot: `[net] stack: simulated > online > relay > udp; sessions: faults > online`.
+
+| Sessions | Match network | When |
+|---|---|---|
+| Online server | the server's relay (TCP) | the default for a player: no `COSMIC_SHORE_RELAY` |
+| Online server | this relay (UDP, with the unreliable channel) | `COSMIC_SHORE_RELAY` set: the server is the lobby only; the host allocates before it starts and the session record carries the join code |
+| Shared folder | direct (UDP or TCP), or this relay when set | the NET page and `net_*` players (they pass `COSMIC_SHORE_NET_SERVER=dir`), the party harness, phones without a server |
+
+Why it exists: on 2026-10-13 the merge that brought the online server into Ys-bleeding-edge kept the online
+server's `PlayerBoot` and lost steps 1, 2 and 4 and the folder service's relay join codes, while every
+per-layer test stayed green; the NET page's transport, line and fault switches did nothing until
+2026-10-14. `NetStackTests` now holds the order, plays a match through the online lobby over Froglet's relay
+end to end, and fails if `PlayerBoot` sets any layer outside `NetStack` (both negative-controlled).
+
 ## 7. Status
 
 | Step | What | Status | Evidence |
@@ -521,6 +545,7 @@ rate limited: the status code says which), or `bind and connect` (UDP to the rel
 | 5 | UDP transport, unreliable channel for opted-in transforms | Done 2026-10-08 | `UdpTransportTests` 6/6, `UnreliableChannelTests` 8/8, `UnreliableDeltasPrefabTests` 3/3; contract checks over `udp` and `sim-udp`; network suites stable over 5 repeats; CosmicShore.Tests 1862/1862; the five-player party harness **14/14 on UDP** |
 | 6 | Relay: Unity Relay's protocol under our UDP transport, Froglet's relay server, session integration, tool switches | Done 2026-10-09 | `RelayTests` 10/10; contract checks over `relay` and `sim-relay`; `MultiplayerRunTests` 16/16; Launcher tests 21/21; CosmicShore.Tests 1,891/1,891; two players partied up through `net_players relay=local`; the five-player party harness through the relay: 14/14 (§6.7) |
 | 7 | UGS sign-in for the relay, `COSMIC_SHORE_RELAY=ugs`, the one-step UGS relay check, our relay's secret | Built 2026-10-09; the live check waits for the owner | `UgsAuthenticationTests` 13/13; `--ugs-relay-check` PASS against local stand-ins (twice, the second resuming both players); CosmicShore.Tests 1,913/1,913; party harness via the UGS path on 4G: 14/14 (§6.8) |
+| 6.9 | NetStack: the transport, relay, simulator and faults put back in the player after the merge with the online server; the online lobby over the relay | Done 2026-10-14 | `NetStackTests` 5/5 (two negative controls fail as they should); contract checks over tcp, loopback, udp, relay, online and each simulated (`NetTransportContractTests` 70); the player boots `simulated > online > udp`, `simulated > tcp` (folder, `COSMIC_SHORE_NET_TRANSPORT=tcp`, 4g) and `simulated > online > relay > udp` (`COSMIC_SHORE_RELAY` = a Froglet relay server). The five-player harness was not re-run (no disk for its worktree) |
 | G2 | UGS Lobby (P8) | Next | The relay half of UGS is done; Lobby replaces the session folder |
 
 ## 8. Sources

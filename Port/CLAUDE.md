@@ -154,6 +154,11 @@ An unattended run without a port: `--frames N --shot F:out.png --do "F:click X,Y
   names one, `CosmicShore --server` runs one alone. Every player needs their own profile
   (`COSMIC_SHORE_PROFILE`): two games with one player id replace each other on the server. A match
   starts only when every player presses the HUD's GO (the ReadyButton), not when GO appears.
+- **A player's networking is built in ONE place, `NetStack.Install`** (transport, relay, sessions, then
+  simulator and faults; `docs/MULTIPLAYER.md` §6.9). Never set `NetDriver.TransportFactory`,
+  `MultiplayerService.Instance`, `NetSimulator` or `NetFaults` from `PlayerBoot` directly: a merge did, and
+  silently disabled the UDP transport, the relay and every NET-page switch. `NetStackTests` fails if it happens
+  again. The NET page and `net_*` players always use the shared folder (`COSMIC_SHORE_NET_SERVER=dir`).
 - **Under xvfb, rendering is software**: a few frames per second. `game_wait 600` is minutes.
   Use `headless: true` when you need no pictures - it ticks as fast as the CPU allows.
 - **Unity injects Reflex before Awake/OnEnable**, with the scene active. Bugs where a value

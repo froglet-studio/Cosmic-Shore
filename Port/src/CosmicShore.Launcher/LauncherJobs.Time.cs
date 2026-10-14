@@ -302,6 +302,8 @@ namespace CosmicShore.Launcher
                 args.Add("--session-report"); args.Add(report);
                 var psi = PlayerStart(exe, args, audio: audio && i == 1, network: true, profile: "player" + i);
                 psi.Environment["COSMIC_SHORE_NET_DIR"] = LocalNetDir;
+                // The NET page's players meet in their own folder, whatever online server SETTINGS > ONLINE names.
+                psi.Environment["COSMIC_SHORE_NET_SERVER"] = "dir";
                 if (!string.IsNullOrWhiteSpace(transport)) psi.Environment["COSMIC_SHORE_NET_TRANSPORT"] = transport;
                 if (relay) psi.Environment["COSMIC_SHORE_RELAY"] = LocalRelayUrl!;
                 else if (ugs) psi.Environment["COSMIC_SHORE_RELAY"] = "ugs";

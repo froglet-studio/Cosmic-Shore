@@ -261,10 +261,17 @@ is sorted back to front. A per-instance "clock block" (15 vec4) rides in a textu
 (`Networking/Wire/INetTransport.cs`) through `NetDriver.TransportFactory`, and reads its events
 in `EarlyUpdate`. The contract is reliable, ordered, whole frames; events come only through `Poll`
 on the main thread; peer 0 is the server; a failed connect reports `Disconnected`; a listen on a
-taken port throws. TCP (`NetSocket`, `TcpTransportFactory`) is the direct transport; the online
-server's relay (`OnlineTransportFactory`) is the second. `NetTransportContractTests` runs the same
-checks against TCP, the relay and the in-memory loopback the tests use, and `NetDriverTransportTests`
-and `OnlineMultiplayerTests` drive the driver's handshake over them.
+taken port throws. TCP (`NetSocket`, `TcpTransportFactory`) was the first implementation, and stays
+the engine's in-process default for tests; Froglet's UDP transport (`UdpTransport`: reliable-ordered
+fragments with selective acks and RTT-timed resends, plus an unreliable channel) is what every
+networked player uses unless `COSMIC_SHORE_NET_TRANSPORT=tcp` (`MULTIPLAYER.md` §6.6). Below it,
+an `IDatagramLink` decides where its datagrams go: straight to the peer (`DirectLink`), or through a
+relay speaking Unity Relay's protocol (`RelayLink`), which is how players behind home routers reach
+each other. Froglet's own relay server (`FrogletRelayServer`, `CosmicShore --relay-server`) speaks
+the same protocol and REST shape as UGS Relay (`MULTIPLAYER.md` §6.7). `NetTransportContractTests`
+runs the same checks against every implementation (TCP, UDP, UDP through the relay, the online
+server's relay, the in-memory loopback the tests use, and each behind the network simulator), and
+`NetDriverTransportTests` and `OnlineMultiplayerTests` drive the driver's handshake.
 
 **The online server** (`Networking/Online/`) is what the UGS Lobby and Relay are to the Unity
 build. One process holds every session (the presence lobby, parties, match sessions: a roster
@@ -290,7 +297,10 @@ netcode connection to its session's host, so nobody but the server needs a reach
 **`OnlineMultiplayerService`** is the game's `MultiplayerService.Instance` when networking is on:
 every SDK call is a request to the server; `CreateSessionAsync` with Relay starts the
 NetworkManager as host (as the SDK's network handler does), and a join to a Relay session points
-the transport at `amoebius-relay:<session>` and starts the client. It keeps the connection up in
+the transport at `amoebius-relay:<session>` and starts the client. When `COSMIC_SHORE_RELAY` names a
+Unity-Relay-protocol relay, the server stays the lobby but the match goes over that relay instead
+(UDP, with the unreliable channel): the host allocates before it starts, and the session record
+carries the join code a joiner uses (`RelayedSessions`, shared with the folder backend). It keeps the connection up in
 the background (backoff, keep-alive, following a server that stood down) and lobby calls made
 while it is down wait for it, then fail with the `SessionException` the game's own retry and
 offline paths handle.
@@ -315,20 +325,45 @@ no window or content (`ServerMode`); the launcher's "Host the online server on t
 that. For players outside the LAN, forward the TCP port on the router to that machine, or run it on
 a machine with a public address, and give every game its address.
 
-**`DirectoryMultiplayerService`** is the earlier, single-machine backend: one JSON file per session
-in a folder every player can see (`COSMIC_SHORE_NET_DIR`), the host's TCP endpoint in the record and
-a direct connection. It stays for phone builds without a server (a phone does not probe the LAN or
-host a server, so iOS shows no local-network prompt) and for `COSMIC_SHORE_NET_SERVER=dir`.
+**How a player puts it together (`NetStack`, `Wire/NetStack.cs`).** `PlayerBoot` calls one method,
+which installs the layers in the only order that works: the transport (`NetTransports.Select`), the
+relay `COSMIC_SHORE_RELAY` names over it, the session service (which, for the online server, adds the
+server's own relay over the transport chosen beneath it), then the network simulator around the whole
+transport chain and session faults around the service. The player prints the result at boot, e.g.
+`[net] stack: simulated > online > relay > udp; sessions: faults > online`. `NetStackTests` holds the
+order, plays a match through the online lobby and the relay end to end, and fails if `PlayerBoot`
+stops calling it (a merge on 2026-10-13 dropped the transport, relay, simulator and fault wiring while
+every per-layer test stayed green).
+
+| Sessions | Match network | When |
+|---|---|---|
+| Online server | the server's relay (TCP) | the default: no `COSMIC_SHORE_RELAY` |
+| Online server | the Unity-Relay-protocol relay (UDP) | `COSMIC_SHORE_RELAY` set (Froglet's relay server, or `ugs`) |
+| Shared folder | direct (UDP by default, or TCP), or that relay when set | `COSMIC_SHORE_NET_SERVER=dir`, or `COSMIC_SHORE_NET_DIR` with no server named: the NET page, `net_*` tools, the party harness, phones |
+
+**`DirectoryMultiplayerService`** is the single-machine backend: one JSON file per session in a
+folder every player can see (`COSMIC_SHORE_NET_DIR`): roster, per-player properties (the game's
+invite channel), heartbeat, and the host's endpoint, or its relay join code when `COSMIC_SHORE_RELAY`
+names a relay (the host allocates before it starts listening; a joiner joins by code). Its lobby rules
+are `SessionRules`, the online server's. It is what the NET page, the `net_*` tools and the party
+harness use, and phone builds without a server (a phone does not probe the LAN or host a server, so
+iOS shows no local-network prompt).
 
 **Services** are local stand-ins:
 - Authentication: an anonymous id persisted per install (each player on one machine needs their own
-  `COSMIC_SHORE_PROFILE`; two games with one id replace each other on the server).
+  `COSMIC_SHORE_PROFILE`; two games with one id replace each other on the server). Separately, with
+  `COSMIC_SHORE_RELAY=ugs` the relay signs in to UGS itself (`UgsAuthentication`, REST, one UGS player
+  per save profile) to get the bearer token UGS Relay needs (`MULTIPLAYER.md` §6.8).
 - Cloud Save: a JSON file.
 - Friends: an empty friend book.
 - Leaderboards and Analytics: in memory.
 
 **Turning it off:** `COSMIC_SHORE_NET=off` keeps everything in one process. A second player on one
-machine runs with `COSMIC_SHORE_PROFILE=b`.
+machine runs with `COSMIC_SHORE_PROFILE=b`. A headless player in a multiplayer run needs
+`--realtime`, which keeps its game clock on the wall clock (`RealtimePacer`).
+
+**The plan, the backends and the test tools** (simulator, stats, faults, the Launcher's
+MULTIPLAYER panel, the UDP transport) are in `MULTIPLAYER.md`.
 
 ---
 

@@ -199,6 +199,8 @@ namespace Amoebius
             foreach (var kv in o.Environment) psi.Environment[kv.Key] = kv.Value;
             psi.Environment["COSMIC_SHORE_PROFILE"] = profile;
             psi.Environment["COSMIC_SHORE_NET_DIR"] = NetDir;
+            // These players meet in their own folder, whatever online server the shell or the branch names.
+            psi.Environment["COSMIC_SHORE_NET_SERVER"] = "dir";
             if (!string.IsNullOrWhiteSpace(o.Transport)) psi.Environment["COSMIC_SHORE_NET_TRANSPORT"] = o.Transport;
             if (RelayUrl != null) psi.Environment["COSMIC_SHORE_RELAY"] = RelayUrl;
             else psi.Environment.Remove("COSMIC_SHORE_RELAY"); // direct, whatever the launching shell set

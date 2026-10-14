@@ -17,7 +17,7 @@
     "shaders": {
       "Faithful": 0,
       "Approximate": 67,
-      "Missing": 19
+      "Missing": 20
     }
   },
   "subsystems": [
@@ -798,6 +798,13 @@
       "status": "Approximate",
       "why": "Shader Graph compiler; frames not yet compared per shader (C2)",
       "test": "ShaderGraphCompilerTests, --check-shaders"
+    },
+    {
+      "path": "Assets/_Graphics/Materials/Graphs/StoatRipple.shader",
+      "name": "CosmicShore/StoatRipple",
+      "status": "Missing",
+      "why": "generic material-family fallback",
+      "test": ""
     },
     {
       "path": "Assets/_Graphics/Materials/Graphs/SwarmMemberInstanced.shader",

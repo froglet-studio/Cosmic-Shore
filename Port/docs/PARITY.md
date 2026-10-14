@@ -9,7 +9,7 @@ Last parity run against Unity goldens: 2026-10-07 (boot-menu, random, skimrace-f
 | | Faithful | Approximate | Missing |
 |---|---|---|---|
 | Subsystems | 0 | 27 | 6 |
-| Shaders | 0 | 67 | 19 |
+| Shaders | 0 | 67 | 20 |
 
 ## Subsystems
 
@@ -96,6 +96,7 @@ Last parity run against Unity goldens: 2026-10-07 (boot-menu, random, skimrace-f
 | Shader Graphs/SpikeGraph | `Assets/_Graphics/Materials/Graphs/SpikeGraph.shadergraph` | Approximate | Shader Graph compiler; frames not yet compared per shader (C2) |
 | Shader Graphs/SpindleGraph | `Assets/_Graphics/Materials/Graphs/SpindleGraph.shadergraph` | Approximate | Shader Graph compiler; frames not yet compared per shader (C2); approximate nodes: ObjectNode |
 | Shader Graphs/StarGraph | `Assets/_Graphics/Materials/Graphs/StarGraph.shadergraph` | Approximate | Shader Graph compiler; frames not yet compared per shader (C2) |
+| CosmicShore/StoatRipple | `Assets/_Graphics/Materials/Graphs/StoatRipple.shader` | Missing | generic material-family fallback |
 | CosmicShore/SwarmMemberInstanced | `Assets/_Graphics/Materials/Graphs/SwarmMemberInstanced.shader` | Missing | hand-written .shader: no translation yet |
 | Shader Graphs/TimeCrystalGraph | `Assets/_Graphics/Materials/Graphs/TimeCrystalGraph.shadergraph` | Approximate | Shader Graph compiler; frames not yet compared per shader (C2) |
 | Shader Graphs/VelocityBlockGraphOld | `Assets/_Graphics/Materials/Graphs/VelocityBlockGraphOld.shadergraph` | Approximate | Shader Graph compiler; frames not yet compared per shader (C2) |

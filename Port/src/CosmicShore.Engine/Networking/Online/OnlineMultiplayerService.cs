@@ -103,7 +103,9 @@ namespace CosmicShore.Engine.Networking
         {
             var svc = new OnlineMultiplayerService(options);
             MultiplayerService.Instance = svc;
-            NetDriver.TransportFactory = new OnlineTransportFactory(svc);
+            // Over the transport already chosen (UDP or TCP, and the configured relay): matches whose host
+            // allocated on that relay use it; the rest go through this server's own relay.
+            NetDriver.TransportFactory = new OnlineTransportFactory(svc, NetDriver.TransportFactory);
             svc.Start();
             return svc;
         }
@@ -465,11 +467,19 @@ namespace CosmicShore.Engine.Networking
             var rec = SessionRules.NewSession(options, self, SessionRules.NowTicks);
             rec.Relay = options?.UseRelay == true;
             var props = SessionRules.ToRecords(options?.PlayerProperties);
+            // A configured Unity-Relay-protocol relay (COSMIC_SHORE_RELAY: UGS Relay or Froglet's relay server)
+            // carries the match over UDP: the host allocates and starts first, and the record carries the join code.
+            bool viaRelay = rec.Relay && DriveNetworkManager && RelayedSessions.Active && NetworkManager.Singleton != null;
+            if (viaRelay && await RelayedSessions.HostAsync(NetworkManager.Singleton, rec.MaxPlayers) is { } code)
+            {
+                rec.RelayJoinCode = code;
+                rec.RelayAddress = RelaySessions.RelayAddress;
+            }
             var reply = await Request(new OnlineMessage { Op = "create", Session = rec });
             var session = new OnlineSession(this, reply.Session, self, props);
             Register(session);
             // The SDK's network handler brings the NetworkManager up as host before the create completes.
-            if (rec.Relay && DriveNetworkManager && NetworkManager.Singleton is { } nm && !nm.IsListening) nm.StartHost();
+            if (rec.Relay && !viaRelay && DriveNetworkManager && NetworkManager.Singleton is { } nm && !nm.IsListening) nm.StartHost();
             return session;
         }
 
@@ -485,6 +495,13 @@ namespace CosmicShore.Engine.Networking
             {
                 if (nm.IsListening)
                     Debug.LogWarning("[Multiplayer] Joining a networked session while the NetworkManager is still running; shut it down first.");
+                else if (!string.IsNullOrEmpty(rec.RelayJoinCode))
+                {
+                    // The host is on the configured relay: join it by code, over UDP.
+                    await RelayedSessions.JoinAsync(rec.RelayJoinCode);
+                    nm.Transport?.SetConnectionData(RelaySessions.RelayAddress, 0);
+                    nm.StartClient();
+                }
                 else
                 {
                     // The transport connects through the server's relay to the session's host.
@@ -707,14 +724,27 @@ namespace CosmicShore.Engine.Networking
     /// address names a session (<see cref="OnlineWire.RelayScheme"/>) connects through the relay.
     /// Any other address is a plain TCP connection.
     /// </summary>
-    internal sealed class OnlineTransportFactory : INetTransportFactory
+    /// <summary>
+    /// The online server's relay over the transport chosen beneath it (<see cref="Inner"/>: UDP or TCP, and the
+    /// configured Unity-Relay-protocol relay). A host whose session allocated on that relay listens there; any other
+    /// host listens on TCP and takes the links the server relays to it. A join to <c>amoebius-relay:SESSION</c>
+    /// goes through the server; every other address (a relay join, a direct endpoint) goes to <see cref="Inner"/>.
+    /// </summary>
+    internal sealed class OnlineTransportFactory : INetTransportFactory, IWrappingTransportFactory
     {
         readonly OnlineMultiplayerService _svc;
 
-        public OnlineTransportFactory(OnlineMultiplayerService svc) => _svc = svc;
+        public OnlineTransportFactory(OnlineMultiplayerService svc, INetTransportFactory inner = null)
+        {
+            _svc = svc;
+            Inner = inner is OnlineTransportFactory nested ? nested.Inner : inner ?? new TcpTransportFactory();
+        }
+
+        public INetTransportFactory Inner { get; }
 
         public INetTransport Listen(string address, int port)
         {
+            if (RelaySessions.PendingHost != null) return Inner.Listen(address, port);
             var socket = NetSocket.Listen(address, port);
             _svc.AttachHost(socket);
             return socket;
@@ -727,7 +757,7 @@ namespace CosmicShore.Engine.Networking
                 var sessionId = address.Substring(OnlineWire.RelayScheme.Length);
                 return NetSocket.ConnectWith(() => _svc.OpenRelayLink(sessionId, timeoutMs), "the relay");
             }
-            return NetSocket.Connect(address, port, timeoutMs);
+            return Inner.Connect(address, port, timeoutMs);
         }
     }
 }

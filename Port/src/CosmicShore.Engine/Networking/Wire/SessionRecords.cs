@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 
 namespace CosmicShore.Engine.Networking
 {
@@ -40,6 +41,11 @@ namespace CosmicShore.Engine.Networking
         public int RelayPort { get; set; }
         /// <summary>Online sessions: the session carries a Relay network (joins connect through the server).</summary>
         public bool Relay { get; set; }
+        /// <summary>
+        /// Set when the host is reached through a Unity-Relay-protocol relay (UGS Relay or Froglet's relay server,
+        /// <see cref="RelaySessions.Allocator"/>): joiners join by this code, over UDP. Either backend carries it.
+        /// </summary>
+        public string RelayJoinCode { get; set; }
         public Dictionary<string, PropRecord> Properties { get; set; } = new();
         public List<PlayerRecord> Players { get; set; } = new();
     }
@@ -267,5 +273,38 @@ namespace CosmicShore.Engine.Networking
         }
 
         public void Clear() => Players = new List<IReadOnlyPlayer>();
+    }
+
+    /// <summary>
+    /// A session's network through the configured Unity-Relay-protocol relay (docs/MULTIPLAYER.md §6.7), the same
+    /// for the shared-folder and the online-server backends: the host allocates and gets a join code BEFORE it
+    /// starts listening (the relay transport binds the allocation on Listen), a joiner joins by that code.
+    /// </summary>
+    internal static class RelayedSessions
+    {
+        /// <summary>A relay is configured (COSMIC_SHORE_RELAY): sessions with a network go through it.</summary>
+        public static bool Active => RelaySessions.Allocator != null;
+
+        /// <summary>Hosts through the relay and returns the join code, or null when the NetworkManager was already running.</summary>
+        public static async Task<string> HostAsync(NetworkManager nm, int maxPlayers)
+        {
+            var relay = RelaySessions.Allocator;
+            if (!nm.IsListening)
+            {
+                var alloc = await relay.AllocateAsync(Math.Max(1, (maxPlayers > 0 ? maxPlayers : 4) - 1), RelaySessions.Region);
+                await relay.CreateJoinCodeAsync(alloc);
+                RelaySessions.HostWith(alloc);
+                nm.StartHost();
+            }
+            return NetDriver.IsServer && RelaySessions.HostingJoinCode is { Length: > 0 } code ? code : null;
+        }
+
+        /// <summary>Prepares the next client start to join <paramref name="joinCode"/>; the transport then connects to <see cref="RelaySessions.RelayAddress"/>.</summary>
+        public static async Task JoinAsync(string joinCode)
+        {
+            var relay = RelaySessions.Allocator
+                ?? throw new SessionException("This session is reached through a relay, and this player has none configured (COSMIC_SHORE_RELAY).", SessionError.NetworkSetupFailed);
+            RelaySessions.JoinWith(await relay.JoinAsync(joinCode));
+        }
     }
 }
