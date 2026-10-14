@@ -159,7 +159,7 @@ namespace CosmicShore.Player
             _environment = new EnvironmentLighting(_gl);
             _sceneRenderer.EnvironmentLight = _environment;
             _post = new PostPass(_gl);
-            if (SessionReport.Enabled && GpuTimer.Supported) _gpu = new GpuTimer(_gl, "textures", "clear", "sky", "collect", "post", "ui", "present", "opaque", "transparent");
+            if (GpuTimer.Supported) _gpu = new GpuTimer(_gl, "textures", "clear", "sky", "collect", "post", "ui", "present", "opaque", "transparent");
             _textures.External = t => t is RenderTexture rt && _rt.TryGetValue(rt, out var target) ? target.Out.Color : 0u;
             Camera.RenderRequested = cam => { if (cam != null && cam.targetTexture != null) RenderToTexture(cam, force: true); };
 
@@ -199,7 +199,11 @@ namespace CosmicShore.Player
 
         void OnUpdate(double dt)
         {
-            float step = Scripted ? 1f / 60f : (float)Math.Min(dt, 0.1);
+            // A scripted run steps every game clock by 1/60 s so its pictures repeat run to run. A normal
+            // run passes the real frame time unclamped, because Time.unscaledDeltaTime is the wall clock in
+            // Unity. Time.Advance caps deltaTime at the project's Maximum Allowed Timestep, so a slow frame
+            // cannot run away the simulation. FrameTimingManager measures the real frame in both kinds of run.
+            float step = Scripted ? 1f / 60f : (float)dt;
             _inputBridge.BeforeTick();
             BeforeTick?.Invoke(step);
             _script.BeforeTick(_frameIndex);
@@ -239,7 +243,7 @@ namespace CosmicShore.Player
         }
 
         double _lastFrameMs, _lastSimMs, _lastGpuMs = -1;
-        // GPU time per render pass for the session report (desktop GL, --session-report only). A pass's
+        // GPU time per render pass (desktop GL), for the session report and FrameTimingManager. A pass's
         // time is GPU wall time, so while the frame is CPU-bound it includes the GPU waiting for
         // the pass's commands: read it next to cpu.renderP50Ms.
         GpuTimer _gpu;
@@ -297,6 +301,8 @@ namespace CosmicShore.Player
             }
             else _present.Draw(_frame.Color, w, h);
             _gpu?.EndFrame();
+            // The game's frame timing (FrameTimingManager, which DiagnosticsHUD reads): this frame's draw CPU and the GPU's last answer.
+            FrameTimingManager.ReportRender(System.Diagnostics.Stopwatch.GetElapsedTime(r0).TotalMilliseconds, _gpu?.LastFrameMs);
             // CPU time spent issuing the frame's GL work (the GPU's own time needs timer queries).
             double renderMs = System.Diagnostics.Stopwatch.GetElapsedTime(r0).TotalMilliseconds;
             SessionReport.RenderTime(renderMs);

@@ -159,6 +159,11 @@ An unattended run without a port: `--frames N --shot F:out.png --do "F:click X,Y
   happens again. The player calls it from `UgsSetup.InstallOnline`.
 - **Under xvfb, rendering is software**: a few frames per second. `game_wait 600` is minutes.
   Use `headless: true` when you need no pictures - it ticks as fast as the CPU allows.
+- **A scripted run (`--frames`) steps every game clock by 1/60 s**, so the game's DiagnosticsHUD (F7) reads
+  "FPS 60 · 16.7 ms" there however slow the frame is. That is deliberate: the pictures repeat. Its CPU (busy)
+  and GPU rows come from `FrameTimingManager`, which measures the real frame in every run. Judge fps from a
+  normal run, or from F3. A normal run passes the real frame time unclamped (`deltaTime` is capped at the
+  project's Maximum Allowed Timestep), and there the HUD and F3 agree within a few percent.
 - **Unity injects Reflex before Awake/OnEnable**, with the scene active. Bugs where a value
   "never updates" are often an injection-order gap in the engine, not the game.
 - **The live compile takes whatever `Assets/` is checked out.** Errors, warnings and stack traces
