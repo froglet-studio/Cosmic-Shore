@@ -122,5 +122,36 @@ namespace CosmicShore.Engine
             }
             return _byKey.TryGetValue(key, out var c) ? c : null;
         }
+
+        /// <summary>
+        /// Poses <paramref name="go"/> as the clip has it at <paramref name="time"/> seconds
+        /// (UnityEngine.AnimationClip.SampleAnimation): every binding the hierarchy has is written,
+        /// with no Animator and no blending. Bindings whose target is missing are skipped.
+        /// </summary>
+        public void SampleAnimation(GameObject go, float time)
+        {
+            if (go == null) return;
+            var root = go.transform;
+            HashSet<Transform> rotated = null;
+            foreach (var b in Bindings)
+            {
+                if (b.Curve == null) continue;
+                var slot = AnimatorBindings.Resolve(root, b);
+                if (slot.set == null) continue;
+                float v = b.Curve.Evaluate(time);
+                slot.set(slot.isBool ? (v > 0.5f ? 1f : 0f) : v);
+                if ((b.ClassId == 4 || b.ClassId == 224) && b.Attribute.StartsWith("m_LocalRotation", StringComparison.Ordinal)
+                    && (string.IsNullOrEmpty(b.Path) ? root : root.Find(b.Path)) is { } t)
+                    (rotated ??= new HashSet<Transform>()).Add(t);
+            }
+            // Rotation is written a component at a time: restore unit length once all four are in.
+            if (rotated == null) return;
+            foreach (var t in rotated)
+            {
+                var q = t.localRotation;
+                float mag = MathF.Sqrt(q.x * q.x + q.y * q.y + q.z * q.z + q.w * q.w);
+                if (mag > 1e-6f && MathF.Abs(mag - 1f) > 1e-6f) t.localRotation = new Quaternion(q.x / mag, q.y / mag, q.z / mag, q.w / mag);
+            }
+        }
     }
 }

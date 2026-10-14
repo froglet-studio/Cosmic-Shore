@@ -88,8 +88,7 @@ namespace CosmicShore.Engine.Networking
         SessionDeleted = 2,
         SessionNotFound = 3,
         RateLimitExceeded = 4,
-        // The rest of the codes UgsRequestPolicy.ClassifySessionError reads (party request
-        // discipline, review Phase 0). Placeholder-local values, like the five above.
+        // The rest of the SDK's codes, by name: UgsRequestPolicy classifies every one of them.
         AllocationNotFound = 5,
         NetworkManagerNotInitialized = 6,
         NetworkManagerStartFailed = 7,
@@ -122,6 +121,13 @@ namespace CosmicShore.Engine.Networking
 
         public SessionException(SessionError error, string message = null)
             : base(message ?? error.ToString())
+        {
+            Error = error;
+        }
+
+        /// <summary>The SDK's own argument order: message first.</summary>
+        public SessionException(string message, SessionError error, System.Exception innerException = null)
+            : base(message ?? error.ToString(), innerException)
         {
             Error = error;
         }

@@ -114,9 +114,17 @@ namespace CosmicShore.Gameplay
             // ward earned against the arena must not cancel one (ElementalDebuffSources). The
             // magnitude is authored NEGATIVE (it reads as a debuff); a transfer takes a positive
             // amount, because how much moves has no sign.
-            for (int i = 0; i < elements.Length; i++)
-                ElementalTransfer.Eject(victim, elements[i], -debuffMagnitude, blastVelocity,
-                                        ElementalDebuffSources.Explosion);
+            //
+            // AUTHORITATIVE: a replicated press puts a copy of this blast on every peer, and the
+            // Dolphin's crystal blast is replayed on the server AND its owner. The blast's pilot
+            // (SourceVessel) decides, on its own machine, and the victim's owner settles - the same
+            // rule CombatHitDrain follows, so this drain and the sibling scoring effect agree. An
+            // anonymous blast has no pilot and settles where it ran, as before. The authored list
+            // becomes a mask, so a duplicated entry can no longer take one element twice.
+            var attacker = impactee ? impactee.SourceVessel?.VesselStatus : null;
+            ElementalTransfer.ApplyAuthoritative(ElementalTransferForm.Eject, victim, attacker,
+                                                 ElementalTransfer.MaskOf(elements), -debuffMagnitude,
+                                                 blastVelocity, ElementalDebuffSources.Explosion);
         }
     }
 }

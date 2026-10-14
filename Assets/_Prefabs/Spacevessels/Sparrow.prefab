@@ -169,7 +169,7 @@ MonoBehaviour:
   m_ReferencePixelsPerUnit: 100
   m_ScaleFactor: 1
   m_ReferenceResolution: {x: 1920, y: 1080}
-  m_ScreenMatchMode: 0
+  m_ScreenMatchMode: 1
   m_MatchWidthOrHeight: 1
   m_PhysicalUnit: 3
   m_FallbackScreenDPI: 96
@@ -1343,7 +1343,7 @@ MonoBehaviour:
   objectiveSwitchImprovement: 0.75
   preferApproachRunDistance: 0
   breakOffClosingCosine: 0.5
-  orbitSweepDegrees: 540
+  orbitSweepDegrees: 360
   orbitProgressFraction: 0.9
   orbitTargetJumpFraction: 1.6
   abilities:

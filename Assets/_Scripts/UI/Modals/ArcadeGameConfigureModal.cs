@@ -3008,7 +3008,7 @@ namespace CosmicShore.UI
             if (!window)
             {
                 CSDebug.LogWarning("[ArcadeConfigModal] No WeeklyChallengeLeaderboardModal in the " +
-                                 "scene - wire one on this modal, or run FrogletTools > Interface " +
+                                 "scene - wire one on this modal, or run FrogletTools > UI " +
                                  "> Wire Weekly Challenge Leaderboard.");
                 return;
             }
@@ -3177,13 +3177,12 @@ namespace CosmicShore.UI
             // A guest who is FLYING cannot be shown anything. Freestyle is not just "the appshell
             // is on another screen": ScreenSwitcher.HandleEnterFreestyle has closed every modal,
             // faded the screens CanvasGroup out and handed the pad to the vessel; NavigateTo
-            // refuses outright (so FollowHostToArcadeScreen below is a no-op) and ModalWindowIn
+            // refuses outright and ModalWindowIn
             // refuses to open at all while that input gate is engaged. So the host's open landed,
             // drew nothing, and the guest kept flying while the party sat in a lobby - and because
             // the open is an EDGE, nothing ever delivered it again.
             //
-            // Being pulled into the host's card is exactly the kind of host-driven move
-            // FollowHostToArcadeScreen already exists for, so leaving freestyle is part of it. The
+            // Being pulled into the host's card is a host-driven move, so leaving freestyle is part of it. The
             // re-entry is deferred to the END of the exit transition, never the start: the start
             // event runs another CloseAllModals, which would close whatever we opened.
             if (Switcher && Switcher.IsInFreestyle)
@@ -3260,18 +3259,12 @@ namespace CosmicShore.UI
             ApplyHostOnlyInteractability();
             ResetReadyUpUI();
 
-            // Move the APP SHELL to the screen the card belongs to first, so the card the host
-            // opened is drawn on it rather than over whatever the guest was looking at - and so
-            // closing the modal leaves them there instead of somewhere unrelated. An Arena card
-            // sits over the Arena grid; anything else over the arcade screen.
-            // ScreenSwitcher.NavigateTo refuses ARK for a guest on purpose (no browsing the
-            // arcade in someone else's party); FollowHostToArcadeScreen is the host-driven
-            // entry point past that guard, and nothing on the guest's own UI calls it.
-            if (Switcher)
-            {
-                if (_activePanel is ArenaLaunchPanel) Switcher.FollowHostToArenaWindow();
-                else                                  Switcher.FollowHostToArcadeScreen();
-            }
+            // Move the APP SHELL to the window the card belongs to first, so the card the host
+            // opened is drawn on it rather than over whatever the guest was looking at. An Arena card
+            // sits over the Arena grid. (An arcade card used to pull the guest to the ARK screen, back
+            // when ARK was the arcade; ARK is the Elemental Converter now, so an arcade card stays
+            // over whatever the guest has open.)
+            if (Switcher && _activePanel is ArenaLaunchPanel) Switcher.FollowHostToArenaWindow();
 
             // A panel with a window of its own (Arena, Maelstrom) opened it in SelectLaunchPanel;
             // this window is only the surface for the panels that are its children - the same

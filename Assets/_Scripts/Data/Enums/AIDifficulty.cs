@@ -43,7 +43,10 @@ namespace CosmicShore.Data
         /// is a promise the game breaks. Skim Race is the first; add a mode here in the same
         /// change that teaches its pilot to read <c>GameDataSO.RequestedAIDifficulty</c>.
         /// </summary>
-        public static bool IsOfferedFor(GameModes mode) => mode == GameModes.SkimRace;
+        public static bool IsOfferedFor(GameModes mode) =>
+            mode == GameModes.SkimRace
+            // The Stoat's gate races: GateRaceController applies GateRaceHandicap (the same numbers) to its AI.
+            || mode == GameModes.Slingshot || mode == GameModes.Warpline;
 
         /// <summary>One step easier or harder, clamped to Easy..Hard (the gamepad's left/right).</summary>
         public static AIDifficulty Step(AIDifficulty from, int direction)

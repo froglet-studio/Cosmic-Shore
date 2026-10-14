@@ -9,10 +9,16 @@ identity: the controller, the turn monitor (point-race → 120 s NetworkTimeBase
 the scoring rule, and the crystal ladder. Then it registers the mode everywhere a
 mode must be registered (card, live game list, progression unlock, build settings).
 
-Like author_dogfight_assets.py, this generator asserts on the DONOR's exact field
-blocks: the day someone reworks the Bends scene, this file becomes permanently
-un-runnable — which is the correct end state for a one-shot migration. Do not
-"fix" the asserts to chase the donor; the shipped Bloomrush assets are the record.
+The clone asserts on the DONOR's exact field blocks, and it is a ONE-SHOT: it runs only
+while MinigameBloomrush.unity does not exist yet. Once the scene is committed the Editor
+owns it (its fileIDs, its Netcode GlobalObjectIdHash values, every later scene edit), so
+the committed scene is ADOPTED as-is (arcade_mode_lib.committed_scene) and the donor
+asserts STAND DOWN when Bends moves on - they print a note and every other check still
+runs (CLAUDE.md "a spent one-shot must STAND DOWN, not abort"). What the gate still
+enforces is that the blocks this script authors - the controller and monitor scripts,
+the controller's field block, the 120 s duration and the crystal ladder - appear
+verbatim in the committed scene, so retuning one here without the scene fails --check
+by name. Do not "fix" the donor asserts to chase Bends; the committed scene is the record.
 
 Deterministic guids (md5 of a stable name), idempotent, --check compares.
 """
@@ -52,16 +58,8 @@ def sub(t: str, old: str, new: str, label: str) -> str:
     return t.replace(old, new)
 
 
-def build_scene() -> str:
-    t = open(os.path.join(ROOT, "Assets/_Scenes/Multiplayer Scenes/MinigameBends.unity")).read()
-
-    # Controller identity: BendsController → BloomrushController, and its mode fields.
-    t = sub(t,
-        "  m_Script: {fileID: 11500000, guid: %s, type: 3}" % BENDS_CONTROLLER_SCRIPT,
-        "  m_Script: {fileID: 11500000, guid: %s, type: 3}" % BLOOMRUSH_CONTROLLER_SCRIPT,
-        "controller script")
-    t = sub(t,
-        """  rule: {fileID: 11400000, guid: d17aa51522bc1bedc765900d767f71b5, type: 2}
+CONTROLLER_SCRIPT_LINE = "  m_Script: {fileID: 11500000, guid: %s, type: 3}" % BLOOMRUSH_CONTROLLER_SCRIPT
+OLD_CONTROLLER_FIELDS = """  rule: {fileID: 11400000, guid: d17aa51522bc1bedc765900d767f71b5, type: 2}
   arenaCell: {fileID: 1700000065}
   firstMilestoneFraction: 0.25
   secondMilestoneFraction: 0.5
@@ -71,8 +69,8 @@ def build_scene() -> str:
   aiAimBlastReach: 2400
   aiAimBlastDuration: 2.7
   aiAimHumanFocus: 3
-  aiAimMaxRange: 2400""",
-        """  rule: {fileID: 11400000, guid: %s, type: 2}
+  aiAimMaxRange: 2400"""
+NEW_CONTROLLER_FIELDS = """  rule: {fileID: 11400000, guid: %s, type: 2}
   arenaCell: {fileID: 1700000065}
   fuseSecondsByIntensity:
   - 30
@@ -81,14 +79,39 @@ def build_scene() -> str:
   - 20
   elementalCrystalCount: 16
   crystalScatterRadius: 850
-  crystalScatterSeed: 45""" % RULE_GUID,
-        "controller fields")
+  crystalScatterSeed: 45""" % RULE_GUID
+MONITOR_SCRIPT_LINE = "  m_Script: {fileID: 11500000, guid: %s, type: 3}" % NETWORK_TIME_MONITOR_SCRIPT
+MONITOR_DURATION = "  _updateInterval: 1\n  duration: 120\n"
+OLD_CRYSTAL_LADDER = """  - CrystalsPerPlayer: 2
+    ExtraCrystals: 0
+  - CrystalsPerPlayer: 1
+    ExtraCrystals: 0
+  - CrystalsPerPlayer: 1
+    ExtraCrystals: -1"""
+NEW_CRYSTAL_LADDER = """  - CrystalsPerPlayer: 3
+    ExtraCrystals: 2
+  - CrystalsPerPlayer: 2
+    ExtraCrystals: 1
+  - CrystalsPerPlayer: 1
+    ExtraCrystals: 0"""
+SCENE_REL = "Assets/_Scenes/Multiplayer Scenes/MinigameBloomrush.unity"
+
+
+def clone_scene() -> str:
+    t = open(os.path.join(ROOT, "Assets/_Scenes/Multiplayer Scenes/MinigameBends.unity")).read()
+
+    # Controller identity: BendsController → BloomrushController, and its mode fields.
+    t = sub(t,
+        "  m_Script: {fileID: 11500000, guid: %s, type: 3}" % BENDS_CONTROLLER_SCRIPT,
+        CONTROLLER_SCRIPT_LINE,
+        "controller script")
+    t = sub(t, OLD_CONTROLLER_FIELDS, NEW_CONTROLLER_FIELDS, "controller fields")
 
     # Turn monitor: the Bends point race becomes the 120-second clock. Same GameObject,
     # same fileID, new class + one new key — the change-type-in-place technique.
     t = sub(t,
         "  m_Script: {fileID: 11500000, guid: %s, type: 3}" % BENDS_MONITOR_SCRIPT,
-        "  m_Script: {fileID: 11500000, guid: %s, type: 3}" % NETWORK_TIME_MONITOR_SCRIPT,
+        MONITOR_SCRIPT_LINE,
         "monitor script")
     monitor = re.search(
         r"(--- !u!114 &1628508337\nMonoBehaviour:\n.*?_updateInterval: 1\n)", t, re.S)
@@ -97,21 +120,17 @@ def build_scene() -> str:
 
     # Crystal ladder: plentiful at intensity 1 (crystals close and constant), contested by
     # 4 — the Bloomrush spec's own axis, replacing Bends' inherited Rampage scarcity.
-    t = sub(t,
-        """  - CrystalsPerPlayer: 2
-    ExtraCrystals: 0
-  - CrystalsPerPlayer: 1
-    ExtraCrystals: 0
-  - CrystalsPerPlayer: 1
-    ExtraCrystals: -1""",
-        """  - CrystalsPerPlayer: 3
-    ExtraCrystals: 2
-  - CrystalsPerPlayer: 2
-    ExtraCrystals: 1
-  - CrystalsPerPlayer: 1
-    ExtraCrystals: 0""",
-        "crystal ladder")
+    t = sub(t, OLD_CRYSTAL_LADDER, NEW_CRYSTAL_LADDER, "crystal ladder")
     return t
+
+
+def build_scene() -> "tuple[str, list[str]]":
+    """The donor clone on first bring-up, the committed scene after - see the module docstring.
+    Returns (scene text, errors naming any authored block the committed scene no longer has)."""
+    return aml.committed_scene(
+        SCENE_REL, clone_scene,
+        authored_blocks=(CONTROLLER_SCRIPT_LINE, NEW_CONTROLLER_FIELDS, MONITOR_SCRIPT_LINE,
+                         MONITOR_DURATION, NEW_CRYSTAL_LADDER))
 
 
 SCENE_META = """fileFormatVersion: 2
@@ -247,11 +266,12 @@ MonoBehaviour:
 
 
 def main() -> int:
+    scene, scene_errors = build_scene()
     writes = {
         "Assets/_SO_Assets/Game Toasts/GameToastConfig_Bloomrush.asset": TOAST_CONFIG,
         "Assets/_SO_Assets/Game Toasts/GameToastConfig_Bloomrush.asset.meta":
             ASSET_META.format(guid=TOAST_CONFIG_GUID),
-        "Assets/_Scenes/Multiplayer Scenes/MinigameBloomrush.unity": build_scene(),
+        SCENE_REL: scene,
         "Assets/_Scenes/Multiplayer Scenes/MinigameBloomrush.unity.meta": SCENE_META,
         "Assets/_SO_Assets/Scoring Rules/BloomrushScoringRule.asset": RULE_ASSET,
         "Assets/_SO_Assets/Scoring Rules/BloomrushScoringRule.asset.meta": ASSET_META.format(guid=RULE_GUID),
@@ -303,9 +323,9 @@ def main() -> int:
         bs2 = sub(bs, anchor, new, "build settings")
         writes["ProjectSettings/EditorBuildSettings.asset"] = bs2
 
-    card_errors = aml.check_cards(writes)
-    if card_errors:
-        print("VALIDATION FAILED - nothing written:\n  " + "\n  ".join(card_errors))
+    errors = scene_errors + aml.check_cards(writes)
+    if errors:
+        print("VALIDATION FAILED - nothing written:\n  " + "\n  ".join(errors))
         return 1
 
     drift = []

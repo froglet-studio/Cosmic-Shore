@@ -177,7 +177,7 @@ namespace CosmicShore.Gameplay
             var partySessionId = _partyQuery?.ActivePartySessionId ?? "";
             int memberCount = hostConnectionData != null && hostConnectionData.PartyMembers != null
                 ? hostConnectionData.PartyMembers.Count : 0;
-            // The party size players SEE (4), never the transport capacity (6).
+            // The party size (4) - the one size since B25, so what players see is what the session holds.
             int maxSlots = hostConnectionData != null ? hostConnectionData.MaxPartySlots : 0;
 
             await friendsService.SetPresenceAsync(
@@ -198,7 +198,7 @@ namespace CosmicShore.Gameplay
             var partySessionId = _partyQuery?.ActivePartySessionId ?? "";
             int memberCount = hostConnectionData != null && hostConnectionData.PartyMembers != null
                 ? hostConnectionData.PartyMembers.Count : 0;
-            // The party size players SEE (4), never the transport capacity (6).
+            // The party size (4) - the one size since B25, so what players see is what the session holds.
             int maxSlots = hostConnectionData != null ? hostConnectionData.MaxPartySlots : 0;
 
             await friendsService.SetPresenceAsync(

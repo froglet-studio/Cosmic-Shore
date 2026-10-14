@@ -23,3 +23,4 @@ MonoBehaviour:
     Floor: 1
   widthBlendSeconds: 1.5
   massUpgradeShieldsInMassMode: 1
+  massModeCameraHeight: 0

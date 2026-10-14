@@ -187,6 +187,7 @@ static class ToyRig
         go.transform.position = position;
         var col = go.AddComponent<SphereCollider>();
         col.radius = 1f;
+        ContactRig.AddKinematicBody(go); // as the vessel prefabs: a toy's trigger needs a body on the vessel side
 
         var stub = go.AddComponent<ToyStubVessel>();
         var status = go.AddComponent<VesselStatus>();

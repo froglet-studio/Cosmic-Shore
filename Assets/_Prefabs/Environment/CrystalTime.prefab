@@ -211,16 +211,11 @@ MonoBehaviour:
   m_GameObject: {fileID: 6588436222817790470}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 77743c877d59432b8341fe2754a9c118, type: 3}
+  m_Script: {fileID: 11500000, guid: c1b251f1ac8f4a15b1bc5681c1d6bcc5, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   model: {fileID: 441863464924063366}
-  leadBlockBones:
-  - Bone.019
-  - Bone.020
-  - Bone.029
-  - Bone.030
-  - Bone.031
+  profile: {fileID: 11400000, guid: 7ae6c13f991929b01f383003cb5d9277, type: 2}
 --- !u!114 &3568651701759605074
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -376,17 +371,8 @@ PrefabInstance:
       propertyPath: m_Name
       value: TimeCrystalExport
       objectReference: {fileID: 0}
-    - target: {fileID: 5866666021909216657, guid: 2ba95de60da486749bc7cb7a7a421a4e,
-        type: 3}
-      propertyPath: m_Controller
-      value: 
-      objectReference: {fileID: 9100000, guid: 8169508c0fa34f84ca618c68234ba4f5, type: 2}
-    - target: {fileID: 5866666021909216657, guid: 2ba95de60da486749bc7cb7a7a421a4e,
-        type: 3}
-      propertyPath: m_CullingMode
-      value: 0
-      objectReference: {fileID: 0}
-    m_RemovedComponents: []
+    m_RemovedComponents:
+    - {fileID: 5866666021909216657, guid: 2ba95de60da486749bc7cb7a7a421a4e, type: 3}
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
     m_AddedComponents:

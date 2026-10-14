@@ -322,8 +322,8 @@ The main thread pays the array copies (~30 capacity-sized arrays in, 14 out); th
   one-line helpers. It checks that the kernel structs hold only blittable fields, and that the job is
   `[BurstCompile] ... : IJobParallelFor` with only NativeArray/blittable fields and calls the kernel. Negative control:
   the pre-11c step trips 7 rules. Mutations checked by hand: `var`, `Math.`, a `Vector3` local, a managed array, a
-  string field, a managed job field and a missing `[BurstCompile]` each fail it. Since 2026-10-08 it also fails any
-  `MathF` member other than `Min/Max/Abs/PI` anywhere in the kernel file (§7.6), and the pre-11c step trips 7 rules.
+  string field, a managed job field and a missing `[BurstCompile]` each fail it. Since 2026-10-07 it also fails
+  `MathF.` (§7.6): the kernel's maths go through `KernelMath`.
 - **Bit-match (group K):** each agent is stepped by the reference and by the kernel from the same saved state. All
   212,859 agent-steps were bit-identical on .NET.
 - **Split tick (group J):** the parked tick plus a main-thread `RunAgentPass` publishes exactly the plain tick.
@@ -369,22 +369,23 @@ Both holds are asserted.
 - **Burst never compiled the job.** Burst is not available here. `Span`/`ReadOnlySpan` locals, `stackalloc` into a
   `Span`, `NativeArray.AsSpan()/AsReadOnlySpan()` and `System.Numerics.Vector3` as a plain struct are Burst-supported
   as far as we know (Burst 1.8 docs), but the Burst Inspector is the proof (QA-SWARM-ROUND11-8).
-- **Found 2026-10-08: the kernel could not link, and that turned Burst off for every job in the game.** The text gate
-  recommended `MathF`. In Unity's Mono, `MathF.Sqrt/Sin/Cos/Acos/Exp/Pow` are InternalCalls: externs with no IL body.
-  Burst's editor JIT resolves an extern through the engine, the engine does not have these, and Editor.log reads
-  `` Unable to find internal function `System.MathF::Sqrt` `` (then Acos, Pow, Exp, Sin, Cos). Every Assembly-CSharp job
-  is built into ONE Burst library (15 entry points), so the failed link left the whole library unusable:
-  `` Burst is disabled for ... due to a failure to resolve one or more `extern` methods ``, for the prism, AOE, LOD and
-  cell-volume jobs too. They ran as managed code in every mode from the day this job and `SwarmPoseJob` landed
-  (`bleeding-edge`, 10-05; `Docs/SKIM_RACE_AI.md` §8.0k). The Burst Inspector compiled each job cleanly on its own and showed nothing.
-  - **Fix.** The kernel calls one-line `(float)System.Math` helpers (`Sqrt`, `Sin`, `Cos`, `Acos`, `Exp`, `Pow`),
-    which Burst lowers to intrinsics. `MathF.Min/Max/Abs` are plain IL and stay. The gate now fails on any other
-    `MathF` member anywhere in the kernel file, checks the helpers' form, and has its own negative control. On the
-    10-07 kernel it names exactly the six functions Editor.log named.
-  - **Bit-match.** `Sqrt` is bit-identical to `MathF.Sqrt`. The other five differ in the last bit on some inputs:
-    98.4 % of agent-steps were bit-identical, max 6e-5 u. `ReferenceStep.cs` now uses the same primitives, because K
-    proves the restructure, and K is back to 100 % (206,100 agent-steps). Every other group passes unchanged.
-  - **Run `burst` in the console to check it in Unity.** It prints Burst's refusal from Editor.log, if there is one.
+- **Burst DID reject the job, the first time it saw it (2026-10-07).** In the editor:
+  `Unable to find internal function System.MathF::Sqrt` (and `::Pow`, `::Exp`, `::Sin`, `::Cos`, `::Acos`). In
+  Unity's Mono corlib those `MathF` methods are `[MethodImpl(InternalCall)]` externs with no IL, so Burst cannot
+  compile them; it refused this job and `SwarmPoseJob` (whose `PoseMatrix` used `MathF.Sqrt`), and both ran
+  managed. The "as far as we know" above was wrong about `MathF`, and the textual gate had encoded it ("use
+  MathF"). Fix: both kernels call `KernelMath` (`FloraAndFauna/Swarm/KernelMath.cs`), which forwards to
+  `Unity.Mathematics` in Unity (`UNITY_5_3_OR_NEWER`, every Unity compile) and to `MathF` in the harness, so group
+  K's bit-match is unchanged. Both Burst gates now forbid `MathF.` in a kernel (negative control: the pre-fix
+  kernels fail them on exactly that rule), and `Tools/Build/swarm_core_harness/check_kernel_math.py` checks the
+  shim's two branches agree and that the Unity branch never calls `MathF`. Still not proved: that nothing ELSE in
+  the kernels trips Burst — the Burst Inspector is that proof.
+- **Also found on `ai-system` (2026-10-08), same root cause, fixed there with `(float)System.Math`
+  helpers (this branch kept `KernelMath`):** every Assembly-CSharp job is built into ONE Burst library, so this
+  failed link disabled Burst for ALL of them (`Burst is disabled for ... due to a failure to resolve one or more
+  extern methods`): the prism, AOE, LOD and cell-volume jobs ran managed too, from 10-05 until the fix. The
+  Burst Inspector compiled each job cleanly on its own and showed nothing. **Run `burst` in the console** to
+  check it in Unity: it prints Burst's refusal from Editor.log, if there is one.
 - **Burst's floats are not bit-matched.** Burst's math intrinsics may round differently from .NET's. The bit-match is
   .NET-to-.NET. Behaviour under Burst is expected to match to float rounding, not bits.
 - **The safety system was not run.** The job's `[NativeDisableParallelForRestriction]` writes (slot `Live[q]`, not
@@ -826,3 +827,85 @@ from the lab branch (`git fetch origin cece/gifted-curie-x2cpd0` first; it reads
   (§9.9). Whether 150 members find enough in 690-1080 u is the showcase run's question (`showcase_cell_harness`).
 - **Rams during a dive** turn members into crystals (§10.2).
 
+
+## 11. The ARMS RACE: the shoal and its harriers (lab Tools/NCA/arms_*.py)
+
+**Status:** branch `claude/arms-race-port`, on bleeding-edge after the siege (#1016) and the collider trim (#1017).
+Harness group `arms` (A0-A5), `run.sh all` and the author checks pass. **Not yet run in the Unity editor**: QA-ARMS-1
+in `Docs/QA/QA_BACKLOG.md`.
+
+The lab co-evolved a prey and a predator policy against each other (`Tools/NCA/arms_train.py`, results and write-up in
+`Tools/NCA/results/arms/NOTE.md` on `cece/gifted-curie-x2cpd0`). The best run, a9 "selfish herd" (prey trained as 4
+tribes), taught the prey to school (local polarisation 0.53 -> 0.86) and the predators to hunt as a pack. The port
+ships generation 1500 (the run plateaus after it) as two substrate species that share one pond:
+
+| Species | What it is | Element | n0 / cap | Proxies |
+|---|---|---|---|---|
+| shoal | 120 small fish (2.5 u, 60 u/s, turn 10 rad/s). Tight aligned schools that swerve round a hunter or a ship. Never dangerous; a ship rams them. | Time | 120 / 155 | 6 within 100 u |
+| harrier | 8 sprinters (5 u, cruise 45, burst 100 u/s for up to 3 s of stamina, turn 3 rad/s). Spread out, close on a school together, burst. | Charge | 8 / 12 | 4 within 200 u |
+
+### 11.1 How it runs
+
+`SubstrateArms.cs` is a director, like the siege's: in `SubstrateCore.BeginStep` it steps each pond (the prey
+population with the predator population whose `PreyName` names it) and the agent kernel skips both. Each tick:
+
+1. **Into the pond.** Every live agent is copied into the lab's arrays relative to the pond's centre (the sector axis at
+   the middle of the band: +Y x 765 u). A new agent (its `BornTick` changed) gets the lab's fresh state; a newborn is
+   reversed and nudged ~1 u from its parent (the lab's birth). Vessels within reach become the lab's ghosts: prey see
+   them as predators, harriers see them as prey, both treat them as solid (radius + 4 u).
+2. **The lab's step**, line for line: `observe` (31 prey / 36 predator inputs in a parallel-transported body frame),
+   the two 2-layer tanh MLPs (`SubstrateArmsPolicy.cs`, generated from the lab's weights), then `apply`: the burst gate
+   on stamina, the turn-limited steer, the spacing spring, the pond's wall, the swept catch with the confusion roll
+   (1 / (1 + 0.3 x crowd within 10 u)).
+3. **Back to the substrate.** Positions and velocities are written back; the heading drives the draw. A bursting
+   harrier is `Phase` 1 (the gregarious aspect 4.5 stretches it into a streak at once) and aggressive, so the world
+   pass's bite wind-up (`StrikeWindupS` 0.4 s, the pack's fair-burn rule from #1003) makes it a danger prism only after
+   0.4 s of burst. A catch is a `PreyRequest`: the owner kills the fish through its proxy and feeds its stock to the
+   harrier, exactly as the pack eats locusts.
+
+### 11.2 What the game changes, and why
+
+| Change | Why |
+|---|---|
+| The food the policies SEE is the lab's grid with each living plant heart as one full patch (Gaussian sigma 30 u, cap 1); the shoal grazes it down under itself and it regrows toward the plants at the lab's rate (`LabGraze`). What a fish EATS is real flora through `EatRequests` | The cell senses one food point per plant heart. Without the grazed-down signal the shoal sat on its plants and milled: local polarisation fell to 0.61. With it, 0.85 (lab 0.86) |
+| A harrier may burst only while its hunger is at least 0.3 (`SatedHunger`) | The lab's satiety gate is by mass, but stock never burns down in the substrate (mass is conserved), so hunger stands in. One fish holds a harrier off ~30 s |
+| Lifecycle by the substrate's rules: hunger rises by `Metabolism`, a meal lowers it, a fed body splits at `BirthStock` (2 x stock0, the lab's eco split) | Garrett's rule: every life form feeds and breeds. The lab's behaviour runs had a fixed roster |
+| A harrier whose pond has no fish grazes flora | So it can live through a crash of its prey instead of starving at once |
+| A caught fish leaves the pond for up to 3 s while its owner lands the kill (`EatenTimeout`) | The kill goes through the proxy, a frame or more later |
+
+Every lab number is on `SubstrateArmsParams` (the species asset's `Arms` block); the game-only ones are the last four.
+
+### 11.3 Placement and colliders
+
+The pond is a sphere of radius 200 u about (0, 765, 0): the middle shell's +Y pole. Both species are penned to the
+band 690-840 and a 15 degree sector about +Y, which is 35 degrees clear of the stampede, leech and leviathan sectors.
+The Middle forest gains a fifth planting pen there (half-angle 5 degrees, 715-815 u, inside the pond) and its
+floor/cap rise from 9/12 to 10/13 so the other four pens keep two plants each.
+
+The pond's 10 proxies (20 colliders) are spent from the Swarm cell's spare rather than re-divided from the
+substrate's 39: 1,169 colliders worst case (+20 proxy, +1 plant heart) + 23 threat-flora hearts = 1,192 of 1,200.
+The populations fill the core's 1,024 slots exactly (the shoal's cap is 155 for that).
+
+### 11.4 Proof
+
+`bash Tools/Build/substrate_harness/run.sh arms`. The fixture `arms_fixture.json` and `SubstrateArmsPolicy.cs` are
+written by `arms_fixture.py` from the lab branch (it runs the lab's own `arms_sim.py` and `arms_metrics.py`).
+
+| Group | What it asserts |
+|---|---|
+| A0 fidelity | All 21 lab `Cfg` numbers equal the port's; both species describe the same pond; bodies and speeds are the lab's; the policy literals equal the lab's g1500 weights bit for bit. |
+| A1 parity | Five lab states mid-encounter, with a vessel crossing the pond: 17,529 inputs within 2e-6, 2,276 MLP outputs within 5e-6, the step's positions within 1.4e-3 u, the same bursts, stamina, and catch attempts. Negative control: a port blind to the vessel fails. |
+| A2 behaviour | The lab's three start states x 60 s through the port with the lab's metric definitions: local polarisation 0.86 (lab 0.86), schooled share 0.62 (0.60), nearest neighbour 13.0 u (13.1), pack share 0.40 (0.38), harrier spacing 67 u (68), 44 catches/min (39). Negative control: generation 0 schools at 0.51 (lab 0.53). |
+| A3 game tick | Two substrate populations in a pond with two Borromean-sized plants and a vessel crossing at 120 u/s, 3 seeds x 3 min: every catch lands as a kill through the owner, the shoal is never dangerous, a harrier is dangerous only after 0.4 s of burst, a vessel drifting at 20 u/s is bitten (82-109 bites in 3 x 90 s) while one cruising at 120 u/s is bitten 5 times in 9 min, local polarisation 0.85 and pack share 0.50, nobody leaves the pond, largest move 11.6 u per tick. |
+| A4 lifecycle | 10 min on plants that re-leaf after 60 s: the shoal grazes and breeds (~260 births), harriers eat ~220 fish and breed to their cap, neither collapses (shoal never below ~150, harriers never below 8), the ledger closes. |
+| A5 colliders | Shoal cap 6: 19/19 ram passes through a school meet a proxied fish. Harrier cap 4: 67/67 contacts and harm events on a lingering vessel are proxied. |
+
+### 11.5 What is NOT proved
+
+- **Nothing here ran in Unity.** QA-ARMS-1 is the in-editor proof.
+- **The cell's real flora regrowth.** A4 regrows an eaten leaf after 60 s. The pond is two plants; if the real plants
+  regrow slower, the shoal will thin (it held at its cap in every harness run, so there is slack).
+- **That the harriers threaten a skilled pilot.** They read a vessel as prey but a ship cruising faster than their
+  100 u/s burst is rarely caught. That is the lab's result too; it makes them a hazard for a pilot who lingers.
+- **How a school reads on screen** at 2.5 u per fish, and whether the burst streak (aspect 2.6 -> 4.5) is a clear tell.
+- **Several ponds.** One shoal and one harrier population per cell; a second pond would need its own pen.

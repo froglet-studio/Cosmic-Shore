@@ -48,6 +48,38 @@
           "date": "2026-10-08"
         }
       }
+    },
+    "2026-10-09-akouroshm.md": {
+      "submitted_hash": "57ab93425c2c29f864f7bb17d0ea0a7485e9c01041bb1ee1e3ac58987d05281f",
+      "applied_hash": "57ab93425c2c29f864f7bb17d0ea0a7485e9c01041bb1ee1e3ac58987d05281f",
+      "items": {
+        "QA-AUDIT-TOOLS": {
+          "verdict": "FAIL",
+          "row": "672df5e35d32d014",
+          "date": "2026-10-09"
+        }
+      }
+    },
+    "2026-10-12-akouroshm.md": {
+      "submitted_hash": "a0831f346db53aa3ae6e82506c63fdefe3ee4373fbf4ecefec05142cf6eb07a7",
+      "applied_hash": "a0831f346db53aa3ae6e82506c63fdefe3ee4373fbf4ecefec05142cf6eb07a7",
+      "items": {
+        "QA-EDITMODE-TESTS": {
+          "verdict": "FAIL",
+          "row": "2b5c8cafde01652b",
+          "date": "2026-10-12"
+        },
+        "QA-SPARROW-PROJECTILE-POOL": {
+          "verdict": "FAIL",
+          "row": "ea5e3112a28f0598",
+          "date": "2026-10-12"
+        },
+        "QA-FLORA-LEAFSIZE": {
+          "verdict": "PASS",
+          "row": "706f1dbe657b6de0",
+          "date": "2026-10-12"
+        }
+      }
     }
   }
 }

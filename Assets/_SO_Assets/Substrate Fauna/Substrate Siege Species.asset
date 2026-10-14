@@ -217,6 +217,34 @@ MonoBehaviour:
       Substeps: 3
       FoodPull: 150
       Leash: 300
+    Arms:
+      Role: 0
+      PondR: 200
+      PreyV: 60
+      PreyAcc: 300
+      PreyTurn: 10
+      PreyR: 50
+      PreyR0: 5
+      PreySize: 2.5
+      PredV: 45
+      PredBurst: 100
+      PredAcc: 150
+      PredTurn: 3
+      PredR: 80
+      PredR0: 14
+      PredSize: 5
+      StamDrain: 0.33333334
+      StamRegen: 0.125
+      CatchR: 7.5
+      Handle: 1
+      Confusion: 0.3
+      ConfR: 10
+      G: 12
+      FoodSigma: 30
+      SatedHunger: 0.3
+      FoodFull: 1
+      VesselPad: 4
+      EatenTimeout: 3
   seedCount: 0
   seedSpread: 70
   seedAtFlora: 0

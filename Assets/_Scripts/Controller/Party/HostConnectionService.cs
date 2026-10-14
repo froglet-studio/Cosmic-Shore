@@ -278,6 +278,31 @@ namespace CosmicShore.Gameplay
         /// </summary>
         public PartyStateMachine StateMachine => _stateMachine;
 
+        /// <summary>The party data this service writes (roster, online list, flags). Read-only use:
+        /// SOAP single-writer - this service is the writer (PartyConsoleCommand reads it).</summary>
+        public HostConnectionDataSO ConnectionData => connectionData;
+
+        /// <summary>True while this machine runs the offline loopback session (party layer stood down).</summary>
+        public bool IsOfflineSession => _gameData != null && _gameData.IsOfflineSession;
+
+        /// <summary>
+        /// The one log for a failed accept / direct join / spectate, before the caller rethrows. A full
+        /// party is a designed outcome since B25 (the session's MaxPlayers refuses the fifth player) and
+        /// PartyInviteController already toasts and warns it, so only a real fault is an error here.
+        /// </summary>
+        static void LogJoinFailure(string what, Exception e)
+        {
+            if (UgsRequestPolicy.Classify(e) == UgsFailureClass.Full)
+                CSDebug.LogVerbose(CSLogChannel.Party, $"[HostConnectionService] {what}: the party is full ({e.Message}).");
+            else
+                CSDebug.LogError(
+                    $"[HostConnectionService] {what} error ({e.GetType().Name}): {e}" +
+                    (e.InnerException != null
+                        ? $" - inner ({e.InnerException.GetType().Name}): {e.InnerException}"
+                        : string.Empty));
+            CSDebug.LogVerbose(CSLogChannel.Party, $"[HostConnectionService] NetDiag: class={NetworkDiagnostics.ClassifyException(e)} | {NetworkDiagnostics.GetSnapshot()}");
+        }
+
         // ─────────────────────────────────────────────────────────────────────
         // Guard predicates - derive from authoritative state (state machine,
         // lobby service ref, NetworkManager) rather than a separate boolean.
@@ -548,6 +573,16 @@ namespace CosmicShore.Gameplay
         /// </summary>
         private async UniTask EnsureInitializedAsync()
         {
+            // OFFLINE session: the party layer stays stood down for the whole session
+            // (OfflineModeService reset it on the way in). A sign-in that lands late - auth can
+            // succeed while Relay keeps failing - must not re-join the presence lobby and restart
+            // its UGS traffic under a player who was told they are offline. Coming back online is
+            // ReconnectService's re-boot, which clears the flag first.
+            if (_gameData != null && _gameData.IsOfflineSession)
+            {
+                CSDebug.LogVerbose(CSLogChannel.Party, "[HostConnectionService] Offline session active - not joining the presence lobby.");
+                return;
+            }
             if (IsInPresenceLobby || _joining || _presenceRejoinInFlight) return;
             _joining = true;
             // The front-door init supersedes any pending background rejoin.
@@ -729,8 +764,10 @@ namespace CosmicShore.Gameplay
                 try { await _lobbyService.RefreshAsync(); }
                 catch { /* SaveAsync re-reads before any retry */ }
 
-                PublishInvitePayloadsToCurrentPlayer();
+                string advertisedSession = PublishInvitePayloadsToCurrentPlayer();
                 await _propertyWriter.SaveAsync(_lobbyService.ActiveLobby);
+                // The advertisement went out with the invite: the next presence tick need not resend it.
+                _publishedPartySessionId = advertisedSession;
 
                 CSDebug.LogVerbose(CSLogChannel.Party,
                     "[INVITE-SEND] SaveCurrentPlayerDataAsync completed - properties persisted");
@@ -856,12 +893,7 @@ namespace CosmicShore.Gameplay
                 // client. Log the full exception and rethrow so PIC's catch recovers
                 // immediately (fail fast) and the real cause is visible.
                 // See Docs/PartySystem/ARCHITECTURE.md (Error-handling matrix).
-                CSDebug.LogError(
-                    $"[HostConnectionService] AcceptInvite error ({e.GetType().Name}): {e}" +
-                    (e.InnerException != null
-                        ? $" - inner ({e.InnerException.GetType().Name}): {e.InnerException}"
-                        : string.Empty));
-                CSDebug.LogVerbose(CSLogChannel.Party, $"[HostConnectionService] NetDiag: class={CosmicShore.Utility.NetworkDiagnostics.ClassifyException(e)} | {CosmicShore.Utility.NetworkDiagnostics.GetSnapshot()}");
+                LogJoinFailure("AcceptInvite", e);
                 throw;
             }
         }
@@ -945,12 +977,7 @@ namespace CosmicShore.Gameplay
             }
             catch (Exception e)
             {
-                CSDebug.LogError(
-                    $"[HostConnectionService] JoinPartyDirect error ({e.GetType().Name}): {e}" +
-                    (e.InnerException != null
-                        ? $" - inner ({e.InnerException.GetType().Name}): {e.InnerException}"
-                        : string.Empty));
-                CSDebug.LogVerbose(CSLogChannel.Party, $"[HostConnectionService] NetDiag: class={NetworkDiagnostics.ClassifyException(e)} | {NetworkDiagnostics.GetSnapshot()}");
+                LogJoinFailure("JoinPartyDirect", e);
                 throw;
             }
         }
@@ -999,12 +1026,7 @@ namespace CosmicShore.Gameplay
             catch (Exception e)
             {
                 connectionData.IsSpectating = false;
-                CSDebug.LogError(
-                    $"[HostConnectionService] JoinAsSpectator error ({e.GetType().Name}): {e}" +
-                    (e.InnerException != null
-                        ? $" - inner ({e.InnerException.GetType().Name}): {e.InnerException}"
-                        : string.Empty));
-                CSDebug.LogVerbose(CSLogChannel.Party, $"[HostConnectionService] NetDiag: class={NetworkDiagnostics.ClassifyException(e)} | {NetworkDiagnostics.GetSnapshot()}");
+                LogJoinFailure("JoinAsSpectator", e);
                 throw;
             }
         }
@@ -1211,6 +1233,15 @@ namespace CosmicShore.Gameplay
                 // caller reached IsHostingParty == true while we were waiting.
                 if (IsHostingParty) return;
 
+                // The entry check above is a snapshot. OfflineModeService sets the flag only after
+                // a party-layer reset and a profile load that can take seconds, so a call that
+                // passed the entry check can still be queued here - or inside the shutdown below -
+                // when the offline host comes up. Re-decided here (no await between this and the
+                // shutdown, so the shutdown can never land on a live loopback host) and again after
+                // the shutdown (so no Relay session is built on top of one). A late online success
+                // must never tear down a live offline host (HARDENING_PLAN_STEAM_LAUNCH.md §4.2).
+                if (OfflineSessionBegan("while session creation waited for its turn")) return;
+
                 if (_stateMachine.CurrentState != PartyState.HostingParty)
                     _stateMachine.TryTransition(PartyState.HostingParty);
 
@@ -1218,6 +1249,14 @@ namespace CosmicShore.Gameplay
                 // .AsMainThread() guarantees the continuation (and the SOAP raise
                 // further down) runs on Unity's main thread.
                 await _networkTransition.ShutdownAsync(timeoutSeconds: 5f, shutdownCts.Token).AsMainThread();
+
+                if (OfflineSessionBegan("while the NetworkManager shut down"))
+                {
+                    // Undo this call's own HostingParty: the offline reset already took the machine
+                    // to Disconnected, and that is where an offline session's party layer stays.
+                    _stateMachine.TryTransition(PartyState.Disconnected);
+                    return;
+                }
 
                 // CreateAsync starts the host inside the UGS SDK, and Netcode's first act as a
                 // server is to adopt every un-spawned NetworkObject in the loaded scenes as an
@@ -1251,6 +1290,18 @@ namespace CosmicShore.Gameplay
             {
                 _sessionCreationMutex.Release();
             }
+        }
+
+        /// <summary>
+        /// True when this session went OFFLINE after a party-session creation passed its entry
+        /// check - the creation must stand down. See <see cref="EnsurePartySessionAsync"/>.
+        /// </summary>
+        bool OfflineSessionBegan(string when)
+        {
+            if (_gameData == null || !_gameData.IsOfflineSession) return false;
+            CSDebug.LogVerbose(CSLogChannel.Party,
+                $"[HostConnectionService] Offline session began {when} - standing party session creation down.");
+            return true;
         }
 
         /// <summary>
@@ -2057,12 +2108,34 @@ namespace CosmicShore.Gameplay
         // ║  Outgoing invite serialization & expiry                           ║
         // ╚═══════════════════════════════════════════════════════════════════╝
 
-        private void PublishInvitePayloadsToCurrentPlayer()
+        /// <summary>
+        /// Stages the invite lines AND the party session they name on the local player, for the
+        /// caller's one save. Returns the session id advertised.
+        /// </summary>
+        private string PublishInvitePayloadsToCurrentPlayer()
         {
-            string composite = _inviteService.SerializeAll();
-            _lobbyService.ActiveLobby.CurrentPlayer.SetProperty(INVITE_PAYLOADS_KEY,
-                new PlayerProperty(composite, VisibilityPropertyOptions.Public));
+            string advertised = ResolvePublishedPartySessionId();
+            foreach (var kv in InvitePublicationProperties(_inviteService.SerializeAll(), advertised))
+                _lobbyService.ActiveLobby.CurrentPlayer.SetProperty(kv.Key,
+                    new PlayerProperty(kv.Value, VisibilityPropertyOptions.Public));
+            return advertised;
         }
+
+        /// <summary>
+        /// What one invite publish writes, in ONE save: the invite lines and the party session they
+        /// name (Docs/PartySystem/BUGS.md B29, the Accept case). Publishing the lines alone let a poll
+        /// read a fresh invite next to the sender's PREVIOUS <see cref="PARTY_SESSION_KEY"/>, which is
+        /// otherwise republished only on the next presence tick. Right after a host drop the sender
+        /// has just re-created its session, so the invitee's Accept pre-flight
+        /// (<see cref="JoinTargetValidator"/>) compared the new session to the old advertisement and
+        /// refused a valid invite as "no longer available" (defect 5 of the five-process runs). Pure,
+        /// so it is tested without a lobby.
+        /// </summary>
+        public static Dictionary<string, string> InvitePublicationProperties(string inviteLines, string advertisedSessionId) => new()
+        {
+            [INVITE_PAYLOADS_KEY] = inviteLines ?? string.Empty,
+            [PARTY_SESSION_KEY]   = advertisedSessionId ?? string.Empty,
+        };
 
         private void ExpireOutgoingInvites()
         {
@@ -2263,8 +2336,8 @@ namespace CosmicShore.Gameplay
             {
                 lobby.CurrentPlayer.SetProperty(PARTY_COUNT_KEY,
                     new PlayerProperty(currentCount.ToString(), VisibilityPropertyOptions.Public));
-                // Displayed party size (4), not transport capacity (6) - publishing the
-                // capacity is what made every remote row read "1/6".
+                // The party size - 4, the only size since B25 (the session is created with
+                // exactly that many seats, so the published max and the real one cannot disagree).
                 lobby.CurrentPlayer.SetProperty(PARTY_MAX_KEY,
                     new PlayerProperty(connectionData.MaxPartySlots.ToString(), VisibilityPropertyOptions.Public));
                 lobby.CurrentPlayer.SetProperty(MATCH_NAME_KEY,

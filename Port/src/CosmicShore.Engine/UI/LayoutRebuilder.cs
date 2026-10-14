@@ -26,7 +26,32 @@ namespace CosmicShore.Engine.UI
         static readonly List<RectTransform> s_Queued = new();
 
         /// <summary>Fresh-world reset — a new GameLoop drops marks queued by the old world.</summary>
-        internal static void ResetQueue() => s_Queued.Clear();
+        internal static void ResetQueue()
+        {
+            s_Queued.Clear();
+            s_ScreenW = s_ScreenH = -1;
+            CanvasUpdateRegistry.Reset();
+            RectDimensionWatch.Reset();
+        }
+
+        static int s_ScreenW = -1, s_ScreenH = -1;
+
+        /// <summary>
+        /// A new screen size changes every screen-space root canvas's rect (and its scaler's
+        /// factor), so every rect under it that stretches changes size - the case the original
+        /// engine catches per rect as a dimensions change. Rects here are computed on read, so
+        /// only the layout-driven ones go stale: queue every active layout controller.
+        /// </summary>
+        static void MarkAllIfScreenChanged()
+        {
+            if (Screen.width == s_ScreenW && Screen.height == s_ScreenH) return;
+            bool first = s_ScreenW < 0;
+            s_ScreenW = Screen.width; s_ScreenH = Screen.height;
+            if (first) return; // the first tick's layouts are already queued by their OnEnable
+            foreach (var mb in Object.FindObjectsByType<MonoBehaviour>(FindObjectsSortMode.None))
+                if (mb is ILayoutController && mb.isActiveAndEnabled && mb.transform is RectTransform rt)
+                    MarkLayoutForRebuild(rt);
+        }
 
         /// <summary>Solves the whole subtree now (both axes, both passes).</summary>
         public static void ForceRebuildLayoutImmediate(RectTransform layoutRoot)
@@ -55,12 +80,39 @@ namespace CosmicShore.Engine.UI
                 parent = parent.parent as RectTransform;
             }
 
+            // The original queues a lone rect only if it has an active layout controller of its own.
+            if (layoutRoot == rect && !HasLayoutController(rect)) return;
+
             if (!s_Queued.Contains(layoutRoot))
                 s_Queued.Add(layoutRoot);
         }
 
-        /// <summary>Rebuilds every queued root. Called by the GameLoop after LateUpdate.</summary>
+        /// <summary>
+        /// The canvas update, run by the GameLoop after LateUpdate: rects that changed size since the
+        /// last one report it (OnRectTransformDimensionsChange), then the layout phases rebuild every
+        /// queued root between the registered elements' Prelayout and PostLayout, the rects the
+        /// layout resized report it, and the graphic queue runs.
+        /// </summary>
         public static void FlushQueuedRebuilds()
+        {
+            // Canvas.ForceUpdateCanvases from inside the update (a layout callback, a size handler)
+            // would re-enter it: the update already in progress covers it.
+            if (s_Flushing) return;
+            s_Flushing = true;
+            try
+            {
+                MarkAllIfScreenChanged();
+                RectDimensionWatch.Poll();
+                CanvasUpdateRegistry.instance.PerformLayoutUpdate(RebuildQueuedRoots);
+                RectDimensionWatch.Poll();
+                CanvasUpdateRegistry.instance.PerformGraphicUpdate();
+            }
+            finally { s_Flushing = false; }
+        }
+
+        static bool s_Flushing;
+
+        static void RebuildQueuedRoots()
         {
             if (s_Queued.Count == 0) return;
 
@@ -68,9 +120,19 @@ namespace CosmicShore.Engine.UI
             // those marks land in the NEXT tick's flush, preventing rebuild storms.
             var roots = s_Queued.ToArray();
             s_Queued.Clear();
+            // Shallowest first, as the original sorts its queue by depth: a root's solve may resize
+            // a deeper root, which must then lay out inside its final rect.
+            System.Array.Sort(roots, static (a, b) => Depth(a).CompareTo(Depth(b)));
             foreach (var root in roots)
                 if (root != null && !root.destroyedFlag && root.gameObject is { IsDestroyed: false })
                     ForceRebuildLayoutImmediate(root);
+        }
+
+        static int Depth(Transform t)
+        {
+            int n = 0;
+            for (var p = t?.parent; p is not null; p = p.parent) n++;
+            return n;
         }
 
         static bool HasActiveLayoutGroup(RectTransform rect)

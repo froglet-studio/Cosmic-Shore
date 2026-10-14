@@ -363,8 +363,8 @@ namespace CosmicShore.Gameplay
         internal Dictionary<string, PlayerProperty> BuildLocalPlayerProperties()
         {
             int partyCount = _connectionData.PartyMembers != null ? _connectionData.PartyMembers.Count : 0;
-            // The DISPLAYED party size, never the transport capacity: this value is what every
-            // other peer renders as "N/M" and what their LOBBY FULL badge compares against.
+            // The party size (4 - one size since B25, the same number the session's seats enforce):
+            // what every other peer renders as "N/M" and what their LOBBY FULL badge compares against.
             int partyMax   = _connectionData.MaxPartySlots;
 
             var props = new Dictionary<string, PlayerProperty>

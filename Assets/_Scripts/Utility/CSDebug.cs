@@ -142,7 +142,8 @@ namespace CosmicShore.Utility
         /// <summary>
         /// <c>[CrystalMorph]</c> — a vessel's bespoke omni-crystal retirement, step by step: the
         /// retirement firing, the shells it adopted, the target it resolved, the stamp, and the
-        /// hand-off to the real object.
+        /// hand-off to the real object. Also an elemental crystal FUSING onto a hull
+        /// (<c>CrystalHullFusion</c>): the pair, the plate count, the plate size.
         ///
         /// It exists because a morph's dependencies are invisible to it — the thing it lands on
         /// is minted by somebody else — and every way that can fail produces the SAME symptom on
@@ -150,7 +151,7 @@ namespace CosmicShore.Utility
         /// "the retirement never ran" from "the target never arrived" from "the target arrived
         /// and was rejected". Rejections are WARNINGS and fire whether or not this flag is on.
         /// </summary>
-        [CSLogChannelLabel("[CrystalMorph] omni-crystal retirement steps")]
+        [CSLogChannelLabel("[CrystalMorph] crystal morphs: omni retirements and hull fusions")]
         CrystalMorph = 1 << 11,
         /// <summary>
         /// <c>[GunVesselTransformer]</c> — the Urchin's prismscape ride: which dimension a
@@ -315,6 +316,18 @@ namespace CosmicShore.Utility
         /// </summary>
         [CSLogChannelLabel("[ButterflyBloom] omni-crystal bloom sweep and dust outcomes")]
         ButterflyBloom = 1 << 30,
+        /// <summary>
+        /// <c>[BlackHole]</c> — the gravity well's one-line-per-second report: live holes
+        /// (strength, horizon, influence), the prism bodies under gravity, captures this
+        /// second, how many holes are stretching prisms, vessels being pulled — including the idle case with its
+        /// reason, because a field's failure modes all render as "nothing is happening"
+        /// (Docs/BLACK_HOLE.md). Off by default like every channel; a real fault (a spawn
+        /// with no prefab, a job that could not schedule) stays a warning or an error.
+        /// Nothing per-body or per-frame logs here. The SIGN bit, and the last free one: this
+        /// int-backed enum is FULL — the next channel needs the enum widened to long.
+        /// </summary>
+        [CSLogChannelLabel("[BlackHole] gravity wells, bodies, captures, stretching, vessels")]
+        BlackHole = 1 << 31,
         All = ~0
     }
 

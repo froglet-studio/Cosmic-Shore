@@ -86,7 +86,7 @@
    "prisms": 0,
    "tier": "COURSE",
    "track": null,
-   "triangles": 14032
+   "triangles": 8956
   },
   "Headlong": {
    "cell": "Skim Race Cell Config",
@@ -197,6 +197,14 @@
    "track": "SkimRaceWaypointTrack",
    "triangles": 38116
   },
+  "Slingshot": {
+   "cell": "Skim Race Cell Config",
+   "environment": null,
+   "prisms": 0,
+   "tier": "COURSE",
+   "track": null,
+   "triangles": 12228
+  },
   "Switchback": {
    "cell": "Skim Race Cell Config",
    "environment": null,
@@ -213,6 +221,14 @@
    "track": null,
    "triangles": 80500
   },
+  "ThresherTime": {
+   "cell": "Skim Race Cell Config",
+   "environment": null,
+   "prisms": 0,
+   "tier": "COURSE",
+   "track": null,
+   "triangles": 20124
+  },
   "Tollway": {
    "cell": "Tollway Cell Config 2",
    "environment": null,
@@ -228,6 +244,14 @@
    "tier": "RUN",
    "track": null,
    "triangles": 301700
+  },
+  "Warpline": {
+   "cell": "Skim Race Cell Config",
+   "environment": null,
+   "prisms": 0,
+   "tier": "COURSE",
+   "track": null,
+   "triangles": 12120
   },
   "Waystation": {
    "cell": "Skim Race Cell Config",
@@ -259,5 +283,5 @@
   768,
   510
  ],
- "source_hash": "3d49eb29d45177276e45d2ebd13de7e4829922ce98c98ca7501d3d01017dcf0b"
+ "source_hash": "b46cd7d72c2bc578c71cb40190f9f498dc5724455830ac42af402b0981e7f48d"
 }

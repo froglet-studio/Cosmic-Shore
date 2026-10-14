@@ -27,6 +27,14 @@ namespace CosmicShore.Core
 
         public static void ApplyDisplay(GraphicsSettingsData s)
         {
+            // Display mode and resolution are desktop window settings. On a phone or tablet the
+            // app always fills the screen at the OS's resolution, and the pixel budget is the URP
+            // render scale (ApplyQuality). SetResolution there could only hurt: "native" is read
+            // from Display.main.systemWidth/Height, and iOS does not promise those in the
+            // landscape orientation this game runs in, so it could hand the backbuffer portrait
+            // dimensions.
+            if (Application.isMobilePlatform) return;
+
             var mode = ToFullScreenMode(s.DisplayMode);
             int w = s.ResolutionWidth > 0 ? s.ResolutionWidth : Display.main.systemWidth;
             int h = s.ResolutionHeight > 0 ? s.ResolutionHeight : Display.main.systemHeight;

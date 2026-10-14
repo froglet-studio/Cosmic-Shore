@@ -33,7 +33,7 @@ near-miss is visible without being fatal.
 WHAT IT DOES NOT CHECK, stated rather than implied: it is geometry only. An
 element can be perfectly placed and still invisible behind a zero alpha, a
 disabled component, a sibling drawn over it, or a missing texture -- none of
-which is a rect. `FrogletTools > Diagnostics > Report On-Screen UI` answers those
+which is a rect. `FrogletTools > UI > Report On-Screen UI` answers those
 from a rendered frame, which is the one thing static analysis cannot see.
 
     python3 Tools/Build/check_hud_onscreen.py

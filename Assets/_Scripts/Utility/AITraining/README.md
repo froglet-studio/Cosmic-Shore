@@ -110,13 +110,13 @@ _Scripts/Utility/AITraining/
 ├── Runner/                          Scenario SO, session state SO, runner MonoBehaviour
 ├── Persistence/                     Archive SO, JSON sidecars
 ├── Telemetry/                       SOAP telemetry data container
-├── Editor/                          FrogletTools / AI Training window
+├── Editor/                          FrogletTools / AI / AI Training window
 └── Tests/Editor/                    Edit-mode tests for the search-side primitives
 ```
 
 ## Operator
 
-Open **FrogletTools → AI Training**. Four tabs sit under Learn and Stop.
+Open **FrogletTools → AI → AI Training**. Four tabs sit under Learn and Stop.
 Quick Setup creates `Assets/_SO_Assets/AI Training/` the first time anything
 is missing and does not overwrite a scenario that already exists.
 
@@ -169,7 +169,7 @@ archive keys that stay distinct.
 
 ## One-click training: press Learn and walk away
 
-1. **`FrogletTools → AI Training`** to open the window.
+1. **`FrogletTools → AI → AI Training`** to open the window.
 2. **Press the big "Learn" button.**
 
 That's it. The button:
@@ -231,7 +231,7 @@ edit-mode test covers the generation math
 (`Loop_ThreeMatchesAtPopulationSize_IncrementsGeneration`) and does not
 substitute for these steps.
 
-1. Open **FrogletTools → AI Training → Quick Setup** once, so
+1. Open **FrogletTools → AI → AI Training Quick Setup** once, so
    `Assets/_SO_Assets/AI Training/` exists. If a previous run already
    keyed `SessionState` to `Squirrel_SkimRace_I4`, delete that asset (or
    clear its population) before changing size. `EnsureStateInitialized`
@@ -384,9 +384,9 @@ no entry should stay on `AIPilot`.
   recipe picked by game mode — racing recipe for HexRace / Freestyle,
   Joust recipe for joust modes, Cellular recipe for capture/duel
   modes. Assigning a custom profile always overrides the fallback.
-- `FitnessProfileSO` ships with four named presets accessible from
+- `FitnessProfileSO` ships with named presets accessible from
   code (`ApplyRacingDefaults`, `ApplyJoustDefaults`,
-  `ApplyCellularCaptureDefaults`, `ApplyFreestyleDefaults`) and via
+  `ApplyCellularCaptureDefaults`, and one per trained mode) and via
   the asset's `Reset` context-menu item.
 
 To deploy at runtime, drop a `TrainingAIDeploymentBridge` on the AI vessel
@@ -485,9 +485,9 @@ These modes have no scenario yet. They are outside the start list, or
 the existing stats cannot express a per-pilot signal the mode does not
 already write.
 
-- Multiplayer Freestyle, Cellular Duel, Wildlife Blitz, and 2v2 Co-op
-  vs AI. Freestyle has a distance/speed fallback recipe in code and no
-  scenario asset.
+- Cellular Duel, Wildlife Blitz, and 2v2 Co-op vs AI. (Multiplayer
+  Freestyle, mode 28, was retired 2026-10 along with its distance/speed
+  fallback recipe.)
 - Tournament / Maelstrom. It chains other modes; it is not its own
   scoring surface.
 - Single-player arcade cards whose scenes are gone.

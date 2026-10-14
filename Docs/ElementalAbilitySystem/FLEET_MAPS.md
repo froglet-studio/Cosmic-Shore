@@ -7,7 +7,8 @@ remake; its superseded "Reaper Ray" table is kept below as history); their rows 
 record, not a proposal, and are not to be re-litigated from the superseded tables kept beside
 them. The **Serpent's Charge and Space rows joined that set on 2026-09-16** (the scope + rifle
 re-cut; its Mass row and its Time L5 are still proposals). The level-5 upgrades for the **Rhino**
-are still **PROPOSALS for Garrett to mark up** — none are implemented. Approve/edit per row; implementation follows the Sparrow pattern (per-shot/per-use
+are still **PROPOSALS for Garrett to mark up**, except **Space 5, Breaker**, approved and shipped
+2026-10-13 (one-slice shielded cuts on the sword). Approve/edit per row; implementation follows the Sparrow pattern (per-shot/per-use
 snapshot, gated on `IsUpgradeActive(element)` in the executor, replicated unlock bits, no new
 fundamentals).
 
@@ -63,11 +64,13 @@ day after the channel it referred to had been deleted.
 | Manta | 4/4 | 4/4 | 3/4 |
 | Serpent | 3/4 | 3/4 | 2/4 |
 | Scarab | 4/4 | 4/4 | 2/4 |
-| Rhino | 2/4 | 3/4 | 0/4 |
-| **Butterfly** | **4/4** | **4/4** | **4/4** | *(added 2026-09-22 — code + map only; its prefab is built by `FrogletTools ▸ Vessels ▸ Create Butterfly Vessel` and is NOT on the branch yet, so the tool cannot see it until that has been run)* |
+| Rhino | 2/4 | 3/4 | 1/4 | *(Space L5 **Breaker** landed 2026-10-13 on an element whose ABILITY slot is still open — the tool counts the gate and prints no detail for an undesigned row)* |
+| **Butterfly** | **4/4** | **4/4** | **4/4** | *(added 2026-09-22; `Butterfly.prefab` shipped afterwards and its one-shot builder was retired 2026-10-14)* |
+| **Thresher** | **4/4** | **4/4** | **4/4** | *(added 2026-10-08, measured on the branch — prototype; see `R_VesselActions/THRESHER.md`)* |
+| **Stoat** | **4/4** | **4/4** | **4/4** | *(own vessel 2026-10-13 — Space = Field Dipole (L5 **Accretion**, Theft fused in), Time = Pathfinder / Time Mode (L5 **Foresight**), Charge = **Ripple** (L5 **Siphon**), Mass = **Mass / Time Mode** on B (L5 **Armoured Wake**); `R_VesselActions/STOAT_DIPOLE.md` §1a–§1e, §5)* |
 
 Everything the tool still flags is a **design gap, not a wiring bug** — three rows: the Rhino's
-Charge and Space, and the Serpent's Mass. The full list, with what each one would cost to fill, is
+Charge and Space (Space has its L5, Breaker, but still no ability or scaling), and the Serpent's Mass. The full list, with what each one would cost to fill, is
 **`FLEET_GAPS.md`**.
 
 **Re-run the tool rather than reading this table** — it is a transcription and it went stale
@@ -321,7 +324,7 @@ Time→charge fill rate / "Instant Draw".
 |---|---|---|
 | Charge | *(open)* → propose: forcefield shrink rate (the authored-but-dead `GrowSkimmerAction.shrinkRate` Charge mapping, 6→2) | **Unyielding Field** — forcefield no longer shrinks on prism hits, only on crystal timeout |
 | Mass | trail slab max size | **Armored Slabs** — grown slabs arrive shielded (the "arrive shielded" shape; on the Sparrow this lives on **MASS** 5 — it spent 2026-08 rounds 4–6 on Space 5 and was returned by sign-off on 2026-08-13) |
-| Space | *(open)* → propose: forcefield max size | **Breaker** — ramming destroys shielded prisms in one hit (devastate on ram) |
+| Space | *(open)* → propose: forcefield max size | **Breaker** — APPROVED + SHIPPED (Garrett, 2026-10-13): the **sword** cuts a SHIELDED prism in one slice instead of two — the shield sheds and the core is cut in the same hit (`RhinoSkimmerDamagePrismEffectSO.breakerElement`, gated on `IsUpgradeActive(Space)`). Super-shielded mass still needs an energized blade. Replaces the old "devastate on ram" proposal: the hull ploughs since 2026-10-13 (`R_VesselActions/RHINO_PLOUGH.md`) |
 | Time | **ramp wind-up rate** (`accelerationPerSecond` ×2.5 at level 10, ×0.5 at −5 — "Ramp Spool", LIVE since Broadside's playtest) | *(open)* — the row is FILLED, the upgrade is not. The old proposal here was "slab growth rate → **Fast Pour**"; it is retired rather than moved, because Time now owns the ramp and one element owns one parameter |
 
 ### Serpent — scope + rifle (was "Wall-Weaver") — CHARGE + SPACE APPROVED + SHIPPED
@@ -334,8 +337,8 @@ Element assignment and the right-trigger resolution were confirmed in the same s
 | Element | Quantitative (LIVE) | L5 upgrade (LIVE) |
 |---|---|---|
 | Charge | **Sniper Shot** on RT — the RECOVERY: 12 s at rest → 5.4 s at Charge 10 (`SniperShotAction.asset`) | **Pierce** — the round carries through up to 3 prisms instead of stopping at the first (`SniperShotActionExecutor`, gated on `IsUpgradeActive(Charge)`) |
-| Mass | *(open)* → proposal below still stands | **Fortified Wall** — woven wall prisms arrive shielded |
-| Space | **Scope** on LT — the MAGNIFICATION: 22° FOV at full zoom at rest → 11° at Space 10, floored at 8° (`SniperScopeAction.asset`) | **Deep Focus** — ×1.6 more zoom depth, and the floor drops with it, so the extra reach is reachable (13.8° at rest, 6.9° at Space 10; `SniperScopeActionExecutor`, gated on `IsUpgradeActive(Space)`) |
+| Mass | **Seed Wall** — the cloak's super-shielded seed (or the stopped stance's plain-shielded one) grows a symmetric herringbone of 2:1 bricks spaced so shielded octahedra point long vertex at short vertex with half a short side of air; it steals from its EDGE (Space sets the reach; the Space upgrade takes shielded prisms) and keeps growing until the cloak seed's super-shield breaks, or, for the stance's wall, until the Serpent flies again; MASS sets brick SIZE and SPACING together, snapshotted at placement (`SeedWallAction.asset`, ×2 at Mass 10). Every crystal beams to every growing wall's seed and ripples a shield through its wall. Garrett, 2026-10-09 (`R_VesselActions/SERPENT_SEED_WALL.md`) | **Lockdown** — a crystal collected while the Mass upgrade is active seals every square hole of every live wall with a same-size flat danger panel, an even crack short of the shields (no twist since 2026-10-13; replaces the Fortified Wall proposal) |
+| Space | **Scope** on LT — the MAGNIFICATION: 22° FOV at full zoom at rest → 11° at Space 10, floored at 8° (`SniperScopeAction.asset`) | **Deep Focus** — ×1.6 more zoom depth, and the floor drops with it, so the extra reach is reachable (13.8° at rest, 6.9° at Space 10; `SniperScopeActionExecutor`, gated on `IsUpgradeActive(Space)`); it also lets the Seed Wall steal opponents' SHIELDED prisms (2026-10-13, `SERPENT_SEED_WALL.md`) |
 | Time | **Solid Fuel Pellets** on A — burn DURATION per pellet: ×1 at rest → ×1.6 at Time 10 (`ConsumeBoostAction.asset`). Restored 2026-09-25: one press burns one pellet, burns overlap additively, the fuel tank refills at a fixed rate and holds four (`R_VesselActions/SERPENT_FUEL_PELLETS.md`) | *(open)* — the old **Endless Coil** proposal ("chains without the reload pause") is void: the reload no longer exists |
 
 Retired with the re-cut: the Charge proposal *boost stack potency* / **Venom Wake**, and the Space
@@ -537,6 +540,50 @@ mode ball launched by a cavitation cone and a braking wall on the A button — S
 Ablative Wake / Deep Wall / Hair Trigger. A second pass proposed Charge = ball-generation energy
 with **Split Shot**, Mass with **Second Pass**, and Space = juke reach. **The 2026-08-15 markup is
 the record; do not re-litigate from a superseded pass.**
+
+### Thresher — the wrecking ball (chain + ball + plant) — APPROVED + SHIPPED (2026-10-08)
+
+Approved by Garrett on 2026-10-08 (element map and all four level-5s). A prototype hull; the
+mechanic and every dial are in `Assets/_Scripts/Controller/Vessel/R_VesselActions/THRESHER.md`.
+One parameter per element, each an `ElementalFloat` on `ThresherConfigSO` read with
+`EvaluateReplicated` (every peer simulates the ball):
+
+| Element | Ability (input) | Scales | Level 5 | Gated at |
+|---|---|---|---|---|
+| Charge | **Wrecking Ball** (passive) — the ball and chain also reach enemy vessels: a scored Strike that steals petals | petals stolen per enemy-vessel hit 1 → 3 per element | **Magnet** — the free ball is drawn toward the nearest enemy vessel | `ThresherExecutor.MagnetActive` |
+| Mass | **Mass Mode** (A, toggle) — the ball steals rival prisms, shields its own, lays a trail and banks the chain's energy instead of exploding | Mass Mode trail prism size ×1 → ×2 | **Armoured Trail** — those trail prisms are laid shielded | `ThresherExecutor.ArmouredTrailActive` |
+| Space | **Winch** (RT) — the chain, taut or slack, slices rivals and shields own mass; the Space card shows the banked explosion radius | largest blast the chain's bank can buy ×4 → ×8 diameter | **Breaker** — a red ball's direct hit destroys super-shielded prisms | `ThresherExecutor.BreakerActive` |
+| Time | **Plant** (LT) — a fast spin hands the camera to the launch view; LT up launches from the chosen point | orbit spin-up rate and cap ×1 → ×1.75 (how fast it winds up to launch) | **open (design needed)** — "Perfect Release" retired 2026-10-13: every aimed launch now leaves ×4.8 (`launchBoost`), so the timing reward it was is gone | — (gate deleted) |
+
+Re-cut 2026-10-13 (round 3, Garrett's spec). Retired with their gates: Charge "Lit", Mass "Wrecker",
+Space "Reaper Chain", Time "Slingshot"; Charge no longer scales the explosion, Mass the ball's weight,
+or Space the chain's reach.
+
+**One L5 per element** (rule 26): the hull is a Squirrel clone, and the Squirrel's skimmer and
+vessel containers gate their own upgrades on Charge/Space/Time (steal, overtake, crystal blast,
+lifeform wither, danger skim bonus). The Thresher runs forked containers
+(`ThresherImpactorDataContainer`, `ThresherSkimmerImpactorDataContainer`,
+`ThresherSkimmerBoostPrismEffect`) without them, and its skimmer's Space scaling is off.
+
+### Stoat — the field dipole + pathfinder (round 15) — ALL FOUR APPROVED + SHIPPED (2026-10-13)
+
+Approved 2026-10-09: **Space = Field Dipole** (LT/RT; Space sizes both poles ×1 → ×2), **Time = Pathfinder**
+(passive; Time scales the warp boost ×2.5 → ×5). The rest was decided by Garrett on 2026-10-13 against the
+proposals below, and shipped the same day (`_Scripts/Controller/Vessel/R_VesselActions/STOAT_DIPOLE.md` §1a–§1e):
+
+| Slot | Proposed | **Decided (2026-10-13)** |
+|---|---|---|
+| Mass ability | Accretion; Ballast on X; trail size | **Mass / Time Mode** on B: Mass mode = the dipole + a THICK trail (Mass ×3 → ×6 height); Time mode = (2026-10-14) the studio's catch-sling on the triggers — a lighter pair laid ahead, detection and orbit rings in place of the path, caught as you pass, its kick TIMED to a 90° release. "Accretion is great for a space ability and upgrade" — it moved to Space 5 |
+| Charge ability | Annihilation blast; throat shear | **Ripple** — the blast, re-scoped: "charge should always be focused on anti vessel/fauna gameplay … only kill fauna and strip elements from vessels … a cool space time ripple". No prisms. Charge scales its reach ×1 → ×2 |
+| Omni crystal | **Overclock**; Lodestone; ward | **Overclock** (the recommendation, 6 s of full boost) |
+| Time L5 | Slipstream; Foresight | **Foresight** — rivals' predicted paths, in their domain colours |
+| Charge L5 | Pair production (prisms) | **Siphon** — the ripple's stripped petals come to the Stoat (anti-vessel, per the Charge brief; pair production was a prism effect) |
+| Mass L5 | Event horizon (with Accretion) | **Armoured Wake** — Mass-mode prisms arrive shielded (the Butterfly's Mass-mode L5 shape) |
+| Space L5 | Theft (shipped) | **Accretion**, with Theft fused in: swallowed prisms are stolen AND grow the poles (rule 28: one element, one L5) |
+
+Claude's calls inside those decisions, each recorded in STOAT_DIPOLE.md and open to retune: the 90° window's width
+(±15°, 30° falloff, a fifth of the kick outside it), the Mass-mode thickness numbers, the ripple's reach formula and
+its one petal per element, B as the mode button, Siphon and Armoured Wake as the two L5s the brief left open.
 
 ## 3. Implementation notes for approved rows
 

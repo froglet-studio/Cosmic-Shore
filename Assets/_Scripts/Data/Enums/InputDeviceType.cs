@@ -10,7 +10,7 @@ public enum InputDeviceType
     // SingleStickMouseInputStrategy. Anything that switches on this enum and treats "not
     // gamepad" as "binary triggers, needs easing" (VesselTransformer.GetTriggerSum and its two
     // ease sites) is already correct for it; anything that maps a device to a per-trigger
-    // override table (R_VesselActionHandler.GetActiveOverrides) has to name it explicitly,
+    // override table (R_VesselActionHandler.OverridesFor) has to name it explicitly,
     // because this scheme raises the gamepad's trigger events.
     MouseKeyboard = 4
 }

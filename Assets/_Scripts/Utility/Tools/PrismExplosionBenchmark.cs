@@ -17,7 +17,7 @@ namespace CosmicShore.Utility
     /// Assets (project-root <c>BenchmarkResults/PrismExplosion/</c>) so they
     /// survive branch switches — run the series once on the legacy-CPU
     /// baseline branch and once on the gpu-clock branch, then generate the
-    /// comparison with FrogletTools ▸ Performance ▸ Prism Grid Benchmark▸
+    /// comparison with FrogletTools ▸ Performance ▸ Benchmarks ▸ Prism Grid▸
     /// Generate Comparison Report.
     ///
     /// BRANCH-PORTABLE: compiles against both worlds. The variant label is
@@ -241,7 +241,7 @@ namespace CosmicShore.Utility
                 Publish("idle", $"{completed} runs saved");
                 Debug.Log($"[PrismExplosionBenchmark] Series {series} finished: {completed} runs in {OutputDirectory}. " +
                           "Run the OTHER branch's series into the same folder, then " +
-                          "FrogletTools > Performance > Prism Grid Benchmark> Generate Comparison Report.");
+                          "FrogletTools > Performance > Benchmarks > Prism Grid> Generate Comparison Report.");
             }
         }
 

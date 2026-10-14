@@ -10,6 +10,15 @@ playtested and confirmed the same day).
 > The idea was prototyped as a standalone "Wormhole" Cell Selector world, which was retired once the
 > fold carried it: there is no wormhole cell, and `Tools/Build/author_wormholes.py --check` asserts
 > none is listed in Menu_Main.
+>
+> **A second placer (2026-10-08):** the crystal wormhole (`Docs/CRYSTAL_WORMHOLE.md`) seats an untolled,
+> ownerless pair on its attractor and repulsor, drawn with `WormholeSeamless.mat` — the same shader with
+> `_SoftEdge > 0`: alpha-blended, its view dissolving into the world toward the silhouette, no rim. The
+> fold's `Wormhole.mat` keeps `_SoftEdge 0` (its hard sphere and domain rim, unchanged). It began as the
+> Black Hole cell, which seated the pair in the centres of its black hole and its white hole, each the
+> size of the black hole's shadow, so the sink's mouth was what the player saw where the shadow was
+> (`SpawnableBlackHole.SeatWormhole`, with the fold's material and view numbers); that cell is
+> superseded by the crystal wormhole (`Docs/BLACK_HOLE.md` §12).
 
 Files:
 
@@ -161,6 +170,13 @@ ball, so no crystal can drift into the shared interior.
   other transfer, so each machine strips its own copy of the pilot and mints its own local crystals.
   A peer whose tolerant `TryResolveTransit` misses a transit misses that toll too; same stance as
   every per-peer crystal.
+- **It scores for the Butterfly** (2026-10-10, PvP is petals only:
+  `Docs/claude/IMPACT_EFFECTS_AND_AUDIO.md`). Every toll is a combat hit of class `tollHitClass`
+  (Debuff) for the mouth's `Owner` against the payer, raised on `onTollHitLanded`
+  (Event_CombatHitStats) once, on the owner's machine (`ElementalTransfer.IsDecidedHere`), and
+  admitted through `CombatHitDrain.TryAdmit` under the same `WormholeToll` ward the take honours, so
+  a pilot who keeps their petals is not scored on. No latch window: every transit is one toll and one
+  hit. An owner-less mouth scores for nobody.
 
 An unpaired mouth (one withering away, `WormholeMouth.Retire`) is still **sealed**
 (`_WormholeSealed`): no view through, only the fresnel shell. That is now the only seal.
@@ -169,7 +185,7 @@ An unpaired mouth (one withering away, `WormholeMouth.Retire`) is still **sealed
 and its first playtest sealed the Butterfly against its own pair (`BUTTERFLY_FOLD.md` § "Playtest
 1"). The fail-open rule and `Settings.Owner` that fixed it carry straight over to the toll.
 
-**Laying a pair.** The fold builds a domain-tolled pair (radius `gateRadius` 55) at the two ends of
+**Laying a pair.** The fold builds a domain-tolled pair (radius `gateRadius` 33) at the two ends of
 every fold — origin and destination, exactly where its ring gates used to stand — once the arrival
 pose has replicated, and only when the two ends are at least `minGateSeparation` (300, never under
 2.5 radii) apart; the previous pair withers out first (`BUTTERFLY_FOLD.md` § "The gates became

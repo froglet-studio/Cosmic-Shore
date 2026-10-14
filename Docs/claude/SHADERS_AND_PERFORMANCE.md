@@ -18,6 +18,7 @@
 - Watch for `Gfx.WaitForPresentOnGfxThread` bottlenecks — usually indicates GPU sync issues, not CPU
 - Static batching, object pooling, and draw call management are always priorities
 - Test with profiler before and after optimization changes — don't assume improvement
+- A `ProfilerRecorder` built from code **records nothing unless started**: `ProfilerRecorderOptions.Default` is `SumAllSamplesInFrame | WrapAround` and does NOT include `StartImmediately`, and the constructor does not start it. Pass `Default | StartImmediately` (or call `Start()`), and report "marker not found" separately from "no samples" — the Crystal Flip Wave Benchmark's first cut printed `n/a` for every stat and the two causes looked identical (`Docs/TIME_CRYSTAL.md` §7)
 - GPU instancing enabled on all prism and VFX materials
 - Prism scale/material/effect animation is GPU-clock-driven (the clock-material law, `Docs/PRISM_ANIMATION.md`) — the former CPU Jobs+Burst animation managers are deleted
 - Burst-compiled spatial queries replace Physics-based AOE prism damage (`PrismSpatialIndex` — see `Docs/SPATIAL_INDEX.md`)
@@ -44,8 +45,8 @@
   (`_Scripts/Utility/PerformanceBenchmark/BENCHMARK_TOOL.md`). `diag` records the editor's Code Optimization
   mode: **measure in Release** (the bug icon, bottom right); Debug runs all C# about 5x slower and a number taken
   there says nothing about a build.
-- **The same markers with no Unity (Prisma):** `python3 Port/tools/prisma_markers_run.py --mode <Mode>` boots the
-  game headless in Prisma, drives the menu to a match and writes every marker's ms, calls and **KB per frame**
+- **The same markers with no Unity (Amoebius, the engine under `Port/`):** `python3 Port/tools/amoebius_markers_run.py --mode <Mode>` boots the
+  game headless in Amoebius, drives the menu to a match and writes every marker's ms, calls and **KB per frame**
   (`--compare A B` diffs two runs; `Port/docs/ARCHITECTURE.md` §11.3b). Trust its **allocations** and
   run-to-run deltas; its milliseconds are .NET's, without Burst, so a timing win still needs a Unity Release `diag`.
 - **Every per-frame cost gets a `ProfilerMarker` named `System.Part`** (`SkimRace.Pilot.Decide`,

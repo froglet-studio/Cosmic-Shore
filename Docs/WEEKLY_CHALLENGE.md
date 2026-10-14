@@ -577,8 +577,8 @@ is how one of them ends up wrong. Three things it was carrying are worth recordi
 - **Per-mode bests are unaffected.** They live in Cloud Save `MODE_STATS` and still do; what
   disappeared is the global ranking of them, not the record.
 
-The read path was never wired either way: `LeaderboardsMenu` (the Port screen) still fetches
-through the deprecated PlayFab `LeaderboardManager` and is unrelated to both systems.
+The read path was never wired either way: `LeaderboardsMenu` (the Port screen) has had no
+backend since PlayFab's `LeaderboardManager` was removed, and is unrelated to both systems.
 
 ### The time format
 
@@ -614,7 +614,7 @@ and the reward tooltip in the mock-up is that system's surface, not this one's.
 **`WeeklyChallengeRanking` is a project type, not the UGS entry it is built from.** A view taking a
 `Unity.Services.Leaderboards.Models.LeaderboardEntry` would drag the SDK into the UI layer and break
 the day the package renames a field — and this project already has *two* types called
-`LeaderboardEntry` (the PlayFab one and `CosmicShore.Data.LeaderboardEntry`), so a third would be
+`LeaderboardEntry` (the one nested in `LeaderboardsMenu` and `CosmicShore.Data.LeaderboardEntry`), so a third would be
 three names for one idea.
 
 **That warning fires on the SERVICE too, and heeding half of it is not enough.** Keeping the SDK
@@ -760,7 +760,7 @@ board: the player is mid-decision about a card, so the board is a detour, not a 
 
 ### Scene wiring — run the tool
 
-**FrogletTools ▸ Interface ▸ Wire Weekly Challenge Leaderboard** resolves every reference below
+**FrogletTools ▸ UI ▸ Wire Weekly Challenge Leaderboard** resolves every reference below
 from the window's own hierarchy and reports what it could not find. **Report only** shows what it
 would do without writing. It is a repair tool as well as a bring-up tool, because it never
 overwrites a reference set by hand unless you tick the box — so re-running after re-laying the art

@@ -21,7 +21,8 @@ void main(){
   gl_Position = vec4(p, 1.0, 1.0);
 }";
 
-        // Properties declared as Vector (not Color) in the source shader: never linearised.
+        // Colours go up as the GPU receives them (Material.GetShaderColor): the plain ones
+        // linearised, the [HDR] ones as stored. Vectors are never converted.
         static readonly string[] VectorProps = { "_GalacticNormal", "_CoreDirection", "_AndromedaDirection" };
         static readonly string[] ColorProps =
         {
@@ -53,20 +54,32 @@ void main(){
         public bool Draw(Camera camera)
         {
             var sky = RenderSettings.skybox;
-            if (sky == null || camera.clearFlags != CameraClearFlags.Skybox) return false;
-            if (sky.shader?.name != "CosmicShore/HyperSeaSkybox") return false;
+            if (camera.clearFlags != CameraClearFlags.Skybox || !CanDraw(sky)) return false;
 
             // Rotation-only view so the sky sits at infinity.
             var view = camera.worldToCameraMatrix;
             view.m03 = view.m13 = view.m23 = 0f;
             var inv = (camera.projectionMatrix * view).inverse;
+            DrawSky(sky, SceneRenderer.ToNumerics(inv));
+            return true;
+        }
 
+        /// <summary>True when <see cref="RenderSettings.skybox"/> is a skybox this pass can draw.</summary>
+        public static bool CanDraw(Material sky) => sky != null && sky.shader?.name == "CosmicShore/HyperSeaSkybox";
+
+        /// <summary>
+        /// Draws the skybox over the bound target with <paramref name="ndcToDirection"/> taking each
+        /// pixel's NDC (x, y, 1, 1) to its world direction (a camera's inverse rotation-projection, or
+        /// a cubemap face's mapping: EnvironmentLighting).
+        /// </summary>
+        public void DrawSky(Material sky, System.Numerics.Matrix4x4 ndcToDirection)
+        {
             _hyperSea.Use();
-            _hyperSea.Set("uInvViewProj", SceneRenderer.ToNumerics(inv));
+            _hyperSea.Set("uInvViewProj", ndcToDirection);
             _hyperSea.Set("uTime", Time.time);
             foreach (var n in ColorProps)
             {
-                var c = sky.GetColor(n);
+                var c = sky.GetShaderColor(Shader.PropertyToID(n));
                 _hyperSea.Set(n, c.r, c.g, c.b, c.a);
             }
             foreach (var n in VectorProps)
@@ -84,7 +97,6 @@ void main(){
             _gl.BindVertexArray(_vao);
             _gl.DrawArrays(Silk.NET.OpenGL.PrimitiveType.Triangles, 0, 3);
             _gl.DepthMask(true);
-            return true;
         }
 
         public void Dispose()

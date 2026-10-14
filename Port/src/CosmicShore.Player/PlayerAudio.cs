@@ -15,13 +15,29 @@ namespace CosmicShore.Player
     ///
     /// COSMIC_SHORE_AUDIO: unset = the default output (falling back to no-sound where there is no
     /// device), "off" = no runtime at all (the silent local-state model), "wav:PATH" = record the
-    /// mix to a WAV file (FMOD's WAV writer) — how a machine with no speakers verifies it.
+    /// mix to a WAV file (FMOD's WAV writer) — how a machine with no speakers verifies it, "nrt" =
+    /// no output, mixed only when the engine ticks (FMOD's non-real-time no-sound output with a
+    /// synchronous Studio update): the parity harness's mode, deterministic and device-free, with
+    /// every event description (one-shot, snapshot, length) answered by the banks.
+    ///
+    /// The build's GUIDs.txt is read in every mode, so a GUID-only EventReference has its path.
     /// </summary>
     static class PlayerAudio
     {
         static string s_libraryPath;
 
+        /// <summary>What answered the FMOD calls this run: "native" (the runtime and banks) or "silent" (the local-state model).</summary>
+        public static string Mode { get; private set; } = "silent";
+
         public static FmodNativeBackend Start(string projectRoot, bool headless)
+        {
+            FmodGuids.Load(Path.Combine(Path.GetDirectoryName(BankDirectory(projectRoot)) ?? string.Empty, "GUIDs.txt"));
+            var backend = StartRuntime(projectRoot, headless);
+            Mode = backend == null ? "silent" : "native";
+            return backend;
+        }
+
+        static FmodNativeBackend StartRuntime(string projectRoot, bool headless)
         {
             string mode = Environment.GetEnvironmentVariable("COSMIC_SHORE_AUDIO");
             if (string.Equals(mode, "off", StringComparison.OrdinalIgnoreCase)) return null;
@@ -44,6 +60,7 @@ namespace CosmicShore.Player
                 output = FmodNativeBackend.OutputWavWriter;
                 wav = Path.GetFullPath(mode.Substring(4));
             }
+            else if (string.Equals(mode, "nrt", StringComparison.OrdinalIgnoreCase)) output = FmodNativeBackend.OutputNoSoundNrt;
             var backend = FmodNativeBackend.TryCreate(version, banks, output, wav);
             if (backend == null) return null;
             FmodBackend.Current = backend;
@@ -51,6 +68,7 @@ namespace CosmicShore.Player
             {
                 FmodNativeBackend.OutputNoSound => "no-sound (no audio device)",
                 FmodNativeBackend.OutputWavWriter => "WAV writer → " + wav,
+                FmodNativeBackend.OutputNoSoundNrt => "no-sound, non-real-time (parity)",
                 _ => "default device",
             };
             Console.WriteLine($"[fmod] FMOD Studio 0x{version:X8} up, output {outName}, banks: {string.Join(", ", backend.LoadedBanks)}");

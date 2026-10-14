@@ -8,6 +8,8 @@ using EngineVector3 = CosmicShore.Engine.Vector3;
 using EngineColor = CosmicShore.Engine.Color;
 using Rect = CosmicShore.Engine.Rect;
 using Vector4 = System.Numerics.Vector4;
+using Shader = CosmicShore.Engine.Shader;
+using Material = CosmicShore.Engine.Material;
 using PrimitiveType = Silk.NET.OpenGL.PrimitiveType;
 
 namespace CosmicShore.Render
@@ -386,12 +388,15 @@ void main(){
             if (_mesh.vertices.Count == 0) return;
             GraphicsDrawn++;
 
-            if (tex != _batchTexture) { Flush(); _batchTexture = tex; }
+            // A material whose shader is a translated UI shader draws on its own (UiCustomShaders).
+            var custom = g.materialForRendering is { shader: { } sh } m && UiCustomShaders.ByName.TryGetValue(sh.name, out var def) ? def : null;
+            if (custom != null) Flush();
+            else if (tex != _batchTexture) { Flush(); _batchTexture = tex; }
             uint baseIndex = (uint)(_verts.Count / Floats);
-            var tf = rt;
+            var toWorld = rt.PointToWorld;
             foreach (var v in _mesh.vertices)
             {
-                var p = tf.TransformPoint(v.position);
+                var p = toWorld.Apply(v.position);
                 EngineColor vc = v.color;
                 vc = new EngineColor(vc.r * crColor.r, vc.g * crColor.g, vc.b * crColor.b, vc.a);
                 var lc = ColorSpace.Linear(vc);
@@ -399,6 +404,42 @@ void main(){
                 Push(p.x, p.y, v.uv0.x, v.uv0.y, lc, clip, default, default, 0f);
             }
             foreach (var i in _mesh.indices) _idx.Add(baseIndex + (uint)i);
+            if (custom != null) FlushCustom(custom, g.materialForRendering);
+        }
+
+        readonly Dictionary<string, GlProgram> _customPrograms = new();
+
+        /// <summary>Links a translated UI shader on <paramref name="gl"/> (as GLSL ES 3.00 when <paramref name="es"/>): null when it links, else the driver's message.</summary>
+        public static string TryLinkCustom(GL gl, UiCustomShaders.Def def, bool es)
+        {
+            bool previous = GlCaps.ForceEsTranslation;
+            GlCaps.ForceEsTranslation = es;
+            try
+            {
+                using var p = new GlProgram(gl, Vert, UiCustomShaders.Fragment(def), "ugui-" + def.Name.Replace('/', '-') + (es ? ".es" : ""));
+                return null;
+            }
+            catch (Exception e) { return e.Message.Trim(); }
+            finally { GlCaps.ForceEsTranslation = previous; }
+        }
+
+        /// <summary>Draws the pending vertices with a translated UI shader, the material's values bound, then restores the uGUI program.</summary>
+        void FlushCustom(UiCustomShaders.Def def, Material material)
+        {
+            if (!_customPrograms.TryGetValue(def.Name, out var program))
+                _customPrograms[def.Name] = program = new GlProgram(_gl, Vert, UiCustomShaders.Fragment(def), "ugui-" + def.Name.Replace('/', '-'));
+            program.Use();
+            program.Set("uScreen", _screenW, _screenH);
+            foreach (var n in def.Floats) program.Set(n, material.GetFloat(n));
+            foreach (var n in def.Colors)
+            {
+                // The GPU's value: a plain colour property linearised (ColorSpaceRules).
+                var c = material.GetShaderColor(Shader.PropertyToID(n));
+                program.Set(n, c.r, c.g, c.b, c.a);
+            }
+            Flush();
+            _program.Use();
+            _batchTexture = 0;
         }
 
         void DrawText(Component text, float alpha, Vector4 clip)
@@ -426,9 +467,10 @@ void main(){
             uint baseIndex = (uint)(_verts.Count / Floats);
             var tf = text.transform;
             float canvasScale = tf.lossyScale.x;
+            var toWorld = tf.PointToWorld;
             foreach (var v in _text.Vertices)
             {
-                var p = tf.TransformPoint(new EngineVector3(v.X, v.Y, 0f));
+                var p = toWorld.Apply(new EngineVector3(v.X, v.Y, 0f));
                 var lc = ColorSpace.Linear(v.Color);
                 lc.W *= alpha;
                 var sdf = v.Sdf;
@@ -471,6 +513,7 @@ void main(){
         public void Dispose()
         {
             _program.Dispose();
+            foreach (var p in _customPrograms.Values) p.Dispose();
             _gl.DeleteVertexArray(_vao);
             _gl.DeleteBuffer(_vbo);
             _gl.DeleteBuffer(_ebo);

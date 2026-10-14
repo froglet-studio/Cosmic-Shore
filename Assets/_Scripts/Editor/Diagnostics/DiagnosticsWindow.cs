@@ -48,19 +48,19 @@ namespace CosmicShore.Editor
         /// <summary>Set by a button, run after the GUI pass — mutating state mid-layout throws.</summary>
         Action _deferred;
 
-        [MenuItem("FrogletTools/Diagnostics/Crash Detector", false, 10)]
+        [MenuItem("FrogletTools/Diagnostics/Crash Detector", false, 130)]
         [FrogletTool(FrogletToolCategory.Diagnostics, Importance = 4,
             Description = "Editor crash watchdog — journals errors off-thread, reports abnormal exits on the next launch.",
             DocPath = "Docs/DIAGNOSTICS.md#the-crash-detector")]
         public static void OpenCrashDetector() => Open(CrashTab);
 
-        [MenuItem("FrogletTools/Diagnostics/Bug Ledger", false, 11)]
+        [MenuItem("FrogletTools/Diagnostics/Bug Ledger", false, 131)]
         [FrogletTool(FrogletToolCategory.Diagnostics, Importance = 4,
             Description = "Shared committable bug list — red errors file themselves, and a fix only closes once the game validates it.",
             DocPath = "Docs/DIAGNOSTICS.md#the-bug-ledger")]
         public static void OpenBugLedger() => Open(BugsTab);
 
-        [MenuItem("FrogletTools/Diagnostics/Compile Timing", false, 12)]
+        [MenuItem("FrogletTools/Diagnostics/Compile Timing", false, 132)]
         [FrogletTool(FrogletToolCategory.Diagnostics, Importance = 2,
             Description = "Record compile + domain-reload seconds per edit, and which assemblies rebuilt.",
             DocPath = "Docs/ASSEMBLY_SPLIT.md#measuring")]

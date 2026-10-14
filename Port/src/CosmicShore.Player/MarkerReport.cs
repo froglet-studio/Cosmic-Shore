@@ -45,9 +45,9 @@ namespace CosmicShore.Player
             var all = MarkerCollector.Summarize();
             var doc = new
             {
-                kind = "prisma-markers",
+                kind = "amoebius-markers",
                 version = 1,
-                engine = "prisma",
+                engine = "amoebius",
                 scene = CosmicShore.Engine.SceneManagement.SceneManager.GetActiveScene().name,
                 frames = MarkerCollector.TotalFrames,
                 markers = all.Select(m => new

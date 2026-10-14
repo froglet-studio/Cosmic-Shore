@@ -65,15 +65,114 @@ namespace CosmicShore.Engine.VFX
     }
 
     /// <summary>
-    /// A VFX Graph instance. The port simulates NO particles (<see cref="aliveParticleCount"/> is
-    /// always 0) but keeps the component honest as state: property overrides set with <c>SetX</c>
-    /// read back with <c>GetX</c>, <c>HasX</c> is true for what the asset exposes or what has been
-    /// set, play/stop/pause toggle the awake state, and sent events are counted.
+    /// A VFX Graph instance. The port has no VFX Graph runtime; it keeps the component honest as
+    /// state (property overrides set with <c>SetX</c> read back with <c>GetX</c>, <c>HasX</c> is true
+    /// for what the asset exposes or what has been set, play/stop/pause toggle the awake state, sent
+    /// events are counted) and DRAWS the project's graphs APPROXIMATELY from their exposed
+    /// properties: <see cref="Approximations"/>, keyed by the asset's name, submit ribbons through
+    /// <see cref="ProceduralLines"/> each frame while the effect is awake. A graph with no
+    /// approximation draws nothing.
     /// </summary>
     public class VisualEffect : Behaviour
     {
         readonly Dictionary<int, object> _overrides = new();
         bool _awake = true;
+
+        static readonly List<VisualEffect> s_live = new();
+
+        /// <summary>Approximate drawings of the project's VFX Graphs, by asset name.</summary>
+        public static readonly Dictionary<string, Action<VisualEffect>> Approximations = new(StringComparer.Ordinal)
+        {
+            ["vfxgraph_arclightning"] = ArcLightning,
+        };
+
+        public VisualEffect()
+        {
+            lock (s_live)
+            {
+                if (s_live.Count == 0) ProceduralLines.Tick += TickAll;
+                s_live.Add(this);
+            }
+        }
+
+        static void TickAll()
+        {
+            lock (s_live)
+            {
+                for (int i = s_live.Count - 1; i >= 0; i--)
+                {
+                    var ve = s_live[i];
+                    if (!ve) { s_live.RemoveAt(i); continue; }
+                    if (!ve._awake || ve.pause || !ve.isActiveAndEnabled) continue;
+                    if (ve.gameObject.transform.root.gameObject.isPrefabAsset) continue;
+                    if (ve.visualEffectAsset != null && Approximations.TryGetValue(ve.visualEffectAsset.name ?? "", out var draw)) draw(ve);
+                }
+            }
+        }
+
+        /// <summary>
+        /// vfxgraph_arclightning: two particle strips of 200, each a cubic Bezier through Pos1..Pos4
+        /// (and Pos5..Pos8), displaced by fractal noise (Noise Frequency / Power / Speed / Octaves /
+        /// Roughness) with the ends held, drawn Thickness wide in Color, additively.
+        /// </summary>
+        static void ArcLightning(VisualEffect ve)
+        {
+            float F(string n, float d) => ve.HasFloat(n) ? ve.GetFloat(n) : d;
+            var c4 = ve.HasVector4("Color") ? ve.GetVector4("Color") : new Vector4(0.5f, 0.8f, 1f, 1f);
+            var color = new Color(c4.x, c4.y, c4.z, 1f);
+            float width = Math.Max(0.005f, F("Thickness", 0.1f));
+            float freq = F("Noise Frequency", 3f), power = Math.Abs(F("NoisePower", 0.1f)), speed = F("NoiseSpeed", 1f);
+            int octaves = Math.Clamp((int)F("NoiseOctaves", 3f), 1, 8);
+            float rough = Math.Clamp(F("NoiseRoughness", 0.5f), 0f, 1f);
+            float time = Time.time * speed;
+            var t = ve.transform;
+            for (int bolt = 0; bolt < 2; bolt++)
+            {
+                int k = bolt * 4;
+                var p = new Vector3[4];
+                bool any = false;
+                for (int i = 0; i < 4; i++)
+                {
+                    string name = "Pos" + (k + i + 1);
+                    p[i] = ve.HasVector3(name) ? ve.GetVector3(name) : Vector3.zero;
+                    any |= p[i] != Vector3.zero;
+                }
+                if (!any) continue;
+                // The graph's noise frequency is per unit of length: sample densely enough to show it.
+                float length = (p[1] - p[0]).magnitude + (p[2] - p[1]).magnitude + (p[3] - p[2]).magnitude;
+                int N = Math.Clamp((int)(length * freq * 6f), 24, 200);
+                var pts = new Vector3[N];
+                for (int i = 0; i < N; i++)
+                {
+                    float s = (float)i / (N - 1), u = 1f - s;
+                    var pos = u * u * u * p[0] + 3f * u * u * s * p[1] + 3f * u * s * s * p[2] + s * s * s * p[3];
+                    var tan = (3f * u * u * (p[1] - p[0]) + 6f * u * s * (p[2] - p[1]) + 3f * s * s * (p[3] - p[2])).normalized;
+                    var n1 = Vector3.Cross(tan, Mathf.Abs(tan.y) < 0.9f ? Vector3.up : Vector3.right).normalized;
+                    var n2 = Vector3.Cross(tan, n1);
+                    float hold = Mathf.Sin(s * Mathf.PI);
+                    float x = s * length * freq;
+                    pos += (n1 * Fbm(x + time, bolt * 17.3f, octaves, rough) + n2 * Fbm(x - time, bolt * 31.7f + 5f, octaves, rough)) * (power * length * 0.25f * hold);
+                    pts[i] = t.TransformPoint(pos);
+                }
+                ProceduralLines.Add(pts, width, color, additive: true, layer: ve.gameObject.layer);
+            }
+        }
+
+        static float Hash(float n) { float v = Mathf.Sin(n) * 43758.5453f; return v - Mathf.Floor(v); }
+
+        static float Noise1(float x, float seed)
+        {
+            float i = Mathf.Floor(x), f = x - i;
+            f = f * f * (3f - 2f * f);
+            return Mathf.Lerp(Hash(i + seed * 57.1f), Hash(i + 1f + seed * 57.1f), f) * 2f - 1f;
+        }
+
+        static float Fbm(float x, float seed, int octaves, float roughness)
+        {
+            float sum = 0f, amp = 1f, norm = 0f;
+            for (int o = 0; o < octaves; o++) { sum += Noise1(x, seed + o) * amp; norm += amp; x *= 2f; amp *= roughness; }
+            return norm > 0f ? sum / norm : 0f;
+        }
 
         public VisualEffectAsset visualEffectAsset { get; set; }
         public bool pause { get; set; }

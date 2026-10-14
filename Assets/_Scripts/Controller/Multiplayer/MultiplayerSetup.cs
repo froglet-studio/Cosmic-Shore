@@ -10,7 +10,7 @@ using CosmicShore.Utility;
 using Reflex.Attributes;
 using CosmicShore.ScriptableObjects;
 #if UNITY_EDITOR
-using Unity.Multiplayer.Playmode;
+using Unity.Multiplayer.PlayMode;
 using Unity.Netcode.Transports.UTP;
 #endif
 namespace CosmicShore.Gameplay
@@ -291,8 +291,8 @@ namespace CosmicShore.Gameplay
                     var transport = nm.GetComponent<UnityTransport>();
                     if (transport != null)
                     {
-                        var tags = CurrentPlayer.ReadOnlyTags();
-                        var tagKey = tags != null && tags.Length > 0 ? string.Join("-", tags) : "clone";
+                        var tags = CurrentPlayer.Tags;
+                        var tagKey = tags != null && tags.Count > 0 ? string.Join("-", tags) : "clone";
                         ushort port = (ushort)(7778 + (ushort)(Math.Abs(tagKey.GetHashCode()) % 100));
                         transport.SetConnectionData("127.0.0.1", port, "0.0.0.0");
                         CSDebug.LogVerbose(CSLogChannel.NetworkFlow, $"[MultiplayerSetup] MPPM clone '{tagKey}' - local host port {port}.");
@@ -482,6 +482,7 @@ namespace CosmicShore.Gameplay
                 CSDebug.LogVerbose(CSLogChannel.NetworkFlow, $"[MultiplayerSetup] Approved client {request.ClientNetworkId} as a SPECTATOR (no player object).");
             }
 
+            NetSessionRecorder.Mark("clientApproved", spectator ? $"{request.ClientNetworkId} spectator" : request.ClientNetworkId.ToString());
             response.Approved           = true;
             response.CreatePlayerObject = !spectator;
             response.Position           = Vector3.zero;
@@ -498,6 +499,7 @@ namespace CosmicShore.Gameplay
                 if (clientId != networkManager.LocalClientId)
                 {
                     CSDebug.LogVerbose(CSLogChannel.NetworkFlow, $"[MultiplayerSetup] Client {clientId} disconnected from host.");
+                    NetSessionRecorder.Mark("clientLeft", clientId.ToString());
                     SpectatorSession.ServerUnregister(clientId);
                     // Netcode backstop for hard drops (client crash) that may beat the
                     // graceful UGS ISession.PlayerLeaving. Only the Netcode clientId is

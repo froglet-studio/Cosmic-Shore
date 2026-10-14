@@ -84,6 +84,7 @@ namespace CosmicShore.Engine
             // after the loop exists (ContentRuntime), so its step never leaks into the next world.
             fixedDeltaTime = 0.02f;
             maximumDeltaTime = float.PositiveInfinity;
+            FrameTimingManager.Reset();   // the measured frames belong to the old world too
         }
     }
 }

@@ -443,12 +443,62 @@ namespace CosmicShore.Content.Scenes
                     line.textureMode = (LineTextureMode)par.Int("textureMode");
                 }
             }
+            else if (comp is ParticleSystem ps)
+                ParticleSystemReader.Apply(ps, obj.Body, n => Resolve(ObjRef.From(n), typeof(Mesh), obj.Origin) as Mesh);
+            else if (comp is ParticleSystemRenderer psr)
+                ParticleSystemReader.ApplyRenderer(psr, obj.Body, n => Resolve(ObjRef.From(n), typeof(Mesh), obj.Origin) as Mesh);
+            else if (comp.GetType().FullName == "CosmicShore.Engine.VFX.VisualEffect")
+                ApplyVisualEffect(comp, obj);
             else if (comp is Animator animator && obj.Body["m_Controller"] != null)
             {
                 var controller = ObjRef.From(obj.Body["m_Controller"]);
                 if (!controller.IsNull)
                     animator.runtimeAnimatorController = Resolve(controller, typeof(RuntimeAnimatorController), obj.Origin) as RuntimeAnimatorController;
             }
+        }
+
+        /// <summary>
+        /// A VisualEffect (class 2083052967, in the Compat assembly, which this one does not
+        /// reference): its asset by name, and its property sheet - every value the instance stores,
+        /// written through the component's own SetX and declared as exposed on the asset.
+        /// </summary>
+        void ApplyVisualEffect(EngineObject comp, GraphObject obj)
+        {
+            var type = comp.GetType();
+            var b = obj.Body;
+            var assetRef = ObjRef.From(b["m_Asset"]);
+            var assetPath = assetRef.IsNull ? null : _assets.Db.PathOf(assetRef.Guid);
+            var assetType = type.Assembly.GetType("CosmicShore.Engine.VFX.VisualEffectAsset");
+            EngineObject asset = null;
+            if (assetType != null && assetPath != null)
+            {
+                asset = (EngineObject)Activator.CreateInstance(assetType);
+                asset.name = System.IO.Path.GetFileNameWithoutExtension(assetPath);
+                type.GetProperty("visualEffectAsset")?.SetValue(comp, asset);
+            }
+            if (b.Has("m_InitialEventName")) type.GetProperty("initialEventName")?.SetValue(comp, b.Str("m_InitialEventName"));
+            if (b["m_PropertySheet"] is not YMap sheet) return;
+            void Each(string key, Type valueType, Func<YNode, object> read)
+            {
+                var set = type.GetMethod("Set" + valueType.Name switch { "Single" => "Float", "Int32" => "Int", "UInt32" => "UInt", "Boolean" => "Bool", var n => n },
+                                         new[] { typeof(string), valueType });
+                var declare = assetType?.GetMethod("DeclareExposedProperty");
+                foreach (var item in (sheet[key] as YMap)?["m_Array"]?.Items ?? Array.Empty<YNode>())
+                {
+                    if (item is not YMap e) continue;
+                    var name = e.Str("m_Name");
+                    if (string.IsNullOrEmpty(name)) continue;
+                    if (asset != null) declare?.Invoke(asset, new object[] { name, valueType });
+                    set?.Invoke(comp, new[] { name, read(e["m_Value"]) });
+                }
+            }
+            Each("m_Float", typeof(float), n => YScalar.TryFloat(n?.Scalar, out var f) ? f : 0f);
+            Each("m_Int", typeof(int), n => YScalar.TryFloat(n?.Scalar, out var f) ? (int)f : 0);
+            Each("m_Uint", typeof(uint), n => YScalar.TryFloat(n?.Scalar, out var f) ? (uint)Math.Max(0f, f) : 0u);
+            Each("m_Bool", typeof(bool), n => YScalar.TryFloat(n?.Scalar, out var f) && f != 0f);
+            Each("m_Vector2f", typeof(Vector2), n => n is YMap m ? new Vector2(m.Float("x"), m.Float("y")) : Vector2.zero);
+            Each("m_Vector3f", typeof(Vector3), n => n is YMap m ? new Vector3(m.Float("x"), m.Float("y"), m.Float("z")) : Vector3.zero);
+            Each("m_Vector4f", typeof(Vector4), n => n is YMap m ? new Vector4(m.Float("x"), m.Float("y"), m.Float("z"), m.Float("w")) : Vector4.zero);
         }
 
         // ── IReferenceResolver ───────────────────────────────────────────────

@@ -65,6 +65,44 @@ namespace CosmicShore.Tests
             Assert.AreEqual(JoinTargetVerdict.SessionChanged, Validate(new[] { Player("A", "") }, "A", "S1"));
         }
 
+        // ── B29, the Accept case (defect 5 of the five-process runs) ────────────────────────────
+        // Right after a host drop the sender re-creates its session and invites at once. The invite
+        // used to be published ALONE, so a poll read the new invite next to the sender's OLD
+        // partySession, and this pre-flight refused a valid invite as "no longer available".
+
+        [Test]
+        public void AFreshInvite_NextToAStaleAdvertisement_WasRefused()
+        {
+            // The failure mode itself, pinned: the invite names S2 while the row still says S1.
+            Assert.AreEqual(JoinTargetVerdict.SessionChanged,
+                Validate(new[] { Player("C", "S1", name: "PilotC") }, "C", "S2", expectMessageContains: "no longer available"));
+        }
+
+        [Test]
+        public void AnInvitePublish_CarriesTheSessionItNames_SoTheAcceptPreFlightPasses()
+        {
+            var props = HostConnectionService.InvitePublicationProperties("line naming S2", "S2");
+            Assert.AreEqual(2, props.Count, "the invite lines and the advertisement, in one save");
+            Assert.AreEqual("line naming S2", props[Const("INVITE_PAYLOADS_KEY")]);
+            Assert.AreEqual("S2", props[Const("PARTY_SESSION_KEY")]);
+            // What the invitee's next poll reads for the sender, whenever it lands after that save.
+            var sender = Player("C", props[Const("PARTY_SESSION_KEY")], name: "PilotC");
+            Assert.AreEqual(JoinTargetVerdict.Ok, Validate(new[] { sender }, "C", "S2"));
+        }
+
+        [Test]
+        public void AnInvitePublish_WithNoLiveSession_AdvertisesNone()
+        {
+            var props = HostConnectionService.InvitePublicationProperties(null, null);
+            Assert.AreEqual(string.Empty, props[Const("INVITE_PAYLOADS_KEY")]);
+            Assert.AreEqual(string.Empty, props[Const("PARTY_SESSION_KEY")]);
+        }
+
+        private static string Const(string name) =>
+            (string)typeof(HostConnectionService)
+                .GetField(name, System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static)!
+                .GetRawConstantValue();
+
         [Test]
         public void FullParty_IsPartyFull() =>
             Assert.AreEqual(JoinTargetVerdict.PartyFull, Validate(new[] { Player("A", "S1", count: 4, max: 4, name: "Ada") }, "A", "S1", expectMessageContains: "Ada's party is full"));

@@ -29,8 +29,10 @@ adding a handler class:
 - **UI** (`Scripts/UI/`): `QuestDialoguePanelView`, `QuestInstructionView`,
   `QuestRewardRevealView`, `QuestToastNotifier`. **All four hide themselves in `Awake`**, which
   is what makes standing the runner down safe.
-- **Editor** (`Assets/FTUE/Editor/`): `QuestGraphEditorWindow` (the graph authoring tool),
-  `QuestDefaultContentBuilder`, `QuestPhase0UIWirer`, `QuestRunnerSetup`, `QuestGraphLayout`.
+- **Editor** (`Assets/FTUE/Editor/`): `QuestGraphEditorWindow` (the graph authoring tool,
+  `FrogletTools ▸ FTUE ▸ Quest Graph Editor`) and `QuestGraphLayout`. The one-shot generators
+  (`QuestDefaultContentBuilder`, `QuestPhase0UIWirer`, `QuestRunnerSetup`) were retired on
+  2026-10-14; their output (MainQuest + phases, the wired runner in Menu_Main) is shipped.
 - **Events**: `FTUEEventManager` survives, narrowed to three — `InitializeFTUE` (an external
   start trigger) plus `OnQuestPhaseCompleted` / `OnQuestCompleted`, consumed only by
   `QuestToastNotifier`. Nothing blocks on them.
@@ -73,6 +75,8 @@ Runtime-configurable AI opponents at `Assets/_Scripts/Controller/AI/`:
 - AI profiles configured via `SO_AIProfileList` (`MainAIProfileList.asset`)
 - AI profiles used for score cards and multiplayer backfill
 - Configurable AI ship selection and behavior at runtime
+
+**Start at `Docs/AI_SYSTEM/README.md`** (2026-10-08): the roster of every AI (worked on `Ys-bleeding-edge`; the `ai-system` branch was merged there and retired 2026-10-09), its layers, the branch workflow and the diagnosis playbook. The table below is the short version.
 
 **Where the AI work lives now (2026-10-07) - read these before touching an AI:**
 

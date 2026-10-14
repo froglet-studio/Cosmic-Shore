@@ -338,6 +338,10 @@ namespace CosmicShore.Gameplay
             float tanHalf = Mathf.Tan(Mathf.Deg2Rad * Mathf.Clamp(so.ConeHalfAngleDegrees, 0f, 89f));
             Vector3 launch = direction * so.VesselEjectSpeed;
 
+            // The press replicates, so every peer resolves this cone; only the Serpent's owner
+            // decides a strip and scores it (the same machine the transfer below settles from).
+            bool decidedHere = ElementalTransfer.IsDecidedHere(_status);
+
             VesselVisionShading.CollectStampedVessels(_vesselScratch);
             for (int i = 0; i < _vesselScratch.Count; i++)
             {
@@ -365,12 +369,33 @@ namespace CosmicShore.Gameplay
                                                     reach, tanHalf, so.MinPathRadius))
                     continue;
 
+                // A strip IS a scored hit (2026-10-10): one gate for both, so a warded pilot is
+                // neither stripped nor scored on, and only the Serpent's owner decides.
+                if (!decidedHere ||
+                    !CombatHitDrain.TryAdmit(victim, _status, so.HitClass, so.SameVictimCooldownSeconds,
+                                             ElementalDebuffSources.Other, out int supersededRank))
+                    continue;
+
                 // Classed Other: this is a gun round rather than a blast or a contact, so neither
                 // the Explosion nor the VesselContact ward should stop it, and only a pilot warded
                 // against everything is spared.
-                ElementalTransfer.ApplyAll(ElementalTransferForm.Eject, victim, attacker: null,
-                                           so.VesselStripPerElement, launch,
-                                           ElementalDebuffSources.Other);
+                //
+                // AUTHORITATIVE, and the Serpent is passed as the attacker. The press replicates, so
+                // every peer resolves this cone from its own lagged picture of both hulls; only the
+                // Serpent's owner decides, and the victim's owner settles. Passing no attacker (the
+                // old shape) routed Local, so every peer took from its own copy and only the
+                // victim's own replay counted.
+                ElementalTransfer.ApplyAllAuthoritative(ElementalTransferForm.Eject, victim, _status,
+                                                        so.VesselStripPerElement, launch,
+                                                        ElementalDebuffSources.Other);
+
+                so.OnCombatHitLanded.Raise(new CombatHitStats
+                {
+                    ShooterName = _status.PlayerName,
+                    VictimName = victim.PlayerName,
+                    HitClass = so.HitClass,
+                    SupersededRank = supersededRank,
+                });
             }
             _vesselScratch.Clear();
         }

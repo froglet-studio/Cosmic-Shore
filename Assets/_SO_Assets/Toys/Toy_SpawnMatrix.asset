@@ -114,6 +114,12 @@ MonoBehaviour:
   - Name: Wearer Builders
     ElementConfigs:
     - {fileID: 11400000, guid: a635d6272e1d571db605a90a6452c41f, type: 2}
+  - Name: Shoal
+    ElementConfigs:
+    - {fileID: 11400000, guid: 254d2f7923c3f9a9ab1c6395408e7e53, type: 2}
+  - Name: Harrier
+    ElementConfigs:
+    - {fileID: 11400000, guid: 0054a60f9ec44a978eacd0cf5c1a5309, type: 2}
   floraSpecies:
   - Name: Gyroid
     ElementConfigs:
@@ -307,6 +313,10 @@ MonoBehaviour:
     Description: "Magpies that nest on a plant, tail your ship, snatch your fresh trail and fly it home to a visible hoard. Space crystals. Fly a trail near them."
   - Species: Wearer Builders
     Description: "Hearts that steal your trail and wear it as a body, fuse together, then rear and lunge. Ram one to strip the prisms back. Fly a trail to feed them."
+  - Species: Shoal
+    Description: "120 small fish that school as the lab's evolved herd: tight, aligned schools that swerve round a hunter or a ship. Harmless; ram them. Time crystals. Needs flora."
+  - Species: Harrier
+    Description: "8 sprinters that hunt the shoal as a pack. A hunter streaks out when it bursts and can burn only after 0.4 s of it. Charge crystals. Spawn with a Shoal or it scavenges flora."
   - Species: Gyroid
     Description: "A colony of 30-prism tiles of a saddle-shaped minimal surface, budding a neighbour about every 30s into one endless lattice. Space grows needles."
   - Species: SchwarzP

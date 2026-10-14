@@ -12,8 +12,3 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 74996c3eac744015a93523dd29430ad1, type: 3}
   m_Name: RhinoSwordCrystalBurstEffect
   m_EditorClassIdentifier: 
-  aoePrefabs:
-  - {fileID: 5915562654621825366, guid: d568a14301490e54280955b50673f884, type: 3}
-  minExplosionScale: 60
-  maxExplosionScale: 400
-  overrideMaterial: {fileID: 0}

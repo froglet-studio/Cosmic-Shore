@@ -19,8 +19,18 @@ scored shape-drawing flow was **deleted 2026-08-25** (`ShapeDrawingManager` C15 
 unreachable after the scene went; migrating it would have shipped an untested clock
 path). Recover from git if a scored minigame is wanted. `SegmentSpawner` + spawnable
 shapes + `ShapeDefinition` remain (SkimRace live; painting toy is the successor).
-`MultiplayerFreestyle (28)` is a separate multiplayer sandbox
-game scene and still exists.
+Its multiplayer sibling, `MultiplayerFreestyle (28)` (`MinigameFreestyleMultiplayer_Gameplay.unity`,
+`MultiplayerFreestyleController`, card `ArcadeGameMultiplayerFreestyle.asset`), was the prototype
+that grew into the Menu_Main lava lamp, freestyle, toybox and lobby. It was **removed 2026-10-08**
+with its scene, controller, card and mode preview; ID 28 stays reserved. Do not reintroduce it.
+`OnlineDuelForTheCell (29)` (`MinigameDuelForCellMultiplayer_Gameplay.unity`, card
+`ArcadeGameOnlineDuelForTheCell.asset`) followed the same day: Brood Rush replaced it. Its controller
+stays, because the CoOp Wildlife Blitz scene runs on `OnlineDuelForTheCellController`. ID 29 stays reserved.
+
+**2026-10-13:** the 2v2 CoOp vs AI (30) and CoOp Wildlife Blitz (32) scenes were dropped from the build
+list, and their cards plus the 21 legacy cards that named no existing scene were moved to
+`_SO_Assets/Games/_Archive/` (guids kept, so the class and training assets that point at them still
+resolve). IDs 30 and 32 stay in the enum and no menu reaches them; `TrainingAutoLauncher` still names both, so an AI-training run pointed at either now fails to load its scene (follow-up).
 
 ---
 
@@ -39,7 +49,7 @@ game scene and still exists.
 
 | Scene | Path | Game Mode | Controller |
 |---|---|---|---|
-| ~~MinigameDuelForTheCell~~ | retired 2026-09 | `DuelForTheCell (8)` | replaced by `MinigameDuelForCellMultiplayer_Gameplay` |
+| ~~MinigameDuelForTheCell~~ | retired 2026-09 | `DuelForTheCell (8)` | replaced by `MinigameDuelForCellMultiplayer_Gameplay`, itself retired 2026-10 (Brood Rush replaced the duel) |
 | ~~MinigameWildlifeBlitz~~ | retired 2026-09 | `WildlifeBlitz (26)` | scene deleted; its co-op successor `MinigameWildlifeBlitzMultuplayerCoOp` was itself deleted 2026-10 (BH-5.7) |
 
 ### Multiplayer Game Scenes
@@ -47,11 +57,9 @@ game scene and still exists.
 | Scene | Path | Game Mode | Controller |
 |---|---|---|---|
 | **MinigameSkimRace** | `_Scenes/Multiplayer Scenes/` | `SkimRace (33)` | `SkimRaceController` |
-| **MinigameFreestyleMultiplayer_Gameplay** | `_Scenes/Multiplayer Scenes/` | `MultiplayerFreestyle (28)` | `MultiplayerFreestyleController` |
 | **MinigameScurryMultiplayer_Gameplay** | `_Scenes/Multiplayer Scenes/` | `Scurry (35)` | `ScurryController` |
-| **MinigameDuelForCellMultiplayer_Gameplay** | `_Scenes/Multiplayer Scenes/` | `OnlineDuelForTheCell (29)` | `OnlineDuelForTheCellController` |
 | **MinigameJoust_Gameplay** | `_Scenes/Multiplayer Scenes/` | `Joust (34)` | `JoustController` |
-| ~~MinigameWildlifeBlitzMultuplayerCoOp~~ | deleted 2026-10 (BH-5.5 unlisted it, BH-5.7 deleted scene + controller) | `CoOpWildlifeBlitz (32)` | *(controller deleted)* |
+| ~~MinigameWildlifeBlitzMultuplayerCoOp~~ | deleted 2026-10 (BH-5.5 unlisted it, BH-5.7 deleted scene + controller; bleeding-edge separately took it out of the build 2026-10-13, Garrett's call, DESIGN_CALLS 12.3) | `CoOpWildlifeBlitz (32)` | *(controller deleted; its card is archived in `_SO_Assets/Games/_Archive/`)* |
 | **MinigameAstroLeague** | `_Scenes/Multiplayer Scenes/` | `AstroLeague (37)` | `AstroLeagueController` |
 | **MinigameBroodRush** | `_Scenes/Multiplayer Scenes/` | `BroodRush (38)` | `BroodRushController` |
 | **MinigameRampage** | `_Scenes/Multiplayer Scenes/` | `Rampage (2)` | `RampageController` |
@@ -73,13 +81,16 @@ game scene and still exists.
 | **MinigameRedline** | `_Scenes/Multiplayer Scenes/` | `Redline (53)` | `RedlineController` |
 | **MinigameGrizzlyCharge** | `_Scenes/Singleplayer Scenes/` | `GrizzlyCharge (62)` | `DogFightController` |
 | **MinigameGrizzlyTime** | `_Scenes/Multiplayer Scenes/` | `GrizzlyTime (63)` | `GrizzlyTimeController` |
+| **MinigameSlingshot** | `_Scenes/Multiplayer Scenes/` | `Slingshot (64)` | `SlingshotController` |
+| **MinigameWarpline** | `_Scenes/Multiplayer Scenes/` | `Warpline (65)` | `WarplineController` |
+| **MinigameThresherTime** | `_Scenes/Multiplayer Scenes/` | `ThresherTime (66)` | `ThresherTimeController` |
 | **MinigameRegatta** | `_Scenes/Multiplayer Scenes/` | `Regatta (56)` | `RegattaController` |
 | **MinigameBroadside** | `_Scenes/Multiplayer Scenes/` | `Broadside (57)` | `BroadsideController` |
 | **MinigameWaystation** | `_Scenes/Multiplayer Scenes/` | `Waystation (58)` | `WaystationController` |
 | **MinigameDustup** | `_Scenes/Multiplayer Scenes/` | `Dustup (59)` | `DustupController` |
 | **MinigameTapestry** | `_Scenes/Multiplayer Scenes/` | `Tapestry (60)` | `TapestryController` |
 | **MinigameSirocco** | `_Scenes/Multiplayer Scenes/` | `Sirocco (61)` | `SiroccoController` |
-| **ArcadeGameMultiplayer2v2CoOpVsAI** | `_Scenes/Multiplayer Scenes/` | `Multiplayer2v2CoOpVsAI (30)` | Variant of domain games controller |
+| **ArcadeGameMultiplayer2v2CoOpVsAI** | `_Scenes/Multiplayer Scenes/` | `Multiplayer2v2CoOpVsAI (30)` | Variant of domain games controller. **Out of the build since 2026-10-13** (Garrett's call, DESIGN_CALLS 12.3): the scene stays on disk, its entry is gone from `EditorBuildSettings.asset` and its card is in `_SO_Assets/Games/_Archive/`. |
 | **MinigameMaelstromMultuplayer** | `_Scenes/Multiplayer Scenes/` | Maelstrom variant | Multi-round tournament format |
 
 ### Tool & Test Scenes
@@ -228,7 +239,6 @@ MiniGameControllerBase (abstract, NetworkBehaviour)
     │   Server-driven turn/round/game flow via ClientRpc synchronization
     │   Replay + Rematch systems via ServerRpc/ClientRpc
     │
-    ├── MultiplayerFreestyleController     — per-player activation, player removal protocol
     │
     └── MultiplayerDomainGamesController
         │   Ready synchronization: all players must click Ready before countdown
@@ -237,7 +247,7 @@ MiniGameControllerBase (abstract, NetworkBehaviour)
         │
         ├── SkimRaceController              — deterministic track, crystal race, golf scoring
         ├── JoustController      — collision tracking, server-authoritative winner, golf scoring
-        ├── OnlineDuelForTheCellController — vessel ownership swap between rounds
+        ├── OnlineDuelForTheCellController — vessel ownership swap between rounds (its own mode is retired; CoOp Wildlife Blitz's scene runs it)
         ├── ScurryController — minimal subclass (1 round, 1 turn)
         ├── AstroLeagueController             — hypersea soccer, server-simulated ball, golden goal
         ├── BroodRushController             — nucleus-control fauna-wave race, brood scoring
@@ -279,8 +289,8 @@ MiniGameControllerBase (abstract, NetworkBehaviour)
 | 25 | `MazeRun` | SP Arcade | Shared | Scene-configured |
 | 26 | `WildlifeBlitz` | SP Arcade | *(scene retired 2026-09)* | `SinglePlayerWildlifeBlitzController` (BenchmarkStressTest only) |
 | 27 | `ProtectMission` | SP Mission | Shared | Scene-configured |
-| 28 | `MultiplayerFreestyle` | MP | MinigameFreestyleMultiplayer_Gameplay | `MultiplayerFreestyleController` |
-| 29 | `OnlineDuelForTheCell` | MP | MinigameDuelForCellMultiplayer_Gameplay | `OnlineDuelForTheCellController` |
+| 28 | *(retired 2026-10: `MultiplayerFreestyle`, reserved)* | | | |
+| 29 | *(retired 2026-10: `OnlineDuelForTheCell`, reserved; Brood Rush replaced it)* | | | |
 | 30 | `Multiplayer2v2CoOpVsAI` | MP | ArcadeGameMultiplayer2v2CoOpVsAI | Variant |
 | 32 | `CoOpWildlifeBlitz` | MP | *(scene deleted 2026-10, BH-5.7)* | *(controller deleted)* |
 | 33 | `SkimRace` | MP Racing | MinigameSkimRace | `SkimRaceController` |
@@ -306,6 +316,9 @@ MiniGameControllerBase (abstract, NetworkBehaviour)
 | 53 | `Redline` | MP | MinigameRedline | `RedlineController` (Manta circuit race — see `REDLINE.md`) |
 | 62 | `GrizzlyCharge` | MP | MinigameGrizzlyCharge | `DogFightController` (Grizzly proving ground — a Dog Fight clone in the Boneyard) |
 | 63 | `GrizzlyTime` | MP | MinigameGrizzlyTime | `GrizzlyTimeController` (Grizzly bomb-jump circuit race — see `GRIZZLYTIME.md`) |
+| 64 | `Slingshot` | MP | MinigameSlingshot | `SlingshotController` (Stoat wormhole-sling circuit race — see `SLINGSHOT.md`) |
+| 65 | `Warpline` | MP | MinigameWarpline | `WarplineController` (the Stoat's time race on the field dipole — see `WARPLINE.md`) |
+| 66 | `ThresherTime` | MP | MinigameThresherTime | `ThresherTimeController` (Thresher sling circuit race — see `THRESHERTIME.md`) |
 | 56 | `Regatta` | MP | MinigameRegatta | `RegattaController` (the ARENA race — every playable hull on a rail circuit; see `REGATTA.md`) |
 | 57 | `Broadside` | MP | MinigameBroadside | `BroadsideController` (the ARENA brawl — seven hulls, each with its own weapon, priced per VERB; see `BROADSIDE.md`) |
 | 58 | `Waystation` | MP | MinigameWaystation | `WaystationController` (Butterfly migration race — clusters you weave, folds between them; a teleport threads nothing. See `WAYSTATION.md`) |
@@ -337,7 +350,7 @@ the scene went; the painting toy is the scoreless successor. Still in the tree:
 
 ### Cellular Duel (Single-Player) — RETIRED 2026-09
 
-> Scene and controller deleted; the online duel (`OnlineDuelForTheCellController`) replaces it. Kept below as a record.
+> Scene and controller deleted; the online duel replaced it, and was itself retired 2026-10 (Brood Rush replaced it). Kept below as a record.
 
 **Scene**: `MinigameDuelForTheCell.unity`
 **Controller**: `SinglePlayerDuelForTheCellController`
@@ -429,28 +442,6 @@ Collision-based competitive duel. Players collide with each other; first to reac
 - Atomic results sync via `FixedString64Bytes[]` / `float[]` / `int[]` arrays in ClientRpc
 - `_finalResultsSent` guard prevents duplicate end-game processing
 
-### Multiplayer Cellular Duel
-
-**Scene**: `MinigameDuelForCellMultiplayer_Gameplay.unity`
-**Controller**: `OnlineDuelForTheCellController`
-**Base**: `MultiplayerDomainGamesController`
-
-Networked vessel-swapping duel for exactly 2 players. Between rounds, players swap vessels via Netcode `ChangeOwnership()`.
-
-**Status (read off the shipped card and scene, 2026-10-08).** Card `ArcadeGameOnlineDuelForTheCell.asset`
-("Online Duel for the Cell"), listed on `AllGames` and `LaunchPartyAllGames`.
-- **Scores:** most mass. There is no scoring-rule asset. The scene's `NetworkScoreTracker` sums three legacy `ScoringModes` at ×1 each: `VolumeCreated`, `HostileVolumeDestroyed` and `FriendlyVolumeDestroyed`. Points are not golf.
-- **Shape:** two rounds of one turn (`numberOfRounds: 2`), each a 120 s `NetworkTimeBasedTurnMonitor`. You fly round 2 in the hull your opponent flew in round 1.
-- **Hulls:** the card authors no usable hull list. Its hulls are still serialized under the pre-rename `Captains` key, and that key names six `SO_Captain` assets (Manta, Squirrel, Serpent, Sparrow, Dolphin, Rhino), not `SO_Vessel`s. So `Vessels` holds no usable hull, and each pilot flies whatever hull they brought.
-- **Intensity:** 1–2 on the card. The cell has a single `Barren Cell Config`, so intensity changes nothing in the cell.
-- **The 2-player limit is hard.** The card has `MinPlayersAllowed = MaxPlayersAllowed = 2`. The swap indexes `gameData.Players[0]` and `[1]` and nothing else. The scene carries the plain `ServerPlayerVesselInitializer`, not the `…WithAI` one, so nothing backfills an AI into an empty seat. A third pilot would never be swapped, and with only one pilot the swap would index past the end of the list.
-- **Verification:** none recorded. Neither QA nor UVC tracks this mode.
-
-**Key features**:
-- Vessel ownership swap via `NetworkObject.ChangeOwnership()` + `gameData.SwapVessels()`
-- Hardcoded for 2 players (`gameData.Players[0]` and `Players[1]`)
-- Vessels swapped back on replay
-
 ### Multiplayer Crystal Capture
 
 **Scene**: `MinigameScurryMultiplayer_Gameplay.unity`
@@ -478,29 +469,6 @@ Hypersea soccer (Rocket League-inspired) — two domains slam a server-simulated
 - Server-authoritative ball (`AstroLeagueBall` NetworkVariables + client dead reckoning), goal attribution by last non-defending striker (own goals credit the opponent)
 - `UseSceneReloadForReplay => true`
 - AI strikers via `AIPilot.SetExternalTargetProvider` (billiard approach behind the ball)
-
-### Multiplayer Freestyle
-
-**Scene**: `MinigameFreestyleMultiplayer_Gameplay.unity`
-**Controller**: `MultiplayerFreestyleController`
-**Base**: `MultiplayerMiniGameControllerBase` (NOT domain games)
-
-Lobby/freestyle sandbox mode. Open-ended multiplayer flying with per-player activation.
-
-**Status (read off the shipped card and scene, 2026-10-08).** Card `ArcadeGameMultiplayerFreestyle.asset`
-("Multiplayer Freestyle": "No rules, time, or score"), listed on `AllGames` and `LaunchPartyAllGames`.
-- **Scores:** nothing decides a winner. The scene's `NetworkScoreTracker` does carry one `VolumeCreated` ×1 config, so a volume stat is tallied. But no turn monitor exists to end the turn and read it.
-- **Shape:** the scene authors `numberOfRounds: 1`, overriding the `int.MaxValue` field default. `TurnMonitorController` has `monitors: []`, though, so the one turn never ends and there is no natural end.
-- **Hulls:** six on the card: Dolphin, Manta, Rhino, Sparrow, Serpent and Squirrel.
-- **Players:** 2–3 on the card. The scene carries the plain `ServerPlayerVesselInitializer`, so there is no AI backfill.
-- **Intensity:** 1–4 on the card. The cell has a single `Barren Cell Config`, so intensity changes nothing in the cell.
-- **Verification:** none recorded. Neither QA nor UVC tracks this mode.
-
-**Key features**:
-- No scoring, no natural end (the scene's turn monitor list is empty)
-- Per-player countdown activation (each player starts individually, not synchronized)
-- Player removal protocol: removes player data from all clients before leaving the session
-- Subscribes to `OnClientReady` to handle late-joining clients
 
 ### Multiplayer Wildlife Blitz Co-op
 
@@ -604,7 +572,7 @@ Turn monitors determine when a turn ends. They are scene-placed components manag
 | `WildlifeKillTurnMonitor` | `TurnMonitors/` | A domain's summed creature kills reach the Wildlife Liberation target |
 | `DogFightPointTurnMonitor` | `TurnMonitors/` | A domain's summed gunnery points reach the Dog Fight target |
 | `SalvoPrismTurnMonitor` | `TurnMonitors/` | A domain's summed hostile-prism destruction reaches the Salvo target |
-| `RaceGateTurnMonitor` | `Arcade/Racing/` | A domain's LEAD RUNNER threads every gate of the course (Switchback, Headlong, Breakwater, Skein, Redline, Grizzly Time, Regatta, Waystation). Was `SwitchbackGateTurnMonitor` |
+| `RaceGateTurnMonitor` | `Arcade/Racing/` | A domain's LEAD RUNNER threads every gate of the course (Switchback, Headlong, Breakwater, Skein, Redline, Grizzly Time, Slingshot, Warpline, Thresher Time, Regatta, Waystation). Was `SwitchbackGateTurnMonitor` |
 | `HijackStealTurnMonitor` | `TurnMonitors/` | A domain's summed prisms STOLEN reach the Hijack target |
 | `TollwayTollTurnMonitor` | `TurnMonitors/` | A domain's summed TOLLS reach the Tollway target |
 | `WreckingBallPrismTurnMonitor` | `TurnMonitors/` | A domain's summed hostile prisms destroyed (ball + plate) reach the Wrecking Ball target |
@@ -683,7 +651,6 @@ All scene names are centralized in `SceneNameListSO` (`Assets/_Scripts/Utility/D
 | `BootstrapScene` | `"Bootstrap"` |
 | `AuthenticationScene` | `"Authentication"` |
 | `MainMenuScene` | `"Menu_Main"` |
-| `MultiplayerScene` | `"MinigameFreestyleMultiplayer_Gameplay"` |
 
 Game scene names are stored in `SO_ArcadeGame.SceneName` assets, not in `SceneNameListSO`.
 
@@ -719,7 +686,6 @@ Game scene names are stored in `SO_ArcadeGame.SceneName` assets, not in `SceneNa
 | Astro League | `AstroLeagueController.cs` | `_Scripts/Controller/Arcade/AstroLeague/` |
 | Nucleus Rush (Brood Rush) | `BroodRushController.cs` | `_Scripts/Controller/Arcade/` |
 | Rampage | `RampageController.cs` | `_Scripts/Controller/Arcade/` |
-| Freestyle (MP) | `MultiplayerFreestyleController.cs` | `_Scripts/Controller/Arcade/` |
 | Wildlife Blitz (MP) | `CoOpWildlifeBlitzMiniGame.cs` | `_Scripts/Controller/Arcade/` |
 | Wildlife Blitz (SP) | `SinglePlayerWildlifeBlitzController.cs` | `_Scripts/Controller/Arcade/` |
 | SlipNStride | *(controller deleted 2026-10, BH-5.6)* | — |

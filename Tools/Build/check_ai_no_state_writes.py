@@ -7,8 +7,9 @@
 
 The rule (Docs/SKIM_RACE_AI.md, "Input-only contract"): an AI - hand-written policy or evolved
 genome - may READ anything a pilot can see, and may WRITE only the vessel's input channels
-(IInputStatus XSum/YSum/YDiff/XDiff, EasedLeftJoystickPosition, clamped to human ranges at the
-actuation point) and press its own bound controls (PerformShipControllerActions /
+(IInputStatus XSum/YSum/YDiff/XDiff, EasedLeftJoystickPosition, LeftTriggerAnalog - the Skim Race
+pilot's drift depth, a full pull - all within human ranges at the actuation point) and press its
+own bound controls (PerformShipControllerActions /
 StopShipControllerActions). It must never write the vessel's pose or motion, its speed, course
 or boost, any crystal, score, winner or race state, or the time scale. Any such write would let
 a policy "solve" the race by reaching past the vessel's physics, which is the one thing a

@@ -50,7 +50,7 @@ namespace CosmicShore.Gameplay
     ///
     /// ── What makes it seamless at both ends ───────────────────────────────────────────────────
     /// • <b>It draws the crystal's own renderers.</b> Mesh, shared materials and property block are
-    ///   copied off the live crystal, so frame 0 IS the crystal — body, falling tone triangles and
+    ///   copied off the live crystal, so frame 0 IS the crystal — body, depth prisms and
     ///   tint. A rebuilt look-alike would pop on the one frame that has to be free.
     /// • <b>It ends ON the real ball.</b> The target is read from the ball's own shipped hull mesh
     ///   at its own radius, so there is no second authority to drift from: retune the ball's
@@ -129,7 +129,7 @@ namespace CosmicShore.Gameplay
             if (!morph.Adopt(crystal))
             {
                 CSDebug.LogWarning($"[ScarabCrystalMorph] '{crystal.name}' exposed no drawable body " +
-                                   "(a model with a MeshFilter AND a MeshRenderer), so there is " +
+                                   "(a model with a MeshFilter and MeshRenderer, or a SkinnedMeshRenderer), so there is " +
                                    "nothing to morph — the ball falls back to its birth bloom.");
                 Destroy(go);
                 return null;

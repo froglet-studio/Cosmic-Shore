@@ -109,6 +109,8 @@ SOURCES = [
     f"{_AR}/Switchback/SwitchbackCourse.cs",
     f"{_AR}/Redline/RedlineCourse.cs",
     f"{_AR}/GrizzlyTime/GrizzlyTimeCourse.cs",
+    f"{_AR}/Slingshot/SlingshotCourse.cs",
+    f"{_AR}/ThresherTime/ThresherTimeCourse.cs",
     f"{_AR}/Breakwater/BreakwaterCourse.cs",
     f"{_AR}/Breakwater/BreakwaterStationBuilder.cs",
 ]
@@ -679,6 +681,17 @@ CAMERAS = {
     # since the bomb launch was tripled - eight rings round the nucleus, shot from a new side and
     # pulled back far enough to keep the whole lap in frame.
     "GrizzlyTime": (125, 34, 0.95, 42),
+    # Slingshot is the fifth gate circuit: the Stoat's smaller octagon (base 600) - shot from the
+    # opposite side to Grizzly Time and a little closer, so the two cards never read as one.
+    "Slingshot": (305, 30, 0.9, 42),
+    # Warpline is Slingshot's circle cut into five long legs: shot from between the two Stoat cards'
+    # angles so the pentagon does not read as Slingshot's octagon.
+    "Warpline": (215, 36, 0.9, 42),
+    # Thresher Time is Grizzly Time's octagon cut against the Thresher's sling: shot from high up
+    # (the other circuits sit at 30-36 deg), so the lap reads as a loop and the planted ball with its
+    # dotted orbit (the signature act, staged in the harness at the lap's tightest corner) reads
+    # against it. A side-on angle saw this seed's lap edge-on.
+    "ThresherTime": (20, 60, 0.9, 42),
 }
 
 # Pilots in the shot: (domain, radius fraction, tilt, start angle, sweep). None = generic trio.
@@ -732,7 +745,8 @@ def recipe(stem, card_path, pal, ends):
         node["intensity"] = INTENSITY
         layers.append(node)
         nucleus()
-    elif s in ("Switchback", "Headlong", "Redline", "GrizzlyTime", "Breakwater"):
+    elif s in ("Switchback", "Headlong", "Redline", "GrizzlyTime", "Slingshot", "Warpline", "ThresherTime",
+               "Breakwater"):
         # GateRaceController.BuildCourse, mirrored: the shell comes off the scene's controller and
         # the cell's nucleus (ResolveShell), the gate count off EndConditionOverrides.
         tier = "COURSE"
@@ -750,14 +764,19 @@ def recipe(stem, card_path, pal, ends):
                 settings["GateCount"] = ends.get("switchbackGateTarget", 20)
                 settings["FirstGateDistance"] = min(max(ctl.get("firstGateDistance", 620.0), inner), outer)
             else:
-                key = {"GrizzlyTime": "grizzlyTimeGateTarget"}.get(s, f"{s.lower()}GateTarget")
+                key = {"GrizzlyTime": "grizzlyTimeGateTarget",
+                       "ThresherTime": "thresherTimeGateTarget"}.get(s, f"{s.lower()}GateTarget")
                 target = ends.get(key, 24)
                 settings["GateCount"] = max(3, math.ceil(target / max(1, ctl.get("laps", 3))))
-            layers.append({"kind": s.lower(), "intensity": INTENSITY, "seed": stable_seed(s),
-                           "path": True, "settings": settings, "tube": 0.14,
+            # Warpline cuts Slingshot's circuit (WarplineController.BuildCourse): the same generator.
+            layers.append({"kind": {"Warpline": "slingshot"}.get(s, s.lower()), "intensity": INTENSITY,
+                           "seed": stable_seed(s), "path": True, "settings": settings, "tube": 0.14,
                            "color": {"Switchback": [0.4, 0.8, 1.6], "Headlong": [1.4, 0.55, 0.2],
                                      "Redline": [1.5, 0.25, 0.35],
-                                     "GrizzlyTime": [0.95, 0.45, 1.5]}[s]})
+                                     "GrizzlyTime": [0.95, 0.45, 1.5],
+                                     "Slingshot": [0.35, 1.5, 0.95],
+                                     "Warpline": [0.62, 1.0, 0.18],
+                                     "ThresherTime": [1.6, 1.05, 0.25]}[s]})
             nucleus()
     elif s == "Waystation":
         # COURSE tier through the OFFLINE MIRROR (Tools/Build/waystation_course.py), which its own
@@ -926,7 +945,8 @@ def recipe(stem, card_path, pal, ends):
     elif s == "SkimRace":
         aim((0.55, -0.1, 0.35), 0.55, base=700)
         stage.update({"centre": cam["target"], "radius": cam["radius"] * 0.8})
-    elif s in ("Switchback", "Headlong", "Redline", "GrizzlyTime", "Waystation"):
+    elif s in ("Switchback", "Headlong", "Redline", "GrizzlyTime", "Slingshot", "Warpline", "ThresherTime",
+               "Waystation"):
         cam["percentile"] = 0.6
     elif s == "Tollway":
         aim((0.25, 0.1, 0.2), 0.45)
@@ -1100,7 +1120,7 @@ def end_conditions():
     body = read(ROOT / END_CONDITIONS)
     out = {}
     for k in ("switchbackGateTarget", "breakwaterStationTarget", "breakwaterLaps", "waystationRingTarget",
-              "grizzlyTimeGateTarget"):
+              "grizzlyTimeGateTarget", "thresherTimeGateTarget"):
         m = re.search(rf"^  {k}: (\d+)", body, re.M)
         if m:
             out[k] = int(m.group(1))

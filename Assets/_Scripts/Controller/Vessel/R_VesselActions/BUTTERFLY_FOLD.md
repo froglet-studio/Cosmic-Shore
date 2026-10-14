@@ -300,7 +300,7 @@ chosen are the only two that do:
 The tempting alternative is to derive the destination from the HOLD — `_heldSeconds` does
 accumulate on every peer, and `ResolveTarget` is pure. It is correct on the owner and **tens of
 units out everywhere else**, because the press and the release arrive over the wire: at
-`reachSpeed 900`, 50 ms of jitter is 45 units against a 55-unit mouth. *A quantity every peer can
+`reachSpeed 900`, 50 ms of jitter is 45 units against a 33-unit mouth. *A quantity every peer can
 compute is not a quantity every peer computes the same.*
 
 A peer waits up to `gateSettleSeconds` for the replicated pose to actually move. If the two ends
@@ -373,7 +373,7 @@ a route it does not need.
 
 | field | shipped | what it is |
 |---|---|---|
-| `gateRadius` | 55 | mouth radius; the ring is drawn at exactly this |
+| `gateRadius` | 33 | mouth radius; the ring is drawn at exactly this |
 | `minGateSeparation` | 300 | shortest fold worth leaving gates for |
 | `gateExitClearance` | 40 | minimum depth of the near zone the arming latch reads (the zone is at least one `gateRadius` deep). It used to also push an arriving pilot this far past the far plane; a transit now carries the pilot through exactly, so there is no push |
 | `portalWindowRange` | 2500 | furthest the camera may be for a gate to show the far side; also the range over which the second render is paid |
@@ -583,7 +583,7 @@ sees their ship through the mouth rather than hidden behind an opaque sphere. It
 being taken back because a mouth only takes a step that STARTS outside it — the ring gates' arming
 latch, now pure geometry (`WormholeGeometry.SegmentEntersBall`).
 
-**Tuning (`ButterflyFoldAction.asset`).** `gateRadius` 55 is the sphere radius. `minGateSeparation`
+**Tuning (`ButterflyFoldAction.asset`).** `gateRadius` 33 is the sphere radius (was 55; cut to 60% on 2026-10-08). `minGateSeparation`
 300 (and never under 2.5 radii, so two mouths cannot touch). `portalWindowRange` 2500 is the exact-view
 range and the new `portalWindowFadeBand` 600 its crossfade to the panorama; `portalWindowRenderScale`
 0.75; new `panoramaFaceSize` 256; new `wormholeMaterial` → `Assets/_Graphics/Materials/Wormhole.mat`.
@@ -638,6 +638,9 @@ and leaves them as elemental crystals at the surface of the wormhole."*
   the entry point and thrown radially out (`ElementalCrystalEjector.ShedOntoSphere`). The Butterfly
   never pays, its domain never pays, and an unreadable pilot rides free (positive evidence only,
   vessel skill §4.ac). `WormholeTollTests` pins all four.
+- **It scores** (2026-10-10). A toll is a scored combat hit for the Butterfly (Debuff class), raised
+  once on the Butterfly's machine and warded exactly like the take: PvP is petals only, and a petal
+  taken is always a scored hit (`Docs/WORMHOLES.md` §5).
 
 **Why the petals stay at the ENTRY mouth.** The rival comes out of the far mouth, so the spill is
 behind them — the price is real, not something they scoop back up on the way out. It sits on the

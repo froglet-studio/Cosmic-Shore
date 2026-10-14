@@ -348,12 +348,11 @@ namespace CosmicShore.Utility.AITraining
             // MultiplayerMiniGameControllerBase which is a NetworkBehaviour, so
             // they require a host. The single-player DuelForTheCell/WildlifeBlitz
             // scenes were retired in 2026-09; CoOpWildlifeBlitz scene deleted (BH-5.7);
-            // GameModes.Freestyle (7) is retired.
+            // GameModes.Freestyle (7), MultiplayerFreestyle (28) and OnlineDuelForTheCell (29)
+            // are retired.
             if (TrainingModeCatalog.TryGet(mode, out _)) return true;
             switch (mode)
             {
-                case GameModes.MultiplayerFreestyle:
-                case GameModes.OnlineDuelForTheCell:
                 case GameModes.Multiplayer2v2CoOpVsAI:
                     return true;
                 default:
@@ -369,8 +368,6 @@ namespace CosmicShore.Utility.AITraining
             if (TrainingModeCatalog.TryGet(mode, out var row)) return row.SceneName;
             switch (mode)
             {
-                case GameModes.MultiplayerFreestyle: return "MinigameFreestyleMultiplayer_Gameplay";
-                case GameModes.OnlineDuelForTheCell: return "MinigameDuelForCellMultiplayer_Gameplay";
                 default: return "MinigameSkimRace";
             }
         }

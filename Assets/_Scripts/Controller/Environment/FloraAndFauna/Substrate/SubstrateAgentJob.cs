@@ -181,7 +181,7 @@ namespace CosmicShore.Gameplay
             for (int q = 0; q < c.Pops.Count; q++)
             {
                 var pop = c.Pops[q];
-                if (!pop.Active || pop.LiveCount == 0 || pop.Siege != null) continue;   // a siege moved in BeginStep
+                if (!pop.Active || pop.LiveCount == 0 || pop.Siege != null || pop.Arms != null) continue;   // a siege or a pond moved in BeginStep
                 var t = Tables(q, pop);
                 t.Live.CopyFrom(pop.Live); t.Key.CopyFrom(pop.Key); t.Tab.CopyFrom(pop.Tab); t.Agg.CopyFrom(pop.Agg);
                 t.Dirs.CopyFrom(pop.Dirs);

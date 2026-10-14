@@ -45,7 +45,7 @@ has its own item, and each hull's open vessel checks sit next to the modes that 
 | G | Rhino: Cleave, Headlong | 2 hull-locked cards | 2 |
 | H | Manta: Redline, Bloomrush | 2 hull-locked cards | 2 |
 | I | Urchin hull + Skein, Hijack | Least finished; its HUD, AI and Hijack sync merged 2026-10-06 (Block P) | 3 |
-| J | Party cards: Multiplayer Freestyle, Online Duel for the Cell | Never opened or tracked; on no live roster; two players needed | 2 |
+| J | Two-player setup (shared by Block Q); both party cards retired 2026-10-08 | No items | 0 |
 | P | The parallel PRs' own Editor checks (#971–#976) | Merged 2026-10-06, never opened in Unity | 6 |
 | Q | The round-3 PRs' own Editor checks (#998, #1001, #1002, #1004, #1005, #1007) | Merged 2026-10-08, never opened in Unity; three need two players | 7 |
 
@@ -191,7 +191,7 @@ last 100 lines of `Player.log` for any failure.
 compile fix). **Why a gate, and why separate from the Windows build:** iOS is a fresh
 IL2CPP target that has never produced a running build; a platform-only compile error is
 invisible in the Editor and on the Windows player.
-1. Produce an **iOS build** (or take the unsigned ipa this branch's CI produced). Record
+1. Produce an **iOS build** (or install the latest TestFlight build). Record
    whether the build itself completes.
 2. Install and launch on an iOS device. Sign in and reach `Menu_Main`.
 3. Read the device log afterwards.
@@ -275,7 +275,7 @@ compiler. Reference: `Docs/PRISM_CLOCK_WIRING_CHECKLIST.md` § occlusion corrido
 7. **Shoot something and watch the debris** — each face should wipe with one hard
    erosion front that finishes before the piece retires.
 8. Swap to a much larger/smaller vessel (Vessel Changer toy) and repeat step 2.
-9. Run **FrogletTools ▸ Vessels ▸ Audit Corridor Vessel Radii** and check the Console
+9. Run **FrogletTools ▸ Vessels ▸ Audits ▸ Audit Corridor Vessel Radii** and check the Console
    for `[PrismOcclusion]` messages.
 
 **PASS:** prisms between camera and ship dissolve so the ship stays visible; they snap
@@ -353,7 +353,9 @@ double-fire (pop *and* destroy in one contact); the two markers stay sub-ms and
 **FAIL:** skims only at the box · gap false-positives · pop-then-destroy · any prism
 that cannot be hit at all · marker spikes or a rising `Physics.SendEvents` train.
 
-### QA-EDITMODE-TESTS ⬜ — run the test suites that were written but never executed
+### QA-EDITMODE-TESTS 🔴 — run the test suites that were written but never executed
+**Last QA:** FAIL on `5ba3e941` (2026-10-12, akouroshm) — EditMode Run All: **2685 pass, 35 fail** (total ~2720 — far above the item's stale "≈762" expectation, which is now corrected in the item body). All **11** named step-4 suites are GREEN. The 35 failures span 14 suites, several entirely red (FollowHeightScale 6/6, RaceRankToastDriver 7/7, RearViewLaw 5/5, SparrowCombatTier 3/3, PartyInviteSystem 3/3) — a whole-suite-red pattern that usually means a shared regression or stale assertions, not 35 independent bugs. Full list in DT-003; screenshot attached: evidence/2026-10-12-akouroshm/QA-EDITMODE-TESTS-35-failures.webp
+
 **Source:** PRs #659, #639, #627, #641, #668, #651, #673 + **#688/#690** (all 61 NUnit
 files were **moved under `Editor/` folders** so they stop shipping into the player, and
 `Assembly-CSharp-Editor` was given `InternalsVisibleTo`). That move touched 105 files
@@ -361,8 +363,9 @@ and has never been run — a suite that silently stops compiling now looks like 
 failures".
 
 1. **Window ▸ General ▸ Test Runner ▸ EditMode ▸ Run All.**
-2. Record the **total test count** as well as pass/fail. The move preserved 762 `[Test]`
-   methods — a total far below that means suites are missing, not passing.
+2. Record the **total test count** as well as pass/fail. The suite has grown well past its
+   original 762 `[Test]` methods — **~2720 as of 2026-10-12** — so a total materially below
+   ~2700 means suites are missing (not compiling into the editor assembly), not passing.
 3. Record every failing test by name and assertion message.
 4. Specifically confirm these suites are present and green: `CellSpawnFormationTests`,
    `SkimmerSwingKinematicsTests`, `ShieldShellMathTests`, `VesselElementalMorphTests`,
@@ -370,12 +373,15 @@ failures".
    `GeometryUtilsTests`, `PrismOcclusionCoverageTests`, `DisplayNameValidatorTests`,
    `ShipModifierTests`.
 
-**PASS:** all EditMode tests green, the total is ≈762, and all eleven suites appear.
+**PASS:** all EditMode tests green, the total is **~2720** (or higher as the suite grows),
+and all eleven named suites appear.
 **FAIL:** any red test (record the name + assertion message), a suite that does not
 appear at all (it did not compile into the editor assembly), or a total materially
-below 762.
+below ~2700.
 
-### QA-AUDIT-TOOLS ⬜ — run every FrogletTools auditor and record its verdict
+### QA-AUDIT-TOOLS 🔴 — run every FrogletTools auditor and record its verdict
+**Last QA:** FAIL on `88478a6d` (2026-10-09, akouroshm) — Auditors ran without throwing, but several report beyond the known exceptions. Audit Vessel Skimmers: **6 faults** (known exception is Serpent only). Validate Lifeform Crystals: **34 warnings**. Measure Cell Environment Baselines: **1 warning**. Game Mode Prefab Kit Validate: **75 warnings**. Pending Tool Changes: **~11 uncommitted files**. Ability Rows / Elemental Morphs / Speed Tunnel / Corridor Radii / Cell-Owned Visuals / Occlusion Corridor: ran clean. NOTE: the item's step 10 is STALE — End Game Conditions correctly shows Wildlife Liberation **30** (the mode was re-targeted 250 to 30) and Dog Fight 120; 30 is right, so that line is a doc bug in this item, not a tool fault (fixed in the item body).
+
 **Source:** PRs #637, #641, #653, #659, #661, #668, #646, #650, #702. Each auditor is a
 cheap, asset-only check that encodes a contract; several have never been run.
 
@@ -390,8 +396,8 @@ Run each and paste its report into your results file:
 7. **Ecology ▸ Validate Lifeform Crystals**
 8. **Ecology ▸ Prism Animation** (validator) **▸ Validate Occlusion Corridor**
 9. **Ecology ▸ Measure Cell Environment Baselines**
-10. **Game Modes ▸ End Game Conditions** — confirm it lists Wildlife Liberation **250**
-    and Dog Fight **120**
+10. **Game Modes ▸ End Game Conditions** — confirm it lists Wildlife Liberation **30**
+    and Dog Fight **120** (Wildlife Liberation was re-targeted 250 → 30; 30 is correct)
 11. **Game Modes ▸ Game Mode Prefab Kit ▸ Validate**
 12. **Build ▸ Pending Tool Changes** (should list nothing unexpected)
 
@@ -1196,7 +1202,9 @@ roll so violent it reads as a loss of control.
 **Report the feel:** `rollDegrees` (60) is a single inspector value — say whether it
 wants to be larger or smaller.
 
-### QA-SPARROW-PROJECTILE-POOL ⬜ — async-refilled pooled projectiles are injected
+### QA-SPARROW-PROJECTILE-POOL 🔴 — async-refilled pooled projectiles are injected
+**Last QA:** FAIL on `5ba3e941` (2026-10-12, akouroshm) — Full-auto shots have launch sound; **the skyburst missiles have NO launch sound**. Both shot types still interact with prisms (live colliders), and no NullReferenceException was reported. So this is specifically a missing missile launch SFX, not a dud projectile or a pool/injection crash. Likely an empty/unwired `EventReference` on the skyburst launch path (per the FMOD exposed-field convention, an empty slot ships silent).
+
 
 **Source:** PR #606. The failure mode is *silent duds* seconds after spawn.
 1. Spawn a Sparrow (any mode or freestyle) and fire full-auto for ~30 s.
@@ -1401,7 +1409,7 @@ skims** to fill; lime jaw CTA at full energy). The Dolphin's `VesselStatus` poin
 a **disabled** legacy skimmer, so every contact was dropped silently. The fix is
 unconfirmed. Reference: `DOLPHIN_ENERGY_ECONOMY.md` §5–6.
 
-1. Run **FrogletTools ▸ Vessels ▸ Audit Vessel Skimmers**. This is the gate.
+1. Run **FrogletTools ▸ Vessels ▸ Audits ▸ Audit Vessel Skimmers**. This is the gate.
 2. Freestyle as the Dolphin: fly through cell mass so prisms pass through the skimmer.
    Watch the Console — a single `[DolphinVesselHUDView]` warning means the shared bars
    config is missing or the jaw refs carry no `Graphic`, and the lime CTA is silently
@@ -1494,7 +1502,7 @@ fragment-stage change to the prism sight shader, neither seen by Unity.** Refere
 
 1. Open `DolphinHUDVariant.prefab`: four slots left to right — ProfileButton, CrystalButton,
    JawButton, DriftButton; `CrystalPip0/1` are **gone**; the `Profile` object has its script.
-   Run **FrogletTools ▸ Vessels ▸ Audit Vessel Ability Rows** (Dolphin 4/4, order ✅).
+   Run **FrogletTools ▸ Vessels ▸ Audits ▸ Audit Vessel Ability Rows** (Dolphin 4/4, order ✅).
 2. Select `Resources/EchoSightHalo.mat`: it shows the `EchoSightHalo` shader, not magenta.
 3. Freestyle on the Dolphin. Watch the Charge icon as energy banks; hold and release the
    right trigger.
@@ -1570,7 +1578,7 @@ The legacy hull was replaced by the `dolphin_shapekey` rig; every structural che
 the ship was still broken in flight, so only a flight settles it. Reference:
 `Docs/VESSEL_CONSTRUCTION.md` §4.6.5.
 
-1. Run **FrogletTools ▸ Vessels ▸ Audit Vessel Tails and Jets**: six jets, on the nozzle bones.
+1. Run **FrogletTools ▸ Vessels ▸ Audits ▸ Audit Vessel Tails and Jets**: six jets, on the nozzle bones.
 2. Run **Audit Corridor Vessel Radii**: the Dolphin's number has not moved.
 3. Run **Audit Vessel Skimmers**: the Dolphin passes exactly as before.
 4. Fly the Dolphin in freestyle **side by side** (or alternately) with a Dolphin on an older
@@ -1984,13 +1992,12 @@ steering to hit the burr · AI that orbit or crawl · scores that differ between
 speeds, the arrow and (since PR #1004, QA-HIJACK-SHIELD-SYNC) rail prism SHIELDS must now AGREE
 between machines - a shield on one machine and not the other is a failure.
 
-## Priority 0 — Block J: the two party cards — Multiplayer Freestyle and Online Duel for the Cell
+## Priority 0 — Block J: two-player setup (the party cards are retired)
 
-Neither card has ever been opened in Unity, and until this refresh neither was tracked here or in
-`Docs/UNITY_VERIFICATION_CHECKLIST.md` (re-audit G37). Both are on `AllGames.asset` and
-`LaunchPartyAllGames.asset` but on **neither** live roster (`ArcadeGames.asset`,
-`ArenaGames.asset`), so the first thing each item checks is whether a player can reach the card at
-all. Both need **two players**, so run them in one Multiplayer Play Mode session.
+Both party cards were retired 2026-10-08 as prototype vestiges: Multiplayer Freestyle (28),
+replaced by the Menu_Main lava lamp, freestyle, toybox and lobby, and Online Duel for the Cell
+(29), replaced by Brood Rush. Their items (QA-PARTY-FREESTYLE-MODE, QA-PARTY-DUEL-MODE) are gone.
+The two-player setup below stays here because Block Q and later items point at it.
 
 **Two-player setup used by every two-player item in Blocks J and Q:**
 1. Open **Window ▸ Multiplayer ▸ Multiplayer Play Mode**. Tick **Player 2** and type a tag for it
@@ -2000,96 +2007,6 @@ all. Both need **two players**, so run them in one Multiplayer Play Mode session
 3. In the main window, click the **+** slot on the party panel and pick the other player. In the
    Player 2 window, press **Accept** on the invite. Wait (up to 15 seconds) until both windows show
    two people in the party. The main window is the **host**; the Player 2 window is the **client**.
-
-### QA-PARTY-FREESTYLE-MODE ⬜ — "Multiplayer Freestyle" has never been opened
-**Source:** `GameModes.MultiplayerFreestyle = 28`; card `ArcadeGameMultiplayerFreestyle.asset`;
-scene `MinigameFreestyleMultiplayer_Gameplay.unity`; `MultiplayerFreestyleController`. Status read
-off the card and scene in `Docs/SCENES.md` § Multiplayer Freestyle (PR #1000, whose step 4 is
-folded in here): no scoring, no natural end (the scene's turn-monitor list is empty), each player
-starts on their own countdown, 2–3 players, no AI fill, six hulls on the card. Re-audit G37.
-
-1. In the Project window, select `Assets/_SO_Assets/Games/ArcadeGameMultiplayerFreestyle.asset`.
-   Read **Vessels**, **Min Players Allowed**, **Max Players Allowed** and **Scene Name**.
-2. Open `MinigameFreestyleMultiplayer_Gameplay.unity` (type its name in the Project window's search
-   box). Select the object that has `TurnMonitorController` and look at its **Monitors** list. Look
-   at the Console for red errors and at the Hierarchy for any `Missing (Mono Script)`.
-3. Do the two-player setup at the top of Block J.
-4. In the host window, open the **Arcade** screen and then the **Arena** screen and look for a card
-   named **Multiplayer Freestyle**. If neither screen has it, stop: mark this item ⛔ BLOCKED and
-   write "no Multiplayer Freestyle card on the Arcade or Arena screen" in the notes.
-5. Open the card, pick a ship, and launch. Watch both windows through the countdown.
-6. In each window, fly for a minute: lay trail, fly through the other player's trail, and find the
-   other player's ship.
-7. Keep flying for five minutes and watch for any end-of-round or winner screen.
-8. In the client window, leave the match with the in-game leave button. Watch both windows.
-
-**PASS:** the card lists six ships (Dolphin, Manta, Rhino, Sparrow, Serpent, Squirrel), 2 and 3
-players, and that scene name; the scene opens with no red errors or missing scripts and its
-Monitors list is empty; both windows get through the countdown and each player can fly; each
-window shows the other player's ship and trail moving smoothly in the same place; the match keeps
-running with no end screen; the leaving player returns to the menu and the host keeps flying with
-no errors.
-**FAIL:** a red error or `Missing (Mono Script)` · a window stuck on the connecting panel or the
-countdown · a player who never gets control · the other player's ship invisible, frozen or in the
-wrong place · an end screen or a winner banner · the leaving player stranded on a black screen, or
-an error in either window when they leave.
-**Known, do not fail on:** there is no score, no timer and no end by design (the card says "No
-rules, time, or score"); intensity changes nothing (the scene has one cell config); no AI fills an
-empty seat; the card has no background render of its own yet.
-**Report:** whether the card was reachable from the menu (step 4), and if not, how (if at all) you
-launched the scene.
-
-### QA-PARTY-DUEL-MODE ⬜ — "Online Duel for the Cell" has never been opened
-**Source:** `GameModes.OnlineDuelForTheCell = 29`; card `ArcadeGameOnlineDuelForTheCell.asset`;
-scene `MinigameDuelForCellMultiplayer_Gameplay.unity`; `OnlineDuelForTheCellController`. Status in
-`Docs/SCENES.md` § Multiplayer Cellular Duel (PR #1000, whose step 3 is folded in here): exactly two
-players; two rounds of one 120 s turn; at round 2 the controller swaps the two ships
-(`NetworkObject.ChangeOwnership` + `gameData.SwapVessels`) and swaps back on replay; most mass wins
-(`VolumeCreated` + `HostileVolumeDestroyed` + `FriendlyVolumeDestroyed`, ×1 each, no scoring-rule
-asset); no AI fill. The card's hull list is still serialized under the retired `Captains` key, so
-**Vessels** is expected to read empty and each pilot flies the ship they brought. The swap reads
-`Players[0]` and `Players[1]` only. The Urchin's swap throw was fixed by PR #973. Re-audit G37/G38.
-
-1. Select `Assets/_SO_Assets/Games/ArcadeGameOnlineDuelForTheCell.asset`. Look at **Vessels** and
-   write down exactly what it shows: an empty list, six ships, or "Type mismatch" / None entries.
-   Read **Min/Max Players Allowed** and **Min/Max Intensity**.
-2. Open `MinigameDuelForCellMultiplayer_Gameplay.unity`. Look at the Console for red errors and the
-   Hierarchy for `Missing (Mono Script)`. Select the object that has `NetworkTimeBasedTurnMonitor`
-   and read its duration.
-3. Do the two-player setup at the top of Block J. In each window, take control of the ship (click
-   the centre of the screen, or press **Y** on a gamepad), open the Vessel Changer and pick a
-   **different** ship in each window (for example Sparrow in the host, Dolphin in the client).
-4. In the host window, look for an **Online Duel for the Cell** card on the Arcade and Arena
-   screens. If neither has it, stop: mark this item ⛔ BLOCKED and write "no Duel card on the Arcade
-   or Arena screen".
-5. Launch it at intensity 1. Write down which ship each window flies.
-6. Round 1: in both windows, lay trail and fly through the other player's trail for the whole two
-   minutes. Watch both players' scores in both windows.
-7. When round 2 starts, look at each window: which ship are you flying now? Steer it and check the
-   camera follows it.
-8. Play round 2 to the end. Read the end screen in both windows.
-9. Press **Play Again** (or Ready) in both windows. Check which ship each window flies.
-10. Go back to the menu, pick the **Urchin** in one window, and repeat steps 5–7.
-11. Leave the party so you are alone, and try to launch the card.
-
-**PASS:** the card reads 2 / 2 players and intensity 1–2; the scene opens clean and the turn lasts
-120 seconds; both players start round 1 in the ships they picked; scores rise when you lay trail and
-when you destroy the other player's trail, and match in both windows; at round 2 each player is
-flying the ship the **other** player flew in round 1, can steer it, and the camera follows it; the
-match ends after round 2 and both windows name the same winner, the one with the higher score; after
-Play Again each player is back in their original ship; the Urchin swaps with no error; a
-one-player launch is refused (or not offered) rather than starting.
-**FAIL:** a red error or missing script · a window stuck on the connecting panel · after the swap, a
-player steering the wrong ship, a camera left on the old ship, or dead controls · scores that differ
-between windows · the lower score named winner, or the two windows naming different winners ·
-"No network object found in vessel", `NullReferenceException` or `ArgumentOutOfRangeException` in
-the Console · a one-player match that starts.
-**Known, do not fail on:** intensity 2 looks the same as 1 (one cell config); no AI fills the second
-seat; the card has no background render of its own yet.
-**Report:** what **Vessels** shows (step 1) — that decides whether the card's ship list must be
-re-authored — and whether the card was reachable from the menu (step 4).
-
----
 
 ## Priority 0 — Block P: the parallel PRs' own checks (merged 2026-10-06)
 
@@ -2125,7 +2042,7 @@ Urchin flew with no HUD at all before this. Reference: `Docs/UNITY_VERIFICATION_
    has `UrchinVesselHUDView` and count the entries under **Ability Icons**.
 2. Open `Assets/_Prefabs/Spacevessels/Urchin.prefab`. On its `VesselStatus` component, read the
    **Vessel HUD Controller** field. Look for any field that says **Missing**.
-3. Run **FrogletTools ▸ Vessels ▸ Audit Vessel Ability Rows**, then **FrogletTools ▸ Vessels ▸
+3. Run **FrogletTools ▸ Vessels ▸ Audits ▸ Audit Vessel Ability Rows**, then **FrogletTools ▸ Vessels ▸
    Audit Ability Lockups**. Find the Urchin lines in each report.
 4. Start freestyle (click the centre of the main menu screen, or press **Y** on a gamepad), open
    the Vessel Changer and pick the **Urchin**. Look at the bottom-right of the screen.
@@ -2164,8 +2081,8 @@ pictures. Prefabs written as text, never imported; no code changed.
    Watch the Console for red errors. In the Project window, check the new `*-PLACEHOLDER.png`
    files under `Assets/_Graphics/Icons/AbilityIcons/Rhino`, `/Serpent` and `/Scarab` show as
    Sprite images.
-2. Run **FrogletTools ▸ Vessels ▸ Audit Vessel Ability Rows** and read the Rhino, Serpent and
-   Scarab lines. Run **FrogletTools ▸ Vessels ▸ Audit Ability Lockups**.
+2. Run **FrogletTools ▸ Vessels ▸ Audits ▸ Audit Vessel Ability Rows** and read the Rhino, Serpent and
+   Scarab lines. Run **FrogletTools ▸ Vessels ▸ Audits ▸ Audit Ability Lockups**.
 3. Start freestyle and pick the **Rhino** in the Vessel Changer. Read the four cards bottom-right,
    left to right.
 4. Pick the **Serpent**. Read the four cards and their control hints. Fire the rifle (right
@@ -3275,6 +3192,44 @@ avoids the bite; hovering gets dived on; the cloud stays in its band when idle a
 hold; it feeds and breeds. **FAIL:** a burn from a member that was not glowing · a dive with no hold first · no
 visible gap · the cloud follows you across the cell · proxies or colliders over budget · the cloud dwindles or starves
 
+### QA-ARMS-1 ⬜ — the arms race: a schooling shoal and a pack of harriers that hunt it
+
+**Source:** branch `claude/arms-race-port`, ported from the lab's arms race (`Tools/NCA/arms_*.py`, run a9 generation
+1500, on `cece/gifted-curie-x2cpd0`). Only the headless harnesses have run (`Tools/Build/substrate_harness/run.sh arms`
+replays the lab's states input for input and its behaviour runs metric for metric; `run.sh all`; the author `--check`s);
+it has never been opened in the editor. Reference: `Docs/SUBSTRATE_FAUNA.md` §11. Tunables: the `Arms` block of
+`Substrate Shoal Species.asset` and `Substrate Harrier Species.asset`.
+
+**Why it matters:** this is the first creature behaviour that was evolved rather than written. It only lands if the
+schools visibly school, the pack visibly hunts together, and the burst is a fair warning before a burn.
+
+1. **Find the pond.** Open the Swarm cell (Unity 2021.3.9f1) and fly to the top of the middle shell: straight up (+Y)
+   from the cell centre, about 765 u out. The pond has no visible edge: it is the sphere ~400 u across that the fish
+   and harriers never leave, with two Time plants near its middle, ~120 small Time-coloured fish and 8 larger
+   Charge-coloured harriers. Say whether the invisible edge reads as odd when they turn along it.
+2. **The shoal schools.** Watch from just outside the pond for a minute. Fish should travel in tight groups heading the
+   same way (neighbours ~13 u apart), not a buzzing cloud. They graze near the plants but keep moving.
+3. **The harriers hunt as a pack.** Harriers cruise spread out (~65 u apart). When they go for a school, two or more
+   should close on it from different sides, then sprint. A sprinting harrier stretches into a long streak.
+4. **The school answers.** When harriers close in, the school swerves and splits round them. Catches happen (the fish
+   is sucked into the harrier and leaves a crystal) but most attacks on a tight school should fail.
+5. **The burst is the warning.** Hover inside the pond. Harriers will treat you as prey. A harrier must be streaking
+   (bursting) for at least 0.4 s before touching it burns petals; touching a cruising harrier or any fish must never
+   burn. Expect regular burns while you hover.
+6. **Speed is safety.** Fly straight through the pond at cruise speed. You should rarely or never be burned: the
+   harriers' burst (100 u/s) is slower than you. Ram through a school: fish die and drop crystals.
+7. **Budgets.** Physics debugger with your ship in the pond: at most 6 shoal proxies and 4 harrier proxies, colliders
+   under 1,200 in total.
+8. **It lives.** Leave the cell running 10+ minutes, then come back: the shoal still near 120-155 fish, harriers 8-12,
+   none starving, new fish appearing as they graze. Ram 30 fish and check the shoal recovers. If the shoal thins out,
+   the pond's two plants are not regrowing fast enough (say so; the fix is more plants in the pond's pen).
+
+**PASS:** schools that move as aligned groups; harriers that converge together and burst; the school swerves and most
+attacks fail; only a harrier that has been bursting for 0.4 s burns; a cruising ship gets through; budgets hold; both
+species are alive after 10 minutes. **FAIL:** a shapeless cloud of fish · harriers that hunt one by one · a burn from a
+fish or a cruising harrier · a burn the instant a harrier starts its burst · fish or harriers outside the pond · the
+shoal or the harriers die out · proxies or colliders over budget.
+
 ### QA-SWARM-ROUND11-14 ⬜ — the balance pass: sated swarms live, swarms keep to their bands, packs survive a ram
 
 **Source:** branch `overnight/balance`. Only the headless showcase harness (`Tools/Build/showcase_cell_harness/run.sh all`,
@@ -4349,22 +4304,35 @@ a creature frozen mid-approach · any element **held** above level 10.
 
 ### QA-VESSEL-RHINO-SWORD ⬜ — sword point-velocity + the debris retune
 **Source:** PR #639. Reference: `RHINO_SHIELD_SWIPE.md` § In-editor verification (5–11).
+**⚠ Partly outdated (noted 2026-10-09, SKIP):** this item predates the sword rework
+(PRs #914 slice-on-destroy, #904 super-shield bind, #921 combos). That rework — and whether
+the sword behaves correctly today — is covered by **QA-RHINO-SWORD-COMBOS**; this item is
+*only* about the PR #639 debris physics (point-velocity + the ~⅓ debris-speed retune). Run
+the two together and keep this one scoped to debris speed.
 1. Fly straight with **no trigger**: hit a prism with the hull, then hit one with the
-   parked sword at the same speed.
+   parked sword at the same speed. **Judge the debris SPEED, not the break style** — the
+   sword SLICES where the hull shatters (that difference is expected, see "Known" below);
+   what this step tests is whether the two throw debris at the *same speed*.
 2. Mid-swipe: hit prisms with the **tip** and with the **hilt**. Select the
    ForceFieldSkimmer in play mode to see the per-point velocity gizmo rays.
 3. Clip your own Rhino trail (small prisms, vol ≈ 0.75) and a fat environment prism at
    the same speed.
 4. Fly a couple of other vessels and fire projectiles at prisms.
-5. Play Astro League and trigger a field reset.
+5. **(If reachable)** In Astro League, if you can trigger a field reset, confirm its prisms
+   **animate out** instead of freezing. **As of 2026-10-09 no way to trigger a field reset
+   was found in the build** — if you cannot find one, skip this step and flag it rather than
+   failing the item (see FAIL note).
 
 **PASS:** hull and parked-sword hits throw debris at the **same** speed; a tip strike
 visibly beats a hilt strike and throws along the swing tangent; small and large prisms
 at the same speed match; other vessels/projectiles throw debris at ~1/3 the old speed
-with nothing else changed; Astro League's field-reset prisms animate out instead of
-freezing.
+with nothing else changed. (Astro League field-reset prisms animating out — only if a
+reset can be triggered.)
 **FAIL:** a parked sword adding speed · tip and hilt identical · debris speed varying
-with prism size · debris pinned to one speed regardless of impact.
+with prism size · debris pinned to one speed regardless of impact. **Not a fail:** the
+sword breaking prisms differently from a hull (that is the intended slice), or being
+unable to find an Astro League field-reset trigger (flag that to design/engineering — it
+may be a removed or renamed mechanic — rather than failing here).
 **Judgement call to report:** shatter is now ~3× slower on gentle grazes (violence
 tracks force by design). Say whether the slow end reads as sluggish.
 
@@ -4564,10 +4532,10 @@ keys from the `SilhouetteController` rename.
 
 ### QA-FTUE-QUEST-ROWS ⬜ — quest graphs lay out in venue rows
 **Source:** PR #633 (six graph assets rewritten by script).
-1. **FrogletTools ▸ Quest Graph Editor** → MainQuest → click through Phases 0–5.
+1. **FrogletTools ▸ FTUE ▸ Quest Graph Editor** → MainQuest → click through Phases 0–5.
 2. On any phase: drag a node somewhere silly → **Layout Rows** → then `Ctrl+Z`.
 3. Press **Save** once per phase.
-4. Run **FrogletTools ▸ Quest Graph ▸ Layout All Phases (Rows)**.
+4. Run **FrogletTools ▸ FTUE ▸ Layout All Phases (Rows)**.
 
 **PASS:** every phase opens already in rows with edges intact and no node stacked at
 the origin; Layout Rows re-snaps and undo restores the drag; Save produces a **no-op
@@ -4613,14 +4581,6 @@ branch, not on `bleeding-edge`.**
 a protected branch is refused; the pre-staged file **stays staged and out of the commit**.
 **FAIL:** anything else riding along in the commit, a protected-branch push succeeding,
 or the pre-staged file being swept in.
-
-### QA-FLORA-LEAFSIZE ⬜ — garden flora still grow leaves at the authored size
-**Source:** PR #656 (a duplicate declaration removed after a semantic merge conflict).
-1. Confirm zero compile errors.
-2. Freestyle → Cell Selector → **Hesperides**; look at leaf size on grown flora.
-
-**PASS:** compiles clean and leaves grow at the authored size.
-**FAIL:** compile error, or leaves that are obviously too big/small/absent.
 
 ### QA-NET-PRESENCE-PARTY 🟡 — party/presence regression pass, and the fault-rate numbers
 **Source:** PR #666 + `Docs/PartySystem/BUGS.md` + `Docs/PresenceSystem/BUGS.md`
@@ -4691,7 +4651,6 @@ is always free. Earlier written instructions wrongly listed Scurry among the loc
 do not file that as a defect. Modes 28, 29, 32, 33, 34, 36, 37, 38 and 43 **do** lock.
 Progress is also **not saved between sessions** yet — quit and the unlocks reset. That is
 deliberate, so treat any gate-off test as a single-session test.
-
 
 ### QA-TOY-ELEMENT-CHARGER ⬜ — the Element Charger toy grants elements to your vessel
 **Source:** PR #913. New freestyle toy, authored headless and never compiled. Reference:
@@ -5037,6 +4996,33 @@ cheapest four in play: **Squirrel** skim energy per hit rises with Charge; **Urc
 rises with Charge; **Sparrow** turret prism z-stretch rises with Mass; **Scarab** forged ball size
 rises with Space (×4 at Space 10). **PASS = each still responds to its element.**
 **FAIL = any one stopped responding** — name which, because each has a different home.
+
+### QA-P2-BENCH-DEPTH-PRISMS ⬜ — measure what the omni and Mass crystals cost per frame
+**Source:** branch `cece/determined-ride-rqzaeo` (2026-10-13, not merged yet): new READER tool
+`CrystalDepthPrismBenchmarkWindow`. Reference: `Docs/Studios/OMNI_SHEPARD_LAB.md`, round 10 "Performance".
+**For Yash** (the designer asked for it on his list). The engineering work that follows
+(property-block dirty-check, distance LOD, the leaving-prism pass, Space-squares freeze) is blocked on
+these numbers: the project rule is profile first. This item's deliverable is data.
+
+1. Open the project in Unity and wait until it finishes importing.
+2. Make a new empty scene: **File ▸ New Scene**, pick **Basic (URP)**, press **Create**. It must have a
+   **Main Camera** and nothing else.
+3. Press **Play**.
+4. Open **FrogletTools ▸ Performance ▸ Benchmarks ▸ Crystal Depth Prism**.
+5. Set **Crystals** to **Both**. Leave **Warm-up frames** at 120 and **Sample frames** at 600.
+6. Press **Run N = 10 / 50 / 200**. Wait until three results appear in the window (about a minute).
+7. Set **Crystals** to **Omni Only** and press **N = 50 only**. Wait for the result.
+8. Set **Crystals** to **Mass Only** and press **N = 50 only**. Wait for the result.
+9. Press **Copy report** and paste the text into your results.
+10. Open any C# script, type `GetComponent<Renderer>().SetShaderUserValue(` and note whether the editor
+    recognises it (no red underline) or not.
+
+**PASS:** the report shows five runs, and every line has numbers (no "not found" on **Depth prisms**,
+**Draw calls** or **Main thread**), plus your answer for step 10.
+**FAIL:** the window shows an error dialog · the crystals do not appear in a ring in front of the camera ·
+**Depth prisms** reads "no samples" (the crystals never ran) · a run never finishes.
+**Known, do not fail on:** **Space squares** or **Flip wave** reading "no samples" in the **Mass Only**
+run (the Mass crystal has neither) · the last line listing no SRP counters.
 
 ---
 

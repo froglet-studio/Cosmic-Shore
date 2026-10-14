@@ -138,6 +138,11 @@ it samples an authored `EnvironmentPrefab` — pure generation math, no prisms. 
   existed for editor preview — via `ModePreviewTrackModel.BuildWaypointLays`, with domains
   cycling the playable triad per waypoint segment (matching `SegmentSpawner`'s live painting).
   **If the scene's track is retuned, re-bake the prefab and re-run the author script.**
+  Intensity 4 ("Relativity") is the exception that needs no hand re-bake:
+  `Tools/Build/author_skimrace_relativity_track.py` writes the scene's track AND this bake in one
+  pass (ribbon normals, crystals per lap and marked waypoints included) and refuses to write if the
+  two component bodies would differ; `GetPreviewBlocks` honours all three fields, so the card's
+  model shows the rolled ribbon and only the crystal markers.
 
 Two knock-on rules the track added:
 
@@ -542,7 +547,7 @@ Joust(34), Scurry = Scurry(35)**.
 | Group | Modes | Arena source |
 |---|---|---|
 | Full arenas | Rampage, Cleave, Wildlife Liberation, Dog Fight, Scarab Scramble, The Bends, Nucleus Rush, Astro League, Skim Race, Scurry, Wildlife Blitz ×2 | The mode's own cell config — authored environment or grown via its spawn profile |
-| Barren-cell modes | Joust, Duel for the Cell ×2, Multiplayer Freestyle, 2v2 CoOp | Their own scenes run on the Barren cell: open water + nucleus + the vessel. Sparse by construction, and the definitions' Notes say so |
+| Barren-cell modes | Joust, 2v2 CoOp | Their own scenes run on the Barren cell: open water + nucleus + the vessel. Sparse by construction, and the definitions' Notes say so |
 | Later arcade modes | Tollway, Wrecking Ball, Undertow, Regatta, Salvo, Hijack, Skein, Bloomrush | The mode's own cell configs, four per intensity where the scene is IntensityWise (Hijack's Switchyard and Skein's knot are authored `EnvironmentPrefab`s, so their scale models show the rails; Salvo and Bloomrush reference the Boneyard and the Rampage forest exactly as the modes do) |
 | Shell-only gate races | Switchback, Headlong, Redline, Breakwater | Controller-built courses (rings solved at match start, Breakwater's stations) on a single cell, so the preview shows the cell and the hull and the Notes say OPEN-ENDED — the same honesty Tollway and Regatta already record. A `StructurePrefab` of a few standing rings is the recorded gap |
 

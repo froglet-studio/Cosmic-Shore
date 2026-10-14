@@ -85,7 +85,9 @@ namespace CosmicShore.Engine.Profiling
 
         long Read() => _name switch
         {
-            "Main Thread" or "CPU Main Thread Frame Time" or "CPU Total Frame Time" => (long)(Time.unscaledDeltaTime * 1e9),
+            // The measured frame, not the loop's step (a scripted run's step is a fixed 1/60 s).
+            "Main Thread" or "CPU Main Thread Frame Time" => FrameTimingManager.TryGetLastFrame(out var main) ? (long)(main.cpuMainThreadFrameTime * 1e6) : 0,
+            "CPU Total Frame Time" => FrameTimingManager.TryGetLastFrame(out var total) ? (long)(total.cpuFrameTime * 1e6) : 0,
             "GC Reserved Memory" or "Total Reserved Memory" => GC.GetGCMemoryInfo().HeapSizeBytes,
             "GC Used Memory" or "Total Used Memory" => GC.GetTotalMemory(false),
             "System Used Memory" => Environment.WorkingSet,

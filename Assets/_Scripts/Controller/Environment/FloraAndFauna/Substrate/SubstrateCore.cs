@@ -136,6 +136,9 @@ namespace CosmicShore.Gameplay
         /// <summary>A siege population's phase machine and shell (Docs/SUBSTRATE_FAUNA.md §10); null for every other
         /// species. A siege is moved by <see cref="SubstrateSiege"/> in BeginStep, never by the agent kernel.</summary>
         public readonly SubstrateSiegeState Siege;
+        /// <summary>An arms-race population's lab state (Docs/SUBSTRATE_FAUNA.md §11); null for every other species. Its
+        /// pond is stepped by <see cref="SubstrateArms"/> in BeginStep, never by the agent kernel.</summary>
+        public readonly SubstrateArmsState Arms;
 
         internal SubstratePopulation(int index, int start, SubstrateSpeciesParams p)
         {
@@ -148,6 +151,7 @@ namespace CosmicShore.Gameplay
             SlotW = new Vector3[bk]; SlotV = new Vector3[bk];
             for (int k = 0; k < bk; k++) MouthZ = Math.Max(MouthZ, p.BodySlots[3 * k + 2]);
             if (p.Siege != null && p.Siege.Enabled) Siege = new SubstrateSiegeState(Cap, p.Siege.FirstCool, 7919 * (start + 1));
+            if (p.Arms != null && p.Arms.Role != 0) Arms = new SubstrateArmsState(Cap, 104729 * (start + 1));
         }
     }
 
@@ -541,6 +545,16 @@ namespace CosmicShore.Gameplay
                     MsAgents += Ms(t0);
                 }
             }
+            // the arms race's ponds are moved here, once every population's live list is built (a pond steps its prey and
+            // its predators together, as the lab does) - the agent pass skips them
+            bool arms = false;
+            for (int q = 0; q < Pops.Count; q++) arms |= Pops[q].Active && Pops[q].Arms != null;
+            if (arms)
+            {
+                t0 = System.Diagnostics.Stopwatch.GetTimestamp();
+                SubstrateArms.Step(this, food);
+                MsAgents += Ms(t0);
+            }
         }
 
         /// <summary>The tick's agent pass, managed: <see cref="SubstrateKernel.StepAgent"/> for every live agent of every
@@ -553,7 +567,7 @@ namespace CosmicShore.Gameplay
             {
                 var pop = Pops[q];
                 int n = pop.LiveCount;
-                if (!pop.Active || n == 0 || pop.Siege != null) continue;   // a siege moved in BeginStep
+                if (!pop.Active || n == 0 || pop.Siege != null || pop.Arms != null) continue;   // moved in BeginStep
                 if (Stepper != null)
                 {
                     Span<float> I = stackalloc float[pop.Dirs.Length];
@@ -906,8 +920,9 @@ namespace CosmicShore.Gameplay
                 if (now) striking++;
                 if (now && !was) { pop.Strikes++; Events.Add(new SubstrateEvent { Kind = SubstrateEventKind.Strike, Index = i }); }
 
-                // food: the slice that is hungry asks the owner for a bite of REAL food - flora, or prey it has caught
-                if (Steered[i] && MathF.Min(1f, Hunger[i]) > P.EatHunger)
+                // food: the slice that is hungry asks the owner for a bite of REAL food - flora, or prey it has caught (an
+                // arms pond asks for its own: its catches are the lab's rule, SubstrateArms)
+                if (pop.Arms == null && Steered[i] && MathF.Min(1f, Hunger[i]) > P.EatHunger)
                 {
                     EatRequests.Add(i);
                     if (pop.PreyPop >= 0)

@@ -239,14 +239,8 @@ emit("Assets/_SO_Assets/Games/ArcadeGameHeadlong.asset.meta",
 
 
 # ── 4. Scene: clone MinigameSwitchback, swap the controller ──────────────────
-scene = read("Assets/_Scenes/Multiplayer Scenes/MinigameSwitchback.unity")
-
-# 4a. controller script swap
-scene, n = re.subn(EXISTING["SwitchbackController"], G_SCRIPT["HeadlongController"], scene)
-assert n == 1, f"controller guid appeared {n} times in the donor scene"
-
-# 4b. its serialized field block. firstGateDistance goes (a closed circuit has no first leg to
-# place - gate 0 is rotated onto the spawn pole instead); `laps` arrives.
+# 4b. the controller's serialized field block. firstGateDistance goes (a closed circuit has no
+# first leg to place - gate 0 is rotated onto the spawn pole instead); `laps` arrives.
 OLD_FIELDS = f"""  rule: {{fileID: 11400000, guid: {EXISTING['SwitchbackScoringRule']}, type: 2}}
   cellData: {{fileID: 11400000, guid: 8d4e8398eedc76c4dadb8604f89b9e1b, type: 2}}
   courseOuterRadius: 1080
@@ -261,8 +255,7 @@ NEW_FIELDS = f"""  rule: {{fileID: 11400000, guid: {G_ASSET['HeadlongScoringRule
   innerRadiusNucleusFactor: 1.22
   laps: {LAPS}
 """
-assert scene.count(OLD_FIELDS) == 1, "controller field block not found in donor scene"
-scene = scene.replace(OLD_FIELDS, NEW_FIELDS)
+CONTROLLER_SCRIPT_LINE = f"  m_Script: {{fileID: 11500000, guid: {G_SCRIPT['HeadlongController']}, type: 3}}\n"
 
 # 4c. Everything ELSE the donor authored is already what this mode wants, and that is worth
 # stating rather than leaving as an absence:
@@ -272,9 +265,33 @@ scene = scene.replace(OLD_FIELDS, NEW_FIELDS)
 #     is rotated onto that ring's POLE, and only a point on the axis is equidistant from every
 #     pilot.
 #   - (the comeback source is no longer authored: it reads the scoring rule, 2026-09)
-for probe, why in ((r"^  spawnFormation: 1$", "equatorial spawn ring"),
-                   (r"^  cellTypeChoiceOptions: 0$", "single race cell")):
-    assert re.search(probe, scene, re.M), f"donor no longer provides: {why}"
+INHERITED_PROBES = ((r"^  spawnFormation: 1$", "equatorial spawn ring"),
+                    (r"^  cellTypeChoiceOptions: 0$", "single race cell"))
+
+
+def clone_scene() -> str:
+    scene = read("Assets/_Scenes/Multiplayer Scenes/MinigameSwitchback.unity")
+    # 4a. controller script swap
+    scene, n = re.subn(EXISTING["SwitchbackController"], G_SCRIPT["HeadlongController"], scene)
+    assert n == 1, f"controller guid appeared {n} times in the donor scene"
+    assert scene.count(OLD_FIELDS) == 1, "controller field block not found in donor scene"
+    scene = scene.replace(OLD_FIELDS, NEW_FIELDS)
+    for probe, why in INHERITED_PROBES:
+        assert re.search(probe, scene, re.M), f"donor no longer provides: {why}"
+    return scene
+
+
+# The clone is a one-shot: once MinigameHeadlong.unity is committed the Editor owns its fileIDs
+# and Netcode GlobalObjectIdHash values, and a re-clone would revert them to Switchback's. The
+# committed scene is adopted, the blocks this script authors must still be in it, and the donor
+# asserts STAND DOWN when Switchback moves on (CLAUDE.md "spent one-shot"). See aml.committed_scene.
+scene, _scene_errors = aml.committed_scene(
+    "Assets/_Scenes/Multiplayer Scenes/MinigameHeadlong.unity", clone_scene,
+    authored_blocks=(CONTROLLER_SCRIPT_LINE, NEW_FIELDS))
+# What the mode INHERITED from the donor is still what it needs - checked on the scene it ships,
+# not on the donor, so the donor moving on cannot take these with it.
+_scene_errors += [f"MinigameHeadlong.unity no longer provides: {why}"
+                  for probe, why in INHERITED_PROBES if not re.search(probe, scene, re.M)]
 
 emit("Assets/_Scenes/Multiplayer Scenes/MinigameHeadlong.unity", scene)
 emit("Assets/_Scenes/Multiplayer Scenes/MinigameHeadlong.unity.meta",
@@ -338,7 +355,7 @@ emit(END_PATH, endcond)
 
 
 # ══ VALIDATE EVERYTHING BEFORE WRITING ANYTHING ═════════════════════════════
-errors = []
+errors = list(_scene_errors)
 
 # The comeback rate is meaningless without the target next to it - see COMEBACK_RATE.
 if 0.25 * GATE_TARGET * COMEBACK_RATE < 1.0:

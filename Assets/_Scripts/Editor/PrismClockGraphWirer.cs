@@ -188,7 +188,7 @@ namespace CosmicShore.Editor
             },
         };
 
-        [MenuItem("FrogletTools/Ecology/Prism Animation/Auto-Wire Clock Properties (All Graphs)")]
+        [MenuItem("FrogletTools/Ecology/Prism Animation/Auto-Wire Clock Properties (All Graphs)", false, 162)]
         [FrogletTool(FrogletToolCategory.Ecology, Importance = 4,
             Description = "Stamp clock properties across every prism shader graph.")]
         public static void AutoWireAll()

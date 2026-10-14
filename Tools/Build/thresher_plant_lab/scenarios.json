@@ -1,0 +1,368 @@
+{
+ "_comment": "Scripted plant cycles for the parity gate (parity.cjs). Each step runs for t seconds at a constant yaw (deg/s) and winch state; plant/release/arm fire on the step's first frame. Run by TraceDriver.cs against the SHIPPED ThresherChainSolver and by the lab page's own JS port.",
+ "scenarios": [
+  {
+   "name": "reeled-turn-plant",
+   "steps": [
+    {
+     "t": 1.0,
+     "yaw": 0,
+     "pay": false
+    },
+    {
+     "t": 0.6,
+     "yaw": 60,
+     "pay": false
+    },
+    {
+     "t": 2.0,
+     "yaw": 0,
+     "pay": false,
+     "plant": true
+    },
+    {
+     "t": 2.0,
+     "yaw": 0,
+     "pay": false,
+     "release": true
+    }
+   ]
+  },
+  {
+   "name": "letout-plant-reel-spin",
+   "steps": [
+    {
+     "t": 1.0,
+     "yaw": 0,
+     "pay": true
+    },
+    {
+     "t": 0.8,
+     "yaw": -30,
+     "pay": true
+    },
+    {
+     "t": 0.8,
+     "yaw": 0,
+     "pay": true,
+     "plant": true
+    },
+    {
+     "t": 1.2,
+     "yaw": 0,
+     "pay": false
+    },
+    {
+     "t": 1.5,
+     "yaw": 0,
+     "pay": false,
+     "release": true
+    }
+   ]
+  },
+  {
+   "name": "straight-plant-degenerate",
+   "steps": [
+    {
+     "t": 0.5,
+     "yaw": 0,
+     "pay": false
+    },
+    {
+     "t": 2.0,
+     "yaw": 0,
+     "pay": false,
+     "plant": true
+    },
+    {
+     "t": 1.0,
+     "yaw": 0,
+     "pay": false,
+     "release": true
+    }
+   ]
+  },
+  {
+   "name": "armed-launch",
+   "steps": [
+    {
+     "t": 1.0,
+     "yaw": 0,
+     "pay": false
+    },
+    {
+     "t": 0.5,
+     "yaw": 90,
+     "pay": false
+    },
+    {
+     "t": 1.5,
+     "yaw": 0,
+     "pay": false,
+     "plant": true
+    },
+    {
+     "t": 3.0,
+     "yaw": 0,
+     "pay": false,
+     "arm": [
+      1,
+      0,
+      0
+     ]
+    }
+   ]
+  },
+  {
+   "name": "analog-squeeze-rigid",
+   "analog": true,
+   "steps": [
+    {
+     "t": 1.0,
+     "yaw": 0,
+     "pay": false,
+     "lt": 0,
+     "rt": 1
+    },
+    {
+     "t": 0.6,
+     "yaw": 60,
+     "pay": false,
+     "lt": 0,
+     "rt": 1
+    },
+    {
+     "t": 0.1,
+     "yaw": 0,
+     "pay": false,
+     "lt": 0.2,
+     "rt": 1
+    },
+    {
+     "t": 0.1,
+     "yaw": 0,
+     "pay": false,
+     "lt": 0.4,
+     "rt": 1
+    },
+    {
+     "t": 0.1,
+     "yaw": 0,
+     "pay": false,
+     "lt": 0.6,
+     "rt": 1
+    },
+    {
+     "t": 0.1,
+     "yaw": 0,
+     "pay": false,
+     "lt": 0.8,
+     "rt": 1
+    },
+    {
+     "t": 0.1,
+     "yaw": 0,
+     "pay": false,
+     "lt": 1.0,
+     "rt": 1
+    },
+    {
+     "t": 2.0,
+     "yaw": 0,
+     "pay": false,
+     "lt": 1,
+     "rt": 1
+    },
+    {
+     "t": 2.0,
+     "yaw": 0,
+     "pay": false,
+     "lt": 0,
+     "rt": 1
+    }
+   ]
+  },
+  {
+   "name": "analog-slack-plant-then-rigid",
+   "analog": true,
+   "steps": [
+    {
+     "t": 1.0,
+     "yaw": 0,
+     "pay": false,
+     "lt": 0,
+     "rt": 0
+    },
+    {
+     "t": 0.8,
+     "yaw": -40,
+     "pay": false,
+     "lt": 0,
+     "rt": 0
+    },
+    {
+     "t": 1.0,
+     "yaw": 0,
+     "pay": false,
+     "lt": 1,
+     "rt": 0
+    },
+    {
+     "t": 1.5,
+     "yaw": 0,
+     "pay": false,
+     "lt": 1,
+     "rt": 1
+    },
+    {
+     "t": 1.5,
+     "yaw": 0,
+     "pay": false,
+     "lt": 0,
+     "rt": 1
+    }
+   ]
+  },
+  {
+   "name": "analog-feather-letgo-midstop",
+   "analog": true,
+   "steps": [
+    {
+     "t": 1.0,
+     "yaw": 0,
+     "pay": false,
+     "lt": 0,
+     "rt": 1
+    },
+    {
+     "t": 0.8,
+     "yaw": 30,
+     "pay": false,
+     "lt": 0.5,
+     "rt": 1
+    },
+    {
+     "t": 0.1,
+     "yaw": 0,
+     "pay": false,
+     "lt": 1,
+     "rt": 1
+    },
+    {
+     "t": 1.5,
+     "yaw": 0,
+     "pay": false,
+     "lt": 0,
+     "rt": 1
+    }
+   ]
+  },
+  {
+   "name": "analog-astern-ambiguous",
+   "analog": true,
+   "steps": [
+    {
+     "t": 1.0,
+     "yaw": 0,
+     "pay": false,
+     "lt": 0,
+     "rt": 1
+    },
+    {
+     "t": 0.3,
+     "yaw": 40,
+     "pay": false,
+     "lt": 0,
+     "rt": 1
+    },
+    {
+     "t": 0.05,
+     "yaw": 0,
+     "pay": false,
+     "lt": 0,
+     "rt": 1
+    },
+    {
+     "t": 1.5,
+     "yaw": 0,
+     "pay": false,
+     "lt": 1,
+     "rt": 1
+    },
+    {
+     "t": 1.0,
+     "yaw": 0,
+     "pay": false,
+     "lt": 0,
+     "rt": 1
+    }
+   ]
+  },
+  {
+   "name": "analog-armed-lead",
+   "analog": true,
+   "steps": [
+    {
+     "t": 1.0,
+     "yaw": 0,
+     "pay": false,
+     "lt": 0,
+     "rt": 1
+    },
+    {
+     "t": 0.5,
+     "yaw": 90,
+     "pay": false,
+     "lt": 0,
+     "rt": 1
+    },
+    {
+     "t": 1.5,
+     "yaw": 0,
+     "pay": false,
+     "lt": 1,
+     "rt": 1
+    },
+    {
+     "t": 1.5,
+     "yaw": 0,
+     "pay": false,
+     "lt": 0.95,
+     "rt": 1,
+     "arm": [
+      1,
+      0,
+      0
+     ],
+     "lead": 0.2
+    },
+    {
+     "t": 1.5,
+     "yaw": 0,
+     "pay": false,
+     "lt": 0,
+     "rt": 1
+    }
+   ]
+  }
+ ],
+ "_comment_analog": "Analog scenarios (\"analog\": true) fly the analog triggers: lt/rt are trigger depths per step (0..1), 'lead' sets LaunchLeadRadians. analogDials uses the lab's dial names; TraceDriver.cs maps them onto ThresherChainSettings and parity.cjs checks they equal ThresherConfig.asset.",
+ "analogDials": {
+  "anScheme": 1,
+  "anFull": 0.97,
+  "anRelease": 0.9,
+  "anBrake": 4,
+  "anBrakeCurve": 1.5,
+  "anAnchor": 2,
+  "anStopDecel": 450,
+  "elSlack": 1.2,
+  "elRigid": 30,
+  "elDamp": 0.8,
+  "elCurve": 1,
+  "elSlew": 2,
+  "hkShape": 1,
+  "hkSeconds": 0.5,
+  "spEase": 0.4,
+  "yank": 0
+ }
+}

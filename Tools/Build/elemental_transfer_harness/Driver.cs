@@ -159,9 +159,8 @@ static class Driver
         Check(ElementalTransfer.RouteFor(ej, true, true, false) == ElementalTransferRoute.Local, "a victim with no relay settles locally");
         Check(ElementalTransfer.RouteFor(ej, true, true, true) == ElementalTransferRoute.Relay, "the shooter's owner relays to the victim's owner");
         Check(ElementalTransfer.RouteFor(ej, true, false, true) == ElementalTransferRoute.NotOurs, "a replay of somebody else's shot moves nothing");
-        Check(ElementalTransfer.RouteFor(ElementalTransferForm.Steal, true, false, true) == ElementalTransferRoute.Local &&
-              ElementalTransfer.RouteFor(ElementalTransferForm.Burn, true, false, true) == ElementalTransferRoute.Local,
-              "  ... and only an eject is relayed (steal and burn settle where they ran, as before)");
+        Check(ElementalTransfer.RouteFor(ElementalTransferForm.Burn, true, false, true) == ElementalTransferRoute.Local,
+              "  ... and a burn is never relayed (it settles where it ran, as before)");
         uint pk = ElementalTransfer.PackPetals(1, 0, 3, 15);
         Check(ElementalTransfer.PetalsIn(pk, Element.Charge) == 1 && ElementalTransfer.PetalsIn(pk, Element.Mass) == 0 &&
               ElementalTransfer.PetalsIn(pk, Element.Space) == 3 && ElementalTransfer.PetalsIn(pk, Element.Time) == 15,
@@ -175,7 +174,125 @@ static class Driver
                                                       ElementalDebuffSources.Other) == 0,
               "a null victim settles nothing on the local route");
 
+        // The callers #1007 left settling on every peer (the sniper strip, the blast debuff, the
+        // joust/sword steal) now go through ApplyAuthoritative with the attacker passed. This drives
+        // the REAL routing against fake hulls carrying a fake relay, so what is asserted is what
+        // ElementalTransfer does with a hull's relay, not a re-statement of the table.
+        Console.WriteLine("T10 the steal and the element subset are settled once, on the right machines");
+        var st = ElementalTransferForm.Steal;
+        Check(ElementalTransfer.RouteFor(st, true, true, true) == ElementalTransferRoute.Relay,
+              "the thief's owner relays a steal to the victim's owner");
+        Check(ElementalTransfer.RouteFor(st, true, false, true) == ElementalTransferRoute.NotOurs,
+              "  ... and a replay of somebody else's joust moves nothing");
+        Check(ElementalTransfer.RouteFor(ElementalTransferForm.Burn, true, true, true) == ElementalTransferRoute.Local,
+              "a burn has no attacker to own it and settles where it ran");
+
+        Check(ElementalTransfer.DecidedHere(false, false) && ElementalTransfer.DecidedHere(true, true) &&
+              !ElementalTransfer.DecidedHere(true, false),
+              "a hit is decided (and scored) offline or on the shooter's owner, nowhere else");
+        Check(ElementalTransfer.IsDecidedHere(null), "  ... and an anonymous attacker is decided where it ran");
+
+        Check(ElementalTransfer.MaskOf(new[] { Element.Mass, Element.Space }) == 0b0110,
+              "the Manta bomb's authored Mass+Space list is bits 1 and 2");
+        Check(ElementalTransfer.MaskOf(new[] { Element.Mass, Element.Mass, Element.Omni, Element.None }) == 0b0010,
+              "  ... duplicates collapse and Omni/None drop, so a list cannot take an element twice");
+        Check(ElementalTransfer.MaskOf((Element[])null) == 0, "  ... and a null list is the empty mask");
+
+        // Machine A owns the shooter; the victim is owned elsewhere.
+        var victimRelay = new FakeRelay { Networked = true, Owned = false };
+        var shooterRelay = new FakeRelay { Networked = true, Owned = true };
+        var victimHull = FakeStatus.On(victimRelay);
+        var shooterHull = FakeStatus.On(shooterRelay);
+        int here = ElementalTransfer.ApplyAuthoritative(st, victimHull, shooterHull, ElementalTransfer.AllElementsMask,
+                                                        0.5f, UnityEngine.Vector3.zero, ElementalDebuffSources.VesselContact);
+        Check(here == 0 && victimRelay.Takes == 1 && victimRelay.LastForm == st && victimRelay.LastPayee == shooterRelay,
+              "the thief's owner hands the steal to the victim's relay, naming itself as the payee");
+        Check(victimHull.ResourceSystem.Asked[(int)Element.Mass] == 0 && shooterHull.ResourceSystem.Granted[(int)Element.Mass] == 0,
+              "  ... and touches neither copy of the levels itself");
+
+        // Machine B: the same contact, replayed by a peer that does not own the shooter.
+        var replayShooter = FakeStatus.On(new FakeRelay { Networked = true, Owned = false });
+        var replayVictimRelay = new FakeRelay { Networked = true, Owned = true };
+        var replayVictim = FakeStatus.On(replayVictimRelay);
+        replayVictim.ResourceSystem.Settles[(int)Element.Charge] = 3;
+        int moved = ElementalTransfer.ApplyAuthoritative(st, replayVictim, replayShooter, ElementalTransfer.AllElementsMask,
+                                                         0.5f, UnityEngine.Vector3.zero, ElementalDebuffSources.VesselContact);
+        Check(moved == 0 && replayVictimRelay.Takes == 0 && replayVictim.ResourceSystem.Asked[(int)Element.Charge] == 0,
+              "a replay on the victim's own machine moves nothing (the thief's owner will send it)");
+
+        // The victim's owner settles: only the masked elements are asked, and a steal pays.
+        var owned = FakeStatus.On(new FakeRelay { Networked = true, Owned = true });
+        owned.ResourceSystem.Settles[(int)Element.Mass] = 2;
+        owned.ResourceSystem.Settles[(int)Element.Space] = 1;
+        owned.ResourceSystem.Settles[(int)Element.Charge] = 9;   // must never be asked under the Manta mask
+        uint settled = ElementalTransfer.SettleTake(owned, 0b0110, 0.12f, ElementalDebuffSources.Explosion);
+        Check(owned.ResourceSystem.Asked[(int)Element.Charge] == 0 && owned.ResourceSystem.Asked[(int)Element.Time] == 0 &&
+              owned.ResourceSystem.Asked[(int)Element.Mass] == 1 && owned.ResourceSystem.Asked[(int)Element.Space] == 1,
+              "the owner asks only the masked elements (Mass, Space), once each");
+        Check(ElementalTransfer.PetalsIn(settled, Element.Mass) == 2 && ElementalTransfer.PetalsIn(settled, Element.Space) == 1 &&
+              ElementalTransfer.TotalPetals(settled) == 3, "  ... and packs exactly what came loose");
+        var thief = FakeStatus.On(new FakeRelay { Networked = true, Owned = true });
+        ElementalTransfer.GrantSettled(thief, settled);
+        Check(thief.ResourceSystem.Granted[(int)Element.Mass] == 2 && thief.ResourceSystem.Granted[(int)Element.Space] == 1 &&
+              thief.ResourceSystem.Granted[(int)Element.Charge] == 0,
+              "the thief's owner is granted exactly the settled petals (conservation across two machines)");
+
+        // Offline: no relay on either hull, so the steal settles and pays right here, as before.
+        var offVictim = FakeStatus.On(null);
+        var offThief = FakeStatus.On(null);
+        offVictim.ResourceSystem.Settles[(int)Element.Time] = 1;
+        int off = ElementalTransfer.ApplyAuthoritative(st, offVictim, offThief, ElementalTransfer.AllElementsMask,
+                                                       0.5f, UnityEngine.Vector3.zero, ElementalDebuffSources.VesselContact);
+        Check(off == 1 && offThief.ResourceSystem.Granted[(int)Element.Time] == 1 &&
+              offVictim.ResourceSystem.Asked[(int)Element.Charge] == 1,
+              "offline the steal settles and pays locally, on all four elements, exactly as before");
+        Check(ElementalTransfer.ApplyAuthoritative(ej, offVictim, offThief, 0, 0.5f, UnityEngine.Vector3.zero,
+                                                   ElementalDebuffSources.Other) == 0,
+              "an empty mask takes nothing");
+
         Console.WriteLine(_fail == 0 ? "\nALL PASS" : $"\n{_fail} FAILED");
         return _fail == 0 ? 0 : 1;
+    }
+}
+
+// A hull's relay as ElementalTransfer sees it: two facts and two calls, recorded.
+class FakeRelay : IElementalLossRelay
+{
+    public bool Networked, Owned;
+    public int Takes, Grants;
+    public ElementalTransferForm LastForm;
+    public IElementalLossRelay LastPayee;
+    public bool IsNetworked => Networked;
+    public bool IsOwnedHere => Networked && Owned;
+    public int RelayTakeToOwner(ElementalTransferForm form, int elementMask, float normalizedAmountPerElement,
+                                UnityEngine.Vector3 impactVelocity, ElementalDebuffSources source, IElementalLossRelay payee)
+    {
+        Takes++; LastForm = form; LastPayee = payee;
+        return 0;
+    }
+    public void RelayGrantToOwner(uint packedPetals) { Grants++; }
+}
+
+class FakeVessel : IVessel
+{
+    public UnityEngine.Transform Transform { get; set; }
+    public IVesselStatus VesselStatus { get; set; }
+}
+
+// A pilot whose hull carries the given relay (null = a hull with none: offline / a mini hull).
+class FakeStatus : IVesselStatus
+{
+    public IVessel Vessel { get; set; }
+    public string PlayerName => "fake";
+    public Domains Domain => default;
+    public ResourceSystem ResourceSystem { get; } = new ResourceSystem();
+    public UnityEngine.Vector3 Course { get; set; }
+    public float Speed { get; set; }
+
+    public static FakeStatus On(FakeRelay relay)
+    {
+        var s = new FakeStatus();
+        s.Vessel = new FakeVessel { Transform = new UnityEngine.Transform { Attached = relay }, VesselStatus = s };
+        return s;
     }
 }

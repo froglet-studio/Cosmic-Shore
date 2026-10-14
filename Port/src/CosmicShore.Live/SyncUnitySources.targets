@@ -208,8 +208,8 @@
           foreach (var w in skips) {
             var bar = w.IndexOf('|');
             int line; int.TryParse(w.Substring(0, bar), out line);
-            Log.LogWarning(null, "PRISMA001", null, file, line, 0, 0, 0,
-              "RPC not intercepted - " + w.Substring(bar + 1) + ". It will run locally instead of over the network in Prisma.");
+            Log.LogWarning(null, "AMOEBIUS001", null, file, line, 0, 0, 0,
+              "RPC not intercepted - " + w.Substring(bar + 1) + ". It will run locally instead of over the network in Amoebius.");
             rpcWarnings++;
           }
         }

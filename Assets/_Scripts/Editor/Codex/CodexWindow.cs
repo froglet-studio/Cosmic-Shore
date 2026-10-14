@@ -10,7 +10,7 @@ using UnityEngine;
 namespace CosmicShore.Editor.Codex
 {
     /// <summary>
-    /// <b>FrogletTools &gt; Interface &gt; Codex</b> — the one place the in-game encyclopedia is
+    /// <b>FrogletTools &gt; UI &gt; Codex</b> — the one place the in-game encyclopedia is
     /// authored, across all three of its kingdoms: <b>Ethirions</b> (every crystal),
     /// <b>Ecology</b> (every lifeform) and <b>Tools</b> (every freestyle toy, categorised by the
     /// fundamental it changes).
@@ -60,7 +60,7 @@ namespace CosmicShore.Editor.Codex
         static readonly string[] KingdomFilters = { "All", "Ethirions", "Flora", "Fauna", "Tools" };
         static readonly int[] BakeSizes = { 256, 512, 1024 };
 
-        [MenuItem("FrogletTools/Interface/Codex")]
+        [MenuItem("FrogletTools/UI/Codex", false, 210)]
         [FrogletTool(FrogletToolCategory.Interface, Importance = 4,
             Description = "Harvest, edit and illustrate every ethirion, lifeform and tool for the " +
                           "in-game encyclopedia.",

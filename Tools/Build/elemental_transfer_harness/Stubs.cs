@@ -14,15 +14,27 @@ namespace UnityEngine
         public Vector3(float x, float y, float z) { this.x = x; this.y = y; this.z = z; }
         public static Vector3 zero => new Vector3(0, 0, 0);
         public static Vector3 one => new Vector3(1, 1, 1);
+        public static Vector3 up => new Vector3(0, 1, 0);
+        public static Vector3 right => new Vector3(1, 0, 0);
         public float magnitude => Mathf.Sqrt(x * x + y * y + z * z);
         public float sqrMagnitude => x * x + y * y + z * z;
         public Vector3 normalized => this;
         public static Vector3 operator *(Vector3 a, float d) => new Vector3(a.x * d, a.y * d, a.z * d);
         public static Vector3 operator *(float d, Vector3 a) => a * d;
         public static Vector3 operator +(Vector3 a, Vector3 b) => new Vector3(a.x + b.x, a.y + b.y, a.z + b.z);
+        public static Vector3 operator -(Vector3 a, Vector3 b) => new Vector3(a.x - b.x, a.y - b.y, a.z - b.z);
+        public static Vector3 Cross(Vector3 a, Vector3 b) =>
+            new Vector3(a.y * b.z - a.z * b.y, a.z * b.x - a.x * b.z, a.x * b.y - a.y * b.x);
         public static Vector3 ClampMagnitude(Vector3 v, float max) => v;
     }
-    public struct Quaternion { public static Quaternion identity => default; }
+    public struct Quaternion
+    {
+        public static Quaternion identity => default;
+        // ElementalCrystalEjector.ShedOntoSphere (the wormhole toll). Type-checks only: the
+        // harness never mints a crystal, so the rotation's value is never read.
+        public static Quaternion AngleAxis(float angle, Vector3 axis) => identity;
+        public static Vector3 operator *(Quaternion q, Vector3 v) => v;
+    }
     public static class Mathf
     {
         public const float Epsilon = 1e-5f;
@@ -43,6 +55,7 @@ namespace UnityEngine
         public static Vector3 onUnitSphere => new Vector3(0, 1, 0);
         public static Quaternion rotation => Quaternion.identity;
         public static int Range(int a, int b) => a;
+        public static float Range(float a, float b) => a;
     }
     public class Object
     {
@@ -56,7 +69,14 @@ namespace UnityEngine
         public GameObject gameObject => null;
         public T GetComponentInChildren<T>(bool includeInactive) => default;
         public T[] GetComponentsInChildren<T>(bool includeInactive) => new T[0];
-        public bool TryGetComponent<T>(out T component) { component = default; return false; }
+        // The harness attaches a fake IElementalLossRelay here, so ElementalTransfer.RelayOf
+        // resolves a hull's relay exactly as it does on a vessel prefab.
+        public object Attached;
+        public bool TryGetComponent<T>(out T component)
+        {
+            if (Attached is T t) { component = t; return true; }
+            component = default; return false;
+        }
     }
     public class Behaviour : Component { public bool enabled { get; set; } }
     public class MonoBehaviour : Behaviour { }

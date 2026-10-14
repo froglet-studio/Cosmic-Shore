@@ -636,7 +636,30 @@ namespace CosmicShore.Core
         void StartNetworkMonitor()
         {
             CosmicShore.Utility.NetworkDiagnostics.Initialize(networkMonitorDataVariable);
+            InstallNetSessionProviders();
             networkMonitor?.StartMonitoring();
+        }
+
+        /// <summary>
+        /// Tells the session recorder what this peer is. The recorder references nothing in the
+        /// party layer on purpose (NetSessionRecorder.cs, "DEPENDENCY DIRECTION"), so the one
+        /// place that already wires the network diagnostics answers for it. Read on demand -
+        /// when a record is built - never per frame.
+        /// </summary>
+        void InstallNetSessionProviders()
+        {
+            NetSessionRecorder.OfflineProvider = () => gameData != null && gameData.IsOfflineSession;
+            NetSessionRecorder.DeviceOnlineProvider = () =>
+                Application.internetReachability != NetworkReachability.NotReachable;
+            NetSessionRecorder.RoleProvider = () =>
+            {
+                if (gameData != null && gameData.IsOfflineSession) return "offline";
+                var nm = Unity.Netcode.NetworkManager.Singleton;
+                if (nm == null || !nm.IsListening) return "none";
+                if (nm.IsHost) return "host";
+                if (nm.IsServer) return "server";
+                return hostConnectionData != null && hostConnectionData.IsSpectating ? "spectator" : "client";
+            };
         }
         void StopNetworkMonitor() => networkMonitor?.StopMonitoring();
         void StartAuthentication() => authenticationServiceFacade?.StartAuthentication();

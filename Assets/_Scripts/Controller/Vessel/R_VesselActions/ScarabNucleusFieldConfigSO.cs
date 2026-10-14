@@ -31,13 +31,14 @@ namespace CosmicShore.Gameplay
         public AstroLeagueBall ballPrefab;
 
         [Header("Nucleus overload")]
-        [Tooltip("How many balls may be knocked INTO the nucleus before the next one overloads it. " +
-                 "The Nth entry detonates instead of entering, so this many can be banked safely.")]
-        [Min(1)] public int nucleusEntryLimit = 3;
+        [Tooltip("How many of ONE SCARAB's balls (counted by domain) may be knocked INTO the nucleus " +
+                 "before the next one overloads it. One more of that domain's balls detonates " +
+                 "instead of entering, so this many can be banked safely per Scarab.")]
+        [Min(1)] public int nucleusEntryLimit = 5;
 
         [Tooltip("Explosion radius of the overload detonation, as a multiple of each ball's own " +
                  "radius.")]
-        [Min(0.1f)] public float detonationRadiusScale = 2f;
+        [Min(0.1f)] public float detonationRadiusScale = 6f;
 
         [Tooltip("ON: the overload detonates EVERY live ball (the authored spectacle). OFF: only the " +
                  "balls banked inside the nucleus. A dial for playtest, not a design fork.")]

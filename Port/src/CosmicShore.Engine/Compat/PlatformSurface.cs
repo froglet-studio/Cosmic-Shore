@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Threading.Tasks;
 using CosmicShore.Engine.Rendering;
+using CosmicShore.Engine.InputSystem.Controls;
 
 namespace CosmicShore.Engine
 {
@@ -201,7 +202,6 @@ namespace CosmicShore.Engine
             logMessageReceivedThreaded?.Invoke(condition, stackTrace, type);
         }
 
-        public static void SetFocus(bool focused) { isFocused = focused; focusChanged?.Invoke(focused); }
         public static bool CanQuit() { foreach (Func<bool> f in wantsToQuit?.GetInvocationList() ?? Array.Empty<Delegate>()) if (!f()) return false; return true; }
         public static void RaiseLowMemory() => lowMemory?.Invoke();
         internal static void RaiseUnloading() => unloading?.Invoke();
@@ -306,7 +306,7 @@ namespace CosmicShore.Engine
         public static bool graphicsMultiThreaded => false;
         public static bool supportsComputeShaders { get; set; }
         /// <summary>
-        /// Storage buffers readable in the vertex stage. Prisma renders with GL 3.3 / GL ES 3.0, which
+        /// Storage buffers readable in the vertex stage. Amoebius renders with GL 3.3 / GL ES 3.0, which
         /// have none, so this is 0 - what Unity reports on such a device. Code that draws from a
         /// <see cref="GraphicsBuffer"/> in a vertex shader checks it and takes its own fallback.
         /// </summary>
@@ -453,7 +453,7 @@ namespace CosmicShore.Engine
         public static int touchCount => InputSystem.EnhancedTouch.Touch.activeTouches.Count;
         public static Touch GetTouch(int index) => touches[index];
 
-        static InputSystem.ButtonControl Control(KeyCode key)
+        static InputSystem.Controls.ButtonControl Control(KeyCode key)
         {
             var mouse = InputSystem.Mouse.current;
             switch (key)

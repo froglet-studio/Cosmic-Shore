@@ -70,8 +70,10 @@ Two smaller findings that each cause a visible class of "it just didn't work":
 
 What is **right** and must not move: the two-level model, eager per-user Relay, single-writer SOAP,
 `.AsMainThread()` at every await, `PartyStateMachine` as the only lifecycle authority,
-`NetworkSceneObjectGuard.Sweep` before every join, the `maxPartySlots 6 / partyDisplaySlots 4`
-split, and "every catch maps to a named recovery". *(§9)*
+`NetworkSceneObjectGuard.Sweep` before every join, ~~the `maxPartySlots 6 / partyDisplaySlots 4`
+split~~ **one party size, 4, enforced by the session's seat count** (2026-10-08: the split was
+the defect behind B25 — see `Docs/PartySystem/BUGS.md`), and "every catch maps to a named
+recovery". *(§9)*
 
 ---
 
@@ -103,7 +105,7 @@ and the Google SRE book *Handling Overload* (retry budgets, retry at one layer).
 ```
  UGS Lobby (presence lobby, 100 players, no Relay)   <- discovery + invite carrier (player properties)
       |  polled every 1.5 s / 0.75 s boosted; converge query every 4 s
- UGS Sessions + Relay (party session, 6 transport slots / 4 shown)  <- eager, one per user ("Always InParty")
+ UGS Sessions + Relay (party session, 4 seats - B25)               <- eager, one per user ("Always InParty")
       |  polled every tick too (RefreshAsync); PlayerLeaving/Deleted subscribed
  Netcode for GameObjects 2.13.3 host/client over UTP+Relay          <- NetworkManager.prefab, approval on
       |  OnClientDisconnect / OnTransportFailure
@@ -461,15 +463,18 @@ Join-direct path is the rejoin).
 
 `PartyMembers` is rebuilt from the party session's `Players` on its `PlayerJoined / PlayerLeft /
 PlayerPropertiesChanged`, and from `ConnectedClients` **only** while in a match. The `joined_party`
-scan goes. Keep `maxPartySlots 6 / partyDisplaySlots 4` as is — headroom is cheap insurance and the
-UI already reads the display number.
+scan goes. ~~Keep `maxPartySlots 6 / partyDisplaySlots 4` as is — headroom is cheap insurance and the
+UI already reads the display number.~~ **Superseded 2026-10-08 (B25):** the headroom was what let
+two simultaneous Joins seat a fifth player, because no check of the 4 ran where the seat is granted.
+There is one size, `maxPartySlots = 4`, the session is created with 4 seats, and `HasOpenSlots`
+counts distinct player ids — the flicker the spare seats used to absorb.
 
 ### 5.8 UI contract for the two buttons (and Accept)
 
 | Control | Enabled when | While in flight | Result states |
 |---|---|---|---|
-| **Invite** | target online · target not in a match that disallows joins · `HasOpenDisplaySlots` · no outstanding invite to this target (60 s) | disabled + spinner ("Inviting…") | "Sent ✓" (60 s) → auto-flips to member on `PlayerJoined`; "Declined"; "Expired" |
-| **Join** | target `HasJoinableSession` · `partyCount < partyDisplaySlots` (push-fresh) · no `join:*` in flight | disabled + "Joining…" with **Cancel** (cancels the single-flight token; own session untouched until validation passed) | success → lobby; `Full` → "Party is full"; `Gone` → "Party no longer available"; `Transient` → "Couldn't reach the party — try again"; timeout → same |
+| **Invite** | target online · target not in a match that disallows joins · `HasOpenSlots` (was `HasOpenDisplaySlots` before B25) · no outstanding invite to this target (60 s) | disabled + spinner ("Inviting…") | "Sent ✓" (60 s) → auto-flips to member on `PlayerJoined`; "Declined"; "Expired" |
+| **Join** | target `HasJoinableSession` · `partyCount < partyMax` (push-fresh; the session's 4 seats are the authority since B25) · no `join:*` in flight | disabled + "Joining…" with **Cancel** (cancels the single-flight token; own session untouched until validation passed) | success → lobby; `Full` → "Party is full"; `Gone` → "Party no longer available"; `Transient` → "Couldn't reach the party — try again"; timeout → same |
 | **Accept** (notification) | invite not expired · sender still online & joinable (push-fresh) | disabled + "Joining…" | as Join; stale invite auto-dismisses on sender `PlayerLeft` / `partyCount` full |
 | **Spectate** | match in progress · spectator slot | disabled + "Connecting…" (≤ 45 s) | as Join |
 
@@ -598,7 +603,7 @@ back; a fake-`ISession` roster test proving `PartyMembers` follows events withou
 `Ys-bleeding-edge` took 251 upstream commits (afd66621) on 2026-10-08, merged twice in parallel by
 two sessions (dcead731 landed; the other was folded in as 226448c0). The Phase 0-1 work was then
 re-checked against the merged tree, and the multiplayer test suites were **executed** for the first
-time - not just compiled - on Prisma's engine (`Tools/Build/prisma_edit_mode_tests/run.sh`).
+time - not just compiled - on Amoebius's engine (`Tools/Build/prisma_edit_mode_tests/run.sh`).
 
 **What ran, on 280c0475 + the runner commit:**
 
@@ -607,7 +612,7 @@ time - not just compiled - on Prisma's engine (`Tools/Build/prisma_edit_mode_tes
 | `unity_refcompile` player config | 0 project errors, 0 unverified (95 assemblies) |
 | `unity_refcompile` editor config | 0 errors in files changed since the merge base |
 | `check_ugs_request_discipline.py` (new, b1aa0a0c) | OK, 1933 files; negative control on the pre-merge tree reports the 2 bypasses + 6 scaled waits below |
-| Edit-mode suites on Prisma's engine, 35 files | **549 / 559 pass.** Every party, presence, invite, lobby, spectator, UGS-policy, join-validator, bootstrap and app-state suite is green (detail below) |
+| Edit-mode suites on Amoebius's engine, 35 files | **549 / 559 pass.** Every party, presence, invite, lobby, spectator, UGS-policy, join-validator, bootstrap and app-state suite is green (detail below) |
 | Other `check_*.py` gates | 25 / 27; the two red ones fail identically on bleeding-edge (row F6) |
 
 Multiplayer suites, all green: UgsRequestPolicy 72, UgsRequestTelemetry 5, JoinTargetValidator 14,
@@ -627,7 +632,7 @@ IRoundStatsCleanup 11.
 | F4 | The landed merge dcead731 dropped upstream 1b5c4522 (InitializeAfterDelay is cancelled when its controller is destroyed - the host-loss bounce raised InitializeGame into the next scene), dropped the thumb controls' inert-until-initialised guard, and declared `MainMenu_To_Authenticating_Succeeds_Reconnect` twice (CS0111 - the whole editor test assembly would not compile). | ✅ fixed 226448c0 |
 | F5 | Three `PartyInviteSystemTests` asserted `HasOpenSlots == false` at 4 members - the rule from before the capacity split - so they failed against the shipped design (in Unity too). | ✅ fixed 280c0475; negative-controlled |
 | F6 | Upstream's own red gates: `check_fauna_replication_seam` (a heuristic false positive on the NCA lizard's `HealthBlock` hit prism, which carries no NetworkObject) and `check_vessel_on_vessel_motion` (`VesselImpulseByExplosionEffectSO` from the Grizzly merge moves an opposing vessel). | open, upstream's - not multiplayer defects |
-| F7 | Prisma's live build of this branch does not compile: 11 engine API gaps, nine from upstream gameplay code and two (`SessionError.TransportComponentMissing/TransportInvalid`) from this review's own classifier. Filled in a throwaway worktree for the test run (`gapfill.py`); belongs in a port session. | open, port |
+| F7 | Amoebius's live build of this branch does not compile: 11 engine API gaps, nine from upstream gameplay code and two (`SessionError.TransportComponentMissing/TransportInvalid`) from this review's own classifier. Filled in a throwaway worktree for the test run (`gapfill.py`); belongs in a port session. | open, port |
 | F8 | Non-multiplayer failures in the run, each pre-existing on bleeding-edge's and the pre-merge branch's assets: SparrowCombatTier 2 (rocket costs 25 prisms where the test wants 50; the rocket-blast hit effect is wired into a container the SkyBurst prefab does not use), RaceRankToastDriver 4 (the driver posts NewRaceLeader as well as Overtake when a pass takes the lead). Harness, not game: SceneTransitionManager 3 (main-thread identity on NUnit's thread), AppManagerBootstrap 1 (Unity-Editor-only "Destroy may not be called from edit mode"). | open, owners of those systems |
 
 **Re-run it:** `bash Tools/Build/prisma_edit_mode_tests/run.sh` (needs the .NET 10 SDK; the script

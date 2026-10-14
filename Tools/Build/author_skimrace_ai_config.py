@@ -175,6 +175,8 @@ POLICIES = {
     # contacts on the 0.04 s fixed step). On 20 fresh races (seedbase 99000, cut at 164 + 60 s) it finished
     # 20/20, winner median 142.3 s; the general policy (skimrace-v2-general) on the same races: 20/20, 159.8
     # s.
+    # I4 became Relativity (2026-10-08, same fingerprint 227b9055): the earlier skimrace-v1-i4 completed it
+    # (sim 39/40, median ~146 s; Docs/SKIM_RACE_AI.md 6.12). This v2-i4 retune is the one kept by the ai-system merge.
     "SkimRaceAIConfig_I4": {
         "PolicyVersion": "skimrace-v2-i4",
         "TrackFingerprint": "227b9055",

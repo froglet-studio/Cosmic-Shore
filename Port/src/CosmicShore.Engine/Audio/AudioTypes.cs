@@ -159,7 +159,15 @@ namespace CosmicShore.Engine.Audio
             return null;
         }
 
-        public void TransitionToSnapshots(AudioMixerSnapshot[] snapshots, float[] weights, float timeToReach) { }
+        /// <summary>Recorded for parity (the heaviest-weighted snapshot); the mix itself is not blended.</summary>
+        public void TransitionToSnapshots(AudioMixerSnapshot[] snapshots, float[] weights, float timeToReach)
+        {
+            if (snapshots is not { Length: > 0 }) return;
+            int best = 0;
+            for (int i = 1; i < snapshots.Length && weights != null && i < weights.Length; i++)
+                if (weights[i] > weights[best]) best = i;
+            if (snapshots[best] != null) Audio.Fmod.RuntimeManager.RecordMixerSnapshot(name, snapshots[best].name);
+        }
     }
 
     public enum AudioMixerUpdateMode { Normal = 0, UnscaledTime = 1 }
@@ -176,6 +184,7 @@ namespace CosmicShore.Engine.Audio
     public class AudioMixerSnapshot : Object
     {
         public AudioMixer audioMixer { get; internal set; }
-        public void TransitionTo(float timeToReach) { }
+        /// <summary>Recorded for parity; the mix itself is not blended.</summary>
+        public void TransitionTo(float timeToReach) => Audio.Fmod.RuntimeManager.RecordMixerSnapshot(audioMixer?.name, name);
     }
 }

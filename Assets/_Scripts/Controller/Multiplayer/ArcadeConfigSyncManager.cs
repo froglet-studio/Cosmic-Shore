@@ -460,6 +460,18 @@ namespace CosmicShore.Gameplay
             // A member who leaves mid-lobby is neither ready nor expected any more.
             if (_isCommitted && (_readyClients.Remove(clientId) || _lobby.Value.IsOpen))
             {
+                // The commit-time head-count is a FLOOR for members still connecting, never a
+                // reason to keep waiting on somebody who has left. Without this clamp
+                // ExpectedHumanCount stayed Max(committed, connected) = the committed count after
+                // a departure, so the re-decide below could never pass: four in the lobby, three
+                // press Start, the fourth leaves, and the lobby sat at 3/4 forever (B20's lobby
+                // half; found by Tools/Build/prisma_party_scenarios T4-lobby, 2026-10-08).
+                // NGO removes the id from ConnectedClientsIds before this callback runs
+                // (NetworkConnectionManager.OnClientDisconnectFromServer), so this is the
+                // post-departure count.
+                _committedHumanCount = Mathf.Min(_committedHumanCount,
+                    SpectatorSession.CountHumanClients(NetworkManager.Singleton));
+
                 RepublishHumanCount();
                 SyncReadyCount_ClientRpc(_readyClients.Count, ExpectedHumanCount);
 
@@ -489,6 +501,11 @@ namespace CosmicShore.Gameplay
             if (!IsServer || !_isCommitted) return;
 
             int expected = ExpectedHumanCount;
+            // Every re-decision is traced, the hold as much as the launch: a gate that holds in
+            // silence is how B20's lobby half went unseen (MultiplayerMiniGameControllerBase's
+            // match gate logs the same line).
+            CSDebug.LogVerbose(CSLogChannel.ArcadeMatch,
+                $"[ArcadeConfigSync] Lobby gate ({because}): {_readyClients.Count}/{expected}");
             if (expected <= 0 || _readyClients.Count < expected) return;
 
             CSDebug.LogVerbose(CSLogChannel.ArcadeMatch,

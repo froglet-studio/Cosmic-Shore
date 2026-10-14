@@ -449,7 +449,7 @@ winner while saying nothing about the duplicate behind it.
 `InputDeviceType.MouseKeyboard` is the new member. Anything that switches on that enum and treats
 "not gamepad" as *binary triggers, needs easing* — `VesselTransformer.GetTriggerSum` and its two
 ease sites — is already correct for it. Anything that maps a device to a per-trigger override table
-must name it explicitly: `R_VesselActionHandler.GetActiveOverrides` routes it to the **gamepad**
+must name it explicitly: `R_VesselActionHandler.OverridesFor` routes it to the **gamepad**
 overrides, for the same reason keyboard and dual-mouse already are — it raises the pad's trigger
 events.
 

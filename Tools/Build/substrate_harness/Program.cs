@@ -40,6 +40,7 @@ static partial class SubstrateHarness
         if (all || which == "leech") Leech();
         if (all || which == "leviathan") Leviathan();
         if (all || which == "siege") Siege();
+        if (all || which == "arms") Arms();
         if (all || which == "proxies") Proxies();
         if (all || which == "ledger") Ledger();
         if (all || which == "job") Job();
@@ -132,7 +133,15 @@ static partial class SubstrateHarness
         public void Step()
         {
             for (int j = 0; j < Pilots.Count; j++) { Pilots[j].Step(Dt); _sense[j] = Pilots[j].Sense; }
-            if (Core.Tick % 10 == 0)
+            if (SenseFood != null && Core.Tick % 10 == 0)
+            {
+                // the game's read of flora (SubstrateCellHost.SenseFood): one unit per living plant heart
+                var hearts = SenseFood();
+                if (_food.Length < hearts.Count) _food = new SubstrateFood[hearts.Count * 2];
+                for (int k = 0; k < hearts.Count; k++) _food[k] = hearts[k];
+                _foodCount = hearts.Count;
+            }
+            else if (Core.Tick % 10 == 0)
             {
                 int live = 0;
                 for (int k = 0; k < MassAlive.Count; k++) if (MassAlive[k]) live++;
@@ -177,6 +186,8 @@ static partial class SubstrateHarness
         }
         public int Preyed;
         int _foodCount;
+        /// <summary>When set, the food points the core senses (instead of every mass point at its volume).</summary>
+        public Func<List<SubstrateFood>> SenseFood;
 
         /// <summary>A death: the body (its stock) stays where it fell as ordinary mass the food web grazes.</summary>
         public void KillAndLay(int i)
@@ -231,6 +242,7 @@ static partial class SubstrateHarness
                 string s => JsonSerializer.Serialize(s),
                 SubstrateRegime r => Obj(r, ind + "  "),
                 SubstrateSiegeParams sg => Obj(sg, ind + "  "),
+                SubstrateArmsParams ap => Obj(ap, ind + "  "),
                 float[] arr => "[" + string.Join(", ", arr.Select(a => a.ToString("R", System.Globalization.CultureInfo.InvariantCulture))) + "]",
                 _ => throw new InvalidOperationException($"export: unhandled field {f.Name} ({f.FieldType})"),
             };

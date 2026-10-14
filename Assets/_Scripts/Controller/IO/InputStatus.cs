@@ -63,6 +63,15 @@ namespace CosmicShore.Gameplay
         readonly NetworkVariable<Vector2> n_single = new(readPerm: NetworkVariableReadPermission.Everyone, writePerm: NetworkVariableWritePermission.Owner);
         readonly NetworkVariable<Vector3> n_3dPos  = new(readPerm: NetworkVariableReadPermission.Everyone, writePerm: NetworkVariableWritePermission.Owner);
 
+        // The device the OWNER is flying with. It used to be the one local-only field here, and
+        // every peer runs InputController.Initialize for every player, which picks a strategy from
+        // THAT machine's hardware - so a phone saw a PC pilot as Touch and a PC saw a phone pilot
+        // as Keyboard. Everything that reads it on a replica then simulated the wrong device: the
+        // per-device ability maps (R_VesselActionHandler), the Manta's trigger-turn trail shaping,
+        // VesselTransformer's trigger depth and easing. The triggers it interprets already
+        // replicate above; the device has to travel with them.
+        readonly NetworkVariable<InputDeviceType> n_device = new(readPerm: NetworkVariableReadPermission.Everyone, writePerm: NetworkVariableWritePermission.Owner);
+
         //–––––––––––––––––––––––––––––––––––––––––
         // Properties switch on IsSpawned
         public float XSum
@@ -160,8 +169,8 @@ namespace CosmicShore.Gameplay
 
         public InputDeviceType ActiveInputDevice
         {
-            get => _activeInputDeviceLocal;
-            set => _activeInputDeviceLocal = value;
+            get => IsSpawned ? n_device.Value : _activeInputDeviceLocal;
+            set { if (IsSpawned && IsOwner) n_device.Value = value; else _activeInputDeviceLocal = value; }
         }
 
         public Vector2 RightJoystickHome

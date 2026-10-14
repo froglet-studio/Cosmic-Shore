@@ -125,6 +125,8 @@ namespace CosmicShore.Engine.UI
             catch (Exception) { result = null; }
             m_lastLayout = result;
             m_lastLayoutRect = rect;
+            // Auto-size: fontSize reads back the size layout chose (fontSizeBase keeps the authored one), as TMP does.
+            if (result != null && m_enableAutoSizing && result.fontSize > 0f) m_fontSize = result.fontSize;
             m_havePropertiesChanged = false;
             FillTextInfo(result);
             return result;
@@ -303,7 +305,14 @@ namespace CosmicShore.Engine.UI
             m_havePropertiesChanged = true;
             return v;
         }
-        public Vector2 GetPreferredValues(float width, float height) => GetPreferredValues();
+        /// <summary>The preferred size when laid out in a width x height box: the height is the wrapped text's at that width.</summary>
+        public Vector2 GetPreferredValues(float width, float height)
+        {
+            TmpLayoutResult r;
+            try { r = TmpLayout.Layout(this, new Rect(0f, 0f, width, height)); }
+            catch (Exception) { r = null; }
+            return r == null ? Vector2.zero : new Vector2(r.preferredWidth, r.preferredHeight);
+        }
         public Vector2 GetRenderedValues() => new(renderedWidth, renderedHeight);
         public Vector2 GetRenderedValues(bool onlyVisibleCharacters) => GetRenderedValues();
 

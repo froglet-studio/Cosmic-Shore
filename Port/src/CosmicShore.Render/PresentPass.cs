@@ -40,9 +40,10 @@ void main(){
             _vao = gl.GenVertexArray();
         }
 
-        public void Draw(uint sourceTexture, int width, int height)
+        /// <param name="targetFbo">0 = the window; else an 8-bit target (the control port's virtual resolution).</param>
+        public void Draw(uint sourceTexture, int width, int height, uint targetFbo = 0)
         {
-            _gl.BindFramebuffer(FramebufferTarget.Framebuffer, 0);
+            _gl.BindFramebuffer(FramebufferTarget.Framebuffer, targetFbo);
             _gl.Viewport(0, 0, (uint)width, (uint)height);
             _gl.Disable(EnableCap.Blend);
             _gl.Disable(EnableCap.DepthTest);

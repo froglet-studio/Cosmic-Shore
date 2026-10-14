@@ -14,11 +14,11 @@ MonoBehaviour:
   m_EditorClassIdentifier:
   FloraPrefab: {fileID: 8186157953239024492, guid: 421bf59ddd3f6def5e0ad21fb5cbbcf1, type: 3}
   SpawnProbability: 1
-  InitialSpawnCount: 9
+  InitialSpawnCount: 10
   OverrideDefaultPlantPeriod: 0
   NewPlantPeriod: 9999999
-  PopulationSize: 9
-  MaxLivePopulation: 12
+  PopulationSize: 10
+  MaxLivePopulation: 13
   GrowthPerOffspring: 126
   OffspringPerBirth: 1
   ReproductionCooldownSeconds: 5
@@ -61,3 +61,7 @@ MonoBehaviour:
     HalfAngle: 0
     InnerFraction: 0.53083
     OuterFraction: 0.56083
+  - Axis: {x: 0, y: 1, z: 0}
+    HalfAngle: 5
+    InnerFraction: 0.59583
+    OuterFraction: 0.67917

@@ -14,7 +14,7 @@ namespace CosmicShore.Launcher
     /// game, build a phone package. The UI reads <see cref="Stage"/>/<see cref="Progress"/> each
     /// frame and can cancel. Everything here runs off the UI thread.
     /// </summary>
-    public sealed class LauncherJobs
+    public sealed partial class LauncherJobs
     {
         readonly LauncherSettings _s;
         readonly Toolchain _tools;
@@ -33,7 +33,11 @@ namespace CosmicShore.Launcher
         public float Progress { get; private set; } = -1;
         public bool? LastOk { get; private set; }
         public string? LastArtifact { get; private set; }
-        public bool GameRunning => _game is { HasExited: false };
+        /// <summary>
+        /// The game started from PLAY is still open. Read every frame by the UI thread, so it must never
+        /// throw: <see cref="Process.HasExited"/> does on a process that is not (or not yet) started.
+        /// </summary>
+        public bool GameRunning => ProcessRunner.IsRunning(_game);
         public CommitInfo? Commit { get; private set; }
         public List<string> Branches { get; private set; } = new();
         public bool BranchesLoading { get; private set; }
@@ -43,6 +47,43 @@ namespace CosmicShore.Launcher
         {
             Commit = _ws.Commit();
             Scenes = _ws.BuildScenes();
+            HeadSha = _ws.HeadSha();
+        }
+
+        /// <summary>The workspace's commit, and the branch tip on GitHub when last checked (ls-remote).</summary>
+        public string? HeadSha { get; private set; }
+        public string? RemoteTip { get; private set; }
+        public string? RemoteTipBranch { get; private set; }
+        /// <summary>Counts successful syncs: the EDITOR rebuilds its tools when this moves.</summary>
+        public int SyncCount { get; private set; }
+        DateTime _remoteChecked;
+        bool _remoteChecking;
+
+        /// <summary>
+        /// True when Amoebius's own copy is not at the tip of the branch it plays: the editor tools
+        /// and the game would run older code than GitHub has.
+        /// </summary>
+        public bool Behind(string branch) =>
+            RemoteTip != null && HeadSha != null && RemoteTipBranch == branch && !string.Equals(RemoteTip, HeadSha, StringComparison.OrdinalIgnoreCase);
+
+        /// <summary>Reads the branch tip from GitHub at most once a minute (or at once when <paramref name="now"/>).</summary>
+        public void CheckRemote(string branch, bool now = false)
+        {
+            if (_remoteChecking || Busy || !_ws.Exists || _tools.Git == null) return;
+            if (!now && RemoteTipBranch == branch && (DateTime.Now - _remoteChecked).TotalSeconds < 60) return;
+            _remoteChecking = true;
+            _remoteChecked = DateTime.Now;
+            Task.Run(async () =>
+            {
+                try
+                {
+                    HeadSha ??= _ws.HeadSha();
+                    var tip = await _ws.RemoteTip(branch, CancellationToken.None);
+                    RemoteTip = tip; RemoteTipBranch = branch;
+                }
+                catch { /* offline: no banner */ }
+                finally { _remoteChecking = false; }
+            });
         }
 
         public void Cancel() => _cts?.Cancel();
@@ -101,10 +142,26 @@ namespace CosmicShore.Launcher
 
         public void Update() => Start("Update workspace", async ct => await SyncStep(ct));
 
-        public void Play() => Start("Start game", async ct =>
+        /// <summary>Extra player arguments for the next PLAY only (STUDIOS' PLAY IN ENGINE: <c>--arcade MODE</c>); cleared when it launches.</summary>
+        IReadOnlyList<string>? _oneShotArgs;
+
+        /// <summary>PLAY, with <paramref name="extraArgs"/> added to this one launch.</summary>
+        public void Play(IReadOnlyList<string> extraArgs) { _oneShotArgs = extraArgs; Play(); }
+
+        /// <summary>
+        /// START (offline, the default) or START ONLINE (<paramref name="online"/>: signed in to UGS, parties and
+        /// matches through UGS Lobby and Relay).
+        /// </summary>
+        public void Play(bool online = false) => Start("Start game", async ct =>
         {
+            PlayingOnline = online;
             if (!await EnsureTools(ct)) return false;
-            if (_s.PullBeforePlay || !_ws.HasEngine)
+            // Unsaved edits in the workspace are what the user wants to try: build them as they are.
+            int pending = _ws.HasEngine ? _ws.PendingChanges() : 0;
+            if (pending > 0)
+                Log.Add(LogKind.Warn, $"Using the workspace as it is: it has {pending} unsaved change{(pending == 1 ? "" : "s")}, so {_s.Branch} was not pulled. " +
+                                      "Commit them to a branch or discard them on the GIT page to get the latest again.");
+            else if (_s.PullBeforePlay || !_ws.HasEngine)
                 if (!await SyncStep(ct)) return false;
             Step("Audio library");
             bool audio = _s.Audio && await _ws.FetchNatives(Log, ct);
@@ -112,61 +169,57 @@ namespace CosmicShore.Launcher
             return LaunchGame(audio);
         });
 
-        /// <summary>The BUILD page's iOS button, in whichever mode SETTINGS chose.</summary>
-        public void BuildIos()
+        /// <summary>
+        /// EDITOR > MODELS' VIEW IN ENGINE: the player built as PLAY builds it, opened on one model
+        /// (<c>--view-model</c>): drawn by the engine with the game's materials, turned with the mouse.
+        /// No game scene loads, so it opens in seconds once the player is built.
+        /// </summary>
+        public void ViewModel(string projectRelative) => Start("View model", async ct =>
         {
-            if (_s.Ios == IosMode.GitHub) BuildIosOnGitHub();
-            else BuildPhone(ios: true);
-        }
-
-        public string? IosRunUrl { get; private set; }
-
-        /// <summary>No Mac: GitHub's free macOS runner compiles the .ipa from the branch; we download it.</summary>
-        public void BuildIosOnGitHub() => Start("Build iOS on GitHub", async ct =>
-        {
-            IosRunUrl = null;
-            Step("Signing in to GitHub");
-            if (_tools.Git == null) _tools.Detect(_s);
-            var token = _ws.GitHubApiToken();
-            if (token == null)
+            if (!await EnsureTools(ct)) return false;
+            if (!File.Exists(Path.Combine(_ws.Dir, "Port", "src", "CosmicShore.Player", "ModelViewer.cs")))
             {
-                Log.Add(LogKind.Error, "No GitHub sign-in found. Sign in with GitHub Desktop, or paste a token in SETTINGS > Source (Actions: read & write).");
+                Log.Add(LogKind.Error, $"{_s.Branch}'s engine has no model viewer yet: play a branch that has Port/src/CosmicShore.Player/ModelViewer.cs.");
                 return false;
             }
-            var gh = new GitHubActions(_s.RemoteUrl, token);
-            Step("Starting the Mac build for " + _s.Branch);
-            long run = await gh.Start(_s.Branch, _s.DebugBuild, Log, ct);
-            IosRunUrl = gh.RunUrl;
-            Log.Add(LogKind.Command, "GitHub run: " + gh.RunUrl);
-            string last = "";
-            while (true)
+            if (!await EnsurePlayerBuilt(ct, _s.ReleaseBuild ? "Release" : "Debug")) return false;
+            Step("Opening the model viewer", 1);
+            var psi = new ProcessStartInfo(PlayerExe)
             {
-                await Task.Delay(10000, ct);
-                GitHubActions.RunState st;
-                try { st = await gh.Poll(run, ct); }
-                catch (Exception ex) when (ex is not OperationCanceledException) { Log.Add(LogKind.Warn, "poll: " + ex.Message); continue; }
-                Step("Mac: " + st.Step, st.Total > 0 ? (float)st.Done / st.Total : -1);
-                if (st.Step != last) { Log.Add(LogKind.Output, "mac> " + st.Step); last = st.Step; }
-                if (st.Status != "completed") continue;
-                if (st.Conclusion != "success")
-                {
-                    Log.Add(LogKind.Error, $"The Mac build {st.Conclusion}. Open the run for the log: {gh.RunUrl}");
-                    return false;
-                }
-                break;
-            }
-            Step("Downloading the .ipa");
-            var outDir = Path.Combine(_ws.Exists ? _ws.Dir : LauncherSettings.DataDir, "Builds", "iOS");
-            var ipa = await gh.DownloadIpa(run, outDir, ct);
-            LastArtifact = ipa;
-            Log.Add(LogKind.Success, $"Built {ipa} - open it in Sideloadly to sign and install it on your iPhone.");
+                WorkingDirectory = Path.Combine(_ws.Dir, "Port"),
+                UseShellExecute = false,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                CreateNoWindow = true,
+            };
+            foreach (var a in new[] { "--view-model", projectRelative, "--size", "1280x800" }) psi.ArgumentList.Add(a);
+            foreach (var kv in _tools.DotnetEnv()) psi.Environment[kv.Key] = kv.Value;
+            psi.Environment["COSMIC_SHORE_PROJECT"] = _ws.Dir;
+            psi.Environment["COSMIC_SHORE_AUDIO"] = "off";
+            psi.Environment["COSMIC_SHORE_NET"] = "off";
+            if (_s.MobileRenderPath) psi.Environment["COSMIC_SHORE_GLES"] = "1";
+            var viewer = new Process { StartInfo = psi, EnableRaisingEvents = true };
+            viewer.OutputDataReceived += (_, e) => { if (e.Data != null) Log.Add(LogKind.Output, e.Data); };
+            viewer.ErrorDataReceived += (_, e) => { if (e.Data != null) Log.Add(LogKind.Output, e.Data); };
+            viewer.Start();
+            viewer.BeginOutputReadLine();
+            viewer.BeginErrorReadLine();
+            Log.Add(LogKind.Success, "Model viewer open: drag to turn, wheel to zoom, right-drag to pan, F frame, R reset, Space spin, Tab the next prefab's materials.");
             return true;
         });
+
+        /// <summary>The BUILD page's iOS button: an Xcode project, or on a Mac a signed .ipa.</summary>
+        public void BuildIos() => BuildPhone(ios: true);
 
         public void BuildPhone(bool ios) => Start(ios ? "Build iOS" : "Build Android", async ct =>
         {
             if (!await EnsureTools(ct)) return false;
-            if (_s.PullBeforePlay || !_ws.HasEngine)
+            // Unsaved edits in the workspace are what the user wants to try: build them as they are.
+            int pending = _ws.HasEngine ? _ws.PendingChanges() : 0;
+            if (pending > 0)
+                Log.Add(LogKind.Warn, $"Using the workspace as it is: it has {pending} unsaved change{(pending == 1 ? "" : "s")}, so {_s.Branch} was not pulled. " +
+                                      "Commit them to a branch or discard them on the GIT page to get the latest again.");
+            else if (_s.PullBeforePlay || !_ws.HasEngine)
                 if (!await SyncStep(ct)) return false;
             bool xcode = ios && _s.Ios == IosMode.Xcode;
             Step(xcode ? "Exporting the Xcode project" : ios ? "Building the iOS app" : "Building the Android app (first run installs the Android SDK)");
@@ -229,15 +282,16 @@ namespace CosmicShore.Launcher
             bool ok = await _ws.Sync(_s.Branch, Log, (p, what) => Step(what, p), ct);
             RefreshLocalState();
             if (ok && Commit != null) Log.Add(LogKind.Success, $"{_s.Branch} @ {Commit.Sha} - {Commit.Subject}");
+            if (ok) { SyncCount++; CheckRemote(_s.Branch, now: true); }
             return ok;
         }
 
         int _projectsBuilt;
-        async Task<bool> BuildPlayer(CancellationToken ct)
+        async Task<bool> BuildPlayer(CancellationToken ct, string? config = null)
         {
             _projectsBuilt = 0;
             Step("Compiling the engine and the game", 0);
-            string cfg = _s.ReleaseBuild ? "Release" : "Debug";
+            string cfg = config ?? (_s.ReleaseBuild ? "Release" : "Debug");
             var r = await ProcessRunner.Run(_tools.Dotnet!, new[] { "build", _ws.PlayerProject, "-c", cfg, "-nologo", "-v:minimal", "-clp:NoSummary" },
                 _ws.Dir, Log, ct, _tools.DotnetEnv(), line =>
                 {
@@ -245,7 +299,31 @@ namespace CosmicShore.Launcher
                     if (line.Contains(" -> ")) { _projectsBuilt++; Step("Compiling the engine and the game", Math.Min(0.95f, _projectsBuilt / 8f)); }
                 });
             if (r.ExitCode != 0) { Log.Add(LogKind.Error, "Build failed - the compiler messages above say why."); return false; }
+            try { File.WriteAllText(BuildStamp(cfg), BuiltFrom() ?? ""); } catch (IOException) { }
             return true;
+        }
+
+        string BuildStamp(string cfg) => Path.Combine(Path.GetDirectoryName(PlayerExeFor(cfg))!, ".amoebius-built-from");
+
+        /// <summary>What the workspace holds right now: its commit, or null when it has unsaved changes (then nothing is "already built").</summary>
+        string? BuiltFrom() => _ws.PendingChanges() == 0 ? _ws.HeadSha() : null;
+
+        /// <summary>
+        /// Builds the player unless this configuration was already built from the workspace's
+        /// current commit with no unsaved changes since: VIEW IN ENGINE and the TIME page start in
+        /// seconds on a second run. A workspace with edits always builds (dotnet build is
+        /// incremental, so that stays quick too).
+        /// </summary>
+        async Task<bool> EnsurePlayerBuilt(CancellationToken ct, string config)
+        {
+            var from = BuiltFrom();
+            if (from != null && File.Exists(PlayerExeFor(config)))
+            {
+                string stamp = "";
+                try { stamp = File.ReadAllText(BuildStamp(config)).Trim(); } catch (IOException) { }
+                if (stamp == from) { Log.Add(LogKind.Info, $"Player ({config}) already built from {from[..7]}: no build needed."); return true; }
+            }
+            return await BuildPlayer(ct, config);
         }
 
         void PhoneProgress(string line)
@@ -254,8 +332,10 @@ namespace CosmicShore.Launcher
             if (m.Success) Progress = float.Parse(m.Groups[1].Value) / float.Parse(m.Groups[2].Value);
         }
 
-        public string PlayerExe =>
-            Path.Combine(_ws.Dir, "Port", "src", "CosmicShore.Player", "bin", _s.ReleaseBuild ? "Release" : "Debug", "net10.0",
+        public string PlayerExe => PlayerExeFor(_s.ReleaseBuild ? "Release" : "Debug");
+
+        public string PlayerExeFor(string config) =>
+            Path.Combine(_ws.Dir, "Port", "src", "CosmicShore.Player", "bin", config, "net10.0",
                 OperatingSystem.IsWindows() ? "CosmicShore.exe" : "CosmicShore");
 
         bool LaunchGame(bool audio)
@@ -271,10 +351,12 @@ namespace CosmicShore.Launcher
                 CreateNoWindow = true,
             };
             foreach (var a in PlayerArgs()) psi.ArgumentList.Add(a);
+            _oneShotArgs = null;
             foreach (var kv in _tools.DotnetEnv()) psi.Environment[kv.Key] = kv.Value;
             psi.Environment["COSMIC_SHORE_PROJECT"] = _ws.Dir;
             if (!audio) psi.Environment["COSMIC_SHORE_AUDIO"] = "off";
-            if (!_s.Network) psi.Environment["COSMIC_SHORE_NET"] = "off";
+            if (!PlayingOnline) psi.Environment["COSMIC_SHORE_NET"] = "off";
+            OnlineEnvironment(psi);
             if (_s.MobileRenderPath) psi.Environment["COSMIC_SHORE_GLES"] = "1";
             if (!string.IsNullOrWhiteSpace(_s.Profile)) psi.Environment["COSMIC_SHORE_PROFILE"] = _s.Profile.Trim();
             // Every play session leaves a report (scenes, frame times, errors) the CLAUDE page can hand to Claude.
@@ -285,13 +367,17 @@ namespace CosmicShore.Launcher
             if (commit != null) psi.Environment["COSMIC_SHORE_COMMIT"] = commit;
             PruneSessions();
 
-            _game = new Process { StartInfo = psi, EnableRaisingEvents = true };
-            _game.OutputDataReceived += (_, e) => { if (e.Data != null) Log.Add(LogKind.Output, e.Data); };
-            _game.ErrorDataReceived += (_, e) => { if (e.Data != null) Log.Add(LogKind.Output, e.Data); };
-            _game.Exited += (_, _) => { Log.Add(LogKind.Info, $"Game closed (exit code {SafeExit(_game)})."); GameExited?.Invoke(); };
-            _game.Start();
-            _game.BeginOutputReadLine();
-            _game.BeginErrorReadLine();
+            // Published only once it has started: the UI reads GameRunning every frame, and on Windows
+            // Start can take seconds (the virus scanner checks a freshly built exe). A field holding
+            // an unstarted Process made HasExited throw on the UI thread, which closed Amoebius.
+            var game = new Process { StartInfo = psi, EnableRaisingEvents = true };
+            game.OutputDataReceived += (_, e) => { if (e.Data != null) Log.Add(LogKind.Output, e.Data); };
+            game.ErrorDataReceived += (_, e) => { if (e.Data != null) Log.Add(LogKind.Output, e.Data); };
+            game.Exited += (_, _) => { Log.Add(LogKind.Info, $"Game closed (exit code {SafeExit(game)})."); GameExited?.Invoke(); };
+            game.Start();
+            _game = game;
+            game.BeginOutputReadLine();
+            game.BeginErrorReadLine();
             Log.Add(LogKind.Success, "Game running. Have fun.");
             return true;
         }
@@ -322,6 +408,7 @@ namespace CosmicShore.Launcher
 
             if (_s.VerboseLogs) a.Add("--verbose");
             foreach (var x in SplitArgs(_s.ExtraArgs)) a.Add(x);
+            if (_oneShotArgs != null) a.AddRange(_oneShotArgs);
             return a;
         }
 

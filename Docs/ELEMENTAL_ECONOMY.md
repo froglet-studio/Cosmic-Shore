@@ -312,13 +312,41 @@ still gets their comeback bonus on top.
   nothing. The route table is `ElementalTransfer.RouteFor` (harness T9,
   `ElementalTransferRouteTests`). Before this, a client shot by an AI kept every petal (the AI's
   rounds never exist on a client), and a human shot by a human lost petals only when their own
-  replay of the shot connected. **Still per-peer, outside this fix:** the other callers of
-  `ElementalTransfer`. Those are `SniperShotActionExecutor.StripVessels` (it passes no attacker),
-  `VesselElementalDebuffByExplosionEffectSO`, `VesselOvertakeBySkimmerEffectSO` (a STEAL: it would
-  have to pay the attacker on the attacker's owner too) and the danger-prism burn. The burn is
-  fine as it is, because prisms sit in the same place on every peer and only the owner's copy of
-  the victim counts. The first three can adopt `ApplyAllAuthoritative` once they pass the
-  attacker.
+  replay of the shot connected.
+- **Every anti-vessel transfer is now authoritative, and a steal is paid on the thief's owner (Oct
+  2026, follow-up).** The three callers the first pass left settling per peer now go through
+  `ElementalTransfer.ApplyAuthoritative` and pass the attacker:
+
+  | Caller | Form | Attacker passed | Elements |
+  |---|---|---|---|
+  | `SniperShotActionExecutor.StripVessels` | Eject | the Serpent (`_status`); it used to pass none, which routed Local | all four |
+  | `VesselElementalDebuffByExplosionEffectSO` | Eject | the blast's `SourceVessel`; an anonymous blast still settles where it ran | the authored list, as a mask (`ElementalTransfer.MaskOf`): the Manta bomb is Mass + Space |
+  | `VesselOvertakeBySkimmerEffectSO` (joust, sword) | **Steal** | the thief (the skimmer's vessel) | all four |
+
+  A steal takes two hops, because levels are owner state on BOTH sides. The thief's owner decides
+  and relays the take to the victim's owner (`IElementalLossRelay.RelayTakeToOwner`, naming itself
+  as the payee). The victim's owner settles it (`ElementalTransfer.SettleTake`: ward, clamp, whole
+  petals, masked elements only). It then sends the packed count to the thief's owner
+  (`RelayGrantToOwner`), which grants exactly that (`GrantSettled`). No crystals are minted, so
+  nothing is published. If the payee despawned in flight, the take ejects instead, so the petals
+  stay in play. The one case that does not conserve is an ownership swap (Hijack's pilot swap)
+  landing inside that round trip: the grant arrives at a machine that no longer owns the thief and
+  is dropped. Before this, every peer took from its own copy of the victim and paid its own copy
+  of the thief. Only the victim owner's take and only the thief owner's pay counted, and they were
+  decided independently, so a joust could take a petal nobody received or pay one nobody lost.
+  **The per-victim anti-spam cooldowns** (`cooldown` on the blast debuff and the overtake) are now
+  enforced on the deciding machine, which is the attacker's owner. Two different attackers on two
+  machines can therefore each land one inside the same second, where before the victim's own copy
+  would have refused the second. The danger-prism burn stays local, and that is correct: prisms sit
+  in the same place on every peer, a burn has no attacker, and only the owner's copy of the victim
+  counts. Proof: harness T10 (route, payee, mask, grant, offline), with four negative controls
+  (steal routed Local again, mask ignored, every replay deciding, a NotOurs replay settling). Each
+  one fails T10.
+- **The score is decided on the same machine as the drain (Oct 2026).** The three combat-hit
+  reporters (`VesselCombatHitByProjectileEffectSO`, `…ByExplosionEffectSO`, `…BySkimmerEffectSO`)
+  return early unless `ElementalTransfer.IsDecidedHere(shooter)`. That is the predicate the route
+  reads, so a replay of somebody else's shot neither drains nor scores. This closed a real double
+  score: see `Assets/_Scripts/Controller/Arcade/DOGFIGHT.md` § Multiplayer.
 - **The ally buff stays temporary.** A buff is not a transfer — there is no victim to take it from
   — so making the Squirrel's mirrored overtake buff permanent would mint petals out of nothing and
   break "lifeforms are the only source". Jousting an enemy *moves* material; jousting a friend only
@@ -328,7 +356,7 @@ still gets their comeback bonus on top.
 
 | What | How |
 |---|---|
-| The transfer arithmetic | `bash Tools/Build/elemental_transfer_harness/run.sh` — compiles the shipped C# against a stub surface and **runs** it. 9 blocks, negative-controlled. T8 is the petal-burn switch (§4.1), on the asset's own numbers. T9 is the networked eject's route table and petal packing (§7). The same script type-checks the danger-prism effect SO and `CellConfigDataSO` against `SwitchStubs.cs`. |
+| The transfer arithmetic | `bash Tools/Build/elemental_transfer_harness/run.sh` — compiles the shipped C# against a stub surface and **runs** it. 10 blocks, negative-controlled. T8 is the petal-burn switch (§4.1), on the asset's own numbers. T9 is the networked eject's route table and petal packing (§7). T10 drives the real `ApplyAuthoritative` against fake hulls carrying a fake relay: the steal's route and payee, the element mask, the owner's settle and the thief's grant, and the offline path. The same script type-checks the danger-prism effect SO and `CellConfigDataSO` against `SwitchStubs.cs`. |
 | The economy's five invariants | `python3 Tools/Build/check_elemental_economy.py` (`--self-test`: twelve controls, all fire). §5 is the petal-burn switch. |
 | The switch's asset half | `python3 Tools/Build/author_petal_burn_rule.py --check` (effect asset) · `python3 Tools/Build/author_swarm_fauna.py --check` (the Swarm cell's `PetalBurnRule: 1`) |
 | The drain magnitudes | `python3 Tools/Build/author_combat_debuff_magnitudes.py --check` |
@@ -440,7 +468,7 @@ reach them, so they were flagged as a separate decision and then removed on the 
 | `VesselChangeSkimmerSizeBySparrowFullAutoProjectileEffect` | the Sparrow's two gun containers | shrank a **Rhino's** skimmer to 0.7× for 3 s (`vesselTypesToImpact` was Rhino-only) — i.e. its blade |
 | `VesselDamageBySkimmerEffect` | `RhinoForceFieldSkimmerImpactorDataContainer` | muted the victim's `RightStickAction` for 5 s and cancelled the action it was driving |
 | `VesselPrismSpawnerCooldownBySkimmerEffect` | `Rhino.prefab` | froze the victim's trail spawner for 10 s |
-| `VesselChangeSpeedByExplosionEffect` | `SlowExplosionImpactorDataContainer` → the Rhino's sword crystal burst and vessel crystal blast, and the Squirrel's vessel crystal blast | muted `RightStickAction` for 3 s. **Misnamed — it changed no speed at all** |
+| `VesselChangeSpeedByExplosionEffect` | `SlowExplosionImpactorDataContainer` → the Rhino's vessel crystal blast (the sword crystal burst stopped spawning a blast 2026-10-08), and the Squirrel's vessel crystal blast | muted `RightStickAction` for 3 s. **Misnamed — it changed no speed at all** |
 
 `ShieldSkimmerScaleConfigSO.ApplyMaxSizeDebuff` is deleted with them (the first row was its only
 caller), along with the `_maxScaleMultiplier` / `_isMaxSizeDebuffed` runtime state it wrote, so

@@ -9,10 +9,10 @@ namespace CosmicShore.Utility
     /// icosidodecahedron coordinates, and preserved by Unity's FBX axis conversion, which only
     /// permutes and negates axes).
     ///
-    /// A shape with that symmetry is CONGRUENT under every one of these rotations, so snapping its
-    /// transform to any of them in a single frame is invisible - only something riding on the shape
-    /// that is NOT symmetric (an animation that starts at one vertex) visibly moves. That is what
-    /// <see cref="CosmicShore.Gameplay.TimeCrystalVertexHop"/> uses it for.
+    /// A shape with that symmetry is CONGRUENT under every one of these rotations, so a wave that
+    /// runs across it from one five-fold vertex looks the same started from any of the twelve. That is
+    /// what <see cref="FlipWaveRig"/> resolves the frame for: it finds the twelve start vertices of a
+    /// crystal whose plates sit on the two-fold axes (<see cref="TryResolveFromTwoFoldDirections"/>).
     ///
     /// Two orientations of the icosahedron share coordinate two-fold axes: one with its 12 five-fold
     /// axes at the cyclic permutations of (0, ±1, ±φ), the other at (0, ±φ, ±1). They differ by a 90°
@@ -33,8 +33,16 @@ namespace CosmicShore.Utility
         // elements, so this threshold sits far from both the real duplicates and the real neighbours.
         const float SameRotationDot = 0.9999f;
 
-        // Distinct five-fold axes meet at 63.4° (dot ±0.447) or are antipodal (dot -1).
-        const float SameAxisDot = 0.9f;
+        /// <summary>
+        /// The angle between a two-fold axis and each of its two nearest five-fold axes: acos(φ / √(1 + φ²)).
+        /// A plate centred on a two-fold axis therefore sits this far from the two vertices it lies between.
+        /// </summary>
+        public const float TwoFoldToFiveFoldDegrees = 31.7175f;
+
+        // Five-fold axes of ONE orientation meet at 63.43° (|dot| 1/√5) or are antipodal (|dot| 1); the other
+        // orientation's nearest axes sit 26.57° away (|dot| 0.894), so this tolerance separates the families.
+        const float SameFamilyDotTolerance = 0.01f;
+        static readonly float InverseSqrt5 = 1f / Mathf.Sqrt(5f);
 
         static readonly Vector3[] FiveFoldCandidates = BuildFiveFoldCandidates();
 
@@ -113,22 +121,74 @@ namespace CosmicShore.Utility
         }
 
         /// <summary>
-        /// A uniformly random element of <paramref name="group"/> that carries
-        /// <paramref name="axis"/> to a DIFFERENT five-fold axis than element
-        /// <paramref name="current"/> does - i.e. one of the 11 other vertices, each equally likely.
+        /// The twelve five-fold axes of the orientation that contains <paramref name="fiveFoldAxis"/> (which
+        /// must be one of the snapped candidates).
         /// </summary>
-        public static int PickElementMovingAxis(Quaternion[] group, Vector3 axis, int current, System.Random rng)
+        public static Vector3[] FiveFoldAxesOf(Vector3 fiveFoldAxis)
         {
-            var currentPole = group[current] * axis;
-            // 55 of the 60 elements qualify, so rejection sampling almost never needs a second try.
-            for (int attempt = 0; attempt < 32; attempt++)
+            var a = fiveFoldAxis.normalized;
+            var axes = new List<Vector3>(FiveFoldAxisCount);
+            foreach (var candidate in FiveFoldCandidates)
             {
-                int candidate = rng.Next(group.Length);
-                if (Vector3.Dot(group[candidate] * axis, currentPole) < SameAxisDot) return candidate;
+                float dot = Mathf.Abs(Vector3.Dot(a, candidate));
+                if (Mathf.Abs(dot - 1f) < SameFamilyDotTolerance || Mathf.Abs(dot - InverseSqrt5) < SameFamilyDotTolerance)
+                    axes.Add(candidate);
             }
-            for (int candidate = 0; candidate < group.Length; candidate++)
-                if (Vector3.Dot(group[candidate] * axis, currentPole) < SameAxisDot) return candidate;
-            return current;
+            return axes.ToArray();
+        }
+
+        /// <summary>
+        /// The twelve five-fold axes of the coordinate-aligned icosahedral frame whose TWO-fold axes the
+        /// given directions lie on - e.g. the outward directions of a crystal's 30 plates. Each direction must
+        /// sit <see cref="TwoFoldToFiveFoldDegrees"/> from exactly two five-fold axes of the chosen orientation
+        /// (within <paramref name="toleranceDegrees"/>), and exactly one of the two orientations may qualify.
+        /// That decides the orientation from the geometry itself, with no assumption about how an importer
+        /// signed the axes. Returns false, with the reason, when the directions do not describe such a frame.
+        /// </summary>
+        public static bool TryResolveFromTwoFoldDirections(IReadOnlyList<Vector3> directions, float toleranceDegrees,
+                                                           out Vector3[] fiveFoldAxes, out string problem)
+        {
+            fiveFoldAxes = null;
+            if (directions == null || directions.Count == 0)
+            {
+                problem = "no directions to resolve a frame from";
+                return false;
+            }
+
+            float lo = Mathf.Cos((TwoFoldToFiveFoldDegrees + toleranceDegrees) * Mathf.Deg2Rad);
+            float hi = Mathf.Cos((TwoFoldToFiveFoldDegrees - toleranceDegrees) * Mathf.Deg2Rad);
+            Vector3[] found = null;
+            int qualifying = 0;
+            for (int family = 0; family < 2; family++)
+            {
+                var axes = FiveFoldAxesOf(FiveFoldCandidates[family * FiveFoldAxisCount]);
+                bool fits = true;
+                foreach (var direction in directions)
+                {
+                    var d = direction.normalized;
+                    int near = 0;
+                    foreach (var axis in axes)
+                    {
+                        float dot = Vector3.Dot(d, axis);
+                        if (dot >= lo && dot <= hi) near++;
+                    }
+                    if (near != 2) { fits = false; break; }
+                }
+                if (!fits) continue;
+                qualifying++;
+                found = axes;
+            }
+
+            if (qualifying != 1)
+            {
+                problem = qualifying == 0
+                    ? $"the {directions.Count} directions do not lie on the two-fold axes of a coordinate-aligned icosahedral frame (within {toleranceDegrees}°)"
+                    : "the directions fit BOTH icosahedral orientations - they cannot decide the frame";
+                return false;
+            }
+            fiveFoldAxes = found;
+            problem = null;
+            return true;
         }
     }
 }

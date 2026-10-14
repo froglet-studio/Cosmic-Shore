@@ -7,14 +7,7 @@ plus: no Vector3 value in the kernel at all (no local, no operator - its fields 
 `var`, no delegate/lambda, no `ref`-returning trick through a managed array. And the job itself: [BurstCompile], an
 IJobParallelFor, NativeArray fields only, and it calls the kernel.
 
-No MathF member but Min/Max/Abs/PI ANYWHERE in the kernel file (2026-10-08, Docs/SUBSTRATE_FAUNA.md §7.6): MathF's
-Sqrt/Sin/Cos/Acos/Exp/Pow... are InternalCalls in Unity's Mono, Burst cannot link them ("Unable to find internal function
-`System.MathF::Sqrt`" in Editor.log), and because every Assembly-CSharp job shares one Burst library, one such call ran
-EVERY game job as managed code. This gate used to recommend MathF; the kernel now calls one-line (float)System.Math
-helpers, which Burst lowers to intrinsics, and the gate checks their form.
-
-Negative controls: the pre-11c managed step kept as the harness's reference (ReferenceStep.cs) must FAIL, and the MathF
-rule must fire on MathF.Sqrt and pass MathF.Max.
+Negative control: the pre-11c managed step kept as the harness's reference (ReferenceStep.cs) must FAIL.
 
     check_burst_substrate.py <SubstrateKernel.cs> <SubstrateAgentJob.cs> <ReferenceStep.cs>
 """
@@ -25,9 +18,9 @@ FORBIDDEN = [
     (r"\bVector3\.\w+\(", "a System.Numerics.Vector3 method (Lerp/Cross/Dot/Normalize...)"),
     (r"\.Length\(\)|\.LengthSquared\(\)", "Vector3.Length()"),
     (r"\bnew\s+\w", "an allocation or a constructor call"),
-    (r"\bMathF\.(?!(?:Min|Max|Abs|PI)\b)\w+", "a System.MathF extern (an InternalCall Burst cannot link - and one turns Burst off for "
-                                            "EVERY job in Assembly-CSharp; call the kernel's (float)System.Math helper)"),
-    (r"(?<![\w.])Math\.", "System.Math inline (double maths in the step - call the kernel's one-line float helper)"),
+    (r"(?<![\w.])Math\.", "System.Math (use KernelMath or a comparison)"),
+    (r"\bMathF\.", "System.MathF - Burst cannot find its internal calls ('Unable to find internal function "
+                   "System.MathF::Sqrt'); use KernelMath (Unity.Mathematics in Unity, MathF in the harness)"),
     (r"\bstring\b|\bobject\b|\bclass\b|\bdynamic\b", "a managed type"),
     (r"\btry\b|\bthrow\b|\bforeach\b|\?\.|\block\b", "a managed construct"),
     (r"\w+\s*\[\s*\]", "a managed array"),
@@ -37,10 +30,6 @@ FORBIDDEN = [
     (r"\bList<|\bDictionary<|\bIEnumerable<", "a managed collection"),
     (r"\.Clear\(\)|\.Fill\(", "a span helper Burst may not inline (write the loop)"),
 ]
-
-# the kernel's float wrappers over System.Math (a Burst intrinsic): each must be exactly `=> (float)Math.<Name>(...)`
-MATH_HELPERS = ("Sqrt", "Sin", "Cos", "Acos", "Exp", "Pow")
-MATHF_RULE = 3  # index of the MathF-extern rule in FORBIDDEN
 
 KERNEL_FUNCS = [
     (r"public static void StepAgent\(", "StepAgent"),
@@ -99,20 +88,6 @@ def main():
             if re.search(pat, strip(m.group(1) + m.group(2))):
                 print(f"  FAIL SubstrateKernel.{name}: {why}")
                 bad += 1
-    # no MathF extern anywhere in the file: the step's helpers are not all listed above, and a helper added later is
-    # exactly where one slips in (Len called MathF.Sqrt, and the old helper rules did not ban it)
-    pat, why = FORBIDDEN[MATHF_RULE]
-    for hit in sorted(set(re.findall(pat, strip(kernel)))):
-        print(f"  FAIL SubstrateKernel: {hit} - {why}")
-        bad += 1
-    for name in MATH_HELPERS:
-        m = re.search(r"static float " + name + r"\(([^)]*)\)\s*=>([^;]*);", kernel)
-        if m and not re.fullmatch(r"\s*\(float\)Math\." + name + r"\([^;]*\)\s*", m.group(2)):
-            print(f"  FAIL SubstrateKernel.{name}: must be `=> (float)Math.{name}(...)` (Burst intrinsic), is `{m.group(2).strip()}`")
-            bad += 1
-    if not re.search(pat, "MathF.Sqrt(x)") or re.search(pat, "MathF.Max(a, b) + MathF.PI"):
-        print("  FAIL negative control: the MathF rule does not separate MathF.Sqrt (extern) from MathF.Max (IL)")
-        bad += 1
     # the data the job hands the kernel must be blittable: the pop/world structs hold scalars and SubstrateRegime only
     for st in ("SubstrateKernelPop", "SubstrateKernelWorld"):
         b = strip(body(kernel, r"public struct " + st + r"\b", st))

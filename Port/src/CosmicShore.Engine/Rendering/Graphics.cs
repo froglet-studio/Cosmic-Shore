@@ -53,6 +53,27 @@ namespace CosmicShore.Engine
         /// </summary>
         public static Action<Texture, RenderTexture, Material, int> BlitHook;
 
+        /// <summary>
+        /// The render backend's replay of a <see cref="Rendering.CommandBuffer"/>'s recorded commands.
+        /// None is installed yet, so an executed buffer draws nothing (docs/ROADMAP.md lists the gap).
+        /// </summary>
+        public static Action<Rendering.CommandBuffer> ExecuteCommandBufferHook;
+
+        public static void ExecuteCommandBuffer(Rendering.CommandBuffer buffer) => ExecuteCommandBufferHook?.Invoke(buffer);
+
+        /// <summary>
+        /// The render backend's GPU copy for <see cref="CopyTexture(Texture, int, int, Texture, int, int)"/>;
+        /// null while no backend provides one, and then <see cref="SystemInfo.copyTextureSupport"/>
+        /// reports None so callers take their fallback, as on a device without copy support.
+        /// </summary>
+        public static Action<Texture, int, int, Texture, int, int> CopyTextureHook;
+
+        /// <summary>Original: Graphics.CopyTexture - one element/mip of a texture into another's (a 2D target into an array slice).</summary>
+        public static void CopyTexture(Texture src, int srcElement, int srcMip, Texture dst, int dstElement, int dstMip)
+            => CopyTextureHook?.Invoke(src, srcElement, srcMip, dst, dstElement, dstMip);
+
+        public static void CopyTexture(Texture src, Texture dst) => CopyTexture(src, 0, 0, dst, 0, 0);
+
         public static void Blit(Texture source, RenderTexture dest) => Blit(source, dest, null, -1);
         public static void Blit(Texture source, RenderTexture dest, Material mat, int pass = -1)
         {
@@ -60,16 +81,6 @@ namespace CosmicShore.Engine
             dest?.MarkModified();
         }
         public static void Blit(Texture source, Material mat, int pass = -1) => Blit(source, null, mat, pass);
-
-        /// <summary>
-        /// Original contract: GPU copy of one texture region. Not implemented (see
-        /// <see cref="SystemInfo.copyTextureSupport"/>, which reports None); a render-texture destination is
-        /// marked modified so a reader does not keep a stale cached version.
-        /// </summary>
-        public static void CopyTexture(Texture src, Texture dst) => (dst as RenderTexture)?.MarkModified();
-
-        public static void CopyTexture(Texture src, int srcElement, int srcMip, Texture dst, int dstElement, int dstMip)
-            => (dst as RenderTexture)?.MarkModified();
 
         public const int MaxRecordedSubmissions = 16;
 
@@ -128,7 +139,7 @@ namespace CosmicShore.Engine
 
         /// <summary>
         /// Procedural instancing: the shader builds each instance from GPU buffers (SV_InstanceID).
-        /// Prisma's renderer has no vertex-stage storage buffers
+        /// Amoebius's renderer has no vertex-stage storage buffers
         /// (<see cref="SystemInfo.maxComputeBufferInputsVertex"/> is 0), so nothing is drawn and the
         /// first call says so. Code that checks the capability first never gets here.
         /// </summary>
@@ -136,7 +147,7 @@ namespace CosmicShore.Engine
         {
             if (s_primitivesWarned || mesh is null || instanceCount <= 0) return;
             s_primitivesWarned = true;
-            Debug.LogWarning($"[port] Graphics.RenderMeshPrimitives ('{mesh.name}', material '{rparams.material?.name}') is not drawn: procedural instancing from GPU buffers has no Prisma backend yet.");
+            Debug.LogWarning($"[port] Graphics.RenderMeshPrimitives ('{mesh.name}', material '{rparams.material?.name}') is not drawn: procedural instancing from GPU buffers has no Amoebius backend yet.");
         }
 
         public static void RenderMeshInstanced(in RenderParams rparams, Mesh mesh, int submeshIndex,

@@ -24,6 +24,7 @@ Assets/_Scripts/Tests/Editor/MaelstromStateMachineTests.cs
 Assets/_Scripts/Tests/Editor/MenuFreestyleToggleTests.cs
 Assets/_Scripts/Tests/Editor/NetSessionRecorderTests.cs
 Assets/_Scripts/Tests/Editor/NetworkExplodeParamsTests.cs
+Assets/_Scripts/Tests/Editor/OfflineSessionTests.cs
 Assets/_Scripts/Tests/Editor/PartyInviteControllerTests.cs
 Assets/_Scripts/Tests/Editor/PartyInviteDataTests.cs
 Assets/_Scripts/Tests/Editor/PartyInviteSystemTests.cs

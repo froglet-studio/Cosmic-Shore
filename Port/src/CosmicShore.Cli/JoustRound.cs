@@ -756,6 +756,11 @@ namespace CosmicShore.Cli
             // Joust contact rig, vessel side: non-trigger contact bubble + impactor routing
             // (identical to the HexRace crystal rig — the vessel-side half of every contact).
             var contactBubble = go.AddComponent<SphereCollider>();
+            // The vessel prefabs carry a kinematic, gravity-free Rigidbody; trigger messages need a
+            // body on one side (crystals and prisms have none), as in the original engine.
+            var vesselBody = go.AddComponent<Rigidbody>();
+            vesselBody.isKinematic = true;
+            vesselBody.useGravity = false;
             contactBubble.radius = contactRadius;
 
             var networkVesselImpactor = go.AddComponent<NetworkVesselImpactor>();
@@ -775,6 +780,10 @@ namespace CosmicShore.Cli
             var skimmerTrigger = skimmerGo.AddComponent<SphereCollider>();
             skimmerTrigger.isTrigger = true;
             skimmerTrigger.radius = skimmerRadius;
+            // Skimmer.prefab carries its own kinematic Rigidbody, so its messages stay on the skimmer.
+            var skimmerBody = skimmerGo.AddComponent<Rigidbody>();
+            skimmerBody.isKinematic = true;
+            skimmerBody.useGravity = false;
 
             var skimmerImpactor = skimmerGo.AddComponent<SkimmerImpactor>();
             SetPrivateField(skimmerImpactor, "skimmer", nearFieldSkimmer);

@@ -3,6 +3,18 @@ using System.Collections.Generic;
 
 namespace CosmicShore.Engine
 {
+    /// <summary>A transform's local → world point mapping, captured once (<see cref="Transform.PointToWorld"/>).</summary>
+    public readonly struct PointToWorldMap
+    {
+        readonly Vector3 _position, _scale;
+        readonly Quaternion _rotation;
+
+        internal PointToWorldMap(Vector3 position, Quaternion rotation, Vector3 scale)
+            => (_position, _rotation, _scale) = (position, rotation, scale);
+
+        public Vector3 Apply(Vector3 point) => _position + _rotation * Vector3.Scale(_scale, point);
+    }
+
     public enum Space
     {
         World = 0,
@@ -51,16 +63,20 @@ namespace CosmicShore.Engine
         public void SetAsLastSibling()
         {
             if (_parent is null) return;
+            if (_parent._children.Count > 0 && ReferenceEquals(_parent._children[^1], this)) return;
             _parent._children.Remove(this);
             _parent._children.Add(this);
+            TransformMessages.ChildrenChanged(_parent);
         }
 
         /// <summary>Move to the front of the parent's child list (original contract: renders first / laid out first). No-op at the root.</summary>
         public void SetAsFirstSibling()
         {
             if (_parent is null) return;
+            if (_parent._children.Count > 0 && ReferenceEquals(_parent._children[0], this)) return;
             _parent._children.Remove(this);
             _parent._children.Insert(0, this);
+            TransformMessages.ChildrenChanged(_parent);
         }
 
         /// <summary>
@@ -151,8 +167,15 @@ namespace CosmicShore.Engine
         public Transform root => parent is null ? this : parent.root;
 
         /// <summary>Local point → world point (includes scale).</summary>
-        public Vector3 TransformPoint(Vector3 point)
-            => position + rotation * Vector3.Scale(lossyScale, point);
+        public Vector3 TransformPoint(Vector3 point) => PointToWorld.Apply(point);
+
+        /// <summary>
+        /// Port engine extension: <see cref="TransformPoint"/> with the world pose read once, for
+        /// mapping many points (a UI mesh's vertices). Each pose read re-validates the parent chain,
+        /// and a RectTransform's re-derives its anchored position, so per point that was three chain
+        /// walks. Bit-identical to calling TransformPoint per point while the pose holds.
+        /// </summary>
+        public PointToWorldMap PointToWorld => new(position, rotation, lossyScale);
 
         /// <summary>World point → local point.</summary>
         public Vector3 InverseTransformPoint(Vector3 point)
@@ -225,13 +248,16 @@ namespace CosmicShore.Engine
                 return;
             }
 
+            TransformMessages.BeforeParentChanged(this);
+            var oldParent = parent;
             bool wasActive = gameObject.activeInHierarchy;
-            Vector3 worldPos = default;
+            Vector3 worldPos = default, worldScale = default;
             Quaternion worldRot = default;
             if (worldPositionStays)
             {
                 worldPos = position;
                 worldRot = rotation;
+                worldScale = lossyScale;
             }
 
             parent?._children.Remove(this);
@@ -246,12 +272,24 @@ namespace CosmicShore.Engine
 
             if (worldPositionStays)
             {
+                // Unity keeps the world scale too: an element moved under a parent of another
+                // scale (a canvas root carries its scale factor) keeps its size on screen.
+                var parentScale = WorldParent?.lossyScale ?? Vector3.one;
+                var local = localScale;
+                localScale = new Vector3(
+                    parentScale.x != 0f ? worldScale.x / parentScale.x : local.x,
+                    parentScale.y != 0f ? worldScale.y / parentScale.y : local.y,
+                    parentScale.z != 0f ? worldScale.z / parentScale.z : local.z);
                 position = worldPos;
                 rotation = worldRot;
             }
 
             bool isActive = gameObject.activeInHierarchy;
             if (wasActive != isActive) gameObject.NotifyHierarchyActiveChanged(isActive);
+
+            TransformMessages.ChildrenChanged(oldParent);
+            TransformMessages.ChildrenChanged(newParent);
+            TransformMessages.ParentChanged(this);
         }
 
         public bool IsChildOf(Transform potentialAncestor)
@@ -266,11 +304,13 @@ namespace CosmicShore.Engine
         /// <summary>Detach from the parent's child list during GameObject destruction.</summary>
         internal void SetParentForDestroy()
         {
+            var oldParent = parent;
             parent?._children.Remove(this);
             _parent = null;
             ReleaseWorldCacheForDestroy();
             GameObject.BumpHierarchyEpoch();
             MarkMoved();
+            TransformMessages.ChildrenChanged(oldParent);
         }
 
         /// <summary>

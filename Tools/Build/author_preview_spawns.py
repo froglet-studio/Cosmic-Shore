@@ -34,8 +34,6 @@ ASSETS = os.path.join(ROOT, 'Assets')
 # a preview for a mode with no scene keeps whatever it has.
 SCENE_FOR_MODE = {
     2:  'MinigameRampage',
-    28: 'MinigameFreestyleMultiplayer_Gameplay',
-    29: 'MinigameDuelForCellMultiplayer_Gameplay',
     30: 'ArcadeGameMultiplayer2v2CoOpVsAI',
     32: 'MinigameWildlifeBlitzMultuplayerCoOp',  # retired; scene + controller deleted BH-5.7 (no preview exists for 32)
     33: 'MinigameSkimRace',
@@ -68,6 +66,9 @@ SCENE_FOR_MODE = {
     61: 'MinigameSirocco',
     62: 'MinigameGrizzlyCharge',
     63: 'MinigameGrizzlyTime',
+    64: 'MinigameSlingshot',
+    65: 'MinigameWarpline',
+    66: 'MinigameThresherTime',
 }
 
 

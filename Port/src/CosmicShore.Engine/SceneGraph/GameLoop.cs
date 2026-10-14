@@ -72,6 +72,7 @@ namespace CosmicShore.Engine
             Current = this;
             Profiling.MarkerCollector.LoopThreadId = Environment.CurrentManagedThreadId;
             Time.Reset();
+            Application.ResetQuit();
             Physics.ResetSettings();
             // Fresh-world reset for static UI state (same rationale as Time.Reset):
             // loop disposal skips OnDisable, so the old world's registrations and
@@ -160,6 +161,7 @@ namespace CosmicShore.Engine
             SynchronizationContext.SetSynchronizationContext(SyncContext);
             try
             {
+                FrameTimingManager.BeginFrame(); // the wall clock, whatever step the host passes
                 long mark = PhaseTiming ? System.Diagnostics.Stopwatch.GetTimestamp() : 0;
                 if (PhaseTiming) _allocMark = GC.GetAllocatedBytesForCurrentThread();
                 Time.Advance(deltaTime);
@@ -177,6 +179,8 @@ namespace CosmicShore.Engine
                 Scheduler.RunFrame();
                 if (PhaseTiming) Lap(ref mark, "tasks");
                 Animator.TickAll(); // the animation slot: after Update and coroutines, before LateUpdate
+                ParticleSystem.TickAll(); // particles move after Update has placed their emitters
+                ProceduralLines.RunFrame(); // code-drawn ribbons (approximate VFX Graphs)
                 if (PhaseTiming) Lap(ref mark, "animator");
                 RunPhase(_lateUpdate, static mb => mb.RunLateUpdate());
                 if (PhaseTiming) Lap(ref mark, "late");
@@ -187,6 +191,7 @@ namespace CosmicShore.Engine
                 FlushDestroyQueue();
                 if (PhaseTiming) { Lap(ref mark, "destroy"); TimedFrames++; }
                 Profiling.MarkerCollector.EndFrame();
+                FrameTimingManager.EndSimulation();
             }
             finally
             {
