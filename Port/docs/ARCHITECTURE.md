@@ -187,7 +187,7 @@ through those entities.
 - **compiled**: every other Shader Graph, compiled node by node to GLSL (`Content/Shaders`) inside
   `GraphProgramCache`'s template. `cs-asset shadergraph-glsl FILE` prints what it draws.
 - **hand**: a hand-written `.shader` translated in `Content/Shaders/Hand/*.glsl` (the crystals:
-  OmniCrystalFresnel, OmniChargeEdges, ChargeCrystal, OmniShepardFresnel, SpreadFresnel). They
+  OmniCrystalFresnel, ChargeCrystal, OmniShepardFresnel, SpreadFresnel). They
   read the mesh's TEXCOORD2/3 (attribute locations 10/11 in a graph draw) and honour `Offset`.
 - **builtin**: Unity's own shaders by name, each by its source's formula — Particles/Standard
   Unlit (the vessel jets' flares), the legacy particle shaders, Sprites/Default, URP Unlit and

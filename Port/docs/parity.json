@@ -16,8 +16,8 @@
     },
     "shaders": {
       "Faithful": 0,
-      "Approximate": 67,
-      "Missing": 20
+      "Approximate": 66,
+      "Missing": 22
     }
   },
   "subsystems": [
@@ -540,7 +540,7 @@
       "path": "Assets/_Graphics/Materials/Graphs/BlackHoleLens.shader",
       "name": "CosmicShore/BlackHoleLens",
       "status": "Missing",
-      "why": "generic material-family fallback",
+      "why": "hand-written .shader: no translation yet",
       "test": ""
     },
     {
@@ -575,7 +575,7 @@
       "path": "Assets/_Graphics/Materials/Graphs/CloakGhost.shader",
       "name": "CosmicShore/CloakGhost",
       "status": "Missing",
-      "why": "generic material-family fallback",
+      "why": "hand-written .shader: no translation yet",
       "test": ""
     },
     {
@@ -803,10 +803,17 @@
       "test": "ShaderGraphCompilerTests, --check-shaders"
     },
     {
+      "path": "Assets/_Graphics/Materials/Graphs/StoatPathDots.shader",
+      "name": "CosmicShore/StoatPathDots",
+      "status": "Missing",
+      "why": "hand-written .shader: no translation yet",
+      "test": ""
+    },
+    {
       "path": "Assets/_Graphics/Materials/Graphs/StoatRipple.shader",
       "name": "CosmicShore/StoatRipple",
       "status": "Missing",
-      "why": "generic material-family fallback",
+      "why": "hand-written .shader: no translation yet",
       "test": ""
     },
     {
@@ -862,7 +869,7 @@
       "path": "Assets/_Graphics/Materials/Graphs/Wormhole.shader",
       "name": "CosmicShore/Wormhole",
       "status": "Approximate",
-      "why": "hand translation (Content/Shaders/Hand); frames not yet compared per shader (C2); approximate nodes: Panorama",
+      "why": "hand translation (Content/Shaders/Hand); frames not yet compared per shader (C2); approximate nodes: Blend [_SrcBlend] [_DstBlend], ZWrite [_ZWrite], Panorama",
       "test": "HandShaderTests, --check-shaders"
     },
     {
@@ -957,6 +964,13 @@
       "test": "ShaderGraphCompilerTests, --check-shaders"
     },
     {
+      "path": "Assets/_Graphics/Materials/Shaders/CrystalChargeArcsShader.shader",
+      "name": "Custom/CrystalChargeArcsShader",
+      "status": "Missing",
+      "why": "hand-written .shader: no translation yet",
+      "test": ""
+    },
+    {
       "path": "Assets/_Graphics/Materials/Shaders/DistortionShader.shader",
       "name": "Custom/TransparentPerlinDistortion",
       "status": "Missing",
@@ -971,13 +985,6 @@
       "test": "engine_parity frames"
     },
     {
-      "path": "Assets/_Graphics/Materials/Shaders/OmniChargeEdgesShader.shader",
-      "name": "Custom/OmniChargeEdgesShader",
-      "status": "Approximate",
-      "why": "hand translation (Content/Shaders/Hand); frames not yet compared per shader (C2); approximate nodes: Fog",
-      "test": "HandShaderTests, --check-shaders"
-    },
-    {
       "path": "Assets/_Graphics/Materials/Shaders/OmniCrystalFresnelShader.shader",
       "name": "Custom/OmniCrystalFresnelShader",
       "status": "Approximate",
@@ -988,7 +995,7 @@
       "path": "Assets/_Graphics/Materials/Shaders/OmniDepthPrismShader.shader",
       "name": "Custom/OmniDepthPrismShader",
       "status": "Missing",
-      "why": "generic material-family fallback",
+      "why": "hand-written .shader: no translation yet",
       "test": ""
     },
     {
@@ -1030,14 +1037,14 @@
       "path": "Assets/_Graphics/Materials/Shaders/ThresherBallFresnelShader.shader",
       "name": "CosmicShore/ThresherBallFresnel",
       "status": "Missing",
-      "why": "generic material-family fallback",
+      "why": "hand-written .shader: no translation yet",
       "test": ""
     },
     {
       "path": "Assets/_Graphics/Materials/Shaders/ThresherChainFresnelShader.shader",
       "name": "CosmicShore/ThresherChainFresnel",
       "status": "Missing",
-      "why": "generic material-family fallback",
+      "why": "hand-written .shader: no translation yet",
       "test": ""
     },
     {
