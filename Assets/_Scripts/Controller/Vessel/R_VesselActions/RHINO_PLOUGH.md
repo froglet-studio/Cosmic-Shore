@@ -39,6 +39,13 @@ On each hull contact `RhinoPloughPrismEffectSO.Execute`:
    clock's flight stamp (`PrismRenderService.StampFlight`, Docs/PRISM_ANIMATION.md §5 C5) with its
    render bounds widened to cover the start. No per-frame CPU work during the slide.
 
+6. **A shoved prism is a MOVING prism** (2026-10-14, `Docs/PRISM_MOTION.md`). Before the shove is
+   committed, `PrismMotion.TrySweep` asks for the first prism its path runs into. If there is one,
+   the shoved prism stops at the contact point and **both are destroyed** (devastating, scored to the
+   Rhino's pilot; a super-shielded target deflects and only the shoved prism goes). Only a clear
+   path completes the shove. So the furrow is still a plough in open space, and a weapon against a
+   wall beside it.
+
 Prism contact is simulated per peer, so the plough runs per peer exactly as the ram did. The side
 is read off each peer's own hull pose and agrees everywhere except for a prism struck within float
 noise of the centreline.

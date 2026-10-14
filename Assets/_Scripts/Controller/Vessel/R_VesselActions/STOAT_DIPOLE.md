@@ -272,6 +272,7 @@ The icons are placeholders (`Tools/Build/author_stoat_icon_placeholders.py`, `--
 | **a rival vessel** | carried out of the source, **stripped of its crystals** — every element's takeable level (`crystalStripShare` 1), left as crystals on the sink's side | `BlackHoleCrystalStrip.Levy` from `TeleportContinuity` |
 | **a teammate** | carried through, not stripped | — |
 | **a prism** | **vanishes** (destroyed at the horizon, scored to the owner, no debris — it fell behind the shadow); with **Space 5 (Theft)** it is **stolen**: carried out of the source in the owner's domain | `BlackHoleGravityField.ApplyVerdicts`, `Prism.Vanish` / `Prism.Steal` |
+| **a falling prism meets another on the way in** | **both are destroyed**, scored to the owner — prism movement's collision rule (`Docs/PRISM_MOTION.md`); prisms that fall in already touching (a trail's neighbours) are at rest and do not | `BlackHoleGravityField.ApplyContacts`, `PrismMotion` |
 | **a creature** | **swallowed**: killed within 1.5 sink horizons, its body suctioned into the sink (`Fauna.Predated(name, sink)`), on the fauna's simulating machine | `StoatDipoleExecutor.SwallowFauna` |
 
 Nothing outside the pair is MOVED by it except by its own flying: an owned horizon pair pulls no

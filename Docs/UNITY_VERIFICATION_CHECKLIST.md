@@ -8839,3 +8839,20 @@ executor edit was checked by reading only.
 3. No AI may peel away from a crystal it is flying straight at (final approach is untouched).
 4. Skein / Regatta: an AI riding a rail must keep its grind speed (the rail lead point must not
    trip the detector).
+
+## 🔴 Prism movement — a moving prism that runs into another destroys BOTH (`cece/dreamy-pascal-7xxx1m`, 2026-10-14) — NOT EDITOR-VERIFIED
+
+Prism movement is now a fundamental (`Docs/claude/DESIGN_PHILOSOPHY_EMERGENCE.md`, design + steps:
+`Docs/PRISM_MOTION.md`). One rule, `PrismMotion`, for both movers: the Rhino's hull plough
+(`TrySweep` before the shove) and every black hole's gravity field (the Burst `ContactJob` after the
+integration). No `unity` binary in the authoring session: both headless reference-compile configs
+(`Tools/Build/unity_refcompile`, player and editor) are clean, `PrismMotionTests` compiled but not run
+in Unity, and nothing has been seen in play.
+1. **Rhino**: ram a trail that lies a few units beside a second trail. Each prism thrown into the second
+   trail stops there and both explode; a prism thrown into open space slides out and survives.
+2. **Rhino into super-shield**: the super-shielded prism jiggles and survives, the thrown one explodes.
+3. **Stoat** in a dense field: prisms falling in from different sides explode in pairs on the way in; a
+   trail falling in as a ribbon must NOT chain-explode from its own neighbours.
+4. **Scoring**: both kinds of collision count for the Rhino's / Stoat's pilot.
+5. **Cost**: `prof` with a Stoat pair at a full body budget — `ContactJob` must be a small fraction of
+   `IntegrateJob` in the Timeline.
