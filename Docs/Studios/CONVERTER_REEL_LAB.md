@@ -5,6 +5,7 @@ team choose its look before export. There is no CONVERT button and no UI in it.
 
 - **Page (built, do not edit):** `Docs/Studios/ConverterReelLab.html`. Open it in Chrome or Edge on a computer to
   export, or use the live page.
+- **Live page:** https://claude.ai/artifact/V7T3ou5hZUDJDHntohZqac (private until shared from its Share menu; team looks saved there land in its `looks` collection)
 - **Sources:** `Tools/Build/converter_reel/`: `src/*.js`, `page.html`, and `build.py`, which inlines the shipped assets
   and the sources.
 - **Rebuild:** `python3 Tools/Build/converter_reel/build.py`. `--check` fails when the page is stale against the assets
@@ -132,6 +133,7 @@ idle effect on one clock that restarts with the loop, which is what cutting the 
   - the settle and hand-back;
   - Space, Charge, Mass and Time leave in that order;
   - the frame at 55.25 s and the frame at 0.01 s match.
+- The in-page exporter, run in headless Chromium: 20 frames encoded through WebCodecs and muxed to MP4 (313 KB). That Chromium build has no H.264 encoder (`avc1.*` not supported) and fell back to VP9. Desktop Chrome and Edge encode H.264, and the page says so when it falls back.
 - A headless render of the default look at 1080×1920, 60 fps, 2× supersampling plus MSAA, H.264 CRF 15. That is the
   delivered `converter-reel-1080x1920-60fps.mp4`.
 

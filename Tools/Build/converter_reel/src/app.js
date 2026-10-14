@@ -495,7 +495,8 @@
       const blob = new Blob([muxer.target.buffer], { type: mp4 ? 'video/mp4' : 'video/webm' });
       const name = 'converter-reel-' + f.w + 'x' + f.h + '-' + fps + 'fps-play' + P.seed + '-' + (preset || 'custom') + (mp4 ? '.mp4' : '.webm');
       pendingFile = { name, blob };
-      busyMessage('Ready: ' + name + ' (' + (blob.size / 1e6).toFixed(1) + ' MB, ' + (pick.kind === 'avc' ? 'H.264' : 'VP9') + ').', false, true);
+      const vp9Note = pick.kind === 'vp9' && P.codec === 0 ? ' This browser has no H.264 encoder, so the file holds VP9, which some apps refuse. For Instagram and TikTok, export from Chrome or Edge on a computer, which encode H.264.' : '';
+      busyMessage('Ready: ' + name + ' (' + (blob.size / 1e6).toFixed(1) + ' MB, ' + (pick.kind === 'avc' ? 'H.264' : 'VP9') + ').' + vp9Note, false, true);
     } catch (e) {
       busyMessage('The encoder stopped: ' + (e && e.message || e) + '. Try a smaller size or the other file type.', true);
     } finally {
