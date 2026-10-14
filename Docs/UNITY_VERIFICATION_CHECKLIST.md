@@ -5661,3 +5661,19 @@ What changed (authored by `Tools/Build/author_mass_crystal_look.py --check`, plu
    blue-white); free Mass reads mostly DARK with lime confined to face edges and silhouettes. The
    omni crystal's falling triangles look exactly as before. Tune in
    `Tools/Build/author_mass_crystal_look.py` (`RIM_POWER`, `INACTIVE_COLORS`), then re-run it.
+
+## 🔴 2026-10-14 — `capture` console command + Capture Performance window (unverified: no Unity CLI in the session)
+
+**Files:** `Assets/_Scripts/Utility/PerformanceBenchmark/DiagnosticsHUD.Capture.cs` (runtime, `#if UNITY_EDITOR || DEVELOPMENT_BUILD`),
+`Assets/_Scripts/Editor/PerfCaptureWindow.cs`, `DiagnosticsHUD` made `partial`. What ran instead of `/verify-unity`:
+`unity_refcompile --config player-dev` (RESULT OK), the editor window compiled with csc against UnityEditor.dll, and the
+runtime command ran end to end in Prisma (`console capture S1test 5` wrote a bundle `perf_capture_report.py` read).
+
+1. Play Menu_Main, F7, type `capture test 5`. Expect: console answers "capture 'test': burst, diag 5s, prof 180 frames ...",
+   the HUD's Capture row walks burst → diag → prof → renderers, cells → done, and the console logs
+   `capture saved: .../CosmicShore Diagnostics/capture_Menu_Main_test_*.json`.
+2. Open that file: `diag` is an object (not null), `prof` is an object (Editor), `burst`, `renderers`, `cells` are non-empty strings.
+3. `capture copy` → the clipboard holds the file's text.
+4. FrogletTools ▸ Performance ▸ Capture Performance (one file): in Play mode, Capture → the Profiler window opens, the pill
+   reads CAPTURING, then READY, and the file's text is on the clipboard without a further click.
+5. `python3 Tools/Build/perf_capture_report.py <file>` prints validity, the frame, markers, Profiler top self/GC, the world.

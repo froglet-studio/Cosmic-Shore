@@ -664,6 +664,12 @@ namespace CosmicShore.Engine
     }
 
     public sealed class GUILayoutOption { }
+
+    /// <summary>Original: UnityEngine.GUIUtility. The clipboard is process-local here (no window system is assumed).</summary>
+    public static class GUIUtility
+    {
+        public static string systemCopyBuffer { get; set; } = "";
+    }
 }
 
 namespace CosmicShore.Engine.Rendering

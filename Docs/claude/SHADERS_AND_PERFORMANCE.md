@@ -34,6 +34,9 @@
   list, how to measure without fooling yourself). Then `Docs/MEMORY_AUDIT.md` (what the game HOLDS) and
   `Docs/PLATFORM_UNIFICATION.md` (device tiers: Desktop / MobileHigh / MobileLow, the trail cap, one codebase
   for Windows, iOS and Android). The next session's brief: `Docs/prompts/PERFORMANCE_NEXT_SESSION_PROMPT.md`.
+- **One measurement, one file:** `capture <label> 15` in the HUD console (or FrogletTools ▸ Performance ▸ Capture
+  Performance) runs burst + diag + prof + renderers + cells and leaves ONE JSON on the clipboard;
+  `Tools/Build/perf_capture_report.py` judges it (validity first). Ask for this, never for screenshots.
 - **Instruments in the game:** the console commands `diag` (per-system timings, a report to JSON),
   `prof` (the Profiler Hierarchy as JSON; flags Burst jobs that ran as managed code), `freeze` / `ab`
   (a same-state A/B in one line), `renderers` (a renderer census; `hide <prefix>` / `show` to A/B a family's

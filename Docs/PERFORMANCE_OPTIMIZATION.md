@@ -449,6 +449,13 @@ scenario, Release, `diag` 15 s, §4.7 protocol:
 | **4** | **L4 pure-entity prisms** — the structural change for 100k on a phone: no GameObject per prism, collider only within the 200 m LOD radius, data in chunks. Largest step; design exists (Checkpoint D) | code | 100k `prisms` cloud on the MobileHigh device: memory and fps recorded; S4 at 2× its prism count |
 | **5** | **Gate.** Nightly `-csmbench` on S1–S6 per tier (§3.4) plus the Prisma marker run as the no-editor allocation gate (§2, 10-09) | tooling | a regression fails a run |
 
+**How a test is run now (2026-10-14).** One command in the HUD console, `capture <label> 15`, or the
+FrogletTools ▸ Performance ▸ Capture Performance button; paste the one file it leaves on the clipboard.
+The agent reads it with `Tools/Build/perf_capture_report.py`, which refuses a Debug-optimization, Deep-Profile
+or managed-job capture before it ranks anything. **First editor test asked for: S2 Lattice** - Menu_Main,
+Cell Selector → Lattice, let it grow 8 minutes, `capture S2 15`. It is the owner's "40k prisms under 60 fps"
+scene, and the bundle also answers the Burst question (`burst` + the Profiler's managed-job rows).
+
 **Tests owed before any lever is built** (this is the list the owner asked for):
 1. Phone `diag` S2 + S4 + `prisms 50000` on a MobileLow and a MobileHigh device, Vulkan and GLES3 — the baseline and the path answer.
 2. Unity Release `burst` + `diag` + `prof` in Skim Race I2 — confirms the 10-08 Burst fix (still unmeasured) and the `PoolRefill` allocation lead.
@@ -472,6 +479,7 @@ editor window, and screenshots re-typed by hand.
 
 | Question | Tool | Output |
 |---|---|---|
+| **Everything, once, with nothing to transcribe** | `capture <label> 15` (or FrogletTools ▸ Performance ▸ Capture Performance), then paste the file (§4.6) | One JSON: burst + diag + prof + renderers + cells + console; `perf_capture_report.py` reads it |
 | **What is costing the frame?** | **Unity Profiler**, Hierarchy + Timeline, Deep Profile **off** | Names the caller. **Always start here.** |
 | **Where does the GC come from?** | Profiler Hierarchy, sort by **GC Alloc** — or `prof <label>` (`topGc` ranks by SELF allocation) | Names the caller |
 | **The Hierarchy as text** | `prof <label> [frames] [root=…] [sort=…]` (§4.5) | `prof_*.json`: averaged tree, top self, top GC, threads, typical + spike frame |
@@ -641,6 +649,7 @@ Three ways to satisfy the rule, simplest first:
 | `freeze on` / `freeze off` | Hold ecology production in every cell (§4.5); released on scene change |
 | `ab "<A>" "<B>" [seconds] [rounds]` | Counterbalanced A/B of two commands → one line of paired deltas + `ab_*.json`; `ab stop` cancels (§4.5) |
 | `burst` | Are this project's Burst jobs running as Burst? Prints Burst's switches (`enabled`, `compilation`, `synchronous`, the job system's `jobCompiler`, `jobsDebugger`), an attached debugger and the Code Optimization, then runs a probe job in Assembly-CSharp (`Run()` and `Schedule()`) that reports `BURST` or `MANAGED` from how it actually executed, then Burst's own refusal from the editor log (jobs disabled, the reason, unresolved InternalCalls), since the last domain reload (`SKIM_RACE_AI.md` §8.0j, §8.0k) |
+| **`capture [label] [seconds]`** | **The whole measurement in one file** (added 2026-10-14): runs `burst`, `diag`, `prof` (Editor), `renderers` and `cells` in sequence, collects the console's warnings/errors meanwhile, and writes `capture_<scene>_<label>_*.json` with the diag and prof JSON embedded verbatim. `capture copy` puts the file's text on the clipboard. **FrogletTools ▸ Performance ▸ Capture Performance (one file)** is the same with a button, opens the Profiler for `prof`, and copies the file when done. `Tools/Build/perf_capture_report.py <file>` prints the judgement (validity first: Debug optimization, Deep Profile, frame cap, Burst, managed job time); two files = a before/after |
 | `prof [label] [frames] [root=…] [sort=…] [min=…] [mingc=…] [depth=…] [top=…]` | Editor only: record + read back Profiler frames → averaged tree, top self time, top allocators, thread busy/wait, typical + spike frame in `prof_*.json`; `prof stop` cancels (§4.5). For a BUILD, use FrogletTools ▸ Performance ▸ Export Profiler Frames to JSON |
 
 ### 4.7 The test protocol (industry standard, adopted 2026-09-26)
