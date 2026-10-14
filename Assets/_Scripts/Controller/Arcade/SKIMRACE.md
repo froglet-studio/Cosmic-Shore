@@ -395,8 +395,11 @@ the morph runs). The AI's `CrystalTrackObjective.CaptureRadius`
 aims at `0.7 × mouth` for a ring crystal (Regatta's fraction), so it flies through the ring, not at
 its rim.
 
-**Not done here (follow-ups):** the card background (`ArcadeGameSkimRace`, `/cardart`) still stages
-lime crystal glyphs; the offline AI simulator (`skimrace_sim_harness/Sim.cs`) still scores sphere
+**Card art:** the Skim Race card stages domain race rings on the track (`render_card_backgrounds.py`
+reads the intensity-2 mouth off this prefab, drawn at a ×3.6 glyph scale; the 2.4 u omni crystal is
+sub-pixel at card size and is not drawn).
+
+**Not done here (follow-ups):** the offline AI simulator (`skimrace_sim_harness/Sim.cs`) still scores sphere
 touches; Amoebius (`Port/`, formerly Prisma) still spawns the crystal model.
 
 **Refactor rows found at ship (2026-10-14, `/ship-deep` D8 — rows, not edits):**
