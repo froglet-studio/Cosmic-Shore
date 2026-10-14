@@ -22,6 +22,7 @@ ability (`/arenagame` §1).
 | Butterfly | 3: `ButterflyAutopilotModeDriver` (Mass ↔ Dust switch) | **Waystation** (gate race), Dustup, Sirocco, Tapestry | — | — |
 | Dolphin | 1: `ChargeBoostAIPolicySO` (discharge on straights); 4: `EchoSightActionExecutor` holds while drifting | **Switchback** (gate race), Bends, Rampage | Broadside, Brood Rush, Regatta | — |
 | Sparrow | 1: `HoldBoostAIPolicySO` | **Breakwater** (gate race), Dog Fight, Salvo, Wildlife Liberation | Broadside, Brood Rush, Maelstrom, Regatta, Scurry | — |
+| Thresher (2026-10-13) | none: races at cruise, never slings (`THRESHERTIME.md` §4) | **Thresher Time** (gate race, `GameModes` 66) | — | — |
 | Rhino | none (autopilot ramps by the straight-stick gesture) | **Headlong** (gate race), Cleave | Astro League, Broadside, Brood Rush, Regatta | — |
 | Serpent | 1: `PelletBoostAIPolicySO` | none | Brood Rush, Regatta | — |
 | Termite, Falcon, Shrike | none (Falcon / Shrike classes are `_SO_Assets/_TEMP`) | none | none | Not a candidate |

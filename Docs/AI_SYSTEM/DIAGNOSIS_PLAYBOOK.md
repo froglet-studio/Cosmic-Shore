@@ -100,3 +100,5 @@ intakes, then the restructures.
 | 7 | Skim Race pilot | 1–5 (QA PASS) | Split the core, then Burst the rollouts (`ARCHITECTURE.md` §4.5); Hard vs 2 humans decision still open | AI session, then user |
 | 8 | Genetic training stack | 1, 2 | User verdict: keep / editor-only / retire | User |
 | 9 | Stoat autopilot sling / dipole (**new**) | 2, tests exist (not gated) | Gate scope; markers (`AI.StoatSling.*`); user script in Warpline (AI Stoats lay pairs) | AI session, then user |
+| 10 | Gate-race difficulty `GateRaceHandicap` (**new**, Slingshot, Warpline) | 2, tests exist (not gated) | Expose each AI's current belief (noticed / misjudged / true ring) so the Third Eye draws it; then the user script in the checklist (Slingshot Easy vs Hard) | AI session, then user |
+| 11 | Thresher (**no AI drive**) | — | Autopilot sling in Thresher Time (`THRESHERTIME.md` §4 follow-up; models: Grizzly bomb-jump, Stoat `AutopilotSling`) | AI session |

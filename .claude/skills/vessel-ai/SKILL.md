@@ -77,8 +77,9 @@ Copy this list into the AI's doc and tick it.
 
 ### 3.1 Difficulty levels
 
-- **Today only Skim Race offers a difficulty** (`AIDifficultyRules.IsOfferedFor(GameModes.SkimRace)`). In
-  every other mode the AI's skill follows the **intensity** (Grizzly Time: skill = intensity × 0.25, throttle
+- **Three cards offer a difficulty** (`AIDifficultyRules.IsOfferedFor`): Skim Race (`SkimRaceHandicap` on crystals) and,
+  since 2026-10-10, Slingshot and Warpline (`GateRaceHandicap` on rings, applied by `GateRaceController`, so any
+  gate race can join by being named there). In every other mode the AI's skill follows the **intensity** (Grizzly Time: skill = intensity × 0.25, throttle
   0.7 → 1.0). Say which one your AI uses.
 - **To add a difficulty to a mode**, follow Skim Race's pattern (`SKIM_RACE_AI.md` §10) and do not invent a
   second one:
