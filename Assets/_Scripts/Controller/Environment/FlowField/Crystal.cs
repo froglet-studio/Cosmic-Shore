@@ -59,6 +59,15 @@ namespace CosmicShore.Gameplay
         public List<CrystalModelData> CrystalModels => crystalModels;
 
         /// <summary>
+        /// False for a crystal authored with no crystal model at all (its pickup drawn by something
+        /// else entirely). A retirement that animates the crystal's own body (the Squirrel's morph)
+        /// has nothing to carry for one and stands down quietly, rather than warning on every
+        /// pickup about a body that was never meant to exist. (Skim Race's race-ring crystals DO
+        /// have one: the small omni crystal in the middle of the ring.)
+        /// </summary>
+        public bool HasBody => crystalModels is { Count: > 0 };
+
+        /// <summary>
         /// Raised when a model's renderer settles onto a new material — a domain change or an
         /// activation reaching the end of its lerp. For an overlay that wears the crystal's colour
         /// without being one of its models: the omni crystal's charge edges

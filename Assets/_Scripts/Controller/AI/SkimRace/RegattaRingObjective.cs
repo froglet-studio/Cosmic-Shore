@@ -27,7 +27,7 @@ namespace CosmicShore.Gameplay
     {
         /// <summary>Fraction of the mouth radius the pilot treats as "hit". The crossing test is
         /// the full mouth; aiming inside it is the margin a hull at 300 u/s needs.</summary>
-        const float CaptureFractionOfMouth = 0.7f;
+        internal const float CaptureFractionOfMouth = 0.7f;
 
         GateRaceController _race;
         Transform _ringTransform;
