@@ -39,7 +39,7 @@ namespace CosmicShore.Editor
             ValidateAuthoredHeartSizes();
         }
 
-        // ── 1. one elemental crystal per lifeform prefab ─────────────────────
+        // ── 1. one elemental crystal per lifeform prefab ──────────────────────
 
         static void ValidatePrefabCrystals()
         {

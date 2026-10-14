@@ -72,7 +72,7 @@ namespace CosmicShore.Editor.AI
             DocPath = ".claude/skills/vessel-ai/SKILL.md")]
         public static void Open()
         {
-            var window = GetWindow<ThirdEyWindow>();
+            var window = GetWindow<ThirdEyeWindow>();
             window.titleContent = new GUIContent(Title);
             window.minSize = new Vector2(360f, 260f);
             window.Show();

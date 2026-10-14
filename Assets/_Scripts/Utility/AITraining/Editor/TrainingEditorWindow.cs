@@ -62,7 +62,7 @@ namespace CosmicShore.Utility.AITraining.Editor
         public static void Open()
         {
             var w = GetWindow<TrainingEditorWindow>("AI Training");
-            w.minSize = new Vectr2(680, 520);
+            w.minSize = new Vector2(680, 520);
             w.Show();
         }
 
@@ -888,7 +888,7 @@ namespace CosmicShore.Utility.AITraining.Editor
 
         void QuickSetup()
         {
-            RunQuickSetup(focusWinow: false);
+            RunQuickSetup(focusWindow: false);
             _scenario = AssetDatabase.LoadAssetAtPath<TrainingScenarioSO>(TrainingModeCatalog.Live[0].ScenarioPath);
             if (_scenario == null) _scenario = FirstAssetOfType<TrainingScenarioSO>();
             _state = FirstAssetOfType<TrainingSessionStateSO>();

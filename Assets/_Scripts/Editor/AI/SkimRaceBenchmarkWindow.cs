@@ -37,7 +37,7 @@ namespace CosmicShore.Editor.AI
         void OnGUI()
         {
             _races = EditorGUILayout.IntSlider("Races", _races, 1, 50);
-           _intensity = EditorGUILayout.IntSlider("Intensity", _intensity, 1, 4);
+            _intensity = EditorGUILayout.IntSlider("Intensity", _intensity, 1, 4);
             _players = EditorGUILayout.IntSlider("Total players (host + AI)", _players, 2, 4);
             _limit = EditorGUILayout.FloatField("Benchmark limit (s, 0 = default)", _limit);
             if (_limit <= 0f)
