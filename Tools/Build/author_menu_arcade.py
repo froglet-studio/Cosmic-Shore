@@ -20,9 +20,8 @@ on the "Menu Redesign B" canvas).
 
     Menu_Main.unity, `ModalWindows/ArcadeScreenModal`:
         The old Header, GameSelectScrollView, ArcadeLobbyList, CloseButton and FriendListPanel are
-        deleted; one ArcadeView instance goes under `Arcade_Panel/Explore`, whose ArcadeExploreView and
-        ArcadeDPadNav are KEPT (four scene objects reference the view) and re-pointed into the
-        instance. The window root stretches full screen (the view draws its own nav dim), the panel's
+        deleted; one ArcadeView instance goes under `Arcade_Panel/Explore`, whose ArcadeExploreView is KEPT (four
+        scene objects reference the view) and re-pointed into the instance. The window root stretches full screen (the view draws its own nav dim), the panel's
         old gradient Image is switched off, the two OfflineUIGates gate the new party panel, and the
         FTUE QuestGraphRunner's gameCards list names the 28 new cards.
 
@@ -87,7 +86,6 @@ S = dict(
     weekly=script("Assets/_Scripts/UI/Elements/WeeklyChallengeCard.cs"),
     audio=script("Assets/_Scripts/UI/MenuAudio.cs"),
     view=script("Assets/_Scripts/UI/Views/ArcadeExploreView.cs"),
-    dpad=script("Assets/ArcadeDPadNav.cs"),
     runner=script("Assets/FTUE/Scripts/Graph/Runtime/QuestGraphRunner.cs"),
     gate=script("Assets/_Scripts/UI/Elements/OfflineUIGate.cs"),
     close=script("Assets/_Scripts/UI/Modals/ModalWindowCloseButton.cs"),
@@ -999,14 +997,16 @@ def outputs():
 MODAL = dict(go="5018536842734414741", rt="461152924818656390", gate="9200687658501214767")
 PANEL = dict(go="1588431009219518451", rt="3611855818750974332", img="3611855818750974333",
              gate="6633029320521394827")
-EXPLORE = dict(go="829334092218458952", rt="4722418330166964489", view="1267710959564374252",
-               dpad="7154877470426546964")
+EXPLORE = dict(go="829334092218458952", rt="4722418330166964489", view="1267710959564374252")
 RUNNER = "654228613"
 RETIRED_ROOTS = {"7767652896660694874": "Header", "3184225246935049006": "GameSelectScrollView",
                  "2496229280682334806": "ArcadeLobbyList", "7399798317413155242": "CloseButton",
                  "688672352": "FriendListPanel"}
 
 VIEW_OWNED = ("GameSelectionView", "GameSelectionGrid", "WeeklyChallengeCard", "maelstromCard", "gameCountText")
+# Fields the view no longer declares; a migration may drop them (ArcadeDPadNav: retired, see
+# Tools/Build/retire_arcade_dpad_nav.py).
+VIEW_RETIRED = ("ArcadeDPadNav",)
 
 
 class Ids:
@@ -1024,7 +1024,6 @@ class Ids:
             "WeeklyChallengeCard": (V("Weekly#weekly"), 114, S["weekly"]),
             "maelstromCard": (V("Maelstrom#tile"), 114, S["tile"]),
             "gameCountText": (V("AllGames/Count#kt"), 114, S["kt"]),
-            "scrollRect": (V("Explore#scroll"), 114, SCROLL_RECT),
         }
         # Objects of NESTED instances inside ArcadeView: their id in ArcadeView is derived once.
         party_pid = V("PartyPanel#inst")
@@ -1037,6 +1036,8 @@ class Ids:
                 self.refs[key] = (derived(K.FileIds("ArcadeGameCard")("root#card"), pid), 114, S["card"])
                 self.cards.append(key)
         self.stubs = {k: str(derived(v[0], self.inst)) for k, v in self.refs.items()}
+        # The ScrollRect stub only the retired ArcadeDPadNav named. Removed if present.
+        self.stale = {str(derived(V("Explore#scroll"), self.inst))}
 
     def all(self):
         return {self.inst, self.stub} | set(self.stubs.values())
@@ -1060,9 +1061,9 @@ def doc_fields(doc):
 def view_doc(old, ids):
     head = old[:old.index("  rosterOverride:")]
     fields, _ = doc_fields(old[len(head):])
-    values = dict(fields)
+    values = {k: v for k, v in fields if k not in VIEW_RETIRED}
     new = {k: f" {ref(ids.stubs[k])}" for k in VIEW_OWNED}
-    order = ["rosterOverride", "GameSelectionView", "GameSelectionGrid", "ArcadeDPadNav", "WeeklyChallengeCard",
+    order = ["rosterOverride", "GameSelectionView", "GameSelectionGrid", "WeeklyChallengeCard",
              "maelstromCard", "gameCountText", "ArcadeGameConfigureModal", "selectedVesselClassType",
              "cardRevealSettings"]
     assert set(values) <= set(order), f"ArcadeExploreView carries fields this script does not know: {set(values) - set(order)}"
@@ -1085,7 +1086,6 @@ def transform(text, files=None):
     assert sc.field(PANEL["go"], "m_Name") == "Arcade_Panel", "Arcade_Panel moved"
     assert sc.field(EXPLORE["go"], "m_Name") == "Explore", "Explore moved"
     assert sc.script(EXPLORE["view"]) == S["view"], "ArcadeExploreView moved"
-    assert sc.script(EXPLORE["dpad"]) == S["dpad"], "ArcadeDPadNav moved"
     assert sc.script(RUNNER) == S["runner"], "QuestGraphRunner moved"
     assert sc.script(MODAL["gate"]) == S["gate"] and sc.script(PANEL["gate"]) == S["gate"], "OfflineUIGates moved"
     assert sc.script(PANEL["img"]) == K.IMAGE, "Arcade_Panel's Image moved"
@@ -1100,7 +1100,7 @@ def transform(text, files=None):
             for fid in sc.subtree(root):
                 sc.remove(fid)
     for fid in list(sc.order):
-        if fid in generated:
+        if fid in generated or fid in ids.stale:
             sc.remove(fid)
 
     out = []
@@ -1123,7 +1123,6 @@ def transform(text, files=None):
     sc.replace(PANEL["gate"], T.set_block(sc.docs[PANEL["gate"]], "onlineOnlyObjects",
                                           K.refs_list("onlineOnlyObjects", [ids.stubs["partyRoot"]])))
     sc.replace(EXPLORE["view"], view_doc(sc.docs[EXPLORE["view"]], ids))
-    sc.replace(EXPLORE["dpad"], field_set(sc.docs[EXPLORE["dpad"]], "scrollRect", ref(ids.stubs["scrollRect"])))
     sc.replace(RUNNER, T.set_block(sc.docs[RUNNER], "gameCards", K.refs_list("gameCards", [ids.stubs[k] for k in ids.cards])))
     return sc.text()
 
@@ -1288,16 +1287,19 @@ def validate_scene(before_text, after_text, files):
         if before.has(root):
             retired |= set(before.subtree(root))
     assert added <= generated, f"unexpected new documents {sorted(added - generated)[:3]}"
-    assert removed <= retired | generated, f"unexpected removals {sorted(removed - retired - generated)[:3]}"
+    assert removed <= retired | generated | ids.stale, \
+        f"unexpected removals {sorted(removed - retired - generated - ids.stale)[:3]}"
+    for fid in ids.stale:
+        assert not sc.has(fid), "the retired DPadNav's ScrollRect stub is still in the scene"
     patched = {MODAL["rt"], MODAL["gate"], PANEL["rt"], PANEL["img"], PANEL["gate"], EXPLORE["rt"], EXPLORE["view"],
-               EXPLORE["dpad"], RUNNER}
+               RUNNER}
     changed = {f for f in set(before.order) & set(sc.order) if T.normalize(before.docs[f]) != T.normalize(sc.docs[f])}
     assert changed <= patched | generated, f"unexpected edits {sorted(changed - patched - generated)[:3]}"
 
     # Field scope: every patched document changes only in the fields this item owns.
     scope = {MODAL["rt"]: {"m_Children", "m_AnchoredPosition", "m_SizeDelta"}, MODAL["gate"]: {"onlineOnlyObjects"},
              PANEL["rt"]: {"m_Children"}, PANEL["img"]: {"m_Enabled"}, PANEL["gate"]: {"onlineOnlyObjects"},
-             EXPLORE["rt"]: {"m_Children"}, EXPLORE["view"]: set(VIEW_OWNED), EXPLORE["dpad"]: {"scrollRect"},
+             EXPLORE["rt"]: {"m_Children"}, EXPLORE["view"]: set(VIEW_OWNED) | set(VIEW_RETIRED),
              RUNNER: {"gameCards"}}
     for fid, owned in scope.items():
         if not before.has(fid):
@@ -1310,7 +1312,8 @@ def validate_scene(before_text, after_text, files):
     vf = block_fields(sc.docs[EXPLORE["view"]])
     for field in VIEW_OWNED:
         assert vf.get(field) == ref(ids.stubs[field]), f"ArcadeExploreView.{field} is not wired to the view"
-    assert block_fields(sc.docs[EXPLORE["dpad"]])["scrollRect"] == ref(ids.stubs["scrollRect"]), "ArcadeDPadNav.scrollRect"
+    for field in VIEW_RETIRED:
+        assert field not in vf, f"ArcadeExploreView still serializes the retired {field}"
     gate = sc.docs[PANEL["gate"]]
     assert f"  - {ref(ids.stubs['partyRoot'])}\n" in gate, "Arcade_Panel's OfflineUIGate does not gate the party panel"
     assert "onlineOnlyObjects: []" in sc.docs[MODAL["gate"]], "the modal's gate still names a retired object"
@@ -1327,7 +1330,7 @@ def validate_scene(before_text, after_text, files):
         assert f"{{fileID: {src}, guid: {asset_guid('ArcadeView')}" in stub, f"{key}: wrong source"
         assert f"m_PrefabInstance: {{fileID: {ids.inst}}}" in stub, f"{key}: wrong instance"
         assert str(src) in prefab_objects(asset_guid("ArcadeView"), files), f"{key}: source not in ArcadeView"
-    for key in ("GameSelectionGrid", "WeeklyChallengeCard", "maelstromCard", "gameCountText", "scrollRect"):
+    for key in ("GameSelectionGrid", "WeeklyChallengeCard", "maelstromCard", "gameCountText"):
         src, cls, scr = ids.refs[key]
         got = kind_of(view_text, src)
         assert got[0] == cls and (scr is None or got[1] == scr), f"{key}: wrong kind in ArcadeView"
