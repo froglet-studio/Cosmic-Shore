@@ -1,5 +1,9 @@
 # Brittle Star: handoff between the two sessions (2026-10-14)
 
+> **Status at gallant-lamport `7e2e877a4` (its session's report, 2026-10-14 21:13Z):** it has NOT merged this branch; it
+> copied the concept art and the AUDIT/BACKLOG `maxSyncPrewarm` correction, noted the Falcon (9) row, and put the full
+> merge (studio page, hub, `studios.json`, `SKILL.md`) to Garrett as a decision. The §3 rows below include its later decisions.
+
 Two sessions built the Brittle Star on the same day, from the same Notion class document, without seeing each other:
 
 | Branch | Session | What it holds |
@@ -52,14 +56,14 @@ gallant-lamport decided otherwise, change the PAGE (its `SHIP_SETS`, `KIT`, `STY
 | Mode buttons | X Speed · Y Creation · B Destruction; keys 1/2/3 | **A Speed · B Creation · X Destruction**; keys Space / R / Q |
 | Cruise speed | 35 u/s (branch `DefaultThrottleScaler` 25 + 10) | **45 u/s** |
 | Speed mode | ×4 (`boostMultiplier`), Time ×1→×1.5 on the bonus → 110–155 u/s | **×6 at rest → ×8 at Time 10** (floored ×4) on the throttle TARGET → 270 u/s; turn rates follow speed (`RotationThrottleScaler` 0.1) |
-| Trail in Speed | wavelength × the boost | same rule (`speedModeSpacingFollow` 1) |
+| Trail in Speed | wavelength × the boost (the mode's TARGET) | trail spacing follows the hull's **actual** speed (so a Speed→Creation switch no longer lays 3× for a second) |
 | Base trail | (2,2,5) every 7 u, 4 u behind | **(2.5, 2.5, 4.5) every 6 u, 2 u behind** |
-| Creation | one block per **edge** of the pentagon (a hollow pentagonal frame) | **five lines, one per ring CORNER**, 2 u behind each corner, every 6 u; block 2.5×2.5×4.5 × Mass ×1→×1.8; cockpit trail paused |
+| Creation | one block per **edge** of the pentagon (a hollow pentagonal frame), at cruise speed | **five lines, one per ring CORNER**, 2 u behind each corner, every 6 u; block 2.5×2.5×4.5 × Mass ×1→×1.8; cockpit trail paused. **Creation is the slowest mode: ×0.5 cruise** (Overdrive: ×6 × ×0.5 = ×3) |
 | Destruction | the five turrets fire **while fire is held**, ×2.5 rounds | **fires on its own — the five ARMS**: 90 rounds/s each, 1350 u/s, unspread; RT adds nothing |
-| Aim stick | "Spread" (design) or "Convergence" (branch) dropdown | **in = the arms converge 120 u ahead; out = each splays 25°** (`BrittleStarRules.ArmDirection`); outside Destruction: picks the turret (ring turns ≤36° at 540°/s) and opens a spread to 16° |
+| Aim stick | "Spread" (design) or "Convergence" (branch) dropdown | **in = the arms converge 120 u ahead; out = each splays 25°** (`BrittleStarRules.ArmDirection`); **in Destruction the stick's DIRECTION also turns the ring and the arms** (Garrett, later 2026-10-14); outside Destruction: picks the turret (ring turns ≤36° at 540°/s) and opens a spread to 16° |
 | Fire outside Destruction | 30 rounds/s, 1500→4000 u/s with Space, 0.3 s | **RT: 12 rounds/s, 700 u/s**, 0.3 s × **range ×1→×1.6 with Space** |
 | Ring | radius 7 | **radius 6** (ring is NOT a hit box: hull box 4.6 × 4.6 × 2.4) |
-| Ring Detonation | +420 u/s, 1.4 s fuse, ball 55 u, wave to 150 u ±10, Charge ×1→×1.6 | **+240 u/s, 1.1 s fuse, blast Ø60 × Charge ×1→×1.6, then after 0.12 s a ±6 u disc swept from the blast radius to 2.5× over 0.45 s**; super-shielded mass refuses |
+| Ring Detonation | +420 u/s, 1.4 s fuse, ball 55 u, wave to 150 u ±10, Charge ×1→×1.6 | **(Garrett, later 2026-10-14) one FLAT DISK in the ring's plane: as thick as the ring (half-thickness 0.22 × Charge ×1→×4), as wide as the cell's NUCLEUS (`NucleusVisualWorldRadius`, fallback 200), swept out over 0.7 s, one hit per hull (MissileBlast). No AOE ball, no separate plane wave.** +240 u/s, 1.1 s fuse; super-shielded mass refuses |
 | Rebuild | instant from a charge | **0.5 s bloom** from a charge |
 | Overdrive | 6 s | 6 s (same) |
 | Vessel hits | **petals only** (fixed on this branch to match the LOCKED rule) | petals only (same) |
@@ -108,7 +112,7 @@ All passed on `cece/brave-galileo-d95fpj` at handoff. The test hook `window.__br
    the best pilot never spends the charge on a ring. Shorter Overdrive, a ring that refunds on a big burst, or keep it?
 2. **Destruction clears Derby walls faster than the hull reaches them** (at the branch's numbers; re-measure at the Unity
    build's five arms, 450 rounds/s, which will be stronger still): the intensity ladder only bites at I4.
-3. **Speed momentum carries into Creation** (3× output for ~1 s after a switch). Skill or hole?
+3. ~~Speed momentum carries into Creation~~ — **fixed on gallant-lamport** (spacing follows actual speed); the studio still shows it until §3 is applied.
 4. The four **level-5** slots (gallant-lamport §5 has proposals A/B per element).
 5. **Touch** cannot reach the three modes (gallant-lamport F1): the studio's phone layout has SPEED / CREATE / DESTROY / RING
    buttons on the right — a ready answer to try on a phone.
