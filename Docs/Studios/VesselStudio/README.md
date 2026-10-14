@@ -10,6 +10,7 @@ thing; what only claude.ai can do (Ask, shared requests and log, Sync) says so a
 |---|---|
 | `index.html` | The hub: one bay per studio, where each platform stands, and the **studio agent** (Ask, and Development requests). |
 | `squirrel.html` | **Squirrel Studio, round 2: AI sim lab** (2026-10-09). The racer on its shipped numbers, on the game's four Skim Race courses (I1–I4, read from `MinigameSkimRace.unity`). AI Squirrels at Easy / Medium / Hard (Hard is a simplified stand-in for `SkimRaceDriver`; Easy and Medium add `SkimRaceHandicap`'s two mistakes), your own hull flown by you or by the AI, chase / follow / free camera, 1–4× speed, auto-restart, "Show AI thinking", and a headless scorecard (every difficulty × course, three seeds). Six play-style types over its four element levels. |
+| `hypersea.html` | **HyperSea Studio, round 1: the fleet AI simulation** (2026-10-14). Every vessel prefab (12 registered + the planned Falcon, Shrike and Termite) in one cell, under one rule set, AI-flown at Easy / Medium / Hard on its shipped cruise, turn rates and trail (each row names its prefab), with its boost modelled by kind (skim, charge, ramp, pellets, hold, rail, dash, rush) and a lab-only stand-in for its signature move. Up to 16 players, each with a **Vessel** dropdown (the race panel's `players.vessels`, `/vessel-studio` D34); opens with the whole fleet seated. Scorecard: **Score the fleet** (one of every hull, three seeds, ranked) and **Score AI levels** (Hard must collect the most). Hook `window.__hyperseaStudio` (`state`, `set`, `startRace`, `stopRace`, `tick(s)`, `raceHeadless`, `scoreFleet`, `scoreLevels`). |
 | `studio-look.js` | **The Vessel Studio look** (`/vessel-studio` D19): the Stoat's sky, stars, lights and drifting prism field, the crystal and the screen marker, as one file every studio loads. Listed under `shared` in `studios.json`. |
 | `studio-ide.js` | **The Vessel Studio editor layout** (`/vessel-studio` D8): the game view in the middle, every panel a tab in the right or bottom dock, pop-out windows, splitters, no page scroll. Listed under `shared` in `studios.json`. |
 | `ai_race_panel.js` | The **universal AI race config panel** (`StudioRacePanel.mount`): Course · Your hull (You / AI Easy / Medium / Hard) · one row per AI rival seat with its own level (Off / Easy / Medium / Hard, D20) · Camera (Chase / Follow / Free) · Speed · Show AI thinking · Auto-restart. The Squirrel and the Stoat both mount it, and every arcade-game studio after them does too (`/vessel-studio` D17, §3.4). Listed under `shared` in `studios.json`. |
@@ -78,6 +79,34 @@ Read it as relative. The studio pilot finishes every course at every level withi
 on I1–I3 (it is faster on I4, where the game's pilot is conservative). Its difficulty gaps are smaller
 than the game's (game: Medium +14–19%, Easy +23–54%). It plans only ~100 u ahead, so a late notice rarely
 costs it, and it recovers from a missed crystal in ~2 s where the game's pilot loses ~10. The page says so.
+
+### HyperSea scorecards, measured 2026-10-14 (I2, all AI Hard; median of seeds 11/22/33)
+
+| Hull | Score | Crystals | Destroyed | Stolen | Standing | Avg u/s |
+|---|---|---|---|---|---|---|
+| Scarab | 290 | 29 | 0 | 0 | 20 | 161 |
+| Grizzly | 219 | 4 | 175 | 0 | 55 | 44 |
+| Manta | 210 | 21 | 0 | 0 | 60 | 150 |
+| Serpent | 200 | 20 | 0 | 0 | 160 | 96 |
+| Rhino | 180 | 8 | 100 | 0 | 70 | 55 |
+| Butterfly | 168 | 2 | 0 | 74 | 148 | 43 |
+| Sparrow | 158 | 14 | 18 | 0 | 0 | 64 |
+| Termite (planned) | 150 | 15 | 0 | 0 | 0 | 81 |
+| Falcon (planned) | 141 | 14 | 0 | 0 | 57 | 80 |
+| Shrike (planned) | 110 | 11 | 1 | 0 | 57 | 79 |
+| Squirrel | 90 | 9 | 0 | 0 | 119 | 54 |
+| Dolphin | 90 | 9 | 0 | 0 | 108 | 61 |
+| Stoat | 90 | 9 | 0 | 0 | 118 | 81 |
+| Thresher | 70 | 5 | 20 | 0 | 99 | 78 |
+| Urchin | 50 | 2 | 2 | 25 | 108 | 61 |
+
+AI levels, the whole fleet at one level (two seeds): crystals a minute Easy 4.38, Medium 5.12, Hard 5.45; mean score
+121, 129, 140. Hard is ahead on both, so the levels decide.
+
+Read it as relative, and read the abilities as lab-only. The crystal race is won on raw cruise (the Scarab's 216 and the
+Manta's 180), the mass war by the area moves (the Grizzly's 100 u bomb on a lab-only 6 s cooldown, the Rhino's sword),
+and the skim hulls (Squirrel, Stoat, Thresher) gain little skim boost because the rule set lets nobody skim their own
+trail. The Urchin barely rides: one shared AI does not plan rails the way `UrchinAutopilotDriver` does.
 
 ## In Amoebius
 

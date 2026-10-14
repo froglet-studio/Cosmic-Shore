@@ -25,6 +25,15 @@
       "docs": "Docs/Studios/STOAT_PLAY_STYLES.md",
       "engineNote": "The game's own Stoat in the Slingshot race (the round-4 orbit sling the game ships today, not the studio's dipole sling).",
       "engineMode": "Slingshot"
+    },
+    {
+      "id": "hypersea",
+      "name": "HyperSea",
+      "file": "hypersea.html",
+      "kind": "fleet AI simulation - round 1",
+      "summary": "Every vessel in the project in one cell, under one rule set, AI-flown at Easy, Medium or Hard on its shipped speed, turn rates and trail, each working its signature move (lab-only stand-ins). Up to 16 players, each picking a vessel, domain, level and play style; a scorecard ranks the whole fleet and checks the AI levels.",
+      "accent": "blue",
+      "docs": "Docs/Studios/VesselStudio/README.md"
     }
   ],
   "shared": [
