@@ -2168,6 +2168,43 @@ a signature that would have been an editor-only error: **`Obvious.Soap`'s `Scrip
 implements `IList<T>` and NOT `IReadOnlyList<T>`**, so the natural read-only parameter type
 does not accept one. Any helper taking a SOAP list must take `IList<T>`.
 
+### Technique: test a BINARY-FORMAT reader against the real tool's output, not hand-written bytes
+
+A reader for a format you did not author (a protobuf manifest, an ELF header, a signature
+block) is only proven against bytes the real producer wrote. Writing them by hand repeats your
+own understanding of the format back to you. Google's Android tools are reachable from this
+container, so `AndroidBundleCheck` (`Assets/_Scripts/Editor/Build/`) was proven against real
+output (claude/serene-edison-lfv24f, 2026-10-13):
+
+- **A real aapt2 protobuf manifest.** Download aapt2's Linux jar
+  (`dl.google.com/android/maven2/com/android/tools/build/aapt2/<ver>/aapt2-<ver>-linux.jar`) and
+  `android.jar` from `dl.google.com/android/repository/platform-36_r02.zip`, each unpacked into
+  its own empty folder. Then run
+  `aapt2 link --proto-format -I android.jar --manifest AndroidManifest.xml -o x.apk`. The
+  `AndroidManifest.xml` inside `x.apk` is the exact protobuf `XmlNode` an App Bundle carries.
+  Link a clean manifest and one that is wrong in every field you check.
+- **Real ELF alignments.** The repo's FMOD arm64 `.so` has LOAD alignment `0x4000` and Nice
+  Vibrations' `liblofelt_sdk.so` has `0x1000`. Confirm both with `readelf -lW` before relying on
+  them.
+- **Real signatures.** `keytool` and `jarsigner` are installed. Sign one fixture with a
+  release-named key and one with `CN=Android Debug`.
+
+Then build one fixture per verdict (good, unsigned, debug-signed, no 64-bit libraries, not a
+bundle) and require each verdict to differ. **That set caught a check that could never fire:**
+the "no arm64 libraries" error was gated on the list of libraries the check MEASURED, which held
+only 64-bit ones, so a 32-bit-only bundle passed. A check whose precondition is computed from the
+thing it looks for is always silent. Test the precondition on the raw input instead.
+
+### Trap: an SDK-style harness project compiles EVERY `.cs` under its folder
+
+`dotnet` project files glob `**/*.cs` by default, not only the files you `<Compile Include>`.
+A deliberately broken copy of the shipped file (a mutant for a negative control) left in the
+harness folder is compiled beside the real one. Every member then reports
+`CS0111 … already defines a member`, which reads exactly like the shipped file got duplicated.
+The repo file was fine; only the harness was wrong. Keep each mutant in its own folder with its
+own project file, or set `<EnableDefaultCompileItems>false</EnableDefaultCompileItems>`. Check
+`git show HEAD:<file>` before believing a duplicate-member error in a harness.
+
 ### Trap: you cannot see a PACKAGE API's SHAPE here, so a test written against one is a guess
 
 The absent `Library/PackageCache` is usually discussed as a guid problem (see §5's differential
