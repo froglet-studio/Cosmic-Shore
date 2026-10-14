@@ -86,7 +86,7 @@
    "prisms": 0,
    "tier": "COURSE",
    "track": null,
-   "triangles": 14032
+   "triangles": 8956
   },
   "Headlong": {
    "cell": "Skim Race Cell Config",
@@ -195,7 +195,7 @@
    "prisms": 464,
    "tier": "RUN",
    "track": "SkimRaceWaypointTrack",
-   "triangles": 38116
+   "triangles": 11876
   },
   "Switchback": {
    "cell": "Skim Race Cell Config",
@@ -259,5 +259,5 @@
   768,
   510
  ],
- "source_hash": "3d49eb29d45177276e45d2ebd13de7e4829922ce98c98ca7501d3d01017dcf0b"
+ "source_hash": "8623ce37d113170c824f01d8b71291ea18daff78a25a0d006c8b2bb7283aa23d"
 }

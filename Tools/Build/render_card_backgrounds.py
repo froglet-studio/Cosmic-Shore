@@ -1047,15 +1047,18 @@ def accents(s, layers, stage, cam, pal, R, card_path):
             p = [R * 0.35, R * 0.05, R * 0.3]
             cone(v_add(p, [0, -R * 0.004, 0]), v_add(p, [0, R * 0.004, 0]), 88, RUBY, 0.28, 1.0)
     elif s == "SkimRace":
-        # The race is ringed: each pilot's crystal is a RaceGateRing (24 u mouth) in its owner's
-        # domain, standing square across the track at the crystal's anchor + jitter. The harness
+        # The race is ringed (SKIMRACE.md §7a, CrystalRaceRing): each pilot's crystal is a
+        # RaceGateRing in its owner's domain, standing square across the track at the crystal's
+        # anchor + jitter. The harness
         # stands them on the track's own MARKER blocks (the waypoints carrying a crystal anchor),
         # facing along each block's pose - the track tangent - the way the COURSE cards' gates
         # face along their course. Jitter is the scene CrystalManager's anchorJitterRadius. The
-        # ring is drawn at a GLYPH scale (x3 the real 24 u mouth) - true size is a 5-8 px speck
-        # at card size; the position, facing and jitter stay true.
+        # ring is drawn at a GLYPH scale (SKIMRACE_RING_GLYPH x the real intensity-2 mouth) - true
+        # size is a 5-8 px speck at card size; the position, facing and jitter stay true. The small
+        # omni crystal in the ring's middle (~2.4 u) is sub-pixel even at glyph scale, so it is
+        # not drawn.
         track = next(l for l in layers if l["kind"] == "generator")
-        mouth = 24.0 * SKIMRACE_RING_GLYPH
+        mouth = skimrace_ring_mouth(INTENSITY) * SKIMRACE_RING_GLYPH
         track["markerRings"] = {
             "pick": SKIMRACE_RING_ANCHORS, "R": mouth, "r": mouth * 0.12, "seed": stable_seed(s + "/rings"),
             "jitter": crystal_jitter(card_path),
@@ -1098,7 +1101,17 @@ def accents(s, layers, stage, cam, pal, R, card_path):
 # clipped by the bottom edge and, at glyph scale, overlaps 2), painted Jade / Ruby / Gold in turn
 # - one crystal per pilot.
 SKIMRACE_RING_ANCHORS = [0, 2, 3, 4]
-SKIMRACE_RING_GLYPH = 3.0   # drawn mouth / real RaceGateRing mouth (24 u)
+SKIMRACE_RING_GLYPH = 3.6   # drawn mouth / real I2 mouth (20 u): a 72 u glyph, the size approved on the sheet
+
+
+def skimrace_ring_mouth(intensity):
+    """CrystalRaceRing.MouthRadiusFor, read off the shipped ring prefab: I1's radius lerped toward
+    I1 x intensityFourMouthFraction at intensity 4 (24 / 20 / 16 / 12 u as authored)."""
+    body = read(ROOT / "Assets/_Prefabs/Environment/SkimRaceRingCrystal.prefab")
+    f = {k: float(re.search(rf"^  {k}: ([-0-9.e]+)$", body, re.M).group(1))
+         for k in ("intensityOneMouthRadius", "intensityFourMouthFraction")}
+    t = (min(max(intensity, 1), 4) - 1) / 3
+    return f["intensityOneMouthRadius"] * (1 + (f["intensityFourMouthFraction"] - 1) * t)
 
 
 def crystal_jitter(card_path):
