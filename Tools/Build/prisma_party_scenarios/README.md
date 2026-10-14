@@ -4,8 +4,6 @@
 bash Tools/Build/prisma_party_scenarios/run.sh          # ~10-15 min wall; exit 0 = every scenario passed
 KEEP=1 bash Tools/Build/prisma_party_scenarios/run.sh   # keep the worktree, the logs and results.json
 COSMIC_SHORE_NET_SIM=4g bash .../run.sh                 # every pilot on a simulated 4G line
-PRISMA_RELAY=1 bash .../run.sh                          # every pilot through Froglet's relay (Unity Relay's protocol)
-PRISMA_RELAY=ugs bash .../run.sh                        # the same, signed in to a local UGS stand-in (COSMIC_SHORE_RELAY=ugs)
 COSMIC_SHORE_NET_TRANSPORT=tcp bash .../run.sh          # the TCP transport instead of the default UDP
 ```
 
@@ -13,14 +11,55 @@ Needs the .NET 10 SDK (`DOTNET10_ROOT`, default `$HOME/.dotnet10`), like
 `../prisma_edit_mode_tests/run.sh`. The scratch dir is `$PRISMA_PARTY_WORK` (default
 `$TMPDIR/prisma_party_scenarios`): `logs/<A..E>.log` is each pilot's full console, and
 `results.json` is one row per scenario with the state it asserted on, plus `network`: each pilot's own
-boot lines for its transport, simulated line and relay, so a result names what it ran under.
+boot lines for its transport, its whole stack, the UGS project it went online to, its sign-in and its
+simulated line, so a result names what it ran under. `logs/ugs-auth.log` has one line per sign-in, and
+`logs/standins.log` a relay and Lobby counter line every 30 s.
+
+It needs the **UGS-only engine** (Port/docs/MULTIPLAYER.md §6.10, 2026-10-14): `run.sh` stops with exit 2
+if the engine has no `UgsMultiplayerService`. The shared-folder sessions (`COSMIC_SHORE_NET_DIR`) and
+`COSMIC_SHORE_RELAY` / `--relay-server` it used before are gone from the engine, and so are its old
+`PRISMA_RELAY` switches: every pilot now goes through the relay, as every START ONLINE game does.
+
+## State on 2026-10-14: 8/14, blocked on the match's frame rate, not on the stand-ins
+
+Ported to the UGS stand-ins on 2026-10-14 and run on a 4-core cloud container against the UGS-only engine:
+**8/14**. T1, T5-accept, T2b, kick, leave, T2, T5-join and launch pass through the stand-ins (five
+sign-ins, one per pilot; every pilot booted `[net] stack: simulated > relay > udp; sessions: faults > ugs`,
+the relay forwarded the match). **T4 fails, and everything after it is `not run`.**
+
+That failure is not the port's. The pre-port harness on the pre-port engine (shared folder, same game
+code, same container) fails at exactly the same step with exactly the same error: **8/14**, T4,
+`timed out after 180s waiting for PilotB's Ready button to show`. Measured cause:
+
+- In the Bloomrush match each headless pilot runs at **~2.4 fps** with four matches on four cores,
+  and at **3.5-5.4 fps even alone, offline and uncontended**. The menu runs at ~58 fps.
+- The scene's live behaviour count keeps climbing: **~570,000-595,000 per pilot** a few minutes into the
+  match, rising by ~130 a frame (PilotB read 87,643 on entering it).
+- Headless ticks a fixed 1/60 s, so the 7.5 s pre-game cinematic takes ~190 s of wall time, past T4's
+  180 s wait. A local run that pressed Skip and allowed 8× every wait (not committed) got Ready shown
+  and counted on two pilots, but the host still had not counted the third press after 960 s.
+
+So T3, T6, net, T7 and T4-lobby are **not yet verified on the stand-ins**. They need a match that runs at
+playable speed in Amoebius first (profile the Bloomrush scene's object growth: `Docs/claude/SHADERS_AND_PERFORMANCE.md`).
+The last 14/14 was on the shared folder, before 2026-10-14 (`Port/docs/MULTIPLAYER.md` §6.7-6.8).
 
 ## What it does
 
 It builds Amoebius's player (`Port/`) against **this checkout's** `Assets/_Scripts` and launches five
 instances, `PilotA`…`PilotE`. Each instance runs as its own process with its own `NetworkManager`,
-its own save folder and its own control port. Netcode's model runs over TCP, and UGS Lobby + Relay
-are a shared session directory. Then `scenarios.py` plays one continuous session through
+its own save folder and its own control port. Each is online exactly as START ONLINE is: it signs in
+to UGS, allocates on UGS Relay and holds its presence lobby, party and match sessions in UGS Lobby, over
+Froglet's UDP transport. All three services are **local stand-ins**, so nothing reaches the live UGS
+project:
+
+| Service | Stand-in | Pilots read |
+|---|---|---|
+| Player Authentication (anonymous + session-token sign-in) | `ugs_auth_standin.py` | `COSMIC_SHORE_UGS_AUTH_URL`, `COSMIC_SHORE_UGS_PROJECT` |
+| Relay (allocations REST + Unity Relay's UDP protocol) | `standins/`: the engine's `FrogletRelayServer` | `COSMIC_SHORE_UGS_RELAY_URL` |
+| Lobby (create, query, join, update, heartbeat, remove, delete) | `standins/`: `Port/tests/CosmicShore.Tests/UgsLobbyStandIn.cs`, compiled in, so the engine tests and the harness share one Lobby stand-in | `COSMIC_SHORE_UGS_LOBBY_URL` |
+
+The sign-in's id tokens (`id-PLAYER-N`) are what the Lobby stand-in reads as the caller, so five pilots
+are five UGS players. Then `scenarios.py` plays one continuous session through
 `driver.py`. It presses only what a person presses: the `party` console command
 (`Assets/_Scripts/Controller/Party/PartyConsoleCommand.cs`, which calls exactly what the buttons
 call), the HUD's Ready button, and the port's `arcade` / `vessels` / `score` verbs.
@@ -59,12 +98,15 @@ Every later row then reads `not run`, never `pass`.
 **Does not prove:**
 - **The Unity runtime.** Amoebius re-implements the engine. NGO's internals, Unity Transport and the
   UGS SDK are stood in for.
-- **UGS error shapes.** UGS's error for a full lobby, or for a 429, is not reproduced byte for
-  byte. The stand-in throws `SessionException("Session is full.")`, which reaches
-  `UgsRequestPolicy`'s message floor. If the real SDK's shape differs, only MPPM (Block 2) would
-  show it.
-- **Timing.** TCP sees a dead peer at once, but UTP waits for its disconnect timeout (10 s here).
-  T7's wall time is therefore a lower bound, not the player's experience.
+- **UGS itself.** The stand-ins follow UGS's public REST reference, not the live service. A full
+  lobby is the Lobby stand-in's 409 "lobby is full", which `UgsMultiplayerService` turns into the
+  SDK's "is full" `SessionException` (`Port/docs/MULTIPLAYER.md` §6.10); the real service's bodies,
+  rate limits and inactive-lobby expiry (the stand-in counts heartbeats but expires nothing) are only
+  shown by the owner's live test (`Docs/MULTIPLAYER_START_HERE.md` §5.3) and MPPM (Block 2).
+- **The Unity SDK.** Amoebius talks to UGS over REST with its own client; the Unity build uses the
+  Multiplayer Services SDK. Same service, different client.
+- **Timing.** Every pilot is on one machine, so the relay is ~0 ms away. T7's wall time is a lower
+  bound, not the player's experience.
 - **The disconnect callback order.** The ready gate (B20) re-counts inside the disconnect callback.
   Both engines remove the id before invoking it: the port by construction, and NGO 2.13.3 in
   `NetworkConnectionManager.OnClientDisconnectFromServer` (`ConnectedClientIds.Remove` at line
@@ -94,9 +136,10 @@ A process per player gives each player its own `Singleton`, and runs the code un
 ## Game time runs on the wall clock
 
 A `--headless` Amoebius ticks a fixed 1/60 s as fast as the CPU allows. An idle menu therefore runs
-its game clock ~200× ahead of the session directory and the TCP links, which both run on the wall
+its game clock ~200× ahead of the session service and the network links, which both run on the wall
 clock. Game-time timers then fire early against them. Run 3 showed this: an invite's 60 s lifetime
-lapsed before the guest had polled it, and the Accept met a withdrawn invite.
+lapsed before the guest had polled it, and the Accept met a withdrawn invite. (The session service
+was the shared folder then; it is the Lobby stand-in now, on the same wall clock.)
 
 Unity has no such mode. So every instance runs with the engine's `--realtime` flag
 (`Port/src/CosmicShore.Engine/SceneGraph/RealtimePacer.cs`, `Port/docs/MULTIPLAYER.md` §6.1): each
@@ -106,7 +149,8 @@ the machine was.
 
 ## Touches nothing committed
 
-`run.sh` makes a `git worktree` of HEAD and copies this checkout's `Assets/_Scripts` over it. It
+`run.sh` makes a `git worktree` of HEAD and copies this checkout's `Assets/_Scripts` over it, and builds
+the stand-ins from a copy of `standins/` in the scratch dir against that worktree's engine. It
 fills any engine API gaps (`../prisma_edit_mode_tests/gapfill.py`) in that worktree only. Every
 gap it knew of on 2026-10-08 has since landed in the engine, so it currently changes nothing. It
 removes the worktree on exit. (The pacing was a worktree patch, `pace_headless.py`, until the engine
