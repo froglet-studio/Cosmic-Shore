@@ -1,7 +1,9 @@
 # Goby & Pistol: the first duo vessel
 
 **Status:** design brief, round 2. Nothing is in the game. **The lab is built** (round 1, §9):
-`Docs/Studios/VesselStudio/goby.html`, a page of the one Vessel Studio artifact.
+`Docs/Studios/VesselStudio/goby.html`. Garrett prototypes it first in its own private artifact,
+https://claude.ai/artifact/6hGNJz2AKFYY5gHvYJa9Up (his call, 2026-10-14). It joins the one Vessel Studio artifact later,
+by a merge into `Ys-bleeding-edge`. Read that artifact's `decisions` collection at the start of each round.
 
 - The brief was given by Garrett on 2026-10-14 as "the Flier & Bird".
 - In round 2 (the same day) Garrett answered the open questions and asked for a symbiotic pair of
