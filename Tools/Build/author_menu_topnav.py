@@ -7,8 +7,9 @@ Author ITEM 1 of the style-B menu redesign - the TOP NAV - into Menu_Main.unity
 WHAT `Safe Area/NavBar` BECOMES
 
     NavBar                    84 tall (was 180.35); anchors and CanvasGroup untouched
-    |- Band                   SurfaceVeryDark fill (replaces NavBarGradient)
-    |- Rule                   1 px SurfaceDark bottom rule (replaces NavBarLine)
+    |- Band                   SurfaceVeryDark fill at 60 % (replaces NavBarGradient; translucent since
+    |                         the 2026-10-14 revision so the menu scene shows through)
+    |- Rule                   1 px SurfaceLight bottom rule at 70 % (replaces NavBarLine)
     '- NavBarButtons          HorizontalLayoutGroup, centred, children 56 apart
        |- LeftArrrow          the SAME Button (OnClickLeftArrow), now a transparent hit area,
        |  '- Keycap           KitKeycap "LT"; a KitHoverTint on the button lifts it on hover
@@ -49,6 +50,8 @@ _spec = importlib.util.spec_from_file_location("author_ui_kit_prefabs", os.path.
 K = importlib.util.module_from_spec(_spec)
 _spec.loader.exec_module(K)
 
+BAND_ALPHA = 0.6   # the nav band (MENU_REDESIGN_B §13.1)
+RULE_ALPHA = 0.7   # its bottom rule
 REPO = K.REPO
 SCENE = "Assets/_Scenes/Menu_Main.unity"
 FILE_KEY = "Menu_Main/TopNav"
@@ -383,11 +386,13 @@ def transform(text):
     out = []
     # Band and Rule: plain nodes, emitted by the kit's own node writer.
     band = K.Node("Band", "Band", K.STRETCH)
-    band.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(K.tok("SurfaceVeryDark"))) \
-        .add("th", 114, K.themed("SurfaceVeryDark"))
+    # Revision 2026-10-14 (MENU_REDESIGN_B §13.1): the band is translucent so the menu scene shows
+    # through it, as it did under the old NavBarGradient; the rule is Neutral Light at 70 %.
+    band.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(K.tok("SurfaceVeryDark", BAND_ALPHA))) \
+        .add("th", 114, K.themed("SurfaceVeryDark", BAND_ALPHA))
     rule = K.Node("Rule", "Rule", K.rect((0, 0), (1, 0), (0, 0), (0, 1), (0.5, 0)))
-    rule.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(K.tok("SurfaceDark"))) \
-        .add("th", 114, K.themed("SurfaceDark"))
+    rule.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(K.tok("SurfaceLight", RULE_ALPHA))) \
+        .add("th", 114, K.themed("SurfaceLight", RULE_ALPHA))
     K.emit_node(ids.ctx, band, NAVBAR["rt"], out)
     K.emit_node(ids.ctx, rule, NAVBAR["rt"], out)
     for i in range(len(TABS)):

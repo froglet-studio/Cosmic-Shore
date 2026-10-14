@@ -125737,7 +125737,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_Material: {fileID: 0}
-  m_Color: {r: 0, g: 0.015686275, b: 0.12156863, a: 1}
+  m_Color: {r: 0, g: 0.015686275, b: 0.12156863, a: 0.6}
   m_RaycastTarget: 0
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
@@ -125768,7 +125768,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   theme: {fileID: 11400000, guid: 0aef6398681c4ec98118cc9b9740060a, type: 2}
   token: 4
-  alpha: 1
+  alpha: 0.6
 --- !u!1 &1043564639168578696
 GameObject:
   m_ObjectHideFlags: 0
@@ -125828,7 +125828,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_Material: {fileID: 0}
-  m_Color: {r: 0.13333334, g: 0.14901961, b: 0.27058825, a: 1}
+  m_Color: {r: 0.2627451, g: 0.29803923, b: 0.5372549, a: 0.7}
   m_RaycastTarget: 0
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
@@ -125858,8 +125858,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   theme: {fileID: 11400000, guid: 0aef6398681c4ec98118cc9b9740060a, type: 2}
-  token: 5
-  alpha: 1
+  token: 6
+  alpha: 0.7
 --- !u!1001 &476038552526488390
 PrefabInstance:
   m_ObjectHideFlags: 0

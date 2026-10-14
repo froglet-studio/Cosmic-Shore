@@ -16,6 +16,13 @@ Every shape the style-B menu redesign draws comes from here (Docs/MENU_REDESIGN_
                                              right: the scrim behind a feature card's copy (item 3)
     kit_oct_fill                             the avatar octagon (29% corner cuts), 48 x 48: the
                                              party seat's domain ring and every avatar backing (item 3)
+    kit_grid                                 the blueprint grid tile (revision 2, §13.4): a 1-unit line on
+                                             its top and left edges every 24 units; drawn Tiled, tinted
+                                             Neutral Dark, under a panel's content
+    kit_bracket                              a 22-unit corner bracket (1-unit L, top-left); the other
+                                             three corners flip it by scale
+    kit_spark                                the travelling highlight (KitSpark): a 48 x 2 streak that
+                                             is clear at both ends and solid in the middle
 
 THE SLIVER (Docs/STYLE_FOUNDATION.md §5): a 45 deg cut on TWO OPPOSITE corners. Normal = top-left
 and bottom-right; `_flip` = top-right and bottom-left (§5 "flippable"). `fill` is the whole
@@ -66,6 +73,9 @@ BANNER_H, BANNER_SLANT = 56, 14
 FADE_W, FADE_H = 4, 64       # texels; a 1-D ramp, stretched to any size
 OCT = 48                     # the avatar octagon, canvas units (drawn simple, like the hexagons)
 OCT_CUT = 0.29               # corner cut as a fraction of the side - the mockup's clip-path
+GRID = 24                    # blueprint grid pitch, canvas units (§5 spacing scale)
+BRACKET = 22                 # corner bracket arm, canvas units
+SPARK_W, SPARK_H = 48, 2     # spark streak, canvas units
 
 
 def guid_for(name):
@@ -205,6 +215,32 @@ def build_oct():
     return downsample(convex_mask(xs, ys, oct_verts(OCT)), t, t), 0
 
 
+def build_grid():
+    """A 1-unit line along the top and the left edge of one 24-unit tile; tiled, they make the grid."""
+    t = GRID * TEXELS_PER_UNIT
+    a = np.zeros((t, t))
+    a[:TEXELS_PER_UNIT, :] = 1.0
+    a[:, :TEXELS_PER_UNIT] = 1.0
+    return a, 0
+
+
+def build_bracket():
+    """A top-left L: a 1-unit line along the top edge and down the left edge, 22 units each way."""
+    t = BRACKET * TEXELS_PER_UNIT
+    a = np.zeros((t, t))
+    a[:TEXELS_PER_UNIT, :] = 1.0
+    a[:, :TEXELS_PER_UNIT] = 1.0
+    return a, 0
+
+
+def build_spark():
+    """Alpha follows a raised-cosine bump along x: clear at both ends, solid in the middle."""
+    w, h = SPARK_W * TEXELS_PER_UNIT, SPARK_H * TEXELS_PER_UNIT
+    x = (np.arange(w) + 0.5) / w
+    bump = 0.5 - 0.5 * np.cos(2 * np.pi * x)
+    return np.repeat(bump[None, :], h, axis=0), 0
+
+
 def sprite_set():
     """(name, alpha, 9-slice border in texels as (left, bottom, right, top))."""
     out = []
@@ -230,6 +266,12 @@ def sprite_set():
     out.append(("kit_fade_h", a, (0, 0, 0, 0), dict(fade_h=True)))
     a, _ = build_oct()
     out.append(("kit_oct_fill", a, (0, 0, 0, 0), dict(oct=True)))
+    a, _ = build_grid()
+    out.append(("kit_grid", a, (0, 0, 0, 0), dict(grid=True)))
+    a, _ = build_bracket()
+    out.append(("kit_bracket", a, (0, 0, 0, 0), dict(bracket=True)))
+    a, _ = build_spark()
+    out.append(("kit_spark", a, (0, 0, 0, 0), dict(spark=True)))
     return out
 
 
@@ -305,6 +347,17 @@ def check_sprite(name, alpha, border, meta):
         # the corner cut runs OCT_CUT of the side along the top edge
         measured = edge_crossing(alpha[0]) / w
         assert abs(measured - OCT_CUT) <= 0.02, f"{name}: the corner cut is {measured:.3f} of the side"
+    elif meta.get("grid") or meta.get("bracket"):
+        t = TEXELS_PER_UNIT
+        assert alpha.shape == ((GRID if meta.get("grid") else BRACKET) * t,) * 2, f"{name}: wrong tile size"
+        assert np.all(alpha[:t, :] == 1.0) and np.all(alpha[:, :t] == 1.0), f"{name}: the top and left lines must be solid"
+        assert np.all(alpha[t:, t:] == 0.0), f"{name}: everything off the two lines must be clear"
+    elif meta.get("spark"):
+        assert np.allclose(alpha, alpha[0:1, :]), f"{name}: every row of the streak must match"
+        row = alpha[0]
+        assert np.allclose(row, row[::-1], atol=1e-6), f"{name}: the streak must be symmetric"
+        assert row[0] < 0.05 and row[-1] < 0.05, f"{name}: the streak must be clear at both ends"
+        assert row[len(row) // 2] > 0.95, f"{name}: the streak must be solid in the middle"
     elif meta.get("banner") == "body":
         b = border[0]
         mid = alpha[:, b:w - b]
@@ -551,6 +604,18 @@ def self_test():
     t = OCT * TEXELS_PER_UNIT
     expect_fail("square checked as the octagon",
                 lambda: check_sprite("ctl", np.ones((t, t)), (0, 0, 0, 0), dict(oct=True)))
+
+    # 9. a grid tile with ink inside the cell
+    a, _ = build_grid()
+    a2 = a.copy(); a2[20, 20] = 1.0
+    expect_fail("grid tile with ink inside the cell", lambda: check_sprite("ctl", a2, (0, 0, 0, 0), dict(grid=True)))
+    # 10. a spark that is solid at one end (a ramp, not a streak)
+    a, _ = build_fade_h()
+    expect_fail("ramp checked as a spark", lambda: check_sprite("ctl", a, (0, 0, 0, 0), dict(spark=True)))
+    # 11. a bracket missing its left arm
+    a, _ = build_bracket()
+    a3 = a.copy(); a3[:, :TEXELS_PER_UNIT] = 0.0
+    expect_fail("bracket missing its left arm", lambda: check_sprite("ctl", a3, (0, 0, 0, 0), dict(bracket=True)))
 
     ok = True
     for label, fired, msg in controls:
