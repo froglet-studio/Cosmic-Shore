@@ -945,6 +945,15 @@ scoped, and assigned a doc home — not reasons to sit on finished work.
   gate applies.
 - Base is `bleeding-edge` unless told otherwise. Do not subscribe to PR activity to watch
   CI (§0.05); subscribe only if the human asks you to follow the review.
+- **Before pushing MORE work onto the branch of a PR you already opened, confirm the PR is still
+  OPEN** (`pull_request_read` → `merged`/`state`), right before the push, not at the start of the
+  task. A human can merge at any moment, and a commit pushed after the merge lands on a branch
+  nobody will merge again: it is stranded, and any PR-body update you make to describe it then
+  claims work the merged PR does not contain. It happened on 2026-10-14: #1091 merged at 21:20 and
+  the prefab-authoring commit was pushed at 21:30. The QA backlog is scanned from PR bodies, so an
+  overclaiming body is a wrong test plan, not just a wrong note. If it has merged, restart the
+  branch from the base (merge the base in when force-push is refused), keep the commit, and say so
+  in both PRs. The follow-up went out as #1094, and #1091 carries a correction note pointing at it.
 
 ## 5.5 Fire CI once (every mode — `/ship`, `/ship-quick`, `/ship-deep`, `/ship-tools`)
 

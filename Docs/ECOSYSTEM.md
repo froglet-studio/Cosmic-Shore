@@ -11499,6 +11499,10 @@ different transform — they get warped and don't like to be collected, but they
 around; they interact with the vessel skimmer but not the hull". Two independent defects, both in
 how the heart is authored rather than in the death path.
 
+**Landed in two PRs:** #1091 (the runtime wiring in `LifeFormCrystal`, the QuadFish scale move and
+`Crystal.ReparentToCell`) and #1094 (the authoring half below: the collection pair on five prefabs,
+and `Tools/Build/author_lifeform_heart_collection.py`).
+
 ### 60.1 Vacuumable, never collectable — the collection pair was missing
 
 A heart is collected through `ElementalCrystalImpactor` + `ImpactCollider` on the crystal. The
@@ -11562,4 +11566,8 @@ hold more often (a dropped heart is now always collectable). No collider is adde
 `ImpactCollider` is a component on the heart's existing `SphereCollider`, not a new collider — so the
 collider budget is unchanged. Not editor-verified: kill a Space QuadFish in Garland or Wildlife
 Liberation, fly the HULL through its dropped heart (it must collect), and confirm the heart and a
-living fish both look undistorted.
+living fish both look undistorted. Then open QuadFish, Clawfish, NerveFlora, PineFlora and WallFlora:
+each heart must show `ElementalCrystalImpactor` (`Crystal` set, one collection effect) and
+`ImpactCollider` (pointing at it), its `Crystal` component unchecked, and no Missing (Mono Script)
+rows. A living QuadFish's heart must still be joustable: `SetEmbeddedIn` enables the collider, and
+that doesn't depend on the `Crystal` component being enabled.
