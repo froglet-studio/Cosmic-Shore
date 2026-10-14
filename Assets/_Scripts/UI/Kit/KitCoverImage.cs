@@ -7,8 +7,9 @@ namespace CosmicShore.UI
     /// Sizes one child <see cref="Image"/> to COVER this rect at its sprite's aspect, centred - the
     /// style-B hero frames show a vessel preview edge to edge at any screen width. uGUI's
     /// <c>preserveAspect</c> only contains, so it letterboxes; put a <see cref="Mask"/> on this object
-    /// to crop what overflows. Re-fits when this rect changes size and when the sprite is set through
-    /// <see cref="SetSprite"/>.
+    /// to crop what overflows. Re-fits when this rect changes size and whenever the image's sprite
+    /// changes - through <see cref="SetSprite"/> or by code that writes <c>Image.sprite</c> directly
+    /// (the arcade's game and weekly cards do: their scripts predate the kit).
     /// </summary>
     [RequireComponent(typeof(RectTransform))]
     [AddComponentMenu("Cosmic Shore/UI Kit/Kit Cover Image")]
@@ -16,6 +17,9 @@ namespace CosmicShore.UI
     {
         [Tooltip("The image to size. The fit anchors it to this rect's centre.")]
         [SerializeField] private Image image;
+
+        // The sprite the current fit was computed for; a different one means fit again.
+        private Sprite _fitted;
 
         public Image Image => image;
 
@@ -30,9 +34,16 @@ namespace CosmicShore.UI
 
         private void OnRectTransformDimensionsChange() => Fit();
 
+        private void LateUpdate()
+        {
+            if (image && image.sprite != _fitted) Fit();
+        }
+
         public void Fit()
         {
-            if (!image || !image.sprite) return;
+            if (!image) return;
+            _fitted = image.sprite;
+            if (!_fitted) return;
 
             var size = ((RectTransform)transform).rect.size;
             var spriteRect = image.sprite.rect;

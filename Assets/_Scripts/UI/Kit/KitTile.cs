@@ -40,6 +40,9 @@ namespace CosmicShore.UI
         [SerializeField] private Sprite borderSelectedSprite;
         [Tooltip("Border sprite while not selected (list tiles: the 1px band; hex tiles: the 2px band).")]
         [SerializeField] private Sprite borderUnselectedSprite;
+        [Tooltip("What the border wears while selected. List tiles: TextLight (the §10.11 white border). " +
+                 "Arcade game cards: ControlActive - the card the local player picked.")]
+        [SerializeField] private UIColorToken selectedBorderToken = UIColorToken.TextLight;
 
         [Header("Content")]
         [Tooltip("The name / icon / label - Light when selected.")]
@@ -54,6 +57,8 @@ namespace CosmicShore.UI
         [SerializeField] private Graphic[] artGraphics = { };
         [Tooltip("The lock glyph, shown only while locked.")]
         [SerializeField] private Graphic lockGraphic;
+        [Tooltip("Optional word beside the lock glyph (\"Locked\"), shown with it.")]
+        [SerializeField] private Graphic lockLabel;
 
         public bool IsSelected
         {
@@ -92,7 +97,7 @@ namespace CosmicShore.UI
             {
                 var sprite = isSelected ? borderSelectedSprite : borderUnselectedSprite;
                 if (sprite && borderImage.sprite != sprite) borderImage.sprite = sprite;
-                var border = isSelected ? UIColorToken.TextLight
+                var border = isSelected ? selectedBorderToken
                     : hover ? UIColorToken.SurfaceLight
                     : UIColorToken.SurfaceDark;
                 into.Add((borderImage, Token(border)));
@@ -114,6 +119,7 @@ namespace CosmicShore.UI
                 if (g) into.Add((g, new Color(1f, 1f, 1f, isLocked ? LockedArtAlpha : contentAlpha)));
 
             if (lockGraphic) into.Add((lockGraphic, Token(UIColorToken.TextLight, isLocked ? 1f : 0f)));
+            if (lockLabel) into.Add((lockLabel, Token(UIColorToken.TextLight, isLocked ? 1f : 0f)));
         }
     }
 }

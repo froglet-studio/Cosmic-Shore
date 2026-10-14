@@ -46,6 +46,14 @@ namespace CosmicShore.UI
         // migration, not a refactor.
         [FormerlySerializedAs("DailyChallengeCard")]
         [SerializeField] WeeklyChallengeCard WeeklyChallengeCard;
+
+        [Header("Style-B Explore (optional)")]
+        [Tooltip("The Maelstrom feature card. Pressing it opens the Maelstrom launch panel " +
+                 "(ArcadeGameConfigureModal.OpenMaelstrom) - wired here, in code, so the card can live " +
+                 "in a prefab that holds no reference to the scene's modal.")]
+        [SerializeField] Button maelstromCard;
+        [Tooltip("The count beside ALL GAMES: how many cards the grid draws.")]
+        [SerializeField] KitText gameCountText;
         [Header("Game Detail View")]
         [SerializeField] ArcadeGameConfigureModal ArcadeGameConfigureModal;
         [SerializeField] VesselClassTypeVariable selectedVesselClassType;
@@ -132,11 +140,14 @@ namespace CosmicShore.UI
 
             _hostModal = GetComponentInParent<ModalWindowManager>(true);
             if (_hostModal) _hostModal.OnModalOpened += PlayCardReveal;
+
+            if (maelstromCard) maelstromCard.onClick.AddListener(SelectMaelstrom);
         }
 
         void OnDestroy()
         {
             if (_hostModal) _hostModal.OnModalOpened -= PlayCardReveal;
+            if (maelstromCard) maelstromCard.onClick.RemoveListener(SelectMaelstrom);
             CardGridReveal.Snap(this, _revealCards, _reveal);
             _reveal = null;
         }
@@ -243,6 +254,7 @@ namespace CosmicShore.UI
             });
 
             EnsureGridCapacity(sortedGames.Count);
+            if (gameCountText) gameCountText.SetText(sortedGames.Count.ToString());
 
             // Deactivate all game cards and add them to the list of game cards
             for (var i = 0; i < GameSelectionGrid.transform.childCount; i++)
@@ -768,6 +780,15 @@ namespace CosmicShore.UI
             }
 
             return null;
+        }
+
+        /// <summary>
+        /// Open the Maelstrom's own launch panel - the meta-mode is not a grid card (see
+        /// PopulateGameSelectionList), so its feature card routes here.
+        /// </summary>
+        public void SelectMaelstrom()
+        {
+            if (ArcadeGameConfigureModal) ArcadeGameConfigureModal.OpenMaelstrom();
         }
 
         /// <summary>

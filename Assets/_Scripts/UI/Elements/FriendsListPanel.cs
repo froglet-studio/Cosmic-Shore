@@ -40,6 +40,15 @@ namespace CosmicShore.UI
         [Header("Actions")]
         [SerializeField] private Button closeButton;
 
+        [Header("Style-B Party Panel")]
+        [Tooltip("The lists sit inside the party panel, always on screen (style-B menu redesign, item 3): " +
+                 "an empty slot's add button moves focus into them instead of opening this panel. " +
+                 "Off for the legacy overlay, which opens and closes.")]
+        [SerializeField] private bool embedded;
+        [Tooltip("List members of YOUR party among the online players (\"IN YOUR PARTY\"). The style-B " +
+                 "panel shows them in its seats directly above, so it turns this off.")]
+        [SerializeField] private bool listPartyMembers = true;
+
         [Header("Audio")]
         [Tooltip("Category played when a party invite is received.")]
         [SerializeField] private MenuAudioCategory inviteReceivedAudio = MenuAudioCategory.Confirmed;
@@ -274,6 +283,31 @@ namespace CosmicShore.UI
         public void ShowOnlineTab() => Show();
         public void ShowRequestsTab() => Show();
 
+        /// <summary>True when the lists live inside the party panel rather than in an overlay.</summary>
+        public bool IsEmbedded => embedded;
+
+        /// <summary>
+        /// Puts gamepad / keyboard focus on the first live row control - an invite to answer first,
+        /// then someone to invite. Nothing to focus (nobody online, nothing pending) leaves focus
+        /// where it is: the empty-state line is already in view.
+        /// </summary>
+        public void FocusList()
+        {
+            var events = UnityEngine.EventSystems.EventSystem.current;
+            if (!events) return;
+
+            foreach (var content in new[] { requestsContent, onlineContent })
+            {
+                if (!content) continue;
+                foreach (var s in content.GetComponentsInChildren<Selectable>(false))
+                {
+                    if (!s.IsInteractable() || s.navigation.mode == Navigation.Mode.None) continue;
+                    events.SetSelectedGameObject(s.gameObject);
+                    return;
+                }
+            }
+        }
+
         #endregion
 
         #region Rendering
@@ -298,6 +332,7 @@ namespace CosmicShore.UI
             foreach (var player in connectionData.OnlinePlayers)
             {
                 if (player.PlayerId == localId) continue;
+                if (!listPartyMembers && IsInSameParty(player.PlayerId)) continue;
                 SpawnOnlineEntry(player);
             }
         }
@@ -447,6 +482,12 @@ namespace CosmicShore.UI
         void HandleOnlinePlayerChanged(PartyPlayerData player)
         {
             if (connectionData && player.PlayerId == connectionData.LocalPlayerId) return;
+
+            if (!listPartyMembers && IsInSameParty(player.PlayerId))
+            {
+                RemoveEntryByPlayerId(_spawnedOnline, player.PlayerId);
+                return;
+            }
 
             // Upsert: refresh existing row if present, otherwise spawn.
             var existing = FindEntryByPlayerId<OnlineInfoEntry>(_spawnedOnline, player.PlayerId);

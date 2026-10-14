@@ -11,6 +11,12 @@ using CosmicShore.Utility;
 
 namespace CosmicShore.UI
 {
+    /// <summary>
+    /// One arcade card: a mode's art, title, vessel, genre petals, favourite star, party picks and
+    /// lock. What the favourite, the local pick, the lock and the pick chips LOOK like goes through
+    /// the virtual Draw hooks, so the style-B card (<see cref="KitGameCard"/>) draws the same states
+    /// without a second copy of the card's rules. This class draws the legacy look.
+    /// </summary>
     public class GameCard : MonoBehaviour
     {
         [Header("Resources")]
@@ -142,7 +148,7 @@ namespace CosmicShore.UI
 
             GameTitle.text = game.DisplayName;
             BackgroundImage.sprite = game.CardBackground;
-            StarImage.sprite = Favorited ? StarIconActive : StarIconInActive;
+            DrawFavorite(Favorited);
 
             UpdateVesselIcon(game);
             UpdateGenrePetal(game);
@@ -288,8 +294,7 @@ namespace CosmicShore.UI
             // TINT the border rather than switching an object on: the card's Border is a
             // decorative frame that is drawn on EVERY card, so using its active state as the
             // highlight would strip the border off every card the local player has not picked.
-            if (LocalPickBorder)
-                LocalPickBorder.color = includesLocalPlayer ? localPickBorderColor : _borderRestColor;
+            DrawLocalPick(includesLocalPlayer);
 
             if (!AvatarSpace || !_avatarTemplate) return;
 
@@ -310,7 +315,7 @@ namespace CosmicShore.UI
                 if (!chip) continue;
 
                 bool used = i < wanted;
-                chip.gameObject.SetActive(used);
+                SetChipShown(chip, used);
                 if (used) chip.sprite = ResolveAvatar(avatarIds[i]);
             }
         }
@@ -333,7 +338,7 @@ namespace CosmicShore.UI
         public void ToggleFavorite()
         {
             Favorited = !Favorited;
-            StarImage.sprite = Favorited ? StarIconActive : StarIconInActive;
+            DrawFavorite(Favorited);
 
             // The audio is a FLOURISH and the two lines under it are the ACTION, so the audio must
             // not be able to stop them. This is persistent call [0] on every card's favourite star,
@@ -359,6 +364,34 @@ namespace CosmicShore.UI
         /// </summary>
         public void SetLocked(bool locked)
         {
+            DrawLocked(locked);
+            _isLocked = locked;
+
+            if (TryGetComponent<Button>(out var btn))
+                btn.interactable = !locked;
+        }
+
+        // ── Look ────────────────────────────────────────────────────────────────
+
+        /// <summary>The favourite star. Legacy: swaps the star sprite.</summary>
+        protected virtual void DrawFavorite(bool favorited)
+        {
+            if (StarImage) StarImage.sprite = favorited ? StarIconActive : StarIconInActive;
+        }
+
+        /// <summary>The local player's own pick. Legacy: tints the card's Border.</summary>
+        protected virtual void DrawLocalPick(bool picked)
+        {
+            if (LocalPickBorder)
+                LocalPickBorder.color = picked ? localPickBorderColor : _borderRestColor;
+        }
+
+        /// <summary>One party-pick avatar chip. Legacy: toggles its GameObject.</summary>
+        protected virtual void SetChipShown(Image chip, bool shown) => chip.gameObject.SetActive(shown);
+
+        /// <summary>The locked look. Legacy: the lock overlay and a tinted background.</summary>
+        protected virtual void DrawLocked(bool locked)
+        {
             if (lockOverlay != null)
                 lockOverlay.SetActive(locked);
 
@@ -371,11 +404,6 @@ namespace CosmicShore.UI
 
                 BackgroundImage.color = locked ? lockedTintColor : _originalBgColor;
             }
-
-            _isLocked = locked;
-
-            if (TryGetComponent<Button>(out var btn))
-                btn.interactable = !locked;
         }
     }
 }

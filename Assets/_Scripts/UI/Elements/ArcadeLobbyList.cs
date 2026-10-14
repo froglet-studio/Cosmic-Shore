@@ -63,6 +63,13 @@ namespace CosmicShore.UI
                  "Should be the scene-wired FriendsListPanel.")]
         [SerializeField] private FriendsListPanel friendsListPanel;
 
+        [Header("Style-B (optional)")]
+        [Tooltip("\"n / 4\" beside the PARTY label: the seats drawn out of the slots shown.")]
+        [SerializeField] private KitText partyCountText;
+        [Tooltip("The Leave button's group. Hidden (and out of the layout) while there is nobody else " +
+                 "in the party, instead of showing a Leave that does nothing.")]
+        [SerializeField] private CanvasGroup leaveGroup;
+
         /// <summary>Max slots rendered - matches <c>HostConnectionDataSO.MaxPartySlots</c> (4 by design).</summary>
         const int MAX_SLOTS = 4;
 
@@ -333,6 +340,7 @@ namespace CosmicShore.UI
                 if (seat.IsLocal)
                 {
                     PopulateLocalSlot(slot);
+                    slot.SetRole(true, seat.IsHost);
                     continue;
                 }
 
@@ -343,7 +351,11 @@ namespace CosmicShore.UI
                     seat.Member.DisplayName,
                     ResolveAvatar(seat.Member.AvatarId),
                     canKick: connectionData.IsPartyHost);
+                slot.SetRole(false, seat.IsHost);
             }
+
+            if (partyCountText)
+                partyCountText.SetText($"{seatCount} / {slotCount}");
 
             _seatedFingerprint = _netFingerprint;
             _hasSeated         = true;
@@ -427,7 +439,9 @@ namespace CosmicShore.UI
 
             // Leaving only makes sense when we have at least one other party
             // member. A solo "leave" is a no-op from the user's perspective.
-            leaveButton.interactable = connectionData.RemotePartyMemberCount > 0;
+            bool canLeave = connectionData.RemotePartyMemberCount > 0;
+            leaveButton.interactable = canLeave;
+            KitVisibility.SetShown(leaveGroup, canLeave);
         }
 
         // ─────────────────────────────────────────────────────────────────────
@@ -470,7 +484,13 @@ namespace CosmicShore.UI
 
         void OnAddSlotPressed()
         {
-            if (friendsListPanel != null)
+            if (friendsListPanel == null) return;
+
+            // The style-B panel carries the list beside the slots, so "invite a friend below" moves
+            // focus down into it; the legacy overlay has to be opened first.
+            if (friendsListPanel.IsEmbedded)
+                friendsListPanel.FocusList();
+            else
                 friendsListPanel.Show();
         }
 
