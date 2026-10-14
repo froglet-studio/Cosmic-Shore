@@ -23,8 +23,9 @@ namespace CosmicShore.Gameplay
     /// its attractor, in the plane of the hull's pass: the DETECTION radius (faint — where it can catch you) and the ORBIT
     /// radius (where it holds you; brighter once it has caught you, easing toward lime as the quarter-turn nears and LIME
     /// while a release would pay the whole kick, <see cref="StoatSlingExecutor.Timing01"/>). That is the cue the 90°
-    /// slingshot is timed by. No path is predicted and no warp boost runs in Time mode (the omni Overclock still
-    /// does).</para>
+    /// slingshot is timed by. No path is predicted in Time mode; the warp boost runs while the pair is held
+    /// (<see cref="StoatSlingExecutor.WarpsFlight"/>, the studio's catch warp, 2026-10-14), to
+    /// <see cref="StoatSlingConfigSO.CatchWarpShare"/> of the field's boost, so the two modes fly at one pace.</para>
     ///
     /// <para><b>Time 5 — Foresight</b> (the replicated unlock bit): the nearest rivals' paths are drawn too, in their
     /// domain colours, each flown forward on the turn and speed it is holding right now (measured from its pose, no
@@ -143,11 +144,18 @@ namespace CosmicShore.Gameplay
             float dt = Time.deltaTime;
             float target = Mathf.Max(1f, config.Boost.EvaluateLive(_status));
             if (flying && IsOverclocked) _path.Warped = true;   // the omni crystal: the line is lime and the boost on
-            _boost = flying ? StoatDipoleMath.StepBoost(_boost, _path.Warped, target, config.BoostRise, config.BoostFadeSeconds, dt) : 1f;
+            // Time mode: the catch warps the clock while its pair is held (the field's rule, "held" in place of "lime").
+            bool warped = _path.Warped;
+            if (_timeMode && _sling && _sling.Config && !IsOverclocked)
+            {
+                warped = _sling.WarpsFlight;
+                target = _sling.Config.CatchWarpTarget(target);
+            }
+            _boost = flying ? StoatDipoleMath.StepBoost(_boost, warped, target, config.BoostRise, config.BoostFadeSeconds, dt) : 1f;
             transformer.FlightTimeScale = _boost;
 
-            if (_path.Warped && !_wasWarped) PlayOneShot(config.WarpEvent);
-            _wasWarped = _path.Warped;
+            if (warped && !_wasWarped) PlayOneShot(config.WarpEvent);
+            _wasWarped = warped;
 
             bool pilot = _status.IsLocalUser && !_status.AutoPilotEnabled;
             if (pilot && flying) DrawDots();

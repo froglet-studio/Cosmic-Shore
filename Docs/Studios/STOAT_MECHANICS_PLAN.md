@@ -170,3 +170,13 @@ The Unity panel is scoped this way because of the LOCKED rule (CLAUDE.md, the us
 window may re-draw a studio's parameters or hand-edit a mapped field. A picker that chooses which existing mechanics a
 play session uses, and shows numbers without editing them, stays inside that rule. If the panel should EDIT numbers, the
 rule has to be lifted for the Stoat first.
+
+## 7. Update, 2026-10-14 (play feedback: "the catch is slow; I want both mechanics at the same pace")
+
+- **The switch is T** on a keyboard in the game and in the artifact (pad B in both). R stays the studio's reset.
+  `Button2Action` moved from R to T for every vessel (`KeyboardInputStrategy`, `SingleStickMouseInputStrategy`, the
+  hint chip).
+- **The catch sling now runs at the field's pace.** It uses the field's warp, starting from the press, at 1.15 of the
+  field's boost (`dpWarp`, `dpWarpHeld`). Unity's 90° timing is back in the artifact (`dpSweetDeg` …), so the artifact is
+  the source again. Numbers are in `STOAT_DIPOLE.md` §1b. The catch now takes 56.1 s on the circuit against the field's
+  59.6 s; hairpins are still the field's (71 s against 33 s). This covers §4 P2's timing port and part of P3.

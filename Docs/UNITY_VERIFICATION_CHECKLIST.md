@@ -65,6 +65,31 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Stoat: T is B on the keyboard; the catch sling flies at the field's pace (`Ys-bleeding-edge`, 2026-10-14) — NOT EDITOR-VERIFIED
+
+**What landed:**
+- **Keyboard B (`Button2Action`) moved from R to T, for every vessel**, in both desktop schemes (`KeyboardInputStrategy`,
+  `SingleStickMouseInputStrategy`) and the hint chip (`Resources/ControlGlyphSet.asset`, binding 3 → `T`). R is the
+  Vessel Studio's reset; T now switches the Stoat's mode in the game and in the studio.
+- **The catch sling's pace** (`STOAT_DIPOLE.md` §1b "The pace"): in Time mode the pathfinder warps the flight clock while
+  the pair is held, to `1 + (Boost − 1) × StoatSlingConfig.catchWarpShare` (1.15), at the field's `boostRise` and
+  `boostFadeSeconds`. The release kick now reads the engine's speed (warp taken out). Decided in the artifact (`dpWarp`,
+  `dpWarpHeld`) and cloned by `studio_to_unity.py` (six new rows, `--check` matches them; its 4 older drifts are unchanged).
+
+**Verified without the editor:** `unity_refcompile` player-dev and editor configs, with no error in any Stoat or
+keyboard file. Both configs report about 690 errors elsewhere, all from the Reflex package, which this session could not
+download. Amoebius `CosmicShore.Live` builds. New `StoatSlingTests` (catch warp target and step, the shipped asset's
+pace and timing, T is B) are compiled but have not been run in an editor. The artifact's batch race gives circuit 56.1 s
+best for the catch against 59.6 s for the field.
+
+**Verify in editor:**
+1. Any vessel on keyboard: T fires its B ability, R does nothing, and the B hint chip reads T.
+2. Stoat, T to Time mode, squeeze a trigger: the hull speeds up straight away (the Time card's warp), keeps the speed
+   round the black hole, and slows over about 0.6 s after the release. Mass mode feels unchanged.
+3. A release at a quarter turn still pays the bigger kick (lime window), and the kick does not explode with the warp
+   (top speed stays in the 300s, not the 700s).
+4. Slingshot with 3 AI Stoats: the AIs in Time mode keep pace with Mass-mode AIs.
+
 ### 🔴 No more "Script Updating Consent" prompt: MPPM calls moved to the engine API (`Ys-bleeding-edge`, 2026-10-14) — NOT EDITOR-VERIFIED
 
 **What landed:** Multiplayer Play Mode 2.0 moved `CurrentPlayer` into the Unity 6.3 engine as
