@@ -65,6 +65,25 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Regatta: the host picks every AI seat's hull, so five hulls race at once (`Ys-bleeding-edge`, 2026-10-14) — NOT EDITOR-VERIFIED
+
+**What landed:** `AIHullSeating.MayPick` / `SeatHull`. The host may tap any AI chip on the launch panel,
+opponents included; a pick on an opponent seat replaces the card's pinned Squirrel for that seat. Guests
+are unchanged (own allies only). The spawner now reads a pick before the pin (`ResolveAIVesselType`).
+
+**Verified without the editor:** the seating rule ran under .NET (7 cases, plus a negative control: the
+old pin-first rule fails "a pick beats the pin"). `unity_refcompile` player-dev and editor: no error in
+the changed files beyond the unfetchable Reflex and Unity.Services.Multiplayer packages.
+`RegattaTeamPlayTests` gains two cases (compiled, not run in an editor).
+
+**Verify in editor (the five-hull race, `REGATTA.md` §8):**
+1. Arcade ▸ Regatta, solo, 6 seats over 3 domains. Every AI chip, both teams, steps when you tap it
+   (auto → Manta → Dolphin → Rhino → Urchin → Squirrel → …). An opponent chip on auto shows the Squirrel.
+2. Seat Squirrel, Manta, Rhino, Urchin, Dolphin; launch at intensity 1, Hard. Each AI spawns in the hull
+   its chip showed (FrogletTools ▸ AI ▸ Third Eye to watch any of them).
+3. Note per hull: finished 3 laps or not, place, rings missed, where it got stuck.
+4. With a guest: the guest can still tap only their own team's ally chips.
+
 ### 🔴 Stoat: T is B on the keyboard; the catch sling flies at the field's pace (`Ys-bleeding-edge`, 2026-10-14) — NOT EDITOR-VERIFIED
 
 **What landed:**

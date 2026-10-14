@@ -197,6 +197,11 @@ hull backstop alike):
   `GameDataSO.RequestedAIVessels` (entry *i* = bot *i*); the spawner honours a pick that is on the
   card, built and still free, and otherwise draws from the card as before. *Auto* (no pick) is
   the old behaviour. Picks are per session — not remembered with the launch preference.
+- **The host picks every seat** (2026-10-14, for testing a mixed grid): the host may tap ANY AI chip,
+  an opponent's included, and step it through *auto → the card's hulls → auto*. On an opponent seat
+  *auto* is the pinned Squirrel; a pick replaces the pin for that seat only and then follows arena
+  seating like any pick (one pilot per hull). A guest still picks only their own allies.
+  `AIHullSeating.MayPick` / `SeatHull`, read by the chips, the host's check and the spawner.
 
 ## 6.5 Scoring — the team sum
 
@@ -255,6 +260,15 @@ files against a UnityEngine math stub with Roslyn and RUNS them (the four shippe
 assets; the generator reads both.
 
 ## 8. Verification status and known limitations
+
+- **The five-hull test race (2026-10-14) — NOT EDITOR-VERIFIED.** Solo, Arcade ▸ Regatta, 6 seats
+  (you + 5 AI) over 3 domains. Tap each AI chip (as host you can tap every team's) to put **Squirrel,
+  Manta, Rhino, Urchin, Dolphin** on the grid, and fly a sixth hull yourself (or one of the five, leaving
+  that AI on *auto*). Intensity 1, Hard. Record per hull: finished 3 laps or not, place, rings missed,
+  where it got stuck. The model's skilled-pilot I1 times for these five are Rhino 17.8 s, Manta 23.9 s,
+  Dolphin 41.9 s, Urchin 48.3 s, Squirrel 48.5 s (`regatta_balance.py`): a 2.7× spread before any AI
+  error. The result decides the next step: AI fixes for a hull that does not finish, then
+  `StartingElements` or a pursuit start for the spread.
 
 **Authored headless and never run in the editor.** The pure course code was compiled and run
 for real (Roslyn, 244 circuits, every contract the editor tests assert held); the C# that
