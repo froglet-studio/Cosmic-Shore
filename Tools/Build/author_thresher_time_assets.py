@@ -24,7 +24,7 @@ GateRaceScoringRuleSO. The clone swaps FIVE things and inherits the rest:
   1. the controller script (ThresherTimeController), keeping the donor's `laps` field (3).
   2. its scoring rule ASSET (another asset on the same GateRaceScoringRuleSO script).
   3. the AI approach numbers and the plausible-speed clamp - the approach sized to the only
-     circle an AI Thresher flies (cruise: it never slings), the clamp to cover a Perfect Release.
+     circle an AI Thresher flies (cruise: it never slings), the clamp to cover a boosted aimed launch.
   4. the scene's Netcode GlobalObjectIdHash values, minted fresh so no in-scene NetworkObject
      shares an id with its donor.
   5. the arcade card's Vessels list: Thresher, not Grizzly.
@@ -118,11 +118,13 @@ AI_APPROACH_LEAD = 150
 AI_THROUGH_DISTANCE = 100
 
 # Detection clamp: a frame's motion longer than this x dt x 2 + 5 is read as a respawn. The fastest a
-# Thresher can leave a sling is the ball's 479 u/s ceiling x Time L5's 1.6 Perfect Release = 766 u/s
-# (ThresherTimeCourse.PerfectSlingSpeed); the skim boost is a separate, slower channel (5x the 110
-# throttle span, 565 u/s). 1600 covers twice the perfect sling and is still far under a respawn's jump.
-MAX_PLAUSIBLE_SPEED = 1600
-PERFECT_SLING_SPEED = 2600 * 70 / 380 * 1.6
+# Thresher can leave a sling is the ball's 479 u/s ceiling x the 4.8 launch boost EVERY aimed launch
+# takes = 2299 u/s (ThresherTimeCourse.BoostedSlingSpeed; until 2026-10-13 it was Time L5's x1.6
+# Perfect Release, 766 u/s, and the clamp was 1600); the skim boost is a separate, slower channel (5x
+# the 110 throttle span, 565 u/s). 4600 covers twice the boosted sling - a step of ~158 u at 60 fps,
+# still under a respawn's jump onto an 800 u circuit.
+MAX_PLAUSIBLE_SPEED = 4600
+BOOSTED_SLING_SPEED = 2600 * 70 / 380 * 4.8
 
 # The comeback strength, a FUNCTION OF THE TARGET (`bonusLevels = deficit x rate`): at 0.3 a
 # quarter-of-race deficit (6 gates) buys 1.8 element levels, Grizzly Time's number on the same
@@ -364,11 +366,11 @@ for h in re.findall(r"GlobalObjectIdHash: (\d+)", scene):
     if int(h) != 0 and int(h) in _taken:
         errors.append(f"scene GlobalObjectIdHash {h} is also carried by another scene or prefab")
 
-# The detection clamp must cover the fastest thing the hull can fly, or a Perfect Release reads as
-# a respawn and the gate it threads is never credited.
-if MAX_PLAUSIBLE_SPEED < 2 * PERFECT_SLING_SPEED:
-    errors.append(f"maxPlausibleSpeed {MAX_PLAUSIBLE_SPEED} is under twice the perfect sling "
-                  f"({PERFECT_SLING_SPEED:.0f} u/s)")
+# The detection clamp must cover the fastest thing the hull can fly, or a boosted aimed launch reads
+# as a respawn and the gate it threads is never credited.
+if MAX_PLAUSIBLE_SPEED < 2 * BOOSTED_SLING_SPEED:
+    errors.append(f"maxPlausibleSpeed {MAX_PLAUSIBLE_SPEED} is under twice the boosted sling "
+                  f"({BOOSTED_SLING_SPEED:.0f} u/s)")
 # The AI approach is sized to the cruise circle an AI Thresher actually flies; it must stay
 # outside that circle or the pilot orbits its own aim point (AIPilot has no arrive-and-stop).
 if not (AI_THROUGH_DISTANCE > CRUISE_RADIUS and AI_COMMIT_DISTANCE > 2 * CRUISE_RADIUS

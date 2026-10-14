@@ -40,7 +40,7 @@ The digital controls (until 2026-10-13; `analogTriggers` off):
 | **RT hold** (Winch) | `RightStickAction` (1) | `OnlyRightStickAction` (11) | Let chain out (`payOut`) up to `maxLen` × the Space scaling: longer reach, slower whip. |
 | **RT release** | | | Chain reels in fast (`reelIn`) conserving spin — **the crack**. The chain turns **lime** (the palette's CTA colour, a quick ease, never a flicker) while releasing now would reach smash speed (READY). |
 | **LT hold** (Plant) | `LeftStickAction` (2) | `OnlyLeftStickAction` (12) | The ball skids to a stop (`skidSeconds`, still destructive) and becomes a pivot; the ship swings round it, faster every lap. RT up winds you in and spins you faster; RT held lets you out. The sticks keep a **low-sensitivity** say: they steer your path round the ball at `pivotSteer` 45 °/s (under half of free flight's 120), never the spin. |
-| **LT release** | | | Fly off along the orbit's tangent — or, while the camera spectates the spin, along the **aim** the sticks have set (§5a): the ship keeps circling and leaves from the launch point whose tangent is the aim (at most a lap later; no wait inside the lime window); the ball is yanked after you (`yank`). |
+| **LT release** | | | Fly off along the orbit's tangent — or, while the camera spectates the spin, along the **aim** the sticks have set (§5a): the ship keeps circling and leaves from the launch point whose tangent is the aim (at most a lap later; no wait inside the lime window), always at the **launch boost** (`launchBoost` ×4.8 the orbit's speed, whatever the timing); the ball is yanked after you (`yank`). |
 | **A press** (Mass Mode) | `Button1Action` (6), shared map | `Button1Action` (on-screen button) | **Toggle** Mass Mode (§2b). The release is ignored (rule 37). |
 
 The trigger bindings use the Squirrel's InputEvents slots, so no input plumbing changed. Keyboard:
@@ -151,13 +151,13 @@ routed to all of them.
 | Charge | **Wrecking Ball** (passive) | `vesselHitPetals` 1 → 3 petals per element the ball or chain steals per enemy-vessel hit (floor 0.5) | **Magnet** — the free ball is drawn to enemy vessels |
 | Mass | **Mass Mode** (A, toggle) | `massTrailScale` ×1 → ×2 on the size of the ball's Mass Mode trail prisms (floor ×0.5) | **Armoured Trail** — those prisms are laid shielded |
 | Space | **Winch** (RT) | `energyMaxDiameterScale` ×4 → ×8, the largest blast the chain's bank can buy (floor ×2) | **Breaker** — a red ball's direct hit destroys super-shielded prisms |
-| Time | **Plant** (LT) | `spinMultiplier` ×1 → ×1.75 on spin-up rate and cap — how fast the spin winds up to launch speed | **Perfect Release** — a launch timed inside the window leaves ×1.6 faster |
+| Time | **Plant** (LT) | `spinMultiplier` ×1 → ×1.75 on spin-up rate and cap — how fast the spin winds up to launch speed | **open (design needed)** — "Perfect Release" (a timed launch ×1.6) retired 2026-10-13 when every aimed launch took the boost |
 
 Retired by this re-cut (rule 26 — each old gate is deleted, not left beside the new one): Charge
 "Lit", Mass "Wrecker" (and the ball's Mass-scaled weight/radius: the ball is now a fixed size),
 Space "Reaper Chain" (and the Space-scaled chain reach: `maxLen` is fixed), Time "Slingshot", and
 the Charge-scaled explosion size. Upgrades are read through the replicated unlock bits at the
-moment of use (`MagnetActive`, `ArmouredTrailActive`, `BreakerActive`, `PerfectReleaseActive`). The scalings use `EvaluateReplicated`, not
+moment of use (`MagnetActive`, `ArmouredTrailActive`, `BreakerActive`; Time's slot is open, its gate deleted). The scalings use `EvaluateReplicated`, not
 `EvaluateLive`: every peer simulates the ball and element levels do not replicate.
 
 **One L5 per element (rule 26).** The hull is a Squirrel clone, and the Squirrel's containers gate
@@ -365,8 +365,9 @@ the speed tunnel's (vessel rule 21) and is only READ. Dials in `ThresherConfigSO
   - **The launch sight** (`ThresherLaunchSight`, round 4 — it replaced the dotted line, which
     degenerates to a point once the camera is ON the trajectory). A **crosshair** at screen centre:
     every point of the trajectory projects there. White while a release would wait; the palette's
-    **CTA lime while the timing is right** — the ship will reach the launch point within
-    `perfectWindowSeconds` 0.25 s (`IsTimingPerfect`, `ThresherChainSolver.SecondsToLaunchPoint`).
+    **CTA lime while a release would barely wait** — the ship will reach the launch point within
+    `launchCueSeconds` 0.25 s (`IsLaunchImminent`, `ThresherChainSolver.SecondsToLaunchPoint`). A cue
+    only: it pays nothing (below).
     Beside it, a **zoom window shaped like the TIME petal** (the Plant is the Time ability), in the
     Serpent eyepiece's slot (top-left, 45% of screen height): a second camera looking down the same
     trajectory from the launch point, with its own crosshair, **zoomed by LT's depth** like the
@@ -383,8 +384,15 @@ the speed tunnel's (vessel rule 21) and is only READ. Dials in `ThresherConfigSO
     ship keeps circling and leaves from the chosen point, along the aim, on the frame it would
     otherwise carry past it (the angle still to go is within that frame's angular step) — at most one
     lap later (≈ 2 s at 3 rad/s, ≈ 7 s at the 0.9 threshold). Released inside the lime window the wait
-    is little to none, and with **Time L5 "Perfect Release"** that launch leaves `perfectBoost` ×1.6
-    faster than the orbit (`ThresherStepResult.Perfect`). The aim is held once armed. The ball is
+    is little to none. **Every aimed launch is boosted** (2026-10-13, Garrett: "boost it out of a cross
+    hair move every time instead of rewarding timing … triple the boost"): it leaves `launchBoost` **×4.8**
+    the orbit's speed however long it waited for its point (`ThresherChainSolver.ArmLaunch(aim, boost)`;
+    739 u/s off the 154 u/s spin cap, 2 299 u/s off the 479 u/s sling ceiling). Before, only a launch
+    timed inside the 0.25 s window with **Time L5 "Perfect Release"** got ×1.6; that upgrade and its
+    `ThresherStepResult.Perfect` flag are retired. A plain release (no crosshair: a slow orbit, the
+    autopilot, a remote replica's LT edge) still leaves at the orbit's speed. The ship carries the speed
+    as momentum and bleeds it back to cruise at the throttle step (`LERP_AMOUNT` 1.5/s); nothing clamps
+    it (no `ModifyVelocity`, so §4.ab2's ceiling does not apply). The aim is held once armed. The ball is
     yanked along the aim; the transformer faces the hull along it (`TryConsumeReleaseDirection`) and
     grip puts the momentum on the nose. Re-pressing LT while armed does not cancel it (re-releasing
     re-arms with the same aim).
@@ -393,6 +401,15 @@ the speed tunnel's (vessel rule 21) and is only READ. Dials in `ThresherConfigSO
     at its cap spectates (reeled in at cruise 3.2 rad/s, let out at its cap 1.1); only a let-out orbit
     hooked on at the crawl floor (0.3 rad/s) is ridden until it spins up. Below the threshold the old
     behaviour stands: the sticks lean the orbit at `pivotSteer` and LT releases on the tangent at once.
+- **No trail while the crosshair is up** (2026-10-13). A spin circling in front of the lens walled its
+  own launch path in prisms, so the hull's trail pen is held UP for exactly as long as the launch view
+  is (`ThresherExecutor.LaunchViewUp` → `VesselPrismController.SetSpawnerPaused`, the Fold's lever: it
+  gates prism creation only, never the spawn loop, written on edges because the pen is one last-writer
+  flag shared with the cell's spawner pause and the painting toys). `LaunchViewUp` is the camera's old
+  engage/release rule moved into `StepChain`, so it is simulated on EVERY peer from the chain's own state
+  and every machine pauses the same trail; the owner's camera now switches on its edges, so crosshair
+  on == trail off by construction. The trail comes back on the launch frame (the plant ends). Mass
+  Mode's ball trail is untouched (it lays only off the plant anyway).
 - **Analog triggers** (shipped 2026-10-13): the camera switches only with the ball STOPPED and LT and the
   chain's rigidity both at `fullPull`; RT eased below `letGoBelow` hands it back unless a launch is armed.
   The entry keeps the camera's own turn and glides it to a stop over `spectateCarrySeconds` 0.35 (the old
@@ -530,7 +547,7 @@ is the fix.
 | `_Graphics/Materials/Shaders/ThresherChainFresnelShader.shader`, `_Graphics/Materials/ThresherChainMaterial.mat` | The chain's fresnel tube (§5) |
 | `Tests/Editor/ThresherAnalogTriggerTests.cs` | 10 tests on the analog path (partial pull never plants, full-pull stop with no single-frame stop, let-go mid-stop keeps the ball's speed, slack vs rigid reach, reel-in spins up, slew, ambiguous plant swept over 80 turn patterns, 30 fps stability, armed launch with/without a lead, analog off is inert); run offline by the chain harness too |
 | `Docs/Studios/ThresherPlantLab.html`, `Docs/Studios/THRESHER_PLANT_LAB.md`, `Tools/Build/thresher_plant_lab/` | The lab the analog triggers graduated from, and `parity.cjs` (lab ↔ C# frame parity on both paths, asset ↔ lab preset) |
-| `Tests/Editor/ThresherChainSolverTests.cs`, `Tools/Build/thresher_chain_harness/` | 56 tests (solver, planted steering, hook-on, windmill, chain smoothing, camera framing, reach envelope, launch camera on the trajectory, sight zoom, armed + perfect launch, steered plane, magnet); offline runner + feel table. `Tests/Editor/TimePetalGeometryTests.cs`: the traced Time petal |
+| `Tests/Editor/ThresherChainSolverTests.cs`, `Tools/Build/thresher_chain_harness/` | 56 tests (solver, planted steering, hook-on, windmill, chain smoothing, camera framing, reach envelope, launch camera on the trajectory, sight zoom, armed + boosted launch, steered plane, magnet); offline runner + feel table. `Tests/Editor/TimePetalGeometryTests.cs`: the traced Time petal |
 
 Registered in `Vessel Prefab Container`, `DefaultNetworkPrefabs` (own `GlobalObjectIdHash`
 1887398589), `ToyVesselRoster.Default`, `CrystalHullFusionConfig` (no bakes: a runtime hull, §5b) and
@@ -575,7 +592,21 @@ Registered in `Vessel Prefab Container`, `DefaultNetworkPrefabs` (own `GlobalObj
   the local pilot's camera state and do not replicate. The hull's pose does, but a remote peer runs
   the plain release the moment LT comes up, so its copy of the ball is let go while the replicated
   hull keeps circling to the launch point — the remote ball and chain can look wrong for up to a lap.
-  Replicating the armed aim (one Vector3 with the release) is the fix. Untested in MPPM.
+  Replicating the armed aim (one Vector3 with the release) is the fix. Untested in MPPM. Since every
+  aimed launch is boosted ×4.8 (2026-10-13) the gap is wider: the remote copy's ball is yanked at the
+  orbit's speed while the owner's leaves at ×4.8 — the hull's replicated pose is right, the remote
+  ball's yank is not.
+- **Time L5 is an open slot (design needed, 2026-10-13).** "Perfect Release" was the timing reward, and
+  the timing reward is gone: every aimed launch takes the boost. Its gate is deleted (rule 26), the map's
+  `UpgradeLabel` is empty, so a Time-5 Thresher gains nothing — but `IsUpgradeActive(Time)` still flips
+  and the HUD's Time card still shows the upgrade. Not invented here (the vessel skill's design gate).
+- **Thresher Time is not cut for the boosted launch.** Its ladder is cut against the UNBOOSTED 479 u/s
+  sling ceiling (THRESHERTIME.md §3); a boosted ceiling launch leaves at 2 299 u/s, whose 120 °/s circle
+  (~1 100 u) is wider than the course shell. Only the detection clamp moved (1600 → 4600 u/s). Whether
+  the mode wants the boost, a lower cap, or a re-cut is a design call.
+- **The launch view (and so the trail pause) is simulated per peer from replicated edges.** A remote copy
+  reads each trigger press as a full pull (§7), so during a partial pull the owner and a guest can
+  disagree on the moment the view (and the trail) goes up by a few frames — a prism or two at the edges.
 - Mass Mode is a toggle replicated by re-running the press on every peer; a press lost to a peer
   would invert that peer's Mass Mode until the next press (the same exposure every edge has).
 - The windmill and Mass Mode have **no FMOD events of their own** yet: the trail and shield reuse
@@ -649,20 +680,25 @@ A8. **MPPM**: a guest sees the host's ball stop at the press (expected, §7); sc
 8. **Launch view**: once it spins, the camera glides (~0.9 s, no wobble) to sit level behind a point
    on the circle, looking along the launch path; a crosshair at screen centre flashes lime as the ship
    is about to pass the point. Stick X slides the point round the circle; stick Y tilts the whole
-   orbit with the camera. Hold RT: the point stays on the ship's own circle.
+   orbit with the camera. Hold RT: the point stays on the ship's own circle. **The hull lays no trail
+   while the crosshair is up** — no ring of your prisms round the orbit — and laying resumes the
+   moment you launch (or the view drops).
 9. **Sight**: a Time-petal (diamond) window top-left shows the path magnified with its own crosshair;
    squeeze LT deeper to zoom (to 6°), ease to a light hold to widen; the main view never zooms.
 10. **Launch**: release LT anywhere in the lap — the ship leaves exactly from the point along the
-    crosshair; released while lime, almost no wait. The camera glides back behind the ship (~0.8 s, no
-    swing, no pop). Let a spin decay instead (pay out RT): the same glide.
+    crosshair; released while lime, almost no wait. **Every** such launch leaves boosted (×4.8 the
+    orbit — far faster than any plain release), whether released while lime or a lap early; compare
+    with a plain release from a slow orbit (no crosshair), which leaves at orbit speed. The camera
+    glides back behind the ship (~0.8 s, no swing, no pop). Let a spin decay instead (pay out RT): the
+    same glide.
 11. **Windmill**: fly through an OMNI crystal — the ball whips red-hot round the ship across your flight
     path for ~12 s; RT changes its radius. An elemental crystal does not.
 12. **Enemy vessels**: hit an AI/rival hull with the ball or the chain — they lose petals and you score
     a Strike (once a second per victim); nothing else happens to them.
 13. **Upgrades** (FrogletTools element tools or crystals to L5): Charge (Magnet) — the free ball curves
     toward a nearby enemy; Mass (Armoured Trail) — Mass Mode's trail prisms arrive shielded; Space
-    (Breaker) — a red ball smashes a super-shielded prism; Time (Perfect Release) — a release while lime
-    launches visibly faster. Below 5: more petals per hit, bigger trail prisms, bigger max blast, faster
+    (Breaker) — a red ball smashes a super-shielded prism; Time — no upgrade (open slot; the HUD's
+    Time card still marks L5). Below 5: more petals per hit, bigger trail prisms, bigger max blast, faster
     spin-up.
 14. **Other vessels**: Squirrel, Dolphin, Scarab fly unchanged; the **Serpent's** scope eyepiece looks
     exactly as before (it shares `ScopePipView` / `ScopePetalImage` with the Thresher's sight).
@@ -676,11 +712,36 @@ A8. **MPPM**: a guest sees the host's ball stop at the press (expected, §7); sc
 Tuning order if it feels wrong: `maxLen` vs the hull's turn rate (whether the ball swings or falls
 slack), then `smashSpeed`, `explosionDiameter`, then `crack` / `reelSpinCap`. Camera: `spectateSpinRate`
 (when it detaches), `aimYawRate` / `aimElevationDegrees` (how the aim feels), then `cameraZoomInRate`
-(how lazily it comes home), `perfectWindowSeconds` / `perfectBoost` (the timing reward). Energy:
+(how lazily it comes home), `launchBoost` (the aimed launch's speed) / `launchCueSeconds` (the lime cue). Energy:
 `energyDiameterPerUnit` / `energyMaxDiameterScale`. Vessel hits: `vesselHitPetals`, `magnetRange`. Mass Mode:
 `massTrailSpacing` (trail density). Windmill: `windmillSeconds`, `windmillSpeed`.
 
 ## Follow-ups
+
+### Refactor rows (2026-10-14 crosshair-trail + launch-boost ship pass, `cece/relaxed-dijkstra-g6ix3x` — rows only)
+
+- **The trail pen is a fifth last-writer of one flag (debt CREATED).** `HoldTrailPen` writes
+  `VesselPrismController.SetSpawnerPaused`, a single bool also written by the Cell's spawner pause, the
+  painting runner, Arkway, the mode preview and the Fold. Written on edges only, so it never fights per
+  frame, but a launch view that ENDS while the cell holds the pen up releases the cell's hold (the Fold has
+  the same exposure, and `Cell.cs`'s own note says so). The fix is the `SetTierHold` shape: a per-owner
+  hold set (or a counted pen), so no holder can release another's. Measure:
+  `grep -rn "SetSpawnerPaused(" Assets/_Scripts --include=*.cs | grep -v "public void" | wc -l` → 11 call
+  sites in 6 files.
+- **The Plant Lab's `armLaunch` still has the retired timing window (debt CREATED).** The shipped solver is
+  `ArmLaunch(aim, boost)`; `Docs/Studios/ThresherPlantLab.html` still carries
+  `armLaunch(aim, perfectWindowSeconds, perfectBoost)` and a `res.Perfect`. Parity cannot see it: every
+  scenario arms with the default boost 1 (`TraceDriver.cs` calls `ArmLaunch(aim)`), so the gate passes
+  whatever the boost does. Port the lab's signature and add an armed-with-boost scenario to
+  `scenarios.json`. Measure: `grep -n "armLaunch(aim, perfectWindowSeconds" Docs/Studios/ThresherPlantLab.html`
+  → line 374.
+- **`UpdateCamera`'s docstring describes the round-1 camera (prose describing a deleted system, walked
+  past).** `ThresherExecutor.cs` ~1050: "looks DOWN on the orbit … a line shows the path, and releasing LT
+  flies the ship off along it at once". Since round 4 the camera sits ON the trajectory, the line is a
+  crosshair, and a release ARMS a launch that waits for its point. Rewrite it against §5a. Measure:
+  `grep -n "a line shows the path" ThresherExecutor.cs` → 1 hit.
+- **Time L5 is open (INCOMPLETENESS, a report, not debt).** Recorded in §9; a design question, not a
+  cleanup — do not fill it from this row.
 
 ### Refactor rows (2026-10-13 own-vessel ship pass, `cece/dazzling-hypatia-nmdhle` — rows only)
 

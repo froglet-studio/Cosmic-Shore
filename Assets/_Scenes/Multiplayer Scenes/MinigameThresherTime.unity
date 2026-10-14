@@ -830,7 +830,7 @@ MonoBehaviour:
   aiThroughDistance: 100
   aiCrystalDetourSlack: 220
   aiCrystalScanSeconds: 0.5
-  maxPlausibleSpeed: 1600
+  maxPlausibleSpeed: 4600
   reportResyncSeconds: 3
 --- !u!114 &1628508347
 MonoBehaviour:

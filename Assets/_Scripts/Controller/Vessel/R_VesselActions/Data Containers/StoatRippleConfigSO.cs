@@ -43,6 +43,8 @@ namespace CosmicShore.ScriptableObjects
         [SerializeField] ElementalFloat reach = ElementalFloat.Multiplier(1f, 2f, Element.Charge, 1f);
 
         [Header("The wave")]
+        // Subtle by design (2026-10-14, play: the first cut was "far too big and bright"): a faint bend and a dim rim,
+        // read as a ripple in space after an annihilation, never a flash.
         [Tooltip("Seconds the front takes to reach the ripple's full radius (it decelerates — fast at birth).")]
         [SerializeField, Range(0.1f, 5f)] float expandSeconds = 0.9f;
 
@@ -50,16 +52,16 @@ namespace CosmicShore.ScriptableObjects
         [SerializeField, Range(0f, 3f)] float fadeSeconds = 0.5f;
 
         [Tooltip("The ring's half-thickness on screen, as a share of the radius (the band the scene is bent in).")]
-        [SerializeField, Range(0.02f, 0.5f)] float bandWidth = 0.12f;
+        [SerializeField, Range(0.02f, 0.5f)] float bandWidth = 0.08f;
 
         [Tooltip("How far the wave bends the scene behind it, as a share of the screen at birth (fades to 0).")]
-        [SerializeField, Range(0f, 0.1f)] float bend = 0.025f;
+        [SerializeField, Range(0f, 0.1f)] float bend = 0.008f;
 
         [Tooltip("The red / blue split of the bend at the wavefront (0 = none): the ripple's colour fringe.")]
-        [SerializeField, Range(0f, 0.5f)] float chromaticSplit = 0.12f;
+        [SerializeField, Range(0f, 0.5f)] float chromaticSplit = 0.03f;
 
         [Tooltip("How bright the wavefront's rim glows in the owner's domain colour (HDR, 0 = no rim).")]
-        [SerializeField, Range(0f, 8f)] float rimGlow = 1.6f;
+        [SerializeField, Range(0f, 8f)] float rimGlow = 0.15f;
 
         [Header("What it does")]
         [Tooltip("Whole petals stripped from EVERY element a rival vessel holds when the front sweeps over it.")]

@@ -65,6 +65,354 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Stoat play fixes: no flash at the poles' birth, a subtle ripple, the path drawn again, Time mode is the catch-sling (`cece/admiring-cannon-lhmv6t`, 2026-10-14) — NOT EDITOR-VERIFIED
+
+`R_VesselActions/STOAT_DIPOLE.md` §1a, §1b, §1c, §3b. Play feedback on the own-vessel pass below: the annihilation
+effect fired at the poles' CREATION and was far too big and bright; the path ("the foresight") was gone; in Time mode
+the poles could not be seen and the hull was just pulled left or right. No editor and no `unity` CLI in this session,
+so `/verify-unity` did NOT run. Headless proof: `unity_refcompile` player + editor (0 project errors, negative control
+fires), Amoebius's live build (`dotnet build Port/src/CosmicShore.Live`, 0 errors), `author_stoat_assets.py --check`, gates. The NUnit suites (`StoatSlingTests`, `StoatRippleTests`) were edited but not run in an editor.
+`StoatPathDots.shader` has not been compiled by Unity.
+
+**What landed:** (a) the white-hole birth light and the death light + gravitational wave (`BlackHoleWaves`) are behind
+`StoatDipoleConfig.annihilationWaves`, OFF; the ripple is the only annihilation effect, toned down (bend 0.008, split
+0.03, rim glow 0.15, band 0.08). (b) The 3D path dots are one dynamic mesh drawn with the new
+`CosmicShore/StoatPathDots` shader (`Resources/StoatPathDots.mat`) — the instanced `Sprites/Default` draw collapsed every
+dot to a point. (c) Time mode is the studio's round-6 dipole sling: a light pair (1.6 u / GM 20 000) laid 150 u ahead,
+45 u to the pressed side; detection and orbit rings instead of the path; caught as you pass; the kick timed to 90° of
+orbit swept since the catch, none before a catch. This supersedes step 4 and the "Ripple look" row of the entry below.
+
+1. **Mass mode, press a trigger.** NO bright shell converges on the new pair and nothing washes the screen. The
+   predicted path is drawn again: blue-grey dots ahead of the nose, lime when the poles warp it.
+2. **Let go.** The poles slam together; where they meet, ONE faint ripple bends the scene outward (no bright rim, no
+   colour flash, no screen shake). A rival inside it still loses its petals.
+3. **B → Time mode, press LT.** A small black hole appears AHEAD and a little to the LEFT, on screen, with two dotted
+   rings round it: a faint wide one (detection) and a brighter one (orbit). Squeezing harder (or holding a key longer)
+   shrinks both. Nothing pulls you yet.
+4. **Fly past it.** As it comes off your nose it catches you: the nose swings onto the orbit ring and you circle it.
+   The orbit ring brightens, eases toward lime and goes LIME about a quarter-turn round. Release in the lime: a big kick
+   out along the tangent. Release well before or after: a small one. Release before it catches you: no kick. You can
+   never be swallowed by it.
+5. **Hold a full turn.** At 360° you are let go on your own; the pair closes and its ripple plays.
+6. **AI Stoats (Slingshot / Warpline).** In Time mode they press, get caught, swing round and let go toward their
+   target; no AI circles more than one turn or holds an uncaught pair longer than ~4 s.
+7. **`dotsInWorld` off (StoatDipoleConfig).** The flat screen-overlay path still draws in Mass mode (Time mode's rings
+   are world dots only).
+
+| Knob | Where | Ships |
+|---|---|---|
+| Birth / death light (off) | `StoatDipoleConfig` `annihilationWaves` | 0 |
+| Ripple look | `StoatRippleConfig` `bandWidth`, `bend`, `chromaticSplit`, `rimGlow` | 0.08, 0.008, 0.03, 0.15 |
+| Where the Time pair is laid | `StoatSlingConfig` `catchAhead`, `catchSide` | 150, 45 |
+| The catch | `StoatSlingConfig` `catchReach`, `catchDegrees`, `settleRate`, `maxOrbitDegrees` | 1.5×, 50°, 3 /s, 360° |
+| Time-mode poles | `StoatSlingConfig` `poleHorizon`, `poleGM` | 1.6, 20 000 |
+| Rings | `StoatSlingConfig` `ringDotSpacing`, `ringDotSize`, `detectionRingAlpha`, `orbitRingAlpha` | 5, 0.9, 0.35, 0.6 |
+| AI release | `StoatSlingConfig` `aiReleaseConeDegrees`, `aiCatchGiveUpSeconds` | 20°, 4 s |
+
+### 🔴 Mass crystal: slimmer column; converter crystals socket in once centred (`cece/beautiful-goodall-8cenn3`, 2026-10-14) — NOT EDITOR-VERIFIED
+
+`/verify-unity` was not run (no Unity Editor or `unity` CLI in the session). What ran:
+- `unity_refcompile`, player and editor: no errors in project code;
+- `converter_round5_harness`: all pass. Negative controls: Mass sealed in flight slides along the shell; raised to
+  the very top of its column it reaches the waiting Time crystal;
+- `omni_combine_parity`: lab 7e-7;
+- `omni_depth_prism_shader_parity.py`: the Mass's own column against the Omni Shepard Lab;
+- `--check` on every generator touched, `author_elemental_converter.py --self-test`, and `verify_lab.cjs` on the
+  Omni Shepard, Omni Combine and Omni Motion labs.
+
+**What landed** (`Docs/Studios/OMNI_COMBINE_LAB.md`, revision 8):
+- `MassDepthPrisms[Inactive].mat`: `_FaceSplit` 0.5 → 0.25 (50%). `_Reach` 3 → 2.5: the column stands 1.5 plate
+  radii past the seat instead of 2 (75%). This is the Mass crystal in play everywhere. The omni's triangles are
+  unchanged.
+- Converter, Charge and Time: the extra spacing (now 0.14–0.18) is held until the crystal is centred on the omni,
+  then comes down over `socketSeconds` (0.8–1.0 s).
+- Converter, Mass: its prisms fly in raised up the Mass crystal's own column (`massRaise` 0.6 of it) and come
+  straight down through their triangle holes once the crystal is centred. Their deepest point is 0.59 R above the
+  landed shell.
+- The play is 0.8–1.0 s longer: the omni waits for Time to socket in.
+
+**Verify in editor:**
+1. A Mass crystal in a game mode: as you fly round it, its raised prisms stand visibly shorter and their faces part
+   less than the omni's.
+2. Ark → CONVERT several times:
+   - Mass: as it sets off, its prisms rise and stay up while it flies in. Once it is centred they come straight
+     down into the holes, with none sliding through the Space or Charge plates beside them.
+   - Charge and Time: their plates hover a little wide until the crystal stops moving, then drop straight in.
+   - The omni dithers in only after Time has socketed.
+3. Mid-flight, the Mass prisms bound for the omni's far side pass through it on the way in (1.0% of prism-frames,
+   0.55% on the camera's half). Every far-bound plate of every crystal already does this. Judge whether it reads.
+4. Tuning, in `Tools/Build/author_elemental_converter.py`, then regenerate:
+   - `massRaise` is the Mass hold height, 1 = the very top of the column, as asked. Measured nearest approach to the
+     waiting Time crystal: 1 → 0.00 R, 0.75 → 0.03 R, 0.6 → 0.17 R. 0.6 is the highest that clears it.
+   - `socketSpacing` and `socketSeconds` for the others.
+
+### 🔴 Thresher: no trail while the crosshair is up; every aimed launch boosted ×4.8 (`cece/relaxed-dijkstra-g6ix3x`, 2026-10-13) — NOT EDITOR-VERIFIED
+
+**What landed** (`R_VesselActions/THRESHER.md` §5a, §9; `Controller/Arcade/THRESHERTIME.md` §3):
+- **Trail off under the crosshair.** `ThresherExecutor.LaunchViewUp` (the camera's old engage/release
+  rule, moved into `StepChain` so every peer simulates it) holds the hull's trail pen up
+  (`VesselPrismController.SetSpawnerPaused`, edges only) while the launch view is up. The owner's camera
+  now switches on the same edges, so crosshair on == trail off.
+- **Boost every aimed launch, not the timing.** `ThresherChainSolver.ArmLaunch(aim, boost)`: any launch
+  out of the crosshair view leaves `launchBoost` × the orbit's speed however long it waited. Time L5
+  "Perfect Release" (×1.6 inside a 0.25 s window) and its gate are retired; Time L5 is an OPEN slot.
+- **Tripled:** `perfectBoost` 1.6 → `launchBoost` **4.8** (`[FormerlySerializedAs]`; `perfectWindowSeconds`
+  → `launchCueSeconds`, now only the crosshair's lime cue).
+- **Thresher Time:** `maxPlausibleSpeed` 1600 → **4600** (2× the 2 299 u/s boosted ceiling sling). The
+  ladder is NOT re-cut (a design call, THRESHERTIME.md §3).
+
+**Proven headless:** the chain harness compiles and runs the shipped solver + suite (66/66; the new
+`Launch_EveryAimedLaunchTakesTheBoost_HoweverLongItWaited` goes red with the boost removed); the Plant
+Lab parity gate passes (default boost 1 is bit-identical); `author_thresher_time_assets.py --check` OK.
+The executor's trail/camera change is compiled by `unity_refcompile`, never run.
+
+**Verify in editor** (Toy Box > Vessel Changer > Thresher):
+1. Fly with a visible trail. Plant (LT full) and wind up (RT full) until the camera glides into the
+   launch view: the crosshair appears and from that moment **no new trail prisms** appear round the orbit.
+2. Release LT: the ship launches through the crosshair point and **visibly much faster** than the orbit
+   (×4.8); the trail resumes on the launch frame.
+3. Release LT a moment AFTER the lime flash (so the ship waits most of a lap): the launch is just as fast.
+4. Let a spin decay without launching (ease RT): the camera returns and the trail resumes.
+5. Plant without reaching the launch view (a slow orbit) and release: plain release at orbit speed,
+   trail never paused.
+6. Paint toy / a cell that pauses spawners: after a launch view the trail pen is not left stuck either way.
+7. MPPM two clients: the guest's copy of the host's Thresher also stops laying trail during the launch
+   view (no ring of prisms on one screen only).
+8. Thresher Time: a boosted launch credits the gates it threads (no "respawn" rejection).
+
+**First-pass tuning:** `ThresherConfig.asset` → `launchBoost` 4.8 (739 u/s off the 154 u/s spin cap; 2 299
+off the 479 sling ceiling). If it feels absurd at the ceiling, a cap on the boosted speed is the lever,
+not the multiplier.
+
+---
+
+### 🔴 Converter: the crystals arrive at the camera's height, not from above it (`cece/sharp-fermi-yw38ky`, 2026-10-13) — NOT EDITOR-VERIFIED
+
+`/verify-unity` was not run (no Unity Editor or `unity` CLI). What ran:
+- `unity_refcompile`, player and editor;
+- `converter_round5_harness`, with "on its own path, up to 48° above the camera" as the negative control;
+- `omni_combine_parity` (7e-7);
+- `author_elemental_converter.py --check` and `--self-test`.
+
+**What landed:** `OmniCombineParams.ApproachElevation`, `CameraElevation` and `ApproachAboveCamera`
+(`approachAboveCameraDegrees` on `OmniCombineConfig`, default 0). Charge, Mass and Time are tipped so they arrive at
+the camera's height as well as from its side, following it.
+
+**Verify in editor:**
+1. Ark → CONVERT, watching Mass especially: it should come in level with the camera, not drop through the omni's top.
+2. Judge the edge of the omni. The triangle ray-cast says arriving along the line of sight puts more clipping on the
+   silhouette than arriving from above (Mass 98 against 31 rim intersections a second). If it reads worse, raise
+   `approachAboveCameraDegrees` (e.g. 30–60) in `Tools/Build/author_elemental_converter.py` and regenerate.
+
+### 🔴 Converter: the camera-side approach moves with the camera (`cece/sharp-fermi-yw38ky`, 2026-10-13) — NOT EDITOR-VERIFIED
+
+`/verify-unity` was not run (no Unity Editor or `unity` CLI). What ran: `unity_refcompile` (player and editor), and
+`converter_round5_harness`, with "aimed once, not following" as the negative control (162° behind a faster camera).
+
+**What landed:** `OmniCombineParams.CameraAzimuth` and `ApproachCameraAzimuth`. `OmniCombinePlayer.TrackCamera` hands
+the play the camera's unwrapped azimuth every frame, and Charge, Mass and Time each keep turning with it until they
+land (`OmniCombineCore.FaceCamera`, revision 7, round 8).
+
+**Verify in editor:**
+1. Ark → CONVERT, then change the view's `orbitDegreesPerSecond` mid-play (or watch at the default 5°/s): each
+   crystal still comes in from the side facing you, wherever the camera has got to.
+2. The plates that pass through landed ones as a crystal enters the omni are NOT hidden by this. The ray-cast says
+   about 15% stay visible on any approach. Judge whether it reads as clipping.
+
+### 🔴 Charge light: Mass columns light only when protracted; softer petals on the Charge crystal (`cece/sharp-fermi-yw38ky`, 2026-10-13) — NOT EDITOR-VERIFIED
+
+`/verify-unity` was not run (no Unity Editor or `unity` CLI). What did run:
+- `unity_refcompile`, player and editor;
+- `charge_arcs_harness`, with ungated retracted prisms lighting as the negative control;
+- `converter_round5_harness`;
+- `author_omni_crystal_triangles.py --check` and `author_elemental_converter.py --check`.
+
+**What landed:**
+- `ChargeArcs.FluxStrikes` takes each prism's column place and seat. A prism lights only while it stands out
+  (`strikeProtractionFrom` 0.15 to `strikeProtractionFull` 0.45 of its column, on `CrystalChargeArcsProfile`), and a
+  standing one lights when an arc crosses its column, anywhere from its seat up to the prism.
+- Before this, arcs only ever reached prisms 10–20% out, the ones that read as retracted. Prisms further out stand
+  above every arc. Wired in play (`CrystalChargeArcs`) and in the converter (`OmniCombinePlayer.StrikeTriangles`).
+- `seamPetalGlow` (0.35): the Charge crystal's petals beside the seam walk light at a third of their old brightness.
+
+**Verify in editor:**
+1. An omni in play, and the converter's woken omni: when a flux arc runs under a raised Mass prism, the prism lights.
+   A prism sealed in the shell, or barely out of it, never lights.
+2. Check the arcs still don't read as clipping through the barely-out prisms near the silhouette, which no longer
+   light.
+3. The Charge crystal (in play and waiting in the converter): the seam-walk plasma reads clearly over the petals it
+   lights.
+4. Tuning: `seamPetalGlow`, `strikeProtractionFrom` and `strikeProtractionFull` on `CrystalChargeArcsProfile`
+   (generated by `author_omni_crystal_triangles.py`).
+
+### 🔴 Converter: the lab's morphs back, a bit of extra spacing, every crystal but Space arrives from the camera's side (`cece/sharp-fermi-yw38ky`, 2026-10-13) — NOT EDITOR-VERIFIED
+
+`/verify-unity` was not run (no Unity Editor or `unity` CLI). What did run:
+- `unity_refcompile`, player and editor;
+- `converter_round5_harness`, with "arriving straight in" as the negative control (Time 33% inside);
+- `omni_combine_parity` (lab 7e-7);
+- `author_elemental_converter.py --check` and `--self-test`.
+
+**What landed** (`Docs/Studios/OMNI_COMBINE_LAB.md`, revision 7):
+- The socket swing below is gone; the plates morph exactly as the lab's.
+- `OmniCombineParams.SocketSpacing` (`socketSpacing`, 0.08–0.12 per play): plates come in a bit wide of their slots
+  and settle onto them over the last 15% of their morph.
+- `OmniCombineCore.FaceCamera`, called on CONVERT: Charge, Mass and Time each turn about the vertical on the way in,
+  so they arrive from the side the camera will be on.
+
+**Verify in editor:**
+1. Ark → CONVERT several times, watching Charge, Mass and Time land:
+   - each crystal sets off from exactly where it idled (no jump);
+   - it curves round to come in from the camera's side, finished turning well before it reaches the omni;
+   - the rhombi you can see come in a little wide of their holes and settle in from outside;
+   - nothing rises out of a hole that faces you, and none slides along the surface;
+   - Space, first, is as before.
+2. Watch for the swoop speed when a crystal starts on the far side; it's the cost of this choice.
+3. Tuning: `socketSpacing` (min, max) on `OmniCombineConfig`; `SettleFrom` (0.85) and `ApproachTurnEnds` (0.7) are
+   constants in `OmniCombineCore`. (2026-10-14: `SettleFrom` retired; the spacing now holds until the crystal is
+   centred and settles over `socketSeconds`. See the Mass crystal entry above.)
+
+### 🔴 Converter crystals socket in from outside; flux arcs are five seamless coaxial strands (`cece/sharp-fermi-yw38ky`, 2026-10-13) — NOT EDITOR-VERIFIED
+
+`/verify-unity` was not run (no Unity Editor or `unity` CLI). What did run:
+- `unity_refcompile`, player and editor (the editor run caught a stale `Strand` call in `CrystalChargeArcsTests`,
+  fixed);
+- `converter_round5_harness`: socket checks, with the straight path as the negative control (Time 76% inside);
+- `charge_arcs_harness`: bundle checks, with no bundle as the negative control;
+- `omni_combine_parity` (lab 7e-7);
+- the converter self-test.
+
+**What landed** (`Docs/Studios/OMNI_COMBINE_LAB.md`, revision 6):
+- ~~`OmniCombineParams.SocketLift`~~ (retired by the entry above): every crystal but Space flew its plates out to a
+  shell beyond the omni, round it, and radially into their slots.
+- `ChargeFluxPath.Strand`: five full-length strands, coaxial between the forks. The beam is retired; the corners are
+  paired by order round the arc. `CrystalChargeArcsProfile.fluxBundle` / `fluxTurns`.
+
+**Verify in editor:**
+1. (The socket swing is retired; see the entry above.)
+2. The woken omni's flux arcs (and an omni in play): five filaments leave the source pentagon's corners, gather into a
+   thin braided cable that makes one turn on the way, and fan out onto the sink's five corners. There's no thicker
+   middle beam and no seam anywhere.
+3. Tuning: `fluxBundle` (how far apart the five run) and `fluxTurns` on `CrystalChargeArcsProfile`.
+
+### 🔴 Charge polish: one hue in the converter, flux arcs light the Mass columns they pass through, plasma bolts (`cece/sharp-fermi-yw38ky`, 2026-10-13) — NOT EDITOR-VERIFIED
+
+`/verify-unity` was not run (no Unity Editor or `unity` CLI). What did run:
+- `unity_refcompile`, player and editor;
+- DXC (v1.8.2407) compiling `CrystalChargeArcsShader` against the real URP ShaderLibrary and `OmniDepthPrismShader`
+  against a `UnityCG` stub, both stages and both passes, each with a negative control;
+- `omni_depth_prism_shader_parity.py`;
+- `charge_arcs_harness`, all pass. New checks: continuous strip, pinned ends, smooth bends, no frame-to-frame jump,
+  the seam trail's tail fading to nothing, strikes on raised and never on sealed prisms. Negative controls: the old
+  fade rule fails both trail checks;
+- `converter_round5_harness`;
+- every generator `--check`, and `author_elemental_converter.py --self-test`.
+
+**What landed** (`Docs/Studios/OMNI_COMBINE_LAB.md`, revision 5):
+1. The converter's Charge crystal wears `OmniCrystalBody`, and its seam walk draws on `OmniChargeArcs`.
+2. `ChargeArcs.FluxStrikes` lights struck prisms through `_DepthState.w` / `_StrikeColor`. This applies in play
+   (`CrystalChargeArcs` → `CrystalDepthPrisms.Strike`) and in the converter.
+3. Every bolt is one plasma ribbon (`ChargeArcMeshWriter.Plasma`). The profile's `jagHz` / `flickerHz` became
+   `writheSpeed` / `flickerSpeed`.
+
+**Verify in editor:**
+1. Ark → CONVERT: Charge's pentagons land in the same lime as the omni's body, with no hue change as the omni dithers
+   in. Lit petals and pentagons still stand out clearly.
+2. An omni in play, orbited so prisms stand part-way up near the silhouette: when a flux arc passes through one, the
+   prism glows in the arc's colour for the arc's hold. It reads as conducting, not clipping. Same on the Ark after
+   CONVERT.
+3. Bolts, in play and on the Ark:
+   - one continuous glowing filament with a hot core, writhing smoothly;
+   - no pieces separating, no 20 Hz jitter;
+   - the seam walk's trail fading smoothly to nothing at its tail.
+4. Bloom: tune `_BoltIntensity` / `_GlowIntensity` on `OmniChargeArcs.mat` / `ChargeCrystalArcs.mat`, and
+   `_StrikeColor` on the depth materials (it ships as the arc core colour, at 1).
+5. The Mass crystal (no flux arcs) and the hull fusion's Mass faces (undriven) show no glow.
+
+### 🔴 Elemental Converter polish: the game's round-5 effects in the omni combine (`cece/sharp-fermi-yw38ky`, 2026-10-13) — NOT EDITOR-VERIFIED
+
+`/verify-unity` was not run (no Unity Editor or `unity` CLI in the session). Offline: `unity_refcompile` player and
+editor, `converter_round5_harness` 15/15 (two negative controls), `omni_combine_parity` (lab parity 7e-7),
+`omni_turns_harness`, `crystal_depth_harness` 14/14, `author_elemental_converter.py --check` and `--self-test` 11/11.
+
+**What landed** (`Docs/Studios/OMNI_COMBINE_LAB.md`, revision 4):
+- The waiting Charge crystal plays the seam walk (crawl held at 0); the woken omni plays chained flux arcs.
+- The woken omni plays the game's cadence, rigid square turns and cued flip waves; its plates swell 1.0 → 1.1 as it
+  wakes.
+- Mass columns step with the game's `CrystalDepthPrisms.StepColumns` (horizon seal, hidden rise).
+- Refactors shared with the game:
+  - `CrystalDepthPrisms.StepColumns` / `TryGetPlates`;
+  - `SquareTurnFit` (from `CrystalSpaceSquares`' baker);
+  - `OmniCombineCore.CrystalFrame`.
+- `OmniChargeEdges.mat` and `OmniChargeEdgesShader` are deleted.
+
+**Verify in editor:**
+1. EditMode: `OmniCombineTests` (incl. the new `RoundFive_…`), `CrystalSpaceSquaresTests`, `CrystalDepthPrismTests`.
+2. Menu_Main → Ark. While the four wait:
+   - the Charge crystal shows one bolt walking the seams between its blooms, petals lighting beside it, and no edge
+     crawl;
+   - Mass shows tall columns standing out on its far side, coming round the edge from the top, never one visibly
+     rising, and the side facing you flush.
+3. CONVERT. The Charge bolt fades as the crystal sets off, before its petals start to fold. Each crystal lands as
+   before.
+4. The omni dithers in, then wakes:
+   - its plates thicken slightly (no pop);
+   - the first flux arc charges and leaps; each next arc leaves from where the last landed;
+   - once awake: squares turn round a pentagon in one smooth hop, a flip wave, a 120° triangle turn, a wave — never
+     squares and rhombi at once.
+5. Leave the Ark and come back, and press CONVERT twice: no `OmniCombinePlayer` errors in the console.
+6. Charge crystals and omnis in play are unchanged by this entry; it only moved shared code (`StepColumns`, `SquareTurnFit`).
+   Spot-check one of each.
+
+### 🔴 Omni Motion Lab round 5 graduated: Mass horizon seal + rise while hidden, Space/Time cadence with rigid square turns, Charge seam walk + chained flux arcs (`cece/sharp-fermi-yw38ky`, 2026-10-13) — NOT EDITOR-VERIFIED
+
+`/verify-unity` was not run: the session had no Unity Editor and no `unity` CLI. What did run: `unity_refcompile`
+(player and editor configs, no errors in project code), `crystal_depth_harness` (14/14), `omni_turns_harness` (all pass,
+incl. a stretched-key negative control) and `charge_arcs_harness` (23 checks, two negative controls), all on the shipped
+C# against the real FBX meshes, and every generator `--check` that touches these assets.
+
+**What landed:**
+- **Mass** (`CrystalDepthPrismProfile`, shared by the omni and the Mass crystal): the seal depth is the camera's
+  horizon (`plateRadius / cameraDistance − 0.05`); a prism climbs its column only while its column top is hidden
+  behind the body (ray–sphere at 0.936 × plate radius); columns 3× tall, 0.6 size at the top (`_Reach`,
+  `_PlateScaleStart` on `OmniDepthPrisms*` and `MassDepthPrisms*`); descent from −0.25; reseat −0.97.
+- **Space + Time** (omni): `OmniCrystalCadence` on the `Crystal.prefab` root (`OmniCrystalCadence.asset`): pentagon
+  turn 1.733 s → wave 1.8 s → triangle turn 2.4 s → wave, 0.15 s gaps, 8.33 s cycle, a per-crystal phase.
+  `CrystalSpaceSquares` fits each square's turn to the art file's keys at runtime and writes two new blend shapes
+  ("Squares Pentagon Turn", "Squares Triangle Turn", 24 frames each) into the shaped twin, with the squares, rhombi and
+  pentagons 1.1× thick. `CrystalFlipWave` plays one cued wave per wave beat when the root has a cadence.
+- **Charge**: `CrystalChargeArcs` (+ `CrystalChargeArcsShader`, `CrystalChargeArcsProfile.asset`). The omni's
+  `OmniCrystalChargeArcs` child (Flux) replaces `OmniCrystalChargeEdges` (prefab deleted; its material and shader
+  followed once the Elemental Converter moved to the flux arcs, the entry above). `CrystalCharge.prefab` gets a `ChargeCrystalArcs` child (SeamWalk) that holds the
+  shell's `_ArcIntensity` / `_NodeIntensity` at 0 through a property block (the material, and the hull fusion that
+  copies it, keep the crawl).
+
+**Verify in editor:**
+1. Compile, then run the EditMode tests: `DepthRatchetTests`, `CrystalDepthPrismTests`, `CrystalSpaceSquaresTests`,
+   `CrystalFlipWaveTests`, `TeamCrystalMaterialTests`, `CrystalChargeArcsTests` (new).
+2. Open a scene with omni crystals and play. Orbit one: no prism is ever part-way out on the side you can see; prisms
+   on the far side stand tall and come round the edge from the top; none is ever seen rising.
+3. Watch an omni for ~10 s: squares turn round a pentagon (one smooth hop), a Time wave, squares turn round a triangle
+   (one smooth 120° move, hopping out and stepping sideways), a wave — never squares and rhombi at once, and no square
+   shrinks mid-move. Two omnis side by side should be out of step.
+4. The omni's Charge: one pentagon lights, an arc leaps to a pentagon 55–125° away, forks onto all five corners at
+   both ends, one thick beam between; the next arc leaves from where the last landed. Check the thick middle reads as
+   a glowing tube under the game's bloom (`_BoltIntensity` / `_GlowIntensity` on `OmniChargeArcs.mat` to tune).
+5. A Charge crystal: no edge crawl on the shell; one bolt walks the seams between the blooms forever, petals lighting
+   beside it. Collect it with a vessel that fuses crystals into its hull: the fused hull still crackles (crawl kept).
+6. A team omni (Skim Race track / the Dolphin's TeamCrystal): the lit pentagons wear the domain colour.
+7. Profiler: `CrystalChargeArcs.LateUpdate`, `CrystalDepthPrisms.LateUpdate`, `CrystalSpaceSquares` with a field of
+   omnis in view (the arcs mesh is rebuilt per visible crystal per frame; the squares' twin gains 48 blend frames).
+
+**Flagged for the designer:** the Mass crystal shares the profile, so it now seals at the horizon, rises while hidden
+and has the taller columns too. The Charge crystal still tumbles (`JustRotate`, 20°/s). `CrystalChargeDandruff.prefab`
+keeps the crawl (it is not the Charge crystal).
+
+**First-pass tuning:** profile values are the lab's (`ChargeArcSettings.Lab`, `OmniCrystalCadence.asset`); the bolt and
+glow intensities start at 1 with no HDR boost — expect to raise them once bloom is seen.
+
+---
+
 ### 🔴 Android release build + pre-upload App Bundle check (`claude/serene-edison-lfv24f`, 2026-10-13) — NOT EDITOR-VERIFIED
 
 No editor and no `unity` CLI in the authoring session, so `/verify-unity` did NOT run. Out of
@@ -262,7 +610,7 @@ the hull. Platform additions: `VesselPrismController.ThicknessMultiplier`, `Blac
    (they were sideways before: the Squirrel's `DriftJet`). Clean console.
 3. **Mass mode (spawn).** The trail is visibly THICK (×3 height at Mass 0). LT/RT lay the dipole as before. Raise Mass
    to 10 (toolbox): ×6. At Mass 5 the trail arrives shielded.
-4. **B → Time mode.** The trail thins over ~0.8 s; the HUD's Mass card empties. LT: an attractor appears on the left,
+4. **(Superseded 2026-10-14 — Time mode is now the catch-sling, see the entry above.) B → Time mode.** The trail thins over ~0.8 s; the HUD's Mass card empties. LT: an attractor appears on the left,
    the hull circles it; the dots become the orbit ahead and go lime as you pass ~75°. Release in the lime: a clear
    kick (the whole one). Release at once (tap): a small one. B again mid-orbit: the pair is let go with NO kick.
 5. **The Ripple.** In Mass mode squeeze both triggers wide and let go: where the poles meet, a ring of bent space

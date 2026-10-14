@@ -106,8 +106,8 @@ MonoBehaviour:
   onCombatHitLanded: {fileID: 11400000, guid: 45fb43a0cddb5cc3cc4dc448df994152, type: 2}
   magnetRange: 150
   magnetAcceleration: 220
-  perfectWindowSeconds: 0.25
-  perfectBoost: 1.6
+  launchCueSeconds: 0.25
+  launchBoost: 4.8
   chainCutRadius: 0.6
   chainDebrisRestitution: 0.5
   hitStopMinSeconds: 0.03

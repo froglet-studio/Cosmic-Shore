@@ -64,6 +64,101 @@ namespace CosmicShore.Tests
             Assert.AreEqual(1f, c.Fade, 1e-4f, "the fade did not finish after 0.6 s");
         }
 
+        // ------------------------------------------------------------------ Omni Motion Lab: horizon seal, rise while hidden
+
+        [Test]
+        public void HorizonSeal_IsThePlateRadiusOverTheCameraDistance_LessTheMargin()
+        {
+            Assert.AreEqual(1.5f / 10f - 0.05f, DepthRatchet.HorizonSealDepth(1.5f, 10f, 0.05f), 1e-6f);
+            Assert.LessOrEqual(DepthRatchet.HorizonSealDepth(1.5f, 1f, 0f), 0.999f, "a camera inside the shell must not push the seal past 1");
+            Assert.Less(DepthRatchet.HorizonSealDepth(1.5f, 100f, 0.05f), DepthRatchet.HorizonSealDepth(1.5f, 10f, 0.05f), "a farther camera sees closer to a hemisphere");
+        }
+
+        [Test]
+        public void HiddenBehindBody_HidesWhatIsBehindTheSphere_AndNotWhatIsBesideOrInFront()
+        {
+            var eye = new Vector3(0f, 0f, 10f);
+            Assert.IsTrue(DepthRatchet.HiddenBehindBody(new Vector3(0f, 0f, -2f), eye, 1f), "straight behind");
+            Assert.IsFalse(DepthRatchet.HiddenBehindBody(new Vector3(0f, 0f, 2f), eye, 1f), "in front");
+            Assert.IsFalse(DepthRatchet.HiddenBehindBody(new Vector3(3f, 0f, -1f), eye, 1f), "behind but standing out past the silhouette");
+            Assert.IsTrue(DepthRatchet.HiddenBehindBody(new Vector3(0f, 0f, 0.5f), eye, 1f), "inside the body is hidden by its surface");
+            Assert.IsFalse(DepthRatchet.HiddenBehindBody(new Vector3(0f, 0f, 1.2f), eye, 1f), "just above the facing surface");
+        }
+
+        /// <summary>
+        /// The round-5 rule on 60 plates spread over a shell, the camera orbiting with a tilt: every prism the camera
+        /// can see stays flush (seal at the horizon); a prism is never seen rising (rise only while its column top is
+        /// hidden); and more prisms stand out than the shipped ratchet lets (the reason for the rule).
+        /// </summary>
+        [Test]
+        public void RiseWhileHidden_NeverSeenRising_VisibleSideFlush_MoreOut()
+        {
+            var with = Orbit(true);
+            var without = Orbit(false);
+            Assert.Greater(with.rises, 0, "no prism ever rose - the test would pass on a rule that never fires");
+            Assert.AreEqual(0, with.risesSeen, $"{with.risesSeen} of {with.rises} rises happened where the camera could see the column top");
+            Assert.AreEqual(0, with.unflushInView, "a prism facing the camera past the horizon was not flush");
+            Assert.AreEqual(0, without.rises, "the shipped ratchet must never rise");
+            Assert.Greater(with.meanOut, 1.5f * without.meanOut, $"rise while hidden stood {with.meanOut:F2} prisms half out on average, the shipped ratchet {without.meanOut:F2}");
+        }
+
+        static (int rises, int risesSeen, int unflushInView, float meanOut) Orbit(bool rise)
+        {
+            const float r = 1.5f, reach = 3f, sizeAtTop = 0.6f, top = 0.04f, open = -0.25f, margin = 0.05f, reseat = -0.97f, rate = 1.5f, dt = 1f / 30f;
+            float occluder = 0.936f * r;
+            var dirs = new Vector3[60];
+            for (int i = 0; i < dirs.Length; i++)   // a Fibonacci sphere
+            {
+                float y = 1f - 2f * (i + 0.5f) / dirs.Length, rad = Mathf.Sqrt(1f - y * y), a = i * 2.39996323f;
+                dirs[i] = new Vector3(rad * Mathf.Cos(a), y, rad * Mathf.Sin(a));
+            }
+            var cols = new DepthRatchet.Column[dirs.Length];
+            int rises = 0, risesSeen = 0, unflush = 0, frames = 0;
+            float outSum = 0f;
+            for (int k = 0; k < 1200; k++)
+            {
+                float t = k * dt, yaw = 0.35f * t, pitch = 0.35f * Mathf.Sin(0.5f * t), dist = 6.5f * r;
+                var eye = new Vector3(dist * Mathf.Cos(pitch) * Mathf.Sin(yaw), dist * Mathf.Sin(pitch), dist * Mathf.Cos(pitch) * Mathf.Cos(yaw));
+                var toCam = eye / dist;
+                float seal = DepthRatchet.HorizonSealDepth(r, dist, margin);
+                for (int j = 0; j < dirs.Length; j++)
+                {
+                    float depth = Vector3.Dot(dirs[j], toCam), seat = DepthRatchet.Seat(depth, open, seal, 1f);
+                    if (k == 0) { cols[j] = DepthRatchet.Column.At(seat); continue; }
+                    float before = cols[j].Place, target = 0f;
+                    bool hidden = false;
+                    if (rise && seat < before && cols[j].Fade >= 1f)
+                    {
+                        target = DepthRatchet.RiseTarget(cols[j], seat, dt, rate);
+                        hidden = DepthRatchet.HiddenBehindBody(DepthRatchet.ColumnTop(dirs[j] * r, dirs[j], top, target, reach, sizeAtTop), eye, occluder);
+                    }
+                    cols[j] = DepthRatchet.Step(cols[j], depth, seat, dt, reseat, Fade, hidden, target);
+                    if (cols[j].Place < before - 1e-6f && cols[j].Fade >= 1f)
+                    {
+                        rises++;
+                        bool seenBefore = !DepthRatchet.HiddenBehindBody(DepthRatchet.ColumnTop(dirs[j] * r, dirs[j], top, before, reach, sizeAtTop), eye, occluder);
+                        bool seenAfter = !DepthRatchet.HiddenBehindBody(DepthRatchet.ColumnTop(dirs[j] * r, dirs[j], top, cols[j].Place, reach, sizeAtTop), eye, occluder);
+                        if (seenBefore || seenAfter) risesSeen++;
+                    }
+                    bool faces = Vector3.Dot(eye - dirs[j] * r, dirs[j]) > 0f;
+                    if (faces && depth >= seal && cols[j].Place < 0.999f) unflush++;
+                    if (cols[j].Place < 0.5f) outSum++;
+                }
+                if (k > 0) frames++;
+            }
+            return (rises, risesSeen, unflush, outSum / frames);
+        }
+
+        [Test]
+        public void RiseWhileHidden_IsOffWithoutItsFlag_TheShippedRatchetHolds()
+        {
+            var held = DepthRatchet.Step(DepthRatchet.Column.At(1f), -0.5f, 0f, 0.1f, -0.97f, 0.6f, false, 0.2f);
+            Assert.AreEqual(1f, held.Place, 1e-6f, "without a hidden target a sealed prism going away must hold");
+            var risen = DepthRatchet.Step(DepthRatchet.Column.At(1f), -0.5f, 0f, 0.1f, -0.97f, 0.6f, true, 0.85f);
+            Assert.AreEqual(0.85f, risen.Place, 1e-6f, "a hidden target lets it climb exactly that far");
+            Assert.AreEqual(1f, risen.Fade, 1e-6f, "a rise is not a reseat: no fade");
+        }
+
         // ------------------------------------------------------------------ round 10: a pose per crystal
 
         [Test]

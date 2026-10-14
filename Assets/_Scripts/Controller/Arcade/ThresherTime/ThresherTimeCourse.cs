@@ -79,9 +79,10 @@ namespace CosmicShore.Gameplay
         /// as a multiple of `gameCruise` (154 u/s). Only the wind-in carries an orbit past it.</summary>
         public const float LockMax = 2.2f;
 
-        /// <summary>`perfectBoost` on ThresherConfig.asset - Time L5 "Perfect Release": an aimed
-        /// launch released inside the timing window leaves this many times the orbit's speed.</summary>
-        public const float PerfectBoost = 1.6f;
+        /// <summary>`launchBoost` on ThresherConfig.asset - EVERY aimed launch (out of the crosshair
+        /// view) leaves this many times the orbit's speed, whatever its timing. Until 2026-10-13 this
+        /// was Time L5's x1.6 "Perfect Release" on a timing window.</summary>
+        public const float LaunchBoost = 4.8f;
 
         /// <summary>`LERP_AMOUNT` in VesselTransformer.cs (a C# constant, not an asset): the rate
         /// at which the throttle's step pulls the hull's speed toward its target, so the rate a
@@ -102,10 +103,12 @@ namespace CosmicShore.Gameplay
         /// Time at rest. The wind-in carries the orbit past it, up to <see cref="SlingCeiling"/>.</summary>
         public const float OrbitSpinCap = LockMax * GameCruise;
 
-        /// <summary>The fastest a Thresher can ever leave a sling: the ceiling with Time L5's
-        /// Perfect Release on it (~766 u/s). Above the ladder - the ladder is cut for a hull
-        /// without the upgrade - and the number the scene's detection clamp has to cover.</summary>
-        public const float PerfectSlingSpeed = SlingCeiling * PerfectBoost;
+        /// <summary>The fastest a Thresher can ever leave a sling: the ceiling out of the crosshair
+        /// view, boosted (~2299 u/s). Every human's aimed launch takes the boost, so this is reachable
+        /// by anyone who winds a sling to the ceiling - the ladder is still cut against the UNBOOSTED
+        /// ceiling (THRESHERTIME.md §3, "the boost outruns the ladder"). The number the scene's
+        /// detection clamp has to cover.</summary>
+        public const float BoostedSlingSpeed = SlingCeiling * LaunchBoost;
 
         /// <summary>Turn rate at <paramref name="speed"/>, deg/s - the transformer's own formula,
         /// <c>speed x RotationThrottleScaler + min(Pitch, Yaw)</c>. A flat 120 for the Thresher.</summary>
