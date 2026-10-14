@@ -90,6 +90,20 @@ Entries are grouped by family; within a family, the newest goes at the bottom.
 - Evidence: StoatFlightStudio.html prism-field block ("seeded (round 15)"); `verify_lab.cjs` "a second load".
 - Promoted: §3
 
+### L-GEN-10 — A harness's maths stub decides its cost numbers: write it the way Unity's `Mathf` is written
+- Lab: Omni Motion Lab round 5 (`charge_arcs_harness --bench`) · Branch: `claude/compassionate-allen-ta8oa6` · Date: 2026-10-14
+- What happened: the harness timed the seam walk at 1,130 µs a crystal per frame; Amoebius measured the same shipped
+  code at 113 µs. Settings, meshes and trail length all matched. The difference was the maths: the harness stub's
+  `Mathf.Exp` and `Vector3.magnitude` are double precision, as Unity's are written (`(float)Math.Exp`,
+  `(float)Math.Sqrt`), and the engine's are `MathF`. Switching the stub to `MathF` gave 147 µs. The hot loop took
+  `Exp` of values deep in its underflow range (d² in the hundreds), so the precision of `Exp` decided the cost.
+- Do instead: keep a stub's `Mathf` as Unity writes it, and say so beside any cost it reports. A number from a
+  float-maths runtime can understate Unity's several times for `Exp`-heavy code. When two measurements of one
+  function disagree, swap the maths before blaming the data. And prove a speed-up exact with a byte-for-byte dump,
+  under both maths (`run.sh --dump`).
+- Evidence: `Tools/Build/charge_arcs_harness/run.sh --bench`; `Docs/PERFORMANCE_OPTIMIZATION.md` §2 (10-14).
+- Promoted: no
+
 ## STU — browser studios (Stoat Flight Studio, Vessel Studio)
 
 ### L-STU-1 — A lab's scripted input exposed a real game bug: the sling read the latest trigger sample, not the squeeze
