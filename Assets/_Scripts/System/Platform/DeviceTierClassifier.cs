@@ -27,19 +27,27 @@ namespace CosmicShore.Core
         public readonly int ProcessorCount;
         public readonly string GraphicsDeviceName;
 
+        /// <summary>
+        /// A WebGL player (<c>RuntimePlatform.WebGLPlayer</c>): WebAssembly in a browser, one thread, no
+        /// Burst. It does not change the <see cref="DeviceTier"/> (<see cref="DeviceTierClassifier.Classify"/>
+        /// never reads it); it picks the Web profile in place of the tier's (<c>PlatformProfileSetSO.For</c>).
+        /// </summary>
+        public readonly bool IsWebPlayer;
+
         public DeviceFacts(bool isHandheld, DeviceOs os, int systemMemoryMB, int processorCount,
-                           string graphicsDeviceName)
+                           string graphicsDeviceName, bool isWebPlayer = false)
         {
             IsHandheld = isHandheld;
             Os = os;
             SystemMemoryMB = systemMemoryMB;
             ProcessorCount = processorCount;
             GraphicsDeviceName = graphicsDeviceName ?? string.Empty;
+            IsWebPlayer = isWebPlayer;
         }
 
         public override string ToString() =>
-            $"{Os}{(IsHandheld ? " handheld" : "")}, {SystemMemoryMB} MB RAM, {ProcessorCount} cores, " +
-            $"GPU '{GraphicsDeviceName}'";
+            $"{Os}{(IsHandheld ? " handheld" : "")}{(IsWebPlayer ? " web player" : "")}, {SystemMemoryMB} MB RAM, " +
+            $"{ProcessorCount} cores, GPU '{GraphicsDeviceName}'";
     }
 
     /// <summary>
