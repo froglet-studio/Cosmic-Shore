@@ -95,6 +95,7 @@ MonoBehaviour:
   borderImage: {fileID: 1117908924333388441}
   borderSelectedSprite: {fileID: 21300000, guid: 6a172fe8ed96165ca76d16f9cefb285c, type: 3}
   borderUnselectedSprite: {fileID: 21300000, guid: e75ec5d5d015d1257b05414fdff6f954, type: 3}
+  selectedBorderToken: 0
   primaryGraphics:
   - {fileID: 559272978730958318}
   unselectedPrimaryToken: 0
@@ -104,6 +105,7 @@ MonoBehaviour:
   artGraphics:
   - {fileID: 7116141844331670}
   lockGraphic: {fileID: 502719016673685268}
+  lockLabel: {fileID: 0}
 --- !u!1 &36996131791736358
 GameObject:
   m_ObjectHideFlags: 0

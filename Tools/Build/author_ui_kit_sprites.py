@@ -12,6 +12,10 @@ Every shape the style-B menu redesign draws comes from here (Docs/MENU_REDESIGN_
                                              the end-game screens are OUT of the menu redesign
     kit_fade_v                               a vertical alpha ramp, clear at the top to solid at the
                                              bottom: the scrim under a hero frame's title (item 2)
+    kit_fade_h                               a horizontal alpha ramp, solid at the left to clear at the
+                                             right: the scrim behind a feature card's copy (item 3)
+    kit_oct_fill                             the avatar octagon (29% corner cuts), 48 x 48: the
+                                             party seat's domain ring and every avatar backing (item 3)
 
 THE SLIVER (Docs/STYLE_FOUNDATION.md §5): a 45 deg cut on TWO OPPOSITE corners. Normal = top-left
 and bottom-right; `_flip` = top-right and bottom-left (§5 "flippable"). `fill` is the whole
@@ -60,6 +64,8 @@ HEX_W, HEX_H = 88, 76        # §10.12 nav tile, canvas units (the approved kit 
 HANDLE_W, HANDLE_H = 32, 28  # §10.7 slider handle, canvas units
 BANNER_H, BANNER_SLANT = 56, 14
 FADE_W, FADE_H = 4, 64       # texels; a 1-D ramp, stretched to any size
+OCT = 48                     # the avatar octagon, canvas units (drawn simple, like the hexagons)
+OCT_CUT = 0.29               # corner cut as a fraction of the side - the mockup's clip-path
 
 
 def guid_for(name):
@@ -181,6 +187,24 @@ def build_fade():
     return np.repeat(ramp[:, None], FADE_W, axis=1), 0
 
 
+def build_fade_h():
+    """Alpha falls linearly from 1 at the left column to 0 at the right column."""
+    ramp = 1.0 - (np.arange(FADE_H) + 0.5) / FADE_H
+    return np.repeat(ramp[None, :], FADE_W, axis=0), 0
+
+
+def oct_verts(side, cut=OCT_CUT):
+    c = cut * side
+    return [(c, 0.0), (side - c, 0.0), (side, c), (side, side - c),
+            (side - c, side), (c, side), (0.0, side - c), (0.0, c)]
+
+
+def build_oct():
+    t = OCT * TEXELS_PER_UNIT
+    xs, ys = grid(t, t)
+    return downsample(convex_mask(xs, ys, oct_verts(OCT)), t, t), 0
+
+
 def sprite_set():
     """(name, alpha, 9-slice border in texels as (left, bottom, right, top))."""
     out = []
@@ -202,6 +226,10 @@ def sprite_set():
         out.append((f"kit_banner_{part}", a, (0, 0, 0, 0), dict(banner=part)))
     a, _ = build_fade()
     out.append(("kit_fade_v", a, (0, 0, 0, 0), dict(fade=True)))
+    a, _ = build_fade_h()
+    out.append(("kit_fade_h", a, (0, 0, 0, 0), dict(fade_h=True)))
+    a, _ = build_oct()
+    out.append(("kit_oct_fill", a, (0, 0, 0, 0), dict(oct=True)))
     return out
 
 
@@ -263,6 +291,20 @@ def check_sprite(name, alpha, border, meta):
         col = alpha[:, 0]
         assert np.all(np.diff(col) > 0), f"{name}: the ramp must rise from top to bottom"
         assert col[0] < 0.05 and col[-1] > 0.95, f"{name}: the ramp must run clear to solid"
+    elif meta.get("fade_h"):
+        assert np.allclose(alpha, alpha[0:1, :]), f"{name}: every row of the ramp must match"
+        row = alpha[0]
+        assert np.all(np.diff(row) < 0), f"{name}: the ramp must fall from left to right"
+        assert row[0] > 0.95 and row[-1] < 0.05, f"{name}: the ramp must run solid to clear"
+    elif meta.get("oct"):
+        for r, c in ((0, 0), (0, w - 1), (h - 1, 0), (h - 1, w - 1)):
+            assert alpha[r, c] == 0, f"{name}: an octagon's bounding corners must be empty"
+        for r, c in ((0, w // 2), (h - 1, w // 2), (h // 2, 0), (h // 2, w - 1)):
+            assert alpha[r, c] > 0.4, f"{name}: an octagon touches all four sides at their middle"
+        assert alpha[h // 2, w // 2] == 1.0, f"{name}: a fill must be solid inside"
+        # the corner cut runs OCT_CUT of the side along the top edge
+        measured = edge_crossing(alpha[0]) / w
+        assert abs(measured - OCT_CUT) <= 0.02, f"{name}: the corner cut is {measured:.3f} of the side"
     elif meta.get("banner") == "body":
         b = border[0]
         mid = alpha[:, b:w - b]
@@ -501,6 +543,14 @@ def self_test():
     a, _ = build_fade()
     expect_fail("fade ramp upside down",
                 lambda: check_sprite("ctl", a[::-1], (0, 0, 0, 0), dict(fade=True)))
+    # 7. a horizontal fade drawn right to left
+    a, _ = build_fade_h()
+    expect_fail("horizontal fade mirrored",
+                lambda: check_sprite("ctl", a[:, ::-1], (0, 0, 0, 0), dict(fade_h=True)))
+    # 8. a square checked as the octagon (corners not cut)
+    t = OCT * TEXELS_PER_UNIT
+    expect_fail("square checked as the octagon",
+                lambda: check_sprite("ctl", np.ones((t, t)), (0, 0, 0, 0), dict(oct=True)))
 
     ok = True
     for label, fired, msg in controls:

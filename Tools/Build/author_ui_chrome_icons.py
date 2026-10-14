@@ -21,11 +21,13 @@ supersampling, margin or PNG encoding. Docs/STYLE_FOUNDATION.md sections 1.2, 5 
   * 256x256 with a 24px margin, matching the vendor sub-sprites they replace so no
     RectTransform moves.
 
-SEVEN glyphs. Five arrived with the vendor swap - FOUR of them for six replaced references, and one consolidation is deliberate. `CancelButton`
+TEN glyphs. Five arrived with the vendor swap - FOUR of them for six replaced references, and one consolidation is deliberate. `CancelButton`
 (Menu_Main) and `Close Button` (Arcade Screen) wore two DIFFERENT vendor glyphs while
 meaning the same thing; the style guide's icon list names one "X Button", so they share
 `chrome_close` here. That is the one intentional look change in the swap. `chrome_lock` and
-`chrome_crystal` were added for the style-B component kit (Docs/MENU_REDESIGN_B.md, item 0).
+`chrome_crystal` were added for the style-B component kit (Docs/MENU_REDESIGN_B.md, item 0);
+`chrome_plus`, `chrome_star` and `chrome_star_fill` for the arcade (item 3): the party panel's open
+seat and the game card's favourite star, off and on.
 
 Usage:
     python3 Tools/Build/author_ui_chrome_icons.py            # write the PNGs + .meta files
@@ -137,6 +139,30 @@ def chrome_crystal():
     return m
 
 
+def chrome_plus():
+    """Add - the open party seat's invite glyph. Butt-capped, like the X it pairs with."""
+    m = stroke([(-0.70, 0.00), (0.70, 0.00)], w=W * 1.30)
+    m |= stroke([(0.00, -0.70), (0.00, 0.70)], w=W * 1.30)
+    return m
+
+
+def _star(outer=0.84, inner=0.36):
+    """A five-point star, point up - straight edges and sharp points (section 5)."""
+    return [((outer if k % 2 == 0 else inner) * math.cos(math.pi / 2 + k * math.pi / 5),
+             (outer if k % 2 == 0 else inner) * math.sin(math.pi / 2 + k * math.pi / 5) - 0.04)
+            for k in range(10)]
+
+
+def chrome_star():
+    """Favourite, off - the star's outline."""
+    return ring(_star(), w=W * 1.00)
+
+
+def chrome_star_fill():
+    """Favourite, on - the same star, solid, so on and off share one silhouette."""
+    return fill(_star())
+
+
 GLYPHS = [
     ("chrome_close",      chrome_close),
     ("chrome_reroll",     chrome_reroll),
@@ -145,6 +171,9 @@ GLYPHS = [
     ("chrome_vessel_placeholder", chrome_vessel_placeholder),
     ("chrome_lock",       chrome_lock),
     ("chrome_crystal",    chrome_crystal),
+    ("chrome_plus",       chrome_plus),
+    ("chrome_star",       chrome_star),
+    ("chrome_star_fill",  chrome_star_fill),
 ]
 
 

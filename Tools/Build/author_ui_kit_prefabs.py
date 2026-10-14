@@ -609,7 +609,8 @@ def build_tile():
     return root
 
 
-def tile_body(fill, border, sel_sprite, unsel_sprite, primary, unsel_primary, secondary, art, lock):
+def tile_body(fill, border, sel_sprite, unsel_sprite, primary, unsel_primary, secondary, art, lock,
+              sel_border="TextLight", lock_label=None):
     def body(ctx, go):
         return mono(go, kit_script("KitTile"),
                     SELECTABLE_FIELDS
@@ -621,12 +622,14 @@ def tile_body(fill, border, sel_sprite, unsel_sprite, primary, unsel_primary, se
                     f"  borderImage: {{fileID: {ctx.c(border, 'img')}}}\n"
                     f"  borderSelectedSprite: {sprite_ref(kit_sprite(sel_sprite))}\n"
                     f"  borderUnselectedSprite: {sprite_ref(kit_sprite(unsel_sprite))}\n"
+                    f"  selectedBorderToken: {TOKEN_INDEX[sel_border]}\n"
                     + refs_list("primaryGraphics", [ctx.c(k, "tmp" if k in ("Name", "Label") else "img") for k in primary])
                     + f"  unselectedPrimaryToken: {TOKEN_INDEX[unsel_primary]}\n"
                     + refs_list("secondaryGraphics", [ctx.c(k, "tmp") for k in secondary])
                     + f"  lockedSecondaryToken: {TOKEN_INDEX['Purchase']}\n"
                     + refs_list("artGraphics", [ctx.c(k, "img") for k in art])
-                    + (f"  lockGraphic: {{fileID: {ctx.c(lock, 'img')}}}\n" if lock else "  lockGraphic: {fileID: 0}\n"))
+                    + (f"  lockGraphic: {{fileID: {ctx.c(lock, 'img')}}}\n" if lock else "  lockGraphic: {fileID: 0}\n")
+                    + (f"  lockLabel: {{fileID: {ctx.c(lock_label, 'tmp')}}}\n" if lock_label else "  lockLabel: {fileID: 0}\n"))
     return body
 
 
