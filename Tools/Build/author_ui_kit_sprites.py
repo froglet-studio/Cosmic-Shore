@@ -10,6 +10,8 @@ Every shape the style-B menu redesign draws comes from here (Docs/MENU_REDESIGN_
     kit_hex_handle                           the settings slider handle (§10.7)  32 x 28
     kit_banner_body / _cap_left / _cap_right the end-game header (§10.9) - authored so T7 closes;
                                              the end-game screens are OUT of the menu redesign
+    kit_fade_v                               a vertical alpha ramp, clear at the top to solid at the
+                                             bottom: the scrim under a hero frame's title (item 2)
 
 THE SLIVER (Docs/STYLE_FOUNDATION.md §5): a 45 deg cut on TWO OPPOSITE corners. Normal = top-left
 and bottom-right; `_flip` = top-right and bottom-left (§5 "flippable"). `fill` is the whole
@@ -57,6 +59,7 @@ LINES = (1, 2)               # §5 hairline / stroke, in canvas units
 HEX_W, HEX_H = 88, 76        # §10.12 nav tile, canvas units (the approved kit mockup)
 HANDLE_W, HANDLE_H = 32, 28  # §10.7 slider handle, canvas units
 BANNER_H, BANNER_SLANT = 56, 14
+FADE_W, FADE_H = 4, 64       # texels; a 1-D ramp, stretched to any size
 
 
 def guid_for(name):
@@ -172,6 +175,12 @@ def build_banner(part):
     return downsample(convex_mask(xs, ys, verts), w_tex, h_tex), 0
 
 
+def build_fade():
+    """Alpha rises linearly from 0 at the top row to 1 at the bottom row (texel centres)."""
+    ramp = (np.arange(FADE_H) + 0.5) / FADE_H
+    return np.repeat(ramp[:, None], FADE_W, axis=1), 0
+
+
 def sprite_set():
     """(name, alpha, 9-slice border in texels as (left, bottom, right, top))."""
     out = []
@@ -191,6 +200,8 @@ def sprite_set():
     for part in ("cap_left", "cap_right"):
         a, _ = build_banner(part)
         out.append((f"kit_banner_{part}", a, (0, 0, 0, 0), dict(banner=part)))
+    a, _ = build_fade()
+    out.append(("kit_fade_v", a, (0, 0, 0, 0), dict(fade=True)))
     return out
 
 
@@ -247,6 +258,11 @@ def check_sprite(name, alpha, border, meta):
             f"{name}: a flat-top hexagon touches both side edges at mid-height"
         if meta["hex"] in ("line1", "line2"):
             assert alpha[h // 2, w // 2] == 0, f"{name}: an outline must be hollow"
+    elif meta.get("fade"):
+        assert np.allclose(alpha, alpha[:, 0:1]), f"{name}: every column of the ramp must match"
+        col = alpha[:, 0]
+        assert np.all(np.diff(col) > 0), f"{name}: the ramp must rise from top to bottom"
+        assert col[0] < 0.05 and col[-1] > 0.95, f"{name}: the ramp must run clear to solid"
     elif meta.get("banner") == "body":
         b = border[0]
         mid = alpha[:, b:w - b]
@@ -481,6 +497,10 @@ def self_test():
     a, b = build_sliver(14, "fill", False)
     expect_fail("solid fill checked as an outline",
                 lambda: check_sprite("ctl", a, (b,) * 4, dict(cut=14, kind="line1", flip=False)))
+    # 6. a fade ramp drawn upside down (solid at the top)
+    a, _ = build_fade()
+    expect_fail("fade ramp upside down",
+                lambda: check_sprite("ctl", a[::-1], (0, 0, 0, 0), dict(fade=True)))
 
     ok = True
     for label, fired, msg in controls:
