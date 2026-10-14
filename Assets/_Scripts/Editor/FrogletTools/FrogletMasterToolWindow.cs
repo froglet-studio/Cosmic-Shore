@@ -42,7 +42,7 @@ namespace CosmicShore.Editor.Froglet
             w.Show();
         }
 
-        void OEnable() => FrogletToolRegistry.Refresh();
+        void OnEnable() => FrogletToolRegistry.Refresh();
 
         void OnGUI()
         {

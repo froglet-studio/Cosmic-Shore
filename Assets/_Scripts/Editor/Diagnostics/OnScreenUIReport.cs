@@ -47,7 +47,7 @@ namespace CosmicShore.Editor
                                    "screen right now, biggest first, with its alpha, its owning " +
                                    "CanvasGroup and its canvas. Run it while the bad frame is up.")]
         static void Run()
-       {
+        {
             if (!Application.isPlaying)
             {
                 EditorUtility.DisplayDialog(

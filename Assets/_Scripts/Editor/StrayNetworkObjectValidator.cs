@@ -34,7 +34,7 @@ namespace CosmicShore.Editor
             var networked = new List<GameObject>();
             foreach (var guid in AssetDatabase.FindAssets("t:Prefab"))
             {
-                var ath = AssetDatabase.GUIDToAssetPath(guid);
+                var path = AssetDatabase.GUIDToAssetPath(guid);
                 var go = AssetDatabase.LoadAssetAtPath<GameObject>(path);
                 if (go && go.GetComponent<NetworkObject>()) networked.Add(go);
             }
