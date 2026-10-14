@@ -70,8 +70,14 @@ namespace CosmicShore.Gameplay
         [SerializeField] Vector2 siteSpread = new(0.35f, 0.65f);
         [Tooltip("Share of Charge's morph spent sucking each petal's back in before the tips fuse and flatten.")]
         [SerializeField] Vector2 suck = new(0.3f, 0.4f);
-        [Tooltip("Every crystal but the first comes in with a bit of extra spacing and comes down to perfect spacing: each plate morphs toward its slot pushed out this fraction of the slot's radius, settling to nothing as it lands, so its last motion is inward (designer, 2026-10-13). The morphs themselves are the lab's. Each crystal also arrives from the camera's side (OmniCombineCore.FaceCamera), so the rhombi that must cross the omni do it behind it.")]
-        [SerializeField] Vector2 socketSpacing = new(0.08f, 0.12f);
+        [Tooltip("Every crystal but the first comes in with a bit of extra spacing and comes down to perfect spacing: each plate morphs toward its slot pushed out this fraction of the slot's radius and holds it until the crystal is centred on the omni, then settles to nothing over Socket Seconds, so its last motion is straight in (designer, 2026-10-13; held to the centre and widened from 0.08-0.12, 2026-10-14). The Mass crystal's much larger clearance is its depth columns: its prisms ride at the top of their columns all the way in. The morphs themselves are the lab's. Each crystal also arrives from the camera's side (OmniCombineCore.FaceCamera), so the rhombi that must cross the omni do it behind it.")]
+        [SerializeField] Vector2 socketSpacing = new(0.14f, 0.18f);
+
+        [Tooltip("Seconds a crystal takes to socket in once it is centred on the omni: the extra spacing comes down to nothing, and the Mass prisms come down their columns from the top into their slots (designer, 2026-10-14: 'socket into place instead of clipping into place'). Centred first, so every plate moves straight in through its own slot. The omni takes over once the last crystal has socketed.")]
+        [SerializeField] Vector2 socketSeconds = new(0.8f, 1f);
+
+        [Tooltip("How far up its depth column each Mass prism stands while the Mass crystal flies in (0 sealed, 1 the top of the column - the Mass crystal's own column, MassDepthPrisms' _Reach). Its prisms are thick, so they need far more clearance than the others' spacing to come straight down into their slots once the crystal is centred, instead of sliding along the shell into them. Below 1 on purpose: at the top of the column, with the crystal nearly centred, a prism stands where the waiting Time crystal is. Measured over 24 plays (Tools/Build/converter_round5_harness, section 9, which reads this value and holds both clearances): 0.6 keeps the prisms 0.17 R off the Time crystal and their deepest point 0.59 R above the landed shell; 0.75 comes within 0.03 R of Time, 1 touches it.")]
+        [SerializeField, Range(0f, 1f)] float massRaise = 0.6f;
         [Tooltip("Degrees above the camera's own height that Charge, Mass and Time arrive from (they always come in from the camera's side, following it round). 0 = along the camera's line of sight; raise it to have them drop in from above (designer, 2026-10-13: 'the mass triangles especially come in from the top which presents visible clipping to the camera viewing from the side').")]
         [SerializeField, Range(-30f, 80f)] float approachAboveCameraDegrees = 0f;
 
@@ -133,6 +139,8 @@ namespace CosmicShore.Gameplay
                 SiteSpread = Pick(siteSpread),
                 Suck = Pick(suck),
                 SocketSpacing = Pick(socketSpacing),
+                SocketSeconds = Pick(socketSeconds),
+                MassRaise = massRaise,
                 ApproachAboveCamera = approachAboveCameraDegrees * Mathf.Deg2Rad,
                 EffectFade = effectFade,
                 EffectPhase = rng.NextDouble() * 100.0,

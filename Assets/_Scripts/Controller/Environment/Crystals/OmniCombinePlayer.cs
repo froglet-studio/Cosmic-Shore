@@ -22,10 +22,13 @@ namespace CosmicShore.Gameplay
     /// <see cref="DepthRatchet"/> and <see cref="CrystalDepthPrismProfileSO"/> against the converter's camera, exactly
     /// as <see cref="CrystalDepthPrisms"/> does in play. The omni's triangles are <c>OmniCrystalTriangles.asset</c> on
     /// <c>OmniDepthPrisms</c>, turned onto the omni, and its body has their holes cut, as in play. As the Mass prisms
-    /// morph, the depth shader's shape (thickness, top-face height, plate radius, reach, split) blends from the Mass
-    /// material's to the omni triangles', and each wedge's column centre slides to its triangle's centre, so the three
-    /// landed wedges ARE the omni's triangle prism by the time it takes over. The game meshes have their thickness
-    /// baked in; the combine's Mass prisms are the thin ones, so their thickness (from the data) goes on in the shader.</para>
+    /// morph, the prisms' shape (thickness, top-face height, plate radius) blends from the Mass material's to the omni
+    /// triangles', and each wedge's column centre slides to its triangle's centre, so the three landed wedges ARE the
+    /// omni's triangle prism by the time it takes over. Their column (reach, split, size at the top) stays the Mass
+    /// crystal's: they fly in raised up it (<see cref="OmniCombineParams.MassRaise"/>) and come down it into their slots
+    /// only once the crystal is centred (<see cref="OmniCombineCore.MassColumnPlace"/>). The game meshes have their
+    /// thickness baked in; the combine's Mass prisms are the thin ones, so their thickness (from the data) goes on in the
+    /// shader.</para>
     ///
     /// <para><b>Every effect is the game's round-5 one</b> (Omni Motion Lab, graduated 2026-10-13): the Mass columns step
     /// with <see cref="CrystalDepthPrisms.StepColumns"/> (sealed at the horizon, rising only while hidden); the Charge
@@ -397,7 +400,7 @@ namespace CosmicShore.Gameplay
                     _crystals[k].Write(_poses[k], Vector3.zero, null);
                     SetOpacity(_crystals[k].Renderer, fadeIn);
                 }
-                WriteMass(dt, cameraWorld, fadeIn);
+                reach = Mathf.Max(reach, WriteMass(dt, cameraWorld, fadeIn));
                 WriteSeamWalk(cameraWorld, fadeIn);
                 StageRadius = reach * transform.lossyScale.x;
             }
@@ -429,9 +432,13 @@ namespace CosmicShore.Gameplay
         /// <summary>
         /// The game's Mass crystal: its object sits at the crystal's flight centre (so the shader's columns rise
         /// from the crystal's own centre, as in play), each plate's column centre slides to its omni triangle's
-        /// centre as it morphs, and the depth shader's shape blends from the Mass material's to the triangles'.
+        /// centre as it morphs, and the prisms' own shape (thickness, top-face height, plate radius) blends from the Mass
+        /// material's to the triangles' while they keep the Mass crystal's column (reach, split, size at the top).
+        /// While it idles its columns step as in play; as it sets off they hand over to
+        /// <see cref="OmniCombineCore.MassColumnPlace"/>: every prism held up its column all the way in, and down into its
+        /// slot once the crystal is centred. Returns how far out the farthest prism stands, in stage units.
         /// </summary>
-        void WriteMass(float dt, Vector3 cameraWorld, float fadeIn)
+        float WriteMass(float dt, Vector3 cameraWorld, float fadeIn)
         {
             int k = OmniCombineCore.Mass;
             var piece = _crystals[k];
@@ -468,7 +475,7 @@ namespace CosmicShore.Gameplay
             piece.Write(pose, centre, _massPlates);
             // The columns as CrystalDepthPrisms steps them in play: each plate's centre and top, and the plates' radius,
             // which the horizon seal and the hidden-rise test measure with.
-            var shape = DepthShape.Lerp(_massShape, _triThinShape, morph);
+            var shape = DepthShape.Morph(_massShape, _triThinShape, morph);
             float radius = 0f;
             for (int q = 0; q < _massPlates.Length; q++)
             {
@@ -480,8 +487,13 @@ namespace CosmicShore.Gameplay
             }
             _massColumns.PlateRadius = radius / Mathf.Max(1, _massPlates.Length);
             _massColumns.Step(piece.Renderer.transform.InverseTransformPoint(cameraWorld), dt, _config.DepthProfile,
-                              shape.Reach, shape.SizeStart, _effect[k]);
+                              shape.Reach, shape.SizeStart, _effect[k], (float)OmniCombineCore.MassColumnPlace(_t, _params));
             ApplyDepth(piece.Renderer, _massColumns, shape, fadeIn);
+            // The prisms stand out past the pose (up to Reach x their radius), so the framing counts where they are.
+            float farthest = 0f;
+            for (int q = 0; q < _massPlates.Length; q++)
+                farthest = Mathf.Max(farthest, (centre + (Vector3)_massPlates[q] * Mathf.Lerp(shape.Reach, 1f, _massColumns.State[q].x)).magnitude);
+            return farthest;
         }
 
         /// <summary>
@@ -654,8 +666,8 @@ namespace CosmicShore.Gameplay
         /// <summary>
         /// One depth-prism renderer's columns, stepped by the game's own <see cref="CrystalDepthPrisms.StepColumns"/>
         /// (the profile, the horizon seal and the hidden rise as in play) against this camera, and its state ramped by
-        /// <c>strength</c> - 0 draws every prism sealed and solid, 1 is the ratchet as in play - so the effect hands over
-        /// continuously in both directions.
+        /// <c>strength</c> - 0 draws every prism solid at column place <c>rest</c> (1 sealed, 0 at the top), 1 is the
+        /// ratchet as in play - so the effect hands over continuously in both directions.
         /// </summary>
         sealed class DepthColumns
         {
@@ -681,14 +693,15 @@ namespace CosmicShore.Gameplay
 
             public int Count => _columns.Length;
 
-            public void Step(Vector3 eye, float dt, CrystalDepthPrismProfileSO profile, float reach, float sizeAtTop, float strength)
+            public void Step(Vector3 eye, float dt, CrystalDepthPrismProfileSO profile, float reach, float sizeAtTop, float strength,
+                             float rest = 1f)
             {
                 if (eye.sqrMagnitude < 1e-8f || PlateRadius <= 0f) return;
                 CrystalDepthPrisms.StepColumns(_columns, Directions, Centres, Tops, PlateRadius, eye, dt, Fresh, profile, reach, sizeAtTop);
                 for (int j = 0; j < _columns.Length; j++)
                 {
                     var c = _columns[j];
-                    State[j] = new Vector4(Mathf.Lerp(1f, c.Place, strength), Mathf.Lerp(1f, c.Fade, strength),
+                    State[j] = new Vector4(Mathf.Lerp(rest, c.Place, strength), Mathf.Lerp(1f, c.Fade, strength),
                                            Mathf.Lerp(1f, c.LeavingPlace, strength), Strike[j]);
                 }
                 Fresh = false;
@@ -767,10 +780,13 @@ namespace CosmicShore.Gameplay
                 m.GetFloat(ThicknessID) * baked, m.GetFloat(TopHeightID) * unit, m.GetFloat(SplitUnitID) * unit,
                 m.GetFloat(ReachID), m.GetFloat(FaceSplitID), m.GetFloat(SizeStartID));
 
-            public static DepthShape Lerp(in DepthShape a, in DepthShape b, float t) => new(
+            /// <summary>The prism's own geometry (thickness, top-face height, plate radius) morphed from
+            /// <paramref name="a"/>'s to <paramref name="b"/>'s; its column (reach, face split, size at the top) stays
+            /// <paramref name="a"/>'s. The Mass prisms ride the Mass crystal's own column all the way in, and land seated,
+            /// where the column dials do nothing, so the hand-off to <paramref name="b"/>'s prisms is still seamless.</summary>
+            public static DepthShape Morph(in DepthShape a, in DepthShape b, float t) => new(
                 Mathf.Lerp(a.Thickness, b.Thickness, t), Mathf.Lerp(a.TopHeight, b.TopHeight, t),
-                Mathf.Lerp(a.SplitUnit, b.SplitUnit, t), Mathf.Lerp(a.Reach, b.Reach, t),
-                Mathf.Lerp(a.FaceSplit, b.FaceSplit, t), Mathf.Lerp(a.SizeStart, b.SizeStart, t));
+                Mathf.Lerp(a.SplitUnit, b.SplitUnit, t), a.Reach, a.FaceSplit, a.SizeStart);
         }
 
         /// <summary>One drawn mesh: unwelded per triangle (so each face has its own normal), fed from the core's

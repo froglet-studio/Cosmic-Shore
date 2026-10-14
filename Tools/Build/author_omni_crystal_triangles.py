@@ -255,14 +255,16 @@ def _sub1(text, pattern, repl, label):
     return out
 
 
-def depth_material(name, body_name, body_text, thickness, top_height, split_unit):
+def depth_material(name, body_name, body_text, thickness, top_height, split_unit, reach=DEPTH_REACH,
+                   face_split=DEPTH_FACE_SPLIT):
     """A depth-prism material: the body material (same colours, same _Spread) moved onto
-    OmniDepthPrismShader, plus the prism's shape dials. OPAQUE (queue Geometry), like the body."""
+    OmniDepthPrismShader, plus the prism's shape dials. OPAQUE (queue Geometry), like the body. The Mass crystal
+    passes its own reach and face split (author_mass_crystal_look.py); the omni's triangles take the defaults."""
     t = _sub1(body_text, rf"^  m_Name: {re.escape(body_name)}$", f"  m_Name: {name}", name + " m_Name")
     t = _sub1(t, r"^  m_Shader: \{fileID: 4800000, guid: \w+, type: 3\}",
               f"  m_Shader: {{fileID: 4800000, guid: {DEPTH_SHADER_GUID}, type: 3}}", name + " m_Shader")
-    floats = (f"    - _DepthDriven: 0\n    - _FaceSplit: {DEPTH_FACE_SPLIT}\n"
-              f"    - _PlateScaleStart: {DEPTH_PLATE_SCALE_START}\n    - _Reach: {DEPTH_REACH}\n"
+    floats = (f"    - _DepthDriven: 0\n    - _FaceSplit: {face_split}\n"
+              f"    - _PlateScaleStart: {DEPTH_PLATE_SCALE_START}\n    - _Reach: {reach}\n"
               f"    - _SplitUnit: {split_unit}\n    - _Thickness: {thickness}\n"
               f"    - _ThicknessInward: {DEPTH_THICKNESS_INWARD}\n    - _TopHeight: {top_height}\n")
     t = _sub1(t, r"^    m_Floats:\n", lambda m: m.group(0) + floats, name + " m_Floats")

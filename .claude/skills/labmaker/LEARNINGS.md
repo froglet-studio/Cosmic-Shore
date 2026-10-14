@@ -806,3 +806,18 @@ Entries are grouped by family; within a family, the newest goes at the bottom.
   that was never validated against it, and don't hide a metric that disagrees.
 - Evidence: `OmniCombineParams.ApproachAboveCamera`; `OMNI_COMBINE_LAB.md` revision 7, round 9.
 - Promoted: no
+
+### L-STU-63 — Run the designer's literal value as a control: it can trade the fault they named for a new one
+- Lab: Omni Combine Lab revision 8 (the converter) · Branch: `cece/beautiful-goodall-8cenn3` · Date: 2026-10-14
+- What happened: the designer asked for the Mass prisms to fly in "at maximum column height" so they socket instead of
+  clipping. Taken literally, the raised prisms stand 2.5 R out in every direction as the crystal nears the centre, and
+  the Time crystal waits 2.7–3.3 R out. Measured on the real prism bodies, the top of the column reaches into the Time
+  crystal (0.00 R). The first version of the check also flagged prisms passing through the omni mid-flight. That was a
+  proxy problem: it lumped "landing beside my hole" together with "bound for the far side, passing through".
+- Do instead: build the ask as a dial, and run the literal value through the same harness. Here that is `massRaise`,
+  with 1 meaning "maximum". If the literal value only trades the fault the designer named for a new one (a
+  body-on-body contact, not a contested metric as in L-STU-62), ship the highest value that keeps the ask's purpose.
+  Keep the literal value as a negative control, and give the designer the table. Split a fault metric by cause
+  before gating on it.
+- Evidence: `Tools/Build/converter_round5_harness` section 9; `OMNI_COMBINE_LAB.md` revision 8.
+- Promoted: no

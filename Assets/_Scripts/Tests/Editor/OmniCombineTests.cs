@@ -175,6 +175,57 @@ namespace CosmicShore.Tests
         }
 
         [Test]
+        public void EveryCrystalButTheFirst_HoldsItsClearanceUntilCentred_ThenSocketsStraightIn()
+        {
+            var data = LoadData();
+            var core = new OmniCombineCore(data);
+            var p = OmniCombineParams.LabDefault;
+            p.GameMotion = true;
+            p.ShaderDepth = true;
+            p.SocketSpacing = 0.16;
+            p.SocketSeconds = 0.9;
+            p.MassRaise = 0.6;
+            var none = p;
+            none.SocketSpacing = 0;
+            Assert.AreEqual(OmniCombineCore.Centred(OmniCombineCore.Time, p) + p.SocketSeconds, OmniCombineCore.MorphEnds(p), 1e-9,
+                            "the omni takes over once the last crystal has socketed in");
+            var pos = Buffers(core);
+            var plain = Buffers(core);
+            float r = (float)core.OmniRadius;
+            for (int k = 1; k < 4; k++)
+            {
+                double centred = OmniCombineCore.Centred(k, p);
+                core.CrystalFrame(k, centred, p, out var at, out _, out _, out _, out _);
+                Assert.Less(at.Length, 1e-9 * r, $"{OmniCombineCore.Order[k]} is centred on the omni when its flight is over");
+                // Centred, every plate still stands out by the full spacing, along its own slot.
+                core.Pose(centred, p, Camera, pos, new float[4]);
+                core.Pose(centred, none, Camera, plain, new float[4]);
+                for (int i = 0; i < pos[k].Length / 3; i++)
+                {
+                    var v = new Vector3(pos[k][3 * i], pos[k][3 * i + 1], pos[k][3 * i + 2]);
+                    var v0 = new Vector3(plain[k][3 * i], plain[k][3 * i + 1], plain[k][3 * i + 2]);
+                    Assert.Greater((v - v0).magnitude, 0.12f * r, $"{OmniCombineCore.Order[k]} came down before it was centred");
+                    Assert.Greater(Vector3.Dot(v - v0, v0), 0f, $"{OmniCombineCore.Order[k]}'s spacing is not outward");
+                }
+                // Socketed in, it is exactly in its slots.
+                core.Pose(centred + p.SocketSeconds, p, Camera, pos, new float[4]);
+                var final = core.CrystalData(k).final;
+                for (int i = 0; i < pos[k].Length; i++)
+                    Assert.AreEqual(final[i], pos[k][i], 1e-4f, $"{OmniCombineCore.Order[k]} does not socket into its slots");
+            }
+
+            // The Mass prisms: raised all the way in, down their columns only once the crystal is centred, seated once socketed.
+            double massCentred = OmniCombineCore.Centred(OmniCombineCore.Mass, p);
+            for (double t = OmniCombineCore.Departs(OmniCombineCore.Mass, p); t < massCentred; t += 0.1)
+                Assert.AreEqual(1 - p.MassRaise, OmniCombineCore.MassColumnPlace(t, p), 1e-9, "a Mass prism came down before the crystal was centred");
+            double mid = OmniCombineCore.MassColumnPlace(massCentred + 0.5 * p.SocketSeconds, p);
+            Assert.That(mid, Is.GreaterThan(1 - p.MassRaise).And.LessThan(1.0), "the Mass prisms come down their columns as the crystal sockets in");
+            Assert.AreEqual(1.0, OmniCombineCore.MassColumnPlace(massCentred + p.SocketSeconds, p), 1e-12, "the Mass prisms are seated once it has socketed in");
+            var lab = OmniCombineParams.LabDefault;
+            Assert.AreEqual(1.0, OmniCombineCore.MassColumnPlace(massCentred, lab), 1e-12, "the lab's Mass prisms are never raised");
+        }
+
+        [Test]
         public void APlayIsAFunctionOfItsSeed()
         {
             var core = new OmniCombineCore(LoadData());
@@ -314,7 +365,9 @@ namespace CosmicShore.Tests
             {
                 var p = config.Draw(rng);
                 Assert.IsTrue(p.GameMotion, "the converter's omni moves as the game's does");
-                Assert.That(p.SocketSpacing, Is.InRange(0.08 - 1e-6, 0.12 + 1e-6), "every crystal but the first comes in with a bit of extra spacing");
+                Assert.That(p.SocketSpacing, Is.InRange(0.14 - 1e-6, 0.18 + 1e-6), "every crystal but the first comes in with a bit of extra spacing");
+                Assert.That(p.SocketSeconds, Is.InRange(0.8 - 1e-6, 1.0 + 1e-6), "each crystal sockets in once it is centred");
+                Assert.AreEqual(0.6, p.MassRaise, 1e-6, "the Mass prisms fly in raised up their columns (converter_round5_harness section 9)");
                 Assert.IsNull(p.ApproachTurn, "the approach is aimed at the camera when the crystals set off, not when the play is drawn");
                 Assert.AreEqual(0.0, p.ApproachAboveCamera, 1e-9, "the crystals arrive at the camera's own height");
                 Assert.That(p.Flight, Is.InRange(4.4, 5.4));

@@ -141,9 +141,24 @@ namespace CosmicShore.Utility
         /// <summary>Every crystal but the first comes in with a bit of extra spacing and comes down to perfect spacing
         /// (designer, 2026-10-13: "the time rhombuses come in with a bit of extra spacing and then come down to perfect
         /// spacing in order to socket in from the outside"): each plate morphs toward its slot pushed out this fraction of
-        /// the slot's radius, and from <see cref="OmniCombineCore.SettleFrom"/> of its morph on the extra eases to nothing,
-        /// so its last motion is inward. The morph itself is untouched. 0 (the lab) = none.</summary>
+        /// the slot's radius, and HOLDS that until the crystal is centred on the omni (its flight is over), then eases it
+        /// to nothing over <see cref="SocketSeconds"/> (designer, 2026-10-14: "keep the triangles at maximum column height
+        /// till we get the crystal centered then we can decrease the radial distance so they socket into place ... you can
+        /// do this a bit more for the others"), so its last motion is straight in. The morph itself is untouched. 0 (the
+        /// lab) = none. The Mass crystal's far larger clearance is its depth columns (<see cref="MassRaise"/>).</summary>
         public double SocketSpacing;
+        /// <summary>Seconds a crystal takes to socket in once it is centred on the omni: its plates' extra spacing comes
+        /// down to nothing, and the Mass prisms, held up their columns all the way in (<see cref="MassRaise"/>), come down
+        /// them into their slots. Every crystal is centred before it sockets, so the motion is radial about the omni's own centre:
+        /// a plate moves straight in through its own slot and never across a neighbour's. <see cref="OmniCombineCore.MorphEnds"/>
+        /// waits for the last one. 0 (the lab) = none.</summary>
+        public double SocketSeconds;
+        /// <summary>How far up its depth column each Mass prism stands while the crystal flies in, 0 (sealed, the lab) .. 1
+        /// (the top of the column): the clearance its thick prisms need to come straight down into their slots instead of
+        /// sliding along the shell into them (designer, 2026-10-14: "keep the triangles at maximum column height till we
+        /// get the crystal centered"). Below 1 on purpose: a prism at the top of its column, with the crystal nearly centred,
+        /// stands out where the waiting Time crystal is (Tools/Build/converter_round5_harness, section 9).</summary>
+        public double MassRaise;
         /// <summary>Radians each crystal's flight turns about the vertical on the way in (index = element; null, the lab =
         /// none), so it arrives from the side the camera will be on and the rhombi that have to cross the omni do it behind
         /// it (designer, 2026-10-13: "the solution i want has all its clipping occluded"). The turn starts at nothing - a
@@ -255,9 +270,6 @@ namespace CosmicShore.Utility
             return sizes.ToArray();
         }
 
-        /// <summary>How far through its morph a plate starts settling from its extra spacing to its slot
-        /// (<see cref="OmniCombineParams.SocketSpacing"/>).</summary>
-        public const double SettleFrom = 0.85;
         /// <summary>How far through a crystal's eased flight its approach turn (<see cref="OmniCombineParams.ApproachTurn"/>)
         /// is complete: while the crystal is still well clear of the omni.</summary>
         public const double ApproachTurnEnds = 0.7;
@@ -265,7 +277,31 @@ namespace CosmicShore.Utility
         const double ArrivalAt = 0.85;
 
         public static double Departs(int element, in OmniCombineParams p) => p.Lead + element * p.Stagger;
-        public static double MorphEnds(in OmniCombineParams p) => p.Lead + 3 * p.Stagger + p.Flight;
+        /// <summary>When crystal <paramref name="element"/>'s flight is over: it is centred on the omni, every plate morphed.</summary>
+        public static double Centred(int element, in OmniCombineParams p) => Departs(element, p) + p.Flight;
+        /// <summary>When the last crystal (Time) has socketed in: the omni takes over from here.</summary>
+        public static double MorphEnds(in OmniCombineParams p) => Centred(Time, p) + Math.Max(0, p.SocketSeconds);
+
+        /// <summary>How far crystal <paramref name="element"/> has socketed in at <paramref name="t"/>: 0 until it is
+        /// centred on the omni, then eased to 1 over <see cref="OmniCombineParams.SocketSeconds"/> (at once with none).</summary>
+        public static double SocketIn(int element, double t, in OmniCombineParams p)
+        {
+            double since = t - Centred(element, p);
+            return p.SocketSeconds > 0 ? Smooth(since / p.SocketSeconds) : since >= 0 ? 1 : 0;
+        }
+
+        /// <summary>
+        /// Where the Mass prisms are on their depth columns at <paramref name="t"/> once the crystal has set off (0 at the
+        /// top of a column, 1 sealed): raised by <see cref="OmniCombineParams.MassRaise"/> all the way in, and down into
+        /// their slots as the crystal sockets in (designer, 2026-10-14: "for mass lets keep the triangles at maximum column
+        /// height till we get the crystal centered then we can decrease the radial distance so the socket into place
+        /// instead of clipping into place ... mass it should be done much more due to the extra clearance needed from their
+        /// thickness"). A column is radial about the crystal's own centre, and once it is centred that is the omni's, so
+        /// each prism comes straight down through its own triangle hole. The caller blends the idle depth effect into this
+        /// as the crystal sets off.
+        /// </summary>
+        public static double MassColumnPlace(double t, in OmniCombineParams p) =>
+            1 - Clamp01(p.MassRaise) * (1 - SocketIn(Mass, t, p));
 
         /// <summary>
         /// Every vertex of every crystal at combine time <paramref name="t"/>, in the stage's frame:
@@ -290,6 +326,7 @@ namespace CosmicShore.Utility
                 var outPos = positions[k];
                 double t0 = Departs(k, p), u = Clamp01((t - t0) / p.Flight);
                 double fxIdle = 1 - Smooth((t - t0) / p.EffectFade);
+                double socket = k > 0 && p.SocketSpacing > 0 ? SocketIn(k, t, p) : 0;
                 effect[k] = (float)Math.Max(0, fxIdle);
                 Frame(k, t, p, out var centre, out double spin, out double ang);
                 double mS = Math.Min(p.MorphStart, 1 - p.MorphLength);
@@ -311,10 +348,9 @@ namespace CosmicShore.Utility
                         seatScale = 1 + (Data.depth.massSizeStart - 1) * (1 - sd) * fxIdle;
                         seatLift = pl.C * ((Data.depth.massReach - 1) * (1 - sd) * fxIdle);
                     }
-                    // A bit of extra spacing that comes down to nothing as the plate lands: its slot, pushed out along itself.
-                    double extra = k > 0 && p.SocketSpacing > 0
-                        ? w * p.SocketSpacing * (1 - Smooth((w - SettleFrom) / (1 - SettleFrom)))
-                        : 0;
+                    // A bit of extra spacing, held until the crystal is centred and then brought down to nothing: its slot,
+                    // pushed out along itself.
+                    double extra = k > 0 && p.SocketSpacing > 0 ? w * p.SocketSpacing * (1 - socket) : 0;
                     foreach (int i in pl.Idx)
                     {
                         D3 b = V(c.Data.basis, i);
