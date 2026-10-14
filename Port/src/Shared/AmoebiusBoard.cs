@@ -28,7 +28,7 @@ namespace Amoebius
     /// build does not know are carried through unchanged.
     /// The scheduling fields and logic live in <c>Shared/Workspace</c>.
     /// </summary>
-    public sealed partial class AmoebiusBoard
+    internal sealed partial class AmoebiusBoard
     {
         public enum Kind { Bug = 0, Task = 1 }
         public enum Status { Suggested = 0, Todo = 1, Doing = 2, Done = 3, Dismissed = 4 }

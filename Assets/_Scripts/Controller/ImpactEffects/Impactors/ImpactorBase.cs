@@ -67,7 +67,7 @@ namespace CosmicShore.Gameplay
                 CSDebug.LogError(
                     $"[{GetType().Name}] '{path}'.{containerField} is not assigned — this impactor " +
                     "dispatches no effects until it is wired (reported once; contacts are skipped, " +
-                    "not thrown). Run FrogletTools > Vessels > Audit Vessel Skimmers to see every " +
+                    "not thrown). Run FrogletTools > Vessels > Audits > Audit Vessel Skimmers to see every " +
                     "unwired skimmer.", this);
             }
             return true;

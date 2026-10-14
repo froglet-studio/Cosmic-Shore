@@ -139,22 +139,49 @@ namespace CosmicShore.Editor.Froglet
 
         // ── Heuristics for un-annotated tools ────────────────────────────────────
 
+        /// <summary>
+        /// The menu's second segment IS the section (Docs/TOOLING.md § Sections), so an
+        /// un-annotated tool is filed by its path first and by keywords only as a fallback.
+        /// </summary>
+        static readonly Dictionary<string, FrogletToolCategory> SegmentCategories = new(StringComparer.OrdinalIgnoreCase)
+        {
+            { "AI", FrogletToolCategory.Ai },
+            { "Amoebius", FrogletToolCategory.Build },
+            { "Build", FrogletToolCategory.Build },
+            { "Diagnostics", FrogletToolCategory.Diagnostics },
+            { "Ecology", FrogletToolCategory.Ecology },
+            { "FTUE", FrogletToolCategory.Ftue },
+            { "Game Modes", FrogletToolCategory.GameModes },
+            { "Performance", FrogletToolCategory.Performance },
+            { "QA", FrogletToolCategory.Qa },
+            { "Scenes", FrogletToolCategory.SceneSetup },
+            { "Services", FrogletToolCategory.Services },
+            { "UI", FrogletToolCategory.Interface },
+            { "Utilities", FrogletToolCategory.Utilities },
+            { "Vessels", FrogletToolCategory.Vessels },
+        };
+
         static FrogletToolCategory InferCategory(string path, Type declaring)
         {
+            var segments = path.Split('/');
+            if (segments.Length >= 3 && SegmentCategories.TryGetValue(segments[1], out var bySegment))
+                return bySegment;
+
             var hay = (path + " " + (declaring?.Name ?? "")).ToLowerInvariant();
 
             if (Has(hay, "build", "release", "player")) return FrogletToolCategory.Build;
             if (Has(hay, "benchmark", "performance", "memory", "profil", "texture")) return FrogletToolCategory.Performance;
-            // Deliberately not bare "bug" (matches "debug") or "log" (the Logging toolbox is Misc).
+            // Deliberately not bare "bug" (matches "debug") or "log" (the Logging toolbox is Utilities).
             if (Has(hay, "crash", "diagnos", "watchdog", "bug ledger", "bugledger")) return FrogletToolCategory.Diagnostics;
-            if (Has(hay, "audit", "validate", "validator", "verify", "integrity")) return FrogletToolCategory.Validation;
+            if (Has(hay, "quest", "dialogue", "ftue")) return FrogletToolCategory.Ftue;
+            if (Has(hay, "third eye", "pilot", "ai training")) return FrogletToolCategory.Ai;
             if (Has(hay, "prism", "cell", "lifeform", "crystal", "ecolog", "flora", "fauna", "toybox")) return FrogletToolCategory.Ecology;
             if (Has(hay, "vessel", "ship", "hud", "elemental", "petal", "rig", "ability")) return FrogletToolCategory.Vessels;
             if (Has(hay, "game mode", "gamemode", "minigame", "end game", "endcondition", "end condition", "arcade")) return FrogletToolCategory.GameModes;
-            if (Has(hay, "canvas", "toast", "dialogue", "ui", "raycast", "notification")) return FrogletToolCategory.Interface;
+            if (Has(hay, "canvas", "toast", "ui", "raycast", "notification")) return FrogletToolCategory.Interface;
             if (Has(hay, "ugs", "product", "leaderboard", "cloud")) return FrogletToolCategory.Services;
             if (Has(hay, "scene", "setup", "spawn", "photobooth", "recording")) return FrogletToolCategory.SceneSetup;
-            return FrogletToolCategory.Misc;
+            return FrogletToolCategory.Utilities;
         }
 
         static bool Has(string haystack, params string[] needles)

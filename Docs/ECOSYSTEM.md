@@ -2753,7 +2753,7 @@ First pass, in Menu_Main freestyle:
 
 1. **Import clean.** Pull, let Unity reimport, confirm zero compile errors and that the
    four new prefabs open without "Missing (Mono Script)" rows. Run
-   **FrogletTools > Validation > Validate Lifeform Crystals** — every segment's heart is
+   **FrogletTools > Ecology > Validate Lifeform Crystals** — every segment's heart is
    runtime-provisioned by design (and the validator only inspects `LifeForm`/`LightFauna`
    prefabs anyway), so it should stay quiet about the worm.
 2. **Spawn**: freestyle → Spawn Matrix toy → "Worm Colony" → any element station.
@@ -4725,7 +4725,7 @@ NOT re-run after the octagon conversion and remain open:
    Confirm it still reads as topiary in the garden.
 7. Re-run `python3 Tools/Build/author_flora_populations.py --check` after any asset tuning,
    `python3 Tools/Build/verify_gyroid_octagon_tables.py` after any bond-table or octagon-table
-   edit, and `FrogletTools ▸ Validation ▸ Validate Lifeform Crystals` (every octagon is a lifeform
+   edit, and `FrogletTools ▸ Ecology ▸ Validate Lifeform Crystals` (every octagon is a lifeform
    now, so the one-crystal rule is being asserted far more often than before).
 
 ### 32.7 The octagon colony — a crystal in every window (Aug 2026, second pass)
@@ -5227,7 +5227,7 @@ Menu_Main freestyle (Blob cell) is the fastest read:
    SHOULD show a size gradient with the founders largest.
 5. **The reward tracks** — collect a level-1 heart and a levelled one and confirm the element
    flowers move further on the second.
-6. Re-run `FrogletTools ▸ Validation ▸ Validate Lifeform Crystals` (no prefab changed, but the
+6. Re-run `FrogletTools ▸ Ecology ▸ Validate Lifeform Crystals` (no prefab changed, but the
    sizing path did) and `FrogletTools ▸ Ecology ▸ Measure Cell Environment Baselines` for
    Rampage per consequence 1 above.
 ## 34. Schwarz P grows on its own TILE — the hyperbolic {6,4}, which is one half-period cube (Aug 2026)
@@ -6227,7 +6227,7 @@ fit against and no equivalent measurement; nobody has looked at them.
    construction (nothing in `Spindle` reads `leafSize`) and they compose, but the *look* of a
    Charge gyroid's join is the one thing this branch cannot predict. Check it on the same plant as
    step 5.
-8. After the flora config edits: `FrogletTools ▸ Validation ▸ Validate Lifeform Crystals`.
+8. After the flora config edits: `FrogletTools ▸ Ecology ▸ Validate Lifeform Crystals`.
 
 ---
 
@@ -6704,7 +6704,7 @@ five-playtest failure class).
 7. **The food web:** graze a strut (any vessel ability) — the edge frees and the plant regrows
    it; strip a whole plant — it withers to its crystal on the standard path, and the freed
    heart is re-plantable by the colony.
-8. After the flora config edits: `FrogletTools ▸ Validation ▸ Validate Lifeform Crystals`.
+8. After the flora config edits: `FrogletTools ▸ Ecology ▸ Validate Lifeform Crystals`.
 
 ### 37.9 A prism is a LEAF of the hierarchy — and the lattice doubles (Aug 2026, second pass)
 
@@ -7397,7 +7397,7 @@ twelve flora colonies, and the **Blob** SpawnProfile still holds the mixed fauna
    not the feel).
 7. Re-run `python3 Tools/Build/author_lifeform_heart_sizes.py --check` (must print
    *"every lifeform heart matches the authored band"*), then
-   `FrogletTools ▸ Ecology ▸ Validate Lifeform Crystals` and
+   `FrogletTools ▸ Validation ▸ Validate Lifeform Crystals` and
    `FrogletTools ▸ Ecology ▸ Measure Cell Environment Baselines` for Rampage per consequence 1.
 
 ## 41. The Arkway and the Ark — a voyage whose fights are the shipped ecology (Sep 2026)
@@ -9099,7 +9099,7 @@ Everything above is offline. Specifically:
    of bluntness, are the prefab's `density` (0.5–1.3), then `Blossoms`/`Crowns`/`Falls`.
 4. **Confirm the garden grows and stops.** Plant count should settle at 21 and stay there; the
    cell should reach Restless within the first minutes and never reach Frenzy.
-5. **FrogletTools > Validation > Validate Lifeform Crystals** after any lifeform-prefab change.
+5. **FrogletTools > Ecology > Validate Lifeform Crystals** after any lifeform-prefab change.
 
 **Known gaps, stated rather than hidden:** the cell wears the project-wide placeholder card icon
 (as 15 of the 16 shipped cell configs do — a Garland-specific one is an art task); the flora

@@ -290,7 +290,9 @@ namespace CosmicShore.Gameplay
             _source.OwnerVessel = OwnerTransform();
             _age = 0f;
             // The white hole's birth: its light converging from far away onto the pair (the studio's spawnWave('in', mid)).
-            BlackHoleWaves.Spawn(BlackHoleWaves.Kind.In, 0.5f * (sinkAt + sourceAt), inSeconds: config.SourceGrowSeconds);
+            // Off by default (StoatDipoleConfigSO.AnnihilationWaves): in play it read as the annihilation flash at CREATION.
+            if (config.AnnihilationWaves)
+                BlackHoleWaves.Spawn(BlackHoleWaves.Kind.In, 0.5f * (sinkAt + sourceAt), inSeconds: config.SourceGrowSeconds);
             ApplyOwnerRules();
             return true;
         }
@@ -371,7 +373,7 @@ namespace CosmicShore.Gameplay
             _collapses.RemoveAt(index);
             ResolveSiblings();
             if (detonate && _ripple) _ripple.Detonate(c.Middle, c.Separation);
-            if (detonate)
+            if (detonate && config != null && config.AnnihilationWaves)
             {
                 // The studio's startDying: the pair's mass leaves as a gravitational wave from where the poles met, along
                 // the line they met on, its strength the pair's (mass = S/6 in 0.3..2); the white hole's light leaves as an

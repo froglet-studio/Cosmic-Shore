@@ -64,7 +64,7 @@ namespace CosmicShore.Editor
         readonly List<Status> _status = new();
         System.Action _deferred;
 
-        [MenuItem("FrogletTools/Vessels/Bake Crystal Hull Fusions", false, 24)]
+        [MenuItem("FrogletTools/Vessels/Wiring/Bake Crystal Hull Fusions", false, 253)]
         [FrogletTool(FrogletToolCategory.Vessels, Importance = 3,
             Description = "Solve where each elemental crystal's faces land on each vessel hull, at edit time, " +
                           "and bake it - so a pickup in game does no geometry. Re-run when a hull or crystal model changes.",

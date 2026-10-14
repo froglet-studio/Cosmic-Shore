@@ -35,7 +35,6 @@
   h1 { margin: 0; text-transform: uppercase; }
   .round { font-size: 12px; color: var(--muted); border: 1px solid var(--line); border-radius: 999px; padding: 4px 8px; }
   .sub { color: var(--muted); max-width: 78ch; margin: 0; }
-  .host { font-size: 11px; color: var(--accent); }
 
   .layout { display: grid; grid-template-columns: minmax(0, 1fr) 360px; gap: 12px; align-items: start; }
   .layout > section { min-width: 0; }
@@ -142,7 +141,6 @@
     <a class="back" href="index.html">&larr; Vessel Studio</a>
     <h1>HyperSea Studio</h1>
     <span class="round">Round 1 · fleet AI simulation</span>
-    <span class="host" id="hostTag" hidden>Running on Amoebius</span>
     <p class="sub">Every vessel in the project in one cell, under one rule set, flown by AI at Easy, Medium or Hard. Each hull flies on its shipped speed, turn rates and trail, chases crystals, skims and rams the mass the others lay, and works its own signature move. Watch any of them, take one over, and score the whole fleet in seconds to see which hull holds the HyperSea.</p>
   </header>
 
@@ -302,7 +300,6 @@
 (function () {
   'use strict';
   const $ = (id) => document.getElementById(id);
-  if (/(^|[#&])(amoebius|prisma)\b/i.test(location.hash) || window.__studioHost) $('hostTag').hidden = false;
 
   // ================= the fleet: shipped numbers, one row per prefab =================
   // min + thr = cruise (VesselTransformer.CruiseSpeed); p/y/r = Pitch/Yaw/RollScaler (deg/s); boost = VesselStatus.boostMultiplier;
@@ -693,7 +690,7 @@
 
   // ================= rendering =================
   const canvas = $('c');
-  const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+  const renderer = VesselStudioTheme.renderer(THREE, { canvas, antialias: true });   // no WebGL: the stage says so, the rest loads (D34)
   renderer.setPixelRatio(Math.min(2, window.devicePixelRatio || 1));
   const scene = new THREE.Scene();
   const cam = new THREE.PerspectiveCamera(70, 16 / 10, 0.5, 12000);
@@ -923,7 +920,7 @@
 
   // ================= panels =================
   const elx = (t, c, x) => { const e = document.createElement(t); if (c) e.className = c; if (x != null) e.textContent = x; return e; };
-  // The universal AI race config panel (ai_race_panel.js, D17) with a Players list (D25) whose players also pick a Vessel (D34)
+  // The universal AI race config panel (ai_race_panel.js, D17) with a Players list (D25) whose players also pick a Vessel (D39)
   const racePanel = StudioRacePanel.mount($('racePanel'), {
     gameHost: $('intensityPanel'), sceneHost: $('scenePanel'),
     courses: [1, 2, 3, 4].map((v) => ({ v, label: 'I' + v, note: CELLS[v].note })),

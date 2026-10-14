@@ -235,6 +235,19 @@ public class PlayerDataBuilderTests : IDisposable
     }
 
     [Fact]
+    public void The_branchs_ugs_environment_ships_with_the_build()
+    {
+        Asset("Assets/Scenes/Boot.unity", 1);
+        Settings(("Assets/Scenes/Boot.unity", 1, true));
+        new Amoebius.AmoebiusProjectSettings { Network = { UgsEnvironment = "staging" } }.Save(_root);
+        var outDir = Path.Combine(_root, "out");
+        new PlayerDataBuilder(_root).Build(outDir);
+
+        // The phone reads it where the desktop player does: Port/ProjectSettings under its data root.
+        Assert.Equal("staging", Amoebius.AmoebiusProjectSettings.Load(outDir).Network.UgsEnvironment);
+    }
+
+    [Fact]
     public void Player_settings_name_and_version_the_build()
     {
         Settings();

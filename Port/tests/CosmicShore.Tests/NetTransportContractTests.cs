@@ -6,29 +6,43 @@ using CosmicShore.Engine.Networking;
 namespace CosmicShore.Tests
 {
     /// <summary>
-    /// The <see cref="INetTransport"/> contract, checked against every implementation: TCP (the
-    /// shipping one), Froglet's UDP transport, the in-memory loopback, and each behind the network simulator. A new transport (the internet relay of C6) joins
-    /// <see cref="Transports"/> and must pass the same checks.
+    /// The <see cref="INetTransport"/> contract, checked against every implementation: TCP, Froglet's UDP
+    /// transport, UDP through a Unity-Relay-protocol relay (<see cref="RelayTestFactory"/>), the in-memory
+    /// loopback, and each behind the network simulator. A new transport joins <see cref="Transports"/> and must pass the same checks.
     /// </summary>
-    public class NetTransportContractTests
+    public class NetTransportContractTests : IDisposable
     {
-        public static TheoryData<string> Transports => new() { "tcp", "loopback", "udp", "relay", "sim-tcp", "sim-loopback", "sim-udp", "sim-relay" };
+        internal static readonly string[] TransportNames =
+        {
+            "tcp", "loopback", "udp", "relay",
+            "sim-tcp", "sim-loopback", "sim-udp", "sim-relay",
+        };
+
+        public static TheoryData<string> Transports => new(TransportNames);
 
         /// <summary>A bad line: the simulator must keep the contract (whole, ordered, reliable) under it.</summary>
         static readonly NetSimSettings BadLine = new() { LatencyMs = 5, JitterMs = 10, LossPercent = 20, BandwidthKbps = 200000 };
 
-        static INetTransportFactory Make(string name) => name switch
+        readonly List<IDisposable> _factories = new();
+
+        public void Dispose()
         {
-            "tcp" => new TcpTransportFactory(),
-            "loopback" => new LoopbackTransportFactory(),
-            "udp" => new UdpTransportFactory(),
-            "sim-udp" => new SimulatedTransportFactory(new UdpTransportFactory(), () => BadLine),
-            "relay" => new RelayTestFactory(),
-            "sim-relay" => new SimulatedTransportFactory(new RelayTestFactory(), () => BadLine),
-            "sim-tcp" => new SimulatedTransportFactory(new TcpTransportFactory(), () => BadLine),
-            "sim-loopback" => new SimulatedTransportFactory(new LoopbackTransportFactory(), () => BadLine),
-            _ => throw new ArgumentException(name),
-        };
+            foreach (var f in _factories) f.Dispose();
+        }
+
+        INetTransportFactory Make(string name)
+        {
+            if (name.StartsWith("sim-", StringComparison.Ordinal))
+                return new SimulatedTransportFactory(Make(name.Substring(4)), () => BadLine);
+            switch (name)
+            {
+                case "tcp": return new TcpTransportFactory();
+                case "loopback": return new LoopbackTransportFactory();
+                case "udp": return new UdpTransportFactory();
+                case "relay": return new RelayTestFactory();
+                default: throw new ArgumentException(name);
+            }
+        }
 
         static NetEvent Next(INetTransport t, NetEventKind kind, int timeoutMs = 5000)
         {

@@ -40,7 +40,7 @@ namespace CosmicShore.Editor
 
         const string RetiredComponentName = "SpeedTunnelEffectController";
 
-        [MenuItem("FrogletTools/Vessels/Validate Speed Tunnel Law")]
+        [MenuItem("FrogletTools/Vessels/Audits/Validate Speed Tunnel Law", false, 277)]
         [FrogletTool(FrogletToolCategory.Vessels, Importance = 5,
             Description = "Speed-tunnel platform law - catches a vessel that silently doesn't tunnel " +
                           "and a second writer that fights the one driver.")]

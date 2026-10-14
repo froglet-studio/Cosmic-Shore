@@ -57,7 +57,13 @@ namespace CosmicShore.Launcher
         public bool Fullscreen { get; set; }
         public string StartScene { get; set; } = "";
         public bool Audio { get; set; } = true;
-        public bool Network { get; set; } = true;
+        /// <summary>
+        /// The UGS environment START ONLINE signs in to. Empty: the branch's (Network.UgsEnvironment in
+        /// Port/ProjectSettings/AmoebiusProject.json), else "amoebius".
+        /// </summary>
+        public string UgsEnvironment { get; set; } = "";
+        /// <summary>Games start with Amoebius's diagnostics overlay shown (F3 toggles it in any game).</summary>
+        public bool Diagnostics { get; set; }
         public bool MobileRenderPath { get; set; }
         public bool VerboseLogs { get; set; }
         public string Profile { get; set; } = "";
@@ -107,7 +113,7 @@ namespace CosmicShore.Launcher
         /// <summary>The agent's mode for new messages: 0 PLAN or 1 EDIT. AUTO is per chat and never saved (ClaudeChat.AutoAllowed).</summary>
         public int ChatMode { get; set; }
 
-        // TIME page: the benchmark's scenes and run shape, and local multiplayer.
+        // TIME page: the benchmark's scenes and run shape.
         public List<string> BenchScenes { get; set; } = new();
         public int BenchFrames { get; set; } = 1800;
         public int BenchRuns { get; set; } = 1;
@@ -116,13 +122,6 @@ namespace CosmicShore.Launcher
         /// <summary>0 the default GC, 1 SustainedLowLatency, 2 both (A/B).</summary>
         public int BenchGc { get; set; }
         public string BenchSize { get; set; } = "1920x1080";
-        public int MpPlayers { get; set; } = 2;
-        public string MpScene { get; set; } = "";
-        public string MpSize { get; set; } = "960x540";
-        /// <summary>The network simulator preset each local player starts on (NET page), "" = a clean line.</summary>
-        public List<string> MpSims { get; set; } = new() { "", "", "", "" };
-        /// <summary>The transport the local players share: "udp" (Froglet's) or "tcp" (NET page).</summary>
-        public string MpTransport { get; set; } = "udp";
 
         // Toolchain
         public string DotnetPath { get; set; } = "";

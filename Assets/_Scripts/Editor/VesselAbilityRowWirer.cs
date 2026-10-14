@@ -5,6 +5,7 @@ using TMPro;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.UI;
+using CosmicShore.Editor.Froglet;
 // `using System;` (for Array/Enum below) collides with `using UnityEngine;` on the name
 // Object — CS0104. The repo's convention for this collision is an alias, not per-site
 // qualification (AOERadialBlocks.cs aliases Random, CSDebug.cs aliases Debug): it also means a
@@ -48,8 +49,8 @@ namespace CosmicShore.Editor
     /// out at its call site.</para>
     ///
     /// Open the HUD prefab in Prefab Mode, select the root, then
-    /// <b>FrogletTools ▸ Vessels ▸ Wire Vessel Ability Row</b>. Verify with
-    /// <b>FrogletTools ▸ Vessels ▸ Audit Vessel Ability Rows</b>.
+    /// <b>FrogletTools ▸ Vessels ▸ Wiring ▸ Wire Vessel Ability Row</b>. Verify with
+    /// <b>FrogletTools ▸ Vessels ▸ Audits ▸ Audit Vessel Ability Rows</b>.
     /// </summary>
     public static class VesselAbilityRowWirer
     {
@@ -112,7 +113,9 @@ namespace CosmicShore.Editor
             return slots;
         }
 
-        [MenuItem("FrogletTools/Vessels/Wire Vessel Ability Row")]
+        [MenuItem("FrogletTools/Vessels/Wiring/Wire Vessel Ability Row", false, 250)]
+        [FrogletTool(FrogletToolCategory.Vessels, Importance = 4,
+            Description = "Build or repair a vessel HUD's four-icon ability row.")]
         static void WireSelected()
         {
             var go = Selection.activeGameObject;
@@ -135,7 +138,7 @@ namespace CosmicShore.Editor
             EditorUtility.DisplayDialog("Wire Vessel Ability Row",
                 $"Placed and bound {bound}/4 ability icons on '{view.name}' at the fleet-standard bands.\n\n" +
                 (bound < 4 ? "A slot is unbound — see the Console for which and why.\n\n" : "") +
-                "Verify with FrogletTools > Vessels > Audit Vessel Ability Rows.", "OK");
+                "Verify with FrogletTools > Vessels > Audits > Audit Vessel Ability Rows.", "OK");
         }
 
         /// <summary>

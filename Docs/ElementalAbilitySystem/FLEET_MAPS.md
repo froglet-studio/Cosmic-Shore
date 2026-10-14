@@ -65,7 +65,7 @@ day after the channel it referred to had been deleted.
 | Serpent | 3/4 | 3/4 | 2/4 |
 | Scarab | 4/4 | 4/4 | 2/4 |
 | Rhino | 2/4 | 3/4 | 1/4 | *(Space L5 **Breaker** landed 2026-10-13 on an element whose ABILITY slot is still open — the tool counts the gate and prints no detail for an undesigned row)* |
-| **Butterfly** | **4/4** | **4/4** | **4/4** | *(added 2026-09-22 — code + map only; its prefab is built by `FrogletTools ▸ Vessels ▸ Create Butterfly Vessel` and is NOT on the branch yet, so the tool cannot see it until that has been run)* |
+| **Butterfly** | **4/4** | **4/4** | **4/4** | *(added 2026-09-22; `Butterfly.prefab` shipped afterwards and its one-shot builder was retired 2026-10-14)* |
 | **Thresher** | **4/4** | **4/4** | **4/4** | *(added 2026-10-08, measured on the branch — prototype; see `R_VesselActions/THRESHER.md`)* |
 | **Stoat** | **4/4** | **4/4** | **4/4** | *(own vessel 2026-10-13 — Space = Field Dipole (L5 **Accretion**, Theft fused in), Time = Pathfinder / Time Mode (L5 **Foresight**), Charge = **Ripple** (L5 **Siphon**), Mass = **Mass / Time Mode** on B (L5 **Armoured Wake**); `R_VesselActions/STOAT_DIPOLE.md` §1a–§1e, §5)* |
 
@@ -553,7 +553,7 @@ One parameter per element, each an `ElementalFloat` on `ThresherConfigSO` read w
 | Charge | **Wrecking Ball** (passive) — the ball and chain also reach enemy vessels: a scored Strike that steals petals | petals stolen per enemy-vessel hit 1 → 3 per element | **Magnet** — the free ball is drawn toward the nearest enemy vessel | `ThresherExecutor.MagnetActive` |
 | Mass | **Mass Mode** (A, toggle) — the ball steals rival prisms, shields its own, lays a trail and banks the chain's energy instead of exploding | Mass Mode trail prism size ×1 → ×2 | **Armoured Trail** — those trail prisms are laid shielded | `ThresherExecutor.ArmouredTrailActive` |
 | Space | **Winch** (RT) — the chain, taut or slack, slices rivals and shields own mass; the Space card shows the banked explosion radius | largest blast the chain's bank can buy ×4 → ×8 diameter | **Breaker** — a red ball's direct hit destroys super-shielded prisms | `ThresherExecutor.BreakerActive` |
-| Time | **Plant** (LT) — a fast spin hands the camera to the launch view; LT up launches from the chosen point | orbit spin-up rate and cap ×1 → ×1.75 (how fast it winds up to launch) | **Perfect Release** — a launch timed inside the lime window leaves ×1.6 faster | `ThresherExecutor.PerfectReleaseActive` |
+| Time | **Plant** (LT) — a fast spin hands the camera to the launch view; LT up launches from the chosen point | orbit spin-up rate and cap ×1 → ×1.75 (how fast it winds up to launch) | **open (design needed)** — "Perfect Release" retired 2026-10-13: every aimed launch now leaves ×4.8 (`launchBoost`), so the timing reward it was is gone | — (gate deleted) |
 
 Re-cut 2026-10-13 (round 3, Garrett's spec). Retired with their gates: Charge "Lit", Mass "Wrecker",
 Space "Reaper Chain", Time "Slingshot"; Charge no longer scales the explosion, Mass the ball's weight,
@@ -573,7 +573,7 @@ proposals below, and shipped the same day (`_Scripts/Controller/Vessel/R_VesselA
 
 | Slot | Proposed | **Decided (2026-10-13)** |
 |---|---|---|
-| Mass ability | Accretion; Ballast on X; trail size | **Mass / Time Mode** on B: Mass mode = the dipole + a THICK trail (Mass ×3 → ×6 height); Time mode = the round-4 auto-orbit slingshot back on the triggers, its kick TIMED to a 90° release. "Accretion is great for a space ability and upgrade" — it moved to Space 5 |
+| Mass ability | Accretion; Ballast on X; trail size | **Mass / Time Mode** on B: Mass mode = the dipole + a THICK trail (Mass ×3 → ×6 height); Time mode = (2026-10-14) the studio's catch-sling on the triggers — a lighter pair laid ahead, detection and orbit rings in place of the path, caught as you pass, its kick TIMED to a 90° release. "Accretion is great for a space ability and upgrade" — it moved to Space 5 |
 | Charge ability | Annihilation blast; throat shear | **Ripple** — the blast, re-scoped: "charge should always be focused on anti vessel/fauna gameplay … only kill fauna and strip elements from vessels … a cool space time ripple". No prisms. Charge scales its reach ×1 → ×2 |
 | Omni crystal | **Overclock**; Lodestone; ward | **Overclock** (the recommendation, 6 s of full boost) |
 | Time L5 | Slipstream; Foresight | **Foresight** — rivals' predicted paths, in their domain colours |
