@@ -8851,8 +8851,10 @@ in Unity, and nothing has been seen in play.
 1. **Rhino**: ram a trail that lies a few units beside a second trail. Each prism thrown into the second
    trail stops there and both explode; a prism thrown into open space slides out and survives.
 2. **Rhino into super-shield**: the super-shielded prism jiggles and survives, the thrown one explodes.
-3. **Stoat** in a dense field: prisms falling in from different sides explode in pairs on the way in; a
-   trail falling in as a ribbon must NOT chain-explode from its own neighbours.
+3. **Stoat**, once in a sparse field (≤ 256 bodies: exact boxes) and once in a dense one (spheres):
+   prisms falling in from different sides explode in pairs on the way in; a trail falling in as a ribbon
+   must NOT chain-explode from its own neighbours. A long prism struck end-on must collide at its end in
+   the sparse run.
 4. **Scoring**: both kinds of collision count for the Rhino's / Stoat's pilot.
-5. **Cost**: `prof` with a Stoat pair at a full body budget — `ContactJob` must be a small fraction of
-   `IntegrateJob` in the Timeline.
+5. **Cost**: `prof` with a Stoat pair at ~250 bodies (`BoxContacts` on the main thread, well under 1 ms)
+   and at a full body budget (`ContactJob` a small fraction of `IntegrateJob`).

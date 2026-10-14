@@ -56,10 +56,12 @@ namespace CosmicShore.Gameplay
     /// entity was born on a non-Prism prototype (debris, husks: their flight is a clock stamp).</para>
     ///
     /// <para><b>A body that runs into a prism destroys both</b> — prism movement's collision rule
-    /// (<see cref="PrismMotion"/>, Docs/PRISM_MOTION.md). After the integration a fourth Burst job,
-    /// <see cref="PrismMotion.ContactJob"/>, sweeps every body's step against the index (static
-    /// prisms where they stand, other bodies along their own step) for its earliest contact; the
-    /// main thread annihilates each pair, scored to the hole that moved the body. Bodies already
+    /// (<see cref="PrismMotion"/>, Docs/PRISM_MOTION.md). After the integration every body's step is
+    /// swept against the index (static prisms where they stand, other bodies along their own step)
+    /// for its earliest contact — as its exact oriented BOX on the main thread while the body count
+    /// is within <see cref="BlackHoleConfigSO.BoxContactMaxBodies"/>, as the sphere of its volume in a
+    /// fourth Burst job (<see cref="PrismMotion.ContactJob"/>) past it. The main thread annihilates
+    /// each pair, scored to the hole that moved the body. Bodies already
     /// touching when the step began (a trail's neighbours falling together) are at rest, not a
     /// collision. A collision outranks a verdict on the same frame.</para>
     ///
@@ -110,6 +112,9 @@ namespace CosmicShore.Gameplay
         static NativeArray<float3> _prevPoints;
         static NativeParallelHashMap<int, int> _bodyOfSlot;
         static NativeList<PrismMotion.Contact> _contacts;
+
+        // True while the body count has the contact pass on spheres (see UseSphereContacts).
+        static bool _sphereContacts;
 
         static readonly List<Prism> _query = new();
         static readonly List<Candidate> _candidates = new();
@@ -230,11 +235,15 @@ namespace CosmicShore.Gameplay
 
             // 4. Prism motion's collision rule: each body's step against the index as it stood last
             // frame. It reads the index's own arrays, so it completes before the batch write below.
+            // Few bodies: their exact boxes, on the main thread once the poses are written. Many: the
+            // spheres of their volumes, in Burst beside the write-back.
             var index = PrismSpatialIndex.Instance;
             bool indexLive = index != null && index.IsAvailable;
-            var contacts = ScheduleContacts(index, indexLive, n, integrate);
+            bool spheres = UseSphereContacts(n, config.BoxContactMaxBodies);
+            var contacts = ScheduleContacts(index, indexLive, n, integrate, spheres);
             writeBack.Complete();
             contacts.Complete();
+            if (indexLive && !spheres) BoxContacts(index, n);
 
             if (indexLive)
                 index.UpdatePositionsBatch(_indexIds.AsArray(), _points, n);
@@ -245,7 +254,44 @@ namespace CosmicShore.Gameplay
 
         // ---------------- Prism motion: collisions ----------------
 
-        static JobHandle ScheduleContacts(PrismSpatialIndex index, bool indexLive, int n, JobHandle integrate)
+        /// <summary>
+        /// Boxes while the body count is at or under <paramref name="boxMax"/>, spheres above it, and back to
+        /// boxes only at three quarters of it — so a count hovering at the line does not flip the contact
+        /// shape every frame. 0 = always spheres.
+        /// </summary>
+        static bool UseSphereContacts(int n, int boxMax)
+        {
+            if (boxMax <= 0) return _sphereContacts = true;
+            if (_sphereContacts) { if (n <= boxMax * 3 / 4) _sphereContacts = false; }
+            else if (n > boxMax) _sphereContacts = true;
+            return _sphereContacts;
+        }
+
+        /// <summary>
+        /// The box pass: each moving body's oriented box swept over its step (its transform already
+        /// stands at the end of it), other bodies met along their own step. Runs before the batch index
+        /// write, so the index's stored positions are still every body's start.
+        /// </summary>
+        static void BoxContacts(PrismSpatialIndex index, int n)
+        {
+            var movers = new PrismMotion.MoverSteps(_bodyOfSlot, _prevPoints, _points);
+            for (int i = 0; i < n; i++)
+            {
+                if (_valid[i] == 0) continue;
+                if ((BlackHolePhysics.Verdict)_verdicts[i] == BlackHolePhysics.Verdict.Captured) continue;
+                var p = _prisms[i];
+                if (p == null || p.destroyed) continue;
+                float3 step = _points[i] - _prevPoints[i];
+                // A body that did not move runs into nothing; one moving into it finds it.
+                if (math.lengthsq(step) < 1e-12f) continue;
+                if (!PrismMotion.TryGetBox(p, out var box)) continue;
+                box.Center -= step;
+                if (PrismMotion.TryFirstContact(index, p, in box, step, in movers, out int slot, out float t))
+                    _contacts.Add(new PrismMotion.Contact { Mover = i, Slot = slot, T = t });
+            }
+        }
+
+        static JobHandle ScheduleContacts(PrismSpatialIndex index, bool indexLive, int n, JobHandle integrate, bool spheres)
         {
             _contacts.Clear();
             if (!indexLive || !index.TryGetMotionView(out var spatial, out var cellData, out var buckets, out int highWaterMark))
@@ -260,6 +306,7 @@ namespace CosmicShore.Gameplay
                 Count = n,
                 Map = _bodyOfSlot,
             }.Schedule();
+            if (!spheres) return map;
 
             return new PrismMotion.ContactJob
             {
@@ -716,6 +763,7 @@ namespace CosmicShore.Gameplay
             CapturedThisSecond = 0;
             ThroatTransitsTotal = 0;
             CollisionsTotal = 0;
+            _sphereContacts = false;
             DisposeLedger();
             DisposeOutputs();
         }

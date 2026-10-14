@@ -40,7 +40,8 @@ On each hull contact `RhinoPloughPrismEffectSO.Execute`:
    render bounds widened to cover the start. No per-frame CPU work during the slide.
 
 6. **A shoved prism is a MOVING prism** (2026-10-14, `Docs/PRISM_MOTION.md`). Before the shove is
-   committed, `PrismMotion.TrySweep` asks for the first prism its path runs into. If there is one,
+   committed, `PrismMotion.TrySweep` asks for the first prism its path runs into — box against box,
+   exact (one prism per ram is always the few-movers case). If there is one,
    the shoved prism stops at the contact point and **both are destroyed** (devastating, scored to the
    Rhino's pilot; a super-shielded target deflects and only the shoved prism goes). Only a clear
    path completes the shove. So the furrow is still a plough in open space, and a weapon against a

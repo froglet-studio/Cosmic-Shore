@@ -192,11 +192,13 @@ once, exactly as the swarm and the builders do. Nothing per prism is managed exc
 the verdicts.
 
 **A body is a MOVING prism (2026-10-14, `Docs/PRISM_MOTION.md`).** Prism movement is a fundamental,
-and its rule holds here: a body that runs into another prism destroys both. A fourth Burst job,
-`PrismMotion.ContactJob`, scheduled after the integration and completed BEFORE the bulk index write
-(it reads the index's stored = pre-step positions), sweeps every body's step for its earliest contact
-— static prisms where they stand, other bodies along their own step (`IntegrateJob` now also emits
-each body's pre-step point). `ApplyContacts` annihilates each pair on the main thread, scored to the
+and its rule holds here: a body that runs into another prism destroys both. Every body's step is
+swept for its earliest contact BEFORE the bulk index write (the index's stored positions are the
+pre-step ones) — static prisms where they stand, other bodies along their own step (`IntegrateJob` now
+also emits each body's pre-step point). **Boxes when few bodies move, spheres when many**: at or under
+`boxContactMaxBodies` (256) each body's exact oriented box is swept on the main thread
+(`BoxContacts` → `PrismMotion.TryFirstContact`); above it a fourth Burst job, `PrismMotion.ContactJob`,
+tests the spheres of the prisms' volumes; it returns to boxes at three quarters of the budget. `ApplyContacts` annihilates each pair on the main thread, scored to the
 hole nearest the body (its owner, or the anonymous "Black Hole"), before `ApplyVerdicts`, which drops
 the destroyed bodies — a collision outranks a capture or a throat transit on the same frame. Bodies
 already touching when the step began (a ribbon of trail falling in together) are at rest, not a

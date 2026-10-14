@@ -89,6 +89,13 @@ namespace CosmicShore.ScriptableObjects
         [Min(0)]
         [SerializeField] int maxBodies = 6000;
 
+        [Tooltip("Prism movement's collision rule (Docs/PRISM_MOTION.md): while this many bodies or fewer are under " +
+                 "gravity, a body meets other prisms as its real oriented BOX (exact, swept, on the main thread); above " +
+                 "it, as the sphere of its volume (Burst, every worker). Back to boxes below three quarters of it, so a " +
+                 "count hovering at the line does not flip every frame. 0 = always spheres.")]
+        [Min(0)]
+        [SerializeField] int boxContactMaxBodies = 256;
+
         [Tooltip("How many holes may be live at once, every pilot's together (a spawn past this is refused; a hole that is " +
                  "annihilating has already left the count). A Stoat's pair is two, so a 4-pilot race needs 8; 16 leaves " +
                  "room for the cell's own. At a budget of 4, two AIs holding pairs refused the player's squeeze (2026-10-12). " +
@@ -424,6 +431,7 @@ namespace CosmicShore.ScriptableObjects
         public float ReleaseSpeed => Mathf.Max(0.01f, releaseSpeed);
         public int MaxSubsteps => Mathf.Clamp(maxSubsteps, 1, 16);
         public int MaxBodies => Mathf.Max(0, maxBodies);
+        public int BoxContactMaxBodies => Mathf.Max(0, boxContactMaxBodies);
         /// <summary>The budget's ceiling: <c>BlackHolePhysics.NativeWells.Capacity</c> (BlackHoleTests holds them equal).</summary>
         public const int HoleBudgetCeiling = 16;
         public int MaxBlackHoles => Mathf.Clamp(maxBlackHoles, 2, HoleBudgetCeiling);

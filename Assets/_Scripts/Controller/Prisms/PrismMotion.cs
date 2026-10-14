@@ -14,17 +14,21 @@ namespace CosmicShore.Gameplay
     /// DISPLACES a prism keeps, whoever applies it.
     ///
     /// <para><b>The collision rule.</b> A moving prism that runs into another prism destroys BOTH. "Runs
-    /// into" is <see cref="EntersContact"/>: over the step, the two contact spheres go from apart to
-    /// touching. Prisms that were already touching when the step began are at rest against each other —
+    /// into" means: over the step, the two prisms' contact shapes go from apart to touching. Prisms that were already touching when the step began are at rest against each other —
     /// a trail's neighbours, a structure being carried whole — and are not a collision. Super-shielded
     /// mass is the one exception: it is indestructible, so it deflects (<see cref="Prism.AbsorbSuperShieldHit"/>)
     /// and only the mover is destroyed. An ordinary shield is no answer to a collision (devastating).</para>
     ///
-    /// <para><b>The contact sphere.</b> A prism's <see cref="ContactRadius"/> is the radius of the sphere
-    /// with its volume — its MASS as a sphere, the quantity the cells already weigh — capped at
-    /// <see cref="MaxContactRadius"/>. One definition, used by the batch path (the gravity field's Burst
-    /// <see cref="ContactJob"/>) and the one-shot path (<see cref="TrySweep"/>, the Rhino plough), so a
-    /// prism shoved and a prism pulled meet the world by the same rule.</para>
+    /// <para><b>The contact shape: boxes when few prisms move, spheres when many.</b> The exact shape is the
+    /// prism's own oriented BOX, swept over the step by the separating-axis test
+    /// (<see cref="EntersContact(in Box, float3, in Box, float3, out float)"/>, <see cref="TryFirstContact"/>):
+    /// main-thread, per mover, so it is what a mover uses while it moves few prisms — the Rhino plough
+    /// always (one prism per ram, <see cref="TrySweep"/>), the gravity field while its body count is at or
+    /// under <c>BlackHoleConfigSO.BoxContactMaxBodies</c>. Past that the gravity field switches to the
+    /// SPHERE of each prism's volume (<see cref="ContactRadius"/>, capped at <see cref="MaxContactRadius"/>),
+    /// tested for thousands of bodies at once in the Burst <see cref="ContactJob"/>. Both answer the same
+    /// question — apart at the start, touching during the step — so only the precision changes with the
+    /// count, never the rule.</para>
     ///
     /// <para><b>Who it is scored to.</b> The force that moved the prism: the collision is the act of the
     /// vessel or field behind the motion, never a passive decay, so it stays inside "Mass is conserved"
@@ -43,6 +47,13 @@ namespace CosmicShore.Gameplay
         /// than a sphere of this radius (~900 u³) meets the world as one of this radius.
         /// </summary>
         public const float MaxContactRadius = 6f;
+
+        /// <summary>
+        /// How far past its own half-diagonal the BOX path looks for a target's centre, in world units: a
+        /// target whose half-diagonal is longer than this can be missed by the broad phase. Generous on
+        /// purpose — the box path only runs while few prisms move.
+        /// </summary>
+        public const float MaxBoxReach = 12f;
 
         /// <summary>
         /// Debris speed as a multiple of the closing speed: the ram's own restitution
@@ -105,8 +116,138 @@ namespace CosmicShore.Gameplay
                 mover.Damage(-impact, domain, playerName, devastate: true, debrisSpeedLimit: DebrisSpeedLimit);
         }
 
-        // Scratch for the one-shot sweep, kept off PrismMotion itself so the Burst-compiled jobs below
-        // never share a class with managed statics.
+        // ------------------------------------------------------------------ boxes (few movers)
+
+        /// <summary>A prism's oriented box: centre, unit axes, half-extents along them.</summary>
+        public struct Box
+        {
+            public float3 Center, X, Y, Z, Half;
+
+            public float BoundRadius => math.length(Half);
+
+            /// <summary>An axis-aligned cube (a virtual swarm member, which has no transform to read).</summary>
+            public static Box Cube(float3 center, float half) => new()
+            {
+                Center = center,
+                X = new float3(1f, 0f, 0f),
+                Y = new float3(0f, 1f, 0f),
+                Z = new float3(0f, 0f, 1f),
+                Half = new float3(half),
+            };
+
+            /// <summary>The box's half-width along <paramref name="axis"/> (its support distance).</summary>
+            public float RadiusAlong(float3 axis) =>
+                Half.x * math.abs(math.dot(X, axis)) + Half.y * math.abs(math.dot(Y, axis)) + Half.z * math.abs(math.dot(Z, axis));
+        }
+
+        /// <summary>
+        /// The box twin of the sphere test: whether <paramref name="a"/> moving by <paramref name="aStep"/> and
+        /// <paramref name="b"/> moving by <paramref name="bStep"/> (both translating, neither turning — every
+        /// mover today) go from apart to overlapping during the step, <paramref name="t"/> the first touch
+        /// (0..1). Exact: the 15 separating axes of two boxes depend only on their orientations, so each
+        /// axis's overlap is one interval of t, and the boxes overlap exactly where all 15 do. A pair that
+        /// overlaps at the start is at rest, not a collision.
+        /// </summary>
+        public static bool EntersContact(in Box a, float3 aStep, in Box b, float3 bStep, out float t)
+        {
+            t = 0f;
+            float3 d0 = b.Center - a.Center;
+            float3 dv = bStep - aStep;
+            float enter = float.NegativeInfinity, exit = float.PositiveInfinity;
+            bool apart = false;
+
+            if (!Axis(a.X, in a, in b, d0, dv, ref enter, ref exit, ref apart)) return false;
+            if (!Axis(a.Y, in a, in b, d0, dv, ref enter, ref exit, ref apart)) return false;
+            if (!Axis(a.Z, in a, in b, d0, dv, ref enter, ref exit, ref apart)) return false;
+            if (!Axis(b.X, in a, in b, d0, dv, ref enter, ref exit, ref apart)) return false;
+            if (!Axis(b.Y, in a, in b, d0, dv, ref enter, ref exit, ref apart)) return false;
+            if (!Axis(b.Z, in a, in b, d0, dv, ref enter, ref exit, ref apart)) return false;
+            if (!Axis(math.cross(a.X, b.X), in a, in b, d0, dv, ref enter, ref exit, ref apart)) return false;
+            if (!Axis(math.cross(a.X, b.Y), in a, in b, d0, dv, ref enter, ref exit, ref apart)) return false;
+            if (!Axis(math.cross(a.X, b.Z), in a, in b, d0, dv, ref enter, ref exit, ref apart)) return false;
+            if (!Axis(math.cross(a.Y, b.X), in a, in b, d0, dv, ref enter, ref exit, ref apart)) return false;
+            if (!Axis(math.cross(a.Y, b.Y), in a, in b, d0, dv, ref enter, ref exit, ref apart)) return false;
+            if (!Axis(math.cross(a.Y, b.Z), in a, in b, d0, dv, ref enter, ref exit, ref apart)) return false;
+            if (!Axis(math.cross(a.Z, b.X), in a, in b, d0, dv, ref enter, ref exit, ref apart)) return false;
+            if (!Axis(math.cross(a.Z, b.Y), in a, in b, d0, dv, ref enter, ref exit, ref apart)) return false;
+            if (!Axis(math.cross(a.Z, b.Z), in a, in b, d0, dv, ref enter, ref exit, ref apart)) return false;
+
+            if (!apart) return false;                           // overlapping at the start: at rest
+            float lo = math.max(enter, 0f), hi = math.min(exit, 1f);
+            if (lo > hi) return false;
+            t = lo;
+            return true;
+        }
+
+        // One separating axis: narrows [enter, exit] to the times the projections overlap on it, and
+        // notes whether they were apart at t = 0. False when they can never overlap. A degenerate axis
+        // (parallel edges) carries no information; the face axes already cover that case.
+        static bool Axis(float3 axis, in Box a, in Box b, float3 d0, float3 dv,
+                         ref float enter, ref float exit, ref bool apart)
+        {
+            if (math.lengthsq(axis) < 1e-10f) return true;
+            float r = a.RadiusAlong(axis) + b.RadiusAlong(axis);
+            float p = math.dot(d0, axis);
+            float s = math.dot(dv, axis);
+            if (math.abs(p) > r) apart = true;
+            if (math.abs(s) < 1e-12f) return math.abs(p) <= r;  // no relative motion along it
+            float t1 = (-r - p) / s, t2 = (r - p) / s;
+            if (t1 > t2) (t1, t2) = (t2, t1);
+            enter = math.max(enter, t1);
+            exit = math.min(exit, t2);
+            return enter <= exit;
+        }
+
+        /// <summary>The prism's box at its CURRENT pose: its authored box collider through its live
+        /// transform. False for a prism with no box geometry.</summary>
+        public static bool TryGetBox(Prism prism, out Box box)
+        {
+            box = default;
+            if (!prism || !prism.TryGetBoxGeometry(out var centerLocal, out var halfLocal)) return false;
+            var t = prism.transform;
+            Vector3 half = Vector3.Scale(halfLocal, t.lossyScale);
+            Quaternion q = t.rotation;
+            box = new Box
+            {
+                Center = t.TransformPoint(centerLocal),
+                X = q * Vector3.right,
+                Y = q * Vector3.up,
+                Z = q * Vector3.forward,
+                Half = new float3(Mathf.Abs(half.x), Mathf.Abs(half.y), Mathf.Abs(half.z)),
+            };
+            return true;
+        }
+
+        /// <summary>
+        /// Which other prisms are movers this step, and by how much — for the box path inside a batch
+        /// mover, whose movers' transforms already stand at the END of their step. Default = none (every
+        /// other prism static).
+        /// </summary>
+        public readonly struct MoverSteps
+        {
+            readonly NativeParallelHashMap<int, int> _moverOfSlot;
+            readonly NativeArray<float3> _from, _to;
+            readonly bool _live;
+
+            public MoverSteps(NativeParallelHashMap<int, int> moverOfSlot, NativeArray<float3> from, NativeArray<float3> to)
+            {
+                _moverOfSlot = moverOfSlot;
+                _from = from;
+                _to = to;
+                _live = moverOfSlot.IsCreated && from.IsCreated && to.IsCreated;
+            }
+
+            public bool TryGetStep(int slot, out float3 step)
+            {
+                step = float3.zero;
+                if (!_live || !_moverOfSlot.TryGetValue(slot, out int j)) return false;
+                step = _to[j] - _from[j];
+                return true;
+            }
+        }
+
+        // Scratch for the box path, kept off PrismMotion itself so the Burst-compiled jobs below never
+        // share a class with managed statics.
         static class SweepScratch
         {
             internal static readonly List<Prism> Segment = new();
@@ -114,63 +255,84 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// The one-shot path, for a mover that relocates a prism in a single step
-        /// (<see cref="RhinoPloughPrismEffectSO"/>): the first prism the move from <paramref name="from"/> to
-        /// <paramref name="to"/> runs into, and where along it. False (and nothing hit) when the path is
-        /// clear, so the caller completes its move. The caller then calls <see cref="Annihilate"/>.
-        /// Main thread; reads the spatial index's stored positions, so every other prism is taken as
-        /// static for the step.
+        /// The box path: the earliest prism that <paramref name="mover"/>, starting as <paramref name="start"/>
+        /// and moving by <paramref name="step"/>, runs into — its index <paramref name="slot"/> and the fraction
+        /// <paramref name="t"/> of the step at first touch. Targets are found by their stored centres within the
+        /// mover's half-diagonal + <see cref="MaxBoxReach"/> of the path, then tested box against box; a target in
+        /// <paramref name="movers"/> is met along its own step. A virtual swarm member (no transform) is a cube
+        /// of its contact radius, and is not materialised here. Main thread.
+        /// </summary>
+        public static bool TryFirstContact(PrismSpatialIndex index, Prism mover, in Box start, float3 step,
+            in MoverSteps movers, out int slot, out float t)
+        {
+            slot = -1;
+            t = float.MaxValue;
+            if (index == null || !index.IsAvailable) return false;
+
+            float reach = start.BoundRadius + MaxBoxReach;
+            Vector3 a = start.Center, b = start.Center + step;
+
+            var segment = SweepScratch.Segment;
+            index.QuerySegment(a, b, reach, segment);
+            for (int i = 0; i < segment.Count; i++)
+            {
+                var other = segment[i];
+                if (!other || other == mover || other.destroyed) continue;
+                int id = other.SpatialIndexId;
+                if (id < 0 || !TryGetBox(other, out var box)) continue;
+                if (movers.TryGetStep(id, out float3 otherStep)) box.Center -= otherStep;
+                if (EntersContact(in start, step, in box, otherStep, out float hit) && hit < t)
+                {
+                    t = hit;
+                    slot = id;
+                }
+            }
+            segment.Clear();
+
+            var virtuals = SweepScratch.Virtual;
+            index.QuerySegmentVirtualIds(a, b, reach, virtuals);
+            for (int i = 0; i < virtuals.Count; i++)
+            {
+                int id = virtuals[i];
+                var cube = Box.Cube(index.StoredPosition(id), ContactRadius(index.ContactVolume(id)));
+                if (EntersContact(in start, step, in cube, float3.zero, out float hit) && hit < t)
+                {
+                    t = hit;
+                    slot = id;
+                }
+            }
+            virtuals.Clear();
+
+            return slot >= 0;
+        }
+
+        /// <summary>
+        /// The one-shot path, for a mover that relocates ONE prism in a single step
+        /// (<see cref="RhinoPloughPrismEffectSO"/>) — always the box path: the first prism the move from
+        /// <paramref name="from"/> to <paramref name="to"/> runs into, and where the mover's pivot is at that
+        /// moment. False when the path is clear, so the caller completes its move; otherwise the caller calls
+        /// <see cref="Annihilate"/>. Main thread; every other prism is taken as standing where it is.
         /// </summary>
         public static bool TrySweep(Prism mover, Vector3 from, Vector3 to, out Prism struck, out Vector3 contactPoint)
         {
             struck = null;
             contactPoint = to;
             var index = PrismSpatialIndex.Instance;
-            if (index == null || !index.IsAvailable || !mover) return false;
+            if (index == null || !index.IsAvailable || !TryGetBox(mover, out var box)) return false;
 
-            float self = ContactRadius(mover.CachedVolume);
-            float broad = self + MaxContactRadius;
-            float3 a0 = from, a1 = to;
-            float best = float.MaxValue;
+            // The box at the start of the move, wherever the transform stands now.
+            box.Center += (float3)(from - mover.transform.position);
+            if (!TryFirstContact(index, mover, in box, (float3)(to - from), default, out int slot, out float t))
+                return false;
 
-            var segment = SweepScratch.Segment;
-            index.QuerySegment(from, to, broad, segment);
-            for (int i = 0; i < segment.Count; i++)
-            {
-                var other = segment[i];
-                if (!other || other == mover || other.destroyed || other.SpatialIndexId < 0) continue;
-                float3 b = index.StoredPosition(other.SpatialIndexId);
-                if (EntersContact(a0, a1, b, b, self + ContactRadius(index.ContactVolume(other.SpatialIndexId)), out float t)
-                    && t < best)
-                {
-                    best = t;
-                    struck = other;
-                }
-            }
-
-            // Virtual entries (data-driven swarm members) are mass too; one is materialised only if it
-            // is the hit, after the ranking, so a sweep past a swarm costs nothing.
-            int bestVirtual = -1;
-            var virtuals = SweepScratch.Virtual;
-            index.QuerySegmentVirtualIds(from, to, broad, virtuals);
-            for (int i = 0; i < virtuals.Count; i++)
-            {
-                int slot = virtuals[i];
-                float3 b = index.StoredPosition(slot);
-                if (EntersContact(a0, a1, b, b, self + ContactRadius(index.ContactVolume(slot)), out float t) && t < best)
-                {
-                    best = t;
-                    bestVirtual = slot;
-                }
-            }
-            if (bestVirtual >= 0) struck = index.ResolvePrism(bestVirtual, materialise: true);
-
-            segment.Clear();
-            virtuals.Clear();
-            if (!struck) return false;
-            contactPoint = Vector3.Lerp(from, to, best);
+            // A virtual member is materialised only now that it is the hit.
+            struck = index.ResolvePrism(slot, materialise: true);
+            if (!struck || struck == mover || struck.destroyed) return false;
+            contactPoint = Vector3.Lerp(from, to, t);
             return true;
         }
+
+        // ------------------------------------------------------------------ spheres (many movers)
 
         /// <summary>One collision the batch path found: mover <see cref="Mover"/> (an index into the
         /// caller's mover arrays) runs into index slot <see cref="Slot"/>, <see cref="T"/> of the way
@@ -183,7 +345,8 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// The batch path, for a mover that integrates many prisms per frame (the gravity field): one
+        /// The SPHERE batch path, for a mover that integrates many prisms per frame (the gravity field past
+        /// its box budget): one
         /// mover per index, its EARLIEST contact over the step against every live index entry — static
         /// prisms at their stored position, and other movers (found through <see cref="MoverOfSlot"/>)
         /// along their own step. At most one <see cref="Contact"/> per mover, so a hit list of capacity
