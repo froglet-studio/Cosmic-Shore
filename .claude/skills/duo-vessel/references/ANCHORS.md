@@ -102,7 +102,8 @@ one-Player-one-Vessel assumption. Do not start A without Garrett's call.
   its warped world, which `CameraMode` has no mode for.
 
 ### Flight references
-- **Serpent:** `C/Vessel/SingleStickVesselTransformer.cs` (one stick, stationary stance).
+- **Squirrel (the Goby's flight, Garrett 2026-10-14):** the dual-stick `VesselTransformer` on `Squirrel.prefab` (throttle 60, pitch / yaw 120, roll 130); the lab mirrors the Squirrel studio's `stepPilot` mix.
+- **Serpent:** `C/Vessel/SingleStickVesselTransformer.cs` (one stick, stationary stance). It was the brief's first reading of the Goby; it is one-stick, so it is not the Goby's flight.
   - Its impactor container has no skimmer effects, so it rams through prisms.
   - Docs: `R_VesselActions/SERPENT_*.md`.
   - The Serpent has no "ignore collisions" flag; a Goby that ignores collision needs its own.

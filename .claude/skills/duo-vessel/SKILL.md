@@ -1,6 +1,6 @@
 ---
 name: duo-vessel
-description: Use for ANY "two vessels in one" class in Cosmic Shore - a DUO vessel that takes ONE squad slot and is balanced as ONE vessel, but is really two craft that two humans, or a human and an AI, fly separately, swapped with the SAME D-pad left/right gesture as the arena pilot swap (a phone flip on mobile). Holds the duo contract (one slot, two hulls, one shared element meter, the pilot matrix, the unified swap, per-half cameras, HUDs and AIs, crystals that restock both halves, balance as one), the lab-first build order, the code anchors a duo hooks into and the pieces that do not exist yet, and one design brief per duo under references/designs/ (the first is the Goby & Pistol - a Serpent-like goby that lays the path and a pistol shrimp that plays a warped 2D sidescroller unrolled from the goby's ribbon, with primer, heat and flares). Trigger on "duo vessel", "two vessels in one", "two-in-one", "tandem vessel", "co-op vessel", "two pilots one vessel", "switch characters", "phone flip swap", Goby, Pistol, the Flier, the Bird, the sidescroller vessel, or any references/designs/*.md here. Load /vessel alongside it for the single-hull contract every half still owes.
+description: Use for ANY "two vessels in one" class in Cosmic Shore - a DUO vessel that takes ONE squad slot and is balanced as ONE vessel, but is really two craft that two humans, or a human and an AI, fly separately, swapped with the SAME D-pad left/right gesture as the arena pilot swap (a phone flip on mobile). Holds the duo contract (one slot, two hulls, one shared element meter, the pilot matrix, the unified swap, per-half cameras, HUDs and AIs, crystals that restock both halves, balance as one), the lab-first build order, the code anchors a duo hooks into and the pieces that do not exist yet, and one design brief per duo under references/designs/ (the first is the Goby & Pistol - a two-thumb goby (flies like the Squirrel) that lays the path and a pistol shrimp that plays a warped 2D sidescroller unrolled from the goby's ribbon, with primer, heat and flares). Trigger on "duo vessel", "two vessels in one", "two-in-one", "tandem vessel", "co-op vessel", "two pilots one vessel", "switch characters", "phone flip swap", Goby, Pistol, the Flier, the Bird, the sidescroller vessel, or any references/designs/*.md here. Load /vessel alongside it for the single-hull contract every half still owes.
 ---
 
 # Duo Vessel Protocol
@@ -20,7 +20,7 @@ duo teaches something new, it is added here (§8), so the skill grows with each 
 - **`references/designs/<duo>.md`**: the brief for the duo you are working on. Read every
   **[open]**, **[read]** and **[proposed]** tag before building. An [open] item is a question for
   Garrett, never a gap to fill. Briefs today:
-  - `goby-and-pistol.md`: the **Goby**, a Serpent-like path-layer with primer and flares, and the
+  - `goby-and-pistol.md`: the **Goby**, a two-thumb path-layer (it flies like the Squirrel) with primer and flares, and the
     **Pistol**, a pistol shrimp that plays a warped 2D sidescroller unrolled from the Goby's path.
     (Garrett first called them the Flier and the Bird.)
     Its lab is `Docs/Studios/VesselStudio/goby.html` (round 1, 2026-10-14). It is the template for

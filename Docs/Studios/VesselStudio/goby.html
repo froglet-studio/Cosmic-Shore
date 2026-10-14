@@ -5,7 +5,7 @@
 <title>Goby &amp; Pistol Studio</title>
 <!-- Goby & Pistol Studio, round 1: the first DUO vessel lab (.claude/skills/duo-vessel). A page of the Vessel Studio
      (Docs/Studios/VesselStudio/). A DESIGN studio (D2): nothing here ships. Where the game has a number, the page reads
-     it and names the asset (the Goby flies like the Serpent, its straight boost is the Rhino's ramp, the swap is the
+     it and names the asset (the Goby is a two-thumb flier on the Squirrel's numbers, its straight boost is the Rhino's ramp, the swap is the
      arena pilot swap); every other number is lab-only and says so. The brief it prototypes is
      .claude/skills/duo-vessel/references/designs/goby-and-pistol.md (section 9 says what this lab must hold). -->
 <style>
@@ -64,6 +64,10 @@
   .pips.fl i.on { background: var(--hot); border-color: var(--hot); }
   .feed { position: absolute; right: 10px; bottom: 10px; display: grid; gap: 4px; justify-items: end; max-width: 44%; }
   .feed div { font-size: 12px; background: #0b0d16cc; border: 1px solid var(--line); padding: 2px 8px; border-radius: 4px; }
+  .acts { position: absolute; left: 50%; bottom: 40px; transform: translateX(-50%); display: flex; gap: 6px; align-items: center; z-index: 7; background: #0b0d16b3; border: 1px solid #27336a; border-radius: 8px; padding: 4px 6px; white-space: nowrap; }
+  .acts .btn { padding: 4px 10px; font-size: 12px; background: #121524d9; color: #e8ecff; }
+  .acts .hintx { font-size: 11px; color: #9aa6d6; margin-right: 4px; }
+  body.play .acts, body.ai-you .acts { display: none; }
   .camtag { position: absolute; left: 50%; bottom: 10px; transform: translateX(-50%); font-size: 11px; color: var(--muted); background: #0b0d16b3; border: 1px solid var(--line); border-radius: 999px; padding: 4px 9px; white-space: nowrap; }
   .holding { position: absolute; left: 50%; top: 10px; transform: translateX(-50%); font-size: 12px; color: #04131c; background: #7fd7ff; border-radius: 999px; padding: 3px 10px; white-space: nowrap; }
   .whoflies { position: absolute; left: 50%; top: 10px; transform: translateX(-50%); font-size: 12px; background: #0b0d16cc; border: 1px solid var(--line); border-radius: 999px; padding: 3px 10px; white-space: nowrap; }
@@ -150,7 +154,7 @@
     <h1>Goby &amp; Pistol</h1>
     <span class="round">Duo lab · round 1</span>
     <span class="diffchip" id="diffChip" hidden></span>
-    <p class="sub">The first duo vessel: one squad slot, two craft. The <b>Goby</b> flies the 3D world like the Serpent and lays the path; the <b>Pistol</b> (a pistol shrimp) plays a 2D sidescroller unrolled from that path, rides its hills Tiny Wings style and blows things up. Fly either half while the AI flies the other, and swap with D-pad left / right or keys 1 / 2, the same swap as the arena's. A design lab: the brief is <code>.claude/skills/duo-vessel/references/designs/goby-and-pistol.md</code>.</p>
+    <p class="sub">The first duo vessel: one squad slot, two craft. The <b>Goby</b> flies the 3D world on two thumbs like the Squirrel and lays the path; the <b>Pistol</b> (a pistol shrimp) plays a 2D sidescroller unrolled from that path, rides its hills Tiny Wings style and blows things up. Fly either half while the AI flies the other, and swap with D-pad left / right or keys 1 / 2, the same swap as the arena's. A design lab: the brief is <code>.claude/skills/duo-vessel/references/designs/goby-and-pistol.md</code>.</p>
   </header>
 
   <div class="layout">
@@ -172,18 +176,22 @@
           <div class="feed" id="feed"></div>
           <div class="camtag" id="camTag">Chase camera</div>
         </div>
+        <div class="acts" id="acts" aria-label="Abilities of the half you fly">
+          <span class="goby-only hintx">Goby: F primer · G flares</span><button class="btn goby-only" id="aPrimer" type="button">Primer</button><button class="btn goby-only" id="aFlare" type="button">Flares</button>
+          <span class="pistol-only hintx">Pistol: hold to dive · drag to launch</span><button class="btn pistol-only" id="aBoom" type="button">Snap (E)</button><button class="btn pistol-only" id="aGhost" type="button">Ghost (G)</button>
+        </div>
         <div class="stagebtns"><button class="btn phone-only" id="playBtn" type="button">Back to flying</button><span class="transport" id="transport" role="toolbar" aria-label="Play controls"><button class="btn" id="tpPlay" type="button" aria-pressed="false" title="Play / pause (Enter starts, P pauses and resumes)">▶ Play</button><button class="btn" id="tpStop" type="button" title="Stop (R): end the run, back to the start">■ Stop</button></span></div>
         <div class="overlay" id="overlay">
           <div class="card">
             <h2 id="ovTitle">Duo run, intensity 2</h2>
             <p id="ovText">One duo, two halves. You fly one; the AI flies the other. Swap any time: D-pad left / right, or 1 / 2. The Goby hunts and primes; the Pistol rides the Goby's path in 2D and breaks everything in its band.</p>
             <div class="keys">
-              <span>Goby</span><span>W S pitch · A D yaw · Q E roll · ↑ ↓ throttle · F primer · G flares (or both sticks, RT primer, LT flares)</span>
-              <span>Pistol</span><span>Space dive · drag on its view to launch · F quick launch · E explode · G ghost (pad: A dive, RT + right stick launch, X explode, B ghost)</span>
+              <span>Goby</span><span>two thumbs like the Squirrel: both sticks (or W S pitch · A D yaw · Q E roll · ↑ ↓ throttle) · F primer · G flares</span>
+              <span>Pistol</span><span>press and hold on its view (or Space) to dive · drag to aim, release to launch · E snap · G ghost (pad: A dive, RT + right stick launch, X snap, B ghost)</span>
               <span>Swap</span><span>1 / 2 or D-pad left / right</span>
               <span></span><span>Enter play · P pause · R stop · C camera · V views</span>
             </div>
-            <div class="btns"><button class="btn primary" id="startBtn" type="button">Start</button><button class="btn" id="resetBtn" type="button">New world</button></div>
+            <div class="btns"><button class="btn primary" id="startBtn" type="button">Start</button><button class="btn" id="startGoby" type="button">Fly the Goby</button><button class="btn" id="startPistol" type="button">Play the Pistol</button><button class="btn" id="resetBtn" type="button">New world</button></div>
           </div>
         </div>
         <div class="touch" id="touch">
@@ -236,12 +244,13 @@
         <h3>Controls</h3>
         <div class="keys">
           <span>Swap</span><span>1 / 2 · D-pad left / right · phone: ⇄ Swap (the arena pilot swap, 0.75 s cooldown)</span>
-          <span>Goby keys</span><span>W S pitch · A D yaw · Q E roll · ↑ ↓ throttle · F primer · G flares</span>
-          <span>Goby pad</span><span>both sticks (the game's dual-stick mix) · RT primer · LT flares</span>
+          <span>Goby keys</span><span>W S pitch · A D yaw · Q E roll · ↑ ↓ throttle · F primer · G flares (the Squirrel studio's keys)</span>
+          <span>Goby pad</span><span>two thumbs like the Squirrel: both sticks up = nose up, sticks apart = throttle, one up one down = roll · RT primer · LT flares</span>
           <span>Goby phone</span><span>two thumb sticks · Primer · Flares</span>
-          <span>Pistol keys</span><span>Space dive · drag on its view to aim, release to launch · F quick launch · E explode · G ghost</span>
+          <span>Pistol mouse</span><span>press and hold on its view to dive (Tiny Wings) · drag to aim, release to launch · Snap and Ghost buttons on the stage</span>
+          <span>Pistol keys</span><span>Space dive · F quick launch · E snap · G ghost</span>
           <span>Pistol pad</span><span>A or LT dive · hold RT, aim with the right stick, release to launch · X explode · B ghost</span>
-          <span>Pistol phone</span><span>hold the left half to dive · drag on the right half to aim, release to launch · Explode · Ghost</span>
+          <span>Pistol phone</span><span>hold anywhere to dive · drag to aim, release to launch · Explode · Ghost</span>
           <span>Cameras</span><span>C cycles Chase / Follow / Free (3D) · Free: drag to orbit, wheel to zoom · V switches views</span>
           <span>Transport</span><span>Enter play · P pause / resume · R stop</span>
         </div>
@@ -289,7 +298,7 @@
         <details open>
           <summary>Where the numbers come from, and what is not modelled</summary>
           <ul>
-            <li>Goby flight: <code>Serpent.prefab</code> VesselTransformer: cruise 50 u/s (DefaultThrottleScaler), minimum 10, pitch and yaw 80, roll 20. The sticks go through the game's dual-stick mix (<code>InputController</code>).</li>
+            <li>Goby flight: a two-thumb flier like the Squirrel (<code>Squirrel.prefab</code> VesselTransformer: cruise 60 u/s, pitch and yaw 120, roll 130, speed eased as the Squirrel studio eases it; a lab-only 10 u/s floor). The sticks go through the game's dual-stick mix (<code>InputController</code>).</li>
             <li>Straight boost: the Rhino's ramp (<code>RhinoRampBoostAction.asset</code>: up at 220 u/s², bleed 300 u/s²) to a lab-only ceiling of ×4, against the Rhino's ×16.8 ("like the Rhino's but less").</li>
             <li>Swap: <code>PilotSwap</code> (cooldown 0.75 s) on <code>PilotSwapGesture</code>'s keys: D-pad left / right, 1 / 2.</li>
             <li>AI levels: Hard is the skilled pilot; Medium and Easy notice each new target late (0.25 / 0.5 s mean) and misjudge 4.5% / 9.9% of them (<code>SkimRaceDifficulty.asset</code>, the Vessel Studio's universal levels).</li>
@@ -321,11 +330,12 @@
   // ================= the numbers =================
   // A READER of the shipped numbers (D1): every value the game has names its asset; the rest is lab-only.
   const SHIPPED = {
-    gCruise: 50,          // Serpent.prefab VesselTransformer DefaultThrottleScaler 50
-    gMinSpeed: 10,        // Serpent.prefab DefaultMinimumSpeed 10
-    gPitchRate: 80,       // Serpent.prefab PitchScaler 80
-    gYawRate: 80,         // Serpent.prefab YawScaler 80
-    gRollRate: 20,        // Serpent.prefab RollScaler 20
+    // the Goby is a two-thumb flier like the Squirrel (Garrett, 2026-10-14): the Squirrel's flight numbers and stick mix
+    gCruise: 60,          // Squirrel.prefab VesselTransformer DefaultThrottleScaler 60
+    gMinSpeed: 10,        // lab-only floor (the Squirrel studio has none; the Goby must keep laying path)
+    gPitchRate: 120,      // Squirrel.prefab PitchScaler 120
+    gYawRate: 120,        // Squirrel.prefab YawScaler 120
+    gRollRate: 130,       // Squirrel.prefab RollScaler 130
     gStraightMax: 4,      // lab-only ("like the Rhino's but less": RhinoRampBoostAction.asset maxBoostMultiplier 16.8)
     gStraightAccel: 220,  // RhinoRampBoostAction.asset accelerationPerSecond 220
     gStraightBleed: 300,  // RhinoRampBoostAction.asset bleedPerSecond 300
@@ -377,9 +387,9 @@
   };
   // Sliders are data: [group, key, lo, hi, step, label, tip]
   const SPEC = [
-    ['Goby', 'gCruise', 20, 120, 1, 'Cruise u/s', 'Serpent.prefab DefaultThrottleScaler (50).'],
-    ['Goby', 'gYawRate', 30, 160, 1, 'Turn °/s', 'Serpent.prefab YawScaler and PitchScaler (80).'],
-    ['Goby', 'gPitchRate', 30, 160, 1, 'Pitch °/s', 'Serpent.prefab PitchScaler (80).'],
+    ['Goby', 'gCruise', 20, 120, 1, 'Cruise u/s', 'Squirrel.prefab DefaultThrottleScaler (60).'],
+    ['Goby', 'gYawRate', 30, 200, 1, 'Yaw °/s', 'Squirrel.prefab YawScaler (120).'],
+    ['Goby', 'gPitchRate', 30, 200, 1, 'Pitch °/s', 'Squirrel.prefab PitchScaler (120).'],
     ['Goby', 'gStraightMax', 1, 8, 0.1, 'Straight boost ×', 'Lab-only. The Rhino ramps to ×16.8; the brief says "like the Rhino but less".'],
     ['Goby', 'gCloseMax', 1, 3, 0.05, 'Closeness ×', 'Lab-only. The Goby\'s speed with the Pistol right on its tail.'],
     ['Goby', 'gCloseRange', 60, 800, 10, 'Closeness range u', 'Lab-only. Beyond this gap the Pistol adds no speed.'],
@@ -608,10 +618,11 @@
   // ================= input: the game's dual-stick mix (InputController) =================
   const ease = (x) => (x < 0 ? Math.cos(x * Math.PI / 4) - 1 : -(Math.cos(x * Math.PI / 4) - 1));
   const easeInv = (e) => { e = clamp(e, -1, 1); return e >= 0 ? (4 / Math.PI) * Math.acos(1 - e) : -(4 / Math.PI) * Math.acos(1 + e); };
-  function mix(L, R) { return { yaw: ease(R.x + L.x), pitch: -ease(R.y + L.y), roll: ease(R.y - L.y), thr: (R.x - L.x + 2) / 4 }; }
+  // the Squirrel studio's stepPilot, term for term: sticks' sum steers (both up = nose up), their difference rolls and throttles
+  function mix(L, R) { return { yaw: ease(R.x + L.x), pitch: ease(R.y + L.y), roll: -ease(R.y - L.y), thr: (R.x - L.x + 2) / 4 }; }
   function unmix(yaw, pitch, roll, thr) {   // what an AI presses to get these: the mix, inverted (/vessel-studio 3.2)
-    const sx = easeInv(yaw), sy = easeInv(-pitch);
-    const dx = clamp(thr * 4 - 2, -(2 - Math.abs(sx)), 2 - Math.abs(sx)), dy = clamp(easeInv(roll), -(2 - Math.abs(sy)), 2 - Math.abs(sy));
+    const sx = easeInv(yaw), sy = easeInv(pitch);
+    const dx = clamp(thr * 4 - 2, -(2 - Math.abs(sx)), 2 - Math.abs(sx)), dy = clamp(easeInv(-roll), -(2 - Math.abs(sy)), 2 - Math.abs(sy));
     return { R: { x: (sx + dx) / 2, y: (sy + dy) / 2 }, L: { x: (sx - dx) / 2, y: (sy - dy) / 2 } };
   }
 
@@ -642,7 +653,8 @@
     g.sm = target > g.sm ? Math.min(target, g.sm + P.gStraightAccel / P.gCruise * dt) : Math.max(target, g.sm - P.gStraightBleed / P.gCruise * dt);
     const gap = W.p ? W.gx - W.p.x : Infinity;
     g.cm = W.o.noClose || !W.p ? 1 : 1 + (P.gCloseMax - 1) * clamp(1 - gap / P.gCloseRange, 0, 1);
-    g.speed = Math.max(P.gMinSpeed, P.gCruise * g.thr) * g.sm * g.cm;
+    const want = Math.max(P.gMinSpeed, P.gCruise * g.thr) * g.sm * g.cm;
+    g.speed += (want - g.speed) * (1 - Math.exp(-1.5 * dt));   // the Squirrel's speed ease
     const a = g.pos; g.pos = vadd(a, vscl(g.f, g.speed * dt)); layPath(W, a, g.pos); gobyEnds(W);
     // the primer: an oil glob that primes what it hits and everything in its splash
     if (inp.primer && !g.prevPrimer && g.primer > 0 && !W.o.noPrimer) {
@@ -1126,16 +1138,22 @@
   const readPad = () => { const ps = navigator.getGamepads ? navigator.getGamepads() : []; for (const p of ps) if (p && p.connected) return p; return null; };
   const dz = (v) => (Math.abs(v) < 0.12 ? 0 : v);
   let padPrev = {}, padAim = null, pendingLaunch = null;
-  // the Pistol's launch aim: a drag on its view (mouse, or a finger on the phone's right half)
-  const drag = { on: false, x: 0, y: 0 };
+  // ---- the Pistol's one gesture (Tiny Wings, plus the brief's tap-and-drag launch), the same with a mouse and a finger:
+  // press and hold = dive; drag past a few pixels = aim a launch (the dive lets go); release while aiming = launch.
+  const ptr = { on: false, id: null, x0: 0, y0: 0, x: 0, y: 0, aiming: false };
+  const AIM_PX = 14;
   function sideToWorld(cx, cy) { const r = side.getBoundingClientRect(), dpr = side.width / Math.max(1, r.width), sx = (cx - r.left) * dpr, sy = (cy - r.top) * dpr; return { x: SC.x + (sx - SC.w / 2) / SC.k, h: SC.y - (sy - SC.h / 2) / SC.k }; }
-  side.addEventListener('pointerdown', (e) => { if (S.fly !== 'pistol' || playMode) return; drag.on = true; drag.x = e.clientX; drag.y = e.clientY; touched(); try { side.setPointerCapture(e.pointerId); } catch (err) { /* synthetic */ } });
-  side.addEventListener('pointermove', (e) => { if (drag.on) { drag.x = e.clientX; drag.y = e.clientY; touched(); } });
-  side.addEventListener('pointerup', () => { if (!drag.on || !W || !W.p) { drag.on = false; return; } const a = sideToWorld(drag.x, drag.y); pendingLaunch = { dx: a.x - W.p.x, dy: a.h - W.p.y }; drag.on = false; });
+  const pistolYours = () => S.fly === 'pistol' && !halfIsAI('pistol');
+  function pDown(id, x, y) { ptr.on = true; ptr.id = id; ptr.x0 = ptr.x = x; ptr.y0 = ptr.y = y; ptr.aiming = false; touched(); }
+  function pMove(id, x, y) { if (!ptr.on || ptr.id !== id) return; ptr.x = x; ptr.y = y; if (Math.hypot(x - ptr.x0, y - ptr.y0) > AIM_PX) ptr.aiming = true; touched(); }
+  function pUp(id) { if (!ptr.on || ptr.id !== id) return; if (ptr.aiming && W && W.p) { const a = sideToWorld(ptr.x, ptr.y); pendingLaunch = { dx: a.x - W.p.x, dy: a.h - W.p.y }; } ptr.on = false; ptr.aiming = false; }
+  side.addEventListener('pointerdown', (e) => { if (!pistolYours() || playMode) return; pDown(e.pointerId, e.clientX, e.clientY); try { side.setPointerCapture(e.pointerId); } catch (err) { /* synthetic */ } e.preventDefault(); });
+  side.addEventListener('pointermove', (e) => pMove(e.pointerId, e.clientX, e.clientY));
+  side.addEventListener('pointerup', (e) => pUp(e.pointerId)); side.addEventListener('pointercancel', (e) => pUp(e.pointerId));
+  side.addEventListener('contextmenu', (e) => e.preventDefault());
   function aimNow(W) {
-    if (S.fly !== 'pistol' || halfIsAI('pistol') || !W.p) return null;
-    if (drag.on) { const a = sideToWorld(drag.x, drag.y); return { dx: a.x - W.p.x, dy: a.h - W.p.y }; }
-    if (touch.aim) { const r = side.getBoundingClientRect(), k = 1 / SC.k * (side.width / Math.max(1, r.width)); return { dx: (touch.aim.x - touch.aim.x0) * k * 2.2, dy: -(touch.aim.y - touch.aim.y0) * k * 2.2 }; }
+    if (!pistolYours() || !W.p) return null;
+    if (ptr.on && ptr.aiming) { const a = sideToWorld(ptr.x, ptr.y); return { dx: a.x - W.p.x, dy: a.h - W.p.y }; }
     if (padAim) return padAim;
     return null;
   }
@@ -1145,47 +1163,46 @@
   window.addEventListener('pointermove', (e) => { if (!orbDrag) return; orbit.yaw -= (e.clientX - orbDrag.x) * 0.006; orbit.pitch = clamp(orbit.pitch + (e.clientY - orbDrag.y) * 0.005, -1.4, 1.4); orbDrag = { x: e.clientX, y: e.clientY }; });
   window.addEventListener('pointerup', () => { orbDrag = null; });
   canvas.addEventListener('wheel', (e) => { if (S.cam !== 'Free') return; orbit.dist = clamp(orbit.dist * (e.deltaY > 0 ? 1.1 : 0.9), 30, 1500); e.preventDefault(); }, { passive: false });
-  // touch play
-  const touch = { used: false, L: { x: 0, y: 0, id: null, x0: 0, y0: 0 }, R: { x: 0, y: 0, id: null, x0: 0, y0: 0 }, dive: false, aim: null, primer: false, flares: false, boom: false, ghost: false };
+  // touch play: the Goby's two thumb sticks; for the Pistol, both halves of the screen take its one gesture
+  const touch = { used: false, L: { x: 0, y: 0, id: null, x0: 0, y0: 0 }, R: { x: 0, y: 0, id: null, x0: 0, y0: 0 } };
+  const btn = { primer: false, flares: false, boom: false, ghost: false };   // the on-stage and phone ability buttons
   function bindZone(zone, key, ring) {
     const el = $(zone), ts = $(ring);
     el.addEventListener('pointerdown', (e) => {
       touch.used = true; touched(); const st = touch[key]; st.id = e.pointerId; const r = el.getBoundingClientRect(); st.x0 = e.clientX; st.y0 = e.clientY; st.x = st.y = 0;
       ts.style.left = (e.clientX - r.left) + 'px'; ts.style.top = (e.clientY - r.top) + 'px'; ts.classList.remove('idle');
-      if (S.fly === 'pistol') { if (key === 'L') touch.dive = true; else touch.aim = { x0: e.clientX, y0: e.clientY, x: e.clientX, y: e.clientY }; }
+      if (pistolYours()) pDown(e.pointerId, e.clientX, e.clientY);
       try { el.setPointerCapture(e.pointerId); } catch (err) { /* synthetic */ }
     });
-    el.addEventListener('pointermove', (e) => { const st = touch[key]; if (st.id !== e.pointerId) return; st.x = clamp((e.clientX - st.x0) / 56, -1, 1); st.y = clamp(-(e.clientY - st.y0) / 56, -1, 1); ts.firstElementChild.style.transform = 'translate(' + st.x * 30 + 'px,' + -st.y * 30 + 'px)'; if (touch.aim && key === 'R') { touch.aim.x = e.clientX; touch.aim.y = e.clientY; } touched(); });
-    const up = (e) => {
-      const st = touch[key]; if (st.id !== e.pointerId) return; st.id = null; st.x = st.y = 0; ts.classList.add('idle'); ts.firstElementChild.style.transform = '';
-      if (key === 'L') touch.dive = false;
-      if (key === 'R' && touch.aim && W && W.p) { const a = aimNow(W); if (a) pendingLaunch = a; touch.aim = null; }
-    };
+    el.addEventListener('pointermove', (e) => { const st = touch[key]; if (st.id !== e.pointerId) return; st.x = clamp((e.clientX - st.x0) / 56, -1, 1); st.y = clamp(-(e.clientY - st.y0) / 56, -1, 1); ts.firstElementChild.style.transform = 'translate(' + st.x * 30 + 'px,' + -st.y * 30 + 'px)'; pMove(e.pointerId, e.clientX, e.clientY); touched(); });
+    const up = (e) => { const st = touch[key]; if (st.id !== e.pointerId) return; st.id = null; st.x = st.y = 0; ts.classList.add('idle'); ts.firstElementChild.style.transform = ''; pUp(e.pointerId); };
     el.addEventListener('pointerup', up); el.addEventListener('pointercancel', up);
   }
   bindZone('tzL', 'L', 'tsL'); bindZone('tzR', 'R', 'tsR');
-  const pulse = (k) => () => { touch[k] = true; touched(); };
-  $('tPrimer').addEventListener('click', pulse('primer')); $('tFlare').addEventListener('click', pulse('flares')); $('tBoom').addEventListener('click', pulse('boom')); $('tGhost').addEventListener('click', pulse('ghost'));
+  const pulse = (k) => (e) => { btn[k] = true; touched(); if (e) e.stopPropagation(); };
+  for (const [id, k] of [['tPrimer', 'primer'], ['tFlare', 'flares'], ['tBoom', 'boom'], ['tGhost', 'ghost'], ['aPrimer', 'primer'], ['aFlare', 'flares'], ['aBoom', 'boom'], ['aGhost', 'ghost']]) $(id).addEventListener('click', pulse(k));
+  function takeBtn(k) { const v = btn[k]; btn[k] = false; return v; }
   function humanGoby(dt) {
-    const g = readPad();
-    if (playMode && touch.used) { const o = { L: { x: touch.L.x, y: touch.L.y }, R: { x: touch.R.x, y: touch.R.y }, primer: touch.primer, flares: touch.flares }; touch.primer = touch.flares = false; return o; }
-    if (g && (g.axes.some((a) => Math.abs(a) > 0.12) || g.buttons.some((b) => b && b.pressed))) { touched(); return { L: { x: dz(g.axes[0]), y: -dz(g.axes[1]) }, R: { x: dz(g.axes[2]), y: -dz(g.axes[3]) }, primer: !!(g.buttons[7] && g.buttons[7].value > 0.5), flares: !!(g.buttons[6] && g.buttons[6].value > 0.5) }; }
+    const g = readPad(), primerB = takeBtn('primer'), flaresB = takeBtn('flares');
+    if (playMode && touch.used) return { L: { x: touch.L.x, y: touch.L.y }, R: { x: touch.R.x, y: touch.R.y }, primer: primerB, flares: flaresB };
+    if (g && (g.axes.some((a) => Math.abs(a) > 0.12) || g.buttons.some((b) => b && b.pressed))) { touched(); return { L: { x: dz(g.axes[0]), y: -dz(g.axes[1]) }, R: { x: dz(g.axes[2]), y: -dz(g.axes[3]) }, primer: primerB || !!(g.buttons[7] && g.buttons[7].value > 0.5), flares: flaresB || !!(g.buttons[6] && g.buttons[6].value > 0.5) }; }
     const k = (c) => (keys.has(c) ? 1 : 0);
     if (keys.has('ArrowUp')) kbThr = Math.min(1, kbThr + dt * 0.6); if (keys.has('ArrowDown')) kbThr = Math.max(0, kbThr - dt * 0.6);
-    return { k: { yaw: k('KeyD') - k('KeyA'), pitch: k('KeyS') - k('KeyW'), roll: k('KeyE') - k('KeyQ'), thr: kbThr }, primer: keys.has('KeyF'), flares: keys.has('KeyG') };
+    // the Squirrel studio's keys: W S pitch, A D yaw, Q E roll (E as the Squirrel's YDiff)
+    return { k: { yaw: k('KeyD') - k('KeyA'), pitch: k('KeyS') - k('KeyW'), roll: k('KeyQ') - k('KeyE'), thr: kbThr }, primer: primerB || keys.has('KeyF'), flares: flaresB || keys.has('KeyG') };
   }
   function humanPistol() {
     const g = readPad(); let launch = pendingLaunch; pendingLaunch = null;
-    if (playMode && touch.used) { const o = { dive: touch.dive ? 1 : 0, launch, explode: touch.boom, ghost: touch.ghost }; touch.boom = touch.ghost = false; return o; }
+    const boomB = takeBtn('boom'), ghostB = takeBtn('ghost'), pressDive = ptr.on && !ptr.aiming ? 1 : 0;
     if (g && (g.axes.some((a) => Math.abs(a) > 0.12) || g.buttons.some((b) => b && b.pressed))) {
       touched(); const rt = g.buttons[7] ? g.buttons[7].value : 0;
       if (rt > 0.5) padAim = { dx: dz(g.axes[2]) * P.pLaunchRange, dy: -dz(g.axes[3]) * P.pLaunchRange };
       else if (padAim) { if (Math.hypot(padAim.dx, padAim.dy) > 10) launch = padAim; padAim = null; }
-      return { dive: Math.max(g.buttons[0] && g.buttons[0].pressed ? 1 : 0, g.buttons[6] ? g.buttons[6].value : 0), launch, explode: !!(g.buttons[2] && g.buttons[2].pressed), ghost: !!(g.buttons[1] && g.buttons[1].pressed) };
+      return { dive: Math.max(pressDive, g.buttons[0] && g.buttons[0].pressed ? 1 : 0, g.buttons[6] ? g.buttons[6].value : 0), launch, explode: boomB || !!(g.buttons[2] && g.buttons[2].pressed), ghost: ghostB || !!(g.buttons[1] && g.buttons[1].pressed) };
     }
     if (keys.has('KeyF') && !padPrev.f) launch = { dx: 0.7 * P.pLaunchRange, dy: 0.45 * P.pLaunchRange };
     padPrev.f = keys.has('KeyF');
-    return { dive: keys.has('Space') || keys.has('KeyS') || keys.has('ArrowDown') ? 1 : 0, launch, explode: keys.has('KeyE'), ghost: keys.has('KeyG') };
+    return { dive: Math.max(pressDive, keys.has('Space') || keys.has('KeyS') || keys.has('ArrowDown') ? 1 : 0), launch, explode: boomB || keys.has('KeyE'), ghost: ghostB || keys.has('KeyG') };
   }
   function padSwapCheck() {
     const g = readPad(); if (!g) return;
@@ -1207,7 +1224,7 @@
   let lastSwapAt = -9;
   function swap() {   // the arena pilot swap, unified (PilotSwap: 0.75 s cooldown); nothing about either half resets
     const now = performance.now() / 1000; if (now - lastSwapAt < P.swapCd) return; lastSwapAt = now;
-    S.fly = S.fly === 'goby' ? 'pistol' : 'goby'; $('selFly').value = S.fly; keys.clear(); padAim = null; pendingLaunch = null; drag.on = false; touch.aim = null; touch.dive = false;
+    S.fly = S.fly === 'goby' ? 'pistol' : 'goby'; $('selFly').value = S.fly; keys.clear(); padAim = null; pendingLaunch = null; ptr.on = false; ptr.aiming = false;
     if (W) { W.aiG.out = {}; W.aiP.out = {}; W.g.prevPrimer = W.g.prevFlare = false; if (W.p) { W.p.prevExplode = W.p.prevGhost = false; } W.swaps = (W.swaps || 0) + 1; }
     applyViews(); save(); say('You fly the ' + (S.fly === 'goby' ? 'Goby' : 'Pistol') + '; the AI took the ' + (S.fly === 'goby' ? 'Pistol' : 'Goby'));
   }
@@ -1373,7 +1390,7 @@
     const hd = elx('div', 'hd'); hd.append(elx('span', null, 'I' + S.course + ' · ' + Math.max(0, P.runSecs - W.t).toFixed(0) + ' s left'), elx('span', null, S.mode)); b.appendChild(hd);
     for (const [k, v] of [['Pistol', st.pistolKills], ['Chain (primed)', st.chainKills], ['Flares', st.flareKills], ['Friendly broken', st.friendly], ['Crystals', st.crystals]]) { const r = elx('div', 'row'); r.append(elx('span', null, k), elx('b', null, String(v))); b.appendChild(r); }
     const wf = $('whoFlies'); wf.textContent = ''; wf.append(document.createTextNode('You fly the '), elx('b', null, S.fly === 'goby' ? 'Goby' : 'Pistol'), document.createTextNode(S.you !== 'You' ? ' (AI ' + S.you + ')' : ' · 1 / 2 or D-pad ← → to swap'));
-    $('holding').hidden = !idleAI;
+    $('holding').hidden = !idleAI; document.body.classList.toggle('ai-you', S.you !== 'You' || idleAI);
     $('camTag').textContent = S.cam + ' camera (3D)';
     const live = race === 'running' && !paused;
     $('tpPlay').textContent = live ? '❚❚ Pause' : '▶ Play'; $('tpPlay').classList.toggle('on', live); $('tpPlay').setAttribute('aria-pressed', paused ? 'true' : 'false');
@@ -1401,7 +1418,7 @@
   function frame(now) {
     const dt = Math.min(0.05, Math.max(0, (now - last) / 1000)); last = now; resize(); padSwapCheck();
     if (W && race === 'running' && !paused && !manualClock) {
-      idleAI = S.idleHold && S.you === 'You' && now - lastHuman > 3000;
+      idleAI = S.idleHold && S.you === 'You' && S.fly === 'goby' && now - lastHuman > 3000;   // the Pistol rides its ground by itself: it is never taken from you
       acc += dt * S.speed; let n = 0;
       while (acc >= STEP && n < 12) { stepOnce(STEP); acc -= STEP; n++; if (race !== 'running') break; }
       if (n >= 12) acc = 0;
@@ -1424,7 +1441,9 @@
   $('touch').addEventListener('pointerdown', () => { if (playMode && !document.fullscreenElement) { try { const v = $('viewport'), req = v.requestFullscreen || v.webkitRequestFullscreen; if (req) { const pr = req.call(v, { navigationUI: 'hide' }); if (pr && pr.catch) pr.catch(() => {}); } } catch (e) { /* not allowed */ } } });
   const PLATFORM = VesselStudioIDE.platform();
   $('tStart').addEventListener('click', playPause); $('tBack').addEventListener('click', stopRace); $('tCam').addEventListener('click', cycleCamera); $('tSwap').addEventListener('click', () => { lastSwapAt = -9; swap(); });
-  $('tpPlay').addEventListener('click', playPause); $('tpStop').addEventListener('click', stopRace); $('startBtn').addEventListener('click', startRace); $('resetBtn').addEventListener('click', () => { seedN++; lsSet(LS + '.seed', seedN); newRace(); });
+  $('tpPlay').addEventListener('click', playPause); $('tpStop').addEventListener('click', stopRace); $('startBtn').addEventListener('click', startRace);
+  const startAs = (half) => () => { if (S.fly !== half) { lastSwapAt = -9; swap(); } if (S.you !== 'You') { S.you = 'You'; racePanel.set('you', 'You', true); save(); } startRace(); };
+  $('startGoby').addEventListener('click', startAs('goby')); $('startPistol').addEventListener('click', startAs('pistol')); $('resetBtn').addEventListener('click', () => { seedN++; lsSet(LS + '.seed', seedN); newRace(); });
 
   // ================= the editor layout (D8, D21, D27) =================
   const IDE = VesselStudioIDE.build({

@@ -61,7 +61,7 @@ that makes it feel like an ordinary sidescroller wins over strict accuracy to th
 | | Goby (front, "Flier") | Pistol (back, "Bird") |
 |---|---|---|
 | Role | Lays the path, primes targets, finishes hot targets | Rides the path and destroys things |
-| Space | Full 3D, flies like the **Serpent** **[stated]** | A **warped 2D world** with parallax depth (§4) **[stated]** |
+| Space | Full 3D, a **two-thumb flier like the Squirrel** **[stated, 2026-10-14; was "like the Serpent"]** | A **warped 2D world** with parallax depth (§4) **[stated]** |
 | Collision | **Ignores collision** **[stated]** | Breaks every block **except the Goby's trail**. Friendly fire is ON **[stated]** |
 | Trail | The main trail. Its blocks alternate their angles, and those angles are the control points of a spline **[stated]** | A tiny trail **[stated]** |
 | Input | **Two-touch** flight on mobile **[stated]** | Sidescroller controls. No yaw and no off-plane movement **[stated]** |
@@ -126,7 +126,7 @@ craft riding the trail.
 
 ## 5. The Goby
 
-- **Flight:** like the Serpent, with two-touch controls **[stated]**. **Ignores collision**
+- **Flight:** a two-thumb flier like the **Squirrel** **[stated, 2026-10-14; it replaced "like the Serpent"]**. **Ignores collision**
   **[stated]**.
 - **Speed from closeness:** the closer the Pistol is, the faster the Goby goes **[stated]**. A
   **speed gauge** on the HUD shows the change **[stated]**. **[open]:** the curve and its range.
@@ -249,7 +249,7 @@ See `../ANCHORS.md`. In short:
 - **Ghost:** `UrchinSlipActionExecutor`.
 - **Launch aim:** `ThresherLaunchSight` for the stick. Drag-to-aim on mobile does not exist.
 - **Per-viewer visibility:** the Serpent cloak's `IsLocalUser` alpha.
-- **Goby flight:** `SingleStickVesselTransformer`. **Straight boost:** `RampBoostActionExecutor` +
+- **Goby flight:** the Squirrel's dual-stick `VesselTransformer` (`Squirrel.prefab`), not the Serpent's `SingleStickVesselTransformer`. **Straight boost:** `RampBoostActionExecutor` +
   `StraightLineGesture`.
 - **Pistol far camera:** the Serpent's `SerpentCameraSettingsSO.asset` is a chase cam, not a side
   cam. The Pistol needs a new camera mode.
@@ -274,5 +274,10 @@ the line it settled.
   - The swap is the arena's D-pad left/right, unified.
   - A lab with both halves together comes first.
   - Claude proposed the clades: Goby (Flier) and Pistol shrimp (Bird).
+- 2026-10-14, Garrett: the Goby is a **two-thumb flier like the Squirrel**, not the Serpent (the Serpent flies on one stick
+  in the game, so "flies like the Serpent" and "two-touch flier" disagreed). The lab now flies it on `Squirrel.prefab`'s
+  numbers and the Squirrel studio's stick mix. The Pistol must be playable in the lab: press and hold to dive, drag to
+  launch, Snap / Ghost buttons. Found: the Squirrel's turn radius (~29 u) is inside the 45 u vision band, so the band must
+  narrow or the Goby must turn wider while it lays path (README § Goby & Pistol, round 1b).
 - 2026-10-14, round 1 of the lab built (§9.1). Nothing decided yet: Garrett picks the unroll in the lab (its
   Decisions tab writes to the shared log).

@@ -125,6 +125,15 @@ AI levels do not separate yet (the rookie row is level with Hard on World up): t
 the Goby needed no Pistol. A flare now takes only its one block; a prime is the Pistol's to detonate (the brief's "primed
 for explosion by the bird").
 
+**Round 1b (same day, Garrett):** the Goby is a two-thumb flier like the Squirrel (`Squirrel.prefab`: 60 u/s, pitch and
+yaw 120, roll 130, the Squirrel studio's stick mix and speed ease), and the Pistol is playable on a mouse or a finger with
+one gesture (press and hold to dive, drag to aim, release to launch) plus Snap and Ghost buttons on the stage; the AI no
+longer takes the Pistol when you stop pressing, since it rides its ground by itself. Re-measured: the pair now scores
+117 / 116 / 121 blocks (World up / Arc length / Goby's up) against 32 for the Goby alone, and Hard beats the rookie row in
+all three. The Squirrel turns much tighter (a ~29 u radius at cruise against the Serpent's ~36), which is now **inside**
+the 45 u vision band, so every unroll folds on an ordinary weave (~40% of points land elsewhere). **Found:** the Pistol's
+vision band must stay narrower than the Goby's tightest turn radius, or the Goby must turn less sharply while it lays path.
+
 ## In Amoebius
 
 VESSEL STUDIO ▸ **OPEN IN AMOEBIUS** builds the checkout's branch and opens the served page as its own window (Sync,
