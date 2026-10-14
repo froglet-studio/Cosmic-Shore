@@ -573,7 +573,7 @@ proposals below, and shipped the same day (`_Scripts/Controller/Vessel/R_VesselA
 
 | Slot | Proposed | **Decided (2026-10-13)** |
 |---|---|---|
-| Mass ability | Accretion; Ballast on X; trail size | **Mass / Time Mode** on B: Mass mode = the dipole + a THICK trail (Mass ×3 → ×6 height); Time mode = the round-4 auto-orbit slingshot back on the triggers, its kick TIMED to a 90° release. "Accretion is great for a space ability and upgrade" — it moved to Space 5 |
+| Mass ability | Accretion; Ballast on X; trail size | **Mass / Time Mode** on B: Mass mode = the dipole + a THICK trail (Mass ×3 → ×6 height); Time mode = (2026-10-14) the studio's catch-sling on the triggers — a lighter pair laid ahead, detection and orbit rings in place of the path, caught as you pass, its kick TIMED to a 90° release. "Accretion is great for a space ability and upgrade" — it moved to Space 5 |
 | Charge ability | Annihilation blast; throat shear | **Ripple** — the blast, re-scoped: "charge should always be focused on anti vessel/fauna gameplay … only kill fauna and strip elements from vessels … a cool space time ripple". No prisms. Charge scales its reach ×1 → ×2 |
 | Omni crystal | **Overclock**; Lodestone; ward | **Overclock** (the recommendation, 6 s of full boost) |
 | Time L5 | Slipstream; Foresight | **Foresight** — rivals' predicted paths, in their domain colours |
