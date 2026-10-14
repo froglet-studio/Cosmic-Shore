@@ -68,5 +68,22 @@ checklist.
    every match). Stop a stray game by PID (`pgrep -x CosmicShore`), never `pkill -f 'CosmicShore ...'`:
    the pattern also matches the shell running your command, so it kills that shell too.
 
+12. **Traps from the UGS-online session (2026-10-14).**
+   - **Amoebius.exe and the game update separately.** START pulls and builds the GAME from the branch;
+     the launcher itself only changes through its own UPDATE (rail badge, or SETTINGS > ABOUT > CHECK /
+     INSTALL). A launcher feature you just pushed is invisible to a user who only pressed START: tell them
+     to update Amoebius, and read the PLAY page's own buttons in their screenshot to see which build they run.
+   - **A file the player window uses must also be linked into `CosmicShore.Mobile.csproj`.** The phone build
+     compiles the shared player sources by link; `MobileLinkTests` fails when one is missing (it caught
+     `XInputRumble.cs` and `PlayerDiagnostics.cs`). Add the `<Compile Include=... Link=...>` with the file.
+   - **Launcher screenshots under xvfb show a tooltip** wherever the pointer sits (the screen's centre).
+     Use a virtual screen much larger than the window (`xvfb-run -s "-screen 0 3400x2200x24"`) so the
+     pointer is off it.
+   - **Never assume the user's workspace path.** `%LOCALAPPDATA%\Amoebius\workspace` is only the default;
+     BESIDE MY CLONE puts it next to their clone. Prefer a launcher button over hand-run PowerShell.
+   - **F3 is Amoebius's diagnostics overlay** (`PlayerDiagnostics.cs`, ARCHITECTURE §11.3): read it in a
+     user's screenshot for fps, sign-in, lobby and ping before guessing. The game's own top-left panel (F7)
+     reported 60 fps while the game ran at 5-9, so trust F3's numbers.
+
 Report what you saw (attach the screenshot path) and what you verified; say plainly if a check
 did not run.

@@ -73,7 +73,7 @@ inside any broadband line and inside UGS Relay's free egress (§4.3).
 The netcode does not care where its bytes travel. Two seams keep the backend swappable:
 
 - **`INetTransport`** (exists: `Wire/INetTransport.cs`) carries frames between peers.
-- **The session service** (exists in stand-in form: `DirectoryMultiplayerService`) finds and joins
+- **The session service** (exists: `UgsMultiplayerService` over UGS Lobby, §6.10) finds and joins
   sessions: lobby, roster, invites, host endpoint.
 
 ### 4.1 UGS from Amoebius: yes, without Unity's SDK
@@ -104,7 +104,7 @@ What a self-hosted backend would be, in .NET with no new packages:
 
 | Piece | Size | Notes |
 |---|---|---|
-| Lobby service | One HTTP service (sessions in memory, JSON over HTTP) | `DirectoryMultiplayerService`'s file format is already this shape |
+| Lobby service | One HTTP service (sessions in memory, JSON over HTTP) | `UgsLobbyStandIn` (the tests' UGS Lobby) is already this shape, in-process |
 | Relay | One UDP forwarder: bind, connect, forward by allocation id | A few hundred lines. Same protocol idea as UGS Relay |
 | Auth | Steam auth tickets, or signed anonymous ids | Needed so players can't impersonate each other |
 
@@ -269,9 +269,8 @@ stats (`do net`) work on any online game through its control port.
 `UdpTransport` (`Wire/UdpTransport.cs`) is Froglet's own transport. It keeps the `INetTransport`
 contract (reliable, ordered, whole frames), so `NetDriver` runs on it unchanged, and the same
 `NetTransportContractTests` hold it, TCP and the loopback to that contract. **It is the default for
-every networked player since 2026-10-08**; TCP is one switch away: `COSMIC_SHORE_NET_TRANSPORT=tcp`,
-`net_players transport=tcp`, or TCP on the NET page. Every player of a session must use the same
-transport.
+every networked player since 2026-10-08**; TCP is one switch away: `COSMIC_SHORE_NET_TRANSPORT=tcp`.
+Every player of a session must use the same transport.
 
 **Wire** (little-endian; every packet starts with a type byte):
 
