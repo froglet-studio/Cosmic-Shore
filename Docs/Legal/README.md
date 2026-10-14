@@ -32,14 +32,18 @@ entirely — confirm with counsel (question 2.3 in `DLC_VS_TOKENS_QUESTIONNAIRE.
 
 ### Privacy policy → three places
 
-1. **A public URL you control** — e.g. `https://froglet.games/privacy`. This is the canonical copy.
-   A GitHub Pages site or a plain page on the marketing site is fine; it must be reachable without
-   logging in and must not require the game.
+1. **A public URL you control** — **`https://www.froglet.games/privacy`** (the marketing site,
+   GitHub Pages, repo `froglet-studio/cosmic-shore-landing-page`). This is the canonical copy. It
+   must be reachable without logging in and must not require the game. Its siblings are
+   `/support` and `/delete-my-data` (the Google Play account-deletion URL).
 2. **The Steam store page** — Steamworks has a dedicated privacy-policy URL field in App Admin.
    Paste the same URL.
-3. **In-game** — the settings panel already has a Privacy Policy row wired to
-   `Application.OpenURL`. Set `GameSettingsPanelController.privacyPolicyUrl` to the same URL. The
-   button exists; it just needs the real address.
+3. **In-game** — two places, both pointed at the URLs above (2026-10-14):
+   - the settings panel's Privacy Policy / Delete my data / bug-report rows
+     (`SettingsModal.prefab` serializes `privacyPolicyUrl`, `deleteDataUrl`, `bugReportUrl`, which
+     override the defaults in `GameSettingsPanelController`; change the prefab, not just the code);
+   - the first-run consent screen's policy link, `Resources/PrivacyConsentConfig.asset`
+     `privacyPolicyUrl` (it was empty, so the consent screen linked nowhere).
 
 > Do not ship the policy as a file inside the game. It has to be updatable without a patch, and
 > regulators expect a durable public URL.

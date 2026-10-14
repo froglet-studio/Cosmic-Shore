@@ -107,9 +107,9 @@ namespace CosmicShore.UI
         [SerializeField] Slider hapticsSlider;
 
         [Header("Links")]
-        [SerializeField] string privacyPolicyUrl = "https://cosmicshore.com/privacy";
-        [SerializeField] string deleteDataUrl = "https://cosmicshore.com/delete-my-data";
-        [SerializeField] string bugReportUrl = "https://cosmicshore.com/support";
+        [SerializeField] string privacyPolicyUrl = "https://www.froglet.games/privacy";
+        [SerializeField] string deleteDataUrl = "https://www.froglet.games/delete-my-data";
+        [SerializeField] string bugReportUrl = "https://www.froglet.games/support";
 
         // Option labels (index == enum value - the controller fills these, never author them in the dropdown)
         static readonly string[] ColorblindOpts = { "Off", "Protanopia", "Deuteranopia", "Tritanopia" };
