@@ -11,6 +11,7 @@ instead of copying them:
 
 | Read | For |
 |---|---|
+| `Docs/AI_SYSTEM/REGATTA_AI_ROADMAP.md` | **The current plan**: the Regatta six, the hull-drive pattern every new racing AI follows (§2), measuring in Amoebius (§4), the order |
 | `Docs/AI_SYSTEM/README.md` | Start here: the branch AI work lives on (`Ys-bleeding-edge`), the first command of every AI session (`python3 Tools/Build/ai_branch_sync.py`) |
 | `Docs/AI_SYSTEM/ARCHITECTURE.md` | The six layers (§1) and **the roster of every AI** (§2, the source of truth). A new AI gets a row there first |
 | `Docs/AI_SYSTEM/DIAGNOSIS_PLAYBOOK.md` | The five tiers of evidence, the intake checklist, the user's test-script template, the status board |

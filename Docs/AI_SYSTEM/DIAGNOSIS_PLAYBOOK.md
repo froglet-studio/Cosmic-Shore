@@ -87,7 +87,8 @@ QA results also flow through `/qa-backlog` (`Docs/QA/QA_BACKLOG.md`), which alre
 ## 5. Status board (update on every diagnosis)
 
 Order chosen by reach × risk: the autopilot first (every AI seat in ~30 modes, unmeasured), then the new
-intakes, then the restructures.
+intakes, then the restructures. **Since 2026-10-14 the Regatta six lead** (`REGATTA_AI_ROADMAP.md` §3): rows 9
+(Stoat) and 10 (gate-race belief) come first, then the Manta, Rhino, Urchin and Dolphin rows in the roadmap's order.
 
 | # | AI | Tiers done | Next action | Owner of next action |
 |---|---|---|---|---|

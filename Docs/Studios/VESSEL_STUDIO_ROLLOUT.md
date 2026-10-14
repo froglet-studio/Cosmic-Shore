@@ -53,6 +53,10 @@ same shape, built by hand).
 
 ## 3. Recommended order
 
+> **Superseded 2026-10-14** by `Docs/AI_SYSTEM/REGATTA_AI_ROADMAP.md`: the studios now follow the Regatta six
+> (Squirrel, Stoat, Manta, Rhino, Urchin, Dolphin), and the AI race lives in one Regatta studio with a drive
+> module per hull. The table below is kept for the hulls outside Regatta.
+
 | # | Vessel | Studio map | Why this place | What its scorecard asks (D5) |
 |---|---|---|---|---|
 | 1 | **Grizzly** | Grizzly Time I1–I4 | The closest to the two built studios: a gate race with laps and golf, one AI drive whose four numbers live in one asset, and that AI has never been seen working in the editor (`GRIZZLYTIME.md` §4, roster "Intake"). It builds the gate-race core | Lap time per intensity (the AI's skill follows it); bomb-jumps per lap; launches that land the hull through the next ring vs off-line; self-blasts that cost time |
