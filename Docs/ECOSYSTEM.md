@@ -11533,8 +11533,8 @@ components on the nested crystal instance, plus the `Crystal` component overridd
 last part was a second inconsistency the sweep found: all 25 working hearts author `m_Enabled: 0` on
 their Crystal, so a living heart stays out of `Crystal.Active` and its `Start` (the `crystalValue`
 stamp) waits for `ActivateCrystal`; QuadFish and Clawfish did not (the four flora already did). The
-script authored QuadFish, Clawfish, Nerve, Pine and Wall flora. **oldWallFlora is skipped** — no
-config, scene or prefab references its guid. `--check` is the gate: it fails naming any lifeform
+script authored QuadFish, Clawfish, Nerve, Pine and Wall flora. oldWallFlora, the sixth bare heart,
+was skipped because no config, scene or prefab referenced its guid, and was then deleted (#1097). `--check` is the gate: it fails naming any lifeform
 prefab whose heart lacks the pair (negative-controlled — it named exactly these five before the
 write), and a second write is byte-identical. Nested ids follow Unity's rule
 (`instanceFileID XOR sourceFileID`, 63-bit), which reproduces all 25 existing hearts' stubs.

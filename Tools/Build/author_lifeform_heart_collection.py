@@ -45,10 +45,8 @@ ROOT = Path(__file__).resolve().parents[2]
 LIFEFORM_DIRS = ["Assets/_Prefabs/FloraAndFauna", "Assets/_Models/Fauna"]
 
 # Prefabs that instance a heart but are deliberately not authored. Each entry says why.
-SKIP = {
-    "Assets/_Prefabs/FloraAndFauna/oldWallFlora.prefab":
-        "unreferenced - no config, scene or prefab points at its guid (measured 2026-10-14)",
-}
+# Empty: oldWallFlora, the one entry this ever had (unreferenced), was deleted on 2026-10-14.
+SKIP: dict[str, str] = {}
 
 CRYSTAL_PREFAB_GUIDS = {
     "ba23c28d2d22a1b458f7b6e91c355d53": "Charge",
