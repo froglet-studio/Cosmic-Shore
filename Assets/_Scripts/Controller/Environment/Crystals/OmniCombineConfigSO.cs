@@ -26,16 +26,12 @@ namespace CosmicShore.Gameplay
         [SerializeField] TextAsset combineData;
 
         [Header("Materials")]
-        [Tooltip("The Charge crystal. ChargeCrystalMaterial: its discharge needs the edge bake, which the player runs on its own mesh.")]
-        [SerializeField] Material chargeMaterial;
-        [Tooltip("The Space and Time crystals. OmniCrystalBody: the omni's own body material - the same lime pair every elemental crystal ships in - so those plates do not change look when the omni takes over.")]
+        [Tooltip("The Space, Time and Charge crystals. OmniCrystalBody: the omni's own body material, so the plates they land as are already the omni's hue and nothing changes at the hand-off (Charge's own lime differed, and its pentagons came in the wrong hue; its contrast is its lit state, the seam walk).")]
         [SerializeField] Material shellMaterial;
         [Tooltip("The Mass crystal, as it is drawn in play: MassDepthPrisms (the depth-prism shader). The crystal itself is the game's MassCrystalPrisms mesh, carried in the combine data.")]
         [SerializeField] Material massMaterial;
         [Tooltip("The finished omni crystal's body. OmniCrystalBody.")]
         [SerializeField] Material omniMaterial;
-        [Tooltip("The discharge on the omni's twelve pentagons. OmniChargeEdges (additive, drawn over the body).")]
-        [SerializeField] Material omniChargeEdgesMaterial;
         [Tooltip("The omni's triangles, as they are drawn in play: OmniDepthPrisms.")]
         [SerializeField] Material omniTrianglesMaterial;
 
@@ -44,6 +40,14 @@ namespace CosmicShore.Gameplay
         [SerializeField] Mesh omniTrianglesMesh;
         [Tooltip("How the Mass prisms and the omni's triangles ride their columns by depth: the profile CrystalDepthPrisms uses in play.")]
         [SerializeField] CrystalDepthPrismProfileSO depthProfile;
+
+        [Header("The game's round-5 effects (Omni Motion Lab)")]
+        [Tooltip("The woken omni's beats, square turns and plate thickness: OmniCrystalCadence.asset, the one the omni crystal plays in the game.")]
+        [SerializeField] OmniCrystalCadenceSO cadence;
+        [Tooltip("The Charge light's timing and brightness: CrystalChargeArcsProfile.asset, shared with the game.")]
+        [SerializeField] CrystalChargeArcsProfileSO chargeArcs;
+        [Tooltip("The Charge light on both: the waiting Charge crystal's seam walk and the woken omni's flux arcs. OmniChargeArcs (CrystalChargeArcsShader), in the omni's colours, so a petal lands lit the way the omni lights it.")]
+        [SerializeField] Material omniArcsMaterial;
 
         [Header("Choreography - drawn per play from each range (min, max)")]
         [Tooltip("Seconds the four idle, each doing its own effect, before the first sets off.")]
@@ -66,6 +70,16 @@ namespace CosmicShore.Gameplay
         [SerializeField] Vector2 siteSpread = new(0.35f, 0.65f);
         [Tooltip("Share of Charge's morph spent sucking each petal's back in before the tips fuse and flatten.")]
         [SerializeField] Vector2 suck = new(0.3f, 0.4f);
+        [Tooltip("Every crystal but the first comes in with a bit of extra spacing and comes down to perfect spacing: each plate morphs toward its slot pushed out this fraction of the slot's radius and holds it until the crystal is centred on the omni, then settles to nothing over Socket Seconds, so its last motion is straight in (designer, 2026-10-13; held to the centre and widened from 0.08-0.12, 2026-10-14). The Mass crystal's much larger clearance is its depth columns: its prisms ride at the top of their columns all the way in. The morphs themselves are the lab's. Each crystal also arrives from the camera's side (OmniCombineCore.FaceCamera), so the rhombi that must cross the omni do it behind it.")]
+        [SerializeField] Vector2 socketSpacing = new(0.14f, 0.18f);
+
+        [Tooltip("Seconds a crystal takes to socket in once it is centred on the omni: the extra spacing comes down to nothing, and the Mass prisms come down their columns from the top into their slots (designer, 2026-10-14: 'socket into place instead of clipping into place'). Centred first, so every plate moves straight in through its own slot. The omni takes over once the last crystal has socketed.")]
+        [SerializeField] Vector2 socketSeconds = new(0.8f, 1f);
+
+        [Tooltip("How far up its depth column each Mass prism stands while the Mass crystal flies in (0 sealed, 1 the top of the column - the Mass crystal's own column, MassDepthPrisms' _Reach). Its prisms are thick, so they need far more clearance than the others' spacing to come straight down into their slots once the crystal is centred, instead of sliding along the shell into them. Below 1 on purpose: at the top of the column, with the crystal nearly centred, a prism stands where the waiting Time crystal is. Measured over 24 plays (Tools/Build/converter_round5_harness, section 9, which reads this value and holds both clearances): 0.6 keeps the prisms 0.17 R off the Time crystal and their deepest point 0.59 R above the landed shell; 0.75 comes within 0.03 R of Time, 1 touches it.")]
+        [SerializeField, Range(0f, 1f)] float massRaise = 0.6f;
+        [Tooltip("Degrees above the camera's own height that Charge, Mass and Time arrive from (they always come in from the camera's side, following it round). 0 = along the camera's line of sight; raise it to have them drop in from above (designer, 2026-10-13: 'the mass triangles especially come in from the top which presents visible clipping to the camera viewing from the side').")]
+        [SerializeField, Range(-30f, 80f)] float approachAboveCameraDegrees = 0f;
 
         [Header("Choreography - fixed")]
         [Tooltip("Where the four start: 0 the art file's row, 1 a ring, 2 a tetrahedron.")]
@@ -88,14 +102,15 @@ namespace CosmicShore.Gameplay
         [SerializeField, Min(0.1f)] float omniWorldRadius = 40f;
 
         public TextAsset CombineData => combineData;
-        public Material ChargeMaterial => chargeMaterial;
         public Material ShellMaterial => shellMaterial;
         public Material OmniMaterial => omniMaterial;
-        public Material OmniChargeEdgesMaterial => omniChargeEdgesMaterial;
         public Material MassMaterial => massMaterial;
         public Material OmniTrianglesMaterial => omniTrianglesMaterial;
         public Mesh OmniTrianglesMesh => omniTrianglesMesh;
         public CrystalDepthPrismProfileSO DepthProfile => depthProfile;
+        public OmniCrystalCadenceSO Cadence => cadence;
+        public CrystalChargeArcsProfileSO ChargeArcs => chargeArcs;
+        public Material OmniArcsMaterial => omniArcsMaterial;
         public float FadeInSeconds => fadeInSeconds;
         public float HandOffSeconds => handOffSeconds;
         public float OmniWorldRadius => omniWorldRadius;
@@ -123,8 +138,13 @@ namespace CosmicShore.Gameplay
                 MorphLength = morphLength,
                 SiteSpread = Pick(siteSpread),
                 Suck = Pick(suck),
+                SocketSpacing = Pick(socketSpacing),
+                SocketSeconds = Pick(socketSeconds),
+                MassRaise = massRaise,
+                ApproachAboveCamera = approachAboveCameraDegrees * Mathf.Deg2Rad,
                 EffectFade = effectFade,
                 EffectPhase = rng.NextDouble() * 100.0,
+                GameMotion = true,
             };
         }
 

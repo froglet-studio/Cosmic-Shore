@@ -19,6 +19,13 @@ namespace CosmicShore.Gameplay
     /// rhombi on top - the squares are bound to the still root bone and are the keys' alone.
     ///
     /// Each crystal plays at its own phase, so a field of omnis does not weave in lockstep.
+    ///
+    /// With an <see cref="OmniCrystalCadence"/> on the crystal root (Omni Motion Lab round 5) the squares make TWO moves
+    /// per cycle instead of the art file's three, each ONE rigid turn - a fifth round the pentagon, then a third round
+    /// the triangle - that hops just high enough to clear its neighbours, and they move only in their own beats, so the
+    /// rhombi flip while they are still. The body's squares, rhombi and pentagons are also drawn
+    /// <see cref="OmniCrystalCadenceSO.PlateThickness"/> times thicker. Both are built into the shaped twin
+    /// (<see cref="CrystalSpaceSquaresBaker.TryAddTurns"/>).
     /// </summary>
     [RequireComponent(typeof(SkinnedMeshRenderer))]
     public class CrystalSpaceSquares : MonoBehaviour
@@ -34,6 +41,10 @@ namespace CosmicShore.Gameplay
         int[] shapeIndex;
         float[] weights;
         float phase;
+        OmniCrystalCadence cadence;
+        OmniCrystalCadenceSO turns;
+        int pentagonShape = -1, triangleShape = -1;
+        SquareTurn lastTurn = SquareTurn.None;
 
         void Awake()
         {
@@ -46,6 +57,9 @@ namespace CosmicShore.Gameplay
             }
             shapeIndex = new int[squares.Keys.Length];
             weights = new float[squares.Keys.Length];
+            // The cadence lives on the crystal root (the body is one of its models).
+            cadence = GetComponentInParent<OmniCrystalCadence>();
+            turns = cadence ? cadence.Settings : null;
             // Its own stream: the global UnityEngine.Random is seeded for deterministic content.
             phase = (float)new System.Random(GetInstanceID()).NextDouble() * squares.LoopSeconds;
         }
@@ -57,6 +71,24 @@ namespace CosmicShore.Gameplay
             if (!body.isVisible) return;
             if (body.sharedMesh != shaped && !TryWearShapes()) return;
 
+            if (turns)
+            {
+                // One turn at a time, eased with no jolt at either end; a finished turn lands congruent with rest, so the
+                // snap back to weight 0 is invisible.
+                float progress = 0f;
+                var turn = cadence.enabled ? cadence.SquaresNow(out progress) : SquareTurn.None;
+                float w = turn == SquareTurn.None ? 0f : OmniCadence.Smoother(progress) * 100f;
+                if (turn != lastTurn)
+                {
+                    body.SetBlendShapeWeight(pentagonShape, 0f);
+                    body.SetBlendShapeWeight(triangleShape, 0f);
+                    lastTurn = turn;
+                }
+                if (turn == SquareTurn.Pentagon) body.SetBlendShapeWeight(pentagonShape, w);
+                else if (turn == SquareTurn.Triangle) body.SetBlendShapeWeight(triangleShape, w);
+                return;
+            }
+
             squares.WeightsAt(Time.time + phase, weights);
             for (int k = 0; k < weights.Length; k++)
                 body.SetBlendShapeWeight(shapeIndex[k], weights[k] * 100f);
@@ -65,7 +97,7 @@ namespace CosmicShore.Gameplay
         /// <summary>Puts the body on a twin carrying the squares' blend shapes, and finds their indices.</summary>
         bool TryWearShapes()
         {
-            if (!CrystalSpaceSquaresBaker.TryGetShaped(body.sharedMesh, squares, out var mesh, out var problem))
+            if (!CrystalSpaceSquaresBaker.TryGetShaped(body.sharedMesh, squares, turns, out var mesh, out var problem))
             {
                 CSDebug.LogError($"CrystalSpaceSquares on '{name}': {problem}. The squares will hold still.", this);
                 enabled = false;
@@ -76,11 +108,21 @@ namespace CosmicShore.Gameplay
                 // Swapping the mesh keeps the bones; the bounds are carried over explicitly so a turning rhombus
                 // is still never culled.
                 var bounds = body.localBounds;
+                // a hopping square stands out past the shell: grow the bounds by the highest hop
+                if (turns) bounds.Expand(bounds.size * Mathf.Max(turns.PentagonLift, 0.15f * turns.TriangleLift));
                 body.sharedMesh = mesh;
                 body.localBounds = bounds;
             }
-            for (int k = 0; k < shapeIndex.Length; k++)
-                shapeIndex[k] = mesh.GetBlendShapeIndex(squares.Keys[k].Name);
+            if (turns)
+            {
+                pentagonShape = mesh.GetBlendShapeIndex(CrystalSpaceSquaresBaker.PentagonTurnName);
+                triangleShape = mesh.GetBlendShapeIndex(CrystalSpaceSquaresBaker.TriangleTurnName);
+            }
+            else
+            {
+                for (int k = 0; k < shapeIndex.Length; k++)
+                    shapeIndex[k] = mesh.GetBlendShapeIndex(squares.Keys[k].Name);
+            }
             shaped = mesh;
             return true;
         }
@@ -103,8 +145,11 @@ namespace CosmicShore.Gameplay
 
         const string ShapedSuffix = "(Space Squares)";
 
-        /// <summary>Shaped twins: (the mesh a body drew, the squares asset) -> that mesh with the keys added.</summary>
-        static readonly Dictionary<(Mesh, CrystalSpaceSquaresSO), Mesh> s_shaped = new();
+        /// <summary>The two round-5 turns' blend shapes (<see cref="TryAddTurns"/>).</summary>
+        public const string PentagonTurnName = "Squares Pentagon Turn", TriangleTurnName = "Squares Triangle Turn";
+
+        /// <summary>Shaped twins: (the mesh a body drew, the squares asset, the turns or null) -> that mesh shaped.</summary>
+        static readonly Dictionary<(Mesh, CrystalSpaceSquaresSO, OmniCrystalCadenceSO), Mesh> s_shaped = new();
 
         // Enter Play Mode keeps statics (domain reload is off): a re-exported model is shaped afresh.
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
@@ -118,7 +163,14 @@ namespace CosmicShore.Gameplay
         /// <see cref="RhombusSkinBaker.RegisterDerivedTwin"/> so <see cref="RhombusSkinBaker.SourceOf"/> still
         /// finds the FBX mesh behind it.
         /// </summary>
-        public static bool TryGetShaped(Mesh drawn, CrystalSpaceSquaresSO squares, out Mesh shaped, out string problem)
+        public static bool TryGetShaped(Mesh drawn, CrystalSpaceSquaresSO squares, out Mesh shaped, out string problem) =>
+            TryGetShaped(drawn, squares, null, out shaped, out problem);
+
+        /// <summary>
+        /// As above; with <paramref name="turns"/> the shapes are the round-5 TURNS and the thicker plates
+        /// (<see cref="TryAddTurns"/>) instead of the art file's keys.
+        /// </summary>
+        public static bool TryGetShaped(Mesh drawn, CrystalSpaceSquaresSO squares, OmniCrystalCadenceSO turns, out Mesh shaped, out string problem)
         {
             shaped = null;
             if (!drawn)
@@ -126,10 +178,13 @@ namespace CosmicShore.Gameplay
                 problem = "the body draws no mesh";
                 return false;
             }
+            var names = new List<string>();
+            if (turns) { names.Add(PentagonTurnName); names.Add(TriangleTurnName); }
+            else foreach (var key in squares.Keys) names.Add(key.Name);
             int carried = 0;
-            foreach (var key in squares.Keys)
-                if (drawn.GetBlendShapeIndex(key.Name) >= 0) carried++;
-            if (carried == squares.Keys.Length)
+            foreach (var shapeName in names)
+                if (drawn.GetBlendShapeIndex(shapeName) >= 0) carried++;
+            if (carried == names.Count)
             {
                 shaped = drawn;
                 problem = null;
@@ -137,10 +192,10 @@ namespace CosmicShore.Gameplay
             }
             if (carried != 0)
             {
-                problem = $"mesh '{drawn.name}' carries {carried} of the squares' {squares.Keys.Length} blend shapes";
+                problem = $"mesh '{drawn.name}' carries {carried} of the squares' {names.Count} blend shapes";
                 return false;
             }
-            if (s_shaped.TryGetValue((drawn, squares), out shaped) && shaped)
+            if (s_shaped.TryGetValue((drawn, squares, turns), out shaped) && shaped)
             {
                 problem = null;
                 return true;
@@ -157,14 +212,14 @@ namespace CosmicShore.Gameplay
             twin.name = drawn.name.EndsWith(suffix)
                 ? $"{drawn.name[..^suffix.Length].TrimEnd()} {ShapedSuffix} {suffix}"
                 : $"{drawn.name} {ShapedSuffix}";
-            if (!TryAddShapes(twin, squares, out problem))
+            if (!(turns ? TryAddTurns(twin, squares, turns, out problem) : TryAddShapes(twin, squares, out problem)))
             {
                 if (Application.isPlaying) Object.Destroy(twin);
                 else Object.DestroyImmediate(twin);
                 return false;
             }
             RhombusSkinBaker.RegisterDerivedTwin(twin, drawn);
-            s_shaped[(drawn, squares)] = twin;
+            s_shaped[(drawn, squares, turns)] = twin;
             shaped = twin;
             return true;
         }
@@ -236,6 +291,147 @@ namespace CosmicShore.Gameplay
             }
             problem = null;
             return true;
+        }
+
+        /// <summary>
+        /// The round-5 SQUARE TURNS (Omni Motion Lab, "rigid arcs that hop clear") and the THICKER PLATES, added to
+        /// <paramref name="mesh"/> in place:
+        /// <list type="number">
+        /// <item>Every square, rhombus and pentagon (a plate of 8 or 10 corners; the cut triangles have none) is made
+        /// <see cref="OmniCrystalCadenceSO.PlateThickness"/> times thicker, about its own centre along its own normal
+        /// (outer face centre - inner face centre). A rhombus stays rigid on its bone; normals are unchanged.</item>
+        /// <item>Each square's two turns are MEASURED from the art file's keys, which are exact rigid turns about the
+        /// crystal's centre: the pentagon key a 72-degree turn about the square's pentagon axis, Step1 + Step2 a
+        /// 120-degree turn about its triangle axis, and Step1 that turn halfway, lifted (its offset split into a lift
+        /// straight out and a sideways step).</item>
+        /// <item>Two blend shapes, <see cref="PentagonTurnName"/> and <see cref="TriangleTurnName"/>, each
+        /// <see cref="OmniCrystalCadenceSO.FramesPerTurn"/> frames along its turn: the thickened square turned rigidly by
+        /// e x the angle, hopped out by a sine (the pentagon turn by <see cref="OmniCrystalCadenceSO.PentagonLift"/> of the
+        /// body's radius; the triangle turn by its lift and sideways step x the art file's), so a square never shrinks.
+        /// Normals are the authored normals turned with the square.</item>
+        /// </list>
+        /// JS twin: <c>poseSquares()</c> (pent path 1, tri path 2) and <c>thicken()</c> in <c>Docs/Studios/OmniMotionLab.html</c>.
+        /// </summary>
+        internal static bool TryAddTurns(Mesh mesh, CrystalSpaceSquaresSO squares, OmniCrystalCadenceSO turns, out string problem)
+        {
+            var keys = squares.Keys;
+            var verts = mesh.vertices;
+            var normals = mesh.normals;
+            if (normals.Length != verts.Length)
+            {
+                problem = $"mesh '{mesh.name}' has no normals to turn";
+                return false;
+            }
+            if (keys.Length < 3)
+            {
+                problem = $"the squares asset has {keys.Length} keys; the turns are measured from its pentagon key and its two triangle steps";
+                return false;
+            }
+            if (!TryMapAnchors(verts, squares.Anchors, squares.BodyRadius, out var anchorOf, out var axes, out problem))
+            {
+                problem = $"mesh '{mesh.name}': {problem}";
+                return false;
+            }
+            Vector3 Offset(int key, int i) => Vector3.Scale(keys[key].Deltas[anchorOf[i]], axes);
+
+            float bodyRadius = 0f;
+            foreach (var v in verts) bodyRadius = Mathf.Max(bodyRadius, v.magnitude);
+            var plateOf = RhombusSkinBaker.PlateOfVertices(mesh, verts, out var corners, out var weldOf, out var welds);
+            var members = new Dictionary<int, List<int>>();
+            for (int i = 0; i < verts.Length; i++)
+            {
+                if (!members.TryGetValue(plateOf[i], out var list)) members[plateOf[i]] = list = new List<int>();
+                list.Add(i);
+            }
+
+            // 1. thicker plates (squares, rhombi, pentagons)
+            var rest = (Vector3[])verts.Clone();
+            float k = turns.PlateThickness;
+            foreach (var pair in members)
+            {
+                int n = corners[pair.Key];
+                if (n != 8 && n != 10) continue;
+                PlateFrame(pair.Value, rest, weldOf, welds, out var centre, out var normal);
+                if (Mathf.Abs(k - 1f) < 1e-6f || normal == Vector3.zero) continue;
+                foreach (int i in pair.Value) verts[i] = rest[i] + normal * (Vector3.Dot(rest[i] - centre, normal) * (k - 1f));
+            }
+            mesh.vertices = verts;
+
+            // 2. each square's two turns, from the art file's keys (measured on the unthickened corners)
+            var squaresOf = new List<(List<int> idx, SquareTurnFit turn)>();
+            float tolerance = 1e-3f * bodyRadius;
+            foreach (var pair in members)
+            {
+                var idx = pair.Value;
+                if (anchorOf[idx[0]] < 0) continue;
+                foreach (int i in idx)
+                    if (anchorOf[i] < 0)
+                    {
+                        problem = $"a square plate is only partly anchored (vertex {i})";
+                        return false;
+                    }
+                PlateFrame(idx, rest, weldOf, welds, out var centre, out _);
+                if (!SquareTurnFit.TryFit(idx, rest, centre, i => Offset(0, i), i => Offset(1, i), i => Offset(2, i), tolerance,
+                                       out var turn, out problem))
+                {
+                    problem = $"mesh '{mesh.name}': {problem}";
+                    return false;
+                }
+                squaresOf.Add((idx, turn));
+            }
+            if (squaresOf.Count == 0)
+            {
+                problem = $"mesh '{mesh.name}' has no square plate on the anchors";
+                return false;
+            }
+
+            // 3. the two turns as multi-frame blend shapes
+            int frames = Mathf.Max(2, turns.FramesPerTurn), count = verts.Length;
+            var dv = new Vector3[count];
+            var dn = new Vector3[count];
+            for (int shape = 0; shape < 2; shape++)
+            {
+                string shapeName = shape == 0 ? PentagonTurnName : TriangleTurnName;
+                for (int f = 1; f <= frames; f++)
+                {
+                    float e = (float)f / frames;
+                    System.Array.Clear(dv, 0, count);
+                    System.Array.Clear(dn, 0, count);
+                    foreach (var sq in squaresOf)
+                    {
+                        sq.turn.At(shape == 0, e, turns.PentagonLift * bodyRadius, turns.TriangleLift, turns.TriangleSide,
+                                   out var turn, out var shift);
+                        foreach (int i in sq.idx)
+                        {
+                            dv[i] = turn * verts[i] + shift - verts[i];
+                            dn[i] = turn * normals[i] - normals[i];
+                        }
+                    }
+                    mesh.AddBlendShapeFrame(shapeName, e * 100f, dv, dn, null);
+                }
+            }
+            problem = null;
+            return true;
+        }
+
+        /// <summary>A plate's centre (mean of its distinct corners) and its normal (outer face centre - inner face centre,
+        /// the faces split by distance from the crystal's centre).</summary>
+        static void PlateFrame(List<int> idx, Vector3[] positions, int[] weldOf, List<Vector3> welds, out Vector3 centre, out Vector3 normal)
+        {
+            var seen = new HashSet<int>();
+            var pts = new List<Vector3>();
+            foreach (int i in idx) if (seen.Add(weldOf[i])) pts.Add(positions[i]);
+            centre = Vector3.zero;
+            float lo = float.MaxValue, hi = float.MinValue;
+            foreach (var p in pts) { centre += p; lo = Mathf.Min(lo, p.magnitude); hi = Mathf.Max(hi, p.magnitude); }
+            centre /= pts.Count;
+            float mid = (lo + hi) / 2f;
+            Vector3 outer = Vector3.zero, inner = Vector3.zero;
+            int no = 0, ni = 0;
+            foreach (var p in pts)
+                if (p.magnitude > mid) { outer += p; no++; }
+                else { inner += p; ni++; }
+            normal = no > 0 && ni > 0 ? (outer / no - inner / ni).normalized : Vector3.zero;
         }
 
         /// <summary>

@@ -7,8 +7,8 @@ Material:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: OmniChargeEdges
-  m_Shader: {fileID: 4800000, guid: fea45e80b3e94b3e34515f9ff6446e87, type: 3}
+  m_Name: StoatPathDots
+  m_Shader: {fileID: 4800000, guid: 5018e4b4020843ff80584518a4bdd471, type: 3}
   m_Parent: {fileID: 0}
   m_ModifiedSerializedProperties: 0
   m_ValidKeywords: []
@@ -19,24 +19,12 @@ Material:
   m_CustomRenderQueue: -1
   stringTagMap: {}
   disabledShaderPasses: []
-  m_LockedProperties:
+  m_LockedProperties: 
   m_SavedProperties:
     serializedVersion: 3
     m_TexEnvs: []
     m_Ints: []
-    m_Floats:
-    - _ArcDuty: 0.35
-    - _ArcIntensity: 4
-    - _ArcJitter: 3
-    - _ArcLength: 0.14
-    - _ArcShimmer: 0.03
-    - _ArcSpeed: 0.85
-    - _ArcWidth: 0.005
-    - _NodeIntensity: 3.5
-    - _NodeRadius: 0.011
-    m_Colors:
-    - _ArcCoreColor: {r: 0.85, g: 0.95, b: 1, a: 1}
-    - _BrightColor: {r: 0.4862745, g: 0.9882354, b: 0, a: 1}
-    - _Spread: {r: 0.01, g: 0.01, b: 0.01, a: 0}
+    m_Floats: []
+    m_Colors: []
   m_BuildTextureStacks: []
-  m_AllowLocking: 1
+  m_AllowLocalizedText: 1
