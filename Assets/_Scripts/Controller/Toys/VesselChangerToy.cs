@@ -315,8 +315,14 @@ namespace CosmicShore.Gameplay
         {
             await UniTask.Delay(RestoreDelayMs, ignoreTimeScale: true, cancellationToken: ct);
 
+            // Wait out the WHOLE swap. This used to give up after 20 x 100 ms, but a party
+            // guest's swap latch runs until the new hull is bound (up to its 5 s deadline) and a
+            // relay round trip can outlast 2.6 s - restoring early found the old hull destroyed and
+            // did nothing, and the swapped-in ship then stayed on autopilot under a pilot who was
+            // flying. IsSwapping is bounded on both sides (the server's finally, the client's
+            // deadline), so this cannot hang.
             var init = Context?.VesselInitializer;
-            for (int i = 0; i < 20 && init && init.IsSwapping; i++)
+            while (init && init.IsSwapping)
                 await UniTask.Delay(100, ignoreTimeScale: true, cancellationToken: ct);
 
             // Only hand control back if the player is still flying freestyle.

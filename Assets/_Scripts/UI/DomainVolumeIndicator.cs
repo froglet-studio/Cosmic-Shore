@@ -367,8 +367,15 @@ namespace CosmicShore.UI
         {
             if (explicitCell) return explicitCell;
 
-            Transform vesselT = gameData?.LocalPlayer?.Vessel?.Transform;
-            Vector3 at = vesselT != null ? vesselT.position : Vector3.zero;
+            // IsAlive, not `?.`: IVessel is an interface, so a null-conditional sails past a
+            // DESTROYED vessel and throws on its transform. A party guest's player holds exactly
+            // that for the whole of a vessel swap - the server despawns the old hull before
+            // ReplaceVesselForPlayer_ClientRpc binds the new one - and this samples at 4 Hz.
+            // Mid-swap the last answer is held, as the summary promises.
+            var vessel = gameData ? gameData.LocalPlayer?.Vessel : null;
+            bool alive = vessel.IsAlive();
+            if (!alive && _cachedCell) return _cachedCell;
+            Vector3 at = alive ? vessel.Transform.position : Vector3.zero;
 
             // MEMBRANE first, not ContainsPosition. "Which cell am I in" is a question about
             // the boundary the player can SEE, and ContainsPosition answers with the SENSING
