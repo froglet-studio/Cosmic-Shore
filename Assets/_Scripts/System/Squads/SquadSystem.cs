@@ -21,7 +21,11 @@ namespace CosmicShore.Core
         {
             Squad = DataAccessor.Load<Squad>(SquadSaveFileName);
 
-            if (Squad.Equals(default(Squad)))
+            // No saved squad: build the default one only from captains somebody supplied. The captain system was
+            // removed from vessels, so nothing supplies them today (PortSquadView's captain list is empty); the
+            // squad then stays empty and SquadLeader / RogueOne / RogueTwo answer null. Building it from null
+            // captains threw on every fresh profile's Menu_Main.
+            if (Squad.Equals(default(Squad)) && DefaultLeader && DefaultRogueOne && DefaultRogueTwo)
             {
                 Squad = new Squad(DefaultLeader, DefaultRogueOne, DefaultRogueTwo);
                 DataAccessor.Save(SquadSaveFileName, Squad);

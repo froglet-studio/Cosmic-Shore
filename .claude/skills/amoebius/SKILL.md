@@ -23,8 +23,9 @@ checklist.
    "done when" is its acceptance test: run it and show the result before calling the work done.
 5. **Multiplayer is UGS only.** START ONLINE (`game_start` `online: true`) signs in to the game's LIVE
    UGS project and plays through UGS Lobby and Relay, as the Unity build does; START is offline. There
-   is no LAN play, local server or multi-player harness any more, so only start an online game when the
-   owner asks. Engine-side work is tested against stand-ins (`UgsMultiplayerTests`, `NetStackTests`).
+   is no LAN play or local server any more, so only start an online game when the owner asks.
+   Engine-side work is tested against stand-ins (`UgsMultiplayerTests`, `NetStackTests`), and the party
+   layer by the five-pilot harness on those stand-ins (`bash Tools/Build/prisma_party_scenarios/run.sh`, 14/14).
    `Docs/MULTIPLAYER_START_HERE.md` first, then `Port/docs/MULTIPLAYER.md` §6.10.
 6. **Inspect, don't guess.** `game_find` / `game_hierarchy` to locate objects, `game_get` to read
    live fields, `game_ui_at X,Y` for "what is that on screen", `game_dump_ui` for layout and
@@ -103,6 +104,27 @@ checklist.
      with CS0118 ("'Player' is a namespace but is used like a type"). To test player logic, move the part
      you need into the engine (`FrameTimingWindow` went to `Engine/Rendering/`), where the tests already
      reach it. Linking into `CosmicShore.Mobile` is fine: the phone build has no such type.
+
+14. **Traps from the Bloomrush-slowdown session (2026-10-14).**
+   - **Profile a slow scene, don't guess at it.** The Bloomrush arena held ~640k behaviours, and the forest
+     looked like the culprit, but it was not the cost. `dotnet tool install -g dotnet-trace`, then
+     `dotnet-trace collect -p PID --profile dotnet-sampled-thread-time --duration 00:00:00:30` and
+     `dotnet-trace report FILE topN -n 40 --inclusive`. The main thread is the one under `Program.Main`;
+     read percentages against its total, not the process's. That trace put ~95% of the main thread in one
+     visual-only `LateUpdate`.
+   - **`Renderer.isVisible` is real culling now** (`Engine/Rendering/RenderVisibility.cs`): true only for a
+     renderer a camera drew in the last rendered frame, so it is always false headless. Game code that
+     skips work on `!isVisible` (the crystals' arcs, flip wave, depth prisms, space squares) does nothing
+     headless. Before 2026-10-14 it read "enabled and active", every crystal animated off screen, and a
+     headless Bloomrush match ran at 3-5 fps. Treat any engine property that returns a constant answer
+     as a lead when a scene is slow.
+   - **A windowed player under xvfb that crashes with "Couldn't find a suitable window platform"** needs
+     the system GLFW: `apt-get install -y --no-install-recommends xvfb libgl1 libglx-mesa0
+     libgl1-mesa-dri libglfw3` (the line `Port/setup.sh` runs).
+   - **The party harness's T4 waits 180 s of wall clock for GO, but the pre-game cinematic is game
+     time.** Headless ticks a fixed 1/60 s, so a slow match frame turns the 7.5 s cinematic into minutes
+     and T4 times out. When T4 fails on the Ready button, read the pilots' frame rate (`state` →
+     `frame`) before reading the party code.
 
 Report what you saw (attach the screenshot path) and what you verified; say plainly if a check
 did not run.

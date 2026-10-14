@@ -30,6 +30,7 @@ namespace UnityEngine
         public static float Round(float v) => (float)Math.Round(v, MidpointRounding.ToEven);
         public static float Floor(float v) => (float)Math.Floor(v);
         public static float Exp(float v) => (float)Math.Exp(v);
+        public static float Log(float v) => (float)Math.Log(v);
         public static float Atan2(float y, float x) => (float)Math.Atan2(y, x);
         public static float Clamp(float v, float a, float b) => v < a ? a : v > b ? b : v;
         public static int Clamp(int v, int a, int b) => v < a ? a : v > b ? b : v;

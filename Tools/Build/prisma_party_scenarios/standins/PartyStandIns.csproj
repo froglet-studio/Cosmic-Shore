@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- The party harness's UGS stand-ins in one process: Froglet's relay server (the engine's
+       FrogletRelayServer, Unity Relay's protocol and REST shape) and UGS Lobby (the engine tests'
+       UgsLobbyStandIn, compiled in from Port/tests so there is one Lobby stand-in, not two).
+       run.sh builds it with -p:PortRoot=<the worktree's Port>; nothing here talks to UGS. -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>disable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <PortRoot Condition="'$(PortRoot)' == ''">$(MSBuildThisFileDirectory)../../../../Port</PortRoot>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(PortRoot)/src/CosmicShore.Engine/CosmicShore.Engine.csproj" />
+    <Compile Include="$(PortRoot)/tests/CosmicShore.Tests/UgsLobbyStandIn.cs" Link="UgsLobbyStandIn.cs" />
+  </ItemGroup>
+</Project>

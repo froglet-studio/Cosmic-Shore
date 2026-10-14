@@ -33,12 +33,15 @@ static class Program
 
     static Vector3 V(JsonElement e) => new(e[0].GetSingle(), e[1].GetSingle(), e[2].GetSingle());
 
-    static int Main()
+    static int Main(string[] args)
     {
         var doc = JsonDocument.Parse(File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "../../../meshes.json"))).RootElement;
         (Vector3[] p, int[] t) Load(string key) => (doc.GetProperty(key).GetProperty("positions").EnumerateArray().Select(V).ToArray(),
                                                      doc.GetProperty(key).GetProperty("triangles").EnumerateArray().Select(x => x.GetInt32()).ToArray());
         var settings = ChargeArcSettings.Lab;
+        if (args.Contains("--bench")) return Bench(Load("charge"), Load("omni"), settings);
+        int dumpAt = Array.IndexOf(args, "--dump");
+        if (dumpAt >= 0 && dumpAt + 1 < args.Length) return Dump(Load("charge"), Load("omni"), settings, args[dumpAt + 1]);
 
         // ── 1-3: the Charge crystal's sites and seam net ──
         var (cp, ct) = Load("charge");
@@ -446,6 +449,85 @@ static class Program
             var c = g.Aggregate(Vector3.zero, (a, w) => a + welds[w]) / 6f;
             return (c, g.Max(w => (welds[w] - c).magnitude));
         }).ToList();
+    }
+
+    /// <summary>
+    /// --bench: the CPU cost of one crystal's Charge light per frame, as CrystalChargeArcs.LateUpdate spends it before the
+    /// mesh reaches Unity (the effect's core, then Upload()'s lit-face writes). 60 s of 60 fps per effect, after a 10 s
+    /// warm-up, the camera orbiting at 6 radii. Mesh.Clear/SetVertices/SetUVs/SetTriangles is Unity's own cost and is NOT
+    /// timed here: the vertex and triangle counts it is handed per frame are reported instead. Numbers are this .NET
+    /// runtime's (Release JIT), not Unity's: measure Unity with the CrystalChargeArcs.LateUpdate profiler marker.
+    /// </summary>
+    static int Bench((Vector3[] p, int[] t) chargeMesh, (Vector3[] p, int[] t) omniMesh, ChargeArcSettings settings)
+    {
+        if (!ChargeSites.TryBuild(chargeMesh.p, chargeMesh.t, 1f, out var charge, out var problem)) { Console.WriteLine(problem); return 1; }
+        if (!ChargeSites.TryBuild(omniMesh.p, omniMesh.t, 1.1f, out var omni, out problem)) { Console.WriteLine(problem); return 1; }
+        Console.WriteLine($"bench: {Environment.Version} {(System.Runtime.InteropServices.RuntimeInformation.ProcessArchitecture)}, Release, {Environment.ProcessorCount} cores");
+        BenchOne("Charge crystal: seam walk", charge, true, settings);
+        BenchOne("omni: flux arcs          ", omni, false, settings);
+        return 0;
+    }
+
+    static void BenchOne(string label, ChargeSites sites, bool seamWalk, ChargeArcSettings settings)
+    {
+        var writer = new ChargeArcMeshWriter();
+        var light = new float[sites.Faces.Length];
+        var walker = new ChargeSeamWalker(sites, 3, 0f);
+        var chain = new ChargeFluxChain(sites, 11);
+        const float Step = 1f / 60f, Warm = 10f, Span = 60f;
+        var micros = new List<double>();
+        long verts = 0, tris = 0, frames = 0, maxVerts = 0;
+        var clock = new System.Diagnostics.Stopwatch();
+        for (float t = 0f; t < Warm + Span; t += Step)
+        {
+            float a = t * 0.3f;
+            var eye = new Vector3(Mathf.Sin(a), 0.3f, Mathf.Cos(a)).normalized * sites.Radius * 6f;
+            clock.Restart();
+            if (seamWalk) { walker.Advance(t, settings); writer.Clear(); ChargeArcs.SeamWalk(sites, walker, t, settings, writer, eye, light); }
+            else { writer.Clear(); ChargeArcs.Flux(sites, chain, t, settings, writer, eye, light); }
+            for (int f = 0; f < sites.Faces.Length; f++) writer.Face(sites.Faces[f], light[f], seamWalk);   // Upload()'s writes
+            clock.Stop();
+            if (t < Warm) continue;
+            micros.Add(clock.Elapsed.TotalMilliseconds * 1000.0);
+            verts += writer.Positions.Count; tris += writer.Indices.Count / 3; frames++;
+            maxVerts = Math.Max(maxVerts, writer.Positions.Count);
+        }
+        micros.Sort();
+        double P(double q) => micros[(int)Math.Min(micros.Count - 1, q * micros.Count)];
+        Console.WriteLine($"{label}  per frame: mean {micros.Average():F0} us, p50 {P(0.5):F0}, p95 {P(0.95):F0}, max {micros[^1]:F0}" +
+                          $"  |  mesh handed to Unity: {verts / (double)frames:F0} verts avg ({maxVerts} max), {tris / (double)frames:F0} tris avg  ({frames} frames)");
+    }
+
+    /// <summary>
+    /// --dump FILE: every frame of 60 s of the seam walk and of the flux arcs (petal and pentagon light, then every mesh
+    /// vertex) as raw floats. A change meant to make ChargeArcs FASTER without changing the look must leave this file
+    /// byte-identical: dump before and after, then cmp.
+    /// </summary>
+    static int Dump((Vector3[] p, int[] t) chargeMesh, (Vector3[] p, int[] t) omniMesh, ChargeArcSettings settings, string path)
+    {
+        if (!ChargeSites.TryBuild(chargeMesh.p, chargeMesh.t, 1f, out var charge, out var problem)) { Console.WriteLine(problem); return 1; }
+        if (!ChargeSites.TryBuild(omniMesh.p, omniMesh.t, 1.1f, out var omni, out problem)) { Console.WriteLine(problem); return 1; }
+        using var file = new BinaryWriter(File.Create(path));
+        foreach (bool seamWalk in new[] { true, false })
+        {
+            var sites = seamWalk ? charge : omni;
+            var writer = new ChargeArcMeshWriter();
+            var light = new float[sites.Faces.Length];
+            var walker = new ChargeSeamWalker(sites, 3, 0f);
+            var chain = new ChargeFluxChain(sites, 11);
+            for (int frame = 0; frame < 3600; frame++)
+            {
+                float t = frame / 60f, a = t * 0.3f;
+                var eye = new Vector3(Mathf.Sin(a), 0.3f, Mathf.Cos(a)).normalized * sites.Radius * 6f;
+                writer.Clear();
+                if (seamWalk) { walker.Advance(t, settings); ChargeArcs.SeamWalk(sites, walker, t, settings, writer, eye, light); }
+                else ChargeArcs.Flux(sites, chain, t, settings, writer, eye, light);
+                foreach (float v in light) file.Write(v);
+                foreach (var p in writer.Positions) { file.Write(p.x); file.Write(p.y); file.Write(p.z); }
+            }
+        }
+        Console.WriteLine($"dumped 2 x 3600 frames to {path}");
+        return 0;
     }
 
     static int Finish()

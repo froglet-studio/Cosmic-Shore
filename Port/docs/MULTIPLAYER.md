@@ -151,7 +151,7 @@ Relay cost nothing extra for a Steam game. Re-check
 | Relay | `Wire/Relay/` | Unity Relay's protocol client and Froglet's own relay server (§6.7) |
 | UGS sign-in | `Wire/Ugs/UgsAuthentication.cs` | Anonymous sign-in and session-token resume over REST; feeds UGS Relay its bearer token (§6.8). Tested against local stand-ins; the live project waits for the owner |
 | Session service | `Wire/Ugs/UgsMultiplayerService.cs`, `UgsLobbyClient.cs` | UGS Lobby over REST, as the SDK uses it (§6.10). Tested against a local stand-in; the live project waits for the owner |
-| Five-player scenario harness | `Tools/Build/prisma_party_scenarios/` | Ran 14/14 on the shared-folder sessions, which are gone; it needs a UGS (stand-in) rewrite before it runs again |
+| Five-player scenario harness | `Tools/Build/prisma_party_scenarios/` | 14/14 on the UGS stand-ins (2026-10-14): every pilot online as START ONLINE is, against the sign-in, Relay (`FrogletRelayServer`) and Lobby (`UgsLobbyStandIn`) stand-ins |
 | Offline switch, per-instance profile | `COSMIC_SHORE_NET=off`, `COSMIC_SHORE_PROFILE=<name>` | Works |
 | Test tools | §6 | Network simulator, stats and capture, session faults (the NET page and MCP `net_*` tools were retired 2026-10-14) |
 
@@ -164,7 +164,7 @@ Relay cost nothing extra for a Steam game. Re-check
 | Runtime Network Stats Monitor | **`net` overlay and `do net` verb**: per-peer bytes and messages in/out, RTT, RPCs by name, variable updates, spawned objects | 2 |
 | Network Profiler | **Per-frame capture** to JSON (`do net capture`) and the session report's `net` block; a timeline view on the Launcher | 2 (capture), 4 (view) |
 | *(none)* | **Session-service faults**: lobby full, rate limited, relay allocation fails, service down. `COSMIC_SHORE_NET_FAULT` or `do netfault` | 3 |
-| *(none)* | **Scenario harness**: `run.sh` without patches (needs a UGS stand-in rewrite, §5) | 0 |
+| *(none)* | **Scenario harness**: `run.sh` without patches, five pilots on the UGS stand-ins (§5) | 0 |
 | *(none, Unity's transport is fixed)* | **Our reliable-UDP transport** with reliable and unreliable channels | 5 |
 | Relay (UGS Relay through Unity Transport) | **`RelayLink`** under our UDP transport, speaking Unity Relay's protocol; **`FrogletRelayServer`** speaks it too, as the tests' stand-in for UGS Relay | 6 |
 | Authentication + Relay SDKs (sign in, allocate) | **`UgsAuthentication`** (REST), always on with START ONLINE; **`--ugs-relay-check`** / SETTINGS > ONLINE > UGS CHECK proves the live path in one step | 7 |
@@ -539,7 +539,8 @@ NetDriver handshake over the Unity-Relay-protocol relay through `NetStack`), `Ne
 
 **Not done yet**: the live check against the project (the owner's go-ahead, `Docs/MULTIPLAYER_START_HERE.md`
 §5.3), join by lobby code, quick join, lobby events (Lobby's websocket; the handle polls with `RefreshAsync`
-as the game's party code already does), and the party harness's move from the shared folder to stand-ins.
+as the game's party code already does). The party harness moved from the shared folder to the stand-ins on
+2026-10-14 and runs 14/14 (`Tools/Build/prisma_party_scenarios/README.md`).
 
 ## 7. Status
 

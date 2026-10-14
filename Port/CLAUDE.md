@@ -157,6 +157,10 @@ An unattended run without a port: `--frames N --shot F:out.png --do "F:click X,Y
   `MultiplayerService.Instance`, `NetSimulator` or `NetFaults` from `PlayerBoot` directly: a merge did, and
   silently disabled the UDP transport, the relay, the simulator and the faults. `NetStackTests` fails if it
   happens again. The player calls it from `UgsSetup.InstallOnline`.
+- **`Renderer.isVisible` is Unity's: a camera drew it in the last rendered frame** (`Rendering/RenderVisibility.cs`),
+  so it is always false headless and the game's visual-only `!isVisible` early-outs skip there. It once read
+  "enabled and active", and a headless Bloomrush match crawled at 3-5 fps rebuilding every crystal's arcs.
+  A slow scene is profiled (`dotnet-trace`, `/amoebius` item 14), never guessed at.
 - **Under xvfb, rendering is software**: a few frames per second. `game_wait 600` is minutes.
   Use `headless: true` when you need no pictures - it ticks as fast as the CPU allows.
 - **A scripted run (`--frames`) steps every game clock by 1/60 s**, so the game's DiagnosticsHUD (F7) reads

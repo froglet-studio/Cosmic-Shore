@@ -8924,3 +8924,37 @@ executor edit was checked by reading only.
 3. No AI may peel away from a crystal it is flying straight at (final approach is untouched).
 4. Skein / Regatta: an AI riding a rail must keep its grind speed (the rail lead point must not
    trip the detector).
+
+## 🔴 SquadSystem: a fresh profile's Menu_Main no longer throws (`claude/compassionate-allen-ta8oa6`, 2026-10-14) — NOT EDITOR-VERIFIED
+
+`SquadSystem.Init` built the default squad from `DefaultLeader` / `DefaultRogueOne` / `DefaultRogueTwo`, which
+nothing sets since the captain system left the vessels (`PortSquadView`'s captain list is empty), so
+`new Squad(null, …)` threw a `NullReferenceException` on every fresh profile's Menu_Main (5 of 5 pilots in every
+Amoebius party-harness run). It now leaves the squad empty when no default captains were supplied; the
+`SquadLeader` / `RogueOne` / `RogueTwo` getters already answer null then. Verified without Unity: the new
+`SquadSystemTests` passes in Amoebius's edit-mode runner (`Tools/Build/prisma_edit_mode_tests/run.sh`) and fails
+with the old `Init` (negative control), and fresh pilots reach Menu_Main with no exception in the party harness.
+
+1. Delete `squad.data` from `Application.persistentDataPath` (a fresh profile).
+2. Play from Bootstrap to Menu_Main. **Expect** no `NullReferenceException` from `Squad..ctor` /
+   `SquadSystem.Init` / `PortSquadView.UpdateView` in the console, and no `squad.data` written.
+3. Test Runner > EditMode > `SquadSystemTests`: **expect** pass.
+
+## 🔴 Charge light: the seam walk's petal light skips terms below its floor (`claude/compassionate-allen-ta8oa6`, 2026-10-14) — NOT EDITOR-VERIFIED
+
+`ChargeArcs.SeamWalk` lit each petal from one `Exp` per (petal x lit point x back point), ~5,200 a frame per Charge
+crystal, nearly all far below the 0.01 floor at which a petal lights. Terms that cannot reach the floor are now
+skipped on their squared distance; every kept term is computed exactly as before. Verified without Unity:
+`Tools/Build/charge_arcs_harness/run.sh` ALL PASS (40 checks), `run.sh --dump` byte-identical before and after
+(2 x 3,600 frames, both effects), `--bench` seam walk 1,130 -> 201 µs per crystal per frame (double-precision
+`Mathf`), and in Amoebius `SeamWalk` 0.113 -> 0.082 ms a call. Not measured: Unity's own cost
+(`Docs/PERFORMANCE_OPTIMIZATION.md` §2, 10-14; `Docs/Studios/OMNI_MOTION_LAB.md` "Cost, measured 2026-10-14").
+
+1. Launch Bloomrush at intensity 1 and fly until the arena has grown; keep several Charge crystals on screen.
+   **Expect** the seam walk to look exactly as before: one bolt walking the seams, the petals beside it lighting
+   and fading, no petal lit far from the bolt.
+2. Profiler (Development build, or the editor) > CPU > search `CrystalChargeArcs.LateUpdate`. **Record** its
+   ms per frame and per call with the number of crystals in view, in `Docs/PERFORMANCE_OPTIMIZATION.md` §2 (10-14),
+   so the lab's cost round starts from Unity's number.
+3. Test Runner > EditMode > `CrystalChargeArcsTests`: **expect** pass (it cannot build in Amoebius: no
+   `AssetDatabase.LoadAllAssetsAtPath`).

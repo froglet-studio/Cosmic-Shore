@@ -1,5 +1,7 @@
-"""A local stand-in for UGS Player Authentication, for testing Prisma's `COSMIC_SHORE_RELAY=ugs` path
-without touching the live UGS project (Port/docs/MULTIPLAYER.md §6.8).
+"""A local stand-in for UGS Player Authentication, so the party harness's pilots sign in the way START ONLINE
+does without touching the live UGS project (Port/docs/MULTIPLAYER.md §6.8, §6.10). Its id tokens
+("id-PLAYER-N") are the bearer the Relay and Lobby stand-ins (standins/) accept, and the Lobby stand-in
+reads the player from them.
 
 It answers the two calls Prisma makes, in the documented shape:
   POST /v1/authentication/anonymous       (header ProjectId)            -> a new player

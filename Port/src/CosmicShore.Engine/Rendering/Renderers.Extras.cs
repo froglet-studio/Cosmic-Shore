@@ -23,7 +23,8 @@ namespace CosmicShore.Engine
     {
         /// <summary>Hide this renderer without disabling it (original contract).</summary>
         public bool forceRenderingOff { get; set; }
-        public bool isVisible => enabled && !forceRenderingOff && gameObject != null && gameObject.activeInHierarchy;
+        /// <summary>Drawn by any camera in the last rendered frame, as Unity's (RenderVisibility.cs): never true headless.</summary>
+        public bool isVisible => enabled && !forceRenderingOff && gameObject != null && gameObject.activeInHierarchy && SeenInLastRenderedFrame;
         public LightProbeUsage lightProbeUsage { get; set; } = LightProbeUsage.BlendProbes;
         public ReflectionProbeUsage reflectionProbeUsage { get; set; } = ReflectionProbeUsage.BlendProbes;
         public MotionVectorGenerationMode motionVectorGenerationMode { get; set; } = MotionVectorGenerationMode.Object;

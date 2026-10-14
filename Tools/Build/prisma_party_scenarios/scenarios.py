@@ -346,8 +346,10 @@ def main():
     for k, inst in insts.items():
         boot_to_menu(inst)
     report["boot_wall_s"] = round(time.time() - t0, 1)
-    # What each pilot's network was, as the pilot itself logged it at boot (transport, simulated line, relay).
-    report["network"] = {k: [l for l in inst.log_lines() if l.startswith(("[net] transport:", "[netsim] starting", "[relay] sessions"))][:3]
+    # What each pilot's network was, as the pilot itself logged it at boot (transport, the whole stack, the UGS
+    # project it went online to, simulated line) and its sign-in, once the menu's first sign-in has run.
+    report["network"] = {k: [l for l in inst.log_lines()
+                             if l.startswith(("[net] transport:", "[net] stack:", "[online] ", "[netsim] starting"))][:5]
                          for k, inst in insts.items()}
 
     session, failed = Session(insts), False

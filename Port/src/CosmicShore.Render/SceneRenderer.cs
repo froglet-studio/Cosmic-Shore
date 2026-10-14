@@ -1160,6 +1160,7 @@ void main(){
             int mask = camera.cullingMask;
 
             long t0 = System.Diagnostics.Stopwatch.GetTimestamp();
+            Renderer.NoteCameraRender();
             SetFrustum(viewProj);
             _cullClock = Shader.GetGlobalFloat(IdPrismClock) is var cc && cc > 0 ? cc : Time.time;
             Collect(mask, camPos);
@@ -1362,6 +1363,7 @@ void main(){
             if (mesh == null || mesh.vertexCount == 0) return;
             if (r is SkinnedMeshRenderer morphing && mesh.blendShapeCount > 0) mesh = Morphed(morphing, mesh);
             bool visible = knownVisible || r is SkinnedMeshRenderer || InFrustum(mesh, r.transform.localToWorldMatrix);
+            if (visible) r.NoteSeenByCamera();
             var mats = r.sharedMaterials;
             int subs = mesh.RenderSubmeshCount;
             for (int i = 0; i < mats.Length && i < Math.Max(subs, 1); i++)
@@ -2260,6 +2262,7 @@ void main(){
             if (loop && _ribbonPts.Count > 2) _ribbonPts.Add(_ribbonPts[0]);
             int n = _ribbonPts.Count;
             if (n < 2) return;
+            r.NoteSeenByCamera();
 
             float total = 0f;
             for (int i = 1; i < n; i++) total += (_ribbonPts[i] - _ribbonPts[i - 1]).magnitude;
@@ -2336,6 +2339,7 @@ void main(){
             int n = ps.GetRenderParticles(ref _particleScratch);
             if (n == 0) return;
             _cShown++;
+            r.NoteSeenByCamera();
             var verts = new EVector3[n * 4];
             var cols = new Color[n * 4];
             var uvs = new Vector2[n * 4];

@@ -4,8 +4,6 @@
 bash Tools/Build/prisma_party_scenarios/run.sh          # ~10-15 min wall; exit 0 = every scenario passed
 KEEP=1 bash Tools/Build/prisma_party_scenarios/run.sh   # keep the worktree, the logs and results.json
 COSMIC_SHORE_NET_SIM=4g bash .../run.sh                 # every pilot on a simulated 4G line
-PRISMA_RELAY=1 bash .../run.sh                          # every pilot through Froglet's relay (Unity Relay's protocol)
-PRISMA_RELAY=ugs bash .../run.sh                        # the same, signed in to a local UGS stand-in (COSMIC_SHORE_RELAY=ugs)
 COSMIC_SHORE_NET_TRANSPORT=tcp bash .../run.sh          # the TCP transport instead of the default UDP
 ```
 
@@ -13,14 +11,63 @@ Needs the .NET 10 SDK (`DOTNET10_ROOT`, default `$HOME/.dotnet10`), like
 `../prisma_edit_mode_tests/run.sh`. The scratch dir is `$PRISMA_PARTY_WORK` (default
 `$TMPDIR/prisma_party_scenarios`): `logs/<A..E>.log` is each pilot's full console, and
 `results.json` is one row per scenario with the state it asserted on, plus `network`: each pilot's own
-boot lines for its transport, simulated line and relay, so a result names what it ran under.
+boot lines for its transport, its whole stack, the UGS project it went online to, its sign-in and its
+simulated line, so a result names what it ran under. `logs/ugs-auth.log` has one line per sign-in, and
+`logs/standins.log` a relay and Lobby counter line every 30 s.
+
+It runs on the **UGS-only engine** (Port/docs/MULTIPLAYER.md §6.10, 2026-10-14). The shared-folder sessions (`COSMIC_SHORE_NET_DIR`) and
+`COSMIC_SHORE_RELAY` / `--relay-server` it used before are gone from the engine, and so are its old
+`PRISMA_RELAY` switches: every pilot now goes through the relay, as every START ONLINE game does.
+
+## State on 2026-10-14: 14/14 on the UGS stand-ins
+
+Run on a 4-core cloud container against the UGS-only engine, at `5a4479cbf`: **14/14**, exit 0. Boot to
+five menus 75 s, the scenarios 158 s. Five sign-ins (one per pilot). Every pilot booted
+`[net] stack: simulated > relay > udp; sessions: faults > ugs`. The relay stand-in made 20 allocations,
+accepted 20 of 20 binds and forwarded 22,558 frames with 0 refused. The Lobby stand-in served 1,448
+calls and 58 heartbeats.
+
+Earlier the same day the harness stopped at T4 (8/14), and so did the pre-port harness on the pre-port
+engine. The cause was an engine gap, not the harness. Amoebius's `Renderer.isVisible` meant "enabled
+and active", so the crystals' visual-only effects never skipped an unseen crystal. In a grown
+Bloomrush arena (the Rampage cell, ~60k prisms by design), every Charge crystal rebuilt its arc mesh
+every frame: `CrystalChargeArcs.LateUpdate` took ~95% of the main thread, and a match ran at
+3.5-5 fps. With `isVisible` as Unity means it (`Port/src/CosmicShore.Engine/Rendering/RenderVisibility.cs`:
+drawn by a camera in the last rendered frame, so never headless), one pilot runs the grown arena at
+54-61 fps.
+
+**If T4 times out on the Ready button again, check the match's frame rate first.** Headless ticks a
+fixed 1/60 s, so a slow frame stretches the 7.5 s pre-game cinematic past T4's 180 s wait.
+`{"cmd":"state"}` on a pilot's control port gives `frame` and `behaviours`. `dotnet-trace collect -p
+PID --profile dotnet-sampled-thread-time` then `dotnet-trace report FILE topN --inclusive` names the
+hot path in a few minutes.
+
+## Follow-ups
+
+- **Two UGS sign-in stand-ins.** The harness uses `ugs_auth_standin.py`; the engine tests use the C#
+  `UgsAuthStandIn`, declared inside `Port/tests/CosmicShore.Tests/UgsAuthenticationTests.cs` beside the xunit
+  tests (line ~20), so `standins/` cannot link it the way it links `UgsLobbyStandIn.cs`. Moving
+  `UgsAuthStandIn` to its own file (a Port change) lets `standins/` host all three services and retires the
+  Python copy. Both answer the same two calls today (`/v1/authentication/anonymous`, `/session-token`) with
+  id tokens shaped `id-PLAYER-N`; check that first if they ever disagree.
 
 ## What it does
 
 It builds Amoebius's player (`Port/`) against **this checkout's** `Assets/_Scripts` and launches five
 instances, `PilotA`…`PilotE`. Each instance runs as its own process with its own `NetworkManager`,
-its own save folder and its own control port. Netcode's model runs over TCP, and UGS Lobby + Relay
-are a shared session directory. Then `scenarios.py` plays one continuous session through
+its own save folder and its own control port. Each is online exactly as START ONLINE is: it signs in
+to UGS, allocates on UGS Relay and holds its presence lobby, party and match sessions in UGS Lobby, over
+Froglet's UDP transport. All three services are **local stand-ins**, so nothing reaches the live UGS
+project:
+
+| Service | Stand-in | Pilots read |
+|---|---|---|
+| Player Authentication (anonymous + session-token sign-in) | `ugs_auth_standin.py` | `COSMIC_SHORE_UGS_AUTH_URL`, `COSMIC_SHORE_UGS_PROJECT` |
+| Relay (allocations REST + Unity Relay's UDP protocol) | `standins/`: the engine's `FrogletRelayServer` | `COSMIC_SHORE_UGS_RELAY_URL` |
+| Lobby (create, query, join, update, heartbeat, remove, delete) | `standins/`: `Port/tests/CosmicShore.Tests/UgsLobbyStandIn.cs`, compiled in, so the engine tests and the harness share one Lobby stand-in | `COSMIC_SHORE_UGS_LOBBY_URL` |
+
+The sign-in's id tokens (`id-PLAYER-N`) are what the Lobby stand-in reads as the caller, so five pilots
+are five UGS players. Then `scenarios.py` plays one continuous session through
 `driver.py`. It presses only what a person presses: the `party` console command
 (`Assets/_Scripts/Controller/Party/PartyConsoleCommand.cs`, which calls exactly what the buttons
 call), the HUD's Ready button, and the port's `arcade` / `vessels` / `score` verbs.
@@ -59,12 +106,15 @@ Every later row then reads `not run`, never `pass`.
 **Does not prove:**
 - **The Unity runtime.** Amoebius re-implements the engine. NGO's internals, Unity Transport and the
   UGS SDK are stood in for.
-- **UGS error shapes.** UGS's error for a full lobby, or for a 429, is not reproduced byte for
-  byte. The stand-in throws `SessionException("Session is full.")`, which reaches
-  `UgsRequestPolicy`'s message floor. If the real SDK's shape differs, only MPPM (Block 2) would
-  show it.
-- **Timing.** TCP sees a dead peer at once, but UTP waits for its disconnect timeout (10 s here).
-  T7's wall time is therefore a lower bound, not the player's experience.
+- **UGS itself.** The stand-ins follow UGS's public REST reference, not the live service. A full
+  lobby is the Lobby stand-in's 409 "lobby is full", which `UgsMultiplayerService` turns into the
+  SDK's "is full" `SessionException` (`Port/docs/MULTIPLAYER.md` §6.10); the real service's bodies,
+  rate limits and inactive-lobby expiry (the stand-in counts heartbeats but expires nothing) are only
+  shown by the owner's live test (`Docs/MULTIPLAYER_START_HERE.md` §5.3) and MPPM (Block 2).
+- **The Unity SDK.** Amoebius talks to UGS over REST with its own client; the Unity build uses the
+  Multiplayer Services SDK. Same service, different client.
+- **Timing.** Every pilot is on one machine, so the relay is ~0 ms away. T7's wall time is a lower
+  bound, not the player's experience.
 - **The disconnect callback order.** The ready gate (B20) re-counts inside the disconnect callback.
   Both engines remove the id before invoking it: the port by construction, and NGO 2.13.3 in
   `NetworkConnectionManager.OnClientDisconnectFromServer` (`ConnectedClientIds.Remove` at line
@@ -94,9 +144,10 @@ A process per player gives each player its own `Singleton`, and runs the code un
 ## Game time runs on the wall clock
 
 A `--headless` Amoebius ticks a fixed 1/60 s as fast as the CPU allows. An idle menu therefore runs
-its game clock ~200× ahead of the session directory and the TCP links, which both run on the wall
+its game clock ~200× ahead of the session service and the network links, which both run on the wall
 clock. Game-time timers then fire early against them. Run 3 showed this: an invite's 60 s lifetime
-lapsed before the guest had polled it, and the Accept met a withdrawn invite.
+lapsed before the guest had polled it, and the Accept met a withdrawn invite. (The session service
+was the shared folder then; it is the Lobby stand-in now, on the same wall clock.)
 
 Unity has no such mode. So every instance runs with the engine's `--realtime` flag
 (`Port/src/CosmicShore.Engine/SceneGraph/RealtimePacer.cs`, `Port/docs/MULTIPLAYER.md` §6.1): each
@@ -106,7 +157,8 @@ the machine was.
 
 ## Touches nothing committed
 
-`run.sh` makes a `git worktree` of HEAD and copies this checkout's `Assets/_Scripts` over it. It
+`run.sh` makes a `git worktree` of HEAD and copies this checkout's `Assets/_Scripts` over it, and builds
+the stand-ins from a copy of `standins/` in the scratch dir against that worktree's engine. It
 fills any engine API gaps (`../prisma_edit_mode_tests/gapfill.py`) in that worktree only. Every
 gap it knew of on 2026-10-08 has since landed in the engine, so it currently changes nothing. It
 removes the worktree on exit. (The pacing was a worktree patch, `pace_headless.py`, until the engine

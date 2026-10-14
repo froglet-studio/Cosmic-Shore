@@ -406,6 +406,31 @@ Both controls fail as they must. The clip detector's own control, `clipSelfTest(
 - Whether Charge gets its own beat.
 - **Which Charge effect, or effects.** This round is about the look; cost comes next.
 
+### Cost, measured 2026-10-14 (input for the cost round)
+
+Every VISIBLE crystal with a `CrystalChargeArcs` rebuilds its mesh on the CPU every frame, so the cost is
+**per crystal in view**. A grown Bloomrush arena (Rampage cell, intensity 1) holds **~181 Charge crystals and ~8
+omni** with arcs. Per crystal per frame, from `Tools/Build/charge_arcs_harness/run.sh --bench` (the shipped
+`ChargeArcs.cs` on the real meshes; double-precision `Mathf` as Unity's is written):
+
+| Effect | CPU per frame | Mesh handed to Unity per frame |
+|---|---|---|
+| Seam walk (Charge crystal) | **201 µs** (was 1,130 µs before 2026-10-14's exact petal-light cull) | ~1,240 verts, ~1,180 tris |
+| Flux arcs (omni) | **~450 µs** | ~3,400 verts (6,664 max), ~3,400 tris |
+
+So 30 Charge crystals in view cost ~6 ms of CPU a frame before Unity's own mesh upload, and an omni costs
+about two Charge crystals. Unity's real number is the `CrystalChargeArcs.LateUpdate` profiler marker, which has
+not been read in Unity yet.
+
+**Decision needed (designer, the cost round):** whether crystals in view need a budget, and which one. Each
+option changes the look somewhere, which is why it is the lab's call:
+- a distance or screen-size cutoff (a crystal a few pixels across draws the plates only);
+- a per-frame budget across crystals (the farthest update every other frame);
+- coarser ribbons far away (`SampleSpacing` is 0.0125 radii everywhere today);
+- fewer flux strands far away (five per discharge, up to four discharges).
+
+Any change meant to be invisible must leave `run.sh --dump` byte-identical (2026-10-14's cull did).
+
 ### Not modelled
 
 - The shading approximates the Fresnel shaders, and there is no bloom.

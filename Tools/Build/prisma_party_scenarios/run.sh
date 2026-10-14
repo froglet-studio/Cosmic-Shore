@@ -14,9 +14,11 @@
 # player gives each its own Singleton and runs the shipped code unmodified.
 #
 # WHAT IT RUNS ON. Prisma (Port/): the game's Assets/_Scripts compiled live against a .NET
-# re-implementation of the engine, with Netcode's model over TCP and UGS Lobby + Relay stood in by
-# a shared session directory (COSMIC_SHORE_NET_DIR). See README.md for what a pass here does and
-# does not prove - it is evidence, not a substitute for the owner's MPPM run (Block 2).
+# re-implementation of the engine, each pilot online the way START ONLINE is (UGS sign-in, UGS Relay,
+# UGS Lobby - Port/docs/MULTIPLAYER.md §6.10) with all three pointed at local stand-ins: the sign-in at
+# ugs_auth_standin.py, Relay and Lobby at standins/ (the engine's FrogletRelayServer and the engine tests'
+# UgsLobbyStandIn). Nothing here talks to the live UGS project. See README.md for what a pass here does
+# and does not prove - it is evidence, not a substitute for the owner's MPPM run (Block 2).
 #
 # WHAT IT TOUCHES. Nothing committed: a `git worktree` of HEAD with THIS checkout's
 # Assets/_Scripts copied over it (uncommitted edits are tested), the engine's API gaps filled in
@@ -37,7 +39,7 @@ export DOTNET_CLI_TELEMETRY_OPTOUT=1 DOTNET_NOLOGO=1
 
 WORK="${PRISMA_PARTY_WORK:-${TMPDIR:-/tmp}/prisma_party_scenarios}"
 mkdir -p "$WORK" && WORK="$(cd "$WORK" && pwd)"
-WT="$WORK/worktree"; PLAYER="$WORK/player"; LOGS="$WORK/logs"; NET="$WORK/net"; HOMES="$WORK/home"
+WT="$WORK/worktree"; PLAYER="$WORK/player"; STANDINS="$WORK/standins"; LOGS="$WORK/logs"; HOMES="$WORK/home"
 BASE_PORT="${PRISMA_PARTY_BASE_PORT:-47900}"
 LABELS=(A B C D E)
 PIDS=()
@@ -59,47 +61,51 @@ echo "prisma_party_scenarios: engine gap-fill (worktree only; a no-op once the p
 python3 "$HERE/../prisma_edit_mode_tests/gapfill.py" "$WT"
 
 echo "prisma_party_scenarios: building the player against this checkout's Assets/_Scripts"
-rm -rf "$PLAYER" "$LOGS" "$NET" "$HOMES"; mkdir -p "$LOGS" "$NET" "$HOMES"
+rm -rf "$PLAYER" "$STANDINS" "$LOGS" "$HOMES"; mkdir -p "$LOGS" "$HOMES"
 if ! dotnet build "$WT/Port/src/CosmicShore.Player" -c Debug -v q -nologo -o "$PLAYER" > "$WORK/build.log" 2>&1; then
   grep -oE '[^ /]+\.cs\([0-9]+,[0-9]+\): error CS[0-9]+: [^[]*' "$WORK/build.log" | sort -u | head -40
   echo "prisma_party_scenarios: BUILD FAILED - full log: $WORK/build.log" >&2
   exit 1
 fi
 
-# PRISMA_RELAY=1: every pilot hosts and joins through Froglet's relay server (Unity Relay's protocol,
-# Port/docs/MULTIPLAYER.md §6.7) instead of connecting directly - the path a game over the internet takes.
-# PRISMA_RELAY=ugs: the same relay, reached the way UGS Relay is (COSMIC_SHORE_RELAY=ugs, §6.8): each pilot
-# signs in to a local stand-in of UGS Player Authentication (ugs_auth_standin.py) and allocates with its
-# token. Nothing here talks to the live UGS project.
-if [ "${PRISMA_RELAY:-0}" != "0" ]; then
-  nohup dotnet "$PLAYER/CosmicShore.dll" --relay-server 0 0 > "$LOGS/relay.log" 2>&1 < /dev/null &
-  PIDS+=($!)
-  RELAY_URL=""
-  for _ in $(seq 1 100); do
-    RELAY_URL="$(grep -o 'COSMIC_SHORE_RELAY=http[^)]*' "$LOGS/relay.log" 2>/dev/null | head -1 | cut -d= -f2 || true)"
-    [ -n "$RELAY_URL" ] && break; sleep 0.2
-  done
-  if [ -z "$RELAY_URL" ]; then echo "prisma_party_scenarios: the relay server did not start:" >&2; cat "$LOGS/relay.log" >&2; exit 1; fi
-  if [ "$PRISMA_RELAY" = "ugs" ]; then
-    UGS_PROJECT="00000000-0000-0000-0000-00000000f106"
-    python3 -I "$HERE/ugs_auth_standin.py" 0 "$UGS_PROJECT" > "$LOGS/ugs-auth.log" 2>&1 < /dev/null &
-    PIDS+=($!)
-    AUTH_URL=""
-    for _ in $(seq 1 100); do
-      AUTH_URL="$(grep -o 'COSMIC_SHORE_UGS_AUTH_URL=[^)]*' "$LOGS/ugs-auth.log" 2>/dev/null | head -1 | cut -d= -f2 || true)"
-      [ -n "$AUTH_URL" ] && break; sleep 0.2
-    done
-    if [ -z "$AUTH_URL" ]; then echo "prisma_party_scenarios: the UGS sign-in stand-in did not start:" >&2; cat "$LOGS/ugs-auth.log" >&2; exit 1; fi
-    export COSMIC_SHORE_RELAY=ugs COSMIC_SHORE_UGS_PROJECT="$UGS_PROJECT" COSMIC_SHORE_UGS_AUTH_URL="$AUTH_URL" COSMIC_SHORE_UGS_RELAY_URL="$RELAY_URL"
-    echo "prisma_party_scenarios: every pilot signs in to the UGS stand-in at $AUTH_URL and goes through the relay at $RELAY_URL"
-  else
-    export COSMIC_SHORE_RELAY="$RELAY_URL"
-    echo "prisma_party_scenarios: every pilot goes through Froglet's relay at $RELAY_URL (log: $LOGS/relay.log)"
-  fi
+# The UGS stand-ins. The sign-in (ugs_auth_standin.py) hands out id tokens shaped "id-PLAYER-N", which
+# the Lobby stand-in reads as the caller; the relay takes any bearer (no secret), as our harness relay
+# always did. Each pilot signs in as its own profile's UGS player, so five pilots are five players.
+echo "prisma_party_scenarios: building the UGS Relay + Lobby stand-ins"
+cp -a "$HERE/standins" "$WORK/standins-src"
+if ! dotnet build "$WORK/standins-src" -c Debug -v q -nologo -o "$STANDINS" -p:PortRoot="$WT/Port" > "$WORK/standins-build.log" 2>&1; then
+  grep -E 'error' "$WORK/standins-build.log" | sort -u | head -20
+  echo "prisma_party_scenarios: STAND-IN BUILD FAILED - full log: $WORK/standins-build.log" >&2
+  exit 1
 fi
+rm -rf "$WORK/standins-src"
+
+wait_for() {  # wait_for LOG VARIABLE: the value a stand-in prints as VARIABLE=VALUE once it listens
+  local v=""
+  for _ in $(seq 1 100); do
+    v="$(grep -o "$2=[^) ]*" "$1" 2>/dev/null | head -1 | cut -d= -f2- || true)"
+    [ -n "$v" ] && break; sleep 0.2
+  done
+  echo "$v"
+}
+
+UGS_PROJECT="00000000-0000-0000-0000-00000000f106"
+python3 -I "$HERE/ugs_auth_standin.py" 0 "$UGS_PROJECT" > "$LOGS/ugs-auth.log" 2>&1 < /dev/null &
+PIDS+=($!)
+nohup dotnet "$STANDINS/PartyStandIns.dll" > "$LOGS/standins.log" 2>&1 < /dev/null &
+PIDS+=($!)
+AUTH_URL="$(wait_for "$LOGS/ugs-auth.log" COSMIC_SHORE_UGS_AUTH_URL)"
+RELAY_URL="$(wait_for "$LOGS/standins.log" COSMIC_SHORE_UGS_RELAY_URL)"
+LOBBY_URL="$(wait_for "$LOGS/standins.log" COSMIC_SHORE_UGS_LOBBY_URL)"
+if [ -z "$AUTH_URL" ] || [ -z "$RELAY_URL" ] || [ -z "$LOBBY_URL" ]; then
+  echo "prisma_party_scenarios: a UGS stand-in did not start:" >&2; cat "$LOGS/ugs-auth.log" "$LOGS/standins.log" >&2; exit 1
+fi
+export COSMIC_SHORE_UGS_PROJECT="$UGS_PROJECT" COSMIC_SHORE_UGS_AUTH_URL="$AUTH_URL" \
+  COSMIC_SHORE_UGS_RELAY_URL="$RELAY_URL" COSMIC_SHORE_UGS_LOBBY_URL="$LOBBY_URL"
+echo "prisma_party_scenarios: UGS stand-ins up - sign-in $AUTH_URL, Relay $RELAY_URL, Lobby $LOBBY_URL"
 
 # One profile per pilot, each with its own HOME so no instance inherits another run's saved
-# username, consent or party; one shared session directory standing in for UGS Lobby + Relay.
+# username, consent, party or UGS session token.
 cd "$WORK"   # nothing an instance writes relative to its cwd may land in the repo
 SPEC="$WORK/instances.json"
 echo "{" > "$SPEC"
@@ -108,7 +114,7 @@ for k in "${!LABELS[@]}"; do
   # The engine falls back to ~/.local/share when .NET reports no LocalApplicationData
   # (LocalDataPath.cs); creating the folder keeps each pilot's saves under its own HOME either way.
   mkdir -p "$HOMES/$L/.local/share"
-  HOME="$HOMES/$L" XDG_DATA_HOME="$HOMES/$L/.local/share" COSMIC_SHORE_PROJECT="$WT" COSMIC_SHORE_PROFILE="party$L" COSMIC_SHORE_NET_DIR="$NET" \
+  HOME="$HOMES/$L" XDG_DATA_HOME="$HOMES/$L/.local/share" COSMIC_SHORE_PROJECT="$WT" COSMIC_SHORE_PROFILE="party$L" \
     COSMIC_SHORE_AUDIO=off nohup dotnet "$PLAYER/CosmicShore.dll" --headless --realtime --verbose --control-port "$PORT" \
     > "$LOGS/$L.log" 2>&1 < /dev/null &
   PIDS+=($!)
@@ -122,4 +128,5 @@ set +e
 python3 "$HERE/scenarios.py" --instances "$SPEC" --out "$WORK/results.json" --repo "$REPO"
 RC=$?
 set -e
+echo "prisma_party_scenarios: $(grep -c 'sign-in: player' "$LOGS/ugs-auth.log" || true) UGS sign-ins (log: $LOGS/ugs-auth.log)"
 exit $RC
