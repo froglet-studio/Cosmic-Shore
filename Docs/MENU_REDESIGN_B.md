@@ -3,11 +3,17 @@
 Every Menu_Main screen and modal, rebuilt in the visual style of the **"B · Hangar bay"** board on
 the Port mockup canvas (`https://claude.ai/artifact/KtM3MAtYnrwu9biej4uXuM`, file
 `project/SquadFocus.dc.html`). **`Docs/STYLE_FOUNDATION.md` v0.3.3 is the authority.** Where the
-mockup and the spec disagree, the spec wins, and the disagreement is recorded in §4.
+mockup and the spec disagree, the spec wins, and the disagreement is recorded in §5 of this document.
+
+**Mockups from item 1 on live on their own canvas, "Menu Redesign B"**
+(`https://claude.ai/artifact/W8DBZaW6pu3L28egCjrKo2`). Nothing is built in Unity until that item's
+board is approved there. The Port canvas keeps the item 0 kit board where it was approved; the new
+canvas carries a reference copy of it (`MenuKit.dc.html`) so the kit sits beside the items built
+from it.
 
 Work goes one item at a time, with three approval gates per item:
 1. **Plan:** the inventory, build order and kit (this document).
-2. **Mockup:** an artboard on the canvas, using real content.
+2. **Mockup:** an artboard on the mockup canvas, using real content.
 3. **Build:** prefabs, scene and theme wiring, verified offline, then committed, pushed and checked
    in the editor.
 
@@ -26,7 +32,7 @@ Legend: `Planned` ▸ `Mockup` ▸ `Mockup approved` ▸ `Built` ▸ `Approved i
 | # | Item | Status | Mockup board | Commits |
 |---|---|---|---|---|
 | 0 | Component kit: T7 sprites, Chakra Petch SemiBold (T5), type roles + `TabularText` (T6), theme components, kit prefabs, kit test scene | Built | `MenuKit.dc.html` | `3b36c361`, `fe108889`, `b0918296`, `908fc2d7`, `4cba49ee`, `e932eaf2` + docs |
-| 1 | Top nav (`Safe Area/NavBar`) | Planned | | |
+| 1 | Top nav (`Safe Area/NavBar`) | Mockup | `Main.dc.html` (interactive), `TopNavHover.dc.html`, `TopNavLocked.dc.html` on the Menu Redesign B canvas | |
 | 2 | Hangar screen: grid, detail and the spend-crystals panel | Planned | | |
 | 3 | Arcade modal (`ArcadeScreenModal`): explore grid plus the party/friends panel | Planned | | |
 | 4 | Game configure: `ArcadeGameConfigureModal`, plus the Maelstrom and Arena configure windows and the weekly leaderboard | Planned | | |
@@ -317,3 +323,27 @@ the Gate 1 measurement of `Menu_Main.unity`.
 | NavBar `nav line*` (5), `Component 1/2.png` (L1/R1), `Polygon 165/166.png` (arrows) | NavBar | `KitTopNavTab`, `KitKeycap` | 1 |
 | Button `ColorTint` transitions with literal colours | per screen | `KitButton` states from tokens | per item |
 
+
+## 10. Item 1: top nav (mockup, awaiting approval)
+
+Boards on the Menu Redesign B canvas: `Main.dc.html` (interactive: click a tab, click LT / RT, click
+PORT), `TopNavHover.dc.html` (HANGAR active, pointer over ARK) and `TopNavLocked.dc.html` (PORT
+pressed and refused).
+
+| Element | Mockup | Built from (at the build gate) |
+|---|---|---|
+| Band | 84 tall (was 180.35), `surfaceVeryDark` `00041F`, a 1 px `surfaceDark` `222645` bottom rule, tabs centred 56 apart | `NavBar` keeps its anchors and `CanvasGroup`; `NavBarGradient` and `NavBarLine` give way to the band fill and the rule |
+| Tabs | Text, not icons: HANGAR, ARK, HOME, PORT, PROFILE, in strip order (D1). Chakra Petch SemiBold 18, caps, 0.12 em tracking | Each `<X>Link` becomes a `KitTopNavTab` instance. Its `InactiveImage` / `ActiveImage` children stay in `NavInactiveImages` / `NavActiveImages`, so `UpdateNavBar` and the `EventTrigger` -> `OnClick<X>Nav` wiring are untouched |
+| Inactive tab | `neutralLightest` `747BAD`; hover `textLight` `E6E9FF` | `KitTopNavTab` inactive label |
+| Active tab | `controlActive` `00D4FF` text, 2 px `controlActive` underline (S9) | `KitTopNavTab` `ActiveImage` (label + underline) |
+| Locked tab (PORT) | `inactiveLight` `5C5F70`, padlock before the label; still pressable | The `MenuAvailabilityView` that `ScreenSwitcher` already ensures on the link, authored on the tab: `lockedOverlay` = `chrome_lock`, `label` = the tab label |
+| Refusal | "Not open yet." toast under the band for about 2.4 s | Unchanged: `MenuAvailabilityView` -> `ToastNotificationAPI.Show(disabledScreenMessage)`. The toast is drawn in style B on the board, but the toast itself is restyled at item 11, so until then the build shows today's toast |
+| LT / RT | Keycaps at each end of the strip, clickable; pressing steps one screen, skipping PORT | `KitKeycap` art on the existing `LeftArrrow` / `RightArrow` buttons, so `OnClickLeftArrow` / `OnClickRightArrow` stay wired. The `L1 Indicator` / `R1 Indicator` hint images retire (the keycaps carry the hint) |
+
+Open points for the build gate, recorded rather than decided here:
+- **`UpdateNavBar` toggles the tab images with `SetActive`.** The brief says CanvasGroup alpha, never
+  `SetActive`. Item 1 changes look and layout only, so the plan is to leave that code alone and
+  restyle the objects it toggles. Converting it is a one-method change if you want it in item 1.
+- **The tabs are not `Selectable`s today** (gamepad reaches screens through LT / RT only). The
+  mockup's focus ring (`cta`, 2 px) appears only if they become `Selectable`, which is a navigation
+  change, so it is out of scope.
