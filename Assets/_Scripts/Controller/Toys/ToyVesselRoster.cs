@@ -123,6 +123,23 @@ namespace CosmicShore.Gameplay
         static readonly HashSet<VesselClassType> _warnedMissingPrefab = new();
 
         /// <summary>
+        /// The flat picture of <paramref name="vessel"/>: its class asset's card art
+        /// (<see cref="SO_Vessel.CardSilohoutteActive"/>), else its icon
+        /// (<see cref="SO_Vessel.IconActive"/>) - the same sprites the hangar and the arcade
+        /// loadout draw, so the Toy Box shows the hull the rest of the menu already shows.
+        ///
+        /// <para>A PROBE, quiet on a miss: a hull with no class asset or no art is still offered,
+        /// as a text row. <c>ToyVesselRosterCoverageTests</c> is where a missing picture is loud.</para>
+        /// </summary>
+        public static bool TryGetPicture(SO_VesselList art, VesselClassType vessel, out Sprite picture)
+        {
+            picture = null;
+            if (!art || !art.TryGetVesselByClass(vessel, out var so, reportMissing: false)) return false;
+            picture = so.CardSilohoutteActive ? so.CardSilohoutteActive : so.IconActive;
+            return picture != null;
+        }
+
+        /// <summary>
         /// A display-only mini hull for <paramref name="vessel"/>, built straight from the ship
         /// PREFAB ASSET (never instantiated, so no NetworkObject / VesselStatus / controller ever
         /// runs). Returns false when the context has no prefab registry, the class has no prefab,

@@ -117,6 +117,33 @@ namespace CosmicShore.Tests
                     "list believing it is a set.");
             }
         }
+
+        const string VesselChangerPath = "Assets/_SO_Assets/Toys/Toy_VesselChanger.asset";
+
+        /// <summary>
+        /// Every hull the Vessel Changer offers has a PICTURE on the Toy Box's vessel list.
+        /// <c>ToyVesselRoster.TryGetPicture</c> is a quiet probe - a hull without art is still
+        /// offered, as a bare name - so this is the one place a missing picture is loud.
+        /// </summary>
+        [Test]
+        public void EveryOfferedHullHasAPicture()
+        {
+            var def = UnityEditor.AssetDatabase
+                .LoadAssetAtPath<CosmicShore.ScriptableObjects.VesselChangerToyDefinitionSO>(VesselChangerPath);
+            Assert.IsNotNull(def, $"{VesselChangerPath} is missing.");
+            Assert.IsNotNull(def.VesselArt,
+                $"{VesselChangerPath} has no Vessel Art list, so every row on the Toy Box's vessel " +
+                "list is a bare name. Wire SO_Classlist_All.");
+
+            var hulls = new List<VesselClassType>();
+            ToyVesselRoster.Resolve(def.VesselCollection, hulls);
+            var missing = hulls.Where(v => !ToyVesselRoster.TryGetPicture(def.VesselArt, v, out _)).ToList();
+
+            Assert.IsEmpty(missing,
+                $"{string.Join(", ", missing)} " + (missing.Count == 1 ? "has" : "have") +
+                $" no picture on the Toy Box's vessel list: '{def.VesselArt.name}' has no class " +
+                "asset for it, or the class asset has neither CardSilohoutteActive nor IconActive set.");
+        }
     }
 }
 #endif

@@ -141,12 +141,14 @@ namespace CosmicShore.Gameplay
             {
                 var captured = vessel;
                 bool isCurrent = hasCurrent && vessel == current;
+                ToyVesselRoster.TryGetPicture(_def ? _def.VesselArt : null, vessel, out var picture);
 
                 into.Add(new ToyShellOption
                 {
                     Label = vessel.ToString(),
                     Detail = isCurrent ? "flying" : "",
                     Accent = accent,
+                    Picture = picture,
                     IsCurrent = isCurrent,
                     Payload = captured,
                     // No Apply on the hull you are already flying: that row is there to be READ.

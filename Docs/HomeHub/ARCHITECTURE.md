@@ -1041,8 +1041,19 @@ definition itself is captured at bind, because it is an *asset* and is the one t
 torn-down toy that survives.
 
 (`ToyOptionCard`, the UI component that drew the original rows, was deleted with the reshape and is
-not resurrected. `ToyVariantCard` is a smaller thing against a smaller card: fill, rim, name, and an
-optional detail line.)
+not resurrected. `ToyVariantCard` is a smaller thing against a smaller card: fill, rim, name, an
+optional detail line, and an optional picture.)
+
+**The vessel changer's rows carry the hull's picture** (`ToyShellOption.Picture`, 2026-10-14). The
+3D preview (§4.1.4) shows only the SELECTED row, so a list of twelve hull names read as twelve words
+until each one was picked. Each row now draws the hull's own card art on its right edge — the
+`SO_Vessel` the hangar and the arcade loadout already draw (`CardSilohoutteActive`, else
+`IconActive`), resolved by `ToyVesselRoster.TryGetPicture` through the definition's `vesselArt`
+list (`Toy_VesselChanger.asset` → `SO_Classlist_All`). The sprite is drawn in its own colours, never
+tinted with the row's accent, and the slot (`ToyVariantTemplate/Picture`, x 0.71–0.97, behind the
+text, no raycast) hides on any row without one, so every other toy's list is unchanged. The lookup
+is a quiet probe — a hull with no art is still offered, as a name — and
+`ToyVesselRosterCoverageTests.EveryOfferedHullHasAPicture` is where a missing picture is loud.
 
 #### Colour: the rim is brighter than the base, in every state
 

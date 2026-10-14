@@ -76,6 +76,11 @@ namespace CosmicShore.UI
                                  "the authored template is.")]
         TMP_Text detailText;
 
+        [SerializeField, Tooltip("Optional picture of what the row names - a hull's card art on " +
+                                 "the vessel changer's rows. Drawn in its own colours, never tinted, " +
+                                 "and hidden on a row whose option has no picture.")]
+        Image picture;
+
         [SerializeField, Tooltip("Optional extra mark for the selected row, for a template that " +
                                  "authors one. The border tint is the fallback and is always applied.")]
         GameObject selectedMarker;
@@ -176,6 +181,7 @@ namespace CosmicShore.UI
             {
                 if (nameText) nameText.text = "";
                 if (detailText) detailText.text = "";
+                BindPicture(null);
                 if (selectedMarker) selectedMarker.SetActive(false);
                 ApplySelection(false, Color.white);
                 Button.interactable = false;
@@ -187,6 +193,7 @@ namespace CosmicShore.UI
             // toy's own Label, which is the station's name and is read by the world too.
             if (nameText) nameText.text = option.IsBranch ? $"{option.Label}  >" : option.Label;
             if (detailText) detailText.text = option.Detail;
+            BindPicture(option.Picture);
 
             var accent = option.Accent;
             float fill = selected ? Mathf.Max(restFill, selectedFill) : restFill;
@@ -203,6 +210,18 @@ namespace CosmicShore.UI
             // A row with neither an action nor a layer under it is there to be READ - the hull you
             // are already flying, the domain you already wear. It stays drawn and stops responding.
             Button.interactable = option.Apply != null || option.IsBranch;
+        }
+
+        /// <summary>
+        /// Show the option's picture, or hide the slot. A pooled card is re-bound across toys, so
+        /// a row without a picture must clear the last one rather than inherit it.
+        /// </summary>
+        void BindPicture(Sprite sprite)
+        {
+            if (!picture) return;
+            picture.sprite = sprite;
+            picture.preserveAspect = true;
+            picture.gameObject.SetActive(sprite != null);
         }
 
         /// <summary>

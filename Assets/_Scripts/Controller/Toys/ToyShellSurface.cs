@@ -35,6 +35,14 @@ namespace CosmicShore.Gameplay
         public Color Accent = Color.white;
 
         /// <summary>
+        /// A flat picture of what the option names - a hull's card art - drawn on the row
+        /// itself, so the list reads as pictures before the player reads a word. Optional; null
+        /// leaves the row as text. Distinct from <see cref="BuildPreview"/>, which is the one
+        /// SELECTED row's live 3D model: this is every row, at rest, and costs a sprite.
+        /// </summary>
+        public Sprite Picture;
+
+        /// <summary>
         /// True when this option is the state the player is ALREADY in - the cell they are flying
         /// in, the hull they are flying. Never hidden: the diegetic toys show it too (the cell
         /// selector haloes the current world, and flying it is the freestyle reset).
