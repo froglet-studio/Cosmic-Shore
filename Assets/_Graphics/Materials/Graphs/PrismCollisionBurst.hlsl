@@ -1,57 +1,62 @@
-// PrismCollisionBurst.hlsl — the GPU side of a COLLISION death (Docs/PRISM_ANIMATION.md §4.11,
-// Docs/PRISM_MOTION.md § "The look"). A moving prism that runs into another prism destroys both
-// (PrismMotion, the prism-movement fundamental); while few prisms are moving and the budget allows,
-// each of the two comes apart as a COLLISION BURST drawn on the ultra-high-res prism the Rhino's
-// slice uses, instead of as the ordinary explosion debris.
+// PrismCollisionBurst.hlsl — the GPU side of the prism's DETAIL LEVELS for its two fundamental
+// interactions (Docs/PRISM_ANIMATION.md §4.11, Docs/PRISM_MOTION.md § "The look"): how a prism is
+// DESTROYED and how it is STOLEN, drawn on the ultra-high-res prism the Rhino's slice uses whenever the
+// viewer is close enough to see the detail and the budget allows, and as the ordinary effect otherwise.
+// (The file keeps the name of its first use, the prism-movement collision.)
 //
-// THE BRIEF, and the one constraint every line below answers to: spectacular when you LOOK at it,
-// indistinguishable from the ordinary explosion when you SQUINT. So the burst shares the explosion's
-// whole ENVELOPE and differs only at the fine scale the dense mesh affords:
-//   • the same FLIGHT — the piece cloud's frame travels at the explosion's own clamped, gained
-//     velocity, linearly (offset = v·t), for the explosion's own 7.5 s life (PrismDebris resolves
-//     both, so the two cannot drift apart);
-//   • the same SIZE — every piece stays within PrismBurstEnvelope prism radii of the travelling
-//     centre, the way the explosion's wedges spin in place rather than fly off;
-//   • the same COLOUR — the domain's dark face brightening to its bright rim at grazing angles;
-//     accents (fracture glow, ember front, glints) are thin lines and brief instants;
-//   • the same FADE — coverage falls LINEARLY with age (PrismBurstDissolveValue is uniform on [0,1),
-//     so the surviving fraction is exactly 1 − progress), finishing just before retirement.
+//   DESTRUCTION is one spectrum, coarse to fine: the ordinary EXPLOSION (24 wedges, far away or over
+//   budget) → SHATTER (Voronoi shards) → GLITTER (every one of the 1,200 triangles a shard, close up).
+//   Each finer level shares the explosion's whole ENVELOPE so that, squinted at, it IS the explosion:
+//   the same flight (offset = v·t, PrismDebris resolves both), the same size (every piece within
+//   PrismBurstEnvelope prism radii of the travelling centre), the same colours, and the same LINEAR
+//   fade (PrismBurstDissolveValue is uniform on [0,1), so the surviving fraction is 1 − progress).
 //
-// WHY A STAMP AND NOT A GLOBAL (the prism-morph admission test, question 1). Everything is known
-// at the instant of the collision — the pose, the velocity, the kind — so this is §1's ordinary
-// shape: one stamp per prism, the GPU runs the course off _PrismClock, one scheduled retirement.
-// No per-frame CPU write to any burst, ever. It is the slice's neighbour: it rides the slice's
-// batch spawner and stamp channels (PrismCollisionBurst.cs), born ON the dense mesh, so there is
-// no residency swap and nothing to hide.
+//   STEALING is the GRADE far away — the 0.8 s smoothstep colour lerp PrismColorLerp runs on the prism —
+//   and a SHED close up: the prism takes its new colour at once and a skin wearing the OLD colours
+//   (bloom petals, unravelling ribbons, or flaking scales) comes off it, its inside already the new
+//   colour. The skin's coverage falls on the grade's own smoothstep over the grade's own length
+//   (PrismBurstProgress, curve 1), so the mean colour, squinted at, IS the grade.
 //
-// WHY THE DENSE MESH, AND WHY UNWELDED. Each burst draws HighPolyPrismMesh.GetUnwelded — the
-// identical solid at subdivision 10 (1,200 triangles against the prism's 24) with every triangle
-// owning its own three vertices. Unwelded is what lets the surface TEAR along any pattern the
-// kind chooses (shard borders, petal diagonals, ribbon seams) with no stretched triangle across
-// the tear; dense is what makes those tears and the curls smooth. TEXCOORD2 gives each vertex its
-// triangle's centroid in face coordinates plus a per-triangle random, so every vertex of a
-// triangle makes the SAME choice of piece — a triangle never straddles two pieces.
+// No white accents (the designer, 2026-10-14): the only contrast is the brighter INSIDE colour on the
+// back faces once the surface opens.
 //
-// THE FOUR KINDS (_SliceTiming.w; chosen per prism on the CPU, deterministic in the pose):
-//   0 SHATTER — each face fractures into Voronoi shards (PrismBurstVoronoi over the triangle
-//     centroids), each a RIGID piece that leaves along its face normal and tumbles about its own
-//     seed point; the fracture lines flash white-hot and cool.
-//   1 BLOOM   — each face splits along its diagonals into four petals, exactly the explosion's
+// WHY A STAMP AND NOT A GLOBAL (the prism-morph admission test, question 1). Everything is known at
+// the instant of the event — the pose, the velocity, the kind, the colours — so this is §1's ordinary
+// shape: one stamp per prism, the GPU runs the course off _PrismClock, one scheduled retirement. No
+// per-frame CPU write to any burst, ever. It rides the slice's batch spawner and stamp channels
+// (PrismCollisionBurst.cs), born ON the dense mesh, so there is no residency swap and nothing to hide.
+//
+// WHY THE DENSE MESH, AND WHY UNWELDED. Each burst draws HighPolyPrismMesh.GetUnwelded — the identical
+// solid at subdivision 10 (1,200 triangles against the prism's 24) with every triangle owning its own
+// three vertices. Unwelded is what lets the surface TEAR along any pattern the kind chooses (shard
+// borders, petal diagonals, ribbon seams, scale edges) with no stretched triangle across the tear;
+// dense is what makes those tears and the curls smooth. TEXCOORD2 gives each vertex its triangle's
+// centroid in face coordinates plus a per-triangle random, so every vertex of a triangle makes the SAME
+// choice of piece — a triangle never straddles two pieces.
+//
+// THE KINDS (_SliceTiming.w; chosen on the CPU, PrismInteractionLod):
+//   0 SHATTER — destruction, mid range. Each face fractures into Voronoi shards (PrismBurstVoronoi over
+//     the triangle centroids), each a RIGID piece that leaves along its face normal and tumbles about
+//     its own seed point.
+//   1 BLOOM   — shed. Each face splits along its diagonals into four petals, exactly the explosion's
 //     wedge layout, and each petal CURLS OUT from its cube edge like a flower opening — an exact
 //     isometric bend (PrismBurstBend), so the petal rolls without stretching.
-//   2 UNRAVEL — each face peels into ribbons along its longer axis, each ribbon curling up from
+//   2 UNRAVEL — shed. Each face peels into ribbons along its longer axis, each ribbon curling up from
 //     one end into a near-loop, staggered ribbon by ribbon.
-//   3 GLITTER — every triangle is its own shard: 1,200 glints that spin out and blink away one by
-//     one.
+//   3 GLITTER — destruction, close up. Every triangle is its own shard, spinning out and blinking away.
+//   4 FLAKE   — shed. The skin lifts off as rigid SCALES, a grid twice as fine as the shatter's, in a
+//     wave that runs the prism's long axis: each scale tips up on its far edge as the front nears and
+//     is gone when the front reaches it.
 //
 // EXACTNESS. Rigid pieces rotate their normal with them (Rodrigues). A bend's normal is the bend's
-// derivative: the strip at arc length s is rotated by a = κ·s about the hinge, so its normal is
-// that same rotation of the rest normal — exact, not a shortcut (the cradle's cheap-normal lesson).
-// The harness (Tools/Shaders/verify_prism_collision_burst.py) executes this file and proves: the
-// first frame IS the prism, rigid pieces stay rigid, bends are isometric with the normal as the
-// derivative, every piece stays inside the envelope the CPU bounds the entity by, and coverage is
-// linear in age and gone before retirement. It cannot prove the burst LOOKS good; that is the
-// playtest's.
+// derivative: the strip at arc length s is rotated by a = κ·s about the hinge, so its normal is that
+// same rotation of the rest normal — exact, not a shortcut (the cradle's cheap-normal lesson). The
+// harness (Tools/Shaders/verify_prism_collision_burst.py) executes this file and proves: the first
+// frame IS the prism, rigid pieces stay rigid, bends are isometric with the normal as the derivative,
+// every piece stays inside the envelope the CPU bounds the entity by, destruction coverage is linear in
+// age, a shed's progress IS the shipped grade's (PrismColorLerp, executed), and both are gone before
+// retirement. It cannot prove a burst LOOKS good; that is the playtest's and the lab's
+// (Docs/Studios/COLLISION_BURST_LAB.md).
 
 #ifndef PRISM_COLLISION_BURST_INCLUDED
 #define PRISM_COLLISION_BURST_INCLUDED
@@ -60,6 +65,7 @@
 #define PRISM_BURST_BLOOM   1.0
 #define PRISM_BURST_UNRAVEL 2.0
 #define PRISM_BURST_GLITTER 3.0
+#define PRISM_BURST_FLAKE   4.0
 
 #define PRISM_BURST_TAU 6.28318530718
 
@@ -85,10 +91,17 @@
 #define PRISM_BURST_BEND_NORMAL 1
 #endif
 
+// 1 (shipped): a SHED's progress is the grade's smoothstep (PrismColorLerp), so its mean colour is the
+// grade's. 0: linear like the destruction — the harness's negative control for the grade test.
+#ifndef PRISM_BURST_GRADE_SMOOTH
+#define PRISM_BURST_GRADE_SMOOTH 1
+#endif
+
 // The bloom's petal tie-break, in face coordinates (see PrismBurstPose).
 #define PRISM_BURST_PETAL_TIE 1e-4
 
-// Upper bound on Voronoi cells per face edge — the loops below are bounded by it.
+// Upper bound on Voronoi cells per face edge — the loops below are bounded by it. The flake's scales
+// are a grid twice as fine.
 #define PRISM_BURST_MAX_CELLS 6.0
 
 // Everything one vertex needs, all in WORLD space (the shader builds it from the object-space
@@ -105,6 +118,7 @@ struct PrismBurstFrame
     float2 triUV;       // its TRIANGLE's centroid in face coordinates, [-1, 1]
     float3 faceKey;     // identity of the face (its object normal, seeded) for hashing
     float radius;       // the prism's half-diagonal
+    float3 longAxis;    // the prism's longest half-axis (centre -> the middle of that end), the flake's sweep
 };
 
 struct PrismBurstParams
@@ -119,6 +133,7 @@ struct PrismBurstParams
     float unravelTurns; // a ribbon end's final curl, in turns
     float strips;       // ribbons per face
     float cells;        // shard seeds per face edge
+    float progress;     // the fade's progress now (PrismBurstProgress): the flake lifts a scale ahead of it
 };
 
 // ─── small pieces ─────────────────────────────────────────────────────────────────────────────
@@ -166,7 +181,7 @@ float2 PrismBurstSeed(float i, float j, float3 faceKey, float cells)
 }
 
 // The Voronoi cell of uv01 (face coords in [0, 1]²): its seed, and the distance from uv01 to the
-// nearest bisector — positive inside the cell, which is where the fracture line glows.
+// nearest bisector — positive inside the cell (the harness checks every point lies in its own cell).
 void PrismBurstVoronoi(float2 uv01, float3 faceKey, float cells, out float2 seed, out float border)
 {
     float k = clamp(floor(cells + 0.5), 1.0, PRISM_BURST_MAX_CELLS);
@@ -268,8 +283,9 @@ void PrismBurstShatter(PrismBurstFrame f, PrismBurstParams p, float shardScale, 
 }
 
 // The whole map for one vertex. pos/nrm exclude the flight (the shader adds v·t to every kind,
-// which is what makes the squint the explosion's). pieceHash in [0, 1) names the vertex's piece,
-// the same for every vertex of it — the dissolve's per-piece order.
+// which is what makes the squint the explosion's; a shed has none). pieceHash in [0, 1) names the
+// vertex's piece, the same for every vertex of it — the dissolve's per-piece order (for the flake, its
+// place in the wave).
 void PrismBurstPose(float kind, PrismBurstFrame f, PrismBurstParams p,
     out float3 pos, out float3 nrm, out float pieceHash)
 {
@@ -330,6 +346,36 @@ void PrismBurstPose(float kind, PrismBurstFrame f, PrismBurstParams p,
         pieceHash = frac(h.z * 7.13 + h.y);
         return;
     }
+    if (k == PRISM_BURST_FLAKE)
+    {
+        // The scale: a cell of a grid twice as fine as the shatter's; rigid.
+        float g = clamp(floor(p.cells * 2.0 + 0.5), 1.0, 2.0 * PRISM_BURST_MAX_CELLS);
+        float2 cell = min(floor((f.triUV * 0.5 + float2(0.5, 0.5)) * g), float2(g - 1.0, g - 1.0));
+        float2 c11 = (cell + float2(0.5, 0.5)) / g * 2.0 - float2(1.0, 1.0);
+        float3 pivot = f.faceCentre + f.faceU * c11.x + f.faceV * c11.y;
+        float3 h = PrismBurstHash3(f.faceKey * 7.7 + float3(cell.x, cell.y, p.seed * 19.0));
+        // The wave runs the long axis, from the end the seed picks.
+        float halfLong = max(length(f.longAxis), 1e-5);
+        float3 sweep = f.longAxis / halfLong * (frac(p.seed * 3.17) >= 0.5 ? 1.0 : -1.0);
+        float along = saturate(0.5 + 0.5 * dot(pivot - f.centre, sweep) / halfLong);
+        // Its turn in the fade (a little ragged), and its lift: from 70% of the way to its turn, fully
+        // up when the front takes it. Progress 0 lifts nothing, so the first frame is the skin.
+        float turn = min(along * 0.94 + h.x * 0.05, 0.999);
+        float lift = saturate((p.progress - 0.7 * turn) / max(0.3 * turn, 1e-3));
+        lift = lift * lift * (3.0 - 2.0 * lift);
+        // It tips up on its far edge: the hinge runs across the wave, in the face; an end face (the
+        // wave along its normal) hinges on its u axis.
+        float3 inPlane = sweep - f.normal * dot(sweep, f.normal);
+        float3 axis = PrismBurstAxis(cross(f.normal, inPlane), PrismBurstAxis(f.faceU, f.normal));
+        float3 back = PrismBurstAxis(cross(axis, f.normal), f.normal);
+        float reach = (abs(dot(back, f.faceU)) + abs(dot(back, f.faceV))) / g;
+        float3 hinge = pivot + back * reach;
+        float angle = lift * (0.55 + 0.25 * h.y) * PRISM_BURST_TAU * 0.5;
+        pos = hinge + PrismBurstRotate(f.rest - hinge, axis, angle) + f.normal * (min(p.spread, 1.0) * 0.3 * f.radius * lift);
+        nrm = PrismBurstRotate(f.normal, axis, angle);
+        pieceHash = turn;
+        return;
+    }
     if (k == PRISM_BURST_GLITTER)
     {
         float3 pivot = f.faceCentre + f.faceU * f.triUV.x + f.faceV * f.triUV.y;
@@ -351,11 +397,19 @@ void PrismBurstPose(float kind, PrismBurstFrame f, PrismBurstParams p,
 
 // ─── the fade ─────────────────────────────────────────────────────────────────────────────────
 
-// How far the fade has come: linear in age, the explosion's opacity curve, reaching 1 (all gone)
-// just before retirement.
-float PrismBurstProgress(float age, float life)
+// How far the fade has come, reaching 1 (all gone) at life / (1 + overshoot), before retirement.
+// curve 0 — DESTRUCTION: linear in age, the explosion's opacity curve. curve 1 — SHED: the grade's
+// smoothstep (PrismColorLerp: t = smoothstep(0, 1, saturate(elapsed / duration))), so with the life
+// stamped as the grade's duration × (1 + overshoot) the skin's coverage is 1 − t: squinted at, the
+// mean colour runs exactly the grade's course.
+float PrismBurstProgress(float age, float life, float curve)
 {
-    return max(age, 0.0) / max(life, 1e-4) * (1.0 + PRISM_BURST_DISSOLVE_OVERSHOOT);
+    float x = max(age, 0.0) / max(life, 1e-4) * (1.0 + PRISM_BURST_DISSOLVE_OVERSHOOT);
+#if PRISM_BURST_GRADE_SMOOTH
+    if (curve > 0.5)
+        return smoothstep(0.0, 1.0, saturate(x));
+#endif
+    return x;
 }
 
 // A fragment's place in the fade, in [0, 1): its piece's own time plus a ragged grain.

@@ -97,6 +97,13 @@ Entries are grouped by family; within a family, the newest goes at the bottom.
 - Evidence: `Docs/Studios/COLLISION_BURST_LAB.md` round 1 scorecard; `__lab.runBatch()`
 - Promoted: no
 
+### L-GEN-11 — A fixed tolerance in a randomized harness is a latent failure: adding an unrelated case moved the draws onto it
+- Lab: Collision Burst Lab round 2 (`Tools/Shaders/verify_prism_collision_burst.py`) · Branch: `cece/dreamy-pascal-7xxx1m` · Date: 2026-10-14
+- What happened: adding a fifth kind (the flake) to the pose loop consumed more of the seeded RNG, so the later bend test drew different prisms, and the unravel's isometry check failed at 2.2e-3 against its fixed 2e-3 — float32 noise of ~40-unit coordinates over a 5e-4 step. The shader was right; the check had passed only because its seed never drew such a prism. Its sibling check (the normal tilt) already scaled by the float noise floor and passed.
+- Do instead: every finite-difference tolerance in a randomized harness gets a noise floor scaled to the coordinates and the step (`8 · 1.2e-7 · (|p| + R) / eps`), never a bare constant; and when a harness goes red after an unrelated addition, suspect the draws moved before the code.
+- Evidence: `verify_prism_collision_burst.py` `stretchFloor`; the failing run printed `the bend stretched a step by 0.997898` four times
+- Promoted: no
+
 ## STU — browser studios (Stoat Flight Studio, Vessel Studio)
 
 ### L-STU-1 — A lab's scripted input exposed a real game bug: the sling read the latest trigger sample, not the squeeze
@@ -601,6 +608,13 @@ Entries are grouped by family; within a family, the newest goes at the bottom.
 - What happened: each seed shifts every pose 7.31 units in z so the per-prism seed hash changes; the line-up camera targeted the origin. Seed 0 looked perfect; any Replay (seed + 1) and `verify_lab.cjs`'s `reset(7)` left an empty stage, and the gate still passed (a WebGL stage skips the blank check). Only reading `desktop.png` showed it.
 - Do instead: derive the camera target from the same "home" the scene items use. Read the screenshot the verifier takes after `reset(seed)`, not only a fresh load.
 - Evidence: `lab.src.html` `camTarget`
+- Promoted: no
+
+### L-STU-66 — "Looks like X from a distance" is a SILHOUETTE claim before it is a colour claim; and a ramp of the right curve can still read as a wipe
+- Lab: Collision Burst Lab round 2 · Branch: `cece/dreamy-pascal-7xxx1m` · Date: 2026-10-14
+- What happened: a steal's shed was built so its coverage runs the grade's exact smoothstep (proven equal to the executed `PrismColorLerp`), so its mean colour IS the grade's. Scored on blurred rendered pixels against the grade, the bloom (0.214) and the unravel (0.220) still read further from it than an instant colour snap (0.158), because their petals and ribbons grow the silhouette by a third (size 1.32–1.35). The flake, whose silhouette barely changes (1.10), scored 0.120 but plateaued at ~0.104 under every dial: it reveals the colour as a front along the prism, a wipe, not a uniform change.
+- Do instead: before tuning colour or timing to match an effect "from a distance", score the silhouette (size column) and the spatial order of the change, not only the mean; when the ordinary effect is a colour change, blur all three channels (a hue change at equal brightness hides from a luminance blur). Give the scorecard a band (the ordinary effect, slightly late) and a negative (the change snapped) so "close" has a scale.
+- Evidence: `Docs/Studios/COLLISION_BURST_LAB.md` round 2 tables; `__lab.runBatch()` `table: 'sheds'`
 - Promoted: no
 
 ## NCA — swarm / neural-CA research rigs (Tools/NCA)

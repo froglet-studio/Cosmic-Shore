@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """
-Build Docs/Studios/PrismCollisionBurstLab.html — the COLLISION BURST LAB — from the shipped sources.
+Build Docs/Studios/PrismCollisionBurstLab.html — the COLLISION BURST LAB (round 2: the prism's interaction
+detail levels — destruction and stealing) — from the shipped sources.
 
 The lab is a READER of the game (`/labmaker` §2.1): every number and every line of shader math it runs
 is stamped in here from the file the game ships, never typed into the page.
@@ -18,7 +19,10 @@ is stamped in here from the file the game ships, never typed into the page.
                  PrismExplosion.prefab (minSpeed, maxSpeed, dangerDetonationMultiplier),
                  PrismExplosion.DefaultDuration
   explosion mesh Assets/_Models/Testing/Prism.asset (the 72 vertices, decoded from the mesh bytes)
-  burst config   Assets/Resources/PrismMotionConfig.asset (the ladder, the burst's shape and weights)
+  the grade      Assets/_Graphics/Materials/Graphs/PrismClockAnimation.hlsl (PrismColorLerp_float, the steal's
+                 colour lerp) -> GLSL, mechanically; MaterialPropertyAnimator.DefaultTransitionSeconds
+  detail config  Assets/Resources/PrismInteractionLodConfig.asset (the detail levels' lines, the shape, the
+                 shed weights) and Assets/Resources/PrismMotionConfig.asset (the motion ladder)
   burst look     Assets/_Graphics/Materials/PrismCollisionBurstMaterial.mat
   domain colours Assets/_SO_Assets/Color Palettes/OriginalColorSetSO.asset (Inside/OutsideBlockColor —
                  the Plain tier pair TryGetPrismKindColors hands both the burst and the explosion)
@@ -48,6 +52,9 @@ EXPLOSION_PREFAB = os.path.join(ROOT, "Assets/_Prefabs/Trails/Prisms With Pools/
 EXPLOSION_CS = os.path.join(ROOT, "Assets/_Scripts/Utility/Effects/PrismExplosion.cs")
 PRISM_MESH = os.path.join(ROOT, "Assets/_Models/Testing/Prism.asset")
 CONFIG = os.path.join(ROOT, "Assets/Resources/PrismMotionConfig.asset")
+LOD_CONFIG = os.path.join(ROOT, "Assets/Resources/PrismInteractionLodConfig.asset")
+CLOCK_HLSL = os.path.join(GRAPHS, "PrismClockAnimation.hlsl")
+ANIMATOR_CS = os.path.join(ROOT, "Assets/_Scripts/Controller/Environment/Prisms/MaterialPropertyAnimator.cs")
 BURST_MAT = os.path.join(ROOT, "Assets/_Graphics/Materials/PrismCollisionBurstMaterial.mat")
 COLORSET = os.path.join(ROOT, "Assets/_SO_Assets/Color Palettes/OriginalColorSetSO.asset")
 MOTION_CS = os.path.join(ROOT, "Assets/_Scripts/Controller/Prisms/PrismMotion.cs")
@@ -103,6 +110,10 @@ def extract_function(src, signature):
             if depth == 0:
                 return src[i:k + 1]
         k += 1
+
+
+def grade_glsl():
+    return hlsl_to_glsl(extract_function(read(CLOCK_HLSL), "void PrismColorLerp_float("))
 
 
 def erosion_glsl():
@@ -197,11 +208,15 @@ def domain_colors():
 
 
 def config():
-    t = read(CONFIG)
-    keys = ["showcaseMaxMovers", "boxMaxMovers", "maxLiveBursts", "burstSubdivision", "shatterWeight", "bloomWeight",
-            "unravelWeight", "glitterWeight", "spread", "openSeconds", "spinPerSpeed", "heatSeconds", "bloomTurns",
-            "unravelTurns", "ribbonsPerFace", "shardsPerFaceEdge", "dissolveGrain", "emberBand", "crackWidth", "glint"]
-    return {k: yaml_float(t, k) for k in keys}
+    motion, lod = read(CONFIG), read(LOD_CONFIG)
+    out = {k: yaml_float(motion, k) for k in ("showcaseMaxMovers", "boxMaxMovers")}
+    for k in ("maxLiveBursts", "burstSubdivision", "shatterMinScreen", "glitterMinScreen", "shedMinScreen",
+              "bloomWeight", "unravelWeight", "flakeWeight", "shedInflate", "spread", "openSeconds", "spinPerSpeed",
+              "bloomTurns", "unravelTurns", "ribbonsPerFace", "shardsPerFaceEdge", "dissolveGrain"):
+        out[k] = yaml_float(lod, k)
+    cs = read(ANIMATOR_CS)
+    out["gradeSeconds"] = float(re.search(r"public const float DefaultTransitionSeconds = ([0-9.]+)f;", cs).group(1))
+    return out
 
 
 def burst_look():
@@ -209,10 +224,7 @@ def burst_look():
     return {
         "fresnelPower": yaml_float(t, "_FresnelPower"),
         "innerGlow": yaml_float(t, "_InnerGlow"),
-        "emberGlow": yaml_float(t, "_EmberGlow"),
-        "emberWhite": yaml_float(t, "_EmberWhite"),
         "noiseScale": yaml_float(t, "_DissolveNoiseScale"),
-        "hot": yaml_color(t, "_HotColor"),
     }
 
 
@@ -252,13 +264,15 @@ def build():
         "sources": {
             "burst": "Assets/_Graphics/Materials/Graphs/PrismCollisionBurst.hlsl",
             "erosion": "Assets/_Graphics/Materials/Graphs/PrismOcclusionCorridor.hlsl (PrismErosionFade)",
+            "grade": "Assets/_Graphics/Materials/Graphs/PrismClockAnimation.hlsl (PrismColorLerp_float)",
             "explosionMap": "RotateFacesAlongAxis.shadersubgraph (closed form, parity-gated)",
         },
     }
     page = read(SRC)
     for marker, value in (("/*@@DATA@@*/null", json.dumps(data, separators=(",", ":"))),
                           ("/*@@GLSL_BURST@@*/", burst_glsl()),
-                          ("/*@@GLSL_EROSION@@*/", erosion_glsl())):
+                          ("/*@@GLSL_EROSION@@*/", erosion_glsl()),
+                          ("/*@@GLSL_GRADE@@*/", grade_glsl())):
         assert page.count(marker) == 1, f"marker {marker} must appear exactly once in {SRC}"
         page = page.replace(marker, value)
     return page

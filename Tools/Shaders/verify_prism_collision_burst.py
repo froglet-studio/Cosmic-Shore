@@ -5,12 +5,12 @@ collision burst does. Two halves, neither a transcription of the shader:
 
 A. EXECUTION (clang++, /asset-surgery §4.5c). The file under Assets/ is translated mechanically
    (HLSL -> C++ spelling only) and RUN on randomized prisms (rotation, translation, non-uniform scale
-   up to 20:1), every vertex of the unwelded high-poly mesh the burst draws, all four kinds:
+   up to 20:1), every vertex of the unwelded high-poly mesh the burst draws, all five kinds:
 
    1. THE FIRST FRAME IS THE PRISM: at age 0 every vertex and normal of every kind is where the prism
       had it — the burst replaces the prism with no pop (continuity of existence).
    2. A TRIANGLE IS NEVER TORN: the three vertices of a triangle always name the same piece.
-   3. RIGID PIECES STAY RIGID (shatter, glitter): every distance inside a piece is preserved at every
+   3. RIGID PIECES STAY RIGID (shatter, glitter, flake): every distance inside a piece is preserved at every
       age, under the prism's non-uniform scale — the reason the motion is done in world space.
    4. BENDS ARE ISOMETRIC AND THE NORMAL IS THEIR DERIVATIVE (bloom, unravel): a small step along the
       petal or ribbon keeps its length, and the returned normal is perpendicular to both surface
@@ -24,7 +24,12 @@ A. EXECUTION (clang++, /asset-surgery §4.5c). The file under Assets/ is transla
       The tolerance is reported against the measured worst case.
    8. THE FADE IS LINEAR: the fraction of fragments surviving at progress q is 1 - q (to sampling
       noise) for every grain — the explosion's opacity curve, the squint's other half.
-   9. GONE BEFORE RETIREMENT: progress reaches 1 before age reaches 95% of the life, and is monotone.
+   9. GONE BEFORE RETIREMENT: progress reaches 1 before age reaches 95% of the life, and is monotone,
+      on both curves.
+   9b. A SHED IS THE GRADE: with the life stamped as the grade's duration x (1 + overshoot), a shed's
+      progress equals the colour weight the SHIPPED grade (PrismColorLerp_float, extracted from
+      PrismClockAnimation.hlsl and executed) has reached at every instant — so the skin's coverage,
+      1 - progress, is the grade's course.
   10. VORONOI: every point lies inside its own cell (non-negative border) and seeds stay on the face.
   11. AN UNKNOWN KIND FALLS BACK to the shatter, never to garbage.
   NEGATIVE CONTROLS, each must FAIL the test it guards:
@@ -32,6 +37,7 @@ A. EXECUTION (clang++, /asset-surgery §4.5c). The file under Assets/ is transla
   13. -DPRISM_BURST_UNIFORM_VALUE=0       — the fade sags off the explosion's curve (test 8 fires).
   14. -DPRISM_BURST_ENVELOPE_BASE=1       — a pose escapes the bounds (test 6 fires).
   15. -DPRISM_BURST_BEND_NORMAL=0         — the bend keeps its rest normal (test 4 fires).
+  16. -DPRISM_BURST_GRADE_SMOOTH=0        — a shed fades linearly, off the grade (test 9b fires).
 
 B. FRONT-END COMPILE (glslang, HLSL mode). Every pass of PrismCollisionBurst.shader, vertex and
    fragment, plain and DOTS-instanced, against a mock of the URP library (the slice verifier's). It
@@ -52,6 +58,7 @@ import tempfile
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 GRAPHS = os.path.join(ROOT, "Assets/_Graphics/Materials/Graphs")
 HLSL = os.path.join(GRAPHS, "PrismCollisionBurst.hlsl")
+CLOCK = os.path.join(GRAPHS, "PrismClockAnimation.hlsl")
 SHADER = os.path.join(GRAPHS, "PrismCollisionBurst.shader")
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -96,6 +103,13 @@ static inline float lerp(float a,float b,float t){return a+(b-a)*t;}
 static inline float frac(float v){return v-std::floor(v);}
 static inline float3 frac(float3 v){return float3(frac(v.x),frac(v.y),frac(v.z));}
 static inline float3 floor(float3 v){return float3(std::floor(v.x),std::floor(v.y),std::floor(v.z));}
+static inline float2 floor(float2 v){return float2(std::floor(v.x),std::floor(v.y));}
+static inline float2 min(float2 a,float2 b){return float2(min(a.x,b.x),min(a.y,b.y));}
+static inline float2 operator+(float2 a,float b){return float2(a.x+b,a.y+b);}
+static inline float smoothstep(float a,float b,float x){float t=saturate((x-a)/(b-a));return t*t*(3.0f-2.0f*t);}
+struct float4 { float x=0,y=0,z=0,w=0; float4(){} float4(float a,float b,float c,float d):x(a),y(b),z(c),w(d){} };
+static inline float4 lerp(float4 a,float4 b,float t){return float4(lerp(a.x,b.x,t),lerp(a.y,b.y,t),lerp(a.z,b.z,t),lerp(a.w,b.w,t));}
+static inline float3 lerp(float3 a,float3 b,float t){return float3(lerp(a.x,b.x,t),lerp(a.y,b.y,t),lerp(a.z,b.z,t));}
 """
 
 HARNESS = r"""#include "shipped.h"
@@ -165,24 +179,30 @@ static PrismBurstFrame frameOf(const Pose& p, const Vert& v, float seed) {
     f.triUV = v.tri * 2.0f - float2(1, 1);
     f.faceKey = v.n * 3.7f + seed * 11.0f;
     f.radius = length(linear(p, float3(0.5f, 0.5f, 0.5f)));
+    float3 hx = linear(p, float3(0.5f, 0, 0)), hy = linear(p, float3(0, 0.5f, 0)), hz = linear(p, float3(0, 0, 0.5f));
+    float3 lng = hx;
+    if (dot(hy, hy) > dot(lng, lng)) lng = hy;
+    if (dot(hz, hz) > dot(lng, lng)) lng = hz;
+    f.longAxis = lng;
     return f;
 }
 static PrismBurstParams params(float age, float seed, float spread) {
     PrismBurstParams q;
     q.age = age; q.speed = rnd(10, 53); q.seed = seed; q.spread = spread; q.tau = 0.22f; q.spin = 0.3f;
     q.bloomTurns = 0.7f; q.unravelTurns = 0.9f; q.strips = 5; q.cells = 3;
+    q.progress = PrismBurstProgress(age, 7.5f, 0.0f);
     return q;
 }
 
 static void run_pose_tests(bool envelopeOnly) {
     std::vector<Vert> m = mesh();
-    float worstCentroid[4] = {0,0,0,0};
+    float worstCentroid[5] = {0,0,0,0,0};
     float worstEnvelope = 0;
     for (int trial = 0; trial < 24; trial++) {
         Pose P = rndPose();
         float seed = rnd(0, 1);
         float spread = rnd(0.2f, 1.5f);
-        for (int kind = 0; kind < 4; kind++) {
+        for (int kind = 0; kind < 5; kind++) {
             float ages[6] = {0.0f, 0.05f, 0.3f, 1.0f, 3.0f, 7.5f};
             for (float age : ages) {
                 PrismBurstParams q = params(age, seed, spread);
@@ -219,8 +239,8 @@ static void run_pose_tests(bool envelopeOnly) {
                 for (size_t i = 0; i < m.size(); i += 3) {
                     // 2. a triangle is never torn
                     CHECK(piece[i] == piece[i+1] && piece[i] == piece[i+2], "kind %d: a triangle straddles two pieces", kind);
-                    // 3. rigid pieces stay rigid (shatter, glitter): the triangle's own edges
-                    if (kind == 0 || kind == 3) {
+                    // 3. rigid pieces stay rigid (shatter, glitter, flake): the triangle's own edges
+                    if (kind == 0 || kind == 3 || kind == 4) {
                         for (int a = 0; a < 3; a++) {
                             int b = (a + 1) % 3;
                             float3 restA = world(P, m[i+a].pos), restB = world(P, m[i+b].pos);
@@ -229,20 +249,20 @@ static void run_pose_tests(bool envelopeOnly) {
                         }
                     }
                 }
-                // 3b. rigid across a whole piece: pairs of triangles naming the same shard
-                if (kind == 0) {
+                // 3b. rigid across a whole piece: pairs of triangles naming the same shard or scale
+                if (kind == 0 || kind == 4) {
                     for (int k = 0; k < 400; k++) {
                         size_t i = (rng() % (m.size() / 3)) * 3, j = (rng() % (m.size() / 3)) * 3;
                         if (piece[i] != piece[j] || !(m[i].n.x == m[j].n.x && m[i].n.y == m[j].n.y && m[i].n.z == m[j].n.z)) continue;
                         float d0 = length(world(P, m[i].pos) - world(P, m[j].pos)), d1 = length(pos[i] - pos[j]);
-                        CHECK(std::fabs(d0 - d1) <= 2e-4f * R, "shatter: a shard deformed %g -> %g", d0, d1);
+                        CHECK(std::fabs(d0 - d1) <= 2e-4f * R, "kind %d: a piece deformed %g -> %g", kind, d0, d1);
                     }
                 }
             }
         }
     }
-    printf("worst envelope: %.3f radii; worst cloud-centre drift (radii) shatter %.3f bloom %.3f unravel %.3f glitter %.3f\n",
-           worstEnvelope, worstCentroid[0], worstCentroid[1], worstCentroid[2], worstCentroid[3]);
+    printf("worst envelope: %.3f radii; worst cloud-centre drift (radii) shatter %.3f bloom %.3f unravel %.3f glitter %.3f flake %.3f\n",
+           worstEnvelope, worstCentroid[0], worstCentroid[1], worstCentroid[2], worstCentroid[3], worstCentroid[4]);
 }
 
 // 4. bends: isometric, and the normal is the derivative.
@@ -276,7 +296,10 @@ static void run_bend_tests() {
                         PrismBurstPose((float)kind, g, q, p1, n1, h1);
                         float3 step = p1 - p0;
                         float ratio = length(step) / eps;
-                        CHECK(std::fabs(ratio - 1.0f) <= 2e-3f, "kind %d: the bend stretched a step by %g", kind, ratio);
+                        // The chord of a step this size is within 2e-3 of its arc; below that, float32
+                        // rounding of coordinates of size |p0| over the step (the tilt's floor, below).
+                        float stretchFloor = std::max(2e-3f, 8.0f * 1.2e-7f * (length(p0) + f.radius) / eps);
+                        CHECK(std::fabs(ratio - 1.0f) <= stretchFloor, "kind %d: the bend stretched a step by %g (floor %g)", kind, ratio, stretchFloor);
                         tilt[h] = std::fabs(dot(normalize(step), n0));
                     }
                     // Below the float noise floor of a step this size the tilt carries no
@@ -306,11 +329,31 @@ static void run_fade_tests() {
             CHECK(std::fabs(frac - (1.0f - q)) <= 0.01f, "grain %.2f: at progress %.1f %.3f survive, the explosion's curve says %.3f", grain, q, frac, 1.0f - q);
         }
     }
-    float life = 7.5f;
-    CHECK(PrismBurstProgress(0.0f, life) == 0.0f, "progress at age 0 is not 0");
-    CHECK(PrismBurstProgress(life * 0.95f, life) >= 1.0f, "progress has not reached 1 at 95%% of the life (%g): fragments survive to retirement", PrismBurstProgress(life * 0.95f, life));
-    float prev = -1;
-    for (int k = 0; k <= 100; k++) { float pr = PrismBurstProgress(life * k / 100.0f, life); CHECK(pr >= prev, "progress not monotone"); prev = pr; }
+    for (float curve : {0.0f, 1.0f}) {
+        float life = curve > 0.5f ? 0.848f : 7.5f;
+        CHECK(PrismBurstProgress(0.0f, life, curve) == 0.0f, "curve %g: progress at age 0 is not 0", curve);
+        CHECK(PrismBurstProgress(life * 0.95f, life, curve) >= 1.0f, "curve %g: progress has not reached 1 at 95%% of the life (%g): fragments survive to retirement", curve, PrismBurstProgress(life * 0.95f, life, curve));
+        float prev = -1;
+        for (int k = 0; k <= 100; k++) { float pr = PrismBurstProgress(life * k / 100.0f, life, curve); CHECK(pr >= prev, "curve %g: progress not monotone", curve); prev = pr; }
+    }
+}
+
+// 9b. a shed is the grade: its progress is the shipped grade's colour weight at every instant.
+static void run_grade_tests() {
+    const float overshoot = PRISM_BURST_DISSOLVE_OVERSHOOT;
+    for (float duration : {0.8f, 0.35f, 2.0f}) {
+        float life = duration * (1.0f + overshoot);
+        float worst = 0;
+        for (int k = 0; k <= 400; k++) {
+            float age = duration * 1.2f * k / 400.0f;
+            float4 bright, dark; float3 spread;
+            PrismColorLerp_float(age, 0.0f, duration, float4(0,0,0,0), float4(0,0,0,0), float3(0,0,0),
+                                 float4(1,1,1,1), float4(1,1,1,1), float3(1,1,1), bright, dark, spread);
+            float err = std::fabs(PrismBurstProgress(age, life, 1.0f) - bright.x);
+            if (err > worst) worst = err;
+        }
+        CHECK(worst <= 1e-4f, "duration %g: a shed's progress leaves the grade's course by %g", duration, worst);
+    }
 }
 
 // 10. voronoi; 11. unknown kind.
@@ -339,26 +382,37 @@ int main(int argc, char** argv) {
     bool envelopeOnly = argc > 1 && std::strcmp(argv[1], "envelope") == 0;
     bool fadeOnly = argc > 1 && std::strcmp(argv[1], "fade") == 0;
     bool bendOnly = argc > 1 && std::strcmp(argv[1], "bend") == 0;
+    bool gradeOnly = argc > 1 && std::strcmp(argv[1], "grade") == 0;
     if (envelopeOnly) run_pose_tests(true);
     else if (fadeOnly) run_fade_tests();
     else if (bendOnly) run_bend_tests();
-    else { run_pose_tests(false); run_bend_tests(); run_fade_tests(); run_misc_tests(); }
+    else if (gradeOnly) run_grade_tests();
+    else { run_pose_tests(false); run_bend_tests(); run_fade_tests(); run_grade_tests(); run_misc_tests(); }
     printf("collision burst: %d failure(s)\n", failures);
     return failures ? 1 : 0;
 }
 """
 
 
-def translate(src):
+def grade_function():
+    """The SHIPPED grade, PrismColorLerp_float, cut out of PrismClockAnimation.hlsl verbatim."""
+    clock = open(CLOCK).read()
+    m = re.search(r"void PrismColorLerp_float\(.*?\n}\n", clock, re.S)
+    assert m, "PrismColorLerp_float missing from PrismClockAnimation.hlsl"
+    return m.group(0)
+
+
+def translate(src, required=True):
     """HLSL -> C++ spelling. Mechanical only."""
     out = src
+    out = re.sub(r"\bout float4 (\w+)", r"float4 &\1", out)
     out = re.sub(r"\bout float3 (\w+)", r"float3 &\1", out)
     out = re.sub(r"\bout float2 (\w+)", r"float2 &\1", out)
     out = re.sub(r"\bout float (\w+)", r"float &\1", out)
     for name in ("void PrismBurstPose(", "void PrismBurstBend(", "void PrismBurstVoronoi(",
                  "float PrismBurstEnvelope(", "float PrismBurstProgress(", "float PrismBurstDissolveValue(",
                  "bool PrismBurstClipped(", "float PrismBurstNoise("):
-        assert name in out, f"{name} missing from the shipped HLSL"
+        assert not required or name in out, f"{name} missing from the shipped HLSL"
     return out
 
 
@@ -387,7 +441,7 @@ def main():
         with open(os.path.join(work, "shim.h"), "w") as f:
             f.write(SHIM)
         with open(os.path.join(work, "shipped.h"), "w") as f:
-            f.write('#pragma once\n#include "shim.h"\n' + translate(src))
+            f.write('#pragma once\n#include "shim.h"\n' + translate(src) + "\n" + translate(grade_function(), required=False))
         with open(os.path.join(work, "main.cpp"), "w") as f:
             f.write(HARNESS)
 
@@ -399,7 +453,8 @@ def main():
         for flag, arg, label in (("-DPRISM_BURST_DISSOLVE_OVERSHOOT=0.0", "fade", "overshoot control"),
                                  ("-DPRISM_BURST_UNIFORM_VALUE=0", "fade", "uniform-value control"),
                                  ("-DPRISM_BURST_ENVELOPE_BASE=1.0", "envelope", "envelope control"),
-                                 ("-DPRISM_BURST_BEND_NORMAL=0", "bend", "cheap-normal control")):
+                                 ("-DPRISM_BURST_BEND_NORMAL=0", "bend", "cheap-normal control"),
+                                 ("-DPRISM_BURST_GRADE_SMOOTH=0", "grade", "linear-shed control")):
             rc, out = build_and_run(work, [flag], arg, label)
             fired = rc != 0
             print(f"negative control [{label}]: {'FIRED' if fired else 'DID NOT FIRE'} ({out.splitlines()[-1]})")

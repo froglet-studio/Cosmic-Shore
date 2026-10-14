@@ -14,23 +14,3 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::CosmicShore.ScriptableObjects.PrismMotionConfigSO
   showcaseMaxMovers: 64
   boxMaxMovers: 256
-  burstEnabled: 1
-  burstMaterial: {fileID: 2100000, guid: bb416e904a654a8597031d364831aa5d, type: 2}
-  burstSubdivision: 10
-  maxLiveBursts: 48
-  shatterWeight: 1
-  bloomWeight: 1
-  unravelWeight: 1
-  glitterWeight: 1
-  spread: 0.55
-  openSeconds: 0.22
-  spinPerSpeed: 0.3
-  heatSeconds: 0.35
-  bloomTurns: 0.7
-  unravelTurns: 0.8
-  ribbonsPerFace: 5
-  shardsPerFaceEdge: 3
-  dissolveGrain: 0.35
-  emberBand: 0.05
-  crackWidth: 0.035
-  glint: 0.6

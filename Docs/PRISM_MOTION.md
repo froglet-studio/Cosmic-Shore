@@ -75,7 +75,8 @@ displaced, so they do not run the rule. They are valid TARGETS of it.
 6. **The move is final the frame it is made** (the movers contract, `PRISM_ANIMATION.md` §3.6): the
    transform, the collider, the spatial index and the shell agree, so a moving prism is always tested
    where it actually is, and later movers in the same frame see it there.
-7. **The look at level 1 — spectacular up close, the explosion when squinted at** (§3a).
+7. **The look at level 1 — spectacular up close, the explosion when squinted at** (§3a): the
+   destruction detail level the viewer's distance picks (explosion → shatter → glitter), game-wide.
 
 ## 3. How each path keeps it
 
@@ -102,47 +103,35 @@ ARE every body's pre-step positions. On the main thread `ApplyContacts` annihila
 capture or a throat transit on the same frame. A pair both bodies reported is annihilated once
 (`Damage` is idempotent on a destroyed prism).
 
-## 3a. The look — the collision burst (level 1)
+## 3a. The look — the destruction detail levels (level 1)
 
-Each prism a level-1 collision destroys comes apart as a **collision burst**: one pure render entity
-drawing the slice's ultra-high-res prism — subdivided ×10, 1,200 triangles against the prism's 24, and
-**unwelded** (`HighPolyPrismMesh.GetUnwelded`: every triangle owns its vertices, so the surface can
-tear along any pattern) — in one of four kinds, picked per prism by weight (`PrismMotionConfig`):
+A prism destroyed by a level-1 collision is drawn at the **destruction detail level** the viewer's
+distance picks, like every other prism death in the game (the detail levels are game-wide since
+2026-10-14 — `Docs/PRISM_ANIMATION.md` §4.11, `PrismInteractionLod`, `Resources/PrismInteractionLodConfig`).
+Destruction is one spectrum, coarse to fine, by the prism's projected diameter over the screen height:
 
-| Kind | Up close |
-|---|---|
-| **Shatter** | each face fractures into ~9 Voronoi shards that tumble away about their own seeds; the fracture lines flash white-hot and cool in ~0.35 s |
-| **Bloom** | each face splits along its diagonals into four petals (the explosion's own wedge layout) that CURL open from the cube's edges like a flower — an exact isometric bend, the inside of the cube glowing as it opens |
-| **Unravel** | each face peels into five ribbons along its longer side, each curling up from one end, staggered |
-| **Glitter** | every one of the 1,200 triangles is its own shard: spinning out, glinting now and then, blinking away one by one |
+| Level | Size on screen | Up close |
+|---|---|---|
+| **Explosion** | under `shatterMinScreen` (5%), off screen, or over budget | the ordinary 24-wedge explosion |
+| **Shatter** | from 5% | each face fractures into ~9 Voronoi shards that tumble away about their own seeds |
+| **Glitter** | from `glitterMinScreen` (15%) | every one of the 1,200 triangles of the slice's unwelded ultra-high-res prism is its own shard, spinning out and blinking away |
 
-**Why squinting can't tell it from the explosion**: the burst shares the explosion's whole envelope
-and differs only at the fine scale. Its **flight** is `PrismDebris.ResolveExplosionFlight` — the
-explosion's own clamp and tier gain, extracted from `TryRequestExplosion` so the two cannot drift — and
-is linear (`v·t`) like the debris'; its **life** is `PrismExplosion.DefaultDuration` (7.5 s); its
-**palette** is the tier pair the factory resolved for the explosion; its pieces stay within
-`3.5 + 1.5·spread` prism radii of the travelling centre (spread capped at 1 radius), and the cloud's
-mean stays within 0.23 radii of it (measured); its **coverage falls linearly with age** — the
-explosion's opacity curve — because each fragment's place in the fade is `frac(piece + grain·noise)`,
-uniform on [0, 1) whatever the grain. The accents (fracture flash, ember front, glints) are thin lines
-and brief instants.
+No white accents (the designer, 2026-10-14): the only contrast is the brighter inside colour on the
+back faces once the surface opens. Both finer levels share the explosion's ENVELOPE — its flight
+(`PrismDebris.ResolveExplosionFlight`, linear `v·t`), its life (`PrismExplosion.DefaultDuration`, 7.5 s),
+its palette, a prism-sized cloud (`3.5 + 1.5·spread` radii, spread capped at 1), and its linear fade — so
+squinted at, each is meant to read as the explosion.
 
-**That argument did not survive measurement.** The Collision Burst Lab
-(`Docs/Studios/COLLISION_BURST_LAB.md`, https://claude.ai/artifact/F47yG1UjBkK662rEnhk7m9) runs the
-shipped HLSL beside the shipped explosion and scores blurred rendered pixels: two explosions differ by
-0.082, the four kinds by 0.33–0.47 (a prism that never breaks scores 0.261). The accents brighten the
-cloud, the cloud is 0.69–0.91 of the explosion's size, and the explosion's wedges linger past the
-burst's fade. Carrying the burst's detail on the explosion's own wedges, with the accents tamed, reaches
-0.12–0.18. **Decision needed (designer):** graduate that proposal, tame the accents, end the fade with
-the explosion's — or accept that level 1 reads differently.
+**Measured (the Collision Burst Lab, `Docs/Studios/COLLISION_BURST_LAB.md`,
+https://claude.ai/artifact/F47yG1UjBkK662rEnhk7m9):** with the white gone, the glitter's colour difference
+from the explosion fell (0.187 → 0.109), but neither level yet squints as the explosion on rendered,
+blurred pixels (shatter 0.346, glitter 0.303 against a 0.097 two-explosion band; a never-breaking prism
+scores 0.315). What remains is shape — the cloud is ~0.79 of the explosion's size and its last pieces go
+sooner. Round 1's proposal (carry the detail on the explosion's own wedges) stays in the lab's Archive.
 
-**How it is drawn**: a stamp, like the slice — everything is known at the instant of the collision, so
-one stamp per prism and the GPU runs the course (`PrismCollisionBurst.hlsl` / `.shader`, Docs/
-PRISM_ANIMATION.md §4.11). It rides the slice's carrier unchanged (`SpawnSliceDebrisBatch`, its timing
-and drift channels), so it added no ECS component. `Prism.DamageByCollision` parks the request on the
-death event (`PrismEventData.CollisionBurst`), and `PrismFactory.SpawnExplosion` tries the burst after
-the slice and before the explosion — any refusal (budget full, config off) is the ordinary explosion.
-**Budget**: `maxLiveBursts` 48 × 1,200 = **57,600 triangles**, zero colliders, one batch.
+Above level 1 (many movers) a collision asks for the plain explosion (`PrismEventData.PlainDeath`), as
+the ladder always said. **Budget**: `maxLiveBursts` 48 × 1,200 = **57,600 triangles**, destruction and
+the steal's sheds together, zero colliders, one batch; past it, the ordinary effect.
 
 ## 4. Stated limits
 
@@ -159,11 +148,13 @@ the slice and before the explosion — any refusal (budget full, config off) is 
 - **Per peer.** Both movers already run on every peer from local state (the plough as the ram did,
   the gravity field as the wormhole toll does), so two peers can disagree on a collision at the edge
   of a contact — the same stance as those systems' own verdicts.
-- **The burst is photons only and per peer.** Like the explosion it replaces, each peer draws its own;
-  the kind is hashed from the pose, so peers that agree on the collision agree on the look.
+- **The detail level is photons only and per peer.** Like the explosion it replaces, each peer draws its
+  own, picked by that peer's own camera — two peers may draw one death at different levels, never a
+  different outcome.
 - **"When we can afford it" is a budget, not a frame-time measurement.** Level 1 is a mover-count
-  ceiling plus a live-burst ceiling; neither reads the frame time. If profiling shows a burst wave
-  costing frames, lower `maxLiveBursts` or `showcaseMaxMovers`.
+  ceiling plus a live-burst ceiling and a size-on-screen line; none reads the frame time. If profiling
+  shows a burst wave costing frames, lower `maxLiveBursts` (`PrismInteractionLodConfig`) or
+  `showcaseMaxMovers`.
 - **Cost.** Box path: up to 256 bodies × one managed segment query + a 15-axis test per candidate, on
   the main thread. Sphere path: up to 6,000 bodies × the buckets their reach spans (8–27 at 8 u
   buckets), in parallel. Neither yet profiled in the editor — see §6.
@@ -175,14 +166,16 @@ the slice and before the explosion — any refusal (budget full, config off) is 
 | `_Scripts/Controller/Prisms/PrismMotion.cs` | The rule: `Annihilate`; boxes — `Box`, `TryGetBox`, `EntersContact(Box…)`, `TryFirstContact`, `MoverSteps`, `TrySweep`; spheres — `ContactRadius`, `EntersContact(float3…)`, `ContactJob`, `MapSlotsJob` |
 | `_Scripts/Controller/Managers/PrismSpatialIndex.cs` | `StoredPosition`, `ContactVolume`, `TryGetMotionView` (region "Prism motion") |
 | `_Scripts/Controller/Environment/BlackHole/BlackHoleGravityField.cs` | `PrevPoints` out of the integration, `NextLevel` (the ladder), `BoxContacts`, `ScheduleContacts`, `ApplyContacts`, `CollisionsTotal` |
-| `_Scripts/ScriptableObjects/PrismMotionConfigSO.cs`, `Resources/PrismMotionConfig.asset` | The ladder (`showcaseMaxMovers` 64, `boxMaxMovers` 256) and the burst's tuning, budget and variety weights |
-| `_Scripts/Utility/Effects/PrismCollisionBurst.cs` | The burst carrier: kind pick, culling bounds, stamp, drain, retire |
-| `_Graphics/Materials/Graphs/PrismCollisionBurst.hlsl` / `.shader`, `_Graphics/Materials/PrismCollisionBurstMaterial.mat` | The four kinds, the fade, the URP passes |
+| `_Scripts/ScriptableObjects/PrismMotionConfigSO.cs`, `Resources/PrismMotionConfig.asset` | The ladder (`showcaseMaxMovers` 64, `boxMaxMovers` 256) |
+| `_Scripts/ScriptableObjects/PrismInteractionLodConfigSO.cs`, `Resources/PrismInteractionLodConfig.asset` | The game-wide detail levels: the size-on-screen lines, the budget, the shape, the shed weights (`Docs/PRISM_ANIMATION.md` §4.11) |
+| `_Scripts/Utility/Effects/PrismInteractionLod.cs` | Picks the level: destruction (explosion / shatter / glitter) and stealing (grade / shed) |
+| `_Scripts/Utility/Effects/PrismCollisionBurst.cs` | The carrier: culling bounds, stamp, drain, retire (destruction and sheds on separate expiry queues) |
+| `_Graphics/Materials/Graphs/PrismCollisionBurst.hlsl` / `.shader`, `_Graphics/Materials/PrismCollisionBurstMaterial.mat` | The five kinds, the two fade curves, the URP passes |
 | `_Scripts/Utility/HighPolyPrismMesh.cs` | `GetUnwelded` (TEXCOORD2 = triangle centroid + random) |
 | `_Scripts/Utility/Effects/PrismDebris.cs` | `ResolveExplosionFlight` — the explosion's flight, shared |
-| `_Scripts/Controller/Vessel/Prism.cs`, `PrismEventChannelWithReturnSO.cs`, `PrismFactory.cs` | `DamageByCollision` → `PrismEventData.CollisionBurst` → the factory's burst-then-explosion |
-| `Tools/Shaders/verify_prism_collision_burst.py` | Executes the shipped HLSL (11 properties, 4 negative controls) and glslang-compiles every pass |
-| `_Scripts/Tests/Editor/PrismCollisionBurstTests.cs` | The ladder and its hysteresis, the envelope formula vs the HLSL, the bounds, the kind weights, the unwelded mesh, the shipped config and wiring |
+| `_Scripts/Controller/Vessel/Prism.cs`, `PrismEventChannelWithReturnSO.cs`, `PrismFactory.cs` | `DamageByCollision` → `PrismEventData.PlainDeath` (above level 1) → the factory's slice, detail level, explosion |
+| `Tools/Shaders/verify_prism_collision_burst.py` | Executes the shipped HLSL (12 properties, 5 negative controls, the shipped grade executed) and glslang-compiles every pass |
+| `_Scripts/Tests/Editor/PrismCollisionBurstTests.cs` | The ladder and its hysteresis, the envelope and overshoot vs the HLSL, the bounds, the shed life and skin, the shed weights, the size-on-screen pick, the unwelded mesh, the shipped configs and wiring, no white accents |
 | `_Scripts/Controller/ImpactEffects/EffectsSO/Vessel Prism Effects/RhinoPloughPrismEffectSO.cs` | `TrySweep` before the shove |
 | `_Scripts/Tests/Editor/PrismMotionTests.cs` | Spheres and boxes: first touch, stop-short, pass-wide, at-rest, separating, two movers, lockstep, symmetry; a long slab its sphere misses; a gap only the edge axes see |
 
@@ -209,16 +202,14 @@ spectacular, and whether squinting really can't tell them from the explosion, is
 5. **Cost.** `prof` with a Stoat pair at ~250 bodies (boxes: the main-thread `BoxContacts` must stay well
    under a millisecond — if not, lower `boxMaxMovers`) and over a full body budget (~6,000,
    spheres: `ContactJob` must be a small fraction of `IntegrateJob` — if not, lower `MaxContactRadius`).
-6. **The bursts, up close.** Plough a few prisms into a trail (level 1). Each pair comes apart as one of
-   the four kinds: shards with a white-hot crack flash, petals curling open, ribbons peeling, or a
-   glitter of triangles. No magenta (a rejected shader), no pop on the first frame (the burst must start
-   exactly as the prism), nothing culled while still on screen.
+6. **The detail levels, up close.** Plough a few prisms into a trail (level 1) with the camera close:
+   each comes apart as a shatter (shards, the brighter inside colour on their backs) or, closer still, a
+   glitter of triangles — no white anywhere. Back the camera off: the same collision explodes plainly.
+   No magenta (a rejected shader), no pop on the first frame, nothing culled while still on screen.
 7. **The squint test.** Side by side — a plough collision and a sword-free hull ram of a stationary
    prism by another vessel (the ordinary explosion) — at play distance, squinting: the two clouds should
-   travel the same way, be the same size, fade over the same time in the same colours. (The lab
-   predicts they will NOT yet, see §3a — this step confirms or refutes it in the engine.) If a kind reads
-   brighter or bigger, lower its accent (`_HotColor`, `glint`) or `spread`; if one reads as a different
-   effect at a glance, turn its weight to 0 rather than retuning the envelope.
+   travel the same way, be the same size, fade over the same time in the same colours. (The lab measures
+   that they do NOT yet, see §3a — this step confirms or refutes it in the engine.)
 8. **The ladder.** Dense Stoat field: past 64 bodies collisions explode plainly (level 2), past 256 the
    contact goes to spheres (level 3); coming back down, level 2 returns at 192 and level 1 at 48. Fill
    the burst budget (48 live) with many level-1 collisions at once: the overflow explodes plainly, never

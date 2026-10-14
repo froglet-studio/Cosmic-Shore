@@ -1,8 +1,9 @@
 # Collision Burst Lab
 
-The four level-1 **collision bursts** (shatter, bloom, unravel, glitter — `Docs/PRISM_MOTION.md` §3a,
-`Docs/PRISM_ANIMATION.md` §4.11) side by side with the **ordinary prism explosion**, running the
-shipped shader code in WebGL2, with a measured squint scorecard and a shared decision log.
+The prism's **interaction detail levels** (`Docs/PRISM_ANIMATION.md` §4.11) side by side with the ordinary
+effects they stand in for, running the shipped shader code in WebGL2, with a measured squint scorecard and
+a shared decision log: **destruction** (explosion → shatter → glitter) and **stealing** (the grade → a
+bloom, unravel or flake shed). Round 1 looked at the four level-1 collision bursts alone.
 
 - **Live page:** https://claude.ai/artifact/F47yG1UjBkK662rEnhk7m9 (decision log: `decisions`)
 - **Page (generated, never edit by hand):** `Docs/Studios/PrismCollisionBurstLab.html`
@@ -11,8 +12,9 @@ shipped shader code in WebGL2, with a measured squint scorecard and a shared dec
 - **Parity gate:** `Tools/Build/prism_collision_burst_lab/parity.py`
 
 The question the lab exists to answer is the brief's: **spectacular when you look at it, the ordinary
-explosion when you squint.** One column per part of that: size, centre, fade, colour, and the RMS of the
-blurred difference ("squint"), each against the explosion of the same prism at the same moment.
+effect when you squint** — the explosion for a destruction, the grade for a steal. One column per part of
+that: size, centre, fade, colour, and the RMS of the blurred difference ("squint"), each against the
+ordinary effect on the same prism at the same moment.
 
 ## What the page reads (it is a reader, never an authority)
 
@@ -25,13 +27,122 @@ blurred difference ("squint"), each against the explosion of the same prism at t
 | RotateFacesAlongAxis / TangentSlider subgraphs | the explosion's face pivot (asserted −0.5 / 0.5 / 0.5 from the graph's node slots) |
 | `ExplodingBlockMaterial.mat`, `PrismExplosion.prefab`, `PrismExplosion.cs` | `_ExplosiveRotation` 0.0169, `_ExplosiveSpead` 0.05, `_Spread` (0.18, 0.1, 0.1), speed 10–33.33, 7.5 s life |
 | `Prism.asset` | the explosion's 72-vertex wedge mesh, byte for byte |
-| `PrismMotionConfig.asset`, `PrismMotion.cs` | burst dials, kind weights, the 64/48 and 256/192 ladder, debris restitution ⅓ and limit 200 |
-| `PrismCollisionBurstMaterial.mat`, `OriginalColorSetSO` | the burst's look dials; Jade/Ruby/Gold/Blue inside/outside colours |
+| `PrismInteractionLodConfig.asset` | the size-on-screen lines, the budget, the shape, the shed weights and skin offset |
+| `PrismClockAnimation.hlsl`, `MaterialPropertyAnimator.cs` | the steal's grade, `PrismColorLerp_float` (translated), and its 0.8 s length |
+| `PrismMotionConfig.asset`, `PrismMotion.cs` | the 64/48 and 256/192 ladder, debris restitution ⅓ and limit 200 |
+| `PrismCollisionBurstMaterial.mat`, `OriginalColorSetSO` | the look dials; Jade/Ruby/Gold/Blue inside/outside colours |
 
 The burst mesh is `HighPolyPrismMesh.GetUnwelded(10)` rebuilt on the page in float32 (`Math.fround`), as
 C# builds it.
 
-## Round 1 — 2026-10-14 (`cece/dreamy-pascal-7xxx1m`)
+## Round 2 — 2026-10-14 (`cece/dreamy-pascal-7xxx1m`): the detail levels
+
+**Your decisions applied** (the designer, in the session; the shared log was empty): no white edge on the
+dissolves or the glitter — the brighter inside colour is the contrast; shatter, glitter and the explosion
+are one spectrum for destruction; bloom and unravel shed for stealing, revealing the new colour inside; a
+level of detail for these fundamental interactions across the game; other shedding effects that look like
+the grade from a distance. Round 1's geometry is kept ("good geometrically"); its carried proposal moved
+to the Archive tab.
+
+### What changed, in the game and in the lab
+
+- **The shader** (`PrismCollisionBurst.hlsl` / `.shader`): the white accents are gone (`_HotColor`, ember,
+  glint, crack flash, `_BurstFade`); every kind's back faces wear the inside colour; a fifth kind, **FLAKE**
+  (scales tipping off in a wave down the long axis); a second fade curve, the **grade's smoothstep**, for
+  sheds; the inside colour as a stamp so a shed's inside is the NEW colour.
+- **The game** (`PrismInteractionLod`, `PrismInteractionLodConfigSO`): every explosion death picks
+  explosion / shatter / glitter by the prism's size on screen (5% / 15% of the screen height); every steal
+  picks the grade or a shed (from 8%), and an accepted shed snaps the prism to its new colour under a skin
+  in its old colours. One budget (48), past it the ordinary effect. `PrismMotionConfig` keeps only the
+  ladder; a collision above level 1 asks for the plain explosion.
+- **The lab**: three views — **Destruction** (explosion, shatter, glitter on one flight), **Stealing** (the
+  grade beside the three sheds, a "stolen by" domain), **Collision** (drawn at the level the camera
+  distance picks). The HUD says the prism's size on screen and what the game would draw there; the ◆
+  marks it, and moves as you zoom. Tabs: Levels, Shape, Kinds, Sheds, Look, Scene, Proposal, Archive.
+
+### Scorecard (shipped settings)
+
+`__lab.runBatch()` (Score the squint; reproduced by `verify_lab.cjs`). The squint now blurs all three
+colour channels, not luminance alone, because a steal is a change of HUE. Each table has a band and a
+negative control.
+
+**Destruction, against the explosion** (15 times over 7.25 s):
+
+| | size | centre | fade | colour | **squint** | verdict |
+|---|---|---|---|---|---|---|
+| Explosion, another prism (band) | 1.13 | 0.21 | 0.10 | 0.012 | **0.097** | the band |
+| Prism held whole (negative) | 0.12 | 0.53 | 0.59 | 0.002 | **0.315** | fails, as it must |
+| Shatter | 0.79 | 0.50 | 0.23 | 0.115 | **0.346** | reads as different |
+| Glitter | 0.80 | 0.47 | 0.20 | 0.109 | **0.303** | close |
+
+**Sheds, against the grade** (jade stolen by ruby, 15 times over the 0.8 s grade):
+
+| | size | centre | fade | colour | **squint** | verdict |
+|---|---|---|---|---|---|---|
+| Grade, 10% late (band) | 1.00 | 0 | 0 | 0.015 | **0.033** | the band |
+| Colour snapped (negative) | 1.00 | 0 | 0 | 0.076 | **0.158** | fails, as it must |
+| Bloom | 1.32 | 0.03 | 0.24 | 0.045 | **0.214** | reads as different |
+| Unravel | 1.35 | 0.06 | 0.25 | 0.048 | **0.220** | reads as different |
+| Flake | 1.10 | 0.04 | 0.04 | 0.032 | **0.120** | close |
+
+**The shed PROPOSAL** (lab-only dials, not in the game: a shed's lift and curl as a share of the shared
+spread and turns):
+
+| lift × / curl × | Bloom | Unravel | Flake |
+|---|---|---|---|
+| 1 / 1 (shipped) | 0.214 | 0.220 | 0.120 |
+| 0.2 / 0.5 | 0.112 | 0.186 | 0.109 |
+| 0 / 0.35 | 0.081 | 0.166 | 0.104 |
+| 0 / 0.2 | 0.069 | 0.138 | 0.104 |
+
+### Found
+
+1. **No white helped the glitter's colour, not the shape.** The glitter's colour difference from the
+   explosion went 0.187 → 0.109 (the same measure in both rounds; the squint blur changed from luminance to
+   three channels, so round-1 and round-2 squint numbers are not comparable). What still separates both
+   destruction levels from the explosion is SHAPE: the cloud is ~0.79 of the explosion's screen and its
+   pieces go sooner (fade gap 0.20–0.23).
+2. **A shed that leaves the silhouette cannot look like a grade.** Bloom and unravel, at the destruction's
+   spread and curl, grow the prism's silhouette by a third and score further from the grade than an instant
+   colour snap does. Kept on the prism (no lift, a third of the curl) the bloom reaches 0.069 — still above
+   the strict band (0.05), well under the snap.
+3. **The flake reads as a WIPE.** Its coverage follows the grade's curve exactly (it is the same
+   smoothstep), but the old colour leaves from one end to the other, not everywhere at once; no dial moved
+   it below 0.104. Whether a wipe is acceptable as "the grade from a distance" is a design call.
+4. **The unravel's ribbons run the long axis**, so on a 4 : 0.6 : 2 slab they are long levers: even at a
+   fifth of the curl they stick out (size 1.19, squint 0.138).
+5. **A harness tolerance broke on a draw it had never seen.** Adding the flake shifted the shader harness's
+   random sequence, and the unravel's isometry check failed at 2.2e-3 against a fixed 2e-3: float32 noise of
+   40-unit coordinates over a 5e-4 step. Fixed by giving the check the same noise floor its sibling normal
+   check had (the shader was right).
+
+### Checked
+
+- `python3 Tools/Shaders/verify_prism_collision_burst.py` — **PASS**: 5 kinds, 0 failures; negative controls
+  FIRED: overshoot, uniform value, envelope, cheap normal, **linear shed** (a shed off the grade's curve);
+  the shed's progress equals the executed shipped `PrismColorLerp_float` to 1e-4 at three grade lengths;
+  glslang compiles every pass.
+- `python3 Tools/Build/prism_collision_burst_lab/parity.py` — **PASS**: 108,000 vertices over 30 cases
+  (5 kinds, sheds on the grade's curve), worst 5.16e-4 radii / 1.91e-4 normal, 0 past tolerance; the
+  explosion 720 vertices, worst 4.59e-4; both negative controls FIRED (76.7%, 100%).
+- `node .claude/skills/labmaker/verify_lab.cjs Docs/Studios/PrismCollisionBurstLab.html` — **PASS**;
+  desktop and phone screenshots read.
+- `build.py --check` — OK. `bash Tools/Build/unity_refcompile/run.sh` — player and editor configs: 0 errors
+  in project code. `check_console_logging.py`, `check_conditional_compilation.py` — clean.
+- **Not run:** the Unity editor (no `unity` binary in this session) and so `PrismCollisionBurstTests` —
+  filed in `Docs/UNITY_VERIFICATION_CHECKLIST.md`.
+
+### Decision needed (designer)
+
+1. **The sheds:** keep bloom and unravel as they are (spectacular, but they read as their own effect),
+   or graduate the shed-only lift and curl (a per-shed stamp channel; bloom at lift 0 / curl 0.2 ≈ 0.07)?
+   Is the flake's wipe "the grade from a distance"?
+2. **The destruction spectrum's lines:** 5% (shatter) and 15% (glitter) of the screen height, 8% for a
+   shed — zoom the stage and watch the ◆.
+3. **Destruction's remaining gap is shape** (size 0.79, pieces gone sooner). Close it (spread, a later
+   fade), or accept that a close-up death reads as a richer explosion.
+
+## Round 1 — 2026-10-14 (`cece/dreamy-pascal-7xxx1m`) — superseded by round 2
 
 ### What it shows
 

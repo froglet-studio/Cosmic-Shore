@@ -7,7 +7,8 @@ what the page's GPU actually computes (transform feedback reads its vertex stage
 Playwright + headless Chromium):
 
   0. FRESH: the page is the build of the current shipped sources (build.py --check).
-  1. BURST: for random prisms (rotation, non-uniform scale up to 20:1), all four kinds, several ages,
+  1. BURST: for random prisms (rotation, non-uniform scale up to 20:1), all five kinds (destruction on
+     the linear fade, sheds on the grade's curve and life, which drive the flake's wave), several ages,
      every vertex of the unwelded high-poly mesh — the page's pose and normal against the C++
      EXECUTION of the shipped PrismCollisionBurst.hlsl (translated exactly as
      Tools/Shaders/verify_prism_collision_burst.py translates it).
@@ -72,7 +73,7 @@ const { chromium } = require('playwright');
 CPP_MAIN = r"""#include "shipped.h"
 #include <cstdio>
 #include <vector>
-// Reads cases from stdin: kind age seed speed spread tau spin bloom unravel strips cells
+// Reads cases from stdin: kind age seed speed spread tau spin bloom unravel strips cells life curve
 // rot(9, column-major) scale(3) origin(3). Writes pos3 nrm3 per vertex of the unwelded mesh.
 static const int N = 10;
 int main() {
@@ -81,8 +82,8 @@ int main() {
     float3 fu[6] = {float3(0,1,0),float3(0,0,1),float3(0,0,1),float3(1,0,0),float3(1,0,0),float3(0,1,0)};
     float3 fv[6] = {float3(0,0,1),float3(0,1,0),float3(1,0,0),float3(0,0,1),float3(0,1,0),float3(1,0,0)};
     for (int c = 0; c < count; c++) {
-        float kind, age, seed, speed, spread, tau, spin, bloom, unravel, strips, cells, r[9], s[3], o[3];
-        scanf("%f %f %f %f %f %f %f %f %f %f %f", &kind, &age, &seed, &speed, &spread, &tau, &spin, &bloom, &unravel, &strips, &cells);
+        float kind, age, seed, speed, spread, tau, spin, bloom, unravel, strips, cells, life, curve, r[9], s[3], o[3];
+        scanf("%f %f %f %f %f %f %f %f %f %f %f %f %f", &kind, &age, &seed, &speed, &spread, &tau, &spin, &bloom, &unravel, &strips, &cells, &life, &curve);
         for (int i = 0; i < 9; i++) scanf("%f", &r[i]);
         for (int i = 0; i < 3; i++) scanf("%f", &s[i]);
         for (int i = 0; i < 3; i++) scanf("%f", &o[i]);
@@ -92,6 +93,11 @@ int main() {
         auto wnm = [&](float3 n) { return normalize(c0 * (n.x / sc.x) + c1 * (n.y / sc.y) + c2 * (n.z / sc.z)); };
         PrismBurstParams q; q.age = age; q.speed = speed; q.seed = seed; q.spread = spread; q.tau = tau; q.spin = spin;
         q.bloomTurns = bloom; q.unravelTurns = unravel; q.strips = strips; q.cells = cells;
+        q.progress = PrismBurstProgress(age, life, curve);
+        float3 hx = lin(float3(0.5f, 0, 0)), hy = lin(float3(0, 0.5f, 0)), hz = lin(float3(0, 0, 0.5f));
+        float3 lng = hx;
+        if (dot(hy, hy) > dot(lng, lng)) lng = hy;
+        if (dot(hz, hz) > dot(lng, lng)) lng = hz;
         for (int f = 0; f < 6; f++) for (int j = 0; j < N; j++) for (int i = 0; i < N; i++) {
             float2 cq[4] = { float2((float)i/N,(float)j/N), float2((float)(i+1)/N,(float)j/N), float2((float)(i+1)/N,(float)(j+1)/N), float2((float)i/N,(float)(j+1)/N) };
             for (int t = 0; t < 2; t++) {
@@ -105,6 +111,7 @@ int main() {
                     fr.faceU = lin(fu[f] * 0.5f); fr.faceV = lin(cross(fn[f], fu[f]) * 0.5f);
                     fr.triUV = cen * 2.0f - float2(1, 1); fr.faceKey = fn[f] * 3.7f + seed * 11.0f;
                     fr.radius = length(lin(float3(0.5f, 0.5f, 0.5f)));
+                    fr.longAxis = lng;
                     float3 pp, nn; float h;
                     PrismBurstPose(kind, fr, q, pp, nn, h);
                     printf("%.7g %.7g %.7g %.7g %.7g %.7g\n", pp.x, pp.y, pp.z, nn.x, nn.y, nn.z);
@@ -127,17 +134,23 @@ def rnd_rotation(rng):
     return a + d + c   # columns: a, d, c — orthonormal
 
 
+KINDS = 5            # shatter, bloom, unravel, glitter, flake
+SHEDS = (1, 2, 4)    # bloom, unravel, flake — stamped with the grade's curve and life
+
+
 def burst_cases(rng):
     cases = []
     for trial in range(6):
         rot = rnd_rotation(rng)
         base = rng.uniform(0.5, 4)
         scale = [base * rng.uniform(1, 20), base * rng.uniform(0.2, 3), base * rng.uniform(0.5, 6)]
-        for kind in range(4):
-            cases.append(dict(kind=kind, age=rng.choice([0.0, 0.07, 0.4, 1.6, 5.0]), seed=rng.random(),
-                              speed=rng.uniform(10, 33), spread=rng.uniform(0.2, 1.0), tau=0.22, spin=0.3,
-                              bloomTurns=0.7, unravelTurns=0.8, strips=5, cells=3, rot=rot, scale=scale,
-                              origin=[rng.uniform(-30, 30) for _ in range(3)]))
+        for kind in range(KINDS):
+            shed = kind in SHEDS
+            life = 0.8 * 1.06 if shed else 7.5
+            cases.append(dict(kind=kind, age=rng.choice([0.0, 0.07, 0.3, 0.6]) if shed else rng.choice([0.0, 0.07, 0.4, 1.6, 5.0]),
+                              seed=rng.random(), speed=rng.uniform(10, 33), spread=rng.uniform(0.2, 1.0), tau=0.22, spin=0.3,
+                              bloomTurns=0.7, unravelTurns=0.8, strips=5, cells=3, life=life, curve=1.0 if shed else 0.0,
+                              rot=rot, scale=scale, origin=[rng.uniform(-30, 30) for _ in range(3)]))
     return cases
 
 
@@ -154,8 +167,9 @@ def explosion_cases(rng):
 def run_cpp(work, cases, kind_shift=0):
     lines = [str(len(cases))]
     for c in cases:
-        lines.append(" ".join(str(x) for x in [(c["kind"] + kind_shift) % 4, c["age"], c["seed"], c["speed"], c["spread"],
-                                                 c["tau"], c["spin"], c["bloomTurns"], c["unravelTurns"], c["strips"], c["cells"]]
+        lines.append(" ".join(str(x) for x in [(c["kind"] + kind_shift) % KINDS, c["age"], c["seed"], c["speed"], c["spread"],
+                                                 c["tau"], c["spin"], c["bloomTurns"], c["unravelTurns"], c["strips"], c["cells"],
+                                                 c["life"], c["curve"]]
                               + c["rot"] + c["scale"] + c["origin"]))
     r = subprocess.run([os.path.join(work, "burst_ref")], input="\n".join(lines), capture_output=True, text=True)
     assert r.returncode == 0, r.stderr
@@ -256,7 +270,7 @@ def main():
         bad, total, wp, wn = compare_burst(page["burst"], ref, cases["burst"])
         share = bad / total
         good = share <= OUTLIER_SHARE
-        print(f"burst: {total} vertices over {len(cases['burst'])} cases (4 kinds); worst {wp:.2e} radii / {wn:.2e} normal; "
+        print(f"burst: {total} vertices over {len(cases['burst'])} cases (5 kinds); worst {wp:.2e} radii / {wn:.2e} normal; "
               f"{bad} past tolerance ({share:.3%}) -> {'PASS' if good else 'FAIL'}")
         ok &= good
 

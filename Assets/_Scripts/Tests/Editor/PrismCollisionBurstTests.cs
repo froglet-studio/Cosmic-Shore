@@ -12,18 +12,21 @@ using UnityEngine;
 namespace CosmicShore.Tests
 {
     /// <summary>
-    /// The CPU half of prism movement's three-level ladder and its level-1 COLLISION BURST
+    /// The CPU half of prism movement's three-level ladder and of the prism's interaction DETAIL LEVELS —
+    /// destruction (explosion, shatter, glitter) and stealing (the grade, or a bloom / unravel / flake shed)
     /// (Docs/PRISM_MOTION.md, Docs/PRISM_ANIMATION.md §4.11). The GPU half is proven by
     /// Tools/Shaders/verify_prism_collision_burst.py, which executes the shipped HLSL. This file holds
-    /// the CPU to the promises that proof assumes — the culling envelope uses the SAME formula the HLSL
-    /// does, the unwelded mesh is the same solid with untearable triangles, the ladder has hysteresis —
-    /// plus the shipped config's sanity, its wiring to the shader, and the triangle budget.
+    /// the CPU to the promises that proof assumes — the culling envelope and the dissolve overshoot are the
+    /// HLSL's, the unwelded mesh is the same solid with untearable triangles, the ladder has hysteresis, a
+    /// shed's life ends with the grade, the level is picked by screen size in order — plus the shipped
+    /// config's sanity, its wiring to the shader, and the triangle budget.
     /// </summary>
     public class PrismCollisionBurstTests
     {
         const string ShaderPath = "Assets/_Graphics/Materials/Graphs/PrismCollisionBurst.shader";
         const string HlslPath = "Assets/_Graphics/Materials/Graphs/PrismCollisionBurst.hlsl";
-        const string ConfigPath = "Assets/Resources/PrismMotionConfig.asset";
+        const string MotionConfigPath = "Assets/Resources/PrismMotionConfig.asset";
+        const string LodConfigPath = "Assets/Resources/PrismInteractionLodConfig.asset";
 
         // ---------------------------------------------------------------- the ladder
 
@@ -113,18 +116,95 @@ namespace CosmicShore.Tests
         }
 
         [Test]
-        public void KindsArePickedByWeight()
+        public void TheOvershootIsTheHlsls()
+        {
+            string hlsl = File.ReadAllText(HlslPath);
+            string value = PrismCollisionBurst.DissolveOvershoot.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture);
+            StringAssert.Contains($"#define PRISM_BURST_DISSOLVE_OVERSHOOT {value}", hlsl);
+        }
+
+        [Test]
+        public void AShedEndsWithTheGradeItStandsFor()
+        {
+            // The fade reaches 1 at life / (1 + overshoot): exactly the grade's length.
+            float life = PrismCollisionBurst.ShedLife(MaterialPropertyAnimator.DefaultTransitionSeconds);
+            Assert.AreEqual(MaterialPropertyAnimator.DefaultTransitionSeconds,
+                life / (1f + PrismCollisionBurst.DissolveOvershoot), 1e-6f);
+        }
+
+        [Test]
+        public void TheSkinSitsOutsideThePrismOnEverySide()
+        {
+            var scale = new Vector3(4f, 0.6f, 2f);
+            var skin = PrismCollisionBurst.SkinScale(scale, 0.02f);
+            float grow = 2f * 0.02f * 0.5f * scale.magnitude;
+            Assert.AreEqual(scale.x + grow, skin.x, 1e-5f);
+            Assert.AreEqual(scale.y + grow, skin.y, 1e-5f, "the thin side gets the same margin, not 2% of itself");
+            Assert.AreEqual(scale.z + grow, skin.z, 1e-5f);
+            Assert.AreEqual(-scale.x - grow, PrismCollisionBurst.SkinScale(new Vector3(-4f, 0.6f, 2f), 0.02f).x, 1e-5f);
+            Assert.AreEqual(scale, PrismCollisionBurst.SkinScale(scale, 0f));
+        }
+
+        [Test]
+        public void ShedsArePickedByWeight()
         {
             int[] counts = new int[PrismCollisionBurst.KindCount];
-            for (int i = 0; i < 4000; i++)
-                counts[PrismCollisionBurst.PickKind((i + 0.5f) / 4000f, 1f, 1f, 1f, 1f)]++;
-            foreach (int c in counts) Assert.AreEqual(1000, c, 1);
+            for (int i = 0; i < 3000; i++)
+                counts[PrismCollisionBurst.PickShed((i + 0.5f) / 3000f, 1f, 1f, 1f)]++;
+            Assert.AreEqual(1000, counts[PrismCollisionBurst.Bloom], 1);
+            Assert.AreEqual(1000, counts[PrismCollisionBurst.Unravel], 1);
+            Assert.AreEqual(1000, counts[PrismCollisionBurst.Flake], 1);
+            Assert.AreEqual(0, counts[PrismCollisionBurst.Shatter] + counts[PrismCollisionBurst.Glitter],
+                "a destruction kind is never a shed");
 
             for (int i = 0; i < 100; i++)
-                Assert.AreNotEqual(PrismCollisionBurst.Bloom, PrismCollisionBurst.PickKind(i / 100f, 1f, 0f, 1f, 1f));
-            Assert.AreEqual(PrismCollisionBurst.Glitter, PrismCollisionBurst.PickKind(1f, 1f, 1f, 1f, 1f));
-            Assert.AreEqual(PrismCollisionBurst.Unravel, PrismCollisionBurst.PickKind(1f, 1f, 1f, 1f, 0f));
-            Assert.AreEqual(PrismCollisionBurst.Shatter, PrismCollisionBurst.PickKind(0.5f, 0f, 0f, 0f, 0f));
+                Assert.AreNotEqual(PrismCollisionBurst.Unravel, PrismCollisionBurst.PickShed(i / 100f, 1f, 0f, 1f));
+            Assert.AreEqual(PrismCollisionBurst.Flake, PrismCollisionBurst.PickShed(1f, 1f, 1f, 1f));
+            Assert.AreEqual(PrismCollisionBurst.Unravel, PrismCollisionBurst.PickShed(1f, 1f, 1f, 0f));
+            Assert.AreEqual(PrismCollisionBurst.Bloom, PrismCollisionBurst.PickShed(0.5f, 0f, 0f, 0f));
+        }
+
+        // ---------------------------------------------------------------- the detail levels
+
+        [Test]
+        public void ScreenFractionIsTheDiameterOverTheScreenHeight()
+        {
+            // A prism of radius 1 at distance d through a 90° camera: the screen is 2d tall, the prism 2 wide.
+            Assert.AreEqual(1f / 10f, PrismInteractionLod.ScreenFraction(1f, 10f, 90f), 1e-5f);
+            Assert.AreEqual(2f / 10f, PrismInteractionLod.ScreenFraction(2f, 10f, 90f), 1e-5f);
+            Assert.AreEqual(1f / 20f, PrismInteractionLod.ScreenFraction(1f, 20f, 90f), 1e-5f);
+            // Narrower field of view, bigger on screen.
+            Assert.Greater(PrismInteractionLod.ScreenFraction(1f, 10f, 40f), PrismInteractionLod.ScreenFraction(1f, 10f, 90f));
+            // Orthographic: the half-height is the unit.
+            Assert.AreEqual(0.25f, PrismInteractionLod.ScreenFraction(1f, 999f, 60f, true, 4f), 1e-6f);
+        }
+
+        [Test]
+        public void DestructionGetsFinerAsThePrismGrowsOnScreen()
+        {
+            Assert.AreEqual(PrismInteractionLod.DestructionLevel.Explosion, PrismInteractionLod.PickDestruction(0.01f, 0.05f, 0.15f));
+            Assert.AreEqual(PrismInteractionLod.DestructionLevel.Shatter, PrismInteractionLod.PickDestruction(0.05f, 0.05f, 0.15f));
+            Assert.AreEqual(PrismInteractionLod.DestructionLevel.Shatter, PrismInteractionLod.PickDestruction(0.149f, 0.05f, 0.15f));
+            Assert.AreEqual(PrismInteractionLod.DestructionLevel.Glitter, PrismInteractionLod.PickDestruction(0.15f, 0.05f, 0.15f));
+            Assert.AreEqual(PrismInteractionLod.DestructionLevel.Glitter, PrismInteractionLod.PickDestruction(5f, 0.05f, 0.15f));
+
+            // Monotone: walking the camera in never steps back to a coarser level.
+            var previous = PrismInteractionLod.DestructionLevel.Explosion;
+            for (float d = 400f; d > 1f; d *= 0.97f)
+            {
+                var level = PrismInteractionLod.PickDestruction(PrismInteractionLod.ScreenFraction(2.25f, d, 60f), 0.05f, 0.15f);
+                Assert.GreaterOrEqual((int)level, (int)previous);
+                previous = level;
+            }
+            Assert.AreEqual(PrismInteractionLod.DestructionLevel.Glitter, previous);
+        }
+
+        [Test]
+        public void LevelsCarryExplicitValues_Destruction()
+        {
+            Assert.AreEqual(0, (int)PrismInteractionLod.DestructionLevel.Explosion);
+            Assert.AreEqual(1, (int)PrismInteractionLod.DestructionLevel.Shatter);
+            Assert.AreEqual(2, (int)PrismInteractionLod.DestructionLevel.Glitter);
         }
 
         // ---------------------------------------------------------------- the mesh
@@ -169,29 +249,47 @@ namespace CosmicShore.Tests
         // ---------------------------------------------------------------- the shipped config
 
         [Test]
-        public void TheShippedConfigIsSaneAndWired()
+        public void TheShippedConfigsAreSaneAndWired()
         {
-            var cfg = AssetDatabase.LoadAssetAtPath<PrismMotionConfigSO>(ConfigPath);
-            Assert.IsNotNull(cfg, ConfigPath);
+            var motion = AssetDatabase.LoadAssetAtPath<PrismMotionConfigSO>(MotionConfigPath);
+            Assert.IsNotNull(motion, MotionConfigPath);
+            Assert.IsTrue(motion.IsSane);
+            Assert.AreEqual(256, motion.BoxMaxMovers, "the level-3 line the user set");
+
+            var cfg = AssetDatabase.LoadAssetAtPath<PrismInteractionLodConfigSO>(LodConfigPath);
+            Assert.IsNotNull(cfg, LodConfigPath);
             Assert.IsTrue(cfg.IsSane);
-            Assert.AreEqual(256, cfg.BoxMaxMovers, "the level-3 line the user set");
-            Assert.LessOrEqual(cfg.ShowcaseMaxMovers, cfg.BoxMaxMovers);
-            Assert.IsTrue(cfg.BurstEnabled);
+            Assert.IsTrue(cfg.DestructionEnabled);
+            Assert.IsTrue(cfg.ShedEnabled);
             Assert.IsNotNull(cfg.BurstMaterial);
             Assert.AreEqual("CosmicShore/PrismCollisionBurst", cfg.BurstMaterial.shader.name);
-            Assert.LessOrEqual(cfg.WorstCaseTriangles, 80_000, "the burst's budget");
+            Assert.LessOrEqual(cfg.WorstCaseTriangles, 80_000, "the detail levels' budget");
             Assert.LessOrEqual(cfg.Spread, 1f, "a cloud wider than the prism stops squinting as the explosion");
+            Assert.Less(cfg.ShatterMinScreen, cfg.GlitterMinScreen, "the spectrum runs coarse to fine as the prism nears");
+            Assert.Greater(cfg.ShedInflate, 0f, "a skin at the prism's own depth would fight it");
         }
 
         [Test]
         public void TheShaderReadsTheStampsTheCarrierWrites()
         {
             string shader = File.ReadAllText(ShaderPath);
-            foreach (var prop in new[] { "_SliceTiming", "_SliceDrift", "_BrightColor", "_DarkColor" })
+            foreach (var prop in new[] { "_SliceTiming", "_SliceDrift", "_SlicePlane", "_SlicePivot", "_BrightColor", "_DarkColor" })
                 Assert.IsTrue(Regex.IsMatch(shader, $@"UNITY_DOTS_INSTANCED_PROP\(float4, {prop}\)"), prop);
-            foreach (var prop in new[] { "_BurstShape", "_BurstCurl", "_BurstFade" })
+            StringAssert.Contains("PRISM_BURST_PROP(float4, _SlicePlane).x", shader, "the fade curve");
+            StringAssert.Contains("PRISM_BURST_PROP(float4, _SlicePivot)", shader, "the inside colour");
+            foreach (var prop in new[] { "_BurstShape", "_BurstCurl" })
                 StringAssert.Contains(prop, shader);
             StringAssert.Contains("#include \"PrismCollisionBurst.hlsl\"", shader);
+        }
+
+        [Test]
+        public void NoWhiteAccentsRemain()
+        {
+            // The designer, 2026-10-14: no white edge on the dissolves or the glitter; the inside colour is the
+            // only contrast.
+            string shader = File.ReadAllText(ShaderPath);
+            foreach (var retired in new[] { "_HotColor", "_EmberGlow", "_EmberWhite", "_BurstFade" })
+                StringAssert.DoesNotContain(retired, shader, retired);
         }
     }
 }

@@ -16,8 +16,8 @@ namespace CosmicShore.Gameplay
     /// </summary>
     public enum PrismMotionLevel
     {
-        /// <summary>Few movers: exact boxes, and each destroyed prism comes apart as a collision burst on
-        /// the ultra-high-res prism while the burst budget allows.</summary>
+        /// <summary>Few movers: exact boxes, and each destroyed prism comes apart at the destruction detail
+        /// level the viewer's distance and the budget allow (shatter or glitter up close).</summary>
         Showcase = 1,
         /// <summary>More movers: exact boxes, the ordinary explosion.</summary>
         Plain = 2,
@@ -40,9 +40,9 @@ namespace CosmicShore.Gameplay
     /// (<see cref="PrismMotionLevel"/>, <see cref="NextLevel"/>, <c>PrismMotionConfigSO</c>).
     /// LEVEL 1, Showcase (≤ 64 movers): the prism's own oriented BOX, swept over the step by the
     /// separating-axis test (<see cref="EntersContact(in Box, float3, in Box, float3, out float)"/>,
-    /// <see cref="TryFirstContact"/>), and each destroyed prism comes apart as a COLLISION BURST on the
-    /// ultra-high-res prism (<c>PrismCollisionBurst</c>, Docs/PRISM_ANIMATION.md §4.11) while its budget
-    /// allows. LEVEL 2, Plain (≤ 256): boxes, the ordinary explosion. LEVEL 3, Bulk (above): the SPHERE of
+    /// <see cref="TryFirstContact"/>), and each destroyed prism comes apart at the destruction DETAIL LEVEL
+    /// the viewer's distance and the budget allow — glitter, shatter or the explosion
+    /// (<c>PrismInteractionLod</c>, Docs/PRISM_ANIMATION.md §4.11, game-wide). LEVEL 2, Plain (≤ 256): boxes, the ordinary explosion. LEVEL 3, Bulk (above): the SPHERE of
     /// each prism's volume (<see cref="ContactRadius"/>, capped at <see cref="MaxContactRadius"/>), tested
     /// for thousands of bodies at once in the Burst <see cref="ContactJob"/>, the ordinary explosion. Each
     /// line is crossed back downward at three quarters of it. The Rhino plough moves one prism per ram,
@@ -131,11 +131,11 @@ namespace CosmicShore.Gameplay
             PrismMotionLevel level)
         {
             Vector3 impact = closingVelocity * DebrisRestitution;
-            bool burst = level == PrismMotionLevel.Showcase;
+            bool fineDetail = level == PrismMotionLevel.Showcase;
             if (struck && !struck.destroyed)
-                struck.DamageByCollision(impact, domain, playerName, burst, DebrisSpeedLimit);
+                struck.DamageByCollision(impact, domain, playerName, fineDetail, DebrisSpeedLimit);
             if (mover && !mover.destroyed)
-                mover.DamageByCollision(-impact, domain, playerName, burst, DebrisSpeedLimit);
+                mover.DamageByCollision(-impact, domain, playerName, fineDetail, DebrisSpeedLimit);
         }
 
         // ------------------------------------------------------------------ the ladder

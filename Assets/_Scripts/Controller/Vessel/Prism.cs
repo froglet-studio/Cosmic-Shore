@@ -62,9 +62,9 @@ namespace CosmicShore.Gameplay
         Vector3 _sliceCutPoint;
         Vector3 _sliceCutNormal;
         // Set transiently by DamageByCollision around its Damage call, the same way: this death is
-        // prism movement's collision at LEVEL 1, so the factory draws a COLLISION BURST
-        // (Docs/PRISM_ANIMATION.md §4.11) instead of the explosion when it can afford one.
-        bool _collisionBurst;
+        // prism movement's collision ABOVE level 1 of its ladder, so the factory draws the plain
+        // explosion rather than a finer detail level (Docs/PRISM_ANIMATION.md §4.11).
+        bool _plainDeath;
         public bool IsSmallest;
         public bool IsLargest;
         
@@ -1538,7 +1538,7 @@ namespace CosmicShore.Gameplay
                 Kind = kind,
                 SlicePoint = _sliceCutPoint,
                 SliceNormal = _sliceCutNormal,
-                CollisionBurst = _collisionBurst,
+                PlainDeath = _plainDeath,
                 PrismType = PrismType.Explosion
             });
         }
@@ -1644,22 +1644,23 @@ namespace CosmicShore.Gameplay
         /// <summary>
         /// <see cref="Damage"/>, delivered by prism movement's COLLISION rule (<see cref="PrismMotion"/>,
         /// Docs/PRISM_MOTION.md): devastating, because an ordinary shield is no answer to a collision.
-        /// With <paramref name="burst"/> (LEVEL 1 of the ladder) the death is drawn as a collision burst
-        /// on the ultra-high-res prism (Docs/PRISM_ANIMATION.md §4.11) when the budget allows, the
-        /// ordinary explosion otherwise. Everything the death MEANS is Damage's, unchanged — the
+        /// With <paramref name="fineDetail"/> (LEVEL 1 of the ladder) the death may be drawn at a finer
+        /// destruction detail level — shatter or glitter, by the viewer's distance and the budget
+        /// (Docs/PRISM_ANIMATION.md §4.11) — like any other death; without it (levels 2 and 3, many movers)
+        /// it is always the plain explosion. Everything the death MEANS is Damage's, unchanged — the
         /// super-shield gate included, so super-shielded mass still deflects and survives.
         /// </summary>
-        public void DamageByCollision(Vector3 impactVector, Domains domain, string playerName, bool burst,
+        public void DamageByCollision(Vector3 impactVector, Domains domain, string playerName, bool fineDetail,
                                       float debrisSpeedLimit)
         {
-            _collisionBurst = burst;
+            _plainDeath = !fineDetail;
             try
             {
                 Damage(impactVector, domain, playerName, devastate: true, debrisSpeedLimit: debrisSpeedLimit);
             }
             finally
             {
-                _collisionBurst = false;
+                _plainDeath = false;
             }
         }
 

@@ -69,13 +69,13 @@ namespace CosmicShore.ScriptableObjects
         public Vector3 SliceNormal;
 
         /// <summary>
-        /// PrismType.Explosion only: a death by prism movement's COLLISION rule at LEVEL 1 of the ladder
-        /// (Docs/PRISM_MOTION.md). Asks the factory for a collision burst on the ultra-high-res prism
-        /// (Docs/PRISM_ANIMATION.md §4.11); the factory falls back to the ordinary explosion whenever the
-        /// burst refuses (budget full, config off), so a death never loses its visual. False — the
-        /// default every other producer leaves — is an ordinary explosion.
+        /// PrismType.Explosion only: withhold the finer destruction DETAIL LEVELS (shatter, glitter —
+        /// Docs/PRISM_ANIMATION.md §4.11) and draw the ordinary explosion. Prism movement's collision rule
+        /// sets it above LEVEL 1 of its ladder (Docs/PRISM_MOTION.md), where many prisms move at once.
+        /// False — the default every other producer leaves — lets the factory pick the level by the
+        /// viewer's distance and the budget, falling back to the explosion on any refusal.
         /// </summary>
-        public bool CollisionBurst;
+        public bool PlainDeath;
 
         public Transform TargetTransform;
         public System.Action OnGrowCompleted;

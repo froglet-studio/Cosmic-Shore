@@ -289,15 +289,17 @@ namespace CosmicShore.Gameplay
                 return null;
             }
 
-            // A COLLISION BURST (prism movement's level 1, Docs/PRISM_ANIMATION.md §4.11) is tried
-            // next, on the same terms: it leaves on the explosion's own flight with the explosion's
-            // palette, and any refusal — the budget full, the config off — falls through to the
-            // ordinary explosion, so a collision never loses its visual.
-            if (configured && data.CollisionBurst &&
-                TryGetTeamColors(data.ownDomain, data.Kind, out var burstBright, out var burstDark) &&
-                CosmicShore.Utility.PrismCollisionBurst.TryRequest(
+            // The DETAIL LEVEL of the death (Docs/PRISM_ANIMATION.md §4.11), tried next on the same
+            // terms: close to the viewer and within the budget, a SHATTER — closer still a GLITTER — on
+            // the ultra-high-res prism, leaving on the explosion's own flight in its palette, so squinted
+            // at it IS the explosion. Prism movement's collisions above level 1 ask for the plain
+            // explosion. Any refusal falls through to the ordinary explosion, so a death never loses
+            // its visual.
+            if (configured && !data.PlainDeath &&
+                TryGetTeamColors(data.ownDomain, data.Kind, out var detailBright, out var detailDark) &&
+                CosmicShore.Utility.PrismInteractionLod.TryDestruction(
                     data.SpawnPosition, data.Rotation, data.Scale,
-                    burstBright, burstDark, data.Velocity, data.DebrisSpeedLimit, data.Kind))
+                    detailBright, detailDark, data.Velocity, data.DebrisSpeedLimit, data.Kind))
             {
                 return null;
             }

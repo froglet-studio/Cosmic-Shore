@@ -2589,7 +2589,53 @@ halves' fresnel and flesh shading is the prism look approximated, not the BlockG
 `UNITY_DOTS_INSTANCED_PROP` / `DOTS.hlsl` are the documented Entities-Graphics custom-shader surface
 and were compiled against a mock, not the package.
 
-### 4.11 The COLLISION BURST — prism movement's level-1 death (shipped 2026-10-14, C20)
+### 4.11 The prism's interaction DETAIL LEVELS — destruction and stealing (shipped 2026-10-14, C20, C21)
+
+**Current design (round 2, the designer, 2026-10-14):** *"lets do without the white edge on the dissolves
+and the glitter; the interior brighter color will create plenty of contrast already. in this scheme
+shatter, glitter and explosion are simply a spectrum that we can use for destruction. unravel and bloom
+could be used for stealing as a molting effect that reveals the new color inside. then we have a level of
+detail effect for these fundamental interactions across the game. we can probably do other shedding
+effects that can look like grading from a distance."*
+
+The prism's two fundamental interactions each have DETAIL LEVELS, picked once at the instant of the event,
+for every prism in the game, by how big the prism is on the player's screen (its projected diameter over
+the screen height through `CameraManager.ViewCamera`; behind the camera or well off screen: the ordinary
+effect) and by the shared budget (`PrismInteractionLod`, config `Resources/PrismInteractionLodConfig`):
+
+| Interaction | Far / over budget | Nearer | Close up |
+|---|---|---|---|
+| **Destruction** (every explosion death; a collision above motion level 1 asks for plain) | the EXPLOSION | SHATTER (≥ `shatterMinScreen` 5%) | GLITTER (≥ `glitterMinScreen` 15%) |
+| **Stealing** (`PrismTeamManager.Steal`) | the GRADE — the 0.8 s smoothstep colour lerp (`PrismColorLerp`) | a SHED (≥ `shedMinScreen` 8%): BLOOM, UNRAVEL or FLAKE by weight | the same shed |
+
+- **No white accents.** The crack flash, the ember front and the glints are gone (`_HotColor`,
+  `_EmberGlow`, `_EmberWhite`, `_BurstFade` retired). The contrast is the brighter INSIDE colour on every
+  kind's back faces as the surface opens.
+- **A destruction level shares the explosion's envelope** (flight, life, palette, size, linear fade), as
+  round 1 below describes, so squinted at it is meant to read as the explosion.
+- **A SHED is the grade, squinted at.** On an accepted shed the prism takes its new colour AT ONCE
+  (`UpdateMaterial` with duration 0) and a skin in its OLD on-screen colours, a hair outside it
+  (`shedInflate` radii), comes off it; the skin's inside wears the NEW colour (the `_SlicePivot` stamp).
+  Its coverage falls on the grade's own smoothstep over the grade's own length (`_SlicePlane.x` = 1:
+  `PrismBurstProgress` returns `smoothstep(age / (life/(1+overshoot)))`, the life stamped as
+  `DefaultTransitionSeconds × (1 + overshoot)`), so the mean colour runs the grade's course exactly —
+  `verify_prism_collision_burst.py` executes the shipped `PrismColorLerp_float` and holds the two equal
+  (≤ 1e-4), with a linear-shed negative control. No flight: the prism stays.
+- **FLAKE, the new shed** (kind 4): the skin lifts off as rigid scales, a grid twice as fine as the
+  shatter's, in a wave that runs the prism's long axis — each scale tips up on its far edge as the front
+  nears and is gone when the front reaches it (its dissolve value IS its place in the wave).
+- **The carrier** (`PrismCollisionBurst`) keeps its first name; destruction and sheds share its budget
+  and batch, and retire from separate expiry queues so a 0.85 s shed never waits behind a 7.5 s death.
+
+**Measured** (Collision Burst Lab round 2, `Docs/Studios/COLLISION_BURST_LAB.md`): without the white the
+glitter's colour difference from the explosion fell from 0.187 to 0.109, but neither destruction level yet squints as the
+explosion on blurred rendered pixels (shatter 0.346, glitter 0.303 vs a 0.097 band). Against the grade
+(band: the grade 10% late, 0.033; negative: the colour snapped, 0.158) the flake is closest (0.120) but
+reads as a wipe along the prism; bloom (0.214) and unravel (0.220) grow the silhouette by a third and
+read further from the grade than a snap does — kept to the prism (the lab's PROPOSAL: a shed-only lift
+and curl), bloom reaches 0.069. **Decision needed (designer):** see the write-up.
+
+#### 4.11 round 1 — the collision burst (superseded where the round-2 text above differs: the four-way kind pick, the white accents)
 
 Prism movement is a fundamental (Docs/PRISM_MOTION.md): a moving prism that runs into another prism
 destroys both. At LEVEL 1 of its ladder — few prisms moving, and the budget has room — each of the two
@@ -2713,7 +2759,7 @@ Phase C — rogue paths & ecosystem visuals (each is standalone):
 | C17 | The Urchin's CRADLE — the mass around a RIDING Urchin drapes onto its hull (a per-frame, per-prism deformation that a per-prism material write would have made a §1 violation) | ✅ SHIPPED 2026-09-16 as the THIRD §4.7 global-uniform citizen (§4.7.2); **RE-CUT 2026-09-22 from a per-triangle rigid motion to a high-poly radial DRAPE** after the per-face and per-wedge cuts were both rejected on look (*"this looks terrible"* → a 10x tone-down → *"really bad to the point i put this down"*) — a deformation is only as smooth as the surface it moves, and 24 triangles is not a surface. Now: `HighPolyPrismMesh` (the identical solid subdivided 16x per face axis, 3,072 tris, SHARED so the swapped prisms still batch) + `PrismCradle`'s residency pass (`Prism.SetRenderMeshOverride` on the nearest prisms within `hullRadius + drapeReach + residencyMargin` — a STATE CHANGE, final at the instant it is applied, like a shield engaging, and budgeted at 24 prisms; it declines any prism already holding an override and only clears one that is still its own) + `PrismCradle.hlsl` (`PrismCradleDeform`, VERTEX stage, 4 slots — the object-space Tangent Vector the wedge cut needed is GONE, the map reads only world position and normal — spliced LAST on both live graphs by `Tools/Shaders/wire_prism_cradle.py`, whose migration is now written against slot DIRECTIONS so it runs in both directions and sweeps the feeder nodes an old signature orphaned) + `PrismCradleSource` (ensured on every Urchin by `GunVesselTransformer.Initialize`, gated on `IsRiding`) + `PrismCradleConfigSO` (`Resources/PrismCradleConfig`: 6 u drape reach, exponent 1.5, max strength **1**, subdivision 16, 24 resident prisms, 2 u residency margin, 0.25 s in / 0.4 s out). The map is ONE line — `p' = U + dir·(d − s·k(s)·w)` — with a falloff C1 at both ends (no seam) and the ANALYTIC inverse-transpose for the normal (the cheap lerp-toward-the-sphere-normal shortcut pops where `n·dir` crosses zero, which is a line down the middle of the ridden prism's side faces). Proven by `Tools/Shaders/verify_prism_cradle.py` (clang++ over the SHIPPED file: identity off/beyond reach, the wrap onto the surface along the outward radial, the lip never past the surface and never folding, radial purity, the normal proven by CONVERGENCE RATE — halving the patch quarters the error, 0.32 → 0.0058 — no seam at the reach, affine in the weight, dominant slot, plus a negative control that PLATEAUS at 0.74 with the radial Jacobian term neutered). Not run in the editor. |
 | C18 | The Rhino sword's kills burst into debris like any other death — a blade reads as a blast | ✅ SHIPPED 2026-09-26 (§4.10) — a blade kill is a CUT: two pure render entities per prism on the shared `HighPolyPrismMesh`, the far skin centrally projected onto the cut plane (`PrismSlice.hlsl`), rigid hinge-opening motion and a dissolve from the cut face, all off one stamp per half; batched spawn/retire (`PrismSlice.cs`, `PrismRenderService.SpawnSliceDebrisBatch`), explosion fallback on any refusal, budget 115k triangles / zero colliders. Proven offline by `verify_prism_slice.py` (execution + glslang) and `PrismSliceTests`; **not run in the editor** |
 | C19 | A BLACK HOLE — mass around a spawned gravity well orbits, spirals in and is consumed, and bends on screen as it goes (a per-frame, per-prism deformation and a per-frame, per-prism MOVE) | ✅ BUILT 2026-10-07 (§4.7.4, `Docs/BLACK_HOLE.md`) — the MOVE is live gameplay data under the movers contract (three chained Burst jobs over the admitted bodies — read-only pose read, `IJobParallelFor` integration, transform write-back — + `SetTransformsBatch` + `UpdatePositionsBatch`; `GravityBody` on every prism prototype, disabled until admitted), the BEND is a §4.7 global bank (`PrismGravityWarp.hlsl`, spliced immediately before the cradle on both live graphs) drawing the GR tidal tensor as one affine stretch per prism — no residency since the 2026-10-08 re-cut; captures go through `Prism.Consume` with the hole as the implosion sink. Proven offline by `verify_prism_gravity_warp.py` (thirteen properties + negative control), `BlackHoleTests`, `BlackHolePhysicsTests`; **not run in the editor** |
-| C20 | Prism-movement collisions die as the ordinary explosion at every load | ✅ SHIPPED 2026-10-14 (§4.11) — at ladder level 1 a collision death is a COLLISION BURST: one pure render entity per prism on the unwelded `HighPolyPrismMesh` (s10), four kinds (shatter / bloom / unravel / glitter) off one stamp on the slice's carrier, sharing the explosion's flight, life, palette, size and linear fade (the Collision Burst Lab measured that this does NOT yet squint as the explosion — 0.33–0.47 against a 0.08 band; decision open, `Docs/Studios/COLLISION_BURST_LAB.md`); explosion fallback on any refusal, budget 57,600 triangles / zero colliders. Proven offline by `verify_prism_collision_burst.py` (execution, 4 negative controls, glslang) and `PrismCollisionBurstTests`; **not run in the editor** |
+| C20 | Prism-movement collisions die as the ordinary explosion at every load | ✅ SHIPPED 2026-10-14 (§4.11) — at ladder level 1 a collision death is a COLLISION BURST: one pure render entity per prism on the unwelded `HighPolyPrismMesh` (s10), four kinds (shatter / bloom / unravel / glitter) off one stamp on the slice's carrier, sharing the explosion's flight, life, palette, size and linear fade (the Collision Burst Lab measured that this does NOT yet squint as the explosion — 0.33–0.47 against a 0.08 band; decision open, `Docs/Studios/COLLISION_BURST_LAB.md`); **round 2 (same day): game-wide DETAIL LEVELS** — destruction explosion → shatter → glitter and stealing grade → bloom / unravel / flake shed, by size on screen, no white accents (§4.11, `PrismInteractionLod`); explosion fallback on any refusal, budget 57,600 triangles / zero colliders. Proven offline by `verify_prism_collision_burst.py` (execution, 4 negative controls, glslang) and `PrismCollisionBurstTests`; **not run in the editor** |
 
 Phase D — lock-in:
 
