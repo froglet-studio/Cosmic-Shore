@@ -28,7 +28,7 @@ namespace CosmicShore.Gameplay
         [SerializeField, Range(0.3f, 3f)] float profilePower = 1f;
 
         [Header("Ratchet")]
-        [Tooltip("A prism going away stays where it got to until it is behind this depth - hidden by the crystal - and then reseats: it fades out in its hole while a new one fades in at the top of its column. A column top stands 2x its plate radius out, so seen from far away (nearly orthographic) it clears the silhouette above about −0.87: the lab measured −0.8 seen on 56-73% of reseats at 250 u, −0.87 on none at any distance (round 10). Deeper = fewer reseats; with Rise While Hidden on, the reseat is a fallback and sits at −0.97 (Omni Motion Lab round 3).")]
+        [Tooltip("A prism going away stays where it got to until it is behind this depth - hidden by the crystal - and then reseats: it fades out in its hole while a new one fades in at the top of its column. An omni column top stands 2x its plate radius out (the Mass crystal's 1.5x since 2026-10-14, so it clears sooner), so seen from far away (nearly orthographic) it clears the silhouette above about −0.87: the lab measured −0.8 seen on 56-73% of reseats at 250 u, −0.87 on none at any distance (round 10). Deeper = fewer reseats; with Rise While Hidden on, the reseat is a fallback and sits at −0.97 (Omni Motion Lab round 3).")]
         [SerializeField, Range(-1f, 0.5f)] float reseatDepth = -0.97f;
 
         [Tooltip("Seconds a reseat takes. The two prisms dither on complementary pixels, so it never shows a gap.")]
