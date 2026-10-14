@@ -83,7 +83,26 @@ checklist.
      BESIDE MY CLONE puts it next to their clone. Prefer a launcher button over hand-run PowerShell.
    - **F3 is Amoebius's diagnostics overlay** (`PlayerDiagnostics.cs`, ARCHITECTURE §11.3): read it in a
      user's screenshot for fps, sign-in, lobby and ping before guessing. The game's own top-left panel (F7)
-     reported 60 fps while the game ran at 5-9, so trust F3's numbers.
+     used to report 60 fps while the game ran at 5-9. Since 2026-10-14 both read one clock
+     (`FrameTimingManager`) and agree within a few percent in a normal run. In a scripted (`--frames`) run
+     F7's FPS and Frame Time still read the fixed 1/60 step, on purpose (item 13); F3 reads the real frame.
+
+13. **Traps from the frame-timing session (2026-10-14).**
+   - **The cloud container has no .NET.** `curl -sSL https://dot.net/v1/dotnet-install.sh | bash -s --
+     --channel 10.0 --install-dir /opt/dotnet`, then `PATH=/opt/dotnet:$PATH`. The built `CosmicShore`
+     apphost also needs `DOTNET_ROOT=/opt/dotnet`, or it exits 131 with "You must install .NET".
+   - **A scripted run (`--frames`) fixes every game clock at 1/60 s.** `Time.unscaledDeltaTime`,
+     `Time.time` and `realtimeSinceStartup` all advance by the step, so judge fps from a normal run (control
+     port, no `--frames`). `FrameTimingManager` is the API that measures the real frame in both kinds of run.
+   - **F3's frame figures average its last 240 frames.** At 3 fps that is 80 seconds, so after a scene
+     change it still mixes in the previous scene. Before comparing F3 with anything, `wait` 240+ frames in
+     the scene.
+   - **Never link a `CosmicShore.Player` source file into `CosmicShore.Tests`.** The tests' namespace
+     is `CosmicShore.Tests`, so a linked file that declares `namespace CosmicShore.Player` makes `Player`
+     resolve to that namespace instead of the game's `Player` type. Six existing test files then fail
+     with CS0118 ("'Player' is a namespace but is used like a type"). To test player logic, move the part
+     you need into the engine (`FrameTimingWindow` went to `Engine/Rendering/`), where the tests already
+     reach it. Linking into `CosmicShore.Mobile` is fine: the phone build has no such type.
 
 Report what you saw (attach the screenshot path) and what you verified; say plainly if a check
 did not run.
