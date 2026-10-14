@@ -33,7 +33,7 @@ Legend: `Planned` ▸ `Mockup` ▸ `Mockup approved` ▸ `Built` ▸ `Approved i
 |---|---|---|---|---|
 | 0 | Component kit: T7 sprites, Chakra Petch SemiBold (T5), type roles + `TabularText` (T6), theme components, kit prefabs, kit test scene | Built | `MenuKit.dc.html` | `3b36c361`, `fe108889`, `b0918296`, `908fc2d7`, `4cba49ee`, `e932eaf2` + docs |
 | 1 | Top nav (`Safe Area/NavBar`) | Approved in editor (2026-10-14) | `Main.dc.html` (interactive), `TopNavHover.dc.html`, `TopNavLocked.dc.html` on the Menu Redesign B canvas | `8d6d2acb`, `99ef3ccd` + docs |
-| 2 | Hangar screen: grid, detail and the spend-crystals panel | Built (mockup approved 2026-10-14; awaiting in-editor approval) | `Hangar.dc.html` (interactive), `HangarLocked`, `HangarSpend`, `HangarShort`, `HangarNoArt`, `HangarNotes` on the Menu Redesign B canvas | `661a7f1f`, `7987b896`, `96c81faa` + docs |
+| 2 | Hangar screen: grid, detail and the spend-crystals panel | Approved in editor (2026-10-14) | `Hangar.dc.html` (interactive), `HangarLocked`, `HangarSpend`, `HangarShort`, `HangarNoArt`, `HangarNotes` on the Menu Redesign B canvas | `661a7f1f`, `7987b896`, `96c81faa` + docs |
 | 3 | Arcade modal (`ArcadeScreenModal`): explore grid plus the party/friends panel | Planned | | |
 | 4 | Game configure: `ArcadeGameConfigureModal`, plus the Maelstrom and Arena configure windows and the weekly leaderboard | Planned | | |
 | 5 | Profile screen, Profile modal (avatar / display name), Episodes entry | Planned | | |
@@ -397,7 +397,7 @@ Not verified (no Unity editor in a cloud session): the in-editor look, hover, po
 TMP's real word widths against the generator's PIL estimate, and the FrogletTools > Game Modes >
 Game Mode Prefab Kit Validate run. Steps are in `Docs/UNITY_VERIFICATION_CHECKLIST.md`.
 
-## 11. Item 2: Hangar (built; awaiting in-editor approval)
+## 11. Item 2: Hangar (approved in editor 2026-10-14)
 
 Boards on the Menu Redesign B canvas: `Hangar.dc.html` (interactive) and `HangarLocked`,
 `HangarSpend`, `HangarShort`, `HangarNoArt`, which mount the same board in those starting states.

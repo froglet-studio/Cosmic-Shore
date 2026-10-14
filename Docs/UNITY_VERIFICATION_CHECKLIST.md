@@ -65,7 +65,7 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
-### 🔴 Style-B menu redesign, item 2: the Hangar as one three-zone view (`claude/new-session-76hnyc`, 2026-10-14) — NOT EDITOR-VERIFIED
+### 🟢 Style-B menu redesign, item 2: the Hangar as one three-zone view (`claude/new-session-76hnyc`, 2026-10-14) — approved in editor 2026-10-14
 
 `Screens/Hangar Screen` rebuilt from the approved Hangar boards (`Docs/MENU_REDESIGN_B.md` §11):
 vessel list, selected vessel, abilities, and the spend-crystals popup. No editor and no `unity`
