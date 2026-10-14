@@ -430,16 +430,20 @@ glow intensities start at 1 with no HDR boost — expect to raise them once bloo
 
 ---
 
-### 🔴 From `cece/nice-brahmagupta-ojclij`: CI gates and offline audit tools; Steam dual-app uploader and Playtest runbook; Prisma engine APIs the game's new code compiles against (Port/ only) (`test/acm`, 2026-10-14) — NOT EDITOR-VERIFIED
+### 🔴 From `cece/nice-brahmagupta-ojclij`: CI gates and offline audit tools; Steam dual-app uploader and Playtest runbook; Prisma engine APIs the game's new code compiles against (Port/ only) (`Ys-bleeding-edge`, 2026-10-14) — NOT EDITOR-VERIFIED
 
 Picked by `Tools/Build/pick_branch_parts.py` from `cece/nice-brahmagupta-ojclij`. The steps are that branch's reviewed test plan (`Docs/BRANCH_TEST_PLAN_2026-10-12.md` there), one block per part this branch carries. Each step has a PASS and a FAIL line; record the result in the PR or in Docs/QA/.
+
+**Already run on 2026-10-14, no Unity (all PASS):** A steps 1, 2 and 8, plus every command of the guard's static job; C steps 1-9; M steps 1-3 (Prisma player build 0 errors, engine tests 1951 passed 0 failed, M's two commits touch only `Port/`). **Still open:** A steps 3 and 9 (GitHub Actions), 4-6 (Unity); C step 10 (owners' read-through) and 11 (waits on A2/A4).
+
+**What differs from the plan on this push.** Ys-bleeding-edge already carries its own fix for the red guard (`15d2f514`: the C# checks read only `Assets/` and `Packages/`, and a `UnityEditor` string literal in `Assets/` is still flagged on purpose). Part A's three literal-lexer commits (`8c6952942`, `cc81cf2d5`, `a8b1dc65e`) contradict that choice and were left out, so step 1's self-test prints `25/25 passed`, not `34/34`. A's two Prisma AssetTool test commits (`e8f7a5557`, `68d502b42`) were left out because the base pinned the same test another way. `check_ai_no_state_writes.py` gained a call-receiver exception for the Third Eye window, which moves its own camera rig, not a vessel. C's `Docs/BUILD_AND_DELIVERY.md` edits were merged by hand around the base's newer CI rows.
 
 #### CI gates and offline audit tools
 
 1. **Terminal battery (no Unity).** Use a FULL checkout (a sparse one without PNG/FBX makes author_hijack, author_switchback and author_lifeform_heart_sizes fail for missing files). Run `git status` and confirm it is clean, then from the repo root paste:
    `python3 Tools/CI/test_validate_project.py && python3 Tools/CI/validate_project.py && python3 Tools/Build/audit_vessel_skimmers.py --self-test && python3 Tools/Build/audit_vessel_skimmers.py && python3 Tools/Build/audit_lifeform_crystals.py --self-test && python3 Tools/Build/audit_lifeform_crystals.py && python3 Tools/Build/check_ai_no_state_writes.py --self-test && python3 Tools/Build/check_ai_no_state_writes.py --check && python3 Tools/Build/arcade_mode_lib.py --self-test && for f in Tools/Build/author_*_assets.py Tools/Build/author_skimrace_ai_config.py Tools/Build/author_lifeform_heart_sizes.py; do python3 "$f" --check || { echo "GATE RED: $f"; break; }; done`
    - **PASS:** it finishes in about 2 minutes, and the output contains all of these:
-     - `34/34 passed` and `PASSED: nothing that blocks a build.`
+     - `25/25 passed` and `PASSED: nothing that blocks a build.`
      - From the skimmer self-test: a `live tree: 6 fault(s) ... (informational, not asserted)` line, 15 lines starting `ok`, then `self-test: OK`.
      - From the skimmer report: 14 hull blocks, then `Not audited (no VesselStatus on the prefab root; the editor skips these too):` with exactly nine `-- Components/...: no VesselStatus found` lines, then `6 fault(s); standing exceptions: Serpent`.
      - From the lifeform self-test: 9 lines starting `ok`, then `self-test: OK`. The lifeform report ends with `32 warning(s)`.

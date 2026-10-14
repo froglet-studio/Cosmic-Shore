@@ -1,7 +1,8 @@
 # Build & Delivery — Windows x64 / Steam
 
 Covers launch-checklist **Workstream B**. The Steam half is written and reviewable but **not armed**:
-nothing can upload until the Steamworks app exists (checklist **A2**).
+nothing can upload until the Steamworks apps exist (checklist **A2** for the base app, **A4** for the
+Playtest child app).
 
 Owner: Shombith. Related: `Docs/STEAM_EA_INVESTOR_CHECKPOINT.pdf`, `Tools/Steam/README.md`.
 
@@ -17,7 +18,7 @@ Owner: Shombith. Related: `Docs/STEAM_EA_INVESTOR_CHECKPOINT.pdf`, `Tools/Steam/
 | B4 | SteamPipe upload + branch convention | **Ready, not armed** — `Tools/Steam/`. Needs app id + depot id. |
 | B5 | Repeatable build checklist | **This document** + `Tools/Build/build_windows.sh`. |
 | B6 | Crash reporting behind consent | **Done** — `CrashReportingService`, gated by the existing analytics consent. |
-| B7 | Steam overlay verification | **Blocked** — needs a real Steam build on the beta branch. Do it during the closed playtest (E7). |
+| B7 | Steam overlay verification | **Blocked** — needs a real Steam build on the Playtest child app's `internal` branch (`Docs/STEAM_PLAYTEST_RUNBOOK.md` A4 step 6). Do it before Wave 0 (E7). |
 | — | Scheduled build verification (CI) | **Authored, static checks only** — `.github/workflows/unity-ci.yml`. Every Unity tier is skipped: there has been **no runner since 2026-10-13**, when the self-hosted one was removed. Stays skipped until a runner that meets §10 *Security* is attached. |
 | — | Bleeding-edge landing guard | **Authored, static half running** — `.github/workflows/bleeding-edge-guard.yml`. Checks every commit that lands on trunk and autofixes; the compile half has had no runner since 2026-10-13 and is skipped, see §10.1. |
 | — | Test build promotion | **Authored** — `.github/workflows/sync-build-branches.yml`. Moves `development` into `build/android` and `build/windows` every 3 weeks, Wednesday 06:00 PT, see §11. |
@@ -106,14 +107,26 @@ artefact that `Tools/Steam/upload.sh` consumes.
 See **`Tools/Steam/README.md`** for the full procedure. Summary:
 
 ```bash
+# Playtest child app (ids from A4): the live invite channel
+export STEAM_PLAYTEST_APPID=<playtest-appid> STEAM_PLAYTEST_DEPOTID=<playtest-depotid> STEAM_USER=<builder-account>
+./Tools/Steam/upload.sh --target playtest --build-dir Builds/Windows64 --branch internal --set-live
+
+# Base app (ids from A2): the future paid build; --target base is the default
 export STEAM_APPID=<appid> STEAM_DEPOTID=<depotid> STEAM_USER=<builder-account>
-./Tools/Steam/upload.sh --build-dir Builds/Windows64 --branch internal
+./Tools/Steam/upload.sh --target base --build-dir Builds/Windows64 --branch internal --set-live
 ```
 
-Branches: `internal` (team) → `beta` (playtesters, used for E7) → `default` (players).
-Under the Playtest model there are **two apps** and the invite channel is the Playtest app's `default`, not the base app's `beta` — `./Tools/Steam/upload.sh --target playtest …`; branch model in `Docs/STEAM_PLAYTEST_RUNBOOK.md`.
-Publishing to `default` requires both `--set-live` and typing the app id back. Every other upload
-lands in Steamworks unpublished, which is the normal path.
+Under the Playtest model there are **two apps**, and the same branch name has a different audience
+on each; the table in `Docs/STEAM_PLAYTEST_RUNBOOK.md` § *Branch model under two apps* is the one
+statement of it and wins over this summary. Playtest child app: `internal` (team, password
+protected; B7 runs here) → `default` (every granted tester: the invite channel, E7 / E10). Base app:
+`internal` (team) → `default` (owners: the paid release); its `beta` has no audience under the
+Playtest model.
+`--set-live` with `internal` sets that branch live without a prompt; without `--set-live` every
+upload lands in Steamworks unassigned and `--branch` only labels the build description. `default`
+is set live from App Admin → Builds on either app: Valve does not let a build script set `default`
+live, and the script's demand to type the app id back before `--set-live default` is a guard, not
+the publishing mechanism.
 
 ---
 
@@ -196,17 +209,17 @@ Run top to bottom. Every step is either a command above or a box to tick.
 6. [ ] Build exited 0 and `build_manifest.txt` shows the right version and commit
 7. [ ] Launch the built player locally: reaches the main menu, plays one Maelstrom round
 8. [ ] Offline smoke test (§7)
-9. [ ] Upload to `internal`: `./Tools/Steam/upload.sh --build-dir Builds/Windows64 --branch internal`
-10. [ ] Install from Steam on a clean machine; verify the overlay renders (**B7**)
-11. [ ] Promote to `beta` for playtesters, or `default` with `--set-live` for release
+9. [ ] Upload to the Playtest child app's `internal`: `./Tools/Steam/upload.sh --target playtest --build-dir Builds/Windows64 --branch internal --set-live` (a paid-release build after the conversion uses `--target base`)
+10. [ ] Install the Playtest app's `internal` branch from Steam on a clean machine; smoke test and verify the overlay renders (**B7**)
+11. [ ] Set the build live on the Playtest app's `default` from App Admin → Builds, only as the signed wave policy allows (`Docs/STEAM_PLAYTEST_RUNBOOK.md` § A6). A paid release is the base app's `default`, also set live from App Admin
 12. [ ] Confirm crashes and funnel events appear in their dashboards
 
 ---
 
 ## 9. Known gaps
 
-- **B7 (overlay verification)** cannot be done until a build is on Steam. Fold it into the closed
-  playtest (E7).
+- **B7 (overlay verification)** cannot be done until a build is on Steam. It runs on the Playtest
+  child app's `internal` branch (`Docs/STEAM_PLAYTEST_RUNBOOK.md` A4 step 6), before Wave 0 (E7).
 - The build script has not been executed in this environment — there is no Unity install here. It
   needs one clean run on a Windows machine with the IL2CPP toolchain before it is trusted; expect
   the first IL2CPP build to take considerably longer than a Mono one.
