@@ -1004,6 +1004,25 @@ folders that measure 12 MB (coincidence) and **4.4 MB** on disk.
 State which you mean every time: *"reaches a build"* vs *"on disk"*. A removal's headline is
 usually the first and its licence/repo-hygiene argument is the second.
 
+### Trap: a runtime `new Material(shader)` draws a variant the BUILD stripped
+
+A player build keeps only the shader variants some shipped material (or a variant collection) asks for, so
+a material made in code at runtime can ask for a keyword nobody shipped. The Editor has every variant,
+so it works there and fails only in the build: `INSTANCING_ON` is the usual casualty, and the draw comes out
+non-instanced or invisible. When code needs a material with a keyword or instancing, author a material
+ASSET with it set (GPU instancing ticked), keep it reachable (`Resources/`, or a reference from a shipped
+SO), and load it rather than constructing one. `SwarmMemberFallbackDraw` loads
+`Resources/SwarmMemberInstancedFallback.mat` for exactly this (claude/webgl-toybox-kg5qx7, 2026-10-14).
+
+### Technique: check a `.jslib` against a vendor's JS internals by grepping its static library
+
+A WebGL plugin's browser half is often JavaScript embedded as plain strings inside an Emscripten static
+library (`Assets/Plugins/<vendor>/platforms/html5/lib/<ver>/*.a`). A `.jslib` that calls into it
+(`Module.mInputRegistered`, `Module["OutputWebAudio_resumeAudio"]`) can be checked without a build:
+`grep -c -a '<name>' <lib>.a` for each name, against the library version Unity will link (FMOD picks
+`3.1.39` for Unity 6), and `grep -a -o '.{200}<name>.{300}'` to read the code around it. Names that are
+not there mean the `.jslib` does nothing, silently (claude/webgl-toybox-kg5qx7, 2026-10-14).
+
 ## 4. Technique: C# verification — get a real compiler first
 
 **Reach for ROSLYN, not `mcs`.** `mcs` is a C# 7.x compiler and this codebase is
