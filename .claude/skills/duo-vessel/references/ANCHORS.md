@@ -14,8 +14,9 @@ one Vessel**, and flight, ability input and the AI's stick all go through `Playe
 pilots for.
 
 So the cheapest duo is **each half is an ordinary vessel with its own Player (a human, or an AI
-Player), and the duo is a SEAT that groups the two.** A swap is then exactly `PilotSwap.ApplyLocal`
-restricted to the partner hull: the human Player and the AI Player trade hulls. This is option B
+Player), and the duo is a SEAT that groups the two.** A swap is then exactly `PilotSwap`, with the
+partner hull in the ring: the human Player and the AI Player trade hulls. Score already follows
+the pilot, so the seat's score is the sum of its two Players. This is option B
 in SKILL.md §3.1, and it reuses the most code. Option A (one Player, two hulls) means rewriting the
 one-Player-one-Vessel assumption. Do not start A without Garrett's call.
 
@@ -64,7 +65,7 @@ one-Player-one-Vessel assumption. Do not start A without Garrett's call.
 - **`R_VesselActionHandler`:** latched input subscription, `ReleaseHeldInputs`, `SetInputSuppressed`.
   **A held button must be released on swap.**
 - **`AIPilot`** (`C/AI/AIPilot.cs`): `StartAIPilot` / `StopAIPilot`, `SetExternalTargetProvider`
-  (a duo AI's target, e.g. "follow the Flier's trail"), `TakeModeHooksFrom`.
+  (a duo AI's target, e.g. "follow the Goby's trail"), `TakeModeHooksFrom`.
 
 ### The swap (PilotSwap, the template)
 - **`C/Multiplayer/PilotSwap.cs`:**
@@ -74,8 +75,9 @@ one-Player-one-Vessel assumption. Do not start A without Garrett's call.
   - `VerifyLocalTakeoverAsync` fixes the camera if needed.
   - `CooldownSeconds = 0.75`.
   - Design: `Docs/HomeHub/ARCHITECTURE.md` §3.9.
-- **`C/IO/PilotSwapGesture.cs`:** D-pad **left/right** (plus keyboard 1/2) cycles the team's hulls
-  on arena cards. **D-pad up/down are free in flight.** Other D-pad readers: `SpectatorController`
+- **`C/IO/PilotSwapGesture.cs`:** D-pad **left/right** (plus keyboard 1/2) cycles the team's
+  hulls on arena cards. **The duo swap uses this exact gesture** (SKILL.md §2.2, LOCKED); only the
+  ring changes. D-pad up/down are unread in flight. Other D-pad readers: `SpectatorController`
   (left/right), menu navigation (`ArcadeDPadNav`), `DuelCellStatsRoundUIController` (up, in a UI).
   The D-pad is read directly (`Gamepad.current.dpad`), not through an InputActions asset or
   `InputEvents`.
@@ -96,36 +98,38 @@ one-Player-one-Vessel assumption. Do not start A without Garrett's call.
 - **Serpent far cam:** `Assets/_SO_Assets/Camera/SerpentCameraSettingsSO.asset` (fixed mode,
   follow z = -250, dynamic min/max 250). `CameraSettingsSO.dynamicMaxDistance` is the far-cam
   distance.
+- These are all **chase** cameras. The Pistol's camera sits **beside** it, sidescroller-style, in
+  its warped world, which `CameraMode` has no mode for.
 
 ### Flight references
 - **Serpent:** `C/Vessel/SingleStickVesselTransformer.cs` (one stick, stationary stance).
   - Its impactor container has no skimmer effects, so it rams through prisms.
   - Docs: `R_VesselActions/SERPENT_*.md`.
-  - The Serpent has no "ignore collisions" flag; a Flier that ignores collision needs its own.
+  - The Serpent has no "ignore collisions" flag; a Goby that ignores collision needs its own.
 - **Rhino straight-line boost:**
   - `C/IO/StraightLineGesture.cs` → `InputEvents.FullSpeedStraightAction`.
   - `RampBoostActionSO` / `RampBoostActionExecutor` (graded).
   - Doc: `R_VesselActions/RHINO_RAMP_BOOST.md`.
-  - Reuse it at a lower ceiling for the Flier.
+  - Reuse it at a lower ceiling for the Goby.
 - **One / two thumbs:** `TouchInputStrategy`, `DualStickMix.cs`,
   `VesselStatus.IsSingleStickControls`. Doc: `C/IO/ONE_THUMB_MOUSE_CONTROLS.md`.
 
 ### Trails, prisms, the spline
-- **Spawner:** `C/Vessel/VesselPrismController.cs` (`CreateBlock`, `StartSpawn`). The Flier's
+- **Spawner:** `C/Vessel/VesselPrismController.cs` (`CreateBlock`, `StartSpawn`). The Goby's
   alternating block angles go here.
 - **The spline already exists:** `C/Vessel/Trail.cs` `Project(...)` rides a **Catmull-Rom** curve
   through block centres (`CatmullRom` / `CatmullRomTangent`).
 - **Riders:** `C/Vessel/TrailFollower.cs` (1D ride along a trail; the Urchin rider,
   `URCHIN_TRAIL_RIDER.md`) and `C/Vessel/BlockscapeFollower.cs` (2D surface ride). **These are the
-  nearest thing to the Bird's 2.5D motion.**
+  nearest thing to the Pistol's 2D motion.**
 - **Attraction:** `SkimmerAlignPrismEffectSO` (nose and position nudged along the trail; used by
   the Squirrel and Thresher), and `VesselAttachPrismEffectSO`.
 - **Prism state:** `C/Vessel/Prism.cs` (`Domain`, `Damage`, `MakeDangerous`),
   `C/Environment/PrismProperties.cs` (`IsShielded`, `IsSuperShielded`, `IsDangerous`,
   `IsTransparent`), `C/Managers/PrismStateManager.cs`.
 - **Friendly fire:**
-  - **Ramming has no team check, so teammate prisms already break on contact.** The Bird's
-    friendly fire is the default; the work is the exemption for the Flier's trail (see
+  - **Ramming has no team check, so teammate prisms already break on contact.** The Pistol's
+    friendly fire is the default; the work is the exemption for the Goby's trail (see
     `C/ImpactEffects/SELF_TRAIL_CONTACT.md`, `SelfTrailContactConfigSO`).
   - Projectiles (`Projectile.friendlyFire`) and explosions (`ExplosionImpactor` `affectSelf`)
     spare their own team by default.
@@ -160,18 +164,20 @@ one-Player-one-Vessel assumption. Do not start A without Garrett's call.
 | Piece | Generic or per duo | Nearest thing to start from |
 |---|---|---|
 | A seat that holds two Players / two hulls and counts as one (team size, backfill, scoreboard, vessel select) | **generic** | `PilotSwap` ring, `AIHullSeating`, `RequestedAIVessels` |
-| Swap restricted to the partner half, on a non-arena card | **generic** | `PilotSwap` + `PilotSwapGesture` |
-| Swap input on D-pad up/down (or the agreed direction) and on the phone flip | **generic** | `PilotSwapGesture`, `DeviceOrientationHandler` |
-| Co-op offer/accept handshake (two humans trading halves) | **generic** | none |
+| The duo ring in `PilotSwap` (the partner half, on any card; with the team ring on arena cards: open) | **generic** | `PilotSwap.TryPickRingTarget`, `CollectTeamHulls` |
+| Phone flip as the mobile form of the swap gesture (the Grizzly's FlipAction binding has to be resolved first) | **generic, fleet-wide** | `PilotSwapGesture`, `DeviceOrientationHandler` |
+| Co-op offer/accept handshake (two humans trading halves; `PilotSwap` only trades a human with an AI) | **generic** | `PilotSwap.TryValidateServer` |
+| One element meter shared by two hulls that two machines may own | **generic** | `ResourceSystem`; levels do not replicate today |
 | Party/lobby: two players share one seat | **generic** | `PartySessionService`, `MaxPartySlots` |
 | A shared cooldown / charges component | **generic, fleet-wide** | none; cooldowns are private per executor. `RateLimitCooldown.cs` is the only shared one |
 | "Restock everything" on a crystal (charges + cooldowns) | generic once the above exists | `VesselChangeResourceByCrystalEffectSO` |
 | Per-viewer rendering of prisms or a curve | **generic** | the Serpent cloak's `IsLocalUser` alpha |
 | Speed gauge on the HUD | generic | `ThresherHUDView` fill |
-| Speed from distance to another object | per duo (Flier) | `StoatPathfinderExecutor` `FlightTimeScale`, `SkimmerModifyThrotleByPrismEffectSO` |
-| 2.5D / strip-constrained flight with warped yaw | per duo (Bird) | `TrailFollower`, `BlockscapeFollower`, `Trail.Project` |
-| Alternating-angle trail blocks | per duo (Flier) | `VesselPrismController.CreateBlock` |
+| Speed from distance to another object | per duo (Goby) | `StoatPathfinderExecutor` `FlightTimeScale`, `SkimmerModifyThrotleByPrismEffectSO` |
+| The unrolled-ribbon world: map world points to (s, h, d) and back, constrain the Pistol to the plane, draw parallax depth layers and distorted prisms, on the Pistol's client only | per duo (Pistol) | `Trail.Project`, `TrailFollower`, `BlockscapeFollower`; nothing renders a warped world |
+| A side-on sidescroller camera mode | generic | `CameraSettingsSO.CameraMode` |
+| Alternating-angle trail blocks | per duo (Goby) | `VesselPrismController.CreateBlock` |
 | Drag-to-aim launch on mobile | generic | `ThresherLaunchSight` (stick aim only) |
-| Prime / hot prism states and their decay | per duo (Flier & Bird), maybe fleet | `PrismProperties` flags, `MakeDangerous` |
+| Prime / hot prism states and their decay | per duo (Goby & Pistol), maybe fleet | `PrismProperties` flags, `MakeDangerous` |
 | Homing ("heat-seeking") projectiles, one per hot target | generic | `Projectile`, `Gun`; Sparrow missiles are unguided |
-| An "ignore collision" flight for a whole hull | per duo (Flier) | the Urchin slip ghost |
+| An "ignore collision" flight for a whole hull | per duo (Goby) | the Urchin slip ghost |
