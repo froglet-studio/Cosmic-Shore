@@ -23,8 +23,9 @@ checklist.
    "done when" is its acceptance test: run it and show the result before calling the work done.
 5. **Multiplayer is UGS only.** START ONLINE (`game_start` `online: true`) signs in to the game's LIVE
    UGS project and plays through UGS Lobby and Relay, as the Unity build does; START is offline. There
-   is no LAN play, local server or multi-player harness any more, so only start an online game when the
-   owner asks. Engine-side work is tested against stand-ins (`UgsMultiplayerTests`, `NetStackTests`).
+   is no LAN play or local server any more, so only start an online game when the owner asks.
+   Engine-side work is tested against stand-ins (`UgsMultiplayerTests`, `NetStackTests`), and the party
+   layer by the five-pilot harness on those stand-ins (`bash Tools/Build/prisma_party_scenarios/run.sh`, 14/14).
    `Docs/MULTIPLAYER_START_HERE.md` first, then `Port/docs/MULTIPLAYER.md` §6.10.
 6. **Inspect, don't guess.** `game_find` / `game_hierarchy` to locate objects, `game_get` to read
    live fields, `game_ui_at X,Y` for "what is that on screen", `game_dump_ui` for layout and

@@ -27,8 +27,8 @@ namespace CosmicShore.Engine.Networking
     /// With <see cref="Secret"/> set, the REST calls need <c>Authorization: Bearer SECRET</c> (401
     /// otherwise), so only Froglet's players can allocate on a relay that faces the internet.
     ///
-    /// Run it standalone with the player: <c>CosmicShore --relay-server [UDP_PORT] [HTTP_PORT] [ADVERTISED_HOST]</c>
-    /// (<c>COSMIC_SHORE_RELAY_SECRET</c> sets the secret).
+    /// The tests and the party harness (<c>Tools/Build/prisma_party_scenarios/standins</c>) host it in-process; the player's
+    /// standalone <c>--relay-server</c> went with UGS-only online play (docs/MULTIPLAYER.md §6.10).
     /// </summary>
     public sealed class FrogletRelayServer : IDisposable
     {
