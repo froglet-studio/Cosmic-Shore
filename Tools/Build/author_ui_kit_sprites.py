@@ -21,8 +21,8 @@ Every shape the style-B menu redesign draws comes from here (Docs/MENU_REDESIGN_
                                              Neutral Dark, under a panel's content
     kit_bracket                              a 22-unit corner bracket (1-unit L, top-left); the other
                                              three corners flip it by scale
-    kit_spark                                the travelling highlight (KitSpark): a 48 x 2 streak that
-                                             is clear at both ends and solid in the middle
+    kit_spark / kit_spark_v                  the travelling highlight (KitSpark): a 48 x 2 streak (and its
+                                             2 x 48 vertical twin) clear at both ends, solid in the middle
 
 THE SLIVER (Docs/STYLE_FOUNDATION.md §5): a 45 deg cut on TWO OPPOSITE corners. Normal = top-left
 and bottom-right; `_flip` = top-right and bottom-left (§5 "flippable"). `fill` is the whole
@@ -272,6 +272,7 @@ def sprite_set():
     out.append(("kit_bracket", a, (0, 0, 0, 0), dict(bracket=True)))
     a, _ = build_spark()
     out.append(("kit_spark", a, (0, 0, 0, 0), dict(spark=True)))
+    out.append(("kit_spark_v", a.T.copy(), (0, 0, 0, 0), dict(spark_v=True)))
     return out
 
 
@@ -358,6 +359,8 @@ def check_sprite(name, alpha, border, meta):
         assert np.allclose(row, row[::-1], atol=1e-6), f"{name}: the streak must be symmetric"
         assert row[0] < 0.05 and row[-1] < 0.05, f"{name}: the streak must be clear at both ends"
         assert row[len(row) // 2] > 0.95, f"{name}: the streak must be solid in the middle"
+    elif meta.get("spark_v"):
+        check_sprite(name, alpha.T, border, dict(spark=True))
     elif meta.get("banner") == "body":
         b = border[0]
         mid = alpha[:, b:w - b]
