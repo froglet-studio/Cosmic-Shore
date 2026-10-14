@@ -68,11 +68,15 @@ duo teaches something new, it is added here (§8), so the skill grows with each 
 
 ### 2.2 Switching
 
-- **Controller: the D-pad.** One direction (default: D-pad down) means "swap halves". The other
-  directions stay free for the halves' own use. **[open per duo]** Which direction, and whether
-  other directions are used, is a design call. Record it in the brief.
+- **Controller: the D-pad.** D-pad **left/right is already taken**: it is the arena pilot swap
+  (`PilotSwapGesture`), which cycles a team's hulls on arena cards. **Up/down are free in
+  flight.** The proposed duo default is **D-pad up/down = swap halves**, so a duo also works on an
+  arena card. **[open, fleet-level]:** confirm the direction once and record it here.
 - **Mobile: a phone flip.** Solo: the flip swaps. Co-op: the flip **offers** a swap to the partner
-  (stated in the Flier & Bird brief, adopted as the duo default).
+  (stated in the Flier & Bird brief, adopted as the duo default). The flip today raises
+  `InputEvents.FlipAction`, which is an **ability input**. The Grizzly binds it, and on a pad it
+  is the right shoulder. So a duo's halves must not bind FlipAction as an ability, and the flip
+  has to become the swap (see ANCHORS.md, Phone flip).
 - **Keyboard:** a key bound through the same input action as the D-pad. Never a hard-coded key.
 - **What moves on a swap:** input routing, the camera, the HUD (the four-icon row, gauges and
   hints of the new half), the audio listener, and in multiplayer the **input authority** of that
@@ -121,6 +125,15 @@ working approach (until Garrett picks one; see ANCHORS.md for the code each one 
 - **B: two classes, paired by config.** Each half is its own `VesselClassType`, and an SO pairs
   them. Pros: each half reuses the single-hull pipeline unchanged. Cons: the slot counting,
   selection and backfill must learn to treat a pair as one seat.
+
+**The code leans hard toward B.** Everything assumes one Player flies one Vessel, and flight,
+abilities and the AI's stick all go through `Player.InputStatus`. The arena **pilot swap**
+(`PilotSwap.ApplyLocal`) already has a human Player and an AI Player trade hulls in place:
+ownership transfer, camera, HUD, local-pilot systems, motion carried over, AI restarted. A B-duo
+is two hulls with two Players (human or AI), grouped into one seat, and its swap is a pilot swap
+restricted to the partner. A means one Player driving two hulls, which rewrites the
+one-Player-one-Vessel assumption everywhere. Recommend B unless the design needs something only A
+gives.
 
 Do not choose between them inside a feature branch. It is an architecture decision; ask, and
 record the answer here.
@@ -184,6 +197,10 @@ them.**
 - **Broadcasting per-viewer content.** Making a spline invisible with a layer on every client
   still sends it everywhere and costs every client. Build it only on the viewer's client.
 - **Resetting on swap.** A swap that re-inits a half (cooldowns, charges, trail) is a bug.
+- **A held button across a swap.** A boost or charge held when the swap fires stays "held" on the
+  half you left, unless `R_VesselActionHandler.ReleaseHeldInputs` runs. Release on every swap.
+- **Rebuilding the arena swap.** `PilotSwap` already does ownership, camera, HUD and AI handover.
+  Extend it; never write a second swap.
 
 ## 7. Glossary
 

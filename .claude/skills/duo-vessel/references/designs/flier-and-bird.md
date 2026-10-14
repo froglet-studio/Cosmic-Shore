@@ -132,7 +132,29 @@ proposals, not design:
     Bird spawns or respawns away from the trail).
 11. The Bird's AI priorities.
 
-## 8. Decisions log
+## 8. Where each mechanic starts in code
+
+See `../ANCHORS.md` for the full map. In short:
+
+- **The spline:** `Trail.Project` already rides a Catmull-Rom curve through the trail's block
+  centres. The Flier's alternating angles change where the control points sit, not the maths.
+  The Bird's 2.5D ride starts from `TrailFollower` / `BlockscapeFollower`.
+- **Bird friendly fire:** ramming has no team check today, so it already breaks friendly
+  blocks. The work is exempting the Flier's trail.
+- **Bird ghosting:** `UrchinSlipActionExecutor` (`GhostAsync`, `SetHullSolid`).
+- **Bird launch:** Thresher's aimed launch (`ThresherLaunchSight`) for the stick. Drag-to-aim
+  on mobile does not exist yet.
+- **Spline visible to the Bird only:** the Serpent cloak's `IsLocalUser` alpha is the
+  precedent.
+- **Flier flight:** `SingleStickVesselTransformer` (Serpent). There is no "ignore collision"
+  flag yet.
+- **Flier straight-line boost:** `RampBoostActionExecutor` + `StraightLineGesture` (Rhino), at
+  a lower ceiling.
+- **Far cam:** `SerpentCameraSettingsSO.asset`.
+- **Primer, hot, flares, speed gauge, proximity speed, shared cooldowns:** none exist. See
+  ANCHORS.md §3.
+
+## 9. Decisions log
 
 Add a dated line each time an **[open]** or **[read]** item is settled, and update the line it
 settled. Never delete the original tag. Strike it through and point at the decision.

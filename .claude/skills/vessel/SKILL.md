@@ -42,6 +42,7 @@ touching before editing; read all of it when creating or completing a vessel.
 | Petal flowers / hull morphs / rig or FBX | §6 Bars, §7 Morphs | CLAUDE.md ▸ Elemental Bars / Hull Morphs; `Docs/VESSEL_CONSTRUCTION.md` |
 | Prefab construction, model swaps, deleting a model | — | **`Docs/VESSEL_CONSTRUCTION.md`** (guid ownership, nested-instance parenting, what the unreferenced rigs carry) |
 | Tails, jets, vessel FX mounts | — | `Docs/VESSEL_TAIL_AND_JETS.md` |
+| A **duo vessel** (two craft in one squad slot, D-pad / phone-flip swap between halves) | — | **`/duo-vessel`** skill (contract, code anchors, one brief per duo) |
 | Collisions, crystals, skimmers, jousting | §9 Impact effects | CLAUDE.md ▸ Impact Effects; `RHINO_SHIELD_SWIPE.md` |
 | Docs, shipping, verification | §10 Paper trail | `GIT_RULES.md`, `Docs/UNITY_VERIFICATION_CHECKLIST.md` |
 
