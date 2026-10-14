@@ -5,13 +5,12 @@ using System.Text.RegularExpressions;
 namespace CosmicShore.Tests;
 
 /// <summary>
-/// The multiplayer test tools are wired at boot and in the session service, where nothing fails when a
-/// line goes missing: the relay, the UDP default, the simulator and the faults simply stop applying. That
-/// happened on 2026-10-14 when a merge took one side of PlayerBoot and DirectoryMultiplayerService
-/// whole (the online-server PR against Steps 1-7): every tool kept compiling and every unit test kept
-/// passing, while COSMIC_SHORE_RELAY, COSMIC_SHORE_NET_SIM and COSMIC_SHORE_NET_FAULT went silent and the
-/// transport contract lost six of its transports. These checks name the lines that must survive a merge
-/// (docs/MULTIPLAYER.md §6).
+/// The multiplayer stack is wired at boot, where nothing fails when a line goes missing: the relay, the UDP
+/// default, the simulator and the faults simply stop applying. That happened on 2026-10-14 when a merge took
+/// one side of PlayerBoot whole: every tool kept compiling and every unit test kept passing. The online
+/// server and the session folder have since been removed (START ONLINE is UGS Lobby + Relay), and the stack
+/// is built in one place, <c>NetStack.Install</c> (order held by <c>NetStackTests</c>). These checks name the
+/// calls that must survive a merge (docs/MULTIPLAYER.md §6.9).
 /// </summary>
 public class NetworkWiringGuardTests
 {
@@ -22,28 +21,23 @@ public class NetworkWiringGuardTests
     }
 
     [Fact]
-    public void TheBoot_InstallsTheTransportRelaySimulatorAndFaults()
+    public void TheBoot_BuildsTheNetworkThroughNetStack()
     {
         if (ContentYamlTests.ProjectRoot == null) return;
-        var boot = Source(Path.Combine("CosmicShore.Player", "PlayerBoot.cs"));
-        foreach (var call in new[] { "NetTransports.Select(", "UgsSetup.InstallRelay(", "NetSimulator.Install()", "NetFaults.Install()" })
-            Assert.True(boot.Contains(call), $"PlayerBoot no longer calls {call}: its switch silently stops applying (docs/MULTIPLAYER.md §6)");
-    }
-
-    [Fact]
-    public void TheSessionFolder_HostsAndJoinsThroughARelay()
-    {
-        if (ContentYamlTests.ProjectRoot == null) return;
-        var svc = Source(Path.Combine("CosmicShore.Engine", "Networking", "Wire", "DirectoryMultiplayerService.cs"));
-        foreach (var piece in new[] { "RelaySessions.Allocator", "RelaySessions.HostWith(", "RelaySessions.JoinWith(", "RelayJoinCode" })
-            Assert.True(svc.Contains(piece), $"DirectoryMultiplayerService lost '{piece}': sessions no longer go through COSMIC_SHORE_RELAY (docs/MULTIPLAYER.md §6.7)");
+        Assert.True(Source(Path.Combine("CosmicShore.Player", "PlayerBoot.cs")).Contains("UgsSetup.InstallOnline("),
+            "PlayerBoot no longer calls UgsSetup.InstallOnline: START ONLINE silently plays offline");
+        Assert.True(Source(Path.Combine("CosmicShore.Player", "UgsSetup.cs")).Contains("NetStack.Install("),
+            "UgsSetup no longer builds the stack through NetStack.Install: the transport, relay, simulator and faults stop applying");
+        var stack = Source(Path.Combine("CosmicShore.Engine", "Networking", "Wire", "NetStack.cs"));
+        foreach (var call in new[] { "NetTransports.Select(", "NetSimulator.Install()", "NetFaults.Install()" })
+            Assert.True(stack.Contains(call), $"NetStack no longer calls {call}: its switch silently stops applying (docs/MULTIPLAYER.md §6)");
     }
 
     [Fact]
     public void TheTransportContract_CoversEveryTransport_AndEachOnABadLine()
     {
         var names = NetTransportContractTests.TransportNames.ToHashSet();
-        foreach (var t in new[] { "tcp", "udp", "relay", "online-relay", "loopback" })
+        foreach (var t in new[] { "tcp", "udp", "relay", "loopback" })
         {
             Assert.Contains(t, names);
             Assert.Contains("sim-" + t, names);

@@ -12,11 +12,13 @@ namespace CosmicShore.Tests
     /// </summary>
     public class NetTransportContractTests : IDisposable
     {
-        public static TheoryData<string> Transports => new()
+        internal static readonly string[] TransportNames =
         {
             "tcp", "loopback", "udp", "relay",
             "sim-tcp", "sim-loopback", "sim-udp", "sim-relay",
         };
+
+        public static TheoryData<string> Transports => new(TransportNames);
 
         /// <summary>A bad line: the simulator must keep the contract (whole, ordered, reliable) under it.</summary>
         static readonly NetSimSettings BadLine = new() { LatencyMs = 5, JitterMs = 10, LossPercent = 20, BandwidthKbps = 200000 };
