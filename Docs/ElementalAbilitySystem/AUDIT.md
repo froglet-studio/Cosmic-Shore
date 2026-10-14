@@ -131,7 +131,8 @@ Full-history forensics (`git fetch --unshallow`, 7,248 commits) plus code verifi
   field exists on that branch, on `Bleeding-Edge-Reintroduce-Falcon` or on HEAD (`git grep
   maxSyncPrewarm`). The branch prewarms `max(defaultCapacity, bufferSizeTarget)` = 100 and lacks the
   injection fix, which HEAD now has (`ProjectilePoolManager.OnInstanceCreated`). The Brittle Star
-  was rebuilt from its class document instead: `R_VesselActions/BRITTLE_STAR.md`.
+  was rebuilt from its class document as `VesselClassType.BrittleStar = 16`: the Unity contract is
+  `R_VesselActions/BRITTLE_STAR.md`, the research and design studio `Docs/Studios/BRITTLE_STAR.md`.
 
 ### #2 — Skyburst missiles become permanent duds via pooled collider state (CONFIRMED)
 

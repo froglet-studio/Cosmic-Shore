@@ -84,6 +84,35 @@
       "docs": "Docs/Studios/STOAT_PLAY_STYLES.md",
       "engineNote": "The game's own Stoat in the Slingshot race (the round-4 orbit sling the game ships today, not the studio's dipole sling).",
       "engineMode": "Slingshot"
+    },
+    {
+      "id": "brittlestar",
+      "name": "Brittle Star",
+      "file": "brittlestar.html",
+      "kind": "the Unity build - round 2",
+      "chip": "the Unity build · round 2",
+      "summary": "The Brittle Star as it ships (BrittleStar = 16): a cockpit inside a pentagon of five engines and five guns. Speed (x6), Creation (the slowest, a trail per ring corner) and Destruction (five auto-firing arms the stick moves in and out), and the support ring thrown as a nucleus-wide disk. Demolition Derby and Fauna Frenzy at four intensities, AI rivals at Easy, Medium or Hard flying four element personas, and a scorecard that races every level and style.",
+      "spec": [
+        {
+          "k": "Modes",
+          "v": "Cruise · Speed · Creation · Destruction"
+        },
+        {
+          "k": "Ring",
+          "v": "a nucleus-wide disk; a crystal rebuilds it"
+        },
+        {
+          "k": "Flight",
+          "v": "one stick · 45 u/s, 270 in Speed"
+        },
+        {
+          "k": "Games",
+          "v": "Demolition Derby · Fauna Frenzy"
+        }
+      ],
+      "preview": "previews/brittlestar.png",
+      "accent": "#7fd7ff",
+      "docs": "Docs/Studios/BRITTLE_STAR.md"
     }
   ],
   "fleet": [
@@ -97,7 +126,6 @@
     "Scarab",
     "Butterfly",
     "Termite",
-    "Falcon",
     "Shrike"
   ],
   "fleetNote": "No studio yet. Ask the studio agent below to start one; each needs the vessel's own numbers read from its assets first.",

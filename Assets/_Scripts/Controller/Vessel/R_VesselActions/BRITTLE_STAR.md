@@ -4,6 +4,9 @@
 Documents ▸ Sparrow Chain). `VesselClassType.BrittleStar = 16`. Compiled and statically gated offline; **not yet opened
 in Unity** — see [In-editor verification](#in-editor-verification).
 
+> Research, the design document transcribed, the studio and its scorecards: `Docs/Studios/BRITTLE_STAR.md`. Fly it first in
+> the Vessel Studio (`Docs/Studios/VesselStudio/brittlestar.html`, the Unity build set).
+
 > *"A complex one-touch flyer. With different modes concentrated on destruction, creation, and maneuverability, the
 > Brittle Star is an all-in-one tutorial on the more advanced systems of the game."* Superlative: **best at short-range
 > barrages for pinpoint destruction with minimal investment.**
@@ -331,10 +334,12 @@ None of that is a play test. In order:
   charge stored, Overdrive) — audio's to author.
 - **F5 — minigames**: *Demolition Derby* (Time/Charge rewards) and *Fauna Frenzy* (Mass/Space rewards) from the
   document (`/arcadegame`).
-- **F6 — Vessel Studio page**: a design studio was drafted on the retired branch `cece/brave-galileo-d95fpj`
-  (`Docs/Studios/VesselStudio/brittlestar.html`), but it models the class document as written, not Garrett's decisions
-  since (×6 Speed, the five arms in/out, corner trails, the 2.5× ring, the nucleus-wide disk, Creation the slowest). It
-  needs that pass before it can be the source of truth (`/vessel-studio` §2); until then the numbers are seeded from the C#.
+- **F6 — Vessel Studio page: DONE** (2026-10-14). `Docs/Studios/VesselStudio/brittlestar.html` (merged from the retired
+  `cece/brave-galileo-d95fpj`) flies this build by default (round 2): its `SHIPPED` block holds every number here, and
+  `python3 Tools/Build/studio_to_unity.py --vessel brittlestar` writes them into `BrittleStarConfig.asset` and the prefab
+  (`--check`: 34 mapped, 0 drift). Tune there, then clone with `/artifact-to-unity`. Its round-2 scorecard and findings
+  (the disk breaks your own trail in the Frenzy; half-speed Creation slows it; Overdrive still out-pays the ring):
+  `Docs/Studios/BRITTLE_STAR.md` §5.2. Not yet published into the one artifact (it goes through `Ys-bleeding-edge`).
 - **F8 — a suspended ring**: the concept art floats the ring round the cockpit on energy; the hull joins them with five
   physical arms. Swapping them for energy links (a flame-like domain-coloured beam per arm) is a hull-builder change.
 - **F7 — "Ark maximum range"** (1 cell diameter, a gentle pull back at the edge) is in the document's play-loop section and
