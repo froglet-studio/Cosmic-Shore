@@ -97,6 +97,12 @@ checklist.
    - **F3's frame figures average its last 240 frames.** At 3 fps that is 80 seconds, so after a scene
      change it still mixes in the previous scene. Before comparing F3 with anything, `wait` 240+ frames in
      the scene.
+   - **Never link a `CosmicShore.Player` source file into `CosmicShore.Tests`.** The tests' namespace
+     is `CosmicShore.Tests`, so a linked file that declares `namespace CosmicShore.Player` makes `Player`
+     resolve to that namespace instead of the game's `Player` type. Six existing test files then fail
+     with CS0118 ("'Player' is a namespace but is used like a type"). To test player logic, move the part
+     you need into the engine (`FrameTimingWindow` went to `Engine/Rendering/`), where the tests already
+     reach it. Linking into `CosmicShore.Mobile` is fine: the phone build has no such type.
 
 Report what you saw (attach the screenshot path) and what you verified; say plainly if a check
 did not run.
