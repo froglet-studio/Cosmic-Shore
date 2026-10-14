@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using System.Linq;
 using System.Reflection;
 using UnityEditor;
 using UnityEditor.Build;
@@ -24,8 +25,12 @@ namespace CosmicShore.Editor
     /// (<see cref="AndroidBundleCheck.VersionCodeAt"/>), so every build is higher than the last
     /// without anyone editing Player Settings. <c>-buildVersionCode N</c> overrides it.</para>
     ///
-    /// <para><b>Nothing persists.</b> The version, version code, keystore fields, app category and
-    /// the App Bundle switch are put back after the build, so it never leaves
+    /// <para><b>Debug symbols.</b> The native symbol table goes into the bundle, so Play's
+    /// "you've not uploaded debug symbols" warning does not appear and crash reports are readable
+    /// (<see cref="EmbedDebugSymbols"/>).</para>
+    ///
+    /// <para><b>Nothing persists.</b> The version, version code, keystore fields, app category, debug
+    /// symbol settings and the App Bundle switch are put back after the build, so it never leaves
     /// <c>ProjectSettings.asset</c> modified, and never writes a keystore path into it. Its only
     /// output is under the git-ignored <c>Builds/</c>, so it is not a writer tool in the
     /// <c>Docs/TOOLING.md</c> sense and carries no ship panel.</para>
@@ -112,6 +117,7 @@ namespace CosmicShore.Editor
                 int versionCode = ResolveVersionCode(GetArg("-buildVersionCode"));
                 PlayerSettings.Android.bundleVersionCode = versionCode;
                 SetAppCategoryGame();
+                EmbedDebugSymbols();
 
                 EditorUserBuildSettings.buildAppBundle = true;
                 EditorUserBuildSettings.exportAsGoogleAndroidProject = false;
@@ -279,6 +285,55 @@ namespace CosmicShore.Editor
                              "Set it in Player Settings > Android > Other Settings so every build agrees.");
         }
 
+        // UnityEditor.Android.UserBuildSettings.DebugSymbols lives in UnityEditor.Android.Extensions,
+        // which exists only on a machine with Android Build Support installed. A direct reference
+        // would stop this whole editor assembly compiling on every PC without the module, so it is
+        // reached by reflection, like appCategory above.
+        // Resolved on use and retried while missing, never cached as null: this class also loads for
+        // the Windows build, possibly before Unity has loaded the Android extension assembly.
+        static Type _debugSymbolsType;
+
+        static Type DebugSymbolsType => _debugSymbolsType ??= AppDomain.CurrentDomain.GetAssemblies()
+            .Select(a => a.GetType("UnityEditor.Android.UserBuildSettings+DebugSymbols", false))
+            .FirstOrDefault(type => type != null);
+
+        static PropertyInfo DebugSymbolLevelProperty =>
+            DebugSymbolsType?.GetProperty("level", BindingFlags.Public | BindingFlags.Static);
+
+        static PropertyInfo DebugSymbolFormatProperty =>
+            DebugSymbolsType?.GetProperty("format", BindingFlags.Public | BindingFlags.Static);
+
+        /// <summary>
+        /// Puts the native symbol table into the bundle, where Play picks it up on upload
+        /// (<c>BUNDLE-METADATA/com.android.tools.build.debugsymbols/</c>), and writes a symbols zip beside
+        /// it for a manual upload. Without them, Play warns "This App Bundle contains native code, and
+        /// you've not uploaded debug symbols", and crash and ANR reports show bare addresses.
+        ///
+        /// <para>Symbol Table, not Full: it is enough to name every function in a native stack trace,
+        /// and Full adds file and line data many times its size. The metadata is never delivered to a
+        /// device, so the download is unchanged.</para>
+        /// </summary>
+        static void EmbedDebugSymbols()
+        {
+            if (DebugSymbolLevelProperty is not { CanWrite: true } || DebugSymbolFormatProperty is not { CanWrite: true })
+            {
+                Debug.LogWarning("[Build] This editor has no UserBuildSettings.DebugSymbols; the bundle ships without " +
+                                 "native debug symbols, and the check will say so.");
+                return;
+            }
+
+            // A recommendation, not a requirement: if Unity renames these values, warn and build on.
+            try
+            {
+                DebugSymbolLevelProperty.SetValue(null, Enum.Parse(DebugSymbolLevelProperty.PropertyType, "SymbolTable"));
+                DebugSymbolFormatProperty.SetValue(null, Enum.Parse(DebugSymbolFormatProperty.PropertyType, "IncludeInBundle, Zip"));
+            }
+            catch (ArgumentException ex)
+            {
+                Debug.LogWarning($"[Build] Could not turn on native debug symbols ({ex.Message}); the bundle ships without them.");
+            }
+        }
+
         // ──────────────────────────────────────────────
         //  Report
         // ──────────────────────────────────────────────
@@ -317,6 +372,7 @@ namespace CosmicShore.Editor
             bool _useCustomKeystore;
             string _keystoreName, _keystorePass, _keyaliasName, _keyaliasPass;
             object _appCategory;
+            object _debugSymbolLevel, _debugSymbolFormat;
             bool _buildAppBundle, _exportProject;
 
             public static AndroidBuildSettingsSnapshot Capture() => new()
@@ -329,6 +385,8 @@ namespace CosmicShore.Editor
                 _keyaliasName = PlayerSettings.Android.keyaliasName,
                 _keyaliasPass = PlayerSettings.Android.keyaliasPass,
                 _appCategory = AppCategoryProperty?.GetValue(null),
+                _debugSymbolLevel = DebugSymbolLevelProperty?.GetValue(null),
+                _debugSymbolFormat = DebugSymbolFormatProperty?.GetValue(null),
                 _buildAppBundle = EditorUserBuildSettings.buildAppBundle,
                 _exportProject = EditorUserBuildSettings.exportAsGoogleAndroidProject,
             };
@@ -344,6 +402,10 @@ namespace CosmicShore.Editor
                 PlayerSettings.Android.keyaliasPass = _keyaliasPass;
                 if (_appCategory != null && AppCategoryProperty is { CanWrite: true })
                     AppCategoryProperty.SetValue(null, _appCategory);
+                if (_debugSymbolLevel != null && DebugSymbolLevelProperty is { CanWrite: true })
+                    DebugSymbolLevelProperty.SetValue(null, _debugSymbolLevel);
+                if (_debugSymbolFormat != null && DebugSymbolFormatProperty is { CanWrite: true })
+                    DebugSymbolFormatProperty.SetValue(null, _debugSymbolFormat);
                 EditorUserBuildSettings.buildAppBundle = _buildAppBundle;
                 EditorUserBuildSettings.exportAsGoogleAndroidProject = _exportProject;
             }

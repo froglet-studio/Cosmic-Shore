@@ -2201,9 +2201,13 @@ thing it looks for is always silent. Test the precondition on the raw input inst
 A deliberately broken copy of the shipped file (a mutant for a negative control) left in the
 harness folder is compiled beside the real one. Every member then reports
 `CS0111 … already defines a member`, which reads exactly like the shipped file got duplicated.
-The repo file was fine; only the harness was wrong. Keep each mutant in its own folder with its
-own project file, or set `<EnableDefaultCompileItems>false</EnableDefaultCompileItems>`. Check
-`git show HEAD:<file>` before believing a duplicate-member error in a harness.
+The repo file was fine; only the harness was wrong. Moving the mutant into its own folder is
+not enough on its own. If that folder's project also `<Compile Include>`s the mutant, the SDK
+stops with `NETSDK1022 Duplicate 'Compile' items` before any test runs, and a quiet grep for
+`Passed!|Failed!` then prints nothing, which a hurried reader takes as a pass. Give every harness
+project `<EnableDefaultCompileItems>false</EnableDefaultCompileItems>` and list its files.
+Check `git show HEAD:<file>` before believing a duplicate-member error in a harness. Read the
+test count line before believing a mutant run: no line means no run.
 
 ### Trap: you cannot see a PACKAGE API's SHAPE here, so a test written against one is a guess
 

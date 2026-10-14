@@ -435,7 +435,13 @@ editor:
      - there is no upload key (from `CS_ANDROID_*` or Publishing Settings).
    - Version code = minutes since 2026-01-01 UTC.
    - `appCategory` is forced to `game` by reflection.
-   - Version, code, keystore fields, category and the App Bundle switch are restored afterwards.
+   - **Native debug symbols** (added 2026-10-14, after Play warned on build 412826): Debug Symbols is
+     set to Symbol Table + Include In Bundle + Zip through `UserBuildSettings.DebugSymbols`, by
+     reflection, because that type exists only with Android Build Support installed. The check
+     warns when a bundle has native code and no `BUNDLE-METADATA/com.android.tools.build.debugsymbols/`
+     entries.
+   - Version, code, keystore fields, category, debug-symbol settings and the App Bundle switch are
+     restored afterwards.
 2. **`AndroidBundleCheck`** runs after every build. It writes `<aab>.check.txt` and shows a dialog.
    **FrogletTools > Build > Check Android App Bundle…** runs it on any `.aab`.
 3. **`Tools/Build/check_android_signing_settings.py`**, wired into `unity-ci.yml`'s static job,
@@ -453,7 +459,9 @@ editor:
    - the dialog says "Ready to upload, with 1 warning(s)": `liblofelt_sdk.so` is not 16 KB-aligned;
    - `Builds/Android/CosmicShore-0.2.0-<about 410000+>.aab` and its `.check.txt` exist;
    - the report says package `com.FrogletGames.CosmicShore`, target 36, category `game`,
-     debuggable False, Signed: yes, ABIs: arm64-v8a.
+     debuggable False, Signed: yes, ABIs: arm64-v8a, **Native debug symbols: in the bundle**;
+   - a `….symbols.zip` sits beside the `.aab`. If the log says "Could not turn on native debug
+     symbols", Unity renamed the enum values; send the message to Claude.
 4. **Player Settings are put back.** `git status` shows no change to `ProjectSettings.asset`
    beyond a keystore selection you made yourself. Bundle Version Code still reads 11.
 5. **The category.** If the log warned "Application Category is '…'; this build uses 'game'", set
@@ -463,7 +471,8 @@ editor:
    with no keystore variables set.
 7. **Edit-mode tests:** `AndroidBundleCheckTests` passes in the Test Runner.
 8. **Play.** Upload the `.aab` to Internal testing (`ANDROID_BUILD.md` §5):
-   - Play accepts it with no signing, target-SDK or debuggable error;
+   - Play accepts it with no signing, target-SDK or debuggable error, and **no "debug symbols"
+     warning**;
    - it installs from the tester link on the 4 GB Samsung and a flagship.
 
 ---

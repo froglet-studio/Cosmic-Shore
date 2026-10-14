@@ -18,8 +18,8 @@ namespace CosmicShore.Editor
     /// libraries, a base module over 200 MB, or the wrong package name. <b>Warnings</b> are what
     /// Play accepts today but the team decided against: native libraries without 16 KB page
     /// alignment (Play blocks UPDATES lacking it from 1 Feb 2027), an app category other than
-    /// <c>game</c>, a Play Billing permission (Unity IAP was removed), and a base module over
-    /// 150 MB.</para>
+    /// <c>game</c>, a Play Billing permission (Unity IAP was removed), no native debug symbols
+    /// (Play's "you've not uploaded debug symbols"), and a base module over 150 MB.</para>
     ///
     /// <para>No Unity API here, so the parsing is unit-tested on its own
     /// (<c>AndroidBundleCheckTests</c>), and no bundletool or Java: the manifest inside a bundle is
@@ -56,6 +56,9 @@ namespace CosmicShore.Editor
             (int)Math.Max(1, Math.Floor((utcNow.ToUniversalTime() - VersionCodeEpoch).TotalMinutes));
 
         const string ManifestEntry = "base/manifest/AndroidManifest.xml";
+
+        /// <summary>Where a bundle carries native debug symbols; Play reads them from here on upload.</summary>
+        public const string DebugSymbolsPrefix = "BUNDLE-METADATA/com.android.tools.build.debugsymbols/";
         const string BillingPermission = "com.android.vending.BILLING";
 
         // An ELF's program headers sit right after its 64-byte header in every library seen so
@@ -94,6 +97,7 @@ namespace CosmicShore.Editor
             public long BaseCompressedBytes;
             public bool Signed;
             public bool DebugSigned;
+            public bool HasDebugSymbols;
             public readonly List<string> Errors = new();
             public readonly List<string> Warnings = new();
 
@@ -122,6 +126,7 @@ namespace CosmicShore.Editor
                     sb.AppendLine($"  {lib.Path}: LOAD align {FormatAlign(lib.MinLoadAlign)}{(lib.Is16KAligned ? "" : "  <- not 16 KB")}");
                 sb.AppendLine($"Base module, compressed: {BaseCompressedBytes / (1024.0 * 1024.0):F1} MB (Play's limit is 200 MB)");
                 sb.AppendLine($"Signed: {(Signed ? (DebugSigned ? "yes, with the Android DEBUG key" : "yes") : "no")}");
+                sb.AppendLine($"Native debug symbols: {(HasDebugSymbols ? "in the bundle" : "none")}");
                 return sb.ToString();
             }
         }
@@ -157,6 +162,8 @@ namespace CosmicShore.Editor
                     string name = entry.FullName;
                     if (name.StartsWith("base/", StringComparison.Ordinal))
                         report.BaseCompressedBytes += entry.CompressedLength;
+                    else if (name.StartsWith(DebugSymbolsPrefix, StringComparison.Ordinal))
+                        report.HasDebugSymbols = true;
 
                     if (IsSignatureBlock(name))
                     {
@@ -209,6 +216,9 @@ namespace CosmicShore.Editor
             var unaligned = r.Libraries.Where(l => !l.Is16KAligned).ToList();
             if (unaligned.Count > 0)
                 r.Warnings.Add($"{unaligned.Count} native librar{(unaligned.Count == 1 ? "y is" : "ies are")} not 16 KB-aligned ({string.Join(", ", unaligned.Select(l => Path.GetFileName(l.Path)))}). Play blocks updates without 16 KB support from 1 Feb 2027.");
+
+            if (r.Abis.Count > 0 && !r.HasDebugSymbols)
+                r.Warnings.Add("No native debug symbols in the bundle, so Play warns \"you've not uploaded debug symbols\" and crash reports show bare addresses. FrogletTools > Build > Android App Bundle (Release) embeds them; this bundle was built another way, or by an editor without UserBuildSettings.DebugSymbols.");
 
             if (!r.Signed)
                 r.Errors.Add("The bundle is not signed. Sign it with the upload key: Player Settings > Android > Publishing Settings > Custom Keystore.");

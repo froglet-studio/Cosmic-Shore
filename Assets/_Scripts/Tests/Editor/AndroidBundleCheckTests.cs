@@ -208,6 +208,16 @@ namespace CosmicShore.Tests
         }
 
         [Test]
+        public void Check_WarnsButPassesWithoutDebugSymbols()
+        {
+            var r = CheckBundle(GoodManifest, "arm64-v8a", Elf64(0x4000), "CN=Froglet Games", withSymbols: false);
+            Assert.IsTrue(r.Passed, r.Format());
+            Assert.IsFalse(r.HasDebugSymbols);
+            Assert.AreEqual(1, r.Warnings.Count, r.Format());
+            StringAssert.Contains("debug symbols", r.Warnings[0]);
+        }
+
+        [Test]
         public void Check_WarnsButPassesOnA4KLibrary()
         {
             var r = CheckBundle(GoodManifest, "arm64-v8a", Elf64(0x1000), "CN=Froglet Games");
@@ -217,7 +227,7 @@ namespace CosmicShore.Tests
         }
 
         static AndroidBundleCheck.Report CheckBundle(byte[] manifest, string abi, byte[] library, string signer,
-                                                      string expectedPackage = Package)
+                                                      string expectedPackage = Package, bool withSymbols = true)
         {
             string path = Path.Combine(Path.GetTempPath(), $"cs-aab-test-{Guid.NewGuid():N}.aab");
             try
@@ -227,6 +237,8 @@ namespace CosmicShore.Tests
                     if (manifest != null) Write(zip, "base/manifest/AndroidManifest.xml", manifest);
                     Write(zip, $"base/lib/{abi}/libmain.so", library);
                     Write(zip, "base/dex/classes.dex", new byte[256]);
+                    // Where AGP puts a symbol table when Debug Symbols is Include In Bundle.
+                    if (withSymbols) Write(zip, AndroidBundleCheck.DebugSymbolsPrefix + abi + "/libmain.so.sym", new byte[64]);
                     // A signature block carries the signer's certificate, subject name in ASCII.
                     if (signer != null) Write(zip, "META-INF/UPLOAD.RSA", Encoding.ASCII.GetBytes($"0\x82..{signer}, O=Test, C=US.."));
                 }

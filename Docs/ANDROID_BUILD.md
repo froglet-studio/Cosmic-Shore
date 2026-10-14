@@ -107,8 +107,13 @@ What the build does (`Assets/_Scripts/Editor/Build/CosmicShoreBuildPipeline.Andr
   Settings' Version (`0.2.0`).
 - **Application Category:** set to `game` for the build. If Player Settings says otherwise, the log
   warns and asks for it to be fixed there.
-- **Player Settings are put back afterwards:** version, version code, keystore fields, category and
-  the App Bundle switch. So a build leaves the repo clean, apart from a keystore you selected
+- **Native debug symbols:** the symbol table goes into the bundle (Debug Symbols: Symbol Table,
+  Include In Bundle). Play reads it on upload, so crash and ANR reports name the functions, and
+  the "you've not uploaded debug symbols" warning does not appear. A `….symbols.zip` is also
+  written beside the `.aab` for a manual upload. Symbols are never delivered to phones, so the
+  download size is unchanged.
+- **Player Settings are put back afterwards:** version, version code, keystore fields, category,
+  debug-symbol settings and the App Bundle switch. So a build leaves the repo clean, apart from a keystore you selected
   yourself (§1).
 - It runs the check in §4 on the result.
 
@@ -140,6 +145,7 @@ and no Java.
 | Warning | Application category is `game` | Manifest |
 | Warning | No `com.android.vending.BILLING` permission | Manifest |
 | Warning | Base module ≤ 150 MB | Unity's own validation threshold |
+| Warning | Native debug symbols are in the bundle | `BUNDLE-METADATA/com.android.tools.build.debugsymbols/` |
 
 The manifest inside a bundle is aapt2's protobuf `XmlNode`, not XML. The check reads it with a
 small wire-format reader. **How it was proven:**
@@ -198,10 +204,11 @@ Automating the upload is possible once the first one is in. It needs:
 
 Not set up; it is a follow-up.
 
-**Native debug symbols are not uploaded either**, so Play's crash reports (Android vitals, the
-pre-launch report) show unsymbolicated native frames. Unity 6 can write them into the bundle or
-beside it, but its API for that could not be verified offline, so the build does not set it. Also a
-follow-up.
+**Native debug symbols travel inside the bundle** (§3), so later uploads need no separate symbol
+step. A bundle built before 2026-10-14 has none, and Play shows "This App Bundle contains native
+code, and you've not uploaded debug symbols". That is a recommendation, not a block: roll the
+release out. To symbolicate that build's crashes, rebuild it and upload the `….symbols.zip` under
+App bundle explorer > the version > Downloads > Native debug symbols.
 
 ## 7. When something goes wrong
 
@@ -213,5 +220,6 @@ follow-up.
 | Play: "signed in debug mode" | The check fails on this first. Select the upload key and rebuild |
 | Play: "signed with the wrong key" | Later uploads must use the key the first upload registered. If it is lost: Play Console > Test and release > Setup > App signing > **Request upload key reset** |
 | Play: "Version code … has already been used" | Build again (a new minute), or pass `-buildVersionCode` |
+| Play warning: "contains native code, and you've not uploaded debug symbols" | Only a recommendation; the release can go out. The bundle was built without the menu (or before 2026-10-14). The check warns about this too. Rebuild with FrogletTools > Build > Android App Bundle (Release) |
 | Gradle fails during the build | Most Android Gradle failures trace to `Assets/Plugins/Android/*.gradle` and the EDM4U block; see `Docs/PLATFORM_UNIFICATION.md` §2.1. Send the Console error to Claude |
 | The check says the base module is over 200 MB | Player Settings > Android > Publishing Settings > **Split Application Binary**, then rebuild |
