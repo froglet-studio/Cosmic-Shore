@@ -141,6 +141,7 @@ namespace CosmicShore.Core
             if (WebToybox.IsBuild)
             {
                 ShowLoading(WebToyboxLoadingText);
+                if (!await WaitForWebAudioBanksAsync(ct)) return;
                 NavigateToMainMenu();
                 return;
             }
@@ -952,6 +953,43 @@ namespace CosmicShore.Core
 
         /// <summary>The loading line the browser Toybox shows while its local session starts.</summary>
         const string WebToyboxLoadingText = "Starting the Toybox…";
+        const string WebToyboxAudioLoadingText = "Loading sound…";
+        const float WebAudioBankTimeoutSeconds = 90f;
+
+        /// <summary>
+        /// A WebGL player loads FMOD's banks asynchronously, over the network, from StreamingAssets
+        /// (SFX.bank alone is ~37 MB). An event created before its bank arrives fails once and stays
+        /// silent, so the menu's music and the freestyle sounds would be lost. The browser Toybox
+        /// waits here, on the loading text, up to a timeout; past it the menu opens anyway and
+        /// sound joins late. Native players load banks synchronously at start, so this only
+        /// matters on the web. False when the scene went away while waiting.
+        /// </summary>
+        async UniTask<bool> WaitForWebAudioBanksAsync(CancellationToken ct)
+        {
+            if (Application.platform != RuntimePlatform.WebGLPlayer) return true;
+
+            float deadline = Time.realtimeSinceStartup + WebAudioBankTimeoutSeconds;
+            bool shown = false;
+            while (!BanksLoaded())
+            {
+                if (Time.realtimeSinceStartup > deadline)
+                {
+                    CSDebug.LogWarning($"[AuthScene] FMOD banks still loading after {WebAudioBankTimeoutSeconds:0} s; " +
+                                       "opening the Toybox without them. Sounds created before they arrive stay silent.");
+                    return true;
+                }
+                if (!shown) { ShowLoading(WebToyboxAudioLoadingText); shown = true; }
+                await UniTask.Yield(PlayerLoopTiming.Update);
+                if (ct.IsCancellationRequested) return false;
+            }
+            return true;
+
+            static bool BanksLoaded()
+            {
+                try { return FMODUnity.RuntimeManager.HaveAllBanksLoaded; }
+                catch (Exception) { return true; } // FMOD failed to start: nothing to wait for.
+            }
+        }
 
         /// <summary>
         /// Resolves when <see cref="HostConnectionDataSO.OnHostConnectionEstablished"/> fires
