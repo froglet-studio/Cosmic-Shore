@@ -33,7 +33,7 @@ Legend: `Planned` ▸ `Mockup` ▸ `Mockup approved` ▸ `Built` ▸ `Approved i
 |---|---|---|---|---|
 | 0 | Component kit: T7 sprites, Chakra Petch SemiBold (T5), type roles + `TabularText` (T6), theme components, kit prefabs, kit test scene | Built | `MenuKit.dc.html` | `3b36c361`, `fe108889`, `b0918296`, `908fc2d7`, `4cba49ee`, `e932eaf2` + docs |
 | 1 | Top nav (`Safe Area/NavBar`) | Approved in editor (2026-10-14) | `Main.dc.html` (interactive), `TopNavHover.dc.html`, `TopNavLocked.dc.html` on the Menu Redesign B canvas | `8d6d2acb`, `99ef3ccd` + docs |
-| 2 | Hangar screen: grid, detail and the spend-crystals panel | Planned | | |
+| 2 | Hangar screen: grid, detail and the spend-crystals panel | Mockup | `Hangar.dc.html` (interactive), `HangarLocked`, `HangarSpend`, `HangarShort`, `HangarNoArt`, `HangarNotes` on the Menu Redesign B canvas | |
 | 3 | Arcade modal (`ArcadeScreenModal`): explore grid plus the party/friends panel | Planned | | |
 | 4 | Game configure: `ArcadeGameConfigureModal`, plus the Maelstrom and Arena configure windows and the weekly leaderboard | Planned | | |
 | 5 | Profile screen, Profile modal (avatar / display name), Episodes entry | Planned | | |
@@ -273,6 +273,22 @@ Assets are authored offline:
 - **The invite popup's RectTransform has two parents.** It is listed in the `m_Children` of both
   `HomeScreen` and `UI_Refactored`.
 
+Found while mapping the Hangar for item 2 (2026-10-14):
+
+- **The Hangar drops gamepad focus.** Grid to detail and Back re-select nothing, so the selected
+  object is switched off under the pad. No Cancel / B / Escape handling exists in the menu UI.
+- **A refused vessel purchase says nothing.** `ProgressionBackendGate.CloudEnabled` is false, so
+  `VesselUnlockSystem.TryPurchaseVessel` refuses every paid unlock and the spend-crystals panel just
+  stays open. `IsVesselHangarUnlocked() == false` only writes a debug log.
+- **Three detail-view fields are unassigned in the scene:** `vesselPreviewImage` (so the authored
+  `SO_Vessel.PreviewImage` never shows), `vibeButton` and `unlockButtonText` (so the price never
+  shows; the caption is baked into the button sprite).
+- **Authored text the 97-glyph fonts cannot draw:** a curly apostrophe in the Squirrel description
+  and in Sparrow's Skyburst Rockets, an em dash in the Butterfly description.
+- **Roster data gaps:** Urchin's four abilities reuse the Serpent's text; Stoat's icon is
+  `Squirrel.png`; Butterfly, Thresher, Scarab and Stoat have no `PreviewImage` and no abilities;
+  every ability's icon is the generic `Ability_Button.png`.
+
 ---
 
 ## 8. The component kit as built (item 0)
@@ -377,3 +393,35 @@ Deviations from the board, all small:
 Not verified (no Unity editor in a cloud session): the in-editor look, hover, pointer hit areas,
 TMP's real word widths against the generator's PIL estimate, and the FrogletTools > Game Modes >
 Game Mode Prefab Kit Validate run. Steps are in `Docs/UNITY_VERIFICATION_CHECKLIST.md`.
+
+## 11. Item 2: Hangar (mockup, awaiting approval)
+
+Boards on the Menu Redesign B canvas: `Hangar.dc.html` (interactive: pick a vessel, unlock, confirm
+or cancel; keyboard focus moves the selection), and `HangarLocked` (locked Manta, gamepad focus on
+its tile), `HangarSpend` (spend crystals, enough), `HangarShort` (not enough), `HangarNoArt`
+(Scarab: no preview art, no abilities), which mount the same board in those starting states.
+`HangarNotes` lists every change. Content is the real roster: `SO_Classlist_Classes`, the authored
+names, descriptions, ability text, prices, icons and hangar previews, in the shipping state (only
+the Squirrel owned, owned first).
+
+| Zone | Mockup | Built from (at the build gate) |
+|---|---|---|
+| Header | "Hangar" label, "Select a vessel" (H1), crystal balance pill on the right | `PlayerDataService.CrystalBalance`, already read by the detail view |
+| Vessel list (left, 340) | 11 `KitTile` rows: icon, name, "Owned" or "Locked / price". Locked rows dim the icon to 35 % with the padlock; the selected row has the 2 px light border | Replaces the 4-column `VesselGridPrefab` cards; still built from `ShipList` in `HangarScreen.PopulateGrid`, owned first |
+| Selected vessel (centre, 900) | `PreviewImage` hero (16:9) with an Owned / Locked chip and the name at Display size; "About" + description; bottom-left the unlock button: Purchase "Unlock - 4000", or the inactive "Unlocked" when owned | `HangarVesselDetailView`'s name, description and unlock button, plus the preview field it already has. A vessel with no preview shows its icon |
+| Abilities (right, 552) | All of the vessel's abilities with their descriptions; "No abilities are listed for the X yet." when there are none | Replaces the General / Ability tabs |
+| Spend crystals | The kit popup: "Spend", "4000 to unlock Manta", the balance; Confirm (Purchase, opaque) left of Cancel, both on the bottom edge | `UnlockPanel` / `SpendCrystalsPanel`, same open / close / confirm calls |
+
+Retired with this item: the grid-to-detail hop and its Back button, the Vibe tile (unwired), the
+static Overview / Elements / Progress images, and the "Vessel Names" eye toggle (names are always on
+the tiles).
+
+Open points for the build gate:
+- **Selection follows focus in the list,** so a gamepad previews each vessel as it moves and focus
+  never lands on a hidden panel. This changes the in-screen flow (D5), not screen navigation.
+- **Not enough crystals:** the board shows Confirm disabled plus "You need N more crystals." Today
+  Confirm is hidden. The line is a new string in `HangarVesselDetailView`.
+- **Stoat costs 0:** the board reads "Unlock - Free" rather than the code's "UNLOCK - 0".
+- **The interactive board's Confirm unlocks the vessel.** In the build the progression gate still
+  refuses paid unlocks silently (section 7); this item does not change that.
+
