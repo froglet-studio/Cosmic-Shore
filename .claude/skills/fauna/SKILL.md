@@ -258,7 +258,9 @@ Load **`/asset-surgery`** for the general rules. These are the fauna-specific on
   `CrystalSpace` instance has only `Crystal` + a trigger, which the skimmer's VACUUM reads — so
   the dead heart followed the vessel forever and could never be collected (QuadFish, Clawfish,
   Nerve/Pine/Wall flora). `LifeFormCrystal.EnsureElementalCrystal` now wires the pair on a kept
-  crystal at runtime; authoring it on the prefab is still the clean shape.
+  crystal at runtime, and `python3 Tools/Build/author_lifeform_heart_collection.py [--check]`
+  authors it (plus the heart's `Crystal` disabled) on every lifeform prefab — run `--check` on any
+  new creature or plant.
 - **Every guid a creature prefab references must have exactly one `.meta` owner.** Sweep it:
   `for g in $(grep -o "guid: [0-9a-f]\{32\}" <prefab> | sort -u | cut -d' ' -f2); do ...`
 
