@@ -55,8 +55,17 @@ namespace CosmicShore.Launcher
             new CardAction("live", "OPEN LIVE IN BROWSER", new HashSet<string> { "amoebius", "unity" }, "mirror", null),
         };
 
+        /// <summary>
+        /// The hub's "+ New studio" card (<c>newCard</c>, /vessel-studio D36), its text exactly as the hub shows it. A home
+        /// draws it last in its studio grid; pressing it opens the hub with <c>#&lt;Fragment&gt;</c>, which opens the
+        /// panel (vessel, mini-game, what you want, Create with Claude Code).
+        /// </summary>
+        public sealed record NewStudioCard(string Name, string Summary, string Open, string Fragment);
+
         /// <summary>The hub's lede, the vessels without a studio, the line under them, and the card's buttons.</summary>
         public string? Lede { get; init; }
+        /// <summary>The hub's "+ New studio" card, or null when the catalog has none (a branch from before D36).</summary>
+        public NewStudioCard? NewCard { get; init; }
         public IReadOnlyList<string> Fleet { get; init; } = Array.Empty<string>();
         public string? FleetNote { get; init; }
         public IReadOnlyList<CardAction> CardActions { get; init; } = DefaultCardActions;
@@ -149,8 +158,14 @@ namespace CosmicShore.Launcher
                 var fleet = new List<string>();
                 if (root.TryGetProperty("fleet", out var fl) && fl.ValueKind == JsonValueKind.Array)
                     foreach (var f in fl.EnumerateArray()) if (f.ValueKind == JsonValueKind.String) fleet.Add(f.GetString()!);
+                NewStudioCard? newCard = null;
+                if (root.TryGetProperty("newCard", out var nc) && nc.ValueKind == JsonValueKind.Object
+                    && Str(nc, "name") is { Length: > 0 } ncName && Str(nc, "fragment") is { } frag
+                    && System.Text.RegularExpressions.Regex.IsMatch(frag, "^[A-Za-z0-9-]{1,40}$"))
+                    newCard = new NewStudioCard(ncName, Str(nc, "summary") ?? "", Str(nc, "open") ?? "", frag);
                 return new StudioCatalog
                 {
+                    NewCard = newCard,
                     Web = Str(root, "web"), Mirror = HttpUrl(Str(root, "mirror")), Hub = Str(root, "hub") ?? "index.html", Studios = list,
                     Lede = Str(root, "lede"), Fleet = fleet, FleetNote = Str(root, "fleetNote"),
                     CardActions = actions.Count > 0 ? actions : DefaultCardActions,

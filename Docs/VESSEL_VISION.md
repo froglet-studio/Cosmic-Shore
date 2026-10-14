@@ -338,7 +338,7 @@ with zero authoring.
 |---|---|---|
 | The shipped HLSL behaves | `python3 Tools/Shaders/verify_vessel_vision_band.py` | An inert off sentinel, a plateau that never reaches 1, a non-monotone or popping edge, a quantizer that overshoots its top tone, a stamped-but-near vessel being modified, an unstamped object being modified. **And for the break-up:** that it is bit-identical to off when any of its three switches is 0, that the centre really is broken up, that the silhouette is never dithered, that it has closed by `breakupEndDistance`, that it produces no NaN, and that no fragment lands outside the segment between the hull colour and the undithered mark. Compiles and **runs** the shipped file with clang++ — no Unity needed. |
 | The graph is still spliced | `python3 Tools/Shaders/wire_vessel_vision_shading.py --check` | A reverted or hand-edited graph. Exits non-zero; re-run without `--check` to repair. |
-| Guards + assets | **FrogletTools > Vessels > Validate Vessel Vision Band** | A severed tint channel, a lost cutoff, a second stamp site, a local-pilot exclusion that lost a bind site or drifted off `IsLocalPilot`, an insane config, a vessel prefab with no hull material on the wired shader. It also **re-measures the fleet's widest gameplay camera from the assets** and reports it. |
+| Guards + assets | **FrogletTools > Vessels > Audits > Validate Vessel Vision Band** | A severed tint channel, a lost cutoff, a second stamp site, a local-pilot exclusion that lost a bind site or drifted off `IsLocalPilot`, an insane config, a vessel prefab with no hull material on the wired shader. It also **re-measures the fleet's widest gameplay camera from the assets** and reports it. |
 | Guards + assets, in CI | `VesselVisionLawTests` (edit mode) | The same, from the test runner. |
 | Conditional compilation | `python3 Tools/Build/check_conditional_compilation.py` | The `#if UNITY_EDITOR` trap in `VesselVisionLawSource`. |
 
@@ -351,7 +351,7 @@ in order:
 1. **Open the project and let it import.** `VesselGraph` recompiles and its 13 materials pick up
    `_VesselVisionTint`. Watch the console for shader-compile errors on `VesselVisionShading.hlsl` —
    the HLSL is proven by clang++, but Unity's compiler is the one that ships.
-2. **Run FrogletTools > Vessels > Validate Vessel Vision Band.** Expect all six checks green and a
+2. **Run FrogletTools > Vessels > Audits > Validate Vessel Vision Band.** Expect all six checks green and a
    `note` line naming the Serpent at 250 units.
 3. **Run the edit-mode suite** (`VesselVisionLawTests`).
 4. **In play, two domains in one arena, then back away.** The far ship should *arrive* as a coloured

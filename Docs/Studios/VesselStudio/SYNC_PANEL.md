@@ -48,6 +48,14 @@ press **Start session** and try again.
     republishes. Every open copy reloads.
 - The console also lists, for each watched branch, how many commits it has that yours lacks, as
   **merge suggestions**. These are exact counts.
+- The job reaches the repo, froglet-studio/Cosmic-Shore, through whichever remote of the checkout points
+  there: `origin` when it does, else another remote that does (a fork clone's `upstream`), else the repo's URL
+  directly. Its first console line names the one it used ("via ..."). Nothing is added to the checkout's git
+  config.
+- **"branch X does not exist on ..."**: the branch really is missing on the remote that line names. A
+  sync_job.py from before 2026-10-14 asked `origin` only, so in a checkout whose `origin` is a fork or a local
+  copy every Refresh failed with "does not exist on origin". Pull the checkout to the tools branch
+  (Ys-bleeding-edge) to get the fix.
 
 ### Console
 

@@ -26,7 +26,7 @@ namespace CosmicShore.Editor.Studios
     {
         const string StudioUrl = "https://claude.ai/artifact/3igBJJbNvJjsfJoBJnAMPa";
 
-        [MenuItem("FrogletTools/Vessels/Vessel Studio", false, 0)]
+        [MenuItem("FrogletTools/Vessels/Vessel Studio", false, 230)]
         [FrogletTool(FrogletToolCategory.Vessels, Importance = 5,
             Description = "The Vessel Studio home: every studio as a card with its live preview, as on the web hub. A card " +
                           "opens that studio (the artifact's own pages, every tab and parameter, from this checkout) in its own window.",

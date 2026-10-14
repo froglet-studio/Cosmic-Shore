@@ -125,7 +125,7 @@ Cell owns the environment (lifeforms via the cell's own `SpawnProfile` + canonic
 
 ## In-editor verification (I cannot run Unity)
 
-1. Run **FrogletTools > Scene Setup > Setup Freestyle Toybox** (wires the omni prefab + palette on
+1. Run **FrogletTools > Scenes > Setup Freestyle Toybox** (wires the omni prefab + palette on
    `Wander_WithoutArk.asset`), enter freestyle in Menu_Main, fly the Wander toy and choose Without Ark.
 2. Confirm: most scenes read one coherent colour with occasional accent/Blue-vein/banded scenes;
    the new recipes appear (arches, vortices with a crystal at the open mouth, roll-through slot

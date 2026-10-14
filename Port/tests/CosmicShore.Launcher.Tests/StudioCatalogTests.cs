@@ -68,6 +68,15 @@ namespace CosmicShore.Launcher.Tests
         }
 
         [Fact]
+        public void Parse_ReadsTheNewStudioCard_AndRefusesAFragmentThatIsNotOneWord()
+        {
+            var c = StudioCatalog.Parse("{\"studios\":[],\"newCard\":{\"name\":\"New studio\",\"summary\":\"Make one.\",\"open\":\"Start\",\"fragment\":\"new-studio\"}}");
+            Assert.Equal(new StudioCatalog.NewStudioCard("New studio", "Make one.", "Start", "new-studio"), c.NewCard);
+            Assert.Null(StudioCatalog.Parse("{\"newCard\":{\"name\":\"x\",\"fragment\":\"a&b=<c>\"}}").NewCard);
+            Assert.Null(StudioCatalog.Parse("{\"studios\":[]}").NewCard);   // a branch from before D36: no card
+        }
+
+        [Fact]
         public void Parse_BadJsonIsAnErrorNotACrash()
         {
             var c = StudioCatalog.Parse("{ not json");
@@ -340,6 +349,17 @@ namespace CosmicShore.Launcher.Tests
                 Assert.Equal(spec, s.Spec);
                 Assert.Equal(Text(System.Text.RegularExpressions.Regex.Match(bay, @"<span class=""open"">(.*?)</span>").Groups[1].Value), cat.CardActions[0].Label);
                 Assert.NotNull(StudioCatalog.PreviewPath(d.FullName, s));
+            }
+            // the "+ New studio" card (D36): on the hub, so on this page, with the hub's own text
+            var add = System.Text.RegularExpressions.Regex.Match(html, @"<button type=""button"" class=""bay add""[^>]*>(.*?)</button>", System.Text.RegularExpressions.RegexOptions.Singleline);
+            if (add.Success)
+            {
+                Assert.NotNull(cat.NewCard);
+                string bay = add.Groups[1].Value;
+                Assert.Equal(Text(System.Text.RegularExpressions.Regex.Match(bay, @"<div class=""name""><b>(.*?)</b>").Groups[1].Value), cat.NewCard!.Name);
+                Assert.Equal(Text(System.Text.RegularExpressions.Regex.Match(bay, @"<p>(.*?)</p>", System.Text.RegularExpressions.RegexOptions.Singleline).Groups[1].Value), cat.NewCard.Summary);
+                Assert.Equal(Text(System.Text.RegularExpressions.Regex.Match(bay, @"<span class=""open"">(.*?)</span>").Groups[1].Value), cat.NewCard.Open);
+                Assert.Contains(cat.NewCard.Fragment, File.ReadAllText(Path.Combine(dir, "studio-new.js")));
             }
             var fleet = System.Text.RegularExpressions.Regex.Match(html, @"<div class=""fleet""[^>]*>(.*?)</div>", System.Text.RegularExpressions.RegexOptions.Singleline).Groups[1].Value;
             Assert.Equal(System.Text.RegularExpressions.Regex.Matches(fleet, @"<span>([^<]+)</span>").Select(x => x.Groups[1].Value.Trim()), cat.Fleet);

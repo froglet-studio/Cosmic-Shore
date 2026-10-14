@@ -40,6 +40,10 @@ namespace CosmicShore.Launcher
         public const string BridgeTag = "<script src=\".amoebius/bridge.js\"></script>";
         /// <summary>The session the build names (build.json "session"), so the Sync panel needs no Start session here.</summary>
         public const string LocalSession = "amoebius-local";
+        /// <summary>The session a "+ New studio" request starts here: an AGENT chat in Amoebius (/vessel-studio D36).</summary>
+        public const string AgentSession = "amoebius-agent";
+        /// <summary>The Sync panel's own session prompt starts so; every other create_session prompt is work for an agent chat.</summary>
+        public const string SyncPromptStart = "You handle Vessel Studio Sync jobs";
         public const string Ccr = "Claude Code Remote";
         public const int MaxBody = 1 << 20;
 
@@ -49,7 +53,8 @@ namespace CosmicShore.Launcher
             Func<string?> Root,
             Func<string, Action<string>, CancellationToken, Task<string>>? Ask = null,
             Func<string?>? Python = null,
-            Action<string>? Log = null);
+            Action<string>? Log = null,
+            Func<string, string, bool>? Agent = null);   // (title, prompt) -> an AGENT chat started with that prompt
 
         readonly Options _o;
         readonly HttpListener _http = new();
@@ -126,7 +131,11 @@ namespace CosmicShore.Launcher
         }
 
         /// <summary>A studio page's address: the build, with the host hash the pages read (VesselStudioTheme.host()).</summary>
-        public string PageUrl(string file) => BaseUrl + Uri.EscapeDataString(file) + "#amoebius";
+        public string PageUrl(string file, string? fragment = null) =>
+            BaseUrl + Uri.EscapeDataString(file) + "#amoebius" + (Fragment(fragment) is { } f ? "&" + f : "");
+
+        /// <summary>A page-hash word a caller may add after #amoebius (e.g. "new-studio"), or null: letters, digits and dashes only.</summary>
+        public static string? Fragment(string? f) => f is { Length: > 0 and <= 40 } && Regex.IsMatch(f, "^[A-Za-z0-9-]+$") ? f : null;
 
         /// <summary>
         /// Builds the checkout's current branch (or <paramref name="ref"/>) unless the served build already shows that commit.
@@ -177,11 +186,11 @@ namespace CosmicShore.Launcher
             }
         }
 
-        /// <summary>Refresh: serve origin/&lt;branch&gt;; true when the studio now shows a different studio commit.</summary>
-        bool Rebuild(string branch, string? pathSha)
+        /// <summary>Refresh: serve the ref the job fetched (<see cref="StudioJobs.FetchedRef"/>); true when the studio now shows a different studio commit.</summary>
+        bool Rebuild(string gitRef, string? pathSha)
         {
             var before = Current?.PathSha;
-            var info = EnsureBuilt("origin/" + branch);
+            var info = EnsureBuilt(gitRef);
             return info.PathSha != before;
         }
 
@@ -402,7 +411,17 @@ namespace CosmicShore.Launcher
                 case "list_environments":
                     return new JsonObject { ["result"] = new JsonObject { ["payload"] = new JsonObject { ["environments"] = new JsonArray(new JsonObject { ["environment_id"] = "env_amoebius", ["name"] = "Amoebius (this computer)" }) } } };
                 case "create_session":
-                    return new JsonObject { ["result"] = new JsonObject { ["payload"] = new JsonObject { ["session_id"] = LocalSession } } };
+                {
+                    // the Sync panel's session is Amoebius itself; any other prompt (the hub's "+ New studio") is an AGENT chat's work
+                    var prompt = args?["prompt"]?.ToString();
+                    if (string.IsNullOrWhiteSpace(prompt) || prompt.StartsWith(SyncPromptStart, StringComparison.Ordinal))
+                        return new JsonObject { ["result"] = new JsonObject { ["payload"] = new JsonObject { ["session_id"] = LocalSession } } };
+                    if (_o.Agent == null) return Error("tool_error", "this Amoebius cannot start an agent chat; use Copy prompt on its AGENT page");
+                    var title = args?["title"]?.ToString() is { Length: > 0 } t ? (t.Length > 80 ? t[..80] : t) : "Vessel Studio";
+                    if (prompt.Length > 20000) return Error("invalid_argument", "the prompt is too long");
+                    if (!_o.Agent(title, prompt)) return Error("tool_error", "Amoebius could not start an agent chat");
+                    return new JsonObject { ["result"] = new JsonObject { ["payload"] = new JsonObject { ["session_id"] = AgentSession, ["where"] = "an AGENT chat in Amoebius, on this computer," } } };
+                }
                 case "send_message":
                 {
                     var msg = args?["message"]?.ToString() ?? "";
