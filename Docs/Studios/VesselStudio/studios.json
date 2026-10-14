@@ -84,6 +84,35 @@
       "docs": "Docs/Studios/STOAT_PLAY_STYLES.md",
       "engineNote": "The game's own Stoat in the Slingshot race (the round-4 orbit sling the game ships today, not the studio's dipole sling).",
       "engineMode": "Slingshot"
+    },
+    {
+      "id": "goby",
+      "name": "Goby & Pistol",
+      "file": "goby.html",
+      "kind": "duo lab - round 1",
+      "chip": "duo lab · round 1",
+      "summary": "The first duo vessel: one squad slot, two craft. The Goby flies the 3D world like the Serpent and lays the path; the Pistol plays a 2D sidescroller unrolled from that path, rides its hills Tiny Wings style and blows things up. Fly either half while the AI flies the other; swap with D-pad left / right or 1 / 2.",
+      "spec": [
+        {
+          "k": "Goby",
+          "v": "Serpent flight · primer · flares"
+        },
+        {
+          "k": "Pistol",
+          "v": "2D · dive · launch · snap · ghost"
+        },
+        {
+          "k": "Unroll",
+          "v": "World up · Arc length · Goby's up"
+        },
+        {
+          "k": "Status",
+          "v": "design lab (nothing in the game yet)"
+        }
+      ],
+      "preview": "previews/goby.png",
+      "accent": "#ff8a3d",
+      "docs": ".claude/skills/duo-vessel/references/designs/goby-and-pistol.md"
     }
   ],
   "fleet": [

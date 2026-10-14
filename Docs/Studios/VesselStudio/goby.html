@@ -1,0 +1,1461 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Goby &amp; Pistol Studio</title>
+<!-- Goby & Pistol Studio, round 1: the first DUO vessel lab (.claude/skills/duo-vessel). A page of the Vessel Studio
+     (Docs/Studios/VesselStudio/). A DESIGN studio (D2): nothing here ships. Where the game has a number, the page reads
+     it and names the asset (the Goby flies like the Serpent, its straight boost is the Rhino's ramp, the swap is the
+     arena pilot swap); every other number is lab-only and says so. The brief it prototypes is
+     .claude/skills/duo-vessel/references/designs/goby-and-pistol.md (section 9 says what this lab must hold). -->
+<style>
+  :root {
+    color-scheme: dark;
+    --bg: #0b0d16; --panel: #121524; --panel-2: #181c30; --line: #262b47;
+    --fg: #e9ecff; --muted: #8e95bf;
+    --jade: #13fff2; --ruby: #ff00f9; --gold: #ffa700; --blue: #6680ff;   /* studio-domains.js sets them from the game */
+    --charge: #ffd23f; --mass: #ff6a4d; --space: #6aa8ff; --time: #c48bff;
+    --easy: #4be38f; --medium: #ffb454; --hard: #ff5c6c;
+    --goby: #13fff2; --pistol: #ff8a3d; --primed: #b98bff; --hot: #ff6a2a;
+  }
+  [hidden] { display: none !important; }
+  *, *::before, *::after { box-sizing: border-box; }
+  html, body { height: 100%; }
+  body { margin: 0; background: var(--bg); color: var(--fg); font: 14px/1.5 system-ui, sans-serif; -webkit-text-size-adjust: 100%; }
+  a { color: var(--accent); }
+  button, input, select, textarea { font: inherit; color: inherit; }
+  button { cursor: pointer; }
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  code { font-size: .9em; }
+
+  .wrap { max-width: 1440px; margin: 0 auto; padding-inline: 16px; padding-block: 12px 32px; display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; }
+  header.top { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 16px; }
+  .back { font-size: 13px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); text-decoration: none; }
+  h1 { margin: 0; font-size: clamp(26px, 4vw, 38px); line-height: 1; text-transform: uppercase; }
+  .round { font-size: 12px; color: var(--muted); border: 1px solid var(--line); border-radius: 999px; padding: 4px 8px; }
+  .diffchip { font-size: 12px; color: var(--accent); border: 1px solid var(--accent); border-radius: 999px; padding: 4px 8px; }
+  .sub { color: var(--muted); max-width: 80ch; margin: 0; }
+
+  .layout { display: grid; grid-template-columns: minmax(0, 1fr) 380px; gap: 12px; align-items: start; }
+  .layout > section { min-width: 0; }
+  @media (max-width: 1020px) { .layout { grid-template-columns: minmax(0, 1fr); } }
+
+  #viewport { position: relative; border-radius: 10px; overflow: hidden; background: #05060c; border: 1px solid var(--line); aspect-ratio: 16 / 10; max-width: 100%; touch-action: none; user-select: none; -webkit-user-select: none; }
+  #viewport canvas { position: absolute; display: block; outline: none; }
+  #viewport .vmain { left: 0; top: 0; width: 100%; height: 100%; z-index: 1; }
+  #viewport .vinset { right: 10px; top: 10px; width: 36%; height: 38%; z-index: 4; border: 1px solid #ffffff40; border-radius: 8px; box-shadow: 0 6px 24px #000a; }
+  #viewport.split #side { left: 0; bottom: 0; top: auto; right: auto; width: 100%; height: 45%; border: 0; border-top: 1px solid var(--line); border-radius: 0; z-index: 1; box-shadow: none; }
+  #viewport.split #c { left: 0; top: 0; right: auto; width: 100%; height: 55%; border: 0; border-radius: 0; z-index: 1; box-shadow: none; }
+  .hud { position: absolute; inset: 0; pointer-events: none; z-index: 5; font-variant-numeric: tabular-nums; }
+  .board { position: absolute; left: 10px; top: 10px; display: grid; gap: 2px; min-width: 200px; background: #0b0d16b3; border: 1px solid var(--line); border-radius: 8px; padding: 6px 9px; font-size: 12px; }
+  .board .hd { display: flex; justify-content: space-between; gap: 10px; color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: .06em; }
+  .board .row { display: flex; justify-content: space-between; gap: 10px; }
+  .board .row b { font-weight: 600; }
+  .gauges { position: absolute; left: 10px; bottom: 10px; display: grid; gap: 4px; width: min(260px, 46%); background: #0b0d16b3; border: 1px solid var(--line); border-radius: 8px; padding: 6px 9px; }
+  .gauges .t { font-size: 11px; color: var(--muted); letter-spacing: .08em; text-transform: uppercase; display: flex; justify-content: space-between; }
+  .gauges .t b { color: var(--fg); font-weight: 600; letter-spacing: 0; text-transform: none; }
+  .meter { height: 6px; border-radius: 3px; background: #ffffff1a; overflow: hidden; }
+  .meter > i { display: block; height: 100%; width: 0; }
+  .meter.close > i { background: linear-gradient(90deg, var(--goby), var(--pistol)); }
+  .meter.straight > i { background: var(--time); }
+  .pips { display: flex; gap: 3px; align-items: center; font-size: 11px; color: var(--muted); }
+  .pips i { width: 9px; height: 9px; border-radius: 50%; border: 1px solid #ffffff55; }
+  .pips i.on { background: var(--primed); border-color: var(--primed); }
+  .pips.fl i.on { background: var(--hot); border-color: var(--hot); }
+  .feed { position: absolute; right: 10px; bottom: 10px; display: grid; gap: 4px; justify-items: end; max-width: 44%; }
+  .feed div { font-size: 12px; background: #0b0d16cc; border: 1px solid var(--line); padding: 2px 8px; border-radius: 4px; }
+  .camtag { position: absolute; left: 50%; bottom: 10px; transform: translateX(-50%); font-size: 11px; color: var(--muted); background: #0b0d16b3; border: 1px solid var(--line); border-radius: 999px; padding: 4px 9px; white-space: nowrap; }
+  .holding { position: absolute; left: 50%; top: 10px; transform: translateX(-50%); font-size: 12px; color: #04131c; background: #7fd7ff; border-radius: 999px; padding: 3px 10px; white-space: nowrap; }
+  .whoflies { position: absolute; left: 50%; top: 10px; transform: translateX(-50%); font-size: 12px; background: #0b0d16cc; border: 1px solid var(--line); border-radius: 999px; padding: 3px 10px; white-space: nowrap; }
+  .whoflies b { color: var(--accent); }
+
+  .overlay { position: absolute; inset: 0; display: grid; place-items: center; background: #05060cb3; padding: 16px; z-index: 8; }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 16px 18px; max-width: 520px; display: grid; gap: 10px; }
+  .card h2 { margin: 0; font-size: 22px; text-transform: uppercase; }
+  .card p { margin: 0; color: var(--muted); }
+  .keys { font-size: 12px; display: grid; grid-template-columns: auto 1fr; gap: 2px 12px; }
+  .keys span:nth-child(odd) { color: var(--muted); }
+  .btns { display: flex; flex-wrap: wrap; gap: 8px; }
+  .btn { border: 1px solid var(--line); background: var(--panel-2); border-radius: 6px; padding: 7px 14px; font-weight: 600; }
+  .btn.primary { background: var(--accent); color: #1a1200; border-color: var(--accent); }
+  .btn.small { padding: 4px 10px; font-size: 12px; }
+  .btn[disabled] { opacity: .5; cursor: default; }
+  .stagebtns { position: absolute; left: 10px; bottom: 156px; display: flex; gap: 6px; z-index: 7; }
+  .stagebtns .btn { padding: 4px 10px; font-size: 12px; background: #121524d9; }
+  body:not(.dev-phone) .phone-only { display: none !important; }
+  .transport { display: flex; gap: 2px; }
+  .transport .btn:disabled { opacity: 0.35; cursor: default; }
+  .transport .btn.on { background: var(--accent); color: #1a1200; opacity: 1; }
+  .transport .btn[aria-pressed="true"] { background: #7fd7ff; color: #04131c; }
+
+  aside { display: grid; gap: 10px; min-width: 0; }
+  .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; display: grid; gap: 10px; min-width: 0; }
+  .panel h3 { margin: 0; font-size: 14px; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+  .field { display: grid; grid-template-columns: 86px minmax(0, 1fr); gap: 8px; align-items: center; }
+  .field > span { font-size: 12px; color: var(--muted); }
+  .field select { width: 100%; min-width: 0; background: var(--panel-2); border: 1px solid var(--line); border-radius: 6px; padding: 5px 6px; font-size: 12px; }
+  .note { font-size: 12px; color: var(--muted); margin: 0; }
+  .check { display: flex; gap: 8px; align-items: center; font-size: 13px; }
+  .spec { display: grid; grid-template-columns: minmax(0, 1fr) 96px 44px; gap: 6px 8px; align-items: center; font-size: 12px; }
+  .spec label { color: var(--muted); }
+  .spec label.diff { color: var(--fg); text-decoration: underline; text-decoration-color: var(--accent); text-underline-offset: 3px; }
+  .spec input { width: 100%; accent-color: var(--accent); }
+  .spec output { text-align: right; font-variant-numeric: tabular-nums; }
+  .petals { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
+  .petal { border: 1px dashed var(--line); border-radius: 8px; padding: 8px 4px; text-align: center; font-size: 11px; color: var(--muted); }
+  .petal b { display: block; font-size: 12px; letter-spacing: .08em; text-transform: uppercase; }
+  .tbl { width: 100%; border-collapse: collapse; font-size: 12px; font-variant-numeric: tabular-nums; }
+  .tbl td, .tbl th { padding: 3px 5px; border-bottom: 1px solid var(--line); text-align: right; white-space: nowrap; }
+  .tbl th:first-child, .tbl td:first-child { text-align: left; }
+  .tbl th { color: var(--muted); font-weight: 500; }
+  .tbl tr.grp td { color: var(--accent); text-align: left; padding-top: 8px; }
+  .tbl td.bad { color: var(--hard); } .tbl td.ok { color: var(--easy); }
+  .tblwrap { overflow-x: auto; }
+  details summary { cursor: pointer; color: var(--muted); }
+  details ul { margin: 6px 0 0; padding-left: 18px; color: var(--muted); font-size: 12px; display: grid; gap: 3px; }
+  .log { display: grid; gap: 6px; font-size: 12px; }
+  .log .e { border: 1px solid var(--line); border-radius: 6px; padding: 5px 8px; }
+  .log .e b { color: var(--accent); }
+  .dform { display: grid; gap: 6px; }
+  .dform input, .dform textarea, .dform select { width: 100%; background: var(--panel-2); border: 1px solid var(--line); border-radius: 6px; padding: 5px 7px; font-size: 12px; }
+
+  /* touch play (D9, D26): the stage is the whole phone */
+  .touch { position: absolute; inset: 0; display: none; z-index: 6; }
+  body.play .touch { display: block; }
+  body.play .vside-dock, body.play .vside-split, body.play .vside-win { display: none !important; }
+  body.play #viewport { position: fixed; inset: 0; z-index: 50; border-radius: 0; aspect-ratio: auto; border: 0; }
+  body.play .wrap > :not(.layout), body.play aside, body.play .stagebtns, body.play #overlay, body.play .feed, body.play .camtag { display: none !important; }
+  .tz { position: absolute; bottom: 0; top: 22%; width: 50%; }
+  .tz.L { left: 0; } .tz.R { right: 0; }
+  .ts { position: absolute; width: 112px; height: 112px; margin: -56px 0 0 -56px; border-radius: 50%; border: 2px solid #ffffff55; background: #ffffff0d; pointer-events: none; }
+  .ts.idle { opacity: .4; }
+  .ts > i { position: absolute; left: 50%; top: 50%; width: 46px; height: 46px; margin: -23px 0 0 -23px; border-radius: 50%; background: #ffffff40; }
+  .tbar { position: absolute; top: calc(8px + env(safe-area-inset-top, 0px)); left: 50%; transform: translateX(-50%); display: flex; gap: 6px; }
+  .tbar .btn, .tacts .btn { padding: 6px 10px; font-size: 13px; background: #121524d9; }
+  .tacts { position: absolute; bottom: calc(10px + env(safe-area-inset-bottom, 0px)); left: 50%; transform: translateX(-50%); display: flex; gap: 8px; }
+  .portrait { position: absolute; inset: 0; display: none; place-items: center; background: #05060cf2; text-align: center; padding: 24px; font-size: 22px; text-transform: uppercase; z-index: 9; }
+  @media (orientation: portrait) { body.play .portrait { display: grid; } }
+  body.play .gauges { bottom: 56px; }
+  body.play .whoflies { display: none; }   /* the touch bar's Swap and the views say who you fly */
+  body.play #viewport .vinset { top: calc(52px + env(safe-area-inset-top, 0px)); height: 34%; }
+  body.play .board { top: calc(52px + env(safe-area-inset-top, 0px)); }
+  body.fly-goby .pistol-only, body.fly-pistol .goby-only { display: none !important; }
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+<script src="studio-theme.js"></script>   <!-- the one Vessel Studio look (D29): after this page's own <style> so it wins -->
+
+<div class="wrap">
+  <header class="top">
+    <a class="back" href="index.html">&larr; Vessel Studio</a>
+    <h1>Goby &amp; Pistol</h1>
+    <span class="round">Duo lab · round 1</span>
+    <span class="diffchip" id="diffChip" hidden></span>
+    <p class="sub">The first duo vessel: one squad slot, two craft. The <b>Goby</b> flies the 3D world like the Serpent and lays the path; the <b>Pistol</b> (a pistol shrimp) plays a 2D sidescroller unrolled from that path, rides its hills Tiny Wings style and blows things up. Fly either half while the AI flies the other, and swap with D-pad left / right or keys 1 / 2, the same swap as the arena's. A design lab: the brief is <code>.claude/skills/duo-vessel/references/designs/goby-and-pistol.md</code>.</p>
+  </header>
+
+  <div class="layout">
+    <section>
+      <div id="viewport" class="v-goby">
+        <canvas id="side" class="vinset" aria-label="The Pistol's sidescroller"></canvas>
+        <canvas id="c" class="vmain" tabindex="0" aria-label="The Goby's 3D world"></canvas>
+        <div class="hud">
+          <div class="board" id="board"></div>
+          <div class="whoflies" id="whoFlies"></div>
+          <div class="holding" id="holding" hidden>AI HOLDING YOUR HALF · touch any control to fly</div>
+          <div class="gauges" id="gauges">
+            <div class="t"><span>Goby speed</span><b id="gSpeed">0 u/s</b></div>
+            <div class="t"><span>Pistol close</span><b id="gClose">×1.00</b></div><div class="meter close"><i id="mClose"></i></div>
+            <div class="t"><span>Straight</span><b id="gStraight">×1.00</b></div><div class="meter straight"><i id="mStraight"></i></div>
+            <div class="pips" id="pPrimer"></div>
+            <div class="pips fl" id="pFlare"></div>
+          </div>
+          <div class="feed" id="feed"></div>
+          <div class="camtag" id="camTag">Chase camera</div>
+        </div>
+        <div class="stagebtns"><button class="btn phone-only" id="playBtn" type="button">Back to flying</button><span class="transport" id="transport" role="toolbar" aria-label="Play controls"><button class="btn" id="tpPlay" type="button" aria-pressed="false" title="Play / pause (Enter starts, P pauses and resumes)">▶ Play</button><button class="btn" id="tpStop" type="button" title="Stop (R): end the run, back to the start">■ Stop</button></span></div>
+        <div class="overlay" id="overlay">
+          <div class="card">
+            <h2 id="ovTitle">Duo run, intensity 2</h2>
+            <p id="ovText">One duo, two halves. You fly one; the AI flies the other. Swap any time: D-pad left / right, or 1 / 2. The Goby hunts and primes; the Pistol rides the Goby's path in 2D and breaks everything in its band.</p>
+            <div class="keys">
+              <span>Goby</span><span>W S pitch · A D yaw · Q E roll · ↑ ↓ throttle · F primer · G flares (or both sticks, RT primer, LT flares)</span>
+              <span>Pistol</span><span>Space dive · drag on its view to launch · F quick launch · E explode · G ghost (pad: A dive, RT + right stick launch, X explode, B ghost)</span>
+              <span>Swap</span><span>1 / 2 or D-pad left / right</span>
+              <span></span><span>Enter play · P pause · R stop · C camera · V views</span>
+            </div>
+            <div class="btns"><button class="btn primary" id="startBtn" type="button">Start</button><button class="btn" id="resetBtn" type="button">New world</button></div>
+          </div>
+        </div>
+        <div class="touch" id="touch">
+          <div class="tz L" id="tzL"><div class="ts idle" id="tsL"><i></i></div></div>
+          <div class="tz R" id="tzR"><div class="ts idle" id="tsR"><i></i></div></div>
+          <div class="tbar"><button class="btn" id="tStart" type="button">▶ Play</button><button class="btn" id="tSwap" type="button">⇄ Swap</button><button class="btn" id="tCam" type="button">Cam</button><button class="btn" id="tBack" type="button">■ Stop</button><button class="btn" id="tExit" type="button" aria-label="Leave phone play">✕</button></div>
+          <div class="tacts"><button class="btn goby-only" id="tPrimer" type="button">Primer</button><button class="btn goby-only" id="tFlare" type="button">Flares</button><button class="btn pistol-only" id="tBoom" type="button">Explode</button><button class="btn pistol-only" id="tGhost" type="button">Ghost</button></div>
+          <div class="portrait">Turn the phone sideways</div>
+        </div>
+      </div>
+    </section>
+
+    <aside>
+      <div class="panel" id="pnScene">
+        <h3>Scene</h3>
+        <div id="scenePanel"></div>
+        <label class="field"><span>Unroll</span><select id="selMode" title="How the Goby's path is unrolled into the Pistol's 2D world (brief 4.1). World up: a vertical curtain through the path, unrolled exactly (x = distance along the ground track, y = height). Arc length: x = distance flown, y = height (no walls, horizontal stretch). Goby's up: the ribbon follows the Goby's own up and twists with its roll (the path is flat; only the hills remain)."></select></label>
+        <label class="field"><span>Views</span><select id="selViews" title="Main + inset: the half you fly fills the stage, the other is a window. Split: both at once, the 3D world above the sidescroller."><option value="inset">Main + inset</option><option value="split">Split</option></select></label>
+        <label class="check"><input type="checkbox" id="chkRibbon"> Show the Pistol's world in 3D (its ground line and vision band)</label>
+      </div>
+
+      <div class="panel" id="pnIntensity">
+        <h3>Intensity</h3>
+        <div id="intensityPanel"></div>
+      </div>
+
+      <div class="panel" id="pnDuo">
+        <h3>The duo seat</h3>
+        <label class="field"><span>You fly</span><select id="selFly" title="The half you fly. The other half is flown by its AI. Swap any time: 1 / 2, D-pad left / right, or the Swap button on a phone (PilotSwap's gesture, unified)."><option value="goby">Goby</option><option value="pistol">Pistol</option></select></label>
+        <label class="field"><span>Partner AI</span><select id="selPartner" title="The level of the AI flying the half you are not flying."><option>Easy</option><option>Medium</option><option>Hard</option></select></label>
+        <label class="field"><span>Domain</span><select id="selDomain" title="The duo's team. Friendly blocks are this colour: the Pistol breaks them too (friendly fire is ON) unless it ghosts."></select></label>
+        <p class="note">One seat, two halves (the duo contract). Rival duos and rival single hulls come in a later round. The swap keeps everything: charges, cooldowns, the path.</p>
+      </div>
+
+      <div class="panel" id="pnAI">
+        <h3>AI</h3>
+        <div id="racePanel"></div>
+        <label class="check"><input type="checkbox" id="chkIdle"> AI holds my idle half (after 3 s with no input)</label>
+        <p class="note">Goby AI: 1. the crystal, 2. hunt flora and fauna (and enemy walls), 3. lay the Pistol a path (it eases off when the Pistol falls behind, and weaves in height to give it hills). Pistol AI: dive on downslopes, let go on upslopes (Tiny Wings), launch at the densest target ahead, explode on 3+ targets or a primed one, ghost through friendly blocks. Both write the same inputs a player does.</p>
+        <div class="spec" id="specAI"></div>
+      </div>
+
+      <div class="panel" id="pnStyle">
+        <h3>Play styles</h3>
+        <div class="petals"><div class="petal" style="color:var(--charge)"><b>Charge</b>open</div><div class="petal" style="color:var(--mass)"><b>Mass</b>open</div><div class="petal" style="color:var(--space)"><b>Space</b>open</div><div class="petal" style="color:var(--time)"><b>Time</b>open</div></div>
+        <p class="note">One element meter for the pair (Garrett, 2026-10-14). Which ability each element scales is not decided (brief §6), and this lab does not invent it (<code>/vessel</code> §3, the design-approval gate). Named play styles come here once the mappings are approved.</p>
+      </div>
+
+      <div class="panel" id="pnControls">
+        <h3>Controls</h3>
+        <div class="keys">
+          <span>Swap</span><span>1 / 2 · D-pad left / right · phone: ⇄ Swap (the arena pilot swap, 0.75 s cooldown)</span>
+          <span>Goby keys</span><span>W S pitch · A D yaw · Q E roll · ↑ ↓ throttle · F primer · G flares</span>
+          <span>Goby pad</span><span>both sticks (the game's dual-stick mix) · RT primer · LT flares</span>
+          <span>Goby phone</span><span>two thumb sticks · Primer · Flares</span>
+          <span>Pistol keys</span><span>Space dive · drag on its view to aim, release to launch · F quick launch · E explode · G ghost</span>
+          <span>Pistol pad</span><span>A or LT dive · hold RT, aim with the right stick, release to launch · X explode · B ghost</span>
+          <span>Pistol phone</span><span>hold the left half to dive · drag on the right half to aim, release to launch · Explode · Ghost</span>
+          <span>Cameras</span><span>C cycles Chase / Follow / Free (3D) · Free: drag to orbit, wheel to zoom · V switches views</span>
+          <span>Transport</span><span>Enter play · P pause / resume · R stop</span>
+        </div>
+      </div>
+
+      <div class="panel" id="pnGoby">
+        <h3>Goby <button class="btn small" type="button" data-reset="Goby">Shipped</button></h3>
+        <div class="spec" id="specGoby"></div>
+      </div>
+      <div class="panel" id="pnPistol">
+        <h3>Pistol <button class="btn small" type="button" data-reset="Pistol">Shipped</button></h3>
+        <div class="spec" id="specPistol"></div>
+      </div>
+      <div class="panel" id="pnTrail">
+        <h3>Trail and hills <button class="btn small" type="button" data-reset="Trail">Shipped</button></h3>
+        <div class="spec" id="specTrail"></div>
+        <p class="note">Every block of the Goby's trail is laid along its path; every Nth block is a <b>hinge</b> tilted up or down in turn, and the hinges are the control points of the Pistol's ground (a Catmull-Rom curve, the same curve <code>Trail.Project</code> rides). How hinges become hills is the lab's reading of the brief, not decided.</p>
+      </div>
+
+      <div class="panel" id="pnScore">
+        <h3>Scorecard <span class="btns"><button class="btn small" id="unrollBtn" type="button">Unroll test</button><button class="btn small" id="duoBtn" type="button">Duo runs</button></span></h3>
+        <p class="note" id="scoreNote">Unroll test: does the Pistol's world hold on every kind of flight, in each unroll? Duo runs: does the pair work, against baselines (no Pistol, no primer, no closeness speed) and a rookie column (Easy / Easy)?</p>
+        <div class="tblwrap"><table class="tbl" id="unrollTbl"></table></div>
+        <div class="tblwrap"><table class="tbl" id="duoTbl"></table></div>
+      </div>
+
+      <div class="panel" id="pnRuns">
+        <h3>Runs</h3>
+        <div class="tblwrap"><table class="tbl"><thead><tr><th>Run</th><th>Unroll</th><th>You flew</th><th>Pistol</th><th>Chain</th><th>Flares</th><th>Friendly</th><th>Crystals</th><th>Swaps</th></tr></thead><tbody id="runs"></tbody></table></div>
+      </div>
+
+      <div class="panel" id="pnDecisions">
+        <h3>Decisions</h3>
+        <div class="dform">
+          <select id="dTopic"><option>Unroll</option><option>Pistol world (depth, prisms)</option><option>Pistol feel</option><option>Goby feel</option><option>Primer, heat, flares</option><option>Swap</option><option>Other</option></select>
+          <input id="dChoice" placeholder="The choice (e.g. World up, with climbs clamped to 60°)">
+          <textarea id="dNote" rows="2" placeholder="Why, and what to try next"></textarea>
+          <div class="btns"><button class="btn small primary" id="dRecord" type="button">Record</button><button class="btn small" id="dCopy" type="button">Copy log</button></div>
+          <p class="note" id="logStatus"></p>
+        </div>
+        <div class="log" id="log"></div>
+      </div>
+
+      <div class="panel" id="pnAbout">
+        <details open>
+          <summary>Where the numbers come from, and what is not modelled</summary>
+          <ul>
+            <li>Goby flight: <code>Serpent.prefab</code> VesselTransformer: cruise 50 u/s (DefaultThrottleScaler), minimum 10, pitch and yaw 80, roll 20. The sticks go through the game's dual-stick mix (<code>InputController</code>).</li>
+            <li>Straight boost: the Rhino's ramp (<code>RhinoRampBoostAction.asset</code>: up at 220 u/s², bleed 300 u/s²) to a lab-only ceiling of ×4, against the Rhino's ×16.8 ("like the Rhino's but less").</li>
+            <li>Swap: <code>PilotSwap</code> (cooldown 0.75 s) on <code>PilotSwapGesture</code>'s keys: D-pad left / right, 1 / 2.</li>
+            <li>AI levels: Hard is the skilled pilot; Medium and Easy notice each new target late (0.25 / 0.5 s mean) and misjudge 4.5% / 9.9% of them (<code>SkimRaceDifficulty.asset</code>, the Vessel Studio's universal levels).</li>
+            <li>Everything else is lab-only: the closeness boost, the primer, heat and flares, the Pistol's gravity, dive, launch, blast and ghost, its vision band and body, the hills, and the world (clusters of flora, fauna, enemy walls and friendly blocks, seeded per intensity).</li>
+            <li>Not modelled: rival ships (the brief says ships are hot by default), the element meter and its mappings, network ownership of the two halves, co-op (two humans: the offer / accept swap), death and respawn, sound, the real game's prisms and their shields, the phone flip (a Swap button stands in).</li>
+            <li>The 2D world's prisms are drawn where the unroll puts them, at a parallax by depth; prisms off the band are hidden unless primed. Near tight turns two passes of the path compete for a point: the Unroll test counts how often.</li>
+          </ul>
+        </details>
+        <p class="note">Want a change in this studio or a design tried? <a href="index.html#agent">Ask the studio agent</a>.</p>
+      </div>
+    </aside>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="studio-look.js"></script>
+<script src="studio-domains.js"></script>
+<script src="studio-ide.js"></script>
+<script src="ai_race_panel.js"></script>
+<script>
+(function () {
+  'use strict';
+  const $ = (id) => document.getElementById(id);
+  const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
+  const lerp = (a, b, t) => a + (b - a) * t;
+  const DEG = Math.PI / 180;
+  function mulberry32(a) { return function () { a |= 0; a = (a + 0x6D2B79F5) | 0; let t = Math.imul(a ^ (a >>> 15), 1 | a); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
+
+  // ================= the numbers =================
+  // A READER of the shipped numbers (D1): every value the game has names its asset; the rest is lab-only.
+  const SHIPPED = {
+    gCruise: 50,          // Serpent.prefab VesselTransformer DefaultThrottleScaler 50
+    gMinSpeed: 10,        // Serpent.prefab DefaultMinimumSpeed 10
+    gPitchRate: 80,       // Serpent.prefab PitchScaler 80
+    gYawRate: 80,         // Serpent.prefab YawScaler 80
+    gRollRate: 20,        // Serpent.prefab RollScaler 20
+    gStraightMax: 4,      // lab-only ("like the Rhino's but less": RhinoRampBoostAction.asset maxBoostMultiplier 16.8)
+    gStraightAccel: 220,  // RhinoRampBoostAction.asset accelerationPerSecond 220
+    gStraightBleed: 300,  // RhinoRampBoostAction.asset bleedPerSecond 300
+    gCloseMax: 1.8,       // lab-only: the Goby's speed with the Pistol right behind it
+    gCloseRange: 320,     // lab-only: the gap (u along the ribbon) at which closeness stops counting
+    gPrimerCharges: 6,    // lab-only ("generous charges")
+    gPrimerCd: 1.5,       // lab-only ("relatively short cooldown"), seconds per charge
+    gPrimerRange: 380,    // lab-only
+    gPrimeSplash: 34,     // lab-only: the oil splash radius
+    gPrimeLife: 12,       // lab-only: a prime decays after this ("enough time to go for a recovery once")
+    gFlareCharges: 2,     // lab-only
+    gFlareCd: 10,         // lab-only ("a longer cooldown")
+    gFlareRange: 420,     // lab-only
+    gFlareMax: 10,        // lab-only: flares per volley (one per hot target)
+    gFlareSpeed: 240,     // lab-only
+    pGravity: 140,        // lab-only: the pull to the ground line (the "magnet")
+    pDiveMul: 3.2,        // lab-only: the pull while diving
+    pMinSpeed: 35,        // lab-only
+    pDrag: 0.04,          // lab-only, per second
+    pGoodLand: 28,        // lab-only: degrees between velocity and slope that still count as a smooth landing
+    pVision: 45,          // lab-only: how far either side of the main trail the Pistol sees
+    pBodyR: 5,            // lab-only: the cylinder's radius (its length reaches 4 u past the vision band)
+    pViewWidth: 460,      // lab-only: how much of the ribbon the Pistol's screen shows
+    pParallax: 160,       // lab-only: depth at which a layer draws at half size
+    pLaunchRange: 240,    // lab-only
+    pLaunchSpeed: 280,    // lab-only
+    pLaunchCharges: 2,    // lab-only
+    pLaunchCd: 4,         // lab-only
+    pBlastR: 46,          // lab-only: the snap's radius in the plane
+    pBlastDepth: 70,      // lab-only: how far the snap reaches off the plane
+    pExplodeCd: 6,        // lab-only
+    pGhostTime: 2.5,      // lab-only
+    pGhostCd: 8,          // lab-only
+    pChain: 40,           // lab-only: a detonating primed block sets off primed blocks this close
+    pHotRing: 80,         // lab-only: blocks this close to a detonation (and not primed) turn hot
+    pHotLife: 10,         // lab-only
+    tSampleGap: 4,        // lab-only: the ribbon is sampled this often along the path
+    tBlockGap: 16,        // lab-only: a trail block every this many u
+    tHillEvery: 4,        // lab-only: every Nth block is a hinge (a control point)
+    tHillAmp: 26,         // lab-only: how far a hinge lifts or drops the ground
+    tAngle: 22,           // lab-only: the hinge's tilt, degrees (what you see in 3D)
+    aiMaxGap: 260,        // lab-only: the Goby AI eases off beyond this gap
+    aiCrystalSeek: 520,   // lab-only
+    aiWeave: 50,          // lab-only: the Goby AI's height weave (hills for the Pistol)
+    aiWeaveHz: 0.18,      // lab-only
+    aiHighDive: 120,      // lab-only: the Pistol AI dives when this far above the ground
+    runSecs: 90,          // lab-only: one run
+    swapCd: 0.75,         // PilotSwap.CooldownSeconds 0.75
+  };
+  // Sliders are data: [group, key, lo, hi, step, label, tip]
+  const SPEC = [
+    ['Goby', 'gCruise', 20, 120, 1, 'Cruise u/s', 'Serpent.prefab DefaultThrottleScaler (50).'],
+    ['Goby', 'gYawRate', 30, 160, 1, 'Turn °/s', 'Serpent.prefab YawScaler and PitchScaler (80).'],
+    ['Goby', 'gPitchRate', 30, 160, 1, 'Pitch °/s', 'Serpent.prefab PitchScaler (80).'],
+    ['Goby', 'gStraightMax', 1, 8, 0.1, 'Straight boost ×', 'Lab-only. The Rhino ramps to ×16.8; the brief says "like the Rhino but less".'],
+    ['Goby', 'gCloseMax', 1, 3, 0.05, 'Closeness ×', 'Lab-only. The Goby\'s speed with the Pistol right on its tail.'],
+    ['Goby', 'gCloseRange', 60, 800, 10, 'Closeness range u', 'Lab-only. Beyond this gap the Pistol adds no speed.'],
+    ['Goby', 'gPrimerCharges', 1, 12, 1, 'Primer charges', 'Lab-only. "Generous charges".'],
+    ['Goby', 'gPrimerCd', 0.3, 6, 0.1, 'Primer s / charge', 'Lab-only. "A relatively short cooldown".'],
+    ['Goby', 'gPrimeSplash', 10, 80, 1, 'Oil splash u', 'Lab-only. Everything this close to the hit is primed.'],
+    ['Goby', 'gPrimeLife', 3, 30, 0.5, 'Prime lasts s', 'Lab-only. Long enough for the Pistol to try one recovery: time it here.'],
+    ['Goby', 'gFlareCharges', 1, 5, 1, 'Flare charges', 'Lab-only.'],
+    ['Goby', 'gFlareCd', 2, 30, 0.5, 'Flare s / charge', 'Lab-only. Longer than the primer\'s.'],
+    ['Goby', 'gFlareMax', 1, 24, 1, 'Flares per volley', 'Lab-only. One flare per hot block in range, up to this.'],
+    ['Pistol', 'pGravity', 40, 400, 5, 'Pull u/s²', 'Lab-only. The magnet that holds the Pistol to the ground line.'],
+    ['Pistol', 'pDiveMul', 1, 8, 0.1, 'Dive ×', 'Lab-only. The pull while diving (Tiny Wings: heavy on the way down).'],
+    ['Pistol', 'pMinSpeed', 0, 120, 1, 'Min speed', 'Lab-only.'],
+    ['Pistol', 'pGoodLand', 5, 60, 1, 'Smooth landing °', 'Lab-only. Land within this angle of the slope and keep your speed.'],
+    ['Pistol', 'pVision', 10, 160, 1, 'Vision band u', 'Lab-only. How far either side of the trail the Pistol sees; its body reaches 4 u past it.'],
+    ['Pistol', 'pViewWidth', 200, 1000, 10, 'Screen width u', 'Lab-only. How much ribbon the Pistol\'s screen shows.'],
+    ['Pistol', 'pParallax', 40, 600, 10, 'Parallax depth', 'Lab-only. Layers this deep draw at half size.'],
+    ['Pistol', 'pLaunchRange', 80, 500, 5, 'Launch range', 'Lab-only.'],
+    ['Pistol', 'pLaunchCd', 0.5, 12, 0.5, 'Launch s / charge', 'Lab-only.'],
+    ['Pistol', 'pBlastR', 15, 120, 1, 'Snap radius', 'Lab-only. The explosion in the plane.'],
+    ['Pistol', 'pBlastDepth', 10, 200, 1, 'Snap depth', 'Lab-only. How far the explosion reaches off the plane.'],
+    ['Pistol', 'pExplodeCd', 1, 20, 0.5, 'Snap cooldown s', 'Lab-only.'],
+    ['Pistol', 'pGhostTime', 0.5, 6, 0.1, 'Ghost s', 'Lab-only.'],
+    ['Pistol', 'pChain', 10, 120, 1, 'Chain u', 'Lab-only. Primed blocks this close go up together.'],
+    ['Pistol', 'pHotRing', 20, 200, 1, 'Heat ring u', 'Lab-only. Unprimed blocks this close to a detonation turn hot.'],
+    ['Trail', 'tBlockGap', 6, 40, 1, 'Block gap u', 'Lab-only.'],
+    ['Trail', 'tHillEvery', 1, 12, 1, 'Hinge every N', 'Lab-only. Every Nth block is a hinge, alternately up and down.'],
+    ['Trail', 'tHillAmp', 0, 90, 1, 'Hill height u', 'Lab-only. How far a hinge lifts or drops the ground. 0: the path alone.'],
+    ['Trail', 'tAngle', 0, 60, 1, 'Hinge tilt °', 'Lab-only. What the hinge looks like in 3D.'],
+    ['AI', 'aiMaxGap', 60, 800, 10, 'Goby waits beyond u', 'Lab-only. The Goby AI eases off when the Pistol is further behind than this.'],
+    ['AI', 'aiWeave', 0, 160, 2, 'Goby weave u', 'Lab-only. The Goby AI weaves in height to give the Pistol hills.'],
+    ['AI', 'aiWeaveHz', 0.02, 1, 0.01, 'Weave Hz', 'Lab-only.'],
+    ['AI', 'runSecs', 20, 300, 5, 'Run s', 'Lab-only. One run of the lab.'],
+  ];
+  const DIFF = { Hard: { late: 0, mis: 0 }, Medium: { late: 0.25, mis: 0.045 }, Easy: { late: 0.5, mis: 0.099 } };   // SkimRaceDifficulty.asset
+  const INTENSITY = { 1: { clusters: 8, crystals: 2, note: '8 clusters, 2 crystals' }, 2: { clusters: 14, crystals: 3, note: '14 clusters, 3 crystals' }, 3: { clusters: 22, crystals: 3, note: '22 clusters, 3 crystals' }, 4: { clusters: 30, crystals: 4, note: '30 clusters, 4 crystals' } };
+  const MODES = { world: 'World up (exact unroll)', arc: 'Arc length', goby: "Goby's up (twisting)" };
+  const KINDS = ['flora', 'fauna', 'enemy', 'friendly'];
+
+  const LS = 'goby-studio-v1';
+  const lsGet = (k, d) => { try { const v = JSON.parse(localStorage.getItem(k)); return v == null ? d : v; } catch (e) { return d; } };
+  const lsSet = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) { /* storage blocked */ } };
+  const saved = lsGet(LS, {});
+  const P = Object.assign({}, SHIPPED);
+  for (const k in (saved.diff || {})) if (k in SHIPPED && typeof saved.diff[k] === 'number') P[k] = saved.diff[k];
+  const S = Object.assign({ course: 2, you: 'You', fly: 'goby', partner: 'Hard', cam: 'Chase', speed: 1, thinking: true, autoRestart: false, mode: 'world', views: 'inset', ribbon3d: true, idleHold: true, domain: 'jade' }, saved.S || {});
+  function save() { const diff = {}; for (const k in SHIPPED) if (P[k] !== SHIPPED[k]) diff[k] = P[k]; lsSet(LS, { S, diff }); }
+
+  // ================= vectors (plain objects: the sim never touches THREE) =================
+  const V = (x, y, z) => ({ x, y, z });
+  const vadd = (a, b) => V(a.x + b.x, a.y + b.y, a.z + b.z);
+  const vsub = (a, b) => V(a.x - b.x, a.y - b.y, a.z - b.z);
+  const vscl = (a, s) => V(a.x * s, a.y * s, a.z * s);
+  const vdot = (a, b) => a.x * b.x + a.y * b.y + a.z * b.z;
+  const vcross = (a, b) => V(a.y * b.z - a.z * b.y, a.z * b.x - a.x * b.z, a.x * b.y - a.y * b.x);
+  const vlen = (a) => Math.hypot(a.x, a.y, a.z);
+  const vnorm = (a) => { const l = vlen(a) || 1; return V(a.x / l, a.y / l, a.z / l); };
+  function vrot(v, k, a) { const c = Math.cos(a), s = Math.sin(a), kv = vcross(k, v), d = vdot(k, v) * (1 - c); return V(v.x * c + kv.x * s + k.x * d, v.y * c + kv.y * s + k.y * d, v.z * c + kv.z * s + k.z * d); }
+
+  // ================= the ribbon: the Goby's path, unrolled into the Pistol's world (brief 4.1) =================
+  // A world point maps to (x, h, d): x along the unrolled path, h up, d across (into or out of the screen).
+  //  world: a vertical curtain hung through the path. It is developable, so it unrolls EXACTLY:
+  //         x = distance along the ground track, h = world height. A climb straight up is a wall.
+  //  arc:   x = distance flown, h = world height. No walls; the ground is stretched where the path climbs.
+  //  goby:  the ribbon follows the Goby's own (filtered) up and twists with its roll; the path is flat in it.
+  function makeRibbon(mode) {
+    return { mode, n: 0, px: [], py: [], pz: [], s: [], sig: [], hx: [], hz: [], ux: [], uy: [], uz: [], rx: [], ry: [], rz: [], upF: V(0, 1, 0), cx: [], cy: [] };
+  }
+  const RX = (rb, k) => (rb.mode === 'world' ? rb.sig[k] : rb.s[k]);
+  function ribAdd(rb, p, gUp, fwd) {
+    const n = rb.n; let s = 0, sig = 0, hx, hz, t = fwd;
+    if (n > 0) {
+      const dx = p.x - rb.px[n - 1], dy = p.y - rb.py[n - 1], dz = p.z - rb.pz[n - 1], l3 = Math.hypot(dx, dy, dz), lh = Math.hypot(dx, dz);
+      s = rb.s[n - 1] + l3; sig = rb.sig[n - 1] + lh;
+      if (l3 > 1e-6) t = V(dx / l3, dy / l3, dz / l3);
+      if (lh > 1e-3) { hx = dx / lh; hz = dz / lh; } else { hx = rb.hx[n - 1]; hz = rb.hz[n - 1]; }
+    } else { const lh = Math.hypot(fwd.x, fwd.z); if (lh > 1e-3) { hx = fwd.x / lh; hz = fwd.z / lh; } else { hx = 0; hz = -1; } }
+    const f = rb.upF; rb.upF = vnorm(V(lerp(f.x, gUp.x, 0.2), lerp(f.y, gUp.y, 0.2), lerp(f.z, gUp.z, 0.2)));
+    let up = vsub(rb.upF, vscl(t, vdot(rb.upF, t)));
+    if (vlen(up) < 1e-4) up = n > 0 ? V(rb.ux[n - 1], rb.uy[n - 1], rb.uz[n - 1]) : V(0, 1, 0);
+    up = vnorm(up); const right = vnorm(vcross(t, up));
+    rb.px.push(p.x); rb.py.push(p.y); rb.pz.push(p.z); rb.s.push(s); rb.sig.push(sig); rb.hx.push(hx); rb.hz.push(hz);
+    rb.ux.push(up.x); rb.uy.push(up.y); rb.uz.push(up.z); rb.rx.push(right.x); rb.ry.push(right.y); rb.rz.push(right.z); rb.n++;
+  }
+  function ribIdx(rb, x) {   // the segment k (0..n-2) whose x-range holds x
+    let lo = 0, hi = rb.n - 1; if (hi < 1) return 0;
+    if (x <= RX(rb, 0)) return 0; if (x >= RX(rb, hi)) return hi - 1;
+    while (hi - lo > 1) { const m = (lo + hi) >> 1; if (RX(rb, m) <= x) lo = m; else hi = m; }
+    return lo;
+  }
+  function ribUnmap(rb, x, h, d, out) {   // (x, h, d) back to a world point
+    out = out || V(0, 0, 0);
+    if (rb.n < 2) { out.x = rb.px[0] || 0; out.y = h; out.z = rb.pz[0] || 0; return out; }
+    const k = ribIdx(rb, x), X0 = RX(rb, k), X1 = RX(rb, k + 1);
+    let t = X1 > X0 + 1e-9 ? (x - X0) / (X1 - X0) : 0, extra = 0;
+    if (t > 1) { extra = x - X1; t = 1; } else if (t < 0) { extra = x - X0; t = 0; }
+    if (rb.mode === 'goby') {
+      const ax = rb.px[k], ay = rb.py[k], az = rb.pz[k], bx = rb.px[k + 1], by = rb.py[k + 1], bz = rb.pz[k + 1];
+      const L = Math.hypot(bx - ax, by - ay, bz - az) || 1, tx = (bx - ax) / L, ty = (by - ay) / L, tz = (bz - az) / L;
+      const up = vnorm(V(lerp(rb.ux[k], rb.ux[k + 1], t), lerp(rb.uy[k], rb.uy[k + 1], t), lerp(rb.uz[k], rb.uz[k + 1], t)));
+      const rt = vnorm(V(lerp(rb.rx[k], rb.rx[k + 1], t), lerp(rb.ry[k], rb.ry[k + 1], t), lerp(rb.rz[k], rb.rz[k + 1], t)));
+      out.x = lerp(ax, bx, t) + tx * extra + up.x * h + rt.x * d; out.y = lerp(ay, by, t) + ty * extra + up.y * h + rt.y * d; out.z = lerp(az, bz, t) + tz * extra + up.z * h + rt.z * d;
+    } else {
+      const hx = rb.hx[k + 1], hz = rb.hz[k + 1];   // the segment's own heading (as ribMap uses it)
+      out.x = lerp(rb.px[k], rb.px[k + 1], t) + hx * extra - hz * d; out.y = h; out.z = lerp(rb.pz[k], rb.pz[k + 1], t) + hz * extra + hx * d;
+    }
+    return out;
+  }
+  function pathH(rb, x) { if (rb.mode === 'goby' || rb.n < 2) return rb.mode === 'goby' ? 0 : (rb.py[0] || 0); const k = ribIdx(rb, x), X0 = RX(rb, k), X1 = RX(rb, k + 1); return lerp(rb.py[k], rb.py[k + 1], X1 > X0 ? clamp((x - X0) / (X1 - X0), 0, 1) : 1); }
+  let SD_T = 0;
+  function segD2(rb, k, q, goby) {
+    if (goby) {
+      const ax = rb.px[k], ay = rb.py[k], az = rb.pz[k], abx = rb.px[k + 1] - ax, aby = rb.py[k + 1] - ay, abz = rb.pz[k + 1] - az, L2 = abx * abx + aby * aby + abz * abz;
+      const t = L2 > 1e-9 ? clamp(((q.x - ax) * abx + (q.y - ay) * aby + (q.z - az) * abz) / L2, 0, 1) : 0; SD_T = t;
+      const cx = ax + abx * t - q.x, cy = ay + aby * t - q.y, cz = az + abz * t - q.z; return cx * cx + cy * cy + cz * cz;
+    }
+    const ax = rb.px[k], az = rb.pz[k], abx = rb.px[k + 1] - ax, abz = rb.pz[k + 1] - az, L2 = abx * abx + abz * abz;
+    const t = L2 > 1e-9 ? clamp(((q.x - ax) * abx + (q.z - az) * abz) / L2, 0, 1) : 0; SD_T = t;
+    const cx = ax + abx * t - q.x, cz = az + abz * t - q.z; return cx * cx + cz * cz;
+  }
+  // world point -> (x, h, d), searching only the path with x in [xLo, xHi] (the Pistol's screen: the ribbon only
+  // exists there). amb: a different pass of the path is nearly as close, so the point could belong to either.
+  function ribMap(rb, q, xLo, xHi, out) {
+    out = out || {}; out.ok = false;
+    if (rb.n < 2) return out;
+    const goby = rb.mode === 'goby', k0 = ribIdx(rb, xLo), k1 = Math.min(rb.n - 2, ribIdx(rb, xHi));
+    let bk = -1, bt = 0, bd = Infinity;
+    for (let k = k0; k <= k1; k++) { const d2 = segD2(rb, k, q, goby); if (d2 < bd) { bd = d2; bk = k; bt = SD_T; } }
+    if (bk < 0) return out;
+    let sd = Infinity, sk = -1;
+    for (let k = k0; k <= k1; k++) { if (Math.abs(k - bk) <= 6) continue; const d2 = segD2(rb, k, q, goby); if (d2 < sd) { sd = d2; sk = k; } }
+    const k = bk, t = bt, X0 = RX(rb, k), X1 = RX(rb, k + 1);
+    out.x = X0 + (X1 - X0) * t;
+    if (goby) {
+      const cx = lerp(rb.px[k], rb.px[k + 1], t), cy = lerp(rb.py[k], rb.py[k + 1], t), cz = lerp(rb.pz[k], rb.pz[k + 1], t), rx = q.x - cx, ry = q.y - cy, rz = q.z - cz;
+      const up = vnorm(V(lerp(rb.ux[k], rb.ux[k + 1], t), lerp(rb.uy[k], rb.uy[k + 1], t), lerp(rb.uz[k], rb.uz[k + 1], t)));
+      const rt = vnorm(V(lerp(rb.rx[k], rb.rx[k + 1], t), lerp(rb.ry[k], rb.ry[k + 1], t), lerp(rb.rz[k], rb.rz[k + 1], t)));
+      out.h = rx * up.x + ry * up.y + rz * up.z; out.d = rx * rt.x + ry * rt.y + rz * rt.z;
+    } else {
+      const cx = lerp(rb.px[k], rb.px[k + 1], t), cz = lerp(rb.pz[k], rb.pz[k + 1], t), hx = rb.hx[k + 1], hz = rb.hz[k + 1];
+      out.h = q.y; out.d = (q.x - cx) * -hz + (q.z - cz) * hx;
+    }
+    out.amb = sk >= 0 && Math.sqrt(sd) < Math.sqrt(bd) * 1.25 + 4 && Math.abs(RX(rb, sk) - out.x) > 60;
+    out.ok = true; return out;
+  }
+
+  // ---- the ground: a Catmull-Rom curve through the hinge blocks, ending at the Goby (it is still being laid) ----
+  let GS = 0;   // the slope at the last groundAt() call
+  const cpX = (W, i) => (i < W.rb.cx.length ? W.rb.cx[i] : W.endX);
+  const cpY = (W, i) => (i < W.rb.cx.length ? W.rb.cy[i] : W.endY);
+  function cpCount(W) { const n = W.rb.cx.length; return n && W.endX > W.rb.cx[n - 1] + 1 ? n + 1 : n; }
+  function cpTan(W, i, m) { const a = Math.max(0, i - 1), b = Math.min(m - 1, i + 1), dx = cpX(W, b) - cpX(W, a); return dx > 1e-6 ? (cpY(W, b) - cpY(W, a)) / dx : 0; }
+  function groundAt(W, x) {
+    const m = cpCount(W);
+    if (m === 0) { GS = 0; return W.endY; }
+    if (m === 1 || x <= cpX(W, 0)) { GS = 0; return cpY(W, 0); }
+    if (x >= cpX(W, m - 1)) { GS = 0; return cpY(W, m - 1); }
+    let lo = 0, hi = m - 1; while (hi - lo > 1) { const md = (lo + hi) >> 1; if (cpX(W, md) <= x) lo = md; else hi = md; }
+    const xa = cpX(W, lo), xb = cpX(W, lo + 1), ya = cpY(W, lo), yb = cpY(W, lo + 1), h = xb - xa;
+    if (h < 1e-6) { GS = 0; return yb; }
+    const ma = cpTan(W, lo, m), mb = cpTan(W, lo + 1, m), t = (x - xa) / h, t2 = t * t, t3 = t2 * t;
+    GS = ((6 * t2 - 6 * t) * ya + (3 * t2 - 4 * t + 1) * h * ma + (-6 * t2 + 6 * t) * yb + (3 * t2 - 2 * t) * h * mb) / h;
+    return (2 * t3 - 3 * t2 + 1) * ya + (t3 - 2 * t2 + t) * h * ma + (-2 * t3 + 3 * t2) * yb + (t3 - t2) * h * mb;
+  }
+
+  // ================= the world =================
+  function makeWorld(o) {
+    const PP = o.P, rng = mulberry32((o.seed * 7919 + o.intensity * 104729) >>> 0), I = INTENSITY[o.intensity];
+    const W = { o, P: PP, t: 0, rng, rngAI: mulberry32((o.seed * 31337 + 17) >>> 0), rb: makeRibbon(o.mode), events: [], fx: [], flares: [], endX: 0, endY: 0, gx: 0,
+      px: [], py: [], pz: [], kind: [], alive: [], primed: [], hot: [], ra: [], rb2: [], clusters: [], crystals: [], N: 0, aliveN: 0,
+      stats: { pistolKills: 0, chainKills: 0, flareKills: 0, friendly: 0, crystals: 0, primers: 0, volleys: 0, detonations: 0, launches: 0, explodes: 0, goodLand: 0, badLand: 0, air: 0, gapSum: 0, steps: 0, speedSum: 0 },
+      aiG: { key: null, noticeAt: 0, mis: false, misOff: V(0, 0, 0), misUntil: 0, aim: null, cluster: null, out: {} }, aiP: { scanAt: 0, vis: [], key: -1, noticeAt: 0, mis: false, out: {}, aim: null } };
+    const addPrism = (x, y, z, kind, c) => { W.px.push(x); W.py.push(y); W.pz.push(z); W.kind.push(kind); W.alive.push(1); W.primed.push(-1); W.hot.push(-1); W.ra.push(rng() * Math.PI); W.rb2.push(rng() * Math.PI); c.ids.push(W.N); W.N++; };
+    for (let ci = 0; ci < I.clusters; ci++) {
+      let cx, cy, cz, kind;
+      if (ci < 3) { cz = -(300 + ci * 300); cx = (rng() - 0.5) * 140; cy = (rng() - 0.5) * 100; kind = [0, 2, 3][ci]; }
+      else {
+        const u = rng() * 2 - 1, th = rng() * Math.PI * 2, rr = 1100 * Math.cbrt(rng()), sxy = Math.sqrt(1 - u * u);
+        cx = rr * sxy * Math.cos(th); cz = rr * sxy * Math.sin(th); cy = rr * u * 0.4;
+        const roll = rng(); kind = roll < 0.35 ? 0 : roll < 0.6 ? 1 : roll < 0.85 ? 2 : 3;
+      }
+      const c = { id: ci, c: V(cx, cy, cz), kind, ids: [], r: 30, visited: false };
+      if (kind === 0) for (let i = 0; i < 16; i++) { const a = rng() * Math.PI * 2, rr = 26 * Math.sqrt(rng()); addPrism(cx + Math.cos(a) * rr, cy - 8 + rng() * 44, cz + Math.sin(a) * rr, 0, c); }
+      else if (kind === 1) { const nx = vnorm(V(rng() - 0.5, rng() - 0.5, rng() - 0.5)), ax = vnorm(vcross(nx, V(0, 1, 0.3))), bx = vcross(nx, ax); for (let i = 0; i < 10; i++) { const a = i / 10 * Math.PI * 2; addPrism(cx + (ax.x * Math.cos(a) + bx.x * Math.sin(a)) * 24, cy + (ax.y * Math.cos(a) + bx.y * Math.sin(a)) * 24, cz + (ax.z * Math.cos(a) + bx.z * Math.sin(a)) * 24, 1, c); } }
+      else { const rows = kind === 2 ? 3 : 2, yaw = rng() * Math.PI, rx = Math.cos(yaw), rz = Math.sin(yaw); for (let r = 0; r < rows; r++) for (let k = 0; k < 6; k++) addPrism(cx + rx * (k - 2.5) * 9, cy + (r - (rows - 1) / 2) * 9, cz + rz * (k - 2.5) * 9, kind, c); }
+      W.clusters.push(c);
+    }
+    W.aliveN = W.N;
+    for (let k = 0; k < I.crystals; k++) W.crystals.push({ id: k, on: true, p: k === 0 ? V(70, 20, -650) : crystalSpot(W) });
+    // the Goby, 160 u ahead of the Pistol on a straight first stretch, so the Pistol starts on ground
+    W.g = { pos: V(0, 0, 0), f: V(0, 0, -1), u: V(0, 1, 0), r: V(1, 0, 0), speed: PP.gCruise, sm: 1, cm: 1, thr: 1, acc: 0, blockAcc: 0, blockN: 0,
+      primer: PP.gPrimerCharges, primerT: 0, flare: PP.gFlareCharges, flareT: 0, prevPrimer: false, prevFlare: false, lastPrimerAt: -9, lastFlareAt: -9 };
+    W.blocks = [];
+    ribAdd(W.rb, W.g.pos, W.g.u, W.g.f); addBlock(W, W.g.pos);
+    const start = V(0, 0, -160); layPath(W, W.g.pos, start); W.g.pos = start; gobyEnds(W);
+    if (!o.noPistol) {
+      const y0 = groundAt(W, 0);
+      W.p = { x: 0, y: y0, vx: 0, vy: 0, v: PP.pMinSpeed + 25, grounded: true, launch: PP.pLaunchCharges, launchT: 0, lastLaunchAt: -9, explodeAt: 0, ghostAt: 0, ghostUntil: -1, freeBoom: false, prevExplode: false, prevGhost: false, wpos: V(0, y0, 0) };
+      ribUnmap(W.rb, 0, y0, 0, W.p.wpos);
+    } else W.p = null;
+    return W;
+  }
+  function crystalSpot(W) {
+    const live = W.clusters.filter((c) => c.ids.some((i) => W.alive[i]) && c.kind !== 3), c = live.length ? live[Math.floor(W.rng() * live.length)] : W.clusters[0];
+    const d = vnorm(V(W.rng() - 0.5, W.rng() - 0.5, W.rng() - 0.5)); return vadd(c.c, vscl(d, 60));
+  }
+  function addBlock(W, p) {
+    const g = W.g, P = W.P, rb = W.rb, idx = g.blockN++, hinge = idx % Math.max(1, Math.round(P.tHillEvery)) === 0;
+    const x = RX(rb, rb.n - 1), sign = Math.floor(idx / Math.max(1, Math.round(P.tHillEvery))) % 2 === 0 ? 1 : -1;
+    if (hinge) { const n = rb.cx.length, H = rb.mode === 'goby' ? 0 : p.y; if (!n || x - rb.cx[n - 1] >= 2) { rb.cx.push(x); rb.cy.push(H + sign * P.tHillAmp); } }
+    W.blocks.push({ x, hinge, sign, pos: V(p.x, p.y, p.z), f: g.f, u: g.u, r: g.r });
+    if (W.blocks.length > 2600) W.blocks.shift();
+  }
+  function layPath(W, a, b) {   // the Goby moved a -> b: a ribbon sample every tSampleGap, a block every tBlockGap
+    const g = W.g, P = W.P, L = Math.sqrt((b.x - a.x) ** 2 + (b.y - a.y) ** 2 + (b.z - a.z) ** 2); if (L <= 0) return;
+    const gap = P.tSampleGap; let d = gap - g.acc;
+    while (d <= L) { const p = V(a.x + (b.x - a.x) * d / L, a.y + (b.y - a.y) * d / L, a.z + (b.z - a.z) * d / L); ribAdd(W.rb, p, g.u, g.f); g.blockAcc += gap; if (g.blockAcc >= P.tBlockGap) { g.blockAcc -= P.tBlockGap; addBlock(W, p); } d += gap; }
+    g.acc = L - (d - gap);
+  }
+  function gobyEnds(W) {   // where the Goby is on the ribbon: the end of the Pistol's ground
+    const rb = W.rb, g = W.g, n = rb.n - 1;
+    W.gx = RX(rb, n) + g.acc * (rb.mode === 'world' ? Math.hypot(g.f.x, g.f.z) : 1);
+    W.endX = W.gx; W.endY = rb.mode === 'goby' ? 0 : g.pos.y;
+  }
+
+  // ================= input: the game's dual-stick mix (InputController) =================
+  const ease = (x) => (x < 0 ? Math.cos(x * Math.PI / 4) - 1 : -(Math.cos(x * Math.PI / 4) - 1));
+  const easeInv = (e) => { e = clamp(e, -1, 1); return e >= 0 ? (4 / Math.PI) * Math.acos(1 - e) : -(4 / Math.PI) * Math.acos(1 + e); };
+  function mix(L, R) { return { yaw: ease(R.x + L.x), pitch: -ease(R.y + L.y), roll: ease(R.y - L.y), thr: (R.x - L.x + 2) / 4 }; }
+  function unmix(yaw, pitch, roll, thr) {   // what an AI presses to get these: the mix, inverted (/vessel-studio 3.2)
+    const sx = easeInv(yaw), sy = easeInv(-pitch);
+    const dx = clamp(thr * 4 - 2, -(2 - Math.abs(sx)), 2 - Math.abs(sx)), dy = clamp(easeInv(roll), -(2 - Math.abs(sy)), 2 - Math.abs(sy));
+    return { R: { x: (sx + dx) / 2, y: (sy + dy) / 2 }, L: { x: (sx - dx) / 2, y: (sy - dy) / 2 } };
+  }
+
+  // ================= one step of the world (pure: never draws, never reads a device) =================
+  function turnGoby(g, it, P, dt) {
+    if (it.yaw) { const a = -it.yaw * P.gYawRate * DEG * dt; g.f = vrot(g.f, g.u, a); g.r = vrot(g.r, g.u, a); }
+    if (it.pitch) { const a = it.pitch * P.gPitchRate * DEG * dt; g.f = vrot(g.f, g.r, a); g.u = vrot(g.u, g.r, a); }
+    if (it.roll) { const a = it.roll * P.gRollRate * DEG * dt; g.u = vrot(g.u, g.f, a); g.r = vrot(g.r, g.f, a); }
+    g.f = vnorm(g.f); g.r = vnorm(vcross(g.f, g.u)); g.u = vcross(g.r, g.f);
+  }
+  const isHot = (W, i) => W.alive[i] && (W.kind[i] === 0 || W.hot[i] > W.t);
+  const ppos = (W, i) => V(W.px[i], W.py[i], W.pz[i]);
+  function primerTarget(W) {
+    const g = W.g, P = W.P, cosMax = Math.cos(10 * DEG); let best = -1, bd = Infinity;
+    for (let i = 0; i < W.N; i++) {
+      if (!W.alive[i]) continue; const dx = W.px[i] - g.pos.x, dy = W.py[i] - g.pos.y, dz = W.pz[i] - g.pos.z, dist = Math.hypot(dx, dy, dz);
+      if (dist > P.gPrimerRange || dist < 1e-6) continue; if ((dx * g.f.x + dy * g.f.y + dz * g.f.z) / dist < cosMax) continue;
+      if (dist < bd) { bd = dist; best = i; }
+    }
+    return best;
+  }
+  function gobyStep(W, dt, inp) {
+    const g = W.g, P = W.P;
+    const it = inp.k ? inp.k : mix(inp.L || { x: 0, y: 0 }, inp.R || { x: 0, y: 0 });
+    g.thr = clamp(it.thr, 0, 1); turnGoby(g, it, P, dt);
+    const straight = 1 - Math.max(Math.abs(it.yaw), Math.abs(it.pitch));
+    const target = W.o.noStraight ? 1 : 1 + (P.gStraightMax - 1) * clamp((straight - 0.85) / 0.15, 0, 1);
+    g.sm = target > g.sm ? Math.min(target, g.sm + P.gStraightAccel / P.gCruise * dt) : Math.max(target, g.sm - P.gStraightBleed / P.gCruise * dt);
+    const gap = W.p ? W.gx - W.p.x : Infinity;
+    g.cm = W.o.noClose || !W.p ? 1 : 1 + (P.gCloseMax - 1) * clamp(1 - gap / P.gCloseRange, 0, 1);
+    g.speed = Math.max(P.gMinSpeed, P.gCruise * g.thr) * g.sm * g.cm;
+    const a = g.pos; g.pos = vadd(a, vscl(g.f, g.speed * dt)); layPath(W, a, g.pos); gobyEnds(W);
+    // the primer: an oil glob that primes what it hits and everything in its splash
+    if (inp.primer && !g.prevPrimer && g.primer > 0 && !W.o.noPrimer) {
+      const i = primerTarget(W); g.primer--; g.lastPrimerAt = W.t; W.stats.primers++;
+      const hit = i >= 0 ? ppos(W, i) : vadd(g.pos, vscl(g.f, P.gPrimerRange));
+      W.fx.push({ kind: 'oil', a: V(g.pos.x, g.pos.y, g.pos.z), b: hit, t: W.t });
+      if (i >= 0) for (let j = 0; j < W.N; j++) if (W.alive[j] && (W.px[j] - hit.x) ** 2 + (W.py[j] - hit.y) ** 2 + (W.pz[j] - hit.z) ** 2 <= P.gPrimeSplash ** 2) W.primed[j] = W.t + P.gPrimeLife;
+    }
+    g.prevPrimer = !!inp.primer;
+    // heat-seeking flares: one per hot block in range ("whistling birds")
+    if (inp.flares && !g.prevFlare && g.flare > 0) {
+      const hot = []; for (let i = 0; i < W.N; i++) if (isHot(W, i)) { const d2 = (W.px[i] - g.pos.x) ** 2 + (W.py[i] - g.pos.y) ** 2 + (W.pz[i] - g.pos.z) ** 2; if (d2 <= P.gFlareRange ** 2) hot.push([d2, i]); }
+      if (hot.length) {
+        hot.sort((a, b) => a[0] - b[0]); const n = Math.min(hot.length, Math.round(P.gFlareMax));
+        for (let j = 0; j < n; j++) { const a2 = j / n * Math.PI * 2, dir = vnorm(vadd(g.f, vadd(vscl(g.u, Math.cos(a2) * 0.7), vscl(g.r, Math.sin(a2) * 0.7)))); W.flares.push({ p: V(g.pos.x, g.pos.y, g.pos.z), v: vscl(dir, P.gFlareSpeed), tgt: hot[j][1], life: 4 }); }
+        g.flare--; g.lastFlareAt = W.t; W.stats.volleys++;
+      }
+    }
+    g.prevFlare = !!inp.flares;
+    if (g.primer < P.gPrimerCharges) { g.primerT += dt; if (g.primerT >= P.gPrimerCd) { g.primer++; g.primerT = 0; } } else g.primerT = 0;
+    if (g.flare < P.gFlareCharges) { g.flareT += dt; if (g.flareT >= P.gFlareCd) { g.flare++; g.flareT = 0; } } else g.flareT = 0;
+  }
+  function kill(W, i, by) {
+    if (!W.alive[i]) return; W.alive[i] = 0; W.aliveN--;
+    const st = W.stats; if (W.kind[i] === 3) st.friendly++; else if (by === 'flare') st.flareKills++; else if (by === 'chain') st.chainKills++; else st.pistolKills++;
+    W.fx.push({ kind: 'pop', i, t: W.t });
+    if (W.primed[i] > W.t && by !== 'flare') detonate(W, i);   // a prime is for the PISTOL to set off ("primed for explosion by the bird"); a flare only takes its one block
+  }
+  function detonate(W, i0) {   // a primed block goes up: the primed blocks it touches go with it; the ring round it turns hot
+    const P = W.P, q = [i0], c2 = P.pChain * P.pChain, h2 = P.pHotRing * P.pHotRing; W.primed[i0] = -1; W.stats.detonations++;
+    while (q.length) {
+      const i = q.pop();
+      for (let j = 0; j < W.N; j++) {
+        if (!W.alive[j]) continue; const d2 = (W.px[j] - W.px[i]) ** 2 + (W.py[j] - W.py[i]) ** 2 + (W.pz[j] - W.pz[i]) ** 2;
+        if (W.primed[j] > W.t && d2 <= c2) { W.alive[j] = 0; W.aliveN--; W.primed[j] = -1; if (W.kind[j] === 3) W.stats.friendly++; else W.stats.chainKills++; W.fx.push({ kind: 'pop', i: j, t: W.t }); q.push(j); }
+        else if (d2 <= h2) W.hot[j] = W.t + P.pHotLife;
+      }
+    }
+  }
+  const MP = {}, MP2 = {};
+  function blast(W, free) {   // the snap: in the plane to pBlastR, and off it to pBlastDepth
+    const p = W.p, P = W.P, q = p.wpos, reach = Math.hypot(P.pBlastR, P.pBlastDepth) + 30, r2 = reach * reach;
+    W.fx.push({ kind: 'boom', x: p.x, y: p.y, w: V(q.x, q.y, q.z), t: W.t, free }); W.stats.explodes++;
+    for (let i = 0; i < W.N; i++) {
+      if (!W.alive[i]) continue; if ((W.px[i] - q.x) ** 2 + (W.py[i] - q.y) ** 2 + (W.pz[i] - q.z) ** 2 > r2) continue;
+      const m = ribMap(W.rb, ppos(W, i), p.x - reach, p.x + reach, MP); if (!m.ok) continue;
+      if (Math.abs(m.d) <= P.pBlastDepth && Math.hypot(m.x - p.x, m.h - p.y) <= P.pBlastR) kill(W, i, 'blast');
+    }
+  }
+  function pistolStep(W, dt, inp) {
+    const p = W.p, P = W.P; if (!p) return;
+    const dive = clamp(inp.dive || 0, 0, 1), g = P.pGravity * (1 + (P.pDiveMul - 1) * dive);
+    if (p.grounded) {
+      groundAt(W, p.x); const m = GS, c = 1 / Math.sqrt(1 + m * m), s = m * c;
+      p.v += (-g * s - P.pDrag * p.v) * dt; if (p.v < P.pMinSpeed) p.v = P.pMinSpeed;
+      const nx = p.x + p.v * c * dt, yb = p.y + p.v * s * dt - 0.5 * g * dt * dt, yg = groundAt(W, nx);
+      if (dive < 0.5 && yb > yg + 0.05) { p.grounded = false; p.vx = p.v * c; p.vy = p.v * s; p.x = nx; p.y = yb; }
+      else { p.x = nx; p.y = yg; }
+    } else {
+      p.vy -= g * dt; p.x += p.vx * dt; p.y += p.vy * dt; W.stats.air += dt;
+      const yg = groundAt(W, p.x);
+      if (p.y <= yg) {
+        const m = GS, c = 1 / Math.sqrt(1 + m * m), s = m * c, sp = Math.hypot(p.vx, p.vy), vt = p.vx * c + p.vy * s;
+        const ang = sp > 1e-6 ? Math.acos(clamp(vt / sp, -1, 1)) / DEG : 0;
+        if (ang <= P.pGoodLand) { p.v = Math.max(vt, sp * 0.98) * 1.04; W.stats.goodLand++; } else { p.v = Math.max(P.pMinSpeed, vt * 0.55); W.stats.badLand++; }
+        p.grounded = true; p.y = yg;
+      }
+    }
+    // the Pistol cannot pass the Goby: there is no ground ahead of it yet
+    const lim = W.gx - 6;
+    if (p.x > lim) { p.x = lim; if (p.grounded) { p.v = Math.min(p.v, W.g.speed); p.y = groundAt(W, p.x); } else p.vx = Math.min(p.vx, W.g.speed); }
+    // abilities
+    if (p.launch < P.pLaunchCharges) { p.launchT += dt; if (p.launchT >= P.pLaunchCd) { p.launch++; p.launchT = 0; } } else p.launchT = 0;
+    if (inp.launch && p.launch > 0) {
+      let dx = inp.launch.dx, dy = inp.launch.dy; const L = Math.hypot(dx, dy);
+      if (L > P.pLaunchRange) { dx *= P.pLaunchRange / L; dy *= P.pLaunchRange / L; }
+      const T = Math.max(0.35, Math.hypot(dx, dy) / P.pLaunchSpeed);
+      p.vx = dx / T; p.vy = dy / T + 0.5 * P.pGravity * T; p.grounded = false; p.launch--; p.lastLaunchAt = W.t; W.stats.launches++;
+    }
+    ribUnmap(W.rb, p.x, p.y, 0, p.wpos);
+    if (inp.explode && !p.prevExplode && W.t >= p.explodeAt) { blast(W, false); p.explodeAt = W.t + P.pExplodeCd; }
+    p.prevExplode = !!inp.explode;
+    if (inp.ghost && !p.prevGhost && W.t >= p.ghostAt) { p.ghostUntil = W.t + P.pGhostTime; p.ghostAt = W.t + P.pGhostCd; }
+    p.prevGhost = !!inp.ghost;
+    // the body: a cylinder across the band, breaking everything it touches but the Goby's trail (friendly fire ON)
+    const half = P.pVision + 4, reach = half + P.pBodyR + 16, r2 = reach * reach, q = p.wpos;
+    if (W.t >= p.ghostUntil) for (let i = 0; i < W.N; i++) {
+      if (!W.alive[i]) continue; if ((W.px[i] - q.x) ** 2 + (W.py[i] - q.y) ** 2 + (W.pz[i] - q.z) ** 2 > r2) continue;
+      const m = ribMap(W.rb, ppos(W, i), p.x - reach - 30, p.x + reach + 30, MP); if (!m.ok) continue;
+      if (Math.abs(m.d) > half || Math.hypot(m.x - p.x, m.h - p.y) > P.pBodyR + 3) continue;
+      if (p.freeBoom) { p.freeBoom = false; blast(W, true); }
+      kill(W, i, 'body');
+      if (p.grounded) p.v *= 0.97; else p.vx *= 0.97;
+    }
+  }
+  function flareStep(W, dt) {
+    for (const F of W.flares) {
+      if (!W.alive[F.tgt]) {   // its target went: the nearest hot block nobody is chasing, or it fizzles
+        let best = -1, bd = 160 * 160; for (let i = 0; i < W.N; i++) if (isHot(W, i) && !W.flares.some((o) => o !== F && o.tgt === i)) { const d2 = (W.px[i] - F.p.x) ** 2 + (W.py[i] - F.p.y) ** 2 + (W.pz[i] - F.p.z) ** 2; if (d2 < bd) { bd = d2; best = i; } }
+        if (best < 0) { F.life = 0; continue; } F.tgt = best;
+      }
+      const T = ppos(W, F.tgt), sp = W.P.gFlareSpeed, want = vscl(vnorm(vsub(T, F.p)), sp), k = clamp(5 * dt, 0, 1);
+      F.v = vscl(vnorm(V(lerp(F.v.x, want.x, k), lerp(F.v.y, want.y, k), lerp(F.v.z, want.z, k))), sp);
+      F.p = vadd(F.p, vscl(F.v, dt)); F.life -= dt;
+      if ((T.x - F.p.x) ** 2 + (T.y - F.p.y) ** 2 + (T.z - F.p.z) ** 2 < 49) { kill(W, F.tgt, 'flare'); F.life = 0; }
+    }
+    W.flares = W.flares.filter((F) => F.life > 0);
+  }
+  function takeCrystal(W, c, who) {   // a crystal restocks BOTH halves (Garrett, 2026-10-14); the Pistol's own bonus on top
+    const g = W.g, P = W.P, p = W.p;
+    g.primer = P.gPrimerCharges; g.flare = P.gFlareCharges; g.primerT = g.flareT = 0;
+    if (p) { p.launch = P.pLaunchCharges; p.launchT = 0; p.explodeAt = W.t; p.ghostAt = W.t; if (who === 'pistol') p.freeBoom = true; }
+    W.stats.crystals++; W.events.push(who === 'pistol' ? 'Pistol took the crystal: cooldowns reset, a free snap on its next hit' : 'Goby took the crystal: both halves restocked');
+    c.p = crystalSpot(W);
+  }
+  function crystalStep(W) {
+    const g = W.g, p = W.p, P = W.P;
+    for (const c of W.crystals) {
+      if ((c.p.x - g.pos.x) ** 2 + (c.p.y - g.pos.y) ** 2 + (c.p.z - g.pos.z) ** 2 < 18 * 18) { takeCrystal(W, c, 'goby'); continue; }
+      if (!p) continue; const half = P.pVision + 4, q = p.wpos;
+      if ((c.p.x - q.x) ** 2 + (c.p.y - q.y) ** 2 + (c.p.z - q.z) ** 2 > (half + 30) ** 2) continue;
+      const m = ribMap(W.rb, c.p, p.x - half - 60, p.x + half + 60, MP2);
+      if (m.ok && Math.abs(m.d) <= half && Math.hypot(m.x - p.x, m.h - p.y) <= P.pBodyR + 8) takeCrystal(W, c, 'pistol');
+    }
+  }
+  function stepWorld(W, dt, inG, inP) {
+    W.t += dt; W.stats.steps++;
+    gobyStep(W, dt, inG);
+    if (W.p) pistolStep(W, dt, inP || {});
+    flareStep(W, dt); crystalStep(W);
+    if (W.p) W.stats.gapSum += W.gx - W.p.x;
+    W.stats.speedSum += W.g.speed;
+    if (W.fx.length > 80) W.fx.splice(0, W.fx.length - 80);
+  }
+
+  // ================= the AIs: inputs only (D4) =================
+  function clusterLive(W, c) { let n = 0; for (const i of c.ids) n += W.alive[i]; return n; }
+  function gobyAI(W, lvl) {
+    const g = W.g, P = W.P, B = W.aiG, D = DIFF[lvl] || DIFF.Hard, t = W.t;
+    // 1. the crystal  2. flora and fauna (and the enemy's walls)  3. lay the Pistol a path
+    let key = null, tgt = null, bc = null, bcd = P.aiCrystalSeek * P.aiCrystalSeek;
+    for (const c of W.crystals) { const d2 = (c.p.x - g.pos.x) ** 2 + (c.p.y - g.pos.y) ** 2 + (c.p.z - g.pos.z) ** 2; if (d2 < bcd) { bcd = d2; bc = c; } }
+    if (bc) { key = 'c' + bc.id + ':' + Math.round(bc.p.x); tgt = bc.p; B.state = 'crystal'; }
+    else {
+      let cl = B.cluster != null ? W.clusters[B.cluster] : null;
+      if (cl && (cl.visited || clusterLive(W, cl) < 0.3 * cl.ids.length)) cl = null;
+      if (!cl) {
+        let best = null, bs = Infinity;
+        for (const c of W.clusters) {
+          if (c.visited || c.kind === 3 || clusterLive(W, c) < 0.3 * c.ids.length) continue;
+          const v = vsub(c.c, g.pos), dist = vlen(v) || 1, ahead = vdot(v, g.f) / dist, sc = dist * (1.6 - ahead * 0.6);
+          if (sc < bs) { bs = sc; best = c; }
+        }
+        cl = best; B.cluster = best ? best.id : null;
+      }
+      if (cl) { key = 'k' + cl.id; tgt = cl.c; B.state = 'hunt'; if (vlen(vsub(g.pos, cl.c)) < cl.r + 25) cl.visited = true; }
+      else B.state = 'path';
+    }
+    if (key !== B.key) {
+      B.key = key; B.noticeAt = t + (D.late > 0 ? D.late * (0.5 + W.rngAI()) : 0);
+      B.mis = !!key && W.rngAI() < D.mis; if (B.mis) { B.misOff = vscl(vnorm(V(W.rngAI() - 0.5, W.rngAI() - 0.5, W.rngAI() - 0.5)), 80); B.misUntil = t + 6; }
+    }
+    let aim;
+    B.unnoticed = t < B.noticeAt && !!B.aim; B.misjudged = B.mis && t < B.misUntil;
+    if (B.unnoticed) aim = B.aim;
+    else if (tgt) aim = B.misjudged ? vadd(tgt, B.misOff) : tgt;
+    else aim = vadd(g.pos, vscl(g.f, 220));
+    if (vlen(g.pos) > 1300) aim = V(0, 0, 0);
+    B.aim = aim;
+    const want = vadd(aim, V(0, Math.sin(t * P.aiWeaveHz * 2 * Math.PI) * P.aiWeave, 0));   // a weave in height: hills for the Pistol
+    B.want = want;
+    const dir = vnorm(vsub(want, g.pos)), lx = vdot(dir, g.r), ly = vdot(dir, g.u), lz = vdot(dir, g.f);
+    const yaw = clamp(Math.atan2(lx, lz) * 1.6, -1, 1), pitch = clamp(Math.atan2(ly, lz) * 1.6, -1, 1), roll = clamp(g.r.y * 2, -1, 1);
+    const gap = W.p ? W.gx - W.p.x : 0, thr = gap > P.aiMaxGap ? 0.3 : 1;
+    const pt = g.primer > 0 && t - g.lastPrimerAt > 0.8 && !W.o.noPrimer ? primerTarget(W) : -1;
+    const wantPrimer = pt >= 0 && W.kind[pt] !== 3 && !(W.primed[pt] > t);
+    let hot = 0; if (g.flare > 0) for (let i = 0; i < W.N; i++) if (isHot(W, i) && (W.px[i] - g.pos.x) ** 2 + (W.py[i] - g.pos.y) ** 2 + (W.pz[i] - g.pos.z) ** 2 <= P.gFlareRange ** 2) hot++;
+    const wantFlares = hot >= 3 || (hot >= 1 && g.flare >= P.gFlareCharges && t - g.lastFlareAt > 3);
+    const out = unmix(yaw, pitch, roll, thr);
+    out.primer = wantPrimer && !B.out.primer; out.flares = wantFlares && !B.out.flares;   // a press is a press: let go between shots
+    B.out = out; return out;
+  }
+  function pistolScan(W, B) {   // what the Pistol can see: its band, plus primed blocks anywhere on its screen
+    const p = W.p, P = W.P, q = p.wpos, reach = P.pLaunchRange + P.pVision + 60, r2 = reach * reach; B.vis.length = 0;
+    for (let i = 0; i < W.N; i++) {
+      if (!W.alive[i]) continue; if ((W.px[i] - q.x) ** 2 + (W.py[i] - q.y) ** 2 + (W.pz[i] - q.z) ** 2 > r2) continue;
+      const m = ribMap(W.rb, ppos(W, i), p.x - 80, p.x + P.pLaunchRange + 60, MP); if (!m.ok) continue;
+      const primed = W.primed[i] > W.t; if (Math.abs(m.d) > P.pVision && !primed) continue;
+      B.vis.push({ i, x: m.x, h: m.h, d: m.d, primed, friendly: W.kind[i] === 3 });
+    }
+  }
+  function pistolAI(W, lvl) {
+    const p = W.p, P = W.P, B = W.aiP, D = DIFF[lvl] || DIFF.Hard, t = W.t;
+    const gy = groundAt(W, p.x), slope = GS; groundAt(W, p.x + Math.max(25, (p.grounded ? p.v : p.vx) * 0.3)); const aSlope = GS;
+    // Tiny Wings: heavy on the way down, light on the way up
+    const dive = p.grounded ? (slope < -0.02 ? 1 : 0) : ((p.vy < 0 && aSlope < -0.02) || p.y - gy > P.aiHighDive ? 1 : 0);
+    if (t >= B.scanAt) { B.scanAt = t + 0.1; pistolScan(W, B); }
+    let explode = false, launch = null, ghost = false;
+    if (t >= p.explodeAt) {
+      let n = 0, pr = 0; for (const v of B.vis) { if (v.friendly || Math.abs(v.d) > P.pBlastDepth) continue; if (Math.hypot(v.x - p.x, v.h - p.y) <= P.pBlastR * 0.9) { n++; if (v.primed) pr++; } }
+      explode = n >= 3 || pr >= 1;
+    }
+    B.aimL = null;
+    if (p.launch > 0 && t - p.lastLaunchAt > 1.2) {
+      let best = null, bs = 0;
+      for (const v of B.vis) {
+        if (v.friendly || v.x < p.x + 30 || v.x > p.x + P.pLaunchRange || Math.abs(v.h - p.y) > 160) continue;
+        let sc = v.primed ? 3 : 0; for (const o of B.vis) if (!o.friendly && Math.hypot(o.x - v.x, o.h - v.h) < 30) sc++;
+        if (sc > bs) { bs = sc; best = v; }
+      }
+      if (best && bs >= 3) {
+        if (best.i !== B.key) { B.key = best.i; B.noticeAt = t + (D.late > 0 ? D.late * (0.5 + W.rngAI()) : 0); B.mis = W.rngAI() < D.mis; B.misDy = (W.rngAI() < 0.5 ? -1 : 1) * 45; }
+        B.unnoticed = t < B.noticeAt; B.misjudged = B.mis;
+        if (!B.unnoticed) { const ay = best.h + (B.mis ? B.misDy : 0); launch = { dx: best.x - p.x, dy: ay - p.y }; B.aimL = { x: best.x, h: ay }; }
+      }
+    }
+    if (t >= p.ghostAt) for (const v of B.vis) if (v.friendly && Math.abs(v.d) <= P.pVision && v.x > p.x && v.x - p.x < 60 && Math.abs(v.h - p.y) < 25) { ghost = true; break; }
+    const out = { dive, launch, explode: explode && !B.out.explode, ghost: ghost && !B.out.ghost };
+    B.out = { explode, ghost }; return out;
+  }
+
+  // ================= headless: the scorecard =================
+  function runDuo(o) {
+    const W = makeWorld(Object.assign({ P: Object.assign({}, P), mode: S.mode, intensity: 2, seed: 1 }, o)), dt = 1 / 30, steps = Math.round((o.secs || 60) / dt);
+    for (let k = 0; k < steps; k++) stepWorld(W, dt, gobyAI(W, o.gl || 'Hard'), W.p ? pistolAI(W, o.pl || 'Hard') : null);
+    const st = W.stats;
+    return { pistol: st.pistolKills, chain: st.chainKills, flares: st.flareKills, total: st.pistolKills + st.chainKills + st.flareKills, friendly: st.friendly, crystals: st.crystals, gap: W.p ? Math.round(st.gapSum / st.steps) : null, air: W.p ? Math.round(st.air / (st.steps * dt) * 100) : null, speed: Math.round(st.speedSum / st.steps), landings: st.goodLand + '/' + (st.goodLand + st.badLand) };
+  }
+  // The unroll test (brief 4.1): fly scripted paths, build each unroll, then ask it questions that can say NO.
+  const PATHS = [
+    ['weave', (t) => ({ yaw: Math.sin(t * 0.9) * 0.8, pitch: Math.sin(t * 0.6) * 0.6, roll: 0 })],
+    ['loop', (t) => ({ yaw: 0, pitch: t > 3 && t < 3 + 360 / 80 ? 1 : 0, roll: 0 })],
+    ['climb', (t) => ({ yaw: 0, pitch: (t > 3 && t < 3 + 90 / 80) ? 1 : (t > 7 && t < 7 + 90 / 80 ? -1 : 0), roll: 0 })],
+    ['corkscrew', (t) => ({ yaw: 0.6, pitch: 0.6, roll: 0 })],
+    ['rolling', (t) => ({ yaw: 0.3, pitch: 0, roll: Math.sin(t * 0.8) })],
+    ['hairpin', (t) => ({ yaw: t > 3 && t < 3 + 180 / 80 ? 1 : 0, pitch: 0, roll: 0 })],
+    ['circling (control)', (t) => ({ yaw: 1, pitch: 0, roll: 0 })],   // every lap lies on the last: the test MUST see the fold
+  ];
+  function flyScripted(mode, fn, PP) {
+    const W = { P: PP, rb: makeRibbon(mode), o: {}, blocks: [], endX: 0, endY: 0, gx: 0 };
+    W.g = { pos: V(0, 0, 0), f: V(0, 0, -1), u: V(0, 1, 0), r: V(1, 0, 0), acc: 0, blockAcc: 0, blockN: 0 };
+    ribAdd(W.rb, W.g.pos, W.g.u, W.g.f); addBlock(W, W.g.pos);
+    const dt = 1 / 30; for (let t = 0; t < 16; t += dt) { turnGoby(W.g, fn(t), PP, dt); const a = W.g.pos; W.g.pos = vadd(a, vscl(W.g.f, 60 * dt)); layPath(W, a, W.g.pos); gobyEnds(W); }
+    return W;
+  }
+  function unrollMeasure(W, PP) {
+    const rb = W.rb, n = rb.n, rng = mulberry32(4242), m = cpCount(W);
+    let maxSlope = 0, steep = 0, total = 0;
+    const x0 = cpX(W, 0), x1 = cpX(W, m - 1);
+    for (let x = x0; x < x1; x += 2) { groundAt(W, x); const a = Math.atan(Math.abs(GS)) / DEG; maxSlope = Math.max(maxSlope, a); if (a > 60) steep++; total++; }
+    let xPerU = Infinity; for (let k = 0; k < n - 1; k++) { const l3 = rb.s[k + 1] - rb.s[k]; if (l3 > 1e-6) xPerU = Math.min(xPerU, (RX(rb, k + 1) - RX(rb, k)) / l3); }
+    let amb = 0, far = 0; const errs = [], out = {}, q = V(0, 0, 0);
+    for (let j = 0; j < 300; j++) {
+      const k = 10 + Math.floor(rng() * Math.max(1, n - 20)), x = RX(rb, Math.min(n - 1, k)), h = pathH(rb, x) + (rng() - 0.5) * 120, d = (rng() - 0.5) * 2 * PP.pVision;
+      ribUnmap(rb, x, h, d, q); ribMap(rb, q, x - 300, x + 300, out);
+      const e = Math.hypot(out.x - x, out.h - h, out.d - d); errs.push(e); if (out.amb) amb++; if (e > 5) far++;
+    }
+    errs.sort((a, b) => a - b);
+    return { maxSlope: Math.round(maxSlope), steepPct: total ? Math.round(steep / total * 100) : 0, ambPct: Math.round(amb / 3), offPct: Math.round(far / 3), err95: +errs[Math.floor(errs.length * 0.95)].toFixed(1), xPerU: +xPerU.toFixed(2) };
+  }
+  function unrollTest(mode) { const PP = Object.assign({}, P); return PATHS.map(([name, fn]) => Object.assign({ path: name }, unrollMeasure(flyScripted(mode, fn, PP), PP))); }
+
+  // ================= rendering: the Goby's 3D world =================
+  const canvas = $('c'), side = $('side'), sctx = side.getContext('2d');
+  const renderer = VesselStudioTheme.renderer(THREE, { canvas, antialias: true });
+  renderer.setPixelRatio(Math.min(2, window.devicePixelRatio || 1));
+  const scene = new THREE.Scene();
+  const cam = new THREE.PerspectiveCamera(70, 16 / 10, 0.5, 12000);
+  const ENV = VesselStudioLook.install(scene, { field: 2600, prismScale: 2.2 });
+  const mark = VesselStudioLook.marker($('viewport'));
+  const DOM = () => VesselStudioDomains.get(S.domain);
+  const enemyDom = () => VesselStudioDomains.list.find((d) => d.playable && d.key !== S.domain);
+  const MAXP = 1000, MAXB = 2600;
+  const prismMesh = new THREE.InstancedMesh(new THREE.BoxGeometry(3.5, 3.5, 9), new THREE.MeshStandardMaterial({ roughness: 0.5, metalness: 0.05, flatShading: true }), MAXP);
+  prismMesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage); prismMesh.frustumCulled = false; scene.add(prismMesh);
+  const blockMesh = new THREE.InstancedMesh(new THREE.BoxGeometry(5, 0.9, 13), new THREE.MeshStandardMaterial({ roughness: 0.4, metalness: 0.1, emissive: 0x0a2a2a, flatShading: true }), MAXB);
+  blockMesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage); blockMesh.frustumCulled = false; scene.add(blockMesh);
+  const gobyG = new THREE.Group(); scene.add(gobyG);
+  const gobyMat = new THREE.MeshStandardMaterial({ color: 0x13fff2, emissive: 0x0a5a55, roughness: 0.35, flatShading: true });
+  { const body = new THREE.Mesh(new THREE.SphereGeometry(1, 12, 8), gobyMat); body.scale.set(2.4, 2, 7.5); gobyG.add(body);
+    const tail = new THREE.Mesh(new THREE.ConeGeometry(2.6, 5, 4), gobyMat); tail.rotation.x = -Math.PI / 2; tail.position.z = 8.5; tail.scale.set(0.3, 1, 1); gobyG.add(tail);
+    const fin = new THREE.Mesh(new THREE.ConeGeometry(1.4, 4, 3), gobyMat); fin.position.set(0, 2.6, 0.5); gobyG.add(fin); }
+  const pistolMat = new THREE.MeshStandardMaterial({ color: 0xff8a3d, emissive: 0x5a2205, roughness: 0.4, transparent: true, opacity: 0.55, depthWrite: false });
+  const pistolMesh = new THREE.Mesh(new THREE.CylinderGeometry(1, 1, 1, 14, 1, true), pistolMat); scene.add(pistolMesh);
+  const ribbonGeo = new THREE.BufferGeometry(), RIBN = 180; ribbonGeo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(RIBN * 3 * 3), 3));
+  const ribbonLine = new THREE.LineSegments(ribbonGeo, new THREE.LineBasicMaterial({ color: 0xff8a3d, transparent: true, opacity: 0.7 })); ribbonLine.frustumCulled = false; scene.add(ribbonLine);
+  const flareGeo = new THREE.BufferGeometry(); flareGeo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(64 * 3), 3));
+  const flarePts = new THREE.Points(flareGeo, new THREE.PointsMaterial({ color: 0xffd28a, size: 5, sizeAttenuation: true })); flarePts.frustumCulled = false; scene.add(flarePts);
+  const fxGeo = new THREE.BufferGeometry(); fxGeo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(16 * 2 * 3), 3));
+  const fxLines = new THREE.LineSegments(fxGeo, new THREE.LineBasicMaterial({ color: 0xb98bff })); fxLines.frustumCulled = false; scene.add(fxLines);
+  const thinkGeo = new THREE.BufferGeometry(); thinkGeo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(6), 3));
+  const thinkMat = new THREE.LineBasicMaterial({ color: 0x4be38f }); const thinkLine = new THREE.Line(thinkGeo, thinkMat); thinkLine.frustumCulled = false; scene.add(thinkLine);
+  const booms = []; for (let i = 0; i < 6; i++) { const m = new THREE.Mesh(new THREE.SphereGeometry(1, 16, 10), new THREE.MeshBasicMaterial({ color: 0xffb070, transparent: true, opacity: 0.5, depthWrite: false })); m.visible = false; scene.add(m); booms.push(m); }
+  let crystalMeshes = [];
+  const dum = new THREE.Object3D(), col = new THREE.Color(), tq = new THREE.Quaternion(), tm = new THREE.Matrix4(), tv = new THREE.Vector3(), tv2 = new THREE.Vector3(), tv3 = new THREE.Vector3();
+  const KCOL = () => [new THREE.Color(0x4be38f), new THREE.Color(0xffd23f), new THREE.Color(enemyDom().hex), new THREE.Color(DOM().hex)];
+  let kcol = KCOL();
+  const C_PRIMED = new THREE.Color(0xb98bff), C_HOT = new THREE.Color(0xff6a2a);
+  function mountWorld(W) {
+    for (const c of crystalMeshes) scene.remove(c);
+    crystalMeshes = W.crystals.map(() => { const c = VesselStudioLook.crystal(0x7fffd4, 7); scene.add(c); return c; });
+    kcol = KCOL(); gobyMat.color.set(DOM().hex); gobyMat.emissive.set(new THREE.Color(DOM().hex).multiplyScalar(0.3));
+    blockMesh.material.color.set(new THREE.Color(DOM().hex).lerp(new THREE.Color(0xffffff), 0.35));
+  }
+  function drawWorld3D(W, now) {
+    const n = Math.min(W.N, MAXP);
+    for (let i = 0; i < n; i++) {
+      dum.position.set(W.px[i], W.py[i], W.pz[i]); dum.rotation.set(W.ra[i], W.rb2[i], 0); dum.scale.setScalar(W.alive[i] ? 1 : 0.0001); dum.updateMatrix(); prismMesh.setMatrixAt(i, dum.matrix);
+      if (W.primed[i] > W.t) col.copy(kcol[W.kind[i]]).lerp(C_PRIMED, 0.75); else if (W.hot[i] > W.t) col.copy(C_HOT); else col.copy(kcol[W.kind[i]]);
+      if (W.kind[i] === 0 && !(W.primed[i] > W.t)) col.lerp(C_HOT, 0.25 + 0.15 * Math.sin(now * 3 + i));   // flora is hot by default: it glows
+      prismMesh.setColorAt(i, col);
+    }
+    prismMesh.count = n; prismMesh.instanceMatrix.needsUpdate = true; if (prismMesh.instanceColor) prismMesh.instanceColor.needsUpdate = true;
+    const nb = Math.min(W.blocks.length, MAXB), b0 = W.blocks.length - nb;
+    for (let j = 0; j < nb; j++) {
+      const b = W.blocks[b0 + j];
+      tm.makeBasis(tv.set(b.r.x, b.r.y, b.r.z), tv2.set(b.u.x, b.u.y, b.u.z), tv3.set(-b.f.x, -b.f.y, -b.f.z)); tq.setFromRotationMatrix(tm);
+      if (b.hinge && W.P.tAngle) { dum.quaternion.setFromAxisAngle(tv.set(1, 0, 0), b.sign * W.P.tAngle * DEG); tq.multiply(dum.quaternion); }
+      dum.position.set(b.pos.x, b.pos.y, b.pos.z); dum.quaternion.copy(tq); dum.scale.set(b.hinge ? 1.5 : 1, 1, 1); dum.updateMatrix(); blockMesh.setMatrixAt(j, dum.matrix);
+    }
+    blockMesh.count = nb; blockMesh.instanceMatrix.needsUpdate = true;
+    const g = W.g; gobyG.position.set(g.pos.x, g.pos.y, g.pos.z);
+    tm.makeBasis(tv.set(g.r.x, g.r.y, g.r.z), tv2.set(g.u.x, g.u.y, g.u.z), tv3.set(-g.f.x, -g.f.y, -g.f.z)); gobyG.quaternion.setFromRotationMatrix(tm);
+    // the Pistol in 3D: a cylinder lying ACROSS the ribbon, as long as its band (everyone but its pilot sees this)
+    const p = W.p; pistolMesh.visible = !!p;
+    if (p) {
+      const half = W.P.pVision + 4, a = ribUnmap(W.rb, p.x, p.y, -half), b = ribUnmap(W.rb, p.x, p.y, half);
+      tv.set(b.x - a.x, b.y - a.y, b.z - a.z); const L = tv.length() || 1; tv.multiplyScalar(1 / L);
+      pistolMesh.position.set((a.x + b.x) / 2, (a.y + b.y) / 2, (a.z + b.z) / 2); pistolMesh.quaternion.setFromUnitVectors(tv2.set(0, 1, 0), tv); pistolMesh.scale.set(W.P.pBodyR, L, W.P.pBodyR);
+      pistolMat.opacity = W.t < p.ghostUntil ? 0.2 : 0.55;
+    }
+    // the Pistol's world, drawn in 3D for the lab: its ground line and the edges of its vision band
+    ribbonLine.visible = !!p && S.ribbon3d;
+    if (ribbonLine.visible) {
+      const arr = ribbonGeo.attributes.position.array, xa = p.x - W.P.pViewWidth * 0.3, xb = W.gx; let o = 0;
+      const pt = V(0, 0, 0), pt2 = V(0, 0, 0);
+      for (let lane = 0; lane < 3; lane++) {
+        const dd = lane === 0 ? 0 : (lane === 1 ? -W.P.pVision : W.P.pVision), segs = RIBN / 2;
+        for (let j = 0; j < segs; j++) {
+          const x0 = lerp(xa, xb, j / segs), x1 = lerp(xa, xb, (j + 1) / segs);
+          ribUnmap(W.rb, x0, groundAt(W, x0), dd, pt); ribUnmap(W.rb, x1, groundAt(W, x1), dd, pt2);
+          arr[o++] = pt.x; arr[o++] = pt.y; arr[o++] = pt.z; arr[o++] = pt2.x; arr[o++] = pt2.y; arr[o++] = pt2.z;
+        }
+      }
+      ribbonGeo.setDrawRange(0, o / 3); ribbonGeo.attributes.position.needsUpdate = true;
+    }
+    const fa = flareGeo.attributes.position.array; let fn = 0;
+    for (const F of W.flares) { if (fn >= 64) break; fa[fn * 3] = F.p.x; fa[fn * 3 + 1] = F.p.y; fa[fn * 3 + 2] = F.p.z; fn++; }
+    flareGeo.setDrawRange(0, fn); flareGeo.attributes.position.needsUpdate = true;
+    const la = fxGeo.attributes.position.array; let ln = 0, bi = 0;
+    for (const f of W.fx) {
+      const age = W.t - f.t;
+      if (f.kind === 'oil' && age < 0.4 && ln < 16) { la.set([f.a.x, f.a.y, f.a.z, f.b.x, f.b.y, f.b.z], ln * 6); ln++; }
+      if (f.kind === 'boom' && age < 0.5 && bi < booms.length) { const m = booms[bi++]; m.visible = true; m.position.set(f.w.x, f.w.y, f.w.z); m.scale.setScalar(Math.max(1, W.P.pBlastR * (0.3 + age / 0.5))); m.material.opacity = 0.5 * (1 - age / 0.5); }
+    }
+    for (; bi < booms.length; bi++) booms[bi].visible = false;
+    fxGeo.setDrawRange(0, ln * 2); fxGeo.attributes.position.needsUpdate = true;
+    W.crystals.forEach((c, i) => { const m = crystalMeshes[i]; if (!m) return; m.position.set(c.p.x, c.p.y, c.p.z); VesselStudioLook.spinCrystal(m, now + i); });
+    // Show AI thinking: the Goby AI's line to what it is flying for (green = target, amber = not noticed yet, red = misjudged)
+    const B = W.aiG; thinkLine.visible = S.thinking && halfIsAI('goby') && !!B.want;
+    if (thinkLine.visible) { const ta = thinkGeo.attributes.position.array; ta.set([g.pos.x, g.pos.y, g.pos.z, B.want.x, B.want.y, B.want.z]); thinkGeo.attributes.position.needsUpdate = true; thinkMat.color.set(B.misjudged ? 0xff5c6c : B.unnoticed ? 0xffb454 : 0x4be38f); }
+  }
+  let camOff = null; const orbit = { yaw: 0.7, pitch: 0.3, dist: 180 };
+  function placeCamera(W, dt, snap) {
+    const g = W.g;
+    if (S.cam === 'Free') {
+      const cp = Math.cos(orbit.pitch); cam.position.set(g.pos.x + orbit.dist * cp * Math.sin(orbit.yaw), g.pos.y + orbit.dist * Math.sin(orbit.pitch), g.pos.z + orbit.dist * cp * Math.cos(orbit.yaw));
+      cam.up.set(0, 1, 0); cam.lookAt(g.pos.x, g.pos.y, g.pos.z); return;
+    }
+    let want;
+    if (S.cam === 'Chase') want = V(-g.f.x * 44 + g.u.x * 20, -g.f.y * 44 + g.u.y * 20, -g.f.z * 44 + g.u.z * 20);   // above the trail it lays, not inside it
+    else { const h = vnorm(V(g.f.x, 0, g.f.z)); want = V(-h.x * 250, 80, -h.z * 250); }   // Follow: the Serpent's far cam distance (SerpentCameraSettingsSO followOffset z -250)
+    if (!camOff || snap) camOff = want; else { const k = clamp(dt * 5, 0, 1); camOff = V(lerp(camOff.x, want.x, k), lerp(camOff.y, want.y, k), lerp(camOff.z, want.z, k)); }
+    cam.position.set(g.pos.x + camOff.x, g.pos.y + camOff.y, g.pos.z + camOff.z);
+    if (S.cam === 'Chase') cam.up.set(g.u.x, g.u.y, g.u.z); else cam.up.set(0, 1, 0);
+    cam.lookAt(g.pos.x + g.f.x * 30, g.pos.y + g.f.y * 30, g.pos.z + g.f.z * 30);
+  }
+
+  // ================= rendering: the Pistol's sidescroller (brief 4: the unrolled ribbon, parallax depth) =================
+  const SC = { x: 0, y: 0, k: 1, w: 1, h: 1 };
+  const starRng = mulberry32(99), stars2d = []; for (let i = 0; i < 90; i++) stars2d.push({ x: starRng(), y: starRng(), z: 0.15 + starRng() * 0.5, s: starRng() < 0.15 ? 2 : 1 });
+  const pTrail = []; const vis2d = []; const MPR = {};
+  const pf = (d) => clamp(P.pParallax / Math.max(1, P.pParallax + d), 0.4, 1.8);
+  const sxo = (x, f) => SC.w / 2 + (x - SC.x) * SC.k * f, syo = (h, f) => SC.h / 2 - (h - SC.y) * SC.k * f;
+  function sideCam(W, dt, snap) {
+    const p = W.p; SC.w = side.width; SC.h = side.height; SC.k = SC.w / P.pViewWidth;
+    const tx = p.x + 0.2 * P.pViewWidth, gy = groundAt(W, p.x), ty = Math.max(p.y, gy) + 0.08 * SC.h / SC.k;
+    SC.x = tx; SC.y = snap ? ty : lerp(SC.y, ty, clamp(dt * 4, 0, 1));
+  }
+  function sideList(W) {
+    const p = W.p, q = p.wpos, half = P.pViewWidth * 0.7, r2 = (half + 260) ** 2; vis2d.length = 0;
+    for (let i = 0; i < W.N; i++) {
+      if (!W.alive[i]) continue; if ((W.px[i] - q.x) ** 2 + (W.py[i] - q.y) ** 2 + (W.pz[i] - q.z) ** 2 > r2) continue;
+      const m = ribMap(W.rb, ppos(W, i), p.x - half, p.x + half, MPR); if (!m.ok) continue;
+      const primed = W.primed[i] > W.t, off = Math.abs(m.d) > P.pVision; if (off && !primed) continue;
+      vis2d.push({ i, x: m.x, h: m.h, d: off ? 0 : m.d, faint: off, primed, hot: isHot(W, i), amb: m.amb });
+    }
+    vis2d.sort((a, b) => b.d - a.d);
+  }
+  function drawPrism2D(W, v, alpha) {
+    const f = pf(v.d), x = sxo(v.x, f), y = syo(v.h, f); if (x < -30 || x > SC.w + 30 || y < -30 || y > SC.h + 30) return;
+    const w = Math.max(2, 3.5 * SC.k * f), h = Math.max(4, 9 * SC.k * f), k = W.kind[v.i];
+    sctx.save(); sctx.translate(x, y); sctx.rotate(W.ra[v.i]); sctx.globalAlpha = alpha;
+    sctx.fillStyle = v.primed ? '#b98bff' : ['#4be38f', '#ffd23f', enemyDom().color, DOM().color][k];
+    sctx.fillRect(-w / 2, -h / 2, w, h);
+    if (v.hot) { sctx.strokeStyle = '#ff6a2a'; sctx.lineWidth = 1.5; sctx.strokeRect(-w / 2 - 2, -h / 2 - 2, w + 4, h + 4); }
+    if (k === 3) { sctx.strokeStyle = '#ffffff'; sctx.lineWidth = 1; sctx.setLineDash([2, 2]); sctx.strokeRect(-w / 2, -h / 2, w, h); sctx.setLineDash([]); }
+    sctx.restore();
+  }
+  function drawSide(W, dt, snap) {
+    const p = W.p; const w = side.width, h = side.height; if (!w || !h) return;
+    const g = sctx, dpr = side.width / Math.max(1, side.clientWidth);
+    const grad = g.createLinearGradient(0, 0, 0, h); grad.addColorStop(0, '#0d1030'); grad.addColorStop(1, '#2a1240'); g.fillStyle = grad; g.fillRect(0, 0, w, h);
+    if (!p) { g.fillStyle = '#8e95bf'; g.font = (14 * dpr) + 'px sans-serif'; g.fillText('No Pistol in this run', 12 * dpr, 24 * dpr); return; }
+    sideCam(W, dt, snap); sideList(W);
+    g.fillStyle = '#ffffff'; for (const s of stars2d) { const x = ((s.x * w - SC.x * SC.k * s.z * 0.2) % w + w) % w, y = ((s.y * h + SC.y * SC.k * s.z * 0.2) % h + h) % h; g.globalAlpha = 0.25 + s.z; g.fillRect(x, y, s.s * dpr, s.s * dpr); }
+    g.globalAlpha = 1;
+    for (const v of vis2d) if (!v.faint && v.d > 0) drawPrism2D(W, v, clamp(1 - v.d / (P.pVision * 2.2), 0.35, 1));
+    // the ground: the hinge curve, from where the Pistol's world starts to the Goby
+    const x0 = Math.max(cpX(W, 0), SC.x - w / 2 / SC.k), x1 = Math.min(W.gx, SC.x + w / 2 / SC.k);
+    if (x1 > x0) {
+      const dom = DOM().color, step = 3 * dpr / SC.k;
+      g.beginPath(); g.moveTo(sxo(x0, 1), h); for (let x = x0; x <= x1; x += step) g.lineTo(sxo(x, 1), syo(groundAt(W, x), 1)); g.lineTo(sxo(x1, 1), syo(groundAt(W, x1), 1)); g.lineTo(sxo(x1, 1), h); g.closePath();
+      const gg = g.createLinearGradient(0, 0, 0, h); gg.addColorStop(0, dom + '55'); gg.addColorStop(1, '#05060c'); g.fillStyle = gg; g.fill();
+      g.beginPath(); for (let x = x0; x <= x1; x += step) { const sx = sxo(x, 1), sy = syo(groundAt(W, x), 1); if (x === x0) g.moveTo(sx, sy); else g.lineTo(sx, sy); } g.strokeStyle = dom; g.lineWidth = 2 * dpr; g.stroke();
+      for (const b of W.blocks) {   // the trail's blocks sit on the curve; the hinges tilt up and down in turn
+        if (b.x < x0 || b.x > x1) continue; const y = groundAt(W, b.x), a = Math.atan(GS) + (b.hinge ? b.sign * P.tAngle * DEG : 0);
+        g.save(); g.translate(sxo(b.x, 1), syo(y, 1)); g.rotate(-a); g.fillStyle = b.hinge ? '#ffffff' : dom; g.globalAlpha = b.hinge ? 0.9 : 0.6; const bw = Math.max(4, 13 * SC.k), bh = Math.max(2, 1.8 * SC.k); g.fillRect(-bw / 2, -bh / 2, bw, bh); g.restore();
+      }
+    }
+    // the Goby, at the end of the ground (or an arrow to it)
+    const gxS = sxo(W.gx, 1), gyS = syo(W.endY, 1);
+    g.fillStyle = DOM().color;
+    if (gxS < w - 10 * dpr) { g.beginPath(); g.ellipse(gxS, gyS, 9 * dpr, 4.5 * dpr, 0, 0, Math.PI * 2); g.fill(); g.beginPath(); g.moveTo(gxS - 8 * dpr, gyS); g.lineTo(gxS - 15 * dpr, gyS - 5 * dpr); g.lineTo(gxS - 15 * dpr, gyS + 5 * dpr); g.fill(); }
+    else { const yy = clamp(gyS, 14 * dpr, h - 14 * dpr); g.beginPath(); g.moveTo(w - 4 * dpr, yy); g.lineTo(w - 14 * dpr, yy - 7 * dpr); g.lineTo(w - 14 * dpr, yy + 7 * dpr); g.fill(); g.font = (11 * dpr) + 'px sans-serif'; g.textAlign = 'right'; g.fillText('GOBY ' + Math.round(W.gx - p.x) + ' u', w - 18 * dpr, yy + 4 * dpr); g.textAlign = 'left'; }
+    // the Pistol: the cylinder end on, with its claw and a tiny trail
+    if (!snap) { pTrail.push([p.x, p.y]); if (pTrail.length > 26) pTrail.shift(); } else pTrail.length = 0;
+    g.strokeStyle = '#ff8a3d88'; g.lineWidth = 1.5 * dpr; g.beginPath(); pTrail.forEach(([x, y], i) => { const sx = sxo(x, 1), sy = syo(y, 1); if (i) g.lineTo(sx, sy); else g.moveTo(sx, sy); }); g.stroke();
+    const px = sxo(p.x, 1), py = syo(p.y, 1), pr = Math.max(7 * dpr, P.pBodyR * SC.k * 1.3), ghost = W.t < p.ghostUntil;
+    g.globalAlpha = ghost ? 0.4 : 1; g.fillStyle = '#ff8a3d'; g.beginPath(); g.arc(px, py, pr, 0, Math.PI * 2); g.fill();
+    g.fillStyle = '#7a2e08'; g.beginPath(); g.arc(px, py, pr * 0.55, 0, Math.PI * 2); g.fill();
+    g.strokeStyle = '#ffd0a8'; g.lineWidth = 2 * dpr; g.beginPath(); g.arc(px + pr * 0.9, py - pr * 0.2, pr * 0.6, -1.2, 1.2); g.stroke();
+    if (ghost) { g.setLineDash([3 * dpr, 3 * dpr]); g.beginPath(); g.arc(px, py, pr + 4 * dpr, 0, Math.PI * 2); g.stroke(); g.setLineDash([]); }
+    if (p.freeBoom) { g.strokeStyle = '#ffd23f'; g.beginPath(); g.arc(px, py, pr + 7 * dpr, 0, Math.PI * 2); g.stroke(); }
+    g.globalAlpha = 1;
+    for (const v of vis2d) if (!v.faint && v.d <= 0) drawPrism2D(W, v, 0.75);
+    for (const v of vis2d) if (v.faint) drawPrism2D(W, Object.assign({}, v, { d: 0 }), 0.4);   // primed, off the band: seen faintly
+    for (const f of W.fx) { const age = W.t - f.t; if (f.kind === 'boom' && age < 0.5) { g.strokeStyle = f.free ? '#ffd23f' : '#ffb070'; g.lineWidth = 3 * dpr; g.globalAlpha = 1 - age / 0.5; g.beginPath(); g.arc(sxo(f.x, 1), syo(f.y, 1), P.pBlastR * SC.k * (0.4 + age / 0.5 * 0.6), 0, Math.PI * 2); g.stroke(); g.globalAlpha = 1; } }
+    // the launch aim (yours) and the AI's (Show AI thinking)
+    const aim = aimNow(W);
+    if (aim) {
+      let dx = aim.dx, dy = aim.dy; const L = Math.hypot(dx, dy); if (L > P.pLaunchRange) { dx *= P.pLaunchRange / L; dy *= P.pLaunchRange / L; }
+      const T = Math.max(0.35, Math.hypot(dx, dy) / P.pLaunchSpeed), vx = dx / T, vy = dy / T + 0.5 * P.pGravity * T;
+      g.fillStyle = '#ffffff'; for (let s = 0; s <= 1.0001; s += 0.08) { const tt = s * T; g.fillRect(sxo(p.x + vx * tt, 1) - dpr, syo(p.y + vy * tt - 0.5 * P.pGravity * tt * tt, 1) - dpr, 2 * dpr, 2 * dpr); }
+      g.strokeStyle = '#ffffff'; g.beginPath(); g.arc(sxo(p.x + dx, 1), syo(p.y + dy, 1), 8 * dpr, 0, Math.PI * 2); g.stroke();
+    }
+    const B = W.aiP;
+    if (S.thinking && halfIsAI('pistol') && B.aimL) { g.strokeStyle = B.misjudged ? '#ff5c6c' : B.unnoticed ? '#ffb454' : '#4be38f'; g.lineWidth = 1.5 * dpr; g.beginPath(); g.moveTo(px, py); g.lineTo(sxo(B.aimL.x, 1), syo(B.aimL.h, 1)); g.stroke(); }
+    // the Pistol's own HUD
+    g.font = '600 ' + (12 * dpr) + 'px sans-serif'; g.fillStyle = '#e9ecff';
+    const cd = (at) => (W.t >= at ? 'ready' : (at - W.t).toFixed(1) + ' s');
+    const lines = ['PISTOL · ' + (halfIsAI('pistol') ? 'AI ' + levelOf('pistol') : 'you') + ' · ' + Math.round(p.grounded ? p.v : Math.hypot(p.vx, p.vy)) + ' u/s · ' + (p.grounded ? 'ground' : 'air'),
+      'Launch ' + p.launch + '/' + P.pLaunchCharges + ' · Snap ' + cd(p.explodeAt) + ' · Ghost ' + (W.t < p.ghostUntil ? 'on' : cd(p.ghostAt)) + (p.freeBoom ? ' · FREE SNAP' : '')];
+    const inset = $('viewport').classList.contains('v-goby') && S.views === 'inset';
+    const hx = inset ? 8 : (S.views === 'split' ? 12 : 232), hy = inset ? 16 : (S.views === 'split' ? 20 : 58);   // clear of the board and the pills when it is the main view
+    lines.forEach((s, i) => g.fillText(s, hx * dpr, hy * dpr + i * 15 * dpr));
+  }
+
+  // ================= input =================
+  const keys = new Set(); let kbThr = 1, lastHuman = 0;
+  const touched = () => { lastHuman = performance.now(); };
+  window.addEventListener('keydown', (e) => {
+    if (e.target && /INPUT|TEXTAREA|SELECT/.test(e.target.tagName)) return;
+    keys.add(e.code); touched();
+    if (e.code === 'Enter') playPause(); else if (e.code === 'KeyP') togglePause(); else if (e.code === 'KeyR') stopRace(); else if (e.code === 'KeyC') cycleCamera(); else if (e.code === 'KeyV') { S.views = S.views === 'inset' ? 'split' : 'inset'; $('selViews').value = S.views; applyViews(); save(); }
+    else if (e.code === 'Digit1' || e.code === 'Digit2') swap();
+    if (['Space', 'ArrowUp', 'ArrowDown'].includes(e.code)) e.preventDefault();
+  });
+  window.addEventListener('keyup', (e) => keys.delete(e.code));
+  window.addEventListener('blur', () => keys.clear());
+  const readPad = () => { const ps = navigator.getGamepads ? navigator.getGamepads() : []; for (const p of ps) if (p && p.connected) return p; return null; };
+  const dz = (v) => (Math.abs(v) < 0.12 ? 0 : v);
+  let padPrev = {}, padAim = null, pendingLaunch = null;
+  // the Pistol's launch aim: a drag on its view (mouse, or a finger on the phone's right half)
+  const drag = { on: false, x: 0, y: 0 };
+  function sideToWorld(cx, cy) { const r = side.getBoundingClientRect(), dpr = side.width / Math.max(1, r.width), sx = (cx - r.left) * dpr, sy = (cy - r.top) * dpr; return { x: SC.x + (sx - SC.w / 2) / SC.k, h: SC.y - (sy - SC.h / 2) / SC.k }; }
+  side.addEventListener('pointerdown', (e) => { if (S.fly !== 'pistol' || playMode) return; drag.on = true; drag.x = e.clientX; drag.y = e.clientY; touched(); try { side.setPointerCapture(e.pointerId); } catch (err) { /* synthetic */ } });
+  side.addEventListener('pointermove', (e) => { if (drag.on) { drag.x = e.clientX; drag.y = e.clientY; touched(); } });
+  side.addEventListener('pointerup', () => { if (!drag.on || !W || !W.p) { drag.on = false; return; } const a = sideToWorld(drag.x, drag.y); pendingLaunch = { dx: a.x - W.p.x, dy: a.h - W.p.y }; drag.on = false; });
+  function aimNow(W) {
+    if (S.fly !== 'pistol' || halfIsAI('pistol') || !W.p) return null;
+    if (drag.on) { const a = sideToWorld(drag.x, drag.y); return { dx: a.x - W.p.x, dy: a.h - W.p.y }; }
+    if (touch.aim) { const r = side.getBoundingClientRect(), k = 1 / SC.k * (side.width / Math.max(1, r.width)); return { dx: (touch.aim.x - touch.aim.x0) * k * 2.2, dy: -(touch.aim.y - touch.aim.y0) * k * 2.2 }; }
+    if (padAim) return padAim;
+    return null;
+  }
+  // 3D free camera: drag to orbit, wheel to zoom
+  let orbDrag = null;
+  canvas.addEventListener('pointerdown', (e) => { if (S.cam !== 'Free' || playMode) return; orbDrag = { x: e.clientX, y: e.clientY }; });
+  window.addEventListener('pointermove', (e) => { if (!orbDrag) return; orbit.yaw -= (e.clientX - orbDrag.x) * 0.006; orbit.pitch = clamp(orbit.pitch + (e.clientY - orbDrag.y) * 0.005, -1.4, 1.4); orbDrag = { x: e.clientX, y: e.clientY }; });
+  window.addEventListener('pointerup', () => { orbDrag = null; });
+  canvas.addEventListener('wheel', (e) => { if (S.cam !== 'Free') return; orbit.dist = clamp(orbit.dist * (e.deltaY > 0 ? 1.1 : 0.9), 30, 1500); e.preventDefault(); }, { passive: false });
+  // touch play
+  const touch = { used: false, L: { x: 0, y: 0, id: null, x0: 0, y0: 0 }, R: { x: 0, y: 0, id: null, x0: 0, y0: 0 }, dive: false, aim: null, primer: false, flares: false, boom: false, ghost: false };
+  function bindZone(zone, key, ring) {
+    const el = $(zone), ts = $(ring);
+    el.addEventListener('pointerdown', (e) => {
+      touch.used = true; touched(); const st = touch[key]; st.id = e.pointerId; const r = el.getBoundingClientRect(); st.x0 = e.clientX; st.y0 = e.clientY; st.x = st.y = 0;
+      ts.style.left = (e.clientX - r.left) + 'px'; ts.style.top = (e.clientY - r.top) + 'px'; ts.classList.remove('idle');
+      if (S.fly === 'pistol') { if (key === 'L') touch.dive = true; else touch.aim = { x0: e.clientX, y0: e.clientY, x: e.clientX, y: e.clientY }; }
+      try { el.setPointerCapture(e.pointerId); } catch (err) { /* synthetic */ }
+    });
+    el.addEventListener('pointermove', (e) => { const st = touch[key]; if (st.id !== e.pointerId) return; st.x = clamp((e.clientX - st.x0) / 56, -1, 1); st.y = clamp(-(e.clientY - st.y0) / 56, -1, 1); ts.firstElementChild.style.transform = 'translate(' + st.x * 30 + 'px,' + -st.y * 30 + 'px)'; if (touch.aim && key === 'R') { touch.aim.x = e.clientX; touch.aim.y = e.clientY; } touched(); });
+    const up = (e) => {
+      const st = touch[key]; if (st.id !== e.pointerId) return; st.id = null; st.x = st.y = 0; ts.classList.add('idle'); ts.firstElementChild.style.transform = '';
+      if (key === 'L') touch.dive = false;
+      if (key === 'R' && touch.aim && W && W.p) { const a = aimNow(W); if (a) pendingLaunch = a; touch.aim = null; }
+    };
+    el.addEventListener('pointerup', up); el.addEventListener('pointercancel', up);
+  }
+  bindZone('tzL', 'L', 'tsL'); bindZone('tzR', 'R', 'tsR');
+  const pulse = (k) => () => { touch[k] = true; touched(); };
+  $('tPrimer').addEventListener('click', pulse('primer')); $('tFlare').addEventListener('click', pulse('flares')); $('tBoom').addEventListener('click', pulse('boom')); $('tGhost').addEventListener('click', pulse('ghost'));
+  function humanGoby(dt) {
+    const g = readPad();
+    if (playMode && touch.used) { const o = { L: { x: touch.L.x, y: touch.L.y }, R: { x: touch.R.x, y: touch.R.y }, primer: touch.primer, flares: touch.flares }; touch.primer = touch.flares = false; return o; }
+    if (g && (g.axes.some((a) => Math.abs(a) > 0.12) || g.buttons.some((b) => b && b.pressed))) { touched(); return { L: { x: dz(g.axes[0]), y: -dz(g.axes[1]) }, R: { x: dz(g.axes[2]), y: -dz(g.axes[3]) }, primer: !!(g.buttons[7] && g.buttons[7].value > 0.5), flares: !!(g.buttons[6] && g.buttons[6].value > 0.5) }; }
+    const k = (c) => (keys.has(c) ? 1 : 0);
+    if (keys.has('ArrowUp')) kbThr = Math.min(1, kbThr + dt * 0.6); if (keys.has('ArrowDown')) kbThr = Math.max(0, kbThr - dt * 0.6);
+    return { k: { yaw: k('KeyD') - k('KeyA'), pitch: k('KeyS') - k('KeyW'), roll: k('KeyE') - k('KeyQ'), thr: kbThr }, primer: keys.has('KeyF'), flares: keys.has('KeyG') };
+  }
+  function humanPistol() {
+    const g = readPad(); let launch = pendingLaunch; pendingLaunch = null;
+    if (playMode && touch.used) { const o = { dive: touch.dive ? 1 : 0, launch, explode: touch.boom, ghost: touch.ghost }; touch.boom = touch.ghost = false; return o; }
+    if (g && (g.axes.some((a) => Math.abs(a) > 0.12) || g.buttons.some((b) => b && b.pressed))) {
+      touched(); const rt = g.buttons[7] ? g.buttons[7].value : 0;
+      if (rt > 0.5) padAim = { dx: dz(g.axes[2]) * P.pLaunchRange, dy: -dz(g.axes[3]) * P.pLaunchRange };
+      else if (padAim) { if (Math.hypot(padAim.dx, padAim.dy) > 10) launch = padAim; padAim = null; }
+      return { dive: Math.max(g.buttons[0] && g.buttons[0].pressed ? 1 : 0, g.buttons[6] ? g.buttons[6].value : 0), launch, explode: !!(g.buttons[2] && g.buttons[2].pressed), ghost: !!(g.buttons[1] && g.buttons[1].pressed) };
+    }
+    if (keys.has('KeyF') && !padPrev.f) launch = { dx: 0.7 * P.pLaunchRange, dy: 0.45 * P.pLaunchRange };
+    padPrev.f = keys.has('KeyF');
+    return { dive: keys.has('Space') || keys.has('KeyS') || keys.has('ArrowDown') ? 1 : 0, launch, explode: keys.has('KeyE'), ghost: keys.has('KeyG') };
+  }
+  function padSwapCheck() {
+    const g = readPad(); if (!g) return;
+    const l = !!(g.buttons[14] && g.buttons[14].pressed), r = !!(g.buttons[15] && g.buttons[15].pressed), st = !!(g.buttons[9] && g.buttons[9].pressed);
+    if ((l && !padPrev.l) || (r && !padPrev.r)) swap();
+    if (st && !padPrev.st) playPause();
+    padPrev.l = l; padPrev.r = r; padPrev.st = st;
+  }
+
+  // ================= who flies what (the duo contract: one human, the AI on the other half) =================
+  let idleAI = false;
+  const levelOf = (half) => (half === S.fly ? (S.you === 'You' ? 'Hard' : S.you) : S.partner);
+  const halfIsAI = (half) => half !== S.fly || S.you !== 'You' || idleAI;
+  function inputsFor(W, dt) {
+    const ig = halfIsAI('goby') ? gobyAI(W, levelOf('goby')) : humanGoby(dt);
+    const ip = W.p ? (halfIsAI('pistol') ? pistolAI(W, levelOf('pistol')) : humanPistol()) : null;
+    return [ig, ip];
+  }
+  let lastSwapAt = -9;
+  function swap() {   // the arena pilot swap, unified (PilotSwap: 0.75 s cooldown); nothing about either half resets
+    const now = performance.now() / 1000; if (now - lastSwapAt < P.swapCd) return; lastSwapAt = now;
+    S.fly = S.fly === 'goby' ? 'pistol' : 'goby'; $('selFly').value = S.fly; keys.clear(); padAim = null; pendingLaunch = null; drag.on = false; touch.aim = null; touch.dive = false;
+    if (W) { W.aiG.out = {}; W.aiP.out = {}; W.g.prevPrimer = W.g.prevFlare = false; if (W.p) { W.p.prevExplode = W.p.prevGhost = false; } W.swaps = (W.swaps || 0) + 1; }
+    applyViews(); save(); say('You fly the ' + (S.fly === 'goby' ? 'Goby' : 'Pistol') + '; the AI took the ' + (S.fly === 'goby' ? 'Pistol' : 'Goby'));
+  }
+  function applyViews() {
+    const vp = $('viewport'), split = S.views === 'split';
+    vp.classList.toggle('split', split); vp.classList.toggle('v-goby', S.fly === 'goby'); vp.classList.toggle('v-pistol', S.fly === 'pistol');
+    document.body.classList.toggle('fly-goby', S.fly === 'goby'); document.body.classList.toggle('fly-pistol', S.fly === 'pistol');
+    canvas.className = split || S.fly === 'goby' ? 'vmain' : 'vinset'; side.className = split || S.fly === 'pistol' ? 'vmain' : 'vinset';
+    lastW = lastH = 0;
+  }
+
+  // ================= run flow =================
+  let W = null, race = 'ready', paused = false, seedN = lsGet(LS + '.seed', 1), manualClock = false;
+  function newRace() {
+    W = makeWorld({ P, mode: S.mode, intensity: S.course, seed: seedN, domain: S.domain });
+    mountWorld(W); idleAI = false; race = 'ready'; paused = false; feed.length = 0; renderFeed();
+    resize(); drawWorld3D(W, 0); placeCamera(W, 0, true); drawSide(W, 0, true);
+    $('ovTitle').textContent = 'Duo run, intensity ' + S.course + ' · ' + MODES[S.mode]; $('startBtn').textContent = 'Start'; $('overlay').hidden = false;
+  }
+  function startRace() { if (race === 'finished') newRace(); race = 'running'; paused = false; $('overlay').hidden = true; lastHuman = performance.now(); canvas.focus({ preventScroll: true }); }
+  function stopRace() { newRace(); }
+  function togglePause() { if (race !== 'running') return; paused = !paused; say(paused ? 'Paused' : 'Resumed'); }
+  function playPause() { if (race === 'running') togglePause(); else startRace(); }
+  function finishRace() {
+    race = 'finished'; const st = W.stats;
+    runs.unshift({ n: seedN, mode: S.mode, fly: S.you === 'You' ? S.fly : 'AI ' + S.you, pistol: st.pistolKills, chain: st.chainKills, flares: st.flareKills, friendly: st.friendly, crystals: st.crystals, swaps: W.swaps || 0 });
+    runs.length = Math.min(runs.length, 40); lsSet(LS + '.runs', runs); renderRuns();
+    seedN++; lsSet(LS + '.seed', seedN);
+    $('ovTitle').textContent = 'Run over · ' + (st.pistolKills + st.chainKills + st.flareKills) + ' blocks';
+    $('ovText').textContent = 'Pistol ' + st.pistolKills + ' · chain ' + st.chainKills + ' · flares ' + st.flareKills + ' · friendly ' + st.friendly + ' · crystals ' + st.crystals + ' · swaps ' + (W.swaps || 0) + '.';
+    $('startBtn').textContent = 'Next world';
+    if (S.autoRestart) setTimeout(() => { if (race === 'finished') { newRace(); startRace(); } }, 1500); else $('overlay').hidden = false;
+  }
+  function stepOnce(dt) {
+    const [ig, ip] = inputsFor(W, dt);
+    stepWorld(W, dt, ig, ip);
+    if (W.t >= P.runSecs && race === 'running') finishRace();
+  }
+  function cycleCamera() { S.cam = S.cam === 'Chase' ? 'Follow' : S.cam === 'Follow' ? 'Free' : 'Chase'; racePanel.set('camera', S.cam, true); save(); }
+  const feed = [];
+  function say(m) { feed.unshift(m); feed.length = Math.min(feed.length, 4); renderFeed(); }
+  function renderFeed() { const el = $('feed'); el.textContent = ''; for (const m of feed) { const d = document.createElement('div'); d.textContent = m; el.appendChild(d); } }
+
+  // ================= the rail =================
+  const elx = (t, c, x) => { const e = document.createElement(t); if (c) e.className = c; if (x != null) e.textContent = x; return e; };
+  const raceKey = { course: 'course', you: 'you', camera: 'cam', speed: 'speed', thinking: 'thinking', autoRestart: 'autoRestart' };
+  const racePanel = StudioRacePanel.mount($('racePanel'), {
+    gameHost: $('intensityPanel'), sceneHost: $('scenePanel'),
+    courses: [1, 2, 3, 4].map((v) => ({ v, label: 'I' + v, note: INTENSITY[v].note })),
+    value: { course: S.course, you: S.you, rivals: ['Off', 'Off', 'Off'], camera: S.cam, speed: S.speed, thinking: S.thinking, autoRestart: S.autoRestart },
+    supports: { rivals: 'Round 1 flies one duo seat. Rival duos and rival hulls come in a later round.', thinking: true, autoRestart: true },
+    levelNote: 'Your hull = the half you fly: you, or the AI at a level. Hard is the skilled pilot; Medium and Easy notice each new target late and misjudge some (SkimRaceDifficulty.asset). Partner AI (Game Config) sets the other half.',
+    onChange: (key, v) => { if (!(key in raceKey)) return; S[raceKey[key]] = v; save(); if (key === 'course') newRace(); },
+  });
+  const selMode = $('selMode'); for (const k in MODES) { const o = elx('option', null, MODES[k]); o.value = k; selMode.appendChild(o); }
+  selMode.value = S.mode; selMode.addEventListener('change', () => { S.mode = selMode.value; save(); newRace(); });
+  $('selViews').value = S.views; $('selViews').addEventListener('change', (e) => { S.views = e.target.value; applyViews(); save(); });
+  $('chkRibbon').checked = S.ribbon3d; $('chkRibbon').addEventListener('change', (e) => { S.ribbon3d = e.target.checked; save(); });
+  $('chkIdle').checked = S.idleHold; $('chkIdle').addEventListener('change', (e) => { S.idleHold = e.target.checked; save(); });
+  $('selFly').value = S.fly; $('selFly').addEventListener('change', (e) => { if (e.target.value !== S.fly) { lastSwapAt = -9; swap(); } });
+  $('selPartner').value = S.partner; $('selPartner').addEventListener('change', (e) => { S.partner = e.target.value; save(); });
+  const selDom = $('selDomain'); for (const d of VesselStudioDomains.list.filter((x) => x.playable)) { const o = elx('option', null, d.name); o.value = d.key; o.style.color = d.color; selDom.appendChild(o); }
+  selDom.value = S.domain; selDom.addEventListener('change', (e) => { S.domain = e.target.value; save(); newRace(); });
+  // SPEC sliders: shipped vs yours always visible (underlined when changed; the header counts them)
+  const specRows = {};
+  for (const [grp, key, lo, hi, step, label, tip] of SPEC) {
+    const host = $('spec' + grp); if (!host) continue;
+    const lab = elx('label', null, label), inp = document.createElement('input'), out = elx('output');
+    inp.type = 'range'; inp.min = lo; inp.max = hi; inp.step = step; inp.value = P[key]; inp.id = 'sp-' + key; lab.htmlFor = inp.id;
+    const tipText = () => tip + ' Shipped ' + SHIPPED[key] + ' · yours ' + P[key] + '.';
+    lab.title = inp.title = tipText();
+    inp.addEventListener('input', () => { P[key] = +inp.value; syncSpec(); save(); });
+    host.append(lab, inp, out); specRows[key] = { lab, inp, out, tipText };
+  }
+  function syncSpec() {
+    let n = 0;
+    for (const key in specRows) { const r = specRows[key], d = P[key] !== SHIPPED[key]; if (d) n++; r.inp.value = P[key]; r.out.textContent = String(+(+P[key]).toFixed(2)); r.lab.classList.toggle('diff', d); r.lab.title = r.inp.title = r.tipText(); }
+    $('diffChip').hidden = !n; $('diffChip').textContent = n + ' setting' + (n === 1 ? '' : 's') + ' differ from shipped';
+  }
+  document.querySelectorAll('[data-reset]').forEach((b) => b.addEventListener('click', () => { for (const row of SPEC) if (row[0] === b.dataset.reset) P[row[1]] = SHIPPED[row[1]]; syncSpec(); save(); }));
+  let runs = lsGet(LS + '.runs', []); if (!Array.isArray(runs)) runs = [];
+  function renderRuns() {
+    const tb = $('runs'); tb.textContent = '';
+    if (!runs.length) { const tr = elx('tr'), td = elx('td', null, 'No runs yet. Finish a run to add one.'); td.colSpan = 9; td.style.color = 'var(--muted)'; tr.appendChild(td); tb.appendChild(tr); return; }
+    for (const r of runs.slice(0, 12)) { const tr = elx('tr'); for (const v of ['#' + r.n, MODES[r.mode] ? r.mode : '', r.fly, r.pistol, r.chain, r.flares, r.friendly, r.crystals, r.swaps]) tr.appendChild(elx('td', null, String(v))); tb.appendChild(tr); }
+  }
+  // ---- scorecard ----
+  let lastScore = lsGet(LS + '.score', null);
+  function renderUnroll(all) {
+    const t = $('unrollTbl'); t.textContent = ''; if (!all) return;
+    const hd = elx('tr'); for (const h of ['Path', 'Max slope °', '> 60° %', 'Ambiguous %', 'Lands elsewhere %', 'Error p95 u', 'x per u (min)']) hd.appendChild(elx('th', null, h)); t.appendChild(hd);
+    for (const mode in all) {
+      const g = elx('tr', 'grp'), td = elx('td', null, MODES[mode]); td.colSpan = 7; g.appendChild(td); t.appendChild(g);
+      for (const r of all[mode]) {
+        const tr = elx('tr'), ctrl = /control/.test(r.path); tr.appendChild(elx('td', null, r.path));
+        const cells = [[r.maxSlope, r.maxSlope > 75], [r.steepPct, r.steepPct > 5], [r.ambPct, ctrl ? r.ambPct === 0 : r.ambPct > 5], [r.offPct, ctrl ? r.offPct === 0 : r.offPct > 5], [r.err95, r.err95 > 5], [r.xPerU, r.xPerU < 0.3]];
+        for (const [v, bad] of cells) tr.appendChild(elx('td', bad ? 'bad' : '', String(v)));
+        t.appendChild(tr);
+      }
+    }
+  }
+  const VARIANTS = [['Duo, Hard / Hard', { gl: 'Hard', pl: 'Hard' }], ['Rookie: Easy / Easy', { gl: 'Easy', pl: 'Easy' }], ['No Pistol (baseline)', { gl: 'Hard', noPistol: true }], ['No primer', { gl: 'Hard', pl: 'Hard', noPrimer: true }], ['No closeness speed', { gl: 'Hard', pl: 'Hard', noClose: true }]];
+  function renderDuo(rows) {
+    const t = $('duoTbl'); t.textContent = ''; if (!rows) return;
+    const hd = elx('tr'); for (const h of ['Duo runs (I' + rows.intensity + ', ' + rows.secs + ' s, median of ' + rows.seeds + ')', 'Total', 'Pistol', 'Chain', 'Flares', 'Friendly', 'Crystals', 'Gap u', 'Air %', 'Goby u/s', 'Smooth landings']) hd.appendChild(elx('th', null, h)); t.appendChild(hd);
+    for (const r of rows.rows) { const tr = elx('tr'); tr.appendChild(elx('td', null, r.name)); for (const k of ['total', 'pistol', 'chain', 'flares', 'friendly', 'crystals', 'gap', 'air', 'speed', 'landings']) tr.appendChild(elx('td', null, r[k] == null ? '·' : String(r[k]))); t.appendChild(tr); }
+  }
+  const med = (a) => { const v = a.slice().sort((x, y) => x - y); return v[Math.floor(v.length / 2)]; };
+  function duoScorecard(intensity, secs, seeds) {
+    return { intensity, secs, seeds: seeds.length, rows: VARIANTS.map(([name, o]) => {
+      const rs = seeds.map((seed) => runDuo(Object.assign({ intensity, secs, seed }, o))), r = { name };
+      for (const k of ['total', 'pistol', 'chain', 'flares', 'friendly', 'crystals', 'gap', 'air', 'speed']) r[k] = rs[0][k] == null ? null : med(rs.map((x) => x[k]));
+      r.landings = rs[0].landings; return r;
+    }) };
+  }
+  $('unrollBtn').addEventListener('click', () => {
+    $('unrollBtn').disabled = true; $('scoreNote').textContent = 'Flying six scripted paths in each unroll…';
+    setTimeout(() => { const all = {}; for (const m in MODES) all[m] = unrollTest(m); renderUnroll(all); lastScore = Object.assign({}, lastScore, { unroll: all }); lsSet(LS + '.score', lastScore); $('unrollBtn').disabled = false;
+      $('scoreNote').textContent = 'Unroll test: 300 points per path, each placed in the Pistol\'s band and mapped back. "Lands elsewhere" = it comes back more than 5 u from where it was put. Red = a problem; circling is the control (each lap lies on the last): it MUST show ambiguity, or the test cannot see a fold.'; }, 30);
+  });
+  $('duoBtn').addEventListener('click', () => {
+    $('duoBtn').disabled = true; $('scoreNote').textContent = 'Flying every variant on three seeds…';
+    setTimeout(() => { const rows = duoScorecard(S.course, 60, [11, 22, 33]); renderDuo(rows); lastScore = Object.assign({}, lastScore, { duo: rows }); lsSet(LS + '.score', lastScore); $('duoBtn').disabled = false;
+      $('scoreNote').textContent = 'Duo runs: both halves flown by the AI, 60 s each, the median of three seeds, in the unroll picked in Scene Config. Compare the duo with No Pistol (what the Goby does alone) and the rookie row.'; }, 30);
+  });
+  if (lastScore) { renderUnroll(lastScore.unroll); renderDuo(lastScore.duo); }
+  // ---- decisions: the shared log when the viewer offers one, else this browser ----
+  let db = null, me = '', remote = [], localLog = lsGet(LS + '.log', []); if (!Array.isArray(localLog)) localLog = [];
+  function settingsDiff() { const d = {}; for (const k in SHIPPED) if (P[k] !== SHIPPED[k]) d[k] = P[k]; return { mode: S.mode, views: S.views, diff: d }; }
+  function renderLog() {
+    const el = $('log'); el.textContent = ''; const all = remote.concat(localLog).sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt))).filter((d) => d.studio === 'goby');
+    if (!all.length) { el.appendChild(elx('p', 'note', 'No decisions yet.')); return; }
+    for (const d of all.slice(0, 40)) { const e = elx('div', 'e'), b = elx('b', null, d.topic + ': '); e.append(b, document.createTextNode(d.choice + (d.note ? ' · ' + d.note : '') + ' (' + String(d.createdAt).slice(0, 16).replace('T', ' ') + (d.localId ? ', this browser' : '') + ')')); el.appendChild(e); }
+  }
+  $('dRecord').addEventListener('click', async () => {
+    const choice = $('dChoice').value.trim(); if (!choice) { $('dChoice').focus(); return; }
+    const doc = { studio: 'goby', topic: $('dTopic').value, choice, note: $('dNote').value.trim(), settings: settingsDiff(), createdAt: new Date().toISOString(), by: me };
+    $('dChoice').value = ''; $('dNote').value = '';
+    if (db) { try { await db.collection('decisions').add(doc); return; } catch (e) { /* fall back to this browser */ } }
+    doc.localId = 'l' + Date.now(); localLog.unshift(doc); lsSet(LS + '.log', localLog); renderLog();
+  });
+  $('dCopy').addEventListener('click', () => { const t = JSON.stringify(remote.concat(localLog).filter((d) => d.studio === 'goby'), null, 1); try { navigator.clipboard.writeText(t); say('Log copied'); } catch (e) { say('Copy blocked: select the log by hand'); } });
+  (async function connect() {
+    const st = $('logStatus'), c = window.claude;
+    if (!c || typeof c.use !== 'function') { st.textContent = 'Kept in this browser (Copy log to send it). The shared log is in the claude.ai artifact.'; renderLog(); return; }
+    try { db = await c.use('db'); } catch (e) { db = null; }
+    try { const u = await c.use('user'); if (u && u.id) me = (await u.id()) || ''; } catch (e) { me = ''; }
+    if (!db) { st.textContent = 'Kept in this browser (Copy log to send it).'; renderLog(); return; }
+    st.textContent = 'Shared log: saved with the studio, readable by Claude.';
+    db.collection('decisions').orderBy('createdAt', 'desc').limit(300).onSnapshot((snap) => { remote = snap.docs.map((d) => Object.assign({ id: d.id }, d.data())); renderLog(); }, () => { st.textContent = 'Shared log unavailable; kept in this browser.'; db = null; renderLog(); });
+    renderLog();
+  })();
+
+  // ---- the stage HUD ----
+  function pips(el, n, max, label) { if (el.childElementCount !== max + 1) { el.textContent = ''; el.appendChild(elx('span', null, label)); for (let i = 0; i < max; i++) el.appendChild(elx('i')); } for (let i = 0; i < max; i++) el.children[i + 1].className = i < n ? 'on' : ''; }
+  function hud() {
+    if (!W) return; const g = W.g, st = W.stats;
+    $('gSpeed').textContent = Math.round(g.speed) + ' u/s' + (halfIsAI('goby') ? ' · AI ' + levelOf('goby') : ' · you');
+    $('gClose').textContent = '×' + g.cm.toFixed(2) + (W.p ? ' · gap ' + Math.round(W.gx - W.p.x) + ' u' : ''); $('mClose').style.width = ((g.cm - 1) / Math.max(0.01, P.gCloseMax - 1) * 100) + '%';
+    $('gStraight').textContent = '×' + g.sm.toFixed(2); $('mStraight').style.width = ((g.sm - 1) / Math.max(0.01, P.gStraightMax - 1) * 100) + '%';
+    pips($('pPrimer'), g.primer, P.gPrimerCharges, 'Primer'); pips($('pFlare'), g.flare, P.gFlareCharges, 'Flares');
+    const b = $('board'); b.textContent = '';
+    const hd = elx('div', 'hd'); hd.append(elx('span', null, 'I' + S.course + ' · ' + Math.max(0, P.runSecs - W.t).toFixed(0) + ' s left'), elx('span', null, S.mode)); b.appendChild(hd);
+    for (const [k, v] of [['Pistol', st.pistolKills], ['Chain (primed)', st.chainKills], ['Flares', st.flareKills], ['Friendly broken', st.friendly], ['Crystals', st.crystals]]) { const r = elx('div', 'row'); r.append(elx('span', null, k), elx('b', null, String(v))); b.appendChild(r); }
+    const wf = $('whoFlies'); wf.textContent = ''; wf.append(document.createTextNode('You fly the '), elx('b', null, S.fly === 'goby' ? 'Goby' : 'Pistol'), document.createTextNode(S.you !== 'You' ? ' (AI ' + S.you + ')' : ' · 1 / 2 or D-pad ← → to swap'));
+    $('holding').hidden = !idleAI;
+    $('camTag').textContent = S.cam + ' camera (3D)';
+    const live = race === 'running' && !paused;
+    $('tpPlay').textContent = live ? '❚❚ Pause' : '▶ Play'; $('tpPlay').classList.toggle('on', live); $('tpPlay').setAttribute('aria-pressed', paused ? 'true' : 'false');
+    $('tpStop').disabled = race === 'ready'; $('tStart').textContent = live ? '❚❚ Pause' : '▶ Play';
+    while (W.events.length) say(W.events.shift());
+  }
+  function markCrystal() {
+    if (!W || canvas.className !== 'vmain' || race === 'finished') { mark.hide(); return; }
+    let best = null, bd = Infinity; for (const c of W.crystals) { const d = vlen(vsub(c.p, W.g.pos)); if (d < bd) { bd = d; best = c; } }
+    if (!best) { mark.hide(); return; } cam.updateMatrixWorld();
+    mark.set(cam, tv.set(best.p.x, best.p.y, best.p.z), 'Crystal · ' + Math.round(bd) + ' u', '#7fffd4', canvas.clientWidth, canvas.clientHeight);
+  }
+
+  // ================= sizing and the loop =================
+  let lastW = 0, lastH = 0, lastSW = 0, lastSH = 0;
+  function resize() {
+    const w = canvas.clientWidth || 960, h = canvas.clientHeight || 600;
+    if (w !== lastW || h !== lastH) { lastW = w; lastH = h; renderer.setSize(w, h, false); cam.aspect = w / h; cam.updateProjectionMatrix(); }
+    const dpr = Math.min(2, window.devicePixelRatio || 1), sw = Math.round((side.clientWidth || 320) * dpr), sh = Math.round((side.clientHeight || 200) * dpr);
+    if (sw !== lastSW || sh !== lastSH) { lastSW = sw; lastSH = sh; side.width = sw; side.height = sh; }
+  }
+  window.addEventListener('resize', resize);
+  let last = performance.now(), hudT = 0, acc = 0;
+  const STEP = 1 / 60;
+  function frame(now) {
+    const dt = Math.min(0.05, Math.max(0, (now - last) / 1000)); last = now; resize(); padSwapCheck();
+    if (W && race === 'running' && !paused && !manualClock) {
+      idleAI = S.idleHold && S.you === 'You' && now - lastHuman > 3000;
+      acc += dt * S.speed; let n = 0;
+      while (acc >= STEP && n < 12) { stepOnce(STEP); acc -= STEP; n++; if (race !== 'running') break; }
+      if (n >= 12) acc = 0;
+    }
+    ENV.update(dt);
+    if (W) { drawWorld3D(W, now / 1000); placeCamera(W, dt, false); markCrystal(); drawSide(W, dt, false); }
+    renderer.render(scene, cam);
+    hudT += dt; if (hudT > 0.1) { hudT = 0; hud(); }
+    requestAnimationFrame(frame);
+  }
+
+  // ================= phone play (D9, D26: detected, never asked) =================
+  let playMode = false;
+  function setPlayMode(on) {
+    playMode = on; document.body.classList.toggle('play', on);
+    if (on) { try { const v = $('viewport'), req = v.requestFullscreen || v.webkitRequestFullscreen; if (req && document.fullscreenElement == null) { const pr = req.call(v, { navigationUI: 'hide' }); if (pr && pr.catch) pr.catch(() => {}); } } catch (e) { /* needs a gesture */ } }
+    lastW = lastH = lastSW = lastSH = 0; resize();
+  }
+  $('playBtn').addEventListener('click', () => setPlayMode(true)); $('tExit').addEventListener('click', () => setPlayMode(false));
+  $('touch').addEventListener('pointerdown', () => { if (playMode && !document.fullscreenElement) { try { const v = $('viewport'), req = v.requestFullscreen || v.webkitRequestFullscreen; if (req) { const pr = req.call(v, { navigationUI: 'hide' }); if (pr && pr.catch) pr.catch(() => {}); } } catch (e) { /* not allowed */ } } });
+  const PLATFORM = VesselStudioIDE.platform();
+  $('tStart').addEventListener('click', playPause); $('tBack').addEventListener('click', stopRace); $('tCam').addEventListener('click', cycleCamera); $('tSwap').addEventListener('click', () => { lastSwapAt = -9; swap(); });
+  $('tpPlay').addEventListener('click', playPause); $('tpStop').addEventListener('click', stopRace); $('startBtn').addEventListener('click', startRace); $('resetBtn').addEventListener('click', () => { seedN++; lsSet(LS + '.seed', seedN); newRace(); });
+
+  // ================= the editor layout (D8, D21, D27) =================
+  const IDE = VesselStudioIDE.build({
+    key: 'goby-studio-ide-v1', host: document.querySelector('.layout'), stage: $('viewport'),
+    right: [['scene', 'Scene Config', [$('pnScene')]], ['game', 'Game Config', [$('pnIntensity'), $('pnDuo')]], ['ai', 'AI Config', [$('pnAI')]],
+      ['style', 'Play Style Config', [$('pnStyle')]], ['input', 'Input', [$('pnControls')]], ['others', 'Vessel Config', [$('pnGoby'), $('pnPistol'), $('pnTrail')]]],
+    bottom: [['score', 'Scorecard', [$('pnScore')]], ['runs', 'Runs', [$('pnRuns')]], ['decisions', 'Decisions', [$('pnDecisions')]], ['about', 'About', [document.querySelector('header .sub'), $('pnAbout')]]],
+    railW: 390, dockH: 240, winSize: { score: [900, 420], runs: [700, 360] },
+    onLayout: () => { lastW = lastH = lastSW = lastSH = 0; },
+  });
+  VesselStudioIDE.sectionPicker(document.querySelector('.vside-pane[data-tab="others"]'), 'goby-studio', 'vessel');
+  applyViews(); syncSpec(); renderRuns(); renderLog(); newRace(); hud();
+  requestAnimationFrame((t) => { last = t; frame(t); });
+  if (PLATFORM.device === 'phone') setPlayMode(true);
+
+  // ================= the test surface (D14, /labmaker 2.2) =================
+  function tick(dt, n) { dt = dt || STEP; n = n || 1; if (race === 'ready') { race = 'running'; $('overlay').hidden = true; } for (let i = 0; i < n && race === 'running'; i++) stepOnce(dt); drawWorld3D(W, W.t); placeCamera(W, dt, false); drawSide(W, dt, false); hud(); }
+  function reset(seed) { if (seed != null) seedN = seed; newRace(); race = 'running'; $('overlay').hidden = true; }
+  function runBatch() { return { unroll: unrollTest(S.mode).map((r) => [r.path, r.maxSlope, r.ambPct, r.offPct]), duo: runDuo({ intensity: 2, seed: 3, secs: 20, gl: 'Hard', pl: 'Hard' }) }; }
+  function score() { return lastScore || runBatch(); }
+  const hook = {
+    get race() { return race; },
+    state: () => ({ race, t: W ? +W.t.toFixed(3) : 0, fly: S.fly, you: S.you, mode: S.mode, intensity: S.course, gx: +W.gx.toFixed(1), pistol: W.p ? { x: +W.p.x.toFixed(1), y: +W.p.y.toFixed(1), grounded: W.p.grounded, launch: W.p.launch } : null, goby: { speed: +W.g.speed.toFixed(1), primer: W.g.primer, flare: W.g.flare }, stats: Object.assign({}, W.stats), alive: W.aliveN, hinges: W.rb.cx.length, swaps: W.swaps || 0 }),
+    get aiOn() { return S.you !== 'You'; }, set aiOn(v) { S.you = v ? 'Hard' : 'You'; racePanel.set('you', S.you, true); save(); },
+    set: (k, v) => { S[k] = v; save(); applyViews(); newRace(); },
+    get manualClock() { return manualClock; }, set manualClock(v) { manualClock = !!v; },
+    startRace, stopRace, swap: () => { lastSwapAt = -9; swap(); }, tick, reset, score, runBatch, runDuo, unrollTest, duoScorecard,
+    ribbon: { makeRibbon, ribAdd, ribMap, ribUnmap, groundAt }, SHIPPED, SPEC, P, PLATFORM, ide: IDE,
+  };
+  window.__gobyStudio = hook; window.__lab = hook;
+})();
+</script>
+</html>
+<script src="sync.js"></script>

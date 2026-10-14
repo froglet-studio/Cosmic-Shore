@@ -1,6 +1,7 @@
 # Goby & Pistol: the first duo vessel
 
-**Status:** design brief, round 2. Nothing is built. **The first build step is a lab** (§9).
+**Status:** design brief, round 2. Nothing is in the game. **The lab is built** (round 1, §9):
+`Docs/Studios/VesselStudio/goby.html`, a page of the one Vessel Studio artifact.
 
 - The brief was given by Garrett on 2026-10-14 as "the Flier & Bird".
 - In round 2 (the same day) Garrett answered the open questions and asked for a symbiotic pair of
@@ -200,6 +201,40 @@ lab must have:
   blocks and flares, and the speed-from-closeness gauge.
 - **Parallax depth layers** and the Pistol's vision band, with prisms distorted into them.
 
+### 9.1 Round 1 (2026-10-14): what the lab models and what it found
+
+**Built:**
+- both views at once: the Goby in 3D and the Pistol's sidescroller, as main + inset or split;
+- the arena swap's keys (D-pad left / right, 1 / 2, 0.75 s), with an AI on the half you are not flying;
+- the three unrolls of §4.1 as a Scene Config choice: **World up** (an exact vertical curtain), **Arc length**, and
+  **Goby's up** (the ribbon twists with the Goby's roll);
+- the ground: a Catmull-Rom curve through every Nth trail block (a hinge), alternately lifted and dropped;
+- parallax depth layers, prisms drawn where the unroll puts them, and primed blocks shown faintly off the band;
+- the Pistol: dive, launch (drag, or RT + right stick), the snap that reaches off the plane, ghost, the crystal bonus;
+- the Goby: primer, heat, heat-seeking flares, the straight boost and the closeness speed, with a gauge for both.
+
+Everything without a game number is lab-only and says so on the page. The Unroll test and the Duo runs are the
+scorecard. Tables: `Docs/Studios/VesselStudio/README.md` § "Goby & Pistol, round 1".
+
+**Readings the lab had to make** (all [read], confirm in the lab):
+- How hinges make hills: every 4th block is a hinge, alternately ±26 u, and the hinges are the ground's control points.
+- The Pistol cannot pass the Goby: there is no ground ahead of it yet. This is one answer to open question 8.
+- Only the Pistol detonates a prime; a flare takes only its own block (see Found 5).
+
+**Found:**
+1. The **Goby's-up** unroll held best on six of seven flights, and the pair scored most in it (124 blocks in 60 s,
+   against 88 for Arc length and 42 for World up).
+2. **World up** folds on an ordinary weave: the Goby's turn radius (~54 u) is close to the 45 u vision band, so the
+   inside edge of the band crosses itself. A third of the test points came back somewhere else.
+3. **Every unroll fails on a corkscrew** (81-99% ambiguous): a helix stacks its passes. Loops fold too (15-35%).
+   This is a design question for Garrett: limit the Goby's flight, or accept a lossy Pistol world on those paths.
+4. The **pair beats the Goby alone** in every unroll (42 / 88 / 124 against 32).
+5. The first "No Pistol" baseline scored chain kills, because the Goby's flares set off primes. This is fixed in the
+   lab. Keep it in mind for the design too: a half that can cash the other half's payoff alone erases the duo.
+6. The **closeness speed hurt** the pair in World up (42 with it, 119 without): the Pistol pushes the Goby past its
+   targets.
+7. The AI levels do not separate yet. Rookie scores level with Hard in World up, so the Hard AIs are not yet skilled.
+
 ## 10. Where each mechanic starts in code
 
 See `../ANCHORS.md`. In short:
@@ -237,3 +272,5 @@ the line it settled.
   - The swap is the arena's D-pad left/right, unified.
   - A lab with both halves together comes first.
   - Claude proposed the clades: Goby (Flier) and Pistol shrimp (Bird).
+- 2026-10-14, round 1 of the lab built (§9.1). Nothing decided yet: Garrett picks the unroll in the lab (its
+  Decisions tab writes to the shared log).

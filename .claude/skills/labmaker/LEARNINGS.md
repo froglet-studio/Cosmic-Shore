@@ -821,3 +821,10 @@ Entries are grouped by family; within a family, the newest goes at the bottom.
   before gating on it.
 - Evidence: `Tools/Build/converter_round5_harness` section 9; `OMNI_COMBINE_LAB.md` revision 8.
 - Promoted: no
+
+### L-STU-64 — A baseline that can reach the payoff another way measures nothing; and a negative control must be shown to fire
+- Lab: Goby & Pistol Studio (`Docs/Studios/VesselStudio/goby.html`) · Branch: `cece/sharp-tesla-j0kd7z` · By: session 01KpzppLj3ETY5c6jEP7HuyA · Date: 2026-10-14
+- What happened: two yardstick bugs, both caught only because the table looked odd. (1) The "No Pistol" baseline (the Goby alone) scored 17 CHAIN kills, a column meant to be the Pistol's alone: the Goby's flares were killing primed blocks, and every kill of a primed block set off the chain. The baseline was not "without the Pistol"; it was "with a Pistol built into the flares", and the pair's advantage was understated by the whole column. (2) The Unroll test's first negative control, a hairpin, reported 0% ambiguous in every unroll: its two legs part along the ribbon faster than the screen window that the mapping searches, so the fold it was meant to show never entered the search. A flat circle (every lap lies on the last) reads 100%.
+- Do instead: for every baseline, list the paths by which the effect it removes could still happen, and close them (a flare now takes only its own block; a prime is the Pistol's to detonate). Run every negative control once and check that it FIRES before reading any other row; a control that passes clean proves only that the test cannot see the fault.
+- Evidence: `goby.html` `kill()` (`by !== 'flare'`), `PATHS` (`circling (control)`); README § "Goby & Pistol, round 1".
+- Promoted: no

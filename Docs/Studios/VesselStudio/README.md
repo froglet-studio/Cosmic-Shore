@@ -11,6 +11,7 @@ they say so and link to the artifact. Plan: `../VESSEL_STUDIO_PLAN.md`.
 |---|---|
 | `index.html` | The hub: one bay per studio, where each platform stands, and the **studio agent** (Ask, and Development requests). |
 | `squirrel.html` | **Squirrel Studio, round 2: AI sim lab** (2026-10-09). The racer on its shipped numbers, on the game's four Skim Race courses (I1–I4, read from `MinigameSkimRace.unity`). AI Squirrels at Easy / Medium / Hard (Hard is a simplified stand-in for `SkimRaceDriver`; Easy and Medium add `SkimRaceHandicap`'s two mistakes), your own hull flown by you or by the AI, chase / follow / free camera, 1–4× speed, auto-restart, "Show AI thinking", and a headless scorecard (every difficulty × course, three seeds). Six play-style types over its four element levels. |
+| `goby.html` | **Goby & Pistol Studio, duo lab round 1** (2026-10-14). The first **duo vessel** (`.claude/skills/duo-vessel`): one squad slot, two craft, one human with the AI on the other half, swapped with the arena pilot swap's keys (D-pad left / right, 1 / 2). The **Goby** flies the 3D world like the Serpent (its numbers, cited), lays a trail whose hinge blocks are the control points of the Pistol's ground, primes blocks and fires heat-seeking flares. The **Pistol** plays a 2D sidescroller unrolled from the Goby's path (three unrolls to compare: World up, Arc length, Goby's up), with parallax depth layers, Tiny Wings dive and launch, a snap explosion that reaches off the plane, and ghosting. Both views on screen at once (main + inset, or split). Scorecard: the **Unroll test** (seven scripted flights, 300 round-trip points each, with a circling control that must fold) and **Duo runs** against baselines (no Pistol, no primer, no closeness speed) and a rookie row. On the `__lab` contract (`window.__lab` = `window.__gobyStudio`). Brief: `.claude/skills/duo-vessel/references/designs/goby-and-pistol.md`. |
 | `studios.json` + `previews/` | **The catalog and the card** (`/vessel-studio` D35): every studio, and its hub card as text (`chip`, `summary`, `spec`, `cardActions`, `fleet`) and as a picture (`previews/<id>.png`, baked from the hub's live canvas by `.claude/skills/vessel-studio/bake_previews.cjs`). Amoebius's VESSEL STUDIO page and Unity's studio home draw the hub's cards from it; `parity_gate.py` fails when it and `index.html` differ. |
 | `studio-look.js` | **The Vessel Studio look** (`/vessel-studio` D19): the Stoat's sky, stars, lights and drifting prism field, the crystal and the screen marker, as one file every studio loads. Listed under `shared` in `studios.json`. |
 | `studio-ide.js` | **The Vessel Studio editor layout** (`/vessel-studio` D8): the game view in the middle, every panel a tab in the right or bottom dock, pop-out windows, splitters, no page scroll. Listed under `shared` in `studios.json`. |
@@ -89,6 +90,40 @@ Read it as relative. The studio pilot finishes every course at every level withi
 on I1–I3 (it is faster on I4, where the game's pilot is conservative). Its difficulty gaps are smaller
 than the game's (game: Medium +14–19%, Easy +23–54%). It plans only ~100 u ahead, so a late notice rarely
 costs it, and it recovers from a missed crystal in ~2 s where the game's pilot loses ~10. The page says so.
+
+### Goby & Pistol, round 1 measured 2026-10-14
+
+**Unroll test** (seven scripted flights at 60 u/s for 16 s; 300 points each placed in the Pistol's band, unrolled and
+mapped back; "elsewhere" = back more than 5 u from where it was put; "steep" = ground over 60°):
+
+| Flight | World up: steep / ambiguous / elsewhere | Arc length | Goby's up |
+|---|---|---|---|
+| weave | 14% / 14% / 34% | 5% / 15% / 29% | 0% / 2% / 11% |
+| loop | 7% / 28% / 26% | 6% / 35% / 26% | 0% / 15% / 20% |
+| climb (to vertical and back) | 5% / 0% / 0% (x per u 0.03: a wall) | 8% / 0% / 0% | 0% / 1% / 3% |
+| corkscrew | 15% / 99% / 77% | 8% / 81% / 22% | 0% / 90% / 36% |
+| rolling | 10% / 0% / 0% | 5% / 0% / 0% | 0% / 0% / 0% |
+| hairpin | 0% / 0% / 2% | 0% / 0% / 2% | 0% / 0% / 2% |
+| circling (control) | 0% / **100%** / 33% | 0% / **100%** / 33% | 0% / **100%** / 33% |
+
+**Duo runs** (I2, 60 s, both halves AI, median of seeds 11 / 22 / 33; blocks destroyed):
+
+| Variant | World up | Arc length | Goby's up |
+|---|---|---|---|
+| Duo, Hard / Hard | 42 | 88 | 124 |
+| Rookie, Easy / Easy | 42 | 60 | 108 |
+| No Pistol (the Goby alone) | 32 | 32 | 32 |
+| No primer | 42 | 79 | 91 |
+| No closeness speed | 119 | 117 | 126 |
+
+Read it as relative. **Found:** (1) the Goby's-up unroll holds best on every flight but the corkscrew, and the pair scores
+most in it; World up folds on a weave because the Goby's turn radius (~54 u) is close to the 45 u vision band, so the band's
+inside edge crosses itself. (2) Every unroll fails on a corkscrew: a helix stacks its passes on top of one another. (3)
+The closeness speed hurts the pair in World up (42 against 119 without it): the Goby is pushed past its targets. (4) The
+AI levels do not separate yet (the rookie row is level with Hard on World up): the duo AIs are not yet skilled, so D24 is
+**not met**. (5) The first "No Pistol" baseline scored 17 chain kills: the Goby's flares were setting off primed blocks, so
+the Goby needed no Pistol. A flare now takes only its one block; a prime is the Pistol's to detonate (the brief's "primed
+for explosion by the bird").
 
 ## In Amoebius
 

@@ -23,6 +23,8 @@ duo teaches something new, it is added here (§8), so the skill grows with each 
   - `goby-and-pistol.md`: the **Goby**, a Serpent-like path-layer with primer and flares, and the
     **Pistol**, a pistol shrimp that plays a warped 2D sidescroller unrolled from the Goby's path.
     (Garrett first called them the Flier and the Bird.)
+    Its lab is `Docs/Studios/VesselStudio/goby.html` (round 1, 2026-10-14). It is the template for
+    the next duo's lab.
 - **`references/ANCHORS.md`**: the code a duo plugs into (seats, the arena pilot swap, input,
   phone flip, cameras, trails and the spline, crystals), and the list of pieces that **do not
   exist yet**. Re-verify an anchor before relying on it. Anchors drift.
@@ -221,6 +223,13 @@ enum before taking a value.
 - **A held button across a swap.** Release held inputs on every swap.
 - **A second swap.** `PilotSwap` is THE swap. Extend its ring and handshake; never write another.
 - **A shared meter with no owner.** Element levels do not replicate across owners (§3.3).
+- **A half that can cash the other half's payoff alone.** In the Goby & Pistol lab's first round, the
+  Goby's flares set off the primes meant for the Pistol. The "Goby alone" baseline then scored chain
+  kills, and the duo's reason to exist went missing from the table. For each payoff, name the half that
+  cashes it, and check the baseline without that half scores none of it.
+- **An unrolled world folds where the path crosses itself.** If one half's world is built from the other
+  half's path (the Pistol's sidescroller), loops, helices and turns tighter than the band fold it. Measure
+  this with an unroll test that has a control which must fold (a flat circle), before tuning anything else.
 
 ## 7. Glossary
 
