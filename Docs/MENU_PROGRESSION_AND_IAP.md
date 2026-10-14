@@ -41,6 +41,7 @@ In `Menu_Main.unity` the `ScreenSwitcher.disabledScreens` list = **{ PORT }** (A
 The grid-based Hangar (`HangarVesselGridCard` + `HangarVesselDetailView` + `VesselUnlockSystem`) **originated on `development` and is already present on this branch** — the two branches share no history, but the Hangar C# is ~90–97% identical. The only behavioral difference has been restored:
 
 - `HangarScreen.RefreshGridCards()` now **re-populates** the grid on unlock (cards re-sort unlocked-first), matching development, instead of only flipping the lock overlay in place.
+- **Superseded 2026-10-14:** the grid is now the style-B three-zone Hangar (`Docs/MENU_REDESIGN_B.md` §11). `HangarScreen.RebuildList()` keeps the same contract: it re-populates on unlock, owned first. `HangarVesselGridCard` is no longer used by Menu_Main.
 
 Do **not** remove `HangarScreen : IScreen` or the `_lastLoadFrame` double-load guard — those are required by this branch's `ScreenSwitcher` and are not present on development for that reason.
 

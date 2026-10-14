@@ -33,7 +33,7 @@ Legend: `Planned` ▸ `Mockup` ▸ `Mockup approved` ▸ `Built` ▸ `Approved i
 |---|---|---|---|---|
 | 0 | Component kit: T7 sprites, Chakra Petch SemiBold (T5), type roles + `TabularText` (T6), theme components, kit prefabs, kit test scene | Built | `MenuKit.dc.html` | `3b36c361`, `fe108889`, `b0918296`, `908fc2d7`, `4cba49ee`, `e932eaf2` + docs |
 | 1 | Top nav (`Safe Area/NavBar`) | Approved in editor (2026-10-14) | `Main.dc.html` (interactive), `TopNavHover.dc.html`, `TopNavLocked.dc.html` on the Menu Redesign B canvas | `8d6d2acb`, `99ef3ccd` + docs |
-| 2 | Hangar screen: grid, detail and the spend-crystals panel | Mockup | `Hangar.dc.html` (interactive), `HangarLocked`, `HangarSpend`, `HangarShort`, `HangarNoArt`, `HangarNotes` on the Menu Redesign B canvas | |
+| 2 | Hangar screen: grid, detail and the spend-crystals panel | Built (mockup approved 2026-10-14; awaiting in-editor approval) | `Hangar.dc.html` (interactive), `HangarLocked`, `HangarSpend`, `HangarShort`, `HangarNoArt`, `HangarNotes` on the Menu Redesign B canvas | `661a7f1f`, `7987b896`, `96c81faa` + docs |
 | 3 | Arcade modal (`ArcadeScreenModal`): explore grid plus the party/friends panel | Planned | | |
 | 4 | Game configure: `ArcadeGameConfigureModal`, plus the Maelstrom and Arena configure windows and the weekly leaderboard | Planned | | |
 | 5 | Profile screen, Profile modal (avatar / display name), Episodes entry | Planned | | |
@@ -298,7 +298,7 @@ Generated, not hand-authored: re-run the generator rather than editing its outpu
 | Piece | Where | Generator |
 |---|---|---|
 | Role colour tokens | `UIThemeSO.controlActive` / `purchase` / `tooltip`, `UIColorToken` 10-12 | — |
-| Sprites (19) | `Assets/_Graphics/UI/Kit/kit_*` | `Tools/Build/author_ui_kit_sprites.py` |
+| Sprites (20; `kit_fade_v` added at item 2) | `Assets/_Graphics/UI/Kit/kit_*` | `Tools/Build/author_ui_kit_sprites.py` |
 | Lock and currency glyphs | `Assets/_Graphics/UI/Chrome/chrome_lock`, `chrome_crystal` | `Tools/Build/author_ui_chrome_icons.py` |
 | Button / label face | `Assets/_Graphics/Fonts/ChakraPetch/ChakraPetch-SemiBold SDF.asset` (dynamic) | `Tools/Build/author_chakra_petch_semibold.py` |
 | Components | `Assets/_Scripts/UI/Kit/` | — |
@@ -324,6 +324,7 @@ How the later items use it:
 - **Every label** carries `KitText` (§4 role + §11 token). Live numbers go through
   `KitText.SetText` so they get per-face `<mspace>`.
 - **Static chrome** carries `KitThemedGraphic`.
+- **A picture that must fill a frame edge to edge** (a hero preview) is an Image under a `KitCoverImage` + `Mask`: it covers at the sprite's aspect, where uGUI's `preserveAspect` only contains.
 
 Not built in item 0, because the items that need them will settle their shape:
 
@@ -343,6 +344,8 @@ the Gate 1 measurement of `Menu_Main.unity`.
 | `HomeScreen/Play Button.png` (hub button plate) | 8 refs | `KitButton` Play/Opaque | 6 |
 | `{LEGACY}/Cut Frame Corner.png`, `Cut Frame Corner Glow.png` | 10 + 10 refs | `kit_sliver*` | as found |
 | NavBar art under `Design Assests/Menu_Main/R_Menu_Main/HomeScreen/`: `gradient.png`, `nav line.png` + `nav line (1)`-`(4)`, `Component 1/2.png` (L1/R1), `Polygon 165/166.png` (arrows), and the ten tab icons (`hangar`, `hangar (1)`, `Ark`, `arcade (2)`, `home`, `home (2)`, `Port`, `port (2)`, `Profile`, `store (1)`) | NavBar | `KitTopNavTab`, `KitKeycap`, band + rule | **1: done.** Menu_Main references none of the 20. Their only remaining consumers are the dead copies in `_Prefabs/MIgration_Prefabs (DELETE LATER)/` (`NavBar`, `Screens`, `ModalWindows`); delete the sprites with those prefabs. |
+| Hangar art under `_Graphics/Hangar/`: `CurrencyBar.png`, and in `Hanger_New/`: `Eye.png`, `Frame 1085.png`, `Frame 1109 (1).png`, `Frame 1110 (4).png`, `Frame 7.png`, `Group 2048.png`, `Group 2049.png`, `Group 2097.png` (the baked "UNLOCK VESSEL" button), `Rectangle 1283 (1).png`, `Rectangle 995.png`, `popup (1).png`; plus `_Graphics/Port/Button_Flat_Gray_Flipped.png` | Hangar GridPanel / DetailPanel | `HangarView` (kit slivers, `KitButton`, `KitCurrencyPill`) | **2: done.** Menu_Main references none of the 13; only `_Prefabs/MIgration_Prefabs (DELETE LATER)/Screens.prefab` does. Delete with it. (`Back Button.png`, `Button_Flat_Orange.png`, `OmniCrystal_Active.png` and two Arcade images were also on the old panels but are still used elsewhere in Menu_Main.) |
+| `HangarVesselGridCard.cs` + `VesselGridPrefab.prefab` | Hangar grid | `HangarVesselTile` (a `KitTile` variant) | **2: unused by Menu_Main.** Kept only because `MIgration_Prefabs (DELETE LATER)/Screens.prefab` still nests the prefab; delete all three together. `HangarScreen.SelectVesselForDetail` is still the card's entry point. |
 | Button `ColorTint` transitions with literal colours | per screen | `KitButton` states from tokens | per item |
 
 
@@ -394,34 +397,55 @@ Not verified (no Unity editor in a cloud session): the in-editor look, hover, po
 TMP's real word widths against the generator's PIL estimate, and the FrogletTools > Game Modes >
 Game Mode Prefab Kit Validate run. Steps are in `Docs/UNITY_VERIFICATION_CHECKLIST.md`.
 
-## 11. Item 2: Hangar (mockup, awaiting approval)
+## 11. Item 2: Hangar (built; awaiting in-editor approval)
 
-Boards on the Menu Redesign B canvas: `Hangar.dc.html` (interactive: pick a vessel, unlock, confirm
-or cancel; keyboard focus moves the selection), and `HangarLocked` (locked Manta, gamepad focus on
-its tile), `HangarSpend` (spend crystals, enough), `HangarShort` (not enough), `HangarNoArt`
-(Scarab: no preview art, no abilities), which mount the same board in those starting states.
-`HangarNotes` lists every change. Content is the real roster: `SO_Classlist_Classes`, the authored
-names, descriptions, ability text, prices, icons and hangar previews, in the shipping state (only
-the Squirrel owned, owned first).
+Boards on the Menu Redesign B canvas: `Hangar.dc.html` (interactive) and `HangarLocked`,
+`HangarSpend`, `HangarShort`, `HangarNoArt`, which mount the same board in those starting states.
+`HangarNotes` lists every change. Mockup approved 2026-10-14 with all four open points as
+recommended: selection follows focus; short of crystals, Confirm is disabled and the shortfall is
+stated; a zero price reads "UNLOCK - FREE"; the purchase gate is left as it is.
 
-| Zone | Mockup | Built from (at the build gate) |
-|---|---|---|
-| Header | "Hangar" label, "Select a vessel" (H1), crystal balance pill on the right | `PlayerDataService.CrystalBalance`, already read by the detail view |
-| Vessel list (left, 340) | 11 `KitTile` rows: icon, name, "Owned" or "Locked / price". Locked rows dim the icon to 35 % with the padlock; the selected row has the 2 px light border | Replaces the 4-column `VesselGridPrefab` cards; still built from `ShipList` in `HangarScreen.PopulateGrid`, owned first |
-| Selected vessel (centre, 900) | `PreviewImage` hero (16:9) with an Owned / Locked chip and the name at Display size; "About" + description; bottom-left the unlock button: Purchase "Unlock - 4000", or the inactive "Unlocked" when owned | `HangarVesselDetailView`'s name, description and unlock button, plus the preview field it already has. A vessel with no preview shows its icon |
-| Abilities (right, 552) | All of the vessel's abilities with their descriptions; "No abilities are listed for the X yet." when there are none | Replaces the General / Ability tabs |
-| Spend crystals | The kit popup: "Spend", "4000 to unlock Manta", the balance; Confirm (Purchase, opaque) left of Cancel, both on the bottom edge | `UnlockPanel` / `SpendCrystalsPanel`, same open / close / confirm calls |
+Generated by `Tools/Build/author_menu_hangar.py` (`--check`, `--self-test`); re-run it rather than
+editing the prefabs or the scene's Hangar by hand. Its scene migration stands down once the old
+panels are gone; the wiring checks run on every invocation.
 
-Retired with this item: the grid-to-detail hop and its Back button, the Vibe tile (unwired), the
-static Overview / Elements / Progress images, and the "Vessel Names" eye toggle (names are always on
-the tiles).
+```
+Screens/Hangar Screen  [FlipUI, HangarScreen]
+|- Hangar_Panel              legacy, inactive, untouched
+'- HangarView                (prefab instance)  HangarVesselDetailView on its root
+   |- Header                 "HANGAR" / "Select a vessel" (H1); "CRYSTALS" + KitCurrencyPill
+   |- Body   [HorizontalLayoutGroup, spacing 19]
+   |  |- VesselList          350 fixed: "VESSELS" + owned count; ScrollRect > Viewport [RectMask2D] > Content [VLG]
+   |  |                      tiles: HangarVesselTile (KitTile variant) built at runtime, owned first
+   |  |- SelectedVessel      flexible 62: Hero (Clip [Mask, KitCoverImage] > Preview, FallbackIcon, Fade;
+   |  |                      Border; StatusChip; Name), About, Description, Unlock (Locked: KitButton
+   |  |                      Purchase / CTA; Owned: KitButton Inactive "UNLOCKED")
+   |  '- Abilities           flexible 38: panel; "ABILITIES" + count; List [VLG] of HangarAbilityRow; NoAbilities
+   '- SpendCrystals [CanvasGroup]   Overlay (SurfaceBlack 0.886); Dialog [VLG + CSF]: "SPEND", title,
+                             Balance (KitCurrencyPill), Shortfall; Buttons on the bottom edge: Confirm, Cancel
+```
 
-Open points for the build gate:
-- **Selection follows focus in the list,** so a gamepad previews each vessel as it moves and focus
-  never lands on a hidden panel. This changes the in-screen flow (D5), not screen navigation.
-- **Not enough crystals:** the board shows Confirm disabled plus "You need N more crystals." Today
-  Confirm is hidden. The line is a new string in `HangarVesselDetailView`.
-- **Stoat costs 0:** the board reads "Unlock - Free" rather than the code's "UNLOCK - 0".
-- **The interactive board's Confirm unlocks the vessel.** In the build the progression gate still
-  refuses paid unlocks silently (section 7); this item does not change that.
+| Behaviour | As built |
+|---|---|
+| Widths | The list is fixed at 350; the centre and the ability column share the rest 62 : 38. At 1920 that is the board (404-1307 and 1332-1880); at 1728 (16:10, Steam Deck) 784 / 476; at 1440 (4:3) 606 / 366. The preview always covers its frame. |
+| Selection | `HangarVesselTile` implements `ISelectHandler`: a click or arriving focus selects the vessel. `ScreenSwitcher.Refocus` lands on the first tile (the owned Squirrel in the shipping state). Old tiles are deactivated before `Destroy` so focus never lands on one that is about to vanish. |
+| After a purchase | `OnUnlockStateChanged` rebuilds the list (owned first) and keeps the selection; focus returns to the selected vessel's tile. |
+| Popup | Shown and hidden by one CanvasGroup. Focus moves in (Confirm, or Cancel when short) and explicit navigation keeps it between the two buttons. Closing returns focus to the unlock button, or to the tile once the vessel is owned. B / Esc still do nothing: the menu has no Cancel handling (section 7). |
+| Visibility | In the new code every show / hide is a CanvasGroup (or a LayoutElement leaving the layout), never `SetActive`; the one `SetActive(false)` is on rows and tiles being destroyed. The legacy path below it is unchanged. |
+| Colours | Every graphic is a `KitThemedGraphic`, `KitText`, `KitButton` or `KitTile` token; the only literals are white art and the locked fallback icon's 0.5 alpha (a serialized field). |
 
+Deviations from the board:
+- **The crystal glyph leads the Confirm label** ("CONFIRM - 4000" after the glyph), as on the
+  unlock button, because `KitButton` places its icon before its label.
+- **The spend popup is composed from kit parts, not a `KitPopup` instance.** `KitPopup` has a fixed
+  eyebrow / title / body with no slot for the balance row. When a second popup needs a custom body,
+  give `KitPopup` a content slot and move this one onto it.
+- **Ability text keeps the authored characters** the fonts lack (section 7); they will show as
+  missing glyphs until the content is fixed.
+
+Not verified (no Unity editor in a cloud session): the editor look and layout, real TMP widths, the
+gamepad flow, the purchase path, and the Game Mode Prefab Kit Validate run. Prisma could not
+stand in: its live compile fails on existing engine gaps (BlackHole RenderGraph types,
+`MouseOrbitCamera`'s `ButtonControl`) and on the kit's `DoStateTransition(state, instant)` override,
+which Prisma's `Selectable` lacks; that engine gap is filed as a separate task. Steps are in
+`Docs/UNITY_VERIFICATION_CHECKLIST.md`.

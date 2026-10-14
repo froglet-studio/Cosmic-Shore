@@ -65,6 +65,67 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Style-B menu redesign, item 2: the Hangar as one three-zone view (`claude/new-session-76hnyc`, 2026-10-14) — NOT EDITOR-VERIFIED
+
+`Screens/Hangar Screen` rebuilt from the approved Hangar boards (`Docs/MENU_REDESIGN_B.md` §11):
+vessel list, selected vessel, abilities, and the spend-crystals popup. No editor and no `unity`
+CLI in the authoring session, so `/verify-unity` and the Game Mode Prefab Kit Validate did NOT run.
+Prisma could not stand in either: its live compile fails on existing engine gaps and on the kit's
+`DoStateTransition(state, instant)` override (filed as a separate task). Offline:
+`unity_refcompile` player and editor configs report 0 project errors (a planted CS1061 in
+`HangarVesselTile.cs` failed the gate first); `author_menu_hangar.py --check` validates the
+committed wiring and `--self-test` catches 7 planted defects; `check_generated_assets.py` reports
+only package-script guids on the new files, and a planted unknown field on the detail view was
+caught.
+
+**What landed**
+
+1. Code: `HangarScreen` (list + selection follows focus), `HangarVesselDetailView` (centre zone,
+   ability column, popup), new `HangarVesselTile`, `HangarAbilityRow`, kit `KitCoverImage`.
+2. Prefabs in `_Prefabs/UI Elements/Main Menu Screens/Hangar/`: `HangarVesselTile` (a variant of
+   `KitTile`), `HangarAbilityRow`, `HangarView`. Kit sprite `kit_fade_v`.
+3. `Menu_Main.unity`: `GridPanel` and `DetailPanel` replaced by one `HangarView` instance;
+   `HangarScreen`'s list / detail fields point into it.
+
+**Verify in editor**
+
+1. Let the project import and compile. Expect no console errors and no missing-script or
+   missing-prefab warnings on Menu_Main load, in particular none naming `HangarVesselTile`,
+   `HangarAbilityRow`, `HangarVesselDetailView` or `KitCoverImage`.
+2. Open `Assets/_Prefabs/UI Elements/Main Menu Screens/Hangar/HangarView.prefab` (Game view
+   1920x1080 if you preview it in a scene): header top-left, list left, empty hero frame centre,
+   ability panel right. The popup is present but hidden (CanvasGroup alpha 0).
+3. Run FrogletTools > Game Modes > Game Mode Prefab Kit > Validate.
+4. Play from Bootstrap as usual; the menu opens on HOME. Click HANGAR in the top nav (or press LT
+   twice). Compare with `Hangar.dc.html` on https://claude.ai/artifact/W8DBZaW6pu3L28egCjrKo2.
+   - **List:** 11 tiles fade in one after another. In the editor the developer unlock gate is ON by
+     default, so every tile reads "OWNED" and every vessel shows "UNLOCKED". To see the shipping
+     state, untick "Unlock everything (vessels, modes, intensities, hangar)" under Master Developer
+     Unlock in FrogletTools > Toolbox (Quest or Vessels tab; it is a PlayerPrefs switch and the list
+     rebuilds live). Expect Squirrel "OWNED" first and the rest locked with the padlock and a gold
+     "LOCKED / 4000" (or / 100, / FREE for the Stoat). Tick it again afterwards.
+   - **Click** a tile: its border goes light, the hero shows that vessel's preview (Butterfly,
+     Thresher, Scarab and Stoat show their icon instead), the name, chip, description and every
+     ability update.
+   - **Gamepad / arrow keys:** on entering, the first tile is focused (green ring). Up / down moves
+     focus AND selection. Right reaches the unlock button. LT / RT still change screens.
+5. **Unlock (gate off, a locked vessel selected):** the button reads "UNLOCK - 4000" in gold.
+   - Press it: the screen dims, the popup reads "4000 to unlock Manta" with your balance; Confirm
+     (gold) sits left of Cancel on the popup's bottom edge; focus is on Confirm. Left / right move
+     between the two only.
+   - With too few crystals: Confirm is grey and disabled, "You need N more crystals." shows, focus
+     is on Cancel.
+   - Cancel: the popup closes and focus returns to the unlock button.
+   - Confirm with enough crystals: with cloud progression off the purchase is still refused and
+     the popup stays open (unchanged, known). If your setup lets it succeed: the vessel moves to
+     the owned group, its chip reads OWNED and focus is on its tile.
+6. Narrow the Game view to 16:10 (1728x1080 at the reference) and 4:3: the list stays 350 wide, the
+   centre and the ability column shrink, the preview still fills its frame, nothing overlaps.
+7. Report any text that is clipped or any glyph box: the Squirrel and Butterfly descriptions and
+   Sparrow's Skyburst Rockets contain characters the fonts do not have (known content issue).
+
+---
+
 ### 🟢 Style-B menu redesign, item 1: the top nav in Menu_Main (`claude/new-session-76hnyc`, 2026-10-14) — approved in editor 2026-10-14
 
 `Safe Area/NavBar` restyled to the approved Menu Redesign B boards (`Docs/MENU_REDESIGN_B.md` §10).

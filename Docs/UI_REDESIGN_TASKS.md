@@ -440,7 +440,7 @@ Acceptance criteria:
 - [x] **No shipping prefab touched** — only new prefabs and a new test scene
 
 **Deliverables:** (style-B menu redesign, item 0 — `Docs/MENU_REDESIGN_B.md`)
-- `Tools/Build/author_ui_kit_sprites.py` (`--check`, `--self-test`) → 19 sprites in
+- `Tools/Build/author_ui_kit_sprites.py` (`--check`, `--self-test`) → 19 sprites (20 since item 2 added `kit_fade_v`) in
   `Assets/_Graphics/UI/Kit/`: `kit_sliver14_*` / `kit_sliver10_*` (fill, line1, line2, each normal and
   `_flip`), `kit_hex_fill` / `_line1` / `_line2`, `kit_hex_handle`, `kit_banner_body` / `_cap_left` /
   `_cap_right`. Two texels per canvas unit (PPU 480 against the canvas' 240).
