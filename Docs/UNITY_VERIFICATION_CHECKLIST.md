@@ -65,6 +65,50 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Stoat play fixes: no flash at the poles' birth, a subtle ripple, the path drawn again, Time mode is the catch-sling (`cece/admiring-cannon-lhmv6t`, 2026-10-14) — NOT EDITOR-VERIFIED
+
+`R_VesselActions/STOAT_DIPOLE.md` §1a, §1b, §1c, §3b. Play feedback on the own-vessel pass below: the annihilation
+effect fired at the poles' CREATION and was far too big and bright; the path ("the foresight") was gone; in Time mode
+the poles could not be seen and the hull was just pulled left or right. No editor and no `unity` CLI in this session,
+so `/verify-unity` did NOT run. Headless proof: see the commit message (reference compile, `author_stoat_assets.py
+--check`, gates). The NUnit suites (`StoatSlingTests`, `StoatRippleTests`) were edited but not run in an editor.
+`StoatPathDots.shader` has not been compiled by Unity.
+
+**What landed:** (a) the white-hole birth light and the death light + gravitational wave (`BlackHoleWaves`) are behind
+`StoatDipoleConfig.annihilationWaves`, OFF; the ripple is the only annihilation effect, toned down (bend 0.008, split
+0.03, rim glow 0.15, band 0.08). (b) The 3D path dots are one dynamic mesh drawn with the new
+`CosmicShore/StoatPathDots` shader (`Resources/StoatPathDots.mat`) — the instanced `Sprites/Default` draw collapsed every
+dot to a point. (c) Time mode is the studio's round-6 dipole sling: a light pair (1.6 u / GM 20 000) laid 150 u ahead,
+45 u to the pressed side; detection and orbit rings instead of the path; caught as you pass; the kick timed to 90° of
+orbit swept since the catch, none before a catch. This supersedes step 4 and the "Ripple look" row of the entry below.
+
+1. **Mass mode, press a trigger.** NO bright shell converges on the new pair and nothing washes the screen. The
+   predicted path is drawn again: blue-grey dots ahead of the nose, lime when the poles warp it.
+2. **Let go.** The poles slam together; where they meet, ONE faint ripple bends the scene outward (no bright rim, no
+   colour flash, no screen shake). A rival inside it still loses its petals.
+3. **B → Time mode, press LT.** A small black hole appears AHEAD and a little to the LEFT, on screen, with two dotted
+   rings round it: a faint wide one (detection) and a brighter one (orbit). Squeezing harder (or holding a key longer)
+   shrinks both. Nothing pulls you yet.
+4. **Fly past it.** As it comes off your nose it catches you: the nose swings onto the orbit ring and you circle it.
+   The orbit ring brightens, eases toward lime and goes LIME about a quarter-turn round. Release in the lime: a big kick
+   out along the tangent. Release well before or after: a small one. Release before it catches you: no kick. You can
+   never be swallowed by it.
+5. **Hold a full turn.** At 360° you are let go on your own; the pair closes and its ripple plays.
+6. **AI Stoats (Slingshot / Warpline).** In Time mode they press, get caught, swing round and let go toward their
+   target; no AI circles more than one turn or holds an uncaught pair longer than ~4 s.
+7. **`dotsInWorld` off (StoatDipoleConfig).** The flat screen-overlay path still draws in Mass mode (Time mode's rings
+   are world dots only).
+
+| Knob | Where | Ships |
+|---|---|---|
+| Birth / death light (off) | `StoatDipoleConfig` `annihilationWaves` | 0 |
+| Ripple look | `StoatRippleConfig` `bandWidth`, `bend`, `chromaticSplit`, `rimGlow` | 0.08, 0.008, 0.03, 0.15 |
+| Where the Time pair is laid | `StoatSlingConfig` `catchAhead`, `catchSide` | 150, 45 |
+| The catch | `StoatSlingConfig` `catchReach`, `catchDegrees`, `settleRate`, `maxOrbitDegrees` | 1.5×, 50°, 3 /s, 360° |
+| Time-mode poles | `StoatSlingConfig` `poleHorizon`, `poleGM` | 1.6, 20 000 |
+| Rings | `StoatSlingConfig` `ringDotSpacing`, `ringDotSize`, `detectionRingAlpha`, `orbitRingAlpha` | 5, 0.9, 0.35, 0.6 |
+| AI release | `StoatSlingConfig` `aiReleaseConeDegrees`, `aiCatchGiveUpSeconds` | 20°, 4 s |
+
 ### 🔴 Mass crystal: slimmer column; converter crystals socket in once centred (`cece/beautiful-goodall-8cenn3`, 2026-10-14) — NOT EDITOR-VERIFIED
 
 `/verify-unity` was not run (no Unity Editor or `unity` CLI in the session). What ran:
@@ -509,7 +553,7 @@ the hull. Platform additions: `VesselPrismController.ThicknessMultiplier`, `Blac
    (they were sideways before: the Squirrel's `DriftJet`). Clean console.
 3. **Mass mode (spawn).** The trail is visibly THICK (×3 height at Mass 0). LT/RT lay the dipole as before. Raise Mass
    to 10 (toolbox): ×6. At Mass 5 the trail arrives shielded.
-4. **B → Time mode.** The trail thins over ~0.8 s; the HUD's Mass card empties. LT: an attractor appears on the left,
+4. **(Superseded 2026-10-14 — Time mode is now the catch-sling, see the entry above.) B → Time mode.** The trail thins over ~0.8 s; the HUD's Mass card empties. LT: an attractor appears on the left,
    the hull circles it; the dots become the orbit ahead and go lime as you pass ~75°. Release in the lime: a clear
    kick (the whole one). Release at once (tap): a small one. B again mid-orbit: the pair is let go with NO kick.
 5. **The Ripple.** In Mass mode squeeze both triggers wide and let go: where the poles meet, a ring of bent space

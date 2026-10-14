@@ -81,26 +81,6 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// The horizon of the hole an orbit of <paramref name="radius"/> circles, <paramref name="orbitHorizons"/>
-        /// horizon radii out. Floored at 3: inside 3 r_s (the Paczyński–Wiita ISCO) no circular orbit is
-        /// stable, so a hole is never laid that close.
-        /// </summary>
-        public static float OrbitHorizon(float radius, float orbitHorizons) => Mathf.Max(0f, radius) / Mathf.Max(3f, orbitHorizons);
-
-        /// <summary>
-        /// The gravitational parameter that makes <paramref name="radius"/> a CIRCULAR orbit at
-        /// <paramref name="speed"/> under the Paczyński–Wiita law the holes pull with:
-        /// <c>v² / r = GM / (r − r_s)²</c>. The hole's strength is chosen, not authored — the right mass
-        /// for the turn the squeeze asked for at the speed the pilot is flying.
-        /// </summary>
-        public static float CircularOrbitGM(float speed, float radius, float horizon)
-        {
-            float r = Mathf.Max(radius, 1e-3f);
-            float gap = Mathf.Max(r - Mathf.Max(0f, horizon), 1e-3f);
-            return speed * speed * gap * gap / r;
-        }
-
-        /// <summary>
         /// The next heading on the orbit: <paramref name="forward"/> with its radial part removed (the
         /// tangent), turned toward the centre (along <paramref name="toCentre"/>) by
         /// <paramref name="angleRadians"/>. A nose pointed straight at or away from the centre has no
@@ -151,33 +131,78 @@ namespace CosmicShore.Gameplay
         public static float TimedKick(float squeezeBoost, float sweetSpot01, float missShare, float rate) =>
             Mathf.Max(0f, squeezeBoost) * Mathf.Lerp(Mathf.Clamp01(missShare), 1f, Mathf.Clamp01(sweetSpot01)) * Mathf.Max(1f, rate);
 
+        // ------------------------------------------------------------------ Time mode: the catch (STOAT_DIPOLE.md §1b)
+
         /// <summary>
-        /// The rest of the orbit, as points to draw (the pathfinder in Time mode): from the hull's angle round
-        /// <paramref name="centre"/> forward on the orbit's plane until <paramref name="sweptDegrees"/> reaches
-        /// <paramref name="untilDegrees"/>, every <paramref name="step"/> world units of arc. Returns the count written.
+        /// Where a Time-mode press lays its pair: the ATTRACTOR <paramref name="ahead"/> along the nose and
+        /// <paramref name="side"/> to the pressed side, the repulsor mirrored on the other side (the studio's dipole sling,
+        /// <c>dpAhead</c> / <c>dpSide</c>) — out in front of the hull, where the camera sees it.
         /// </summary>
-        public static int OrbitArc(Vector3 hull, Vector3 forward, Vector3 centre, float sweptDegrees, float untilDegrees,
-            float step, Vector3[] points)
+        public static void CatchPair(Vector3 hull, Vector3 forward, Vector3 right, bool attractorLeft, float ahead, float side,
+            out Vector3 attractor, out Vector3 repulsor)
         {
-            if (points == null || points.Length == 0) return 0;
-            var radial = hull - centre;
-            float radius = radial.magnitude;
-            if (radius < 1e-3f) return 0;
-            var normal = Vector3.Cross(radial, forward);
-            if (normal.sqrMagnitude < 1e-8f) return 0;
-            normal.Normalize();
-            float remaining = Mathf.Max(0f, untilDegrees - Mathf.Abs(sweptDegrees));
-            float stepDegrees = Mathf.Max(0.05f, step / radius * Mathf.Rad2Deg);
-            int n = Mathf.Min(points.Length, Mathf.FloorToInt(remaining / stepDegrees) + 1);
-            for (int i = 0; i < n; i++)
-                points[i] = centre + Quaternion.AngleAxis(i * stepDegrees, normal) * radial;   // r rotates toward v about r × v
+            var mid = hull + forward * Mathf.Max(0f, ahead);
+            var toAttractor = (attractorLeft ? -right : right) * Mathf.Max(0f, side);
+            attractor = mid + toAttractor;
+            repulsor = mid - toAttractor;
+        }
+
+        /// <summary>
+        /// Whether the attractor CATCHES the hull this frame (the studio's dipole sling): as the hull passes it — within
+        /// the <paramref name="detectionRadius"/> and with the attractor at least <paramref name="catchDegrees"/> off the
+        /// nose — or as soon as the hull is inside the <paramref name="orbitRadius"/>. The second rule is what makes it
+        /// ALWAYS catch before the hull can reach the hole: the orbit radius is many horizons wide, so nothing flown at it
+        /// gets near enough to fall in.
+        /// </summary>
+        public static bool Catches(Vector3 hull, Vector3 forward, Vector3 attractor, float orbitRadius, float detectionRadius,
+            float catchDegrees)
+        {
+            var to = attractor - hull;
+            float d = to.magnitude;
+            if (d <= Mathf.Max(0f, orbitRadius)) return true;
+            if (d > Mathf.Max(0f, detectionRadius)) return false;
+            return Vector3.Angle(forward, to) >= Mathf.Clamp(catchDegrees, 0f, 180f);
+        }
+
+        /// <summary>
+        /// The plane a ring round <paramref name="centre"/> is drawn in: the plane of the hull's pass (its offset from the
+        /// centre and its heading), or <paramref name="fallbackUp"/>'s plane when the hull flies straight at the centre.
+        /// Returns the unit normal.
+        /// </summary>
+        public static Vector3 RingNormal(Vector3 hull, Vector3 forward, Vector3 centre, Vector3 fallbackUp)
+        {
+            var n = Vector3.Cross(hull - centre, forward);
+            if (n.sqrMagnitude < 1e-6f) n = fallbackUp;
+            return n.sqrMagnitude > 1e-8f ? n.normalized : Vector3.up;
+        }
+
+        /// <summary>
+        /// A closed ring of <paramref name="radius"/> round <paramref name="centre"/> in the plane normal to
+        /// <paramref name="normal"/>, as up to <paramref name="segments"/> points (the drawn detection and orbit radii).
+        /// Returns the count written.
+        /// </summary>
+        public static int Ring(Vector3 centre, Vector3 normal, float radius, int segments, Vector3[] points)
+        {
+            if (points == null || radius <= 0f || normal.sqrMagnitude < 1e-8f) return 0;
+            int n = Mathf.Min(points.Length, Mathf.Max(3, segments));
+            var axis = normal.normalized;
+            var u = Vector3.Cross(axis, Mathf.Abs(axis.y) < 0.9f ? Vector3.up : Vector3.right).normalized * radius;
+            for (int i = 0; i < n; i++) points[i] = centre + Quaternion.AngleAxis(360f * i / n, axis) * u;
             return n;
         }
 
-        /// <summary>Seconds an autopilot holds its squeeze to turn <paramref name="turnRadians"/> on an orbit of
-        /// <paramref name="radius"/> at <paramref name="speed"/>: the arc over the speed.</summary>
-        public static float AutopilotHoldSeconds(float turnRadians, float speed, float radius) =>
-            Mathf.Abs(turnRadians) * Mathf.Max(1f, radius) / Mathf.Max(1f, speed);
+        /// <summary>
+        /// The nose a caught hull flies this step: <paramref name="forward"/> turned toward the orbit's
+        /// <paramref name="tangent"/> by at least <paramref name="orbitStepDegrees"/> (the circle's own turn) and by
+        /// <paramref name="settle01"/> of what is left — so a catch from off the tangent eases onto it instead of snapping.
+        /// </summary>
+        public static Vector3 SettleHeading(Vector3 forward, Vector3 tangent, float orbitStepDegrees, float settle01)
+        {
+            float miss = Vector3.Angle(forward, tangent);
+            if (miss <= 1e-4f) return tangent;
+            float step = Mathf.Max(Mathf.Max(0f, orbitStepDegrees), miss * Mathf.Clamp01(settle01));
+            return Vector3.RotateTowards(forward, tangent, Mathf.Min(step, miss) * Mathf.Deg2Rad, 0f);
+        }
 
         /// <summary>The pair's midpoint: <paramref name="aheadHorizons"/> horizon radii ahead of the hull.</summary>
         public static Vector3 Midpoint(Vector3 hullPosition, Vector3 hullForward, float horizonRadius, float aheadHorizons)

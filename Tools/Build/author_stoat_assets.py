@@ -640,6 +640,7 @@ def dipole_config_asset() -> str:
             "  sourceGrowSeconds: 1.1\n"
             "  dieSeconds: 0.7\n"
             "  sourceSizeX: 1\n"
+            "  annihilationWaves: 0\n"   # the birth/death light: too big and bright, fired at creation (the user, 2026-10-14)
             "  throughZoneRadius: 135\n"
             "  throughDegrees: 200\n"
             "  turnCap: 12\n"
@@ -1443,10 +1444,10 @@ def ripple_config_asset() -> str:
             "  reach:\n" + elemental(1, 1, 2, 1, 1) +
             "  expandSeconds: 0.9\n"
             "  fadeSeconds: 0.5\n"
-            "  bandWidth: 0.12\n"
-            "  bend: 0.025\n"
-            "  chromaticSplit: 0.12\n"
-            "  rimGlow: 1.6\n"
+            "  bandWidth: 0.08\n"
+            "  bend: 0.008\n"
+            "  chromaticSplit: 0.03\n"
+            "  rimGlow: 0.15\n"
             "  petalsPerElement: 1\n"
             "  shedSpeed: 8\n"
             "  siphonOnChargeUpgrade: 1\n"
