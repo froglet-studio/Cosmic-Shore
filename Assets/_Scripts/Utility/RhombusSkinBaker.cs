@@ -168,6 +168,26 @@ namespace CosmicShore.Utility
             return new PlateMap { WeldIds = weldIds, WeldPositions = weldPositions, RootOfWeld = roots };
         }
 
+        /// <summary>
+        /// Every vertex's PLATE (a connected component of the welded mesh, named by its root weld), each plate's corner
+        /// count (distinct welded positions) and every vertex's weld id with the welded positions - the same split
+        /// <see cref="Bake"/> and <see cref="Cut"/> use. A plate whose triangles were cut away falls apart into
+        /// one-corner plates.
+        /// </summary>
+        public static int[] PlateOfVertices(Mesh mesh, Vector3[] vertices, out Dictionary<int, int> cornerCount,
+            out int[] weldOfVertex, out List<Vector3> weldPositions)
+        {
+            var map = MapPlates(mesh, vertices);
+            cornerCount = new Dictionary<int, int>();
+            foreach (int root in map.RootOfWeld)
+                cornerCount[root] = cornerCount.TryGetValue(root, out int n) ? n + 1 : 1;
+            var plateOf = new int[vertices.Length];
+            for (int i = 0; i < vertices.Length; i++) plateOf[i] = map.RootOfWeld[map.WeldIds[i]];
+            weldOfVertex = map.WeldIds;
+            weldPositions = map.WeldPositions;
+            return plateOf;
+        }
+
         /// <summary>Builds a twin, uncached (the edit-mode tests own what they bake).</summary>
         internal static Skin Bake(Mesh source, out string problem)
         {

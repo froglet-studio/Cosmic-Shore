@@ -13,7 +13,7 @@ namespace CosmicShore.Tests
     /// The Elemental Converter's OMNI COMBINE (<see cref="OmniCombineCore"/>, <see cref="OmniCombinePlayer"/>,
     /// <see cref="ElementalConverterView"/>): the shipped data loads through JsonUtility, every crystal lands
     /// exactly on its share of the omni, a play is a pure function of its seed, waiting never sets anything
-    /// off, the discharge bakes find real creases on the meshes the player builds, and the Ark screen is open
+    /// off, the meshes the player builds split by face, the round-5 effects fit the data, and the Ark screen is open
     /// and wired.
     ///
     /// Parity with the Omni Combine Lab itself is held out of editor, vertex for vertex, by
@@ -130,6 +130,51 @@ namespace CosmicShore.Tests
         }
 
         [Test]
+        public void EveryCrystalButTheFirst_ArrivesFromTheCamerasSide_FollowingIt_AndStillLands()
+        {
+            var data = LoadData();
+            var core = new OmniCombineCore(data);
+            var straight = OmniCombineParams.LabDefault;
+            straight.GameMotion = true;
+            straight.SocketSpacing = 0.1;
+            for (int trial = 0; trial < 8; trial++)
+            {
+                double cameraAzimuth = trial * 0.9 - 3, rate = 0.087;   // ~5 degrees a second, as the converter's camera circles
+                var aimed = straight;
+                core.FaceCamera(ref aimed, cameraAzimuth, rate, 0);
+                Assert.AreEqual(0.0, aimed.ApproachTurn[OmniCombineCore.Space], "Space keeps its path");
+                for (int k = 1; k < 4; k++)
+                {
+                    double t0 = OmniCombineCore.Departs(k, aimed);
+                    core.CrystalFrame(k, t0, straight, out var idle, out _, out _, out _, out _);
+                    core.CrystalFrame(k, t0, aimed, out var setsOff, out _, out _, out _, out _);
+                    Assert.Less((setsOff - idle).Length, 1e-9, "a crystal sets off from exactly where it idles");
+                    double tA = t0 + 0.97 * aimed.Flight;
+                    // The player hands the play the live camera every frame; the approach follows it at any speed.
+                    foreach (double actual in new[] { rate, 2 * rate, 0.0 })
+                    {
+                        var live = aimed;
+                        live.CameraAzimuth = cameraAzimuth + actual * tA;
+                        live.CameraElevation = 0.314;   // the converter's 18 degrees
+                        core.CrystalFrame(k, tA, live, out var arriving, out _, out _, out _, out _);
+                        double off = OmniCombineCore.WrapAngle(System.Math.Atan2(arriving.X, arriving.Z) - live.CameraAzimuth);
+                        Assert.Less(System.Math.Abs(off), 12 * System.Math.PI / 180, $"{OmniCombineCore.Order[k]} does not arrive from the camera's side");
+                        double height = System.Math.Asin(arriving.Y / arriving.Length);
+                        Assert.AreEqual(live.CameraElevation, height, 8 * System.Math.PI / 180, $"{OmniCombineCore.Order[k]} does not arrive at the camera's height");
+                    }
+                }
+                var pos = Buffers(core);
+                core.Pose(OmniCombineCore.MorphEnds(aimed), aimed, Camera, pos, new float[4]);
+                for (int k = 0; k < 4; k++)
+                {
+                    var final = core.CrystalData(k).final;
+                    for (int i = 0; i < pos[k].Length; i++)
+                        Assert.AreEqual(final[i], pos[k][i], 1e-4f, $"{OmniCombineCore.Order[k]} does not land in its slots");
+                }
+            }
+        }
+
+        [Test]
         public void APlayIsAFunctionOfItsSeed()
         {
             var core = new OmniCombineCore(LoadData());
@@ -198,37 +243,54 @@ namespace CosmicShore.Tests
         }
 
         [Test]
-        public void TheDischargeBakesFindRealCreasesOnTheBuiltMeshes()
+        public void TheBuiltMeshesSplitByFace_SoEachFaceShadesFlat()
         {
+            // The converter draws every crystal on the Fresnel body with one normal per FACE (the art data shares a slab's
+            // corners across its faces; drawn welded, the plates would shade smooth). Since 2026-10-13 nothing is baked for
+            // a discharge: the Charge light is the seam walk and the flux arcs, drawn on the CPU.
             var data = LoadData();
             var charge = data.crystals[OmniCombineCore.Charge];
             var source = OmniCombinePlayer.BuildFaceSplitSource(charge.basis, charge.tris, charge.plate, out var faces);
-            var baked = CrystalEdgeArcMeshBaker.Bake(source, 0);
             var omniSource = OmniCombinePlayer.BuildFaceSplitSource(data.omni.verts, data.omni.tris, data.omni.plate, out var omniFaces);
-            var pentagons = CrystalEdgeArcMeshBaker.Bake(omniSource, 10);
             try
             {
                 // 60 pentagonal slabs of 7 faces (5 sides + 2 caps): split by face, never welded across one.
                 Assert.AreEqual(420, faces.Max() + 1, "Charge faces");
                 Assert.AreEqual(724, omniFaces.Max() + 1, "omni faces (30x6 + 20x5 + 12x7 + 60x6)");
-                Assert.IsNotNull(baked, "the Charge crystal did not bake");
-                Assert.AreEqual(charge.tris.Length, baked.vertexCount, "one baked vertex per triangle corner, in triangle order");
-                var heights = new System.Collections.Generic.List<Vector3>();
-                baked.GetUVs(2, heights);
-                int creases = heights.Sum(h => (h.x > 0 ? 1 : 0) + (h.y > 0 ? 1 : 0) + (h.z > 0 ? 1 : 0));
-                int diagonals = heights.Sum(h => (h.x < 0 ? 1 : 0) + (h.y < 0 ? 1 : 0) + (h.z < 0 ? 1 : 0));
-                Assert.Greater(creases, 0, "no crease: the discharge would never draw");
-                Assert.Greater(diagonals, 0, "no triangulation diagonal: faces were not grouped");
-                Assert.IsNotNull(pentagons, "the omni's pentagons did not bake");
-                Assert.AreEqual(12 * 16 * 3, pentagons.vertexCount, "the twelve pentagonal prisms (16 triangles each)");
             }
             finally
             {
                 Object.DestroyImmediate(source);
                 Object.DestroyImmediate(omniSource);
-                if (baked) Object.DestroyImmediate(baked);
-                if (pentagons) Object.DestroyImmediate(pentagons);
             }
+        }
+
+        [Test]
+        public void RoundFive_TheOmnisSquaresFitTheirTurns_AndTheChargeLightReadsBothCrystals()
+        {
+            var data = LoadData();
+            var core = new OmniCombineCore(data);
+            Assert.IsTrue(OmniCombineMotion.TryFit(data, (float)core.OmniRadius, 1.1f, out var motion, out var problem), problem);
+            var offsets = motion.ThickOffset;
+            var turns = motion.Squares;
+            var corners = motion.SquareCorners;
+            Assert.AreEqual(60, turns.Length, "every square plate turns");
+            Assert.IsTrue(corners.All(c => c.Length == 8), "a square plate has eight corners");
+            // The thicker plates: each square, rhombus and pentagon grows about its own centre; the triangles do not.
+            for (int i = 0; i < data.omni.plate.Length; i++)
+            {
+                bool moved = offsets[3 * i] != 0f || offsets[3 * i + 1] != 0f || offsets[3 * i + 2] != 0f;
+                if (data.omni.plateOwner[data.omni.plate[i]] == OmniCombineCore.Mass) Assert.IsFalse(moved, $"triangle vertex {i} moved");
+            }
+            Assert.IsTrue(offsets.Any(x => x != 0f), "no plate grew");
+
+            var charge = core.CrystalData(OmniCombineCore.Charge);
+            var cv = Enumerable.Range(0, charge.basis.Length / 3).Select(i => new Vector3(charge.basis[3 * i], charge.basis[3 * i + 1], charge.basis[3 * i + 2])).ToArray();
+            Assert.IsTrue(ChargeSites.TryBuild(cv, charge.tris, 1f, out var blooms, out problem), problem);
+            Assert.AreEqual(ChargeSiteKind.Blooms, blooms.Kind);
+            var ov = Enumerable.Range(0, data.omni.verts.Length / 3).Select(i => new Vector3(data.omni.verts[3 * i], data.omni.verts[3 * i + 1], data.omni.verts[3 * i + 2])).ToArray();
+            Assert.IsTrue(ChargeSites.TryBuild(ov, data.omni.tris, 1.1f, out var pentagons, out problem), problem);
+            Assert.AreEqual(ChargeSiteKind.Pentagons, pentagons.Kind);
         }
 
         [Test]
@@ -237,10 +299,11 @@ namespace CosmicShore.Tests
             var config = AssetDatabase.LoadAssetAtPath<OmniCombineConfigSO>(ConfigPath);
             Assert.IsNotNull(config, $"{ConfigPath}: run Tools/Build/author_elemental_converter.py");
             Assert.IsNotNull(config.CombineData);
-            Assert.IsNotNull(config.ChargeMaterial);
             Assert.IsNotNull(config.ShellMaterial);
             Assert.IsNotNull(config.OmniMaterial);
-            Assert.IsNotNull(config.OmniChargeEdgesMaterial);
+            Assert.IsNotNull(config.Cadence, "the woken omni plays the game's cadence");
+            Assert.IsNotNull(config.ChargeArcs, "the Charge light is the game's");
+            Assert.IsNotNull(config.OmniArcsMaterial);
             Assert.IsNotNull(config.MassMaterial, "the Mass crystal draws with the game's depth-prism material");
             Assert.IsNotNull(config.OmniTrianglesMaterial);
             Assert.IsNotNull(config.OmniTrianglesMesh);
@@ -250,6 +313,10 @@ namespace CosmicShore.Tests
             for (int i = 0; i < 200; i++)
             {
                 var p = config.Draw(rng);
+                Assert.IsTrue(p.GameMotion, "the converter's omni moves as the game's does");
+                Assert.That(p.SocketSpacing, Is.InRange(0.08 - 1e-6, 0.12 + 1e-6), "every crystal but the first comes in with a bit of extra spacing");
+                Assert.IsNull(p.ApproachTurn, "the approach is aimed at the camera when the crystals set off, not when the play is drawn");
+                Assert.AreEqual(0.0, p.ApproachAboveCamera, 1e-9, "the crystals arrive at the camera's own height");
                 Assert.That(p.Flight, Is.InRange(4.4, 5.4));
                 Assert.That(p.Stagger / p.Flight, Is.InRange(0.95 - 1e-6, 1.05 + 1e-6), "each crystal sets off as the last lands");
                 Assert.That(p.Lead, Is.InRange(2.2, 3.2));

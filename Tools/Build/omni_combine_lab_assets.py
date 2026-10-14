@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """
 Bakes the Omni Combine Lab's data block (Docs/Studios/OmniCombineLab.html, between the lines `// <assets>`
-and `// </assets>`):
+and `// </assets>`), and the same block into the Omni Motion Lab (Docs/Studios/OmniMotionLab.html), which reads
+the shipped omni and the four effects' numbers from it:
 
   - the artist's combine targets, `Docs/Studios/data/omni_crystal_combine.json`, baked out of
     CrystalsRaw.blend by `Tools/Build/bake_omni_crystal_combine.py`: each elemental crystal's Basis and
@@ -27,6 +28,8 @@ import numpy as np
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 LAB = os.path.join(ROOT, "Docs", "Studios", "OmniCombineLab.html")
+# Every page that carries this block. The Omni Motion Lab (2026-10-13) reuses it unchanged.
+LABS = [LAB, os.path.join(ROOT, "Docs", "Studios", "OmniMotionLab.html")]
 DATA = os.path.join(ROOT, "Docs", "Studios", "data", "omni_crystal_combine.json")
 SQUARES = os.path.join(ROOT, "Docs", "Studios", "data", "omni_space_squares.json")
 DEPTH_PROFILE = os.path.join(ROOT, "Assets", "_SO_Assets", "Environment", "CrystalDepthPrismProfile.asset")
@@ -310,6 +313,11 @@ def omni_effects(d):
     for name, mat in (("omni", "OmniDepthPrisms"), ("mass", "MassDepthPrisms")):
         f = floats(read(os.path.join(MATS, mat + ".mat")))
         depth[name] = {"reach": f["_Reach"], "sizeStart": f["_PlateScaleStart"], "faceSplit": f["_FaceSplit"]}
+    # The prisms' thickness is baked into their meshes by the generator that owns them; import it, never copy it
+    # (labmaker L-STU-40). The Omni Motion Lab thickens the art omni's triangle plates by this, inward.
+    sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+    import author_omni_crystal_triangles as omni_tris  # noqa: E402
+    depth["omni"]["thickness"] = float(omni_tris.DEPTH_THICKNESS)
     return {"plateOwner": [plate_owner[p] for p in range(len(plate_owner))],
             "squares": {"fps": sq["fps"], "keys": keys, "weights": sq["weights"]}, "depth": depth}
 
@@ -394,12 +402,12 @@ def summary(d):
         f"; omni {len(d['omni']['verts']) // 3} verts"
 
 
-def splice(page, block):
+def splice(page, block, where=LAB):
     """Replace the text between the marker LINES (each alone on its line, exactly one of each)."""
     opens = [m for m in re.finditer(r"^[ \t]*" + re.escape(OPEN) + r"[ \t]*$", page, re.M)]
     closes = [m for m in re.finditer(r"^[ \t]*" + re.escape(CLOSE) + r"[ \t]*$", page, re.M)]
     if len(opens) != 1 or len(closes) != 1 or closes[0].start() < opens[0].end():
-        raise SystemExit(f"{LAB}: expected exactly one '{OPEN}' line before one '{CLOSE}' line")
+        raise SystemExit(f"{where}: expected exactly one '{OPEN}' line before one '{CLOSE}' line")
     return page[:opens[0].end()] + "\n" + block + "\n" + page[closes[0].start():]
 
 
@@ -484,18 +492,23 @@ def main():
     if args.self_test:
         self_test()
     d = build()
-    page = read(LAB)
-    new = splice(page, block_for(d))
+    block, stale = block_for(d), []
+    for lab in LABS:
+        page = read(lab)
+        new = splice(page, block, lab)
+        if args.check:
+            if new != page:
+                stale.append(lab)
+            continue
+        with open(lab, "w") as f:
+            f.write(new)
+        print(f"wrote {lab}: {summary(d)}")
     if args.check:
-        if new != page:
-            print(f"STALE: {LAB} does not carry the current combine data. {summary(d)}")
+        if stale:
+            for lab in stale:
+                print(f"STALE: {lab} does not carry the current combine data. {summary(d)}")
             sys.exit(1)
-        print(f"OK: lab matches the data. {summary(d)}")
-        return
-    with open(LAB, "w") as f:
-        f.write(new)
-    print(f"wrote {LAB}: {summary(d)}")
-
+        print(f"OK: {len(LABS)} labs match the data. {summary(d)}")
 
 if __name__ == "__main__":
     main()
