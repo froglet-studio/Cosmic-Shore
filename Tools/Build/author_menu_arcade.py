@@ -895,16 +895,13 @@ def build_view(maelstrom_art, maelstrom_desc, weekly_art):
     image_node(root, "NavDim", "NavDim", R((0, 1), (1, 1), (0, 0), (0, 84), (0.5, 1)), "SurfaceBlack", alpha=0.75)
     image_node(root, "Backdrop", "Backdrop", R((0, 0), (1, 1), (0, -42), (0, -84)), "SurfaceBlack")
 
-    header = root.child(N("Header", "Header", R((0, 1), (1, 1), (0, -108), (-80, 64), (0.5, 1))))
-    label(header.child(N("Header/Eyebrow", "Eyebrow", R((0, 1), None, (0, 0), (300, 18), (0, 1)))), "ARCADE", "Label",
-          "NeutralLightest")
-    label(header.child(N("Header/Title", "Title", R((0, 1), None, (0, -20), (760, 46), (0, 1)))), "Explore games", "H1",
-          "TextLight")
-    back_button(header)
-
+    # Sibling order is FOCUS order: ScreenSwitcher.Refocus lands on the first live Selectable in
+    # hierarchy order, so the explore scroll comes before the party panel (the Body lays them out
+    # reversed, panel on the left) and the header - whose Back would close the window on the first
+    # A press - comes last.
     body = root.child(N("Body", "Body", R((0, 0), (1, 1), (5, -78), (-70, -236))))
-    body.add("hlg", 114, K.hv_layout(False, (0, 0, 0, 0), 24, 0, (1, 1), (0, 1)))
-    body.children.append(Inst("PartyPanel", "PartyPanel", "PartyPanel", R((0, 1), None, (0, 0), (PANEL_W, 844), (0, 1))))
+    body.add("hlg", 114, lambda ctx, go: K.hv_layout(False, (0, 0, 0, 0), 24, 0, (1, 1), (0, 1))(ctx, go)
+             .replace("  m_ReverseArrangement: 0\n", "  m_ReverseArrangement: 1\n"))
 
     ex = body.child(N("Explore", "ExploreScroll", R((0, 1), None, (444, 0), (1406, 844), (0, 1))))
     ex.add("le", 114, le(mw=0, fw=1)).add("scroll", 114, scroll_rect("Explore/Viewport/Content", "Explore/Viewport"))
@@ -953,6 +950,14 @@ def build_view(maelstrom_art, maelstrom_desc, weekly_art):
         for col in range(GRID_COLS):
             row.children.append(Inst(card_key(r, col), "ArcadeGameCard", "GameCard",
                                      R((0, 1), None, (col * (CARD_W + 10), 0), (CARD_W, CARD_H), (0, 1))))
+    body.children.append(Inst("PartyPanel", "PartyPanel", "PartyPanel", R((0, 1), None, (0, 0), (PANEL_W, 844), (0, 1))))
+
+    header = root.child(N("Header", "Header", R((0, 1), (1, 1), (0, -108), (-80, 64), (0.5, 1))))
+    label(header.child(N("Header/Eyebrow", "Eyebrow", R((0, 1), None, (0, 0), (300, 18), (0, 1)))), "ARCADE", "Label",
+          "NeutralLightest")
+    label(header.child(N("Header/Title", "Title", R((0, 1), None, (0, -20), (760, 46), (0, 1)))), "Explore games", "H1",
+          "TextLight")
+    back_button(header)
     return root
 
 
@@ -1252,6 +1257,14 @@ def validate_prefabs(files, guids):
     for r in range(GRID_ROWS):
         _, row = doc_of(view, V(f"Row{r + 1}#rt"))
         assert len(re.findall(r"^  - \{fileID:", row, re.M)) == GRID_COLS, f"grid row {r + 1} does not hold {GRID_COLS} cards"
+    order = [doc_of(view, k)[1] for k in re.findall(r"^  - \{fileID: (-?\d+)\}", doc_of(view, V("root#rt"))[1], re.M)]
+    names = [re.search(r"m_Name: (.*)", doc_of(view, re.search(r"m_GameObject: \{fileID: (-?\d+)\}", b).group(1))[1]).group(1)
+             for b in order]
+    assert names.index("Body") < names.index("Header"), "the header (Back) must come after the body in focus order"
+    _, body_rt = doc_of(view, V("Body#rt"))
+    first = re.search(r"^  - \{fileID: (-?\d+)\}", body_rt, re.M).group(1)
+    assert first == str(V("Explore#rt")), "the explore scroll must be the body's first child (focus lands on a card)"
+    assert "m_ReverseArrangement: 1" in doc_of(view, V("Body#hlg"))[1], "the body must lay out reversed (panel left)"
     _, back = doc_of(view, V("Back#button"))
     assert back and doc_of(view, V("Back#close"))[0] == 114, "Back has no ModalWindowCloseButton"
     assert "m_Calls: []" in back, "Back must close through ModalWindowCloseButton, not a persistent call"
@@ -1386,6 +1399,10 @@ def self_test(current, files, guids):
             s, RUNNER, f"  - {{fileID: {ids.stubs[ids.cards[-1]]}}}\n", "")),
         "party panel left ungated offline": scene_plant(lambda s: T.in_doc(
             s, PANEL["gate"], f"  - {{fileID: {ids.stubs['partyRoot']}}}\n", "  - {fileID: 0}\n")),
+        "Back first in focus order": prefab_plant(prefab_path("ArcadeView"), lambda t: in_one(
+            t, K.FileIds("ArcadeView")("root#rt"),
+            f"  - {{fileID: {K.FileIds('ArcadeView')('Body#rt')}}}\n  - {{fileID: {K.FileIds('ArcadeView')('Header#rt')}}}\n",
+            f"  - {{fileID: {K.FileIds('ArcadeView')('Header#rt')}}}\n  - {{fileID: {K.FileIds('ArcadeView')('Body#rt')}}}\n")),
         "unrelated document edited": scene_plant(lambda s: s.replace("  m_Name: Screens\n", "  m_Name: Screenz\n", 1)),
     }
     failed = []
