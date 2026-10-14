@@ -31,7 +31,7 @@ namespace CosmicShore.Editor
         readonly List<string> _prefabCandidatePaths = new();
         string _lastReport = "Scan the open scene or the selected prefabs to begin.";
 
-        [MenuItem("FrogletTools/Interface/Raycast Target Audit")]
+        [MenuItem("FrogletTools/UI/Raycast Target Audit", false, 212)]
         [FrogletTool(FrogletToolCategory.Interface, Importance = 3,
             Description = "Find graphics needlessly eating raycasts.")]
         static void Open() => GetWindow<RaycastTargetAuditTool>("Raycast Audit");

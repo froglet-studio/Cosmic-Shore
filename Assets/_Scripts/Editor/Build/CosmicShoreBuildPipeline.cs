@@ -43,17 +43,17 @@ namespace CosmicShore.Editor
         //  Entry points
         // ──────────────────────────────────────────────
 
-        [MenuItem("FrogletTools/Build/Windows x64 (Release)", false, 100)]
+        [MenuItem("FrogletTools/Build/Windows x64 (Release)", false, 120)]
         [FrogletTool(FrogletToolCategory.Build, Importance = 5,
             Description = "Release player build - the artifact that ships.")]
         public static void BuildWindowsRelease() => Run(development: false);
 
-        [MenuItem("FrogletTools/Build/Windows x64 (Development)", false, 101)]
+        [MenuItem("FrogletTools/Build/Windows x64 (Development)", false, 121)]
         [FrogletTool(FrogletToolCategory.Build, Importance = 4,
             Description = "Development player build with the profiler attached.")]
         public static void BuildWindowsDevelopment() => Run(development: true);
 
-        [MenuItem("FrogletTools/Build/Reveal Build Folder", false, 120)]
+        [MenuItem("FrogletTools/Build/Reveal Build Folder", false, 122)]
         [FrogletTool(FrogletToolCategory.Build, Importance = 2,
             Description = "Open the last build output in the file browser.")]
         public static void RevealBuildFolder()

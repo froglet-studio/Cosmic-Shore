@@ -124,7 +124,7 @@ namespace CosmicShore.Editor
             },
         };
 
-        [MenuItem("FrogletTools/Vessels/Plan Vessel Rig Swap")]
+        [MenuItem("FrogletTools/Vessels/Wiring/Plan Vessel Rig Swap", false, 254)]
         [FrogletTool(FrogletToolCategory.Vessels, Importance = 2,
             Description = "Report-only plan for moving a vessel onto its rigged model.")]
         public static void Plan()
@@ -152,7 +152,7 @@ namespace CosmicShore.Editor
             report.AppendLine("     bones by name (VesselAnimation.ResolvePart), so leave them EMPTY.");
             report.AppendLine("  5. Point VesselCustomization's ship geometry list at the rig's skinned mesh,");
             report.AppendLine("     or the hull will not take its domain colour.");
-            report.AppendLine("  6. Re-run FrogletTools > Vessels > Audit Vessel Elemental Morphs to confirm all");
+            report.AppendLine("  6. Re-run FrogletTools > Vessels > Audits > Audit Vessel Elemental Morphs to confirm all");
             report.AppendLine("     four elements resolve, and fly it to check the animation.");
 
             Debug.Log(report.ToString());

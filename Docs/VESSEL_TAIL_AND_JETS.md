@@ -7,7 +7,7 @@
 
 **Status:** standard shipped, fleet migrated. Every vessel has a tail; 7 of 12 have jets.
 The Sparrow's **skyburst missile** has one too — the first non-vessel to carry a tail (§4.2).
-Audit with **FrogletTools ▸ Vessels ▸ Audit Vessel Tails and Jets**.
+Audit with **FrogletTools ▸ Vessels ▸ Audits ▸ Audit Vessel Tails and Jets**.
 
 ## 1. Three things stream off the back of a vessel, and they are not interchangeable
 
@@ -154,7 +154,7 @@ together: particle size, emission shape, particle speed, and the `Trail` child's
 (which the Urchin was rendering at 0.63 units — one and a half hull diameters behind a ship whose
 body sphere is 0.207 in radius).
 
-**Audit it, don't remember it:** *FrogletTools ▸ Vessels ▸ Audit Vessel Tails and Jets* now reports
+**Audit it, don't remember it:** *FrogletTools ▸ Vessels ▸ Audits ▸ Audit Vessel Tails and Jets* now reports
 each hull's effective plume scale against its camera-derived target and flags a jet that authors no
 scale at all as `UNSIZED`. For a bone-mounted jet it calls **`VesselJet.ResolveMountBone`** — the
 same method `MountOnBone` uses at Awake, not a second copy of the search — so what it reports is

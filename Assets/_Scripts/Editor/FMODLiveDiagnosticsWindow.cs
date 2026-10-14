@@ -47,7 +47,7 @@ namespace CosmicShore.Editor
         float _studioUpdate, _dsp, _stream, _coreUpdate;
         bool _sampled;
 
-        [MenuItem("FrogletTools/Performance/FMOD Live Diagnostics")]
+        [MenuItem("FrogletTools/Performance/FMOD Live Diagnostics", false, 173)]
         [FrogletTool(FrogletToolCategory.Performance, Importance = 5,
             Description = "Live FMOD counters: instances per event, channels, CPU split. " +
                           "Use when RuntimeManager.Update() is eating the frame.")]

@@ -27,7 +27,7 @@ namespace CosmicShore.Editor.Froglet
     /// </summary>
     public class PlayerDataWipeWindow : EditorWindow
     {
-        [MenuItem("FrogletTools/Services/Wipe Player Data", false, 20)]
+        [MenuItem("FrogletTools/Services/Wipe Player Data", false, 201)]
         [FrogletTool(FrogletToolCategory.Services, Importance = 4,
             Description = "Clear PlayerPrefs, the local cloud snapshot, UGS Cloud Save and the " +
                           "session token — the four places player data actually lives.")]

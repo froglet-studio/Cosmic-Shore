@@ -2543,7 +2543,7 @@ Vessel Elemental Morphs**, **Audit Corridor Vessel Radii**, **Validate Speed Tun
     into its column of the §3.0.2 table; confirm the other three channels hold still, that the
     puppetry keeps playing THROUGH the morph (rotation and mesh writes are disjoint channels),
     and that a morphed pose survives a juke + flare without the hull popping back. Then run
-    FrogletTools > Vessels > Audit Vessel Elemental Morphs: the Scarab must report
+    FrogletTools > Vessels > Audits > Audit Vessel Elemental Morphs: the Scarab must report
     `[procedural]` with the Sparrow placeholder's shapes marked INERT.
 
 Anything not verifiable this way gets a 🔴 entry in `Docs/UNITY_VERIFICATION_CHECKLIST.md` at

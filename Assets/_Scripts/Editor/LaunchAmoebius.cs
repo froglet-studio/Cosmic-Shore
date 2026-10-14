@@ -40,7 +40,7 @@ namespace CosmicShore.Editor
         static string _buildStamp;
         static double _buildStarted;
 
-        [MenuItem("FrogletTools/Amoebius/Launch Amoebius", false, 0)]
+        [MenuItem("FrogletTools/Amoebius/Launch Amoebius", false, 110)]
         [FrogletTool(FrogletToolCategory.Build, Importance = 5,
             Description = "Opens Amoebius, our own engine, built from this checkout (rebuilt only when its source changed).",
             DocPath = "Port/docs/LAUNCHER.md")]
@@ -73,7 +73,7 @@ namespace CosmicShore.Editor
         /// <summary>The Amoebius page the next start opens (<c>--page</c>), then cleared. Null = Amoebius's own default.</summary>
         static string _openPage;
 
-        [MenuItem("FrogletTools/Amoebius/Vessel Studio Page", false, 3)]
+        [MenuItem("FrogletTools/Amoebius/Vessel Studio Page", false, 130)]
         [FrogletTool(FrogletToolCategory.Build, Importance = 2,
             Description = "Opens Amoebius on its VESSEL STUDIO page (pick a vessel; PLAY IN ENGINE runs the game's own vessel in Amoebius).",
             DocPath = "Port/docs/LAUNCHER.md")]
@@ -177,7 +177,7 @@ namespace CosmicShore.Editor
             return new[] { "/usr/bin/microsoft-edge", "/usr/bin/google-chrome", "/usr/bin/chromium", "/usr/bin/chromium-browser" };
         }
 
-        [MenuItem("FrogletTools/Amoebius/Rebuild Amoebius", false, 1)]
+        [MenuItem("FrogletTools/Amoebius/Rebuild Amoebius", false, 111)]
         [FrogletTool(FrogletToolCategory.Build, Importance = 2,
             Description = "Builds Amoebius from this checkout again even if its source looks unchanged, then opens it.",
             DocPath = "Port/docs/LAUNCHER.md")]
@@ -187,7 +187,7 @@ namespace CosmicShore.Editor
             Launch();
         }
 
-        [MenuItem("FrogletTools/Amoebius/Show Amoebius Folder", false, 2)]
+        [MenuItem("FrogletTools/Amoebius/Show Amoebius Folder", false, 112)]
         [FrogletTool(FrogletToolCategory.Build, Importance = 1,
             Description = "Reveals Library/Amoebius, where the built Amoebius.exe lives.")]
         public static void Reveal()
