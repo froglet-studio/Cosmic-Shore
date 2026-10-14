@@ -56,11 +56,6 @@ trap cleanup EXIT
 git -C "$REPO" worktree remove --force "$WT" >/dev/null 2>&1 || rm -rf "$WT"
 git -C "$REPO" worktree prune
 git -C "$REPO" worktree add --detach --quiet "$WT" HEAD
-if [ ! -f "$WT/Port/src/CosmicShore.Engine/Networking/Wire/Ugs/UgsMultiplayerService.cs" ]; then
-  echo "prisma_party_scenarios: this engine has no UGS Lobby session service (UgsMultiplayerService.cs); the harness" >&2
-  echo "  needs the UGS-only engine (Port/docs/MULTIPLAYER.md §6.10). Merge it in first." >&2
-  exit 2
-fi
 rm -rf "$WT/Assets/_Scripts" && cp -a "$REPO/Assets/_Scripts" "$WT/Assets/_Scripts"
 echo "prisma_party_scenarios: engine gap-fill (worktree only; a no-op once the port has the members)"
 python3 "$HERE/../prisma_edit_mode_tests/gapfill.py" "$WT"

@@ -15,8 +15,7 @@ boot lines for its transport, its whole stack, the UGS project it went online to
 simulated line, so a result names what it ran under. `logs/ugs-auth.log` has one line per sign-in, and
 `logs/standins.log` a relay and Lobby counter line every 30 s.
 
-It needs the **UGS-only engine** (Port/docs/MULTIPLAYER.md §6.10, 2026-10-14): `run.sh` stops with exit 2
-if the engine has no `UgsMultiplayerService`. The shared-folder sessions (`COSMIC_SHORE_NET_DIR`) and
+It runs on the **UGS-only engine** (Port/docs/MULTIPLAYER.md §6.10, 2026-10-14). The shared-folder sessions (`COSMIC_SHORE_NET_DIR`) and
 `COSMIC_SHORE_RELAY` / `--relay-server` it used before are gone from the engine, and so are its old
 `PRISMA_RELAY` switches: every pilot now goes through the relay, as every START ONLINE game does.
 
@@ -42,6 +41,15 @@ fixed 1/60 s, so a slow frame stretches the 7.5 s pre-game cinematic past T4's 1
 `{"cmd":"state"}` on a pilot's control port gives `frame` and `behaviours`. `dotnet-trace collect -p
 PID --profile dotnet-sampled-thread-time` then `dotnet-trace report FILE topN --inclusive` names the
 hot path in a few minutes.
+
+## Follow-ups
+
+- **Two UGS sign-in stand-ins.** The harness uses `ugs_auth_standin.py`; the engine tests use the C#
+  `UgsAuthStandIn`, declared inside `Port/tests/CosmicShore.Tests/UgsAuthenticationTests.cs` beside the xunit
+  tests (line ~20), so `standins/` cannot link it the way it links `UgsLobbyStandIn.cs`. Moving
+  `UgsAuthStandIn` to its own file (a Port change) lets `standins/` host all three services and retires the
+  Python copy. Both answer the same two calls today (`/v1/authentication/anonymous`, `/session-token`) with
+  id tokens shaped `id-PLAYER-N`; check that first if they ever disagree.
 
 ## What it does
 

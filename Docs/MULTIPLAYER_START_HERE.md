@@ -72,7 +72,7 @@ These are on top of the root `CLAUDE.md`; they are decisions the owner has alrea
 
 ### Amoebius (our engine): online is UGS only
 
-Since 2026-10-14 Amoebius plays online exactly one way, the way the Unity build does
+Since 2026-10-14 (#1089) Amoebius plays online exactly one way, the way the Unity build does
 (`Port/docs/MULTIPLAYER.md` §6.10):
 
 - **START** plays offline (`COSMIC_SHORE_NET=off`, one process, no network).
@@ -87,7 +87,7 @@ Since 2026-10-14 Amoebius plays online exactly one way, the way the Unity build 
 - **F3** in any game shows the diagnostics overlay: frame, memory, scene, and online status (stack,
   UGS sign-in, lobby, match role and relay join code, per-peer RTT and traffic).
 
-Removed with it, and no longer to be used or documented as live: the self-hosted online server,
+Removed with it (#1089), and no longer to be used or documented as live: the self-hosted online server (#1080),
 LAN discovery, shared-folder sessions (`COSMIC_SHORE_NET_DIR`, `DirectoryMultiplayerService`),
 `COSMIC_SHORE_NET_SERVER`, `COSMIC_SHORE_RELAY`, `--server`, `--relay-server`, the launcher's NET
 page and the MCP `net_*` tools. What those tools tested stays in the engine and works on any
@@ -106,9 +106,11 @@ faults (`COSMIC_SHORE_NET_FAULT`, `do netfault`) and stats (`do net`).
 | 7 | UGS sign-in (anonymous + session-token resume), UGS Relay as that player, the one-step UGS CHECK | Built and tested against local stand-ins. **The live check waits for you (§5.3)** |
 | 8 | UGS Lobby as the session service; START / START ONLINE; `+ PLAYER 2`; F3 diagnostics | Built 2026-10-14 (`UgsMultiplayerTests` 6/6 on stand-ins); party harness on the stand-ins: **14/14** (2026-10-14, `Tools/Build/prisma_party_scenarios/README.md` § State). **The live test waits for you (§5.3)** |
 
-**When you merge into this branch, run `NetworkWiringGuardTests` and `NetStackTests`.** On 2026-10-14 a
-merge took one side of `PlayerBoot` whole and switched the UDP transport, the relay, the simulator and the
-faults off with every other test green; those two tests fail if a merge drops that wiring again.
+**Networking is built in one place, `NetStack.Install`** (`Port/docs/MULTIPLAYER.md` §6.9): transport, UGS
+Relay, UGS Lobby, then the simulator and faults. **When you merge into this branch, run the engine tests.**
+Once a merge took one side of `PlayerBoot` whole and switched the UDP transport, the relay, the
+simulator and the faults off with every other test green; `NetStackTests` and `NetworkWiringGuardTests`
+fail if a merge drops that wiring again.
 
 ### Unity game: the hardening programme
 
@@ -210,8 +212,8 @@ FAIL names its step (`Port/docs/MULTIPLAYER.md` §6.8 lists what each one means)
    the console, with the environment it tried.
 2. **`+ PLAYER 2`**. Expect a second, smaller window, its console lines prefixed `[P2]`, signing in
    as a **different** player id.
-3. **Party invite.** In the first game: ARCADE, the party panel's **+**, invite player 2's name.
-   Accept in player 2. Expect player 2 seated in player 1's party, both rosters showing both names.
+3. **Party invite.** In the first game: ARCADE, the party panel's **+**, invite player 2's name (or
+   F7, `party invite <player 2's name>`). Accept in player 2. Expect player 2 seated in player 1's party, both rosters showing both names.
    F3 on both: a `lobby` line for the party.
 4. **Match.** Player 1 opens a card (Bloomrush); both press Start. Expect both games in
    the match: F3 shows player 1 `match HOST · relay code XXXXXX` with `client 1` and an RTT, player 2
