@@ -128,7 +128,7 @@ namespace CosmicShore.Launcher
             _window.Load += OnLoad;
             _window.Render += OnRender;
             _window.FramebufferResize += s => _gl?.Viewport(s);
-            _window.Closing += () => { _chats.StopAll(); _s.Save(); _imgui?.Dispose(); };
+            _window.Closing += () => { _chats.StopAll(); _jobs.StopSecondPlayer(); _s.Save(); _imgui?.Dispose(); };
             _window.Run();
             _window.Dispose();
         }
@@ -537,9 +537,23 @@ namespace CosmicShore.Launcher
             // START (offline) and START ONLINE (UGS Lobby + Relay, as the Unity build plays online)
             ImGui.SetCursorScreenPos(new Vector2(x0, y));
             bool ready = _toolsScanned && _tools.Git != null && !_jobs.Busy;
-            if (_jobs.GameRunning)
+            if (_jobs.GameRunning && _jobs.PlayingOnline)
             {
-                Neon.Button("start", _jobs.PlayingOnline ? "ONLINE" : "RUNNING", new Vector2(colW - 150, 96), Neon.Lime, Neon.Hero, 46, enabled: false);
+                // A second online player on this PC, to party up with through UGS.
+                Neon.Button("start", "ONLINE", new Vector2(colW - 300, 96), Neon.Lime, Neon.Hero, 46, enabled: false);
+                ImGui.SameLine(0, 12);
+                bool p2 = _jobs.SecondPlayerRunning;
+                if (Neon.Button("player2", p2 ? "CLOSE P2" : "+ PLAYER 2", new Vector2(138, 96), Neon.Magenta, Neon.Title, 22))
+                {
+                    if (p2) _jobs.StopSecondPlayer(); else _jobs.StartSecondPlayer();
+                }
+                Neon.Tooltip(p2 ? "Close player 2" : "Start a second online game on this PC as another UGS player (profile player2),\nto party up with and play against through UGS");
+                ImGui.SameLine(0, 12);
+                if (Neon.Button("stop", "STOP", new Vector2(138, 96), Neon.Red, Neon.Title, 30)) _jobs.StopGame();
+            }
+            else if (_jobs.GameRunning)
+            {
+                Neon.Button("start", "RUNNING", new Vector2(colW - 150, 96), Neon.Lime, Neon.Hero, 46, enabled: false);
                 ImGui.SameLine(0, 12);
                 if (Neon.Button("stop", "STOP", new Vector2(138, 96), Neon.Red, Neon.Title, 30)) _jobs.StopGame();
             }

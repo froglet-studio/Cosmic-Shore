@@ -215,8 +215,10 @@ SETTINGS > ONLINE:
 - **UGS CHECK**: signs two test players in to UGS (the `relaycheck` profile, the same two every time),
   allocates on UGS Relay, joins by code and sends frames both ways (`CosmicShore --ugs-relay-check`).
 
-Each player is their own UGS player: two people on one PC use different profiles (SETTINGS >
-ADVANCED > Profile).
+Each player is their own UGS player. **+ PLAYER 2**, beside a running online game, starts a second
+online game on this PC as the `player2` profile (its own save and UGS sign-in; a smaller window, no
+sound, its console lines prefixed `[P2]`), so one person can party up with themselves through UGS:
+ARCADE, the party panel's **+**, Invite, accept in the other window. **CLOSE P2** closes it.
 
 ## When Amoebius itself closes unexpectedly
 

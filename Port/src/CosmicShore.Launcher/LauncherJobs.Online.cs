@@ -1,5 +1,6 @@
 using System;
 using System.Diagnostics;
+using System.IO;
 using System.Threading;
 
 namespace CosmicShore.Launcher
@@ -13,6 +14,38 @@ namespace CosmicShore.Launcher
     {
         /// <summary>Whether the game PLAY started last (or is starting) is online.</summary>
         public bool PlayingOnline { get; private set; }
+
+        Process? _secondPlayer;
+
+        /// <summary>Whether the second online player PLAY > + PLAYER 2 started is still running.</summary>
+        public bool SecondPlayerRunning => ProcessRunner.IsRunning(_secondPlayer);
+
+        /// <summary>
+        /// PLAY > + PLAYER 2: while an online game runs, a second online game on this PC as another UGS player
+        /// (its own profile and save, so its own sign-in), to party up with through UGS. The same build START ONLINE
+        /// made, a smaller window beside the first, no sound.
+        /// </summary>
+        public void StartSecondPlayer()
+        {
+            if (SecondPlayerRunning) return;
+            if (!File.Exists(PlayerExe)) { Log.Add(LogKind.Warn, "Press START ONLINE first: player 2 runs the build it makes."); return; }
+            string profile = string.Equals(_s.Profile?.Trim(), "player2", StringComparison.OrdinalIgnoreCase) ? "player3" : "player2";
+            var psi = PlayerStart(PlayerExe, new[] { "--size", "1280x720", "--position", "640,80" }, audio: false, network: true, profile: profile);
+            var p = new Process { StartInfo = psi, EnableRaisingEvents = true };
+            p.OutputDataReceived += (_, e) => { if (e.Data != null) Log.Add(LogKind.Output, "[P2] " + e.Data); };
+            p.ErrorDataReceived += (_, e) => { if (e.Data != null) Log.Add(LogKind.Output, "[P2] " + e.Data); };
+            p.Exited += (_, _) => Log.Add(LogKind.Info, "Player 2 closed.");
+            p.Start();
+            _secondPlayer = p;
+            p.BeginOutputReadLine();
+            p.BeginErrorReadLine();
+            Log.Add(LogKind.Success, $"Player 2 starting online as the '{profile}' profile (its own UGS player). Its lines start with [P2].");
+        }
+
+        public void StopSecondPlayer()
+        {
+            try { if (SecondPlayerRunning) _secondPlayer!.Kill(entireProcessTree: true); } catch (InvalidOperationException) { }
+        }
 
         /// <summary>The UGS environment every game process signs in to, when SETTINGS > ONLINE names one (else the branch's).</summary>
         void OnlineEnvironment(ProcessStartInfo psi)
