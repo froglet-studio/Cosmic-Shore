@@ -14,7 +14,7 @@ namespace Amoebius
     /// (Amoebius sets them from SETTINGS; <c>PRISMA_*</c>, their names before the rename, still
     /// count); otherwise PATH, then the usual install folders.
     /// </summary>
-    public static class DccLocator
+    internal static class DccLocator
     {
         /// <summary>The Blender executable, or null.</summary>
         public static string? FindBlender() => Find("AMOEBIUS_BLENDER", new[] { "blender" }, BlenderInstalls());

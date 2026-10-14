@@ -10,7 +10,7 @@ namespace Amoebius.Workspace
     /// The scheduler's read side. Pure functions of a board and "now" (the user's local clock).
     /// Only open cards count: TO DO and DOING, never suggestions, DONE or dismissed ones.
     /// </summary>
-    public static class BoardQueries
+    internal static class BoardQueries
     {
         /// <summary>Open cards whose deadline has passed: an earlier day, or today at a time already gone.</summary>
         public static List<Item> Overdue(AmoebiusBoard board, DateTime now)
