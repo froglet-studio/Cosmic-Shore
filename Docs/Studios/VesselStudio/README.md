@@ -134,6 +134,22 @@ all three. The Squirrel turns much tighter (a ~29 u radius at cruise against the
 the 45 u vision band, so every unroll folds on an ordinary weave (~40% of points land elsewhere). **Found:** the Pistol's
 vision band must stay narrower than the Goby's tightest turn radius, or the Goby must turn less sharply while it lays path.
 
+**Round 2 (same day, Garrett):**
+- **Rendering parity for the Pistol.** Its world is now drawn by three.js with the same prism mesh, materials, colours,
+  lights, sky and stars as the Goby's view. Only transforms are warped: each prism sits at its unrolled (x, h, d), turned
+  by the ribbon's frame there (flat = Mᵀ · world, M = [T U R]). The sky and stars are turned by the frame at the Pistol,
+  so the Pistol sees the real sky across its ribbon. A perspective side camera gives the depth layers real parallax. The
+  2D canvas on top carries only the HUD and the aim. The ground is a line, a faint floor across the band and a faint
+  curtain below. Not mapped: the drifting decorative field.
+- **The vortex ring** (Q, pad Y, the Vortex button): the Pistol's snap shot as a ring. Prisms near its core are pulled
+  into a toroidal flow (round the core, drifting round the ring), carried, and broken when it collapses.
+- **Enough to interact with:** the world keeps seeding clusters just ahead of the Goby's path (every ~140 u, chance by
+  intensity), and the fauna rings turn.
+- Re-measured (I2, 60 s, both AI, median of 3 seeds): the pair breaks **218 / 172 / 220** blocks (World up / Arc length /
+  Goby's up) against **66** for the Goby alone; the vortex accounts for 18-30 of them. **Found:** with this much to hit,
+  the AI levels stop separating again (the rookie row is level with Hard), so the levels' mistakes are too cheap in a
+  dense world.
+
 ## In Amoebius
 
 VESSEL STUDIO ▸ **OPEN IN AMOEBIUS** builds the checkout's branch and opens the served page as its own window (Sync,

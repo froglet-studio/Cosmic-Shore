@@ -44,7 +44,9 @@
   #viewport canvas { position: absolute; display: block; outline: none; }
   #viewport .vmain { left: 0; top: 0; width: 100%; height: 100%; z-index: 1; }
   #viewport .vinset { right: 10px; top: 10px; width: 36%; height: 38%; z-index: 4; border: 1px solid #ffffff40; border-radius: 8px; box-shadow: 0 6px 24px #000a; }
-  #viewport.split #side { left: 0; bottom: 0; top: auto; right: auto; width: 100%; height: 45%; border: 0; border-top: 1px solid var(--line); border-radius: 0; z-index: 1; box-shadow: none; }
+  #viewport #side.vmain { z-index: 2; } #viewport #side.vinset { z-index: 5; }   /* the Pistol's HUD and aim, over its 3D world (#side3d) */
+  #viewport.split #side3d, #viewport.split #side { left: 0; bottom: 0; top: auto; right: auto; width: 100%; height: 45%; border: 0; border-top: 1px solid var(--line); border-radius: 0; z-index: 1; box-shadow: none; }
+  #viewport.split #side { z-index: 2; }
   #viewport.split #c { left: 0; top: 0; right: auto; width: 100%; height: 55%; border: 0; border-radius: 0; z-index: 1; box-shadow: none; }
   .hud { position: absolute; inset: 0; pointer-events: none; z-index: 5; font-variant-numeric: tabular-nums; }
   .board { position: absolute; left: 10px; top: 10px; display: grid; gap: 2px; min-width: 200px; background: #0b0d16b3; border: 1px solid var(--line); border-radius: 8px; padding: 6px 9px; font-size: 12px; }
@@ -161,6 +163,7 @@
     <section>
       <div id="viewport" class="v-goby">
         <canvas id="side" class="vinset" aria-label="The Pistol's sidescroller"></canvas>
+        <canvas id="side3d" class="vinset" aria-hidden="true"></canvas>
         <canvas id="c" class="vmain" tabindex="0" aria-label="The Goby's 3D world"></canvas>
         <div class="hud">
           <div class="board" id="board"></div>
@@ -178,7 +181,7 @@
         </div>
         <div class="acts" id="acts" aria-label="Abilities of the half you fly">
           <span class="goby-only hintx">Goby: F primer · G flares</span><button class="btn goby-only" id="aPrimer" type="button">Primer</button><button class="btn goby-only" id="aFlare" type="button">Flares</button>
-          <span class="pistol-only hintx">Pistol: hold to dive · drag to launch</span><button class="btn pistol-only" id="aBoom" type="button">Snap (E)</button><button class="btn pistol-only" id="aGhost" type="button">Ghost (G)</button>
+          <span class="pistol-only hintx">Pistol: hold to dive · drag to launch</span><button class="btn pistol-only" id="aVortex" type="button">Vortex (Q)</button><button class="btn pistol-only" id="aBoom" type="button">Snap (E)</button><button class="btn pistol-only" id="aGhost" type="button">Ghost (G)</button>
         </div>
         <div class="stagebtns"><button class="btn phone-only" id="playBtn" type="button">Back to flying</button><span class="transport" id="transport" role="toolbar" aria-label="Play controls"><button class="btn" id="tpPlay" type="button" aria-pressed="false" title="Play / pause (Enter starts, P pauses and resumes)">▶ Play</button><button class="btn" id="tpStop" type="button" title="Stop (R): end the run, back to the start">■ Stop</button></span></div>
         <div class="overlay" id="overlay">
@@ -187,7 +190,7 @@
             <p id="ovText">One duo, two halves. You fly one; the AI flies the other. Swap any time: D-pad left / right, or 1 / 2. The Goby hunts and primes; the Pistol rides the Goby's path in 2D and breaks everything in its band.</p>
             <div class="keys">
               <span>Goby</span><span>two thumbs like the Squirrel: both sticks (or W S pitch · A D yaw · Q E roll · ↑ ↓ throttle) · F primer · G flares</span>
-              <span>Pistol</span><span>press and hold on its view (or Space) to dive · drag to aim, release to launch · E snap · G ghost (pad: A dive, RT + right stick launch, X snap, B ghost)</span>
+              <span>Pistol</span><span>press and hold on its view (or Space) to dive · drag to aim, release to launch · Q vortex ring · E snap · G ghost (pad: A dive, RT + right stick launch, Y vortex, X snap, B ghost)</span>
               <span>Swap</span><span>1 / 2 or D-pad left / right</span>
               <span></span><span>Enter play · P pause · R stop · C camera · V views</span>
             </div>
@@ -198,7 +201,7 @@
           <div class="tz L" id="tzL"><div class="ts idle" id="tsL"><i></i></div></div>
           <div class="tz R" id="tzR"><div class="ts idle" id="tsR"><i></i></div></div>
           <div class="tbar"><button class="btn" id="tStart" type="button">▶ Play</button><button class="btn" id="tSwap" type="button">⇄ Swap</button><button class="btn" id="tCam" type="button">Cam</button><button class="btn" id="tBack" type="button">■ Stop</button><button class="btn" id="tExit" type="button" aria-label="Leave phone play">✕</button></div>
-          <div class="tacts"><button class="btn goby-only" id="tPrimer" type="button">Primer</button><button class="btn goby-only" id="tFlare" type="button">Flares</button><button class="btn pistol-only" id="tBoom" type="button">Explode</button><button class="btn pistol-only" id="tGhost" type="button">Ghost</button></div>
+          <div class="tacts"><button class="btn goby-only" id="tPrimer" type="button">Primer</button><button class="btn goby-only" id="tFlare" type="button">Flares</button><button class="btn pistol-only" id="tVortex" type="button">Vortex</button><button class="btn pistol-only" id="tBoom" type="button">Explode</button><button class="btn pistol-only" id="tGhost" type="button">Ghost</button></div>
           <div class="portrait">Turn the phone sideways</div>
         </div>
       </div>
@@ -248,9 +251,9 @@
           <span>Goby pad</span><span>two thumbs like the Squirrel: both sticks up = nose up, sticks apart = throttle, one up one down = roll · RT primer · LT flares</span>
           <span>Goby phone</span><span>two thumb sticks · Primer · Flares</span>
           <span>Pistol mouse</span><span>press and hold on its view to dive (Tiny Wings) · drag to aim, release to launch · Snap and Ghost buttons on the stage</span>
-          <span>Pistol keys</span><span>Space dive · F quick launch · E snap · G ghost</span>
+          <span>Pistol keys</span><span>Space dive · F quick launch · Q vortex ring · E snap · G ghost</span>
           <span>Pistol pad</span><span>A or LT dive · hold RT, aim with the right stick, release to launch · X explode · B ghost</span>
-          <span>Pistol phone</span><span>hold anywhere to dive · drag to aim, release to launch · Explode · Ghost</span>
+          <span>Pistol phone</span><span>hold anywhere to dive · drag to aim, release to launch · Vortex · Explode · Ghost</span>
           <span>Cameras</span><span>C cycles Chase / Follow / Free (3D) · Free: drag to orbit, wheel to zoom · V switches views</span>
           <span>Transport</span><span>Enter play · P pause / resume · R stop</span>
         </div>
@@ -304,6 +307,7 @@
             <li>AI levels: Hard is the skilled pilot; Medium and Easy notice each new target late (0.25 / 0.5 s mean) and misjudge 4.5% / 9.9% of them (<code>SkimRaceDifficulty.asset</code>, the Vessel Studio's universal levels).</li>
             <li>Everything else is lab-only: the closeness boost, the primer, heat and flares, the Pistol's gravity, dive, launch, blast and ghost, its vision band and body, the hills, and the world (clusters of flora, fauna, enemy walls and friendly blocks, seeded per intensity).</li>
             <li>Not modelled: rival ships (the brief says ships are hot by default), the element meter and its mappings, network ownership of the two halves, co-op (two humans: the offer / accept swap), death and respawn, sound, the real game's prisms and their shields, the phone flip (a Swap button stands in).</li>
+            <li>The Pistol's world is drawn by three.js with the same prism mesh, materials, lights, sky and stars as the Goby's view (rendering parity); only position and orientation are warped: each prism sits at its unrolled place, turned by the ribbon's frame there, and the sky is turned by the frame at the Pistol. A side camera gives the depth its parallax. Not mapped: the drifting background field. The vortex ring is the snap shot as a ring: prisms near its core are pulled into a toroidal flow and carried, then broken when it collapses (lab-only, a setting). The world keeps seeding clusters just ahead of the Goby (lab-only, Trail and hills).</li>
             <li>The 2D world's prisms are drawn where the unroll puts them, at a parallax by depth; prisms off the band are hidden unless primed. Near tight turns two passes of the path compete for a point: the Unroll test counts how often.</li>
           </ul>
         </details>
@@ -372,6 +376,17 @@
     pChain: 40,           // lab-only: a detonating primed block sets off primed blocks this close
     pHotRing: 80,         // lab-only: blocks this close to a detonation (and not primed) turn hot
     pHotLife: 10,         // lab-only
+    pVortexR: 22,         // lab-only: the vortex ring's radius (the pistol shrimp's snap, shot as a ring)
+    pVortexSpeed: 120,    // lab-only
+    pVortexLife: 2.6,     // lab-only, seconds
+    pVortexCapture: 24,   // lab-only: prisms this close to the ring's core are pulled into it
+    pVortexSpin: 7,       // lab-only: how fast captured prisms circle the core (rad/s, the toroidal flow)
+    pVortexMax: 30,       // lab-only: prisms one ring can carry
+    pVortexCd: 4,         // lab-only
+    pVortexCollapse: 1,   // lab-only: 1 = the ring collapses and breaks what it carries; 0 = it lets them go
+    wStreamGap: 140,      // lab-only: every this many u the Goby flies, the world may seed a cluster ahead of it
+    wStreamChance: 0.75,  // lab-only (scaled by intensity)
+    wStreamAhead: 300,    // lab-only: how far ahead of the Goby it seeds
     tSampleGap: 4,        // lab-only: the ribbon is sampled this often along the path
     tBlockGap: 16,        // lab-only: a trail block every this many u
     tHillEvery: 4,        // lab-only: every Nth block is a hinge (a control point)
@@ -415,6 +430,17 @@
     ['Pistol', 'pGhostTime', 0.5, 6, 0.1, 'Ghost s', 'Lab-only.'],
     ['Pistol', 'pChain', 10, 120, 1, 'Chain u', 'Lab-only. Primed blocks this close go up together.'],
     ['Pistol', 'pHotRing', 20, 200, 1, 'Heat ring u', 'Lab-only. Unprimed blocks this close to a detonation turn hot.'],
+    ['Pistol', 'pVortexR', 6, 60, 1, 'Vortex radius', 'Lab-only. The snap shot as a vortex ring: its radius.'],
+    ['Pistol', 'pVortexSpeed', 20, 400, 5, 'Vortex speed', 'Lab-only.'],
+    ['Pistol', 'pVortexLife', 0.5, 8, 0.1, 'Vortex life s', 'Lab-only.'],
+    ['Pistol', 'pVortexCapture', 4, 60, 1, 'Vortex pull u', 'Lab-only. Prisms this close to the ring\'s core are pulled into its toroidal flow.'],
+    ['Pistol', 'pVortexSpin', 1, 20, 0.5, 'Vortex spin', 'Lab-only. Radians per second round the core.'],
+    ['Pistol', 'pVortexMax', 1, 80, 1, 'Vortex carries', 'Lab-only. Prisms one ring can carry.'],
+    ['Pistol', 'pVortexCd', 0.5, 15, 0.5, 'Vortex cooldown', 'Lab-only.'],
+    ['Pistol', 'pVortexCollapse', 0, 1, 1, 'Vortex collapses', 'Lab-only. 1: the ring collapses and breaks what it carries. 0: it lets them go where they are.'],
+    ['Trail', 'wStreamGap', 40, 600, 10, 'Seed every u', 'Lab-only. The world keeps seeding clusters ahead of the Goby, so the Pistol always has things to hit.'],
+    ['Trail', 'wStreamChance', 0, 1, 0.05, 'Seed chance', 'Lab-only. 0 = only the clusters the run starts with.'],
+    ['Trail', 'wStreamAhead', 100, 800, 10, 'Seed ahead u', 'Lab-only.'],
     ['Trail', 'tBlockGap', 6, 40, 1, 'Block gap u', 'Lab-only.'],
     ['Trail', 'tHillEvery', 1, 12, 1, 'Hinge every N', 'Lab-only. Every Nth block is a hinge, alternately up and down.'],
     ['Trail', 'tHillAmp', 0, 90, 1, 'Hill height u', 'Lab-only. How far a hinge lifts or drops the ground. 0: the path alone.'],
@@ -522,7 +548,7 @@
     let sd = Infinity, sk = -1;
     for (let k = k0; k <= k1; k++) { if (Math.abs(k - bk) <= 6) continue; const d2 = segD2(rb, k, q, goby); if (d2 < sd) { sd = d2; sk = k; } }
     const k = bk, t = bt, X0 = RX(rb, k), X1 = RX(rb, k + 1);
-    out.x = X0 + (X1 - X0) * t;
+    out.x = X0 + (X1 - X0) * t; out.k = k; out.t = t;
     if (goby) {
       const cx = lerp(rb.px[k], rb.px[k + 1], t), cy = lerp(rb.py[k], rb.py[k + 1], t), cz = lerp(rb.pz[k], rb.pz[k + 1], t), rx = q.x - cx, ry = q.y - cy, rz = q.z - cz;
       const up = vnorm(V(lerp(rb.ux[k], rb.ux[k + 1], t), lerp(rb.uy[k], rb.uy[k + 1], t), lerp(rb.uz[k], rb.uz[k + 1], t)));
@@ -559,23 +585,17 @@
   function makeWorld(o) {
     const PP = o.P, rng = mulberry32((o.seed * 7919 + o.intensity * 104729) >>> 0), I = INTENSITY[o.intensity];
     const W = { o, P: PP, t: 0, rng, rngAI: mulberry32((o.seed * 31337 + 17) >>> 0), rb: makeRibbon(o.mode), events: [], fx: [], flares: [], endX: 0, endY: 0, gx: 0,
-      px: [], py: [], pz: [], kind: [], alive: [], primed: [], hot: [], ra: [], rb2: [], clusters: [], crystals: [], N: 0, aliveN: 0,
-      stats: { pistolKills: 0, chainKills: 0, flareKills: 0, friendly: 0, crystals: 0, primers: 0, volleys: 0, detonations: 0, launches: 0, explodes: 0, goodLand: 0, badLand: 0, air: 0, gapSum: 0, steps: 0, speedSum: 0 },
+      px: [], py: [], pz: [], kind: [], alive: [], primed: [], hot: [], ra: [], rb2: [], capt: [], clusters: [], crystals: [], N: 0, aliveN: 0, vortices: [], streamAcc: 0,
+      stats: { pistolKills: 0, chainKills: 0, flareKills: 0, vortexKills: 0, vortexShots: 0, seeded: 0, friendly: 0, crystals: 0, primers: 0, volleys: 0, detonations: 0, launches: 0, explodes: 0, goodLand: 0, badLand: 0, air: 0, gapSum: 0, steps: 0, speedSum: 0 },
       aiG: { key: null, noticeAt: 0, mis: false, misOff: V(0, 0, 0), misUntil: 0, aim: null, cluster: null, out: {} }, aiP: { scanAt: 0, vis: [], key: -1, noticeAt: 0, mis: false, out: {}, aim: null } };
-    const addPrism = (x, y, z, kind, c) => { W.px.push(x); W.py.push(y); W.pz.push(z); W.kind.push(kind); W.alive.push(1); W.primed.push(-1); W.hot.push(-1); W.ra.push(rng() * Math.PI); W.rb2.push(rng() * Math.PI); c.ids.push(W.N); W.N++; };
     for (let ci = 0; ci < I.clusters; ci++) {
       let cx, cy, cz, kind;
       if (ci < 3) { cz = -(300 + ci * 300); cx = (rng() - 0.5) * 140; cy = (rng() - 0.5) * 100; kind = [0, 2, 3][ci]; }
       else {
         const u = rng() * 2 - 1, th = rng() * Math.PI * 2, rr = 1100 * Math.cbrt(rng()), sxy = Math.sqrt(1 - u * u);
-        cx = rr * sxy * Math.cos(th); cz = rr * sxy * Math.sin(th); cy = rr * u * 0.4;
-        const roll = rng(); kind = roll < 0.35 ? 0 : roll < 0.6 ? 1 : roll < 0.85 ? 2 : 3;
+        cx = rr * sxy * Math.cos(th); cz = rr * sxy * Math.sin(th); cy = rr * u * 0.4; kind = -1;
       }
-      const c = { id: ci, c: V(cx, cy, cz), kind, ids: [], r: 30, visited: false };
-      if (kind === 0) for (let i = 0; i < 16; i++) { const a = rng() * Math.PI * 2, rr = 26 * Math.sqrt(rng()); addPrism(cx + Math.cos(a) * rr, cy - 8 + rng() * 44, cz + Math.sin(a) * rr, 0, c); }
-      else if (kind === 1) { const nx = vnorm(V(rng() - 0.5, rng() - 0.5, rng() - 0.5)), ax = vnorm(vcross(nx, V(0, 1, 0.3))), bx = vcross(nx, ax); for (let i = 0; i < 10; i++) { const a = i / 10 * Math.PI * 2; addPrism(cx + (ax.x * Math.cos(a) + bx.x * Math.sin(a)) * 24, cy + (ax.y * Math.cos(a) + bx.y * Math.sin(a)) * 24, cz + (ax.z * Math.cos(a) + bx.z * Math.sin(a)) * 24, 1, c); } }
-      else { const rows = kind === 2 ? 3 : 2, yaw = rng() * Math.PI, rx = Math.cos(yaw), rz = Math.sin(yaw); for (let r = 0; r < rows; r++) for (let k = 0; k < 6; k++) addPrism(cx + rx * (k - 2.5) * 9, cy + (r - (rows - 1) / 2) * 9, cz + rz * (k - 2.5) * 9, kind, c); }
-      W.clusters.push(c);
+      spawnCluster(W, V(cx, cy, cz), kind);
     }
     W.aliveN = W.N;
     for (let k = 0; k < I.crystals; k++) W.crystals.push({ id: k, on: true, p: k === 0 ? V(70, 20, -650) : crystalSpot(W) });
@@ -587,10 +607,91 @@
     const start = V(0, 0, -160); layPath(W, W.g.pos, start); W.g.pos = start; gobyEnds(W);
     if (!o.noPistol) {
       const y0 = groundAt(W, 0);
-      W.p = { x: 0, y: y0, vx: 0, vy: 0, v: PP.pMinSpeed + 25, grounded: true, launch: PP.pLaunchCharges, launchT: 0, lastLaunchAt: -9, explodeAt: 0, ghostAt: 0, ghostUntil: -1, freeBoom: false, prevExplode: false, prevGhost: false, wpos: V(0, y0, 0) };
+      W.p = { x: 0, y: y0, vx: 0, vy: 0, v: PP.pMinSpeed + 25, grounded: true, vortexAt: 0, prevVortex: false, launch: PP.pLaunchCharges, launchT: 0, lastLaunchAt: -9, explodeAt: 0, ghostAt: 0, ghostUntil: -1, freeBoom: false, prevExplode: false, prevGhost: false, wpos: V(0, y0, 0) };
       ribUnmap(W.rb, 0, y0, 0, W.p.wpos);
     } else W.p = null;
     return W;
+  }
+  const MAXN = 2400;   // prisms a run can hold (the render's instance budget)
+  function spawnCluster(W, c0, kind) {   // one cluster of flora, fauna, an enemy wall or friendly blocks, seeded from W.rng
+    const rng = W.rng, cx = c0.x, cy = c0.y, cz = c0.z;
+    if (kind < 0) { const roll = rng(); kind = roll < 0.35 ? 0 : roll < 0.6 ? 1 : roll < 0.85 ? 2 : 3; }
+    const c = { id: W.clusters.length, c: V(cx, cy, cz), kind, ids: [], r: 30, visited: false };
+    const add = (x, y, z) => { W.px.push(x); W.py.push(y); W.pz.push(z); W.kind.push(kind); W.alive.push(1); W.primed.push(-1); W.hot.push(-1); W.ra.push(rng() * Math.PI); W.rb2.push(rng() * Math.PI); W.capt.push(0); c.ids.push(W.N); W.N++; W.aliveN++; };
+    if (kind === 0) for (let i = 0; i < 16; i++) { const a = rng() * Math.PI * 2, rr = 26 * Math.sqrt(rng()); add(cx + Math.cos(a) * rr, cy - 8 + rng() * 44, cz + Math.sin(a) * rr); }
+    else if (kind === 1) {   // fauna: a ring that turns (it moves: the vortex and the Pistol meet moving prisms too)
+      const nx = vnorm(V(rng() - 0.5, rng() - 0.5, rng() - 0.5)), ax = vnorm(vcross(nx, V(0, 1, 0.3))), bx = vcross(nx, ax);
+      c.ax = ax; c.bx = bx; c.ang = 0; c.spin = (rng() < 0.5 ? -1 : 1) * (0.4 + rng() * 0.6);
+      for (let i = 0; i < 10; i++) { const a = i / 10 * Math.PI * 2; add(cx + (ax.x * Math.cos(a) + bx.x * Math.sin(a)) * 24, cy + (ax.y * Math.cos(a) + bx.y * Math.sin(a)) * 24, cz + (ax.z * Math.cos(a) + bx.z * Math.sin(a)) * 24); }
+    } else { const rows = kind === 2 ? 3 : 2, yaw = rng() * Math.PI, rx = Math.cos(yaw), rz = Math.sin(yaw); for (let r = 0; r < rows; r++) for (let k = 0; k < 6; k++) add(cx + rx * (k - 2.5) * 9, cy + (r - (rows - 1) / 2) * 9, cz + rz * (k - 2.5) * 9); }
+    W.clusters.push(c); return c;
+  }
+  function faunaStep(W, dt) {
+    for (const c of W.clusters) {
+      if (c.kind !== 1) continue; c.ang += c.spin * dt;
+      c.ids.forEach((i, n) => { if (!W.alive[i] || W.capt[i]) return; const a = n / 10 * Math.PI * 2 + c.ang, ca = Math.cos(a) * 24, sa = Math.sin(a) * 24; W.px[i] = c.c.x + c.ax.x * ca + c.bx.x * sa; W.py[i] = c.c.y + c.ax.y * ca + c.bx.y * sa; W.pz[i] = c.c.z + c.ax.z * ca + c.bx.z * sa; });
+    }
+  }
+  function streamStep(W, dt) {   // lab-only: keep seeding clusters just ahead of the Goby, inside the band its path will become
+    const P = W.P, g = W.g; if (W.o.noStream || P.wStreamChance <= 0) return;
+    W.streamAcc += g.speed * dt;
+    while (W.streamAcc >= P.wStreamGap) {
+      W.streamAcc -= P.wStreamGap;
+      if (W.N > MAXN - 20 || W.rng() > P.wStreamChance * [0.6, 0.8, 1, 1.2][W.o.intensity - 1]) continue;
+      const ahead = P.wStreamAhead + W.rng() * 120, side = (W.rng() - 0.5) * 2 * P.pVision * 0.8, up = (W.rng() - 0.5) * 90;
+      spawnCluster(W, vadd(g.pos, vadd(vscl(g.f, ahead), vadd(vscl(g.r, side), vscl(g.u, up)))), -1); W.stats.seeded++;
+    }
+  }
+  // the ribbon's frame at segment k, fraction t: T along the unrolled path, U its up, R across (into the screen's depth)
+  function ribFrame(rb, k, t, out) {
+    k = clamp(k, 0, Math.max(0, rb.n - 2));
+    if (rb.mode === 'goby') {
+      out.T = vnorm(V(rb.px[k + 1] - rb.px[k], rb.py[k + 1] - rb.py[k], rb.pz[k + 1] - rb.pz[k]));
+      out.U = vnorm(V(lerp(rb.ux[k], rb.ux[k + 1], t), lerp(rb.uy[k], rb.uy[k + 1], t), lerp(rb.uz[k], rb.uz[k + 1], t)));
+      out.R = vnorm(V(lerp(rb.rx[k], rb.rx[k + 1], t), lerp(rb.ry[k], rb.ry[k + 1], t), lerp(rb.rz[k], rb.rz[k + 1], t)));
+    } else { const hx = rb.hx[k + 1], hz = rb.hz[k + 1]; out.T = V(hx, 0, hz); out.U = V(0, 1, 0); out.R = V(-hz, 0, hx); }
+    return out;
+  }
+  function ribFrameAt(rb, x, out) { const k = ribIdx(rb, x), X0 = RX(rb, k), X1 = RX(rb, k + 1); return ribFrame(rb, k, X1 > X0 ? clamp((x - X0) / (X1 - X0), 0, 1) : 0, out); }
+  // ---- the vortex ring: the snap shot as a ring; prisms near its core are pulled into a toroidal flow and carried ----
+  function fireVortex(W, aim) {   // aim: {dx, dy} in the Pistol's plane; straight ahead along the path when none is given
+    const p = W.p; let dx = 1, dy = 0;
+    if (aim && typeof aim === 'object' && Math.hypot(aim.dx, aim.dy) > 1) { const l = Math.hypot(aim.dx, aim.dy); dx = aim.dx / l; dy = aim.dy / l; }
+    const F = ribFrameAt(W.rb, p.x, {}), n = vnorm(vadd(vscl(F.T, dx), vscl(F.U, dy)));
+    const e1 = vnorm(vcross(n, Math.abs(n.y) < 0.9 ? V(0, 1, 0) : V(1, 0, 0))), e2 = vcross(n, e1);
+    W.vortices.push({ c: V(p.wpos.x, p.wpos.y, p.wpos.z), n, e1, e2, life: P.pVortexLife, age: 0, cap: [] });
+    W.stats.vortexShots++;
+  }
+  function vortexStep(W, dt) {
+    const P = W.P, R = P.pVortexR;
+    for (const v of W.vortices) {
+      v.c = vadd(v.c, vscl(v.n, P.pVortexSpeed * dt)); v.life -= dt; v.age += dt;
+      if (v.cap.length < P.pVortexMax) {
+        const reach2 = (R + P.pVortexCapture) ** 2;
+        for (let i = 0; i < W.N && v.cap.length < P.pVortexMax; i++) {
+          if (!W.alive[i] || W.capt[i]) continue;
+          const rx = W.px[i] - v.c.x, ry = W.py[i] - v.c.y, rz = W.pz[i] - v.c.z; if (rx * rx + ry * ry + rz * rz > reach2) continue;
+          const a = rx * v.n.x + ry * v.n.y + rz * v.n.z, qx = rx - v.n.x * a, qy = ry - v.n.y * a, qz = rz - v.n.z * a, rr = Math.hypot(qx, qy, qz);
+          const core = Math.hypot(rr - R, a); if (core > P.pVortexCapture) continue;
+          v.cap.push({ i, th: Math.atan2(qx * v.e2.x + qy * v.e2.y + qz * v.e2.z, qx * v.e1.x + qy * v.e1.y + qz * v.e1.z), ph: Math.atan2(a, rr - R), rho: Math.max(2, core) });
+          W.capt[i] = 1;
+        }
+      }
+      for (const c of v.cap) {   // the toroidal flow: round the core (poloidal), drifting slowly round the ring (toroidal)
+        if (!W.alive[c.i]) continue;
+        c.ph += P.pVortexSpin * dt; c.th += 0.8 * dt; c.rho += (4 - c.rho) * (1 - Math.exp(-2.5 * dt));
+        const ct = Math.cos(c.th), st = Math.sin(c.th), rad = R + c.rho * Math.cos(c.ph), ax = c.rho * Math.sin(c.ph);
+        W.px[c.i] = v.c.x + v.n.x * ax + (v.e1.x * ct + v.e2.x * st) * rad;
+        W.py[c.i] = v.c.y + v.n.y * ax + (v.e1.y * ct + v.e2.y * st) * rad;
+        W.pz[c.i] = v.c.z + v.n.z * ax + (v.e1.z * ct + v.e2.z * st) * rad;
+        W.ra[c.i] += 4 * dt;
+      }
+      if (v.life <= 0) {
+        for (const c of v.cap) { if (!W.alive[c.i]) continue; W.capt[c.i] = 0; if (P.pVortexCollapse >= 0.5) kill(W, c.i, 'vortex'); }
+        if (P.pVortexCollapse >= 0.5) W.fx.push({ kind: 'collapse', w: V(v.c.x, v.c.y, v.c.z), t: W.t });
+      }
+    }
+    W.vortices = W.vortices.filter((v) => v.life > 0);
   }
   function crystalSpot(W) {
     const live = W.clusters.filter((c) => c.ids.some((i) => W.alive[i]) && c.kind !== 3), c = live.length ? live[Math.floor(W.rng() * live.length)] : W.clusters[0];
@@ -679,7 +780,7 @@
   }
   function kill(W, i, by) {
     if (!W.alive[i]) return; W.alive[i] = 0; W.aliveN--;
-    const st = W.stats; if (W.kind[i] === 3) st.friendly++; else if (by === 'flare') st.flareKills++; else if (by === 'chain') st.chainKills++; else st.pistolKills++;
+    const st = W.stats; if (W.kind[i] === 3) st.friendly++; else if (by === 'flare') st.flareKills++; else if (by === 'chain') st.chainKills++; else if (by === 'vortex') st.vortexKills++; else st.pistolKills++;
     W.fx.push({ kind: 'pop', i, t: W.t });
     if (W.primed[i] > W.t && by !== 'flare') detonate(W, i);   // a prime is for the PISTOL to set off ("primed for explosion by the bird"); a flare only takes its one block
   }
@@ -739,6 +840,8 @@
     p.prevExplode = !!inp.explode;
     if (inp.ghost && !p.prevGhost && W.t >= p.ghostAt) { p.ghostUntil = W.t + P.pGhostTime; p.ghostAt = W.t + P.pGhostCd; }
     p.prevGhost = !!inp.ghost;
+    if (inp.vortex && !p.prevVortex && W.t >= p.vortexAt) { fireVortex(W, inp.vortex); p.vortexAt = W.t + P.pVortexCd; }
+    p.prevVortex = !!inp.vortex;
     // the body: a cylinder across the band, breaking everything it touches but the Goby's trail (friendly fire ON)
     const half = P.pVision + 4, reach = half + P.pBodyR + 16, r2 = reach * reach, q = p.wpos;
     if (W.t >= p.ghostUntil) for (let i = 0; i < W.N; i++) {
@@ -746,6 +849,7 @@
       const m = ribMap(W.rb, ppos(W, i), p.x - reach - 30, p.x + reach + 30, MP); if (!m.ok) continue;
       if (Math.abs(m.d) > half || Math.hypot(m.x - p.x, m.h - p.y) > P.pBodyR + 3) continue;
       if (p.freeBoom) { p.freeBoom = false; blast(W, true); }
+      if (!W.alive[i]) continue;
       kill(W, i, 'body');
       if (p.grounded) p.v *= 0.97; else p.vx *= 0.97;
     }
@@ -766,7 +870,7 @@
   function takeCrystal(W, c, who) {   // a crystal restocks BOTH halves (Garrett, 2026-10-14); the Pistol's own bonus on top
     const g = W.g, P = W.P, p = W.p;
     g.primer = P.gPrimerCharges; g.flare = P.gFlareCharges; g.primerT = g.flareT = 0;
-    if (p) { p.launch = P.pLaunchCharges; p.launchT = 0; p.explodeAt = W.t; p.ghostAt = W.t; if (who === 'pistol') p.freeBoom = true; }
+    if (p) { p.launch = P.pLaunchCharges; p.launchT = 0; p.explodeAt = W.t; p.ghostAt = W.t; p.vortexAt = W.t; if (who === 'pistol') p.freeBoom = true; }
     W.stats.crystals++; W.events.push(who === 'pistol' ? 'Pistol took the crystal: cooldowns reset, a free snap on its next hit' : 'Goby took the crystal: both halves restocked');
     c.p = crystalSpot(W);
   }
@@ -784,7 +888,7 @@
     W.t += dt; W.stats.steps++;
     gobyStep(W, dt, inG);
     if (W.p) pistolStep(W, dt, inP || {});
-    flareStep(W, dt); crystalStep(W);
+    flareStep(W, dt); vortexStep(W, dt); faunaStep(W, dt); streamStep(W, dt); crystalStep(W);
     if (W.p) W.stats.gapSum += W.gx - W.p.x;
     W.stats.speedSum += W.g.speed;
     if (W.fx.length > 80) W.fx.splice(0, W.fx.length - 80);
@@ -872,8 +976,14 @@
       }
     }
     if (t >= p.ghostAt) for (const v of B.vis) if (v.friendly && Math.abs(v.d) <= P.pVision && v.x > p.x && v.x - p.x < 60 && Math.abs(v.h - p.y) < 25) { ghost = true; break; }
-    const out = { dive, launch, explode: explode && !B.out.explode, ghost: ghost && !B.out.ghost };
-    B.out = { explode, ghost }; return out;
+    let vortex = false;
+    if (t >= p.vortexAt) {
+      let best = null, bs = 0;
+      for (const v of B.vis) { if (v.friendly || v.x < p.x + 20 || v.x > p.x + 200 || Math.abs(v.h - p.y) > 120) continue; let sc = 0; for (const o of B.vis) if (!o.friendly && Math.hypot(o.x - v.x, o.h - v.h) < P.pVortexR + P.pVortexCapture) sc++; if (sc > bs) { bs = sc; best = v; } }
+      if (best && bs >= 4) vortex = { dx: best.x - p.x, dy: best.h - p.y };
+    }
+    const out = { dive, launch, explode: explode && !B.out.explode, ghost: ghost && !B.out.ghost, vortex: vortex && !B.out.vortex ? vortex : false };
+    B.out = { explode, ghost, vortex: !!vortex }; return out;
   }
 
   // ================= headless: the scorecard =================
@@ -881,7 +991,7 @@
     const W = makeWorld(Object.assign({ P: Object.assign({}, P), mode: S.mode, intensity: 2, seed: 1 }, o)), dt = 1 / 30, steps = Math.round((o.secs || 60) / dt);
     for (let k = 0; k < steps; k++) stepWorld(W, dt, gobyAI(W, o.gl || 'Hard'), W.p ? pistolAI(W, o.pl || 'Hard') : null);
     const st = W.stats;
-    return { pistol: st.pistolKills, chain: st.chainKills, flares: st.flareKills, total: st.pistolKills + st.chainKills + st.flareKills, friendly: st.friendly, crystals: st.crystals, gap: W.p ? Math.round(st.gapSum / st.steps) : null, air: W.p ? Math.round(st.air / (st.steps * dt) * 100) : null, speed: Math.round(st.speedSum / st.steps), landings: st.goodLand + '/' + (st.goodLand + st.badLand) };
+    return { pistol: st.pistolKills, chain: st.chainKills, flares: st.flareKills, vortex: st.vortexKills, total: st.pistolKills + st.chainKills + st.flareKills + st.vortexKills, friendly: st.friendly, crystals: st.crystals, gap: W.p ? Math.round(st.gapSum / st.steps) : null, air: W.p ? Math.round(st.air / (st.steps * dt) * 100) : null, speed: Math.round(st.speedSum / st.steps), landings: st.goodLand + '/' + (st.goodLand + st.badLand) };
   }
   // The unroll test (brief 4.1): fly scripted paths, build each unroll, then ask it questions that can say NO.
   const PATHS = [
@@ -927,7 +1037,7 @@
   const mark = VesselStudioLook.marker($('viewport'));
   const DOM = () => VesselStudioDomains.get(S.domain);
   const enemyDom = () => VesselStudioDomains.list.find((d) => d.playable && d.key !== S.domain);
-  const MAXP = 1000, MAXB = 2600;
+  const MAXP = MAXN, MAXB = 2600;
   const prismMesh = new THREE.InstancedMesh(new THREE.BoxGeometry(3.5, 3.5, 9), new THREE.MeshStandardMaterial({ roughness: 0.5, metalness: 0.05, flatShading: true }), MAXP);
   prismMesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage); prismMesh.frustumCulled = false; scene.add(prismMesh);
   const blockMesh = new THREE.InstancedMesh(new THREE.BoxGeometry(5, 0.9, 13), new THREE.MeshStandardMaterial({ roughness: 0.4, metalness: 0.1, emissive: 0x0a2a2a, flatShading: true }), MAXB);
@@ -949,6 +1059,9 @@
   const thinkMat = new THREE.LineBasicMaterial({ color: 0x4be38f }); const thinkLine = new THREE.Line(thinkGeo, thinkMat); thinkLine.frustumCulled = false; scene.add(thinkLine);
   const booms = []; for (let i = 0; i < 6; i++) { const m = new THREE.Mesh(new THREE.SphereGeometry(1, 16, 10), new THREE.MeshBasicMaterial({ color: 0xffb070, transparent: true, opacity: 0.5, depthWrite: false })); m.visible = false; scene.add(m); booms.push(m); }
   let crystalMeshes = [];
+  const VORT_N = 6, torusGeo = new THREE.TorusGeometry(1, 0.16, 10, 48), torusMat = new THREE.MeshBasicMaterial({ color: 0x9fe8ff, transparent: true, opacity: 0.55, depthWrite: false, blending: THREE.AdditiveBlending });
+  const tori = []; for (let i = 0; i < VORT_N; i++) { const m = new THREE.Mesh(torusGeo, torusMat); m.visible = false; scene.add(m); tori.push(m); }
+  const ZAX = new THREE.Vector3(0, 0, 1);
   const dum = new THREE.Object3D(), col = new THREE.Color(), tq = new THREE.Quaternion(), tm = new THREE.Matrix4(), tv = new THREE.Vector3(), tv2 = new THREE.Vector3(), tv3 = new THREE.Vector3();
   const KCOL = () => [new THREE.Color(0x4be38f), new THREE.Color(0xffd23f), new THREE.Color(enemyDom().hex), new THREE.Color(DOM().hex)];
   let kcol = KCOL();
@@ -1013,6 +1126,7 @@
     for (; bi < booms.length; bi++) booms[bi].visible = false;
     fxGeo.setDrawRange(0, ln * 2); fxGeo.attributes.position.needsUpdate = true;
     W.crystals.forEach((c, i) => { const m = crystalMeshes[i]; if (!m) return; m.position.set(c.p.x, c.p.y, c.p.z); VesselStudioLook.spinCrystal(m, now + i); });
+    tori.forEach((m, i) => { const v = W.vortices[i]; m.visible = !!v; if (!v) return; m.position.set(v.c.x, v.c.y, v.c.z); m.quaternion.setFromUnitVectors(ZAX, tv.set(v.n.x, v.n.y, v.n.z)); m.scale.setScalar(W.P.pVortexR); m.rotation.z += 0; });
     // Show AI thinking: the Goby AI's line to what it is flying for (green = target, amber = not noticed yet, red = misjudged)
     const B = W.aiG; thinkLine.visible = S.thinking && halfIsAI('goby') && !!B.want;
     if (thinkLine.visible) { const ta = thinkGeo.attributes.position.array; ta.set([g.pos.x, g.pos.y, g.pos.z, B.want.x, B.want.y, B.want.z]); thinkGeo.attributes.position.needsUpdate = true; thinkMat.color.set(B.misjudged ? 0xff5c6c : B.unnoticed ? 0xffb454 : 0x4be38f); }
@@ -1033,76 +1147,132 @@
     cam.lookAt(g.pos.x + g.f.x * 30, g.pos.y + g.f.y * 30, g.pos.z + g.f.z * 30);
   }
 
-  // ================= rendering: the Pistol's sidescroller (brief 4: the unrolled ribbon, parallax depth) =================
+  // ================= rendering: the Pistol's sidescroller (brief 4) =================
+  // RENDERING PARITY: the Pistol's world is drawn by three.js with the SAME meshes, materials, lights, sky and stars as the
+  // Goby's view. Only positions and orientations are warped: every prism, block, crystal, flare and ring is placed at its
+  // unrolled (x, h, d) and turned by the ribbon's frame there (flat = M^T world, M = [T U R]). The sky and stars, being
+  // infinitely far, are turned by the frame at the Pistol, so it sees the real sky across its ribbon. A perspective side
+  // camera gives the depth layers their parallax for free. The 2D canvas on top (#side) carries only the HUD and the aim.
   const SC = { x: 0, y: 0, k: 1, w: 1, h: 1 };
-  const starRng = mulberry32(99), stars2d = []; for (let i = 0; i < 90; i++) stars2d.push({ x: starRng(), y: starRng(), z: 0.15 + starRng() * 0.5, s: starRng() < 0.15 ? 2 : 1 });
   const pTrail = []; const vis2d = []; const MPR = {};
-  const pf = (d) => clamp(P.pParallax / Math.max(1, P.pParallax + d), 0.4, 1.8);
   const sxo = (x, f) => SC.w / 2 + (x - SC.x) * SC.k * f, syo = (h, f) => SC.h / 2 - (h - SC.y) * SC.k * f;
+  const side3d = $('side3d');
+  const r2 = VesselStudioTheme.renderer(THREE, { canvas: side3d, antialias: true });
+  r2.setPixelRatio(Math.min(2, window.devicePixelRatio || 1));
+  const pscene = new THREE.Scene(), PFOV = 32, pcam = new THREE.PerspectiveCamera(PFOV, 16 / 10, 1, 20000);
+  const PENV = VesselStudioLook.install(pscene, { field: 0 });
+  const pHemi = pscene.children.find((o) => o.isHemisphereLight), pSun = pscene.children.find((o) => o.isDirectionalLight);
+  const pPrism = new THREE.InstancedMesh(prismMesh.geometry, prismMesh.material, MAXP); pPrism.instanceMatrix.setUsage(THREE.DynamicDrawUsage); pPrism.frustumCulled = false; pscene.add(pPrism);
+  const pFaint = new THREE.InstancedMesh(prismMesh.geometry, new THREE.MeshStandardMaterial({ roughness: 0.5, metalness: 0.05, flatShading: true, transparent: true, opacity: 0.35, depthWrite: false }), 400); pFaint.instanceMatrix.setUsage(THREE.DynamicDrawUsage); pFaint.frustumCulled = false; pscene.add(pFaint);
+  const pBlock = new THREE.InstancedMesh(blockMesh.geometry, blockMesh.material, 600); pBlock.instanceMatrix.setUsage(THREE.DynamicDrawUsage); pBlock.frustumCulled = false; pscene.add(pBlock);
+  const GN = 220;   // the ground: a line at the band's centre, a faint floor across the band, a faint curtain below it
+  const mkStrip = (mat) => { const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.BufferAttribute(new Float32Array(GN * 2 * 3), 3)); const idx = []; for (let k = 0; k < GN - 1; k++) { const a = k * 2; idx.push(a, a + 1, a + 2, a + 1, a + 3, a + 2); } g.setIndex(idx); const m = new THREE.Mesh(g, mat); m.frustumCulled = false; pscene.add(m); return m; };
+  const gFloor = mkStrip(new THREE.MeshBasicMaterial({ color: 0x13fff2, transparent: true, opacity: 0.1, side: THREE.DoubleSide, depthWrite: false }));
+  const gCurtain = mkStrip(new THREE.MeshBasicMaterial({ color: 0x13fff2, transparent: true, opacity: 0.07, side: THREE.DoubleSide, depthWrite: false }));
+  const gLineGeo = new THREE.BufferGeometry(); gLineGeo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(GN * 3), 3));
+  const gLine = new THREE.Line(gLineGeo, new THREE.LineBasicMaterial({ color: 0x13fff2 })); gLine.frustumCulled = false; pscene.add(gLine);
+  const pPistolMat = new THREE.MeshStandardMaterial({ color: 0xff8a3d, emissive: 0x5a2205, roughness: 0.4, transparent: true, opacity: 0.9 });
+  const pPistol = new THREE.Mesh(new THREE.CylinderGeometry(1, 1, 1, 24), pPistolMat); pscene.add(pPistol);
+  const pGoby = gobyG.clone(); pscene.add(pGoby);
+  const pFlare = new THREE.Points(new THREE.BufferGeometry(), flarePts.material); pFlare.geometry.setAttribute('position', new THREE.BufferAttribute(new Float32Array(64 * 3), 3)); pFlare.frustumCulled = false; pscene.add(pFlare);
+  const pTori = []; for (let i = 0; i < VORT_N; i++) { const m = new THREE.Mesh(torusGeo, torusMat); m.visible = false; pscene.add(m); pTori.push(m); }
+  const pBooms = []; for (let i = 0; i < 6; i++) { const m = new THREE.Mesh(booms[0].geometry, booms[0].material.clone()); m.visible = false; pscene.add(m); pBooms.push(m); }
+  let pCrystals = [];
+  const FM = new THREE.Matrix4(), FMT = new THREE.Matrix4(), FQ = new THREE.Quaternion(), fT = new THREE.Vector3(), fU = new THREE.Vector3(), fR = new THREE.Vector3(), FR = {};
+  function flatFrame(F) { fT.set(F.T.x, F.T.y, F.T.z); fU.set(F.U.x, F.U.y, F.U.z); fR.set(F.R.x, F.R.y, F.R.z); FM.makeBasis(fT, fU, fR); FMT.copy(FM).transpose(); FQ.setFromRotationMatrix(FMT); return FQ; }
+  function mountSide(W) {
+    for (const c of pCrystals) pscene.remove(c);
+    pCrystals = W.crystals.map(() => { const c = VesselStudioLook.crystal(0x7fffd4, 7); pscene.add(c); return c; });
+    const dc = new THREE.Color(DOM().hex); gFloor.material.color.copy(dc); gCurtain.material.color.copy(dc); gLine.material.color.copy(dc);
+  }
   function sideCam(W, dt, snap) {
     const p = W.p; SC.w = side.width; SC.h = side.height; SC.k = SC.w / P.pViewWidth;
     const tx = p.x + 0.2 * P.pViewWidth, gy = groundAt(W, p.x), ty = Math.max(p.y, gy) + 0.08 * SC.h / SC.k;
     SC.x = tx; SC.y = snap ? ty : lerp(SC.y, ty, clamp(dt * 4, 0, 1));
   }
   function sideList(W) {
-    const p = W.p, q = p.wpos, half = P.pViewWidth * 0.7, r2 = (half + 260) ** 2; vis2d.length = 0;
+    const p = W.p, q = p.wpos, half = P.pViewWidth * 0.75, rr = (half + 260) ** 2; vis2d.length = 0;
     for (let i = 0; i < W.N; i++) {
-      if (!W.alive[i]) continue; if ((W.px[i] - q.x) ** 2 + (W.py[i] - q.y) ** 2 + (W.pz[i] - q.z) ** 2 > r2) continue;
+      if (!W.alive[i]) continue; if ((W.px[i] - q.x) ** 2 + (W.py[i] - q.y) ** 2 + (W.pz[i] - q.z) ** 2 > rr) continue;
       const m = ribMap(W.rb, ppos(W, i), p.x - half, p.x + half, MPR); if (!m.ok) continue;
       const primed = W.primed[i] > W.t, off = Math.abs(m.d) > P.pVision; if (off && !primed) continue;
-      vis2d.push({ i, x: m.x, h: m.h, d: off ? 0 : m.d, faint: off, primed, hot: isHot(W, i), amb: m.amb });
+      vis2d.push({ i, x: m.x, h: m.h, d: m.d, k: MPR.k, t: MPR.t, faint: off, primed, hot: isHot(W, i), amb: m.amb });
     }
-    vis2d.sort((a, b) => b.d - a.d);
   }
-  function drawPrism2D(W, v, alpha) {
-    const f = pf(v.d), x = sxo(v.x, f), y = syo(v.h, f); if (x < -30 || x > SC.w + 30 || y < -30 || y > SC.h + 30) return;
-    const w = Math.max(2, 3.5 * SC.k * f), h = Math.max(4, 9 * SC.k * f), k = W.kind[v.i];
-    sctx.save(); sctx.translate(x, y); sctx.rotate(W.ra[v.i]); sctx.globalAlpha = alpha;
-    sctx.fillStyle = v.primed ? '#b98bff' : ['#4be38f', '#ffd23f', enemyDom().color, DOM().color][k];
-    sctx.fillRect(-w / 2, -h / 2, w, h);
-    if (v.hot) { sctx.strokeStyle = '#ff6a2a'; sctx.lineWidth = 1.5; sctx.strokeRect(-w / 2 - 2, -h / 2 - 2, w + 4, h + 4); }
-    if (k === 3) { sctx.strokeStyle = '#ffffff'; sctx.lineWidth = 1; sctx.setLineDash([2, 2]); sctx.strokeRect(-w / 2, -h / 2, w, h); sctx.setLineDash([]); }
-    sctx.restore();
+  const qW = new THREE.Quaternion(), eW = new THREE.Euler();
+  function renderSide3D(W, now) {
+    const p = W.p, w = side3d.clientWidth, h = side3d.clientHeight; if (!p || !w || !h || r2.noWebGL) return;
+    pcam.aspect = w / h; pcam.fov = PFOV; pcam.updateProjectionMatrix();
+    const dist = (P.pViewWidth / 2) / (Math.tan(PFOV * DEG / 2) * pcam.aspect);
+    pcam.position.set(0, SC.y, dist); pcam.up.set(0, 1, 0); pcam.lookAt(0, SC.y, 0);
+    // the sky and lights, turned by the frame at the Pistol (they are infinitely far: a rotation is exact)
+    const Fq = flatFrame(ribFrameAt(W.rb, p.x, FR)).clone();
+    PENV.sky.quaternion.copy(Fq); PENV.stars.quaternion.copy(Fq);
+    if (pSun) pSun.position.set(0.4, 1, 0.3).applyQuaternion(Fq); if (pHemi) pHemi.position.set(0, 1, 0).applyQuaternion(Fq);
+    // prisms: the same mesh, material and colours as the 3D view, at their unrolled place and turned by the ribbon there
+    let n = 0, nf = 0;
+    for (const v of vis2d) {
+      const q = flatFrame(ribFrame(W.rb, v.k, v.t, FR)); eW.set(W.ra[v.i], W.rb2[v.i], 0); qW.setFromEuler(eW);
+      dum.quaternion.copy(q).multiply(qW); dum.position.set(v.x - SC.x, v.h, v.faint ? clamp(v.d, -P.pVision, P.pVision) : v.d); dum.scale.setScalar(1); dum.updateMatrix();
+      if (W.primed[v.i] > W.t) col.copy(kcol[W.kind[v.i]]).lerp(C_PRIMED, 0.75); else if (W.hot[v.i] > W.t) col.copy(C_HOT); else col.copy(kcol[W.kind[v.i]]);
+      if (W.kind[v.i] === 0 && !(W.primed[v.i] > W.t)) col.lerp(C_HOT, 0.25 + 0.15 * Math.sin(now * 3 + v.i));
+      if (v.faint) { if (nf < 400) { pFaint.setMatrixAt(nf, dum.matrix); pFaint.setColorAt(nf, col); nf++; } }
+      else { pPrism.setMatrixAt(n, dum.matrix); pPrism.setColorAt(n, col); n++; }
+    }
+    pPrism.count = n; pPrism.instanceMatrix.needsUpdate = true; if (pPrism.instanceColor) pPrism.instanceColor.needsUpdate = true;
+    pFaint.count = nf; pFaint.instanceMatrix.needsUpdate = true; if (pFaint.instanceColor) pFaint.instanceColor.needsUpdate = true;
+    // the ground and the trail's blocks on it (the hinges tilt up and down in turn)
+    const xa = Math.max(cpX(W, 0), SC.x - P.pViewWidth * 0.75), xb = Math.min(W.gx, SC.x + P.pViewWidth * 0.75), show = xb > xa;
+    gFloor.visible = gCurtain.visible = gLine.visible = show;
+    if (show) {
+      const fa = gFloor.geometry.attributes.position.array, ca = gCurtain.geometry.attributes.position.array, la = gLineGeo.attributes.position.array;
+      for (let k = 0; k < GN; k++) {
+        const x = lerp(xa, xb, k / (GN - 1)), y = groundAt(W, x), fx = x - SC.x;
+        fa.set([fx, y, -P.pVision, fx, y, P.pVision], k * 6); ca.set([fx, y, -P.pVision, fx, y - 600, -P.pVision], k * 6); la.set([fx, y, 0], k * 3);
+      }
+      gFloor.geometry.attributes.position.needsUpdate = true; gCurtain.geometry.attributes.position.needsUpdate = true; gLineGeo.attributes.position.needsUpdate = true;
+      gFloor.geometry.computeBoundingSphere(); gCurtain.geometry.computeBoundingSphere();
+    }
+    let nb = 0;
+    for (let j = W.blocks.length - 1; j >= 0 && nb < 600; j--) {
+      const b = W.blocks[j]; if (b.x < xa - 20) break; if (b.x > xb + 20) continue;
+      const y = groundAt(W, b.x), a = Math.atan(GS) + (b.hinge ? b.sign * P.tAngle * DEG : 0);
+      dum.position.set(b.x - SC.x, y, 0); dum.rotation.set(0, Math.PI / 2, 0); dum.rotateX(-a); dum.scale.set(b.hinge ? 1.5 : 1, 1, 1); dum.updateMatrix(); pBlock.setMatrixAt(nb++, dum.matrix);
+    }
+    pBlock.count = nb; pBlock.instanceMatrix.needsUpdate = true;
+    // the Pistol: the cylinder, END ON (its length runs into the screen, across the band: brief 4.4)
+    const half = P.pVision + 4; pPistol.position.set(p.x - SC.x, p.y, 0); pPistol.rotation.set(Math.PI / 2, now * 2, 0); pPistol.scale.set(P.pBodyR, half * 2, P.pBodyR);
+    pPistolMat.opacity = W.t < p.ghostUntil ? 0.3 : 0.9; pPistolMat.emissive.setHex(p.freeBoom ? 0x7a5a05 : 0x5a2205);
+    // the Goby at the end of the ground, turned by the frame there
+    const g = W.g, gq = flatFrame(ribFrameAt(W.rb, W.gx, FR)); pGoby.position.set(W.gx - SC.x, W.endY, 0);
+    tm.makeBasis(tv.set(g.r.x, g.r.y, g.r.z), tv2.set(g.u.x, g.u.y, g.u.z), tv3.set(-g.f.x, -g.f.y, -g.f.z)); tq.setFromRotationMatrix(tm); pGoby.quaternion.copy(gq).multiply(tq);
+    // crystals, flares, vortex rings, blasts: mapped the same way
+    const win = (pt) => { const m = ribMap(W.rb, pt, p.x - P.pViewWidth, p.x + P.pViewWidth, MPR); return m.ok && Math.abs(m.d) < P.pVision * 3 ? m : null; };
+    W.crystals.forEach((c, i) => { const m = pCrystals[i]; if (!m) return; const mm = win(c.p); m.visible = !!mm; if (mm) { m.position.set(mm.x - SC.x, mm.h, mm.d); VesselStudioLook.spinCrystal(m, now + i); } });
+    const fa2 = pFlare.geometry.attributes.position.array; let fn = 0;
+    for (const F of W.flares) { if (fn >= 64) break; const mm = win(F.p); if (!mm) continue; fa2[fn * 3] = mm.x - SC.x; fa2[fn * 3 + 1] = mm.h; fa2[fn * 3 + 2] = mm.d; fn++; }
+    pFlare.geometry.setDrawRange(0, fn); pFlare.geometry.attributes.position.needsUpdate = true;
+    pTori.forEach((m, i) => { const v = W.vortices[i]; const mm = v && win(v.c); m.visible = !!mm; if (!mm) return; const q = flatFrame(ribFrame(W.rb, MPR.k, MPR.t, FR)); m.position.set(mm.x - SC.x, mm.h, mm.d); tv.set(v.n.x, v.n.y, v.n.z).applyQuaternion(q); m.quaternion.setFromUnitVectors(ZAX, tv); m.scale.setScalar(P.pVortexR); });
+    let bi = 0;
+    for (const f of W.fx) { const age = W.t - f.t; if ((f.kind === 'boom' || f.kind === 'collapse') && age < 0.5 && bi < pBooms.length) { const mm = win(f.w); if (!mm) continue; const m = pBooms[bi++]; m.visible = true; m.position.set(mm.x - SC.x, mm.h, mm.d); m.scale.setScalar(Math.max(1, (f.kind === 'boom' ? P.pBlastR : P.pVortexR) * (0.3 + age / 0.5))); m.material.opacity = 0.5 * (1 - age / 0.5); m.material.color.setHex(f.kind === 'boom' ? 0xffb070 : 0x9fe8ff); } }
+    for (; bi < pBooms.length; bi++) pBooms[bi].visible = false;
+    r2.render(pscene, pcam);
   }
   function drawSide(W, dt, snap) {
     const p = W.p; const w = side.width, h = side.height; if (!w || !h) return;
     const g = sctx, dpr = side.width / Math.max(1, side.clientWidth);
-    const grad = g.createLinearGradient(0, 0, 0, h); grad.addColorStop(0, '#0d1030'); grad.addColorStop(1, '#2a1240'); g.fillStyle = grad; g.fillRect(0, 0, w, h);
-    if (!p) { g.fillStyle = '#8e95bf'; g.font = (14 * dpr) + 'px sans-serif'; g.fillText('No Pistol in this run', 12 * dpr, 24 * dpr); return; }
+    g.clearRect(0, 0, w, h);
+    if (!p) { g.fillStyle = '#05060c'; g.fillRect(0, 0, w, h); g.fillStyle = '#8e95bf'; g.font = (14 * dpr) + 'px sans-serif'; g.fillText('No Pistol in this run', 12 * dpr, 24 * dpr); return; }
     sideCam(W, dt, snap); sideList(W);
-    g.fillStyle = '#ffffff'; for (const s of stars2d) { const x = ((s.x * w - SC.x * SC.k * s.z * 0.2) % w + w) % w, y = ((s.y * h + SC.y * SC.k * s.z * 0.2) % h + h) % h; g.globalAlpha = 0.25 + s.z; g.fillRect(x, y, s.s * dpr, s.s * dpr); }
-    g.globalAlpha = 1;
-    for (const v of vis2d) if (!v.faint && v.d > 0) drawPrism2D(W, v, clamp(1 - v.d / (P.pVision * 2.2), 0.35, 1));
-    // the ground: the hinge curve, from where the Pistol's world starts to the Goby
-    const x0 = Math.max(cpX(W, 0), SC.x - w / 2 / SC.k), x1 = Math.min(W.gx, SC.x + w / 2 / SC.k);
-    if (x1 > x0) {
-      const dom = DOM().color, step = 3 * dpr / SC.k;
-      g.beginPath(); g.moveTo(sxo(x0, 1), h); for (let x = x0; x <= x1; x += step) g.lineTo(sxo(x, 1), syo(groundAt(W, x), 1)); g.lineTo(sxo(x1, 1), syo(groundAt(W, x1), 1)); g.lineTo(sxo(x1, 1), h); g.closePath();
-      const gg = g.createLinearGradient(0, 0, 0, h); gg.addColorStop(0, dom + '55'); gg.addColorStop(1, '#05060c'); g.fillStyle = gg; g.fill();
-      g.beginPath(); for (let x = x0; x <= x1; x += step) { const sx = sxo(x, 1), sy = syo(groundAt(W, x), 1); if (x === x0) g.moveTo(sx, sy); else g.lineTo(sx, sy); } g.strokeStyle = dom; g.lineWidth = 2 * dpr; g.stroke();
-      for (const b of W.blocks) {   // the trail's blocks sit on the curve; the hinges tilt up and down in turn
-        if (b.x < x0 || b.x > x1) continue; const y = groundAt(W, b.x), a = Math.atan(GS) + (b.hinge ? b.sign * P.tAngle * DEG : 0);
-        g.save(); g.translate(sxo(b.x, 1), syo(y, 1)); g.rotate(-a); g.fillStyle = b.hinge ? '#ffffff' : dom; g.globalAlpha = b.hinge ? 0.9 : 0.6; const bw = Math.max(4, 13 * SC.k), bh = Math.max(2, 1.8 * SC.k); g.fillRect(-bw / 2, -bh / 2, bw, bh); g.restore();
-      }
-    }
-    // the Goby, at the end of the ground (or an arrow to it)
+    if (r2.noWebGL) { g.fillStyle = '#0d1030'; g.fillRect(0, 0, w, h); }
+    const band = g.createLinearGradient(0, 0, 0, 52 * dpr); band.addColorStop(0, 'rgba(5,6,12,0.55)'); band.addColorStop(1, 'rgba(5,6,12,0)'); g.fillStyle = band; g.fillRect(0, 0, w, 52 * dpr);   // a backdrop for the HUD text
+    // the Goby off to the right: an arrow and how far
     const gxS = sxo(W.gx, 1), gyS = syo(W.endY, 1);
-    g.fillStyle = DOM().color;
-    if (gxS < w - 10 * dpr) { g.beginPath(); g.ellipse(gxS, gyS, 9 * dpr, 4.5 * dpr, 0, 0, Math.PI * 2); g.fill(); g.beginPath(); g.moveTo(gxS - 8 * dpr, gyS); g.lineTo(gxS - 15 * dpr, gyS - 5 * dpr); g.lineTo(gxS - 15 * dpr, gyS + 5 * dpr); g.fill(); }
-    else { const yy = clamp(gyS, 14 * dpr, h - 14 * dpr); g.beginPath(); g.moveTo(w - 4 * dpr, yy); g.lineTo(w - 14 * dpr, yy - 7 * dpr); g.lineTo(w - 14 * dpr, yy + 7 * dpr); g.fill(); g.font = (11 * dpr) + 'px sans-serif'; g.textAlign = 'right'; g.fillText('GOBY ' + Math.round(W.gx - p.x) + ' u', w - 18 * dpr, yy + 4 * dpr); g.textAlign = 'left'; }
-    // the Pistol: the cylinder end on, with its claw and a tiny trail
+    if (gxS > w - 10 * dpr) { g.fillStyle = DOM().color; const yy = clamp(gyS, 14 * dpr, h - 14 * dpr); g.beginPath(); g.moveTo(w - 4 * dpr, yy); g.lineTo(w - 14 * dpr, yy - 7 * dpr); g.lineTo(w - 14 * dpr, yy + 7 * dpr); g.fill(); g.font = (11 * dpr) + 'px sans-serif'; g.textAlign = 'right'; g.fillText('GOBY ' + Math.round(W.gx - p.x) + ' u', w - 18 * dpr, yy + 4 * dpr); g.textAlign = 'left'; }
+    // its tiny trail
     if (!snap) { pTrail.push([p.x, p.y]); if (pTrail.length > 26) pTrail.shift(); } else pTrail.length = 0;
     g.strokeStyle = '#ff8a3d88'; g.lineWidth = 1.5 * dpr; g.beginPath(); pTrail.forEach(([x, y], i) => { const sx = sxo(x, 1), sy = syo(y, 1); if (i) g.lineTo(sx, sy); else g.moveTo(sx, sy); }); g.stroke();
-    const px = sxo(p.x, 1), py = syo(p.y, 1), pr = Math.max(7 * dpr, P.pBodyR * SC.k * 1.3), ghost = W.t < p.ghostUntil;
-    g.globalAlpha = ghost ? 0.4 : 1; g.fillStyle = '#ff8a3d'; g.beginPath(); g.arc(px, py, pr, 0, Math.PI * 2); g.fill();
-    g.fillStyle = '#7a2e08'; g.beginPath(); g.arc(px, py, pr * 0.55, 0, Math.PI * 2); g.fill();
-    g.strokeStyle = '#ffd0a8'; g.lineWidth = 2 * dpr; g.beginPath(); g.arc(px + pr * 0.9, py - pr * 0.2, pr * 0.6, -1.2, 1.2); g.stroke();
-    if (ghost) { g.setLineDash([3 * dpr, 3 * dpr]); g.beginPath(); g.arc(px, py, pr + 4 * dpr, 0, Math.PI * 2); g.stroke(); g.setLineDash([]); }
-    if (p.freeBoom) { g.strokeStyle = '#ffd23f'; g.beginPath(); g.arc(px, py, pr + 7 * dpr, 0, Math.PI * 2); g.stroke(); }
-    g.globalAlpha = 1;
-    for (const v of vis2d) if (!v.faint && v.d <= 0) drawPrism2D(W, v, 0.75);
-    for (const v of vis2d) if (v.faint) drawPrism2D(W, Object.assign({}, v, { d: 0 }), 0.4);   // primed, off the band: seen faintly
-    for (const f of W.fx) { const age = W.t - f.t; if (f.kind === 'boom' && age < 0.5) { g.strokeStyle = f.free ? '#ffd23f' : '#ffb070'; g.lineWidth = 3 * dpr; g.globalAlpha = 1 - age / 0.5; g.beginPath(); g.arc(sxo(f.x, 1), syo(f.y, 1), P.pBlastR * SC.k * (0.4 + age / 0.5 * 0.6), 0, Math.PI * 2); g.stroke(); g.globalAlpha = 1; } }
+    const px = sxo(p.x, 1), py = syo(p.y, 1);
     // the launch aim (yours) and the AI's (Show AI thinking)
     const aim = aimNow(W);
     if (aim) {
@@ -1117,9 +1287,9 @@
     g.font = '600 ' + (12 * dpr) + 'px sans-serif'; g.fillStyle = '#e9ecff';
     const cd = (at) => (W.t >= at ? 'ready' : (at - W.t).toFixed(1) + ' s');
     const lines = ['PISTOL · ' + (halfIsAI('pistol') ? 'AI ' + levelOf('pistol') : 'you') + ' · ' + Math.round(p.grounded ? p.v : Math.hypot(p.vx, p.vy)) + ' u/s · ' + (p.grounded ? 'ground' : 'air'),
-      'Launch ' + p.launch + '/' + P.pLaunchCharges + ' · Snap ' + cd(p.explodeAt) + ' · Ghost ' + (W.t < p.ghostUntil ? 'on' : cd(p.ghostAt)) + (p.freeBoom ? ' · FREE SNAP' : '')];
+      'Launch ' + p.launch + '/' + P.pLaunchCharges + ' · Vortex ' + cd(p.vortexAt) + ' · Snap ' + cd(p.explodeAt) + ' · Ghost ' + (W.t < p.ghostUntil ? 'on' : cd(p.ghostAt)) + (p.freeBoom ? ' · FREE SNAP' : '')];
     const inset = $('viewport').classList.contains('v-goby') && S.views === 'inset';
-    const hx = inset ? 8 : (S.views === 'split' ? 12 : 232), hy = inset ? 16 : (S.views === 'split' ? 20 : 58);   // clear of the board and the pills when it is the main view
+    const hx = inset ? 8 : (S.views === 'split' ? 12 : 232), hy = inset ? 16 : (S.views === 'split' ? 20 : 58);
     lines.forEach((s, i) => g.fillText(s, hx * dpr, hy * dpr + i * 15 * dpr));
   }
 
@@ -1165,7 +1335,7 @@
   canvas.addEventListener('wheel', (e) => { if (S.cam !== 'Free') return; orbit.dist = clamp(orbit.dist * (e.deltaY > 0 ? 1.1 : 0.9), 30, 1500); e.preventDefault(); }, { passive: false });
   // touch play: the Goby's two thumb sticks; for the Pistol, both halves of the screen take its one gesture
   const touch = { used: false, L: { x: 0, y: 0, id: null, x0: 0, y0: 0 }, R: { x: 0, y: 0, id: null, x0: 0, y0: 0 } };
-  const btn = { primer: false, flares: false, boom: false, ghost: false };   // the on-stage and phone ability buttons
+  const btn = { primer: false, flares: false, boom: false, ghost: false, vortex: false };   // the on-stage and phone ability buttons
   function bindZone(zone, key, ring) {
     const el = $(zone), ts = $(ring);
     el.addEventListener('pointerdown', (e) => {
@@ -1180,7 +1350,7 @@
   }
   bindZone('tzL', 'L', 'tsL'); bindZone('tzR', 'R', 'tsR');
   const pulse = (k) => (e) => { btn[k] = true; touched(); if (e) e.stopPropagation(); };
-  for (const [id, k] of [['tPrimer', 'primer'], ['tFlare', 'flares'], ['tBoom', 'boom'], ['tGhost', 'ghost'], ['aPrimer', 'primer'], ['aFlare', 'flares'], ['aBoom', 'boom'], ['aGhost', 'ghost']]) $(id).addEventListener('click', pulse(k));
+  for (const [id, k] of [['tPrimer', 'primer'], ['tFlare', 'flares'], ['tBoom', 'boom'], ['tGhost', 'ghost'], ['aPrimer', 'primer'], ['aFlare', 'flares'], ['aBoom', 'boom'], ['aGhost', 'ghost'], ['aVortex', 'vortex'], ['tVortex', 'vortex']]) $(id).addEventListener('click', pulse(k));
   function takeBtn(k) { const v = btn[k]; btn[k] = false; return v; }
   function humanGoby(dt) {
     const g = readPad(), primerB = takeBtn('primer'), flaresB = takeBtn('flares');
@@ -1193,16 +1363,16 @@
   }
   function humanPistol() {
     const g = readPad(); let launch = pendingLaunch; pendingLaunch = null;
-    const boomB = takeBtn('boom'), ghostB = takeBtn('ghost'), pressDive = ptr.on && !ptr.aiming ? 1 : 0;
+    const boomB = takeBtn('boom'), ghostB = takeBtn('ghost'), vortexB = takeBtn('vortex'), pressDive = ptr.on && !ptr.aiming ? 1 : 0;
     if (g && (g.axes.some((a) => Math.abs(a) > 0.12) || g.buttons.some((b) => b && b.pressed))) {
       touched(); const rt = g.buttons[7] ? g.buttons[7].value : 0;
       if (rt > 0.5) padAim = { dx: dz(g.axes[2]) * P.pLaunchRange, dy: -dz(g.axes[3]) * P.pLaunchRange };
       else if (padAim) { if (Math.hypot(padAim.dx, padAim.dy) > 10) launch = padAim; padAim = null; }
-      return { dive: Math.max(pressDive, g.buttons[0] && g.buttons[0].pressed ? 1 : 0, g.buttons[6] ? g.buttons[6].value : 0), launch, explode: boomB || !!(g.buttons[2] && g.buttons[2].pressed), ghost: ghostB || !!(g.buttons[1] && g.buttons[1].pressed) };
+      return { dive: Math.max(pressDive, g.buttons[0] && g.buttons[0].pressed ? 1 : 0, g.buttons[6] ? g.buttons[6].value : 0), launch, explode: boomB || !!(g.buttons[2] && g.buttons[2].pressed), ghost: ghostB || !!(g.buttons[1] && g.buttons[1].pressed), vortex: (vortexB || !!(g.buttons[3] && g.buttons[3].pressed)) && (aimNow(W) || { dx: 1, dy: 0 }) };
     }
     if (keys.has('KeyF') && !padPrev.f) launch = { dx: 0.7 * P.pLaunchRange, dy: 0.45 * P.pLaunchRange };
     padPrev.f = keys.has('KeyF');
-    return { dive: Math.max(pressDive, keys.has('Space') || keys.has('KeyS') || keys.has('ArrowDown') ? 1 : 0), launch, explode: boomB || keys.has('KeyE'), ghost: ghostB || keys.has('KeyG') };
+    return { dive: Math.max(pressDive, keys.has('Space') || keys.has('KeyS') || keys.has('ArrowDown') ? 1 : 0), launch, explode: boomB || keys.has('KeyE'), ghost: ghostB || keys.has('KeyG'), vortex: (vortexB || keys.has('KeyQ')) && (aimNow(W) || { dx: 1, dy: 0 }) };
   }
   function padSwapCheck() {
     const g = readPad(); if (!g) return;
@@ -1232,7 +1402,7 @@
     const vp = $('viewport'), split = S.views === 'split';
     vp.classList.toggle('split', split); vp.classList.toggle('v-goby', S.fly === 'goby'); vp.classList.toggle('v-pistol', S.fly === 'pistol');
     document.body.classList.toggle('fly-goby', S.fly === 'goby'); document.body.classList.toggle('fly-pistol', S.fly === 'pistol');
-    canvas.className = split || S.fly === 'goby' ? 'vmain' : 'vinset'; side.className = split || S.fly === 'pistol' ? 'vmain' : 'vinset';
+    canvas.className = split || S.fly === 'goby' ? 'vmain' : 'vinset'; side.className = split || S.fly === 'pistol' ? 'vmain' : 'vinset'; side3d.className = side.className;
     lastW = lastH = 0;
   }
 
@@ -1240,8 +1410,8 @@
   let W = null, race = 'ready', paused = false, seedN = lsGet(LS + '.seed', 1), manualClock = false;
   function newRace() {
     W = makeWorld({ P, mode: S.mode, intensity: S.course, seed: seedN, domain: S.domain });
-    mountWorld(W); idleAI = false; race = 'ready'; paused = false; feed.length = 0; renderFeed();
-    resize(); drawWorld3D(W, 0); placeCamera(W, 0, true); drawSide(W, 0, true);
+    mountWorld(W); mountSide(W); idleAI = false; race = 'ready'; paused = false; feed.length = 0; renderFeed();
+    resize(); drawWorld3D(W, 0); placeCamera(W, 0, true); drawSide(W, 0, true); renderSide3D(W, 0);
     $('ovTitle').textContent = 'Duo run, intensity ' + S.course + ' · ' + MODES[S.mode]; $('startBtn').textContent = 'Start'; $('overlay').hidden = false;
   }
   function startRace() { if (race === 'finished') newRace(); race = 'running'; paused = false; $('overlay').hidden = true; lastHuman = performance.now(); canvas.focus({ preventScroll: true }); }
@@ -1329,14 +1499,14 @@
   const VARIANTS = [['Duo, Hard / Hard', { gl: 'Hard', pl: 'Hard' }], ['Rookie: Easy / Easy', { gl: 'Easy', pl: 'Easy' }], ['No Pistol (baseline)', { gl: 'Hard', noPistol: true }], ['No primer', { gl: 'Hard', pl: 'Hard', noPrimer: true }], ['No closeness speed', { gl: 'Hard', pl: 'Hard', noClose: true }]];
   function renderDuo(rows) {
     const t = $('duoTbl'); t.textContent = ''; if (!rows) return;
-    const hd = elx('tr'); for (const h of ['Duo runs (I' + rows.intensity + ', ' + rows.secs + ' s, median of ' + rows.seeds + ')', 'Total', 'Pistol', 'Chain', 'Flares', 'Friendly', 'Crystals', 'Gap u', 'Air %', 'Goby u/s', 'Smooth landings']) hd.appendChild(elx('th', null, h)); t.appendChild(hd);
-    for (const r of rows.rows) { const tr = elx('tr'); tr.appendChild(elx('td', null, r.name)); for (const k of ['total', 'pistol', 'chain', 'flares', 'friendly', 'crystals', 'gap', 'air', 'speed', 'landings']) tr.appendChild(elx('td', null, r[k] == null ? '·' : String(r[k]))); t.appendChild(tr); }
+    const hd = elx('tr'); for (const h of ['Duo runs (I' + rows.intensity + ', ' + rows.secs + ' s, median of ' + rows.seeds + ')', 'Total', 'Pistol', 'Chain', 'Flares', 'Vortex', 'Friendly', 'Crystals', 'Gap u', 'Air %', 'Goby u/s', 'Smooth landings']) hd.appendChild(elx('th', null, h)); t.appendChild(hd);
+    for (const r of rows.rows) { const tr = elx('tr'); tr.appendChild(elx('td', null, r.name)); for (const k of ['total', 'pistol', 'chain', 'flares', 'vortex', 'friendly', 'crystals', 'gap', 'air', 'speed', 'landings']) tr.appendChild(elx('td', null, r[k] == null ? '·' : String(r[k]))); t.appendChild(tr); }
   }
   const med = (a) => { const v = a.slice().sort((x, y) => x - y); return v[Math.floor(v.length / 2)]; };
   function duoScorecard(intensity, secs, seeds) {
     return { intensity, secs, seeds: seeds.length, rows: VARIANTS.map(([name, o]) => {
       const rs = seeds.map((seed) => runDuo(Object.assign({ intensity, secs, seed }, o))), r = { name };
-      for (const k of ['total', 'pistol', 'chain', 'flares', 'friendly', 'crystals', 'gap', 'air', 'speed']) r[k] = rs[0][k] == null ? null : med(rs.map((x) => x[k]));
+      for (const k of ['total', 'pistol', 'chain', 'flares', 'vortex', 'friendly', 'crystals', 'gap', 'air', 'speed']) r[k] = rs[0][k] == null ? null : med(rs.map((x) => x[k]));
       r.landings = rs[0].landings; return r;
     }) };
   }
@@ -1388,7 +1558,7 @@
     pips($('pPrimer'), g.primer, P.gPrimerCharges, 'Primer'); pips($('pFlare'), g.flare, P.gFlareCharges, 'Flares');
     const b = $('board'); b.textContent = '';
     const hd = elx('div', 'hd'); hd.append(elx('span', null, 'I' + S.course + ' · ' + Math.max(0, P.runSecs - W.t).toFixed(0) + ' s left'), elx('span', null, S.mode)); b.appendChild(hd);
-    for (const [k, v] of [['Pistol', st.pistolKills], ['Chain (primed)', st.chainKills], ['Flares', st.flareKills], ['Friendly broken', st.friendly], ['Crystals', st.crystals]]) { const r = elx('div', 'row'); r.append(elx('span', null, k), elx('b', null, String(v))); b.appendChild(r); }
+    for (const [k, v] of [['Pistol', st.pistolKills], ['Chain (primed)', st.chainKills], ['Flares', st.flareKills], ['Vortex', st.vortexKills], ['Friendly broken', st.friendly], ['Crystals', st.crystals]]) { const r = elx('div', 'row'); r.append(elx('span', null, k), elx('b', null, String(v))); b.appendChild(r); }
     const wf = $('whoFlies'); wf.textContent = ''; wf.append(document.createTextNode('You fly the '), elx('b', null, S.fly === 'goby' ? 'Goby' : 'Pistol'), document.createTextNode(S.you !== 'You' ? ' (AI ' + S.you + ')' : ' · 1 / 2 or D-pad ← → to swap'));
     $('holding').hidden = !idleAI; document.body.classList.toggle('ai-you', S.you !== 'You' || idleAI);
     $('camTag').textContent = S.cam + ' camera (3D)';
@@ -1410,7 +1580,7 @@
     const w = canvas.clientWidth || 960, h = canvas.clientHeight || 600;
     if (w !== lastW || h !== lastH) { lastW = w; lastH = h; renderer.setSize(w, h, false); cam.aspect = w / h; cam.updateProjectionMatrix(); }
     const dpr = Math.min(2, window.devicePixelRatio || 1), sw = Math.round((side.clientWidth || 320) * dpr), sh = Math.round((side.clientHeight || 200) * dpr);
-    if (sw !== lastSW || sh !== lastSH) { lastSW = sw; lastSH = sh; side.width = sw; side.height = sh; }
+    if (sw !== lastSW || sh !== lastSH) { lastSW = sw; lastSH = sh; side.width = sw; side.height = sh; r2.setSize(side3d.clientWidth || 320, side3d.clientHeight || 200, false); }
   }
   window.addEventListener('resize', resize);
   let last = performance.now(), hudT = 0, acc = 0;
@@ -1424,7 +1594,7 @@
       if (n >= 12) acc = 0;
     }
     ENV.update(dt);
-    if (W) { drawWorld3D(W, now / 1000); placeCamera(W, dt, false); markCrystal(); drawSide(W, dt, false); }
+    if (W) { drawWorld3D(W, now / 1000); placeCamera(W, dt, false); markCrystal(); drawSide(W, dt, false); renderSide3D(W, now / 1000); }
     renderer.render(scene, cam);
     hudT += dt; if (hudT > 0.1) { hudT = 0; hud(); }
     requestAnimationFrame(frame);
@@ -1460,7 +1630,7 @@
   if (PLATFORM.device === 'phone') setPlayMode(true);
 
   // ================= the test surface (D14, /labmaker 2.2) =================
-  function tick(dt, n) { dt = dt || STEP; n = n || 1; if (race === 'ready') { race = 'running'; $('overlay').hidden = true; } for (let i = 0; i < n && race === 'running'; i++) stepOnce(dt); drawWorld3D(W, W.t); placeCamera(W, dt, false); drawSide(W, dt, false); hud(); }
+  function tick(dt, n) { dt = dt || STEP; n = n || 1; if (race === 'ready') { race = 'running'; $('overlay').hidden = true; } for (let i = 0; i < n && race === 'running'; i++) stepOnce(dt); drawWorld3D(W, W.t); placeCamera(W, dt, false); drawSide(W, dt, false); renderSide3D(W, W.t); hud(); }
   function reset(seed) { if (seed != null) seedN = seed; newRace(); race = 'running'; $('overlay').hidden = true; }
   function runBatch() { return { unroll: unrollTest(S.mode).map((r) => [r.path, r.maxSlope, r.ambPct, r.offPct]), duo: runDuo({ intensity: 2, seed: 3, secs: 20, gl: 'Hard', pl: 'Hard' }) }; }
   function score() { return lastScore || runBatch(); }
@@ -1471,7 +1641,7 @@
     set: (k, v) => { S[k] = v; save(); applyViews(); newRace(); },
     get manualClock() { return manualClock; }, set manualClock(v) { manualClock = !!v; },
     startRace, stopRace, swap: () => { lastSwapAt = -9; swap(); }, tick, reset, score, runBatch, runDuo, unrollTest, duoScorecard,
-    ribbon: { makeRibbon, ribAdd, ribMap, ribUnmap, groundAt }, SHIPPED, SPEC, P, PLATFORM, ide: IDE,
+    world: () => W, ribbon: { makeRibbon, ribAdd, ribMap, ribUnmap, groundAt }, SHIPPED, SPEC, P, PLATFORM, ide: IDE,
   };
   window.__gobyStudio = hook; window.__lab = hook;
 })();

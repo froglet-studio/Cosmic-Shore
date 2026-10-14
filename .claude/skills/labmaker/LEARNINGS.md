@@ -828,3 +828,10 @@ Entries are grouped by family; within a family, the newest goes at the bottom.
 - Do instead: for every baseline, list the paths by which the effect it removes could still happen, and close them (a flare now takes only its own block; a prime is the Pistol's to detonate). Run every negative control once and check that it FIRES before reading any other row; a control that passes clean proves only that the test cannot see the fault.
 - Evidence: `goby.html` `kill()` (`by !== 'flare'`), `PATHS` (`circling (control)`); README § "Goby & Pistol, round 1".
 - Promoted: no
+
+### L-STU-65 — A warped view keeps rendering parity by warping only TRANSFORMS; rotate the infinitely far sky by the frame
+- Lab: Goby & Pistol Studio (`Docs/Studios/VesselStudio/goby.html`) · Branch: `cece/sharp-tesla-j0kd7z` · By: session 01KpzppLj3ETY5c6jEP7HuyA · Date: 2026-10-14
+- What happened: the Pistol's sidescroller (a 3D world unrolled into 2.5D) was first drawn as flat 2D rectangles, and read as a different game from the 3D view beside it. Redrawing it in three.js with the SAME geometry and material objects as the 3D view (shared across the two renderers), and warping only each object's position and rotation (flat = Mᵀ · world, with M the ribbon's frame [T U R] where the object maps), gave parity at no art cost. The sky and stars needed one rotation, the frame at the viewer, because only direction matters for something infinitely far. A side camera on the +R side, looking along -R with up U, puts the path's +T to the right (the -R side mirrors it, a trap: T × U = R).
+- Do instead: for any remapped or warped view of a lab's world, reuse the world's meshes and materials and move only transforms. Turn sky, stars and lights by the frame at the viewer. Check the handedness of the frame before placing the camera.
+- Evidence: `goby.html` `renderSide3D`, `flatFrame`, `ribFrame`.
+- Promoted: no

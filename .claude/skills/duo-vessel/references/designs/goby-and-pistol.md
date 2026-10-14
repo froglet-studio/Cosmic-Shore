@@ -279,5 +279,11 @@ the line it settled.
   numbers and the Squirrel studio's stick mix. The Pistol must be playable in the lab: press and hold to dive, drag to
   launch, Snap / Ghost buttons. Found: the Squirrel's turn radius (~29 u) is inside the 45 u vision band, so the band must
   narrow or the Goby must turn wider while it lays path (README § Goby & Pistol, round 1b).
+- 2026-10-14, Garrett: render the Pistol's prisms and surroundings with as much rendering parity as the warp allows (the
+  lab now draws its world with the Goby view's own meshes, materials, lights and sky, warping only transforms); the
+  pistol shrimp **shoots a vortex ring that pulls prisms into a toroidal motion** [stated] (in the lab: Q / pad Y; it
+  carries what it catches and breaks it when it collapses [read]); and the world needs enough to interact with (the lab
+  seeds clusters ahead of the Goby). **[open]:** the Pistol's row now has five candidates (launch, snap / explode,
+  vortex ring, dive, ghost) for four slots.
 - 2026-10-14, round 1 of the lab built (§9.1). Nothing decided yet: Garrett picks the unroll in the lab (its
   Decisions tab writes to the shared log).
