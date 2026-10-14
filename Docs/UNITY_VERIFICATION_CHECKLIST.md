@@ -65,6 +65,23 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 No more "Script Updating Consent" prompt: MPPM calls moved to the engine API (`Ys-bleeding-edge`, 2026-10-14) — NOT EDITOR-VERIFIED
+
+**What landed:** Multiplayer Play Mode 2.0 moved `CurrentPlayer` into the Unity 6.3 engine as
+`Unity.Multiplayer.PlayMode.CurrentPlayer` and obsoleted `ReadOnlyTags()` for `Tags` (`IReadOnlyList<string>`).
+The editor's Script Updater offered to rewrite `AuthenticationServiceFacade.cs` and `MultiplayerSetup.cs` on every
+import; that rewrite is now committed (`using Unity.Multiplayer.PlayMode;`, `CurrentPlayer.Tags`, `.Count`). Both
+sites are editor-only (`#if UNITY_EDITOR`). Amoebius's copies under `Port/` keep their own compat shim, unchanged.
+
+**Verified without the editor:** the 6.3 LTS scripting reference declares `public static IReadOnlyList<string> Tags`
+in `Unity.Multiplayer.PlayMode`. Not compiled: the offline refcompile has no 6.3 editor engine DLLs.
+
+**Verify in editor:**
+1. Pull, let it compile: no "Script Updating Consent" dialog, no compile errors in either file.
+2. MPPM with one clone: the clone still signs in on its own auth profile (`mppm-<tags>` or `mppm-clone`) and
+   hosts on its own local port (the `[MultiplayerSetup] MPPM clone ...` line on the `NetworkFlow` channel).
+3. If anyone on the team clicked "Yes" before pulling, discard their local rewrite of these two files first.
+
 ### 🔴 Stoat play fixes: no flash at the poles' birth, a subtle ripple, the path drawn again, Time mode is the catch-sling (`cece/admiring-cannon-lhmv6t`, 2026-10-14) — NOT EDITOR-VERIFIED
 
 `R_VesselActions/STOAT_DIPOLE.md` §1a, §1b, §1c, §3b. Play feedback on the own-vessel pass below: the annihilation
