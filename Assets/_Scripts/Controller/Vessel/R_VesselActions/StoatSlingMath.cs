@@ -200,8 +200,12 @@ namespace CosmicShore.Gameplay
         {
             float miss = Vector3.Angle(forward, tangent);
             if (miss <= 1e-4f) return tangent;
-            float step = Mathf.Max(Mathf.Max(0f, orbitStepDegrees), miss * Mathf.Clamp01(settle01));
-            return Vector3.RotateTowards(forward, tangent, Mathf.Min(step, miss) * Mathf.Deg2Rad, 0f);
+            float step = Mathf.Min(miss, Mathf.Max(Mathf.Max(0f, orbitStepDegrees), miss * Mathf.Clamp01(settle01)));
+            if (step >= miss) return tangent;
+            var axis = Vector3.Cross(forward, tangent);
+            // Antiparallel: no unique plane, so turn about any axis square to the nose.
+            if (axis.sqrMagnitude < 1e-10f) axis = Vector3.Cross(forward, Mathf.Abs(forward.y) < 0.9f ? Vector3.up : Vector3.right);
+            return Quaternion.AngleAxis(step, axis.normalized) * forward;
         }
 
         /// <summary>The pair's midpoint: <paramref name="aheadHorizons"/> horizon radii ahead of the hull.</summary>

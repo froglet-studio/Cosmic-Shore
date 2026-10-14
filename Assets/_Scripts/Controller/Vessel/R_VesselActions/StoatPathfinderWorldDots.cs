@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using CosmicShore.Utility;
 using UnityEngine;
 using UnityEngine.Rendering;
@@ -13,11 +14,16 @@ namespace CosmicShore.Gameplay
     /// off.
     ///
     /// <para><b>How it draws.</b> <see cref="Begin"/>, any number of <see cref="Add"/>s, <see cref="End"/>: every dot of the
-    /// frame becomes a quad in ONE dynamic mesh (billboarded here, its colour in the vertex colour), drawn once for the one
-    /// camera with <c>CosmicShore/StoatPathDots</c> (<c>Resources/StoatPathDots.mat</c>). Not instanced, and on no shader
-    /// that reads a sprite renderer's per-draw data: the first cut drew instanced <c>Sprites/Default</c>, whose instanced
-    /// variant takes its flip and colour from per-instance arrays nothing filled — both read zero, every dot collapsed to a
-    /// point, and the line was never seen (2026-10-14).</para>
+    /// frame becomes a quad in ONE dynamic mesh (billboarded here toward the pilot's camera, its colour in the vertex
+    /// colour), drawn as a single identity instance with <c>CosmicShore/StoatPathDots</c> (<c>Resources/StoatPathDots.mat</c>),
+    /// a shader whose only per-instance datum is the matrix the call supplies. Never on a shader that reads a sprite
+    /// renderer's per-draw data: the first cut drew instanced <c>Sprites/Default</c>, whose instanced variant takes its flip
+    /// and colour from per-instance arrays nothing filled — both read zero, every dot collapsed to a point, and the line was
+    /// never seen (2026-10-14).</para>
+    ///
+    /// <para><b>Amoebius.</b> The engine compiles this file live, so it calls only what its UnityEngine shim also has:
+    /// <c>Graphics.RenderMeshInstanced</c> (not <c>RenderMesh</c>), <c>Mesh.Clear()</c>, list-based
+    /// <c>SetColors</c> / <c>SetIndices</c>, and no <c>RenderParams.camera</c>.</para>
     /// </summary>
     public sealed class StoatPathfinderWorldDots
     {
@@ -28,10 +34,11 @@ namespace CosmicShore.Gameplay
 
         static Material s_material;
         static bool s_warned;
-        static int[] s_indices;
+        static readonly Matrix4x4[] s_identity = { Matrix4x4.identity };
 
         readonly Vector3[] _vertices = new Vector3[MaxDots * 4];
-        readonly Color[] _colors = new Color[MaxDots * 4];
+        readonly List<Color32> _colors = new(MaxDots * 4);
+        readonly List<int> _indices = new(MaxDots * 6);
         readonly Vector2[] _uvs = new Vector2[MaxDots * 4];
         Mesh _mesh;
         Camera _cam;
@@ -46,6 +53,7 @@ namespace CosmicShore.Gameplay
         public bool Begin(Camera cam)
         {
             _count = 0;
+            _colors.Clear();
             _cam = cam;
             if (!cam || !SharedMaterial()) return false;
             var t = cam.transform;
@@ -97,21 +105,22 @@ namespace CosmicShore.Gameplay
         {
             if (!_cam || _count == 0 || !SharedMaterial()) return;
             EnsureMesh();
-            _mesh.Clear(true);
+            _mesh.Clear();
             int verts = _count * 4;
             _mesh.SetVertices(_vertices, 0, verts);
-            _mesh.SetColors(_colors, 0, verts);
+            _mesh.SetColors(_colors);
             _mesh.SetUVs(0, _uvs, 0, verts);
-            _mesh.SetIndices(Indices(), 0, _count * 6, MeshTopology.Triangles, 0, false);
-            _mesh.bounds = new Bounds(_camPos, Vector3.one * (2f * Mathf.Max(1f, _cam.farClipPlane)));
+            SizeIndices(_count);
+            _mesh.SetIndices(_indices, MeshTopology.Triangles, 0, false);
+            var bounds = new Bounds(_camPos, Vector3.one * (2f * Mathf.Max(1f, _cam.farClipPlane)));
+            _mesh.bounds = bounds;
             var rp = new RenderParams(s_material)
             {
-                camera = _cam,
                 shadowCastingMode = ShadowCastingMode.Off,
                 receiveShadows = false,
-                worldBounds = _mesh.bounds,
+                worldBounds = bounds,
             };
-            Graphics.RenderMesh(rp, _mesh, 0, Matrix4x4.identity);
+            Graphics.RenderMeshInstanced(rp, _mesh, 0, s_identity);
         }
 
         /// <summary>One polyline, drawn on its own this frame (the path when nothing else is drawn with it).</summary>
@@ -133,7 +142,11 @@ namespace CosmicShore.Gameplay
             _vertices[v + 1] = centre - r + u;
             _vertices[v + 2] = centre + r + u;
             _vertices[v + 3] = centre + r - u;
-            _colors[v] = _colors[v + 1] = _colors[v + 2] = _colors[v + 3] = color;
+            Color32 c = color;
+            _colors.Add(c);
+            _colors.Add(c);
+            _colors.Add(c);
+            _colors.Add(c);
             _uvs[v] = new Vector2(0f, 0f);
             _uvs[v + 1] = new Vector2(0f, 1f);
             _uvs[v + 2] = new Vector2(1f, 1f);
@@ -155,21 +168,21 @@ namespace CosmicShore.Gameplay
             _mesh.MarkDynamic();
         }
 
-        static int[] Indices()
+        /// <summary>The quad index list, grown or trimmed to <paramref name="quads"/> (entry i depends only on i).</summary>
+        void SizeIndices(int quads)
         {
-            if (s_indices != null) return s_indices;
-            s_indices = new int[MaxDots * 6];
-            for (int q = 0; q < MaxDots; q++)
+            int want = quads * 6;
+            if (_indices.Count > want) _indices.RemoveRange(want, _indices.Count - want);
+            for (int q = _indices.Count / 6; q < quads; q++)
             {
-                int v = q * 4, i = q * 6;
-                s_indices[i] = v;
-                s_indices[i + 1] = v + 1;
-                s_indices[i + 2] = v + 2;
-                s_indices[i + 3] = v + 2;
-                s_indices[i + 4] = v + 3;
-                s_indices[i + 5] = v;
+                int v = q * 4;
+                _indices.Add(v);
+                _indices.Add(v + 1);
+                _indices.Add(v + 2);
+                _indices.Add(v + 2);
+                _indices.Add(v + 3);
+                _indices.Add(v);
             }
-            return s_indices;
         }
 
         static Material SharedMaterial()

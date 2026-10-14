@@ -366,9 +366,10 @@ INSTANCED draw on the built-in `Sprites/Default`. That shader's instanced varian
 colour from per-instance arrays (`unity_SpriteFlipArray`, `unity_SpriteRendererColorArray`) that
 `Graphics.RenderMeshInstanced` never fills: both read zero, `UnityFlipSprite` scaled every quad to a point, and the line
 vanished the day it replaced the screen overlay. The dots are now ONE dynamic mesh a frame (each dot a quad billboarded
-on the CPU, its colour in the vertex colour), drawn once, uninstanced, with the project's own
-`CosmicShore/StoatPathDots` shader (`Resources/StoatPathDots.mat`, so builds carry it; it reads no per-draw sprite data).
-`Begin` / `Add` / `End` lets the path and Time mode's two rings share the one draw.
+on the CPU, its colour in the vertex colour), drawn as a single identity instance (`Graphics.RenderMeshInstanced`, the
+call Amoebius's shim also has) with the project's own `CosmicShore/StoatPathDots` shader (`Resources/StoatPathDots.mat`,
+instancing on, so builds carry it; its only per-instance datum is the matrix the call fills). `Begin` / `Add` / `End`
+lets the path and Time mode's two rings share the one draw.
 
 **Tune it in the artifact, then clone it:** the Vessel Studio artifact's Stoat page is the one source of truth for these
 numbers; `/artifact-to-unity` writes them into `StoatDipoleConfig` and `BlackHoleConfig` (`Tools/Build/studio_to_unity.py`,
@@ -475,7 +476,7 @@ harness's math stub: 29 of 29 pass); the NUnit suites (`StoatRippleTests`, the e
 ripple shader compiles in both stages against the lens verifier's URP mock (`Tools/Shaders/verify_stoat_ripple.py`, with
 a negative control); the real-URP DXC compile was not available. **Not opened in the Editor** — `Docs/UNITY_VERIFICATION_CHECKLIST.md`.
 
-## 8. Debt and follow-ups (rows only — the 2026-10-13 ship pass)
+## 8. Debt and follow-ups (rows only — the 2026-10-13 and 2026-10-14 ship passes)
 
 | # | Kind | Row | Measured |
 |---|---|---|---|
@@ -491,3 +492,7 @@ a negative control); the real-URP DXC compile was not available. **Not opened in
 | D10 | debt this branch widened | **The Stoat's sim-authority test lives on another vessel's executor.** Every Stoat executor asks `MantaStingActionExecutor.IsSimAuthority(status)` whether it is the simulating machine — a general rule (the owner; the host for an AI) homed on the Manta's sting. This branch added a fourth caller (`StoatModeExecutor`). Shape: a helper on the wrong class (`/refactor` §3). Move it to a vessel-level home (`IVesselStatus` / a static `VesselAuthority`) and repoint every caller. | `grep -rln "MantaStingActionExecutor.IsSimAuthority" Assets/_Scripts --include=*.cs` → 4 files, all four Stoat executors (the Manta's own uses are unqualified) |
 | D11 | walked past | **`check_enum_member_references.py` is red on bleeding-edge**, not on this branch: `GameCanvasUnifier.cs(920): 'Placement' has no member 'Capture'`, the enum it resolved being `CrystalFlipWaveBenchmarkWindow.cs`'s — likely two same-named enums rather than a missing member. Confirmed identical on `390c2467` (exit 1) before any Stoat change. | `python3 Tools/Build/check_enum_member_references.py; echo $?` → 1 on base and branch |
 | D12 | walked past, FIXED here | `Tools/Build/peer_press_harness` could not compile on bleeding-edge: its `UnityEngine` stub had no `Vector4`, which the Stoat port's `NetStoatDipoleSink/Source` added to `R_VesselActionHandler`. One stub line; the harness now runs (1050 + 1050 presses, 0 divergences). | `python3 Tools/Build/peer_press_harness/run.py --self-test` → was COMPILE FAILED, now passes |
+| D13 | debt this branch created | **`BlackHoleWaves` has no caller by default.** Its only producer (`StoatDipoleExecutor`) now spawns it behind `StoatDipoleConfig.annihilationWaves`, OFF (2026-10-14), so the wave pipeline (`BlackHoleWaves`, the lens shader's wave loop, `PrismGravityWarp.hlsl`'s strain, ~11 `BlackHoleConfig` wave fields) runs for nobody, and `studio_to_unity/stoat.json` still clones the studio's wave keys into it. Decide: keep as an opt-in look (and say so on the studio page), or retire the pipeline with its studio rows. | `grep -rn "BlackHoleWaves.Spawn" Assets --include=*.cs` → 3 sites, all inside `if (config.AnnihilationWaves)` |
+| D14 | walked past | **`Tools/Shaders/verify_stoat_ripple.py` FAILS on bleeding-edge** under glslang 15.1 (`lens_vert.hlsl:9: 'declaration' : Expected`, both stages, before any change here); its negative control still "fires", so the harness reports FAIL while looking like it runs. The lens verifier's URP mock likely needs updating for this glslang. | `git stash; python3 Tools/Shaders/verify_stoat_ripple.py` → FAIL on `b645b9d3` |
+| D15 | report (port) | **Amoebius's shim lacks** `Graphics.RenderMesh`, `Mesh.Clear(bool)`, `Mesh.SetColors(Color[], int, int)`, `Mesh.SetIndices(int[], int, int, …)`, `RenderParams.camera` and `Vector3.RotateTowards`; this branch wrote around them (vessel skill rule 51). A port-branch row, not a game change. | `dotnet build Port/src/CosmicShore.Live` on the first cut of this branch → 6 errors, all of these |
+| D16 | report | **`STOAT.md` §1–§2 describe the round-4 orbit**, which no longer ships (Time mode is the catch-sling, §1b). The banner says so; the sections stay as the orbit's record. Fold them into a short history paragraph when the catch-sling settles in play. | `STOAT.md` banner, 2026-10-14 |

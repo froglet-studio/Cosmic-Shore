@@ -761,6 +761,28 @@ applies to new abilities, new resources on the meter list, and anything that add
     computed somewhere that one can. A shared last-writer flag (`SetSpawnerPaused`) is written on EDGES,
     never per frame, or it fights its other writers every frame.
 
+49. **An ability's object the pilot must SEE goes inside the chase camera's frustum — "beside the hull" is off
+    screen.** The Stoat's Time mode laid its attractor square to the side at the orbit radius (150 u) with the
+    chase camera 21 u behind: ~80° off the view axis, outside every FOV the game ships. In play: "I couldn't see
+    the poles at all and was just pulled right or left." Fixed (2026-10-14) by laying it 150 u AHEAD and 45 u to
+    the side, where a catch then takes over (`StoatSlingMath.CatchPair`, a test asserts < 30° off the nose).
+    Before shipping a placement, compute its angle off the camera's forward from the shipped camera settings
+    (`StoatCameraSettingsSO.followOffset`, the FOV) — a cue the pilot cannot see is an unexplained force.
+50. **Never draw instanced `Sprites/Default` (or any sprite shader) with `Graphics.RenderMeshInstanced`.** Its
+    instanced variant reads `unity_SpriteFlipArray` / `unity_SpriteRendererColorArray` per instance; only a
+    `SpriteRenderer` fills them, so both read ZERO and `UnityFlipSprite` collapses every quad to a point. No error,
+    nothing drawn. The Stoat's 3D path dots shipped that way and the path vanished ("I no longer see the
+    foresight"). Draw custom geometry with a shader whose only per-instance datum is the matrix the call fills
+    (`CosmicShore/StoatPathDots`, shipped via a `Resources/` material so builds carry it) — and for many
+    billboards, ONE dynamic mesh with the colour in the vertex colour beats N instances.
+51. **Amoebius compiles `Assets/_Scripts` LIVE: a Unity API its shim lacks breaks the engine's build.** The
+    reference compile (`unity_refcompile`) is against real Unity and stays green; it cannot see this.
+    `Graphics.RenderMesh`, `Mesh.Clear(bool)`, ranged `SetColors` / `SetIndices`, `RenderParams.camera` and
+    `Vector3.RotateTowards` were all missing (2026-10-14). Build it (`dotnet build Port/src/CosmicShore.Live`,
+    .NET 10 SDK) whenever a change calls an engine API the game did not call before, and write to the overloads
+    both have (`RenderMeshInstanced` with one identity instance, list-based mesh setters). A game branch does not
+    edit `Port/` (Port/CLAUDE.md); a missing API worth having is a port-branch row.
+
 ### 4.x Placing prisms from a vessel ability — shield sizing
 
 An ability that BUILDS with prisms (the Scarab's switch dais, the Urchin's track, a boost ring)

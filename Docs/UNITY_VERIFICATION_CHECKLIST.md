@@ -70,8 +70,8 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 `R_VesselActions/STOAT_DIPOLE.md` §1a, §1b, §1c, §3b. Play feedback on the own-vessel pass below: the annihilation
 effect fired at the poles' CREATION and was far too big and bright; the path ("the foresight") was gone; in Time mode
 the poles could not be seen and the hull was just pulled left or right. No editor and no `unity` CLI in this session,
-so `/verify-unity` did NOT run. Headless proof: see the commit message (reference compile, `author_stoat_assets.py
---check`, gates). The NUnit suites (`StoatSlingTests`, `StoatRippleTests`) were edited but not run in an editor.
+so `/verify-unity` did NOT run. Headless proof: `unity_refcompile` player + editor (0 project errors, negative control
+fires), Amoebius's live build (`dotnet build Port/src/CosmicShore.Live`, 0 errors), `author_stoat_assets.py --check`, gates. The NUnit suites (`StoatSlingTests`, `StoatRippleTests`) were edited but not run in an editor.
 `StoatPathDots.shader` has not been compiled by Unity.
 
 **What landed:** (a) the white-hole birth light and the death light + gravitational wave (`BlackHoleWaves`) are behind
