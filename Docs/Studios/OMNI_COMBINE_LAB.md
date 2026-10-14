@@ -333,6 +333,190 @@ shell material with the lab's stateless CPU depth model. Now:
     `_Thickness` for the morphing Mass prisms only; the triangle renderer draws its thick mesh as authored.
     Stretching about the top face composes by multiplying, so the landed Mass draws exactly the thick mesh.
 
+**Revision 4 (2026-10-13): the game's round-5 effects.** The designer: "now polish the elemental conversion
+animation in the app shell", straight after round 5 of the Omni Motion Lab graduated. The converter had kept every
+effect from before round 5, so what it showed no longer matched the game:
+- the Charge edge crawl on both the Charge crystal and the omni's pentagons;
+- the squares' three-key weave, which shrinks the squares mid-move;
+- a flip wave on its own 2 s clock, flipping while the squares moved;
+- Mass columns stepped without the horizon seal or the hidden rise. Against the new −0.25 / −0.97 profile this would
+  have shown far fewer prisms standing out than the game does.
+
+It now plays the game's round 5 through the game's own code:
+
+| What | In the converter | Shared with the game |
+|---|---|---|
+| Mass (waiting crystal, the omni's triangles) | columns stepped against the converter camera, sealed at the horizon, rising only while hidden | `CrystalDepthPrisms.StepColumns` (extracted from its `LateUpdate`) and `TryGetPlates` |
+| The Charge crystal, waiting | the **seam walk**, carried on the crystal's rigid frame (`OmniCombineCore.CrystalFrame`); its crawl held at 0. It fades as the crystal sets off and is gone before any petal morphs | `ChargeArcs`, `CrystalChargeArcsProfile.asset`, `ChargeCrystalArcs.mat` |
+| The woken omni's Charge | **chained flux arcs**; the first discharge starts charging as the omni wakes | the same core, `OmniChargeArcs.mat` |
+| The woken omni's Space and Time | the **cadence** (pentagon turn, wave, triangle turn, wave, 0.15 s gaps); each square turn ONE rigid hop; one **cued** flip wave per wave beat. The first beat starts once the omni is fully awake, so its first move is a whole pentagon turn | `OmniCrystalCadence.asset`, `OmniCadence`, `SquareTurnFit` (extracted from `CrystalSpaceSquares`' baker, so the blend shapes and the converter turn a square the same way), `OmniCombineCore.OmniPose`'s game-motion path |
+| Thicker plates | the omni's squares, rhombi and pentagons **swell from 1.0 to 1.1 as its effects wake**. The landed plates are the thin art plates, so the hand-off has no step | `OmniCombineMotion.Swell`, the same thickening the game's shaped twin applies |
+
+The lab path is untouched: `OmniCombineParams.GameMotion` is off in the lab defaults, and the parity harness still
+matches the lab to 7e-7. `OmniChargeEdges.mat` and `OmniChargeEdgesShader` are deleted (the converter was their last
+user).
+
+**Proved offline:**
+- `Tools/Build/converter_round5_harness` runs the shipped `OmniCombineCore`, `OmniCombineMotion`, `SquareTurnFit`,
+  `OmniCadence` and `ChargeArcs` on the shipped `OmniCombineData.json`. All 15 checks pass:
+  - all 60 squares fit the data's keys as rigid turns;
+  - full swell is 1.1× thick (3e-6), and the triangles do not move;
+  - a finished turn lands congruent (4e-5 R), and squares stay rigid mid-turn (2e-7 R);
+  - with no wave cued nothing moves; a cued wave lands every rhombus congruent (7e-6 R);
+  - `CrystalFrame` composed as the player composes it reproduces `Pose` (2.5e-7 R);
+  - both crystals read as Charge sites;
+  - the arc ends sit on the swelled pentagons (7e-7 R);
+  - the lab path ignores the new arguments.
+- Two negative controls fire: the keys out of order are refused, and the frame composed the other way round misses by
+  0.78 R.
+- `author_elemental_converter.py --self-test` had gone vacuous. The converter is now on the merge base, so its "base
+  scene" was already edited and two refusals never reached the code they guard. Both were red. It now edits the scene
+  from before the converter landed and asserts that it does; 11/11.
+
+**Revision 7 (2026-10-13): the lab's morphs back; a bit of extra spacing; arrive from the camera's side.** The
+designer: "you have embellished heavily on the morphs. revert to the morphs that elegantly undergo minimal
+transformations to be exactly where they need to be. the point was it is better if the time rhombuses come in with a bit
+of extra spacing and then come down to perfect spacing in order to socket in from the outside instead of sliding through
+on the same radius or coming out to higher radii from within the structure ... the solution i want has all its clipping
+occluded or unnoticeable, but leaves the minimal transformations preserved."
+
+- **What the lab's morph actually does at the end.** Measured on the shipped data: a crystal's shell is 90% formed
+  while its centre is still 0.3–0.5 omni radii out, coming down off its arc. The last stretch is the finished shell
+  sliding home. The rhombi on its leading side rise out of their holes, the ones at its sides slide along at slot
+  radius, and only the trailing side comes in from outside.
+- **Why spacing alone cannot fix it.** A crystal arriving from one side can only bring its leading rhombi in from
+  outside by going round the omni (revision 6's swing, retired) or by swelling to about twice the omni's size.
+  - A bit of extra spacing on its own barely helps: Time's camera-facing rhombi stay inside 26% of the late morph,
+    against 30% before.
+  - Retiming the flight's ease does no better: 19–41%.
+  - Lifting plates radially onto a floor whips them at 36 R/s.
+- **What shipped.** The designer chose the third option: arrive from the camera's side.
+  - Revision 6's `SocketPath` is gone, and the morphs are the lab's again.
+  - `SocketSpacing` (0.08–0.12, drawn per play): each plate of every crystal but Space morphs toward its slot pushed
+    out by that fraction of the slot's radius. Over the last 15% of its morph (`OmniCombineCore.SettleFrom`) the extra
+    eases to nothing, so the plate comes down to perfect spacing.
+  - `ApproachTurn`, set by `OmniCombineCore.FaceCamera` when the crystals set off: each crystal's flight turns about
+    the vertical, the shorter way round. The turn starts at nothing, so a crystal sets off from exactly where it idles,
+    and is complete by 70% of the eased flight, while the crystal is well clear of the omni.
+  - The camera aimed for is where it will be as each crystal arrives. The player reads the camera's position and how
+    fast it circles from what the view hands it each frame. The rhombi that have to cross the omni then do it on its
+    far side, behind it.
+- **Measured** (`converter_round5_harness`, 24 random plays against the real orbit, 18° pitch at 5°/s):
+  - Camera-facing rhombi are inside the omni late in their morph 0.5% (Charge), 6.5% (Mass) and 0.6% (Time) of the
+    time, against 24.6%, 19.0% and 33.0% arriving straight in (the negative control).
+  - Arrival is within 2.9° of the camera's azimuth.
+  - Landings are 7e-8 R. The spacing matches its formula to 6e-7 R.
+  - Space is untouched.
+  - The lab path (`SocketSpacing` 0, no turn) matches the lab to 7e-7.
+- **Correction, round 8.** The 0.5 / 6.5 / 0.6% figures above came from a proxy: a rhombus counted as visible if its
+  hole faces the camera. Ray-casting against every triangle actually drawn, the turn does NOT occlude the clipping.
+  - Intersections between an incoming crystal's triangles and the landed ones stay visible about 15% of the time on
+    every approach. Time: 208/s straight in, 212/s from the camera's side, 221/s along the camera's line of sight
+    (azimuth and elevation), 177/s from above. Arriving from behind is the best of them: 124/s for Time, 59 for Mass,
+    160 for Charge.
+  - The clipping is the crystal entering the omni and growing inside it, between 40% and 90% of its flight. Arriving
+    from the camera's side shows the entry, and arriving from behind shows the growth.
+  - The turn does stop camera-facing rhombi from rising out of their holes, which is what the designer saw on Time.
+  - Charge and Mass already had the same turn as Time. They land into a sparse structure (Space only, then Space and
+    Charge), so there is little landed geometry to hide them.
+- **Round 8: the approach moves with the camera** (designer: "optimize the camera side approach to move with the
+  camera").
+  - The aim is no longer fixed at CONVERT. Each frame the player hands the play the camera's unwrapped azimuth
+    (`OmniCombineParams.CameraAzimuth`), and every path turns by however far the camera has circled since it was aimed.
+  - `FaceCamera` still uses the expected orbit rate, but only to pick the shorter way round.
+  - Arrival is within 0.1° of the live camera, at the predicted rate, at twice it, or with the camera stopped.
+    Aimed once without following (the negative control), a faster camera leaves a crystal 162° behind.
+  - Ray-cast, the visible clipping is unchanged by this (Time 221/s, Mass 82/s, Charge 188/s, against 209, 91 and 187
+    straight in). Following guarantees the side a crystal arrives from, not what it hides.
+- **Round 9: the camera's height too** (designer: "the mass triangles especially come in from the top which presents
+  visible clipping to the camera viewing from the side. do you have a 90 degree error?").
+  - Not in azimuth. The turn matched only the camera's compass direction, while the start's height plus the upward
+    arc brought each crystal in up to 48° above the camera's 18°. Mass starts on an upper vertex of the tetrahedron,
+    so it comes in steepest.
+  - Each path is now also tipped in the vertical plane facing the camera, so a crystal arrives at the camera's height
+    plus `approachAboveCameraDegrees` (0 = along the line of sight). That plane follows the live camera
+    (`CameraElevation`, `ApproachElevation`).
+  - Measured: arrival within 0.2° of the camera's height. Mass's camera-facing rhombi inside the omni late in the
+    morph went from 6.5% to 0%.
+  - Not backed by the triangle ray-cast (6 plays per direction, intersections a second visible / on the silhouette):
+
+    | Approach (from the camera's side unless noted) | Mass | Time | Charge |
+    |---|---|---|---|
+    | at the camera's height | 119 / 98 | 217 / 173 | 234 / 180 |
+    | 60° up | 109 / 59 | 231 / 105 | 222 / 148 |
+    | overhead | 72 / 31 | 215 / 78 | 181 / 87 |
+    | from behind, below | 60 / 47 | 133 / 97 | 150 / 113 |
+
+    Arriving along the line of sight puts the crystal's side rhombi, the ones that slide along the surface, on the
+    silhouette. The designer's eye in the converter decides. `approachAboveCameraDegrees` is the dial.
+- **Cost.** A crystal that has to come round from the far side moves at up to 4.5 omni radii a second, against 1.9
+  arriving straight in. Turning only to within a tolerance of the camera trades that speed straight back for visible
+  clipping: at ±30° Time is inside 4% of the time, at ±60° 12%.
+
+**Revision 6 (2026-10-13): socket in from outside; five seamless strands.** The designer: "the time crystal appeared to
+come in from inside. they should all (except the first) be separating more as if they are eating the whole and then
+socketing into place from the outside. The 5 streams that touch the pentagon tip are great, but then there is an abrupt
+seam and then a different effect ... keep all 5 streams and have them connect from one to the other with as much
+coaxial definition as you can for that length instead of creating any seams at all."
+
+- **Socket from outside** (retired in revision 7: the designer read it as an embellishment). Space lands first, so the later crystals arrive near the centre. Time's plates moved
+  straight from there to their slots: outward, through the omni. The harness's negative control measures it at up to
+  76% inside the slot radius. Now, for every crystal but the first, each plate's CENTRE follows
+  `OmniCombineCore.SocketPath`:
+  - out to a shell `socketLift` (0.35–0.6, drawn per play) omni radii beyond its slot;
+  - round the omni on that shell, along the great circle, to above its slot;
+  - straight down into it.
+
+  Its shape morph and its turn are untouched. The path starts exactly where the unmorphed plate is and ends exactly in
+  the slot. Measured: no plate dips inside its slot radius, the last approach is within 0.1° of radial, the landings
+  are exact (7e-8 R), and Space is unchanged. The lab path (`SocketLift` 0) still matches the lab to 7e-7.
+- **Five seamless strands** (in play and here). The thick middle beam is gone. Each of the five strands is ONE plasma
+  ribbon from its source corner to its sink corner:
+  - fanned onto the corners at each end, as before;
+  - between, a coaxial bundle `fluxBundle` (0.016 R) off the centre line, the five exactly 72° apart;
+  - the bundle carried along the arc in a rotation-minimizing frame and making `fluxTurns` (1) whole turns, a braided
+    cable;
+  - all five bending on one shared noise, so they writhe together and stay coaxial.
+
+  Two things had to change for that:
+  - The corners are now paired by their ORDER round the arc. "Turn the source onto the sink" reverses that order as
+    seen along the arc, which leaves one face and enters the other, and every strand crossed mid-arc.
+  - Through the middle the five are evenly spaced, because the corners, seen obliquely, are not.
+
+  Measured on the real omni over every source-sink pair: closest approach between two strands 0.0182 R (the ring's own
+  spacing is 0.0188 R), landings 2e-7 R, sharpest bend 8° per step. With no bundle the five collapse onto one line,
+  which is the negative control.
+
+**Revision 5 (2026-10-13): one hue, conducting columns, plasma.** The designer: "the charge pentagons come in with the
+wrong hue ... unify the starting hue so the charge matches at base and still has the contrast with the lit state. detect
+when a charge effect will bolt through a mass column on the omni crystal and light it up appropriately instead of
+reading as a clip. the discrete units along the lighting bolt are separating in a way that reads as an effect not
+plasma. use the plasma effect that triggers when the squirrel skims a prism as a reference."
+
+- **One hue.** The Charge crystal wore `ChargeCrystalMaterial` (its own lime, 0.59 / 0.92 / 0.16). The omni body then
+  dithered over its landed pentagons in the omni's lime (0.49 / 0.99 / 0), so they came in the wrong hue. Charge now
+  wears `OmniCrystalBody` like Space and Time, and its seam walk draws on `OmniChargeArcs`. The base matches at the
+  hand-off, and the only contrast is the lit state. The edge-crawl bake on the converter's Charge mesh is gone with
+  it (`chargeMaterial` and `chargeArcsMaterial` left `OmniCombineConfigSO`).
+- **Conducting columns.** `ChargeArcs.FluxStrikes` tests each flux arc's path against every triangle prism's body at
+  its column's place (`CrystalDepthPrisms.ColumnBody`). A prism the path runs through glows in `_StrikeColor` while the
+  arc holds: full where the path runs through its middle, nothing at its edge. `OmniDepthPrismShader` reads the glow
+  from `_DepthState.w`. In play `CrystalChargeArcs` writes it through `CrystalDepthPrisms.Strike`; here
+  `OmniCombinePlayer.StrikeTriangles` does. Measured on the real omni: a prism at the top of its column is three radii
+  out, above every arc. The hits are prisms part-way up near the silhouette: 2,664 of 9,600 frames at places 0.6–0.9.
+  Sealed prisms are never struck.
+- **Plasma** (`ChargeArcMeshWriter.Plasma`, after `ForcefieldCrackle.hlsl`):
+  - each bolt is ONE continuous ribbon whose vertices are shared from piece to piece, so it never parts;
+  - it bends on smooth FBM value noise that flows along it instead of re-rolling, held to zero only near the ends of
+    a bolt that must land;
+  - its cross-section is the crackle's: a Gaussian glow and a hot core, the colour running glow → core by heat²;
+  - a thinner sub-filament rides beside it at 0.4.
+
+  The seam walk is one trail through every lit seam. Each point fades from when the bolt LEFT it, so it fades
+  smoothly to nothing at its tail. Fading from when a point was struck stepped the brightness at every hold, and cut
+  the tail off at a third of its brightness when the old seam died.
+
+
 **Picture quality (revision 2).** The first build rendered 1280 px along the picture's long edge and stretched
 it over the screen with no anti-aliasing: low resolution and jagged. It now renders at the picture's
 on-screen PIXEL size times 2 (an exact box filter on the way down), with 4× MSAA on the target. It uses the

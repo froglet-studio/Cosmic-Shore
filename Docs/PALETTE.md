@@ -507,7 +507,7 @@ authored by `Tools/Build/author_omni_crystal_triangles.py` (`--check`):
 |---|---|---|---|
 | 0 | **the whole omni model** (`OmniCrystalBody.prefab`) minus its 20 triangle plates at runtime (the holes); its 30 rhombi flip and its 60 squares weave (Space squares), the rest is still | `OmniCrystalBody` / `OmniCrystalBodyInactive` (`OmniCrystalFresnelShader`) | still |
 | 1 | the 20 triangular prisms (`OmniCrystalTriangles.asset`, SEATED at the prefab's scale) | `OmniDepthPrisms` / `…Inactive` (`OmniDepthPrismShader`, opaque) | each rides its column by depth (`CrystalDepthPrisms`) |
-| child, not a slot | **pentagons only** (the body's mesh, filtered at runtime) | `OmniChargeEdges` (`OmniChargeEdgesShader`, additive) | still |
+| child, not a slot | the Charge light (`CrystalChargeArcs`, Flux): the five-strand arcs between pentagons and the lit pentagons, one CPU-written mesh a frame in the crystal's space | `OmniChargeArcs` (`CrystalChargeArcsShader`, additive) | chained discharges (§2.10) |
 
 **The triangles are SEALED BY DEPTH (2026-10-12, the Omni Shepard Lab's pick, round 8).** Each prism
 sits in a column over its own hole, and WHERE in the column is set by its depth from the camera, not
@@ -585,6 +585,20 @@ shipped shader's `vert()` with clang and shows (a) the defaults are `v · s` to 
 without plate centres, and (b) the three shipped materials match the lab's model of the picked
 look to 3e-6 on the real mesh. `Tools/Build/omni_shepard_lab_parity.cjs` shows the lab's shipped
 page draws exactly what the designer exported.
+
+**Since 2026-10-13 (Omni Motion Lab round 5) Charge's light is the FLUX ARC, not the edge crawl.**
+`OmniCrystalChargeArcs` (a plain child of `Crystal.prefab`, `CrystalChargeArcs` in Flux mode on
+`CrystalChargeArcsShader`) replaces `OmniCrystalChargeEdges`: a pentagon charges, an arc leaps to one 55-125 degrees
+away, runs as five strands from corner to corner (fanned onto the five corners at both ends, one coaxial braided bundle
+between: no beam, no seam), and the next leaps on from the sink. Only
+those two pentagons light, in the body's bright colour mixed toward the arc core colour (`CrystalAccentTint` repaints
+it per domain). Every bolt is one continuous
+plasma ribbon after the Squirrel's skim crackle (`ForcefieldCrackle.hlsl`): a Gaussian glow running to a hot core in the
+arc core colour. Where a flux arc's path runs through a raised Mass prism, the prism glows in `_StrikeColor` (the arc
+core colour, `OmniDepthPrismShader`'s `_DepthState.w`), so the bolt reads as conducting through it. The Charge crystal wears the same component in SeamWalk mode, so the element keeps ONE look on both
+crystals. The paragraph below describes the crawl as it shipped from 2026-10-08 to 2026-10-13. Its material and shader
+(`OmniChargeEdges.mat`, `OmniChargeEdgesShader`) were deleted the same day, once the Elemental Converter moved to the
+flux arcs too.
 
 **Charge's pentagons carry the charge crystal's EDGE DISCHARGE (2026-10-08).** The charge crystal's
 signature is its plasma crackling vertex to vertex along crease edges (`ChargeCrystal.hlsl`), so the
@@ -1122,6 +1136,24 @@ Machine validation covers structure and colorimetry; only a playtest covers *loo
 
 ## 7. Follow-ups
 
+- **Charge light and the converter (§2.10) — rows from the `cece/sharp-fermi-yw38ky` ship pass, 2026-10-14.**
+  - **`ChargeArcs.FluxStrikes` hands the column seats to `StrikeAlong` through static scratch.** `s_seats` /
+    `s_seatRadii` are set before `FluxStrikesUngated` and cleared in a `finally` (8 references in
+    `ChargeArcs.cs`), the same main-thread-only pattern as `s_points`, so a re-entrant or job-thread caller would
+    test the wrong columns. Three callers today (`CrystalChargeArcs.StrikePrisms`,
+    `OmniCombinePlayer.StrikeTriangles`, the harness), all on the main thread. Thread the two arrays through
+    `FluxStrikesUngated` → `StrikeAlong` as parameters. Debt this branch created.
+  - **The converter harness still carries the occlusion PROXY as a check.** `converter_round5_harness`'s
+    "rhombi under camera-facing holes are almost never inside the omni" (`Program.cs`, check 8) counts a rhombus
+    as visible when its hole faces the camera. L-STU-61 measured that this does not predict occlusion: ray-cast
+    against the drawn triangles, visible plate-through-plate intersections stay at about 15% on every approach.
+    The ray-cast rig that measured it was session scratch and is not in the repo. Port it into the harness
+    (visible intersections a second and on the silhouette, per crystal) so the next approach change is measured,
+    not guessed. Debt this branch made visible.
+  - **The Omni Motion Lab's baseline is the pre-graduation game.** Its "Shipped today" style (id `shipped`, the
+    `as shipped` diff) is the game before round 5 graduated; the card now says so. If the lab runs a round 6,
+    re-baseline `shipped` to round 5's knobs first, or every column scores against a game that no longer exists.
+    Incompleteness (a report), not a fix.
 - **Squirrel crystal morph — rows from its ship pass, 2026-10-08 (`SQUIRREL_CRYSTAL_MORPH.md`).**
   - **`OmniCrystalFresnelShader.PrismFresnelColor` is a second transcription of BlockGraph's
     colour** (FresnelColors → FresnelPower4, back-face branch `(d+1)·0.2`). If either subgraph
@@ -1134,9 +1166,9 @@ Machine validation covers structure and colorimetry; only a playtest covers *loo
     DIFFERENT omni's renderers — the same look today, a wrong one if those crystals ever differ.
     Measure first: what `Id` do manager-less mints carry, and are two ever live at once?
   - **The pentagons' charge discharge leaves on the pickup frame** under any vessel retirement.
-    `OmniCrystalChargeEdges` (merged the same day) is a plain child, not a `crystalModels` slot, so
-    `CrystalMorphRunner.Adopt` never sees it, and `OmniChargeEdgesShader` has no `_Opacity` to fade
-    it by. If the playtest reads it as a pop: give the shader an `_Opacity` multiplier on its additive
+    The Charge light (`CrystalChargeArcs`, which replaced `OmniCrystalChargeEdges` on 2026-10-13) is a
+    plain child, not a `crystalModels` slot, so `CrystalMorphRunner.Adopt` never sees it, and
+    `CrystalChargeArcsShader` has no `_Opacity` to fade it by. If the playtest reads it as a pop: give the shader an `_Opacity` multiplier on its additive
     output and have `Adopt` also take `Crystal`'s accent children as overlays. A report until seen.
   - **The ring's prisms are unhidden by reference at teardown** with no life check; harmless while
     nothing else that draws from the boost pool hides a prism (`SetOwnerHidden` callers today:
@@ -1189,7 +1221,9 @@ Machine validation covers structure and colorimetry; only a playtest covers *loo
     so they took the new look too (and the exploding-material repoint). Intended — one Mass look —
     but nobody has looked at the maze with it. A report.
 - **Omni pentagon charge edges (§2.10) — rows from its ship pass, 2026-10-08.**
-  - **A THIRD transcription of `SpreadFresnelDisplace`.** `OmniChargeEdgesShader` copies the body's
+  - ~~**A THIRD transcription of `SpreadFresnelDisplace`.**~~ Closed 2026-10-13: `OmniChargeEdgesShader`
+    was deleted with the edge overlay, and its successor `CrystalChargeArcsShader` copies no push (it draws its
+    own CPU-written geometry). The row as it stood: `OmniChargeEdgesShader` copies the body's
     `_Spread` vertex push (it has to match it vertex for vertex or the overlay fails the depth test),
     so the push now lives in `SpreadFresnelShader`, `OmniCrystalFresnelShader` and here. Fold it into
     the `SpreadFresnelCore.hlsl` row above when that lands — the overlay is the consumer that BREAKS

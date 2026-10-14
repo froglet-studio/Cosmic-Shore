@@ -62,6 +62,10 @@ namespace CosmicShore.Gameplay
 
         public float LoopSeconds => loopSeconds;
 
+        /// <summary>Seconds into a wave that the lead ring starts to turn: a cued wave (<see cref="OmniCrystalCadence"/>)
+        /// starts its clock here, so its rings move from its first frame.</summary>
+        public float FirstRingStartSeconds => firstRingStartSeconds;
+
         /// <summary>Ring <paramref name="ring"/>'s pose <paramref name="loopSeconds"/> into a wave.</summary>
         public FlipSample Sample(int ring, float loopSeconds)
         {
