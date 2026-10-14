@@ -161,14 +161,20 @@
   const GLSL_EROSION = `/*@@GLSL_EROSION@@*/`;
   const GLSL_GRADE = `/*@@GLSL_GRADE@@*/`;
 
-  const LAB = { name: 'Collision Burst Lab', branch: 'cece/dreamy-pascal-7xxx1m', round: 2, doc: 'Docs/Studios/COLLISION_BURST_LAB.md' };
+  const LAB = { name: 'Collision Burst Lab', branch: 'cece/dreamy-pascal-7xxx1m', round: 3, doc: 'Docs/Studios/COLLISION_BURST_LAB.md' };
   const C = DATA.config, LOOK = DATA.look, X = DATA.explosion;
 
   // ================= SHIPPED: every value names where it came from =================
   const SHIPPED = {
     shatterMinScreen: C.shatterMinScreen, // PrismInteractionLodConfig.shatterMinScreen (diameter ÷ screen height)
-    glitterMinScreen: C.glitterMinScreen, // PrismInteractionLodConfig.glitterMinScreen
-    shedMinScreen: C.shedMinScreen,   // PrismInteractionLodConfig.shedMinScreen
+    glitterMinScreen: C.glitterMinScreen, // PrismInteractionLodConfig.glitterMinScreen (glitter, large fragments)
+    glitterMediumScreen: C.glitterMediumScreen, // PrismInteractionLodConfig.glitterMediumScreen (+ medium)
+    glitterFullScreen: C.glitterFullScreen, // PrismInteractionLodConfig.glitterFullScreen (+ small)
+    shedMinScreen: C.shedMinScreen,   // PrismInteractionLodConfig.shedMinScreen   (shed at shedSubdivision)
+    shedFineScreen: C.shedFineScreen, // PrismInteractionLodConfig.shedFineScreen  (at shedFineSubdivision)
+    shedFinestScreen: C.shedFinestScreen, // PrismInteractionLodConfig.shedFinestScreen (at shedFinestSubdivision)
+    crowdedFill: C.crowdedFill,       // PrismInteractionLodConfig.crowdedFill (one level coarser)
+    packedFill: C.packedFill,         // PrismInteractionLodConfig.packedFill  (two levels coarser)
     bloomWeight: C.bloomWeight,       // PrismInteractionLodConfig.bloomWeight   (shed)
     unravelWeight: C.unravelWeight,   // PrismInteractionLodConfig.unravelWeight (shed)
     flakeWeight: C.flakeWeight,       // PrismInteractionLodConfig.flakeWeight   (shed)
@@ -188,6 +194,8 @@
     labScaleX: 4, labScaleY: 0.6, labScaleZ: 2,   // lab: the prism's size (a trail slab)
     labSquint: 7,                     // lab: how hard Squint blurs (px)
     labScreenPx: 1080,                // lab: the player's screen height (px), for the size readout
+    labFill: 0,                       // lab: how full the detail budget already is (the AMOUNT)
+    labShedRes: 0,                    // lab: shed resolution shown — 0 by size, else level 1 / 2 / 3
     propOvershoot: DATA.overshoot,    // PrismCollisionBurst.hlsl PRISM_BURST_DISSOLVE_OVERSHOOT (the Archive tab moves it)
     propShedLift: 1,                  // PROPOSAL, not shipped: a shed's spread = spread × this (1 = shipped)
     propShedCurl: 1,                  // PROPOSAL, not shipped: a shed's curl turns = turns × this (1 = shipped)
@@ -198,8 +206,15 @@
   // [group, key, min, max, step, label, tooltip]
   const SPEC = [
     ['Levels', 'shatterMinScreen', 0, 0.6, 0.005, 'Shatter from (screen)', 'A death SHATTERS instead of exploding when the prism is at least this much of the screen height across. Zoom the stage to watch the pick change.'],
-    ['Levels', 'glitterMinScreen', 0, 0.6, 0.005, 'Glitter from (screen)', 'A death GLITTERS (every triangle a shard) instead of shattering from this size up. Not below the shatter line.'],
-    ['Levels', 'shedMinScreen', 0, 0.6, 0.005, 'Shed from (screen)', 'A steal SHEDS its old colours instead of grading from this size up.'],
+    ['Levels', 'glitterMinScreen', 0, 0.6, 0.005, 'Glitter, large (screen)', 'A death GLITTERS from this size up, in its LARGE fragments only (a quarter of a face across): the medium and small ones are merged into them.'],
+    ['Levels', 'glitterMediumScreen', 0, 0.6, 0.005, 'Glitter, + medium (screen)', 'From this size the glitter adds its MEDIUM fragments (an eighth of a face).'],
+    ['Levels', 'glitterFullScreen', 0, 0.6, 0.005, 'Glitter, + small (screen)', 'From this size, the FULL glitter: its small fragments too (a sixteenth of a face).'],
+    ['Levels', 'shedMinScreen', 0, 0.6, 0.005, 'Shed from (screen)', 'A steal SHEDS its old colours instead of grading from this size up, on the ' + C.shedSubdivision + '-subdivision mesh.'],
+    ['Levels', 'shedFineScreen', 0, 0.6, 0.005, 'Shed fine from (screen)', 'From this size the shed is drawn at ' + C.shedFineSubdivision + ' subdivisions.'],
+    ['Levels', 'shedFinestScreen', 0, 0.6, 0.005, 'Shed finest from (screen)', 'From this size the shed is drawn at ' + C.shedFinestSubdivision + ' subdivisions (' + (12 * C.shedFinestSubdivision * C.shedFinestSubdivision).toLocaleString() + ' triangles).'],
+    ['Levels', 'crowdedFill', 0, 1, 0.01, 'Crowded at (budget full)', 'The AMOUNT: once the budget (entities or triangles) is this full, every new event is one level coarser.'],
+    ['Levels', 'packedFill', 0, 1, 0.01, 'Packed at (budget full)', 'Two levels coarser from here.'],
+    ['Levels', 'labFill', 0, 1, 0.01, 'Budget already full', 'Lab only. Pretend this much of the budget is already in use, to watch the AMOUNT make the pick coarser.'],
     ['Shape', 'spread', 0, 1, 0.01, 'Spread (prism radii)', 'How far a piece leaves. Capped at 1 so a destruction stays the explosion\'s size when you squint.'],
     ['Shape', 'openSeconds', 0.03, 1, 0.01, 'Opening time constant (s)', 'How fast a piece opens: 1 − e^(−t/τ). Short is a crack; long is a slow bloom.'],
     ['Shape', 'spinPerSpeed', 0, 1.5, 0.01, 'Spin (rad per unit speed per s)', 'Shard tumble (shatter, glitter). The explosion\'s wedges turn with its speed the same way.'],
@@ -211,6 +226,7 @@
     ['Sheds', 'bloomWeight', 0, 4, 0.1, 'Bloom weight', 'Petals curl open off each face, inside already the new colour. 0 removes it.'],
     ['Sheds', 'unravelWeight', 0, 4, 0.1, 'Unravel weight', 'Ribbons peel off each face, one after another. 0 removes it.'],
     ['Sheds', 'flakeWeight', 0, 4, 0.1, 'Flake weight', 'Scales tip off in a wave down the prism\'s length. 0 removes it.'],
+    ['Sheds', 'labShedRes', 0, 3, 1, 'Shed resolution shown', 'Lab only. 0: the resolution this size and amount pick. 1 / 2 / 3: force ' + C.shedSubdivision + ' / ' + C.shedFineSubdivision + ' / ' + C.shedFinestSubdivision + ' subdivisions.'],
     ['Sheds', 'shedInflate', 0, 0.2, 0.005, 'Skin offset (prism radii)', 'How far the old skin sits outside the prism, so the two never share a depth.'],
     ['Sheds', 'gradeSeconds', 0.1, 3, 0.05, 'Grade length (s)', 'The steal\'s colour lerp (MaterialPropertyAnimator). A shed lasts exactly as long.'],
     ['Look', 'fresnelPower', 0.5, 8, 0.1, 'Fresnel power', 'Skin: how tight the bright rim is at grazing angles.'],
@@ -253,7 +269,39 @@
   function shedFor(pos) { return pickShed(frac(burstSeed(pos) * 7.919 + 0.371), P.bloomWeight, P.unravelWeight, P.flakeWeight); }
   // PrismInteractionLod.ScreenFraction / PickDestruction
   function screenFraction(radius, depth, vfovRad) { return radius / (Math.max(depth, 1e-4) * Math.tan(0.5 * vfovRad)); }
-  function pickDestruction(f, shatterMin, glitterMin) { return f >= glitterMin ? 'Glitter' : f >= shatterMin ? 'Shatter' : 'Explosion'; }
+  // PrismInteractionLod.CrowdSteps / LevelForSize / PickDestruction / PickSteal
+  function crowdSteps(fill, crowded, packed) { return fill >= packed ? 2 : fill >= crowded ? 1 : 0; }
+  function levelForSize(f, lines) { let l = 0; lines.forEach((line, i) => { if (f >= line) l = i + 1; }); return l; }
+  const DESTRUCTION = ['Explosion', 'Shatter', 'Glitter · large', 'Glitter · medium', 'Glitter · full'];
+  const DESTRUCTION_MESH = [null, 'shatter', 'glitter4', 'glitter2', 'glitter1'];
+  function pickDestruction(f, steps) { return Math.max(0, levelForSize(f, [P.shatterMinScreen, P.glitterMinScreen, P.glitterMediumScreen, P.glitterFullScreen]) - steps); }
+  function pickSteal(f, steps) { return Math.max(0, levelForSize(f, [P.shedMinScreen, P.shedFineScreen, P.shedFinestScreen]) - steps); }
+  const SHED_SUB = [0, C.shedSubdivision, C.shedFineSubdivision, C.shedFinestSubdivision];
+  // PrismGlitterTiling, line for line (integer-only; parity.py compiles the C# and compares block for block).
+  const TILING = { grid: C.tilingGrid, large: C.tilingLargeLeg, splitLarge: C.tilingSplitLargePercent, splitMedium: C.tilingSplitMediumPercent };
+  function tilingHash(face, size, x, y, salt) {
+    let h = (Math.imul((((face * 8 + size) * 64 + y) * 64 + x) >>> 0, 2654435761) + Math.imul(salt, 40503)) >>> 0;
+    h = (h ^ (h >>> 16)) >>> 0;
+    h = Math.imul(h, 0x7feb352d) >>> 0;
+    h = (h ^ (h >>> 15)) >>> 0;
+    h = Math.imul(h, 0x846ca68b) >>> 0;
+    h = (h ^ (h >>> 16)) >>> 0;
+    return h;
+  }
+  function glitterBlocks(face, minSize) {
+    const out = [];
+    const emit = (x, y, size) => {
+      const percent = size === TILING.large ? TILING.splitLarge : TILING.splitMedium;
+      if (size > 1 && size > minSize && tilingHash(face, size, x, y, 1) % 100 < percent) {
+        const half = size / 2;
+        emit(x, y, half); emit(x + half, y, half); emit(x, y + half, half); emit(x + half, y + half, half);
+        return;
+      }
+      out.push(x, y, size, tilingHash(face, size, x, y, 2) & 1);
+    };
+    for (let by = 0; by < TILING.grid; by += TILING.large) for (let bx = 0; bx < TILING.grid; bx += TILING.large) emit(bx, by, TILING.large);
+    return out;
+  }
   // PrismCollisionBurst.ShedLife / SkinScale
   function shedLife(gradeSeconds) { return Math.max(0.05, gradeSeconds) * (1 + DATA.overshoot); }
   function skinScale(s, inflate) { const grow = 2 * Math.max(0, inflate) * 0.5 * Math.hypot(s[0], s[1], s[2]); return s.map((c) => c + Math.sign(c) * grow); }
@@ -277,7 +325,8 @@
 
   // ================= meshes =================
   // HighPolyPrismMesh.PopulateUnwelded, line for line (same faces, order, winding, TEXCOORD2).
-  function buildUnwelded(n) {
+  // unionJack: HighPolyPrismMesh.GetShed — the two off-diagonal quadrants cut along the other diagonal.
+  function buildUnwelded(n, unionJack) {
     const FN = [[1, 0, 0], [-1, 0, 0], [0, 1, 0], [0, -1, 0], [0, 0, 1], [0, 0, -1]];
     const FU = [[0, 1, 0], [0, 0, 1], [0, 0, 1], [1, 0, 0], [1, 0, 0], [0, 1, 0]];
     const FV = [[0, 0, 1], [0, 1, 0], [1, 0, 0], [0, 0, 1], [0, 1, 0], [1, 0, 0]];
@@ -291,7 +340,8 @@
         const fr = Math.fround, q0 = (k) => fr(fr(k) / fr(n));
         const c = [[q0(i), q0(j)], [q0(i + 1), q0(j)], [q0(i + 1), q0(j + 1)], [q0(i), q0(j + 1)]];
         for (let s = 0; s < 2; s++, t++) {
-          const a = c[0], b = s === 0 ? c[1] : c[2], d = s === 0 ? c[2] : c[3];
+          const flip = !!unionJack && (2 * i + 1 - n) * (2 * j + 1 - n) < 0;
+          const a = flip ? c[s] : c[0], b = c[s + 1], d = flip ? c[3] : c[s + 2];
           const cu = fr(fr(fr(a[0] + b[0]) + d[0]) / 3), cv = fr(fr(fr(a[1] + b[1]) + d[1]) / 3);
           const xr = Math.sin(t * 12.9898 + f * 78.233) * 43758.5453, rnd = xr - Math.floor(xr);
           for (const q of [a, b, d]) {
@@ -308,6 +358,41 @@
         }
       }
     }
+    return { pos, nrm, tan, uv, tri, count: cnt };
+  }
+  // HighPolyPrismMesh.PopulateGlitter, line for line: the tiling's blocks, two triangles each across the
+  // block's diagonal, TEXCOORD2 = each triangle's own centroid (float arithmetic, as C# does it).
+  function buildGlitter(minSize) {
+    const FN = [[1, 0, 0], [-1, 0, 0], [0, 1, 0], [0, -1, 0], [0, 0, 1], [0, 0, -1]];
+    const FU = [[0, 1, 0], [0, 0, 1], [0, 0, 1], [1, 0, 0], [1, 0, 0], [0, 1, 0]];
+    const FV = [[0, 0, 1], [0, 1, 0], [1, 0, 0], [0, 0, 1], [0, 1, 0], [1, 0, 0]];
+    const fr = Math.fround, g = TILING.grid, faces = FN.map((_, f) => glitterBlocks(f, minSize));
+    const cnt = faces.reduce((a, b) => a + b.length / 4 * 6, 0);
+    const pos = new Float32Array(cnt * 3), nrm = new Float32Array(cnt * 3), tan = new Float32Array(cnt * 4), uv = new Float32Array(cnt * 2), tri = new Float32Array(cnt * 3);
+    let vi = 0;
+    faces.forEach((blocks, f) => {
+      const N = FN[f], U = FU[f], V = FV[f];
+      for (let k = 0; k < blocks.length; k += 4) {
+        const x = blocks[k], y = blocks[k + 1], size = blocks[k + 2], other = blocks[k + 3] !== 0;
+        const c = [[fr(x / g), fr(y / g)], [fr((x + size) / g), fr(y / g)], [fr((x + size) / g), fr((y + size) / g)], [fr(x / g), fr((y + size) / g)]];
+        for (let t = 0; t < 2; t++) {
+          const a = other ? c[t] : c[0], b = c[t + 1], d = other ? c[3] : c[t + 2];
+          const cu = fr(fr(fr(a[0] + b[0]) + d[0]) / 3), cv = fr(fr(fr(a[1] + b[1]) + d[1]) / 3);
+          const rnd = tilingHash(f, size, x, y, 3 + t) / 4294967296;
+          for (const q of [a, b, d]) {
+            for (let m = 0; m < 3; m++) {
+              pos[vi * 3 + m] = N[m] * 0.5 + U[m] * (q[0] - 0.5) + V[m] * (q[1] - 0.5);
+              nrm[vi * 3 + m] = N[m];
+              tan[vi * 4 + m] = U[m];
+            }
+            tan[vi * 4 + 3] = -1;
+            uv[vi * 2] = q[0]; uv[vi * 2 + 1] = q[1];
+            tri[vi * 3] = cu; tri[vi * 3 + 1] = cv; tri[vi * 3 + 2] = rnd;
+            vi++;
+          }
+        }
+      }
+    });
     return { pos, nrm, tan, uv, tri, count: cnt };
   }
   // Prism.asset: the authored 72-vertex prism the explosion draws (pos3 nrm3 tan3 uv2 per vertex).
@@ -525,6 +610,7 @@ void main() {
     return { v, count: mesh.count, mesh };
   }
   let progBurst, progExplosion, progPrism, probeBurst, probeExplosion, meshBurst, meshPrism;
+  const MESHES = {};
   if (gl) {
     try {
       progBurst = program(BURST_VS, BURST_FS, 'burst');
@@ -534,6 +620,9 @@ void main() {
       probeExplosion = program(EXPLOSION_VS, PROBE_FS, 'explosion probe', ['vSubPos', 'vSubNrm']);
       meshBurst = vao(buildUnwelded(Math.round(C.burstSubdivision)));
       meshPrism = vao(buildPrism72());
+      MESHES.shatter = meshBurst;
+      for (const m of [4, 2, 1]) MESHES['glitter' + m] = vao(buildGlitter(m));
+      for (const l of [1, 2, 3]) MESHES['shed' + l] = vao(buildUnwelded(SHED_SUB[l], true));
     } catch (e) { glError = String(e.message || e); console.error(e); }
   }
 
@@ -579,7 +668,9 @@ void main() {
   // numbers behind it.
   function liveLevels() {
     const R = prismRadius(), d = camDistance(), f = screenFraction(R, d, FOV);
-    return { fraction: f, destruction: pickDestruction(f, P.shatterMinScreen, P.glitterMinScreen), shed: f >= P.shedMinScreen };
+    const steps = crowdSteps(P.labFill, P.crowdedFill, P.packedFill);
+    const dl = pickDestruction(f, steps), st = pickSteal(f, steps);
+    return { fraction: f, steps, destructionLevel: dl, destruction: DESTRUCTION[dl], stealLevel: st, shed: st > 0 };
   }
   // Every thing on stage this frame:
   //   { type: 'burst'|'explosion'|'prism', kind, origin, flight, start, life, curve, intact, label, steal }
@@ -587,11 +678,11 @@ void main() {
     const R = prismRadius(), items = [];
     if (view === 'destruction' || view === 'stealing') {
       const shed = view === 'stealing';
-      const spacing = shed ? Math.max(6, R * 2 * 1.9) : Math.max(8, R * 2 * (3.5 + 1.5 * P.spread) * 0.62);
+      const spacing = shed ? Math.max(6, R * 2 * 1.9) : Math.max(8, R * 2 * (3.5 + 1.5 * P.spread) * 0.56);
       const fl = shed ? STILL : impactFlight(1);
       const cells = shed
-        ? [{ type: 'prism', label: 'Grade', steal: 'grade' }].concat([BLOOM, UNRAVEL, FLAKE].map((k) => ({ type: 'burst', kind: k, label: KINDS[k], steal: 'shed' })))
-        : [{ type: 'explosion', label: 'Explosion' }, { type: 'burst', kind: SHATTER, carry, label: 'Shatter' + (carry ? ' · carried' : '') }, { type: 'burst', kind: GLITTER, carry, label: 'Glitter' + (carry ? ' · carried' : '') }];
+        ? (() => { const res = P.labShedRes > 0 ? Math.round(P.labShedRes) : Math.max(1, liveLevels().stealLevel); return [{ type: 'prism', label: 'Grade', steal: 'grade' }].concat([BLOOM, UNRAVEL, FLAKE].map((k) => ({ type: 'burst', kind: k, label: KINDS[k] + ' · ' + SHED_SUB[res], steal: 'shed', mesh: 'shed' + res, level: res }))); })()
+        : DESTRUCTION.map((name, l) => l === 0 ? { type: 'explosion', label: name, level: 0 } : { type: 'burst', kind: l === 1 ? SHATTER : GLITTER, carry, mesh: DESTRUCTION_MESH[l], level: l, label: name + (carry ? ' · carried' : '') });
       cells.forEach((c, i) => {
         const origin = v3.add(home(), [(i - (cells.length - 1) / 2) * spacing, 0, 0]);
         items.push(Object.assign(c, { origin, flight: fl, start: 0, intact: clock < 0 }));
@@ -601,12 +692,12 @@ void main() {
       const closing = P.labClosing, struck = v3.add(home(), [gap * 0.5, 0, 0]);
       const moverAtContact = v3.add(home(), [-gap * 0.5, 0, 0]);
       const fStruck = impactFlight(1), fMover = impactFlight(-1);
-      const level = liveLevels().destruction;
+      const level = liveLevels().destructionLevel;
       const pre = clock < 0;
       const moverPos = pre ? v3.add(moverAtContact, [closing * clock, 0, 0]) : moverAtContact;
-      const one = (origin, flight, who) => level === 'Explosion'
+      const one = (origin, flight, who) => level === 0
         ? { type: 'explosion', origin, flight, start: 0, intact: pre, label: who + ' · Explosion' }
-        : { type: 'burst', kind: level === 'Glitter' ? GLITTER : SHATTER, carry, origin, flight, start: 0, intact: pre, label: who + ' · ' + level + (carry ? ' · carried' : '') };
+        : { type: 'burst', kind: level === 1 ? SHATTER : GLITTER, mesh: DESTRUCTION_MESH[level], carry, origin, flight, start: 0, intact: pre, label: who + ' · ' + DESTRUCTION[level] + (carry ? ' · carried' : '') };
       items.push(one(moverPos, fMover, 'Mover'), one(struck, fStruck, 'Struck'));
     }
     return items;
@@ -627,7 +718,7 @@ void main() {
     if (cam.focus >= 0) return R * 9;
     // Narrow stages (a phone) back the camera off so the clouds still fit side by side.
     const wide = Math.max(1, 1.75 / Math.max(0.3, canvas.width / Math.max(1, canvas.height)));
-    return (view === 'destruction' ? R * 18 : view === 'stealing' ? R * 13 : R * 20 + P.labClosing * 0.2) * wide;
+    return (view === 'destruction' ? R * 22 : view === 'stealing' ? R * 13 : R * 20 + P.labClosing * 0.2) * wide;
   }
   function cameraFor(clock, w, h) {
     const target = camTarget(clock), d = camDistance();
@@ -671,7 +762,8 @@ void main() {
       gl.uniform3fv(u.uCamPos, cam.eye); gl.uniform3fv(u.uDark, c.dark);
       gl.uniform1f(u.uFresnelPower, P.fresnelPower); gl.uniform1f(u.uInnerGlow, P.innerGlow);
     }
-    gl.bindVertexArray(meshBurst.v); gl.drawArrays(gl.TRIANGLES, 0, meshBurst.count);
+    const mesh = MESHES[it.mesh || (it.kind === GLITTER ? 'glitter1' : shed ? 'shed1' : 'shatter')] || meshBurst;
+    gl.bindVertexArray(mesh.v); gl.drawArrays(gl.TRIANGLES, 0, mesh.count);
   }
   function drawExplosion(prog, it, cam, clock) {
     const u = prog.u;
@@ -733,7 +825,6 @@ void main() {
     const cm = cameraFor(clock, canvas.width, canvas.height), items = sceneItems(clock), lv = liveLevels();
     drawItems(items, cm, clock);
     // labels under each cloud; the one the game would draw at this size is marked
-    const pick = view === 'stealing' ? (lv.shed ? 'shed' : 'grade') : lv.destruction;
     const r = canvas.getBoundingClientRect(), sx = r.width / canvas.width, sy = r.height / canvas.height, R = prismRadius();
     if (labelsEl.childElementCount !== items.length) {
       labelsEl.replaceChildren();
@@ -744,7 +835,7 @@ void main() {
       const s = project(cm.VP, v3.add(at, [0, -R * 1.9, 0]), canvas.width, canvas.height), el = labelsEl.children[i];
       el.hidden = !s; if (!s) return;
       el.style.left = (s[0] * sx) + 'px'; el.style.top = (s[1] * sy) + 'px';
-      const picked = view === 'destruction' ? it.label.startsWith(pick) : view === 'stealing' ? it.steal === pick : false;
+      const picked = view === 'destruction' ? it.level === lv.destructionLevel : view === 'stealing' ? (lv.shed ? it.steal === 'shed' && (P.labShedRes === 0 || it.level === lv.stealLevel) : it.steal === 'grade') : false;
       const b = el.firstChild; b.textContent = (cam.focus === i ? '◉ ' : '') + it.label + (picked ? ' ◆' : ''); b.className = (it.type === 'explosion' || it.type === 'prism') ? 'base' : '';
       b.title = (it.type === 'explosion' ? 'The shipped explosion (the baseline). ' : it.type === 'prism' ? 'The shipped grade (the baseline). ' : '') + (picked ? 'The game draws this at the size shown. ' : '') + (cam.focus === i ? 'Back to the whole stage' : 'Fly the camera to this one');
     });
@@ -752,9 +843,11 @@ void main() {
     const head = view === 'destruction' ? 'Destruction, coarse to fine: the explosion, the shatter, the glitter'
       : view === 'stealing' ? 'Stealing: the grade, and the three sheds (' + domain + ' stolen by ' + thief + ')'
         : 'Collision: a moving prism runs into a resting one; both die';
+    const pc = (x) => (x * 100).toFixed(1) + '%';
+    const crowd = lv.steps ? '   — budget ' + Math.round(P.labFill * 100) + '% full: ' + lv.steps + ' level' + (lv.steps > 1 ? 's' : '') + ' coarser' : '';
     const lod = view === 'stealing'
-      ? 'At this size (' + pct + ') a steal ' + (lv.shed ? 'SHEDS' : 'GRADES') + '   (shed from ' + (P.shedMinScreen * 100).toFixed(1) + '%)'
-      : 'At this size (' + pct + ') a death is ' + lv.destruction.toUpperCase() + '   (shatter from ' + (P.shatterMinScreen * 100).toFixed(1) + '%, glitter from ' + (P.glitterMinScreen * 100).toFixed(1) + '%)';
+      ? 'At this size (' + pct + ') a steal ' + (lv.shed ? 'SHEDS at ' + SHED_SUB[lv.stealLevel] + ' subdivisions' : 'GRADES') + crowd + '\n(shed ' + pc(P.shedMinScreen) + ', fine ' + pc(P.shedFineScreen) + ', finest ' + pc(P.shedFinestScreen) + ')'
+      : 'At this size (' + pct + ') a death is ' + lv.destruction.toUpperCase() + crowd + '\n(shatter ' + pc(P.shatterMinScreen) + ', glitter large ' + pc(P.glitterMinScreen) + ', + medium ' + pc(P.glitterMediumScreen) + ', + small ' + pc(P.glitterFullScreen) + ')';
     $('hud').textContent = head + '\n' + lod + '\nt ' + clock.toFixed(2) + ' s   seed ' + labSeed + (clock < 0 ? '   (before the ' + (view === 'stealing' ? 'steal' : 'event') + ')' : '');
     $('scrub').value = clock; $('clockOut').textContent = clock.toFixed(2) + ' s';
   }
@@ -769,42 +862,46 @@ void main() {
   const SW = 120, SH = 80;
   const DESTRUCTION_TIMES = Array.from({ length: 15 }, (_, i) => 0.25 + i * 0.5);
   function shedTimes() { const g = P.gradeSeconds; return Array.from({ length: 15 }, (_, i) => g * (0.04 + i * 0.07)); }
-  let fbo = null;
-  function ensureFbo() {
-    if (fbo) return fbo;
+  const fbos = {};
+  function ensureFbo(W, H) {
+    const key = W + 'x' + H;
+    if (fbos[key]) return fbos[key];
     const f = gl.createFramebuffer(), tex = gl.createTexture(), depth = gl.createRenderbuffer();
-    gl.bindTexture(gl.TEXTURE_2D, tex); gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA8, SW, SH, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
-    gl.bindRenderbuffer(gl.RENDERBUFFER, depth); gl.renderbufferStorage(gl.RENDERBUFFER, gl.DEPTH_COMPONENT24, SW, SH);
+    gl.bindTexture(gl.TEXTURE_2D, tex); gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA8, W, H, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
+    gl.bindRenderbuffer(gl.RENDERBUFFER, depth); gl.renderbufferStorage(gl.RENDERBUFFER, gl.DEPTH_COMPONENT24, W, H);
     gl.bindFramebuffer(gl.FRAMEBUFFER, f);
     gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, tex, 0);
     gl.framebufferRenderbuffer(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.RENDERBUFFER, depth);
     gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-    fbo = f; return fbo;
+    return (fbos[key] = f);
   }
-  function shoot(item, t) {
-    const R = prismRadius(), target = v3.add(item.origin, v3.mul(item.flight.v, t)), d = R * 11;
+  // One shot of one candidate, alone, read back. The defaults are the squint: 120×80 from 11 radii, three
+  // separable box passes of radius 3 px (σ ≈ 3.5 px ≈ 0.4 prism radius at this range) on each channel, so a
+  // change of hue at equal brightness (a steal) still shows. The LOD steps pass their own size and blur.
+  function shoot(item, t, opt) {
+    const o = Object.assign({ W: SW, H: SH, dist: 11, radius: 3, passes: 3 }, opt || {});
+    const W = o.W, H = o.H;
+    const R = prismRadius(), target = v3.add(item.origin, v3.mul(item.flight.v, t)), d = R * o.dist;
     const eye = [target[0] + d * Math.cos(0.32) * Math.sin(0.2), target[1] + d * Math.sin(0.32), target[2] + d * Math.cos(0.32) * Math.cos(0.2)];
-    const cm = { VP: mul4(perspective(0.75, SW / SH, 0.1, d * 40), lookAt(eye, target, [0, 1, 0])), eye };
-    gl.bindFramebuffer(gl.FRAMEBUFFER, ensureFbo()); gl.viewport(0, 0, SW, SH);
+    const cm = { VP: mul4(perspective(0.75, W / H, 0.1, d * 40), lookAt(eye, target, [0, 1, 0])), eye };
+    gl.bindFramebuffer(gl.FRAMEBUFFER, ensureFbo(W, H)); gl.viewport(0, 0, W, H);
     drawItems([item], cm, t);
-    const px = new Uint8Array(SW * SH * 4); gl.readPixels(0, 0, SW, SH, gl.RGBA, gl.UNSIGNED_BYTE, px);
+    const px = new Uint8Array(W * H * 4); gl.readPixels(0, 0, W, H, gl.RGBA, gl.UNSIGNED_BYTE, px);
     gl.bindFramebuffer(gl.FRAMEBUFFER, null);
     const bg = stageColor().map((c) => Math.round(Math.pow(c, 1) * 255));
-    const lum = new Float32Array(SW * SH), rgb = [0, 0, 0];
+    const rgb = [0, 0, 0];
     let cov = 0, cx = 0, cy = 0;
-    for (let i = 0; i < SW * SH; i++) {
+    for (let i = 0; i < W * H; i++) {
       const r = px[i * 4], g = px[i * 4 + 1], b = px[i * 4 + 2];
       const on = Math.abs(r - bg[0]) + Math.abs(g - bg[1]) + Math.abs(b - bg[2]) > 6;
-      lum[i] = (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255;
-      if (on) { cov++; cx += i % SW; cy += Math.floor(i / SW); rgb[0] += r; rgb[1] += g; rgb[2] += b; }
+      if (on) { cov++; cx += i % W; cy += Math.floor(i / W); rgb[0] += r; rgb[1] += g; rgb[2] += b; }
     }
-    // A squint: three separable box passes of radius 3 px (σ ≈ 3.5 px ≈ 0.4 prism radius at this range),
-    // on each channel, so a change of hue at equal brightness (a steal) still shows.
-    const pass = (src, dx, dy) => { const out = new Float32Array(SW * SH); for (let y = 0; y < SH; y++) for (let x = 0; x < SW; x++) { let s = 0, n = 0; for (let k = -3; k <= 3; k++) { const xx = x + k * dx, yy = y + k * dy; if (xx < 0 || yy < 0 || xx >= SW || yy >= SH) continue; s += src[yy * SW + xx]; n++; } out[y * SW + x] = s / n; } return out; };
-    const blur = (src) => { let sq = src; for (let i = 0; i < 3; i++) sq = pass(pass(sq, 1, 0), 0, 1); return sq; };
-    const chans = [0, 1, 2].map((c) => { const a = new Float32Array(SW * SH); for (let i = 0; i < SW * SH; i++) a[i] = px[i * 4 + c] / 255; return blur(a); });
-    const projR = R / (d * Math.tan(0.375)) * SH / 2;
-    return { cov: cov / (SW * SH), cx: cov ? cx / cov : SW / 2, cy: cov ? cy / cov : SH / 2, rgb: cov ? rgb.map((c) => c / cov / 255) : [0, 0, 0], squint: chans, projR };
+    const rad = o.radius;
+    const pass = (src, dx, dy) => { const out = new Float32Array(W * H); for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) { let s = 0, n = 0; for (let k = -rad; k <= rad; k++) { const xx = x + k * dx, yy = y + k * dy; if (xx < 0 || yy < 0 || xx >= W || yy >= H) continue; s += src[yy * W + xx]; n++; } out[y * W + x] = s / n; } return out; };
+    const blur = (src) => { let sq = src; for (let i = 0; i < o.passes; i++) sq = pass(pass(sq, 1, 0), 0, 1); return sq; };
+    const chans = [0, 1, 2].map((c) => { const a = new Float32Array(W * H); for (let i = 0; i < W * H; i++) a[i] = px[i * 4 + c] / 255; return blur(a); });
+    const projR = R / (d * Math.tan(0.375)) * H / 2;
+    return { cov: cov / (W * H), cx: cov ? cx / cov : W / 2, cy: cov ? cy / cov : H / 2, rgb: cov ? rgb.map((c) => c / cov / 255) : [0, 0, 0], squint: chans, projR };
   }
   function compare(c, base) {
     let size = 0, centre = 0, colour = 0, squint = 0, fade = 0, n = 0;
@@ -841,7 +938,7 @@ void main() {
     const destruction = [
       { name: 'Explosion, another prism', control: 'band', runs: [dShots(make('explosion', -1, 1, { flight: { v: turned, speed: fl.speed } }))] },
       { name: 'Prism held whole', control: 'negative', runs: [dShots(make('burst', SHATTER, 0, { intact: true }))] },
-    ].concat([SHATTER, GLITTER].map((k) => ({ name: KINDS[k], runs: seeds.map((s) => dShots(make('burst', k, s))) })))
+    ].concat([1, 2, 3, 4].map((l) => ({ name: DESTRUCTION[l], runs: seeds.map((s) => dShots(make('burst', l === 1 ? SHATTER : GLITTER, s, { mesh: DESTRUCTION_MESH[l] }))) })))
       .map((c) => Object.assign(c, { table: 'destruction' }));
     // Sheds against the grade: standing prisms, stolen at t = 0.
     const sShots = (it) => shedTimes().map((t) => shoot(it, t));
@@ -850,7 +947,7 @@ void main() {
     const sheds = [
       { name: 'Grade, 10% late', control: 'band', runs: [sShots(make('prism', -1, 0, Object.assign({ start: 0.1 * P.gradeSeconds }, still)))] },
       { name: 'Colour snapped', control: 'negative', runs: [sShots(make('prism', -1, 0, Object.assign({ gradeSeconds: 0 }, still)))] },
-    ].concat([BLOOM, UNRAVEL, FLAKE].map((k) => ({ name: KINDS[k], runs: seeds.map((s) => sShots(make('burst', k, s, Object.assign({ steal: 'shed' }, still)))) })))
+    ].concat([1, 3].flatMap((res) => [BLOOM, UNRAVEL, FLAKE].map((k) => ({ name: KINDS[k] + ' · ' + SHED_SUB[res], runs: seeds.map((s) => sShots(make('burst', k, s, Object.assign({ steal: 'shed', mesh: 'shed' + res }, still)))) }))))
       .map((c) => Object.assign(c, { table: 'sheds' }));
     const rows = verdicts(destruction.map((c) => compare(c, dBase)), 'the explosion')
       .concat(verdicts(sheds.map((c) => compare(c, sBase)), 'the grade'));
@@ -859,6 +956,46 @@ void main() {
   }
   let lastScore = null;
   function score() { return lastScore ? lastScore.map((r) => ({ table: r.table, name: r.name, squint: r.squint, verdict: r.verdict })) : { t: +clock.toFixed(2) }; }
+
+  // ================= the LOD steps (rendered at the size where each step happens) =================
+  // Where the game switches from one level to the next, the two are drawn at the TRUE pixel size of that line
+  // on a labScreenPx-tall screen (no squint: one pass of radius 1 px for the anti-aliasing) and compared. The
+  // band is the finer level against itself on ANOTHER prism — how different two of the same death look anyway.
+  // A step no larger than 1.5× its band is one a player cannot pick out.
+  const STEP_FBO_MAX = 800;
+  function stepCandidates() {
+    const fl = impactFlight(1), still = { flight: STILL };
+    const dz = (mesh, kind) => mesh ? { type: 'burst', kind, mesh } : { type: 'explosion', kind: -1 };
+    return [
+      { name: 'Glitter full → medium', line: P.glitterFullScreen, fine: dz('glitter1', GLITTER), coarse: dz('glitter2', GLITTER), flight: fl },
+      { name: 'Glitter medium → large', line: P.glitterMediumScreen, fine: dz('glitter2', GLITTER), coarse: dz('glitter4', GLITTER), flight: fl },
+      { name: 'Glitter large → shatter', line: P.glitterMinScreen, fine: dz('glitter4', GLITTER), coarse: dz('shatter', SHATTER), flight: fl },
+      { name: 'Shatter → explosion', line: P.shatterMinScreen, fine: dz('shatter', SHATTER), coarse: dz(null), flight: fl },
+      { name: 'Shed ' + SHED_SUB[3] + ' → ' + SHED_SUB[2] + ' (bloom)', line: P.shedFinestScreen, fine: Object.assign({ type: 'burst', kind: BLOOM, steal: 'shed', mesh: 'shed3' }, still), coarse: Object.assign({ type: 'burst', kind: BLOOM, steal: 'shed', mesh: 'shed2' }, still), shed: true },
+      { name: 'Shed ' + SHED_SUB[2] + ' → ' + SHED_SUB[1] + ' (bloom)', line: P.shedFineScreen, fine: Object.assign({ type: 'burst', kind: BLOOM, steal: 'shed', mesh: 'shed2' }, still), coarse: Object.assign({ type: 'burst', kind: BLOOM, steal: 'shed', mesh: 'shed1' }, still), shed: true },
+      { name: 'Shed ' + SHED_SUB[1] + ' (bloom) → grade', line: P.shedMinScreen, fine: Object.assign({ type: 'burst', kind: BLOOM, steal: 'shed', mesh: 'shed1' }, still), coarse: Object.assign({ type: 'prism' }, still), shed: true },
+    ];
+  }
+  function runSteps() {
+    if (!gl || glError) return [];
+    const savedClock = clock, rows = [];
+    for (const st of stepCandidates()) {
+      const D = st.line * P.labScreenPx;                     // the prism's diameter in px at the line
+      const H = Math.max(32, Math.min(STEP_FBO_MAX, Math.round(D * 2.5))), W = Math.round(H * 1.4);
+      const fFbo = Math.min(D, H / 2.5) / H;                // capped: the prism drawn smaller than true size
+      const opt = { W, H, dist: 1 / (fFbo * Math.tan(0.375)), radius: 1, passes: 1 };
+      const times = st.shed ? Array.from({ length: 8 }, (_, i) => P.gradeSeconds * (0.06 + i * 0.12)) : Array.from({ length: 8 }, (_, i) => 0.3 + i * 0.9);
+      const at = (proto, seedIdx) => Object.assign({ flight: st.flight || STILL, start: 0, intact: false, origin: [seedIdx * 13.7, 0, seedIdx * 7.31] }, proto);
+      const shots = (it) => times.map((t) => shoot(it, t, opt));
+      const base = shots(at(st.fine, 0));
+      const band = compare({ name: 'band', runs: [shots(at(st.fine, 1))] }, base).squint;
+      const step = compare({ name: st.name, runs: [shots(at(st.coarse, 0))] }, base).squint;
+      rows.push({ name: st.name, line: st.line, px: Math.round(D), drawnPx: Math.round(fFbo * H), band, step, ratio: +(step / Math.max(band, 1e-6)).toFixed(2), verdict: step <= band * 1.5 ? 'unnoticeable' : 'visible' });
+    }
+    clock = savedClock; lastSteps = rows;
+    return rows;
+  }
+  let lastSteps = null;
 
   // ================= parity probes (read by parity.py through Playwright) =================
   // Transform feedback captures the vertex stage's own outputs: the page's burst and explosion maps,
@@ -988,13 +1125,28 @@ void main() {
     };
     box.querySelector('#runScore').onclick = () => draw(runBatch());
     if (lastScore) draw(lastScore);
+    const steps = document.createElement('div');
+    steps.innerHTML = '<p><button class="btn" id="runSteps">Score the LOD steps</button> <span class="hint">Each step between neighbouring levels, drawn at the true pixel size where the game switches (on a ' + P.labScreenPx + ' px screen, Scene tab), against the finer level on another prism.</span></p><div class="tablewrap"><table id="stepTable"></table></div>';
+    const drawSteps = (rows) => {
+      const t = steps.querySelector('#stepTable');
+      t.innerHTML = '<tr><th>Step</th><th title="The line, as a share of the screen height">At</th><th title="The prism\'s diameter at the line, and as drawn (capped at ' + STEP_FBO_MAX + ' px tall shots)">Prism px</th><th title="The finer level against itself on another prism">Band</th><th title="The finer level against the coarser one, same prism">Step</th><th>Step ÷ band</th><th>Verdict</th></tr>';
+      for (const r of rows) {
+        const tr = document.createElement('tr');
+        for (const v of [r.name, (r.line * 100).toFixed(1) + '%', r.px + (r.drawnPx < r.px ? ' (drawn ' + r.drawnPx + ')' : ''), r.band, r.step, r.ratio]) { const td = document.createElement('td'); td.textContent = v; tr.appendChild(td); }
+        const td = document.createElement('td'), pill = document.createElement('span'); pill.className = 'pill ' + (r.verdict === 'unnoticeable' ? 'ok' : 'warn'); pill.textContent = r.verdict; td.appendChild(pill); tr.appendChild(td);
+        t.appendChild(tr);
+      }
+    };
+    steps.querySelector('#runSteps').onclick = () => drawSteps(runSteps());
+    if (lastSteps) drawSteps(lastSteps);
+    box.appendChild(steps);
     return box;
   }
 
   // The ladder: PrismMotion.NextLevel on a moving-prism count you drag.
   function ladderPanel() {
     const box = document.createElement('div');
-    box.innerHTML = '<div class="twocol"><div><div class="row"><label for="movers"><span>Moving prisms</span><span class="key">e.g. a black hole\'s bodies</span></label><output id="moversOut">1</output><input type="range" id="movers" min="0" max="400" step="1" value="1"></div><p class="hint">Drag up past ' + C.showcaseMaxMovers + ' and ' + C.boxMaxMovers + ', then back down: each line is crossed downward only at three quarters of it (' + Math.floor(C.showcaseMaxMovers * 3 / 4) + ', ' + Math.floor(C.boxMaxMovers * 3 / 4) + ').</p><canvas id="ladderTrace" width="600" height="70" style="width:100%;height:70px;display:block;"></canvas></div><div class="ladder" id="rungs"></div></div><p class="hint">The detail levels\' budget, destruction and sheds together: ' + C.maxLiveBursts + ' alive at once × ' + (12 * C.burstSubdivision * C.burstSubdivision) + ' triangles = ' + (C.maxLiveBursts * 12 * C.burstSubdivision * C.burstSubdivision).toLocaleString() + ' triangles. Past it, every interaction draws its ordinary effect. The plough moves one prism per ram, so it is always level 1.</p>';
+    box.innerHTML = '<div class="twocol"><div><div class="row"><label for="movers"><span>Moving prisms</span><span class="key">e.g. a black hole\'s bodies</span></label><output id="moversOut">1</output><input type="range" id="movers" min="0" max="400" step="1" value="1"></div><p class="hint">Drag up past ' + C.showcaseMaxMovers + ' and ' + C.boxMaxMovers + ', then back down: each line is crossed downward only at three quarters of it (' + Math.floor(C.showcaseMaxMovers * 3 / 4) + ', ' + Math.floor(C.boxMaxMovers * 3 / 4) + ').</p><canvas id="ladderTrace" width="600" height="70" style="width:100%;height:70px;display:block;"></canvas></div><div class="ladder" id="rungs"></div></div><p class="hint">The detail levels\' budget, destruction and sheds together: ' + C.maxLiveBursts + ' alive at once and ' + C.maxLiveTriangles.toLocaleString() + ' triangles. Half full, every new event is one level coarser; ' + Math.round(C.packedFill * 100) + '% full, two; a level that does not fit steps down until one does, then the ordinary effect. The plough moves one prism per ram, so it is always level 1.</p>';
     const rungs = box.querySelector('#rungs');
     const info = [['Level 1 · Showcase', '≤ ' + C.showcaseMaxMovers + ' moving', 'Exact boxes. Each destroyed prism gets the destruction level its size on screen picks (shatter, glitter), budget permitting.'], ['Level 2 · Plain', '≤ ' + C.boxMaxMovers + ' moving', 'Exact boxes. The ordinary explosion.'], ['Level 3 · Bulk', 'above ' + C.boxMaxMovers, 'Spheres of the prisms\' volumes, in Burst. The ordinary explosion.']];
     info.forEach((r) => { const d = document.createElement('div'); d.className = 'rung'; d.innerHTML = '<b></b><span class="hint"></span><div></div>'; d.querySelector('b').textContent = r[0]; d.querySelector('.hint').textContent = r[1]; d.lastChild.textContent = r[2]; rungs.appendChild(d); });
@@ -1029,13 +1181,14 @@ void main() {
     const d = diffOnly(), parts = [];
     parts.push(Object.keys(d).length ? 'Settings: ' + JSON.stringify(d) : 'Settings: shipped');
     if (lastScore) parts.push('Squint: ' + lastScore.filter((r) => !r.control).map((r) => r.name + ' ' + r.squint + ' (' + r.verdict + ')').join('; '));
+    if (lastSteps) parts.push('LOD steps: ' + lastSteps.map((r) => r.name + ' ' + r.ratio + '× band (' + r.verdict + ')').join('; '));
     const lv = liveLevels();
-    parts.push('At ' + (lv.fraction * 100).toFixed(1) + '% of the screen: ' + lv.destruction + ' / ' + (lv.shed ? 'shed' : 'grade'));
+    parts.push('At ' + (lv.fraction * 100).toFixed(1) + '% of the screen, budget ' + Math.round(P.labFill * 100) + '% full: ' + lv.destruction + ' / ' + (lv.shed ? 'shed at ' + SHED_SUB[lv.stealLevel] : 'grade'));
     return parts.join('\n');
   }
   function logPanel() {
     const box = document.createElement('div');
-    box.innerHTML = '<p class="hint" id="logStatus"></p><div class="twocol"><div><select id="logTopic" aria-label="Topic"><option>Destruction levels</option><option>Shatter</option><option>Glitter</option><option>Sheds</option><option>Bloom</option><option>Unravel</option><option>Flake</option><option>Squint verdict</option><option>Ladder</option><option>Overall</option></select><textarea id="logChoice" rows="4" aria-label="Your decision"></textarea><p><button class="btn primary" id="logSave">Record decision</button> <button class="btn" id="logCopy">Copy log</button></p></div><div class="tablewrap"><table id="logTable"></table></div></div>';
+    box.innerHTML = '<p class="hint" id="logStatus"></p><div class="twocol"><div><select id="logTopic" aria-label="Topic"><option>Destruction levels</option><option>Shatter</option><option>Glitter sizes</option><option>Sheds</option><option>Shed resolutions</option><option>LOD steps</option><option>Amount (crowding)</option><option>Bloom</option><option>Unravel</option><option>Flake</option><option>Squint verdict</option><option>Ladder</option><option>Overall</option></select><textarea id="logChoice" rows="4" aria-label="Your decision"></textarea><p><button class="btn primary" id="logSave">Record decision</button> <button class="btn" id="logCopy">Copy log</button></p></div><div class="tablewrap"><table id="logTable"></table></div></div>';
     const status = box.querySelector('#logStatus');
     status.textContent = db ? 'Shared log: saved with the lab and readable by Claude at the start of the next round.' : 'Kept in this browser. Use Copy log to send it.';
     status.className = db ? 'ok' : 'warn';
@@ -1062,7 +1215,7 @@ void main() {
 
   function aboutPanel() {
     const box = document.createElement('div');
-    box.innerHTML = '<div class="twocol"><div><p><b>What you are looking at.</b> The prism\'s two fundamental interactions, each at its DETAIL LEVELS. <b>Destruction</b> is one spectrum, coarse to fine: the ordinary explosion far away, a shatter nearer, a glitter close up — every level the explosion when you squint. <b>Stealing</b> is the ordinary grade (the 0.8 s colour lerp) far away and a SHED close up: the prism takes its new colour at once and a skin in the old colours comes off it (bloom, unravel or flake), on the grade\'s own curve, so squinted at it is the grade. The game picks the level by how big the prism is on the screen; zoom the stage and the ◆ moves. No white accents: the brighter inside colour is the only contrast. Click a label to fly the camera to it.</p><p class="hint" id="aboutSource"></p></div><div><p><b>What this lab does not model</b></p><ul class="plain"><li>Bloom, HDR and tonemapping.</li><li>The prism\'s and the explosion\'s own shader colouring. Every prism here wears the burst\'s skin shading (dark face, bright rim), so the differences are the detail levels, not the lab. The explosion\'s MOTION and FADE and the grade\'s CURVE are the shipped code.</li><li>The occlusion corridor (prisms between camera and ship go see-through).</li><li>The real collision test: Collision mode meets at touching x-extents, not the swept box test.</li><li>Shielded, danger and super-shielded tiers (other colour pairs, the danger gain).</li><li>The budget (48 alive): the lab always draws the level; the game draws the ordinary effect past it.</li><li>The game\'s float32 clock and a phone GPU\'s precision; frame time on a real device.</li></ul></div></div>';
+    box.innerHTML = '<div class="twocol"><div><p><b>What you are looking at.</b> The prism\'s two fundamental interactions, each at its DETAIL LEVELS. <b>Destruction</b> is one spectrum, coarse to fine: the ordinary explosion far away, a shatter nearer, then the glitter — triangles of three sizes, graded large → + medium → + small as the prism nears (a coarser glitter is the finer with its small fragments merged into their parents) — every level the explosion when you squint. <b>Stealing</b> is the ordinary grade (the 0.8 s colour lerp) far away and a SHED close up: the prism takes its new colour at once and a skin in the old colours comes off it (bloom, unravel or flake), on the grade\'s own curve, so squinted at it is the grade, at one of three mesh resolutions (' + C.shedSubdivision + ', ' + C.shedFineSubdivision + ', ' + C.shedFinestSubdivision + ' subdivisions). The game picks the level by how big the prism is on the screen and by how full the budget already is (the AMOUNT: Levels tab); zoom the stage and the ◆ moves. No white accents: the brighter inside colour is the only contrast. Click a label to fly the camera to it.</p><p class="hint" id="aboutSource"></p></div><div><p><b>What this lab does not model</b></p><ul class="plain"><li>Bloom, HDR and tonemapping.</li><li>The prism\'s and the explosion\'s own shader colouring. Every prism here wears the burst\'s skin shading (dark face, bright rim), so the differences are the detail levels, not the lab. The explosion\'s MOTION and FADE and the grade\'s CURVE are the shipped code.</li><li>The occlusion corridor (prisms between camera and ship go see-through).</li><li>The real collision test: Collision mode meets at touching x-extents, not the swept box test.</li><li>Shielded, danger and super-shielded tiers (other colour pairs, the danger gain).</li><li>The budget (48 alive): the lab always draws the level; the game draws the ordinary effect past it.</li><li>The game\'s float32 clock and a phone GPU\'s precision; frame time on a real device.</li></ul></div></div>';
     box.querySelector('#aboutSource').textContent = LAB.name + ' · round ' + LAB.round + ' · ' + LAB.branch + ' · write-up ' + LAB.doc + ' · the detail levels run ' + DATA.sources.burst + '; the explosion\'s fade runs ' + DATA.sources.erosion + '; its motion is ' + DATA.sources.explosionMap + '; the grade runs ' + DATA.sources.grade + '.';
     return box;
   }
@@ -1124,7 +1277,30 @@ void main() {
     setClock(t) { clock = t; render(); },
     state: () => ({ t: elapsed, clock, view, seed: labSeed, playing, glError }),
     probeBurstCase, probeExplosionCase, nextLevel, pickShed, pickDestruction, screenFraction, shedLife, skinScale, resolveFlight,
-    levels: liveLevels,
+    levels: liveLevels, runSteps, glitterBlocks, crowdSteps,
+    // parity.py: the glitter meshes cover the whole surface (area 6 for the unit cube) and no shed-mesh
+    // triangle straddles either face diagonal (the union-jack cut).
+    meshChecks() {
+      const out = {};
+      for (const m of [4, 2, 1]) {
+        const g = MESHES['glitter' + m].mesh, P3 = g.pos; let area = 0;
+        for (let t = 0; t < g.count; t += 3) {
+          const a = [P3[t * 3], P3[t * 3 + 1], P3[t * 3 + 2]], b = [P3[t * 3 + 3], P3[t * 3 + 4], P3[t * 3 + 5]], c = [P3[t * 3 + 6], P3[t * 3 + 7], P3[t * 3 + 8]];
+          const cr = v3.cross(v3.sub(b, a), v3.sub(c, a)); area += 0.5 * Math.hypot(cr[0], cr[1], cr[2]);
+        }
+        out['glitter' + m] = { triangles: g.count / 3, area: +area.toFixed(5) };
+      }
+      for (const l of [1, 2, 3]) {
+        const g = MESHES['shed' + l].mesh, uv = g.uv; let straddles = 0;
+        for (let t = 0; t < g.count; t += 3) {
+          let lo1 = false, hi1 = false, lo2 = false, hi2 = false;
+          for (let k = 0; k < 3; k++) { const u = uv[(t + k) * 2], v = uv[(t + k) * 2 + 1], d1 = u - v, d2 = u + v - 1; lo1 = lo1 || d1 < -1e-5; hi1 = hi1 || d1 > 1e-5; lo2 = lo2 || d2 < -1e-5; hi2 = hi2 || d2 > 1e-5; }
+          if ((lo1 && hi1) || (lo2 && hi2)) straddles++;
+        }
+        out['shed' + l] = { subdivision: SHED_SUB[l], triangles: g.count / 3, straddles };
+      }
+      return out;
+    },
   };
 })();
 </script>

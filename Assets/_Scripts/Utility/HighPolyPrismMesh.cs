@@ -70,6 +70,8 @@ namespace CosmicShore.Utility
 
         static readonly Dictionary<int, Mesh> s_cache = new();
         static readonly Dictionary<int, Mesh> s_unweldedCache = new();
+        static readonly Dictionary<int, Mesh> s_glitterCache = new();
+        static readonly Dictionary<int, Mesh> s_shedCache = new();
 
         /// <summary>
         /// The shared subdivided prism for <paramref name="subdivision"/> quads per face axis,
@@ -110,6 +112,126 @@ namespace CosmicShore.Utility
             return mesh;
         }
 
+        /// <summary>
+        /// The SHED's mesh (Docs/PRISM_ANIMATION.md §4.11): <see cref="GetUnwelded"/> triangulated UNION-JACK —
+        /// the cells of the two quadrants the face's anti-diagonal crosses are cut along the other diagonal — so
+        /// BOTH face diagonals run along triangle edges and the bloom's petals tear along straight lines at every
+        /// resolution, instead of a staircase on one of them. Same solid, same vertex layout, same
+        /// <see cref="TriangleUVChannel"/> meaning. Shared and cached; never mutate it.
+        /// </summary>
+        public static Mesh GetShed(int subdivision)
+        {
+            subdivision = Mathf.Clamp(subdivision, MinSubdivision, MaxSubdivision);
+            if (s_shedCache.TryGetValue(subdivision, out var mesh) && mesh != null)
+                return mesh;
+
+            mesh = new Mesh { name = $"Prism_HighPoly_Shed_{subdivision}" };
+            PopulateUnwelded(mesh, subdivision, unionJack: true);
+            s_shedCache[subdivision] = mesh;
+            return mesh;
+        }
+
+        /// <summary>
+        /// The GLITTER's mesh at one detail level (<see cref="PrismGlitterTiling"/>): the same solid tiled by right
+        /// triangles of a range of sizes — legs of 1/4, 1/8 and 1/16 of a face — every triangle owning its vertices
+        /// with <see cref="TriangleUVChannel"/> = its own centroid, so each is one shard. <paramref name="minSize"/>
+        /// 4 is the LARGE level, 2 MEDIUM, 1 FULL: each coarser level is the finer one with its small triangles
+        /// merged back into the one they came from, so every level is the whole prism at rest. Same vertex layout
+        /// as <see cref="GetUnwelded"/>; shared and cached; never mutate it.
+        /// </summary>
+        public static Mesh GetGlitter(int minSize)
+        {
+            minSize = minSize >= PrismGlitterTiling.LargeLeg ? PrismGlitterTiling.LargeLeg : minSize >= 2 ? 2 : 1;
+            if (s_glitterCache.TryGetValue(minSize, out var mesh) && mesh != null)
+                return mesh;
+
+            mesh = new Mesh { name = $"Prism_Glitter_{minSize}" };
+            PopulateGlitter(mesh, minSize);
+            s_glitterCache[minSize] = mesh;
+            return mesh;
+        }
+
+        /// <summary>Rewrite <paramref name="mesh"/> as the glitter's tiling at <paramref name="minSize"/> (<see cref="GetGlitter"/>).</summary>
+        public static void PopulateGlitter(Mesh mesh, int minSize)
+        {
+            if (mesh == null) return;
+            int triCount = PrismGlitterTiling.TriangleCount(minSize);
+            int vertCount = triCount * 3;
+            var verts = new Vector3[vertCount];
+            var norms = new Vector3[vertCount];
+            var tangents = new Vector4[vertCount];
+            var uvs = new List<Vector2>(vertCount);
+            var cents = new List<Vector3>(vertCount);
+            var tris = new List<Vector3>(vertCount);
+            var indices = new int[vertCount];
+            var blocks = new List<int>(512);
+            var corner = new Vector2[4];
+            const float grid = PrismGlitterTiling.Grid;
+
+            int vi = 0;
+            for (int f = 0; f < 6; f++)
+            {
+                Vector3 nrm = FaceNormals[f];
+                Vector3 u = FaceU[f];
+                Vector3 v = FaceV[f];
+                Vector3 centre = nrm * HalfExtent;
+                blocks.Clear();
+                PrismGlitterTiling.Blocks(f, minSize, blocks);
+
+                for (int k = 0; k < blocks.Count; k += 4)
+                {
+                    int x = blocks[k], y = blocks[k + 1], size = blocks[k + 2];
+                    corner[0] = new Vector2(x / grid, y / grid);
+                    corner[1] = new Vector2((x + size) / grid, y / grid);
+                    corner[2] = new Vector2((x + size) / grid, (y + size) / grid);
+                    corner[3] = new Vector2(x / grid, (y + size) / grid);
+
+                    // Diagonal 0: (00,10,11)+(00,11,01), the unwelded mesh's cut. Diagonal 1: (00,10,01)+(10,11,01).
+                    // Both wind counter-clockwise in (u, v), like every prism face.
+                    bool other = blocks[k + 3] != 0;
+                    for (int t = 0; t < 2; t++)
+                    {
+                        Vector2 a = other ? corner[t] : corner[0];
+                        Vector2 b = corner[t + 1];
+                        Vector2 c = other ? corner[3] : corner[t + 2];
+                        Vector2 centroid = (a + b + c) / 3f;
+                        float random = PrismGlitterTiling.Hash(f, size, x, y, 3 + t) / 4294967296f;
+                        var triangle = new Vector3(centroid.x, centroid.y, random);
+
+                        AddVertex(a);
+                        AddVertex(b);
+                        AddVertex(c);
+
+                        void AddVertex(Vector2 uv)
+                        {
+                            verts[vi] = centre + u * ((uv.x - 0.5f) * 2f * HalfExtent)
+                                               + v * ((uv.y - 0.5f) * 2f * HalfExtent);
+                            norms[vi] = nrm;
+                            tangents[vi] = new Vector4(u.x, u.y, u.z, -1f);
+                            uvs.Add(uv);
+                            cents.Add(centre);
+                            tris.Add(triangle);
+                            indices[vi] = vi;
+                            vi++;
+                        }
+                    }
+                }
+            }
+
+            mesh.Clear();
+            mesh.indexFormat = vertCount > 65000
+                ? UnityEngine.Rendering.IndexFormat.UInt32
+                : UnityEngine.Rendering.IndexFormat.UInt16;
+            mesh.vertices = verts;
+            mesh.normals = norms;
+            mesh.triangles = indices;
+            mesh.SetUVs(FaceUVChannel, uvs);
+            mesh.SetUVs(FaceCentroidUVChannel, cents);
+            mesh.SetUVs(TriangleUVChannel, tris);
+            mesh.SetTangents(tangents);
+            mesh.RecalculateBounds();
+        }
+
         /// <summary>True if <paramref name="mesh"/> is one this cache built (identity, not shape).</summary>
         public static bool IsHighPoly(Mesh mesh)
         {
@@ -120,6 +242,12 @@ namespace CosmicShore.Utility
             foreach (var kv in s_unweldedCache)
                 if (ReferenceEquals(kv.Value, mesh))
                     return true;
+            foreach (var kv in s_glitterCache)
+                if (ReferenceEquals(kv.Value, mesh))
+                    return true;
+            foreach (var kv in s_shedCache)
+                if (ReferenceEquals(kv.Value, mesh))
+                    return true;
             return false;
         }
 
@@ -128,14 +256,17 @@ namespace CosmicShore.Utility
         {
             s_cache.Clear();
             s_unweldedCache.Clear();
+            s_glitterCache.Clear();
+            s_shedCache.Clear();
         }
 
         /// <summary>
         /// Rewrite <paramref name="mesh"/> as the unwelded subdivided prism (<see cref="GetUnwelded"/>):
         /// the face grid of <see cref="Populate"/>, triangle for triangle in the same order and winding,
-        /// with three vertices per triangle.
+        /// with three vertices per triangle. <paramref name="unionJack"/> (<see cref="GetShed"/>) cuts the cells of
+        /// the two off-diagonal quadrants along the other diagonal.
         /// </summary>
-        public static void PopulateUnwelded(Mesh mesh, int subdivision)
+        public static void PopulateUnwelded(Mesh mesh, int subdivision, bool unionJack = false)
         {
             if (mesh == null) return;
             int n = Mathf.Clamp(subdivision, MinSubdivision, MaxSubdivision);
@@ -168,12 +299,14 @@ namespace CosmicShore.Utility
                     corner[2] = new Vector2((float)(i + 1) / n, (float)(j + 1) / n);
                     corner[3] = new Vector2((float)i / n, (float)(j + 1) / n);
 
-                    // (00,10,11) and (00,11,01): the welded mesh's two triangles, same winding.
+                    // (00,10,11) and (00,11,01): the welded mesh's two triangles, same winding. Union-jack, a
+                    // cell whose centre lies in the (+u,-v) or (-u,+v) quadrant is cut (00,10,01) and (10,11,01).
+                    bool flip = unionJack && (2 * i + 1 - n) * (2 * j + 1 - n) < 0;
                     for (int t = 0; t < 2; t++, tri++)
                     {
-                        Vector2 a = corner[0];
-                        Vector2 b = t == 0 ? corner[1] : corner[2];
-                        Vector2 c = t == 0 ? corner[2] : corner[3];
+                        Vector2 a = flip ? corner[t] : corner[0];
+                        Vector2 b = corner[t + 1];
+                        Vector2 c = flip ? corner[3] : corner[t + 2];
                         Vector2 centroid = (a + b + c) / 3f;
                         float random = TriangleRandom(f, tri);
                         var triangle = new Vector3(centroid.x, centroid.y, random);

@@ -10,10 +10,11 @@ namespace CosmicShore.Utility
 {
     /// <summary>
     /// The CARRIER of the prism's fine DETAIL LEVELS (Docs/PRISM_ANIMATION.md §4.11): the pure render
-    /// entities that draw a destruction or a steal on the shared UNWELDED high-poly prism
-    /// (<see cref="HighPolyPrismMesh.GetUnwelded"/>), each run entirely on the GPU off one stamp
-    /// (<c>PrismCollisionBurst.hlsl</c>; the class keeps the name of its first use, prism movement's
-    /// collision). <see cref="PrismInteractionLod"/> decides WHEN; this class only draws.
+    /// entities that draw a destruction or a steal on a shared high-resolution prism mesh — the unwelded
+    /// prism (<see cref="HighPolyPrismMesh.GetUnwelded"/>) at the shatter's and the sheds' resolutions, or the
+    /// glitter's tiling (<see cref="HighPolyPrismMesh.GetGlitter"/>) at one of its three levels — each run entirely
+    /// on the GPU off one stamp (<c>PrismCollisionBurst.hlsl</c>; the class keeps the name of its first use, prism
+    /// movement's collision). <see cref="PrismInteractionLod"/> decides WHICH level and mesh; this class only draws.
     ///
     /// <list type="bullet">
     /// <item><b>Destruction</b> (<see cref="TryRequestDestruction"/>): a SHATTER or a GLITTER, leaving on the
@@ -34,8 +35,9 @@ namespace CosmicShore.Utility
     ///
     /// <para><b>It never costs an interaction its visual.</b> Every refusal — the config off or missing, the
     /// budget full, the render service down — returns false, and the caller draws the ordinary effect.
-    /// Budget: <see cref="PrismInteractionLodConfigSO.MaxLiveBursts"/> entities of 12·s² triangles, destruction
-    /// and sheds together. ZERO colliders.</para>
+    /// Budget: <see cref="PrismInteractionLodConfigSO.MaxLiveBursts"/> entities and
+    /// <see cref="PrismInteractionLodConfigSO.MaxLiveTriangles"/> triangles, destruction and sheds together, each
+    /// drawing the mesh its detail level picked (one spawn batch per mesh). ZERO colliders.</para>
     /// </summary>
     public static class PrismCollisionBurst
     {
@@ -69,6 +71,7 @@ namespace CosmicShore.Utility
         {
             public Entity Entity;
             public float EndTime;
+            public int Triangles;
         }
 
         /// <summary>
@@ -82,12 +85,19 @@ namespace CosmicShore.Utility
             int _head;
 
             public int Count => _records.Count - _head;
-            public void Add(Entity entity, float endTime) => _records.Add(new Record { Entity = entity, EndTime = endTime });
+            public int Triangles { get; private set; }
+
+            public void Add(Entity entity, float endTime, int triangles)
+            {
+                _records.Add(new Record { Entity = entity, EndTime = endTime, Triangles = triangles });
+                Triangles += triangles;
+            }
 
             public void Clear()
             {
                 _records.Clear();
                 _head = 0;
+                Triangles = 0;
             }
 
             /// <summary>Appends every expired entity to <paramref name="into"/> and drops it from the queue.</summary>
@@ -95,7 +105,11 @@ namespace CosmicShore.Utility
             {
                 int end = _head;
                 while (end < _records.Count && _records[end].EndTime <= now) end++;
-                for (int i = _head; i < end; i++) into.Add(_records[i].Entity);
+                for (int i = _head; i < end; i++)
+                {
+                    into.Add(_records[i].Entity);
+                    Triangles -= _records[i].Triangles;
+                }
                 _head = end;
                 if (_head == _records.Count) Clear();
                 else if (_head >= 256 && _head * 2 >= _records.Count)
@@ -106,8 +120,18 @@ namespace CosmicShore.Utility
             }
         }
 
-        static readonly List<PrismRenderService.SliceDebrisSpawn> s_pending = new(64);
-        static readonly List<bool> s_pendingIsShed = new(64);
+        /// <summary>The requests of one frame that draw one mesh: one spawn batch each.</summary>
+        sealed class Bucket
+        {
+            public Mesh Mesh;
+            public readonly List<PrismRenderService.SliceDebrisSpawn> Spawns = new(32);
+            public readonly List<bool> IsShed = new(32);
+        }
+
+        // At most one bucket per detail mesh (the shatter's, three glitter, three shed resolutions).
+        static readonly List<Bucket> s_buckets = new(8);
+        static int s_pendingCount;
+        static int s_pendingTriangles;
         static readonly List<Entity> s_scratch = new(64);
         static readonly LiveQueue s_liveDestruction = new();
         static readonly LiveQueue s_liveShed = new();
@@ -121,11 +145,27 @@ namespace CosmicShore.Utility
         /// <summary>Detail-level entities alive now — diagnostics and the budget.</summary>
         public static int LiveCount => s_liveDestruction.Count + s_liveShed.Count;
 
+        /// <summary>Detail-level triangles alive now — diagnostics and the budget.</summary>
+        public static int LiveTriangles => s_liveDestruction.Triangles + s_liveShed.Triangles;
+
+        /// <summary>
+        /// How full the budget is, counting this frame's queued requests: the fuller of entities and triangles, 0–1+.
+        /// The AMOUNT half of <see cref="PrismInteractionLod"/>'s choice.
+        /// </summary>
+        public static float Fill(PrismInteractionLodConfigSO cfg)
+        {
+            if (cfg == null) return 1f;
+            float entities = (LiveCount + s_pendingCount) / (float)Mathf.Max(1, cfg.MaxLiveBursts);
+            float triangles = (LiveTriangles + s_pendingTriangles) / (float)Mathf.Max(1, cfg.MaxLiveTriangles);
+            return Mathf.Max(entities, triangles);
+        }
+
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
         static void ResetStatics()
         {
-            s_pending.Clear();
-            s_pendingIsShed.Clear();
+            s_buckets.Clear();
+            s_pendingCount = 0;
+            s_pendingTriangles = 0;
             s_scratch.Clear();
             s_liveDestruction.Clear();
             s_liveShed.Clear();
@@ -142,13 +182,20 @@ namespace CosmicShore.Utility
         static void HandleQuitting() => s_quitting = true;
 
         /// <summary>
-        /// Whether one more detail-level entity could be accepted right now (config sane, budget room, service
+        /// Whether one more detail-level entity could be accepted right now (config sane, an entity free, service
         /// up). <see cref="PrismInteractionLod"/> asks before it spends anything on a choice.
         /// </summary>
         public static bool CanAccept(PrismInteractionLodConfigSO cfg) =>
             !s_quitting && PrismRenderService.Enabled && Time.unscaledTime >= s_suspendedUntil &&
             cfg != null && cfg.IsSane && cfg.BurstMaterial != null &&
-            LiveCount + s_pending.Count < cfg.MaxLiveBursts;
+            LiveCount + s_pendingCount < cfg.MaxLiveBursts;
+
+        /// <summary>Whether <paramref name="triangles"/> more fit the triangle budget right now.</summary>
+        public static bool FitsTriangles(PrismInteractionLodConfigSO cfg, int triangles) =>
+            cfg != null && LiveTriangles + s_pendingTriangles + triangles <= cfg.MaxLiveTriangles;
+
+        /// <summary>Triangles in <paramref name="mesh"/> (the budget's unit).</summary>
+        public static int TrianglesOf(Mesh mesh) => mesh != null ? (int)(mesh.GetIndexCount(0) / 3) : 0;
 
         /// <summary>
         /// Queues a DESTRUCTION of <paramref name="kind"/> (<see cref="Shatter"/> or <see cref="Glitter"/>) for the
@@ -158,10 +205,10 @@ namespace CosmicShore.Utility
         /// false — the caller explodes the prism instead — on any refusal.
         /// </summary>
         public static bool TryRequestDestruction(Vector3 position, Quaternion rotation, Vector3 scale,
-            Color bright, Color dark, Vector3 impactVelocity, float speedLimitOverride, PrismKind tier, int kind)
+            Color bright, Color dark, Vector3 impactVelocity, float speedLimitOverride, PrismKind tier, int kind, Mesh mesh)
         {
             var cfg = PrismInteractionLodConfigSO.Instance;
-            if (!CanAccept(cfg) || !PrismDebris.TryGetExplosionLayer(out _)) return false;
+            if (!CanAccept(cfg) || !FitsTriangles(cfg, TrianglesOf(mesh)) || !PrismDebris.TryGetExplosionLayer(out _)) return false;
 
             Vector3 flight = PrismDebris.ResolveExplosionFlight(impactVelocity, speedLimitOverride, tier, out float speed);
             float life = PrismExplosion.DefaultDuration;
@@ -179,7 +226,7 @@ namespace CosmicShore.Utility
                 Axis = float4.zero,
                 Drift = new float4(flight.x, flight.y, flight.z, speed),
                 Bounds = new AABB { Center = centre, Extents = extents },
-            }, isShed: false);
+            }, isShed: false, mesh);
             return true;
         }
 
@@ -192,10 +239,10 @@ namespace CosmicShore.Utility
         /// false — the caller grades as usual — on any refusal.
         /// </summary>
         public static bool TryRequestShed(Vector3 position, Quaternion rotation, Vector3 scale,
-            Color oldBright, Color oldDark, Color newBright, float gradeSeconds, int kind)
+            Color oldBright, Color oldDark, Color newBright, float gradeSeconds, int kind, Mesh mesh)
         {
             var cfg = PrismInteractionLodConfigSO.Instance;
-            if (!CanAccept(cfg) || !PrismDebris.TryGetExplosionLayer(out _)) return false;
+            if (!CanAccept(cfg) || !FitsTriangles(cfg, TrianglesOf(mesh)) || !PrismDebris.TryGetExplosionLayer(out _)) return false;
 
             Vector3 skin = SkinScale(scale, cfg.ShedInflate);
             BuildBounds(rotation, skin, Vector3.zero, cfg.Spread, out var centre, out var extents);
@@ -216,7 +263,7 @@ namespace CosmicShore.Utility
                 Axis = float4.zero,
                 Drift = float4.zero,                    // the prism stays where it is
                 Bounds = new AABB { Center = centre, Extents = extents },
-            }, isShed: true);
+            }, isShed: true, mesh);
             return true;
         }
 
@@ -236,10 +283,20 @@ namespace CosmicShore.Utility
             math.frac(math.dot(new float3(position.x, position.y, position.z),
                 new float3(0.1031f, 0.11369f, 0.13787f)) * 43.7585f);
 
-        static void Queue(in PrismRenderService.SliceDebrisSpawn spawn, bool isShed)
+        static void Queue(in PrismRenderService.SliceDebrisSpawn spawn, bool isShed, Mesh mesh)
         {
-            s_pending.Add(spawn);
-            s_pendingIsShed.Add(isShed);
+            Bucket bucket = null;
+            for (int i = 0; i < s_buckets.Count; i++)
+                if (ReferenceEquals(s_buckets[i].Mesh, mesh)) { bucket = s_buckets[i]; break; }
+            if (bucket == null)
+            {
+                bucket = new Bucket { Mesh = mesh };
+                s_buckets.Add(bucket);
+            }
+            bucket.Spawns.Add(spawn);
+            bucket.IsShed.Add(isShed);
+            s_pendingCount++;
+            s_pendingTriangles += TrianglesOf(mesh);
             EnsureHost();
         }
 
@@ -344,44 +401,61 @@ namespace CosmicShore.Utility
 
         static void Drain()
         {
-            if (s_pending.Count == 0) return;
+            if (s_pendingCount == 0) return;
 
             using (s_drainMarker.Auto())
             {
                 var cfg = PrismInteractionLodConfigSO.Instance;
                 var material = ResolveRuntimeMaterial(cfg);
-                bool spawned = material != null
-                    && PrismDebris.TryGetExplosionLayer(out int layer)
-                    && PrismRenderService.SpawnSliceDebrisBatch(
-                        HighPolyPrismMesh.GetUnwelded(cfg.BurstSubdivision), material, layer,
-                        s_pending, PrismClock.Now, s_scratch);
+                bool layerOk = PrismDebris.TryGetExplosionLayer(out int layer);
+                int failed = 0;
 
-                if (spawned)
+                for (int b = 0; b < s_buckets.Count; b++)
                 {
-                    int epoch = PrismRenderService.CurrentEpoch;
-                    if (s_liveEpoch != epoch)
+                    var bucket = s_buckets[b];
+                    if (bucket.Spawns.Count == 0) continue;
+
+                    s_scratch.Clear();
+                    bool spawned = material != null && layerOk && bucket.Mesh != null
+                        && PrismRenderService.SpawnSliceDebrisBatch(bucket.Mesh, material, layer,
+                            bucket.Spawns, PrismClock.Now, s_scratch);
+
+                    if (spawned)
                     {
-                        s_liveDestruction.Clear();
-                        s_liveShed.Clear();
-                        s_liveEpoch = epoch;
+                        int epoch = PrismRenderService.CurrentEpoch;
+                        if (s_liveEpoch != epoch)
+                        {
+                            s_liveDestruction.Clear();
+                            s_liveShed.Clear();
+                            s_liveEpoch = epoch;
+                        }
+
+                        float now = PrismClock.Now;
+                        int triangles = TrianglesOf(bucket.Mesh);
+                        for (int i = 0; i < s_scratch.Count; i++)
+                            (bucket.IsShed[i] ? s_liveShed : s_liveDestruction).Add(s_scratch[i], now + bucket.Spawns[i].Timing.y, triangles);
+                    }
+                    else
+                    {
+                        failed += bucket.Spawns.Count;
                     }
 
-                    float now = PrismClock.Now;
-                    for (int i = 0; i < s_scratch.Count; i++)
-                        (s_pendingIsShed[i] ? s_liveShed : s_liveDestruction).Add(s_scratch[i], now + s_pending[i].Timing.y);
+                    bucket.Spawns.Clear();
+                    bucket.IsShed.Clear();
                 }
-                else
+
+                if (failed > 0)
                 {
                     // Accepted while the service looked usable, lost before the drain. Hold new requests so
                     // interactions go back to their ordinary effects, time-based so a rebuilt world re-enables it.
                     s_suspendedUntil = Time.unscaledTime + SuspendSeconds;
-                    CSDebug.LogWarning($"[PrismCollisionBurst] Batch spawn failed for {s_pending.Count} queued detail-level " +
+                    CSDebug.LogWarning($"[PrismCollisionBurst] Batch spawn failed for {failed} queued detail-level " +
                                      $"entities (render service: {PrismRenderService.StatusLine()}). These destructions and " +
                                      $"steals have no visual; interactions fall back to their ordinary effects for {SuspendSeconds:F0}s.");
                 }
 
-                s_pending.Clear();
-                s_pendingIsShed.Clear();
+                s_pendingCount = 0;
+                s_pendingTriangles = 0;
                 s_scratch.Clear();
             }
         }

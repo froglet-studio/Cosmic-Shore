@@ -114,7 +114,10 @@ Destruction is one spectrum, coarse to fine, by the prism's projected diameter o
 |---|---|---|
 | **Explosion** | under `shatterMinScreen` (5%), off screen, or over budget | the ordinary 24-wedge explosion |
 | **Shatter** | from 5% | each face fractures into ~9 Voronoi shards that tumble away about their own seeds |
-| **Glitter** | from `glitterMinScreen` (15%) | every one of the 1,200 triangles of the slice's unwelded ultra-high-res prism is its own shard, spinning out and blinking away |
+| **Glitter large / medium / full** | from 12% / 17% / 24% | every triangle of a nested tiling is its own shard — triangles with legs of 1/4, 1/8 and 1/16 of a face; a coarser level is the finer with its small fragments merged into their parents (192 / 528 / 1,386 triangles) |
+
+The AMOUNT grades it too: once the shared budget is half full every new death is one level coarser, at 80%
+two (`PrismInteractionLodConfig`).
 
 No white accents (the designer, 2026-10-14): the only contrast is the brighter inside colour on the
 back faces once the surface opens. Both finer levels share the explosion's ENVELOPE — its flight
@@ -130,8 +133,9 @@ scores 0.315). What remains is shape — the cloud is ~0.79 of the explosion's s
 sooner. Round 1's proposal (carry the detail on the explosion's own wedges) stays in the lab's Archive.
 
 Above level 1 (many movers) a collision asks for the plain explosion (`PrismEventData.PlainDeath`), as
-the ladder always said. **Budget**: `maxLiveBursts` 48 × 1,200 = **57,600 triangles**, destruction and
-the steal's sheds together, zero colliders, one batch; past it, the ordinary effect.
+the ladder always said. **Budget**: `maxLiveBursts` 48 entities and `maxLiveTriangles` 80,000 triangles,
+destruction and the steal's sheds together, zero colliders, one batch per mesh; a level that does not fit
+steps down, and past every level the ordinary effect.
 
 ## 4. Stated limits
 
@@ -171,7 +175,8 @@ the steal's sheds together, zero colliders, one batch; past it, the ordinary eff
 | `_Scripts/Utility/Effects/PrismInteractionLod.cs` | Picks the level: destruction (explosion / shatter / glitter) and stealing (grade / shed) |
 | `_Scripts/Utility/Effects/PrismCollisionBurst.cs` | The carrier: culling bounds, stamp, drain, retire (destruction and sheds on separate expiry queues) |
 | `_Graphics/Materials/Graphs/PrismCollisionBurst.hlsl` / `.shader`, `_Graphics/Materials/PrismCollisionBurstMaterial.mat` | The five kinds, the two fade curves, the URP passes |
-| `_Scripts/Utility/HighPolyPrismMesh.cs` | `GetUnwelded` (TEXCOORD2 = triangle centroid + random) |
+| `_Scripts/Utility/HighPolyPrismMesh.cs` | `GetUnwelded` (TEXCOORD2 = triangle centroid + random); `GetGlitter` (the glitter's three nested levels); `GetShed` (the union-jack cut the sheds draw) |
+| `_Scripts/Utility/PrismGlitterTiling.cs` | The glitter's quadtree of triangles of three sizes — pure, held to the lab's port by `parity.py` (.NET) |
 | `_Scripts/Utility/Effects/PrismDebris.cs` | `ResolveExplosionFlight` — the explosion's flight, shared |
 | `_Scripts/Controller/Vessel/Prism.cs`, `PrismEventChannelWithReturnSO.cs`, `PrismFactory.cs` | `DamageByCollision` → `PrismEventData.PlainDeath` (above level 1) → the factory's slice, detail level, explosion |
 | `Tools/Shaders/verify_prism_collision_burst.py` | Executes the shipped HLSL (12 properties, 5 negative controls, the shipped grade executed) and glslang-compiles every pass |

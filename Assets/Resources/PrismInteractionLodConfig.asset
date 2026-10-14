@@ -15,11 +15,21 @@ MonoBehaviour:
   burstMaterial: {fileID: 2100000, guid: bb416e904a654a8597031d364831aa5d, type: 2}
   burstSubdivision: 10
   maxLiveBursts: 48
+  maxLiveTriangles: 80000
+  crowdedFill: 0.5
+  packedFill: 0.8
   destructionEnabled: 1
   shatterMinScreen: 0.05
-  glitterMinScreen: 0.15
+  glitterMinScreen: 0.12
+  glitterMediumScreen: 0.17
+  glitterFullScreen: 0.24
   shedEnabled: 1
   shedMinScreen: 0.08
+  shedFineScreen: 0.16
+  shedFinestScreen: 0.28
+  shedSubdivision: 12
+  shedFineSubdivision: 18
+  shedFinestSubdivision: 24
   bloomWeight: 1
   unravelWeight: 1
   flakeWeight: 1
@@ -29,6 +39,6 @@ MonoBehaviour:
   spinPerSpeed: 0.3
   bloomTurns: 0.7
   unravelTurns: 0.8
-  ribbonsPerFace: 5
+  ribbonsPerFace: 6
   shardsPerFaceEdge: 3
   dissolveGrain: 0.35

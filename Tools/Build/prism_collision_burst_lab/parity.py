@@ -15,9 +15,14 @@ Playwright + headless Chromium):
   2. EXPLOSION: for random velocities, speeds and times, every vertex of the 72-vertex Prism.asset —
      the page's closed form of RotateFacesAlongAxis against the shipped .shadersubgraph EVALUATED as a
      dataflow graph (Tools/Shaders/verify_prism_face_pivot.py's evaluator).
+  3. GLITTER TILING: the page's port of PrismGlitterTiling against the shipped C# file COMPILED and run
+     with the .NET SDK — every block of every face at every level, exactly; and the page's meshes: the
+     glitter's three levels each cover the whole surface (area 6) with the C#'s triangle count, and no
+     triangle of the shed meshes straddles either face diagonal (the union-jack cut).
   NEGATIVE CONTROLS (each must FAIL):
-  3. the burst compared against the NEXT kind's C++ pose;
-  4. the explosion compared against the graph run with ExplosiveRotation doubled.
+  4. the burst compared against the NEXT kind's C++ pose;
+  5. the explosion compared against the graph run with ExplosiveRotation doubled;
+  6. the page's tiling compared against the C#'s for the NEXT face.
 
     python3 Tools/Build/prism_collision_burst_lab/parity.py      # exit 0 = every check passed
 """
@@ -62,7 +67,9 @@ const { chromium } = require('playwright');
   const out = await p.evaluate((cases) => {
     const L = window.__lab;
     if (L.state().glError) return { error: L.state().glError };
-    return { burst: cases.burst.map((c) => L.probeBurstCase(c)), explosion: cases.explosion.map((c) => L.probeExplosionCase(c)) };
+    const tiling = {};
+    for (const m of [4, 2, 1]) tiling[m] = [0, 1, 2, 3, 4, 5].map((f) => L.glitterBlocks(f, m));
+    return { burst: cases.burst.map((c) => L.probeBurstCase(c)), explosion: cases.explosion.map((c) => L.probeExplosionCase(c)), tiling, meshes: L.meshChecks() };
   }, cases);
   out.pageErrors = errors;
   process.stdout.write(JSON.stringify(out));
@@ -226,6 +233,45 @@ def compare_explosion(page, cases, rotation_scale=1.0):
 
 MESH = None
 
+TILING_CS = os.path.join(ROOT, "Assets/_Scripts/Utility/PrismGlitterTiling.cs")
+TILING_MAIN = r"""
+using System.Collections.Generic;
+using System.Text;
+using CosmicShore.Utility;
+var sb = new StringBuilder("{");
+foreach (int m in new[] { 4, 2, 1 })
+{
+    sb.Append(m == 4 ? "" : ",").Append('"').Append(m).Append("\":[");
+    for (int f = 0; f < 6; f++)
+    {
+        var b = new List<int>();
+        PrismGlitterTiling.Blocks(f, m, b);
+        sb.Append(f == 0 ? "[" : ",[").Append(string.Join(",", b)).Append(']');
+    }
+    sb.Append(']');
+}
+sb.Append(",\"triangles\":{\"4\":").Append(PrismGlitterTiling.TriangleCount(4)).Append(",\"2\":")
+  .Append(PrismGlitterTiling.TriangleCount(2)).Append(",\"1\":").Append(PrismGlitterTiling.TriangleCount(1)).Append("}}");
+System.Console.Write(sb.ToString());
+"""
+
+
+def run_tiling_cs(work):
+    """Compile the SHIPPED PrismGlitterTiling.cs with the .NET SDK and dump every block."""
+    dotnet = shutil.which("dotnet") or os.path.expanduser("~/.dotnet/dotnet")
+    proj = os.path.join(work, "tiling")
+    os.makedirs(proj, exist_ok=True)
+    with open(os.path.join(proj, "tiling.csproj"), "w") as f:
+        f.write('<Project Sdk="Microsoft.NET.Sdk"><PropertyGroup><OutputType>Exe</OutputType>'
+                '<TargetFramework>net8.0</TargetFramework><Nullable>disable</Nullable></PropertyGroup></Project>')
+    shutil.copy(TILING_CS, os.path.join(proj, "PrismGlitterTiling.cs"))
+    with open(os.path.join(proj, "Program.cs"), "w") as f:
+        f.write(TILING_MAIN)
+    r = subprocess.run([dotnet, "run", "--project", proj], capture_output=True, text=True, timeout=600,
+                       env=dict(os.environ, DOTNET_CLI_TELEMETRY_OPTOUT="1", DOTNET_NOLOGO="1"))
+    assert r.returncode == 0, r.stdout + r.stderr
+    return json.loads(r.stdout.strip().splitlines()[-1])
+
 
 def main():
     global MESH
@@ -280,7 +326,27 @@ def main():
               f"worst {ew:.2e}; {ebad} past tolerance -> {'PASS' if egood else 'FAIL'}")
         ok &= egood
 
+        # the glitter's tiling, against the C# compiled
+        cs = run_tiling_cs(work)
+        tmiss = sum(page["tiling"][str(m)][f] != cs[str(m)][f] for m in (4, 2, 1) for f in range(6))
+        tblocks = sum(len(cs[str(m)][f]) // 4 for m in (4, 2, 1) for f in range(6))
+        tgood = tmiss == 0
+        print(f"glitter tiling: {tblocks} blocks over 3 levels x 6 faces vs PrismGlitterTiling.cs compiled; "
+              f"{tmiss} face(s) differ -> {'PASS' if tgood else 'FAIL'}")
+        ok &= tgood
+        mg = page["meshes"]
+        mgood = all(abs(mg["glitter" + str(m)]["area"] - 6.0) < 1e-3 and mg["glitter" + str(m)]["triangles"] == cs["triangles"][str(m)]
+                    for m in (4, 2, 1)) and all(mg["shed" + str(l)]["straddles"] == 0 for l in (1, 2, 3))
+        print("meshes: glitter " + ", ".join(f"{mg['glitter' + str(m)]['triangles']} tris area {mg['glitter' + str(m)]['area']}" for m in (4, 2, 1))
+              + "; shed " + ", ".join(f"{mg['shed' + str(l)]['subdivision']}: {mg['shed' + str(l)]['straddles']} straddles" for l in (1, 2, 3))
+              + f" -> {'PASS' if mgood else 'FAIL'}")
+        ok &= mgood
+
         # negative controls
+        tnext = sum(page["tiling"][str(m)][f] != cs[str(m)][(f + 1) % 6] for m in (4, 2, 1) for f in range(6))
+        tfired = tnext > 0
+        print(f"negative control [next face's tiling]: {tnext} of 18 faces differ -> {'FIRED' if tfired else 'DID NOT FIRE'}")
+        ok &= tfired
         nref = run_cpp(work, cases["burst"], kind_shift=1)
         nbad, ntotal, _, _ = compare_burst(page["burst"], nref, cases["burst"])
         fired = nbad / ntotal > 0.2

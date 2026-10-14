@@ -182,29 +182,199 @@ namespace CosmicShore.Tests
         [Test]
         public void DestructionGetsFinerAsThePrismGrowsOnScreen()
         {
-            Assert.AreEqual(PrismInteractionLod.DestructionLevel.Explosion, PrismInteractionLod.PickDestruction(0.01f, 0.05f, 0.15f));
-            Assert.AreEqual(PrismInteractionLod.DestructionLevel.Shatter, PrismInteractionLod.PickDestruction(0.05f, 0.05f, 0.15f));
-            Assert.AreEqual(PrismInteractionLod.DestructionLevel.Shatter, PrismInteractionLod.PickDestruction(0.149f, 0.05f, 0.15f));
-            Assert.AreEqual(PrismInteractionLod.DestructionLevel.Glitter, PrismInteractionLod.PickDestruction(0.15f, 0.05f, 0.15f));
-            Assert.AreEqual(PrismInteractionLod.DestructionLevel.Glitter, PrismInteractionLod.PickDestruction(5f, 0.05f, 0.15f));
+            PrismInteractionLod.DestructionLevel Pick(float f, int crowd = 0) =>
+                PrismInteractionLod.PickDestruction(f, crowd, 0.05f, 0.12f, 0.17f, 0.24f);
+            Assert.AreEqual(PrismInteractionLod.DestructionLevel.Explosion, Pick(0.01f));
+            Assert.AreEqual(PrismInteractionLod.DestructionLevel.Shatter, Pick(0.05f));
+            Assert.AreEqual(PrismInteractionLod.DestructionLevel.GlitterLarge, Pick(0.12f));
+            Assert.AreEqual(PrismInteractionLod.DestructionLevel.GlitterMedium, Pick(0.2f));
+            Assert.AreEqual(PrismInteractionLod.DestructionLevel.GlitterFull, Pick(0.24f));
+            Assert.AreEqual(PrismInteractionLod.DestructionLevel.GlitterFull, Pick(5f));
 
             // Monotone: walking the camera in never steps back to a coarser level.
             var previous = PrismInteractionLod.DestructionLevel.Explosion;
             for (float d = 400f; d > 1f; d *= 0.97f)
             {
-                var level = PrismInteractionLod.PickDestruction(PrismInteractionLod.ScreenFraction(2.25f, d, 60f), 0.05f, 0.15f);
+                var level = Pick(PrismInteractionLod.ScreenFraction(2.25f, d, 60f));
                 Assert.GreaterOrEqual((int)level, (int)previous);
                 previous = level;
             }
-            Assert.AreEqual(PrismInteractionLod.DestructionLevel.Glitter, previous);
+            Assert.AreEqual(PrismInteractionLod.DestructionLevel.GlitterFull, previous);
         }
 
         [Test]
-        public void LevelsCarryExplicitValues_Destruction()
+        public void TheAmountMakesEveryLevelCoarser()
+        {
+            Assert.AreEqual(0, PrismInteractionLod.CrowdSteps(0.49f, 0.5f, 0.8f));
+            Assert.AreEqual(1, PrismInteractionLod.CrowdSteps(0.5f, 0.5f, 0.8f));
+            Assert.AreEqual(2, PrismInteractionLod.CrowdSteps(0.8f, 0.5f, 0.8f));
+            Assert.AreEqual(PrismInteractionLod.DestructionLevel.GlitterMedium,
+                PrismInteractionLod.PickDestruction(0.3f, 1, 0.05f, 0.12f, 0.17f, 0.24f), "crowded: one level coarser");
+            Assert.AreEqual(PrismInteractionLod.DestructionLevel.Explosion,
+                PrismInteractionLod.PickDestruction(0.06f, 2, 0.05f, 0.12f, 0.17f, 0.24f), "never below the explosion");
+            Assert.AreEqual(PrismInteractionLod.StealLevel.ShedFine,
+                PrismInteractionLod.PickSteal(0.3f, 1, 0.08f, 0.16f, 0.28f));
+            Assert.AreEqual(PrismInteractionLod.StealLevel.Grade,
+                PrismInteractionLod.PickSteal(0.1f, 1, 0.08f, 0.16f, 0.28f), "a crowded small steal grades");
+        }
+
+        [Test]
+        public void StealsGetFinerAsThePrismGrowsOnScreen()
+        {
+            Assert.AreEqual(PrismInteractionLod.StealLevel.Grade, PrismInteractionLod.PickSteal(0.07f, 0, 0.08f, 0.16f, 0.28f));
+            Assert.AreEqual(PrismInteractionLod.StealLevel.Shed, PrismInteractionLod.PickSteal(0.08f, 0, 0.08f, 0.16f, 0.28f));
+            Assert.AreEqual(PrismInteractionLod.StealLevel.ShedFine, PrismInteractionLod.PickSteal(0.2f, 0, 0.08f, 0.16f, 0.28f));
+            Assert.AreEqual(PrismInteractionLod.StealLevel.ShedFinest, PrismInteractionLod.PickSteal(0.28f, 0, 0.08f, 0.16f, 0.28f));
+        }
+
+        [Test]
+        public void LevelsCarryExplicitValues_Interactions()
         {
             Assert.AreEqual(0, (int)PrismInteractionLod.DestructionLevel.Explosion);
             Assert.AreEqual(1, (int)PrismInteractionLod.DestructionLevel.Shatter);
-            Assert.AreEqual(2, (int)PrismInteractionLod.DestructionLevel.Glitter);
+            Assert.AreEqual(2, (int)PrismInteractionLod.DestructionLevel.GlitterLarge);
+            Assert.AreEqual(3, (int)PrismInteractionLod.DestructionLevel.GlitterMedium);
+            Assert.AreEqual(4, (int)PrismInteractionLod.DestructionLevel.GlitterFull);
+            Assert.AreEqual(0, (int)PrismInteractionLod.StealLevel.Grade);
+            Assert.AreEqual(1, (int)PrismInteractionLod.StealLevel.Shed);
+            Assert.AreEqual(2, (int)PrismInteractionLod.StealLevel.ShedFine);
+            Assert.AreEqual(3, (int)PrismInteractionLod.StealLevel.ShedFinest);
+        }
+
+        [Test]
+        public void TheShedMeshTearsAlongBothFaceDiagonals()
+        {
+            HighPolyPrismMesh.InvalidateCache();
+            foreach (int n in new[] { 12, 18, 24 })
+            {
+                var mesh = HighPolyPrismMesh.GetShed(n);
+                Assert.AreSame(mesh, HighPolyPrismMesh.GetShed(n), "shared and cached");
+                Assert.IsTrue(HighPolyPrismMesh.IsHighPoly(mesh));
+                Assert.AreEqual(12 * n * n * 3, mesh.vertexCount, "the unwelded mesh's triangle count");
+                var uvs = new System.Collections.Generic.List<Vector2>();
+                mesh.GetUVs(HighPolyPrismMesh.FaceUVChannel, uvs);
+                var verts = mesh.vertices;
+                var normals = mesh.normals;
+                for (int t = 0; t < uvs.Count; t += 3)
+                {
+                    // No triangle has vertices strictly on both sides of u = v, nor of u + v = 1: the bloom's
+                    // petal borders are triangle edges, so a petal tears along a straight line.
+                    bool below = false, above = false, inside = false, outside = false;
+                    for (int k = 0; k < 3; k++)
+                    {
+                        float d1 = uvs[t + k].x - uvs[t + k].y, d2 = uvs[t + k].x + uvs[t + k].y - 1f;
+                        below |= d1 < -1e-5f; above |= d1 > 1e-5f;
+                        inside |= d2 < -1e-5f; outside |= d2 > 1e-5f;
+                    }
+                    Assert.IsFalse(below && above, $"n {n}: a triangle straddles the main diagonal");
+                    Assert.IsFalse(inside && outside, $"n {n}: a triangle straddles the anti-diagonal");
+                    Vector3 wound = Vector3.Cross(verts[t + 1] - verts[t], verts[t + 2] - verts[t]);
+                    Assert.Greater(Vector3.Dot(wound, normals[t]), 0f, "outward winding");
+                }
+            }
+        }
+
+        // ---------------------------------------------------------------- the glitter's tiling
+
+        [Test]
+        public void EveryGlitterLevelTilesEveryFaceExactlyOnce()
+        {
+            const int g = PrismGlitterTiling.Grid;
+            var blocks = new System.Collections.Generic.List<int>();
+            foreach (int minSize in new[] { 4, 2, 1 })
+            for (int face = 0; face < 6; face++)
+            {
+                blocks.Clear();
+                PrismGlitterTiling.Blocks(face, minSize, blocks);
+                var cover = new int[g * g];
+                for (int k = 0; k < blocks.Count; k += 4)
+                {
+                    int x = blocks[k], y = blocks[k + 1], size = blocks[k + 2];
+                    Assert.That(size, Is.EqualTo(4).Or.EqualTo(2).Or.EqualTo(1));
+                    Assert.GreaterOrEqual(size, minSize, "no block below the level's size");
+                    Assert.AreEqual(0, x % size, "blocks sit on the quadtree");
+                    Assert.AreEqual(0, y % size);
+                    for (int j = y; j < y + size; j++)
+                    for (int i = x; i < x + size; i++)
+                        cover[j * g + i]++;
+                }
+                foreach (int c in cover) Assert.AreEqual(1, c, $"level {minSize} face {face}: a hole or an overlap");
+            }
+        }
+
+        [Test]
+        public void ACoarserGlitterIsTheFinerWithItsSmallFragmentsMerged()
+        {
+            var fine = new System.Collections.Generic.List<int>();
+            var coarse = new System.Collections.Generic.List<int>();
+            for (int face = 0; face < 6; face++)
+            foreach (var (f, c) in new[] { (1, 2), (2, 4) })
+            {
+                fine.Clear(); coarse.Clear();
+                PrismGlitterTiling.Blocks(face, f, fine);
+                PrismGlitterTiling.Blocks(face, c, coarse);
+                // Every fine block lies inside exactly one coarse block, and a coarse block bigger than the
+                // coarse level's size is a fine block too (it never split).
+                for (int k = 0; k < fine.Count; k += 4)
+                {
+                    int inside = 0;
+                    for (int m = 0; m < coarse.Count; m += 4)
+                        if (fine[k] >= coarse[m] && fine[k] + fine[k + 2] <= coarse[m] + coarse[m + 2] &&
+                            fine[k + 1] >= coarse[m + 1] && fine[k + 1] + fine[k + 2] <= coarse[m + 1] + coarse[m + 2])
+                            inside++;
+                    Assert.AreEqual(1, inside);
+                }
+            }
+        }
+
+        [Test]
+        public void TheFullGlitterHasEverySize()
+        {
+            var blocks = new System.Collections.Generic.List<int>();
+            var sizes = new System.Collections.Generic.HashSet<int>();
+            for (int face = 0; face < 6; face++)
+            {
+                blocks.Clear();
+                PrismGlitterTiling.Blocks(face, 1, blocks);
+                for (int k = 2; k < blocks.Count; k += 4) sizes.Add(blocks[k]);
+            }
+            CollectionAssert.AreEquivalent(new[] { 1, 2, 4 }, sizes);
+            Assert.Less(PrismGlitterTiling.TriangleCount(4), PrismGlitterTiling.TriangleCount(2));
+            Assert.Less(PrismGlitterTiling.TriangleCount(2), PrismGlitterTiling.TriangleCount(1));
+            Assert.AreEqual(6 * 16 * 2, PrismGlitterTiling.TriangleCount(4), "the large level: sixteen blocks a face");
+        }
+
+        [Test]
+        public void TheGlitterMeshIsTheTilingWithACentroidPerShard()
+        {
+            HighPolyPrismMesh.InvalidateCache();
+            foreach (int minSize in new[] { 4, 2, 1 })
+            {
+                var mesh = HighPolyPrismMesh.GetGlitter(minSize);
+                Assert.AreSame(mesh, HighPolyPrismMesh.GetGlitter(minSize), "shared and cached");
+                Assert.IsTrue(HighPolyPrismMesh.IsHighPoly(mesh));
+                Assert.AreEqual(PrismGlitterTiling.TriangleCount(minSize) * 3, mesh.vertexCount);
+                var verts = mesh.vertices;
+                var normals = mesh.normals;
+                var tris = new System.Collections.Generic.List<Vector3>();
+                mesh.GetUVs(HighPolyPrismMesh.TriangleUVChannel, tris);
+                var tangents = mesh.tangents;
+                float area = 0f;
+                for (int t = 0; t < verts.Length; t += 3)
+                {
+                    Vector3 n = normals[t];
+                    Vector3 wound = Vector3.Cross(verts[t + 1] - verts[t], verts[t + 2] - verts[t]);
+                    Assert.Greater(Vector3.Dot(wound, n), 0f, "outward winding");
+                    area += 0.5f * wound.magnitude;
+                    Vector3 u = tangents[t];
+                    Vector3 v = Vector3.Cross(n, u);
+                    Vector3 centroid = (verts[t] + verts[t + 1] + verts[t + 2]) / 3f;
+                    Assert.AreEqual(Vector3.Dot(centroid, u) + 0.5f, tris[t].x, 1e-5f);
+                    Assert.AreEqual(Vector3.Dot(centroid, v) + 0.5f, tris[t].y, 1e-5f);
+                    Assert.AreEqual(tris[t], tris[t + 2]);
+                }
+                Assert.AreEqual(6f, area, 1e-3f, "the whole unit cube's surface: no holes at rest");
+            }
         }
 
         // ---------------------------------------------------------------- the mesh
@@ -263,9 +433,22 @@ namespace CosmicShore.Tests
             Assert.IsTrue(cfg.ShedEnabled);
             Assert.IsNotNull(cfg.BurstMaterial);
             Assert.AreEqual("CosmicShore/PrismCollisionBurst", cfg.BurstMaterial.shader.name);
-            Assert.LessOrEqual(cfg.WorstCaseTriangles, 80_000, "the detail levels' budget");
+            Assert.LessOrEqual(cfg.MaxLiveTriangles, 80_000, "the detail levels' triangle budget");
+            Assert.LessOrEqual(cfg.LargestEntityTriangles, cfg.MaxLiveTriangles);
             Assert.LessOrEqual(cfg.Spread, 1f, "a cloud wider than the prism stops squinting as the explosion");
             Assert.Less(cfg.ShatterMinScreen, cfg.GlitterMinScreen, "the spectrum runs coarse to fine as the prism nears");
+            Assert.Less(cfg.GlitterMinScreen, cfg.GlitterMediumScreen);
+            Assert.Less(cfg.GlitterMediumScreen, cfg.GlitterFullScreen);
+            Assert.Less(cfg.ShedMinScreen, cfg.ShedFineScreen);
+            Assert.Less(cfg.ShedFineScreen, cfg.ShedFinestScreen);
+            Assert.Less(cfg.CrowdedFill, cfg.PackedFill);
+            // Ribbons and flake scales fall on whole triangles at every shed resolution.
+            foreach (int level in new[] { 1, 2, 3 })
+            {
+                int n = cfg.ShedSubdivisionOf(level);
+                Assert.AreEqual(0, n % cfg.RibbonsPerFace, $"shed subdivision {n} vs {cfg.RibbonsPerFace} ribbons");
+                Assert.AreEqual(0, n % (2 * cfg.ShardsPerFaceEdge), $"shed subdivision {n} vs the flake's scales");
+            }
             Assert.Greater(cfg.ShedInflate, 0f, "a skin at the prism's own depth would fight it");
         }
 

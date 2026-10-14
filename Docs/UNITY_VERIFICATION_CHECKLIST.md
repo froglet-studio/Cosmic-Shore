@@ -8881,6 +8881,11 @@ imports without errors (magenta = rejected), the config asset loads (not a missi
    the rest the ordinary effect, nothing vanishes, no frame spike in `prof` (`PrismCollisionBurst.Drain`).
 4. **Shielded / dangerous / transparent prisms**: a stolen transparent prism grades (no skin); a shielded
    one sheds in its shield colours.
+5. **Round 3 — glitter sizes, shed resolutions, the amount**: close up a death glitters in triangles of
+   three sizes; walk back and the small ones merge into their parents (no holes on the first frame at any
+   distance). A steal very close sheds on the 24-subdivision mesh — the bloom's petals tear along straight
+   diagonals, not staircases. A wide AOE near the camera: as the budget fills, later events come out one or
+   two levels coarser, never as nothing; `prof` shows one `SpawnSliceDebrisBatch` per mesh per frame.
 
 ### 🔴 The collision burst — level 1's high-res death (same branch, 2026-10-14) — NOT EDITOR-VERIFIED
 

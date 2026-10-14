@@ -21,6 +21,8 @@ is stamped in here from the file the game ships, never typed into the page.
   explosion mesh Assets/_Models/Testing/Prism.asset (the 72 vertices, decoded from the mesh bytes)
   the grade      Assets/_Graphics/Materials/Graphs/PrismClockAnimation.hlsl (PrismColorLerp_float, the steal's
                  colour lerp) -> GLSL, mechanically; MaterialPropertyAnimator.DefaultTransitionSeconds
+  glitter tiling Assets/_Scripts/Utility/PrismGlitterTiling.cs — its constants; the page's port of its hash
+                 and quadtree is held to the C# (compiled with the .NET SDK) block for block by parity.py
   detail config  Assets/Resources/PrismInteractionLodConfig.asset (the detail levels' lines, the shape, the
                  shed weights) and Assets/Resources/PrismMotionConfig.asset (the motion ladder)
   burst look     Assets/_Graphics/Materials/PrismCollisionBurstMaterial.mat
@@ -54,6 +56,7 @@ PRISM_MESH = os.path.join(ROOT, "Assets/_Models/Testing/Prism.asset")
 CONFIG = os.path.join(ROOT, "Assets/Resources/PrismMotionConfig.asset")
 LOD_CONFIG = os.path.join(ROOT, "Assets/Resources/PrismInteractionLodConfig.asset")
 CLOCK_HLSL = os.path.join(GRAPHS, "PrismClockAnimation.hlsl")
+TILING_CS = os.path.join(ROOT, "Assets/_Scripts/Utility/PrismGlitterTiling.cs")
 ANIMATOR_CS = os.path.join(ROOT, "Assets/_Scripts/Controller/Environment/Prisms/MaterialPropertyAnimator.cs")
 BURST_MAT = os.path.join(ROOT, "Assets/_Graphics/Materials/PrismCollisionBurstMaterial.mat")
 COLORSET = os.path.join(ROOT, "Assets/_SO_Assets/Color Palettes/OriginalColorSetSO.asset")
@@ -210,10 +213,16 @@ def domain_colors():
 def config():
     motion, lod = read(CONFIG), read(LOD_CONFIG)
     out = {k: yaml_float(motion, k) for k in ("showcaseMaxMovers", "boxMaxMovers")}
-    for k in ("maxLiveBursts", "burstSubdivision", "shatterMinScreen", "glitterMinScreen", "shedMinScreen",
-              "bloomWeight", "unravelWeight", "flakeWeight", "shedInflate", "spread", "openSeconds", "spinPerSpeed",
-              "bloomTurns", "unravelTurns", "ribbonsPerFace", "shardsPerFaceEdge", "dissolveGrain"):
+    for k in ("maxLiveBursts", "maxLiveTriangles", "crowdedFill", "packedFill", "burstSubdivision",
+              "shatterMinScreen", "glitterMinScreen", "glitterMediumScreen", "glitterFullScreen",
+              "shedMinScreen", "shedFineScreen", "shedFinestScreen", "shedSubdivision", "shedFineSubdivision",
+              "shedFinestSubdivision", "bloomWeight", "unravelWeight", "flakeWeight", "shedInflate", "spread",
+              "openSeconds", "spinPerSpeed", "bloomTurns", "unravelTurns", "ribbonsPerFace", "shardsPerFaceEdge",
+              "dissolveGrain"):
         out[k] = yaml_float(lod, k)
+    tiling = read(TILING_CS)
+    for k in ("Grid", "LargeLeg", "SplitLargePercent", "SplitMediumPercent"):
+        out["tiling" + k] = int(re.search(r"public const int " + k + r" = (\d+);", tiling).group(1))
     cs = read(ANIMATOR_CS)
     out["gradeSeconds"] = float(re.search(r"public const float DefaultTransitionSeconds = ([0-9.]+)f;", cs).group(1))
     return out

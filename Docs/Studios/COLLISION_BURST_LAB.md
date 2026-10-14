@@ -5,7 +5,7 @@ effects they stand in for, running the shipped shader code in WebGL2, with a mea
 a shared decision log: **destruction** (explosion → shatter → glitter) and **stealing** (the grade → a
 bloom, unravel or flake shed). Round 1 looked at the four level-1 collision bursts alone.
 
-- **Live page:** https://claude.ai/artifact/F47yG1UjBkK662rEnhk7m9 (decision log: `decisions`)
+- **Live page:** https://claude.ai/artifact/F47yG1UjBkK662rEnhk7m9 (decision log: `decisions`) — round 3
 - **Page (generated, never edit by hand):** `Docs/Studios/PrismCollisionBurstLab.html`
 - **Source:** `Tools/Build/prism_collision_burst_lab/lab.src.html`; `build.py` stamps the shipped
   numbers and shader code into it (`--check` fails when the page is stale).
@@ -35,7 +35,100 @@ ordinary effect on the same prism at the same moment.
 The burst mesh is `HighPolyPrismMesh.GetUnwelded(10)` rebuilt on the page in float32 (`Math.fround`), as
 C# builds it.
 
-## Round 2 — 2026-10-14 (`cece/dreamy-pascal-7xxx1m`): the detail levels
+## Round 3 — 2026-10-14 (`cece/dreamy-pascal-7xxx1m`): glitter sizes, shed resolutions, the amount
+
+**Your decisions applied** (the designer, in the session): *"lets have glitter create a range of fragment
+sizes that are triangles of different sizes. then from far away it will look like we just aren't seeing the
+small ones. then you can grade the effect with more LOD based on distance and amount."* and *"the steal
+effects are looking great, but these should have even higher resolution versions that also grade LOD."*
+
+### What changed, in the game and in the lab
+
+- **Glitter in three sizes** (`PrismGlitterTiling`, `HighPolyPrismMesh.GetGlitter`): each face is a 16 × 16
+  grid cut by a quadtree — 4-blocks that may split into 2-blocks that may split into cells (60% each), every
+  block two right triangles across a diagonal its hash picks — so the shards are triangles with legs of 1/4,
+  1/8 and 1/16 of a face. The levels are NESTED: GLITTER LARGE is the sixteen 4-blocks a face (192
+  triangles), MEDIUM the tree cut at 2 (528), FULL the whole tree (1,386). A coarser level is the finer with its
+  small fragments merged back into the triangle they came from, so every level is the whole prism at rest (no
+  holes, no pop) and, far away, reads as the finer one with the small fragments too small to see. A far
+  glitter draws a seventh of the triangles a near one does.
+- **Sheds at three resolutions** (`HighPolyPrismMesh.GetShed`): 12, 18 and 24 subdivisions (1,728 / 3,888 /
+  6,912 triangles), multiples of 6 so the unravel's ribbons (now 6 a face, was 5) and the flake's scales fall
+  on whole triangles. The shed meshes are cut UNION-JACK: the off-diagonal quadrants' cells take the other
+  diagonal, so both face diagonals are triangle edges and the bloom's petals tear along straight lines — on
+  the old uniform cut one of the two diagonals was a staircase, plain to see close up at 24.
+- **Graded by distance AND amount** (`PrismInteractionLod`): destruction explosion → shatter → glitter large →
+  medium → full at 5% / 12% / 17% / 24% of the screen height; stealing grade → shed 12 → 18 → 24 at 8% / 16% /
+  28%. The AMOUNT: once the budget (entities, or the new TRIANGLE budget of 80,000) is half full every new event
+  is one level coarser, at 80% two; a level whose mesh does not fit steps down until one does, then the
+  ordinary effect. Each mesh is its own spawn batch.
+- **The lab**: the Destruction line-up is the whole spectrum (explosion, shatter, glitter large, medium, full);
+  the Stealing view draws its sheds at the resolution the size and amount pick (or one you force, Sheds tab);
+  a "Budget already full" slider shows the amount at work; the Levels tab holds every line. **Score the LOD
+  steps** renders each pair of neighbouring levels at the true pixel size of the line between them.
+
+### Scorecards (shipped settings)
+
+**Squint, destruction against the explosion** (band 0.097, held whole 0.315): shatter 0.346; glitter large
+0.322, medium 0.319, full 0.318. **The three glitter levels squint the same** — merging keeps the cover.
+**Squint, sheds against the grade** (band 0.033, snapped 0.158): at 12 and at 24 subdivisions bloom 0.213 /
+0.215, unravel 0.222 / 0.223, flake 0.118 / 0.117 — **resolution does not change the squint**.
+
+**LOD steps** (`__lab.runSteps()`; a 1,080 px screen; the band is the finer level on another prism):
+
+| Step | At | Prism px | Band | Step | Step ÷ band |
+|---|---|---|---|---|---|
+| Glitter full → medium | 24% | 259 | 0.974 | 0.489 | 0.50 |
+| Glitter medium → large | 17% | 184 | 0.977 | 0.624 | 0.64 |
+| Glitter large → shatter | 12% | 130 | 0.973 | 1.141 | 1.17 |
+| Shatter → explosion | 5% | 54 | 0.938 | 0.884 | 0.94 |
+| Shed 24 → 18 (bloom) | 28% | 302 | 0.492 | 0.035 | **0.07** |
+| Shed 18 → 12 (bloom) | 16% | 173 | 0.462 | 0.058 | **0.13** |
+| Shed 12 (bloom) → grade | 8% | 86 | 0.412 | 0.536 | 1.30 |
+
+Every step is within 1.5× its band. Read it with its limit: a destruction band is two DIFFERENT deaths of one
+level, which differ almost completely up close (~0.97), so for destruction "within the band" only says a level
+change is no more different than another death. The strong results are the glitter's merges (half to two
+thirds of the band: a merged glitter differs from the full one less than two full glitters differ) and the
+shed resolutions (a fourteenth and an eighth of the band: the extra resolution is invisible at the size where it
+switches on — and visible only as smoother curls up close).
+
+### Found
+
+1. **A uniform triangulation staircases one face diagonal.** Every cell cut the same way puts the main diagonal
+   on triangle edges and the anti-diagonal across them, so a bloom petal's border on that side was a staircase —
+   at 24 subdivisions, up close, exactly where the finest shed is drawn. Fixed in the shed meshes (union-jack);
+   the shatter's mesh keeps the slice's cut, which its Voronoi does not care about.
+2. **Holes would have popped.** Dropping the small glitter fragments outright (the first reading of "not seeing
+   the small ones") leaves the prism with holes on its first frame. Merging them into their parents is the same
+   picture far away with nothing missing.
+3. **A 24-subdivision shed is 6,912 triangles**, more than the old per-entity worst case (1,200), so an entity
+   count alone could no longer bound the cost: the budget is now triangles too, and the levels step down to fit.
+
+### Checked
+
+- `python3 Tools/Build/prism_collision_burst_lab/parity.py` — **PASS**: the burst on 108,000 vertices (0 past
+  tolerance), the explosion; **the page's glitter tiling against `PrismGlitterTiling.cs` compiled with the
+  .NET SDK — 1,053 blocks, 0 faces differ**; the page's glitter meshes cover the surface (area 6, the C#'s
+  triangle counts) and its shed meshes have 0 triangles across either diagonal; controls FIRED (next face's
+  tiling 18/18, next kind 76.7%, ExplosiveRotation ×2 100%).
+- The tiling's own properties run under .NET (every level tiles every face once; every fine block in exactly one
+  coarse block): 0 failures. The union-jack rule checked for n = 10, 12, 18, 24 (0 straddles; odd n cannot avoid
+  its centre cell, and every shed n is a multiple of 6).
+- `python3 Tools/Shaders/verify_prism_collision_burst.py` — PASS (unchanged shader). `verify_lab.cjs` — PASS.
+  `build.py --check` — OK. `unity_refcompile` player + editor — 0 errors in project code.
+- **Not run:** the Unity editor, so `PrismCollisionBurstTests` (now also the tiling, the glitter and shed meshes,
+  the ladders and the amount) — filed in `Docs/UNITY_VERIFICATION_CHECKLIST.md`.
+
+### Decision needed (designer)
+
+1. **The lines**: glitter large / medium / full at 12% / 17% / 24%, sheds 12 / 18 / 24 at 8% / 16% / 28% — zoom
+   the stage and watch the ◆.
+2. **The amount**: one level coarser at half the budget, two at 80% — and is 80,000 triangles the right budget?
+3. **The glitter's odds** (60% split at each level) set how many small fragments there are; the round-2
+   decisions on the sheds' silhouette and destruction's shape gap stay open.
+
+## Round 2 — 2026-10-14 (`cece/dreamy-pascal-7xxx1m`): the detail levels — superseded where round 3 differs
 
 **Your decisions applied** (the designer, in the session; the shared log was empty): no white edge on the
 dissolves or the glitter — the brighter inside colour is the contrast; shatter, glitter and the explosion

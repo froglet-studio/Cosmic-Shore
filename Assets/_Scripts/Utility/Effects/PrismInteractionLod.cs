@@ -10,21 +10,21 @@ namespace CosmicShore.Utility
     /// for every prism in the game (Docs/PRISM_ANIMATION.md §4.11; config <see cref="PrismInteractionLodConfigSO"/>):
     ///
     /// <list type="table">
-    /// <item><b>Destruction</b> — one spectrum, coarse to fine, by how big the prism is on screen: the ordinary
-    /// EXPLOSION (small, off screen, over budget) → SHATTER (≥ <see cref="PrismInteractionLodConfigSO.ShatterMinScreen"/>)
-    /// → GLITTER (≥ <see cref="PrismInteractionLodConfigSO.GlitterMinScreen"/>). Every finer level is the explosion
-    /// squinted at, so where the line falls changes only how much detail a near viewer gets.</item>
-    /// <item><b>Stealing</b> — the GRADE (the prism's 0.8 s colour lerp) when small, a SHED (bloom, unravel or flake)
-    /// when the prism is at least <see cref="PrismInteractionLodConfigSO.ShedMinScreen"/> of the screen. A shed is the
-    /// grade squinted at.</item>
+    /// <item><b>Destruction</b> — coarse to fine: the ordinary EXPLOSION → SHATTER → GLITTER LARGE → MEDIUM → FULL.
+    /// The glitter's three levels are one nested tiling of triangles of three sizes
+    /// (<see cref="PrismGlitterTiling"/>): a coarser one is the finer with its small fragments merged back into their
+    /// parents, so from far away it looks like the small ones are simply too small to see.</item>
+    /// <item><b>Stealing</b> — the GRADE (the prism's 0.8 s colour lerp) → a SHED (bloom, unravel or flake) at three
+    /// mesh resolutions. Every shed is the grade squinted at.</item>
     /// </list>
     ///
-    /// "Size on screen" is the prism's projected DIAMETER over the screen height through
-    /// <see cref="CameraManager.ViewCamera"/> (<see cref="ScreenFraction"/>), so the same numbers hold on every
-    /// camera, field of view and resolution. A prism behind the camera or well off screen always gets the
-    /// ordinary effect — the budget is spent where it is seen. The choice is local and cosmetic: two peers may
-    /// draw one death at different levels, never a different outcome. Every refusal returns false and the caller
-    /// draws the ordinary effect, so an interaction never loses its visual.
+    /// Both ladders are graded by DISTANCE — the prism's projected diameter over the screen height through
+    /// <see cref="CameraManager.ViewCamera"/> (<see cref="ScreenFraction"/>), against each level's line — and by
+    /// AMOUNT — how full the shared budget already is (<see cref="PrismCollisionBurst.Fill"/>): crowded, one level
+    /// coarser; packed, two (<see cref="CrowdSteps"/>). A level whose mesh does not fit the triangle budget steps
+    /// down until one does. A prism behind the camera or well off screen gets the ordinary effect — the budget is
+    /// spent where it is seen. The choice is local and cosmetic: two peers may draw one event at different levels,
+    /// never a different outcome. Every refusal returns false and the caller draws the ordinary effect.
     /// </summary>
     public static class PrismInteractionLod
     {
@@ -33,7 +33,18 @@ namespace CosmicShore.Utility
         {
             Explosion = 0,
             Shatter = 1,
-            Glitter = 2,
+            GlitterLarge = 2,
+            GlitterMedium = 3,
+            GlitterFull = 4,
+        }
+
+        /// <summary>Stealing's levels, coarse to fine. Explicit values: a tuning vocabulary.</summary>
+        public enum StealLevel
+        {
+            Grade = 0,
+            Shed = 1,
+            ShedFine = 2,
+            ShedFinest = 3,
         }
 
         /// <summary>How far outside the screen (viewport units) a prism may be and still earn its detail —
@@ -54,11 +65,40 @@ namespace CosmicShore.Utility
             return radius / (Mathf.Max(distance, 1e-4f) * tanHalf);
         }
 
-        /// <summary>The destruction level for a prism covering <paramref name="fraction"/> of the screen height.</summary>
-        public static DestructionLevel PickDestruction(float fraction, float shatterMin, float glitterMin) =>
-            fraction >= glitterMin ? DestructionLevel.Glitter
-            : fraction >= shatterMin ? DestructionLevel.Shatter
-            : DestructionLevel.Explosion;
+        /// <summary>How many levels coarser the AMOUNT makes every new interaction: 0, 1 crowded, 2 packed.</summary>
+        public static int CrowdSteps(float fill, float crowded, float packed) =>
+            fill >= packed ? 2 : fill >= crowded ? 1 : 0;
+
+        /// <summary>
+        /// The level a size on screen earns, coarse to fine, before the amount: the finest level whose line
+        /// <paramref name="fraction"/> reaches (lines ascending, level 1 first; level 0 has no line).
+        /// </summary>
+        public static int LevelForSize(float fraction, float line1, float line2 = float.PositiveInfinity,
+            float line3 = float.PositiveInfinity, float line4 = float.PositiveInfinity) =>
+            fraction >= line4 ? 4 : fraction >= line3 ? 3 : fraction >= line2 ? 2 : fraction >= line1 ? 1 : 0;
+
+        /// <summary>The destruction level for a size on screen and an amount. Pure, for the tests and the lab.</summary>
+        public static DestructionLevel PickDestruction(float fraction, int crowdSteps, float shatter, float glitterLarge,
+            float glitterMedium, float glitterFull) =>
+            (DestructionLevel)Mathf.Max(0, LevelForSize(fraction, shatter, glitterLarge, glitterMedium, glitterFull) - crowdSteps);
+
+        /// <summary>The steal level for a size on screen and an amount. Pure, for the tests and the lab.</summary>
+        public static StealLevel PickSteal(float fraction, int crowdSteps, float shed, float fine, float finest) =>
+            (StealLevel)Mathf.Max(0, LevelForSize(fraction, shed, fine, finest) - crowdSteps);
+
+        /// <summary>The mesh destruction level <paramref name="level"/> draws (null for the explosion).</summary>
+        public static Mesh MeshOf(DestructionLevel level, PrismInteractionLodConfigSO cfg) => level switch
+        {
+            DestructionLevel.Shatter => HighPolyPrismMesh.GetUnwelded(cfg.BurstSubdivision),
+            DestructionLevel.GlitterLarge => HighPolyPrismMesh.GetGlitter(PrismGlitterTiling.LargeLeg),
+            DestructionLevel.GlitterMedium => HighPolyPrismMesh.GetGlitter(2),
+            DestructionLevel.GlitterFull => HighPolyPrismMesh.GetGlitter(1),
+            _ => null,
+        };
+
+        /// <summary>The mesh steal level <paramref name="level"/> draws (null for the grade).</summary>
+        public static Mesh MeshOf(StealLevel level, PrismInteractionLodConfigSO cfg) =>
+            level == StealLevel.Grade ? null : HighPolyPrismMesh.GetShed(cfg.ShedSubdivisionOf((int)level));
 
         /// <summary>
         /// How big a prism at <paramref name="position"/> of world <paramref name="scale"/> is on the player's screen
@@ -91,30 +131,46 @@ namespace CosmicShore.Utility
             if (cfg == null || !cfg.DestructionEnabled || !PrismCollisionBurst.CanAccept(cfg)) return false;
             if (!TryMeasure(position, scale, out float fraction)) return false;
 
-            var level = PickDestruction(fraction, cfg.ShatterMinScreen, cfg.GlitterMinScreen);
-            if (level == DestructionLevel.Explosion) return false;
-            int kind = level == DestructionLevel.Glitter ? PrismCollisionBurst.Glitter : PrismCollisionBurst.Shatter;
-            return PrismCollisionBurst.TryRequestDestruction(position, rotation, scale, bright, dark,
-                impactVelocity, speedLimitOverride, tier, kind);
+            int steps = CrowdSteps(PrismCollisionBurst.Fill(cfg), cfg.CrowdedFill, cfg.PackedFill);
+            var level = PickDestruction(fraction, steps, cfg.ShatterMinScreen, cfg.GlitterMinScreen,
+                cfg.GlitterMediumScreen, cfg.GlitterFullScreen);
+            // A level whose mesh does not fit the triangle budget steps down until one does.
+            for (; level > DestructionLevel.Explosion; level--)
+            {
+                var mesh = MeshOf(level, cfg);
+                if (!PrismCollisionBurst.FitsTriangles(cfg, PrismCollisionBurst.TrianglesOf(mesh))) continue;
+                int kind = level == DestructionLevel.Shatter ? PrismCollisionBurst.Shatter : PrismCollisionBurst.Glitter;
+                return PrismCollisionBurst.TryRequestDestruction(position, rotation, scale, bright, dark,
+                    impactVelocity, speedLimitOverride, tier, kind, mesh);
+            }
+            return false;
         }
 
         /// <summary>
         /// A STEAL at its detail level: when the prism is big enough on screen and the budget has room, its old
-        /// colours shed off it as a skin (bloom, unravel or flake, picked by weight from the pose) over a grade of
-        /// <paramref name="gradeSeconds"/>. True means the caller must give the prism its new colour AT ONCE (the
-        /// skin is the transition); false means the caller grades as usual.
+        /// colours shed off it as a skin (bloom, unravel or flake, picked by weight from the pose) at the resolution
+        /// its size and the amount allow, over a grade of <paramref name="gradeSeconds"/>. True means the caller must
+        /// give the prism its new colour AT ONCE (the skin is the transition); false means the caller grades as usual.
         /// </summary>
         public static bool TryShed(Vector3 position, Quaternion rotation, Vector3 scale,
             Color oldBright, Color oldDark, Color newBright, float gradeSeconds)
         {
             var cfg = PrismInteractionLodConfigSO.Instance;
             if (cfg == null || !cfg.ShedEnabled || !PrismCollisionBurst.CanAccept(cfg)) return false;
-            if (!TryMeasure(position, scale, out float fraction) || fraction < cfg.ShedMinScreen) return false;
+            if (!TryMeasure(position, scale, out float fraction)) return false;
 
+            int steps = CrowdSteps(PrismCollisionBurst.Fill(cfg), cfg.CrowdedFill, cfg.PackedFill);
+            var level = PickSteal(fraction, steps, cfg.ShedMinScreen, cfg.ShedFineScreen, cfg.ShedFinestScreen);
             float roll = Mathf.Repeat(PrismCollisionBurst.SeedOf(position) * 7.919f + 0.371f, 1f);
             int kind = PrismCollisionBurst.PickShed(roll, cfg.BloomWeight, cfg.UnravelWeight, cfg.FlakeWeight);
-            return PrismCollisionBurst.TryRequestShed(position, rotation, scale, oldBright, oldDark, newBright,
-                gradeSeconds, kind);
+            for (; level > StealLevel.Grade; level--)
+            {
+                var mesh = MeshOf(level, cfg);
+                if (!PrismCollisionBurst.FitsTriangles(cfg, PrismCollisionBurst.TrianglesOf(mesh))) continue;
+                return PrismCollisionBurst.TryRequestShed(position, rotation, scale, oldBright, oldDark, newBright,
+                    gradeSeconds, kind, mesh);
+            }
+            return false;
         }
     }
 }

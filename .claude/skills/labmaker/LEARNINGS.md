@@ -617,6 +617,20 @@ Entries are grouped by family; within a family, the newest goes at the bottom.
 - Evidence: `Docs/Studios/COLLISION_BURST_LAB.md` round 2 tables; `__lab.runBatch()` `table: 'sheds'`
 - Promoted: no
 
+### L-STU-67 — A detail level that DROPS geometry pops; one that MERGES it does not — and a uniform triangulation staircases one diagonal
+- Lab: Collision Burst Lab round 3 · Branch: `cece/dreamy-pascal-7xxx1m` · Date: 2026-10-14
+- What happened: the brief was "from far away it will look like we just aren't seeing the small ones". Removing the small glitter fragments from the far mesh would leave the prism with holes on the first frame of the death, a pop. A nested tiling (a quadtree whose coarser level is the finer with its children merged into their parent) gives the same far picture with nothing missing, and it measured as squint-identical (0.318–0.322 across three levels). Separately, the 24-subdivision shed showed a staircase along one face diagonal: every cell cut the same way puts one diagonal on triangle edges and the other across them. A union-jack cut puts both on edges (0 straddles at every even n, checked).
+- Do instead: build an LOD ladder as a hierarchy of merges (every level a complete cover), not a subset. When a piece pattern follows lines on a mesh (petal diagonals, ribbon seams, scale grids), make the mesh's edges lie on those lines (cut direction, subdivision a multiple of the pattern), and test for straddling triangles.
+- Evidence: `PrismGlitterTiling.cs`, `HighPolyPrismMesh.GetShed`; `parity.py` (tiling vs C# compiled; meshes: area 6, 0 straddles)
+- Promoted: no
+
+### L-STU-68 — A step test's band decides what it can say: "no more different than another death" is weak when two deaths differ completely
+- Lab: Collision Burst Lab round 3 · Branch: `cece/dreamy-pascal-7xxx1m` · Date: 2026-10-14
+- What happened: each LOD step was scored at the true pixel size of its line against a band of the finer level on another prism. For destruction the band was ~0.97 (two close-up deaths share almost no pixels), so every destruction step passed, the shatter→explosion one at 0.94 of it. The same test was sharp for the sheds (band ~0.46, resolution steps 0.035–0.058).
+- Do instead: report the step and the band side by side, never only the verdict; when the band is near its ceiling, say the test cannot tell and look for a tighter band (the same death at a 10% time offset, a squint) before claiming a step is invisible.
+- Evidence: `__lab.runSteps()`; `Docs/Studios/COLLISION_BURST_LAB.md` round 3 table
+- Promoted: no
+
 ## NCA — swarm / neural-CA research rigs (Tools/NCA)
 
 ### L-NCA-1 — The yardstick was wrong four times before the creatures were

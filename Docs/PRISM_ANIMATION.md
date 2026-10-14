@@ -2605,8 +2605,30 @@ effect) and by the shared budget (`PrismInteractionLod`, config `Resources/Prism
 
 | Interaction | Far / over budget | Nearer | Close up |
 |---|---|---|---|
-| **Destruction** (every explosion death; a collision above motion level 1 asks for plain) | the EXPLOSION | SHATTER (≥ `shatterMinScreen` 5%) | GLITTER (≥ `glitterMinScreen` 15%) |
-| **Stealing** (`PrismTeamManager.Steal`) | the GRADE — the 0.8 s smoothstep colour lerp (`PrismColorLerp`) | a SHED (≥ `shedMinScreen` 8%): BLOOM, UNRAVEL or FLAKE by weight | the same shed |
+| **Destruction** (every explosion death; a collision above motion level 1 asks for plain) | the EXPLOSION | SHATTER (≥ 5%) | GLITTER LARGE (≥ 12%) → MEDIUM (≥ 17%) → FULL (≥ 24%) |
+| **Stealing** (`PrismTeamManager.Steal`) | the GRADE — the 0.8 s smoothstep colour lerp (`PrismColorLerp`) | a SHED (≥ 8%): BLOOM, UNRAVEL or FLAKE by weight, on 12 subdivisions | the same shed on 18 (≥ 16%), then 24 (≥ 28%) subdivisions |
+
+**Round 3 (the designer, the same day):** *"lets have glitter create a range of fragment sizes that are
+triangles of different sizes. then from far away it will look like we just aren't seeing the small ones. then
+you can grade the effect with more LOD based on distance and amount."* — *"the steal effects are looking
+great, but these should have even higher resolution versions that also grade LOD."*
+
+- **The glitter's fragments are triangles of three sizes** (`PrismGlitterTiling`: a 16 × 16 grid a face cut by
+  a quadtree of 4-, 2- and 1-cell blocks, each block two right triangles across a hashed diagonal;
+  `HighPolyPrismMesh.GetGlitter`). Its three levels are NESTED — LARGE (192 triangles) is MEDIUM (528) with the
+  1-cell fragments merged into their 2-cell parents and those into the 4-cell ones; FULL is 1,386 — so every
+  level is the whole prism at rest and far away a coarser one reads as the finer with the small ones unseen.
+  The shader is unchanged: each triangle is a shard about its own centroid (TEXCOORD2), whatever its size.
+- **Sheds at three resolutions** on `HighPolyPrismMesh.GetShed` — the unwelded prism cut UNION-JACK (the
+  off-diagonal quadrants take the other cell diagonal) so both face diagonals are triangle edges and the bloom's
+  petals tear straight at every resolution. 12 / 18 / 24 subdivisions: multiples of the 6 ribbons and of the
+  flake's 6 scales a face edge.
+- **Graded by distance and AMOUNT**: once the budget — `maxLiveBursts` entities or `maxLiveTriangles` (80,000)
+  triangles, whichever is fuller — is `crowdedFill` (half) full, every new event is one level coarser; at
+  `packedFill` (80%) two. A level whose mesh does not fit steps down until one does. One spawn batch per mesh.
+- **Measured** (lab round 3): the glitter's three levels squint identically (0.318–0.322); a shed squints the same
+  at 12 and 24 subdivisions; at the true pixel size of each line the glitter's merges differ from the finer level
+  by half to two-thirds of what two glitters differ, and the shed's resolution steps by a fourteenth and an eighth.
 
 - **No white accents.** The crack flash, the ember front and the glints are gone (`_HotColor`,
   `_EmberGlow`, `_EmberWhite`, `_BurstFade` retired). The contrast is the brighter INSIDE colour on every
