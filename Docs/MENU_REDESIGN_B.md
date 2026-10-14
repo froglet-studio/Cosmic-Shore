@@ -34,7 +34,7 @@ Legend: `Planned` ▸ `Mockup` ▸ `Mockup approved` ▸ `Built` ▸ `Approved i
 | 0 | Component kit: T7 sprites, Chakra Petch SemiBold (T5), type roles + `TabularText` (T6), theme components, kit prefabs, kit test scene | Built | `MenuKit.dc.html` | `3b36c361`, `fe108889`, `b0918296`, `908fc2d7`, `4cba49ee`, `e932eaf2` + docs |
 | 1 | Top nav (`Safe Area/NavBar`) | Approved in editor (2026-10-14) | `Main.dc.html` (interactive), `TopNavHover.dc.html`, `TopNavLocked.dc.html` on the Menu Redesign B canvas | `8d6d2acb`, `99ef3ccd` + docs |
 | 2 | Hangar screen: grid, detail and the spend-crystals panel | Approved in editor (2026-10-14) | `Hangar.dc.html` (interactive), `HangarLocked`, `HangarSpend`, `HangarShort`, `HangarNoArt`, `HangarNotes` on the Menu Redesign B canvas | `661a7f1f`, `7987b896`, `96c81faa` + docs |
-| 3 | Arcade modal (`ArcadeScreenModal`): explore grid plus the party/friends panel | Planned | | |
+| 3 | Arcade modal (`ArcadeScreenModal`): explore grid plus the party/friends panel | Mockup | `Arcade.dc.html` (interactive), `ArcadeSolo`, `ArcadeNoFriends`, `ArcadePicks`, `ArcadeNotes` on the Menu Redesign B canvas | |
 | 4 | Game configure: `ArcadeGameConfigureModal`, plus the Maelstrom and Arena configure windows and the weekly leaderboard | Planned | | |
 | 5 | Profile screen, Profile modal (avatar / display name), Episodes entry | Planned | | |
 | 6 | Home screen: hub row, header, settings and freestyle buttons, invite popup | Planned | | |
@@ -258,6 +258,8 @@ Assets are authored offline:
 | D5 | Hangar: B shows the list, the vessel and the detail together. Today it is grid ▸ detail with a Back button. | Make it one three-zone view. This changes the in-screen flow, not screen navigation. |
 | D6 | Shared-prefab debt: Settings has 1,659 overrides; two configure windows are unpacked copies; party and friends exist as four scene copies each. | Settings: delete the byte-identical overrides and apply the rest before restyling. Copies: restyle them through nested kit prefabs. Converting the copies to Prefab Variants is a separate call. |
 
+| D7 | (Raised by you, 2026-10-14.) The Arcade and Toy Box friends UI is two panels: the party panel's invite slots and a separate friends overlay with its own list. | Unify them: one party panel holding the party slots, incoming invites and friend requests, and the friends-online list with Invite / Join on each row. Built once and shared by Arcade, Arena, Toy Box and Mission (item 3). |
+
 ## 7. Pre-existing defects found during the inventory (not fixed here)
 
 - **Gamepad Y freestyle toggle is dead.** `ScreenSwitcher.crystalClickHandler` is `{fileID: 0}` in
@@ -285,6 +287,20 @@ Found while mapping the Hangar for item 2 (2026-10-14):
   shows; the caption is baked into the button sprite).
 - **Authored text the 97-glyph fonts cannot draw:** a curly apostrophe in the Squirrel description
   and in Sparrow's Skyburst Rockets, an em dash in the Butterfly description.
+- **Arcade (found mapping item 3):**
+  - **The arcade grid is unreachable by gamepad past row 3.** `ArcadeDPadNav` returns while any
+    modal is open, and the Arcade is a modal; its `ScrollToButton` is commented out, so the scroll
+    never follows focus either.
+  - **B with the friends overlay open closes the whole modal and leaves the overlay open** for the
+    next visit.
+  - **The two close paths differ:** Back deactivates the object and jumps HOME; B animates out.
+  - **Dead controls:** the friends overlay's ONLINE / REQUESTS header buttons and refresh icons have
+    no listeners; both `ControllerButtonPress` hooks are empty; the weekly card's LEADERBOARD button
+    is authored inactive; `ArcadeScreen`'s Loadout view and toggles are unwired.
+  - **Cards look their titles up in `OrganicRematchGames`,** not the Arcade roster, so a mode added
+    only to `ArcadeGames` keeps its placeholder title.
+  - **Content:** Joust's description is "Joust joust joust"; the Grizzly's `IconActive` is a legacy
+    "BUFO selected" button graphic.
 - **Roster data gaps:** Urchin's four abilities reuse the Serpent's text; Stoat's icon is
   `Squirrel.png`; Butterfly, Thresher, Scarab and Stoat have no `PreviewImage` and no abilities;
   every ability's icon is the generic `Ability_Button.png`.
@@ -449,3 +465,28 @@ stand in: its live compile fails on existing engine gaps (BlackHole RenderGraph 
 `MouseOrbitCamera`'s `ButtonControl`) and on the kit's `DoStateTransition(state, instant)` override,
 which Prisma's `Selectable` lacks; that engine gap is filed as a separate task. Steps are in
 `Docs/UNITY_VERIFICATION_CHECKLIST.md`.
+
+## 12. Item 3: Arcade and the shared party panel (mockup, awaiting approval)
+
+Boards on the Menu Redesign B canvas: `Arcade.dc.html` (interactive: accept / decline an invite,
+invite a friend, kick, leave, star a game, pick a game), `ArcadeSolo` (just you, friends online,
+pad focus on a card), `ArcadeNoFriends` (the empty friends list), `ArcadePicks` (favourites first,
+party picks on cards, the locked look on two cards for illustration) and `ArcadeNotes`. Content is
+real: the 28 `ArcadeGames` cards (Maelstrom has its own feature card) with their rendered
+`CardBackground`s, vessel icons and authored descriptions, sorted favourites first then A to Z as
+`ArcadeExploreView` does, and the real profile icons. Party and friend names are placeholders.
+
+| Zone | Mockup | Built from (at the build gate) |
+|---|---|---|
+| Header | "Arcade" label, "Explore games" (H1); Back with a B keycap, top right | The modal's close: Back and B both animate out |
+| Party panel (left, 420) | One panel (D7): "PARTY n / 4" and "{N} Players Online"; four slots (avatar with a domain-colour ring, name, "You / Host" or "Pilot", a kick icon on remote rows for the host); an open slot reads "Open slot - invite a friend below" and jumps to the list; "Leave party" with remote members; INVITES (party invites and friend requests, accept / decline icons); FRIENDS ONLINE with Invite, Join or the inactive Invited; an empty-list line | `ArcadeLobbyList` and `FriendsListPanel` merged into one shared prefab, data and calls unchanged (`HostConnectionData`, the party / friends services); replaces the four scene copies of each |
+| Feature row | Weekly challenge (mode art, title, "ENDS IN 6d 3h") and Maelstrom ("Gauntlet", its description) as two wide cards | `WeeklyChallengeCard` and the Maelstrom card, same calls |
+| Game grid | 4 across; each card: art, vessel icon chip, favourite star (filled Jade when on), title, party-pick avatars; your pick is a 2 px Jade border; locked dims and adds a padlock and "Locked"; pad focus is the CTA ring | `GameCard`, same fields; cards become the scroll view's Selectables and scroll into view on focus |
+
+Open points for the build gate:
+- **Gamepad reach:** cards are Selectables that scroll into view (today rows 4-7 are unreachable by
+  pad). This changes in-modal navigation, not screen navigation.
+- **One close path:** Back and B both call the window's out animation.
+- **New strings:** the empty friends line, "Open slot - invite a friend below", "You / Host".
+- **The weekly card's LEADERBOARD button** stays retired (it is authored inactive today).
+
