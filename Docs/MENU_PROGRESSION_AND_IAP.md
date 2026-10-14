@@ -16,7 +16,7 @@ Navigation is driven by `ScreenSwitcher` (`Assets/_Scripts/UI/ScreenSwitcher.cs`
 STORE = 0, ARK = 1, HOME = 2, PORT = 3, HANGAR = 4, PROFILE = 5
 ```
 
-In `Menu_Main.unity` the `ScreenSwitcher.disabledScreens` list = **{ ARK, PORT }**. So:
+In `Menu_Main.unity` the `ScreenSwitcher.disabledScreens` list = **{ PORT }** (ARK reopened 2026-10-13 as the Elemental Converter). So:
 
 | Screen | State |
 |---|---|
@@ -24,7 +24,7 @@ In `Menu_Main.unity` the `ScreenSwitcher.disabledScreens` list = **{ ARK, PORT }
 | HANGAR | **Enabled** |
 | PROFILE | **Enabled** |
 | STORE | **Has no entry in `screens` at all** — see the note below |
-| ARK | **Locked** (intentional — stays as-is). **This is the screen that hosts `StoreScreen`** |
+| ARK | **Enabled — the Elemental Converter** (2026-10-13, designer). It still carries the disabled `StoreScreen` and its inactive `Scroll View`, so the store stays closed; its `OfflineUIGate` and mockup background are gone (`Tools/Build/author_elemental_converter.py`) |
 | PORT | **Locked** (intentional — stays as-is) |
 
 > ⚠ **`MenuScreens.STORE` is a dangling enum value.** `ScreenSwitcher.screens` contains
@@ -140,7 +140,7 @@ The Profile screen root exists (`screens` index 4 → `ProfileScreen`), but the 
    - `EpisodeScreen` (`Assets/_Scripts/UI/Screens/EpisodeScreen.cs`) — wire `episodeList` → `EpisodeList.asset`, `cardContainer`, `episodeCardPrefab` (`EpisodePrefab.prefab`), `supportUsButton`, `episodePanel`.
 
    (The XP track widget was removed — no XP UI to wire.)
-4. Leave `ScreenSwitcher.disabledScreens` as **{ ARK, PORT }**.
+4. Leave `ScreenSwitcher.disabledScreens` as **{ PORT }** (ARK hosts the Elemental Converter; a store would need its own screen or a share of ARK's).
 
 (The prior content lives in `Assets/_Prefabs/MIgration_Prefabs (DELETE LATER)/` — `Screens.prefab` / `UI.prefab` — if you need a reference for how it was assembled.)
 
@@ -153,7 +153,7 @@ The Profile screen root exists (`screens` index 4 → `ProfileScreen`), but the 
 > reaches `PurchaseConfirmationModal`. Read §6 before changing anything here. The verification gap
 > below is *why* it is off, not merely a scheduling accident.
 
-There is **no in-app store SDK** and (deliberately) no new dependency. Purchases open a hosted checkout page in the **system browser** via `Application.OpenURL`, which works on Steam/PC and mobile.
+There is **no in-app store SDK** and (deliberately) no new dependency. Purchases open a hosted checkout page in the **system browser** via `Application.OpenURL`. That path is **desktop builds only**: `IAPManager` opens it only where `UNITY_STANDALONE` is defined and refuses it on iOS and Android, where Apple App Review Guideline 3.1.1 and Google Play's payments policy require the platform's own billing. The refusal is compiled in, so `CommerceAvailability` cannot re-open it there.
 
 ### Pieces
 
@@ -242,7 +242,8 @@ so the panel does not open.
 - `PurchaseCard.OnClickBuy` and `HangarCaptainsView.OnClickBuy` — the **only** two paths to
   `PurchaseConfirmationModal`, asserted by `CommerceDeScopeTests.OnlyTheKnownPathsOpenThePurchaseModal`;
 - `HangarCaptainsView.PurchaseUpgrade`, because it is public and a scene could wire a button to it;
-- `IAPManager.OpenCheckout`, the choke point both checkout entry points share.
+- `IAPManager.OpenCheckout`, the choke point both checkout entry points share. Outside a desktop
+  (`UNITY_STANDALONE`) build it refuses before reading the posture (§5).
 
 Same split `OfflineUIGate` records: gate the UI so a player is never offered something that cannot
 work, and never rely on the UI alone to enforce it.
@@ -256,8 +257,8 @@ loop; it is part of the invite build and it passes through none of the de-scoped
 consulting the de-scope.
 
 **The Hangar's *captain upgrade* is a different economy and IS de-scoped.** It is priced in the
-PlayFab catalog (`CatalogManager`), which `AuthenticationManager` — the legacy PlayFab auth — has to
-initialize, and that is inert since the UGS migration. So `GetCaptainUpgrade` returns null, the
+catalog (`CatalogManager`), which has had no backend since PlayFab was removed
+(`Docs/PLAYFAB_RETIREMENT.md`). So `GetCaptainUpgrade` returns null, the
 requirement checks never pass, and the upgrade *was already refusing* with a bare denied sting and no
 explanation. That is exactly the "reads as broken" state this item exists to fix, so it now refuses
 with a reason. It is not the crystal loop above, and locking it costs the invite build nothing.
@@ -265,7 +266,7 @@ with a reason. It is not the crystal loop above, and locking it costs the invite
 ### 6.5 The scene ALSO blocks most of this today — do not mistake that for the gate
 
 Independently of the code gates, `Menu_Main` currently has: `StoreScreen` with `m_Enabled: 0`, its
-content root `ArkScreen/Scroll View` inactive, `ARK` in `disabledScreens`, `HangarCaptainsView` under
+content root `ArkScreen/Scroll View` inactive (ARK itself reopened 2026-10-13 for the Elemental Converter), `HangarCaptainsView` under
 two inactive ancestors, and the `EpisodeScreen` panel inactive. Several gates are therefore
 **unreachable today**. They are kept deliberately: the scene state is not a decision anybody recorded
 and a single re-activation undoes it, whereas the config is.

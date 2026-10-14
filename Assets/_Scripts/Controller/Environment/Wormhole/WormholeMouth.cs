@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using CosmicShore.Data;
+using CosmicShore.ScriptableObjects;
 using CosmicShore.Utility;
 using UnityEngine;
 using UnityEngine.Rendering;
@@ -103,6 +104,11 @@ namespace CosmicShore.Gameplay
             public int TollPetalsPerElement;
             /// <summary>World units/second the stripped crystals are thrown out off the surface.</summary>
             public float TollShedSpeed;
+            /// <summary>The combat-hit class a toll scores as, for <see cref="Owner"/>.</summary>
+            public CombatHitClass TollHitClass;
+            /// <summary>Event_CombatHitStats. Raised once per toll, on the owner's machine; required
+            /// whenever <see cref="Owner"/> is set (an owner-less mouth scores for nobody).</summary>
+            public ScriptableEventCombatHitStats TollHitLanded;
             /// <summary>The domain that owns the mouth (its rim colour, and its toll if tolled) when
             /// it has no <see cref="Owner"/>; with one, the owner's LIVE domain wins.</summary>
             public Domains Domain;
@@ -327,6 +333,14 @@ namespace CosmicShore.Gameplay
         /// is (<see cref="ElementalTransfer"/>), so each machine takes the toll off its own copy of
         /// the pilot and mints its own local crystals, the platform's stance for loose crystals.</para>
         ///
+        /// <para><b>It scores, once.</b> PvP is petals only and every petal theft is a scored hit
+        /// (<c>Docs/claude/IMPACT_EFFECTS_AND_AUDIO.md</c> § "PvP is petals only"), so a toll is a
+        /// <see cref="Settings.TollHitClass"/> hit for the <see cref="Owner"/>. The petals are taken
+        /// on every peer, but the hit is raised only where the owner is decided
+        /// (<see cref="ElementalTransfer.IsDecidedHere"/>), and it admits through
+        /// <see cref="CombatHitDrain.TryAdmit"/> under the same WormholeToll ward the take honours:
+        /// a warded pilot neither pays nor is scored on. No latch window: every transit is a toll.</para>
+        ///
         /// <para><b>It conserves.</b> The take is <see cref="ResourceSystem.AccrueElementalLoss"/>:
         /// clamped to what the pilot holds above resting level 0, whole petals only, honouring a
         /// ward against <see cref="ElementalDebuffSources.WormholeToll"/> — and every petal it
@@ -351,7 +365,29 @@ namespace CosmicShore.Gameplay
                                                        status.PlayerName);
                 total += petals;
             }
+            ScoreToll(status);
             return total;
+        }
+
+        /// <summary>Raise the toll's combat hit for the owner - on the owner's machine only, and only
+        /// for a pilot whose petals the toll may take (see <see cref="LevyToll"/>).</summary>
+        void ScoreToll(IVesselStatus payer)
+        {
+            var owner = _settings.Owner;
+            // A mouth with no pilot behind it scores for nobody: nobody laid it.
+            if (owner == null || owner.Player == null) return;
+            if (!ElementalTransfer.IsDecidedHere(owner)) return;
+            if (!CombatHitDrain.TryAdmit(payer, owner, _settings.TollHitClass, 0f,
+                                         ElementalDebuffSources.WormholeToll, out int supersededRank))
+                return;
+
+            _settings.TollHitLanded.Raise(new CombatHitStats
+            {
+                ShooterName = owner.PlayerName,
+                VictimName = payer.PlayerName,
+                HitClass = _settings.TollHitClass,
+                SupersededRank = supersededRank,
+            });
         }
 
         static readonly Element[] TollElements =

@@ -203,7 +203,7 @@
    "prisms": 0,
    "tier": "COURSE",
    "track": null,
-   "triangles": 12312
+   "triangles": 12228
   },
   "Switchback": {
    "cell": "Skim Race Cell Config",
@@ -220,6 +220,14 @@
    "tier": "MODEL",
    "track": null,
    "triangles": 80500
+  },
+  "ThresherTime": {
+   "cell": "Skim Race Cell Config",
+   "environment": null,
+   "prisms": 0,
+   "tier": "COURSE",
+   "track": null,
+   "triangles": 20124
   },
   "Tollway": {
    "cell": "Tollway Cell Config 2",
@@ -243,7 +251,7 @@
    "prisms": 0,
    "tier": "COURSE",
    "track": null,
-   "triangles": 12216
+   "triangles": 12120
   },
   "Waystation": {
    "cell": "Skim Race Cell Config",
@@ -275,5 +283,5 @@
   768,
   510
  ],
- "source_hash": "9478c078c2af56747fbdb5efd307515aecbf0adf2d4e3143766ecef75dfbedb8"
+ "source_hash": "b46cd7d72c2bc578c71cb40190f9f498dc5724455830ac42af402b0981e7f48d"
 }

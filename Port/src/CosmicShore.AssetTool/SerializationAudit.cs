@@ -10,13 +10,13 @@ namespace CosmicShore.AssetTool
     /// <summary>
     /// cs-asset serialization-audit [path...]: for every script component and ScriptableObject
     /// Unity wrote under Assets/, compare each YAML key with (a) what Unity's serializer reads
-    /// (<see cref="UnitySerializationRules"/>) and (b) what Prisma's loader assigns
+    /// (<see cref="UnitySerializationRules"/>) and (b) what Amoebius's loader assigns
     /// (<see cref="SerializedReader"/>), recursing into nested [Serializable] classes and lists.
     ///
-    ///   DROPPED  Unity reads it, Prisma does not   - the value silently never arrives (worst)
-    ///   EXTRA    Prisma reads it, Unity does not   - Prisma loads data Unity ignores
+    ///   DROPPED  Unity reads it, Amoebius does not   - the value silently never arrives (worst)
+    ///   EXTRA    Amoebius reads it, Unity does not   - Amoebius loads data Unity ignores
     ///   STALE    neither reads it                  - left over from an older script; harmless
-    ///   MANAGED  a [SerializeReference] block      - Prisma does not load managed references yet
+    ///   MANAGED  a [SerializeReference] block      - Amoebius does not load managed references yet
     ///
     /// Exit code 1 when anything is DROPPED or EXTRA, so it can gate a build.
     /// </summary>
@@ -104,10 +104,10 @@ namespace CosmicShore.AssetTool
                 keys++;
                 var field = UnitySerializationRules.UnityField(type, key, out bool builtIn);
                 if (builtIn) continue;   // a built-in base's native key: not judged here
-                bool prisma = SerializedReader.Accepts(type, key);
+                bool amoebius = SerializedReader.Accepts(type, key);
                 string where = $"{path}.{key}";
-                if (field != null && !prisma) { Note(classes, "DROPPED", where, file); continue; }
-                if (field == null && prisma) { Note(classes, "EXTRA", where, file); continue; }
+                if (field != null && !amoebius) { Note(classes, "DROPPED", where, file); continue; }
+                if (field == null && amoebius) { Note(classes, "EXTRA", where, file); continue; }
                 if (field == null) { Note(classes, "STALE", where, file); continue; }
 
                 // Read by both: follow nested [Serializable] classes and lists of them.

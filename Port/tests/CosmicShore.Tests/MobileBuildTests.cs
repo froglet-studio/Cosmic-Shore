@@ -107,6 +107,9 @@ public class GlslEsTranslationTests : IDisposable
                 foreach (var f in type.GetFields(BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic))
                     if (f.IsLiteral && f.FieldType == typeof(string) && f.GetRawConstantValue() is string s && s.StartsWith("#version 330 core", StringComparison.Ordinal))
                         yield return (type.Name + "." + f.Name, s);
+        // The translated UI shaders' fragment stages are assembled at run time.
+        foreach (var def in UiCustomShaders.ByName.Values)
+            yield return ("UiCustomShaders." + def.Name.Replace('/', '-'), UiCustomShaders.Fragment(def));
     }
 
     [Fact]
@@ -229,6 +232,24 @@ public class PlayerDataBuilderTests : IDisposable
         Assert.True(Shipped("PlayerData.json"));
         Assert.Equal(1, report.LfsPointers);
         Assert.Equal(new[] { "Assets/Scenes/Boot.unity" }, report.BuildScenes);
+    }
+
+    [Fact]
+    public void The_branchs_online_server_ships_with_the_build()
+    {
+        Asset("Assets/Scenes/Boot.unity", 1);
+        Settings(("Assets/Scenes/Boot.unity", 1, true));
+        // The engine's settings file (AmoebiusProjectSettings is linked into two of the referenced
+        // assemblies, so the test writes and reads its JSON directly).
+        const string rel = "Port/ProjectSettings/AmoebiusProject.json";
+        var src = Path.Combine(_root, rel);
+        Directory.CreateDirectory(Path.GetDirectoryName(src)!);
+        File.WriteAllText(src, "{\"network\": {\"server\": \"play.example.org:47777\", \"key\": \"k\"}}");
+        var outDir = Path.Combine(_root, "out");
+        new PlayerDataBuilder(_root).Build(outDir);
+
+        // The phone reads it where the desktop player does: Port/ProjectSettings under its data root.
+        Assert.Equal(File.ReadAllText(src), File.ReadAllText(Path.Combine(outDir, rel)));
     }
 
     [Fact]

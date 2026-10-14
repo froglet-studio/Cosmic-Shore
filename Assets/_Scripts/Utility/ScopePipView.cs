@@ -103,6 +103,17 @@ namespace CosmicShore.Utility
         /// <summary>How often the window refreshes, in Hz. Capped for the same reason.</summary>
         public float RefreshHz = 30f;
 
+        /// <summary>
+        /// Render target width / height. 1 (square) for the Serpent's Charge-petal eyepiece; the
+        /// Thresher's Time petal is a rhombus of aspect tan 36° (<c>TimePetalGeometry.Aspect</c>),
+        /// and its picture must match or it is squashed. Read when the target is first made, so set
+        /// it before the first <see cref="Tick(Transform, float)"/>.
+        /// </summary>
+        public float RenderAspect = 1f;
+
+        /// <summary>Names the camera and render target in the Hierarchy and profiler.</summary>
+        public string Label = "SerpentScope";
+
         public ScopePipView(RawImage surface) => _surface = surface;
 
         public bool Visible => _surface != null && _surface.enabled;
@@ -124,7 +135,29 @@ namespace CosmicShore.Utility
             _surface.enabled = true;
 
             PoseCamera(vessel, fieldOfView);
+            RenderIfDue();
+        }
 
+        /// <summary>
+        /// <see cref="Tick(Transform, float)"/> from an EXPLICIT eye instead of the vessel's nose —
+        /// the Thresher's launch sight looks down its launch trajectory from the launch point, which
+        /// is not on the hull. Written outright every frame (rigid), as the nose eye is.
+        /// </summary>
+        public void Tick(Vector3 eye, Quaternion rotation, float fieldOfView)
+        {
+            if (_surface == null) return;
+            if (!EnsureCamera()) { Hide(); return; }
+
+            _surface.texture = _texture;
+            _surface.enabled = true;
+
+            _camera.transform.SetPositionAndRotation(eye, rotation);
+            _camera.fieldOfView = Mathf.Clamp(fieldOfView, 1f, 170f);
+            RenderIfDue();
+        }
+
+        void RenderIfDue()
+        {
             // Stepped by hand rather than left enabled: an enabled camera renders every frame, and
             // this one is drawing the whole arena a second time.
             if (Time.unscaledTime < _nextRenderTime) return;
@@ -212,9 +245,10 @@ namespace CosmicShore.Utility
             if (_texture == null)
             {
                 int size = Mathf.Clamp(RenderSize, 180, 1080);
-                _texture = new RenderTexture(size, size, 16)
+                int width = Mathf.Clamp(Mathf.RoundToInt(size * Mathf.Max(0.1f, RenderAspect)), 64, 2048);
+                _texture = new RenderTexture(width, size, 16)
                 {
-                    name = "SerpentScopeRT",
+                    name = Label + "RT",
                     antiAliasing = 1,
                     filterMode = FilterMode.Bilinear,
                     useMipMap = false,
@@ -226,7 +260,7 @@ namespace CosmicShore.Utility
 
             if (_camera == null)
             {
-                var go = new GameObject("[SerpentScopeCamera]");
+                var go = new GameObject($"[{Label}Camera]");
                 // Deliberately NOT tagged MainCamera, and deliberately left disabled.
                 _camera = go.AddComponent<Camera>();
                 _camera.enabled = false;

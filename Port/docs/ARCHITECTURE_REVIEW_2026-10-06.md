@@ -35,7 +35,7 @@ Measurements in this file were taken on 2026-10-06 on the branch `cece/focused-p
 | H17 | Acceptance criteria on board items and milestones | Done | done |
 | H18 | A generated parity scoreboard | Accepted | C1 |
 | H19 | Budget and fallback for milestone sessions | Done; worktrees deferred | done |
-| H20 | `prisma_bisect` | Accepted, after the harness | new C1b |
+| H20 | `amoebius_bisect` | Accepted, after the harness | new C1b |
 
 "Done" means implemented, tested and measured in this pass. The work is recorded as checkpoint
 **C0 (Foundations)** in `ROADMAP.md` and `milestones.json`.
@@ -103,7 +103,7 @@ generator.
     unsupported shape appears or when C6 starts.
 
 **Done.**
-- The sync reports each RPC it cannot intercept as warning **`PRISMA001`**, at the original file
+- The sync reports each RPC it cannot intercept as warning **`AMOEBIUS001`**, at the original file
   and line.
 - The incremental manifest keeps the warning, so an unchanged file reports it on every build.
 - Today's tree gives 0 warnings.
@@ -428,6 +428,12 @@ write a general solver in-house.**
 - **Landed 2026-10-08:** `INetTransport` / `INetTransportFactory`
   (`src/CosmicShore.Engine/Networking/Wire/INetTransport.cs`), with `NetSocket` as the TCP
   implementation and `NetDriver.TransportFactory` as the one place a backend plugs in.
+- **Landed 2026-10-13:** until G2, players on different machines meet through Amoebius's own
+  online server (`src/CosmicShore.Engine/Networking/Online/`, ARCHITECTURE §8): Lobby + Relay
+  semantics, LAN discovery, `CosmicShore --server`. Its relay is a second transport behind the same
+  seam (`OnlineTransportFactory`), and its lobby is `IMultiplayerService`, so whichever backend G2
+  picks replaces those two pieces and nothing in the game. The "Lobby and Relay" row below
+  describes the state before it.
 
 The UGS boundary, stated explicitly (the G2 columns are candidates, not commitments):
 
@@ -465,7 +471,7 @@ The UGS boundary, stated explicitly (the G2 columns are candidates, not commitme
 - Phase timing turns on with a session report. Its cost is one timestamp per phase.
 
 How Amoebius uses those numbers:
-- `PrismaTracks` carries the CPU and GC figures per run, and the agent's brief shows them.
+- `AmoebiusTracks` carries the CPU and GC figures per run, and the agent's brief shows them.
 - A run whose steady GC pause tops 1 ms per frame becomes a *perf* problem. It goes to the board
   with an acceptance criterion like any other.
 - TRACKS > PERFORMANCE has a *Frame budget* card.
@@ -535,17 +541,17 @@ needs `EXT_disjoint_timer_query`, so they are measured on desktop.
 **Done.** Every board item has a **done when** criterion:
 - A bug Amoebius found in the tracks carries the tracks' own check: the problem is not seen again in
   3 runs through its scene.
-  - After every ingest, `PrismaBoard.Verify` applies it.
+  - After every ingest, `AmoebiusBoard.Verify` applies it.
   - A passing card gets a green **MET** pill and a notification offering **MARK DONE**. Moving it
     stays the user's call.
   - A card whose problem comes back loses MET. A DONE card reopens to TO DO.
-- `prisma_board_suggest` **requires** a `criterion`.
+- `amoebius_board_suggest` **requires** a `criterion`.
 - A milestone task carries its checkpoint's exit criterion.
 - The user's own items take an optional "Done when..." field.
 - The game agent is told to run a card's check and show the result before calling it done.
 - Milestone sessions are told never to mark a checkpoint done until its exit criterion was run and
   passed, with the command and result in the note.
-- 4 tests: `PrismaTracksBoardTests`.
+- 4 tests: `AmoebiusTracksBoardTests`.
 
 ### H18. A parity scoreboard
 
@@ -584,19 +590,19 @@ inputs are the contract until they do.
   - the C1 session stopped and the transcript said so;
   - the board task (T-4 in the screenshot) listed every tool call the run made;
   - the checkpoint got its note;
-  - the banner offered CONTINUE. See `docs/architecture/prisma_milestone_stopped.png`.
+  - the banner offered CONTINUE.
 - `milestones.json` is now written without `'`-style escaping. The verification run exposed
   that older bug.
 
 **Deferred: worktrees and PRs.** The developer works on one branch in GitHub Desktop. A worktree
 session produces a second branch that has to be merged, and Amoebius has no merge or review view
 yet. When two milestone sessions need to run at once, each will run in `claude --worktree <id>`
-(the CLI supports it) on a `prisma/<checkpoint>` branch, with a PR opened from Amoebius. Until then,
+(the CLI supports it) on a `amoebius/<checkpoint>` branch, with a PR opened from Amoebius. Until then,
 the deny rules and one session at a time keep every change reviewable in GitHub Desktop.
 
-### H20. `prisma_bisect`
+### H20. `amoebius_bisect`
 
-**Accepted, after C1, as checkpoint C1b.** `prisma_bisect(good, bad, check)`:
+**Accepted, after C1, as checkpoint C1b.** `amoebius_bisect(good, bad, check)`:
 - runs `git bisect run` over commits that touch `Port/` only, so Unity-side commits never move the
   window;
 - builds each candidate in a scratch worktree;
@@ -613,7 +619,7 @@ the deny rules and one session at a time keep every change reviewable in GitHub 
   - the tolerance table (C9);
   - Random goldens from Unity (C6);
   - the generated scoreboard (H18).
-- **C1b** (new, 1 week, after C1): `prisma_bisect` (H20).
+- **C1b** (new, 1 week, after C1): `amoebius_bisect` (H20).
 - **C2:** a Shader Graph compiler, the custom-function library and guid-keyed families, plus
   Shuriken and approximate VFX Graph (D10, D12).
 - **C3:** the decision rule. Implement what the census needs; bind Bepu for contacts if mesh

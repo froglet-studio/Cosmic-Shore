@@ -105,6 +105,21 @@ namespace CosmicShore.Engine
 
         public static Bounds CalculateRelativeRectTransformBounds(Transform trans) => CalculateRelativeRectTransformBounds(trans, trans);
 
+        /// <summary>Swaps the horizontal and vertical layout of a rect (and, recursively, its children).</summary>
+        public static void FlipLayoutAxes(RectTransform rect, bool keepPositioning, bool recursive)
+        {
+            if (rect == null) return;
+            if (recursive)
+                for (int i = 0; i < rect.childCount; i++)
+                    if (rect.GetChild(i) is RectTransform c) FlipLayoutAxes(c, false, true);
+            rect.pivot = new Vector2(rect.pivot.y, rect.pivot.x);
+            rect.sizeDelta = new Vector2(rect.sizeDelta.y, rect.sizeDelta.x);
+            if (keepPositioning) return;
+            rect.anchoredPosition = new Vector2(rect.anchoredPosition.y, rect.anchoredPosition.x);
+            rect.anchorMin = new Vector2(rect.anchorMin.y, rect.anchorMin.x);
+            rect.anchorMax = new Vector2(rect.anchorMax.y, rect.anchorMax.x);
+        }
+
         public static void FlipLayoutOnAxis(RectTransform rect, int axis, bool keepPositioning, bool recursive)
         {
             if (rect == null) return;

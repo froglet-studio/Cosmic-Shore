@@ -328,7 +328,8 @@ areas. Solved at edit time, exactness costs nothing anyone waits for.
   (`VesselImpactorDataContainerSO.OmniCrystalRetirement`), this uses a Resources table keyed by
   (vessel, element), because elemental collection runs on the skimmer path, which has no such
   slot. Worth unifying once a second hull or element shows which shape generalises.
-- **The Scarab's bake is misleading.** It is solved on the Sparrow model the Scarab hides at runtime
+- **The Scarab's bake is misleading, and so are the Stoat's (2026-10-13).** The Stoat's four entries reuse the
+  Squirrel's bakes on the Squirrel model it hides under `StoatHull`, the same shape. The Scarab's is solved on the Sparrow model the Scarab hides at runtime
   (`ScarabHullBuilder` draws a procedural hull), so the window reads CURRENT while the game always
   finds it stale and solves on the procedural body instead — and the stale warning tells the reader
   to re-run the tool, which cannot help. Either bake procedural hulls through
@@ -358,7 +359,7 @@ Measured with `BuildPanels` on each crystal FBX (assimp export), then confirmed 
 | Crystal | Drawn by | Faces that fly | Template (verts) | Shader family → what the fusion does |
 |---|---|---|---|---|
 | Charge | MeshRenderer (edge-arc twin) | 60 pentagons | 10,440 | `_Dull/_BrightCrystalColor` tint, `_opacity` fade, discharge |
-| Mass | 4 nested MeshRenderer shells, one mesh | 60 triangles | 6,120 | `OmniShepardFresnelShader`. The **outer shell** (the one whose band holds its size, `_ScaleDistance` 0) is the one that flies; the three shrinking shells **fade in place** over the peel and flight (`_Opacity`), gone by the mate. On the fusion the band is pinned anyway — it scales about the object origin, which is the hull — `_ScaleDistance` 0 and `_Start = _Stop = 0.05` (alpha 1); fade on `_Opacity`; rim `_BrightColor` converges, `_DarkColor` held |
+| Mass | ONE MeshRenderer, `MassCrystalPrisms.asset` (since 2026-10-12; was 4 nested shells of the FBX) | 60 triangles | 6,120 (FBX; re-measure after the 2026-10-13 re-bake) | `OmniDepthPrismShader`. The fusion forces **`_DepthDriven 0`**: driven, the shader rebuilds each vertex from its plate's rest centre in TEXCOORD2, but the fusion's re-tessellated mesh moves the vertices onto the hull and holds discharge heights in TEXCOORD2 (zero on filler), so a driven or thickness-stretched face lands tens of radii off (measured 36 mesh units on a 1-unit crystal) or NaN. Undriven the vertex stage is the identity, which needs the thickness BAKED into the mesh (`_Thickness 1` on the materials) - `Tools/Build/omni_depth_prism_shader_parity.py` proves both. Fade on `_Opacity`; rim `_BrightColor` converges, `_DarkColor` held. (Before 2026-10-12 the outer Shepard shell flew with its band pinned and three inner shells faded in place.) |
 | Space | SkinnedMeshRenderer, blend-shape spin | 60 kites | 8,280 | `SpreadFresnelShader`, OPAQUE: no fade property, so the faces **shrink to their centroids** through the dissolve |
 | Time | SkinnedMeshRenderer on a CHILD of the model, 30 bones | 30 rhombi | 4,140 | `SpreadFresnelShader`, as Space |
 
@@ -450,7 +451,7 @@ written to name the exit, not from reading code.*
 
 | Vessels | Hull | How it is pinned |
 |---|---|---|
-| Squirrel, Manta, Termite, Falcon, Shrike, Dolphin, Serpent, Sparrow, Scarab | skinned (`FindHullRenderer`) | bones + bind poses, as authored |
+| Squirrel, Manta, Termite, Falcon, Shrike, Dolphin, Serpent, Sparrow, Scarab, Stoat | skinned (`FindHullRenderer`) | bones + bind poses, as authored |
 | Rhino, Urchin, Grizzly | **static**: a body MeshRenderer + wings / engines / jets / guns / fins as separate MeshRenderers, no skin | `HullRig`: the largest mesh renderer is the BODY and the rig's space; every mesh part under it (in hierarchy order, regardless of active state, so prefab and instance list the same transforms) is a rigid "bone" whose bind pose is the inverse of where it sat against the body when solved. A puppeted Rhino wing carries its patches. |
 | Butterfly | runtime-generated mesh | none — no entry |
 
@@ -493,6 +494,7 @@ INITIALISES collects the crystal. (b) is read off each prefab's `_nearFieldSkimm
 | Squirrel, Dolphin, Manta, Urchin, Sparrow, Grizzly | yes | play-tested by the user, all four elements on Squirrel/Dolphin; `HullFusion` log line on Sparrow |
 | Rhino | yes, not re-tested since schema 3 | reported fine in the third playtest |
 | Scarab | expected yes (runtime-solved), **not re-tested** | its procedural hull has no asset; the bake (on the hidden Sparrow model) always reads stale, and the runtime solves on the procedural body |
+| Stoat | **not tested** (entries added 2026-10-13) | the prefab is a text clone of the Squirrel's and still carries its skinned model, hidden at runtime under the procedural `StoatHull`. Its four entries REUSE the Squirrel's bakes (a hull that draws the source's mesh may, `.claude/skills/vessel/SKILL.md`): at edit time the bake reads CURRENT, as the Scarab's does, while the runtime finds that skin hidden and solves on whatever `FindHull` returns, with one stale warning per element. The entries exist because `CrystalHullFusionConfigTests` requires every hull × element (DT-003) |
 | Termite, Falcon, Shrike | **no** | `_nearFieldSkimmer` is unset on all three, so no skimmer is ever initialised: crystals are collected with NO vessel - no fusion, and (pre-existing, not this branch) no score or element level. Their entries stay in the config for the day the skimmer is wired. |
 | Serpent | **no** | its only skimmer (`VacuumSkimmer`) is inactive, collider disabled, no impactor - it does not collect crystals at all (pre-existing) |
 | Butterfly | no entry | hull generated at runtime. Collects (generic capture) only since 2026-10-09: its one skimmer, the dust capsule, is off in Mass mode, so it took no elemental crystal until the always-on far-field crystal catcher landed (`BUTTERFLY.md §3.1a`) |

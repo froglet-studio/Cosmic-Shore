@@ -101,6 +101,95 @@ namespace CosmicShore.Tests
         }
 
         [Test]
+        public void TheZone_LetsA180TurnGo_ButTakesALoopPast200()
+        {
+            var field = Dipole(400f, 60000f, 3.5f / 3f);
+            field.ThroughRadius = 90f;
+            field.ThroughDegrees = 200f;
+            // A body circling the sink at 40 u, its heading turning toward the sink in 1° steps.
+            var b = new StoatDipoleMath.Body { Rotation = Quaternion.identity };
+            bool through = false;
+            int degrees = 0;
+            for (; degrees < 360 && !through; degrees++)
+            {
+                var before = b.Rotation * Vector3.forward;
+                b.Rotation = Quaternion.AngleAxis(-1f, Vector3.up) * b.Rotation;   // turning left, toward a sink on the left
+                b.Position = field.Sink + Quaternion.AngleAxis(-(degrees + 1), Vector3.up) * new Vector3(40f, 0f, 0f);
+                through = StoatDipoleMath.WindThrough(ref b, before, field);
+                if (degrees + 1 == 180) Assert.IsFalse(through, "a U-turn round the pole is the pilot's");
+            }
+            Assert.IsTrue(through);
+            Assert.AreEqual(200, degrees, 1, "taken through at the threshold");
+
+            // Turning AWAY unwinds; leaving the zone clears.
+            b.Winding = 150f;
+            var fwd = b.Rotation * Vector3.forward;
+            b.Rotation = Quaternion.AngleAxis(30f, Vector3.up) * b.Rotation;
+            StoatDipoleMath.WindThrough(ref b, fwd, field);
+            Assert.AreEqual(120f, b.Winding, 0.5f, "30° away takes 30° off");
+            b.Position = field.Sink + new Vector3(0f, 0f, 200f);
+            StoatDipoleMath.WindThrough(ref b, b.Rotation * Vector3.forward, field);
+            Assert.AreEqual(0f, b.Winding, "out of the zone: cleared");
+        }
+
+        [Test]
+        public void TheSlam_ClosesFromRest_AndFieldAndDistanceReachNothingTogether()
+        {
+            Assert.AreEqual(1f, StoatDipoleMath.SlamRemaining(0f, 0.3f), 1e-6f, "let go: still apart, full strength");
+            Assert.AreEqual(0.75f, StoatDipoleMath.SlamRemaining(0.15f, 0.3f), 1e-5f, "half the time, a quarter of the way: accelerating");
+            Assert.AreEqual(0f, StoatDipoleMath.SlamRemaining(0.3f, 0.3f), 1e-6f, "they meet: nothing left");
+            Assert.AreEqual(0f, StoatDipoleMath.SlamRemaining(1f, 0.3f), 1e-6f);
+            float early = 1f - StoatDipoleMath.SlamRemaining(0.03f, 0.3f), late = StoatDipoleMath.SlamRemaining(0.27f, 0.3f);
+            Assert.Less(early, late, "the last tenth closes more than the first: they SLAM, not settle");
+        }
+
+        [Test]
+        public void TheSoftenedSink_BendsAPassSmoothly_WhereTheSteepLawJumps()
+        {
+            // The pull on a line of points walking in toward the sink: the softened law never exceeds its core's peak,
+            // the steep law blows up at the horizon.
+            var steep = Dipole(2000f, 40000f, 1.75f);
+            var soft = steep;
+            soft.SinkSoftening = 14f * 1.75f;
+            soft.AccelerationCap = steep.AccelerationCap = 1e9f;
+            float peakSoft = 0f, peakSteep = 0f;
+            for (float r = 2f; r <= 120f; r += 0.5f)
+            {
+                var p = steep.Sink + new Vector3(0f, 0f, r);
+                peakSoft = Mathf.Max(peakSoft, StoatDipoleMath.FieldAcceleration(p, soft).magnitude);
+                peakSteep = Mathf.Max(peakSteep, StoatDipoleMath.FieldAcceleration(p, steep).magnitude);
+            }
+            float coreMax = 40000f * 2f / (3f * Mathf.Sqrt(3f) * (24.5f * 24.5f));   // GM·r/(r²+ε²)^1.5 peaks at r = ε/√2
+            Assert.AreEqual(coreMax, peakSoft, 0.05f * coreMax, "the softened pull peaks at its core");
+            Assert.Greater(peakSteep, 50f * peakSoft, "the steep law is what made a near pass all-or-nothing");
+        }
+
+        [Test]
+        public void ThroughTheZone_YouComeOutAtTheSourcesMouth()
+        {
+            var field = Dipole(400f, 60000f, 3.5f / 3f);
+            var exit = StoatDipoleMath.ExitPoint(field.Sink + new Vector3(0f, 0f, 60f), field, 1.05f);
+            Assert.AreEqual(1.05f * field.SourceHorizon, Vector3.Distance(exit, field.Source), 1e-3f, "at the mouth, not 60 u out");
+            Assert.Less(Vector3.Dot(exit - field.Source, Vector3.forward), 0f, "on the opposite side (the point reflection)");
+        }
+
+        [Test]
+        public void ThePrediction_EasesIntoATurnTheWayTheHullDoes()
+        {
+            // VesselTransformer: the stick turns the command, the hull slerps after it at 1.5/s. A held 48°/s yaw from
+            // straight flight: after 1 s the hull has turned far less than 48°.
+            var start = new StoatDipoleMath.Body { Rotation = Quaternion.identity, Command = Quaternion.identity, HasCommand = true };
+            var response = new StoatDipoleMath.HullResponse { Enabled = true, NoseFollowRate = 1.5f, SpeedFollowRate = 1.5f, TargetSpeed = 60f };
+            var yaw = new Vector3(0f, 48f * Mathf.Deg2Rad, 0f);
+            var pts = new Vector3[512];
+            var eased = StoatDipoleMath.PredictPath(start, 60f, yaw, default, false, Flight, Path(), pts, new int[8], response);
+            var at60 = pts[Mathf.Min(eased.Count - 1, 20)];   // ~60 u on
+            var instant = StoatDipoleMath.PredictPath(start, 60f, yaw, default, false, Flight, Path(), pts, new int[8]);
+            var instant60 = pts[Mathf.Min(instant.Count - 1, 20)];
+            Assert.Less(Mathf.Abs(at60.x), Mathf.Abs(instant60.x), "the eased line bends later than the instant one");
+        }
+
+        [Test]
         public void WithThePortalShut_ThePathStopsAtTheHorizon()
         {
             var field = Dipole(71f);
@@ -163,6 +252,29 @@ namespace CosmicShore.Tests
             for (int i = 0; i < n; i++) if (dots[i].x > 100.5f && dots[i].x < 499.5f) dotInTheGap = true;
             Assert.IsFalse(dotInTheGap, "no dots across the jump from the sink to the source");
             Assert.AreEqual(500f, dots[3].x, 1e-3f, "the far side restarts with a dot where it comes out");
+        }
+
+        [Test]
+        public void TheDots_PackTighterWithDepth_AndShrinkToTheFloor()
+        {
+            // Two segments of 100 px: the first at full size, the second at half (twice as deep, squared).
+            var screen = new[] { new Vector2(0f, 0f), new Vector2(100f, 0f), new Vector2(200f, 0f) };
+            var visible = new[] { true, true, true };
+            var scale = new[] { 1f, 1f, 0.5f };
+            var dots = new Vector2[64];
+            var src = new int[64];
+            int n = StoatDipoleMath.LayDots(screen, visible, null, scale, 3, 20f, dots, src);
+            Assert.AreEqual(20f, dots[1].x - dots[0].x, 1e-3f, "near: the authored spacing");
+            Assert.AreEqual(10f, dots[n - 1].x - dots[n - 2].x, 1e-3f, "far: the spacing of a half-size dot");
+
+            int plain = StoatDipoleMath.LayDots(screen, visible, null, 3, 20f, dots, src);
+            int unscaled = StoatDipoleMath.LayDots(screen, visible, null, null, 3, 20f, dots, src);
+            Assert.AreEqual(plain, unscaled, "no scales = the screen-even layout, unchanged");
+
+            Assert.AreEqual(1f, StoatDipoleMath.DepthScale(40f, 40f, 0.35f), 1e-5f, "the nearest dot is full size");
+            Assert.AreEqual(0.5f, StoatDipoleMath.DepthScale(160f, 40f, 0.35f), 1e-5f, "four times as deep: half size");
+            Assert.AreEqual(0.35f, StoatDipoleMath.DepthScale(4000f, 40f, 0.35f), 1e-5f, "far: floored");
+            Assert.AreEqual(1f, StoatDipoleMath.DepthScale(20f, 40f, 0.35f), 1e-5f, "never larger than the nearest");
         }
 
         [Test]

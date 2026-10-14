@@ -249,6 +249,11 @@ ceiling would finish the shatter inside a single frame while the debris crawled.
 `DebrisSpeedLimit` defaults **0** (= use the prefab clamp and the legacy divide), so projectile,
 AOE and fauna destruction keep their existing behaviour.
 
+> **Superseded for the Rhino's hull, 2026-10-13 (`RHINO_PLOUGH.md`):** the Rhino's hull no longer
+> destroys prisms — it ploughs them aside — so the hull half of the parity below (and the hull-ram
+> row of the table, and verification step 5) now describes every OTHER hull running
+> `VesselDamagePrismEffectSO`, not the Rhino.
+
 **The hull runs the same model.** `VesselDamagePrismEffectSO` is on `proportionalDebris` too, so
 the two paths cannot drift: flying straight at 35 u/s imparts the same debris speed whether the
 prism is clipped by the hull or by the parked sword. At `restitution` 1 that was already what the

@@ -2023,3 +2023,48 @@ the harness's 240 s wait. The cause was on the invitee's side:
 - **Direct Join** (no invite) compares the row's own session with itself, so it never had this
   case.
 
+
+## B30 — A party guest's swapped-in vessel never moves, and the gap throws every 250 ms 🟢 (root-caused & fixed 2026-10-13; playtest-confirmed by the owner 2026-10-13)
+
+**Report.** Join someone's lobby, change vessel (the vessel changer toy, or a mode preview's hull
+swap): the new ship sits still, and the console repeats
+`MissingReferenceException: The object of type 'VesselController' has been destroyed` from
+`DomainVolumeIndicator.ResolveCell`.
+
+**Cause 1, the ship that never moves.** `VesselController.Initialize` ends in
+`VesselStatus.ResetForPlay`, which sets `IsStationary = true`, and `VesselTransformer` does not
+move a stationary hull. Only `Player.StartPlayer` → `VesselController.StartVessel` releases it.
+- On the **host**, `MenuServerPlayerVesselInitializer.SwapVesselAsync` → `ActivateAutopilot` calls
+  `StartPlayer` on every swap, but on the host's copy only. The guest owns its vessel's movement.
+- On the **guest**, `ClientPlayerVesselInitializer.ReInitializePair` raises
+  `OnPlayerPairInitialized` and never `OnClientReady`. `MainMenuController.HandlePlayerPairInitialized`
+  skipped the local player, because `HandleMenuReady` (on `OnClientReady`) starts it. That is true of
+  the first pair only. Nothing started the swapped-in hull.
+
+**Cause 2, stuck on autopilot.** `VesselChangerToy.RestoreControlAfterSwap` gave up waiting
+after 600 ms + 20 × 100 ms. A guest's swap latch (`MenuServerPlayerVesselInitializer.ClientSwapPending`)
+holds until the new hull is bound, up to 5 s, and a relay round trip can outlast 2.6 s. An early
+restore found the old hull destroyed and did nothing, so the new hull stayed on autopilot under a
+pilot who was flying.
+
+**Cause 3, the exception.** The server despawns the old hull before
+`ReplaceVesselForPlayer_ClientRpc` binds the new one, so for the whole gap the guest's
+`Player.Vessel` is a destroyed `VesselController`. `IVessel` is an interface, so `?.` cannot see a
+destroyed object. `DomainVolumeIndicator.ResolveCell` (4 Hz) and
+`SpawnMatrixToy.TryPointAheadOfPilot` read `LocalPlayer?.Vessel?.Transform` through it.
+
+**Fix.**
+- `HandlePlayerPairInitialized` now activates the local pair too: start, autopilot on, input
+  paused. That mirrors the host's `ActivateAutopilot` exactly. `StartPlayer` is idempotent, so the
+  first pair being started twice is harmless.
+- `RestoreControlAfterSwap` waits out the whole swap. `IsSwapping` is bounded on both sides.
+- Both readers go through `VesselLiveness.IsAlive`. The gauge holds its last cell through the gap.
+
+**Verified 2026-10-13** by the owner's playtest: the guest's swapped-in vessel flies. Steps kept for regressions.
+
+**Verify (two machines or MPPM).** Host a party, join it from the second instance. On the guest:
+1. Change vessel from the menu (autopilot) state. The new hull must fly on autopilot at once.
+2. Enter freestyle, change vessel with the vessel changer. The new hull must move and answer the
+   stick within about a second of appearing.
+3. The console must show no `MissingReferenceException` during either swap.
+4. Repeat 2 on the host. Behaviour must be unchanged.

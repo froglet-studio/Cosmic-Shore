@@ -74,7 +74,7 @@ spawning between steps, and every fault they reported is fixed and recorded in t
 | 10 | The lens bends TRANSPARENTS too (shards, particles): its own after-transparents pass | §5.1 |
 | 11 | Merged with bleeding-edge (9,708 commits); `CSLogChannel.BlackHole` moved to bit 31 — the enum is now FULL | the merge commit |
 | 12 | WHITE holes and black–white PAIRS: the radial law reversed, the horizon emitting, captured mass passed through to the other pole, the pair drifting apart and annihilating; tool buttons, N/M keys, `blackhole white|pair` | §11 |
-| 13 | The STOAT (`VesselClassType.Stoat = 14`): a Squirrel-prefab clone whose triggers sling an attractor–repulsor pair across the hull, hold = size, attractor on the pressed side; the Sparrow's stop on X; generator + gates | §11, `R_VesselActions/STOAT.md` |
+| 13 | The STOAT (`VesselClassType.Stoat = 15`): a Squirrel-prefab clone whose triggers sling an attractor–repulsor pair across the hull, hold = size, attractor on the pressed side; the Sparrow's stop on X; generator + gates (its own vessel since 2026-10-13 — the orbit is now its Time mode, `R_VesselActions/STOAT_DIPOLE.md` §1a–§1e) | §11, `R_VesselActions/STOAT.md` |
 | 14 | (charming-cerf) The Black Hole cell, then the dipole — now the Crystal Wormhole: smooth wells, the graded lens, the felt pull, the seamless mouths, formation and annihilation | §12, `Docs/CRYSTAL_WORMHOLE.md` |
 | 15 | (charming-cerf) The warp field | `Docs/WARP_FIELD.md` |
 | 16 | The merge: both pair styles on one engine, a pair-style switch on the Stoat's sling and in the Black Hole tool | §13 |
@@ -412,6 +412,39 @@ Dials (`BlackHoleConfig`, Lens header): `lensEnabled`, `shadowSize`, `lensStreng
 `lensFadeStart`, `whiteLensStrength`, `whiteCoreSize`, `whiteCoreBrightness`, `whiteCoreSkyMix`, `photonRingGlow`,
 `photonRingWidth`. `lensEnabled` off falls back to the plain black sphere.
 
+## 5.2 Waves in space-time — the annihilation's wobble (`BlackHoleWaves`, 2026-10-12)
+
+The Vessel Studio's pairs are born and die with waves, and Unity now draws them, ported line for line
+(`StoatFlightStudio.html`: `spawnWave`, `waveAlive`, `gwStrainAt`, `setWaveUniforms`, the wave loop of `lensMat`,
+`writeBodies`). Three kinds, all photons (nothing here moves mass), local per peer like every hole visual:
+
+| Wave | When | What you see | Parameters (the studio's 'life' rows, `BlackHoleConfig` unless noted) |
+|---|---|---|---|
+| **In** — the white hole's light converging onto its spot | a pair is laid (`StoatDipoleExecutor.Spawn`) | a thin bright shell shrinking from far away onto the pair, bending the view across its front | `whInFrom` 700 u; its duration is the white hole's birth, `whInS` (= `StoatDipoleConfig.sourceGrowSeconds` 1.1 s); `shellBend` 6 |
+| **Gravitational** — the burst the pair's mass leaves as | the pair annihilates (`Close(annihilate: true)`) | a ripple moving out at `gwSpeed`, ringing (`gwPeriod`) and dying away (`gwRingdown`), weaker as 1/r (flat inside 60 u), loudest sideways to the line the holes met on and silent along it; crests a little brighter, troughs a little darker (`gwGlow`); the whole view stretches one way and squeezes the other as it passes YOU (`gwShake`); every prism it crosses stretches along its own x and squeezes along its own y (`gwPrism`, `PrismGravityWarp.hlsl`) | `gwAmp` 12, `gwSpeed` 120, `gwPeriod` 0.35, `gwRingdown` 1.0, `gwPrism` 0.6, `gwShake` 1, `gwGlow` 1; its mass is the pair's strength / 6 in 0.3–2 |
+| **Out** — the white hole's light leaving | the pair annihilates | a bright shell growing from the white hole, and a soft wash of light as it passes you | `whOutSpeed` 450, `whOutFade` 1.6, `shellBend` 6 |
+
+Both poles also **sink to a point over `dieS`** (`StoatDipoleConfig.dieSeconds` 0.7 s) along the studio's curve,
+1 − smoothstep(t / dieS) (`BlackHole.BeginDespawn(seconds)`), instead of the generic linear ease. And the white hole is
+`whSizeX` × the black hole (`StoatDipoleConfig.sourceSizeX` 1). Every one of these is a row in
+`Tools/Build/studio_to_unity/stoat.json`, so the artifact's values reach the game through `/artifact-to-unity` and
+`studio_to_unity.py --check` reports drift.
+
+**How it draws.** `BlackHoleWaves` keeps the live waves (dropped when the studio's `waveAlive` says they are over: an In
+shell after `whInS`, an Out shell after 6 × `whOutFade`, the gravitational wave after 4000 u / `gwSpeed` + 8 ringdowns)
+and lays the newest four on screen per camera (`ScreenWaves`). The lens pass (`BlackHoleLensPass`) keeps running while
+any wave is alive, even after every hole is gone. `BlackHoleWarp.Flush` publishes the newest four gravitational waves to
+the prism shader. Proof: `verify_black_hole_lens.py` 1b (45,000 pixels of random waves with holes, the view stretched and
+a shell's wash, against the studio's GLSL: 1.2e-7) and 5b (a negative control), C2 (`BlackHoleWaves.cs` compiled against
+stubs vs the page's `setWaveUniforms` run in node, with its own negative control); `verify_prism_gravity_warp.py` 16 (the
+strain is the page's `gwStrainAt`, the prism stretch is 1 ± gh along its own axes; a flipped-axis control fails it).
+
+**The hole budget (fixed 2026-10-12).** The registry allowed four live holes in all, sized to the prism warp bank. With
+two AIs holding pairs, the player's squeeze was refused — "sometimes my pair spawns, sometimes it doesn't". The budget
+is now 16 (`maxBlackHoles`; the field's well list `BlackHolePhysics.NativeWells` holds 16); the prism warp bank stays at
+4 and takes the holes nearest the camera; the lens draws the nearest 8. A squeeze refused for room keeps asking while the
+trigger is held (`StoatDipoleExecutor.StepAuthority`), so it opens the moment there is room.
+
 ## 6. Tools, keys, console and the test scene — retired (2026-10-10)
 
 The DiagnosticsHUD console verbs (`blackhole …`, `bh`, `wormhole …`), the **Black Hole tool** panel
@@ -722,6 +755,7 @@ A hole can carry its OWNER's rules on top of the physics, set every frame by who
 | `PrismCapture` = `Steal` | the same | a paired sink carries the prism through AND recolours it (`Prism.Steal(CaptureOwnerName, CaptureDomain, superSteal)`) |
 | `CrystalStripShare` | `BlackHoleCrystalStrip.Levy`, from `TeleportContinuity` | a rival vessel carried through the sink sheds that share of every element as crystals on the sink's side (the wormhole toll's shape: `AccrueElementalLoss`, conserving; the owner and teammates never pay) |
 | `DomainTint` / `DomainTintAmount` | `BlackHoleLens` → `_BHTint` | a sink's shadow is drawn toward the colour, a white hole's core glows in it |
+| `Amplitude` (2026-10-13) | `GM`, the tides (`BlackHoleWarp`), and — for a HORIZON hole — `BlackHoleLens` → `_BHStrength` | the field NEUTRALIZES at full size: pull and tides scale down, the lens's bend relaxes toward the straight ray and the shadow/core fade into the scene behind. The Stoat's released pair drives it to 0 as its poles slam together (`STOAT_DIPOLE.md` § "The annihilation"); 1 for every other horizon hole, so their look is unchanged. A smooth well already carried it in its bank strength. |
 
 `Default` keeps everything above exactly as §3 and §11 describe. The dipole's pair is NOT a registry
 `Pair` (its executor places both holes every frame and joins them as each other's `Throat`), so

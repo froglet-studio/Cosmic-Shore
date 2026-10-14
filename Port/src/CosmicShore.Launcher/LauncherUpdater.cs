@@ -188,15 +188,20 @@ namespace CosmicShore.Launcher
             return list.OrderByDescending(v => v.Date).ThenBy(v => v.Commit).ToList();
         }
 
-        /// <summary>A version folder's launcher: Prisma(.exe), or FrogletLauncher(.exe) from before the rename.</summary>
+        /// <summary>The launcher's file name, then its names before each rename (Prisma, FrogletLauncher).</summary>
+        static readonly string[] ExeNames = { "Amoebius", "Prisma", "FrogletLauncher" };
+
+        /// <summary>
+        /// A version folder's launcher: Amoebius(.exe), or the first earlier name it has (a version
+        /// built from a commit before a rename).
+        /// </summary>
         static string Exe(string dir)
         {
-            var prisma = Path.Combine(dir, OperatingSystem.IsWindows() ? "Prisma.exe" : "Prisma");
-            var legacy = Path.Combine(dir, OperatingSystem.IsWindows() ? "FrogletLauncher.exe" : "FrogletLauncher");
-            return File.Exists(prisma) || !File.Exists(legacy) ? prisma : legacy;
+            var names = ExeNames.Select(n => Path.Combine(dir, OperatingSystem.IsWindows() ? n + ".exe" : n)).ToArray();
+            return names.FirstOrDefault(File.Exists) ?? names[0];
         }
 
-        /// <summary>The running launcher, when it is a file that can be swapped (not `dotnet Prisma.dll`).</summary>
+        /// <summary>The running launcher, when it is a file that can be swapped (not `dotnet Amoebius.dll`).</summary>
         static string? RunningExe
         {
             get
@@ -263,8 +268,12 @@ namespace CosmicShore.Launcher
                     });
                     if (r.ExitCode != 0 || !File.Exists(Exe(tmp))) throw new Exception("The launcher did not compile at " + info.Short + " - see CONSOLE.");
                     foreach (var f in Directory.GetFiles(tmp, "*.pdb")) File.Delete(f);
-                    // The pre-rename copy the build leaves for older launchers' updaters (see the .csproj).
-                    foreach (var f in Directory.GetFiles(tmp, "FrogletLauncher*")) File.Delete(f);
+                    // The copies under earlier names the build leaves for older launchers' updaters
+                    // (see the .csproj); a version from before a rename keeps the one it runs as.
+                    var exe = Exe(tmp);
+                    foreach (var n in ExeNames.Skip(1))
+                        foreach (var f in new[] { n, n + ".exe" }.Select(x => Path.Combine(tmp, x)))
+                            if (f != exe && File.Exists(f)) File.Delete(f);
                     if (Directory.Exists(dir)) Directory.Delete(dir, true);
                     Directory.Move(tmp, dir);
                     File.WriteAllText(Path.Combine(dir, "version.json"), JsonSerializer.Serialize(info with { Source = rev, Dir = "" }));

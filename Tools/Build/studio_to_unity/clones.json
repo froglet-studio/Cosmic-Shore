@@ -4,7 +4,7 @@
     "artifactVersion": "v25 (1791599841-30fe)",
     "pageSha": "9393e9026",
     "decisionsThrough": "2026-10-09T21:35:00.000Z",
-    "clonedAt": "2026-10-10",
-    "result": "37 mapped parameters match the artifact (studio_to_unity.py --check); the shared log held no settings snapshot yet"
+    "clonedAt": "2026-10-12",
+    "result": "50 mapped parameters match the artifact (studio_to_unity.py --check). Cloned the waves: the light shells in and out, the gravitational wave (lens + prisms), dieS, whSizeX. The shared log held no newer decision (only d16-d17, no settings snapshot)."
   }
 }

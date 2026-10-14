@@ -38,6 +38,11 @@ namespace CosmicShore.Engine
         Vector3 _storedLocalPosition; // z always; xy kept as the last written value while driven
         Vector3 _storedLocalScale = Vector3.one;
 
+        // RectDimensionWatch's record of the rect last reported (OnRectTransformDimensionsChange).
+        [System.NonSerialized] internal Rect DimensionRect;
+        [System.NonSerialized] internal bool DimensionSeen, DimensionChanged;
+        [System.NonSerialized] internal int DimensionPoll;
+
         // ── The rect solve ───────────────────────────────────────────────────
 
         /// <summary>The parent's rect in parent-local space, or zero when the parent is not a RectTransform.</summary>

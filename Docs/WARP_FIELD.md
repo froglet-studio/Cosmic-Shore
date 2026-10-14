@@ -69,6 +69,14 @@ is a candidate consumer — add it by multiplying its authored length by
 `WarpFieldRuntime.ScaleAt(position)`, nothing more. The 2022 version scaled only the player, two
 AI ships, the camera and the trail.
 
+**Known gap (found 2026-10-13, not fixed):** `CustomCameraController.SnapToTarget` poses at
+`rotation * EffectiveOffset`, while `UpdateCamera` poses at `rotation * (EffectiveOffset * warp)`.
+Inside a field, a snap (the rear-view flip, `VesselRearView`) can therefore show one frame at the
+unscaled distance, which breaks §2's continuity rule. The fix is to read the scale in
+`SnapToTarget` the way `UpdateCamera` does (and check whether its near-clip scaling belongs there
+too). `RearViewLawTests.TheCameraPosesFromTheMirroredOffsetAtEveryPoseSite` already accepts the
+scaled form at both sites. Measured: `grep -n "EffectiveOffset" Assets/_Scripts/Controller/Camera/CustomCameraController.cs`.
+
 ## 4. The radial field, its poles, and the crystal wormhole
 
 `RadialWarp` (smooth since 2026-10-08): `s = √(min² + core²)`, `core = max·y / (1 + y⁴)^¼`,

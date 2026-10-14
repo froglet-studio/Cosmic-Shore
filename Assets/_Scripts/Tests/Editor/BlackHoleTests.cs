@@ -91,9 +91,8 @@ namespace CosmicShore.Tests
             Assert.AreEqual(BlackHoleWarp.Slots, hlslSlots,
                 "BlackHoleWarp.Slots (C#) and PRISM_GRAVITY_WARP_SLOTS (HLSL) disagree — the publisher would write " +
                 "a bank the shader reads at a different length. Change both together.");
-            Assert.AreEqual(BlackHolePhysics.NativeWells.Capacity, hlslSlots,
-                "BlackHolePhysics.NativeWells.Capacity and PRISM_GRAVITY_WARP_SLOTS disagree — a hole the field pulls " +
-                "toward must be one the warp can bend around. Change all three together.");
+            Assert.LessOrEqual(hlslSlots, BlackHolePhysics.NativeWells.Capacity,
+                "the warp bank is wider than the well list — its tail could never be filled.");
 
             string meta = File.ReadAllText(HlslPath + ".meta");
             var guid = Regex.Match(meta, @"guid:\s*([0-9a-f]{32})");
@@ -196,8 +195,14 @@ namespace CosmicShore.Tests
                 "BlackHoleConfig.MaxTidalStretch is 1 or less — the ceiling would forbid any stretch at all.");
             Assert.GreaterOrEqual(config.TidalResponseSeconds, 0f);
             Assert.That(config.Spin, Is.InRange(0f, 0.998f), "a* outside [0, 0.998] is not a black hole.");
-            Assert.LessOrEqual(config.MaxBlackHoles, BlackHoleWarp.Slots,
-                "BlackHoleConfig.MaxBlackHoles exceeds the warp bank — a hole past the bank pulls mass the shader cannot bend around.");
+            Assert.AreEqual(BlackHolePhysics.NativeWells.Capacity, BlackHoleConfigSO.HoleBudgetCeiling,
+                "the config's budget ceiling and the field's well list disagree — change both together.");
+            Assert.LessOrEqual(config.MaxBlackHoles, BlackHolePhysics.NativeWells.Capacity,
+                "BlackHoleConfig.MaxBlackHoles exceeds the field's well list — a hole past it would pull nothing.");
+            // Every pilot of a full race (4 seats) holds a pair (2026-10-12: with two AIs holding pairs, the player's
+            // squeeze was refused at a budget of 4). A despawning hole leaves the registry at once, so only live pairs count.
+            Assert.GreaterOrEqual(config.MaxBlackHoles, 4 * 2,
+                "the hole budget cannot seat every pilot's pair — a squeeze is silently refused while the AIs hold theirs.");
 
             // The derived numbers are monotone in strength: a stronger hole is bigger in every sense.
             Assert.Greater(config.HorizonRadius(20f), config.HorizonRadius(10f));
@@ -210,6 +215,10 @@ namespace CosmicShore.Tests
             // InfluenceRadius(100000) alone is 300 000 u by design and says nothing about the cap.)
             Assert.LessOrEqual(config.InfluenceRadius(100000f, config.HorizonRadius(10f)), config.MaxInfluenceRadius,
                 "the influence radius is not capped — an operator's typo would query the whole arena every frame.");
+            // Only the horizon's own shell outranks the cap (BlackHoleConfigSO.InfluenceRadius, "never inside
+            // 1.5 horizons, even when that exceeds the cap"): a hole whose horizon is past the cap still pulls it.
+            Assert.AreEqual(1.5f * config.HorizonRadius(100000f), config.InfluenceRadius(100000f), 1f,
+                "past the cap, the influence radius must be exactly the 1.5-horizon shell, not the uncapped pull.");
         }
 
         [Test]
@@ -388,6 +397,63 @@ namespace CosmicShore.Tests
             string hlsl = File.ReadAllText("Assets/_Graphics/Materials/Graphs/BlackHoleLens.hlsl");
             Assert.IsFalse(shader.Contains("_BHDisk") || hlsl.Contains("BlackHoleDiskEmission"),
                 "the lens paints an accretion disc again — the hole is its shadow and the lensed scene only.");
+        }
+
+        /// <summary>
+        /// The waves (Docs/BLACK_HOLE.md §5.2) are the Vessel Studio's: the shader carries its wave loop, the view's own
+        /// stretch and a shell's wash; every 'life' row of the studio has a field. Tools/Shaders/verify_black_hole_lens.py
+        /// (1b, C2) and verify_prism_gravity_warp.py (16) prove the numbers against the page's own code.
+        /// </summary>
+        [Test]
+        public void Lens_DrawsTheStudiosWaves()
+        {
+            string shader = File.ReadAllText("Assets/_Graphics/Materials/Graphs/BlackHoleLens.shader");
+            string hlsl = File.ReadAllText("Assets/_Graphics/Materials/Graphs/BlackHoleLens.hlsl");
+            Assert.IsTrue(shader.Contains("BlackHoleLensWave(") && shader.Contains("BlackHoleLensViewStretch("),
+                "the lens no longer draws the waves (the gravitational wave, the light shells, the view stretching).");
+            Assert.IsTrue(hlsl.Contains("squeeze += 0.14 * gwGlow") && hlsl.Contains("float3(1.0, 0.96, 0.86) * shellWash"),
+                "the wave's crests, troughs or a shell's wash are gone.");
+            string warp = File.ReadAllText(HlslPath);
+            Assert.IsTrue(warp.Contains("PrismGravityWaveStrain(") && warp.Contains("_PrismGravityWaveParams"),
+                "the prisms no longer stretch and squeeze in the gravitational wave (gwPrism).");
+
+            var config = LoadConfig();
+            Assert.Greater(config.GwSpeed, 0f);
+            Assert.Greater(config.GwPeriod, 0f);
+            Assert.Greater(config.GwRingdown, 0f);
+            Assert.Greater(config.WhOutFade, 0f);
+        }
+
+        /// <summary>The strain is zero before the front reaches a point and after eight ringdowns, and silent along the axis.</summary>
+        [Test]
+        public void Waves_StrainHasAFrontARingdownAndASilentAxis()
+        {
+            var config = LoadConfig();
+            var wave = new BlackHoleWaves.Wave
+            {
+                Kind = BlackHoleWaves.Kind.Gravitational, Centre = Vector3.zero, Axis = Vector3.right, Mass = 1f, T0 = 0f,
+            };
+            float r = 200f, arrive = r / config.GwSpeed;
+            Assert.AreEqual(0f, BlackHoleWaves.Strain(new Vector3(0f, r, 0f), wave, arrive * 0.5f, config), "felt before the front arrived");
+            Assert.AreEqual(0f, BlackHoleWaves.Strain(new Vector3(0f, r, 0f), wave, arrive + 9f * config.GwRingdown, config), "felt after the ringdown");
+            float quarter = arrive + 0.25f * config.GwPeriod;
+            Assert.AreNotEqual(0f, BlackHoleWaves.Strain(new Vector3(0f, r, 0f), wave, quarter, config), "silent across the axis");
+            Assert.AreEqual(0f, BlackHoleWaves.Strain(new Vector3(r, 0f, 0f), wave, quarter, config), 1e-5f, "loud along the meeting line");
+        }
+
+        /// <summary>
+        /// A full race seats every pilot's pair (2026-10-12): at a budget of 4, two AIs holding pairs left the player's squeeze
+        /// silently refused. The warp bank stays at 4 and draws the nearest holes.
+        /// </summary>
+        [Test]
+        public void Config_HoleBudgetSeatsEveryPilotsPair()
+        {
+            var config = LoadConfig();
+            Assert.GreaterOrEqual(config.MaxBlackHoles, 4 * 2, "four Stoats cannot all hold a pair.");
+            Assert.AreEqual(BlackHolePhysics.NativeWells.Capacity, BlackHoleConfigSO.HoleBudgetCeiling);
+            var wells = new BlackHolePhysics.NativeWells();
+            for (int i = 0; i < config.MaxBlackHoles; i++) wells.Add(default);
+            Assert.AreEqual(config.MaxBlackHoles, wells.Count, "the field's well list cannot hold the whole budget.");
         }
 
         /// <summary>

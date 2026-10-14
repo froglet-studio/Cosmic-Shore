@@ -65,6 +65,14 @@ Shader "CosmicShore/BlackHoleLens"
             float4 _BHLook;
             // x lens fade start, y white core brightness, z white core sky mix, w the camera's aspect
             float4 _BHLook2;
+            // The waves (BlackHoleWaves.ScreenWaves): light shells and the gravitational wave, the newest 4 first.
+            float4 _BHWaveC[4];
+            float4 _BHWaveP[4];
+            float4 _BHWaveQ[4];
+            float4 _BHWaveA[4];
+            float _BHWaveCount;
+            // x gwCam (the view's own stretch), y the wash of a shell passing the camera, z gwGlow
+            float4 _BHWave;
 
             // The scene as the camera drew it up to the lens — opaques, skybox and transparents — copied by
             // BlackHoleLensPass.cs (sampler_LinearClamp comes with URP's Core.hlsl).
@@ -91,16 +99,24 @@ Shader "CosmicShore/BlackHoleLens"
             {
                 float2 uv = GetNormalizedScreenSpaceUV(input.positionCS);
                 float aspect = _BHLook2.w;
-                float2 p = (uv - 0.5) * float2(aspect, 1.0);
+                float2 p0 = (uv - 0.5) * float2(aspect, 1.0);
+                float2 p = BlackHoleLensViewStretch(p0, _BHWave.x);
                 float sceneZ = LinearEyeDepth(SampleSceneDepth(uv), _ZBufferParams);
 
                 float2 disp = float2(0.0, 0.0);
+                float squeeze = 0.0;
                 float shadow = 0.0;
                 float core = 0.0;
                 float coreGlow = 0.0;
                 float3 glow = float3(0.0, 0.0, 0.0);
                 float3 shadowColour = float3(0.0, 0.0, 0.0);
                 float3 coreColour = BLACK_HOLE_LENS_CORE_COLOUR;
+                for (int k = 0; k < 4; k++)
+                {
+                    if (k >= (int)_BHWaveCount) break;
+                    if (_BHWaveC[k].w < 0.5) continue;
+                    BlackHoleLensWave(p, _BHWaveC[k], _BHWaveP[k], _BHWaveQ[k], _BHWaveA[k], _BHWave.z, disp, glow, squeeze);
+                }
                 for (int i = 0; i < BLACK_HOLE_LENS_MAX_WELLS; i++)
                 {
                     if (i >= (int)_BHWellCount) break;
@@ -110,11 +126,12 @@ Shader "CosmicShore/BlackHoleLens"
                     BlackHoleLensWell(p, c, _BHWellP[i], _BHWellM[i], _BHLook, _BHLook2, _BHWellT[i],
                                       disp, shadow, core, coreGlow, glow, shadowColour, coreColour);
                 }
-                if (BlackHoleLensUntouched(disp, shadow, core, glow)) discard;
+                if (BlackHoleLensUntouched(p - p0 + disp, shadow, core, glow, squeeze, _BHWave.y)) discard;
 
                 float2 suv = BlackHoleLensSampleUV(p, disp, aspect);
                 float3 col = SAMPLE_TEXTURE2D_LOD(_BlackHoleSceneColor, sampler_LinearClamp, suv, 0).rgb;
-                col = BlackHoleLensComposite(col, shadow, core, coreGlow, glow, _BHLook2.z, shadowColour, coreColour);
+                col = BlackHoleLensComposite(col, shadow, core, coreGlow, glow, _BHLook2.z, shadowColour, coreColour,
+                                             squeeze, _BHWave.y);
                 return half4(col, 1.0);
             }
             ENDHLSL

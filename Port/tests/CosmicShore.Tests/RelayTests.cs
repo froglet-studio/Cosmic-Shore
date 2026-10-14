@@ -219,7 +219,8 @@ namespace CosmicShore.Tests
             var api = new RelayAllocationClient(server.BaseUrl);
             var hostAlloc = await api.AllocateAsync(3);
             await api.CreateJoinCodeAsync(hostAlloc);
-            var factory = new RelayTransportFactory(new UdpTransportFactory());
+            // Qualified: NetTransportContractTests declares a test-local RelayTransportFactory (the online server's relay) in this namespace.
+            var factory = new CosmicShore.Engine.Networking.RelayTransportFactory(new UdpTransportFactory());
             RelaySessions.HostWith(hostAlloc);
             using var host = factory.Listen("0.0.0.0", 7777);
             RelaySessions.JoinWith(await api.JoinAsync(hostAlloc.JoinCode));

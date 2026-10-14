@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """game_catalog.py - GENERATE Docs/Studios/VesselStudio/studio-game.js: the game's vessels and mini-games, read from the
-project, for the hub's "+ New studio" panel (/vessel-studio D34). The panel never types a vessel or a mode name: it
+project, for the hub's "+ New studio" panel (/vessel-studio D36). The panel never types a vessel or a mode name: it
 offers what the game has, so a request names real assets.
 
   vessels  VesselClassType (Assets/_Scripts/Data/Enums/VesselClassType.cs), minus Any / Random; per hull: its enum

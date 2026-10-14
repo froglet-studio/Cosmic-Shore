@@ -65,6 +65,9 @@ namespace unity {
 static float4 _BHWellC[BLACK_HOLE_LENS_MAX_WELLS], _BHWellP[BLACK_HOLE_LENS_MAX_WELLS], _BHWellM[BLACK_HOLE_LENS_MAX_WELLS], _BHWellT[BLACK_HOLE_LENS_MAX_WELLS];
 static float _BHWellCount;
 static float4 _BHLook, _BHLook2;
+static float4 _BHWaveC[4], _BHWaveP[4], _BHWaveQ[4], _BHWaveA[4];
+static float _BHWaveCount;
+static float4 _BHWave;
 static float2 g_uv;
 static float g_sceneZ;
 #include "frag.h"
@@ -85,7 +88,7 @@ int main(int argc, char** argv)
     FILE* out = std::fopen(argv[a], "wb");
     {
         using namespace studio;
-        camNear = 0.5f; camFar = 9000.0f; aspect = L[7]; soft = 0.65f; gwCam = 0; shellWash = 0; gwGlow = 1;
+        camNear = 0.5f; camFar = 9000.0f; aspect = L[7]; soft = 0.65f; gwCam = 0; shellWash = 0; gwGlow = 1;   // no waves in this still
         kShadow = L[0]; kCore = L[1]; ringGlow = L[2]; ringWidth = L[3]; lensFade = L[4]; coreBright = L[5]; coreMix = L[6];
         for (int i = 0; i < n && i < 4; i++) { wC[i] = C[i]; wP[i] = P[i]; wM[i] = M[i]; }
     }

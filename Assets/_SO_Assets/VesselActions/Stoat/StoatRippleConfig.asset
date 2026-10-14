@@ -1,0 +1,49 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6978f1c58d924a5a958ebf74c45bb1ac, type: 3}
+  m_Name: StoatRippleConfig
+  m_EditorClassIdentifier: 
+  radiusPerSeparation: 0.6
+  minRadius: 30
+  maxRadius: 160
+  reach:
+    Enabled: 1
+    Value: 1
+    Min: 1
+    Max: 2
+    element: 1
+    UseFloor: 1
+    Floor: 1
+  expandSeconds: 0.9
+  fadeSeconds: 0.5
+  bandWidth: 0.08
+  bend: 0.008
+  chromaticSplit: 0.03
+  rimGlow: 0.15
+  petalsPerElement: 1
+  shedSpeed: 8
+  siphonOnChargeUpgrade: 1
+  killsFauna: 1
+  rippleEvent:
+    Guid:
+      Data1: 0
+      Data2: 0
+      Data3: 0
+      Data4: 0
+    Path: 
+  stripEvent:
+    Guid:
+      Data1: 0
+      Data2: 0
+      Data3: 0
+      Data4: 0
+    Path: 

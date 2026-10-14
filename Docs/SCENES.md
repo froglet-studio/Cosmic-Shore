@@ -27,6 +27,11 @@ with its scene, controller, card and mode preview; ID 28 stays reserved. Do not 
 `ArcadeGameOnlineDuelForTheCell.asset`) followed the same day: Brood Rush replaced it. Its controller
 stays, because the CoOp Wildlife Blitz scene runs on `OnlineDuelForTheCellController`. ID 29 stays reserved.
 
+**2026-10-13:** the 2v2 CoOp vs AI (30) and CoOp Wildlife Blitz (32) scenes were dropped from the build
+list, and their cards plus the 21 legacy cards that named no existing scene were moved to
+`_SO_Assets/Games/_Archive/` (guids kept, so the class and training assets that point at them still
+resolve). IDs 30 and 32 stay in the enum and no menu reaches them; `TrainingAutoLauncher` still names both, so an AI-training run pointed at either now fails to load its scene (follow-up).
+
 ---
 
 ## Scene Inventory
@@ -54,7 +59,7 @@ stays, because the CoOp Wildlife Blitz scene runs on `OnlineDuelForTheCellContro
 | **MinigameSkimRace** | `_Scenes/Multiplayer Scenes/` | `SkimRace (33)` | `SkimRaceController` |
 | **MinigameScurryMultiplayer_Gameplay** | `_Scenes/Multiplayer Scenes/` | `Scurry (35)` | `ScurryController` |
 | **MinigameJoust_Gameplay** | `_Scenes/Multiplayer Scenes/` | `Joust (34)` | `JoustController` |
-| ~~MinigameWildlifeBlitzMultuplayerCoOp~~ | deleted 2026-10 (BH-5.5 unlisted it, BH-5.7 deleted scene + controller) | `CoOpWildlifeBlitz (32)` | *(controller deleted)* |
+| ~~MinigameWildlifeBlitzMultuplayerCoOp~~ | deleted 2026-10 (BH-5.5 unlisted it, BH-5.7 deleted scene + controller; bleeding-edge separately took it out of the build 2026-10-13, Garrett's call, DESIGN_CALLS 12.3) | `CoOpWildlifeBlitz (32)` | *(controller deleted; its card is archived in `_SO_Assets/Games/_Archive/`)* |
 | **MinigameAstroLeague** | `_Scenes/Multiplayer Scenes/` | `AstroLeague (37)` | `AstroLeagueController` |
 | **MinigameBroodRush** | `_Scenes/Multiplayer Scenes/` | `BroodRush (38)` | `BroodRushController` |
 | **MinigameRampage** | `_Scenes/Multiplayer Scenes/` | `Rampage (2)` | `RampageController` |
@@ -77,13 +82,15 @@ stays, because the CoOp Wildlife Blitz scene runs on `OnlineDuelForTheCellContro
 | **MinigameGrizzlyCharge** | `_Scenes/Singleplayer Scenes/` | `GrizzlyCharge (62)` | `DogFightController` |
 | **MinigameGrizzlyTime** | `_Scenes/Multiplayer Scenes/` | `GrizzlyTime (63)` | `GrizzlyTimeController` |
 | **MinigameSlingshot** | `_Scenes/Multiplayer Scenes/` | `Slingshot (64)` | `SlingshotController` |
+| **MinigameWarpline** | `_Scenes/Multiplayer Scenes/` | `Warpline (65)` | `WarplineController` |
+| **MinigameThresherTime** | `_Scenes/Multiplayer Scenes/` | `ThresherTime (66)` | `ThresherTimeController` |
 | **MinigameRegatta** | `_Scenes/Multiplayer Scenes/` | `Regatta (56)` | `RegattaController` |
 | **MinigameBroadside** | `_Scenes/Multiplayer Scenes/` | `Broadside (57)` | `BroadsideController` |
 | **MinigameWaystation** | `_Scenes/Multiplayer Scenes/` | `Waystation (58)` | `WaystationController` |
 | **MinigameDustup** | `_Scenes/Multiplayer Scenes/` | `Dustup (59)` | `DustupController` |
 | **MinigameTapestry** | `_Scenes/Multiplayer Scenes/` | `Tapestry (60)` | `TapestryController` |
 | **MinigameSirocco** | `_Scenes/Multiplayer Scenes/` | `Sirocco (61)` | `SiroccoController` |
-| **ArcadeGameMultiplayer2v2CoOpVsAI** | `_Scenes/Multiplayer Scenes/` | `Multiplayer2v2CoOpVsAI (30)` | Variant of domain games controller |
+| **ArcadeGameMultiplayer2v2CoOpVsAI** | `_Scenes/Multiplayer Scenes/` | `Multiplayer2v2CoOpVsAI (30)` | Variant of domain games controller. **Out of the build since 2026-10-13** (Garrett's call, DESIGN_CALLS 12.3): the scene stays on disk, its entry is gone from `EditorBuildSettings.asset` and its card is in `_SO_Assets/Games/_Archive/`. |
 | **MinigameMaelstromMultuplayer** | `_Scenes/Multiplayer Scenes/` | Maelstrom variant | Multi-round tournament format |
 
 ### Tool & Test Scenes
@@ -310,6 +317,8 @@ MiniGameControllerBase (abstract, NetworkBehaviour)
 | 62 | `GrizzlyCharge` | MP | MinigameGrizzlyCharge | `DogFightController` (Grizzly proving ground — a Dog Fight clone in the Boneyard) |
 | 63 | `GrizzlyTime` | MP | MinigameGrizzlyTime | `GrizzlyTimeController` (Grizzly bomb-jump circuit race — see `GRIZZLYTIME.md`) |
 | 64 | `Slingshot` | MP | MinigameSlingshot | `SlingshotController` (Stoat wormhole-sling circuit race — see `SLINGSHOT.md`) |
+| 65 | `Warpline` | MP | MinigameWarpline | `WarplineController` (the Stoat's time race on the field dipole — see `WARPLINE.md`) |
+| 66 | `ThresherTime` | MP | MinigameThresherTime | `ThresherTimeController` (Thresher sling circuit race — see `THRESHERTIME.md`) |
 | 56 | `Regatta` | MP | MinigameRegatta | `RegattaController` (the ARENA race — every playable hull on a rail circuit; see `REGATTA.md`) |
 | 57 | `Broadside` | MP | MinigameBroadside | `BroadsideController` (the ARENA brawl — seven hulls, each with its own weapon, priced per VERB; see `BROADSIDE.md`) |
 | 58 | `Waystation` | MP | MinigameWaystation | `WaystationController` (Butterfly migration race — clusters you weave, folds between them; a teleport threads nothing. See `WAYSTATION.md`) |
@@ -563,7 +572,7 @@ Turn monitors determine when a turn ends. They are scene-placed components manag
 | `WildlifeKillTurnMonitor` | `TurnMonitors/` | A domain's summed creature kills reach the Wildlife Liberation target |
 | `DogFightPointTurnMonitor` | `TurnMonitors/` | A domain's summed gunnery points reach the Dog Fight target |
 | `SalvoPrismTurnMonitor` | `TurnMonitors/` | A domain's summed hostile-prism destruction reaches the Salvo target |
-| `RaceGateTurnMonitor` | `Arcade/Racing/` | A domain's LEAD RUNNER threads every gate of the course (Switchback, Headlong, Breakwater, Skein, Redline, Grizzly Time, Slingshot, Regatta, Waystation). Was `SwitchbackGateTurnMonitor` |
+| `RaceGateTurnMonitor` | `Arcade/Racing/` | A domain's LEAD RUNNER threads every gate of the course (Switchback, Headlong, Breakwater, Skein, Redline, Grizzly Time, Slingshot, Warpline, Thresher Time, Regatta, Waystation). Was `SwitchbackGateTurnMonitor` |
 | `HijackStealTurnMonitor` | `TurnMonitors/` | A domain's summed prisms STOLEN reach the Hijack target |
 | `TollwayTollTurnMonitor` | `TurnMonitors/` | A domain's summed TOLLS reach the Tollway target |
 | `WreckingBallPrismTurnMonitor` | `TurnMonitors/` | A domain's summed hostile prisms destroyed (ball + plate) reach the Wrecking Ball target |

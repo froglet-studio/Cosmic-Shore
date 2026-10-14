@@ -49,7 +49,7 @@ namespace CosmicShore.Engine.Networking
             if (idBytes.Length == RelayProtocol.AllocationIdLength) r.AllocationIdBytes = idBytes;
             else if (Guid.TryParse(r.AllocationId, out var g)) r.AllocationIdBytes = g.ToByteArray(bigEndian: true); // RFC 4122 order
             else throw new FormatException("the allocation has no usable id");
-            // A plain UDP endpoint: Prisma's transport does its own reliability; DTLS and WebSocket are not used.
+            // A plain UDP endpoint: Amoebius's transport does its own reliability; DTLS and WebSocket are not used.
             var udp = (a["serverEndpoints"] as JsonArray)?.FirstOrDefault(e => (string)e?["connectionType"] == "udp");
             if (udp != null) { r.ServerHost = (string)udp["host"] ?? ""; r.ServerPort = (int?)udp["port"] ?? 0; }
             else { r.ServerHost = (string)a["relayServer"]?["ipV4"] ?? ""; r.ServerPort = (int?)a["relayServer"]?["port"] ?? 0; }

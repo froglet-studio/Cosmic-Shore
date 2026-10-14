@@ -49,6 +49,12 @@ namespace CosmicShore.Gameplay
         static readonly int WellCountId = Shader.PropertyToID("_BHWellCount");
         static readonly int LookId = Shader.PropertyToID("_BHLook");
         static readonly int Look2Id = Shader.PropertyToID("_BHLook2");
+        static readonly int WaveCId = Shader.PropertyToID("_BHWaveC");
+        static readonly int WavePId = Shader.PropertyToID("_BHWaveP");
+        static readonly int WaveQId = Shader.PropertyToID("_BHWaveQ");
+        static readonly int WaveAId = Shader.PropertyToID("_BHWaveA");
+        static readonly int WaveCountId = Shader.PropertyToID("_BHWaveCount");
+        static readonly int WaveId = Shader.PropertyToID("_BHWave");
 
         class CopyData
         {
@@ -65,6 +71,12 @@ namespace CosmicShore.Gameplay
             public readonly Vector4[] t = new Vector4[BlackHoleLens.MaxWells];
             public int count;
             public Vector4 look, look2;
+            public readonly Vector4[] wc = new Vector4[BlackHoleWaves.MaxDrawn];
+            public readonly Vector4[] wp = new Vector4[BlackHoleWaves.MaxDrawn];
+            public readonly Vector4[] wq = new Vector4[BlackHoleWaves.MaxDrawn];
+            public readonly Vector4[] wa = new Vector4[BlackHoleWaves.MaxDrawn];
+            public int waveCount;
+            public Vector4 wave;
         }
 
         // This camera's holes, filled before the graph is built (a camera that sees none skips the pass).
@@ -72,6 +84,11 @@ namespace CosmicShore.Gameplay
         static readonly Vector4[] s_p = new Vector4[BlackHoleLens.MaxWells];
         static readonly Vector4[] s_m = new Vector4[BlackHoleLens.MaxWells];
         static readonly Vector4[] s_t = new Vector4[BlackHoleLens.MaxWells];
+        static readonly Vector4[] s_wc = new Vector4[BlackHoleWaves.MaxDrawn];
+        static readonly Vector4[] s_wp = new Vector4[BlackHoleWaves.MaxDrawn];
+        static readonly Vector4[] s_wq = new Vector4[BlackHoleWaves.MaxDrawn];
+        static readonly Vector4[] s_wa = new Vector4[BlackHoleWaves.MaxDrawn];
+        static bool s_waves;
 
         BlackHoleLensPass()
         {
@@ -84,9 +101,13 @@ namespace CosmicShore.Gameplay
         internal static void Acquire() => s_users++;
         internal static void Release() => s_users = Mathf.Max(0, s_users - 1);
 
+        /// <summary>A wave is alive (BlackHoleWaves): the pass runs even when every hole is gone — a wave outlives its pair.</summary>
+        internal static void AcquireWaves() => s_waves = true;
+        internal static void ReleaseWaves() => s_waves = false;
+
         static void OnBeginCameraRendering(ScriptableRenderContext context, Camera cam)
         {
-            if (s_users == 0 || cam == null) return;
+            if ((s_users == 0 && !s_waves) || cam == null) return;
             ScriptableRenderer renderer = null;
             if (cam.cameraType == CameraType.Game)
             {
@@ -116,7 +137,9 @@ namespace CosmicShore.Gameplay
             if (material == null) return;
             var config = BlackHoleRegistry.Config;
             int count = BlackHoleLens.ScreenWells(cam, config, s_c, s_p, s_m, s_t);
-            if (count == 0) return;
+            int waveCount = BlackHoleWaves.ScreenWaves(cam.worldToCameraMatrix, cam.transform.position, cam.fieldOfView,
+                cam.nearClipPlane, BlackHoleWaves.Now, config, s_wc, s_wp, s_wq, s_wa, out float gwCam, out float shellWash);
+            if (count == 0 && waveCount == 0 && gwCam == 0f && shellWash == 0f) return;
             TextureHandle colour = resources.activeColorTexture;
 
             // 1. The scene as drawn so far — opaques, skybox AND transparents — resolved, single-sample.
@@ -151,6 +174,12 @@ namespace CosmicShore.Gameplay
                 System.Array.Copy(s_t, data.t, BlackHoleLens.MaxWells);
                 data.look = BlackHoleLens.Look(config);
                 data.look2 = BlackHoleLens.Look2(config, cam.aspect);
+                data.waveCount = waveCount;
+                System.Array.Copy(s_wc, data.wc, BlackHoleWaves.MaxDrawn);
+                System.Array.Copy(s_wp, data.wp, BlackHoleWaves.MaxDrawn);
+                System.Array.Copy(s_wq, data.wq, BlackHoleWaves.MaxDrawn);
+                System.Array.Copy(s_wa, data.wa, BlackHoleWaves.MaxDrawn);
+                data.wave = new Vector4(gwCam, shellWash, config.GwGlow, 0f);
                 builder.UseTexture(copy, AccessFlags.Read);
                 if (resources.cameraDepthTexture.IsValid())
                     builder.UseTexture(resources.cameraDepthTexture, AccessFlags.Read);
@@ -167,6 +196,12 @@ namespace CosmicShore.Gameplay
                     d.block.SetFloat(WellCountId, d.count);
                     d.block.SetVector(LookId, d.look);
                     d.block.SetVector(Look2Id, d.look2);
+                    d.block.SetVectorArray(WaveCId, d.wc);
+                    d.block.SetVectorArray(WavePId, d.wp);
+                    d.block.SetVectorArray(WaveQId, d.wq);
+                    d.block.SetVectorArray(WaveAId, d.wa);
+                    d.block.SetFloat(WaveCountId, d.waveCount);
+                    d.block.SetVector(WaveId, d.wave);
                     ctx.cmd.DrawProcedural(Matrix4x4.identity, d.material, 0, MeshTopology.Triangles, 3, 1, d.block);
                 });
             }
@@ -177,6 +212,7 @@ namespace CosmicShore.Gameplay
         static void ResetOnLoad()
         {
             s_users = 0;
+            s_waves = false;
             RenderPipelineManager.beginCameraRendering -= OnBeginCameraRendering;
             RenderPipelineManager.beginCameraRendering += OnBeginCameraRendering;
         }

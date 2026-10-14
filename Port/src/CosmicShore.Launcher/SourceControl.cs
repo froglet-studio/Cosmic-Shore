@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 namespace CosmicShore.Launcher
 {
     /// <summary>
-    /// Git for Prisma's workspace, behind the GIT page. The agent's edits (and any made by hand)
+    /// Git for Amoebius's workspace, behind the GIT page. The agent's edits (and any made by hand)
     /// land in the workspace, which is not the user's own clone; this is how they get from there
     /// to GitHub: see every change and its diff, commit it to a branch of its own, push it, open a
     /// pull request, or throw it away. Nothing here runs on its own: every write is a button.

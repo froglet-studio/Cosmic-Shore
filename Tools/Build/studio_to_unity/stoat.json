@@ -39,6 +39,19 @@
     {"key": "bhShadow", "asset": "Assets/Resources/BlackHoleConfig.asset", "field": "shadowSize"},
     {"key": "bhLensStrength", "asset": "Assets/Resources/BlackHoleConfig.asset", "field": "lensStrength"},
     {"key": "whCoreSize", "asset": "Assets/Resources/BlackHoleConfig.asset", "field": "whiteCoreSize"},
-    {"key": "whLensStrength", "asset": "Assets/Resources/BlackHoleConfig.asset", "field": "whiteLensStrength"}
+    {"key": "whLensStrength", "asset": "Assets/Resources/BlackHoleConfig.asset", "field": "whiteLensStrength"},
+    {"key": "whInFrom", "asset": "Assets/Resources/BlackHoleConfig.asset", "field": "whInFrom"},
+    {"key": "whOutSpeed", "asset": "Assets/Resources/BlackHoleConfig.asset", "field": "whOutSpeed"},
+    {"key": "whOutFade", "asset": "Assets/Resources/BlackHoleConfig.asset", "field": "whOutFade"},
+    {"key": "shellBend", "asset": "Assets/Resources/BlackHoleConfig.asset", "field": "shellBend"},
+    {"key": "gwAmp", "asset": "Assets/Resources/BlackHoleConfig.asset", "field": "gwAmp"},
+    {"key": "gwSpeed", "asset": "Assets/Resources/BlackHoleConfig.asset", "field": "gwSpeed"},
+    {"key": "gwPeriod", "asset": "Assets/Resources/BlackHoleConfig.asset", "field": "gwPeriod"},
+    {"key": "gwRingdown", "asset": "Assets/Resources/BlackHoleConfig.asset", "field": "gwRingdown"},
+    {"key": "gwPrism", "asset": "Assets/Resources/BlackHoleConfig.asset", "field": "gwPrism"},
+    {"key": "gwShake", "asset": "Assets/Resources/BlackHoleConfig.asset", "field": "gwShake"},
+    {"key": "gwGlow", "asset": "Assets/Resources/BlackHoleConfig.asset", "field": "gwGlow"},
+    {"key": "dieS", "asset": "Assets/_SO_Assets/VesselActions/Stoat/StoatDipoleConfig.asset", "field": "dieSeconds"},
+    {"key": "whSizeX", "asset": "Assets/_SO_Assets/VesselActions/Stoat/StoatDipoleConfig.asset", "field": "sourceSizeX"}
   ]
 }

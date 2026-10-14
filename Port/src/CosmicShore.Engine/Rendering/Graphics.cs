@@ -47,14 +47,19 @@ namespace CosmicShore.Engine
     /// </summary>
     public static class Graphics
     {
-        /// <summary>Runs a command buffer (UnityEngine.Graphics.ExecuteCommandBuffer). The port's CommandBuffer records nothing, so this does nothing (Rendering/RenderGraph.cs).</summary>
-        public static void ExecuteCommandBuffer(Rendering.CommandBuffer buffer) { }
-
         /// <summary>
         /// Installed by the GL renderer: performs a GPU copy (optionally through a material).
         /// Headless it bumps the destination's version so a reader sees fresh contents.
         /// </summary>
         public static Action<Texture, RenderTexture, Material, int> BlitHook;
+
+        /// <summary>
+        /// The render backend's replay of a <see cref="Rendering.CommandBuffer"/>'s recorded commands.
+        /// None is installed yet, so an executed buffer draws nothing (docs/ROADMAP.md lists the gap).
+        /// </summary>
+        public static Action<Rendering.CommandBuffer> ExecuteCommandBufferHook;
+
+        public static void ExecuteCommandBuffer(Rendering.CommandBuffer buffer) => ExecuteCommandBufferHook?.Invoke(buffer);
 
         /// <summary>
         /// The render backend's GPU copy for <see cref="CopyTexture(Texture, int, int, Texture, int, int)"/>;
@@ -134,7 +139,7 @@ namespace CosmicShore.Engine
 
         /// <summary>
         /// Procedural instancing: the shader builds each instance from GPU buffers (SV_InstanceID).
-        /// Prisma's renderer has no vertex-stage storage buffers
+        /// Amoebius's renderer has no vertex-stage storage buffers
         /// (<see cref="SystemInfo.maxComputeBufferInputsVertex"/> is 0), so nothing is drawn and the
         /// first call says so. Code that checks the capability first never gets here.
         /// </summary>

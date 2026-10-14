@@ -103,7 +103,7 @@ namespace CosmicShore.Launcher
         {
             var fg = ImGui.GetForegroundDrawList();
             if (_updater.Installing || _updater.Done) { DrawInstall(size, dt); return; }
-            // An open Prisma keeps checking now and then, so UPDATE shows up without a restart.
+            // An open Amoebius keeps checking now and then, so UPDATE shows up without a restart.
             if (!_args.Offline && !_updater.Checking && _updater.CheckedAt != default && (DateTime.Now - _updater.CheckedAt).TotalMinutes > 30) _ = _updater.Check();
 
             // the rail badge: pulses while a newer launcher waits on the branch

@@ -38,22 +38,70 @@ namespace CosmicShore.Player
             Console.WriteLine($"[player] verbose log channels: {field.GetValue(null)}");
         }
 
-        /// <summary>This install's anonymous player id: minted once and kept, like the real service's device identity.</summary>
+        static readonly object s_idLock = new();
+        static string s_playerId;
+
+        /// <summary>
+        /// This install's anonymous player id: minted once and kept, like the real service's device
+        /// identity. Read by the game's sign-in and by the online service's connector thread, so the
+        /// first read mints it under a lock and every later one returns the same id.
+        /// </summary>
         static string AnonymousPlayerId()
         {
-            var file = System.IO.Path.Combine(Application.persistentDataPath, "ugs-player-id");
-            try
+            lock (s_idLock)
             {
-                if (System.IO.File.Exists(file))
+                if (s_playerId != null) return s_playerId;
+                var file = System.IO.Path.Combine(Application.persistentDataPath, "ugs-player-id");
+                try
                 {
-                    var existing = System.IO.File.ReadAllText(file).Trim();
-                    if (existing.Length > 0) return existing;
+                    if (System.IO.File.Exists(file))
+                    {
+                        var existing = System.IO.File.ReadAllText(file).Trim();
+                        if (existing.Length > 0) return s_playerId = existing;
+                    }
+                    var id = Guid.NewGuid().ToString("N").Substring(0, 24);
+                    System.IO.File.WriteAllText(file, id);
+                    return s_playerId = id;
                 }
-                var id = Guid.NewGuid().ToString("N").Substring(0, 24);
-                System.IO.File.WriteAllText(file, id);
-                return id;
+                catch (Exception) { return "local-player"; }
             }
-            catch (Exception) { return "local-player"; }
+        }
+
+        /// <summary>The online service when networking is on and sessions go through a server (not the shared folder).</summary>
+        public CosmicShore.Engine.Networking.OnlineMultiplayerService Online { get; private set; }
+
+        /// <summary>
+        /// Picks the lobby + relay backend. COSMIC_SHORE_NET_SERVER (the launcher's SETTINGS > ONLINE),
+        /// else the branch's shared server (Port/ProjectSettings/AmoebiusProject.json, Network.Server):
+        /// "host[:port]" uses that online server (internet play); "dir" keeps every session in a folder
+        /// on this machine (COSMIC_SHORE_NET_DIR, the pre-network backend - a phone build sets the
+        /// folder, so it stays on it unless the branch names a server); empty or "auto" finds an
+        /// Amoebius server on the LAN, or hosts one in this game.
+        /// </summary>
+        void InstallSessions()
+        {
+            var options = CosmicShore.Engine.Networking.OnlineClientOptions.FromEnvironment();
+            options.PlayerId = AnonymousPlayerId;
+            if (string.IsNullOrWhiteSpace(options.Server) && AssetDatabase.FindProjectRoot() is { } root)
+            {
+                var network = Amoebius.AmoebiusProjectSettings.Load(root).Network;
+                options.Server = network.Server;
+                if (string.IsNullOrEmpty(options.Key)) options.Key = network.Key;
+            }
+            var server = options.Server?.Trim();
+            bool folder = string.Equals(server, "dir", StringComparison.OrdinalIgnoreCase)
+                || (string.IsNullOrEmpty(server) && !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("COSMIC_SHORE_NET_DIR")));
+            if (folder)
+            {
+                var dir = CosmicShore.Engine.Networking.DirectoryMultiplayerService.DefaultDirectory;
+                CosmicShore.Engine.Networking.MultiplayerService.Instance = new CosmicShore.Engine.Networking.DirectoryMultiplayerService(dir);
+                Console.WriteLine($"[online] sessions in the folder {dir} (this machine only)");
+                return;
+            }
+            Online = CosmicShore.Engine.Networking.OnlineMultiplayerService.Install(options);
+            Console.WriteLine(options.Automatic
+                ? "[online] looking for an Amoebius server on the network (this game hosts one if there is none)"
+                : $"[online] online server {options.Server}");
         }
 
         public void Start(string firstScene)
@@ -67,25 +115,8 @@ namespace CosmicShore.Player
             // A real transport between players (TCP; COSMIC_SHORE_NET=off keeps one process).
             CosmicShore.Engine.Networking.NetDriver.Enabled = Environment.GetEnvironmentVariable("COSMIC_SHORE_NET") != "off";
             CosmicShore.Engine.Services.AuthenticationService.AnonymousIdProvider = AnonymousPlayerId;
-            // Sessions (lobby + relay) through a directory every local/LAN player shares.
-            // The transport every player of a session shares: COSMIC_SHORE_NET_TRANSPORT=udp (default) | tcp.
-            // Every transport then runs behind the network simulator (off unless COSMIC_SHORE_NET_SIM or `do netsim`).
-            if (CosmicShore.Engine.Networking.NetDriver.Enabled)
-            {
-                var transport = CosmicShore.Engine.Networking.NetTransports.Select(Environment.GetEnvironmentVariable("COSMIC_SHORE_NET_TRANSPORT"));
-                Console.WriteLine($"[net] transport: {transport}");
-                // Sessions through a relay (docs/MULTIPLAYER.md §6.7-6.8): COSMIC_SHORE_RELAY=<allocations URL> (Froglet's
-                // relay server, `--relay-server`) or ugs (UGS Relay, signed in as this profile); unset keeps direct connections.
-                if (UgsSetup.InstallRelay(root) is { } relayLine) Console.WriteLine(relayLine);
-                CosmicShore.Engine.Networking.NetSimulator.Install();
-            }
-            if (CosmicShore.Engine.Networking.NetDriver.Enabled)
-            {
-                CosmicShore.Engine.Networking.MultiplayerService.Instance =
-                    new CosmicShore.Engine.Networking.DirectoryMultiplayerService(CosmicShore.Engine.Networking.DirectoryMultiplayerService.DefaultDirectory);
-                // Session-service faults (off unless COSMIC_SHORE_NET_FAULT or `do netfault`): docs/MULTIPLAYER.md §6.3.
-                CosmicShore.Engine.Networking.NetFaults.Install();
-            }
+            // Sessions (lobby + relay): an online server for players on any machine (InstallSessions).
+            if (CosmicShore.Engine.Networking.NetDriver.Enabled) InstallSessions();
             // The game's own verbose log channels (CSDebug.VerboseChannels - the Froglet Toolbox
             // Logging tab in the editor): COSMIC_SHORE_LOG_CHANNELS=Party,Boot. Only a Debug
             // (development) build compiles LogVerbose in.
@@ -140,6 +171,9 @@ namespace CosmicShore.Player
 
         public void Dispose()
         {
+            // Leaves the online server (and stops the one this game hosted, if any).
+            Online?.Dispose();
+            Online = null;
             Loop?.Dispose();
             PlayerAudio.Stop(_audio);
             _audio = null;

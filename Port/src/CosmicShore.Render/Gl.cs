@@ -284,10 +284,10 @@ namespace CosmicShore.Render
         }
     }
 
-    /// <summary>Color-space helpers matching Unity's (exact sRGB transfer function).</summary>
+    /// <summary>Color-space helpers matching Unity's (the sRGB curve, a 2.2 power above 1: <see cref="Mathf.GammaToLinearSpace"/>).</summary>
     public static class ColorSpace
     {
-        public static float ToLinear(float c) => c <= 0.04045f ? c / 12.92f : MathF.Pow((c + 0.055f) / 1.055f, 2.4f);
+        public static float ToLinear(float c) => Mathf.GammaToLinearSpace(c);
         public static System.Numerics.Vector4 Linear(Color c) => new(ToLinear(c.r), ToLinear(c.g), ToLinear(c.b), c.a);
     }
 }

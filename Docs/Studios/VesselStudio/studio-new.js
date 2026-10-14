@@ -1,4 +1,4 @@
-/* studio-new.js - the hub's "+ New studio" panel (/vessel-studio D34; the user, 2026-10-14: "a plus button beside the
+/* studio-new.js - the hub's "+ New studio" panel (/vessel-studio D36; the user, 2026-10-14: "a plus button beside the
  * studios: choose a vessel to create or modify, a mini-game to use or create, name the new ones, say what I want by
  * voice, and it goes straight to Claude Code on a new branch").
  *
@@ -57,6 +57,8 @@
     return caps[name];
   }
   function inClaude() { return !!(window.claude && typeof window.claude.use === 'function'); }
+  // Amoebius serves the build with its own backend (D34): there "Claude Code" is an AGENT chat in Amoebius, on this computer
+  function inAmoebius() { return !!(window.VesselStudioTheme && VesselStudioTheme.host && VesselStudioTheme.host().shell === 'amoebius'); }
 
   function opt(sel, value, text, group) {
     var o = document.createElement('option'); o.value = value; o.textContent = text; (group || sel).appendChild(o); return o;
@@ -345,11 +347,16 @@
         if (!env) throw { message: 'no Claude Code environment was found for your account; open claude.ai/code once, or Copy prompt.' };
         return mcp.callTool(CCR, 'create_session', {
           environment_id: env, source_url: REPO_URL, source_revision: BASE,
-          title: 'New studio: ' + summary(s), prompt: prompt(s, reqRef && reqRef.id), tags: ['vessel-studio']
+          title: 'New studio: ' + summary(s), prompt: prompt(s, inAmoebius() ? null : reqRef && reqRef.id), tags: ['vessel-studio']
         });
       }).then(function (res) {
         var sid = (res.payload && (res.payload.session_id || res.payload.id)) || (JSON.stringify(res.payload || res.content || '').match(/session_[A-Za-z0-9]+/) || [])[0];
         if (reqRef && sid) reqRef.update({ session: sid }).catch(function () {});
+        if (/^amoebius/.test(sid || '')) {   // Amoebius opened an AGENT chat with the request
+          setState('Sent to Amoebius: an AGENT chat is building it now, on this computer (Amoebius\'s AGENT page).', 'ok');
+          try { localStorage.removeItem(DRAFT); } catch (e) { /* storage blocked */ }
+          return;
+        }
         var link = document.createElement('a'); link.target = '_blank'; link.rel = 'noopener';
         link.href = sid ? 'https://claude.ai/code/' + sid : 'https://claude.ai/code'; link.textContent = sid ? 'open the session' : 'claude.ai/code';
         setState('Sent. Claude Code is building it on a new branch (it takes a minute to start): ', 'ok');
@@ -415,7 +422,7 @@
     prompt: function () { if (!el) build(); return prompt(state()); },
     problems: function () { if (!el) build(); return problems(state()); }
   };
-  if (/^#new-studio\b/.test(location.hash)) {
+  if (/(^|[#&])new-studio\b/.test(location.hash)) {   // #new-studio, or #amoebius&new-studio from Unity's + card
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', function () { open(); });
     else open();
   }

@@ -95,9 +95,14 @@ namespace CosmicShore.Gameplay
             NetworkVariableReadPermission.Everyone,
             NetworkVariableWritePermission.Owner);
 
-        /// <summary>The source (white hole) of <see cref="NetStoatDipoleSink"/>'s pair, world position.</summary>
-        public NetworkVariable<Vector3> NetStoatDipoleSource = new(
-            Vector3.zero,
+        /// <summary>
+        /// The source (white hole) of <see cref="NetStoatDipoleSink"/>'s pair, world position in xyz, and in w
+        /// the pair's SERIAL (1, 2, 3...): every trigger press lays a fresh pair, and a press can close one pair
+        /// and open the next inside one network tick, so a peer re-lays its copy when w changes rather than
+        /// sliding the old pair to the new place.
+        /// </summary>
+        public NetworkVariable<Vector4> NetStoatDipoleSource = new(
+            Vector4.zero,
             NetworkVariableReadPermission.Everyone,
             NetworkVariableWritePermission.Owner);
 

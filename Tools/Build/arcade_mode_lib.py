@@ -75,6 +75,8 @@ MEMBRANE_RADIUS = 1200.0
 # An ARENA card lists several of these in its Vessels; an arcade card exactly one. Termite,
 # Falcon and Shrike are not here because they are not shipped playable kits. The Grizzly joined
 # with Grizzly Time (2026-10): its kit was restored on grizzly-v2 and its AIPilot enabled.
+# The Thresher joined with Thresher Time (2026-10-13): a prototype hull (Toy Box flyable) whose
+# AIPilot is enabled and races at cruise - THRESHERTIME.md §4.
 VESSELS = {
     "Manta":    "b0e6ec5495dbfb6419332830d585f364",
     "Dolphin":  "c0f30e9f09616874780edc0a375ce686",
@@ -87,6 +89,7 @@ VESSELS = {
     "Butterfly": "fe4abf38579d7f84baf16a532ed4a015",
     "Grizzly":  "312ea06c4539cdc46b027615a590c94b",
     "Stoat":    "cc163188820f4e7a985561bc609da2e0",
+    "Thresher": "8e4f2a9c1b3d4e6f7a8b9c0d1e2f3a4b",
 }
 
 # VesselClassType enum ids (Assets/_Scripts/Data/Enums/VesselClassType.cs) - a card's
@@ -94,7 +97,7 @@ VESSELS = {
 VESSEL_CLASS_ID = {
     "Manta": 1, "Dolphin": 2, "Rhino": 3, "Urchin": 4, "Grizzly": 5, "Squirrel": 6,
     "Serpent": 7, "Termite": 8, "Falcon": 9, "Shrike": 10, "Sparrow": 11, "Scarab": 12,
-    "Butterfly": 13, "Stoat": 14,
+    "Butterfly": 13, "Thresher": 14, "Stoat": 15,
 }
 
 # ── Arcade card art shared by the pure-aggression party games (Rampage, Dog Fight, Bends) ──

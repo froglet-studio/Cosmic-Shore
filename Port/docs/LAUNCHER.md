@@ -10,13 +10,13 @@ Source: `Port/src/CosmicShore.Launcher` (C#, Dear ImGui on our own Silk.NET wind
 ## Getting the .exe
 
 - **From Unity (the everyday way): FrogletTools > Amoebius > Launch Amoebius.** It builds
-  `Prisma.exe` from the checkout the editor has open into `Library/Prisma` and opens it. After a
+  `Amoebius.exe` from the checkout the editor has open into `Library/Amoebius` and opens it. After a
   pull it rebuilds by itself (it compares the launcher's source files with the last build); a first
   build takes a minute or two, later launches open at once. *Rebuild Amoebius* forces a build, *Show
   Amoebius Folder* reveals the .exe. With no .NET 10 SDK yet it opens the copy in
-  `Port/dist/Prisma-Windows.zip` instead; press START in Amoebius once (it installs its own SDK) and
-  later launches build from source. Source: `Assets/_Scripts/Editor/LaunchPrisma.cs`.
-- Without Unity: `Port/dist/Prisma-Windows.zip` (one file), or double-click `Port\build-launcher.bat`.
+  `Port/dist/Amoebius-Windows.zip` instead; press START in Amoebius once (it installs its own SDK) and
+  later launches build from source. Source: `Assets/_Scripts/Editor/LaunchAmoebius.cs`.
+- Without Unity: `Port/dist/Amoebius-Windows.zip` (one file), or double-click `Port\build-launcher.bat`.
 
 | Needed | Why | If missing |
 |---|---|---|
@@ -34,12 +34,10 @@ Source: `Port/src/CosmicShore.Launcher` (C#, Dear ImGui on our own Silk.NET wind
 | **AGENT** | The Amoebius Agent, powered by Claude: as many chats as you like, side by side (below). |
 | **GIT** | What the agent (or you) changed in the workspace, and getting it to GitHub (below). |
 | **EDITOR** | TOOLS (every FrogletTools tool, run by the agent), DATA (the data sets, editable) and MODELS (every model in the game's colours; VIEW IN ENGINE) (below). |
-| **VESSEL STUDIO** | The Vessel Studio inside Amoebius: pick a vessel (Squirrel, Stoat, or ALL STUDIOS for the hub), then one row of actions for it: **OPEN IN AMOEBIUS · OPEN IN BROWSER · PLAY IN ENGINE · AGENT · DOCS**. Quiet links below: the claude.ai artifact, the folder, update from the artifact. Below it, **ARTIFACTS**: every claude.ai artifact brought into the repo, and the way to add one. Catalogs: `Docs/Studios/VesselStudio/studios.json` and `Docs/Artifacts/artifacts.json` (below). |
-| **TIME** | Benchmarks (timed runs of scenes and replays that close themselves, with a results table against the last run) (below). |
-| **NET** | Multiplayer on this PC: 2-4 game windows that join each other, a simulated line per player, live traffic and RTT, a pulled cable, session faults (below; `docs/MULTIPLAYER.md`). |
+| **TIME** | Benchmarks (timed runs of scenes and replays that close themselves, with a results table against the last run) and local multiplayer (2-4 game windows that join each other) (below). |
 | **TRACKS** | Every play run: performance per scene, features used, audio, every problem over time (below). |
 | **BOARD** | Bugs and tasks, with Amoebius's suggestions (below). |
-| **SETTINGS** | Folded sections: Game, Source, Look, Claude, Advanced, Toolchain, About (versions). |
+| **SETTINGS** | Folded sections: Game, Online (below), Source, Look, Claude, Advanced, Toolchain, About (versions). |
 | **CONSOLE** | Every command the launcher ran and its output. COPY for a bug report. |
 
 ![PLAY](architecture/launcher_play.png)
@@ -57,82 +55,7 @@ bottom shows what is happening, a progress bar and CANCEL. The title bar shows t
 agent's state (green: ready on your Claude plan), the notification bell and **?** (the tour).
 The first start shows a one-minute tour of every page; **?** replays it.
 
-## VESSEL STUDIO - the Vessel Studio and every artifact
-
-The rail item was called STUDIOS until 2026-10-09; the page id is still `studios` (`--page studios`, which
-Unity's **FrogletTools ▸ Amoebius ▸ Vessel Studio Page** passes). `--page studios:artifacts` opens it scrolled to the
-artifact library (docs screenshots).
-
-![VESSEL STUDIO](architecture/launcher_vessel_studio.png)
-
-Pick a vessel and its studio opens: fly it on gamepad, keys or a phone's thumbs, switch its play-style types
-and element levels, and read what each number does. The pages are plain HTML in
-`Docs/Studios/VesselStudio/` (no build step), so the same files open here, in any desktop browser, and on a
-phone through the live mirror or the claude.ai artifact. Test steps: `Docs/Studios/PRISMA_TEST_STEPS.md`.
-
-**One picker, one action row** (2026-10-10, the user: no row of buttons per vessel). The page is a picker over
-`StudioCatalog.Targets()` (each vessel's studio, then ALL STUDIOS = the hub) and one card for the picked one, with
-the same five actions in the same order whatever is picked (`LauncherApp.StudioActions`). An action that does not
-apply stays visible, disabled, and its tooltip says why (the hub has no PLAY IN ENGINE). A vessel added to
-`studios.json` gets every action with no launcher change. The artifact library below uses the same picker, card
-(`PickedCard`) and action row (`ActionRow`). The pages are read from Amoebius's workspace when it has them, else
-from the checkout Unity opened Amoebius from (`StudioCatalog.PickRoot`), so nothing waits for the first START.
-
-The actions:
-
-- **OPEN IN AMOEBIUS**: the page as its own window, in the app mode of Edge (always on Windows 10/11) or Chrome.
-  - It has no tabs or address bar.
-  - It uses a window profile under Amoebius's data folder (`studio-window`), so the studio's layout and pop-out
-    windows are remembered.
-  - The page is opened with `#prisma`, so it reads "Running on Amoebius".
-  - With neither browser installed it falls back to the default browser.
-  - Code: `StudioCatalog.AppBrowserCandidates` / `AppWindowArgs`; `LauncherApp.OpenStudioWindow`.
-- **OPEN IN BROWSER**: the published page on the live mirror (`mirror` in the catalog, else `StudioCatalog.DefaultMirror`), in the default browser; the same link opens on a phone.
-- **PLAY IN ENGINE** (a studio with `engineMode` in the catalog): the game's own vessel.
-  - Amoebius builds and starts the game as PLAY does.
-  - It adds `--arcade MODE` for that one launch (`LauncherJobs.Play(extraArgs)`).
-  - The player waits for the main menu, opens that arcade card and presses its Start
-    (`Port/src/CosmicShore.Player/ArcadeAutoStart.cs`, through the same path as the `arcade` input verb).
-  - The pilot presses Ready. First-run prompts on a new profile still come first.
-  - `engineNote` says what the engine run is when it differs from the studio's design (the Stoat's game sling
-    is still round 4's).
-
-- **The list comes from data:** `Docs/Studios/VesselStudio/studios.json` (`id`, `name`, `file`, `kind`,
-  `summary`, `docs`, optional `engineMode` and `engineNote`, plus `web` and `hub`). A test checks every
-  `engineMode` is a `GameModes` member. A branch without it shows why, and how to switch. Adding a studio
-  is a page plus a catalog entry; no launcher change. Read by `StudioCatalog` (tested in
-  `tests/CosmicShore.Launcher.Tests/StudioCatalogTests.cs`, including "every listed page exists").
-- **AGENT** starts an Amoebius Agent chat on that studio (or on the Vessel Studio as a whole, for ALL STUDIOS), in plan mode.
-- **DOCS**: the vessel's doc (`docs` in the catalog); for ALL STUDIOS, the plan.
-- **Links under the card**: the claude.ai artifact (`web`, else `StudioCatalog.DefaultWeb`; Sync, Ask and shared decisions work there), the folder, and update from the artifact (an agent chat; needs the workspace).
-- **From Unity:** **FrogletTools > Amoebius > Vessel Studio Page** opens Amoebius on this page (`--page studios`);
-  **FrogletTools > Vessels > Vessel Studio** opens the studio home in Unity; a card opens its studio page in an app window (no Amoebius).
-- **Phones today** use the web pages. A studio scene inside the Amoebius phone player (the game's own vessel
-  instead of the web copy) is the next step: `Docs/Studios/VESSEL_STUDIO_PLAN.md`.
-
-
-### ARTIFACTS - the artifact library
-
-Anything built as a claude.ai artifact, in any session, comes into Amoebius by its link
-(`Docs/Artifacts/README.md`). The library is `Docs/Artifacts/artifacts.json`; Amoebius reads it every few
-seconds (`ArtifactLibrary.Load`), so an import shows at once.
-
-![ARTIFACTS](architecture/launcher_artifacts.png)
-
-- **ADD WITH AGENT** (a pasted `https://claude.ai/artifact/...` link): an AGENT chat that runs
-  `/amoebius-artifact <url>` (`ArtifactLibrary.ImportPrompt`): it saves every file of the artifact with the
-  Artifact tool, imports them with `Tools/Build/amoebius_artifacts.py` and gates them. The change stays
-  uncommitted in the workspace for the GIT page.
-- **IMPORT FILE**: one downloaded page plus its link, no agent (`ArtifactLibrary.ImportPage`, the same schema
-  the script writes). BROWSE is the Windows file dialog; elsewhere type the path.
-- The same picker and one action row: **OPEN IN AMOEBIUS** (its own window), **OPEN IN BROWSER** (the live artifact on
-  claude.ai, with the viewer's features), **AGENT** (an agent chat that re-imports it).
-- The Vessel Studio is entry `vessel-studio`; **update from the artifact** under the studio card checks the published
-  studio against the repo pages (normally every file `unchanged`) and the line under it names the version last
-  matched.
-- Tests: `ArtifactLibraryTests` (parse, path safety, IMPORT FILE add/update, the repo's own library).
-
-## TIME - benchmarks
+## TIME - benchmarks and local multiplayer
 
 **BENCHMARK** times the game on this machine. Tick scenes and replays (REPLAY rows are the parity
 harness's recorded inputs, `Port/parity/manifest.json`: they fly a real match, so they measure
@@ -148,35 +71,43 @@ RESULTS shows one row per scene: frame time at the 50th and 95th percentile and 
 frames over 33 ms, the simulation's 95th percentile, GPU time (timer queries), load time (the scene's switch
 to its first frame; hover for boot to first frame), GC pause per frame and
 the frame count, each with its change against the previous benchmark on the same machine (green
-faster, red slower). Every benchmark is kept in `%LOCALAPPDATA%\Prisma\bench` and can be picked
-from the history list. `Prisma --auto bench:Menu_Main,MinigameSkimRace:600` runs a headless
+faster, red slower). Every benchmark is kept in `%LOCALAPPDATA%\Amoebius\bench` and can be picked
+from the history list. `Amoebius --auto bench:Menu_Main,MinigameSkimRace:600` runs a headless
 benchmark unattended and closes Amoebius when it is saved.
 
-## NET - multiplayer on this PC
+**MULTIPLAYER** opens 2, 3 or 4 game windows on this PC, each in its own save slot (`player1`,
+`player2` ...) with networking on and sound only in the first. The first window hosts the online
+server (or they all use the one SETTINGS > ONLINE names), so a party or match hosted in one window
+shows up in the others: host in one, join from the rest. Start them at Bootstrap (log in, menu) or
+straight into a scene. **CLOSE** closes them all.
 
-Amoebius's counterpart of Unity's Multiplayer Play Mode, Network Simulator and Runtime Network Stats
-Monitor (`docs/MULTIPLAYER.md` §6).
+## ONLINE - playing with other machines
 
-**PLAYERS** opens 2, 3 or 4 game windows (a party is four), tiled two by two, each in its own save
-slot (`player1`, `player2` ...) with networking on and sound only in the first. They share one
-fresh session folder per run, so a party or match hosted in one window shows up in the others:
-host in one, join from the rest (the friends list, or the DiagnosticsHUD's `party invite <name>` /
-`party join <name>`). **TRANSPORT** picks what carries their traffic: UDP (Froglet's own transport,
-the default) or TCP (the first one); every player uses the same. Each player can start on a
-simulated line (clean, lan, broadband, dsl, 4g, 3g, poor). Start them at Bootstrap (log in, menu) or straight into a scene. **CLOSE** closes them all.
+SETTINGS > ONLINE decides where every game this launcher starts finds the other players. Games meet
+through Amoebius's online server: the lobby (who is online, parties, invites) and the relay that
+carries a match between machines (`docs/ARCHITECTURE.md` §8).
 
-**LIVE** shows, once a second, each player's scene, role (server or client), traffic in and out and
-RTT to each peer, read from its control port. Per player, while it runs: change its line, **PULL
-CABLE** (after 10 s every peer drops it, as a real timeout does; **PLUG IN** ends it), arm a session
-fault (full, ratelimit=3, relayfail, slow=2000, down) and **CAPTURE 10 S** (600 frames of per-frame
-traffic and RTT to a JSON file the console names). The windows' titles carry the same line.
+- **Server** empty (the default): on a local network nothing needs setting up. A game looks for a
+  server on the network; if there is none, the first game started hosts one and the others find it.
+- **Server** `host[:port]`: for players in different places. Everyone enters the same address, of a
+  machine that runs the server and is reachable from the internet (port 47777 when left out).
+- **Server key**: only when that server was started with a key. Kept in the OS credential store.
+- **Host the online server on this PC**: runs the server (the game's player with `--server`) while
+  Amoebius is open, independent of any game. Games on this network prefer it over one a game hosts,
+  and it lists the addresses players on this network use. For friends elsewhere, forward TCP 47777
+  on your router to this PC and give them your public address. Windows asks once whether CosmicShore
+  may use the network: allow it on private networks.
+
+A branch can name the team's shared server for everyone: `Network.Server` (and `Network.Key`) in
+`Port/ProjectSettings/AmoebiusProject.json`. A player's own Server setting wins over it, and phone
+builds carry it (without it, a phone plays on its own).
 
 ## TRACKS - Amoebius's memory of every run
 
-![TRACKS](architecture/prisma_tracks.png)
+![TRACKS](architecture/amoebius_tracks.png)
 
 Every game started from PLAY writes a session report when it closes or crashes. Amoebius folds it
-into **tracks** (`%LOCALAPPDATA%\Prisma\tracks`): OVERVIEW (runs, crash-free rate, median
+into **tracks** (`%LOCALAPPDATA%\Amoebius\tracks`): OVERVIEW (runs, crash-free rate, median
 frame time, open problems), PERFORMANCE (a *Frame budget* card with simulation and render CPU,
 allocations per frame and GC pause per frame, then each scene's 95th-percentile frame time per run
 against the 60 fps line), AUDIO (sound events per run, events missing from the banks, unwired one-shots),
@@ -195,10 +126,10 @@ history.
 
 ## BOARD - tasks and bugs
 
-![BOARD](architecture/prisma_board.png)
+![BOARD](architecture/amoebius_board.png)
 
 TO DO / DOING / DONE columns of bugs and tasks; click a card for its detail and to move it, or
-hand it to the agent. Amoebius *suggests* items - problems from the tracks - and so can the agent (`prisma_board_suggest`); a suggestion joins
+hand it to the agent. Amoebius *suggests* items - problems from the tracks - and so can the agent (`amoebius_board_suggest`); a suggestion joins
 the board only when you ACCEPT it.
 
 Every card has a **done when** line: the check that proves it. Type one next to a new item's
@@ -208,43 +139,29 @@ and a notification offers MARK DONE (moving it stays your call). If the problem 
 card loses MET, and a DONE card reopens to TO DO. A card in DOING tells the agent's brief that a
 fix is in progress.
 
-The board is `board.json` beside the tracks. A suggestion an agent makes while Amoebius is open shows up
-within a second and survives Amoebius's next save (saves merge with the file instead of overwriting it).
-If the file cannot be read, Amoebius keeps a copy as `board.json.corrupt-<time>`, says so in CONSOLE and
-starts an empty board; the copy is never overwritten.
-How it works, how to test it on Windows, and the scheduler that builds on it: [`PRISMA_BOARD_SCHEDULER.md`](PRISMA_BOARD_SCHEDULER.md).
-
 ## BUILD
 
 ![BUILD](architecture/launcher_build.png)
 
 **Android** - APK (install directly) or AAB (Play Store). Options: CPU, keystore, debug.
 
-**iOS** - three ways, picked with the switch on the card:
+**iOS** - picked with the switch on the card:
 
 | Mode | Needs | Produces |
 |---|---|---|
-| **GITHUB** (default without a Mac) | a GitHub sign-in (GitHub Desktop is enough) | an unsigned `.ipa`, built on GitHub's free Mac and downloaded to `Builds/iOS` |
-| **XCODE** | nothing | `Builds/iOS/CosmicShore.xcodeproj` + player data, like Unity's iOS export |
+| **XCODE** (the default without a Mac) | nothing | `Builds/iOS/CosmicShore.xcodeproj` + player data, like Unity's iOS export |
 | **THIS MAC** | a Mac with Xcode | a signed `.ipa` |
 
-GITHUB mode runs `.github/workflows/prisma-ios.yml` for the selected branch, shows each
-step of the Mac build in the status bar (15-25 minutes), then downloads the `.ipa`. Install it with
-**Sideloadly** and a free Apple ID - the same Windows steps as the Unity build
-(`Docs/IOS_BUILD.md` section 2, Path A, step 4). OPEN RUN shows the run on GitHub.
-
-Token: GitHub Desktop's sign-in works as-is. With a typed token (SETTINGS > Source) it needs
-**Actions: read & write** (fine-grained) or the `workflow` scope. Until the workflow is on the
-default branch, the launcher starts it by committing `Port/ios-build-request.txt` to your feature
-branch, which needs **Contents: read & write**. A `claude/**` branch never starts it by push
-(agent branches are excluded from CI); use Run workflow there.
+The GITHUB mode (an unsigned `.ipa` from GitHub's Mac, for Sideloadly) was retired on 2026-10-13
+with the game's free-Apple-ID sideload path: TestFlight is the only route onto a phone
+(`Docs/IOS_BUILD.md`). A settings file that still names it opens on XCODE.
 
 ## PROJECT - the engine's Project Settings
 
 ![PROJECT](architecture/launcher_project_1.png)
 
 Unity keeps Player Settings and Build Settings in `ProjectSettings/`. The engine keeps its own in
-**`Port/ProjectSettings/PrismaProject.json`**, so it never edits Unity's files. Every field is an
+**`Port/ProjectSettings/AmoebiusProject.json`**, so it never edits Unity's files. Every field is an
 override: leave it empty and Unity's value applies (shown greyed in the field).
 
 | Tab | Holds | Read by |
@@ -281,7 +198,7 @@ and Mono domain colours), motion speed (down to still), dim, and the intro and p
 Every game started from PLAY writes a report when it closes or crashes: scenes and time in each,
 frame-time percentiles (overall and per scene), simulation and render CPU, the average cost and
 allocations of each loop phase, GC collections and pauses, audio use, every distinct error,
-warning and exception with its count, and the crash, branch and commit. They are kept in `%LOCALAPPDATA%\Prisma\sessions` (the last
+warning and exception with its count, and the crash, branch and commit. They are kept in `%LOCALAPPDATA%\Amoebius\sessions` (the last
 40). The CLAUDE page's LAST SESSION hands the newest one to Claude to analyse.
 
 ## AGENT - the Amoebius Agent, powered by Claude
@@ -298,7 +215,7 @@ it does not go looking for engine problems on its own.
 **+ NEW CHAT** opens another, a click switches, the x deletes. Each chat has its own transcript,
 its own Claude Code session (resumed on the next message, also after Amoebius restarts) and its own
 context, and several can work at once - a pulsing dot marks the ones that are. FIX, AGENT and ANALYSE buttons elsewhere open a fresh chat for the
-job. Chats are kept in `%LOCALAPPDATA%\Prisma\chats`.
+job. Chats are kept in `%LOCALAPPDATA%\Amoebius\chats`.
 
 The layout follows Claude Code: a bullet per message and tool call, each tool's result folded
 under it, to-do lists as checklists, the game's screenshots inline.
@@ -315,7 +232,10 @@ every reply, so they appear after the first one and are remembered.
 - **Model** and **effort** on the bar (default / fable / opus / sonnet / haiku; low to max).
 - **PLAN**: Claude investigates (it may build, test and run the game) and answers with a plan
   card. **APPROVE + EDIT** or **APPROVE + AUTO** lets it build the plan; typing keeps planning.
-  **EDIT** edits files directly; **AUTO** may also run any command. **CLEAR** starts this chat over.
+  **EDIT** edits files directly; **AUTO** may also run any command, with Claude Code's permission
+  checks off. AUTO is opt-in **per chat, per session**: choosing it (or APPROVE + AUTO, or `/auto`)
+  asks first, the answer holds for that chat until Amoebius closes, and it is never saved - a
+  restored chat, a new chat and a restart all start in PLAN or EDIT. **CLEAR** starts this chat over.
 - **Chips**: RUN TESTS, SMOKE TEST (boots the game headless and reports every error), LAST
   SESSION, PARITY CHECK (compares one system with the Unity game, in plan mode).
 - **Commands**: `/new /clear /rename TITLE /usage /plan /edit /auto /model NAME /effort LEVEL /test /smoke /session`.
@@ -331,10 +251,13 @@ needed.
 **SIGN IN** (SETTINGS > Claude, or on the AGENT page): a window opens for the browser sign-in,
 and chat then runs on your plan. An **API key** is only for pay-as-you-go billing from
 console.anthropic.com; when one is set it is used *instead of* the plan. Keys and tokens are shown
-as dots; SHOW reveals them to check a paste. A key is stored only on this PC and passed only to
-the `claude` process.
+as dots; SHOW reveals them to check a paste. The API key and the GitHub token are kept in the OS's
+credential store (Windows Credential Manager, the macOS Keychain, or the Secret Service on Linux;
+`secrets.json`, readable by you only, where there is none), never in `launcher.json`, and the key
+is passed only to the `claude` process. A `launcher.json` from before that moves its two secrets
+into the store on the first start and is rewritten without them.
 
-It is connected to the engine itself (the `prisma` tools, `Port/CLAUDE.md`): Claude can
+It is connected to the engine itself (the `amoebius` tools, `Port/CLAUDE.md`): Claude can
 build the engine, start the game, take screenshots, click and type, and read or change live
 objects - so "start the game and check the score panel updates" is a request it can carry out
 and show you. Those tools never edit files, so PLAN may use them too.
@@ -352,7 +275,7 @@ a chat changed files.
   changed file with its +/- lines and **which chat changed it**. Click a file for its diff;
   **REVERT** (hover, click twice) puts one file back; **DISCARD ALL** (click twice) throws every
   change away.
-- **SAVE TO GITHUB:** a branch name (suggested from the chat, e.g. `prisma/fix-score`), the author
+- **SAVE TO GITHUB:** a branch name (suggested from the chat, e.g. `amoebius/fix-score`), the author
   (read from your git config, which GitHub Desktop sets) and a message (suggested from the chats
   and files). **COMMIT** commits every change to that branch on this PC; **COMMIT + PUSH** also
   sends it to GitHub; **OPEN PR** opens GitHub's pull-request page for it into your branch.
@@ -411,7 +334,7 @@ files, tagged BLENDER / MAYA. Unity cannot read those two either: its importer r
 Blender or Maya in the background to export an FBX. Amoebius does the same (Unity's own export
 settings), keeps the FBX until the file changes, and says so plainly when the application is not
 installed. SETTINGS > TOOLCHAIN shows whether Blender and Maya were found, their version and path,
-with **BROWSE** to point at one Amoebius did not find (passed on as `PRISMA_BLENDER` / `PRISMA_MAYAPY`).
+with **BROWSE** to point at one Amoebius did not find (passed on as `AMOEBIUS_BLENDER` / `AMOEBIUS_MAYAPY`).
 
 Pick a model for a preview **in the colours the game draws it with**: the materials come from the
 prefabs that draw its meshes (Manta's model from `Manta.prefab`, VesselGraph's `_Color1`), not from
@@ -443,15 +366,24 @@ git fetch <branch>  ->  FMOD library from Git LFS  ->  dotnet build Port/src/Cos
                     ->  CosmicShore.exe --size ... [--fullscreen] [--scene ...]
 ```
 
-Settings live in `%LOCALAPPDATA%\Prisma\launcher.json`. The launcher never writes to your
+Settings live in `%LOCALAPPDATA%\Amoebius\launcher.json` (its secrets in the credential store, above). The launcher never writes to your
 own clone: *Beside my clone* uses a git worktree next to it.
+
+**From the engine's earlier names (Prisma, before that FrogletEngine).** Nothing is lost on the
+first start of Amoebius: the data folder (`%LOCALAPPDATA%\Prisma`, or `FrogletEngine`) moves over
+whole, with settings, chats, sessions, tracks, the board, versions and the private .NET SDK; a
+worktree already made as `<clone>-prisma` stays in use (it may hold the agent's uncommitted
+edits); `PrismaProject.json`, the `PRISMA_DATA_DIR` / `PRISMA_BLENDER` / `PRISMA_MAYAPY` variables
+and `prisma-session` reports are still read. An old launcher's UPDATE installs Amoebius over its own file,
+which keeps its old file name (the build leaves `Prisma.exe` and `FrogletLauncher.exe` copies for
+that updater to find; Amoebius's own updater deletes them).
 
 ## Testing the launcher itself
 
-`Prisma --page build --screenshot out.png --frames 40` renders a page and exits
+`Amoebius --page build --screenshot out.png --frames 40` renders a page and exits
 (`--page project:1` opens a Project tab, `--page options:look` one settings section, `--page chat:usage` the usage card,
 `--page editor:1:Assets/x.asset` an EDITOR tab with a data file or model open).
-`PRISMA_DATA_DIR` points all of Amoebius's data (settings, chats, tracks, versions) at another
+`AMOEBIUS_DATA_DIR` points all of Amoebius's data (settings, chats, tracks, versions) at another
 folder - a second, separate Amoebius, or the tests. `Port/tests/CosmicShore.Launcher.Tests` covers
 chats and their persistence, plan usage and the GIT page's git steps.
 `--auto launcher-update:REV` / `launcher-use:SHORT` exercise the version flow. `--auto play|update|android|ios` presses the button on

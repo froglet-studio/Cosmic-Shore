@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::CosmicShore.ScriptableObjects.BlackHoleConfigSO
   gmPerStrength: 2000
   horizonPerStrength: 2
-  minHorizonRadius: 1.5
+  minHorizonRadius: 1
   influenceAccelerationFloor: 0.6
   maxInfluenceRadius: 900
   spin: 0.9
@@ -22,7 +22,7 @@ MonoBehaviour:
   releaseSpeed: 0.75
   maxSubsteps: 8
   maxBodies: 6000
-  maxBlackHoles: 4
+  maxBlackHoles: 16
   admissionInterval: 0.1
   pullVessels: 1
   vesselPullScale: 1
@@ -44,6 +44,17 @@ MonoBehaviour:
   whiteCoreSkyMix: 0.8
   photonRingGlow: 0.55
   photonRingWidth: 0.06
+  whInFrom: 700
+  whOutSpeed: 450
+  whOutFade: 1.6
+  shellBend: 6
+  gwAmp: 12
+  gwSpeed: 120
+  gwPeriod: 0.35
+  gwRingdown: 1
+  gwPrism: 0.6
+  gwShake: 1
+  gwGlow: 1
   spawnStrength: 10
   spawnHorizonRadius: 0
   spawnAheadOfCamera: 1

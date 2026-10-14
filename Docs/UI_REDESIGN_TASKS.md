@@ -482,5 +482,5 @@ Decisions taken during the redesign to explicitly not do something. Recorded so 
 | Item | Decision | Rationale |
 |---|---|---|
 | UI Toolkit migration | Deferred past Steam EA | Framework migration on top of the fork debt risks the EA date |
-| Store / ARK screen | Cut from overhaul | Needs a product decision, not a visual one |
+| Store / ARK screen | Cut from overhaul | Needs a product decision, not a visual one. (2026-10-13: ARK reopened as the Elemental Converter; the store on it stays disabled.) |
 | Port / Leaderboards screen | Cut from overhaul | Same — 104 sprites feeding a disabled screen |

@@ -89,7 +89,7 @@ entitlement questions.
 | **A1, A2, A3** (shipped `Resources/` folders + the Demo asmdef) | [`SHIPPED_RESOURCES_PRUNE_PROMPT.md`](prompts/SHIPPED_RESOURCES_PRUNE_PROMPT.md) — **executed 12 Sep 2026**; A3's art half remains open |
 | **A3 art, B1** (NiceVibrations demo sprites + audio) | [`NICEVIBRATIONS_DEMO_ASSET_REPLACEMENT_PROMPT.md`](prompts/NICEVIBRATIONS_DEMO_ASSET_REPLACEMENT_PROMPT.md) |
 | ~~**A4, A5**~~ (Wwise, Parse) | ✅ **Executed** 12 Sep 2026 — [`WWISE_AND_DEAD_SDK_REMOVAL_PROMPT.md`](prompts/WWISE_AND_DEAD_SDK_REMOVAL_PROMPT.md). `SerializeInterface` went with them, rewritten first-party |
-| ~~**B2, C7**~~ (PlayFabSDK + editor extensions, 20 code call sites) | ✅ **Executed** 12 Sep 2026 — [`PLAYFAB_RETIREMENT_PROMPT.md`](prompts/PLAYFAB_RETIREMENT_PROMPT.md); the answer is [`PLAYFAB_RETIREMENT.md`](PLAYFAB_RETIREMENT.md) |
+| ~~**B2, C7**~~ (PlayFabSDK + editor extensions, 20 code call sites) | ✅ **Executed** 12 Sep 2026 — the record is [`PLAYFAB_RETIREMENT.md`](PLAYFAB_RETIREMENT.md) (its scoping prompt has been retired) |
 | ~~C3, C4~~ (PrimitivePlus, Shift) | ✅ **Done 12 Sep 2026.** [`VENDORED_UI_PACK_PLACEHOLDERS_PROMPT.md`](prompts/VENDORED_UI_PACK_PLACEHOLDERS_PROMPT.md) executed — both replaced first-party and removed. Record: [`THIRD_PARTY_REGISTER.md` §2.1](THIRD_PARTY_REGISTER.md) |
 | **C5** (Effects Library) | [`EFFECTS_LIBRARY_PROVENANCE_PROMPT.md`](prompts/EFFECTS_LIBRARY_PROVENANCE_PROMPT.md) |
 | **E1, E2** (the 360 MB noise pack, the video folder) | [`UNREFERENCED_ART_SWEEP_PROMPT.md`](prompts/UNREFERENCED_ART_SWEEP_PROMPT.md) |

@@ -160,7 +160,7 @@ namespace CosmicShore.Engine.UI
 
         // ── navigation (original contract) ───────────────────────────
 
-        public Selectable FindSelectableOnLeft()
+        public virtual Selectable FindSelectableOnLeft()
         {
             if (m_Navigation.mode == Navigation.Mode.Explicit) return m_Navigation.selectOnLeft;
             if (((int)m_Navigation.mode & (int)Navigation.Mode.Horizontal) != 0)
@@ -168,7 +168,7 @@ namespace CosmicShore.Engine.UI
             return null;
         }
 
-        public Selectable FindSelectableOnRight()
+        public virtual Selectable FindSelectableOnRight()
         {
             if (m_Navigation.mode == Navigation.Mode.Explicit) return m_Navigation.selectOnRight;
             if (((int)m_Navigation.mode & (int)Navigation.Mode.Horizontal) != 0)
@@ -176,7 +176,7 @@ namespace CosmicShore.Engine.UI
             return null;
         }
 
-        public Selectable FindSelectableOnUp()
+        public virtual Selectable FindSelectableOnUp()
         {
             if (m_Navigation.mode == Navigation.Mode.Explicit) return m_Navigation.selectOnUp;
             if (((int)m_Navigation.mode & (int)Navigation.Mode.Vertical) != 0)
@@ -184,7 +184,7 @@ namespace CosmicShore.Engine.UI
             return null;
         }
 
-        public Selectable FindSelectableOnDown()
+        public virtual Selectable FindSelectableOnDown()
         {
             if (m_Navigation.mode == Navigation.Mode.Explicit) return m_Navigation.selectOnDown;
             if (((int)m_Navigation.mode & (int)Navigation.Mode.Vertical) != 0)

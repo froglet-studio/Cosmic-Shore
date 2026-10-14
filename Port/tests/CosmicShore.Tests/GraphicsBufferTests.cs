@@ -4,9 +4,9 @@ using CosmicShore.Engine;
 namespace CosmicShore.Tests;
 
 /// <summary>
-/// ComputeBuffer and GraphicsBuffer are CPU-backed in Prisma; SetData/GetData must round-trip
+/// ComputeBuffer and GraphicsBuffer are CPU-backed in Amoebius; SetData/GetData must round-trip
 /// arrays of structs (the swarm renderers upload SwarmInstance[]), which Buffer.BlockCopy refused.
-/// Prisma reports no vertex-stage storage buffers, so code that would draw from them falls back.
+/// Amoebius reports no vertex-stage storage buffers, so code that would draw from them falls back.
 /// </summary>
 public class GraphicsBufferTests
 {

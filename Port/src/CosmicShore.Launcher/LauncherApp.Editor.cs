@@ -12,7 +12,7 @@ using StbImageSharp;
 namespace CosmicShore.Launcher
 {
     /// <summary>
-    /// The EDITOR page: Prisma's first editor surfaces, picked for a game whose content already
+    /// The EDITOR page: Amoebius's first editor surfaces, picked for a game whose content already
     /// exists. TOOLS is every FrogletTools tool, run by the agent without Unity; DATA browses and
     /// edits the ScriptableObject data sets; MODELS shows each FBX as Unity imports it, with a
     /// preview. Scene and hierarchy work is the agent's (cs-asset), so there is no hierarchy panel.
@@ -467,7 +467,7 @@ namespace CosmicShore.Launcher
             if (SmallButton("ASK CLAUDE", 130, true))
             {
                 var chat = _chats.New(); chat.Title = "Data: " + Path.GetFileNameWithoutExtension(_edFile);
-                _chatInput = $"About the data file {_edFile} (the prisma tool asset_dataset reads it): ";
+                _chatInput = $"About the data file {_edFile} (the amoebius tool asset_dataset reads it): ";
                 _page = Page.Chat;
             }
             ImGui.SameLine(0, 6);
@@ -861,7 +861,7 @@ namespace CosmicShore.Launcher
             if (SmallButton("ASK CLAUDE", 130, true))
             {
                 var chat = _chats.New(); chat.Title = "Model: " + Path.GetFileNameWithoutExtension(_edModelPath);
-                _chatInput = $"About the model {_edModelPath} (the prisma tools asset_model and asset_model_preview read it): ";
+                _chatInput = $"About the model {_edModelPath} (the amoebius tools asset_model and asset_model_preview read it): ";
                 _page = Page.Chat;
             }
             ImGui.SameLine(0, 6);
@@ -912,7 +912,7 @@ namespace CosmicShore.Launcher
             else
             {
                 // The JSON comes from the branch's own cs-asset, which may be older or newer than this
-                // Prisma: a shape this page does not expect shows a line, never takes Prisma down.
+                // Amoebius: a shape this page does not expect shows a line, never takes Amoebius down.
                 try { DrawModelFacts(_edModel.RootElement); }
                 catch (Exception e) when (e is KeyNotFoundException or InvalidOperationException or FormatException)
                 {

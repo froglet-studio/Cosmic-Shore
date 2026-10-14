@@ -164,8 +164,17 @@
      ]
     },
     {
-     "name": "Stoat",
+     "name": "Thresher",
      "value": 14,
+     "hasClass": true,
+     "studio": null,
+     "games": [
+      "Thresher Time"
+     ]
+    },
+    {
+     "name": "Stoat",
+     "value": 15,
      "hasClass": true,
      "studio": "stoat",
      "games": [
@@ -189,15 +198,6 @@
      "menu": "arena"
     },
     {
-     "name": "Block Bandit",
-     "mode": "BlockBandit",
-     "modeValue": 5,
-     "card": "ArcadeGameBlockBandit.asset",
-     "scene": "MinigameBlockBandit",
-     "vessels": [],
-     "menu": ""
-    },
-    {
      "name": "Bloomrush",
      "mode": "Bloomrush",
      "modeValue": 52,
@@ -207,15 +207,6 @@
       "Manta"
      ],
      "menu": "arcade"
-    },
-    {
-     "name": "Bot Duel",
-     "mode": "BotDuel",
-     "modeValue": 23,
-     "card": "ArcadeGameBotDuel.asset",
-     "scene": "MinigameBotDuel",
-     "vessels": [],
-     "menu": ""
     },
     {
      "name": "Breakwater",
@@ -262,24 +253,6 @@
      "menu": "arena"
     },
     {
-     "name": "Cat N Mouse",
-     "mode": "CatNMouse",
-     "modeValue": 12,
-     "card": "ArcadeGameCatNMouse.asset",
-     "scene": "MinigameCatNMouse",
-     "vessels": [],
-     "menu": ""
-    },
-    {
-     "name": "Cellular Brawl",
-     "mode": "CellularBrawl",
-     "modeValue": 10,
-     "card": "ArcadeGameCellularBrawl.asset",
-     "scene": "MinigameCellularBrawl2v2",
-     "vessels": [],
-     "menu": ""
-    },
-    {
      "name": "Cleave",
      "mode": "Cleave",
      "modeValue": 39,
@@ -289,42 +262,6 @@
       "Rhino"
      ],
      "menu": "arcade"
-    },
-    {
-     "name": "Curvatious",
-     "mode": "Curvatious",
-     "modeValue": 24,
-     "card": "ArcadeGameCurvatious.asset",
-     "scene": "MinigameCurvatious",
-     "vessels": [],
-     "menu": ""
-    },
-    {
-     "name": "Dash N Grab",
-     "mode": "DashNGrab",
-     "modeValue": 9,
-     "card": "ArcadeGameDashAndGrab.asset",
-     "scene": "MinigameDashAndGrab",
-     "vessels": [],
-     "menu": ""
-    },
-    {
-     "name": "Denial",
-     "mode": "Denial",
-     "modeValue": 11,
-     "card": "ArcadeGameDenial.asset",
-     "scene": "MinigameDenial",
-     "vessels": [],
-     "menu": ""
-    },
-    {
-     "name": "Distraction",
-     "mode": "Distraction",
-     "modeValue": 18,
-     "card": "ArcadeGameDistraction.asset",
-     "scene": "MinigameDistraction",
-     "vessels": [],
-     "menu": ""
     },
     {
      "name": "Dog Fight",
@@ -338,15 +275,6 @@
      "menu": "arcade"
     },
     {
-     "name": "Dolphin Darts",
-     "mode": "DolphinDarts",
-     "modeValue": 3,
-     "card": "ArcadeGameDolphinDarts.asset",
-     "scene": "MinigameDolphinDarts",
-     "vessels": [],
-     "menu": ""
-    },
-    {
      "name": "Dustup",
      "mode": "Dustup",
      "modeValue": 59,
@@ -356,15 +284,6 @@
       "Butterfly"
      ],
      "menu": "arcade"
-    },
-    {
-     "name": "Elimination",
-     "mode": "Elimination",
-     "modeValue": 1,
-     "card": "ArcadeGameElimination.asset",
-     "scene": "MinigameElimination",
-     "vessels": [],
-     "menu": ""
     },
     {
      "name": "Grizzly Charge",
@@ -422,15 +341,6 @@
      "menu": "arcade"
     },
     {
-     "name": "Kickin Mass",
-     "mode": "KickinMass",
-     "modeValue": 20,
-     "card": "ArcadeGameKickinMass.asset",
-     "scene": "MinigameKickinMass",
-     "vessels": [],
-     "menu": ""
-    },
-    {
      "name": "Maelstrom",
      "mode": "Maelstrom",
      "modeValue": 36,
@@ -442,51 +352,6 @@
       "Squirrel"
      ],
      "menu": "arcade"
-    },
-    {
-     "name": "Master Exploder",
-     "mode": "MasterExploder",
-     "modeValue": 15,
-     "card": "ArcadeGameMasterExploder.asset",
-     "scene": "MinigameMasterExploder",
-     "vessels": [],
-     "menu": ""
-    },
-    {
-     "name": "Maze Run",
-     "mode": "MazeRun",
-     "modeValue": 25,
-     "card": "ArcadeGameMazeRun.asset",
-     "scene": "MinigameMazeRun",
-     "vessels": [],
-     "menu": ""
-    },
-    {
-     "name": "ObstacleCourse",
-     "mode": "ObstacleCourse",
-     "modeValue": 17,
-     "card": "ArcadeGameObstacleCourse.asset",
-     "scene": "MinigameObstacleCoarse",
-     "vessels": [],
-     "menu": ""
-    },
-    {
-     "name": "Online 2v2 CoOp vs AI",
-     "mode": "Multiplayer2v2CoOpVsAI",
-     "modeValue": 30,
-     "card": "ArcadeGameMultiplayer2v2CoOpVsAI.asset",
-     "scene": "ArcadeGameMultiplayer2v2CoOpVsAI",
-     "vessels": [],
-     "menu": ""
-    },
-    {
-     "name": "PumpNDump",
-     "mode": "PumpNDump",
-     "modeValue": 14,
-     "card": "ArcadeGamePumpNDump.asset",
-     "scene": "MinigamePumpNDump",
-     "vessels": [],
-     "menu": ""
     },
     {
      "name": "Rampage",
@@ -527,15 +392,6 @@
       "Scarab"
      ],
      "menu": "arena"
-    },
-    {
-     "name": "Risky Driftness",
-     "mode": "RiskyDriftness",
-     "modeValue": 6,
-     "card": "ArcadeGameRiskyDriftness.asset",
-     "scene": "MinigameRiskyDriftness",
-     "vessels": [],
-     "menu": ""
     },
     {
      "name": "Salvo",
@@ -617,24 +473,6 @@
      "menu": "arcade"
     },
     {
-     "name": "Slip N Stride",
-     "mode": "SlipNStride",
-     "modeValue": 13,
-     "card": "ArcadeGameSlipNStride.asset",
-     "scene": "MinigameSlipNStride",
-     "vessels": [],
-     "menu": ""
-    },
-    {
-     "name": "Soar",
-     "mode": "Soar",
-     "modeValue": 16,
-     "card": "ArcadeGameSoar.asset",
-     "scene": "MinigameSoar",
-     "vessels": [],
-     "menu": ""
-    },
-    {
      "name": "Switchback",
      "mode": "Switchback",
      "modeValue": 45,
@@ -664,6 +502,17 @@
      "scene": "MinigameBends",
      "vessels": [
       "Dolphin"
+     ],
+     "menu": "arcade"
+    },
+    {
+     "name": "Thresher Time",
+     "mode": "ThresherTime",
+     "modeValue": 66,
+     "card": "ArcadeGameThresherTime.asset",
+     "scene": "MinigameThresherTime",
+     "vessels": [
+      "Thresher"
      ],
      "menu": "arcade"
     },

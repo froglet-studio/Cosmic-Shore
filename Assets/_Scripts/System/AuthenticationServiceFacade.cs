@@ -6,7 +6,7 @@ using CosmicShore.Utility;
 using Unity.Services.Core;
 using Unity.Services.Authentication;
 #if UNITY_EDITOR
-using Unity.Multiplayer.Playmode;
+using Unity.Multiplayer.PlayMode;
 #endif
 
 namespace CosmicShore.Core
@@ -400,8 +400,8 @@ namespace CosmicShore.Core
             if (CurrentPlayer.IsMainEditor)
                 return;
 
-            var tags = CurrentPlayer.ReadOnlyTags();
-            var profileName = tags != null && tags.Length > 0
+            var tags = CurrentPlayer.Tags;
+            var profileName = tags != null && tags.Count > 0
                 ? $"mppm-{string.Join("-", tags)}"
                 : "mppm-clone";
 
