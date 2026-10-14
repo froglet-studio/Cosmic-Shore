@@ -202,7 +202,6 @@ namespace CosmicShore.Engine
             logMessageReceivedThreaded?.Invoke(condition, stackTrace, type);
         }
 
-        public static void SetFocus(bool focused) { isFocused = focused; focusChanged?.Invoke(focused); }
         public static bool CanQuit() { foreach (Func<bool> f in wantsToQuit?.GetInvocationList() ?? Array.Empty<Delegate>()) if (!f()) return false; return true; }
         public static void RaiseLowMemory() => lowMemory?.Invoke();
         internal static void RaiseUnloading() => unloading?.Invoke();

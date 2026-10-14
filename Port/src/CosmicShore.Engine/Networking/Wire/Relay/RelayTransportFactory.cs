@@ -50,9 +50,10 @@ namespace CosmicShore.Engine.Networking
         }
     }
 
-    internal sealed class RelayTransportFactory : INetTransportFactory
+    internal sealed class RelayTransportFactory : INetTransportFactory, IWrappingTransportFactory
     {
         readonly INetTransportFactory _direct;
+        public INetTransportFactory Inner => _direct;
         public RelayTransportFactory(INetTransportFactory direct) => _direct = direct;
 
         public INetTransport Listen(string address, int port)

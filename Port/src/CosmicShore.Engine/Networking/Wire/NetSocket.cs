@@ -54,50 +54,26 @@ namespace CosmicShore.Engine.Networking
 
         /// <summary>Connects on a background thread; a Connected or Disconnected event reports the outcome.</summary>
         public static NetSocket Connect(string address, int port, int timeoutMs)
-            => ConnectWith(() => OnlineWire.Connect(address, port, timeoutMs), $"{address}:{port}");
-
-        /// <summary>
-        /// A client over a connection <paramref name="open"/> establishes on a background thread
-        /// (a direct TCP connect, or a relay link through the online server); a Connected or
-        /// Disconnected event reports the outcome.
-        /// </summary>
-        public static NetSocket ConnectWith(Func<TcpClient> open, string label)
         {
             var s = new NetSocket { IsServer = false };
             var t = new Thread(() =>
             {
-                TcpClient client = null;
+                var client = new TcpClient { NoDelay = true };
                 try
                 {
-                    client = open();
-                    client.NoDelay = true;
-                    if (s._disposed) { client.Dispose(); return; }
+                    var task = client.ConnectAsync(address, port);
+                    if (!task.Wait(timeoutMs) || !client.Connected) throw new TimeoutException($"connect to {address}:{port} timed out");
                     s.AddPeer(client);
                 }
                 catch (Exception e)
                 {
-                    try { client?.Dispose(); } catch { }
-                    Console.WriteLine($"[net] connect to {label} failed: {e.GetBaseException().Message}");
+                    try { client.Dispose(); } catch { }
+                    Console.WriteLine($"[net] connect failed: {e.GetBaseException().Message}");
                     s._inbox.Enqueue(new NetEvent(NetEventKind.Disconnected, 0, null));
                 }
             }) { IsBackground = true, Name = "net-connect" };
             t.Start();
             return s;
-        }
-
-        /// <summary>A server that is still taking peers.</summary>
-        public bool IsListening => IsServer && !_disposed;
-
-        /// <summary>
-        /// A server takes a connection it did not accept itself - a client the online server relays
-        /// to this host - as a new peer, exactly like an accepted one. False once disposed.
-        /// </summary>
-        public bool Adopt(TcpClient client)
-        {
-            if (!IsServer || _disposed) return false;
-            client.NoDelay = true;
-            AddPeer(client);
-            return true;
         }
 
         void AcceptLoop()

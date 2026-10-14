@@ -220,7 +220,7 @@ namespace CosmicShore.Build
 
             // ProjectSettings ships whole (the player reads build scenes, time, physics, graphics, tags).
             CopyTree(Path.Combine(_project, "ProjectSettings"), Path.Combine(outDir, "ProjectSettings"), hash);
-            // The engine's own settings too: the branch's online server (Network) reaches the phone build.
+            // The engine's own settings too: the branch's UGS environment (Network) reaches the phone build.
             var engineSettings = Amoebius.AmoebiusProjectSettings.PathIn(_project);
             if (File.Exists(engineSettings))
             {
