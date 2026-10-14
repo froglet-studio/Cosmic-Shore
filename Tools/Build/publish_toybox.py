@@ -21,6 +21,11 @@ Two steps, usable together (the toybox-publish workflow) or alone:
                   python3 Tools/Build/publish_toybox.py serve --build-dir Builds/WebGLToybox
               Browsers decode Brotli on localhost even without HTTPS. Needs nothing installed.
 
+  check       Read a published root the way www.froglet.games/play will, and say whether it will load:
+              latest.json, then each build file's Content-Encoding, Content-Type and CORS header.
+                  python3 Tools/Build/publish_toybox.py check --root https://play.froglet.games/toybox
+              Exit 0 = /play can load it. Run it after every first upload to a new host.
+
 Why the headers matter: the build is compressed (Brotli or gzip) with Unity's decompression
 fallback off, so the browser can only read it if each file arrives with Content-Encoding set,
 the right Content-Type (application/wasm for the code, or the browser refuses to stream-compile
@@ -36,6 +41,7 @@ import json
 import mimetypes
 import os
 import sys
+import urllib.error
 import urllib.request
 
 CONTENT_TYPES = {
@@ -242,6 +248,71 @@ def cmd_serve(args):
     return 0
 
 
+def _head(url, origin):
+    """Status and lower-cased headers of a request the way a browser on `origin` makes it."""
+    req = urllib.request.Request(url, method="GET", headers={
+        "Origin": origin,
+        "Accept-Encoding": "gzip, deflate, br",
+        "Range": "bytes=0-0",   # the headers are the question, not the bytes
+        "User-Agent": "Mozilla/5.0 (publish_toybox.py check)",
+    })
+    try:
+        with urllib.request.urlopen(req, timeout=30) as r:
+            return r.status, {k.lower(): v for k, v in r.headers.items()}, r.read()
+    except urllib.error.HTTPError as e:
+        return e.code, {k.lower(): v for k, v in e.headers.items()}, b""
+
+
+def cmd_check(args):
+    root = args.root.rstrip("/")
+    problems = []
+
+    def report(ok, what, detail=""):
+        print(("  ok    " if ok else "  FAIL  ") + what + (f"  ({detail})" if detail else ""))
+        if not ok:
+            problems.append(what)
+
+    print(f"{root}/latest.json")
+    req = urllib.request.Request(f"{root}/latest.json", headers={"Origin": args.origin, "Cache-Control": "no-cache"})
+    try:
+        with urllib.request.urlopen(req, timeout=30) as r:
+            manifest = json.loads(r.read().decode())
+            acao = r.headers.get("Access-Control-Allow-Origin")
+    except Exception as e:  # noqa: BLE001 - every failure here means the same thing to the reader
+        raise SystemExit(f"  FAIL  cannot read latest.json: {e}")
+    report(acao in (args.origin, "*"), "CORS allows " + args.origin, f"Access-Control-Allow-Origin: {acao}")
+    for key in ("loader", "framework", "code", "data"):
+        if key not in manifest:
+            report(False, f"latest.json names a {key}")
+    print(f"  build {manifest.get('version')}, {manifest.get('bytes', 0) / 1048576:.0f} MB")
+
+    for key in ("loader", "framework", "code", "data"):
+        if key not in manifest:
+            continue
+        url = f"{root}/{manifest[key]}"
+        status, h, _ = _head(url, args.origin)
+        print(f"{key}: {manifest[key]}")
+        report(status in (200, 206), "reachable", f"HTTP {status}")
+        name = manifest[key].rsplit("/", 1)[-1]
+        want_type, want_enc = headers_for(name)
+        got_enc = h.get("content-encoding")
+        if want_enc:
+            report(got_enc == want_enc, f"Content-Encoding: {want_enc}", f"got {got_enc or 'none'}")
+        if key == "code":
+            got_type = (h.get("content-type") or "").split(";")[0]
+            report(got_type == "application/wasm", "Content-Type: application/wasm", f"got {got_type or 'none'}")
+        if key != "loader":   # the loader is a <script>; the rest are fetched, so they need CORS
+            got = h.get("access-control-allow-origin")
+            report(got in (args.origin, "*"), "CORS", f"Access-Control-Allow-Origin: {got}")
+
+    if problems:
+        print(f"\n{len(problems)} problem(s): /play will not load this build until they are fixed "
+              "(Docs/WEBGL_TOYBOX.md section 5).")
+        return 1
+    print("\nAll good: /play can load this build.")
+    return 0
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     sub = ap.add_subparsers(dest="cmd", required=True)
@@ -256,8 +327,11 @@ def main():
     s = sub.add_parser("serve")
     s.add_argument("--build-dir", required=True)
     s.add_argument("--port", type=int, default=8000)
+    c = sub.add_parser("check")
+    c.add_argument("--root", required=True, help="the build_root /play uses, e.g. https://play.froglet.games/toybox")
+    c.add_argument("--origin", default="https://www.froglet.games")
     args = ap.parse_args()
-    return {"upload": cmd_upload, "fetch-uba": cmd_fetch_uba, "serve": cmd_serve}[args.cmd](args)
+    return {"upload": cmd_upload, "fetch-uba": cmd_fetch_uba, "serve": cmd_serve, "check": cmd_check}[args.cmd](args)
 
 
 if __name__ == "__main__":
