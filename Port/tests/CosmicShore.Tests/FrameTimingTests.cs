@@ -104,6 +104,106 @@ public class FrameTimingTests : IDisposable
     }
 
     [Fact]
+    public void F3AndTheGamesHud_ReadOneClock_ASlowFrameShowsInBoth()
+    {
+        using var loop = new GameLoop();
+        var stall = new GameObject("stall").AddComponent<Stall>();
+        var f3 = new FrameTimingWindow();
+
+        loop.Run(10, 1f / 60f);
+        stall.SleepMs = 90;
+        loop.Tick(1f / 60f);            // the slow frame (tick 11; tick 12 completes it)
+        stall.SleepMs = 0;
+        loop.Run(5, 1f / 60f);          // ticks 12-16: frames 11-15 complete, so the slow one is 4 back
+
+        f3.Read();
+        // DiagnosticsHUD's read: capture, then the latest frames.
+        FrameTimingManager.CaptureFrameTimings();
+        var hud = new FrameTiming[5];
+        Assert.Equal(5u, FrameTimingManager.GetLatestTimings(5, hud));
+
+        Assert.True(hud[4].cpuFrameTime >= 88, $"HUD's slow frame {hud[4].cpuFrameTime:F1} ms");
+        Assert.Equal(hud[4].cpuFrameTime, f3.MaxMs);   // the same number: one clock, not two that agree
+        Assert.Equal(15, f3.Frames);
+        Assert.Equal(15, f3.NewFrames);
+        Assert.True(f3.AverageMs >= 90.0 / 15, $"F3 average {f3.AverageMs:F1} ms");
+        Assert.True(f3.Fps < 1000.0 / (90.0 / 15), $"F3 {f3.Fps:F0} fps");
+    }
+
+    [Fact]
+    public void F3_CountsEveryFrameSinceItsLastRead_ButAveragesOnlyItsWindow()
+    {
+        using var loop = new GameLoop();
+        var f3 = new FrameTimingWindow();
+        loop.Run(2, 1f / 60f);
+        f3.Read();
+
+        loop.Run(300, 1f / 60f);        // F3 hidden for longer than its window
+        f3.Read();
+
+        Assert.Equal(300, f3.NewFrames);                   // per-frame allocation and loop phases divide by this
+        Assert.Equal(FrameTimingWindow.Window, f3.Frames);
+    }
+
+    [Fact]
+    public void F3_SimulationIsTheLoopsTick_RenderIsTheHosts()
+    {
+        using var loop = new GameLoop();
+        var stall = new GameObject("stall").AddComponent<Stall>();
+        var f3 = new FrameTimingWindow();
+
+        stall.SleepMs = 40;              // simulation: this tick's Update
+        loop.Tick(1f / 60f);
+        stall.SleepMs = 0;
+        f3.Read();                       // the frame is still in flight: nothing completed yet
+        Thread.Sleep(20);                // the host draws the same frame
+        FrameTimingManager.ReportRender(20.0, gpuMs: 7.0);
+        loop.Tick(1f / 60f);             // completes it
+        f3.Read();
+
+        Assert.Equal(1, f3.NewFrames);
+        Assert.True(f3.SimulationMs >= 38 && f3.SimulationMs < 60, $"sim {f3.SimulationMs:F1} ms");
+        Assert.Equal(20.0, f3.RenderMs);
+        Assert.Equal(7.0, f3.GpuMs);
+        Assert.True(f3.MaxMs >= 58, $"frame {f3.MaxMs:F1} ms");
+    }
+
+    [Fact]
+    public void F3_SplitAveragesAtLeastTenFrames_SoASlowFrameRateReadsSteady()
+    {
+        using var loop = new GameLoop();
+        var stall = new GameObject("stall").AddComponent<Stall>();
+        var f3 = new FrameTimingWindow();
+        loop.Run(20, 1f / 60f);
+        f3.Read();
+
+        stall.SleepMs = 50;
+        loop.Tick(1f / 60f);
+        stall.SleepMs = 0;
+        loop.Tick(1f / 60f);             // two new frames, one of them a 50 ms simulation
+        f3.Read();
+
+        Assert.Equal(2, f3.NewFrames);
+        // Averaged over the last 10 frames, not the 2 new ones (which would read about 25 ms).
+        Assert.True(f3.SimulationMs >= 4.8 && f3.SimulationMs < 10, $"sim {f3.SimulationMs:F1} ms");
+    }
+
+    [Fact]
+    public void Capture_IsAWatermark_FramesAfterItOverwriteOnlyTheOldest()
+    {
+        using var loop = new GameLoop();
+        var all = new FrameTiming[300];
+        loop.Run(301, 1f / 60f);         // 300 completed frames, more than the 256-frame history
+        FrameTimingManager.CaptureFrameTimings();
+        Assert.Equal(256u, FrameTimingManager.GetLatestTimings(300, all));
+        ulong newestCaptured = all[0].frameStartTimestamp;
+
+        loop.Run(20, 1f / 60f);          // 20 more frames overwrite the 20 oldest captured ones
+        Assert.Equal(236u, FrameTimingManager.GetLatestTimings(300, all));
+        Assert.Equal(newestCaptured, all[0].frameStartTimestamp);   // still the captured snapshot, newest first
+    }
+
+    [Fact]
     public void ProfilerRecorder_FrameTimeStats_ReadTheMeasuredFrame()
     {
         using var loop = new GameLoop();

@@ -83,9 +83,9 @@ checklist.
      BESIDE MY CLONE puts it next to their clone. Prefer a launcher button over hand-run PowerShell.
    - **F3 is Amoebius's diagnostics overlay** (`PlayerDiagnostics.cs`, ARCHITECTURE §11.3): read it in a
      user's screenshot for fps, sign-in, lobby and ping before guessing. The game's own top-left panel (F7)
-     used to report 60 fps while the game ran at 5-9. Since 2026-10-14 it agrees with F3 within a few
-     percent in a normal run. In a scripted (`--frames`) run its FPS and Frame Time still read the fixed
-     1/60 step, on purpose (item 13).
+     used to report 60 fps while the game ran at 5-9. Since 2026-10-14 both read one clock
+     (`FrameTimingManager`) and agree within a few percent in a normal run. In a scripted (`--frames`) run
+     F7's FPS and Frame Time still read the fixed 1/60 step, on purpose (item 13); F3 reads the real frame.
 
 13. **Traps from the frame-timing session (2026-10-14).**
    - **The cloud container has no .NET.** `curl -sSL https://dot.net/v1/dotnet-install.sh | bash -s --

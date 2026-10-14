@@ -446,9 +446,11 @@ own touch controls.
 
 The readout's FPS and frame time come from `Time.unscaledDeltaTime`. Its CPU, GPU and bound verdict come from
 `FrameTimingManager`, which the engine measures on the wall clock (`src/CosmicShore.Engine/Rendering/FrameTimingManager.cs`).
-The game loop times each tick, and the player reports its draw CPU and GPU timer queries. In a normal run the two
-agree with F3. A scripted run (`--frames`) steps every game clock by 1/60 s, so there FPS and frame time read
-60 / 16.7 ms while the CPU and GPU rows show the real cost.
+The game loop times each tick, and the player reports its draw CPU and GPU timer queries. F3 (below), the session
+report's frame times and the control port's `frameMs` read the same measured frames, so in a normal run the two
+panels agree. Only their averaging differs: F7 smooths over about 10 frames, F3 over 240. A scripted run (`--frames`)
+steps every game clock by 1/60 s, so there F7's FPS and frame time read 60 / 16.7 ms while its CPU and GPU rows, and
+all of F3, show the real cost.
 
 **Amoebius's own diagnostics (F3, top right).** The game's panel above is the game's; F3 shows the engine's
 view of the same process (`src/CosmicShore.Player/PlayerDiagnostics.cs`), refreshed twice a second:
@@ -457,7 +459,7 @@ view of the same process (`src/CosmicShore.Player/PlayerDiagnostics.cs`), refres
 
 | Section | What it shows |
 |---|---|
-| FRAME | fps (green 55+, amber 30+, red below), frame time average / 1% worst / max over the last 240 frames; simulation and render CPU; GPU from timer queries (desktop GL; a GL ES context has none); the game loop's phases |
+| FRAME | fps (green 55+, amber 30+, red below), frame time average / 1% worst / max over the last 240 frames; simulation and render CPU and GPU from timer queries (desktop GL; a GL ES context has none), averaged over the frames since the last refresh and at least the last 10; the game loop's phases. All read from `FrameTimingManager` through `FrameTimingWindow`, the clock F7 reads |
 | MEMORY | managed heap, process working set, allocation per frame, collections per generation and GC pause in the last half second |
 | SCENE | the active scene, resolution, draw calls and instances |
 | NETWORK | offline (START) or online (START ONLINE); the NetStack chain; the UGS sign-in (player id, or why it failed), project and environment; every lobby this player is in (code, host or member, seats, relay join code, properties) and the last Lobby error; the match role, relay code and region, traffic, and each peer's round trip (green under 80 ms, amber under 160); the network simulator and session faults when set |

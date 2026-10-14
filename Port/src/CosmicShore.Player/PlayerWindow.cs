@@ -1,5 +1,4 @@
 using System;
-using System.Linq;
 using CosmicShore.Engine;
 using CosmicShore.Render;
 using ColorSpace = CosmicShore.Render.ColorSpace;
@@ -172,7 +171,7 @@ namespace CosmicShore.Player
             // game's Entities Graphics support probe passes as it does on a desktop GPU. A
             // headless run never gets here and stays on the MeshRenderer path, like -nographics.
             SystemInfo.supportsComputeShaders = true;
-            if (Control != null) { Control.Quit = () => _window.Close(); Control.FrameMs = () => _lastFrameMs; }
+            if (Control != null) { Control.Quit = () => _window.Close(); Control.FrameMs = LastFrameMs; }
             if (StartHidden && Control != null) Control.VirtualSize = (_width, _height);
             _boot = new PlayerBoot { NoScene = ModelViewer.Path != null };
             SessionReport.Log = _boot.Log;
@@ -221,8 +220,14 @@ namespace CosmicShore.Player
             _boot.Tick(step);
             if (_boot.QuitNow) _window.Close();
             ParityRun.AfterTick(_frameIndex);
-            _lastSimMs = System.Diagnostics.Stopwatch.GetElapsedTime(t0).TotalMilliseconds;
-            SessionReport.SimTime(_lastSimMs);
+            // One clock for every frame figure (session report, F3, the control port, the game's DiagnosticsHUD):
+            // the frame the loop just completed, as FrameTimingManager measured it.
+            if (FrameTimingManager.CompletedFrames != _reportedFrames && FrameTimingManager.TryGetLastFrame(out var frame, out double simMs))
+            {
+                _reportedFrames = FrameTimingManager.CompletedFrames;
+                SessionReport.FrameTime(frame.cpuFrameTime);
+                SessionReport.SimTime(simMs);
+            }
             if (ModelViewer.Path == null) PlayerDiagnostics.Tick(_sceneRenderer.DrawCalls, _sceneRenderer.Instances);
             if (s_timing && _frameIndex % 30 == 0)
                 Console.WriteLine($"[tick] simulation {(System.Diagnostics.Stopwatch.GetTimestamp() - t0) * 1000.0 / System.Diagnostics.Stopwatch.Frequency:F1} ms (frame {_frameIndex})"
@@ -242,20 +247,20 @@ namespace CosmicShore.Player
             return r;
         }
 
-        double _lastFrameMs, _lastSimMs, _lastGpuMs = -1;
+        int _reportedFrames;
+
+        /// <summary>The last completed frame's wall time (FrameTimingManager), for the control port and the screenshot line.</summary>
+        static double LastFrameMs() => FrameTimingManager.TryGetLastFrame(out var frame) ? frame.cpuFrameTime : 0;
+
         // GPU time per render pass (desktop GL), for the session report and FrameTimingManager. A pass's
         // time is GPU wall time, so while the frame is CPU-bound it includes the GPU waiting for
         // the pass's commands: read it next to cpu.renderP50Ms.
         GpuTimer _gpu;
         Action<int> _gpuSceneSplit;
         static readonly bool s_timing = Environment.GetEnvironmentVariable("COSMIC_SHORE_RENDER_TIMING") == "1";
-        readonly System.Diagnostics.Stopwatch _frameClock = System.Diagnostics.Stopwatch.StartNew();
 
         void OnRender(double dt)
         {
-            _lastFrameMs = _frameClock.Elapsed.TotalMilliseconds;
-            SessionReport.FrameTime(_lastFrameMs);
-            _frameClock.Restart();
             int winW = _window.FramebufferSize.X, winH = _window.FramebufferSize.Y;
             if (winW <= 0 || winH <= 0) return;
             // The control port's `resize WxH`: the game sees (and captures) that resolution
@@ -275,7 +280,7 @@ namespace CosmicShore.Player
                 return;
             }
             long r0 = System.Diagnostics.Stopwatch.GetTimestamp();
-            if (_gpu?.BeginFrame() is { } gpuMs) { SessionReport.GpuTime(_gpu.Passes, gpuMs); _lastGpuMs = gpuMs.Sum(); }
+            if (_gpu?.BeginFrame() is { } gpuMs) SessionReport.GpuTime(_gpu.Passes, gpuMs);
             _gpu?.Begin(0);
             _frame.Ensure(w, h);
             // Enabled cameras aimed at a RenderTexture draw every frame (the preview window, the
@@ -301,18 +306,17 @@ namespace CosmicShore.Player
             }
             else _present.Draw(_frame.Color, w, h);
             _gpu?.EndFrame();
-            // The game's frame timing (FrameTimingManager, which DiagnosticsHUD reads): this frame's draw CPU and the GPU's last answer.
-            FrameTimingManager.ReportRender(System.Diagnostics.Stopwatch.GetElapsedTime(r0).TotalMilliseconds, _gpu?.LastFrameMs);
-            // CPU time spent issuing the frame's GL work (the GPU's own time needs timer queries).
+            // CPU time spent issuing the frame's GL work (the GPU's own time needs timer queries). FrameTimingManager
+            // takes it with the GPU's last answer: the frame timing F3 and the game's DiagnosticsHUD read.
             double renderMs = System.Diagnostics.Stopwatch.GetElapsedTime(r0).TotalMilliseconds;
+            FrameTimingManager.ReportRender(renderMs, _gpu?.LastFrameMs);
             SessionReport.RenderTime(renderMs);
-            PlayerDiagnostics.Frame(_lastFrameMs, _lastSimMs, renderMs, _lastGpuMs >= 0 ? _lastGpuMs : null);
 
             _frameIndex++;
             if (_shots.TryGetValue(_frameIndex, out var path))
             {
                 Capture(path, w, h);
-                Console.WriteLine($"screenshot → {path} ({w}x{h}) frame {_frameIndex} — scene {_sceneRenderer.DrawCalls} draws / {_sceneRenderer.Instances} instances, {_lastFrameMs:F0} ms/frame");
+                Console.WriteLine($"screenshot → {path} ({w}x{h}) frame {_frameIndex} — scene {_sceneRenderer.DrawCalls} draws / {_sceneRenderer.Instances} instances, {LastFrameMs():F0} ms/frame");
             }
             if (FrameRecorder.TryPath(_frameIndex, out var recPath))
                 Capture(recPath, w, h);

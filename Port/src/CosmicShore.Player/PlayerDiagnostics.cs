@@ -15,7 +15,8 @@ namespace CosmicShore.Player
     /// right, drawn by the engine's uGUI and refreshed twice a second. The game's DiagnosticsHUD (F7, top left) is
     /// the game's; this one is the engine's view of the same process:
     /// <list type="bullet">
-    /// <item>FRAME: fps, frame time (average, 1% worst, max), simulation and render CPU, GPU when timed, the loop's phases;</item>
+    /// <item>FRAME: fps, frame time (average, 1% worst, max), simulation and render CPU, GPU when timed, the loop's phases.
+    /// Read from <see cref="FrameTimingManager"/> through <see cref="FrameTimingWindow"/>, the clock F7 reads too;</item>
     /// <item>MEMORY: managed heap, allocation per frame, collections and GC pause, the process's working set;</item>
     /// <item>SCENE: the active scene, draw calls and instances, resolution;</item>
     /// <item>NETWORK: online or offline, the NetStack chain, the UGS sign-in, the lobbies this player is in, the relay,
@@ -25,7 +26,6 @@ namespace CosmicShore.Player
     /// </summary>
     static class PlayerDiagnostics
     {
-        const int Window = 240;          // frames the frame-time figures cover (4 s at 60 fps)
         const float Width = 470f, Pad = 12f, LineH = 17.5f, FontSize = 13.5f;
 
         public static bool Visible { get; private set; }
@@ -35,27 +35,14 @@ namespace CosmicShore.Player
         static RectTransform s_panel;
         static TextMeshProUGUI s_text;
 
-        static readonly double[] s_frameMs = new double[Window];
-        static int s_frames, s_framesSinceRefresh;
-        static double s_simMs, s_renderMs, s_gpuMs = -1;
+        // FRAME reads FrameTimingManager, the clock the game's DiagnosticsHUD (F7) reads too.
+        static readonly FrameTimingWindow s_frame = new();
         static long s_allocMark = -1;
         static int s_gc0, s_gc1, s_gc2;
         static TimeSpan s_gcPause;
         static readonly Stopwatch s_refresh = Stopwatch.StartNew();
         static readonly Process s_process = Process.GetCurrentProcess();
         static string s_phases = "";
-
-        /// <summary>Per frame, from the window: the frame's wall time and its simulation and render CPU.</summary>
-        public static void Frame(double frameMs, double simMs, double renderMs, double? gpuMs)
-        {
-            s_frameMs[s_frames % Window] = frameMs;
-            s_frames++;
-            s_framesSinceRefresh++;
-            // A light running average: the text shows a steady number rather than the last frame's.
-            s_simMs = s_simMs * 0.9 + simMs * 0.1;
-            s_renderMs = s_renderMs * 0.9 + renderMs * 0.1;
-            if (gpuMs is { } g) s_gpuMs = s_gpuMs < 0 ? g : s_gpuMs * 0.9 + g * 0.1;
-        }
 
         /// <summary>Per tick: F3 toggles; twice a second the text is rebuilt.</summary>
         public static void Tick(int drawCalls, int instances)
@@ -67,7 +54,6 @@ namespace CosmicShore.Player
             s_text.text = Text(drawCalls, instances);
             int lines = s_text.text.Count(c => c == '\n') + 1;
             s_panel.sizeDelta = new Vector2(Width, lines * LineH + 2 * Pad);
-            s_framesSinceRefresh = 0;
             s_refresh.Restart();
         }
 
@@ -122,27 +108,24 @@ namespace CosmicShore.Player
             var sb = new StringBuilder();
 
             // ── FRAME
-            int n = Math.Min(s_frames, Window);
-            var ms = new double[n];
-            Array.Copy(s_frameMs, ms, n);
-            Array.Sort(ms);
-            double avg = n > 0 ? ms.Average() : 0, worst1 = n > 0 ? ms[(int)Math.Min(n - 1, Math.Floor(n * 0.99))] : 0, max = n > 0 ? ms[n - 1] : 0;
-            double fps = avg > 0 ? 1000 / avg : 0;
-            string fpsColor = fps >= 55 ? Good : fps >= 30 ? Warn : Bad;
-            sb.Append(Col(Head, "FRAME")).Append("   ").Append(Col(fpsColor, $"{fps:0} fps")).Append($"   {avg:0.0} ms avg · 1% {worst1:0.0} · max {max:0.0}\n");
-            sb.Append($"cpu  sim {s_simMs:0.0} ms · render {s_renderMs:0.0} ms");
-            sb.Append(s_gpuMs >= 0 ? $" · gpu {s_gpuMs:0.0} ms" : Col(Dim, " · gpu not timed"));
+            var f = s_frame;
+            f.Read();
+            int newFrames = f.NewFrames;
+            string fpsColor = f.Fps >= 55 ? Good : f.Fps >= 30 ? Warn : Bad;
+            sb.Append(Col(Head, "FRAME")).Append("   ").Append(Col(fpsColor, $"{f.Fps:0} fps")).Append($"   {f.AverageMs:0.0} ms avg · 1% {f.Worst1PercentMs:0.0} · max {f.MaxMs:0.0}\n");
+            sb.Append($"cpu  sim {f.SimulationMs:0.0} ms · render {f.RenderMs:0.0} ms");
+            sb.Append(f.GpuMs is { } gpu ? $" · gpu {gpu:0.0} ms" : Col(Dim, " · gpu not timed"));
             sb.Append('\n');
-            if (GameLoop.Current is { } loop && s_framesSinceRefresh > 0)
+            if (GameLoop.Current is { } loop && newFrames > 0)
             {
-                var phases = loop.TakePhaseReport(s_framesSinceRefresh);
+                var phases = loop.TakePhaseReport(newFrames);
                 if (phases.Length > 0) s_phases = phases;
             }
             if (s_phases.Length > 0) sb.Append(Col(Dim, Wrap("loop " + s_phases, 64))).Append('\n');
 
             // ── MEMORY
             long total = GC.GetTotalAllocatedBytes(false);
-            double kbPerFrame = s_allocMark >= 0 && s_framesSinceRefresh > 0 ? (total - s_allocMark) / 1024.0 / s_framesSinceRefresh : 0;
+            double kbPerFrame = s_allocMark >= 0 && newFrames > 0 ? (total - s_allocMark) / 1024.0 / newFrames : 0;
             s_allocMark = total;
             int g0 = GC.CollectionCount(0), g1 = GC.CollectionCount(1), g2 = GC.CollectionCount(2);
             var pause = GC.GetTotalPauseDuration();
