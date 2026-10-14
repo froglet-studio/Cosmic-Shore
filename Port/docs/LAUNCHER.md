@@ -28,7 +28,7 @@ Source: `Port/src/CosmicShore.Launcher` (C#, Dear ImGui on our own Silk.NET wind
 
 | Page | What it is for |
 |---|---|
-| **PLAY** | Branch, **START**, and four quick toggles (fullscreen, audio, online, pull first). The small buttons beside them update without playing and open the workspace folder. |
+| **PLAY** | Branch, **START** (offline) and **START ONLINE** (UGS, below), and three quick toggles (fullscreen, audio, pull first). The small buttons beside them update without playing and open the workspace folder. |
 | **BUILD** | One card per phone platform. Each card has one choice and one button; everything else is under *Options*. |
 | **PROJECT** | The engine's own Project Settings (below). |
 | **AGENT** | The Amoebius Agent, powered by Claude: as many chats as you like, side by side (below). |
@@ -36,7 +36,6 @@ Source: `Port/src/CosmicShore.Launcher` (C#, Dear ImGui on our own Silk.NET wind
 | **EDITOR** | TOOLS (every FrogletTools tool, run by the agent), DATA (the data sets, editable) and MODELS (every model in the game's colours; VIEW IN ENGINE) (below). |
 | **VESSEL STUDIO** | The Vessel Studio inside Amoebius: pick a vessel (Squirrel, Stoat, or ALL STUDIOS for the hub), then one row of actions for it: **OPEN IN AMOEBIUS · OPEN IN BROWSER · PLAY IN ENGINE · AGENT · DOCS**. Quiet links below: the claude.ai artifact, the folder, update from the artifact. Below it, **ARTIFACTS**: every claude.ai artifact brought into the repo, and the way to add one. Catalogs: `Docs/Studios/VesselStudio/studios.json` and `Docs/Artifacts/artifacts.json` (below). |
 | **TIME** | Benchmarks (timed runs of scenes and replays that close themselves, with a results table against the last run) (below). |
-| **NET** | Multiplayer on this PC: 2-4 game windows that join each other, a simulated line per player, live traffic and RTT, a pulled cable, session faults (below; `docs/MULTIPLAYER.md`). |
 | **TRACKS** | Every play run: performance per scene, features used, audio, every problem over time (below). |
 | **BOARD** | Bugs and tasks, with Amoebius's suggestions (below). |
 | **SETTINGS** | Folded sections: Game, Online (below), Source, Look, Claude, Advanced, Toolchain, About (versions). |
@@ -197,49 +196,27 @@ faster, red slower). Every benchmark is kept in `%LOCALAPPDATA%\Amoebius\bench` 
 from the history list. `Amoebius --auto bench:Menu_Main,MinigameSkimRace:600` runs a headless
 benchmark unattended and closes Amoebius when it is saved.
 
-## NET - multiplayer on this PC
+## START ONLINE - playing with other players
 
-Amoebius's counterpart of Unity's Multiplayer Play Mode, Network Simulator and Runtime Network Stats
-Monitor (`docs/MULTIPLAYER.md` §6).
+**START** plays offline, on your own. **START ONLINE**, beside it, plays online the way the Unity
+build does: the game signs in to Unity Gaming Services (UGS) as this profile's player, and its
+parties, invites and matches go through **UGS Lobby** (who is online, parties, sessions) and **UGS
+Relay** (the match traffic between machines). There is nothing to host, find or forward: UGS is
+always there, and players on any network meet through it (`docs/MULTIPLAYER.md` §6.10). There is no
+LAN or local-network play.
 
-**PLAYERS** opens 2, 3 or 4 game windows (a party is four), tiled two by two, each in its own save
-slot (`player1`, `player2` ...) with networking on and sound only in the first. They share one
-fresh session folder per run, so a party or match hosted in one window shows up in the others:
-host in one, join from the rest (the friends list, or the DiagnosticsHUD's `party invite <name>` /
-`party join <name>`). **TRANSPORT** picks what carries their traffic: UDP (Froglet's own transport,
-the default) or TCP (the first one); every player uses the same. Each player can start on a
-simulated line (clean, lan, broadband, dsl, 4g, 3g, poor). Start them at Bootstrap (log in, menu) or straight into a scene. **CLOSE** closes them all.
+SETTINGS > ONLINE:
 
-**LIVE** shows, once a second, each player's scene, role (server or client), traffic in and out and
-RTT to each peer, read from its control port. Per player, while it runs: change its line, **PULL
-CABLE** (after 10 s every peer drops it, as a real timeout does; **PLUG IN** ends it), arm a session
-fault (full, ratelimit=3, relayfail, slow=2000, down) and **CAPTURE 10 S** (600 frames of per-frame
-traffic and RTT to a JSON file the console names). The windows' titles carry the same line.
+- **UGS environment**: the UGS environment START ONLINE signs in to. Empty uses the branch's
+  (`Network.UgsEnvironment` in `Port/ProjectSettings/AmoebiusProject.json`), else **`amoebius`**: a
+  separate environment keeps Amoebius's lobbies apart from the Unity build's, whose netcode does not
+  talk to Amoebius's. **It must exist in the UGS dashboard** (Project settings > Environments > Add);
+  until it does, sign-in fails, the console says so, and START still plays offline.
+- **UGS CHECK**: signs two test players in to UGS (the `relaycheck` profile, the same two every time),
+  allocates on UGS Relay, joins by code and sends frames both ways (`CosmicShore --ugs-relay-check`).
 
-The NET page's players always meet in their own session folder, whatever SETTINGS > ONLINE
-names (`COSMIC_SHORE_NET_SERVER=dir`), so the transport, simulator, relay and fault switches here
-are exactly what they test.
-
-## ONLINE - playing with other machines
-
-SETTINGS > ONLINE decides where every game this launcher starts finds the other players. Games meet
-through Amoebius's online server: the lobby (who is online, parties, invites) and the relay that
-carries a match between machines (`docs/ARCHITECTURE.md` §8).
-
-- **Server** empty (the default): on a local network nothing needs setting up. A game looks for a
-  server on the network; if there is none, the first game started hosts one and the others find it.
-- **Server** `host[:port]`: for players in different places. Everyone enters the same address, of a
-  machine that runs the server and is reachable from the internet (port 47777 when left out).
-- **Server key**: only when that server was started with a key. Kept in the OS credential store.
-- **Host the online server on this PC**: runs the server (the game's player with `--server`) while
-  Amoebius is open, independent of any game. Games on this network prefer it over one a game hosts,
-  and it lists the addresses players on this network use. For friends elsewhere, forward TCP 47777
-  on your router to this PC and give them your public address. Windows asks once whether CosmicShore
-  may use the network: allow it on private networks.
-
-A branch can name the team's shared server for everyone: `Network.Server` (and `Network.Key`) in
-`Port/ProjectSettings/AmoebiusProject.json`. A player's own Server setting wins over it, and phone
-builds carry it (without it, a phone plays on its own).
+Each player is their own UGS player: two people on one PC use different profiles (SETTINGS >
+ADVANCED > Profile).
 
 ## When Amoebius itself closes unexpectedly
 
@@ -516,6 +493,7 @@ The agent has the same data through MCP: `asset_froglet_tools`, `asset_datasets`
 ```
 git fetch <branch>  ->  FMOD library from Git LFS  ->  dotnet build Port/src/CosmicShore.Player
                     ->  CosmicShore.exe --size ... [--fullscreen] [--scene ...]
+                        (START: COSMIC_SHORE_NET=off; START ONLINE: signed in to UGS, Lobby + Relay)
 ```
 
 Settings live in `%LOCALAPPDATA%\Amoebius\launcher.json` (its secrets in the credential store, above). The launcher never writes to your

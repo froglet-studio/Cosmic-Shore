@@ -8,7 +8,7 @@ Last parity run against Unity goldens: 2026-10-07 (boot-menu, random, skimrace-f
 
 | | Faithful | Approximate | Missing |
 |---|---|---|---|
-| Subsystems | 0 | 27 | 6 |
+| Subsystems | 0 | 28 | 5 |
 | Shaders | 0 | 67 | 20 |
 
 ## Subsystems
@@ -44,8 +44,8 @@ Last parity run against Unity goldens: 2026-10-07 (boot-menu, random, skimrace-f
 | UI | uGUI layout, graphics, events, navigation | Approximate | no Unity golden yet | EngineUiLayoutTests, EngineUiGraphicTests, EngineUiEventTests, EngineUiNavigationTests, EngineUiGeometryTests | boot-menu/frames (missing) |
 | UI | TextMeshPro text | Approximate | no Unity golden yet | UiShellTests | boot-menu/frames (missing) |
 | Networking | Netcode over TCP, direct or through the relay | Approximate | no parity channel covers it yet | NetworkingTests, NetWireTests, MultiplayerSessionTests, NetTransportContractTests, NetDriverTransportTests | - |
-| Networking | Online server: lobby + relay between machines (LAN discovery, internet) | Approximate | no parity channel covers it yet | OnlineMultiplayerTests, SessionRulesTests | - |
-| Networking | Shipping online backend: real UGS or Steam (gate G2) | Missing | not implemented | - | - |
+| Networking | START ONLINE: UGS Lobby sessions + UGS Relay match, through NetStack | Approximate | no parity channel covers it yet | UgsMultiplayerTests, NetStackTests | - |
+| Networking | Shipping online backend: UGS live in the project (owner's check), or Steam (gate G2) | Approximate | no parity channel covers it yet | UgsAuthenticationTests, UgsMultiplayerTests | - |
 | Services | Cloud Save / stats (local stand-ins) | Approximate | no parity channel covers it yet | CloudDataTests, PlayerDataCloudTests | - |
 | Performance | p95 frame time within 10% of Unity (C7) | Approximate | no parity channel covers it yet | LongRunMemoryTests | - |
 

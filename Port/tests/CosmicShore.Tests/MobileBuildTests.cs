@@ -235,7 +235,7 @@ public class PlayerDataBuilderTests : IDisposable
     }
 
     [Fact]
-    public void The_branchs_online_server_ships_with_the_build()
+    public void The_branchs_ugs_environment_ships_with_the_build()
     {
         Asset("Assets/Scenes/Boot.unity", 1);
         Settings(("Assets/Scenes/Boot.unity", 1, true));
@@ -244,7 +244,7 @@ public class PlayerDataBuilderTests : IDisposable
         const string rel = "Port/ProjectSettings/AmoebiusProject.json";
         var src = Path.Combine(_root, rel);
         Directory.CreateDirectory(Path.GetDirectoryName(src)!);
-        File.WriteAllText(src, "{\"network\": {\"server\": \"play.example.org:47777\", \"key\": \"k\"}}");
+        File.WriteAllText(src, "{\"network\": {\"ugsEnvironment\": \"amoebius\"}}");
         var outDir = Path.Combine(_root, "out");
         new PlayerDataBuilder(_root).Build(outDir);
 

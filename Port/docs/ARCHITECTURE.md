@@ -108,7 +108,7 @@ sits behind those names is first-party code.
 | Async | A frame-driven task scheduler; awaits resume on the game-loop thread | `Tasks/` |
 | Rendering data | `Mesh`, `Material`, `Camera`, `RenderTexture`, volumes, change tracking. **Data only:** the Render project draws | `Rendering/` |
 | Audio | The FMOD Studio surface (`EventReference`, `EventInstance`, buses, VCAs). It runs silent on local state, or drives the real FMOD C API when a native backend is installed (which then also answers event descriptions: one-shot, snapshot, length). `RuntimeManager.EventRecorded` is the parity harness's FMOD channel (starts, restarts, stops, FMOD and Unity mixer snapshots); `FmodGuids` names GUID-only references from the build's `GUIDs.txt` | `Audio/` |
-| Networking | Netcode for GameObjects' model over TCP, directly or through the online server's relay; the online server (lobby + relay) for players on any network (section 8) | `Networking/`, `Networking/Online/` |
+| Networking | Netcode for GameObjects' model over Froglet's UDP transport through UGS Relay, with UGS Lobby for sessions: START ONLINE plays the way the Unity build does (section 8) | `Networking/`, `Networking/Wire/Ugs/` |
 | Services | Authentication, Cloud Save, Friends, Leaderboards and Analytics, kept on local disk | `Services/` |
 
 *More:* `docs/ENGINE_CORE.md`.
@@ -243,7 +243,7 @@ is sorted back to front. A per-instance "clock block" (15 vec4) rides in a textu
 
 ![Network](architecture/network.png)
 
-**Figure 5.** Players on any machine party up and play together through Amoebius's online server.
+**Figure 5.** START ONLINE: players on any network party up and play together through UGS Lobby and UGS Relay (drawn by `tools/draw_network_figure.py`).
 
 **`NetDriver`** carries Netcode for GameObjects' model over TCP. Each frame is
 `[length][kind][payload]`, encoded by `NetWire`. It covers:
@@ -267,103 +267,59 @@ fragments with selective acks and RTT-timed resends, plus an unreliable channel)
 networked player uses unless `COSMIC_SHORE_NET_TRANSPORT=tcp` (`MULTIPLAYER.md` §6.6). Below it,
 an `IDatagramLink` decides where its datagrams go: straight to the peer (`DirectLink`), or through a
 relay speaking Unity Relay's protocol (`RelayLink`), which is how players behind home routers reach
-each other. Froglet's own relay server (`FrogletRelayServer`, `CosmicShore --relay-server`) speaks
-the same protocol and REST shape as UGS Relay (`MULTIPLAYER.md` §6.7). `NetTransportContractTests`
-runs the same checks against every implementation (TCP, UDP, UDP through the relay, the online
-server's relay, the in-memory loopback the tests use, and each behind the network simulator), and
-`NetDriverTransportTests` and `OnlineMultiplayerTests` drive the driver's handshake.
+each other. `FrogletRelayServer` speaks the same protocol and REST shape as UGS Relay and is the tests'
+stand-in for it (`MULTIPLAYER.md` §6.7). `NetTransportContractTests` runs the same checks against every
+implementation (TCP, UDP, UDP through the relay, the in-memory loopback the tests use, and each behind
+the network simulator), and `NetDriverTransportTests` and `UgsMultiplayerTests` drive the driver's
+handshake.
 
-**The online server** (`Networking/Online/`) is what the UGS Lobby and Relay are to the Unity
-build. One process holds every session (the presence lobby, parties, match sessions: a roster
-each, with the per-player properties the game invites through) and relays each joining client's
-netcode connection to its session's host, so nobody but the server needs a reachable address.
-- **Wire** (`OnlineWire`): one TCP port (47777). A connection opens with one JSON frame
-  ([int32 length][UTF-8 JSON]): `hello` makes it a game's control connection (lobby requests and
-  replies matched by request id, plus server events), `link-open` is a joining client's relay link,
-  `link-accept` the host's half, which the server asks for with a `link` event. Once paired, the
-  server copies bytes both ways untouched, so `NetSocket`'s own frames run end to end.
-- **Lobby rules** (`SessionRules`, `Wire/SessionRecords.cs`) are the ones the shared-folder backend
-  uses too: join refuses a gone host, a locked or a full session; a player silent for 30 s leaves
-  the roster; a refresh hands a host-less session to the next player; queries filter on the
-  indexed properties and hide private and locked sessions. Only the host may delete a session or
-  remove a player.
-- **Liveness** is the control connection: a connected player is alive; one whose connection drops
-  keeps its seats for the 30 s reconnect grace.
-- **Soft state.** A game that (re)connects re-asserts every session it holds before its own lobby
-  calls go through, so a server restart, or a move to another server, rebuilds the lobby from the
-  games themselves (the host keeps its seat; deleted sessions and removed players stay gone).
-- **Keys.** A server started with a key refuses games without it (`COSMIC_SHORE_NET_KEY`).
+**Online is UGS, as the Unity build's** (`MULTIPLAYER.md` §6.10). The launcher's **START ONLINE** runs the
+game with networking on, and `UgsSetup.InstallOnline` puts it on Unity Gaming Services through REST (no
+Unity SDK, no Unity package code):
+- **Sign-in** (`UgsAuthentication`): anonymous, then the session token kept in the save profile's
+  folder, so a profile stays one UGS player. The game's own `SignInAnonymouslyAsync` goes through it
+  (`AuthenticationService.RemoteSignIn`), so the game's player id is its UGS id.
+- **Sessions** (`UgsMultiplayerService` over `UgsLobbyClient`): a session is a UGS Lobby lobby, as the
+  Multiplayer Services SDK makes it: roster, per-player properties (the game's invite channel), session
+  properties with their query index (S1..S5), host, private and locked, seats. The host heartbeats every
+  lobby it holds every 15 s. Lobby refusals become the SDK's `SessionException` codes the game's
+  `UgsRequestPolicy` reads (429 rate limited; 404 gone; a full lobby by its words "is full"; 5xx and no
+  answer a transient `RequestFailedException`).
+- **The match** (`RelayedSessions`): creating a Relay-networked session allocates on UGS Relay, starts
+  the NetworkManager host on the allocation, and puts the join code in the lobby as member-visible data
+  (`amoebius_relay`); a joiner joins Relay by that code and starts the client. Frames go over Froglet's
+  UDP transport in Unity Relay's protocol.
+- **Which UGS environment**: `COSMIC_SHORE_UGS_ENVIRONMENT` (the launcher's SETTINGS > ONLINE), else
+  `Network.UgsEnvironment` in `Port/ProjectSettings/AmoebiusProject.json`, else **`amoebius`**, which keeps
+  Amoebius's lobbies apart from the Unity build's (their netcode does not talk to each other). It must
+  exist in the UGS dashboard; `""` means the project's default.
 
-**`OnlineMultiplayerService`** is the game's `MultiplayerService.Instance` when networking is on:
-every SDK call is a request to the server; `CreateSessionAsync` with Relay starts the
-NetworkManager as host (as the SDK's network handler does), and a join to a Relay session points
-the transport at `amoebius-relay:<session>` and starts the client. When `COSMIC_SHORE_RELAY` names a
-Unity-Relay-protocol relay, the server stays the lobby but the match goes over that relay instead
-(UDP, with the unreliable channel): the host allocates before it starts, and the session record
-carries the join code a joiner uses (`RelayedSessions`, shared with the folder backend). It keeps the connection up in
-the background (backoff, keep-alive, following a server that stood down) and lobby calls made
-while it is down wait for it, then fail with the `SessionException` the game's own retry and
-offline paths handle.
+**START** runs with `COSMIC_SHORE_NET=off`: one offline process, sessions in `LocalMultiplayerService`.
+There is no LAN discovery, local server or shared-folder backend (removed 2026-10-14: UGS is the one
+place players meet, as in the Unity build).
 
-**Which server.** `PlayerBoot` picks, in order:
-1. `COSMIC_SHORE_NET_SERVER` (the launcher's SETTINGS > ONLINE): `host[:port]` for internet play,
-   or `dir` for the shared-folder backend below;
-2. the branch's shared server, `Network.Server` in `Port/ProjectSettings/AmoebiusProject.json`
-   (packaged into phone builds too);
-3. **automatic** (empty): a UDP probe on 47777 (`OnlineDiscovery`) finds a server on the local
-   network; with none, the game hosts one itself (`OnlineServer.TryStartEmbedded`). The discovery
-   port is the election lock, so one machine hosts one server. Servers announce themselves every 3 s;
-   a server hosted inside a game stands down for a better one it hears (a standalone server, else
-   the older), after checking it can reach it and that the key is the same, telling its games to
-   move. Relay links already running keep running until they close. A server hosted by a game
-   lives in that game: when the game quits, another game takes over (hosts one and re-asserts its
-   sessions), but a match relayed through the old server ends with it. A standalone server does
-   not have that problem.
-
-`CosmicShore --server [PORT] [--key KEY] [--name NAME] [--no-discovery]` runs the server alone, with
-no window or content (`ServerMode`); the launcher's "Host the online server on this PC" runs exactly
-that. For players outside the LAN, forward the TCP port on the router to that machine, or run it on
-a machine with a public address, and give every game its address.
-
-**How a player puts it together (`NetStack`, `Wire/NetStack.cs`).** `PlayerBoot` calls one method,
-which installs the layers in the only order that works: the transport (`NetTransports.Select`), the
-relay `COSMIC_SHORE_RELAY` names over it, the session service (which, for the online server, adds the
-server's own relay over the transport chosen beneath it), then the network simulator around the whole
-transport chain and session faults around the service. The player prints the result at boot, e.g.
-`[net] stack: simulated > online > relay > udp; sessions: faults > online`. `NetStackTests` holds the
-order, plays a match through the online lobby and the relay end to end, and fails if `PlayerBoot`
-stops calling it (a merge on 2026-10-13 dropped the transport, relay, simulator and fault wiring while
-every per-layer test stayed green).
-
-| Sessions | Match network | When |
-|---|---|---|
-| Online server | the server's relay (TCP) | the default: no `COSMIC_SHORE_RELAY` |
-| Online server | the Unity-Relay-protocol relay (UDP) | `COSMIC_SHORE_RELAY` set (Froglet's relay server, or `ugs`) |
-| Shared folder | direct (UDP by default, or TCP), or that relay when set | `COSMIC_SHORE_NET_SERVER=dir`, or `COSMIC_SHORE_NET_DIR` with no server named: the NET page, `net_*` tools, the party harness, phones |
-
-**`DirectoryMultiplayerService`** is the single-machine backend: one JSON file per session in a
-folder every player can see (`COSMIC_SHORE_NET_DIR`): roster, per-player properties (the game's
-invite channel), heartbeat, and the host's endpoint, or its relay join code when `COSMIC_SHORE_RELAY`
-names a relay (the host allocates before it starts listening; a joiner joins by code). Its lobby rules
-are `SessionRules`, the online server's. It is what the NET page, the `net_*` tools and the party
-harness use, and phone builds without a server (a phone does not probe the LAN or host a server, so
-iOS shows no local-network prompt).
+**How a player puts it together (`NetStack`, `Wire/NetStack.cs`).** `UgsSetup.InstallOnline` calls one
+method, which installs the layers in the only order that works: the transport (`NetTransports.Select`),
+UGS Relay over it, the session service (UGS Lobby), then the network simulator around the whole transport
+chain and session faults around the service. The player prints the result at boot:
+`[net] stack: simulated > relay > udp; sessions: faults > ugs`. `NetStackTests` holds the order and fails
+if the player stops calling it (a merge on 2026-10-13 dropped the transport, relay, simulator and fault
+wiring while every per-layer test stayed green); `UgsMultiplayerTests` plays a match through it against
+local stand-ins for UGS Lobby (`UgsLobbyStandIn`) and Relay (`FrogletRelayServer`).
 
 **Services** are local stand-ins:
-- Authentication: an anonymous id persisted per install (each player on one machine needs their own
-  `COSMIC_SHORE_PROFILE`; two games with one id replace each other on the server). Separately, with
-  `COSMIC_SHORE_RELAY=ugs` the relay signs in to UGS itself (`UgsAuthentication`, REST, one UGS player
-  per save profile) to get the bearer token UGS Relay needs (`MULTIPLAYER.md` §6.8).
+- Authentication: offline, an anonymous id persisted per install; online, the UGS sign-in above (one
+  UGS player per save profile: each player on one machine needs their own `COSMIC_SHORE_PROFILE`).
 - Cloud Save: a JSON file.
 - Friends: an empty friend book.
 - Leaderboards and Analytics: in memory.
 
-**Turning it off:** `COSMIC_SHORE_NET=off` keeps everything in one process. A second player on one
-machine runs with `COSMIC_SHORE_PROFILE=b`. A headless player in a multiplayer run needs
+**Turning it off:** `COSMIC_SHORE_NET=off` (START) keeps everything in one process. A second player on
+one machine runs with `COSMIC_SHORE_PROFILE=b`. A headless player in a multiplayer run needs
 `--realtime`, which keeps its game clock on the wall clock (`RealtimePacer`).
 
-**The plan, the backends and the test tools** (simulator, stats, faults, the Launcher's
-MULTIPLAYER panel, the UDP transport) are in `MULTIPLAYER.md`.
+**The plan, the backends and the test tools** (simulator, stats, faults, the UDP transport) are in
+`MULTIPLAYER.md`.
 
 ---
 
@@ -500,12 +456,12 @@ own touch controls.
 | `--do "F:inspect OBJECT Component"` · `eval Type.Member` | Print live state at frame F |
 | `--record DIR:FROM-TO` | Record frames (`tools/record_session.sh` makes a video) |
 | `--headless` · `--verbose` · `--seed S` | No window · every log channel · reproducible runs |
-| `--server [PORT] [--key K]` | The online server alone: lobby and relay for other games, no window or content (section 8) |
+| `--ugs-relay-check [REGION]` | Signs two UGS players in, allocates, joins by code and times frames through UGS Relay (the launcher's UGS CHECK) |
 | `--train train\|replay\|eval` | The game's AI genetic training (`docs/AI_TRAINING.md`) |
 
 Environment variables:
 - `COSMIC_SHORE_AUDIO=off|wav:PATH|nrt` (`nrt`: the FMOD runtime and banks, no output, mixed only on the engine's tick; what `engine_parity` runs)
-- `COSMIC_SHORE_NET=off`; `COSMIC_SHORE_NET_SERVER=host[:port]|dir` (empty: automatic), `COSMIC_SHORE_NET_KEY`, `COSMIC_SHORE_NET_EMBED=0` (never host a server in this game)
+- `COSMIC_SHORE_NET=off` (START: offline); online, `COSMIC_SHORE_UGS_ENVIRONMENT` (default `amoebius`), `COSMIC_SHORE_UGS_PROJECT`, `COSMIC_SHORE_RELAY_REGION`, `COSMIC_SHORE_NET_TRANSPORT=tcp`, `COSMIC_SHORE_NET_SIM`, `COSMIC_SHORE_NET_FAULT`
 - `COSMIC_SHORE_PROFILE=b` (second install)
 - `COSMIC_SHORE_PROJECT=DIR` (use another project or packaged data)
 - `COSMIC_SHORE_GLES=1`

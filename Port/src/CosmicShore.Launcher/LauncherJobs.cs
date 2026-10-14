@@ -148,8 +148,13 @@ namespace CosmicShore.Launcher
         /// <summary>PLAY, with <paramref name="extraArgs"/> added to this one launch.</summary>
         public void Play(IReadOnlyList<string> extraArgs) { _oneShotArgs = extraArgs; Play(); }
 
-        public void Play() => Start("Start game", async ct =>
+        /// <summary>
+        /// START (offline, the default) or START ONLINE (<paramref name="online"/>: signed in to UGS, parties and
+        /// matches through UGS Lobby and Relay).
+        /// </summary>
+        public void Play(bool online = false) => Start("Start game", async ct =>
         {
+            PlayingOnline = online;
             if (!await EnsureTools(ct)) return false;
             // Unsaved edits in the workspace are what the user wants to try: build them as they are.
             int pending = _ws.HasEngine ? _ws.PendingChanges() : 0;
@@ -350,7 +355,7 @@ namespace CosmicShore.Launcher
             foreach (var kv in _tools.DotnetEnv()) psi.Environment[kv.Key] = kv.Value;
             psi.Environment["COSMIC_SHORE_PROJECT"] = _ws.Dir;
             if (!audio) psi.Environment["COSMIC_SHORE_AUDIO"] = "off";
-            if (!_s.Network) psi.Environment["COSMIC_SHORE_NET"] = "off";
+            if (!PlayingOnline) psi.Environment["COSMIC_SHORE_NET"] = "off";
             OnlineEnvironment(psi);
             if (_s.MobileRenderPath) psi.Environment["COSMIC_SHORE_GLES"] = "1";
             if (!string.IsNullOrWhiteSpace(_s.Profile)) psi.Environment["COSMIC_SHORE_PROFILE"] = _s.Profile.Trim();

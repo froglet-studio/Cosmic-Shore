@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace CosmicShore.Engine.Networking
 {
-    /// <summary>A transport factory that adds a layer over another one (the simulator, a relay, the online server).</summary>
+    /// <summary>A transport factory that adds a layer over another one (the simulator, the relay).</summary>
     internal interface IWrappingTransportFactory
     {
         INetTransportFactory Inner { get; }
@@ -13,8 +13,8 @@ namespace CosmicShore.Engine.Networking
     /// The one place a player puts its networking together, in the only order that works (docs/MULTIPLAYER.md §6.9):
     /// <list type="number">
     /// <item>the transport (<see cref="NetTransports.Select"/>: UDP unless COSMIC_SHORE_NET_TRANSPORT=tcp);</item>
-    /// <item>the Unity-Relay-protocol relay over it, when COSMIC_SHORE_RELAY names one;</item>
-    /// <item>the session service: the online server (which adds its own relay over the transport) or the shared folder;</item>
+    /// <item>UGS Relay over it (every online match goes through it);</item>
+    /// <item>the session service: UGS Lobby (<see cref="UgsMultiplayerService"/>);</item>
     /// <item>the network simulator around the whole transport chain, then session-service faults around the service.</item>
     /// </list>
     /// A merge once dropped steps 1, 2 and 4 from the player while every engine test stayed green, so the
@@ -33,7 +33,7 @@ namespace CosmicShore.Engine.Networking
             Console.WriteLine($"[net] stack: {Describe()}; sessions: {DescribeSessions()}");
         }
 
-        /// <summary>The driver's transport chain, outermost first: "simulated > online > relay > udp".</summary>
+        /// <summary>The driver's transport chain, outermost first: "simulated > relay > udp".</summary>
         public static string Describe() => Describe(NetDriver.TransportFactory);
 
         internal static string Describe(INetTransportFactory factory)
@@ -44,7 +44,6 @@ namespace CosmicShore.Engine.Networking
                 names.Add(f switch
                 {
                     SimulatedTransportFactory => "simulated",
-                    OnlineTransportFactory => "online",
                     RelayTransportFactory => "relay",
                     UdpTransportFactory => "udp",
                     TcpTransportFactory => "tcp",
@@ -55,7 +54,7 @@ namespace CosmicShore.Engine.Networking
             return string.Join(" > ", names);
         }
 
-        /// <summary>The session service chain, outermost first: "faults > online".</summary>
+        /// <summary>The session service chain, outermost first: "faults > ugs".</summary>
         public static string DescribeSessions()
         {
             var names = new List<string>();
@@ -65,8 +64,7 @@ namespace CosmicShore.Engine.Networking
                 switch (s)
                 {
                     case FaultInjectingMultiplayerService f: names.Add("faults"); s = f.Inner; continue;
-                    case OnlineMultiplayerService: names.Add("online"); break;
-                    case DirectoryMultiplayerService: names.Add("folder"); break;
+                    case UgsMultiplayerService: names.Add("ugs"); break;
                     default: names.Add(s.GetType().Name); break;
                 }
                 break;

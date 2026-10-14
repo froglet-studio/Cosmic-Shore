@@ -11,8 +11,8 @@
   "summary": {
     "subsystems": {
       "Faithful": 0,
-      "Approximate": 27,
-      "Missing": 6
+      "Approximate": 28,
+      "Missing": 5
     },
     "shaders": {
       "Faithful": 0,
@@ -455,22 +455,25 @@
     {
       "id": "internet-relay",
       "area": "Networking",
-      "name": "Online server: lobby + relay between machines (LAN discovery, internet)",
+      "name": "START ONLINE: UGS Lobby sessions + UGS Relay match, through NetStack",
       "status": "Approximate",
       "why": "no parity channel covers it yet",
       "tests": [
-        "OnlineMultiplayerTests",
-        "SessionRulesTests"
+        "UgsMultiplayerTests",
+        "NetStackTests"
       ],
       "parity": []
     },
     {
       "id": "ugs-steam",
       "area": "Networking",
-      "name": "Shipping online backend: real UGS or Steam (gate G2)",
-      "status": "Missing",
-      "why": "not implemented",
-      "tests": [],
+      "name": "Shipping online backend: UGS live in the project (owner's check), or Steam (gate G2)",
+      "status": "Approximate",
+      "why": "no parity channel covers it yet",
+      "tests": [
+        "UgsAuthenticationTests",
+        "UgsMultiplayerTests"
+      ],
       "parity": []
     },
     {

@@ -57,17 +57,11 @@ namespace CosmicShore.Launcher
         public bool Fullscreen { get; set; }
         public string StartScene { get; set; } = "";
         public bool Audio { get; set; } = true;
-        public bool Network { get; set; } = true;
         /// <summary>
-        /// The online server games connect to ("host[:port]", internet play). Empty: the branch's shared
-        /// server (Port/ProjectSettings/AmoebiusProject.json) if it names one, else automatic - a server on
-        /// the local network, or the first game hosts one.
+        /// The UGS environment START ONLINE signs in to. Empty: the branch's (Network.UgsEnvironment in
+        /// Port/ProjectSettings/AmoebiusProject.json), else "amoebius".
         /// </summary>
-        public string NetServer { get; set; } = "";
-        /// <summary>The online server's key, when it has one. Kept like <see cref="GitHubToken"/>.</summary>
-        [JsonIgnore] public string NetKey { get; set; } = "";
-        /// <summary>The TCP port a server hosted on this PC (SETTINGS > ONLINE) listens on.</summary>
-        public int HostServerPort { get; set; } = 47777;
+        public string UgsEnvironment { get; set; } = "";
         public bool MobileRenderPath { get; set; }
         public bool VerboseLogs { get; set; }
         public string Profile { get; set; } = "";
@@ -105,7 +99,7 @@ namespace CosmicShore.Launcher
         public string? LegacyAnthropicApiKey { get; set; }
 
         // The secrets as last stored, so Save writes the store only when one changed.
-        string? _storedGitHubToken, _storedAnthropicApiKey, _storedNetKey;
+        string? _storedGitHubToken, _storedAnthropicApiKey;
         public string ClaudeModel { get; set; } = "";
         public string ClaudeEffort { get; set; } = "";
         public bool VoiceReplies { get; set; }
@@ -117,7 +111,7 @@ namespace CosmicShore.Launcher
         /// <summary>The agent's mode for new messages: 0 PLAN or 1 EDIT. AUTO is per chat and never saved (ClaudeChat.AutoAllowed).</summary>
         public int ChatMode { get; set; }
 
-        // TIME page: the benchmark's scenes and run shape, and local multiplayer.
+        // TIME page: the benchmark's scenes and run shape.
         public List<string> BenchScenes { get; set; } = new();
         public int BenchFrames { get; set; } = 1800;
         public int BenchRuns { get; set; } = 1;
@@ -126,13 +120,6 @@ namespace CosmicShore.Launcher
         /// <summary>0 the default GC, 1 SustainedLowLatency, 2 both (A/B).</summary>
         public int BenchGc { get; set; }
         public string BenchSize { get; set; } = "1920x1080";
-        public int MpPlayers { get; set; } = 2;
-        public string MpScene { get; set; } = "";
-        public string MpSize { get; set; } = "960x540";
-        /// <summary>The network simulator preset each local player starts on (NET page), "" = a clean line.</summary>
-        public List<string> MpSims { get; set; } = new() { "", "", "", "" };
-        /// <summary>The transport the local players share: "udp" (Froglet's) or "tcp" (NET page).</summary>
-        public string MpTransport { get; set; } = "udp";
 
         // Toolchain
         public string DotnetPath { get; set; } = "";
@@ -214,7 +201,6 @@ namespace CosmicShore.Launcher
             // A store that refused keeps the file's value working until it accepts it.
             GitHubToken = _storedGitHubToken = SecretStore.Get(SecretStore.GitHubToken) ?? LegacyGitHubToken ?? "";
             AnthropicApiKey = _storedAnthropicApiKey = SecretStore.Get(SecretStore.AnthropicApiKey) ?? LegacyAnthropicApiKey ?? "";
-            NetKey = _storedNetKey = SecretStore.Get(SecretStore.NetKey) ?? "";
             return moved;
         }
 
@@ -225,8 +211,6 @@ namespace CosmicShore.Launcher
             { _storedGitHubToken = GitHubToken; LegacyGitHubToken = null; }
             if ((AnthropicApiKey ?? "") != (_storedAnthropicApiKey ?? "") && SecretStore.Set(SecretStore.AnthropicApiKey, AnthropicApiKey))
             { _storedAnthropicApiKey = AnthropicApiKey; LegacyAnthropicApiKey = null; }
-            if ((NetKey ?? "") != (_storedNetKey ?? "") && SecretStore.Set(SecretStore.NetKey, NetKey))
-                _storedNetKey = NetKey;
         }
 
         public void Save()

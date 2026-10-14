@@ -31,7 +31,7 @@ starts by measuring use in `Assets/`, and anything the game doesn't touch stays 
 | Physics | Triggers and queries over spheres, oriented boxes and capsules; a contact pass for dynamic spheres (the Astro League ball) fires `OnCollision*`. **No general solver** and no physics library: the census needs none | ARCHITECTURE §13.1 (census, C3) |
 | Animation | Animator, blend trees, FBX takes; **Animation Rigging is data only** | |
 | Audio | FMOD Studio runtime, real banks, buses, VCAs | |
-| Networking | Netcode model over Froglet's own UDP transport (reliable stream plus an unreliable channel; TCP one switch away), directly, through a Unity-Relay-protocol relay (Froglet's relay server or UGS Relay), or through Amoebius's own online server (lobby + relay): parties and matches between machines on a LAN (found automatically) or over the internet. Built-in test tools: network simulator, stats, session faults, the Launcher's NET page, MCP `net_*`. **No real UGS Lobby yet** | `MULTIPLAYER.md`; ARCHITECTURE §8; `NetStackTests`, `OnlineMultiplayerTests` |
+| Networking | Netcode model over Froglet's own UDP transport (reliable stream plus an unreliable channel; TCP one switch away) through UGS Relay (Unity Relay's protocol), with UGS Lobby for sessions: the launcher's START ONLINE plays the way the Unity build does; START is offline. No LAN or local play (removed 2026-10-14). Built-in test tools: network simulator, stats, session faults. **Live UGS check waits for the owner** | `MULTIPLAYER.md` §6.10; ARCHITECTURE §8; `NetStackTests`, `UgsMultiplayerTests` |
 | Performance | Heavy Bloomrush: collect 22-26 ms (was ~150 ms). Not yet at Unity's level on the GTX 1060 floor | PROGRESS §2 |
 | Platforms | Windows and Linux desktop; Android APK builds (no device run yet); iOS Xcode project export and a signed .ipa on a Mac (the GitHub CI + Sideloadly route was retired 2026-10-13) | |
 | Tooling | Launcher (play, phone builds, Project Settings, Claude, tracks, board, milestones), `cs-asset` (scene/prefab writes, `serialization-audit`), `cs-build`, MCP server, session reports with CPU/GC per phase, `engine_smoke` | `docs/LAUNCHER.md` |
@@ -50,12 +50,12 @@ starts by measuring use in `Assets/`, and anything the game doesn't touch stays 
    visible gap.
 4. **The remaining 62 shaders.** Each one is a visible difference waiting to be noticed.
 5. **Contact physics,** limited to what the 17 Rigidbody scripts use. No general-purpose solver.
-6. **Online play at launch scale.** Amoebius's own online server (2026-10-13) already carries
-   parties and matches between machines on a LAN or over the internet, through one reachable server,
-   and over UDP through a Unity-Relay-protocol relay when one is configured (`MULTIPLAYER.md` §6.6-6.9).
-   What it is not yet: the shipping backend. Gate G2 still decides Steam lobbies + Datagram Relay or UGS
-   over REST for the Steam build, and the netcode still lacks delta compression (NetworkVariable writes
-   dominate measured traffic).
+6. **Online play at launch scale.** START ONLINE (2026-10-14) puts Amoebius on UGS as the Unity build
+   is: sign-in, UGS Lobby for parties and sessions, UGS Relay for the match over UDP (`MULTIPLAYER.md`
+   §6.10); LAN and local play were removed. What it is not yet: proven live (the owner creates the
+   `amoebius` UGS environment and plays two PCs), and Gate G2 still decides UGS or Steam lobbies +
+   Datagram Relay for the Steam build. The netcode still lacks delta compression (NetworkVariable
+   writes dominate measured traffic).
 7. **Parity CI.** Every bleeding-edge push should compile the port against the new `Assets/`
    and smoke-run every mode headless on a Linux runner. Today a Unity-side change that breaks
    the port is found by hand.
@@ -247,6 +247,7 @@ Next items, by on-screen use (rank with `render.shaders` from each mode's report
 
 **C6 - Online**
 > Done before G2 (2026-10-13): the `INetTransport` seam, and Amoebius's own online server - lobby + relay, LAN discovery, `CosmicShore --server`, the launcher's SETTINGS > ONLINE - proven by two games on separate profiles completing the party invite and a Bloomrush match through it (ARCHITECTURE §8).
+> 2026-10-14: that online server, LAN discovery and local play were removed; START ONLINE is UGS Lobby + Relay (`MULTIPLAYER.md` §6.10).
 > Before G2: put an `INetTransport` seam between NetDriver and NetSocket (TCP stays the first implementation) with tests. After G2: implement the chosen backend from the boundary table in docs/ARCHITECTURE_REVIEW_2026-10-06.md (F14): transport over the internet with relay, Steam auth/achievements via Steamworks.NET, cloud save and leaderboards. Prove it with two machines in different networks (or two GitHub runners) completing a Bloomrush match.
 
 **C7 - Performance**

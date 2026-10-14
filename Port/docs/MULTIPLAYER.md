@@ -2,8 +2,7 @@
 
 Written 2026-10-08. Owner: Froglet Inc. This is the plan and the manual for Cosmic Shore's
 four-player online play in Amoebius, and for the tools that test it **without Unity**. Read it before
-touching `src/CosmicShore.Engine/Networking/**`, the Launcher's multiplayer panel or the `net_*`
-MCP tools. It extends `ARCHITECTURE.md` §8 (how the netcode works today) and the C6 row of
+touching `src/CosmicShore.Engine/Networking/**` or the launcher's START ONLINE. It extends `ARCHITECTURE.md` §8 (how the netcode works today) and the C6 row of
 `ROADMAP.md`.
 
 *The licensing sections are an engineering review, not legal advice (same footing as
@@ -137,7 +136,13 @@ Relay cost nothing extra for a Steam game. Re-check
 
 ---
 
-## 5. What exists today (2026-10-09)
+## 5. What exists today (2026-10-09; online is UGS only since 2026-10-14)
+
+> **2026-10-14: START ONLINE is UGS, and LAN and local play are gone.** The launcher's START plays offline;
+> START ONLINE signs in to UGS and plays through UGS Lobby and UGS Relay (§6.10). The online server, LAN
+> discovery, the shared-folder sessions, the NET page, the `net_*` MCP tools, `--server` and
+> `--relay-server` were removed. Rows and measurements below that name them are history.
+
 
 | Piece | Where | Status |
 |---|---|---|
@@ -145,24 +150,25 @@ Relay cost nothing extra for a Steam game. Re-check
 | Transports | `Wire/INetTransport.cs` | Froglet's UDP (`UdpTransport`, the default, §6.6) directly or through a relay (§6.7); TCP (`NetSocket`); an in-memory loopback for tests |
 | Relay | `Wire/Relay/` | Unity Relay's protocol client and Froglet's own relay server (§6.7) |
 | UGS sign-in | `Wire/Ugs/UgsAuthentication.cs` | Anonymous sign-in and session-token resume over REST; feeds UGS Relay its bearer token (§6.8). Tested against local stand-ins; the live project waits for the owner |
-| Session service | `Online/` (the online server) and `Wire/DirectoryMultiplayerService.cs` | Two stand-ins for UGS Lobby until P8, with one set of lobby rules (`SessionRules`). The online server (2026-10-13) is the default for players: lobby and relay between machines, found on the LAN or named. The shared folder (`COSMIC_SHORE_NET_DIR`) is what the NET page, `net_*` and the party harness use. Either records the relay join code when a relay is configured. How they combine: §6.9 |
-| Five-player scenario harness | `Tools/Build/prisma_party_scenarios/` | 14/14 directly, on simulated 4G, and through the relay. No engine patches since Step 0 |
+| Session service | `Wire/Ugs/UgsMultiplayerService.cs`, `UgsLobbyClient.cs` | UGS Lobby over REST, as the SDK uses it (§6.10). Tested against a local stand-in; the live project waits for the owner |
+| Five-player scenario harness | `Tools/Build/prisma_party_scenarios/` | Ran 14/14 on the shared-folder sessions, which are gone; it needs a UGS (stand-in) rewrite before it runs again |
 | Offline switch, per-instance profile | `COSMIC_SHORE_NET=off`, `COSMIC_SHORE_PROFILE=<name>` | Works |
-| Test tools | §6 | Network simulator, stats and capture, session faults, the Launcher's NET page, MCP `net_*` tools |
+| Test tools | §6 | Network simulator, stats and capture, session faults (the NET page and MCP `net_*` tools were retired 2026-10-14) |
 
 ## 6. The tools, mapped to Unity's
 
 | Unity | Amoebius | Step |
 |---|---|---|
-| Multiplayer Play Mode (virtual players with tags) | **MULTIPLAYER panel** in the Launcher: 1-4 players, each its own process, profile and save folder, one shared session folder; MCP `net_players` | 4 |
+| Multiplayer Play Mode (virtual players with tags) | Retired 2026-10-14 with local play: two games on separate profiles, each started with START ONLINE, meet through UGS | 4 |
 | Network Simulator (latency, jitter, loss, disconnect) | **`SimulatedTransport`**: wraps any transport. Set at launch with `COSMIC_SHORE_NET_SIM` or live with `do netsim` | 1 |
 | Runtime Network Stats Monitor | **`net` overlay and `do net` verb**: per-peer bytes and messages in/out, RTT, RPCs by name, variable updates, spawned objects | 2 |
 | Network Profiler | **Per-frame capture** to JSON (`do net capture`) and the session report's `net` block; a timeline view on the Launcher | 2 (capture), 4 (view) |
 | *(none)* | **Session-service faults**: lobby full, rate limited, relay allocation fails, service down. `COSMIC_SHORE_NET_FAULT` or `do netfault` | 3 |
-| *(none)* | **Scenario harness as a tool**: `run.sh` without patches; MCP `net_scenario` | 0, 4 |
+| *(none)* | **Scenario harness**: `run.sh` without patches (needs a UGS stand-in rewrite, §5) | 0 |
 | *(none, Unity's transport is fixed)* | **Our reliable-UDP transport** with reliable and unreliable channels | 5 |
-| Relay (UGS Relay through Unity Transport) | **`RelayLink`** under our UDP transport, speaking Unity Relay's protocol; **Froglet's relay server** (`--relay-server`) speaking it too. `COSMIC_SHORE_RELAY`, NET page RELAY, `net_players relay=local`, `PRISMA_RELAY=1` | 6 |
-| Authentication + Relay SDKs (sign in, allocate) | **`UgsAuthentication`** (REST) and `COSMIC_SHORE_RELAY=ugs`; **`--ugs-relay-check`** / NET page UGS RELAY CHECK proves the live path in one step | 7 |
+| Relay (UGS Relay through Unity Transport) | **`RelayLink`** under our UDP transport, speaking Unity Relay's protocol; **`FrogletRelayServer`** speaks it too, as the tests' stand-in for UGS Relay | 6 |
+| Authentication + Relay SDKs (sign in, allocate) | **`UgsAuthentication`** (REST), always on with START ONLINE; **`--ugs-relay-check`** / SETTINGS > ONLINE > UGS CHECK proves the live path in one step | 7 |
+| Lobby / Multiplayer Services SDK sessions | **`UgsMultiplayerService`** over **`UgsLobbyClient`** (REST): the game's sessions as UGS lobbies | 6.10 |
 
 ### 6.1 Step 0: engine features that replace the harness's throwaway patches
 
@@ -250,36 +256,13 @@ transforms, the first place to look when bandwidth matters (§3).
 Reading RTT: two headless players on one machine at `--realtime` see ~18-30 ms, which is the
 frames each side takes to read a message (the driver polls once a frame), not the network.
 
-### 6.5 Step 4: the Launcher's NET page and the MCP tools
+### 6.5 Step 4: the Launcher's NET page and the MCP tools (retired 2026-10-14)
 
-**The Launcher's NET page** (`src/CosmicShore.Launcher/LauncherApp.Net.cs`; manual:
-`LAUNCHER.md` § NET). PLAYERS: 2-4 windows (a party is four), tiled two by two, each its own
-profile (`player1`...) and save, one fresh session folder per run, a simulated line per player.
-LIVE: each player's scene, role, traffic and RTT once a second, and per player a line picker, PULL
-CABLE / PLUG IN, a fault picker and CAPTURE 10 S. It replaces the TIME page's old MULTIPLAYER
-card, which allowed six players and had no control ports.
-
-**The MCP tools** (`src/CosmicShore.Mcp/Tools.Multiplayer.cs`), backed by `Shared/MultiplayerRun.cs`:
-
-| Tool | What |
-|---|---|
-| `net_players` | `action=start` 1-4 players (headless by default, `--realtime`), `profiles`, `sims`, `faults` per player; `status`; `stop` |
-| `net_input` | Any `--do` action on one player or all (`party invite PilotB` through the console route, `click X,Y` ...) |
-| `net_command` | Any control-port command on one player or all (`state`, `wait`, `find`, `get`, `screenshot` ...) |
-| `net_sim` / `net_fault` | The simulator and the session faults, live, per player |
-| `net_stats` | `do net`: text, `json`, `reset`, `capture N [PATH]` |
-| `net_logs` | One player's console, optionally filtered |
-| `net_scenario` | The five-player party scenario harness (`Tools/Build/prisma_party_scenarios/run.sh`), ~10-15 min |
-
-From a shell, without MCP, the same pieces are the player's own flags:
-
-```bash
-P=Port/src/CosmicShore.Player/bin/Debug/net10.0/CosmicShore.dll
-export COSMIC_SHORE_NET_DIR=/tmp/mp/sessions COSMIC_SHORE_AUDIO=off
-COSMIC_SHORE_PROFILE=PilotA dotnet $P --control-port 47801 --position 0,0 &
-COSMIC_SHORE_PROFILE=PilotB COSMIC_SHORE_NET_SIM=4g dotnet $P --control-port 47802 --position 960,0 &
-curl -s -X POST -d '{"cmd":"do","arg":"net"}' http://127.0.0.1:47801/
-```
+The NET page (2-4 local game windows over one session folder, a simulated line, pulled cable and fault per
+player, live traffic and RTT) and the MCP `net_*` tools that drove the same players went with local play,
+when online became UGS only (§6.10). What they tested stays in the engine and its tests: the simulator
+(`COSMIC_SHORE_NET_SIM`, `do netsim`), the session faults (`COSMIC_SHORE_NET_FAULT`, `do netfault`) and the
+stats (`do net`) work on any online game through its control port.
 
 ### 6.6 Step 5: our UDP transport
 
@@ -421,20 +404,11 @@ case-insensitive). `/health` reports allocations, forwarded and refused counts.
 
 | Where | Switch |
 |---|---|
-| Any player | `COSMIC_SHORE_RELAY=<allocations URL>` (a relay server's HTTP address), or `ugs` (UGS Relay, §6.8). Unset or `off` = direct. `COSMIC_SHORE_RELAY_REGION` picks a region; `COSMIC_SHORE_RELAY_SECRET` is our server's token |
-| Run our relay | `CosmicShore --relay-server [UDP] [HTTP] [HOST]`: 0 = any free port; HOST is the name players reach it by (default `127.0.0.1`). It prints `COSMIC_SHORE_RELAY=...` for the players |
-| Launcher NET page | Connection = **RELAY** starts our relay beside the players; **UGS RELAY** sends them through UGS |
-| MCP | `net_players relay=local` (or a relay URL, or `ugs`); `net_scenario relay=true` |
-| Party harness | `PRISMA_RELAY=1 bash Tools/Build/prisma_party_scenarios/run.sh` (`PRISMA_RELAY=ugs`: through a local UGS sign-in stand-in, §6.8) |
+| Any online player | START ONLINE: always UGS Relay (§6.10). `COSMIC_SHORE_RELAY_REGION` pins a region; `COSMIC_SHORE_UGS_RELAY_URL` points the same code at a stand-in |
+| Tests | `FrogletRelayServer.Start()` in-process (`RelayTests`, `UgsMultiplayerTests`); its `Secret` makes allocating need a bearer token |
 
-**Running ours on a server** (only if wanted; UGS Relay is the plan): run
-`CosmicShore --relay-server 7780 7781 relay.example.com`, open UDP 7780 and TCP 7781, and set
-`COSMIC_SHORE_RELAY=http://relay.example.com:7781` on the players. Start it with
-`COSMIC_SHORE_RELAY_SECRET=<a long random value>` and give the players the same value: then only
-callers carrying it can allocate (401 otherwise; `/health` stays open). **Before it faces the public
-internet it still needs TLS**: the allocations endpoint is plain HTTP, so the secret and the
-allocation keys cross the network in the clear. Put it behind a TLS proxy first. Testing on a LAN
-or one machine needs neither.
+Until 2026-10-14 the player could also run our relay as a process (`--relay-server`) and pick it with
+`COSMIC_SHORE_RELAY`; both went with local play. `FrogletRelayServer` stays as the stand-in.
 
 **Measured** (2026-10-09):
 
@@ -486,11 +460,9 @@ Authentication REST API (§8):
 
 | Where | Switch |
 |---|---|
-| Any player | `COSMIC_SHORE_RELAY=ugs` (sessions allocate on UGS Relay as this profile's UGS player); `COSMIC_SHORE_RELAY_REGION=<region id>` to pin a region |
-| One-step live check | `CosmicShore --ugs-relay-check [REGION]`, or NET page > **UGS RELAY CHECK**: two players (the same two every run: their session tokens stay in the `relaycheck` profile) sign in, allocate, join by code, connect through UGS Relay and time ten round trips. Each step logs a line; exit 0 = PASS |
-| Launcher NET page | Connection = **UGS RELAY** |
-| MCP | `net_players relay=ugs` |
-| Tests without UGS | `COSMIC_SHORE_UGS_AUTH_URL` / `COSMIC_SHORE_UGS_RELAY_URL` point the same code at stand-ins: `Tools/Build/prisma_party_scenarios/ugs_auth_standin.py` and our relay server. `PRISMA_RELAY=ugs` runs the party harness that way |
+| Any player | START ONLINE (sessions allocate on UGS Relay as this profile's UGS player); `COSMIC_SHORE_RELAY_REGION=<region id>` to pin a region |
+| One-step live check | `CosmicShore --ugs-relay-check [REGION]`, or SETTINGS > ONLINE > **UGS CHECK**: two players (the same two every run: their session tokens stay in the `relaycheck` profile) sign in, allocate, join by code, connect through UGS Relay and time ten round trips. Each step logs a line; exit 0 = PASS |
+| Tests without UGS | `COSMIC_SHORE_UGS_AUTH_URL` / `COSMIC_SHORE_UGS_RELAY_URL` / `COSMIC_SHORE_UGS_LOBBY_URL` point the same code at stand-ins (`UgsAuthStandIn`, `FrogletRelayServer`, `UgsLobbyStandIn`) |
 
 **Measured** (2026-10-09, all against local stand-ins; nothing called UGS):
 
@@ -508,29 +480,67 @@ goes out and back twice). A failure names its step: `sign in` (project id, netwo
 Authentication settings), `allocate` / `join code` / `join` (Relay not enabled for the project, or
 rate limited: the status code says which), or `bind and connect` (UDP to the relay blocked).
 
-### 6.9 Putting it together: NetStack, and the online server
+### 6.9 Putting it together: NetStack
 
-The player builds its networking in one call, `NetStack.Install` (`Wire/NetStack.cs`), in the only order that works:
+The player builds its networking in one call, `NetStack.Install` (`Wire/NetStack.cs`), made by
+`UgsSetup.InstallOnline`, in the only order that works:
 
 1. the transport, `NetTransports.Select(COSMIC_SHORE_NET_TRANSPORT)`: UDP unless `tcp`;
-2. the relay `COSMIC_SHORE_RELAY` names, over it (`UgsSetup.InstallRelay`: a Froglet relay URL or `ugs`);
-3. the session service: the online server (`OnlineMultiplayerService`, which puts the server's own relay over
-   the transport chosen beneath it) or the shared folder (`DirectoryMultiplayerService`);
+2. UGS Relay over it (`RelaySessions.Install`, signed in as this profile's UGS player);
+3. the session service: UGS Lobby (`UgsMultiplayerService`, §6.10);
 4. the network simulator around the whole transport chain, and session faults around the service.
 
-The player prints the result at boot: `[net] stack: simulated > online > relay > udp; sessions: faults > online`.
+The player prints the result at boot: `[net] stack: simulated > relay > udp; sessions: faults > ugs`.
 
-| Sessions | Match network | When |
-|---|---|---|
-| Online server | the server's relay (TCP) | the default for a player: no `COSMIC_SHORE_RELAY` |
-| Online server | this relay (UDP, with the unreliable channel) | `COSMIC_SHORE_RELAY` set: the server is the lobby only; the host allocates before it starts and the session record carries the join code |
-| Shared folder | direct (UDP or TCP), or this relay when set | the NET page and `net_*` players (they pass `COSMIC_SHORE_NET_SERVER=dir`), the party harness, phones without a server |
+Why it exists: on 2026-10-13 the merge that brought the (since removed) online server into
+Ys-bleeding-edge lost steps 1, 2 and 4 while every per-layer test stayed green. `NetStackTests` holds the
+order and fails if the player sets any layer outside `NetStack`; `UgsMultiplayerTests` plays a match
+through the whole stack.
 
-Why it exists: on 2026-10-13 the merge that brought the online server into Ys-bleeding-edge kept the online
-server's `PlayerBoot` and lost steps 1, 2 and 4 and the folder service's relay join codes, while every
-per-layer test stayed green; the NET page's transport, line and fault switches did nothing until
-2026-10-14. `NetStackTests` now holds the order, plays a match through the online lobby over Froglet's relay
-end to end, and fails if `PlayerBoot` sets any layer outside `NetStack` (both negative-controlled).
+### 6.10 UGS Lobby: START ONLINE is UGS, as the Unity build
+
+Built 2026-10-14, when online became UGS only (the owner: "Real UGS (Lobby + Relay)", no LAN or local
+play). The launcher's **START ONLINE** runs the game with networking on; **START** runs it offline
+(`COSMIC_SHORE_NET=off`, sessions in the engine's single-process `LocalMultiplayerService`).
+
+- **Client** (`UgsLobbyClient`): the Lobby client API over REST, written from Unity's public reference
+  (<https://docs.unity.com/legacy-services-docs/lobby/v1/>): `create`, `query`, `{id}/join`, `GET {id}`,
+  update lobby and player, remove player, delete, `{id}/heartbeat`; every call as the signed-in player
+  (`Authorization: Bearer` the `UgsAuthentication` id token). A refusal is a `UgsServiceException` with the
+  status and the service's `title`/`detail`; no answer is status 0.
+- **Sessions** (`UgsMultiplayerService`): `CreateSessionAsync` makes a lobby (name, max players - a party is
+  four - private, locked, the host's player data, the session properties as lobby data with their index
+  S1..S5); `QuerySessionsAsync` filters on those indexes and drops locked lobbies; `JoinSessionByIdAsync`
+  joins with the player's data. The session handle refreshes from `GET`, saves the player's own data (a
+  removed key is sent as null), leaves, deletes (host) and removes players (host). A refresh that finds the
+  lobby gone (404) or the player no longer in it (403, or missing from the roster) closes the handle and
+  raises `Deleted`, as the SDK does; players missing since the last refresh raise `PlayerLeaving`.
+- **Heartbeat**: the host heartbeats every lobby it holds every 15 s (UGS marks one inactive after 30 s).
+- **The match**: with `WithRelayNetwork`, the host allocates on UGS Relay and starts the NetworkManager
+  host on it before the lobby exists; the lobby carries the join code as member-visible data
+  (`amoebius_relay`, never shown to the game as a session property) and the host's allocation id. A joiner
+  joins Relay by the code, starts the client and tells the lobby its allocation id.
+- **Errors**, as the game's `UgsRequestPolicy` classifies them: 429 is `RateLimitExceeded`; 404 is
+  `SessionNotFound` (or `SessionDeleted` in a session); a full lobby is `SessionError.Unknown` with "is full"
+  in its message; locked is "Session is locked."; 401 `NotAuthorized`, 403 `Forbidden`/`NotInLobby`, 409
+  `SessionConflict`, 400 `InvalidParameter`; 5xx and no answer are a `RequestFailedException` with the status.
+- **The UGS environment**: `COSMIC_SHORE_UGS_ENVIRONMENT` (SETTINGS > ONLINE), else `Network.UgsEnvironment`
+  in `Port/ProjectSettings/AmoebiusProject.json`, else `amoebius`. A separate environment keeps Amoebius's
+  lobbies out of the Unity build's queries, since the two netcodes cannot play each other. **It must exist
+  in the UGS dashboard** before START ONLINE can sign in; until then the player logs the failed sign-in and
+  its hint, and START still plays offline.
+
+**Measured** (2026-10-14, against local stand-ins; nothing called UGS): `UgsMultiplayerTests` 6/6 (a
+session created by one player is found by query, joined and shared with another, the invite property
+written by one read by the other and removed again; private lobbies unlisted but joinable by id; full,
+missing, locked, rate-limited, 503 and unreachable refusals as above; the host leaving hands the lobby on
+and the member hears who left; a removed player and a deleted lobby close the handle; the host heartbeats
+and a member never does; a Relay session puts the join code in the lobby as member data and carries a
+NetDriver handshake over the Unity-Relay-protocol relay through `NetStack`), `NetStackTests` 3/3.
+
+**Not done yet**: the live check against the project (the owner's go-ahead, `Docs/MULTIPLAYER_START_HERE.md`
+§5.3), join by lobby code, quick join, lobby events (Lobby's websocket; the handle polls with `RefreshAsync`
+as the game's party code already does), and the party harness's move from the shared folder to stand-ins.
 
 ## 7. Status
 
@@ -546,7 +556,8 @@ end to end, and fails if `PlayerBoot` sets any layer outside `NetStack` (both ne
 | 6 | Relay: Unity Relay's protocol under our UDP transport, Froglet's relay server, session integration, tool switches | Done 2026-10-09 | `RelayTests` 10/10; contract checks over `relay` and `sim-relay`; `MultiplayerRunTests` 16/16; Launcher tests 21/21; CosmicShore.Tests 1,891/1,891; two players partied up through `net_players relay=local`; the five-player party harness through the relay: 14/14 (§6.7) |
 | 7 | UGS sign-in for the relay, `COSMIC_SHORE_RELAY=ugs`, the one-step UGS relay check, our relay's secret | Built 2026-10-09; the live check waits for the owner | `UgsAuthenticationTests` 13/13; `--ugs-relay-check` PASS against local stand-ins (twice, the second resuming both players); CosmicShore.Tests 1,913/1,913; party harness via the UGS path on 4G: 14/14 (§6.8) |
 | 6.9 | NetStack: the transport, relay, simulator and faults put back in the player after the merge with the online server; the online lobby over the relay | Done 2026-10-14 | `NetStackTests` 5/5 (two negative controls fail as they should); contract checks over tcp, loopback, udp, relay, online and each simulated (`NetTransportContractTests` 70); the player boots `simulated > online > udp`, `simulated > tcp` (folder, `COSMIC_SHORE_NET_TRANSPORT=tcp`, 4g) and `simulated > online > relay > udp` (`COSMIC_SHORE_RELAY` = a Froglet relay server). The five-player harness was not re-run (no disk for its worktree) |
-| G2 | UGS Lobby (P8) | Next | The relay half of UGS is done; Lobby replaces the session folder |
+| 6.10 | UGS-only online: UGS Lobby sessions, START / START ONLINE, LAN and local play removed | Built 2026-10-14; the live check waits for the owner | `UgsMultiplayerTests` 6/6, `NetStackTests` 3/3, contract checks over tcp, loopback, udp, relay and each simulated (56) (§6.10) |
+| G2 | UGS Lobby (P8) | Built (§6.10); live check next | The owner creates the `amoebius` environment and runs START ONLINE on two PCs |
 
 ## 8. Sources
 
@@ -556,6 +567,8 @@ end to end, and fails if `PlayerBoot` sets any layer outside `NetStack` (both ne
   the Allocations reference: <https://docs.unity.com/legacy-services-docs/relay-allocations/v1/>
 - Player Authentication REST API (anonymous and session-token sign-in):
   <https://docs.unity.com/legacy-services-docs/player-auth/v1/>
+- Lobby client REST API (create, query, join, update, heartbeat, delete):
+  <https://docs.unity.com/legacy-services-docs/lobby/v1/>
 - Unity Companion License: <https://unity.com/legal/licenses/unity-companion-license>
 - UGS pricing: <https://unity.com/products/gaming-services/pricing>
 - How Relay is priced: <https://support.unity.com/hc/en-us/articles/4410136449812-How-is-the-Relay-Service-Priced>
