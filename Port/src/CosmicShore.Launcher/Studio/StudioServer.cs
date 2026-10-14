@@ -420,7 +420,7 @@ namespace CosmicShore.Launcher
                     var title = args?["title"]?.ToString() is { Length: > 0 } t ? (t.Length > 80 ? t[..80] : t) : "Vessel Studio";
                     if (prompt.Length > 20000) return Error("invalid_argument", "the prompt is too long");
                     if (!_o.Agent(title, prompt)) return Error("tool_error", "Amoebius could not start an agent chat");
-                    return new JsonObject { ["result"] = new JsonObject { ["payload"] = new JsonObject { ["session_id"] = AgentSession, ["where"] = "Amoebius AGENT page" } } };
+                    return new JsonObject { ["result"] = new JsonObject { ["payload"] = new JsonObject { ["session_id"] = AgentSession, ["where"] = "an AGENT chat in Amoebius, on this computer," } } };
                 }
                 case "send_message":
                 {

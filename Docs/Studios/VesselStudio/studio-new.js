@@ -57,8 +57,6 @@
     return caps[name];
   }
   function inClaude() { return !!(window.claude && typeof window.claude.use === 'function'); }
-  // Amoebius serves the build with its own backend (D34): there "Claude Code" is an AGENT chat in Amoebius, on this computer
-  function inAmoebius() { return !!(window.VesselStudioTheme && VesselStudioTheme.host && VesselStudioTheme.host().shell === 'amoebius'); }
 
   function opt(sel, value, text, group) {
     var o = document.createElement('option'); o.value = value; o.textContent = text; (group || sel).appendChild(o); return o;
@@ -87,7 +85,7 @@
       '<section class="card" id="nspTalkCard"><h3>What you want</h3>' +
       '<textarea id="nspText" placeholder="Say or type what the vessel should do, how it should feel, what its AI and mini-game are about."></textarea>' +
       '<div class="nsp-btns"><button type="button" class="btn" id="nspMic" aria-pressed="false">Speak</button>' +
-      '<button type="button" class="btn" id="nspFill" hidden>Fill the form from this</button></div>' +
+      '<button type="button" class="btn" id="nspFill" title="Claude reads what you said or wrote into the choices above">Fill the form from this</button></div>' +
       '<div class="nsp-state" id="nspVoiceState" aria-live="polite"></div></section>' +
       '<p class="nsp-sum" id="nspSummary"></p>' +
       '<div class="nsp-btns"><button type="button" class="btn primary" id="nspSend">Create with Claude Code</button>' +
@@ -108,7 +106,7 @@
     $('nspCopy').addEventListener('click', copy);
     $('nspMic').addEventListener('click', toggleMic);
     $('nspFill').addEventListener('click', fillFromWords);
-    cap('sample').then(function (s) { $('nspFill').hidden = !s; });
+
     restore();
   }
 
@@ -235,7 +233,7 @@
       ', /labmaker (rounds), and /artifact-to-unity (the artifact is the one source of truth; the game is its clone).');
     lines.push('- Build or extend the studio page FIRST, in the artifact (Docs/Studios/VesselStudio/, studios.json, the hub card), gate it with check_studio.cjs, and publish it into the ONE artifact from your branch so the requester can fly it. The game side follows the studio once the requester decides, through /artifact-to-unity.');
     lines.push('- When something in this request is unclear, ask the requester in the session before guessing.');
-    if (requestId) lines.push('- This request is document "' + requestId + '" in the artifact\'s "requests" collection: set its status to "in progress" with your branch in "reply" when you start, and to "done" with what to test when you finish.');
+    if (requestId) lines.push('- This request is document "' + requestId + '" in the Vessel Studio\'s "requests" collection (the claude.ai artifact\'s database; when this chat runs in Amoebius, its local studio store, which you cannot reach: then skip this): set its status to "in progress" with your branch in "reply" when you start, and to "done" with what to test when you finish.');
     return lines.join('\n');
   }
 
@@ -276,7 +274,7 @@
     var text = $('nspText').value.trim();
     if (!text) { voiceState('Say or type what you want first.'); return; }
     cap('sample').then(function (sample) {
-      if (!sample) return;
+      if (!sample) { voiceState('Filling the form from your words asks Claude: it works in the claude.ai Vessel Studio and in Amoebius. Choose above meanwhile.', 'err'); return; }
       voiceState('Reading your words\u2026');
       var ask = 'You fill a form from a game developer\'s request. Answer with JSON only: ' +
         '{"vesselMode":"existing"|"new","vessel":string,"goal":"ai"|"fly"|"both"|"explore"|"new"|"newNoAi","gameMode":"existing"|"new"|"none","game":string}. ' +
@@ -347,13 +345,13 @@
         if (!env) throw { message: 'no Claude Code environment was found for your account; open claude.ai/code once, or Copy prompt.' };
         return mcp.callTool(CCR, 'create_session', {
           environment_id: env, source_url: REPO_URL, source_revision: BASE,
-          title: 'New studio: ' + summary(s), prompt: prompt(s, inAmoebius() ? null : reqRef && reqRef.id), tags: ['vessel-studio']
+          title: 'New studio: ' + summary(s), prompt: prompt(s, reqRef && reqRef.id), tags: ['vessel-studio']
         });
       }).then(function (res) {
         var sid = (res.payload && (res.payload.session_id || res.payload.id)) || (JSON.stringify(res.payload || res.content || '').match(/session_[A-Za-z0-9]+/) || [])[0];
         if (reqRef && sid) reqRef.update({ session: sid }).catch(function () {});
-        if (/^amoebius/.test(sid || '')) {   // Amoebius opened an AGENT chat with the request
-          setState('Sent to Amoebius: an AGENT chat is building it now, on this computer (Amoebius\'s AGENT page).', 'ok');
+        if (res.payload && res.payload.where) {   // the connector says where the work runs (an AGENT chat on this computer)
+          setState('Sent: ' + res.payload.where + ' is building it now.', 'ok');
           try { localStorage.removeItem(DRAFT); } catch (e) { /* storage blocked */ }
           return;
         }
@@ -422,7 +420,8 @@
     prompt: function () { if (!el) build(); return prompt(state()); },
     problems: function () { if (!el) build(); return problems(state()); }
   };
-  if (/(^|[#&])new-studio\b/.test(location.hash)) {   // #new-studio, or #amoebius&new-studio from Unity's + card
+  // #new-studio opens the panel on load (Unity's + card adds it after the host word)
+  if (/(^|[#&])new-studio\b/.test(location.hash)) {
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', function () { open(); });
     else open();
   }
