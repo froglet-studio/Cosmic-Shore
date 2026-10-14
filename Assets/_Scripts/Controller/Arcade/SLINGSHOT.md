@@ -88,9 +88,10 @@ described in `WARPLINE.md` §3, and both apply here the same way.
 
 An AI Stoat flies the course on the platform's gate approach (commit 160 / lead 180 / through
 120 u) and **slings**: `StoatSlingExecutor.AutopilotSling` presses the trigger on the side of its
-target whenever the target is at least 30° off the nose and 120 u away (at most every 3 s), HOLDS for
-the arc the orbit needs to swing the nose round to it at its fixed half squeeze
-(`StoatSlingMath.AutopilotHoldSeconds`), and releases — both edges through the **replicated** press
+target whenever the target is at least 30° off the nose and 120 u away (at most every 3 s) — in Time
+mode, since 2026-10-14, that lays the pair AHEAD on that side and the AI is caught as it flies past
+(`R_VesselActions/STOAT_DIPOLE.md` §1b) — HOLDS until the target is within 20° of the nose (60° inside
+the 90° timing window; an uncaught pair is let go after 4 s), and releases — both edges through the **replicated** press
 path (the Grizzly's autopilot bomb is the model). It is a turning aid, not a racing line — a human who
 times the release beats it. Tunable on `StoatSlingConfig` (Autopilot sling).
 

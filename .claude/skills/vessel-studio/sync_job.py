@@ -11,11 +11,16 @@ Prints ONE JSON object on stdout: {"ok": bool, "log": [lines for the panel conso
 The session copies `log` and the result into the job document (ArtifactData update, collection
 `jobs`) and, for status/merge, rebuilds and republishes the artifact (SKILL.md section 5).
 
+The repo is froglet-studio/Cosmic-Shore wherever it is reached from: the remote named origin when it points
+there, else any other remote that does (a fork clone keeps the studio as `upstream`), else the repo's URL
+itself (nothing is added to the checkout's config). Fetched branches land in refs/remotes/<that remote>/;
+`status` returns that ref as `ref`, and Amoebius rebuilds the studio from it.
+
 Never touches the session's own checkout: merges happen in a throwaway worktree, pushes name the
 target branch explicitly. Refuses to merge into or delete a GUARDED branch, refuses a merge that
 conflicts (aborts it, lists the files), and needs --yes for anything that writes to the remote.
 """
-import argparse, json, os, shutil, subprocess, sys, tempfile
+import argparse, json, os, re, shutil, subprocess, sys, tempfile
 
 DIR = 'Docs/Studios/VesselStudio'
 GUARDED = {'bleeding-edge', 'main', 'master', 'Ys-bleeding-edge'}
@@ -29,14 +34,45 @@ def git(*a, cwd=None, check=True):
     return r.stdout.strip()
 
 
+REPO_URL = 'https://github.com/froglet-studio/Cosmic-Shore.git'
+REPO_RE = re.compile(r'github\.com[:/]+froglet-studio/cosmic-shore(?:\.git)?/?$', re.I)
+URL_NS = 'froglet-studio'   # the ref namespace when no remote points at the repo and its URL is fetched directly
+_remote = None
+
+
+def remote():
+    """(fetch/push target, ref namespace, how it was chosen): origin when it is the repo, else the remote that is,
+    else the repo's URL. A checkout whose origin is a fork or a local copy has no studio branches on origin, and
+    every job used to fail 'does not exist on origin' there (2026-10-14, B:\\FrogletGames\\Cosmic-Shore)."""
+    global _remote
+    if _remote is None:
+        names = git('remote', check=False).split()
+        urls = {n: git('remote', 'get-url', n, check=False) for n in names}
+        pick = next((n for n in ['origin'] + names if n in urls and REPO_RE.search(urls[n] or '')), None)
+        if pick:
+            _remote = (pick, pick, f'{pick} ({urls[pick]})')
+        else:
+            seen = ', '.join(f'{n} = {u}' for n, u in urls.items()) or 'no remotes'
+            _remote = (REPO_URL, URL_NS, f'{REPO_URL} directly (this checkout has {seen})')
+    return _remote
+
+
+def ref(b):
+    """The fetched copy of branch b (after fetch(b))."""
+    return f'{remote()[1]}/{b}'
+
+
 def fetch(*branches):
+    target, ns, how = remote()
     for b in branches:
         for i in range(4):
-            r = subprocess.run(['git', 'fetch', '-q', 'origin', f'+refs/heads/{b}:refs/remotes/origin/{b}'], text=True, capture_output=True)
+            r = subprocess.run(['git', 'fetch', '-q', target, f'+refs/heads/{b}:refs/remotes/{ns}/{b}'], text=True, capture_output=True)
             if r.returncode == 0:
                 break
             if 'couldn\'t find remote ref' in r.stderr:
-                raise RuntimeError(f'branch "{b}" does not exist on origin')
+                raise RuntimeError(f'branch "{b}" does not exist on {how}')
+        else:
+            raise RuntimeError(f'could not fetch "{b}" from {how}: {r.stderr.strip()[-300:]}')
     return True
 
 
@@ -51,15 +87,15 @@ def count(rng):
 
 def status(branch, shown):
     fetch(branch)
-    ref = f'origin/{branch}'
-    head = git('log', '-1', '--format=%H%x09%s%x09%cI', ref).split('\t')
-    path = git('log', '-1', '--format=%H%x09%s', ref, '--', DIR).split('\t')
-    log = [f'repo froglet-studio/cosmic-shore, branch {branch}',
+    br = ref(branch)
+    head = git('log', '-1', '--format=%H%x09%s%x09%cI', br).split('\t')
+    path = git('log', '-1', '--format=%H%x09%s', br, '--', DIR).split('\t')
+    log = [f'repo froglet-studio/cosmic-shore, branch {branch}, via {remote()[2]}',
            f'head {head[0][:7]} "{head[1]}" {head[2]}',
            f'last studio commit {path[0][:7]} "{path[1]}"']
     fresh = []
     if shown and shown != path[0] and git('cat-file', '-t', shown, check=False) == 'commit':
-        out = git('log', '--max-count=10', '--format=%H%x09%s', f'{shown}..{ref}', '--', DIR, check=False)
+        out = git('log', '--max-count=10', '--format=%H%x09%s', f'{shown}..{br}', '--', DIR, check=False)
         fresh = [dict(zip(('sha', 'subject'), l.split('\t', 1))) for l in out.splitlines() if l]
     up_to_date = shown == path[0]
     log.append('studio is up to date' if up_to_date else f'studio changed since {shown[:7] if shown else "an unknown commit"}:')
@@ -70,19 +106,20 @@ def status(branch, shown):
             continue
         try:
             fetch(b)
-            a, behind = count(f'{ref}..origin/{b}'), count(f'origin/{b}..{ref}')
+            a, behind = count(f'{br}..{ref(b)}'), count(f'{ref(b)}..{br}')
         except RuntimeError as e:
             log.append(f'  {b}: {e}'); continue
         sugg.append({'branch': b, 'ahead': a, 'behind': behind})
         log.append(f'  {b}: {a} ahead, {behind} behind' + (f' -> suggest merging {b} into {branch}' if a and b not in GUARDED else ''))
-    return {'ok': True, 'log': log, 'upToDate': up_to_date, 'pathSha': path[0], 'headSha': head[0], 'suggestions': sugg}
+    return {'ok': True, 'log': log, 'upToDate': up_to_date, 'pathSha': path[0], 'headSha': head[0], 'suggestions': sugg,
+            'ref': f'refs/remotes/{br}'}
 
 
 def compare(a, b):
     fetch(a, b)
-    ahead, behind = count(f'origin/{b}..origin/{a}'), count(f'origin/{a}..origin/{b}')
+    ahead, behind = count(f'{ref(b)}..{ref(a)}'), count(f'{ref(a)}..{ref(b)}')
     log = [f'{a} vs {b}: {ahead} ahead, {behind} behind']
-    cs = commits(f'origin/{b}..origin/{a}', 15)
+    cs = commits(f'{ref(b)}..{ref(a)}', 15)
     log += [f'  + {c["sha"][:7]} {c["subject"]}' for c in cs]
     return {'ok': True, 'log': log, 'ahead': ahead, 'behind': behind, 'commits': cs, 'guarded': b in GUARDED}
 
@@ -93,12 +130,12 @@ def merge(a, b, yes):
     if not yes:
         return {'ok': False, 'log': ['merge needs --yes'], 'refused': True}
     fetch(a, b)
-    if count(f'origin/{b}..origin/{a}') == 0:
+    if count(f'{ref(b)}..{ref(a)}') == 0:
         return {'ok': True, 'log': [f'{b} already has everything on {a}'], 'merged': False}
     wt = tempfile.mkdtemp(prefix='vs-merge-')
     try:
-        git('worktree', 'add', '-q', '--detach', wt, f'origin/{b}')
-        r = subprocess.run(['git', 'merge', '--no-ff', '--no-edit', '-m', f'merge: {a} into {b} (Vessel Studio sync)', f'origin/{a}'],
+        git('worktree', 'add', '-q', '--detach', wt, ref(b))
+        r = subprocess.run(['git', 'merge', '--no-ff', '--no-edit', '-m', f'merge: {a} into {b} (Vessel Studio sync)', ref(a)],
                            cwd=wt, text=True, capture_output=True)
         if r.returncode:
             files = git('diff', '--name-only', '--diff-filter=U', cwd=wt, check=False).splitlines()
@@ -108,7 +145,7 @@ def merge(a, b, yes):
                            ['ask a Claude session to merge and resolve these by hand']}
         sha = git('rev-parse', 'HEAD', cwd=wt)
         for i in range(4):
-            p = subprocess.run(['git', 'push', 'origin', f'HEAD:refs/heads/{b}'], cwd=wt, text=True, capture_output=True)
+            p = subprocess.run(['git', 'push', remote()[0], f'HEAD:refs/heads/{b}'], cwd=wt, text=True, capture_output=True)
             if p.returncode == 0:
                 break
         else:
@@ -124,10 +161,10 @@ def delete(branch, yes, keep=()):
         return {'ok': False, 'refused': True, 'log': [f'refused: {branch} cannot be deleted from the panel']}
     if not yes:
         return {'ok': False, 'refused': True, 'log': ['delete needs --yes']}
-    r = subprocess.run(['git', 'push', 'origin', '--delete', branch], text=True, capture_output=True)
+    r = subprocess.run(['git', 'push', remote()[0], '--delete', branch], text=True, capture_output=True)
     if r.returncode:
         return {'ok': False, 'log': [f'could not delete {branch}: {r.stderr.strip()[-300:]}']}
-    return {'ok': True, 'deleted': True, 'log': [f'deleted {branch} on origin']}
+    return {'ok': True, 'deleted': True, 'log': [f'deleted {branch} on {remote()[2]}']}
 
 
 def self_test():
@@ -138,6 +175,28 @@ def self_test():
     if not delete('main', True).get('refused'): bad.append('delete of a guarded branch was not refused')
     if not delete('x', False).get('refused'): bad.append('delete without --yes was not refused')
     if not delete('claude/some-session', True, keep={'claude/some-session'}).get('refused'): bad.append('delete of the session branch was not refused')
+    # The remote the jobs use, in throwaway repos (no network): the repo under any remote name, or its URL.
+    global _remote
+    here = os.getcwd()
+    cases = [({'origin': 'https://github.com/froglet-studio/Cosmic-Shore'}, 'origin', 'origin'),
+             ({'origin': 'https://github.com/someone/Cosmic-Shore.git', 'upstream': 'git@github.com:froglet-studio/Cosmic-Shore.git'},
+              'upstream', 'upstream'),
+             ({'origin': 'B:/FrogletGames/Other-Clone'}, REPO_URL, URL_NS),
+             ({}, REPO_URL, URL_NS)]
+    for remotes, want_target, want_ns in cases:
+        d = tempfile.mkdtemp(prefix='vs-remote-')
+        try:
+            os.chdir(d); git('init', '-q')
+            for n, u in remotes.items():
+                git('remote', 'add', n, u)
+            _remote = None
+            got = remote()
+            if got[:2] != (want_target, want_ns):
+                bad.append(f'remote() with {remotes} gave {got[:2]}, want {(want_target, want_ns)}')
+            if want_ns == URL_NS and remotes and next(iter(remotes.values())) not in got[2]:
+                bad.append('the fallback does not say what the checkout\'s remotes are')
+        finally:
+            os.chdir(here); _remote = None; shutil.rmtree(d, ignore_errors=True)
     print('self-test: ' + ('ok' if not bad else 'FAILED: ' + '; '.join(bad)))
     return bad
 

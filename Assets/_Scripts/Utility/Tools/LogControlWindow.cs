@@ -88,7 +88,7 @@ namespace CosmicShore.Utility
         [NonSerialized] Texture2D _whiteTexture;
         [NonSerialized] bool _stylesBuilt;
 
-        [MenuItem("FrogletTools/Toolbox", false, 0)]
+        [MenuItem("FrogletTools/Toolbox", false, -99)]
         static void Open()
         {
             var window = GetWindow<LogControlWindow>("Froglet Toolbox");
@@ -352,11 +352,6 @@ namespace CosmicShore.Utility
         {
             DrawTabTitle("Tools", Tabs[1].Color);
 
-            DrawSubSectionLabel("Create");
-            DrawMenuItemButton("New MiniGame", "FrogletTools/Legacy/Create/MiniGame");
-            DrawMenuItemButton("New Class",    "FrogletTools/Legacy/Create/Class");
-
-            GUILayout.Space(8);
             DrawSubSectionLabel("Testing Multiplayer");
 
             bool bootstrapEnabled = EditorPrefs.GetBool(PrefBootstrapScene, true);
@@ -371,11 +366,9 @@ namespace CosmicShore.Utility
 
             GUILayout.Space(8);
             DrawSubSectionLabel("Utilities");
-            DrawMenuItemButton("Component Copier",           "FrogletTools/Legacy/Component Copier");
-            DrawMenuItemButton("Dialogue Editor",            "FrogletTools/Legacy/Dialogue Editor");
-            DrawMenuItemButton("ElementalFloat Editor",      "FrogletTools/Legacy/ElementalFloat Editor");
-            DrawMenuItemButton("Find Asset by GUID",         "FrogletTools/Legacy/Find Asset by GUID");
-            DrawMenuItemButton("Force Re-Serialize All SOs", "FrogletTools/Legacy/Force Re-Serialize All ScriptableObjects");
+            DrawMenuItemButton("Dialogue Editor",            "FrogletTools/FTUE/Dialogue Editor");
+            DrawMenuItemButton("Find Asset by GUID",         "FrogletTools/Utilities/Find Asset by GUID");
+            DrawMenuItemButton("Force Re-Serialize All SOs", "FrogletTools/Utilities/Force Re-Serialize All ScriptableObjects");
         }
 
         // ═════════════════════════════════════════════════════════════════════

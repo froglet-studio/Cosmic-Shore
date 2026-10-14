@@ -10,7 +10,7 @@ namespace Amoebius.Workspace
     /// stamps <c>Updated</c> the same way. That matters for merging, and later for sync and the activity feed.
     /// Callers save the board afterwards (<see cref="AmoebiusBoard.Save(string?)"/>).
     /// </summary>
-    public static class BoardCommands
+    internal static class BoardCommands
     {
         /// <summary>Adds a card from a quick-add line (<see cref="QuickAdd"/>). Null when the line has no title.</summary>
         public static Item? AddFromQuickAdd(AmoebiusBoard board, string line, DateTime now, string source = "user", Status state = Status.Todo)

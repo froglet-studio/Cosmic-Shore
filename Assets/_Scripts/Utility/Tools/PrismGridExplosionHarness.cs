@@ -20,7 +20,7 @@ namespace CosmicShore.Utility
     /// Spawns a parameterised cuboid lattice of REAL prisms centred on the world origin, then
     /// detonates the Dolphin's giant blast into the middle of it on demand. Fills the gap between
     /// the two existing prism harnesses: <c>PrismRenderStressTest</c>/<c>PrismStressInjector</c>
-    /// spawn a render-only ECS cloud (nothing damageable), and <c>AOEBenchmarkRunner</c> registers
+    /// spawn a render-only ECS cloud (nothing damageable), and the retired AOE benchmark registered
     /// synthetic index entries with damage application deliberately excluded. This one exercises
     /// the whole chain — mass spawn + grow-in, instanced rendering at a known count, and Burst AOE
     /// damage WITH real destruction — at a count you choose.
@@ -294,7 +294,7 @@ namespace CosmicShore.Utility
             if (config == null)
             {
                 Debug.LogError("[PrismGridExplosionHarness] No PrismGridTestConfigSO assigned or found " +
-                               "in Resources. Run FrogletTools > Scene Setup > Setup Prism Grid Explosion Scene.");
+                               "in Resources. Run FrogletTools > Scenes > Setup Prism Grid Explosion Scene.");
                 enabled = false;
                 return;
             }
@@ -335,7 +335,7 @@ namespace CosmicShore.Utility
             // Without it, the FIRST laid prism NREs and Spawn appears to do nothing.
             if (FindFirstObjectByType<ThemeManager>() == null)
                 Warn("No ThemeManager in scene — Spawn will fail on the first prism. " +
-                     "Re-run FrogletTools > Scene Setup > Setup Prism Grid Explosion Scene.");
+                     "Re-run FrogletTools > Scenes > Setup Prism Grid Explosion Scene.");
 
             DiagnosticsHUD.RegisterCommand(CommandName, HandleGridCommand);
             DiagnosticsHUD.RegisterCommand(LabCommandName, HandleLabCommand);

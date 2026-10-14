@@ -13,7 +13,7 @@ namespace CosmicShore.Editor
         private List<KeyValuePair<Texture2D, long>> sortedTextures;
         private int topN = 10;
 
-        [MenuItem("FrogletTools/Performance/Texture Memory Usage")]
+        [MenuItem("FrogletTools/Performance/Texture Memory Usage", false, 190)]
         [FrogletTool(FrogletToolCategory.Performance, Importance = 3,
             Description = "Static texture memory footprint by asset.")]
         public static void ShowWindow()

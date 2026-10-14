@@ -1,6 +1,6 @@
 # Performance Benchmark Tool
 
-**Open the window:** `FrogletTools > Performance Benchmark` (Unity menu bar).
+**Open the window:** `FrogletTools > Performance > Performance Benchmark` (Unity menu bar).
 
 The toolset measures the **running game** frame-by-frame, scores it, names what's slow and how to
 fix it, saves runs you can compare, sweeps scenes for errors, and gives you an on-screen readout

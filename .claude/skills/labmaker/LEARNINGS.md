@@ -369,7 +369,7 @@ Entries are grouped by family; within a family, the newest goes at the bottom.
   - **The discharge:** `ScreenSwitcher` runs every menu screen but HOME at `Time.timeScale = 0`. The lab's CPU effects had been ported onto unscaled time, but the game's discharge SHADERS read `_Time.y`, so every bolt stood still.
   - **The shimmer:** the off-screen stage sat at y −150000, where a float resolves 1/64 of a unit, on a crystal 4 units across. Every vertex snapped as the camera circled.
 - Do instead: before shipping a lab's motion into a menu, list every clock the drawn result reads (CPU and SHADER: `_Time`, `Time.time`, animators, particles) and give each one the display's own unscaled time. A default-off property such as `_ArcClock` leaves the game untouched. Put an off-screen stage only as far out as the far clip needs, and make it large. Its jitter is |position| × 2^-23 against the subject's size.
-- Evidence: `_ArcClock` in `ChargeCrystal.shader` / `OmniChargeEdgesShader.shader`; `ElementalConverterView.StageOrigin`; `OmniCombineConfigSO.omniWorldRadius`.
+- Evidence: `_ArcClock` in `ChargeCrystal.shader` / `OmniChargeEdgesShader.shader` (the latter retired 2026-10-13; its successor `CrystalChargeArcsShader` draws CPU geometry on the player's clock, so it needs none); `ElementalConverterView.StageOrigin`; `OmniCombineConfigSO.omniWorldRadius`.
 - Promoted: no
 
 ### L-STU-40 — A graduated lab that reads ANOTHER generator's mesh breaks when that generator bakes something new into it
@@ -377,6 +377,20 @@ Entries are grouped by family; within a family, the newest goes at the bottom.
 - What happened: the converter's generator fits the game's `MassCrystalPrisms` / `OmniCrystalTriangles` onto the art file's plates. A parallel branch (Omni Shepard round 10) baked the prisms' thickness into those meshes and set the materials to `_Thickness 1`. The merge was clean; the generator's `--check` failed with "misses the omni's triangles by 5.33e-01". Had it not been gated, the converter would have drawn the Mass prisms thin, then double-thick at hand-off.
 - Do instead: when a lab's generator reads a mesh another generator owns, IMPORT that owner's constants (`author_omni_crystal_triangles.DEPTH_THICKNESS`, `author_mass_crystal_look.MASS_DEPTH_THICKNESS`); never copy the numbers. Undo the owner's transform exactly, and gate the inverse against something it cannot fake. Here the top face is fixed, so the mesh's highest corner must sit at the material's `_TopHeight`, and the thin triangles must land on the art omni within 1e-4. Add a negative control for a wrong constant. Re-run every such generator's `--check` after each merge of the base: the break shows there, not as a conflict.
 - Evidence: `read_prisms()` in `Tools/Build/author_omni_combine_asset.py` and its "wrong baked thickness is refused" self-test; `depth.massThickness` / `depth.omniThickness`; `OmniCombinePlayer.DepthShape.Of(..., baked)`. The recovered thin Mass matched the pre-bake data to 1e-5.
+- Promoted: no
+
+### L-STU-41 — A brief names a cause; measure the mechanism before building the cure
+- Lab: Omni Motion Lab (`Docs/Studios/OmniMotionLab.html`) · Branch: `cece/sharp-fermi-yw38ky` · Date: 2026-10-13
+- What happened: the brief was to time the squares' moves and the rhombi's flips so they never move at once, "so their movements never clip". The lab built that scheduler. It also added a convex-plate interpenetration test that records what was moving on each clipping frame (`clipTimeline`). The overlap fell from 87% to 0, but visible clips only fell from 66.7% to 28.6% of frames, and every remaining clip happened with the rhombi STILL. A square turning round its pentagon cuts through the still rhombus beside it, on the art's own keys and on a rigid turn alike. What reached 0 was a rigid turn that hops off the shell. A lift sweep found the edge: 0.14 R on the pentagon turn, 2.2× the art's lift on the triangle turn.
+- Do instead: when a brief says "do X so that Y", build Y's METRIC as well as X. Have it record the state that was active when Y fails, so the lab can say whether X is the cause. Ship the requested change AND the measured fix as separate styles, so the designer sees both.
+- Evidence: `runFullBatch()` rows "Proposal: the brief, as keys" (overlap 0, clips 28.6) vs "Proposal: rigid arcs that hop clear" (0, 0); `clipTimeline`; `OMNI_MOTION_LAB.md` Found 1.
+- Promoted: no
+
+### L-STU-42 — "Make it more" can be capped by a rule, not by the knob the designer named; measure what caps it
+- Lab: Omni Motion Lab round 3 (`Docs/Studios/OmniMotionLab.html`) · Branch: `cece/sharp-fermi-yw38ky` · Date: 2026-10-13
+- What happened: "more Mass prisms out, and further out". The obvious knob, column height, moved the visible count from 2.2 to at most about 2.4. The ratchet was the cap: it holds a prism moving away sealed until the deep reseat. Taller columns made it worse, because they need a deeper reseat to stay hidden. Changing the RULE fixed it: a prism may rise whenever its column top is hidden. Visible height went 1.5 → 7.4 plate radii, with zero rises seen, and a planted "rise anywhere" control reads 100% so the check is live.
+- Do instead: before sweeping the named knob, add the metric for what the designer wants to SEE (here, height seen = how far × how many). Sweep the knob, and if it plateaus, find the invariant that caps it. A new rule needs its own never-seen check and a planted control that breaks it.
+- Evidence: `OMNI_MOTION_LAB.md` round 3 sweep; `depthRise` in `depthStep`; styles "Round 3" and "Control: rise anywhere".
 - Promoted: no
 
 ---
@@ -416,6 +430,7 @@ Entries are grouped by family; within a family, the newest goes at the bottom.
 - Evidence: `stepAnalog` and the analog `stepPivot` branch (`nSub`); round 2 "Found" 8.
 - Promoted: no (§8's fixed-timestep trap covers it)
 
+
 ### L-STU-46 — A float32 game clock ends a curve a frame before (or after) a float64 lab; end curves at 1 − ε, and expect a peak column to move
 - Lab: Thresher Plant Lab graduation (`ThresherChainSolver`, `parity.cjs`) · Branch: `cece/zealous-johnson-gopp6t` · Date: 2026-10-13
 - What happened: the analog hook ends at `u = hookT / hookSeconds >= 1`. Adding 1/60 thirty times is 0.49999997 in C# float32 and 0.5000000000000001 in JS float64, so the game's hook ran one frame longer than the lab's, and parity diverged from 1e-3 u to a mode mismatch within 50 frames. Ending every curve at `u >= 1 − 1e-4` on both sides fixed parity, and it moved the lab's analog catch column ~20% (2 620 → 3 183 °/s²), because a peak column reads the one frame where two models hand over.
@@ -429,6 +444,26 @@ Entries are grouped by family; within a family, the newest goes at the bottom.
 - Do instead: for every test written for a lab finding, delete or break the line it guards and run it once. If it still passes, the scenario does not reach the case; sweep the scenario until it does, and assert that the sweep produced enough qualifying cases.
 - Evidence: `AmbiguousPlant_OrbitsInTheFlightPlane_TheWayTheShipIsTurning` (the sweep and its `ambiguous > 10` guard).
 - Promoted: no
+
+### L-STU-58 — A "worst error" over zero matched samples is 0: gate every max-error check on its sample count
+- Lab: Omni Motion Lab round 5 graduation · Branch: `cece/sharp-fermi-yw38ky` · Date: 2026-10-13
+- What happened: the graduation harness checked that the triangle turn with the art file's own lift and side step passes through the art's Step1 key, as the worst distance over matched vertices. The first run printed PASS with worst 0. No vertex had matched: the anchor set is mirror-symmetric, so the matcher tried both x signs and the hit count never reached a full match, leaving the max at its initial 0. Breaking on the first FULL match (x as written, the same as the baker) gave the real result, 1.97e-6 R.
+- Do instead: report the sample count beside every max/mean error, and fail the check when it is zero or short of the expected count. A tolerance check that can pass on an empty set is not a check.
+- Evidence: `Tools/Build/omni_turns_harness/Program.cs` ("anchors with x 1: 1440 body vertices matched"); the round-5 graduation section of `Docs/Studios/OMNI_MOTION_LAB.md`.
+- Promoted: no
+
+### L-STU-59 — A trail that fades per point from its STRIKE steps at every hold; fade from when the bolt LEFT the point
+- Lab: Omni Motion Lab round 5, after graduation · Branch: `cece/sharp-fermi-yw38ky` · Date: 2026-10-13
+- What happened: the seam walk struck each seam in 0.07 s and then HELD 0.1–0.28 s before the next. Each point faded
+  from when it was struck, so at every junction the brightness stepped by the hold's worth of fade (about 0 → 0.3).
+  When the old seam died, the trail's tail began at a third of its brightness: a hard, popping end. The designer saw it
+  as "discrete units separating". The harness's frame-to-frame check found it only once it measured what is visible.
+  The first measurements blamed resampling and pinning.
+- Do instead: fade each point from when the bolt LEFT it (`min(now, start + (leaves - start) * place)`), so consecutive
+  points across a hold are the same moment. Check the trail's tail brightness and frame-to-frame motion over visible
+  points, and keep the old rule as the negative control.
+- Evidence: `ChargeArcs.SeamWalk` (`leftAt`); `Tools/Build/charge_arcs_harness` ("the seam trail's tail always fades
+  to nothing", 0.014 vs 0.327 with the old rule).
 
 ### L-STU-48 — A harder course measures the AI's failures unless the AI learns the harder skill
 - Lab: Stoat Flight Studio sim lab, round 14 · Branch: `claude/peaceful-rubin-hhw49n` · Date: 2026-10-09
@@ -712,3 +747,77 @@ Entries are grouped by family; within a family, the newest goes at the bottom.
 - Do instead: a lab that re-implements the kernel can drift from the game, and one that calls the shipped kernel cannot. Report verdicts as ratios against the shipped baseline.
 - Evidence: PrismOcclusionDitherLab.cs class doc.
 - Promoted: §0
+
+### L-STU-60 — Before inventing a path, measure where the existing one goes wrong, and ask whether topology allows "a bit"
+- Lab: Omni Combine Lab revisions 6–7 (the converter) · Branch: `cece/sharp-fermi-yw38ky` · Date: 2026-10-13
+- What happened: "Time came in from inside" got answered with a new per-plate path that rose to a shell, went round
+  and dropped in. The designer called it heavily embellished and asked for the lab's morphs plus "a bit of extra
+  spacing". Measuring the lab's morph first showed the real fault: its shell is 90% formed while the crystal is still
+  0.3–0.5 R out, so the finish is a finished shell SLIDING home. Its leading rhombi rise out of their holes, its sides
+  slide along at slot radius, and only its trailing side comes in from outside. A body arriving from one side must
+  bring its leading side through or round the other body. No small spacing can avoid that, and five cheaper variants
+  were measured and failed:
+  - spacing alone;
+  - retiming the ease;
+  - a radial floor, which whips plates at 36 R/s;
+  - re-anchoring plates to their slots, which moves them 1.5–3 R;
+  - containment, which swells the shell to 2–3x.
+  The conflict was put to the designer with numbers. The answer was to keep the morphs and choose WHERE the crossing
+  happens: the flight turns so each crystal arrives from the camera's side, and the crossing goes behind the omni.
+- Do instead:
+  - Measure the existing motion against the complaint in the viewer's terms first. Here that is "a rhombus under a
+    camera-facing hole is inside the omni, late in its morph".
+  - Before building a new path, check whether "a bit" can satisfy the ask at all. If the geometry forbids it, put the
+    conflict to the designer with measured options, rather than shipping an embellishment that looks like an answer.
+  - When something unavoidable can't be made smaller, the viewer's camera is a design input. Put the crossing where
+    the body itself hides it. This is the same move as the Mass "rise while hidden".
+- Evidence: `OmniCombineCore.FaceCamera`, `SocketSpacing`; `Tools/Build/converter_round5_harness` (camera-facing
+  rhombi inside 0.5 / 6.5 / 0.6% of late frames, against 24.6 / 19.0 / 33.0% arriving straight in). See L-STU-61: that
+  measure was a proxy, and the true one does not back the occlusion claim.
+- Promoted: no
+
+### L-STU-61 — "Occluded" means a ray from the camera hits something drawn first; a facing test is not that
+- Lab: Omni Combine Lab revision 7 → round 8 (the converter) · Branch: `cece/sharp-fermi-yw38ky` · Date: 2026-10-13
+- What happened: revision 7 shipped "arrive from the camera's side, so the clipping happens behind the omni". Its
+  evidence was a proxy, "a rhombus whose hole faces the camera is inside the omni", which fell from 33% to 0.6%. The
+  designer then asked for "the same treatment" on Charge and Mass, which already had it. Ray-casting from the
+  converter's camera against every triangle drawn showed visible plate-through-plate intersections at about 15% on
+  every approach: straight in, from the camera's side, along the line of sight, from above. From behind was best.
+  The clipping is the crystal entering the omni and growing inside it. The approach direction only trades which half
+  you see. A sparse structure (Charge lands on Space alone) has nothing to hide it behind.
+- Do instead: when the claim is "occluded" or "hidden", measure it with occlusion. Cast rays from the real camera
+  against the geometry actually drawn, at the moment it is drawn, and count the events the viewer would call the
+  fault: here, triangle-triangle intersections. Keep any facing or hemisphere test only as a fast pre-filter, and say
+  in the doc which one produced the number.
+- Evidence: the round-8 scratch ray-cast rig (`OMNI_COMBINE_LAB.md` revision 7, "Correction, round 8").
+- Promoted: no
+
+### L-STU-62 — When the designer's eye and your measure disagree, ship their ask with the dial, and publish the disagreement
+- Lab: Omni Combine Lab revision 7, round 9 (the converter) · Branch: `cece/sharp-fermi-yw38ky` · Date: 2026-10-13
+- What happened: the designer saw Mass "come in from the top", with visible clipping from the side, and asked
+  whether there was a 90° error. There was no error in azimuth: the approach matched only the camera's compass
+  direction, not its height. Matching the height too fixed what they named, with arrival 0.2° off the camera's.
+  But the triangle ray-cast scored a line-of-sight approach WORSE on the silhouette (Mass 98 against 31 rim
+  intersections a second from overhead). The measure counts intersection points; it cannot see a body sinking
+  through another body's outline, which is what they were describing.
+- Do instead: build what the designer asked, and expose the contested quantity as one authored dial
+  (`approachAboveCameraDegrees`, default the ask). Put the measure's opposing numbers in the doc and the
+  verification checklist, so the next look in the editor settles it. Don't override the eye with a metric
+  that was never validated against it, and don't hide a metric that disagrees.
+- Evidence: `OmniCombineParams.ApproachAboveCamera`; `OMNI_COMBINE_LAB.md` revision 7, round 9.
+- Promoted: no
+
+### L-STU-63 — Run the designer's literal value as a control: it can trade the fault they named for a new one
+- Lab: Omni Combine Lab revision 8 (the converter) · Branch: `cece/beautiful-goodall-8cenn3` · Date: 2026-10-14
+- What happened: the designer asked for the Mass prisms to fly in "at maximum column height" so they socket instead of
+  clipping. Taken literally, the raised prisms stand 2.5 R out in every direction as the crystal nears the centre, and
+  the Time crystal waits 2.7–3.3 R out. Measured on the real prism bodies, the top of the column reaches into the Time
+  crystal (0.00 R). The first version of the check also flagged prisms passing through the omni mid-flight. That was a
+  proxy problem: it lumped "landing beside my hole" together with "bound for the far side, passing through".
+- Do instead: build the ask as a dial, and run the literal value through the same harness. Here that is `massRaise`,
+  with 1 meaning "maximum". If the literal value only trades the fault the designer named for a new one (a
+  body-on-body contact, not a contested metric as in L-STU-62), ship the highest value that keeps the ask's purpose.
+  Keep the literal value as a negative control, and give the designer the table. Split a fault metric by cause
+  before gating on it.
+- Evidence: `Tools/Build/converter_round5_harness` section 9; `OMNI_COMBINE_LAB.md` revision 8.
+- Promoted: no

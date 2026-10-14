@@ -78,12 +78,16 @@ ALLOW = [
     ("Utility/AITraining/Runner/TrainingAutoLauncher.cs", r"^Time$", "timeScale",
      "overnight TRAINING batches only (never a benchmark); applies to every pilot equally, "
      "refused while another client is connected, restored after the batch"),
+    ("Editor/AI/ThirdEyeWindow.cs", r"^_cam\.transform$", "SetPositionAndRotation",
+     "_cam is the Third Eye window's own hidden camera rig, never a vessel; it only watches"),
 ]
 
 ASSIGN = re.compile(
     r"(?P<recv>[A-Za-z_][\w\.\[\]]*?)\s*\.\s*(?P<member>[A-Za-z_]\w*)\s*"
     r"(?P<op>\+\+|--|[+\-*/]?=(?!=))")
 CALL = re.compile(r"(?:\.|\b)(?P<name>[A-Za-z_]\w*)\s*\(")
+# The receiver chain a `.Call(` match starts right after, for the allow-list.
+CALL_RECV = re.compile(r"(?P<recv>[A-Za-z_][\w\.\[\]]*?)\s*$")
 
 
 def strip(text):
@@ -142,6 +146,9 @@ def scan_text(rel, text):
                 # A method DECLARATION with that name is not a call into the world.
                 before = line[:m.start()]
                 if re.search(r"\b(void|bool|float|int|static|public|private|protected|internal)\s*$", before):
+                    continue
+                recv = m.group(0).startswith(".") and CALL_RECV.search(before)
+                if recv and allowed(rel, recv.group("recv"), name):
                     continue
                 findings.append((rel, ln, f"calls {name}(...)"))
         if REFLECTION.search(line):
@@ -221,6 +228,13 @@ def self_test():
         bad += 1
     if not scan_text("Assets/_Scripts/Utility/AITraining/Pilot/TrainingPilot.cs", "_status.Speed = s;"):
         print("SELF-TEST FAIL: exception leaked to another receiver")
+        bad += 1
+    eye = "Assets/_Scripts/Editor/AI/ThirdEyeWindow.cs"
+    if scan_text(eye, "_cam.transform.SetPositionAndRotation(p, q);"):
+        print("SELF-TEST FAIL: reviewed call exception not honoured")
+        bad += 1
+    if not scan_text(eye, "vessel.transform.SetPositionAndRotation(p, q);"):
+        print("SELF-TEST FAIL: call exception leaked to another receiver")
         bad += 1
     print("self-test", "OK" if not bad else f"FAILED ({bad})")
     return 1 if bad else 0

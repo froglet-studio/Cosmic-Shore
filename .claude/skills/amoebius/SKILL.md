@@ -21,12 +21,11 @@ checklist.
    and audio; `amoebius_board` the open bugs and tasks. Suggest what you find but won't fix now with
    `amoebius_board_suggest`, always with a `criterion`: the check that will prove it done. A card's
    "done when" is its acceptance test: run it and show the result before calling the work done.
-5. **Multiplayer: several players at once.** `net_players action=start players=N` (1-4, a party
-   is four) starts them over one session folder; `net_input` / `net_command` drive any of them,
-   `net_sim` gives each a bad line (latency, loss, a pulled cable), `net_fault` breaks the session
-   service, `net_stats` reads traffic and RTT. `relay=local` sends them through Froglet's relay
-   server as an internet game would; `relay=ugs` signs them in to the game's LIVE UGS project, so
-   only when the owner asks. `Docs/MULTIPLAYER_START_HERE.md` first, then `Port/docs/MULTIPLAYER.md`.
+5. **Multiplayer is UGS only.** START ONLINE (`game_start` `online: true`) signs in to the game's LIVE
+   UGS project and plays through UGS Lobby and Relay, as the Unity build does; START is offline. There
+   is no LAN play, local server or multi-player harness any more, so only start an online game when the
+   owner asks. Engine-side work is tested against stand-ins (`UgsMultiplayerTests`, `NetStackTests`).
+   `Docs/MULTIPLAYER_START_HERE.md` first, then `Port/docs/MULTIPLAYER.md` §6.10.
 6. **Inspect, don't guess.** `game_find` / `game_hierarchy` to locate objects, `game_get` to read
    live fields, `game_ui_at X,Y` for "what is that on screen", `game_dump_ui` for layout and
    anchors, `game_logs` for errors.
@@ -59,6 +58,51 @@ checklist.
      means scroll a log to the newest line). When a component misbehaves, port Unity's rule for
      rule (ugui 2.0), then fix the tests that pinned the approximation.
    Drive scrolling with `game_input` `scroll X,Y N` (wheel notches) and `drag X,Y X,Y F`.
+
+11. **Multiplayer runs two games, online, with the owner's go-ahead.** Give each its own `profile`
+   (each is its own UGS player) and `online: true`; both sign in to UGS and meet in its Lobby. In
+   Menu_Main: ARCADE, the party panel's "+", then Invite (accept it in the other game's REQUESTS) or Join
+   on the row. Both press START GAME; the match begins when every player presses the HUD's GO (the
+   ReadyButton) - a GO that stays on screen is waiting for a press. Check replication with
+   `get "Manta(Clone)" NetworkObject OwnerClientId` and `Transform position` on both games (`get` prints
+   every match). Stop a stray game by PID (`pgrep -x CosmicShore`), never `pkill -f 'CosmicShore ...'`:
+   the pattern also matches the shell running your command, so it kills that shell too.
+
+12. **Traps from the UGS-online session (2026-10-14).**
+   - **Amoebius.exe and the game update separately.** START pulls and builds the GAME from the branch;
+     the launcher itself only changes through its own UPDATE (rail badge, or SETTINGS > ABOUT > CHECK /
+     INSTALL). A launcher feature you just pushed is invisible to a user who only pressed START: tell them
+     to update Amoebius, and read the PLAY page's own buttons in their screenshot to see which build they run.
+   - **A file the player window uses must also be linked into `CosmicShore.Mobile.csproj`.** The phone build
+     compiles the shared player sources by link; `MobileLinkTests` fails when one is missing (it caught
+     `XInputRumble.cs` and `PlayerDiagnostics.cs`). Add the `<Compile Include=... Link=...>` with the file.
+   - **Launcher screenshots under xvfb show a tooltip** wherever the pointer sits (the screen's centre).
+     Use a virtual screen much larger than the window (`xvfb-run -s "-screen 0 3400x2200x24"`) so the
+     pointer is off it.
+   - **Never assume the user's workspace path.** `%LOCALAPPDATA%\Amoebius\workspace` is only the default;
+     BESIDE MY CLONE puts it next to their clone. Prefer a launcher button over hand-run PowerShell.
+   - **F3 is Amoebius's diagnostics overlay** (`PlayerDiagnostics.cs`, ARCHITECTURE §11.3): read it in a
+     user's screenshot for fps, sign-in, lobby and ping before guessing. The game's own top-left panel (F7)
+     used to report 60 fps while the game ran at 5-9. Since 2026-10-14 both read one clock
+     (`FrameTimingManager`) and agree within a few percent in a normal run. In a scripted (`--frames`) run
+     F7's FPS and Frame Time still read the fixed 1/60 step, on purpose (item 13); F3 reads the real frame.
+
+13. **Traps from the frame-timing session (2026-10-14).**
+   - **The cloud container has no .NET.** `curl -sSL https://dot.net/v1/dotnet-install.sh | bash -s --
+     --channel 10.0 --install-dir /opt/dotnet`, then `PATH=/opt/dotnet:$PATH`. The built `CosmicShore`
+     apphost also needs `DOTNET_ROOT=/opt/dotnet`, or it exits 131 with "You must install .NET".
+   - **A scripted run (`--frames`) fixes every game clock at 1/60 s.** `Time.unscaledDeltaTime`,
+     `Time.time` and `realtimeSinceStartup` all advance by the step, so judge fps from a normal run (control
+     port, no `--frames`). `FrameTimingManager` is the API that measures the real frame in both kinds of run.
+   - **F3's frame figures average its last 240 frames.** At 3 fps that is 80 seconds, so after a scene
+     change it still mixes in the previous scene. Before comparing F3 with anything, `wait` 240+ frames in
+     the scene.
+   - **Never link a `CosmicShore.Player` source file into `CosmicShore.Tests`.** The tests' namespace
+     is `CosmicShore.Tests`, so a linked file that declares `namespace CosmicShore.Player` makes `Player`
+     resolve to that namespace instead of the game's `Player` type. Six existing test files then fail
+     with CS0118 ("'Player' is a namespace but is used like a type"). To test player logic, move the part
+     you need into the engine (`FrameTimingWindow` went to `Engine/Rendering/`), where the tests already
+     reach it. Linking into `CosmicShore.Mobile` is fine: the phone build has no such type.
 
 Report what you saw (attach the screenshot path) and what you verified; say plainly if a check
 did not run.

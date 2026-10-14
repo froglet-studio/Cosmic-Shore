@@ -63,6 +63,9 @@ namespace CosmicShore.Render
 
         public int Dropped => _ring.Dropped;
 
+        /// <summary>The GPU milliseconds of the last frame whose results came back (every pass summed), or null before the first.</summary>
+        public double? LastFrameMs { get; private set; }
+
         public GpuTimer(GL gl, params string[] passes)
         {
             _gl = gl;
@@ -101,7 +104,11 @@ namespace CosmicShore.Render
                 }
             for (int p = 0; p < Passes.Length; p++) _used[slot, p] = false;
             _ring.Harvested(available);
-            return available ? _ms : null;
+            if (!available) return null;
+            double total = 0;
+            foreach (double ms in _ms) total += ms;
+            LastFrameMs = total;
+            return _ms;
         }
 
         public void Begin(int pass)

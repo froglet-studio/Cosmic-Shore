@@ -11,7 +11,7 @@ One asset, `Assets/Resources/Codex.asset` (`CodexSO`), holds all three. The runt
 the codex is opened from more than one place and a per-scene reference is a per-scene thing to
 forget.
 
-**Tool:** FrogletTools ▸ Interface ▸ **Codex**.
+**Tool:** FrogletTools ▸ UI ▸ **Codex**.
 
 > **Naming hazard.** A **Tool** in this document is a thing in the GAME — the Vessel Changer, the
 > Cell Selector. It has nothing to do with **FrogletTools**, which are editor tools. The codebase

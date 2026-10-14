@@ -20,7 +20,7 @@ At any total at most two adjacent colours show (e.g. +8 → 3 blue + 2 white). P
 
 **Per-vessel integration.** `ElementalBarsController` (on all 11 vessel prefabs — formerly named `SilhouetteController` before the vessel silhouette/trail-display HUD element it also drove was removed; the leftover `Silhouette` GameObjects were finally excised from all 13 vessel + HUD-variant prefabs in 2026-08, along with the dead `silhouette`/`silhouetteContainer`/`trailContainer` keys — do not re-add a vessel silhouette to a HUD) is the driver: `InitializeElementBars()` calls `elementBars.Build()`, seeds levels, and subscribes to `ResourceSystem.OnElementLevelChange`. The `elementBars` reference is null-safe — vessels without the view wired simply show no bars (opt-in rollout). `SquirrelVesselHUDView` routes drift/joust/crystal juice into the view.
 
-**Zero-wire by default.** With no config or petalRoot assigned, the view loads `Resources/ElementalBarsConfig`, auto-creates a centred flower container per element, and loads petal sprites from `Resources/ElementPetals/{element}_petal`. To author explicitly (recommended for real positioning), run **FrogletTools > Vessels > Wire Elemental Petal Bars** (assigns config + creates `*_Flower` containers), then position the containers. A petal authored in-prefab as `Petal{0..4}` under a container is reused (not duplicated) and normalised via `ElementalBarsView.ConfigurePetal`.
+**Zero-wire by default.** With no config or petalRoot assigned, the view loads `Resources/ElementalBarsConfig`, auto-creates a centred flower container per element, and loads petal sprites from `Resources/ElementPetals/{element}_petal`. To author explicitly (recommended for real positioning), run **FrogletTools > Vessels > Wiring > Wire Elemental Petal Bars** (assigns config + creates `*_Flower` containers), then position the containers. A petal authored in-prefab as `Petal{0..4}` under a container is reused (not duplicated) and normalised via `ElementalBarsView.ConfigurePetal`.
 
 **Patterns to follow:**
 - **Spec changes go in the config asset**, never per-vessel SerializeFields — that's the whole point of the shared system.
@@ -48,7 +48,7 @@ continuity of existence applies to the vessel's own body.
   Non-element art shapes (jaws, tendrils) are untouched; a name mentioning two elements is ambiguous
   and ignored. The shape's authored extreme is read from its last frame weight, so 0-100 and custom
   frame weights both work.
-- **Fleet status**: audit with **FrogletTools > Vessels > Audit Vessel Elemental Morphs** (asset-only,
+- **Fleet status**: audit with **FrogletTools > Vessels > Audits > Audit Vessel Elemental Morphs** (asset-only,
   no play mode, uses the exact runtime discovery). Manta/Termite/Falcon/Shrike (Manta meshes),
   Sparrow, Serpent, Squirrel **and now the Dolphin** ship labeled shapes that MOVE the hull (9/12
   by shape keys, measured 2026-08-26); **the Dolphin was rig-swapped on 2026-08-26** and is the
@@ -133,7 +133,7 @@ collapsed the six jets onto one point; it now restores each part's **own** captu
 animated around a neighbour's rest pose. **That second fix changes the Dolphin's current look** — its
 six engine cases rest at 26–169° and were being dragged toward identity.
 
-The prefab half is **FrogletTools > Vessels > Swap Vessel Rig** (`VesselRigSwapper`, 2026-08-26),
+The prefab half is **FrogletTools > Vessels > Wiring > Swap Vessel Rig** (`VesselRigSwapper`, 2026-08-26),
 which performs it. A `SkinnedMeshRenderer`'s bone list, bindposes, bounds and imported mesh IDs are
 owned by Unity's FBX importer — that is the one part that genuinely needs the editor, and the reason
 the swap is a tool rather than hand-authored YAML. Everything else is measured: each rig instance is
@@ -184,7 +184,7 @@ scale bump** with a one-shot unlock punch.
   **must** override `SetAbilityUpgraded` to re-anchor its captured rest scales to
   `AbilityIconRestScale(element)`, or its own tweens settle back to the pre-upgrade scale and wipe the
   bump. `SquirrelVesselHUDView` is the reference implementation.
-- **Fleet status** (audit it yourself: **FrogletTools > Vessels > Audit Vessel Ability Rows**, which
+- **Fleet status** (audit it yourself: **FrogletTools > Vessels > Audits > Audit Vessel Ability Rows**, which
   reports every vessel's compliance against this contract from assets alone, no play mode):
 
   | vessel | map | icons | order | uniform | control chip |
@@ -528,7 +528,7 @@ scale bump** with a one-shot unlock punch.
   `UpgradeLabel`, and those slots are bound with no icon so they draw LOCKED cards (the designed abilities beside them are bound). Author the map
   (`Docs/ElementalAbilitySystem/FLEET_MAPS.md` §2 holds the un-approved proposals) and the icons
   before wiring — do not invent an element→ability mapping to satisfy the audit. Once the map
-  exists, the mechanical half is one click: **FrogletTools > Vessels > Wire Vessel Ability Row**
+  exists, the mechanical half is one click: **FrogletTools > Vessels > Wiring > Wire Vessel Ability Row**
   (`VesselAbilityRowWirer`) places the four buttons at the fleet-standard bands, creates a
   `{Element}Icon` in each, and binds `abilityIcons` in `AbilityDisplayOrder` — on ANY vessel, from
   nothing. It is idempotent (find-by-name, re-bind only) and never touches sprites, so it is a

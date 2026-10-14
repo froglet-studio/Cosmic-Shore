@@ -20,7 +20,7 @@ now the reference the procedural wave is generated from and tested against.
 | Generator + source proof | `python3 Tools/Build/author_time_crystal_flip_wave.py` (`--check`, `--self-test`) |
 | Tests | `Assets/_Scripts/Tests/Editor/CrystalFlipWaveTests.cs` — including **FBX parity** |
 | Consumers | `CrystalTime.prefab` and its variant `CrystalTimeDandruff.prefab` (`ElementalCrystalSet.time`); the omni `Crystal.prefab`'s 30 rhombi (§5). `OldCrystalTime.prefab` is legacy and still tumbles. |
-| Benchmark | `FrogletTools > Performance > Crystal Flip Wave Benchmark` (§7) |
+| Benchmark | `FrogletTools > Performance > Benchmarks > Crystal Flip Wave` (§7) |
 
 ## 1. What the take actually is — measured, not described
 
@@ -134,6 +134,15 @@ in the 60 boxes, and the frame refuses all 90 directions loudly. Edit-mode:
 `RhombusSkin_BonesOnlyTheRhombi_AndDrawsTheSourceAtRest` (ran out of editor) and
 `OmniCrystalPrefab_TurnsItsThirtyRhombi_AndLeavesTheBodyStill` (Editor only).
 
+**Cued waves on the omni (Omni Motion Lab round 5, 2026-10-13).** The omni's rhombi no longer run the 2 s loop on
+their own clock. `OmniCrystalCadence` on the same root is the omni's one clock for Space and Time: pentagon turn
+(1.733 s), wave, triangle turn (2.4 s), wave, a 0.15 s gap between each, so the squares and the rhombi never move at
+once. When a cadence is present `CrystalFlipWave` plays ONE wave per wave beat - the profile sampled from its lead
+ring's start (`FirstRingStartSeconds`) for the beat's 1.8 s (`OmniCrystalCadence.asset`'s `waveActiveSeconds`,
+generated as the profile's loop less its lead-in: with rings of 5/5/10/5/5 the last ring lands at 0.2 × 4 + 1.0 =
+1.8 s) - from a new start vertex each wave, and holds the rest pose between beats (a finished wave IS the rest shape,
+so the reset is invisible). The Time crystal has no cadence and keeps its own loop.
+
 ## 6. Open rows (seen while building this, not fixed here)
 
 - **`OldCrystalTime.prefab` looks dead.** Its guid `cb1d516a59d28e64d87b8dcc2abaf7b9` appears in no
@@ -155,7 +164,7 @@ in the 60 boxes, and the frame refuses all 90 directions loudly. Edit-mode:
 
 ## 7. Benchmark: procedural vs the legacy Animator
 
-`FrogletTools > Performance > Crystal Flip Wave Benchmark` spawns N copies of `CrystalTime.prefab` and
+`FrogletTools > Performance > Benchmarks > Crystal Flip Wave` spawns N copies of `CrystalTime.prefab` and
 plays either the **procedural** wave (what ships) or the **legacy** setup it replaced, rebuilt on the same
 prefab: an Animator in `AlwaysAnimate` (the old prefab's culling mode) playing the FBX take. The clip runs
 through a PlayableGraph because the old controller asset was deleted; a one-state controller costs about

@@ -1100,6 +1100,11 @@ references, m_Script classes). What cost time on the first runs (2026-10-06 to 1
   the same file as an `m_Script` is a package script. Measured 2026-10-13 on
   `claude/serpent-mass-seed-wall`: 3 findings, all 3 false. The fix belongs in the tool (index guids
   from `git ls-tree` plus the refcompile package cache), not in a habit.
+- **`check_generated_assets.py` reports a guid-KEEPING RENAME as a `[deleted]` reference.** `git mv a.png b.png`
+  with its `.meta` keeps the guid, so every reference still resolves — but the audit sees `a.png` deleted since the
+  base and reports `b.png.meta: references a.png (guid …), deleted since the base`. The file it names IS the owner
+  now. Confirm with `grep -c "^guid: <g>$"` over the `.meta` set (exactly one owner, the new path) and call it out
+  as the tool's false positive (Thresher Heavy Iron → Mass Mode icon, 2026-10-13).
 - **`check_generated_assets.py` reports only findings that are NEW against the base's copy of the
   asset — so a negative control must inject a defect the BASE never had.** Re-adding a key you just
   removed (a retired field's `minExplosionScale: 60`, still present in the base asset) is suppressed
@@ -2162,6 +2167,47 @@ this repo that resolves types across the SOAP/Unity boundary without the editor,
 a signature that would have been an editor-only error: **`Obvious.Soap`'s `ScriptableList<T>`
 implements `IList<T>` and NOT `IReadOnlyList<T>`**, so the natural read-only parameter type
 does not accept one. Any helper taking a SOAP list must take `IList<T>`.
+
+### Technique: test a BINARY-FORMAT reader against the real tool's output, not hand-written bytes
+
+A reader for a format you did not author (a protobuf manifest, an ELF header, a signature
+block) is only proven against bytes the real producer wrote. Writing them by hand repeats your
+own understanding of the format back to you. Google's Android tools are reachable from this
+container, so `AndroidBundleCheck` (`Assets/_Scripts/Editor/Build/`) was proven against real
+output (claude/serene-edison-lfv24f, 2026-10-13):
+
+- **A real aapt2 protobuf manifest.** Download aapt2's Linux jar
+  (`dl.google.com/android/maven2/com/android/tools/build/aapt2/<ver>/aapt2-<ver>-linux.jar`) and
+  `android.jar` from `dl.google.com/android/repository/platform-36_r02.zip`, each unpacked into
+  its own empty folder. Then run
+  `aapt2 link --proto-format -I android.jar --manifest AndroidManifest.xml -o x.apk`. The
+  `AndroidManifest.xml` inside `x.apk` is the exact protobuf `XmlNode` an App Bundle carries.
+  Link a clean manifest and one that is wrong in every field you check.
+- **Real ELF alignments.** The repo's FMOD arm64 `.so` has LOAD alignment `0x4000` and Nice
+  Vibrations' `liblofelt_sdk.so` has `0x1000`. Confirm both with `readelf -lW` before relying on
+  them.
+- **Real signatures.** `keytool` and `jarsigner` are installed. Sign one fixture with a
+  release-named key and one with `CN=Android Debug`.
+
+Then build one fixture per verdict (good, unsigned, debug-signed, no 64-bit libraries, not a
+bundle) and require each verdict to differ. **That set caught a check that could never fire:**
+the "no arm64 libraries" error was gated on the list of libraries the check MEASURED, which held
+only 64-bit ones, so a 32-bit-only bundle passed. A check whose precondition is computed from the
+thing it looks for is always silent. Test the precondition on the raw input instead.
+
+### Trap: an SDK-style harness project compiles EVERY `.cs` under its folder
+
+`dotnet` project files glob `**/*.cs` by default, not only the files you `<Compile Include>`.
+A deliberately broken copy of the shipped file (a mutant for a negative control) left in the
+harness folder is compiled beside the real one. Every member then reports
+`CS0111 … already defines a member`, which reads exactly like the shipped file got duplicated.
+The repo file was fine; only the harness was wrong. Moving the mutant into its own folder is
+not enough on its own. If that folder's project also `<Compile Include>`s the mutant, the SDK
+stops with `NETSDK1022 Duplicate 'Compile' items` before any test runs, and a quiet grep for
+`Passed!|Failed!` then prints nothing, which a hurried reader takes as a pass. Give every harness
+project `<EnableDefaultCompileItems>false</EnableDefaultCompileItems>` and list its files.
+Check `git show HEAD:<file>` before believing a duplicate-member error in a harness. Read the
+test count line before believing a mutant run: no line means no run.
 
 ### Trap: you cannot see a PACKAGE API's SHAPE here, so a test written against one is a guess
 

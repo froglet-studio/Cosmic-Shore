@@ -1602,7 +1602,7 @@ BEFORE editor testing; every blocker found was fixed in a follow-up commit
 3. **Collect the three open datums**: (a) `PoolActivate.<prefab>` — who owns
    the 0.27 ms activations, first-Awake or heavy OnEnable? (b) `PoolRefill.*`
    typical clean ms; (c) whether `GC.Collect` ever fires mid-gameplay now.
-4. **Task 2 (user action)**: run `FrogletTools > Interface > Raycast Target
+4. **Task 2 (user action)**: run `FrogletTools > UI > Raycast Target
    Audit` on Menu_Main + vessel/UI prefabs (scene edits Undo-able; PREFAB
    edits are NOT — rely on git). Expect `EventSystem.Update` 0.5 → ~0.1 ms.
 5. **Task 3 (user action)**: record the shader-variant collection over
@@ -2282,7 +2282,7 @@ and does not depend on which controller a scene carries:
 - **`EcosystemPerfProbe`** — the `[ECOSIM]` line. **Gated behind the
   `ECOSIM_PROBE` define, which is not set in any `scriptingDefineSymbols`
   entry** — add it temporarily to read live collider counts.
-- **`PerformanceBenchmarkRunner`** — FrogletTools ▸ Performance Benchmark
+- **`PerformanceBenchmarkRunner`** — FrogletTools ▸ Performance ▸ Performance Benchmark
   (tabs, score/hints, sweep, Load Time Insights). See `BENCHMARK_TOOL.md`.
 
 - **Console commands**: `prisms N` / `prisms off` / `prismcolors`.
@@ -2291,7 +2291,7 @@ and does not depend on which controller a scene carries:
 - **A/B switch**: `PrismShellContactManager.ForceLegacyBoxInteraction` reverts
   shielded interaction to the authored box trigger (`Docs/SPATIAL_INDEX.md`
   § Shell view).
-- **Raycast audit tool**: `FrogletTools > Interface > Raycast Target Audit`
+- **Raycast audit tool**: `FrogletTools > UI > Raycast Target Audit`
   (`Assets/_Scripts/Editor/RaycastTargetAuditTool.cs`) — shipped `669b5ef8`,
   **never run**.
 - **Dead weight, flagged not fixed**: `SandboxBenchmarkController.cs` has zero
@@ -2598,7 +2598,7 @@ display. Real Selectables are interleaved (the Squirrel HUD holds 5), so a
 blind batch edit was rejected.
 
 **Tool behavior (verified,** `Assets/_Scripts/Editor/RaycastTargetAuditTool.cs`**):**
-menu `FrogletTools/Interface/Raycast Target Audit` (line 33). Classifier
+menu `FrogletTools/UI/Raycast Target Audit` (line 33). Classifier
 (`NeedsRaycast`, lines 163-178) keeps any Graphic with a `Selectable`
 (`GetComponentInParent`, inactive included) or an `IEventSystemHandler` on
 self-or-ancestor; everything else is a disable candidate. Scan scope: Project
@@ -2856,7 +2856,7 @@ ranking suspects.
   triggered its own synchronous refresh. Behaviour is otherwise unchanged:
   assets created or deleted during play are still left alone.
 - `SceneBootstrapper` — the OnValidate-noise auto-save is now **opt-in and
-  off by default** (`FrogletTools > Scene Setup > Testing Multiplayer >
+  off by default** (`FrogletTools > Scenes > Testing Multiplayer >
   Auto-Save OnValidate Noise`). It previously ran `EditorSceneManager.SaveScene`
   on the active scene after *every* domain reload and every play-mode exit
   whenever Cinemachine / URP / NetworkManager `OnValidate` dirtied it —
