@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- The reference side of the converter reel's Charge light parity: compiles the SHIPPED ChargeArcs.cs and
+       CrystalChargeArcsProfileSO.cs against the omni turns harness's UnityStub.cs (as Tools/Build/charge_arcs_harness and
+       Tools/Build/converter_round5_harness do). Nothing under Assets/ is copied or edited. Run ../run_parity_charge.sh. -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>disable</Nullable>
+    <LangVersion>10.0</LangVersion>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <NoWarn>CS8981;CS0162;CS1591;CS0660;CS0661;CS0414;CS0649</NoWarn>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="../../omni_turns_harness/UnityStub.cs" />
+    <Compile Include="Program.cs" />
+    <Compile Include="../../../../Assets/_Scripts/Utility/ChargeArcs.cs" />
+    <Compile Include="../../../../Assets/_Scripts/Controller/Environment/Crystals/CrystalChargeArcsProfileSO.cs" />
+  </ItemGroup>
+</Project>

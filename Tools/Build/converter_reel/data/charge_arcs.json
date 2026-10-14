@@ -1,0 +1,175 @@
+{
+  "arcMaterial": "OmniChargeArcs",
+  "colorSpace": "Linear",
+  "generatedBy": "Tools/Build/converter_reel/extract_charge_arcs.py (re-run; --check fails when stale)",
+  "materials": {
+    "ChargeCrystalArcs": {
+      "colors": {
+        "_ArcCoreColor": {
+          "linear": [
+            0.692071057,
+            0.890005407,
+            1.0,
+            1.0
+          ],
+          "srgb": [
+            0.85,
+            0.95,
+            1.0,
+            1.0
+          ]
+        },
+        "_BrightColor": {
+          "linear": [
+            0.306999319,
+            0.82757083,
+            0.021980947,
+            1.0
+          ],
+          "srgb": [
+            0.59,
+            0.92,
+            0.16,
+            1.0
+          ]
+        }
+      },
+      "floats": {
+        "_BoltIntensity": 1,
+        "_GlowIntensity": 1
+      },
+      "path": "Assets/_Graphics/Materials/CrystalMaterials/ChargeCrystalArcs.mat",
+      "shaderGuid": "0979e966bf522ddf32cac152d0784867"
+    },
+    "OmniChargeArcs": {
+      "colors": {
+        "_ArcCoreColor": {
+          "linear": [
+            0.692071057,
+            0.890005407,
+            1.0,
+            1.0
+          ],
+          "srgb": [
+            0.85,
+            0.95,
+            1.0,
+            1.0
+          ]
+        },
+        "_BrightColor": {
+          "linear": [
+            0.201556245,
+            0.973445528,
+            0.0,
+            1.0
+          ],
+          "srgb": [
+            0.4862745,
+            0.9882354,
+            0.0,
+            1.0
+          ]
+        }
+      },
+      "floats": {
+        "_BoltIntensity": 1,
+        "_GlowIntensity": 1
+      },
+      "path": "Assets/_Graphics/Materials/CrystalMaterials/OmniChargeArcs.mat",
+      "shaderGuid": "0979e966bf522ddf32cac152d0784867"
+    }
+  },
+  "plateThickness": 1.1,
+  "profile": {
+    "boltIntensity": 1,
+    "coreWidth": 0.012,
+    "flickerSpeed": 4,
+    "fluxBundle": 0.016,
+    "fluxChargeSeconds": 0.45,
+    "fluxFadeSeconds": 0.45,
+    "fluxFork": 0.3,
+    "fluxGapSeconds": 0.9,
+    "fluxHoldSeconds": 0.45,
+    "fluxMaxDegrees": 125,
+    "fluxMinDegrees": 55,
+    "fluxStrikeSeconds": 0.06,
+    "fluxTurns": 1,
+    "glowIntensity": 1,
+    "rate": 1,
+    "seamDwellMaxSeconds": 0.28,
+    "seamDwellMinSeconds": 0.1,
+    "seamFadeSeconds": 0.85,
+    "seamPetalGlow": 0.35,
+    "seamStrikeSeconds": 0.07,
+    "strikeProtractionFrom": 0.15,
+    "strikeProtractionFull": 0.45,
+    "writheSpeed": 3
+  },
+  "shader": {
+    "path": "Assets/_Graphics/Materials/Shaders/CrystalChargeArcsShader.shader",
+    "properties": {
+      "_ArcCoreColor": {
+        "default": [
+          0.85,
+          0.95,
+          1.0,
+          1.0
+        ],
+        "hdr": true,
+        "label": "Arc Core Color",
+        "type": "Color"
+      },
+      "_BoltIntensity": {
+        "default": 1.0,
+        "hdr": false,
+        "label": "Bolt Intensity",
+        "type": "Range(0, 8)"
+      },
+      "_BrightColor": {
+        "default": [
+          0.4862745,
+          0.9882354,
+          0.0,
+          1.0
+        ],
+        "hdr": true,
+        "label": "Bright Color (painted from the body)",
+        "type": "Color"
+      },
+      "_GlowIntensity": {
+        "default": 1.0,
+        "hdr": false,
+        "label": "Glow Intensity",
+        "type": "Range(0, 8)"
+      }
+    },
+    "queue": "Transparent+2",
+    "renderState": {
+      "Blend": "One One",
+      "Cull": "Off",
+      "Offset": "-1, -1",
+      "ZTest": "LEqual",
+      "ZWrite": "Off"
+    }
+  },
+  "sources": {
+    "cadence": {
+      "guid": "9dc884f2725861be23f15bb77f5267e4",
+      "path": "Assets/_SO_Assets/Environment/OmniCrystalCadence.asset"
+    },
+    "config": "Assets/_SO_Assets/Environment/OmniCombine/OmniCombineConfig.asset",
+    "omniArcsMaterial": {
+      "guid": "df9f4366505dce6cc7b832d44a384d97",
+      "path": "Assets/_Graphics/Materials/CrystalMaterials/OmniChargeArcs.mat"
+    },
+    "profile": {
+      "guid": "c737a3419ec6c52c4b723e5c6a101711",
+      "path": "Assets/_SO_Assets/Environment/CrystalChargeArcsProfile.asset"
+    },
+    "shader": {
+      "guid": "0979e966bf522ddf32cac152d0784867",
+      "path": "Assets/_Graphics/Materials/Shaders/CrystalChargeArcsShader.shader"
+    }
+  }
+}

@@ -582,6 +582,27 @@ Entries are grouped by family; within a family, the newest goes at the bottom.
 - Evidence: README round 15 "Checked" (through the wormhole) and "Found".
 - Promoted: no
 
+### L-STU-64 — A looping video needs each effect's clock to restart where that effect is invisible, and a seam yardstick that measures shape, not vertices
+- Lab: Converter Reel (`Docs/Studios/ConverterReelLab.html`) · Branch: `cece/gracious-pasteur-9z5e9t` · Date: 2026-10-14
+- What happened: the reel loops idle → build → omni → pull-out → idle. Each crystal's idle effects (Space spin, Time flip wave, Charge seam walk, Mass ratchet) run on their own clock. A clock that restarts with the loop (the naive cut) jumps 10.9× the largest idle frame-to-frame step at the loop point. Restarting each crystal's clock mid-flight on the way in, where its idle effect has faded to 0, brings the jump to 0.69× (seeds 7, 21, 64: 0.69 / 1.14 / 0.93, against 10.9 / 12.5 / 9.6 for the control). The first yardstick was per-vertex distance, and it flagged a 0.43 R "jump" mid-pull-out: Space's spin lands on a congruent shape and snaps its vertices back to rest, which no viewer can see. Symmetric Hausdorff distance per crystal reads the same frames as 0.06 R, and that is ordinary flight motion.
+- Do instead: give every effect a clock whose discontinuity sits where the effect's strength is 0, and bake the stateful parts (ratchets, framing eases) over two loops, keeping the second. Measure the seam by shape distance (Hausdorff), with a naive-cut control that must read far above 1.
+- Evidence: `Tools/Build/converter_reel/src/reel.js` `clockOf`; `src/app.js` `score` / `runBatch`; `verify_lab.cjs` batch row.
+- Promoted: no
+
+### L-STU-65 — A System.Random port in JS must wrap int32 arithmetic; a parity gate run on small seeds cannot see it
+- Lab: Converter Reel (`Tools/Build/converter_reel/src/chargeArcs.js` `NetRandom`) · Branch: `cece/gracious-pasteur-9z5e9t` · Date: 2026-10-14
+- What happened: the Charge flux chain's port passed parity bit for bit (2.94 M values) on seed `7 ^ 0x5bd1e995`. Seeds drawn per play are up to 2^31, and the legacy seeding (`MSEED - |seed|`, `mj - mk`, `a[i] - a[...]`) relies on C# int overflow. In doubles the values left int range, `Sample()` exceeded 1, `Next(n)` returned n, and a discharge had no sink. `runBatch` threw `cd is not iterable` on seed 21. Fixed with `| 0` after each step. The gate now also compares 200 draws for six large and negative seeds, including `int.MinValue` and `int.MaxValue`.
+- Do instead: a parity gate for a ported RNG or hash covers the edge seeds (0, negatives, `int.MinValue`, `int.MaxValue`, seeds near 2^31), not only the lab's default.
+- Evidence: `parity_charge/Program.cs` `randomSeeds`; `run_parity_charge.sh` PASS with 2,938,658 values.
+- Promoted: no
+
+### L-STU-66 — A lab that exports video renders frame by frame at the export size and encodes with WebCodecs; inside claude.ai it saves through `downloads`
+- Lab: Converter Reel · Branch: `cece/gracious-pasteur-9z5e9t` · Date: 2026-10-14
+- What happened: a real-time capture (MediaRecorder) records whatever the device manages live, and the reel's 1080×1920 at 2× supersampling is not a real-time load on a phone. The exporter steps the loop at exactly `i / fps`, draws at the export size, wraps the canvas in a `VideoFrame`, and encodes H.264 (VP9 when H.264 is missing) through `mp4-muxer` / `webm-muxer` from jsDelivr. The claude.ai viewer blocks `<a download>`, so the file goes out through the `downloads` capability. Headless software GL (SwiftShader, 4 cores) costs about 2 s a frame at 2× supersampling and 0.8 s with MSAA only. `readPixels` is where the queued GPU work waits, so time it, not the draw call. Three parallel browsers rendered the 3,316 frames for ffmpeg.
+- Do instead: export frame-exact from the pure `frame(tau)` function, never from the live loop. Declare `downloads`, and fall back to a link outside the viewer. For a headless render, pipe raw RGBA to ffmpeg and split the frame range across processes.
+- Evidence: `src/app.js` `exportVideo` / `saveFile`; `Tools/Build/converter_reel/render_headless.cjs`.
+- Promoted: no
+
 ## NCA — swarm / neural-CA research rigs (Tools/NCA)
 
 ### L-NCA-1 — The yardstick was wrong four times before the creatures were

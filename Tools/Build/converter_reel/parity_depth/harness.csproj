@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Runs the SHIPPED depth-prism column maths (DepthRatchet, CrystalDepthPrismProfileSO, CrystalDepthPrisms.StepColumns /
+       ColumnBody / TryGetPlates) on the shipped OmniCrystalTriangles plates (via data/depth.json) and on moving Mass
+       columns, and dumps every frame's _DepthState for parity_depth.cjs. Nothing under Assets/ is copied or edited. -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>disable</Nullable>
+    <LangVersion>10.0</LangVersion>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <NoWarn>CS8981;CS0162;CS1591;CS0660;CS0661;CS0414;CS0649;CS0169</NoWarn>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="UnityStub.cs" />
+    <Compile Include="Program.cs" />
+    <Compile Include="../../../../Assets/_Scripts/Utility/DepthRatchet.cs" />
+    <Compile Include="../../../../Assets/_Scripts/Utility/CrystalPoseJitter.cs" />
+    <Compile Include="../../../../Assets/_Scripts/Controller/Environment/Crystals/CrystalDepthPrismProfileSO.cs" />
+    <Compile Include="../../../../Assets/_Scripts/Controller/Environment/Crystals/CrystalDepthPrisms.cs" />
+  </ItemGroup>
+</Project>

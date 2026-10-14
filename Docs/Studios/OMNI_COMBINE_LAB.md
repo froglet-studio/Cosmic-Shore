@@ -11,6 +11,7 @@ a headless scorecard and a shared decision log.
 - **Lab data block:** `python3 Tools/Build/omni_combine_lab_assets.py` (`--check` fails when the data or the
   shipped colours move and the page has not been rebaked; `--self-test` 9/9)
 - **Verify:** `node .claude/skills/labmaker/verify_lab.cjs Docs/Studios/OmniCombineLab.html`
+- **Social reel of the shipped converter:** `Docs/Studios/CONVERTER_REEL_LAB.md` (the game's convert, looped with a first-in-first-out pull-out, a colour lab and a video exporter)
 
 ## What the art file has (measured 2026-10-13)
 

@@ -1,0 +1,173 @@
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Converter Reel</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: an editing bay. The picture sits centre stage at its export aspect; settings in a right dock;
+   the loop's timeline (its phases as coloured bands) along the bottom. One dark world on purpose: colour is
+   judged against a dark surround, so the tool does not change theme with the viewer. */
+:root {
+  --ink: #0b0d10;          /* the bay */
+  --panel: #12161b;        /* docks */
+  --raise: #1a2027;        /* controls, rows */
+  --line: #262e37;         /* hairlines */
+  --text: #d9e2e4;
+  --muted: #8a979d;
+  --lime: #9cff6a;         /* the converter's title colour (ElementalConverterView.titleColor), the one accent */
+  --warn: #ffb547;
+  --bad: #ff6b6b;
+  --band-idle: #3b4650;
+  --band-space: #5f87ff;
+  --band-charge: #f0c53a;
+  --band-mass: #ff6d5e;
+  --band-time: #b48cff;
+  --band-omni: #9cff6a;
+  --display: 'Chakra Petch', 'Avenir Next Condensed', 'Arial Narrow', sans-serif;
+  --body: 'IBM Plex Sans', 'Segoe UI', system-ui, sans-serif;
+  --mono: 'IBM Plex Mono', ui-monospace, 'SFMono-Regular', Menlo, monospace;
+  color-scheme: dark;
+}
+html, body { height: 100%; }
+body { margin: 0; background: var(--ink); color: var(--text); font: 13px/1.45 var(--body); overflow: hidden; }
+[hidden] { display: none !important; }
+button, input, select { font: inherit; color: inherit; }
+button { cursor: pointer; }
+:focus-visible { outline: 2px solid var(--lime); outline-offset: 2px; }
+
+.app { height: 100%; display: grid; grid-template-columns: minmax(0, 1fr) 360px; grid-template-rows: auto minmax(0, 1fr) auto; }
+header { grid-column: 1 / -1; display: flex; align-items: center; gap: 16px; padding: 10px 16px; border-bottom: 1px solid var(--line); background: var(--panel); min-width: 0; flex-wrap: wrap; }
+.brand { display: flex; align-items: baseline; gap: 10px; min-width: 0; }
+.brand h1 { margin: 0; font: 600 17px/1 var(--display); letter-spacing: 0.08em; text-transform: uppercase; color: var(--lime); }
+.brand span { color: var(--muted); font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.hstats { display: flex; gap: 14px; font: 12px var(--mono); color: var(--muted); margin-left: auto; flex-wrap: wrap; }
+.hstats b { color: var(--text); font-weight: 500; }
+.diff { color: var(--warn); }
+.btn { border: 1px solid var(--line); background: var(--raise); border-radius: 6px; padding: 6px 12px; }
+.btn:hover { border-color: var(--muted); }
+.btn.primary { background: var(--lime); color: #0b1406; border-color: var(--lime); font-weight: 600; }
+.btn.primary:hover { filter: brightness(1.08); }
+.btn:disabled { opacity: 0.5; cursor: default; }
+
+.stage { position: relative; min-width: 0; min-height: 0; display: grid; place-items: center; padding: 16px; background:
+  radial-gradient(circle at 50% 50%, #151a20 0, var(--ink) 70%); }
+.frame { position: relative; max-width: 100%; max-height: 100%; box-shadow: 0 0 0 1px var(--line), 0 18px 60px #000a; }
+.frame canvas { display: block; width: 100%; height: 100%; }
+.safe { position: absolute; inset: 0; pointer-events: none; }
+.safe i { position: absolute; left: 0; right: 0; background: repeating-linear-gradient(135deg, #ff6b6b22 0 6px, transparent 6px 12px); border: 1px dashed #ff6b6b66; }
+.stagebar { position: absolute; left: 16px; bottom: 12px; display: flex; gap: 8px; font: 11px var(--mono); color: var(--muted); }
+.chip { background: #0b0d10cc; border: 1px solid var(--line); border-radius: 999px; padding: 3px 9px; }
+.busy { position: absolute; inset: 0; display: grid; place-items: center; background: #0b0d10d9; z-index: 5; }
+.busy .card { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 18px 20px; width: min(420px, 90%); display: grid; gap: 10px; }
+.busy h2 { margin: 0; font: 600 15px var(--display); letter-spacing: 0.06em; text-transform: uppercase; }
+.bar { height: 6px; background: var(--raise); border-radius: 3px; overflow: hidden; }
+.bar > i { display: block; height: 100%; width: 0; background: var(--lime); }
+
+aside { grid-row: 2 / 4; grid-column: 2; background: var(--panel); border-left: 1px solid var(--line); display: grid; grid-template-rows: auto minmax(0, 1fr); min-height: 0; }
+.tabs { display: flex; border-bottom: 1px solid var(--line); }
+.tabs button { flex: 1; background: none; border: 0; border-bottom: 2px solid transparent; padding: 10px 4px; color: var(--muted); font: 600 12px var(--display); letter-spacing: 0.08em; text-transform: uppercase; }
+.tabs button[aria-selected="true"] { color: var(--text); border-bottom-color: var(--lime); }
+.pane { overflow-y: auto; padding: 12px 14px 24px; display: grid; gap: 14px; align-content: start; }
+.group { display: grid; gap: 8px; }
+.group h3 { margin: 0; font: 600 11px var(--display); letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); display: flex; justify-content: space-between; align-items: center; }
+.row { display: grid; grid-template-columns: 112px minmax(0, 1fr) 54px; gap: 8px; align-items: center; }
+.row label { color: var(--muted); font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.row label.changed { color: var(--warn); text-decoration: underline dotted; text-underline-offset: 3px; }
+.row output { font: 11px var(--mono); text-align: right; color: var(--text); font-variant-numeric: tabular-nums; }
+.row input[type=range] { width: 100%; accent-color: var(--lime); }
+.row select { width: 100%; background: var(--raise); border: 1px solid var(--line); border-radius: 5px; padding: 3px 4px; grid-column: 2 / 4; }
+.row.color { grid-template-columns: 112px 36px minmax(0, 1fr); }
+.row input[type=color] { width: 36px; height: 24px; padding: 0; border: 1px solid var(--line); border-radius: 4px; background: none; }
+.row .hex { font: 11px var(--mono); color: var(--muted); }
+.row input[type=text] { grid-column: 2 / 4; background: var(--raise); border: 1px solid var(--line); border-radius: 5px; padding: 4px 6px; min-width: 0; }
+.swatches { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
+.swatch { display: grid; grid-template-columns: 34px minmax(0, 1fr); gap: 8px; align-items: center; text-align: left; background: var(--raise); border: 1px solid var(--line); border-radius: 6px; padding: 5px; }
+.swatch[aria-pressed="true"] { border-color: var(--lime); }
+.swatch canvas { width: 34px; height: 34px; border-radius: 4px; }
+.swatch b { display: block; font-size: 12px; font-weight: 500; }
+.swatch small { color: var(--muted); font-size: 11px; }
+.note { color: var(--muted); font-size: 12px; margin: 0; }
+.kv { display: grid; grid-template-columns: auto 1fr; gap: 3px 10px; font: 11px var(--mono); color: var(--muted); }
+.kv b { color: var(--text); font-weight: 500; text-align: right; }
+
+.timeline { grid-column: 1; border-top: 1px solid var(--line); background: var(--panel); padding: 8px 16px 10px; display: grid; gap: 6px; min-width: 0; }
+.transport { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.transport .tc { font: 13px var(--mono); font-variant-numeric: tabular-nums; min-width: 128px; }
+.transport .phase { font: 600 11px var(--display); letter-spacing: 0.1em; text-transform: uppercase; color: var(--lime); }
+.bands { position: relative; height: 28px; border-radius: 5px; overflow: hidden; background: var(--raise); cursor: pointer; touch-action: none; }
+.bands i { position: absolute; top: 0; bottom: 0; opacity: 0.55; }
+.bands i span { position: absolute; left: 4px; top: 7px; font: 600 10px var(--display); letter-spacing: 0.06em; text-transform: uppercase; color: #0b0d10; white-space: nowrap; }
+.bands .head { position: absolute; top: -2px; bottom: -2px; width: 2px; background: #fff; box-shadow: 0 0 6px #fff; }
+.legend { display: flex; gap: 12px; flex-wrap: wrap; font-size: 11px; color: var(--muted); }
+.legend span::before { content: ''; display: inline-block; width: 8px; height: 8px; border-radius: 2px; margin-right: 5px; background: var(--c); }
+
+.looks { display: grid; gap: 6px; }
+.look { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; align-items: center; background: var(--raise); border: 1px solid var(--line); border-radius: 6px; padding: 7px 9px; }
+.look b { font-weight: 500; }
+.look small { display: block; color: var(--muted); font-size: 11px; }
+table.score { width: 100%; border-collapse: collapse; font: 11px var(--mono); }
+table.score td, table.score th { padding: 4px 6px; border-bottom: 1px solid var(--line); text-align: left; }
+table.score th { color: var(--muted); font-weight: 500; }
+.pass { color: var(--lime); } .fail { color: var(--bad); }
+ul.plain { margin: 0; padding-left: 18px; color: var(--muted); }
+ul.plain li { margin: 2px 0; }
+
+@media (max-width: 900px) {
+  body { overflow: auto; }
+  .app { height: auto; grid-template-columns: minmax(0, 1fr); grid-template-rows: auto auto auto auto; }
+  .stage { height: 62vh; }
+  aside { grid-row: auto; grid-column: 1; border-left: 0; border-top: 1px solid var(--line); }
+  .pane { max-height: none; overflow: visible; }
+  .timeline { grid-row: 3; }
+  .row { grid-template-columns: 96px minmax(0, 1fr) 48px; }
+}
+@media (prefers-reduced-motion: reduce) { .bands .head { box-shadow: none; } }
+</style>
+
+<div class="app" id="app">
+  <header>
+    <div class="brand"><h1>Converter Reel</h1><span>The Elemental Converter, looped for social: built, woken, pulled apart first in first out.</span></div>
+    <div class="hstats">
+      <span>loop <b id="hLoop">–</b></span>
+      <span>out <b id="hFormat">–</b></span>
+      <span id="hDiff" class="diff"></span>
+    </div>
+    <button class="btn" id="bStill" type="button">Save still</button>
+    <button class="btn primary" id="bExport" type="button">Export video</button>
+  </header>
+
+  <main class="stage" id="stage">
+    <div class="frame" id="frame"><canvas id="view" aria-label="The converter loop, rendered"></canvas><div class="safe" id="safe" hidden></div></div>
+    <div class="stagebar"><span class="chip" id="chipFps">–</span><span class="chip" id="chipRes">–</span></div>
+    <div class="busy" id="busy" hidden><div class="card">
+      <h2 id="busyTitle">Exporting</h2>
+      <div class="bar"><i id="busyBar"></i></div>
+      <p class="note" id="busyNote">Rendering frame by frame at the export size.</p>
+      <div style="display:flex;gap:8px;justify-content:flex-end"><button class="btn" id="busyCancel" type="button">Cancel</button><button class="btn primary" id="busySave" type="button" hidden>Save file</button></div>
+    </div></div>
+  </main>
+
+  <aside>
+    <div class="tabs" role="tablist" id="tabs"></div>
+    <div class="pane" id="pane"></div>
+  </aside>
+
+  <section class="timeline" aria-label="Loop timeline">
+    <div class="transport">
+      <button class="btn" id="bPlay" type="button" aria-label="Play or pause">Pause</button>
+      <span class="tc" id="tc">0:00.00 / 0:00.00</span>
+      <span class="phase" id="phase">idle</span>
+      <label class="note" for="speedSel" style="margin-left:auto">Preview</label>
+      <select id="speedSel" class="btn" style="padding:4px 6px"><option value="0.25">0.25×</option><option value="0.5">0.5×</option><option value="1" selected>1×</option><option value="2">2×</option></select>
+      <select id="qualSel" class="btn" style="padding:4px 6px" aria-label="Preview quality"><option value="0.5">Draft</option><option value="1" selected>Screen</option><option value="2">Sharp (2× AA)</option></select>
+    </div>
+    <div class="bands" id="bands" role="slider" aria-label="Scrub the loop" tabindex="0"></div>
+    <div class="legend"><span style="--c:var(--band-idle)">idle</span><span style="--c:var(--band-space)">Space</span><span style="--c:var(--band-charge)">Charge</span><span style="--c:var(--band-mass)">Mass</span><span style="--c:var(--band-time)">Time</span><span style="--c:var(--band-omni)">omni awake</span><span>top row in, bottom row out</span></div>
+  </section>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/mp4-muxer@5.2.1/build/mp4-muxer.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/webm-muxer@5.1.3/build/webm-muxer.min.js"></script>
+<!--ASSETS-->
+<!--MODULES-->
+<!--APP-->

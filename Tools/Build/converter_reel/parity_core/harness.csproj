@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Runs the SHIPPED OmniCombineCore / OmniCombineMotion / SquareTurnFit / OmniCadence on the shipped combine data and
+       dumps poses for parity_core.cjs, which runs Tools/Build/converter_reel/src/combineCore.js on the same inputs.
+       Nothing under Assets/ is copied or edited. Force-added: the repo gitignores *.csproj. -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>disable</Nullable>
+    <LangVersion>10.0</LangVersion>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <NoWarn>CS8981;CS0162;CS1591;CS0660;CS0661;CS0414;CS0649</NoWarn>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="../../omni_turns_harness/UnityStub.cs" />
+    <Compile Include="Program.cs" />
+    <Compile Include="../../../../Assets/_Scripts/Utility/OmniCombineCore.cs" />
+    <Compile Include="../../../../Assets/_Scripts/Utility/OmniCadence.cs" />
+    <Compile Include="../../../../Assets/_Scripts/Utility/SquareTurnFit.cs" />
+    <Compile Include="../../../../Assets/_Scripts/Utility/ChargeArcs.cs" />
+    <Compile Include="../../../../Assets/_Scripts/Utility/OmniCombineMotion.cs" />
+  </ItemGroup>
+</Project>
