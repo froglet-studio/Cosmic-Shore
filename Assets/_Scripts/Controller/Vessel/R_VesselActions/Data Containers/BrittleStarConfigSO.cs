@@ -13,7 +13,7 @@ namespace CosmicShore.Gameplay
     /// <para><b>One element per ability</b> (the four-icon row, charge → mass → space → time):
     /// <list type="bullet">
     /// <item><b>Charge — Ring Detonation</b> (Rolling Thunder: "larger projectile size and larger AOE on support ring
-    /// detonation"): <see cref="BlastScale"/> and <see cref="ProjectileScaleMultiplier"/>.</item>
+    /// detonation"): the ring explosion's thickness (<see cref="BlastScale"/>) and <see cref="ProjectileScaleMultiplier"/>.</item>
     /// <item><b>Mass — Creation Mode</b> (Fabricator: "increased block size in creation mode"): a trail behind each of
     /// the ring's five corners, <see cref="CreationBlockScale"/>.</item>
     /// <item><b>Space — Destruction Mode &amp; Shooting</b> (Hunter: "increased shot range"):
@@ -25,8 +25,8 @@ namespace CosmicShore.Gameplay
     /// <para><b>PvP is petals only (LOCKED, 2026-10-10).</b> The class document predates that rule and asks for shots
     /// that knock enemies back, cut their momentum and disable their trail. None of that may touch another pilot's
     /// vessel any more: every hit on an enemy hull is a SCORED combat hit that moves petals, through the fleet's
-    /// reporters (the bullet's <c>VesselCombatHitByBullet</c>, the blast's prefab container) and, for the ring's
-    /// plane wave, <see cref="CombatHitDrain.TryAdmit"/> directly. Destruction Mode's "disable mass production" is
+    /// reporters (the bullet's <c>VesselCombatHitByBullet</c>) and, for the ring explosion,
+    /// <see cref="CombatHitDrain.TryAdmit"/> directly. Destruction Mode's "disable mass production" is
     /// carried by what it can still do: five unbroken streams take petals five times as fast.</para>
     /// </summary>
     [CreateAssetMenu(fileName = "BrittleStarConfig", menuName = "ScriptableObjects/Vessel Actions/Brittle Star Config")]
@@ -55,6 +55,9 @@ namespace CosmicShore.Gameplay
         [SerializeField, Min(0f)] float creationOffset = 2f;
         [Tooltip("Most blocks one corner may lay in a frame; excess owed distance is DROPPED so a hitch never dumps a burst.")]
         [SerializeField, Range(1, 8)] int creationMaxPerFrame = 3;
+        [Tooltip("Creation Mode's multiplier on cruise speed: the SLOWEST of the modes (Garrett, 2026-10-14). Building " +
+                 "is slow work; the corner trails keep their spacing, so production per second falls with it.")]
+        [SerializeField, Range(0.1f, 1f)] float creationSpeedMultiplier = 0.5f;
         [Tooltip("Seconds a freshly laid block's collider stays off, so the hull clears it.")]
         [SerializeField, Min(0f)] float creationWaitTime = 0.6f;
 
@@ -105,30 +108,29 @@ namespace CosmicShore.Gameplay
         [SerializeField, Min(0.1f)] float ringContactRadiusScale = 1f;
         [Tooltip("Spin of the flying ring about its axis, degrees per second.")]
         [SerializeField] float ringFlightSpin = 900f;
-        [Tooltip("The blast: an all-domain explosion (friendly fire — the document's 'destroying both enemy and allied mass').")]
-        [SerializeField] AOEExplosion[] blastExplosions;
-        [Tooltip("The blast's diameter at Charge 0, world units.")]
-        [SerializeField, Min(1f)] float blastDiameter = 60f;
-        [Tooltip("CHARGE: multiplier on both blasts' size. Rolling Thunder's element.")]
-        [SerializeField] ElementalFloat blastScale = ElementalFloat.Multiplier(1f, 1.6f, Element.Charge, 0.7f);
-        [Tooltip("The second blast — the wave that 'continues out in the plane of the ring' — reaches this multiple of the " +
-                 "first blast's radius.")]
-        [SerializeField, Min(1f)] float planeWaveReach = 2.5f;
-        [Tooltip("Half-thickness of the plane wave, world units (it is a disc, not a sphere).")]
-        [SerializeField, Min(0.5f)] float planeWaveHalfThickness = 6f;
-        [Tooltip("Seconds after the blast the plane wave leaves, and how long it takes to reach its full radius.")]
-        [SerializeField, Min(0f)] float planeWaveDelay = 0.12f;
-        [SerializeField, Min(0.05f)] float planeWaveSeconds = 0.45f;
+        [Tooltip("The RING EXPLOSION (Garrett, 2026-10-14): a flat disk the diameter of the cell's NUCLEUS and as thick as " +
+                 "the ring, centred where the ring blows and lying in its plane. It expands from the ring's own radius out to the " +
+                 "nucleus's over this many seconds, destroying every prism it passes (any domain - friendly fire) and " +
+                 "stripping petals from every rival hull it passes.")]
+        [SerializeField, Min(0.05f)] float ringBlastSeconds = 0.7f;
+        [Tooltip("The disk's radius when the ring blows outside any cell with a nucleus, world units.")]
+        [SerializeField, Min(1f)] float ringBlastFallbackRadius = 200f;
+        [Tooltip("CHARGE: multiplier on the disk's THICKNESS (x1 = exactly the ring's own). Rolling Thunder's element: " +
+                 "'larger AOE on support ring detonation'.")]
+        [SerializeField] ElementalFloat blastScale = ElementalFloat.Multiplier(1f, 4f, Element.Charge, 1f);
+        [Tooltip("Width of the expanding band drawn at the disk's edge, world units (the explosion's look; it does not " +
+                 "change what the disk reaches).")]
+        [SerializeField, Min(0.1f)] float ringBlastBandWidth = 6f;
         [Tooltip("Seconds the cockpit takes to build a new ring once it has the resources.")]
         [SerializeField, Min(0.05f)] float rebuildSeconds = 0.5f;
         [Tooltip("Seconds of OVERDRIVE (all three modes at once) a crystal buys when a charge is already stored.")]
         [SerializeField, Min(0.5f)] float overdriveSeconds = 6f;
 
         [Header("Scored hits (PvP is petals only)")]
-        [Tooltip("The plane wave's hit on an enemy hull: its class (and so its price in petals).")]
-        [SerializeField] CombatHitClass planeWaveHitClass = CombatHitClass.MissileShockwave;
-        [Tooltip("Seconds before the same victim can be scored by this pilot's plane wave again.")]
-        [SerializeField, Min(0f)] float planeWaveHitCooldown = 0.5f;
+        [Tooltip("The ring explosion's hit on an enemy hull: its class (and so its price in petals).")]
+        [SerializeField] CombatHitClass ringBlastHitClass = CombatHitClass.MissileBlast;
+        [Tooltip("Seconds before the same victim can be scored by this pilot's ring explosion again.")]
+        [SerializeField, Min(0f)] float ringBlastHitCooldown = 0.5f;
         [Tooltip("Shared combat-hit channel (StatsManager scores from it).")]
         [SerializeField] ScriptableEventCombatHitStats onCombatHitLanded;
 
@@ -180,6 +182,7 @@ namespace CosmicShore.Gameplay
         public float DestructionFireRate => destructionFireRate;
         public float DestructionProjectileSpeed => destructionProjectileSpeed;
         public float CreationOffset => creationOffset;
+        public float CreationSpeedMultiplier => creationSpeedMultiplier;
         public float ArmFocusDistance => armFocusDistance;
         public float ArmSplayDegrees => armSplayDegrees;
         public float MaxSpreadDegrees => maxSpreadDegrees;
@@ -189,17 +192,14 @@ namespace CosmicShore.Gameplay
         public float RingFuseSeconds => ringFuseSeconds;
         public float RingContactRadiusScale => ringContactRadiusScale;
         public float RingFlightSpin => ringFlightSpin;
-        public AOEExplosion[] BlastExplosions => blastExplosions;
-        public float BlastDiameter => blastDiameter;
+        public float RingBlastSeconds => ringBlastSeconds;
+        public float RingBlastFallbackRadius => ringBlastFallbackRadius;
         public ElementalFloat BlastScale => blastScale;
-        public float PlaneWaveReach => planeWaveReach;
-        public float PlaneWaveHalfThickness => planeWaveHalfThickness;
-        public float PlaneWaveDelay => planeWaveDelay;
-        public float PlaneWaveSeconds => planeWaveSeconds;
+        public float RingBlastBandWidth => ringBlastBandWidth;
         public float RebuildSeconds => rebuildSeconds;
         public float OverdriveSeconds => overdriveSeconds;
-        public CombatHitClass PlaneWaveHitClass => planeWaveHitClass;
-        public float PlaneWaveHitCooldown => planeWaveHitCooldown;
+        public CombatHitClass RingBlastHitClass => ringBlastHitClass;
+        public float RingBlastHitCooldown => ringBlastHitCooldown;
         public ScriptableEventCombatHitStats OnCombatHitLanded => onCombatHitLanded;
         public float AiModeIntervalSeconds => aiModeIntervalSeconds;
         public int AiFireMinTargets => aiFireMinTargets;

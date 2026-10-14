@@ -80,7 +80,7 @@ namespace CosmicShore.Gameplay
         readonly Trail[] _cornerTrails =
             { new Trail(), new Trail(), new Trail(), new Trail(), new Trail() };
 
-        // Thrown rings and the plane waves they leave.
+        // Thrown rings and the ring explosions (expanding disks) they leave.
         struct Flight
         {
             public GameObject Body;
@@ -97,6 +97,9 @@ namespace CosmicShore.Gameplay
             public float InnerRadius;
             public float OuterRadius;
             public float LastRadius;
+            public float HalfThickness;
+            public GameObject Band;      // the expanding ring drawn at the disk's edge
+            public Mesh BandMesh;
         }
 
         readonly List<Flight> _flights = new();
@@ -209,6 +212,15 @@ namespace CosmicShore.Gameplay
             for (int i = 0; i < _idleBodies.Count; i++)
                 if (_idleBodies[i]) Destroy(_idleBodies[i]);
             _idleBodies.Clear();
+            for (int i = 0; i < _waves.Count; i++) ReturnBand(_waves[i].Band);   // a blast still expanding
+            _waves.Clear();
+            for (int i = 0; i < _idleBands.Count; i++)
+            {
+                if (!_idleBands[i]) continue;
+                if (_idleBands[i].TryGetComponent<MeshFilter>(out var mf) && mf.sharedMesh) Destroy(mf.sharedMesh);
+                Destroy(_idleBands[i]);
+            }
+            _idleBands.Clear();
         }
 
         void OnTurnEnd()
@@ -295,14 +307,27 @@ namespace CosmicShore.Gameplay
             _destruction01 = Mathf.MoveTowards(_destruction01, IsOn(Mode.Destruction) ? 1f : 0f, step);
         }
 
-        /// <summary>The transformer's speed multiplier and the base trail's spacing, from one eased value.</summary>
+        /// <summary>
+        /// The transformer's speed multiplier — Speed Mode's ×6 and Creation Mode's slow-down (the slowest mode), from
+        /// their eased blends, multiplied so Overdrive (all modes on) gets both — and the trails' spacing.
+        ///
+        /// <para>The spacing follows the hull's ACTUAL speed over its plain cruise, not the mode's target: the hull eases
+        /// into and out of a speed change, and a spacing keyed to the target lays several times too many prisms while the
+        /// hull is still coasting down from ×6 (the momentum hole the Brittle Star design studio's scorecard found). It
+        /// never shrinks below the authored wavelength, so the slower Creation Mode simply lays fewer per second.</para>
+        /// </summary>
         void ApplySpeedMode()
         {
-            float multiplier = Mathf.Max(1f, config.SpeedModeMultiplier.EvaluateReplicated(_status));
-            float now = Mathf.Lerp(1f, multiplier, _speed01);
-            if (_status.VesselTransformer is BrittleStarVesselTransformer transformer) transformer.SpeedModeMultiplier = now;
+            float speedMode = Mathf.Max(1f, config.SpeedModeMultiplier.EvaluateReplicated(_status));
+            float now = BrittleStarRules.ModeSpeed(_speed01, _creation01, speedMode, config.CreationSpeedMultiplier);
+            if (_status.VesselTransformer is not BrittleStarVesselTransformer transformer) return;
+            transformer.SpeedModeMultiplier = now;
             if (_status.VesselPrismController is BrittleStarPrismController prisms)
-                prisms.SpacingMultiplier = Mathf.Lerp(1f, now, config.SpeedModeSpacingFollow);
+            {
+                float cruise = transformer.CurrentThrottleTarget / Mathf.Max(0.01f, now);
+                float ratio = cruise > 1f ? Mathf.Max(1f, _status.Speed / cruise) : 1f;
+                prisms.SpacingMultiplier = Mathf.Lerp(1f, ratio, config.SpeedModeSpacingFollow);
+            }
         }
 
         // ------------------------------------------------------------------ aim: the ring's firing rotation
@@ -317,8 +342,9 @@ namespace CosmicShore.Gameplay
         void AimRing(float dt)
         {
             Vector2 stick = AimStick();
-            // In Destruction Mode the stick moves the five arms in and out instead (UpdateFire); the ring holds.
-            float? aim = IsOn(Mode.Destruction) ? null : BrittleStarRules.AimAngle(stick, config.AimDeadzone);
+            // The stick's DIRECTION turns the ring in every mode (in Destruction Mode it turns the five arms with it);
+            // its DEFLECTION opens RT's spread, or moves the arms in and out (UpdateFire).
+            float? aim = BrittleStarRules.AimAngle(stick, config.AimDeadzone);
             if (aim == null)
             {
                 _aimedPoint = -1;
@@ -609,57 +635,56 @@ namespace CosmicShore.Gameplay
             return false;
         }
 
-        /// <summary>The all-domain blast, then the wave out in the ring's plane.</summary>
+        /// <summary>
+        /// The RING EXPLOSION (Garrett, 2026-10-14): a flat disk lying in the ring's plane, centred where it blew, as thick
+        /// as the ring (× Charge) and as wide as the cell's NUCLEUS. It is swept outward from the ring's own radius to the
+        /// nucleus's over <c>ringBlastSeconds</c>, drawn as an expanding band.
+        /// </summary>
         void Detonate(Vector3 at, Vector3 ringNormal)
         {
-            float scale = Mathf.Max(0.1f, config.BlastScale.EvaluateReplicated(_status));
-            float diameter = config.BlastDiameter * scale;
-            if (config.BlastExplosions is { Length: > 0 })
-            {
-                var init = new AOEExplosion.InitializeStruct
-                {
-                    OwnDomain = _status.Domain,
-                    AnnonymousExplosion = false,
-                    Vessel = _status.Vessel,
-                    OverrideMaterial = _status.AOEExplosionMaterial,
-                    MaxScale = diameter,
-                    SpawnPosition = at,
-                    SpawnRotation = ringNormal.sqrMagnitude > 1e-6f ? Quaternion.LookRotation(ringNormal) : Quaternion.identity,
-                    // Friendly fire: "destroying both enemy and allied mass".
-                    AffectSelfOverride = true,
-                };
-                ExplosionHelper.CreateExplosion(config.BlastExplosions, init, _impactor ? _impactor.DIContainer : null);
-            }
             PlayAt(config.RingBlastEvent, at);
-
-            float inner = diameter * 0.5f;
-            _waves.Add(new Wave
+            float half = (hull ? hull.RingHalfThickness : 0.2f) * Mathf.Max(0.1f, config.BlastScale.EvaluateReplicated(_status));
+            Vector3 normal = ringNormal.sqrMagnitude > 1e-6f ? ringNormal.normalized : Vector3.forward;
+            float inner = hull ? hull.RingRadius : 1f;
+            var wave = new Wave
             {
                 Centre = at,
-                Normal = ringNormal.sqrMagnitude > 1e-6f ? ringNormal.normalized : Vector3.forward,
-                StartsAt = Time.time + config.PlaneWaveDelay,
+                Normal = normal,
+                StartsAt = Time.time,
                 InnerRadius = inner,
-                OuterRadius = inner * config.PlaneWaveReach,
-                LastRadius = inner,
-            });
+                OuterRadius = Mathf.Max(inner, NucleusRadiusAt(at)),
+                LastRadius = 0f,
+                HalfThickness = half,
+            };
+            wave.Band = TakeBand(out wave.BandMesh);
+            if (wave.Band) wave.Band.transform.SetPositionAndRotation(at, Quaternion.LookRotation(normal));
+            _waves.Add(wave);
+        }
+
+        /// <summary>The nucleus's geometric radius of the cell the ring blew in (or the nearest active one), else the
+        /// configured fallback. The marker's GEOMETRY, not its control radius: a mode that borrows the nucleus as play
+        /// geometry collapses the control radius to 0 while the nucleus is still there (Cell.NucleusVisualWorldRadius).</summary>
+        float NucleusRadiusAt(Vector3 at)
+        {
+            var cell = Cell.FindCellContaining(at) ?? Cell.FindNearestActiveCell(at);
+            float r = cell ? cell.NucleusVisualWorldRadius : 0f;
+            if (r <= 0f && cell) r = cell.ExpectedNucleusWorldRadius;
+            return r > 0f ? r : config.RingBlastFallbackRadius;
         }
 
         /// <summary>
-        /// The plane wave: a disc of <c>planeWaveHalfThickness</c> expanding from the blast's radius to
-        /// <c>planeWaveReach</c> times it over <c>planeWaveSeconds</c>, breaking every prism it passes (any domain; a
-        /// shield pops first, super-shielded mass refuses — <see cref="Prism.Damage"/>) and scoring a hit on every enemy
-        /// hull it passes. Swept in a few rings rather than every frame, so a wide wave costs a handful of queries.
+        /// Sweep the disk outward in steps (a handful of queries per explosion, not one per frame), breaking every prism it
+        /// passes — any domain, friendly fire; a shield pops first, super-shielded mass refuses (<see cref="Prism.Damage"/>)
+        /// — and scoring every rival hull it passes. The band grows with it and goes when it reaches the nucleus's edge.
         /// </summary>
         void UpdateWaves()
         {
-            const int Steps = 6;
+            const int Steps = 10;
             for (int w = _waves.Count - 1; w >= 0; w--)
             {
                 var wave = _waves[w];
-                float t = (Time.time - wave.StartsAt) / config.PlaneWaveSeconds;
-                if (t < 0f) continue;
-                float eased = Mathf.Sin(Mathf.Clamp01(t) * Mathf.PI * 0.5f);
-                float radius = Mathf.Lerp(wave.InnerRadius, wave.OuterRadius, eased);
+                float t = Mathf.Clamp01((Time.time - wave.StartsAt) / config.RingBlastSeconds);
+                float radius = Mathf.Lerp(wave.InnerRadius, wave.OuterRadius, Mathf.Sin(t * Mathf.PI * 0.5f));
                 float stride = (wave.OuterRadius - wave.InnerRadius) / Steps;
                 if (radius - wave.LastRadius >= stride * 0.999f || t >= 1f)
                 {
@@ -667,13 +692,17 @@ namespace CosmicShore.Gameplay
                     wave.LastRadius = radius;
                     _waves[w] = wave;
                 }
-                if (t >= 1f) _waves.RemoveAt(w);
+                if (wave.BandMesh) BuildBand(wave.BandMesh, radius, config.RingBlastBandWidth, wave.HalfThickness);
+                if (t >= 1f)
+                {
+                    ReturnBand(wave.Band);
+                    _waves.RemoveAt(w);
+                }
             }
         }
 
         void SweepWave(in Wave wave, float fromRadius, float toRadius)
         {
-            float half = config.PlaneWaveHalfThickness;
             var index = PrismSpatialIndex.Instance;
             if (index && index.IsAvailable)
             {
@@ -682,11 +711,18 @@ namespace CosmicShore.Gameplay
                 {
                     var prism = _candidates[i];
                     if (!prism || prism.destroyed) continue;
-                    Vector3 d = prism.transform.position - wave.Centre;
+                    var pt = prism.transform;
+                    Vector3 d = pt.position - wave.Centre;
                     float along = Vector3.Dot(d, wave.Normal);
-                    if (Mathf.Abs(along) > half) continue;
+                    // The disk touches the prism if their slabs overlap: the prism's own half-extent along the normal
+                    // (a box's support distance) plus the disk's half-thickness.
+                    Vector3 ls = pt.lossyScale;
+                    float extent = 0.5f * (Mathf.Abs(Vector3.Dot(pt.right, wave.Normal)) * Mathf.Abs(ls.x)
+                                         + Mathf.Abs(Vector3.Dot(pt.up, wave.Normal)) * Mathf.Abs(ls.y)
+                                         + Mathf.Abs(Vector3.Dot(pt.forward, wave.Normal)) * Mathf.Abs(ls.z));
+                    if (!BrittleStarRules.DiskReaches(d, wave.Normal, wave.HalfThickness, toRadius, extent, 0f)) continue;
                     Vector3 radial = d - wave.Normal * along;
-                    if (radial.sqrMagnitude < fromRadius * fromRadius * 0.81f) continue;   // already swept
+                    if (radial.sqrMagnitude < fromRadius * fromRadius) continue;   // already swept
                     if (SelfTrailContactConfigSO.SuppressesSkimContact(prism, _status)) continue;
                     Vector3 push = radial.sqrMagnitude > 1e-6f ? radial.normalized * 60f : wave.Normal * 60f;
                     prism.Damage(push, _status.Domain, _status.PlayerName);
@@ -701,21 +737,98 @@ namespace CosmicShore.Gameplay
                 var victim = EnemyStatus(players[i]);
                 if (victim == null) continue;
                 Vector3 d = victim.Transform.position - wave.Centre;
-                float along = Vector3.Dot(d, wave.Normal);
-                if (Mathf.Abs(along) > half + VesselHitRadius) continue;
-                Vector3 radial = d - wave.Normal * along;
-                if (radial.magnitude > toRadius + VesselHitRadius) continue;
+                if (!BrittleStarRules.DiskReaches(d, wave.Normal, wave.HalfThickness, toRadius, VesselHitRadius, VesselHitRadius))
+                    continue;
+                Vector3 radial = d - wave.Normal * Vector3.Dot(d, wave.Normal);
+                // Each hull is scored once per explosion: by the step whose sweep its edge falls in.
+                if (fromRadius > 0f && radial.magnitude <= fromRadius + VesselHitRadius) continue;
                 ScoreWaveHit(victim, radial);
             }
         }
 
-        /// <summary>The wave's hit on an enemy hull, under the LOCKED PvP rule: admitted through
+        // ---- the explosion's band: one dynamic annulus mesh per live explosion, pooled
+
+        readonly List<GameObject> _idleBands = new();
+        readonly List<Vector3> _bandVerts = new();
+        readonly List<Vector3> _bandNormals = new();
+        readonly List<int> _bandTris = new();
+
+        GameObject TakeBand(out Mesh mesh)
+        {
+            mesh = null;
+            GameObject band = null;
+            while (_idleBands.Count > 0 && !band)
+            {
+                band = _idleBands[_idleBands.Count - 1];
+                _idleBands.RemoveAt(_idleBands.Count - 1);
+            }
+            if (!band)
+            {
+                band = new GameObject($"BrittleStarRingExplosion::{(_status != null ? _status.PlayerName : name)}");
+                band.AddComponent<MeshFilter>().sharedMesh = new Mesh { name = "BrittleStarRingExplosion" };
+                band.AddComponent<MeshRenderer>();
+            }
+            mesh = band.GetComponent<MeshFilter>().sharedMesh;
+            // The domain colour: slot 1 of the hull's painted renderer (ShipHelper.ApplyShipMaterial).
+            if (hull && hull.TryGetComponent<MeshRenderer>(out var source))
+            {
+                var mats = source.sharedMaterials;
+                if (mats is { Length: > 0 }) band.GetComponent<MeshRenderer>().sharedMaterial = mats[mats.Length > 1 ? 1 : 0];
+            }
+            band.SetActive(true);
+            return band;
+        }
+
+        void ReturnBand(GameObject band)
+        {
+            if (!band) return;
+            band.SetActive(false);
+            _idleBands.Add(band);
+        }
+
+        /// <summary>A flat annulus in the band's local XY plane: outer radius <paramref name="radius"/>, <paramref name="width"/>
+        /// wide, ±<paramref name="half"/> thick — top, bottom, outer and inner walls, flat-shaded.</summary>
+        void BuildBand(Mesh mesh, float radius, float width, float half)
+        {
+            const int Segments = 96;
+            float outer = Mathf.Max(0.01f, radius), inner = Mathf.Max(0f, radius - width);
+            half = Mathf.Max(0.05f, half);
+            _bandVerts.Clear(); _bandNormals.Clear(); _bandTris.Clear();
+            for (int i = 0; i < Segments; i++)
+            {
+                float a0 = i * Mathf.PI * 2f / Segments, a1 = (i + 1) * Mathf.PI * 2f / Segments;
+                Vector3 d0 = new(Mathf.Cos(a0), Mathf.Sin(a0), 0f), d1 = new(Mathf.Cos(a1), Mathf.Sin(a1), 0f);
+                Vector3 f = Vector3.forward * half;
+                BandQuad(d0 * inner + f, d0 * outer + f, d1 * outer + f, d1 * inner + f, Vector3.forward);
+                BandQuad(d1 * inner - f, d1 * outer - f, d0 * outer - f, d0 * inner - f, Vector3.back);
+                BandQuad(d0 * outer + f, d0 * outer - f, d1 * outer - f, d1 * outer + f, (d0 + d1).normalized);
+                BandQuad(d1 * inner + f, d1 * inner - f, d0 * inner - f, d0 * inner + f, -(d0 + d1).normalized);
+            }
+            mesh.Clear();
+            mesh.SetVertices(_bandVerts);
+            mesh.SetNormals(_bandNormals);
+            mesh.SetTriangles(_bandTris, 0);
+            mesh.RecalculateBounds();
+        }
+
+        void BandQuad(Vector3 a, Vector3 b, Vector3 c, Vector3 d, Vector3 n)
+        {
+            // Wound so Unity's front face (clockwise seen from outside) faces along n.
+            if (Vector3.Dot(Vector3.Cross(b - a, c - a), n) < 0f) { (b, d) = (d, b); }
+            int i0 = _bandVerts.Count;
+            _bandVerts.Add(a); _bandVerts.Add(b); _bandVerts.Add(c); _bandVerts.Add(d);
+            for (int k = 0; k < 4; k++) _bandNormals.Add(n);
+            _bandTris.Add(i0); _bandTris.Add(i0 + 1); _bandTris.Add(i0 + 2);
+            _bandTris.Add(i0); _bandTris.Add(i0 + 2); _bandTris.Add(i0 + 3);
+        }
+
+        /// <summary>The ring explosion's hit on an enemy hull, under the LOCKED PvP rule: admitted through
         /// <see cref="CombatHitDrain.TryAdmit"/> (a warded victim is neither scored on nor robbed), its petals ejected
         /// at the class's fleet price, the score raised on the stats channel. It never moves the victim.</summary>
         void ScoreWaveHit(IVesselStatus victim, Vector3 outward)
         {
-            var hitClass = config.PlaneWaveHitClass;
-            if (!CombatHitDrain.TryAdmit(victim, _status, hitClass, config.PlaneWaveHitCooldown,
+            var hitClass = config.RingBlastHitClass;
+            if (!CombatHitDrain.TryAdmit(victim, _status, hitClass, config.RingBlastHitCooldown,
                                          ElementalDebuffSources.Explosion, out int superseded))
                 return;
             CombatHitDrain.Apply(victim, _status, hitClass, superseded, outward.normalized * 40f,
@@ -734,6 +847,7 @@ namespace CosmicShore.Gameplay
         {
             for (int i = 0; i < _flights.Count; i++) ReturnBody(_flights[i].Body);
             _flights.Clear();
+            for (int i = 0; i < _waves.Count; i++) ReturnBand(_waves[i].Band);
             _waves.Clear();
         }
 

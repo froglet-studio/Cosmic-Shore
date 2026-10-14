@@ -338,6 +338,43 @@ namespace CosmicShore.Tests
         }
 
         [Test]
+        public void ModeSpeed_CreationIsTheSlowest_SpeedTheFastest_OverdriveGetsBoth()
+        {
+            const float speedX = 6f, creationX = 0.5f;
+            float cruise = BrittleStarRules.ModeSpeed(0f, 0f, speedX, creationX);
+            float speed = BrittleStarRules.ModeSpeed(1f, 0f, speedX, creationX);
+            float creation = BrittleStarRules.ModeSpeed(0f, 1f, speedX, creationX);
+            Assert.AreEqual(1f, cruise, 1e-5f, "cruise and Destruction Mode fly at the plain cruise");
+            Assert.AreEqual(6f, speed, 1e-5f, "Speed Mode is x6");
+            Assert.AreEqual(0.5f, creation, 1e-5f);
+            Assert.Less(creation, cruise, "Creation Mode is the slowest");
+            Assert.AreEqual(3f, BrittleStarRules.ModeSpeed(1f, 1f, speedX, creationX), 1e-5f, "Overdrive: both");
+            Assert.AreEqual(Mathf.Lerp(1f, 0.5f, 0.4f), BrittleStarRules.ModeSpeed(0f, 0.4f, speedX, creationX), 1e-5f,
+                "eases between");
+        }
+
+        [Test]
+        public void RingExplosion_IsADiskAsThickAsTheRing_NotASphere()
+        {
+            var n = Vector3.forward;
+            const float half = 0.22f, radius = 392f;
+            // In the plane, out to the nucleus's edge: reached.
+            Assert.IsTrue(BrittleStarRules.DiskReaches(new Vector3(390f, 0f, 0f), n, half, radius, 0f, 0f));
+            Assert.IsTrue(BrittleStarRules.DiskReaches(new Vector3(0f, -200f, 0.2f), n, half, radius, 0f, 0f));
+            // Past the edge: not reached — unless the body's own extent across the normal crosses it.
+            Assert.IsFalse(BrittleStarRules.DiskReaches(new Vector3(400f, 0f, 0f), n, half, radius, 0f, 0f));
+            Assert.IsTrue(BrittleStarRules.DiskReaches(new Vector3(400f, 0f, 0f), n, half, radius, 0f, 10f));
+            // A short way off the plane — well inside what a sphere would reach — not reached ...
+            Assert.IsFalse(BrittleStarRules.DiskReaches(new Vector3(10f, 0f, 3f), n, half, radius, 0f, 0f));
+            // ... unless the body is thick enough along the normal to straddle the disk.
+            Assert.IsTrue(BrittleStarRules.DiskReaches(new Vector3(10f, 0f, 3f), n, half, radius, 3f, 0f));
+            // The disk lies across whatever normal the ring had when it blew.
+            var tilted = new Vector3(1f, 1f, 0f).normalized;
+            Assert.IsTrue(BrittleStarRules.DiskReaches(new Vector3(0f, 0f, 300f), tilted, half, radius, 0f, 0f));
+            Assert.IsFalse(BrittleStarRules.DiskReaches(tilted * 5f, tilted, half, radius, 0f, 0f));
+        }
+
+        [Test]
         public void Range_IsSpeedTimesTwoTOverPi()
         {
             Assert.AreEqual(700f * 0.6f / Mathf.PI, BrittleStarRules.RangeFor(700f, 0.3f), 1e-3f);

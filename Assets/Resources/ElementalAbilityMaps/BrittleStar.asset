@@ -16,15 +16,16 @@ MonoBehaviour:
   entries:
   - Element: 1
     AbilityLabel: Ring Detonation
-    AbilityDescription: 'LT. Eject the support ring and throw it forward (240 u/s on top of your own speed); it detonates
-      on touching any mass or a rival hull, or on its 1.1 s fuse, in an ALL-DOMAIN blast (your own and
-      your allies'' mass too), then a second wave runs out in the plane of the ring to 2.5x the
-      blast''s radius. A rival caught in either is scored on (petals only - nothing is moved). No
-      cooldown, only a ring: with a stored crystal charge a new ring is built at once (two in rapid
-      succession); without one you fly ringless and modeless until a crystal builds the next. Charge
-      is threat - one dial: both blasts'' size x1 -> x1.6 at level 10
-      (BrittleStarConfigSO.blastScale), and the rounds'' size x1 -> x1.8 with it
-      (projectileScaleMultiplier), the Rolling Thunder persona''s two halves of one idea.'
+    AbilityDescription: 'LT. Eject the support ring and throw it forward (240 u/s on top of your own speed); it blows on
+      touching any mass or a rival hull, or on its 1.1 s fuse, in a RING EXPLOSION: a flat disk in the
+      ring''s plane, as thick as the ring and as wide as the cell''s nucleus, sweeping out from the
+      ring over 0.7 s. It destroys every prism it passes, any domain (your own and your allies'' too),
+      and strips petals from every rival hull it passes (petals only - nothing is moved). No cooldown,
+      only a ring: with a stored crystal charge a new ring is built at once (two in rapid succession);
+      without one you fly ringless and modeless until a crystal builds the next. Charge is threat -
+      one dial: the disk''s thickness x1 -> x4 at level 10 (BrittleStarConfigSO.blastScale), and the
+      rounds'' size x1 -> x1.8 with it (projectileScaleMultiplier), the Rolling Thunder persona''s two
+      halves of one idea.'
     Input: 2
     UnlockLevel: 5
     RelockBelowLevel: 4
@@ -34,8 +35,8 @@ MonoBehaviour:
   - Element: 2
     AbilityLabel: Creation Mode
     AbilityDescription: 'B. A trail behind EACH of the ring''s five corners instead of the single small block from the
-      cockpit - five lines that turn with the ring''s firing rotation. Needs the ring. Mass is volume
-      - one dial: the corner trails'' blocks x1 -> x1.8 at level 10
+      cockpit - five lines that turn with the ring''s firing rotation. The SLOWEST mode: cruise x0.5.
+      Needs the ring. Mass is volume - one dial: the corner trails'' blocks x1 -> x1.8 at level 10
       (BrittleStarConfigSO.creationBlockScale).'
     Input: 7
     UnlockLevel: 5
@@ -47,13 +48,13 @@ MonoBehaviour:
     AbilityLabel: Destruction Mode
     AbilityDescription: 'X. The FIVE ARMS: while the mode is on, every turret fires on its own - unspread, at the
       Sparrow''s full-auto cadence (90 rounds/s each, 1350 u/s) - a stream steady enough to read as
-      five arms reaching ahead of the ring. The right stick moves them in and out: centred they meet
-      120 u ahead (the vessel a crosshair), pushed to the rim they splay 25 degrees. Outside it, Fire
-      on RT (held) is one stream from the turret the right stick points at (the ring turns to bring it
-      round) or the cockpit gun with the stick centred, the stick''s deflection opening the spread.
-      Friendly fire is on. A round on a rival hull is a scored bullet hit (petals only). Space is
-      reach - one dial: the rounds'' flight time, and so their range, x1 -> x1.6 at level 10
-      (BrittleStarConfigSO.rangeMultiplier).'
+      five arms reaching ahead of the ring. The right stick''s direction turns the ring, and the arms
+      with it; its deflection moves them in and out: centred they meet 120 u ahead (the vessel a
+      crosshair), pushed to the rim they splay 25 degrees. Outside it, Fire on RT (held) is one stream
+      from the turret the right stick points at (the ring turns to bring it round) or the cockpit gun
+      with the stick centred, the stick''s deflection opening the spread. Friendly fire is on. A round
+      on a rival hull is a scored bullet hit (petals only). Space is reach - one dial: the rounds''
+      flight time, and so their range, x1 -> x1.6 at level 10 (BrittleStarConfigSO.rangeMultiplier).'
     Input: 8
     UnlockLevel: 5
     RelockBelowLevel: 4

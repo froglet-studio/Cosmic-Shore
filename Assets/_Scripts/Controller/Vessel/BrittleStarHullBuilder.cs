@@ -78,6 +78,9 @@ namespace CosmicShore.Gameplay
         /// <summary>The cockpit gun's muzzle (index -1) or point <paramref name="index"/>'s, which ride the ring.</summary>
         public Transform Muzzle(int index) => _muzzles[index + 1];
         public float RingRadius => ringRadius;
+        /// <summary>Half the support ring's thickness across its plane (a strut's half-width) — what Ring Detonation's
+        /// disk is as thick as.</summary>
+        public float RingHalfThickness => strutThickness;
 
         static readonly Element[] MorphedElements = { Element.Charge, Element.Mass, Element.Space, Element.Time };
         public IReadOnlyList<Element> ProceduralMorphElements => MorphedElements;

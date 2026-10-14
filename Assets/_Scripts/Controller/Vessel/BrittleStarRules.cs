@@ -181,6 +181,29 @@ namespace CosmicShore.Gameplay
             return tilt * forward;
         }
 
+        /// <summary>
+        /// The hull's speed multiplier from the modes' eased blends: Speed Mode's ×N and Creation Mode's slow-down
+        /// (the slowest of the modes), multiplied so Overdrive — all modes on at once — gets both. Destruction Mode
+        /// leaves the speed alone.
+        /// </summary>
+        public static float ModeSpeed(float speed01, float creation01, float speedMultiplier, float creationMultiplier) =>
+            Mathf.Lerp(1f, speedMultiplier, speed01) * Mathf.Lerp(1f, creationMultiplier, creation01);
+
+        /// <summary>
+        /// Does the ring explosion's disk — centred at the origin of <paramref name="offset"/>, lying across
+        /// <paramref name="normal"/> (unit), ±<paramref name="halfThickness"/> thick and <paramref name="radius"/>
+        /// wide — reach a body at <paramref name="offset"/> whose own half-extent along the normal is
+        /// <paramref name="extentAlongNormal"/> and across it <paramref name="extentAcross"/>?
+        /// </summary>
+        public static bool DiskReaches(Vector3 offset, Vector3 normal, float halfThickness, float radius,
+                                       float extentAlongNormal, float extentAcross)
+        {
+            float along = Vector3.Dot(offset, normal);
+            if (Mathf.Abs(along) > halfThickness + extentAlongNormal) return false;
+            float reach = radius + extentAcross;
+            return (offset - normal * along).sqrMagnitude <= reach * reach;
+        }
+
         /// <summary>A pure integer hash to [0, 1).</summary>
         public static float Hash01(uint x)
         {

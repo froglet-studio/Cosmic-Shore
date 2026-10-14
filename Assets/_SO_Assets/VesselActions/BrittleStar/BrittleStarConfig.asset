@@ -35,6 +35,7 @@ MonoBehaviour:
   creationRadiusScale: 1
   creationOffset: 2
   creationMaxPerFrame: 3
+  creationSpeedMultiplier: 0.5
   creationWaitTime: 0.6
   fireRate: 12
   projectileSpeed: 700
@@ -68,25 +69,21 @@ MonoBehaviour:
   ringFuseSeconds: 1.1
   ringContactRadiusScale: 1
   ringFlightSpin: 900
-  blastExplosions:
-  - {fileID: 3479271500403630839, guid: 8713aea50e6b47119e57afc2ce603771, type: 3}
-  blastDiameter: 60
+  ringBlastSeconds: 0.7
+  ringBlastFallbackRadius: 200
   blastScale:
     Enabled: 1
     Value: 1
     Min: 1
-    Max: 1.6
+    Max: 4
     element: 1
     UseFloor: 1
-    Floor: 0.7
-  planeWaveReach: 2.5
-  planeWaveHalfThickness: 6
-  planeWaveDelay: 0.12
-  planeWaveSeconds: 0.45
+    Floor: 1
+  ringBlastBandWidth: 6
   rebuildSeconds: 0.5
   overdriveSeconds: 6
-  planeWaveHitClass: 4
-  planeWaveHitCooldown: 0.5
+  ringBlastHitClass: 3
+  ringBlastHitCooldown: 0.5
   onCombatHitLanded: {fileID: 11400000, guid: 45fb43a0cddb5cc3cc4dc448df994152, type: 2}
   aiModeIntervalSeconds: 3
   aiFireMinTargets: 2

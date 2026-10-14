@@ -89,8 +89,9 @@ Sparrow HUD indicators (~~roll armed~~ SHIPPED — the boost icon's ring is now 
    revisit after playtest.
 4. **Latch policy default.** Re-lock with 5/4 hysteresis (codebase-symmetric) vs latch-for-turn.
    *Recommendation:* re-lock; debuffs stripping your upgrade is legible elemental counterplay.
-5. **`origin/claude/falcon-brittlestar-reintro-oyx1q1`**: if it is ever merged, it must not land
-   without `f1f278ab4` (its prewarm cap makes the pool-injection NRE strictly worse — AUDIT §2#1).
+5. **`origin/claude/falcon-brittlestar-reintro-oyx1q1`**: do not merge it; the Brittle Star was rebuilt from its class
+   document as `VesselClassType.BrittleStar = 16` (`R_VesselActions/BRITTLE_STAR.md`). (The "prewarm cap" this row once
+   cited does not exist on the branch; the pool-injection fix is on HEAD — AUDIT §2#1.)
 
 ## Four-icon ability row — follow-ups (from the `vessel-ability-icons` branch)
 

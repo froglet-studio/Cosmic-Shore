@@ -597,7 +597,7 @@ slots are open (empty `UpgradeLabel`) — proposals, NOT implemented, for mark-u
 
 | Slot | Proposal A | Proposal B |
 |---|---|---|
-| Charge L5 | **Chain Reaction** — the plane wave sets off a second, smaller detonation where it ends | **Domain-Safe Ring** — the blast spares your own domain's mass (the Sparrow's Charge 5 shape) |
+| Charge L5 | **Chain Reaction** — the disk's edge sets off a second, smaller ring explosion where it ends | **Domain-Safe Ring** — the disk spares your own domain's mass (the Sparrow's Charge 5 shape) |
 | Mass L5 | **Shielded Corners** — the corner trails arrive shielded | **Webbing** — every fifth block bridges to the next corner |
 | Space L5 | **Piercing Arms** — the arms' rounds pass through the first prism (the Sparrow's Space 5) | **Long Arms** — the arms' range ×1.25 |
 | Time L5 | **Afterburner Ring** — a thrown ring inherits Speed Mode's speed and fuses later | **Quick Build** — instant ring rebuild |

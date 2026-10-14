@@ -168,7 +168,6 @@ GUN_SCRIPT = "35a4e5dfc7064254cb27fc78eefb05a0"
 FACTORY_SCRIPT = "a9b3080b23e64bba93ece7a3dece3463"
 POOL_SCRIPT = "b5daed71d21246db9fdb15a9d495e1ec"
 SPARROW_ROUND = "{fileID: 7632677803272750685, guid: 1bdcea9e9329dd141af7ab874a4d31a2, type: 3}"   # SparrowProjectile
-BLAST = "{fileID: 3479271500403630839, guid: 8713aea50e6b47119e57afc2ce603771, type: 3}"           # AOEGrizzlyExplosion
 COMBAT_HIT_CHANNEL = "45fb43a0cddb5cc3cc4dc448df994152"
 TURN_END_CHANNEL = "498a06d44bde9184f985c938c803b2a1"
 SO_VESSEL_SCRIPT = "0309a5343d820c14abd73b35f6fa50f1"
@@ -474,6 +473,7 @@ def config_asset() -> str:
             "  creationRadiusScale: 1\n"
             "  creationOffset: 2\n"
             "  creationMaxPerFrame: 3\n"
+            "  creationSpeedMultiplier: 0.5\n"
             "  creationWaitTime: 0.6\n"
             "  fireRate: 12\n"
             "  projectileSpeed: 700\n"
@@ -493,18 +493,14 @@ def config_asset() -> str:
             "  ringFuseSeconds: 1.1\n"
             "  ringContactRadiusScale: 1\n"
             "  ringFlightSpin: 900\n"
-            "  blastExplosions:\n"
-            f"  - {BLAST}\n"
-            "  blastDiameter: 60\n"
-            "  blastScale:\n" + ef(1, 1, 1.6, 1, 0.7) +
-            "  planeWaveReach: 2.5\n"
-            "  planeWaveHalfThickness: 6\n"
-            "  planeWaveDelay: 0.12\n"
-            "  planeWaveSeconds: 0.45\n"
+            "  ringBlastSeconds: 0.7\n"
+            "  ringBlastFallbackRadius: 200\n"
+            "  blastScale:\n" + ef(1, 1, 4, 1, 1) +
+            "  ringBlastBandWidth: 6\n"
             "  rebuildSeconds: 0.5\n"
             "  overdriveSeconds: 6\n"
-            "  planeWaveHitClass: 4\n"
-            "  planeWaveHitCooldown: 0.5\n"
+            "  ringBlastHitClass: 3\n"
+            "  ringBlastHitCooldown: 0.5\n"
             f"  onCombatHitLanded: {g(COMBAT_HIT_CHANNEL)}\n"
             "  aiModeIntervalSeconds: 3\n"
             "  aiFireMinTargets: 2\n"
@@ -619,22 +615,23 @@ def quote(text: str) -> str:
 
 MAP_ENTRIES = (
     (1, "Ring Detonation", 2,
-     "LT. Eject the support ring and throw it forward (240 u/s on top of your own speed); it detonates on touching any "
-     "mass or a rival hull, or on its 1.1 s fuse, in an ALL-DOMAIN blast (your own and your allies' mass too), then a "
-     "second wave runs out in the plane of the ring to 2.5x the blast's radius. A rival caught in either is scored on "
-     "(petals only - nothing is moved). No cooldown, only a ring: with a stored crystal charge a new ring is built at "
-     "once (two in rapid succession); without one you fly ringless and modeless until a crystal builds the next. "
-     "Charge is threat - one dial: both blasts' size x1 -> x1.6 at level 10 (BrittleStarConfigSO.blastScale), and the "
-     "rounds' size x1 -> x1.8 with it (projectileScaleMultiplier), the Rolling Thunder persona's two halves of one idea."),
+     "LT. Eject the support ring and throw it forward (240 u/s on top of your own speed); it blows on touching any "
+     "mass or a rival hull, or on its 1.1 s fuse, in a RING EXPLOSION: a flat disk in the ring's plane, as thick as the "
+     "ring and as wide as the cell's nucleus, sweeping out from the ring over 0.7 s. It destroys every prism it passes, "
+     "any domain (your own and your allies' too), and strips petals from every rival hull it passes (petals only - "
+     "nothing is moved). No cooldown, only a ring: with a stored crystal charge a new ring is built at once (two in "
+     "rapid succession); without one you fly ringless and modeless until a crystal builds the next. Charge is threat - "
+     "one dial: the disk's thickness x1 -> x4 at level 10 (BrittleStarConfigSO.blastScale), and the rounds' size "
+     "x1 -> x1.8 with it (projectileScaleMultiplier), the Rolling Thunder persona's two halves of one idea."),
     (2, "Creation Mode", 7,
      "B. A trail behind EACH of the ring's five corners instead of the single small block from the cockpit - five "
-     "lines that turn with the ring's firing rotation. Needs the ring. Mass is volume - one dial: the corner trails' "
+     "lines that turn with the ring's firing rotation. The SLOWEST mode: cruise x0.5. Needs the ring. Mass is volume - one dial: the corner trails' "
      "blocks x1 -> x1.8 at level 10 (BrittleStarConfigSO.creationBlockScale)."),
     (3, "Destruction Mode", 8,
      "X. The FIVE ARMS: while the mode is on, every turret fires on its own - unspread, at the Sparrow's full-auto "
      "cadence (90 rounds/s each, 1350 u/s) - a stream steady enough to read as five arms reaching ahead of the ring. "
-     "The right stick moves them in and out: centred they meet 120 u ahead (the vessel a crosshair), pushed to the rim "
-     "they splay 25 degrees. "
+     "The right stick's direction turns the ring, and the arms with it; its deflection moves them in and out: centred "
+     "they meet 120 u ahead (the vessel a crosshair), pushed to the rim they splay 25 degrees. "
      "Outside it, Fire on RT (held) is one stream from the turret the right stick points at (the ring turns to bring it "
      "round) or the cockpit gun with the stick centred, the stick's deflection opening the spread. Friendly fire is on. "
      "A round on a rival hull is a scored bullet hit (petals only). Space is reach - one dial: the rounds' flight time, "
