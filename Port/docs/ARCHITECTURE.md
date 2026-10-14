@@ -444,6 +444,20 @@ own touch controls.
 | 6 | Command box + **Run** | Type a registered command, e.g. `prisms 50000` (a stress test) or `prisms off` |
 | — | **F7** | Show or hide the panel |
 
+**Amoebius's own diagnostics (F3, top right).** The game's panel above is the game's; F3 shows the engine's
+view of the same process (`src/CosmicShore.Player/PlayerDiagnostics.cs`), refreshed twice a second:
+
+![Amoebius diagnostics](architecture/ui_amoebius_diagnostics.png)
+
+| Section | What it shows |
+|---|---|
+| FRAME | fps (green 55+, amber 30+, red below), frame time average / 1% worst / max over the last 240 frames; simulation and render CPU; GPU when the frame is timed (games the launcher starts); the game loop's phases |
+| MEMORY | managed heap, process working set, allocation per frame, collections per generation and GC pause in the last half second |
+| SCENE | the active scene, resolution, draw calls and instances |
+| NETWORK | offline (START) or online (START ONLINE); the NetStack chain; the UGS sign-in (player id, or why it failed), project and environment; every lobby this player is in (code, host or member, seats, relay join code, properties) and the last Lobby error; the match role, relay code and region, traffic, and each peer's round trip (green under 80 ms, amber under 160); the network simulator and session faults when set |
+
+Start a game with it shown: `--diag`, `COSMIC_SHORE_DIAG=1`, or the launcher's SETTINGS > GAME > Diagnostics overlay.
+
 ### 11.4 Player command-line options (testing)
 
 | Option | Use |
@@ -456,6 +470,7 @@ own touch controls.
 | `--do "F:inspect OBJECT Component"` · `eval Type.Member` | Print live state at frame F |
 | `--record DIR:FROM-TO` | Record frames (`tools/record_session.sh` makes a video) |
 | `--headless` · `--verbose` · `--seed S` | No window · every log channel · reproducible runs |
+| `--diag` | Start with Amoebius's diagnostics overlay shown (F3 toggles it; section 11.3) |
 | `--ugs-relay-check [REGION]` | Signs two UGS players in, allocates, joins by code and times frames through UGS Relay (the launcher's UGS CHECK) |
 | `--train train\|replay\|eval` | The game's AI genetic training (`docs/AI_TRAINING.md`) |
 

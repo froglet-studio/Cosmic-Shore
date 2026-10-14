@@ -1065,6 +1065,8 @@ namespace CosmicShore.Launcher
                     _s.Resolution, v => _s.Resolution = v));
                 Row("", () => Toggle("Fullscreen", () => _s.Fullscreen, v => _s.Fullscreen = v, "F11 toggles in game"));
                 Row("", () => Toggle("Audio", () => _s.Audio, v => _s.Audio = v));
+                Row("", () => Toggle("Diagnostics overlay", () => _s.Diagnostics, v => _s.Diagnostics = v,
+                    "Games start with Amoebius's diagnostics shown: FPS, frame and CPU/GPU time, memory,\nscene, and online status (UGS sign-in, lobby, relay, ping, traffic). F3 toggles it in any game."));
                 Row("", () => Toggle("Pull before play", () => _s.PullBeforePlay, v => _s.PullBeforePlay = v));
                 Row("", () => Toggle("Phone render path", () => _s.MobileRenderPath, v => _s.MobileRenderPath = v, "OpenGL ES 3.0, exactly as a phone renders"));
             }

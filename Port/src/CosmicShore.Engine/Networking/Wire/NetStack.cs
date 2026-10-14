@@ -54,6 +54,14 @@ namespace CosmicShore.Engine.Networking
             return string.Join(" > ", names);
         }
 
+        /// <summary>The session service of type <typeparamref name="T"/> in the chain (under the faults), or null.</summary>
+        public static T FindSessions<T>() where T : class, IMultiplayerService
+        {
+            for (IMultiplayerService s = MultiplayerService.Instance; s != null; s = (s as FaultInjectingMultiplayerService)?.Inner)
+                if (s is T found) return found;
+            return null;
+        }
+
         /// <summary>The session service chain, outermost first: "faults > ugs".</summary>
         public static string DescribeSessions()
         {

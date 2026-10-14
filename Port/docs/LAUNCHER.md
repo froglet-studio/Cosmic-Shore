@@ -205,6 +205,10 @@ Relay** (the match traffic between machines). There is nothing to host, find or 
 always there, and players on any network meet through it (`docs/MULTIPLAYER.md` §6.10). There is no
 LAN or local-network play.
 
+**Diagnostics**: press **F3** in any game for Amoebius's diagnostics overlay (FPS, frame, CPU and GPU time,
+memory, scene, and online status: UGS sign-in, lobby, relay, ping and traffic; `ARCHITECTURE.md` §11.3).
+SETTINGS > GAME > **Diagnostics overlay** starts every game with it shown.
+
 SETTINGS > ONLINE:
 
 - **UGS environment**: the UGS environment START ONLINE signs in to. Empty uses the branch's

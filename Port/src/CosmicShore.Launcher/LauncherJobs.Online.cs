@@ -47,10 +47,11 @@ namespace CosmicShore.Launcher
             try { if (SecondPlayerRunning) _secondPlayer!.Kill(entireProcessTree: true); } catch (InvalidOperationException) { }
         }
 
-        /// <summary>The UGS environment every game process signs in to, when SETTINGS > ONLINE names one (else the branch's).</summary>
+        /// <summary>What every game process gets from SETTINGS: the UGS environment (when one is named) and the diagnostics overlay.</summary>
         void OnlineEnvironment(ProcessStartInfo psi)
         {
             if (!string.IsNullOrWhiteSpace(_s.UgsEnvironment)) psi.Environment["COSMIC_SHORE_UGS_ENVIRONMENT"] = _s.UgsEnvironment.Trim();
+            if (_s.Diagnostics) psi.Environment["COSMIC_SHORE_DIAG"] = "1";
         }
 
         /// <summary>

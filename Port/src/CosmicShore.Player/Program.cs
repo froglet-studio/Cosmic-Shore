@@ -55,6 +55,8 @@ namespace CosmicShore.Player
 
         public static int Main(string[] args)
         {
+            // The diagnostics overlay (F3) shown from the start: --diag, or the launcher's SETTINGS > GAME switch.
+            if (Environment.GetEnvironmentVariable("COSMIC_SHORE_DIAG") == "1") PlayerDiagnostics.StartVisible = true;
             string scene = null, screenshot = null;
             int frames = -1, width = 1600, height = 900;
             bool headless = false, quiet = false, reportRender = false;
@@ -85,6 +87,7 @@ namespace CosmicShore.Player
                     case "--frames" when i + 1 < args.Length: int.TryParse(args[++i], out frames); break;
                     case "--headless": headless = true; break;
                     case "--realtime": s_realtime = true; break;
+                    case "--diag": PlayerDiagnostics.StartVisible = true; break;
                     case "--render-from" when i + 1 < args.Length: int.TryParse(args[++i], out PlayerWindow.RenderFrom); break;
                     case "--quiet": quiet = true; break;
                     case "--yaml-roundtrip" when i + 2 < args.Length:

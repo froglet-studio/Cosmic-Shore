@@ -18,6 +18,12 @@ namespace CosmicShore.Player
     /// </summary>
     static class UgsSetup
     {
+        /// <summary>Where this player went online ("UGS project ..., environment ..."), for the diagnostics overlay; null offline.</summary>
+        public static string Where { get; private set; }
+
+        /// <summary>Why the last UGS sign-in failed, for the diagnostics overlay; null after a sign-in that worked.</summary>
+        public static string SignInError { get; private set; }
+
         static string Env(string name) => Environment.GetEnvironmentVariable(name) is { Length: > 0 } v ? v.Trim() : null;
 
         public static string ProjectId(string projectRoot) => Env("COSMIC_SHORE_UGS_PROJECT") ?? UgsAuthentication.ReadUnityProjectId(projectRoot);
@@ -60,14 +66,16 @@ namespace CosmicShore.Player
             try { auth = SignIn(projectRoot, "ugs-session-token"); }
             catch (InvalidOperationException e)
             {
+                SignInError = e.Message;
                 Console.WriteLine("[online] " + e.Message + ": playing offline");
                 return;
             }
             CosmicShore.Engine.Services.AuthenticationService.RemoteSignIn = async () =>
             {
-                try { await auth.GetAccessTokenAsync(); }
+                try { await auth.GetAccessTokenAsync(); SignInError = null; }
                 catch (Exception e)
                 {
+                    SignInError = e.Message;
                     Console.WriteLine($"[online] UGS sign-in failed: {e.Message}");
                     Console.WriteLine($"[online] the UGS environment \"{auth.Environment ?? "(the project's default)"}\" must exist in the UGS dashboard " +
                                       "(or set SETTINGS > ONLINE > UGS environment); START plays offline meanwhile");
@@ -80,7 +88,8 @@ namespace CosmicShore.Player
             NetStack.Install(Environment.GetEnvironmentVariable("COSMIC_SHORE_NET_TRANSPORT"),
                 () => RelaySessions.Install(UgsRelay(auth)),
                 () => MultiplayerService.Instance = new UgsMultiplayerService(UgsLobby(auth)));
-            Console.WriteLine($"[online] UGS project {auth.ProjectId}, environment {auth.Environment ?? "(the project's default)"}: Lobby and Relay");
+            Where = $"UGS project {auth.ProjectId} · environment {auth.Environment ?? "(the project's default)"}";
+            Console.WriteLine($"[online] {Where}: Lobby and Relay");
         }
     }
 }

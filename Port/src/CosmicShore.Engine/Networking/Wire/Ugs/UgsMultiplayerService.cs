@@ -78,7 +78,7 @@ namespace CosmicShore.Engine.Networking
             };
             JsonNode lobby;
             try { lobby = await _lobby.CreateAsync(body); }
-            catch (UgsServiceException e) { throw UgsLobbyMapping.Map(e, inSession: false); }
+            catch (UgsServiceException e) { throw Fail(e, inSession: false); }
             var session = new UgsSession(this, UgsLobbyMapping.ToRecord(lobby), self, props, options.UseRelay);
             Register(session);
             return session;
@@ -90,7 +90,7 @@ namespace CosmicShore.Engine.Networking
             var props = Records(options?.PlayerProperties);
             JsonNode lobby;
             try { lobby = await _lobby.JoinByIdAsync(sessionId, new JsonObject { ["id"] = self, ["data"] = UgsLobbyMapping.PlayerData(props) }); }
-            catch (UgsServiceException e) { throw UgsLobbyMapping.Map(e, inSession: false); }
+            catch (UgsServiceException e) { throw Fail(e, inSession: false); }
             var rec = UgsLobbyMapping.ToRecord(lobby);
             bool networked = !string.IsNullOrEmpty(rec.RelayJoinCode);
             var session = new UgsSession(this, rec, self, props, networked);
@@ -119,7 +119,7 @@ namespace CosmicShore.Engine.Networking
                 filters.Add(new JsonObject { ["field"] = "S" + ((int)f.Field + 1), ["op"] = UgsLobbyMapping.Op(f.Operation), ["value"] = f.Value ?? "" });
             JsonNode reply;
             try { reply = await _lobby.QueryAsync(new JsonObject { ["count"] = 100, ["filter"] = filters }); }
-            catch (UgsServiceException e) { throw UgsLobbyMapping.Map(e, inSession: false); }
+            catch (UgsServiceException e) { throw Fail(e, inSession: false); }
             var list = new List<ISessionInfo>();
             foreach (var l in reply?["results"] as JsonArray ?? new JsonArray())
                 if (l != null && !((bool?)l["isLocked"] ?? false)) list.Add(new UgsSessionInfo(l));
@@ -127,6 +127,33 @@ namespace CosmicShore.Engine.Networking
         }
 
         // ── bookkeeping ─────────────────────────────────────────────
+
+        /// <summary>The last refusal or failure from UGS Lobby, for the diagnostics overlay; null while none.</summary>
+        public string LastProblem { get; private set; }
+
+        /// <summary>When the host last heartbeat a lobby successfully (UTC), or null.</summary>
+        public DateTime? LastHeartbeat { get; private set; }
+
+        /// <summary>One line per lobby this player is in, for the diagnostics overlay: code, role, seats, relay, properties.</summary>
+        public IReadOnlyList<string> DescribeSessions()
+        {
+            List<UgsSession> live;
+            lock (_live) live = _live.ToList();
+            return live.Select(s =>
+            {
+                var line = $"{s.Code ?? s.Id} · {(s.IsHost ? "host" : "member")} · {s.PlayerCount}/{s.MaxPlayers} players";
+                if (s.LastRecord?.RelayJoinCode is { Length: > 0 } code) line += " · relay " + code;
+                var props = s.Properties.Take(2).Select(kv => $"{kv.Key}={kv.Value.Value}").ToList();
+                if (props.Count > 0) line += " · " + string.Join(", ", props);
+                return line;
+            }).ToList();
+        }
+
+        internal Exception Fail(UgsServiceException e, bool inSession)
+        {
+            LastProblem = e.Message;
+            return UgsLobbyMapping.Map(e, inSession);
+        }
 
         internal UgsLobbyClient Lobby => _lobby;
 
@@ -139,8 +166,8 @@ namespace CosmicShore.Engine.Networking
             List<UgsSession> hosted;
             lock (_live) hosted = _live.Where(s => s.IsHost).ToList();
             foreach (var s in hosted)
-                try { _lobby.HeartbeatAsync(s.Id).GetAwaiter().GetResult(); }
-                catch (Exception) { } // the next refresh reports a lobby that is gone
+                try { _lobby.HeartbeatAsync(s.Id).GetAwaiter().GetResult(); LastHeartbeat = DateTime.UtcNow; }
+                catch (Exception e) { LastProblem = "heartbeat: " + e.Message; } // the next refresh reports a lobby that is gone
         }
 
         static Dictionary<string, PropRecord> Records(Dictionary<string, PlayerProperty> props) => SessionRules.ToRecords(props);
@@ -217,7 +244,7 @@ namespace CosmicShore.Engine.Networking
                 try { lobby = await _svc.Lobby.GetAsync(Id); }
                 catch (UgsServiceException e) when (e.Status is 404) { throw Gone(SessionError.SessionDeleted, $"Session '{Id}' is gone: {e.Message}"); }
                 catch (UgsServiceException e) when (e.Status is 403) { throw Gone(SessionError.NotInLobby, $"Not in session '{Id}': {e.Message}"); }
-                catch (UgsServiceException e) { throw UgsLobbyMapping.Map(e, inSession: true); }
+                catch (UgsServiceException e) { throw _svc.Fail(e, inSession: true); }
                 if (_closed) return;
                 var rec = UgsLobbyMapping.ToRecord(lobby);
                 // Removed by the host: the lobby no longer lists this player.
@@ -233,7 +260,7 @@ namespace CosmicShore.Engine.Networking
                 foreach (var gone in _savedKeys.Where(k => !props.ContainsKey(k))) data[gone] = null; // UGS removes a key sent as null
                 JsonNode lobby;
                 try { lobby = await _svc.Lobby.UpdatePlayerAsync(Id, _self, new JsonObject { ["data"] = data }); }
-                catch (UgsServiceException e) { throw UgsLobbyMapping.Map(e, inSession: true); }
+                catch (UgsServiceException e) { throw _svc.Fail(e, inSession: true); }
                 _savedKeys = new HashSet<string>(props.Keys);
                 if (lobby != null && !_closed) Apply(UgsLobbyMapping.ToRecord(lobby));
             }
@@ -259,7 +286,7 @@ namespace CosmicShore.Engine.Networking
             public async Task RemovePlayerAsync(string playerId)
             {
                 try { await _svc.Lobby.RemovePlayerAsync(Id, playerId); }
-                catch (UgsServiceException e) { throw UgsLobbyMapping.Map(e, inSession: true); }
+                catch (UgsServiceException e) { throw _svc.Fail(e, inSession: true); }
             }
 
             void CloseLocal()

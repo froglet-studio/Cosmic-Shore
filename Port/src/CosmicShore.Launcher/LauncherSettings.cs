@@ -62,6 +62,8 @@ namespace CosmicShore.Launcher
         /// Port/ProjectSettings/AmoebiusProject.json), else "amoebius".
         /// </summary>
         public string UgsEnvironment { get; set; } = "";
+        /// <summary>Games start with Amoebius's diagnostics overlay shown (F3 toggles it in any game).</summary>
+        public bool Diagnostics { get; set; }
         public bool MobileRenderPath { get; set; }
         public bool VerboseLogs { get; set; }
         public string Profile { get; set; } = "";
