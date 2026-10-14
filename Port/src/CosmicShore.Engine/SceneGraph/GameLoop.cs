@@ -159,6 +159,7 @@ namespace CosmicShore.Engine
             SynchronizationContext.SetSynchronizationContext(SyncContext);
             try
             {
+                FrameTimingManager.BeginFrame(); // the wall clock, whatever step the host passes
                 long mark = PhaseTiming ? System.Diagnostics.Stopwatch.GetTimestamp() : 0;
                 if (PhaseTiming) _allocMark = GC.GetAllocatedBytesForCurrentThread();
                 Time.Advance(deltaTime);
@@ -187,6 +188,7 @@ namespace CosmicShore.Engine
                 Scheduler.RunEndOfFrame();
                 FlushDestroyQueue();
                 if (PhaseTiming) { Lap(ref mark, "destroy"); TimedFrames++; }
+                FrameTimingManager.EndSimulation();
             }
             finally
             {
