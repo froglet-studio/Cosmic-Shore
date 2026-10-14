@@ -42,7 +42,9 @@ namespace CosmicShore.Launcher
         /// <param name="store">The studio db (jobs live in its <c>jobs</c> collection).</param>
         /// <param name="root">The studio checkout (where sync_job.py and git run), or null when there is none.</param>
         /// <param name="python">Python 3, or null (Sync then says it needs Python).</param>
-        /// <param name="rebuild">Refresh: rebuild the served studio from <c>origin/&lt;branch&gt;</c>; true when it now shows something new.</param>
+        /// <param name="rebuild">Refresh: rebuild the served studio from the ref the job fetched (sync_job.py's <c>ref</c>,
+        /// <c>refs/remotes/&lt;remote&gt;/&lt;branch&gt;</c>; the remote is whichever reaches froglet-studio/Cosmic-Shore, not
+        /// always origin); true when it now shows something new.</param>
         public StudioJobs(StudioStore store, Func<string?> root, Func<string?> python, Func<string, string?, bool>? rebuild = null, string git = "git")
         {
             _store = store; _root = root; _python = python; _rebuild = rebuild; _git = git;
@@ -159,11 +161,12 @@ namespace CosmicShore.Launcher
                 if (ok && kind == "refresh" && _rebuild != null && result["upToDate"] is JsonValue u && u.TryGetValue<bool>(out var up) && !up)
                 {
                     var target = args["branch"]!.GetValue<string>().Trim();
+                    var gitRef = FetchedRef(result, target);
                     try
                     {
-                        bool changed = _rebuild(target, result["pathSha"]?.ToString());
+                        bool changed = _rebuild(gitRef, result["pathSha"]?.ToString());
                         result["published"] = changed;
-                        log.Add(changed ? $"rebuilt the studio from origin/{target}" : "the studio already shows that commit");
+                        log.Add(changed ? $"rebuilt the studio from {gitRef}" : "the studio already shows that commit");
                     }
                     catch (Exception e) { log.Add("rebuild failed: " + e.Message); ok = false; }
                 }
@@ -175,6 +178,18 @@ namespace CosmicShore.Launcher
                 try { Write("failed"); } catch { }
             }
             finally { _one.Release(); }
+        }
+
+        /// <summary>
+        /// The ref a refresh rebuilds from: sync_job.py's <c>ref</c> when it names a remote-tracking ref of
+        /// <paramref name="branch"/>, else <c>origin/&lt;branch&gt;</c> (a sync_job.py from before it chose the remote).
+        /// </summary>
+        public static string FetchedRef(JsonObject result, string branch)
+        {
+            if (result["ref"] is JsonValue v && v.TryGetValue<string>(out var r) && r.StartsWith("refs/remotes/", StringComparison.Ordinal)
+                && r.EndsWith("/" + branch, StringComparison.Ordinal) && IsBranch(r["refs/remotes/".Length..]))
+                return r;
+            return "origin/" + branch;
         }
 
         static string? CurrentBranch(string git, string root)

@@ -22,7 +22,7 @@ namespace CosmicShore.Gameplay
     ///
     /// ── The geometry is SOLVED AT EDIT TIME ───────────────────────────────────────────────────
     /// Where the faces land is a property of two assets - the hull mesh in its bind pose and the
-    /// crystal mesh - so <b>FrogletTools > Vessels > Bake Crystal Hull Fusions</b> solves it once
+    /// crystal mesh - so <b>FrogletTools > Vessels > Wiring > Bake Crystal Hull Fusions</b> solves it once
     /// (<see cref="CrystalHullFusionGeometry.Solve"/>) and writes a
     /// <see cref="CrystalHullFusionBakeSO"/> holding the answer and the mesh to draw. With a current
     /// bake a pickup does no geometry at all: it matches faces to patches (a 60×60 assignment),
@@ -70,7 +70,7 @@ namespace CosmicShore.Gameplay
         public const int FaceSubdivisions = 3;
 
         /// <summary>The bake tool's menu path, named in every stale/missing-bake warning.</summary>
-        public const string BakeToolMenu = "FrogletTools > Vessels > Bake Crystal Hull Fusions";
+        public const string BakeToolMenu = "FrogletTools > Vessels > Wiring > Bake Crystal Hull Fusions";
 
         static readonly ProfilerMarker s_beginMarker = new("CrystalHullFusion.Begin");
         static readonly ProfilerMarker s_prewarmMarker = new("CrystalHullFusion.Prewarm");

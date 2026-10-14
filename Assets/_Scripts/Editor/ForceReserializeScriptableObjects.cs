@@ -2,10 +2,13 @@ using UnityEngine;
 using UnityEditor;
 using System.IO;
 using CosmicShore.Utility;
+using CosmicShore.Editor.Froglet;
 
 public class ForceReserializeScriptableObjects
 {
-    [MenuItem("FrogletTools/Legacy/Force Re-Serialize All ScriptableObjects")]
+    [MenuItem("FrogletTools/Utilities/Force Re-Serialize All ScriptableObjects", false, 221)]
+    [FrogletTool(FrogletToolCategory.Utilities, Importance = 2,
+        Description = "Re-save every ScriptableObject so serialized data matches the current scripts.")]
     public static void ReserializeAllScriptableObjects()
     {
         // Find all ScriptableObject asset GUIDs in the project

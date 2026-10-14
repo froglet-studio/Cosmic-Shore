@@ -3008,7 +3008,7 @@ namespace CosmicShore.UI
             if (!window)
             {
                 CSDebug.LogWarning("[ArcadeConfigModal] No WeeklyChallengeLeaderboardModal in the " +
-                                 "scene - wire one on this modal, or run FrogletTools > Interface " +
+                                 "scene - wire one on this modal, or run FrogletTools > UI " +
                                  "> Wire Weekly Challenge Leaderboard.");
                 return;
             }

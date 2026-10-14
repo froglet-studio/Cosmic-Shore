@@ -62,7 +62,7 @@ however correct it is** — the expense eats the window. Anything that depends o
 (here: two meshes) is a cache, built before it is needed.
 
 **The fourth cut moves it out of the game.** If the answer depends only on two ASSETS, the cheapest
-cache is an asset: **FrogletTools > Vessels > Bake Crystal Hull Fusions** solves it at edit time
+cache is an asset: **FrogletTools > Vessels > Wiring > Bake Crystal Hull Fusions** solves it at edit time
 and ships the answer (§4). The worker of the third cut stays only as the fallback for a missing or
 stale bake.
 
@@ -130,7 +130,7 @@ space: the skinned renderer, or a static hull's body (§12 "The hulls").
 
 ### The bake
 
-**FrogletTools > Vessels > Bake Crystal Hull Fusions** (`Editor/CrystalHullFusionBaker.cs`, a
+**FrogletTools > Vessels > Wiring > Bake Crystal Hull Fusions** (`Editor/CrystalHullFusionBaker.cs`, a
 keeper WRITER) runs `Solve` for every config entry and writes
 `Assets/_SO_Assets/CrystalHullFusion/<Vessel>_<Element>_HullFusionBake.asset`
 (`CrystalHullFusionBakeSO`), pointing the entry's `bake` at it. The asset holds:
@@ -201,7 +201,7 @@ is prefixed `[CrystalMorph] [HullFusion]`.
 | File | Role |
 |---|---|
 | `Controller/Environment/Crystals/CrystalHullFusion.cs` | runtime: bake or worker fallback, per-pickup match, per-frame pose, material; the capture/resolve/mesh helpers the baker shares |
-| `Editor/CrystalHullFusionBaker.cs` | **FrogletTools > Vessels > Bake Crystal Hull Fusions** — solve at edit time, write the bake, Validate & Push |
+| `Editor/CrystalHullFusionBaker.cs` | **FrogletTools > Vessels > Wiring > Bake Crystal Hull Fusions** — solve at edit time, write the bake, Validate & Push |
 | `ScriptableObjects/CrystalHullFusionBakeSO.cs` | the baked solution + template mesh + fingerprint |
 | `_SO_Assets/CrystalHullFusion/<Vessel>_<Element>_HullFusionBake.asset` + `<Element>_FusionTemplate.asset` | the tool's output — **not on this branch until the tool has been run and its output pushed** (only Squirrel × Charge's schema-1 bake is, and it now reads stale) |
 | `Tests/Editor/CrystalHullFusionBakeTests.cs` | shipped bakes current (stale fails, missing inconclusive); every entry resolves to a readable hull and crystal; the Rhino is a multi-part static rig; the solve is deterministic |
@@ -281,7 +281,7 @@ areas. Solved at edit time, exactness costs nothing anyone waits for.
 
 ### In-editor verification
 
-0. **Bake first:** **FrogletTools > Vessels > Bake Crystal Hull Fusions** → *Bake all*. Expect all
+0. **Bake first:** **FrogletTools > Vessels > Wiring > Bake Crystal Hull Fusions** → *Bake all*. Expect all
    48 rows CURRENT — Charge `60 × 31`, Mass `60 × 19`, Space `60 × 25`, Time `30 × 25` — each with
    `0 of N off the skin` (or close), and four `<Element>_FusionTemplate.asset` files. Then
    **Validate & Push** in the same window, which commits only the bakes, the templates and the

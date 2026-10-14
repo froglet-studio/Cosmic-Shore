@@ -28,7 +28,7 @@ namespace CosmicShore.Gameplay
     /// static reading of a prefab or a scene can answer, only a rendered frame. An unconditional
     /// warning saying so would be a permanent false positive the day the real defect is fixed, so
     /// the guidance rides the happy-path line instead (<see cref="Drawing"/>) and names the tool:
-    /// FrogletTools ▸ Diagnostics ▸ Report On-Screen UI, in play mode. Enabling this one channel
+    /// FrogletTools ▸ UI ▸ Report On-Screen UI, in play mode. Enabling this one channel
     /// is therefore the whole procedure for separating "never ticked" from "covered".</para>
     /// </summary>
     public static class SniperScopeDiagnostics
@@ -148,7 +148,7 @@ namespace CosmicShore.Gameplay
                 $"The RING is the shot's true angular size and is legitimately a few pixels wide; " +
                 $"the MARK is the four posts around it, which is what the pilot can actually see. " +
                 $"If nothing is visible where these say it is, they are drawing and being covered " +
-                $"— run FrogletTools > Diagnostics > Report On-Screen UI in play mode.");
+                $"— run FrogletTools > UI > Report On-Screen UI in play mode.");
         }
 
         static string Explain(Reason reason, string detail) => reason switch

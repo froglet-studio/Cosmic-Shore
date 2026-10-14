@@ -20,7 +20,7 @@ now the reference the procedural wave is generated from and tested against.
 | Generator + source proof | `python3 Tools/Build/author_time_crystal_flip_wave.py` (`--check`, `--self-test`) |
 | Tests | `Assets/_Scripts/Tests/Editor/CrystalFlipWaveTests.cs` — including **FBX parity** |
 | Consumers | `CrystalTime.prefab` and its variant `CrystalTimeDandruff.prefab` (`ElementalCrystalSet.time`); the omni `Crystal.prefab`'s 30 rhombi (§5). `OldCrystalTime.prefab` is legacy and still tumbles. |
-| Benchmark | `FrogletTools > Performance > Crystal Flip Wave Benchmark` (§7) |
+| Benchmark | `FrogletTools > Performance > Benchmarks > Crystal Flip Wave` (§7) |
 
 ## 1. What the take actually is — measured, not described
 
@@ -164,7 +164,7 @@ so the reset is invisible). The Time crystal has no cadence and keeps its own lo
 
 ## 7. Benchmark: procedural vs the legacy Animator
 
-`FrogletTools > Performance > Crystal Flip Wave Benchmark` spawns N copies of `CrystalTime.prefab` and
+`FrogletTools > Performance > Benchmarks > Crystal Flip Wave` spawns N copies of `CrystalTime.prefab` and
 plays either the **procedural** wave (what ships) or the **legacy** setup it replaced, rebuilt on the same
 prefab: an Animator in `AlwaysAnimate` (the old prefab's culling mode) playing the FBX take. The clip runs
 through a PlayableGraph because the old controller asset was deleted; a one-state controller costs about

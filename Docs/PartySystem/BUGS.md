@@ -1326,7 +1326,7 @@ followed "playing a game" (a game is what you leave), and why the reverted idle-
   in-scene object is legitimately un-spawned before the host starts). It runs immediately
   before each of the four calls that start a NetworkManager: party session create, party
   session join, the offline `StartHost`, and the game-scene matchmaking path.
-- `FrogletTools ▸ Validation ▸ Audit Stray Network Objects` reports the authoring combination
+- `FrogletTools ▸ Utilities ▸ Audit Stray Network Objects` reports the authoring combination
   (a fauna config whose prefab carries a NetworkObject with replication off) so the guard never
   has to fire.
 

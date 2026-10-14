@@ -185,11 +185,11 @@ namespace CosmicShore.Gameplay
 
         /// <summary>
         /// When true, BeginBatchProcessing() is a no-op - forces Physics OnTriggerEnter
-        /// for all collisions. Used by AOEBenchmarkOverlay for A/B comparison.
+        /// for all collisions. An A/B switch for benchmark harnesses; never set in a normal session.
         /// </summary>
         public static bool ForceLegacyPhysics { get; set; }
 
-        // A/B switch owned by the benchmark overlay; must not survive into a normal session.
+        // A/B switch for benchmark harnesses; must not survive into a normal session.
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
         static void ResetForceLegacy()
         {
