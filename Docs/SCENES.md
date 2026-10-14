@@ -50,7 +50,7 @@ resolve). IDs 30 and 32 stay in the enum and no menu reaches them; `TrainingAuto
 | Scene | Path | Game Mode | Controller |
 |---|---|---|---|
 | ~~MinigameDuelForTheCell~~ | retired 2026-09 | `DuelForTheCell (8)` | replaced by `MinigameDuelForCellMultiplayer_Gameplay`, itself retired 2026-10 (Brood Rush replaced the duel) |
-| ~~MinigameWildlifeBlitz~~ | retired 2026-09 | `WildlifeBlitz (26)` | replaced by `MinigameWildlifeBlitzMultuplayerCoOp` |
+| ~~MinigameWildlifeBlitz~~ | retired 2026-09 | `WildlifeBlitz (26)` | scene deleted; its co-op successor `MinigameWildlifeBlitzMultuplayerCoOp` was itself deleted 2026-10 (BH-5.7) |
 
 ### Multiplayer Game Scenes
 
@@ -59,7 +59,7 @@ resolve). IDs 30 and 32 stay in the enum and no menu reaches them; `TrainingAuto
 | **MinigameSkimRace** | `_Scenes/Multiplayer Scenes/` | `SkimRace (33)` | `SkimRaceController` |
 | **MinigameScurryMultiplayer_Gameplay** | `_Scenes/Multiplayer Scenes/` | `Scurry (35)` | `ScurryController` |
 | **MinigameJoust_Gameplay** | `_Scenes/Multiplayer Scenes/` | `Joust (34)` | `JoustController` |
-| **MinigameWildlifeBlitzMultuplayerCoOp** | `_Scenes/Multiplayer Scenes/` | `CoOpWildlifeBlitz (32)` | `OnlineDuelForTheCellController` (the scene was forked from the duel; `CoOpWildlifeBlitzMiniGame` is in no scene). **Out of the build since 2026-10-13** (Garrett's call, DESIGN_CALLS 12.3): the scene stays on disk, its entry is gone from `EditorBuildSettings.asset` and its card is in `_SO_Assets/Games/_Archive/`. |
+| ~~MinigameWildlifeBlitzMultuplayerCoOp~~ | deleted 2026-10 (BH-5.5 unlisted it, BH-5.7 deleted scene + controller; bleeding-edge separately took it out of the build 2026-10-13, Garrett's call, DESIGN_CALLS 12.3) | `CoOpWildlifeBlitz (32)` | *(controller deleted; its card is archived in `_SO_Assets/Games/_Archive/`)* |
 | **MinigameAstroLeague** | `_Scenes/Multiplayer Scenes/` | `AstroLeague (37)` | `AstroLeagueController` |
 | **MinigameBroodRush** | `_Scenes/Multiplayer Scenes/` | `BroodRush (38)` | `BroodRushController` |
 | **MinigameRampage** | `_Scenes/Multiplayer Scenes/` | `Rampage (2)` | `RampageController` |
@@ -232,16 +232,13 @@ MiniGameControllerBase (abstract, NetworkBehaviour)
 ├── SinglePlayerMiniGameControllerBase (abstract)
 │   │   Start(): subscribe to SOAP events, InitializeGame(), InvokeClientReady()
 │   │
-│   ├── SinglePlayerSlipnStrideController  — procedural course with intensity scaling
-│   ├── SinglePlayerWildlifeBlitzController — blitz scoring with wildlife turn monitor
-│   └── WildlifeBlitzMiniGame             — minimal variant of wildlife blitz
+│   └── SinglePlayerWildlifeBlitzController — blitz scoring with wildlife turn monitor
 │
 └── MultiplayerMiniGameControllerBase (abstract, NetworkBehaviour)
     │   OnNetworkSpawn(): server-authoritative setup + InitDelayMs (1000ms)
     │   Server-driven turn/round/game flow via ClientRpc synchronization
     │   Replay + Rematch systems via ServerRpc/ClientRpc
     │
-    ├── CoOpWildlifeBlitzMiniGame    — own ready-sync (not domain-based)
     │
     └── MultiplayerDomainGamesController
         │   Ready synchronization: all players must click Ready before countdown
@@ -277,7 +274,7 @@ MiniGameControllerBase (abstract, NetworkBehaviour)
 | 10 | `CellularBrawl` | SP Competitive | Shared | Scene-configured |
 | 11 | `Denial` | SP Arcade | Shared | Scene-configured |
 | 12 | `CatNMouse` | SP Arcade | Shared | Scene-configured |
-| 13 | `SlipNStride` | SP Arcade | Shared | `SinglePlayerSlipnStrideController` |
+| 13 | `SlipNStride` | SP Arcade | Shared | *(controller deleted 2026-10, BH-5.6)* |
 | 14 | `PumpNDump` | SP Arcade | Shared | Scene-configured |
 | 15 | `MasterExploder` | SP Arcade | Shared | Scene-configured |
 | 16 | `Soar` | SP Arcade | Shared | Scene-configured |
@@ -295,7 +292,7 @@ MiniGameControllerBase (abstract, NetworkBehaviour)
 | 28 | *(retired 2026-10: `MultiplayerFreestyle`, reserved)* | | | |
 | 29 | *(retired 2026-10: `OnlineDuelForTheCell`, reserved; Brood Rush replaced it)* | | | |
 | 30 | `Multiplayer2v2CoOpVsAI` | MP | ArcadeGameMultiplayer2v2CoOpVsAI | Variant |
-| 32 | `CoOpWildlifeBlitz` | MP | MinigameWildlifeBlitzMultuplayerCoOp | `CoOpWildlifeBlitzMiniGame` |
+| 32 | `CoOpWildlifeBlitz` | MP | *(scene deleted 2026-10, BH-5.7)* | *(controller deleted)* |
 | 33 | `SkimRace` | MP Racing | MinigameSkimRace | `SkimRaceController` |
 | 34 | `Joust` | MP | MinigameJoust_Gameplay | `JoustController` |
 | 35 | `Scurry` | MP | MinigameScurryMultiplayer_Gameplay | `ScurryController` |
@@ -384,7 +381,7 @@ Blitz-mode wildlife collection with dedicated score tracking and turn monitoring
 
 ### SlipNStride (Single-Player)
 
-**Controller**: `SinglePlayerSlipnStrideController`
+**Controller**: *deleted 2026-10 (BH-5.6, `SinglePlayerSlipnStrideController`); the mode has no controller on this branch*
 **Base**: `SinglePlayerMiniGameControllerBase`
 
 Procedurally generated trail-based course with intensity-driven difficulty scaling. Ported from the deprecated `CourseMiniGame`.
@@ -691,7 +688,7 @@ Game scene names are stored in `SO_ArcadeGame.SceneName` assets, not in `SceneNa
 | Rampage | `RampageController.cs` | `_Scripts/Controller/Arcade/` |
 | Wildlife Blitz (MP) | `CoOpWildlifeBlitzMiniGame.cs` | `_Scripts/Controller/Arcade/` |
 | Wildlife Blitz (SP) | `SinglePlayerWildlifeBlitzController.cs` | `_Scripts/Controller/Arcade/` |
-| SlipNStride | `SinglePlayerSlipnStrideController.cs` | `_Scripts/Controller/Arcade/` |
+| SlipNStride | *(controller deleted 2026-10, BH-5.6)* | — |
 | Countdown timer | `CountdownTimer.cs` | `_Scripts/Controller/Arcade/` |
 
 ### Game Data & Configuration

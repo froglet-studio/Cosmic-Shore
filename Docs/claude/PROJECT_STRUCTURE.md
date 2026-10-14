@@ -87,7 +87,7 @@ player). **The drawer is the load-bearing half**: a `[RequireInterface]` field w
 degrades *silently* into an object field that accepts anything, which compiles, looks correct in the
 inspector, and throws on the cast at runtime. `Docs/THIRD_PARTY_REGISTER.md` §2, §6.
 
-Note: `_Scripts/Game/` is **not vestigial — do not delete it.** This line previously said it held "only non-code assets" and that all C# had been reorganised out of it; measured, it holds **3 `.cs` files, two of them live** (`Environment/CapsuleMembrane.cs` → `CapsuleMembrane.prefab`, `Environment/CapsuleMembraneAnimationSO.cs` → `CapsuleMembraneAnimation.asset`; `IO/_Input Mapping/InputActionsAsset.cs` is the generated wrapper and has no serialized referrer) **plus two assets wired into shipped vessels** — `Vessel/Animation/JetMaterial.mat` → `Rhino.prefab` and `Vessel/TrailPassives/ScoutTrailPrismConfig.asset` → `Manta.prefab`. It also still holds the compute shaders, input action mappings and `PRISM_PERFORMANCE_AUDIT.md`. *"Vestigial" in a folder description invites exactly the delete a reference check would have prevented* — `Docs/LAUNCH_BLOCKER_INDEX.md` §C6.
+Note: `_Scripts/Game/` is **not vestigial — do not delete it.** This line previously said it held "only non-code assets" and that all C# had been reorganised out of it; measured, it holds **3 `.cs` files, two of them live** (`Environment/CapsuleMembrane.cs` → `CapsuleMembrane.prefab`, `Environment/CapsuleMembraneAnimationSO.cs` → `CapsuleMembraneAnimation.asset`; `IO/_Input Mapping/InputActionsAsset.cs` is the generated wrapper and has no serialized referrer) **plus two assets wired into shipped vessels** — `Vessel/Animation/JetMaterial.mat` → `Rhino.prefab` and `Vessel/TrailPassives/ScoutTrailPrismConfig.asset` → `Manta.prefab`. It also still holds the compute shaders and input action mappings (the `PRISM_PERFORMANCE_AUDIT.md` it used to hold was deleted 2026-09-22 as obsolete). *"Vestigial" in a folder description invites exactly the delete a reference check would have prevented* — `Docs/LAUNCH_BLOCKER_INDEX.md` §C6.
 
 ### Assembly Definitions
 
@@ -179,13 +179,13 @@ See `Docs/SCENES.md` for the full scene and game mode reference. Summary below.
 
 **None ship.** `MinigameDuelForTheCell` and `MinigameWildlifeBlitz` were retired in 2026-09 — they had
 been replaced by `MinigameDuelForCellMultiplayer_Gameplay` (`OnlineDuelForTheCell (29)`, itself retired 2026-10) and
-`MinigameWildlifeBlitzMultuplayerCoOp` (`CoOpWildlifeBlitz (32)`), and every ability in them was
+`MinigameWildlifeBlitzMultuplayerCoOp` (`CoOpWildlifeBlitz (32)`; itself deleted 2026-10, BH-5.7), and every ability in them was
 dead (their non-networked Player fails `IsLocalUser`). The `GameModes` members 8 and 26 are KEPT
 (ids are never reused; cloud progress keys on the names). The single-player Wildlife Blitz stack
 (`SinglePlayerWildlifeBlitzController` and friends, `PlayerSpawner`/`VesselSpawner`) survives only
 because `BenchmarkStressTest.unity` — which Settings ▸ Run Benchmark launches — was cloned from it;
-note that scene is NOT in Build Settings. The `ArcadeGameWildlifeBlitz` card survives only because
-the (dead) hangar training entries for Rhino and Sparrow point at it — it is in no game list.
+note that scene is NOT in Build Settings. The `ArcadeGameWildlifeBlitz` card and the hangar training
+entries that pointed at it were deleted 2026-10 (BH-5.4).
 
 #### Multiplayer Game Scenes
 
@@ -194,7 +194,6 @@ the (dead) hangar training entries for Rhino and Sparrow point at it — it is i
 | `MinigameSkimRace` | `SkimRace (33)` | `SkimRaceController` |
 | `MinigameScurryMultiplayer_Gameplay` | `Scurry (35)` | `ScurryController` |
 | `MinigameJoust_Gameplay` | `Joust (34)` | `JoustController` |
-| `MinigameWildlifeBlitzMultuplayerCoOp` | `CoOpWildlifeBlitz (32)` | `OnlineDuelForTheCellController` (forked from the duel scene) |
 | `MinigameAstroLeague` | `AstroLeague (36)` | `AstroLeagueController` |
 | `MinigameBroodRush` | `BroodRush (38)` | `BroodRushController` |
 | `MinigameRampage` | `Rampage (2)` | `RampageController` |

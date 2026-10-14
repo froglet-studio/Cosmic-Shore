@@ -25,10 +25,10 @@ MonoBehaviour:
     Floor: 1
   expandSeconds: 0.9
   fadeSeconds: 0.5
-  bandWidth: 0.12
-  bend: 0.025
-  chromaticSplit: 0.12
-  rimGlow: 1.6
+  bandWidth: 0.08
+  bend: 0.008
+  chromaticSplit: 0.03
+  rimGlow: 0.15
   petalsPerElement: 1
   shedSpeed: 8
   siphonOnChargeUpgrade: 1

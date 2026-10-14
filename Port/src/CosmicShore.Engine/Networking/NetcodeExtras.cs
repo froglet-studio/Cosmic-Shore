@@ -219,6 +219,13 @@ namespace CosmicShore.Engine.Networking.Components
         public bool UseQuaternionSynchronization;
         public bool UseHalfFloatPrecision;
         public bool SlerpPosition;
+        /// <summary>
+        /// Send pose changes on the unreliable channel (serialized, as the original's field). Each pose
+        /// carries the network time it was taken at, so a late or reordered one is dropped; a teleport
+        /// still goes reliably, and once the transform settles its last pose is sent reliably too
+        /// (a lost final update must not leave it stuck). Four fauna prefabs opt in.
+        /// </summary>
+        public bool UseUnreliableDeltas;
 
         public bool CanCommitToTransform => OnIsServerAuthoritative() ? IsServer : IsOwner;
         public bool IsServerAuthoritative() => OnIsServerAuthoritative();
@@ -258,6 +265,38 @@ namespace CosmicShore.Engine.Networking.Components
             _sentPos = p; _sentRot = q; _sentScale = s;
             return true;
         }
+
+        [NonSerialized] double _lastStamp = double.MinValue, _lastSendTime;
+        [NonSerialized] bool _lastSendUnreliable;
+
+        /// <summary>Keeps only poses newer than the newest applied (a teleport always applies). False = drop it.</summary>
+        internal bool PortAcceptStamp(double stamp, bool teleport)
+        {
+            if (!teleport && stamp <= _lastStamp) { PortStale++; return false; }
+            _lastStamp = Math.Max(_lastStamp, stamp);
+            return true;
+        }
+
+        internal void PortMarkSent(double now, bool unreliable)
+        {
+            _lastSendTime = now;
+            _lastSendUnreliable = unreliable;
+        }
+
+        /// <summary>
+        /// True once, when the last pose went unreliably and the transform has not moved for a quarter
+        /// second: its settled pose is then sent reliably, so a lost last datagram cannot strand it.
+        /// </summary>
+        internal bool PortNeedsKeyframe(double now, out Vector3 p, out Quaternion q, out Vector3 s)
+        {
+            p = _sentPos; q = _sentRot; s = _sentScale;
+            if (!_lastSendUnreliable || now - _lastSendTime < 0.25) return false;
+            _lastSendUnreliable = false;
+            return true;
+        }
+
+        /// <summary>Diagnostics: stamped poses dropped because a newer one was already applied.</summary>
+        public int PortStale { get; private set; }
 
         /// <summary>Diagnostics: poses received / sent since spawn.</summary>
         public int PortReceived { get; private set; }

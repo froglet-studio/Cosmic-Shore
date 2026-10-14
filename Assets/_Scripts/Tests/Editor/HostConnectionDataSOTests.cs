@@ -2,6 +2,7 @@
 using NUnit.Framework;
 using UnityEngine;
 using CosmicShore.Utility;
+using CosmicShore.ScriptableObjects;
 
 namespace CosmicShore.Tests
 {
@@ -179,26 +180,31 @@ namespace CosmicShore.Tests
         #region Party slots
 
         [Test]
-        public void MaxPartySlots_DefaultIsTransportCapacity()
+        public void MaxPartySlots_IsFour()
         {
-            // Capacity, not the game's party size: one spare seat of headroom above the
-            // displayed four, so a transient double-count in the polled member list cannot
-            // throw the fourth invite out as "party full".
-            Assert.AreEqual(6, _data.MaxPartySlots);
+            // ONE party size: what players see, what peers publish, and the party session's
+            // seat count - so UGS itself refuses a fifth (Docs/PartySystem/BUGS.md B25).
+            Assert.AreEqual(4, _data.MaxPartySlots);
         }
 
         [Test]
-        public void PartyDisplaySlots_DefaultIsFour()
+        public void HasOpenSlots_CountsEachPlayerOnce()
         {
-            // What players SEE and what peers publish - a party is four, always.
-            Assert.AreEqual(4, _data.PartyDisplaySlots);
-        }
+            // The polled roster can briefly carry one player twice on a join or leave. Three
+            // real players plus one duplicated row is still a party with a free seat.
+            var members = ScriptableObject.CreateInstance<ScriptableListPartyPlayerData>();
+            _data.PartyMembers = members;
+            members.Add(new PartyPlayerData("p1", "Pilot1", 1));
+            members.Add(new PartyPlayerData("p2", "Pilot2", 2));
+            members.Add(new PartyPlayerData("p3", "Pilot3", 3));
+            members.Add(new PartyPlayerData("p3", "Pilot3", 3));
 
-        [Test]
-        public void PartyDisplaySlots_NeverExceedsCapacity()
-        {
-            // Display must never promise a seat the session cannot hold.
-            Assert.LessOrEqual(_data.PartyDisplaySlots, _data.MaxPartySlots);
+            Assert.AreEqual(3, _data.DistinctPartyMemberCount);
+            Assert.IsTrue(_data.HasOpenSlots, "A duplicated row must not read as a full party.");
+
+            members.Add(new PartyPlayerData("p4", "Pilot4", 4));
+            Assert.IsFalse(_data.HasOpenSlots, "Four distinct players fill the party.");
+            Object.DestroyImmediate(members);
         }
 
         #endregion

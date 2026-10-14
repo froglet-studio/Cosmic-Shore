@@ -50,5 +50,34 @@ namespace CosmicShore.Gameplay
             course = new SkimRaceCourse(pts, nrm, rot, half);
             return true;
         }
+
+        /// <summary>
+        /// The live map's fingerprint for <paramref name="intensity"/> (<see cref="SkimRaceTrackFingerprint"/>),
+        /// read from the three components the race itself reads: the track's path and curve setting
+        /// (<see cref="SpawnableWaypointTrack"/>), the laps (<see cref="CrystalCollisionTurnMonitor"/>)
+        /// and the crystal anchors (<see cref="CrystalManager"/>). Authored data only, so it is the same
+        /// before and after the track is spawned. <paramref name="sceneHandle"/> names the scene load the
+        /// track belongs to (one per race). False when the scene does not carry all three, or has no path
+        /// for that intensity - then nothing can be said about the map.
+        /// </summary>
+        public static bool TryFingerprintFromScene(int intensity, out string fingerprint, out int sceneHandle)
+        {
+            fingerprint = null;
+            sceneHandle = 0;
+            var track = Object.FindAnyObjectByType<SpawnableWaypointTrack>(FindObjectsInactive.Include);
+            var monitor = Object.FindAnyObjectByType<CrystalCollisionTurnMonitor>(FindObjectsInactive.Include);
+            var crystals = Object.FindAnyObjectByType<CrystalManager>(FindObjectsInactive.Include);
+            if (track == null || monitor == null || crystals == null) return false;
+
+            int index = intensity - 1;
+            if (track.waypoints == null || index < 0 || index >= track.waypoints.Count) return false;
+            var path = track.waypoints[index]?.positions;
+            if (path == null || path.Count < 2) return false;
+
+            fingerprint = SkimRaceTrackFingerprint.Compute(path, track.UsesSplineFor(intensity),
+                monitor.ResolveLaps(intensity), crystals.AnchorsForIntensity(intensity));
+            sceneHandle = track.gameObject.scene.handle;
+            return true;
+        }
     }
 }

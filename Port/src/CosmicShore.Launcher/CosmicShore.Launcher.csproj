@@ -92,5 +92,7 @@
   <ItemGroup>
     <Compile Include="../Shared/AmoebiusTracks.cs" Link="Shared/AmoebiusTracks.cs" />
     <Compile Include="../Shared/AmoebiusBoard.cs" Link="Shared/AmoebiusBoard.cs" />
+    <Compile Include="../Shared/MultiplayerRun.cs" Link="Shared/MultiplayerRun.cs" />
+    <Compile Include="../Shared/Workspace/*.cs" Link="Shared/Workspace/%(Filename)%(Extension)" />
   </ItemGroup>
 </Project>

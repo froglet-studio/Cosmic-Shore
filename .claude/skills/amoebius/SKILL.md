@@ -21,22 +21,28 @@ checklist.
    and audio; `amoebius_board` the open bugs and tasks. Suggest what you find but won't fix now with
    `amoebius_board_suggest`, always with a `criterion`: the check that will prove it done. A card's
    "done when" is its acceptance test: run it and show the result before calling the work done.
-5. **Inspect, don't guess.** `game_find` / `game_hierarchy` to locate objects, `game_get` to read
+5. **Multiplayer: several players at once.** `net_players action=start players=N` (1-4, a party
+   is four) starts them over one session folder; `net_input` / `net_command` drive any of them,
+   `net_sim` gives each a bad line (latency, loss, a pulled cable), `net_fault` breaks the session
+   service, `net_stats` reads traffic and RTT. `relay=local` sends them through Froglet's relay
+   server as an internet game would; `relay=ugs` signs them in to the game's LIVE UGS project, so
+   only when the owner asks. `Docs/MULTIPLAYER_START_HERE.md` first, then `Port/docs/MULTIPLAYER.md`.
+6. **Inspect, don't guess.** `game_find` / `game_hierarchy` to locate objects, `game_get` to read
    live fields, `game_ui_at X,Y` for "what is that on screen", `game_dump_ui` for layout and
    anchors, `game_logs` for errors.
-6. **Data, models and editor tools without Unity.** `asset_datasets` / `asset_dataset` read the
+7. **Data, models and editor tools without Unity.** `asset_datasets` / `asset_dataset` read the
    ScriptableObject data sets (fields with Unity's labels, ranges, enums, references, stale keys);
    change one with `cs-asset set <file> &<fileId> <path> <value>`. `asset_model` and
    `asset_model_preview` show an FBX as Unity imports it, with a picture. `asset_froglet_tools`
    lists the FrogletTools with their source - read a tool's source before doing its job. Scene and
    hierarchy edits go through `cs-asset` (create, add, delete, overrides, apply), never by hand.
-7. **Fix in the right place.** Engine gaps in `Port/src`; gameplay bugs in `Assets/_Scripts` on a
+8. **Fix in the right place.** Engine gaps in `Port/src`; gameplay bugs in `Assets/_Scripts` on a
    separate Unity PR. Never edit `obj/live-src` (it is regenerated); errors there already name the
    original `Assets/` file and line. Treat a `AMOEBIUS001` warning (an RPC Amoebius cannot intercept)
    as a bug.
-8. **Before committing**: `engine_test`, then `unity_isolation_check` - the port must not change
+9. **Before committing**: `engine_test`, then `unity_isolation_check` - the port must not change
    anything Unity reads. `game_stop` when done.
-9. **UI bugs: test at the user's size, not the reference size.** The launcher opens the game at
+10. **UI bugs: test at the user's size, not the reference size.** The launcher opens the game at
    1600x900, and windows get resized. At 1920x1080 (the canvases' reference resolution) the scale
    factor is exactly 1, so scale- and resize-dependent layout bugs disappear. Reproduce at
    `game_start` size 1600x900, then `resize 1280x720` through the control port, before you call a

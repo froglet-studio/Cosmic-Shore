@@ -22,7 +22,7 @@ MonoBehaviour:
   releaseSpeed: 0.75
   maxSubsteps: 8
   maxBodies: 6000
-  maxBlackHoles: 4
+  maxBlackHoles: 16
   admissionInterval: 0.1
   pullVessels: 1
   vesselPullScale: 1
@@ -34,13 +34,27 @@ MonoBehaviour:
   warpReachMultiplier: 6
   warpEaseSeconds: 0.5
   lensEnabled: 1
+  shadowSize: 2.6
+  lensStrength: 1
   lensRadiusMultiplier: 30
   lensFadeStart: 0.55
-  lensSteps: 128
-  lensSkyResolution: 1024
-  lensSkyFacesPerFrame: 1
+  whiteLensStrength: 1
+  whiteCoreSize: 2.6
   whiteCoreBrightness: 4
   whiteCoreSkyMix: 0.8
+  photonRingGlow: 0.55
+  photonRingWidth: 0.06
+  whInFrom: 700
+  whOutSpeed: 450
+  whOutFade: 1.6
+  shellBend: 6
+  gwAmp: 12
+  gwSpeed: 120
+  gwPeriod: 0.35
+  gwRingdown: 1
+  gwPrism: 0.6
+  gwShake: 1
+  gwGlow: 1
   spawnStrength: 10
   spawnHorizonRadius: 0
   spawnAheadOfCamera: 1

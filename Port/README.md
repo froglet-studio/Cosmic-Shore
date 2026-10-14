@@ -4,6 +4,12 @@ A ground-up replication of Cosmic Shore onto a stack wholly owned by Froglet Inc
 no Unity, no editor-bound tooling, no dependency that blocks a fully autonomous,
 headless develop/build/test loop.
 
+**Name.** The engine is **Amoebius** (renamed from Prisma on 2026-10-09). The code followed on
+2026-10-12 (`Amoebius.exe`, `Amoebius-Windows.zip`, `Library/Amoebius`, the `AMOEBIUS_*` variables, the
+`amoebius_*` MCP tools, the `/amoebius` skill, the `amoebius-*` workflows, `AmoebiusBoard`,
+`AmoebiusTracks`, `AMOEBIUS001`); existing installs keep working, and the legacy `Prisma*` / `PRISMA_*`
+settings and data are still read. `CLAUDE.md` lists the few names that still carry the old one.
+
 **Just want to play a branch?** Unzip `dist/Amoebius-Windows.zip` and run
 `Amoebius.exe`: pick a branch, press START GAME. See `docs/LAUNCHER.md`.
 

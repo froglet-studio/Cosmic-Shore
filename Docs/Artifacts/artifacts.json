@@ -1,0 +1,39 @@
+{
+  "comment": "Amoebius's artifact library. Its VESSEL STUDIO page lists every entry (the Vessel Studio first) and opens each entry page from the workspace. Written by Tools/Build/amoebius_artifacts.py (the /amoebius-artifact skill) or by Amoebius's IMPORT FILE; never by hand. Docs/Artifacts/README.md.",
+  "artifacts": [
+    {
+      "id": "vessel-studio",
+      "title": "Vessel Studio",
+      "url": "https://claude.ai/artifact/3igBJJbNvJjsfJoBJnAMPa",
+      "dir": "Docs/Studios/VesselStudio",
+      "entry": "index.html",
+      "group": "Vessel Studio",
+      "summary": "Every vessel and its AI, flown, watched and decided on before the game changes: the hub, the Squirrel and Stoat studios, the studio agent and the Sync panel. The repo pages are the source (/vessel-studio D12); an import only brings back what a publish changed.",
+      "unwrap": true,
+      "strip": [
+        "<script src=\"sync.js\"></script>"
+      ],
+      "skip": [
+        "build.json"
+      ],
+      "publishedFrom": {
+        "branch": "Ys-bleeding-edge",
+        "sha": "f4c18e9a079795e421f6996495819a8dd58d6328",
+        "subject": "feat(vessel-studio): game domain colours everywhere, and a hook that recommends the studio"
+      },
+      "files": {
+        "ai_race_panel.js": "ff96f93b87b22e5647bf724265a269aa0021c8d00f1ee40671e1ab341d1547fc",
+        "index.html": "886002017c850b836675ed289b7526466037556e117218524b13099d7a5f2ce4",
+        "squirrel.html": "f139bc0a4075b42a3520bcea2a98ea678a257428040bb5d598075e18971df8d5",
+        "stoat.html": "caba95b2fe208220631cd5155f4e752ba91ac71dc0ff2e650aafe1c14554910a",
+        "studio-domains.js": "db1678842bc6b7796e082338b6dd805f75d215c7fc35917da7dcb4efb35fb8db",
+        "studio-ide.js": "17e8713dc8e2a371099eb9fd60ea02e8f56d73fa2e73c9dac988e2723a7e23c4",
+        "studio-look.js": "813fbdd9c7efbc09255a9285682dee91fca7a9eff9111735d73c0587954ac47a",
+        "studios.json": "ea7e35f87334dc07dee4f712806cc6a5b8592caa2ccbca33c12c859850b383b8",
+        "sync.js": "43aa82724bf160c7847ef25efc18cf0a451c5d895ef1c4771e8702549af00ab4"
+      },
+      "version": "1791589285-639e",
+      "importedAt": "2026-10-09"
+    }
+  ]
+}

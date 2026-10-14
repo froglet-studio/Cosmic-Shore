@@ -862,6 +862,33 @@ same kit. The scene's `maxPlausibleSpeed` is 1400 (the inherited 400 rejects a T
 `MinigameDogFight` clone running `DogFightController` / `DogFightPointTurnMonitor` in the Boneyard
 (prisms to nuke, an opponent to shove, the cannon's shockwaves to ride).
 
+`Slingshot(64)` is the **Stoat-only circuit race** — Redline's shape (`GateRaceController`, the
+shared `HeadlongCircuit` solver, laps, golf on finish time) cut for the Stoat (`VesselClassType.Stoat
+= 14`, `R_VesselActions/STOAT.md`): a 60 u/s hull on a flat 120°/s turn (a 29 u pivot) with **no
+speed of its own past cruise** — the barren race cell has nothing to skim. Its speed is its ability:
+LT/RT sling an **attractor–repulsor wormhole pair** across the hull (attractor on the trigger's side,
+squeeze = size), whose pull adds up to 90 u/s (150 u/s on a 72 u circle). The pull moves **only the
+Stoat that slung it** (`BlackHole.OwnerVessel`, ELEMENTAL_ECONOMY §9). A sling is a THROW, so a ring
+asks where the pull will have put you. Eight gates on a 600 u circle, **two laps (16)**; intensity
+tightens and lifts the turns and closes the mouth 48 → 26 u, measured over 400 seeds by
+`Tools/Build/slingshot_course_harness` and asserted by `SlingshotCourseTests`. The autopilot slings
+through the replicated press path (`StoatSlingExecutor.AutopilotSling`). Generator
+`author_slingshot_assets.py` (donor: Redline's scene); the Stoat's class asset, prefab and hull come
+from `author_stoat_assets.py`. See `_Scripts/Controller/Arcade/SLINGSHOT.md`. Authored headless —
+not yet run in the editor. **Since 2026-10-09 the Stoat's triggers are the round-15 FIELD DIPOLE**
+(`R_VesselActions/STOAT_DIPOLE.md`) and its autopilot is `StoatDipoleExecutor.Autopilot`; the sling
+above is unbound, so Slingshot is now flown on the dipole too.
+
+`Warpline(65)` is the **Stoat's TIME race** — Slingshot's shape and Slingshot's cut
+(`SlingshotCourse.ForIntensity` into the shared `HeadlongCircuit`) with **five** rings a lap, two laps
+(10), flown on the field dipole: the triggers hold a sink–source pair open ahead, the **pathfinder**
+draws the path the hull will fly, and while the poles warp it the line is lime and the hull flies it
+×2 → ×4 faster (Time scales the boost, a warp of the hull's own flight clock,
+`VesselTransformer.FlightTimeScale`). Long legs, so every leg is a pair laid and ridden. Metric 9,
+golf; `warplineGateTarget`; `RaceGateObjectiveProvider`; comeback 0.45. Generator
+`author_warpline_assets.py` (donor: Slingshot's scene). See `_Scripts/Controller/Arcade/WARPLINE.md`.
+Authored headless — not yet run in the editor.
+
 `GrizzlyTime(63)` is the **Grizzly-only circuit race** — Redline's shape (`GateRaceController`,
 the shared `HeadlongCircuit` solver, laps, golf on finish time) cut against the Grizzly **riding its
 own blasts** instead of a boost. The hull cruises at 50 u/s on a 30 u circle; its **trigger bombs**
@@ -1283,7 +1310,7 @@ on redraw, because a seat the host can see must be a seat the host can move. Sea
 than the card: the launch modal's Add AI ceiling (`MatchSeatCeiling`, 6 on an arena card) and the
 replicated `LobbySnapshot`'s AI slots (6) both had to move with it. `Docs/HomeHub/ARCHITECTURE.md` §3.9.
 
-`WildlifeLiberation(40)` is the **Sparrow-only hunt** — three concentric cages at 1050 / 600 / 200 pen three tiers of wildlife (a very heavy swarm of small creatures outside, much bigger ones in the middle room, the biggest and toughest in the core), plus a fourth tier loose in the open water outside the outer cage where players spawn; the first **DOMAIN** to 250 summed kills wins. It is an ordinary domain race and that is deliberate: a per-PLAYER (free-for-all) winner shipped here briefly and was **reverted**, because the mode seats up to four players while the platform has only three playable domains, so a full lobby always has teammates and a per-individual winner bypasses every domain surface (winner banner, HUD panels, scoreboard ordering, `ResolvePlacementOrder`). Do not re-derive it. Its metric, `ScoringMetric.LifeformsKilled`, is the first whose source is the ECOLOGY rather than prisms or crystals — and the first that needs an RPC, because fauna are client-local so a client's kill is invisible to the server (`Player.ReportFaunaKill_ServerRpc`; the round-trip stays correct once fauna network sync lands). Shipping it made **every creature in the game killable by shooting its body prisms** (previously only the worm colony was — see `Docs/ECOSYSTEM.md §24`) and generalized the cell's single fauna pen into a per-species BAND. See `_Scripts/Controller/Arcade/WILDLIFE_LIBERATION.md`.
+`WildlifeLiberation(40)` is the **Sparrow-only hunt** — three concentric cages at 1050 / 600 / 200 divide the arena into rooms, and every tier of wildlife roams **all** of it on ONE shared band (0..1180), including the open water outside the outer cage where players spawn; the first **DOMAIN** to 30 summed kills wins (the fuller account, including why the three-tier pen and the 250 target went, is in the `WildlifeLiberation(40)` paragraph above). It is an ordinary domain race and that is deliberate: a per-PLAYER (free-for-all) winner shipped here briefly and was **reverted**, because the mode seats up to four players while the platform has only three playable domains, so a full lobby always has teammates and a per-individual winner bypasses every domain surface (winner banner, HUD panels, scoreboard ordering, `ResolvePlacementOrder`). Do not re-derive it. Its metric, `ScoringMetric.LifeformsKilled`, is the first whose source is the ECOLOGY rather than prisms or crystals — and the first that needs an RPC, because fauna are client-local so a client's kill is invisible to the server (`Player.ReportFaunaKill_ServerRpc`; the round-trip stays correct once fauna network sync lands). Shipping it made **every creature in the game killable by shooting its body prisms** (previously only the worm colony was — see `Docs/ECOSYSTEM.md §24`) and generalized the cell's single fauna pen into a per-species BAND. See `_Scripts/Controller/Arcade/WILDLIFE_LIBERATION.md`.
 
 Many single-player modes (1, 3-6, 9-25, 27) reference scenes that no longer exist on disk — their `SO_ArcadeGame` assets still exist and appear in the Arcade UI, but launching them would fail. (`Rampage(2)` used to be in this set; it now has a real scene as a multiplayer mode.)
 
@@ -1294,14 +1321,11 @@ MiniGameControllerBase (abstract, NetworkBehaviour)
 │   Template Method: rounds → turns → countdown → gameplay → end
 │
 ├── SinglePlayerMiniGameControllerBase (abstract)
-│   ├── SinglePlayerSlipnStrideController  — procedural course with intensity scaling
-│   ├── SinglePlayerWildlifeBlitzController — blitz scoring (only BenchmarkStressTest uses it now)
-│   └── WildlifeBlitzMiniGame             — minimal variant
+│   └── SinglePlayerWildlifeBlitzController — blitz scoring (only BenchmarkStressTest uses it now)
 │
 └── MultiplayerMiniGameControllerBase (abstract, NetworkBehaviour)
     │   Server-authoritative turn/round/game flow via ClientRpc
     │
-    ├── CoOpWildlifeBlitzMiniGame    — co-op, own ready-sync
     │
     └── MultiplayerDomainGamesController
         ├── SkimRaceController              — crystal race, deterministic track, golf scoring

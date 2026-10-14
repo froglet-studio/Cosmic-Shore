@@ -136,6 +136,7 @@ namespace CosmicShore.Gameplay
 
             // Lifecycle timeline for MPPM testing - enable the Party channel to see it.
             CSDebug.LogVerbose(CSLogChannel.Party, $"[PartyStateMachine] {from} -> {to}");
+            NetSessionRecorder.Mark("party", $"{from}->{to}");
 
             OnStateChanged?.Invoke(from, to);
             return true;
