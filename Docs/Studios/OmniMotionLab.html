@@ -150,7 +150,7 @@
   // SHIPPED holds what the game does today; every key names where it came from. Keys prefixed by nothing but
   // marked "lab:" are proposals this lab adds; their SHIPPED value is the setting that reproduces today's game
   // (e.g. cadence 0 = the squares and the rhombi on their own clocks, as they ship).
-  const LAB = { name: 'Omni Motion Lab', branch: 'cece/sharp-fermi-yw38ky', round: 3, doc: 'Docs/Studios/OMNI_MOTION_LAB.md' };
+  const LAB = { name: 'Omni Motion Lab', branch: 'cece/sharp-fermi-yw38ky', round: 5, doc: 'Docs/Studios/OMNI_MOTION_LAB.md' };
   const FX = A.omniFx, ARC = FX.arcs, FLIP = FX.flip;
   const SHIPPED = {
     // ---- Mass: the triangle prisms (CrystalDepthPrismProfile.asset, OmniDepthPrisms.mat) ----
@@ -288,7 +288,7 @@
   // Round 5 (designer: "near perfect"): the omni's squares, rhombi and pentagons 10% thicker; the flux arcs chain.
   const R5 = Object.assign({}, R4, { plateThick: 1.1 });
   const STYLES = [
-    { id: 'shipped', name: 'Shipped today', blurb: 'The game as it is: prisms seal only when facing you, the squares move three times on their 4.8 s loop and the rhombi flip every 2 s on their own clock, the pentagons crawl.', v: {} },
+    { id: 'shipped', name: 'Shipped today', blurb: 'The game as it was before round 5 graduated (2026-10-13), kept as the baseline every round is scored against: prisms seal only when facing you, the squares move three times on their 4.8 s loop and the rhombi flip every 2 s on their own clock, the pentagons crawl. The game now plays round 5 (OMNI_MOTION_LAB.md, Graduated to the game).', v: {} },
     { id: 'r3', name: 'Round 3: hop clear, bolder Mass, seam arc', blurb: 'The designer\'s round-2 pick for Space and Time (rigid arcs that hop clear, a Time wave in each stop). Mass: columns 3x the plate radius, prisms climb back up whenever their column top is hidden (never seen rising), and descend late, from d = -0.25 to the horizon, so you see them come in. Charge: the Wandering arc, crawling the seams between the blooms.', v: R3 },
     { id: 'r3-bold', name: 'Round 3, Mass bolder', blurb: 'Round 3 with columns 3.5x and bigger prisms at the top (0.75).', v: Object.assign({}, R3, { depthReach: 3.5, depthSizeStart: 0.75 }) },
     { id: 'r3-mass2', name: 'Round 3 with round-2 Mass', blurb: 'Round 3, but Mass as round 2 had it (columns 2x, the shipped ratchet, descent from -0.88): the subtler look, to compare.', v: Object.assign({}, R3, { depthRise: 0, depthReach: 2, depthOpen: -0.88, depthSizeStart: 0.5, depthSwap: -0.87 }) },

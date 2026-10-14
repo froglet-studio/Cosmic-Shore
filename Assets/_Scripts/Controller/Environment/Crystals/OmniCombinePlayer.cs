@@ -680,7 +680,6 @@ namespace CosmicShore.Gameplay
             }
 
             public int Count => _columns.Length;
-            public float Place(int j) => _columns[j].Place;
 
             public void Step(Vector3 eye, float dt, CrystalDepthPrismProfileSO profile, float reach, float sizeAtTop, float strength)
             {

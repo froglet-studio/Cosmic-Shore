@@ -369,7 +369,7 @@ Entries are grouped by family; within a family, the newest goes at the bottom.
   - **The discharge:** `ScreenSwitcher` runs every menu screen but HOME at `Time.timeScale = 0`. The lab's CPU effects had been ported onto unscaled time, but the game's discharge SHADERS read `_Time.y`, so every bolt stood still.
   - **The shimmer:** the off-screen stage sat at y −150000, where a float resolves 1/64 of a unit, on a crystal 4 units across. Every vertex snapped as the camera circled.
 - Do instead: before shipping a lab's motion into a menu, list every clock the drawn result reads (CPU and SHADER: `_Time`, `Time.time`, animators, particles) and give each one the display's own unscaled time. A default-off property such as `_ArcClock` leaves the game untouched. Put an off-screen stage only as far out as the far clip needs, and make it large. Its jitter is |position| × 2^-23 against the subject's size.
-- Evidence: `_ArcClock` in `ChargeCrystal.shader` / `OmniChargeEdgesShader.shader`; `ElementalConverterView.StageOrigin`; `OmniCombineConfigSO.omniWorldRadius`.
+- Evidence: `_ArcClock` in `ChargeCrystal.shader` / `OmniChargeEdgesShader.shader` (the latter retired 2026-10-13; its successor `CrystalChargeArcsShader` draws CPU geometry on the player's clock, so it needs none); `ElementalConverterView.StageOrigin`; `OmniCombineConfigSO.omniWorldRadius`.
 - Promoted: no
 
 ### L-STU-40 — A graduated lab that reads ANOTHER generator's mesh breaks when that generator bakes something new into it
@@ -790,4 +790,19 @@ Entries are grouped by family; within a family, the newest goes at the bottom.
   fault: here, triangle-triangle intersections. Keep any facing or hemisphere test only as a fast pre-filter, and say
   in the doc which one produced the number.
 - Evidence: the round-8 scratch ray-cast rig (`OMNI_COMBINE_LAB.md` revision 7, "Correction, round 8").
+- Promoted: no
+
+### L-STU-62 — When the designer's eye and your measure disagree, ship their ask with the dial, and publish the disagreement
+- Lab: Omni Combine Lab revision 7, round 9 (the converter) · Branch: `cece/sharp-fermi-yw38ky` · Date: 2026-10-13
+- What happened: the designer saw Mass "come in from the top", with visible clipping from the side, and asked
+  whether there was a 90° error. There was no error in azimuth: the approach matched only the camera's compass
+  direction, not its height. Matching the height too fixed what they named, with arrival 0.2° off the camera's.
+  But the triangle ray-cast scored a line-of-sight approach WORSE on the silhouette (Mass 98 against 31 rim
+  intersections a second from overhead). The measure counts intersection points; it cannot see a body sinking
+  through another body's outline, which is what they were describing.
+- Do instead: build what the designer asked, and expose the contested quantity as one authored dial
+  (`approachAboveCameraDegrees`, default the ask). Put the measure's opposing numbers in the doc and the
+  verification checklist, so the next look in the editor settles it. Don't override the eye with a metric
+  that was never validated against it, and don't hide a metric that disagrees.
+- Evidence: `OmniCombineParams.ApproachAboveCamera`; `OMNI_COMBINE_LAB.md` revision 7, round 9.
 - Promoted: no

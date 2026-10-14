@@ -32,8 +32,9 @@ The designer: "let's graduate round 5 to unity". Everything below is generated b
 | Charge (omni) | `chModeOmni 20` (Flux, chained) | `CrystalChargeArcs` (Flux) on `OmniCrystalChargeArcs`, replacing `OmniCrystalChargeEdges` |
 | Charge (crystal) | `chMode 19` (Seam walk) | `CrystalChargeArcs` (SeamWalk) on `CrystalCharge.prefab`'s `ChargeCrystalArcs`; the shell's crawl held at 0 |
 
-The beam is drawn the way the Ship-it note asked: one camera-facing strip per piece with the falloff computed across
-its width in `CrystalChargeArcsShader`, and the thick middle as halo + body + hot core, in HDR for bloom.
+The bolts are drawn the way the Ship-it note asked: camera-facing strips with the falloff computed across their width
+in `CrystalChargeArcsShader`, in HDR for bloom. (The lab's thick middle beam shipped at graduation and was replaced the
+same day by five seamless strands; see below.)
 
 **Proof run offline** (no Editor in the session):
 - `Tools/Build/omni_turns_harness` runs the shipped `CrystalSpaceSquares`, `RhombusSkinBaker` and cadence on the real
@@ -50,6 +51,8 @@ takes the round-3 Mass rules as well.
 
 **After graduation (same day):**
 - every bolt is a continuous plasma ribbon modelled on the Squirrel's skim crackle;
+- the flux arc is five full-length strands, corner to corner, running as one coaxial braided bundle between the forks
+  (`fluxBundle` 0.016 R, `fluxTurns` 1): no thick middle beam and no seam (`OMNI_COMBINE_LAB.md`, revision 6);
 - a flux arc through a raised Mass column lights the prism (`_DepthState.w`, `_StrikeColor`):
   - only while it stands out (`strikeProtractionFrom` 0.15 to `strikeProtractionFull` 0.45 of its column);
   - tested along its whole column, from its seat up to the prism, since a raised prism stands above the arcs. Before
