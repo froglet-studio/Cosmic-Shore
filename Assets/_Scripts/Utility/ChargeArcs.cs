@@ -1021,6 +1021,8 @@ namespace CosmicShore.Utility
         static readonly List<float> s_weights = new(128);
         static readonly List<float> s_coords = new(128);
         static readonly List<Vector4> s_lit = new(128);   // (point, life)
+        static readonly List<float> s_reach = new(128);   // per lit point: the largest d*d at which it can still light a petal
+        const float PetalFloor = 0.01f;                   // a petal lights only above this
 
         // The looks, x the crystal's radius: how far each kind of bolt bends off its path.
         const float SeamWobble = 0.02f, BundleWobble = 0.02f;
@@ -1079,21 +1081,34 @@ namespace CosmicShore.Utility
             }
             writer.Plasma(s_points, s_points.Count, s_weights, s_coords, settings.Bolts * 2.4f, 2f, SeamWobble, 7, seconds,
                           settings, eye, sites.Radius, pinned: false);
-            // a petal glows by how near the bolt runs to its short sides, and how fresh that stretch of bolt is
+            // a petal glows by how near the bolt runs to its short sides, and how fresh that stretch of bolt is.
+            // A petal lights only when its brightest term passes PetalFloor, so a term that cannot reach it cannot change
+            // the light: lit.w * e^(-d*d) < PetalFloor * 0.99 whenever d*d > ln(lit.w / (PetalFloor * 0.99)). Those terms
+            // are skipped on their squared distance, before the square root and the exponential; every term that is kept
+            // is computed exactly as before, so the light is identical. Most terms are far from the petal: this is the
+            // seam walk's dominant cost (60 petals x every lit point x 3 back points, each an Exp), and with
+            // double-precision Exp (Unity's Mathf.Exp) it measured ~6x the rest of the effect.
+            s_reach.Clear();
+            foreach (var lit in s_lit) s_reach.Add(lit.w > PetalFloor * 0.99f ? Mathf.Log(lit.w / (PetalFloor * 0.99f)) : -1f);
             for (int f = 0; f < sites.Faces.Length; f++)
             {
                 var face = sites.Faces[f];
                 float g = 0f;
-                foreach (var lit in s_lit)
+                float inverseSigmaSquared = 1f / (face.Sigma * face.Sigma);
+                for (int i = 0; i < s_lit.Count; i++)
                 {
+                    float reach = s_reach[i];
+                    if (reach < 0f) continue;
+                    var lit = s_lit[i];
                     var q = (Vector3)lit;
                     foreach (var back in face.Back)
                     {
+                        if ((back - q).sqrMagnitude * inverseSigmaSquared > reach) continue;
                         float d = (back - q).magnitude / face.Sigma;
                         g = Mathf.Max(g, lit.w * Mathf.Exp(-d * d));
                     }
                 }
-                if (g > 0.01f) faceLight[f] = settings.Glow * settings.SeamPetalGlow * 2.4f * g;
+                if (g > PetalFloor) faceLight[f] = settings.Glow * settings.SeamPetalGlow * 2.4f * g;
             }
             return s_points.Count;
         }
