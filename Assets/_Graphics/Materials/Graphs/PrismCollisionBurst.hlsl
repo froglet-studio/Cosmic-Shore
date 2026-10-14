@@ -85,6 +85,9 @@
 #define PRISM_BURST_BEND_NORMAL 1
 #endif
 
+// The bloom's petal tie-break, in face coordinates (see PrismBurstPose).
+#define PRISM_BURST_PETAL_TIE 1e-4
+
 // Upper bound on Voronoi cells per face edge — the loops below are bounded by it.
 #define PRISM_BURST_MAX_CELLS 6.0
 
@@ -220,8 +223,11 @@ void PrismBurstBend(float3 x, float3 n, float3 hinge, float3 inward, float3 lift
     float arcUp = 0.5 * kappa * s * s;
     if (abs(kappa) > 1e-5)
     {
+        // 1 − cos a written as 2·sin²(a/2): the same number, without the cancellation that a GPU's
+        // less exact cos would divide by a tiny κ into a visible jitter on a curl's first frames.
+        float sh = sin(0.5 * a);
         arcIn = sa / kappa;
-        arcUp = (1.0 - ca) / kappa;
+        arcUp = 2.0 * sh * sh / kappa;
     }
     pos = hinge + along + inward * arcIn + lift * arcUp + (lift * ca - inward * sa) * l;
 #if PRISM_BURST_BEND_NORMAL
@@ -276,7 +282,10 @@ void PrismBurstPose(float kind, PrismBurstFrame f, PrismBurstParams p,
         float sg;
         float3 edgeVec;
         float side;
-        if (ax >= ay)
+        // A centroid exactly ON a diagonal (the anti-diagonal cells of the grid put one there) is a
+        // tie, and float rounding would pick its petal differently per GPU. The bias settles every
+        // tie on the u-edge petal on every platform; real centroids are 2/(3n) away from a diagonal.
+        if (ax >= ay - PRISM_BURST_PETAL_TIE)
         {
             sg = f.triUV.x >= 0.0 ? 1.0 : -1.0;
             edgeVec = f.faceU * sg;

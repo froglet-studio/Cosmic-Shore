@@ -127,6 +127,15 @@ explosion's opacity curve — because each fragment's place in the fade is `frac
 uniform on [0, 1) whatever the grain. The accents (fracture flash, ember front, glints) are thin lines
 and brief instants.
 
+**That argument did not survive measurement.** The Collision Burst Lab
+(`Docs/Studios/COLLISION_BURST_LAB.md`, https://claude.ai/artifact/F47yG1UjBkK662rEnhk7m9) runs the
+shipped HLSL beside the shipped explosion and scores blurred rendered pixels: two explosions differ by
+0.082, the four kinds by 0.33–0.47 (a prism that never breaks scores 0.261). The accents brighten the
+cloud, the cloud is 0.69–0.91 of the explosion's size, and the explosion's wedges linger past the
+burst's fade. Carrying the burst's detail on the explosion's own wedges, with the accents tamed, reaches
+0.12–0.18. **Decision needed (designer):** graduate that proposal, tame the accents, end the fade with
+the explosion's — or accept that level 1 reads differently.
+
 **How it is drawn**: a stamp, like the slice — everything is known at the instant of the collision, so
 one stamp per prism and the GPU runs the course (`PrismCollisionBurst.hlsl` / `.shader`, Docs/
 PRISM_ANIMATION.md §4.11). It rides the slice's carrier unchanged (`SpawnSliceDebrisBatch`, its timing
@@ -206,7 +215,8 @@ spectacular, and whether squinting really can't tell them from the explosion, is
    exactly as the prism), nothing culled while still on screen.
 7. **The squint test.** Side by side — a plough collision and a sword-free hull ram of a stationary
    prism by another vessel (the ordinary explosion) — at play distance, squinting: the two clouds should
-   travel the same way, be the same size, fade over the same time in the same colours. If a kind reads
+   travel the same way, be the same size, fade over the same time in the same colours. (The lab
+   predicts they will NOT yet, see §3a — this step confirms or refutes it in the engine.) If a kind reads
    brighter or bigger, lower its accent (`_HotColor`, `glint`) or `spread`; if one reads as a different
    effect at a glance, turn its weight to 0 rather than retuning the envelope.
 8. **The ladder.** Dense Stoat field: past 64 bodies collisions explode plainly (level 2), past 256 the

@@ -2278,8 +2278,11 @@ pivot = Pn + slide               the rotation is rot(P - pivot) + pivot
 — and the `0.5` in `slide` is not a fact about faces. It is the prism CUBE's geometry: that
 mesh carries twice a normal cube's triangles so every face is four isoceles wedges fanned
 from a face-centre vertex, and a wedge's own centre sits half a face-half-width along its
-tangent. `Pn + 0.25*T` therefore lands on the wedge, the four wedges spin in place, and the
-prism comes apart the way it is supposed to.
+tangent. `Pn + 0.25*T` therefore lands on the wedge at age 0 and the prism comes apart the way it is
+supposed to. (The wedges do not "spin in place": the slide grows with the explosion's amount,
+`(0.5 + Spread + A·ExplosiveSpread)·T/2` with `A = speed·t`, so each wedge slides outward along its
+tangent linearly with age while turning by `A·ExplosiveRotation` — measured against the evaluated
+subgraph by the Collision Burst Lab's parity gate, `Docs/Studios/COLLISION_BURST_LAB.md`.)
 
 For a mesh whose faces are single triangles it is simply wrong, in two different ways:
 
@@ -2643,9 +2646,20 @@ envelope, the cheap normal. (B) glslang compiles every pass, plain and DOTS-inst
 slice verifier's URP mock. `PrismCollisionBurstTests` holds the CPU half: the envelope formula against
 the HLSL text, the bounds against random points, the kind weights, the unwelded mesh, the config.
 
-**Not proven, stated.** Nothing has run in the editor. Whether a burst reads as spectacular, and whether
-squinting truly cannot tell it from the explosion, is the playtest's answer — the numbers only show the
-envelope is shared.
+**Not proven, stated.** Nothing has run in the editor. Whether a burst reads as spectacular is the
+playtest's answer.
+
+**Measured since: the shipped bursts do NOT squint as the explosion** (Collision Burst Lab, round 1,
+`Docs/Studios/COLLISION_BURST_LAB.md`, https://claude.ai/artifact/F47yG1UjBkK662rEnhk7m9). The page runs
+this HLSL on WebGL2 (parity 4.65e-4 radii against the C++ execution, zero outliers) beside the shipped
+explosion subgraph, and scores rendered, blurred pixels: two explosions differ by 0.082; the four kinds
+by 0.33–0.47 — more than a prism that never breaks (0.261). A shared envelope is not a shared look: the
+accents brighten the cloud (colour Δ 0.11–0.20 against 0.012), the cloud covers 0.69–0.91 of the
+explosion's screen, and the explosion's last wedges outlast the burst's linear fade. A proposal (the
+detail carried on the explosion's own wedges) plus tamed accents reaches 0.12–0.18. **Decision needed
+(designer)** — see the write-up. The parity gate also found three float32 defects in this HLSL, fixed:
+bloom petals tied on a face diagonal (`PRISM_BURST_PETAL_TIE`), the unravel bend cancelling at small
+angles (now `2 sin²(a/2)/κ`), and the lab's own double-precision centroids.
 
 ## 5. Migration tracker (the deduplicated work list)
 
@@ -2699,7 +2713,7 @@ Phase C — rogue paths & ecosystem visuals (each is standalone):
 | C17 | The Urchin's CRADLE — the mass around a RIDING Urchin drapes onto its hull (a per-frame, per-prism deformation that a per-prism material write would have made a §1 violation) | ✅ SHIPPED 2026-09-16 as the THIRD §4.7 global-uniform citizen (§4.7.2); **RE-CUT 2026-09-22 from a per-triangle rigid motion to a high-poly radial DRAPE** after the per-face and per-wedge cuts were both rejected on look (*"this looks terrible"* → a 10x tone-down → *"really bad to the point i put this down"*) — a deformation is only as smooth as the surface it moves, and 24 triangles is not a surface. Now: `HighPolyPrismMesh` (the identical solid subdivided 16x per face axis, 3,072 tris, SHARED so the swapped prisms still batch) + `PrismCradle`'s residency pass (`Prism.SetRenderMeshOverride` on the nearest prisms within `hullRadius + drapeReach + residencyMargin` — a STATE CHANGE, final at the instant it is applied, like a shield engaging, and budgeted at 24 prisms; it declines any prism already holding an override and only clears one that is still its own) + `PrismCradle.hlsl` (`PrismCradleDeform`, VERTEX stage, 4 slots — the object-space Tangent Vector the wedge cut needed is GONE, the map reads only world position and normal — spliced LAST on both live graphs by `Tools/Shaders/wire_prism_cradle.py`, whose migration is now written against slot DIRECTIONS so it runs in both directions and sweeps the feeder nodes an old signature orphaned) + `PrismCradleSource` (ensured on every Urchin by `GunVesselTransformer.Initialize`, gated on `IsRiding`) + `PrismCradleConfigSO` (`Resources/PrismCradleConfig`: 6 u drape reach, exponent 1.5, max strength **1**, subdivision 16, 24 resident prisms, 2 u residency margin, 0.25 s in / 0.4 s out). The map is ONE line — `p' = U + dir·(d − s·k(s)·w)` — with a falloff C1 at both ends (no seam) and the ANALYTIC inverse-transpose for the normal (the cheap lerp-toward-the-sphere-normal shortcut pops where `n·dir` crosses zero, which is a line down the middle of the ridden prism's side faces). Proven by `Tools/Shaders/verify_prism_cradle.py` (clang++ over the SHIPPED file: identity off/beyond reach, the wrap onto the surface along the outward radial, the lip never past the surface and never folding, radial purity, the normal proven by CONVERGENCE RATE — halving the patch quarters the error, 0.32 → 0.0058 — no seam at the reach, affine in the weight, dominant slot, plus a negative control that PLATEAUS at 0.74 with the radial Jacobian term neutered). Not run in the editor. |
 | C18 | The Rhino sword's kills burst into debris like any other death — a blade reads as a blast | ✅ SHIPPED 2026-09-26 (§4.10) — a blade kill is a CUT: two pure render entities per prism on the shared `HighPolyPrismMesh`, the far skin centrally projected onto the cut plane (`PrismSlice.hlsl`), rigid hinge-opening motion and a dissolve from the cut face, all off one stamp per half; batched spawn/retire (`PrismSlice.cs`, `PrismRenderService.SpawnSliceDebrisBatch`), explosion fallback on any refusal, budget 115k triangles / zero colliders. Proven offline by `verify_prism_slice.py` (execution + glslang) and `PrismSliceTests`; **not run in the editor** |
 | C19 | A BLACK HOLE — mass around a spawned gravity well orbits, spirals in and is consumed, and bends on screen as it goes (a per-frame, per-prism deformation and a per-frame, per-prism MOVE) | ✅ BUILT 2026-10-07 (§4.7.4, `Docs/BLACK_HOLE.md`) — the MOVE is live gameplay data under the movers contract (three chained Burst jobs over the admitted bodies — read-only pose read, `IJobParallelFor` integration, transform write-back — + `SetTransformsBatch` + `UpdatePositionsBatch`; `GravityBody` on every prism prototype, disabled until admitted), the BEND is a §4.7 global bank (`PrismGravityWarp.hlsl`, spliced immediately before the cradle on both live graphs) drawing the GR tidal tensor as one affine stretch per prism — no residency since the 2026-10-08 re-cut; captures go through `Prism.Consume` with the hole as the implosion sink. Proven offline by `verify_prism_gravity_warp.py` (thirteen properties + negative control), `BlackHoleTests`, `BlackHolePhysicsTests`; **not run in the editor** |
-| C20 | Prism-movement collisions die as the ordinary explosion at every load | ✅ SHIPPED 2026-10-14 (§4.11) — at ladder level 1 a collision death is a COLLISION BURST: one pure render entity per prism on the unwelded `HighPolyPrismMesh` (s10), four kinds (shatter / bloom / unravel / glitter) off one stamp on the slice's carrier, sharing the explosion's flight, life, palette, size and linear fade so it squints as the explosion; explosion fallback on any refusal, budget 57,600 triangles / zero colliders. Proven offline by `verify_prism_collision_burst.py` (execution, 4 negative controls, glslang) and `PrismCollisionBurstTests`; **not run in the editor** |
+| C20 | Prism-movement collisions die as the ordinary explosion at every load | ✅ SHIPPED 2026-10-14 (§4.11) — at ladder level 1 a collision death is a COLLISION BURST: one pure render entity per prism on the unwelded `HighPolyPrismMesh` (s10), four kinds (shatter / bloom / unravel / glitter) off one stamp on the slice's carrier, sharing the explosion's flight, life, palette, size and linear fade (the Collision Burst Lab measured that this does NOT yet squint as the explosion — 0.33–0.47 against a 0.08 band; decision open, `Docs/Studios/COLLISION_BURST_LAB.md`); explosion fallback on any refusal, budget 57,600 triangles / zero colliders. Proven offline by `verify_prism_collision_burst.py` (execution, 4 negative controls, glslang) and `PrismCollisionBurstTests`; **not run in the editor** |
 
 Phase D — lock-in:
 

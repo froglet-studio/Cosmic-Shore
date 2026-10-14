@@ -90,6 +90,13 @@ Entries are grouped by family; within a family, the newest goes at the bottom.
 - Evidence: StoatFlightStudio.html prism-field block ("seeded (round 15)"); `verify_lab.cjs` "a second load".
 - Promoted: §3
 
+### L-GEN-10 — Score the LOOK in rendered pixels against the SHIPPED baseline; a shared-envelope argument is not a shared look
+- Lab: Collision Burst Lab (`Docs/Studios/PrismCollisionBurstLab.html`) · Branch: `cece/dreamy-pascal-7xxx1m` · Date: 2026-10-14
+- What happened: the collision bursts were designed to "squint as the explosion" by sharing its flight, life, palette, envelope radius and linear fade, and the docs said so. The lab drew both and scored blurred 120×80 pixels: two explosions differ by 0.082, the bursts by 0.33–0.47 — worse than a prism that never breaks (0.261, the negative control). Thin accents, a smaller cloud and the explosion's lingering last wedges each mattered. The design had also been argued against a REMEMBERED explosion ("the wedges spin in place"); the shipped subgraph, evaluated, slides each wedge outward linearly with age.
+- Do instead: make the baseline the shipped graph, evaluated (and parity-gated), never its description. Measure "looks like" on rendered, blurred pixels, with a band control (the baseline vs itself on another seed) and a negative control that must fail. Hand-waved invariants become columns.
+- Evidence: `Docs/Studios/COLLISION_BURST_LAB.md` round 1 scorecard; `__lab.runBatch()`
+- Promoted: no
+
 ## STU — browser studios (Stoat Flight Studio, Vessel Studio)
 
 ### L-STU-1 — A lab's scripted input exposed a real game bug: the sling read the latest trigger sample, not the squeeze
@@ -580,6 +587,20 @@ Entries are grouped by family; within a family, the newest goes at the bottom.
 - What happened: the flight followed the drawn line within about 1.5 u all the way into the black hole and came out within 1 u of the drawn exit. It then left the line by up to 76 u over the next 330 u. The wormhole drops you 1.05 horizons from the white hole, inside a push softened over 2 horizons, so a 1 u difference at entry became about 13° of heading on the way out. Running the prediction on the flight's own 4 ms step did not remove it, and the boost did not change it.
 - Do instead: in a parity probe, log the deviation over flown distance, not only its maximum. The trace shows exactly where the flight leaves the line (here, the frame after the jump). A teleport that lands inside a strong force is a sensitivity to report or design out (a wider exit gap), not an integrator to tune.
 - Evidence: README round 15 "Checked" (through the wormhole) and "Found".
+- Promoted: no
+
+### L-STU-64 — Gate a WebGL port of a shipped shader by transform feedback, with ZERO outliers allowed: it finds the shipped shader's float bugs
+- Lab: Collision Burst Lab · Branch: `cece/dreamy-pascal-7xxx1m` · Date: 2026-10-14
+- What happened: `parity.py` reads the page's vertex shader back through WebGL2 transform feedback and compares every vertex with C++ executing the shipped HLSL on the same mesh. An outlier allowance would have hidden three real defects, all now fixed in the shipped HLSL: bloom petals picked by float noise when a centroid sat exactly on a face diagonal (~80 vertices per case, ~1 radius off; fixed with a tie epsilon), `(1 − cos a)/κ` cancelling in float32 at small angles (fixed as `2 sin²(a/2)/κ`), and the lab building mesh centroids in doubles where C# uses float (`Math.fround`). Mechanical trap: transform feedback returned all zeros with `GL_INVALID_OPERATION` because the feedback buffer was still bound to `ARRAY_BUFFER` — unbind it after creating it and check `gl.getError()` after the draw.
+- Do instead: translate the shipped shader mechanically (build step, `--check`), gate it per vertex with no outlier share, and plant controls (the next kind, a doubled dial) that must fire. When parity fails on a few vertices, suspect the shipped code before the port.
+- Evidence: `Tools/Build/prism_collision_burst_lab/parity.py` (`OUTLIER_SHARE = 0.0`); `PrismCollisionBurst.hlsl` `PRISM_BURST_PETAL_TIE`
+- Promoted: no
+
+### L-STU-65 — A camera that frames the scene must move with whatever moves the scene (the seed); read the screenshot at a non-zero seed
+- Lab: Collision Burst Lab · Branch: `cece/dreamy-pascal-7xxx1m` · Date: 2026-10-14
+- What happened: each seed shifts every pose 7.31 units in z so the per-prism seed hash changes; the line-up camera targeted the origin. Seed 0 looked perfect; any Replay (seed + 1) and `verify_lab.cjs`'s `reset(7)` left an empty stage, and the gate still passed (a WebGL stage skips the blank check). Only reading `desktop.png` showed it.
+- Do instead: derive the camera target from the same "home" the scene items use. Read the screenshot the verifier takes after `reset(seed)`, not only a fresh load.
+- Evidence: `lab.src.html` `camTarget`
 - Promoted: no
 
 ## NCA — swarm / neural-CA research rigs (Tools/NCA)
