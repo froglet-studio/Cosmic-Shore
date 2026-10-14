@@ -36,13 +36,13 @@ Legend: `Planned` ▸ `Mockup` ▸ `Mockup approved` ▸ `Built` ▸ `Approved i
 | 2 | Hangar screen: grid, detail and the spend-crystals panel | Approved in editor (2026-10-14) | `Hangar.dc.html` (interactive), `HangarLocked`, `HangarSpend`, `HangarShort`, `HangarNoArt`, `HangarNotes` on the Menu Redesign B canvas | `661a7f1f`, `7987b896`, `96c81faa` + docs |
 | 3 | Arcade modal (`ArcadeScreenModal`): explore grid plus the party/friends panel | Built | `Arcade.dc.html` (interactive), `ArcadeSolo`, `ArcadeNoFriends`, `ArcadePicks`, `ArcadeNotes` on the Menu Redesign B canvas | `f9b59fd4`, `75cd38e7`, `5cc56adb` + docs |
 | 4 | Game configure: `ArcadeGameConfigureModal`, plus the Maelstrom and Arena configure windows and the weekly leaderboard | Mockup (revision 2) | `Configure.dc.html` (interactive), `ConfigureArena`, `ConfigureMaelstrom`, `ConfigureWeekly`, `ConfigureWeeklySpent`, `ConfigureGuest`, `ConfigureLocked`, `WeeklyLeaderboard` (interactive), `LeaderboardEmpty`, `ConfigureNotes` | |
-| 5 | Profile screen, Profile modal (avatar / display name), Episodes entry | Mockup | `Profile.dc.html` (interactive), `ProfileFresh`, `ProfileModal` (interactive), `ProfileName`, `ProfileNameError`, `ProfileNameTaken`, `ProfileNotes` | |
-| 6 | Home screen: hub row, header, settings and freestyle buttons, invite popup | Mockup | `Home.dc.html` (interactive), `HomeInvite`, `HomeFocus`, `HomeOffline`, `HomeNotes` | |
-| 7 | Ark screen (Elemental Converter) | Mockup | `Ark.dc.html` (interactive), `ArkConverting`, `ArkDone`, `ArkNotes` | |
-| 8 | Arena, Toy Box and Mission modals, and Toy configure | Mockup | `ToyBox.dc.html` (interactive), `ToyBoxClaimed`, `ArenaWindow`, `MissionWindow`, `ToyConfigure` (interactive), `ToyConfigurePaint`, `ToyConfigureSpawn`, `ToyConfigureDomain`, `ModesNotes` | |
-| 9 | Settings modal and Credits | Mockup | `Settings.dc.html` (interactive), `SettingsDisplay`, `SettingsPerformance`, `SettingsOther`, `Credits`, `SystemNotes` | |
-| 10 | Closed surfaces: Port (locked), Store (no slot), Episodes panel, purchase confirmation | Mockup | `ClosedSurfaces.dc.html`, `PurchaseConfirm` (blind), `SystemNotes` | |
-| 11 | Menu toasts | Mockup | `Toasts.dc.html` (interactive), `SystemNotes` | |
+| 5 | Profile screen, Profile modal (avatar / display name), Episodes entry | Mockup (revision 2) | `Profile.dc.html` (interactive), `ProfileFresh`, `ProfileModal` (interactive), `ProfileName`, `ProfileNameError`, `ProfileNameTaken`, `ProfileNotes` | |
+| 6 | Home screen: hub row, header, settings and freestyle buttons, invite popup | Mockup (revision 2) | `Home.dc.html` (interactive), `HomeInvite`, `HomeFocus`, `HomeOffline`, `HomeNotes` | |
+| 7 | Ark screen (Elemental Converter) | Mockup (revision 2) | `Ark.dc.html` (interactive), `ArkConverting`, `ArkDone`, `ArkNotes` | |
+| 8 | Arena, Toy Box and Mission modals, and Toy configure | Mockup (revision 2) | `ToyBox.dc.html` (interactive), `ToyBoxClaimed`, `ArenaWindow`, `MissionWindow`, `ToyConfigure` (interactive), `ToyConfigurePaint`, `ToyConfigureSpawn`, `ToyConfigureDomain`, `ModesNotes` | |
+| 9 | Settings modal and Credits | Mockup (revision 2) | `Settings.dc.html` (interactive), `SettingsDisplay`, `SettingsPerformance`, `SettingsOther`, `Credits`, `SystemNotes` | |
+| 10 | Closed surfaces: Port (locked), Store (no slot), Episodes panel, purchase confirmation | Mockup (revision 2) | `ClosedSurfaces.dc.html`, `PurchaseConfirm` (blind), `SystemNotes` | |
+| 11 | Menu toasts | Mockup (revision 2) | `Toasts.dc.html` (interactive), `SystemNotes` | |
 
 ---
 
@@ -623,6 +623,9 @@ Nothing here is built yet; the builds follow approval, in the order of §3.
 | Q7 | 6 | Avatar and name open the profile window (today they only play a sound)? | They open it. |
 | Q8 | 8 | Wander's portrait is the conveyor still; Element Charger has none. | `tool_arkway`, `ethirion_omni`. |
 | Q9 | 11 | Toasts move to top centre and gain an optional kind (refusal, success, error, goal) for a leading glyph. | Top centre, glyphs drawn. |
+| Q10 | 6 | Home gains two "Up next" cards above the hubs: the weekly challenge (live countdown, your best) and the current quest (meter, next goal). New on Home, from data the game already has. | Drawn. |
+| Q11 | 6 | A breathing "Tap the cell to fly" hint at the centre of Home, so freestyle can be found. | Drawn. |
+| Q12 | 9 | Settings options each get a one-line description; the copy is proposed and needs review. | Drawn. |
 
 ### 13.3 Departures from today's behaviour, by item (all listed on the notes boards)
 
@@ -650,3 +653,29 @@ Content found on the way: Joust's card description is the placeholder "Joust jou
 Stoat ability maps show "(open design slot)" rows; the Skim Race quest is still named "HEX RACE";
 Astro League's description says "Rhino only" while its card seats three hulls; Buckyball and Lion's
 Head have no painting art; Colorblind mode, Subtitles and Subtitle size have no consumer.
+
+### 13.4 Revision 2 across the set (2026-10-14, "give all the others the same treatment")
+
+The configure window's revision-2 treatment now runs through every item. It is one shared vocabulary,
+so the build can implement it once in the kit:
+
+- **Surfaces:** the blueprint grid (Neutral Dark 1 px lines every 24 px on Very Dark) with Neutral Light
+  corner brackets on the main panels; the menu scene behind every screen under a Black veil.
+- **Entrances:** panels rise in on the panel token (320 ms OutQuint); cards, rows, tiles and seats follow
+  on the 40 ms stagger capped at 8 (section 7).
+- **State motion (std / micro tokens):** bars and meters grow, toggle underlines and slider handles
+  slide, a refused locked entry shakes once, toasts drop in and drain their 5 s, the quest claim and the
+  omni crystal pop (ceremony, OutBack).
+- **Ambient (Q1, beyond section 7):** the travelling spark on live routes and progress rails, floating
+  hulls / portraits / avatars, the highlight sweep on each screen's primary action, slow pans on card
+  art, breathing hints and lamps, the turning settings gear. Every piece is separable.
+- **Live data:** countdowns tick (weekly challenge, today's activity), the Ark run shows its clock,
+  shuffle rolls through candidate results before landing.
+
+Per item: Profile gains the pilot record (Q6), per-intensity quest goals and the claim ceremony; the
+profile window gains a "how others see you" preview, a character count and live rule ticks; Home gains
+hub icons, the Up next cards (Q10), the crystal balance and a draining invite timer; the Ark gains a
+recipe panel with the element crystals and the omni result; Toy Box, Arena and Toy configure take the
+grid, staggered cards, floating portraits and the shuffle roll; Settings gains option descriptions (Q12)
+and Credits a title band; the weekly leaderboard gains a podium, your outlined reward band and a
+percentile bar.
