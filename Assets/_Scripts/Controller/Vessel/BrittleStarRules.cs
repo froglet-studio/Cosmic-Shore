@@ -121,6 +121,23 @@ namespace CosmicShore.Gameplay
         public static float Spread01(Vector2 stick, float deadzone) =>
             Mathf.Clamp01((stick.magnitude - deadzone) / Mathf.Max(1e-4f, 1f - deadzone));
 
+        /// <summary>
+        /// One of Destruction Mode's five ARMS, aimed by how far the stick is pushed "in and out" (Garrett, 2026-10-14):
+        /// with the stick IN (centred, <paramref name="splay01"/> 0) every arm angles inward to meet the nose axis at
+        /// <paramref name="focusDistance"/> ahead — the whole vessel a crosshair — and pushed OUT to the rim
+        /// (<paramref name="splay01"/> 1) each splays <paramref name="maxSplayDegrees"/> outward from the nose. Between,
+        /// the angle moves linearly. <paramref name="radialOut"/> is the unit direction from the nose axis out to the arm's
+        /// muzzle (perpendicular to <paramref name="forward"/>), <paramref name="radialDistance"/> how far out it sits.
+        /// </summary>
+        public static Vector3 ArmDirection(Vector3 forward, Vector3 radialOut, float radialDistance, float splay01,
+                                           float focusDistance, float maxSplayDegrees)
+        {
+            float inward = Mathf.Atan2(Mathf.Max(0f, radialDistance), Mathf.Max(1e-3f, focusDistance)) * Mathf.Rad2Deg;
+            float degrees = Mathf.Lerp(-inward, maxSplayDegrees, Mathf.Clamp01(splay01));
+            float a = degrees * Mathf.Deg2Rad;
+            return (forward * Mathf.Cos(a) + radialOut * Mathf.Sin(a)).normalized;
+        }
+
         /// <summary>The point whose CURRENT angle (its rest angle plus the ring's phase) is closest to
         /// <paramref name="aimAngle"/>.</summary>
         public static int NearestPoint(float aimAngle, float ringPhase)

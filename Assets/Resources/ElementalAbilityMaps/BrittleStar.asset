@@ -47,11 +47,13 @@ MonoBehaviour:
     AbilityLabel: Destruction Mode
     AbilityDescription: 'X. The FIVE ARMS: while the mode is on, every turret fires on its own - unspread, at the
       Sparrow''s full-auto cadence (90 rounds/s each, 1350 u/s) - a stream steady enough to read as
-      five arms reaching ahead of the ring. Outside it, Fire on RT (held) is one stream from the
-      turret the right stick points at (the ring turns to bring it round) or the cockpit gun with the
-      stick centred, the stick''s deflection opening the spread. Friendly fire is on. A round on a
-      rival hull is a scored bullet hit (petals only). Space is reach - one dial: the rounds'' flight
-      time, and so their range, x1 -> x1.6 at level 10 (BrittleStarConfigSO.rangeMultiplier).'
+      five arms reaching ahead of the ring. The right stick moves them in and out: centred they meet
+      120 u ahead (the vessel a crosshair), pushed to the rim they splay 25 degrees. Outside it, Fire
+      on RT (held) is one stream from the turret the right stick points at (the ring turns to bring it
+      round) or the cockpit gun with the stick centred, the stick''s deflection opening the spread.
+      Friendly fire is on. A round on a rival hull is a scored bullet hit (petals only). Space is
+      reach - one dial: the rounds'' flight time, and so their range, x1 -> x1.6 at level 10
+      (BrittleStarConfigSO.rangeMultiplier).'
     Input: 8
     UnlockLevel: 5
     RelockBelowLevel: 4

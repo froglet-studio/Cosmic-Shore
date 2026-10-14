@@ -34,13 +34,13 @@ namespace CosmicShore.Gameplay
 
         [Header("Support ring")]
         [Tooltip("Centre to each point of the pentagon.")]
-        [SerializeField, Min(0.5f)] float ringRadius = 2.4f;
+        [SerializeField, Min(0.5f)] float ringRadius = 6f;
         [Tooltip("The ring's plane along the body axis.")]
         [SerializeField] float ringZ = -0.35f;
-        [SerializeField, Min(0.01f)] float strutThickness = 0.15f;
+        [SerializeField, Min(0.01f)] float strutThickness = 0.22f;
         [Tooltip("Beams per side of the pentagon. Topology: Time curves them into an arc (the Zephyr's circle).")]
         [SerializeField, Range(1, 12)] int strutSegments = 6;
-        [SerializeField, Min(0.01f)] float armThickness = 0.1f;
+        [SerializeField, Min(0.01f)] float armThickness = 0.14f;
 
         [Header("Engines and guns (one per point)")]
         [Tooltip("Engine pod half-width. Charge grows the pods and guns (Rolling Thunder).")]

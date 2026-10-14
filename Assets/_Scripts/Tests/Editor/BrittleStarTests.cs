@@ -308,6 +308,36 @@ namespace CosmicShore.Tests
         }
 
         [Test]
+        public void Arms_StickIn_MeetAheadAtTheFocus_StickOut_SplayOutward()
+        {
+            var fwd = Vector3.forward;
+            var outDir = Vector3.up;
+            const float r = 6f, focus = 120f, splay = 25f;
+
+            // Stick IN: the arm from a muzzle r out crosses the nose axis exactly `focus` ahead (a crosshair).
+            var d = BrittleStarRules.ArmDirection(fwd, outDir, r, 0f, focus, splay);
+            float t = focus / d.z;
+            Assert.AreEqual(0f, r + d.y * t, 1e-3f, "converges onto the axis");
+            Assert.Less(Vector3.Dot(d, outDir), 0f, "angled inward");
+
+            // Stick OUT: splayed the full angle outward.
+            var o = BrittleStarRules.ArmDirection(fwd, outDir, r, 1f, focus, splay);
+            Assert.AreEqual(splay, Vector3.Angle(fwd, o), 1e-3f);
+            Assert.Greater(Vector3.Dot(o, outDir), 0f, "angled outward");
+
+            // In between: the outward angle rises steadily with how far the stick is pushed.
+            float last = -999f;
+            for (int i = 0; i <= 10; i++)
+            {
+                var a = BrittleStarRules.ArmDirection(fwd, outDir, r, i / 10f, focus, splay);
+                float signed = Vector3.Angle(fwd, a) * Mathf.Sign(Vector3.Dot(a, outDir));
+                Assert.Greater(signed, last);
+                Assert.AreEqual(1f, a.magnitude, 1e-4f);
+                last = signed;
+            }
+        }
+
+        [Test]
         public void Range_IsSpeedTimesTwoTOverPi()
         {
             Assert.AreEqual(700f * 0.6f / Mathf.PI, BrittleStarRules.RangeFor(700f, 0.3f), 1e-3f);

@@ -59,6 +59,8 @@ MonoBehaviour:
   destructionFireRate: 90
   destructionProjectileSpeed: 1350
   destructionProjectileScale: 1
+  armFocusDistance: 120
+  armSplayDegrees: 25
   maxSpreadDegrees: 16
   aimDeadzone: 0.25
   ringTurnRate: 540

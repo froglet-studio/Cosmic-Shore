@@ -33,6 +33,10 @@ Modes are **exclusive**: one at a time, or **Cruise** (none). All three need the
 
 ## 2. The hull (`BrittleStarHullForm` / `BrittleStarHullBuilder` / `BrittleStarAnimation`)
 
+- **Ring size** (Garrett, 2026-10-14): radius **6** — 2.5× the first cut — so Creation Mode's five corner trails lie
+  12 u apart across the path. The vessel's hit box still spans only the cockpit and the inner arms (4.6 × 4.6 × 2.4):
+  the ring is the crosshair's frame, not a 12-unit wall that collides with every prism near the line. The camera
+  sits straight behind with **no height offset** — the ring frames what you fly at.
 - **Pure geometry**: `BrittleStarHullForm` (settings in, parts out). Part 0 is the **cockpit** (on the builder's own,
   painted renderer); part 1 the **ring** (struts, arms, pods and barrels — one mesh, a child that spins about the nose
   axis and is what Ring Detonation throws); parts 2–7 the six **flames** (domain-coloured cones the animation stretches).
@@ -87,7 +91,14 @@ Modes are **exclusive**: one at a time, or **Cruise** (none). All three need the
   Sparrow's tracer at `destructionProjectileScale` 1) — "such a steady stream that they give the appearance of five arms,
   hence the name brittle star". Spacing between rounds is speed / rate = 15 u, under the tracer's own ~20 u length, so
   each arm reads as solid. The arms run while the mode is on and the trail is running (the turn's clock), and RT adds
-  nothing to them. Fire is owed in seconds and paid in whole volleys, capped at 4 per frame (rule 17).
+  nothing to them.
+- **The right stick moves the arms in and out** (Garrett, 2026-10-14; the class document's "drag away from the centre to
+  increase spread"): with the stick IN (centred) every arm angles inward to cross the nose axis `armFocusDistance` 120 u
+  ahead — the five arms close on one point, the whole vessel a crosshair — and pushed OUT to the rim each splays
+  `armSplayDegrees` 25° outward; between, the angle moves linearly with the stick's deflection
+  (`BrittleStarRules.ArmDirection`, tested). The stick does not turn the ring while the arms run. On the one-thumb mouse
+  scheme there is no right stick, so the arms stay focused; on one-thumb touch the steering thumb is mirrored onto the
+  right stick, so hard turns open the arms. Fire is owed in seconds and paid in whole volleys, capped at 4 per frame (rule 17).
 - **Fire (RT, held) outside Destruction Mode**: one stream at `fireRate` 12 rounds/s, 700 u/s, from the turret the right
   stick points at — the ring turns (`ringTurnRate` 540°/s, always the short way round, never more than 36°) to bring the
   nearest point onto the aim — or from the **cockpit gun** with the stick inside `aimDeadzone`. Ringless, only the
@@ -207,7 +218,7 @@ procedural, own colliders, own HUD with petal bars, `DefaultVesselTelemetry`) an
 fresh `GlobalObjectIdHash` for its own guid, the **Sparrow's one-thumb transformer block** on the same fileID (scripted
 to `BrittleStarVesselTransformer`; cruise 35 + 10), the spawner swapped to `BrittleStarPrismController`, the hull builder
 and animation swapped on the same fileIDs, the Stoat's two VesselJets removed (the hull draws its own flames), every
-Stoat executor removed and `BrittleStarExecutor` + a turrets object added, its own camera (0, 9, −38), containers,
+Stoat executor removed and `BrittleStarExecutor` + a turrets object added, its own camera (0, 0, −38), containers,
 skimmer container (`affectSelf` off) and HUD. The clone is a spent one-shot: it stands down once the prefab exists and
 `--check` validates the shipped invariants. Tuning assets (config, camera, AI policy) are **seeded** — written once,
 then only checked for script and name — so a retune never fails the gate.
@@ -238,9 +249,10 @@ identical on the Stoat and Sparrow and shared by all 16 vessel prefabs — inher
 | Cruise | `BrittleStar.prefab` transformer | `DefaultThrottleScaler` 35 + `DefaultMinimumSpeed` 10 |
 | Turn rates | `BrittleStar.prefab` transformer | the Sparrow's: pitch/yaw 80, roll 30 |
 | Base trail | `BrittleStar.prefab` spawner | `BaseScale` (2.5, 2.5, 4.5), wavelength 6, offset 2 |
-| Hull proportions | `BrittleStarHullBuilder` field initializers (`BrittleStarHullForm.Defaults`) | ring radius 2.4 |
+| Hull proportions | `BrittleStarHullBuilder` field initializers (`BrittleStarHullForm.Defaults`) | ring radius 6 (2.5× the first cut), struts 0.22, arms 0.14 |
 | Flames / bank | `BrittleStarAnimation` | lit 3.2 u, ember 0.12 u, bank 28° |
-| Camera | `BrittleStarCameraSettingsSO` | offset (0, 9, −38), far 12000 |
+| Camera | `BrittleStarCameraSettingsSO` | offset (0, 0, −38) — no height: the vessel is a crosshair — far 12000 |
+| `armFocusDistance` / `armSplayDegrees` (the arms in / out) | `BrittleStarConfig` | 120 u / 25° |
 
 ## In-editor verification
 
@@ -257,7 +269,8 @@ None of that is a play test. In order:
    (~36 u apart, same blocks per second). **A** again: back to Cruise.
 4. **B** (Creation): the cockpit's trail stops and five trails run behind the ring's five corners. Push the right stick
    round: the ring turns and the five lines twist with it.
-5. **X** (Destruction): with no button held, five unbroken streams pour out of the five turrets — five arms. They should
+5. **X** (Destruction): with no button held, five unbroken streams pour out of the five turrets — five arms, closing on
+   one point ~120 u ahead. Push the right stick out: they open to a 25° splay; let it back in: they close again. They should
    read as solid lines, not dashes. Fly through mass: the arms cut it, your own included (friendly fire). **X** again:
    they stop. **RT** outside it: one stream from the cockpit gun; with the right stick pushed, from the aimed turret;
    full deflection opens a cone.

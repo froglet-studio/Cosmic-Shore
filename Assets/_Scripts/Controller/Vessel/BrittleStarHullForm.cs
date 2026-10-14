@@ -61,18 +61,19 @@ namespace CosmicShore.Gameplay
             public float FlameRadius;       // a nozzle flame's half-width at its root
         }
 
-        /// <summary>The shipped proportions: a ring about 5 u across, near the Sparrow's footprint.</summary>
+        /// <summary>The shipped proportions: a ring 12 u across (radius 6 - 2.5x the first cut, Garrett 2026-10-14, so the
+        /// five corner trails of Creation Mode lie well apart) round a cockpit near the Sparrow's size.</summary>
         public static Settings Defaults => new()
         {
             CockpitRadius = 0.62f,
             CockpitLength = 2.1f,
             CockpitTailZ = -0.9f,
-            RingRadius = 2.4f,
+            RingRadius = 6f,
             RingZ = -0.35f,
-            StrutThickness = 0.15f,
+            StrutThickness = 0.22f,
             StrutSegments = 6,
             Roundness = 0f,
-            ArmThickness = 0.1f,
+            ArmThickness = 0.14f,
             PodRadius = 0.26f,
             PodLength = 1.0f,
             PodTailZ = -0.85f,

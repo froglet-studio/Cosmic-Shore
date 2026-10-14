@@ -81,6 +81,12 @@ namespace CosmicShore.Gameplay
         [SerializeField, Min(10f)] float destructionProjectileSpeed = 1350f;
         [Tooltip("The arms' round size, as a multiple of the round prefab's own (the Sparrow's tracer at 1).")]
         [SerializeField, Min(0.1f)] float destructionProjectileScale = 1f;
+        [Tooltip("With the right stick IN (centred), the five arms angle inward to meet the nose axis this far ahead, " +
+                 "world units - the vessel as a crosshair.")]
+        [SerializeField, Min(1f)] float armFocusDistance = 120f;
+        [Tooltip("With the right stick pushed OUT to the rim, each arm splays this many degrees outward from the nose. " +
+                 "Between in and out the arms move linearly (BrittleStarRules.ArmDirection).")]
+        [SerializeField, Range(0f, 60f)] float armSplayDegrees = 25f;
         [Tooltip("Widest cone the right stick (or a touch drag) opens, in degrees off each muzzle's axis.")]
         [SerializeField, Range(0f, 45f)] float maxSpreadDegrees = 16f;
         [Tooltip("Right-stick deflection below this aims nowhere: normal fire comes from the cockpit gun.")]
@@ -174,6 +180,8 @@ namespace CosmicShore.Gameplay
         public float DestructionFireRate => destructionFireRate;
         public float DestructionProjectileSpeed => destructionProjectileSpeed;
         public float CreationOffset => creationOffset;
+        public float ArmFocusDistance => armFocusDistance;
+        public float ArmSplayDegrees => armSplayDegrees;
         public float MaxSpreadDegrees => maxSpreadDegrees;
         public float AimDeadzone => aimDeadzone;
         public float RingTurnRate => ringTurnRate;

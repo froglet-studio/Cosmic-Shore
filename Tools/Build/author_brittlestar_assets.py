@@ -191,8 +191,9 @@ STOAT_SCRIPTS = ("f8734be12714484eb93134990801178a",   # StoatAnimation
                  "95baa921cf22958449a3143749d5e0e3")   # the Stoat's base VesselTransformer (two-stick)
 VESSEL_JET_GUID = "55ceca573be662744948afc745f8840b"
 
-# Dimensions (world units): the hit box spans the ring and its pods (BrittleStarHullForm.Defaults: ring radius 2.4,
-# pods to ~2.7, pod tail -0.85 to barrel tips ~0.9).
+# Dimensions (world units): the hit box spans the cockpit and the inner arms. Since the ring grew to radius 6
+# (2026-10-14) it no longer covers the ring: the ring is the crosshair's frame, and a 12-unit solid box would make
+# every prism near the line a collision.
 BODY_BOX = ((0, 0, 0), (4.6, 4.6, 2.4))
 TRIGGER_BOX = ((0, 0, 0), (5.4, 5.4, 3.0))
 TAIL_X, TAIL_Z = 1.2, -3.0
@@ -483,6 +484,8 @@ def config_asset() -> str:
             "  destructionFireRate: 90\n"
             "  destructionProjectileSpeed: 1350\n"
             "  destructionProjectileScale: 1\n"
+            "  armFocusDistance: 120\n"
+            "  armSplayDegrees: 25\n"
             "  maxSpreadDegrees: 16\n"
             "  aimDeadzone: 0.25\n"
             "  ringTurnRate: 540\n"
@@ -550,11 +553,12 @@ def skimmer_container_asset() -> str:
 
 
 def camera_asset() -> str:
-    """SEEDED once. A hard-attached chase (the fleet default: no look-ahead, no ease), far enough back that the whole
-    5-unit ring and the pentagon it lays read; the fleet's 12000 far plane STATED (vessel contract 1.8)."""
+    """SEEDED once. A hard-attached chase (the fleet default: no look-ahead, no ease) straight BEHIND the hull with no
+    height offset - the whole vessel is a crosshair, the ring framing what it flies at (Garrett, 2026-10-14) - far enough
+    back that the 12-unit ring reads; the fleet's 12000 far plane STATED (vessel contract 1.8)."""
     return (header(CAMERA_SCRIPT, "BrittleStarCameraSettingsSO") +
             "  mode: 0\n"
-            "  followOffset: {x: 0, y: 9, z: -38}\n"
+            "  followOffset: {x: 0, y: 0, z: -38}\n"
             "  lookAheadDistance: 0\n"
             "  lookAheadLift: 0\n"
             "  chaseEaseRate: 0\n"
@@ -629,6 +633,8 @@ MAP_ENTRIES = (
     (3, "Destruction Mode", 8,
      "X. The FIVE ARMS: while the mode is on, every turret fires on its own - unspread, at the Sparrow's full-auto "
      "cadence (90 rounds/s each, 1350 u/s) - a stream steady enough to read as five arms reaching ahead of the ring. "
+     "The right stick moves them in and out: centred they meet 120 u ahead (the vessel a crosshair), pushed to the rim "
+     "they splay 25 degrees. "
      "Outside it, Fire on RT (held) is one stream from the turret the right stick points at (the ring turns to bring it "
      "round) or the cockpit gun with the stick centred, the stick's deflection opening the spread. Friendly fire is on. "
      "A round on a rival hull is a scored bullet hit (petals only). Space is reach - one dial: the rounds' flight time, "

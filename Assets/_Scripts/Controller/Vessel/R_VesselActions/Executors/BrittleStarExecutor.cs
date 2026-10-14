@@ -23,7 +23,8 @@ namespace CosmicShore.Gameplay
     /// <item><b>Creation Mode</b> (Mass): a trail behind EACH of the ring's five corners instead of the cockpit's one,
     /// turning with the ring's firing rotation.</item>
     /// <item><b>Destruction Mode</b> (Space): the FIVE ARMS — every turret fires on its own, unspread, at the Sparrow's
-    /// full-auto cadence, a stream steady enough to read as the brittle star's arms. <b>Fire</b> (RT, held) outside it:
+    /// full-auto cadence, a stream steady enough to read as the brittle star's arms; the right stick moves them in (meeting
+    /// ahead, a crosshair) and out (splayed). <b>Fire</b> (RT, held) outside it:
     /// one stream from the turret the right stick points at (the cockpit gun with the stick centred), the stick's
     /// deflection opening the spread. Friendly fire is on (the round's prefab).</item>
     /// <item><b>Ring Detonation</b> (Charge, LT): throw the ring forward; it blows on contact or on its fuse — an
@@ -316,7 +317,8 @@ namespace CosmicShore.Gameplay
         void AimRing(float dt)
         {
             Vector2 stick = AimStick();
-            float? aim = BrittleStarRules.AimAngle(stick, config.AimDeadzone);
+            // In Destruction Mode the stick moves the five arms in and out instead (UpdateFire); the ring holds.
+            float? aim = IsOn(Mode.Destruction) ? null : BrittleStarRules.AimAngle(stick, config.AimDeadzone);
             if (aim == null)
             {
                 _aimedPoint = -1;
@@ -455,9 +457,23 @@ namespace CosmicShore.Gameplay
                 int volleys = Mathf.FloorToInt(_armsOwed / armInterval);
                 _armsOwed -= volleys * armInterval;
                 float armScale = config.DestructionProjectileScale * charge;
+                // The stick moves the arms in and out: centred they meet ahead (a crosshair), at the rim they splay.
+                float splay01 = BrittleStarRules.Spread01(AimStick(), config.AimDeadzone);
+                Vector3 forward = _status.Transform.forward;
+                Vector3 axis = HullPosition;
                 for (int v = 0; v < volleys; v++)
                     for (int i = 0; i < BrittleStarHullForm.Points; i++)
-                        FireFrom(hull.Muzzle(i), config.DestructionProjectileSpeed, armScale, time, 0f, inherit, up);
+                    {
+                        var muzzle = hull.Muzzle(i);
+                        if (!muzzle) continue;
+                        Vector3 radial = Vector3.ProjectOnPlane(muzzle.position - axis, forward);
+                        float distance = radial.magnitude;
+                        Vector3 dir = distance > 1e-4f
+                            ? BrittleStarRules.ArmDirection(forward, radial / distance, distance, splay01,
+                                                            config.ArmFocusDistance, config.ArmSplayDegrees)
+                            : forward;
+                        FireAlong(muzzle, dir, config.DestructionProjectileSpeed, armScale, time, inherit);
+                    }
                 if (volleys > 0) PlayAt(config.FireEvent, HullPosition);
                 return;   // the arms ARE the guns while they run; RT adds nothing to them
             }
@@ -481,9 +497,14 @@ namespace CosmicShore.Gameplay
         void FireFrom(Transform muzzle, float speed, float scale, float time, float spread, Vector3 inherit, Vector3 up)
         {
             if (!muzzle) return;
-            Vector3 aim = BrittleStarRules.Deflect(_status.Transform.forward, up, spread, _shotSerial++);
+            FireAlong(muzzle, BrittleStarRules.Deflect(_status.Transform.forward, up, spread, _shotSerial++),
+                      speed, scale, time, inherit);
+        }
+
+        void FireAlong(Transform muzzle, Vector3 direction, float speed, float scale, float time, Vector3 inherit)
+        {
             gun.FireGun(muzzle, speed, inherit, scale, true, time, 0f, FiringPatterns.Default, 0,
-                        detachAfterSpawn: true, stopOnFirstPrismImpact: true, aimDirection: aim);
+                        detachAfterSpawn: true, stopOnFirstPrismImpact: true, aimDirection: direction);
         }
 
         // ------------------------------------------------------------------ Ring Detonation
