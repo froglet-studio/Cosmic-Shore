@@ -11518,8 +11518,22 @@ QuadFish authors a Space crystal. Charge, Mass and Time QuadFish were always col
 **Fix:** both `EnsureElementalCrystal` overloads now run `WireCollection` on a crystal they KEEP.
 It is a no-op when an impactor is already present, so the 25 prefabs that author it are unchanged. The
 same call makes the Space QuadFish's heart reachable by the crystal-joust chain, which also goes
-through the impactor. Authoring the pair on the six prefabs is still the clean shape; the runtime
-wiring is what makes "every lifeform drops a collectable crystal" hold regardless.
+through the impactor. The runtime wiring is the backstop that makes "every lifeform drops a
+collectable crystal" hold regardless of authoring.
+
+**The authoring half (same day):** `Tools/Build/author_lifeform_heart_collection.py` adds the pair to
+any lifeform heart that lacks it, in the exact shape the 25 already carry — an
+`ElementalCrystalImpactor` (`Crystal` -> the instance's Crystal, the one collection effect
+`0ac04a74…` every authored heart uses) and an `ImpactCollider` pointing at it, both as added
+components on the nested crystal instance, plus the `Crystal` component overridden to DISABLED. That
+last part was a second inconsistency the sweep found: all 25 working hearts author `m_Enabled: 0` on
+their Crystal, so a living heart stays out of `Crystal.Active` and its `Start` (the `crystalValue`
+stamp) waits for `ActivateCrystal`; QuadFish and Clawfish did not (the four flora already did). The
+script authored QuadFish, Clawfish, Nerve, Pine and Wall flora. **oldWallFlora is skipped** — no
+config, scene or prefab references its guid. `--check` is the gate: it fails naming any lifeform
+prefab whose heart lacks the pair (negative-controlled — it named exactly these five before the
+write), and a second write is byte-identical. Nested ids follow Unity's rule
+(`instanceFileID XOR sourceFileID`, 63-bit), which reproduces all 25 existing hearts' stubs.
 
 ### 60.2 Warped — a non-uniform creature root
 
