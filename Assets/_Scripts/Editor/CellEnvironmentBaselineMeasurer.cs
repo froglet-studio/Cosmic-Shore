@@ -16,7 +16,7 @@ namespace CosmicShore.Editor
     /// </summary>
     public static class CellEnvironmentBaselineMeasurer
     {
-        [MenuItem("FrogletTools/Ecology/Measure Cell Environment Baselines")]
+        [MenuItem("FrogletTools/Ecology/Measure Cell Environment Baselines", false, 141)]
         [FrogletTool(FrogletToolCategory.Ecology, Importance = 4,
             Description = "Measure per-cell prism baselines that phase thresholds ride on.")]
         public static void Measure()

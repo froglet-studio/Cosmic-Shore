@@ -90,7 +90,7 @@ namespace CosmicShore.Utility.PerformanceBenchmark.Editor
         Vector2 scroll;
         string batchCounters;
 
-        [MenuItem("FrogletTools/Performance/Crystal Depth Prism Benchmark", false, 41)]
+        [MenuItem("FrogletTools/Performance/Benchmarks/Crystal Depth Prism", false, 210)]
         [FrogletTool(FrogletToolCategory.Performance, Importance = 3,
             Description = "Frame cost of N omni + N Mass depth-prism crystals (N = 10/50/200): crystal markers, draw calls, SetPass calls, batches.")]
         public static void Open()

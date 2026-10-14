@@ -26,12 +26,12 @@ namespace CosmicShore.Editor
     /// just renders (and pays) the same heart as every other unsized one - heart world scale
     /// is read AS GAMEPLAY by the collect reward.</para>
     ///
-    /// Read-only. Run via FrogletTools ▸ Validation ▸ Validate Lifeform Crystals.
+    /// Read-only. Run via FrogletTools ▸ Ecology ▸ Validate Lifeform Crystals.
     /// </summary>
     public static class LifeFormCrystalValidator
     {
-        [MenuItem("FrogletTools/Validation/Validate Lifeform Crystals")]
-        [FrogletTool(FrogletToolCategory.Validation, Importance = 4,
+        [MenuItem("FrogletTools/Ecology/Validate Lifeform Crystals", false, 142)]
+        [FrogletTool(FrogletToolCategory.Ecology, Importance = 4,
             Description = "Every lifeform must drop exactly one elemental crystal, at its own authored size.")]
         public static void Validate()
         {
@@ -39,7 +39,7 @@ namespace CosmicShore.Editor
             ValidateAuthoredHeartSizes();
         }
 
-        // ── 1. one elemental crystal per lifeform prefab ──────────────────────
+        // ── 1. one elemental crystal per lifeform prefab ─────────────────────
 
         static void ValidatePrefabCrystals()
         {

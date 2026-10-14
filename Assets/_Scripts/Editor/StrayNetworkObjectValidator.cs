@@ -22,19 +22,19 @@ namespace CosmicShore.Editor
     /// (<c>NetworkSceneObjectGuard</c>); this reports the authoring so the guard never has to
     /// fire. See Docs/PartySystem/BUGS.md B16.</para>
     ///
-    /// Read-only. FrogletTools ▸ Validation ▸ Audit Stray Network Objects.
+    /// Read-only. FrogletTools ▸ Utilities ▸ Audit Stray Network Objects.
     /// </summary>
     public static class StrayNetworkObjectValidator
     {
-        [MenuItem("FrogletTools/Validation/Audit Stray Network Objects")]
-        [FrogletTool(FrogletToolCategory.Validation, Importance = 5,
+        [MenuItem("FrogletTools/Utilities/Audit Stray Network Objects", false, 222)]
+        [FrogletTool(FrogletToolCategory.Utilities, Importance = 5,
             Description = "A NetworkObject on a prefab that is instantiated but never spawned breaks every multiplayer join.")]
         public static void Audit()
         {
             var networked = new List<GameObject>();
             foreach (var guid in AssetDatabase.FindAssets("t:Prefab"))
             {
-                var path = AssetDatabase.GUIDToAssetPath(guid);
+                var ath = AssetDatabase.GUIDToAssetPath(guid);
                 var go = AssetDatabase.LoadAssetAtPath<GameObject>(path);
                 if (go && go.GetComponent<NetworkObject>()) networked.Add(go);
             }

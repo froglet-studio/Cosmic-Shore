@@ -31,7 +31,7 @@ namespace CosmicShore.Editor
 
         const string ToolName = "Audit Vessel Skimmers";
 
-        [MenuItem("FrogletTools/Vessels/Audit Vessel Skimmers")]
+        [MenuItem("FrogletTools/Vessels/Audits/Audit Vessel Skimmers", false, 274)]
         [FrogletTool(FrogletToolCategory.Vessels, Importance = 4,
             Description = "Checks every vessel's near/far skimmer reference actually reaches the " +
                           "object doing the physics — an unreachable or inactive skimmer skims " +

@@ -41,13 +41,13 @@ namespace CosmicShore.Editor
         /// "what is IN THE WAY", and a 2% badge never is.</summary>
         const float MinCoverage = 0.02f;
 
-        [MenuItem("FrogletTools/Diagnostics/Report On-Screen UI")]
-        [FrogletTool(FrogletToolCategory.Diagnostics, Importance = 4,
+        [MenuItem("FrogletTools/UI/Report On-Screen UI", false, 213)]
+        [FrogletTool(FrogletToolCategory.Interface, Importance = 4,
                      Description = "In play mode: name every UI element actually covering the " +
                                    "screen right now, biggest first, with its alpha, its owning " +
                                    "CanvasGroup and its canvas. Run it while the bad frame is up.")]
         static void Run()
-        {
+       {
             if (!Application.isPlaying)
             {
                 EditorUtility.DisplayDialog(

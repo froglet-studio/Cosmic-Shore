@@ -29,15 +29,15 @@ namespace CosmicShore.Editor.AI
         float _timeout = 150f;
         AIDifficulty _difficulty = AIDifficulty.Hard;
 
-        [MenuItem("FrogletTools/AI/Skim Race AI Benchmark")]
-        [FrogletTool(FrogletToolCategory.Performance, Importance = 3,
+        [MenuItem("FrogletTools/AI/Skim Race AI Benchmark", false, 101)]
+        [FrogletTool(FrogletToolCategory.Ai, Importance = 3,
             Description = "Play N Skim Races through the normal flow with the Skim Race AI and record completion times.")]
         static void Open() => GetWindow<SkimRaceBenchmarkWindow>("Skim Race AI Benchmark");
 
         void OnGUI()
         {
             _races = EditorGUILayout.IntSlider("Races", _races, 1, 50);
-            _intensity = EditorGUILayout.IntSlider("Intensity", _intensity, 1, 4);
+           _intensity = EditorGUILayout.IntSlider("Intensity", _intensity, 1, 4);
             _players = EditorGUILayout.IntSlider("Total players (host + AI)", _players, 2, 4);
             _limit = EditorGUILayout.FloatField("Benchmark limit (s, 0 = default)", _limit);
             if (_limit <= 0f)
