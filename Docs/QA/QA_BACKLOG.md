@@ -275,7 +275,7 @@ compiler. Reference: `Docs/PRISM_CLOCK_WIRING_CHECKLIST.md` § occlusion corrido
 7. **Shoot something and watch the debris** — each face should wipe with one hard
    erosion front that finishes before the piece retires.
 8. Swap to a much larger/smaller vessel (Vessel Changer toy) and repeat step 2.
-9. Run **FrogletTools ▸ Vessels ▸ Audit Corridor Vessel Radii** and check the Console
+9. Run **FrogletTools ▸ Vessels ▸ Audits ▸ Audit Corridor Vessel Radii** and check the Console
    for `[PrismOcclusion]` messages.
 
 **PASS:** prisms between camera and ship dissolve so the ship stays visible; they snap
@@ -1409,7 +1409,7 @@ skims** to fill; lime jaw CTA at full energy). The Dolphin's `VesselStatus` poin
 a **disabled** legacy skimmer, so every contact was dropped silently. The fix is
 unconfirmed. Reference: `DOLPHIN_ENERGY_ECONOMY.md` §5–6.
 
-1. Run **FrogletTools ▸ Vessels ▸ Audit Vessel Skimmers**. This is the gate.
+1. Run **FrogletTools ▸ Vessels ▸ Audits ▸ Audit Vessel Skimmers**. This is the gate.
 2. Freestyle as the Dolphin: fly through cell mass so prisms pass through the skimmer.
    Watch the Console — a single `[DolphinVesselHUDView]` warning means the shared bars
    config is missing or the jaw refs carry no `Graphic`, and the lime CTA is silently
@@ -1502,7 +1502,7 @@ fragment-stage change to the prism sight shader, neither seen by Unity.** Refere
 
 1. Open `DolphinHUDVariant.prefab`: four slots left to right — ProfileButton, CrystalButton,
    JawButton, DriftButton; `CrystalPip0/1` are **gone**; the `Profile` object has its script.
-   Run **FrogletTools ▸ Vessels ▸ Audit Vessel Ability Rows** (Dolphin 4/4, order ✅).
+   Run **FrogletTools ▸ Vessels ▸ Audits ▸ Audit Vessel Ability Rows** (Dolphin 4/4, order ✅).
 2. Select `Resources/EchoSightHalo.mat`: it shows the `EchoSightHalo` shader, not magenta.
 3. Freestyle on the Dolphin. Watch the Charge icon as energy banks; hold and release the
    right trigger.
@@ -1578,7 +1578,7 @@ The legacy hull was replaced by the `dolphin_shapekey` rig; every structural che
 the ship was still broken in flight, so only a flight settles it. Reference:
 `Docs/VESSEL_CONSTRUCTION.md` §4.6.5.
 
-1. Run **FrogletTools ▸ Vessels ▸ Audit Vessel Tails and Jets**: six jets, on the nozzle bones.
+1. Run **FrogletTools ▸ Vessels ▸ Audits ▸ Audit Vessel Tails and Jets**: six jets, on the nozzle bones.
 2. Run **Audit Corridor Vessel Radii**: the Dolphin's number has not moved.
 3. Run **Audit Vessel Skimmers**: the Dolphin passes exactly as before.
 4. Fly the Dolphin in freestyle **side by side** (or alternately) with a Dolphin on an older
@@ -2042,7 +2042,7 @@ Urchin flew with no HUD at all before this. Reference: `Docs/UNITY_VERIFICATION_
    has `UrchinVesselHUDView` and count the entries under **Ability Icons**.
 2. Open `Assets/_Prefabs/Spacevessels/Urchin.prefab`. On its `VesselStatus` component, read the
    **Vessel HUD Controller** field. Look for any field that says **Missing**.
-3. Run **FrogletTools ▸ Vessels ▸ Audit Vessel Ability Rows**, then **FrogletTools ▸ Vessels ▸
+3. Run **FrogletTools ▸ Vessels ▸ Audits ▸ Audit Vessel Ability Rows**, then **FrogletTools ▸ Vessels ▸
    Audit Ability Lockups**. Find the Urchin lines in each report.
 4. Start freestyle (click the centre of the main menu screen, or press **Y** on a gamepad), open
    the Vessel Changer and pick the **Urchin**. Look at the bottom-right of the screen.
@@ -2081,8 +2081,8 @@ pictures. Prefabs written as text, never imported; no code changed.
    Watch the Console for red errors. In the Project window, check the new `*-PLACEHOLDER.png`
    files under `Assets/_Graphics/Icons/AbilityIcons/Rhino`, `/Serpent` and `/Scarab` show as
    Sprite images.
-2. Run **FrogletTools ▸ Vessels ▸ Audit Vessel Ability Rows** and read the Rhino, Serpent and
-   Scarab lines. Run **FrogletTools ▸ Vessels ▸ Audit Ability Lockups**.
+2. Run **FrogletTools ▸ Vessels ▸ Audits ▸ Audit Vessel Ability Rows** and read the Rhino, Serpent and
+   Scarab lines. Run **FrogletTools ▸ Vessels ▸ Audits ▸ Audit Ability Lockups**.
 3. Start freestyle and pick the **Rhino** in the Vessel Changer. Read the four cards bottom-right,
    left to right.
 4. Pick the **Serpent**. Read the four cards and their control hints. Fire the rifle (right
@@ -4532,10 +4532,10 @@ keys from the `SilhouetteController` rename.
 
 ### QA-FTUE-QUEST-ROWS ⬜ — quest graphs lay out in venue rows
 **Source:** PR #633 (six graph assets rewritten by script).
-1. **FrogletTools ▸ Quest Graph Editor** → MainQuest → click through Phases 0–5.
+1. **FrogletTools ▸ FTUE ▸ Quest Graph Editor** → MainQuest → click through Phases 0–5.
 2. On any phase: drag a node somewhere silly → **Layout Rows** → then `Ctrl+Z`.
 3. Press **Save** once per phase.
-4. Run **FrogletTools ▸ Quest Graph ▸ Layout All Phases (Rows)**.
+4. Run **FrogletTools ▸ FTUE ▸ Layout All Phases (Rows)**.
 
 **PASS:** every phase opens already in rows with edges intact and no node stacked at
 the origin; Layout Rows re-snaps and undo restores the drag; Save produces a **no-op
@@ -5008,7 +5008,7 @@ these numbers: the project rule is profile first. This item's deliverable is dat
 2. Make a new empty scene: **File ▸ New Scene**, pick **Basic (URP)**, press **Create**. It must have a
    **Main Camera** and nothing else.
 3. Press **Play**.
-4. Open **FrogletTools ▸ Performance ▸ Crystal Depth Prism Benchmark**.
+4. Open **FrogletTools ▸ Performance ▸ Benchmarks ▸ Crystal Depth Prism**.
 5. Set **Crystals** to **Both**. Leave **Warm-up frames** at 120 and **Sample frames** at 600.
 6. Press **Run N = 10 / 50 / 200**. Wait until three results appear in the window (about a minute).
 7. Set **Crystals** to **Omni Only** and press **N = 50 only**. Wait for the result.

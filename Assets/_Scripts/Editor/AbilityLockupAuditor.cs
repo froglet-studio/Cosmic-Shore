@@ -55,7 +55,7 @@ namespace CosmicShore.Editor
         // The style's geometry is authored in reference px at 1920x1080.
         const float ReferenceWidth = 1920f;
 
-        [MenuItem("FrogletTools/Vessels/Audit Ability Lockups")]
+        [MenuItem("FrogletTools/Vessels/Audits/Audit Ability Lockups", false, 270)]
         [FrogletTool(FrogletToolCategory.Vessels, Importance = 4,
             Description = "Ability lockup: style sanity + per-vessel icon fit inside the totem card.")]
         public static void Audit()

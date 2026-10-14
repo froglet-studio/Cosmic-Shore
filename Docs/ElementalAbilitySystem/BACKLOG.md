@@ -154,7 +154,7 @@ Mechanics reference: `_Scripts/Controller/Vessel/R_VesselActions/DOLPHIN_ENERGY_
 10. **Serpent's skimmer is dead.** `_nearFieldSkimmer` resolves to a `VacuumSkimmer` whose
     GameObject is INACTIVE *and* which carries no `SkimmerImpactor`/container. Same class of
     fault the Dolphin had; deliberately left untouched by that branch (different vessel).
-    Confirm with `FrogletTools > Vessels > Audit Vessel Skimmers`.
+    Confirm with `FrogletTools > Vessels > Audits > Audit Vessel Skimmers`.
 11. **`ExplosionImpactor.OnBlastResolved` is a static C# event.** CLAUDE.md's anti-patterns
     forbid static events for cross-system communication. It is presentation-only, has one
     self-filtering listener (the Dolphin HUD's prism tally), and subscribes/unsubscribes
@@ -255,7 +255,7 @@ Mechanics reference: `_Scripts/Controller/Vessel/R_VesselActions/DOLPHIN_ENERGY_
     dangling local reference in the file, present since before this branch. Same
     never-pruned-override rot CLAUDE.md documents for `Cell`: Unity retains modifications
     whose `propertyPath` no longer resolves. Fix by running
-    **FrogletTools > Vessels > Wire Elemental Petal Bars** on the Dolphin and re-saving the
+    **FrogletTools > Vessels > Wiring > Wire Elemental Petal Bars** on the Dolphin and re-saving the
     prefab, then re-check with the ability-row audit. Pre-existing; NOT caused by the shard
     toggle removal (verified: the base revision has the same dangling reference).
 24. **`ActionExecutorRegistry._executors` on the Dolphin holds an empty slot** (`{fileID: 0}`

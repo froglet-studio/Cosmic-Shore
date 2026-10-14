@@ -18,7 +18,7 @@ namespace CosmicShore.Editor
         const int MaxPrisms = 500;
         const float Radius = 400f;
 
-        [MenuItem("FrogletTools/Ecology/Prism Animation/Smoke Test - Re-Bloom Nearby Prisms (Play Mode)")]
+        [MenuItem("FrogletTools/Ecology/Prism Animation/Smoke Test - Re-Bloom Nearby Prisms (Play Mode)", false, 164)]
         public static void ReBloomNearbyPrisms()
         {
             var origin = Camera.main != null ? Camera.main.transform.position : Vector3.zero;
@@ -45,7 +45,7 @@ namespace CosmicShore.Editor
                       "SNAP + [PrismClock] errors = that material's graph still needs the §4.4 wiring.");
         }
 
-        [MenuItem("FrogletTools/Ecology/Prism Animation/Smoke Test - Re-Bloom Nearby Prisms (Play Mode)", isValidateFunction: true)]
+        [MenuItem("FrogletTools/Ecology/Prism Animation/Smoke Test - Re-Bloom Nearby Prisms (Play Mode)", true, 164)]
         static bool ValidatePlayMode() => Application.isPlaying;
     }
 }

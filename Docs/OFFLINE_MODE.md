@@ -463,7 +463,7 @@ with the preference false; going online then costs them one tap.
 `ReconnectAsync` clears the preference *before* the boot chain reads it; `RunBootChainAsync`
 clears only `IsOfflineSession`, never the preference.
 
-### 8.4 Wiring it: `FrogletTools > Interface > Wire Offline Menu Surfaces`
+### 8.4 Wiring it: `FrogletTools > UI > Wire Offline Menu Surfaces`
 
 `OfflineMenuWirer` wires Menu_Main: the lamp, the confirm bar, and an `OfflineUIGate` on each
 online-only panel.
@@ -684,7 +684,7 @@ Two details that matter for UI sprites: **mipmaps are on** (these scale *down* t
 CanvasScaler, and a thin stroke shimmers without them), and **RGB stays white even where alpha is
 zero** — a sprite carrying black RGB in its transparent pixels fringes dark when filtered.
 
-`EnsureIcon` never overwrites, so authored art always wins; **FrogletTools ▸ Interface ▸ Wire
+`EnsureIcon` never overwrites, so authored art always wins; **FrogletTools ▸ UI ▸ Wire
 Offline Menu Surfaces (Regenerate Icons)** forces a re-render after a geometry change.
 
 ---

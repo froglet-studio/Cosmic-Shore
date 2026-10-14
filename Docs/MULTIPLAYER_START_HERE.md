@@ -106,6 +106,10 @@ faults (`COSMIC_SHORE_NET_FAULT`, `do netfault`) and stats (`do net`).
 | 7 | UGS sign-in (anonymous + session-token resume), UGS Relay as that player, the one-step UGS CHECK | Built and tested against local stand-ins. **The live check waits for you (§5.3)** |
 | 8 | UGS Lobby as the session service; START / START ONLINE; `+ PLAYER 2`; F3 diagnostics | Built 2026-10-14 (`UgsMultiplayerTests` 6/6 on stand-ins); party harness on the stand-ins: **14/14** (2026-10-14, `Tools/Build/prisma_party_scenarios/README.md` § State). **The live test waits for you (§5.3)** |
 
+**When you merge into this branch, run `NetworkWiringGuardTests` and `NetStackTests`.** On 2026-10-14 a
+merge took one side of `PlayerBoot` whole and switched the UDP transport, the relay, the simulator and the
+faults off with every other test green; those two tests fail if a merge drops that wiring again.
+
 ### Unity game: the hardening programme
 
 | Block | What | State |
@@ -119,6 +123,15 @@ faults (`COSMIC_SHORE_NET_FAULT`, `do netfault`) and stats (`do net`).
 
 Open bugs that matter: **B29 Count case** (a party that just shrank reads as full; Block 5 cures
 it). The B29 Session case ("defect 5") is fixed but unverified in Unity.
+
+**Fixed 2026-10-14: networked Bloomrush matches crawled in Amoebius (not a network bug).** Once a
+match started, frames fell to ~4 a second, and the pre-game cinematic outlasted the party harness's
+3-minute wait for GO, so the harness stopped at T4 (8/14). The flora growth in the trace (the Rampage
+cell grows ~60k prisms by design) was not the cost. `dotnet-trace` put ~95% of the main thread in
+`CrystalChargeArcs.LateUpdate`, because Amoebius's `Renderer.isVisible` read true for every renderer and
+every Charge crystal rebuilt its arc mesh every frame. `isVisible` now means what Unity's does (drawn by a
+camera in the last rendered frame; `Port/src/CosmicShore.Engine/Rendering/RenderVisibility.cs`). One
+pilot runs the grown arena at 54-61 fps, and the harness passes 14/14.
 
 ## 5. What the owner tests by hand
 
@@ -141,6 +154,11 @@ Everything online in Amoebius goes through the real UGS project, so it is §5.3.
 
 Prerequisite for every test: **each virtual player has its own tag** (P2, P3, P4), or they share
 one UGS account (`Docs/PartySystem/TESTS.md` § prerequisites).
+
+**First, after pulling (MPPM 2.0, 2026-10-14):** let the project compile. Expect no "Script Updating
+Consent" dialog and no errors in `AuthenticationServiceFacade.cs` or `MultiplayerSetup.cs`; a clone still
+signs in on its own profile. If anyone clicked "Yes" on that dialog before pulling, discard their local
+rewrite of those two files first (checklist entry "No more Script Updating Consent prompt").
 
 Run in this order. The checklist entry named in the last column holds the exact steps.
 

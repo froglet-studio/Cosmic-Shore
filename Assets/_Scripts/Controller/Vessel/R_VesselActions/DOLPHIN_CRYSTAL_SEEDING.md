@@ -207,7 +207,7 @@ this. Two rows remain unverified because one editor cannot reach them: the **MPP
 row, and the **live-cap** row (~4 minutes of uninterrupted seeding at the shipped 30 s cooldown).
 Mirrored in `Docs/UNITY_VERIFICATION_CHECKLIST.md`.
 
-Run **FrogletTools > Vessels > Audit Vessel Ability Rows** first — Dolphin should still report map
+Run **FrogletTools > Vessels > Audits > Audit Vessel Ability Rows** first — Dolphin should still report map
 complete, 4/4 icons, order ✅. Then play Menu_Main and enter freestyle on the Dolphin.
 
 | check | expect |
@@ -364,7 +364,7 @@ the reference extent in one call so the icon can never mix a radius from one fra
 from another.
 
 The row wirer was re-cut to the same layout AND generalized to the whole fleet —
-`VesselAbilityRowWirer` (`FrogletTools > Vessels > Wire Vessel Ability Row`). Nothing about the
+`VesselAbilityRowWirer` (`FrogletTools > Vessels > Wiring > Wire Vessel Ability Row`). Nothing about the
 row's geometry was ever Dolphin-specific, and three vessels still report 0/4 icons, so pointing
 it at Manta/Rhino/Serpent builds their whole row from nothing. The Dolphin's gauges (profile
 capsule, tallies, jaws, adopted boost ring) stay as a per-vessel step the generic pass calls for
