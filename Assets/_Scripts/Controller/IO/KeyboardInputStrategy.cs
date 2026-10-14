@@ -15,8 +15,8 @@ namespace CosmicShore.Gameplay
     ///   A / D     left  -X / +X     XSum yaw; with ' / L → XDiff speed (A+' fast, L+D slow)
     ///   P / ;     right +Y / -Y     YDiff roll vs left Y (P+S roll left, W+; roll right)
     ///   L / '     right -X / +X     (same mix as A / D)
-    ///   Space       Button1Action   R  Button2Action   Q  Button3Action   E  FlipAction
-    ///               (QWER + Space — shared verbatim with SingleStickMouseInputStrategy, because
+    ///   Space       Button1Action   T  Button2Action   Q  Button3Action   E  FlipAction
+    ///               (QWERT + Space — shared verbatim with SingleStickMouseInputStrategy, because
     ///                ControlGlyphSetSO authors one keyboardLabel per control)
     ///   Left Shift  left trigger analog 1, LeftStickAction / OnlyLeftStickAction
     ///               → Squirrel drift (prefab singleTriggerDrift; gamepad binds LeftStickAction)
@@ -125,13 +125,15 @@ namespace CosmicShore.Gameplay
         {
             EdgeFire(keyboard.spaceKey.isPressed, ref prevButton1, InputEvents.Button1Action);
 
-            // R / Q rather than the historical B / N: both desktop schemes must raise the SAME
+            // T / Q rather than the historical B / N: both desktop schemes must raise the SAME
             // key per control, because ControlGlyphSetSO authors ONE keyboardLabel each and a
             // divergence makes the ability chip confidently wrong for whichever scheme is live.
-            // SingleStickMouseInputStrategy needs its action keys inside QWER + Space (one
-            // resting left hand, never leaving the mouse), and R / Q sit directly above this
-            // scheme's own WASD left stick, so the move suits both hands.
-            EdgeFire(keyboard.rKey.isPressed, ref prevButton2, InputEvents.Button2Action);
+            // SingleStickMouseInputStrategy needs its action keys inside QWERT + Space (one
+            // resting left hand, never leaving the mouse), and T / Q sit just above this
+            // scheme's own WASD left stick, so the move suits both hands. Button2 was R until
+            // 2026-10-14: R is the Vessel Studio's reset, and the Stoat's mode switch (pad B)
+            // should be the same key in the studio and the game, so it moved one key right.
+            EdgeFire(keyboard.tKey.isPressed, ref prevButton2, InputEvents.Button2Action);
             EdgeFire(keyboard.qKey.isPressed, ref prevButton3, InputEvents.Button3Action);
             EdgeFire(keyboard.eKey.isPressed, ref prevFlip, InputEvents.FlipAction);
 
