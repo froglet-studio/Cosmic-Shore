@@ -381,14 +381,13 @@
     spreadDeg: 7,           // the widest spread, at a full aim stick
     destructionRadius: 2.5, // Destruction mode: rounds x2.5 bigger ("larger projectiles")
     chargeShotAtFull: 1.8,  // Charge 10: rounds x1.8 bigger (Rolling Thunder)
-    nudge: 30, nudgeStack: 0.6, nudgeWindow: 1.5, slowOnHit: 0.85,   // a hit on a vessel: a 30 u/s shove, +60% per hit inside 1.5 s, speed x0.85
-    spaceNudgeAtFull: 2,    // Space 10: x2 shove
-    disableSeconds: 3,      // Destruction mode: a hit switches the victim's trail off for 3 s
+    hitWindow: 0.05,        // PvP is petals only (LOCKED, Docs/claude/IMPACT_EFFECTS_AND_AUDIO.md): a hit on a vessel takes petals and
+                            // nothing else, at most one per victim per 0.05 s (VesselCombatHitByBullet). The design's knockback, slow
+                            // and trail-off on vessels are retired by that rule; friendly fire still breaks allied MASS.
     creationScale: 1.6, massCreationAtFull: 1.8,   // Creation: five edge blocks of the ring's pentagon, x1.6 thick; Mass 10: x1.8 more (Fabricator)
     ringRadius: 7,          // the support ring's radius on the hull
     ringLaunch: 420, ringFuse: 1.4,          // the launched ring: +420 u/s over the hull's speed; bursts on impact or after 1.4 s
     blastR: 55, planeR: 150, planeT: 10, chargeBlastAtFull: 1.6,   // the burst: a 55 u ball, then a 150 u wave 10 u thick in the ring's plane; Charge 10: x1.6
-    blastSlow: 0.5, blastDisable: 4, blastShove: 80,
     overdrive: 6,           // a crystal while a charge is held: all three modes at once for 6 s
     hullR: 4, ramSlow: 0.8, ramStop: 0.3,   // ramming an ordinary prism costs 20% speed; a super-shielded one stops you at 30%
   };
@@ -396,7 +395,7 @@
   const ELEMENTS = [
     { key: 'charge', name: 'Charge', color: '--charge', persona: 'Rolling Thunder', param: 'Round size and ring blast' },
     { key: 'mass', name: 'Mass', color: '--mass', persona: 'Fabricator', param: 'Creation block size' },
-    { key: 'space', name: 'Space', color: '--space', persona: 'Hunter', param: 'Shot range and shove' },
+    { key: 'space', name: 'Space', color: '--space', persona: 'Hunter', param: 'Shot range' },
     { key: 'time', name: 'Time', color: '--time', persona: 'Zephyr', param: 'Speed mode bonus' },
   ];
   // Play styles are named types over the element levels (D6); each also has its AI brain (D23, lab-only).
@@ -408,7 +407,7 @@
     { name: 'Rolling Thunder', lv: { charge: 10, mass: 0, space: 0, time: 0 }, brain: { speedFar: 520, clearAt: 2, ringAt: 18, create: 0, hunt: 0.3, shoot: 0.3, guard: 1.6, parting: true , crowd: 2, crystalReach: 250 },
       info: 'Charge. Persona: Fox / Falco. "I\'m not just painting the town red, I\'m tearing it down brick by brick." Destroys every clump in its path; detonates eagerly. Bigger rounds and a bigger ring blast.' },
     { name: 'Hunter', lv: { charge: 0, mass: 0, space: 10, time: 0 }, brain: { speedFar: 500, clearAt: 6, ringAt: 45, create: 0, hunt: 1, shoot: 1.5, guard: 1.2 , crowd: 3, crystalReach: 450 },
-      info: 'Space. Persona: bounty hunter. "In a dogfight, I\'m the judge and the executioner." Turns its guns on any rival in range. Longer shot range and a harder shove.' },
+      info: 'Space. Persona: bounty hunter. "In a dogfight, I\'m the judge and the executioner." Turns its guns on any rival in range. Longer shot range (the design\'s "nudge" is retired: PvP is petals only).' },
     { name: 'Zephyr', lv: { charge: 0, mass: 0, space: 0, time: 10 }, brain: { speedFar: 240, clearAt: 10, ringAt: 30, create: 0, hunt: 0, shoot: 6, guard: 0.8 , crowd: 3, crystalReach: 700 },
       info: 'Time. Persona: adrenaline junkie. "You can try to keep up, but I\'ll always be one step ahead!" Lives in Speed mode, weaves round barricades rather than through them. A bigger Speed bonus.' },
     { name: 'Shipped', lv: { charge: 0, mass: 0, space: 0, time: 0 }, brain: { speedFar: 420, clearAt: 6, ringAt: 40, create: 0.15, hunt: 0, shoot: 1.5, guard: 1.2 , crowd: 3, crystalReach: 450 },
@@ -440,7 +439,7 @@
     return {
       shot: lerp(1, KIT.chargeShotAtFull, f('charge')), blast: lerp(1, KIT.chargeBlastAtFull, f('charge')),
       block: lerp(1, KIT.massCreationAtFull, f('mass')),
-      shotSpeed: lerp(SHIP.gunSpeed[0], SHIP.gunSpeed[1], f('space')), shove: lerp(1, KIT.spaceNudgeAtFull, f('space')),   // Space: the authored speedValue ElementalFloat (range)
+      shotSpeed: lerp(SHIP.gunSpeed[0], SHIP.gunSpeed[1], f('space')),   // Space: the authored speedValue ElementalFloat (range)
       speedBonus: (SHIP.boostMult - 1) * lerp(1, KIT.timeBonusAtFull, f('time')),
       circle: f('time'), cockpit: 1 + 0.5 * f('mass'), pods: 1 + 0.45 * f('charge'), barrels: 1 + 1.1 * f('space'),
     };
@@ -530,7 +529,7 @@
       const P = {
         i, spec, domain: domainOf(spec.domain), pos: new V(off, 0, 60), quat: q0.clone(), cmd: q0.clone(), speed: SHIP.minSpeed + SHIP.throttle, push: new V(),
         lv: Object.assign({}, spec.lv), m: mults(spec.lv), style: styleOf(spec.style),
-        mode: 'speed', ring: true, charge: 0, overdrive: 0, ringAngle: 0, ringTarget: 0, owed: 0, shotN: 0, trailAcc: 0, trailOff: 0, knockStack: 0, knockUntil: 0,
+        mode: 'speed', ring: true, charge: 0, overdrive: 0, ringAngle: 0, ringTarget: 0, owed: 0, shotN: 0, trailAcc: 0, trailOff: 0, lastHitAt: -1, petalsLost: 0,
         crystals: 0, crystal: null, finishT: null, destroyed: 0, bonus: 0, rings: 0, hits: 0, mass: 0, kills: 0, modeT: { speed: 0, creation: 0, destruction: 0, overdrive: 0, none: 0 },
         hc: spec.ai ? { level: DIFF[spec.ai], rng: rng(seed * 31 + i * 7 + 1), tracking: -1, noticeAt: 0, misjudged: false, until: 0, off: new V(), unnoticed: false } : null,
         aim: null, aiState: '', lastAiIn: null, firing: false, aimX: 0, aimY: 0, idle: 0, held: false, ringWas: false,
@@ -658,7 +657,7 @@
         if (d < rangeOf(P) && to.normalize().dot(f) > 0.975 && !ownInLine(W, P, f, d)) { fire = true; break; }
       }
     }
-    if (br.hunt > 0) {   // a rival in the gunsight: shove it off its line
+    if (br.hunt > 0) {   // a rival in the gunsight: take its petals
       for (const O of W.pilots) {
         if (O === P || O.finishT != null) continue; const to = O.pos.clone().sub(P.pos), d = to.length();
         if (d < rangeOf(P) && to.normalize().dot(f) > 0.985 - 0.02 * br.hunt) { fire = true; if (br.hunt >= 1) { goal = O.pos.clone(); why = 'hunt'; } }
@@ -811,7 +810,7 @@
         if (rel.addScaledVector(s.d, -along).lengthSq() < (6 + s.r) ** 2 && along < Math.min(hd, vd)) { c.hp -= s.big ? 2 : 1; s.dead = true; if (c.hp <= 0) { c.dead = true; W.pilots[s.owner].kills++; W.killed++; } break; }
       }
       if (s.dead) continue;
-      if (vh && vd < hd) { s.dead = true; shove(W, W.pilots[s.owner], vh, s.d, s.disable); continue; }
+      if (vh && vd < hd) { s.dead = true; petalHit(W, W.pilots[s.owner], vh); continue; }
       if (hit) {
         s.dead = true; const by = W.pilots[s.owner];
         if (hit.shield === 2) { hit.flash = 1; W.dirty = true; }
@@ -823,12 +822,10 @@
     }
     if (W.shots.length > 600) W.shots = W.shots.filter((s) => !s.dead);
   }
-  function shove(W, by, O, dir, disable) {   // a hit on a vessel: knock back, slow, and (Destruction) switch its trail off
-    if (O.finishT != null) return;
-    O.knockStack = W.t < O.knockUntil ? O.knockStack + 1 : 0; O.knockUntil = W.t + KIT.nudgeWindow;
-    O.push.addScaledVector(dir, KIT.nudge * by.m.shove * (1 + KIT.nudgeStack * O.knockStack)); O.speed *= KIT.slowOnHit; by.hits++;
-    if (disable) { O.trailOff = Math.max(O.trailOff, W.t + KIT.disableSeconds); }
-    if (O.i === W.watch && O.knockStack === 0) W.events.push('Hit by ' + by.domain.name + (disable ? ': trail off' : ''));
+  function petalHit(W, by, O) {   // a hit on a vessel: petals only (LOCKED), one per victim per 0.05 s; nothing moves, slows or switches off
+    if (O.finishT != null || W.t - O.lastHitAt < KIT.hitWindow) return;
+    O.lastHitAt = W.t; O.petalsLost++; by.hits++;
+    if (O.i === W.watch && O.petalsLost % 10 === 1) W.events.push('Hit by ' + by.domain.name + ': petals');
   }
   function stepRings(W, dt) {
     for (const R of W.rings) {
@@ -850,9 +847,9 @@
       else if (d < pr && off < KIT.planeT) { if (p.shield === 2) { p.flash = 1; } else { killPrism(W, p, by); gone++; } }
     }
     W.dirty = true;
-    for (const O of W.pilots) {   // vessels caught in it: knocked back, slowed, trail off (the design names enemies; the owner is spared)
+    for (const O of W.pilots) {   // vessels caught in it: a scored hit, petals only (LOCKED); the owner is spared
       if (O.i === R.owner || O.finishT != null) continue; const rel = O.pos.clone().sub(R.pos), d = rel.length();
-      if (d < br || (d < pr && Math.abs(rel.dot(n)) < KIT.planeT * 2)) { O.push.addScaledVector(rel.normalize(), KIT.blastShove); O.speed *= KIT.blastSlow; O.trailOff = Math.max(O.trailOff, W.t + KIT.blastDisable); by.hits++; if (O.i === W.watch) W.events.push('Caught in ' + by.domain.name + "'s ring blast"); }
+      if (d < br || (d < pr && Math.abs(rel.dot(n)) < KIT.planeT * 2)) { O.lastHitAt = -1; petalHit(W, by, O); if (O.i === W.watch) W.events.push('Caught in ' + by.domain.name + "'s ring blast"); }
     }
     for (const c of W.fauna) if (!c.dead && c.pos.distanceTo(R.pos) < br * 1.2) { c.dead = true; by.kills++; W.killed++; }
     if (R.owner === W.watch) W.events.push('Ring burst: ' + gone + ' prisms');
@@ -1244,7 +1241,7 @@
     const m = mults(S.lv);
     for (const E of ELEMENTS) {
       const r = elRows[E.key]; r.inp.value = S.lv[E.key]; r.out.textContent = S.lv[E.key];
-      const val = E.key === 'charge' ? '\u00d7' + m.shot.toFixed(2) + ' rounds, \u00d7' + m.blast.toFixed(2) + ' blast' : E.key === 'mass' ? '\u00d7' + m.block.toFixed(2) + ' Creation blocks' : E.key === 'space' ? Math.round(m.shotSpeed * 2 * SHIP.gunLife / Math.PI) + ' u range, \u00d7' + m.shove.toFixed(2) + ' shove' : Math.round(SHIP.minSpeed + SHIP.throttle * (1 + m.speedBonus)) + ' u/s in Speed mode';
+      const val = E.key === 'charge' ? '\u00d7' + m.shot.toFixed(2) + ' rounds, \u00d7' + m.blast.toFixed(2) + ' blast' : E.key === 'mass' ? '\u00d7' + m.block.toFixed(2) + ' Creation blocks' : E.key === 'space' ? Math.round(m.shotSpeed * 2 * SHIP.gunLife / Math.PI) + ' u range' : Math.round(SHIP.minSpeed + SHIP.throttle * (1 + m.speedBonus)) + ' u/s in Speed mode';
       r.wl.textContent = ''; r.wl.append(document.createTextNode(E.persona + ' '), elx('b', null, val));
     }
   }
@@ -1253,8 +1250,6 @@
     ['timeBonusAtFull', 'Zephyr bonus', 1, 3, 0.05, (v) => '\u00d7' + v.toFixed(2), 'Time 10 multiplies the Speed-mode bonus by this ("increased movement speed bonus in speed mode"). The bonus itself is authored: Speed mode is the boost, VesselStatus.boostMultiplier x4. Lab-only.'],
     ['spreadDeg', 'Widest spread', 0, 20, 0.5, (v) => v.toFixed(1) + '°', 'The spread at a full aim stick: "drag away from the centre of the button to increase spread". Lab-only.'],
     ['destructionRadius', 'Destruct rounds', 1, 3, 0.1, (v) => '×' + v.toFixed(1), 'Destruction mode: "larger projectiles". Lab-only.'],
-    ['nudge', 'Shove', 0, 120, 5, (v) => v + ' u/s', 'A hit on a vessel knocks it back; each hit inside the window knocks it further (the design). Lab-only.'],
-    ['disableSeconds', 'Trail off', 0, 10, 0.5, (v) => v + ' s', 'Destruction-mode hits "disable enemy vessel mass production temporarily". Lab-only.'],
     ['creationScale', 'Creation blocks', 1, 4, 0.1, (v) => '×' + v.toFixed(1), 'Creation: "a large pentagon of blocks flowing from the support ring", five at a time. Lab-only.'],
     ['ringLaunch', 'Ring launch', 100, 900, 10, (v) => '+' + v + ' u/s', 'Ring Detonation: the ring leaves "forward at high velocity". Lab-only.'],
     ['ringFuse', 'Ring fuse', 0.4, 3, 0.1, (v) => v.toFixed(1) + ' s', '"On impact, or after a certain amount of time with no impact, the ring explodes." Lab-only.'],
@@ -1348,7 +1343,6 @@
     $('hCharge').textContent = 'charge ' + P.charge + '/1';
     const al = $('hAlert'); let msg = null, od = false;
     if (P.overdrive > W.t) { msg = 'Overdrive ' + (P.overdrive - W.t).toFixed(1) + ' s'; od = true; }
-    else if (P.trailOff > W.t) msg = 'Trail disabled ' + (P.trailOff - W.t).toFixed(1) + ' s';
     else if (!P.ring && !P.noRing) msg = 'No support ring: collect a crystal';
     al.hidden = !msg; if (msg) { al.textContent = msg; al.classList.toggle('od', od); }
     const b = $('board'); b.textContent = '';
@@ -1363,7 +1357,7 @@
     abCards.ring.c.classList.toggle('on', P.ring); abCards.ring.st.textContent = P.ring ? (P.charge ? 'ready +1' : 'ready') : 'need crystal';
     $('readWho').textContent = P.domain.name + (P.spec.ai ? ' (AI ' + P.spec.ai + ')' : '');
     const rows = [['speed', P.speed.toFixed(1) + ' u/s'], ['mode', P.ring ? (P.overdrive > W.t ? 'overdrive' : P.mode ? modeName(P.mode) : 'none') : 'no ring'], ['range', Math.round(rangeOf(P)) + ' u'], ['round', (SHIP.shotRadius * P.m.shot * (M.destruction ? KIT.destructionRadius : 1)).toFixed(1) + ' u'],
-      ['destroyed', String(P.destroyed)], ['bonus mass', String(P.bonus)], ['rings', String(P.rings)], ['hits on rivals', String(P.hits)], ['trail mass', String(P.mass)], ['creatures', String(P.kills)], ['AI state', P.spec.ai || P.held ? P.aiState : 'player'], ['mistakes', P.spec.ai ? String(P.mistakes || 0) : '—']];
+      ['destroyed', String(P.destroyed)], ['bonus mass', String(P.bonus)], ['rings', String(P.rings)], ['petal hits dealt', String(P.hits)], ['petal hits taken', String(P.petalsLost)], ['trail mass', String(P.mass)], ['creatures', String(P.kills)], ['AI state', P.spec.ai || P.held ? P.aiState : 'player'], ['mistakes', P.spec.ai ? String(P.mistakes || 0) : '—']];
     const box = $('read'); if (box.childElementCount !== rows.length * 2) { box.textContent = ''; for (const [k] of rows) box.append(elx('span', null, k), elx('b')); }
     rows.forEach(([, v], i) => { box.children[i * 2 + 1].textContent = v; });
     const live = race === 'running' && !paused;   // the universal transport (D18)

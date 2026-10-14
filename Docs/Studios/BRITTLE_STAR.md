@@ -3,6 +3,10 @@
 > **Fly it first:** the Brittle Star has a design studio in the Vessel Studio (`Docs/Studios/VesselStudio/brittlestar.html`,
 > card "Brittle Star" in the hub, published into https://claude.ai/artifact/3igBJJbNvJjsfJoBJnAMPa). Decide its numbers there,
 > record them, then bring them into the game with `/artifact-to-unity` (CLAUDE.md: the artifact is the one source of truth).
+>
+> **Two branches, one vessel (2026-10-14).** This branch (`cece/brave-galileo-d95fpj`) holds the research, this record and
+> the web studio. `cece/gallant-lamport-sc3khe` holds the Unity build (`BrittleStar = 16`, its own
+> `R_VesselActions/BRITTLE_STAR.md`, with Garrett's decisions). How they fit and what is left: **`BRITTLE_STAR_HANDOFF.md`**.
 
 This file collects everything that was found about the vessel on 2026-10-14: the design document, what exists on
 bleeding-edge, what the never-merged branches built, what the studio models, what its scorecard says, and what it would
@@ -45,7 +49,8 @@ Concept art saved beside this file in `BrittleStar/`.
   controller: a fire button, and the right stick controls spread.
 - **Ring Detonation** (icon 4): eject the support ring forward at high velocity; on impact, or after a time with no
   impact, it explodes, destroying enemy and allied mass in a medium area, then a further blast continues out in the ring's
-  plane. Vessels caught are knocked back, slowed and have their trail disabled. A crystal adds one charge (only one held);
+  plane. Vessels caught are knocked back, slowed and have their trail disabled (*retired by the LOCKED "PvP is petals only"
+  rule, which postdates the document: in the studio and the Unity build a vessel hit takes petals only*). A crystal adds one charge (only one held);
   with a charge the ring rebuilds at once; without, the vessel has **no ring and none of its three modes** until a crystal.
   A crystal taken while a charge is held activates **all three modes at once for a short time**. No cooldown: two rings in
   quick succession with a stored charge.
@@ -141,7 +146,7 @@ A **design studio** (`/vessel-studio` D2): it models the design document's kit o
 - **Flight numbers**: a dropdown in Vessel Config switches between two sets. The default is the branch's `BrittleStar.prefab`: cruise 35, Speed 110, turns 80 / 80 / 30 °/s + 0.1·speed, gun 30/s at 1500–4000 u/s, 0.3 s. The other is `Falcon.prefab`. Every number names its source in the page.
 - **The kit**:
   - **Three modes**, one at a time, on the gamepad's X / Y / B or keys 1 / 2 / 3.
-  - **The gun** fires on RT or A. With the aim stick centred, the cockpit fires; pushed out, the ring turret nearest it fires; in Destruction all five fire, with ×2.5 rounds and a 3 s trail-off on hit.
+  - **The gun** fires on RT or A. With the aim stick centred, the cockpit fires; pushed out, the ring turret nearest it fires; in Destruction all five fire, with ×2.5 rounds. **A hit on a vessel takes petals and nothing else** (PvP is petals only, LOCKED: `Docs/claude/IMPACT_EFFECTS_AND_AUDIO.md`); the design's knockback, slow and trail-off on vessels are retired, as on the Unity build.
   - **The aim stick** has two readings, picked in Input:
     - *Spread*: the design's drag-to-spread.
     - *Convergence*: the branch's `GunRingTransformer` focus.
