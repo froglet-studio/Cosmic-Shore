@@ -90,6 +90,13 @@ Entries are grouped by family; within a family, the newest goes at the bottom.
 - Evidence: StoatFlightStudio.html prism-field block ("seeded (round 15)"); `verify_lab.cjs` "a second load".
 - Promoted: §3
 
+### L-GEN-10 — A mechanism written into a write-up is a hypothesis until a trace shows it
+- Lab: Crew Vessel Lab round 1 (`Docs/Studios/CrewVesselLab.html`) · Branch: `cece/compassionate-babbage-gc13io` · Date: 2026-10-14
+- What happened: the first draft explained the weak element-buff consoles as "the pilot's crystals fill the [0,10] band within about two minutes, so buffs only reach the draining overcharge". The arithmetic looked right (4 elements × 8 petals at ~15 catches/min). A trace of the levels at 30 / 60 / 90 / 120 s showed 6–10 at the END of the 120 s scoring window, so the band was not full for most of it. The real cause, also traced, was the payout: a match board averages about 1 level of buff spread over four elements.
+- Do instead: before a "because" goes into a finding, log the quantity it names over the run (here the base levels and the summed live buff) and confirm it says what the sentence claims. An arithmetic estimate is where to look, not the evidence.
+- Evidence: `CREW_VESSEL_LAB.md` round 1, Found 2 (mean live buff 1.06 levels; base levels 7.0/10.4/10.8/7.0 at 120 s).
+- Promoted: no
+
 ## STU — browser studios (Stoat Flight Studio, Vessel Studio)
 
 ### L-STU-1 — A lab's scripted input exposed a real game bug: the sling read the latest trigger sample, not the squeeze
@@ -580,6 +587,20 @@ Entries are grouped by family; within a family, the newest goes at the bottom.
 - What happened: the flight followed the drawn line within about 1.5 u all the way into the black hole and came out within 1 u of the drawn exit. It then left the line by up to 76 u over the next 330 u. The wormhole drops you 1.05 horizons from the white hole, inside a push softened over 2 horizons, so a 1 u difference at entry became about 13° of heading on the way out. Running the prediction on the flight's own 4 ms step did not remove it, and the boost did not change it.
 - Do instead: in a parity probe, log the deviation over flown distance, not only its maximum. The trace shows exactly where the flight leaves the line (here, the frame after the jump). A teleport that lands inside a strong force is a sensitivity to report or design out (a wider exit gap), not an integrator to tune.
 - Evidence: README round 15 "Checked" (through the wormhole) and "Found".
+- Promoted: no
+
+### L-STU-64 — A pursuit AI with no throttle orbits anything inside its turn circle; read the per-seed spread before the mean
+- Lab: Crew Vessel Lab round 1 · Branch: `cece/compassionate-babbage-gc13io` · Date: 2026-10-14
+- What happened: the first scorecard said two of four navigator consoles made a crew WORSE than a solo pilot. The per-seed scores ran from 2 to 20 petals per minute. Two lab bugs: the hull flew at constant speed, so a crystal inside its 25 u turn circle (35 u/s at 80 °/s) was orbited forever; and the "nothing in sight" behaviour turned in place, so a pilot that lost sight of everything never found anything again. With the Sparrow's real throttle (minimum 10 + scaler 25, braking for a target inside 2.2 turn radii) and a roaming search point, skilled runs sat within about ±15% and both "negative" consoles turned positive.
+- Do instead: give the lab hull the game's throttle, not a constant speed, and print per-seed values for every condition before quoting a mean. A spread of 10× between seeds is a stuck agent, not noise.
+- Evidence: `CrewVesselLab.html` `pilotAI` (`turnR`, `seat.roam`); `CREW_VESSEL_LAB.md` round 1, Found 7.
+- Promoted: no
+
+### L-STU-65 — To ask "does this seat's PLAY matter", score skill in the seat separately from the seat existing
+- Lab: Crew Vessel Lab round 1 · Branch: `cece/compassionate-babbage-gc13io` · Date: 2026-10-14
+- What happened: on crew lift alone, Power Split ranked second (+20%). Scoring a Hard against an Easy navigator in the same seat showed 4% (inside the noise): the lift came from the pips being lit at all, not from how they were routed. An actions-per-minute column showed the Hard AI clicking about 200 times a minute for it. Scope Call showed the opposite shape: small lift (+14%) and large skill (31%), so a bad navigator made a good pilot worse than flying alone.
+- Do instead: for any lab about a role or a seat, report three columns side by side: the role's lift over its absence, the skill spread inside the role (expert vs rookie in that seat, everything else fixed), and the role's action rate. Each catches a design the others miss: a chore (high rate, no skill), a crutch (lift, no skill) and a liability (skill bigger than lift).
+- Evidence: `CrewVesselLab.html` `runBatch` (`navMatters`, `navApm`); `CREW_VESSEL_LAB.md` round 1 scorecard.
 - Promoted: no
 
 ## NCA — swarm / neural-CA research rigs (Tools/NCA)
