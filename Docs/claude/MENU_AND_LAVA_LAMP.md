@@ -77,6 +77,11 @@ live in `Docs/MENU_REDESIGN_B.md`. Build new menu UI from the kit:
 - **Static chrome:** `KitThemedGraphic`.
 - **Hover on a non-`KitButton` surface** (an EventTrigger tab, a keycap on a plain Button):
   `KitHoverTint`.
+- **Show / hide:** `KitVisibility.SetShown(CanvasGroup, bool)` - never `SetActive`; a `LayoutElement`
+  on the same object leaves the layout while hidden.
+- **Focus in a scroll view:** `KitScrollIntoView` on each control. **Lists spawned by other code:**
+  `KitListCounter` (count, header, empty line). **Rows rebuilt under focus:** `KitFocusKeeper`.
+- **A window's Back button:** `ModalWindowCloseButton` (closes like gamepad B).
 
 All of these are in `Assets/_Scripts/UI/Kit/` and `Assets/_Prefabs/UI Elements/Kit/`. Colours
 come from `UIThemeSO` tokens, never literals. The kit owns every interaction state, including the
@@ -102,6 +107,19 @@ gamepad / keyboard focus arriving on it (`ISelectHandler`), so focus never lands
 `HangarScreen` still owns the list (`RebuildList` on unlock, owned first);
 `HangarVesselDetailView` owns everything else and toggles by CanvasGroup only. Details:
 `Docs/MENU_REDESIGN_B.md` §11.
+
+**The Arcade is style B (item 3, 2026-10-14), with the shared party panel.** `ArcadeScreenModal`
+stretches the safe area and holds one `ArcadeView` instance under `Arcade_Panel/Explore` (generated
+by `Tools/Build/author_menu_arcade.py`): a dimmed nav band, the header with Back + B keycap
+(`ModalWindowCloseButton`, the same close as gamepad B), the PARTY panel on the left and the explore
+scroll - weekly challenge and Maelstrom feature cards, ALL GAMES, 28 `ArcadeGameCard`s
+(`KitGameCard`, a `GameCard` on a `KitTile`). `ArcadeExploreView` and `ArcadeDPadNav` stay on the
+scene's `Explore`; cards are the scroll's Selectables and `KitScrollIntoView` keeps the focused one
+visible. Sibling order is focus order: the cards come before the party panel and Back comes last.
+The party panel is `Main Menu Screens/Party/PartyPanel.prefab`: `ArcadeLobbyList` +
+`FriendsListPanel` (embedded) on one root, four `KitPartySlot` seats, Leave, then INVITES and ONLINE
+in one scroll - the old friends overlay is gone from the Arcade. Arena, Toy Box and Mission still
+carry the legacy pair until item 8. Details: `Docs/MENU_REDESIGN_B.md` §12.
 
 #### Menu Screen Patterns to Follow
 

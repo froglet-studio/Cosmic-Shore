@@ -307,6 +307,17 @@ and `PartyInviteNotificationPanel` (the
 bottom-left **global invite popup** in Menu_Main — avatar + name + Accept/Decline,
 3s auto-hide, latest-wins).
 
+**Style-B party panel (menu redesign item 3, 2026-10-14).** In the Arcade the two panels above are
+one prefab, `_Prefabs/UI Elements/Main Menu Screens/Party/PartyPanel.prefab`: `ArcadeLobbyList` and
+an `embedded` `FriendsListPanel` on one root, four `KitPartySlot` seats (a `FriendInfoSlot` drawn in
+the kit: the domain halo becomes an octagon ring in the pilot's domain colour, and each seat reads
+"You / Host", "You", "Host" or "Pilot"), Leave (hidden while solo), then INVITES (`KitRequestRow`) and
+ONLINE (`KitOnlineRow`) in one scroll. Your own party's members are left out of ONLINE
+(`listPartyMembers` off) because they sit in the seats; an open seat moves focus into the list
+instead of opening an overlay. Seating, invite, join, spectate, kick, leave and expiry behave exactly
+as above - the kit rows only override how a state is drawn. Arena, Toy Box and Mission keep the
+legacy pair until item 8.
+
 **The party panel's SEATING is synced, not local** — `PartyRoster` puts the host in the
 first slot and the clients behind it in join order, the same on every device, by ordering on
 Netcode's replicated `OwnerClientId` rather than on `HostConnectionDataSO.PartyMembers`,

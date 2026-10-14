@@ -65,6 +65,74 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Style-B menu redesign, item 3: the Arcade and the shared party panel (`claude/new-session-76hnyc`, 2026-10-14) — NOT EDITOR-VERIFIED
+
+`ModalWindows/ArcadeScreenModal` rebuilt from the approved Arcade boards (`Docs/MENU_REDESIGN_B.md`
+§12): one party panel (seats, invites, online pilots), the weekly and Maelstrom feature cards and a
+7 x 4 grid of kit cards. No editor and no `unity` CLI in the authoring session, so `/verify-unity`,
+the new edit-mode tests and the Game Mode Prefab Kit Validate did NOT run. Offline:
+`unity_refcompile` player and editor configs report 0 project errors (a planted CS1061 in
+`KitGameCard.cs` failed the gate first); `author_menu_arcade.py --check` validates the committed
+wiring and `--self-test` catches 12 planted defects; every neighbouring generator's `--check`
+passes; `check_generated_assets.py` reports only known false-positive classes on the branch
+(package script guids, `KitButtonSmall` variant-derived ids - each proven derivable - and the
+audit's missing `m_PersistentCalls` schema, which item 0's working `KitButton` trips too), and a
+planted unknown field on `KitGameCard` was caught.
+
+**What landed**
+
+1. Code: `KitPartySlot`, `KitOnlineRow`, `KitRequestRow`, `KitGameCard` (kit subclasses of the
+   legacy row / card classes, which now draw through virtual hooks); `ArcadeLobbyList` (roles, count,
+   Leave hidden while solo, open seat focuses the list); `FriendsListPanel` (embedded, focus, your own
+   party left out of the online list); `ArcadeExploreView` (Maelstrom card, ALL GAMES count);
+   `ModalWindowCloseButton`; kit `KitVisibility`, `KitScrollIntoView`, `KitListCounter`,
+   `KitFocusKeeper`, `KitTile` (selected border token, lock label), `KitCoverImage` (refits on any
+   sprite change). Tests: `KitVisibilityTests`.
+2. Prefabs: `_Prefabs/UI Elements/Main Menu Screens/Party/` (`PartySlot`, `PartyRequestRow`,
+   `PartyOnlineRow`, `PartyPanel`) and `.../Arcade/` (`ArcadeGameCard`, `ArcadeView`). Sprites
+   `kit_fade_h`, `kit_oct_fill`; glyphs `chrome_plus`, `chrome_star`, `chrome_star_fill`.
+3. `Menu_Main.unity`: the old Header, GameSelectScrollView, ArcadeLobbyList, CloseButton and
+   FriendListPanel are gone; one `ArcadeView` under `Arcade_Panel/Explore`; the modal root
+   stretches full screen; `Arcade_Panel`'s gradient Image is off; the OfflineUIGate gates the party
+   panel; `QuestGraphRunner.gameCards` names the 28 new cards.
+
+**Verify in editor**
+
+1. Let the project import and compile. Expect no console errors and no missing-script or
+   missing-prefab warnings on Menu_Main load. Run the edit-mode tests (`KitVisibilityTests` should
+   pass) and FrogletTools > Game Modes > Game Mode Prefab Kit > Validate.
+2. Open `Assets/_Prefabs/UI Elements/Main Menu Screens/Arcade/ArcadeView.prefab`: header top-left
+   with BACK + B keycap top-right, the party panel left (four "Open slot" tiles), two feature cards
+   and the card grid right. Open `ArcadeGameCard.prefab`: art, vessel chip top-left, star top-right,
+   title bottom-left, no visible padlock.
+3. Play from Bootstrap; on HOME press the Arcade hub button. Compare with `Arcade.dc.html` on
+   https://claude.ai/artifact/W8DBZaW6pu3L28egCjrKo2.
+   - **Window:** the nav band is dimmed, the rest is the dark backdrop. The cards pop in.
+   - **Party panel (solo):** "PARTY 1 / 4", "N Players Online"; your seat reads your name and
+     "YOU / HOST" (or "YOU") with your domain colour ring; three "Open slot" tiles; no Leave button;
+     ONLINE lists other pilots or the empty line.
+   - **Cards:** 28, favourites first then A to Z; vessel icons and genre petals present; click a
+     star: it fills Control Active and the card moves to the front. Click a card: its configure
+     window opens as before. With the developer unlock off, locked cards show the padlock and
+     "LOCKED" over dimmed art and do not open.
+   - **Feature cards:** the weekly card shows this week's mode, art and countdown and opens the
+     weekly launch; the Maelstrom card opens the Maelstrom panel.
+4. **Gamepad:** on opening, focus lands on the weekly card (green ring). D-pad down through all
+   seven rows: the grid scrolls so the focused card is always fully visible. Left from the first
+   column reaches the party panel (open slot tiles). Press A on an open slot: focus moves into the
+   ONLINE list (if anyone is online). B closes the window with the out animation; so does BACK.
+   Reopen: no stray overlay.
+5. **With a second client** (two editors / a build): invite them from the ONLINE row: the button
+   reads "INVITED" (inactive) and the ✕ beside it retracts. On the other client the invite appears
+   under INVITES with accept / decline; accept: both see two seats, the host sees a kick icon on
+   the guest's seat, the guest's seat reads "PILOT", and LEAVE PARTY appears. Pick a card each and
+   check the pick avatars and your own card's Control Active border. Kick and leave behave as before.
+6. **Offline session:** the party panel is hidden and the explore area takes the full width.
+7. Narrow the Game view to 16:10 (1728x1080) and 4:3: the party panel stays 420 wide; cards shrink
+   and long titles wrap to two lines; nothing overlaps.
+
+---
+
 ### 🟢 Style-B menu redesign, item 2: the Hangar as one three-zone view (`claude/new-session-76hnyc`, 2026-10-14) — approved in editor 2026-10-14
 
 `Screens/Hangar Screen` rebuilt from the approved Hangar boards (`Docs/MENU_REDESIGN_B.md` §11):

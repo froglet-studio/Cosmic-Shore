@@ -34,7 +34,7 @@ Legend: `Planned` ▸ `Mockup` ▸ `Mockup approved` ▸ `Built` ▸ `Approved i
 | 0 | Component kit: T7 sprites, Chakra Petch SemiBold (T5), type roles + `TabularText` (T6), theme components, kit prefabs, kit test scene | Built | `MenuKit.dc.html` | `3b36c361`, `fe108889`, `b0918296`, `908fc2d7`, `4cba49ee`, `e932eaf2` + docs |
 | 1 | Top nav (`Safe Area/NavBar`) | Approved in editor (2026-10-14) | `Main.dc.html` (interactive), `TopNavHover.dc.html`, `TopNavLocked.dc.html` on the Menu Redesign B canvas | `8d6d2acb`, `99ef3ccd` + docs |
 | 2 | Hangar screen: grid, detail and the spend-crystals panel | Approved in editor (2026-10-14) | `Hangar.dc.html` (interactive), `HangarLocked`, `HangarSpend`, `HangarShort`, `HangarNoArt`, `HangarNotes` on the Menu Redesign B canvas | `661a7f1f`, `7987b896`, `96c81faa` + docs |
-| 3 | Arcade modal (`ArcadeScreenModal`): explore grid plus the party/friends panel | Mockup | `Arcade.dc.html` (interactive), `ArcadeSolo`, `ArcadeNoFriends`, `ArcadePicks`, `ArcadeNotes` on the Menu Redesign B canvas | |
+| 3 | Arcade modal (`ArcadeScreenModal`): explore grid plus the party/friends panel | Built | `Arcade.dc.html` (interactive), `ArcadeSolo`, `ArcadeNoFriends`, `ArcadePicks`, `ArcadeNotes` on the Menu Redesign B canvas | `f9b59fd4`, `75cd38e7`, `5cc56adb` + docs |
 | 4 | Game configure: `ArcadeGameConfigureModal`, plus the Maelstrom and Arena configure windows and the weekly leaderboard | Planned | | |
 | 5 | Profile screen, Profile modal (avatar / display name), Episodes entry | Planned | | |
 | 6 | Home screen: hub row, header, settings and freestyle buttons, invite popup | Planned | | |
@@ -290,13 +290,16 @@ Found while mapping the Hangar for item 2 (2026-10-14):
 - **Arcade (found mapping item 3):**
   - **The arcade grid is unreachable by gamepad past row 3.** `ArcadeDPadNav` returns while any
     modal is open, and the Arcade is a modal; its `ScrollToButton` is commented out, so the scroll
-    never follows focus either.
+    never follows focus either. **Fixed at item 3** (`KitScrollIntoView`); `ArcadeDPadNav` itself
+    is still attached and misbehaves while the window is closed (section 12).
   - **B with the friends overlay open closes the whole modal and leaves the overlay open** for the
-    next visit.
+    next visit. **Gone at item 3:** the lists live in the party panel, there is no overlay.
   - **The two close paths differ:** Back deactivates the object and jumps HOME; B animates out.
+    **Fixed at item 3** (`ModalWindowCloseButton`).
   - **Dead controls:** the friends overlay's ONLINE / REQUESTS header buttons and refresh icons have
     no listeners; both `ControllerButtonPress` hooks are empty; the weekly card's LEADERBOARD button
-    is authored inactive; `ArcadeScreen`'s Loadout view and toggles are unwired.
+    is authored inactive; `ArcadeScreen`'s Loadout view and toggles are unwired. **The first three
+    left the Arcade with the objects that carried them at item 3**; `ArcadeScreen`'s fields remain.
   - **Cards look their titles up in `OrganicRematchGames`,** not the Arcade roster, so a mode added
     only to `ArcadeGames` keeps its placeholder title.
   - **Content:** Joust's description is "Joust joust joust"; the Grizzly's `IconActive` is a legacy
@@ -314,8 +317,8 @@ Generated, not hand-authored: re-run the generator rather than editing its outpu
 | Piece | Where | Generator |
 |---|---|---|
 | Role colour tokens | `UIThemeSO.controlActive` / `purchase` / `tooltip`, `UIColorToken` 10-12 | — |
-| Sprites (20; `kit_fade_v` added at item 2) | `Assets/_Graphics/UI/Kit/kit_*` | `Tools/Build/author_ui_kit_sprites.py` |
-| Lock and currency glyphs | `Assets/_Graphics/UI/Chrome/chrome_lock`, `chrome_crystal` | `Tools/Build/author_ui_chrome_icons.py` |
+| Sprites (22; `kit_fade_v` added at item 2, `kit_fade_h` and `kit_oct_fill` at item 3) | `Assets/_Graphics/UI/Kit/kit_*` | `Tools/Build/author_ui_kit_sprites.py` |
+| Lock and currency glyphs; plus and favourite star (outline, filled) at item 3 | `Assets/_Graphics/UI/Chrome/chrome_lock`, `chrome_crystal`, `chrome_plus`, `chrome_star`, `chrome_star_fill` | `Tools/Build/author_ui_chrome_icons.py` |
 | Button / label face | `Assets/_Graphics/Fonts/ChakraPetch/ChakraPetch-SemiBold SDF.asset` (dynamic) | `Tools/Build/author_chakra_petch_semibold.py` |
 | Components | `Assets/_Scripts/UI/Kit/` | — |
 | Prefabs, type roles, test scene | `Assets/_Prefabs/UI Elements/Kit/`, `Assets/_SO_Assets/UI/UITypeRoles.asset`, `Assets/_Scenes/Game_TestDesign/UIKitTestScene.unity` | `Tools/Build/author_ui_kit_prefabs.py` |
@@ -340,11 +343,26 @@ How the later items use it:
 - **Every label** carries `KitText` (§4 role + §11 token). Live numbers go through
   `KitText.SetText` so they get per-face `<mspace>`.
 - **Static chrome** carries `KitThemedGraphic`.
-- **A picture that must fill a frame edge to edge** (a hero preview) is an Image under a `KitCoverImage` + `Mask`: it covers at the sprite's aspect, where uGUI's `preserveAspect` only contains.
+- **A picture that must fill a frame edge to edge** (a hero preview) is an Image under a `KitCoverImage` + `Mask`: it covers at the sprite's aspect, where uGUI's `preserveAspect` only contains. It refits whenever the sprite changes, however it was set.
+- **Showing and hiding a part** goes through `KitVisibility.SetShown(CanvasGroup, bool)`: alpha,
+  interactable and raycasts together, and a `LayoutElement` on the same object leaves the layout while
+  hidden. Never `SetActive`.
+- **A control inside a scroll view** carries `KitScrollIntoView`, so pad / keyboard focus scrolls it
+  into view (point `target` at the card when the control is a button inside one).
+- **A list whose rows other code spawns** carries `KitListCounter` on its content: it keeps a count
+  label, the section's header / divider and the empty-state line in step with the rows.
+- **A panel whose rows are rebuilt while focused** carries `KitFocusKeeper` on its root.
+- **A window's own Back button** carries `ModalWindowCloseButton`: it closes the enclosing
+  `ModalWindowManager` exactly as gamepad B does.
+- **A card the player picks** is a `KitTile` with `selectedBorderToken` (Control Active for the
+  arcade's local pick) and an optional `lockLabel` beside the lock glyph.
+- **The party panel** is `Main Menu Screens/Party/PartyPanel.prefab` (item 3): drop an instance into
+  a mode window; it needs nothing wired from the scene. Arena, Toy Box and Mission move onto it at
+  item 8.
 
 Not built in item 0, because the items that need them will settle their shape:
 
-- the party panel prefab (item 3);
+- the party panel prefab (built at item 3, section 12);
 - the two-label toggle and the slider prefab (item 9; the hex handle sprite exists).
 
 ## 9. Retirement list: what the kit supersedes
@@ -354,9 +372,13 @@ the Gate 1 measurement of `Menu_Main.unity`.
 
 | Old sprite / style | Consumers | Replaced by | Retired at item |
 |---|---|---|---|
-| `_Graphics/UI/Frames/frame_cut_filled_200` / `_300` | ArcadeLobbyList, FriendListPanel, UsernameInputField (4 + 4 refs) | `kit_sliver14_fill` + `line1` | 3 |
+| `_Graphics/UI/Frames/frame_cut_filled_200` / `_300` | ArcadeLobbyList, FriendListPanel, UsernameInputField (4 + 4 refs) | `kit_sliver14_fill` + `line1` | **3: the Arcade's copies are gone.** The Arena, Toy Box and Mission copies go at 8; UsernameInputField at 5. |
 | `_Graphics/UI/Frames/frame_cut_outline_200` | settings tab buttons (2 prefabs) | `KitHexNavTile` | 9 |
-| `ArcadeScreen/Group 1585.png` (card PLATE), `Rectangle 1127 (2).png` (card RIM) | 40 + 77 refs | `kit_sliver14_*`, `KitTile` | 3, 8 |
+| `ArcadeScreen/Group 1585.png` (card PLATE), `Rectangle 1127 (2).png` (card RIM) | 40 + 77 refs | `kit_sliver14_*`, `KitTile` | **3: the Arcade's cards are gone** (12 authored cards, the weekly and Maelstrom cards); the rest at 8. |
+| Party rows `_Prefabs/UI Elements/Panels/Party/New Prefabs/OnlineFriendsInfo Variant.prefab`, `RequestsInfo.prefab` | the four `FriendsListPanel` copies | `PartyOnlineRow`, `PartyRequestRow` | **3: the Arcade no longer uses them**; the other three copies at 8. |
+| `_Graphics/ARCADE/Favorite_Star_Active.png` / `Favorite_Star_Inactive.png` | every `GameCard` | `chrome_star_fill` / `chrome_star` | **3: the Arcade's cards no longer use them**; the Arena's cards at 8. |
+| `Design Assests/Menu_Main/Gradient Background 3.png` on `Arcade_Panel` | the Arcade backdrop | `ArcadeView` NavDim + Backdrop | **3: the Image is switched off**, not deleted (its component still names the sprite); remove it with the other windows' copies at 8. |
+| The legacy draw paths in `FriendInfoSlot`, `OnlineInfoEntry`, `RequestInfoEntry`, `GameCard` (the `SetActive` / literal-colour hook bodies) | the three non-Arcade copies | the `Kit*` subclasses | 8, when the last legacy copy moves onto the kit prefabs. |
 | `HomeScreen/Play Button.png` (hub button plate) | 8 refs | `KitButton` Play/Opaque | 6 |
 | `{LEGACY}/Cut Frame Corner.png`, `Cut Frame Corner Glow.png` | 10 + 10 refs | `kit_sliver*` | as found |
 | NavBar art under `Design Assests/Menu_Main/R_Menu_Main/HomeScreen/`: `gradient.png`, `nav line.png` + `nav line (1)`-`(4)`, `Component 1/2.png` (L1/R1), `Polygon 165/166.png` (arrows), and the ten tab icons (`hangar`, `hangar (1)`, `Ark`, `arcade (2)`, `home`, `home (2)`, `Port`, `port (2)`, `Profile`, `store (1)`) | NavBar | `KitTopNavTab`, `KitKeycap`, band + rule | **1: done.** Menu_Main references none of the 20. Their only remaining consumers are the dead copies in `_Prefabs/MIgration_Prefabs (DELETE LATER)/` (`NavBar`, `Screens`, `ModalWindows`); delete the sprites with those prefabs. |
@@ -466,27 +488,84 @@ stand in: its live compile fails on existing engine gaps (BlackHole RenderGraph 
 which Prisma's `Selectable` lacks; that engine gap is filed as a separate task. Steps are in
 `Docs/UNITY_VERIFICATION_CHECKLIST.md`.
 
-## 12. Item 3: Arcade and the shared party panel (mockup, awaiting approval)
+## 12. Item 3: Arcade and the shared party panel (built, awaiting in-editor approval)
 
-Boards on the Menu Redesign B canvas: `Arcade.dc.html` (interactive: accept / decline an invite,
-invite a friend, kick, leave, star a game, pick a game), `ArcadeSolo` (just you, friends online,
-pad focus on a card), `ArcadeNoFriends` (the empty friends list), `ArcadePicks` (favourites first,
-party picks on cards, the locked look on two cards for illustration) and `ArcadeNotes`. Content is
-real: the 28 `ArcadeGames` cards (Maelstrom has its own feature card) with their rendered
-`CardBackground`s, vessel icons and authored descriptions, sorted favourites first then A to Z as
-`ArcadeExploreView` does, and the real profile icons. Party and friend names are placeholders.
+Boards on the Menu Redesign B canvas: `Arcade.dc.html` (interactive), `ArcadeSolo`,
+`ArcadeNoFriends`, `ArcadePicks` and `ArcadeNotes`. Mockup approved 2026-10-14 with all three
+recommendations: cards are Selectables that scroll into view; Back and B close the same way, with
+the out animation; the new strings ship. D7 (one party panel for seats, invites and the online
+list, built once for Arcade, Arena, Toy Box and Mission) is part of the same item.
 
-| Zone | Mockup | Built from (at the build gate) |
-|---|---|---|
-| Header | "Arcade" label, "Explore games" (H1); Back with a B keycap, top right | The modal's close: Back and B both animate out |
-| Party panel (left, 420) | One panel (D7): "PARTY n / 4" and "{N} Players Online"; four slots (avatar with a domain-colour ring, name, "You / Host" or "Pilot", a kick icon on remote rows for the host); an open slot reads "Open slot - invite a friend below" and jumps to the list; "Leave party" with remote members; INVITES (party invites and friend requests, accept / decline icons); FRIENDS ONLINE with Invite, Join or the inactive Invited; an empty-list line | `ArcadeLobbyList` and `FriendsListPanel` merged into one shared prefab, data and calls unchanged (`HostConnectionData`, the party / friends services); replaces the four scene copies of each |
-| Feature row | Weekly challenge (mode art, title, "ENDS IN 6d 3h") and Maelstrom ("Gauntlet", its description) as two wide cards | `WeeklyChallengeCard` and the Maelstrom card, same calls |
-| Game grid | 4 across; each card: art, vessel icon chip, favourite star (filled Jade when on), title, party-pick avatars; your pick is a 2 px Jade border; locked dims and adds a padlock and "Locked"; pad focus is the CTA ring | `GameCard`, same fields; cards become the scroll view's Selectables and scroll into view on focus |
+Generated by `Tools/Build/author_menu_arcade.py` (`--check`, `--self-test`); re-run it rather than
+editing the prefabs or the scene's Arcade by hand. Its scene migration stands down once the old
+objects are gone; the wiring checks run on every invocation, including `--check` against the
+committed scene.
 
-Open points for the build gate:
-- **Gamepad reach:** cards are Selectables that scroll into view (today rows 4-7 are unreachable by
-  pad). This changes in-modal navigation, not screen navigation.
-- **One close path:** Back and B both call the window's out animation.
-- **New strings:** the empty friends line, "Open slot - invite a friend below", "You / Host".
-- **The weekly card's LEADERBOARD button** stays retired (it is authored inactive today).
+```
+ModalWindows/ArcadeScreenModal   [FlipUI, CanvasGroup, ArcadeScreen, ModalWindowManager, Animator, OfflineUIGate]
+|                                now stretches the whole safe area (it was inset 171 for the old nav)
+'- Arcade_Panel                  its old gradient Image is switched off; OfflineUIGate -> PartyPanel
+   '- Explore                    ArcadeExploreView + ArcadeDPadNav KEPT (four scene objects name the view)
+      '- ArcadeView              (prefab instance)
+         |- NavDim               SurfaceBlack 0.75 over the 84-unit nav band
+         |- Backdrop             SurfaceBlack below it
+         |- Body   [HorizontalLayoutGroup, spacing 24, REVERSED: the panel draws on the left]
+         |  |- ExploreScroll     ScrollRect > Viewport [RectMask2D] > Content [VLG + CSF]
+         |  |  |- Features       WeeklyChallenge (KitTile + WeeklyChallengeCard) | Maelstrom (KitTile)
+         |  |  |- AllGames       "ALL GAMES" + count
+         |  |  '- GameGrid       7 x GameListRow [HLG] x 4 ArcadeGameCard (28 slots for 28 games)
+         |  '- PartyPanel        (nested prefab, 420 fixed) - see below
+         '- Header               "ARCADE" / "Explore games" (H1); Back: KitButton + B keycap + ModalWindowCloseButton
 
+         Sibling order is focus order: ScreenSwitcher.Refocus lands on the first live Selectable, so the
+         weekly card (then the Maelstrom card) comes first and Back, which would close the window on the
+         first A press, comes last.
+
+PartyPanel  [ArcadeLobbyList, FriendsListPanel (embedded), KitFocusKeeper]
+|- Frame                         sliver 14, SurfaceVeryDark / SurfaceDark
+'- Inner [VLG, spacing 14]
+   |- Top                        "PARTY" + "n / 4"; diamond + "N Players Online"
+   |- Slots                      4 x PartySlot (KitPartySlot): Occupied layer | OpenSlot tile
+   |- Leave [CanvasGroup]        KitButtonSmall Cancel "LEAVE PARTY", out of the layout while solo
+   |- Divider
+   '- Lists                      ScrollRect: INVITES header, Requests [KitListCounter], divider,
+                                 ONLINE header, OnlinePlayers [KitListCounter], the empty line
+```
+
+| Zone | As built |
+|---|---|
+| Window | The modal root now stretches the whole safe area and the view draws its own 0.75 dim over the nav band, as on the board. The `Standard` animator still drives the root CanvasGroup; nothing new sits at the `Content` path it animates. |
+| Header | Back is a `KitButton` (Default, transparent) with a `KitKeycap` "B". `ModalWindowCloseButton` calls the window's `ModalWindowOut`, so Back and gamepad B play the same out animation and close sound and unwind the same stack entry. The old Back's `SetActive(false)` + `OnClickHomeNav` pair is gone; the arcade only opens from HOME and the screen cannot change under a modal, so nothing is lost. |
+| Party seats | `KitPartySlot` (a `FriendInfoSlot`): the framed row shows the avatar inside an octagon ring painted the pilot's domain colour (`SO_ColorSet`, pushed live by `ArcadeLobbyList` as before; Surface Dark while unknown), the name, and the role line "You / Host", "You", "Host" or "Pilot". The host sees a kick icon on remote seats. An open seat is a `KitTile`, "Open slot - invite a friend below"; pressing it moves focus into the list (`FriendsListPanel.FocusList`). Seating, kick and leave are unchanged. |
+| Leave | Hidden and out of the layout while you are alone (was: a disabled button). |
+| Invites | `KitRequestRow` (a `RequestInfoEntry`): "PARTY INVITE" / "FRIEND REQUEST" in Control Active, warming to Danger as it expires; accept (CTA) and decline (Cancel) icon buttons. The section header and its divider show only while there is a row (`KitListCounter`). |
+| Online | `KitOnlineRow` (an `OnlineInfoEntry`): status line in CTA (online, in a party), Purchase (in a match), Neutral (party full, invite pending); Invite (Default), Join (CTA) or Watch (Purchase) on the one join control; the ✕ retracts an invite. While our invite is out the Invite button stays, inactive, reading "INVITED". Members of your own party are left out of this list (`listPartyMembers` off): they are in the seats above. |
+| Feature row | Weekly challenge: "WEEKLY CHALLENGE" (Purchase), this week's mode and art, "ENDS IN 6d 3h" from `WeeklyChallengeCard`, unchanged. Maelstrom: "GAUNTLET" (Control Active), its card art and its authored description; pressing it calls `ArcadeExploreView.SelectMaelstrom` -> `ArcadeGameConfigureModal.OpenMaelstrom`, wired in code so the prefab names no scene object. |
+| Game cards | `KitGameCard` (a `GameCard`) on a `KitTile`: art cover-fitted under a sliver mask, a bottom scrim, the vessel chip, the genre petal(s), the favourite star (outline, or filled Control Active), the title (H3, wraps to two lines on narrow screens) and the party-pick avatars. Your own pick is the tile's selected state (2 px Control Active border); a lock is the tile's locked state (art 35 %, padlock, "LOCKED"); focus is the CTA ring. |
+| Gamepad | Cards and feature cards are the scroll view's Selectables; `KitScrollIntoView` scrolls each into view when focus (not a click) lands on it, so all seven rows are reachable. Row buttons in the party lists do the same. `KitFocusKeeper` puts focus back inside the party panel when a focused row is rebuilt under it. |
+| Visibility | Every show / hide in the new code is a CanvasGroup (`KitVisibility`, which also takes a hidden part out of its layout). The legacy row classes keep their `SetActive` paths for the three other copies until item 8. `ArcadeExploreView`'s card-slot pool still activates and deactivates slots and rows: that pool is shared with the Arena's legacy grid and is item 8's to convert. |
+
+Deviations from the board, each reported:
+- **"ONLINE", not "FRIENDS ONLINE".** The list is every pilot in the presence lobby
+  (`HostConnectionDataSO.OnlinePlayers`), not your friends, so "Friends" would be wrong. The empty
+  line reads "No one else is online right now. Pilots who come online show here, ready to invite."
+- **The genre petals stay** (the board left them out): they are card identity today, drawn beside
+  the vessel chip.
+- **The favourite star is not a gamepad stop.** Today it sits inside the card and the pad never
+  reaches it in practice; it now has no navigation at all, so the pad moves card to card. Favouriting
+  by pad would need a new binding (Y is taken by the freestyle toggle).
+- **"INVITED" keeps the ✕** beside it, so an invite can still be retracted as today.
+
+Not verified (no Unity editor in a cloud session): the editor look and layout at 16:10 and 4:3, real
+TMP widths, the gamepad flow, the party flows with a second client, and the Game Mode Prefab Kit
+Validate run. Steps are in `Docs/UNITY_VERIFICATION_CHECKLIST.md`.
+
+Found while building item 3 (not fixed here):
+- **`ArcadeDPadNav` acts while the Arcade is CLOSED.** It returns while any modal is open, which is
+  every moment the Arcade is visible, and polls the pad directly the rest of the time: with a
+  gamepad connected it `Select()`s the hidden grid's first card at Start, moves a hidden selection on
+  every d-pad press on HOME, and `buttonSouth` invokes that hidden card. The Arena, Toy Box and Mission
+  carry their own copies. Recommendation: remove the component from all four windows (and null-guard
+  `ArcadeExploreView`'s three calls); the EventSystem plus `KitScrollIntoView` now does its job.
+- **`author_elemental_converter.py --check` fails at the branch base too** ("the document count moved
+  by something other than +3 converter / -1 gate"): a spent one-shot gate, not this item's.

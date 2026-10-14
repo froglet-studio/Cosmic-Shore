@@ -936,6 +936,11 @@ so every input that worked before is unchanged. `PlayerProfileTests` holds it.
 
 Reference doc: `Docs/PartySystem/UI.md`. Prefabs: `Assets/_Prefabs/UI Elements/Panels/Party/New Prefabs/`. **Both panels are children of the Arcade modal** — the friends list is only reachable through Arcade (or when an invite force-opens it).
 
+> **Since 2026-10-14 (style-B menu redesign, item 3)** the Arcade carries both panels below as one
+> prefab, `PartyPanel.prefab` (`Docs/MENU_REDESIGN_B.md` §12): the lists are embedded beside the
+> seats and the friends overlay is gone from the Arcade. The description below is the legacy shape the
+> Arena, Toy Box and Mission still use until item 8.
+
 **`ArcadeLobbyList` — the party panel** (`Assets/_Scripts/UI/Elements/ArcadeLobbyList.cs`): header + description, an **"N Players Online"** counter (counts the whole presence lobby including you; "1 Player Online" grammar special-cased), **exactly four member slots**, and a **Leave** button (non-interactable when alone).
 - Slot 0 is always the local player (avatar + name, or "You"). Slots 1–3 are remote members in join order.
 - Each slot (`FriendInfoSlot`) has three states: local player / occupied (avatar + name + **host-only kick ✕**) / **empty ("+" button that opens the friends panel)**. Unresolved names show "Pilot".
