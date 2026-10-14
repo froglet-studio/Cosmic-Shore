@@ -721,10 +721,24 @@ namespace CosmicShore.Gameplay
         /// every-lifeform-drops-a-crystal invariant. Reparenting preserves world pose, and a
         /// withering creature holds still, so the heart does not appear to move.
         /// </summary>
-        public void DetachHeartToCell()
+        public void DetachHeartToCell() => ReparentToCell();
+
+        /// <summary>
+        /// Moves this crystal onto the cell, keeping its world pose and its world SIZE - and
+        /// making that size uniform again. A heart is sized along x (<see cref="LifeFormCrystal.SetWorldScale"/>
+        /// divides out the parent's x), so under an owner whose chain is NON-uniformly scaled the
+        /// heart is stretched along the other axes, and its spinning model children shear as they
+        /// turn. A plain reparent bakes that stretch into the crystal's own localScale, so the
+        /// dropped pickup kept warping long after the creature was gone (the QuadFish root was
+        /// authored at z 1.31). Re-stating the x size on the uniform cell is what un-warps it, and
+        /// x is also the axis the collect reward reads, so the payoff does not move.
+        /// </summary>
+        void ReparentToCell()
         {
-            if (cellData && cellData.Cell)
-                transform.parent = cellData.Cell.transform;
+            if (!cellData || !cellData.Cell) return;
+            float worldScale = Mathf.Abs(transform.lossyScale.x);
+            transform.SetParent(cellData.Cell.transform, true);
+            LifeFormCrystal.SetWorldScale(this, worldScale);
         }
 
         public void ActivateCrystal()
@@ -743,8 +757,7 @@ namespace CosmicShore.Gameplay
             bool hadTint = TryGetDisplayedTint(out var fromBright, out var fromDull);
 
             EmbeddedIn = null; // no longer a living heart - it's a free collectible now
-            if (cellData && cellData.Cell)
-                transform.parent = cellData.Cell.transform;
+            ReparentToCell();
             var dropCol = gameObject.GetComponent<SphereCollider>();
             if (_authoredColliderRadius > 0f) dropCol.radius = _authoredColliderRadius;
             dropCol.enabled = true;
