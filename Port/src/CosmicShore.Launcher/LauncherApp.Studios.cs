@@ -194,17 +194,21 @@ namespace CosmicShore.Launcher
             }
             float cw = Math.Min(1120, ImGui.GetContentRegionAvail().X - 4);   // the hub's column (max-width 1120px)
             var studios = cat.Studios;
-            int cols = Math.Clamp((int)((cw + CardGap) / (CardMinW + CardGap)), 1, Math.Max(1, studios.Count));   // auto-fit, as the hub's grid
+            int items = studios.Count + (cat.NewCard != null ? 1 : 0);   // every studio, then the hub's "+ New studio" card (D36)
+            int cols = Math.Clamp((int)((cw + CardGap) / (CardMinW + CardGap)), 1, Math.Max(1, items));   // auto-fit, as the hub's grid
             float cardW = (cw - CardGap * (cols - 1)) / cols;
-            for (int i = 0; i < studios.Count; i += cols)
+            for (int i = 0; i < items; i += cols)
             {
                 var top = ImGui.GetCursorScreenPos();
                 float rowH = 0;
-                for (int c = 0; c < cols && i + c < studios.Count; c++) rowH = Math.Max(rowH, StudioCardHeight(cat, studios[i + c], cardW));
-                for (int c = 0; c < cols && i + c < studios.Count; c++)
+                for (int c = 0; c < cols && i + c < items; c++)
+                    rowH = Math.Max(rowH, i + c < studios.Count ? StudioCardHeight(cat, studios[i + c], cardW) : NewStudioCardHeight(cat.NewCard!, cardW));
+                for (int c = 0; c < cols && i + c < items; c++)
                 {
+                    var at = top + new Vector2(c * (cardW + CardGap), 0);
+                    if (i + c >= studios.Count) { ImGui.PushID("newstudio"); DrawNewStudioCard(cat, root, at, new Vector2(cardW, rowH)); ImGui.PopID(); continue; }
                     ImGui.PushID("card" + studios[i + c].Id);
-                    DrawStudioCard(cat, root, studios[i + c], top + new Vector2(c * (cardW + CardGap), 0), new Vector2(cardW, rowH));
+                    DrawStudioCard(cat, root, studios[i + c], at, new Vector2(cardW, rowH));
                     ImGui.PopID();
                 }
                 ImGui.SetCursorScreenPos(top + new Vector2(0, rowH + CardGap));
@@ -397,6 +401,66 @@ namespace CosmicShore.Launcher
             ImGui.SameLine(0, 14);
             if (Link("docs", docs != null && File.Exists(docs), docs ?? "No document for this one yet.")) OpenUrl(docs!);
             ImGui.PopFont();
+        }
+
+        float NewStudioCardHeight(StudioCatalog.NewStudioCard nc, float w)
+        {
+            ImGui.PushFont(Neon.Small);
+            float sumH = ImGui.CalcTextSize(nc.Summary, false, w - 2 * CardPad).Y;
+            ImGui.PopFont();
+            return CardPad + PreviewH + 12 + 36 + 8 + sumH + ImGui.GetStyle().ItemSpacing.Y + 14 + 46 + 22 + CardPad;
+        }
+
+        /// <summary>
+        /// The hub's "+ New studio" card (index.html <c>.bay.add</c>, studios.json <c>newCard</c>, D36): dashed, the + in the
+        /// preview's well, the hub's name and blurb, one button. Pressing it opens the hub as every studio opens here (this
+        /// checkout's build, served by Amoebius) with <c>#&lt;fragment&gt;</c>, so the hub's own panel is up: pick the vessel
+        /// and the mini-game, say what you want, and Create starts an AGENT chat here with the request.
+        /// </summary>
+        void DrawNewStudioCard(StudioCatalog cat, string? root, Vector2 p, Vector2 size)
+        {
+            var nc = cat.NewCard!;
+            var dl = ImGui.GetWindowDrawList();
+            var accent = new Vector4(1f, 0.702f, 0.278f, 1f);   // #ffb347, the hub's --accent (studio-theme.js: the studio chrome colour)
+            bool hover = ImGui.IsMouseHoveringRect(p, p + size);
+            var line = hover ? Neon.U(accent, 0.9f) : Neon.U(new Vector4(0.149f, 0.169f, 0.278f, 1f));
+            for (float d = 0; d < size.X; d += 10)   // the hub's dashed border
+            {
+                dl.AddLine(p + new Vector2(d, 0), p + new Vector2(Math.Min(d + 5, size.X), 0), line, 1.2f);
+                dl.AddLine(p + new Vector2(d, size.Y), p + new Vector2(Math.Min(d + 5, size.X), size.Y), line, 1.2f);
+            }
+            for (float d = 0; d < size.Y; d += 10)
+            {
+                dl.AddLine(p + new Vector2(0, d), p + new Vector2(0, Math.Min(d + 5, size.Y)), line, 1.2f);
+                dl.AddLine(p + new Vector2(size.X, d), p + new Vector2(size.X, Math.Min(d + 5, size.Y)), line, 1.2f);
+            }
+            float x = p.X + CardPad, inner = size.X - 2 * CardPad, y = p.Y + CardPad;
+
+            // the + where the preview would be
+            var w0 = new Vector2(x, y); var w1 = new Vector2(x + inner, y + PreviewH);
+            dl.AddRectFilled(w0, w1, Neon.U(new Vector4(0.020f, 0.024f, 0.047f, 1f)), 8);
+            var c = (w0 + w1) / 2; float arm = Math.Min(70, PreviewH * 0.42f), th = 8;
+            uint plus = hover ? Neon.U(Neon.Ink) : Neon.U(accent);
+            dl.AddRectFilled(c - new Vector2(arm / 2, th / 2), c + new Vector2(arm / 2, th / 2), plus, 2);
+            dl.AddRectFilled(c - new Vector2(th / 2, arm / 2), c + new Vector2(th / 2, arm / 2), plus, 2);
+            y += PreviewH + 12;
+
+            dl.AddText(Neon.Title, 32, new Vector2(x, y), Neon.U(accent), nc.Name.ToUpperInvariant());
+            y += 36 + 8;
+            ImGui.SetCursorScreenPos(new Vector2(x, y));
+            ImGui.PushFont(Neon.Small);
+            ImGui.PushTextWrapPos(ImGui.GetCursorPosX() + inner);
+            ImGui.TextColored(new Vector4(0.557f, 0.584f, 0.749f, 1f), nc.Summary);
+            ImGui.PopTextWrapPos();
+            ImGui.PopFont();
+
+            var page = root != null ? StudioCatalog.PagePath(root, cat.Hub) : null;
+            bool ok = page != null && File.Exists(page) && !_studioBusy;
+            string tip = ok
+                ? "Opens the hub's + New studio panel (this checkout's build, served by Amoebius): pick the vessel and the mini-game, say what you want, and Create starts an AGENT chat here with the request."
+                : _studioBusy ? "The studio is being built." : "The hub is not in this checkout: switch to Ys-bleeding-edge.";
+            ImGui.SetCursorScreenPos(new Vector2(x, p.Y + size.Y - CardPad - 22 - 46 + 4));
+            CardActionRow(new[] { new PageAction(nc.Open.ToUpperInvariant(), ok, tip, () => OpenServedStudio(cat.Hub, window: true, fragment: nc.Fragment)) }, inner, accent);
         }
 
         /// <summary>The card's buttons in the accent, wrapping when the card is narrow; the first one (Open studio) is the card's own.</summary>

@@ -1,5 +1,5 @@
 {
-  "comment": "The Vessel Studio catalog. Amoebius's VESSEL STUDIO page lists these; index.html shows the same studios. Add a studio here and in index.html. Optional accent: the card colour on the hub and the Unity home, a domain key from studio-domains.js (jade, ruby, gold, blue) or a #hex. Optional engineMode: an arcade mode (GameModes name) that PLAY IN ENGINE opens from the main menu in the Amoebius player, the game's own vessel; engineNote says what that run is. \"shared\": files every studio page loads beside it (studio-look.js = the default graphics, /vessel-studio D19); build_artifact.py publishes them. \"mirror\": the live mirror, a plain https copy of the same build_artifact.py output (OPEN LIVE IN BROWSER); a mirror of the one artifact in \"web\", never a second source. Cards (/vessel-studio D35): every surface shows the hub's studio cards. index.html draws them; the native homes (Amoebius's VESSEL STUDIO page, Unity's studio home) draw them from these fields, so they carry the hub's text exactly: \"chip\", \"summary\", \"spec\" (the rows under it), \"preview\" (a thumbnail of the hub's live canvas, baked by .claude/skills/vessel-studio/bake_previews.cjs), and (no \"tuner\": Unity has no tuner of its own, D33) on the catalog \"lede\", \"fleet\", \"fleetNote\" and \"cardActions\": the card's buttons in order, the hosts they work on (web, amoebius, unity) and what a studio needs for one. parity_gate.py fails when these and the hub differ.",
+  "comment": "The Vessel Studio catalog. Amoebius's VESSEL STUDIO page lists these; index.html shows the same studios. Add a studio here and in index.html. Optional accent: the card colour on the hub and the Unity home, a domain key from studio-domains.js (jade, ruby, gold, blue) or a #hex. Optional engineMode: an arcade mode (GameModes name) that PLAY IN ENGINE opens from the main menu in the Amoebius player, the game's own vessel; engineNote says what that run is. \"shared\": files every studio page loads beside it (studio-look.js = the default graphics, /vessel-studio D19); build_artifact.py publishes them. \"mirror\": the live mirror, a plain https copy of the same build_artifact.py output (OPEN LIVE IN BROWSER); a mirror of the one artifact in \"web\", never a second source. Cards (/vessel-studio D35): every surface shows the hub's studio cards. index.html draws them; the native homes (Amoebius's VESSEL STUDIO page, Unity's studio home) draw them from these fields, so they carry the hub's text exactly: \"chip\", \"summary\", \"spec\" (the rows under it), \"preview\" (a thumbnail of the hub's live canvas, baked by .claude/skills/vessel-studio/bake_previews.cjs), and (no \"tuner\": Unity has no tuner of its own, D33) on the catalog \"lede\", \"fleet\", \"fleetNote\" and \"cardActions\": the card's buttons in order, the hosts they work on (web, amoebius, unity) and what a studio needs for one. parity_gate.py fails when these and the hub differ. \"newCard\": the hub's \"+ New studio\" card (/vessel-studio D36), its text exactly as the hub shows it; the native homes (Amoebius, Unity) draw it last in their studio grids and open the hub with #<fragment> (the panel).",
   "web": "https://claude.ai/artifact/3igBJJbNvJjsfJoBJnAMPa",
   "mirror": "https://yskhan61.github.io/vessel-studio/",
   "hub": "index.html",
@@ -86,6 +86,12 @@
       "engineMode": "Slingshot"
     }
   ],
+  "newCard": {
+    "name": "New studio",
+    "summary": "Create a vessel or work on one of the fleet: its AI, how it flies, a mini-game of the game or a new one. Name the new ones, say what you want (by voice too), and Claude Code builds it on a new branch.",
+    "open": "Start →",
+    "fragment": "new-studio"
+  },
   "fleet": [
     "Manta",
     "Dolphin",

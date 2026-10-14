@@ -22,6 +22,18 @@ the studio until they are ported (`STOAT_SIM_LAB_PLAN.md` §5, and the vessel-co
    **GIT** page (or click **FOLLOW UNITY**). Without the studio folder on its branch, the VESSEL STUDIO page says so
    and names the branches that have it.
 
+## 0b. + New studio (D36, D37)
+
+1. VESSEL STUDIO: the last card in the STUDIOS grid is **NEW STUDIO** (an amber + in a dark well, a dashed border,
+   the hub's own text). **Pass:** the same card, text and place as on the claude.ai hub and Unity's studio home.
+2. Press **START**. The hub opens in its own window with the **New studio** panel already up
+   (address ends `index.html#amoebius&new-studio`).
+3. Pick a vessel (say Manta, "Create or improve its AI"), a mini-game, type or **Speak** a line, press
+   **Create with Claude Code**. **Pass:** the panel says "Sent: an AGENT chat in Amoebius, on this computer, is building
+   it now", and Amoebius's AGENT page shows a new chat titled "New studio: Manta · ..." working on the request.
+4. In Unity: FrogletTools ▸ Vessels ▸ Vessel Studio ▸ the **NEW STUDIO** card does the same (it opens the hub through
+   Amoebius with the panel up).
+
 ## 1. The studio in its own window (OPEN IN AMOEBIUS)
 
 1. VESSEL STUDIO ▸ pick **STOAT** ▸ **OPEN IN AMOEBIUS**. A window opens with no browser chrome.
