@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using CosmicShore.Engine;
 using CosmicShore.Render;
 using ColorSpace = CosmicShore.Render.ColorSpace;
@@ -110,6 +111,9 @@ namespace CosmicShore.Player
             _window.Update += OnUpdate;
             _window.Render += OnRender;
             _window.Run();
+            // The window was closed (its close button, Alt+F4, or the game's own quit): the game hears
+            // OnApplicationQuit and Application.quitting once either way, as in a Unity player.
+            if (_boot?.Loop != null) Application.RunQuitSequence(cancellable: false);
             SessionReport.Write("window closed");
             _boot?.Dispose();
             _inputBridge?.Dispose();
@@ -160,6 +164,8 @@ namespace CosmicShore.Player
             Camera.RenderRequested = cam => { if (cam != null && cam.targetTexture != null) RenderToTexture(cam, force: true); };
 
             _inputBridge = new SilkInputBridge(_window);
+            // Alt+Tab and clicks elsewhere reach the game as OnApplicationFocus (the rumble stops, as in Unity).
+            if (_window is IWindow focusable) focusable.FocusChanged += Application.SetFocus;
             OnInput?.Invoke(_window);
             _script.EnsureDevices();
             // This device draws Entities Graphics entities (SceneRenderer's entity pass), so the
@@ -207,10 +213,13 @@ namespace CosmicShore.Player
             Control?.BeforeTick(_frameIndex);
             UpdateNetTitle();
             long t0 = System.Diagnostics.Stopwatch.GetTimestamp();
-            CosmicShore.Engine.GameLoop.PhaseTiming = s_timing || SessionReport.Enabled;
+            CosmicShore.Engine.GameLoop.PhaseTiming = s_timing || SessionReport.Enabled || PlayerDiagnostics.Visible;
             _boot.Tick(step);
+            if (_boot.QuitNow) _window.Close();
             ParityRun.AfterTick(_frameIndex);
-            SessionReport.SimTime(System.Diagnostics.Stopwatch.GetElapsedTime(t0).TotalMilliseconds);
+            _lastSimMs = System.Diagnostics.Stopwatch.GetElapsedTime(t0).TotalMilliseconds;
+            SessionReport.SimTime(_lastSimMs);
+            if (ModelViewer.Path == null) PlayerDiagnostics.Tick(_sceneRenderer.DrawCalls, _sceneRenderer.Instances);
             if (s_timing && _frameIndex % 30 == 0)
                 Console.WriteLine($"[tick] simulation {(System.Diagnostics.Stopwatch.GetTimestamp() - t0) * 1000.0 / System.Diagnostics.Stopwatch.Frequency:F1} ms (frame {_frameIndex})"
                     + $" | avg/30: {CosmicShore.Engine.GameLoop.Current?.TakePhaseReport(30)} | {GcReport()}");
@@ -229,7 +238,7 @@ namespace CosmicShore.Player
             return r;
         }
 
-        double _lastFrameMs;
+        double _lastFrameMs, _lastSimMs, _lastGpuMs = -1;
         // GPU time per render pass for the session report (desktop GL, --session-report only). A pass's
         // time is GPU wall time, so while the frame is CPU-bound it includes the GPU waiting for
         // the pass's commands: read it next to cpu.renderP50Ms.
@@ -262,7 +271,7 @@ namespace CosmicShore.Player
                 return;
             }
             long r0 = System.Diagnostics.Stopwatch.GetTimestamp();
-            if (_gpu?.BeginFrame() is { } gpuMs) SessionReport.GpuTime(_gpu.Passes, gpuMs);
+            if (_gpu?.BeginFrame() is { } gpuMs) { SessionReport.GpuTime(_gpu.Passes, gpuMs); _lastGpuMs = gpuMs.Sum(); }
             _gpu?.Begin(0);
             _frame.Ensure(w, h);
             // Enabled cameras aimed at a RenderTexture draw every frame (the preview window, the
@@ -289,7 +298,9 @@ namespace CosmicShore.Player
             else _present.Draw(_frame.Color, w, h);
             _gpu?.EndFrame();
             // CPU time spent issuing the frame's GL work (the GPU's own time needs timer queries).
-            SessionReport.RenderTime(System.Diagnostics.Stopwatch.GetElapsedTime(r0).TotalMilliseconds);
+            double renderMs = System.Diagnostics.Stopwatch.GetElapsedTime(r0).TotalMilliseconds;
+            SessionReport.RenderTime(renderMs);
+            PlayerDiagnostics.Frame(_lastFrameMs, _lastSimMs, renderMs, _lastGpuMs >= 0 ? _lastGpuMs : null);
 
             _frameIndex++;
             if (_shots.TryGetValue(_frameIndex, out var path))

@@ -111,10 +111,7 @@ With the **amoebius MCP server** (preferred - see below), the loop is tools:
 3. `game_start` - boots the real game with a control port (under xvfb on a display-less server).
 4. Look and act (and read `amoebius_tracks` first when chasing a reported problem): `game_screenshot`, `game_state`, `game_input` ("click X,Y", "type pilot",
    "key Enter", "hold W 60", "scroll X,Y -3", "drag X,Y X,Y 8"), `game_wait`, `game_find`, `game_hierarchy`, `game_get` /
-   `game_set`, `game_ui_at`, `game_dump_ui`, `game_logs`, `game_load_scene`. For multiplayer, the
-   `net_*` tools start and drive up to four players at once (`net_players`, `net_input`,
-   `net_command`, `net_sim`, `net_fault`, `net_stats`, `net_logs`, `net_scenario`;
-   `docs/MULTIPLAYER.md` §6.5).
+   `game_set`, `game_ui_at`, `game_dump_ui`, `game_logs`, `game_load_scene`.
 5. `game_stop`, then `engine_test` and `unity_isolation_check` before committing.
 
 When something that used to work is broken, `amoebius_bisect` (good, bad, check) finds the commit:
@@ -148,12 +145,18 @@ An unattended run without a port: `--frames N --shot F:out.png --do "F:click X,Y
   username. `profile` in `game_start` picks a save slot (a new name is a first-time user; reuse a
   name to skip them). Never accept consent on the user's behalf unless asked. Offline (`COSMIC_SHORE_NET=off`) and silent
   (`COSMIC_SHORE_AUDIO=off`) are the MCP defaults.
-- **Multiplayer between games goes through Amoebius's online server** (lobby + relay,
-  `docs/ARCHITECTURE.md` §8). With networking on and no server named, the first game hosts one and
-  the others find it by LAN discovery; `COSMIC_SHORE_NET_SERVER=host[:port]` (`game_start` `server`)
-  names one, `CosmicShore --server` runs one alone. Every player needs their own profile
-  (`COSMIC_SHORE_PROFILE`): two games with one player id replace each other on the server. A match
-  starts only when every player presses the HUD's GO (the ReadyButton), not when GO appears.
+- **Online play is UGS, as the Unity build's** (`docs/MULTIPLAYER.md` §6.10): the launcher's START ONLINE
+  (`game_start` `online: true`) signs in to the game's live UGS project and plays through UGS Lobby and UGS
+  Relay. START is offline, and there is no LAN play, no local server and no shared-folder sessions. **Never
+  start an online game without the owner's go-ahead** (a sign-in creates a player in the live project); the
+  tests use `UgsLobbyStandIn`, `UgsAuthStandIn` and `FrogletRelayServer`. Every player needs their own profile
+  (`COSMIC_SHORE_PROFILE`), which is their own UGS player. A match starts only when every player presses the
+  HUD's GO (the ReadyButton), not when GO appears.
+- **A player's networking is built in ONE place, `NetStack.Install`** (transport, relay, sessions, then
+  simulator and faults; `docs/MULTIPLAYER.md` §6.9). Never set `NetDriver.TransportFactory`,
+  `MultiplayerService.Instance`, `NetSimulator` or `NetFaults` from `PlayerBoot` directly: a merge did, and
+  silently disabled the UDP transport, the relay, the simulator and the faults. `NetStackTests` fails if it
+  happens again. The player calls it from `UgsSetup.InstallOnline`.
 - **Under xvfb, rendering is software**: a few frames per second. `game_wait 600` is minutes.
   Use `headless: true` when you need no pictures - it ticks as fast as the CPU allows.
 - **Unity injects Reflex before Awake/OnEnable**, with the scene active. Bugs where a value

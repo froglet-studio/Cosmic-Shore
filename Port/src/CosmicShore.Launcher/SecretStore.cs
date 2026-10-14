@@ -24,7 +24,6 @@ namespace CosmicShore.Launcher
     {
         public const string GitHubToken = "github-token";
         public const string AnthropicApiKey = "anthropic-api-key";
-        public const string NetKey = "online-server-key";
 
         /// <summary>Where the secrets live on this machine, for SETTINGS to say.</summary>
         public static string Where => OperatingSystem.IsWindows() ? "Windows Credential Manager"
