@@ -40,7 +40,7 @@ public class RenderVisibilityTests : IDisposable
     [Fact]
     public void NothingRendered_NothingVisible()
     {
-        // Headless: no camera ever draws, so an enabled, active renderer is still not visible (Unity with no graphics).
+        // Headless: no camera ever draws, so an enabled, active renderer is still not visible.
         Assert.True(_renderer.enabled && _go.activeInHierarchy);
         Assert.False(_renderer.isVisible);
     }

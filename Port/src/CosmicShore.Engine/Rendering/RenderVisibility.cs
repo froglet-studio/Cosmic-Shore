@@ -7,8 +7,8 @@ namespace CosmicShore.Engine
     /// The render backend calls <see cref="NoteCameraRender"/> as each camera starts drawing and
     /// <see cref="NoteSeenByCamera"/> on every renderer that passes that camera's frustum test. A renderer is visible
     /// while its stamp is the newest rendered frame's: any camera that frame counts, and a frame the game ticks without
-    /// drawing (headless catch-up, a skipped present) keeps the last frame's answer, as Unity keeps it until it renders
-    /// again. Nothing renders headless, so nothing is visible there - Unity's answer with no graphics device too.
+    /// drawing (a catch-up tick, a skipped present) keeps the last frame's answer, as Unity keeps it until it renders
+    /// again. Nothing renders headless, so nothing is visible there.
     ///
     /// Why it matters: the game skips purely visual work on renderers no camera sees (the crystals' Charge arcs, flip
     /// wave, depth prisms and space squares read <c>isVisible</c>). With every renderer reading visible, a grown
