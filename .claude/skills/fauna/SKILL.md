@@ -249,6 +249,16 @@ Load **`/asset-surgery`** for the general rules. These are the fauna-specific on
   records two passes of Rhino jets landing on a placeholder hull a fifth of the ship's
   height. Prisms are gameplay colliders and conserved mass; put them where a human can see
   them land.
+- **Never scale a creature ROOT non-uniformly.** The heart hangs off the root, so a root at
+  `(1, 1, 1.31)` (the QuadFish until 2026-10-14) stretches it, shears its spinning model as it
+  turns, and used to bake that stretch into the dropped pickup. Put an elongation on the BODY
+  child instead — a roll about z commutes with a z-only scale, so the body's world pose is
+  identical. `Crystal.ReparentToCell` now restores a uniform size on release as a backstop.
+- **A heart needs its collection pair (`ElementalCrystalImpactor` + `ImpactCollider`).** A bare
+  `CrystalSpace` instance has only `Crystal` + a trigger, which the skimmer's VACUUM reads — so
+  the dead heart followed the vessel forever and could never be collected (QuadFish, Clawfish,
+  Nerve/Pine/Wall flora). `LifeFormCrystal.EnsureElementalCrystal` now wires the pair on a kept
+  crystal at runtime; authoring it on the prefab is still the clean shape.
 - **Every guid a creature prefab references must have exactly one `.meta` owner.** Sweep it:
   `for g in $(grep -o "guid: [0-9a-f]\{32\}" <prefab> | sort -u | cut -d' ' -f2); do ...`
 
