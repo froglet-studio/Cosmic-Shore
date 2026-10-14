@@ -11,6 +11,29 @@ wrote it. The C# compiles against the Unity 6 reference assemblies (`unity_refco
 and `--config player`, 0 project errors). Everything below that says "does" means "is written to do",
 until the checklist at the end has been run.
 
+## 0. Fastest path: play it on the site today
+
+The full setup (§5) moves froglet.games's DNS to Cloudflare first. To play sooner, use the bucket's own
+`r2.dev` address and move DNS later; only `build_root` changes when you do. `r2.dev` is rate-limited by
+Cloudflare and meant for testing, so switch to `play.froglet.games` before announcing the page.
+
+1. **Unity Hub:** add **Web Build Support** to 6000.3.17f1. Check out `claude/webgl-toybox-kg5qx7` (later
+   `bleeding-edge`). In Unity, File > Build Profiles > Web > Switch Platform (a long reimport the first time).
+2. **Build:** FrogletTools > Build > **WebGL Toybox**. Output: `Builds/WebGLToybox/`.
+3. **Try it locally:** `python3 Tools/Build/publish_toybox.py serve --build-dir Builds/WebGLToybox`, open
+   http://localhost:8000 in Chrome or Edge. (Opening `index.html` from disk cannot work: the files are
+   Brotli-compressed and need the server's `Content-Encoding`.)
+4. **Cloudflare (free account; R2 asks for a payment method even on its free tier):** R2 > Create bucket
+   (`froglet-play`). Bucket > Settings > **Public Development URL** (the r2.dev subdomain) > Enable; note the
+   `https://pub-….r2.dev` address. Settings > CORS policy: the JSON in §5.2 B. R2 > Manage API
+   tokens > Create, Object Read & Write on that bucket; note the Access Key ID, the Secret and the account ID.
+5. **Upload:** `pip install boto3`, set `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_BUCKET`, then
+   `python3 Tools/Build/publish_toybox.py upload --build-dir Builds/WebGLToybox --version 1`.
+6. **Check the host:** `python3 Tools/Build/publish_toybox.py check --root https://pub-….r2.dev/toybox` must end
+   "All good". It reads every file the way `/play` will, from the www.froglet.games origin.
+7. **Website:** in `cosmic-shore-landing-page`, set `_data/toybox.yml` `build_root: https://pub-….r2.dev/toybox`, and
+   merge the website PR. GitHub Pages republishes in a minute or two; www.froglet.games/play shows the launch button.
+
 ---
 
 ## 1. One define, read one way
@@ -55,8 +78,62 @@ in the Editor, so the toybox path can be played before it is built). Everywhere 
 
 ## 4. Platform work
 
-_Filled in when the platform and rendering work lands on this branch: build entry point, WebGL player
-settings, the web PlatformProfile, threads, painting share, FMOD, and the non-compute renderers._
+**Build.** `Editor/Build/WebToyboxBuild.cs`: FrogletTools > Build > WebGL Toybox (+ Development), or
+`-executeMethod CosmicShore.Editor.WebToyboxBuild.Build`. Exactly Bootstrap, Authentication and Menu_Main, with
+`FROGLET_WEB_TOYBOX` passed for that build only (`extraScriptingDefines`), to `Builds/WebGLToybox/`, plus a
+`build_manifest.txt`. It refuses unless the editor is on Web, and sets the editor's Development checkbox to match the
+build, because the release guards exempt any build while it is ticked. Unity Build Automation calls
+`WebToyboxBuild.PreExport` instead (batchmode only): it sets the three scenes and appends the define. The release
+guard checks the scenes a scripted build declares (`UnityPipelineReleaseGuard.DeclareBuildScenes`) as well as Build
+Settings, and `BuildSceneListReconciler` stands down in a toybox-defined editor so UBA's define reload cannot re-add
+every arcade scene.
+
+**Player settings (Web only).** Brotli with the decompression fallback off (the host sets `Content-Encoding`); hashed
+file names (immutable caching); 256 MB initial and 4 GB maximum memory (boot alone passes 256 MB); exceptions
+"without stack trace", which keeps IL2CPP's null and bounds checks (explicit-only drops them, so a null dereference
+would read garbage instead of reaching a catch); template `PROJECT:FrogletToybox`. No threads, no debug symbols.
+
+**Template.** `Assets/WebGLTemplates/FrogletToybox/index.html`: a canvas and Unity's loader, used when a build is
+opened on its own (`serve`, a UBA share link). It posts `progress`, `ready`, `warning` and `error` to a parent page
+and exposes `window.frogletUnity`. www.froglet.games/play does not use it: it reads `latest.json` and calls the
+loader itself.
+
+**Web profile.** `PlatformProfile_Web` (in `Resources/PlatformProfiles`) is what any WebGL player runs, whatever its
+tier; the tier itself is unchanged, so input is unaffected. It keeps every toy and the no-trail-cap law. It turns the
+first-run heuristic off (a browser hides the real hardware), starts at the Low preset with a 2.1 MP budget, FXAA and
+60 fps, uses the baked sky, and takes MobileLow's CPU strips: the freestyle pen waits at 10,000 and resumes at 9,700,
+a smaller Wanderway belt (8 scenes of 600 prisms) with its lifeforms and crystals, menus off while flying, no
+cytoplasm. The reason is CPU: wasm runs single-threaded, without Burst, at roughly half native speed.
+
+**Threads.** A WebGL player has none. `CrystalHullFusion`'s fallback solve runs inline there (at vessel spawn, and only
+for a missing or stale bake); `TextureScale` scales in one slice. Swarm, Substrate and the NCA creatures already ran
+their sims inline on WebGL (`SimulateOffMainThread` is ignored there).
+
+**GPU: no compute on WebGL2.** Swarm members and substrate agents draw through `SwarmMemberFallbackDraw`: the same
+80-byte instances as five per-instance float4 rows, 128 per `RenderMeshInstanced` (10 KB, inside the 16 KB uniform
+block), through `SwarmMemberInstancedFallback.shader` (SM 3.5), which runs the same pose and shade code. The
+renderers choose it from `SystemInfo`, not the define; `memberdraw sm35|auto` forces it in the editor for an A/B
+(`SWARM_FAUNA.md` §14.8, `SUBSTRATE_FAUNA.md` §5.1). VFX Graph needs compute too: `ArcLightningFallback` draws the
+arc lightning's two strands as LineRenderers (the Rhino's arc is switched off on every platform today, so nothing
+shows there yet).
+
+**Painting SHARE** downloads the viewer `.html` (`Plugins/WebGL/FrogletDownload.jslib`); a WebGL player has no share
+sheet, and its files live in IndexedDB.
+
+**Audio (FMOD).** The WebGL node inherits the Default settings, like every shipping platform, and Unity 6 links
+`html5/lib/3.1.39`. Banks load asynchronously from StreamingAssets, so the toybox waits on "Loading sound…" (up to
+90 s) before the menu: an event created before its bank arrives fails once and stays silent. FMOD resumes the
+browser's audio only on click and touch; `WebAudioResume` + `FrogletAudioResume.jslib` add a key press. Open idea:
+FADPCM web banks, since Vorbis decodes on the main thread.
+
+**Display.** `GraphicsSettingsApplier.ApplyDisplay` skips WebGL: the page sizes the canvas, and a full-screen mode
+there would leave the page on the first click. The page's full-screen button owns that.
+
+**Controllers.** The game reads `Gamepad.current` and follows the last device used (`InputDeviceActuation`); on WebGL
+the Input System fills it from the browser's Gamepad API (`WebGLGamepad`, standard mapping: Xbox and PlayStation
+pads). No device filter is set, so nothing else is needed. A browser reveals a pad only after one of its buttons is
+pressed with the page focused, which `/play` tells the player, and it shows "Controller connected" when it is.
+Rumble does nothing in a browser.
 
 ## 5. Hosting: Cloudflare R2 at play.froglet.games
 
@@ -114,8 +191,10 @@ SPF), so replies from `support@froglet.games` are likely to land in players' spa
 5. R2 → Manage API tokens → create one with Object Read & Write on that bucket only. Note the Access Key ID, the
    Secret and the account ID.
 
-**C. Unity Build Automation target.** Add a WebGL target using the toybox build entry point (§4). Then create an
-API key, and note the org ID, project ID and the new target's ID.
+**C. Unity Build Automation target.** Add a target: platform **Web (WebGL)**, Unity **6000.3.17f1**, branch
+`bleeding-edge` (or `claude/webgl-toybox-kg5qx7` until it merges), Advanced > **Pre-Export Method**
+`CosmicShore.Editor.WebToyboxBuild.PreExport`, Development off. Then create an API key, and note the org ID, project
+ID and the new target's ID.
 
 **D. GitHub (game repo).** Settings → Environments → `toybox`: add the secrets `UBA_API_KEY`, `UBA_ORG_ID`,
 `UBA_PROJECT_ID`, `UBA_TOYBOX_TARGET`, `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY` and `R2_BUCKET`.
@@ -127,6 +206,10 @@ Adding required reviewers to the environment makes every publish an approved ste
   newest successful UBA build, uploads it to `toybox/builds/<build>/`, then rewrites `toybox/latest.json`.
 - **By hand** (a local build): `python3 Tools/Build/publish_toybox.py upload --build-dir Builds/WebGLToybox --version <name>`
   with the R2 variables set. Add `--dry-run` to see every object and header first.
+- **Check a host:** `python3 Tools/Build/publish_toybox.py check --root <build_root>` reads `latest.json` and every
+  build file the way `/play` does and names anything that would stop it loading.
+- **Play a local build:** `python3 Tools/Build/publish_toybox.py serve --build-dir Builds/WebGLToybox`, then
+  http://localhost:8000.
 - **Roll back:** rewrite `toybox/latest.json` with an older build's paths (copy it from the dry-run output of that
   build, or edit `version` and the four paths). Old builds stay in `builds/` until deleted.
 
