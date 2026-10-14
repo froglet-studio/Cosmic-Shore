@@ -52,7 +52,12 @@ Read from the prefab and from an in-editor probe (`SkimRaceRaceRecorder.WritePro
 - Track: 10x1x3 plates every 12 u, **super-shielded**, so the contact solid is a stella octangula of
   half-extents 15 x 1.5 x 4.5 — a slab ~3 u thick the hull must never enter, and a 2.5..9 u skim band
   above or below it.
-- Crystal pickup sphere: radius 24 (`SphereCollider`, bounds 48).
+- Crystal target: **a race ring threaded by its mouth** since 2026-10-14 (`SKIMRACE.md` §7a) — mouth
+  radius **24 / 20 / 16 / 12 u at intensity 1-4**, square across the track, tested against the hull's
+  centre point (`RaceGateRing.CrossedMouth`). It was a touched pickup sphere of radius 24 (`SphereCollider`,
+  bounds 48); that collider is now disabled. `CrystalTrackObjective.CaptureRadius` aims at 0.7 × the mouth
+  (Regatta's fraction) — 8.4 u at I4. Measurements quoted below that say "24 u capture radius" predate the
+  change, and the offline simulator still models the sphere (follow-up in §7a).
 
 ## 3. Architecture
 

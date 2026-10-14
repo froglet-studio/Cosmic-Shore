@@ -397,7 +397,7 @@ its rim.
 
 **Not done here (follow-ups):** the card background (`ArcadeGameSkimRace`, `/cardart`) still stages
 lime crystal glyphs; the offline AI simulator (`skimrace_sim_harness/Sim.cs`) still scores sphere
-touches; Prisma (`Port/`) still spawns the crystal model.
+touches; Amoebius (`Port/`, formerly Prisma) still spawns the crystal model.
 
 ### 8. Winner Determination & Score Sync
 
