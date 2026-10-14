@@ -16,6 +16,11 @@ Two steps, usable together (the toybox-publish workflow) or alone:
               --dry-run prints every object with its headers and the manifest, needs nothing,
               and uploads nothing.
 
+  serve       Serve a built WebGL folder on http://localhost with the same headers, to play a
+              local build before uploading it (the build's own index.html, the FrogletToybox template).
+                  python3 Tools/Build/publish_toybox.py serve --build-dir Builds/WebGLToybox
+              Browsers decode Brotli on localhost even without HTTPS. Needs nothing installed.
+
 Why the headers matter: the build is compressed (Brotli or gzip) with Unity's decompression
 fallback off, so the browser can only read it if each file arrives with Content-Encoding set,
 the right Content-Type (application/wasm for the code, or the browser refuses to stream-compile
@@ -25,6 +30,8 @@ soon as it is written. latest.json goes up LAST, so a page never points at files
 uploading, and a rollback is rewriting latest.json to an older version folder.
 """
 import argparse
+import functools
+import http.server
 import json
 import mimetypes
 import os
@@ -204,6 +211,37 @@ def cmd_fetch_uba(args):
     return 0
 
 
+class _ToyboxHandler(http.server.SimpleHTTPRequestHandler):
+    """Serves a build folder with the headers a real host gives it (headers_for)."""
+
+    def guess_type(self, path):
+        ctype, _ = headers_for(os.path.basename(path)) if not path.endswith(".unityweb") else (None, None)
+        return ctype or super().guess_type(path)
+
+    def end_headers(self):
+        name = os.path.basename(self.path.split("?", 1)[0])
+        if not name.endswith(".unityweb"):
+            _, enc = headers_for(name)
+            if enc:
+                self.send_header("Content-Encoding", enc)
+        self.send_header("Cache-Control", "no-store")
+        super().end_headers()
+
+
+def cmd_serve(args):
+    if not os.path.isfile(os.path.join(args.build_dir, "index.html")):
+        raise SystemExit(f"{args.build_dir}: no index.html - point --build-dir at the WebGL output folder.")
+    find_build_files(args.build_dir)  # the same refusals as an upload: one of each, no .unityweb
+    handler = functools.partial(_ToyboxHandler, directory=args.build_dir)
+    server = http.server.ThreadingHTTPServer(("127.0.0.1", args.port), handler)
+    print(f"Serving {args.build_dir} at http://localhost:{args.port}/  (Ctrl+C to stop)")
+    try:
+        server.serve_forever()
+    except KeyboardInterrupt:
+        pass
+    return 0
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     sub = ap.add_subparsers(dest="cmd", required=True)
@@ -215,8 +253,11 @@ def main():
     f = sub.add_parser("fetch-uba")
     f.add_argument("--out", required=True)
     f.add_argument("--meta-out")
+    s = sub.add_parser("serve")
+    s.add_argument("--build-dir", required=True)
+    s.add_argument("--port", type=int, default=8000)
     args = ap.parse_args()
-    return cmd_upload(args) if args.cmd == "upload" else cmd_fetch_uba(args)
+    return {"upload": cmd_upload, "fetch-uba": cmd_fetch_uba, "serve": cmd_serve}[args.cmd](args)
 
 
 if __name__ == "__main__":
