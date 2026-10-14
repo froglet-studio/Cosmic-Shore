@@ -106,7 +106,8 @@ http://localhost:8000 in Chrome or Edge):
 5. Audio starts on the first click, and on the first key press alone. Music plays from the menu's first frame.
 6. No full-screen jump on the first click. The page's own full-screen button works.
 7. A controller (Xbox and PlayStation): press a button, then it flies (sticks, A/B/X, triggers, RB flips) and the
-   keyboard takes back over when touched.
+   keyboard takes back over when touched. Menu button glyphs appear once the pad is pressed: Cross/Circle on a
+   PlayStation pad, A/B on an Xbox pad. In the editor, plugging a pad in mid-session now shows the glyphs too.
 8. Painting SHARE downloads an `.html` that opens and spins.
 9. On www.froglet.games/play: the progress bar fills, "Controller connected" appears on a pad press.
 

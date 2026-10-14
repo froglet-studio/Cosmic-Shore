@@ -133,7 +133,9 @@ there would leave the page on the first click. The page's full-screen button own
 the Input System fills it from the browser's Gamepad API (`WebGLGamepad`, standard mapping: Xbox and PlayStation
 pads). No device filter is set, so nothing else is needed. A browser reveals a pad only after one of its buttons is
 pressed with the page focused, which `/play` tells the player, and it shows "Controller connected" when it is.
-Rumble does nothing in a browser.
+Rumble does nothing in a browser. Menu button glyphs (`ControllerButtonPress`) take the PlayStation set when the
+browser's id names Sony's vendor id (054c) and the Xbox set otherwise, and are re-picked whenever `Gamepad.current`
+changes, so a pad revealed after the menu opened still gets them.
 
 ## 5. Hosting: Cloudflare R2 at play.froglet.games
 
@@ -221,3 +223,20 @@ real API key.
 ## 6. Verification checklist (nobody has run this yet)
 
 Recorded in `Docs/UNITY_VERIFICATION_CHECKLIST.md` under the toybox branch's entry.
+
+## 7. Follow-ups
+
+- **Release guards trust the Development checkbox** (all three: `UnityPipelineReleaseGuard`, `CreditsReleaseGuard`,
+  `WeeklyChallengeTestModeBuildGuard`). A scripted release build made while it is ticked skips them.
+  `WebToyboxBuild` works around it by forcing the checkbox to match; `CosmicShoreBuildPipeline` does not. Filed as a
+  separate task.
+- **Display settings in a browser.** The settings modal still shows display mode and resolution, which do nothing
+  on WebGL now (`ApplyDisplay` returns). Hide those rows when `Application.platform == WebGLPlayer`.
+- **FMOD on the web.** The toybox waits up to 90 s for the banks (SFX.bank is ~37 MB, downloaded after the build
+  itself). Measure the real wait; if it is long, build FADPCM or smaller web banks, or load SFX.bank lazily.
+- **A Web Build Profile asset** (Build Profiles > Add > Web, the three scenes, `FROGLET_WEB_TOYBOX`) would let anyone
+  build from the Build Profiles window; nothing in the repo is a donor for its schema, so it was not hand-authored.
+- **The Rhino's arc lightning** is inactive with its renderer off on every platform, so `ArcLightningFallback` has
+  nothing to stand in for yet. Incompleteness, not a defect: decide whether the arc should show.
+- **Move off `r2.dev`** once DNS is on Cloudflare (§5.2 A): connect `play.froglet.games` to the bucket and change
+  `build_root`. `r2.dev` is rate-limited and meant for testing.
