@@ -91,6 +91,7 @@ GameObject:
   - component: {fileID: 8104676223178479142}
   - component: {fileID: 8104676223178479143}
   - component: {fileID: 8104676223178479140}
+  - component: {fileID: 8104676223178479150}
   m_Layer: 0
   m_Name: vfxgraph_arclightning
   m_TagString: Untagged
@@ -396,6 +397,34 @@ MonoBehaviour:
   m_Property:
     m_Name: Pos8
   Target: {fileID: 8104676223559602850}
+--- !u!114 &8104676223178479150
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8104676223178479069}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bfde082981874604b40a11c35432ff33, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  visualEffect: {fileID: 8104676223178479141}
+  blueStrand:
+  - {fileID: 8104676223827983113}
+  - {fileID: 8104676223240908971}
+  - {fileID: 8104676223304178516}
+  - {fileID: 8104676222730128031}
+  whiteStrand:
+  - {fileID: 8104676223904127887}
+  - {fileID: 8104676223575164452}
+  - {fileID: 8104676223310855134}
+  - {fileID: 8104676223559602850}
+  segments: 24
+  jitter: 0.35
+  fadeSeconds: 0.2
+  whiteColor: {r: 0.4921569, g: 0.4960784, b: 0.1254902, a: 1}
+  whiteWidth: 0.5
 --- !u!1 &8104676223240908968
 GameObject:
   m_ObjectHideFlags: 0
