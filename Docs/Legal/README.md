@@ -12,7 +12,7 @@ drafted for us.**
 
 | Document | Required? | Who writes it | Where it goes | Status |
 |---|---|---|---|---|
-| **Privacy policy** | **Yes, unconditionally** | Draft exists → counsel reviews | Public URL + Steam store page + in-game settings | Draft written, **needs a purchases section + hosting** |
+| **Privacy policy** | **Yes, unconditionally** | Draft exists → counsel reviews | Public URL + Steam store page + in-game settings | Web version written from the code for `www.froglet.games/privacy` (website repo); in-game URLs pointed at it; **needs counsel, a purchases section, and the gaps below** |
 | **EULA** | No — Steam's default covers it | Only if we want custom terms | Steamworks App Admin → EULA field | **Decision: use Steam's default** unless counsel says otherwise |
 | **Terms of Sale (virtual items)** | **Only if we sell tokens** | Draft written → counsel reviews | Public URL, linked from store page | Draft written, **on hold pending DLC-vs-tokens** |
 | **Refund policy** | Steam's applies to the app | Us, for the spent-token case | Same page as terms of sale | Covered in the terms draft |
@@ -90,3 +90,25 @@ sell tokens directly rather than shipping episodes as DLC.
 The drafts are structurally complete but every one of them contains bracketed placeholders — legal
 entity address, contact email, retention periods, governing law. Those are facts we have and I do
 not; fill them before sending to counsel so the review is about substance rather than blanks.
+
+---
+
+## Where the template and the code disagree (audit 2026-10-14, bleeding-edge `04e1ecf`)
+
+The web policy at `/privacy` was written from the CODE, not from `PRIVACY_POLICY_TEMPLATE.md`, because
+the two disagree. Each row is evidence for a decision (counsel, owner or a game fix); none of them is
+fixed by the URL change that added this section. Re-grep before trusting a line number.
+
+| # | Gap | Evidence | Who decides |
+|---|---|---|---|
+| 1 | The settings "Delete my data" row deletes nothing; it only opens `deleteDataUrl`. The one controller that calls `RequestDataDeletion` (`AnalyticsPrivacySettingsController`, guid `d891f53eef26405c8822f89d7cc004f1`) is in no scene or prefab. Deletion is a support-handled request until in-app deletion exists (Apple 5.1.1(v), Google Play account deletion). | `GameSettingsPanelController.OpenDeleteDataForm` | Game task |
+| 2 | Under-13 players are kept out of analytics and crash reports only. Sign-in, Cloud Save, the public presence lobby and Friends start BEFORE the age question, and under-13s still get a public display name, friends and leaderboards. Template §8 ("we do not knowingly collect personal information… from them") overstates this. | `AppManager.StartAuthentication` runs before `PrivacyConsentOverlay.CreateIfNeeded` | Counsel (COPPA) |
+| 3 | "Anonymous" is inaccurate: events are keyed to the UGS player ID; PostHog also receives the display name, an install ID and progress totals as person properties; social events carry OTHER players' IDs. | `PostHogAnalyticsSink`, `AnalyticsServiceFacade` | Copy (done on the web page) |
+| 4 | PostHog (EU) is missing from template §6 processors. The consent text already names it. | `Resources/PostHogConfig.asset` | Copy (done on the web page) |
+| 5 | Display name and avatar are PUBLIC: presence lobby (`IsPrivate=false`), the public Cloud Save key `display_name_norm`, and the weekly-challenge leaderboard. The template never says so. | `PresenceLobbyService`, `DisplayNameRegistry` | Copy (done on the web page) |
+| 6 | Unity hardware statistics are sent at startup with no consent (`submitAnalytics: 1`). Disclosed on the web page; turning it off is cleaner. | `ProjectSettings/ProjectSettings.asset` `submitAnalytics` | Owner |
+| 7 | The age check is year-only (`UtcNow.Year - birthYear`), so a 12-year-old whose birthday is later this year passes as 13. Counting the birth year as not yet reached closes it. | `AnalyticsServiceFacade` age-eligibility method | Game task |
+| 8 | The same consent turns on crash reports, but the consent text does not mention them. Turning analytics off stops collection but does not request deletion. PostHog IP/GeoIP is not disabled in code (check the PostHog project settings). | `CrashReportingService`, `PrivacyConsentConfig.asset` `consentBody` | Owner |
+| 9 | Template §3g/§3h/§4/§6 describe purchases and ads, and §3b a "play-style summary"; none exist in this build (Unity IAP not installed, ads off in `UnityConnectSettings.asset`). | `CommerceAvailability.asset`, `UnityConnectSettings.asset` | Copy |
+| 10 | `support@frogletgames.zendesk.com` is in `SendBugReport` / `ShareByEmail`, but `ModalWindows.prefab` and `R_Options_Menu_Panel.prefab` are referenced by no scene; the shipping bug row opens `bugReportUrl`. | prefab guid sweep | Owner (which address to publish) |
+| 11 | The legal entity name varies: the template says Froglet Inc.; Unity `companyName` and the site footer say Froglet Games. | `ProjectSettings.asset` `companyName` | Owner |
