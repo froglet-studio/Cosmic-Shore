@@ -399,6 +399,23 @@ its rim.
 lime crystal glyphs; the offline AI simulator (`skimrace_sim_harness/Sim.cs`) still scores sphere
 touches; Amoebius (`Port/`, formerly Prisma) still spawns the crystal model.
 
+**Refactor rows found at ship (2026-10-14, `/ship-deep` D8 — rows, not edits):**
+
+- **`Crystal.HasBody` guards nothing today** *(debt this branch created)*. It was added when the
+  first cut of the ring crystal had no model; the shipped ring crystal carries the omni body, and
+  `grep -rlE "^  crystalModels: \[\]" Assets --include=*.prefab` finds no bodyless crystal prefab.
+  One production caller (`SquirrelCrystalMorph.Begin`'s stand-down) plus
+  `SkimRaceRingCrystalTests`. Question that settles it: does any runtime path mint a crystal with no
+  models (conveyor toy, ejector)? If not, the guard and its doc can go. *Vestige → a deletion
+  proposal, not a deletion.*
+- **A touched TEAM crystal still runs the wrong-domain vessel's half of a pickup** *(walked past)*.
+  `TeamCrystalImpactor` refuses the pilot, but `VesselImpactor`'s `OmniCrystalImpactor` case does not
+  check domain, so the speed buff / boost ring fire with no credit. The ring path no longer does this
+  (it gates on `OmniCrystalImpactor.AcceptsDomain` before either half). `BigCrystalVariant` is still
+  spawned by `ArcadeGameMultiplayer2v2CoOpVsAI.unity`, `MinigameWildlifeBlitzMultuplayerCoOp.unity`
+  and `Recording Studio.unity`, and `TeamCrystal.prefab` uses the same impactor. *Inconsistency → a
+  fix, outside this branch.*
+
 ### 8. Winner Determination & Score Sync
 
 When any domain's summed crystals reach the target, the turn monitor detects the condition and the turn ends. Winner detection is **server-authoritative** and **domain-aggregated** via `OnTurnEndedCustom()`:

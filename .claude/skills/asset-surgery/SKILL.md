@@ -1071,6 +1071,21 @@ references, m_Script classes). What cost time on the first runs (2026-10-06 to 1
   files that `using` a UGS package no mirror carries (Multiplayer, Friends, Leaderboards); they are
   counted, not judged. Check your own files are not in that bucket (they would be unverified):
   grep the run's `report.json` for each file you changed.
+- **`check_generated_assets.py` used to call a VARIANT-DERIVED fileID "missing"; it resolves them
+  since 2026-10-14.** A variant of a variant (Skim Race's `SkimRaceRingCrystal` → `BigCrystalVariant`
+  → `Crystal.prefab`) overrides, and is referenced through, objects its source INHERITS without
+  writing them out, whose ids are `(instanceFileID XOR sourceFileID) & INT64_MAX` and appear in no
+  document of the source file. The reference check only knew anchors, so all four correct overrides
+  (root `m_LocalScale`, `SphereCollider.m_Enabled`) came back as dangling. `Audit.has_object` now
+  recurses through the source's `PrefabInstance`s; its self-test carries a positive and a negative
+  control. If an older checkout still reports such ids missing, check the XOR before believing it —
+  the old scene reference to `BigCrystalVariant`'s Crystal (`6588436222817790495`) was exactly that
+  kind of id and loaded in play for months.
+- **The `editor` config is RED on bleeding-edge itself (measured 2026-10-14): 3 errors, all in
+  `Assets/_Scripts/System/AuthenticationServiceFacade.cs`** (`Unity.Multiplayer.PlayMode` /
+  `CurrentPlayer` — the Multiplayer Play Mode editor package, not obtainable here). A/B it on a
+  detached worktree of the base before attributing it (`git worktree add --detach <tmp>
+  origin/bleeding-edge`); the line to read is "`0 in files changed since origin/bleeding-edge`".
 - **`--config editor` compiles the Editor-folder scripts as their own `Assembly-CSharp-Editor`**,
   referencing the runtime, as Unity does. Before 2026-10-08 it merged the changed ones INTO the
   runtime compilation, so any branch touching one of the 123 `namespace CosmicShore.Editor` files got
