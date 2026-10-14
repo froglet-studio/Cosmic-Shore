@@ -108,7 +108,7 @@ pilot who swaps beats either single mechanic.
 | **P3** | Artifact | Race tuning rounds: cap the field spike, tune the catch kick for hairpins, the AI swaps on the mixed course. Each round recorded with Record (settings snapshot). | §3's targets met on the scorecard. |
 | **P3b** | Artifact (optional) | The orbit's AI and camera-visible placement; race it; keep or archive. | It has a niche on the scorecard, or it is archived with its numbers. |
 | **P4** | Unity (+ Amoebius) via `/artifact-to-unity` | Generalise `StoatModeExecutor` into a mechanic ring: `StoatMechanic` enum (static values), a `StoatMechanicRingSO` (the ring, the default, the cooldown), B = next, the replicated set-index request for clicks, the HUD strip in `StoatHUDVariant`, every executor standing aside unless its mechanic is current (today's pattern). The decided numbers cloned with `studio_to_unity.py`. Tests with page-golden numbers. | Unity checklist entry; Amoebius builds; `studio_to_unity --check` clean. |
-| **P5** | Unity | The AI swaps (input-only, through the same replicated press): the rule the artifact settled in P3. | Slingshot mode with 3 AI Stoats: the AIs swap on the mixed course and the scorecard holds in the game. |
+| **P5** | Unity | The AI swaps across the RING (input-only, through the same replicated press). It already swaps two modes (`StoatModeExecutor.Autopilot`: Time when the target is > 70° off the nose, at most every 3 s, `StoatModeActionSO`); P5 generalises that rule to N mechanics with the rule the artifact settled in P3. | Slingshot mode with 3 AI Stoats: the AIs swap on the mixed course and the scorecard holds in the game. |
 
 ## 5. Decisions needed before P2
 
@@ -117,3 +117,56 @@ pilot who swaps beats either single mechanic.
 2. **The default ring.** Today's `[Field, Catch]`, or another set.
 3. **The orbit sling.** Revive it with an AI and a visible placement (P3b), or leave it archived.
 4. **The crystal wormhole.** Keep it out of the ring (recommended), or make it a third entry.
+
+## 6. Building on Garrett's Stoat work (surveyed 2026-10-14)
+
+Garrett's Stoat work runs as `cece/*` Claude sessions that he merges into `bleeding-edge`. Every branch with a Stoat,
+sling, dipole, black-hole or pathfinder change since 2026-09-30 was checked against `Ys-bleeding-edge`.
+
+**Already on this branch (nothing to take; build on it as it stands):**
+
+| PR | Branch | What it gave the Stoat |
+|---|---|---|
+| #1064 | `cece/fervent-hypatia-rg4why` | The Stoat port: black holes, the lens, the element map, Slingshot and Warpline |
+| #1076 | `cece/zen-fermat-wu03hr` | Its own vessel: the Mass / Time modes on B, the Charge ripple, Accretion (Space 5), Foresight (Time 5), its own HUD |
+| #1085 | `cece/admiring-cannon-lhmv6t` | The play-feedback pass: birth and annihilation waves OFF, a subtle ripple, the 3D path dots redrawn (`StoatPathDots.shader`), **Time mode = the catch sling with the 90° timing** |
+| — | (on `Ys-bleeding-edge`) | `Docs/AI_SYSTEM/REGATTA_AI_ROADMAP.md`: the Stoat is one of Regatta's six racing AIs; its sling AI (`StoatSlingExecutor.AutopilotSling`) is the reference for "an AI that presses the hull's mechanic" |
+
+Also already there: **the AI switches modes on its own** (`StoatModeExecutor.Autopilot`); P5 starts from it.
+
+**Not merged anywhere yet:**
+
+| Branch | Last commit | What | How to take it |
+|---|---|---|---|
+| `cece/dreamy-pascal-7xxx1m` | 2026-10-14 | **Prism movement is a fundamental** (`PrismMotion`): a moving prism that hits another destroys both. The Stoat's gravity field and the Rhino's plough are the movers; box contacts at <= 256 bodies, spheres above (`BlackHoleConfigSO.boxContactMaxBodies`). Touches `BlackHoleGravityField`, `BlackHoleRegistry`, `STOAT_DIPOLE.md`. | Work in progress, a fleet-wide rule rather than a Stoat mechanic. Let it land on `bleeding-edge` through Garrett's PR, then merge `bleeding-edge` in. Every mechanic in the ring gets it for free, since every pair runs the same gravity field. Do not cherry-pick it: it is a LOCKED-style fundamental. |
+| `cece/charming-cerf-alf1j1` | 2026-10-09 | The crystal wormhole rebuilt as one geometry: field, light and flight (`CrystalWormholeView`, `CrystalWormholeLens`, `ThroatWarp`, a 905-line simulator), then tuned so sink to source takes under 10 s. Only `BlackHoleConfig.crystalPairs` (off) reached this branch. | Ask Garrett whether it is still live. If it is, it becomes the **Crystal wormhole** module (§6.1), behind its own entry rather than the global `crystalPairs` switch. It is five days stale and conflicts with the lens rework (`BlackHoleLensPass`), so merge `bleeding-edge` into it first. |
+
+### 6.1 Modular mechanics: each one a module, none lost
+
+Today two hard-coded modes gate three executors (`IsMassMode` / `IsTimeMode` in `StoatDipoleExecutor`,
+`StoatSlingExecutor`, `StoatPathfinderExecutor`, the HUD). The modular form keeps every one of Garrett's executors
+unchanged inside and only replaces the gate:
+
+- **`StoatMechanic` enum** (static values): `Field = 0` (Garrett's Mass mode), `Catch = 1` (Garrett's Time mode, with
+  his 90° timing), `Orbit = 2` (round 4, archived), `Crystal = 3` (charming-cerf). New mechanics append.
+- **One module per mechanic** = its executor + its config SO + what it shows (trail thickness, path or rings, the Time
+  card's readout) + its AI policy. Each executor asks `_mode.IsCurrent(StoatMechanic.X)` instead of
+  `IsMassMode` / `IsTimeMode`.
+- **`StoatMechanicRingSO`**: which mechanics the B ring holds, their order, the default, and the swap cooldown. The
+  shipped ring is `[Field, Catch]`, which is Garrett's approved behaviour.
+- **The passives stay outside the ring**, on every mechanic: ripple, Accretion, Foresight, Armoured Wake, Overclock.
+- `StoatModeExecutor` becomes the ring owner. Its replicated press, its let-go-on-swap rule and its one-writer
+  thickness stay exactly as Garrett wrote them.
+
+### 6.2 Where the settings are chosen: three surfaces, one set of numbers
+
+| Surface | What you choose there | Where it is saved |
+|---|---|---|
+| **Artifact** (source of truth) | Vessel Config tab ▸ **Mechanics**: the ring (tick boxes plus order), the default, the cooldown, and each mechanic's own numbers in its group (Field / Catch / Orbit / Crystal). The Archive card is retired into it. Recorded with Record. | The decision log, cloned by `/artifact-to-unity` (`studio_to_unity.py` writes `StoatMechanicRingSO` and each module's config SO) |
+| **Amoebius** | Its VESSEL STUDIO page opens the same artifact. Amoebius runs the game's own assets, so the ring Unity ships is the ring Amoebius plays. In-game, B and the HUD chips swap. | Nothing of its own |
+| **Unity: FrogletTools ▸ Vessels ▸ Stoat Mechanics** (the panel the user asked for, 2026-10-14) | A **play-session picker**: tick which mechanics this play session's ring holds and which one you start in, then press Play. It shows each mechanic's numbers read-only, with **Open in the studio** to change them. | A session override only (`EditorPrefs`, read by the ring owner in the Editor). It never writes the shipped `StoatMechanicRingSO` |
+
+The Unity panel is scoped this way because of the LOCKED rule (CLAUDE.md, the user 2026-10-10): no Unity tuning
+window may re-draw a studio's parameters or hand-edit a mapped field. A picker that chooses which existing mechanics a
+play session uses, and shows numbers without editing them, stays inside that rule. If the panel should EDIT numbers, the
+rule has to be lifted for the Stoat first.
