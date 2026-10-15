@@ -17,6 +17,8 @@ namespace CosmicShore.Editor
     /// <item><b>crash</b> — the Crash Detector's abnormal-exit reports (<c>Logs/CrashDetector/Crash-*.log</c>).</item>
     /// <item><b>perf</b> — the DiagnosticsHUD's JSON reports and captures
     /// (<c>Documents/CosmicShore Diagnostics/*.json</c>).</item>
+    /// <item><b>flights</b> — human Regatta flights the Squirrel AI learns from
+    /// (<c>Documents/CosmicShore Diagnostics/Flights/flight_*.json</c>, <c>HumanFlightRecorder</c>).</item>
     /// </list>
     ///
     /// Each lands at <c>BugLedger/shared/reports/&lt;user&gt;/&lt;kind&gt;/&lt;file&gt;</c> on the sender's
@@ -62,6 +64,8 @@ namespace CosmicShore.Editor
             string perfDir = null;
             try { perfDir = DiagnosticsHUD.OutputDirectory; } catch { /* no Documents folder */ }
             if (perfDir != null) Collect(candidates, perfDir, "*.json", "perf", cutoff);
+            // Human Regatta flights for the Squirrel AI to learn from (HumanFlightRecorder, learn_from_flights.py).
+            if (perfDir != null) Collect(candidates, Path.Combine(perfDir, "Flights"), "flight_*.json", "flights", cutoff);
 
             candidates.Sort((a, b) => b.file.LastWriteTimeUtc.CompareTo(a.file.LastWriteTimeUtc));
             var reports = new List<Report>(candidates.Count);

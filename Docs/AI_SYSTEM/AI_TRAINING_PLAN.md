@@ -49,7 +49,7 @@ everything (section 3, the noise warning).
 | Offline simulators: the Skim Race sim (cross-entropy tuning that writes the AI config assets), the Regatta course harness, the Regatta balance model | Built | `Tools/Build/skimrace_sim_harness/`, `skimrace_retune.py`, `regatta_course_harness/`, `regatta_balance.py` | No Regatta AI simulator in C# |
 | Amoebius headless trainer (`--train` / `replay` / `eval`) | Built, **under evaluation** (`Docs/TOOLING_DECISIONS.md`) | `Port/docs/AI_TRAINING.md` | Not to be grown here |
 | AI simulation scene, Test Range | **Planned only** | `Docs/Studios/VESSEL_TEST_RANGE_PLAN.md` (R1–R6 unbuilt) | — |
-| Recording a player's flight, ghosts, imitation, behaviour cloning | **Absent** | — | — |
+| Recording a player's flight; learning the Regatta Squirrel's numbers from it | **Built 2026-10-15** (L3 steps 1 and 4A, your own flights, editor and dev builds) | `HumanFlightRecorder.cs`, `Tools/Build/learn_from_flights.py`, `Docs/SKIM_RACE_AI.md` §16 | Ghosts, behaviour cloning, players' flights (consent) |
 | Neural inference | Package only | `com.unity.ai.inference` 2.6.1 (Sentis) is in `Packages/manifest.json`; no code or model uses it | — |
 | Consent, analytics, Cloud Save | Built | `AnalyticsServiceFacade.cs` (opt-in consent, COPPA age gate), `UI/Privacy/PrivacyConsentOverlay.cs` (text from `PrivacyConsentConfigSO`), `UGSDataService.cs` (Cloud Save 3.4.0, key-value only) | No AI-training consent; no store for flight files |
 
