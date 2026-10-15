@@ -56,7 +56,7 @@ other WebGL or low-end build.
 | Authentication scene | cached / anonymous sign-in, username, Relay attempts | straight to the local host (`RunAuthFlowAsync`) |
 | `PlanBootNetwork` | may attempt Relay; counts an unwanted fallback | `webToybox: true`: never attempts Relay, never counts |
 | Offline host | `UnityTransport` on 127.0.0.1 | **`SinglePlayerTransport`** (NGO 2.13.3), in memory |
-| Menu_Main | menu, then the player taps to fly | enters freestyle once at the first menu-ready |
+| Menu_Main | menu, then the player taps to fly | the same: the menu, then the player taps to fly |
 
 Because UGS never signs in, nothing that starts from `OnSignedIn` runs: Cloud Save, the presence lobby,
 Friends, party, leaderboards, UGS Analytics and PostHog. The local data layer still initialises from
