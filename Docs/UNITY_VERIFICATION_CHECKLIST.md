@@ -80,7 +80,13 @@ frame). An adversarial audit (four lenses, three refuters per finding) then fixe
 (a streak across the screen); the bar's start times run through `Expire` every 2 s (every bar re-grew from half length);
 `showSideView` off also hiding the 3D rings and flares; the ring's `LookRotation` with an exactly-up axis; a sample gap of 0
 laying forever; the GobyUp frame swinging past the ribbon's end; a re-bind (menu round trip) keeping the old clock's primer /
-flare deadlines. `PistolWorldMathTests` (18) + `PistolViewMathTests` (11) + `PistolTargetsTests` (1) + `GobyPistolMathTests`
+flare deadlines. The audited code (`ced821c4`) was then flown again by hand from screenshots (the Toybox's Vessel Changer,
+NAVIGATE, the Pistol taken, Q / F / a dive): bound on the Goby, 2206-3741 prisms mapped a frame, 28 warped, up to 367 boxes
+and 115 tiles, one ring fired and collapsed, 14 prisms primed by the AI Goby, zero exceptions from the duo. A scripted
+flight in between ended as the Sparrow: the AI-flown Goby crossed the Sparrow's station and the Vessel Changer swapped the
+hull mid-flight - the duo unbound without an exception (worth knowing: in that toy the pair can lose its hull to a
+station). The menu round trip (Y, Y) did not unbind the duo in Amoebius, so the re-bind fix is covered by the audit's
+reading and by the code, not by a flight. `PistolWorldMathTests` (18) + `PistolViewMathTests` (11) + `PistolTargetsTests` (1) + `GobyPistolMathTests`
 (17: the 10 sim goldens plus 7 VIEW goldens the lab's own `window.__lab.view` emitted - the lap's extent, three bend boxes'
 corners, the bar's extent, the zones and the parallax, so Unity's warp is held to the LAB's numbers as the ribbon and the AI
 already are): 48/48 outside Unity. Amoebius cannot composite the side camera, so the PICTURE is unseen.
