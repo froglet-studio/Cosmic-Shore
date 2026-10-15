@@ -299,8 +299,12 @@ namespace CosmicShore.Utility
             Color bright, Color dark, Vector3 velocity, float speedLimitOverride,
             PrismKind kind = PrismKind.Plain)
         {
-            if (!s_configured || !PrismRenderService.Enabled || s_quitting) return false;
-            if (Time.unscaledTime < s_suspendedUntil) return false;
+            // No Entities Graphics on this device (a WebGL2 browser): the same piece, computed below with the
+            // same arithmetic, is drawn by the capped MeshRenderer carrier (Docs/PRISM_ANIMATION.md §4.11)
+            // instead of being queued for a batch that could never spawn. False everywhere else.
+            bool meshRendererPath = PrismMeshRendererStamps.Active;
+            if (!s_configured || (!meshRendererPath && !PrismRenderService.Enabled) || s_quitting) return false;
+            if (!meshRendererPath && Time.unscaledTime < s_suspendedUntil) return false;
 
             if (float.IsNaN(velocity.x) || float.IsNaN(velocity.y) || float.IsNaN(velocity.z))
                 velocity = Vector3.up * s_minSpeed;
@@ -327,6 +331,11 @@ namespace CosmicShore.Utility
                 flight.y / Mathf.Max(1e-4f, Mathf.Abs(scale.y)),
                 flight.z / Mathf.Max(1e-4f, Mathf.Abs(scale.z)));
             float pad = 4f + 0.25f * math.length(objDisp);
+
+            if (meshRendererPath)
+                return PrismMeshRendererDebris.TrySpawnExplosion(s_mesh, s_material, s_layer,
+                    position, rotation, scale, bright, dark, velocity, speed, duration, in objDisp, pad,
+                    facePivotFromCentroid: 0f);
 
             s_pending.Add(new PrismRenderService.ExplosionDebrisSpawn
             {
@@ -359,12 +368,18 @@ namespace CosmicShore.Utility
         public static bool TryRequestImplosion(Vector3 position, Quaternion rotation, Vector3 scale,
             Color bright, Color dark, Transform target)
         {
-            if (!s_impConfigured || !PrismRenderService.Enabled || s_quitting) return false;
-            if (Time.unscaledTime < s_implosionSuspendedUntil) return false;
+            // §4.11: on a device without Entities Graphics the capped MeshRenderer carrier draws it instead.
+            bool meshRendererPath = PrismMeshRendererStamps.Active;
+            if (!s_impConfigured || (!meshRendererPath && !PrismRenderService.Enabled) || s_quitting) return false;
+            if (!meshRendererPath && Time.unscaledTime < s_implosionSuspendedUntil) return false;
             // A suction with nothing to converge on is not an implosion. StartImplosion
             // (and the retired factory deferred drain) guarded the same way — drop
             // rather than inventing a point.
             if (target == null) return false;
+
+            if (meshRendererPath)
+                return PrismMeshRendererDebris.TrySpawnImplosion(s_impMesh, s_impMaterial, s_impLayer,
+                    position, rotation, scale, bright, dark, target, s_impDuration);
 
             var localToWorld = Matrix4x4.TRS(position, rotation, scale);
             Vector3 location = target.position;
