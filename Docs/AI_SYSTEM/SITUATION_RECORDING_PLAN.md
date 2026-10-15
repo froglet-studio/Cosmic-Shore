@@ -8,6 +8,9 @@ understand the situation that is right for that manoeuvre. This is how we can ac
 This plan extends `AI_TRAINING_PLAN.md` L3 (learn from players) and the recorder built for it on 2026-10-15
 (`HumanFlightRecorder.cs`, `Tools/Build/learn_from_flights.py`, schema `cosmic-shore.flight/2`). It does not replace them.
 
+**Review waiting (Caleb, 2026-10-15): read §7 before the next step.** The situation is computed from the world as
+it *was*, not as the pilot *saw* it (camera, frustum, occlusion, reaction lag). §7 lists the changes, V1-V5.
+
 ## 1. Why sticks alone cannot teach
 
 A recording of sticks says *what* the pilot pressed, never *why*. The same stick input is right in one situation and a
@@ -145,3 +148,62 @@ studyholic, Garrett and Shombith; any use of it is agreed with them first.
 1. Is the feature list in §2.3 what you mean, or are there situations you read while flying that are missing?
 2. The phase names in §2.4: do they match how you think about flying a ring?
 3. Start with S2 in the artifact (fast to see and correct), or straight in Unity?
+
+## 7. Review: add the pilot's VIEW, not only the world (Caleb, 2026-10-15)
+
+**The point (Caleb).** A player decides from a screen of moving objects and spaces. To fly *like* them, and not only
+as well as them, the AI has to learn from some version of what they saw. A list of keystrokes means little without
+the picture the keys answered.
+
+**Verdict on S1-S5.** Most of the idea is already here. The hull-relative situation in §2.3 is a cheap symbolic
+stand-in for the screen. Recording pixels is **not** the fix (see below). But every feature and label is computed
+from the **whole world as it was**, not from **what the pilot could see at that moment**. For learning *behaviour*,
+three differences matter:
+
+1. **The screen is not the hull frame.** The chase camera trails the hull. `CustomCameraController` has a 0.2 s
+   follow smoothing and a rotation lerp, and look-behind mirrors the offset. The FOV is a player setting
+   (`DisplayGraphicsSettings.FieldOfView`), reshaped by `CameraAspectFit`. A ring 35° off the nose can be centred on
+   one player's screen and off another player's screen.
+2. **The pilot sees only part of the world.** They see what is inside the frustum and not hidden behind a rail wall.
+   Today `gap`, `aheadPrisms`, `skimDetour` and the label candidates count every prism and rival in range, in any lane,
+   seen or not.
+   - **The worst case is the skipped-skim label.** A skim the pilot never saw is recorded as "skipped to keep speed".
+     The skim rule in S5 then learns a reason the pilot never had.
+   - The same goes for a missed mouth when the ring was off screen. That is a *navigation* error, not a *control* error.
+3. **Pilots react late.** Seeing and pressing takes about 0.15-0.3 s, plus the camera's lag. Pairing situation(t) with
+   sticks(t) blurs every curve. The pairing should be situation(t - lag) with sticks(t), with the lag measured per pilot.
+
+Why this is behaviour and not only skill: much of human "style" comes from these limits. Humans react late to what
+comes onto the screen. They do not take a skim they cannot see. They overshoot a ring that appears late. An AI that
+learns human curves from all-seeing features learns the wrong causes, and it can never make human-looking mistakes.
+The game already has the right place for this on the AI's side: belief handicaps (`GateRaceHandicap`,
+`SkimRaceHandicap.ReactionSeconds`). Today those numbers are picked by hand. Flights can **measure** them.
+
+**Why not record frames.**
+- **Size:** 10 Hz of even low-res frames is megabytes a race, against a few KB today.
+- **Data:** learning from pixels needs orders of magnitude more flights than a few testers will ever fly.
+- **What it would learn:** the art, VFX and HUD, which change every build.
+- **No consumer:** the AI is input-only and hand-structured. It reads features, not images.
+
+Regatta's world is recorded once (§2.1). So with the **camera pose** recorded, the screen can be re-drawn
+*symbolically*, offline, exactly and cheaply, and re-run over every flight whenever a view feature is added.
+
+### What to change (smallest first)
+
+| Step | Change | Where |
+|---|---|---|
+| **V1** | **Record the camera each sample:** position, rotation (quaternion), vertical FOV, aspect, and camera mode / look-behind. About 10 floats, so the file stays in KB. §2.2 already lists "the camera mode" but S4 did not record it. Read the camera that renders the player's view through `CameraManager`, cached once, with no per-sample search or allocation. S4 is not editor-verified and no player data exists yet, so adding this to `flight/3` now is cheaper than a `flight/4` later (Yash's call). | `HumanFlightRecorder.cs` |
+| **V2** | **A `view` feature group,** from the camera pose and the static world. For the target ring, the ring after it, the skim candidate, the nearest prism ahead and each rival, compute: `onScreen`, `screenX` / `screenY` (-1..1), `angularSize`, `occluded` (a ray from the camera against the rail prisms' contact boxes) and `tau` = angular size / its growth rate (time to contact, the cue humans judge closing by). Plus a coarse **view grid**, 8×5 screen cells, each holding the nearest depth and kind (own rail, rival rail, ring, rival hull, empty). That grid is the "compressed screenshot". | `situation_features.json`, then `situation.js` and `situation_features.py` (the self-test keeps the twins equal; regenerate the fixture) |
+| **V3** | **Gate the labels on what was seen.** A target candidate counts only if it is on screen or was seen within the last ~1 s (memory). A *skipped skim* needs the skim visible and not occluded for at least ~0.3 s before the choice. Otherwise label it `unseen` and leave it out of the skim-rule fit. Split *mistake* into: missed with the ring visible (control) and missed with the ring off screen (navigation). | the same three files |
+| **V4** | **Measure the reaction lag** per pilot: the shift that best correlates the target's `screenX` with the yaw stick (and `screenY` with pitch). Fit S5's rules on situation(t - lag). `learn_from_flights` reports the lag. Proposing it as a measured `ReactionSeconds` per difficulty goes to the handicaps' owners (Garrett) and changes no AI by itself. | `situation_features.py` / `situation.js`, `learn_from_flights.py` |
+| **V5** | *Later, only if S5/S6 show the gap:* an **AI perception filter**. The AI's belief updates only for what lies inside a virtual chase camera's view, with the measured lag. This is a belief handicap, so the input-only contract is unchanged. It is the step that makes the AI fly *like* a person and not only as fast. | the AI's handicap layer, with its owners |
+
+Also in the artifact's Flights tab: draw the pilot's frustum on the replay, and grey out skims and rivals that were off
+screen or occluded. Then a person correcting a stretch sees what the pilot saw.
+
+*Optional audit, not training data:* in development builds, one tiny greyscale capture every 2 s (async GPU readback,
+nothing on the frame) to check that V2's view grid matches what was really on screen. Drop it if it costs a frame.
+
+**Questions for Yash.** (1) Camera into `flight/3` now, or a `flight/4`? (2) Should V3's visibility gate apply to the
+flights already recorded? They have no camera, so their skim labels would become `unseen`. Or should those flights be
+kept but marked as all-seeing?
