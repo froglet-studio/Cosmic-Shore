@@ -14,6 +14,7 @@
 //     u(t)   = normalize(u0 - f (f . u0)), u0 = (0.25 sin 0.5t, 1, 0)
 //   the ribbon starts with ribAdd(pos0, u0, f0) + addBlock(pos0), then layPath(pos[k-1], pos[k]) with the Goby's f, u set
 //   to step k's, then gobyEnds.
+//   view: the drawing-only maths (window.__lab.view) on a lap of radius 29: see the section at the end.
 'use strict';
 const path = require('path');
 let chromium; try { ({ chromium } = require('playwright')); } catch (e) { console.error('needs playwright on NODE_PATH'); process.exit(2); }
@@ -93,7 +94,38 @@ const page = path.resolve(__dirname, '../../Docs/Studios/VesselStudio/goby.html'
     }
     // the dual-stick mix and its inverse (the AI presses what unmix says)
     const mixes = [[0.3, -0.2, 0.1, 0.9], [-1, 0.5, -0.4, 0.2], [0, 0, 0, 1]].map(([y, p, r, t]) => { const s = C.unmix(y, p, r, t), m = C.mix(s.L, s.R); return { in: [y, p, r, t], L: [r6(s.L.x), r6(s.L.y)], R: [r6(s.R.x), r6(s.R.y)], back: [r6(m.yaw), r6(m.pitch), r6(m.roll), r6(m.thr)] }; });
-    return { shipped: P, ribbon, body, vring, rngSeq, ai, mixes };
+    // the VIEW's drawing-only maths (window.__lab.view: PistolWarp.cs, PistolRibbon.MapFast / MapNear / Curvature /
+    // LapExtent, the zones and the projection), on a lap of radius 29 (the Squirrel's turn), 1.2 laps, laid 400 steps at a
+    // time with the page's own ribAdd / layPath (WorldUp) - the lap PistolWorldMathTests / PistolViewMathTests build
+    const VW = (() => {
+      const R = 29, on = (th) => V(R * Math.cos(th), 0, R * Math.sin(th)), tan = (th) => V(-Math.sin(th), 0, Math.cos(th)), up = V(0, 1, 0), f0 = tan(0);
+      const Wl = { P, rb: C.makeRibbon('world'), o: {}, blocks: [], endX: 0, endY: 0, gx: 0 };
+      Wl.g = { pos: on(0), f: f0, u: up, r: nrm(cross(f0, up)), acc: 0, blockAcc: 0, blockN: 0, speed: 60 };
+      C.ribAdd(Wl.rb, on(0), up, f0); C.addBlock(Wl, on(0));
+      const total = 2 * Math.PI * 1.2, steps = 400;
+      for (let i = 1; i <= steps; i++) { const a = (i - 1) * total / steps, b = i * total / steps, f = tan(b); Wl.g.f = f; Wl.g.u = up; Wl.g.r = nrm(cross(f, up)); C.layPath(Wl, on(a), on(b)); Wl.g.pos = on(b); C.gobyEnds(Wl); }
+      return Wl;
+    })();
+    const VV = L.view, rbL = VW.rb, gapL = P.tSampleGap, kSpanL = Math.max(2, rbL.n);
+    // boxes of half-size 2 at r = 6, 10, 20 from the lap's centre (at angle pi: (-r, 0, 0)) and a box of half-size 3 at the centre:
+    // the centre map, the curvature there, how each is drawn (classify), and its corners (STRAIGHT / BEND) or its bar (BAR)
+    const boxes = [[6, 2], [10, 2], [20, 2], [0, 3]].map(([r, sz]) => {
+      const c = V(-r, 0, 0), hd = sz * Math.sqrt(3), m = VV.ribMapFast(rbL, c, -1e9, 1e9, true, {}), kap = VV.ribCurvature(rbL, m.k), cls = VV.classify(hd, kap, m.d, gapL, kSpanL);
+      const C8 = [], X8 = []; for (let i = 0; i < 8; i++) { C8.push(V(0, 0, 0)); X8.push(V(0, 0, 0)); }
+      VV.boxCorners(c, V(sz, 0, 0), V(0, sz, 0), V(0, 0, sz), C8);
+      const o = { r, halfSize: sz, centre: { x: r6(m.x), h: r6(m.h), d: r6(m.d), k: m.k }, curvature: r6(kap), kind: cls.kind, window: cls.window };
+      if (cls.kind === 'BAR') {
+        const e = VV.ribLapExtent(rbL, c, m.k, cls.rho + hd + 2, -1e9, 1e9, {}), b = VV.barExtent(rbL, c, m.k, cls.rho, hd, C8, -1e9, 1e9, {});
+        o.lap = { kLo: e.kLo, kHi: e.kHi, loByDist: e.loByDist, hiByDist: e.hiByDist }; o.bar = { xA: r6(b.xA), xB: r6(b.xB) };
+      } else { const ok = VV.warpBox(rbL, m.k, C8, -1e9, 1e9, cls.window, X8, true); o.corners = ok ? X8.map(rv) : null; o.tearBound = r6(VV.tearBound(hd, kap, m.d, gapL)); }
+      return o;
+    });
+    // the zones by depth (d into the screen) on the shipped band, vision and parallax depth
+    const zones = [0, 49, 55, 61, 100, 135, 136, 480, -49, -80].map((d) => { const z = VV.zone(d); return { d, reach: r6(z.reach), fog: r6(z.fog), alpha: r6(z.alpha), solid: z.solid, warped: z.warped }; });
+    // the projection about the Pistol: p.x = 100, the camera at (192, 40) with a lift of 23, P = 160, for the point (100, 40 - 23 + 10, d)
+    const par = [-80, -49, 0, 49, 160, 480].map((d) => ({ d, p: rv(VV.parallax(100, 40 - 23 + 10, d, 192, 40, 100, 40 - 23, 160, V(0, 0, 0))) }));
+    const view = { lap: { n: rbL.n, lastX: r6(rbL.sig[rbL.n - 1]), gx: r6(VW.gx) }, boxes, zones, parallax: par };
+    return { shipped: P, ribbon, body, vring, rngSeq, ai, mixes, view };
   });
   if (errs.length) { console.error(errs.join('\n')); process.exit(1); }
   process.stdout.write(JSON.stringify(out, null, 1) + '\n');
