@@ -66,7 +66,7 @@
   .camtag { position: absolute; left: 50%; bottom: 10px; transform: translateX(-50%); font-size: 11px; color: var(--muted); background: #0b0d16b3; border: 1px solid var(--line); border-radius: 999px; padding: 4px 9px; white-space: nowrap; }
   .holdtag { position: absolute; left: 50%; top: 10px; transform: translateX(-50%); font-size: 11px; color: #04131c; background: #7fd7ff; border-radius: 999px; padding: 4px 9px; white-space: nowrap; }
 
-  .overlay { position: absolute; inset: 0; display: grid; place-items: center; background: #05060cb3; padding: 16px; }
+  .overlay { position: absolute; inset: 0; z-index: 4; display: grid; place-items: center; background: #05060cb3; padding: 16px; }   /* above the transport bar: the card has its own Start */
   .card { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 16px 18px; max-width: 540px; display: grid; gap: 10px; }
   .overlay > .card { max-height: calc(100% - 8px); overflow-y: auto; }
   @media (max-width: 1100px) { .overlay .keys { display: none; } }   /* a narrow stage keeps the start card short; the keys are in Input */
@@ -393,6 +393,7 @@
   };
   const tuneDefaults = (key) => Object.fromEntries(TUNE_SPEC[key].rows.map((r) => [r[0], r[7]]));
   const LAPS = 3, LIMIT = 300;
+  const DOCK_RIGHT_ABOVE = 520;   // px: wider than this, the settings tabs dock on the right of the stage
   const DOMAINS = VesselStudioDomains.list.map((d) => ({ key: d.key, name: d.name, color: d.hex, css: d.color }));
   const DOMAIN_BY = Object.fromEntries(DOMAINS.map((d) => [d.key, d]));
   const LANE_OF = { jade: 0, ruby: 1, gold: 2 };   // RegattaCourse.LaneDomains; Blue has no rail of its own
@@ -1138,10 +1139,28 @@
     right: [['scene', 'Scene Config', [$('grp-scene')]], ['game', 'Game Config', [$('grp-intensity'), $('grp-players')]], ['ai', 'AI Config', [$('grp-ai'), $('grp-aitune'), $('grp-steer')]],
       ['style', 'Play Style Config', [$('grp-style')]], ['input', 'Input', [$('grp-controls')]], ['others', 'Vessel Config', [$('grp-hulls'), $('grp-moves'), $('grp-live')]]],
     bottom: [['score', 'Scorecard', [$('grp-score')]], ['runs', 'Runs', [$('grp-runs')]], ['about', 'About', [document.querySelector('header .sub'), $('grp-about')]]],
-    railW: 380, dockH: 230, stackBelow: 600,   // the settings dock stays beside the stage down to 600 px (the user, 2026-10-15: tabs on the right of the view)
+    railW: 380, dockH: 230, stackBelow: DOCK_RIGHT_ABOVE,   // the settings dock stays beside the stage (the user, 2026-10-15: tabs on the right of the view)
     winSize: { score: [880, 440], runs: [640, 360] },
     onLayout: () => { lastW = lastH = 0; },
   });
+  // The settings dock stays on the RIGHT of the stage whatever studio-ide.js version the browser has cached (an older copy
+  // stacks the docks below 900 px and ignores stackBelow): this rule is injected after the layout, so it wins over the
+  // shared one. It holds on any mouse-and-keyboard screen however narrow the viewer panel is, and on a touch screen wider
+  // than DOCK_RIGHT_ABOVE px; only a phone held upright stacks the docks (and a phone opens touch play anyway, D26).
+  // The rail never takes more than 46% of the width, so a narrow panel still shows the stage beside it.
+  (function keepDockRight() {
+    const st = document.createElement('style'); st.id = 'regatta-dock-right';
+    st.textContent = '@media (min-width: ' + (DOCK_RIGHT_ABOVE + 1) + 'px), (hover: hover) and (pointer: fine) {' +
+      'body.vside-on { height: 100vh !important; height: 100dvh !important; overflow: hidden !important; }' +
+      'body.vside-on .wrap { height: 100% !important; display: grid !important; grid-template-rows: auto minmax(0, 1fr) !important; }' +
+      'body.vside-on .vside { grid-template-columns: minmax(0, 1fr) 6px min(var(--vside-railW, 380px), 46vw) !important; height: 100% !important; }' +
+      'body.vside-on .vside-main { grid-template-rows: minmax(0, 1fr) 6px var(--vside-dockH, 230px) !important; height: 100% !important; }' +
+      'body.vside-on .vside-main > .vside-stage { height: 100% !important; }' +
+      'body.vside-on .vside-split { display: block !important; }' +
+      'body.vside-on .vside-dock { max-height: none !important; }' +
+      '} body.play .vside-main > .vside-stage { height: auto !important; }';
+    document.head.appendChild(st);
+  })();
   VesselStudioIDE.sectionPicker(document.querySelector('.vside-pane[data-tab="others"]'), 'regatta-ai', 'vessel');
   renderStyle(); renderHulls(); renderRuns();
   newRace(); hud();

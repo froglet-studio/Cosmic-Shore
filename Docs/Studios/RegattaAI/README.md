@@ -31,7 +31,9 @@ then publish `<dir>/index.html` with every other file in `<dir>` as `files`, `ur
   `AIPilot.UpdateOrbitBreak` (extend and re-attack). Difficulty: `GateRaceHandicap` with `SkimRaceDifficulty.asset`.
 - **Each hull's drive** (how it spends its speed verb) is lab-only and named in the page.
 - **The studio kit (`/vessel-studio` §1.5), for every AI:** the six settings tabs in a dock on the RIGHT of the stage
-  (it stays there down to 600 px wide: `stackBelow: 600`; the Vessel Studio pages stack at 900), records below; AI
+  (on any mouse-and-keyboard screen however narrow the viewer, rail capped at 46% of the width; the page injects its
+  own `#regatta-dock-right` rule so an older cached `studio-ide.js` cannot stack it; only an upright phone stacks, and a
+  phone opens touch play anyway), records below; AI
   Config holds **AI tuning** (pick any of the eight AIs and tune its drive with lab-only sliders, Reset this AI) and the
   shared **Gate steering** as sliders starting at the scene's shipped values; Play Style Config's **Custom** style puts a
   Time-level slider on every hull Time reaches; the Free camera **orbits or flies** (D16); the scorecard's **Hard
