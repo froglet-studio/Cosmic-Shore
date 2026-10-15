@@ -9373,3 +9373,17 @@ the `perf_capture_report.py --self-test`.
    deep profile, editor profiling, Profiler recording).
 4. HUD console (F7): `timescale 0.25` slows the race to quarter speed; `timescale` reports it; `timescale off`
    restores it. Leaving the scene restores it with a warning.
+
+## 🔴 2026-10-15 — Impactor effect loops: no closure per contact (unverified: no Unity CLI in the session)
+
+**Files:** `ImpactorBase.cs` (`ReportEffectThrow`), `VesselImpactor.cs`, `SkimmerImpactor.cs`, `ProjectileImpactor.cs`: the
+14 `RunEffectIsolated(() => e.Execute(...), e)` calls are now `try { e.Execute(...); } catch (Exception ex) { ReportEffectThrow(ex, e); }`,
+the same once-per-effect error report with no lambda allocated per effect per contact. What ran instead of `/verify-unity`:
+`unity_refcompile --config player-dev` (OK), the Amoebius Skim Race marker run (behaviour unchanged: same contact
+counts, same effects fire), the logging and conditional-compilation gates.
+
+1. Skim Race I2, 2 AI, Release: ram a trail, skim a trail, collect an omni and an elemental crystal, fire a projectile
+   into a prism. Expect every effect as before (damage, resource change, SFX, crystal collect).
+2. Temporarily make one effect SO throw (or use an unwired slot): expect ONE red console line naming the effect and
+   the impactor, and the rest of that contact's effects still running - the same as before.
+

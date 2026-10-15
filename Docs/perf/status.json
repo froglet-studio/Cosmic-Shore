@@ -5,26 +5,22 @@
       "topGameAllocators": [
         [
           "PoolRefill.Squirrel Prism",
-          8.29
+          8.898
         ],
         [
           "VesselImpactor.AcceptImpactee",
-          3.831
+          5.578
         ],
         [
           "PoolActivate.Squirrel Prism",
-          0.678
-        ],
-        [
-          "ForcefieldCrackleController.Update",
-          0.564
+          0.725
         ],
         [
           "PoolRefill.FastGrowPrism",
-          0.526
+          0.7
         ]
       ],
-      "verdict": "within baseline"
+      "verdict": "REGRESSION"
     }
   ],
   "baselines": [],
@@ -101,8 +97,11 @@
     }
   ],
   "gatesOk": true,
-  "generatedUtc": "2026-10-15T16:10:56Z",
+  "generatedUtc": "2026-10-15T18:26:47Z",
   "next": [
+    "Resolve: Allocation regression in Amoebius SkimRace|I2|3p: VesselImpactor.AcceptImpactee allocates 3.831 -> 5.578 KB/frame (+46%)",
+    "Resolve: Allocation regression in Amoebius SkimRace|I2|3p: PoolRefill.FastGrowPrism allocates 0.526 -> 0.7 KB/frame (+33%)",
+    "Resolve: Allocation regression in Amoebius SkimRace|I2|3p: new allocating marker PoolRefill.PrismImplosion: 0.122 KB/frame",
     "Capture S2 Lattice in Release (no valid baseline yet): Menu_Main, Cell Selector > Lattice, wait 8 minutes, then Capture on the Scene view's Bug Hunt & Performance badge [T-20261015-56dd]",
     "Capture Skim Race I2 in Release (no valid baseline yet): Arcade > Skim Race, intensity 2, 2 AI, then Capture on the badge - also proves the Burst fix [T-20261015-3e0b]",
     "Capture S5 Wildlife Liberation in Release (no valid baseline yet): Arcade > Wildlife Liberation, two minutes in, then Capture on the badge - the L8 go/no-go [T-20261015-3972]",
@@ -138,9 +137,33 @@
       "id": "T-20261015-7d29",
       "kind": "test",
       "task": "Test the Bug Hunt & Performance badge in the Scene view: open Unity, check the card shows bugs and perf with no dialog on load, fold/unfold/hide it, press Relea"
+    },
+    {
+      "id": "T-20261015-7edd",
+      "kind": "test",
+      "task": "Confirm the lava lamp fps fix in Unity: Release, Third Eye closed, Play Menu_Main, press Capture S2 on the Scene view badge in the first minute, stop, Send to C"
+    },
+    {
+      "id": "T-20261015-a5a5",
+      "kind": "decision",
+      "task": "The Charge light now sleeps when a crystal is under 24 px in radius on screen (CrystalChargeArcsProfileSO.sleepBelowScreenRadiusPixels; it rebuilt a mesh per cr"
+    },
+    {
+      "id": "T-20261015-1551",
+      "kind": "test",
+      "task": "Find why Regatta runs at 10 fps in the editor: in MinigameRegatta (Release code optimization, Deep Profile off), press Capture on the Scene view's Bug Hunt & Pe"
+    },
+    {
+      "id": "T-20261015-fafa",
+      "kind": "dev",
+      "task": "Pool the AOE explosions: ExplosionHelper.SpawnAllAndDetonate does Object.Instantiate(prefab) per detonation and AOEExplosion Destroys itself after (Projectiles/"
     }
   ],
-  "regressions": [],
+  "regressions": [
+    "Allocation regression in Amoebius SkimRace|I2|3p: VesselImpactor.AcceptImpactee allocates 3.831 -> 5.578 KB/frame (+46%)",
+    "Allocation regression in Amoebius SkimRace|I2|3p: PoolRefill.FastGrowPrism allocates 0.526 -> 0.7 KB/frame (+33%)",
+    "Allocation regression in Amoebius SkimRace|I2|3p: new allocating marker PoolRefill.PrismImplosion: 0.122 KB/frame"
+  ],
   "scenarios": [
     {
       "label": "S2",

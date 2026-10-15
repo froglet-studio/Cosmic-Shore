@@ -40,9 +40,11 @@
   and the game's markers are measured in Amoebius with allocations as the gate; a regression becomes a team task and
   `/perf-hunt` is how it is resolved (rank by measured cost, fix against the checklist, prove before/after, adopt the
   new baseline). `Docs/PERFORMANCE_OPTIMIZATION.md` §3.4.
-- **One measurement, one file:** `capture <label> 15` in the HUD console (or FrogletTools ▸ Performance ▸ Capture
-  Performance) runs burst + diag + prof + renderers + cells and leaves ONE JSON on the clipboard;
-  `Tools/Build/perf_capture_report.py` judges it (validity first). Ask for this, never for screenshots.
+- **One measurement, one file:** `capture <label> 15` in the HUD console (or **Capture** on the Scene view's Bug Hunt &
+  Performance badge, the one editor indicator) runs burst + diag + prof + renderers + cells as ONE JSON; after Play,
+  Unity's "Send to Claude?" sends it to the person's `bugledger/<user>` branch, and the sweep judges it
+  (`Tools/Build/perf_capture_report.py`, validity first). Ask for this, never for screenshots. Status and next steps:
+  ask any session "performance status" (the `health_status.py` hook answers from `Docs/perf/status.json`).
 - **Instruments in the game:** the console commands `diag` (per-system timings, a report to JSON),
   `prof` (the Profiler Hierarchy as JSON; flags Burst jobs that ran as managed code), `freeze` / `ab`
   (a same-state A/B in one line), `renderers` (a renderer census; `hide <prefix>` / `show` to A/B a family's
