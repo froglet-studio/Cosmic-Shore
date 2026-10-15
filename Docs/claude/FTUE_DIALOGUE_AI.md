@@ -4,6 +4,10 @@
 
 ### FTUE (First-Time User Experience) — the QUEST GRAPH
 
+> **Activation work starts at `Docs/ACTIVATION.md`**: every onboarding plan and its status, who is on
+> what, the `ftue_*` analytics events, and the redesign (first-login spotlight guide, Lesson, Mentor)
+> written on the unmerged branch `claude/exciting-bell-69b398`.
+
 **The adapter/step-handler tutorial system this section used to describe is DELETED** (25 files:
 `IFlowController`, `ITutorialExecutor`, `TutorialFlowController`, `TutorialStep`,
 `TutorialSequenceSet`, `FTUEIntroAnimator`, the four step handlers, `TutorialUIView`,

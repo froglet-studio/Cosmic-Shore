@@ -313,7 +313,10 @@ namespace CosmicShore.Core
 
             // Record the completed node + resume cursor (every node lands in UGS).
             if (_phaseIndex >= 0)
+            {
                 QuestProgressStore.ReportNodeCompleted(QuestId, _phaseIndex, from.nodeId, next != null ? next.nodeId : string.Empty);
+                FTUEEventManager.RaiseQuestNodeCompleted(QuestId, _phaseIndex, from.nodeId, from.displayName);
+            }
 
             if (next != null)
             {

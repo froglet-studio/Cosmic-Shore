@@ -44,6 +44,9 @@ namespace CosmicShore.Core
         public const string EventModeUnlocked      = "mode_unlocked";
         public const string EventIntensityUnlocked = "intensity_unlocked";
         public const string EventSettingChanged    = "setting_changed";
+        public const string EventFtueStepCompleted  = "ftue_step_completed";
+        public const string EventFtuePhaseCompleted = "ftue_phase_completed";
+        public const string EventFtueCompleted      = "ftue_completed";
 
         // Phase 2 - economy
         public const string EventCrystalsEarned        = "crystals_earned";
