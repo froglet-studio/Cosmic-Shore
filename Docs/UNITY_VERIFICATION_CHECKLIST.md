@@ -65,6 +65,26 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Release guards judge a build by its own options, not the Development checkbox (`claude/release-guard-dev-checkbox-kg5qx7`, 2026-10-15) — NOT EDITOR-VERIFIED
+
+**What landed:** `UnityPipelineReleaseGuard`, `CreditsReleaseGuard` and `WeeklyChallengeTestModeBuildGuard` exempted a
+build when `EditorUserBuildSettings.development` OR `BuildOptions.Development` said "development". A scripted build
+never reads the checkbox, so a Windows release build from `CosmicShoreBuildPipeline` made while the checkbox happened
+to be ticked was waved through all three guards. They now ask `ReleaseBuildKind.IsDevelopment(report)`, which reads
+only the build's own options. `WebToyboxBuild` no longer forces and restores the checkbox (its workaround).
+
+**Verified without the editor:** `unity_refcompile --config editor`, 0 errors in the six changed files (a planted
+typo in `ReleaseBuildKind.cs` was reported, tagged as changed). `ReleaseBuildKindTests` not run.
+
+**Verify in editor:**
+1. Edit-mode tests: `ReleaseBuildKindTests` pass.
+2. The assumption this rests on: a Build Profiles window build with **Development ticked** passes
+   `BuildOptions.Development` in its options. Tick it, put the weekly challenge in TEST MODE, build from the window:
+   the build must NOT be refused (development is exempt). If it is refused, the window does not pass the flag and
+   this change must be reverted.
+3. Leave the checkbox ticked and run **FrogletTools > Build > Windows x64 (Release)** with weekly TEST MODE on: the
+   build must now FAIL with the weekly-challenge message. Switch TEST MODE off afterwards.
+
 ### 🔴 The browser Toybox: a WebGL build of Menu_Main's freestyle for www.froglet.games/play (`claude/webgl-toybox-kg5qx7`, 2026-10-14) — NOT EDITOR-VERIFIED
 
 **What landed:** everything in `Docs/WEBGL_TOYBOX.md`. The `FROGLET_WEB_TOYBOX` define (read through
