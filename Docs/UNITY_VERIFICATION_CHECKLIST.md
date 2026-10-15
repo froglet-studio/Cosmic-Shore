@@ -65,6 +65,64 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 The Shrike flies in freestyle: the studio's kit ported, the prefab rebuilt (`cece/affectionate-clarke-s738vh`, 2026-10-15) — NOT EDITOR-VERIFIED
+
+**What landed:** everything in `Assets/_Scripts/Controller/Vessel/R_VesselActions/SHRIKE.md`.
+
+- `Shrike.prefab` was rebuilt from `BrittleStar.prefab` by `Tools/Build/author_shrike_assets.py`. It keeps its guid,
+  so the DefaultNetworkPrefabs entry holds.
+- New code: `ShrikeExecutor`, `ShrikeActionSO` ×4, `ShrikeConfigSO`, `ShrikeRules`, `ShrikeHullForm` /
+  `ShrikeHullBuilder`, `ShrikeAnimation`, `ShrikePrismController`, `ShrikeHUDController` / `ShrikeHUDView` /
+  `ShrikeHUDVariant`, and `ShrikeCrystalEffectSO`.
+- New assets: the containers, the camera, `SO_Class_Shrike` (unlocked), `ElementalAbilityMaps/Shrike`, the four icons
+  and the card.
+- Registered in the Vessel Prefab Container, both class lists and `ToyVesselRoster.Default`.
+- The four vessel-10 fusion entries are bake-free now.
+
+**Verified without the editor:**
+
+- `unity_refcompile`:
+  - `--config player`: 0 project errors.
+  - `--config editor`: 0 errors in changed files. The 3 project errors are in the untouched
+    `AuthenticationServiceFacade.cs`, from the unfetchable Playmode package.
+- `Tools/Build/shrike_harness/run.sh --self-test`: the 16 `ShrikeTests` compile and pass under .NET, against golden
+  numbers from the page's own functions. Both negative controls fire (a frustum wound inside out; a nest firing its
+  last block).
+- `author_shrike_assets.py`: `--check` passes and `--self-test` fires 11/11 negative controls. A rebuild from the donor
+  is byte-identical to the shipped prefab.
+- `studio_to_unity.py --vessel shrike --check`: 29/29 match.
+- `author_shrike_icons.py --check` and `render_shrike_card_icon.py --check` pass.
+- These gates pass: `check_vessel_shared_channels`, `check_vessel_prefab_container`, `check_vessel_camera_farclip`,
+  `check_vessel_class_icons`, `check_network_prefab_hashes`, `check_console_logging`, `check_conditional_compilation`,
+  `check_using_directives` and `check_elemental_floats`.
+- Not run: Unity itself, Play mode, and any network session.
+
+**Verify in editor:**
+1. Pull and let it compile: no errors. In edit mode, `ShrikeTests` and `ShrikeConfigTests` pass, and so do
+   `ToyVesselRosterCoverageTests`, `OneThumbVesselCoverageTests` and `EnumIntegrityTests`.
+2. Open `Shrike.prefab`. Right-click `ShrikeHull` ▸ Rebuild Hull. You should see a long six-sided dart, the lance's
+   barrel under the nose, forward-swept wings, a tail fin and a flame child. Check that no field is "Missing".
+3. Play `Menu_Main`. Open the Toy Box ▸ Vessel Changer (or fly into the toy) and pick **Shrike**. It spawns and flies
+   slowly (about 18 u/s) on the one-thumb mouse scheme, laying a thin trail.
+4. Docking:
+   - Touch any block: the hull stops and sticks, the flame shrinks to an ember, and the nose still aims (faster).
+   - **Space / A** undocks with a small push.
+   - In flight, **Space / A** builds a nest: a cup of shielded blocks behind and round you, with a bud on top. You
+     dock in it. A fourth nest retires the first.
+5. **LMB / RT (held)**: a domain-coloured beam 2400 u long that breaks every block on its line, shielded ones too, but
+   not your own nest while you sit in it. Cooldown 1.2 s; noticeably faster while docked.
+6. **R / B**: the tether flies ahead. When it meets a block, the hull rushes there in 1 s, laying thick blocks, and
+   docks where it lands. Cooldown 6 s.
+7. With at least one nest: hold **RMB / LT** on a mass. One missile per nest rises from the bud, homes on the mass and
+   blows an 18 u hole (a shield pops first). The Array gauge empties as nests reach 1 health. Release and hold again
+   to fire again.
+8. HUD: four cards (Lance, Nest, Array, Sling) with their gauges and icons, and no "Missing" sprite.
+9. Spawn Matrix: release a Shrike AI. It flies, lances mass ahead, docks and undocks, builds a nest and slings toward
+   far targets.
+
+**First-pass tuning:** every number is the studio's SHIPPED (lab-only proposals, `Docs/Studios/SHRIKE.md` §3). Tune in
+the artifact, Record, then clone. Never tune in the asset.
+
 ### 🔴 The browser Toybox: a WebGL build of Menu_Main's freestyle for www.froglet.games/play (`claude/webgl-toybox-kg5qx7`, 2026-10-14) — NOT EDITOR-VERIFIED
 
 **What landed:** everything in `Docs/WEBGL_TOYBOX.md`. The `FROGLET_WEB_TOYBOX` define (read through

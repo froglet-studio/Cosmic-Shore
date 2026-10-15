@@ -1,0 +1,166 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1f0d5c908646cc7b3d28431cff49e6ff, type: 3}
+  m_Name: ShrikeConfig
+  m_EditorClassIdentifier: 
+  hullRadius: 3
+  dockBonus: 1.6
+  dockBonusShielded: 2.5
+  dockQueryReach: 12
+  dockGraceSeconds: 0.5
+  undockPush: 8
+  ownTrailGraceSeconds: 1
+  lanceRange: 2400
+  lanceCooldown: 1.2
+  lanceRadius:
+    Enabled: 1
+    Value: 1.5
+    Min: 1.5
+    Max: 5
+    element: 1
+    UseFloor: 1
+    Floor: 0.5
+  lanceDebrisSpeed: 60
+  lanceBeamSeconds: 0.3
+  slingRange: 1600
+  tetherSpeed: 2400
+  slingSeconds: 1
+  slingCooldown:
+    Enabled: 1
+    Value: 6
+    Min: 6
+    Max: 2.5
+    element: 4
+    UseFloor: 1
+    Floor: 1
+  slingTurnRate: 6
+  lockRange: 1500
+  lockCone:
+    Enabled: 1
+    Value: 5
+    Min: 5
+    Max: 14
+    element: 3
+    UseFloor: 1
+    Floor: 2
+  missileSpeed: 220
+  missileTurn: 140
+  missileBlast: 18
+  missileEvery: 0.8
+  missileLife: 8
+  lockKeepScale: 1.6
+  massLockRadius: 35
+  nestBlocks:
+    Enabled: 1
+    Value: 12
+    Min: 12
+    Max: 32
+    element: 2
+    UseFloor: 1
+    Floor: 6
+  nestCooldown: 8
+  nestHealth: 4
+  nestHealthMax: 12
+  turretRegen: 6
+  crystalHealth: 3
+  maxNests: 3
+  trailWavelength:
+    Enabled: 1
+    Value: 8
+    Min: 8
+    Max: 4
+    element: 2
+    UseFloor: 1
+    Floor: 2
+  trailThin: 0.6
+  trailThick: 2.6
+  trailLength: 7
+  slingMaxBlocksPerFrame: 6
+  lanceHitClass: 0
+  missileHitClass: 3
+  hitCooldown: 0.05
+  onCombatHitLanded: {fileID: 11400000, guid: 45fb43a0cddb5cc3cc4dc448df994152, type: 2}
+  aiLanceMinTargets: 2
+  aiDockSeconds: 3
+  aiNestEvery: 25
+  aiSlingMinDistance: 300
+  aiSlingDegrees: 20
+  lanceEvent:
+    Guid:
+      Data1: 0
+      Data2: 0
+      Data3: 0
+      Data4: 0
+    Path: 
+  tetherEvent:
+    Guid:
+      Data1: 0
+      Data2: 0
+      Data3: 0
+      Data4: 0
+    Path: 
+  slingEvent:
+    Guid:
+      Data1: 0
+      Data2: 0
+      Data3: 0
+      Data4: 0
+    Path: 
+  dockEvent:
+    Guid:
+      Data1: 0
+      Data2: 0
+      Data3: 0
+      Data4: 0
+    Path: 
+  undockEvent:
+    Guid:
+      Data1: 0
+      Data2: 0
+      Data3: 0
+      Data4: 0
+    Path: 
+  nestEvent:
+    Guid:
+      Data1: 0
+      Data2: 0
+      Data3: 0
+      Data4: 0
+    Path: 
+  lockEvent:
+    Guid:
+      Data1: 0
+      Data2: 0
+      Data3: 0
+      Data4: 0
+    Path: 
+  missileLaunchEvent:
+    Guid:
+      Data1: 0
+      Data2: 0
+      Data3: 0
+      Data4: 0
+    Path: 
+  missileBlastEvent:
+    Guid:
+      Data1: 0
+      Data2: 0
+      Data3: 0
+      Data4: 0
+    Path: 
+  crystalEvent:
+    Guid:
+      Data1: 0
+      Data2: 0
+      Data3: 0
+      Data4: 0
+    Path: 

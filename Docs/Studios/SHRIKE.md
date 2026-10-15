@@ -8,7 +8,23 @@ log), from the repo page by `Docs/Studios/Shrike/build_standalone.py`. Explore t
 to Unity (`/labmaker` §7). This file holds what the document says, what the game ships, how the studio
 turned the document's words into numbers, what the scorecard measured, and what is left for the designer.
 
-## 1. What the game ships today (measured 2026-10-15, bleeding-edge)
+## 0. In Unity (2026-10-15)
+
+The studio's kit is now in the game: `/artifact-to-unity` cloned it, so the Shrike flies in freestyle (the Vessel
+Changer toy).
+
+- **Prefab.** `Shrike.prefab` was rebuilt from `BrittleStar.prefab` by `Tools/Build/author_shrike_assets.py`.
+- **Numbers.** 29 SHIPPED keys map through `Tools/Build/studio_to_unity/shrike.json`. The five elemental ranges were
+  ported into `ShrikeConfig.asset` by hand.
+- **Mechanics.** They are ported from the page's own functions into `ShrikeExecutor` and `ShrikeRules`.
+- **What changed on the way.** Read `Assets/_Scripts/Controller/Vessel/R_VesselActions/SHRIKE.md`. It covers where
+  everything is, the controls, and what differs from the page and why.
+- **Flight.** The game flies the page's **design** ship (`cruise` 18, all throttle). `minimumSpeed` and
+  `throttleScaler` describe the pre-port Manta copy, so the clone does not map them.
+
+§1 below is the state before the port.
+
+## 1. What the game shipped before the port (measured 2026-10-15, bleeding-edge)
 
 - `VesselClassType.Shrike = 10`. `Assets/_Prefabs/Spacevessels/Shrike.prefab` is a flat Manta copy
   (`Docs/VESSEL_CONSTRUCTION.md`): `SingleStickVesselTransformer` (DefaultMinimumSpeed 10, DefaultThrottleScaler 50,
@@ -180,6 +196,8 @@ path-finding beyond a look-ahead swerve. Read every number as relative: between 
 | `Docs/Studios/Shrike/shrike_score.cjs` | The scorecard, headless |
 | `Docs/Studios/Shrike/build_standalone.py` | Builds the standalone artifact folder from the repo page (`--self-test`); publish `shrike.html` with the scripts as `files`, capabilities `db` + `user`, to https://claude.ai/artifact/JD17sQMeuEUETp6AUPqMmy |
 | `Docs/Studios/VesselStudio/studios.json`, `index.html`, `previews/shrike.png` | Its catalog row, hub card and preview |
+| `Tools/Build/studio_to_unity/shrike.json` | The clone's number map (studio key → Unity field); `clones.json` records the clone |
+| `Assets/_Scripts/Controller/Vessel/R_VesselActions/SHRIKE.md` | The Unity port's own record |
 
 Gates run 2026-10-15: `verify_lab.cjs` PASS, `check_studio.cjs --hook __shrikeStudio` PASS, `parity_gate.py` ok,
 `game_catalog.py --check` up to date, `domain_colors.py --check` agree.

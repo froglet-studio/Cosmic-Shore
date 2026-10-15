@@ -1,0 +1,152 @@
+{
+  "comment": "The Shrike: where each studio parameter lives in the game. key = the studio's own key (the SHIPPED block in Docs/Studios/VesselStudio/shrike.html, the standalone Shrike Studio artifact's source); asset + field = the Unity field it becomes. ShrikeConfig.asset rows use ShrikeConfigSO's own field names (the studio's keys verbatim); Shrike.prefab rows are the one-thumb transformer block and the trail spawner. `cruise` is the design ship's speed and lands on DefaultThrottleScaler because the prefab's DefaultMinimumSpeed is 0 (author_shrike_assets.py holds it there): cruise = MinimumSpeed + ThrottleScaler. Not mapped, and listed by --unmapped: minimumSpeed / throttleScaler (the pre-port Manta copy's 10 + 50, the page's 'prefab' ship, which the port retired), the ElementalFloat ranges (lanceRadiusAt0/At10, slingCooldownAt0/At10, lockConeAt0/At10, nestBlocksAt0/At10, trailWaveAt10: nested in ShrikeConfig.asset, ported by hand and held by ShrikeConfigTests) and arkRange (the minigames' arena, lab-only). Edit this file, never the assets by hand.",
+  "vessel": "Shrike",
+  "page": "Docs/Studios/VesselStudio/shrike.html",
+  "rows": [
+    {
+      "key": "pitchScaler",
+      "asset": "Assets/_Prefabs/Spacevessels/Shrike.prefab",
+      "field": "PitchScaler"
+    },
+    {
+      "key": "yawScaler",
+      "asset": "Assets/_Prefabs/Spacevessels/Shrike.prefab",
+      "field": "YawScaler"
+    },
+    {
+      "key": "rollScaler",
+      "asset": "Assets/_Prefabs/Spacevessels/Shrike.prefab",
+      "field": "RollScaler"
+    },
+    {
+      "key": "rotationThrottleScaler",
+      "asset": "Assets/_Prefabs/Spacevessels/Shrike.prefab",
+      "field": "RotationThrottleScaler"
+    },
+    {
+      "key": "cruise",
+      "asset": "Assets/_Prefabs/Spacevessels/Shrike.prefab",
+      "field": "DefaultThrottleScaler"
+    },
+    {
+      "key": "trailWaveAt0",
+      "asset": "Assets/_Prefabs/Spacevessels/Shrike.prefab",
+      "field": "initialWavelength"
+    },
+    {
+      "key": "hullRadius",
+      "asset": "Assets/_SO_Assets/VesselActions/Shrike/ShrikeConfig.asset",
+      "field": "hullRadius"
+    },
+    {
+      "key": "dockBonus",
+      "asset": "Assets/_SO_Assets/VesselActions/Shrike/ShrikeConfig.asset",
+      "field": "dockBonus"
+    },
+    {
+      "key": "dockBonusShielded",
+      "asset": "Assets/_SO_Assets/VesselActions/Shrike/ShrikeConfig.asset",
+      "field": "dockBonusShielded"
+    },
+    {
+      "key": "lanceRange",
+      "asset": "Assets/_SO_Assets/VesselActions/Shrike/ShrikeConfig.asset",
+      "field": "lanceRange"
+    },
+    {
+      "key": "lanceCooldown",
+      "asset": "Assets/_SO_Assets/VesselActions/Shrike/ShrikeConfig.asset",
+      "field": "lanceCooldown"
+    },
+    {
+      "key": "slingRange",
+      "asset": "Assets/_SO_Assets/VesselActions/Shrike/ShrikeConfig.asset",
+      "field": "slingRange"
+    },
+    {
+      "key": "tetherSpeed",
+      "asset": "Assets/_SO_Assets/VesselActions/Shrike/ShrikeConfig.asset",
+      "field": "tetherSpeed"
+    },
+    {
+      "key": "slingSeconds",
+      "asset": "Assets/_SO_Assets/VesselActions/Shrike/ShrikeConfig.asset",
+      "field": "slingSeconds"
+    },
+    {
+      "key": "lockRange",
+      "asset": "Assets/_SO_Assets/VesselActions/Shrike/ShrikeConfig.asset",
+      "field": "lockRange"
+    },
+    {
+      "key": "missileSpeed",
+      "asset": "Assets/_SO_Assets/VesselActions/Shrike/ShrikeConfig.asset",
+      "field": "missileSpeed"
+    },
+    {
+      "key": "missileTurn",
+      "asset": "Assets/_SO_Assets/VesselActions/Shrike/ShrikeConfig.asset",
+      "field": "missileTurn"
+    },
+    {
+      "key": "missileBlast",
+      "asset": "Assets/_SO_Assets/VesselActions/Shrike/ShrikeConfig.asset",
+      "field": "missileBlast"
+    },
+    {
+      "key": "missileEvery",
+      "asset": "Assets/_SO_Assets/VesselActions/Shrike/ShrikeConfig.asset",
+      "field": "missileEvery"
+    },
+    {
+      "key": "missileLife",
+      "asset": "Assets/_SO_Assets/VesselActions/Shrike/ShrikeConfig.asset",
+      "field": "missileLife"
+    },
+    {
+      "key": "nestCooldown",
+      "asset": "Assets/_SO_Assets/VesselActions/Shrike/ShrikeConfig.asset",
+      "field": "nestCooldown"
+    },
+    {
+      "key": "nestHealth",
+      "asset": "Assets/_SO_Assets/VesselActions/Shrike/ShrikeConfig.asset",
+      "field": "nestHealth"
+    },
+    {
+      "key": "nestHealthMax",
+      "asset": "Assets/_SO_Assets/VesselActions/Shrike/ShrikeConfig.asset",
+      "field": "nestHealthMax"
+    },
+    {
+      "key": "turretRegen",
+      "asset": "Assets/_SO_Assets/VesselActions/Shrike/ShrikeConfig.asset",
+      "field": "turretRegen"
+    },
+    {
+      "key": "crystalHealth",
+      "asset": "Assets/_SO_Assets/VesselActions/Shrike/ShrikeConfig.asset",
+      "field": "crystalHealth"
+    },
+    {
+      "key": "maxNests",
+      "asset": "Assets/_SO_Assets/VesselActions/Shrike/ShrikeConfig.asset",
+      "field": "maxNests"
+    },
+    {
+      "key": "trailThin",
+      "asset": "Assets/_SO_Assets/VesselActions/Shrike/ShrikeConfig.asset",
+      "field": "trailThin"
+    },
+    {
+      "key": "trailThick",
+      "asset": "Assets/_SO_Assets/VesselActions/Shrike/ShrikeConfig.asset",
+      "field": "trailThick"
+    },
+    {
+      "key": "trailLength",
+      "asset": "Assets/_SO_Assets/VesselActions/Shrike/ShrikeConfig.asset",
+      "field": "trailLength"
+    }
+  ]
+}
