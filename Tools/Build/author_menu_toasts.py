@@ -120,9 +120,9 @@ def item_body(ctx):
 
 
 def prefab_outputs():
+    # Resources/UI already exists (icon_Spectate.png lives there): its folder meta is never rewritten.
     return {prefab_path(): P.prefab_text(build_item(), NAME),
-            prefab_path() + ".meta": K.PREFAB_META.format(g=asset_guid(NAME)),
-            OUT_DIR + ".meta": K.FOLDER_META.format(g=asset_guid("folder/Resources/UI"))}
+            prefab_path() + ".meta": K.PREFAB_META.format(g=asset_guid(NAME))}
 
 
 # --------------------------------------------------------------------------------------------
@@ -217,6 +217,7 @@ def self_test(files):
         print(f"  MISSED: {label_}")
         return False
     pf = prefab_path()
+    assert os.path.exists(os.path.join(REPO, OUT_DIR + ".meta")), "Resources/UI has no folder meta"
     vlg_head = f"--- !u!114 &{CONTAINER['vlg']}\n"
 
     def container_uncontrolled(f):
