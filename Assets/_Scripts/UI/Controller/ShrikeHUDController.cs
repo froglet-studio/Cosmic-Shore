@@ -14,7 +14,7 @@ namespace CosmicShore.UI
     {
         [Header("Shrike")]
         [SerializeField] ShrikeHUDView view;
-        [Tooltip("This vessel's executor: the cooldowns, the dock, the array.")]
+        [Tooltip("This vessel's executor: the mode, the cooldowns, the dock, the missiles.")]
         [SerializeField] ShrikeExecutor shrike;
 
         bool _isLocalPilotHud;
@@ -34,11 +34,13 @@ namespace CosmicShore.UI
         void Update()
         {
             if (!_isLocalPilotHud || !view || !shrike) return;
-            bool docked = shrike.Docked;
-            view.SetLance(shrike.Lance01, docked);
-            view.SetNest(shrike.Nest01, shrike.DockedInNest);
-            view.SetArray(shrike.ArrayHealth > 0 ? 1f : 0f, shrike.Painting && shrike.Locked);
-            view.SetSling(shrike.Sling01, shrike.Slinging);
+            var mode = shrike.CurrentMode;
+            int missiles = shrike.MissilesReady;
+            view.SetMissileCount(missiles);
+            view.SetCharge(missiles > 0 ? 1f : 0f, mode == ShrikeExecutor.Mode.Charge);
+            view.SetMass(shrike.Nest01, shrike.Docked);
+            view.SetSpace(shrike.Lance01, mode == ShrikeExecutor.Mode.Space);
+            view.SetTime(shrike.Sling01, mode == ShrikeExecutor.Mode.Time);
         }
     }
 }

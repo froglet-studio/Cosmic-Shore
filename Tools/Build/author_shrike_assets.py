@@ -27,13 +27,14 @@ WHAT IT MAKES
         - the animation: ShrikeAnimation on the same fileID;
         - the executors: the Brittle Star's executor and its turrets object (gun, factory, round pool) removed;
           ShrikeExecutor added (config, hull, turn-end channel);
-        - the bindings (shared): RT Void Lance, LT Targeting Array, A Nest / Dock, B Void Sling;
+        - the bindings (shared; OWNED - re-applied to the shipped prefab): RT the mode's action, LT zoom, X Space mode,
+          RB Charge mode, B Time mode, A Mass (detach and leave a nest);
         - the AI: no blind ability cycle, the no-op HoldBoostAIPolicy (no boost to drive); the executor's autopilot presses
           the replicated controls;
         - the HUD: ShrikeHUDVariant (a copy of BrittleStarHUDVariant: same internal fileIDs, the view swapped to
           ShrikeHUDView, the four icons and gauges renamed) and ShrikeHUDController;
         - the camera, the impactor containers and the skimmer's container: the Shrike's own.
-    Assets: ShrikeConfig + the four control assets (VesselActions/Shrike/), the crystal effect, the two containers, the
+    Assets: ShrikeConfig + the six control assets (VesselActions/Shrike/), the crystal effect, the two containers, the
     camera, SO_Class_Shrike, the elemental map, every new script's .meta, the doc's .meta.
     Registrations: Vessel Prefab Container (root TRANSFORM), DefaultNetworkPrefabs (root GAMEOBJECT; already there),
     SO_Classlist_All / _Classes, and the four CrystalHullFusionConfig entries for vessel 10 made bake-free (the bakes
@@ -105,8 +106,12 @@ CARD_ACTIVE = hashlib.md5(b"CosmicShore/Shrike/CardImages/Shrike.png").hexdigest
 CARD_INACTIVE = hashlib.md5(b"CosmicShore/Shrike/CardImages/Shrike_Inactive.png").hexdigest()
 
 # (control name, enum value, InputEvents it is bound to). The InputEvents numbers: RightStickAction=1 (RT / LMB /
-# Right Shift), LeftStickAction=2 (LT / RMB / Left Shift), Button1=6 (A / Space), Button2=7 (B / R).
-CONTROLS = (("ShrikeLance", 0, 1), ("ShrikeSling", 1, 7), ("ShrikePaint", 2, 2), ("ShrikeDock", 3, 6))
+# Right Shift), LeftStickAction=2 (LT / RMB / Left Shift), FlipAction=3 (RB / E), Button1=6 (A / Space),
+# Button2=7 (B / R), Button3=8 (X / Q). Garrett, 2026-10-15: LT is always zoom, RT does the mode's action.
+CONTROLS = (("ShrikeTrigger", 4, 1), ("ShrikeZoom", 5, 2), ("ShrikeChargeMode", 7, 3), ("ShrikeMass", 3, 6),
+            ("ShrikeTimeMode", 8, 7), ("ShrikeSpaceMode", 6, 8))
+# The first port's control assets, retired with the direct Lance / Sling / Paint / Dock controls.
+RETIRED_CONTROLS = ("ShrikeLance", "ShrikeSling", "ShrikePaint", "ShrikeDock")
 CONTROL_GUID = {name: guid_for(name + ".asset") for name, _, _ in CONTROLS}
 
 # Every script this vessel added: (path under Assets/_Scripts, guid).
@@ -115,6 +120,8 @@ NEW_SCRIPTS = tuple((rel, guid_for(os.path.basename(rel))) for rel in (
     "Controller/Vessel/ShrikeHullForm.cs",
     "Controller/Vessel/ShrikeHullBuilder.cs",
     "Controller/Vessel/ShrikePrismController.cs",
+    "Controller/Vessel/ShrikeScopeOverlay.cs",
+    "Controller/Vessel/ShrikeNestFlora.cs",
     "Controller/Animation/ShrikeAnimation.cs",
     "Controller/Vessel/R_VesselActions/Data Containers/ShrikeActionSO.cs",
     "Controller/Vessel/R_VesselActions/Data Containers/ShrikeConfigSO.cs",
@@ -180,8 +187,8 @@ BRITTLESTAR = {  # what the Brittle Star's tool minted (author_brittlestar_asset
         "BrittleStarImpactorDataContainer.asset", "BrittleStarSkimmerImpactorDataContainer.asset",
         "BrittleStarAIBoostPolicy.asset")}
 ICON_SWAP = {}   # BrittleStar icon sprite guid -> the Shrike's (author_shrike_icons.py), by element
-for old, new in (("BrittleStar_RingDetonation.png", "Shrike_VoidLance.png"), ("BrittleStar_CreationMode.png", "Shrike_Nest.png"),
-                 ("BrittleStar_DestructionMode.png", "Shrike_TargetingArray.png"), ("BrittleStar_SpeedMode.png", "Shrike_VoidSling.png")):
+for old, new in (("BrittleStar_RingDetonation.png", "Shrike_TargetingArray.png"), ("BrittleStar_CreationMode.png", "Shrike_Nest.png"),
+                 ("BrittleStar_DestructionMode.png", "Shrike_VoidLance.png"), ("BrittleStar_SpeedMode.png", "Shrike_VoidSling.png")):
     ICON_SWAP[hashlib.md5(f"CosmicShore/BrittleStarIcons/{old}".encode()).hexdigest()] = \
         hashlib.md5(f"CosmicShore/ShrikeIcons/{new}".encode()).hexdigest()
 
@@ -342,16 +349,24 @@ def build_prefab(donor: str) -> str:
     return S.join_docs(head, docs)
 
 
+def rebind(prefab: str) -> str:
+    """The shipped prefab with its handler's bindings set to CONTROLS (idempotent)."""
+    head, docs = S.split_docs(prefab)
+    handler = S.get_doc(docs, HANDLER_ID)
+    S.set_doc(docs, HANDLER_ID, re.sub(r"  _inputEventShipActions:(?:.*\n)*?(?=  _onButtonPressed:)", bindings(), handler, count=1))
+    return S.join_docs(head, docs)
+
+
 # ===================================================================================================== the HUD variant
 def build_hud_variant(donor: str) -> str:
     text = S.replace_once(donor, "      value: BrittleStarHUDVariant\n", "      value: ShrikeHUDVariant\n", "variant name")
     text = S.replace_once(text, f"guid: {BRITTLESTAR['BrittleStarHUDView.cs']}, type: 3}}", f"guid: {SCRIPT['ShrikeHUDView']}, type: 3}}", "view script")
     text = text.replace("CosmicShore.UI.BrittleStarHUDView", "CosmicShore.UI.ShrikeHUDView")
-    for old, new in (("ringGauge", "lanceGauge"), ("creationGauge", "nestGauge"),
-                     ("destructionGauge", "arrayGauge"), ("speedGauge", "slingGauge")):
+    for old, new in (("ringGauge", "chargeGauge"), ("creationGauge", "massGauge"),
+                     ("destructionGauge", "spaceGauge"), ("speedGauge", "timeGauge")):
         text = S.replace_once(text, f"  {old}: {{fileID:", f"  {new}: {{fileID:", f"view field {old}")
-    for old, new in (("RingGauge", "LanceGauge"), ("CreationGauge", "NestGauge"),
-                     ("DestructionGauge", "ArrayGauge"), ("SpeedGauge", "SlingGauge")):
+    for old, new in (("RingGauge", "ChargeGauge"), ("CreationGauge", "MassGauge"),
+                     ("DestructionGauge", "SpaceGauge"), ("SpeedGauge", "TimeGauge")):
         text = S.replace_once(text, f"  m_Name: {old}\n", f"  m_Name: {new}\n", f"gauge object {old}")
     for old, new in ICON_SWAP.items():
         text = S.replace_once(text, f"guid: {old}, type: 3}}", f"guid: {new}, type: 3}}", f"icon sprite {old}")
@@ -373,6 +388,10 @@ def config_asset() -> str:
             "  hullRadius: 3\n"
             "  dockBonus: 1.6\n"
             "  dockBonusShielded: 2.5\n"
+            "  zoomFieldOfView: 24\n"
+            "  zoomSeconds: 0.2\n"
+            "  dockedCameraPullBack: 1.8\n"
+            "  cameraEaseRate: 4\n"
             "  dockQueryReach: 12\n"
             "  dockGraceSeconds: 0.5\n"
             "  undockPush: 8\n"
@@ -397,12 +416,18 @@ def config_asset() -> str:
             "  lockKeepScale: 1.6\n"
             "  massLockRadius: 35\n"
             "  nestBlocks:\n" + ef(12, 12, 32, 2, 6) +
+            "  nestBlockSize: 4.5\n"
+            "  nestClearance: 1.1\n"
             "  nestCooldown: 8\n"
-            "  nestHealth: 4\n"
-            "  nestHealthMax: 12\n"
-            "  turretRegen: 6\n"
-            "  crystalHealth: 3\n"
+            "  detachNestMissiles: 1\n"
+            "  leaveNestSeconds: 2\n"
             "  maxNests: 3\n"
+            "  turretRegen: 6\n"
+            "  floraMissileMax: 4\n"
+            "  maxFlora: 8\n"
+            "  missileLength: 4\n"
+            "  missileTrailSeconds: 0.9\n"
+            "  missileTrailWidth: 1.8\n"
             "  trailWavelength:\n" + ef(8, 8, 4, 2, 2) +
             "  trailThin: 0.6\n"
             "  trailThick: 2.6\n"
@@ -414,10 +439,9 @@ def config_asset() -> str:
             f"  onCombatHitLanded: {{fileID: 11400000, guid: {COMBAT_HIT_CHANNEL}, type: 2}}\n"
             "  aiLanceMinTargets: 2\n"
             "  aiDockSeconds: 3\n"
-            "  aiNestEvery: 25\n"
             "  aiSlingMinDistance: 300\n"
             "  aiSlingDegrees: 20\n" +
-            "".join(S.empty_event(n) for n in ("lanceEvent", "tetherEvent", "slingEvent", "dockEvent", "undockEvent",
+            "".join(S.empty_event(n) for n in ("modeEvent", "lanceEvent", "tetherEvent", "slingEvent", "dockEvent", "undockEvent",
                                                "nestEvent", "lockEvent", "missileLaunchEvent", "missileBlastEvent",
                                                "crystalEvent")))
 
@@ -507,27 +531,31 @@ def class_asset() -> str:
             "  UnlockCost: 100\n")
 
 
+# (element, label, InputEvents shown on its card, description, upgrade label, upgrade description). Garrett, 2026-10-15:
+# the modes (X Space, RB Charge, B Time) pick what RT does; LT is always zoom.
 MAP_ENTRIES = (
-    (1, "Void Lance", 1,
-     "RT (held). A hitscan beam 2400 u long that breaks every block it passes - super-shielded included, any domain - "
-     "except the nest you are docked in; a rival hull on the line is a scored petal hit (petals only - nothing is "
-     "moved). 1.2 s cooldown, faster docked. Charge is reach - one dial: the beam's radius 1.5 -> 5 u at level 10 "
-     "(ShrikeConfigSO.lanceRadius)."),
+    (1, "Targeting Array", 3,
+     "RB: Charge mode. RT (held) paints a target - a rival vessel first, then a creature, then a plant, then the centre "
+     "of the mass nearest your aim - and every nest flora with a ready missile launches it, one each per 0.8 s, homing "
+     "while you paint. A missile blows on contact in an 18 u blast (a shield takes the hit first); a rival hull inside "
+     "it is a petal hit (petals only - nothing is moved). The card counts the missiles left across every flora. A "
+     "collected crystal becomes a nest flora that grows large missiles (one per 6 s, up to 4). Space widens the lock "
+     "cone 5 -> 14 degrees at level 10 (ShrikeConfigSO.lockCone).", "", ""),
     (2, "Nest", 6,
-     "A. Flying: build a nest round the hull - a cup of super-shielded blocks behind and around you, the nose's way out "
-     "open, a turret flora on top - and dock in it. Docked: undock with a push off the surface. Any block you touch "
-     "docks you; docked, every cooldown runs x1.6 (x2.5 in a nest or on super-shielded mass). At most three nests; a "
-     "fourth retires the oldest. Mass is volume - one dial: 12 -> 32 blocks per nest at level 10 "
-     "(ShrikeConfigSO.nestBlocks), and the cruising trail's wavelength 8 -> 4 u (trailWavelength)."),
-    (3, "Targeting Array", 2,
-     "LT (held). Paint a rival hull inside the lock cone, else the centre of the mass nearest your aim; each nest "
-     "launches one homing missile per paint while its turret has a health block to spare. A missile blows on contact "
-     "in an 18 u blast (a shield takes the hit first); a rival hull inside it is a petal hit. Space is reach - one dial: "
-     "the lock cone 5 -> 14 degrees at level 10 (ShrikeConfigSO.lockCone)."),
+     "A. Any block you touch docks you (the camera eases back); docked, every cooldown runs x1.6 (x2.5 on "
+     "super-shielded mass or in a nest). Docked, A detaches you and leaves a nest behind: a cup of super-shielded "
+     "blocks round where you were, no two touching, the nose's way out open, crowned with a flora carrying ONE "
+     "missile (8 s cooldown; at most three nests). Mass is volume - one dial: 12 -> 32 blocks per nest at level 10 "
+     "(ShrikeConfigSO.nestBlocks), and the cruising trail's wavelength 8 -> 4 u (trailWavelength).", "", ""),
+    (3, "Void Lance", 8,
+     "X: Space mode. RT (held) fires a hitscan beam 2400 u long that breaks every block it passes, any domain, except "
+     "super-shielded mass and the nest you are docked in; a rival hull on the line is a scored petal hit. 1.2 s "
+     "cooldown, faster docked. Charge widens the beam 1.5 -> 5 u at level 10 (ShrikeConfigSO.lanceRadius).",
+     "Void Pierce", "The Void Lance breaks super-shielded mass too."),
     (4, "Void Sling", 7,
-     "B. Shoot a tether (1600 u); it anchors on the first block it meets and the hull flies straight there in exactly "
-     "1 s, laying thick trail, docking on the first block it touches. A crystal resets it and gives every nest 3 health "
-     "blocks. Time is rate - one dial: the cooldown 6 -> 2.5 s at level 10 (ShrikeConfigSO.slingCooldown)."),
+     "B: Time mode. RT shoots a tether (1600 u); it anchors on the first block it meets and the hull flies straight "
+     "there in exactly 1 s, laying thick trail, docking on the first block it touches. A crystal resets it. Time is "
+     "rate - one dial: the cooldown 6 -> 2.5 s at level 10 (ShrikeConfigSO.slingCooldown).", "", ""),
 )
 
 
@@ -546,7 +574,7 @@ def quote(text: str) -> str:
 def map_asset() -> str:
     out = header(MAP_SCRIPT, "Shrike").replace("  m_EditorClassIdentifier: \n", "  m_EditorClassIdentifier:\n")
     out += f"  vesselClass: {CLASS_ID}\n  entries:\n"
-    for element, label, input_event, description in MAP_ENTRIES:
+    for element, label, input_event, description, upgrade, upgrade_text in MAP_ENTRIES:
         out += (f"  - Element: {element}\n"
                 f"    AbilityLabel: {label}\n"
                 f"    AbilityDescription: {quote(description)}\n"
@@ -554,10 +582,10 @@ def map_asset() -> str:
                 "    UnlockLevel: 5\n"
                 "    RelockBelowLevel: 4\n"
                 "    LatchPolicy: 0\n"
-                # Level-5 upgrades are OPEN design slots: the class document names none, and the vessel skill's design
-                # gate forbids inventing one.
-                "    UpgradeLabel: \n"
-                "    UpgradeDescription: \n")
+                # Only the Space upgrade is designed (Garrett, 2026-10-15: the lance breaks super-shielded mass "when
+                # upgraded"); the other level-5 slots stay OPEN - the vessel skill's design gate forbids inventing one.
+                f"    UpgradeLabel: {upgrade}\n"
+                f"    UpgradeDescription: {quote(upgrade_text) if upgrade_text else ''}\n")
     return out
 
 
@@ -707,7 +735,7 @@ def check(files: "dict[str, str]") -> "list[str]":
         errors.append("ShrikeHUDVariant.prefab is missing")
     else:
         need(f"guid: {SCRIPT['ShrikeHUDView']}" in hud and BRITTLESTAR["BrittleStarHUDView.cs"] not in hud, "the HUD variant's view is not ShrikeHUDView")
-        for field in ("lanceGauge", "nestGauge", "arrayGauge", "slingGauge"):
+        for field in ("chargeGauge", "massGauge", "spaceGauge", "timeGauge"):
             need(re.search(r"  %s: \{fileID: [1-9]\d*\}" % field, hud), f"HUD view field {field} is not wired")
         for old, new in ICON_SWAP.items():
             need(old not in hud and new in hud, f"HUD icon {new} not swapped in")
@@ -715,6 +743,8 @@ def check(files: "dict[str, str]") -> "list[str]":
     for path, want in owned_files().items():
         have = files.get(path)
         need(have == want, f"{os.path.relpath(path, ROOT)} is {'missing' if have is None else 'drifted'} - run the tool")
+    for name in RETIRED_CONTROLS:
+        need(not os.path.exists(os.path.join(ACTIONS_DIR, name + ".asset")), f"retired control asset {name} still on disk")
     for path, (_, script, name) in SEEDED.items():
         have = files.get(path) or ""
         need(f"guid: {script}, type: 3}}" in have and f"  m_Name: {name}\n" in have, f"{os.path.relpath(path, ROOT)} missing or not a {name}")
@@ -769,6 +799,17 @@ def author() -> None:
     if HUD_VARIANT_PATH not in files:
         write(HUD_VARIANT_PATH, build_hud_variant(open(HUD_DONOR, encoding="utf-8", newline="").read()))
         print("cloned BrittleStarHUDVariant.prefab -> ShrikeHUDVariant.prefab")
+    # The bindings are OWNED on the shipped prefab (a control change re-applies here; the rest of the prefab is not).
+    prefab = open(PREFAB, encoding="utf-8", newline="").read()
+    rebound = rebind(prefab)
+    if rebound != prefab:
+        write(PREFAB, rebound)
+        print("re-applied the bindings on Shrike.prefab")
+    for name in RETIRED_CONTROLS:
+        for path in (os.path.join(ACTIONS_DIR, name + ".asset"), os.path.join(ACTIONS_DIR, name + ".asset.meta")):
+            if os.path.exists(path):
+                os.remove(path)
+                print("retired", os.path.relpath(path, ROOT))
     for path, text in owned_files().items():
         if files.get(path) != text:
             write(path, text)
@@ -800,7 +841,7 @@ def self_test() -> int:
         "a Brittle Star script left behind": (PREFAB, lambda t: t.replace(SCRIPT["ShrikeAnimation"], BRITTLESTAR["BrittleStarAnimation.cs"])),
         "unregistered from the container": (CONTAINER, lambda t: t.replace(PREFAB_GUID, "0" * 32)),
         "the map drifted": (MAP, lambda t: t.replace("Input: 7", "Input: 0")),
-        "Lance unbound": (PREFAB, lambda t: t.replace(CONTROL_GUID["ShrikeLance"], "f" * 32)),
+        "Trigger unbound": (PREFAB, lambda t: t.replace(CONTROL_GUID["ShrikeTrigger"], "f" * 32)),
         "a stale fusion bake": (FUSION, lambda t: re.sub(r"(  - vessel: 10\n    element: 1\n    bake: )\{fileID: 0\}", r"\1{fileID: 11400000, guid: a828e0f4240b5d54e8a4aa29c016ea12, type: 2}", t)),
         "roster entry missing": (os.path.join(SCRIPTS, "Controller/Toys/ToyVesselRoster.cs"), lambda t: t.replace("VesselClassType.Shrike", "")),
         "the Brittle Star's boost policy": (PREFAB, lambda t: t.replace(NO_BOOST_POLICY, "005f1b63856ace9974b0b3dbf2bb0853")),

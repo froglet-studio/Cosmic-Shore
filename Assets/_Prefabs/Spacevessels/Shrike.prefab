@@ -959,16 +959,22 @@ MonoBehaviour:
   _inputEventShipActions:
   - InputEvent: 1
     ShipActions:
-    - {fileID: 11400000, guid: b47a4d0c36a63294f46c49a3806ab163, type: 2}
+    - {fileID: 11400000, guid: 08e586ef8a8b02a7de75f7057025de61, type: 2}
   - InputEvent: 2
     ShipActions:
-    - {fileID: 11400000, guid: b6dd2bda7be7f25e813f415db31ee651, type: 2}
+    - {fileID: 11400000, guid: 93d8c998e7596ddc7afeb72a0fa4bc0e, type: 2}
+  - InputEvent: 3
+    ShipActions:
+    - {fileID: 11400000, guid: dfa0585d0972719a2ba8990536835324, type: 2}
   - InputEvent: 6
     ShipActions:
-    - {fileID: 11400000, guid: dfdc4b28efcd6ea7e23925815d96de2c, type: 2}
+    - {fileID: 11400000, guid: dd6c70c64010dfc7ffffe5e0ff83631b, type: 2}
   - InputEvent: 7
     ShipActions:
-    - {fileID: 11400000, guid: 551e3cd317732070794fe1b0bd082b6c, type: 2}
+    - {fileID: 11400000, guid: c7f7a2401f6b87262d9803e8aabcb540, type: 2}
+  - InputEvent: 8
+    ShipActions:
+    - {fileID: 11400000, guid: b193b34cecdde527eef26aeed5162ea2, type: 2}
   _resourceEventClassActions: []
   _touchActionOverrides: []
   _gamepadActionOverrides: []

@@ -11,41 +11,44 @@ using UnityEngine;
 namespace CosmicShore.Gameplay
 {
     /// <summary>
-    /// The Shrike — a slow sniper that docks to the mass it touches, builds nests, slings itself across the cell and
-    /// calls missiles down from its nests' turrets (design: <c>R_VesselActions/SHRIKE.md</c>; tuning:
-    /// <see cref="ShrikeConfigSO"/>; source: the Shrike Studio, <c>Docs/Studios/VesselStudio/shrike.html</c>, whose
-    /// <c>stepPilot</c> this class ports). Owns every piece of the vessel's state; the four
-    /// <see cref="ShrikeActionSO"/> controls only call in.
+    /// The Shrike — a slow sniper that docks to the mass it touches, leaves nests behind it, slings itself across the cell
+    /// and calls large missiles down from the flora its crystals become (design: <c>R_VesselActions/SHRIKE.md</c>; tuning:
+    /// <see cref="ShrikeConfigSO"/>; first source: the Shrike Studio's <c>stepPilot</c>; the control scheme and the flora
+    /// are Garrett's 2026-10-15 redesign). Owns every piece of the vessel's state; the <see cref="ShrikeActionSO"/>
+    /// controls only call in.
     ///
     /// <list type="bullet">
-    /// <item><b>Docking</b>: a touch on any block docks the hull to it (translation pinned, the nose still aims, faster:
-    /// the fleet's restricted-stance turn). Docked, every cooldown runs ×1.6, ×2.5 in a nest or on super-shielded mass.</item>
-    /// <item><b>Nest</b> (A): docked, undock (a push off the surface); flying, build a cup of super-shielded blocks round
-    /// the hull, its turret flora on top, and dock in it (Mass: more blocks). At most three; a fourth retires the oldest.</item>
-    /// <item><b>Void Lance</b> (RT, held): a hitscan beam that breaks every block it passes, super-shielded included,
-    /// except the nest you are docked in (Charge: a wider beam). A rival hull on the line is a scored petal hit.</item>
-    /// <item><b>Void Sling</b> (B): a tether shot anchors on the first block it meets; the hull flies straight there in
-    /// exactly <c>slingSeconds</c>, laying a thick trail, and docks where it lands (Time: a shorter cooldown). A crystal
-    /// resets it.</item>
-    /// <item><b>Targeting Array</b> (LT, held): paint a rival hull inside the lock cone, else the centre of the mass
-    /// nearest the aim; each of your nests launches one homing missile per paint while it has a health block to spare
-    /// (Space: a wider cone).</item>
+    /// <item><b>Modes</b> (X Space · RB Charge · B Time): the mode decides what the RIGHT TRIGGER does —
+    /// Space fires the <b>Void Lance</b> (held), Charge <b>paints</b> a target for the flora's missiles (held), Time
+    /// shoots the <b>Void Sling</b> (press).</item>
+    /// <item><b>Zoom</b> (LT, always): the flight view narrows and a scope in the mode's own shape comes up.</item>
+    /// <item><b>Docking</b>: a touch on any block docks the hull (translation pinned, the nose aims faster, the camera
+    /// eases back). Docked, every cooldown runs ×1.6, ×2.5 in a nest or on super-shielded mass.</item>
+    /// <item><b>Mass</b> (A): docked, DETACH — leaving behind a nest of super-shielded blocks with a flora carrying ONE
+    /// missile.</item>
+    /// <item><b>Crystals</b> (<see cref="ShrikeCrystalEffectSO"/>): the crystal becomes a nest flora that visibly grows
+    /// large missiles; the sling resets.</item>
+    /// <item><b>Void Lance</b> (Space): breaks every block it passes; SUPER-SHIELDED mass only with the Space upgrade.</item>
+    /// <item><b>Targeting Array</b> (Charge): locks vessels, then fauna, then flora, then mass; while painted, every flora
+    /// with a ready missile launches it. The Charge card counts the missiles left across all flora.</item>
     /// </list>
     ///
-    /// <para><b>Simulated on EVERY peer</b> (the Brittle Star's rule): the presses replicate, so every machine holds the
-    /// same docks, nests, tethers and missiles and lays the same trail; prism destruction is per peer by design. Only
-    /// the hull's own MOTION (the sling's flight, the undock push, the snap onto a surface) is written by the machine
-    /// that owns it (<see cref="IsAuthority"/>); scored hits are decided once, on the shooter's owner
-    /// (<see cref="ElementalTransfer.IsDecidedHere"/>).</para>
+    /// <para><b>Simulated on EVERY peer</b> (the Brittle Star's rule): the presses and crystal pickups replicate, so every
+    /// machine holds the same mode, docks, nests, flora and missiles. Only the hull's MOTION (the sling, the undock push,
+    /// the snap onto a surface) is written by its owner (<see cref="IsAuthority"/>); the camera and the overlay are the
+    /// local pilot's; scored hits are decided on the shooter's owner (<see cref="ElementalTransfer.IsDecidedHere"/>).</para>
     ///
     /// <para><b>PvP is petals only (LOCKED).</b> Nothing here moves, slows or disables another pilot's vessel.</para>
     /// </summary>
     public sealed class ShrikeExecutor : ShipActionExecutorBase
     {
+        /// <summary>What the right trigger does (values serialized nowhere; the order is the HUD's).</summary>
+        public enum Mode { Space = 0, Charge = 1, Time = 2 }
+
         [Header("Wiring (serialized on the prefab so a missing wire shows in the inspector)")]
         [Tooltip("Every number this executor reads. Wired directly (vessel rule 20).")]
         [SerializeField] ShrikeConfigSO config;
-        [Tooltip("The procedural hull: its renderer's materials dress the turrets and missiles.")]
+        [Tooltip("The procedural hull: its renderer's materials dress the flora and the missiles.")]
         [SerializeField] ShrikeHullBuilder hull;
         [Tooltip("The fleet's shared turn-end channel: triggers let go, the tether and missiles are cleared.")]
         [SerializeField] ScriptableEventNoParam OnMiniGameTurnEnd;
@@ -53,28 +56,29 @@ namespace CosmicShore.Gameplay
         [Inject] GameDataSO _gameData;
 
         enum DockKind { None = 0, Block = 1, Nest = 2 }
-        enum LockKind { None = 0, Vessel = 1, Mass = 2 }
 
         sealed class Nest
         {
             public readonly List<Prism> Blocks = new();
             public readonly List<float> Born = new();   // each block's TimeCreated at lay: a pooled reuse is not ours
             public Vector3 Centre;
-            public Quaternion Rotation;
-            public int Health;
-            public float Regen;
-            public float FireCooldown;
-            public int FiredForLock = -1;
-            public bool TurretAlive = true;
-            public GameObject Turret;
-            public Vector3 TurretPosition;
-            public Vector3 Up;
+            public bool Dead;
+        }
+
+        sealed class Flora
+        {
+            public ShrikeNestFlora View;
+            public Nest Nest;            // the nest it crowns, or null (a crystal's)
+            public int Ready;
+            public float Growth;
+            public float LaunchCooldown;
             public bool Dead;
         }
 
         sealed class Missile
         {
             public GameObject Body;
+            public TrailRenderer Trail;
             public Vector3 Position;
             public Vector3 Direction;
             public Nest From;
@@ -83,6 +87,9 @@ namespace CosmicShore.Gameplay
 
         IVesselStatus _status;
         bool _pinned;
+        Mode _mode = Mode.Space;
+        bool _triggerHeld;
+        bool _zoomHeld;
 
         // Docking.
         DockKind _dock;
@@ -92,10 +99,11 @@ namespace CosmicShore.Gameplay
         float _dockGrace;
         float _dockedFor;
         Vector3 _push;
+        Nest _leftNest;                 // the nest a Mass detach just left behind: it does not catch the hull leaving it
+        float _leftNestUntil;
 
         // Cooldowns (seconds left; they tick at the dock bonus's rate).
         float _lanceCd, _slingCd, _nestCd;
-        bool _lanceHeld;
 
         // Sling: the tether in flight, then the boost.
         bool _tethering;
@@ -112,42 +120,52 @@ namespace CosmicShore.Gameplay
         bool _penHeld;
 
         // Array.
-        bool _painting;
         int _lockId;
-        LockKind _lock;
-        IVesselStatus _lockVessel;
+        ShrikeRules.LockClass _lock = ShrikeRules.LockClass.None;
+        Transform _lockTarget;          // a vessel's, a creature's or a plant heart's transform
         Vector3 _lockPoint;
         float _lockScanAt;
 
         readonly List<Nest> _nests = new();
+        readonly List<Flora> _flora = new();
         readonly List<Missile> _missiles = new();
-        readonly List<GameObject> _idleMissiles = new();
+        readonly List<Missile> _idleMissiles = new();
         readonly List<Prism> _candidates = new();
         readonly List<ShipActionSO> _bindScratch = new();
         readonly Dictionary<ShrikeControl, InputEvents> _boundInputs = new();
-        static Mesh _budMesh;
+        static Material _trailMaterial;
+
+        // The local pilot's camera, zoom and overlay.
+        CustomCameraController _cam;
+        float _camWritten;
+        bool _camEngaged;
+        float _zoom01;
+        float _baseFov;
+        ShrikeScopeOverlay _overlay;
 
         // Autopilot.
-        float _aiNextScan, _aiNextNest;
+        float _aiNextScan, _aiNextMode;
         int _aiTargetsAhead;
-        bool _aiEnemyAhead, _aiHoldingLance, _aiHoldingPaint;
+        bool _aiEnemyAhead, _aiHoldingTrigger;
 
         // ------------------------------------------------------------------ read by the HUD and the animation
 
         public ShrikeConfigSO Config => config;
+        public Mode CurrentMode => _mode;
         public bool Docked => _dock != DockKind.None;
         public bool DockedInNest => _dock == DockKind.Nest;
         public bool Slinging => _slinging;
         public bool Tethering => _tethering;
-        public bool Painting => _painting;
-        public bool Locked => _lock != LockKind.None;
-        public int NestCount { get { int n = 0; foreach (var nest in _nests) if (!nest.Dead) n++; return n; } }
+        public bool Painting => _mode == Mode.Charge && _triggerHeld;
+        public bool Locked => _lock != ShrikeRules.LockClass.None;
+        public bool Zooming => _zoomHeld;
         /// <summary>0 just fired … 1 ready.</summary>
         public float Lance01 => config ? 1f - Mathf.Clamp01(_lanceCd / config.LanceCooldown) : 0f;
         public float Nest01 => config && config.NestCooldown > 0f ? 1f - Mathf.Clamp01(_nestCd / config.NestCooldown) : 1f;
         public float Sling01 => config ? 1f - Mathf.Clamp01(_slingCd / Mathf.Max(0.01f, config.SlingCooldown.EvaluateReplicated(_status))) : 0f;
-        /// <summary>The sum of every live nest's turret health — the missiles the array can still call.</summary>
-        public int ArrayHealth { get { int h = 0; foreach (var nest in _nests) if (!nest.Dead && nest.TurretAlive) h += Mathf.Max(0, nest.Health - 1); return h; } }
+        /// <summary>The ready missiles across every nest flora — what the Charge card counts.</summary>
+        public int MissilesReady { get { int n = 0; foreach (var f in _flora) if (!f.Dead) n += f.Ready; return n; } }
+        public int FloraCount { get { int n = 0; foreach (var f in _flora) if (!f.Dead) n++; return n; } }
 
         // ------------------------------------------------------------------ lifecycle
 
@@ -157,16 +175,17 @@ namespace CosmicShore.Gameplay
             _status = shipStatus;
             if (!hull && _status != null && _status.Transform)
                 hull = _status.Transform.GetComponentInChildren<ShrikeHullBuilder>(true);
+            _mode = Mode.Space;
             _lanceCd = _slingCd = _nestCd = 0f;
             _lockId = 0;
             _boundInputs.Clear();
-            _aiNextScan = _aiNextNest = 0f;
+            _aiNextScan = _aiNextMode = 0f;
 
             if (!config)
                 CSDebug.LogError($"[Shrike] {name}: ShrikeExecutor has no ShrikeConfig — the vessel has no lance, sling, " +
                                  "array or nest. Wire Assets/_SO_Assets/VesselActions/Shrike/ShrikeConfig.asset.");
             if (!hull)
-                CSDebug.LogError($"[Shrike] {name}: no ShrikeHullBuilder under the vessel — turrets and missiles have no material.");
+                CSDebug.LogError($"[Shrike] {name}: no ShrikeHullBuilder under the vessel — flora and missiles have no material.");
         }
 
         void OnEnable()
@@ -174,8 +193,8 @@ namespace CosmicShore.Gameplay
             if (OnMiniGameTurnEnd != null) OnMiniGameTurnEnd.OnRaised += OnTurnEnd;
         }
 
-        // Unconditional and idempotent: a despawned or pooled vessel must not keep a pin, a held pen, a tether or a
-        // missile in flight. Nests are MASS in the world and stay, like any trail.
+        // Unconditional and idempotent: a despawned or pooled vessel must not keep a pin, a held pen, a zoom, a pulled-back
+        // camera, a tether or a missile in flight. Nests and flora are things in the world and stay.
         void OnDisable()
         {
             if (OnMiniGameTurnEnd != null) OnMiniGameTurnEnd.OnRaised -= OnTurnEnd;
@@ -185,21 +204,23 @@ namespace CosmicShore.Gameplay
         void OnDestroy()
         {
             for (int i = 0; i < _idleMissiles.Count; i++)
-                if (_idleMissiles[i]) Destroy(_idleMissiles[i]);
+                if (_idleMissiles[i].Body) Destroy(_idleMissiles[i].Body);
             _idleMissiles.Clear();
-            for (int i = 0; i < _nests.Count; i++)
-                if (_nests[i].Turret) Destroy(_nests[i].Turret);
+            for (int i = 0; i < _flora.Count; i++)
+                if (_flora[i].View) Destroy(_flora[i].View.gameObject);
+            _flora.Clear();
             _nests.Clear();
+            if (_overlay) Destroy(_overlay.gameObject);
         }
 
         void OnTurnEnd() => ClearAll();
 
         void ClearAll()
         {
-            _lanceHeld = false;
-            _painting = false;
-            _lock = LockKind.None;
-            _lockVessel = null;
+            _triggerHeld = false;
+            _zoomHeld = false;
+            _lock = ShrikeRules.LockClass.None;
+            _lockTarget = null;
             _tethering = false;
             _slinging = false;
             _slingAnchor = _slingFrom = null;
@@ -208,34 +229,85 @@ namespace CosmicShore.Gameplay
             _dockPrism = null;
             _dockNest = null;
             _push = Vector3.zero;
-            for (int i = 0; i < _missiles.Count; i++) ReturnMissile(_missiles[i].Body);
+            for (int i = 0; i < _missiles.Count; i++) ReturnMissile(_missiles[i]);
             _missiles.Clear();
             Pin(false);
             ReleasePen();
+            ReleaseCamera();
+            if (_overlay) _overlay.Hide();
             if (_status?.VesselPrismController is ShrikePrismController prisms) prisms.SpacingMultiplier = 1f;
         }
 
         // ------------------------------------------------------------------ controls (every peer: presses replicate)
 
-        public void BeginLance() => _lanceHeld = true;
-        public void EndLance() => _lanceHeld = false;
-
-        /// <summary>Paint on: a fresh paint is a fresh salvo, even on the same mass (page <c>stepPilot</c>).</summary>
-        public void BeginPaint()
+        /// <summary>X / RB / B: pick the mode — what the right trigger does. A held trigger lets go of the old mode's
+        /// action first (a held lance does not become a held paint).</summary>
+        public void SelectMode(Mode mode)
         {
-            if (!_painting) _lockId++;
-            _painting = true;
+            if (mode == _mode) return;
+            bool held = _triggerHeld;
+            if (held) EndTrigger();
+            _mode = mode;
+            if (config) PlayAt(config.ModeEvent, HullPosition);
         }
 
-        public void EndPaint()
+        /// <summary>RT down: Space fires the lance while held, Charge paints while held, Time shoots the sling.</summary>
+        public void BeginTrigger()
         {
-            _painting = false;
-            _lock = LockKind.None;
-            _lockVessel = null;
+            if (_triggerHeld) return;
+            _triggerHeld = true;
+            switch (_mode)
+            {
+                case Mode.Charge: _lockId++; break;   // a fresh paint is a fresh salvo
+                case Mode.Time: PressSling(); break;
+            }
         }
 
-        /// <summary>The Void Sling: shoot the tether, if its cooldown is up and nothing is already flying.</summary>
-        public void PressSling()
+        public void EndTrigger()
+        {
+            _triggerHeld = false;
+            _lock = ShrikeRules.LockClass.None;
+            _lockTarget = null;
+        }
+
+        /// <summary>LT: zoom, whatever the mode.</summary>
+        public void BeginZoom() => _zoomHeld = true;
+        public void EndZoom() => _zoomHeld = false;
+
+        /// <summary>A, the Mass ability: docked, detach and leave a nest behind with a flora carrying one missile (on
+        /// the nest's cooldown; inside it, just detach). Flying, nothing — a nest is what a stay leaves.</summary>
+        public void PressMass()
+        {
+            if (!config || _status == null || !_status.Transform || !Docked || _slinging) return;
+            Vector3 at = HullPosition;
+            Quaternion rot = _status.Transform.rotation;
+            bool leaveNest = _nestCd <= 0f && _dock != DockKind.Nest;
+            Undock(push: true);
+            PlayAt(config.UndockEvent, at);
+            if (!leaveNest) return;
+            var nest = BuildNest(at, rot);
+            if (nest == null) return;
+            // Out through the nest's open mouth (the nose's way out), and the nest does not catch the hull leaving it.
+            _push = _status.Transform.forward * config.UndockPush;
+            _leftNest = nest;
+            _leftNestUntil = Time.time + config.LeaveNestSeconds;
+            _nestCd = config.NestCooldown;
+            float radius = ShrikeRules.NestRadiusFor(nest.Blocks.Count, false, config.NestBlockSize, config.NestClearance);
+            AddFlora(at + rot * ShrikeRules.TurretLocal(radius), rot * Vector3.up, config.DetachNestMissiles, nest);
+            PlayAt(config.NestEvent, at);
+        }
+
+        /// <summary>A crystal (any kind) becomes a nest flora where it was, and the sling resets (page <c>pickUp</c>:
+        /// "resetting your void sling").</summary>
+        public void CollectCrystal(Vector3 at)
+        {
+            if (!config) return;
+            _slingCd = 0f;
+            AddFlora(at, Vector3.up, 0, null);
+            PlayAt(config.CrystalEvent, at);
+        }
+
+        void PressSling()
         {
             if (!config || _status == null || !_status.Transform) return;
             if (_slingCd > 0f || _tethering || _slinging) return;
@@ -246,36 +318,6 @@ namespace CosmicShore.Gameplay
             _tetherWent = 0f;
             _slingCd = Mathf.Max(0.05f, config.SlingCooldown.EvaluateReplicated(_status));
             PlayAt(config.TetherEvent, HullPosition);
-        }
-
-        /// <summary>A: docked, undock with a push off the surface; flying, build a nest round the hull and dock in it.</summary>
-        public void PressDock()
-        {
-            if (!config || _status == null || !_status.Transform) return;
-            if (_slinging || _tethering) return;
-            if (Docked)
-            {
-                Undock(push: true);
-                PlayAt(config.UndockEvent, HullPosition);
-                return;
-            }
-            if (_nestCd > 0f) return;
-            var nest = BuildNest();
-            if (nest == null) return;
-            _nestCd = config.NestCooldown;
-            DockInNest(nest);
-            PlayAt(config.NestEvent, HullPosition);
-        }
-
-        /// <summary>A crystal (any kind): the sling's cooldown resets and every nest gains health
-        /// (page <c>pickUp</c>: "resetting your void sling"; "each nest 3 health blocks").</summary>
-        public void CollectCrystal()
-        {
-            if (!config) return;
-            _slingCd = 0f;
-            for (int i = 0; i < _nests.Count; i++)
-                if (!_nests[i].Dead) _nests[i].Health = Mathf.Min(config.NestHealthMax, _nests[i].Health + config.CrystalHealth);
-            PlayAt(config.CrystalEvent, HullPosition);
         }
 
         // ------------------------------------------------------------------ the frame (page stepPilot, in its order)
@@ -294,20 +336,37 @@ namespace CosmicShore.Gameplay
             _dockedFor = Docked ? _dockedFor + dt : 0f;
 
             UpdateTrailSpacing();
-            if (_lanceHeld && _lanceCd <= 0f && !_slinging) FireLance();
+            if (_mode == Mode.Space && _triggerHeld && _lanceCd <= 0f && !_slinging) FireLance();
             StepTether(dt);
             UpdateLock();
-            LaunchMissiles(dt);
+            StepFlora(dt);
 
             if (_slinging) StepSling(dt);
             else if (Docked) HoldDock();
             else Fly(dt);
 
             StepMissiles(dt);
-            StepNests(dt);
+            StepNests();
             UpdatePen();
 
             if (_status.AutoPilotEnabled && IsAuthority()) Autopilot();
+        }
+
+        void LateUpdate()
+        {
+            if (!config || _status == null || !_status.Transform) return;
+            if (!IsLocalPilot())
+            {
+                ReleaseCamera();
+                if (_overlay) _overlay.Hide();
+                return;
+            }
+            float dt = Time.deltaTime;
+            UpdateCamera(dt);
+            UpdateZoom(dt);
+            if (!_overlay) _overlay = ShrikeScopeOverlay.Create("ShrikeScope");
+            _overlay.Drive(_zoom01 > 0.05f, (ShrikeScopeOverlay.ScopeShape)(int)_mode, DomainColour(),
+                Painting && Locked, LockPosition, CameraManager.ViewCamera);
         }
 
         bool DockedShielded()
@@ -321,6 +380,72 @@ namespace CosmicShore.Gameplay
             if (_status.VesselPrismController is not ShrikePrismController prisms) return;
             float authored = Mathf.Max(0.01f, config.TrailWavelength.EvaluateAtNormalizedLevel(0f));
             prisms.SpacingMultiplier = config.TrailWavelength.EvaluateReplicated(_status) / authored;
+        }
+
+        // ------------------------------------------------------------------ the local pilot's camera and zoom
+
+        bool IsLocalPilot() => _status.Player != null && _status.Player.IsLocalPilot && !_status.AutoPilotEnabled;
+
+        /// <summary>"After colliding with a prism the camera should move further away": docked, the chase eases back to
+        /// <c>dockedCameraPullBack</c> × its authored distance; undocked, it eases home. Written only while this hull is
+        /// the camera's target, and handed back only if nobody else wrote it since (ThresherExecutor's rule).</summary>
+        void UpdateCamera(float dt)
+        {
+            var cam = CameraManager.Instance ? CameraManager.Instance.GetActiveController() as CustomCameraController : null;
+            var ship = _status.Transform;
+            if (!cam || !cam.FollowTarget || !(cam.FollowTarget == ship || cam.FollowTarget.IsChildOf(ship)))
+            {
+                ReleaseCamera();
+                return;
+            }
+            _cam = cam;
+            float neutral = cam.NeutralOffsetZ;
+            if (neutral >= 0f) return;   // not a chase camera
+            if (!Docked && !_camEngaged) return;
+            if (_camEngaged && !Mathf.Approximately(cam.GetCameraDistance(), _camWritten))
+            {
+                _camEngaged = false;     // somebody else moved it: theirs now
+                return;
+            }
+            float target = Docked ? neutral * config.DockedCameraPullBack : neutral;
+            float now = _camEngaged ? _camWritten : cam.GetCameraDistance();
+            float next = Mathf.Lerp(now, target, 1f - Mathf.Exp(-config.CameraEaseRate * dt));
+            if (!Docked && Mathf.Abs(next - neutral) < 0.05f) next = neutral;
+            cam.SetCameraDistance(next);
+            _camWritten = next;
+            _camEngaged = Docked || !Mathf.Approximately(next, neutral);
+        }
+
+        void ReleaseCamera()
+        {
+            if (_camEngaged && _cam && Mathf.Approximately(_cam.GetCameraDistance(), _camWritten))
+                _cam.SetCameraDistance(_cam.NeutralOffsetZ);
+            _camEngaged = false;
+            _cam = null;
+            if (_zoom01 > 0f && _status != null && _status.Transform)
+                VesselSpeedTunnel.ClearHomeFieldOfViewOverride(_status.Transform);
+            _zoom01 = 0f;
+        }
+
+        /// <summary>LT narrows the flight view through the speed tunnel's home override — the gameplay camera's ONE
+        /// FOV writer (VesselSpeedTunnel) — and hands the player's own FOV back when let go.</summary>
+        void UpdateZoom(float dt)
+        {
+            var key = _status.Transform;
+            if (_zoom01 <= 0f && _zoomHeld)
+            {
+                var view = CameraManager.ViewCamera;
+                _baseFov = VesselSpeedTunnel.HomeFieldOfView > 1f ? VesselSpeedTunnel.HomeFieldOfView : view ? view.fieldOfView : 60f;
+            }
+            float step = dt / Mathf.Max(0.01f, config.ZoomSeconds);
+            _zoom01 = Mathf.MoveTowards(_zoom01, _zoomHeld ? 1f : 0f, step);
+            if (_zoom01 <= 0f)
+            {
+                VesselSpeedTunnel.ClearHomeFieldOfViewOverride(key);
+                return;
+            }
+            float eased = _zoom01 * _zoom01 * (3f - 2f * _zoom01);
+            VesselSpeedTunnel.SetHomeFieldOfViewOverride(Mathf.Lerp(_baseFov, config.ZoomFieldOfView, eased), key);
         }
 
         // ------------------------------------------------------------------ docking
@@ -367,6 +492,7 @@ namespace CosmicShore.Gameplay
             if (!prism || prism.destroyed || prism.prismProperties == null) return false;
             if (IsOwnFreshTrail(prism)) return false;
             if (_slinging && prism == _slingFrom && _slingWent < 8f) return false;
+            if (_leftNest != null && Time.time < _leftNestUntil && IsNestBlock(prism, out var nest) && nest == _leftNest) return false;
             return true;
         }
 
@@ -376,7 +502,7 @@ namespace CosmicShore.Gameplay
 
         void DockOn(Prism prism)
         {
-            if (IsNestBlock(prism, out var nest) && _dockNest == null)
+            if (IsNestBlock(prism, out var nest))
             {
                 DockInNest(nest);
                 return;
@@ -445,9 +571,11 @@ namespace CosmicShore.Gameplay
             else _status.IsTranslationRestricted = on;
         }
 
-        // ------------------------------------------------------------------ nests
+        // ------------------------------------------------------------------ nests and flora
 
-        Nest BuildNest()
+        /// <summary>A cup of super-shielded blocks round <paramref name="centre"/>, the nose's way out open, its radius
+        /// grown so that NO two blocks clip (<see cref="ShrikeRules.NestRadiusFor"/>), each block facing out.</summary>
+        Nest BuildNest(Vector3 centre, Quaternion rot)
         {
             var prisms = _status.VesselPrismController;
             var channel = prisms ? prisms.PrismSpawnChannel : null;
@@ -461,26 +589,23 @@ namespace CosmicShore.Gameplay
             if (live >= config.MaxNests && oldest != null) RetireNest(oldest);
             _nests.RemoveAll(n => n.Dead);
 
-            var nest = new Nest
-            {
-                Centre = HullPosition,
-                Rotation = _status.Transform.rotation,
-                Health = config.NestHealth,
-            };
+            var nest = new Nest { Centre = centre };
             int count = ShrikeRules.NestBlockCount(config.NestBlocks.EvaluateReplicated(_status));
-            Vector3 size = Vector3.one * ShrikeRules.NestBlockSize(false);
+            float size = config.NestBlockSize;
+            float radius = ShrikeRules.NestRadiusFor(count, false, size, config.NestClearance);
+            Vector3 scale = Vector3.one * size;
+            Vector3 up = rot * Vector3.up;
             for (int i = 0; i < count; i++)
             {
-                Vector3 pos = nest.Centre + nest.Rotation * ShrikeRules.NestLocal(i, count, false);
-                var prism = BoostRingBuilder.LayOne(channel, pos, nest.Rotation, size, PrismKind.SuperShielded,
+                Vector3 local = ShrikeRules.NestLocal(i, count, false, radius);
+                Vector3 outward = rot * local;
+                Quaternion face = SafeLookRotation.TryGet(outward, up, out var r, this, logError: false) ? r : rot;
+                var prism = BoostRingBuilder.LayOne(channel, centre + outward, face, scale, PrismKind.SuperShielded,
                     _status.Domain, _status.PlayerName, _status.PlayerName);
                 if (!prism) continue;
                 nest.Blocks.Add(prism);
                 nest.Born.Add(prism.prismProperties.TimeCreated);
             }
-            nest.Up = nest.Rotation * Vector3.up;
-            nest.TurretPosition = nest.Centre + nest.Rotation * ShrikeRules.TurretLocal(false);
-            nest.Turret = MakeBud("ShrikeTurret", nest.TurretPosition, nest.Rotation, 1.8f);
             _nests.Add(nest);
             return nest;
         }
@@ -494,15 +619,7 @@ namespace CosmicShore.Gameplay
                 PrismKinds.Clear(prism);
                 prism.ReturnToPool();
             }
-            KillNest(nest);
-        }
-
-        void KillNest(Nest nest)
-        {
             nest.Dead = true;
-            nest.TurretAlive = false;
-            if (nest.Turret) Destroy(nest.Turret);
-            nest.Turret = null;
             if (_dockNest == nest) Undock(push: false);
         }
 
@@ -523,26 +640,74 @@ namespace CosmicShore.Gameplay
             return false;
         }
 
-        /// <summary>The turret flora regrows health blocks, faster while docked in it; a nest whose every block is gone
-        /// is gone (page <c>stepNests</c>).</summary>
-        void StepNests(float dt)
+        /// <summary>A nest whose every block is gone is gone (page <c>stepNests</c>); its flora stays standing.</summary>
+        void StepNests()
         {
             for (int n = 0; n < _nests.Count; n++)
             {
                 var nest = _nests[n];
                 if (nest.Dead) continue;
-                if (nest.TurretAlive)
-                    ShrikeRules.RegenTick(ref nest.Health, ref nest.Regen, dt, _dockNest == nest, config.TurretRegen, config.NestHealthMax);
                 bool any = false;
                 for (int i = 0; i < nest.Blocks.Count && !any; i++) any = PrismAlive(nest.Blocks[i], nest.Born[i]);
-                if (!any) KillNest(nest);
+                if (any) continue;
+                nest.Dead = true;
+                if (_dockNest == nest) Undock(push: false);
             }
         }
 
-        // ------------------------------------------------------------------ the Void Lance
+        void AddFlora(Vector3 at, Vector3 up, int ready, Nest nest)
+        {
+            // The oldest withers when there are too many.
+            int live = 0;
+            Flora oldest = null;
+            for (int i = 0; i < _flora.Count; i++)
+                if (!_flora[i].Dead) { live++; oldest ??= _flora[i]; }
+            if (live >= config.MaxFlora && oldest != null) KillFlora(oldest);
+            _flora.RemoveAll(f => f.Dead);
 
-        /// <summary>Page <c>fireLance</c>: every block the beam passes breaks — super-shielded included, "even if super
-        /// shielded" — except the nest you are docked in and the block you sit on; a rival hull on the line is a petal hit.</summary>
+            var view = ShrikeNestFlora.Create(at, up, config.FloraMissileMax, config.MissileLength, DomainMaterial());
+            _flora.Add(new Flora { View = view, Nest = nest, Ready = Mathf.Min(ready, config.FloraMissileMax) });
+        }
+
+        void KillFlora(Flora flora)
+        {
+            flora.Dead = true;
+            if (flora.View) Destroy(flora.View.gameObject);
+            flora.View = null;
+        }
+
+        /// <summary>Each flora grows its missiles (twice as fast while you sit in its nest) and, while you paint a lock in
+        /// Charge mode, launches a ready one every <c>missileEvery</c>.</summary>
+        void StepFlora(float dt)
+        {
+            bool fire = Painting && LockAlive;
+            for (int i = 0; i < _flora.Count; i++)
+            {
+                var f = _flora[i];
+                if (f.Dead) continue;
+                if (!f.View) { f.Dead = true; continue; }
+                ShrikeRules.GrowTick(ref f.Ready, ref f.Growth, dt, f.Nest != null && _dockNest == f.Nest,
+                    config.TurretRegen, config.FloraMissileMax);
+                f.LaunchCooldown -= dt;
+                if (fire && ShrikeRules.FloraMayLaunch(f.Ready, f.LaunchCooldown)) Launch(f);
+                f.View.Show(f.Ready, f.Growth / Mathf.Max(0.01f, config.TurretRegen));
+            }
+        }
+
+        // ------------------------------------------------------------------ the Void Lance (Space)
+
+        bool IsPierceUnlocked
+        {
+            get
+            {
+                var elemental = _status?.ElementalAbilityHandler;
+                return elemental != null && elemental.IsUpgradeActive(Element.Space);
+            }
+        }
+
+        /// <summary>Page <c>fireLance</c>: every block the beam passes breaks, super-shielded mass only with the Space
+        /// upgrade (the beam passes it below), except the nest you are docked in and the block you sit on; a rival
+        /// hull on the line is a petal hit.</summary>
         void FireLance()
         {
             _lanceCd = config.LanceCooldown;
@@ -550,6 +715,7 @@ namespace CosmicShore.Gameplay
             Vector3 o = HullPosition + f * 4f;
             float r = Mathf.Max(0.1f, config.LanceRadius.EvaluateReplicated(_status));
             float len = config.LanceRange;
+            bool pierce = IsPierceUnlocked;
             bool hit = false;
 
             var index = PrismSpatialIndex.Instance;
@@ -562,6 +728,7 @@ namespace CosmicShore.Gameplay
                     if (!prism || prism.destroyed) continue;
                     if (_dock == DockKind.Block && prism == _dockPrism) continue;
                     if (_dock == DockKind.Nest && IsNestBlock(prism, out var nest) && nest == _dockNest) continue;
+                    if (!ShrikeRules.LanceBreaks(prism.prismProperties is { IsSuperShielded: true }, pierce)) continue;
                     if (!RayHits(prism, o, f, r, len, out _)) continue;
                     BreakPrism(prism, f * config.LanceDebrisSpeed, devastate: true);
                     hit = true;
@@ -584,8 +751,8 @@ namespace CosmicShore.Gameplay
             PlayAt(config.LanceEvent, o);
         }
 
-        /// <summary>The sanctioned teardown (SniperShotActionExecutor.DestroyPrism): a super-shield comes off first,
-        /// then <c>devastate</c> stops the prism restoring its armour instead of dying.</summary>
+        /// <summary>The sanctioned teardown (SniperShotActionExecutor.DestroyPrism): a super-shield comes off first, then
+        /// <c>devastate</c> stops the prism restoring its armour instead of dying.</summary>
         void BreakPrism(Prism prism, Vector3 impact, bool devastate)
         {
             if (prism.prismProperties is { IsSuperShielded: true })
@@ -596,7 +763,7 @@ namespace CosmicShore.Gameplay
             prism.Damage(impact, _status.Domain, _status.PlayerName, devastate: devastate);
         }
 
-        // ------------------------------------------------------------------ the Void Sling
+        // ------------------------------------------------------------------ the Void Sling (Time)
 
         /// <summary>Page <c>stepTether</c>: the tether flies until it meets a block (never a crystal or a vessel), then
         /// the sling starts toward that point — speed = distance / slingSeconds.</summary>
@@ -666,7 +833,6 @@ namespace CosmicShore.Gameplay
             Vector3 from = HullPosition;
             Vector3 to = from + _slingDir * move;
 
-            // Swept contact: the earliest block along this frame's path within the hull's radius.
             Prism hit = null;
             float hitAlong = float.MaxValue;
             var index = PrismSpatialIndex.Instance;
@@ -770,61 +936,108 @@ namespace CosmicShore.Gameplay
             if (prisms) prisms.SetSpawnerPaused(false);
         }
 
-        // ------------------------------------------------------------------ the Targeting Array
+        // ------------------------------------------------------------------ the Targeting Array (Charge)
 
-        /// <summary>Page <c>updateLock</c>: a rival hull inside the cone first (kept to 1.6× the cone); otherwise the
-        /// centre of the mass round the block nearest the aim, re-scanned every 0.25 s.</summary>
+        /// <summary>
+        /// While painting: the lock goes to the best target in the cone by CLASS first — vessels, then fauna, then flora,
+        /// then mass (Garrett, 2026-10-15) — and within a class to the one nearest the aim. A held lock on a live target
+        /// is kept to 1.6× the cone until something of a higher class enters the cone. Mass is the centre of the blocks
+        /// round the one nearest the aim (page <c>updateLock</c>), re-scanned every 0.25 s.
+        /// </summary>
         void UpdateLock()
         {
-            if (!_painting) { _lock = LockKind.None; _lockVessel = null; return; }
+            if (!Painting) { _lock = ShrikeRules.LockClass.None; _lockTarget = null; return; }
             Vector3 pos = HullPosition, f = _status.Transform.forward;
             float cone = Mathf.Max(0.5f, config.LockCone.EvaluateReplicated(_status)) * Mathf.Deg2Rad;
 
-            if (_lock == LockKind.Vessel && _lockVessel != null && _lockVessel.Transform
-                && Angle(pos, f, _lockVessel.Transform.position) < cone * config.LockKeepScale)
-                return;   // keep an enemy lock through clutter
-
-            IVesselStatus best = null;
+            var bestKind = ShrikeRules.LockClass.None;
             float bestAngle = cone;
+            Transform bestTarget = null;
+
+            void Consider(ShrikeRules.LockClass kind, Transform target, Vector3 at)
+            {
+                float a = Angle(pos, f, at);
+                if (a >= cone) return;
+                if (!ShrikeRules.BetterLock(kind, a, bestKind, bestAngle)) return;
+                bestKind = kind;
+                bestAngle = a;
+                bestTarget = target;
+            }
+
             var players = _gameData != null ? _gameData.Players : null;
             if (players != null)
                 for (int i = 0; i < players.Count; i++)
                 {
                     var victim = EnemyStatus(players[i]);
-                    if (victim == null) continue;
-                    float a = Angle(pos, f, victim.Transform.position);
-                    if (a < bestAngle) { bestAngle = a; best = victim; }
+                    if (victim != null) Consider(ShrikeRules.LockClass.Vessel, victim.Transform, victim.Transform.position);
                 }
-            if (best != null)
+            if (bestKind > ShrikeRules.LockClass.Fauna)
             {
-                if (_lock != LockKind.Vessel || !ReferenceEquals(_lockVessel, best))
+                var cells = Cell.ActiveCellsSnapshot;
+                for (int c = 0; c < cells.Count; c++)
+                {
+                    var cell = cells[c];
+                    if (!cell) continue;
+                    var fauna = cell.LiveFauna;
+                    for (int i = fauna.Count - 1; i >= 0; i--)
+                    {
+                        var creature = fauna[i];
+                        if (!creature || creature.IsDying || !creature.isActiveAndEnabled) continue;
+                        Consider(ShrikeRules.LockClass.Fauna, creature.transform, creature.transform.position);
+                    }
+                }
+            }
+            if (bestKind > ShrikeRules.LockClass.Flora)
+            {
+                var plants = FloraHeartRegistry.Live;
+                for (int i = 0; i < plants.Count; i++)
+                {
+                    var plant = plants[i];
+                    if (!plant || plant.IsDying || !plant.HeartTransform) continue;
+                    Consider(ShrikeRules.LockClass.Flora, plant.HeartTransform, plant.HeartTransform.position);
+                }
+            }
+
+            // Keep a live lock of the same or a higher class while it stays within 1.6x the cone.
+            if (_lock != ShrikeRules.LockClass.None && _lock != ShrikeRules.LockClass.Mass && LockAlive
+                && _lock <= bestKind && Angle(pos, f, LockPosition) < cone * config.LockKeepScale)
+                return;
+
+            if (bestKind != ShrikeRules.LockClass.None)
+            {
+                if (_lock != bestKind || _lockTarget != bestTarget)
                 {
                     _lockId++;
                     PlayAt(config.LockEvent, pos);
                 }
-                _lock = LockKind.Vessel;
-                _lockVessel = best;
+                _lock = bestKind;
+                _lockTarget = bestTarget;
                 return;
             }
-            if (_lock == LockKind.Mass && Time.time < _lockScanAt) return;
-            _lockScanAt = Time.time + 0.25f;
 
-            // "Query the map for volume density and path find into the centre of mass": the block nearest the paint
-            // ray, then the centre of the mass round it.
+            if (_lock == ShrikeRules.LockClass.Mass && Time.time < _lockScanAt) return;
+            _lockScanAt = Time.time + 0.25f;
+            LockMass(pos, f, cone);
+        }
+
+        /// <summary>"Query the map for volume density and path find into the centre of mass": the block nearest the paint
+        /// ray, then the centre of the mass round it. Your own blocks (nests, trail) are never the target.</summary>
+        void LockMass(Vector3 pos, Vector3 f, float cone)
+        {
             var index = PrismSpatialIndex.Instance;
-            if (!index || !index.IsAvailable) { _lock = LockKind.None; return; }
+            if (!index || !index.IsAvailable) { ClearLock(); return; }
             index.QuerySegment(pos, pos + f * config.LockRange, Mathf.Tan(cone) * 300f, _candidates);
             Prism seed = null;
             float seedAngle = cone;
             for (int i = 0; i < _candidates.Count; i++)
             {
                 var prism = _candidates[i];
-                if (!prism || prism.destroyed || IsNestBlock(prism, out _) || prism.ownerID == _status.PlayerName) continue;
+                if (!prism || prism.destroyed || prism.ownerID == _status.PlayerName) continue;
                 float a = Angle(pos, f, prism.transform.position);
                 if (a < seedAngle) { seedAngle = a; seed = prism; }
             }
             _candidates.Clear();
-            if (!seed) { _lock = LockKind.None; return; }
+            if (!seed) { ClearLock(); return; }
 
             Vector3 seedPos = seed.transform.position, sum = Vector3.zero;
             int count = 0;
@@ -832,20 +1045,26 @@ namespace CosmicShore.Gameplay
             for (int i = 0; i < _candidates.Count; i++)
             {
                 var prism = _candidates[i];
-                if (!prism || prism.destroyed || IsNestBlock(prism, out _) || prism.ownerID == _status.PlayerName) continue;
+                if (!prism || prism.destroyed || prism.ownerID == _status.PlayerName) continue;
                 sum += prism.transform.position;
                 count++;
             }
             _candidates.Clear();
             Vector3 point = count > 0 ? sum / count : seedPos;
-            if (_lock != LockKind.Mass || Vector3.Distance(_lockPoint, point) > 15f)
+            if (_lock != ShrikeRules.LockClass.Mass || Vector3.Distance(_lockPoint, point) > 15f)
             {
                 _lockId++;   // the same mass keeps its lock as it is eaten away
                 PlayAt(config.LockEvent, pos);
             }
-            _lock = LockKind.Mass;
-            _lockVessel = null;
+            _lock = ShrikeRules.LockClass.Mass;
+            _lockTarget = null;
             _lockPoint = point;
+        }
+
+        void ClearLock()
+        {
+            _lock = ShrikeRules.LockClass.None;
+            _lockTarget = null;
         }
 
         float Angle(Vector3 pos, Vector3 fwd, Vector3 at)
@@ -856,34 +1075,27 @@ namespace CosmicShore.Gameplay
             return Mathf.Acos(Mathf.Clamp(Vector3.Dot(d, fwd) / l, -1f, 1f));
         }
 
-        bool LockAlive => _lock == LockKind.Mass || _lock == LockKind.Vessel && _lockVessel != null && _lockVessel.Transform;
-        Vector3 LockPosition => _lock == LockKind.Vessel ? _lockVessel.Transform.position : _lockPoint;
+        bool LockAlive => _lock == ShrikeRules.LockClass.Mass
+                          || _lock != ShrikeRules.LockClass.None && _lockTarget && _lockTarget.gameObject.activeInHierarchy;
+        Vector3 LockPosition => _lock == ShrikeRules.LockClass.Mass ? _lockPoint : _lockTarget ? _lockTarget.position : _lockPoint;
 
-        /// <summary>Page <c>launchMissiles</c>: each nest fires ONE missile per painted target, never its last health
-        /// block.</summary>
-        void LaunchMissiles(float dt)
+        // ------------------------------------------------------------------ missiles
+
+        void Launch(Flora flora)
         {
-            for (int n = 0; n < _nests.Count; n++)
-            {
-                var nest = _nests[n];
-                if (nest.Dead) continue;
-                nest.FireCooldown -= dt;
-                if (!_painting || !LockAlive) continue;
-                if (!ShrikeRules.NestMayFire(nest.Health, nest.TurretAlive, nest.FireCooldown, nest.FiredForLock, _lockId)) continue;
-                nest.FireCooldown = config.MissileEvery;
-                nest.FiredForLock = _lockId;
-                nest.Health--;
-                Vector3 dir = ShrikeRules.LaunchDirection(nest.Up, LockPosition - nest.TurretPosition);
-                var missile = new Missile
-                {
-                    Position = nest.TurretPosition + nest.Up * 3f,
-                    Direction = dir,
-                    From = nest,
-                    Body = TakeMissile(),
-                };
-                _missiles.Add(missile);
-                PlayAt(config.MissileLaunchEvent, missile.Position);
-            }
+            flora.Ready--;
+            flora.LaunchCooldown = config.MissileEvery;
+            Vector3 from = flora.View.LaunchPoint;
+            Vector3 up = flora.View.transform.up;
+            var missile = TakeMissile();
+            missile.Position = from;
+            missile.Direction = ShrikeRules.LaunchDirection(up, LockPosition - from);
+            missile.From = flora.Nest;
+            missile.Age = 0f;
+            if (missile.Body) missile.Body.transform.SetPositionAndRotation(from, Quaternion.LookRotation(missile.Direction, UpOf(missile.Direction)));
+            if (missile.Trail) missile.Trail.Clear();
+            _missiles.Add(missile);
+            PlayAt(config.MissileLaunchEvent, from);
         }
 
         /// <summary>Page <c>stepMissiles</c>: "as long as the Shrike continues to paint the target, missiles actively home
@@ -899,13 +1111,12 @@ namespace CosmicShore.Gameplay
                 var missile = _missiles[m];
                 missile.Age += dt;
                 Vector3 dir = missile.Direction;
-                if (_painting && LockAlive)
+                if (Painting && LockAlive)
                 {
                     Vector3 target = LockPosition;
                     Vector3 want = (target - missile.Position).normalized;
                     if (indexed)
                     {
-                        // A look-ahead swerve round the first block 45 u ahead that is not part of the target's mass.
                         index.QuerySegment(missile.Position, missile.Position + dir * 45f, 2.5f + config.DockQueryReach, _candidates);
                         Prism obstacle = null;
                         float obstacleT = float.MaxValue;
@@ -914,7 +1125,7 @@ namespace CosmicShore.Gameplay
                             var prism = _candidates[i];
                             if (!prism || prism.destroyed) continue;
                             if (IsNestBlock(prism, out var own) && own == missile.From) continue;
-                            if (_lock == LockKind.Mass && Vector3.Distance(prism.transform.position, target) < 40f) continue;
+                            if (_lock != ShrikeRules.LockClass.Vessel && Vector3.Distance(prism.transform.position, target) < 40f) continue;
                             if (RayHits(prism, missile.Position, dir, 2.5f, 45f, out float t) && t < obstacleT)
                             {
                                 obstacleT = t;
@@ -944,12 +1155,10 @@ namespace CosmicShore.Gameplay
                 }
                 if (!boom && missile.Age > config.MissileLife) boom = true;
                 if (missile.Body)
-                {
                     missile.Body.transform.SetPositionAndRotation(missile.Position, Quaternion.LookRotation(dir, UpOf(dir)));
-                }
                 if (!boom) continue;
                 Detonate(missile);
-                ReturnMissile(missile.Body);
+                ReturnMissile(missile);
                 _missiles.RemoveAt(m);
             }
         }
@@ -970,6 +1179,10 @@ namespace CosmicShore.Gameplay
                 _candidates.Clear();
                 if (touched) return true;
             }
+            // The painted creature or plant (its body may be off the prism index).
+            if (_lock is ShrikeRules.LockClass.Fauna or ShrikeRules.LockClass.Flora && _lockTarget
+                && (_lockTarget.position - missile.Position).sqrMagnitude < 16f)
+                return true;
             var players = _gameData != null ? _gameData.Players : null;
             if (players == null) return false;
             for (int i = 0; i < players.Count; i++)
@@ -1001,6 +1214,7 @@ namespace CosmicShore.Gameplay
                 }
                 _candidates.Clear();
             }
+            SniperBeam.Fire(at, at + Vector3.up * 0.01f, 0.01f, 0.01f, DomainColour(), 0.01f, blast, 0.35f, hit: true);
             if (!ElementalTransfer.IsDecidedHere(_status)) return;
             var players = _gameData != null ? _gameData.Players : null;
             if (players == null) return;
@@ -1014,33 +1228,63 @@ namespace CosmicShore.Gameplay
             }
         }
 
-        GameObject TakeMissile()
+        /// <summary>A missile body: the flora's large missile mesh in the domain's material, with a bright domain-coloured
+        /// trail so it reads across the cell ("the missiles should be much more visible").</summary>
+        Missile TakeMissile()
         {
             for (int i = _idleMissiles.Count - 1; i >= 0; i--)
             {
-                var body = _idleMissiles[i];
+                var idle = _idleMissiles[i];
                 _idleMissiles.RemoveAt(i);
-                if (!body) continue;
-                body.SetActive(true);
-                return body;
+                if (!idle.Body) continue;
+                idle.Body.SetActive(true);
+                return idle;
             }
-            var made = MakeBud("ShrikeMissile", HullPosition, Quaternion.identity, 0.7f);
-            if (made) made.transform.localScale = new Vector3(0.5f, 0.5f, 1.4f);
-            return made;
+            var missile = new Missile();
+            var go = new GameObject("ShrikeMissile");
+            go.AddComponent<MeshFilter>().sharedMesh = ShrikeMeshes.Missile();
+            var renderer = go.AddComponent<MeshRenderer>();
+            var mat = DomainMaterial();
+            if (mat) renderer.sharedMaterial = mat;
+            float l = config.MissileLength;
+            go.transform.localScale = new Vector3(0.45f * l, 0.45f * l, l);
+            var trail = go.AddComponent<TrailRenderer>();
+            trail.sharedMaterial = TrailMaterial();
+            trail.time = config.MissileTrailSeconds;
+            trail.minVertexDistance = 0.5f;
+            trail.widthCurve = new AnimationCurve(new Keyframe(0f, 1f), new Keyframe(1f, 0f));
+            trail.widthMultiplier = config.MissileTrailWidth;
+            trail.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+            trail.receiveShadows = false;
+            Color c = DomainColour();
+            trail.startColor = new Color(Mathf.Lerp(c.r, 1f, 0.5f), Mathf.Lerp(c.g, 1f, 0.5f), Mathf.Lerp(c.b, 1f, 0.5f), 1f);
+            trail.endColor = new Color(c.r, c.g, c.b, 0f);
+            missile.Body = go;
+            missile.Trail = trail;
+            return missile;
         }
 
-        void ReturnMissile(GameObject body)
+        void ReturnMissile(Missile missile)
         {
-            if (!body) return;
-            body.SetActive(false);
-            _idleMissiles.Add(body);
+            if (missile.Body) missile.Body.SetActive(false);
+            if (missile.Trail) missile.Trail.Clear();
+            _idleMissiles.Add(missile);
+        }
+
+        static Material TrailMaterial()
+        {
+            if (_trailMaterial) return _trailMaterial;
+            var shader = Shader.Find("Sprites/Default") ?? Shader.Find("Universal Render Pipeline/Unlit");
+            if (!shader) return null;
+            _trailMaterial = new Material(shader) { name = "ShrikeMissileTrail", renderQueue = 3000 };
+            return _trailMaterial;
         }
 
         // ------------------------------------------------------------------ scoring
 
-        /// <summary>A hit on a rival hull under the LOCKED PvP rule: admitted through <see cref="CombatHitDrain.TryAdmit"/>
-        /// (a warded victim is neither scored on nor robbed), its petals ejected, the score raised. It never moves the
-        /// victim. Callers have already asked <see cref="ElementalTransfer.IsDecidedHere"/>.</summary>
+        /// <summary>A hit on a rival hull under the LOCKED PvP rule: admitted through <see cref="CombatHitDrain.TryAdmit"/>,
+        /// its petals ejected, the score raised. It never moves the victim. Callers have already asked
+        /// <see cref="ElementalTransfer.IsDecidedHere"/>.</summary>
         void ScoreHit(IVesselStatus victim, CombatHitClass hitClass, ElementalDebuffSources source, Vector3 velocity)
         {
             if (!CombatHitDrain.TryAdmit(victim, _status, hitClass, config.HitCooldown, source, out int superseded)) return;
@@ -1067,9 +1311,10 @@ namespace CosmicShore.Gameplay
         // ------------------------------------------------------------------ autopilot (input-only)
 
         /// <summary>
-        /// The AI flies the Shrike with the SAME replicated controls a human presses (vessel-ai's input-only rule): it
-        /// holds the lance while rival mass or a rival hull lies on the line, paints a rival hull its nests can reach,
-        /// undocks after a few seconds, builds a nest when it has none, and slings toward a far target ahead.
+        /// The AI flies the Shrike with the SAME replicated controls a human presses (vessel-ai's input-only rule): Charge
+        /// with the trigger held while a rival hull is in the cone and it has missiles; Space with the trigger held while
+        /// rival mass lies on the line; otherwise Time, pressing the trigger to sling at a far target ahead. Docked a few
+        /// seconds, it presses Mass to detach and leave a nest.
         /// </summary>
         void Autopilot()
         {
@@ -1084,44 +1329,61 @@ namespace CosmicShore.Gameplay
                 _aiNextScan = now + 0.25f;
                 _aiTargetsAhead = CountRivalPrisms(pos, pos + fwd * config.LanceRange,
                     config.LanceRadius.EvaluateReplicated(_status) + 2f);
-                _aiEnemyAhead = EnemyInCone(pos, fwd, config.LanceRange, 4f);
-            }
-
-            bool wantLance = _aiTargetsAhead >= config.AiLanceMinTargets || _aiEnemyAhead;
-            if (wantLance != _aiHoldingLance && TryResolve(handler, ShrikeControl.Lance, out var lanceInput))
-            {
-                _aiHoldingLance = wantLance;
-                if (wantLance) handler.PerformShipControllerActionsReplicated(lanceInput);
-                else handler.StopShipControllerActionsReplicated(lanceInput);
-            }
-
-            bool wantPaint = ArrayHealth > 0 && EnemyInCone(pos, fwd, config.LockRange,
-                config.LockCone.EvaluateReplicated(_status) * config.LockKeepScale);
-            if (wantPaint != _aiHoldingPaint && TryResolve(handler, ShrikeControl.Paint, out var paintInput))
-            {
-                _aiHoldingPaint = wantPaint;
-                if (wantPaint) handler.PerformShipControllerActionsReplicated(paintInput);
-                else handler.StopShipControllerActionsReplicated(paintInput);
-            }
-
-            bool pressDock = Docked ? _dockedFor >= config.AiDockSeconds
-                                    : !_slinging && _nestCd <= 0f && NestCount == 0 && now >= _aiNextNest;
-            if (pressDock && TryResolve(handler, ShrikeControl.Dock, out var dockInput))
-            {
-                if (!Docked) _aiNextNest = now + config.AiNestEvery;
-                handler.PerformShipControllerActionsReplicated(dockInput);
-                handler.StopShipControllerActionsReplicated(dockInput);
+                _aiEnemyAhead = EnemyInCone(pos, fwd, config.LockRange,
+                    config.LockCone.EvaluateReplicated(_status) * config.LockKeepScale);
             }
 
             Vector3 toTarget = ai.TargetPosition - pos;
-            if (!_slinging && !_tethering && _slingCd <= 0f && toTarget.magnitude >= config.AiSlingMinDistance
-                && Vector3.Angle(fwd, toTarget) <= config.AiSlingDegrees
-                && TryResolve(handler, ShrikeControl.Sling, out var slingInput))
+            Mode want = _aiEnemyAhead && MissilesReady > 0 ? Mode.Charge
+                      : _aiTargetsAhead >= config.AiLanceMinTargets ? Mode.Space
+                      : Mode.Time;
+            if (want != _mode && now >= _aiNextMode && TryResolve(handler, ModeControl(want), out var modeInput))
             {
-                handler.PerformShipControllerActionsReplicated(slingInput);
-                handler.StopShipControllerActionsReplicated(slingInput);
+                _aiNextMode = now + 0.5f;
+                if (_aiHoldingTrigger && TryResolve(handler, ShrikeControl.Trigger, out var release))
+                {
+                    handler.StopShipControllerActionsReplicated(release);
+                    _aiHoldingTrigger = false;
+                }
+                handler.PerformShipControllerActionsReplicated(modeInput);
+                handler.StopShipControllerActionsReplicated(modeInput);
+            }
+
+            if (TryResolve(handler, ShrikeControl.Trigger, out var trigger))
+            {
+                bool hold = _mode switch
+                {
+                    Mode.Charge => _aiEnemyAhead && MissilesReady > 0,
+                    Mode.Space => _aiTargetsAhead >= config.AiLanceMinTargets || _aiEnemyAhead,
+                    _ => false,
+                };
+                if (hold != _aiHoldingTrigger)
+                {
+                    _aiHoldingTrigger = hold;
+                    if (hold) handler.PerformShipControllerActionsReplicated(trigger);
+                    else handler.StopShipControllerActionsReplicated(trigger);
+                }
+                if (_mode == Mode.Time && !_slinging && !_tethering && _slingCd <= 0f
+                    && toTarget.magnitude >= config.AiSlingMinDistance && Vector3.Angle(fwd, toTarget) <= config.AiSlingDegrees)
+                {
+                    handler.PerformShipControllerActionsReplicated(trigger);
+                    handler.StopShipControllerActionsReplicated(trigger);
+                }
+            }
+
+            if (Docked && _dockedFor >= config.AiDockSeconds && TryResolve(handler, ShrikeControl.Mass, out var massInput))
+            {
+                handler.PerformShipControllerActionsReplicated(massInput);
+                handler.StopShipControllerActionsReplicated(massInput);
             }
         }
+
+        static ShrikeControl ModeControl(Mode mode) => mode switch
+        {
+            Mode.Charge => ShrikeControl.ChargeMode,
+            Mode.Time => ShrikeControl.TimeMode,
+            _ => ShrikeControl.SpaceMode,
+        };
 
         int CountRivalPrisms(Vector3 a, Vector3 b, float radius)
         {
@@ -1228,38 +1490,15 @@ namespace CosmicShore.Gameplay
         Color DomainColour()
         {
             var colorSet = _gameData?.ThemeManagerData?.ColorSet;
-            return colorSet != null ? colorSet.GetDomainSignalColor(_status.Domain) : Color.white;
+            return colorSet != null && _status != null ? colorSet.GetDomainSignalColor(_status.Domain) : Color.white;
         }
 
-        /// <summary>A turret bud or a missile: an octahedron dressed in the hull's own materials (the domain colour is
-        /// its slot 1), no collider — nothing touches it but this executor's own queries.</summary>
-        GameObject MakeBud(string label, Vector3 at, Quaternion rotation, float radius)
+        /// <summary>The hull's domain material (its renderer's slot 1, where ShipHelper paints the domain).</summary>
+        Material DomainMaterial()
         {
-            var go = new GameObject(label);
-            go.transform.SetPositionAndRotation(at, rotation);
-            go.transform.localScale = Vector3.one * radius;
-            go.AddComponent<MeshFilter>().sharedMesh = BudMesh();
-            var renderer = go.AddComponent<MeshRenderer>();
-            if (hull && hull.TryGetComponent(out MeshRenderer source))
-            {
-                var mats = source.sharedMaterials;
-                if (mats.Length > 0) renderer.sharedMaterial = mats[mats.Length > 1 ? 1 : 0];
-            }
-            return go;
-        }
-
-        static Mesh BudMesh()
-        {
-            if (_budMesh) return _budMesh;
-            Vector3[] v = { Vector3.up, Vector3.down, Vector3.left, Vector3.right, Vector3.forward, Vector3.back };
-            int[] faces = { 0, 4, 3, 0, 3, 5, 0, 5, 2, 0, 2, 4, 1, 3, 4, 1, 5, 3, 1, 2, 5, 1, 4, 2 };
-            var verts = new Vector3[faces.Length];
-            var tris = new int[faces.Length];
-            for (int i = 0; i < faces.Length; i++) { verts[i] = v[faces[i]]; tris[i] = i; }
-            _budMesh = new Mesh { name = "ShrikeBud", vertices = verts, triangles = tris };
-            _budMesh.RecalculateNormals();
-            _budMesh.RecalculateBounds();
-            return _budMesh;
+            if (!hull || !hull.TryGetComponent(out MeshRenderer source)) return null;
+            var mats = source.sharedMaterials;
+            return mats.Length > 0 ? mats[mats.Length > 1 ? 1 : 0] : null;
         }
 
         static void PlayAt(EventReference reference, Vector3 at)

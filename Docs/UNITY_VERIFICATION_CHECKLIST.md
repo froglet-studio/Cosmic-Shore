@@ -65,6 +65,62 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Shrike redesign: mode-driven RT, LT zoom with per-mode scopes, missile-growing flora, non-clipping nests (`cece/affectionate-clarke-s738vh`, 2026-10-15) — NOT EDITOR-VERIFIED
+
+**What landed:** Garrett's redesign of the Shrike, following the first port (the entry below). The record is
+`R_VesselActions/SHRIKE.md` §3 and §4. **The previous entry's controls (steps 4-7) are superseded by this one.**
+
+- New code: `ShrikeExecutor` rewritten; `ShrikeActionSO` now has six controls; new `ShrikeNestFlora` / `ShrikeMeshes`
+  and `ShrikeScopeOverlay`; `ShrikeRules` gains `NestRadiusFor`, `GrowTick`, `BetterLock` and `LanceBreaks`.
+- `ShrikeConfig` reseeded; HUD fields renamed by element; the Charge and Space icons swapped; the map's Space upgrade
+  named "Void Pierce".
+- Bindings re-applied to `Shrike.prefab`, and the four first-port control assets retired.
+
+**Verified without the editor:**
+
+- `unity_refcompile`:
+  - `--config player`: 0 project errors.
+  - `--config editor`: 0 errors in changed files. The 3 project errors are in the untouched
+    `AuthenticationServiceFacade.cs`.
+- `shrike_harness/run.sh --self-test`: 19/19 pass, and both negative controls fire (inside-out faces; nest blocks that
+  clip).
+- `author_shrike_assets.py`: `--check` passes and `--self-test` fires 11/11 negative controls. A rebuild from the donor
+  is identical to the shipped prefab.
+- `studio_to_unity.py --check`: 26/26 match.
+- These gates pass: `check_vessel_shared_channels`, `check_vessel_prefab_container`, `check_console_logging`,
+  `check_conditional_compilation`, `check_using_directives`, `check_enum_member_references` (no Shrike finding) and
+  `check_switch_label_collisions`.
+- The three scope shapes and the marker were rendered and inspected.
+- Not run: Unity, Play mode, networking.
+
+**Verify in editor** (Menu_Main ▸ Toy Box ▸ Vessel Changer ▸ Shrike):
+1. It compiles. `ShrikeTests` (19) and `ShrikeConfigTests` pass. The HUD shows four cards with no "Missing" sprite:
+   Charge (the array icon with a **0** under it), Mass, Space (the lance icon) and Time. The Space card is lit, because
+   Space is the starting mode.
+2. **Zoom (LT / RMB, held):** the view narrows smoothly to about 24° and a green ring-and-crosshair fades in. Release:
+   the FOV returns exactly to what it was. Press **RB / E**, then zoom: lock brackets round a diamond. Press **B / R**,
+   then zoom: a tether line with chevrons. The lit HUD card follows the mode.
+3. **Space mode (X / Q), RT / LMB held:** the beam breaks ordinary blocks but passes through super-shielded ones
+   (shielded blocks in a nest, for example). With the Space upgrade (Space ≥ 5, e.g. from the Element Charger), it
+   breaks them too.
+4. **Docking:** fly into any block. The hull sticks and the camera eases back noticeably. **A / Space:** the hull
+   pushes out forward, and a nest is left behind:
+   - a cup of shielded blocks, **no two touching or overlapping** (look closely, and try it at high Mass);
+   - a flora on top with **one large missile**.
+
+   The Charge card reads **1**. A second A while flying does nothing.
+5. **Crystals:** fly through a crystal. A flora sprouts where it was and visibly grows large missiles, one per 6 s, up
+   to 4, the growing one swelling. The Charge card counts up.
+6. **Charge mode (RB / E), RT held on a target:** a spinning diamond marker sits on the painted target, and each flora
+   launches a missile every 0.8 s. The missiles are large, with bright trails, home in, and blow an 18 u hole. The count
+   drops. Check the lock priority: with a rival vessel and a creature both in the cone, the vessel is painted; with a
+   creature and a plant, the creature; with a plant and mass, the plant.
+7. **Time mode (B / R), RT:** the tether flies; the hull slings to the block, docks, and the camera pulls back.
+8. Swap to another vessel while zoomed and docked: the FOV and camera distance return to normal and the scope
+   disappears.
+9. Spawn Matrix ▸ Shrike AI: it switches modes, lances mass ahead, slings, docks and detaches (leaving nests), and
+   fires missiles at you once it has some.
+
 ### 🔴 The Shrike flies in freestyle: the studio's kit ported, the prefab rebuilt (`cece/affectionate-clarke-s738vh`, 2026-10-15) — NOT EDITOR-VERIFIED
 
 **What landed:** everything in `Assets/_Scripts/Controller/Vessel/R_VesselActions/SHRIKE.md`.

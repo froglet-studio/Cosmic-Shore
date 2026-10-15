@@ -66,6 +66,7 @@ namespace CosmicShore.Tests
         {
             Near(new Vector3(0f, 11f, -4.05f), ShrikeRules.TurretLocal(false), "nest turret");
             Near(new Vector3(0f, 14f, -5.4f), ShrikeRules.TurretLocal(true), "den turret");
+            Near(new Vector3(0f, 20f, -8.1f), ShrikeRules.TurretLocal(18f), "a grown nest's turret");
         }
 
         [Test]
@@ -130,19 +131,59 @@ namespace CosmicShore.Tests
         }
 
         [Test]
-        public void Nest_RegrowsAndFiresOncePerPaint()
+        public void Flora_GrowsMissiles_FasterDocked_UpToItsMax()
         {
-            int health = 4;
-            float regen = 0f;
-            ShrikeRules.RegenTick(ref health, ref regen, 3f, dockedIn: true, regenSeconds: 6f, max: 12);
-            Assert.AreEqual(5, health, "twice as fast docked in it: 3 s is a block");
-            ShrikeRules.RegenTick(ref health, ref regen, 5f, dockedIn: false, regenSeconds: 6f, max: 12);
-            Assert.AreEqual(5, health);
-            Assert.IsTrue(ShrikeRules.NestMayFire(2, true, 0f, -1, 1));
-            Assert.IsFalse(ShrikeRules.NestMayFire(1, true, 0f, -1, 1), "never its last health block");
-            Assert.IsFalse(ShrikeRules.NestMayFire(4, true, 0f, 1, 1), "one missile per nest per paint");
-            Assert.IsFalse(ShrikeRules.NestMayFire(4, false, 0f, -1, 1), "a dead turret");
-            Assert.IsFalse(ShrikeRules.NestMayFire(4, true, 0.2f, -1, 1), "its clock");
+            int ready = 1;
+            float growth = 0f;
+            ShrikeRules.GrowTick(ref ready, ref growth, 3f, docked: true, growSeconds: 6f, max: 3);
+            Assert.AreEqual(2, ready, "twice as fast docked in its nest: 3 s grows a missile");
+            ShrikeRules.GrowTick(ref ready, ref growth, 5f, docked: false, growSeconds: 6f, max: 3);
+            Assert.AreEqual(2, ready);
+            Assert.AreEqual(5f, growth, 1e-4f, "the growing missile is 5/6 grown");
+            ShrikeRules.GrowTick(ref ready, ref growth, 1f, docked: false, growSeconds: 6f, max: 3);
+            Assert.AreEqual(3, ready);
+            ShrikeRules.GrowTick(ref ready, ref growth, 60f, docked: false, growSeconds: 6f, max: 3);
+            Assert.AreEqual(3, ready, "a full flora grows no more");
+            Assert.AreEqual(0f, growth, "and shows no growing missile");
+            Assert.IsTrue(ShrikeRules.FloraMayLaunch(1, 0f));
+            Assert.IsFalse(ShrikeRules.FloraMayLaunch(0, 0f), "no ready missile");
+            Assert.IsFalse(ShrikeRules.FloraMayLaunch(2, 0.1f), "its clock");
+        }
+
+        [Test]
+        public void Nest_NoTwoBlocksClip_AtAnyCount()
+        {
+            const float size = 4.5f;
+            for (int count = 4; count <= 40; count++)
+            {
+                float r = ShrikeRules.NestRadiusFor(count, false, size);
+                Assert.GreaterOrEqual(r, 9f, "never smaller than the page's nest");
+                // Centres further apart than a cube's bounding diameter cannot intersect, whatever their orientation.
+                for (int i = 0; i < count; i++)
+                    for (int j = i + 1; j < count; j++)
+                        Assert.Greater((ShrikeRules.NestLocal(i, count, false, r) - ShrikeRules.NestLocal(j, count, false, r)).magnitude,
+                            size * Mathf.Sqrt(3f), $"{count} blocks: {i} and {j} clip");
+            }
+            Assert.Greater(ShrikeRules.NestRadiusFor(32, false, size), ShrikeRules.NestRadiusFor(12, false, size), "Mass grows the nest");
+        }
+
+        [Test]
+        public void Lock_Priority_IsVesselsThenFaunaThenFloraThenMass()
+        {
+            Assert.IsTrue(ShrikeRules.BetterLock(ShrikeRules.LockClass.Vessel, 0.2f, ShrikeRules.LockClass.Fauna, 0.01f), "a vessel beats nearer fauna");
+            Assert.IsTrue(ShrikeRules.BetterLock(ShrikeRules.LockClass.Fauna, 0.2f, ShrikeRules.LockClass.Flora, 0.01f));
+            Assert.IsTrue(ShrikeRules.BetterLock(ShrikeRules.LockClass.Flora, 0.2f, ShrikeRules.LockClass.Mass, 0.01f));
+            Assert.IsFalse(ShrikeRules.BetterLock(ShrikeRules.LockClass.Mass, 0.01f, ShrikeRules.LockClass.Flora, 0.2f));
+            Assert.IsTrue(ShrikeRules.BetterLock(ShrikeRules.LockClass.Fauna, 0.1f, ShrikeRules.LockClass.Fauna, 0.2f), "within a class, nearer the aim");
+            Assert.IsTrue(ShrikeRules.BetterLock(ShrikeRules.LockClass.Mass, 0.5f, ShrikeRules.LockClass.None, 0f), "anything beats nothing");
+        }
+
+        [Test]
+        public void Lance_BreaksSuperShieldedOnlyWhenUpgraded()
+        {
+            Assert.IsTrue(ShrikeRules.LanceBreaks(superShielded: false, upgraded: false));
+            Assert.IsFalse(ShrikeRules.LanceBreaks(superShielded: true, upgraded: false));
+            Assert.IsTrue(ShrikeRules.LanceBreaks(superShielded: true, upgraded: true));
         }
 
         // ------------------------------------------------------------------ the hull form

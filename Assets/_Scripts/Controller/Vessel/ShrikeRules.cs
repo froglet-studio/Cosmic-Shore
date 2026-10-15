@@ -21,25 +21,52 @@ namespace CosmicShore.Gameplay
         /// Block <paramref name="index"/> of <paramref name="count"/> in the nest's cup, in the hull's local space
         /// (page <c>buildNest</c>): a golden-angle spiral down a sphere from straight behind the hull to
         /// <c>zMin</c> (−0.25 for a nest, −0.6 for the den), so the shell wraps forward past the hull's sides and leaves
-        /// the nose's way out open.
+        /// the nose's way out open. At the page's radius (9, the den's 12).
         /// </summary>
-        public static Vector3 NestLocal(int index, int count, bool isDen)
+        public static Vector3 NestLocal(int index, int count, bool isDen) => NestLocal(index, count, isDen, NestRadius(isDen));
+
+        /// <summary><see cref="NestLocal(int,int,bool)"/> on a sphere of <paramref name="radius"/>.</summary>
+        public static Vector3 NestLocal(int index, int count, bool isDen, float radius)
         {
-            float rn = NestRadius(isDen);
             float zMin = isDen ? -0.6f : -0.25f;
             float z = 1f - (index + 0.5f) / count * (1f - zMin);
             float rr = Mathf.Sqrt(Mathf.Max(0f, 1f - z * z));
             float ph = index * 2.39996f;
             // page (x, y, z) with +z behind the hull -> Unity (x, y, -z)
-            return new Vector3(rr * Mathf.Cos(ph) * rn, rr * Mathf.Sin(ph) * rn, -z * rn);
+            return new Vector3(rr * Mathf.Cos(ph) * radius, rr * Mathf.Sin(ph) * radius, -z * radius);
         }
 
-        /// <summary>The turret flora on top of the nest (page: <c>local = (0, Rn + 2, Rn * 0.45)</c>, behind the hull).</summary>
-        public static Vector3 TurretLocal(bool isDen)
+        /// <summary>The tightest spacing between two of the spiral's blocks on a UNIT sphere (it scales with the radius).</summary>
+        public static float NestMinSpacing(int count, bool isDen)
         {
-            float rn = NestRadius(isDen);
-            return new Vector3(0f, rn + 2f, -rn * 0.45f);
+            float best = float.MaxValue;
+            for (int i = 0; i < count; i++)
+            {
+                Vector3 a = NestLocal(i, count, isDen, 1f);
+                for (int j = i + 1; j < count; j++)
+                {
+                    float d = (a - NestLocal(j, count, isDen, 1f)).magnitude;
+                    if (d < best) best = d;
+                }
+            }
+            return count > 1 ? best : 2f;
         }
+
+        /// <summary>
+        /// The nest's radius with NO two blocks touching (Garrett, 2026-10-15: "the nest prisms should not have prisms
+        /// clipping into each other"). Two cubes of side s whose centres are more than s√3 apart (their bounding
+        /// spheres' diameters) cannot intersect whatever their orientation, so the cup grows until its tightest pair is
+        /// that far apart, times <paramref name="clearance"/> (a shield shell draws a little proud of the block). Never
+        /// smaller than the page's radius: more blocks (Mass) make a bigger nest, not smaller blocks.
+        /// </summary>
+        public static float NestRadiusFor(int count, bool isDen, float blockSize, float clearance = 1.1f)
+            => Mathf.Max(NestRadius(isDen), blockSize * Mathf.Sqrt(3f) * clearance / NestMinSpacing(count, isDen));
+
+        /// <summary>The turret flora on top of the nest (page: <c>local = (0, Rn + 2, Rn * 0.45)</c>, behind the hull).</summary>
+        public static Vector3 TurretLocal(bool isDen) => TurretLocal(NestRadius(isDen));
+
+        /// <summary>The turret flora on top of a nest of <paramref name="radius"/>.</summary>
+        public static Vector3 TurretLocal(float radius) => new(0f, radius + 2f, -radius * 0.45f);
 
         /// <summary>How many blocks a nest has at this Mass (page <c>mults</c>: <c>Math.round(lerp(...))</c>, which rounds
         /// halves UP — C#'s banker's rounding would not).</summary>
@@ -126,20 +153,33 @@ namespace CosmicShore.Gameplay
         public static Vector3 LaunchDirection(Vector3 up, Vector3 toTarget) => (up + toTarget.normalized).normalized;
 
         /// <summary>
-        /// One tick of a nest's turret flora (page <c>stepNests</c>): it regrows a health block every
-        /// <paramref name="regenSeconds"/>, twice as fast while its Shrike is docked in it, up to <paramref name="max"/>.
+        /// One tick of a nest flora growing its missiles (Garrett, 2026-10-15: a crystal "morph[s] into a nest flora that
+        /// visibly grows large missiles"): the growing missile fills over <paramref name="growSeconds"/>, twice as fast
+        /// while its Shrike is docked in its nest, and joins the ready missiles when full, up to <paramref name="max"/>.
+        /// <paramref name="growth"/> is the growing missile's progress in seconds (0 while the flora is full).
         /// </summary>
-        public static void RegenTick(ref int health, ref float regen, float dt, bool dockedIn, float regenSeconds, int max)
+        public static void GrowTick(ref int ready, ref float growth, float dt, bool docked, float growSeconds, int max)
         {
-            regen += dt * (dockedIn ? 2f : 1f);
-            if (regen < regenSeconds) return;
-            regen = 0f;
-            health = Mathf.Min(max, health + 1);
+            if (ready >= max) { growth = 0f; return; }
+            growth += dt * (docked ? 2f : 1f);
+            if (growth < growSeconds) return;
+            growth = 0f;
+            ready = Mathf.Min(max, ready + 1);
         }
 
-        /// <summary>May this nest fire at the painted target (page <c>launchMissiles</c>)? One missile per nest per
-        /// paint (<paramref name="firedForLock"/>), never its last health block, its turret alive and its clock run.</summary>
-        public static bool NestMayFire(int health, bool turretAlive, float fireCooldown, int firedForLock, int lockId)
-            => fireCooldown <= 0f && turretAlive && health > 1 && firedForLock != lockId;
+        /// <summary>May this flora launch at the painted target? A ready missile and its clock run.</summary>
+        public static bool FloraMayLaunch(int ready, float launchCooldown) => ready > 0 && launchCooldown <= 0f;
+
+        /// <summary>What the Targeting Array locks first (Garrett, 2026-10-15: "vessels, fauna, flora, prisms").</summary>
+        public enum LockClass { Vessel = 0, Fauna = 1, Flora = 2, Mass = 3, None = 4 }
+
+        /// <summary>Is a candidate (<paramref name="kind"/>, <paramref name="angle"/> off the nose) a better lock than
+        /// the best so far? A higher-priority class always wins; within a class, the one nearer the aim.</summary>
+        public static bool BetterLock(LockClass kind, float angle, LockClass bestKind, float bestAngle)
+            => kind < bestKind || kind == bestKind && angle < bestAngle;
+
+        /// <summary>Does the Void Lance break this block? Every block, but super-shielded mass only with the Space
+        /// upgrade (Garrett, 2026-10-15); below it, super-shielded mass lets the beam pass.</summary>
+        public static bool LanceBreaks(bool superShielded, bool upgraded) => !superShielded || upgraded;
     }
 }

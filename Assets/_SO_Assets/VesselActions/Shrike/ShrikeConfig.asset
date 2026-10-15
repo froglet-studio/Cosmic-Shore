@@ -15,6 +15,10 @@ MonoBehaviour:
   hullRadius: 3
   dockBonus: 1.6
   dockBonusShielded: 2.5
+  zoomFieldOfView: 24
+  zoomSeconds: 0.2
+  dockedCameraPullBack: 1.8
+  cameraEaseRate: 4
   dockQueryReach: 12
   dockGraceSeconds: 0.5
   undockPush: 8
@@ -67,12 +71,18 @@ MonoBehaviour:
     element: 2
     UseFloor: 1
     Floor: 6
+  nestBlockSize: 4.5
+  nestClearance: 1.1
   nestCooldown: 8
-  nestHealth: 4
-  nestHealthMax: 12
-  turretRegen: 6
-  crystalHealth: 3
+  detachNestMissiles: 1
+  leaveNestSeconds: 2
   maxNests: 3
+  turretRegen: 6
+  floraMissileMax: 4
+  maxFlora: 8
+  missileLength: 4
+  missileTrailSeconds: 0.9
+  missileTrailWidth: 1.8
   trailWavelength:
     Enabled: 1
     Value: 8
@@ -91,9 +101,15 @@ MonoBehaviour:
   onCombatHitLanded: {fileID: 11400000, guid: 45fb43a0cddb5cc3cc4dc448df994152, type: 2}
   aiLanceMinTargets: 2
   aiDockSeconds: 3
-  aiNestEvery: 25
   aiSlingMinDistance: 300
   aiSlingDegrees: 20
+  modeEvent:
+    Guid:
+      Data1: 0
+      Data2: 0
+      Data3: 0
+      Data4: 0
+    Path: 
   lanceEvent:
     Guid:
       Data1: 0

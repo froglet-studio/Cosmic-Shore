@@ -1,5 +1,5 @@
 {
-  "comment": "The Shrike: where each studio parameter lives in the game. key = the studio's own key (the SHIPPED block in Docs/Studios/VesselStudio/shrike.html, the standalone Shrike Studio artifact's source); asset + field = the Unity field it becomes. ShrikeConfig.asset rows use ShrikeConfigSO's own field names (the studio's keys verbatim); Shrike.prefab rows are the one-thumb transformer block and the trail spawner. `cruise` is the design ship's speed and lands on DefaultThrottleScaler because the prefab's DefaultMinimumSpeed is 0 (author_shrike_assets.py holds it there): cruise = MinimumSpeed + ThrottleScaler. Not mapped, and listed by --unmapped: minimumSpeed / throttleScaler (the pre-port Manta copy's 10 + 50, the page's 'prefab' ship, which the port retired), the ElementalFloat ranges (lanceRadiusAt0/At10, slingCooldownAt0/At10, lockConeAt0/At10, nestBlocksAt0/At10, trailWaveAt10: nested in ShrikeConfig.asset, ported by hand and held by ShrikeConfigTests) and arkRange (the minigames' arena, lab-only). Edit this file, never the assets by hand.",
+  "comment": "The Shrike: where each studio parameter lives in the game. key = the studio's own key (the SHIPPED block in Docs/Studios/VesselStudio/shrike.html, the standalone Shrike Studio artifact's source); asset + field = the Unity field it becomes. ShrikeConfig.asset rows use ShrikeConfigSO's own field names (the studio's keys verbatim); Shrike.prefab rows are the one-thumb transformer block and the trail spawner. `cruise` is the design ship's speed and lands on DefaultThrottleScaler because the prefab's DefaultMinimumSpeed is 0 (author_shrike_assets.py holds it there): cruise = MinimumSpeed + ThrottleScaler. Not mapped, and listed by --unmapped: minimumSpeed / throttleScaler (the pre-port Manta copy's 10 + 50, the page's 'prefab' ship, which the port retired), the ElementalFloat ranges (lanceRadiusAt0/At10, slingCooldownAt0/At10, lockConeAt0/At10, nestBlocksAt0/At10, trailWaveAt10: nested in ShrikeConfig.asset, ported by hand and held by ShrikeConfigTests) arkRange (the minigames' arena, lab-only), and nestHealth / nestHealthMax / crystalHealth (the lab's turret health blocks, retired in the game on 2026-10-15 when a crystal became a nest flora that grows missiles; turretRegen is now one flora's time to grow a missile). Edit this file, never the assets by hand.",
   "vessel": "Shrike",
   "page": "Docs/Studios/VesselStudio/shrike.html",
   "rows": [
@@ -109,24 +109,9 @@
       "field": "nestCooldown"
     },
     {
-      "key": "nestHealth",
-      "asset": "Assets/_SO_Assets/VesselActions/Shrike/ShrikeConfig.asset",
-      "field": "nestHealth"
-    },
-    {
-      "key": "nestHealthMax",
-      "asset": "Assets/_SO_Assets/VesselActions/Shrike/ShrikeConfig.asset",
-      "field": "nestHealthMax"
-    },
-    {
       "key": "turretRegen",
       "asset": "Assets/_SO_Assets/VesselActions/Shrike/ShrikeConfig.asset",
       "field": "turretRegen"
-    },
-    {
-      "key": "crystalHealth",
-      "asset": "Assets/_SO_Assets/VesselActions/Shrike/ShrikeConfig.asset",
-      "field": "crystalHealth"
     },
     {
       "key": "maxNests",

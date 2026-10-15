@@ -22,6 +22,16 @@ Changer toy).
 - **Flight.** The game flies the page's **design** ship (`cruise` 18, all throttle). `minimumSpeed` and
   `throttleScaler` describe the pre-port Manta copy, so the clone does not map them.
 
+- **The game is now ahead of this studio.** The same day, Garrett redesigned the controls and the nests in Unity:
+  - LT is zoom, and RT does the mode's action;
+  - Mass detaches and leaves a nest;
+  - crystals become nest flora that grow missiles;
+  - the lock priority is vessels, then fauna, then flora, then prisms;
+  - the lance pierces super-shielded mass only with the Space upgrade.
+
+  The studio page still models the first design. Bring it level before the next round of tuning here.
+  `R_VesselActions/SHRIKE.md` §3 and §6 have the details.
+
 §1 below is the state before the port.
 
 ## 1. What the game shipped before the port (measured 2026-10-15, bleeding-edge)

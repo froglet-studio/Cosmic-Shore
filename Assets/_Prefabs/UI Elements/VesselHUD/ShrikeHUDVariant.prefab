@@ -184,10 +184,10 @@ MonoBehaviour:
   upgradePunchDuration: 0.35
   abilityLockups: {fileID: 0}
   animSettings: {fileID: 0}
-  lanceGauge: {fileID: 7700000000000001203}
-  nestGauge: {fileID: 7700000000000001223}
-  arrayGauge: {fileID: 7700000000000001213}
-  slingGauge: {fileID: 7700000000000001233}
+  chargeGauge: {fileID: 7700000000000001203}
+  massGauge: {fileID: 7700000000000001223}
+  spaceGauge: {fileID: 7700000000000001213}
+  timeGauge: {fileID: 7700000000000001233}
   gaugeColor: {r: 0.59, g: 0.65, b: 0.76, a: 1}
   readyColor: {r: 0.6156863, g: 1, b: 0.1803922, a: 1}
   colorBlendRate: 15
@@ -298,7 +298,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 21300000, guid: adb67c096f7d1b58ca3efe7a986dafeb, type: 3}
+  m_Sprite: {fileID: 21300000, guid: d26bf70eaf8378fc0bc63fd06f406669, type: 3}
   m_Type: 0
   m_PreserveAspect: 1
   m_FillCenter: 1
@@ -432,7 +432,7 @@ GameObject:
   - component: {fileID: 7700000000000001202}
   - component: {fileID: 7700000000000001203}
   m_Layer: 5
-  m_Name: LanceGauge
+  m_Name: ChargeGauge
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -507,7 +507,7 @@ GameObject:
   - component: {fileID: 7700000000000001212}
   - component: {fileID: 7700000000000001213}
   m_Layer: 5
-  m_Name: ArrayGauge
+  m_Name: SpaceGauge
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -582,7 +582,7 @@ GameObject:
   - component: {fileID: 7700000000000001232}
   - component: {fileID: 7700000000000001233}
   m_Layer: 5
-  m_Name: SlingGauge
+  m_Name: TimeGauge
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -657,7 +657,7 @@ GameObject:
   - component: {fileID: 7700000000000001222}
   - component: {fileID: 7700000000000001223}
   m_Layer: 5
-  m_Name: NestGauge
+  m_Name: MassGauge
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -822,7 +822,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 21300000, guid: d26bf70eaf8378fc0bc63fd06f406669, type: 3}
+  m_Sprite: {fileID: 21300000, guid: adb67c096f7d1b58ca3efe7a986dafeb, type: 3}
   m_Type: 0
   m_PreserveAspect: 1
   m_FillCenter: 1

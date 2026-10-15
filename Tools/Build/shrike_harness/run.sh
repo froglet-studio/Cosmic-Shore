@@ -41,8 +41,8 @@ if [ "${1:-}" = "--self-test" ]; then
   sed 's/Quad(m, p00, p01, p11, p10, accent)/Quad(m, p00, p10, p11, p01, accent)/' "$FORM" > "$OUT/FormFlipped.cs"
   grep -q 'Quad(m, p00, p10, p11, p01, accent)' "$OUT/FormFlipped.cs"
   build_and_run "$OUT/FormFlipped.cs" "$RULES" fail "frustum sides inside out"
-  # 2. A nest that fires its last health block.
-  sed 's/health > 1 \&\& firedForLock/health > 0 \&\& firedForLock/' "$RULES" > "$OUT/RulesLastBlock.cs"
-  grep -q 'health > 0 && firedForLock' "$OUT/RulesLastBlock.cs"
-  build_and_run "$FORM" "$OUT/RulesLastBlock.cs" fail "fires its last health block"
+  # 2. The nest's clearance dropped: its blocks clip into each other.
+  sed 's/blockSize \* Mathf.Sqrt(3f) \* clearance/blockSize * clearance/' "$RULES" > "$OUT/RulesClipping.cs"
+  grep -q 'blockSize \* clearance /' "$OUT/RulesClipping.cs"
+  build_and_run "$FORM" "$OUT/RulesClipping.cs" fail "nest blocks clip"
 fi
