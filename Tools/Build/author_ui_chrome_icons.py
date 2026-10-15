@@ -21,13 +21,14 @@ supersampling, margin or PNG encoding. Docs/STYLE_FOUNDATION.md sections 1.2, 5 
   * 256x256 with a 24px margin, matching the vendor sub-sprites they replace so no
     RectTransform moves.
 
-TEN glyphs. Five arrived with the vendor swap - FOUR of them for six replaced references, and one consolidation is deliberate. `CancelButton`
+THIRTEEN glyphs. Five arrived with the vendor swap - FOUR of them for six replaced references, and one consolidation is deliberate. `CancelButton`
 (Menu_Main) and `Close Button` (Arcade Screen) wore two DIFFERENT vendor glyphs while
 meaning the same thing; the style guide's icon list names one "X Button", so they share
 `chrome_close` here. That is the one intentional look change in the swap. `chrome_lock` and
 `chrome_crystal` were added for the style-B component kit (Docs/MENU_REDESIGN_B.md, item 0);
 `chrome_plus`, `chrome_star` and `chrome_star_fill` for the arcade (item 3): the party panel's open
-seat and the game card's favourite star, off and on.
+seat and the game card's favourite star, off and on; `chrome_globe`, `chrome_pin` and
+`chrome_people` for the weekly leaderboard's scope tabs (item 4).
 
 Usage:
     python3 Tools/Build/author_ui_chrome_icons.py            # write the PNGs + .meta files
@@ -163,6 +164,41 @@ def chrome_star_fill():
     return fill(_star())
 
 
+def _octagon(r, cx=0.0, cy=0.0):
+    return [(cx + r * math.cos(math.pi / 8 + k * math.pi / 4), cy + r * math.sin(math.pi / 8 + k * math.pi / 4))
+            for k in range(8)]
+
+
+def chrome_globe():
+    """World scope - an octagonal globe (section 5: no circles) with its equator and a
+    meridian lens. The weekly leaderboard's World tab (item 4)."""
+    m = ring(_octagon(0.80), w=W * 1.05)
+    m |= stroke([(-0.78, 0.00), (0.78, 0.00)], w=W * 0.90)
+    m |= ring([(0.00, 0.72), (0.32, 0.38), (0.32, -0.38), (0.00, -0.72), (-0.32, -0.38), (-0.32, 0.38)],
+              w=W * 0.90)
+    return m
+
+
+def chrome_pin():
+    """Regional scope - a map pin cut from straight edges: a faceted head over a point, with
+    a hollow core. The weekly leaderboard's Regional tab (item 4)."""
+    m = ring([(0.00, -0.84), (-0.56, 0.06), (-0.56, 0.46), (-0.22, 0.80), (0.22, 0.80),
+              (0.56, 0.46), (0.56, 0.06)], w=W * 1.05)
+    m |= ring(_octagon(0.20, 0.0, 0.36), w=W * 0.90)
+    return m
+
+
+def chrome_people():
+    """Friends scope - two pilots, heads and shoulders, the rear one offset. The weekly
+    leaderboard's Friends tab (item 4)."""
+    m = ring(_octagon(0.24, -0.20, 0.30), w=W * 0.95)
+    m |= stroke([(-0.68, -0.76), (-0.68, -0.24), (-0.40, -0.04), (0.00, -0.04), (0.28, -0.24), (0.28, -0.76)],
+                w=W * 0.95)
+    m |= stroke([(0.22, 0.62), (0.40, 0.70), (0.58, 0.54), (0.58, 0.28), (0.40, 0.10)], w=W * 0.90)
+    m |= stroke([(0.50, -0.04), (0.72, -0.04), (0.84, -0.20), (0.84, -0.60)], w=W * 0.90)
+    return m
+
+
 GLYPHS = [
     ("chrome_close",      chrome_close),
     ("chrome_reroll",     chrome_reroll),
@@ -174,6 +210,9 @@ GLYPHS = [
     ("chrome_plus",       chrome_plus),
     ("chrome_star",       chrome_star),
     ("chrome_star_fill",  chrome_star_fill),
+    ("chrome_globe",      chrome_globe),
+    ("chrome_pin",        chrome_pin),
+    ("chrome_people",     chrome_people),
 ]
 
 

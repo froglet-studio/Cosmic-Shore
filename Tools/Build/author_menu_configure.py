@@ -91,7 +91,9 @@ S = dict(
     briefing=script("GameBriefingView"), objective=script("ObjectiveBoxView"), preview=script("ModePreviewWindow"),
     toast=script("PreviewMicroToast"), favorite=script("FavoriteIcon"), controls=script("VesselControlsPanel"),
     row=script("VesselControlRow"), video=script("ModeVideoView"), pool=script("MaelstromPoolListView"),
-    pool_entry=script("MaelstromPoolEntry"), chip=script("DomainAvatarChip"), node=script("KitIntensityNode"),
+    pool_entry=script("MaelstromPoolEntry"), chip=script("DomainAvatarChip"),
+    lbpanel=script("WeeklyChallengeLeaderboardPanel"), lbmodal=script("WeeklyChallengeLeaderboardModal"),
+    podium=script("LeaderboardPodiumSlot"), band=script("LeaderboardRewardBand"), node=script("KitIntensityNode"),
     dtile=script("KitDomainTile"), hull=script("KitHullTile"), close=script("ModalWindowCloseButton"),
     modal=script("ArcadeGameConfigureModal"), audio=script("MenuAudio"),
     kt=K.kit_script("KitText"), th=K.kit_script("KitThemedGraphic"), button=K.kit_script("KitButton"),
@@ -114,7 +116,8 @@ AVATAR_PLACEHOLDER = A.AVATAR_PLACEHOLDER
 PART_PREFABS = ("ConfigureSeatChip", "ConfigureAbilityRow", "ConfigurePoolRow", "ConfigureIntensityNode",
                 "ConfigureDomainColumn", "ConfigureHullTile")
 VIEW_PREFABS = ("ConfigureView", "ConfigureArenaView", "ConfigureMaelstromView")
-PREFABS = PART_PREFABS + VIEW_PREFABS
+BOARD_PREFABS = ("LeaderboardRow", "LeaderboardView")
+PREFABS = PART_PREFABS + VIEW_PREFABS + BOARD_PREFABS
 
 DOMAINS = (("Jade", 1), ("Ruby", 2), ("Gold", 4))         # Domains enum values (Blue = 3 is never drawn)
 
@@ -163,7 +166,8 @@ STUB_KIND = {"go": (1, None), "rt": (224, None), "tmp": (114, K.TMP_UGUI), "img"
              "node": (114, S["node"]), "dtile": (114, S["dtile"]), "hull": (114, S["hull"]), "chip": (114, S["chip"]),
              "row": (114, S["row"]), "entry": (114, S["pool_entry"]), "cg": (225, None),
              "minigame": (114, S["minigame"]), "arena": (114, S["arena"]), "maelstrom": (114, S["maelstrom"]),
-             "briefing": (114, S["briefing"]), "favorite": (114, S["favorite"])}
+             "briefing": (114, S["briefing"]), "favorite": (114, S["favorite"]),
+             "lbpanel": (114, S["lbpanel"])}
 
 
 def stub_doc(fid, comp, src, guid, pid):
@@ -1032,11 +1036,229 @@ def panel_body(ctx, go, kind):
 # Prefab outputs
 # --------------------------------------------------------------------------------------------
 
+
+# --------------------------------------------------------------------------------------------
+# The weekly leaderboard - LeaderboardRow / LeaderboardView (item 4b)
+# --------------------------------------------------------------------------------------------
+
+LB_ROW_W, LB_ROW_H = 1336, 58
+REWARD_BANDS = ((1, 1, "1st", "100"), (2, 2, "2nd", "50"), (3, 3, "3rd", "20"), (4, 20, "4th - 20th", "10"),
+                (21, 0, "21st and below", "5"))
+PODIUM = (("Podium1", 1, "Purchase"), ("Podium2", 2, "TextLight"), ("Podium3", 3, "Purchase"))
+TABS = (("World", "chrome_globe", "World"), ("Regional", "chrome_pin", "Regional"), ("Friends", "chrome_people", "Friends"))
+ALL_GAMES = A.ALL_GAMES
+PROFILE_ICONS = A.PROFILE_ICONS
+
+
+def color(tok_name, alpha=1.0):
+    return K.col(tok(tok_name, alpha))
+
+
+def build_leaderboard_row():
+    root = N("root", "LeaderboardRow", R(size=(LB_ROW_W, LB_ROW_H)))
+    root.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("SurfaceDark", 0.35)))
+    root.add("cg", 225, canvas_group(True)).add("le", 114, le(ph=LB_ROW_H))
+    rank = root.child(N("Rank", "Rank", R((0, 0.5), None, (32, 0), (60, 28), (0, 0.5))))
+    rank.add("cr", 222, K.canvas_renderer()).add("tmp", 114, text("4", "Data", tok("TextLight"))) \
+        .add("kt", 114, K.kit_text("Data", "TextLight", driven=True))
+    image_node(root, "AvatarBack", "AvatarBack", R((0, 0.5), None, (156, 0), (40, 40)), "SurfaceDark",
+               K.kit_sprite("kit_oct_fill"))
+    art_node(root, "Avatar", "Avatar", R((0, 0.5), None, (156, 0), (38, 38)), AVATAR_PLACEHOLDER, preserve=True)
+    name = root.child(N("Name", "Name", R((0, 0.5), None, (196, 0), (700, 26), (0, 0.5))))
+    name.add("cr", 222, K.canvas_renderer()).add("tmp", 114, A.ellipsis(text("PILOT", "Body", tok("TextLight")))) \
+        .add("kt", 114, K.kit_text("Body", "TextLight", driven=True))
+    t = root.child(N("Time", "Time", R((1, 0.5), None, (-24, 0), (200, 28), (1, 0.5))))
+    t.add("cr", 222, K.canvas_renderer()).add("tmp", 114, text("1:04.88", "Data", tok("TextLight"), align="right")) \
+        .add("kt", 114, K.kit_text("Data", "TextLight", driven=True))
+    image_node(root, "Rule", "Rule", R((0, 0), (1, 0), (0, 0), (0, 1), (0.5, 0)), "SurfaceDark")
+    return root
+
+
+def podium_slot(parent, key, rank, accent, amin, amax, top, height):
+    n = parent.child(N(key, key, R(amin, amax, (0, -top), (0, height), (0.5, 1))))
+    n.add("cg", 225, canvas_group(False)).add("in", 114, M.entrance("Pop" if rank == 1 else "Rise", stagger=rank))
+    first = rank == 1
+    frame(n, f"{key}/Frame", 14, "SurfaceVeryDark", accent if first else "SurfaceDark")
+    if first:
+        n.children[-1].comps = [(k, cid, b) if k != "img" else
+                                ("img", 114, K.image(tok(accent), K.kit_sprite("kit_sliver14_line2"), True))
+                                for k, cid, b in n.children[-1].comps]
+    badge = image_node(n, f"{key}/Badge", "Badge", R((0, 0.5), None, (46, 0), (46, 46)), accent,
+                       K.kit_sprite("kit_hex_fill"), alpha=1.0 if rank != 3 else 0.55, preserve=True)
+    num = badge.child(N(f"{key}/Badge/Num", "Num", STRETCH))
+    label(num, str(rank), "H3", "SurfaceBlack", align="center")
+    image_node(n, f"{key}/AvatarBack", "AvatarBack", R((0, 0.5), None, (122, 0), (62, 62)), "SurfaceDark",
+               K.kit_sprite("kit_oct_fill"))
+    av = art_node(n, f"{key}/Avatar", "Avatar", R((0, 0.5), None, (122, 0), (58, 58)), AVATAR_PLACEHOLDER, preserve=True)
+    if first:
+        av.add("amb", 114, M.ambient("Float", period=3.4, amplitude=5))
+    nm = n.child(N(f"{key}/Name", "Name", R((0, 0.5), (1, 0.5), ((170 - 20) / 2, 14), (-(170 + 20), 26))))
+    nm.add("cr", 222, K.canvas_renderer()).add("tmp", 114, A.ellipsis(text("PILOT", "H3", tok("TextLight")))) \
+        .add("kt", 114, K.kit_text("H3", "TextLight"))
+    tm = n.child(N(f"{key}/Time", "Time", R((0, 0.5), None, (170, -16), (200, 26), (0, 0.5))))
+    label(tm, "0:58.12", "Data", "TextLight")
+    n.add("slot", 114, lambda ctx, go, k=key: mono(go, S["podium"],
+          f"  group: {ref(ctx.c(k, 'cg'))}\n"
+          f"  avatar: {ref(ctx.c(k + '/Avatar', 'img'))}\n"
+          f"  nameText: {ref(ctx.c(k + '/Name', 'tmp'))}\n"
+          f"  timeText: {ref(ctx.c(k + '/Time', 'tmp'))}\n"))
+    return n
+
+
+def reward_band(parent, i, lo, hi, caption, amount):
+    key = f"Rewards/Band{i + 1}"
+    n = parent.child(N(key, f"Band{i + 1}", TL(22, 52 + i * 48, 376, 44)))
+    mark = n.child(N(f"{key}/Mark", "Mark", STRETCH))
+    mark.add("cg", 225, canvas_group(False))
+    frame(mark, f"{key}/Mark/Frame", 10, "SurfaceDark", "ControlActive")
+    label(mark.child(N(f"{key}/Mark/You", "You", R((0, 0.5), None, (150, 0), (60, 16), (0, 0.5)))), "You", "Label",
+          "ControlActive")
+    label(n.child(N(f"{key}/Rank", "Rank", R((0, 0.5), None, (14, 0), (200, 24), (0, 0.5)))), caption, "Body", "TextLight")
+    label(n.child(N(f"{key}/Amount", "Amount", R((1, 0.5), None, (-40, 0), (100, 26), (1, 0.5)))), amount, "Data",
+          "Purchase", align="right")
+    ic = image_node(n, f"{key}/Crystal", "Crystal", R((1, 0.5), None, (-14, 0), (18, 18), (1, 0.5)), "Purchase",
+                    K.chrome_sprite("chrome_crystal"), preserve=True)
+    n.add("band", 114, lambda ctx, go: mono(go, S["band"],
+          f"  minRank: {lo}\n  maxRank: {hi}\n  localMark: {ref(ctx.c(key + '/Mark', 'cg'))}\n"))
+    return n
+
+
+def tab_node(parent, i, key, icon, caption):
+    k = f"Tabs/{key}"
+    n = parent.child(N(k, key, TL(i * 120, 0, 120, 108)))
+    ring = n.child(N(f"{k}/FocusRing", "FocusRing", R((0.5, 1), None, (0, 6), (100, 88), (0.5, 1))))
+    ring.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("Cta", 0.0), K.kit_sprite("kit_hex_line2")))
+    fill = n.child(N(f"{k}/Fill", "Fill", R((0.5, 1), None, (0, 0), (88, 76), (0.5, 1))))
+    fill.add("cr", 222, K.canvas_renderer()) \
+        .add("img", 114, K.image(tok("SurfaceVeryDark"), K.kit_sprite("kit_hex_fill"), raycast=True))
+    bord = n.child(N(f"{k}/Border", "Border", R((0.5, 1), None, (0, 0), (88, 76), (0.5, 1))))
+    bord.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("SurfaceDark"), K.kit_sprite("kit_hex_line2")))
+    ic = n.child(N(f"{k}/Icon", "Icon", R((0.5, 1), None, (0, -22), (32, 32), (0.5, 1))))
+    ic.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("NeutralLightest"), K.chrome_sprite(icon), preserve=True))
+    lab = n.child(N(f"{k}/Label", "Label", R((0, 0), (1, 0), (0, 0), (0, 18), (0.5, 0))))
+    lab.add("cr", 222, K.canvas_renderer()).add("tmp", 114, text(caption.upper(), "Label", tok("NeutralLightest"), align="center")) \
+        .add("kt", 114, K.kit_text("Label", driven=True))
+    n.add("tile", 114, A.tile_body(c(f"{k}/FocusRing", "img"), c(f"{k}/Fill", "img"), c(f"{k}/Border", "img"), 14,
+                                   primary=[c(f"{k}/Icon", "img"), c(f"{k}/Label", "tmp")], unsel_primary="NeutralLightest",
+                                   lock=None))
+    # The hex tile keeps the 2px band in both states (KitTile's hex convention).
+    body = n.comps[-1][2]
+    n.comps[-1] = ("tile", 114, lambda ctx, go, b=body: b(ctx, go).replace(
+        K.sprite_ref(K.kit_sprite("kit_sliver14_line1")), K.sprite_ref(K.kit_sprite("kit_hex_line2"))).replace(
+        K.sprite_ref(K.kit_sprite("kit_sliver14_line2")), K.sprite_ref(K.kit_sprite("kit_hex_line2"))))
+    n.add("audio", 114, A.menu_audio(11))
+    return n
+
+
+def build_leaderboard_view():
+    root = N("root", "LeaderboardView", STRETCH)
+    image_node(root, "Veil", "Veil", R((0, 0), (1, 1), (0, -42), (0, -84)), "SurfaceBlack", alpha=0.72, raycast=True)
+
+    right = root.child(N("Board", "Board", R((0, 1), (1, 1), ((500 - 40) / 2, -LEFT_TOP), (-(500 + 40), COL_H), (0.5, 1))))
+    tabs = right.child(N("Tabs", "Tabs", TL(8, 0, 360, 108)))
+    tabs.add("in", 114, M.entrance("Rise")).add("cg", 225, canvas_group(True))
+    for i, (key, icon, cap) in enumerate(TABS):
+        tab_node(tabs, i, key, icon, cap)
+    thirds = (((0, 1), (0.326, 1)), ((0.337, 1), (0.663, 1)), ((0.674, 1), (1, 1)))
+    podium_slot(right, "Podium1", 1, "Purchase", thirds[1][0], thirds[1][1], 112, 130)
+    podium_slot(right, "Podium2", 2, "TextLight", thirds[0][0], thirds[0][1], 132, 110)
+    podium_slot(right, "Podium3", 3, "Purchase", thirds[2][0], thirds[2][1], 132, 110)
+
+    lst = right.child(N("List", "List", R((0, 1), (1, 1), (0, -260), (0, COL_H - 260), (0.5, 1))))
+    lst.add("cg", 225, canvas_group(True)).add("in", 114, M.entrance("Rise", stagger=4))
+    fill = lst.child(N("List/Fill", "Fill", STRETCH))
+    fill.add("cr", 222, K.canvas_renderer()) \
+        .add("img", 114, K.image(tok("SurfaceVeryDark", 0.92), K.kit_sprite("kit_sliver14_fill"), True)) \
+        .add("th", 114, themed("SurfaceVeryDark", 0.92))
+    lst.child(M.grid_node("List/Grid"))
+    bord = lst.child(N("List/Border", "Border", STRETCH))
+    bord.add("cr", 222, K.canvas_renderer()) \
+        .add("img", 114, K.image(tok("SurfaceDark"), K.kit_sprite("kit_sliver14_line1"), True)).add("th", 114, themed("SurfaceDark"))
+    M.bracket_nodes(lst, "List/Bracket")
+    section_label(lst, "List/HeadRank", "HeadRank", "Rank", TL(42, 28, 100, 18), "NeutralLightest")
+    section_label(lst, "List/HeadPilot", "HeadPilot", "Pilot", TL(126, 28, 200, 18), "NeutralLightest")
+    section_label(lst, "List/HeadTime", "HeadTime", "Time", TR(42, 28, 120, 18), "NeutralLightest", align="right")
+    themed_line(lst, "List/HeadRule", "HeadRule", R((0, 1), (1, 1), (0, -54), (-44, 1), (0.5, 1)), "SurfaceDark")
+    sc = lst.child(N("List/Scroll", "Scroll", R((0, 0), (1, 1), (0, -30), (-44, -100))))
+    sc.add("scroll", 114, A.scroll_rect("List/Scroll/Viewport/Content", "List/Scroll/Viewport", 20))
+    vp = sc.child(N("List/Scroll/Viewport", "Viewport", STRETCH))
+    vp.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image((1.0, 1.0, 1.0, 0.0), raycast=True)) \
+        .add("mask", 114, A.rect_mask())
+    content = vp.child(N("List/Scroll/Viewport/Content", "Content", R((0, 1), (1, 1), (0, 0), (0, 0), (0.5, 1))))
+    content.add("vlg", 114, K.hv_layout(True, (0, 0, 0, 0), 4, 0, (1, 1), (1, 0))).add("csf", 114, K.fitter(0, 2))
+    empty = lst.child(N("List/Empty", "Empty", R((0.5, 0.5), None, (0, -20), (700, 90))))
+    empty.add("cg", 225, canvas_group(False))
+    label(empty.child(N("List/Empty/Text", "Text", TL(0, 0, 700, 36))), "No times yet - be the first.", "H3", "TextLight",
+          align="center")
+    label(empty.child(N("List/Empty/Hint", "Hint", TL(0, 44, 700, 40))),
+          "Finish this week's challenge to put a time on the board.", "Body", "NeutralLightest", align="center")
+
+    left = root.child(N("Side", "Side", TL(40, LEFT_TOP, 420, COL_H)))
+    best = left.child(N("Best", "Best", TL(0, 0, 420, 200)))
+    best.add("cg", 225, canvas_group(True)).add("in", 114, M.entrance("Rise", stagger=1))
+    frame(best, "Best/Frame", 14)
+    M.bracket_nodes(best, "Best/Bracket")
+    section_label(best, "Best/Title", "Title", "Your best run", TL(22, 22, 300, 18))
+    label(best.child(N("Best/Rank", "Rank", TL(22, 46, 130, 58))), "-", "Display", "TextLight")
+    label(best.child(N("Best/Time", "Time", TL(150, 66, 220, 30))), "--:--.--", "Data", "NeutralLightest")
+    label(best.child(N("Best/Line", "Line", TL(22, 124, 376, 52))),
+          "Your rank on this board and your best time this week. One attempt a day.", "BodySmall", "NeutralLightest",
+          valign="top", wrap=True)
+    rw = left.child(N("Rewards", "Rewards", TL(0, 220, 420, 340)))
+    rw.add("cg", 225, canvas_group(True)).add("in", 114, M.entrance("Rise", stagger=2))
+    frame(rw, "Rewards/Frame", 14)
+    M.bracket_nodes(rw, "Rewards/Bracket")
+    section_label(rw, "Rewards/Title", "Title", "Rewards", TL(22, 22, 300, 18))
+    for i, band in enumerate(REWARD_BANDS):
+        reward_band(rw, i, *band)
+    label(rw.child(N("Rewards/Note", "Note", TL(22, 300, 376, 22))), "Paid in crystals when the week closes.",
+          "BodySmall", "NeutralLightest")
+
+    hd = root.child(N("Header", "Header", R((0, 1), (1, 1), (0, -108), (-80, 64), (0.5, 1))))
+    hd.add("in", 114, M.entrance("Rise", distance=10)).add("cg", 225, canvas_group(True))
+    label(hd.child(N("Header/Eyebrow", "Eyebrow", TL(0, 0, 600, 18))), "Weekly challenge - Leaderboard", "Label",
+          "NeutralLightest")
+    label(hd.child(N("Header/Title", "Title", TL(0, 20, 1100, 46))), "Weekly challenge", "H1", "TextLight")
+    A.back_button(hd)
+    back_w = 16 + (K.label_width("B", "Label") + 24) + 10 + K.label_width("BACK", "ButtonSmall") + 16
+    cd = hd.child(N("Header/Countdown", "Countdown", R((1, 0), None, (-(back_w + 24), 6), (200, 28), (1, 0))))
+    label(cd, "6d 03:12:09", "Data", "TextLight", align="right")
+    label(hd.child(N("Header/EndsIn", "EndsIn", R((1, 0), None, (-(back_w + 24 + 212), 10), (120, 18), (1, 0)))),
+          "Ends in", "Label", "NeutralLightest", align="right")
+
+    lst.add("panel", 114, lambda ctx, go: mono(go, S["lbpanel"],
+            f"  rowContainer: {ref(ctx.rt('List/Scroll/Viewport/Content'))}\n"
+            f"  rowTemplate: {K.ref(K.FileIds('LeaderboardRow')('root#rt'), asset_guid('LeaderboardRow'))}\n"
+            "  rowCount: 10\n"
+            f"  templateRank: {K.ref(K.FileIds('LeaderboardRow')('Rank#tmp'), asset_guid('LeaderboardRow'))}\n"
+            f"  templateAvatar: {K.ref(K.FileIds('LeaderboardRow')('Avatar#img'), asset_guid('LeaderboardRow'))}\n"
+            f"  templateName: {K.ref(K.FileIds('LeaderboardRow')('Name#tmp'), asset_guid('LeaderboardRow'))}\n"
+            f"  templateScore: {K.ref(K.FileIds('LeaderboardRow')('Time#tmp'), asset_guid('LeaderboardRow'))}\n"
+            f"  templateBackground: {K.ref(K.FileIds('LeaderboardRow')('root#img'), asset_guid('LeaderboardRow'))}\n"
+            "  titleText: {fileID: 0}\n"
+            f"  emptyState: {ref(ctx.go('List/Empty'))}\n"
+            f"  emptyStateText: {ref(ctx.c('List/Empty/Text', 'tmp'))}\n"
+            "  emptyBoardMessage: No times yet - be the first.\n  loadingMessage: Loading...\n"
+            f"  profileIcons: {K.ref(11400000, PROFILE_ICONS, 2)}\n"
+            f"  localRowColor: {color('ControlActive')}\n  rowColor: {color('TextLight')}\n"
+            "  localNameSuffix: ' *'\n"
+            "  podiumColors:\n  - {r: 1, g: 0.84, b: 0.25, a: 1}\n  - {r: 0.78, g: 0.82, b: 0.86, a: 1}\n"
+            "  - {r: 0.8, g: 0.53, b: 0.3, a: 1}\n"
+            + refs("podium", [ctx.c(k, "slot") for k, _, _ in PODIUM])
+            + refs("rewardBands", [ctx.c(f"Rewards/Band{i + 1}", "band") for i in range(len(REWARD_BANDS))])
+            + f"  bestRankText: {ref(ctx.c('Best/Rank', 'tmp'))}\n"
+            f"  bestTimeText: {ref(ctx.c('Best/Time', 'tmp'))}\n"
+            f"  localRowBackground: {color('SurfaceDark')}\n"
+            "  rowFadeDuration: 0.22\n  rowStagger: 0.04\n  maxStaggerTotal: 0.32\n  rowStartScale: 0.94\n"))
+    return root
+
+
 BUILDERS = {"ConfigureSeatChip": build_seat_chip, "ConfigureAbilityRow": build_ability_row,
             "ConfigurePoolRow": build_pool_row, "ConfigureIntensityNode": build_intensity_node,
             "ConfigureDomainColumn": build_domain_column, "ConfigureHullTile": build_hull_tile,
             "ConfigureView": lambda: build_view("arcade"), "ConfigureArenaView": lambda: build_view("arena"),
-            "ConfigureMaelstromView": lambda: build_view("maelstrom")}
+            "ConfigureMaelstromView": lambda: build_view("maelstrom"),
+            "LeaderboardRow": build_leaderboard_row, "LeaderboardView": build_leaderboard_view}
 
 
 def prefab_outputs():
@@ -1213,6 +1435,14 @@ def scene_transform(text, new_prefab_text):
         sc.replace(ids["modal"], rewrite_modal(sc.docs[ids["modal"]], mount, panels=[]))
         mounts[kind] = mount
 
+    lb = LEADERBOARD
+    assert sc.field(lb["root_go"], "m_Name") == lb["name"], "the leaderboard window moved"
+    assert sc.script(lb["modal"]) == S["lbmodal"], "WeeklyChallengeLeaderboardModal moved"
+    board = BoardMount()
+    mount_window(sc, lb, board)
+    sc.replace(lb["modal"], rewrite_board_modal(sc.docs[lb["modal"]], board))
+    mounts["leaderboard"] = board
+
     # The arcade modal's instance: overrides naming objects the prefab no longer has go, and the two
     # scene panels it lists are the new Arena / Maelstrom panels.
     pi = sc.docs[SCENE_PI]
@@ -1233,6 +1463,54 @@ def scene_transform(text, new_prefab_text):
                       lambda mm, k=kind: mm.group(1) + ref(mounts[k].panel()), body)
     sc.replace(SCENE_PI, head + "    m_Modifications:\n" + body + tail)
     return sc.text(), mounts
+
+
+LEADERBOARD = dict(root_go="6411554931226249784", content_go="940898935156434695", modal="6411554931226249785",
+                   name="LeaderboardConfigureModal",
+                   retired={"1321063439027614107": "Background", "1620340554": "Header",
+                            "3510227859404491540": "LeaderboardHeader", "1589591837": "Time",
+                            "1368105608": "ButtonTabs", "1559680147": "LeaderboardScrollView",
+                            "6857392746860362337": "CloseButton", "2024813792": "RankRewardButton",
+                            "156670760": "RankRewardPanel"})
+LB_REFS = {"panel": ("List#panel", "lbpanel"), "timeLeftText": ("Header/Countdown#tmp", "tmp"),
+           "challengeTitleText": ("Header/Title#tmp", "tmp"), "worldTab": ("Tabs/World#tile", "tile"),
+           "regionalTab": ("Tabs/Regional#tile", "tile"), "friendsTab": ("Tabs/Friends#tile", "tile")}
+LB_DROPPED = ("rankRewardButton", "rankRewardPanel", "rankRewardBackdrop", "closeButton")
+
+
+class BoardMount(Mount):
+    def __init__(self):
+        self.view = "LeaderboardView"
+        self.ctx = Ctx("Menu_Main/Leaderboard")
+        self.inst = str(self.ctx.fid("View#inst"))
+        self.stub = str(self.ctx.fid("View#stub"))
+        self.guid = asset_guid(self.view)
+        self.kind = None
+
+    def docs(self, parent_rt, mods=()):
+        out = []
+        K.emit_instance(self.ctx, K.Instance("View", self.view, self.guid, self.view, STRETCH, mods), parent_rt, out)
+        for key, comp in LB_REFS.values():
+            out.append(self.stub_text(key, comp))
+        return [K.unity_empty_scalars(d) for d in out]
+
+    def ids(self):
+        return {self.inst, self.stub} | {self.stub_fid(k) for k, _ in LB_REFS.values()}
+
+
+def rewrite_board_modal(doc, mount):
+    for field, (key, _) in LB_REFS.items():
+        doc = field_set(doc, field, ref(mount.stub_fid(key)))
+    for field in LB_DROPPED:
+        doc = field_set(doc, field, "{fileID: 0}")
+    doc = field_set(doc, "timeLeftPrefix", "")
+    # Fields added by item 4b (WeeklyChallengeLeaderboardModal.games / countdownInDays), in
+    # declaration order right after challengeTitleText.
+    doc = re.sub(r"^  games: .*\n|^  countdownInDays: .*\n", "", doc, flags=re.M)
+    doc = re.sub(r"(^  challengeTitleText: .*\n)",
+                 lambda m: m.group(1) + f"  games: {{fileID: 11400000, guid: {ALL_GAMES}, type: 2}}\n"
+                 "  countdownInDays: 1\n", doc, count=1, flags=re.M)
+    return doc
 
 
 def outputs():
@@ -1354,6 +1632,27 @@ def validate_prefabs(files):
     strip = re.search(r"avatarStrip: \{fileID: (-?\d+)\}", dtile).group(1)
     assert A.kind_of(col, strip) == (114, K.VLAYOUT), "the domain column's avatarStrip is not its seat VLG"
 
+    board = files[prefab_path("LeaderboardView")]
+    BV = K.FileIds("LeaderboardView")
+    _, panel = comp_doc(board, BV("List#panel"))
+    assert panel, "LeaderboardView: no WeeklyChallengeLeaderboardPanel"
+    for field, want in (("emptyState", 1), ("emptyStateText", TMP), ("bestRankText", TMP), ("bestTimeText", TMP)):
+        wired(board, panel, field, want, "LeaderboardView")
+    slots = re.findall(r"^  - \{fileID: (-?\d+)\}", panel.split("  podium:")[1].split("  rewardBands:")[0], re.M)
+    assert len(slots) == 3 and all(A.kind_of(board, x) == (114, S["podium"]) for x in slots), "the podium needs three slots"
+    bands = re.findall(r"^  - \{fileID: (-?\d+)\}", panel.split("  rewardBands:")[1].split("  bestRankText:")[0], re.M)
+    assert len(bands) == len(REWARD_BANDS) and all(A.kind_of(board, x) == (114, S["band"]) for x in bands), \
+        "the rewards table needs its five bands"
+    ranges = []
+    for x in bands:
+        b = comp_doc(board, x)[1]
+        ranges.append((int(re.search(r"minRank: (\d+)", b).group(1)), int(re.search(r"maxRank: (\d+)", b).group(1))))
+    for (lo, hi), (nlo, _) in zip(ranges, ranges[1:]):
+        assert hi and nlo == hi + 1, f"reward bands must tile without overlap (Q4): {ranges}"
+    assert ranges[-1][1] == 0, "the last reward band must be open-ended"
+    tmpl = f"rowTemplate: {{fileID: {K.FileIds('LeaderboardRow')('root#rt')}, guid: {asset_guid('LeaderboardRow')}"
+    assert tmpl in panel, "the row template is not the LeaderboardRow prefab"
+
     for kind, view in VIEW_NAME.items():
         text = files[prefab_path(view)]
         V = K.FileIds(view)
@@ -1442,6 +1741,18 @@ def validate_scene(text, files):
         assert re.search(r"launchPanels\.Array\.data\[" + str(ids["panel_slot"]) + r"\]'\n      value: \n"
                          r"      objectReference: \{fileID: " + mount.panel() + r"\}", apis), \
             f"the arcade modal's launchPanels[{ids['panel_slot']}] is not the new {kind} panel"
+    board = BoardMount()
+    lb = LEADERBOARD
+    for go in lb["retired"]:
+        assert not sc.has(go), f"the leaderboard still holds retired {lb['retired'][go]}"
+    assert sc.has(board.inst), "the leaderboard view instance is missing"
+    mdoc = sc.docs[lb["modal"]]
+    for field, (key, comp) in LB_REFS.items():
+        assert re.search(r"^  " + field + r": \{fileID: " + board.stub_fid(key) + r"\}", mdoc, re.M), \
+            f"WeeklyChallengeLeaderboardModal.{field} does not point into the view"
+    for field in LB_DROPPED:
+        assert re.search(r"^  " + field + r": \{fileID: 0\}", mdoc, re.M), f"the leaderboard still names its old {field}"
+    assert f"games: {{fileID: 11400000, guid: {ALL_GAMES}" in mdoc, "the leaderboard title has no card list"
     live = A.anchors_of(files[MODAL_PREFAB])
     for target in re.findall(r"- target: \{fileID: (-?\d+), guid: " + K.meta_guid(MODAL_PREFAB), sc.docs[SCENE_PI]):
         assert target in live, f"the arcade modal instance still overrides a retired object ({target})"
@@ -1495,6 +1806,14 @@ def self_test(files):
         ("a modal copy given a panel", lambda f: f.__setitem__(SCENE, f[SCENE].replace(
             "  launchPanels: []", f"  launchPanels:\n  - {{fileID: {Mount('Menu_Main/Configure/arena', 'ConfigureArenaView').panel()}}}", 1)),
          lambda f: validate_scene(f[SCENE], f)),
+    ]
+    lbv = prefab_path("LeaderboardView")
+    cases += [
+        ("overlapping reward bands", lambda f: f.__setitem__(lbv, f[lbv].replace("  minRank: 21\n", "  minRank: 20\n", 1)),
+         validate_prefabs),
+        ("a leaderboard still naming its reward tooltip",
+         lambda f: f.__setitem__(SCENE, re.sub(r"^  rankRewardButton: \{fileID: 0\}", "  rankRewardButton: {fileID: 7}",
+                                               f[SCENE], flags=re.M)), lambda f: validate_scene(f[SCENE], f)),
     ]
     ok = all(expect(l, m, c) for l, m, c in cases)
     print("OK: every negative control fires" if ok else "FAIL: a negative control did not fire")

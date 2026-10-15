@@ -65,7 +65,7 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
-### 🔴 Style-B menu redesign, item 4a: the game configure windows (`claude/new-session-76hnyc`, 2026-10-15) — NOT EDITOR-VERIFIED
+### 🔴 Style-B menu redesign, item 4: the game configure windows and the weekly leaderboard (`claude/new-session-76hnyc`, 2026-10-15) — NOT EDITOR-VERIFIED
 
 The arcade card window (`ArcadeGameConfigureModal.prefab`) and the Arena and Maelstrom windows in
 Menu_Main rebuilt from the approved Configure boards (`Docs/MENU_REDESIGN_B.md` section 14): one
@@ -97,6 +97,11 @@ reference compiles clean; `check_generated_assets.py` at its 788 baseline.
    4; the pool list fills per intensity with its "N of M games" summary; Start fires once.
 10. Favourite star toggles on all three windows.
 11. Pad: focus lands on the tree (never Back); d-pad left/right no longer changes hidden steppers.
+12. Weekly leaderboard (LEADERBOARD on the weekly card): title is the card name, "Ends in 6d hh:mm:ss"
+    ticks; World / Regional / Friends hex tabs select through the tile (Friends dim while disabled);
+    ranks 1-3 on the podium (1st centre, floating face), the list starts at 4th, your row tinted with
+    " *"; "Your best run" shows your ordinal and this week's best time; your reward band is outlined
+    with "You"; an empty board reads "No times yet - be the first."; B / Back closes only the board.
 
 ---
 

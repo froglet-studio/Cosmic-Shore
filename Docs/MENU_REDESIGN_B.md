@@ -38,7 +38,7 @@ Legend: `Planned` ▸ `Mockup` ▸ `Mockup approved` ▸ `Built` ▸ `Approved i
 | 1 | Top nav (`Safe Area/NavBar`) | Approved in editor (2026-10-14); **revision approved 2026-10-14**: translucent band, see §13.1 | `Main.dc.html` (interactive), `TopNavHover.dc.html`, `TopNavLocked.dc.html` on the Menu Redesign B canvas | `8d6d2acb`, `99ef3ccd` + docs |
 | 2 | Hangar screen: grid, detail and the spend-crystals panel | Approved in editor (2026-10-14) | `Hangar.dc.html` (interactive), `HangarLocked`, `HangarSpend`, `HangarShort`, `HangarNoArt`, `HangarNotes` on the Menu Redesign B canvas | `661a7f1f`, `7987b896`, `96c81faa` + docs |
 | 3 | Arcade modal (`ArcadeScreenModal`): explore grid plus the party/friends panel | Built | `Arcade.dc.html` (interactive), `ArcadeSolo`, `ArcadeNoFriends`, `ArcadePicks`, `ArcadeNotes` on the Menu Redesign B canvas | `f9b59fd4`, `75cd38e7`, `5cc56adb` + docs |
-| 4 | Game configure: `ArcadeGameConfigureModal`, plus the Maelstrom and Arena configure windows and the weekly leaderboard | Configure windows Built (2026-10-15, section 14); weekly leaderboard building | `Configure.dc.html` (interactive), `ConfigureArena`, `ConfigureMaelstrom`, `ConfigureWeekly`, `ConfigureWeeklySpent`, `ConfigureGuest`, `ConfigureLocked`, `WeeklyLeaderboard` (interactive), `LeaderboardEmpty`, `ConfigureNotes` | |
+| 4 | Game configure: `ArcadeGameConfigureModal`, plus the Maelstrom and Arena configure windows and the weekly leaderboard | Built (2026-10-15, section 14) | `Configure.dc.html` (interactive), `ConfigureArena`, `ConfigureMaelstrom`, `ConfigureWeekly`, `ConfigureWeeklySpent`, `ConfigureGuest`, `ConfigureLocked`, `WeeklyLeaderboard` (interactive), `LeaderboardEmpty`, `ConfigureNotes` | |
 | 5 | Profile screen, Profile modal (avatar / display name), Episodes entry | Mockup approved (2026-10-14) | `Profile.dc.html` (interactive), `ProfileFresh`, `ProfileModal` (interactive), `ProfileName`, `ProfileNameError`, `ProfileNameTaken`, `ProfileNotes` | |
 | 6 | Home screen: hub row, header, settings and freestyle buttons, invite popup | Mockup approved (2026-10-14) | `Home.dc.html` (interactive), `HomeInvite`, `HomeFocus`, `HomeOffline`, `HomeNotes` | |
 | 7 | Ark screen (Elemental Converter) | Mockup approved (2026-10-14) | `Ark.dc.html` (interactive), `ArkConverting`, `ArkDone`, `ArkNotes` | |
@@ -730,3 +730,22 @@ a Prefab Variant cannot change; everything they share is a nested prefab.
 not a still; Q1 allowed each ambient piece to go alone). The hint lines under each step are static.
 
 **Retired:** `Tools/Build/author_arena_launch_panel_layout.py` now stands down (its carousel is gone).
+
+### 14.1 The weekly leaderboard (item 4b)
+
+`LeaderboardConfigureModal`'s Content is one `LeaderboardView` instance (same generator): hex scope
+tabs (KitTile, new `chrome_globe` / `chrome_pin` / `chrome_people` glyphs), a three-step podium
+(`LeaderboardPodiumSlot`), the rank list (`LeaderboardRow.prefab` as the panel's template), a "your
+best run" card and the inline rewards table (`LeaderboardRewardBand`; Q4 bands 1st / 2nd / 3rd /
+4th - 20th / 21st and below, the local pilot's band outlined). The reward tooltip and its button are
+gone (the rewards are on the page). The empty, loading and region messages now reach the screen.
+
+Code: `WeeklyChallengeLeaderboardPanel` gained the optional podium, bands, best-run fields and a
+CanvasGroup empty state; with a podium the list starts at 4th and the row tint marks you.
+`WeeklyChallengeLeaderboardModal` draws KitTile tabs through the tile (no colour fade), reads the
+title from the card list (`games`: "Skim Race", not "SKIMRACE") and counts down in days
+(`countdownInDays`: "6d 03:12:09"). `FormatDaysCountdown` and `Ordinal` are covered by edit-mode tests.
+
+Departures: no percentile bar on the best-run card (the board service exposes no total entrant count);
+podium medals are Purchase / Light / Purchase at 55 % (Q3 - no medal tokens exist).
+Retired: `FrogletTools > Interface > Wire Weekly Challenge Leaderboard` (its scene names are gone).

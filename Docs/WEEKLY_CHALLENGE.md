@@ -608,7 +608,7 @@ and the reward tooltip in the mock-up is that system's surface, not this one's.
 | Which regional board this player is on | `_Scripts/System/WeeklyChallenge/WeeklyChallengeRegion.cs` |
 | The ROW LIST | `_Scripts/UI/Views/WeeklyChallengeLeaderboardPanel.cs` |
 | The WINDOW (tabs, countdown, reward tooltip, close) | `_Scripts/UI/Modals/WeeklyChallengeLeaderboardModal.cs` |
-| Wiring it up | `_Scripts/Editor/FrogletTools/WeeklyChallengeLeaderboardWirer.cs` |
+| Wiring it up | `Tools/Build/author_menu_configure.py` (the style-B board, `LeaderboardView.prefab`; the old FrogletTools wirer is retired) |
 | The ids | `WeeklyChallengeCatalogSO.leaderboardId` + `.regionalLeaderboards` (authored in the tool) |
 
 **`WeeklyChallengeRanking` is a project type, not the UGS entry it is built from.** A view taking a
