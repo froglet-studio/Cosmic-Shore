@@ -1467,3 +1467,45 @@ entrance used to fade the three empty placeholder steps up to alpha 1.
 Each touched generator now requires its entrances (`menu_b_motion.require_entrances`, run first in
 validation) and plants a strip (`strip_entrances`) as a negative control.
 
+
+## 23. Feature-parity audit against the old UI (2026-10-15)
+
+The user's bar for the first full playtest: every feature the old menus and HUD had must still
+work, in the new look. This audit compares everything reachable from `Menu_Main.unity` and
+`GameCanvas.prefab` on `origin/bleeding-edge` (the old UI, merged into this branch first) with this
+branch. "Reachable" means the scene or prefab plus every prefab it nests or references. The audit
+scripts are mechanical and were run, not estimated.
+
+**Bleeding-edge merged first** (`17cd51731`). Everything is kept from both sides. The one feature
+that landed on top of the old configure modal while this branch was rebuilding it is the Skim Race
+/ Slingshot / Warpline **AI difficulty** row. It is rebuilt in style B on `ConfigureView`
+(`author_menu_configure.ai_row`): three plates under the domain columns. It ships hidden and the
+panel shows it only for a card that offers it. It is wired to `ArcadeLaunchPanel.aiDifficultyPicker`
+and covered by a negative control.
+
+| Check | Old -> new | Result |
+|---|---|---|
+| Script classes no longer reachable from Menu_Main | 14 | 7 are replaced by a style-B subclass of the same class: `GameCard` -> `KitGameCard`, `FriendInfoSlot` -> `KitPartySlot`, `OnlineInfoEntry` / `RequestInfoEntry` -> `KitOnlineRow` / `KitRequestRow`, `QuestItemCard` -> `KitQuestCard`, `ToyVariantCard` -> `KitToyVariantCard`, `DomainInfoData` -> `KitDomainTile`. 3 are built-in UI scripts (Scrollbar, GridLayoutGroup). The rest are below. |
+| `QuickPlayButton` (on the old Maelstrom card) | removed | That card ran BOTH `OpenMaelstrom` (persistent) AND QuickPlayButton's Skim Race launch (runtime listener). The new card opens the Maelstrom only. |
+| `WeeklyChallengePlayButton` x3 | removed | The Arcade weekly card's Play button was **inactive**. The other two sat on the old configure windows next to the real Start and were never reached. The weekly challenge opens from the Home "Up next" card (`ScreenSwitcher.OpenWeeklyChallenge`) and the Arcade weekly card. |
+| `IntStepper` / `PlayerCountButton` (player and domain counts) | replaced | The configure tree's domain tiles and per-domain AI seats (item 4a). The modal's `pcStepper` / `dcStepper` uses are all null-guarded. |
+| `HangarVesselGridCard` | replaced | `HangarVesselTile` (item 2, approved in editor). |
+| `ArcadeDPadNav` | retired | EventSystem navigation (item 3). |
+| GameCanvas `TrapezoidGraphic` x3 | replaced | The goal rows' plates (item 12a). |
+| Persistent button calls no longer present | 11 menu, 7 HUD | Every one is wired in code now, except: **`ScreenSwitcher.OnClickProfileModal`** from the Home avatar's lamp. That was the one real gap, fixed: the Home **avatar** opens the profile window again (`author_menu_home`, negative control). The old `GameOverPanel`'s Replay / Main menu are the scoreboard's code-wired Play again / Main menu / Leave lobby (item 12d). |
+| References set on bleeding-edge and null now, on components on both sides | 17 | Every one is null-guarded in code, and the feature it served has a replacement. For example, the leaderboard's close button and reward panel became the Back button and the inline rewards (item 4b). |
+| Missing scripts in changed assets | 0 new | The only unresolved script guids are package scripts (Image, TMP, layout groups) that the old scene used too. |
+| Cross-prefab references to an object that does not exist | 0 new | Three into `Cell.prefab`, identical on bleeding-edge. |
+| Game-mode scene overrides into removed GameCanvas objects | 0 | All 37 scenes that nest GameCanvas. |
+| `Find("name")` lookups whose name disappeared | 3 | Fallbacks in `QuestItemCard` only. `KitQuestCard` draws its own states. |
+| Settings options | same | Every old option is in the new window. The old music / SFX sliders (`AudioLevelSlider`) and the new ones both write `GameSetting`, which `AudioSystem` applies. The old haptics slider was unwired, and so is the new one. |
+
+**Left as they are, deliberately:**
+- Defect 14: the freestyle `Game UI` rect. It renders correctly, and re-anchoring it blind moves
+  every child.
+- The spectator avatar: the old bar had none either. Adding one needs a profile-icon list wired in
+  every game scene.
+- The live legacy HUD objects (section 22.6): a code change across 15 modes, for a `/refactor`
+  pass.
+
+The playtest script for the first full session is `Docs/MENU_REDESIGN_B_PLAYTEST.md`.

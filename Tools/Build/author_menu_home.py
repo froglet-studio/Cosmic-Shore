@@ -20,7 +20,9 @@ GameObject, its fileID and its name; only its look, its rect and its children ch
         an Avatar image inside a masked octagon), the name, an Online / Offline label (the lamp's
         statusLabel, unwired until now), a divider and the crystal balance (CrystalCurrencyDisplay).
         The lamp sits on the avatar's corner; its stray ScreenSwitcher.OnClickProfileModal call is
-        removed (it opened the profile window AND asked Go offline?).
+        removed (it opened the profile window AND asked Go offline?). The profile window keeps its Home
+        entry point on the AVATAR itself (a Button calling ProfileIconSelectView.OpenAvatar), so a press
+        on the avatar still opens it, as it did on the old screen.
     Question bar: under the chip - the question, a note line on what it changes (ConfirmQuestionBar.
         noteLabel, fed by OnlineStatusIndicator), Yes / No straddling the bottom edge. Its own Button's
         stray OpenDisplayName call is removed.
@@ -311,6 +313,7 @@ def _last_doc(p, node):
 # --------------------------------------------------------------------------------------------
 
 CHIP = dict(x=40, y=108, w=600, h=112)
+PROFILE_WINDOW = "8675064058193410727"   # Menu_Main's ProfileIconSelectView (author_menu_profile IDS["window"])
 
 
 def chip_node():
@@ -396,6 +399,10 @@ def patch_header(p):
     clip_rt = p.emit(avatar_nodes(), I["avatar_rt"], I["avatar_rt"])
     p.children(I["avatar_rt"], [clip_rt, I["lamp_rt"]])
     p.field(I["home_comp"], "avatarImage", ref(p.ctx.c("Avatar/Clip/Avatar", "img")))
+    # Parity with the old Home: pressing the avatar opens the profile window (its Avatar tab).
+    p.add_comp(I["avatar_go"], "button", 114, lambda ctx, go: mono(go, A.BUTTON,
+               A.selectable() + f"  m_TargetGraphic: {ref(I['avatar_img'])}\n"
+               + A.calls([(PROFILE_WINDOW, "CosmicShore.UI.ProfileIconSelectView", "OpenAvatar")])))
 
     # Lamp: a diamond on the avatar's corner; no profile call (it asks Go offline?).
     p.rect(I["lamp_rt"], R((1, 0), (1, 0), (4, 4), (28, 28), (0.5, 0.5)))
@@ -703,6 +710,10 @@ def validate(files):
         assert "m_MethodName: PlayAudio" in d, f"{key}Button lost its press sound"
         assert f"  preferredFocus: {1 if key == 'Arcade' else 0}\n" in sc.docs[hub], f"{key}: preferredFocus wrong"
     assert re.search(r"  m_Calls: \[\]\n", sc.docs[I["lamp_btn"]]), "the lamp still opens the profile window"
+    avatar_btn = str(ctx.fid(f"{I['avatar_go']}#button"))
+    assert sc.has(avatar_btn) and f"m_Target: {{fileID: {PROFILE_WINDOW}}}" in sc.docs[avatar_btn] \
+        and "m_MethodName: OpenAvatar\n" in sc.docs[avatar_btn], "pressing the Home avatar no longer opens the profile window"
+    assert sc.script(PROFILE_WINDOW) == C.script("ProfileIconSelectView"), "PROFILE_WINDOW is not the profile window"
     lamp = sc.docs[I["lamp_comp"]]
     assert f"  statusLabel: {{fileID: {ctx.c('Name/Status', 'tmp')}}}" in lamp, "the lamp's status label is unwired"
     assert f"  avatarImage: {{fileID: {ctx.c('Avatar/Clip/Avatar', 'img')}}}" in sc.docs[I["home_comp"]], "HomeScreen.avatarImage is not the masked avatar"
@@ -761,6 +772,11 @@ def self_test(files):
         j = s.index("--- ", i + 4)
         f[SCENE] = s[:i] + re.sub(r"(  statusLabel: )\{fileID: -?\d+\}", r"\1{fileID: 0}", s[i:j]) + s[j:]
 
+    def avatar_dead(f):
+        s = f[SCENE]
+        i = s.index("m_MethodName: OpenAvatar\n", s.index(f"  m_TargetGraphic: {{fileID: {IDS['avatar_img']}}}"))
+        f[SCENE] = s[:i] + "m_MethodName: OpenAvatarX\n" + s[i + len("m_MethodName: OpenAvatar\n"):]
+
     def arcade_unfocused(f):
         hub = HUBS[1][5]
         s = f[SCENE]
@@ -770,6 +786,7 @@ def self_test(files):
     cases = [
         ("the invite's drop-in stripped", lambda f: f.__setitem__(invite_path(), M.strip_entrances(f[invite_path()]))),
         ("the lamp's status label unwired", unwire_status),
+        ("the Home avatar no longer opens the profile window", avatar_dead),
         ("Arcade not the pad's first stop", arcade_unfocused),
         ("a hub left a plain Button", lambda f: f.__setitem__(SCENE, f[SCENE].replace(
             f"guid: {S['kitbutton']}", f"guid: {S['button']}", 1))),

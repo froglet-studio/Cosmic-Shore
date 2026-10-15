@@ -65,6 +65,28 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Style-B redesign: bleeding-edge merged, AI difficulty row in style B, Home avatar opens the profile window (`claude/new-session-76hnyc`, 2026-10-15) — NOT EDITOR-VERIFIED
+
+Section 23 of `Docs/MENU_REDESIGN_B.md`. The whole-session playtest script is
+`Docs/MENU_REDESIGN_B_PLAYTEST.md`. There is no editor in the session, so `/verify-unity` is still
+owed. Offline checks:
+- The player reference compile is clean.
+- The editor compile's only errors are in `AuthenticationServiceFacade.cs`, which is identical to
+  bleeding-edge; they come from the unfetchable Unity Playmode package.
+- Every Menu_Main generator passes `--check`.
+- `author_menu_configure` and `author_menu_home` each have a new negative control.
+
+**Verify in editor:**
+1. Skim Race configure window: an "AI pilots" row with Easy / Medium / Hard sits under the domain
+   columns. A press lights the plate, and a guest sees the host's pick but cannot change it. On
+   Joust the row is absent and the pad skips it.
+2. Home: pressing the avatar opens the profile window on the Avatar tab. The lamp on its corner
+   still only asks "Go offline?".
+3. The Cell Selector lists the Black Hole and Crystal Wormhole cells (bleeding-edge's Menu_Main
+   change, merged).
+
+---
+
 ### 🔴 Style-B redesign, motion pass: menu windows replay their entrances on open (`claude/new-session-76hnyc`, 2026-10-15) — NOT EDITOR-VERIFIED
 
 Section 22.8 of `Docs/MENU_REDESIGN_B.md`. There is no editor in the session, so `/verify-unity`
