@@ -100,6 +100,7 @@ namespace CosmicShore.ECS
         {
             _runtimeOverride = null;
             _linearizeOverride = null;
+            _forceMeshRendererStamps = false;
         }
         static bool _configLoaded;
         // OPT-IN: defaults OFF. The instanced path only renders correctly once the
@@ -150,6 +151,32 @@ namespace CosmicShore.ECS
 
         /// <summary>Runtime A/B override (null = fall back to config). New prisms follow the new value; existing ones keep their current path until reuse.</summary>
         public static void SetRuntimeOverride(bool? enabled) => _runtimeOverride = enabled;
+
+        // ------------------------------------------------------------------
+        // The no-compute MeshRenderer stamp path (Docs/PRISM_ANIMATION.md §4.11)
+        // ------------------------------------------------------------------
+
+        static bool _forceMeshRendererStamps;
+
+        /// <summary>
+        /// True on a device where Entities Graphics cannot run (<see cref="EntitiesGraphicsSupportProbe"/>: no
+        /// SRP, no compute — every WebGL2 browser —, or compute kernels that fail to load), and while the dev A/B
+        /// forces it (<c>prismpath mpb</c>). On such a device no prism ever gets a companion entity, so the
+        /// clock-material stamps go to each prism's MaterialPropertyBlock instead
+        /// (<see cref="PrismMeshRendererStamps"/>) and the death visuals to a small pooled GameObject carrier
+        /// (<c>PrismMeshRendererDebris</c>). Keyed off the device probe, never a build define. Everywhere else it is
+        /// false and strict mode holds unchanged: a prism without an entity snaps and screams.
+        /// </summary>
+        public static bool UsesMeshRendererStamps =>
+            _forceMeshRendererStamps || !EntitiesGraphicsSupportProbe.IsSupported;
+
+        /// <summary>Whether the dev A/B currently forces the MeshRenderer stamp path.</summary>
+        public static bool MeshRendererStampsForced => _forceMeshRendererStamps;
+
+        /// <summary>Dev A/B (the <c>prismpath mpb</c> console command): force the MeshRenderer stamp path on a
+        /// device that HAS Entities Graphics. Only meaningful together with <c>SetRuntimeOverride(false)</c> and a
+        /// re-sync of the live prisms, so no prism keeps an entity the stamps would land on first.</summary>
+        public static void SetMeshRendererStampsForced(bool forced) => _forceMeshRendererStamps = forced;
 
         // ------------------------------------------------------------------
         // Clock-material animation (Docs/PRISM_ANIMATION.md, LOCKED law)
