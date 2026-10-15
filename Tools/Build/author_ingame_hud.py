@@ -573,7 +573,8 @@ def pause_text(text_):
 
 CONNECT = "Assets/_Prefabs/UI Elements/In Game/ConnectingPanel.prefab"
 WHITRABT = K.meta_guid("Assets/Unity Assests/TextMesh Pro/Resources/Fonts & Materials/whitrabt SDF.asset")
-CN = dict(comp="6370090134550638757", safe_rt="268860854097267997", status_rt="7647039353653187114",
+CN = dict(comp="6370090134550638757", root_go="470661231859203382", root_rt="5402023128368193864",
+          root_img="2388631188305556708", safe_rt="268860854097267997", status_rt="7647039353653187114",
           status_tmp="5105126948944046106", mode_rt="7234322143272291273", mode_tmp="6280339008487199906",
           rank_tmp="1901962995261546283", preview_rt="4036379287790713793", slider_rt="4629373923633661124",
           track_go="5177954019794184100", track_img="8125581187658145292", fill_go="8684485316077403885",
@@ -633,8 +634,40 @@ def connect_text(text_):
     comp = insert_after_field(comp, "phaseTitle", "progressText", f"{{fileID: {p.ctx.c('Connect/Progress', 'tmp')}}}")
     comp = insert_after_field(comp, "progressText", "elapsedText", f"{{fileID: {p.ctx.c('Connect/Elapsed', 'tmp')}}}")
     comp = insert_after_field(comp, "elapsedText", "phaseTitleEntrance", f"{{fileID: {p.ctx.c('Connect/Phase', 'in')}}}")
+    comp = insert_after_field(comp, "gameModeText", "backdropArt", f"{{fileID: {p.ctx.c('Connect/Backdrop/Drift/Art', 'img')}}}")
+    comp = insert_after_field(comp, "backdropArt", "games", K.ref(11400000, ARCADE_GAMES, 2))
     p.replace(CN["comp"], comp)
+    # The backdrop (section 28): the mode's card art drifting under a dim, over a solid base, in
+    # place of the flat purple-blue sprite. It bleeds; the readout stays in the safe area.
+    p.body(CN["root_img"], HM.img_body(tok("SurfaceBlack"), raycast=True), CN["root_go"])
+    backs = backdrop_nodes()
+    added = []
+    after = CN["comp"]
+    for n in backs:
+        added.append(p.emit(n, CN["root_rt"], after))
+        after = HM._last_doc(p, n)
+    p.children(CN["root_rt"], added + [k for k in p.kids(CN["root_rt"]) if k not in added])
     return p.text()
+
+
+ARCADE_GAMES = "402ca7eefc2aeb64baaa140c43312bcd"   # ArcadeGames.asset (SO_GameList)
+
+
+def backdrop_nodes():
+    clip = N("Connect/Backdrop", "Backdrop", STRETCH)
+    clip.add("rmask", 114, A.rect_mask())
+    drift = clip.child(N("Connect/Backdrop/Drift", "Drift", R((0, 0), (1, 1), (0, 0), (160, 90))))
+    drift.add("cover", 114, lambda ctx, go: K.mono(go, K.kit_script("KitCoverImage"),
+              f"  image: {{fileID: {ctx.c('Connect/Backdrop/Drift/Art', 'img')}}}\n")) \
+        .add("pan", 114, HM.M.ambient("Pan", period=28, amplitude=0.06))
+    art = drift.child(N("Connect/Backdrop/Drift/Art", "Art", STRETCH))
+    art.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(K.WHITE))
+    dim = N("Connect/Dim", "Dim", STRETCH)
+    dim.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("SurfaceBlack", 0.55))).add("th", 114, H.themed("SurfaceBlack", 0.55))
+    fade = N("Connect/BottomFade", "BottomFade", R((0, 0), (1, 0), (0, 240), (0, 480)))
+    fade.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("SurfaceBlack", 0.92), K.kit_sprite("kit_fade_v"))) \
+        .add("th", 114, H.themed("SurfaceBlack", 0.92))
+    return [clip, dim, fade]
 
 
 # --------------------------------------------------------------------------------------------
@@ -1271,8 +1304,9 @@ def validate(files):
     check_local_refs(CONNECT, cn)
     assert f"guid: {WHITRABT}" not in cn, "the connecting panel still draws in the off-spec whitrabt face"
     cd = docs_of(cn)
-    for f in ("phaseTitle", "progressText", "elapsedText", "statusText", "gameModeText", "progressSlider"):
+    for f in ("phaseTitle", "progressText", "elapsedText", "statusText", "gameModeText", "progressSlider", "backdropArt"):
         assert re.search(r"^  %s: \{fileID: [1-9-]" % f, cd[CN["comp"]], re.M), f"ConnectingPanelController.{f} is not wired"
+    assert f"  games: {K.ref(11400000, ARCADE_GAMES, 2)}" in cd[CN["comp"]], "the connecting backdrop has no game list to find a mode's art in"
     for key in ("status_tmp", "mode_tmp"):
         assert f"guid: {K.SEMIBOLD[0]}" in cd[CN[key]], f"the connecting panel's {key} is not Chakra Petch SemiBold"
     assert "m_Sprite: {fileID: 0}" in cd[CN["fill_img"]], "the connecting bar still wears the legacy loading sprite"
@@ -1406,6 +1440,8 @@ def self_test(files):
     def sub(path, old, new):
         return lambda f: f.__setitem__(path, f[path].replace(old, new, 1))
     cases = [
+        ("the connecting backdrop unwired", lambda f: f.__setitem__(CONNECT, re.sub(
+            r"(  backdropArt: )\{fileID: -?\d+\}", r"\1{fileID: 0}", f[CONNECT], count=1))),
         ("the lockup plate back to the old near-black", sub(LOCKUP, LOCKUP_FIELDS["plateColor"], "{r: 0.024, g: 0.031, b: 0.063, a: 0.86}")),
         ("the LOCKED card pitch moved", sub(LOCKUP, "  cardPitch: 128\n", "  cardPitch: 140\n")),
         ("RT named wrong", sub(GLYPHS, "    padLabel: RT\n", "    padLabel: R2\n")),

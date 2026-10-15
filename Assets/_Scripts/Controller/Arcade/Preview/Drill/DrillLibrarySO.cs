@@ -107,6 +107,11 @@ namespace CosmicShore.Gameplay
         [SerializeField] LessonTemplateSO twoThumbLesson;
         [SerializeField] LessonTemplateSO oneThumbLesson;
 
+        [Tooltip("Offer Skip on EVERY Lesson, the account's first ones included (the owner, 2026-10-15: " +
+                 "\"even if those come we need a skip button\"). Off restores D7: the first Lesson, and the " +
+                 "first two-thumb Lesson, cannot be skipped.")]
+        [SerializeField] bool everyLessonSkippable = true;
+
         [Tooltip("Seconds into a skippable Lesson before Skip appears (D2).")]
         [SerializeField, Min(0f)] float lessonSkipDelaySeconds = 3f;
 
@@ -157,6 +162,7 @@ namespace CosmicShore.Gameplay
             scheme == FlightScheme.OneThumb ? oneThumbLesson : twoThumbLesson;
 
         public float LessonSkipDelaySeconds => lessonSkipDelaySeconds;
+        public bool EveryLessonSkippable => everyLessonSkippable;
         public float DefaultHintAfterSeconds => defaultHintAfterSeconds;
         public float GhostDemoSeconds => ghostDemoSeconds;
         public float GhostDemoLeadInSeconds => ghostDemoLeadInSeconds;

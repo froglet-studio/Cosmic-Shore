@@ -698,6 +698,13 @@ def build_keycap():
         .add("kt", 114, kit_text("Label", "NeutralLightest"))
     root.add("hlg", 114, hv_layout(False, (12, 12, 4, 4), 0, 4, (1, 1), (0, 0)))
     root.add("csf", 114, fitter(2, 2))
+    # A phone or tablet with no pad names no controls: the cap hides and its slot closes up
+    # (KitKeycapVisibility, Docs/MENU_REDESIGN_B.md section 28).
+    root.add("cg", 225, lambda ctx, go: ("CanvasGroup:\n  m_ObjectHideFlags: 0\n  m_CorrespondingSourceObject: {fileID: 0}\n"
+                                         "  m_PrefabInstance: {fileID: 0}\n  m_PrefabAsset: {fileID: 0}\n"
+                                         f"  m_GameObject: {{fileID: {go}}}\n  m_Enabled: 1\n  m_Alpha: 1\n"
+                                         "  m_Interactable: 0\n  m_BlocksRaycasts: 0\n  m_IgnoreParentGroups: 0\n"))
+    root.add("vis", 114, lambda ctx, go: mono(go, kit_script("KitKeycapVisibility"), "  collapse: {fileID: 0}\n"))
     return root
 
 

@@ -156,6 +156,39 @@ namespace CosmicShore.Gameplay
         [Tooltip("The pad hints along the bottom.")]
         [SerializeField] TMP_Text keyHintText;
 
+        [Header("Words (every line the hub and summary write; empty = the line shows nothing)")]
+        [Tooltip("Tokens: {round} {mode} {played} {target} {domain} {drawable} {total} {ceiling}.")]
+        [SerializeField] string hubTitle = "Round {round}";
+        [SerializeField] string statsTitle = "{mode} results";
+        [SerializeField] string hubRoundChip = "Round {round}";
+        [SerializeField] string statsRoundChip = "{played} rounds played";
+        [SerializeField] string hubInfo = "First domain to {target} points wins";
+        [SerializeField] string statsInfo = "Final standings";
+        [SerializeField] string poolChip = "{drawable} of {total} modes, intensity {ceiling}";
+        [SerializeField] string standingsLabel = "Race to {target}";
+        [SerializeField] string previewNextLabel = "Next round";
+        [SerializeField] string previewLastLabel = "Last arena";
+        [SerializeField] string hubCaption = "When every pilot is ready, the countdown drops to 3.";
+        [SerializeField] string statsCaptionWinner = "{domain} takes the {mode}. Next shows the trophy.";
+        [SerializeField] string statsCaptionNoWinner = "The tournament is decided. Next shows the trophy.";
+        [Tooltip("Pad hints. Shown only where controls are named (a phone with no pad shows none).")]
+        [SerializeField] string hubKeyHints = "LB / RB  scroll rounds     A  ready";
+        [SerializeField] string statsKeyHints = "LB / RB  scroll rounds     A  next";
+        [SerializeField] string summaryWinner = "{domain} WINS";
+        [SerializeField] string summaryNoWinner = "No winner";
+        [SerializeField] string rankLabel = "Domain rank";
+
+        /// <summary>An authored template with its tokens filled. Empty stays empty.</summary>
+        string Words(string template, int round = 0, int played = 0, int target = 0, string domain = null,
+                     int drawable = 0, int total = 0, int ceiling = 0)
+        {
+            if (string.IsNullOrEmpty(template)) return string.Empty;
+            return template.Replace("{round}", round.ToString()).Replace("{mode}", ModeName())
+                .Replace("{played}", played.ToString()).Replace("{target}", target.ToString())
+                .Replace("{domain}", domain ?? string.Empty).Replace("{drawable}", drawable.ToString())
+                .Replace("{total}", total.ToString()).Replace("{ceiling}", ceiling.ToString());
+        }
+
         [Header("Style B summary (optional)")]
         [Tooltip("The rule under the winner line, in the winner's colour.")]
         [SerializeField] Image summaryWinnerRule;
@@ -446,15 +479,12 @@ namespace CosmicShore.Gameplay
             int gamesPlayed = tournamentData != null ? tournamentData.GamesPlayed : 0;
 
             if (modeEyebrowText) modeEyebrowText.text = ModeName();
-            if (titleText) titleText.text = stats ? $"{ModeName()} results" : $"Round {gamesPlayed + 1}";
+            if (titleText) titleText.text = Words(stats ? statsTitle : hubTitle, round: gamesPlayed + 1);
             if (poolText) poolText.text = GameModesPool();
-            if (roundStatusText) roundStatusText.text = stats
-                ? $"{gamesPlayed} rounds played"
-                : $"Round {gamesPlayed + 1}";
+            if (roundStatusText) roundStatusText.text = Words(stats ? statsRoundChip : hubRoundChip,
+                                                              round: gamesPlayed + 1, played: gamesPlayed);
             if (infoText && tournamentData != null)
-                infoText.text = stats
-                    ? "Final standings"
-                    : $"First domain to {tournamentData.EffectiveWinTarget} points wins";
+                infoText.text = Words(stats ? statsInfo : hubInfo, target: tournamentData.EffectiveWinTarget);
             RenderLeadingDomain();
             RenderStandings();
             RenderHubCopy(stats);
@@ -576,8 +606,8 @@ namespace CosmicShore.Gameplay
             if (summaryWinningDomainText)
             {
                 summaryWinningDomainText.text = winner == Domains.Blue
-                    ? "No winner"
-                    : $"{winner.ToString().ToUpperInvariant()} WINS";
+                    ? Words(summaryNoWinner)
+                    : Words(summaryWinner, domain: winner.ToString().ToUpperInvariant());
                 summaryWinningDomainText.color = winnerColor;
             }
             if (summaryWinnerRule) summaryWinnerRule.color = winnerColor;
@@ -785,7 +815,7 @@ namespace CosmicShore.Gameplay
                     if (i < standings.Count) rankChips[i].Show(standings[i].Domain, DomainColor(standings[i].Domain), standings[i].TotalPoints, 0);
                     else rankChips[i].Hide();
                 }
-                if (summaryRankText) summaryRankText.text = "Domain rank";
+                if (summaryRankText) summaryRankText.text = Words(rankLabel);
                 return;
             }
             if (!summaryRankText) return;
@@ -863,7 +893,7 @@ namespace CosmicShore.Gameplay
         {
             if (standingRows == null || standingRows.Length == 0 || tournamentData == null) return;
             int target = tournamentData.EffectiveWinTarget;
-            if (standingsLabelText) standingsLabelText.text = $"Race to {target}";
+            if (standingsLabelText) standingsLabelText.text = Words(standingsLabel, target: target);
             var sorted = tournamentData.BuildSortedStandings();
             for (int i = 0; i < standingRows.Length; i++)
             {
@@ -875,15 +905,18 @@ namespace CosmicShore.Gameplay
 
         void RenderHubCopy(bool stats)
         {
-            if (previewEyebrowText) previewEyebrowText.text = stats ? "Last arena" : "Next round";
-            if (keyHintText) keyHintText.text = stats ? "LB / RB  scroll rounds     A  next" : "LB / RB  scroll rounds     A  ready";
+            if (previewEyebrowText) previewEyebrowText.text = Words(stats ? previewLastLabel : previewNextLabel);
+            // Pad hints mean nothing on a phone with no pad (KitInputDevice).
+            if (keyHintText)
+                keyHintText.text = !KitInputDevice.ShowsControlHints ? string.Empty
+                    : Words(stats ? statsKeyHints : hubKeyHints);
             if (!captionText) return;
             var lead = WinningDomain();
             captionText.text = !stats
-                ? "When every pilot is ready, the countdown drops to 3."
+                ? Words(hubCaption)
                 : lead == Domains.Blue
-                    ? "The tournament is decided. Next shows the trophy."
-                    : $"{lead} takes the {ModeName()}. Next shows the trophy.";
+                    ? Words(statsCaptionNoWinner)
+                    : Words(statsCaptionWinner, domain: lead.ToString());
         }
 
         // ── Roster sourcing / ordering ───────────────────────────────────────────
@@ -978,7 +1011,7 @@ namespace CosmicShore.Gameplay
             int ceiling = Mathf.Clamp(tournamentData.IntensityCeiling <= 0 ? 1 : tournamentData.IntensityCeiling, 1, 4);
             int drawable = tournamentData.GamesForIntensity(ceiling).Count;
 
-            return $"{drawable} of {total} modes, intensity {ceiling}";
+            return Words(poolChip, drawable: drawable, total: total, ceiling: ceiling);
         }
 
         Domains WinningDomain()

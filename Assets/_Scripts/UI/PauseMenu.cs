@@ -241,8 +241,9 @@ namespace CosmicShore.UI
             if (Panel == null || !Panel.activeInHierarchy) return;
 
             // Settings is a window ON the pause window now: closing it goes back to the pause
-            // window, never straight into the match.
+            // window, never straight into the match - with the pad back on Settings.
             SetWindowInteractable(true);
+            Select(settingsButton);
         }
 
         /// <summary>Settings (X): the Settings window, over the pause window.</summary>
@@ -412,7 +413,38 @@ namespace CosmicShore.UI
             // Settings no longer opens with the pause: it is the X button's window. A prefab with no
             // style-B window still gets the old behaviour, so nothing is left with no screen at all.
             if (!windowGroup && settingsModalWindowManager != null) settingsModalWindowManager.ModalWindowIn();
+            LinkDpadNavigation();
+            Select(resumeButton);
             audioSystem.PlayGameplaySFX(GameplaySFXCategory.PauseOpen);
+        }
+
+        /// <summary>
+        /// The D-pad walks the window's actions top to bottom (Resume, Settings, Leave), skipping
+        /// any that are hidden, and A presses the selected one. The face-button shortcuts on the
+        /// keycaps still work alongside. Explicit, not automatic: automatic navigation could step
+        /// off the window onto the HUD behind it.
+        /// </summary>
+        void LinkDpadNavigation()
+        {
+            var chain = new System.Collections.Generic.List<UnityEngine.UI.Selectable>(3);
+            foreach (var b in new[] { resumeButton, settingsButton, leaveButton })
+                if (b && b.gameObject.activeInHierarchy) chain.Add(b);
+            for (int i = 0; i < chain.Count; i++)
+            {
+                var nav = new UnityEngine.UI.Navigation
+                {
+                    mode = UnityEngine.UI.Navigation.Mode.Explicit,
+                    selectOnUp = i > 0 ? chain[i - 1] : chain[chain.Count - 1],
+                    selectOnDown = i < chain.Count - 1 ? chain[i + 1] : chain[0],
+                };
+                chain[i].navigation = nav;
+            }
+        }
+
+        static void Select(UnityEngine.UI.Button button)
+        {
+            var events = UnityEngine.EventSystems.EventSystem.current;
+            if (events && button && button.gameObject.activeInHierarchy) events.SetSelectedGameObject(button.gameObject);
         }
 
         /// <summary>

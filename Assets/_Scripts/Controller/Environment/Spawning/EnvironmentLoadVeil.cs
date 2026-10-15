@@ -123,6 +123,12 @@ namespace CosmicShore.Gameplay
             var canvas = gameObject.AddComponent<Canvas>();
             canvas.renderMode = RenderMode.ScreenSpaceOverlay;
             canvas.sortingOrder = 30000; // above every menu canvas, under the transition fade
+            // Scaled like every style-B canvas, so the readout is the same size on a phone, a 4K
+            // monitor and a tablet (it was raw pixels: tiny at 4K, huge on a small phone).
+            var scaler = gameObject.AddComponent<CanvasScaler>();
+            scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
+            scaler.referenceResolution = new Vector2(1920f, 1080f);
+            scaler.screenMatchMode = CanvasScaler.ScreenMatchMode.Expand;
             gameObject.AddComponent<GraphicRaycaster>();
             _group = gameObject.AddComponent<CanvasGroup>();
             _group.alpha = 0f;

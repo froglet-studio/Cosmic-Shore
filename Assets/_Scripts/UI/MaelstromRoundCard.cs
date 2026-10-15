@@ -53,6 +53,13 @@ namespace CosmicShore.UI
         [Tooltip("\"Up next\" / \"-\" in the pill's place.")]
         [SerializeField] TMP_Text winnerPlaceholderText;
 
+        [Header("Words (empty = no line)")]
+        [Tooltip("The eyebrow; {round} is the round number.")]
+        [SerializeField] string roundTemplate = "Round {round}";
+        [SerializeField] string toBeDrawnWord = "To be drawn";
+        [SerializeField] string upNextWord = "Up next";
+        [SerializeField] string noWinnerWord = "-";
+
         [Header("Player Data Cards")]
         [SerializeField] MaelstromPlayerCard playerCardPrefab;
         [SerializeField] Transform playerCardContainer;
@@ -107,9 +114,10 @@ namespace CosmicShore.UI
 
         void SetHeader(int roundNumber, string modeName, Domains winner, bool showWinner, bool upcoming)
         {
-            if (roundNumberText) roundNumberText.text = $"Round {roundNumber}";
+            if (roundNumberText)
+                roundNumberText.text = string.IsNullOrEmpty(roundTemplate) ? string.Empty : roundTemplate.Replace("{round}", roundNumber.ToString());
             if (roundNameText)
-                roundNameText.text = !string.IsNullOrEmpty(modeName) ? modeName : upcoming ? "To be drawn" : "-";
+                roundNameText.text = !string.IsNullOrEmpty(modeName) ? modeName : upcoming ? toBeDrawnWord : noWinnerWord;
 
             bool hasWinner = showWinner && winner != Domains.Blue;
             Color wc = DomainColor(hasWinner ? winner : Domains.Blue);
@@ -122,7 +130,7 @@ namespace CosmicShore.UI
             KitVisibility.SetShown(winnerPill, hasWinner);
             if (winnerPillMark) winnerPillMark.color = wc;
             if (winnerPillBackground) winnerPillBackground.color = new Color(wc.r, wc.g, wc.b, pillAlpha);
-            if (winnerPlaceholderText) winnerPlaceholderText.text = hasWinner ? string.Empty : upcoming ? "Up next" : "-";
+            if (winnerPlaceholderText) winnerPlaceholderText.text = hasWinner ? string.Empty : upcoming ? upNextWord : noWinnerWord;
 
             if (cardBackground) cardBackground.color = wc;
         }

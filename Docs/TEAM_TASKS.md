@@ -308,3 +308,24 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Who can take it:** Yash
 - **Added:** 2026-10-15 by a Claude session (`claude/new-session-76hnyc`)
 - **See:** Docs/UNITY_VERIFICATION_CHECKLIST.md, Docs/MENU_REDESIGN_B.md section 27
+
+### T-20261015-aed4 · open · test · Activation
+- **Task:** First-login guide Skip and every-Lesson Skip on claude/new-session-76hnyc: SKIP (and pad Y) ends the quest for good; Lessons offer Skip on a fresh profile
+- **Done when:** Steps 1-2 of the checklist entry 'Style-B playtest fixes' pass in the editor
+- **Who can take it:** Yash (offered; FTUE owner)
+- **Added:** 2026-10-15 by a Claude session (`claude/new-session-76hnyc`)
+- **See:** Docs/MENU_REDESIGN_B.md section 28
+
+### T-20261015-a46a · open · decision · Activation
+- **Task:** Should a guide Skip be measured? It currently raises nothing (ftue_completed stays 'played through'). If yes, add and declare an ftue_skipped event in UGS and PostHog
+- **Done when:** Decided; if yes the event is declared and fired from QuestGraphRunner.HandleSkipRequested
+- **Who can take it:** Ian (funnel owner), Yash (offered)
+- **Added:** 2026-10-15 by a Claude session (`claude/new-session-76hnyc`)
+- **See:** Docs/MENU_REDESIGN_B.md section 28
+
+### T-20261015-fd3f · open · test · ui
+- **Task:** Touch and aspect check on claude/new-session-76hnyc: on a phone build with no pad no keycaps or RShift anywhere; tap input stays touch (InputDeviceActuation now reads the touchscreen before the mouse); 4:3 and 21:9 layouts stay on screen
+- **Done when:** Steps 7-8 of the checklist entry pass on a phone and in the Device Simulator
+- **Who can take it:** Yash (offered), Caleb / Andrew (QA)
+- **Added:** 2026-10-15 by a Claude session (`claude/new-session-76hnyc`)
+- **See:** Docs/MENU_REDESIGN_B.md section 28

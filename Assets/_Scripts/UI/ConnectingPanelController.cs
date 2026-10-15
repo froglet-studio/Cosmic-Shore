@@ -44,6 +44,14 @@ namespace CosmicShore.UI
         [Header("Game mode + intensity")]
         [SerializeField] TMP_Text gameModeText;
 
+        [Header("Backdrop (style B)")]
+        [Tooltip("Full-screen art behind the panel: the mode's own card art, drifting slowly under a " +
+                 "dim, so every game's loading screen looks like that game (Docs/MENU_REDESIGN_B.md " +
+                 "section 28). Empty = the panel's plain background.")]
+        [SerializeField] UnityEngine.UI.Image backdropArt;
+        [Tooltip("Where a mode's card art is looked up (the arcade's game list).")]
+        [SerializeField] SO_GameList games;
+
         [Header("Style-B readout (Docs/MENU_REDESIGN_B.md section 22.3)")]
         [Tooltip("The phase as a headline - 'Building the arena', 'Waiting for pilots'. When wired, " +
                  "the status line stays a quiet 'Connecting to Shore' and the live numbers move to " +
@@ -398,6 +406,22 @@ namespace CosmicShore.UI
             string mode = ResolveModeName(gameData != null ? gameData.GameMode : default);
             int intensity = gameData != null && gameData.SelectedIntensity != null ? gameData.SelectedIntensity.Value : 0;
             gameModeText.text = intensity > 0 ? $"{mode} - INTENSITY {intensity}" : mode;
+            RenderBackdrop();
+        }
+
+        void RenderBackdrop()
+        {
+            if (!backdropArt) return;
+            var mode = gameData != null ? gameData.GameMode : default;
+            Sprite art = null;
+            if (games != null && games.Games != null)
+                foreach (var g in games.Games)
+                    if (g != null && g.Mode == mode && g.CardBackground) { art = g.CardBackground; break; }
+            if (!art && tournamentData != null && tournamentData.GameQueue != null)
+                foreach (var g in tournamentData.GameQueue)
+                    if (g != null && g.Mode == mode && g.CardBackground) { art = g.CardBackground; break; }
+            backdropArt.sprite = art;
+            backdropArt.enabled = art != null;
         }
 
         void RenderRank()

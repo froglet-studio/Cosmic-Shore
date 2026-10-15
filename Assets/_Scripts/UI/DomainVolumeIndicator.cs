@@ -143,6 +143,7 @@ namespace CosmicShore.UI
 
         void Update()
         {
+            if (_keycap && transform.localRotation != _keycapAlignedFor) AlignKeycap();
             if (Time.unscaledTime >= _nextSampleAt)
             {
                 _nextSampleAt = Time.unscaledTime + sampleIntervalSeconds;
@@ -189,6 +190,22 @@ namespace CosmicShore.UI
 
         TMP_Text _keycapLabel;
         GameObject _keycap;
+        Quaternion _keycapAlignedFor = new(0f, 0f, 0f, 0f);
+
+        /// <summary>
+        /// The pause hex is ROTATED (30 degrees in GameCanvas), so a keycap anchored to its rect's
+        /// bottom edge sat off to one side and tilted. The cap undoes the hex's rotation and hangs
+        /// straight below its centre, upright, whatever the hex's own turn.
+        /// </summary>
+        void AlignKeycap()
+        {
+            var rt = (RectTransform)_keycap.transform;
+            var turn = transform.localRotation;
+            rt.localRotation = Quaternion.Inverse(turn);
+            float drop = ((RectTransform)transform).rect.height * 0.5f + 8f;
+            rt.anchoredPosition = Quaternion.Inverse(turn) * new Vector3(0f, -drop, 0f);
+            _keycapAlignedFor = turn;
+        }
         InputDeviceIconSetSwitcher _switcher;
 
         /// <summary>
@@ -203,10 +220,10 @@ namespace CosmicShore.UI
             _keycap = new GameObject("Keycap (auto)", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
             var rt = (RectTransform)_keycap.transform;
             rt.SetParent(transform, false);
-            rt.anchorMin = rt.anchorMax = new Vector2(0.5f, 0f);
+            rt.anchorMin = rt.anchorMax = new Vector2(0.5f, 0.5f);
             rt.pivot = new Vector2(0.5f, 1f);
-            rt.anchoredPosition = new Vector2(0f, -8f);
             rt.sizeDelta = new Vector2(64f, 28f);
+            AlignKeycap();
             var plate = _keycap.GetComponent<Image>();
             plate.color = UITheme.Resolve(null, UIColorToken.SurfaceVeryDark);
             plate.raycastTarget = false;
@@ -233,17 +250,22 @@ namespace CosmicShore.UI
             _switcher = GetComponentInParent<InputDeviceIconSetSwitcher>(true);
             if (!_switcher) _switcher = gameObject.AddComponent<InputDeviceIconSetSwitcher>();
             _switcher.OnSetChanged += HandleDeviceChanged;
-            DrawKeycap(_switcher.IsKeyboard);
+            KitInputDevice.Listen(RedrawKeycap);
+            RedrawKeycap();
         }
 
-        void HandleDeviceChanged(InputDeviceIconSetSwitcher.IconSet set)
-            => DrawKeycap(set == InputDeviceIconSetSwitcher.IconSet.KeyboardText);
+        void RedrawKeycap() => HandleDeviceChanged(_switcher ? _switcher.Current : InputDeviceIconSetSwitcher.IconSet.None);
 
-        void DrawKeycap(bool keyboard)
+        // Touch (IconSet.None) and a phone with no pad name no control: the cap hides.
+        void HandleDeviceChanged(InputDeviceIconSetSwitcher.IconSet set)
+            => DrawKeycap(set == InputDeviceIconSetSwitcher.IconSet.KeyboardText,
+                          set != InputDeviceIconSetSwitcher.IconSet.None && KitInputDevice.ShowsControlHints);
+
+        void DrawKeycap(bool keyboard, bool allowed)
         {
             if (!_keycap) return;
             string label = keyboard ? keyboardKeycap : padKeycap;
-            bool shown = !string.IsNullOrEmpty(label);
+            bool shown = allowed && !string.IsNullOrEmpty(label);
             _keycap.GetComponent<Image>().enabled = shown;
             _keycapLabel.enabled = shown;
             if (!shown) return;
@@ -255,6 +277,7 @@ namespace CosmicShore.UI
         void OnDestroy()
         {
             if (_switcher) _switcher.OnSetChanged -= HandleDeviceChanged;
+            KitInputDevice.Unlisten(RedrawKeycap);
         }
 
         /// <summary>

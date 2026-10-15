@@ -1694,3 +1694,41 @@ cheap and reads the same data); a non-host sees no PLAY AGAIN at all, as before.
 **Not changed:** the hub still has no reachable MAIN MENU between rounds. The button lives under the
 summary panel, which `MaelstromSceneView.WarnIfHubExitIsUnreachable` already reports; the boards do
 not place one in the hub either.
+
+## 28. Playtest fixes: skip, connecting backdrop and camera, pad navigation, touch devices (2026-10-15)
+
+From the owner's first play of the redesign.
+
+- **Skip on the first-login guide.** The guide ("This week's game. Open it.") now has a SKIP button
+  in the bottom-right corner, above the dim, on every step. The pad's Y presses it too. It ends the
+  whole tutorial: `MenuGuide.RequestSkip` → `QuestGraphRunner` cleans up, and the quest is saved as
+  done so it never returns. It does not raise `ftue_completed`, which keeps meaning "played
+  through". The words are authored on `QuestGuideToMicrogameNode` (`skipLabel`, `skipKeycap`); an
+  empty label hides Skip.
+- **Skip on every Lesson.** `DrillLibrarySO.everyLessonSkippable` (on) offers Skip on the account's
+  first Lessons too, after the usual delay. Turning it off restores D7.
+- **Connecting screen backdrop.** The flat purple-blue sprite is gone. The mode's own card art fills
+  the screen, cover-fitted and drifting slowly (KitAmbient Pan), under a dim and a bottom fade
+  (`ConnectingPanelController.backdropArt`, looked up in `ArcadeGames`).
+- **The connecting preview camera picks a new move every game** (`ConnectingArenaPreview.randomShot`):
+  a slow orbit, a low sweep past the build, a crane down from above, a spiral in and out, or a slow
+  drift, with a random start angle and direction.
+- **Party row:** INVITE and JOIN no longer overlap. The strip now sizes its slots from their
+  preferred widths, and it is wide enough for INVITE + SPECTATE.
+- **Pause window D-pad:** Resume is selected when the window opens, and the D-pad walks Resume /
+  Settings / Leave (explicit, wrapping). Closing Settings puts the pad back on Settings.
+- **The START keycap under the pause hex** sat off to one side and tilted, because the hex is
+  rotated 30 degrees. The cap now undoes the rotation and hangs straight below the hex's centre.
+- **Touch devices name no controls** (`KitInputDevice`). On a phone or tablet with no pad, every
+  KitKeycap hides and its slot closes up (`KitKeycapVisibility`), the ability row draws no control
+  chips, the pause hex has no keycap, the privacy overlay's keycaps and the Maelstrom pad hints are
+  gone. Connect a pad and they come back. One detection fix: on a phone, a tap also fakes a mouse
+  press, so `InputDeviceActuation` asked the mouse first and named touch players keyboard players
+  (hence "RShift" on a phone). It now asks the touchscreen first, and a phone's browser counts as
+  touch from the start (`Application.isMobilePlatform`).
+- **Every aspect ratio:** Menu_Main, GameCanvas, the Maelstrom hub, the sign-in scene and the
+  Bootstrap splash scale with `Expand` (the whole 1920 x 1080 design stays on screen on a 4:3 tablet
+  and a 20:9 phone; identical to before at 16:9 and wider). The privacy overlay and the boot-world
+  cover use the same scaling; the cover used raw pixels before.
+- **Authored words:** the Maelstrom view, cards and seats, and the privacy overlay's eyebrows and
+  keycaps now read their words from serialized fields (CLAUDE.md, player-facing text rule).

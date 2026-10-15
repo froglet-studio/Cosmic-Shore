@@ -123,7 +123,9 @@ namespace CosmicShore.UI
             var scaler = gameObject.AddComponent<CanvasScaler>();
             scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
             scaler.referenceResolution = new Vector2(1920f, 1080f);
-            scaler.matchWidthOrHeight = 0.5f;
+            // Expand: the whole 1920 x 1080 design stays on screen at any aspect (a 4:3 tablet, a
+            // 20:9 phone) - Docs/MENU_REDESIGN_B.md section 28.
+            scaler.screenMatchMode = CanvasScaler.ScreenMatchMode.Expand;
 
             gameObject.AddComponent<GraphicRaycaster>();
             _group = gameObject.AddComponent<CanvasGroup>();
@@ -154,7 +156,7 @@ namespace CosmicShore.UI
         {
             var panel = NewPanel("AgeGate", parent, AgePanelWidth);
 
-            AddEyebrow(panel, "First flight");
+            AddEyebrow(panel, _config != null ? _config.AgeEyebrow : "First flight");
             AddTitle(panel, _config != null ? _config.AgeTitle : "Before you fly");
             AddBody(panel, _config != null ? _config.AgeBody : "What year were you born?");
 
@@ -168,7 +170,7 @@ namespace CosmicShore.UI
             _ageError.gameObject.SetActive(false);
 
             var row = NewRow(panel);
-            _continueButton = AddButton(row, _config != null ? _config.ContinueLabel : "Continue", "A", true, SubmitBirthYear);
+            _continueButton = AddButton(row, _config != null ? _config.ContinueLabel : "Continue", _config != null ? _config.PrimaryKeycap : "A", true, SubmitBirthYear);
 
             return panel;
         }
@@ -177,7 +179,7 @@ namespace CosmicShore.UI
         {
             var panel = NewPanel("Consent", parent, ConsentPanelWidth);
 
-            AddEyebrow(panel, "Privacy");
+            AddEyebrow(panel, _config != null ? _config.ConsentEyebrow : "Privacy");
             AddTitle(panel, _config != null ? _config.ConsentTitle : "Help us improve Cosmic Shore");
             AddBody(panel, _config != null ? _config.ConsentBody : "");
 
@@ -185,8 +187,8 @@ namespace CosmicShore.UI
                 AddLinkButton(panel, _config.PolicyLabel, () => Application.OpenURL(_config.PrivacyPolicyUrl));
 
             var row = NewRow(panel);
-            _acceptButton = AddButton(row, _config != null ? _config.AcceptLabel : "I agree", "A", true, Accept);
-            AddButton(row, _config != null ? _config.DeclineLabel : "No thanks", "B", false, Decline);
+            _acceptButton = AddButton(row, _config != null ? _config.AcceptLabel : "I agree", _config != null ? _config.PrimaryKeycap : "A", true, Accept);
+            AddButton(row, _config != null ? _config.DeclineLabel : "No thanks", _config != null ? _config.SecondaryKeycap : "B", false, Decline);
 
             return panel;
         }
@@ -372,6 +374,7 @@ namespace CosmicShore.UI
 
         void AddEyebrow(Transform parent, string text)
         {
+            if (string.IsNullOrEmpty(text)) return;
             var t = AddText(parent, text.ToUpperInvariant(), 14f, _labelFont);
             t.characterSpacing = 14f;
             t.color = Tint(UIColorToken.NeutralLightest);
@@ -483,7 +486,9 @@ namespace CosmicShore.UI
             layout.childForceExpandWidth = false;
             layout.childForceExpandHeight = false;
 
+            // No keycap where controls are not named (a phone or tablet with no pad).
             var cap = NewRect("Keycap", r);
+            cap.gameObject.SetActive(KitInputDevice.ShowsControlHints && !string.IsNullOrEmpty(keycap));
             var capElement = cap.gameObject.AddComponent<LayoutElement>();
             capElement.preferredWidth = 26f;
             capElement.preferredHeight = 24f;

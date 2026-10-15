@@ -599,9 +599,13 @@ def build_request_row():
 
 def build_online_row():
     root, _ = row_frame("PartyOnlineRow")
-    text_columns(root, 168, "Pilot", "ONLINE", "Cta")
-    btns = root.child(N("Buttons", "Buttons", R((1, 0.5), None, (0, 0), (160, 32), (1, 0.5))))
-    btns.add("hlg", 114, K.hv_layout(False, (0, 0, 0, 0), 8, 5, (0, 0), (0, 0)))
+    # INVITE + JOIN is 162 wide and JOIN can read SPECTATE (202), so the strip and the text beside
+    # it are sized for the widest pair. The strip CONTROLS its slots' widths (from their preferred
+    # size): reading each slot's own rect instead took its 60-wide placeholder until the slot's
+    # fitter caught up, which drew JOIN over INVITE.
+    text_columns(root, 210, "Pilot", "ONLINE", "Cta")
+    btns = root.child(N("Buttons", "Buttons", R((1, 0.5), None, (0, 0), (202, 36), (1, 0.5))))
+    btns.add("hlg", 114, K.hv_layout(False, (0, 0, 0, 0), 8, 5, (1, 0), (0, 0)))
     for key, caption, variant, shown in (("Invite", "INVITE", "Default", True), ("Join", "JOIN", "Cta", False)):
         slot = wrap_slot(btns, f"{key}Slot", f"{key}Slot", shown)
         slot.children.append(small_button(f"{key}Button", f"{key}Button", variant, caption, added=[row_scroll_into()]))

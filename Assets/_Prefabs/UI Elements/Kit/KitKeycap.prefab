@@ -11,6 +11,8 @@ GameObject:
   - component: {fileID: 234059583874969885}
   - component: {fileID: 73179606420730823}
   - component: {fileID: 401908353018466309}
+  - component: {fileID: 748316056467087057}
+  - component: {fileID: 742704672691662037}
   m_Layer: 5
   m_Name: KitKeycap
   m_TagString: Untagged
@@ -80,6 +82,31 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   m_HorizontalFit: 2
   m_VerticalFit: 2
+--- !u!225 &748316056467087057
+CanvasGroup:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 311680734318915679}
+  m_Enabled: 1
+  m_Alpha: 1
+  m_Interactable: 0
+  m_BlocksRaycasts: 0
+  m_IgnoreParentGroups: 0
+--- !u!114 &742704672691662037
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 311680734318915679}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 946bc78afb1de0e639fe5c3378474e40, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  collapse: {fileID: 0}
 --- !u!1 &629733717371249674
 GameObject:
   m_ObjectHideFlags: 0

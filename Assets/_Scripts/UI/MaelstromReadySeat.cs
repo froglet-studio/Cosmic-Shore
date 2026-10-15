@@ -20,6 +20,10 @@ namespace CosmicShore.UI
         [SerializeField] TMP_Text stateText;
         [SerializeField] UIThemeSO theme;
 
+        [Header("Words (empty = no line)")]
+        [SerializeField] string readyWord = "Ready";
+        [SerializeField] string waitingWord = "Waiting";
+
         [Tooltip("Alpha of a waiting pilot's face.")]
         [SerializeField, Range(0f, 1f)] float waitingAlpha = 0.6f;
 
@@ -40,7 +44,7 @@ namespace CosmicShore.UI
             }
             if (stateText)
             {
-                stateText.text = ready ? "Ready" : "Waiting";
+                stateText.text = ready ? readyWord : waitingWord;
                 stateText.color = UITheme.Resolve(theme, ready ? UIColorToken.Cta : UIColorToken.NeutralLightest);
             }
             if (ring) ring.color = ready ? domainColor : UITheme.Resolve(theme, UIColorToken.SurfaceDark);

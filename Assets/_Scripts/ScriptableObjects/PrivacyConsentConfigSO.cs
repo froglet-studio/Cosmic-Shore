@@ -47,6 +47,14 @@ namespace CosmicShore.ScriptableObjects
         [SerializeField] string continueLabel = "Continue";
         [SerializeField] string policyLabel = "Privacy policy";
 
+        [Header("Style B words (empty = not shown)")]
+        [SerializeField] string ageEyebrow = "First flight";
+        [SerializeField] string consentEyebrow = "Privacy";
+        [Tooltip("The pad button named on the primary button's keycap (Continue, I agree).")]
+        [SerializeField] string primaryKeycap = "A";
+        [Tooltip("The pad button named on No thanks' keycap (B also declines).")]
+        [SerializeField] string secondaryKeycap = "B";
+
         [Header("Style B surfaces (optional)")]
         [Tooltip("The panel's slivered fill (kit_sliver14_fill). Empty draws a plain rectangle.")]
         [SerializeField] Sprite panelFillSprite;
@@ -71,6 +79,10 @@ namespace CosmicShore.ScriptableObjects
         public string ContinueLabel => continueLabel;
         public string PolicyLabel => policyLabel;
 
+        public string AgeEyebrow => ageEyebrow;
+        public string ConsentEyebrow => consentEyebrow;
+        public string PrimaryKeycap => primaryKeycap;
+        public string SecondaryKeycap => secondaryKeycap;
         public Sprite PanelFillSprite => panelFillSprite;
         public Sprite PanelBorderSprite => panelBorderSprite;
         public Sprite ButtonFillSprite => buttonFillSprite;

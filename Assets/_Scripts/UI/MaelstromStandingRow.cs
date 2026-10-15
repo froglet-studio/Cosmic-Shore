@@ -30,6 +30,8 @@ namespace CosmicShore.UI
         [SerializeField] TMP_Text valueText;
         [Tooltip("Alpha of the pill's plate behind the domain colour.")]
         [SerializeField, Range(0f, 1f)] float pillAlpha = 0.14f;
+        [Tooltip("The points against a target. Tokens: {points} {target}.")]
+        [SerializeField] string targetTemplate = "{points} / {target}";
 
         /// <summary>Draws a domain's standing. <paramref name="target"/> 0 shows the points alone.</summary>
         public void Show(Domains domain, Color color, int points, int target)
@@ -51,7 +53,10 @@ namespace CosmicShore.UI
                 fill.offsetMin = Vector2.zero;
                 fill.offsetMax = Vector2.zero;
             }
-            if (valueText) valueText.text = target > 0 ? $"{points} / {target}" : points.ToString();
+            if (valueText)
+                valueText.text = target > 0
+                    ? targetTemplate.Replace("{points}", points.ToString()).Replace("{target}", target.ToString())
+                    : points.ToString();
         }
 
         public void Hide() => KitVisibility.SetShown(group, false);

@@ -65,6 +65,30 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Style-B playtest fixes: guide Skip, connecting backdrop + random camera, pause D-pad, touch keycaps (`claude/new-session-76hnyc`, 2026-10-15) — NOT EDITOR-VERIFIED
+
+Section 28 of `Docs/MENU_REDESIGN_B.md`. Affects Yash's FTUE guide, Lesson and input detection
+(`QuestGraphRunner`, `MenuSpotlight`, `DrillRunner`, `InputDeviceActuation`). No editor in the session,
+so `/verify-unity` is still owed. Offline: player and editor reference compiles clean apart from the
+known package errors; every generator `--check` and the repo gates pass.
+
+**Verify in editor:**
+1. Fresh profile (reset quest progress): the first-login guide shows SKIP bottom right. Click it (or
+   press Y): the dim goes, the menu is free, and a relaunch does not show the guide again.
+2. Open a microgame preview on a fresh profile: the Lesson offers Skip after ~3 s.
+3. Launch any mode: the connecting screen shows that mode's card art drifting behind the readout;
+   the arena preview moves differently on each launch (orbit, low sweep, crane, spiral, drift).
+4. Party panel with an online friend: INVITE and JOIN side by side, no overlap.
+5. In a match, pause with a pad: Resume is highlighted, D-pad up/down moves, A presses. Open and
+   close Settings: the highlight returns to Settings.
+6. The START keycap sits straight, centred under the pause hex.
+7. Mobile build (or Device Simulator, no pad): no keycaps anywhere (hub buttons, pause, ability row,
+   pause hex), no "RShift"; connect a pad and they return.
+8. Set the Game view to 4:3 and 21:9: Menu_Main, a match HUD and the Maelstrom hub stay fully on
+   screen.
+
+---
+
 ### 🔴 Style-B Maelstrom game UI: hub, stats, summary (`claude/new-session-76hnyc`, 2026-10-15) — NOT EDITOR-VERIFIED
 
 Section 27 of `Docs/MENU_REDESIGN_B.md`. Written by `Tools/Build/author_maelstrom_ui.py`: the three

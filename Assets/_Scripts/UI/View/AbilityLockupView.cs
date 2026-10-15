@@ -1233,7 +1233,8 @@ namespace CosmicShore.UI
             var binding = _chipKeyboard ? slot.KeyBinding : slot.PadBinding;
             // A locked slot has no ability, so it has no control to name (the board's "dim plate,
             // a dash, no chip").
-            var glyph = slot.Locked ? null : set.For(binding);
+            // A phone or tablet with no pad names no controls at all (KitInputDevice).
+            var glyph = slot.Locked || !KitInputDevice.ShowsControlHints ? null : set.For(binding);
 
             // A chip depicts a BUTTON, so it wears the button's own held art while the ability is
             // firing - the one thing the retired hint visuals did that the card cannot say, since
