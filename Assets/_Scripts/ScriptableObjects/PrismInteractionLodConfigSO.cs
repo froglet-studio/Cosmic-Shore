@@ -10,16 +10,17 @@ namespace CosmicShore.ScriptableObjects
     /// detail and the budget allows, and as the ordinary effect otherwise. <c>PrismInteractionLod</c> decides.
     ///
     /// <list type="bullet">
-    /// <item><b>Destruction</b> is one Sierpinski cut scaled by recursion depth (<c>PrismSierpinskiTiling</c>):
-    /// depth 0 IS the ordinary explosion (its four wedges a face — far away, off screen, over budget), and each
-    /// deeper depth splits the corner triangles at their edge midpoints, keeping the middles whole — a self-similar
-    /// range of fragment sizes. Each depth is the next with its finest fragments merged into their parents, and every
-    /// fragment of every depth moves by the explosion's own tuned law (its velocity response, spin axes, capped spin
-    /// rate, slide and erosion fade), so squinted at it IS the explosion.</item>
-    /// <item><b>Stealing</b> is the GRADE (the 0.8 s colour lerp) far away and a SHED close up — a bloom (the game's
-    /// one shed; unravel and flake stay as weights at 0) peeling off a skin in the old colours, cut into rings and
-    /// segments that each curl tight and close to the surface — graded by mesh resolution (12, 18, 24
-    /// subdivisions), on the grade's own curve over the grade's own length, so squinted at it IS the grade.</item>
+    /// <item><b>Destruction</b> is one cut of the explosion's wedges scaled by recursion depth — the silver gnomon cut
+    /// (<c>PrismSilverGnomonTiling</c>, round 7) or the Sierpinski cut (<c>PrismSierpinskiTiling</c>, round 4):
+    /// level 0 IS the ordinary explosion (its four wedges a face — far away, off screen, over budget), and each
+    /// finer level cuts the wedges deeper into a range of fragment sizes, each level the next with its finest
+    /// fragments merged into their parents. Every fragment moves by the explosion's own tuned law (its velocity
+    /// response, its root wedge's spin axes, its capped spin rate, slide and erosion fade), its spin a little off its
+    /// neighbours' by a continuous noise, so squinted at it IS the explosion.</item>
+    /// <item><b>Stealing</b> is the GRADE (the 0.8 s colour lerp) far away and a SHED close up — a ROLL (the game's
+    /// one shed since round 7; bloom, unravel and flake stay as weights at 0): each face's skin in the old colours
+    /// rolls up away from the camera and round the prism until the prism hides it — at one of three mesh
+    /// resolutions (12, 18, 24 subdivisions).</item>
     /// </list>
     ///
     /// Both ladders are graded by DISTANCE (the prism's projected diameter over the screen height, so one number
@@ -27,6 +28,13 @@ namespace CosmicShore.ScriptableObjects
     /// level coarser; packed, two). A level that does not fit the triangle budget steps down until one does.
     /// Lives at <c>Resources/PrismInteractionLodConfig</c>; absent, every interaction draws its ordinary effect.
     /// </summary>
+    /// <summary>How the explosion's wedges are cut into a destruction's fragments. Explicit values: serialized.</summary>
+    public enum DestructionCut
+    {
+        Sierpinski = 0,
+        SilverGnomon = 1,
+    }
+
     [CreateAssetMenu(fileName = "PrismInteractionLodConfig",
         menuName = "ScriptableObjects/Prisms/Prism Interaction LOD Config")]
     public class PrismInteractionLodConfigSO : ScriptableObject
@@ -53,15 +61,31 @@ namespace CosmicShore.ScriptableObjects
         [Tooltip("AMOUNT: at least this full, two levels coarser.")]
         [Range(0f, 1f)] [SerializeField] float packedFill = 0.8f;
 
-        [Header("Destruction — the explosion (depth 0), then the Sierpinski cut, deeper as the prism nears")]
+        [Header("Destruction — the explosion (level 0), then the cut of its wedges, finer as the prism nears")]
         [Tooltip("Off: every destruction is the ordinary explosion.")]
         [SerializeField] bool destructionEnabled = true;
 
-        [Tooltip("One line per recursion depth, from depth 1: the prism's projected diameter, as a fraction of the " +
-                 "screen height, at and above which a death is cut that deep (24 x 1, 4, 13, 40, 121, 364 triangles at " +
-                 "depths 0-5). Below the first line, depth 0: the ordinary explosion. Ascending; the array's length is " +
-                 "the deepest cut drawn (at most PrismSierpinskiTiling.MaxDepth, 5).")]
+        [Tooltip("How the explosion's wedges are cut. SilverGnomon (the designer, 2026-10-15): silver triangles and " +
+                 "their gnomons, a range of sizes in the silver ratio. Sierpinski: corners split at their midpoints, " +
+                 "middles kept whole (round 4).")]
+        [SerializeField] DestructionCut destructionCut = DestructionCut.SilverGnomon;
+
+        [Tooltip("One line per detail level, from level 1: the prism's projected diameter, as a fraction of the " +
+                 "screen height, at and above which a death is cut that finely. Below the first line, level 0: the " +
+                 "ordinary explosion. Ascending; the array's length is the number of levels (at most 5).")]
         [SerializeField] float[] depthMinScreen = { 0.05f, 0.10f, 0.16f, 0.24f };
+
+        [Tooltip("The silver gnomon cut's recursion depth at each level, from level 1 (24 x 8, 21, 55, 144 fragments " +
+                 "at depths 4, 6, 8, 10). The Sierpinski cut's depth IS the level.")]
+        [SerializeField] int[] silverDepths = { 4, 6, 8, 10 };
+
+        [Tooltip("How much each fragment's two spin angles wander from its wedge's: 1 + this x a gradient noise over " +
+                 "its position. Continuous, so neighbours keep nearly the same spin and the order holds; never equal, " +
+                 "so no two fragments of a face turn in perfect step. 0: in perfect step.")]
+        [Range(0f, 0.5f)] [SerializeField] float wedgeSpinNoise = 0.15f;
+
+        [Tooltip("The spin noise's frequency, in cycles per prism width (object space): higher, neighbours differ more.")]
+        [Range(0.5f, 8f)] [SerializeField] float wedgeNoiseFrequency = 3f;
 
         [Header("Stealing — the grade, or a shed at one of three resolutions")]
         [Tooltip("Off: every steal is the ordinary grade.")]
@@ -87,9 +111,21 @@ namespace CosmicShore.ScriptableObjects
         [Tooltip("Mesh subdivision of the finest shed (24 = 6,912 triangles).")]
         [SerializeField] int shedFinestSubdivision = 24;
 
-        [Tooltip("Relative weight of the BLOOM shed (petals curling open off each face); 0 removes it. The game " +
-                 "sheds as a bloom only (the designer, 2026-10-15): the other two weights ship at 0.")]
-        [Min(0f)] [SerializeField] float bloomWeight = 1f;
+        [Tooltip("Relative weight of the ROLL shed (the designer, 2026-10-15): each face's skin rolls up into a tight " +
+                 "roll, AWAY from the camera, over the edge and round until its own prism hides it — no dissolve. " +
+                 "The game sheds as a roll only: the other weights ship at 0.")]
+        [Min(0f)] [SerializeField] float rollWeight = 1f;
+
+        [Tooltip("The roll's innermost turn, in prism radii (never less than about a mesh cell, so a turn stays round).")]
+        [Range(0.01f, 0.3f)] [SerializeField] float rollRadius = 0.05f;
+
+        [Tooltip("The gap between the roll's turns, in prism radii (never less than a cell chord's sag, so turns " +
+                 "never cross): larger, a looser, fatter roll.")]
+        [Range(0.001f, 0.1f)] [SerializeField] float rollGap = 0.01f;
+
+        [Tooltip("Relative weight of the BLOOM shed (petals curling open off each face); 0 removes it. Round 5's " +
+                 "shed; ships at 0 since the roll.")]
+        [Min(0f)] [SerializeField] float bloomWeight;
 
         [Tooltip("Relative weight of the UNRAVEL shed (ribbons peeling off along each face); 0 removes it.")]
         [Min(0f)] [SerializeField] float unravelWeight;
@@ -148,7 +184,24 @@ namespace CosmicShore.ScriptableObjects
         public bool DestructionEnabled => destructionEnabled;
 
         /// <summary>The deepest cut a death can be drawn at (the number of depth lines, capped).</summary>
-        public int MaxDepth => depthMinScreen == null ? 0 : Mathf.Min(depthMinScreen.Length, PrismSierpinskiTiling.MaxDepth);
+        public int MaxDepth => depthMinScreen == null ? 0
+            : Mathf.Min(depthMinScreen.Length, destructionCut == DestructionCut.SilverGnomon
+                ? (silverDepths == null ? 0 : silverDepths.Length) : PrismSierpinskiTiling.MaxDepth);
+
+        /// <summary>
+        /// The recursion depth of the cut a death at detail <paramref name="level"/> (1 – <see cref="MaxDepth"/>) is
+        /// drawn at: the level itself on the Sierpinski cut, <c>silverDepths[level - 1]</c> on the silver gnomon cut.
+        /// </summary>
+        public int CutDepthOf(int level) => level <= 0 ? 0
+            : destructionCut == DestructionCut.SilverGnomon
+                ? Mathf.Clamp(silverDepths[Mathf.Min(level, silverDepths.Length) - 1], 0, PrismSilverGnomonTiling.MaxDepth)
+                : Mathf.Min(level, PrismSierpinskiTiling.MaxDepth);
+
+        /// <summary>Triangles one death at detail <paramref name="level"/> draws.</summary>
+        public int TrianglesOfLevel(int level) =>
+            destructionCut == DestructionCut.SilverGnomon
+                ? PrismSilverGnomonTiling.TriangleCount(CutDepthOf(level))
+                : PrismSierpinskiTiling.TriangleCount(CutDepthOf(level));
 
         /// <summary>The screen-size line of depth <paramref name="depth"/> (1 – <see cref="MaxDepth"/>); depth 0 has none.</summary>
         public float DepthLine(int depth) =>
@@ -161,6 +214,12 @@ namespace CosmicShore.ScriptableObjects
         public int ShedFineSubdivision => Mathf.Clamp(shedFineSubdivision, 2, 32);
         public int ShedFinestSubdivision => Mathf.Clamp(shedFinestSubdivision, 2, 32);
         public float BloomWeight => Mathf.Max(0f, bloomWeight);
+        public float RollWeight => Mathf.Max(0f, rollWeight);
+        public float RollRadius => Mathf.Clamp(rollRadius, 0.01f, 0.3f);
+        public float RollGap => Mathf.Clamp(rollGap, 0.001f, 0.1f);
+        public DestructionCut Cut => destructionCut;
+        public float WedgeSpinNoise => Mathf.Clamp(wedgeSpinNoise, 0f, 0.5f);
+        public float WedgeNoiseFrequency => Mathf.Clamp(wedgeNoiseFrequency, 0.5f, 8f);
         public float UnravelWeight => Mathf.Max(0f, unravelWeight);
         public float FlakeWeight => Mathf.Max(0f, flakeWeight);
         public int BloomRings => Mathf.Clamp(bloomRings, 1, 6);
@@ -190,7 +249,7 @@ namespace CosmicShore.ScriptableObjects
 
         /// <summary>The most triangles one entity of any level can draw.</summary>
         public int LargestEntityTriangles =>
-            Mathf.Max(PrismSierpinskiTiling.TriangleCount(MaxDepth), 12 * ShedFinestSubdivision * ShedFinestSubdivision);
+            Mathf.Max(TrianglesOfLevel(MaxDepth), 12 * ShedFinestSubdivision * ShedFinestSubdivision);
 
         /// <summary>
         /// Whether the bloom's rings and segments fall on grid lines of a shed mesh of <paramref name="subdivision"/>:
@@ -198,6 +257,15 @@ namespace CosmicShore.ScriptableObjects
         /// </summary>
         public bool BloomCutsFit(int subdivision) =>
             subdivision % (2 * BloomRings) == 0 && subdivision % BloomSegments == 0;
+
+        bool SilverDepthsAscend()
+        {
+            if (destructionCut != DestructionCut.SilverGnomon) return true;
+            if (silverDepths == null || silverDepths.Length < MaxDepth) return false;
+            for (int l = 2; l <= MaxDepth; l++)
+                if (CutDepthOf(l) <= CutDepthOf(l - 1)) return false;
+            return true;
+        }
 
         bool DepthLinesAscend()
         {
@@ -216,7 +284,8 @@ namespace CosmicShore.ScriptableObjects
             ShedMinScreen <= ShedFineScreen && ShedFineScreen <= ShedFinestScreen &&
             ShedSubdivision <= ShedFineSubdivision && ShedFineSubdivision <= ShedFinestSubdivision &&
             CrowdedFill <= PackedFill &&
-            (!ShedEnabled || BloomWeight + UnravelWeight + FlakeWeight > 0f) &&
+            (!ShedEnabled || BloomWeight + UnravelWeight + FlakeWeight + RollWeight > 0f) &&
+            SilverDepthsAscend() &&
             (BloomWeight <= 0f || (BloomCutsFit(ShedSubdivision) && BloomCutsFit(ShedFineSubdivision) &&
                                    BloomCutsFit(ShedFinestSubdivision))) &&
             MaxLiveTriangles <= 200_000 && LargestEntityTriangles <= MaxLiveTriangles;

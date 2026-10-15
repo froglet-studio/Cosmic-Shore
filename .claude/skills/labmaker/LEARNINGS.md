@@ -666,6 +666,20 @@ Entries are grouped by family; within a family, the newest goes at the bottom.
 - Evidence: `PrismCollisionBurst.hlsl` `PrismBurstWedgeTangent`; `verify_prism_collision_burst.py` W7 and the radial-tangent control
 - Promoted: no
 
+### L-STU-74 — "Hidden by its own prism" is a measurable claim: test it with a segment, and the failures name the geometry
+- Lab: Collision Burst Lab round 7 · Branch: `cece/dreamy-pascal-7xxx1m` · Date: 2026-10-15
+- What happened: the designer asked for steal rolls that leave by being occluded, not by dissolving. A harness test (segment from each rolled vertex to a random camera against the prism's cube) started at 80.6% hidden; sampling the visible vertices named three causes in turn — a fixed run-out distance too short for steep views (fixed by deriving it from the camera's height and offset), the roll's end caps leaking past the corner for a sideways camera (an inward tuck), and a roll that kept rolling out past the far end of a long slab (stop at the first hiding place) — to 98.5%. An occluder shrunk "a hair inside" also miscounted end caps lying exactly in a face plane.
+- Do instead: turn an occlusion idea into a percentage over random poses and cameras with a negative control (roll TOWARD the camera), print a sample of the failures with object-space coordinates, and fix the geometry the sample names; measure against the occluder's true extent.
+- Evidence: `verify_prism_collision_burst.py` `run_roll_tests`, `hiddenBehindPrism`; `PrismCollisionBurst.hlsl` `PrismBurstRoll`
+- Promoted: no
+
+### L-STU-75 — A test that names things by a hash inherits the hash's precision
+- Lab: Collision Burst Lab round 7 · Branch: `cece/dreamy-pascal-7xxx1m` · Date: 2026-10-15
+- What happened: the harness's shatter-rigidity test paired triangles whose piece hash was equal. The float hash on large inputs quantises to steps of 1/1024, so two different shards could share a "name"; the test passed for rounds only because its random sequence never drew such a pair, then failed when an unrelated test added one random draw.
+- Do instead: identify a piece by the quantity that defines it (here the Voronoi cell), and treat a hash as a name that can collide; when a passing test starts failing after an unrelated change to the RNG stream, suspect the test's identity assumption before the code.
+- Evidence: `verify_prism_collision_burst.py` test 3b
+- Promoted: no
+
 ## NCA — swarm / neural-CA research rigs (Tools/NCA)
 
 ### L-NCA-1 — The yardstick was wrong four times before the creatures were

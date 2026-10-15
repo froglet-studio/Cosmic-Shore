@@ -113,7 +113,7 @@ Destruction is one spectrum, coarse to fine, by the prism's projected diameter o
 | Level | Size on screen | Up close |
 |---|---|---|
 | **Explosion** | under `shatterMinScreen` (5%), off screen, or over budget | the ordinary 24-wedge explosion |
-| **Sierpinski depth 1 / 2 / 3 / 4** | from 5% / 10% / 16% / 24% | the explosion's own wedges (depth 0) cut deeper: each corner triangle splits at its edge midpoints, the middle stays whole — 96 / 312 / 960 / 2,904 fragments of a self-similar range of sizes; a shallower depth is the deeper with its finest corners merged. Every fragment moves by the EXPLOSION's own law (round 5, kind `WEDGE`): its response to the impact velocity, its two spin axes, its speed-capped spin rate, its slide and its erosion fade, as a wedge scaled to the fragment |
+| **Cut level 1 / 2 / 3 / 4** (round 7: the silver gnomon cut, 192 / 504 / 1,320 / 3,456 fragments, each spinning a little off its neighbours by a gradient noise; the Sierpinski cut below stays selectable) | from 5% / 10% / 16% / 24% | the explosion's own wedges (depth 0) cut deeper: each corner triangle splits at its edge midpoints, the middle stays whole — 96 / 312 / 960 / 2,904 fragments of a self-similar range of sizes; a shallower depth is the deeper with its finest corners merged. Every fragment moves by the EXPLOSION's own law (round 5, kind `WEDGE`): its response to the impact velocity, its two spin axes, its speed-capped spin rate, its slide and its erosion fade, as a wedge scaled to the fragment |
 
 The AMOUNT grades it too: once the shared budget is half full every new death is one level coarser, at 80%
 two (`PrismInteractionLodConfig`).

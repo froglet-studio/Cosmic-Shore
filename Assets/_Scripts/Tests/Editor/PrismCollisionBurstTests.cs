@@ -164,6 +164,27 @@ namespace CosmicShore.Tests
             Assert.AreEqual(PrismCollisionBurst.Flake, PrismCollisionBurst.PickShed(1f, 1f, 1f, 1f));
             Assert.AreEqual(PrismCollisionBurst.Unravel, PrismCollisionBurst.PickShed(1f, 1f, 1f, 0f));
             Assert.AreEqual(PrismCollisionBurst.Bloom, PrismCollisionBurst.PickShed(0.5f, 0f, 0f, 0f));
+
+            // The roll, fourth in the order; alone, every steal rolls.
+            for (int i = 0; i <= 100; i++)
+                Assert.AreEqual(PrismCollisionBurst.Roll, PrismCollisionBurst.PickShed(i / 100f, 0f, 0f, 0f, 1f));
+            int[] four = new int[PrismCollisionBurst.KindCount];
+            for (int i = 0; i < 4000; i++)
+                four[PrismCollisionBurst.PickShed((i + 0.5f) / 4000f, 1f, 1f, 1f, 1f)]++;
+            Assert.AreEqual(1000, four[PrismCollisionBurst.Roll], 1);
+        }
+
+        [Test]
+        public void TheRollIsTheHlslsKindAndTail()
+        {
+            string hlsl = File.ReadAllText(HlslPath);
+            StringAssert.Contains($"#define PRISM_BURST_ROLL    {PrismCollisionBurst.Roll}.0", hlsl);
+            string tail = PrismCollisionBurst.RollTail.ToString("0.0##", System.Globalization.CultureInfo.InvariantCulture);
+            StringAssert.Contains($"#define PRISM_BURST_ROLL_TAIL {tail}", hlsl);
+            Assert.AreEqual(PrismCollisionBurst.KindCount - 1, PrismCollisionBurst.Roll, "the roll is the last kind");
+            // A roll lives past its grade by the tail; every other shed ends with the grade.
+            Assert.AreEqual(0.8f * (1f + PrismCollisionBurst.RollTail), PrismCollisionBurst.ShedLife(0.8f, PrismCollisionBurst.Roll), 1e-6f);
+            Assert.AreEqual(PrismCollisionBurst.ShedLife(0.8f), PrismCollisionBurst.ShedLife(0.8f, PrismCollisionBurst.Bloom), 1e-6f);
         }
 
         [Test]
@@ -177,7 +198,7 @@ namespace CosmicShore.Tests
             Assert.AreEqual(0.5f, PrismCollisionBurst.SliderGain);
             StringAssert.Contains("return 3.0 * radius + (2.0 * offset + abs(amount * spreadPerAmount) * PRISM_BURST_SLIDER_GAIN) * maxScale;", hlsl,
                 "WedgeReach is the HLSL's PrismBurstWedgeReach, which the harness proves every pose stays inside");
-            Assert.AreEqual(PrismCollisionBurst.KindCount - 1, PrismCollisionBurst.Wedge, "the wedge is the last kind");
+            Assert.AreEqual(5, PrismCollisionBurst.Wedge);
         }
 
         [Test]
@@ -473,6 +494,101 @@ namespace CosmicShore.Tests
         }
 
         [Test]
+        public void TheSilverGnomonCutIsTwoShapesInFibonacciCounts()
+        {
+            int[] fib = { 1, 2, 3, 5, 8, 13, 21, 34, 55, 89, 144, 233, 377 };
+            for (int d = 0; d <= PrismSilverGnomonTiling.MaxDepth; d++)
+            {
+                Assert.AreEqual(fib[d], PrismSilverGnomonTiling.PerWedge(d), $"depth {d}");
+                var t = new System.Collections.Generic.List<float>();
+                PrismSilverGnomonTiling.Triangles(d, t);
+                Assert.AreEqual(4 * fib[d] * PrismSilverGnomonTiling.Stride, t.Count);
+                double area = 0;
+                for (int k = 0; k < t.Count; k += PrismSilverGnomonTiling.Stride)
+                {
+                    double cross = (t[k + 2] - t[k]) * (t[k + 5] - t[k + 1]) - (t[k + 4] - t[k]) * (t[k + 3] - t[k + 1]);
+                    Assert.Greater(cross, 0.0, "counter-clockwise");
+                    area += cross / 2;
+                    var angles = new[] { Angle(t, k, 0), Angle(t, k, 1), Angle(t, k, 2) };
+                    System.Array.Sort(angles);
+                    bool silver = Mathf.Abs(angles[0] - 45f) < 0.01f && Mathf.Abs(angles[2] - 67.5f) < 0.01f;
+                    bool gnomon = Mathf.Abs(angles[0] - 22.5f) < 0.01f && Mathf.Abs(angles[2] - 112.5f) < 0.01f;
+                    bool wedge = d == 0 && Mathf.Abs(angles[2] - 90f) < 0.01f;
+                    Assert.IsTrue(silver || gnomon || wedge, $"depth {d}: a triangle of {angles[0]}, {angles[1]}, {angles[2]} degrees");
+                    // inside its own wedge, so it takes that wedge's spin and UV
+                    int wedgeIndex = k / PrismSilverGnomonTiling.Stride / fib[d];
+                    float cu = (t[k] + t[k + 2] + t[k + 4]) / 3f - 0.5f, cv = (t[k + 1] + t[k + 3] + t[k + 5]) / 3f - 0.5f;
+                    int expected = Mathf.Abs(cu) >= Mathf.Abs(cv) ? (cu > 0 ? 1 : 3) : (cv > 0 ? 2 : 0);
+                    Assert.AreEqual(expected, wedgeIndex, $"depth {d}: a fragment outside its wedge");
+                    Assert.GreaterOrEqual(t[k + 6], 0f, "size level");
+                }
+                Assert.AreEqual(1.0, area, 1e-5, $"depth {d}: the whole face");
+            }
+        }
+
+        [Test]
+        public void ADeeperSilverCutRefinesTheShallower()
+        {
+            // Nested: every triangle at depth d + 1 lies inside one triangle of depth d (its centroid does, and the
+            // areas add up), so a coarser level is the finer with fragments merged.
+            for (int d = 0; d < PrismSilverGnomonTiling.MaxDepth; d++)
+            {
+                var coarse = new System.Collections.Generic.List<float>();
+                var fine = new System.Collections.Generic.List<float>();
+                PrismSilverGnomonTiling.Triangles(d, coarse);
+                PrismSilverGnomonTiling.Triangles(d + 1, fine);
+                var covered = new double[coarse.Count / 7];
+                for (int k = 0; k < fine.Count; k += 7)
+                {
+                    float cu = (fine[k] + fine[k + 2] + fine[k + 4]) / 3f, cv = (fine[k + 1] + fine[k + 3] + fine[k + 5]) / 3f;
+                    int owner = -1;
+                    for (int j = 0; j < coarse.Count; j += 7)
+                        if (Inside(coarse, j, cu, cv)) { owner = j / 7; break; }
+                    Assert.GreaterOrEqual(owner, 0, $"depth {d + 1}: a fragment outside every depth-{d} fragment");
+                    covered[owner] += 0.5 * ((fine[k + 2] - fine[k]) * (fine[k + 5] - fine[k + 1]) - (fine[k + 4] - fine[k]) * (fine[k + 3] - fine[k + 1]));
+                }
+                for (int j = 0; j < coarse.Count; j += 7)
+                {
+                    double a = 0.5 * ((coarse[j + 2] - coarse[j]) * (coarse[j + 5] - coarse[j + 1]) - (coarse[j + 4] - coarse[j]) * (coarse[j + 3] - coarse[j + 1]));
+                    Assert.AreEqual(a, covered[j / 7], 1e-6, $"depth {d}: a fragment not exactly its children");
+                }
+            }
+        }
+
+        static float Angle(System.Collections.Generic.List<float> t, int k, int corner)
+        {
+            int a = corner, b = (corner + 1) % 3, c = (corner + 2) % 3;
+            var p = new Vector2(t[k + 2 * a], t[k + 2 * a + 1]);
+            var u = new Vector2(t[k + 2 * b], t[k + 2 * b + 1]) - p;
+            var v = new Vector2(t[k + 2 * c], t[k + 2 * c + 1]) - p;
+            return Mathf.Acos(Mathf.Clamp(Vector2.Dot(u.normalized, v.normalized), -1f, 1f)) * Mathf.Rad2Deg;
+        }
+
+        static bool Inside(System.Collections.Generic.List<float> t, int k, float u, float v)
+        {
+            float Side(int i, int j) => (t[k + 2 * j] - t[k + 2 * i]) * (v - t[k + 2 * i + 1]) - (t[k + 2 * j + 1] - t[k + 2 * i + 1]) * (u - t[k + 2 * i]);
+            return Side(0, 1) >= -1e-6f && Side(1, 2) >= -1e-6f && Side(2, 0) >= -1e-6f;
+        }
+
+        [Test]
+        public void TheSilverMeshIsTheCut()
+        {
+            HighPolyPrismMesh.InvalidateCache();
+            foreach (int depth in new[] { 4, 6, 8, 10 })
+            {
+                var mesh = HighPolyPrismMesh.GetSilverGnomon(depth);
+                Assert.AreSame(mesh, HighPolyPrismMesh.GetSilverGnomon(depth), "shared and cached");
+                Assert.IsTrue(HighPolyPrismMesh.IsHighPoly(mesh));
+                Assert.AreEqual(PrismSilverGnomonTiling.TriangleCount(depth) * 3, mesh.vertexCount);
+                var verts = mesh.vertices;
+                float area = 0f;
+                for (int t = 0; t < verts.Length; t += 3)
+                    area += 0.5f * Vector3.Cross(verts[t + 1] - verts[t], verts[t + 2] - verts[t]).magnitude;
+                Assert.AreEqual(6f, area, 1e-3f, "the whole unit cube's surface: no holes at rest");
+            }
+        }
+
+        [Test]
         public void TheSierpinskiMeshIsTheCutWithACentroidPerShard()
         {
             HighPolyPrismMesh.InvalidateCache();
@@ -573,10 +689,22 @@ namespace CosmicShore.Tests
             Assert.Less(cfg.ShedMinScreen, cfg.ShedFineScreen);
             Assert.Less(cfg.ShedFineScreen, cfg.ShedFinestScreen);
             Assert.Less(cfg.CrowdedFill, cfg.PackedFill);
-            // The game sheds as a bloom only (the designer, 2026-10-15), cut into more, shorter pieces that peel with noise.
-            Assert.Greater(cfg.BloomWeight, 0f);
-            Assert.AreEqual(0f, cfg.UnravelWeight, "bloom only");
-            Assert.AreEqual(0f, cfg.FlakeWeight, "bloom only");
+            // The game sheds as a ROLL only (the designer, 2026-10-15: the camera trick); the bloom (round 5) keeps
+            // its cuts for the lab.
+            Assert.Greater(cfg.RollWeight, 0f);
+            Assert.AreEqual(0f, cfg.BloomWeight, "roll only");
+            Assert.AreEqual(0f, cfg.UnravelWeight, "roll only");
+            Assert.AreEqual(0f, cfg.FlakeWeight, "roll only");
+            Assert.Greater(cfg.RollRadius, 0f);
+            Assert.Greater(cfg.RollGap, 0f, "turns that touch would fight");
+            // Destruction is the silver gnomon cut (the designer, 2026-10-15), finer at every level, its fragments'
+            // spins a little out of step.
+            Assert.AreEqual(DestructionCut.SilverGnomon, cfg.Cut);
+            for (int l = 2; l <= cfg.MaxDepth; l++)
+                Assert.Greater(cfg.CutDepthOf(l), cfg.CutDepthOf(l - 1), "the silver cut deepens level by level");
+            Assert.LessOrEqual(cfg.CutDepthOf(cfg.MaxDepth), PrismSilverGnomonTiling.MaxDepth);
+            Assert.Greater(cfg.WedgeSpinNoise, 0f, "neighbours out of perfect step");
+            Assert.LessOrEqual(cfg.WedgeSpinNoise, 0.25f, "subtle: the order holds");
             Assert.GreaterOrEqual(cfg.BloomRings, 2, "more cuts: each piece shorter than the quarter, so it curls tighter");
             Assert.Greater(cfg.PeelNoise, 0f, "every peel different");
             // Bloom pieces (and, if weighted again, ribbons and flake scales) fall on whole triangles at every
@@ -599,7 +727,9 @@ namespace CosmicShore.Tests
                 Assert.IsTrue(Regex.IsMatch(shader, $@"UNITY_DOTS_INSTANCED_PROP\(float4, {prop}\)"), prop);
             StringAssert.Contains("PRISM_BURST_PROP(float4, _SlicePlane).x", shader, "the fade curve");
             StringAssert.Contains("PRISM_BURST_PROP(float4, _SlicePivot)", shader, "the inside colour");
-            foreach (var prop in new[] { "_BurstShape", "_BurstCurl", "_BurstPeel", "_ExplosionSpread", "_ExplosionDials" })
+            Assert.IsTrue(Regex.IsMatch(shader, @"UNITY_DOTS_INSTANCED_PROP\(float4, _SliceAxis\)"), "the roll's camera stamp");
+            StringAssert.Contains("PRISM_BURST_PROP(float4, _SliceAxis)", shader, "the roll's camera stamp");
+            foreach (var prop in new[] { "_BurstShape", "_BurstCurl", "_BurstPeel", "_BurstRoll", "_ExplosionSpread", "_ExplosionDials", "_WedgeNoise" })
             {
                 StringAssert.Contains(prop, shader);
                 Assert.IsTrue(Regex.IsMatch(shader, $@"float4 {prop};"), $"{prop} in the CBUFFER");

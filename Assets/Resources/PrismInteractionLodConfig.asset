@@ -18,11 +18,19 @@ MonoBehaviour:
   crowdedFill: 0.5
   packedFill: 0.8
   destructionEnabled: 1
+  destructionCut: 1
   depthMinScreen:
   - 0.05
   - 0.1
   - 0.16
   - 0.24
+  silverDepths:
+  - 4
+  - 6
+  - 8
+  - 10
+  wedgeSpinNoise: 0.15
+  wedgeNoiseFrequency: 3
   shedEnabled: 1
   shedMinScreen: 0.08
   shedFineScreen: 0.16
@@ -30,7 +38,10 @@ MonoBehaviour:
   shedSubdivision: 12
   shedFineSubdivision: 18
   shedFinestSubdivision: 24
-  bloomWeight: 1
+  rollWeight: 1
+  rollRadius: 0.05
+  rollGap: 0.01
+  bloomWeight: 0
   unravelWeight: 0
   flakeWeight: 0
   bloomRings: 3

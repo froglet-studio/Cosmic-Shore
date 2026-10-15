@@ -50,6 +50,8 @@
 //   4 FLAKE   — shed. The skin lifts off as rigid SCALES, a grid twice as fine as the shatter's, in a
 //     wave that runs the prism's long axis: each scale tips up on its far edge as the front nears and
 //     is gone when the front reaches it.
+//   6 ROLL    — shed (the game's, round 7). Each face's skin rolls up like a carpet AWAY from the camera, over the
+//     edge and round onto a face the camera cannot see, until its own prism hides it (PrismBurstRoll).
 //   5 WEDGE   — destruction. Each triangle of the Sierpinski cut turns about its root wedge's two axes (the
 //     wedge's tangent and cross(velocity, N)) and slides with it, by the explosion's law (PrismBurstWedgePose);
 //     fades on the explosion's erosion (the shader's clip).
@@ -73,6 +75,18 @@
 #define PRISM_BURST_GLITTER 3.0
 #define PRISM_BURST_FLAKE   4.0
 #define PRISM_BURST_WEDGE   5.0
+#define PRISM_BURST_ROLL    6.0
+
+// The ROLL shed (the designer, 2026-10-15: "the peeling can curl into a tight roll and roll along and around the
+// surface until the prism occludes it ... then the rolls don't need to dissolve"). Its life is the grade's length
+// × (1 + TAIL): the face is rolled up over the grade's length, the tail carries the roll over the far edge and out
+// of sight behind its own prism. EASE: the share of the grade the roll takes to get up to speed (then it rolls at
+// a constant speed). HIDE: the least the roll travels down the side face past the edge, in roll radii.
+// FADE: the last share of the life in which a roll the prism could not hide (a very thin prism) dissolves.
+#define PRISM_BURST_ROLL_TAIL 0.6
+#define PRISM_BURST_ROLL_EASE 0.3
+#define PRISM_BURST_ROLL_HIDE 2.0
+#define PRISM_BURST_ROLL_FADE 0.15
 
 // RotateFacesAlongAxis / TangentSlider's constants (the explosion's subgraphs; the lab's build.py reads
 // them from the graph and asserts these): the pivot bias, the slide bias and the slider gain.
@@ -80,6 +94,10 @@
 #define PRISM_BURST_PIVOT_BIAS (-0.5)
 #endif
 #define PRISM_BURST_SLIDE_BIAS 0.5
+
+// Scales the gradient noise so it spans about [-1, 1] (the harness measures its spread: most of it inside, a
+// clamped tail).
+#define PRISM_BURST_GRADIENT_GAIN 1.6
 #define PRISM_BURST_SLIDER_GAIN 0.5
 
 #define PRISM_BURST_TAU 6.28318530718
@@ -152,6 +170,11 @@ struct PrismBurstParams
     float rings;        // bloom: rings per quarter, from the cube edge inward
     float segments;     // bloom: segments per quarter, along the cube edge
     float noise;        // bloom: 0 every piece alike .. 1 each with its own delay, curl and lift
+    float3 camera;      // roll: the camera's world position when the steal happened (the roll peels away from it)
+    float life;         // roll: the stamped life (the grade's length × (1 + PRISM_BURST_ROLL_TAIL))
+    float subdivision;  // roll: the shed mesh's cells along a face edge (a turn of the roll must span several)
+    float rollRadius;   // roll: the innermost turn's radius, in prism radii (at least about a mesh cell)
+    float rollGap;      // roll: the gap between turns, in prism radii (at least the chord's sag, so turns never cross)
 };
 
 // ─── small pieces ─────────────────────────────────────────────────────────────────────────────
@@ -272,6 +295,153 @@ void PrismBurstBend(float3 x, float3 n, float3 hinge, float3 inward, float3 lift
 #endif
 }
 
+// ─── the roll (kind ROLL) ─────────────────────────────────────────────────────────────────────────────
+
+// The roll's fade: 0 for all but the last PRISM_BURST_ROLL_FADE of its life — a roll is meant to leave by being
+// hidden behind its own prism, not by dissolving.
+float PrismBurstRollFade(float age, float life)
+{
+    return saturate((age / max(life, 1e-4) - (1.0 - PRISM_BURST_ROLL_FADE)) / PRISM_BURST_ROLL_FADE);
+}
+
+// A face's skin rolled up like a carpet, AWAY from the camera. The roll direction d is the face's in-plane axis along
+// which the camera is furthest off the face centre, pointing away from it; the roll starts at the near edge, winds
+// the skin into an Archimedean spiral (inner radius a, a gap g between turns: r(w) = sqrt(a² + g w / π) for the
+// length w wound), and crosses the face over the grade's length — eased in, then at a constant speed. The skin goes
+// into the roll top side in, so the roll shows its inside: the NEW colour. Past the far edge the roll pivots round
+// it onto the next face — which faces away from the camera, by the choice of d — and rolls along it until its own
+// prism hides it from the camera; it stops short of that face's far edge. Exact: an isometry of the sheet (to the
+// spiral's pitch, b²/2r²), its normal the spiral's.
+void PrismBurstRoll(PrismBurstFrame f, PrismBurstParams p, out float3 pos, out float3 nrm)
+{
+    float Lu = length(f.faceU);
+    float Lv = length(f.faceV);
+    float3 uHat = f.faceU / max(Lu, 1e-6);
+    float3 vHat = f.faceV / max(Lv, 1e-6);
+    float3 toCam = p.camera - f.faceCentre;
+    float cu = dot(toCam, uHat);
+    float cv = dot(toCam, vHat);
+    bool alongU = abs(cu) >= abs(cv);
+#ifdef PRISM_BURST_ROLL_TOWARD_CAMERA
+    float away = -1.0;   // negative control only: roll TOWARD the camera, onto the faces it sees
+#else
+    float away = 1.0;
+#endif
+    float3 d = (alongU ? uHat * (cu > 0.0 ? -1.0 : 1.0) : vHat * (cv > 0.0 ? -1.0 : 1.0)) * away;
+    float L = alongU ? Lu : Lv;
+    float3 n = f.normal;
+    float3 rel = f.rest - f.faceCentre;
+    float s = dot(rel, d);
+    float3 lateral = rel - d * s - n * dot(rel, n);
+    float w = clamp(s + L, 0.0, 2.0 * L);
+
+    // The spiral, never coarser than the mesh: the inner turn spans about seven cells, and the gap clears the
+    // sag of a cell's chord, so the polygon turns never cross.
+    float seg = 2.0 * L / max(p.subdivision, 1.0);
+    float a = max(p.rollRadius * f.radius, 0.9 * seg);
+    float sh = sin(0.25 * seg / a);
+    float g = max(max(p.rollGap * f.radius, 2.5 * a * sh * sh), 1e-5);
+    float b = g / PRISM_BURST_TAU;
+    float r = sqrt(a * a + 2.0 * b * w);
+
+    float D = p.life / (1.0 + PRISM_BURST_ROLL_TAIL);
+    float x = max(p.age, 0.0) / max(D, 1e-4);
+    float k = PRISM_BURST_ROLL_EASE;
+    float wound = 2.0 * L * (x < k ? x * x / (2.0 * k) : x - 0.5 * k) / (1.0 - 0.5 * k);
+    if (x <= 1.0 && w >= wound)
+    {
+        pos = f.rest;   // still flat, ahead of the roll
+        nrm = n;
+        return;
+    }
+    wound = min(wound, 2.0 * L);
+    float Rf = sqrt(a * a + 2.0 * b * wound);
+    float delta = (Rf - r) / b;
+    // The outer turn meets the face TANGENTIALLY: the spiral's pitch tilts its tangent by atan(b / R), so the
+    // contact sits that far round from straight below the axis — the sheet's normal is continuous where it lifts.
+    float eps = atan(b / Rf);
+    float3 axis;
+    float omega = 0.0;
+    if (x <= 1.0)
+    {
+        axis = f.faceCentre + lateral + d * (wound - L) + Rf * (n * cos(eps) - d * sin(eps));
+    }
+    else
+    {
+        // Over the edge and away, rolling without slipping round the prism: a quarter turn about the far edge onto
+        // the side face (which faces away from the camera), down it, and — when that face is too short to hide the
+        // roll — a quarter turn about its far edge onto the face opposite the roll's own, under the prism. Fast
+        // enough to be hidden well inside the tail.
+        //
+        // How far down the side face hides a roll 2R tall from this camera: a point at depth x below the edge,
+        // R' off that face, is behind the prism once x (L + c) > h R' — h the camera's height over this face, c its
+        // distance behind the near side (from the face centre). Never less than HIDE radii.
+        float vEnd = 2.0 * L / (D * (1.0 - 0.5 * k));
+        float camH = max(dot(toCam, n), 0.0);
+        float camC = max(-dot(toCam, d), 0.0);
+        float side = 2.0 * max(dot(f.faceCentre - f.centre, n), 0.0);   // the side face's depth: the prism's thickness
+        float quarter = Rf * 0.25 * PRISM_BURST_TAU;
+        float q1 = quarter;                 // round the far edge
+        float q2 = q1 + side;               // down the side face
+        float q3 = q2 + quarter;            // round its far edge
+        float q4 = q3 + max(0.0, 2.0 * L - 2.0 * Rf);   // back along the opposite face, stopping short of its end
+        // It STOPS at the first place that hides it — further on, a camera looking along the prism would see it
+        // come out past the far end: down the side face as far as this camera needs, or, where the side face is
+        // too short for that, one and a half roll radii round onto the opposite face.
+        float xHide = max(PRISM_BURST_ROLL_HIDE * Rf, 1.25 * camH * 2.0 * Rf / max(L + camC, 1e-4));
+        float qHide = xHide + Rf <= side ? q1 + xHide : min(q3 + 1.5 * Rf, max(q4, q3));
+        float v = max(vEnd, qHide / (0.7 * PRISM_BURST_ROLL_TAIL * D));
+        float q = min(v * (p.age - D), qHide);
+        // The roll's ENDS tuck in as it goes over: a camera off to one side would otherwise see a strip of the roll's
+        // end past the prism's corner, as wide as the roll stands off the prism times the camera's sideways slope.
+        float3 latHat = alongU ? vHat : uHat;
+        float W = alongU ? Lv : Lu;
+        float camLat = abs(dot(toCam, latHat));
+        float tuck = min(0.8 * W, 1.25 * 2.0 * Rf * camLat / max(L + camC, 1e-4));
+        float ramp = smoothstep(0.0, 1.0, q / max(q1 + Rf, 1e-4));
+        lateral = lateral * (1.0 - ramp * tuck / max(W, 1e-4));
+        float3 edge1 = f.faceCentre + lateral + d * L;
+        float3 edge2 = edge1 - n * side;
+        float3 contact;
+        float3 m;   // the outward normal of the surface the roll stands on
+        float3 t;   // its direction of travel
+        if (q < q1)
+        {
+            float beta = q / Rf;
+            contact = edge1;
+            m = n * cos(beta) + d * sin(beta);
+            t = d * cos(beta) - n * sin(beta);
+        }
+        else if (q < q2)
+        {
+            contact = edge1 - n * (q - q1);
+            m = d;
+            t = -n;
+        }
+        else if (q < q3)
+        {
+            float gamma = (q - q2) / Rf;
+            contact = edge2;
+            m = d * cos(gamma) - n * sin(gamma);
+            t = -n * cos(gamma) - d * sin(gamma);
+        }
+        else
+        {
+            contact = edge2 - d * (q - q3);
+            m = -n;
+            t = -d;
+        }
+        axis = contact + Rf * (m * cos(eps) - t * sin(eps));
+        omega = q / Rf;
+    }
+    float alpha = -0.25 * PRISM_BURST_TAU + eps - delta - omega;
+    float3 radial = d * cos(alpha) + n * sin(alpha);
+    float3 around = n * cos(alpha) - d * sin(alpha);   // d radial / d alpha
+    pos = axis + radial * r;
+    // The spiral's own normal: perpendicular to its tangent (b radial + r around), the skin's top side inward.
+    nrm = (around * b - radial * r) / sqrt(r * r + b * b);
+}
+
 // How far from the travelling centre any piece of any kind can be, in prism radii, for a given
 // spread. A piece's pivot is on the surface (1), its farthest point is at most a diameter from the
 // pivot (2), it leaves by at most 1.5 spreads (the glitter's), plus 0.5 for a petal's or ribbon's
@@ -308,6 +478,12 @@ void PrismBurstPose(float kind, PrismBurstFrame f, PrismBurstParams p,
     out float3 pos, out float3 nrm, out float pieceHash)
 {
     float k = floor(kind + 0.5);
+    if (k == PRISM_BURST_ROLL)
+    {
+        PrismBurstRoll(f, p, pos, nrm);
+        pieceHash = PrismBurstHash(f.faceKey * 7.1 + p.seed * 3.3);
+        return;
+    }
     if (k == PRISM_BURST_BLOOM)
     {
         // The quarter is the triangle's diagonal quarter of the face; its outer edge is a cube edge.
@@ -451,8 +627,11 @@ float3 PrismBurstRotateAboutAxis(float3 v, float3 axis, float angle)
 // cross(velocity, N), by amount × rotation — the rotation done in the object-SCALED frame, as the graph does
 // it — and the piece slides out along T by amount × spreadPerAmount. velocity is the stamped WORLD velocity,
 // used as the graph uses it.
+//
+// spin scales the two turns' angles (the tangent's, then the velocity's): (1, 1) is the explosion; the WEDGE kind
+// passes 1 + a little coherent noise so neighbouring fragments drift out of step.
 void PrismBurstExplosionMap(float3 P, float3 N, float3 T, float3 pivot, float3 objectScale, float amount,
-    float3 velocity, float rotation, float spreadPerAmount, out float3 pos, out float3 nrm)
+    float3 velocity, float rotation, float2 spin, float spreadPerAmount, out float3 pos, out float3 nrm)
 {
 #ifdef PRISM_BURST_WEDGE_PIVOT_UNSCALED
     float3 os = float3(1.0, 1.0, 1.0);   // negative control only: the turn in the unscaled frame shears a piece
@@ -460,10 +639,11 @@ void PrismBurstExplosionMap(float3 P, float3 N, float3 T, float3 pivot, float3 o
     float3 os = max(abs(objectScale), float3(1e-5, 1e-5, 1e-5));
 #endif
     float3 local = os * (P - pivot);
-    float angle = amount * rotation;
+    float angle1 = amount * rotation * spin.x;
+    float angle2 = amount * rotation * spin.y;
     float3 axis2 = cross(velocity, N);
-    float3 r = PrismBurstRotateAboutAxis(PrismBurstRotateAboutAxis(local, T, angle), axis2, angle);
-    nrm = PrismBurstRotateAboutAxis(PrismBurstRotateAboutAxis(N, T, angle), axis2, angle);
+    float3 r = PrismBurstRotateAboutAxis(PrismBurstRotateAboutAxis(local, T, angle1), axis2, angle2);
+    nrm = PrismBurstRotateAboutAxis(PrismBurstRotateAboutAxis(N, T, angle1), axis2, angle2);
     pos = r / os + pivot + (PRISM_BURST_SLIDE_BIAS + PRISM_BURST_PIVOT_BIAS + amount * spreadPerAmount) * T * PRISM_BURST_SLIDER_GAIN;
 }
 
@@ -486,14 +666,52 @@ float3 PrismBurstWedgeTangent(float3 offsetInFace)
     return float3(0.0, 0.0, offsetInFace.z >= 0.0 ? 1.0 : -1.0);
 }
 
+// Perlin's gradient noise in 3D, about [-1, 1] (clamped): a pseudo-random gradient at every lattice point
+// (PrismBurstHash3), blended by the quintic fade, so the field is continuous with a continuous derivative — two
+// nearby points get nearly the same value, two far apart unrelated ones.
+float PrismBurstGradientNoise(float3 p)
+{
+    float3 i = floor(p);
+    float3 f = p - i;
+    float3 u = f * f * f * (f * (f * 6.0 - 15.0) + 10.0);
+    float n000 = dot(PrismBurstHash3(i + float3(0.0, 0.0, 0.0)) * 2.0 - 1.0, f - float3(0.0, 0.0, 0.0));
+    float n100 = dot(PrismBurstHash3(i + float3(1.0, 0.0, 0.0)) * 2.0 - 1.0, f - float3(1.0, 0.0, 0.0));
+    float n010 = dot(PrismBurstHash3(i + float3(0.0, 1.0, 0.0)) * 2.0 - 1.0, f - float3(0.0, 1.0, 0.0));
+    float n110 = dot(PrismBurstHash3(i + float3(1.0, 1.0, 0.0)) * 2.0 - 1.0, f - float3(1.0, 1.0, 0.0));
+    float n001 = dot(PrismBurstHash3(i + float3(0.0, 0.0, 1.0)) * 2.0 - 1.0, f - float3(0.0, 0.0, 1.0));
+    float n101 = dot(PrismBurstHash3(i + float3(1.0, 0.0, 1.0)) * 2.0 - 1.0, f - float3(1.0, 0.0, 1.0));
+    float n011 = dot(PrismBurstHash3(i + float3(0.0, 1.0, 1.0)) * 2.0 - 1.0, f - float3(0.0, 1.0, 1.0));
+    float n111 = dot(PrismBurstHash3(i + float3(1.0, 1.0, 1.0)) * 2.0 - 1.0, f - float3(1.0, 1.0, 1.0));
+    float x00 = lerp(n000, n100, u.x);
+    float x10 = lerp(n010, n110, u.x);
+    float x01 = lerp(n001, n101, u.x);
+    float x11 = lerp(n011, n111, u.x);
+    return clamp(PRISM_BURST_GRADIENT_GAIN * lerp(lerp(x00, x10, u.y), lerp(x01, x11, u.y), u.z), -1.0, 1.0);
+}
+
+// A fragment's two spin multipliers: 1 + amplitude × the gradient noise at its centroid (object space × frequency,
+// moved by the death's seed), one field per turn. Continuous, so neighbours keep nearly the same spin and the order
+// holds; never equal, so no two fragments of a face turn in perfect step. noise = (amplitude, frequency, seed).
+float2 PrismBurstWedgeSpin(float3 pieceCentroid, float3 noise)
+{
+#ifdef PRISM_BURST_WEDGE_NOISE_OFF
+    return float2(1.0, 1.0);   // negative control only: every fragment of a wedge in perfect step
+#else
+    float3 q = pieceCentroid * noise.y + noise.z * float3(17.13, 31.71, 7.37);
+    return 1.0 + noise.x * float2(PrismBurstGradientNoise(q), PrismBurstGradientNoise(q + float3(41.3, 11.9, 23.7)));
+#endif
+}
+
 // A Sierpinski fragment as a SCALED WEDGE (kind WEDGE). It turns about its ROOT WEDGE's own two axes — the wedge's
 // tangent T and cross(velocity, N), the explosion's velocity response — by the explosion's angle, and slides along
 // that same T: every fragment of a wedge spins exactly as the explosion spins that wedge and is sent the way it is
 // sent. Its pivot keeps the explosion's pivot-to-centroid offset, scaled by the fragment's size (2^-level), so the
-// pieces tumble apart about their own centres; at level 0 — the explosion's own wedges — this IS the explosion.
+// pieces tumble apart about their own centres; at level 0 — the explosion's own wedges — this IS the explosion
+// (with noise amplitude 0). level is the fragment's size as log2(its wedge's size / its own): an integer on the
+// Sierpinski cut, a fraction on the silver gnomon cut. noise = (amplitude, frequency, seed): PrismBurstWedgeSpin.
 // All in object space, as the explosion's graph.
 void PrismBurstWedgePose(float3 P, float3 N, float3 pieceCentroid, float level, float3 objectScale, float amount,
-    float3 velocity, float3 spreadValue, float rotation, float spreadPerAmount, out float3 pos, out float3 nrm)
+    float3 velocity, float3 spreadValue, float rotation, float spreadPerAmount, float3 noise, out float3 pos, out float3 nrm)
 {
     float3 faceCentre = dot(P, N) * N;
 #ifdef PRISM_BURST_WEDGE_OWN_TANGENT
@@ -505,7 +723,8 @@ void PrismBurstWedgePose(float3 P, float3 N, float3 pieceCentroid, float level, 
     // (spread - pivotBias) × gain. The fragment keeps that offset at its own scale.
     float3 wedgeOffset = (spreadValue - PRISM_BURST_PIVOT_BIAS) * T * PRISM_BURST_SLIDER_GAIN - T * (1.0 / 3.0);
     float3 pivot = pieceCentroid + wedgeOffset * exp2(-max(level, 0.0));
-    PrismBurstExplosionMap(P, N, T, pivot, objectScale, amount, velocity, rotation, spreadPerAmount, pos, nrm);
+    PrismBurstExplosionMap(P, N, T, pivot, objectScale, amount, velocity, rotation,
+        PrismBurstWedgeSpin(pieceCentroid, noise), spreadPerAmount, pos, nrm);
 }
 
 // How far, in WORLD units, a WEDGE fragment can be from the prism's travelling centre (the flight is added

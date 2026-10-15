@@ -2606,7 +2606,29 @@ effect) and by the shared budget (`PrismInteractionLod`, config `Resources/Prism
 | Interaction | Far / over budget | Nearer | Close up |
 |---|---|---|---|
 | **Destruction** (every explosion death; a collision above motion level 1 asks for plain) | the EXPLOSION — depth 0 of the Sierpinski cut | DEPTH 1 (≥ 5%) → DEPTH 2 (≥ 10%) | DEPTH 3 (≥ 16%) → DEPTH 4 (≥ 24%) |
-| **Stealing** (`PrismTeamManager.Steal`) | the GRADE — the 0.8 s smoothstep colour lerp (`PrismColorLerp`) | a SHED (≥ 8%): the BLOOM (round 5; unravel and flake ship at weight 0), on 12 subdivisions | the same shed on 18 (≥ 16%), then 24 (≥ 28%) subdivisions |
+| **Stealing** (`PrismTeamManager.Steal`) | the GRADE — the 0.8 s smoothstep colour lerp (`PrismColorLerp`) | a SHED (≥ 8%): the ROLL (round 7; bloom, unravel and flake ship at weight 0), on 12 subdivisions | the same shed on 18 (≥ 16%), then 24 (≥ 28%) subdivisions |
+
+**Round 7 (the designer, 2026-10-15) — supersedes the Sierpinski cut as the shipped destruction and the bloom as the
+shipped shed:** *"lets add a small amount of perlin noise ... break up the perfectly synchronized triangle rotations
+... use this silver ratio gnomen as a way to get a range of triangle sizes"*; *"for the stealing lets use a camera
+trick like we do for the mass crystal effect. the peeling can curl into a tight roll and roll along and around the
+surface until the prism occludes it ... always peel away from the camera's perspective"*.
+
+- **The silver gnomon cut** (`PrismSilverGnomonTiling`, `HighPolyPrismMesh.GetSilverGnomon`, `destructionCut`,
+  `silverDepths` 4 / 6 / 8 / 10): the explosion's wedges cut into silver triangles (45°, 67.5°, 67.5°) and their
+  gnomons (45°, 22.5°, 112.5°), each of which cuts exactly into one of each (area √2 − 1 and 2 − √2); the same-shape
+  child recursing a level shallower gives Fibonacci counts (24 × 8 / 21 / 55 / 144) and a wide size range. Nested,
+  sliver-free; depth 0 is still the explosion.
+- **The spin noise**: every fragment's two spin angles × (1 + 0.15 × a 3D gradient noise at its centroid, 3 cycles a
+  prism width, seeded per death) — `PrismBurstWedgeSpin`, `_WedgeNoise`. Neighbours turn almost alike, never in step.
+- **The ROLL** (kind 6, `PrismBurstRoll`): each face's skin rolls up into a tight Archimedean roll AWAY from where the
+  camera was at the steal (`_SliceAxis`), crosses the face over the grade's length showing the new colour, rolls over
+  the far edge onto a face the camera cannot see and stops where its own prism hides it — down the side face, or round
+  onto the opposite face when that is too short; its ends tuck in against a sideways camera. No dissolve, but in the
+  last 15% of a 1.6 × grade life. The harness: 98.5% of the camera-facing skin hidden by 70% of the tail.
+- **Measured** (lab round 7): silver levels squint 0.152–0.167 against the explosion (round 6's Sierpinski 0.166),
+  fade 0.035–0.046; the roll does NOT squint as the grade (0.21–0.24 — a wipe that hides itself, by design); every
+  LOD step ≤ 1.4 × its band.
 
 **Round 5 (the designer, 2026-10-15) — supersedes the glitter MOTION of round 4 and the three-way shed pick:**
 *"lets use just the bloom for stealing and we can have more noise in how it peels so it looks different each time.

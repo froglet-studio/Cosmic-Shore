@@ -6,7 +6,7 @@ a shared decision log: **destruction** (the explosion → the Sierpinski cut, ev
 explosion's own law) and **stealing** (the grade → the bloom shed). Round 1 looked at the four level-1 collision
 bursts alone.
 
-- **Live page:** https://claude.ai/artifact/F47yG1UjBkK662rEnhk7m9 (decision log: `decisions`) — round 6
+- **Live page:** https://claude.ai/artifact/F47yG1UjBkK662rEnhk7m9 (decision log: `decisions`) — round 7
 - **Page (generated, never edit by hand):** `Docs/Studios/PrismCollisionBurstLab.html`
 - **Source:** `Tools/Build/prism_collision_burst_lab/lab.src.html`; `build.py` stamps the shipped
   numbers and shader code into it (`--check` fails when the page is stale).
@@ -36,7 +36,114 @@ ordinary effect on the same prism at the same moment.
 The burst mesh is `HighPolyPrismMesh.GetUnwelded(10)` rebuilt on the page in float32 (`Math.fround`), as
 C# builds it.
 
-## Round 6 — 2026-10-15 (`cece/dreamy-pascal-7xxx1m`): every fragment spins on its ROOT wedge's axes
+## Round 7 — 2026-10-15 (`cece/dreamy-pascal-7xxx1m`): the silver gnomon cut, the spin noise, and the ROLL
+
+**Your decisions applied** (the designer, in the session): *"lets add a small amount of perlin noise. just enough so
+we break up the perfectly synchronized triangle rotations from adjacent triangle with the same normal. we can also use
+this silver ratio gnomen as a way to get a range of triangle sizes. the continuity of the subtle perlin noise will
+hopefully keep the beautiful order together while giving just enough asymmetry"* — and for stealing: *"lets use a
+camera trick like we do for the mass crystal effect. the peeling can curl into a tight roll and roll along and around
+the surface until the prism occludes it. it can always peel away from the camera's perspective and around the surfaces
+the camera is facing. then the rolls don't need to dissolve they just move out of sight by being occluded from their
+own prism."*
+
+### What changed, in the game and in the lab
+
+- **The silver gnomon cut** (`PrismSilverGnomonTiling`, `HighPolyPrismMesh.GetSilverGnomon`, config
+  `destructionCut = SilverGnomon`, `silverDepths` 4 / 6 / 8 / 10). Your figure's silver triangle (45°, 67.5°, 67.5°)
+  and gnomon (45°, 22.5°, 112.5°) each cut exactly into one of each — the triangle at (√2 − 1) of its far leg (the
+  smaller triangle 2·sin 22.5° ≈ 0.765 of it), the gnomon where its silver part's legs are equal — taking √2 − 1 and
+  2 − √2 of the parent's area. The explosion's right-isosceles wedge cuts into one of each too (its 90° corner is
+  67.5° + 22.5°), so depth 0 is still the explosion. The recursion gives the child of the OTHER shape one less budget
+  and the child of the SAME shape (the larger, the whirl's continuation) two less: Fibonacci counts (24 × 8 / 21 / 55
+  / 144 fragments at the four levels) with a wide range of sizes (lengths spanning 4.5× / 8.2× / 15× / 28×; the
+  Sierpinski depth 4 spans 8×), every piece one of the two shapes — no slivers — every depth nested in the next.
+  Each fragment's size LEVEL (log2 of its wedge's size over its own) rides TEXCOORD2.z as before; the Sierpinski cut
+  stays selectable.
+- **The spin noise**: each fragment's two spin angles are its root wedge's × (1 + `wedgeSpinNoise` (0.15) × a 3D
+  gradient (Perlin) noise at its centroid, `wedgeNoiseFrequency` 3 cycles a prism width, seeded per death),
+  `PrismBurstWedgeSpin`. Continuous (steepest slope 3.2 a unit), so neighbours turn almost alike and the order holds;
+  never equal (with the noise on, 0.5% of neighbouring fragment pairs remain in step, against 100% without).
+- **The ROLL** (kind 6, `PrismBurstRoll`; `rollWeight` 1, every other shed weight 0). Each face's skin rolls up like a
+  carpet AWAY from the camera — along the face's in-plane axis on which the camera is furthest off the centre — into
+  an Archimedean spiral (inner radius `rollRadius` 0.05 prism radii, `rollGap` 0.01 between turns, both never finer
+  than the shed mesh allows, so a turn stays round and turns never cross), its outer turn tangent to the face. It
+  crosses the face over the grade's length (eased in, then rolling at a constant speed); the skin winds top side in,
+  so the roll shows the NEW colour. Then it rolls over the far edge onto the side face — which faces away from the
+  camera by that choice of axis — and down it as far as this camera needs to lose it (x · (L + c) > h · 2R), or, when
+  that face is too short, round the next edge onto the face opposite its own; it STOPS at the first place that hides
+  it (rolling on would bring it out past the prism's far end for a camera looking along the prism). Its ends tuck in
+  as it goes over, by the strip a sideways camera could see past the corner. It never dissolves where it is seen —
+  only in the last 15% of its life, a roll its prism could not hide. The camera position at the steal and the mesh's
+  subdivision ride `_SliceAxis`; the life is the grade × 1.6.
+
+### Scorecards (shipped settings)
+
+**Destruction against the explosion** (band 0.097, held whole 0.315):
+
+| | Size | Centre | Fade | Colour | Squint |
+|---|---|---|---|---|---|
+| Silver level 1 (192 fragments) | 0.941 | 0.158 | 0.039 | 0.116 | 0.167 |
+| Silver level 2 (504) | 0.892 | 0.219 | 0.035 | 0.117 | 0.154 |
+| Silver level 3 (1,320) | 0.876 | 0.147 | 0.046 | 0.120 | 0.152 |
+| Silver level 4 (3,456) | 0.874 | 0.173 | 0.045 | 0.125 | 0.153 |
+| Sierpinski 4 as wedges (round 6) | 0.903 | 0.228 | 0.054 | 0.119 | 0.166 |
+
+The silver cut squints a little closer than round 6's Sierpinski (0.152–0.167 against 0.166–0.184) and fades closer
+than two explosions are to each other (0.035–0.046 against 0.099); the colour (the inside colour) is still the gap.
+
+**Stealing against the grade** (band 0.033, colour snapped 0.158): the roll 0.239 (12 subdivisions) / 0.209 (24),
+"reads as different"; round 5's bloom 0.116 / 0.121. The roll is a WIPE that hides itself, not a blend: squinted at,
+the old colour leaves the face from the camera's side instead of fading everywhere at once, and the new-colour roll
+stands proud of the face while it crosses (size 1.18–1.21). It is a different kind of steal from the grade by design.
+
+**Off the camera** (the harness, 200 random slabs 1:5 at most, cameras 4–20 radii out from anywhere): by 70% of the
+roll's tail, **98.5%** of the camera-facing skin's vertices are hidden behind their own prism; the rest are grazing
+views, left to the last-15% fade.
+
+**LOD steps** (1,080 px): silver level 4 → 3 0.35, 3 → 2 0.51, 2 → 1 0.71, 1 → the explosion 1.05; the roll 24 → 18
+0.09, 18 → 12 0.48, 12 → the grade 1.40 (its band: the same steal 10% of the grade later) — all unnoticeable.
+
+### Found
+
+1. **The silver dissection fits the explosion's wedges exactly**, and its two shapes refine each other — a two-tile
+   substitution, so every depth is nested and sliver-free (the C# and the page's port agree value for value as float32).
+2. **A roll that keeps rolling un-hides itself.** Rolling on along the opposite face carried it past the prism's far
+   end for a camera looking along a long slab (87.7% hidden); stopping at the first hiding place: 98.5%.
+3. **A roll's ends leak past the corner** for a sideways camera (an end cap lies in the plane of the side face; the
+   strip behind it, as wide as the roll stands off the prism times the camera's slope, is visible). The tuck fixes it.
+4. **The burst hash names shatter shards in steps of 1/1024** (float precision on large inputs), so two shards can
+   share a name; the harness's rigidity test treated a shared name as one shard and failed once the random sequence
+   moved. The test now identifies a shard by its Voronoi cell. Harmless in the game (only the shard's dissolve order
+   shares the value) — the shatter is the shader's fallback, drawn by no ladder.
+5. **A step band from a law without randomness collapses** — again (L-STU-70): the roll follows the camera, not a seed.
+
+### Checked
+
+- `verify_prism_collision_burst.py` — **PASS**: the roll (first frame, unit normals, envelope, isometry and normal
+  derivative on its face, two-sided at its contact line, the 97% hiding test, no early dissolve); the gradient noise
+  (sd 0.305, 0.03% clamped); the wedge on both cuts, noise off (W1–W7) and on (W8: within 2 × amplitude of its
+  wedge's spin, out of step with its neighbours); 10 controls FIRED, two new (noiseless spin; the roll toward the
+  camera).
+- `parity.py` — **PASS**: the burst with the roll (129,600 vertices, 0 outliers); the wedge on both cuts with the
+  noise (10,008 vertices); depth 0 vs the explosion's graph; the silver cut vs the C# compiled, depths 0–12, as
+  float32; the silver meshes (area 6, the C#'s counts); six controls FIRED (one new: the next silver depth).
+- The silver tiling's angles, counts, wedge membership and nesting run under .NET: 0 failures.
+- `verify_lab.cjs` PASS (screenshots read); `build.py --check` OK; `unity_refcompile` player + editor — 0 errors in
+  project code; `check_console_logging.py` 0 problems. **Not run:** the Unity editor (`PrismCollisionBurstTests`,
+  new: the silver cut's shapes, counts, nesting and mesh; the roll's kind, tail and pick; the config) — filed in
+  `Docs/UNITY_VERIFICATION_CHECKLIST.md`.
+
+### Decision needed (designer)
+
+1. **The roll's camera**: stamped at the steal (shipped) — a fast camera move during the 1.3 s could show a roll on
+   its way round; the live camera would follow but could flip a roll's direction mid-way. Play it and say.
+2. **The roll against the grade**: it does not squint as the grade (0.21–0.24); it is the camera trick instead. Keep
+   it, or keep the grade at the farther shed lines and roll only close up.
+3. **The spin noise** (0.15 at 3 cycles a prism width) and **the silver depths** (4 / 6 / 8 / 10) — sliders on the page.
+4. **The inside colour on destruction fragments** (still open from round 6).
+
+## Round 6 — 2026-10-15 (`cece/dreamy-pascal-7xxx1m`): every fragment spins on its ROOT wedge's axes — superseded where round 7 differs (the cut, the noise, the shed)
 
 **Your report applied** (the designer, after trying round 5 in the game): *"the velocity vector should be using a
 cross product with the normal to determine rotation axis etc. like the explosion shader"*.

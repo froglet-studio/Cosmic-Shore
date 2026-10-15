@@ -72,6 +72,7 @@ namespace CosmicShore.Utility
         static readonly Dictionary<int, Mesh> s_cache = new();
         static readonly Dictionary<int, Mesh> s_unweldedCache = new();
         static readonly Dictionary<int, Mesh> s_sierpinskiCache = new();
+        static readonly Dictionary<int, Mesh> s_silverCache = new();
         static readonly Dictionary<int, Mesh> s_shedCache = new();
 
         /// <summary>
@@ -159,6 +160,33 @@ namespace CosmicShore.Utility
             if (mesh == null) return;
             var face = new List<float>(PrismSierpinskiTiling.PerWedge(depth) * 4 * PrismSierpinskiTiling.Stride);
             PrismSierpinskiTiling.Triangles(depth, face);
+            PopulateCut(mesh, face, PrismSierpinskiTiling.PerWedge(depth));
+        }
+
+        /// <summary>
+        /// The DESTRUCTION's silver gnomon cut at one recursion depth (<see cref="PrismSilverGnomonTiling"/>): the
+        /// explosion's wedges cut into silver triangles and their gnomons, a range of sizes in the silver ratio, laid out
+        /// exactly as <see cref="GetSierpinski"/> (UV0 the explosion's, TEXCOORD2 = centroid and size level). Shared and
+        /// cached; never mutate it.
+        /// </summary>
+        public static Mesh GetSilverGnomon(int depth)
+        {
+            depth = Mathf.Clamp(depth, 0, PrismSilverGnomonTiling.MaxDepth);
+            if (s_silverCache.TryGetValue(depth, out var mesh) && mesh != null)
+                return mesh;
+
+            mesh = new Mesh { name = $"Prism_SilverGnomon_{depth}" };
+            var face = new List<float>(PrismSilverGnomonTiling.PerWedge(depth) * 4 * PrismSilverGnomonTiling.Stride);
+            PrismSilverGnomonTiling.Triangles(depth, face);
+            PopulateCut(mesh, face, PrismSilverGnomonTiling.PerWedge(depth));
+            s_silverCache[depth] = mesh;
+            return mesh;
+        }
+
+        // One face's cut (u0, v0, u1, v1, u2, v2, level per triangle, four wedges of perWedge each) placed on all six
+        // faces, every triangle owning its vertices.
+        static void PopulateCut(Mesh mesh, List<float> face, int perWedge)
+        {
             int perFace = face.Count / PrismSierpinskiTiling.Stride;
             int vertCount = perFace * 6 * 3;
             var verts = new Vector3[vertCount];
@@ -179,12 +207,13 @@ namespace CosmicShore.Utility
 
                 for (int k = 0; k < face.Count; k += PrismSierpinskiTiling.Stride)
                 {
-                    int wedge = PrismSierpinskiTiling.WedgeOf(k / PrismSierpinskiTiling.Stride, depth);
+                    int wedge = k / PrismSierpinskiTiling.Stride / perWedge;
                     var a = new Vector2(face[k], face[k + 1]);
                     var b = new Vector2(face[k + 2], face[k + 3]);
                     var c = new Vector2(face[k + 4], face[k + 5]);
                     Vector2 centroid = (a + b + c) / 3f;
-                    // z is the fragment's LEVEL: the wedge pose scales the explosion's pivot offset by 2^-level.
+                    // z is the fragment's size LEVEL, log2(its wedge's size / its own): the wedge pose scales the
+                    // explosion's pivot offset by 2^-level.
                     var triangle = new Vector3(centroid.x, centroid.y, face[k + 6]);
 
                     AddVertex(a);
@@ -236,6 +265,9 @@ namespace CosmicShore.Utility
             foreach (var kv in s_sierpinskiCache)
                 if (ReferenceEquals(kv.Value, mesh))
                     return true;
+            foreach (var kv in s_silverCache)
+                if (ReferenceEquals(kv.Value, mesh))
+                    return true;
             foreach (var kv in s_shedCache)
                 if (ReferenceEquals(kv.Value, mesh))
                     return true;
@@ -248,6 +280,7 @@ namespace CosmicShore.Utility
             s_cache.Clear();
             s_unweldedCache.Clear();
             s_sierpinskiCache.Clear();
+            s_silverCache.Clear();
             s_shedCache.Clear();
         }
 

@@ -32,7 +32,13 @@ A. EXECUTION (clang++, /asset-surgery §4.5c). The file under Assets/ is transla
       1 - progress, is the grade's course.
   10. VORONOI: every point lies inside its own cell (non-negative border) and seeds stay on the face.
   11. AN UNKNOWN KIND FALLS BACK to the shatter, never to garbage.
-  W. THE WEDGE (destruction, every Sierpinski depth 0-3): amount 0 is the prism; level 0 IS the explosion —
+  N. THE GRADIENT NOISE spans about [-1, 1] (sd, clamped share) and is continuous (its steepest slope).
+  R. THE ROLL (the steal): it never dissolves before the last PRISM_BURST_ROLL_FADE of its life, and by 70% of its
+     tail at least 97% of every camera-facing skin is hidden behind its own prism (a segment test against the
+     cube), for random slabs and cameras 4-20 radii out; the roll also runs the first-frame, unit-normal,
+     envelope and (while on its face) isometry / normal-derivative tests above.
+  W. THE WEDGE (destruction, Sierpinski depths 0-3 and the silver gnomon cut at 0, 1, 4, 7, the spin noise off
+     and on): amount 0 is the prism; level 0 IS the explosion —
      equal to the harness's own Rodrigues statement of RotateFacesAlongAxis' closed form with the graph's
      constants; every fragment is rigid in the world; normals unit; every pose inside PrismBurstWedgeReach
      (the CPU's bounds); no fragment turns faster than the explosion's own cap (2 x amount x rotation); and every
@@ -47,6 +53,8 @@ A. EXECUTION (clang++, /asset-surgery §4.5c). The file under Assets/ is transla
   17. -DPRISM_BURST_PIVOT_BIAS=0          — level 0 leaves the explosion (test W fires).
   18. -DPRISM_BURST_WEDGE_PIVOT_UNSCALED=1 — the turn in the unscaled frame shears fragments (test W fires).
   19. -DPRISM_BURST_WEDGE_OWN_TANGENT=1    — each fragment's own radial tangent: off its wedge's spin (W7 fires).
+  20. -DPRISM_BURST_WEDGE_NOISE_OFF=1      — neighbouring fragments back in perfect step (W8 fires).
+  21. -DPRISM_BURST_ROLL_TOWARD_CAMERA=1   — the roll rolls toward the camera, onto faces it sees (R fires).
 
 B. FRONT-END COMPILE (glslang, HLSL mode). Every pass of PrismCollisionBurst.shader, vertex and
    fragment, plain and DOTS-instanced, against a mock of the URP library (the slice verifier's). It
@@ -123,6 +131,9 @@ static inline float3 abs(float3 v){return float3(std::fabs(v.x),std::fabs(v.y),s
 static inline float3 max(float3 a,float3 b){return float3(max(a.x,b.x),max(a.y,b.y),max(a.z,b.z));}
 static inline float3 operator/(float3 a,float3 b){return float3(a.x/b.x,a.y/b.y,a.z/b.z);}
 static inline float exp2(float v){return std::exp2(v);}
+static inline float2 operator*(float a,float2 b){return float2(a*b.x,a*b.y);}
+static inline float2 operator+(float a,float2 b){return float2(a+b.x,a+b.y);}
+static inline float atan(float v){return std::atan(v);}
 """
 
 HARNESS = r"""#include "shipped.h"
@@ -204,22 +215,26 @@ static PrismBurstParams params(float age, float seed, float spread) {
     q.age = age; q.speed = rnd(10, 53); q.seed = seed; q.spread = spread; q.tau = 0.22f; q.spin = 0.3f;
     q.bloomTurns = 0.7f; q.unravelTurns = 0.9f; q.strips = 5; q.cells = 3;
     q.rings = 3; q.segments = 3; q.noise = 0.6f;
+    q.camera = float3(0, 0, 100); q.life = 0.8f * (1.0f + PRISM_BURST_ROLL_TAIL); q.subdivision = N;
+    q.rollRadius = 0.05f; q.rollGap = 0.01f;
     q.progress = PrismBurstProgress(age, 7.5f, 0.0f);
     return q;
 }
 
 static void run_pose_tests(bool envelopeOnly) {
     std::vector<Vert> m = mesh();
-    float worstCentroid[5] = {0,0,0,0,0};
+    float worstCentroid[7] = {0,0,0,0,0,0,0};
     float worstEnvelope = 0;
     for (int trial = 0; trial < 24; trial++) {
         Pose P = rndPose();
         float seed = rnd(0, 1);
         float spread = rnd(0.2f, 1.5f);
-        for (int kind = 0; kind < 5; kind++) {
+        float3 camera = world(P, rndDir() * rnd(3, 12));
+        for (int kind : {0, 1, 2, 3, 4, 6}) {
             float ages[6] = {0.0f, 0.05f, 0.3f, 1.0f, 3.0f, 7.5f};
             for (float age : ages) {
                 PrismBurstParams q = params(age, seed, spread);
+                q.camera = camera;
                 float3 sum(0); int count = 0;
                 float R = 0;
                 std::vector<float3> pos(m.size()), nrm(m.size());
@@ -249,7 +264,8 @@ static void run_pose_tests(bool envelopeOnly) {
                 float3 mean = sum / (float)count;
                 float drift = length(mean - world(P, float3(0,0,0))) / R;
                 if (drift > worstCentroid[kind]) worstCentroid[kind] = drift;
-                CHECK(drift <= 0.45f * std::max(spread, 1.0f), "kind %d age %.2f: the cloud's centre wandered %.3f radii", kind, age, drift);
+                // (the roll is exempt: it carries every skin away from the camera by design, to hide it)
+                CHECK(kind == 6 || drift <= 0.45f * std::max(spread, 1.0f), "kind %d age %.2f: the cloud's centre wandered %.3f radii", kind, age, drift);
                 for (size_t i = 0; i < m.size(); i += 3) {
                     // 2. a triangle is never torn
                     CHECK(piece[i] == piece[i+1] && piece[i] == piece[i+2], "kind %d: a triangle straddles two pieces", kind);
@@ -268,6 +284,16 @@ static void run_pose_tests(bool envelopeOnly) {
                     for (int k = 0; k < 400; k++) {
                         size_t i = (rng() % (m.size() / 3)) * 3, j = (rng() % (m.size() / 3)) * 3;
                         if (piece[i] != piece[j] || !(m[i].n.x == m[j].n.x && m[i].n.y == m[j].n.y && m[i].n.z == m[j].n.z)) continue;
+                        if (kind == 0) {
+                            // A shard is its Voronoi cell. Its piece hash is only a name, and the burst hash runs out
+                            // of float precision on large inputs (names come in steps of 1/1024), so two shards can
+                            // share one: compare the cells themselves.
+                            PrismBurstFrame fi = frameOf(P, m[i], seed), fj = frameOf(P, m[j], seed);
+                            float2 si, sj; float bi, bj;
+                            PrismBurstVoronoi(fi.triUV * 0.5f + float2(0.5f, 0.5f), fi.faceKey, q.cells, si, bi);
+                            PrismBurstVoronoi(fj.triUV * 0.5f + float2(0.5f, 0.5f), fj.faceKey, q.cells, sj, bj);
+                            if (si.x != sj.x || si.y != sj.y) continue;
+                        }
                         float d0 = length(world(P, m[i].pos) - world(P, m[j].pos)), d1 = length(pos[i] - pos[j]);
                         CHECK(std::fabs(d0 - d1) <= 2e-4f * R, "kind %d: a piece deformed %g -> %g", kind, d0, d1);
                     }
@@ -275,8 +301,8 @@ static void run_pose_tests(bool envelopeOnly) {
             }
         }
     }
-    printf("worst envelope: %.3f radii; worst cloud-centre drift (radii) shatter %.3f bloom %.3f unravel %.3f glitter %.3f flake %.3f\n",
-           worstEnvelope, worstCentroid[0], worstCentroid[1], worstCentroid[2], worstCentroid[3], worstCentroid[4]);
+    printf("worst envelope: %.3f radii; worst cloud-centre drift (radii) shatter %.3f bloom %.3f unravel %.3f glitter %.3f flake %.3f roll %.3f\n",
+           worstEnvelope, worstCentroid[0], worstCentroid[1], worstCentroid[2], worstCentroid[3], worstCentroid[4], worstCentroid[6]);
 }
 
 // 4. bends: isometric, and the normal is the derivative.
@@ -286,8 +312,12 @@ static void run_bend_tests() {
         Pose P = rndPose();
         P.t = float3(0, 0, 0);   // float precision is relative to the coordinates; keep them small
         float seed = rnd(0, 1);
-        for (int kind = 1; kind <= 2; kind++) {
-            PrismBurstParams q = params(rnd(0.05f, 7.5f), seed, rnd(0.2f, 1.0f));
+        float3 camera = world(P, rndDir() * rnd(3, 12));
+        for (int kind : {1, 2, 6}) {
+            // (the roll is an isometry while it crosses its face, the part the camera sees; over the edge its ends
+            // tuck in, on purpose, behind the prism)
+            PrismBurstParams q = params(kind == 6 ? rnd(0.05f, 0.8f) : rnd(0.05f, 7.5f), seed, rnd(0.2f, 1.0f));
+            q.camera = camera;
             for (int k = 0; k < 200; k++) {
                 const Vert& v = m[rng() % m.size()];
                 PrismBurstFrame f = frameOf(P, v, seed);
@@ -302,30 +332,49 @@ static void run_bend_tests() {
                 float faceScale = std::min(length(f.faceU), length(f.faceV));
                 float3 dirs[2] = { normalize(f.faceU), normalize(f.faceV) };
                 for (int d = 0; d < 2; d++) {
+                    // One direction of steps: whether the chord's stretch and its tilt off the returned normal both
+                    // converge. The roll's curvature jumps from 0 (flat) to 1/R (rolled) at its contact line, and a
+                    // step that crosses it cannot converge until it is shorter than the way to the line — so for the
+                    // roll the step is taken both ways, and the side that stays in one regime must converge.
                     float tilt[2], stretch[2], floors[2];
-                    for (int h = 0; h < 2; h++) {
-                        float eps = (h == 0 ? 2e-2f : 1e-2f) * faceScale;
-                        PrismBurstFrame g = f; g.rest = f.rest + dirs[d] * eps;
-                        float3 p1, n1; float h1;
-                        PrismBurstPose((float)kind, g, q, p1, n1, h1);
-                        float3 step = p1 - p0;
-                        float ratio = length(step) / eps;
-                        // The chord of a step this size is within 2e-3 of its arc; below that, float32
-                        // rounding of coordinates of size |p0| over the step (the tilt's floor, below).
-                        float stretchFloor = std::max(2e-3f, 8.0f * 1.2e-7f * (length(p0) + f.radius) / eps);
-                        stretch[h] = std::fabs(ratio - 1.0f); floors[h] = stretchFloor;
-                        tilt[h] = std::fabs(dot(normalize(step), n0));
-                    }
+                    auto measure = [&](float sign) {
+                        for (int h = 0; h < 2; h++) {
+                            float eps = (h == 0 ? 2e-2f : 1e-2f) * faceScale;
+                            PrismBurstFrame g = f; g.rest = f.rest + dirs[d] * (eps * sign);
+                            if (kind == 6) {
+                                // The roll's skin ends at the face's edges: a step must stay on the face.
+                                float3 rr = g.rest - f.faceCentre;
+                                if (std::fabs(dot(rr, normalize(f.faceU))) > length(f.faceU) - 1e-4f * f.radius ||
+                                    std::fabs(dot(rr, normalize(f.faceV))) > length(f.faceV) - 1e-4f * f.radius) { tilt[0] = tilt[1] = 0; stretch[0] = stretch[1] = 0; floors[0] = floors[1] = 1; return; }
+                            }
+                            float3 p1, n1; float h1;
+                            PrismBurstPose((float)kind, g, q, p1, n1, h1);
+                            float3 step = p1 - p0;
+                            float ratio = length(step) / eps;
+                            // The chord of a step this size is within 2e-3 of its arc; below that, float32
+                            // rounding of coordinates of size |p0| over the step (the tilt's floor, below).
+                            float stretchFloor = std::max(2e-3f, 8.0f * 1.2e-7f * (length(p0) + f.radius) / eps);
+                            stretch[h] = std::fabs(ratio - 1.0f); floors[h] = stretchFloor;
+                            tilt[h] = std::fabs(dot(normalize(step), n0));
+                        }
+                    };
                     // A tight curl (the bloom's short pieces) makes the chord fall short of its arc by
                     // (k eps)^2 / 24 — so isometry is proved by CONVERGENCE too: halving the step must
                     // quarter the shortfall. A real stretch is O(1) and does not shrink with the step.
-                    bool small = stretch[0] <= floors[0] && stretch[1] <= floors[1];
-                    CHECK(small || stretch[1] <= 0.35f * stretch[0] + floors[1], "kind %d: the bend stretched a step by %g (eps) and %g (eps/2)", kind, stretch[0], stretch[1]);
                     // Below the float noise floor of a step this size the tilt carries no
                     // information either way (rounding of coordinates of size |p0| over a step eps).
                     float floorTilt = 8.0f * 1.2e-7f * (length(p0) + f.radius) / (1e-2f * faceScale);
-                    bool exact = tilt[0] < floorTilt && tilt[1] < floorTilt;
-                    CHECK(exact || tilt[1] <= 0.62f * tilt[0], "kind %d: the normal is not the bend's derivative (tilt %g at eps, %g at eps/2)", kind, tilt[0], tilt[1]);
+                    bool stretchOk = false, tiltOk = false;
+                    for (float sign : {1.0f, -1.0f}) {
+                        if (sign < 0 && kind != 6) break;
+                        measure(sign);
+                        bool small = stretch[0] <= floors[0] && stretch[1] <= floors[1];
+                        stretchOk |= small || stretch[1] <= 0.35f * stretch[0] + floors[1];
+                        bool exact = tilt[0] < floorTilt && tilt[1] < floorTilt;
+                        tiltOk |= exact || tilt[1] <= 0.62f * tilt[0];
+                    }
+                    CHECK(stretchOk, "kind %d: the bend stretched a step by %g (eps) and %g (eps/2)", kind, stretch[0], stretch[1]);
+                    CHECK(tiltOk, "kind %d: the normal is not the bend's derivative (tilt %g at eps, %g at eps/2)", kind, tilt[0], tilt[1]);
                 }
             }
         }
@@ -416,28 +465,84 @@ static void explosionReference(float3 P, float3 N, float3 T, float3 os, float am
     nrm = rodrigues(rodrigues(N, T, amount * ER), axis2, amount * ER);
     pos = r / os + pivot + T * ((0.5f - 0.5f + amount * ES) * 0.5f);
 }
+@@SILVER_CPP@@
+static std::vector<WVert> placeCut(const std::vector<float>& t) {
+    float3 fn[6] = {float3(1,0,0),float3(-1,0,0),float3(0,1,0),float3(0,-1,0),float3(0,0,1),float3(0,0,-1)};
+    float3 fu[6] = {float3(0,1,0),float3(0,0,1),float3(0,0,1),float3(1,0,0),float3(1,0,0),float3(0,1,0)};
+    std::vector<WVert> out;
+    for (int f = 0; f < 6; f++) {
+        float3 fv = cross(fn[f], fu[f]);
+        auto at = [&](float u, float v) { return fn[f]*0.5f + fu[f]*(u - 0.5f) + fv*(v - 0.5f); };
+        for (size_t i = 0; i < t.size(); i += 7) {
+            float cu = (t[i] + t[i+2] + t[i+4]) / 3.0f, cv = (t[i+1] + t[i+3] + t[i+5]) / 3.0f;
+            for (int k = 0; k < 3; k++) { WVert w; w.pos = at(t[i+2*k], t[i+2*k+1]); w.n = fn[f]; w.centroid = at(cu, cv); w.level = t[i+6]; out.push_back(w); }
+        }
+    }
+    return out;
+}
+static std::vector<WVert> silver(int depth) {
+    std::vector<float> t;
+    double cu[4] = {0, 1, 1, 0}, cv[4] = {0, 0, 1, 1};
+    const double h = 0.70710678118654757;
+    for (int k = 0; k < 4; k++) {
+        int n = (k + 1) % 4;
+        if (depth <= 0) { silverEmit(0.5, 0.5, cu[k], cv[k], cu[n], cv[n], t); continue; }
+        double xu = cu[k] + (cu[n] - cu[k]) * h, xv = cv[k] + (cv[n] - cv[k]) * h;
+        silverS(cu[k], cv[k], xu, xv, 0.5, 0.5, depth - 2, t);
+        silverG(cu[n], cv[n], 0.5, 0.5, xu, xv, depth - 1, t);
+    }
+    return placeCut(t);
+}
+
+// The gradient noise's spread: about [-1, 1], continuous.
+static void run_noise_tests() {
+    int clamped = 0, total = 200000; double sum2 = 0; float lipschitz = 0;
+    for (int k = 0; k < total; k++) {
+        float3 p(rnd(-40, 40), rnd(-40, 40), rnd(-40, 40));
+        float n = PrismBurstGradientNoise(p);
+        CHECK(n >= -1.0f && n <= 1.0f, "gradient noise %g outside [-1, 1]", n);
+        if (std::fabs(n) >= 0.999f) clamped++;
+        sum2 += n * n;
+        float3 q = p + rndDir() * 1e-3f;
+        lipschitz = std::max(lipschitz, std::fabs(PrismBurstGradientNoise(q) - n) / 1e-3f);
+    }
+    float sd = (float)std::sqrt(sum2 / total);
+    printf("gradient noise: sd %.3f, %.2f%% clamped, steepest slope %.2f per unit\n", sd, 100.0f * clamped / total, lipschitz);
+    CHECK(sd >= 0.2f && sd <= 0.6f, "the gradient noise's spread %.3f is not about [-1, 1]", sd);
+    CHECK(clamped <= total / 50, "the gradient noise clamps %d of %d samples", clamped, total);
+    CHECK(lipschitz <= 8.0f, "the gradient noise jumps (slope %g): not continuous", lipschitz);
+}
+
 static void run_wedge_tests() {
     const float3 S(0.18f, 0.1f, 0.1f); const float ER = 0.0169f, ES = 0.05f;
-    float worstReach = 0, worstLevel0 = 0, worstSpin = 0, worstWedgeSpin = 0;
-    for (int depth = 0; depth <= 3; depth++) {
-        std::vector<WVert> m = sierpinski(depth);
-        for (int trial = 0; trial < 8; trial++) {
+    float worstReach = 0, worstLevel0 = 0, worstSpin = 0, worstWedgeSpin = 0, worstNoisySpin = 0;
+    int pairs = 0, inStep = 0;
+    struct Cut { const char* name; int depth; };
+    for (Cut cut : {Cut{"sierpinski", 0}, Cut{"sierpinski", 1}, Cut{"sierpinski", 2}, Cut{"sierpinski", 3},
+                    Cut{"silver", 0}, Cut{"silver", 1}, Cut{"silver", 4}, Cut{"silver", 7}})
+    for (float amp : {0.0f, 0.15f}) {
+        bool sier = cut.name[1] == 'i';
+        int depth = cut.depth;
+        std::vector<WVert> m = sier ? sierpinski(depth) : silver(depth);
+        for (int trial = 0; trial < 6; trial++) {
             Pose P = rndPose(); P.t = float3(0,0,0);
             float3 vel = rndDir() * rnd(5, 60);
             float speed = rnd(10, 53);
+            float seed = rnd(0, 1);
+            float3 noise(amp, 3.0f, seed);
             float R = length(linear(P, float3(0.5f,0.5f,0.5f)));
             float maxScale = std::max(P.s.x, std::max(P.s.y, P.s.z));
             for (float t : {0.0f, 0.4f, 2.0f, 7.5f}) {
                 float amount = speed * t;
-                std::vector<float3> wp(m.size());
+                std::vector<float3> wp(m.size()), wn(m.size());
                 for (size_t i = 0; i < m.size(); i++) {
                     const WVert& v = m[i];
                     float3 pos, nrm;
-                    PrismBurstWedgePose(v.pos, v.n, v.centroid, v.level, P.s, amount, vel, S, ER, ES, pos, nrm);
-                    wp[i] = world(P, pos);
+                    PrismBurstWedgePose(v.pos, v.n, v.centroid, v.level, P.s, amount, vel, S, ER, ES, noise, pos, nrm);
+                    wp[i] = world(P, pos); wn[i] = nrm;
                     // W1. the first frame is the prism
                     if (amount == 0.0f) {
-                        CHECK(length(pos - v.pos) <= 1e-5f && length(nrm - v.n) <= 1e-5f, "wedge depth %d: amount 0 moved a vertex", depth);
+                        CHECK(length(pos - v.pos) <= 1e-5f && length(nrm - v.n) <= 1e-5f, "wedge %s %d: amount 0 moved a vertex", cut.name, depth);
                     }
                     // W3. unit normals
                     CHECK(std::fabs(length(nrm) - 1.0f) <= 1e-4f, "wedge: normal length %g", length(nrm));
@@ -445,30 +550,33 @@ static void run_wedge_tests() {
                     float reach = PrismBurstWedgeReach(R, maxScale, amount, ES, S);
                     float r = length(wp[i]);
                     if (r / reach > worstReach) worstReach = r / reach;
-                    CHECK(r <= reach * (1 + 1e-4f), "wedge depth %d: a vertex %.3f escapes the reach %.3f", depth, r, reach);
-                    // W5. the spin is the explosion's, capped by its speed: never more than two turns of amount x rotation
+                    CHECK(r <= reach * (1 + 1e-4f), "wedge %s %d: a vertex %.3f escapes the reach %.3f", cut.name, depth, r, reach);
+                    // W5. the spin is the explosion's, capped by its speed: never more than two turns of amount x
+                    // rotation, x (1 + the noise's amplitude)
                     float turn = std::acos(std::min(1.0f, std::max(-1.0f, dot(nrm, v.n))));
-                    if (amount > 0) worstSpin = std::max(worstSpin, turn / (2 * amount * ER));
-                    CHECK(turn <= 2 * amount * ER + 1e-3f, "wedge: a fragment turned %g rad, more than the explosion's 2 x %g", turn, amount * ER);
-                    // W7. every fragment SPINS as its root wedge does in the explosion: the same two axes (the wedge's
-                    // tangent, cross(velocity, N)) and angle, so its normal is the explosion wedge's normal.
-                    {
-                        float3 off = v.centroid - v.n * dot(v.pos, v.n), a = abs(off);
-                        float3 Tw = a.x >= a.y && a.x >= a.z ? float3(off.x >= 0 ? 1.f : -1.f, 0, 0)
-                                  : a.y >= a.z ? float3(0, off.y >= 0 ? 1.f : -1.f, 0) : float3(0, 0, off.z >= 0 ? 1.f : -1.f);
-                        float3 rp, rn;
-                        explosionReference(v.pos, v.n, Tw, P.s, amount, vel, S, ER, ES, rp, rn);
+                    if (amount > 0) worstSpin = std::max(worstSpin, turn / (2 * amount * ER * (1 + amp)));
+                    CHECK(turn <= 2 * amount * ER * (1 + amp) + 1e-3f, "wedge: a fragment turned %g rad, more than the explosion's 2 x %g x %g", turn, amount * ER, 1 + amp);
+                    float3 off = v.centroid - v.n * dot(v.pos, v.n), a = abs(off);
+                    float3 Tw = a.x >= a.y && a.x >= a.z ? float3(off.x >= 0 ? 1.f : -1.f, 0, 0)
+                              : a.y >= a.z ? float3(0, off.y >= 0 ? 1.f : -1.f, 0) : float3(0, 0, off.z >= 0 ? 1.f : -1.f);
+                    float3 rp, rn;
+                    explosionReference(v.pos, v.n, Tw, P.s, amount, vel, S, ER, ES, rp, rn);
+                    if (amp == 0.0f) {
+                        // W7. every fragment SPINS as its root wedge does in the explosion: the same two axes (the
+                        // wedge's tangent, cross(velocity, N)) and angle, so its normal is the explosion wedge's.
                         worstWedgeSpin = std::max(worstWedgeSpin, length(rn - nrm));
-                        CHECK(length(rn - nrm) <= 1e-4f, "wedge depth %d: a fragment turned off its root wedge's spin by %g", depth, length(rn - nrm));
-                    }
-                    // W2. level 0 IS the explosion
-                    if (v.level == 0.0f) {
-                        float3 T = normalize(v.centroid - v.n * dot(v.pos, v.n));
-                        float3 rp, rn;
-                        explosionReference(v.pos, v.n, T, P.s, amount, vel, S, ER, ES, rp, rn);
-                        float err = length(world(P, rp) - world(P, pos)) / R;
-                        worstLevel0 = std::max(worstLevel0, err);
-                        CHECK(err <= 1e-4f && length(rn - nrm) <= 1e-4f, "wedge: level 0 leaves the explosion's law by %g radii", err);
+                        CHECK(length(rn - nrm) <= 1e-4f, "wedge %s %d: a fragment turned off its root wedge's spin by %g", cut.name, depth, length(rn - nrm));
+                        // W2. level 0 IS the explosion
+                        if (v.level == 0.0f) {
+                            float err = length(world(P, rp) - world(P, pos)) / R;
+                            worstLevel0 = std::max(worstLevel0, err);
+                            CHECK(err <= 1e-4f && length(rn - nrm) <= 1e-4f, "wedge: level 0 leaves the explosion's law by %g radii", err);
+                        }
+                    } else {
+                        // W8a. with the noise, a fragment's spin stays CLOSE to its wedge's (the order holds)
+                        float off2 = std::acos(std::min(1.0f, std::max(-1.0f, dot(rn, nrm))));
+                        if (amount > 0) worstNoisySpin = std::max(worstNoisySpin, off2 / (2 * amount * ER * amp));
+                        CHECK(off2 <= 2 * amount * ER * amp + 1e-3f, "wedge: the noise turned a fragment %g rad off its wedge, more than 2 x %g x %g", off2, amount * ER, amp);
                     }
                 }
                 // W6. every fragment is RIGID in the world, at every depth (the turn is done in the scaled frame)
@@ -476,12 +584,82 @@ static void run_wedge_tests() {
                     for (int a = 0; a < 3; a++) {
                         int b = (a + 1) % 3;
                         float d0 = length(world(P, m[i+a].pos) - world(P, m[i+b].pos)), d1 = length(wp[i+a] - wp[i+b]);
-                        CHECK(std::fabs(d0 - d1) <= 2e-4f * R, "wedge depth %d: a fragment stretched %g -> %g", depth, d0, d1);
+                        CHECK(std::fabs(d0 - d1) <= 2e-4f * R, "wedge %s %d: a fragment stretched %g -> %g", cut.name, depth, d0, d1);
+                    }
+                // W8b. with the noise, neighbouring fragments of one wedge are NOT in perfect step: consecutive
+                // triangles of the cut that share a wedge (same face, same root tangent) turn their normals apart
+                if (amp > 0.0f && t >= 2.0f && depth > 0)
+                    for (size_t i = 0; i + 3 < m.size(); i += 3) {
+                        const WVert& u = m[i]; const WVert& v = m[i + 3];
+                        if (length(u.n - v.n) > 0) continue;
+                        float3 ou = u.centroid - u.n * 0.5f, ov = v.centroid - v.n * 0.5f;
+                        float3 au = abs(ou), av = abs(ov);
+                        auto key = [](float3 o, float3 a) { return a.x >= a.y && a.x >= a.z ? (o.x >= 0 ? 1 : 2) : a.y >= a.z ? (o.y >= 0 ? 3 : 4) : (o.z >= 0 ? 5 : 6); };
+                        if (key(ou, au) != key(ov, av)) continue;
+                        pairs++;
+                        if (length(wn[i] - wn[i + 3]) <= 1e-4f) inStep++;
                     }
             }
         }
     }
-    printf("wedge: worst reach use %.3f, worst level-0 departure %.2g radii, worst spin %.3f of the explosion's cap, worst departure from the root wedge's spin %.2g\n", worstReach, worstLevel0, worstSpin, worstWedgeSpin);
+    printf("wedge: worst reach use %.3f, worst level-0 departure %.2g radii, worst spin %.3f of the cap, worst departure from the root wedge's spin %.2g (noise off), noisy spin off its wedge %.3f of 2 x amplitude; %d of %d neighbouring fragments in perfect step with the noise\n",
+           worstReach, worstLevel0, worstSpin, worstWedgeSpin, worstNoisySpin, inStep, pairs);
+    CHECK(pairs > 0 && inStep <= pairs / 20, "the noise left %d of %d neighbouring fragments in perfect step", inStep, pairs);
+}
+
+// R. the ROLL: it rolls the skin away from the camera and round, until its own prism hides it.
+static bool hiddenBehindPrism(const Pose& P, float3 p, float3 eye) {
+    // the segment p -> eye, in the prism's object space, against the unit cube (slab test, the cube's own extent: a
+    // roll's end caps lie IN the plane of a side face, and a ray from them that only grazes that plane shows nothing
+    // of area — everything inward of the cap is behind the prism)
+    auto toObj = [&](float3 w) { float3 r = w - P.t; return float3(dot(r, P.c0) / P.s.x, dot(r, P.c1) / P.s.y, dot(r, P.c2) / P.s.z); };
+    float3 a = toObj(p), b = toObj(eye), d = b - a;
+    float t0 = 0, t1 = 1; float lim = 0.5f + 1e-4f;
+    float A[3] = {a.x, a.y, a.z}, Dd[3] = {d.x, d.y, d.z};
+    for (int k = 0; k < 3; k++) {
+        if (std::fabs(Dd[k]) < 1e-9f) { if (std::fabs(A[k]) > lim) return false; continue; }
+        float u0 = (-lim - A[k]) / Dd[k], u1 = (lim - A[k]) / Dd[k];
+        if (u0 > u1) std::swap(u0, u1);
+        t0 = std::max(t0, u0); t1 = std::min(t1, u1);
+        if (t0 > t1) return false;
+    }
+    return true;
+}
+static void run_roll_tests() {
+    std::vector<Vert> m = mesh();
+    long seen = 0, hidden = 0; int fadedEarly = 0;
+    for (int trial = 0; trial < 200; trial++) {
+        Pose P = rndPose();
+        float base = rnd(0.5f, 4.0f);
+        // the shed's slabs: no axis thinner than a fifth of the longest (a trail prism)
+        P.s = float3(base * rnd(1, 5), base * rnd(0.6f, 2), base * rnd(0.8f, 3));
+        float R = length(linear(P, float3(0.5f, 0.5f, 0.5f)));
+        // the camera: a pilot's view, 4-20 radii out, never closer than 15 degrees to a face's plane
+        float3 eye = P.t + rndDir() * (R * rnd(4, 20));   // a pilot's view from anywhere, 4-20 radii out
+        float seed = rnd(0, 1);
+        PrismBurstParams q = params(0, seed, 0.55f);
+        q.camera = eye;
+        float D = q.life / (1.0f + PRISM_BURST_ROLL_TAIL);
+        // R1. the fade holds off until the last share of the life
+        for (int k = 0; k <= 20; k++) {
+            float age = q.life * (1.0f - PRISM_BURST_ROLL_FADE) * k / 20.0f;
+            if (PrismBurstRollFade(age, q.life) > 0.0f) fadedEarly++;
+        }
+        // R2. by 70% of the tail, every vertex of every skin the camera faces is hidden behind its own prism
+        q.age = D * (1.0f + 0.7f * PRISM_BURST_ROLL_TAIL);
+        for (size_t i = 0; i < m.size(); i++) {
+            PrismBurstFrame f = frameOf(P, m[i], seed);
+            if (dot(f.normal, eye - f.faceCentre) <= 0) continue;
+            float3 pp, nn; float h;
+            PrismBurstPose(PRISM_BURST_ROLL, f, q, pp, nn, h);
+            seen++;
+            if (hiddenBehindPrism(P, pp, eye)) hidden++;
+        }
+    }
+    CHECK(fadedEarly == 0, "the roll dissolved %d times before the last %.0f%% of its life", fadedEarly, 100 * PRISM_BURST_ROLL_FADE);
+    float share = hidden / (float)std::max(seen, 1L);
+    printf("roll: %.2f%% of the camera-facing skin hidden behind its own prism by 70%% of the tail (%ld vertices)\n", 100 * share, seen);
+    CHECK(share >= 0.97f, "the roll left %.2f%% of the camera-facing skin in view at the end", 100 * (1 - share));
 }
 
 // 10. voronoi; 11. unknown kind.
@@ -512,16 +690,46 @@ int main(int argc, char** argv) {
     bool bendOnly = argc > 1 && std::strcmp(argv[1], "bend") == 0;
     bool gradeOnly = argc > 1 && std::strcmp(argv[1], "grade") == 0;
     bool wedgeOnly = argc > 1 && std::strcmp(argv[1], "wedge") == 0;
+    bool rollOnly = argc > 1 && std::strcmp(argv[1], "roll") == 0;
     if (envelopeOnly) run_pose_tests(true);
     else if (fadeOnly) run_fade_tests();
     else if (bendOnly) run_bend_tests();
     else if (gradeOnly) run_grade_tests();
     else if (wedgeOnly) run_wedge_tests();
-    else { run_pose_tests(false); run_bend_tests(); run_fade_tests(); run_grade_tests(); run_wedge_tests(); run_misc_tests(); }
+    else if (rollOnly) run_roll_tests();
+    else { run_pose_tests(false); run_bend_tests(); run_fade_tests(); run_grade_tests(); run_noise_tests(); run_wedge_tests(); run_roll_tests(); run_misc_tests(); }
     printf("collision burst: %d failure(s)\n", failures);
     return failures ? 1 : 0;
 }
 """
+
+
+# The silver gnomon cut, ported (shared with the lab's parity gate, which builds the same cut in C++).
+SILVER_CPP = r"""// The silver gnomon cut, built the way PrismSilverGnomonTiling lays it out (double inside, float out; a port —
+// parity.py holds the lab's port to the C# compiled).
+static void silverEmit(double au, double av, double bu, double bv, double cu, double cv, std::vector<float>& out) {
+    double cr = (bu - au) * (cv - av) - (cu - au) * (bv - av);
+    if (cr < 0) { std::swap(bu, cu); std::swap(bv, cv); cr = -cr; }
+    float t[7] = {(float)au, (float)av, (float)bu, (float)bv, (float)cu, (float)cv, (float)(0.5 * std::log(0.25 / (0.5 * cr)) / std::log(2.0))};
+    out.insert(out.end(), t, t + 7);
+}
+static void silverG(double au, double av, double bu, double bv, double cu, double cv, int b, std::vector<float>& out);
+static void silverS(double xu, double xv, double yu, double yv, double zu, double zv, int b, std::vector<float>& out) {
+    if (b <= 0) { silverEmit(xu, xv, yu, yv, zu, zv, out); return; }
+    const double k = 0.41421356237309503;
+    double pu = xu + (zu - xu) * k, pv = xv + (zv - xv) * k;
+    silverG(xu, xv, yu, yv, pu, pv, b - 1, out);
+    silverS(yu, yv, zu, zv, pu, pv, b - 2, out);
+}
+static void silverG(double au, double av, double bu, double bv, double cu, double cv, int b, std::vector<float>& out) {
+    if (b <= 0) { silverEmit(au, av, bu, bv, cu, cv, out); return; }
+    double t = std::sqrt((cu - au) * (cu - au) + (cv - av) * (cv - av)) / std::sqrt((bu - au) * (bu - au) + (bv - av) * (bv - av));
+    double pu = au + (bu - au) * t, pv = av + (bv - av) * t;
+    silverS(au, av, cu, cv, pu, pv, b - 1, out);
+    silverG(cu, cv, bu, bv, pu, pv, b - 2, out);
+}
+"""
+HARNESS = HARNESS.replace("@@SILVER_CPP@@", SILVER_CPP)
 
 
 def grade_function():
@@ -588,7 +796,9 @@ def main():
                                  ("-DPRISM_BURST_GRADE_SMOOTH=0", "grade", "linear-shed control"),
                                  ("-DPRISM_BURST_PIVOT_BIAS=0.0", "wedge", "wedge-pivot control"),
                                  ("-DPRISM_BURST_WEDGE_PIVOT_UNSCALED=1", "wedge", "unscaled-turn control"),
-                                 ("-DPRISM_BURST_WEDGE_OWN_TANGENT=1", "wedge", "radial-tangent control")):
+                                 ("-DPRISM_BURST_WEDGE_OWN_TANGENT=1", "wedge", "radial-tangent control"),
+                                 ("-DPRISM_BURST_WEDGE_NOISE_OFF=1", "wedge", "noiseless-spin control"),
+                                 ("-DPRISM_BURST_ROLL_TOWARD_CAMERA=1", "roll", "roll-toward-camera control")):
             rc, out = build_and_run(work, [flag], arg, label)
             fired = rc != 0
             print(f"negative control [{label}]: {'FIRED' if fired else 'DID NOT FIRE'} ({out.splitlines()[-1]})")

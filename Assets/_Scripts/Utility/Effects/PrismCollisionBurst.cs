@@ -25,10 +25,10 @@ namespace CosmicShore.Utility
     /// the explosion's own flight (<see cref="PrismDebris.ResolveExplosionFlight"/>) for the explosion's own life, in the
     /// explosion's palette, fading on the explosion's own erosion. Depth 0 of the cut IS the explosion.</item>
     /// <item><b>Shed</b> (<see cref="TryRequestShed"/>): a skin in the prism's OLD colours, a hair outside it,
-    /// coming off as a BLOOM (the game's one shed; <see cref="Unravel"/> and <see cref="Flake"/> stay in the shader
-    /// for the lab) while the prism underneath already wears the new colour, every steal seeded afresh;
-    /// its coverage falls on the grade's smoothstep over the grade's length — so squinted at it is the
-    /// grade.</item>
+    /// coming off as a ROLL (the game's one shed since round 7; <see cref="Bloom"/>, <see cref="Unravel"/> and
+    /// <see cref="Flake"/> stay in the shader for the lab) while the prism underneath already wears the new colour:
+    /// each face's skin rolls up AWAY from where the camera was at the steal, over the grade's length, then over the
+    /// edge and round until its own prism hides it — the mass crystal's trick: nothing changes where it is seen.</item>
     /// </list>
     ///
     /// <para><b>It rides the slice's carrier unchanged</b> — <see cref="PrismRenderService.SpawnSliceDebrisBatch"/>
@@ -46,7 +46,14 @@ namespace CosmicShore.Utility
     public static class PrismCollisionBurst
     {
         /// <summary>The kinds, in <c>PrismCollisionBurst.hlsl</c>'s order.</summary>
-        public const int Shatter = 0, Bloom = 1, Unravel = 2, Glitter = 3, Flake = 4, Wedge = 5, KindCount = 6;
+        public const int Shatter = 0, Bloom = 1, Unravel = 2, Glitter = 3, Flake = 4, Wedge = 5, Roll = 6, KindCount = 7;
+
+        /// <summary>
+        /// A ROLL's life past the grade it stands for, as a share of the grade's length — <c>PRISM_BURST_ROLL_TAIL</c>
+        /// in the HLSL (a test holds the two equal): the face rolls up over the grade's length, the tail carries the
+        /// roll over the edge and out of sight behind its own prism.
+        /// </summary>
+        public const float RollTail = 0.6f;
 
         /// <summary>RotateFacesAlongAxis / TangentSlider's constants — <c>PRISM_BURST_PIVOT_BIAS</c> and
         /// <c>PRISM_BURST_SLIDER_GAIN</c> in the HLSL (a test holds them equal; the lab's build reads them from the graph).</summary>
@@ -115,9 +122,17 @@ namespace CosmicShore.Utility
         /// <summary>A shed's life for a grade of <paramref name="gradeSeconds"/>: its fade ends with the grade.</summary>
         public static float ShedLife(float gradeSeconds) => Mathf.Max(0.05f, gradeSeconds) * (1f + DissolveOvershoot);
 
+        /// <summary>The life of a shed of <paramref name="kind"/>: a roll's runs on into its tail, every other kind's
+        /// ends with the grade (<see cref="ShedLife(float)"/>).</summary>
+        public static float ShedLife(float gradeSeconds, int kind) => kind == Roll
+            ? Mathf.Max(0.05f, gradeSeconds) * (1f + RollTail)
+            : ShedLife(gradeSeconds);
+
         static readonly int ShapeId = Shader.PropertyToID("_BurstShape");
         static readonly int CurlId = Shader.PropertyToID("_BurstCurl");
         static readonly int PeelId = Shader.PropertyToID("_BurstPeel");
+        static readonly int RollId = Shader.PropertyToID("_BurstRoll");
+        static readonly int WedgeNoiseId = Shader.PropertyToID("_WedgeNoise");
         static readonly int ExplosionSpreadId = Shader.PropertyToID("_ExplosionSpread");
         static readonly int ExplosionDialsId = Shader.PropertyToID("_ExplosionDials");
         static readonly int SourceSpreadId = Shader.PropertyToID("_Spread");
@@ -306,15 +321,17 @@ namespace CosmicShore.Utility
         }
 
         /// <summary>
-        /// Queues a SHED of <paramref name="kind"/> (<see cref="Bloom"/>, <see cref="Unravel"/> or
+        /// Queues a SHED of <paramref name="kind"/> (<see cref="Roll"/>, <see cref="Bloom"/>, <see cref="Unravel"/> or
         /// <see cref="Flake"/>): a skin in the prism's OLD colours (<paramref name="oldBright"/>,
         /// <paramref name="oldDark"/>), inside already <paramref name="newBright"/>, a hair outside the prism at
-        /// (<paramref name="position"/>, <paramref name="rotation"/>, <paramref name="scale"/>), fading over a grade
-        /// of <paramref name="gradeSeconds"/>. The caller then gives the prism its new colour AT ONCE. Returns
-        /// false — the caller grades as usual — on any refusal.
+        /// (<paramref name="position"/>, <paramref name="rotation"/>, <paramref name="scale"/>), over a grade of
+        /// <paramref name="gradeSeconds"/> (<see cref="ShedLife(float, int)"/>). A roll peels away from
+        /// <paramref name="cameraPosition"/> on a mesh of <paramref name="subdivision"/> cells a face edge. The caller
+        /// then gives the prism its new colour AT ONCE. Returns false — the caller grades as usual — on any refusal.
         /// </summary>
         public static bool TryRequestShed(Vector3 position, Quaternion rotation, Vector3 scale,
-            Color oldBright, Color oldDark, Color newBright, float gradeSeconds, int kind, Mesh mesh)
+            Color oldBright, Color oldDark, Color newBright, float gradeSeconds, int kind, Mesh mesh,
+            Vector3 cameraPosition, int subdivision)
         {
             var cfg = PrismInteractionLodConfigSO.Instance;
             if (!CanAccept(cfg) || !FitsTriangles(cfg, TrianglesOf(mesh)) || !PrismDebris.TryGetExplosionLayer(out _)) return false;
@@ -329,13 +346,14 @@ namespace CosmicShore.Utility
                 LocalToWorld = Matrix4x4.TRS(position, rotation, skin),
                 BrightColor = PrismRenderService.ToFloat4(oldBright),
                 DarkColor = PrismRenderService.ToFloat4(oldDark),
-                Timing = new float4(0f, ShedLife(gradeSeconds), StealSeed(position, PrismClock.Now), kind),
+                Timing = new float4(0f, ShedLife(gradeSeconds, kind), StealSeed(position, PrismClock.Now), kind),
                 Plane = new float4(1f, 0f, 0f, 0f),     // fade curve 1: the grade's smoothstep
                 Centre = new float4(0f, 0f, 0f, 1f),
                 // The inside wears the NEW colour; the stamp is raw, so it takes the colour-space conversion
                 // the bright and dark stamps get inside the render service.
                 Pivot = PrismRenderService.ApplyColorSpace(in inside),
-                Axis = float4.zero,
+                // A roll peels AWAY from where the camera was at the steal, on cells this fine.
+                Axis = new float4(cameraPosition.x, cameraPosition.y, cameraPosition.z, subdivision),
                 Drift = float4.zero,                    // the prism stays where it is
                 Bounds = new AABB { Center = centre, Extents = extents },
             }, isShed: true, mesh);
@@ -376,22 +394,24 @@ namespace CosmicShore.Utility
         }
 
         /// <summary>
-        /// A weighted pick of a shed kind from <paramref name="roll01"/> in [0, 1). Zero-weight kinds are never
-        /// picked; all weights zero picks the bloom.
+        /// A weighted pick of a shed kind from <paramref name="roll01"/> in [0, 1): bloom, unravel, flake, roll in that
+        /// order. Zero-weight kinds are never picked; all weights zero picks the bloom.
         /// </summary>
-        public static int PickShed(float roll01, float bloom, float unravel, float flake)
+        public static int PickShed(float roll01, float bloom, float unravel, float flake, float roll = 0f)
         {
             bloom = Mathf.Max(0f, bloom);
             unravel = Mathf.Max(0f, unravel);
             flake = Mathf.Max(0f, flake);
-            float total = bloom + unravel + flake;
+            roll = Mathf.Max(0f, roll);
+            float total = bloom + unravel + flake + roll;
             if (total <= 0f) return Bloom;
             float r = Mathf.Clamp01(roll01) * total;
-            if ((r -= bloom) < 0f) return Bloom;
-            if ((r -= unravel) < 0f) return Unravel;
-            if (flake > 0f) return Flake;
+            if (bloom > 0f && (r -= bloom) < 0f) return Bloom;
+            if (unravel > 0f && (r -= unravel) < 0f) return Unravel;
+            if (flake > 0f && (r -= flake) < 0f) return Flake;
+            if (roll > 0f) return Roll;
             // roll01 == 1 lands past the end: the last kind with weight.
-            return unravel > 0f ? Unravel : Bloom;
+            return flake > 0f ? Flake : unravel > 0f ? Unravel : Bloom;
         }
 
         /// <summary>
@@ -443,6 +463,8 @@ namespace CosmicShore.Utility
             s_runtimeMaterial.SetVector(CurlId,
                 new Vector4(cfg.BloomTurns, cfg.UnravelTurns, cfg.RibbonsPerFace, cfg.ShardsPerFaceEdge));
             s_runtimeMaterial.SetVector(PeelId, new Vector4(cfg.BloomRings, cfg.BloomSegments, cfg.PeelNoise, 0f));
+            s_runtimeMaterial.SetVector(RollId, new Vector4(cfg.RollRadius, cfg.RollGap, 0f, 0f));
+            s_runtimeMaterial.SetVector(WedgeNoiseId, new Vector4(cfg.WedgeSpinNoise, cfg.WedgeNoiseFrequency, 0f, 0f));
             s_runtimeMaterialTuned = ApplyExplosionTuning(s_runtimeMaterial);
             s_runtimeMaterialFor = cfg;
             return s_runtimeMaterial;

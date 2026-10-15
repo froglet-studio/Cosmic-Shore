@@ -8896,6 +8896,13 @@ imports without errors (magenta = rejected), the config asset loads (not a missi
    skimming a trail closely: only blooms, cut in small pieces that curl tight and stay near the surface; steal the
    same prism twice — it peels differently. `PrismInteractionLodConfig` shows unravel / flake weights 0, rings 3,
    segments 3, noise 0.6, and `IsSane` holds (a shed happens at all).
+7. **Round 7 — the silver gnomon cut, the spin noise, the ROLL**: a close death comes apart as silver triangles and
+   gnomons of many sizes, the pieces of a wedge turning nearly but not exactly together. Steal a trail close up: each
+   face's old skin rolls up into a tight new-colour roll AWAY from the camera, over the edge, and disappears behind
+   the prism without dissolving; no roll pops into view at a corner, none is seen fading (except on a very thin
+   prism). Steal from different angles — the roll always leaves away from you. Swing the camera hard during a steal:
+   note whether a roll on its way round shows (decision 1 in the lab write-up). `PrismInteractionLodConfig` shows
+   destructionCut SilverGnomon, silverDepths 4/6/8/10, rollWeight 1 and every other shed weight 0.
 
 ### 🔴 The collision burst — level 1's high-res death (same branch, 2026-10-14) — NOT EDITOR-VERIFIED
 

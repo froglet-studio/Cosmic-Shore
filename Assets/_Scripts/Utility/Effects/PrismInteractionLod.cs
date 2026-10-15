@@ -10,15 +10,15 @@ namespace CosmicShore.Utility
     /// for every prism in the game (Docs/PRISM_ANIMATION.md §4.11; config <see cref="PrismInteractionLodConfigSO"/>):
     ///
     /// <list type="table">
-    /// <item><b>Destruction</b> — a Sierpinski cut scaled by recursion DEPTH (<see cref="PrismSierpinskiTiling"/>):
-    /// depth 0 is the ordinary EXPLOSION (its four wedges a face); each deeper depth splits the corner triangles at
-    /// their edge midpoints and keeps the middles whole. A shallower depth is the deeper one with its finest fragments
-    /// merged back into their parents, so from far away it looks like the small ones are simply too small to see.
-    /// Every fragment of every depth moves by the explosion's own tuned law — about its root wedge's two axes, the
-    /// wedge's tangent and cross(velocity, normal) — as a wedge scaled to its size.</item>
-    /// <item><b>Stealing</b> — the GRADE (the prism's 0.8 s colour lerp) → a SHED (the bloom, cut into rings and
-    /// segments, peeling with its own noise every steal) at three mesh resolutions. Every shed is the grade squinted
-    /// at.</item>
+    /// <item><b>Destruction</b> — a cut of the explosion's wedges scaled by recursion DEPTH: the silver gnomon cut
+    /// (<see cref="PrismSilverGnomonTiling"/>, silver triangles and their gnomons) or the Sierpinski cut
+    /// (<see cref="PrismSierpinskiTiling"/>), <see cref="PrismInteractionLodConfigSO.Cut"/>. Level 0 is the ordinary
+    /// EXPLOSION (its four wedges a face); a coarser level is the finer one with its smallest fragments merged back
+    /// into their parents, so from far away it looks like the small ones are simply too small to see. Every fragment
+    /// moves by the explosion's own tuned law — about its root wedge's two axes, the wedge's tangent and
+    /// cross(velocity, normal) — its spin a little off its neighbours' by a continuous noise.</item>
+    /// <item><b>Stealing</b> — the GRADE (the prism's 0.8 s colour lerp) → a SHED (the roll: each face's skin rolls
+    /// up away from the camera and round the prism until the prism hides it) at three mesh resolutions.</item>
     /// </list>
     ///
     /// Both ladders are graded by DISTANCE — the prism's projected diameter over the screen height through
@@ -86,8 +86,12 @@ namespace CosmicShore.Utility
         public static StealLevel PickSteal(float fraction, int crowdSteps, float shed, float fine, float finest) =>
             (StealLevel)Mathf.Max(0, LevelForSize(fraction, shed, fine, finest) - crowdSteps);
 
-        /// <summary>The mesh a death cut to <paramref name="depth"/> draws (null at 0: the explosion draws itself).</summary>
-        public static Mesh MeshOfDepth(int depth) => depth <= 0 ? null : HighPolyPrismMesh.GetSierpinski(depth);
+        /// <summary>The mesh a death at detail <paramref name="level"/> draws (null at 0: the explosion draws itself) —
+        /// the configured cut at that level's recursion depth.</summary>
+        public static Mesh MeshOfLevel(int level, PrismInteractionLodConfigSO cfg) => level <= 0 ? null
+            : cfg.Cut == DestructionCut.SilverGnomon
+                ? HighPolyPrismMesh.GetSilverGnomon(cfg.CutDepthOf(level))
+                : HighPolyPrismMesh.GetSierpinski(cfg.CutDepthOf(level));
 
         /// <summary>The mesh steal level <paramref name="level"/> draws (null for the grade).</summary>
         public static Mesh MeshOf(StealLevel level, PrismInteractionLodConfigSO cfg) =>
@@ -129,7 +133,7 @@ namespace CosmicShore.Utility
             // A depth whose mesh does not fit the triangle budget steps up until one does; depth 0 is the explosion.
             for (int depth = PickDepth(fraction, steps, cfg); depth > 0; depth--)
             {
-                var mesh = MeshOfDepth(depth);
+                var mesh = MeshOfLevel(depth, cfg);
                 if (!PrismCollisionBurst.FitsTriangles(cfg, PrismCollisionBurst.TrianglesOf(mesh))) continue;
                 return PrismCollisionBurst.TryRequestDestruction(position, rotation, scale, bright, dark,
                     impactVelocity, speedLimitOverride, tier, PrismCollisionBurst.Wedge, mesh);
@@ -153,13 +157,15 @@ namespace CosmicShore.Utility
             int steps = CrowdSteps(PrismCollisionBurst.Fill(cfg), cfg.CrowdedFill, cfg.PackedFill);
             var level = PickSteal(fraction, steps, cfg.ShedMinScreen, cfg.ShedFineScreen, cfg.ShedFinestScreen);
             float roll = Mathf.Repeat(PrismCollisionBurst.SeedOf(position) * 7.919f + 0.371f, 1f);
-            int kind = PrismCollisionBurst.PickShed(roll, cfg.BloomWeight, cfg.UnravelWeight, cfg.FlakeWeight);
+            int kind = PrismCollisionBurst.PickShed(roll, cfg.BloomWeight, cfg.UnravelWeight, cfg.FlakeWeight, cfg.RollWeight);
+            var cam = CameraManager.ViewCamera;
+            Vector3 eye = cam ? cam.transform.position : position;
             for (; level > StealLevel.Grade; level--)
             {
                 var mesh = MeshOf(level, cfg);
                 if (!PrismCollisionBurst.FitsTriangles(cfg, PrismCollisionBurst.TrianglesOf(mesh))) continue;
                 return PrismCollisionBurst.TryRequestShed(position, rotation, scale, oldBright, oldDark, newBright,
-                    gradeSeconds, kind, mesh);
+                    gradeSeconds, kind, mesh, eye, cfg.ShedSubdivisionOf((int)level));
             }
             return false;
         }

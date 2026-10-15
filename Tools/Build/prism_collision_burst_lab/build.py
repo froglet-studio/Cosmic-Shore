@@ -63,6 +63,9 @@ COLORSET = os.path.join(ROOT, "Assets/_SO_Assets/Color Palettes/OriginalColorSet
 MOTION_CS = os.path.join(ROOT, "Assets/_Scripts/Controller/Prisms/PrismMotion.cs")
 
 
+SILVER_CS = os.path.join(ROOT, "Assets/_Scripts/Utility/PrismSilverGnomonTiling.cs")
+
+
 def read(p):
     with open(p, encoding="utf-8") as f:
         return f.read()
@@ -97,7 +100,8 @@ def burst_glsl():
     src = read(BURST_HLSL)
     for name in ("void PrismBurstPose(", "float PrismBurstProgress(", "float PrismBurstDissolveValue(",
                  "bool PrismBurstClipped(", "float PrismBurstNoise(", "void PrismBurstVoronoi(",
-                 "void PrismBurstExplosionMap(", "float3 PrismBurstWedgePivot(", "void PrismBurstWedgePose("):
+                 "void PrismBurstExplosionMap(", "float3 PrismBurstWedgePivot(", "void PrismBurstWedgePose(",
+                 "void PrismBurstRoll(", "float PrismBurstGradientNoise("):
         assert name in src, f"{name} missing from {BURST_HLSL}"
     # The HLSL's explosion constants ARE the graph's: the page's explosion runs the HLSL's map.
     g = subgraph_constants()
@@ -222,7 +226,8 @@ def config():
     out = {k: yaml_float(motion, k) for k in ("showcaseMaxMovers", "boxMaxMovers")}
     for k in ("maxLiveBursts", "maxLiveTriangles", "crowdedFill", "packedFill", "shedMinScreen", "shedFineScreen", "shedFinestScreen", "shedSubdivision", "shedFineSubdivision",
               "shedFinestSubdivision", "bloomWeight", "unravelWeight", "flakeWeight", "bloomRings", "bloomSegments",
-              "peelNoise", "shedInflate", "spread",
+              "peelNoise", "rollWeight", "rollRadius", "rollGap", "destructionCut", "wedgeSpinNoise",
+              "wedgeNoiseFrequency", "shedInflate", "spread",
               "openSeconds", "spinPerSpeed", "bloomTurns", "unravelTurns", "ribbonsPerFace", "shardsPerFaceEdge",
               "dissolveGrain"):
         out[k] = yaml_float(lod, k)
@@ -230,6 +235,10 @@ def config():
     assert m, "depthMinScreen missing from PrismInteractionLodConfig.asset"
     out["depthMinScreen"] = [float(x) for x in re.findall(r"- ([-0-9.eE]+)", m.group(1))]
     out["sierpinskiMaxDepth"] = int(re.search(r"public const int MaxDepth = (\d+);", read(TILING_CS)).group(1))
+    m = re.search(r"^  silverDepths:\n((?:  - [0-9]+\n)+)", lod, re.M)
+    assert m, "silverDepths missing from PrismInteractionLodConfig.asset"
+    out["silverDepths"] = [int(x) for x in re.findall(r"- ([0-9]+)", m.group(1))]
+    out["silverMaxDepth"] = int(re.search(r"public const int MaxDepth = (\d+);", read(SILVER_CS)).group(1))
     cs = read(ANIMATOR_CS)
     out["gradeSeconds"] = float(re.search(r"public const float DefaultTransitionSeconds = ([0-9.]+)f;", cs).group(1))
     return out
@@ -275,6 +284,7 @@ def build():
         "graph": subgraph_constants(),
         "motion": motion_constants(),
         "overshoot": float(re.search(r"#define PRISM_BURST_DISSOLVE_OVERSHOOT ([0-9.]+)", read(BURST_HLSL)).group(1)),
+        "rollTail": float(re.search(r"#define PRISM_BURST_ROLL_TAIL ([0-9.]+)", read(BURST_HLSL)).group(1)),
         "domains": domain_colors(),
         "prismMesh": prism_mesh(),
         "sources": {

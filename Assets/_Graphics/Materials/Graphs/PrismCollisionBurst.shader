@@ -7,13 +7,14 @@
 //
 // It is the Rhino slice's sibling (PrismSlice.shader) and rides the slice's carrier unchanged: the
 // pure render entities PrismCollisionBurst.cs spawns through PrismRenderService
-// .SpawnSliceDebrisBatch, with the slice's per-instance stamp channels, four of which a burst reads:
+// .SpawnSliceDebrisBatch, with the slice's per-instance stamp channels, five of which a burst reads:
 //     _SliceTiming = (start, life, seed, kind)  — kind 0 shatter, 1 bloom, 2 unravel, 3 glitter, 4 flake,
-//                                                 5 wedge (the destruction's Sierpinski fragments)
+//                                                 5 wedge (the destruction's fragments), 6 roll (the steal)
 //     _SliceDrift  = (flight velocity, world xyz; explosion speed w) — zero for a shed
 //     _SlicePlane  = (fade curve, -, -, -)      — 0 destruction (linear), 1 shed (the grade's smoothstep)
 //     _SlicePivot  = (inside colour rgb, set w) — w 1: the inside wears this (a shed: the NEW colour);
 //                                                 w 0: the domain's own bright
+//     _SliceAxis   = (camera world position at the steal, shed subdivision) — the ROLL peels away from it
 // Their Properties-block defaults are the UNSTAMPED state — age 0, zero flight — which renders the
 // plain prism: an unstamped material is inert, never broken.
 //
@@ -35,17 +36,19 @@ Shader "CosmicShore/PrismCollisionBurst"
         _SlicePlane ("Fade curve (x: 0 destruction, 1 shed)", Vector) = (0, 0, 0, 0)
         _SliceCentre ("Slice centre (carried by the slice entity, unused here)", Vector) = (0, 0, 0, 1)
         _SlicePivot ("Inside colour (rgb), used when w is 1", Vector) = (0, 0, 0, 0)
-        _SliceAxis ("Slice axis (carried by the slice entity, unused here)", Vector) = (0, 0, 0, 0)
+        _SliceAxis ("Roll: the camera's world position at the steal (xyz), the shed mesh's subdivision (w)", Vector) = (0, 0, 0, 12)
         _SliceDrift ("Flight velocity, world (xyz) + explosion speed (w)", Vector) = (0, 0, 0, 0)
 
         [Header(Shape (written by PrismCollisionBurst from PrismMotionConfig at runtime))]
         _BurstShape ("Spread (prism radii), opening tau (s), spin (rad per unit speed), dissolve grain", Vector) = (0.55, 0.22, 0.3, 0.35)
         _BurstCurl ("Bloom turns, unravel turns, ribbons per face, shards per face edge", Vector) = (0.7, 0.8, 5, 3)
         _BurstPeel ("Bloom rings, bloom segments, peel noise", Vector) = (3, 3, 0.6, 0)
+        _BurstRoll ("Roll inner radius, gap between turns (prism radii)", Vector) = (0.05, 0.01, 0, 0)
 
         [Header(The explosion tuning (copied at runtime from the explosion material))]
         _ExplosionSpread ("Spread value (the explosion's _Spread)", Vector) = (0.18, 0.1, 0.1, 0)
         _ExplosionDials ("Explosive rotation, explosive spread (per unit amount)", Vector) = (0.0169, 0.05, 0, 0)
+        _WedgeNoise ("Fragment spin noise: amplitude, frequency (per object unit)", Vector) = (0.15, 3, 0, 0)
 
         [Header(Look)]
         _FresnelPower ("Skin Fresnel Power", Range(0.5, 8)) = 3
@@ -82,8 +85,10 @@ Shader "CosmicShore/PrismCollisionBurst"
             float4 _BurstShape;
             float4 _BurstCurl;
             float4 _BurstPeel;
+            float4 _BurstRoll;
             float4 _ExplosionSpread;
             float4 _ExplosionDials;
+            float4 _WedgeNoise;
             float _FresnelPower;
             float _InnerGlow;
             float _DissolveNoiseScale;
@@ -158,8 +163,11 @@ Shader "CosmicShore/PrismCollisionBurst"
             float4 drift = PRISM_BURST_PROP(float4, _SliceDrift);
             float curve = PRISM_BURST_PROP(float4, _SlicePlane).x;
             float4 insideStamp = PRISM_BURST_PROP(float4, _SlicePivot);
+            float4 rollStamp = PRISM_BURST_PROP(float4, _SliceAxis);
             float age = max(_PrismClock - timing.x, 0.0);
-            float progress = PrismBurstProgress(age, timing.y, curve);
+            // A roll leaves by being hidden behind its own prism; it only dissolves at the very end of its life.
+            float progress = floor(timing.w + 0.5) == PRISM_BURST_ROLL
+                ? PrismBurstRollFade(age, timing.y) : PrismBurstProgress(age, timing.y, curve);
 
             // The vertex's frame, in WORLD space: rigid pieces must be rigid under the prism's
             // non-uniform scale, so every rotation and bend below happens after the scale.
@@ -188,6 +196,11 @@ Shader "CosmicShore/PrismCollisionBurst"
             p.rings = _BurstPeel.x;
             p.segments = _BurstPeel.y;
             p.noise = _BurstPeel.z;
+            p.camera = rollStamp.xyz;
+            p.life = timing.y;
+            p.subdivision = rollStamp.w;
+            p.rollRadius = _BurstRoll.x;
+            p.rollGap = _BurstRoll.y;
             p.age = age;
             p.speed = drift.w;
             p.seed = timing.z;
@@ -213,7 +226,8 @@ Shader "CosmicShore/PrismCollisionBurst"
                 float3 centroidOS = input.normalOS * 0.5 + uOS * (input.tri.x - 0.5) + vOS * (input.tri.y - 0.5);
                 float3 posOS, nrmOS;
                 PrismBurstWedgePose(input.positionOS.xyz, input.normalOS, centroidOS, input.tri.z, objectScale,
-                    drift.w * age, drift.xyz, _ExplosionSpread.xyz, _ExplosionDials.x, _ExplosionDials.y, posOS, nrmOS);
+                    drift.w * age, drift.xyz, _ExplosionSpread.xyz, _ExplosionDials.x, _ExplosionDials.y,
+                    float3(_WedgeNoise.x, _WedgeNoise.y, timing.z), posOS, nrmOS);
                 posWS = TransformObjectToWorld(posOS);
                 nrmWS = TransformObjectToWorldNormal(nrmOS);
                 piece = 0.0;
