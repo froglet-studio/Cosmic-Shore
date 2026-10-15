@@ -311,6 +311,48 @@
   const D2R = Math.PI / 180;
 
   // ===================================================================================================
+  // CORE: the pure arithmetic the Unity port copies LINE FOR LINE (Assets/_Scripts/Controller/Vessel/AnglerCommandMath.cs).
+  // The model below calls these and nothing else for these decisions, so the parity gate
+  // (Tools/Build/angler_command_parity) measures what the page flies (labmaker §2.8, L-GEN-8). Vectors are [x, y, z].
+  // ===================================================================================================
+  const CORE = {
+    // trigger depth (0.5 = the press threshold, 1 = a full pull) -> share of the full brush
+    brushScale(depth, brushMin) { return brushMin + (1 - brushMin) * clamp(((depth || 0) - 0.5) / 0.5, 0, 1); },
+    // is point p inside the cone from o along unit f (half-angle coneDeg, reach)? closer than 1 u never counts
+    inCone(o, f, p, coneDeg, reach) {
+      const dx = p[0] - o[0], dy = p[1] - o[1], dz = p[2] - o[2], d = Math.hypot(dx, dy, dz);
+      if (d > reach || d < 1) return false;
+      return (dx * f[0] + dy * f[1] + dz * f[2]) / d > Math.cos(coneDeg * D2R);
+    },
+    // the candidate nearest `from`, each claim on it costing 900 (30 u squared) so a squad spreads over a set
+    pickTarget(from, cands, claims) {
+      let best = -1, bd = Infinity;
+      for (let i = 0; i < cands.length; i++) {
+        const c = cands[i], dx = c[0] - from[0], dy = c[1] - from[1], dz = c[2] - from[2], d = dx * dx + dy * dy + dz * dz + claims[i] * 900;
+        if (d < bd) { bd = d; best = i; }
+      }
+      return best;
+    },
+    // creature i's place in the school: a golden-angle spiral round the hull, formBack behind it
+    formationSlot(i, p, f, r, u, formBack) {
+      const ring = 6 + Math.sqrt(i) * 3.2, th = i * 2.399963, bk = formBack + i * 0.6, c = Math.cos(th) * ring, sn = Math.sin(th) * ring;
+      return [p[0] - f[0] * bk + r[0] * c + u[0] * sn, p[1] - f[1] * bk + r[1] * c + u[1] * sn, p[2] - f[2] * bk + r[2] * c + u[2] * sn];
+    },
+    // a follower's speed: the hull's, fed forward, plus 1.5/s of its gap beyond 4 u, between half its minimum and its cap
+    followSpeed(hullSpeed, gap, minSpeed, cap) { return clamp(hullSpeed + (gap - 4) * 1.5, minSpeed * 0.5, cap); },
+    // a LightFauna follower's cap: its top speed at the commanded aggression, towed by the leash
+    lightFollowCap(maxSpeed, aggrSpeed, tow) { return maxSpeed * aggrSpeed * tow; },
+    // a Tadpole follower's cap: its arrival-capped dash (Boid huntSpeedMultiplier), towed by the leash
+    tadFollowCap(maxSpeed, hunt, tick, gap, tow) { return Math.min(maxSpeed * hunt, Math.max(maxSpeed, gap / Math.max(0.05, tick))) * tow; },
+    // the ball's pull on a gathering creature
+    gatherSpeed(d, minSpeed, top, hullSpeed) { return clamp(d * 2, minSpeed, Math.max(top, hullSpeed * 1.2)); },
+    // taming: fills while held in the light, fades outside it
+    tameStep(tame, inHold, dt, tameTime, decay) { return inHold ? tame + dt / tameTime : Math.max(0, tame - decay * dt); },
+    // where the esca hangs
+    lurePoint(p, f, u, ahead) { return [p[0] + f[0] * ahead + u[0] * 2.5, p[1] + f[1] * ahead + u[1] * 2.5, p[2] + f[2] * ahead + u[2] * 2.5]; },
+  };
+
+  // ===================================================================================================
   // THE SCENE: one fixed battlefield (seeded by a constant, so every run and every scheme meets the same prisms).
   // Domains: 0 = Jade (yours), 1 = Ruby, 2 = Gold. Structures are what an order names.
   // ===================================================================================================
@@ -477,12 +519,8 @@
   function releaseClaim(w, f) { if (f.target >= 0 && w.claims[f.target] > 0) w.claims[f.target]--; f.target = -1; }
   function pickTarget(w, f) {
     releaseClaim(w, f);
-    let best = -1, bd = Infinity;
-    for (const i of f.set) {
-      if (!w.alive[i]) continue;
-      const dx = SCENE.px[i] - f.x, dy = SCENE.py[i] - f.y, dz = SCENE.pz[i] - f.z, d = dx * dx + dy * dy + dz * dz + w.claims[i] * 900;
-      if (d < bd) { bd = d; best = i; }
-    }
+    const live = f.set.filter((i) => w.alive[i]);
+    const k = CORE.pickTarget([f.x, f.y, f.z], live.map(ppos), live.map((i) => w.claims[i])), best = k < 0 ? -1 : live[k];
     if (best < 0) { f.set = null; f.state = ST.IDLE; return; }
     f.target = best; w.claims[best]++;
   }
@@ -585,17 +623,15 @@
   }
   // ---- Sling painter helpers ----
   // brushScale: trigger depth (0.5 = the press threshold, 1 = a full pull) -> share of the full brush.
-  function brushScale(depth) { return P.brushMin + (1 - P.brushMin) * clamp(((depth || 0) - 0.5) / 0.5, 0, 1); }
+  function brushScale(depth) { return CORE.brushScale(depth, P.brushMin); }
   // brushStroke: every alive prism inside the cone (half-angle coneDeg, reach paintRange) is painted (paint) or cleaned.
   function brushStroke(w, coneDeg, paint) {
-    const v = w.v, cosC = Math.cos(coneDeg * D2R);
+    const v = w.v;
     let removed = false;
     for (let i = 0; i < SCENE.n; i++) {
       if (!w.alive[i] || (paint ? w.painted[i] : !w.painted[i])) continue;
       if (paint && P.spareOwn && SCENE.dom[i] === 0) continue;
-      const dx = SCENE.px[i] - v.p[0], dy = SCENE.py[i] - v.p[1], dz = SCENE.pz[i] - v.p[2], d = Math.hypot(dx, dy, dz);
-      if (d > P.paintRange || d < 1) continue;
-      if ((dx * v.f[0] + dy * v.f[1] + dz * v.f[2]) / d <= cosC) continue;
+      if (!CORE.inCone(v.p, v.f, [SCENE.px[i], SCENE.py[i], SCENE.pz[i]], coneDeg, P.paintRange)) continue;
       if (paint) { w.painted[i] = 1; w.paintedList.push(i); } else { w.painted[i] = 0; removed = true; }
     }
     if (removed) w.paintedList = w.paintedList.filter((i) => w.painted[i]);
@@ -703,7 +739,7 @@
           lured++;
           const a = w.t * 1.3 + f.home[0];
           steer(f, w.L[0] + Math.cos(a) * 6, w.L[1] + Math.sin(a * 0.7) * 6, w.L[2] + Math.sin(a) * 6, Math.min(maxS * 1.2, Math.max(minS, dL)), turn, dt);
-          if (dL < P.tameRadius) f.tame += dt / P.tameTime; else f.tame = Math.max(0, f.tame - P.tameDecay * dt);
+          f.tame = CORE.tameStep(f.tame, dL < P.tameRadius, dt, P.tameTime, P.tameDecay);
           if (f.tame >= 1 && w.m.tamed < P.squadCap) {
             f.state = ST.IDLE; f.tame = 1; w.m.tamed++;
             if (w.m.firstTameT == null) w.m.firstTameT = w.t;
@@ -718,13 +754,10 @@
       }
       if (f.state === ST.IDLE) {
         // the leash formation: a golden-angle spiral behind the hull
-        const i = slot++, ring = 6 + Math.sqrt(i) * 3.2, th = i * 2.399963, bk = P.formBack + i * 0.6;
-        const tx = v.p[0] - v.f[0] * bk + (v.r[0] * Math.cos(th) + v.u[0] * Math.sin(th)) * ring;
-        const ty = v.p[1] - v.f[1] * bk + (v.r[1] * Math.cos(th) + v.u[1] * Math.sin(th)) * ring;
-        const tz = v.p[2] - v.f[2] * bk + (v.r[2] * Math.cos(th) + v.u[2] * Math.sin(th)) * ring;
+        const [tx, ty, tz] = CORE.formationSlot(slot++, v.p, v.f, v.r, v.u, P.formBack);
         const d = Math.hypot(tx - f.x, ty - f.y, tz - f.z);
-        const cap = (lf ? maxS * aSpd : Math.min(maxS * P.tadHunt, Math.max(maxS, d / Math.max(0.05, P.tadTick)))) * P.leashTow;
-        steer(f, tx, ty, tz, clamp(v.speed + (d - 4) * 1.5, minS * 0.5, cap), turn, dt);   // the hull's speed fed forward, so the ring holds instead of trailing
+        const cap = lf ? CORE.lightFollowCap(maxS, aSpd, P.leashTow) : CORE.tadFollowCap(maxS, P.tadHunt, P.tadTick, d, P.leashTow);
+        steer(f, tx, ty, tz, CORE.followSpeed(v.speed, d, minS, cap), turn, dt);   // the hull's speed fed forward, so the ring holds instead of trailing
         if (w.scheme === 'feral') {
           f.feralT -= dt;
           if (f.feralT <= 0) {
@@ -743,7 +776,7 @@
       if (f.state === ST.GATHER) {
         const bx = v.p[0] + v.f[0] * P.slingAhead, by = v.p[1] + v.f[1] * P.slingAhead, bz = v.p[2] + v.f[2] * P.slingAhead;
         const d = Math.hypot(bx - f.x, by - f.y, bz - f.z);
-        steer(f, bx, by, bz, clamp(d * 2, minS, Math.max(maxS * aSpd, v.speed * 1.2)), turn * 2, dt);
+        steer(f, bx, by, bz, CORE.gatherSpeed(d, minS, maxS * aSpd, v.speed), turn * 2, dt);
         continue;
       }
       if (f.state === ST.FLUNG && f.homing) {
@@ -825,7 +858,7 @@
     if (sqEdge) w.squadSel = w.squadSel >= SPECIES.length - 1 ? -1 : w.squadSel + 1;
     if (rcEdge) for (const f of w.fauna) if (inSquad(w, f)) { releaseClaim(w, f); f.set = null; f.state = ST.IDLE; f.hold = 0; }
     w.lureOn = (inp.lure || 0) > 0.5;
-    w.L = add(w.v.p, add(mul(w.v.f, P.lureAhead), mul(w.v.u, 2.5)));
+    w.L = CORE.lurePoint(w.v.p, w.v.f, w.v.u, P.lureAhead);
     commandStep(w, inp, edgeDown, edgeUp, dt);
     faunaStep(w, dt);
     if (w.task) {
@@ -1096,9 +1129,10 @@
       if (Math.abs(yaw) > 0.02) inp.yaw = clamp(yaw, -1, 1);
       if (Math.abs(pitch) > 0.02) inp.pitch = clamp(pitch, -1, 1);
       const b = (i) => (g.buttons[i] && (g.buttons[i].value || (g.buttons[i].pressed ? 1 : 0))) || 0;
-      // round 2: RT paints / commands, LT erases, RB lures, A boosts (the triggers were RT command + LT lure in round 1)
-      inp.cmd = Math.max(inp.cmd, b(7)); inp.erase = Math.max(inp.erase, b(6)); inp.lure = Math.max(inp.lure, b(5));
-      inp.squad = inp.squad || b(4) > 0.5; inp.boost = Math.max(inp.boost, b(0));
+      // The game's own pad map (GamepadInputStrategy): RT paints / commands, LT erases, X (Button3) lures, A (Button1)
+      // picks the squad, B (Button2) recalls, RB is the throttle/boost. LB raises no event in the game, so nothing uses it.
+      inp.cmd = Math.max(inp.cmd, b(7)); inp.erase = Math.max(inp.erase, b(6)); inp.lure = Math.max(inp.lure, b(2));
+      inp.squad = inp.squad || b(0) > 0.5; inp.boost = Math.max(inp.boost, b(5));
       inp.recall = inp.recall || b(1) > 0.5;
     }
     if (touch.stick) { inp.yaw = clamp(touch.sx, -1, 1); inp.pitch = clamp(-touch.sy, -1, 1); }
@@ -1326,7 +1360,7 @@
       el.textContent = name + ' ' + list.length + (ball ? ' · ' + ball + ' in the ball' : '') + (busy ? ' · ' + busy + ' hunting' : '');
       bar.appendChild(el);
     }
-    $('hint').textContent = PLATFORM.device === 'phone' ? '' : 'W A S D steer · Shift boost · F LURE · Space / left mouse PAINT + COMMAND · V / right mouse ERASE · Q / Tab SQUAD · X recall · C camera · P pause · R restart. Pad: two sticks fly, RT paint + command, LT erase, RB lure, LB squad, A boost, B recall.';
+    $('hint').textContent = PLATFORM.device === 'phone' ? '' : 'W A S D steer · Shift boost · F LURE · Space / left mouse PAINT + COMMAND · V / right mouse ERASE · Q / Tab SQUAD · X recall · C camera · P pause · R restart. Pad (the game\'s map): two sticks fly, RT paint + command, LT erase, X lure, A squad, B recall, RB boost.';
   }
   function box(w, st, color, label) {
     const ids = aliveIds(w, st); if (!ids.length) return;
@@ -1574,7 +1608,7 @@
 
   // ---------- the test surface (labmaker §2.2) ----------
   window.__lab = window.__anglerLab = {
-    LAB, SHIPPED, SPEC, P, S, PLATFORM, SCHEMES, SPECIES, TASKS, SCENE,
+    LAB, SHIPPED, SPEC, P, S, PLATFORM, SCHEMES, SPECIES, TASKS, SCENE, CORE,
     set manualClock(v) { manualClock = !!v; }, get manualClock() { return manualClock; },
     tick(dt, n, input) { dt = dt || world.dt; n = n || 1; for (let i = 0; i < n; i++) simStep(dt, typeof input === 'function' ? input(world) : (input || commander(world, brainOf('skilled')))); render(); },
     reset: (s, opts) => reset(s, opts), score: () => score(), runBatch, runMission, setParam, record, commander: (kind) => commander(world, brainOf(kind || 'skilled')),
