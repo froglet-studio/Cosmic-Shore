@@ -42,6 +42,15 @@ namespace CosmicShore.Utility
         [Tooltip("The GameOverCounter text inside the toast - shows the win/lose line.")]
         [SerializeField] TMP_Text gameOverCounterText;
 
+        [Header("Style-B reveal (Docs/MENU_REDESIGN_B.md section 22.4) - all optional")]
+        [Tooltip("Above the line: 'Jade wins' in the winning domain's colour, or Victory / Defeat " +
+                 "when no domain won.")]
+        [SerializeField] TMP_Text winnerText;
+        [Tooltip("The short rule under the line, in the same colour as the winner text.")]
+        [SerializeField] UnityEngine.UI.Image winnerRule;
+        [Tooltip("Under the rule: the mode's own number - 'Race time 2:41.37', from the scoring rule.")]
+        [SerializeField] TMP_Text detailText;
+
         [Header("Timing")]
         [Tooltip("Seconds the reveal toast holds before the scoreboard appears.")]
         [SerializeField, Min(0f)] float revealDuration = 3f;
@@ -154,6 +163,7 @@ namespace CosmicShore.Utility
                 if (AudioSystem.Instance != null)
                     AudioSystem.Instance.PlayGameplaySFX(GameplaySFXCategory.GameEnd);
 
+                DrawRevealLines(didWin);
                 ShowToast(ResolveMessage(didWin));
             }
             catch (System.Exception e)
@@ -259,6 +269,48 @@ namespace CosmicShore.Utility
             randomizeVesselBehavior
                 ? ImplementedBehaviors[Random.Range(0, ImplementedBehaviors.Length)]
                 : vesselBehavior;
+
+        /// <summary>
+        /// The lines around the message. The message itself is the crowd line (CLUTCHED IT); these
+        /// say who won and by what, in the mode's own terms.
+        /// </summary>
+        void DrawRevealLines(bool didWin)
+        {
+            if (!winnerText && !winnerRule && !detailText) return;
+
+            var domain = gameData != null ? gameData.WinnerDomain : Domains.Blue;
+            bool named = domain != Domains.Blue && (int)domain != 0;
+            var palette = gameData != null ? gameData.ThemeManagerData : null;
+            Color accent = named && palette != null
+                ? palette.GetDomainUIColor(domain)
+                : UITheme.Resolve(null, didWin ? UIColorToken.TextLight : UIColorToken.NeutralLightest);
+
+            if (winnerText)
+            {
+                winnerText.text = named ? $"{domain} wins" : didWin ? "Victory" : "Defeat";
+                winnerText.color = accent;
+            }
+            if (winnerRule) winnerRule.color = accent;
+
+            if (!detailText) return;
+            detailText.text = string.Empty;
+            var rule = gameData != null ? gameData.ScoringRule : null;
+            if (rule == null || gameData.LocalRoundStats == null) return;
+            var reveal = rule.BuildReveal(gameData, gameData.LocalRoundStats, didWin);
+            if (string.IsNullOrEmpty(reveal.Label)) return;
+            string value = reveal.FormatAsTime
+                ? ScoreResultBuilder.FormatTime(reveal.Value)
+                : reveal.Value.ToString("N0", System.Globalization.CultureInfo.InvariantCulture);
+            detailText.text = TabularText.Wrap($"{SentenceCase(reveal.Label)} {value}", detailText.font);
+        }
+
+        /// <summary>'RACE TIME' -> 'Race time'. The rules author their labels in caps for the old board.</summary>
+        public static string SentenceCase(string caps)
+        {
+            if (string.IsNullOrEmpty(caps)) return caps;
+            string lower = caps.ToLowerInvariant();
+            return char.ToUpperInvariant(lower[0]) + lower.Substring(1);
+        }
 
         void ShowToast(string message)
         {

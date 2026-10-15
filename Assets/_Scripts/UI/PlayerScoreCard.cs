@@ -42,6 +42,19 @@ namespace CosmicShore.UI
         [SerializeField] private GameObject crystalRewardRoot;
         [SerializeField] private TMP_Text crystalRewardText;
 
+        [Header("Style-B row (Docs/MENU_REDESIGN_B.md section 22.4) - all optional")]
+        [Tooltip("The placing - '1', '2' - drawn from the card's order on the board.")]
+        [SerializeField] private TMP_Text rankText;
+        [Tooltip("The pilot's domain under their name, in the domain colour.")]
+        [SerializeField] private TMP_Text domainText;
+        [Tooltip("The row's slivered hairline: Light for the local pilot, Neutral Dark for everyone else.")]
+        [SerializeField] private Image borderImage;
+        [SerializeField] private CosmicShore.UI.UIColorToken localBorderToken = CosmicShore.UI.UIColorToken.TextLight;
+        [SerializeField] private CosmicShore.UI.UIColorToken otherBorderToken = CosmicShore.UI.UIColorToken.SurfaceDark;
+        [Tooltip("The first place's rank wears Light; every other rank Neutral Lightest.")]
+        [SerializeField] private CosmicShore.UI.UIColorToken leaderRankToken = CosmicShore.UI.UIColorToken.TextLight;
+        [SerializeField] private CosmicShore.UI.UIColorToken rankToken = CosmicShore.UI.UIColorToken.NeutralLightest;
+
         [Header("Animation (optional - falls back to defaults)")]
         [SerializeField] private HUDAnimationSettingsSO animSettings;
 
@@ -74,6 +87,12 @@ namespace CosmicShore.UI
             if (playerScoreText) playerScoreText.text = formattedScore;
 
             ApplyDomainColor(domainColor);
+            if (rankText)
+            {
+                rankText.text = (staggerIndex + 1).ToString();
+                rankText.color = CosmicShore.UI.UITheme.Resolve(null, staggerIndex == 0 ? leaderRankToken : rankToken);
+            }
+            SetLocal(false);
             HideCrystalReward();
             HideSecondaryStat();
             PlayEntrance(staggerIndex);
@@ -158,6 +177,23 @@ namespace CosmicShore.UI
         /// <summary>
         /// In-game live score update. Animates a counter roll + punch.
         /// </summary>
+        /// <summary>The local pilot's row wears the Light hairline (and "(you)" after the name).</summary>
+        public void SetLocal(bool isLocal)
+        {
+            if (borderImage)
+                borderImage.color = CosmicShore.UI.UITheme.Resolve(null, isLocal ? localBorderToken : otherBorderToken);
+            if (isLocal && playerNameText && !playerNameText.text.EndsWith(" (you)"))
+                playerNameText.text += " (you)";
+        }
+
+        /// <summary>The domain line under the name ("Jade"), in the domain colour.</summary>
+        public void SetDomain(string label, Color color)
+        {
+            if (!domainText) return;
+            domainText.text = label;
+            domainText.color = color;
+        }
+
         public void UpdateScore(int crystalCount) => ScoreAnimator.AnimateTo(crystalCount);
 
         private void ApplyDomainColor(Color domainColor)

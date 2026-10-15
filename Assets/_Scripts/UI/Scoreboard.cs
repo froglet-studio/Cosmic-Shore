@@ -102,6 +102,15 @@ namespace CosmicShore.UI
         [Header("Animation (optional)")]
         [SerializeField] private HUDAnimationSettingsSO animSettings;
 
+        [Header("Style-B board (Docs/MENU_REDESIGN_B.md section 22.4)")]
+        [Tooltip("Wire the four buttons in code rather than by persistent calls. The style-B board " +
+                 "is a nested prefab, so a persistent call into this component would be a per-" +
+                 "instance override - the shape that left the legacy board's Play Again calling a " +
+                 "null target.")]
+        [SerializeField] private bool wireButtonsInCode;
+        [Tooltip("'Skim Race - Intensity 3' above the banner.")]
+        [SerializeField] private TMP_Text modeText;
+
         #endregion
 
         #region Private Fields
@@ -128,8 +137,29 @@ namespace CosmicShore.UI
                 CSDebug.LogWarning("[Scoreboard] No ScoreboardStatsProvider found.");
 
             ResolveGameController();
+            if (wireButtonsInCode) WireButtons();
             HideScoreboard();
         }
+
+        void WireButtons()
+        {
+            Wire(playAgainButton, OnPlayAgainButtonPressed);
+            Wire(continueButton, OnContinueButtonPressed);
+            Wire(mainMenuButton, OnMainMenuButtonPressed);
+            Wire(leaveLobbyButton, OnLeaveLobbyButtonPressed);
+        }
+
+        static void Wire(GameObject host, UnityEngine.Events.UnityAction action)
+        {
+            if (host && host.TryGetComponent(out Button button)) button.onClick.AddListener(action);
+        }
+
+        /// <summary>
+        /// Main Menu (host only - a guest sees Leave lobby): the whole party returns to the menu.
+        /// The legacy board routed this through the pause menu's handler, whose host branch raises
+        /// the same event.
+        /// </summary>
+        public void OnMainMenuButtonPressed() => onClickToMainMenu.Raise();
 
         /// <summary>
         /// Finds the scene's game controller when the inspector reference is empty.
@@ -238,6 +268,7 @@ namespace CosmicShore.UI
                     : null;
 
                 ConfigureLobbyButtons();
+                RenderModeLine();
                 ShowMultiplayerView();
                 PopulateDynamicStats();
             }
@@ -500,22 +531,36 @@ namespace CosmicShore.UI
 
         protected virtual void SetBannerForDomain(Domains domain)
         {
-            string domainLabel = domain switch
-            {
-                Domains.Jade => "JADE",
-                Domains.Ruby => "RUBY",
-                Domains.Gold => "GOLD",
-                Domains.Blue => "BLUE",
-                _            => null,
-            };
-
             if (BannerImage) BannerImage.color = GetDomainColor(domain);
-            if (BannerText)
-            {
-                BannerText.text = string.IsNullOrEmpty(domainLabel)
-                    ? "GAME OVER"
-                    : $"{domainLabel} VICTORY";
-            }
+            if (BannerText) BannerText.text = BannerLine(domain);
+            if (BannerText && domain != Domains.Blue && (int)domain != 0) BannerText.color = GetDomainColor(domain);
+        }
+
+        /// <summary>
+        /// "Jade victory" - or "Game over" when no domain won. Blue is the "no domain" sentinel
+        /// (GameDataSO.WinnerDomain's reset value), so it never names a winner: "BLUE VICTORY" used
+        /// to be reachable on a board where nobody flies Blue.
+        /// </summary>
+        public static string BannerLine(Domains domain) => domain switch
+        {
+            Domains.Jade => "Jade victory",
+            Domains.Ruby => "Ruby victory",
+            Domains.Gold => "Gold victory",
+            _            => "Game over",
+        };
+
+        void RenderModeLine()
+        {
+            if (!modeText || gameData == null) return;
+            string mode = PauseMenu.SpacedName(gameData.GameMode.ToString());
+            int intensity = gameData.SelectedIntensity != null ? gameData.SelectedIntensity.Value : 0;
+            modeText.text = intensity > 0 ? $"{mode} - Intensity {intensity}" : mode;
+        }
+
+        void DecorateCard(PlayerScoreCard card, string pilotName, Domains domain)
+        {
+            card.SetDomain(domain == Domains.Blue || (int)domain == 0 ? string.Empty : domain.ToString(), GetDomainColor(domain));
+            card.SetLocal(gameData != null && gameData.LocalPlayer != null && gameData.LocalPlayer.Name == pilotName);
         }
 
         void PopulatePlayerCards(List<IRoundStats> orderedStats)
@@ -542,6 +587,7 @@ namespace CosmicShore.UI
                 card.Setup(stats.Name, FormatPlayerScore(stats), domainColor, i);
 
                 card.SetAvatar(ResolveAvatarSprite(stats));
+                DecorateCard(card, stats.Name, stats.Domain);
 
                 string secondary = FormatSecondaryStat(stats);
                 if (!string.IsNullOrEmpty(secondary))
@@ -586,6 +632,7 @@ namespace CosmicShore.UI
 
                 card.Setup(r.Name, r.ScoreText, GetDomainColor(r.Domain), i);
                 card.SetAvatar(ResolveAvatarSpriteByName(r.Name));
+                DecorateCard(card, r.Name, r.Domain);
 
                 if (!string.IsNullOrEmpty(r.Secondary))
                     card.ShowSecondaryStat(r.Secondary);

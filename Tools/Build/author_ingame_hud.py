@@ -451,13 +451,19 @@ def cbp_body(pad_button, group_key):
         "  TriangleButtonSprite: {fileID: 0}\n  CircleButtonSprite: {fileID: 0}\n  CrossButtonSprite: {fileID: 0}\n"
         "  SquareButtonSprite: {fileID: 0}\n  YButtonSprite: {fileID: 0}\n  BButtonSprite: {fileID: 0}\n"
         "  AButtonSprite: {fileID: 0}\n  XButtonSprite: {fileID: 0}\n"
-        f"  canvasGroup: {{fileID: {ctx.c(group_key, 'cg')}}}\n")
+        f"  canvasGroup: {{fileID: {ctx.c(group_key, 'cg') if group_key else 0}}}\n")
 
 
 def pause_button(i, key, caption, variant, opaque, cap, pad):
-    k = f"Pause/{key}"
+    return kit_button(f"Pause/{key}", f"{key}Button", HM.TL(WIN_W - WIN_PAD - BTN_W, 36 + i * (BTN_H + BTN_GAP), BTN_W, BTN_H),
+                      variant, opaque, caption, cap, pad, "Pause/Window", f"Pause{key}Keycap")
+
+
+def kit_button(k, name, r, variant, opaque, caption, cap, pad, group_key=None, keycap_key=None):
+    """A KitButton with its focus ring, fill, border, keycap and label, answering pad button `pad`
+    through ControllerButtonPress (gated by `group_key`'s CanvasGroup when given)."""
     border, fillc, content = K.button_palette(variant, opaque)
-    n = N(k, f"{key}Button", HM.TL(WIN_W - WIN_PAD - BTN_W, 36 + i * (BTN_H + BTN_GAP), BTN_W, BTN_H))
+    n = N(k, name, r)
     ring = n.child(N(f"{k}/FocusRing", "FocusRing", R((0, 0), (1, 1), (0, 0), (10, 10))))
     ring.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("Cta", 0.0), K.kit_sprite("kit_sliver10_line2"), True)) \
         .add("le", 114, H.le(ignore=True))
@@ -471,7 +477,7 @@ def pause_button(i, key, caption, variant, opaque, cap, pad):
     kw, kh = K.label_width(cap.upper(), "Label") + 24, K.line_height("Label") + 8
     slot = n.child(N(f"{k}/KeycapSlot", "KeycapSlot", R(size=(kw, kh))))
     slot.add("le", 114, H.le(pw=kw, ph=kh))
-    slot.children.append(P.Inst(f"Pause{key}Keycap", "KitKeycap", "Keycap", STRETCH, [("Label#tmp", "m_text", cap, None)]))
+    slot.children.append(P.Inst(keycap_key or k.replace("/", "") + "Keycap", "KitKeycap", "Keycap", STRETCH, [("Label#tmp", "m_text", cap, None)]))
     lab = n.child(N(f"{k}/Label", "Label", R(size=(K.label_width(caption.upper(), "Button"), K.line_height("Button")))))
     lab.add("cr", 222, K.canvas_renderer()).add("tmp", 114, K.tmp(caption, "Button", content)) \
         .add("kt", 114, K.kit_text("Button", driven=True))
@@ -486,7 +492,7 @@ def pause_button(i, key, caption, variant, opaque, cap, pad):
         + K.refs_list("contentGraphics", [ctx.c(f"{k}/Label", "tmp")])
         + f"  playGradient: {{fileID: {ctx.c(f'{k}/Fill', 'grad')}}}\n"))
     n.add("hlg", 114, K.hv_layout(False, (24, 24, 0, 0), 12, 3, (1, 1), (0, 0)))
-    n.add("cbp", 114, cbp_body(pad, "Pause/Window"))
+    n.add("cbp", 114, cbp_body(pad, group_key))
     return n
 
 
@@ -617,6 +623,267 @@ def connect_text(text_):
     return p.text()
 
 
+# --------------------------------------------------------------------------------------------
+# 12d - the end reveal (EndGameStatsPanel.prefab) and the scoreboard (new ScoreboardPanel.prefab)
+# --------------------------------------------------------------------------------------------
+
+ENDGAME = "Assets/_Prefabs/UI Elements/In Game/EndGameStatsPanel.prefab"
+ENDGAME_GUID = K.meta_guid(ENDGAME)
+EG = dict(seq="8928388148105690216", toast_rt="1666509602065227010", msg_go="6065125739201124439",
+          msg_rt="2795126439267128504", msg_tmp="8549829074479965766")
+# The reveal's two purple ornaments (Play_ActionText04/05), deleted with the canvas's overrides into them.
+LEGACY_REVEAL_GOS = ("1922089438039815508", "3304012168629254948")
+LEGACY_REVEAL_IDS = frozenset("""1922089438039815508 5888220749407968017 8127182187547510907 4122368631742369545
+3304012168629254948 7632647083028235520 7159594451883480492 386883533307007208""".split())
+S.update(seq=script_guid("Assets/_Scripts/Utility/DataContainers/EndGameSequencer.cs"),
+         card=script_guid("Assets/_Scripts/UI/PlayerScoreCard.cs"), statrow=script_guid("Assets/_Scripts/UI/StatRowUI.cs"),
+         scoreboard=script_guid("Assets/_Scripts/UI/Scoreboard.cs"))
+MSG_SIZE = 96
+
+
+def sized_text(t, role, token, size, spacing=None, align="center"):
+    def body(ctx, go):
+        b = H.text(t, role, tok(token), align=align)(ctx, go)
+        _, face, rsize, rspacing, _, _ = K.ROLES[role]
+        b = b.replace(f"  m_fontSize: {K.f32(rsize)}\n  m_fontSizeBase: {K.f32(rsize)}\n",
+                      f"  m_fontSize: {size}\n  m_fontSizeBase: {size}\n")
+        if spacing is not None:
+            b = b.replace(f"  m_characterSpacing: {K.f32(rspacing)}\n", f"  m_characterSpacing: {spacing}\n")
+        return b
+    return body
+
+
+def endgame_text(text_):
+    p = Patch(text_, "EndGame/Item12")
+    assert p.sc.script(EG["seq"]) == S["seq"], "EndGameSequencer moved"
+    for go in LEGACY_REVEAL_GOS:
+        if p.sc.has(go):
+            p.remove_subtree(go)
+    scrim = N("Reveal/Scrim", "Scrim", STRETCH)
+    scrim.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("SurfaceBlack", 0.5))).add("th", 114, H.themed("SurfaceBlack", 0.5))
+    win = N("Reveal/Winner", "Winner", R((0.5, 0.5), (0.5, 0.5), (0, 148), (1600, 28)))
+    win.add("cr", 222, K.canvas_renderer()).add("tmp", 114, sized_text("Jade wins", "Label", "TextLight", 18, spacing=30))
+    rule = N("Reveal/Rule", "Rule", R((0.5, 0.5), (0.5, 0.5), (0, 0), (160, 3)))
+    rule.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("TextLight")))
+    det = N("Reveal/Detail", "Detail", R((0.5, 0.5), (0.5, 0.5), (0, -36), (1600, 30)))
+    det.add("cr", 222, K.canvas_renderer()).add("tmp", 114, H.text("", "H3", tok("TextLight"), align="center"))
+    ids = [p.emit(n, EG["toast_rt"], EG["seq"]) for n in (scrim, win, rule, det)]
+    p.children(EG["toast_rt"], [ids[0], ids[1], EG["msg_rt"], ids[2], ids[3]])
+    # The crowd line: Light (never the old teal), 96 px Aldrich, auto-sized down to 48 so the longest
+    # line in the set (NOT BEATING THE ALLEGATIONS) fits instead of running off the plate.
+    p.rect(EG["msg_rt"], R((0.5, 0.5), (0.5, 0.5), (0, 68), (1600, 110)))
+    m = tmp_restyle(p.doc(EG["msg_tmp"]), "Aldrich", MSG_SIZE, False, 0, "center", "TextLight")
+    for f, v in (("m_enableAutoSizing", "1"), ("m_fontSizeMin", "48"), ("m_fontSizeMax", str(MSG_SIZE))):
+        m = C.field_set(m, f, v)
+    p.replace(EG["msg_tmp"], m)
+    seq = p.doc(EG["seq"])
+    seq = insert_after_field(seq, "gameOverCounterText", "winnerText", f"{{fileID: {p.ctx.c('Reveal/Winner', 'tmp')}}}")
+    seq = insert_after_field(seq, "winnerText", "winnerRule", f"{{fileID: {p.ctx.c('Reveal/Rule', 'img')}}}")
+    seq = insert_after_field(seq, "winnerRule", "detailText", f"{{fileID: {p.ctx.c('Reveal/Detail', 'tmp')}}}")
+    p.replace(EG["seq"], seq)
+    return p.text()
+
+
+def prune_instance_mods(p, guid, dead):
+    pis = [f for f, d in p.sc.docs.items() if d.startswith("--- !u!1001 ") and f"m_SourcePrefab: {{fileID: 100100000, guid: {guid}" in d]
+    assert len(pis) == 1, f"GameCanvas should nest one instance of {guid}"
+    entry = re.compile(r"    - target: \{fileID: (-?\d+), guid: %s,\s*type: 3\}\n      propertyPath: .*\n      value: .*\n      objectReference: .*\n(?:        .*\n)?" % guid)
+    p.replace(pis[0], entry.sub(lambda m: "" if m.group(1) in dead else m.group(0), p.doc(pis[0])))
+    for fid, doc in list(p.sc.docs.items()):
+        mm = re.search(r"m_CorrespondingSourceObject: \{fileID: (-?\d+), guid: %s," % guid, doc)
+        if mm and mm.group(1) in dead and doc.split("\n", 1)[0].endswith(" stripped"):
+            p.sc.remove(fid)
+
+
+# --- the scoreboard -------------------------------------------------------------------------
+
+SB_DIR = "Assets/_Prefabs/UI Elements/In Game"
+SB_PANEL, SB_ROW, SB_STAT = "ScoreboardPanel", "ScoreboardRow", "ScoreboardStat"
+P.PREFABS = tuple(P.PREFABS) + (SB_PANEL, SB_ROW, SB_STAT)
+GAMEOVER_GUID = K.meta_guid("Assets/_Prefabs/UI Elements/Panels/GameOverPanel.prefab")
+ANIM_SETTINGS = "e1e99ce577ae9be408463160f475ed8d"
+LIST_W, ROW_HT, LIST_H = 1260, 84, 396
+SB_BUTTONS = [  # key, caption, variant, keycap, pad (South 6 = A, East 5 = B), width
+    ("PlayAgain", "Play again", "Play", "A", 6, 340),
+    ("Continue", "Continue", "Play", "A", 6, 300),
+    ("MainMenu", "Main menu", "Cancel", "B", 5, 300),
+    ("LeaveLobby", "Leave lobby", "Cancel", "B", 5, 300),
+]
+
+
+def sb_path(name):
+    return f"{SB_DIR}/{name}.prefab"
+
+
+def build_row():
+    root = N("root", SB_ROW, R(size=(LIST_W, ROW_HT)))
+    root.add("cg", 225, H.canvas_group(True)).add("le", 114, H.le(ph=ROW_HT, pw=LIST_W))
+    base = root.child(N("Base", "Base", STRETCH))
+    base.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("SurfaceVeryDark"), K.kit_sprite("kit_sliver14_fill"), True)) \
+        .add("th", 114, H.themed("SurfaceVeryDark"))
+    tint = root.child(N("Tint", "Tint", STRETCH))
+    tint.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(K.WHITE, K.kit_sprite("kit_sliver14_fill"), True))
+    bord = root.child(N("Border", "Border", STRETCH))
+    bord.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("SurfaceDark"), K.kit_sprite("kit_sliver14_line1"), True))
+    rank = root.child(N("Rank", "Rank", HM.TL(28, 21, 44, 42)))
+    rank.add("cr", 222, K.canvas_renderer()).add("tmp", 114, H.text("1", "H2", tok("TextLight")))
+    ring = root.child(N("Ring", "Ring", HM.TL(84, 16, 52, 52)))
+    ring.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("SurfaceDark"), K.kit_sprite("kit_oct_fill"), True))
+    clip = ring.child(N("Ring/Clip", "Clip", R((0, 0), (1, 1), (0, 0), (-6, -6))))
+    clip.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(K.WHITE, K.kit_sprite("kit_oct_fill"), True)).add("mask", 114, A.mask(False))
+    av = clip.child(N("Ring/Clip/Avatar", "Avatar", STRETCH))
+    av.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(K.WHITE, A.AVATAR_PLACEHOLDER))
+    name = root.child(N("Name", "Name", HM.TL(158, 12, 560, 34)))
+    name.add("cr", 222, K.canvas_renderer()).add("tmp", 114, A.ellipsis(H.text("Pilot", "H2", tok("TextLight"))))
+    dom = root.child(N("Domain", "Domain", HM.TL(158, 50, 300, 18)))
+    dom.add("cr", 222, K.canvas_renderer()).add("tmp", 114, H.text("", "Label", tok("NeutralLightest")))
+    score = root.child(N("Score", "Score", HM.TR(170, 21, 360, 42)))
+    score.add("cr", 222, K.canvas_renderer()).add("tmp", 114, H.text("0", "H2", tok("TextLight"), align="right"))
+    data = root.child(N("Data", "DataPanels", HM.TR(24, 12, 130, 60)))
+    data.add("vlg", 114, K.hv_layout(True, (0, 0, 0, 0), 2, 5, (1, 1), (0, 0)))
+    rew = data.child(N("Data/Reward", "CrystalReward", R(size=(130, 30))))
+    rew.add("hlg", 114, K.hv_layout(False, (0, 0, 0, 0), 6, 5, (0, 0), (0, 0))).add("le", 114, H.le(ph=30))
+    glyph = rew.child(N("Data/Reward/Glyph", "Glyph", R(size=(18, 18))))
+    glyph.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("Purchase"), K.chrome_sprite("chrome_crystal"), preserve=True)) \
+        .add("th", 114, H.themed("Purchase")).add("le", 114, H.le(pw=18, ph=18))
+    amt = rew.child(N("Data/Reward/Amount", "Amount", R(size=(90, 26))))
+    amt.add("cr", 222, K.canvas_renderer()).add("tmp", 114, H.text("+200", "Data", tok("Purchase"), align="right")).add("le", 114, H.le(pw=90, ph=26))
+    sec = data.child(N("Data/Secondary", "Secondary", R(size=(130, 22))))
+    sec.add("cr", 222, K.canvas_renderer()).add("tmp", 114, H.text("", "DataSmall", tok("NeutralLightest"), align="right")).add("le", 114, H.le(ph=22))
+    root.add("card", 114, lambda ctx, go: K.mono(go, S["card"],
+        f"  playerAvatarImage: {{fileID: {ctx.c('Ring/Clip/Avatar', 'img')}}}\n"
+        f"  playerNameText: {{fileID: {ctx.c('Name', 'tmp')}}}\n  playerScoreText: {{fileID: {ctx.c('Score', 'tmp')}}}\n"
+        f"  backgroundImage: {{fileID: {ctx.c('Tint', 'img')}}}\n  domainIndicatorImage: {{fileID: {ctx.c('Ring', 'img')}}}\n"
+        "  backgroundTintAlpha: 0.12\n"
+        f"  dataPanelsRoot: {{fileID: {ctx.go('Data')}}}\n  secondaryStatText: {{fileID: {ctx.c('Data/Secondary', 'tmp')}}}\n"
+        f"  crystalRewardRoot: {{fileID: {ctx.go('Data/Reward')}}}\n  crystalRewardText: {{fileID: {ctx.c('Data/Reward/Amount', 'tmp')}}}\n"
+        f"  rankText: {{fileID: {ctx.c('Rank', 'tmp')}}}\n  domainText: {{fileID: {ctx.c('Domain', 'tmp')}}}\n"
+        f"  borderImage: {{fileID: {ctx.c('Border', 'img')}}}\n"
+        f"  localBorderToken: {K.TOKEN_INDEX['TextLight']}\n  otherBorderToken: {K.TOKEN_INDEX['SurfaceDark']}\n"
+        f"  leaderRankToken: {K.TOKEN_INDEX['TextLight']}\n  rankToken: {K.TOKEN_INDEX['NeutralLightest']}\n"
+        f"  animSettings: {K.ref(11400000, ANIM_SETTINGS, 2)}\n"))
+    return root
+
+
+def build_stat():
+    root = N("root", SB_STAT, R(size=(300, 96)))
+    root.add("le", 114, H.le(fw=1, ph=96))
+    H.framed(root, "Stat", 10, "SurfaceVeryDark", "SurfaceDark")
+    H.label(root.child(N("Label", "Label", HM.TL(20, 16, 220, 18))), "Longest drift", "Label", "NeutralLightest")
+    val = root.child(N("Value", "Value", HM.TL(20, 42, 240, 36)))
+    val.add("cr", 222, K.canvas_renderer()).add("tmp", 114, H.text("0", "H2", tok("TextLight")))
+    icon = root.child(N("Icon", "Icon", HM.TR(18, 16, 24, 24)))
+    icon.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("TextLight"), preserve=True))
+    root.add("stat", 114, lambda ctx, go: K.mono(go, S["statrow"],
+        f"  iconImage: {{fileID: {ctx.c('Icon', 'img')}}}\n  labelText: {{fileID: {ctx.c('Label', 'tmp')}}}\n"
+        f"  valueText: {{fileID: {ctx.c('Value', 'tmp')}}}\n"))
+    return root
+
+
+def build_panel():
+    root = N("root", SB_PANEL, STRETCH)
+    scrim = root.child(N("Scrim", "Scrim", STRETCH))
+    scrim.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("SurfaceBlack", 0.86), raycast=True)).add("th", 114, H.themed("SurfaceBlack", 0.86))
+    head = root.child(N("Header", "Header", R((0.5, 1), (0.5, 1), (0, -56), (LIST_W, 120), (0.5, 1))))
+    head.add("in", 114, HM.M.entrance("Rise", distance=14))
+    mode = head.child(N("Header/Mode", "Mode", HM.TL(0, 0, LIST_W, 22)))
+    mode.add("cr", 222, K.canvas_renderer()).add("tmp", 114, H.text("", "Label", tok("NeutralLightest"), align="center"))
+    ban = head.child(N("Header/Banner", "Banner", HM.TL(0, 28, LIST_W, 64)))
+    ban.add("cr", 222, K.canvas_renderer()).add("tmp", 114, sized_text("Game over", "Display", "TextLight", 56))
+    rule = head.child(N("Header/Rule", "Rule", R((0.5, 1), (0.5, 1), (0, -102), (220, 3), (0.5, 1))))
+    rule.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("TextLight")))
+    view = root.child(N("List", "List", R((0.5, 1), (0.5, 1), (0, -230), (LIST_W, LIST_H), (0.5, 1))))
+    view.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image((1.0, 1.0, 1.0, 0.0), raycast=True)) \
+        .add("rmask", 114, A.rect_mask()).add("scroll", 114, A.scroll_rect("List/Content", "List", 30))
+    content = view.child(N("List/Content", "Content", R((0, 1), (1, 1), (0, 0), (0, 0), (0.5, 1))))
+    content.add("vlg", 114, K.hv_layout(True, (0, 0, 0, 0), 12, 1, (1, 1), (0, 0))).add("csf", 114, K.fitter(0, 2))
+    stats = root.child(N("Stats", "Stats", R((0.5, 1), (0.5, 1), (0, -650), (LIST_W, 96), (0.5, 1))))
+    stats.add("hlg", 114, K.hv_layout(False, (0, 0, 0, 0), 14, 3, (1, 1), (1, 0)))
+    row = root.child(N("Buttons", "Buttons", R((0.5, 1), (0.5, 1), (0, -800), (LIST_W, 64), (0.5, 1))))
+    row.add("hlg", 114, K.hv_layout(False, (0, 0, 0, 0), 20, 4, (1, 1), (0, 0)))
+    for key, cap, variant, keycap, pad, w in SB_BUTTONS:
+        b = kit_button(f"Sb/{key}", f"{key}Button", R(size=(w, 64)), variant, variant == "Play", cap, keycap, pad,
+                       keycap_key=f"Sb{key}Keycap")
+        b.add("le", 114, H.le(pw=w, ph=64))
+        if key == "PlayAgain":
+            strip = b.child(N("Sb/PlayAgain/Avatars", "PlayerAvatars", R((0.5, 0), (0.5, 0), (0, -16), (w, 40), (0.5, 1))))
+            strip.add("hlg", 114, K.hv_layout(False, (0, 0, 0, 0), 10, 4, (0, 0), (0, 0))).add("le", 114, H.le(ignore=True))
+        row.children.append(b)
+    return root
+
+
+def sb_prefabs():
+    out = {}
+    for name, build in ((SB_ROW, build_row), (SB_STAT, build_stat), (SB_PANEL, build_panel)):
+        out[sb_path(name)] = P.prefab_text(build(), name)
+        out[sb_path(name) + ".meta"] = K.PREFAB_META.format(g=P.asset_guid(name))
+    return out
+
+
+def sb_ref(name, key):
+    """A reference INTO one of the new prefabs, as an asset reference (prefab fields)."""
+    return K.ref(K.FileIds(name)(key), P.asset_guid(name), 3)
+
+
+def patch_scoreboard(p):
+    """Swap the legacy GameOverPanel instance (800x450-era art, ~130 parked overrides and an added
+    subtree carrying the real buttons) for one instance of ScoreboardPanel.prefab, and re-point the
+    canvas's Scoreboard at it. Everything else in the canvas that touched the old instance is the
+    ScoreboardController's child list, which is rebuilt here."""
+    sbs = p.by_script(S["scoreboard"])
+    assert len(sbs) == 1, "GameCanvas should carry one Scoreboard"
+    sb = sbs[0]
+    host_go = p.sc.go_of(sb)
+    host_rt = p.sc.rect_of(host_go)
+    olds = [f for f, d in p.sc.docs.items() if d.startswith("--- !u!1001 ") and f"m_SourcePrefab: {{fileID: 100100000, guid: {GAMEOVER_GUID}" in d]
+    if olds:
+        dead = set(C.instance_docs(p.sc, olds[0]))
+        for fid in dead:
+            if p.sc.has(fid):
+                p.sc.remove(fid)
+        p.children(host_rt, [k for k in p.kids(host_rt) if k not in dead])
+    inst = str(p.ctx.fid("Score#inst"))
+    fk = K.FileIds(SB_PANEL)
+    guid = P.asset_guid(SB_PANEL)
+
+    def stub(key, kind):
+        src = fk(key)
+        fid = str(C.derived(src, inst))
+        doc = C.stub_doc(fid, kind, src, guid, inst)
+        if p.sc.has(fid):
+            p.sc.remove(fid)
+        return fid, doc
+    out = []
+    K.emit_instance(p.ctx, K.Instance("Score", SB_PANEL, guid, "ScoreboardPanel", STRETCH, ()), host_rt, out)
+    refs = {}
+    for field, key, kind in (("endGameObject", "root#go", "go"), ("scoreboardPanel", "root#rt", "rt"),
+                             ("statsContainer", "Stats#rt", "rt"), ("BannerImage", "Header/Rule#img", "img"),
+                             ("BannerText", "Header/Banner#tmp", "tmp"), ("playerCardContainer", "List/Content#rt", "rt"),
+                             ("playAgainButton", "Sb/PlayAgain#go", "go"), ("playAgainLabel", "Sb/PlayAgain/Label#tmp", "tmp"),
+                             ("mainMenuButton", "Sb/MainMenu#go", "go"), ("leaveLobbyButton", "Sb/LeaveLobby#go", "go"),
+                             ("continueButton", "Sb/Continue#go", "go"), ("modeText", "Header/Mode#tmp", "tmp")):
+        fid, doc = stub(key, kind)
+        refs[field] = fid
+        if doc not in out:
+            out.append(doc)
+    for fid in [T.doc_fid(d) for d in out]:
+        if p.sc.has(fid):
+            p.sc.remove(fid)
+    anchor = host_rt
+    for d in (K.unity_empty_scalars(d) for d in out):
+        p.sc.insert_after(anchor, T.doc_fid(d), d)
+        anchor = T.doc_fid(d)
+    root_stub = refs["scoreboardPanel"]
+    p.children(host_rt, [k for k in p.kids(host_rt) if k != root_stub] + [root_stub])
+    d = p.doc(sb)
+    for field, fid in refs.items():
+        d = set_field(d, field, f"{{fileID: {fid}}}")
+    d = set_field(d, "statRowPrefab", sb_ref(SB_STAT, "root#stat"))
+    d = set_field(d, "playerCardPrefab", sb_ref(SB_ROW, "root#card"))
+    d = set_field(d, "wireButtonsInCode", "1")
+    p.replace(sb, d)
+
+
 def pause_instance(p):
     pis = [f for f, d in p.sc.docs.items() if d.startswith("--- !u!1001 ") and f"m_SourcePrefab: {{fileID: 100100000, guid: {PAUSE_GUID}" in d]
     assert len(pis) == 1, "GameCanvas should nest one R_Pause_Menu_Panel"
@@ -664,6 +931,8 @@ def patch_pause_instance(p):
 def canvas_text(text_):
     p = Patch(text_, "GameCanvas/Item12")
     patch_pause_instance(p)
+    prune_instance_mods(p, ENDGAME_GUID, LEGACY_REVEAL_IDS)
+    patch_scoreboard(p)
     patch_goal_rows(p)
     patch_pause(p)
     patch_ready(p)
@@ -732,11 +1001,13 @@ def panel_text(text_):
 # --------------------------------------------------------------------------------------------
 
 TRANSFORMS = {LOCKUP: lockup_text, GLYPHS: glyphs_text, CANVAS: canvas_text, PANEL["path"]: panel_text, PAUSE: pause_text,
-              CONNECT: connect_text}
+              CONNECT: connect_text, ENDGAME: endgame_text}
 
 
 def outputs():
-    return {path: fn(open(os.path.join(REPO, path), encoding="utf-8").read()) for path, fn in TRANSFORMS.items()}
+    out = {path: fn(open(os.path.join(REPO, path), encoding="utf-8").read()) for path, fn in TRANSFORMS.items()}
+    out.update(sb_prefabs())
+    return out
 
 
 def docs_of(text_):
@@ -851,6 +1122,47 @@ def validate(files):
         assert f"guid: {K.SEMIBOLD[0]}" in cd[CN[key]], f"the connecting panel's {key} is not Chakra Petch SemiBold"
     assert "m_Sprite: {fileID: 0}" in cd[CN["fill_img"]], "the connecting bar still wears the legacy loading sprite"
 
+    # 12d - reveal
+    eg = files[ENDGAME]
+    check_local_refs(ENDGAME, eg)
+    ed = docs_of(eg)
+    assert not (LEGACY_REVEAL_IDS & set(ed)), "the reveal's purple ornaments survive"
+    for f in ("winnerText", "winnerRule", "detailText", "gameOverCounterText", "toastCanvasGroup"):
+        assert re.search(r"^  %s: \{fileID: [1-9-]" % f, ed[EG["seq"]], re.M), f"EndGameSequencer.{f} is not wired"
+    msg = ed[EG["msg_tmp"]]
+    assert "  m_enableAutoSizing: 1\n" in msg and f"  m_fontSizeMax: {MSG_SIZE}\n" in msg, "the reveal line does not auto-size (long lines overflow)"
+    assert f"  m_Color: {K.col(tok('TextLight'))}\n" in msg, "the reveal line is not Light"
+    egi = next(d for d in docs.values() if d.startswith("--- !u!1001 ") and f"guid: {ENDGAME_GUID}" in d.split("m_SourcePrefab:")[1])
+    for fid in re.findall(r"- target: \{fileID: (-?\d+), guid: %s" % ENDGAME_GUID, egi):
+        assert fid not in LEGACY_REVEAL_IDS, f"GameCanvas still overrides the deleted reveal ornament {fid}"
+    # 12d - scoreboard
+    assert not any(d.startswith("--- !u!1001 ") and f"guid: {GAMEOVER_GUID}" in d.split("m_SourcePrefab:")[1] for d in docs.values()), \
+        "GameCanvas still nests the legacy GameOverPanel"
+    sbd = next(d for d in docs.values() if f"guid: {S['scoreboard']}" in d)
+    assert "  wireButtonsInCode: 1\n" in sbd, "the Scoreboard does not wire its buttons"
+    for f in ("endGameObject", "scoreboardPanel", "statsContainer", "BannerImage", "BannerText", "playerCardContainer",
+              "playAgainButton", "playAgainLabel", "mainMenuButton", "leaveLobbyButton", "continueButton", "modeText"):
+        m = re.search(r"^  %s: \{fileID: (-?\d+)\}" % f, sbd, re.M)
+        assert m and m.group(1) in docs, f"Scoreboard.{f} is not wired"
+        assert f"guid: {P.asset_guid(SB_PANEL)}" in docs[m.group(1)], f"Scoreboard.{f} does not point into ScoreboardPanel"
+    assert f"guid: {P.asset_guid(SB_ROW)}" in sbd and f"guid: {P.asset_guid(SB_STAT)}" in sbd, "the Scoreboard does not clone the style-B row and stat"
+    sp = files[sb_path(SB_PANEL)]
+    check_local_refs(sb_path(SB_PANEL), sp)
+    spd = docs_of(sp)
+    fk = K.FileIds(SB_PANEL)
+    for key, _, _, _, pad, _ in SB_BUTTONS:
+        cbp = spd[str(fk(f"Sb/{key}#cbp"))]
+        assert f"  activationButton: {pad}\n" in cbp, f"{key} answers the wrong pad button"
+    assert {b[4] for b in SB_BUTTONS if b[0] in ("PlayAgain", "Continue")} == {6} and \
+           {b[4] for b in SB_BUTTONS if b[0] in ("MainMenu", "LeaveLobby")} == {5}, "A and B share an end-of-match button"
+    row = docs_of(files[sb_path(SB_ROW)])[str(K.FileIds(SB_ROW)("root#card"))]
+    for f in ("playerAvatarImage", "playerNameText", "playerScoreText", "backgroundImage", "rankText", "domainText", "borderImage",
+              "crystalRewardRoot", "crystalRewardText", "dataPanelsRoot"):
+        assert re.search(r"^  %s: \{fileID: [1-9-]" % f, row, re.M), f"ScoreboardRow: {f} is not wired"
+    assert "  backgroundTintAlpha: 0.12\n" in row, "the scoreboard row is not Team at 12% (a full team fill)"
+    for name in (SB_ROW, SB_STAT):
+        check_local_refs(sb_path(name), files[sb_path(name)])
+
     pn = files[PANEL["path"]]
     check_local_refs(PANEL["path"], pn)
     pd = docs_of(pn)
@@ -912,6 +1224,12 @@ def self_test(files):
             f"guid: {K.ALDRICH[0]}", f"guid: {WHITRABT}", 1))),
         ("the connecting headline unwired", lambda f: f.__setitem__(CONNECT, re.sub(
             r"(  phaseTitle: )\{fileID: -?\d+\}", r"\1{fileID: 0}", f[CONNECT]))),
+        ("the reveal line overflowing again", lambda f: f.__setitem__(ENDGAME, f[ENDGAME].replace(
+            docs_of(f[ENDGAME])[EG["msg_tmp"]], docs_of(f[ENDGAME])[EG["msg_tmp"]].replace("  m_enableAutoSizing: 1\n", "  m_enableAutoSizing: 0\n")))),
+        ("Main menu back on A", lambda f: f.__setitem__(sb_path(SB_PANEL), f[sb_path(SB_PANEL)].replace(
+            docs_of(f[sb_path(SB_PANEL)])[str(K.FileIds(SB_PANEL)("Sb/MainMenu#cbp"))],
+            docs_of(f[sb_path(SB_PANEL)])[str(K.FileIds(SB_PANEL)("Sb/MainMenu#cbp"))].replace("  activationButton: 5\n", "  activationButton: 6\n")))),
+        ("the scoreboard row a full team fill", sub(sb_path(SB_ROW), "  backgroundTintAlpha: 0.12\n", "  backgroundTintAlpha: 1\n")),
         ("the column hairline unwired", lambda f: f.__setitem__(PANEL["path"], re.sub(r"(  borderImage: )\{fileID: -?\d+\}", r"\1{fileID: 0}", f[PANEL["path"]]))),
     ]
     ok = all(expect(l, m) for l, m in cases)

@@ -46,7 +46,7 @@ Legend: `Planned` ▸ `Mockup` ▸ `Mockup approved` ▸ `Built` ▸ `Approved i
 | 9 | Settings modal and Credits | Built (2026-10-15, section 18): Settings window and Credits | `Settings.dc.html` (interactive), `SettingsDisplay`, `SettingsPerformance`, `SettingsOther`, `Credits`, `SystemNotes` | |
 | 10 | Closed surfaces: Port (locked), Store (no slot), Episodes panel, purchase confirmation | Built (2026-10-15, section 19): purchase confirmation drawn blind; locked states from items 1 and 5 | `ClosedSurfaces.dc.html`, `PurchaseConfirm` (blind), `SystemNotes` | |
 | 11 | Menu toasts | Built (2026-10-15, section 20) | `Toasts.dc.html` (interactive), `SystemNotes` | |
-| 12 | In-game UI: GameCanvas HUD chrome, scoreboard, ready / countdown / pause, in-match toasts, end-of-game screens, Menu_Main freestyle HUD | Mockup approved (2026-10-15); building (section 22): 12a HUD chrome, 12b Ready / waiting / countdown, 12c pause and connecting built | `HudMatch.dc.html` (interactive), `HudCardStates`, `HudNotes`, `Hud<Vessel>` x9, `HudReady` (interactive), `HudPause`, `HudConnecting`, `HudEndReveal`, `HudScoreboard` (interactive), `HudSpectator` - page "In-game HUD" | |
+| 12 | In-game UI: GameCanvas HUD chrome, scoreboard, ready / countdown / pause, in-match toasts, end-of-game screens, Menu_Main freestyle HUD | Mockup approved (2026-10-15); building (section 22): 12a HUD chrome, 12b Ready / waiting / countdown, 12c pause and connecting, 12d end reveal and scoreboard built | `HudMatch.dc.html` (interactive), `HudCardStates`, `HudNotes`, `Hud<Vessel>` x9, `HudReady` (interactive), `HudPause`, `HudConnecting`, `HudEndReveal`, `HudScoreboard` (interactive), `HudSpectator` - page "In-game HUD" | |
 
 ---
 
@@ -1266,7 +1266,7 @@ stays green). One generator owns the item: `Tools/Build/author_ingame_hud.py` (`
     - 3: MAIN MENU sat on A. Leave is on Y now.
     - 4: the pause button opened the window twice, through a stray `Show` call next to
       `OnClickPauseGameButton`; the `Show` call is removed.
-  - The legacy Buttons subtree and the canvas's 40 overrides into it are deleted. Validation
+  - The legacy Buttons subtree and the canvas's 39 overrides into it (37 on the deleted objects, plus `replayButton` and `mainMenuButton`) are deleted. Validation
     proves none survives.
   - The legacy `Options_Menu_Panel` instance (inactive) is left as it was.
 - **Connecting** (`ConnectingPanel.prefab`): the off-spec `whitrabt` face is gone (Maelstrom's rank
@@ -1282,4 +1282,39 @@ stays green). One generator owns the item: `Tools/Build/author_ingame_hud.py` (`
   - The arena preview shrinks to 960 x 540 above the column. The pilot roster is unchanged.
   - Departure: the board's "about 3 s" is an estimate the builder does not make. The panel shows
     the seconds waited instead.
+
+### 22.4 The end reveal and the scoreboard (12d; built 2026-10-15, awaiting in-editor approval)
+
+- **Reveal** (`EndGameStatsPanel.prefab`; `EndGameSequencer` keeps its timing, flourish and message
+  set): a black scrim at 50%, then:
+  - "Jade wins" in the winning domain's colour (Victory / Defeat when no domain won);
+  - the crowd line (CLUTCHED IT) in Light, Aldrich 96, auto-sized down to 48 so the longest line in
+    the set fits (defect 9);
+  - a 160 x 3 rule in the winner's colour;
+  - the mode's own number from its scoring rule ("Race time 02:41:37", "Crystals left 3").
+  - New optional fields: `winnerText`, `winnerRule`, `detailText`.
+  - The two purple ornament sprites and the teal text are gone, with the canvas's overrides into
+    them.
+- **Scoreboard:** the legacy `GameOverPanel` instance is gone from GameCanvas. It was 800 x 450-era
+  art carrying 66 overrides and an added subtree that held the real buttons, and its Play Again
+  call targeted nothing. It is replaced by one instance of the new **`ScoreboardPanel.prefab`**,
+  which clones the new **`ScoreboardRow.prefab`** (`PlayerScoreCard`) and
+  **`ScoreboardStat.prefab`** (`StatRowUI`). `PlayerScoreCard.prefab` is untouched; the HUD's legacy
+  layout still uses it.
+  - Header: "Skim Race - Intensity 3", then the banner in the winner's colour ("Jade victory" -
+    never "BLUE VICTORY", defect 6; `Scoreboard.BannerLine`), then a 220 x 3 rule.
+  - Rows: 1260 x 84 in a scrolling list (four visible). Each row has its rank, an octagonal avatar
+    ringed in the domain colour, the name (+ " (you)"), the domain in its colour, and the score. The
+    crystal reward shows in Gold. The fill is the team colour at 12% over Neutral Very Dark (never
+    a full team fill), with a Light hairline for the local pilot.
+  - A stats strip of tiles: label over value.
+  - Buttons, wired in code (`Scoreboard.wireButtonsInCode`): Play again / Continue on **A**, Main
+    menu / Leave lobby on **B**. Each pair is mutually exclusive, so one press is one action
+    (defect 1: one B fired both Play Again and Main Menu). Main menu raises the menu event
+    directly (`Scoreboard.OnMainMenuButtonPressed`).
+  - The rematch vote faces show in a `PlayerAvatars` strip under Play again.
+  - `EndOfMatchTextTests` cover the banner line and the reveal label.
+- **Departures:** the board's stats strip has four tiles, but the strip draws however many the mode
+  tracks (Skim Race has five). The rematch note text ("NovaKite wants a rematch") stays in the match
+  feed, not under the buttons.
 

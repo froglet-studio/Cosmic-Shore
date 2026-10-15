@@ -65,6 +65,30 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Style-B menu redesign, item 12d: end reveal, scoreboard (`claude/new-session-76hnyc`, 2026-10-15) — NOT EDITOR-VERIFIED
+
+`EndGameStatsPanel.prefab` and `GameCanvas.prefab` were patched, and `ScoreboardPanel.prefab`,
+`ScoreboardRow.prefab` and `ScoreboardStat.prefab` were authored, by
+`Tools/Build/author_ingame_hud.py` (`--check` and `--self-test` green; 18 controls) - see
+`Docs/MENU_REDESIGN_B.md` section 22.4. No editor in the session, so `/verify-unity` is still owed.
+Offline: the player and editor reference compiles are clean, and `EndOfMatchTextTests` compiles.
+
+**Verify in editor (Skim Race with AI, then a two-client party):**
+1. At the finish, the scene dims and shows "Jade wins" (in the winner's colour), the crowd line in
+   white, a short rule and "Race time ...". It holds for about 3 s. A long line such as NOT BEATING
+   THE ALLEGATIONS shrinks to fit.
+2. The scoreboard: the mode line, then "Jade victory" in Jade with a rule. Rows are ranked 1..n,
+   with octagon avatars ringed in their domain, your row outlined in white with "(you)", the scores,
+   and a gold "+200" on the winners. The stats tiles sit under the list. More than four pilots
+   scroll.
+3. Host: PLAY AGAIN (A) replays, and MAIN MENU (B) returns everyone. Each pad button fires exactly
+   one of them.
+4. Guest: REMATCH? (A) votes, and the faces appear under it. LEAVE LOBBY (B) leaves.
+5. Maelstrom: the host sees CONTINUE (A) and the guest sees LEAVE LOBBY (B).
+6. FrogletTools > Game Modes > GameCanvas Unifier: Fix prefab / Validate reports nothing new.
+
+---
+
 ### 🔴 Style-B menu redesign, item 12c: pause window, connecting panel (`claude/new-session-76hnyc`, 2026-10-15) — NOT EDITOR-VERIFIED
 
 `R_Pause_Menu_Panel.prefab`, `ConnectingPanel.prefab` and `GameCanvas.prefab` were patched by
