@@ -26,7 +26,9 @@ namespace CosmicShore.Editor.AI
         public Player Player;
 
         /// <summary>The AI is flying this hull right now: an AI seat, or a human's hull the AI is holding.</summary>
-        public bool AIFlying => IsLocalHuman ? Autopilot && Autopilot.AutoPilotEnabled : IsAI;
+        /// Your own hull asks <see cref="PilotControl.IsHeldByAI"/>, the toggle's own answer: a Squirrel handed to the Skim
+        /// Race pilot has its platform autopilot switched OFF, so reading the autopilot alone showed "You" while the AI flew.
+        public bool AIFlying => IsLocalHuman ? PilotControl.IsHeldByAI(Player) : IsAI;
 
         public int Id => Status ? Status.GetInstanceID() : 0;
         public bool Alive => Status && Hull && Hull.gameObject.activeInHierarchy;
@@ -149,7 +151,8 @@ namespace CosmicShore.Editor.AI
                     if (!skim || !(skim.Vessel is Object sv && sv)) continue;
                     if (!ReferenceEquals(skim.Vessel.VesselStatus, status)) continue;
                     pilot.SkimPilot = skim;
-                    pilot.IsAI = true;
+                    // A pilot that stands down on a human's hull (a taken-over seat) does not make it an AI's.
+                    if (pilot.Player == null || pilot.IsAI || skim.FlyingForHuman) pilot.IsAI = true;
                     break;
                 }
 

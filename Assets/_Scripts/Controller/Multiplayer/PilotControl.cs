@@ -96,8 +96,17 @@ namespace CosmicShore.Gameplay
             // If the AI was holding the hull being left, the player's input was paused for it. The swap turns the AI
             // on for that hull again, under its new pilot; the player's own sticks must be live for the new one.
             human.InputController.SetPause(false);
+            // Neither hull is a human's hull held for them any more: the left one becomes the AI's own seat, and the
+            // taken one is the human's to fly. A Skim Race pilot still flying "for a human" would fight their sticks.
+            ReleaseHeldFor(human.Vessel);
+            ReleaseHeldFor(target.Vessel);
             human.ExecutePilotSwapServer(target);
             return true;
+        }
+
+        static void ReleaseHeldFor(IVessel hull)
+        {
+            if (hull is Component c && c && c.TryGetComponent(out SkimRacePilot skim)) skim.FlyingForHuman = false;
         }
 
         static bool TryCheckHuman(Player human, out string refusal)

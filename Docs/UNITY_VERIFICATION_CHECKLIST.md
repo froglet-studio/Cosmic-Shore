@@ -9343,6 +9343,9 @@ and the Third Eye has a skim readout. Checked offline only: reference compile, g
 5. (Second round) Hand your own Squirrel to the AI with the Third Eye's **You / AI** toggle. **Pass:** the Third Eye
    reads "Skim Race pilot" with the skim line (lift 7.5) and the hull rides its rail. Toggle **You**: the sticks are
    yours again at once.
+6. (Third round) The You / AI buttons: press **AI** on your Squirrel, and the button STAYS on AI while the Skim Race
+   pilot flies. Press **You**, and the sticks are yours. Take over an AI hull with **You**, then take your first hull
+   back: it answers your sticks and does not fly itself.
 
 ## 🔴 2026-10-15 — Lava lamp fps regression: Charge arcs sleep when tiny, guide stops searching the scene (unverified: no Unity CLI in the session)
 
