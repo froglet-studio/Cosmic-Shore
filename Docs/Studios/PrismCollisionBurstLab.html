@@ -156,7 +156,7 @@
   const $ = (id) => document.getElementById(id);
 
   // ================= the shipped sources, stamped in by build.py =================
-  const DATA = {"config":{"showcaseMaxMovers":64.0,"boxMaxMovers":256.0,"maxLiveBursts":48.0,"maxLiveTriangles":80000.0,"crowdedFill":0.5,"packedFill":0.8,"shedMinScreen":0.08,"shedFineScreen":0.16,"shedFinestScreen":0.28,"shedSubdivision":12.0,"shedFineSubdivision":18.0,"shedFinestSubdivision":24.0,"bloomWeight":0.0,"unravelWeight":0.0,"flakeWeight":0.0,"bloomRings":3.0,"bloomSegments":3.0,"peelNoise":0.6,"rollWeight":1.0,"rollRadius":0.05,"rollGap":0.01,"destructionCut":1.0,"wedgeSpinNoise":0.15,"wedgeNoiseFrequency":3.0,"shedInflate":0.02,"spread":0.55,"openSeconds":0.22,"spinPerSpeed":0.3,"bloomTurns":0.7,"unravelTurns":0.8,"ribbonsPerFace":6.0,"shardsPerFaceEdge":3.0,"dissolveGrain":0.35,"depthMinScreen":[0.05,0.1,0.16,0.24],"sierpinskiMaxDepth":5,"silverDepths":[4,6,8,10],"silverMaxDepth":12,"gradeSeconds":0.8},"look":{"fresnelPower":3.0,"innerGlow":1.0,"noiseScale":0.55},"explosion":{"rotation":0.0169,"spreadPerAmount":0.05,"spreadValue":[0.18,0.1,0.1],"minSpeed":10.0,"maxSpeed":33.33,"dangerDetonation":1.6,"duration":7.5},"graph":{"pivotBias":-0.5,"slideBias":0.5,"sliderGain":0.5},"motion":{"debrisRestitution":0.3333333333333333,"debrisSpeedLimit":200.0},"overshoot":0.06,"rollTail":0.6,"domains":{"jade":{"bright":[0.0,0.5884546,1.1353014],"dark":[0.0,0.16,0.34]},"ruby":{"bright":[0.5490196,0.0,1.4980392],"dark":[0.11906711,0.006783697,0.30817598]},"gold":{"bright":[0.9964046,0.4048625,0.0185709],"dark":[0.23899364,0.124818474,0.0]},"blue":{"bright":[0.46681717,0.53749484,1.2167859],"dark":[0.023529412,0.023529412,0.34901962]}},"prismMesh":[-0.5,-0.5,0.5,0.0,0.0,1.0,0.0,-1.0,0.0,0.0,0.0,0.5,-0.5,0.5,0.0,0.0,1.0,0.0,-1.0,0.0,1.0,0.0,0.0,0.0,0.5,0.0,0.0,1.0,0.0,-1.0,0.0,0.5,0.5,0.5,-0.5,0.5,0.0,0.0,1.0,1.0,0.0,0.0,0.0,0.0,0.5,0.5,0.5,0.0,0.0,1.0,1.0,0.0,0.0,1.0,0.0,0.0,0.0,0.5,0.0,0.0,1.0,1.0,0.0,0.0,0.5,0.5,0.5,0.5,0.5,0.0,0.0,1.0,0.0,1.0,0.0,0.0,0.0,-0.5,0.5,0.5,0.0,0.0,1.0,0.0,1.0,0.0,1.0,0.0,0.0,0.0,0.5,0.0,0.0,1.0,0.0,1.0,0.0,0.5,0.5,-0.5,0.5,0.5,0.0,0.0,1.0,-1.0,0.0,0.0,0.0,0.0,-0.5,-0.5,0.5,0.0,0.0,1.0,-1.0,0.0,0.0,1.0,0.0,0.0,0.0,0.5,0.0,0.0,1.0,-1.0,0.0,0.0,0.5,0.5,0.5,-0.5,-0.5,0.0,0.0,-1.0,0.0,-1.0,0.0,0.0,0.0,-0.5,-0.5,-0.5,0.0,0.0,-1.0,0.0,-1.0,0.0,1.0,0.0,0.0,0.0,-0.5,0.0,0.0,-1.0,0.0,-1.0,0.0,0.5,0.5,-0.5,-0.5,-0.5,0.0,0.0,-1.0,-1.0,0.0,0.0,0.0,0.0,-0.5,0.5,-0.5,0.0,0.0,-1.0,-1.0,0.0,0.0,1.0,0.0,0.0,0.0,-0.5,0.0,0.0,-1.0,-1.0,0.0,0.0,0.5,0.5,-0.5,0.5,-0.5,0.0,0.0,-1.0,0.0,1.0,0.0,0.0,0.0,0.5,0.5,-0.5,0.0,0.0,-1.0,0.0,1.0,0.0,1.0,0.0,0.0,0.0,-0.5,0.0,0.0,-1.0,0.0,1.0,0.0,0.5,0.5,0.5,0.5,-0.5,0.0,0.0,-1.0,1.0,0.0,0.0,0.0,0.0,0.5,-0.5,-0.5,0.0,0.0,-1.0,1.0,0.0,0.0,1.0,0.0,0.0,0.0,-0.5,0.0,0.0,-1.0,1.0,0.0,0.0,0.5,0.5,-0.5,-0.5,-0.5,-1.0,0.0,0.0,0.0,-1.0,0.0,0.0,0.0,-0.5,-0.5,0.5,-1.0,0.0,0.0,0.0,-1.0,0.0,1.0,0.0,-0.5,0.0,0.0,-1.0,0.0,0.0,0.0,-1.0,0.0,0.5,0.5,-0.5,-0.5,0.5,-1.0,0.0,0.0,0.0,0.0,1.0,0.0,0.0,-0.5,0.5,0.5,-1.0,0.0,0.0,0.0,0.0,1.0,1.0,0.0,-0.5,0.0,0.0,-1.0,0.0,0.0,0.0,0.0,1.0,0.5,0.5,-0.5,0.5,0.5,-1.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,-0.5,0.5,-0.5,-1.0,0.0,0.0,0.0,1.0,0.0,1.0,0.0,-0.5,0.0,0.0,-1.0,0.0,0.0,0.0,1.0,0.0,0.5,0.5,-0.5,0.5,-0.5,-1.0,0.0,0.0,0.0,0.0,-1.0,0.0,0.0,-0.5,-0.5,-0.5,-1.0,0.0,0.0,0.0,0.0,-1.0,1.0,0.0,-0.5,0.0,0.0,-1.0,0.0,0.0,0.0,0.0,-1.0,0.5,0.5,0.5,-0.5,0.5,1.0,0.0,0.0,0.0,-1.0,0.0,0.0,0.0,0.5,-0.5,-0.5,1.0,0.0,0.0,0.0,-1.0,0.0,1.0,0.0,0.5,0.0,0.0,1.0,0.0,0.0,0.0,-1.0,0.0,0.5,0.5,0.5,-0.5,-0.5,1.0,0.0,0.0,0.0,0.0,-1.0,0.0,0.0,0.5,0.5,-0.5,1.0,0.0,0.0,0.0,0.0,-1.0,1.0,0.0,0.5,0.0,0.0,1.0,0.0,0.0,0.0,0.0,-1.0,0.5,0.5,0.5,0.5,-0.5,1.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,0.5,0.5,0.5,1.0,0.0,0.0,0.0,1.0,0.0,1.0,0.0,0.5,0.0,0.0,1.0,0.0,0.0,0.0,1.0,0.0,0.5,0.5,0.5,0.5,0.5,1.0,0.0,0.0,0.0,0.0,1.0,0.0,0.0,0.5,-0.5,0.5,1.0,0.0,0.0,0.0,0.0,1.0,1.0,0.0,0.5,0.0,0.0,1.0,0.0,0.0,0.0,0.0,1.0,0.5,0.5,-0.5,0.5,0.5,0.0,1.0,0.0,0.0,0.0,1.0,0.0,0.0,0.5,0.5,0.5,0.0,1.0,0.0,0.0,0.0,1.0,1.0,0.0,0.0,0.5,0.0,0.0,1.0,0.0,0.0,0.0,1.0,0.5,0.5,0.5,0.5,0.5,0.0,1.0,0.0,1.0,0.0,0.0,0.0,0.0,0.5,0.5,-0.5,0.0,1.0,0.0,1.0,0.0,0.0,1.0,0.0,0.0,0.5,0.0,0.0,1.0,0.0,1.0,0.0,0.0,0.5,0.5,0.5,0.5,-0.5,0.0,1.0,0.0,0.0,0.0,-1.0,0.0,0.0,-0.5,0.5,-0.5,0.0,1.0,0.0,0.0,0.0,-1.0,1.0,0.0,0.0,0.5,0.0,0.0,1.0,0.0,0.0,0.0,-1.0,0.5,0.5,-0.5,0.5,-0.5,0.0,1.0,0.0,-1.0,0.0,0.0,0.0,0.0,-0.5,0.5,0.5,0.0,1.0,0.0,-1.0,0.0,0.0,1.0,0.0,0.0,0.5,0.0,0.0,1.0,0.0,-1.0,0.0,0.0,0.5,0.5,-0.5,-0.5,-0.5,0.0,-1.0,0.0,0.0,0.0,-1.0,0.0,0.0,0.5,-0.5,-0.5,0.0,-1.0,0.0,0.0,0.0,-1.0,1.0,0.0,0.0,-0.5,0.0,0.0,-1.0,0.0,0.0,0.0,-1.0,0.5,0.5,0.5,-0.5,-0.5,0.0,-1.0,0.0,1.0,0.0,0.0,0.0,0.0,0.5,-0.5,0.5,0.0,-1.0,0.0,1.0,0.0,0.0,1.0,0.0,0.0,-0.5,0.0,0.0,-1.0,0.0,1.0,0.0,0.0,0.5,0.5,0.5,-0.5,0.5,0.0,-1.0,0.0,0.0,0.0,1.0,0.0,0.0,-0.5,-0.5,0.5,0.0,-1.0,0.0,0.0,0.0,1.0,1.0,0.0,0.0,-0.5,0.0,0.0,-1.0,0.0,0.0,0.0,1.0,0.5,0.5,-0.5,-0.5,0.5,0.0,-1.0,0.0,-1.0,0.0,0.0,0.0,0.0,-0.5,-0.5,-0.5,0.0,-1.0,0.0,-1.0,0.0,0.0,1.0,0.0,0.0,-0.5,0.0,0.0,-1.0,0.0,-1.0,0.0,0.0,0.5,0.5],"sources":{"burst":"Assets/_Graphics/Materials/Graphs/PrismCollisionBurst.hlsl","erosion":"Assets/_Graphics/Materials/Graphs/PrismOcclusionCorridor.hlsl (PrismErosionFade)","grade":"Assets/_Graphics/Materials/Graphs/PrismClockAnimation.hlsl (PrismColorLerp_float)","explosionMap":"RotateFacesAlongAxis.shadersubgraph (closed form, parity-gated)"}};
+  const DATA = {"config":{"showcaseMaxMovers":64.0,"boxMaxMovers":256.0,"maxLiveBursts":48.0,"maxLiveTriangles":80000.0,"crowdedFill":0.5,"packedFill":0.8,"shedMinScreen":0.08,"shedFineScreen":0.16,"shedFinestScreen":0.28,"shedSubdivision":12.0,"shedFineSubdivision":18.0,"shedFinestSubdivision":24.0,"bloomWeight":0.0,"unravelWeight":0.0,"flakeWeight":0.0,"bloomRings":3.0,"bloomSegments":3.0,"peelNoise":0.6,"rollWeight":1.0,"rollRadius":0.05,"rollGap":0.01,"destructionCut":1.0,"wedgeSpinNoise":0.15,"wedgeNoiseFrequency":3.0,"wedgeSlideNoise":0.15,"shedInflate":0.02,"spread":0.55,"openSeconds":0.22,"spinPerSpeed":0.3,"bloomTurns":0.7,"unravelTurns":0.8,"ribbonsPerFace":6.0,"shardsPerFaceEdge":3.0,"dissolveGrain":0.35,"depthMinScreen":[0.05,0.1,0.16,0.24],"sierpinskiMaxDepth":5,"silverDepths":[4,6,8,10],"silverMaxDepth":12,"gradeSeconds":0.8},"look":{"fresnelPower":3.0,"innerGlow":1.0,"noiseScale":0.55},"explosion":{"rotation":0.0169,"spreadPerAmount":0.05,"spreadValue":[0.18,0.1,0.1],"minSpeed":10.0,"maxSpeed":33.33,"dangerDetonation":1.6,"duration":7.5},"graph":{"pivotBias":-0.5,"slideBias":0.5,"sliderGain":0.5},"motion":{"debrisRestitution":0.3333333333333333,"debrisSpeedLimit":200.0},"overshoot":0.06,"rollTail":0.6,"domains":{"jade":{"bright":[0.0,0.5884546,1.1353014],"dark":[0.0,0.16,0.34]},"ruby":{"bright":[0.5490196,0.0,1.4980392],"dark":[0.11906711,0.006783697,0.30817598]},"gold":{"bright":[0.9964046,0.4048625,0.0185709],"dark":[0.23899364,0.124818474,0.0]},"blue":{"bright":[0.46681717,0.53749484,1.2167859],"dark":[0.023529412,0.023529412,0.34901962]}},"prismMesh":[-0.5,-0.5,0.5,0.0,0.0,1.0,0.0,-1.0,0.0,0.0,0.0,0.5,-0.5,0.5,0.0,0.0,1.0,0.0,-1.0,0.0,1.0,0.0,0.0,0.0,0.5,0.0,0.0,1.0,0.0,-1.0,0.0,0.5,0.5,0.5,-0.5,0.5,0.0,0.0,1.0,1.0,0.0,0.0,0.0,0.0,0.5,0.5,0.5,0.0,0.0,1.0,1.0,0.0,0.0,1.0,0.0,0.0,0.0,0.5,0.0,0.0,1.0,1.0,0.0,0.0,0.5,0.5,0.5,0.5,0.5,0.0,0.0,1.0,0.0,1.0,0.0,0.0,0.0,-0.5,0.5,0.5,0.0,0.0,1.0,0.0,1.0,0.0,1.0,0.0,0.0,0.0,0.5,0.0,0.0,1.0,0.0,1.0,0.0,0.5,0.5,-0.5,0.5,0.5,0.0,0.0,1.0,-1.0,0.0,0.0,0.0,0.0,-0.5,-0.5,0.5,0.0,0.0,1.0,-1.0,0.0,0.0,1.0,0.0,0.0,0.0,0.5,0.0,0.0,1.0,-1.0,0.0,0.0,0.5,0.5,0.5,-0.5,-0.5,0.0,0.0,-1.0,0.0,-1.0,0.0,0.0,0.0,-0.5,-0.5,-0.5,0.0,0.0,-1.0,0.0,-1.0,0.0,1.0,0.0,0.0,0.0,-0.5,0.0,0.0,-1.0,0.0,-1.0,0.0,0.5,0.5,-0.5,-0.5,-0.5,0.0,0.0,-1.0,-1.0,0.0,0.0,0.0,0.0,-0.5,0.5,-0.5,0.0,0.0,-1.0,-1.0,0.0,0.0,1.0,0.0,0.0,0.0,-0.5,0.0,0.0,-1.0,-1.0,0.0,0.0,0.5,0.5,-0.5,0.5,-0.5,0.0,0.0,-1.0,0.0,1.0,0.0,0.0,0.0,0.5,0.5,-0.5,0.0,0.0,-1.0,0.0,1.0,0.0,1.0,0.0,0.0,0.0,-0.5,0.0,0.0,-1.0,0.0,1.0,0.0,0.5,0.5,0.5,0.5,-0.5,0.0,0.0,-1.0,1.0,0.0,0.0,0.0,0.0,0.5,-0.5,-0.5,0.0,0.0,-1.0,1.0,0.0,0.0,1.0,0.0,0.0,0.0,-0.5,0.0,0.0,-1.0,1.0,0.0,0.0,0.5,0.5,-0.5,-0.5,-0.5,-1.0,0.0,0.0,0.0,-1.0,0.0,0.0,0.0,-0.5,-0.5,0.5,-1.0,0.0,0.0,0.0,-1.0,0.0,1.0,0.0,-0.5,0.0,0.0,-1.0,0.0,0.0,0.0,-1.0,0.0,0.5,0.5,-0.5,-0.5,0.5,-1.0,0.0,0.0,0.0,0.0,1.0,0.0,0.0,-0.5,0.5,0.5,-1.0,0.0,0.0,0.0,0.0,1.0,1.0,0.0,-0.5,0.0,0.0,-1.0,0.0,0.0,0.0,0.0,1.0,0.5,0.5,-0.5,0.5,0.5,-1.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,-0.5,0.5,-0.5,-1.0,0.0,0.0,0.0,1.0,0.0,1.0,0.0,-0.5,0.0,0.0,-1.0,0.0,0.0,0.0,1.0,0.0,0.5,0.5,-0.5,0.5,-0.5,-1.0,0.0,0.0,0.0,0.0,-1.0,0.0,0.0,-0.5,-0.5,-0.5,-1.0,0.0,0.0,0.0,0.0,-1.0,1.0,0.0,-0.5,0.0,0.0,-1.0,0.0,0.0,0.0,0.0,-1.0,0.5,0.5,0.5,-0.5,0.5,1.0,0.0,0.0,0.0,-1.0,0.0,0.0,0.0,0.5,-0.5,-0.5,1.0,0.0,0.0,0.0,-1.0,0.0,1.0,0.0,0.5,0.0,0.0,1.0,0.0,0.0,0.0,-1.0,0.0,0.5,0.5,0.5,-0.5,-0.5,1.0,0.0,0.0,0.0,0.0,-1.0,0.0,0.0,0.5,0.5,-0.5,1.0,0.0,0.0,0.0,0.0,-1.0,1.0,0.0,0.5,0.0,0.0,1.0,0.0,0.0,0.0,0.0,-1.0,0.5,0.5,0.5,0.5,-0.5,1.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,0.5,0.5,0.5,1.0,0.0,0.0,0.0,1.0,0.0,1.0,0.0,0.5,0.0,0.0,1.0,0.0,0.0,0.0,1.0,0.0,0.5,0.5,0.5,0.5,0.5,1.0,0.0,0.0,0.0,0.0,1.0,0.0,0.0,0.5,-0.5,0.5,1.0,0.0,0.0,0.0,0.0,1.0,1.0,0.0,0.5,0.0,0.0,1.0,0.0,0.0,0.0,0.0,1.0,0.5,0.5,-0.5,0.5,0.5,0.0,1.0,0.0,0.0,0.0,1.0,0.0,0.0,0.5,0.5,0.5,0.0,1.0,0.0,0.0,0.0,1.0,1.0,0.0,0.0,0.5,0.0,0.0,1.0,0.0,0.0,0.0,1.0,0.5,0.5,0.5,0.5,0.5,0.0,1.0,0.0,1.0,0.0,0.0,0.0,0.0,0.5,0.5,-0.5,0.0,1.0,0.0,1.0,0.0,0.0,1.0,0.0,0.0,0.5,0.0,0.0,1.0,0.0,1.0,0.0,0.0,0.5,0.5,0.5,0.5,-0.5,0.0,1.0,0.0,0.0,0.0,-1.0,0.0,0.0,-0.5,0.5,-0.5,0.0,1.0,0.0,0.0,0.0,-1.0,1.0,0.0,0.0,0.5,0.0,0.0,1.0,0.0,0.0,0.0,-1.0,0.5,0.5,-0.5,0.5,-0.5,0.0,1.0,0.0,-1.0,0.0,0.0,0.0,0.0,-0.5,0.5,0.5,0.0,1.0,0.0,-1.0,0.0,0.0,1.0,0.0,0.0,0.5,0.0,0.0,1.0,0.0,-1.0,0.0,0.0,0.5,0.5,-0.5,-0.5,-0.5,0.0,-1.0,0.0,0.0,0.0,-1.0,0.0,0.0,0.5,-0.5,-0.5,0.0,-1.0,0.0,0.0,0.0,-1.0,1.0,0.0,0.0,-0.5,0.0,0.0,-1.0,0.0,0.0,0.0,-1.0,0.5,0.5,0.5,-0.5,-0.5,0.0,-1.0,0.0,1.0,0.0,0.0,0.0,0.0,0.5,-0.5,0.5,0.0,-1.0,0.0,1.0,0.0,0.0,1.0,0.0,0.0,-0.5,0.0,0.0,-1.0,0.0,1.0,0.0,0.0,0.5,0.5,0.5,-0.5,0.5,0.0,-1.0,0.0,0.0,0.0,1.0,0.0,0.0,-0.5,-0.5,0.5,0.0,-1.0,0.0,0.0,0.0,1.0,1.0,0.0,0.0,-0.5,0.0,0.0,-1.0,0.0,0.0,0.0,1.0,0.5,0.5,-0.5,-0.5,0.5,0.0,-1.0,0.0,-1.0,0.0,0.0,0.0,0.0,-0.5,-0.5,-0.5,0.0,-1.0,0.0,-1.0,0.0,0.0,1.0,0.0,0.0,-0.5,0.0,0.0,-1.0,0.0,-1.0,0.0,0.0,0.5,0.5],"sources":{"burst":"Assets/_Graphics/Materials/Graphs/PrismCollisionBurst.hlsl","erosion":"Assets/_Graphics/Materials/Graphs/PrismOcclusionCorridor.hlsl (PrismErosionFade)","grade":"Assets/_Graphics/Materials/Graphs/PrismClockAnimation.hlsl (PrismColorLerp_float)","explosionMap":"RotateFacesAlongAxis.shadersubgraph (closed form, parity-gated)"}};
   const GLSL_BURST = `#ifndef PRISM_COLLISION_BURST_INCLUDED
 #define PRISM_COLLISION_BURST_INCLUDED
 #define PRISM_BURST_SHATTER 0.0
@@ -578,7 +578,7 @@ vec3 PrismBurstRotateAboutAxis(vec3 v, vec3 axis, float angle)
     return vec3(dot(r0, v), dot(r1, v), dot(r2, v));
 }
 void PrismBurstExplosionMap(vec3 P, vec3 N, vec3 T, vec3 pivot, vec3 objectScale, float amount,
-    vec3 velocity, float rotation, vec2 spin, float spreadPerAmount, out vec3 pos, out vec3 nrm)
+    vec3 velocity, float rotation, vec2 spin, vec3 slideDir, float spreadPerAmount, out vec3 pos, out vec3 nrm)
 {
 #ifdef PRISM_BURST_WEDGE_PIVOT_UNSCALED
     vec3 os = vec3(1.0, 1.0, 1.0);
@@ -591,7 +591,8 @@ void PrismBurstExplosionMap(vec3 P, vec3 N, vec3 T, vec3 pivot, vec3 objectScale
     vec3 axis2 = cross(velocity, N);
     vec3 r = PrismBurstRotateAboutAxis(PrismBurstRotateAboutAxis(local, T, angle1), axis2, angle2);
     nrm = PrismBurstRotateAboutAxis(PrismBurstRotateAboutAxis(N, T, angle1), axis2, angle2);
-    pos = r / os + pivot + (PRISM_BURST_SLIDE_BIAS + PRISM_BURST_PIVOT_BIAS + amount * spreadPerAmount) * T * PRISM_BURST_SLIDER_GAIN;
+    pos = r / os + pivot + (PRISM_BURST_SLIDE_BIAS + PRISM_BURST_PIVOT_BIAS) * T * PRISM_BURST_SLIDER_GAIN
+        + amount * spreadPerAmount * slideDir * PRISM_BURST_SLIDER_GAIN;
 }
 vec3 PrismBurstWedgePivot(vec3 P, vec3 N, vec3 T, vec3 spreadValue)
 {
@@ -623,7 +624,7 @@ float PrismBurstGradientNoise(vec3 p)
     float x11 = mix(n011, n111, u.x);
     return clamp(PRISM_BURST_GRADIENT_GAIN * mix(mix(x00, x10, u.y), mix(x01, x11, u.y), u.z), -1.0, 1.0);
 }
-vec2 PrismBurstWedgeSpin(vec3 pieceCentroid, vec3 noise)
+vec2 PrismBurstWedgeSpin(vec3 pieceCentroid, vec4 noise)
 {
 #ifdef PRISM_BURST_WEDGE_NOISE_OFF
     return vec2(1.0, 1.0);
@@ -632,8 +633,20 @@ vec2 PrismBurstWedgeSpin(vec3 pieceCentroid, vec3 noise)
     return 1.0 + noise.x * vec2(PrismBurstGradientNoise(q), PrismBurstGradientNoise(q + vec3(41.3, 11.9, 23.7)));
 #endif
 }
+vec3 PrismBurstWedgeSlide(vec3 pieceCentroid, vec3 N, vec3 T, vec4 noise)
+{
+#ifdef PRISM_BURST_WEDGE_SLIDE_NOISE_OFF
+    return T;
+#else
+    vec3 q = pieceCentroid * noise.y + noise.z * vec3(17.13, 31.71, 7.37);
+    float along = PrismBurstGradientNoise(q + vec3(73.1, 5.3, 61.7));
+    float across = PrismBurstGradientNoise(q + vec3(13.9, 89.3, 37.1));
+    float off = PrismBurstGradientNoise(q + vec3(97.7, 53.9, 3.1));
+    return T * (1.0 + noise.w * along) + (cross(N, T) * across + N * off) * (0.5 * noise.w);
+#endif
+}
 void PrismBurstWedgePose(vec3 P, vec3 N, vec3 pieceCentroid, float level, vec3 objectScale, float amount,
-    vec3 velocity, vec3 spreadValue, float rotation, float spreadPerAmount, vec3 noise, out vec3 pos, out vec3 nrm)
+    vec3 velocity, vec3 spreadValue, float rotation, float spreadPerAmount, vec4 noise, out vec3 pos, out vec3 nrm)
 {
     vec3 faceCentre = dot(P, N) * N;
 #ifdef PRISM_BURST_WEDGE_OWN_TANGENT
@@ -644,13 +657,15 @@ void PrismBurstWedgePose(vec3 P, vec3 N, vec3 pieceCentroid, float level, vec3 o
     vec3 wedgeOffset = (spreadValue - PRISM_BURST_PIVOT_BIAS) * T * PRISM_BURST_SLIDER_GAIN - T * (1.0 / 3.0);
     vec3 pivot = pieceCentroid + wedgeOffset * exp2(-max(level, 0.0));
     PrismBurstExplosionMap(P, N, T, pivot, objectScale, amount, velocity, rotation,
-        PrismBurstWedgeSpin(pieceCentroid, noise), spreadPerAmount, pos, nrm);
+        PrismBurstWedgeSpin(pieceCentroid, noise), PrismBurstWedgeSlide(pieceCentroid, N, T, noise), spreadPerAmount, pos, nrm);
 }
-float PrismBurstWedgeReach(float radius, float maxScale, float amount, float spreadPerAmount, vec3 spreadValue)
+float PrismBurstWedgeReach(float radius, float maxScale, float amount, float spreadPerAmount, vec3 spreadValue,
+    float slideNoise)
 {
     vec3 o = abs((spreadValue - PRISM_BURST_PIVOT_BIAS) * PRISM_BURST_SLIDER_GAIN - 1.0 / 3.0);
     float offset = max(o.x, max(o.y, o.z));
-    return 3.0 * radius + (2.0 * offset + abs(amount * spreadPerAmount) * PRISM_BURST_SLIDER_GAIN) * maxScale;
+    float slide = abs(amount * spreadPerAmount) * PRISM_BURST_SLIDER_GAIN * (1.0 + 2.0 * abs(slideNoise));
+    return 3.0 * radius + (2.0 * offset + slide) * maxScale;
 }
 float PrismBurstProgress(float age, float life, float curve)
 {
@@ -761,7 +776,7 @@ void PrismErosionFade_float(vec3 UV, vec3 Velocity, float BaseOpacity,
     Spread = mix(StartSpread, TargetSpread, t);
 }`;
 
-  const LAB = { name: 'Collision Burst Lab', branch: 'cece/dreamy-pascal-7xxx1m', round: 7, doc: 'Docs/Studios/COLLISION_BURST_LAB.md' };
+  const LAB = { name: 'Collision Burst Lab', branch: 'cece/dreamy-pascal-7xxx1m', round: 8, doc: 'Docs/Studios/COLLISION_BURST_LAB.md' };
   const C = DATA.config, LOOK = DATA.look, X = DATA.explosion;
 
   // ================= SHIPPED: every value names where it came from =================
@@ -783,6 +798,7 @@ void PrismErosionFade_float(vec3 UV, vec3 Velocity, float BaseOpacity,
     destructionCut: C.destructionCut, // PrismInteractionLodConfig.destructionCut (0 Sierpinski, 1 silver gnomon)
     wedgeSpinNoise: C.wedgeSpinNoise, // PrismInteractionLodConfig.wedgeSpinNoise
     wedgeNoiseFrequency: C.wedgeNoiseFrequency, // PrismInteractionLodConfig.wedgeNoiseFrequency
+    wedgeSlideNoise: C.wedgeSlideNoise, // PrismInteractionLodConfig.wedgeSlideNoise
     shedInflate: C.shedInflate,       // PrismInteractionLodConfig.shedInflate   (prism radii)
     spread: C.spread,                 // PrismInteractionLodConfig.spread        (prism radii)
     openSeconds: C.openSeconds,       // PrismInteractionLodConfig.openSeconds   (s)
@@ -827,6 +843,7 @@ void PrismErosionFade_float(vec3 UV, vec3 Velocity, float BaseOpacity,
     ['Kinds', 'shardsPerFaceEdge', 1, 6, 1, 'Shards per face edge', 'Shatter: seeds per face edge, so this squared per face. The flake\'s scales are a grid twice as fine.'],
     ['Kinds', 'destructionCut', 0, 1, 1, 'Destruction cut', 'How the explosion\'s wedges are cut. 1: the SILVER GNOMON — silver triangles (45°, 67.5°, 67.5°) and their gnomons (45°, 22.5°, 112.5°), a range of sizes in the silver ratio (24 × 8 / 21 / 55 / 144 fragments at levels 1-4). 0: the Sierpinski cut (round 4).'],
     ['Kinds', 'wedgeSpinNoise', 0, 0.5, 0.01, 'Fragment spin noise', 'How much each fragment\'s two spin angles wander from its wedge\'s: 1 + this × a gradient (Perlin) noise over its position. Continuous, so neighbours keep nearly the same spin and the order holds; never equal, so no two fragments of a face turn in perfect step. 0: in perfect step.'],
+    ['Kinds', 'wedgeSlideNoise', 0, 0.5, 0.01, 'Fragment slide noise', 'How much each fragment\'s SLIDE wanders from its wedge\'s: its length × (1 + this × the same gradient noise), plus half this across the wedge and off the face. Neighbours travel nearly together, never in step. 0: the whole wedge slides as one.'],
     ['Kinds', 'wedgeNoiseFrequency', 0.5, 8, 0.1, 'Spin noise frequency', 'Cycles of the spin noise per prism width: higher, neighbours differ more.'],
     ['Kinds', 'rollRadius', 0.01, 0.3, 0.005, 'Roll inner radius', 'The steal\'s roll: its innermost turn, in prism radii (never less than about a mesh cell, so a turn stays round).'],
     ['Kinds', 'rollGap', 0.001, 0.1, 0.001, 'Roll turn gap', 'The gap between the roll\'s turns, in prism radii (never less than a cell chord\'s sag, so turns never cross). Larger, a looser, fatter roll.'],
@@ -1164,7 +1181,7 @@ vec3 explosionMap(vec3 P, vec3 N, vec3 T, vec3 OS, float amount, vec3 velocity, 
   axis2 = cross(velocity, N);
   vec3 pos;
   PrismBurstExplosionMap(P, N, T, PrismBurstWedgePivot(P, N, T, uSpreadValue), OS, amount, velocity,
-                         uExplosiveRotation, vec2(1.0), uExplosiveSpread, pos, nOut);
+                         uExplosiveRotation, vec2(1.0), T, uExplosiveSpread, pos, nOut);
   return pos;
 }
 `;
@@ -1216,7 +1233,7 @@ void main() {
     vec3 centroidOS = aNrm * 0.5 + uOS * (aTri.x - 0.5) + vOS * (aTri.y - 0.5);
     vec3 posOS, nrmOS;
     PrismBurstWedgePose(aPos, aNrm, centroidOS, aTri.z, uScale, uDrift.w * age, uDrift.xyz,
-                        uSpreadValue, uExplosiveRotation, uExplosiveSpread, vec3(uWedgeNoise.x, uWedgeNoise.y, uTiming.z), posOS, nrmOS);
+                        uSpreadValue, uExplosiveRotation, uExplosiveSpread, vec4(uWedgeNoise.x, uWedgeNoise.y, uTiming.z, uWedgeNoise.z), posOS, nrmOS);
     posWS = toWorld(posOS); nrmWS = toWorldNormal(nrmOS); piece = 0.0;
   } else {
     PrismBurstPose(uTiming.w, f, p, posWS, nrmWS, piece);
@@ -1509,7 +1526,7 @@ void main() {
     const sub = shed ? SHED_SUB[parseInt(String(it.mesh || 'shed1').slice(4), 10) || 1] : 0;
     if (u.uSliceAxis) gl.uniform4f(u.uSliceAxis, cam.eye[0], cam.eye[1], cam.eye[2], sub);
     if (u.uBurstRoll) gl.uniform4f(u.uBurstRoll, P.rollRadius, P.rollGap, 0, 0);
-    if (u.uWedgeNoise) gl.uniform4f(u.uWedgeNoise, P.wedgeSpinNoise, P.wedgeNoiseFrequency, 0, 0);
+    if (u.uWedgeNoise) gl.uniform4f(u.uWedgeNoise, P.wedgeSpinNoise, P.wedgeNoiseFrequency, P.wedgeSlideNoise, 0);
     gl.uniform4f(u.uDrift, it.flight.v[0], it.flight.v[1], it.flight.v[2], it.flight.speed);
     gl.uniform1f(u.uIntact, it.intact ? 1 : 0);
     gl.uniform1f(u.uCarry, it.carry ? 1 : 0);
@@ -1607,7 +1624,7 @@ void main() {
       b.title = (it.type === 'explosion' ? 'The shipped explosion (the baseline). ' : it.type === 'prism' ? 'The shipped grade (the baseline). ' : '') + (picked ? 'The game draws this at the size shown. ' : '') + (cam.focus === i ? 'Back to the whole stage' : 'Fly the camera to this one');
     });
     const pct = (lv.fraction * 100).toFixed(1) + '% of the screen height (' + Math.round(lv.fraction * P.labScreenPx) + ' px of ' + P.labScreenPx + ')';
-    const head = view === 'destruction' ? (P.labArchive >= 0.5 ? 'Destruction, round 3 (archived): the explosion, the shatter, the quadtree glitter' : 'Destruction, the ' + (P.destructionCut >= 0.5 ? 'silver gnomon' : 'Sierpinski') + ' cut: the explosion is level 0, then levels 1-' + DEPTHS + ' (fragments spin a little out of step: noise ' + P.wedgeSpinNoise + ')')
+    const head = view === 'destruction' ? (P.labArchive >= 0.5 ? 'Destruction, round 3 (archived): the explosion, the shatter, the quadtree glitter' : 'Destruction, the ' + (P.destructionCut >= 0.5 ? 'silver gnomon' : 'Sierpinski') + ' cut: the explosion is level 0, then levels 1-' + DEPTHS + ' (fragments spin and slide a little out of step: noise ' + P.wedgeSpinNoise + ' / ' + P.wedgeSlideNoise + ')')
       : view === 'stealing' ? (P.labArchive >= 0.5 ? 'Stealing, round 4 (archived): the grade and the three sheds' : 'Stealing: the grade, the ROLL (away from this camera, round the prism until it hides it) and round 5\'s bloom') + ' (' + domain + ' stolen by ' + thief + ')'
         : 'Collision: a moving prism runs into a resting one; both die';
     const pc = (x) => (x * 100).toFixed(1) + '%';
@@ -1814,7 +1831,7 @@ void main() {
       gl.uniformMatrix3fv(u.uRot, false, [1, 0, 0, 0, 1, 0, 0, 0, 1]); gl.uniform3fv(u.uScale, c.scale); gl.uniform3fv(u.uOrigin, [0, 0, 0]);
       gl.uniformMatrix4fv(u.uVP, false, [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]);
       gl.uniform1f(u.uClock, c.t); gl.uniform4f(u.uTiming, 0, 7.5, c.seed == null ? 0.5 : c.seed, WEDGE);
-      if (u.uWedgeNoise) gl.uniform4f(u.uWedgeNoise, c.noise || 0, c.noiseFrequency || 3, 0, 0); gl.uniform4f(u.uDrift, c.velocity[0], c.velocity[1], c.velocity[2], c.speed);
+      if (u.uWedgeNoise) gl.uniform4f(u.uWedgeNoise, c.noise || 0, c.noiseFrequency || 3, c.noise || 0, 0); gl.uniform4f(u.uDrift, c.velocity[0], c.velocity[1], c.velocity[2], c.speed);
       gl.uniform1f(u.uIntact, 0); gl.uniform1f(u.uCarry, 0); gl.uniform1f(u.uCurve, 0); gl.uniform1f(u.uOvershoot, DATA.overshoot);
       gl.uniform4f(u.uBurstShape, 0.55, 0.22, 0.3, 0.35); gl.uniform4f(u.uBurstCurl, 0.7, 0.8, 6, 3);
       if (u.uBurstPeel) gl.uniform4f(u.uBurstPeel, 3, 3, 0.6, 0);
@@ -2012,7 +2029,7 @@ void main() {
 
   function aboutPanel() {
     const box = document.createElement('div');
-    box.innerHTML = '<div class="twocol"><div><p><b>What you are looking at.</b> The prism\'s two fundamental interactions, each at its DETAIL LEVELS. <b>Destruction</b> cuts the explosion\'s own wedges into a range of fragment sizes: the SILVER GNOMON cut (round 7) — silver triangles (45°, 67.5°, 67.5°) and their gnomons (45°, 22.5°, 112.5°), each splitting into one of each, so the sizes run in the silver ratio — or the Sierpinski cut (round 4, the Kinds tab switches). Level 0 is the ordinary explosion; a coarser level is the finer one with its smallest fragments merged into their parents. Every fragment moves by the explosion\'s own tuned law about its root wedge\'s two axes (the wedge\'s tangent and cross(velocity, normal)), its two spin angles a little off its neighbours\' by a continuous gradient noise, so the order holds but no two turn in perfect step. <b>Stealing</b> is the ordinary grade (the 0.8 s colour lerp) far away and, close up, the ROLL — the mass crystal\'s camera trick: the prism takes its new colour at once and each face\'s skin in the old colours rolls up into a tight roll AWAY from the camera, over the edge and round the prism until the prism itself hides it; it never dissolves where it is seen (only, at the very end, a roll the prism could not hide). The game stamps the camera where it was at the steal; the lab uses the camera as it is, so orbit and Replay to see it from elsewhere. Round 5\'s bloom is beside it; the Archive tab has the earlier rounds. The game picks the level by how big the prism is on the screen and by how full the budget already is (the AMOUNT: Levels tab); zoom the stage and the ◆ moves. No white accents: the brighter inside colour is the only contrast. Click a label to fly the camera to it.</p><p class="hint" id="aboutSource"></p></div><div><p><b>What this lab does not model</b></p><ul class="plain"><li>Bloom, HDR and tonemapping.</li><li>The prism\'s and the explosion\'s own shader colouring. Every prism here wears the burst\'s skin shading (dark face, bright rim), so the differences are the detail levels, not the lab. The explosion\'s MOTION and FADE and the grade\'s CURVE are the shipped code.</li><li>The occlusion corridor (prisms between camera and ship go see-through).</li><li>The real collision test: Collision mode meets at touching x-extents, not the swept box test.</li><li>Shielded, danger and super-shielded tiers (other colour pairs, the danger gain).</li><li>The roll\'s camera: the game stamps where the camera was at the steal; the lab follows the live camera.</li><li>The budget (48 alive, 80,000 triangles): the lab always draws the level; the game steps down past it (the Budget slider imitates the amount).</li><li>The game\'s float32 clock and a phone GPU\'s precision; frame time on a real device.</li></ul></div></div>';
+    box.innerHTML = '<div class="twocol"><div><p><b>What you are looking at.</b> The prism\'s two fundamental interactions, each at its DETAIL LEVELS. <b>Destruction</b> cuts the explosion\'s own wedges into a range of fragment sizes: the SILVER GNOMON cut (round 7) — silver triangles (45°, 67.5°, 67.5°) and their gnomons (45°, 22.5°, 112.5°), each splitting into one of each, so the sizes run in the silver ratio — or the Sierpinski cut (round 4, the Kinds tab switches). Level 0 is the ordinary explosion; a coarser level is the finer one with its smallest fragments merged into their parents. Every fragment moves by the explosion\'s own tuned law about its root wedge\'s two axes (the wedge\'s tangent and cross(velocity, normal)), its two spin angles and its slide a little off its neighbours\' by a continuous gradient noise, so the order holds but no two turn or travel in perfect step. <b>Stealing</b> is the ordinary grade (the 0.8 s colour lerp) far away and, close up, the ROLL — the mass crystal\'s camera trick: the prism takes its new colour at once and each face\'s skin in the old colours rolls up into a tight roll AWAY from the camera, over the edge and round the prism until the prism itself hides it; it never dissolves where it is seen (only, at the very end, a roll the prism could not hide). The game stamps the camera where it was at the steal; the lab uses the camera as it is, so orbit and Replay to see it from elsewhere. Round 5\'s bloom is beside it; the Archive tab has the earlier rounds. The game picks the level by how big the prism is on the screen and by how full the budget already is (the AMOUNT: Levels tab); zoom the stage and the ◆ moves. No white accents: the brighter inside colour is the only contrast. Click a label to fly the camera to it.</p><p class="hint" id="aboutSource"></p></div><div><p><b>What this lab does not model</b></p><ul class="plain"><li>Bloom, HDR and tonemapping.</li><li>The prism\'s and the explosion\'s own shader colouring. Every prism here wears the burst\'s skin shading (dark face, bright rim), so the differences are the detail levels, not the lab. The explosion\'s MOTION and FADE and the grade\'s CURVE are the shipped code.</li><li>The occlusion corridor (prisms between camera and ship go see-through).</li><li>The real collision test: Collision mode meets at touching x-extents, not the swept box test.</li><li>Shielded, danger and super-shielded tiers (other colour pairs, the danger gain).</li><li>The roll\'s camera: the game stamps where the camera was at the steal; the lab follows the live camera.</li><li>The budget (48 alive, 80,000 triangles): the lab always draws the level; the game steps down past it (the Budget slider imitates the amount).</li><li>The game\'s float32 clock and a phone GPU\'s precision; frame time on a real device.</li></ul></div></div>';
     box.querySelector('#aboutSource').textContent = LAB.name + ' · round ' + LAB.round + ' · ' + LAB.branch + ' · write-up ' + LAB.doc + ' · the detail levels run ' + DATA.sources.burst + '; the explosion\'s fade runs ' + DATA.sources.erosion + '; its motion is ' + DATA.sources.explosionMap + '; the grade runs ' + DATA.sources.grade + '.';
     return box;
   }

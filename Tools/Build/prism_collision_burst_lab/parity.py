@@ -193,7 +193,7 @@ int main() {
             for (int k = 0; k < 3; k++) {
                 float3 P = fn[f]*0.5f + fu[f]*(tri[i+2*k] - 0.5f) + fv[f]*(tri[i+2*k+1] - 0.5f);
                 float3 pos, nrm;
-                PrismBurstWedgePose(P, fn[f], cen, tri[i+6], os, speed * t, vel, S, rot, slide, float3(nz[0], nz[1], nz[2]), pos, nrm);
+                PrismBurstWedgePose(P, fn[f], cen, tri[i+6], os, speed * t, vel, S, rot, slide, float4(nz[0], nz[1], nz[2], nz[0]), pos, nrm);
                 float3 w = pos * os + vel * t, n = normalize(nrm / os);
                 printf("%.7g %.7g %.7g %.7g %.7g %.7g\n", w.x, w.y, w.z, n.x, n.y, n.z);
             }

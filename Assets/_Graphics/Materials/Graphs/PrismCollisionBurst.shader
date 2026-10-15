@@ -48,7 +48,7 @@ Shader "CosmicShore/PrismCollisionBurst"
         [Header(The explosion tuning (copied at runtime from the explosion material))]
         _ExplosionSpread ("Spread value (the explosion's _Spread)", Vector) = (0.18, 0.1, 0.1, 0)
         _ExplosionDials ("Explosive rotation, explosive spread (per unit amount)", Vector) = (0.0169, 0.05, 0, 0)
-        _WedgeNoise ("Fragment spin noise: amplitude, frequency (per object unit)", Vector) = (0.15, 3, 0, 0)
+        _WedgeNoise ("Fragment noise: spin amplitude, frequency (per object unit), slide amplitude", Vector) = (0.15, 3, 0.15, 0)
 
         [Header(Look)]
         _FresnelPower ("Skin Fresnel Power", Range(0.5, 8)) = 3
@@ -227,7 +227,7 @@ Shader "CosmicShore/PrismCollisionBurst"
                 float3 posOS, nrmOS;
                 PrismBurstWedgePose(input.positionOS.xyz, input.normalOS, centroidOS, input.tri.z, objectScale,
                     drift.w * age, drift.xyz, _ExplosionSpread.xyz, _ExplosionDials.x, _ExplosionDials.y,
-                    float3(_WedgeNoise.x, _WedgeNoise.y, timing.z), posOS, nrmOS);
+                    float4(_WedgeNoise.x, _WedgeNoise.y, timing.z, _WedgeNoise.z), posOS, nrmOS);
                 posWS = TransformObjectToWorld(posOS);
                 nrmWS = TransformObjectToWorldNormal(nrmOS);
                 piece = 0.0;

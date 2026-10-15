@@ -161,7 +161,7 @@
   const GLSL_EROSION = `/*@@GLSL_EROSION@@*/`;
   const GLSL_GRADE = `/*@@GLSL_GRADE@@*/`;
 
-  const LAB = { name: 'Collision Burst Lab', branch: 'cece/dreamy-pascal-7xxx1m', round: 7, doc: 'Docs/Studios/COLLISION_BURST_LAB.md' };
+  const LAB = { name: 'Collision Burst Lab', branch: 'cece/dreamy-pascal-7xxx1m', round: 8, doc: 'Docs/Studios/COLLISION_BURST_LAB.md' };
   const C = DATA.config, LOOK = DATA.look, X = DATA.explosion;
 
   // ================= SHIPPED: every value names where it came from =================
@@ -183,6 +183,7 @@
     destructionCut: C.destructionCut, // PrismInteractionLodConfig.destructionCut (0 Sierpinski, 1 silver gnomon)
     wedgeSpinNoise: C.wedgeSpinNoise, // PrismInteractionLodConfig.wedgeSpinNoise
     wedgeNoiseFrequency: C.wedgeNoiseFrequency, // PrismInteractionLodConfig.wedgeNoiseFrequency
+    wedgeSlideNoise: C.wedgeSlideNoise, // PrismInteractionLodConfig.wedgeSlideNoise
     shedInflate: C.shedInflate,       // PrismInteractionLodConfig.shedInflate   (prism radii)
     spread: C.spread,                 // PrismInteractionLodConfig.spread        (prism radii)
     openSeconds: C.openSeconds,       // PrismInteractionLodConfig.openSeconds   (s)
@@ -227,6 +228,7 @@
     ['Kinds', 'shardsPerFaceEdge', 1, 6, 1, 'Shards per face edge', 'Shatter: seeds per face edge, so this squared per face. The flake\'s scales are a grid twice as fine.'],
     ['Kinds', 'destructionCut', 0, 1, 1, 'Destruction cut', 'How the explosion\'s wedges are cut. 1: the SILVER GNOMON — silver triangles (45°, 67.5°, 67.5°) and their gnomons (45°, 22.5°, 112.5°), a range of sizes in the silver ratio (24 × 8 / 21 / 55 / 144 fragments at levels 1-4). 0: the Sierpinski cut (round 4).'],
     ['Kinds', 'wedgeSpinNoise', 0, 0.5, 0.01, 'Fragment spin noise', 'How much each fragment\'s two spin angles wander from its wedge\'s: 1 + this × a gradient (Perlin) noise over its position. Continuous, so neighbours keep nearly the same spin and the order holds; never equal, so no two fragments of a face turn in perfect step. 0: in perfect step.'],
+    ['Kinds', 'wedgeSlideNoise', 0, 0.5, 0.01, 'Fragment slide noise', 'How much each fragment\'s SLIDE wanders from its wedge\'s: its length × (1 + this × the same gradient noise), plus half this across the wedge and off the face. Neighbours travel nearly together, never in step. 0: the whole wedge slides as one.'],
     ['Kinds', 'wedgeNoiseFrequency', 0.5, 8, 0.1, 'Spin noise frequency', 'Cycles of the spin noise per prism width: higher, neighbours differ more.'],
     ['Kinds', 'rollRadius', 0.01, 0.3, 0.005, 'Roll inner radius', 'The steal\'s roll: its innermost turn, in prism radii (never less than about a mesh cell, so a turn stays round).'],
     ['Kinds', 'rollGap', 0.001, 0.1, 0.001, 'Roll turn gap', 'The gap between the roll\'s turns, in prism radii (never less than a cell chord\'s sag, so turns never cross). Larger, a looser, fatter roll.'],
@@ -564,7 +566,7 @@ vec3 explosionMap(vec3 P, vec3 N, vec3 T, vec3 OS, float amount, vec3 velocity, 
   axis2 = cross(velocity, N);
   vec3 pos;
   PrismBurstExplosionMap(P, N, T, PrismBurstWedgePivot(P, N, T, uSpreadValue), OS, amount, velocity,
-                         uExplosiveRotation, vec2(1.0), uExplosiveSpread, pos, nOut);
+                         uExplosiveRotation, vec2(1.0), T, uExplosiveSpread, pos, nOut);
   return pos;
 }
 `;
@@ -616,7 +618,7 @@ void main() {
     vec3 centroidOS = aNrm * 0.5 + uOS * (aTri.x - 0.5) + vOS * (aTri.y - 0.5);
     vec3 posOS, nrmOS;
     PrismBurstWedgePose(aPos, aNrm, centroidOS, aTri.z, uScale, uDrift.w * age, uDrift.xyz,
-                        uSpreadValue, uExplosiveRotation, uExplosiveSpread, vec3(uWedgeNoise.x, uWedgeNoise.y, uTiming.z), posOS, nrmOS);
+                        uSpreadValue, uExplosiveRotation, uExplosiveSpread, vec4(uWedgeNoise.x, uWedgeNoise.y, uTiming.z, uWedgeNoise.z), posOS, nrmOS);
     posWS = toWorld(posOS); nrmWS = toWorldNormal(nrmOS); piece = 0.0;
   } else {
     PrismBurstPose(uTiming.w, f, p, posWS, nrmWS, piece);
@@ -909,7 +911,7 @@ void main() {
     const sub = shed ? SHED_SUB[parseInt(String(it.mesh || 'shed1').slice(4), 10) || 1] : 0;
     if (u.uSliceAxis) gl.uniform4f(u.uSliceAxis, cam.eye[0], cam.eye[1], cam.eye[2], sub);
     if (u.uBurstRoll) gl.uniform4f(u.uBurstRoll, P.rollRadius, P.rollGap, 0, 0);
-    if (u.uWedgeNoise) gl.uniform4f(u.uWedgeNoise, P.wedgeSpinNoise, P.wedgeNoiseFrequency, 0, 0);
+    if (u.uWedgeNoise) gl.uniform4f(u.uWedgeNoise, P.wedgeSpinNoise, P.wedgeNoiseFrequency, P.wedgeSlideNoise, 0);
     gl.uniform4f(u.uDrift, it.flight.v[0], it.flight.v[1], it.flight.v[2], it.flight.speed);
     gl.uniform1f(u.uIntact, it.intact ? 1 : 0);
     gl.uniform1f(u.uCarry, it.carry ? 1 : 0);
@@ -1007,7 +1009,7 @@ void main() {
       b.title = (it.type === 'explosion' ? 'The shipped explosion (the baseline). ' : it.type === 'prism' ? 'The shipped grade (the baseline). ' : '') + (picked ? 'The game draws this at the size shown. ' : '') + (cam.focus === i ? 'Back to the whole stage' : 'Fly the camera to this one');
     });
     const pct = (lv.fraction * 100).toFixed(1) + '% of the screen height (' + Math.round(lv.fraction * P.labScreenPx) + ' px of ' + P.labScreenPx + ')';
-    const head = view === 'destruction' ? (P.labArchive >= 0.5 ? 'Destruction, round 3 (archived): the explosion, the shatter, the quadtree glitter' : 'Destruction, the ' + (P.destructionCut >= 0.5 ? 'silver gnomon' : 'Sierpinski') + ' cut: the explosion is level 0, then levels 1-' + DEPTHS + ' (fragments spin a little out of step: noise ' + P.wedgeSpinNoise + ')')
+    const head = view === 'destruction' ? (P.labArchive >= 0.5 ? 'Destruction, round 3 (archived): the explosion, the shatter, the quadtree glitter' : 'Destruction, the ' + (P.destructionCut >= 0.5 ? 'silver gnomon' : 'Sierpinski') + ' cut: the explosion is level 0, then levels 1-' + DEPTHS + ' (fragments spin and slide a little out of step: noise ' + P.wedgeSpinNoise + ' / ' + P.wedgeSlideNoise + ')')
       : view === 'stealing' ? (P.labArchive >= 0.5 ? 'Stealing, round 4 (archived): the grade and the three sheds' : 'Stealing: the grade, the ROLL (away from this camera, round the prism until it hides it) and round 5\'s bloom') + ' (' + domain + ' stolen by ' + thief + ')'
         : 'Collision: a moving prism runs into a resting one; both die';
     const pc = (x) => (x * 100).toFixed(1) + '%';
@@ -1214,7 +1216,7 @@ void main() {
       gl.uniformMatrix3fv(u.uRot, false, [1, 0, 0, 0, 1, 0, 0, 0, 1]); gl.uniform3fv(u.uScale, c.scale); gl.uniform3fv(u.uOrigin, [0, 0, 0]);
       gl.uniformMatrix4fv(u.uVP, false, [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]);
       gl.uniform1f(u.uClock, c.t); gl.uniform4f(u.uTiming, 0, 7.5, c.seed == null ? 0.5 : c.seed, WEDGE);
-      if (u.uWedgeNoise) gl.uniform4f(u.uWedgeNoise, c.noise || 0, c.noiseFrequency || 3, 0, 0); gl.uniform4f(u.uDrift, c.velocity[0], c.velocity[1], c.velocity[2], c.speed);
+      if (u.uWedgeNoise) gl.uniform4f(u.uWedgeNoise, c.noise || 0, c.noiseFrequency || 3, c.noise || 0, 0); gl.uniform4f(u.uDrift, c.velocity[0], c.velocity[1], c.velocity[2], c.speed);
       gl.uniform1f(u.uIntact, 0); gl.uniform1f(u.uCarry, 0); gl.uniform1f(u.uCurve, 0); gl.uniform1f(u.uOvershoot, DATA.overshoot);
       gl.uniform4f(u.uBurstShape, 0.55, 0.22, 0.3, 0.35); gl.uniform4f(u.uBurstCurl, 0.7, 0.8, 6, 3);
       if (u.uBurstPeel) gl.uniform4f(u.uBurstPeel, 3, 3, 0.6, 0);
@@ -1412,7 +1414,7 @@ void main() {
 
   function aboutPanel() {
     const box = document.createElement('div');
-    box.innerHTML = '<div class="twocol"><div><p><b>What you are looking at.</b> The prism\'s two fundamental interactions, each at its DETAIL LEVELS. <b>Destruction</b> cuts the explosion\'s own wedges into a range of fragment sizes: the SILVER GNOMON cut (round 7) — silver triangles (45°, 67.5°, 67.5°) and their gnomons (45°, 22.5°, 112.5°), each splitting into one of each, so the sizes run in the silver ratio — or the Sierpinski cut (round 4, the Kinds tab switches). Level 0 is the ordinary explosion; a coarser level is the finer one with its smallest fragments merged into their parents. Every fragment moves by the explosion\'s own tuned law about its root wedge\'s two axes (the wedge\'s tangent and cross(velocity, normal)), its two spin angles a little off its neighbours\' by a continuous gradient noise, so the order holds but no two turn in perfect step. <b>Stealing</b> is the ordinary grade (the 0.8 s colour lerp) far away and, close up, the ROLL — the mass crystal\'s camera trick: the prism takes its new colour at once and each face\'s skin in the old colours rolls up into a tight roll AWAY from the camera, over the edge and round the prism until the prism itself hides it; it never dissolves where it is seen (only, at the very end, a roll the prism could not hide). The game stamps the camera where it was at the steal; the lab uses the camera as it is, so orbit and Replay to see it from elsewhere. Round 5\'s bloom is beside it; the Archive tab has the earlier rounds. The game picks the level by how big the prism is on the screen and by how full the budget already is (the AMOUNT: Levels tab); zoom the stage and the ◆ moves. No white accents: the brighter inside colour is the only contrast. Click a label to fly the camera to it.</p><p class="hint" id="aboutSource"></p></div><div><p><b>What this lab does not model</b></p><ul class="plain"><li>Bloom, HDR and tonemapping.</li><li>The prism\'s and the explosion\'s own shader colouring. Every prism here wears the burst\'s skin shading (dark face, bright rim), so the differences are the detail levels, not the lab. The explosion\'s MOTION and FADE and the grade\'s CURVE are the shipped code.</li><li>The occlusion corridor (prisms between camera and ship go see-through).</li><li>The real collision test: Collision mode meets at touching x-extents, not the swept box test.</li><li>Shielded, danger and super-shielded tiers (other colour pairs, the danger gain).</li><li>The roll\'s camera: the game stamps where the camera was at the steal; the lab follows the live camera.</li><li>The budget (48 alive, 80,000 triangles): the lab always draws the level; the game steps down past it (the Budget slider imitates the amount).</li><li>The game\'s float32 clock and a phone GPU\'s precision; frame time on a real device.</li></ul></div></div>';
+    box.innerHTML = '<div class="twocol"><div><p><b>What you are looking at.</b> The prism\'s two fundamental interactions, each at its DETAIL LEVELS. <b>Destruction</b> cuts the explosion\'s own wedges into a range of fragment sizes: the SILVER GNOMON cut (round 7) — silver triangles (45°, 67.5°, 67.5°) and their gnomons (45°, 22.5°, 112.5°), each splitting into one of each, so the sizes run in the silver ratio — or the Sierpinski cut (round 4, the Kinds tab switches). Level 0 is the ordinary explosion; a coarser level is the finer one with its smallest fragments merged into their parents. Every fragment moves by the explosion\'s own tuned law about its root wedge\'s two axes (the wedge\'s tangent and cross(velocity, normal)), its two spin angles and its slide a little off its neighbours\' by a continuous gradient noise, so the order holds but no two turn or travel in perfect step. <b>Stealing</b> is the ordinary grade (the 0.8 s colour lerp) far away and, close up, the ROLL — the mass crystal\'s camera trick: the prism takes its new colour at once and each face\'s skin in the old colours rolls up into a tight roll AWAY from the camera, over the edge and round the prism until the prism itself hides it; it never dissolves where it is seen (only, at the very end, a roll the prism could not hide). The game stamps the camera where it was at the steal; the lab uses the camera as it is, so orbit and Replay to see it from elsewhere. Round 5\'s bloom is beside it; the Archive tab has the earlier rounds. The game picks the level by how big the prism is on the screen and by how full the budget already is (the AMOUNT: Levels tab); zoom the stage and the ◆ moves. No white accents: the brighter inside colour is the only contrast. Click a label to fly the camera to it.</p><p class="hint" id="aboutSource"></p></div><div><p><b>What this lab does not model</b></p><ul class="plain"><li>Bloom, HDR and tonemapping.</li><li>The prism\'s and the explosion\'s own shader colouring. Every prism here wears the burst\'s skin shading (dark face, bright rim), so the differences are the detail levels, not the lab. The explosion\'s MOTION and FADE and the grade\'s CURVE are the shipped code.</li><li>The occlusion corridor (prisms between camera and ship go see-through).</li><li>The real collision test: Collision mode meets at touching x-extents, not the swept box test.</li><li>Shielded, danger and super-shielded tiers (other colour pairs, the danger gain).</li><li>The roll\'s camera: the game stamps where the camera was at the steal; the lab follows the live camera.</li><li>The budget (48 alive, 80,000 triangles): the lab always draws the level; the game steps down past it (the Budget slider imitates the amount).</li><li>The game\'s float32 clock and a phone GPU\'s precision; frame time on a real device.</li></ul></div></div>';
     box.querySelector('#aboutSource').textContent = LAB.name + ' · round ' + LAB.round + ' · ' + LAB.branch + ' · write-up ' + LAB.doc + ' · the detail levels run ' + DATA.sources.burst + '; the explosion\'s fade runs ' + DATA.sources.erosion + '; its motion is ' + DATA.sources.explosionMap + '; the grade runs ' + DATA.sources.grade + '.';
     return box;
   }

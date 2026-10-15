@@ -8903,6 +8903,9 @@ imports without errors (magenta = rejected), the config asset loads (not a missi
    prism). Steal from different angles — the roll always leaves away from you. Swing the camera hard during a steal:
    note whether a roll on its way round shows (decision 1 in the lab write-up). `PrismInteractionLodConfig` shows
    destructionCut SilverGnomon, silverDepths 4/6/8/10, rollWeight 1 and every other shed weight 0.
+8. **Round 8 — the slide noise**: the fragments of one wedge no longer leave as one sheet; each drifts a little off
+   its neighbours while the four wedges a face still read as the explosion's. `wedgeSlideNoise` 0.15 on the config;
+   nothing culled late in the 7.5 s (the widened `WedgeReach`).
 
 ### 🔴 The collision burst — level 1's high-res death (same branch, 2026-10-14) — NOT EDITOR-VERIFIED
 

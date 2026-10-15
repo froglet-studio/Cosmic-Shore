@@ -2621,6 +2621,9 @@ surface until the prism occludes it ... always peel away from the camera's persp
   sliver-free; depth 0 is still the explosion.
 - **The spin noise**: every fragment's two spin angles × (1 + 0.15 × a 3D gradient noise at its centroid, 3 cycles a
   prism width, seeded per death) — `PrismBurstWedgeSpin`, `_WedgeNoise`. Neighbours turn almost alike, never in step.
+  **Round 8: the slide too** (`PrismBurstWedgeSlide`, `wedgeSlideNoise` 0.15): the slide's length × (1 + 0.15 × a
+  third field), plus half that across the wedge and off the face; at most 1.3 × the explosion's slide (the reach
+  counts it). Measured: silver levels 2–4 now squint as the explosion WITH the inside colour (0.132–0.144).
 - **The ROLL** (kind 6, `PrismBurstRoll`): each face's skin rolls up into a tight Archimedean roll AWAY from where the
   camera was at the steal (`_SliceAxis`), crosses the face over the grade's length showing the new colour, rolls over
   the far edge onto a face the camera cannot see and stops where its own prism hides it — down the side face, or round

@@ -628,10 +628,11 @@ float3 PrismBurstRotateAboutAxis(float3 v, float3 axis, float angle)
 // it — and the piece slides out along T by amount × spreadPerAmount. velocity is the stamped WORLD velocity,
 // used as the graph uses it.
 //
-// spin scales the two turns' angles (the tangent's, then the velocity's): (1, 1) is the explosion; the WEDGE kind
-// passes 1 + a little coherent noise so neighbouring fragments drift out of step.
+// spin scales the two turns' angles (the tangent's, then the velocity's) and slideDir is the direction (and scale) of
+// the slide: (1, 1) and T are the explosion; the WEDGE kind passes a little coherent noise in both, so neighbouring
+// fragments turn and travel a little out of step.
 void PrismBurstExplosionMap(float3 P, float3 N, float3 T, float3 pivot, float3 objectScale, float amount,
-    float3 velocity, float rotation, float2 spin, float spreadPerAmount, out float3 pos, out float3 nrm)
+    float3 velocity, float rotation, float2 spin, float3 slideDir, float spreadPerAmount, out float3 pos, out float3 nrm)
 {
 #ifdef PRISM_BURST_WEDGE_PIVOT_UNSCALED
     float3 os = float3(1.0, 1.0, 1.0);   // negative control only: the turn in the unscaled frame shears a piece
@@ -644,7 +645,8 @@ void PrismBurstExplosionMap(float3 P, float3 N, float3 T, float3 pivot, float3 o
     float3 axis2 = cross(velocity, N);
     float3 r = PrismBurstRotateAboutAxis(PrismBurstRotateAboutAxis(local, T, angle1), axis2, angle2);
     nrm = PrismBurstRotateAboutAxis(PrismBurstRotateAboutAxis(N, T, angle1), axis2, angle2);
-    pos = r / os + pivot + (PRISM_BURST_SLIDE_BIAS + PRISM_BURST_PIVOT_BIAS + amount * spreadPerAmount) * T * PRISM_BURST_SLIDER_GAIN;
+    pos = r / os + pivot + (PRISM_BURST_SLIDE_BIAS + PRISM_BURST_PIVOT_BIAS) * T * PRISM_BURST_SLIDER_GAIN
+        + amount * spreadPerAmount * slideDir * PRISM_BURST_SLIDER_GAIN;
 }
 
 // The explosion's own pivot for a wedge of the prism cube: the face point under P, slid along T by the
@@ -691,8 +693,9 @@ float PrismBurstGradientNoise(float3 p)
 
 // A fragment's two spin multipliers: 1 + amplitude × the gradient noise at its centroid (object space × frequency,
 // moved by the death's seed), one field per turn. Continuous, so neighbours keep nearly the same spin and the order
-// holds; never equal, so no two fragments of a face turn in perfect step. noise = (amplitude, frequency, seed).
-float2 PrismBurstWedgeSpin(float3 pieceCentroid, float3 noise)
+// holds; never equal, so no two fragments of a face turn in perfect step. noise = (spin amplitude, frequency, seed,
+// slide amplitude).
+float2 PrismBurstWedgeSpin(float3 pieceCentroid, float4 noise)
 {
 #ifdef PRISM_BURST_WEDGE_NOISE_OFF
     return float2(1.0, 1.0);   // negative control only: every fragment of a wedge in perfect step
@@ -702,16 +705,34 @@ float2 PrismBurstWedgeSpin(float3 pieceCentroid, float3 noise)
 #endif
 }
 
+// A fragment's slide: its wedge's tangent T, its length × (1 + amplitude × one field of the same gradient noise),
+// plus half the amplitude of two more fields across the wedge (cross(N, T)) and off the face (N). Three more fields
+// of the same continuous noise, so neighbours travel nearly together and never in step; at most 1 + 2 × amplitude
+// of the explosion's slide long (PrismBurstWedgeReach counts it).
+float3 PrismBurstWedgeSlide(float3 pieceCentroid, float3 N, float3 T, float4 noise)
+{
+#ifdef PRISM_BURST_WEDGE_SLIDE_NOISE_OFF
+    return T;   // negative control only: every fragment of a wedge slides in perfect step
+#else
+    float3 q = pieceCentroid * noise.y + noise.z * float3(17.13, 31.71, 7.37);
+    float along = PrismBurstGradientNoise(q + float3(73.1, 5.3, 61.7));
+    float across = PrismBurstGradientNoise(q + float3(13.9, 89.3, 37.1));
+    float off = PrismBurstGradientNoise(q + float3(97.7, 53.9, 3.1));
+    return T * (1.0 + noise.w * along) + (cross(N, T) * across + N * off) * (0.5 * noise.w);
+#endif
+}
+
 // A Sierpinski fragment as a SCALED WEDGE (kind WEDGE). It turns about its ROOT WEDGE's own two axes — the wedge's
 // tangent T and cross(velocity, N), the explosion's velocity response — by the explosion's angle, and slides along
 // that same T: every fragment of a wedge spins exactly as the explosion spins that wedge and is sent the way it is
 // sent. Its pivot keeps the explosion's pivot-to-centroid offset, scaled by the fragment's size (2^-level), so the
 // pieces tumble apart about their own centres; at level 0 — the explosion's own wedges — this IS the explosion
 // (with noise amplitude 0). level is the fragment's size as log2(its wedge's size / its own): an integer on the
-// Sierpinski cut, a fraction on the silver gnomon cut. noise = (amplitude, frequency, seed): PrismBurstWedgeSpin.
+// Sierpinski cut, a fraction on the silver gnomon cut. noise = (spin amplitude, frequency, seed, slide amplitude):
+// PrismBurstWedgeSpin, PrismBurstWedgeSlide.
 // All in object space, as the explosion's graph.
 void PrismBurstWedgePose(float3 P, float3 N, float3 pieceCentroid, float level, float3 objectScale, float amount,
-    float3 velocity, float3 spreadValue, float rotation, float spreadPerAmount, float3 noise, out float3 pos, out float3 nrm)
+    float3 velocity, float3 spreadValue, float rotation, float spreadPerAmount, float4 noise, out float3 pos, out float3 nrm)
 {
     float3 faceCentre = dot(P, N) * N;
 #ifdef PRISM_BURST_WEDGE_OWN_TANGENT
@@ -724,7 +745,7 @@ void PrismBurstWedgePose(float3 P, float3 N, float3 pieceCentroid, float level, 
     float3 wedgeOffset = (spreadValue - PRISM_BURST_PIVOT_BIAS) * T * PRISM_BURST_SLIDER_GAIN - T * (1.0 / 3.0);
     float3 pivot = pieceCentroid + wedgeOffset * exp2(-max(level, 0.0));
     PrismBurstExplosionMap(P, N, T, pivot, objectScale, amount, velocity, rotation,
-        PrismBurstWedgeSpin(pieceCentroid, noise), spreadPerAmount, pos, nrm);
+        PrismBurstWedgeSpin(pieceCentroid, noise), PrismBurstWedgeSlide(pieceCentroid, N, T, noise), spreadPerAmount, pos, nrm);
 }
 
 // How far, in WORLD units, a WEDGE fragment can be from the prism's travelling centre (the flight is added
@@ -732,13 +753,15 @@ void PrismBurstWedgePose(float3 P, float3 N, float3 pieceCentroid, float level, 
 // centre, so a vertex is within 2R of its centroid); the pivot sits off the centroid by the wedge offset, at
 // most o = max |(spread - pivotBias) × gain - 1/3| object units (≤ o × maxScale in the world); the turn keeps
 // the WORLD distance to the pivot (it is done in the scaled frame); the slide adds amount × spreadPerAmount ×
-// gain along a unit object direction. So 3R + 2 o maxScale + slide. The CPU sizes the culling bounds by the
+// gain along an object direction at most 1 + 2 × slideNoise long (PrismBurstWedgeSlide). So 3R + 2 o maxScale + slide. The CPU sizes the culling bounds by the
 // same sum (PrismCollisionBurst.WedgeReach); the harness asserts every pose stays inside it.
-float PrismBurstWedgeReach(float radius, float maxScale, float amount, float spreadPerAmount, float3 spreadValue)
+float PrismBurstWedgeReach(float radius, float maxScale, float amount, float spreadPerAmount, float3 spreadValue,
+    float slideNoise)
 {
     float3 o = abs((spreadValue - PRISM_BURST_PIVOT_BIAS) * PRISM_BURST_SLIDER_GAIN - 1.0 / 3.0);
     float offset = max(o.x, max(o.y, o.z));
-    return 3.0 * radius + (2.0 * offset + abs(amount * spreadPerAmount) * PRISM_BURST_SLIDER_GAIN) * maxScale;
+    float slide = abs(amount * spreadPerAmount) * PRISM_BURST_SLIDER_GAIN * (1.0 + 2.0 * abs(slideNoise));
+    return 3.0 * radius + (2.0 * offset + slide) * maxScale;
 }
 
 // ─── the fade ─────────────────────────────────────────────────────────────────────────────────

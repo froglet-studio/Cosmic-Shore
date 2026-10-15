@@ -6,7 +6,7 @@ a shared decision log: **destruction** (the explosion → the Sierpinski cut, ev
 explosion's own law) and **stealing** (the grade → the bloom shed). Round 1 looked at the four level-1 collision
 bursts alone.
 
-- **Live page:** https://claude.ai/artifact/F47yG1UjBkK662rEnhk7m9 (decision log: `decisions`) — round 7
+- **Live page:** https://claude.ai/artifact/F47yG1UjBkK662rEnhk7m9 (decision log: `decisions`) — round 8
 - **Page (generated, never edit by hand):** `Docs/Studios/PrismCollisionBurstLab.html`
 - **Source:** `Tools/Build/prism_collision_burst_lab/lab.src.html`; `build.py` stamps the shipped
   numbers and shader code into it (`--check` fails when the page is stale).
@@ -35,6 +35,47 @@ ordinary effect on the same prism at the same moment.
 
 The burst mesh is `HighPolyPrismMesh.GetUnwelded(10)` rebuilt on the page in float32 (`Math.fround`), as
 C# builds it.
+
+## Round 8 — 2026-10-15 (`cece/dreamy-pascal-7xxx1m`): the noise moves the slides too
+
+**Your decision applied** (the designer): *"so the perlin noise helped with the rotations now use it for the
+displacements too"*.
+
+### What changed
+
+`PrismBurstWedgeSlide`: a fragment's slide is its wedge's tangent T with its length × (1 + `wedgeSlideNoise` (0.15) ×
+a third field of the same gradient noise), plus half that amplitude across the wedge (cross(N, T)) and off the face
+(N) from two more fields — sampled at the fragment's centroid like the spin's, so each fragment stays rigid,
+neighbours travel nearly together, and none in step. `PrismBurstExplosionMap` takes the slide's direction (the
+explosion passes T, unchanged); the slide's amplitude rides `_WedgeNoise.z`. A slide is at most 1 + 2 × the amplitude
+of the explosion's, and `WedgeReach` (CPU bounds) and `PrismBurstWedgeReach` count it.
+
+### Scorecard (shipped settings)
+
+| | Size | Centre | Fade | Colour | Squint |
+|---|---|---|---|---|---|
+| Silver level 1 | 0.931 | 0.269 | 0.028 | 0.114 | 0.157 |
+| Silver level 2 | 0.868 | 0.235 | 0.044 | 0.112 | **0.141** |
+| Silver level 3 | 0.846 | 0.236 | 0.052 | 0.114 | **0.144** |
+| Silver level 4 | 0.816 | 0.180 | 0.065 | 0.112 | **0.132** |
+| *the band: the explosion, another flight* | 1.132 | 0.208 | 0.099 | 0.012 | 0.097 |
+
+Levels 2–4 now **squint as the explosion** — inside 1.5 × the band — WITH the inside colour (round 7: 0.152–0.167);
+level 1 is close (0.157). The cloud is a little smaller (0.82–0.93 of the explosion's coverage) — the fragments of a
+wedge no longer stack in one sheet. LOD steps: 0.33 / 0.45 / 0.64 / 0.90 of their bands, all unnoticeable.
+
+### Checked
+
+`verify_prism_collision_burst.py` PASS — W9: no neighbouring fragment pair of one wedge slides in perfect step
+(0 of 15,840; without the noise all of them), the slide's steepest slope 1.4 a unit, the longest 1.15 of the
+explosion's (bound 1.30); every pose inside the widened reach (worst use 0.902); a new control (the slide noise off)
+FIRED — 11 in all. (The roll test's own share read 97.8% this run against 98.5%: the new test's random draws moved
+the roll's random prisms and cameras; the roll is unchanged.) `parity.py` PASS (the wedge with both noises on);
+`verify_lab.cjs` PASS; `build.py --check` OK; `unity_refcompile` player + editor 0 errors. **Not run:** the editor.
+
+### Decision needed (designer)
+
+The slide noise amplitude (0.15) — a slider beside the spin noise on the page (Kinds tab).
 
 ## Round 7 — 2026-10-15 (`cece/dreamy-pascal-7xxx1m`): the silver gnomon cut, the spin noise, and the ROLL
 

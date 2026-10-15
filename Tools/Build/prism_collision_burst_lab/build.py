@@ -227,7 +227,7 @@ def config():
     for k in ("maxLiveBursts", "maxLiveTriangles", "crowdedFill", "packedFill", "shedMinScreen", "shedFineScreen", "shedFinestScreen", "shedSubdivision", "shedFineSubdivision",
               "shedFinestSubdivision", "bloomWeight", "unravelWeight", "flakeWeight", "bloomRings", "bloomSegments",
               "peelNoise", "rollWeight", "rollRadius", "rollGap", "destructionCut", "wedgeSpinNoise",
-              "wedgeNoiseFrequency", "shedInflate", "spread",
+              "wedgeNoiseFrequency", "wedgeSlideNoise", "shedInflate", "spread",
               "openSeconds", "spinPerSpeed", "bloomTurns", "unravelTurns", "ribbonsPerFace", "shardsPerFaceEdge",
               "dissolveGrain"):
         out[k] = yaml_float(lod, k)

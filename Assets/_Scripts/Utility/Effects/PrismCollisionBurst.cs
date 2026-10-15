@@ -82,15 +82,18 @@ namespace CosmicShore.Utility
         /// How far, in WORLD units, a <see cref="Wedge"/> fragment can be from the travelling centre at explosion
         /// <paramref name="amount"/> (speed × t) — the SAME sum as <c>PrismBurstWedgeReach</c> in the HLSL, whose
         /// harness proves every pose of every depth stays inside it: 3R, plus twice the pivot's offset off the
-        /// fragment's centroid, plus the slide, both at the largest object scale.
+        /// fragment's centroid, plus the slide — lengthened by at most 1 + 2 × <paramref name="slideNoise"/> — both at
+        /// the largest object scale.
         /// </summary>
-        public static float WedgeReach(float radius, float maxScale, float amount, float spreadPerAmount, Vector3 spreadValue)
+        public static float WedgeReach(float radius, float maxScale, float amount, float spreadPerAmount, Vector3 spreadValue,
+            float slideNoise = 0f)
         {
             float ox = Mathf.Abs((spreadValue.x - PivotBias) * SliderGain - 1f / 3f);
             float oy = Mathf.Abs((spreadValue.y - PivotBias) * SliderGain - 1f / 3f);
             float oz = Mathf.Abs((spreadValue.z - PivotBias) * SliderGain - 1f / 3f);
             float offset = Mathf.Max(ox, Mathf.Max(oy, oz));
-            return 3f * radius + (2f * offset + Mathf.Abs(amount * spreadPerAmount) * SliderGain) * maxScale;
+            float slide = Mathf.Abs(amount * spreadPerAmount) * SliderGain * (1f + 2f * Mathf.Abs(slideNoise));
+            return 3f * radius + (2f * offset + slide) * maxScale;
         }
 
         /// <summary>
@@ -296,7 +299,7 @@ namespace CosmicShore.Utility
                 TryGetExplosionTuning(out var spreadValue, out _, out float spreadPerAmount);
                 var s = Abs(scale);
                 float reach = WedgeReach(0.5f * s.magnitude, Mathf.Max(s.x, Mathf.Max(s.y, s.z)), speed * life,
-                    spreadPerAmount, spreadValue);
+                    spreadPerAmount, spreadValue, cfg.WedgeSlideNoise);
                 BuildBoundsOfReach(rotation, scale, flight * life, reach, out centre, out extents);
             }
             else
@@ -464,7 +467,7 @@ namespace CosmicShore.Utility
                 new Vector4(cfg.BloomTurns, cfg.UnravelTurns, cfg.RibbonsPerFace, cfg.ShardsPerFaceEdge));
             s_runtimeMaterial.SetVector(PeelId, new Vector4(cfg.BloomRings, cfg.BloomSegments, cfg.PeelNoise, 0f));
             s_runtimeMaterial.SetVector(RollId, new Vector4(cfg.RollRadius, cfg.RollGap, 0f, 0f));
-            s_runtimeMaterial.SetVector(WedgeNoiseId, new Vector4(cfg.WedgeSpinNoise, cfg.WedgeNoiseFrequency, 0f, 0f));
+            s_runtimeMaterial.SetVector(WedgeNoiseId, new Vector4(cfg.WedgeSpinNoise, cfg.WedgeNoiseFrequency, cfg.WedgeSlideNoise, 0f));
             s_runtimeMaterialTuned = ApplyExplosionTuning(s_runtimeMaterial);
             s_runtimeMaterialFor = cfg;
             return s_runtimeMaterial;

@@ -38,7 +38,8 @@ A. EXECUTION (clang++, /asset-surgery §4.5c). The file under Assets/ is transla
      cube), for random slabs and cameras 4-20 radii out; the roll also runs the first-frame, unit-normal,
      envelope and (while on its face) isometry / normal-derivative tests above.
   W. THE WEDGE (destruction, Sierpinski depths 0-3 and the silver gnomon cut at 0, 1, 4, 7, the spin noise off
-     and on): amount 0 is the prism; level 0 IS the explosion —
+     and on — the spin noise and the slide noise; W9: the slide is continuous, at most 1 + 2 x its amplitude long,
+     and neighbouring fragments of one wedge do not slide in step): amount 0 is the prism; level 0 IS the explosion —
      equal to the harness's own Rodrigues statement of RotateFacesAlongAxis' closed form with the graph's
      constants; every fragment is rigid in the world; normals unit; every pose inside PrismBurstWedgeReach
      (the CPU's bounds); no fragment turns faster than the explosion's own cap (2 x amount x rotation); and every
@@ -54,6 +55,7 @@ A. EXECUTION (clang++, /asset-surgery §4.5c). The file under Assets/ is transla
   18. -DPRISM_BURST_WEDGE_PIVOT_UNSCALED=1 — the turn in the unscaled frame shears fragments (test W fires).
   19. -DPRISM_BURST_WEDGE_OWN_TANGENT=1    — each fragment's own radial tangent: off its wedge's spin (W7 fires).
   20. -DPRISM_BURST_WEDGE_NOISE_OFF=1      — neighbouring fragments back in perfect step (W8 fires).
+  20b. -DPRISM_BURST_WEDGE_SLIDE_NOISE_OFF=1 — every fragment of a wedge sliding as one (W9 fires).
   21. -DPRISM_BURST_ROLL_TOWARD_CAMERA=1   — the roll rolls toward the camera, onto faces it sees (R fires).
 
 B. FRONT-END COMPILE (glslang, HLSL mode). Every pass of PrismCollisionBurst.shader, vertex and
@@ -529,7 +531,7 @@ static void run_wedge_tests() {
             float3 vel = rndDir() * rnd(5, 60);
             float speed = rnd(10, 53);
             float seed = rnd(0, 1);
-            float3 noise(amp, 3.0f, seed);
+            float4 noise(amp, 3.0f, seed, amp);
             float R = length(linear(P, float3(0.5f,0.5f,0.5f)));
             float maxScale = std::max(P.s.x, std::max(P.s.y, P.s.z));
             for (float t : {0.0f, 0.4f, 2.0f, 7.5f}) {
@@ -547,7 +549,7 @@ static void run_wedge_tests() {
                     // W3. unit normals
                     CHECK(std::fabs(length(nrm) - 1.0f) <= 1e-4f, "wedge: normal length %g", length(nrm));
                     // W4. the reach the CPU sizes the bounds by
-                    float reach = PrismBurstWedgeReach(R, maxScale, amount, ES, S);
+                    float reach = PrismBurstWedgeReach(R, maxScale, amount, ES, S, noise.w);
                     float r = length(wp[i]);
                     if (r / reach > worstReach) worstReach = r / reach;
                     CHECK(r <= reach * (1 + 1e-4f), "wedge %s %d: a vertex %.3f escapes the reach %.3f", cut.name, depth, r, reach);
@@ -601,6 +603,34 @@ static void run_wedge_tests() {
                     }
             }
         }
+    }
+    // W9. the SLIDE noise: every fragment's slide is continuous over the face (bounded slope), at most 1 + 2 x its
+    // amplitude long, and neighbouring fragments of one wedge do not slide in perfect step.
+    {
+        int sp = 0, sameSlide = 0; float slope = 0, longest = 0;
+        std::vector<WVert> m = silver(7);
+        const float amp = 0.15f;
+        for (int trial = 0; trial < 20; trial++) {
+            float4 noise(amp, 3.0f, rnd(0, 1), amp);
+            for (size_t i = 0; i + 3 < m.size(); i += 3) {
+                const WVert& u = m[i]; const WVert& v = m[i + 3];
+                if (length(u.n - v.n) > 0) continue;
+                float3 ou = u.centroid - u.n * 0.5f, ov = v.centroid - v.n * 0.5f, au = abs(ou), av = abs(ov);
+                auto tan_ = [](float3 o, float3 a) { return a.x >= a.y && a.x >= a.z ? float3(o.x >= 0 ? 1.f : -1.f, 0, 0) : a.y >= a.z ? float3(0, o.y >= 0 ? 1.f : -1.f, 0) : float3(0, 0, o.z >= 0 ? 1.f : -1.f); };
+                float3 tu = tan_(ou, au), tv = tan_(ov, av);
+                float3 su = PrismBurstWedgeSlide(u.centroid, u.n, tu, noise), sv = PrismBurstWedgeSlide(v.centroid, v.n, tv, noise);
+                longest = std::max(longest, std::max(length(su), length(sv)));
+                if (length(tu - tv) > 0) continue;   // another wedge: another tangent
+                sp++;
+                if (length(su - sv) <= 1e-5f) sameSlide++;
+                float dc = length(u.centroid - v.centroid);
+                if (dc > 0) slope = std::max(slope, length(su - sv) / dc);
+            }
+        }
+        printf("wedge slide: %d of %d neighbouring fragments slide in perfect step with the noise; steepest slope %.2f a unit; longest slide %.3f of the explosion's\n", sameSlide, sp, slope, longest);
+        CHECK(sp > 0 && sameSlide <= sp / 20, "the slide noise left %d of %d neighbouring fragments in perfect step", sameSlide, sp);
+        CHECK(longest <= 1.0f + 2.0f * amp + 1e-5f, "a slide %.3f is longer than 1 + 2 x the amplitude", longest);
+        CHECK(slope <= amp * 3.0f * 8.0f, "the slide jumps between neighbours (slope %g): not continuous", slope);
     }
     printf("wedge: worst reach use %.3f, worst level-0 departure %.2g radii, worst spin %.3f of the cap, worst departure from the root wedge's spin %.2g (noise off), noisy spin off its wedge %.3f of 2 x amplitude; %d of %d neighbouring fragments in perfect step with the noise\n",
            worstReach, worstLevel0, worstSpin, worstWedgeSpin, worstNoisySpin, inStep, pairs);
@@ -750,7 +780,7 @@ def translate(src, required=True):
     for name in ("void PrismBurstPose(", "void PrismBurstBend(", "void PrismBurstVoronoi(",
                  "float PrismBurstEnvelope(", "float PrismBurstProgress(", "float PrismBurstDissolveValue(",
                  "bool PrismBurstClipped(", "float PrismBurstNoise(", "void PrismBurstWedgePose(",
-                 "float PrismBurstWedgeReach(", "void PrismBurstExplosionMap("):
+                 "float PrismBurstWedgeReach(", "void PrismBurstExplosionMap(", "float3 PrismBurstWedgeSlide("):
         assert not required or name in out, f"{name} missing from the shipped HLSL"
     return out
 
@@ -798,6 +828,7 @@ def main():
                                  ("-DPRISM_BURST_WEDGE_PIVOT_UNSCALED=1", "wedge", "unscaled-turn control"),
                                  ("-DPRISM_BURST_WEDGE_OWN_TANGENT=1", "wedge", "radial-tangent control"),
                                  ("-DPRISM_BURST_WEDGE_NOISE_OFF=1", "wedge", "noiseless-spin control"),
+                                 ("-DPRISM_BURST_WEDGE_SLIDE_NOISE_OFF=1", "wedge", "noiseless-slide control"),
                                  ("-DPRISM_BURST_ROLL_TOWARD_CAMERA=1", "roll", "roll-toward-camera control")):
             rc, out = build_and_run(work, [flag], arg, label)
             fired = rc != 0

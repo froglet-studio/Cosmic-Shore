@@ -196,7 +196,9 @@ namespace CosmicShore.Tests
             StringAssert.Contains("#define PRISM_BURST_SLIDER_GAIN 0.5", hlsl);
             Assert.AreEqual(-0.5f, PrismCollisionBurst.PivotBias);
             Assert.AreEqual(0.5f, PrismCollisionBurst.SliderGain);
-            StringAssert.Contains("return 3.0 * radius + (2.0 * offset + abs(amount * spreadPerAmount) * PRISM_BURST_SLIDER_GAIN) * maxScale;", hlsl,
+            StringAssert.Contains("float slide = abs(amount * spreadPerAmount) * PRISM_BURST_SLIDER_GAIN * (1.0 + 2.0 * abs(slideNoise));", hlsl,
+                "WedgeReach is the HLSL's PrismBurstWedgeReach, which the harness proves every pose stays inside");
+            StringAssert.Contains("return 3.0 * radius + (2.0 * offset + slide) * maxScale;", hlsl,
                 "WedgeReach is the HLSL's PrismBurstWedgeReach, which the harness proves every pose stays inside");
             Assert.AreEqual(5, PrismCollisionBurst.Wedge);
         }
@@ -211,6 +213,9 @@ namespace CosmicShore.Tests
                 PrismCollisionBurst.WedgeReach(2f, 6f, 400f, 0.05f, s), 1e-4f);
             Assert.AreEqual(3f * 2f + 2f * offset * 6f, PrismCollisionBurst.WedgeReach(2f, 6f, 0f, 0.05f, s), 1e-5f,
                 "at rest the reach is the prism plus the pivot's offset");
+            // The slide noise lengthens the slide by at most 1 + 2 x its amplitude.
+            Assert.AreEqual(3f * 2f + (2f * offset + 400f * 0.05f * 0.5f * 1.3f) * 6f,
+                PrismCollisionBurst.WedgeReach(2f, 6f, 400f, 0.05f, s, 0.15f), 1e-4f);
         }
 
         [Test]
@@ -705,6 +710,8 @@ namespace CosmicShore.Tests
             Assert.LessOrEqual(cfg.CutDepthOf(cfg.MaxDepth), PrismSilverGnomonTiling.MaxDepth);
             Assert.Greater(cfg.WedgeSpinNoise, 0f, "neighbours out of perfect step");
             Assert.LessOrEqual(cfg.WedgeSpinNoise, 0.25f, "subtle: the order holds");
+            Assert.Greater(cfg.WedgeSlideNoise, 0f, "neighbours travel out of perfect step");
+            Assert.LessOrEqual(cfg.WedgeSlideNoise, 0.25f, "subtle: the order holds");
             Assert.GreaterOrEqual(cfg.BloomRings, 2, "more cuts: each piece shorter than the quarter, so it curls tighter");
             Assert.Greater(cfg.PeelNoise, 0f, "every peel different");
             // Bloom pieces (and, if weighted again, ribbons and flake scales) fall on whole triangles at every

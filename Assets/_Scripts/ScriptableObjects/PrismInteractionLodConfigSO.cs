@@ -87,6 +87,11 @@ namespace CosmicShore.ScriptableObjects
         [Tooltip("The spin noise's frequency, in cycles per prism width (object space): higher, neighbours differ more.")]
         [Range(0.5f, 8f)] [SerializeField] float wedgeNoiseFrequency = 3f;
 
+        [Tooltip("How much each fragment's SLIDE wanders from its wedge's: its length x (1 + this x the same gradient " +
+                 "noise), plus half this across the wedge and off the face. Neighbours travel nearly together, never " +
+                 "in step. 0: the whole wedge slides as one.")]
+        [Range(0f, 0.5f)] [SerializeField] float wedgeSlideNoise = 0.15f;
+
         [Header("Stealing — the grade, or a shed at one of three resolutions")]
         [Tooltip("Off: every steal is the ordinary grade.")]
         [SerializeField] bool shedEnabled = true;
@@ -220,6 +225,7 @@ namespace CosmicShore.ScriptableObjects
         public DestructionCut Cut => destructionCut;
         public float WedgeSpinNoise => Mathf.Clamp(wedgeSpinNoise, 0f, 0.5f);
         public float WedgeNoiseFrequency => Mathf.Clamp(wedgeNoiseFrequency, 0.5f, 8f);
+        public float WedgeSlideNoise => Mathf.Clamp(wedgeSlideNoise, 0f, 0.5f);
         public float UnravelWeight => Mathf.Max(0f, unravelWeight);
         public float FlakeWeight => Mathf.Max(0f, flakeWeight);
         public int BloomRings => Mathf.Clamp(bloomRings, 1, 6);
