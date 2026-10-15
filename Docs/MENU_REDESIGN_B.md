@@ -47,6 +47,8 @@ Legend: `Planned` ▸ `Mockup` ▸ `Mockup approved` ▸ `Built` ▸ `Approved i
 | 10 | Closed surfaces: Port (locked), Store (no slot), Episodes panel, purchase confirmation | Built (2026-10-15, section 19): purchase confirmation drawn blind; locked states from items 1 and 5 | `ClosedSurfaces.dc.html`, `PurchaseConfirm` (blind), `SystemNotes` | |
 | 11 | Menu toasts | Built (2026-10-15, section 20) | `Toasts.dc.html` (interactive), `SystemNotes` | |
 | 12 | In-game UI: GameCanvas HUD chrome, scoreboard, ready / countdown / pause, in-match toasts, end-of-game screens, Menu_Main freestyle HUD | Built (2026-10-15, section 22): 12a HUD chrome, 12b Ready / waiting / countdown, 12c pause and connecting, 12d end reveal and scoreboard, 12e spectator, match feed, freestyle | `HudMatch.dc.html` (interactive), `HudCardStates`, `HudNotes`, `Hud<Vessel>` x9, `HudReady` (interactive), `HudPause`, `HudConnecting`, `HudEndReveal`, `HudScoreboard` (interactive), `HudSpectator` - page "In-game HUD" | `6a94bdd1`, `422183de`, `9abadaa9`, `f067dc57` + 12e |
+| 13 | Start flow: Bootstrap splash, connection-lost retry, sign-in, pilot name, the first-run privacy overlay (age gate, consent); the boot-world loading cover | Mockup (2026-10-15); the loading cover is Built (section 25) | `StartSplash`, `StartRetry`, `StartSignIn`, `StartSignInFailed`, `StartName`, `StartNameTaken`, `StartAgeGate`, `StartConsent`, `StartLoading`, `StartNotes` - page "Start flow" | `dc023d00d` (cover) |
+| 14 | Maelstrom game UI: the hub between rounds, the stats screen, the tournament summary | Mockup (2026-10-15) | `MaelstromHub`, `MaelstromStats`, `MaelstromSummary`, `MaelstromNotes` - page "In-game HUD" | |
 
 ---
 
