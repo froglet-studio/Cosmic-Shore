@@ -1376,4 +1376,18 @@ Item 12's defect list (section 13.3 inventory) is closed except:
     purpose (switched off, not deleted).
   Retiring those is a code change across 15 modes, not a prefab cleanup, and is left for a
   /refactor pass.
+- **Board departures closed:**
+  - **Objective arrow in the team colour.** `ObjectiveArrowGraphic.SetAccent` derives its three
+    tones from the local domain's colour: the halo is the accent dimmed, the stroke is the accent,
+    the core is lifted toward Light. It is fed by `MiniGameHUD.RefreshGoalStack`, with one mesh
+    rebuild per colour change. The distance readout takes the colour too. Toy runners never call
+    it, so they keep the lime.
+  - **Pause hex keycap.** The authored `DomainVolumeIndicator` names its control under the hex:
+    Start on a pad, Esc on a keyboard. It ensures its own `InputDeviceIconSetSwitcher`, so the
+    label follows the device, and a keyboard player is never shown a pad name.
+  - **Spectator detail line.** Under the pilot's name: "Ruby - Sparrow", the spectated pilot's
+    domain and hull (`SpectatorController.DetailLine`). The avatar is still not drawn, because the
+    controller has no profile-icon list.
+- Still open: the Menu_Main `Game UI` rect (defect 14), the spectator avatar, and the live legacy
+  HUD objects above.
 

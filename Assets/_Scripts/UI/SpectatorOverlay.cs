@@ -37,6 +37,7 @@ namespace CosmicShore.UI
         CanvasGroup _group;
         TMP_Text _nameText;
         TMP_Text _rosterText;
+        TMP_Text _detailText;
         TMP_Text _cameraText;
         float _targetAlpha;
 
@@ -56,6 +57,16 @@ namespace CosmicShore.UI
 
         public void Show() => _targetAlpha = 1f;
         public void Hide() => _targetAlpha = 0f;
+
+        /// <summary>
+        /// The spectated pilot: name in their domain colour, and under it the board's detail line -
+        /// "Ruby - Sparrow" - when the caller knows the domain and hull.
+        /// </summary>
+        public void SetSpectated(string pilotName, Color domainColor, int index, int count, string detail)
+        {
+            SetSpectated(pilotName, domainColor, index, count);
+            if (_detailText) _detailText.text = detail ?? string.Empty;
+        }
 
         public void SetSpectated(string pilotName, Color domainColor, int index, int count)
         {
@@ -141,9 +152,28 @@ namespace CosmicShore.UI
 
             MakeRule(bar);
 
-            _nameText = MakeText(bar, "Pilot", 22f, LabelColor, 290f);
+            // Name over the detail line, one column.
+            var pilot = MakeRect("Pilot", bar);
+            pilot.sizeDelta = new Vector2(290f, 48f);
+            var pilotLayout = pilot.gameObject.AddComponent<LayoutElement>();
+            pilotLayout.preferredWidth = 290f;
+            var column = pilot.gameObject.AddComponent<VerticalLayoutGroup>();
+            column.childAlignment = TextAnchor.MiddleCenter;
+            column.childControlWidth = true;
+            column.childControlHeight = false;
+            column.childForceExpandWidth = true;
+            column.childForceExpandHeight = false;
+            column.spacing = 2f;
+
+            _nameText = MakeText(pilot, "Pilot", 20f, LabelColor, 290f);
+            _nameText.rectTransform.sizeDelta = new Vector2(290f, 26f);
             _nameText.alignment = TextAlignmentOptions.Midline;
             _nameText.overflowMode = TextOverflowModes.Ellipsis;
+
+            _detailText = MakeText(pilot, "", 12f, CaptionColor, 290f, label: true);
+            _detailText.rectTransform.sizeDelta = new Vector2(290f, 16f);
+            _detailText.alignment = TextAlignmentOptions.Midline;
+            _detailText.characterSpacing = 14f;
 
             _rosterText = MakeText(bar, "", 22f, LabelColor, 70f);
             _rosterText.alignment = TextAlignmentOptions.Midline;

@@ -338,6 +338,13 @@ namespace CosmicShore.UI
         /// icon (<see cref="ObjectiveArrowGraphic"/>). Use when no
         /// editor-wired indicator exists in the scene.
         /// </summary>
+        /// <summary>Tint the arrow (and its distance readout) with a domain colour.</summary>
+        public void SetAccent(Color accent)
+        {
+            if (icon && icon.TryGetComponent(out ObjectiveArrowGraphic arrow)) arrow.SetAccent(accent);
+            if (distanceText) distanceText.color = accent;
+        }
+
         public static ObjectiveIndicator CreateRuntime(Transform parent, IObjectiveProvider providerInstance)
         {
             // Sub-canvas isolation: a dedicated Canvas component on the

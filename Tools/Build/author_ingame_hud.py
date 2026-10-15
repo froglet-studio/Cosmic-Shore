@@ -217,6 +217,8 @@ def patch_pause(p):
         "  hexGraphic: {fileID: 0}\n"
         f"  centreGlyph: {K.sprite_ref(PAUSE_GLYPH)}\n"
         "  centreGlyphSize: 44\n"
+        "  padKeycap: Start\n"
+        "  keyboardKeycap: Esc\n"
         "  themeDataOverride: {fileID: 0}\n"
         "  sampleIntervalSeconds: 0.25\n"
         "  fillLerpSpeed: 8\n"
@@ -1180,6 +1182,8 @@ def validate(files):
     vol = [f for f, d in docs.items() if f"guid: {S['volume']}" in d]
     assert len(vol) == 1, "the pause button must carry exactly one DomainVolumeIndicator"
     assert f"guid: {PAUSE_GLYPH}" in docs[vol[0]], "the pause hex has no centre glyph"
+    assert "  padKeycap: Start\n" in docs[vol[0]] and "  keyboardKeycap: Esc\n" in docs[vol[0]], \
+        "the pause hex does not name its control (Start / Esc)"
     hud = [d for d in docs.values() if f"guid: {S['hud']}" in d]
     assert len(hud) == 1 and f"  volumeIndicator: {{fileID: {vol[0]}}}" in hud[0], "MiniGameHUD.volumeIndicator is not the pause hex"
 
@@ -1385,6 +1389,7 @@ def self_test(files):
         ("the feed row without its accent bar", lambda f: f.__setitem__(FEED, re.sub(
             r"(  accentImage: )\{fileID: -?\d+\}", r"\1{fileID: 0}", f[FEED]))),
         ("the match without a toast container", sub(CANVAS, f"  m_Name: {TOAST_CONTAINER}\n", "  m_Name: Toasts\n")),
+        ("the pause hex without its keycap", sub(CANVAS, "  padKeycap: Start\n", "  padKeycap: \n")),
         ("the column hairline unwired", lambda f: f.__setitem__(PANEL["path"], re.sub(r"(  borderImage: )\{fileID: -?\d+\}", r"\1{fileID: 0}", f[PANEL["path"]]))),
     ]
     ok = all(expect(l, m) for l, m in cases)

@@ -6221,6 +6221,8 @@ MonoBehaviour:
   hexGraphic: {fileID: 0}
   centreGlyph: {fileID: 21300000, guid: 341712d17b6ba4a54eb1539a923368d9, type: 3}
   centreGlyphSize: 44
+  padKeycap: Start
+  keyboardKeycap: Esc
   themeDataOverride: {fileID: 0}
   sampleIntervalSeconds: 0.25
   fillLerpSpeed: 8

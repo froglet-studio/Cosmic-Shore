@@ -1037,7 +1037,10 @@ namespace CosmicShore.UI
             var stack = view != null ? view.GoalStack : null;
             if (stack == null) return;
 
-            stack.SetAccent(LocalDomainAccent());
+            var accent = LocalDomainAccent();
+            stack.SetAccent(accent);
+            // The objective arrow points at the local pilot's goal: it wears their colour too.
+            if (accent.HasValue && _autoCreatedIndicator != null) _autoCreatedIndicator.SetAccent(accent.Value);
 
             var rule = gameData != null ? gameData.ScoringRule : null;
             stack.SetObjective(rule != null ? rule.Metric : (ScoringMetric?)null,

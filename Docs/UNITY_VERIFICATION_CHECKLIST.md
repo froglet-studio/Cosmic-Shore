@@ -78,6 +78,12 @@ is still owed.
    'ToastNotificationContainer'".
 2. Back in Menu_Main, menu toasts still appear at the top (the menu's own container).
 3. GameCanvas no longer has a ThumbCursors object, and nothing logs a missing reference.
+4. The objective arrow and its distance read in your domain's colour (Jade: cyan; Ruby: violet;
+   Gold: amber). In a toy mode it is still lime.
+5. Under the pause hex: a "Start" keycap on a pad, which becomes "Esc" as soon as you touch the
+   keyboard.
+6. Spectating: under the pilot's name, "Ruby - Sparrow" (their domain and hull), and it updates
+   as you switch pilot.
 
 ---
 
