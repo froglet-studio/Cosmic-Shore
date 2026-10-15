@@ -66,8 +66,34 @@ def validity(b):
         n = 0
     if n > 1:
         out.append(f"WARN   {n} cameras were enabled ({cams[:120]}) - every extra camera (Third Eye, a preview, a Scene view) renders the world again; close them and re-capture to measure the game's frame")
+    ed = editor_state(b)
+    if ed.get("deepProfile"):
+        out.append("ERROR  the Profiler was DEEP profiling - every C# call is instrumented and the frame is several times too slow; turn Deep Profile off and re-capture")
+    if ed.get("profileEditor"):
+        out.append("WARN   the Profiler was profiling the EDITOR too - its windows' cost lands in the frame; set the Profiler's target to Play Mode")
+    if ed.get("sceneViews"):
+        out.append(f"NOTE   {ed['sceneViews']} Scene view(s) open - a VISIBLE Scene view renders the world again every Play frame; hide it behind another tab or close it")
+    gw, gh = ed.get("gameW", 0), ed.get("gameH", 0)
+    if gw * gh > 2560 * 1440:
+        out.append(f"NOTE   the Game view renders at {gw}x{gh} - more pixels than 1440p; a smaller Game view or a fixed resolution costs the GPU less")
     if "MANAGED" in (b.get("burst") or ""):
         out.append("ERROR  the burst probe job ran MANAGED - the game's jobs are not Burst-compiled; see the burst section")
+    return out
+
+
+def editor_state(b):
+    """The capture's 'editor' line ('sceneViews 1 | gameView 3840x2160 | deepProfile 0 | ...') as numbers."""
+    out = {}
+    for part in (b.get("editor") or "").split("|"):
+        bits = part.split()
+        if len(bits) != 2:
+            continue
+        key, val = bits
+        if key == "gameView" and "x" in val:
+            w, _, h = val.partition("x")
+            out["gameW"], out["gameH"] = int(w or 0), int(h or 0)
+        elif val.isdigit():
+            out[key] = int(val)
     return out
 
 
@@ -170,7 +196,7 @@ def print_report(bundles, top):
                 print(f"     {r.get('caller','?')[:60]:<60} {r.get('avgMs',0):6.2f} ms  present {r.get('presentPct',0):.0f}%")
 
     print("\n-- 4. the world")
-    for key in ("renderers", "cells", "burst", "prismPath", "cameras"):
+    for key in ("renderers", "cells", "burst", "prismPath", "cameras", "editor"):
         text = (a.get(key) or "").strip()
         if text:
             print(f"   {key}: " + text.replace("\n", "\n      ")[:1500])
@@ -203,6 +229,12 @@ def self_test():
     assert any("Code Optimization" in x for x in v) and any("Deep Profile" in x for x in v) and any("MANAGED" in x for x in v), v
     two = json.loads(json.dumps(good)); two["cameras"] = "2 enabled | Main Camera screen depth 0 | ThirdEye 960x540 rt depth 1"
     assert any("cameras" in x for x in validity(two)), validity(two)
+    ed = json.loads(json.dumps(good)); ed["editor"] = "sceneViews 0 | gameView 1920x1080 | deepProfile 0 | profileEditor 0 | profilerRecording 1"
+    assert validity(ed) == [], validity(ed)
+    ed["editor"] = "sceneViews 1 | gameView 3840x2160 | deepProfile 1 | profileEditor 1 | profilerRecording 1"
+    v = validity(ed)
+    assert any("DEEP" in x for x in v) and any("EDITOR too" in x for x in v) and any("Scene view" in x for x in v) \
+        and any("3840x2160" in x for x in v), v
     assert markers(good)[0]["name"] == "A" and len(markers(good)) == 1
     assert delta(10, 5) == "  -50%" and delta(None, 1) == ""
     print("self-test ok")

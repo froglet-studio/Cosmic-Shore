@@ -243,6 +243,7 @@ namespace CosmicShore.Utility.PerformanceBenchmark
             RegisterCommand(CellStateReport.CommandName, CellStateReport.Handle);
             RegisterCommand(BurstProbe.CommandName, BurstProbe.Handle);
             RegisterCommand(CaptureCommand, HandleCaptureCommand);
+            RegisterCommand(TimeScaleCommand.CommandName, TimeScaleCommand.Handle);
         }
 
         void OnDestroy()
@@ -257,6 +258,7 @@ namespace CosmicShore.Utility.PerformanceBenchmark
             UnregisterCommand(CellStateReport.CommandName);
             UnregisterCommand(BurstProbe.CommandName);
             UnregisterCommand(CaptureCommand);
+            UnregisterCommand(TimeScaleCommand.CommandName);
             _abStopRequested = true;
 #if UNITY_EDITOR
             _profStopRequested = true;

@@ -525,6 +525,31 @@ editor window, and screenshots re-typed by hand.
    its idle time.
 5. **Write the commit SHA next to every number.** A measurement describes one tree.
 
+### 4.2a When the EDITOR is slow, not the game (Yash, 2026-10-15: Regatta at 10 fps)
+
+On the same machine (RTX 4070 Ti), Skim Race I2 with 2 AI captured at **66 fps** (CPU busy 13.1 ms, GPU 3.7 ms,
+Release, 2026-10-08). A Regatta session at **10 fps** is therefore the editor's setup, not the GPU. Check these in
+order (the cost estimates are from this record and `Docs/SKIM_RACE_AI.md` §14.4):
+
+| # | Check | Why it costs |
+|---|---|---|
+| 1 | **Code Optimization = Release** (bug icon, bottom right; the badge's Release button). Unity starts in Debug unless Preferences > General > Code Optimization On Startup says Release. | About 5x on the AI planner and on every game C# path, URP's own C# included |
+| 2 | **Profiler: Deep Profile off, target Play Mode, recording off while just testing.** The badge's Capture button opens the Profiler for `prof`. | Deep profile is about 10x; editor profiling adds the windows' cost |
+| 3 | **No visible Scene view while playing** (a tab behind the Game view is fine) | It renders the world again every Play frame |
+| 4 | **The Third Eye: open only while watching, Resolution 0.5, Trails off unless needed** | A second full render (post, shadows, AA) at window pixels x display scale |
+| 5 | **Game view no larger than 1440p**; Burst on; Game view focused | GPU pixels; managed jobs (10-20x); an unfocused editor throttles |
+
+**To find out which it is, measure, do not guess:** in Play, press **Capture** on the Scene view's Bug Hunt &
+Performance badge, once with the Third Eye closed and once with it open, then **Send to Claude** when Unity asks.
+A capture now records the editor's own state (`editor`: Scene views open, Game view size, deep profiling, editor
+profiling) beside the camera list, and `perf_capture_report.py` flags each one.
+
+**When the editor cannot go faster, test in slow motion:** HUD console (F7) `timescale 0.25`. At 10 fps a hull
+at 300 u/s moves 30 u per frame and overshoots its line, so AI (and hand) testing at a low frame rate is not
+representative (`Docs/SKIM_RACE_AI.md` §8.0c). At 0.25x each frame steps what 40 fps does. `timescale off` resets
+it; a scene change releases it. A development player build is the other honest frame rate (the HUD console and
+`capture` work there; the Third Eye does not).
+
 ### 4.3 The same-state rule (why the spindle test failed)
 
 An A/B is only valid if **the only difference between the two arms is the thing under test**.

@@ -151,6 +151,10 @@ Game view, enter Play mode and play normally: the window shows the same match fr
   **You** takes it over on either team and the AI flies the hull you left (the arena `PilotSwap`, without its
   same-team rule). Leave your own hull on AI and every hull is AI-flown. Host / solo only (`PilotControl`).
 - Settings (distances, smoothing, FOV, resolution) live in `UserSettings/ThirdEyeSettings.asset`, per machine.
+- **Cost**: it is a second full render (post, shadows, AA) at the window's pixels times the display scale. Its
+  trails are batched and it repaints at most once per game frame. On a slow editor, lower **Resolution**, turn
+  Trails off, close it when not watching, and test in slow motion (HUD console `timescale 0.25`):
+  `Docs/PERFORMANCE_OPTIMIZATION.md` §4.2a.
 - **Known limit**: the occlusion corridor follows the GAMEPLAY camera, so prisms between that camera and your
   hull may look dithered from the Third Eye. Lower Resolution if the second render costs too much.
 

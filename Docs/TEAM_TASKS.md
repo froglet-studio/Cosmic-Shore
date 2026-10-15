@@ -252,3 +252,10 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Who can take it:** Garrett (owns the crystals)
 - **Added:** 2026-10-15 by the performance session (perf/performance-optimization) (`perf/performance-optimization`)
 - **See:** Docs/PERFORMANCE_OPTIMIZATION.md 2 (10-15 lava lamp row)
+
+### T-20261015-1551 · open · test · Performance
+- **Task:** Find why Regatta runs at 10 fps in the editor: in MinigameRegatta (Release code optimization, Deep Profile off), press Capture on the Scene view's Bug Hunt & Performance badge once with the Third Eye CLOSED and once with it OPEN (label R_editor_A / R_editor_B), stop Play and Send to Claude each time
+- **Done when:** Both captures are on bugledger/yskha and the report names what the 10 fps is spent on (game vs Third Eye vs editor state)
+- **Who can take it:** Yash (offered), anyone with the Unity Editor
+- **Added:** 2026-10-15 by Claude for Yash (`Ys-bleeding-edge`)
+- **See:** Docs/PERFORMANCE_OPTIMIZATION.md §4.2a
