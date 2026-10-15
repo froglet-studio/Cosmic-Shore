@@ -14,6 +14,14 @@ still carry the old one (the `#prisma` page hash the studio pages read, `Tools/B
 `docs/PRISMA_BOARD_SCHEDULER.md`); renaming those is its own change. The game's `Prism*` names are not
 the engine's and were never renamed.
 
+**Status: UNDER EVALUATION** (2026-10-15, [`Docs/TOOLING_DECISIONS.md`](../Docs/TOOLING_DECISIONS.md) §3). The team
+(Garrett, Caleb, Shombith, Yash) has not decided what Amoebius is for. The options are: keep all of it; keep the
+engine as a headless compile / test / multiplayer harness and freeze the launcher; stop; or commit to it as Froglet's
+own engine. Until §6 there records a decision: build what the person asks for; do not grow the launcher's scope on
+your own initiative; and at the end of a task, if `Docs/TOOLING_FEEDBACK.md` has no Amoebius row from the last three
+days, ask the person whether it helped and log the answer. Who drives which part: Shombith the engine, Yash the
+launcher (`Docs/TEAM.md`).
+
 ## The one rule
 
 **The port never changes the Unity project.** Nothing under `Port/` is read by Unity, and the

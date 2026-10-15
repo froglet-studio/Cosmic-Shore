@@ -13,6 +13,23 @@ settled, how a new one is built, how the one artifact is published and shared, a
 reaches the real game. `/labmaker` holds the general lab craft (any lab, not only vessels): defer to
 it for the `__lab` contract and `verify_lab.cjs`, never copy it here.
 
+## Status: UNDER EVALUATION (2026-10-15)
+
+The team (Garrett, Caleb, Shombith, Yash) has not decided whether the Vessel Studio stays as it is, shrinks to a
+design lab whose pages read Unity's numbers, folds into `/labmaker`, or goes (`Docs/TOOLING_DECISIONS.md` §4). The
+measured state on 2026-10-15:
+- **The pages are used.** Garrett's sessions added the Goby & Pistol and Brittle Star studios on 2026-10-14.
+- **The shared machinery is not.** The artifact holds 1 decision, 0 requests and 0 Sync jobs.
+
+Until §6 there records a decision, the rules below stand, and:
+- **Offer the studio; do not require it.**
+- **Do not grow the Sync / jobs / requests / studio-server machinery unasked.**
+- **Check who else works here first.** Before changing a studio page or its numbers, run
+  `python3 Tools/Build/who_works_where.py query Docs/Studios/VesselStudio <the vessel's Assets paths>`: Unity values
+  someone play-tuned are theirs to change.
+- **Ask for feedback now and then.** At the end of the task, if `Docs/TOOLING_FEEDBACK.md` has no Vessel Studio row
+  from the last three days, ask the person the one feedback question and log the answer.
+
 ## 0. The one artifact (LOCKED, the user's rule 2026-10-09)
 
 **There is exactly one Vessel Studio artifact: https://claude.ai/artifact/3igBJJbNvJjsfJoBJnAMPa.**

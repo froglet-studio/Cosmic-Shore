@@ -936,6 +936,14 @@ scoped, and assigned a doc home — not reasons to sit on finished work.
 
 ## 5. Open the PR (GO only)
 
+- **Who else works here** (`Docs/TEAM.md`): `git fetch origin && python3 Tools/Build/who_works_where.py query
+  $(git diff --name-only origin/bleeding-edge...HEAD | cut -d/ -f1-4 | sort -u)`. For every other collaborator with
+  in-flight or recent work in those paths, the PR body gets an **Affects** line ("Affects: Garrett's
+  `cece/zen-fermat` Stoat modes - builds on them, changes nothing they decided"). A branch that would replace or
+  re-tune another collaborator's work is a NO-GO until the person you work with has confirmed it with them (§4).
+- If the branch used or touched Amoebius or the Vessel Studio (both under evaluation, `Docs/TOOLING_DECISIONS.md`)
+  and `Docs/TOOLING_FEEDBACK.md` has no row for that tool from the last three days, ask the person the one feedback
+  question and commit their answer before opening the PR.
 - Check for a PR template (`.github/pull_request_template.md` and variants); mirror its
   structure if present.
 - PR body: what & why, per-system summary, **verification status** (what a human must
