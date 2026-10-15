@@ -65,6 +65,29 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Style-B menu redesign, item 9a: the Settings window (`claude/new-session-76hnyc`, 2026-10-15) — NOT EDITOR-VERIFIED
+
+`SettingsModal.prefab` rebuilt from the approved Settings boards (`Docs/MENU_REDESIGN_B.md`
+section 18.1) by `Tools/Build/author_menu_settings.py` (`--check`, `--self-test` green). It also
+prunes the overrides orphaned in Menu_Main and GameCanvas.prefab. No editor in the session:
+`/verify-unity` still owed. Offline: player + editor reference compiles clean.
+
+**Verify in editor:**
+1. Open Menu_Main and GameCanvas.prefab: no missing-script / missing-reference warnings on
+   `SettingsModal` or `R_Pause_Menu_Panel`; the console shows no "unresolvable modification" noise.
+2. Open Settings from HOME: the window pops in on the General page, title "General", gear tab
+   selected; the four tabs switch pages and the title (mouse and pad shoulder / d-pad).
+3. Each dropdown opens a themed list and applies; ON / OFF pairs show the active side selected and
+   apply. The FOV, music and SFX sliders move, and their readouts update (degrees, percent).
+4. Performance: pick a preset, then change anti-aliasing. The preset reads "Custom" and the restart
+   notice appears. Picking "Custom" itself snaps back. Auto detect and Run benchmark still work.
+5. General links: Credits opens the credits window; Quit asks or quits as before; the version text shows.
+6. In a match, pause > Settings: the same window, with the menu-only options disabled and their
+   notice showing.
+7. Pad: focus lands inside the page; B closes the window.
+
+---
+
 ### 🔴 Style-B menu redesign, item 8c: Toy configure (`claude/new-session-76hnyc`, 2026-10-15) — NOT EDITOR-VERIFIED
 
 `ModalWindows/ToyboxGameConfigureModal` rebuilt from the approved ToyConfigure boards

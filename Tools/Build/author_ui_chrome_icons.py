@@ -21,7 +21,7 @@ supersampling, margin or PNG encoding. Docs/STYLE_FOUNDATION.md sections 1.2, 5 
   * 256x256 with a 24px margin, matching the vendor sub-sprites they replace so no
     RectTransform moves.
 
-FIFTEEN glyphs. Five arrived with the vendor swap - FOUR of them for six replaced references, and one consolidation is deliberate. `CancelButton`
+NINETEEN glyphs. Five arrived with the vendor swap - FOUR of them for six replaced references, and one consolidation is deliberate. `CancelButton`
 (Menu_Main) and `Close Button` (Arcade Screen) wore two DIFFERENT vendor glyphs while
 meaning the same thing; the style guide's icon list names one "X Button", so they share
 `chrome_close` here. That is the one intentional look change in the swap. `chrome_lock` and
@@ -30,7 +30,8 @@ meaning the same thing; the style guide's icon list names one "X Button", so the
 seat and the game card's favourite star, off and on; `chrome_globe`, `chrome_pin` and
 `chrome_people` for the weekly leaderboard's scope tabs (item 4); `chrome_diamond` for a display-name
 rule not yet met in the profile window (item 5 - a met rule wears `chrome_confirm`); `chrome_shuffle` for the
-Toy Box's shuffle card (item 8).
+Toy Box's shuffle card (item 8); `chrome_gear`, `chrome_display`, `chrome_gauge` and `chrome_sliders` for
+the settings window's four tabs (item 9).
 
 Usage:
     python3 Tools/Build/author_ui_chrome_icons.py            # write the PNGs + .meta files
@@ -115,6 +116,49 @@ def chrome_shuffle():
     m |= stroke([(-0.82, -0.50), (-0.36, -0.50), (0.36, 0.50), (0.78, 0.50)], w=W * 1.05)
     m |= stroke([(0.56, 0.74), (0.80, 0.50), (0.56, 0.26)], w=W * 1.05)
     m |= stroke([(0.56, -0.26), (0.80, -0.50), (0.56, -0.74)], w=W * 1.05)
+    return m
+
+
+def _arc(r, a0, a1, n=12):
+    return [(r * math.cos(math.radians(a0 + (a1 - a0) * i / n)), r * math.sin(math.radians(a0 + (a1 - a0) * i / n)))
+            for i in range(n + 1)]
+
+
+def chrome_gear():
+    """Settings, General - an octagonal gear: a faceted rim with six square teeth and a hub."""
+    m = ring([(0.58 * math.cos(math.radians(22.5 + 45 * i)), 0.58 * math.sin(math.radians(22.5 + 45 * i)))
+              for i in range(8)], w=W * 1.05)
+    for i in range(6):
+        a = math.radians(90 + 60 * i)
+        m |= stroke([(0.58 * math.cos(a), 0.58 * math.sin(a)), (0.84 * math.cos(a), 0.84 * math.sin(a))], w=W * 1.6)
+    m |= ring([(0.22 * math.cos(math.radians(45 * i)), 0.22 * math.sin(math.radians(45 * i))) for i in range(8)], w=W * 0.95)
+    return m
+
+
+def chrome_display():
+    """Settings, Display - a monitor: the screen frame, its neck and its foot."""
+    m = ring([(-0.80, 0.62), (0.80, 0.62), (0.80, -0.30), (-0.80, -0.30)], w=W * 1.05)
+    m |= stroke([(0.00, -0.30), (0.00, -0.62)], w=W * 1.05)
+    m |= stroke([(-0.40, -0.66), (0.40, -0.66)], w=W * 1.05)
+    return m
+
+
+def chrome_gauge():
+    """Settings, Performance - a speed gauge: a faceted half dial and its needle."""
+    # A filled band, not a stroked polyline: the shared stroke squares off its joints, which reads
+    # as knuckles on a curve.
+    half = W * 1.05 / 2
+    m = fill(_arc(0.78 + half, 200, -20, 24) + _arc(0.78 - half, -20, 200, 24))
+    m |= stroke([(0.00, -0.22), (0.44, 0.40)], w=W * 1.15)
+    return m
+
+
+def chrome_sliders():
+    """Settings, Other - two slider rails, each with its square knob at a different point."""
+    m = stroke([(-0.82, 0.36), (0.82, 0.36)], w=W * 0.95)
+    m |= stroke([(-0.82, -0.36), (0.82, -0.36)], w=W * 0.95)
+    m |= fill([(0.12, 0.58), (0.44, 0.58), (0.44, 0.14), (0.12, 0.14)])
+    m |= fill([(-0.46, -0.14), (-0.14, -0.14), (-0.14, -0.58), (-0.46, -0.58)])
     return m
 
 
@@ -233,6 +277,10 @@ GLYPHS = [
     ("chrome_people",     chrome_people),
     ("chrome_diamond",    chrome_diamond),
     ("chrome_shuffle",    chrome_shuffle),
+    ("chrome_gear",       chrome_gear),
+    ("chrome_display",    chrome_display),
+    ("chrome_gauge",      chrome_gauge),
+    ("chrome_sliders",    chrome_sliders),
 ]
 
 

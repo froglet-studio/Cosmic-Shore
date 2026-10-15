@@ -43,7 +43,7 @@ Legend: `Planned` ▸ `Mockup` ▸ `Mockup approved` ▸ `Built` ▸ `Approved i
 | 6 | Home screen: hub row, header, settings and freestyle buttons, invite popup | Mockup approved (2026-10-14) | `Home.dc.html` (interactive), `HomeInvite`, `HomeFocus`, `HomeOffline`, `HomeNotes` | |
 | 7 | Ark screen (Elemental Converter) | Built (2026-10-15, section 16) | `Ark.dc.html` (interactive), `ArkConverting`, `ArkDone`, `ArkNotes` | |
 | 8 | Arena, Toy Box and Mission modals, and Toy configure | Arena window, Toy Box and Toy configure Built (2026-10-15, section 17); Mission window held (section 17.2) | `ToyBox.dc.html` (interactive), `ToyBoxClaimed`, `ArenaWindow`, `MissionWindow`, `ToyConfigure` (interactive), `ToyConfigurePaint`, `ToyConfigureSpawn`, `ToyConfigureDomain`, `ModesNotes` | |
-| 9 | Settings modal and Credits | Mockup approved (2026-10-14) | `Settings.dc.html` (interactive), `SettingsDisplay`, `SettingsPerformance`, `SettingsOther`, `Credits`, `SystemNotes` | |
+| 9 | Settings modal and Credits | Settings window Built (2026-10-15, section 18.1); Credits in progress | `Settings.dc.html` (interactive), `SettingsDisplay`, `SettingsPerformance`, `SettingsOther`, `Credits`, `SystemNotes` | |
 | 10 | Closed surfaces: Port (locked), Store (no slot), Episodes panel, purchase confirmation | Mockup approved (2026-10-14) | `ClosedSurfaces.dc.html`, `PurchaseConfirm` (blind), `SystemNotes` | |
 | 11 | Menu toasts | Mockup approved (2026-10-14) | `Toasts.dc.html` (interactive), `SystemNotes` | |
 | 12 | In-game UI: GameCanvas HUD chrome, scoreboard, ready / countdown / pause, in-match toasts, end-of-game screens, Menu_Main freestyle HUD | Planned (inventory running) | | |
@@ -921,3 +921,45 @@ ToyVariantTemplate are deleted; `ToyConfigureModal` is kept and re-pointed, and 
   views are in the scene.
 
 Departure: the lab card's accent tint, glow and lift are not drawn (theme colours only).
+
+## 18. Item 9: Settings and Credits
+
+### 18.1 The Settings window (built 2026-10-15, awaiting in-editor approval)
+
+`Tools/Build/author_menu_settings.py` authors `SettingsView.prefab`
+(`Assets/_Prefabs/UI Elements/Main Menu Screens/Settings/`) and mounts it under
+`SettingsModal.prefab`'s Content (the window animation scales Content). The prefab's old Border
+subtree and its nested `OptionsMenuContent` instance are deleted. `OptionsMenuContent.prefab`
+itself stays in the tree, and nothing nests it any more.
+
+- **One window:** a dim layer behind a 1600 x 900 panel holding the eyebrow, the title (the active
+  tab's name, written by `SettingsTabBar.titleText`), four hex tabs (gear / display / gauge / sliders,
+  the tile's selected state is the active tab), Close (`ModalWindowCloseButton`) and the build version.
+- **Four pages**, each a CanvasGroup shown through `KitVisibility` (no SetActive). Every row has a label
+  and a one-line description (Q12; the copy still needs review), plus one control: a theme-tinted
+  `TMP_Dropdown`, an ON / OFF pair of `KitTextTab`s, or a hex-handle slider with its value written
+  next to it (`fovValueText` / `musicValueText` / `sfxValueText`: degrees, percent).
+- **General** also carries the link row (bug report, privacy policy, delete my data, credits, quit).
+  **Performance** carries the restart notice and the menu-only notice, plus Auto detect and Run
+  benchmark (`BenchmarkSceneLauncher` on the view root).
+- **Quality preset gains "Custom".** Changing anti-aliasing, texture quality or upscaling by hand
+  now shows Custom instead of a preset that no longer describes the settings. Custom cannot be
+  picked directly, so choosing it snaps back.
+- `GameSettingsPanelController` and `SettingsTabBar` are the same classes as before, extended, so the
+  in-game pause menu (`R_Pause_Menu_Panel` in `GameCanvas.prefab`, which nests `SettingsModal`) gets
+  the same window.
+
+**Override debt (decision D6), settled by deletion.** Every override and stripped stub that
+addressed a retired object is now removed:
+- Menu_Main: 1,636 overrides and 1 stub.
+- GameCanvas.prefab: 272 overrides and 237 stubs, through `R_Pause`.
+
+A scan of every prefab and scene in the repo finds nothing else that addresses the removed objects.
+The few overrides that still have a target are kept: Menu_Main's root rect, `screenSwitcher` and the
+hidden alpha, and GameCanvas's root offset and `windowAnimator`. The old Content size overrides are
+dropped, because Content now stretches.
+
+The generator keeps the retired object ids as a fixed list, so `--check` still guards against an
+orphaned override after the rewrite is on disk. A target that was already stale before this change
+(EndGameStatsPanel carries one) is left alone.
+
