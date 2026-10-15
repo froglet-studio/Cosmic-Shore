@@ -36,13 +36,16 @@ namespace CosmicShore.Editor
         public sealed class Operation
         {
             public readonly string Title;
+            /// <summary>Started by the after-play auto-publish rather than a click: nobody is
+            /// watching the tab, so a failure must reach the console instead.</summary>
+            public readonly bool Auto;
             public volatile bool Running = true;
             public volatile bool Failed;
             public volatile float Progress;
             public volatile string Step = "starting…";
             public volatile string Result = "";
 
-            public Operation(string title) { Title = title; }
+            public Operation(string title, bool auto = false) { Title = title; Auto = auto; }
         }
 
         public static Operation Current { get; private set; }
@@ -91,14 +94,15 @@ namespace CosmicShore.Editor
         }
 
         /// <summary>Applies the staged ids into shared/, then add → commit → push, all scoped to
-        /// the ledger's paths. The view confirms (naming the branch) before calling this.</summary>
-        public static void StartPublish(List<string> stagedIds, string message)
+        /// the ledger's paths. The view confirms (naming the branch) before calling this; the
+        /// after-play auto-publish (<paramref name="auto"/>) is pre-authorised by its setting.</summary>
+        public static void StartPublish(List<string> stagedIds, string message, bool auto = false)
         {
             if (IsBusy || stagedIds == null || stagedIds.Count == 0) return;
             Warm();
             if (!CanPush) return;
             if (string.IsNullOrWhiteSpace(message)) message = "bugledger: update";
-            var op = new Operation("Commit & Push");
+            var op = new Operation(auto ? "Auto-publish" : "Commit & Push", auto);
             Current = op;
             var branch = Branch;
             StartThread("BugLedger.Publish", () => PublishOp(op, branch, stagedIds, message.Trim()));
@@ -117,6 +121,8 @@ namespace CosmicShore.Editor
                         op.Failed = true;
                         op.Result = $"{op.Step} — {e.GetType().Name}: {e.Message}";
                         op.Running = false;
+                        if (op.Auto)
+                            Debug.LogWarning($"[BugLedger] Auto-publish after play failed — {op.Result}");
                     }
                 }
                 finally { BugLedger.NotifyExternalChange(); }
@@ -238,6 +244,8 @@ namespace CosmicShore.Editor
             op.Result = detail.Length > 0 ? $"{headline}: {detail}" : headline;
             op.Progress = 1f;
             op.Running = false;
+            if (op.Auto)
+                Debug.LogWarning($"[BugLedger] Auto-publish after play failed — {op.Result}");
         }
 
         static void ReadAheadBehind(string branch)

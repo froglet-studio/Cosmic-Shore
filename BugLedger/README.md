@@ -39,12 +39,21 @@ still-shared copy — and its shared file shows up as a pending **DEL** to stage
   File Bug). Deduped by (tool, title), and validated by the tool itself — a full clean re-run of
   the tool that filed a finding closes it.
 - Every issue carries a **severity** (`blocker` / `major` / `minor`) — click the pill to cycle it.
-- **The lifecycle**: `open` → *Mark Fixed* → `validating` → auto-closed. A fix is only believed
+- **The lifecycle**: `open` → *Mark Fixed* (or a fix published from `shared/`) → `validating` → auto-closed. A fix is only believed
   once the game proves it: the error must stay silent across the issue's `cleanSessionsRequired`
   qualifying sessions (play runs for play-mode bugs, full editor sessions for edit-mode ones).
   Then the issue is resolved into `local/resolved/`. If the error recurs while validating, the
   issue reopens with a regression count. Issues can also be `ignored` (parked — matching errors
   never reopen it and the signature is never re-filed), paused, or deleted.
+
+## Claude fixes what you publish
+
+Turn on **Auto-publish after each play test** (Bug Ledger ▸ Settings) and every play run that
+files a new error, reopens one or closes one pushes the change here. A Claude session running
+**`/bug-ledger`** reads it with `python3 Tools/Build/bug_ledger.py list`, fixes the cause, and
+marks the shared copy `validating` (`bug_ledger.py mark-fixed`). When you pull, the editor adopts
+that fix and your next play runs validate it — closed if the error stays silent, reopened (and
+sent back) if it fires again. Full loop: `Docs/DIAGNOSTICS.md` § "The agent loop".
 
 ## Merging
 
