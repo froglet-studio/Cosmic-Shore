@@ -89,6 +89,8 @@ namespace CosmicShore.Editor.AI
         public bool HasTarget;
         public Vector3 Target;
         public string Detail;
+        /// <summary>The skim readout (Skim Race pilot only): shell gap, line offset, boost, mass in view.</summary>
+        public string Skim;
     }
 
     /// <summary>
@@ -172,6 +174,27 @@ namespace CosmicShore.Editor.AI
         /// and - where the mode says (<see cref="AIPilot.Objective"/>, every gate race) - the ring it is after, the lap,
         /// the phase ("Approach ring 3", "Riding the rail", a difficulty mistake) and its boost policy's decision.
         /// </summary>
+        /// <summary>
+        /// The skim readout: how far the hull is from its own course's contact shell (what a skim
+        /// touches and a strike hits), how far off its skim line, its boost, the non-course mass the
+        /// mass guard is steering round, and the course's skim lift. A reader: one projection per
+        /// repaint, nothing written.
+        /// </summary>
+        static string SkimDetail(SkimRacePilot skim, in SkimRaceObservation o)
+        {
+            var course = skim.Course;
+            var driver = skim.Driver;
+            if (course == null || driver == null) return "";
+            int hint = -1;
+            course.Project(o.Position, ref hint, out _, out _);
+            float shell = course.ShellClearance(o.Position, hint, 6, out _);
+            string gap = float.IsInfinity(shell) ? "n/a" : $"{shell:F1} u";
+            string off = driver.LastTrackError >= 0f ? $"{driver.LastTrackError:F1} u" : "n/a";
+            return $"skim: shell gap {gap} (skims under {skim.Config.PlannerSkimReach:F1}, strikes at 0), " +
+                   $"off line {off}, boost x{o.BoostMultiplier:F2}, mass in view {driver.Obstacles.Count}, " +
+                   $"lift {course.SkimLift:F1} u, direct {(driver.AllowDirectFlight ? (driver.DirectFlight ? "ON" : "armed") : "off")}";
+        }
+
         public static ThirdEyeThinking Read(ThirdEyePilot pilot)
         {
             var t = new ThirdEyeThinking();
@@ -219,6 +242,7 @@ namespace CosmicShore.Editor.AI
                            $"recoveries {d.Recoveries}{recovery}" +
                            (d.CrystalPull ? ", crystal pull" : "") + (d.Unreachable ? ", UNREACHABLE" : "") +
                            $" | {level}";
+                t.Skim = SkimDetail(skim, o);
                 return t;
             }
 

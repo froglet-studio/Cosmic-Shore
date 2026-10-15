@@ -1759,3 +1759,50 @@ nobody reads for them. Harmless today (a plan rebuilds only when `TargetFor` is 
 match never calls it), but it is the shape that bites when a second team-aware objective lands.
 Measure with `grep -n 'SkimRaceTeamPlan\.' Assets/_Scripts/Controller/AI/SkimRace/*.cs`. The likely fix is
 an objective hook (`OnRaceStart` / `OnRaceEnd`) that only the crystal objective implements.
+
+## 15. Regatta: skimming the braided rails (2026-10-15)
+
+**What Yash saw in Regatta:** the Squirrel AI flew through the track and hit super-shielded prisms all race,
+instead of gliding along a rail the way it skims in Skim Race. Three causes, all in the pilot's model of
+the course. Skim Race never exposed them because it lays one thin track.
+
+| Cause | Why it hit | Fix |
+|---|---|---|
+| **The skim line ran inside the rail's contact shell.** `SkimHeight` (4.35 u off the prism centre) was tuned on Skim Race's 10 x 1 x 3 plates, whose super-shield shell reaches 1.5 u along up. Regatta's rails are 6 x 6 x 8, with a shell reaching 9 u. | Every frame on the line was a strike (clearance 0, measured). | `SkimRaceCourse.SkimLift`: how much taller the course's shell is than the plate's (median, 0 within a quarter unit). The driver adds it to the skim height, so the line keeps the tuned 2.85 u gap above the shell on any course: 0 on Skim Race, 7.5 on Regatta. Still inside the 7.5 u skimmer reach, so it skims. |
+| **Rival rails were invisible.** `FillObstacles` skipped every super-shielded prism as "the track". In Regatta two of the three rails are not this pilot's course. | The mass guard never steered round them. | `SkimRaceObjective.IsCourseMass`: Regatta counts only its own lane (by domain) as course. Other super-shielded prisms reach the mass guard as boxes the size of their shell (`SkimRaceShell.SuperShieldHalfScale`). |
+| **It aimed at the ring's centre**, which sits on the braid's spine. Direct flight (boost >= 3.14) went straight there. | Both the aim and the chord cut across the rival rails. | `RegattaRingObjective.TryLaneCrossing`: aim where the pilot's OWN rail crosses the ring plane, 3 u outside its shell on the outer face. The rail runs 22 u from the centre, inside every mouth (54-110 u). `AllowsDirectFlight` is false in Regatta. |
+
+**Skim Race is unchanged.** Its course has zero lift, every super-shielded prism is still its track, and direct
+flight stays on. The simulator gives bit-identical races before and after (I2, 2 seats, 12 races). Tests:
+`RegattaSkimTests`.
+
+**Regatta has its own policy now.** `SkimRaceAIConfig_Regatta` (`SkimRaceAIConfigSO.LoadForRegatta`) starts as a
+copy of the general policy, authored by `author_skimrace_ai_config.py`. Tuning it never moves a number Skim
+Race was calibrated on.
+
+### 15.1 Tuning the skim in Unity, watched in the Third Eye
+
+1. Open `MinigameRegatta`, put Squirrels on AI seats, and open **FrogletTools > AI > Third Eye** docked beside
+   the Game view. Press Play.
+2. Pick an AI Squirrel in the Third Eye (`[` `]` or Tab), camera **Chase** or **Follow**, Trails on.
+3. Read the third line of the info strip (the skim readout):
+   `shell gap` (distance to its own rail's contact shell: it skims below 7.5, strikes at 0),
+   `off line` (distance from its skim line), `boost`, `mass in view` (rival-rail prisms the guard is
+   steering round), `lift` (should read 7.5 on Regatta) and `direct` (should read off).
+4. Select **`Assets/Resources/SkimRaceAIConfig_Regatta.asset`** in the Project window. Its Inspector edits apply
+   **live** (the driver reads the asset every decision), so change a number and watch the next second of flight:
+
+| Knob | What it does on the rails | Watch |
+|---|---|---|
+| `SkimHeight` | Gap above the shell (minus 1.5): 4.35 means 2.85 u above it | `shell gap`: keep it between about 1.5 and 6 |
+| `HullMargin`, `TrackGuardMargin` | How close to the shell the guards let the hull get before pulling away | strikes vs skims |
+| `MassGuardSeconds`, `MassGuardMargin` | How far ahead, and how wide, it looks for rival-rail mass | `mass in view`, swerves near crossings |
+| `LookaheadSeconds` / `Min` / `Max` | How far down the rail it aims | the aim line in the view: too long cuts corners off the rail |
+| `StickGainPerDegree`, `LevelingRoll` | How hard it steers, and how much it rolls back level | wobble round the rail |
+
+5. **The Inspector edits are a change to the asset**, and they stay after Play stops. When a number is right,
+   copy it into `POLICIES["SkimRaceAIConfig_Regatta"]` in `Tools/Build/author_skimrace_ai_config.py`, bump its
+   `PolicyVersion`, and run the script. `--check` names the asset whenever an Inspector edit was not
+   recorded there. Never tune `SkimRaceAIConfig.asset` for Regatta: Skim Race I3 flies it.
+
+**Not verified in Unity yet** (no editor in the session that wrote it): `Docs/UNITY_VERIFICATION_CHECKLIST.md`.

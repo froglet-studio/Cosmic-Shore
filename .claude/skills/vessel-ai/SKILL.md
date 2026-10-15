@@ -140,6 +140,10 @@ Game view, enter Play mode and play normally: the window shows the same match fr
 - **AI thinking**: a line from each AI hull to the point it is steering for, and a cyan ring on the
   crystal it is really after. The bottom strip reads the watched AI's state, heading error, recoveries
   and its difficulty's mistakes.
+- **Skim readout** (the Skim Race pilot, third line): gap to its own course's contact shell (skims under 7.5, strikes
+  at 0), distance off its skim line, boost, the rival mass the guard is steering round, the course's skim lift and
+  whether direct flight is on. Tune Regatta's Squirrel live in `Resources/SkimRaceAIConfig_Regatta.asset`, then
+  record the numbers in `author_skimrace_ai_config.py` (`SKIM_RACE_AI.md` §15.1).
 - **Labels**: each pilot's name, hull and speed; off-screen pilots pinned to the edge you would turn to.
 - **Paused** (the editor's pause button), it keeps rendering on demand: fly round a frozen frame.
 - **Pilots** (toolbar, on by default): every pilot with a **You / AI** toggle. On your own hull, **AI** hands it to the

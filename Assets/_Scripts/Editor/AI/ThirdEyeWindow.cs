@@ -39,7 +39,7 @@ namespace CosmicShore.Editor.AI
     public sealed class ThirdEyeWindow : EditorWindow
     {
         const string Title = "Third Eye";
-        const float InfoHeight = 44f;
+        const float InfoHeight = 64f;
         const double ScanInterval = 0.5;
         const double RepaintInterval = 1.0 / 60.0;
         const double PausedRenderInterval = 1.0 / 30.0;
@@ -784,6 +784,8 @@ namespace CosmicShore.Editor.AI
             string speed = watched.Status ? $"{watched.Status.Speed:F0} u/s" : "";
             GUI.Label(text, $"{watched.Label}   {speed}   {(t.Has ? t.Pilot : "")}", FrogletEditorPalette.CardTitle);
             GUI.Label(line2, t.Has ? t.Detail : "Pick an AI pilot to see what it is aiming for.", FrogletEditorPalette.CardBody);
+            if (t.Has && !string.IsNullOrEmpty(t.Skim))
+                GUI.Label(new Rect(line2.x, line2.yMax + 2f, line2.width, 18f), t.Skim, FrogletEditorPalette.CardBody);
         }
 
         static GUIStyle s_centered;
