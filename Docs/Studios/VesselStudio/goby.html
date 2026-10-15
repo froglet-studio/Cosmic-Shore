@@ -307,8 +307,8 @@
             <li>AI levels: Hard is the skilled pilot; Medium and Easy notice each new target late (0.25 / 0.5 s mean) and misjudge 4.5% / 9.9% of them (<code>SkimRaceDifficulty.asset</code>, the Vessel Studio's universal levels).</li>
             <li>Everything else is lab-only: the closeness boost, the primer, heat and flares, the Pistol's gravity, dive, launch, Snap (the vortex ring) and ghost, its vision band and body, the hills, and the world (clusters of flora, fauna, enemy walls and friendly blocks, seeded per intensity).</li>
             <li>Not modelled: rival ships (the brief says ships are hot by default), the element meter and its mappings, network ownership of the two halves, co-op (two humans: the offer / accept swap), death and respawn, sound, the real game's prisms and their shields, the phone flip (a Swap button stands in).</li>
-            <li>The Pistol's world is drawn by three.js with the same prism mesh, materials, lights, sky and stars as the Goby's view (rendering parity); only position and orientation are warped: each prism sits at its unrolled place, turned by the ribbon's frame there, and the sky is turned by the frame at the Pistol. A side camera gives the depth its parallax. Not mapped: the drifting background field. The Snap is a vortex ring (the self-explosion was dropped, Garrett 2026-10-15): prisms near its core are pulled into a toroidal flow and carried, then broken when it collapses (lab-only, a setting). The world keeps seeding clusters just ahead of the Goby (lab-only, Trail and hills).</li>
-            <li>The 2D world's prisms are drawn where the unroll puts them, at a parallax by depth; prisms off the band are hidden unless primed. Near tight turns two passes of the path compete for a point: the Unroll test counts how often.</li>
+            <li>The Pistol's world is drawn by the same rules as the game's side view (<code>GobyPistolDuo</code>, <code>PistolWarp</code>, <code>PistolWorldMesh</code>, <code>PistolWorld.shader</code>; the artifact is the source of truth, Unity its clone): every prism in a depth window of &minus;0.5 to 3 &times; the parallax depth is drawn, each <b>warped</b> through the unroll (its eight corners mapped through the ribbon round its own segment, as far along the path as the bend there stretches it, so a prism the Goby circles draws as a bar), laid on an orthographic screen with 2.5D parallax, sunk into fog beyond the vision band and rimmed inside it, and forecast past the Goby by extrapolating the ribbon's last segment. The Goby's trail is the ground (no floor, no curtain); the sky and stars are turned by the frame at the Pistol. Not mapped: the drifting background field. The Snap is a vortex ring (the self-explosion was dropped, Garrett 2026-10-15): prisms near its core are pulled into a toroidal flow and carried, then broken when it collapses (lab-only, a setting). The world keeps seeding clusters just ahead of the Goby (lab-only, Trail and hills).</li>
+            <li>The lab's prisms are plain boxes, so the warped box is the warped prism; the game deforms each prism's own mesh inside the same box. Near tight turns two passes of the path compete for a point: the Unroll test counts how often (the view's fast map may pick the other pass at such a fold; the sim's map never does).</li>
           </ul>
         </details>
         <p class="note">Want a change in this studio or a design tried? <a href="index.html#agent">Ask the studio agent</a>.</p>
@@ -554,6 +554,82 @@
     }
     out.amb = sk >= 0 && Math.sqrt(sd) < Math.sqrt(bd) * 1.25 + 4 && Math.abs(RX(rb, sk) - out.x) > 60;
     out.ok = true; return out;
+  }
+  // ---- DRAWING-ONLY maps, beside ribMap and mirroring the Unity clone exactly (PistolRibbon.MapFast / MapNear /
+  //      Curvature / BeyondEnd, Assets/_Scripts/Controller/Vessel/Duo/GobyPistol/PistolRibbon.cs). The SIM asks only
+  //      ribMap; these are what the side view asks, hundreds of times a frame. ----
+  function ribResolve(rb, q, bk, bt, goby, out) {   // (x, h, d) of q against segment bk at fraction bt: the tail of ribMap
+    const k = bk, t = bt, X0 = RX(rb, k), X1 = RX(rb, k + 1);
+    out.x = X0 + (X1 - X0) * t; out.k = k; out.t = t;
+    if (goby) {
+      const cx = lerp(rb.px[k], rb.px[k + 1], t), cy = lerp(rb.py[k], rb.py[k + 1], t), cz = lerp(rb.pz[k], rb.pz[k + 1], t), rx = q.x - cx, ry = q.y - cy, rz = q.z - cz;
+      const up = vnorm(V(lerp(rb.ux[k], rb.ux[k + 1], t), lerp(rb.uy[k], rb.uy[k + 1], t), lerp(rb.uz[k], rb.uz[k + 1], t)));
+      const rt = vnorm(V(lerp(rb.rx[k], rb.rx[k + 1], t), lerp(rb.ry[k], rb.ry[k + 1], t), lerp(rb.rz[k], rb.rz[k + 1], t)));
+      out.h = rx * up.x + ry * up.y + rz * up.z; out.d = rx * rt.x + ry * rt.y + rz * rt.z;
+    } else {
+      const cx = lerp(rb.px[k], rb.px[k + 1], t), cz = lerp(rb.pz[k], rb.pz[k + 1], t), hx = rb.hx[k + 1], hz = rb.hz[k + 1];
+      out.h = q.y; out.d = (q.x - cx) * -hz + (q.z - cz) * hx;
+    }
+    out.ok = true; return out;
+  }
+  // For DRAWING what lies ahead of the Goby: on the ribbon's last segment the projection is not clamped, so a point past
+  // the end maps to x = the end plus its distance along the Goby's heading (a straight forecast of the world to come),
+  // instead of piling up at the Goby's x as ribMap (rightly) has it.
+  function ribBeyondEnd(rb, bk, q, goby, bt) {
+    if (bk !== rb.n - 2 || bt < 1 - 1e-6) return bt;
+    const ax = rb.px[bk], ay = rb.py[bk], az = rb.pz[bk], abx = rb.px[bk + 1] - ax, aby = rb.py[bk + 1] - ay, abz = rb.pz[bk + 1] - az;
+    if (goby) { const L2 = abx * abx + aby * aby + abz * abz; return L2 > 1e-9 ? Math.max(1, ((q.x - ax) * abx + (q.y - ay) * aby + (q.z - az) * abz) / L2) : bt; }
+    const L2h = abx * abx + abz * abz; return L2h > 1e-9 ? Math.max(1, ((q.x - ax) * abx + (q.z - az) * abz) / L2h) : bt;
+  }
+  const COARSE_STEP = 3;   // PistolRibbon.CoarseStep
+  // The map for DRAWING: the same nearest segment as ribMap away from a fold, found coarse-to-fine (every COARSE_STEPth
+  // segment, then the segments round the best) and without the ambiguity pass, a third of the cost. At a fold (two passes
+  // of the path within ~12 u of each other from q) it may pick the other pass; the gameplay asks ribMap, which never does.
+  function ribMapFast(rb, q, xLo, xHi, beyondEnd, out) {
+    out = out || {}; out.ok = false;
+    if (rb.n < 2) return out;
+    const goby = rb.mode === 'goby', k0 = ribIdx(rb, xLo), k1 = Math.min(rb.n - 2, ribIdx(rb, xHi));
+    if (k1 < k0) return out;
+    let ck = -1, cd = Infinity;
+    for (let k = k0; k <= k1; k += COARSE_STEP) { const d2 = segD2(rb, k, q, goby); if (d2 < cd) { cd = d2; ck = k; } }
+    if (ck < 0) return out;
+    { const d2 = segD2(rb, k1, q, goby); if (d2 < cd) { cd = d2; ck = k1; } }
+    let bk = -1, bt = 0, bd = Infinity;
+    for (let k = Math.max(k0, ck - COARSE_STEP), ke = Math.min(k1, ck + COARSE_STEP); k <= ke; k++) { const d2 = segD2(rb, k, q, goby); if (d2 < bd) { bd = d2; bk = k; bt = SD_T; } }
+    if (beyondEnd) bt = ribBeyondEnd(rb, bk, q, goby, bt);
+    return ribResolve(rb, q, bk, bt, goby, out);
+  }
+  // The nearest segment to q among the halfWindow segments either side of kCentre, inside [xLo, xHi]: how a prism's
+  // CORNERS are mapped once its centre is, so the corners stretch along the path exactly as far as the unroll says and
+  // never jump to another pass of it.
+  function ribMapNear(rb, q, kCentre, halfWindow, xLo, xHi, beyondEnd, out) {
+    out = out || {}; out.ok = false;
+    if (rb.n < 2) return out;
+    const goby = rb.mode === 'goby';
+    const k0 = Math.max(ribIdx(rb, xLo), kCentre - halfWindow), k1 = Math.min(Math.min(rb.n - 2, ribIdx(rb, xHi)), kCentre + halfWindow);
+    if (k1 < k0) return out;
+    let bk = -1, bt = 0, bd = Infinity;
+    for (let k = k0; k <= k1; k++) { const d2 = segD2(rb, k, q, goby); if (d2 < bd) { bd = d2; bk = k; bt = SD_T; } }
+    if (beyondEnd) bt = ribBeyondEnd(rb, bk, q, goby, bt);
+    return ribResolve(rb, q, bk, bt, goby, out);
+  }
+  // The path's signed curvature at segment k (1/radius; 0 on a straight), positive when the path bends toward +R (the
+  // centre of curvature at d = +1/kappa), negative toward -R. Measured over the headings of the segments either side of
+  // k, so one noisy sample does not read as a hairpin.
+  function ribCurvature(rb, k) {
+    const n = rb.n; if (n < 3) return 0;
+    const ka = clamp(k - 1, 0, n - 2), kb = clamp(k + 1, 0, n - 2); if (kb <= ka) return 0;
+    const arc = RX(rb, kb) - RX(rb, ka); if (arc <= 1e-4) return 0;   // segment ka's heading to segment kb's: their midpoints are X(kb) - X(ka) apart
+    if (rb.mode === 'goby') {
+      const ta = vnorm(V(rb.px[ka + 1] - rb.px[ka], rb.py[ka + 1] - rb.py[ka], rb.pz[ka + 1] - rb.pz[ka])), tb = vnorm(V(rb.px[kb + 1] - rb.px[kb], rb.py[kb + 1] - rb.py[kb], rb.pz[kb + 1] - rb.pz[kb]));
+      const ang = Math.atan2(vlen(vcross(ta, tb)), vdot(ta, tb)), kr = k + 1 < n ? k + 1 : k;
+      return (vdot(vsub(tb, ta), V(rb.rx[kr], rb.ry[kr], rb.rz[kr])) >= 0 ? 1 : -1) * ang / arc;   // Mathf.Sign: 1 at 0
+    }
+    const hxa = rb.hx[ka + 1], hza = rb.hz[ka + 1], hxb = rb.hx[kb + 1], hzb = rb.hz[kb + 1];
+    // R = (-hz, 0, hx): the bend is toward +R when the heading turns that way
+    const cross = hxa * hzb - hza * hxb, dot = hxa * hxb + hza * hzb, a2 = Math.atan2(Math.abs(cross), dot);
+    const toR = (hxb - hxa) * -hza + (hzb - hza) * hxa;
+    return (toR >= 0 ? 1 : -1) * a2 / arc;
   }
 
   // ---- the ground: a Catmull-Rom curve through the hinge blocks, ending at the Goby (it is still being laid) ----
@@ -1126,34 +1202,40 @@
   }
 
   // ================= rendering: the Pistol's sidescroller (brief 4) =================
-  // RENDERING PARITY: the Pistol's world is drawn by three.js with the SAME meshes, materials, lights, sky and stars as the
-  // Goby's view. Only positions and orientations are warped: every prism, block, crystal, flare and ring is placed at its
-  // unrolled (x, h, d) and turned by the ribbon's frame there (flat = M^T world, M = [T U R]). The sky and stars, being
-  // infinitely far, are turned by the frame at the Pistol, so it sees the real sky across its ribbon. A perspective side
-  // camera gives the depth layers their parallax for free. The 2D canvas on top (#side) carries only the HUD and the aim.
+  // THE SAME RULES AS THE GAME. The artifact is the source of truth and Unity its clone (/artifact-to-unity), so this
+  // view and the game's side view (GobyPistolDuo.cs "the side view", PistolWarp.cs, PistolWorldMesh.cs,
+  // PistolWorld.shader) draw by ONE set of rules, mirrored here line for line. What the Pistol SEES: every prism in a
+  // depth window of [-0.5, 3] x pParallax, WARPED through the unroll (brief 4.3: a prism's eight box corners are each
+  // mapped through the ribbon in a window of segments round its centre's segment, sized by the path's curvature there,
+  // so a prism the Goby circles stretches out along x as the unroll says it must), laid on the screen plane with 2.5D
+  // parallax under an ORTHOGRAPHIC camera (a layer d deep draws at pParallax / (pParallax + d) of its size about the
+  // camera's centre; pViewWidth across at d = 0), sunk into fog with depth beyond the band its body spans and rimmed
+  // while inside it; past the Goby, a straight forecast of what is coming (ribBeyondEnd). The Goby's own trail is the
+  // GROUND it rides, block by block on the hinge hills (pBlock: no floor, no curtain). ONE BufferGeometry a frame (PW,
+  // the lab's PistolWorldMesh) carries the prisms, the Pistol end on, its tiny trail, the rings, the flares and the
+  // aim; the sky, stars and lights are turned by the frame at the Pistol. The 2D canvas on top (#side) is only the HUD.
+  // DEPTH SIGN: the ribbon's R = T x U is the path's RIGHT here (three.js is right-handed) and its LEFT in Unity (the
+  // same arithmetic, left-handed); both views stand on the Pistol's right, so Unity's d, positive INTO the screen, is
+  // -m.d here (dU below), and three.js's -z is into the screen (PW.push). The warp itself (ribCurvature, cornerWindow)
+  // takes the lab's own m.d: it is the ribbon's number, the same in both.
   const SC = { x: 0, y: 0, k: 1, w: 1, h: 1 };
-  const pTrail = []; const vis2d = []; const MPR = {};
+  const pTrail = []; const vis2d = []; const MPR = {}, MPB = {}, MPW = {};
   const sxo = (x, f) => SC.w / 2 + (x - SC.x) * SC.k * f, syo = (h, f) => SC.h / 2 - (h - SC.y) * SC.k * f;
   const side3d = $('side3d');
   const r2 = VesselStudioTheme.renderer(THREE, { canvas: side3d, antialias: true });
   r2.setPixelRatio(Math.min(2, window.devicePixelRatio || 1));
-  const pscene = new THREE.Scene(), PFOV = 32, pcam = new THREE.PerspectiveCamera(PFOV, 16 / 10, 1, 20000);
+  const pscene = new THREE.Scene(), pcam = new THREE.OrthographicCamera(-1, 1, 1, -1, 1, 20000);
   const PENV = VesselStudioLook.install(pscene, { field: 0 });
   const pHemi = pscene.children.find((o) => o.isHemisphereLight), pSun = pscene.children.find((o) => o.isDirectionalLight);
-  const pPrism = new THREE.InstancedMesh(prismMesh.geometry, prismMesh.material, MAXP); pPrism.instanceMatrix.setUsage(THREE.DynamicDrawUsage); pPrism.frustumCulled = false; pscene.add(pPrism);
-  const pFaint = new THREE.InstancedMesh(prismMesh.geometry, new THREE.MeshStandardMaterial({ roughness: 0.5, metalness: 0.05, flatShading: true, transparent: true, opacity: 0.35, depthWrite: false }), 400); pFaint.instanceMatrix.setUsage(THREE.DynamicDrawUsage); pFaint.frustumCulled = false; pscene.add(pFaint);
-  const pBlock = new THREE.InstancedMesh(blockMesh.geometry, blockMesh.material, 600); pBlock.instanceMatrix.setUsage(THREE.DynamicDrawUsage); pBlock.frustumCulled = false; pscene.add(pBlock);
-  const GN = 220;   // the ground: a line at the band's centre, a faint floor across the band, a faint curtain below it
-  const mkStrip = (mat) => { const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.BufferAttribute(new Float32Array(GN * 2 * 3), 3)); const idx = []; for (let k = 0; k < GN - 1; k++) { const a = k * 2; idx.push(a, a + 1, a + 2, a + 1, a + 3, a + 2); } g.setIndex(idx); const m = new THREE.Mesh(g, mat); m.frustumCulled = false; pscene.add(m); return m; };
-  const gFloor = mkStrip(new THREE.MeshBasicMaterial({ color: 0x13fff2, transparent: true, opacity: 0.1, side: THREE.DoubleSide, depthWrite: false }));
-  const gCurtain = mkStrip(new THREE.MeshBasicMaterial({ color: 0x13fff2, transparent: true, opacity: 0.07, side: THREE.DoubleSide, depthWrite: false }));
-  const gLineGeo = new THREE.BufferGeometry(); gLineGeo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(GN * 3), 3));
-  const gLine = new THREE.Line(gLineGeo, new THREE.LineBasicMaterial({ color: 0x13fff2 })); gLine.frustumCulled = false; pscene.add(gLine);
-  const pPistolMat = new THREE.MeshStandardMaterial({ color: 0xff8a3d, emissive: 0x5a2205, roughness: 0.4, transparent: true, opacity: 0.9 });
-  const pPistol = new THREE.Mesh(new THREE.CylinderGeometry(1, 1, 1, 24), pPistolMat); pscene.add(pPistol);
+  // the sky and stars are infinitely far, so they keep a perspective camera of their own (an orthographic one shows a single
+  // patch of the sphere): drawn first, then the world over them
+  const pSkyScene = new THREE.Scene(), pSkyCam = new THREE.PerspectiveCamera(32, 16 / 10, 1, 20000);
+  pscene.remove(PENV.sky); pscene.remove(PENV.stars); pSkyScene.add(PENV.sky); pSkyScene.add(PENV.stars);
+  const VIEW_SIDES = 18, MAX_VIEW = 1200, FG_DEPTH = 0.5, BG_DEPTH = 3;   // GobyPistolDuo: the tube's and the rings' sides; prisms drawn a frame; the depth window, x pParallax
+  // the ground: the trail's blocks (the same geometry as the 3D view) in the domain colour, slightly darkened (GobyPistolDuo: Tint(colour, black, 0.18))
+  const pBlockMat = new THREE.MeshStandardMaterial({ roughness: 0.4, metalness: 0.1, flatShading: true });
+  const pBlock = new THREE.InstancedMesh(blockMesh.geometry, pBlockMat, 600); pBlock.instanceMatrix.setUsage(THREE.DynamicDrawUsage); pBlock.frustumCulled = false; pscene.add(pBlock);
   const pGoby = gobyG.clone(); pscene.add(pGoby);
-  const pFlare = new THREE.Points(new THREE.BufferGeometry(), flarePts.material); pFlare.geometry.setAttribute('position', new THREE.BufferAttribute(new Float32Array(64 * 3), 3)); pFlare.frustumCulled = false; pscene.add(pFlare);
-  const pTori = []; for (let i = 0; i < VORT_N; i++) { const m = new THREE.Mesh(torusGeo, torusMat); m.visible = false; pscene.add(m); pTori.push(m); }
   const pBooms = []; for (let i = 0; i < 6; i++) { const m = new THREE.Mesh(booms[0].geometry, booms[0].material.clone()); m.visible = false; pscene.add(m); pBooms.push(m); }
   let pCrystals = [];
   const FM = new THREE.Matrix4(), FMT = new THREE.Matrix4(), FQ = new THREE.Quaternion(), fT = new THREE.Vector3(), fU = new THREE.Vector3(), fR = new THREE.Vector3(), FR = {};
@@ -1161,56 +1243,293 @@
   function mountSide(W) {
     for (const c of pCrystals) pscene.remove(c);
     pCrystals = W.crystals.map(() => { const c = VesselStudioLook.crystal(0x7fffd4, 7); pscene.add(c); return c; });
-    const dc = new THREE.Color(DOM().hex); gFloor.material.color.copy(dc); gCurtain.material.color.copy(dc); gLine.material.color.copy(dc);
+    pBlockMat.color.set(DOM().hex).multiplyScalar(0.82);
   }
+
+  // ---- the warp (PistolWarp.cs, mirrored exactly): how a prism is DRAWN. The unroll is a map projection with a cut: a
+  //      point the Goby's path circles is beside the path at EVERY arc length of the lap, so its honest image is stretched
+  //      along x by R / r, and a prism the Goby spins round stretches out into a bar. We take that image from the unroll
+  //      itself: a prism's eight box corners are each mapped through the ribbon (ribMapNear, a window round its centre's
+  //      segment wide enough for that stretch) and its box is drawn through the warped corners (trilinear). ----
+  function boxCorners(c, ax, ay, az, into8) {   // corner i: bit 0 = +ax, bit 1 = +ay, bit 2 = +az (else the minus side)
+    for (let i = 0; i < 8; i++) {
+      const sx = i & 1 ? 1 : -1, sy = i & 2 ? 1 : -1, sz = i & 4 ? 1 : -1, o = into8[i];
+      o.x = c.x + sx * ax.x + sy * ay.x + sz * az.x; o.y = c.y + sx * ax.y + sy * ay.y + sz * az.y; o.z = c.z + sx * ax.z + sy * ay.z + sz * az.z;
+    }
+  }
+  // How many segments either side of the centre's segment the corners may map to. On a straight path a corner is within
+  // a segment or two of the centre; inside a bend the corners spread by R / r, and when the prism holds the bend's centre
+  // (r <= its half-diagonal) its image is the whole lap, so the window is everything.
+  function cornerWindow(halfDiagonal, curvature, d, sampleGap, max) {
+    const Slack = 2;
+    if (max < Slack) return max;
+    const k = Math.abs(curvature);
+    if (k < 1e-6 || sampleGap <= 0) return Slack;
+    const rho = 1 / k, centre = curvature > 0 ? rho : -rho;   // the centre of curvature's d
+    const r = Math.abs(centre - d);
+    if (r <= halfDiagonal) return max;
+    const arc = halfDiagonal / r * rho;                        // the corners' half-extent along the path
+    const w = Math.ceil(arc / sampleGap) + Slack;
+    return clamp(w, Slack, max);
+  }
+  // Map the eight corners through the ribbon round the centre's segment. False if a corner cannot be mapped.
+  function warpBox(rb, kCentre, corners8, xLo, xHi, halfWindow, xhd8, beyondEnd) {
+    for (let i = 0; i < 8; i++) {
+      const m = ribMapNear(rb, corners8[i], kCentre, halfWindow, xLo, xHi, beyondEnd, MPW);
+      if (!m.ok) return false;
+      xhd8[i].x = m.x; xhd8[i].y = m.h; xhd8[i].z = m.d;
+    }
+    return true;
+  }
+  // The point at (u, v, w) in [0,1]^3 of the warped box (u along the box's first axis, as boxCorners ordered it).
+  function trilinear(xhd8, u, v, w, out) {
+    const L = (a, b, t, c) => a[c] + (b[c] - a[c]) * t;
+    for (const c of ['x', 'y', 'z']) {
+      const c00 = L(xhd8[0], xhd8[1], u, c), c10 = L(xhd8[2], xhd8[3], u, c), c01 = L(xhd8[4], xhd8[5], u, c), c11 = L(xhd8[6], xhd8[7], u, c);
+      const a = c00 + (c10 - c00) * v, b = c01 + (c11 - c01) * v; out[c] = a + (b - a) * w;
+    }
+    return out;
+  }
+  // 2.5D parallax: the point (x, h, d) on the screen plane for a camera centred at (scX, scY) whose plane is D away: a
+  // layer at depth d draws at D / (D + d) of its size about the centre, z = d.
+  function parallax(x, h, d, scX, scY, D, out) { const s = D / Math.max(D + d, 0.05 * D); out.x = (x - scX) * s; out.y = scY + (h - scY) * s; out.z = d; return out; }
+
+  // ---- the one mesh (PistolWorldMesh.cs + PistolWorld.shader): every prism in view warped through the unroll, the
+  //      Pistol, the rings, the flares, the aim, laid on the screen plane with 2.5D parallax and drawn as ONE mesh.
+  //      Everything the shader needs rides the vertices: aColor (rgb, a = opacity), uv = (glow, reach), aFog. Fixed
+  //      arrays, filled each frame. (x, h, d) in, with d INTO the screen (Unity's sign); three.js's -z is into it. ----
+  const BOX01 = [[0, 0, 0], [1, 0, 0], [0, 1, 0], [1, 1, 0], [0, 0, 1], [1, 0, 1], [0, 1, 1], [1, 1, 1]];   // PistolWorldMesh.s_box
+  const BOX_TRIS = [0, 2, 1, 1, 2, 3, 4, 5, 6, 5, 7, 6, 0, 4, 2, 2, 4, 6, 1, 3, 5, 3, 7, 5, 0, 1, 4, 1, 5, 4, 2, 6, 3, 3, 6, 7];
+  const PW_VERT = [
+    'attribute vec4 aColor; attribute float aFog;',
+    'varying vec3 vPos; varying vec4 vColor; varying vec2 vGR; varying float vFog;',
+    'void main(){ vPos = position; vColor = aColor; vGR = uv; vFog = aFog; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }'].join('\n');
+  const PW_FRAG = [   // PistolWorld.shader: flat facets from the surface's own derivatives (right for any warp), a rim while in reach, fog with depth
+    'uniform vec3 uFog; uniform vec3 uKey; uniform float uAmbient; uniform float uRim;',
+    'varying vec3 vPos; varying vec4 vColor; varying vec2 vGR; varying float vFog;',
+    'void main(){',
+    '  vec3 n = normalize(cross(dFdy(vPos), dFdx(vPos)));',
+    '  float ndl = abs(dot(n, normalize(uKey)));',             // two-sided: the warp can turn a face over
+    '  float lit = uAmbient + (1.0 - uAmbient) * ndl;',
+    '  float glow = clamp(vGR.x, 0.0, 1.0), reach = clamp(vGR.y, 0.0, 1.0);',
+    '  float rim = uRim * reach * pow(1.0 - abs(n.z), 2.0);',   // a face turned away from the viewer catches a rim in its own colour while in reach
+    '  vec3 albedo = vColor.rgb;',
+    '  vec3 rgb = mix(albedo * lit + albedo * rim, albedo, glow);',
+    '  float fog = clamp(vFog, 0.0, 1.0) * (1.0 - glow);',
+    '  rgb = mix(rgb, uFog, fog);',
+    '  gl_FragColor = vec4(rgb, vColor.a);',
+    '}'].join('\n');
+  const PW = (() => {
+    const MAXV = 60000, MAXI = 180000;   // PistolWorldMesh.MaxVertices / MaxIndices
+    const pos = new Float32Array(MAXV * 3), col = new Float32Array(MAXV * 4), gr = new Float32Array(MAXV * 2), fg = new Float32Array(MAXV), ind = new Uint32Array(MAXI);
+    const geo = new THREE.BufferGeometry();
+    const aPos = new THREE.BufferAttribute(pos, 3).setUsage(THREE.DynamicDrawUsage), aCol = new THREE.BufferAttribute(col, 4).setUsage(THREE.DynamicDrawUsage);
+    const aGR = new THREE.BufferAttribute(gr, 2).setUsage(THREE.DynamicDrawUsage), aFog = new THREE.BufferAttribute(fg, 1).setUsage(THREE.DynamicDrawUsage), aInd = new THREE.BufferAttribute(ind, 1).setUsage(THREE.DynamicDrawUsage);
+    geo.setAttribute('position', aPos); geo.setAttribute('aColor', aCol); geo.setAttribute('uv', aGR); geo.setAttribute('aFog', aFog); geo.setIndex(aInd);
+    const mat = new THREE.ShaderMaterial({
+      // PistolWorld.mat: _FogColor, _KeyDir (its z turned for three.js's camera, which looks down -z), _Ambient, _Rim
+      uniforms: { uFog: { value: new THREE.Color(0.05, 0.06, 0.12) }, uKey: { value: new THREE.Vector3(-0.45, 0.8, 0.4) }, uAmbient: { value: 0.42 }, uRim: { value: 0.9 } },
+      vertexShader: PW_VERT, fragmentShader: PW_FRAG, transparent: true, depthWrite: true, depthTest: true, side: THREE.DoubleSide, extensions: { derivatives: true },
+    });
+    const mesh = new THREE.Mesh(geo, mat); mesh.frustumCulled = false;
+    let n = 0, ni = 0, scX = 0, scY = 0, depth = 1;
+    const Q = V(0, 0, 0), S8 = []; for (let i = 0; i < 8; i++) S8.push(V(0, 0, 0));
+    const hasRoom = (v, i) => n + v <= MAXV && ni + i <= MAXI;
+    const push = (x, h, d, c, glow, reach, fog) => {   // (x, h, d) in the Pistol's world to where it is drawn (PistolWarp.Parallax), then three.js's z = -d
+      parallax(x, h, d, scX, scY, depth, Q);
+      const o = n * 3, o4 = n * 4, o2 = n * 2;
+      pos[o] = Q.x; pos[o + 1] = Q.y; pos[o + 2] = -Q.z;
+      col[o4] = c[0]; col[o4 + 1] = c[1]; col[o4 + 2] = c[2]; col[o4 + 3] = c[3];
+      gr[o2] = glow; gr[o2 + 1] = reach; fg[n] = fog;
+      return n++;
+    };
+    const tri = (a, b, c) => { ind[ni++] = a; ind[ni++] = b; ind[ni++] = c; };
+    const cross = (a, b, o) => { o.x = a.y * b.z - a.z * b.y; o.y = a.z * b.x - a.x * b.z; o.z = a.x * b.y - a.y * b.x; return o; };
+    const nrm = (a) => { const l = Math.hypot(a.x, a.y, a.z) || 1; a.x /= l; a.y /= l; a.z /= l; return a; };
+    const RN = V(0, 0, 0), RE1 = V(0, 0, 0), RE2 = V(0, 0, 0), RUP = V(0, 1, 0), RRT = V(1, 0, 0), RC = [0, 0, 0, 1];
+    return {
+      mesh,
+      begin(x, y, D) { n = 0; ni = 0; scX = x; scY = y; depth = Math.max(1, D); },   // start a frame: the camera centred at (x, y), its plane D away
+      scaleAt: (d) => depth / Math.max(depth + d, 0.05 * depth),
+      project(x, h, d, out) { parallax(x, h, d, scX, scY, depth, Q); out.set(Q.x, Q.y, -Q.z); return out; },   // into a THREE.Vector3
+      // a mesh deformed inside the warped box xhd8 (boxCorners' order): the lab's prisms are boxes, so the box IS the prism
+      addWarped(xhd8, c, glow, reach, fog) {
+        if (!hasRoom(8, 36)) return;
+        const b = n;
+        for (let i = 0; i < 8; i++) { const l = BOX01[i]; trilinear(xhd8, l[0], l[1], l[2], Q); push(Q.x, Q.y, Q.z, c, glow, reach, fog); }
+        for (let i = 0; i < 36; i++) ind[ni++] = b + BOX_TRIS[i];
+      },
+      addDot(x, h, d, r, c, glow, fog) {   // a screen-facing square of half-size r at (x, h, d): a dot of the aim, a spark
+        if (!hasRoom(4, 6)) return; glow = glow == null ? 1 : glow; fog = fog || 0;
+        const i0 = push(x - r, h - r, d, c, glow, 0, fog), i1 = push(x - r, h + r, d, c, glow, 0, fog), i2 = push(x + r, h + r, d, c, glow, 0, fog), i3 = push(x + r, h - r, d, c, glow, 0, fog);
+        tri(i0, i1, i2); tri(i0, i2, i3);
+      },
+      // a tube along the depth axis from d0 to d1 at (x, h): the Pistol's body, end on; the radius may differ at each end, and the tube can lean along (lx, ly) per unit of depth
+      addTube(x, h, d0, d1, r0, r1, sides, c, glow, reach, lx, ly) {
+        if (!hasRoom(sides * 2, sides * 6)) return;
+        const b = n;
+        for (let i = 0; i < sides; i++) {
+          const a = i / sides * Math.PI * 2, ca = Math.cos(a), sa = Math.sin(a);
+          push(x + ca * r0 + lx * d0, h + sa * r0 + ly * d0, d0, c, glow, reach, 0);
+          push(x + ca * r1 + lx * d1, h + sa * r1 + ly * d1, d1, c, glow, reach, 0);
+        }
+        for (let i = 0; i < sides; i++) { const i0 = b + i * 2, i1 = b + ((i + 1) % sides) * 2; tri(i0, i1, i0 + 1); tri(i1, i1 + 1, i0 + 1); }
+      },
+      addDisc(x, h, d, r, sides, centre, edge, glow) {   // a disc in the screen plane: a cap, a glowing core
+        if (!hasRoom(sides + 1, sides * 3)) return;
+        const cI = push(x, h, d, centre, glow, 0, 0), b = n;
+        for (let i = 0; i < sides; i++) { const a = i / sides * Math.PI * 2; push(x + Math.cos(a) * r, h + Math.sin(a) * r, d, edge, glow, 0, 0); }
+        for (let i = 0; i < sides; i++) tri(cI, b + i, b + (i + 1) % sides);
+      },
+      addRing(x, h, d, ax, ay, az, R, r, segs, sides, c, glow) {   // a torus of radius R (tube r) at (x, h, d), its axis (ax, ay, az) in the Pistol's world
+        if (!hasRoom(segs * sides, segs * sides * 6)) return;
+        RN.x = ax; RN.y = ay; RN.z = az; if (ax * ax + ay * ay + az * az > 1e-8) nrm(RN); else { RN.x = 0; RN.y = 0; RN.z = 1; }
+        nrm(cross(RN, Math.abs(RN.y) < 0.9 ? RUP : RRT, RE1)); cross(RN, RE1, RE2);
+        const b = n;
+        for (let i = 0; i < segs; i++) {
+          const a = i / segs * Math.PI * 2, ca = Math.cos(a), sa = Math.sin(a), rx = RE1.x * ca + RE2.x * sa, ry = RE1.y * ca + RE2.y * sa, rz = RE1.z * ca + RE2.z * sa;
+          for (let j = 0; j < sides; j++) {
+            const t = j / sides * Math.PI * 2, rr = R + r * Math.cos(t), nn = r * Math.sin(t);
+            push(x + rx * rr + RN.x * nn, h + ry * rr + RN.y * nn, d + rz * rr + RN.z * nn, c, glow, 0, 0);
+          }
+        }
+        for (let i = 0; i < segs; i++) for (let j = 0; j < sides; j++) {
+          const i1 = (i + 1) % segs, j1 = (j + 1) % sides;
+          tri(b + i * sides + j, b + i1 * sides + j, b + i1 * sides + j1); tri(b + i * sides + j, b + i1 * sides + j1, b + i * sides + j1);
+        }
+      },
+      addStrip(points, width, head, tail, glow) {   // a ribbon through the points [x, h] at d = 0, width tall: the Pistol's tiny trail
+        const m = points.length; if (m < 2 || !hasRoom(m * 2, (m - 1) * 6)) return;
+        const b = n;
+        for (let i = 0; i < m; i++) {
+          const f = i / (m - 1), w = width * (0.15 + 0.85 * f);
+          for (let k = 0; k < 4; k++) RC[k] = tail[k] + (head[k] - tail[k]) * f;
+          push(points[i][0], points[i][1] + w, 0, RC, glow, 0, 0); push(points[i][0], points[i][1] - w, 0, RC, glow, 0, 0);
+        }
+        for (let i = 0; i < m - 1; i++) { const i0 = b + i * 2, i1 = i0 + 2; tri(i0, i1, i0 + 1); tri(i1, i1 + 1, i0 + 1); }
+      },
+      end() {   // draw this frame's world (nothing when empty)
+        mesh.visible = ni > 0; if (!mesh.visible) return;
+        aPos.updateRange.count = n * 3; aCol.updateRange.count = n * 4; aGR.updateRange.count = n * 2; aFog.updateRange.count = n; aInd.updateRange.count = ni;
+        aPos.needsUpdate = aCol.needsUpdate = aGR.needsUpdate = aFog.needsUpdate = aInd.needsUpdate = true;
+        geo.setDrawRange(0, ni);
+      },
+      get vertexCount() { return n; }, get indexCount() { return ni; },
+    };
+  })();
+  pscene.add(PW.mesh);
+
+  // ---- the camera (GobyPistolDuo.LateUpdate): a fifth of a screen ahead of the Pistol, easing in height ----
   function sideCam(W, dt, snap) {
     const p = W.p; SC.w = side.width; SC.h = side.height; SC.k = SC.w / P.pViewWidth;
     const tx = p.x + 0.2 * P.pViewWidth, gy = groundAt(W, p.x), ty = Math.max(p.y, gy) + 0.08 * SC.h / SC.k;
     SC.x = tx; SC.y = snap ? ty : lerp(SC.y, ty, clamp(dt * 4, 0, 1));
   }
+  // ---- the prisms, gathered (GobyPistolDuo.DrawPrisms): every live prism in the depth window and on the screen, far first ----
+  const VC = V(0, 0, 0);
   function sideList(W) {
-    const p = W.p, q = p.wpos, half = P.pViewWidth * 0.75, rr = (half + 260) ** 2; vis2d.length = 0;
-    for (let i = 0; i < W.N; i++) {
-      if (!W.alive[i]) continue; if ((W.px[i] - q.x) ** 2 + (W.py[i] - q.y) ** 2 + (W.pz[i] - q.z) ** 2 > rr) continue;
-      const m = ribMap(W.rb, ppos(W, i), p.x - half, p.x + half, MPR); if (!m.ok) continue;
-      const primed = W.primed[i] > W.t, off = Math.abs(m.d) > P.pVision; if (off && !primed) continue;
-      vis2d.push({ i, x: m.x, h: m.h, d: m.d, k: MPR.k, t: MPR.t, faint: off, primed, hot: isHot(W, i), amb: m.amb });
+    const p = W.p, rb = W.rb, Wd = P.pViewWidth, D = Math.max(20, P.pParallax), aspect = Math.max(0.2, SC.w / Math.max(1, SC.h));
+    const dLo = -FG_DEPTH * D, dHi = BG_DEPTH * D, xLo = SC.x - 2 * Wd, xHi = SC.x + 2 * Wd;   // the ribbon the far background can still show
+    const c = ribUnmap(rb, SC.x, SC.y, 0, VC), rad = Math.max(0.8 * Wd, dHi) + 80, rr = rad * rad; vis2d.length = 0;
+    if (!p) return;
+    for (let i = 0; i < W.N && vis2d.length < MAX_VIEW; i++) {
+      if (!W.alive[i]) continue; if ((W.px[i] - c.x) ** 2 + (W.py[i] - c.y) ** 2 + (W.pz[i] - c.z) ** 2 > rr) continue;
+      const m = ribMapFast(rb, ppos(W, i), xLo, xHi, true, MPR); if (!m.ok) continue;
+      const dU = -m.d; if (dU < dLo || dU > dHi) continue;
+      const s = D / (D + dU);
+      if (Math.abs(m.x - SC.x) * s > 0.5 * Wd + 60 * s || Math.abs(m.h - SC.y) * s > 0.5 * Wd / aspect + 60 * s) continue;
+      vis2d.push({ i, x: m.x, h: m.h, d: m.d, dU, k: m.k });
     }
+    vis2d.sort((a, b) => b.dU - a.dU);
   }
-  const qW = new THREE.Quaternion(), eW = new THREE.Euler();
+  // ---- one prism (GobyPistolDuo.DrawPrism): its box warped through the unroll, then the rules of what it looks like ----
+  const PRISM_HALF = [prismMesh.geometry.parameters.width / 2, prismMesh.geometry.parameters.height / 2, prismMesh.geometry.parameters.depth / 2];   // the 3D view's box, the same prism
+  const PRISM_HALF_DIAG = Math.hypot(PRISM_HALF[0], PRISM_HALF[1], PRISM_HALF[2]);
+  const PC8 = [], PX8 = []; for (let i = 0; i < 8; i++) { PC8.push(V(0, 0, 0)); PX8.push(V(0, 0, 0)); }
+  const PCB = V(0, 0, 0), PAX = V(0, 0, 0), PAY = V(0, 0, 0), PAZ = V(0, 0, 0), cTmp = [0, 0, 0, 1];
+  const C_AMBER = [1, 200 / 255, 51 / 255, 1], C_RED = [1, 64 / 255, 38 / 255, 1], C_HELD = [159 / 255, 232 / 255, 1, 1], C_BLACK = [0, 0, 0, 1], C_HOT4 = [1, 0x6a / 255, 0x2a / 255, 1];
+  const setC = (o, r, g, b, a) => { o[0] = r; o[1] = g; o[2] = b; o[3] = a; return o; };
+  const tintC = (o, t, k) => { for (let i = 0; i < 4; i++) o[i] += (t[i] - o[i]) * k; return o; };   // Color.Lerp, all four channels
+  const alphaC = (o, c, a) => setC(o, c[0], c[1], c[2], a);
+  function drawPrism(W, v, now, band, dLo, dHi, xLo, xHi, kSpan) {
+    const i = v.i, rb = W.rb;
+    // the prism's box: the 3D view's BoxGeometry turned by Euler(ra, rb2, 0), its half-axes in the world
+    eW.set(W.ra[i], W.rb2[i], 0); tm.makeRotationFromEuler(eW); const e = tm.elements;
+    PAX.x = e[0] * PRISM_HALF[0]; PAX.y = e[1] * PRISM_HALF[0]; PAX.z = e[2] * PRISM_HALF[0];
+    PAY.x = e[4] * PRISM_HALF[1]; PAY.y = e[5] * PRISM_HALF[1]; PAY.z = e[6] * PRISM_HALF[1];
+    PAZ.x = e[8] * PRISM_HALF[2]; PAZ.y = e[9] * PRISM_HALF[2]; PAZ.z = e[10] * PRISM_HALF[2];
+    PCB.x = W.px[i]; PCB.y = W.py[i]; PCB.z = W.pz[i];
+    boxCorners(PCB, PAX, PAY, PAZ, PC8);
+    const window = cornerWindow(PRISM_HALF_DIAG, ribCurvature(rb, v.k), v.d, P.tSampleGap, kSpan);
+    if (!warpBox(rb, v.k, PC8, xLo, xHi, window, PX8, true)) return;
+    for (let j = 0; j < 8; j++) PX8[j].z = -PX8[j].z;   // into the screen: Unity's sign (the section note)
+    // its own colour (what the 3D view draws it in), then the rules
+    const c = cTmp, kc = kcol[W.kind[i]]; setC(c, kc.r, kc.g, kc.b, 1);
+    const primed = W.primed[i] > W.t, hot = W.hot[i] > W.t;
+    if (W.kind[i] === 0 && !primed) tintC(c, C_HOT4, 0.25 + 0.15 * Math.sin(now * 3 + i));   // flora is hot by default: it glows (drawWorld3D)
+    const dU = v.dU, ad = Math.abs(dU), reach = 1 - clamp((ad - band) / 12, 0, 1); let fog, alpha, glow = 0;
+    if (dU >= 0) { fog = clamp((dU - band) / Math.max(1, dHi - band), 0, 1); alpha = 1 - 0.65 * fog; }
+    else { const f = clamp((-dU - band) / Math.max(1, -dLo - band), 0, 1); fog = 0.15 * f; alpha = lerp(0.6, 0.05, f); }   // foreground: see through it
+    if (v.x > W.gx + 2) { fog = Math.max(fog, 0.55); alpha *= 0.6; }   // the forecast: not laid yet
+    if (primed) { tintC(c, C_AMBER, 0.75); glow = 0.35 + 0.25 * Math.sin(now * 6); fog *= 0.3; alpha = Math.max(alpha, 0.7); }
+    else if (hot) { tintC(c, C_RED, 0.6); glow = 0.3 + 0.2 * Math.sin(now * 9); }
+    if (W.capt[i]) { tintC(c, C_HELD, 0.5); glow = Math.max(glow, 0.5); }
+    c[3] = alpha;
+    PW.addWarped(PX8, c, glow, reach, fog);
+  }
+  // ---- the Pistol, its trail, the rings, the flares, the aim (GobyPistolDuo.DrawActors) ----
+  const cBody = [0, 0, 0, 1], cA = [0, 0, 0, 1], cB = [0, 0, 0, 1], C_RING = [159 / 255, 232 / 255, 1, 1], C_FLARE = [1, 230 / 255, 128 / 255, 1], C_FLARE_BACK = [1, 200 / 255, 90 / 255, 140 / 255], C_AIM = [1, 1, 1, 230 / 255], C_EYE = [1, 250 / 255, 230 / 255, 1], C_EYE_FREE = [1, 220 / 255, 90 / 255, 1];
+  const FV = V(0, 0, 0);
+  function drawActors(W, xLo, xHi) {
+    const p = W.p, half = P.pVision + 4, r = P.pBodyR, ghost = W.t < p.ghostUntil;
+    const body = setC(cBody, 1, 138 / 255, 61 / 255, ghost ? 90 / 255 : 1);
+    const vx = p.grounded ? p.v : p.vx, vy = p.grounded ? 0 : p.vy, vl = Math.hypot(vx, vy), lx = vl > 1 ? vx / vl * 0.12 : 0, ly = vl > 1 ? vy / vl * 0.12 : 0;
+    // the tiny trail, then the tube END ON (its length runs into the screen, across the band), capped, with a glowing eye
+    PW.addStrip(pTrail, 1.1, alphaC(cA, body, ghost ? 0.3 : 0.75), alphaC(cB, body, 0), 0.6);
+    PW.addTube(p.x, p.y, -half, half, r, r * 0.92, VIEW_SIDES, body, 0.1, 1, lx, ly);
+    PW.addDisc(p.x - lx * half, p.y - ly * half, -half + 0.05, r, VIEW_SIDES, body, tintC(alphaC(cA, body, body[3]), C_BLACK, 0.25), 0.1);
+    PW.addDisc(p.x - lx * half, p.y - ly * half, -half - 0.3, r * 0.42, 12, p.freeBoom ? C_EYE_FREE : C_EYE, alphaC(cA, body, 1), 1);   // the eye goes gold with the crystal's free Snap (lab-only)
+    // vortex rings, mapped into the Pistol's world with their axis unrolled (its R component into the screen: the section note)
+    for (const v of W.vortices) {
+      const m = ribMapFast(W.rb, v.c, xLo, xHi, true, MPR); if (!m.ok) continue;
+      const F = ribFrameAt(W.rb, m.x, FR), fade = clamp(v.life / 0.35, 0, 1);
+      PW.addRing(m.x, m.h, -m.d, vdot(v.n, F.T), vdot(v.n, F.U), -vdot(v.n, F.R), P.pVortexR, 0.9, 28, 6, alphaC(cA, C_RING, fade), 1);
+    }
+    for (const F of W.flares) {
+      const m = ribMapFast(W.rb, F.p, xLo, xHi, true, MPR); if (!m.ok) continue;
+      PW.addDot(m.x, m.h, -m.d, 1.4, C_FLARE);
+      FV.x = F.p.x - F.v.x * 0.05; FV.y = F.p.y - F.v.y * 0.05; FV.z = F.p.z - F.v.z * 0.05;
+      const b = ribMapFast(W.rb, FV, xLo, xHi, true, MPB); if (b.ok) PW.addDot(b.x, b.h, -b.d, 0.8, C_FLARE_BACK);
+    }
+    // the launch aim: yours while you drag (or hold RT); the AI's is the Show-AI-thinking line on the HUD canvas
+    const aim = aimNow(W); if (!aim) return;
+    let dx = aim.dx, dy = aim.dy; const L = Math.hypot(dx, dy);
+    if (L > P.pLaunchRange) { dx *= P.pLaunchRange / L; dy *= P.pLaunchRange / L; }
+    const Tt = Math.max(0.35, Math.hypot(dx, dy) / P.pLaunchSpeed), ax = dx / Tt, ay = dy / Tt + 0.5 * P.pGravity * Tt;
+    for (let s = 0; s <= 1.0001; s += 0.08) { const tt = s * Tt; PW.addDot(p.x + ax * tt, p.y + ay * tt - 0.5 * P.pGravity * tt * tt, 0, 1.1, C_AIM); }
+    PW.addRing(p.x + dx, p.y + dy, 0, 0, 0, 1, 5, 0.5, 16, 4, C_AIM, 1);
+  }
+  const eW = new THREE.Euler(), PV = new THREE.Vector3();
   function renderSide3D(W, now) {
     const p = W.p, w = side3d.clientWidth, h = side3d.clientHeight; if (!p || !w || !h || r2.noWebGL) return;
-    pcam.aspect = w / h; pcam.fov = PFOV; pcam.updateProjectionMatrix();
-    const dist = (P.pViewWidth / 2) / (Math.tan(PFOV * DEG / 2) * pcam.aspect);
-    pcam.position.set(0, SC.y, dist); pcam.up.set(0, 1, 0); pcam.lookAt(0, SC.y, 0);
+    const Wd = P.pViewWidth, aspect = Math.max(0.2, w / h), D = Math.max(20, P.pParallax);
+    // the orthographic camera: pViewWidth across at d = 0 (the parallax is the projection's, PW.push), centred on SC, in front of the nearest layer
+    pcam.left = -Wd / 2; pcam.right = Wd / 2; pcam.top = Wd / 2 / aspect; pcam.bottom = -Wd / 2 / aspect; pcam.updateProjectionMatrix();
+    pcam.position.set(0, SC.y, FG_DEPTH * D + 60); pcam.up.set(0, 1, 0); pcam.lookAt(0, SC.y, 0);
+    pSkyCam.aspect = aspect; pSkyCam.updateProjectionMatrix(); pSkyCam.position.set(0, 0, 0); pSkyCam.up.set(0, 1, 0); pSkyCam.lookAt(0, 0, -1);
     // the sky and lights, turned by the frame at the Pistol (they are infinitely far: a rotation is exact)
     const Fq = flatFrame(ribFrameAt(W.rb, p.x, FR)).clone();
     PENV.sky.quaternion.copy(Fq); PENV.stars.quaternion.copy(Fq);
     if (pSun) pSun.position.set(0.4, 1, 0.3).applyQuaternion(Fq); if (pHemi) pHemi.position.set(0, 1, 0).applyQuaternion(Fq);
-    // prisms: the same mesh, material and colours as the 3D view, at their unrolled place and turned by the ribbon there
-    let n = 0, nf = 0;
-    for (const v of vis2d) {
-      const q = flatFrame(ribFrame(W.rb, v.k, v.t, FR)); eW.set(W.ra[v.i], W.rb2[v.i], 0); qW.setFromEuler(eW);
-      dum.quaternion.copy(q).multiply(qW); dum.position.set(v.x - SC.x, v.h, v.faint ? clamp(v.d, -P.pVision, P.pVision) : v.d); dum.scale.setScalar(1); dum.updateMatrix();
-      if (W.primed[v.i] > W.t) col.copy(kcol[W.kind[v.i]]).lerp(C_PRIMED, 0.75); else if (W.hot[v.i] > W.t) col.copy(C_HOT); else col.copy(kcol[W.kind[v.i]]);
-      if (W.kind[v.i] === 0 && !(W.primed[v.i] > W.t)) col.lerp(C_HOT, 0.25 + 0.15 * Math.sin(now * 3 + v.i));
-      if (v.faint) { if (nf < 400) { pFaint.setMatrixAt(nf, dum.matrix); pFaint.setColorAt(nf, col); nf++; } }
-      else { pPrism.setMatrixAt(n, dum.matrix); pPrism.setColorAt(n, col); n++; }
-    }
-    pPrism.count = n; pPrism.instanceMatrix.needsUpdate = true; if (pPrism.instanceColor) pPrism.instanceColor.needsUpdate = true;
-    pFaint.count = nf; pFaint.instanceMatrix.needsUpdate = true; if (pFaint.instanceColor) pFaint.instanceColor.needsUpdate = true;
-    // the ground and the trail's blocks on it (the hinges tilt up and down in turn)
-    const xa = Math.max(cpX(W, 0), SC.x - P.pViewWidth * 0.75), xb = Math.min(W.gx, SC.x + P.pViewWidth * 0.75), show = xb > xa;
-    gFloor.visible = gCurtain.visible = gLine.visible = show;
-    if (show) {
-      const fa = gFloor.geometry.attributes.position.array, ca = gCurtain.geometry.attributes.position.array, la = gLineGeo.attributes.position.array;
-      for (let k = 0; k < GN; k++) {
-        const x = lerp(xa, xb, k / (GN - 1)), y = groundAt(W, x), fx = x - SC.x;
-        fa.set([fx, y, -P.pVision, fx, y, P.pVision], k * 6); ca.set([fx, y, -P.pVision, fx, y - 600, -P.pVision], k * 6); la.set([fx, y, 0], k * 3);
-      }
-      gFloor.geometry.attributes.position.needsUpdate = true; gCurtain.geometry.attributes.position.needsUpdate = true; gLineGeo.attributes.position.needsUpdate = true;
-      gFloor.geometry.computeBoundingSphere(); gCurtain.geometry.computeBoundingSphere();
-    }
+    // the one mesh: the prisms far to near (the fade blends), warped into it, then the actors
+    PW.begin(SC.x, SC.y, D);
+    const xLo = SC.x - 2 * Wd, xHi = SC.x + 2 * Wd, dLo = -FG_DEPTH * D, dHi = BG_DEPTH * D, band = P.pVision + 4;
+    const kSpan = Math.max(2, ribIdx(W.rb, xHi) - ribIdx(W.rb, xLo));
+    for (const v of vis2d) drawPrism(W, v, now, band, dLo, dHi, xLo, xHi, kSpan);
+    drawActors(W, xLo, xHi);
+    PW.end();
+    // the ground: the trail's blocks on the hinge hills, tilted to the slope (the hinges tilt up and down in turn); at d = 0 the projection is the identity
+    const xa = Math.max(cpX(W, 0), SC.x - Wd * 0.75), xb = Math.min(W.gx, SC.x + Wd * 0.75);
     let nb = 0;
     for (let j = W.blocks.length - 1; j >= 0 && nb < 600; j--) {
       const b = W.blocks[j]; if (b.x < xa - 20) break; if (b.x > xb + 20) continue;
@@ -1218,23 +1537,16 @@
       dum.position.set(b.x - SC.x, y, 0); dum.rotation.set(0, Math.PI / 2, 0); dum.rotateX(-a); dum.scale.set(b.hinge ? 1.5 : 1, 1, 1); dum.updateMatrix(); pBlock.setMatrixAt(nb++, dum.matrix);
     }
     pBlock.count = nb; pBlock.instanceMatrix.needsUpdate = true;
-    // the Pistol: the cylinder, END ON (its length runs into the screen, across the band: brief 4.4)
-    const half = P.pVision + 4; pPistol.position.set(p.x - SC.x, p.y, 0); pPistol.rotation.set(Math.PI / 2, now * 2, 0); pPistol.scale.set(P.pBodyR, half * 2, P.pBodyR);
-    pPistolMat.opacity = W.t < p.ghostUntil ? 0.3 : 0.9; pPistolMat.emissive.setHex(p.freeBoom ? 0x7a5a05 : 0x5a2205);
     // the Goby at the end of the ground, turned by the frame there
     const g = W.g, gq = flatFrame(ribFrameAt(W.rb, W.gx, FR)); pGoby.position.set(W.gx - SC.x, W.endY, 0);
     tm.makeBasis(tv.set(g.r.x, g.r.y, g.r.z), tv2.set(g.u.x, g.u.y, g.u.z), tv3.set(-g.f.x, -g.f.y, -g.f.z)); tq.setFromRotationMatrix(tm); pGoby.quaternion.copy(gq).multiply(tq);
-    // crystals, flares, vortex rings, blasts: mapped the same way
-    const win = (pt) => { const m = ribMap(W.rb, pt, p.x - P.pViewWidth, p.x + P.pViewWidth, MPR); return m.ok && Math.abs(m.d) < P.pVision * 3 ? m : null; };
-    W.crystals.forEach((c, i) => { const m = pCrystals[i]; if (!m) return; const mm = win(c.p); m.visible = !!mm; if (mm) { m.position.set(mm.x - SC.x, mm.h, mm.d); VesselStudioLook.spinCrystal(m, now + i); } });
-    const fa2 = pFlare.geometry.attributes.position.array; let fn = 0;
-    for (const F of W.flares) { if (fn >= 64) break; const mm = win(F.p); if (!mm) continue; fa2[fn * 3] = mm.x - SC.x; fa2[fn * 3 + 1] = mm.h; fa2[fn * 3 + 2] = mm.d; fn++; }
-    pFlare.geometry.setDrawRange(0, fn); pFlare.geometry.attributes.position.needsUpdate = true;
-    pTori.forEach((m, i) => { const v = W.vortices[i]; const mm = v && win(v.c); m.visible = !!mm; if (!mm) return; const q = flatFrame(ribFrame(W.rb, MPR.k, MPR.t, FR)); m.position.set(mm.x - SC.x, mm.h, mm.d); tv.set(v.n.x, v.n.y, v.n.z).applyQuaternion(q); m.quaternion.setFromUnitVectors(ZAX, tv); m.scale.setScalar(P.pVortexR); });
+    // crystals and the collapse blasts (lab-only): at their parallax place and size
+    const win = (pt) => { const m = ribMapFast(W.rb, pt, xLo, xHi, true, MPR); const dU = -m.d; return m.ok && dU >= dLo && dU <= dHi ? m : null; };
+    W.crystals.forEach((c, i) => { const m = pCrystals[i]; if (!m) return; const mm = win(c.p); m.visible = !!mm; if (mm) { m.position.copy(PW.project(mm.x, mm.h, -mm.d, PV)); m.scale.setScalar(PW.scaleAt(-mm.d)); VesselStudioLook.spinCrystal(m, now + i); } });
     let bi = 0;
-    for (const f of W.fx) { const age = W.t - f.t; if (f.kind === 'collapse' && age < 0.5 && bi < pBooms.length) { const mm = win(f.w); if (!mm) continue; const m = pBooms[bi++]; m.visible = true; m.position.set(mm.x - SC.x, mm.h, mm.d); m.scale.setScalar(Math.max(1, P.pVortexR * (0.3 + age / 0.5))); m.material.opacity = 0.5 * (1 - age / 0.5); m.material.color.setHex(0x9fe8ff); } }
+    for (const f of W.fx) { const age = W.t - f.t; if (f.kind === 'collapse' && age < 0.5 && bi < pBooms.length) { const mm = win(f.w); if (!mm) continue; const m = pBooms[bi++]; m.visible = true; m.position.copy(PW.project(mm.x, mm.h, -mm.d, PV)); m.scale.setScalar(PW.scaleAt(-mm.d) * Math.max(1, P.pVortexR * (0.3 + age / 0.5))); m.material.opacity = 0.5 * (1 - age / 0.5); m.material.color.setHex(0x9fe8ff); } }
     for (; bi < pBooms.length; bi++) pBooms[bi].visible = false;
-    r2.render(pscene, pcam);
+    r2.autoClear = false; r2.clear(); r2.render(pSkyScene, pSkyCam); r2.clearDepth(); r2.render(pscene, pcam);
   }
   function drawSide(W, dt, snap) {
     const p = W.p; const w = side.width, h = side.height; if (!w || !h) return;
@@ -1247,18 +1559,10 @@
     // the Goby off to the right: an arrow and how far
     const gxS = sxo(W.gx, 1), gyS = syo(W.endY, 1);
     if (gxS > w - 10 * dpr) { g.fillStyle = DOM().color; const yy = clamp(gyS, 14 * dpr, h - 14 * dpr); g.beginPath(); g.moveTo(w - 4 * dpr, yy); g.lineTo(w - 14 * dpr, yy - 7 * dpr); g.lineTo(w - 14 * dpr, yy + 7 * dpr); g.fill(); g.font = (11 * dpr) + 'px sans-serif'; g.textAlign = 'right'; g.fillText('GOBY ' + Math.round(W.gx - p.x) + ' u', w - 18 * dpr, yy + 4 * dpr); g.textAlign = 'left'; }
-    // its tiny trail
+    // its tiny trail: the points (drawn in the world by PW.addStrip, with the launch aim)
     if (!snap) { pTrail.push([p.x, p.y]); if (pTrail.length > 26) pTrail.shift(); } else pTrail.length = 0;
-    g.strokeStyle = '#ff8a3d88'; g.lineWidth = 1.5 * dpr; g.beginPath(); pTrail.forEach(([x, y], i) => { const sx = sxo(x, 1), sy = syo(y, 1); if (i) g.lineTo(sx, sy); else g.moveTo(sx, sy); }); g.stroke();
     const px = sxo(p.x, 1), py = syo(p.y, 1);
-    // the launch aim (yours) and the AI's (Show AI thinking)
-    const aim = aimNow(W);
-    if (aim) {
-      let dx = aim.dx, dy = aim.dy; const L = Math.hypot(dx, dy); if (L > P.pLaunchRange) { dx *= P.pLaunchRange / L; dy *= P.pLaunchRange / L; }
-      const T = Math.max(0.35, Math.hypot(dx, dy) / P.pLaunchSpeed), vx = dx / T, vy = dy / T + 0.5 * P.pGravity * T;
-      g.fillStyle = '#ffffff'; for (let s = 0; s <= 1.0001; s += 0.08) { const tt = s * T; g.fillRect(sxo(p.x + vx * tt, 1) - dpr, syo(p.y + vy * tt - 0.5 * P.pGravity * tt * tt, 1) - dpr, 2 * dpr, 2 * dpr); }
-      g.strokeStyle = '#ffffff'; g.beginPath(); g.arc(sxo(p.x + dx, 1), syo(p.y + dy, 1), 8 * dpr, 0, Math.PI * 2); g.stroke();
-    }
+    // the AI's launch aim (Show AI thinking)
     const B = W.aiP;
     if (S.thinking && halfIsAI('pistol') && B.aimL) { g.strokeStyle = B.misjudged ? '#ff5c6c' : B.unnoticed ? '#ffb454' : '#4be38f'; g.lineWidth = 1.5 * dpr; g.beginPath(); g.moveTo(px, py); g.lineTo(sxo(B.aimL.x, 1), syo(B.aimL.h, 1)); g.stroke(); }
     // the Pistol's own HUD
@@ -1621,6 +1925,7 @@
     startRace, stopRace, swap: () => { lastSwapAt = -9; swap(); }, tick, reset, score, runBatch, runDuo, unrollTest, duoScorecard,
     world: () => W, ribbon: { makeRibbon, ribAdd, ribMap, ribUnmap, groundAt },
     core: { mulberry32, makeRibbon, ribAdd, ribMap, ribUnmap, ribFrame, ribFrameAt, groundAt, cpCount, layPath, addBlock, gobyEnds, flyScripted, PATHS, makeWorld, stepWorld, pistolStep, fireVortex, vortexStep, pistolAI, mix, unmix, get GS() { return GS; } },   // the golden source for the Unity port (Tools/Build/goby_pistol_goldens.cjs)
+    view: { ribMapFast, ribMapNear, ribCurvature, boxCorners, cornerWindow, warpBox, trilinear, parallax, list: () => vis2d.map((v) => ({ i: v.i, x: v.x, h: v.h, d: v.d, k: v.k })), get mesh() { return { vertices: PW.vertexCount, indices: PW.indexCount }; } },   // the side view's drawing-only maths (PistolWarp.cs, PistolRibbon.MapFast / MapNear / Curvature)
     SHIPPED, SPEC, P, PLATFORM, ide: IDE,
   };
   window.__gobyStudio = hook; window.__lab = hook;
