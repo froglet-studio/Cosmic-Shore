@@ -9209,3 +9209,27 @@ code), the 24 `BrittleStarTests` under Roslyn (`Tools/Build/brittlestar_harness/
    at 135 / 70 u/s for 3 s. The arms should still reach ~258 u (a prism wall that far ahead breaks), and read as five
    ropes. Watch the Profiler with 3-4 AI Brittle Stars in Destruction Mode: 1,350+ rounds alive per hull. If it is hot,
    `destructionFireRate` 9 keeps the look at a tenth of the rounds. In Speed Mode the hull outruns its own arms.
+
+## 🔴 First-login guide — spotlight draws nothing in Unity (`claude/exciting-bell-69b398`, 2026-10-06) — NOT EDITOR-VERIFIED
+
+**State.** Second Unity playtest: still no dim, no CTA frame, no caption, and no UI press worked.
+Console: "There is no 'CanvasRenderer' attached to the 'Dim' game object". **Root cause found and
+fixed:** the spotlight's code-built Graphics lacked `[RequireComponent(typeof(CanvasRenderer))]`,
+and the throw inside `GraphicRaycaster` killed every press (`Docs/HomeHub/ARCHITECTURE.md` §8.2).
+Gate: `Tools/Build/check_graphic_canvas_renderer.py`. **Re-test:** the menu takes presses again;
+Home shows the dim, the pulsing frame on ARCADE, the caption, and the gear cut out and pressable.
+
+**What landed for it.** A reader tool, **FrogletTools > Diagnostics > Report Menu Spotlight**
+(`Assets/_Scripts/Editor/Diagnostics/MenuSpotlightReport.cs`). Type-checked with
+`unity_refcompile --config editor` against the Unity 6 engine assemblies. Its only errors are the
+`FrogletTool` attribute types, which that config cannot see because it compiles only changed
+Editor-folder files. It has not been opened in Unity.
+
+**To run.** Fresh profile (both resets: Reset Microgame Lessons + the Quest Graph Editor's restart),
+enter play mode, wait for the caption over ARCADE, run the tool. The report is copied to the
+clipboard. Paste it back. What it settles:
+- Does the dim's generated **mesh** have vertices, inside the screen, with alpha around 178 (0.7)?
+- Is any **cut-out non-finite**, or does one cover the whole screen?
+- Is the spotlight's **material/shader** `UI/Default` and supported, and is its CanvasRenderer
+  culled or at zero inherited alpha?
+- Does a press at the **target centre** pass the dim and reach the Arcade button?

@@ -127,9 +127,22 @@ namespace CosmicShore.UI
 
         void Update()
         {
-            if (HasFocus && WantsRelease())
+            if (HasFocus && !HoldRelease && WantsRelease())
                 ReleaseFocus();
         }
+
+        /// <summary>
+        /// While true, the player's own release gestures (Escape, gamepad Start, a tap outside)
+        /// do nothing: the microgame's first Lesson is forced (Docs/ModePreview/TRAINING_PLAN.md
+        /// D2). It holds ONLY those gestures - every other route out (the card changing, the modal
+        /// closing, a launch, a scene change) still releases through <see cref="ReleaseFocus"/>,
+        /// so the hold can delay a player and never trap them. Set by the session from
+        /// <c>DrillRunner.HoldsExit</c>.
+        /// </summary>
+        public bool HoldRelease { get; set; }
+
+        /// <summary>The live picture's rect - what an overlay drawn on the picture parents to.</summary>
+        public RectTransform SurfaceRect => _surfaceRect ? _surfaceRect : transform as RectTransform;
 
         // ── States (driven by the session) ───────────────────────────────────
 

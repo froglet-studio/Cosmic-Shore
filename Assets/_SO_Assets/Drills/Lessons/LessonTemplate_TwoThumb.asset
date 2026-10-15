@@ -1,0 +1,78 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b1bbaf20f43a4b87b3d5f04047ff2b9b, type: 3}
+  m_Name: LessonTemplate_TwoThumb
+  m_EditorClassIdentifier: 
+  scheme: 0
+  steps:
+  - Id: steer
+    Prompt: 'Push {glyph:Steer} the same way to turn.'
+    Element: 0
+    Anchor: 0
+    Cue: 0
+    Applicability: 0
+    Condition:
+      rid: 1000
+    HintAfterSeconds: 0
+    HintPrompt: 'Both sticks together steer the ship.'
+  - Id: throttle
+    Prompt: 'Pull {glyph:Throttle} apart to speed up.'
+    Element: 0
+    Anchor: 0
+    Cue: 0
+    Applicability: 0
+    Condition:
+      rid: 1001
+    HintAfterSeconds: 0
+    HintPrompt: 'Sticks apart is fast. Sticks together is slow.'
+  - Id: time-ability
+    Prompt: 'Press {glyph:Time} to use {ability:Time}.'
+    Element: 4
+    Anchor: 1
+    Cue: 1
+    Applicability: 2
+    Condition:
+      rid: 1002
+    HintAfterSeconds: 0
+    HintPrompt: '{ability:Time}: {abilityDescription:Time}'
+  - Id: drift
+    Prompt: 'Hold {glyph:Drift} to drift through a turn.'
+    Element: 0
+    Anchor: 0
+    Cue: 0
+    Applicability: 1
+    Condition:
+      rid: 1003
+    HintAfterSeconds: 0
+    HintPrompt: 'Hold {glyph:Drift} while you turn.'
+  references:
+    version: 2
+    RefIds:
+    - rid: 1000
+      type: {class: SteerHeldCondition, ns: CosmicShore.Gameplay, asm: Assembly-CSharp}
+      data:
+        MinDeflection: 0.5
+        Seconds: 1
+    - rid: 1001
+      type: {class: ThrottleHeldCondition, ns: CosmicShore.Gameplay, asm: Assembly-CSharp}
+      data:
+        MinThrottle: 0.8
+        Seconds: 1
+    - rid: 1002
+      type: {class: AbilityActivatedCondition, ns: CosmicShore.Gameplay, asm: Assembly-CSharp}
+      data:
+        Element: 4
+        Count: 1
+    - rid: 1003
+      type: {class: DriftHeldCondition, ns: CosmicShore.Gameplay, asm: Assembly-CSharp}
+      data:
+        Seconds: 0.75

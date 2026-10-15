@@ -343,8 +343,9 @@ if "GameModes.ThresherTime" not in _end:
     errors.append("EndConditionOverridesSO.TryGetAuthoredTurnTarget has no ThresherTime row")
 
 _ctrl = read_or_empty(SCRIPT_PATHS["ThresherTimeController"])
-m = re.search(r"int laps\s*=\s*(\d+);", _ctrl)
-if not m or int(m.group(1)) != LAPS:
+# Literal, or one hop into the course source's const (the RaceCourseSource refactor).
+_laps = lib.cs_field_default(_ctrl, "laps")
+if _laps is None or int(float(_laps)) != LAPS:
     errors.append(f"ThresherTimeController.laps default is not {LAPS}")
 
 _tests = read_or_empty(SCRIPT_PATHS["ThresherTimeCourseTests"])

@@ -42,7 +42,7 @@ This file holds only the rules every session needs. Everything else moved verbat
   Sections: Branch Workflow; Architecture (layers, roster, target); Diagnosis Playbook (tiers, intake, status board); Sync Log
 - [`Docs/BRANCH_PARTS_STATUS.md`](Docs/BRANCH_PARTS_STATUS.md): **Current report on the A–M parts of `cece/nice-brahmagupta-ojclij`** (the 2026-10-12 branch test plan): which parts landed where, what is still to test and who owes each step. Answer any question about those parts or that plan from it, and update it when a part lands.
   Sections: Where each part stands; What landed, and how it differs from the plan; Open problems not caused by these parts; Re-measuring this report
-- [`Docs/claude/FTUE_DIALOGUE_AI.md`](Docs/claude/FTUE_DIALOGUE_AI.md): The FTUE quest graph, dialogue system, AI opponent system — with the table of every AI (platform autopilot + boost policies, the Skim Race pilot and its doc `Docs/SKIM_RACE_AI.md`, the Urchin autopilot), the input-only rule and the AI gates. Read before touching any AI.
+- [`Docs/claude/FTUE_DIALOGUE_AI.md`](Docs/claude/FTUE_DIALOGUE_AI.md): The FTUE quest graph, dialogue system, AI opponent system — with the table of every AI (platform autopilot + boost policies, the Skim Race pilot and its doc `Docs/SKIM_RACE_AI.md`, the Urchin autopilot), the input-only rule and the AI gates. Read before touching any AI. Holds the LOCKED guided-path rule: to send a player somewhere, spotlight the one control to press next, dim and disable everything else except Settings, and let them press it - never navigate for them.
   Sections: FTUE (First-Time User Experience) — the QUEST GRAPH; Dialogue System; AI Opponent System
 - [`Docs/claude/MENU_AND_LAVA_LAMP.md`](Docs/claude/MENU_AND_LAVA_LAMP.md): Menu_Main screens, ScreenSwitcher, menu freestyle (lava-lamp) HUD.
   Sections: Menu Screen Navigation (Menu_Main Scene); Lava-Lamp Mode (Menu Freestyle Merge)
@@ -269,6 +269,19 @@ shared across scenes.
 - Prefer expression-bodied members for simple accessors: `public Transform Transform => transform;`
 - Anti-spam / cooldown patterns belong in the SO config, not hardcoded
 - Always assign static numeric values to enum members to prevent Unity serialization drift
+- **All player-facing text has a human-facing control (LOCKED rule, every branch).** Every word the
+  player can read is a serialized field on an SO, prefab or component, or in an authored table. A
+  human can add, edit, blank or delete it in the inspector (or an authoring window) without touching
+  code. This is the text twin of the FMOD rule ("every sound is an exposed `EventReference`"). The
+  rule in practice:
+  - **Never** put a C# string literal that reaches a `TMP_Text`, toast, dialogue or button label.
+  - Text whose facts are computed is an **authored template with tokens** (`Hold {glyph:Time} to
+    boost`). Code fills the tokens; a human owns the sentence.
+  - An empty field shows nothing. That is how a line is deleted, so never fall back to a hardcoded
+    default.
+  - **Excluded:** logs, dev/diagnostic overlays and editor-tool UI.
+  - Existing literal-built strings are the **legacy shape**. Move them to authored fields when you
+    touch them. Worked example: `Docs/ModePreview/TRAINING_PLAN.md` §4.2.1.
 - Commit messages follow conventional commits: `type(scope): summary` (see `GIT_RULES.md`)
 
 ## Debugging Methodology

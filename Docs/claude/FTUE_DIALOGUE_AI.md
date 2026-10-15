@@ -41,6 +41,22 @@ adding a handler class:
   start trigger) plus `OnQuestPhaseCompleted` / `OnQuestCompleted`, consumed only by
   `QuestToastNotifier`. Nothing blocks on them.
 
+**GUIDE A PLAYER BY SHOWING THE PATH, NEVER BY WALKING IT (LOCKED rule — every quest, tutorial
+and onboarding beat).** When the app wants a player to go to one place (the microgame on first
+login, the Hangar or Profile early on), it **signals that one place** — a call to action on it, a
+semi-transparent dim over everything else — and **turns every other function off except Settings**
+(the "Overlay"), which is always available on every step. The player then **presses each step
+themselves**. Nothing may open a screen, select a card, press a button or fly the vessel in on the
+player's behalf: a player carried somewhere cannot find the way back, and one who walked a locked
+path by hand remembers it. Built as `MenuGuide` + `MenuSpotlight` (`_Scripts/UI/Guide/`) — the dim
+refuses every press outside its cut-outs, the cut-out passes the press to the REAL control, Settings
+is cut out of the dim and found from its own onClick, the step is re-derived from where the player
+is every frame, and it fails open rather than dimming a screen with no way forward. The first driver
+is `QuestGuideToMicrogameNode`; the first-login "railroad" that carried the player instead
+(`TrySelectMode`, `ArmForcedEntry`) was deleted for breaking this. The Quest Graph's older
+`Navigate`/`EnterFreestyle` nodes break it too and must not be used in a new graph.
+`Docs/HomeHub/ARCHITECTURE.md` §8.
+
 **Progression is a separate system from the graph** and is the thing the graph unlocks:
 `SO_UnlockList` + `SO_UnlockData` (formerly `SO_GameModeQuestList` / `SO_GameModeQuestData`) drive
 `GameModeProgressionService`, tuned by `SO_ProgressionConfig`. There is no XP — quest completion
@@ -48,9 +64,15 @@ is the only currency.
 
 **THE MASTER DEVELOPER UNLOCK IS ON BY DEFAULT — read this before debugging any lock.**
 `DeveloperUnlockGate.AllUnlocked` (`_Scripts/System/Progression/`) opens every entitlement at
-once — all vessels, all game modes, every intensity tier, the Vessel Hangar — **and stands the
-quest graph down entirely**, because everything the graph applies is a lock that gate exists to
-open. It defaults ON until the FTUE is designed, so *the onboarding does not run in a default
+once — all vessels, all game modes, every intensity tier, the Vessel Hangar — **and stands down
+every quest that has not opted in** (`QuestSO.runsUnderDeveloperUnlock`, or per PHASE
+`QuestPhaseGraphSO.runsUnderDeveloperUnlock`; both default off), because a
+lock-funnel quest applies exactly the locks that gate exists to open. A quest that ROUTES rather
+than locks (the first-login guide into the Game of the Week microgame,
+`Docs/ModePreview/TRAINING_PLAN.md`) opts in and runs, with every lock-APPLYING node
+(`QuestNodeSO.AppliesLock` — LockModes, the locking direction of LockNavigation /
+SetButtonInteractable / SetArcadeConstraints) passing straight through while the gate is on. It
+defaults ON until the FTUE is designed, so *the onboarding does not run in a default
 checkout*, and a lock that appears not to work is this switch before it is a bug. Flip it in the
 Froglet Toolbox (Quest Debug or Vessel Unlock tab); it announces itself once per session as a
 warning for exactly that reason. It gates six choke points rather than teaching ~20 call sites

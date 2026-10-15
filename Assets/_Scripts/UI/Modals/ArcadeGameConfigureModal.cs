@@ -1159,6 +1159,7 @@ namespace CosmicShore.UI
             }
 
             session.Attach(window);
+            session.SetDrillNames(game ? game.DisplayName : null, ResolveModeVesselName(game));
             session.SetDefinition(definition && definition.CanTestFlight ? definition : null,
                                   ResolveModeVessel(game),
                                   config != null ? config.Intensity : 1,
@@ -1283,6 +1284,7 @@ namespace CosmicShore.UI
 
             session.OnPreviewEnded += HandlePreviewEnded;
             session.OnObjectiveProgress += HandleObjectiveProgress;
+            session.OnDrillGateChanged += RefreshStartAvailability;
             _previewSessionSubscribed = true;
         }
 
@@ -1295,9 +1297,17 @@ namespace CosmicShore.UI
             {
                 session.OnPreviewEnded -= HandlePreviewEnded;
                 session.OnObjectiveProgress -= HandleObjectiveProgress;
+                session.OnDrillGateChanged -= RefreshStartAvailability;
             }
             _previewSessionSubscribed = false;
         }
+
+        /// <summary>The single hull's display name, for the coach's {vessel} token; null when the
+        /// card allows several (a line that names the vessel is then dropped, never guessed).</summary>
+        static string ResolveModeVesselName(SO_ArcadeGame game) =>
+            game != null && game.Vessels != null && game.Vessels.Count == 1 && game.Vessels[0]
+                ? game.Vessels[0].Name
+                : null;
 
         /// <summary>
         /// The hull a mode locks to, or <see cref="VesselClassType.Any"/> when it allows several
@@ -1883,6 +1893,15 @@ namespace CosmicShore.UI
             if (RequiresVesselConfirmation && !_vesselConfirmed)
             {
                 _activePanel.SetStartAvailable(false, "SELECT A VESSEL");
+                return;
+            }
+
+            // The microgame's first Lesson is forced (TRAINING_PLAN D2): Play opens the moment the
+            // Mentor starts. The caption is authored in the drill library.
+            var session = previewSession ? previewSession : _resolvedPreviewSession;
+            if (session && session.DrillHoldsPlay)
+            {
+                _activePanel.SetStartAvailable(false, session.DrillHoldCaption);
                 return;
             }
 

@@ -10,6 +10,7 @@ using Reflex.Attributes;
 using Reflex.Core;
 using UnityEngine;
 using UnityEngine.EventSystems;
+using Unity.Netcode;
 
 namespace CosmicShore.Gameplay
 {
@@ -155,6 +156,10 @@ namespace CosmicShore.Gameplay
         // the first is still landing must not run the whole entry twice.
         bool _enteringFlight;
 
+        /// <summary>The window this session draws into (null while detached) - what a guided path
+        /// spotlights for the player to tap. Nothing outside the window may tap it for them.</summary>
+        public ModePreviewWindow Window => _window;
+
         /// <summary>The mode being previewed, or <see cref="GameModes.Random"/> when idle.</summary>
         public GameModes ActiveMode { get; private set; } = GameModes.Random;
 
@@ -254,6 +259,7 @@ namespace CosmicShore.Gameplay
 
             _window.OnFocusRequested -= HandleFocusRequested;
             _window.OnFocusReleased -= HandleFocusReleased;
+            _window.HoldRelease = false;   // a hold never outlives the window it was placed on
             _window = null;
         }
 
@@ -282,7 +288,23 @@ namespace CosmicShore.Gameplay
             bool sameArena = !definition || !definition.ArenaDiffers(intensity, _intensity);
             if (sameCard && sameArena)
             {
+                bool courseChanges = intensity != _intensity && _gateCourse && _gateCourse.IsRaised;
                 _intensity = intensity;
+
+                // The ARENA is the same but a gate course is not: every course setting is
+                // per-intensity (mouths, corners, laps) even where the cell is shared. Rings are
+                // markers - re-standing them costs nothing like a cell build - so the course
+                // follows the row while the world stays up.
+                if (courseChanges)
+                {
+                    // The structure hangs on THIS course, so it goes with it. An immediate destroy
+                    // rather than the retiring-root drain: no shipped card reaches here with one -
+                    // Breakwater's arena differs per intensity, so its nudge rebuilds the world.
+                    _arena.StrikeCourseStructure();
+                    StrikeGateCourse();
+                    RaiseGateCourse(definition, definition.ResolveCell(intensity));
+                    if (_state == State.Live) _gateCourse.Track(gameData?.LocalPlayer?.Vessel);
+                }
                 return;
             }
 
@@ -451,6 +473,12 @@ namespace CosmicShore.Gameplay
                 // Rampage, and RequestSwap already preserves pose, speed and domain.
                 await SwapVessel(ResolveVessel(definition), remember: true, ct);
 
+                // A racing card's race: the mode's own rings, from the same course source the
+                // match builds from, plus any structure the match hangs on them (Breakwater's
+                // stations). Stood once per arena - a tap back into a standing world resumes the
+                // same course. BEFORE the park, because a race starts the pilot on its own line.
+                RaiseGateCourse(definition, config);
+
                 // Relocate the vessel and point its autopilot at the ARENA's runtime data -
                 // without this the AI keeps hunting the menu cell's crystals 120k units away and
                 // flies straight back out of the arena.
@@ -469,9 +497,14 @@ namespace CosmicShore.Gameplay
                 _state = State.Live;
                 _window?.GoLive();
                 GrantStick();
+                if (_gateCourse && _gateCourse.IsRaised) _gateCourse.Track(gameData?.LocalPlayer?.Vessel);
 
                 // The objective counts from the take-over, which is now also the arrival.
                 if (!_runnerStarted) StartRunner(definition);
+
+                // The coach: the Lesson, then the Mentor (TRAINING_PLAN §4). After the stick is
+                // granted, so the first step's condition reads a vessel the player is flying.
+                StartDrill(definition);
 
                 // A duel needs somebody to duel: modes that seat two or more get a sparring
                 // partner - a dummy in the mode's own hull, nothing clever.
@@ -616,6 +649,8 @@ namespace CosmicShore.Gameplay
                 }
 
                 StopRunner();
+                StopDrill();
+                if (_gateCourse) _gateCourse.Track(null);   // the rings stay; nothing is counting
 
                 // Pen the local trail up across the teleport home: a spawner left live for even
                 // one frame after SetPose lays a prism bridging 120k units of empty space.
@@ -683,6 +718,8 @@ namespace CosmicShore.Gameplay
             _cts = null;
 
             StopRunner();
+            StopDrill();
+            StrikeGateCourse();
 
             _window?.ReleaseFocus();          // routes through HandleFocusReleased → AI back on
 
@@ -797,6 +834,8 @@ namespace CosmicShore.Gameplay
             _cts = null;
 
             StopRunner();
+            StopDrill();
+            StrikeGateCourse();
 
             // Both callers of AbortHard - the launch and OnDestroy - are LEAVING the menu, so
             // the lift is forfeited here, never restored.
@@ -850,7 +889,15 @@ namespace CosmicShore.Gameplay
                 _hasVesselHome = true;
             }
 
-            var pose = _arena.SpawnPose(definition);
+            // A race starts on its own line - behind its first ring (Skein: its collar), pointed
+            // through it - rather than on the cell ring the definition mirrors for every mode.
+            // Read the out-var inside the `if` it was assigned in: routed through a bool and a
+            // `?:`, the compiler cannot prove it assigned (CS0165).
+            Pose pose;
+            if (_gateCourse != null && _gateCourse.TryGetStartPose(out var startPose))
+                pose = startPose;
+            else
+                pose = _arena.SpawnPose(definition);
             vessel.SetPose(pose);
 
             CSDebug.LogVerbose(CSLogChannel.ArcadeLaunch,
@@ -1082,6 +1129,86 @@ namespace CosmicShore.Gameplay
             return manager.BeginWindowedPlayerCamera(vessel.VesselStatus.CameraFollowTarget, texture) != null;
         }
 
+        // ── The drill (Lesson + Mentor) ─────────────────────────────────────
+
+        DrillRunner _drill;
+        DrillCoachView _coach;
+        string _drillModeName;
+        string _drillVesselName;
+
+        /// <summary>
+        /// The drill's hold on the card's Play button moved: true while a forced Lesson runs
+        /// (D2), false once the Mentor starts or the run ends. The modal re-decides Start's
+        /// availability on it.
+        /// </summary>
+        public event Action OnDrillGateChanged;
+
+        /// <summary>True while a forced Lesson holds the card's Play button shut.</summary>
+        public bool DrillHoldsPlay => _drill && _drill.HoldsExit;
+
+        /// <summary>The caption shown beside a held Play button, authored in the drill library.</summary>
+        public string DrillHoldCaption => _drill && _drill.Library ? _drill.Library.Strings.PlayLockedCaption : null;
+
+        /// <summary>
+        /// The words the coach uses for {mode} and {vessel} - the card's display name and the
+        /// hull's. Passed by the modal, which owns the card; null names simply drop any line
+        /// that quotes them (a missing fact, never a placeholder).
+        /// </summary>
+        public void SetDrillNames(string modeName, string vesselName)
+        {
+            _drillModeName = modeName;
+            _drillVesselName = vesselName;
+        }
+
+        void StartDrill(ModePreviewDefinitionSO definition)
+        {
+            var vessel = gameData?.LocalPlayer?.Vessel;
+            if (!definition || !Alive(vessel)) return;
+
+            if (!_drill)
+            {
+                _drill = gameObject.AddComponent<DrillRunner>();
+                _drill.OnChanged += HandleDrillChanged;
+            }
+
+            var nm = NetworkManager.Singleton;
+            bool started = _drill.Begin(new DrillContext
+            {
+                Vessel = vessel,
+                Mode = definition.Mode,
+                Metric = definition.ObjectiveMetric,
+                ModeName = _drillModeName,
+                VesselName = _drillVesselName,
+                GateCourse = GateCourse,
+                PartyGuest = nm && nm.IsListening && !nm.IsServer,
+            });
+            if (!started) return;
+
+            var host = _window ? _window.SurfaceRect : null;
+            _coach = host ? DrillCoachView.Ensure(host) : null;
+            if (_coach) _coach.Bind(_drill);
+            HandleDrillChanged();
+        }
+
+        void StopDrill()
+        {
+            if (_drill) _drill.Stop();
+            if (_coach) _coach.Bind(null);
+            ApplyDrillHold(false);
+        }
+
+        bool _drillHoldApplied;
+
+        void HandleDrillChanged() => ApplyDrillHold(DrillHoldsPlay);
+
+        void ApplyDrillHold(bool hold)
+        {
+            if (_window) _window.HoldRelease = hold;
+            if (hold == _drillHoldApplied) return;
+            _drillHoldApplied = hold;
+            OnDrillGateChanged?.Invoke();
+        }
+
         // ── Objective ────────────────────────────────────────────────────────
 
         void StartRunner(ModePreviewDefinitionSO definition)
@@ -1090,7 +1217,16 @@ namespace CosmicShore.Gameplay
             if (!_runner) _runner = gameObject.AddComponent<ModePreviewRunner>();
 
             _runnerStarted = true;
-            _runner.Begin(gameData?.LocalPlayer?.RoundStats, definition, HandleRunnerFinished);
+
+            // A gate race counts its OWN crossings: SwitchesThreaded is the match's replicated
+            // scoring token and a preview never writes it.
+            System.Func<int> localCount = null;
+            if (_gateCourse && _gateCourse.IsRaised)
+            {
+                var course = _gateCourse;
+                localCount = () => course ? course.Threaded : 0;
+            }
+            _runner.Begin(gameData?.LocalPlayer?.RoundStats, definition, HandleRunnerFinished, localCount);
 
             // The beside-the-window HUD (mode title, objective sentence, "0 / 200" progress, the
             // countdown) is RETIRED and now DELETED: the launch panel's OBJECTIVE BOX is the one
@@ -1128,6 +1264,39 @@ namespace CosmicShore.Gameplay
         /// keep flying in. It just stops counting.
         /// </summary>
         void HandleRunnerFinished(ModePreviewOutcome outcome) { }
+
+        /// <summary>
+        /// The racing card's course, or null when the card is not a gate race or nothing is
+        /// standing. What the drill's Mentor listens to for gate and lap moments.
+        /// </summary>
+        public ModePreviewGateCourse GateCourse =>
+            _gateCourse && _gateCourse.IsRaised ? _gateCourse : null;
+
+        ModePreviewGateCourse _gateCourse;
+
+        void RaiseGateCourse(ModePreviewDefinitionSO definition, CellConfigDataSO config)
+        {
+            if (RaceCourseSource.For(definition.Mode) == null) return;   // not a gate race
+            if (_gateCourse && _gateCourse.IsRaised) return;               // resumed
+
+            if (!_gateCourse) _gateCourse = gameObject.AddComponent<ModePreviewGateCourse>();
+            float nucleus = _arena.Cell ? _arena.Cell.ExpectedNucleusWorldRadius : 0f;
+            if (!_gateCourse.Raise(definition.Mode, _intensity, config, nucleus, _arena.Origin,
+                                   gameData ? gameData.ThemeManagerData : null))
+                return;
+
+            // The structure the match hangs on these rings (Breakwater's stations), from the
+            // prefab the mode's scene controller spawns, posed by the same source. Mass in the
+            // satellite world: it retires with the arena's own world on strike.
+            if (definition.CourseStructurePrefab)
+                _arena.BuildCourseStructure(definition.CourseStructurePrefab, _gateCourse.Source,
+                                            _gateCourse.CellLocalCourse, _intensity);
+        }
+
+        void StrikeGateCourse()
+        {
+            if (_gateCourse) _gateCourse.Strike();
+        }
 
         /// <summary>Kept for the HUD's API surface; nothing binds it to a button any more.</summary>
         public void RequestExit() => Stop();
