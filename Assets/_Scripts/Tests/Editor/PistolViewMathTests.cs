@@ -145,6 +145,26 @@ namespace CosmicShore.Tests
             Assert.IsFalse(PistolWarp.ArrowPlace(scX + 100f, 40f, scX, scY, W, Aspect, out _, out _));
         }
 
+        [Test]
+        public void FrameAt_OnARibbonOfFewerThanTwoSamples_IsAFrameNotAThrow()
+        {
+            // the first frames after the Goby spawns: Amoebius caught X(k + 1) on a one-sample ribbon (2026-10-15)
+            foreach (var mode in new[] { PistolUnroll.WorldUp, PistolUnroll.ArcLength, PistolUnroll.GobyUp })
+            {
+                var rb = new PistolRibbon(mode);
+                rb.FrameAt(0f, out var T, out var U, out var R);
+                Near(Vector3.forward, T, 1e-6f, mode + " empty: T"); Near(Vector3.up, U, 1e-6f, mode + " empty: U"); Near(Vector3.left, R, 1e-6f, mode + " empty: R");
+                rb.AddSample(new Vector3(3f, 1f, -2f), Vector3.up, new Vector3(0.6f, 0f, 0.8f));
+                rb.FrameAt(5f, out T, out U, out R);
+                if (mode == PistolUnroll.GobyUp) { Near(Vector3.forward, T, 1e-6f, "GobyUp one sample: the world's forward"); }
+                else { Near(new Vector3(0.6f, 0f, 0.8f), T, 1e-6f, mode + " one sample: its heading"); Near(new Vector3(-0.8f, 0f, 0.6f), R, 1e-6f, mode + " one sample: R across it"); }
+                Near(Vector3.up, U, 1e-6f, mode + " one sample: U");
+                rb.AddSample(new Vector3(9f, 1f, 6f), Vector3.up, new Vector3(0.6f, 0f, 0.8f));
+                rb.FrameAt(5f, out T, out _, out _);
+                Near(new Vector3(0.6f, 0f, 0.8f), T, 1e-5f, mode + " two samples: the segment's own frame");
+            }
+        }
+
         static void Near(Vector3 want, Vector3 got, float tol, string what)
         {
             Assert.AreEqual(want.x, got.x, tol, what + ".x"); Assert.AreEqual(want.y, got.y, tol, what + ".y"); Assert.AreEqual(want.z, got.z, tol, what + ".z");

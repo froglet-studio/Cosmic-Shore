@@ -734,7 +734,13 @@
     } else { const hx = rb.hx[k + 1], hz = rb.hz[k + 1]; out.T = V(hx, 0, hz); out.U = V(0, 1, 0); out.R = V(-hz, 0, hx); }
     return out;
   }
-  function ribFrameAt(rb, x, out) { const k = ribIdx(rb, x), X0 = RX(rb, k), X1 = RX(rb, k + 1); return ribFrame(rb, k, X1 > X0 ? clamp((x - X0) / (X1 - X0), 0, 1) : 0, out); }
+  function ribFrameAt(rb, x, out) {   // fewer than two samples: no segment yet - the one sample's heading, else the world's forward
+    if (rb.n < 2) {
+      if (rb.n === 1 && rb.mode !== 'goby') { const hx = rb.hx[0], hz = rb.hz[0]; out.T = V(hx, 0, hz); out.U = V(0, 1, 0); out.R = V(-hz, 0, hx); return out; }
+      out.T = V(0, 0, 1); out.U = V(0, 1, 0); out.R = V(-1, 0, 0); return out;
+    }
+    const k = ribIdx(rb, x), X0 = RX(rb, k), X1 = RX(rb, k + 1); return ribFrame(rb, k, X1 > X0 ? clamp((x - X0) / (X1 - X0), 0, 1) : 0, out);
+  }
   // ---- the vortex ring: the snap shot as a ring; prisms near its core are pulled into a toroidal flow and carried ----
   function fireVortex(W, aim) {   // aim: {dx, dy} in the Pistol's plane; straight ahead along the path when none is given
     const p = W.p; let dx = 1, dy = 0;

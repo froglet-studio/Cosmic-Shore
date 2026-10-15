@@ -287,9 +287,15 @@ namespace CosmicShore.Gameplay
             else { float hx = _hx[k + 1], hz = _hz[k + 1]; T = new Vector3(hx, 0f, hz); U = Vector3.up; R = new Vector3(-hz, 0f, hx); }
         }
 
-        /// <summary>The lab's <c>ribFrameAt</c>.</summary>
+        /// <summary>The lab's <c>ribFrameAt</c>. A ribbon of fewer than two samples has no segment yet (the first frames after
+        /// the Goby spawns): its one sample's heading when it has one (WorldUp / ArcLength), else the world's forward.</summary>
         public void FrameAt(float x, out Vector3 T, out Vector3 U, out Vector3 R)
         {
+            if (_p.Count < 2)
+            {
+                if (_p.Count == 1 && Mode != PistolUnroll.GobyUp) { float hx = _hx[0], hz = _hz[0]; T = new Vector3(hx, 0f, hz); U = Vector3.up; R = new Vector3(-hz, 0f, hx); return; }
+                T = Vector3.forward; U = Vector3.up; R = Vector3.left; return;
+            }
             int k = Index(x); float X0 = X(k), X1 = X(k + 1);
             Frame(k, X1 > X0 ? Mathf.Clamp01((x - X0) / (X1 - X0)) : 0f, out T, out U, out R);
         }
