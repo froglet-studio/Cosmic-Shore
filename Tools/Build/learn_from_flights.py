@@ -4,7 +4,7 @@
 Yash, 2026-10-15: "I play Regatta five times with the Squirrel, then my AI reads that data and makes new paths."
 
 Unity writes one flight_*.json per Regatta race the player flies by hand (HumanFlightRecorder, automatic: Go to the
-Play Again menu, or to stopping Play), and Send to Claude puts it on the player's bugledger/<user> branch under
+Play Again menu, or to stopping Play), and Store AI record puts it on the player's bugledger/<user> branch under
 BugLedger/shared/reports/<user>/flights/. This script reads those flights and measures, against the pilot's own rail:
 
   height      how high above the rail the human skims   -> SkimHeight (the line's height minus the course's skim lift)
@@ -213,7 +213,8 @@ def measure(f):
     lane = Lane(f["lane"])
     if f["rows"] and "s" not in f["rows"][0]:
         derive(f, lane)
-    rows = [r for r in f["rows"] if r.get("speed", 0) > 5]
+    # held = 1: the AI flew the hull (the Third Eye's You / AI toggle); that is not the human's flight.
+    rows = [r for r in f["rows"] if r.get("speed", 0) > 5 and not r.get("held", 0) > 0.5]
     skim = [r for r in rows if 0 <= r.get("gap", -1) < SKIM_REACH]
     line_h = statistics.median([r["height"] for r in skim]) if skim else None
 
@@ -390,7 +391,7 @@ def run(sources, write):
         print("skipped:", p)
     if not ms:
         print("No Regatta Squirrel flights to learn from. Fly Regatta as the Squirrel by hand (recording is automatic), "
-              "stop Play and press Send to Claude.")
+              "stop Play and press Store AI record.")
         return 1
     base, _ = current_policy()
     learned, notes, used, why_used = learn(ms, base)
@@ -468,6 +469,18 @@ def self_test():
     assert abs(m2["lineHeight"] - 11.0) < 0.3 and abs(m2["skimLift"] - 7.5) < 1e-6, m2
     assert m2["gapP10"] is not None and abs(m2["gapP10"] - 2.0) < 0.3, m2          # 11 above, shell reaches 9
     assert abs(learn([m2], {"TrackGuardMargin": 1.642, "MassGuardMargin": 1.3})[0]["SkimHeight"] - 3.5) < 0.3
+    # Seconds the AI held the hull (held = 1, the You / AI toggle) are not the human's flight: half the race flown
+    # 30 u up by the AI must not count against the human's time on the skim line. Negative control: with the held
+    # column dropped it does (half the race then looks off the line).
+    held = flight(30, True)
+    hi = flight(30, True, h=30.0)
+    held["columns"] = held["columns"] + ["held"]
+    held["samples"] = [(b if k % 2 else a) + [k % 2] for k, (a, b) in enumerate(zip(held["samples"], hi["samples"]))]
+    m3 = measure(parse("held", json.dumps(held))[0])
+    assert m3["skimShare"] > 0.95 and abs(m3["lineHeight"] - 11.0) < 0.3, m3
+    held["columns"], held["samples"] = held["columns"][:-1], [r[:-1] for r in held["samples"]]
+    m4 = measure(parse("held-dropped", json.dumps(held))[0])
+    assert m4["skimShare"] < 0.6, ("negative control: the held rows should have counted", m4)
     # The author script carries the block this writes into.
     text = open(AUTHOR, encoding="utf-8").read()
     assert BEGIN in text and END in text, "author_skimrace_ai_config.py lost its learn_from_flights block"

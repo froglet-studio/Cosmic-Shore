@@ -308,3 +308,10 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Who can take it:** Garrett (gate races) with Yash
 - **Added:** 2026-10-15 by Claude (Yash's session) (`Ys-bleeding-edge`)
 - **See:** Docs/AI_SYSTEM/SITUATION_RECORDING_PLAN.md S5
+
+### T-20261015-0576 · open · test · AI training
+- **Task:** After your next hand-flown Regatta race in the editor, open the stored flight_Regatta_*.json and check the new situation data: 44 columns per sample, rails (one per lane) with ownRail, ringList, railEvents after a rail hit, camMode not -1; toggle You/AI for a few seconds and those rows have held 1
+- **Done when:** Checklist entry 'AI training recorder: flight/3 records the situation' steps 2 and 2a pass, or what is wrong is reported
+- **Who can take it:** Yash
+- **Added:** 2026-10-15 by Yash's session (`Ys-bleeding-edge`)
+- **See:** Docs/UNITY_VERIFICATION_CHECKLIST.md

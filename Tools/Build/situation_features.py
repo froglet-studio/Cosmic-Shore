@@ -10,7 +10,7 @@ legs, skim choices and learning, line for line, so a flight Unity recorded (Huma
 and a flight the page recorded give the same answers. The definitions are in Docs/AI_SYSTEM/situation_features.json.
 --self-test runs both on the same fixture flight and fails on any difference.
 
-    python3 Tools/Build/situation_features.py                     # every Regatta flight on every origin branch (Send to Claude)
+    python3 Tools/Build/situation_features.py                     # every Regatta flight on every origin branch (stored with Store AI record)
     python3 Tools/Build/situation_features.py --dir <folder>      # ...or a local folder of flight_*.json
     python3 Tools/Build/situation_features.py --json <file>       # one flight: the full analysis as JSON on stdout
     python3 Tools/Build/situation_features.py --write             # ...and write what was learned (learned_situations.json + LEARNED_SITUATIONS.md)
@@ -597,7 +597,7 @@ def report(sources, write=False):
               f"{m['rams']} rail hits, skims {m['skimsTaken']} taken / {m['skimsSkipped']} skipped, {m['boostPresses']} boost presses")
         print("   time in each phase: " + ", ".join(f"{k} {round(v * 100)}%" for k, v in sorted(m["phaseShare"].items(), key=lambda kv: -kv[1]) if v > 0))
     if not analyses:
-        print("No Regatta flight found. Fly a Regatta race by hand in Unity and press Send to Claude, or pass --dir.")
+        print("No Regatta flight found. Fly a Regatta race by hand in Unity and press Store AI record, or pass --dir.")
         return 0
     by_hull = {}
     for hull in sorted({A["norm"]["hullKey"] for A in analyses}):

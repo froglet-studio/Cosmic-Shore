@@ -34,7 +34,9 @@ runs while a person plays), and lets us add a new feature later and re-run it ov
 
 ### 2.1 Recorded once per race (static world)
 
-Regatta's world is static, so it is copied once at the end (the recorder already does this for the pilot's own rail):
+Regatta's world is static, so it is copied once, when recording starts (**recorded since 2026-10-16**: `ringList`, `laps`,
+`rails` with `ownRail`, `rivalDifficulty`, `build`, `unity`, `courseSeed`, `courseIntensity`; the pilot's own rail stays
+in `lane`):
 
 - every ring: position, axis, mouth radius, order, laps;
 - every rail: its prisms, up axes, contact-shell size, which domain owns it;
@@ -50,7 +52,16 @@ Added in `flight/3`:
   drift held, element levels.
 - **Rivals:** each other hull's position, velocity and hull class (8 hulls × 7 numbers is small).
 - **Things that move or vanish:** crystals present (position), prisms destroyed since the last sample (ids only).
-- **Who was flying:** human or AI-holding (already skipped today), and the camera mode the human was using.
+- **Who was flying:** human or AI-holding, and the camera mode the human was using.
+
+**Recorded since 2026-10-16** (all of the above, `HumanFlightRecorder`; columns are read by name, so the schema stays
+`flight/3`): `vx vy vz` (course x speed), `pitchRate yawRate rollRate` (deg/s in the hull's frame, from the rotation
+since the last sample), `charge`, `state` (bits in the header's `stateBits`: boosting, discharging, drifting, slowed,
+attached, stationary), `lvC lvM lvS lvT`, `held` (AI-holding samples are now kept and marked; every reader skips them),
+`camx camy camz camfx camfy camfz fov camMode` (Caleb's V1 view); `rivalVel` (vx, vy, vz per rival, aligned with
+`rivals`); `crystals` (the 12 nearest: x, y, z, element); `railEvents` ([t, rail, prism, 1 destroyed / 0 restored]).
+Not recorded: the hull-specific speed-verb phases (ramp, soar, skim boost) beyond `boost`, `charge` and `state`; they
+have no shared field on the vessel status.
 
 ### 2.3 Computed offline, per sample (the situation, in the pilot's own frame)
 
@@ -133,7 +144,7 @@ their own consent question; no personal data is recorded.
 | **S1** | Feature spec (§2.3) and labels (§2.4) | **Written**: `Docs/AI_SYSTEM/situation_features.json` (every feature, label and learning rule, with its exact definition). Waiting on your sign-off: say what is missing or wrong |
 | **S2** | A replay of a flight with its situations | **Built, now a viewer of Unity flights only** (decision above): its **Flights** tab loads a Unity flight and replays it on the stage (your hull as a white ghost, a line to the target you were going for coloured by phase, green / red / amber dots for skims taken / skipped and mistakes), shows every feature of the moment, and compares each leg with the page's Hard AI from the same spot (a guide, not data). `Docs/Studios/RegattaAI/situation.js` |
 | **S3** | `situation_features.py` over Unity's flights | **Built**: `Tools/Build/situation_features.py` reads flight/2 and flight/3, line for line the same as `situation.js`; `--self-test` runs both on `Tools/Build/situation_fixtures/` and fails on any difference (with a negative control). First real flight (your Squirrel, 2026-10-16 02:31, 24 rings): commit about 431 u out (the AI's is 420), 22 skims taken and 7 skipped, a skim taken when its detour is 10 u or less (69% of your choices) |
-| **S4** | Unity recorder `flight/3` | **Built, not editor-verified**: `HumanFlightRecorder` adds both triggers, the course and every other pilot's position and rings each sample. Rail hits and skims are still inferred (speed drop, boost rise) |
+| **S4** | Unity recorder `flight/3` | **Built, not editor-verified**: `HumanFlightRecorder` adds both triggers, the course and every other pilot's position and rings each sample; since 2026-10-16 everything else in §2.1-2.2 (hull state, element levels, `held`, camera, rival velocities, crystals, every ring and rail, rail holes as `railEvents`). Skims are still inferred (speed drop, boost rise); rail hits can now be read from `railEvents` |
 | **S5** | Learning step 1 (commit curve) and step 2 (skim rule, boost angle) | **Built in `situation_features.py --write`**, over editor flights only: from clean legs in the faster half of your own times for each ring, once a hull has 3 editor flights; writes `learned_situations.json` and `LEARNED_SITUATIONS.md` for review. **Not yet in Unity's steering**: the commit curve and skim rule need their two knobs ported to `GateRaceController` / the Skim Race pilot (task T-20261015-7fc3). The situation-library test (the AI put in your own moments) moves to the editor with that port |
 | **S6** | Behaviour cloning | Only if S5 leaves a measured gap |
 

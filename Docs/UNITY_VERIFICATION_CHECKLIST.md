@@ -68,16 +68,28 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 ### 🔴 AI training recorder: flight/3 records the situation (`Ys-bleeding-edge`, 2026-10-16) — NOT EDITOR-VERIFIED
 
 **What landed:** `HumanFlightRecorder` writes `cosmic-shore.flight/3`: the same columns as before plus both triggers and the
-course, and every other pilot's position and rings each sample (`rivalHulls`, `rivals`). `Tools/Build/situation_features.py`
+course, and every other pilot's position and rings each sample (`rivalHulls`, `rivals`). **2026-10-16, the rest of
+`SITUATION_RECORDING_PLAN.md` §2.1-2.2** (Yash: "record the rest of the planned data too"): per sample the velocity, pitch /
+yaw / roll rates, boost charge, a `state` bit set (boosting, discharging, drifting, slowed, attached, stationary), the four
+element levels, `held` (1 while the AI holds the hull; those samples are now KEPT and every learner skips them), the camera
+(position, forward, field of view, mode: Caleb's V1), each rival's velocity (`rivalVel`) and the 12 nearest crystals
+(`crystals`); once per race every ring (`ringList`: order, position, axis, mouth radius; `laps`), every rail (`rails`:
+prisms, up axes, shell, owning domain; `ownRail`; `lane` kept), each rail prism destroyed or restored (`railEvents`), the
+rival difficulty, the build and the course seed. The rails and rings are copied when recording starts, not at the end. `Tools/Build/situation_features.py`
 turns a flight into situations (target, line-up, obstacles, skim, manoeuvre, race), labels (what you were going for, the
 phase, skims taken and skipped, mistakes) and what to learn (`Docs/AI_SYSTEM/SITUATION_RECORDING_PLAN.md`).
 **Verified without the editor:** `unity_refcompile` player-dev 0 project errors, editor only the 3 known ones; gates;
 `situation_features.py --self-test` (Python = the page's `situation.js` on the fixture, negative control caught); the
-report read your Unity flight of 2026-10-16 02:31 (flight/2).
+report read your Unity flight of 2026-10-16 02:31 (flight/2); both learners read that flight re-shaped with the new keys
+and columns; `learn_from_flights.py --self-test` skips `held` rows (negative control: without the column they count).
 **Verify in editor:**
 1. Regatta, solo, Squirrel, with AI rivals. Fly a full race by hand; store the record when Unity asks after Play.
-2. The new `flight_Regatta_Squirrel_*.json` says `"schema":"cosmic-shore.flight/3"`, has `rivalHulls` naming the rivals and a
-   `rivals` array as long as `samples`; each sample row has 23 numbers.
+2. The new `flight_Regatta_Squirrel_*.json` says `"schema":"cosmic-shore.flight/3"`, has `rivalHulls` naming the rivals and
+   `rivals`, `rivalVel` and `crystals` arrays as long as `samples`; each sample row has 44 numbers (`columns`). `rails` has
+   one entry per lane (3 in a three-domain race) and `ownRail` points at yours; `ringList` has the course's rings in order;
+   hitting the rail adds `railEvents` rows. `camMode` is not -1 and `fov` is not 0 while you fly.
+2a. Switch the Third Eye's You / AI to AI for a few seconds mid-race, then back: those rows have `held` 1, and the record
+   is still stored. No new Console warning or error while recording, and no frame-time change (`diag`).
 3. `python3 Tools/Build/situation_features.py --dir <the Flights folder>` reports it: rings, skims taken / skipped, phases.
 4. After three or more such races: `python3 Tools/Build/situation_features.py --write` learns from them (editor flights only).
 5. Optional, to look at a flight: the Training AI for Regatta page, Flights ▸ Load a Unity flight, then Replay.

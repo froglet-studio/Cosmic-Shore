@@ -1832,14 +1832,17 @@ two parts (`Docs/AI_SYSTEM/AI_TRAINING_PLAN.md` L3, steps 1 and 4A):
 1. **The recorder** (`HumanFlightRecorder`, editor and development builds only), now the **AI training recorder for every
    game mode and vessel** (single player; online players later), files `flight_<Mode>_<Vessel>_<time>.json` with a
    `training` field. After Play, Unity asks **"Store AI training record?"** and names the vessel, mode and training type. **It is automatic** (Yash,
-   2026-10-15: the Record button kept reading on with nothing saved, so it was removed). It starts when a Regatta race
-   starts (Go) and stops when the race ends (the Play Again menu) or when Play stops. Only races the local player
-   flies BY HAND are recorded; seconds the AI holds the hull (You / AI) are skipped. Ten times a second it records
-   position, heading and up, speed, boost, the four stick axes, the throttle and rings threaded. Nothing during the
-   race reads the rail. At the end it copies the pilot's own rail from the arena (prism positions, up axes, contact
-   shell size) and writes `flight_Regatta_<hull>_<time>.json` (schema `cosmic-shore.flight/2`) to
-   `<Documents>/CosmicShore Diagnostics/Flights/`. Unity's after-play **Send to Claude** asks about every new flight
-   and carries it to `BugLedger/shared/reports/<user>/flights/`. A race that cannot be saved says why in one Console
+   2026-10-15: the Record button kept reading on with nothing saved, so it was removed). It starts when a match's turn
+   starts (Go) and stops when it ends (the Play Again menu) or when Play stops. Only the local player's own hull is
+   recorded; seconds the AI holds it (You / AI) are recorded with `held` = 1 and every learner skips them. Ten times
+   a second it records what `Docs/AI_SYSTEM/SITUATION_RECORDING_PLAN.md` §2.2 lists: position, heading and up, speed,
+   boost, the four stick axes, the throttle, both triggers, the course, rings threaded, velocity, turn rates, boost
+   charge and state bits, element levels, the camera, every rival's position, velocity and rings, and the nearest
+   crystals. When recording starts it copies the race's static world (§2.1): every ring and, in Regatta, every rail
+   (prism positions, up axes, contact shell size, owning domain; the pilot's own is `lane` / `ownRail`); rail prisms
+   destroyed or restored during the race are `railEvents`. It writes `flight_<Mode>_<hull>_<time>.json` (schema
+   `cosmic-shore.flight/3`) to `<Documents>/CosmicShore Diagnostics/Flights/`. Unity's after-play **Store AI record**
+   asks about every new flight and carries it to `BugLedger/shared/reports/<user>/flights/`. A race that cannot be saved says why in one Console
    warning. HUD `flightrec` reports the state and the saved count.
 2. **The learner** (`python3 Tools/Build/learn_from_flights.py`) reads every flight on every origin branch, or
    `--dir <folder>`, and measures each sample against the rail itself (arc length, height, sideways offset, gap to the
