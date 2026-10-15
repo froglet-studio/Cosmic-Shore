@@ -18,13 +18,14 @@ namespace CosmicShore.Utility
     ///
     /// <list type="bullet">
     /// <item><b>Destruction</b> (<see cref="TryRequestDestruction"/>): the Sierpinski cut at a depth, every
-    /// fragment a shard (the <see cref="Glitter"/> kind; the shader's <see cref="Shatter"/> kind is its fallback),
-    /// leaving on the
-    /// explosion's own flight (<see cref="PrismDebris.ResolveExplosionFlight"/>) for the explosion's own life,
-    /// in the explosion's palette, inside a prism-sized envelope of the travelling centre, fading linearly —
-    /// so squinted at it is the explosion.</item>
+    /// fragment a <see cref="Wedge"/> — moved by the EXPLOSION's own tuned law (RotateFacesAlongAxis' closed form:
+    /// its response to the impact velocity, its two spin axes, its spin rate capped by its clamped speed, its slide,
+    /// all with the explosion material's own dials, copied at runtime) as a wedge scaled to the fragment — on the
+    /// explosion's own flight (<see cref="PrismDebris.ResolveExplosionFlight"/>) for the explosion's own life, in the
+    /// explosion's palette, fading on the explosion's own erosion. Depth 0 of the cut IS the explosion.</item>
     /// <item><b>Shed</b> (<see cref="TryRequestShed"/>): a skin in the prism's OLD colours, a hair outside it,
-    /// coming off as a BLOOM, an UNRAVEL or a FLAKE while the prism underneath already wears the new colour;
+    /// coming off as a BLOOM (the game's one shed; <see cref="Unravel"/> and <see cref="Flake"/> stay in the shader
+    /// for the lab) while the prism underneath already wears the new colour, every steal seeded afresh;
     /// its coverage falls on the grade's smoothstep over the grade's length — so squinted at it is the
     /// grade.</item>
     /// </list>
@@ -44,7 +45,16 @@ namespace CosmicShore.Utility
     public static class PrismCollisionBurst
     {
         /// <summary>The kinds, in <c>PrismCollisionBurst.hlsl</c>'s order.</summary>
-        public const int Shatter = 0, Bloom = 1, Unravel = 2, Glitter = 3, Flake = 4, KindCount = 5;
+        public const int Shatter = 0, Bloom = 1, Unravel = 2, Glitter = 3, Flake = 4, Wedge = 5, KindCount = 6;
+
+        /// <summary>RotateFacesAlongAxis / TangentSlider's constants — <c>PRISM_BURST_PIVOT_BIAS</c> and
+        /// <c>PRISM_BURST_SLIDER_GAIN</c> in the HLSL (a test holds them equal; the lab's build reads them from the graph).</summary>
+        public const float PivotBias = -0.5f, SliderGain = 0.5f;
+
+        /// <summary>The explosion material's dials, as shipped (ExplodingBlockMaterial.mat) — what the burst shader
+        /// carries as defaults and what <see cref="WedgeReach"/> assumes until the explosion is configured.</summary>
+        public static readonly Vector3 ShippedExplosionSpread = new(0.18f, 0.1f, 0.1f);
+        public const float ShippedExplosiveRotation = 0.0169f, ShippedExplosiveSpread = 0.05f;
 
         /// <summary>
         /// How far past 1 the dissolve runs at retirement — <c>PRISM_BURST_DISSOLVE_OVERSHOOT</c> in the HLSL
@@ -60,14 +70,62 @@ namespace CosmicShore.Utility
         /// </summary>
         public static float EnvelopeRadii(float spread) => 3.5f + 1.5f * Mathf.Max(0f, spread);
 
+        /// <summary>
+        /// How far, in WORLD units, a <see cref="Wedge"/> fragment can be from the travelling centre at explosion
+        /// <paramref name="amount"/> (speed × t) — the SAME sum as <c>PrismBurstWedgeReach</c> in the HLSL, whose
+        /// harness proves every pose of every depth stays inside it: 3R, plus twice the pivot's offset off the
+        /// fragment's centroid, plus the slide, both at the largest object scale.
+        /// </summary>
+        public static float WedgeReach(float radius, float maxScale, float amount, float spreadPerAmount, Vector3 spreadValue)
+        {
+            float ox = Mathf.Abs((spreadValue.x - PivotBias) * SliderGain - 1f / 3f);
+            float oy = Mathf.Abs((spreadValue.y - PivotBias) * SliderGain - 1f / 3f);
+            float oz = Mathf.Abs((spreadValue.z - PivotBias) * SliderGain - 1f / 3f);
+            float offset = Mathf.Max(ox, Mathf.Max(oy, oz));
+            return 3f * radius + (2f * offset + Mathf.Abs(amount * spreadPerAmount) * SliderGain) * maxScale;
+        }
+
+        /// <summary>
+        /// The explosion material's own dials — its <c>_Spread</c>, <c>_ExplosiveRotation</c> and <c>_ExplosiveSpead</c>
+        /// (sic, the graph's ExplosiveSpread) — so every depth of the cut moves by the explosion's tuning, single-sourced.
+        /// False (and the shipped values) until the explosion pool is configured or when its material lacks them.
+        /// </summary>
+        public static bool TryGetExplosionTuning(out Vector3 spreadValue, out float rotation, out float spreadPerAmount)
+        {
+            spreadValue = ShippedExplosionSpread;
+            rotation = ShippedExplosiveRotation;
+            spreadPerAmount = ShippedExplosiveSpread;
+            if (!PrismDebris.TryGetExplosionConfig(out var material, out _, out _) || material == null) return false;
+            if (!material.HasProperty(SourceSpreadId) || !material.HasProperty(SourceRotationId) ||
+                !material.HasProperty(SourceSlideId)) return false;
+            spreadValue = material.GetVector(SourceSpreadId);
+            rotation = material.GetFloat(SourceRotationId);
+            spreadPerAmount = material.GetFloat(SourceSlideId);
+            return true;
+        }
+
+        /// <summary>
+        /// A steal's seed: the pose's (<see cref="SeedOf"/>) moved on by the clock, so the same prism stolen twice
+        /// peels two different ways. Cosmetic only — two peers may peel one steal differently, never to a different colour.
+        /// </summary>
+        public static float StealSeed(Vector3 position, float now) =>
+            Mathf.Repeat(SeedOf(position) + now * 0.618034f, 1f);
+
         /// <summary>A shed's life for a grade of <paramref name="gradeSeconds"/>: its fade ends with the grade.</summary>
         public static float ShedLife(float gradeSeconds) => Mathf.Max(0.05f, gradeSeconds) * (1f + DissolveOvershoot);
 
         static readonly int ShapeId = Shader.PropertyToID("_BurstShape");
         static readonly int CurlId = Shader.PropertyToID("_BurstCurl");
+        static readonly int PeelId = Shader.PropertyToID("_BurstPeel");
+        static readonly int ExplosionSpreadId = Shader.PropertyToID("_ExplosionSpread");
+        static readonly int ExplosionDialsId = Shader.PropertyToID("_ExplosionDials");
+        static readonly int SourceSpreadId = Shader.PropertyToID("_Spread");
+        static readonly int SourceRotationId = Shader.PropertyToID("_ExplosiveRotation");
+        static readonly int SourceSlideId = Shader.PropertyToID("_ExplosiveSpead");
 
         static Material s_runtimeMaterial;
         static PrismInteractionLodConfigSO s_runtimeMaterialFor;
+        static bool s_runtimeMaterialTuned;
 
         struct Record
         {
@@ -177,6 +235,7 @@ namespace CosmicShore.Utility
             s_suspendedUntil = 0f;
             s_runtimeMaterial = null;
             s_runtimeMaterialFor = null;
+            s_runtimeMaterialTuned = false;
             Application.quitting -= HandleQuitting;
             Application.quitting += HandleQuitting;
         }
@@ -201,7 +260,7 @@ namespace CosmicShore.Utility
 
         /// <summary>
         /// Queues a DESTRUCTION of <paramref name="kind"/> on <paramref name="mesh"/> (the game draws the Sierpinski cut
-        /// with <see cref="Glitter"/>) for the
+        /// with <see cref="Wedge"/>) for the
         /// prism that was at (<paramref name="position"/>, <paramref name="rotation"/>, <paramref name="scale"/>).
         /// <paramref name="impactVelocity"/>, <paramref name="speedLimitOverride"/> and <paramref name="tier"/>
         /// are exactly what the explosion would have been handed, so the cloud leaves exactly like it. Returns
@@ -215,7 +274,19 @@ namespace CosmicShore.Utility
 
             Vector3 flight = PrismDebris.ResolveExplosionFlight(impactVelocity, speedLimitOverride, tier, out float speed);
             float life = PrismExplosion.DefaultDuration;
-            BuildBounds(rotation, scale, flight * life, cfg.Spread, out var centre, out var extents);
+            float3 centre, extents;
+            if (kind == Wedge)
+            {
+                TryGetExplosionTuning(out var spreadValue, out _, out float spreadPerAmount);
+                var s = Abs(scale);
+                float reach = WedgeReach(0.5f * s.magnitude, Mathf.Max(s.x, Mathf.Max(s.y, s.z)), speed * life,
+                    spreadPerAmount, spreadValue);
+                BuildBoundsOfReach(rotation, scale, flight * life, reach, out centre, out extents);
+            }
+            else
+            {
+                BuildBounds(rotation, scale, flight * life, cfg.Spread, out centre, out extents);
+            }
 
             Queue(new PrismRenderService.SliceDebrisSpawn
             {
@@ -257,7 +328,7 @@ namespace CosmicShore.Utility
                 LocalToWorld = Matrix4x4.TRS(position, rotation, skin),
                 BrightColor = PrismRenderService.ToFloat4(oldBright),
                 DarkColor = PrismRenderService.ToFloat4(oldDark),
-                Timing = new float4(0f, ShedLife(gradeSeconds), SeedOf(position), kind),
+                Timing = new float4(0f, ShedLife(gradeSeconds), StealSeed(position, PrismClock.Now), kind),
                 Plane = new float4(1f, 0f, 0f, 0f),     // fade curve 1: the grade's smoothstep
                 Centre = new float4(0f, 0f, 0f, 1f),
                 // The inside wears the NEW colour; the stamp is raw, so it takes the colour-space conversion
@@ -328,21 +399,36 @@ namespace CosmicShore.Utility
         /// R / |scale_i| in object space — swept along the whole flight.
         /// </summary>
         public static void BuildBounds(Quaternion rotation, Vector3 scale, Vector3 worldFlight, float spread,
+            out float3 centre, out float3 extents) =>
+            BuildBoundsOfReach(rotation, scale, worldFlight, EnvelopeRadii(spread) * 0.5f * Abs(scale).magnitude,
+                out centre, out extents);
+
+        /// <summary>
+        /// <see cref="BuildBounds"/> for a WORLD reach (<see cref="WedgeReach"/>): every pose within
+        /// <paramref name="reach"/> of the centre, swept along the whole flight.
+        /// </summary>
+        public static void BuildBoundsOfReach(Quaternion rotation, Vector3 scale, Vector3 worldFlight, float reach,
             out float3 centre, out float3 extents)
         {
-            var s = new Vector3(Mathf.Max(1e-4f, Mathf.Abs(scale.x)), Mathf.Max(1e-4f, Mathf.Abs(scale.y)),
-                Mathf.Max(1e-4f, Mathf.Abs(scale.z)));
-            float radius = 0.5f * s.magnitude;
-            float reach = EnvelopeRadii(spread) * radius;
+            var s = Abs(scale);
             Vector3 local = Quaternion.Inverse(rotation) * worldFlight;
             var flightOS = new float3(local.x / s.x, local.y / s.y, local.z / s.z);
             centre = flightOS * 0.5f;
             extents = new float3(reach / s.x, reach / s.y, reach / s.z) + math.abs(flightOS) * 0.5f;
         }
 
+        static Vector3 Abs(Vector3 scale) =>
+            new(Mathf.Max(1e-4f, Mathf.Abs(scale.x)), Mathf.Max(1e-4f, Mathf.Abs(scale.y)),
+                Mathf.Max(1e-4f, Mathf.Abs(scale.z)));
+
         static Material ResolveRuntimeMaterial(PrismInteractionLodConfigSO cfg)
         {
-            if (s_runtimeMaterial != null && s_runtimeMaterialFor == cfg) return s_runtimeMaterial;
+            if (s_runtimeMaterial != null && s_runtimeMaterialFor == cfg)
+            {
+                // The explosion pool can configure after the first burst: copy its dials the first drain they exist.
+                if (!s_runtimeMaterialTuned) s_runtimeMaterialTuned = ApplyExplosionTuning(s_runtimeMaterial);
+                return s_runtimeMaterial;
+            }
             DropRuntimeMaterial();
             if (cfg == null || cfg.BurstMaterial == null) return null;
 
@@ -355,8 +441,20 @@ namespace CosmicShore.Utility
                 new Vector4(cfg.Spread, cfg.OpenSeconds, cfg.SpinPerSpeed, cfg.DissolveGrain));
             s_runtimeMaterial.SetVector(CurlId,
                 new Vector4(cfg.BloomTurns, cfg.UnravelTurns, cfg.RibbonsPerFace, cfg.ShardsPerFaceEdge));
+            s_runtimeMaterial.SetVector(PeelId, new Vector4(cfg.BloomRings, cfg.BloomSegments, cfg.PeelNoise, 0f));
+            s_runtimeMaterialTuned = ApplyExplosionTuning(s_runtimeMaterial);
             s_runtimeMaterialFor = cfg;
             return s_runtimeMaterial;
+        }
+
+        /// <summary>Copies the explosion material's dials onto the burst material (<see cref="TryGetExplosionTuning"/>);
+        /// true once they came from the real explosion, false while the shipped defaults stand in.</summary>
+        static bool ApplyExplosionTuning(Material material)
+        {
+            bool real = TryGetExplosionTuning(out var spreadValue, out float rotation, out float spreadPerAmount);
+            material.SetVector(ExplosionSpreadId, new Vector4(spreadValue.x, spreadValue.y, spreadValue.z, 0f));
+            material.SetVector(ExplosionDialsId, new Vector4(rotation, spreadPerAmount, 0f, 0f));
+            return real;
         }
 
         /// <summary>Editor tooling: forget the runtime clone so the next burst re-reads the config.</summary>
@@ -375,6 +473,7 @@ namespace CosmicShore.Utility
             }
             s_runtimeMaterial = null;
             s_runtimeMaterialFor = null;
+            s_runtimeMaterialTuned = false;
         }
 
         static void EnsureHost()

@@ -17,6 +17,9 @@ namespace CosmicShore.Utility
     /// reads as the deeper one with its small fragments too small to see. Every triangle winds counter-clockwise in
     /// face coordinates, like the face it tiles; every vertex is a dyadic fraction, exact in float.</para>
     ///
+    /// <para>Every fragment also wears its wedge's EXPLOSION UV (<see cref="WedgeUV"/>), so the explosion's erosion
+    /// fades every depth on the explosion's own pattern.</para>
+    ///
     /// <para>Pure (no UnityEngine), so the Collision Burst Lab's JavaScript port is held to it triangle for triangle by
     /// <c>Tools/Build/prism_collision_burst_lab/parity.py</c>, which compiles this file with the .NET SDK and also
     /// checks depth 0 against <c>Prism.asset</c>.</para>
@@ -51,6 +54,34 @@ namespace CosmicShore.Utility
                 int n = (k + 1) % 4;
                 Split(0.5f, 0.5f, cu[k], cv[k], cu[n], cv[n], 0, depth, into);
             }
+        }
+
+        /// <summary>
+        /// The wedge (0–3) a face's triangle <paramref name="indexInFace"/> belongs to at <paramref name="depth"/>:
+        /// <see cref="Triangles"/> emits the four wedges in order, <see cref="PerWedge"/> triangles each.
+        /// </summary>
+        public static int WedgeOf(int indexInFace, int depth) => indexInFace / PerWedge(Clamp(depth));
+
+        /// <summary>
+        /// The EXPLOSION's UV of face point (<paramref name="u"/>, <paramref name="v"/>) in wedge
+        /// <paramref name="wedge"/>: <c>Prism.asset</c> gives every wedge the same UV triangle — its first corner
+        /// (0, 0), its second (1, 0), the face centre (0.5, 0.5) — so its erosion wipes each wedge on its own.
+        /// That is the face coordinates turned back by a quarter turn per wedge about the face centre. A fragment
+        /// of the cut wears its wedge's UV, so every depth fades on the explosion's own erosion pattern. Exact in
+        /// float (the coordinates are dyadic).
+        /// </summary>
+        public static void WedgeUV(int wedge, float u, float v, out float wu, out float wv)
+        {
+            float x = u - 0.5f, y = v - 0.5f;
+            switch (wedge & 3)
+            {
+                case 1: wu = y; wv = -x; break;
+                case 2: wu = -x; wv = -y; break;
+                case 3: wu = -y; wv = x; break;
+                default: wu = x; wv = y; break;
+            }
+            wu += 0.5f;
+            wv += 0.5f;
         }
 
         static void Split(float au, float av, float bu, float bv, float cu, float cv, int level, int depth, List<float> into)

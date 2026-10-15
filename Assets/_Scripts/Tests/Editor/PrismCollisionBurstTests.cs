@@ -13,7 +13,8 @@ namespace CosmicShore.Tests
 {
     /// <summary>
     /// The CPU half of prism movement's three-level ladder and of the prism's interaction DETAIL LEVELS —
-    /// destruction (explosion, shatter, glitter) and stealing (the grade, or a bloom / unravel / flake shed)
+    /// destruction (the explosion, then the Sierpinski cut moved by the explosion's own law) and stealing (the grade,
+    /// or a bloom shed)
     /// (Docs/PRISM_MOTION.md, Docs/PRISM_ANIMATION.md §4.11). The GPU half is proven by
     /// Tools/Shaders/verify_prism_collision_burst.py, which executes the shipped HLSL. This file holds
     /// the CPU to the promises that proof assumes — the culling envelope and the dissolve overshoot are the
@@ -27,6 +28,7 @@ namespace CosmicShore.Tests
         const string HlslPath = "Assets/_Graphics/Materials/Graphs/PrismCollisionBurst.hlsl";
         const string MotionConfigPath = "Assets/Resources/PrismMotionConfig.asset";
         const string LodConfigPath = "Assets/Resources/PrismInteractionLodConfig.asset";
+        const string ExplosionMaterialPath = "Assets/_Graphics/Materials/BlockMaterials/ExplodingBlockMaterial.mat";
 
         // ---------------------------------------------------------------- the ladder
 
@@ -154,14 +156,77 @@ namespace CosmicShore.Tests
             Assert.AreEqual(1000, counts[PrismCollisionBurst.Bloom], 1);
             Assert.AreEqual(1000, counts[PrismCollisionBurst.Unravel], 1);
             Assert.AreEqual(1000, counts[PrismCollisionBurst.Flake], 1);
-            Assert.AreEqual(0, counts[PrismCollisionBurst.Shatter] + counts[PrismCollisionBurst.Glitter],
-                "a destruction kind is never a shed");
+            Assert.AreEqual(0, counts[PrismCollisionBurst.Shatter] + counts[PrismCollisionBurst.Glitter] +
+                               counts[PrismCollisionBurst.Wedge], "a destruction kind is never a shed");
 
             for (int i = 0; i < 100; i++)
                 Assert.AreNotEqual(PrismCollisionBurst.Unravel, PrismCollisionBurst.PickShed(i / 100f, 1f, 0f, 1f));
             Assert.AreEqual(PrismCollisionBurst.Flake, PrismCollisionBurst.PickShed(1f, 1f, 1f, 1f));
             Assert.AreEqual(PrismCollisionBurst.Unravel, PrismCollisionBurst.PickShed(1f, 1f, 1f, 0f));
             Assert.AreEqual(PrismCollisionBurst.Bloom, PrismCollisionBurst.PickShed(0.5f, 0f, 0f, 0f));
+        }
+
+        [Test]
+        public void TheWedgeIsTheHlslsKindAndConstants()
+        {
+            string hlsl = File.ReadAllText(HlslPath);
+            StringAssert.Contains($"#define PRISM_BURST_WEDGE   {PrismCollisionBurst.Wedge}.0", hlsl);
+            StringAssert.Contains("#define PRISM_BURST_PIVOT_BIAS (-0.5)", hlsl);
+            StringAssert.Contains("#define PRISM_BURST_SLIDER_GAIN 0.5", hlsl);
+            Assert.AreEqual(-0.5f, PrismCollisionBurst.PivotBias);
+            Assert.AreEqual(0.5f, PrismCollisionBurst.SliderGain);
+            StringAssert.Contains("return 3.0 * radius + (2.0 * offset + abs(amount * spreadPerAmount) * PRISM_BURST_SLIDER_GAIN) * maxScale;", hlsl,
+                "WedgeReach is the HLSL's PrismBurstWedgeReach, which the harness proves every pose stays inside");
+            Assert.AreEqual(PrismCollisionBurst.KindCount - 1, PrismCollisionBurst.Wedge, "the wedge is the last kind");
+        }
+
+        [Test]
+        public void TheWedgeReachIsTheProvedSum()
+        {
+            var s = new Vector3(0.18f, 0.1f, 0.1f);
+            // offset = max |(s + 0.5) * 0.5 - 1/3| = |0.3 - 1/3| = 1/30 (the thin axes).
+            float offset = Mathf.Abs(0.3f - 1f / 3f);
+            Assert.AreEqual(3f * 2f + (2f * offset + 400f * 0.05f * 0.5f) * 6f,
+                PrismCollisionBurst.WedgeReach(2f, 6f, 400f, 0.05f, s), 1e-4f);
+            Assert.AreEqual(3f * 2f + 2f * offset * 6f, PrismCollisionBurst.WedgeReach(2f, 6f, 0f, 0.05f, s), 1e-5f,
+                "at rest the reach is the prism plus the pivot's offset");
+        }
+
+        [Test]
+        public void TheBurstCarriesTheExplosionsOwnDials()
+        {
+            // The shader's defaults are the explosion material's values (the runtime copies the live material's
+            // over them, TryGetExplosionTuning), so even before the copy every depth moves as the explosion does.
+            string mat = File.ReadAllText(ExplosionMaterialPath);
+            string shader = File.ReadAllText(ShaderPath);
+            float Read(string key) => float.Parse(Regex.Match(mat, $@"- {key}: ([-0-9.e]+)").Groups[1].Value,
+                System.Globalization.CultureInfo.InvariantCulture);
+            var spread = Regex.Match(mat, @"- _Spread: \{r: ([-0-9.e]+), g: ([-0-9.e]+), b: ([-0-9.e]+)");
+            Assert.IsTrue(spread.Success, "the explosion material's _Spread");
+            var shipped = PrismCollisionBurst.ShippedExplosionSpread;
+            var ci = System.Globalization.CultureInfo.InvariantCulture;
+            Assert.AreEqual(float.Parse(spread.Groups[1].Value, ci), shipped.x, 1e-6f);
+            Assert.AreEqual(float.Parse(spread.Groups[2].Value, ci), shipped.y, 1e-6f);
+            Assert.AreEqual(float.Parse(spread.Groups[3].Value, ci), shipped.z, 1e-6f);
+            Assert.AreEqual(Read("_ExplosiveRotation"), PrismCollisionBurst.ShippedExplosiveRotation, 1e-6f);
+            Assert.AreEqual(Read("_ExplosiveSpead"), PrismCollisionBurst.ShippedExplosiveSpread, 1e-6f);
+            string F(float v) => v.ToString("0.####", ci);
+            StringAssert.Contains($"_ExplosionSpread (\"Spread value (the explosion's _Spread)\", Vector) = ({F(shipped.x)}, {F(shipped.y)}, {F(shipped.z)}, 0)", shader);
+            StringAssert.Contains($"= ({F(PrismCollisionBurst.ShippedExplosiveRotation)}, {F(PrismCollisionBurst.ShippedExplosiveSpread)}, 0, 0)", shader);
+        }
+
+        [Test]
+        public void EveryStealPeelsItsOwnWay()
+        {
+            var at = new Vector3(12.5f, -3f, 40f);
+            float a = PrismCollisionBurst.StealSeed(at, 100f), b = PrismCollisionBurst.StealSeed(at, 101.3f);
+            Assert.AreNotEqual(a, b, "the same prism stolen twice peels two ways");
+            for (int i = 0; i < 200; i++)
+            {
+                float seed = PrismCollisionBurst.StealSeed(at * i, i * 7.31f);
+                Assert.GreaterOrEqual(seed, 0f);
+                Assert.Less(seed, 1f);
+            }
         }
 
         // ---------------------------------------------------------------- the detail levels
@@ -355,6 +420,59 @@ namespace CosmicShore.Tests
         }
 
         [Test]
+        public void EveryFragmentWearsItsWedgesExplosionUV()
+        {
+            // Depth 0 wears Prism.asset's UV0 vertex for vertex, so the explosion's erosion fades it exactly as it
+            // fades the explosion; every deeper fragment's UVs lie inside its wedge's UV triangle.
+            HighPolyPrismMesh.InvalidateCache();
+            var prism = AssetDatabase.LoadAssetAtPath<Mesh>("Assets/_Models/Testing/Prism.asset");
+            Assert.IsNotNull(prism, "the explosion's mesh");
+            var pv = prism.vertices;
+            var puv = new System.Collections.Generic.List<Vector2>();
+            prism.GetUVs(0, puv);
+            var pt = prism.triangles;
+            var cut = HighPolyPrismMesh.GetSierpinski(0);
+            var cv = cut.vertices;
+            var cuv = new System.Collections.Generic.List<Vector2>();
+            cut.GetUVs(HighPolyPrismMesh.FaceUVChannel, cuv);
+            Assert.AreEqual(pt.Length, cv.Length, "24 wedges");
+            int matched = 0;
+            for (int t = 0; t < cv.Length; t += 3)
+            for (int s = 0; s < pt.Length; s += 3)
+            {
+                bool same = true;
+                for (int j = 0; j < 3 && same; j++)
+                {
+                    bool found = false;
+                    for (int k = 0; k < 3; k++) found |= (cv[t + j] - pv[pt[s + k]]).sqrMagnitude < 1e-8f;
+                    same = found;
+                }
+                if (!same) continue;
+                for (int j = 0; j < 3; j++)
+                for (int k = 0; k < 3; k++)
+                    if ((cv[t + j] - pv[pt[s + k]]).sqrMagnitude < 1e-8f)
+                    {
+                        Assert.AreEqual(puv[pt[s + k]].x, cuv[t + j].x, 1e-6f, "the explosion's UV");
+                        Assert.AreEqual(puv[pt[s + k]].y, cuv[t + j].y, 1e-6f, "the explosion's UV");
+                        matched++;
+                    }
+            }
+            Assert.AreEqual(72, matched, "every depth-0 vertex is one of the explosion's");
+
+            for (int depth = 1; depth <= 4; depth++)
+            {
+                var uvs = new System.Collections.Generic.List<Vector2>();
+                HighPolyPrismMesh.GetSierpinski(depth).GetUVs(HighPolyPrismMesh.FaceUVChannel, uvs);
+                foreach (var uv in uvs)
+                {
+                    Assert.GreaterOrEqual(uv.y, -1e-6f, "inside the wedge's UV triangle (0,0) (1,0) (0.5,0.5)");
+                    Assert.LessOrEqual(uv.y, uv.x + 1e-6f);
+                    Assert.LessOrEqual(uv.y, 1f - uv.x + 1e-6f);
+                }
+            }
+        }
+
+        [Test]
         public void TheSierpinskiMeshIsTheCutWithACentroidPerShard()
         {
             HighPolyPrismMesh.InvalidateCache();
@@ -382,6 +500,9 @@ namespace CosmicShore.Tests
                     Assert.AreEqual(Vector3.Dot(centroid, u) + 0.5f, tris[t].x, 1e-5f);
                     Assert.AreEqual(Vector3.Dot(centroid, v) + 0.5f, tris[t].y, 1e-5f);
                     Assert.AreEqual(tris[t], tris[t + 2]);
+                    // z is the fragment's LEVEL, which the WEDGE pose scales the explosion's pivot offset by.
+                    Assert.AreEqual(Mathf.Round(tris[t].z), tris[t].z, "a whole level");
+                    Assert.That(tris[t].z, Is.InRange(0f, (float)depth));
                 }
                 Assert.AreEqual(6f, area, 1e-3f, "the whole unit cube's surface: no holes at rest");
             }
@@ -452,10 +573,18 @@ namespace CosmicShore.Tests
             Assert.Less(cfg.ShedMinScreen, cfg.ShedFineScreen);
             Assert.Less(cfg.ShedFineScreen, cfg.ShedFinestScreen);
             Assert.Less(cfg.CrowdedFill, cfg.PackedFill);
-            // Ribbons and flake scales fall on whole triangles at every shed resolution.
+            // The game sheds as a bloom only (the designer, 2026-10-15), cut into more, shorter pieces that peel with noise.
+            Assert.Greater(cfg.BloomWeight, 0f);
+            Assert.AreEqual(0f, cfg.UnravelWeight, "bloom only");
+            Assert.AreEqual(0f, cfg.FlakeWeight, "bloom only");
+            Assert.GreaterOrEqual(cfg.BloomRings, 2, "more cuts: each piece shorter than the quarter, so it curls tighter");
+            Assert.Greater(cfg.PeelNoise, 0f, "every peel different");
+            // Bloom pieces (and, if weighted again, ribbons and flake scales) fall on whole triangles at every
+            // shed resolution.
             foreach (int level in new[] { 1, 2, 3 })
             {
                 int n = cfg.ShedSubdivisionOf(level);
+                Assert.IsTrue(cfg.BloomCutsFit(n), $"shed subdivision {n} vs {cfg.BloomRings} rings x {cfg.BloomSegments} segments");
                 Assert.AreEqual(0, n % cfg.RibbonsPerFace, $"shed subdivision {n} vs {cfg.RibbonsPerFace} ribbons");
                 Assert.AreEqual(0, n % (2 * cfg.ShardsPerFaceEdge), $"shed subdivision {n} vs the flake's scales");
             }
@@ -470,8 +599,13 @@ namespace CosmicShore.Tests
                 Assert.IsTrue(Regex.IsMatch(shader, $@"UNITY_DOTS_INSTANCED_PROP\(float4, {prop}\)"), prop);
             StringAssert.Contains("PRISM_BURST_PROP(float4, _SlicePlane).x", shader, "the fade curve");
             StringAssert.Contains("PRISM_BURST_PROP(float4, _SlicePivot)", shader, "the inside colour");
-            foreach (var prop in new[] { "_BurstShape", "_BurstCurl" })
+            foreach (var prop in new[] { "_BurstShape", "_BurstCurl", "_BurstPeel", "_ExplosionSpread", "_ExplosionDials" })
+            {
                 StringAssert.Contains(prop, shader);
+                Assert.IsTrue(Regex.IsMatch(shader, $@"float4 {prop};"), $"{prop} in the CBUFFER");
+            }
+            StringAssert.Contains("float2 faceUV : TEXCOORD0;", shader, "the explosion's erosion reads the face coordinates");
+            StringAssert.Contains("PrismErosionFade_float(", shader, "a wedge fades on the explosion's own erosion");
             StringAssert.Contains("#include \"PrismCollisionBurst.hlsl\"", shader);
         }
 

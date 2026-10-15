@@ -2,10 +2,11 @@
 
 The prism's **interaction detail levels** (`Docs/PRISM_ANIMATION.md` §4.11) side by side with the ordinary
 effects they stand in for, running the shipped shader code in WebGL2, with a measured squint scorecard and
-a shared decision log: **destruction** (explosion → shatter → glitter) and **stealing** (the grade → a
-bloom, unravel or flake shed). Round 1 looked at the four level-1 collision bursts alone.
+a shared decision log: **destruction** (the explosion → the Sierpinski cut, every fragment moved by the
+explosion's own law) and **stealing** (the grade → the bloom shed). Round 1 looked at the four level-1 collision
+bursts alone.
 
-- **Live page:** https://claude.ai/artifact/F47yG1UjBkK662rEnhk7m9 (decision log: `decisions`) — round 4
+- **Live page:** https://claude.ai/artifact/F47yG1UjBkK662rEnhk7m9 (decision log: `decisions`) — round 5
 - **Page (generated, never edit by hand):** `Docs/Studios/PrismCollisionBurstLab.html`
 - **Source:** `Tools/Build/prism_collision_burst_lab/lab.src.html`; `build.py` stamps the shipped
   numbers and shader code into it (`--check` fails when the page is stale).
@@ -24,10 +25,10 @@ ordinary effect on the same prism at the same moment.
 |---|---|
 | `Assets/_Graphics/Materials/Graphs/PrismCollisionBurst.hlsl` | the whole burst — translated mechanically to GLSL (types, `frac`/`lerp`, comments), not re-written |
 | `PrismOcclusionCorridor.hlsl` | `PrismErosionFade_float`, its hash and `PRISM_EROSION_*` constants (the explosion's fade) |
-| RotateFacesAlongAxis / TangentSlider subgraphs | the explosion's face pivot (asserted −0.5 / 0.5 / 0.5 from the graph's node slots) |
+| RotateFacesAlongAxis / TangentSlider subgraphs | the explosion's face pivot (asserted −0.5 / 0.5 / 0.5 from the graph's node slots, and asserted equal to the HLSL's `PRISM_BURST_PIVOT_BIAS` / `SLIDE_BIAS` / `SLIDER_GAIN`: the page's explosion runs the HLSL's `PrismBurstExplosionMap`) |
 | `ExplodingBlockMaterial.mat`, `PrismExplosion.prefab`, `PrismExplosion.cs` | `_ExplosiveRotation` 0.0169, `_ExplosiveSpead` 0.05, `_Spread` (0.18, 0.1, 0.1), speed 10–33.33, 7.5 s life |
 | `Prism.asset` | the explosion's 72-vertex wedge mesh, byte for byte |
-| `PrismInteractionLodConfig.asset` | the size-on-screen lines, the budget, the shape, the shed weights and skin offset |
+| `PrismInteractionLodConfig.asset` | the size-on-screen lines, the budget, the shape, the shed weights and skin offset, the bloom's rings, segments and peel noise |
 | `PrismClockAnimation.hlsl`, `MaterialPropertyAnimator.cs` | the steal's grade, `PrismColorLerp_float` (translated), and its 0.8 s length |
 | `PrismMotionConfig.asset`, `PrismMotion.cs` | the 64/48 and 256/192 ladder, debris restitution ⅓ and limit 200 |
 | `PrismCollisionBurstMaterial.mat`, `OriginalColorSetSO` | the look dials; Jade/Ruby/Gold/Blue inside/outside colours |
@@ -35,7 +36,140 @@ ordinary effect on the same prism at the same moment.
 The burst mesh is `HighPolyPrismMesh.GetUnwelded(10)` rebuilt on the page in float32 (`Math.fround`), as
 C# builds it.
 
-## Round 4 — 2026-10-15 (`cece/dreamy-pascal-7xxx1m`): the Sierpinski cut
+## Round 5 — 2026-10-15 (`cece/dreamy-pascal-7xxx1m`): every depth moves as the explosion; the bloom alone, cut finer
+
+**Your decisions applied** (the designer, in the session): *"lets use just the bloom for stealing and we can have
+more noise in how it peels so it looks different each time. the lets have it peal from more cuts so one peal curls
+tighter and moves less far off the surface, so it is less obtrusive while skimming close. for destruction the
+explosion is tuned. it accepts velocity vectors that send fragments in the right direction spinning the right way.
+it limits how fast things rotate so they don't flicker etc. Each depth should adopt the fine tuning that was put
+into the base explosion."*
+
+### What changed, in the game and in the lab
+
+- **Every destruction fragment moves by the explosion's own law** — a new burst kind, `WEDGE` (5), in
+  `PrismCollisionBurst.hlsl`: `PrismBurstExplosionMap` is RotateFacesAlongAxis' closed form (W = 0) in object space —
+  turn about the piece's tangent T, then about cross(velocity, N), each by amount × `_ExplosiveRotation`, in the
+  object-SCALED frame as the graph does it; slide out along T by amount × `_ExplosiveSpead`; amount = the explosion's
+  clamped speed × t, so the spin rate is capped exactly where the explosion caps it. `PrismBurstWedgePose` applies it
+  to a Sierpinski fragment as a SCALED WEDGE: T = the direction from its face centre to its centroid (a wedge's own
+  tangent at level 0), pivot = its centroid plus the explosion's pivot-to-centroid offset × 2^−level. At level 0 it
+  IS the explosion. The flight is the explosion's (stamped velocity × t, as before).
+- **The explosion's dials are single-sourced**: `PrismCollisionBurst.TryGetExplosionTuning` copies `_Spread`,
+  `_ExplosiveRotation` and `_ExplosiveSpead` from the explosion pool's live material onto the burst material
+  (`_ExplosionSpread`, `_ExplosionDials`) at runtime; the shader's defaults equal `ExplodingBlockMaterial.mat`'s (a test).
+- **The explosion's fade too**: a `WEDGE` fades on `PrismErosionFade_float` over UV0 at opacity 1 − t/life, the
+  explosion's fragment stage exactly — and every fragment of the cut now wears its wedge's EXPLOSION UV
+  (`PrismSierpinskiTiling.WedgeUV`: `Prism.asset` gives every wedge the same UV triangle, (0,0) (1,0) (0.5,0.5)), so
+  depth 0 fades exactly as the explosion and every depth on its pattern. The Sierpinski mesh's TEXCOORD2.z is now the
+  fragment's level.
+- **Culling bounds** for a wedge: `WedgeReach` = 3R + (2·o + amount·ES·gain)·maxScale, o the pivot's largest offset
+  off the centroid — a proved bound (the harness asserts every pose inside it; worst use 0.898).
+- **Stealing is the bloom only** (`unravelWeight` and `flakeWeight` ship at 0; both stay in the shader and in the
+  Archive tab). The bloom is cut finer: each quarter into `bloomRings` (3) rings from the cube edge inward and
+  `bloomSegments` (3) segments along it; each piece hinges on its own outer edge and is a ring's depth long, so the
+  same `bloomTurns` curls it three times tighter and its lift (∝ its length) is a third. **`peelNoise`** (0.6) gives
+  each piece its own delay, curl (0.4–1.6×) and lift (0.3–1.7×); the rings peel from the edge inward.
+- **A new seed every steal**: `StealSeed` = the pose's seed moved on by the clock (× the golden ratio), so the same
+  prism stolen twice peels two ways. In the lab, every Replay is a new steal.
+- `IsSane` requires every shed mesh to be a multiple of 2 × rings and of segments (`BloomCutsFit`), so no piece
+  straddles a triangle.
+- **The lab**: the Destruction depths draw the `WEDGE` kind; the explosion and the wedge both run the HLSL's
+  `PrismBurstExplosionMap` (the hand-written GLSL closed form is gone). The Stealing line-up is the grade, one petal
+  a quarter (rings 1, segments 1, noise 0), the bloom, and the bloom on the next steal; sliders for rings, segments
+  and peel noise (Kinds tab). The Archive tab adds round 4's glitter depth and round 4's three sheds.
+
+### Scorecards (shipped settings)
+
+**Squint against the explosion** (band 0.097, held whole 0.315):
+
+| | Size | Centre | Fade | Colour | Squint |
+|---|---|---|---|---|---|
+| Depth 1 | 1.015 | 0.186 | 0.066 | 0.111 | 0.213 |
+| Depth 2 | 1.002 | 0.278 | 0.074 | 0.104 | 0.213 |
+| Depth 3 | 0.992 | 0.301 | 0.054 | 0.109 | 0.215 |
+| Depth 4 | 1.019 | 0.378 | 0.063 | 0.109 | 0.224 |
+| Depth 4 as round 4's glitter | 0.821 | 0.486 | 0.188 | 0.099 | 0.306 |
+| *the band: the explosion, another flight* | 1.132 | 0.208 | 0.099 | 0.012 | 0.097 |
+
+Size and fade are now the explosion's (the fade closer than two explosions are to each other). **What is left is the
+colour**: the burst's back faces wear the brighter inside colour (the designer's rule, round 2), the explosion's do
+not. Drawn without it (a scratch copy of the page, not shipped), depths 1–4 squint at 0.130 / 0.138 / 0.138 / 0.139 —
+inside 1.5 × the band: **"squints as the explosion"**.
+
+**LOD steps** (a 1,080 px screen; the band is now the deeper depth on another FLIGHT — the wedge and the explosion
+have no per-prism random, so another prism on the same flight draws the same death):
+
+| Step | At | Prism px | Band | Step | Step ÷ band |
+|---|---|---|---|---|---|
+| Depth 4 → 3 | 24% | 259 | 0.512 | 0.350 | 0.68 |
+| Depth 3 → 2 | 16% | 173 | 0.501 | 0.449 | 0.90 |
+| Depth 2 → 1 | 10% | 108 | 0.490 | 0.561 | 1.14 |
+| Depth 1 → the explosion | 5% | 54 | 0.468 | 0.559 | 1.19 |
+| Shed 24 → 18 | 28% | 302 | 0.455 | 0.066 | 0.15 |
+| Shed 18 → 12 | 16% | 173 | 0.420 | 0.109 | 0.26 |
+| Shed 12 → the grade | 8% | 86 | 0.353 | 0.390 | 1.10 |
+
+Every step unnoticeable (≤ 1.5 × its band).
+
+**Sheds against the grade** (band 0.033, colour snapped 0.158): the bloom 0.116 (12) / 0.121 (24), against one petal a
+quarter 0.177 / 0.175 — the finer cut is closer to the grade (fade 0.065 against 0.172; size 1.12 against 1.25).
+
+**Off the surface** (the lab's 4 × 0.6 × 2 slab, the shed's course, three seeds; the HLSL executed): the highest any
+piece rises off its own face fell from 1.660 u (0.74 prism radii) for one petal a quarter to **0.629 u (0.28)**; the
+mean from 0.344 u to **0.116 u**.
+
+### Found
+
+1. **The motion gap round 4 named was the gap.** With the explosion's law, size went from 0.72–0.82 to 0.99–1.02 and
+   the fade from 0.15–0.19 to 0.05–0.07; the squint fell from 0.30–0.32 to 0.21–0.22.
+2. **The remaining destruction gap is the inside colour, measured.** It is the round-2 rule (the brighter inside is
+   the contrast); keeping it costs the squint ~0.08. A designer's call (below).
+3. **The explosion's UVs are per wedge, not per face.** `Prism.asset` gives all 24 wedges the same UV triangle, so the
+   explosion's erosion wipes each wedge on its own; the cut's face coordinates would have faded on a different
+   pattern on half the faces (parity's new control: 36 of 72 vertices differ). Fixed by `WedgeUV`.
+4. **A destruction's LOD band was measuring nothing.** With a law that has no per-prism random, "the same level on
+   another prism" draws the identical death (band 0.001–0.003, ratios in the hundreds). The band is now another flight.
+5. **A tighter curl breaks a fixed chord tolerance.** The harness's isometry check assumed a chord within 2e-3 of its
+   arc; three times the curvature put it at 3e-3. It now proves isometry by convergence (halving the step quarters
+   the shortfall), as it already proved the normal.
+6. **`centroid` is an HLSL keyword** (an interpolation modifier): a parameter of that name compiles in C++ and fails
+   in glslang. Renamed.
+
+### Checked
+
+- `verify_prism_collision_burst.py` — **PASS**: the wedge at depths 0–3 — amount 0 is the prism; level 0 equals the
+  harness's own Rodrigues statement of the graph's closed form (worst 1.1e-6 radii); rigid in the world; unit normals;
+  inside `PrismBurstWedgeReach` (worst use 0.898); no fragment turns faster than the explosion's 2 × amount × rotation
+  (worst 1.000 of it) — plus the bloom's rings and noise through every earlier test; seven controls FIRED, two new
+  (pivot bias 0; the turn in the unscaled frame); glslang compiles every pass.
+- `parity.py` — **PASS**: burst 108,000 vertices (rings / segments 1, 2, 5, random noise) 0 outliers; explosion 720
+  vertices vs the subgraph evaluated; **wedge** 4,248 vertices at depths 0–3 vs `PrismBurstWedgePose` executed, and depth 0's
+  144 vertices vs RotateFacesAlongAxis evaluated on `Prism.asset` triangle by triangle (worst 3.2e-4); depth 0's UV0 =
+  `Prism.asset`'s, 72 of 72; the cut vs the C# compiled; five controls FIRED (next depth, next kind, wedge and explosion
+  with ExplosiveRotation ×2, face coordinates as UV0).
+- `verify_lab.cjs` PASS (screenshots read); `build.py --check` OK; `unity_refcompile` player + editor — 0 errors in
+  project code; `check_console_logging.py` 0 problems.
+- **Not run:** the Unity editor, so `PrismCollisionBurstTests` (new: the wedge kind and constants, the reach, the
+  explosion's dials, the steal seed, the explosion UVs, bloom-only config) — filed in
+  `Docs/UNITY_VERIFICATION_CHECKLIST.md`.
+
+### Not modelled (also true in the game's burst)
+
+- The explosion's outer graph also slides the whole prism along `TangentSlider` before the face map, and reduces the
+  spread with distance ("Distance Spread And Colors"); the wedge kind, like the lab's explosion, uses the face map
+  alone.
+
+### Decision needed (designer)
+
+1. **The inside colour on destruction fragments**: keep it (the contrast; squint 0.21–0.22, "close") or let the
+   wedge's back faces wear the explosion's shading (squint 0.13–0.14, "squints as the explosion").
+2. **The bloom's cut**: 3 rings × 3 segments and noise 0.6 shipped; the sliders are live on the page (the shed meshes
+   must stay multiples of 2 × rings and of segments: with the shipped 12 / 18 / 24, rings 1 or 3 and segments 1, 2,
+   3 or 6 fit; any other value needs other mesh sizes, or `IsSane` refuses and every steal grades).
+3. **Retire the unravel and the flake** from the shader, or keep them for a later use (shipped at weight 0).
+
+## Round 4 — 2026-10-15 (`cece/dreamy-pascal-7xxx1m`): the Sierpinski cut — superseded where round 5 differs (every depth now moves as the explosion; stealing is the bloom only)
 
 **Your decision applied** (the designer, in the session): *"a serpinski inspired cut would give a nice
 distribution and range that you could scale with recursion depth without the need for shatter and using the

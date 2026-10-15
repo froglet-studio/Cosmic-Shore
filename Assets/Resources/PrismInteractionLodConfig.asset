@@ -31,8 +31,11 @@ MonoBehaviour:
   shedFineSubdivision: 18
   shedFinestSubdivision: 24
   bloomWeight: 1
-  unravelWeight: 1
-  flakeWeight: 1
+  unravelWeight: 0
+  flakeWeight: 0
+  bloomRings: 3
+  bloomSegments: 3
+  peelNoise: 0.6
   shedInflate: 0.02
   spread: 0.55
   openSeconds: 0.22

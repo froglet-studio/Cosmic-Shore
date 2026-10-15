@@ -14,10 +14,12 @@ namespace CosmicShore.ScriptableObjects
     /// depth 0 IS the ordinary explosion (its four wedges a face — far away, off screen, over budget), and each
     /// deeper depth splits the corner triangles at their edge midpoints, keeping the middles whole — a self-similar
     /// range of fragment sizes. Each depth is the next with its finest fragments merged into their parents, and every
-    /// depth shares the explosion's flight, size, colours and linear fade, so squinted at it IS the explosion.</item>
-    /// <item><b>Stealing</b> is the GRADE (the 0.8 s colour lerp) far away and a SHED close up — bloom, unravel or
-    /// flake on a skin in the old colours — graded by mesh resolution (12, 18, 24 subdivisions), on the grade's own
-    /// curve over the grade's own length, so squinted at it IS the grade.</item>
+    /// fragment of every depth moves by the explosion's own tuned law (its velocity response, spin axes, capped spin
+    /// rate, slide and erosion fade), so squinted at it IS the explosion.</item>
+    /// <item><b>Stealing</b> is the GRADE (the 0.8 s colour lerp) far away and a SHED close up — a bloom (the game's
+    /// one shed; unravel and flake stay as weights at 0) peeling off a skin in the old colours, cut into rings and
+    /// segments that each curl tight and close to the surface — graded by mesh resolution (12, 18, 24
+    /// subdivisions), on the grade's own curve over the grade's own length, so squinted at it IS the grade.</item>
     /// </list>
     ///
     /// Both ladders are graded by DISTANCE (the prism's projected diameter over the screen height, so one number
@@ -74,8 +76,9 @@ namespace CosmicShore.ScriptableObjects
         [Tooltip("At and above this, the shed is drawn at shedFinestSubdivision.")]
         [Range(0f, 1f)] [SerializeField] float shedFinestScreen = 0.28f;
 
-        [Tooltip("Mesh subdivision of the coarsest shed. Keep the three a multiple of ribbonsPerFace and of twice " +
-                 "shardsPerFaceEdge, so ribbons and flake scales fall on whole triangles.")]
+        [Tooltip("Mesh subdivision of the coarsest shed. Keep the three a multiple of twice bloomRings and of " +
+                 "bloomSegments (and of ribbonsPerFace and twice shardsPerFaceEdge for the other sheds), so every " +
+                 "piece falls on whole triangles.")]
         [SerializeField] int shedSubdivision = 12;
 
         [Tooltip("Mesh subdivision of the finer shed (12 x subdivision^2 triangles).")]
@@ -84,14 +87,27 @@ namespace CosmicShore.ScriptableObjects
         [Tooltip("Mesh subdivision of the finest shed (24 = 6,912 triangles).")]
         [SerializeField] int shedFinestSubdivision = 24;
 
-        [Tooltip("Relative weight of the BLOOM shed (petals curling open off each face); 0 removes it.")]
+        [Tooltip("Relative weight of the BLOOM shed (petals curling open off each face); 0 removes it. The game " +
+                 "sheds as a bloom only (the designer, 2026-10-15): the other two weights ship at 0.")]
         [Min(0f)] [SerializeField] float bloomWeight = 1f;
 
         [Tooltip("Relative weight of the UNRAVEL shed (ribbons peeling off along each face); 0 removes it.")]
-        [Min(0f)] [SerializeField] float unravelWeight = 1f;
+        [Min(0f)] [SerializeField] float unravelWeight;
 
         [Tooltip("Relative weight of the FLAKE shed (scales tipping off in a wave down the prism); 0 removes it.")]
-        [Min(0f)] [SerializeField] float flakeWeight = 1f;
+        [Min(0f)] [SerializeField] float flakeWeight;
+
+        [Tooltip("The bloom's CUTS across a quarter face: rings from the cube edge inward. Each ring is its own " +
+                 "piece, hinged on its own outer edge, so more rings make shorter pieces that curl tighter and stay " +
+                 "closer to the surface — less in the way of a vessel skimming the prism.")]
+        [Range(1, 6)] [SerializeField] int bloomRings = 3;
+
+        [Tooltip("The bloom's cuts ALONG each cube edge: segments per quarter face.")]
+        [Range(1, 6)] [SerializeField] int bloomSegments = 3;
+
+        [Tooltip("How differently each bloom piece peels: 0 every piece alike, 1 each with its own start, curl " +
+                 "and lift. With the per-steal seed, no two steals peel the same way.")]
+        [Range(0f, 1f)] [SerializeField] float peelNoise = 0.6f;
 
         [Tooltip("How far the shed skin sits outside the prism, in prism radii, so the two never share a depth.")]
         [Range(0f, 0.2f)] [SerializeField] float shedInflate = 0.02f;
@@ -147,6 +163,9 @@ namespace CosmicShore.ScriptableObjects
         public float BloomWeight => Mathf.Max(0f, bloomWeight);
         public float UnravelWeight => Mathf.Max(0f, unravelWeight);
         public float FlakeWeight => Mathf.Max(0f, flakeWeight);
+        public int BloomRings => Mathf.Clamp(bloomRings, 1, 6);
+        public int BloomSegments => Mathf.Clamp(bloomSegments, 1, 6);
+        public float PeelNoise => Mathf.Clamp01(peelNoise);
         public float ShedInflate => Mathf.Clamp(shedInflate, 0f, 0.2f);
         public float Spread => Mathf.Clamp01(spread);
         public float OpenSeconds => Mathf.Max(0.01f, openSeconds);
@@ -173,6 +192,13 @@ namespace CosmicShore.ScriptableObjects
         public int LargestEntityTriangles =>
             Mathf.Max(PrismSierpinskiTiling.TriangleCount(MaxDepth), 12 * ShedFinestSubdivision * ShedFinestSubdivision);
 
+        /// <summary>
+        /// Whether the bloom's rings and segments fall on grid lines of a shed mesh of <paramref name="subdivision"/>:
+        /// a ring boundary sits at face coordinate (1 ± j / rings) / 2, a segment boundary at s / segments.
+        /// </summary>
+        public bool BloomCutsFit(int subdivision) =>
+            subdivision % (2 * BloomRings) == 0 && subdivision % BloomSegments == 0;
+
         bool DepthLinesAscend()
         {
             for (int d = 2; d <= MaxDepth; d++)
@@ -182,7 +208,8 @@ namespace CosmicShore.ScriptableObjects
 
         /// <summary>
         /// The one predicate the tests and the runtime share: each ladder is ordered, the crowding steps are ordered,
-        /// a shed has a kind to pick, the budget is bounded and holds at least one entity of every level.
+        /// a shed has a kind to pick, every bloom piece falls on whole triangles of every shed mesh, and the budget
+        /// is bounded and holds at least one entity of every level.
         /// </summary>
         public bool IsSane =>
             DepthLinesAscend() &&
@@ -190,6 +217,8 @@ namespace CosmicShore.ScriptableObjects
             ShedSubdivision <= ShedFineSubdivision && ShedFineSubdivision <= ShedFinestSubdivision &&
             CrowdedFill <= PackedFill &&
             (!ShedEnabled || BloomWeight + UnravelWeight + FlakeWeight > 0f) &&
+            (BloomWeight <= 0f || (BloomCutsFit(ShedSubdivision) && BloomCutsFit(ShedFineSubdivision) &&
+                                   BloomCutsFit(ShedFinestSubdivision))) &&
             MaxLiveTriangles <= 200_000 && LargestEntityTriangles <= MaxLiveTriangles;
 
         static PrismInteractionLodConfigSO s_instance;

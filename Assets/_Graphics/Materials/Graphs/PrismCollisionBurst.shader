@@ -8,7 +8,8 @@
 // It is the Rhino slice's sibling (PrismSlice.shader) and rides the slice's carrier unchanged: the
 // pure render entities PrismCollisionBurst.cs spawns through PrismRenderService
 // .SpawnSliceDebrisBatch, with the slice's per-instance stamp channels, four of which a burst reads:
-//     _SliceTiming = (start, life, seed, kind)  — kind 0 shatter, 1 bloom, 2 unravel, 3 glitter, 4 flake
+//     _SliceTiming = (start, life, seed, kind)  — kind 0 shatter, 1 bloom, 2 unravel, 3 glitter, 4 flake,
+//                                                 5 wedge (the destruction's Sierpinski fragments)
 //     _SliceDrift  = (flight velocity, world xyz; explosion speed w) — zero for a shed
 //     _SlicePlane  = (fade curve, -, -, -)      — 0 destruction (linear), 1 shed (the grade's smoothstep)
 //     _SlicePivot  = (inside colour rgb, set w) — w 1: the inside wears this (a shed: the NEW colour);
@@ -40,6 +41,11 @@ Shader "CosmicShore/PrismCollisionBurst"
         [Header(Shape (written by PrismCollisionBurst from PrismMotionConfig at runtime))]
         _BurstShape ("Spread (prism radii), opening tau (s), spin (rad per unit speed), dissolve grain", Vector) = (0.55, 0.22, 0.3, 0.35)
         _BurstCurl ("Bloom turns, unravel turns, ribbons per face, shards per face edge", Vector) = (0.7, 0.8, 5, 3)
+        _BurstPeel ("Bloom rings, bloom segments, peel noise", Vector) = (3, 3, 0.6, 0)
+
+        [Header(The explosion tuning (copied at runtime from the explosion material))]
+        _ExplosionSpread ("Spread value (the explosion's _Spread)", Vector) = (0.18, 0.1, 0.1, 0)
+        _ExplosionDials ("Explosive rotation, explosive spread (per unit amount)", Vector) = (0.0169, 0.05, 0, 0)
 
         [Header(Look)]
         _FresnelPower ("Skin Fresnel Power", Range(0.5, 8)) = 3
@@ -75,6 +81,9 @@ Shader "CosmicShore/PrismCollisionBurst"
             float4 _SliceDrift;
             float4 _BurstShape;
             float4 _BurstCurl;
+            float4 _BurstPeel;
+            float4 _ExplosionSpread;
+            float4 _ExplosionDials;
             float _FresnelPower;
             float _InnerGlow;
             float _DissolveNoiseScale;
@@ -117,7 +126,8 @@ Shader "CosmicShore/PrismCollisionBurst"
             float4 positionOS : POSITION;
             float3 normalOS : NORMAL;
             float4 tangentOS : TANGENT;       // the face's +u axis (HighPolyPrismMesh)
-            float3 tri : TEXCOORD2;           // its triangle's centroid in face coords (xy), a per-triangle random (z)
+            float2 faceUV : TEXCOORD0;        // UV0: on the Sierpinski cut, the EXPLOSION's (each wedge's own UV triangle, as Prism.asset)
+            float3 tri : TEXCOORD2;           // its triangle's centroid in face coords (xy); z a random, or the Sierpinski level
             UNITY_VERTEX_INPUT_INSTANCE_ID
         };
 
@@ -131,6 +141,8 @@ Shader "CosmicShore/PrismCollisionBurst"
             nointerpolation float4 dark : TEXCOORD4;
             nointerpolation float4 phase : TEXCOORD5;   // x progress, y curve, z kind, w piece
             nointerpolation float4 inside : TEXCOORD6;  // the colour the back faces wear
+            float2 faceUV : TEXCOORD7;                  // UV0 at rest (the wedge's erosion, the explosion's pattern)
+            nointerpolation float4 wedge : TEXCOORD8;   // xyz the stamped world velocity, w the explosion's opacity
             UNITY_VERTEX_INPUT_INSTANCE_ID
             UNITY_VERTEX_OUTPUT_STEREO
         };
@@ -173,6 +185,9 @@ Shader "CosmicShore/PrismCollisionBurst"
             f.longAxis = longAxis;
 
             PrismBurstParams p;
+            p.rings = _BurstPeel.x;
+            p.segments = _BurstPeel.y;
+            p.noise = _BurstPeel.z;
             p.age = age;
             p.speed = drift.w;
             p.seed = timing.z;
@@ -187,7 +202,26 @@ Shader "CosmicShore/PrismCollisionBurst"
 
             float3 posWS, nrmWS;
             float piece;
-            PrismBurstPose(timing.w, f, p, posWS, nrmWS, piece);
+            float kind = floor(timing.w + 0.5);
+            if (kind == PRISM_BURST_WEDGE)
+            {
+                // A Sierpinski fragment, moved by the explosion's own law in OBJECT space (the graph's frame):
+                // amount = the explosion's speed × t, the stamped world velocity, the explosion's dials.
+                float3 objectScale = float3(length(float3(model[0][0], model[1][0], model[2][0])),
+                                            length(float3(model[0][1], model[1][1], model[2][1])),
+                                            length(float3(model[0][2], model[1][2], model[2][2])));
+                float3 centroidOS = input.normalOS * 0.5 + uOS * (input.tri.x - 0.5) + vOS * (input.tri.y - 0.5);
+                float3 posOS, nrmOS;
+                PrismBurstWedgePose(input.positionOS.xyz, input.normalOS, centroidOS, input.tri.z, objectScale,
+                    drift.w * age, drift.xyz, _ExplosionSpread.xyz, _ExplosionDials.x, _ExplosionDials.y, posOS, nrmOS);
+                posWS = TransformObjectToWorld(posOS);
+                nrmWS = TransformObjectToWorldNormal(nrmOS);
+                piece = 0.0;
+            }
+            else
+            {
+                PrismBurstPose(timing.w, f, p, posWS, nrmWS, piece);
+            }
 
             // The flight: the explosion's own, linear and undamped, so the cloud's centre goes
             // exactly where the ordinary debris would have gone. A shed's is zero: the prism stays.
@@ -200,7 +234,9 @@ Shader "CosmicShore/PrismCollisionBurst"
             output.noisePos = scaledOS / max(_DissolveNoiseScale, 1e-3) + float3(17.13, 31.71, 7.37) * timing.z;
             output.bright = PRISM_BURST_PROP(float4, _BrightColor);
             output.dark = PRISM_BURST_PROP(float4, _DarkColor);
-            output.phase = float4(progress, curve, floor(timing.w + 0.5), piece);
+            output.phase = float4(progress, curve, kind, piece);
+            output.faceUV = input.faceUV;
+            output.wedge = float4(drift.xyz, saturate(1.0 - age / max(timing.y, 1e-4)));
             output.inside = insideStamp.w > 0.5 ? float4(insideStamp.rgb, 1.0) : output.bright;
             return output;
         }
@@ -210,12 +246,23 @@ Shader "CosmicShore/PrismCollisionBurst"
         void BurstClip(Varyings input)
         {
             float progress = input.phase.x;
-            // Glitter shards and flake scales go out WHOLE (a scale when the wave reaches it); the
-            // other kinds erode raggedly within a piece.
-            bool whole = input.phase.z == PRISM_BURST_GLITTER || input.phase.z == PRISM_BURST_FLAKE;
-            float grain = whole ? 0.0 : _BurstShape.w;
-            float value = PrismBurstDissolveValue(input.phase.w, PrismBurstNoise(input.noisePos), grain);
-            clip(PrismBurstClipped(value, progress) ? -1.0 : 1.0);
+            if (input.phase.z == PRISM_BURST_WEDGE)
+            {
+                // The explosion's own fade: its erosion over the explosion's UV (every fragment wears its wedge's), at
+                // opacity 1 - t/life — at depth 0 the explosion's fade exactly.
+                float survival;
+                PrismErosionFade_float(float3(input.faceUV, 0.0), input.wedge.xyz, input.wedge.w, survival);
+                clip(survival - 0.5);
+            }
+            else
+            {
+                // Glitter shards and flake scales go out WHOLE (a scale when the wave reaches it); the
+                // other kinds erode raggedly within a piece.
+                bool whole = input.phase.z == PRISM_BURST_GLITTER || input.phase.z == PRISM_BURST_FLAKE;
+                float grain = whole ? 0.0 : _BurstShape.w;
+                float value = PrismBurstDissolveValue(input.phase.w, PrismBurstNoise(input.noisePos), grain);
+                clip(PrismBurstClipped(value, progress) ? -1.0 : 1.0);
+            }
 
             float corridorAlpha, corridorThreshold;
             PrismOcclusionFadeDebris_float(input.positionWS, _PrismOcclusionTarget.xyz,

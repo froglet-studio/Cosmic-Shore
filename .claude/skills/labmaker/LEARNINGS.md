@@ -638,6 +638,27 @@ Entries are grouped by family; within a family, the newest goes at the bottom.
 - Evidence: `PrismSierpinskiTiling.cs`; `parity.py` "depth 0 vs Prism.asset"
 - Promoted: no
 
+### L-STU-70 — A step band drawn from a deterministic law collapses to zero: "another prism" must be another EVENT
+- Lab: Collision Burst Lab round 5 · Branch: `cece/dreamy-pascal-7xxx1m` · Date: 2026-10-15
+- What happened: once every destruction fragment moved by the explosion's law (no per-prism random), the LOD-step band — the finer level on another prism, same flight — drew the identical death: bands 0.001–0.003 and step ratios of 175 to 559,000, every step "visible". With the band on a turned flight (another death, as the scorecard's explosion band already was) the bands were 0.47–0.51 and every step 0.68–1.19 of its band.
+- Do instead: build a band from the variation a player actually sees between two events of the same kind (another flight, another seed, another moment); when the effect stops consuming a random, re-check what the band draws.
+- Evidence: `lab.src.html` `runSteps` (the `other` prism); `Docs/Studios/COLLISION_BURST_LAB.md` round 5, Found 4
+- Promoted: no
+
+### L-STU-71 — Before matching an effect's motion, read its mesh's UV channel: the explosion's fade was laid out per wedge
+- Lab: Collision Burst Lab round 5 · Branch: `cece/dreamy-pascal-7xxx1m` · Date: 2026-10-15
+- What happened: the destruction fragments were given the explosion's motion and its erosion fade, reading their face coordinates as UV0. `Prism.asset` turned out to give all 24 wedges the SAME UV triangle ((0,0), (1,0), (0.5,0.5)), so the explosion wipes each wedge on its own; on half the faces the face coordinates would have faded on another pattern (36 of 72 vertices differ — now parity's negative control). Fixed with `PrismSierpinskiTiling.WedgeUV`.
+- Do instead: when a new effect must reproduce a shipped one, dump the shipped mesh's every channel (position, normal, tangent, UV) and gate each one the new mesh feeds into the shared shader code, not only the positions.
+- Evidence: `parity.py` `uv_vs_prism`; `PrismCollisionBurstTests.EveryFragmentWearsItsWedgesExplosionUV`
+- Promoted: no
+
+### L-STU-72 — Prove a remaining squint gap's cause with a scratch copy that removes it, before calling it shape or motion
+- Lab: Collision Burst Lab round 5 · Branch: `cece/dreamy-pascal-7xxx1m` · Date: 2026-10-15
+- What happened: with the explosion's law, destruction's size and fade matched the explosion but the squint stayed 0.21–0.22 against a 0.097 band, and the colour column (0.10–0.11, the explosion's band 0.012) pointed at the brighter inside colour. A scratch copy of the built page without the inside colour on the wedge scored 0.13–0.14, inside 1.5 × the band — so the remaining gap is a deliberate design rule, not a motion bug, and goes to the designer as a decision.
+- Do instead: read the scorecard's columns to name the suspect, then remove exactly that in a scratch copy and re-score; put the measured trade-off in the write-up's decisions instead of "tuning" the shipped rule away.
+- Evidence: `Docs/Studios/COLLISION_BURST_LAB.md` round 5, Scorecards and Found 2
+- Promoted: no
+
 ## NCA — swarm / neural-CA research rigs (Tools/NCA)
 
 ### L-NCA-1 — The yardstick was wrong four times before the creatures were

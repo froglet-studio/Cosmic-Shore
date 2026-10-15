@@ -13,9 +13,11 @@ namespace CosmicShore.Utility
     /// <item><b>Destruction</b> — a Sierpinski cut scaled by recursion DEPTH (<see cref="PrismSierpinskiTiling"/>):
     /// depth 0 is the ordinary EXPLOSION (its four wedges a face); each deeper depth splits the corner triangles at
     /// their edge midpoints and keeps the middles whole. A shallower depth is the deeper one with its finest fragments
-    /// merged back into their parents, so from far away it looks like the small ones are simply too small to see.</item>
-    /// <item><b>Stealing</b> — the GRADE (the prism's 0.8 s colour lerp) → a SHED (bloom, unravel or flake) at three
-    /// mesh resolutions. Every shed is the grade squinted at.</item>
+    /// merged back into their parents, so from far away it looks like the small ones are simply too small to see.
+    /// Every fragment of every depth moves by the explosion's own tuned law, as a wedge scaled to its size.</item>
+    /// <item><b>Stealing</b> — the GRADE (the prism's 0.8 s colour lerp) → a SHED (the bloom, cut into rings and
+    /// segments, peeling with its own noise every steal) at three mesh resolutions. Every shed is the grade squinted
+    /// at.</item>
     /// </list>
     ///
     /// Both ladders are graded by DISTANCE — the prism's projected diameter over the screen height through
@@ -111,7 +113,8 @@ namespace CosmicShore.Utility
 
         /// <summary>
         /// A DESTRUCTION at its depth: the Sierpinski cut as deep as the prism's size on screen and the amount allow,
-        /// each fragment a shard (the burst's glitter kind) on the explosion's own flight and palette. False means
+        /// each fragment a scaled explosion wedge (the burst's WEDGE kind) on the explosion's own law, flight, palette
+        /// and fade. False means
         /// depth 0 — the caller (<c>PrismFactory.SpawnExplosion</c>) draws the explosion.
         /// </summary>
         public static bool TryDestruction(Vector3 position, Quaternion rotation, Vector3 scale, Color bright, Color dark,
@@ -128,14 +131,14 @@ namespace CosmicShore.Utility
                 var mesh = MeshOfDepth(depth);
                 if (!PrismCollisionBurst.FitsTriangles(cfg, PrismCollisionBurst.TrianglesOf(mesh))) continue;
                 return PrismCollisionBurst.TryRequestDestruction(position, rotation, scale, bright, dark,
-                    impactVelocity, speedLimitOverride, tier, PrismCollisionBurst.Glitter, mesh);
+                    impactVelocity, speedLimitOverride, tier, PrismCollisionBurst.Wedge, mesh);
             }
             return false;
         }
 
         /// <summary>
         /// A STEAL at its detail level: when the prism is big enough on screen and the budget has room, its old
-        /// colours shed off it as a skin (bloom, unravel or flake, picked by weight from the pose) at the resolution
+        /// colours shed off it as a skin (the bloom; the kind is still picked by weight, unravel and flake ship at 0) at the resolution
         /// its size and the amount allow, over a grade of <paramref name="gradeSeconds"/>. True means the caller must
         /// give the prism its new colour AT ONCE (the skin is the transition); false means the caller grades as usual.
         /// </summary>

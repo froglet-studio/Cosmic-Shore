@@ -4,17 +4,19 @@
 // viewer is close enough to see the detail and the budget allows, and as the ordinary effect otherwise.
 // (The file keeps the name of its first use, the prism-movement collision.)
 //
-//   DESTRUCTION is one spectrum, coarse to fine: the ordinary EXPLOSION (24 wedges, far away or over
-//   budget) → SHATTER (Voronoi shards) → GLITTER (every one of the 1,200 triangles a shard, close up).
-//   Each finer level shares the explosion's whole ENVELOPE so that, squinted at, it IS the explosion:
-//   the same flight (offset = v·t, PrismDebris resolves both), the same size (every piece within
-//   PrismBurstEnvelope prism radii of the travelling centre), the same colours, and the same LINEAR
-//   fade (PrismBurstDissolveValue is uniform on [0,1), so the surviving fraction is 1 − progress).
+//   DESTRUCTION is the Sierpinski cut of the explosion (PrismSierpinskiTiling): depth 0 IS the ordinary
+//   explosion's 24 wedges, and each deeper depth splits the corner triangles at their midpoints. Every
+//   fragment of every depth moves by the explosion's OWN tuned law (PrismBurstWedgePose, kind WEDGE) —
+//   RotateFacesAlongAxis' closed form, applied to the fragment as to a scaled wedge: the same velocity
+//   response, the same spin axes and rate (amount × _ExplosiveRotation, amount = the explosion's clamped
+//   speed × t), the same outward slide (amount × _ExplosiveSpead), the same flight, and the explosion's
+//   own erosion fade — so at depth 0 it is the explosion exactly, and at every depth it moves like it.
 //
 //   STEALING is the GRADE far away — the 0.8 s smoothstep colour lerp PrismColorLerp runs on the prism —
-//   and a SHED close up: the prism takes its new colour at once and a skin wearing the OLD colours
-//   (bloom petals, unravelling ribbons, or flaking scales) comes off it, its inside already the new
-//   colour. The skin's coverage falls on the grade's own smoothstep over the grade's own length
+//   and a SHED close up: the prism takes its new colour at once and a skin wearing the OLD colours comes
+//   off it, its inside already the new colour. The game sheds as a BLOOM (the designer, 2026-10-15):
+//   petals cut into rings from each edge inward and segments along it, so every piece is short — it
+//   curls tight and stays close to the surface — and each peels with its own noise. The skin's coverage falls on the grade's own smoothstep over the grade's own length
 //   (PrismBurstProgress, curve 1), so the mean colour, squinted at, IS the grade.
 //
 // No white accents (the designer, 2026-10-14): the only contrast is the brighter INSIDE colour on the
@@ -38,15 +40,18 @@
 //   0 SHATTER — destruction, mid range. Each face fractures into Voronoi shards (PrismBurstVoronoi over
 //     the triangle centroids), each a RIGID piece that leaves along its face normal and tumbles about
 //     its own seed point.
-//   1 BLOOM   — shed. Each face splits along its diagonals into four petals, exactly the explosion's
-//     wedge layout, and each petal CURLS OUT from its cube edge like a flower opening — an exact
-//     isometric bend (PrismBurstBend), so the petal rolls without stretching.
+//   1 BLOOM   — shed. Each face splits along its diagonals into four quarters (the explosion's wedge
+//     layout), each quarter into RINGS from its cube edge inward and SEGMENTS along it; every piece CURLS
+//     up from its outer edge — an exact isometric bend (PrismBurstBend), so it rolls without stretching —
+//     the rings peeling from the edge inward, each piece with its own delay, curl and lift (the noise).
 //   2 UNRAVEL — shed. Each face peels into ribbons along its longer axis, each ribbon curling up from
 //     one end into a near-loop, staggered ribbon by ribbon.
 //   3 GLITTER — destruction, close up. Every triangle is its own shard, spinning out and blinking away.
 //   4 FLAKE   — shed. The skin lifts off as rigid SCALES, a grid twice as fine as the shatter's, in a
 //     wave that runs the prism's long axis: each scale tips up on its far edge as the front nears and
 //     is gone when the front reaches it.
+//   5 WEDGE   — destruction. Each triangle of the Sierpinski cut moves as an explosion wedge
+//     (PrismBurstWedgePose); fades on the explosion's erosion (the shader's clip).
 //
 // EXACTNESS. Rigid pieces rotate their normal with them (Rodrigues). A bend's normal is the bend's
 // derivative: the strip at arc length s is rotated by a = κ·s about the hinge, so its normal is that
@@ -66,6 +71,15 @@
 #define PRISM_BURST_UNRAVEL 2.0
 #define PRISM_BURST_GLITTER 3.0
 #define PRISM_BURST_FLAKE   4.0
+#define PRISM_BURST_WEDGE   5.0
+
+// RotateFacesAlongAxis / TangentSlider's constants (the explosion's subgraphs; the lab's build.py reads
+// them from the graph and asserts these): the pivot bias, the slide bias and the slider gain.
+#ifndef PRISM_BURST_PIVOT_BIAS
+#define PRISM_BURST_PIVOT_BIAS (-0.5)
+#endif
+#define PRISM_BURST_SLIDE_BIAS 0.5
+#define PRISM_BURST_SLIDER_GAIN 0.5
 
 #define PRISM_BURST_TAU 6.28318530718
 
@@ -134,6 +148,9 @@ struct PrismBurstParams
     float strips;       // ribbons per face
     float cells;        // shard seeds per face edge
     float progress;     // the fade's progress now (PrismBurstProgress): the flake lifts a scale ahead of it
+    float rings;        // bloom: rings per quarter, from the cube edge inward
+    float segments;     // bloom: segments per quarter, along the cube edge
+    float noise;        // bloom: 0 every piece alike .. 1 each with its own delay, curl and lift
 };
 
 // ─── small pieces ─────────────────────────────────────────────────────────────────────────────
@@ -292,12 +309,13 @@ void PrismBurstPose(float kind, PrismBurstFrame f, PrismBurstParams p,
     float k = floor(kind + 0.5);
     if (k == PRISM_BURST_BLOOM)
     {
-        // The petal is the triangle's diagonal quarter of the face; its hinge is the cube edge.
+        // The quarter is the triangle's diagonal quarter of the face; its outer edge is a cube edge.
         float ax = abs(f.triUV.x);
         float ay = abs(f.triUV.y);
         float sg;
         float3 edgeVec;
         float side;
+        float across;
         // A centroid exactly ON a diagonal (the anti-diagonal cells of the grid put one there) is a
         // tie, and float rounding would pick its petal differently per GPU. The bias settles every
         // tie on the u-edge petal on every platform; real centroids are 2/(3n) away from a diagonal.
@@ -306,22 +324,37 @@ void PrismBurstPose(float kind, PrismBurstFrame f, PrismBurstParams p,
             sg = f.triUV.x >= 0.0 ? 1.0 : -1.0;
             edgeVec = f.faceU * sg;
             side = 1.0;
+            across = f.triUV.y;
         }
         else
         {
             sg = f.triUV.y >= 0.0 ? 1.0 : -1.0;
             edgeVec = f.faceV * sg;
             side = 2.0;
+            across = f.triUV.x;
         }
+        // Its piece: the ring (bands parallel to the cube edge, from the edge in) and the segment along it.
+        // Each piece hinges on its own outer edge, so it is a band's depth long — short, so it curls tight
+        // and stays close to the surface.
+        float rings = max(floor(p.rings + 0.5), 1.0);
+        float segments = max(floor(p.segments + 0.5), 1.0);
+        float depthIn = 1.0 - (side == 1.0 ? ax : ay);
+        float ring = min(floor(depthIn * rings), rings - 1.0);
+        float segment = min(floor((across * 0.5 + 0.5) * segments), segments - 1.0);
         float L = max(length(edgeVec), 1e-5);
         float3 inward = -edgeVec / L;
-        float3 hinge = f.faceCentre + edgeVec;
-        float3 h = PrismBurstHash3(f.faceKey * 5.3 + float3(side, sg, p.seed * 13.0));
-        float e = PrismBurstEase(p.age - h.x * 0.12, p.tau);
-        float tip = p.bloomTurns * PRISM_BURST_TAU * e * (0.8 + 0.4 * h.y);
-        PrismBurstBend(f.rest, f.normal, hinge, inward, f.normal, tip / L, pos, nrm);
-        pos = pos + f.normal * (min(p.spread, 1.0) * 0.35 * f.radius * e);
-        pieceHash = h.z;
+        float band = L / rings;
+        float3 hinge = f.faceCentre + edgeVec * (1.0 - ring / rings);
+        float3 h = PrismBurstHash3(f.faceKey * 5.3 + float3(side * 16.0 + ring, sg * 16.0 + segment, p.seed * 13.0));
+        // The noise: each piece its own start, curl and lift; the rings peel from the edge inward.
+        float noise = saturate(p.noise);
+        float delay = ring / rings * 0.15 + h.x * (0.06 + 0.25 * noise);
+        float e = PrismBurstEase(p.age - delay, p.tau);
+        float curl = lerp(1.0, 0.4 + 1.2 * h.y, noise);
+        float tip = p.bloomTurns * PRISM_BURST_TAU * e * curl;
+        PrismBurstBend(f.rest, f.normal, hinge, inward, f.normal, tip / band, pos, nrm);
+        pos = pos + f.normal * (min(p.spread, 1.0) * 0.35 * band * e * lerp(1.0, 0.3 + 1.4 * h.z, noise));
+        pieceHash = frac(h.z * 3.7 + h.x);
         return;
     }
     if (k == PRISM_BURST_UNRAVEL)
@@ -393,6 +426,81 @@ void PrismBurstPose(float kind, PrismBurstFrame f, PrismBurstParams p,
     float3 h = PrismBurstHash3(f.faceKey * 13.7 + float3(seed.x * 101.0, seed.y * 101.0, p.seed * 17.0));
     PrismBurstShatter(f, p, 1.0, 1.0, pivot, h, pos, nrm);
     pieceHash = h.x;
+}
+
+// ─── the explosion's law, for every fragment (kind WEDGE) ─────────────────────────────────────────
+
+// RotateFacesAlongAxis' rotation: v about axis by angle; a zero axis is left unnormalised (the graph's own
+// behaviour, held by the lab's parity gate against the evaluated subgraph).
+float3 PrismBurstRotateAboutAxis(float3 v, float3 axis, float angle)
+{
+    float m2 = dot(axis, axis);
+    float3 a = m2 > 0.0 ? axis / sqrt(m2) : axis;
+    float s = sin(angle);
+    float c = cos(angle);
+    float k = 1.0 - c;
+    float3 r0 = float3(k * a.x * a.x + c, k * a.x * a.y - s * a.z, k * a.x * a.z + s * a.y);
+    float3 r1 = float3(k * a.x * a.y + s * a.z, k * a.y * a.y + c, k * a.y * a.z - s * a.x);
+    float3 r2 = float3(k * a.x * a.z - s * a.y, k * a.y * a.z + s * a.x, k * a.z * a.z + c);
+    return float3(dot(r0, v), dot(r1, v), dot(r2, v));
+}
+
+// The explosion's map of one vertex, in OBJECT space, about any pivot (RotateFacesAlongAxis' closed form,
+// W = 0, generalised from the wedge's own pivot): the vertex turns about the piece's tangent T, then about
+// cross(velocity, N), by amount × rotation — the rotation done in the object-SCALED frame, as the graph does
+// it — and the piece slides out along T by amount × spreadPerAmount. velocity is the stamped WORLD velocity,
+// used as the graph uses it.
+void PrismBurstExplosionMap(float3 P, float3 N, float3 T, float3 pivot, float3 objectScale, float amount,
+    float3 velocity, float rotation, float spreadPerAmount, out float3 pos, out float3 nrm)
+{
+#ifdef PRISM_BURST_WEDGE_PIVOT_UNSCALED
+    float3 os = float3(1.0, 1.0, 1.0);   // negative control only: the turn in the unscaled frame shears a piece
+#else
+    float3 os = max(abs(objectScale), float3(1e-5, 1e-5, 1e-5));
+#endif
+    float3 local = os * (P - pivot);
+    float angle = amount * rotation;
+    float3 axis2 = cross(velocity, N);
+    float3 r = PrismBurstRotateAboutAxis(PrismBurstRotateAboutAxis(local, T, angle), axis2, angle);
+    nrm = PrismBurstRotateAboutAxis(PrismBurstRotateAboutAxis(N, T, angle), axis2, angle);
+    pos = r / os + pivot + (PRISM_BURST_SLIDE_BIAS + PRISM_BURST_PIVOT_BIAS + amount * spreadPerAmount) * T * PRISM_BURST_SLIDER_GAIN;
+}
+
+// The explosion's own pivot for a wedge of the prism cube: the face point under P, slid along T by the
+// spread (the graph's Pn + (spread - pivotBias) T gain). Used by the explosion itself (depth 0).
+float3 PrismBurstWedgePivot(float3 P, float3 N, float3 T, float3 spreadValue)
+{
+    return dot(P, N) * N + (spreadValue - PRISM_BURST_PIVOT_BIAS) * T * PRISM_BURST_SLIDER_GAIN;
+}
+
+// A Sierpinski fragment as a SCALED WEDGE (kind WEDGE). Its tangent is the direction from its face's centre
+// to its centroid (a wedge's own tangent at level 0); its pivot keeps the explosion's pivot-to-centroid
+// offset, scaled by the fragment's size (2^-level), so at level 0 — the explosion's own wedges — this IS
+// the explosion, and every finer fragment turns, slides and spins by the same tuned law. All in object space.
+void PrismBurstWedgePose(float3 P, float3 N, float3 pieceCentroid, float level, float3 objectScale, float amount,
+    float3 velocity, float3 spreadValue, float rotation, float spreadPerAmount, out float3 pos, out float3 nrm)
+{
+    float3 faceCentre = dot(P, N) * N;
+    float3 T = PrismBurstAxis(pieceCentroid - faceCentre, float3(0.0, 0.0, 0.0));
+    // A wedge's centroid lies a third of its height from the face centre; the explosion pivots it at
+    // (spread - pivotBias) × gain. The fragment keeps that offset at its own scale.
+    float3 wedgeOffset = (spreadValue - PRISM_BURST_PIVOT_BIAS) * T * PRISM_BURST_SLIDER_GAIN - T * (1.0 / 3.0);
+    float3 pivot = pieceCentroid + wedgeOffset * exp2(-max(level, 0.0));
+    PrismBurstExplosionMap(P, N, T, pivot, objectScale, amount, velocity, rotation, spreadPerAmount, pos, nrm);
+}
+
+// How far, in WORLD units, a WEDGE fragment can be from the prism's travelling centre (the flight is added
+// after). Proved, not fitted: the fragment's centroid and every vertex lie inside the prism (within R of the
+// centre, so a vertex is within 2R of its centroid); the pivot sits off the centroid by the wedge offset, at
+// most o = max |(spread - pivotBias) × gain - 1/3| object units (≤ o × maxScale in the world); the turn keeps
+// the WORLD distance to the pivot (it is done in the scaled frame); the slide adds amount × spreadPerAmount ×
+// gain along a unit object direction. So 3R + 2 o maxScale + slide. The CPU sizes the culling bounds by the
+// same sum (PrismCollisionBurst.WedgeReach); the harness asserts every pose stays inside it.
+float PrismBurstWedgeReach(float radius, float maxScale, float amount, float spreadPerAmount, float3 spreadValue)
+{
+    float3 o = abs((spreadValue - PRISM_BURST_PIVOT_BIAS) * PRISM_BURST_SLIDER_GAIN - 1.0 / 3.0);
+    float offset = max(o.x, max(o.y, o.z));
+    return 3.0 * radius + (2.0 * offset + abs(amount * spreadPerAmount) * PRISM_BURST_SLIDER_GAIN) * maxScale;
 }
 
 // ─── the fade ─────────────────────────────────────────────────────────────────────────────────

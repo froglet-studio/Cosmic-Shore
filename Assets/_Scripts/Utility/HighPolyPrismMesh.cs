@@ -55,7 +55,8 @@ namespace CosmicShore.Utility
 
         /// <summary>
         /// TEXCOORD2 on the UNWELDED variant only (<see cref="GetUnwelded"/>): the triangle's centroid
-        /// in face coordinates (xy, [0, 1]) and a per-triangle random (z, [0, 1)).
+        /// in face coordinates (xy, [0, 1]) and a per-triangle random (z, [0, 1)) — on the Sierpinski cut
+        /// (<see cref="GetSierpinski"/>), z is the fragment's recursion LEVEL instead.
         /// </summary>
         public const int TriangleUVChannel = 2;
 
@@ -135,7 +136,8 @@ namespace CosmicShore.Utility
         /// The DESTRUCTION's mesh at one recursion depth (<see cref="PrismSierpinskiTiling"/>): the prism cut the
         /// Sierpinski way — depth 0 the explosion's own four wedges a face, each deeper depth splitting every corner
         /// triangle into four at its edge midpoints and keeping the middle whole — every triangle owning its vertices
-        /// with <see cref="TriangleUVChannel"/> = its own centroid, so each is one shard (the burst's glitter kind).
+        /// with <see cref="TriangleUVChannel"/> = its own centroid and its LEVEL (z), so each is one fragment that the
+        /// burst's WEDGE kind moves by the explosion's own law, as a wedge scaled by 2^-level.
         /// Depth d is depth d+1 with its finest corners merged into their parents, so every depth is the whole prism at
         /// rest. Same vertex layout as <see cref="GetUnwelded"/>; shared and cached; never mutate it.
         /// </summary>
@@ -168,7 +170,6 @@ namespace CosmicShore.Utility
             var indices = new int[vertCount];
 
             int vi = 0;
-            int tri = 0;
             for (int f = 0; f < 6; f++)
             {
                 Vector3 nrm = FaceNormals[f];
@@ -176,13 +177,15 @@ namespace CosmicShore.Utility
                 Vector3 v = FaceV[f];
                 Vector3 centre = nrm * HalfExtent;
 
-                for (int k = 0; k < face.Count; k += PrismSierpinskiTiling.Stride, tri++)
+                for (int k = 0; k < face.Count; k += PrismSierpinskiTiling.Stride)
                 {
+                    int wedge = PrismSierpinskiTiling.WedgeOf(k / PrismSierpinskiTiling.Stride, depth);
                     var a = new Vector2(face[k], face[k + 1]);
                     var b = new Vector2(face[k + 2], face[k + 3]);
                     var c = new Vector2(face[k + 4], face[k + 5]);
                     Vector2 centroid = (a + b + c) / 3f;
-                    var triangle = new Vector3(centroid.x, centroid.y, TriangleRandom(f, tri));
+                    // z is the fragment's LEVEL: the wedge pose scales the explosion's pivot offset by 2^-level.
+                    var triangle = new Vector3(centroid.x, centroid.y, face[k + 6]);
 
                     AddVertex(a);
                     AddVertex(b);
@@ -194,7 +197,10 @@ namespace CosmicShore.Utility
                                            + v * ((uv.y - 0.5f) * 2f * HalfExtent);
                         norms[vi] = nrm;
                         tangents[vi] = new Vector4(u.x, u.y, u.z, -1f);
-                        uvs.Add(uv);
+                        // UV0 is the EXPLOSION's: the wedge's own UV triangle, as Prism.asset has it, so the
+                        // explosion's erosion fades every fragment on the explosion's own pattern.
+                        PrismSierpinskiTiling.WedgeUV(wedge, uv.x, uv.y, out float wu, out float wv);
+                        uvs.Add(new Vector2(wu, wv));
                         cents.Add(centre);
                         tris.Add(triangle);
                         indices[vi] = vi;

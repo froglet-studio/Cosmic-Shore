@@ -2606,7 +2606,31 @@ effect) and by the shared budget (`PrismInteractionLod`, config `Resources/Prism
 | Interaction | Far / over budget | Nearer | Close up |
 |---|---|---|---|
 | **Destruction** (every explosion death; a collision above motion level 1 asks for plain) | the EXPLOSION — depth 0 of the Sierpinski cut | DEPTH 1 (≥ 5%) → DEPTH 2 (≥ 10%) | DEPTH 3 (≥ 16%) → DEPTH 4 (≥ 24%) |
-| **Stealing** (`PrismTeamManager.Steal`) | the GRADE — the 0.8 s smoothstep colour lerp (`PrismColorLerp`) | a SHED (≥ 8%): BLOOM, UNRAVEL or FLAKE by weight, on 12 subdivisions | the same shed on 18 (≥ 16%), then 24 (≥ 28%) subdivisions |
+| **Stealing** (`PrismTeamManager.Steal`) | the GRADE — the 0.8 s smoothstep colour lerp (`PrismColorLerp`) | a SHED (≥ 8%): the BLOOM (round 5; unravel and flake ship at weight 0), on 12 subdivisions | the same shed on 18 (≥ 16%), then 24 (≥ 28%) subdivisions |
+
+**Round 5 (the designer, 2026-10-15) — supersedes the glitter MOTION of round 4 and the three-way shed pick:**
+*"lets use just the bloom for stealing and we can have more noise in how it peels so it looks different each time.
+the lets have it peal from more cuts so one peal curls tighter and moves less far off the surface, so it is less
+obtrusive while skimming close. for destruction the explosion is tuned. it accepts velocity vectors that send
+fragments in the right direction spinning the right way. it limits how fast things rotate so they don't flicker
+etc. Each depth should adopt the fine tuning that was put into the base explosion."*
+
+- **Every Sierpinski fragment moves by the explosion's own law** (burst kind `WEDGE` = 5,
+  `PrismBurstWedgePose`): RotateFacesAlongAxis' closed form in object space — turned about its tangent and about
+  cross(velocity, N) by amount × `_ExplosiveRotation` in the object-scaled frame, slid along its tangent by amount ×
+  `_ExplosiveSpead`, amount = the explosion's clamped speed × t (so the spin rate is capped where the explosion caps
+  it) — as a wedge scaled to the fragment (tangent = face centre → centroid; pivot = centroid + the explosion's
+  pivot offset × 2^−level). Depth 0 IS the explosion (parity: 144 vertices against the graph evaluated on
+  `Prism.asset`). The dials are copied from the explosion pool's live material at runtime
+  (`PrismCollisionBurst.TryGetExplosionTuning`). The fade is the explosion's erosion over each fragment's
+  WEDGE UV (`PrismSierpinskiTiling.WedgeUV` — `Prism.asset`'s UV is per wedge). Culling: `WedgeReach`, a proved bound.
+- **The bloom only, cut finer, peeling with noise**: each quarter into `bloomRings` × `bloomSegments` (3 × 3) pieces,
+  each hinged on its own outer edge — a third of the length, so the same `bloomTurns` curls it three times tighter
+  and it lifts a third as far (worst rise off its face 0.63 u against 1.66 u for one petal a quarter on a 4 × 0.6 × 2
+  slab); `peelNoise` (0.6) gives each piece its own delay, curl and lift; `StealSeed` reseeds every steal.
+- **Measured** (lab round 5): destruction size 0.99–1.02 and fade 0.05–0.07 of the explosion's; squint 0.21–0.22
+  against a 0.097 band, the remaining gap the brighter inside colour (0.13–0.14 without it — a designer's call);
+  every LOD step ≤ 1.19 × its band; the bloom 0.116–0.121 against the grade (one petal a quarter 0.175–0.177).
 
 **Round 4 (the designer, 2026-10-15) — supersedes the shatter and the glitter tiling below:** *"a serpinski
 inspired cut would give a nice distribution and range that you could scale with recursion depth without the need

@@ -96,8 +96,15 @@ def hlsl_to_glsl(src):
 def burst_glsl():
     src = read(BURST_HLSL)
     for name in ("void PrismBurstPose(", "float PrismBurstProgress(", "float PrismBurstDissolveValue(",
-                 "bool PrismBurstClipped(", "float PrismBurstNoise(", "void PrismBurstVoronoi("):
+                 "bool PrismBurstClipped(", "float PrismBurstNoise(", "void PrismBurstVoronoi(",
+                 "void PrismBurstExplosionMap(", "float3 PrismBurstWedgePivot(", "void PrismBurstWedgePose("):
         assert name in src, f"{name} missing from {BURST_HLSL}"
+    # The HLSL's explosion constants ARE the graph's: the page's explosion runs the HLSL's map.
+    g = subgraph_constants()
+    for define, key in (("PRISM_BURST_PIVOT_BIAS", "pivotBias"), ("PRISM_BURST_SLIDE_BIAS", "slideBias"),
+                        ("PRISM_BURST_SLIDER_GAIN", "sliderGain")):
+        m = re.search(r"#define " + define + r" \(?([-0-9.]+)\)?", src)
+        assert m and float(m.group(1)) == g[key], f"{define} in {BURST_HLSL} is not the graph's {key} {g[key]}"
     return hlsl_to_glsl(src)
 
 
@@ -214,7 +221,8 @@ def config():
     motion, lod = read(CONFIG), read(LOD_CONFIG)
     out = {k: yaml_float(motion, k) for k in ("showcaseMaxMovers", "boxMaxMovers")}
     for k in ("maxLiveBursts", "maxLiveTriangles", "crowdedFill", "packedFill", "shedMinScreen", "shedFineScreen", "shedFinestScreen", "shedSubdivision", "shedFineSubdivision",
-              "shedFinestSubdivision", "bloomWeight", "unravelWeight", "flakeWeight", "shedInflate", "spread",
+              "shedFinestSubdivision", "bloomWeight", "unravelWeight", "flakeWeight", "bloomRings", "bloomSegments",
+              "peelNoise", "shedInflate", "spread",
               "openSeconds", "spinPerSpeed", "bloomTurns", "unravelTurns", "ribbonsPerFace", "shardsPerFaceEdge",
               "dissolveGrain"):
         out[k] = yaml_float(lod, k)

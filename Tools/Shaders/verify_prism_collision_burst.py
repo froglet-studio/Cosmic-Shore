@@ -32,12 +32,18 @@ A. EXECUTION (clang++, /asset-surgery §4.5c). The file under Assets/ is transla
       1 - progress, is the grade's course.
   10. VORONOI: every point lies inside its own cell (non-negative border) and seeds stay on the face.
   11. AN UNKNOWN KIND FALLS BACK to the shatter, never to garbage.
+  W. THE WEDGE (destruction, every Sierpinski depth 0-3): amount 0 is the prism; level 0 IS the explosion —
+     equal to the harness's own Rodrigues statement of RotateFacesAlongAxis' closed form with the graph's
+     constants; every fragment is rigid in the world; normals unit; every pose inside PrismBurstWedgeReach
+     (the CPU's bounds); and no fragment turns faster than the explosion's own cap (2 x amount x rotation).
   NEGATIVE CONTROLS, each must FAIL the test it guards:
   12. -DPRISM_BURST_DISSOLVE_OVERSHOOT=0  — fragments survive to retirement (test 9 fires).
   13. -DPRISM_BURST_UNIFORM_VALUE=0       — the fade sags off the explosion's curve (test 8 fires).
   14. -DPRISM_BURST_ENVELOPE_BASE=1       — a pose escapes the bounds (test 6 fires).
   15. -DPRISM_BURST_BEND_NORMAL=0         — the bend keeps its rest normal (test 4 fires).
   16. -DPRISM_BURST_GRADE_SMOOTH=0        — a shed fades linearly, off the grade (test 9b fires).
+  17. -DPRISM_BURST_PIVOT_BIAS=0          — level 0 leaves the explosion (test W fires).
+  18. -DPRISM_BURST_WEDGE_PIVOT_UNSCALED=1 — the turn in the unscaled frame shears fragments (test W fires).
 
 B. FRONT-END COMPILE (glslang, HLSL mode). Every pass of PrismCollisionBurst.shader, vertex and
    fragment, plain and DOTS-instanced, against a mock of the URP library (the slice verifier's). It
@@ -110,6 +116,10 @@ static inline float smoothstep(float a,float b,float x){float t=saturate((x-a)/(
 struct float4 { float x=0,y=0,z=0,w=0; float4(){} float4(float a,float b,float c,float d):x(a),y(b),z(c),w(d){} };
 static inline float4 lerp(float4 a,float4 b,float t){return float4(lerp(a.x,b.x,t),lerp(a.y,b.y,t),lerp(a.z,b.z,t),lerp(a.w,b.w,t));}
 static inline float3 lerp(float3 a,float3 b,float t){return float3(lerp(a.x,b.x,t),lerp(a.y,b.y,t),lerp(a.z,b.z,t));}
+static inline float3 abs(float3 v){return float3(std::fabs(v.x),std::fabs(v.y),std::fabs(v.z));}
+static inline float3 max(float3 a,float3 b){return float3(max(a.x,b.x),max(a.y,b.y),max(a.z,b.z));}
+static inline float3 operator/(float3 a,float3 b){return float3(a.x/b.x,a.y/b.y,a.z/b.z);}
+static inline float exp2(float v){return std::exp2(v);}
 """
 
 HARNESS = r"""#include "shipped.h"
@@ -190,6 +200,7 @@ static PrismBurstParams params(float age, float seed, float spread) {
     PrismBurstParams q;
     q.age = age; q.speed = rnd(10, 53); q.seed = seed; q.spread = spread; q.tau = 0.22f; q.spin = 0.3f;
     q.bloomTurns = 0.7f; q.unravelTurns = 0.9f; q.strips = 5; q.cells = 3;
+    q.rings = 3; q.segments = 3; q.noise = 0.6f;
     q.progress = PrismBurstProgress(age, 7.5f, 0.0f);
     return q;
 }
@@ -288,7 +299,7 @@ static void run_bend_tests() {
                 float faceScale = std::min(length(f.faceU), length(f.faceV));
                 float3 dirs[2] = { normalize(f.faceU), normalize(f.faceV) };
                 for (int d = 0; d < 2; d++) {
-                    float tilt[2];
+                    float tilt[2], stretch[2], floors[2];
                     for (int h = 0; h < 2; h++) {
                         float eps = (h == 0 ? 2e-2f : 1e-2f) * faceScale;
                         PrismBurstFrame g = f; g.rest = f.rest + dirs[d] * eps;
@@ -299,9 +310,14 @@ static void run_bend_tests() {
                         // The chord of a step this size is within 2e-3 of its arc; below that, float32
                         // rounding of coordinates of size |p0| over the step (the tilt's floor, below).
                         float stretchFloor = std::max(2e-3f, 8.0f * 1.2e-7f * (length(p0) + f.radius) / eps);
-                        CHECK(std::fabs(ratio - 1.0f) <= stretchFloor, "kind %d: the bend stretched a step by %g (floor %g)", kind, ratio, stretchFloor);
+                        stretch[h] = std::fabs(ratio - 1.0f); floors[h] = stretchFloor;
                         tilt[h] = std::fabs(dot(normalize(step), n0));
                     }
+                    // A tight curl (the bloom's short pieces) makes the chord fall short of its arc by
+                    // (k eps)^2 / 24 — so isometry is proved by CONVERGENCE too: halving the step must
+                    // quarter the shortfall. A real stretch is O(1) and does not shrink with the step.
+                    bool small = stretch[0] <= floors[0] && stretch[1] <= floors[1];
+                    CHECK(small || stretch[1] <= 0.35f * stretch[0] + floors[1], "kind %d: the bend stretched a step by %g (eps) and %g (eps/2)", kind, stretch[0], stretch[1]);
                     // Below the float noise floor of a step this size the tilt carries no
                     // information either way (rounding of coordinates of size |p0| over a step eps).
                     float floorTilt = 8.0f * 1.2e-7f * (length(p0) + f.radius) / (1e-2f * faceScale);
@@ -356,6 +372,104 @@ static void run_grade_tests() {
     }
 }
 
+// ---- W. the WEDGE kind: every Sierpinski fragment moves by the explosion's own law ----
+// The cut, built the way PrismSierpinskiTiling lays it out (a port; parity.py holds the lab's port to the C#).
+struct WVert { float3 pos, n, centroid; float level; };
+static void wSplit(float2 a, float2 b, float2 c, int level, int depth, std::vector<float>& out) {
+    auto emit = [&](float2 x, float2 y, float2 z, int l) { float t[7] = {x.x,x.y,y.x,y.y,z.x,z.y,(float)l}; out.insert(out.end(), t, t + 7); };
+    if (level >= depth) { emit(a, b, c, level); return; }
+    float2 ab = (a + b) * 0.5f, bc = (b + c) * 0.5f, ca = (c + a) * 0.5f;
+    emit(ab, bc, ca, level + 1);
+    wSplit(a, ab, ca, level + 1, depth, out); wSplit(ab, b, bc, level + 1, depth, out); wSplit(ca, bc, c, level + 1, depth, out);
+}
+static std::vector<WVert> sierpinski(int depth) {
+    float3 fn[6] = {float3(1,0,0),float3(-1,0,0),float3(0,1,0),float3(0,-1,0),float3(0,0,1),float3(0,0,-1)};
+    float3 fu[6] = {float3(0,1,0),float3(0,0,1),float3(0,0,1),float3(1,0,0),float3(1,0,0),float3(0,1,0)};
+    std::vector<float> t;
+    float2 cs[4] = {float2(0,0), float2(1,0), float2(1,1), float2(0,1)};
+    for (int k = 0; k < 4; k++) wSplit(float2(0.5f,0.5f), cs[k], cs[(k+1)%4], 0, depth, t);
+    std::vector<WVert> out;
+    for (int f = 0; f < 6; f++) {
+        float3 fv = cross(fn[f], fu[f]);
+        auto at = [&](float u, float v) { return fn[f]*0.5f + fu[f]*(u - 0.5f) + fv*(v - 0.5f); };
+        for (size_t i = 0; i < t.size(); i += 7) {
+            float cu = (t[i] + t[i+2] + t[i+4]) / 3.0f, cv = (t[i+1] + t[i+3] + t[i+5]) / 3.0f;
+            for (int k = 0; k < 3; k++) { WVert w; w.pos = at(t[i+2*k], t[i+2*k+1]); w.n = fn[f]; w.centroid = at(cu, cv); w.level = t[i+6]; out.push_back(w); }
+        }
+    }
+    return out;
+}
+// The harness's OWN statement of the explosion's law for a wedge (RotateFacesAlongAxis' closed form with the
+// graph's constants pivot bias -0.5, slide bias 0.5, gain 0.5, written with Rodrigues' formula — not the
+// shader's matrix): the reference level 0 must equal.
+static float3 rodrigues(float3 v, float3 k, float a) {
+    float l = length(k); if (l <= 0) return v; k = k / l;
+    return v * std::cos(a) + cross(k, v) * std::sin(a) + k * (dot(k, v) * (1 - std::cos(a)));
+}
+static void explosionReference(float3 P, float3 N, float3 T, float3 os, float amount, float3 vel, float3 S, float ER, float ES, float3& pos, float3& nrm) {
+    float3 pivot = N * dot(P, N) + (S + 0.5f) * T * 0.5f;
+    float3 axis2 = cross(vel, N);
+    float3 r = rodrigues(rodrigues((P - pivot) * os, T, amount * ER), axis2, amount * ER);
+    nrm = rodrigues(rodrigues(N, T, amount * ER), axis2, amount * ER);
+    pos = r / os + pivot + T * ((0.5f - 0.5f + amount * ES) * 0.5f);
+}
+static void run_wedge_tests() {
+    const float3 S(0.18f, 0.1f, 0.1f); const float ER = 0.0169f, ES = 0.05f;
+    float worstReach = 0, worstLevel0 = 0, worstSpin = 0;
+    for (int depth = 0; depth <= 3; depth++) {
+        std::vector<WVert> m = sierpinski(depth);
+        for (int trial = 0; trial < 8; trial++) {
+            Pose P = rndPose(); P.t = float3(0,0,0);
+            float3 vel = rndDir() * rnd(5, 60);
+            float speed = rnd(10, 53);
+            float R = length(linear(P, float3(0.5f,0.5f,0.5f)));
+            float maxScale = std::max(P.s.x, std::max(P.s.y, P.s.z));
+            for (float t : {0.0f, 0.4f, 2.0f, 7.5f}) {
+                float amount = speed * t;
+                std::vector<float3> wp(m.size());
+                for (size_t i = 0; i < m.size(); i++) {
+                    const WVert& v = m[i];
+                    float3 pos, nrm;
+                    PrismBurstWedgePose(v.pos, v.n, v.centroid, v.level, P.s, amount, vel, S, ER, ES, pos, nrm);
+                    wp[i] = world(P, pos);
+                    // W1. the first frame is the prism
+                    if (amount == 0.0f) {
+                        CHECK(length(pos - v.pos) <= 1e-5f && length(nrm - v.n) <= 1e-5f, "wedge depth %d: amount 0 moved a vertex", depth);
+                    }
+                    // W3. unit normals
+                    CHECK(std::fabs(length(nrm) - 1.0f) <= 1e-4f, "wedge: normal length %g", length(nrm));
+                    // W4. the reach the CPU sizes the bounds by
+                    float reach = PrismBurstWedgeReach(R, maxScale, amount, ES, S);
+                    float r = length(wp[i]);
+                    if (r / reach > worstReach) worstReach = r / reach;
+                    CHECK(r <= reach * (1 + 1e-4f), "wedge depth %d: a vertex %.3f escapes the reach %.3f", depth, r, reach);
+                    // W5. the spin is the explosion's, capped by its speed: never more than two turns of amount x rotation
+                    float turn = std::acos(std::min(1.0f, std::max(-1.0f, dot(nrm, v.n))));
+                    if (amount > 0) worstSpin = std::max(worstSpin, turn / (2 * amount * ER));
+                    CHECK(turn <= 2 * amount * ER + 1e-3f, "wedge: a fragment turned %g rad, more than the explosion's 2 x %g", turn, amount * ER);
+                    // W2. level 0 IS the explosion
+                    if (v.level == 0.0f) {
+                        float3 T = normalize(v.centroid - v.n * dot(v.pos, v.n));
+                        float3 rp, rn;
+                        explosionReference(v.pos, v.n, T, P.s, amount, vel, S, ER, ES, rp, rn);
+                        float err = length(world(P, rp) - world(P, pos)) / R;
+                        worstLevel0 = std::max(worstLevel0, err);
+                        CHECK(err <= 1e-4f && length(rn - nrm) <= 1e-4f, "wedge: level 0 leaves the explosion's law by %g radii", err);
+                    }
+                }
+                // W6. every fragment is RIGID in the world, at every depth (the turn is done in the scaled frame)
+                for (size_t i = 0; i < m.size(); i += 3)
+                    for (int a = 0; a < 3; a++) {
+                        int b = (a + 1) % 3;
+                        float d0 = length(world(P, m[i+a].pos) - world(P, m[i+b].pos)), d1 = length(wp[i+a] - wp[i+b]);
+                        CHECK(std::fabs(d0 - d1) <= 2e-4f * R, "wedge depth %d: a fragment stretched %g -> %g", depth, d0, d1);
+                    }
+            }
+        }
+    }
+    printf("wedge: worst reach use %.3f, worst level-0 departure %.2g radii, worst spin %.3f of the explosion's cap\n", worstReach, worstLevel0, worstSpin);
+}
+
 // 10. voronoi; 11. unknown kind.
 static void run_misc_tests() {
     for (int k = 0; k < 20000; k++) {
@@ -383,11 +497,13 @@ int main(int argc, char** argv) {
     bool fadeOnly = argc > 1 && std::strcmp(argv[1], "fade") == 0;
     bool bendOnly = argc > 1 && std::strcmp(argv[1], "bend") == 0;
     bool gradeOnly = argc > 1 && std::strcmp(argv[1], "grade") == 0;
+    bool wedgeOnly = argc > 1 && std::strcmp(argv[1], "wedge") == 0;
     if (envelopeOnly) run_pose_tests(true);
     else if (fadeOnly) run_fade_tests();
     else if (bendOnly) run_bend_tests();
     else if (gradeOnly) run_grade_tests();
-    else { run_pose_tests(false); run_bend_tests(); run_fade_tests(); run_grade_tests(); run_misc_tests(); }
+    else if (wedgeOnly) run_wedge_tests();
+    else { run_pose_tests(false); run_bend_tests(); run_fade_tests(); run_grade_tests(); run_wedge_tests(); run_misc_tests(); }
     printf("collision burst: %d failure(s)\n", failures);
     return failures ? 1 : 0;
 }
@@ -411,7 +527,8 @@ def translate(src, required=True):
     out = re.sub(r"\bout float (\w+)", r"float &\1", out)
     for name in ("void PrismBurstPose(", "void PrismBurstBend(", "void PrismBurstVoronoi(",
                  "float PrismBurstEnvelope(", "float PrismBurstProgress(", "float PrismBurstDissolveValue(",
-                 "bool PrismBurstClipped(", "float PrismBurstNoise("):
+                 "bool PrismBurstClipped(", "float PrismBurstNoise(", "void PrismBurstWedgePose(",
+                 "float PrismBurstWedgeReach(", "void PrismBurstExplosionMap("):
         assert not required or name in out, f"{name} missing from the shipped HLSL"
     return out
 
@@ -454,7 +571,9 @@ def main():
                                  ("-DPRISM_BURST_UNIFORM_VALUE=0", "fade", "uniform-value control"),
                                  ("-DPRISM_BURST_ENVELOPE_BASE=1.0", "envelope", "envelope control"),
                                  ("-DPRISM_BURST_BEND_NORMAL=0", "bend", "cheap-normal control"),
-                                 ("-DPRISM_BURST_GRADE_SMOOTH=0", "grade", "linear-shed control")):
+                                 ("-DPRISM_BURST_GRADE_SMOOTH=0", "grade", "linear-shed control"),
+                                 ("-DPRISM_BURST_PIVOT_BIAS=0.0", "wedge", "wedge-pivot control"),
+                                 ("-DPRISM_BURST_WEDGE_PIVOT_UNSCALED=1", "wedge", "unscaled-turn control")):
             rc, out = build_and_run(work, [flag], arg, label)
             fired = rc != 0
             print(f"negative control [{label}]: {'FIRED' if fired else 'DID NOT FIRE'} ({out.splitlines()[-1]})")

@@ -113,7 +113,7 @@ Destruction is one spectrum, coarse to fine, by the prism's projected diameter o
 | Level | Size on screen | Up close |
 |---|---|---|
 | **Explosion** | under `shatterMinScreen` (5%), off screen, or over budget | the ordinary 24-wedge explosion |
-| **Sierpinski depth 1 / 2 / 3 / 4** | from 5% / 10% / 16% / 24% | the explosion's own wedges (depth 0) cut deeper: each corner triangle splits at its edge midpoints, the middle stays whole — 96 / 312 / 960 / 2,904 shards of a self-similar range of sizes; a shallower depth is the deeper with its finest corners merged |
+| **Sierpinski depth 1 / 2 / 3 / 4** | from 5% / 10% / 16% / 24% | the explosion's own wedges (depth 0) cut deeper: each corner triangle splits at its edge midpoints, the middle stays whole — 96 / 312 / 960 / 2,904 fragments of a self-similar range of sizes; a shallower depth is the deeper with its finest corners merged. Every fragment moves by the EXPLOSION's own law (round 5, kind `WEDGE`): its response to the impact velocity, its two spin axes, its speed-capped spin rate, its slide and its erosion fade, as a wedge scaled to the fragment |
 
 The AMOUNT grades it too: once the shared budget is half full every new death is one level coarser, at 80%
 two (`PrismInteractionLodConfig`).
@@ -123,6 +123,10 @@ back faces once the surface opens. Both finer levels share the explosion's ENVEL
 (`PrismDebris.ResolveExplosionFlight`, linear `v·t`), its life (`PrismExplosion.DefaultDuration`, 7.5 s),
 its palette, a prism-sized cloud (`3.5 + 1.5·spread` radii, spread capped at 1), and its linear fade — so
 squinted at, each is meant to read as the explosion.
+
+**Measured, round 5:** with the explosion's law, every depth is the explosion's size (0.99–1.02) and fade
+(0.05–0.07 of it, closer than two explosions); the squint, 0.21–0.22 against the 0.097 band, is held off by the
+brighter inside colour alone (0.13–0.14 without it). The earlier rounds' text follows.
 
 **Measured (the Collision Burst Lab, `Docs/Studios/COLLISION_BURST_LAB.md`,
 https://claude.ai/artifact/F47yG1UjBkK662rEnhk7m9):** with the white gone, the glitter's colour difference
