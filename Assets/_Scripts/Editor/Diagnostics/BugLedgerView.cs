@@ -119,6 +119,13 @@ namespace CosmicShore.Editor
                     _showNewForm = !_showNewForm;
                     GUI.FocusControl(null);
                 }
+                GUILayout.Space(4f);
+                // The ONE button a reporter needs: everything below it (Fix, Ignore, Stage & Push) is for
+                // whoever fixes the code. Same scoped publish as the check-in's Share now.
+                if (FrogletEditorPalette.ColorButton("Share with team", FrogletEditorPalette.Ok, 118f, 20f,
+                        "Send these bugs, plus your new redlog / crash / performance files, to the team in one " +
+                        "commit (BugLedger/ files only). The daily Claude sweep reads and fixes them."))
+                    defer(BugHuntCheckIn.ShareWithTeam);
                 GUILayout.Space(6f);
             }
             GUILayout.Space(4f);
@@ -256,7 +263,7 @@ namespace CosmicShore.Editor
             {
                 if (FrogletEditorPalette.ColorButton(new Rect(x, y, 44f, 20f), "Fix", FrogletEditorPalette.Ok,
                         issue.HasSignature
-                            ? "Mark fixed. The issue moves to VALIDATING and closes itself only once the error stays silent for its clean-session quota."
+                            ? "For whoever CHANGED THE CODE that fixes this: moves it to VALIDATING, and it closes itself once the error stays silent for its clean-session quota. Just reporting it? Use Share with team."
                             : "No signature to auto-validate — resolves after a confirm."))
                     defer(() => MarkFixedFlow(issue));
                 x += 48f;
@@ -483,7 +490,14 @@ namespace CosmicShore.Editor
         {
             if (issue.HasSignature)
             {
-                BugLedger.MarkFixed(issue.Id);
+                // A reporter pressing Fix to "send" a bug starts the validation clock on a bug nobody
+                // fixed, and an intermittent error can then close itself after two lucky runs.
+                if (EditorUtility.DisplayDialog("Mark as fixed?",
+                        $"\"{issue.Title}\"\n\nOnly mark it fixed if you changed the code or data that fixes it. " +
+                        "It then closes itself after its clean play runs, so an unfixed bug can disappear.\n\n" +
+                        "Just reporting it? Press Cancel, then Share with team.",
+                        "I fixed it", "Cancel"))
+                    BugLedger.MarkFixed(issue.Id);
                 return;
             }
             if (EditorUtility.DisplayDialog("Resolve custom bug",
