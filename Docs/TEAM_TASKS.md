@@ -188,3 +188,10 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Who can take it:** Garrett (decides); Yash can do it
 - **Added:** 2026-10-15 by a Claude session (`Ys-bleeding-edge`)
 - **See:** Docs/DIAGNOSTICS.md#the-bug-hunt-check-in
+
+### T-20261015-e266 · open · test · AI / Third Eye
+- **Task:** Play-test the Third Eye You / AI toggle in Regatta: hand your hull to the AI, take over a rival AI hull, all-AI
+- **Done when:** Steps 1-6 of the 'Third Eye: a You / AI toggle' entry pass in the editor
+- **Who can take it:** Yash
+- **Added:** 2026-10-15 by Claude (Yash's session) (`Ys-bleeding-edge`)
+- **See:** Docs/UNITY_VERIFICATION_CHECKLIST.md

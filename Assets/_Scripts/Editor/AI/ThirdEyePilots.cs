@@ -22,6 +22,11 @@ namespace CosmicShore.Editor.AI
         public bool IsAI;
         public SkimRacePilot SkimPilot;
         public AIPilot Autopilot;
+        /// <summary>The pilot's Player, for the You / AI toggle (<see cref="PilotControl"/>). Null for a hull with no player.</summary>
+        public Player Player;
+
+        /// <summary>The AI is flying this hull right now: an AI seat, or a human's hull the AI is holding.</summary>
+        public bool AIFlying => IsLocalHuman ? Autopilot && Autopilot.AutoPilotEnabled : IsAI;
 
         public int Id => Status ? Status.GetInstanceID() : 0;
         public bool Alive => Status && Hull && Hull.gameObject.activeInHierarchy;
@@ -128,6 +133,7 @@ namespace CosmicShore.Editor.AI
                     pilot.HasDomain = true;
                     pilot.IsAI = player.IsInitializedAsAI;
                     pilot.IsLocalHuman = player.IsLocalPilot && !player.IsInitializedAsAI;
+                    pilot.Player = player as Player;
                 }
 
                 if (status.TryGetComponent(out AIPilot autopilot))
