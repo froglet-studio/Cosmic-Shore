@@ -283,6 +283,7 @@ namespace CosmicShore.Gameplay
             _params.IdleTumble = false;    // designer, 2026-10-13: the Charge crystal's idle turn is vestigial
             if (!convert) _params.Lead = Waiting;
             _t = 0;
+            _runStart = 0;
             _playing = true;
             _massColumns.Fresh = true;
             ShowCrystals(true);
@@ -293,8 +294,40 @@ namespace CosmicShore.Gameplay
         public void Convert()
         {
             if (_core == null) return;
-            if (IsWaiting) _params.Lead = _t + ConvertDelay;
-            else Begin(convert: true);
+            if (IsWaiting)
+            {
+                _params.Lead = _t + ConvertDelay;
+                _runStart = _t;
+            }
+            else
+            {
+                Begin(convert: true);
+                _runStart = 0;
+            }
+        }
+
+        // ---- Progress, for the converter's readout (Docs/MENU_REDESIGN_B.md section 16) ----
+
+        /// <summary>Play time at which the current run was sent in (CONVERT, or the start of a play that converts at once).</summary>
+        double _runStart;
+
+        /// <summary>True from CONVERT until the omni has fully woken.</summary>
+        public bool IsRunning => _playing && !IsWaiting && _t < Duration;
+        /// <summary>True once a run has finished and the omni idles.</summary>
+        public bool IsDone => _playing && !IsWaiting && _t >= Duration;
+        /// <summary>Seconds since the run was sent in; 0 while the four wait.</summary>
+        public double RunTime => _playing && !IsWaiting ? System.Math.Max(0, _t - _runStart) : 0;
+        /// <summary>Seconds a run takes from CONVERT until the omni has fully woken.</summary>
+        public double RunDuration => _playing && !IsWaiting ? System.Math.Max(0, Duration - _runStart) : 0;
+        /// <summary>True once the last crystal has landed and the omni has formed.</summary>
+        public bool OmniFormed => _playing && !IsWaiting && _t >= OmniCombineCore.MorphEnds(_params);
+
+        /// <summary>How far element <paramref name="element"/> (<see cref="OmniCombineCore.Space"/>...) is through its
+        /// own flight into the omni, 0..1: 0 while it waits, 1 once it has landed.</summary>
+        public float ElementProgress(int element)
+        {
+            if (!_playing || IsWaiting || _params.Flight <= 0) return IsDone ? 1f : 0f;
+            return Mathf.Clamp01((float)((_t - OmniCombineCore.Departs(element, _params)) / _params.Flight));
         }
 
         /// <summary>Advances the play by <paramref name="dt"/> seconds and writes every mesh.

@@ -65,6 +65,28 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Style-B menu redesign, item 7: the Ark screen's converter overlay (`claude/new-session-76hnyc`, 2026-10-15) — NOT EDITOR-VERIFIED
+
+`ArkScreen/ElementalConverter` gains the approved Ark / ArkConverting overlay (`Docs/MENU_REDESIGN_B.md`
+section 16) from `Tools/Build/author_menu_ark.py` (`--check`, `--self-test` green;
+`author_elemental_converter.py --check` and `--self-test` green again). No editor in the session:
+`/verify-unity` still owed. Offline: player + editor reference compiles clean; the new
+`OmniCombineTests` clock cases compile but have not run.
+
+**Verify in editor:**
+1. ARK tab: the crystals idle full-bleed (the picture runs under the nav); the title band, recipe panel
+   (four rows "Ready", Omni dim) and converter bar ("Ready", "00:00 / --:--", CONVERT green with the
+   sweep) draw over it; no legacy "ELEMENTAL CONVERTER" title or green block button.
+2. Pad: focus lands on CONVERT; A presses it.
+3. CONVERT: the button greys to "CONVERTING..." and ignores presses; the clock counts against the run's
+   length; each row turns "Merging" (green, crystal bobbing) then "Merged" as its crystal lands, its
+   segment fills and then carries a spark; "N of 4 merged" follows.
+4. When the omni forms the Omni block pops in and floats; at the end the bar reads "Converted" and the
+   button "CONVERT AGAIN", which plays a fresh run.
+5. Leave and re-enter the Ark mid-run: it returns to the idle four with the overlay reset.
+
+---
+
 ### 🔴 Style-B menu redesign, item 5b: the profile window (`claude/new-session-76hnyc`, 2026-10-15) — NOT EDITOR-VERIFIED
 
 `PlayerDataSelectModal` (ProfileIconSelectView) rebuilt from the approved ProfileModal / ProfileName /

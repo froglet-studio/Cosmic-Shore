@@ -41,7 +41,7 @@ Legend: `Planned` ▸ `Mockup` ▸ `Mockup approved` ▸ `Built` ▸ `Approved i
 | 4 | Game configure: `ArcadeGameConfigureModal`, plus the Maelstrom and Arena configure windows and the weekly leaderboard | Built (2026-10-15, section 14) | `Configure.dc.html` (interactive), `ConfigureArena`, `ConfigureMaelstrom`, `ConfigureWeekly`, `ConfigureWeeklySpent`, `ConfigureGuest`, `ConfigureLocked`, `WeeklyLeaderboard` (interactive), `LeaderboardEmpty`, `ConfigureNotes` | |
 | 5 | Profile screen, Profile modal (avatar / display name), Episodes entry | Built (2026-10-15, section 15): Profile screen and profile window | `Profile.dc.html` (interactive), `ProfileFresh`, `ProfileModal` (interactive), `ProfileName`, `ProfileNameError`, `ProfileNameTaken`, `ProfileNotes` | |
 | 6 | Home screen: hub row, header, settings and freestyle buttons, invite popup | Mockup approved (2026-10-14) | `Home.dc.html` (interactive), `HomeInvite`, `HomeFocus`, `HomeOffline`, `HomeNotes` | |
-| 7 | Ark screen (Elemental Converter) | Mockup approved (2026-10-14) | `Ark.dc.html` (interactive), `ArkConverting`, `ArkDone`, `ArkNotes` | |
+| 7 | Ark screen (Elemental Converter) | Built (2026-10-15, section 16) | `Ark.dc.html` (interactive), `ArkConverting`, `ArkDone`, `ArkNotes` | |
 | 8 | Arena, Toy Box and Mission modals, and Toy configure | Mockup approved (2026-10-14) | `ToyBox.dc.html` (interactive), `ToyBoxClaimed`, `ArenaWindow`, `MissionWindow`, `ToyConfigure` (interactive), `ToyConfigurePaint`, `ToyConfigureSpawn`, `ToyConfigureDomain`, `ModesNotes` | |
 | 9 | Settings modal and Credits | Mockup approved (2026-10-14) | `Settings.dc.html` (interactive), `SettingsDisplay`, `SettingsPerformance`, `SettingsOther`, `Credits`, `SystemNotes` | |
 | 10 | Closed surfaces: Port (locked), Store (no slot), Episodes panel, purchase confirmation | Mockup approved (2026-10-14) | `ClosedSurfaces.dc.html`, `PurchaseConfirm` (blind), `SystemNotes` | |
@@ -811,3 +811,33 @@ persistent calls that name it all still resolve).
 
 Departures: the window keeps one height (680) on both tabs - the board shortens it to 560 on Display
 name. The unpicked avatars are not dimmed to 80%.
+
+## 16. Item 7: the Ark screen (Elemental Converter)
+
+Built 2026-10-15, awaiting in-editor approval. `Tools/Build/author_menu_ark.py` authors `ArkView.prefab`
+under `Assets/_Prefabs/UI Elements/Main Menu Screens/Ark/` and mounts it under `ArkScreen/ElementalConverter`.
+The 3D picture is still built in code by `ElementalConverterView` and now sits behind the overlay
+(`SetAsFirstSibling`); wiring CONVERT switches the first cut's code-built title and button off.
+
+- **Full bleed:** the converter's RectTransform grows 170.4 units upward, so the stage runs under the
+  translucent nav (ArkScreen itself still starts below it; the NavBar draws after Screens).
+- **Title band:** "Ark" / "Elemental converter" / the one-line recipe, on a solid black band below the nav.
+- **Recipe panel:** four `ConverterRecipeRow`s in fly-in order (Space, Charge, Mass, Time) with their
+  codex renders (`Assets/_Graphics/Codex/ethirion_*.png`): Ready / Merging / Merged, a bar over the
+  crystal's own flight (`OmniCombinePlayer.ElementProgress`), the merging row in CTA green with its
+  crystal bobbing; "N of 4 merged"; below "Makes", the Omni block - dim until the omni forms, then the
+  ceremony pop, floating.
+- **Converter bar:** the run's clock ("00:11 / 00:22", `RunTime` / `RunDuration`), four segments that
+  fill in order and carry the travelling spark once merged, and CONVERT (opaque Play, highlight sweep):
+  Inactive and "Converting..." mid-run - a press mid-run used to restart the sequence and is now ignored -
+  then "Convert again".
+- `OmniCombinePlayer` gained `IsRunning`, `IsDone`, `RunTime`, `RunDuration`, `OmniFormed` and
+  `ElementProgress(k)`; the view no longer calls `Select()` on entry (the switcher's Refocus lands on
+  CONVERT).
+- `author_elemental_converter.py` now judges its edit against the scene it edits rather than the merge
+  base (its `--check` failed on every later Menu_Main edit), and its first-run self-test controls are
+  planted into a synthesised pre-converter scene (they had stopped reaching their code once the merge base
+  carried the converter).
+
+Departures: the board's timings were compressed for viewing; the game keeps its own flights (about 22 s a
+run). No economy is drawn (the converter has no inputs or balances yet).
