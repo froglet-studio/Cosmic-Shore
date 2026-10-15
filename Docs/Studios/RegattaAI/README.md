@@ -36,7 +36,7 @@ then publish `<dir>/index.html` with every other file in `<dir>` as `files`, `ur
   phone opens touch play anyway), records below; AI
   Config holds **AI tuning** (pick any of the eight AIs and tune its drive with lab-only sliders, Reset this AI) and the
   shared **Gate steering** as sliders starting at the scene's shipped values; Play Style Config's **Custom** style puts a
-  Time-level slider on every hull Time reaches; the Free camera **orbits or flies** (D16); the scorecard's **Hard
+  Time-level slider on every hull Time reaches; the Free camera **orbits or flies** (D16); **right-drag (or middle-drag) pans any camera**, double-click resets (the user, 2026-10-15); the scorecard's **Hard
   fastest?** column is the levels check (D24). The scorecard always races the current tuning.
 - **Lab fix (AI Config, on by default; a candidate to port):** commit no earlier than the approach point, and after a
   missed mouth re-latch the side and extend at once. Off = the game's steering.

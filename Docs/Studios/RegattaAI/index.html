@@ -174,7 +174,7 @@
             <div class="keys">
               <span>Gamepad</span><span>both sticks steer (the game's mix), LT speed verb, RT slip (Urchin)</span>
               <span>Keys</span><span>W S pitch · A D yaw · Q E roll · ↑ ↓ throttle · Space speed verb · F slip</span>
-              <span>Free cam</span><span>orbits the viewed hull: drag · wheel · J L / I K turn · U O zoom</span>
+              <span>Camera</span><span>right-drag pans any camera (double-click resets) · Free cam: drag orbits · wheel zooms · J L / I K turn · U O zoom</span>
               <span></span><span>Enter play · P pause / resume · R stop · C next camera · V next player</span>
             </div>
             <div class="btns"><button class="btn primary" id="startBtn" type="button">Start</button><button class="btn" id="gridBtn2" type="button">Five-hull test grid</button></div>
@@ -197,7 +197,7 @@
         <div id="scenePanel"></div>
         <label class="check"><input type="checkbox" id="labelsChk"> <span>Show hull names over the hulls</span></label>
         <label class="check"><input type="checkbox" id="trailsChk"> <span>Show each pilot's trajectory trail</span></label>
-        <div class="frow" title="Free camera (/vessel-studio D16): orbit the viewed hull (drag to turn, wheel to zoom), or fly it yourself (drag to look, I J K L to move, U O down and up, Shift fast; on a phone the sticks when your hull is AI-flown)."><span>Free camera</span><select class="sel" id="freeSel" aria-label="Free camera mode"><option value="Orbit">Orbit the viewed hull</option><option value="Fly">Fly free</option></select></div>
+        <div class="frow" title="Free camera (/vessel-studio D16): orbit the viewed hull (drag to turn, wheel to zoom, right-drag to pan), or fly it yourself (drag to look, right-drag to slide, I J K L to move, U O down and up, Shift fast; on a phone the sticks when your hull is AI-flown)."><span>Free camera</span><select class="sel" id="freeSel" aria-label="Free camera mode"><option value="Orbit">Orbit the viewed hull</option><option value="Fly">Fly free</option></select></div>
         <div class="field" title="How many seconds of flight each trajectory trail shows (like the Third Eye's trails)."><span>Trail length</span><input type="range" id="trailR" min="1" max="12" step="1"><output id="trailO"></output></div>
       </div>
 
@@ -244,6 +244,7 @@
         <div class="keys">
           <span>Gamepad</span><span>both sticks steer (the game's mix), LT the speed verb (hold or press, by hull), RT slip off a rail (Urchin)</span>
           <span>Keys</span><span>W S pitch · A D yaw · Q E roll · ↑ ↓ throttle · Space speed verb · F slip</span>
+          <span>Pan</span><span>right mouse button (or middle): press, hold and drag to pan any camera; double-click the stage to reset the pan (a camera or player change resets it too)</span>
           <span>Free cam</span><span>orbit: drag to turn · wheel to zoom · J L / I K turn · U O zoom; fly: drag to look · I K forward and back · J L sideways · U O down and up · Shift fast</span>
           <span>Transport</span><span>Enter play · P pause / resume · R stop · C next camera · V next player</span>
           <span>Phone</span><span>opens by itself on a phone: two thumb sticks, LT / RT handles</span>
@@ -799,9 +800,15 @@
   // ---- cameras (D16) ----
   const camPos = new V(), camLook = new V(), free = { yaw: 2.6, pitch: 0.35, dist: 180 }, fly = { pos: null, yaw: 0, pitch: 0 };
   let chased = -1;
+  // Right-drag pans every camera (the user, 2026-10-15): the camera slides along its own right and up axes, the hull keeps
+  // its place in the view's frame of motion. Chase / Follow / Orbit keep the pan as an offset re-applied each frame (it
+  // resets on a camera or player change, or a double-click on the stage); Fly moves the camera itself.
+  const pan = { x: 0, y: 0, applied: new V(), cam: null, view: -1 };
   const viewed = () => W.pilots[Math.min(S.view, W.pilots.length - 1)] || W.pilots[0];
   function placeCamera(W, dt, snap) {
     const P = viewed(); let tag; chased = -1;
+    cam.position.sub(pan.applied); pan.applied.set(0, 0, 0);   // back to the unpanned camera before this frame's placement
+    if (pan.cam !== S.cam || pan.view !== S.view) { pan.x = pan.y = 0; pan.cam = S.cam; pan.view = S.view; }
     if (S.cam === 'Free' && S.freeMode === 'Fly') {   // fly free (D16): drag to look, I J K L / U O to move, Shift fast; phone sticks when your hull is AI-flown
       const k = (c) => keys.has(c) ? 1 : 0;
       if (!fly.pos) { fly.pos = cam.position.clone(); const d = new V(); cam.getWorldDirection(d); fly.yaw = Math.atan2(-d.x, -d.z); fly.pitch = Math.asin(clamp(d.y, -1, 1)); }
@@ -830,6 +837,10 @@
       chased = S.cam === 'Chase' ? P.i : -1;
       tag = (S.cam === 'Follow' ? 'Following ' : 'Chase: ') + P.h.name + ' · ' + P.domain.name + (P.spec.ai ? ' (AI ' + P.spec.ai + ')' : P.idleAI ? ' (AI holding)' : ' (you)');
     }
+    if (!(S.cam === 'Free' && S.freeMode === 'Fly') && (pan.x || pan.y)) {
+      pan.applied.set(pan.x, pan.y, 0).applyQuaternion(cam.quaternion); cam.position.add(pan.applied);
+      tag += ' · panned (double-click resets)';
+    }
     $('camTag').textContent = tag + ' · ' + S.speed + '×';
   }
 
@@ -846,10 +857,32 @@
   window.addEventListener('keyup', (e) => keys.delete(e.code)); window.addEventListener('blur', () => keys.clear());
   document.addEventListener('pointerdown', (e) => { armed = $('viewport').contains(e.target); }); canvas.addEventListener('focus', () => { armed = true; });
   let drag = null;
-  canvas.addEventListener('pointerdown', (e) => { if (S.cam === 'Free' && !playMode) drag = { x: e.clientX, y: e.clientY }; });
+  let panDrag = null;
+  // world units one screen pixel spans at the depth the camera looks at (orbit: its distance; chase / follow: its offset; fly: 200 u)
+  const panScale = () => {
+    const depth = S.cam === 'Free' ? (S.freeMode === 'Fly' ? 200 : free.dist) : Math.max(20, camPos.distanceTo(camLook));
+    return depth * 2 * Math.tan(cam.fov * Math.PI / 360) / Math.max(1, canvas.clientHeight);
+  };
+  canvas.addEventListener('pointerdown', (e) => {
+    if (playMode) return;
+    if (e.button === 2 || e.button === 1) { panDrag = { x: e.clientX, y: e.clientY }; e.preventDefault(); try { canvas.setPointerCapture(e.pointerId); } catch (err) { /* lost */ } return; }   // right (or middle) press and hold pans
+    if (S.cam === 'Free') drag = { x: e.clientX, y: e.clientY };
+  });
+  canvas.addEventListener('contextmenu', (e) => e.preventDefault());   // the right button pans the camera, no browser menu over the stage
+  canvas.addEventListener('mousedown', (e) => { if (e.button === 1) e.preventDefault(); });   // no autoscroll on a middle-button pan
+  canvas.addEventListener('dblclick', () => { pan.x = pan.y = 0; });
+  window.addEventListener('pointermove', (e) => {
+    if (!panDrag) return;
+    const k = panScale(), dx = (e.clientX - panDrag.x) * k, dy = (e.clientY - panDrag.y) * k; panDrag = { x: e.clientX, y: e.clientY };
+    if (S.cam === 'Free' && S.freeMode === 'Fly' && fly.pos) {   // fly: slide the camera itself, the scene follows the cursor
+      const r = new V(1, 0, 0).applyQuaternion(cam.quaternion), u = new V(0, 1, 0).applyQuaternion(cam.quaternion);
+      fly.pos.addScaledVector(r, -dx).addScaledVector(u, dy); return;
+    }
+    pan.x -= dx; pan.y += dy;   // the scene follows the cursor (grab and drag)
+  });
   canvas.addEventListener('wheel', (e) => { if (S.cam !== 'Free') return; e.preventDefault(); if (S.freeMode === 'Fly' && fly.pos) { const d = new V(); cam.getWorldDirection(d); fly.pos.addScaledVector(d, -Math.sign(e.deltaY) * 60); return; } free.dist = clamp(free.dist * (1 + Math.sign(e.deltaY) * 0.1), 25, 6000); }, { passive: false });
   window.addEventListener('pointermove', (e) => { if (!drag) return; if (S.cam === 'Free' && S.freeMode === 'Fly') { fly.yaw -= (e.clientX - drag.x) * 0.005; fly.pitch = clamp(fly.pitch - (e.clientY - drag.y) * 0.005, -1.5, 1.5); drag = { x: e.clientX, y: e.clientY }; return; } free.yaw -= (e.clientX - drag.x) * 0.008; free.pitch = clamp(free.pitch + (e.clientY - drag.y) * 0.006, -1.3, 1.3); drag = { x: e.clientX, y: e.clientY }; });
-  window.addEventListener('pointerup', () => { drag = null; });
+  window.addEventListener('pointerup', () => { drag = null; panDrag = null; }); window.addEventListener('pointercancel', () => { drag = null; panDrag = null; });
   function readPad() { let pads = []; try { pads = navigator.getGamepads ? Array.from(navigator.getGamepads()) : []; } catch (e) { return null; } for (const g of pads) if (g && g.connected && g.axes.length >= 4) return g; return null; }
   function stick(x, y) { const m = Math.hypot(x, y); if (m < 0.15) return { x: 0, y: 0 }; const s = Math.min(1, (m - 0.15) / 0.85) / m; return { x: x * s, y: y * s }; }
   let playMode = false, camTouch = false;
