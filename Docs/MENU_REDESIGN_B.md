@@ -47,7 +47,7 @@ Legend: `Planned` ▸ `Mockup` ▸ `Mockup approved` ▸ `Built` ▸ `Approved i
 | 10 | Closed surfaces: Port (locked), Store (no slot), Episodes panel, purchase confirmation | Built (2026-10-15, section 19): purchase confirmation drawn blind; locked states from items 1 and 5 | `ClosedSurfaces.dc.html`, `PurchaseConfirm` (blind), `SystemNotes` | |
 | 11 | Menu toasts | Built (2026-10-15, section 20) | `Toasts.dc.html` (interactive), `SystemNotes` | |
 | 12 | In-game UI: GameCanvas HUD chrome, scoreboard, ready / countdown / pause, in-match toasts, end-of-game screens, Menu_Main freestyle HUD | Built (2026-10-15, section 22): 12a HUD chrome, 12b Ready / waiting / countdown, 12c pause and connecting, 12d end reveal and scoreboard, 12e spectator, match feed, freestyle | `HudMatch.dc.html` (interactive), `HudCardStates`, `HudNotes`, `Hud<Vessel>` x9, `HudReady` (interactive), `HudPause`, `HudConnecting`, `HudEndReveal`, `HudScoreboard` (interactive), `HudSpectator` - page "In-game HUD" | `6a94bdd1`, `422183de`, `9abadaa9`, `f067dc57` + 12e |
-| 13 | Start flow: Bootstrap splash, connection-lost retry, sign-in, pilot name, the first-run privacy overlay (age gate, consent); the boot-world loading cover | Mockup (2026-10-15); the loading cover is Built (section 25) | `StartSplash`, `StartRetry`, `StartSignIn`, `StartSignInFailed`, `StartName`, `StartNameTaken`, `StartAgeGate`, `StartConsent`, `StartLoading`, `StartNotes` - page "Start flow" | `dc023d00d` (cover) |
+| 13 | Start flow: Bootstrap splash, connection-lost retry, sign-in, pilot name, the first-run privacy overlay (age gate, consent); the boot-world loading cover | Built (2026-10-15, section 26), awaiting in-editor approval; the loading cover is Built (section 25) | `StartSplash`, `StartRetry`, `StartSignIn`, `StartSignInFailed`, `StartName`, `StartNameTaken`, `StartAgeGate`, `StartConsent`, `StartLoading`, `StartNotes` - page "Start flow" | `dc023d00d` (cover) |
 | 14 | Maelstrom game UI: the hub between rounds, the stats screen, the tournament summary | Mockup (2026-10-15) | `MaelstromHub`, `MaelstromStats`, `MaelstromSummary`, `MaelstromNotes` - page "In-game HUD" | |
 
 ---
@@ -1577,3 +1577,64 @@ loading screen in between, on every boot and every return from a match.
 
 Tests: `EnvironmentLoadVeilTests` (three bar phases). The visual change is small enough that it
 was built without a board, against the owner's own description.
+
+## 26. Item 13: the start flow (built 2026-10-15, awaiting in-editor approval)
+
+Built from the approved Start boards (`StartSplash`, `StartRetry`, `StartSignIn`, `StartSignInFailed`,
+`StartName`, `StartNameTaken`, `StartAgeGate`, `StartConsent`). The scenes are written by
+`Tools/Build/author_start_flow.py` (`--check`, `--self-test`: eight negative controls); the privacy
+overlay builds its own UI in code, so it is restyled in `PrivacyConsentOverlay`.
+
+**One loading screen, not three.** The Bootstrap splash is also the scene-transition overlay
+(`SceneTransitionManager._splashOverlay`). `SceneLoader.FadeFromSplashWhenSettled` now holds it while
+`EnvironmentLoadVeil.IsCovering` (capped at 60 s), so on boot and on every return from a match the
+player sees the branded splash with its LOADING bar, then one fade into the finished world. The
+black cover of section 25 is still raised underneath, for the moments the splash is not up.
+
+**Bootstrap splash** (`Canvas - Splash Screen`):
+- The feature art stays; a dim and a bottom fade (`kit_fade_v`) go over it.
+- The rotating Loader icon is deleted.
+- The readout is the section 25 one: "LOADING" over a 180 x 2 `KitLoadBar`. `KitLoadBar` is new: it
+  reads the prism builder through `EnvironmentLoadVeil.BarSpan`, so the splash, the sign-in scene and
+  the veil draw the same truth, and it sleeps while nobody can see it (`KitSightline`).
+- The status line (`BootStatusPanel.statusText`) sits under the bar in Chakra Petch.
+- The flat RETRY button is replaced by a "Connection lost" window: eyebrow, title, the request's
+  message (`retryMessageText`) and a kit RETRY button with an A keycap (`retryButton`, `retryPanel`).
+  `BootStatusPanel` shows it by alpha, replays its rise, hides the readout while it is up and selects
+  the button for the pad. Copy: "We could not reach the servers. Check your network, then retry."
+  (`BootStatusBroadcaster.labelConnectionLost`, and the auth controller's last-resort retry).
+
+**Sign-in scene** (`Authentication.unity`):
+- The same dim. The unreferenced "Status Text" + Loader pair (what players saw during the auto
+  sign-in: "Loading" and a spinning icon) becomes the same bottom readout. Its line is written by
+  `BootStatusLine` (new), a read-only listener on the boot status channel the controller already
+  raises; it hides the whole readout on Hide, so a loading bar never sits under a question.
+- **Auth panel:** a slivered window. "Welcome, pilot" / "Ready to launch" / a body line / PLAY AS
+  GUEST (a kit button, the controller's `guestLoginButton`) / the controller's status line, restyled.
+- **Pilot-name panel:** a window. "Pilot name" / "What should we call you?" / the input field
+  restyled (kit fill, a border, an "n / max" count) / four rule ticks / the controller's error line /
+  CONFIRM. `DisplayNameRulesView` (new) draws the ticks from `DisplayNameValidator`'s four real rules
+  (length, characters, edges, no doubles) and turns the border Danger while a typed name would be
+  refused. The board's "Not already taken" tick is not built: uniqueness is only known on submit, and
+  the existing error line reports it there.
+- Both panels now ship **inactive**: the controller shows them by `SetActive` (kept), and a panel
+  that started active flashed for a frame before the controller hid it.
+- **Pad and keyboard:** the controller selects the panel's control as it appears (PLAY AS GUEST; the
+  name field, so the player can type at once). The kit buttons carry no `ControllerButtonPress`: A
+  arrives as an EventSystem submit on the selected button, and a pad poll as well would press twice.
+  The generator's validation fails on that pair.
+
+**Privacy overlay** (`PrivacyConsentOverlay`, built in code by AppManager on first run):
+- Eyebrows "First flight" and "Privacy", Aldrich titles, Chakra Petch body, theme tokens throughout.
+- Panels hug their content (a fixed width, height from the column).
+- Primary (Cta fill) and secondary (Neutral border) buttons, each with a keycap, and a focus ring on
+  the selected button so the pad can see where A lands.
+- The birth-year field is selected on arrival and Enter continues. On the consent step "I agree" is
+  selected (the board's A), and B or Esc declines, the same as "No thanks".
+- The slivered sprites are five optional fields on `PrivacyConsentConfigSO`, set in
+  `Resources/PrivacyConsentConfig.asset`. Empty fields draw plain rectangles.
+
+**Not built: PLAY OFFLINE.** The board offered it beside RETRY as an open question. The auth flow
+already falls back to an offline local host on its own, after its offline notice; the retry window
+appears only when that offline host itself failed, so a PLAY OFFLINE button there would lead to the
+path that just failed. The StartNotes board says so.

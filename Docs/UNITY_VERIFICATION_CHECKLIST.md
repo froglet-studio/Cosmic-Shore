@@ -65,6 +65,39 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Style-B start flow: Bootstrap splash, connection lost, sign-in, pilot name, privacy overlay (`claude/new-session-76hnyc`, 2026-10-15) — NOT EDITOR-VERIFIED
+
+Section 26 of `Docs/MENU_REDESIGN_B.md`. Affects Yash's boot/auth flow: `AuthenticationSceneController`
+(selects each panel's control as it appears; one retry message), `SceneLoader` (the splash holds
+while the boot world builds), `BootStatusPanel` (retry window), and both scenes. Scenes written by
+`Tools/Build/author_start_flow.py`. There is no editor in the session, so `/verify-unity` is still
+owed. Offline: the player and editor reference compiles are clean apart from the known package
+errors; the generator's `--check` and `--self-test` (eight negative controls) pass.
+
+**Verify in editor:**
+1. Open `Bootstrap.unity` and `Authentication.unity`. No missing scripts, no missing references on
+   `BootStatusPanel` (statusText, retryButton, retryPanel, retryMessageText, readoutGroup) or on
+   `AuthenticationSceneController`.
+2. Play from Bootstrap on a fresh install (clear PlayerPrefs). The splash shows the feature art,
+   dimmed, with LOADING and a thin bar at the bottom. No spinning icon.
+3. The age gate: slivered panel, "FIRST FLIGHT", the field already focused - type a year and press
+   Enter. Consent: "PRIVACY", I AGREE selected; press B or Esc - it declines and the flow continues.
+   Repeat with a pad.
+4. Sign-in scene: the bottom readout shows the boot status lines ("Signing in...") while it works,
+   and disappears when a panel asks the player something.
+5. Auth panel (force it: no cached session): "Welcome, pilot" window; PLAY AS GUEST is selected, A
+   or Enter presses it once (watch the log for a single guest sign-in).
+6. Pilot-name panel (a profile with a default name): the field takes focus; the four ticks fill as
+   you type; the count reads "n / 25"; a refused name turns the border red; a taken name shows the
+   error line under the ticks. CONFIRM presses once on A.
+7. Neither panel flashes on the scene's first frame.
+8. After sign-in: the splash holds until Garland is built, then one fade into Home. No black screen
+   in between.
+9. Connection lost (kill the network after the menu loads, or raise a Retry from the Boot channel):
+   the "Connection lost" window rises, the LOADING bar hides, RETRY is selected and works on A.
+
+---
+
 ### 🔴 Menu_Main: the boot world loads before the menu is revealed; subtle loading readout (`claude/new-session-76hnyc`, 2026-10-15) — NOT EDITOR-VERIFIED
 
 Section 25 of `Docs/MENU_REDESIGN_B.md`. Affects Garrett's ecology area: one call from

@@ -47,6 +47,18 @@ namespace CosmicShore.ScriptableObjects
         [SerializeField] string continueLabel = "Continue";
         [SerializeField] string policyLabel = "Privacy policy";
 
+        [Header("Style B surfaces (optional)")]
+        [Tooltip("The panel's slivered fill (kit_sliver14_fill). Empty draws a plain rectangle.")]
+        [SerializeField] Sprite panelFillSprite;
+        [Tooltip("The panel's slivered border (kit_sliver14_line1).")]
+        [SerializeField] Sprite panelBorderSprite;
+        [Tooltip("A button's slivered fill (kit_sliver10_fill).")]
+        [SerializeField] Sprite buttonFillSprite;
+        [Tooltip("A button's border and its keycap (kit_sliver10_line1).")]
+        [SerializeField] Sprite buttonBorderSprite;
+        [Tooltip("The focus ring a selected button wears (kit_sliver10_line2).")]
+        [SerializeField] Sprite focusRingSprite;
+
         public string PrivacyPolicyUrl => privacyPolicyUrl == null ? "" : privacyPolicyUrl.Trim();
         public bool HasPrivacyPolicyUrl => !string.IsNullOrWhiteSpace(PrivacyPolicyUrl);
 
@@ -58,5 +70,11 @@ namespace CosmicShore.ScriptableObjects
         public string DeclineLabel => declineLabel;
         public string ContinueLabel => continueLabel;
         public string PolicyLabel => policyLabel;
+
+        public Sprite PanelFillSprite => panelFillSprite;
+        public Sprite PanelBorderSprite => panelBorderSprite;
+        public Sprite ButtonFillSprite => buttonFillSprite;
+        public Sprite ButtonBorderSprite => buttonBorderSprite;
+        public Sprite FocusRingSprite => focusRingSprite;
     }
 }
