@@ -30,9 +30,19 @@ namespace CosmicShore.Launcher
         public Workspace(LauncherSettings s, Toolchain tools) { _s = s; _tools = tools; }
 
         public string Dir => _s.Workspace == WorkspaceMode.WorktreeOfMyClone && !string.IsNullOrWhiteSpace(_s.MyClonePath)
-            ? Path.Combine(Path.GetDirectoryName(Path.GetFullPath(_s.MyClonePath).TrimEnd('\\', '/'))!,
-                Path.GetFileName(Path.GetFullPath(_s.MyClonePath).TrimEnd('\\', '/')) + "-prisma")
+            ? WorktreeDir(Path.GetFullPath(_s.MyClonePath).TrimEnd('\\', '/'))
             : _s.ResolvedManagedPath;
+
+        /// <summary>
+        /// The worktree beside <paramref name="clone"/>: CLONE-amoebius, or one already made under the
+        /// engine's earlier names (a git worktree cannot just be renamed, and it may hold the agent's
+        /// uncommitted edits).
+        /// </summary>
+        static string WorktreeDir(string clone)
+        {
+            var dirs = new[] { "-amoebius", "-prisma", "-froglet-engine" }.Select(s => clone + s).ToArray();
+            return dirs.FirstOrDefault(d => Directory.Exists(Path.Combine(d, ".git")) || File.Exists(Path.Combine(d, ".git"))) ?? dirs[0];
+        }
 
         public bool Exists => Directory.Exists(Path.Combine(Dir, ".git")) || File.Exists(Path.Combine(Dir, ".git"));
         public bool HasEngine => File.Exists(Path.Combine(Dir, "Port", "src", "CosmicShore.Player", "CosmicShore.Player.csproj"));
@@ -116,8 +126,17 @@ namespace CosmicShore.Launcher
                     return false;
                 }
                 progress(0, "Fetching " + branch);
-                var f = await ProcessRunner.Run(Git, new[] { "-C", clone, "fetch", "--progress", "origin", branch }, null, log, ct, GitEnv(), OnGit);
-                if (f.ExitCode != 0) return Fail(log, "git fetch failed. Check the branch name; for a private repository sign in to GitHub or paste a token in OPTIONS > SOURCE.");
+                // Fetch from the repository the branch list comes from (ListBranches, RemoteTip: _s.RemoteUrl), not from
+                // whatever the clone calls "origin": a clone of a fork, or one whose origin is an old URL, does not carry
+                // every branch PLAY offers, and its fetch failed with "couldn't find remote ref" (2026-10-10). The clone's
+                // own origin is the fallback, for a RemoteUrl this machine cannot reach.
+                var f = await ProcessRunner.Run(Git, new[] { "-C", clone, "fetch", "--progress", _s.RemoteUrl, branch }, null, log, ct, GitEnv(), OnGit);
+                if (f.ExitCode != 0)
+                {
+                    log.Add(LogKind.Info, $"Fetching {branch} from {_s.RemoteUrl} failed; trying the clone's own origin.");
+                    f = await ProcessRunner.Run(Git, new[] { "-C", clone, "fetch", "--progress", "origin", branch }, null, log, ct, GitEnv(), OnGit);
+                }
+                if (f.ExitCode != 0) return Fail(log, $"git fetch failed: neither {_s.RemoteUrl} nor the clone's origin has \"{branch}\". Check the branch name and OPTIONS > SOURCE (the repository URL); for a private repository sign in to GitHub or paste a token there.");
                 var sha = (await ProcessRunner.Run(Git, new[] { "-C", clone, "rev-parse", "FETCH_HEAD" }, null, log, ct, GitEnv(), quiet: true)).StdOut.Trim();
                 if (!Exists)
                 {
@@ -195,8 +214,8 @@ namespace CosmicShore.Launcher
         public List<string> BuildScenes()
         {
             if (!File.Exists(Path.Combine(Dir, "ProjectSettings", "EditorBuildSettings.asset"))) return new();
-            var p = Prisma.PrismaProjectSettings.Load(Dir);
-            return p.BuildScenes(new Prisma.PrismaProjectSettings.UnityDefaults(Dir))
+            var p = Amoebius.AmoebiusProjectSettings.Load(Dir);
+            return p.BuildScenes(new Amoebius.AmoebiusProjectSettings.UnityDefaults(Dir))
                 .Where(s => s.Enabled).Select(s => Path.GetFileNameWithoutExtension(s.Path)).ToList();
         }
 
@@ -276,20 +295,6 @@ namespace CosmicShore.Launcher
                 log.Add(LogKind.Warn, $"Could not fetch the FMOD library ({ex.Message}); the game will run silent.");
                 return false;
             }
-        }
-
-        /// <summary>
-        /// A GitHub token for the API: the one typed in OPTIONS, else the password git's credential
-        /// helper (GitHub Desktop / Git Credential Manager) already stores for github.com.
-        /// </summary>
-        public string? GitHubApiToken()
-        {
-            if (!string.IsNullOrWhiteSpace(_s.GitHubToken)) return _s.GitHubToken.Trim();
-            var basic = CredentialFill(new Uri("https://github.com"));
-            if (basic == null) return null;
-            var pair = Encoding.UTF8.GetString(Convert.FromBase64String(basic));
-            int i = pair.IndexOf(':');
-            return i > 0 ? pair[(i + 1)..] : null;
         }
 
         string? CredentialFill(Uri remote)

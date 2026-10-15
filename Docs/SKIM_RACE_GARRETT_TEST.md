@@ -33,7 +33,7 @@ host seat stays on player input.
 
 1. Pull branch `feat/ai-genetic-training`.
 2. Open the project in Unity `6000.3.17f1`.
-3. Open **FrogletTools → AI Training**.
+3. Open **FrogletTools → AI → AI Training**.
 4. Open the **Deploy** tab.
    - Leave **Use archive in normal play** on.
    - Leave **Store a genome per intensity** off.

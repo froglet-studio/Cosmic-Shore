@@ -9,11 +9,12 @@ namespace CosmicShore.Gameplay
     /// <see cref="HeadlongCircuit"/>, shared: what makes this course the Stoat's is the CUT.
     ///
     /// <para><b>The vessel.</b> The Stoat flies the Squirrel's transformer: 60 u/s at full
-    /// throttle, a flat 120°/s turn (<c>RotationThrottleScaler</c> 0), so it pivots on a 29 u
-    /// circle. In the barren race cell there is nothing to skim, so the only speed past cruise is
-    /// the WORMHOLE PULL of its own slung pair - <c>BlackHoleVesselPull</c>, clamped to
+    /// throttle, a flat 48°/s turn (<c>RotationThrottleScaler</c> 0; the dipole round cut the
+    /// Squirrel's 120 to x0.4 so the hull leans on its poles to turn, <c>STOAT_DIPOLE.md</c>), so it
+    /// pivots on a 72 u circle. In the barren race cell there is nothing to skim, so the only speed
+    /// past cruise is the WORMHOLE PULL of its own slung pair - <c>BlackHoleVesselPull</c>, clamped to
     /// <c>BlackHoleConfig.maxVesselPullSpeed</c> (90 u/s). Slung flat out it makes 150 u/s on a
-    /// 72 u circle.</para>
+    /// 179 u circle.</para>
     ///
     /// <para><b>What a corner asks.</b> At this scale no corner the solver lays is tighter than
     /// the slung circle, so a corner never costs the Stoat speed the way it costs a Manta its
@@ -31,9 +32,10 @@ namespace CosmicShore.Gameplay
         /// <summary>`DefaultThrottleScaler` on Stoat.prefab - cruise speed at full throttle.</summary>
         public const float StoatThrottleScaler = 60f;
 
-        /// <summary>`YawScaler` / `PitchScaler` on Stoat.prefab (both 120): the turn rate, flat,
-        /// because `RotationThrottleScaler` is 0.</summary>
-        public const float StoatTurnScaler = 120f;
+        /// <summary>`YawScaler` / `PitchScaler` on Stoat.prefab (both 48 since the dipole round's
+        /// x0.4 cut, <c>author_stoat_assets.py</c> stage 4): the turn rate, flat, because
+        /// `RotationThrottleScaler` is 0.</summary>
+        public const float StoatTurnScaler = 48f;
 
         /// <summary>`BlackHoleConfig.maxVesselPullSpeed` - the most a slung pair adds.</summary>
         public const float SlingPullCeiling = 90f;
@@ -44,10 +46,10 @@ namespace CosmicShore.Gameplay
         /// <summary>The circle the Stoat holds at that speed.</summary>
         public static float CornerRadiusAtSling(float sling01) => SpeedAtSling(sling01) / (StoatTurnScaler * Mathf.Deg2Rad);
 
-        /// <summary>~29 u: the cruise pivot.</summary>
+        /// <summary>~72 u: the cruise pivot.</summary>
         public static float CruiseRadius => CornerRadiusAtSling(0f);
 
-        /// <summary>~72 u: slung flat out.</summary>
+        /// <summary>~179 u: slung flat out.</summary>
         public static float FullSlingRadius => CornerRadiusAtSling(1f);
 
         // ── The circuit ──────────────────────────────────────────────────────
@@ -81,7 +83,7 @@ namespace CosmicShore.Gameplay
                     new[] { 140f, 135f,  70f,   6f,   4f,   3f,   2f,   1f },
                 }[i - 1],
                 // ABSOLUTE floor in the Stoat's units: 2 x / 1.6 x / 1.3 x / 1.2 x the slung circle
-                // (143 / 115 / 93 / 86 u), never below 2 x the cruise pivot. CornerRadiusFactor stays
+                // (358 / 286 / 233 / 215 u), never below 2 x the cruise pivot (143 u). CornerRadiusFactor stays
                 // 0 - it would be read as a fraction of the RHINO's flat-out radius.
                 CornerRadiusFactor = 0f,
                 CornerFloorRadius = Mathf.Max(2f * CruiseRadius, new[] { 2.0f, 1.6f, 1.3f, 1.2f }[i - 1] * FullSlingRadius),

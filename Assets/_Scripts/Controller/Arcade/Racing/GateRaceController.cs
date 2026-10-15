@@ -908,6 +908,13 @@ namespace CosmicShore.Gameplay
         {
             Vector3 centre = ResolveCellCentre();
 
+            // The lobby's AI difficulty, where this card offers the picker (AIDifficultyRules.IsOfferedFor):
+            // Easy and Medium race on GateRaceHandicap's belief (a ring noticed late, a ring misjudged),
+            // Hard on the true course. Same numbers as the Skim Race (SkimRaceDifficultySO).
+            var handicapLevel = AIDifficultyRules.IsOfferedFor(gameData.GameMode)
+                ? SkimRaceDifficultySO.Load().For(AIDifficultyRules.Resolve(gameData.RequestedAIDifficulty))
+                : default;
+
             foreach (var p in gameData.Players)
             {
                 if (p == null || !p.IsInitializedAsAI) continue;
@@ -919,6 +926,9 @@ namespace CosmicShore.Gameplay
                 float side = 1f;
                 float nextCrystalScan = 0f;
                 Crystal detour = null;
+                // Seeded per seat and per race, so each AI errs differently every race.
+                var handicap = handicapLevel.IsNone ? null
+                    : new GateRaceHandicap(handicapLevel, unchecked(System.Environment.TickCount * 31 + (int)p.PlayerNetId));
 
                 pilot.SetExternalTargetProvider(() =>
                 {
@@ -939,6 +949,16 @@ namespace CosmicShore.Gameplay
                     // arriving at the same ring on the next lap IS a new leg.
                     var gate = _course[RingIndexFor(index)];
                     Vector3 self = selfTf.position;
+
+                    // What this pilot BELIEVES about its ring (GateRaceHandicap): nothing yet (it flies
+                    // straight on), or the mouth off to one side (it flies there and turns back).
+                    Vector3 ringAt = gate.Position;
+                    if (handicap != null)
+                    {
+                        var belief = handicap.Believe(index, gate.Position, gate.Axis, gate.Radius, self, selfTf.forward, Time.time);
+                        if (belief.Unnoticed) return self + selfTf.forward * 200f;
+                        ringAt = belief.Point;
+                    }
 
                     if (index != lockedIndex)
                     {
@@ -972,9 +992,9 @@ namespace CosmicShore.Gameplay
                         }
                     }
 
-                    return (gate.Position - self).sqrMagnitude > aiCommitDistance * aiCommitDistance
-                        ? gate.Position + gate.Axis * (side * aiApproachLead)
-                        : gate.Position - gate.Axis * (side * aiThroughDistance);
+                    return (ringAt - self).sqrMagnitude > aiCommitDistance * aiCommitDistance
+                        ? ringAt + gate.Axis * (side * aiApproachLead)
+                        : ringAt - gate.Axis * (side * aiThroughDistance);
                 });
             }
         }

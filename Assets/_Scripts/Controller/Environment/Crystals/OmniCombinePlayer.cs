@@ -22,17 +22,28 @@ namespace CosmicShore.Gameplay
     /// <see cref="DepthRatchet"/> and <see cref="CrystalDepthPrismProfileSO"/> against the converter's camera, exactly
     /// as <see cref="CrystalDepthPrisms"/> does in play. The omni's triangles are <c>OmniCrystalTriangles.asset</c> on
     /// <c>OmniDepthPrisms</c>, turned onto the omni, and its body has their holes cut, as in play. As the Mass prisms
-    /// morph, the depth shader's shape (thickness, top-face height, plate radius, reach, split) blends from the Mass
-    /// material's to the omni triangles', and each wedge's column centre slides to its triangle's centre, so the three
-    /// landed wedges ARE the omni's triangle prism by the time it takes over. The game meshes have their thickness
-    /// baked in; the combine's Mass prisms are the thin ones, so their thickness (from the data) goes on in the shader.</para>
+    /// morph, the prisms' shape (thickness, top-face height, plate radius) blends from the Mass material's to the omni
+    /// triangles', and each wedge's column centre slides to its triangle's centre, so the three landed wedges ARE the
+    /// omni's triangle prism by the time it takes over. Their column (reach, split, size at the top) stays the Mass
+    /// crystal's: they fly in raised up it (<see cref="OmniCombineParams.MassRaise"/>) and come down it into their slots
+    /// only once the crystal is centred (<see cref="OmniCombineCore.MassColumnPlace"/>). The game meshes have their
+    /// thickness baked in; the combine's Mass prisms are the thin ones, so their thickness (from the data) goes on in the
+    /// shader.</para>
+    ///
+    /// <para><b>Every effect is the game's round-5 one</b> (Omni Motion Lab, graduated 2026-10-13): the Mass columns step
+    /// with <see cref="CrystalDepthPrisms.StepColumns"/> (sealed at the horizon, rising only while hidden); the Charge
+    /// crystal waits with the seam walk (its edge crawl held at zero) and the woken omni discharges in chained flux arcs
+    /// (<see cref="ChargeArcs"/>, the core <see cref="CrystalChargeArcs"/> draws in play); and the woken omni plays the
+    /// game's cadence (<see cref="OmniCadence"/>, <c>OmniCrystalCadence.asset</c>): its squares turn as ONE rigid hop
+    /// (<see cref="SquareTurnFit"/>, the fit the game's blend shapes are built from) and its rhombi flip one cued wave per
+    /// wave beat, never at once. Its squares, rhombi and pentagons swell to the game's 1.1x thickness as its effects
+    /// wake, so the hand-off from the thin landed plates is continuous, and the first beat starts once it is awake.</para>
     ///
     /// <para><b>Meshes are unwelded per triangle with one normal per FACE.</b> The art data shares a slab's
-    /// corners between its faces; drawn welded, the crystals would shade smooth, and the Charge discharge -
-    /// whose bake (<see cref="CrystalEdgeArcMeshBaker"/>) decides a crease by "two triangles that do NOT
-    /// share raw vertices" - would find no crease at all and draw nothing. So each plate's triangles are
-    /// grouped into faces first (adjacent and within the baker's own 20 degrees), every face gets its own
-    /// corners, and the Charge crystal and the omni's pentagons go through the game's own bake.</para>
+    /// corners between its faces; drawn welded, the crystals would shade smooth. So each plate's triangles are
+    /// grouped into faces first (adjacent and within 20 degrees: the art file's quads are not all planar) and every
+    /// face gets its own corners. (Until 2026-10-13 the Charge crystal and the omni's pentagons also went through the
+    /// edge-crawl bake; the Charge light is now drawn on the CPU, and Charge wears the omni's body material.)</para>
     ///
     /// <para><b>Stepped by its owner, on unscaled time.</b> Every menu screen but HOME runs at
     /// <c>Time.timeScale = 0</c> (<c>ScreenSwitcher.NavigateTo</c>), so <see cref="Tick"/> takes its
@@ -40,11 +51,7 @@ namespace CosmicShore.Gameplay
     /// </summary>
     public sealed class OmniCombinePlayer : MonoBehaviour
     {
-        static readonly int OpacityLower = Shader.PropertyToID("_opacity");     // ChargeCrystal (FadeIn's name)
         static readonly int OpacityUpper = Shader.PropertyToID("_Opacity");     // OmniCrystalFresnel / OmniDepthPrism
-        static readonly int ArcIntensity = Shader.PropertyToID("_ArcIntensity");
-        static readonly int NodeIntensity = Shader.PropertyToID("_NodeIntensity");
-        static readonly int ArcClockID = Shader.PropertyToID("_ArcClock");
         static readonly int DepthStateID = Shader.PropertyToID("_DepthState");
         static readonly int DepthDrivenID = Shader.PropertyToID("_DepthDriven");
         static readonly int ThicknessID = Shader.PropertyToID("_Thickness");
@@ -60,8 +67,17 @@ namespace CosmicShore.Gameplay
         OmniCombineParams _params;
         readonly Piece[] _crystals = new Piece[4];
         Piece _omni;
-        MeshRenderer _omniEdges;
-        Mesh _omniEdgesMesh;
+        ArcLayer _chargeArcs, _omniArcs;
+        Vector3[] _strikeCentres;
+        float[] _strikeRadii, _strikePlaces, _strikeSeatRadii;
+        Vector3[] _strikeSeats;
+        ChargeSeamWalker _walker;
+        ChargeFluxChain _chain;
+        ChargeArcSettings _arcSettings;
+        OmniCadence _cadence;
+        float _plateThickness = 1f;
+        float[] _omniRest;
+        OmniCombineMotion _motion;
         DepthColumns _massColumns, _triColumns;
         MeshRenderer _triangles;
         DepthShape _massShape, _triShape, _triThinShape;
@@ -74,10 +90,13 @@ namespace CosmicShore.Gameplay
         int[] _massCount;
         int[][] _massSites;
         MaterialPropertyBlock _block;
-        float _chargeArcBase, _chargeNodeBase, _edgesArcBase, _edgesNodeBase;
         double _t;
         bool _playing;
         System.Random _rng;
+        // The camera about the stage's vertical: where it is and how fast it circles, so each crystal can be sent in from
+        // the side the camera will be on (OmniCombineCore.FaceCamera).
+        double _cameraAzimuth, _cameraTurnRate;
+        bool _cameraSeen;
 
         /// <summary>Seconds into the current play.</summary>
         public double PlayTime => _t;
@@ -99,11 +118,11 @@ namespace CosmicShore.Gameplay
                                  "Run Tools/Build/author_elemental_converter.py.");
                 return null;
             }
-            if (!config.ChargeMaterial || !config.ShellMaterial || !config.OmniMaterial || !config.OmniChargeEdgesMaterial ||
-                !config.MassMaterial || !config.OmniTrianglesMaterial || !config.OmniTrianglesMesh || !config.DepthProfile)
+            if (!config.ShellMaterial || !config.OmniMaterial || !config.OmniArcsMaterial || !config.MassMaterial || !config.OmniTrianglesMaterial || !config.OmniTrianglesMesh ||
+                !config.DepthProfile || !config.Cadence || !config.ChargeArcs)
             {
-                CSDebug.LogError("[OmniCombinePlayer] OmniCombineConfig is missing a material, the omni triangles mesh or the depth profile. " +
-                                 "Run Tools/Build/author_elemental_converter.py.", config);
+                CSDebug.LogError("[OmniCombinePlayer] OmniCombineConfig is missing a material, the omni triangles mesh, the depth profile, " +
+                                 "the cadence or the Charge arcs profile. Run Tools/Build/author_elemental_converter.py.", config);
                 return null;
             }
             var go = new GameObject("OmniCombine");
@@ -153,11 +172,11 @@ namespace CosmicShore.Gameplay
                 int plates = 0;
                 foreach (int q in d.plate) plates = Mathf.Max(plates, q + 1);
                 _morph[k] = new float[plates];
-                var material = k == OmniCombineCore.Charge ? config.ChargeMaterial
-                             : k == OmniCombineCore.Mass ? config.MassMaterial
-                             : config.ShellMaterial;
+                // Charge, Space and Time wear the omni's own body material, so the plates they land as are the omni's hue
+                // from the start: the hand-off changes nothing at base, and Charge's only contrast is its lit state.
+                var material = k == OmniCombineCore.Mass ? config.MassMaterial : config.ShellMaterial;
                 _crystals[k] = Piece.Build(transform, OmniCombineCore.Order[k], d.basis, d.tris, d.plate, material,
-                                           k == OmniCombineCore.Charge, k == OmniCombineCore.Mass, bounds);
+                                           k == OmniCombineCore.Mass, bounds);
                 if (_crystals[k] == null)
                 {
                     CSDebug.LogError($"[OmniCombinePlayer] The {OmniCombineCore.Order[k]} crystal did not build.", config);
@@ -194,7 +213,7 @@ namespace CosmicShore.Gameplay
             for (int t = 0; t < data.omni.tris.Length; t += 3)
                 if (data.omni.plateOwner[data.omni.plate[data.omni.tris[t]]] != OmniCombineCore.Mass)
                     bodyTris.AddRange(new[] { data.omni.tris[t], data.omni.tris[t + 1], data.omni.tris[t + 2] });
-            _omni = Piece.Build(transform, "Omni", data.omni.verts, bodyTris.ToArray(), data.omni.plate, config.OmniMaterial, false, false, bounds);
+            _omni = Piece.Build(transform, "Omni", data.omni.verts, bodyTris.ToArray(), data.omni.plate, config.OmniMaterial, false, bounds);
             if (_omni == null)
             {
                 CSDebug.LogError("[OmniCombinePlayer] The omni crystal did not build.", config);
@@ -206,36 +225,56 @@ namespace CosmicShore.Gameplay
             // What the Mass prisms morph toward: the triangles' shape on THIN prisms, i.e. with the mesh's baked thickness.
             _triThinShape = DepthShape.Of(config.OmniTrianglesMaterial, 1f, data.depth.omniThickness);
 
-            // The omni's twelve pentagons carry the discharge, baked from the omni's face-split rest mesh. The
-            // pentagons never move (only the rhombi, squares and triangles do), so the bake is drawn as is.
-            var source = Piece.FaceSplitSource(data.omni.verts, data.omni.tris, data.omni.plate, out _);
-            _omniEdgesMesh = CrystalEdgeArcMeshBaker.Bake(source, 10);
-            Destroy(source);
-            if (_omniEdgesMesh)
+            // The game's round-5 effects: the cadence, the square turns and thicker plates, the Charge light.
+            _cadence = config.Cadence.Cadence;
+            _plateThickness = config.Cadence.PlateThickness;
+            _arcSettings = config.ChargeArcs.Settings;
+            _omniRest = (float[])data.omni.verts.Clone();
+            if (!OmniCombineMotion.TryFit(data, (float)_core.OmniRadius, _plateThickness, out _motion, out var problem)
+                || !BuildChargeLight(data, bounds, out problem))
             {
-                var edges = new GameObject("OmniChargeEdges");
-                edges.transform.SetParent(transform, false);
-                edges.AddComponent<MeshFilter>().sharedMesh = _omniEdgesMesh;
-                _omniEdges = edges.AddComponent<MeshRenderer>();
-                _omniEdges.sharedMaterial = config.OmniChargeEdgesMaterial;
-                _omniEdges.shadowCastingMode = ShadowCastingMode.Off;
-                _omniEdges.enabled = false;
+                CSDebug.LogError($"[OmniCombinePlayer] {problem}", config);
+                return false;
             }
-            var cm = config.ChargeMaterial;
-            _chargeArcBase = cm.HasProperty(ArcIntensity) ? cm.GetFloat(ArcIntensity) : 0f;
-            _chargeNodeBase = cm.HasProperty(NodeIntensity) ? cm.GetFloat(NodeIntensity) : 0f;
-            var em = config.OmniChargeEdgesMaterial;
-            _edgesArcBase = em.HasProperty(ArcIntensity) ? em.GetFloat(ArcIntensity) : 0f;
-            _edgesNodeBase = em.HasProperty(NodeIntensity) ? em.GetFloat(NodeIntensity) : 0f;
             ShowCrystals(false);
             ShowOmni(false);
             return true;
         }
 
+        /// <summary>The Charge light, as the game draws it: the seam walk over the Charge crystal's blooms and the flux
+        /// arcs over the omni's pentagons (at the cadence's plate thickness), each its own additive layer.</summary>
+        bool BuildChargeLight(OmniCombineData data, Bounds bounds, out string problem)
+        {
+            var charge = _core.CrystalData(OmniCombineCore.Charge);
+            if (!ChargeSites.TryBuild(ToVectors(charge.basis), charge.tris, 1f, out var chargeSites, out problem))
+            {
+                problem = $"the combine's Charge crystal: {problem}";
+                return false;
+            }
+            if (!ChargeSites.TryBuild(ToVectors(data.omni.verts), data.omni.tris, _plateThickness, out var omniSites, out problem))
+            {
+                problem = $"the combine's omni: {problem}";
+                return false;
+            }
+            // The seam walk lights the petals in the omni's colours too, so they land lit the way the omni lights them.
+            _chargeArcs = new ArcLayer(transform, "ChargeSeamWalk", chargeSites, _config.OmniArcsMaterial, bounds, ownCentre: true);
+            _omniArcs = new ArcLayer(transform, "OmniFluxArcs", omniSites, _config.OmniArcsMaterial, bounds, ownCentre: false);
+            problem = null;
+            return true;
+        }
+
+        static Vector3[] ToVectors(float[] p)
+        {
+            var v = new Vector3[p.Length / 3];
+            for (int i = 0; i < v.Length; i++) v[i] = new Vector3(p[3 * i], p[3 * i + 1], p[3 * i + 2]);
+            return v;
+        }
+
         bool BuildTriangles(OmniCombineConfigSO config, float[] r)
         {
             var mesh = config.OmniTrianglesMesh;
-            if (!DepthColumns.TryReadDirections(mesh, out var directions, out var problem))
+            if (!CrystalDepthPrisms.TryGetPlates(mesh, out var directions, out var centres, out var tops, out var plateBounds,
+                                                 out float plateRadius, out var problem))
             {
                 CSDebug.LogError($"[OmniCombinePlayer] {problem}", config);
                 return false;
@@ -252,7 +291,9 @@ namespace CosmicShore.Gameplay
             var b = mesh.bounds;
             float radius = (b.extents.magnitude + b.center.magnitude) * Mathf.Max(1f, _triShape.Reach) + _triShape.FaceSplit * _triShape.SplitUnit * 2f;
             _triangles.localBounds = new Bounds(Vector3.zero, Vector3.one * 2f * radius);
-            _triColumns = new DepthColumns(directions.Length) { Directions = directions };
+            _triColumns = new DepthColumns(directions.Length, directions, centres, tops, plateBounds, plateRadius);
+            _strikeCentres = new Vector3[directions.Length];
+            _strikeRadii = new float[directions.Length];
             return true;
         }
 
@@ -284,8 +325,12 @@ namespace CosmicShore.Gameplay
             if (!convert) _params.Lead = Waiting;
             _t = 0;
             _runStart = 0;
+            if (convert) FaceCamera();
             _playing = true;
             _massColumns.Fresh = true;
+            // The Charge light's own walk and chain, seeded by the play (a CONVERT that only ends the wait keeps them).
+            _walker = new ChargeSeamWalker(_chargeArcs.Sites, _params.Seed, 0f);
+            _chain = new ChargeFluxChain(_omniArcs.Sites, _params.Seed ^ 0x5bd1e995);
             ShowCrystals(true);
             ShowOmni(false);
         }
@@ -298,6 +343,7 @@ namespace CosmicShore.Gameplay
             {
                 _params.Lead = _t + ConvertDelay;
                 _runStart = _t;
+                FaceCamera();
             }
             else
             {
@@ -330,6 +376,33 @@ namespace CosmicShore.Gameplay
             return Mathf.Clamp01((float)((_t - OmniCombineCore.Departs(element, _params)) / _params.Flight));
         }
 
+        /// <summary>Aims every crystal but the first at the side the camera will be on as it arrives, so the rhombi that
+        /// cross the omni do it behind it. Before the first frame the camera is unknown and the crystals fly straight in.</summary>
+        void FaceCamera()
+        {
+            if (_cameraSeen) _core.FaceCamera(ref _params, _cameraAzimuth, _cameraTurnRate, _t);
+        }
+
+        /// <summary>Follows the camera round the stage's vertical: its azimuth (unwrapped), handed to the play every frame
+        /// so the crystals' approach moves with it, and how fast it turns (eased, so one uneven frame does not swing the
+        /// next aim).</summary>
+        void TrackCamera(D3 camDir, float dt)
+        {
+            double azimuth = System.Math.Atan2(camDir.X, camDir.Z);
+            if (_cameraSeen && dt > 1e-4f)
+            {
+                // Unwrapped: the count runs on past a whole turn, so a path following it never flips round.
+                double step = OmniCombineCore.WrapAngle(azimuth - OmniCombineCore.WrapAngle(_cameraAzimuth));
+                _cameraAzimuth += step;
+                _cameraTurnRate += (step / dt - _cameraTurnRate) * (1 - System.Math.Exp(-dt / 0.5));
+            }
+            else if (!_cameraSeen) _cameraAzimuth = azimuth;
+            _cameraSeen = true;
+            // Every crystal on its way in follows the camera round and comes in at its height (OmniCombineParams).
+            _params.CameraAzimuth = _cameraAzimuth;
+            _params.CameraElevation = System.Math.Asin(System.Math.Max(-1.0, System.Math.Min(1.0, camDir.Y)));
+        }
+
         /// <summary>Advances the play by <paramref name="dt"/> seconds and writes every mesh.
         /// <paramref name="cameraWorld"/> is where the viewing camera is: the depth effects read it.</summary>
         public void Tick(float dt, Vector3 cameraWorld)
@@ -339,6 +412,7 @@ namespace CosmicShore.Gameplay
             _t += dt;
             var toward = transform.InverseTransformPoint(cameraWorld);
             var camDir = new D3(toward.x, toward.y, toward.z).Unit;
+            TrackCamera(camDir, dt);
             double m = OmniCombineCore.MorphEnds(_params);
             double handOff = _config.HandOffSeconds;
 
@@ -354,11 +428,10 @@ namespace CosmicShore.Gameplay
                     reach = Mathf.Max(reach, Reach(_poses[k]));
                     if (k == OmniCombineCore.Mass) continue;
                     _crystals[k].Write(_poses[k], Vector3.zero, null);
-                    bool charge = k == OmniCombineCore.Charge;
-                    SetBlock(_crystals[k].Renderer, charge ? OpacityLower : OpacityUpper, fadeIn,
-                             charge ? _chargeArcBase * _effect[k] : -1f, charge ? _chargeNodeBase * _effect[k] : -1f);
+                    SetOpacity(_crystals[k].Renderer, fadeIn);
                 }
-                WriteMass(dt, cameraWorld, fadeIn);
+                reach = Mathf.Max(reach, WriteMass(dt, cameraWorld, fadeIn));
+                WriteSeamWalk(cameraWorld, fadeIn);
                 StageRadius = reach * transform.lossyScale.x;
             }
             ShowCrystals(crystalsVisible);
@@ -373,21 +446,29 @@ namespace CosmicShore.Gameplay
             }
             float appear = (float)OmniCombineCore.Smooth((_t - m) / handOff);
             double fx = OmniCombineCore.Smooth((_t - m - handOff) / _params.EffectFade);
-            _core.OmniPose(_t, _params, fx, camDir, _omniPose);
+            // The game's beats start once the omni is awake: its first move is a whole pentagon turn, never a turn
+            // already under way.
+            PoseOmni(fx, _t - (m + handOff + _params.EffectFade), camDir);
             _omni.Write(_omniPose, Vector3.zero, null);
             if (!crystalsVisible) StageRadius = Reach(_omniPose) * transform.lossyScale.x;
-            SetBlock(_omni.Renderer, OpacityUpper, appear, -1f, -1f);
-            if (_omniEdges) SetBlock(_omniEdges, -1, 1f, _edgesArcBase * (float)fx, _edgesNodeBase * (float)fx);
-            _triColumns.Step(_triangles.transform.InverseTransformPoint(cameraWorld), dt, _config.DepthProfile, (float)fx);
+            SetOpacity(_omni.Renderer, appear);
+            // The first discharge starts charging as the omni wakes.
+            WriteFlux(cameraWorld, (float)fx, _t - (m + handOff));
+            _triColumns.Step(_triangles.transform.InverseTransformPoint(cameraWorld), dt, _config.DepthProfile,
+                             _triShape.Reach, _triShape.SizeStart, (float)fx);
             ApplyDepth(_triangles, _triColumns, _triShape, appear);
         }
 
         /// <summary>
         /// The game's Mass crystal: its object sits at the crystal's flight centre (so the shader's columns rise
         /// from the crystal's own centre, as in play), each plate's column centre slides to its omni triangle's
-        /// centre as it morphs, and the depth shader's shape blends from the Mass material's to the triangles'.
+        /// centre as it morphs, and the prisms' own shape (thickness, top-face height, plate radius) blends from the Mass
+        /// material's to the triangles' while they keep the Mass crystal's column (reach, split, size at the top).
+        /// While it idles its columns step as in play; as it sets off they hand over to
+        /// <see cref="OmniCombineCore.MassColumnPlace"/>: every prism held up its column all the way in, and down into its
+        /// slot once the crystal is centred. Returns how far out the farthest prism stands, in stage units.
         /// </summary>
-        void WriteMass(float dt, Vector3 cameraWorld, float fadeIn)
+        float WriteMass(float dt, Vector3 cameraWorld, float fadeIn)
         {
             int k = OmniCombineCore.Mass;
             var piece = _crystals[k];
@@ -422,11 +503,138 @@ namespace CosmicShore.Gameplay
             }
             morph /= Mathf.Max(1, _massPlates.Length);
             piece.Write(pose, centre, _massPlates);
-            _massColumns.Directions = _massColumns.Directions ?? new Vector3[_massPlates.Length];
-            for (int q = 0; q < _massPlates.Length; q++) _massColumns.Directions[q] = ((Vector3)_massPlates[q]).normalized;
-            _massColumns.Step(piece.Renderer.transform.InverseTransformPoint(cameraWorld), dt, _config.DepthProfile, _effect[k]);
-            ApplyDepth(piece.Renderer, _massColumns, DepthShape.Lerp(_massShape, _triThinShape, morph), fadeIn);
+            // The columns as CrystalDepthPrisms steps them in play: each plate's centre and top, and the plates' radius,
+            // which the horizon seal and the hidden-rise test measure with.
+            var shape = DepthShape.Morph(_massShape, _triThinShape, morph);
+            float radius = 0f;
+            for (int q = 0; q < _massPlates.Length; q++)
+            {
+                var c = (Vector3)_massPlates[q];
+                _massColumns.Centres[q] = c;
+                _massColumns.Directions[q] = c.normalized;
+                _massColumns.Tops[q] = shape.TopHeight;
+                radius += c.magnitude;
+            }
+            _massColumns.PlateRadius = radius / Mathf.Max(1, _massPlates.Length);
+            _massColumns.Step(piece.Renderer.transform.InverseTransformPoint(cameraWorld), dt, _config.DepthProfile,
+                              shape.Reach, shape.SizeStart, _effect[k], (float)OmniCombineCore.MassColumnPlace(_t, _params));
+            ApplyDepth(piece.Renderer, _massColumns, shape, fadeIn);
+            // The prisms stand out past the pose (up to Reach x their radius), so the framing counts where they are.
+            float farthest = 0f;
+            for (int q = 0; q < _massPlates.Length; q++)
+                farthest = Mathf.Max(farthest, (centre + (Vector3)_massPlates[q] * Mathf.Lerp(shape.Reach, 1f, _massColumns.State[q].x)).magnitude);
+            return farthest;
         }
+
+        /// <summary>
+        /// The woken omni in the game's motion: its plates swelled to the game's thickness by <paramref name="fx"/>, the
+        /// rhombi flipping the wave the cadence cues, and the squares turning on it - <paramref name="beats"/> seconds into
+        /// the cadence (negative: before the first beat, everything at rest).
+        /// </summary>
+        void PoseOmni(double fx, double beats, D3 camDir)
+        {
+            _motion.Swell(_core.Data.omni.verts, (float)fx, _omniRest);
+            var turn = SquareTurn.None;
+            float progress = 0f;
+            double waveSeconds = -1;
+            long wave = -1;
+            if (beats >= 0)
+            {
+                turn = _cadence.SquaresAt((float)beats, out progress);
+                if (_cadence.WaveAt((float)beats, out float secondsIn, out long index))
+                {
+                    wave = index;
+                    waveSeconds = _core.Data.flip.first + secondsIn * _config.Cadence.WaveSpeed;
+                }
+            }
+            _core.OmniPose(_t, _params, fx, camDir, _omniPose, _omniRest, waveSeconds, wave);
+            if (turn == SquareTurn.None) return;
+
+            var cadence = _config.Cadence;
+            _motion.TurnSquares(_omniRest, _omniPose, turn == SquareTurn.Pentagon, OmniCadence.Smoother(progress),
+                                cadence.PentagonLift * (float)_core.OmniRadius, cadence.TriangleLift, cadence.TriangleSide);
+        }
+
+        /// <summary>
+        /// The Charge crystal's seam walk while it waits, carried on the crystal's rigid frame. It fades with the
+        /// crystal's idle effect as it sets off and is gone before any petal starts to morph (the seams are the rest
+        /// crystal's).
+        /// </summary>
+        void WriteSeamWalk(Vector3 cameraWorld, float fadeIn)
+        {
+            int k = OmniCombineCore.Charge;
+            float morph = 0f;
+            foreach (float w in _morph[k]) morph = Mathf.Max(morph, w);
+            float strength = fadeIn * _effect[k] * (1f - (float)OmniCombineCore.Smooth(morph / 0.05));
+            _walker.Advance((float)_t, _arcSettings);
+            var layer = _chargeArcs;
+            layer.Renderer.enabled = strength > 0.001f;
+            if (!layer.Renderer.enabled) return;
+            _core.CrystalFrame(k, _t, _params, out var centre, out var spinAxis, out double spin, out var tumbleAxis, out double tumble);
+            layer.Transform.SetLocalPositionAndRotation(ToVector(centre),
+                Quaternion.AngleAxis((float)(tumble * Mathf.Rad2Deg), ToVector(tumbleAxis)) *
+                Quaternion.AngleAxis((float)(spin * Mathf.Rad2Deg), ToVector(spinAxis)));
+            var settings = _arcSettings;
+            settings.Bolts *= strength;
+            settings.Glow *= strength;
+            ChargeArcs.SeamWalk(layer.Sites, _walker, (float)_t, settings, layer.Writer, layer.Transform.InverseTransformPoint(cameraWorld), layer.Light);
+            layer.Upload();
+        }
+
+        /// <summary>The woken omni's chained flux arcs, <paramref name="seconds"/> into their chain, ramped in by
+        /// <paramref name="fx"/>.</summary>
+        void WriteFlux(Vector3 cameraWorld, float fx, double seconds)
+        {
+            var layer = _omniArcs;
+            layer.Renderer.enabled = fx > 0.001f;
+            if (!layer.Renderer.enabled)
+            {
+                System.Array.Clear(_triColumns.Strike, 0, _triColumns.Strike.Length);
+                return;
+            }
+            var settings = _arcSettings;
+            settings.Bolts *= fx;
+            settings.Glow *= fx;
+            ChargeArcs.Flux(layer.Sites, _chain, (float)seconds, settings, layer.Writer, layer.Transform.InverseTransformPoint(cameraWorld), layer.Light);
+            layer.Upload();
+            StrikeTriangles((float)seconds, settings);
+        }
+
+        /// <summary>
+        /// Lights every protracted triangle prism a flux arc passes through (<see cref="ChargeArcs.FluxStrikes"/>), as
+        /// <see cref="CrystalChargeArcs"/> lights the omni's Mass columns in play: each prism's body, at its column's place,
+        /// carried from the triangles' turned frame into the stage's (where the arcs are drawn).
+        /// </summary>
+        void StrikeTriangles(float seconds, in ChargeArcSettings settings)
+        {
+            var c = _triColumns;
+            var turn = _triangles.transform.localRotation;
+            float split = _triShape.FaceSplit * _triShape.SplitUnit;
+            for (int j = 0; j < c.Count; j++)
+            {
+                CrystalDepthPrisms.ColumnBody(c.Centres[j], c.Bounds[j], c.State[j].x, _triShape.Reach, _triShape.SizeStart, split,
+                                              out var centre, out _strikeRadii[j]);
+                _strikeCentres[j] = turn * centre;
+            }
+            // Only a prism standing out lights, at its place as drawn (State.x, eased in with the omni's wake).
+            if (_strikePlaces == null || _strikePlaces.Length != c.Count)
+            {
+                _strikePlaces = new float[c.Count];
+                _strikeSeats = new Vector3[c.Count];
+                _strikeSeatRadii = new float[c.Count];
+            }
+            for (int j = 0; j < c.Count; j++)
+            {
+                _strikePlaces[j] = c.State[j].x;
+                CrystalDepthPrisms.ColumnBody(c.Centres[j], c.Bounds[j], 1f, _triShape.Reach, _triShape.SizeStart, split,
+                                              out var seat, out _strikeSeatRadii[j]);
+                _strikeSeats[j] = turn * seat;
+            }
+            ChargeArcs.FluxStrikes(_omniArcs.Sites, _chain, seconds, settings, _strikeCentres, _strikeRadii, _strikePlaces,
+                                   _strikeSeats, _strikeSeatRadii, c.Count, c.Strike);
+        }
+
+        static Vector3 ToVector(D3 d) => new((float)d.X, (float)d.Y, (float)d.Z);
 
         void ApplyDepth(Renderer r, DepthColumns columns, DepthShape shape, float opacity)
         {
@@ -451,35 +659,29 @@ namespace CosmicShore.Gameplay
             return Mathf.Sqrt(best);
         }
 
-        /// <summary>The face-split rest mesh the discharge bake reads (see <c>Piece.FaceSplitSource</c>); for the tests.</summary>
+        /// <summary>The face-split rest mesh every piece is built from (see <c>Piece.FaceSplitSource</c>); for the tests.</summary>
         internal static Mesh BuildFaceSplitSource(float[] points, int[] tris, int[] plate, out int[] faceOfTri) =>
             Piece.FaceSplitSource(points, tris, plate, out faceOfTri);
 
         void ShowCrystals(bool on)
         {
             foreach (var c in _crystals) if (c != null && c.Renderer.enabled != on) c.Renderer.enabled = on;
+            if (!on && _chargeArcs != null) _chargeArcs.Renderer.enabled = false;
         }
 
         void ShowOmni(bool on)
         {
             if (_omni != null) _omni.Renderer.enabled = on;
-            if (_omniEdges) _omniEdges.enabled = on;
+            if (!on && _omniArcs != null) _omniArcs.Renderer.enabled = false;
             if (_triangles) _triangles.enabled = on;
         }
 
         /// <summary>Read-modify-write, so another writer's override on the same renderer survives (FadeIn's lesson).
-        /// A negative id or value leaves that property alone. A discharge also gets the converter's own clock: the
-        /// menu runs at timeScale 0 off the HOME screen, which freezes the shader's _Time.y and with it every bolt.</summary>
-        void SetBlock(Renderer r, int opacityId, float opacity, float arcs, float nodes)
+        /// (Every bolt is drawn on the CPU on the converter's own unscaled clock, so the menu's timeScale 0 freezes none.)</summary>
+        void SetOpacity(Renderer r, float opacity)
         {
             r.GetPropertyBlock(_block);
-            if (opacityId >= 0) _block.SetFloat(opacityId, opacity);
-            if (arcs >= 0f)
-            {
-                _block.SetFloat(ArcIntensity, arcs);
-                _block.SetFloat(ArcClockID, (float)((_t + _params.EffectPhase) % 3600.0));
-            }
-            if (nodes >= 0f) _block.SetFloat(NodeIntensity, nodes);
+            _block.SetFloat(OpacityUpper, opacity);
             r.SetPropertyBlock(_block);
         }
 
@@ -487,63 +689,102 @@ namespace CosmicShore.Gameplay
         {
             foreach (var c in _crystals) c?.Dispose();
             _omni?.Dispose();
-            if (_omniEdgesMesh) Destroy(_omniEdgesMesh);
+            _chargeArcs?.Dispose();
+            _omniArcs?.Dispose();
         }
 
         /// <summary>
-        /// One depth-prism renderer's columns: the game's ratchet (<see cref="DepthRatchet"/>, the profile
-        /// <see cref="CrystalDepthPrisms"/> uses) stepped against this camera, and its state ramped by
-        /// <c>strength</c> - 0 draws every prism sealed and solid, 1 is the ratchet as in play - so the effect
-        /// hands over continuously in both directions.
+        /// One depth-prism renderer's columns, stepped by the game's own <see cref="CrystalDepthPrisms.StepColumns"/>
+        /// (the profile, the horizon seal and the hidden rise as in play) against this camera, and its state ramped by
+        /// <c>strength</c> - 0 draws every prism solid at column place <c>rest</c> (1 sealed, 0 at the top), 1 is the
+        /// ratchet as in play - so the effect hands over continuously in both directions.
         /// </summary>
         sealed class DepthColumns
         {
-            public Vector3[] Directions;
+            public readonly Vector3[] Directions, Centres;
+            public readonly float[] Tops, Bounds, Strike;
+            public float PlateRadius;
             public readonly Vector4[] State = new Vector4[CrystalDepthPrisms.MaxPlates];
             public bool Fresh = true;
             readonly DepthRatchet.Column[] _columns;
 
-            public DepthColumns(int plates) => _columns = new DepthRatchet.Column[plates];
+            public DepthColumns(int plates) : this(plates, new Vector3[plates], new Vector3[plates], new float[plates], new float[plates], 0f) { }
 
-            public void Step(Vector3 cameraLocal, float dt, CrystalDepthPrismProfileSO profile, float strength)
+            public DepthColumns(int plates, Vector3[] directions, Vector3[] centres, float[] tops, float[] bounds, float plateRadius)
             {
-                if (cameraLocal.sqrMagnitude < 1e-8f || Directions == null) return;
-                var toCamera = cameraLocal.normalized;
+                _columns = new DepthRatchet.Column[plates];
+                Directions = directions;
+                Centres = centres;
+                Tops = tops;
+                Bounds = bounds;
+                Strike = new float[plates];
+                PlateRadius = plateRadius;
+            }
+
+            public int Count => _columns.Length;
+
+            public void Step(Vector3 eye, float dt, CrystalDepthPrismProfileSO profile, float reach, float sizeAtTop, float strength,
+                             float rest = 1f)
+            {
+                if (eye.sqrMagnitude < 1e-8f || PlateRadius <= 0f) return;
+                CrystalDepthPrisms.StepColumns(_columns, Directions, Centres, Tops, PlateRadius, eye, dt, Fresh, profile, reach, sizeAtTop);
                 for (int j = 0; j < _columns.Length; j++)
                 {
-                    float depth = Vector3.Dot(Directions[j], toCamera);
-                    float seat = profile.Seat(depth);
-                    _columns[j] = Fresh ? DepthRatchet.Column.At(seat)
-                                        : DepthRatchet.Step(_columns[j], depth, seat, dt, profile.ReseatDepth, profile.ReseatFadeSeconds);
                     var c = _columns[j];
-                    State[j] = new Vector4(Mathf.Lerp(1f, c.Place, strength), Mathf.Lerp(1f, c.Fade, strength),
-                                           Mathf.Lerp(1f, c.LeavingPlace, strength), 0f);
+                    State[j] = new Vector4(Mathf.Lerp(rest, c.Place, strength), Mathf.Lerp(1f, c.Fade, strength),
+                                           Mathf.Lerp(1f, c.LeavingPlace, strength), Strike[j]);
                 }
                 Fresh = false;
             }
+        }
 
-            /// <summary>Each plate's column direction from a baked prism mesh's TEXCOORD2 (centre xyz, index w).</summary>
-            public static bool TryReadDirections(Mesh mesh, out Vector3[] directions, out string problem)
+        /// <summary>One additive layer of the Charge light (<see cref="ChargeArcs"/>, on <c>CrystalChargeArcsShader</c>):
+        /// its sites, a writer, the faces' light and a dynamic mesh with the stage's fixed bounds.</summary>
+        sealed class ArcLayer
+        {
+            public readonly Transform Transform;
+            public readonly MeshRenderer Renderer;
+            public readonly ChargeSites Sites;
+            public readonly ChargeArcMeshWriter Writer = new();
+            public readonly float[] Light;
+            readonly Mesh _mesh;
+            readonly Bounds _bounds;
+            readonly bool _ownCentre;
+
+            public ArcLayer(Transform parent, string name, ChargeSites sites, Material material, Bounds bounds, bool ownCentre)
             {
-                directions = null;
-                if (!mesh || !mesh.isReadable)
-                {
-                    problem = $"'{(mesh ? mesh.name : "null")}' is not a Read/Write-enabled mesh, so its plate centres cannot be read";
-                    return false;
-                }
-                var plates = new List<Vector4>();
-                mesh.GetUVs(2, plates);
-                int count = 0;
-                foreach (var p in plates) count = Mathf.Max(count, Mathf.RoundToInt(p.w) + 1);
-                if (plates.Count != mesh.vertexCount || count < 1 || count > CrystalDepthPrisms.MaxPlates)
-                {
-                    problem = $"'{mesh.name}' carries no usable plate data in TEXCOORD2";
-                    return false;
-                }
-                directions = new Vector3[count];
-                foreach (var p in plates) directions[Mathf.RoundToInt(p.w)] = new Vector3(p.x, p.y, p.z).normalized;
-                problem = null;
-                return true;
+                Sites = sites;
+                Light = new float[sites.Faces.Length];
+                _bounds = bounds;
+                _ownCentre = ownCentre;
+                _mesh = new Mesh { name = $"OmniCombine {name}", hideFlags = HideFlags.DontSave };
+                _mesh.MarkDynamic();
+                var go = new GameObject(name);
+                go.transform.SetParent(parent, false);
+                Transform = go.transform;
+                go.AddComponent<MeshFilter>().sharedMesh = _mesh;
+                Renderer = go.AddComponent<MeshRenderer>();
+                Renderer.sharedMaterial = material;
+                Renderer.shadowCastingMode = ShadowCastingMode.Off;
+                Renderer.receiveShadows = false;
+                Renderer.enabled = false;
+            }
+
+            /// <summary>The lit faces after the bolts already written, then the whole mesh to the GPU.</summary>
+            public void Upload()
+            {
+                for (int f = 0; f < Sites.Faces.Length; f++) Writer.Face(Sites.Faces[f], Light[f], _ownCentre);
+                _mesh.Clear();
+                _mesh.SetVertices(Writer.Positions);
+                _mesh.SetUVs(0, Writer.Data);
+                _mesh.SetTriangles(Writer.Indices, 0, false);
+                _mesh.bounds = _bounds;
+                Writer.Clear();
+            }
+
+            public void Dispose()
+            {
+                if (_mesh) Object.Destroy(_mesh);
             }
         }
 
@@ -569,10 +810,13 @@ namespace CosmicShore.Gameplay
                 m.GetFloat(ThicknessID) * baked, m.GetFloat(TopHeightID) * unit, m.GetFloat(SplitUnitID) * unit,
                 m.GetFloat(ReachID), m.GetFloat(FaceSplitID), m.GetFloat(SizeStartID));
 
-            public static DepthShape Lerp(in DepthShape a, in DepthShape b, float t) => new(
+            /// <summary>The prism's own geometry (thickness, top-face height, plate radius) morphed from
+            /// <paramref name="a"/>'s to <paramref name="b"/>'s; its column (reach, face split, size at the top) stays
+            /// <paramref name="a"/>'s. The Mass prisms ride the Mass crystal's own column all the way in, and land seated,
+            /// where the column dials do nothing, so the hand-off to <paramref name="b"/>'s prisms is still seamless.</summary>
+            public static DepthShape Morph(in DepthShape a, in DepthShape b, float t) => new(
                 Mathf.Lerp(a.Thickness, b.Thickness, t), Mathf.Lerp(a.TopHeight, b.TopHeight, t),
-                Mathf.Lerp(a.SplitUnit, b.SplitUnit, t), Mathf.Lerp(a.Reach, b.Reach, t),
-                Mathf.Lerp(a.FaceSplit, b.FaceSplit, t), Mathf.Lerp(a.SizeStart, b.SizeStart, t));
+                Mathf.Lerp(a.SplitUnit, b.SplitUnit, t), a.Reach, a.FaceSplit, a.SizeStart);
         }
 
         /// <summary>One drawn mesh: unwelded per triangle (so each face has its own normal), fed from the core's
@@ -589,17 +833,10 @@ namespace CosmicShore.Gameplay
             Vector4[] _uv2;
 
             public static Piece Build(Transform parent, string name, float[] points, int[] tris, int[] plate,
-                                      Material material, bool chargeBake, bool depth, Bounds bounds)
+                                      Material material, bool depth, Bounds bounds)
             {
                 var source = FaceSplitSource(points, tris, plate, out var faceOfTri);
-                Mesh mesh;
-                if (chargeBake)
-                {
-                    // The game's bake keeps one vertex per triangle corner, in triangle order - the order used here.
-                    mesh = CrystalEdgeArcMeshBaker.Bake(source, 0);
-                    if (!mesh) { Destroy(source); return null; }
-                }
-                else mesh = Unweld(source);
+                var mesh = Unweld(source);
                 Destroy(source);
                 mesh.name = $"OmniCombine {name}";
                 mesh.MarkDynamic();
@@ -689,9 +926,9 @@ namespace CosmicShore.Gameplay
 
             /// <summary>
             /// A mesh whose every FACE has its own corners (shared within the face, never across faces), with
-            /// per-face normals and outward winding - the shape an FBX import has, which is what the discharge
-            /// bake reads. Faces are found per plate: triangles that share an edge and sit within the bake's
-            /// own coplanar angle (the art file's quads are not all planar).
+            /// per-face normals and outward winding - the shape an FBX import has. Faces are found per plate:
+            /// triangles that share an edge and sit within <c>CoplanarDegrees</c> (the art file's quads are not all
+            /// planar).
             /// </summary>
             public static Mesh FaceSplitSource(float[] p, int[] tris, int[] plate, out int[] faceOfTri)
             {
@@ -759,7 +996,7 @@ namespace CosmicShore.Gameplay
                 return mesh;
             }
 
-            /// <summary>One vertex per triangle corner, in triangle order (the order the discharge bake writes).</summary>
+            /// <summary>One vertex per triangle corner, in triangle order (the order <c>Write</c> fills).</summary>
             static Mesh Unweld(Mesh source)
             {
                 var sv = source.vertices;

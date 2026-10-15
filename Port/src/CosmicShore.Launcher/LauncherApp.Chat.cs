@@ -12,7 +12,7 @@ using StbImageSharp;
 namespace CosmicShore.Launcher
 {
     /// <summary>
-    /// The CLAUDE page: Prisma's agent, laid out the way Claude Code lays out a session -
+    /// The CLAUDE page: Amoebius's agent, laid out the way Claude Code lays out a session -
     /// a bullet per message and tool call, each tool's result folded under it, plans with approve
     /// buttons, to-do lists as checklists, the game's screenshots inline - with model, effort and
     /// permission mode on the bar, one-click test runs, session reports and voice.
@@ -35,6 +35,29 @@ namespace CosmicShore.Launcher
 
         string ChatDir => _ws.Exists ? _ws.Dir : LauncherSettings.DataDir;
 
+        /// <summary>The mode a message is sent in: AUTO only while this chat has the user's opt-in, else PLAN or EDIT.</summary>
+        ClaudeChat.Mode ChatModeNow => _chat.AutoAllowed ? ClaudeChat.Mode.Auto : (ClaudeChat.Mode)Math.Clamp(_s.ChatMode, 0, 1);
+
+        void SetChatMode(int i)
+        {
+            if (i == 2) { AskAuto(); return; }
+            _chat.AutoAllowed = false;
+            _s.ChatMode = i;
+            _dirty = true;
+        }
+
+        /// <summary>AUTO is opt-in per chat and per session: a notification asks, and only its button turns it on.</summary>
+        void AskAuto(Action? then = null)
+        {
+            var chat = _chat;
+            if (chat.AutoAllowed) { then?.Invoke(); return; }
+            Notify("Turn on AUTO for this chat?",
+                "Claude Code then runs with its permission checks off: it edits files and runs any command without asking. " +
+                "For this chat only, until Amoebius closes. The deny rules on Assets/, Packages/ and ProjectSettings/ still hold.",
+                NoteKind.Warning,
+                ("ALLOW FOR THIS CHAT", () => { chat.AutoAllowed = true; then?.Invoke(); }));
+        }
+
         void SendChat(string text, ClaudeChat.Mode mode, string? extraDir = null)
         {
             text = text.Trim();
@@ -56,13 +79,13 @@ namespace CosmicShore.Launcher
                 case "/new": _chats.New(); return true;
                 case "/usage": case "/context": case "/cost": _usageOpen = true; return true;
                 case "/rename" when arg.Length > 0: _chat.Title = arg; _chat.Save(); return true;
-                case "/plan": _s.ChatMode = 0; _dirty = true; return true;
-                case "/edit": _s.ChatMode = 1; _dirty = true; return true;
-                case "/auto": _s.ChatMode = 2; _dirty = true; return true;
+                case "/plan": SetChatMode(0); return true;
+                case "/edit": SetChatMode(1); return true;
+                case "/auto": SetChatMode(2); return true;
                 case "/model": _s.ClaudeModel = arg; _dirty = true; return true;
                 case "/effort": _s.ClaudeEffort = arg; _dirty = true; return true;
-                case "/test": SendChat(Prompts.Tests, (ClaudeChat.Mode)_s.ChatMode); return true;
-                case "/smoke": SendChat(Prompts.Smoke, (ClaudeChat.Mode)_s.ChatMode); return true;
+                case "/test": SendChat(Prompts.Tests, ChatModeNow); return true;
+                case "/smoke": SendChat(Prompts.Smoke, ChatModeNow); return true;
                 case "/session": SendLastSession(); return true;
                 default: return false; // anything else goes to Claude as typed
             }
@@ -83,10 +106,10 @@ namespace CosmicShore.Launcher
         {
             var last = LauncherJobs.Sessions().FirstOrDefault();
             if (last == null) { _chat.Note("No play session yet: press START, play, close the game, then try again."); return; }
-            SendChat("Analyse my last play session in Prisma. The report is " + last.FullName +
+            SendChat("Analyse my last play session in Amoebius. The report is " + last.FullName +
                      " (scenes, frame-time percentiles, every distinct error/warning/exception with counts, and the crash if any). " +
                      "Rank what needs fixing in the engine, say which Port/ code each item points to, and propose the fixes.",
-                (ClaudeChat.Mode)_s.ChatMode, LauncherJobs.SessionsDir);
+                ChatModeNow, LauncherJobs.SessionsDir);
         }
 
         bool _usageOpen;
@@ -101,7 +124,7 @@ namespace CosmicShore.Launcher
             }
             if (_chat.Cli == null)
             {
-                PageHeader(a, "PRISMA AGENT", "Works on Cosmic Shore  ·  powered by Claude");
+                PageHeader(a, "AMOEBIUS AGENT", "Works on Cosmic Shore  ·  powered by Claude");
                 DrawChatInstall(dl, a, b);
                 return;
             }
@@ -111,8 +134,8 @@ namespace CosmicShore.Launcher
             a = new Vector2(a.X + listW + 18, a.Y);
 
             bool milestone = _chat.CurrentScope == ClaudeChat.Scope.Milestone;
-            PageHeader(a, milestone ? "MILESTONE " + _chat.Milestone : "PRISMA AGENT",
-                milestone ? $"{_chat.MilestoneTitle}  ·  engine work on Prisma (Port/)  ·  powered by Claude"
+            PageHeader(a, milestone ? "MILESTONE " + _chat.Milestone : "AMOEBIUS AGENT",
+                milestone ? $"{_chat.MilestoneTitle}  ·  engine work on Amoebius (Port/)  ·  powered by Claude"
                           : "Works on Cosmic Shore  ·  powered by Claude");
 
             DrawChatBar(a, b);
@@ -271,9 +294,9 @@ namespace CosmicShore.Launcher
             Neon.Tooltip("Effort: how hard Claude thinks before answering. Higher is slower and costs more.");
             ImGui.PopItemWidth();
             ImGui.SameLine(0, 12);
-            Segmented("cmode", new[] { "PLAN", "EDIT", "AUTO" }, Math.Clamp(_s.ChatMode, 0, 2), i => _s.ChatMode = i, Neon.Magenta);
+            Segmented("cmode", new[] { "PLAN", "EDIT", "AUTO" }, (int)ChatModeNow, SetChatMode, Neon.Magenta);
             Neon.Tooltip("PLAN: reads, runs the game and proposes a plan; changes nothing (Claude Code's plan mode).\n" +
-                         "EDIT: may edit engine files.\nAUTO: may also run any command.\n" +
+                         "EDIT: may edit engine files.\nAUTO: may also run any command, without asking. Asked for each chat, every session.\n" +
                          "In every mode Assets/, Packages/ and ProjectSettings/ are off limits.");
             ImGui.SameLine(0, 12);
             if (SmallButton("CLEAR", 80, !_chat.Busy)) _chat.NewChat();
@@ -283,17 +306,17 @@ namespace CosmicShore.Launcher
         void DrawChatWelcome()
         {
             ImGui.Dummy(new Vector2(0, 8));
-            ImGui.PushFont(Neon.Heading); ImGui.TextColored(Neon.Ink, _chat.CurrentScope == ClaudeChat.Scope.Game ? "Prisma Agent" : "Milestone " + _chat.Milestone); ImGui.PopFont();
+            ImGui.PushFont(Neon.Heading); ImGui.TextColored(Neon.Ink, _chat.CurrentScope == ClaudeChat.Scope.Game ? "Amoebius Agent" : "Milestone " + _chat.Milestone); ImGui.PopFont();
             ImGui.PushFont(Neon.Small);
             foreach (var l in new[]
             {
                 _chat.CurrentScope == ClaudeChat.Scope.Game
                     ? "Works on the game (Assets/) - only on what you ask. Ask about a bug or a run and it reads TRACKS."
-                    : "Engine work on Prisma (Port/) for this checkpoint. The game in Assets/ is read-only here.",
+                    : "Engine work on Amoebius (Port/) for this checkpoint. The game in Assets/ is read-only here.",
                 "It can run the tests, start the game, look at it and drive it, and suggest bugs and tasks for your BOARD.",
                 "PLAN proposes before touching anything; approve the plan to let it build.",
                 "Chips below run tests, a smoke test, or analyse your last play session.",
-                "Its edits stay in Prisma's workspace until you save them on the GIT page.",
+                "Its edits stay in Amoebius's workspace until you save them on the GIT page.",
                 "Commands: /new  /clear  /rename TITLE  /usage  /plan  /edit  /auto  /model NAME  /effort LEVEL  /test  /smoke  /session",
             }) ImGui.TextColored(Neon.Dim, l);
             ImGui.PopFont();
@@ -386,9 +409,9 @@ namespace CosmicShore.Launcher
                     if (latest && !_chat.Busy)
                     {
                         ImGui.PushID(it.ToolId ?? "plan");
-                        if (SmallButton("APPROVE + EDIT", 170, true)) { _s.ChatMode = 1; _dirty = true; SendChat("The plan is approved. Implement it.", ClaudeChat.Mode.Edit); }
+                        if (SmallButton("APPROVE + EDIT", 170, true)) { SetChatMode(1); SendChat("The plan is approved. Implement it.", ClaudeChat.Mode.Edit); }
                         ImGui.SameLine(0, 8);
-                        if (SmallButton("APPROVE + AUTO", 170, true)) { _s.ChatMode = 2; _dirty = true; SendChat("The plan is approved. Implement it.", ClaudeChat.Mode.Auto); }
+                        if (SmallButton("APPROVE + AUTO", 170, true)) AskAuto(() => SendChat("The plan is approved. Implement it.", ClaudeChat.Mode.Auto));
                         ImGui.SameLine(0, 8);
                         ImGui.PushFont(Neon.Small); ImGui.TextColored(Neon.Dim, "or type changes to keep planning"); ImGui.PopFont();
                         ImGui.PopID();
@@ -508,7 +531,7 @@ namespace CosmicShore.Launcher
         {
             var dl = ImGui.GetWindowDrawList();
             string model = _chat.ActiveModel ?? (string.IsNullOrWhiteSpace(_s.ClaudeModel) ? "default model" : _s.ClaudeModel);
-            string mode = _s.ChatMode switch { 0 => "plan mode", 1 => "accept edits", _ => "auto" };
+            string mode = ChatModeNow switch { ClaudeChat.Mode.Plan => "plan mode", ClaudeChat.Mode.Edit => "accept edits", _ => "auto" };
             long win = _chat.ContextWindow > 0 ? _chat.ContextWindow : 200_000;
             string ctx = _chat.ContextTokens > 0 ? $"  ·  context {(double)_chat.ContextTokens / win:0%}" : "";
             bool api = !string.IsNullOrWhiteSpace(_s.AnthropicApiKey);
@@ -538,7 +561,7 @@ namespace CosmicShore.Launcher
         {
             ImGui.SetCursorScreenPos(at);
             bool can = !_chat.Busy;
-            var mode = (ClaudeChat.Mode)_s.ChatMode;
+            var mode = ChatModeNow;
             if (SmallButton("RUN TESTS", 120, can)) SendChat(Prompts.Tests, mode);
             Neon.Tooltip("Claude runs the engine's unit tests and explains any failure.");
             ImGui.SameLine(0, 8);
@@ -567,7 +590,7 @@ namespace CosmicShore.Launcher
             }
             if (_chatInput.Length == 0 && !ImGui.IsItemActive())
                 ImGui.GetWindowDrawList().AddText(Neon.Small, 15, ia + new Vector2(10, 8), Neon.U(Neon.Dim, 0.8f),
-                    _s.ChatMode == 0 ? "Ask, or describe what to change - Claude plans first" : "Tell Claude what to do with the engine   (Enter sends, Ctrl+Enter new line)");
+                    ChatModeNow == ClaudeChat.Mode.Plan ? "Ask, or describe what to change - Claude plans first" : "Tell Claude what to do with the engine   (Enter sends, Ctrl+Enter new line)");
 
             // voice: talk instead of typing, and optionally hear the replies
             ImGui.SameLine(0, 8);
@@ -596,7 +619,7 @@ namespace CosmicShore.Launcher
             else if (Neon.Button("chatsend", "SEND", new Vector2(128, inputH), Neon.Magenta, Neon.Heading, 22, can) || (send && can))
             {
                 if (_voice.Listening) _voice.StopListening();
-                SendChat(_chatInput, (ClaudeChat.Mode)_s.ChatMode);
+                SendChat(_chatInput, ChatModeNow);
                 _chatInput = "";
             }
         }
@@ -645,7 +668,7 @@ namespace CosmicShore.Launcher
             }
             ImGui.SetCursorScreenPos(new Vector2(c.X - 220, c.Y + 130));
             SecretField("##akey0", "Anthropic API key (optional)", () => _s.AnthropicApiKey, v => _s.AnthropicApiKey = v, 362);
-            Neon.Tooltip("Only for pay-as-you-go API billing (console.anthropic.com).\nOn a Claude Pro/Max plan leave it empty and SIGN IN instead. Stored only on this PC.");
+            Neon.Tooltip("Only for pay-as-you-go API billing (console.anthropic.com).\nOn a Claude Pro/Max plan leave it empty and SIGN IN instead.\nKept in " + SecretStore.Where + ", not in launcher.json.");
         }
     }
 }

@@ -1298,7 +1298,7 @@ AA stay off, which is where the cost was.
 **The portraits ARE low-poly, and it is the bake, not the display.** `ToolPortraitBuilder.AddRing`
 rebuilt the toy's own 12 × 6 torus — sized for a ring seen from a vessel in flight — and drawn as a
 still at 330 px it is a dodecagon. The bake now tessellates at 48 × 12. **The portraits are baked
-assets** (`Assets/_Graphics/Codex/`), so this lands on the next FrogletTools > Interface > Codex
+assets** (`Assets/_Graphics/Codex/`), so this lands on the next FrogletTools > UI > Codex
 bake; nothing changes on screen until it is run.
 
 ## 4.2 A modal closes without being disabled — so the reset rides `OnModalClosed`
@@ -1398,7 +1398,7 @@ before the raise, on both edges.
 
 The UI itself is hand-designed. What the code needs:
 
-> **Run `FrogletTools ▸ Interface ▸ Home Hub Wiring` first — it does most of this list.** The hub
+> **Run `FrogletTools ▸ UI ▸ Home Hub Wiring` first — it does most of this list.** The hub
 > screens were authored by duplicating the Arcade's, which is the right way to get the LAYOUT and
 > the wrong way to get the WIRING: measured on the authored scene, all four hub buttons called
 > `ScreenSwitcher.OnClickArcadeNav`, all four screen modals declared `ModalType = ARCADE`, and none

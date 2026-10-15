@@ -71,6 +71,7 @@ namespace CosmicShore.Engine
                     "A GameLoop already exists. The engine runs exactly one loop per process — dispose the old one first.");
             Current = this;
             Time.Reset();
+            Application.ResetQuit();
             Physics.ResetSettings();
             // Fresh-world reset for static UI state (same rationale as Time.Reset):
             // loop disposal skips OnDisable, so the old world's registrations and
@@ -158,6 +159,7 @@ namespace CosmicShore.Engine
             SynchronizationContext.SetSynchronizationContext(SyncContext);
             try
             {
+                FrameTimingManager.BeginFrame(); // the wall clock, whatever step the host passes
                 long mark = PhaseTiming ? System.Diagnostics.Stopwatch.GetTimestamp() : 0;
                 if (PhaseTiming) _allocMark = GC.GetAllocatedBytesForCurrentThread();
                 Time.Advance(deltaTime);
@@ -186,6 +188,7 @@ namespace CosmicShore.Engine
                 Scheduler.RunEndOfFrame();
                 FlushDestroyQueue();
                 if (PhaseTiming) { Lap(ref mark, "destroy"); TimedFrames++; }
+                FrameTimingManager.EndSimulation();
             }
             finally
             {

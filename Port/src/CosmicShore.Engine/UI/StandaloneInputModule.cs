@@ -87,6 +87,9 @@ namespace CosmicShore.Engine.UI
             e.pointerPress = newPressed;
             e.rawPointerPress = currentOverGo;
             e.pointerDrag = ExecuteEvents.GetEventHandler<IDragHandler>(currentOverGo);
+            // The drag target learns a drag may start (a ScrollRect stops its fling; a slider drops the threshold).
+            if (e.pointerDrag != null)
+                ExecuteEvents.Execute(e.pointerDrag, e, ExecuteEvents.initializePotentialDrag);
         }
 
         public void PointerUp(Vector2 position)
@@ -103,6 +106,9 @@ namespace CosmicShore.Engine.UI
             if (e.pointerPress == pointerUpHandler && e.eligibleForClick)
                 ExecuteEvents.Execute(e.pointerPress, e, ExecuteEvents.pointerClickHandler);
 
+            // A drag released over a drop target delivers it, then ends.
+            if (e.pointerDrag != null && e.dragging)
+                ExecuteEvents.ExecuteHierarchy(currentOverGo, e, ExecuteEvents.dropHandler);
             if (e.pointerDrag != null && e.dragging)
                 ExecuteEvents.Execute(e.pointerDrag, e, ExecuteEvents.endDragHandler);
 

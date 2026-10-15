@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
 
-namespace Prisma.Bisect
+namespace Amoebius.Bisect
 {
     /// <summary>
     /// How one bisect candidate is judged (ROADMAP C1b). The answer is a <c>git bisect run</c> exit
@@ -12,7 +12,7 @@ namespace Prisma.Bisect
     /// engine predates the check), and anything from 128 up aborts the bisect (the harness itself
     /// broke, so no verdict on any commit is trustworthy).
     /// </summary>
-    public static class BisectVerdict
+    internal static class BisectVerdict
     {
         public const int Good = 0, Bad = 1, Skip = 125, Abort = 128;
 
@@ -53,10 +53,10 @@ namespace Prisma.Bisect
     }
 
     /// <summary>One judged candidate.</summary>
-    public sealed record BisectStep(string Verdict, string Commit, string Subject);
+    internal sealed record BisectStep(string Verdict, string Commit, string Subject);
 
     /// <summary>What a <c>git bisect run</c> found, read back from its output and <c>git bisect log</c>.</summary>
-    public sealed class BisectOutcome
+    internal sealed class BisectOutcome
     {
         public string? FirstBad { get; init; }
         public string FirstBadSubject { get; init; } = "";

@@ -25,8 +25,8 @@ MonoBehaviour:
     Charge: 0
     Space: 0
     Time: 0
-  IconActive: {fileID: 21300000, guid: 372925148d56fc4971f260a7f5cdd470, type: 3}
-  IconInactive: {fileID: 21300000, guid: 372925148d56fc4971f260a7f5cdd470, type: 3}
+  IconActive: {fileID: 21300000, guid: 26e24fdeb0182aa62989f7fe93ff34a3, type: 3}
+  IconInactive: {fileID: 21300000, guid: 044f1f35b65954e51562a8ac664f021e, type: 3}
   PreviewImage: {fileID: 0}
   SquadImage: {fileID: 0}
   TrailPreviewImage: {fileID: 0}

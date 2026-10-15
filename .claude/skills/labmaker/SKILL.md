@@ -83,6 +83,10 @@ races headless in a few seconds.
 - **The yardstick will be wrong before the creature is.** Four of the swarm lab's worst findings
   were bugs in the metric (L-NCA-1). Plant a defect that the metric must catch before trusting a
   green number.
+- **One window per event, and read the worst run.** A column measured over a window that also holds a
+  second event measures that event, or reads the same for every variant (L-STU-32, L-STU-42). Before
+  quoting a scorecard, print the frames around each column's worst peak. A control that is not ~0, or a
+  column that sits exactly at a lab limit on every run, is a yardstick bug until shown otherwise.
 - **Skilled and rookie**: score with a skilled pilot AND a sloppy one (`aiNoise`). The Stoat's
   "Comet is the expert's style" (21% rookie catch rate against 88%) came only from the rookie
   column.
@@ -118,7 +122,7 @@ reads as a promise about the game.
 - **Editor layout, no page scroll**: stage in the middle, a right dock with a tab per settings
   group, a bottom dock for Runs / Scorecard / Decisions / About. Below 900 px the docks stack.
 - **Platform detection is answered once at load**: a native host sets `window.__labHost = {shell, device}`
-  (Prisma uses `#prisma` because a file page cannot be handed a variable); otherwise phone =
+  (Amoebius opens the page with a host hash, still the pre-rename `#prisma`; `studio-ide.js` also accepts `#amoebius`; a hash because a file page cannot be handed a variable); otherwise phone =
   mobile UA / iPadOS-as-Mac / coarse-pointer-only. A touchscreen laptop is a PC. Give a manual
   Layout override.
 - **Phones**: real fullscreen needs a gesture (request it on the first touch); portrait gets a way
@@ -149,7 +153,8 @@ as an iPhone 13, and fails on:
 - a missing `__lab` hook, or a hook that throws when called with no arguments;
 - a `SPEC` key absent from `SHIPPED`, or a shipped value outside its slider range;
 - a manual clock that does not advance;
-- a non-deterministic `runBatch`;
+- a non-deterministic `runBatch`, within one page or across two page loads (a load-time `Math.random` that reaches the
+  batch is invisible to two calls in one page; L-GEN-9);
 - a blank 2D stage.
 
 It writes `desktop.png` and `phone.png`. **Read the screenshots**: the gate cannot see an overlap.
@@ -223,8 +228,13 @@ For a research lab run as parallel autonomous sessions (the NCA and ecology prog
 | A scorecard claim ("each style wins its column") | An edit-mode test that asserts it on the C# model |
 | A model the game should run | A pure-C# core plus a parity harness that scores it with the lab's UNCHANGED yardstick (`Tools/Build/swarm_core_harness/`, `nca_creature_harness/`) |
 | A design question | **Decision needed** in the write-up and the owning `Docs/` file. Never decided by the porter |
-| The lab itself, for designers | A hub entry (`Docs/Studios/VesselStudio/studios.json`), Prisma's STUDIOS page, `FrogletTools ▸ Vessels ▸ Vessel Studio` |
+| The lab itself, for designers | A hub entry (`Docs/Studios/VesselStudio/studios.json`), Amoebius's STUDIOS page, `FrogletTools ▸ Vessels ▸ Vessel Studio` |
 
+- **Port the pick's per-frame ENTRY POINT, not just its physics, and call it from both sides.** Thresholds,
+  slews and "when to switch" decisions that live in the lab's harness class escape a parity gate that only
+  measures the solver. Then add an asset-equals-preset check to the same gate, with a planted asset change that
+  must fail it (L-STU-35, L-GEN-8). Float32 engines end time-driven curves a frame apart from a float64 lab:
+  end them at `1 − ε` on both sides (L-STU-46).
 - **Do not import the lab into the game.** What crosses over is the numbers and the tests.
 - **Extract a shared shell when the SECOND lab needs it, not before** (the Vessel Studio plan §4).
 - Anything a port could not verify in the editor goes to `Docs/QA/QA_BACKLOG.md`
@@ -260,6 +270,8 @@ Each has an entry in `LEARNINGS.md` with the evidence.
 - **A threat the pilots never meet scores 0.** Give it a local reason to be where pilots go (L-ECO-7).
 - **Hot-path sorting in a grid query** (`Array.from().sort()`) cost 13 of 18 ms. Use
   generation-stamped marks (L-ECO-8).
+- **A prediction is not light.** A path, an aim line or a ghost drawn in the 3D scene goes through the lens pass and
+  gets bent and doubled round a black hole. Draw it on the HUD after the lens (L-STU-53).
 - **A design hole looks like a skilled AI.** The best play was a 0° "tap sling" because the kick
   ignored how far round the hull went. When the AI's best play looks like a cheat, it is a design
   question for the human, not an AI bug (L-STU-3).

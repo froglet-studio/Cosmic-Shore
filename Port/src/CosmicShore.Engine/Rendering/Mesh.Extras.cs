@@ -112,6 +112,20 @@ namespace CosmicShore.Engine
         public void SetNormals(Vector3[] inNormals, int start, int length, MeshUpdateFlags flags = MeshUpdateFlags.Default)
             => SetNormals(new ArraySegment<Vector3>(inNormals, start, length).ToArray());
 
+        // The ranged UV setters: the channel takes uvs[start .. start + length).
+        public void SetUVs(int channel, Vector2[] uvs, int start, int length, MeshUpdateFlags flags = MeshUpdateFlags.Default)
+            => SetUVs(channel, new ArraySegment<Vector2>(uvs, start, length).ToArray());
+        public void SetUVs(int channel, Vector3[] uvs, int start, int length, MeshUpdateFlags flags = MeshUpdateFlags.Default)
+            => SetUVs(channel, new ArraySegment<Vector3>(uvs, start, length).ToArray());
+        public void SetUVs(int channel, Vector4[] uvs, int start, int length, MeshUpdateFlags flags = MeshUpdateFlags.Default)
+            => SetUVsWide(channel, new ArraySegment<Vector4>(uvs, start, length).ToArray(), 4);
+        public void SetUVs(int channel, List<Vector2> uvs, int start, int length, MeshUpdateFlags flags = MeshUpdateFlags.Default)
+            => SetUVs(channel, uvs.GetRange(start, length).ToArray());
+        public void SetUVs(int channel, List<Vector3> uvs, int start, int length, MeshUpdateFlags flags = MeshUpdateFlags.Default)
+            => SetUVs(channel, uvs.GetRange(start, length).ToArray());
+        public void SetUVs(int channel, List<Vector4> uvs, int start, int length, MeshUpdateFlags flags = MeshUpdateFlags.Default)
+            => SetUVsWide(channel, uvs.GetRange(start, length).ToArray(), 4);
+
         public void SetColors(Color[] inColors) => colors = inColors;
         public void SetColors(Color32[] inColors) => colors32 = inColors;
         public void SetColors(List<Color32> inColors) => colors32 = inColors.ToArray();

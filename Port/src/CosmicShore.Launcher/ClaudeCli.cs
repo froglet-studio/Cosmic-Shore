@@ -166,7 +166,7 @@ namespace CosmicShore.Launcher
             try
             {
                 using var http = new System.Net.Http.HttpClient { Timeout = TimeSpan.FromMinutes(30) };
-                http.DefaultRequestHeaders.UserAgent.ParseAdd("Prisma/0.1");
+                http.DefaultRequestHeaders.UserAgent.ParseAdd("Amoebius/0.1");
                 InstallStatus = "Finding the latest version";
                 string version = (await http.GetStringAsync($"{Releases}/latest", ct)).Trim();
                 if (!System.Text.RegularExpressions.Regex.IsMatch(version, @"^\d+\.\d+\.\d+"))

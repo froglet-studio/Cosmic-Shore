@@ -46,10 +46,10 @@ namespace CosmicShore.AssetTool.Tests
                 .SelectMany(f => Regex.Matches(File.ReadAllText(f), @"\[MenuItem\(""(FrogletTools/[^""]+)""(?!\s*,\s*true)").Cast<Match>().Select(m => m.Groups[1].Value))
                 .Distinct().Count();
             Assert.Equal(expected, tools.Count);
-            var launch = Assert.Single(tools, t => t.Menu == "FrogletTools/Prisma/Launch Prisma");
+            var launch = Assert.Single(tools, t => t.Menu == "FrogletTools/Amoebius/Launch Amoebius");
             Assert.Equal(("Build", 5, "Launch"), (launch.Category, launch.Importance, launch.Method));
-            Assert.Equal("Assets/_Scripts/Editor/LaunchPrisma.cs", launch.File);
-            Assert.StartsWith("Opens Prisma", launch.Description);
+            Assert.Equal("Assets/_Scripts/Editor/LaunchAmoebius.cs", launch.File);
+            Assert.StartsWith("Opens Amoebius", launch.Description);
             // " & " inside a name is not a hotkey.
             Assert.Contains(tools, t => t.Menu.EndsWith("Warnings & Errors Only", StringComparison.Ordinal));
             // Text with non-ASCII characters (the occlusion tools' summaries use "↔") still come out as JSON that parses.
@@ -216,7 +216,7 @@ namespace CosmicShore.AssetTool.Tests
             if (OperatingSystem.IsWindows()) return; // the stand-in is a shell script
             var dir = Temp();
             var cacheBefore = DccModelConverter.CacheDir;
-            var envBefore = Environment.GetEnvironmentVariable("PRISMA_MAYAPY");
+            var envBefore = Environment.GetEnvironmentVariable("AMOEBIUS_MAYAPY");
             try
             {
                 DccModelConverter.CacheDir = Path.Combine(dir, "cache");
@@ -227,7 +227,7 @@ namespace CosmicShore.AssetTool.Tests
                 var fake = Path.Combine(dir, "mayapy");
                 File.WriteAllText(fake, $"#!/bin/sh\necho \"$2\" >> '{calls}'\ncp '{dolphin}' \"$3\"\n");
                 File.SetUnixFileMode(fake, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
-                Environment.SetEnvironmentVariable("PRISMA_MAYAPY", fake);
+                Environment.SetEnvironmentVariable("AMOEBIUS_MAYAPY", fake);
 
                 var model = DccModelConverter.Import(ma, new CosmicShore.Content.Models.ModelImportSettings(), null, out var error);
                 Assert.True(model != null, error);
@@ -241,7 +241,7 @@ namespace CosmicShore.AssetTool.Tests
             finally
             {
                 DccModelConverter.CacheDir = cacheBefore;
-                Environment.SetEnvironmentVariable("PRISMA_MAYAPY", envBefore);
+                Environment.SetEnvironmentVariable("AMOEBIUS_MAYAPY", envBefore);
                 Directory.Delete(dir, true);
             }
         }
@@ -250,23 +250,23 @@ namespace CosmicShore.AssetTool.Tests
         public void A_Blender_file_says_Blender_is_missing_instead_of_failing_blindly()
         {
             var pathBefore = Environment.GetEnvironmentVariable("PATH");
-            var envBefore = Environment.GetEnvironmentVariable("PRISMA_BLENDER");
+            var envBefore = Environment.GetEnvironmentVariable("AMOEBIUS_BLENDER");
             try
             {
-                Environment.SetEnvironmentVariable("PRISMA_BLENDER", null);
+                Environment.SetEnvironmentVariable("AMOEBIUS_BLENDER", null);
                 Environment.SetEnvironmentVariable("PATH", "");
-                if (DccModelConverter.FindBlender() != null) return; // installed where Prisma looks: nothing to prove here
+                if (DccModelConverter.FindBlender() != null) return; // installed where Amoebius looks: nothing to prove here
                 Assert.Null(DccModelConverter.ToFbx(Path.Combine(Root, "Assets/_Models/shield1.blend"), out var error));
                 Assert.Contains("Blender is not installed", error);
             }
             finally
             {
                 Environment.SetEnvironmentVariable("PATH", pathBefore);
-                Environment.SetEnvironmentVariable("PRISMA_BLENDER", envBefore);
+                Environment.SetEnvironmentVariable("AMOEBIUS_BLENDER", envBefore);
             }
         }
 
-        /// <summary>The real thing, where Blender is installed (PRISMA_BLENDER or PATH): shield1.blend, a hex-tiled sphere.</summary>
+        /// <summary>The real thing, where Blender is installed (AMOEBIUS_BLENDER or PATH): shield1.blend, a hex-tiled sphere.</summary>
         [Fact]
         public void A_Blender_file_imports_through_Blender_when_it_is_installed()
         {
@@ -319,30 +319,30 @@ namespace CosmicShore.AssetTool.Tests
             Assert.Contains(clip.Bindings, b => b.Attribute.StartsWith("blendShape.", StringComparison.Ordinal));
         }
 
-        /// <summary>SETTINGS' Blender/Maya paths reach cs-asset as PRISMA_BLENDER / PRISMA_MAYAPY, ahead of any search.</summary>
+        /// <summary>SETTINGS' Blender/Maya paths reach cs-asset as AMOEBIUS_BLENDER / AMOEBIUS_MAYAPY, ahead of any search.</summary>
         [Fact]
         public void A_configured_Blender_or_Maya_path_wins_and_Maya_reads_its_version_from_the_folder()
         {
             var dir = Temp();
             var fake = Path.Combine(dir, "my-blender");
             File.WriteAllText(fake, "");
-            var old = Environment.GetEnvironmentVariable("PRISMA_BLENDER");
+            var old = Environment.GetEnvironmentVariable("AMOEBIUS_BLENDER");
             try
             {
-                Environment.SetEnvironmentVariable("PRISMA_BLENDER", fake);
-                Assert.Equal(fake, Prisma.DccLocator.FindBlender());
+                Environment.SetEnvironmentVariable("AMOEBIUS_BLENDER", fake);
+                Assert.Equal(fake, Amoebius.DccLocator.FindBlender());
                 Assert.Equal(fake, DccModelConverter.FindBlender());
             }
-            finally { Environment.SetEnvironmentVariable("PRISMA_BLENDER", old); Directory.Delete(dir, true); }
-            Assert.Equal("2025", Prisma.DccLocator.MayaVersion("/usr/autodesk/maya2025/bin/mayapy"));
-            Assert.Equal("2024", Prisma.DccLocator.MayaVersion(@"C:/Program Files/Autodesk/Maya2024/bin/mayapy.exe"));
-            Assert.Null(Prisma.DccLocator.MayaVersion("/opt/tools/mayapy"));
+            finally { Environment.SetEnvironmentVariable("AMOEBIUS_BLENDER", old); Directory.Delete(dir, true); }
+            Assert.Equal("2025", Amoebius.DccLocator.MayaVersion("/usr/autodesk/maya2025/bin/mayapy"));
+            Assert.Equal("2024", Amoebius.DccLocator.MayaVersion(@"C:/Program Files/Autodesk/Maya2024/bin/mayapy.exe"));
+            Assert.Null(Amoebius.DccLocator.MayaVersion("/opt/tools/mayapy"));
         }
 
         /// <summary>
         /// E3a: a new FBX dropped into a project gets a .meta with a fresh GUID and the importer
         /// settings the project's models share (majority values, model-specific tables emptied),
-        /// Prisma's importer reads it, and --prefab writes a prefab nesting it that loads through
+        /// Amoebius's importer reads it, and --prefab writes a prefab nesting it that loads through
         /// the engine with the model drawn. Run on a small temp project, never the checkout.
         /// </summary>
         [Fact]
@@ -354,10 +354,20 @@ namespace CosmicShore.AssetTool.Tests
                 var models = Path.Combine(root, "Assets", "Models");
                 Directory.CreateDirectory(models);
                 File.WriteAllText(models + ".meta", "fileFormatVersion: 2\nguid: 0123456789abcdef0123456789abcdef\nfolderAsset: yes\nDefaultImporter:\n  externalObjects: {}\n");
-                foreach (var donor in new[] { "Assets/_Models/ChargeCrystalExport1_7-11-25.fbx", "Assets/_Models/Crystal.fbx", "Assets/_Models/MassCrystalExport1_8-21-25.fbx" })
+                // The donors are the game's own models, whose settings move with the game (the Mass
+                // crystal became readable in 1fd5b72529, 2026-10-08), so the copies' isReadable is pinned: the
+                // cleanest donor readable, the other two not, a majority that differs from it.
+                var donors = new (string Path, int Readable)[]
+                {
+                    ("Assets/_Models/ChargeCrystalExport1_7-11-25.fbx", 1),
+                    ("Assets/_Models/Crystal.fbx", 0),
+                    ("Assets/_Models/MassCrystalExport1_8-21-25.fbx", 0),
+                };
+                foreach (var (donor, readable) in donors)
                 {
                     File.Copy(Path.Combine(Root, donor), Path.Combine(models, Path.GetFileName(donor)));
-                    File.Copy(Path.Combine(Root, donor + ".meta"), Path.Combine(models, Path.GetFileName(donor) + ".meta"));
+                    var donorMeta = Regex.Replace(File.ReadAllText(Path.Combine(Root, donor + ".meta")), @"isReadable: \d", "isReadable: " + readable);
+                    File.WriteAllText(Path.Combine(models, Path.GetFileName(donor) + ".meta"), donorMeta);
                 }
                 var db = new AssetDatabase(root);
                 var r = JsonSerializer.SerializeToElement(CosmicShore.AssetTool.Program.ModelImport(db, Path.Combine(Root, "Assets/_Models/Orb.fbx"),

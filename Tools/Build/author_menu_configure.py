@@ -87,7 +87,7 @@ def script(cls, folder="Assets/_Scripts"):
 
 
 S = dict(
-    minigame=script("MinigameLaunchPanel"), arena=script("ArenaLaunchPanel"), maelstrom=script("MaelstromLaunchPanel"),
+    minigame=script("MinigameLaunchPanel"), aipicker=script("AIDifficultyPicker"), arena=script("ArenaLaunchPanel"), maelstrom=script("MaelstromLaunchPanel"),
     briefing=script("GameBriefingView"), objective=script("ObjectiveBoxView"), preview=script("ModePreviewWindow"),
     toast=script("PreviewMicroToast"), favorite=script("FavoriteIcon"), controls=script("VesselControlsPanel"),
     row=script("VesselControlRow"), video=script("ModeVideoView"), pool=script("MaelstromPoolListView"),
@@ -884,6 +884,48 @@ def sweep_node():
     return n
 
 
+AI_Y, AI_H, AI_BTN_H = 584, 96, 52
+AI_LEVELS = (("Easy", 1), ("Medium", 2), ("Hard", 3))   # AIDifficulty (Assets/_Scripts/Data), easiest first
+
+
+def ai_row(body):
+    """The AI DIFFICULTY row (AIDifficultyPicker, bleeding-edge 2026-10-14) drawn in style B: three
+    plates under the domain columns, one lit. The panel shows it only on a card whose AI reads it
+    (AIDifficultyRules.IsOfferedFor - Skim Race, Slingshot, Warpline), so it ships HIDDEN; the
+    picker's CanvasGroup is the one ArcadeLaunchPanel.SetAIDifficultyAvailable drives, which also
+    takes the buttons out of pad navigation while it is hidden."""
+    row = body.child(N("AIRow", "AIDifficulty", TL(30, AI_Y, 840, AI_H)))
+    row.add("cg", 225, canvas_group(False)).add("in", 114, M.entrance("Rise", stagger=9))
+    label(row.child(N("AIRow/Caption", "Caption", TL(0, 0, 150, 18))), "AI pilots", "Label", "TextLight")
+    label(row.child(N("AIRow/Hint", "Hint", TL(0, 22, 150, 60))), "How hard the AI races. The host picks.",
+          "BodySmall", "NeutralLightest", valign="top", wrap=True)
+    for i, (name, _) in enumerate(AI_LEVELS):
+        key = f"AIRow/{name}"
+        opt = row.child(N(key, name, TL(COL_X[i] - 30, 4, COL_W, AI_BTN_H)))
+        plate = opt.child(N(f"{key}/Plate", "Plate", STRETCH))
+        plate.add("cr", 222, K.canvas_renderer()) \
+            .add("img", 114, K.image(tok("TextLight"), K.kit_sprite("kit_sliver10_line1"), True, raycast=True))
+        cap = opt.child(N(f"{key}/Label", "Label", STRETCH))
+        cap.add("cr", 222, K.canvas_renderer()) \
+            .add("tmp", 114, text(name, "Label", tok("TextLight"), align="center")) \
+            .add("kt", 114, K.kit_text("Label", "TextLight", driven=True))
+        opt.add("audio", 114, A.menu_audio(2)) \
+            .add("button", 114, lambda ctx, go, key=key: mono(go, A.BUTTON,
+                 A.selectable().replace("  m_Transition: 0\n", "  m_Transition: 1\n")
+                 .replace("    m_NormalColor: {r: 1, g: 1, b: 1, a: 1}\n",
+                          "    m_NormalColor: {r: 0.8, g: 0.8, b: 0.8, a: 1}\n")
+                 + f"  m_TargetGraphic: {ref(ctx.c(f'{key}/Plate', 'img'))}\n"
+                 + A.calls([(ctx.c(key, "audio"), "CosmicShore.UI.MenuAudio", "PlayAudio")])))
+    row.add("picker", 114, lambda ctx, go: mono(go, S["aipicker"],
+            "  options:\n" + "".join(
+                f"  - Difficulty: {val}\n    Button: {ref(ctx.c(f'AIRow/{name}', 'button'))}\n"
+                f"    Plate: {ref(ctx.c(f'AIRow/{name}/Plate', 'img'))}\n"
+                f"    Label: {ref(ctx.c(f'AIRow/{name}/Label', 'tmp'))}\n" for name, val in AI_LEVELS)
+            + f"  plateSelected: {K.sprite_ref(K.kit_sprite('kit_sliver10_fill'))}\n"
+            f"  plateUnselected: {K.sprite_ref(K.kit_sprite('kit_sliver10_line1'))}\n"
+            f"  labelSelected: {color('SurfaceBlack')}\n  labelUnselected: {color('TextLight')}\n"))
+
+
 def tree_panel(root, kind):
     panel = root.child(N("Tree", "Tree", R((0.5, 1), (1, 1), (0, -LEFT_TOP), (-60, COL_H), (0.5, 1))))
     panel.add("cg", 225, canvas_group(True)).add("in", 114, M.entrance("Rise"))
@@ -915,6 +957,7 @@ def tree_panel(root, kind):
         else:
             vessel_row(body)
             routes(body, ROW_Y[0] + NODE_H)
+            ai_row(body)
 
     rows = (0, 1) if kind == "maelstrom" else (1, 2)
     for i, x in enumerate(NODE_X):
@@ -1011,6 +1054,8 @@ def panel_body(ctx, go, kind):
               f"  seatValueText: {ref(ctx.c(f'Step{step_pil}/Value', 'tmp'))}\n"
               f"  pilotsChipText: {ref(ctx.c('Chips/Pilots/Label', 'tmp'))}\n"
               f"  readyLabel: {ref(ctx.go('Status/Ready'))}\n")
+    if kind == "arcade":
+        fields += f"  aiDifficultyPicker: {ref(ctx.c('AIRow', 'picker'))}\n"
     if kind in ("arcade", "arena"):
         fields += (f"  previewWindow: {ref(ctx.c('Preview', 'window'))}\n"
                    f"  controlsPanel: {ref(ctx.c('Controls', 'controls'))}\n"
@@ -1670,6 +1715,12 @@ def validate_prefabs(files):
         assert len(tiles) == 3 and all(A.kind_of(text, t) == (114, S["dtile"]) for t in tiles), \
             f"{view}: needs the three domain tiles"
         assert "  hostModal: {fileID: 0}\n" in body, f"{view}: hostModal must stay empty in the prefab (scene-only)"
+        if kind == "arcade":
+            # Bleeding-edge's Skim Race / Slingshot / Warpline AI difficulty row (merged 2026-10-15).
+            wired(text, body, "aiDifficultyPicker", S["aipicker"], view)
+            _, pick = comp_doc(text, V("AIRow#picker"))
+            assert pick.count("  - Difficulty: ") == 3 and "Button: {fileID: 0}" not in pick, \
+                f"{view}: the AI difficulty row needs Easy, Medium and Hard, each with its button"
         doms = []
         for d, _ in DOMAINS:
             m = re.search(r"target: \{fileID: (\d+), guid: " + asset_guid("ConfigureDomainColumn") +
@@ -1791,6 +1842,8 @@ def self_test(files):
     cases = [
         ("the leaderboard row's entrance stripped", lambda f: f.__setitem__(lb_row, M.strip_entrances(f[lb_row])),
          validate_prefabs),
+        ("the AI difficulty row unwired", lambda f: f.__setitem__(view, re.sub(
+            r"(  aiDifficultyPicker: )\{fileID: -?\d+\}", r"\1{fileID: 0}", f[view])), validate_prefabs),
         ("an unwired start button", lambda f: f.__setitem__(view, re.sub(r"(  startButton: )\{fileID: -?\d+\}", r"\1{fileID: 0}", f[view])),
          validate_prefabs),
         ("a node that forgot the intensity variable", lambda f: f.__setitem__(node, f[node].replace(INTENSITY_VAR, "0" * 32)),

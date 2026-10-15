@@ -133,6 +133,59 @@ namespace CosmicShore.Utility
         /// <summary>The Charge crystal turns as it idles (the lab's port of JustRotate on CrystalCharge.prefab). The
         /// converter turns it off (designer, 2026-10-13: "a vestigial rotation that we don't want").</summary>
         public bool IdleTumble;
+        /// <summary>The woken omni moves as the GAME's omni does (Omni Motion Lab round 5, the converter): no squares weave
+        /// here - the caller turns the squares on its cadence - and the flip wave plays only the wave the caller cues
+        /// (<see cref="OmniCombineCore.OmniPose(double, in OmniCombineParams, double, D3, float[], float[], double, long)"/>).
+        /// Off in the lab, so parity holds.</summary>
+        public bool GameMotion;
+        /// <summary>Every crystal but the first comes in with a bit of extra spacing and comes down to perfect spacing
+        /// (designer, 2026-10-13: "the time rhombuses come in with a bit of extra spacing and then come down to perfect
+        /// spacing in order to socket in from the outside"): each plate morphs toward its slot pushed out this fraction of
+        /// the slot's radius, and HOLDS that until the crystal is centred on the omni (its flight is over), then eases it
+        /// to nothing over <see cref="SocketSeconds"/> (designer, 2026-10-14: "keep the triangles at maximum column height
+        /// till we get the crystal centered then we can decrease the radial distance so they socket into place ... you can
+        /// do this a bit more for the others"), so its last motion is straight in. The morph itself is untouched. 0 (the
+        /// lab) = none. The Mass crystal's far larger clearance is its depth columns (<see cref="MassRaise"/>).</summary>
+        public double SocketSpacing;
+        /// <summary>Seconds a crystal takes to socket in once it is centred on the omni: its plates' extra spacing comes
+        /// down to nothing, and the Mass prisms, held up their columns all the way in (<see cref="MassRaise"/>), come down
+        /// them into their slots. Every crystal is centred before it sockets, so the motion is radial about the omni's own centre:
+        /// a plate moves straight in through its own slot and never across a neighbour's. <see cref="OmniCombineCore.MorphEnds"/>
+        /// waits for the last one. 0 (the lab) = none.</summary>
+        public double SocketSeconds;
+        /// <summary>How far up its depth column each Mass prism stands while the crystal flies in, 0 (sealed, the lab) .. 1
+        /// (the top of the column): the clearance its thick prisms need to come straight down into their slots instead of
+        /// sliding along the shell into them (designer, 2026-10-14: "keep the triangles at maximum column height till we
+        /// get the crystal centered"). Below 1 on purpose: a prism at the top of its column, with the crystal nearly centred,
+        /// stands out where the waiting Time crystal is (Tools/Build/converter_round5_harness, section 9).</summary>
+        public double MassRaise;
+        /// <summary>Radians each crystal's flight turns about the vertical on the way in (index = element; null, the lab =
+        /// none), so it arrives from the side the camera will be on and the rhombi that have to cross the omni do it behind
+        /// it (designer, 2026-10-13: "the solution i want has all its clipping occluded"). The turn starts at nothing - a
+        /// crystal sets off from exactly where it idles - and is complete by <see cref="OmniCombineCore.ApproachTurnEnds"/>
+        /// of its flight, well before its shell meets the omni. <see cref="OmniCombineCore.FaceCamera"/> sets it.
+        /// The turn MOVES WITH THE CAMERA (designer, 2026-10-13: "optimize the camera side approach to move with the
+        /// camera"): on top of it the path turns by however far the camera has circled since it was aimed
+        /// (<see cref="CameraAzimuth"/> - <see cref="ApproachCameraAzimuth"/>), so a crystal stays on the camera's side
+        /// all the way in, however fast or slow the camera goes.</summary>
+        public double[] ApproachTurn;
+        /// <summary>The camera's azimuth about the stage's vertical when <see cref="ApproachTurn"/> was aimed (radians,
+        /// unwrapped: it keeps counting past a whole turn).</summary>
+        public double ApproachCameraAzimuth;
+        /// <summary>The camera's azimuth NOW, on the same unwrapped count; the caller sets it every frame. With
+        /// <see cref="ApproachTurn"/> null it is ignored.</summary>
+        public double CameraAzimuth;
+        /// <summary>Each crystal's own arrival elevation (radians above the stage's horizon, index = element), measured
+        /// when aimed. The flight's start height and its upward arc bring a crystal in from well above the camera
+        /// (designer, 2026-10-13: "the mass triangles especially come in from the top which presents visible clipping to
+        /// the camera viewing from the side"); the path is tipped by <see cref="CameraElevation"/> minus this, so it
+        /// arrives at the camera's height as well as from its side.</summary>
+        public double[] ApproachElevation;
+        /// <summary>The camera's elevation above the stage's horizon NOW (radians); the caller sets it every frame.</summary>
+        public double CameraElevation;
+        /// <summary>How far above the camera's own height a crystal arrives (radians; 0 = along the camera's line of
+        /// sight, negative = below it).</summary>
+        public double ApproachAboveCamera;
 
         public static OmniCombineParams LabDefault => new OmniCombineParams
         {
@@ -217,8 +270,38 @@ namespace CosmicShore.Utility
             return sizes.ToArray();
         }
 
+        /// <summary>How far through a crystal's eased flight its approach turn (<see cref="OmniCombineParams.ApproachTurn"/>)
+        /// is complete: while the crystal is still well clear of the omni.</summary>
+        public const double ApproachTurnEnds = 0.7;
+        /// <summary>The point of a crystal's flight the camera is aimed for: its shell is meeting the omni.</summary>
+        const double ArrivalAt = 0.85;
+
         public static double Departs(int element, in OmniCombineParams p) => p.Lead + element * p.Stagger;
-        public static double MorphEnds(in OmniCombineParams p) => p.Lead + 3 * p.Stagger + p.Flight;
+        /// <summary>When crystal <paramref name="element"/>'s flight is over: it is centred on the omni, every plate morphed.</summary>
+        public static double Centred(int element, in OmniCombineParams p) => Departs(element, p) + p.Flight;
+        /// <summary>When the last crystal (Time) has socketed in: the omni takes over from here.</summary>
+        public static double MorphEnds(in OmniCombineParams p) => Centred(Time, p) + Math.Max(0, p.SocketSeconds);
+
+        /// <summary>How far crystal <paramref name="element"/> has socketed in at <paramref name="t"/>: 0 until it is
+        /// centred on the omni, then eased to 1 over <see cref="OmniCombineParams.SocketSeconds"/> (at once with none).</summary>
+        public static double SocketIn(int element, double t, in OmniCombineParams p)
+        {
+            double since = t - Centred(element, p);
+            return p.SocketSeconds > 0 ? Smooth(since / p.SocketSeconds) : since >= 0 ? 1 : 0;
+        }
+
+        /// <summary>
+        /// Where the Mass prisms are on their depth columns at <paramref name="t"/> once the crystal has set off (0 at the
+        /// top of a column, 1 sealed): raised by <see cref="OmniCombineParams.MassRaise"/> all the way in, and down into
+        /// their slots as the crystal sockets in (designer, 2026-10-14: "for mass lets keep the triangles at maximum column
+        /// height till we get the crystal centered then we can decrease the radial distance so the socket into place
+        /// instead of clipping into place ... mass it should be done much more due to the extra clearance needed from their
+        /// thickness"). A column is radial about the crystal's own centre, and once it is centred that is the omni's, so
+        /// each prism comes straight down through its own triangle hole. The caller blends the idle depth effect into this
+        /// as the crystal sets off.
+        /// </summary>
+        public static double MassColumnPlace(double t, in OmniCombineParams p) =>
+            1 - Clamp01(p.MassRaise) * (1 - SocketIn(Mass, t, p));
 
         /// <summary>
         /// Every vertex of every crystal at combine time <paramref name="t"/>, in the stage's frame:
@@ -241,20 +324,14 @@ namespace CosmicShore.Utility
             {
                 var c = _crystals[k];
                 var outPos = positions[k];
-                double t0 = Departs(k, p), u = Clamp01((t - t0) / p.Flight), e = EaseIO(u, p.Ease);
+                double t0 = Departs(k, p), u = Clamp01((t - t0) / p.Flight);
                 double fxIdle = 1 - Smooth((t - t0) / p.EffectFade);
+                double socket = k > 0 && p.SocketSpacing > 0 ? SocketIn(k, t, p) : 0;
                 effect[k] = (float)Math.Max(0, fxIdle);
-                D3 s = StartOf(k, p), centre;
-                double left = 1 - e;
-                centre = RotAxis(D3.Up, p.Swirl * 2 * Math.PI * left, s * left);
-                centre = new D3(centre.X, centre.Y + p.Arc * s.Length * Math.Sin(Math.PI * e), centre.Z);
-                double ang = p.Tumble * 2 * Math.PI * left;
+                Frame(k, t, p, out var centre, out double spin, out double ang);
                 double mS = Math.Min(p.MorphStart, 1 - p.MorphLength);
                 bool idleSpin = c.Data.idle != null && c.Data.idle.keys != null && c.Data.idle.keys.Length > 0 && fxIdle > 0;
                 if (idleSpin) SpinWeights(te, c.Data.idle.names, _spinWeights);
-                // Charge tumbles while it idles; the accumulated turn unwinds over the flight so it lands in the omni's frame.
-                // Only the turn modulo a whole turn unwinds (the same pose), so a long wait never spins it back for laps.
-                double spin = k == Charge && p.IdleTumble ? (_tumbleSpeed * Math.Min(t, t0)) % (2 * Math.PI) * (1 - e) : 0;
                 for (int q = 0; q < c.Plates.Length; q++)
                 {
                     var pl = c.Plates[q];
@@ -271,6 +348,9 @@ namespace CosmicShore.Utility
                         seatScale = 1 + (Data.depth.massSizeStart - 1) * (1 - sd) * fxIdle;
                         seatLift = pl.C * ((Data.depth.massReach - 1) * (1 - sd) * fxIdle);
                     }
+                    // A bit of extra spacing, held until the crystal is centred and then brought down to nothing: its slot,
+                    // pushed out along itself.
+                    double extra = k > 0 && p.SocketSpacing > 0 ? w * p.SocketSpacing * (1 - socket) : 0;
                     foreach (int i in pl.Idx)
                     {
                         D3 b = V(c.Data.basis, i);
@@ -303,6 +383,7 @@ namespace CosmicShore.Utility
                                 v = D3.Lerp(b, V(c.Data.final, i), w);
                                 break;
                         }
+                        if (extra != 0) v += c.FinalCentre[q] * extra;
                         if (spin != 0) v = RotAxis(_tumbleAxis, spin, v);
                         if (ang != 0) v = RotAxis(_tumbleAxes[k], ang, v);
                         v += centre;
@@ -326,14 +407,22 @@ namespace CosmicShore.Utility
         /// the squares weave, the depth prisms on its triangles. (The discharge on its pentagons is the
         /// shader's.) Writes xyz per omni vertex.
         /// </summary>
-        public void OmniPose(double t, in OmniCombineParams p, double fx, D3 towardCamera, float[] positions)
+        public void OmniPose(double t, in OmniCombineParams p, double fx, D3 towardCamera, float[] positions) =>
+            OmniPose(t, p, fx, towardCamera, positions, null, -1, -1);
+
+        /// <summary>As above; with <see cref="OmniCombineParams.GameMotion"/> the pose starts from <paramref name="rest"/>
+        /// (the omni's vertices as the caller draws them at rest - thicker plates; null = the data's) and the flip wave
+        /// plays wave <paramref name="wave"/>, <paramref name="waveSeconds"/> into the profile's own clock (a negative wave
+        /// holds every rhombus at rest), as <c>CrystalFlipWave</c> plays a cued wave.</summary>
+        public void OmniPose(double t, in OmniCombineParams p, double fx, D3 towardCamera, float[] positions,
+                             float[] rest, double waveSeconds, long wave)
         {
-            var ov = Data.omni.verts;
+            var ov = p.GameMotion && rest != null ? rest : Data.omni.verts;
             Array.Copy(ov, positions, ov.Length);
             if (fx <= 0) return;
             double te = t + p.EffectPhase;
-            SquaresWeights(te, Data.squares, _squareWeights);
-            for (int k = 0; k < Data.squares.keys.Length; k++)
+            if (!p.GameMotion) SquaresWeights(te, Data.squares, _squareWeights);
+            for (int k = 0; k < Data.squares.keys.Length && !p.GameMotion; k++)
             {
                 var key = Data.squares.keys[k];
                 double w = _squareWeights[k] * fx;
@@ -351,7 +440,9 @@ namespace CosmicShore.Utility
                 int owner = Data.omni.plateOwner[q];
                 if (owner == Time)
                 {
-                    var f = FlipPose(_omniRig, q, pl, te, OmniFlipSalt, fx);
+                    if (p.GameMotion && wave < 0) continue;
+                    var f = p.GameMotion ? FlipPoseAt(_omniRig, q, pl, wave, waveSeconds, OmniFlipSalt, fx)
+                                         : FlipPose(_omniRig, q, pl, te, OmniFlipSalt, fx);
                     if (!f.Valid) continue;
                     foreach (int i in pl.Idx) Write(positions, i, ApplyFlip(f, pl, V(ov, i)));
                 }
@@ -363,6 +454,86 @@ namespace CosmicShore.Utility
                     foreach (int i in pl.Idx) Write(positions, i, pl.C + (V(ov, i) - pl.C) * sc + lift);
                 }
             }
+        }
+
+        /// <summary>
+        /// The rigid part of crystal <paramref name="k"/>'s pose at <paramref name="t"/>: an UNMORPHED point v of its basis
+        /// is drawn at <c>RotAxis(tumbleAxis, tumble, RotAxis(spinAxis, spin, v)) + centre</c>, exactly as
+        /// <see cref="Pose(double, in OmniCombineParams, D3, float[][], float[], float[], float[][])"/> draws it. The
+        /// converter carries the Charge crystal's seam-walk light on it while the crystal waits.
+        /// </summary>
+        public void CrystalFrame(int k, double t, in OmniCombineParams p, out D3 centre, out D3 spinAxis, out double spin,
+                                 out D3 tumbleAxis, out double tumble)
+        {
+            Seed(p.Seed);
+            Frame(k, t, p, out centre, out spin, out tumble);
+            spinAxis = _tumbleAxis;
+            tumbleAxis = _tumbleAxes[k];
+        }
+
+        void Frame(int k, double t, in OmniCombineParams p, out D3 centre, out double spin, out double tumble)
+        {
+            double t0 = Departs(k, p), u = Clamp01((t - t0) / p.Flight), e = EaseIO(u, p.Ease);
+            D3 s = StartOf(k, p);
+            double left = 1 - e;
+            double aim = p.ApproachTurn != null ? Smooth(e / ApproachTurnEnds) : 0;
+            double turn = aim > 0 ? (p.ApproachTurn[k] + (p.CameraAzimuth - p.ApproachCameraAzimuth)) * aim : 0;
+            centre = RotAxis(D3.Up, p.Swirl * 2 * Math.PI * left + turn, s * left);
+            centre = new D3(centre.X, centre.Y + p.Arc * s.Length * Math.Sin(Math.PI * e), centre.Z);
+            if (aim > 0 && p.ApproachElevation != null)
+            {
+                // Tip the path in the vertical plane that faces the camera: about the horizontal axis across its view.
+                double az = p.CameraAzimuth;
+                // cross(toward the camera (sin az, 0, cos az), up): turning by +angle about it lifts the path.
+                var across = new D3(-Math.Cos(az), 0, Math.Sin(az));
+                centre = RotAxis(across, (p.CameraElevation + p.ApproachAboveCamera - p.ApproachElevation[k]) * aim, centre);
+            }
+            tumble = p.Tumble * 2 * Math.PI * left;
+            // Charge tumbles while it idles; the accumulated turn unwinds over the flight so it lands in the omni's frame.
+            // Only the turn modulo a whole turn unwinds (the same pose), so a long wait never spins it back for laps.
+            spin = k == Charge && p.IdleTumble ? (_tumbleSpeed * Math.Min(t, t0)) % (2 * Math.PI) * (1 - e) : 0;
+        }
+
+        /// <summary>
+        /// Sets <see cref="OmniCombineParams.ApproachTurn"/> so every crystal but the first arrives from the camera's side:
+        /// a crystal coming in from one side has to bring the rhombi on its far side through the omni, and arriving from
+        /// the camera's side puts them behind it. <paramref name="cameraAzimuth"/> is the camera's azimuth about the stage's
+        /// vertical (<c>atan2(x, z)</c> of the direction toward it, unwrapped) at play time <paramref name="now"/>, and it
+        /// turns at <paramref name="cameraRadiansPerSecond"/>. From then on each path follows the live camera
+        /// (<see cref="OmniCombineParams.CameraAzimuth"/>); the rate only picks the shorter way round for the camera's
+        /// expected travel, so a crystal never sweeps the long way to meet it. Space keeps its path.
+        /// </summary>
+        public void FaceCamera(ref OmniCombineParams p, double cameraAzimuth, double cameraRadiansPerSecond, double now)
+        {
+            var turns = new double[4];
+            var elevations = new double[4];
+            for (int k = 1; k < 4; k++)
+            {
+                // The height it arrives from on its own path (the start's height plus the arc), before any aim.
+                var straight = p;
+                straight.ApproachTurn = null;
+                Frame(k, Departs(k, p) + ArrivalAt * p.Flight, straight, out var at, out _, out _);
+                elevations[k] = Math.Asin(Math.Max(-1, Math.Min(1, at.Y / Math.Max(1e-12, at.Length))));
+                // The swirl unwinds by the end, so a crystal arrives from its start's own azimuth.
+                D3 s = StartOf(k, p);
+                double arrives = Departs(k, p) + ArrivalAt * p.Flight;
+                double travel = cameraRadiansPerSecond * (arrives - now);
+                // Where the camera is expected to be as it arrives, met the shorter way; the live camera adds the travel.
+                turns[k] = WrapAngle(cameraAzimuth + travel - Math.Atan2(s.X, s.Z)) - travel;
+            }
+            p.ApproachTurn = turns;
+            p.ApproachElevation = elevations;
+            p.ApproachCameraAzimuth = cameraAzimuth;
+            p.CameraAzimuth = cameraAzimuth;
+        }
+
+        /// <summary>An angle wrapped into (-pi, pi]: the shorter way round.</summary>
+        public static double WrapAngle(double a)
+        {
+            a %= 2 * Math.PI;
+            if (a > Math.PI) a -= 2 * Math.PI;
+            else if (a <= -Math.PI) a += 2 * Math.PI;
+            return a;
         }
 
         // ------------------------------------------------------------------ the four effects
@@ -438,7 +609,13 @@ namespace CosmicShore.Utility
         {
             var fl = Data.flip;
             long loop = (long)Math.Floor(t / fl.loop);
-            double local = t - loop * fl.loop;
+            return FlipPoseAt(rig, p, pl, loop, t - loop * fl.loop, salt, fx);
+        }
+
+        /// <summary>Plate <paramref name="p"/> in wave <paramref name="loop"/>, <paramref name="local"/> seconds into it.</summary>
+        Flip FlipPoseAt(FlipRig rig, int p, Plate pl, long loop, double local, int salt, double fx)
+        {
+            var fl = Data.flip;
             var step = rig.Plans[FlipStart(rig, loop, salt)][p];
             double tk = local - (fl.first + fl.stagger * step.Ring);
             if (tk < 0) return default;

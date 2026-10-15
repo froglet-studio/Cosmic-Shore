@@ -21,10 +21,38 @@ Confidence scale:
 
 ---
 
+## Merge log (bleeding-edge → Bug_Hunt)
+
+- **2026-10-06 — merged `bleeding-edge @ 0c48d08f5` (PR #965 tip) into `Bug_Hunt`** (merge commit
+  `eb05ce26b`, Bug_Hunt first parent; merge-base `3ba8ea1d2`). Brought in **158 BE commits** (115
+  non-merge): swarm fauna (#960) with substrate / builder colonies / threat flora / ecology LOD,
+  GPU-drawn swarm members on the prism platform (`PrismRenderService`, `PrismSpatialIndex`,
+  `Prism`, `Cell`, `Fauna`, `LightFauna`, `Flora`), objective arrows for Bends / Cleave / Sirocco /
+  Wildlife Liberation / Brood Rush / Scurry (#964, `MiniGameHUD`), silent-hull FMOD slots (#966),
+  Wildlife / Tollway gates (#967), QA arcade matrix (#968), generator gates (#969), registration
+  copy drift (#965), Port / Froglet Engine work.
+  - **Conflicts (2):** `Tollway Cell Config 4.asset` — kept BE's new Description (Borromean
+    anchors, 78558 vol / 3654 prisms) in BH-5.2's single-quoted folded form
+    (`wrap_yaml_scalar`); `author_dogfight_assets.py` — kept both imports (BE `aml`, BH
+    `wrap_yaml_scalar`).
+  - **No follow-up fix needed:** BE did not touch `EditorBuildSettings` (Wildlife Blitz co-op
+    removal stands), no BE code / asset references any BH-5.3..5.7 deleted file or GUID, and
+    nothing references `PrismTimerManager.scheduledActions`. BH fixes in BE-touched files
+    survived (`Cell.OnDestroy` grid dispose, `Fauna.OnDestroy` unregister,
+    `Flora.RemoveHealthBlock` base call, `Crystal.ActivateCrystal` guard).
+  - **Gates:** 4 textual gates OK; strict YAML on the 113 changed assets OK; `author_{tollway,
+    dogfight,regatta,broadside,waystation}_assets.py --check` OK; `dotnet build
+    Port/src/CosmicShore.Player` 0 errors. Not run in Unity. Playtest list for the merged branch:
+    the "Playtest items" section below plus the merge-risk checks (swarm / fauna / prism platform,
+    objective-arrow HUD).
+
+---
+
 ## 0. What already shipped (so you do not redo it)
 
 | # | Fix | Where |
 |---|---|---|
+| 39 | **PrismTimerManager.OnDestroy clears the owner-indexed schedule (BH-4.7 follow-up).** Left-over `scheduledActions.Clear()` after the rename caused CS0103. | `PrismTimerManager.OnDestroy` |
 | 1 | **Comeback now reads the mode's own score.** `ElementalComebackSystem` had a per-scene `ScoreDifferenceSource` that eight cloned scenes set to their donor's stat. The comeback now reads `ScoringRuleSO.DomainValue` through `ElementalComebackSystem.DomainScore`, the same function the HUD, the end condition and the placement order use. The per-scene field is deleted, so the bug class cannot recur. | `ElementalComebackSystem.cs`, `MultiplayerMiniGameControllerBase.OnNetworkSpawn`, 22 scenes, 9 generators |
 | 2 | `Flora.RemoveHealthBlock` now calls `base`. It had skipped the lifeform's death bookkeeping. | `Flora.cs` |
 | 3 | Stats zero when the countdown ends, not only at the turn start. | `MultiplayerDomainGamesController.OnCountdownTimerEnded_ClientRpc` |
@@ -51,7 +79,7 @@ Confidence scale:
 | 24 | **Client report RPCs are turn-gated and reject NaN (was §4).** One `CanCreditReport()` (RoundStats + `IsTurnRunning`) and `IsCreditableVolume()` (finite, ≥ 0) gate every owner-detects / server-records RPC on `Player`. | `Player` |
 | 25 | **BranchingFlora rolls its trunk count once; the name generator reaches the last word (was §4).** | `BranchingFlora.SeedBranches`, `NameGenerationData` |
 | 26 | **An empty domain no longer wins an all-zero tie (was §4, "Bloomrush restarts a tied 0-0-0 round").** `ScoringRuleSO.ResolveWinner` and Bloomrush skip domains with no RoundStats row (`IsFielded`); tests added. | `ScoringRuleSO`, `BloomrushScoringRuleSO`, `ScoringRuleFieldedDomainTests` |
-| 27 | **Suspended ThumbCursor / ThumbPerimeter no longer throw on frame 1 (was §4, `Input.touches`).** Inert until initialized; touch counts read EnhancedTouch. | `ThumbCursor`, `ThumbPerimeter` |
+| 27 | **Suspended ThumbCursor / ThumbPerimeter no longer throw on frame 1 (was §4, `Input.touches`).** Inert until initialized; touch counts read EnhancedTouch (on `Ys-bleeding-edge` they read `Touchscreen.current` through Bug_Hunt's `ActiveTouchCount`, kept at the 2026-10-08 merge - same answer, no dependency on `EnhancedTouchSupport.Enable` having run). | `ThumbCursor`, `ThumbPerimeter` |
 | 28 | **Trail index is `int` (was §4, ushort wrap past 65,535).** | `Trail` |
 | 29 | **Play Again (scene reload) no longer misses its fade-in (was §3.1, traced in code).** The handler subscribed after the 1000 ms `InitDelayMs`, but the host's vessel readies after `preSpawnDelayMs` (~200 ms). Now subscribed before the wait; the fade itself still waits for `InitializeGame`. | `MultiplayerMiniGameControllerBase` |
 | 30 | **19 network/backend waits are unscaled.** Every non-HOME Menu_Main screen sets `Time.timeScale = 0`; scaled `UniTask.Delay`s in the party/presence/session services, the menu vessel swap, `MultiplayerSetup` and `NetworkMonitor` never completed there (a guest's vessel swap left them shipless; the reconcile retry held `_lobbyMutex` and froze the online list, invites and Leave). | `MenuServerPlayerVesselInitializer`, `HostConnectionService`, `LobbyPropertyWriter`, `PresenceLobbyService`, `PartySessionService`, `AcceptanceSignalService`, `MultiplayerSetup`, `NetworkMonitor` |
@@ -104,8 +132,16 @@ Confidence scale:
 | 77 | **Scarab Scramble clients see the cell-overload toast** (subscribed only in the server-only forge hooks). | `ScarabScrambleController` |
 | 78 | **The weekly leaderboard refetches on every open** (its work ran in `OnEnable`, once per menu load, because closing only hides the CanvasGroup). | `WeeklyChallengeLeaderboardModal` |
 | 79 | **A reused leaderboard row no longer shows the previous player's avatar.** | `WeeklyChallengeLeaderboardPanel` |
+| 80 | **PrismTimerManager cancels by owner index (was §4).** Scheduled settle actions are keyed by owner, so mass pool returns no longer scan-and-`RemoveAt` the full list. Shipped on `Bug_Hunt`. | `PrismTimerManager` |
+| 81 | **Crystal.ActivateCrystal no longer NREs when the cell is gone (console).** `ActivateCrystal` returns if the scene is unloading and only reparents when `cellData.Cell` is still alive (same Unity-null pattern as `DetachHeartToCell`). Was an open console issue from `Fauna.ReleaseHeart` ← `LightFauna.WitherCoroutine`. Shipped on `Bug_Hunt`. | `Crystal.ActivateCrystal` |
+| 82 | **Strict YAML on cell configs / arcade cards / captain SOs (console, was FIX_LOG open).** `arcade_mode_lib.wrap_yaml_scalar` + five `author_*_assets.py` generators; 17 assets re-quoted / hand-fixed. Shipped on `Bug_Hunt`. | generators + captain SOs |
+| 83 | **Run Benchmark is Editor-only (was §5).** Button hidden / unwired in players; `LaunchBenchmark` no-ops outside the Editor. `BenchmarkStressTest` stays out of Build Settings. Shipped on `Bug_Hunt`. | `GameSettingsPanelController`, `BenchmarkSceneLauncher` |
+| 84 | **Hangar Wildlife Blitz training retired (was §5).** Rhino/Sparrow `TrainingGames` cleared; `SO_TrainingGame_WildLifeBlitz` and `ArcadeGameWildlifeBlitz` deleted. Shipped on `Bug_Hunt`. | class SOs, TrainingGames list |
+| 85 | **Wildlife Blitz retired from shipped surfaces (was §5).** Co-op scene out of Build Settings; preview + arcade card deleted. Shipped on `Bug_Hunt`. | Build Settings, ModePreviewLibrary |
+| 86 | **Orphans deleted after salvage-before-delete (was §5).** Removed unused `WildlifeBlitzMiniGame`, SlipnStride controller, VolumeTest adapter, `SandboxBenchmarkController`, end-game stats tracker, `WildlifeBlitzStats`; kept Benchmark stack. Shipped on `Bug_Hunt`. | see FIX_LOG BH-5.6 |
+| 87 | **Wildlife Blitz co-op leftovers deleted (follow-up to 5.5/5.6).** Removed `MinigameWildlifeBlitzMultuplayerCoOp` scene + `CoOpWildlifeBlitzMiniGame`; cleaned training launcher refs; Settings ARCHITECTURE aligned to BenchmarkStressTest stack. Shipped on `Bug_Hunt`. | see FIX_LOG BH-5.7 |
 
-Rows 23-79 shipped on `cece/loving-shannon-hxpdy0` (the 2026-10-08 overnight sweep). **None of them has been run in Unity.** Each compiled clean against the real 6000.0 references with `Tools/Build/unity_refcompile` in the player config (0 errors, 0 unverified - the gate was negative-controlled: a planted undefined call shows up as 1 *unverified*, so read both numbers; the seven changed files that `using` the unobtainable UGS Multiplayer package were checked line by line against the report) and, for the changed tests, the editor config; all five textual gates pass. Per-fix reports: [`BugHunt/FIX_LOG.md`](BugHunt/FIX_LOG.md) § "Overnight sweep 2026-10-08".
+Rows 80-87 are `Bug_Hunt` fixes that reached `Ys-bleeding-edge` (renumbered from that branch's 30 and 32-38 at the 2026-10-08 merge; its 23-29 and 31 were the same fixes as rows 23-29 and 31 here). Rows 23-79 shipped on `cece/loving-shannon-hxpdy0` (the 2026-10-08 overnight sweep). **None of them has been run in Unity.** Each compiled clean against the real 6000.0 references with `Tools/Build/unity_refcompile` in the player config (0 errors, 0 unverified - the gate was negative-controlled: a planted undefined call shows up as 1 *unverified*, so read both numbers; the seven changed files that `using` the unobtainable UGS Multiplayer package were checked line by line against the report) and, for the changed tests, the editor config; all five textual gates pass. Per-fix reports: [`BugHunt/FIX_LOG.md`](BugHunt/FIX_LOG.md) § "Overnight sweep 2026-10-08".
 
 ### Playtest items for the shipped fixes
 - **Squirrel ring (#6):** fly Menu_Main freestyle → an arcade game → back, 2-3 round trips, then
@@ -171,6 +207,70 @@ Rows 23-79 shipped on `cece/loving-shannon-hxpdy0` (the 2026-10-08 overnight swe
   then send it again; the second invite must arrive and fire once. Repeat while the other player
   joins or leaves the party. Also let an invite time out, then re-invite. No stuck or doubled
   invites, and no hang on the invite button (a hang would mean a lock deadlock).
+- **STILL TO TEST (revisit): 2.4, kept on Bug_Hunt untested at Yash's call (no merge to bleeding-edge until all fixes are tested together).**
+- **Reconnect app state (2.4):** in Menu_Main (and again from the disconnect notice mid-game or on the game-over screen), trigger Reconnect (the online status indicator or the
+  disconnect notice). The console must not show `Invalid transition: MainMenu → Authenticating`;
+  with the `Boot` channel verbose you should see `[AppState] MainMenu → Authenticating`, then
+  `Authenticating → MainMenu` once the menu is back. The menu should still load as before.
+- **STILL TO TEST (revisit): 3.1, kept on Bug_Hunt untested at Yash's call.**
+- **Play Again fade (3.1):** in Skim Race (host plus a client if you can), finish a round and press
+  Play Again several times in a row. Every peer must fade back in to the arena each time; the
+  screen must never stay black. Also quit to the menu right after pressing Play Again once, and
+  start a normal game: it must not fade oddly.
+- **STILL TO TEST (revisit): 4 (stat report RPC guards), kept on Bug_Hunt untested at Yash's call.**
+- **Stat reports (§4):** play a multiplayer match with a client in a mode that scores kills or hits
+  (Dogfight, Rampage or a flora mode). The client's scores must still rise during the round, as
+  before. After the round ends, the final scoreboard must not change. A normal match is all that is
+  needed; a NaN cannot be sent without a hacked build.
+- **STILL TO TEST (revisit): 4.1 Bloomrush fielded-domain tie-break, kept on Bug_Hunt untested at Yash's call.**
+- **Bloomrush 0-0-0 (§4.1):** start Bloomrush with only Ruby and Gold fielded (no Jade). Let the
+  round end with no blooms scored. It must declare a winner (Ruby, by enum order among fielded
+  domains) and show the scoreboard — not restart the round. A normal two-domain match that does
+  score should still rank by volume, then fuses beaten.
+- **STILL TO TEST (revisit): 4.4 BranchingFlora trunk roll, kept on Bug_Hunt untested at Yash's call.**
+- **BranchingFlora trunks (§4.4):** in a mode with BranchingFlora (Skim Race / freestyle flora),
+  watch a few flora seed: trunk counts should stay between min and max, with no runaway branching.
+- **STILL TO TEST (revisit): 4.5 name generator last word, kept on Bug_Hunt untested at Yash's call.**
+- **Name generator (§4.5):** if anything still calls `NameGenerationData.GenerateName`, confirm the
+  last adjective and noun in the lists can appear. Otherwise this is a correctness fix with no play path.
+- **STILL TO TEST (revisit): 4.6 thumb touch input, kept on Bug_Hunt untested at Yash's call.**
+- **Thumb touch (§4.6):** only matters if the thumb cursor/perimeter scripts are re-enabled. On a
+  touch device, a finger down should light the active sprite / perimeter; lifting should clear it.
+- **STILL TO TEST (revisit): 4.7 follow-up OnDestroy clear (compile fix).**
+- **STILL TO TEST (revisit): 4.7 PrismTimerManager cancel, kept on Bug_Hunt untested at Yash's call.**
+- **Prism timers (§4.7):** play a mode that shields/settles many prisms, then leave the scene or
+  destroy a large patch. No hitch spike unique to that teardown; shield settle still fires on time.
+- **STILL TO TEST (revisit): 4.8 Trail ushort wrap, kept on Bug_Hunt untested at Yash's call.**
+- **Trail indices (§4.8):** only reachable on a very long freestyle trail. Normal play is enough to
+  confirm nothing regressed; a wrap repro needs 65k+ prisms.
+- **STILL TO TEST (revisit): 5.1 Crystal.ActivateCrystal teardown guard, kept on Bug_Hunt untested at Yash's call.**
+- **Crystal heart drop (5.1):** in any mode with fauna (Rampage / freestyle), kill or starve a few
+  creatures, then leave the scene / stop play. Console must not show `NullReferenceException` in
+  `Crystal.ActivateCrystal`. Hearts that drop while the cell is still live must still become
+  collectible.
+- **STILL TO TEST (revisit): 5.2 strict YAML assets, kept on Bug_Hunt untested at Yash's call.**
+- **Strict YAML (5.2):** reimport the touched cell configs / Broadside / Waystation / three captain
+  SOs in the Editor; console must show no `Unable to parse file`. Spot-check Description / Flavor /
+  IconActive still display on those cards.
+- **STILL TO TEST (revisit): 5.3 Run Benchmark Editor-only, kept on Bug_Hunt untested at Yash's call.**
+- **Run Benchmark (5.3):** in the Editor, Settings ▸ Run Benchmark from Menu_Main still loads
+  `BenchmarkStressTest`. In a player build the button must be absent/hidden and must not appear in
+  the settings panel.
+- **STILL TO TEST (revisit): 5.4 Hangar Wildlife Blitz training retirement, kept on Bug_Hunt untested at Yash's call.**
+- **Hangar training (5.4):** open the hangar for Rhino and Sparrow — no Wildlife Blitz training
+  card/row; remaining training games (if any) still open without NRE.
+- **STILL TO TEST (revisit): 5.5 Wildlife Blitz retirement, kept on Bug_Hunt untested at Yash's call.**
+- **Wildlife Blitz retired (5.5):** Arcade / Arena / party lists must not show Wildlife Blitz; Build
+  Settings must not list `MinigameWildlifeBlitzMultuplayerCoOp`; mode preview must not offer it.
+  Editor Run Benchmark (5.3) must still load `BenchmarkStressTest`.
+- **STILL TO TEST (revisit): 5.6 orphan deletions, kept on Bug_Hunt untested at Yash's call.**
+- **Orphans / Benchmark (5.6):** Editor Run Benchmark must still enter `BenchmarkStressTest` and
+  fly. Console must not miss scripts for deleted orphans. MiniGameHUD Ready must not log a missing
+  `WildlifeBlitzMiniGame` target.
+- **STILL TO TEST (revisit): 5.7 co-op leftover deletion, kept on Bug_Hunt untested at Yash's call.**
+- **Co-op leftovers gone (5.7):** project must not contain
+  `MinigameWildlifeBlitzMultuplayerCoOp` or `CoOpWildlifeBlitzMiniGame`; Editor Run Benchmark (5.3)
+  must still load `BenchmarkStressTest` and find `SinglePlayerWildlifeBlitzController`.
 
 ### Playtest items for rows 23-79 (overnight sweep, none run in Unity)
 - **Crystal payout (35):** finish any match and note the wallet before and after - it must rise by the placement payout ONCE, the GameEnd sound and reveal toast play once, and only one crystals-earned event is sent.
@@ -216,8 +316,8 @@ Nothing open at this tier. Everything found by the 2026-10-08 sweep that was sma
 - **Problem:** two players with the same name (two humans with one display name, or a human named like an AI profile) both match the FIRST entry: it takes the second player's Score/metric/Domain and the second is never written; on the host the Score write replicates, so a domain can vanish from Results and placement, and placement crystals go to the wrong side.
 - **Fix:** skip the loop on the host (its values are authoritative); on clients match each entry once (`HashSet<IRoundStats> used`); durable fix is to send the RoundStats `NetworkObjectId` and match on it. Thirteen near-identical edits - do it as one change with a shared helper.
 
-### 2.7 `PrismTimerManager.CancelScheduledActions` is O(N²) on mass cancels (was §4)
-- Deliberately NOT changed overnight: CLAUDE.md says profile first. A per-owner count map would make the common "nothing scheduled" cancel O(1). Profile a mass explosion first.
+### 2.7 `PrismTimerManager.CancelScheduledActions` is O(N²) on mass cancels (was §4) — CLOSED on `Ys-bleeding-edge` by row 80 (BH-4.7, cancel by owner index)
+- Deliberately NOT changed overnight on bleeding-edge: CLAUDE.md says profile first. A per-owner count map would make the common "nothing scheduled" cancel O(1). Profile a mass explosion first.
 
 ---
 
@@ -253,22 +353,8 @@ Nothing open at this tier. Everything found by the 2026-10-08 sweep that was sma
 
 ## 5. Follow-ups from the scene cleanup (#5)
 
-- **Neither Wildlife Blitz exists in the shipped game.** `ArcadeGameCoOpWildlifeBlitz.asset` is in no
-  `SO_GameList`, and `MinigameWildlifeBlitzMultuplayerCoOp.unity` is not in Build Settings. This was
-  already true before the cleanup; it only became visible when the single-player scene was deleted.
-  Decide: ship it (add it to a list and to Build Settings) or retire it.
-- **`BenchmarkStressTest.unity` is not in Build Settings**, but Settings ▸ Run Benchmark loads it, so
-  Run Benchmark probably fails in a player build. Either add it to Build Settings or hide the
-  button in players.
-- **Hangar training is dead:** `Arcade.Instance` is never placed. Rhino's and Sparrow's
-  `SO_TrainingGame_WildLifeBlitz` still point at `ArcadeGameWildlifeBlitz`, whose scene is deleted.
-  The card was KEPT so those references do not NRE. Retire the training entries and the card
-  together.
-- **Orphaned classes** (no scene or prefab references them now): `WildlifeBlitzMiniGame`,
-  `SinglePlayerSlipnStrideController`, `VolumeTestPlayerSpawnerAdapter`, `SandboxBenchmarkController`,
-  the single-player `VesselSelectionPanelController`, `WildlifeBlitzEndGameStatsTracker`,
-  `WildlifeBlitzStats`. Run the `/refactor` skill's salvage-before-delete gate before removing any
-  of them. Some are referenced by `BenchmarkStressTest`.
+_All items from this section are done (BH-5.3–5.7). See §0 rows 34–38._
+
 
 ---
 

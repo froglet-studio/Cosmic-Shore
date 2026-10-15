@@ -29,8 +29,9 @@
     { "id": "vfx-graph", "area": "Rendering", "name": "VFX Graph (2 graphs; Approximate is the target)", "implemented": "none", "tests": [], "parity": [] },
     { "id": "ugui", "area": "UI", "name": "uGUI layout, graphics, events, navigation", "implemented": "full", "tests": ["EngineUiLayoutTests", "EngineUiGraphicTests", "EngineUiEventTests", "EngineUiNavigationTests", "EngineUiGeometryTests"], "parity": ["boot-menu/frames"] },
     { "id": "tmp", "area": "UI", "name": "TextMeshPro text", "implemented": "full", "tests": ["UiShellTests"], "parity": ["boot-menu/frames"] },
-    { "id": "netcode-lan", "area": "Networking", "name": "Netcode over TCP, LAN parties", "implemented": "partial", "tests": ["NetworkingTests", "NetWireTests", "MultiplayerSessionTests"], "parity": [] },
-    { "id": "internet-relay", "area": "Networking", "name": "Internet relay and real UGS (gate G2)", "implemented": "none", "tests": [], "parity": [] },
+    { "id": "netcode-lan", "area": "Networking", "name": "Netcode over TCP, direct or through the relay", "implemented": "partial", "tests": ["NetworkingTests", "NetWireTests", "MultiplayerSessionTests", "NetTransportContractTests", "NetDriverTransportTests"], "parity": [] },
+    { "id": "internet-relay", "area": "Networking", "name": "START ONLINE: UGS Lobby sessions + UGS Relay match, through NetStack", "implemented": "partial", "tests": ["UgsMultiplayerTests", "NetStackTests"], "parity": [] },
+    { "id": "ugs-steam", "area": "Networking", "name": "Shipping online backend: UGS live in the project (owner's check), or Steam (gate G2)", "implemented": "partial", "tests": ["UgsAuthenticationTests", "UgsMultiplayerTests"], "parity": [] },
     { "id": "cloud-data", "area": "Services", "name": "Cloud Save / stats (local stand-ins)", "implemented": "partial", "tests": ["CloudDataTests", "PlayerDataCloudTests"], "parity": [] },
     { "id": "performance", "area": "Performance", "name": "p95 frame time within 10% of Unity (C7)", "implemented": "partial", "tests": ["LongRunMemoryTests"], "parity": [] }
   ]

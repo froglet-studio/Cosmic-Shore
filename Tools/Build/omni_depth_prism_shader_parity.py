@@ -172,7 +172,7 @@ const { chromium } = require('playwright');
     L.setParam('subject', subject);
     const P = Object.assign({}, L.P), rows = [];
     for (const u of places) { const r = []; for (let i = 0; i < n; i++) r.push(L.vertexAt(P, i, 0, 0, null, u)); rows.push(r); }
-    return { rows, stop: P.stop };
+    return { rows, stop: L.stopOf(P) };   // the crystal's own column: the Mass has its own seat since 2026-10-14
   }, [+process.argv[3], +process.argv[4], JSON.parse(process.argv[5])]);
   console.log(JSON.stringify(out));
   await b.close();

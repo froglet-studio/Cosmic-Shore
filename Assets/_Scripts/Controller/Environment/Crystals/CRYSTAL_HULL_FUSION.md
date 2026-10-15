@@ -62,7 +62,7 @@ however correct it is** — the expense eats the window. Anything that depends o
 (here: two meshes) is a cache, built before it is needed.
 
 **The fourth cut moves it out of the game.** If the answer depends only on two ASSETS, the cheapest
-cache is an asset: **FrogletTools > Vessels > Bake Crystal Hull Fusions** solves it at edit time
+cache is an asset: **FrogletTools > Vessels > Wiring > Bake Crystal Hull Fusions** solves it at edit time
 and ships the answer (§4). The worker of the third cut stays only as the fallback for a missing or
 stale bake.
 
@@ -130,7 +130,7 @@ space: the skinned renderer, or a static hull's body (§12 "The hulls").
 
 ### The bake
 
-**FrogletTools > Vessels > Bake Crystal Hull Fusions** (`Editor/CrystalHullFusionBaker.cs`, a
+**FrogletTools > Vessels > Wiring > Bake Crystal Hull Fusions** (`Editor/CrystalHullFusionBaker.cs`, a
 keeper WRITER) runs `Solve` for every config entry and writes
 `Assets/_SO_Assets/CrystalHullFusion/<Vessel>_<Element>_HullFusionBake.asset`
 (`CrystalHullFusionBakeSO`), pointing the entry's `bake` at it. The asset holds:
@@ -201,7 +201,7 @@ is prefixed `[CrystalMorph] [HullFusion]`.
 | File | Role |
 |---|---|
 | `Controller/Environment/Crystals/CrystalHullFusion.cs` | runtime: bake or worker fallback, per-pickup match, per-frame pose, material; the capture/resolve/mesh helpers the baker shares |
-| `Editor/CrystalHullFusionBaker.cs` | **FrogletTools > Vessels > Bake Crystal Hull Fusions** — solve at edit time, write the bake, Validate & Push |
+| `Editor/CrystalHullFusionBaker.cs` | **FrogletTools > Vessels > Wiring > Bake Crystal Hull Fusions** — solve at edit time, write the bake, Validate & Push |
 | `ScriptableObjects/CrystalHullFusionBakeSO.cs` | the baked solution + template mesh + fingerprint |
 | `_SO_Assets/CrystalHullFusion/<Vessel>_<Element>_HullFusionBake.asset` + `<Element>_FusionTemplate.asset` | the tool's output — **not on this branch until the tool has been run and its output pushed** (only Squirrel × Charge's schema-1 bake is, and it now reads stale) |
 | `Tests/Editor/CrystalHullFusionBakeTests.cs` | shipped bakes current (stale fails, missing inconclusive); every entry resolves to a readable hull and crystal; the Rhino is a multi-part static rig; the solve is deterministic |
@@ -281,7 +281,7 @@ areas. Solved at edit time, exactness costs nothing anyone waits for.
 
 ### In-editor verification
 
-0. **Bake first:** **FrogletTools > Vessels > Bake Crystal Hull Fusions** → *Bake all*. Expect all
+0. **Bake first:** **FrogletTools > Vessels > Wiring > Bake Crystal Hull Fusions** → *Bake all*. Expect all
    48 rows CURRENT — Charge `60 × 31`, Mass `60 × 19`, Space `60 × 25`, Time `30 × 25` — each with
    `0 of N off the skin` (or close), and four `<Element>_FusionTemplate.asset` files. Then
    **Validate & Push** in the same window, which commits only the bakes, the templates and the
@@ -328,7 +328,8 @@ areas. Solved at edit time, exactness costs nothing anyone waits for.
   (`VesselImpactorDataContainerSO.OmniCrystalRetirement`), this uses a Resources table keyed by
   (vessel, element), because elemental collection runs on the skimmer path, which has no such
   slot. Worth unifying once a second hull or element shows which shape generalises.
-- **The Scarab's bake is misleading.** It is solved on the Sparrow model the Scarab hides at runtime
+- **The Scarab's bake is misleading, and so are the Stoat's (2026-10-13).** The Stoat's four entries reuse the
+  Squirrel's bakes on the Squirrel model it hides under `StoatHull`, the same shape. The Scarab's is solved on the Sparrow model the Scarab hides at runtime
   (`ScarabHullBuilder` draws a procedural hull), so the window reads CURRENT while the game always
   finds it stale and solves on the procedural body instead — and the stale warning tells the reader
   to re-run the tool, which cannot help. Either bake procedural hulls through
@@ -450,7 +451,7 @@ written to name the exit, not from reading code.*
 
 | Vessels | Hull | How it is pinned |
 |---|---|---|
-| Squirrel, Manta, Termite, Falcon, Shrike, Dolphin, Serpent, Sparrow, Scarab | skinned (`FindHullRenderer`) | bones + bind poses, as authored |
+| Squirrel, Manta, Termite, Falcon, Shrike, Dolphin, Serpent, Sparrow, Scarab, Stoat | skinned (`FindHullRenderer`) | bones + bind poses, as authored |
 | Rhino, Urchin, Grizzly | **static**: a body MeshRenderer + wings / engines / jets / guns / fins as separate MeshRenderers, no skin | `HullRig`: the largest mesh renderer is the BODY and the rig's space; every mesh part under it (in hierarchy order, regardless of active state, so prefab and instance list the same transforms) is a rigid "bone" whose bind pose is the inverse of where it sat against the body when solved. A puppeted Rhino wing carries its patches. |
 | Butterfly | runtime-generated mesh | none — no entry |
 
@@ -493,6 +494,7 @@ INITIALISES collects the crystal. (b) is read off each prefab's `_nearFieldSkimm
 | Squirrel, Dolphin, Manta, Urchin, Sparrow, Grizzly | yes | play-tested by the user, all four elements on Squirrel/Dolphin; `HullFusion` log line on Sparrow |
 | Rhino | yes, not re-tested since schema 3 | reported fine in the third playtest |
 | Scarab | expected yes (runtime-solved), **not re-tested** | its procedural hull has no asset; the bake (on the hidden Sparrow model) always reads stale, and the runtime solves on the procedural body |
+| Stoat | **not tested** (entries added 2026-10-13) | the prefab is a text clone of the Squirrel's and still carries its skinned model, hidden at runtime under the procedural `StoatHull`. Its four entries REUSE the Squirrel's bakes (a hull that draws the source's mesh may, `.claude/skills/vessel/SKILL.md`): at edit time the bake reads CURRENT, as the Scarab's does, while the runtime finds that skin hidden and solves on whatever `FindHull` returns, with one stale warning per element. The entries exist because `CrystalHullFusionConfigTests` requires every hull × element (DT-003) |
 | Termite, Falcon, Shrike | **no** | `_nearFieldSkimmer` is unset on all three, so no skimmer is ever initialised: crystals are collected with NO vessel - no fusion, and (pre-existing, not this branch) no score or element level. Their entries stay in the config for the day the skimmer is wired. |
 | Serpent | **no** | its only skimmer (`VacuumSkimmer`) is inactive, collider disabled, no impactor - it does not collect crystals at all (pre-existing) |
 | Butterfly | no entry | hull generated at runtime. Collects (generic capture) only since 2026-10-09: its one skimmer, the dust capsule, is off in Mass mode, so it took no elemental crystal until the always-on far-field crystal catcher landed (`BUTTERFLY.md §3.1a`) |

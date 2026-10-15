@@ -13,7 +13,6 @@ Canonical locations for everything referenced in this document. Line counts are 
 | `FriendsInitializer.cs` | 236 | Friends service bridge + presence |
 | `Services/PresenceLobbyService.cs` | 503 | Lobby-only session lifecycle |
 | `Services/PartySessionService.cs` | 369 | Relay-backed session lifecycle + retry |
-| `Services/AcceptanceSignalService.cs` | 316 | Sender↔receiver handshake |
 | `Services/NetworkTransitionService.cs` | 288 | NM shutdown + connection/scene waits |
 | `Services/InviteService.cs` | 269 | Outgoing-invite tracking + serialization |
 | `Services/SoapPartyEventBus.cs` | 206 | Centralized SOAP raises |

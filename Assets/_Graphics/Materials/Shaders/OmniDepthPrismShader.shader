@@ -5,7 +5,7 @@
 //
 // Each prism rides a column over its hole. Where it is in the column (u: 0 at the top, 1 sealed) and how solid
 // it is come per plate from CrystalDepthPrisms, which steps the ratchet against the camera and writes
-// _DepthState[plate] = (u, fade, leaving prism's u, 0) and _DepthDriven = 1 through a property block. The plate
+// _DepthState[plate] = (u, fade, leaving prism's u, strike) and _DepthDriven = 1 through a property block. The plate
 // index and centre are baked into TEXCOORD2 (xyz centre, w index). Undriven (_DepthDriven 0: a husk, a codex
 // model, a material without its driver, a hull fusion's faces) the vertex stage is the IDENTITY - the mesh draws
 // exactly as authored, every prism sealed and solid, the whole crystal at rest - and reads nothing from
@@ -24,6 +24,11 @@
 // during a reseat, the leaving one fading out in its hole (pass 1, u = z). They dither on COMPLEMENTARY pixels
 // (noise vs 1 - noise), so the swap never shows a gap or a double. URP draws an untagged (SRPDefaultUnlit)
 // pass and a UniversalForward pass of the same material in the same frame.
+//
+// STRIKE (w, since 2026-10-13): how hard a Charge flux arc is passing through this prism right now (CrystalChargeArcs
+// finds the arcs whose path runs through a raised prism and writes it through CrystalDepthPrisms; the converter does the
+// same). The prism glows in _StrikeColor by that much, so a bolt through a Mass column reads as conducting, not clipping.
+// 0 everywhere else; undriven it is never read.
 //
 // Like the body it deliberately does NOT read FadeIn's lowercase _opacity (see OmniCrystalFresnelShader).
 //
@@ -46,6 +51,7 @@ Shader "Custom/OmniDepthPrismShader"
         _FaceSplit ("Face Split (plate radii at the top)", Range(0, 2)) = 0
         _SplitUnit ("Plate Radius (mesh units)", Float) = 0
         _DepthDriven ("Driven by CrystalDepthPrisms", Float) = 0
+        [HDR]_StrikeColor ("Charge Strike Glow", Color) = (0.85, 0.95, 1, 1)
     }
 
     SubShader
@@ -67,7 +73,8 @@ Shader "Custom/OmniDepthPrismShader"
         float _Opacity;
         float _Reach, _PlateScaleStart, _Thickness, _ThicknessInward, _TopHeight, _FaceSplit, _SplitUnit;
         float _DepthDriven;
-        float4 _DepthState[60];   // per plate: (arriving u, its fade, leaving u, -) - CrystalDepthPrisms
+        float4 _StrikeColor;
+        float4 _DepthState[60];   // per plate: (arriving u, its fade, leaving u, strike) - CrystalDepthPrisms
 
         // OmniCrystalFresnelShader's push: out along the normal by _Spread WORLD units.
         float3 SpreadFresnelDisplace(float3 positionOS, float3 normalOS)
@@ -123,6 +130,7 @@ Shader "Custom/OmniDepthPrismShader"
             float3 worldNormal : TEXCOORD0;
             float3 worldPos : TEXCOORD1;
             float alpha : TEXCOORD2;
+            float strike : TEXCOORD3;
             float4 vertex : SV_POSITION;
         };
 
@@ -133,6 +141,7 @@ Shader "Custom/OmniDepthPrismShader"
             float4 st = _DepthState[clamp((int)(v.plate.w + 0.5), 0, 59)];
             float4 pose = PrismPose(v.vertex.xyz, v.normal, v.plate, st, _DepthDriven, leaving);
             o.alpha = pose.w;
+            o.strike = _DepthDriven > 0.5 ? max(st.w, 0.0) : 0.0;
             v.vertex.xyz = SpreadFresnelDisplace(pose.xyz, v.normal);
             o.vertex = UnityObjectToClipPos(v.vertex);
             o.worldNormal = normalize(mul((float3x3)UNITY_MATRIX_M, v.normal));
@@ -150,7 +159,10 @@ Shader "Custom/OmniDepthPrismShader"
             float threshold = n * 0.998 + 0.001;
             if (leaving > 0.5) threshold = 1.0 - threshold;
             clip(i.alpha * saturate(_Opacity) - threshold);
-            return SpreadFresnelColor(i.worldPos, normalize(i.worldNormal));
+            half4 color = SpreadFresnelColor(i.worldPos, normalize(i.worldNormal));
+            // A Charge arc passing through the prism lights it (STRIKE above).
+            color.rgb += _StrikeColor.rgb * i.strike;
+            return color;
         }
         ENDCG
 

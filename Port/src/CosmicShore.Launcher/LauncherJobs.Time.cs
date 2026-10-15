@@ -230,64 +230,6 @@ namespace CosmicShore.Launcher
             catch (Exception e) when (e is JsonException or IOException) { return ""; }
         }
 
-        // ---------------------------------------------------------------- local multiplayer
-
-        readonly List<(int player, Process proc)> _locals = new();
-
-        /// <summary>The local multiplayer instances still running.</summary>
-        public int LocalPlayersRunning { get { lock (_locals) return _locals.Count(l => !l.proc.HasExited); } }
-
-        /// <summary>
-        /// TIME > MULTIPLAYER: N game windows on this machine, each its own player (profile
-        /// player1..N, so each has its own save and name), networking on. They find each other the
-        /// way two PCs on a LAN do: through the shared local session directory, so one hosts a
-        /// party or match and the others join it from the game's own menus. Only player 1 plays
-        /// sound. Each writes a session report under sessions/.
-        /// </summary>
-        public void LaunchLocalPlayers(int players, string? scene, string size) => Start("Local multiplayer", async ct =>
-        {
-            players = Math.Clamp(players, 2, 6);
-            if (!await EnsureTools(ct)) return false;
-            string cfg = _s.ReleaseBuild ? "Release" : "Debug";
-            if (!await EnsurePlayerBuilt(ct, cfg)) return false;
-            StopLocalPlayers();
-            Step($"Starting {players} players", 1);
-            var exe = PlayerExeFor(cfg);
-            bool audio = _s.Audio && await _ws.FetchNatives(Log, ct);
-            for (int i = 1; i <= players; i++)
-            {
-                var args = new List<string> { "--size", size };
-                if (!string.IsNullOrWhiteSpace(scene)) { args.Add("--scene"); args.Add(scene!); }
-                var report = Path.Combine(SessionsDir, $"session-{DateTime.Now:yyyyMMdd-HHmmss}-p{i}.json");
-                Directory.CreateDirectory(SessionsDir);
-                args.Add("--session-report"); args.Add(report);
-                var psi = PlayerStart(exe, args, audio: audio && i == 1, network: true, profile: "player" + i);
-                var p = new Process { StartInfo = psi, EnableRaisingEvents = true };
-                int n = i;
-                p.OutputDataReceived += (_, e) => { if (e.Data != null) Log.Add(LogKind.Output, $"[P{n}] {e.Data}"); };
-                p.ErrorDataReceived += (_, e) => { if (e.Data != null) Log.Add(LogKind.Output, $"[P{n}] {e.Data}"); };
-                p.Exited += (_, _) => Log.Add(LogKind.Info, $"Player {n} closed.");
-                p.Start();
-                p.BeginOutputReadLine();
-                p.BeginErrorReadLine();
-                lock (_locals) _locals.Add((i, p));
-                // A moment apart, so player 1 is up first and the windows do not all fight for the GPU at once.
-                await Task.Delay(1500, ct);
-            }
-            Log.Add(LogKind.Success, $"{players} players running. Host a party or match in one window and join it from the others.");
-            return true;
-        });
-
-        public void StopLocalPlayers()
-        {
-            lock (_locals)
-            {
-                foreach (var (_, p) in _locals)
-                    try { if (!p.HasExited) p.Kill(entireProcessTree: true); } catch (InvalidOperationException) { }
-                _locals.Clear();
-            }
-        }
-
         /// <summary>How the launcher starts any game process: the workspace's project, its .NET, and the run's choices.</summary>
         ProcessStartInfo PlayerStart(string exe, IEnumerable<string> args, bool audio, bool network, string? profile)
         {
@@ -304,6 +246,7 @@ namespace CosmicShore.Launcher
             psi.Environment["COSMIC_SHORE_PROJECT"] = _ws.Dir;
             if (!audio) psi.Environment["COSMIC_SHORE_AUDIO"] = "off";
             if (!network) psi.Environment["COSMIC_SHORE_NET"] = "off";
+            OnlineEnvironment(psi);
             if (_s.MobileRenderPath) psi.Environment["COSMIC_SHORE_GLES"] = "1";
             if (!string.IsNullOrWhiteSpace(profile)) psi.Environment["COSMIC_SHORE_PROFILE"] = profile;
             psi.Environment["COSMIC_SHORE_BRANCH"] = _s.Branch;

@@ -25,7 +25,7 @@ SUB="$ROOT/Assets/_Scripts/Controller/Environment/FloraAndFauna/Substrate"
 SW="$ROOT/Assets/_Scripts/Controller/Environment/FloraAndFauna/Swarm"
 # the substrate publishes the swarm's instance contract (SwarmInstance, SwarmJobState) and reuses its index ledger (SwarmEntryLedger)
 CORE=("$SUB/SubstrateSpecies.cs" "$SUB/SubstrateFields.cs" "$SUB/SubstrateKernel.cs" "$SUB/SubstrateCore.cs" "$SUB/SubstrateSiege.cs" "$SUB/SubstrateArms.cs" "$SUB/SubstrateArmsPolicy.cs" "$SUB/SubstrateTickJob.cs"
-      "$SW/ISwarmCore.cs" "$SW/SwarmFieldCore.cs" "$SW/SwarmTickJob.cs" "$SW/SwarmPrismSync.cs")
+      "$SW/ISwarmCore.cs" "$SW/SwarmFieldCore.cs" "$SW/SwarmTickJob.cs" "$SW/SwarmPrismSync.cs" "$SW/KernelMath.cs")
 # the kernel the game Burst-compiles stays inside what Burst compiles (Burst cannot run here: a textual gate, with a
 # negative control - the pre-11c managed step in ReferenceStep.cs must fail it)
 # round 11f-2 (group lod): the shared ecology LOD director and its rules (pure; CellEcologyLod.cs is Unity glue)
@@ -33,6 +33,8 @@ EF="$ROOT/Assets/_Scripts/Controller/Environment/FloraAndFauna/Ecology"
 LOD=("$SW/SwarmSortCore.cs" "$SW/SwarmGridCore.cs" "$SW/SwarmEvoFateCore.cs")
 for f in "$EF"/*.cs; do [[ "$(basename "$f")" == CellEcologyLod.cs ]] || LOD+=("$f"); done
 python3 "$HERE/check_burst_substrate.py" "$SUB/SubstrateKernel.cs" "$SUB/SubstrateAgentJob.cs" "$HERE/ReferenceStep.cs" || exit 1
+# the kernel's maths: KernelMath's Unity branch (what Burst compiles) and its MathF branch (what runs here) agree
+python3 "$HERE/../swarm_core_harness/check_kernel_math.py" "$SW/KernelMath.cs" "$SUB/SubstrateKernel.cs" || exit 1
 # Unity compiles these against netstandard2.1 + C# 9 - narrower than net8.0. Fail the way Unity would, first.
 "$DOTNET" "$CSC" -nologo -langversion:9.0 -nostdlib -noconfig "-r:$NSREF" -target:library -out:"$OUT/unityprofile.dll" \
   "${CORE[@]}" || { echo "FAIL: the substrate core does not compile against netstandard2.1 (Unity's API profile)" >&2; exit 1; }

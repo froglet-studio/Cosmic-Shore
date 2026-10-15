@@ -16,7 +16,7 @@ using CosmicShore.Content.Yaml;
 namespace CosmicShore.AssetTool
 {
     /// <summary>
-    /// What Prisma's editor pages read (TOOLS, DATA, MODELS), as JSON on stdout. The launcher runs
+    /// What Amoebius's editor pages read (TOOLS, DATA, MODELS), as JSON on stdout. The launcher runs
     /// these from the branch's own build, so the pages always describe the checkout they show.
     ///
     ///   cs-asset tools                       every FrogletTools menu item, with its metadata and source
@@ -606,7 +606,7 @@ namespace CosmicShore.AssetTool
         /// <summary>
         /// <paramref name="frames"/> views turning once around the model (frame k at yaw + k*360/frames),
         /// laid out <paramref name="cols"/> to a row, all framed alike (the model's bounding sphere)
-        /// so the size holds still while it turns. Prisma's MODELS page drags through them.
+        /// so the size holds still while it turns. Amoebius's MODELS page drags through them.
         /// </summary>
         public static byte[] RenderTurntable(ImportedModel model, int size, int frames, int cols, double yaw, double pitch,
                                              Func<ImportedMesh, int, (double r, double g, double b)?> colorOf = null, IReadOnlyDictionary<ImportedMesh, CosmicShore.Engine.Vector3[]> posed = null)

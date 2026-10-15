@@ -177,7 +177,7 @@ CLAUDE.md: profile first. A cloud session cannot profile, so this branch built t
 nothing on speculation. The designer chose to skip profiling for now and put the run on QA's list for Yash
 (`Docs/QA/QA_BACKLOG.md`, **QA-P2-BENCH-DEPTH-PRISMS**).
 
-**The instrument:** **FrogletTools ▸ Performance ▸ Crystal Depth Prism Benchmark**
+**The instrument:** **FrogletTools ▸ Performance ▸ Benchmarks ▸ Crystal Depth Prism**
 (`Assets/_Scripts/Utility/PerformanceBenchmark/Editor/CrystalDepthPrismBenchmarkWindow.cs`, a READER).
 - Spawns N omni and N Mass crystals (N = 10 / 50 / 200; omni only or Mass only for attribution) in a
   ring, stripped to their visuals.
@@ -284,12 +284,12 @@ now (Found 3).
 | F4 | `CameraManager.ViewCamera` returns the active controller's camera, else `Camera.main`, resolved once a frame; `CrystalDepthPrisms` uses it too. Five view-dependent reads that had round 9's bug now use it: `CellEcologyLod` (the LOD's camera "pilot"), `ThreatGrove` (its far-pilot sense), `GrizzlyBombVisual` (billboards; it also cached the camera at arm time, so a switch to the death cam left them facing the old one), the Thresher combo label, and `SniperScopeOverlay` (the flight reticle was projected through the menu camera). `MainMenuCameraController`'s comment is corrected. | 52 reads in 32 files, classified. **Already right:** `ObjectiveIndicator`, `WormholeView`, `PreGameCinematicController`, and `ShipAudioController` (FMOD listener first). **Menu-only, where `Camera.main` is the view:** toys, previews, screenshots, `ConnectingArenaPreview`. **Settings / tools:** `OffscreenCameraSetup`, the stress and explosion harnesses, training. **Left as rows:** `GraphicsSettingsApplier` applies anti-aliasing to `Camera.main` only, so "CM PlayerCam" never gets the setting; `CameraManager` paints the background of `Camera.main` on two of its three paths. |
 
 New rows found while closing these:
-- **R1:** no material uses `OmniShepardFresnelShader` any more (Prisma has a GLSL translation of it). Retire it
+- **R1:** no material uses `OmniShepardFresnelShader` any more (Amoebius has a GLSL translation of it). Retire it
   with `omni_shepard_shader_parity.py`, or keep it as the lab's Breathe reference.
 - **R2:** `ThemeManager.prefab` serializes `BaseMaterialSet: GreenMaterialSet` and `ColorSet`, which the script no
   longer has (the live set comes from `ThemeManagerDataContainer.asset`). They are dead overrides.
 - **R3:** the anti-aliasing and background-colour reads above (F4, settings side).
-- **R4:** the Prisma port mirrors the OLD team lookup. `Port/src/CosmicShore.Game/.../ThemeManagerDataContainerSO.cs`
+- **R4:** the Amoebius port mirrors the OLD team lookup. `Port/src/CosmicShore.Game/.../ThemeManagerDataContainerSO.cs`
   and its `Crystal.cs` still key the team crystal material by slot index, and `Port/src/CosmicShore.Client/SkimRaceTheme.cs`
   names the deleted `OmniShepardTriangles*` materials, as labels only. Nothing in the port breaks (it does not
   load these assets), but the mirror now disagrees with F1/F2. An engine session ports it.
@@ -673,7 +673,7 @@ the vertex stage was compiled (by clang); Unity has not compiled the ShaderLab w
 fragment stage. Filed in `Docs/UNITY_VERIFICATION_CHECKLIST.md`. Two more gaps:
 - **Draw order:** the three shells keep fixed queues 2999/3000/3001 while they breathe through each
   other. The lab sorts by radius each frame, so overlaps may layer differently in game.
-- **Prisma:** the port's hand-translated `OmniShepardFresnelShader.glsl` still draws the falling look
+- **Amoebius:** the port's hand-translated `OmniShepardFresnelShader.glsl` still draws the falling look
   until an engine session ports the four dials. `Port/` is outside this branch's scope.
 
 **Found**

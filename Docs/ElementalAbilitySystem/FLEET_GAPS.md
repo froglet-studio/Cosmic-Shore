@@ -21,7 +21,7 @@ been filled.
 | Vessel | Element | State | What filling it costs |
 |---|---|---|---|
 | **Rhino** | Charge | no ability, no scaling, no L5 | design + one `ElementalFloat` + (optionally) one `IsUpgradeActive` gate |
-| **Rhino** | Space | no ability, no scaling, no L5 | as above |
+| **Rhino** | Space | no ability, no scaling — its L5 **Breaker** shipped 2026-10-13 (the sword cuts shielded prisms in one slice, `RhinoSkimmerDamagePrismEffectSO.breakerElement`) | design + one `ElementalFloat`; the gate already exists |
 | ~~**Serpent**~~ | ~~Mass~~ | **FILLED 2026-10-09:** Seed Wall + Lockdown (`R_VesselActions/SERPENT_SEED_WALL.md`) | |
 
 This report opened at **five** such rows. The Serpent's **Charge** and **Space** were two of them

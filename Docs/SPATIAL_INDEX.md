@@ -313,7 +313,7 @@ at the editor:
    becoming untouchable afterwards.
 4. **Profiler** (SkimRace, Deep Profile off): `ShellContact.Build/Query` sub-ms;
    `Physics.SendEvents` flat vs bleeding-edge; no new spike train (§5 protocol
-   in Docs/PERFORMANCE_OPTIMIZATION.md).
+   in Docs/archive/PERFORMANCE_LOG_2026.md).
 5. **A/B**: toggling `PrismShellContactManager.ForceLegacyBoxInteraction` at
    runtime reverts to authored-box interaction cleanly (pairs drop with exit
    bookkeeping, box triggers resume).
@@ -396,7 +396,7 @@ but carrying no shell for the query to hit. `ShellOwnsContact` therefore asks
 `PrismSpatialIndex.HasShell(prism.SpatialIndexId)` before claiming an unshielded prism,
 and a prism with no box geometry falls back to the trigger path.
 
-### Measuring it — FrogletTools > Diagnostics > Prism Contact Probe
+### Measuring it — FrogletTools > Performance > Prism Contact Probe
 
 Play mode, reader only, writes no assets. **Run A/B** samples both modes for the same
 wall time and prints one block: query ms (median / p95 / max), hits and active pairs

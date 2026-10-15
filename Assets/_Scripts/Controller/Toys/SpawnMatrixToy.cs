@@ -1045,8 +1045,11 @@ namespace CosmicShore.Gameplay
         bool TryPointAheadOfPilot(Cell cell, out Vector3 point)
         {
             point = default;
-            var vessel = Context?.GameData?.LocalPlayer?.Vessel?.Transform;
-            if (!vessel || !cell.IsInsideMembrane(vessel.position)) return false;
+            // IsAlive, not `?.`: mid-swap the player holds a DESTROYED vessel (interface ref).
+            var pilot = Context?.GameData?.LocalPlayer?.Vessel;
+            if (!pilot.IsAlive()) return false;
+            var vessel = pilot.Transform;
+            if (!cell.IsInsideMembrane(vessel.position)) return false;
             point = vessel.position + vessel.forward * PilotHatchDistance;
             if (!cell.IsInsideMembrane(point)) point = vessel.position;
             return true;

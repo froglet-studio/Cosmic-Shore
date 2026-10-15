@@ -170,14 +170,43 @@ pair it with `monitor=` for cross-checking. Tests A and D in
 ### Not a retry-control predicate
 
 `ClassifyException` is for **logs**, not retry decisions.
-`PartySessionService.IsTransientSessionException` is the
-source-of-truth predicate for retry-loop control. They are
-intentionally separate to avoid coupling log format to retry policy.
+`UgsRequestPolicy.Classify` (`Assets/_Scripts/Utility/UgsRequestPolicy.cs`) is
+the source-of-truth predicate for retry control — since 2026-10-07 the ONE
+classifier every UGS catch in `HostConnectionService`, `PartySessionService`,
+`PresenceLobbyService`, `MultiplayerSetup` and `BenignLobbyLogFilter` reads
+(it replaced five private copies, four of which matched the string
+"Too Many Requests"). The two are intentionally separate to avoid coupling
+log format to retry policy.
 
-If you change the retry policy, update `IsTransientSessionException` —
-NOT `ClassifyException`. They can diverge legitimately (e.g. a future
+If you change the retry policy, update `UgsRequestPolicy.Classify` (and its
+table in `Assets/_Scripts/Tests/Editor/UgsRequestPolicyTests.cs`) — NOT
+`ClassifyException`. They can diverge legitimately (e.g. a future
 `PaymentRequired` class is interesting for logs but should not trigger
 a retry).
+
+### The snapshot carries the request counters (2026-10-07)
+
+`GetSnapshot()` appends `UgsRequestTelemetry.Describe()`:
+
+```
+ugs[req/min=12 reads/min=40 429/min=0 retry/min=1 coalesced/min=0 budget-out/min=0 reset=0 offline=0]
+```
+
+| Field | Meaning |
+|---|---|
+| `req/min` | attempts `UgsRequestPolicy.ExecuteAsync` made in the trailing minute (first tries and retries) |
+| `reads/min` | lobby / session GETs issued outside the policy: the presence and party refresh ticks and `LobbyPropertyWriter`'s pre/post-save refreshes |
+| `429/min`, `retry/min` | rate-limit responses and retries in the trailing minute |
+| `coalesced/min` | callers handed an in-flight task instead of a second request (single-flight) |
+| `budget-out/min` | retries refused because the per-minute retry budget was spent |
+| `reset` | lifetime count of `HostConnectionService` presence-layer `ForceReset`s |
+| `offline` | lifetime count of unwanted offline fallbacks at boot (the B24 landing zone) |
+
+These are the numbers the Phase 1 acceptance criteria in
+`../MultiplayerArchitecture/REVIEW_INVITE_AND_RESILIENCE.md` §7 are read from:
+a four-player, ten-minute MPPM run must end with `429/min=0`, `reset=0`,
+`offline=0`. `UgsRequestTelemetry.Reset()` zeroes the counters for a fresh
+measurement.
 
 ### Polling rate is 5 s
 

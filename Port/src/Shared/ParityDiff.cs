@@ -7,13 +7,13 @@ using System.Linq;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 
-namespace Prisma.Parity
+namespace Amoebius.Parity
 {
     /// <summary>
     /// The per-channel tolerances of docs/ARCHITECTURE_REVIEW_2026-10-06.md (C9). Loaded from
     /// Port/parity/tolerances.json so gate G1 can calibrate them without a code change.
     /// </summary>
-    public sealed class Tolerances
+    internal sealed class Tolerances
     {
         /// <summary>Event timestamps may differ by one fixed step.</summary>
         public double EventTimeSeconds { get; set; } = 0.04;
@@ -38,10 +38,10 @@ namespace Prisma.Parity
         }
     }
 
-    public enum ChannelStatus { Pass, Fail, Missing }
+    internal enum ChannelStatus { Pass, Fail, Missing }
 
     /// <summary>One channel's verdict. Missing: no golden (or no run output) - no claim either way.</summary>
-    public sealed record ChannelResult(string Channel, ChannelStatus Status, string Detail)
+    internal sealed record ChannelResult(string Channel, ChannelStatus Status, string Detail)
     {
         public override string ToString() => $"{Channel,-10} {Status.ToString().ToUpperInvariant(),-7} {Detail}";
     }
@@ -51,7 +51,7 @@ namespace Prisma.Parity
     /// state.jsonl exact, random_*.json exact, events.jsonl (fmod, game, contact) exact order/count
     /// with timestamps within a step, transforms.jsonl within the C9 bars during the first 10 s, frames/*.png by SSIM.
     /// </summary>
-    public static class ParityDiff
+    internal static class ParityDiff
     {
         public static List<ChannelResult> Compare(string golden, string actual, Tolerances tol)
         {
@@ -337,7 +337,7 @@ namespace Prisma.Parity
     }
 
     /// <summary>Minimal PNG decoder: 8-bit greyscale, RGB, grey+alpha and RGBA, non-interlaced (what Unity and MiniPng write).</summary>
-    public static class Png
+    internal static class Png
     {
         public sealed class Image
         {

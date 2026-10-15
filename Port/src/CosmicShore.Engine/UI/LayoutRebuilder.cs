@@ -26,7 +26,13 @@ namespace CosmicShore.Engine.UI
         static readonly List<RectTransform> s_Queued = new();
 
         /// <summary>Fresh-world reset — a new GameLoop drops marks queued by the old world.</summary>
-        internal static void ResetQueue() { s_Queued.Clear(); s_ScreenW = s_ScreenH = -1; }
+        internal static void ResetQueue()
+        {
+            s_Queued.Clear();
+            s_ScreenW = s_ScreenH = -1;
+            CanvasUpdateRegistry.Reset();
+            RectDimensionWatch.Reset();
+        }
 
         static int s_ScreenW = -1, s_ScreenH = -1;
 
@@ -74,23 +80,59 @@ namespace CosmicShore.Engine.UI
                 parent = parent.parent as RectTransform;
             }
 
+            // The original queues a lone rect only if it has an active layout controller of its own.
+            if (layoutRoot == rect && !HasLayoutController(rect)) return;
+
             if (!s_Queued.Contains(layoutRoot))
                 s_Queued.Add(layoutRoot);
         }
 
-        /// <summary>Rebuilds every queued root. Called by the GameLoop after LateUpdate.</summary>
+        /// <summary>
+        /// The canvas update, run by the GameLoop after LateUpdate: rects that changed size since the
+        /// last one report it (OnRectTransformDimensionsChange), then the layout phases rebuild every
+        /// queued root between the registered elements' Prelayout and PostLayout, the rects the
+        /// layout resized report it, and the graphic queue runs.
+        /// </summary>
         public static void FlushQueuedRebuilds()
         {
-            MarkAllIfScreenChanged();
+            // Canvas.ForceUpdateCanvases from inside the update (a layout callback, a size handler)
+            // would re-enter it: the update already in progress covers it.
+            if (s_Flushing) return;
+            s_Flushing = true;
+            try
+            {
+                MarkAllIfScreenChanged();
+                RectDimensionWatch.Poll();
+                CanvasUpdateRegistry.instance.PerformLayoutUpdate(RebuildQueuedRoots);
+                RectDimensionWatch.Poll();
+                CanvasUpdateRegistry.instance.PerformGraphicUpdate();
+            }
+            finally { s_Flushing = false; }
+        }
+
+        static bool s_Flushing;
+
+        static void RebuildQueuedRoots()
+        {
             if (s_Queued.Count == 0) return;
 
             // Snapshot: rebuilds can mark again (e.g. a group resizing a child group);
             // those marks land in the NEXT tick's flush, preventing rebuild storms.
             var roots = s_Queued.ToArray();
             s_Queued.Clear();
+            // Shallowest first, as the original sorts its queue by depth: a root's solve may resize
+            // a deeper root, which must then lay out inside its final rect.
+            System.Array.Sort(roots, static (a, b) => Depth(a).CompareTo(Depth(b)));
             foreach (var root in roots)
                 if (root != null && !root.destroyedFlag && root.gameObject is { IsDestroyed: false })
                     ForceRebuildLayoutImmediate(root);
+        }
+
+        static int Depth(Transform t)
+        {
+            int n = 0;
+            for (var p = t?.parent; p is not null; p = p.parent) n++;
+            return n;
         }
 
         static bool HasActiveLayoutGroup(RectTransform rect)

@@ -1,20 +1,22 @@
 #if UNITY_EDITOR
 using System;
-using System.Reflection;
+using CosmicShore.Utility;
 using NUnit.Framework;
-using UnityEngine;
 
 namespace CosmicShore.Gameplay
 {
     /// <summary>
-    /// Verifies the refresh-loop transient detector added to
-    /// <see cref="HostConnectionService"/>: a UGS SDK
+    /// Verifies the refresh loop's benign-error detection: a UGS SDK
     /// <see cref="ArgumentOutOfRangeException"/> thrown from
-    /// <c>LobbyPatcher.ApplyPatchesToLobby</c> is benign and must be swallowed
-    /// so that <c>RefreshPartyMembersAsync</c> does not null
+    /// <c>LobbyPatcher.ApplyPatchesToLobby</c> is benign and must be swallowed so that
+    /// <c>HostConnectionService.RefreshPartyMembersAsync</c> does not null
     /// <c>ActiveSession</c> (which would cascade into host-vessel despawn).
     ///
-    /// These tests are pure-static and reflect into <c>IsBenignLobbyPatcherError</c>.
+    /// Since 2026-10-07 the detector is the one classifier every UGS catch reads,
+    /// <see cref="UgsRequestPolicy.Classify"/> (<see cref="UgsFailureClass.Benign"/>), so these
+    /// tests call it directly instead of reflecting into a private helper on
+    /// <see cref="HostConnectionService"/>; the exhaustive classification table lives in
+    /// <c>UgsRequestPolicyTests</c>.
     /// Full play-mode integration tests for the host/invitee accept flow
     /// (plan Tests 1, 2, 3) require two NetworkManager instances and are
     /// driven through Multiplayer Play Mode (MPPM) virtual players, which
@@ -26,27 +28,29 @@ namespace CosmicShore.Gameplay
     [TestFixture]
     public class PartyAcceptFlowPlayModeTests
     {
-        // ─────────────────────────────────────────────────────────────────────
+        // ─────────────────────────────────────────────────
         // Benign-error detector
-        // ─────────────────────────────────────────────────────────────────────
+        // ─────────────────────────────────────────────────
 
         [Test]
         public void BenignLobbyPatcherError_DetectsDirectAOORE()
         {
             var ex = MakeAooreWithLobbyPatcherFrame();
-            Assert.IsTrue(InvokeIsBenignLobbyPatcherError(ex),
+            Assert.AreEqual(UgsFailureClass.Benign, UgsRequestPolicy.Classify(ex),
                 "Direct AOORE with LobbyPatcher frame must be classified benign.");
+            Assert.IsTrue(UgsRequestPolicy.IsLobbyPatcherStaleIndex(ex));
         }
 
         [Test]
         public void BenignLobbyPatcherError_DetectsWrappedAOORE()
         {
-            // UniTask / Task.WhenAll wraps exceptions. Verify the helper walks
+            // UniTask / Task.WhenAll wraps exceptions. Verify the classifier walks
             // the InnerException chain.
             var inner = MakeAooreWithLobbyPatcherFrame();
             var wrapped = new InvalidOperationException("await wrapper", inner);
-            Assert.IsTrue(InvokeIsBenignLobbyPatcherError(wrapped),
+            Assert.AreEqual(UgsFailureClass.Benign, UgsRequestPolicy.Classify(wrapped),
                 "Wrapped AOORE with LobbyPatcher frame must be classified benign.");
+            Assert.IsTrue(UgsRequestPolicy.IsLobbyPatcherStaleIndex(wrapped));
         }
 
         [Test]
@@ -57,16 +61,18 @@ namespace CosmicShore.Gameplay
             // No LobbyPatcher frame on the stack - must NOT be classified benign,
             // otherwise the refresh loop would silently drop real session
             // corruption.
-            Assert.IsFalse(InvokeIsBenignLobbyPatcherError(ex),
+            Assert.AreNotEqual(UgsFailureClass.Benign, UgsRequestPolicy.Classify(ex),
                 "AOORE from non-SDK code must not be classified benign.");
+            Assert.IsFalse(UgsRequestPolicy.IsLobbyPatcherStaleIndex(ex));
         }
 
         [Test]
         public void BenignLobbyPatcherError_IgnoresOtherExceptionTypes()
         {
             var ex = new TimeoutException("Lobby request timed out");
-            Assert.IsFalse(InvokeIsBenignLobbyPatcherError(ex),
+            Assert.AreNotEqual(UgsFailureClass.Benign, UgsRequestPolicy.Classify(ex),
                 "Non-AOORE exceptions must not be classified benign.");
+            Assert.IsFalse(UgsRequestPolicy.IsLobbyPatcherStaleIndex(ex));
         }
 
         // ─────────────────────────────────────────────────────────────────────
@@ -86,28 +92,6 @@ namespace CosmicShore.Gameplay
         //   5. Verify on VP-A: new vessel (VP-B's) appears; host vessel still
         //                      same NetworkObjectId.
         //   6. Verify on VP-B: two vessels visible. VP-A's vessel rendered + flying.
-        // ─────────────────────────────────────────────────────────────────────
-
-        // ─────────────────────────────────────────────────────────────────────
-        // Reflection plumbing - the helper is private static so we can keep
-        // it tightly scoped to HostConnectionService.
-        // ─────────────────────────────────────────────────────────────────────
-
-        private static MethodInfo _benignMethod;
-
-        private static bool InvokeIsBenignLobbyPatcherError(Exception e)
-        {
-            if (_benignMethod == null)
-            {
-                _benignMethod = typeof(HostConnectionService).GetMethod(
-                    "IsBenignLobbyPatcherError",
-                    BindingFlags.NonPublic | BindingFlags.Static);
-                Assert.NotNull(_benignMethod,
-                    "IsBenignLobbyPatcherError static method missing.");
-            }
-            return (bool)_benignMethod.Invoke(null, new object[] { e });
-        }
-
         /// <summary>
         /// Constructs an <see cref="ArgumentOutOfRangeException"/> whose stack
         /// trace contains the substring <c>"LobbyPatcher"</c> - matching the

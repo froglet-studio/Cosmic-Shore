@@ -54,7 +54,7 @@ namespace CosmicShore.Editor
         /// </summary>
         public const float MinShapeTravelFraction = 0.001f;
 
-        [MenuItem("FrogletTools/Vessels/Audit Vessel Elemental Morphs")]
+        [MenuItem("FrogletTools/Vessels/Audits/Audit Vessel Elemental Morphs", false, 273)]
         [FrogletTool(FrogletToolCategory.Vessels, Importance = 4,
             Description = "Which vessel models carry element-labelled blend shapes.")]
         public static void Audit()

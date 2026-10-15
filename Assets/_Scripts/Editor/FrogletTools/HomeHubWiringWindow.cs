@@ -86,7 +86,7 @@ namespace CosmicShore.Editor.Froglet
             ("ArenaGameConfigureModal",  ScreenSwitcher.ModalWindows.ARENA_GAME_CONFIGURE),
         };
 
-        [MenuItem("FrogletTools/Interface/Home Hub Wiring", false, 20)]
+        [MenuItem("FrogletTools/UI/Home Hub Wiring", false, 230)]
         [FrogletTool(FrogletToolCategory.Interface, Importance = 4,
             Description = "Wire Menu_Main's Mission / Toy Box / Arena / Arcade buttons, their " +
                           "modal types, and the ScreenSwitcher registry.")]

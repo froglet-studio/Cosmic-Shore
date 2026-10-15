@@ -24,7 +24,7 @@ WHAT IT FIXES (measured on the authored scene, 2026-09-09):
   * The variant row's plates are stretched and sliced too, so the chamfer is a chamfer at
     275x88 rather than a 228x170 picture squashed to 3:1.
 
-The editor tool (FrogletTools > Interface > Home Hub Wiring) writes the SAME numbers, so a re-run
+The editor tool (FrogletTools > UI > Home Hub Wiring) writes the SAME numbers, so a re-run
 of WIRE IT after this cannot regress it; this script exists because the layout has to land on the
 branch, and the tool's output is otherwise a working-tree change nobody pushed
 (Docs/TOOLING.md, "Tool output is a deliverable"). Both read the constants below.

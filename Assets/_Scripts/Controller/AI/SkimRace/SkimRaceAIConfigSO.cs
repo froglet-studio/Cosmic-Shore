@@ -22,6 +22,12 @@ namespace CosmicShore.Gameplay
         [Tooltip("Stamped into every benchmark record. Bump whenever a value below changes.")]
         public string PolicyVersion = "skimrace-v1";
 
+        [Tooltip("The map this policy was tuned on (SkimRaceTrackFingerprint: the track's path, curve " +
+                 "setting, laps and crystal positions). Empty = any map, as for the general policy. When " +
+                 "the live map differs, the general policy flies instead and the console warns once - " +
+                 "retune with Tools/Build/skimrace_retune.py <intensity>.")]
+        public string TrackFingerprint = "";
+
         [Header("Deployment")]
         [Tooltip("Install the Skim Race pilot on every AI seat of a normal (non-training) Skim Race.")]
         public bool DeployInNormalPlay = true;
@@ -169,6 +175,10 @@ namespace CosmicShore.Gameplay
                  "path stays closest to the racing line (pure path following; the line carries the safety).")]
         public bool UseTrackMpc = false;
         [Min(1f)] public float TrackMpcHz = 20f;
+        [Tooltip("At most one AI seat re-plans per frame (SkimRaceReplanGate). A seat that finds its frame " +
+                 "taken flies its previous plan one frame longer, never more. Same re-plan rate and average " +
+                 "cost; the peak frame stops paying every seat's re-plan at once (Docs/SKIM_RACE_AI.md 8.0i).")]
+        public bool TrackMpcStaggerSeats = true;
         [Min(0.1f)] public float TrackMpcHorizon = 0.8f;
         [Min(0.02f)] public float TrackMpcSegment = 0.25f;
         [Min(0.01f)] public float TrackMpcStep = 0.05f;
@@ -345,11 +355,21 @@ namespace CosmicShore.Gameplay
 
         /// <summary>The policy tuned for one intensity's track (<c>SkimRaceAIConfig_I&lt;n&gt;</c>),
         /// falling back to the base policy. Each intensity is a different track, so each may carry
-        /// its own tuning; the pilot code is the same.</summary>
+        /// its own tuning; the pilot code is the same. Whether that tuning still fits the live map is
+        /// <see cref="FitsTrack"/>'s question (asked by <see cref="SkimRaceAIDeployment"/>).</summary>
         public static SkimRaceAIConfigSO LoadFor(int intensity)
         {
             var cfg = Resources.Load<SkimRaceAIConfigSO>($"{ResourcePath}_I{intensity}");
             return cfg != null ? cfg : LoadDefault();
         }
+
+        /// <summary>
+        /// True when this policy may fly the map whose fingerprint is <paramref name="liveFingerprint"/>
+        /// (<see cref="SkimRaceTrackFingerprint"/>): it records no map (it is for any map), the live map
+        /// could not be read (nothing says it changed), or it is the map this policy was tuned on.
+        /// </summary>
+        public bool FitsTrack(string liveFingerprint) =>
+            string.IsNullOrEmpty(TrackFingerprint) || string.IsNullOrEmpty(liveFingerprint) ||
+            string.Equals(TrackFingerprint, liveFingerprint, System.StringComparison.OrdinalIgnoreCase);
     }
 }

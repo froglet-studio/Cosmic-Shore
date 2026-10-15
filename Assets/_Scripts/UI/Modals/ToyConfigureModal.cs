@@ -391,7 +391,7 @@ namespace CosmicShore.UI
             if (navigateButton && !navigateButton.gameObject.activeInHierarchy)
                 CSDebug.LogWarning($"[ToyConfigureModal] navigateButton '{navigateButton.name}' is " +
                                    "inactive in the hierarchy - the lit button on screen is a " +
-                                   "different object. Re-run FrogletTools > Interface > Home Hub Wiring.");
+                                   "different object. Re-run FrogletTools > UI > Home Hub Wiring.");
 
             if (navigateButton)
             {

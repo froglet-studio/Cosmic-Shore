@@ -1,5 +1,6 @@
 using System.IO;
 using System.Text.RegularExpressions;
+using CosmicShore.Core;
 using CosmicShore.Gameplay;
 using NUnit.Framework;
 using UnityEngine;
@@ -83,6 +84,11 @@ namespace CosmicShore.Tests
             settings.followOffset = followOffset;
 
             var cam = _cameraGo.AddComponent<CustomCameraController>();
+            // Edit Mode never calls Awake on a non-[ExecuteAlways] component, and Awake is the
+            // only place the controller resolves its Camera - without this, ApplySettings throws
+            // a NullReferenceException on Camera.nearClipPlane before any geometry is reached.
+            // Safe to invoke: the body only caches the Camera and turns occlusion culling off.
+            EditModeLifecycle.InvokeAwake(cam);
             cam.ApplySettings(settings);
             cam.SetFollowTarget(_shipGo.transform);
             return (cam, _shipGo.transform);
@@ -295,10 +301,17 @@ namespace CosmicShore.Tests
         public void TheCameraPosesFromTheMirroredOffsetAtEveryPoseSite()
         {
             string code = Code(CameraPath);
-            Assert.IsFalse(Regex.IsMatch(code, @"rotation\s*\*\s*_followOffset"),
+
+            // A pose site may scale the effective offset UNIFORMLY before rotating it - UpdateCamera
+            // poses at `rotation * (EffectiveOffset * warp)` for the warp field (Docs/WARP_FIELD.md)
+            // - because a uniform scale keeps the mirror. So the sanctioned shape is the bare
+            // offset or `(EffectiveOffset * <scalar>)`, and the raw-offset check looks inside a
+            // parenthesis too: a raw read must not be able to hide behind one.
+            Assert.IsFalse(Regex.IsMatch(code, @"rotation\s*\*\s*\(?\s*_followOffset\b"),
                 "A pose site still reads the RAW offset, so the rear view is silently inactive " +
                 "there. Every pose must go through EffectiveOffset.");
-            Assert.AreEqual(2, Regex.Matches(code, @"rotation\s*\*\s*EffectiveOffset").Count,
+            Assert.AreEqual(2, Regex.Matches(code,
+                    @"rotation\s*\*\s*(?:EffectiveOffset\b|\(\s*EffectiveOffset\s*\*\s*\w+\s*\))").Count,
                 "Both pose sites (UpdateCamera's desiredPos and SnapToTarget) must use it.");
         }
 

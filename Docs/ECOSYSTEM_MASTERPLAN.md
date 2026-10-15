@@ -395,7 +395,7 @@ code was deliberately **not** adopted.
 1. **Crystal authoring sweep:** one **active** elemental crystal child on every fauna prefab,
    `cellData` wired (`ActivateCrystal` reads `cellData.Cell`; a missing wire is an NRE on first
    death), check the carried crystal's collider/component start state, then
-   **FrogletTools ▸ Validation ▸ Validate Lifeform Crystals** until clean — makes
+   **FrogletTools ▸ Ecology ▸ Validate Lifeform Crystals** until clean — makes
    `EnsureElementalCrystal` the no-op fast path (budget-neutral).
 2. **Per-biome retune with the probe** (`[ECOSIM] prisms= volume= colliders=near/live fauna=
    phase= fps=`): volume thresholds per CellConfig (author `*Volume` fields to override the ×16

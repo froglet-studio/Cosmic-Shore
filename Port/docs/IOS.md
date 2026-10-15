@@ -1,21 +1,18 @@
-# iOS builds of Prisma
+# iOS builds of Amoebius
 
-Apple only compiles iPhone apps on macOS. The engine gives three ways around that, all from the
-same source the Windows player builds from (no Unity export involved):
+Apple only compiles iPhone apps on macOS. The engine builds iOS two ways, both from the same
+source the Windows player builds from (no Unity export involved):
 
 | Way | Command | Output |
 |---|---|---|
-| **No Mac: GitHub's Mac** | Launcher > BUILD > iOS > GITHUB, or Actions > *Prisma iOS ipa* > Run workflow (type the branch) | unsigned `CosmicShore-unsigned.ipa` (artifact `CosmicShore-ios-ipa`, kept 3 days) |
-| **Xcode project** | `cs-build ios --xcode` (any OS) | `Builds/iOS/CosmicShore.xcodeproj` + `PlayerData/` |
-| **On a Mac** | `cs-build ios` (signed) / `cs-build ios --unsigned` | `Builds/iOS/*.ipa` |
+| **Xcode project** | `cs-build ios --xcode` (any OS), or launcher BUILD > iOS > XCODE | `Builds/iOS/CosmicShore.xcodeproj` + `PlayerData/` |
+| **On a Mac** | `cs-build ios`, or launcher BUILD > iOS > THIS MAC | a signed `Builds/iOS/*.ipa` |
 
 `cs-build` is `dotnet run --project Port/src/CosmicShore.Build -- ...`.
 
-## Installing the unsigned .ipa (Windows, no Mac)
-
-Sideloadly signs it with a free Apple ID; the confirmed Windows steps (iTunes and iCloud
-installers, trusting the phone) are in `Docs/IOS_BUILD.md` section 2, Path A, step 4. A free Apple ID
-signature lasts 7 days; re-sideload to renew.
+The unsigned `.ipa` for Sideloadly (the GitHub-Mac workflow, `cs-build ios --unsigned` and the
+launcher's GITHUB mode) was retired on 2026-10-13, with the game's free-Apple-ID sideload path:
+TestFlight is the only route onto a phone (`Docs/IOS_BUILD.md`).
 
 ## The Xcode project
 
@@ -28,5 +25,5 @@ points at the repository it was exported from; set `COSMIC_SHORE_REPO` to use an
 ## Identifiers
 
 Bundle id, version and build number come from Unity's Player Settings unless the engine's
-Project Settings (`Port/ProjectSettings/PrismaProject.json`, launcher PROJECT page) override
-them. iOS Player Settings carry the production id `com.FrogletGames.CosmicShore`; the free sideload `.ipa` is rewritten to the test id `com.FrogletGames.CosmicShore.dev` (`Docs/IOS_BUILD.md` section 1).
+Project Settings (`Port/ProjectSettings/AmoebiusProject.json`, launcher PROJECT page) override
+them. iOS Player Settings carry the production id `com.FrogletGames.CosmicShore` (`Docs/IOS_BUILD.md` section 1).

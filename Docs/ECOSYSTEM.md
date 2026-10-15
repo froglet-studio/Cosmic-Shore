@@ -930,7 +930,7 @@ work is saved and Phase 2 can be picked up.
    - *Menu_Main:* dense flora, flora visibly resume growing in pulses, fauna spawn
      in the controlling color (Jade appears when Jade leads), hunt, and thin out as
      prey runs low; spawn ring sweeps; **no numeric readout**.
-   - *One gameplay scene* (e.g. `MinigameWildlifeBlitzMultuplayerCoOp` / `MinigameSkimRace`): confirm
+   - *One gameplay scene* (e.g. `MinigameWildlifeLiberation` / `MinigameSkimRace`): confirm
      the prey-linked fauna + flora regrowth pulse don't break gameplay — fauna
      still appear, nothing runs away, framerate holds.
 2. **Perf pass** at the new menu density (~4200 prisms steady). If it dips on a
@@ -1436,7 +1436,7 @@ decision, made per profile.
 (still clamped by each species' `MaxLivePopulation` — a tick with the species at cap
 hatches nothing). The profile is shared by `Menu_Main` **and** `BenchmarkStressTest`, so
 the benchmark now runs a fuller average fauna population; re-baseline before reading it
-against older numbers (`Docs/PERFORMANCE_OPTIMIZATION.md`).
+against older numbers (`Docs/archive/PERFORMANCE_LOG_2026.md`).
 
 ### 16.2 Shielded mass is not food for any herbivore
 
@@ -2753,7 +2753,7 @@ First pass, in Menu_Main freestyle:
 
 1. **Import clean.** Pull, let Unity reimport, confirm zero compile errors and that the
    four new prefabs open without "Missing (Mono Script)" rows. Run
-   **FrogletTools > Validation > Validate Lifeform Crystals** — every segment's heart is
+   **FrogletTools > Ecology > Validate Lifeform Crystals** — every segment's heart is
    runtime-provisioned by design (and the validator only inspects `LifeForm`/`LightFauna`
    prefabs anyway), so it should stay quiet about the worm.
 2. **Spawn**: freestyle → Spawn Matrix toy → "Worm Colony" → any element station.
@@ -3713,7 +3713,7 @@ Two things to watch in a playtest, in this order:
 ### 26.8 In-editor verification (the human is the gate)
 
 Scene: **Menu_Main** freestyle (Squirrel is the menu vessel, so the joust is one flight away), and
-**MinigameWildlifeBlitzMultuplayerCoOp** for a populated cell (the single-player scene was retired 2026-09).
+**MinigameWildlifeLiberation** for a populated cell (both Wildlife Blitz scenes were deleted, 2026-09 and 2026-10).
 
 1. **Joust a fauna.** Fly the Squirrel faster than a brittlestar/shark and clip its heart. Expect:
    no explosion; the crystal flies to *your* vessel and grants its element; the arms/fins evaporate
@@ -4725,7 +4725,7 @@ NOT re-run after the octagon conversion and remain open:
    Confirm it still reads as topiary in the garden.
 7. Re-run `python3 Tools/Build/author_flora_populations.py --check` after any asset tuning,
    `python3 Tools/Build/verify_gyroid_octagon_tables.py` after any bond-table or octagon-table
-   edit, and `FrogletTools ▸ Validation ▸ Validate Lifeform Crystals` (every octagon is a lifeform
+   edit, and `FrogletTools ▸ Ecology ▸ Validate Lifeform Crystals` (every octagon is a lifeform
    now, so the one-crystal rule is being asserted far more often than before).
 
 ### 32.7 The octagon colony — a crystal in every window (Aug 2026, second pass)
@@ -5227,7 +5227,7 @@ Menu_Main freestyle (Blob cell) is the fastest read:
    SHOULD show a size gradient with the founders largest.
 5. **The reward tracks** — collect a level-1 heart and a levelled one and confirm the element
    flowers move further on the second.
-6. Re-run `FrogletTools ▸ Validation ▸ Validate Lifeform Crystals` (no prefab changed, but the
+6. Re-run `FrogletTools ▸ Ecology ▸ Validate Lifeform Crystals` (no prefab changed, but the
    sizing path did) and `FrogletTools ▸ Ecology ▸ Measure Cell Environment Baselines` for
    Rampage per consequence 1 above.
 ## 34. Schwarz P grows on its own TILE — the hyperbolic {6,4}, which is one half-period cube (Aug 2026)
@@ -6227,7 +6227,7 @@ fit against and no equivalent measurement; nobody has looked at them.
    construction (nothing in `Spindle` reads `leafSize`) and they compose, but the *look* of a
    Charge gyroid's join is the one thing this branch cannot predict. Check it on the same plant as
    step 5.
-8. After the flora config edits: `FrogletTools ▸ Validation ▸ Validate Lifeform Crystals`.
+8. After the flora config edits: `FrogletTools ▸ Ecology ▸ Validate Lifeform Crystals`.
 
 ---
 
@@ -6704,7 +6704,7 @@ five-playtest failure class).
 7. **The food web:** graze a strut (any vessel ability) — the edge frees and the plant regrows
    it; strip a whole plant — it withers to its crystal on the standard path, and the freed
    heart is re-plantable by the colony.
-8. After the flora config edits: `FrogletTools ▸ Validation ▸ Validate Lifeform Crystals`.
+8. After the flora config edits: `FrogletTools ▸ Ecology ▸ Validate Lifeform Crystals`.
 
 ### 37.9 A prism is a LEAF of the hierarchy — and the lattice doubles (Aug 2026, second pass)
 
@@ -9099,7 +9099,7 @@ Everything above is offline. Specifically:
    of bluntness, are the prefab's `density` (0.5–1.3), then `Blossoms`/`Crowns`/`Falls`.
 4. **Confirm the garden grows and stops.** Plant count should settle at 21 and stay there; the
    cell should reach Restless within the first minutes and never reach Frenzy.
-5. **FrogletTools > Validation > Validate Lifeform Crystals** after any lifeform-prefab change.
+5. **FrogletTools > Ecology > Validate Lifeform Crystals** after any lifeform-prefab change.
 
 **Known gaps, stated rather than hidden:** the cell wears the project-wide placeholder card icon
 (as 15 of the 16 shipped cell configs do — a Garland-specific one is an art task); the flora
@@ -11459,4 +11459,115 @@ outer-sheet fragments the rider cannot bridge (largest component 83–99%).
 * **Unrelated, pre-existing:** `Tools/Build/author_flora_populations.py --check` exits 1 on `Tollway Anchor Flora
   Gyroid` (no recorded pre-conversion budget in `LATTICE_SOURCE_BUDGET`), identically on a clean `bleeding-edge`
   worktree (A/B'd at ship). Needs the number only that conversion's author has.
+---
 
+## 59. The diagnostic production hold — `freeze`, for a same-state A/B (Sep 2026)
+
+**What it is.** `Cell.DiagnosticProductionHold` — one static flag, raised and released only by the
+DiagnosticsHUD `freeze on | off` console command (`EcologyFreezeSwitch`), settable only in the Editor
+and Development builds. While it is up, no cell produces: `FloraGrowingEnabled` is false (so growth,
+planting, plant reproduction and the lattice colonies' population births stop, exactly as they do at
+Frenzy), `FaunaSpawningEnabled` is false, `IsFaunaAtCap` / `IsFloraAtCap` read full (the Microscene
+conveyor, `Fauna.TryReproduce`, the IntensityWise seeder), and the two producers that ask none of
+those — `RandomLifeSpawner`'s fauna seeder and `WormFauna.TickProduction` — check the flag directly.
+
+**Why it exists.** A performance A/B is only valid when the only difference between its two arms is
+the thing under test (`Docs/PERFORMANCE_OPTIMIZATION.md` §4.3). A growing world breaks that: the first
+spindle A/B compared 24,243 prisms against 49,116 because the Lattice cell had kept growing between
+the arms, and the result could not be separated from the growth.
+
+**Invariants (restated per the protocol).** It is **production gating**, which §0 already permits
+("not creating mass is allowed"), and the same class of gate as Frenzy — so it is not a carve-out.
+Nothing is removed, aged or culled; no timer runs; grazing, predation, starvation and vessel abilities
+keep working, so a held world can only LOSE mass. Continuity of existence is untouched (nothing
+appears or disappears because of it). Domain symmetry is untouched (it gates every domain alike and
+changes no spawn colour). The phase is not touched, so fauna aggression does not change. **Nothing
+catches up on release**: every producer already turns its cycle whether or not it produced (the
+lattice colony books, the worm colony's production stamp, the seeders), so `freeze off` resumes at the
+ordinary rate. Collider impact: none.
+
+**Its two fences.** It is released on any active-scene change, with a warning, so a hold set for one
+scenario can never freeze the next one. And it is not a lever: nothing in gameplay may raise it — a
+mode that wants less production tunes its spawn profile or its volume ladder, the way every shipped
+mode does. Explicit player acts are deliberately not gated (the Lifeform Matrix toy's releases).
+
+
+## 60. A dead QuadFish's heart followed the vessel and could not be taken (Oct 2026)
+
+**Reported (2026-10-14):** the crystals left behind by dead QuadFish "look like they are part of a
+different transform — they get warped and don't like to be collected, but they follow the player
+around; they interact with the vessel skimmer but not the hull". Two independent defects, both in
+how the heart is authored rather than in the death path.
+
+**Landed in two PRs:** #1091 (the runtime wiring in `LifeFormCrystal`, the QuadFish scale move and
+`Crystal.ReparentToCell`) and #1094 (the authoring half below: the collection pair on five prefabs,
+and `Tools/Build/author_lifeform_heart_collection.py`).
+
+### 60.1 Vacuumable, never collectable — the collection pair was missing
+
+A heart is collected through `ElementalCrystalImpactor` + `ImpactCollider` on the crystal. The
+standalone elemental prefabs in `Resources/ElementalCrystalSet` carry **neither** (`CrystalSpace`
+is `Crystal` + a trigger `SphereCollider` + audio), and lifeform prefabs add the pair as inspector
+overrides. Swept 2026-10-14: **six** lifeform prefabs never did — QuadFish, Clawfish, Nerve, Pine,
+Wall and oldWall flora (the other 25 lifeform hearts do).
+
+The skimmer's VACUUM (`SkimmerImpactor.OnTriggerStay`) only needs the `Crystal` on the trigger, so
+once death cleared `IsEmbedded` the heart was dragged after the vessel for as long as it stayed in
+range, while no contact could ever reach `ElementalCrystalImpactor.AcceptImpactee`. Only the
+**Space** QuadFish showed it: `LifeFormCrystal.EnsureElementalCrystal(owner, element)` REPLACES an
+authored crystal of the wrong element with a set prefab and wires the pair onto the replacement
+(`WireCollection`), but returned an authored crystal of the right element untouched — and the
+QuadFish authors a Space crystal. Charge, Mass and Time QuadFish were always collectable.
+
+**Fix:** both `EnsureElementalCrystal` overloads now run `WireCollection` on a crystal they KEEP.
+It is a no-op when an impactor is already present, so the 25 prefabs that author it are unchanged. The
+same call makes the Space QuadFish's heart reachable by the crystal-joust chain, which also goes
+through the impactor. The runtime wiring is the backstop that makes "every lifeform drops a
+collectable crystal" hold regardless of authoring.
+
+**The authoring half (same day):** `Tools/Build/author_lifeform_heart_collection.py` adds the pair to
+any lifeform heart that lacks it, in the exact shape the 25 already carry — an
+`ElementalCrystalImpactor` (`Crystal` -> the instance's Crystal, the one collection effect
+`0ac04a74…` every authored heart uses) and an `ImpactCollider` pointing at it, both as added
+components on the nested crystal instance, plus the `Crystal` component overridden to DISABLED. That
+last part was a second inconsistency the sweep found: all 25 working hearts author `m_Enabled: 0` on
+their Crystal, so a living heart stays out of `Crystal.Active` and its `Start` (the `crystalValue`
+stamp) waits for `ActivateCrystal`; QuadFish and Clawfish did not (the four flora already did). The
+script authored QuadFish, Clawfish, Nerve, Pine and Wall flora. oldWallFlora, the sixth bare heart,
+was skipped because no config, scene or prefab referenced its guid, and was then deleted (#1097). `--check` is the gate: it fails naming any lifeform
+prefab whose heart lacks the pair (negative-controlled — it named exactly these five before the
+write), and a second write is byte-identical. Nested ids follow Unity's rule
+(`instanceFileID XOR sourceFileID`, 63-bit), which reproduces all 25 existing hearts' stubs.
+
+### 60.2 Warped — a non-uniform creature root
+
+The QuadFish ROOT was authored at `(1, 1, 1.31)`. The heart hangs off the root, so it was stretched
+31% along the fish, and its spinning model children sheared as they turned (a rotating child of a
+non-uniformly scaled parent cannot stay rigid). `transform.parent = cell` on release preserved that
+lossy scale by baking a non-uniform `localScale` into the crystal itself, so the dropped pickup kept
+warping long after the fish was gone.
+
+**Fix, two layers:**
+- **Prefab:** the elongation moved from the root onto the body child, `BezierCurve` `5,5,5 → 5,5,6.55`,
+  root now `1,1,1`. The root has exactly two children (the body and the heart at the origin), and
+  `QuadFishSwimDriver` banks the body only about **z** — a rotation about z commutes with a z-only
+  scale — so every body and fin world pose is identical at every bank angle.
+  `author_lifeform_heart_sizes.py --check` still measures the body at **22.9** and the band at 1.75.
+- **Code backstop:** `Crystal.ReparentToCell` (behind `DetachHeartToCell` and `ActivateCrystal`)
+  reparents with world pose kept and then restates the crystal's **x** world size uniformly on the
+  cell. x is the axis `LifeFormCrystal.SetWorldScale` sizes a heart along and the axis the collect
+  reward reads (`lossyScale.x`), so no payout moves. Every crystal prefab root is authored uniform
+  (swept 2026-10-14), so a crystal that was already uniform is unaffected.
+
+### 60.3 Invariants
+
+Touches the locked "every lifeform drops exactly one elemental crystal" invariant only to make it
+hold more often (a dropped heart is now always collectable). No collider is added — the
+`ImpactCollider` is a component on the heart's existing `SphereCollider`, not a new collider — so the
+collider budget is unchanged. Not editor-verified: kill a Space QuadFish in Garland or Wildlife
+Liberation, fly the HULL through its dropped heart (it must collect), and confirm the heart and a
+living fish both look undistorted. Then open QuadFish, Clawfish, NerveFlora, PineFlora and WallFlora:
+each heart must show `ElementalCrystalImpactor` (`Crystal` set, one collection effect) and
+`ImpactCollider` (pointing at it), its `Crystal` component unchecked, and no Missing (Mono Script)
+rows. A living QuadFish's heart must still be joustable: `SetEmbeddedIn` enables the collider, and
+that doesn't depend on the `Crystal` component being enabled.
