@@ -364,7 +364,7 @@ Location: `_Prefabs/UI Elements/Panels/Party/`
 
 > **Stale reference:** this section used to point at a `Create Party Prefabs` editor tool. No such
 > `[MenuItem]` exists anywhere in the project — create the party prefabs by hand, or write the tool
-> under `FrogletTools/Interface/` (see `Docs/TOOLING.md`) if it is worth automating. SO data
+> under `FrogletTools/UI/` (see `Docs/TOOLING.md`) if it is worth automating. SO data
 > container references (`HostConnectionDataSO`, `FriendsDataSO`, `SO_ProfileIconList`) must be wired
 > manually in the inspector either way.
 
@@ -672,6 +672,8 @@ count. Record: `Docs/ArcadeLaunch/ARCHITECTURE.md §3.1.2`, `Docs/PartySystem/BU
 ### SkimRace Game Mode
 
 SkimRace is a competitive crystal-collection racing mode (1-4 players) using a **single unified scene** (`MinigameSkimRace.unity`). There is no separate singleplayer scene — all games run through Netcode regardless of player count. Solo play uses AI backfill via `ServerPlayerVesselInitializerWithAI`. See `Assets/_Scripts/Controller/Arcade/SKIMRACE.md` for the full technical reference.
+
+**Its crystals are race rings** (`SKIMRACE.md` §7a): `SkimRaceRingCrystal.prefab` is a variant of the omni crystal shrunk to 1.2× level-1-elemental size (world scale 1.704) with its collider off, whose `CrystalRaceRing` raises the gate races' `RaceGateRing` around it — mouth radius 24 u at intensity 1 (the omni crystal's pickup sphere) down to half that at intensity 4 in even steps (24/20/16/12), square across the laid track, painted its owner's domain, threaded only by that domain (owner detects, server records via `CrystalManager.ReportRingThreaded`). Placement, respawn, scoring and the AI target are the crystal's, unchanged.
 
 #### Architecture
 

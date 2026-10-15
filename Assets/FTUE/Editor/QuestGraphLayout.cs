@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using CosmicShore.Core;
 using UnityEditor;
 using UnityEngine;
+using CosmicShore.Editor.Froglet;
 
 namespace CosmicShore.Editor
 {
@@ -17,8 +18,8 @@ namespace CosmicShore.Editor
     /// <see cref="QuestNodeSO.VenueAfter"/>, which only the transition nodes declare; every
     /// other node inherits, so no row ever breaks on a beat that didn't move the player.
     ///
-    /// Used by the editor window's <c>Layout Rows</c> button and by
-    /// <see cref="QuestDefaultContentBuilder"/> so generated graphs land already arranged.
+    /// Used by the editor window's <c>Layout Rows</c> button and by the
+    /// <c>FrogletTools ▸ FTUE ▸ Layout All Phases (Rows)</c> menu item.
     /// </summary>
     public static class QuestGraphLayout
     {
@@ -38,7 +39,9 @@ namespace CosmicShore.Editor
         /// Re-arrange every phase graph in the project and write it to disk — the one-shot for
         /// "make all the quest tracks read as rows" after hand-editing or adding beats.
         /// </summary>
-        [MenuItem("FrogletTools/Quest Graph/Layout All Phases (Rows)")]
+        [MenuItem("FrogletTools/FTUE/Layout All Phases (Rows)", false, 170)]
+        [FrogletTool(FrogletToolCategory.Ftue, Importance = 2,
+            Description = "Re-lay every quest phase graph into the canonical rows.")]
         public static void LayoutAllPhases()
         {
             var guids = AssetDatabase.FindAssets($"t:{nameof(QuestPhaseGraphSO)}");

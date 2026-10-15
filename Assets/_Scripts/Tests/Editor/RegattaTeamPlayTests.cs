@@ -34,6 +34,32 @@ namespace CosmicShore.Tests
         }
 
         [Test]
+        public void TheHostPicksEverySeat_AGuestOnlyTheirOwnAllies()
+        {
+            Assert.IsTrue(AIHullSeating.MayPick(true, Domains.Jade, Domains.Ruby), "the host sets up a whole test grid");
+            Assert.IsTrue(AIHullSeating.MayPick(false, Domains.Ruby, Domains.Ruby), "a guest picks for their own allies");
+            Assert.IsFalse(AIHullSeating.MayPick(false, Domains.Jade, Domains.Ruby), "never for another team's AI");
+        }
+
+        [Test]
+        public void APickBeatsThePinnedOpponentHull_AndNoPickKeepsIt()
+        {
+            var humans = new HashSet<Domains> { Domains.Jade };
+            Assert.AreEqual(VesselClassType.Rhino,
+                AIHullSeating.SeatHull(VesselClassType.Squirrel, Domains.Ruby, humans, VesselClassType.Rhino),
+                "an opponent seat the host picked flies the pick");
+            Assert.AreEqual(VesselClassType.Squirrel,
+                AIHullSeating.SeatHull(VesselClassType.Squirrel, Domains.Ruby, humans, VesselClassType.Random),
+                "an opponent seat nobody picked keeps the card's pin");
+            Assert.AreEqual(VesselClassType.Random,
+                AIHullSeating.SeatHull(VesselClassType.Squirrel, Domains.Jade, humans, VesselClassType.Random),
+                "an ally nobody picked draws from the card");
+            Assert.AreEqual(VesselClassType.Manta,
+                AIHullSeating.SeatHull(VesselClassType.Random, Domains.Ruby, humans, VesselClassType.Manta),
+                "a card that pins nothing still flies a pick");
+        }
+
+        [Test]
         public void Cycle_StepsThroughAutoThenTheRosterInCardOrder_AndWraps()
         {
             var roster = new List<VesselClassType> { VesselClassType.Manta, VesselClassType.Rhino, VesselClassType.Urchin };

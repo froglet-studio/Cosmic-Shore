@@ -52,14 +52,19 @@ Read from the prefab and from an in-editor probe (`SkimRaceRaceRecorder.WritePro
 - Track: 10x1x3 plates every 12 u, **super-shielded**, so the contact solid is a stella octangula of
   half-extents 15 x 1.5 x 4.5 — a slab ~3 u thick the hull must never enter, and a 2.5..9 u skim band
   above or below it.
-- Crystal pickup sphere: radius 24 (`SphereCollider`, bounds 48).
+- Crystal target: **a race ring threaded by its mouth** since 2026-10-14 (`SKIMRACE.md` §7a) — mouth
+  radius **24 / 20 / 16 / 12 u at intensity 1-4**, square across the track, tested against the hull's
+  centre point (`RaceGateRing.CrossedMouth`). It was a touched pickup sphere of radius 24 (`SphereCollider`,
+  bounds 48); that collider is now disabled. `CrystalTrackObjective.CaptureRadius` aims at 0.7 × the mouth
+  (Regatta's fraction) — 8.4 u at I4. Measurements quoted below that say "24 u capture radius" predate the
+  change, and the offline simulator still models the sphere (follow-up in §7a).
 
 ## 3. Architecture
 
 | File | Role |
 |---|---|
 | `SkimRacePilot` | MonoBehaviour on the AI vessel: lifecycle, sensing, actuation. Inactive (neutral input) until `GameDataSO.IsTurnRunning` rises; neutral again when the turn ends; stops and disables `AIPilot` while it owns the vessel |
-| `SkimRaceAIDeployment` | Installs the pilot from `ServerPlayerVesselInitializerWithAI.ConfigureAIPilot` — every Squirrel backfill seat in **Skim Race and Regatta** in normal play, no scene wiring. Skipped while `IsTraining`; `TrainingDeploymentService` defers to it for Squirrel seats. Reads the host's lobby AI difficulty (`GameDataSO.RequestedAIDifficulty`, §10) only on a card that offers the picker (`AIDifficultyRules.IsOfferedFor`: Skim Race; Regatta's AI flies with no handicap). Picks the policy (`PolicyFor`): the intensity's own file only while it fits the map in the scene, else the general one (§11) |
+| `SkimRaceAIDeployment` | Installs the pilot from `ServerPlayerVesselInitializerWithAI.ConfigureAIPilot` — every Squirrel backfill seat in **Skim Race and Regatta** in normal play, no scene wiring. Skipped while `IsTraining`; `TrainingDeploymentService` defers to it for Squirrel seats. Reads the host's lobby AI difficulty (`GameDataSO.RequestedAIDifficulty`, §10) only on a card that offers the picker (`AIDifficultyRules.IsOfferedFor`: Skim Race and, since 2026-10-14, Regatta). Picks the policy: in Skim Race `PolicyFor` (the intensity's own file only while it fits the map in the scene, else the general one, §11); in any other race (Regatta) always the general one, since the per-intensity files were tuned on Skim Race's tracks. Also installed when a pilot swap hands an AI a Squirrel (`PilotSwap`) |
 | `SkimRaceObjective` | WHAT the pilot races for — the only mode-aware part. `CrystalTrackObjective` (Skim Race: the waypoint track's ribbon, this domain's crystal, crystals collected — the pilot's Skim Race behaviour, moved out of it, team plan included (§13)) and `RegattaRingObjective` (Regatta: this domain's rail, the pilot's next ring via `GateRaceController.TryGetNextGate` at 0.7 × the mouth, gates threaded). `SkimRaceObjective.For(gameData)` picks by mode |
 | `SkimRaceTargetTracker` | Skim Race's target: a live, non-embedded crystal of this domain from `Crystal.Active` (mid-collection crystals are valid only once moved away from the pilot); nearest wins with hysteresis. The whole rule for a lone AI on its team, and the fallback for AI teammates |
 | `SkimRaceTeamPlan` / `SkimRaceTeamAssignment` | Team play (§13): when two or more AI fly for one team, one plan per team per frame gives each a DIFFERENT crystal (least total distance, kept until another plan is 15% cheaper). AI only - a human teammate is never planned for. The assignment is pure C#, shared with the simulator. Read by `CrystalTrackObjective` through its pilot (`SkimRaceObjective.Pilot`) |

@@ -8,7 +8,7 @@ using System.Text.RegularExpressions;
 namespace Amoebius.Workspace
 {
     /// <summary>What one quick-add line asked for. Fields not mentioned stay null or empty.</summary>
-    public sealed class QuickAddResult
+    internal sealed class QuickAddResult
     {
         public string Title { get; set; } = "";
         public AmoebiusBoard.Kind Type { get; set; } = AmoebiusBoard.Kind.Task;
@@ -43,7 +43,7 @@ namespace Amoebius.Workspace
     /// Everything else is the title. To keep titles intact, <c>sat</c>, <c>sun</c> and month names count as dates only where a date is
     /// expected (after <c>on</c>/<c>due</c>/<c>next</c>/<c>every</c>, or with a day number).
     /// </summary>
-    public static class QuickAdd
+    internal static class QuickAdd
     {
         static readonly Regex Estimate = new(@"^~(?:(?<h>\d+(?:\.\d+)?)h)?(?:(?<m>\d+)(?:m|min|mins)?)?$", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
         static readonly Regex Clock24 = new(@"^(?<h>[01]?\d|2[0-3]):(?<m>[0-5]\d)$", RegexOptions.CultureInvariant);
@@ -258,7 +258,7 @@ namespace Amoebius.Workspace
     }
 
     /// <summary>Weekday and month words.</summary>
-    public static class DateWords
+    internal static class DateWords
     {
         static readonly Dictionary<string, DayOfWeek> Weekdays = new()
         {

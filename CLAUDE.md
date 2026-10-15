@@ -10,6 +10,10 @@ When a task spans multiple files or systems, complete ALL of them in a single pa
 
 This file holds only the rules every session needs. Everything else moved verbatim into topic files under `Docs/claude/`. Each entry lists the section headings the file contains, so a reference like "CLAUDE.md § Anti-Patterns" can be found by grepping this index. To find a passage quoted from the old single-file CLAUDE.md, search both places: `grep -rn '<phrase>' CLAUDE.md Docs/claude/`.
 
+- [`Docs/TEAM.md`](Docs/TEAM.md): **Read before working anywhere.** Who works where (Garrett, Caleb, Shombith, Yash and others, measured from git), the collaboration rules, what doing work twice cost, and the generated map (`Tools/Build/who_works_where.py`).
+  Sections: The people; The rules for every session; What happened without this; The map (generated); Open decisions about our tools
+- [`Docs/TOOLING_DECISIONS.md`](Docs/TOOLING_DECISIONS.md): **OPEN decision**: keep, narrow or stop Amoebius and the Vessel Studio, and which one tool builds Froglet's games. Evidence, options, recommendation, decision record. Feedback log: `Docs/TOOLING_FEEDBACK.md`.
+  Sections: The questions; What we have today; Amoebius: keep, narrow, or stop?; The Vessel Studio: keep, narrow, or remove?; The one tool; Decision record; How we decide
 - [`Docs/claude/ECOSYSTEM_DESIGN_PRINCIPLES.md`](Docs/claude/ECOSYSTEM_DESIGN_PRINCIPLES.md): LOCKED. Read before any ecology, fauna, flora, or HyperSea change.
   Sections: Ecosystem Design Principles (LOCKED — read before any ecology change)
 - [`Docs/claude/ABOUT_PROJECT.md`](Docs/claude/ABOUT_PROJECT.md): Vessel classes, team domains, tech stack.
@@ -30,10 +34,14 @@ This file holds only the rules every session needs. Everything else moved verbat
   Sections: Multiplayer / Netcode; Party / Invite Lobby System; Friend System; Player Count & AI Backfill Pipeline; SkimRace Game Mode
 - [`Docs/Studios/VESSEL_STUDIO_PLAN.md`](Docs/Studios/VESSEL_STUDIO_PLAN.md): The Vessel Studio — pick a vessel and fly its studio on web, Windows (Amoebius's VESSEL STUDIO page; Unity's FrogletTools > Vessels > Vessel Studio opens the studio home, whose cards open the same pages as the artifact) and phones. Pages in `Docs/Studios/VesselStudio/`; every studio is a reader of the shipped numbers. Read before touching a studio.
   Sections: What exists; Two kinds of studio; Platforms; The game studio and Amoebius on more platforms; The studio agent; Phases; Branches
+- [`Docs/Studios/VESSEL_STUDIO_VISION.md`](Docs/Studios/VESSEL_STUDIO_VISION.md): **The north star for every studio task**: a Vessel Studio so simple that a non-programmer makes vessels (presets, dice, voice), trains their AI from their own play, makes their mini-games and assigns arena games, with Amoebius as a game engine for non-programmers. The building blocks B1-B9, their order and status (update it in every change that moves a step), and what each step taught.
+  Sections: What "done" looks like; Rules that keep it simple and safe; The building blocks; Status and order; Who does what; What each step taught
 - [`Docs/Studios/VESSEL_TEST_RANGE_PLAN.md`](Docs/Studios/VESSEL_TEST_RANGE_PLAN.md): Plan for testing any vessel and its AI in the REAL game: one dev-only harness in the real mode scenes (AI on any seat, free-fly camera, intensity maps, time scale, Full / Mobile-low / Block look), opened from Unity and Amoebius. The `/vessel-studio` skill builds the web studios and owns the one Vessel Studio artifact.
   Sections: Three tiers, one catalog; What the game already has; The Test Range harness; Opening it; Phases; Decisions for the user
 - [`Docs/AI_SYSTEM/README.md`](Docs/AI_SYSTEM/README.md): Home for EVERY vessel AI, worked on `Ys-bleeding-edge` (the `ai-system` branch was merged there and retired 2026-10-09) — the branch workflow (bleeding-edge, Ys-bleeding-edge, perf/performance-optimization, claude/peaceful-rubin-hhw49n), the AI roster and layers, the per-AI diagnosis playbook and intake checklist. Run `python3 Tools/Build/ai_branch_sync.py` first in any AI session.
   Sections: Branch Workflow; Architecture (layers, roster, target); Diagnosis Playbook (tiers, intake, status board); Sync Log
+- [`Docs/BRANCH_PARTS_STATUS.md`](Docs/BRANCH_PARTS_STATUS.md): **Current report on the A–M parts of `cece/nice-brahmagupta-ojclij`** (the 2026-10-12 branch test plan): which parts landed where, what is still to test and who owes each step. Answer any question about those parts or that plan from it, and update it when a part lands.
+  Sections: Where each part stands; What landed, and how it differs from the plan; Open problems not caused by these parts; Re-measuring this report
 - [`Docs/claude/FTUE_DIALOGUE_AI.md`](Docs/claude/FTUE_DIALOGUE_AI.md): The FTUE quest graph, dialogue system, AI opponent system — with the table of every AI (platform autopilot + boost policies, the Skim Race pilot and its doc `Docs/SKIM_RACE_AI.md`, the Urchin autopilot), the input-only rule and the AI gates. Read before touching any AI.
   Sections: FTUE (First-Time User Experience) — the QUEST GRAPH; Dialogue System; AI Opponent System
 - [`Docs/claude/MENU_AND_LAVA_LAMP.md`](Docs/claude/MENU_AND_LAVA_LAMP.md): Menu_Main screens, ScreenSwitcher, menu freestyle (lava-lamp) HUD.
@@ -46,13 +54,63 @@ This file holds only the rules every session needs. Everything else moved verbat
   Sections: Anti-Patterns to Avoid
 - [`Docs/claude/SHADERS_AND_PERFORMANCE.md`](Docs/claude/SHADERS_AND_PERFORMANCE.md): HLSL / Shader Graph, performance standards, prism performance — Performance Standards now routes to the perf record (`Docs/PERFORMANCE_OPTIMIZATION.md` first, `MEMORY_AUDIT.md`, `PLATFORM_UNIFICATION.md`), the in-game instruments (`diag`, `prof`, `freeze`/`ab`, `renderers`), the allocation gates and the editor-vs-build measurement rules. Read before any perf work.
   Sections: Shader & Visual Development; HLSL / Shader Graph; Performance Standards; Prism System Performance
+- [`Docs/claude/SESSION_DECK.md`](Docs/claude/SESSION_DECK.md): The session deck plugin: `/deck` pane of buttons (team activity, gates, reference compile, sync, ship), band, status line.
+  Sections: What it adds; What each button runs; How it loads; Changing it
 - [`Docs/claude/DESIGN_PHILOSOPHY_EMERGENCE.md`](Docs/claude/DESIGN_PHILOSOPHY_EMERGENCE.md): Read before designing any gameplay feature: fundamentals, order of preference, universality.
   Sections: Design Philosophy: Favor Emergent Systems Over Bespoke Solutions; The fundamentals (working list); Process for curating fundamentals; Order of preference; Don't "cheat" emergence without asking; Universality — one HyperSea, one rule set; When in doubt
 
-## Vessel work starts in the Vessel Studio (recommend it, every time)
+## Team: know who works where, and build on each other's work (read before working)
 
-Before changing how any vessel flies, its AI, its difficulty levels, its play styles or its cameras, **recommend the
-Vessel Studio** to the person in one line: the ONE claude.ai artifact
+Cosmic Shore is built by **Garrett, Caleb, Shombith and Yash** (the core four) plus other collaborators. Almost
+all of it goes through Claude sessions, so git rarely says which person drove a change. On 2026-10-13 one merge
+needed about 110 conflict fixes because work had been done twice: the Stoat in two places, enum value 14 taken twice,
+the engine renamed twice, retired tools brought back. **Every session:**
+- **Look before you touch.** Run `git fetch origin`, then `python3 Tools/Build/who_works_where.py query <the paths you
+  will change>` (about 10 s). It shows who has unmerged work in flight there and who landed what.
+- **Say who else works there**, in a line or two. Read their branch, docs and skill, and build on them.
+- **Never replace, retire, rename or re-tune another collaborator's work** unless the person you work with confirms.
+  Name the owner to check with.
+- **Look for what exists before building anything new** (tool, system, skill, studio, lab, doc), and extend it.
+- **Claim shared numbers only after checking `bleeding-edge` AND the in-flight branches**: enum values, `GameModes`
+  ids, learnings ids, Netcode hashes, GUIDs.
+- **Leave a trail**: write "Affects: <person>'s <area>" in the commit or PR whenever you touch someone else's area.
+
+Who is who, the measured map and the full rules: [`Docs/TEAM.md`](Docs/TEAM.md) (identities in `Docs/TEAM.json`).
+**The person is told too, not only Claude** (Yash, 2026-10-15: "let them know of all these whenever they query the
+engine or anything"). On a session's first prompt, whatever it is about, `.claude/hooks/team_context.py` shows them a
+one-line team notice. Claude's first reply then says who else works in the area the task touches, or that nobody
+does. `team_activity.py` lists what the others pushed since the last prompt.
+
+## Tools under evaluation: Amoebius and the Vessel Studio (OPEN DECISION, 2026-10-15)
+
+**Amoebius** (`Port/`) and **the Vessel Studio** (the artifact and its pages) are in a grey area: the team has not
+decided that they help enough to keep. The single tool that should build Cosmic Shore and Froglet's later games is
+also undecided. The evidence, the options and Claude's recommendation are in
+[`Docs/TOOLING_DECISIONS.md`](Docs/TOOLING_DECISIONS.md). The core four decide, and record the decision in §6 there.
+Until then:
+- **Tell people, every time they ask.** When anyone asks about Amoebius, "the engine", `Port/`, the launcher, the
+  Vessel Studio or which tool to use, open the answer with one line covering:
+  - that the tool is under evaluation;
+  - who drives it: Shombith the engine; Yash the launcher and the Vessel Studio;
+  - that the core four decide after the feedback date in `Docs/TOOLING_DECISIONS.md` §7;
+  - where to say whether it helped (`Docs/TOOLING_FEEDBACK.md`).
+
+  Do this even for a plain question. The hooks show the person the same line, once per session (`team_context.py`
+  for the engine and tools, `vessel_studio_nudge.py` for vessels). Claude's answer carries it every time.
+- **Offer the tools; do not require them.** Recommending the Vessel Studio for vessel work is one line, an option.
+- **Do not grow either tool's scope on your own initiative** (new launcher pages, Sync / jobs / studio-server
+  machinery). Build what the person asks for, and mention once that the tool is under evaluation.
+- **Ask the person, now and then.** At the end of a task that used or touched one of these tools, if
+  [`Docs/TOOLING_FEEDBACK.md`](Docs/TOOLING_FEEDBACK.md) has no row for that tool from the last three days, ask ONE
+  short question: "Did <tool> help with this: keep, change or remove? Why, in a line?". Append their answer as a row
+  and commit it with the work. Record only what they said.
+- **The rules below stay in force while the tools exist.** But before writing artifact numbers over Unity values that
+  someone play-tuned in Unity, ask: `who_works_where.py` shows who tuned them.
+
+### Working with the Vessel Studio (while it is kept)
+
+For vessel work (how a vessel flies, its AI, difficulty levels, play styles or cameras), **offer the Vessel Studio**
+to the person in one line: the ONE claude.ai artifact
 (https://claude.ai/artifact/3igBJJbNvJjsfJoBJnAMPa) where the team flies, watches and decides vessels and their AI on
 phone or PC before the game changes. **Load `/vessel-studio`** for it: §1.5 is the universal panel kit every studio is
 built from (the six settings tabs Scene / Game / AI / Play Style Config, Input and Vessel Config; dropdown rules; the
@@ -62,7 +120,10 @@ intensity ladder; the three cameras). Load `/vessel` for the Unity side. Never p
 and decided in the artifact first, then **`/artifact-to-unity`** clones them into the game
 (`Tools/Build/studio_to_unity.py` writes the artifact's values into the vessel's assets, `--check` is the drift gate;
 features are ported line for line with page-golden tests). Never build a Unity tuning window or tabs that re-draw a
-studio's parameters, never rename an artifact parameter on the Unity side, never hand-edit a mapped field. A project hook
+studio's parameters, never rename an artifact parameter on the Unity side, never hand-edit a mapped field.
+**Every Vessel Studio feature lands on all three surfaces in the same change** (the user, 2026-10-14, `/vessel-studio`
+D37): the artifact, Amoebius's VESSEL STUDIO page (and its studio backend), and Unity's studio home; `parity_gate.py`
+fails a native home that misses a hub card. A project hook
 (`.claude/hooks/vessel_studio_nudge.py`, in `.claude/settings.json`) shows the person this notice once per session
 when a prompt is about vessel work. Studio domain colours come from the game's palette (`studio-domains.js`, generated by
 `.claude/skills/vessel-studio/domain_colors.py`), the same values Amoebius renders.

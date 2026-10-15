@@ -272,9 +272,6 @@ namespace CosmicShore.Gameplay
         /// reached its launch point and the ship left the orbit along <see cref="LaunchDirection"/>.</summary>
         public bool Launched;
         public Vector3 LaunchDirection;
-        /// <summary>The launch left inside the timing window (released so close to the launch point
-        /// that there was little to no wait) and took the perfect-release boost.</summary>
-        public bool Perfect;
     }
 
     /// <summary>
@@ -327,9 +324,7 @@ namespace CosmicShore.Gameplay
         float _hookSlack;          // how far past the chain's length the hook-on swing is allowed
         float _hookSlackSpeed;     // d(slack)/dt - the reel-back is a spring, so radial speed ramps
         Vector3 _launchAim;        // armed launch direction (zero = none armed)
-        float _armedSeconds;       // how long the armed launch has been waiting
-        float _perfectWindow;      // a launch this soon after arming is PERFECT...
-        float _perfectBoost;       // ...and leaves this many times faster (1 = no boost)
+        float _launchBoost;        // the armed launch leaves this many times the orbit's speed (1 = none)
 
         // Analog triggers (Settings.Analog). The lab's names are kept in comments so the port reads beside
         // Docs/Studios/ThresherPlantLab.html, which Tools/Build/thresher_plant_lab/parity.cjs holds it to.
@@ -474,18 +469,15 @@ namespace CosmicShore.Gameplay
         /// circle whose tangent IS the aim (<see cref="LaunchRadial"/>), and leaves from there —
         /// so the pilot picks a point, and the timing is the solver's job. A re-arm replaces the aim;
         /// <see cref="Release"/> (or a windmill) disarms. Ignored unless planted.
-        /// A launch that leaves within <paramref name="perfectWindowSeconds"/> of being armed — the
-        /// trigger came up just before the launch point, so there was little to no wait — is
-        /// PERFECT and leaves <paramref name="perfectBoost"/> times faster (the Time level-5
-        /// snapshot; pass 1 for none).
+        /// The launch leaves <paramref name="boost"/> times the orbit's speed however long it waited
+        /// for its point: the aimed launch is rewarded for being AIMED, never for its timing
+        /// (2026-10-13; pass 1 for none).
         /// </summary>
-        public void ArmLaunch(Vector3 aim, float perfectWindowSeconds = 0f, float perfectBoost = 1f)
+        public void ArmLaunch(Vector3 aim, float boost = 1f)
         {
             if (Mode != ThresherMode.Pivot || aim.sqrMagnitude < 1e-8f) return;
             _launchAim = aim.normalized;
-            _armedSeconds = 0f;
-            _perfectWindow = Mathf.Max(0f, perfectWindowSeconds);
-            _perfectBoost = Mathf.Max(1f, perfectBoost);
+            _launchBoost = Mathf.Max(1f, boost);
         }
 
         /// <summary>
@@ -966,7 +958,6 @@ namespace CosmicShore.Gameplay
         bool TryLaunch(Vector3 shipPosition, float dt, ref ThresherStepResult result)
         {
             if (!LaunchArmed) return false;
-            _armedSeconds += dt;
             if (!LaunchRadial(shipPosition, _launchAim, out Vector3 target)) return false;
             Vector3 r = shipPosition - Pivot;
             float dist = r.magnitude;
@@ -981,21 +972,18 @@ namespace CosmicShore.Gameplay
             if (ahead > step + lead) return false;
 
             Vector3 aim = _launchAim;
-            // PERFECT: the trigger came up inside the window before the point, so it barely waited.
-            bool perfect = _perfectWindow > 0f && _armedSeconds <= _perfectWindow;
             // Shipped: leave along the aim. With a LEAD (the transformer winds the spin down after the
             // launch): leave along the chord this frame's orbit step would fly, and let the wind-down turn the
             // heading onto the aim, so the velocity never steps.
             Vector3 dir = lead > 0f
                 ? Vector3.Cross(n, rh * Mathf.Cos(step * 0.5f) + t.normalized * Mathf.Sin(step * 0.5f)).normalized
                 : aim;
-            Vector3 velocity = dir * (LockSpeed * (perfect ? _perfectBoost : 1f));
+            Vector3 velocity = dir * (LockSpeed * Mathf.Max(1f, _launchBoost));
             Release(velocity);   // Pivot -> Free, the yank, disarms
             result.ShipVelocity = velocity;
             result.BallFrom = BallPosition;
             result.Launched = true;
             result.LaunchDirection = aim;
-            result.Perfect = perfect;
             return true;
         }
 

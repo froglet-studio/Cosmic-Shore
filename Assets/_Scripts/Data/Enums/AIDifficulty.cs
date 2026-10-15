@@ -46,7 +46,10 @@ namespace CosmicShore.Data
         public static bool IsOfferedFor(GameModes mode) =>
             mode == GameModes.SkimRace
             // The Stoat's gate races: GateRaceController applies GateRaceHandicap (the same numbers) to its AI.
-            || mode == GameModes.Slingshot || mode == GameModes.Warpline;
+            || mode == GameModes.Slingshot || mode == GameModes.Warpline
+            // Regatta (2026-10-14): its Squirrels fly the Skim Race pilot (SkimRaceHandicap), every other hull the gate
+            // race's GateRaceHandicap - both read the same pick and the same numbers.
+            || mode == GameModes.Regatta;
 
         /// <summary>One step easier or harder, clamped to Easy..Hard (the gamepad's left/right).</summary>
         public static AIDifficulty Step(AIDifficulty from, int direction)

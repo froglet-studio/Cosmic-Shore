@@ -32,8 +32,10 @@ namespace CosmicShore.Core
             // render scale (ApplyQuality). SetResolution there could only hurt: "native" is read
             // from Display.main.systemWidth/Height, and iOS does not promise those in the
             // landscape orientation this game runs in, so it could hand the backbuffer portrait
-            // dimensions.
-            if (Application.isMobilePlatform) return;
+            // dimensions. A WebGL player's canvas is sized by its page, and a full-screen mode
+            // there is a request the browser grants on the next click - so the first click into
+            // the browser Toybox would leave the page. The page's own fullscreen button owns that.
+            if (Application.isMobilePlatform || Application.platform == RuntimePlatform.WebGLPlayer) return;
 
             var mode = ToFullScreenMode(s.DisplayMode);
             int w = s.ResolutionWidth > 0 ? s.ResolutionWidth : Display.main.systemWidth;

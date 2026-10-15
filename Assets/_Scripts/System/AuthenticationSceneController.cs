@@ -135,6 +135,17 @@ namespace CosmicShore.Core
         async UniTaskVoid RunAuthFlowAsync(CancellationToken ct)
         {
             HideAllPanels();
+
+            // The browser Toybox signs in to nothing (WebToybox): no cached session, no username
+            // step, no Relay. Straight to the single-player local host and Menu_Main.
+            if (WebToybox.IsBuild)
+            {
+                ShowLoading(WebToyboxLoadingText);
+                if (!await WaitForWebAudioBanksAsync(ct)) return;
+                NavigateToMainMenu();
+                return;
+            }
+
             ShowLoading(IsOffline ? "No connection. Starting offline…" : "Signing in…");
 
             try
@@ -757,7 +768,8 @@ namespace CosmicShore.Core
             // because "the player has no network" and "UGS is having a bad day" deserve the
             // attempts.
             bool offlinePreferred = _offlineMode != null && _offlineMode.OfflinePreferred;
-            var plan = PlanBootNetwork(offlinePreferred, IsOffline, _offlineMode?.IsOfflineSession ?? false);
+            var plan = PlanBootNetwork(offlinePreferred, IsOffline, _offlineMode?.IsOfflineSession ?? false,
+                                       webToybox: WebToybox.IsBuild);
             bool attemptRelay = plan.AttemptRelay;
 
             if (offlinePreferred)
@@ -842,12 +854,11 @@ namespace CosmicShore.Core
                 // Counted: an unwanted offline start is the failure the request policy exists to prevent
                 // (Docs/MultiplayerArchitecture/REVIEW_INVITE_AND_RESILIENCE.md, B24).
                 if (plan.UnwantedFallback) UgsRequestTelemetry.Count(UgsRequestCounter.OfflineFallback);
+                string startingText = WebToybox.IsBuild ? WebToyboxLoadingText : "Starting offline…";
                 if (plan.UnwantedFallback)
                     await ShowOfflineNoticeAsync(ct);   // explains an UNWANTED offline start
-                else
-                    ShowLoading("Starting offline…");
 
-                ShowLoading("Starting offline…");
+                ShowLoading(startingText);
 
                 bool offlineReady;
                 try
@@ -929,11 +940,56 @@ namespace CosmicShore.Core
         /// make), when the device reports no network (they cannot succeed), or when an offline
         /// session is already live. A REACHABLE device whose UGS calls merely fail still walks the
         /// attempts - "no network" and "UGS is having a bad day" are different failures.
+        ///
+        /// <para>The browser Toybox (<paramref name="webToybox"/>) is offline by design: it never
+        /// attempts Relay and its local session is not a fallback, so it is neither counted nor
+        /// explained on screen.</para>
         /// </summary>
-        internal static BootNetworkPlan PlanBootNetwork(bool offlinePreferred, bool deviceOffline, bool offlineSessionLive) =>
+        internal static BootNetworkPlan PlanBootNetwork(bool offlinePreferred, bool deviceOffline, bool offlineSessionLive,
+                                                        bool webToybox = false) =>
             new BootNetworkPlan(
-                attemptRelay: !offlinePreferred && !deviceOffline && !offlineSessionLive,
-                unwantedFallback: !offlinePreferred);
+                attemptRelay: !webToybox && !offlinePreferred && !deviceOffline && !offlineSessionLive,
+                unwantedFallback: !webToybox && !offlinePreferred);
+
+        /// <summary>The loading line the browser Toybox shows while its local session starts.</summary>
+        const string WebToyboxLoadingText = "Starting the Toybox…";
+        const string WebToyboxAudioLoadingText = "Loading sound…";
+        const float WebAudioBankTimeoutSeconds = 90f;
+
+        /// <summary>
+        /// A WebGL player loads FMOD's banks asynchronously, over the network, from StreamingAssets
+        /// (SFX.bank alone is ~37 MB). An event created before its bank arrives fails once and stays
+        /// silent, so the menu's music and the freestyle sounds would be lost. The browser Toybox
+        /// waits here, on the loading text, up to a timeout; past it the menu opens anyway and
+        /// sound joins late. Native players load banks synchronously at start, so this only
+        /// matters on the web. False when the scene went away while waiting.
+        /// </summary>
+        async UniTask<bool> WaitForWebAudioBanksAsync(CancellationToken ct)
+        {
+            if (Application.platform != RuntimePlatform.WebGLPlayer) return true;
+
+            float deadline = Time.realtimeSinceStartup + WebAudioBankTimeoutSeconds;
+            bool shown = false;
+            while (!BanksLoaded())
+            {
+                if (Time.realtimeSinceStartup > deadline)
+                {
+                    CSDebug.LogWarning($"[AuthScene] FMOD banks still loading after {WebAudioBankTimeoutSeconds:0} s; " +
+                                       "opening the Toybox without them. Sounds created before they arrive stay silent.");
+                    return true;
+                }
+                if (!shown) { ShowLoading(WebToyboxAudioLoadingText); shown = true; }
+                await UniTask.Yield(PlayerLoopTiming.Update);
+                if (ct.IsCancellationRequested) return false;
+            }
+            return true;
+
+            static bool BanksLoaded()
+            {
+                try { return FMODUnity.RuntimeManager.HaveAllBanksLoaded; }
+                catch (Exception) { return true; } // FMOD failed to start: nothing to wait for.
+            }
+        }
 
         /// <summary>
         /// Resolves when <see cref="HostConnectionDataSO.OnHostConnectionEstablished"/> fires

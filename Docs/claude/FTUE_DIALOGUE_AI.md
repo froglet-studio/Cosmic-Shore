@@ -33,8 +33,10 @@ adding a handler class:
 - **UI** (`Scripts/UI/`): `QuestDialoguePanelView`, `QuestInstructionView`,
   `QuestRewardRevealView`, `QuestToastNotifier`. **All four hide themselves in `Awake`**, which
   is what makes standing the runner down safe.
-- **Editor** (`Assets/FTUE/Editor/`): `QuestGraphEditorWindow` (the graph authoring tool),
-  `QuestDefaultContentBuilder`, `QuestPhase0UIWirer`, `QuestRunnerSetup`, `QuestGraphLayout`.
+- **Editor** (`Assets/FTUE/Editor/`): `QuestGraphEditorWindow` (the graph authoring tool,
+  `FrogletTools ▸ FTUE ▸ Quest Graph Editor`) and `QuestGraphLayout`. The one-shot generators
+  (`QuestDefaultContentBuilder`, `QuestPhase0UIWirer`, `QuestRunnerSetup`) were retired on
+  2026-10-14; their output (MainQuest + phases, the wired runner in Menu_Main) is shipped.
 - **Events**: `FTUEEventManager` survives, narrowed to three — `InitializeFTUE` (an external
   start trigger) plus `OnQuestPhaseCompleted` / `OnQuestCompleted`, consumed only by
   `QuestToastNotifier`. Nothing blocks on them.

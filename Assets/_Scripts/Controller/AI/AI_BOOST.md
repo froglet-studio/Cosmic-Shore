@@ -7,7 +7,9 @@
 `AIPilot` writes the stick and a 0.6–0.9 throttle and nothing else. A hull whose speed is an
 ABILITY needs something to press it, and before this only two had one: the Manta
 (`MantaAnalogTurnBoostExecutor`'s autopilot drive, boost = how straight the stick is) and the
-Rhino (the ramp engages off a straight stick). Everyone else raced at cruise — in Regatta an AI
+Rhino (the ramp engages off a straight stick — **wrong, found 2026-10-14**: the ramp starts only on
+`FullSpeedStraightAction`, which only a human input strategy raises, and the action handler drops presses
+under autopilot, so an AI Rhino never ramped; `RampBoostAIPolicySO` below now drives it). Everyone else raced at cruise — in Regatta an AI
 Sparrow, Serpent, Dolphin or Scarab "finishes but never wins", and the Squirrel's AI charged its
 skim boost only inside Skim Race (`SkimRacePilot`).
 
@@ -77,3 +79,18 @@ have handed over, so the hull flies exactly as before. Shipped lists:
   limitation `SkimRacePilot`'s ring already has.
 - The Dolphin still discharges whatever is banked when the commit loop's own overshoot release
   fires at a turn; the policy only moves the FULL-meter spend onto straights.
+
+## Ramp (the Rhino) — `RampBoostAIPolicySO`, 2026-10-14
+
+On a straight at the objective with runway (`IsStraight` + `HasRunway`), the driver presses the ramp
+(`RampBoostActionSO.StartAction` → `RampBoostActionExecutor.Begin`), then holds the throttle full
+(`HoldsFullThrottle`) and keeps the pilot's total steering inside the ramp's full-power plateau
+(`RotationLimit` = 0.9 × `StraightLineGesture.EngageThreshold`, applied by `AIPilot.LimitRotation`, which scales
+the three axes together so it still steers at the ring). Before the turn (`TurnAhead`) or off the line
+(`!StillStraight`) it lets go; the AI steers normally again and the executor ends the ramp itself once the pilot's
+deviation passes the grace band, coasting down at `returnPerSecond`. Asset: `AI Boost Policies/RhinoAIBoostPolicy`,
+wired on `Rhino.prefab`'s `AIPilot`. Not editor-verified.
+
+The same audit added two hooks every driver can use (`AIBoostDriver.HoldsFullThrottle`, `RotationLimit`), a
+`Status` string for the Third Eye, and to the Dolphin's `ChargeBoost` driver a nose check: it spends only with the
+NOSE on the objective too (the discharge fires along the nose, and in a drift the nose is free of the course).

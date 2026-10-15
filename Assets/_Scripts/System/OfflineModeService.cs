@@ -4,6 +4,7 @@ using CosmicShore.Gameplay;
 using CosmicShore.Utility;
 using Cysharp.Threading.Tasks;
 using Unity.Netcode;
+using Unity.Netcode.Transports.SinglePlayer;
 using Unity.Netcode.Transports.UTP;
 using UnityEngine;
 
@@ -156,7 +157,11 @@ namespace CosmicShore.Core
             // 5. Point the transport at loopback. At cold boot this is already the prefab's
             //    authored state; re-asserting it costs nothing and protects against any
             //    partially-applied Relay configuration from the failed attempts.
-            if (nm.TryGetComponent<UnityTransport>(out var transport))
+            //    A browser cannot listen on a socket at all, so there the same host-only session
+            //    runs over NGO's in-memory SinglePlayerTransport instead (Docs/WEBGL_TOYBOX.md).
+            if (UsesInMemoryTransport)
+                UseSinglePlayerTransport(nm);
+            else if (nm.TryGetComponent<UnityTransport>(out var transport))
                 transport.SetConnectionData("127.0.0.1", LOCAL_HOST_PORT, "0.0.0.0");
 
             // 6. The flag goes up before StartHost and comes down again on failure - see
@@ -204,6 +209,27 @@ namespace CosmicShore.Core
             if (OfflinePreferred) NetSessionRecorder.Mark("offlineChosen");
             else NetSessionRecorder.MarkOfflineFallback(NetSessionRecorder.DeviceOnlineProvider());
             return true;
+        }
+
+        /// <summary>
+        /// True where the offline host must run in memory rather than on a loopback socket: a
+        /// WebGL player (no sockets) and the browser Toybox build, including in the Editor, so the
+        /// toybox path can be played before it is built.
+        /// </summary>
+        internal static bool UsesInMemoryTransport =>
+            WebToybox.IsBuild || Application.platform == RuntimePlatform.WebGLPlayer;
+
+        /// <summary>
+        /// Swaps the NetworkManager onto <see cref="SinglePlayerTransport"/> (added once, reused).
+        /// It only starts as a host, which is the only way an offline session starts. Must run
+        /// before StartHost; the NetworkManager is not listening here.
+        /// </summary>
+        static void UseSinglePlayerTransport(NetworkManager nm)
+        {
+            if (!nm.TryGetComponent<SinglePlayerTransport>(out var single))
+                single = nm.gameObject.AddComponent<SinglePlayerTransport>();
+            nm.NetworkConfig.NetworkTransport = single;
+            CSDebug.LogVerbose(CSLogChannel.Boot, "[OfflineModeService] Using SinglePlayerTransport (in-memory host).");
         }
 
         /// <summary>

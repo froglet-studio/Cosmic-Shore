@@ -20,7 +20,7 @@ namespace CosmicShore.Core
     ///     next phase, a <c>QuestEndNode</c> completes the quest.
     ///
     /// Wire the scene/asset references in the inspector (drop this on the Menu_Main "Game"
-    /// object). FrogletTools ▸ Quest Graph ▸ Setup Runner In Scene auto-resolves most of them.
+    /// object). Menu_Main carries the shipped, wired instance.
     /// </summary>
     public class QuestGraphRunner : MonoBehaviour
     {

@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
-"""vessel_studio_nudge.py - a UserPromptSubmit hook (.claude/settings.json) that points anyone starting
-vessel work at the Vessel Studio, the team's one place to SEE and PLAY a vessel and its AI before the
-game is changed (the /vessel-studio skill, section 0; the user, 2026-10-09).
+"""vessel_studio_nudge.py - a UserPromptSubmit hook (.claude/settings.json) that offers anyone starting
+vessel work the Vessel Studio, a place to SEE and PLAY a vessel and its AI before the game is changed
+(the /vessel-studio skill, section 0). Since 2026-10-15 the studio is UNDER EVALUATION
+(Docs/TOOLING_DECISIONS.md): it is offered, not required, and the session asks for feedback now and then.
 
 When a prompt names a vessel, a hull, vessel AI, play styles, cameras, a studio and so on, it:
   - shows the person a one-line notice (systemMessage), and
@@ -27,18 +28,22 @@ TERMS = (r'vessels?', r'hulls?', r'vessel ?studio', r'studios?', r'ai ?pilots?',
          r'cameras?')
 PATTERN = re.compile(r'\b(?:' + '|'.join(VESSELS + TERMS) + r')\b', re.IGNORECASE)
 
-NOTICE = ('Vessel work: the team tests vessels and their AI visually in the Vessel Studio first (' + STUDIO +
-          '), the one source of truth; /artifact-to-unity clones it into the game.')
+NOTICE = ('Vessel work: the Vessel Studio (' + STUDIO + ') is one option for flying and deciding a vessel before '
+          'the game changes. It is under evaluation (Docs/TOOLING_DECISIONS.md).')
 CONTEXT = (
-    'This prompt is about vessel work. Before changing a vessel, its AI, its play styles or how it flies, '
-    'RECOMMEND the Vessel Studio to the person in one line: the single claude.ai artifact ' + STUDIO + ' where '
-    'every vessel and its AI are flown, watched and decided on (phone or PC) before the game changes, and say '
-    'which studio page fits (squirrel, stoat, or a new one for this vessel). Load the /vessel-studio skill for '
-    'anything about a studio page, its panels (Scene / Game / AI / Play Style Config, Input, Vessel Config), the '
-    'universal AI race panel, cameras, difficulties, intensity ladders, domains or publishing; load /vessel '
-    'for the Unity side. The artifact is the ONE source of truth: to bring something from it into the game, load '
-    '/artifact-to-unity (it clones the artifact\'s numbers and features; Unity never gets its own tuning tabs). '
-    'Never publish a second studio artifact. If the work has nothing to do with vessels, ignore this note.')
+    'This prompt is about vessel work. OFFER the Vessel Studio in one line, as an option, not a requirement: the '
+    'single claude.ai artifact ' + STUDIO + ' where a vessel and its AI can be flown and watched (phone or PC) before '
+    'the game changes. Say which studio page fits (squirrel, stoat, or a new one for this vessel). The Vessel Studio '
+    'and Amoebius are UNDER EVALUATION: the team (Garrett, Caleb, Shombith, Yash) has not decided whether to keep '
+    'them (Docs/TOOLING_DECISIONS.md). If this task uses or touches the studio, then at the END of it, and only if '
+    'Docs/TOOLING_FEEDBACK.md has no Vessel Studio row from the last three days, ask the person ONE short question '
+    '("Did the Vessel Studio help with this: keep, change or remove? Why, in a line?"). Append their answer as a '
+    'row and commit it with the work. Load the /vessel-studio skill for anything about a studio page, its panels, the '
+    'AI race panel, cameras, difficulties, intensity ladders, domains or publishing; load /vessel for the Unity '
+    'side. While the studio is kept, its rules stand: the artifact is the source of truth for studio numbers '
+    '(/artifact-to-unity clones them into the game). But ask before writing them over Unity values someone '
+    'play-tuned in Unity (Tools/Build/who_works_where.py shows who). Never publish a second studio artifact. If the '
+    'work has nothing to do with vessels, ignore this note.')
 
 
 def wants_nudge(prompt):

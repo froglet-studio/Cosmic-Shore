@@ -11,7 +11,7 @@ namespace Amoebius
     /// Dates and times are the user's local wall clock (a day and a time of day, no zone): "Friday
     /// 15:00" stays Friday 15:00 for whoever reads it.
     /// </summary>
-    public sealed partial class AmoebiusBoard
+    internal sealed partial class AmoebiusBoard
     {
         public sealed partial class Item
         {

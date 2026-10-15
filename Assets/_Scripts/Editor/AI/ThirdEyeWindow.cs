@@ -48,6 +48,11 @@ namespace CosmicShore.Editor.AI
         int _adoptedFrom;
 
         readonly List<ThirdEyePilot> _pilots = new();
+        // Each pilot's recent path (its trajectory), sampled at TrailHz in game time, keyed by ThirdEyePilot.Id.
+        readonly Dictionary<int, ThirdEyeTrail> _trails = new();
+        readonly HashSet<int> _livePilots = new();
+        const float TrailHz = 15f;
+        float _nextTrailSample;
         string[] _pilotLabels = System.Array.Empty<string>();
         int _watchedId;
 
@@ -65,8 +70,8 @@ namespace CosmicShore.Editor.AI
         double _nextScan, _nextRepaint, _nextPausedRender, _saveAt, _lastStep;
         Rect _viewRect;
 
-        [MenuItem("FrogletTools/AI/Third Eye", false, 1)]
-        [FrogletTool(FrogletToolCategory.Vessels, Importance = 4,
+        [MenuItem("FrogletTools/AI/Third Eye", false, 100)]
+        [FrogletTool(FrogletToolCategory.Ai, Importance = 4,
             Description = "Watch Play mode from a second camera while you play: any pilot, Chase / Follow / Free, " +
                           "with each AI's aim drawn over the view.",
             DocPath = ".claude/skills/vessel-ai/SKILL.md")]
@@ -130,7 +135,10 @@ namespace CosmicShore.Editor.AI
                 ThirdEyePilots.Scan(_pilots);
                 RebuildPilotLabels();
                 EnsureRig();
+                PruneTrails();
             }
+
+            SampleTrails();
 
             if (_cam) _cam.enabled = _visible && _rt;
 
@@ -205,7 +213,59 @@ namespace CosmicShore.Editor.AI
             _pilots.Clear();
             _pilotLabels = System.Array.Empty<string>();
             _held.Clear();
+            _trails.Clear();
+            _nextTrailSample = 0f;
             _snap = true;
+        }
+
+        // ── Trails (each pilot's trajectory) ─────────────────────────────────────
+
+        /// <summary>One point per pilot every 1/TrailHz s of GAME time, so a paused game freezes the trails.</summary>
+        void SampleTrails()
+        {
+            if (!Settings.ShowTrails || EditorApplication.isPaused) return;
+            float t = Time.time;
+            if (t < _nextTrailSample && t >= _nextTrailSample - 1f) return;
+            _nextTrailSample = t + 1f / TrailHz;
+            int capacity = Mathf.CeilToInt(30f * TrailHz) + 2;
+            foreach (var pilot in _pilots)
+            {
+                if (!pilot.Alive) continue;
+                if (!_trails.TryGetValue(pilot.Id, out var trail)) _trails[pilot.Id] = trail = new ThirdEyeTrail(capacity);
+                trail.Add(pilot.Hull.position, t);
+            }
+        }
+
+        /// <summary>Forget the trails of pilots that are gone (despawned, swapped out).</summary>
+        void PruneTrails()
+        {
+            if (_trails.Count == 0) return;
+            _livePilots.Clear();
+            foreach (var p in _pilots) _livePilots.Add(p.Id);
+            List<int> gone = null;
+            foreach (var id in _trails.Keys)
+                if (!_livePilots.Contains(id)) (gone ??= new List<int>()).Add(id);
+            if (gone != null) foreach (var id in gone) _trails.Remove(id);
+        }
+
+        void DrawTrail(Rect local, ThirdEyePilot pilot)
+        {
+            if (!_trails.TryGetValue(pilot.Id, out var trail) || trail.Count < 2) return;
+            float now = Time.time, keep = Settings.TrailSeconds, near = _cam.nearClipPlane + 0.01f;
+            Color domain = ThirdEyePilots.DomainColor(pilot);
+            for (int i = 1; i < trail.Count; i++)
+            {
+                trail.Get(i - 1, out Vector3 pa, out float ta);
+                trail.Get(i, out Vector3 pb, out float tb);
+                float age = now - tb;
+                if (age > keep) continue;
+                Vector3 va = _cam.WorldToViewportPoint(pa), vb = _cam.WorldToViewportPoint(pb);
+                if (!ThirdEyeRig.ClipToFront(pa, va.z, pb, vb.z, near, out Vector3 wa, out Vector3 wb)) continue;
+                Vector2 ga = ToGui(local, _cam.WorldToViewportPoint(wa));
+                Vector2 gb = ToGui(local, _cam.WorldToViewportPoint(wb));
+                Handles.color = domain.WithAlpha(0.85f * (1f - age / keep));
+                Handles.DrawAAPolyLine(2.5f, new Vector3(ga.x, ga.y, 0f), new Vector3(gb.x, gb.y, 0f));
+            }
         }
 
         // Paused, the player loop renders nothing; draw this one camera on request so the Free camera
@@ -426,8 +486,12 @@ namespace CosmicShore.Editor.AI
                 GUILayout.FlexibleSpace();
 
                 bool thinking = GUILayout.Toggle(s.ShowThinking, new GUIContent("AI thinking",
-                    "Draw each AI's aim and the crystal it is after."), EditorStyles.toolbarButton);
+                    "Draw each AI's aim, the ring or crystal it is after, and what it is doing."), EditorStyles.toolbarButton);
                 if (thinking != s.ShowThinking) { s.ShowThinking = thinking; MarkSettingsDirty(); }
+
+                bool trails = GUILayout.Toggle(s.ShowTrails, new GUIContent("Trails",
+                    "Draw the path every pilot has flown over the last few seconds (Settings: how long)."), EditorStyles.toolbarButton);
+                if (trails != s.ShowTrails) { s.ShowTrails = trails; MarkSettingsDirty(); }
 
                 bool labels = GUILayout.Toggle(s.ShowLabels, new GUIContent("Labels",
                     "Name every pilot and pin off-screen pilots to the edge."), EditorStyles.toolbarButton);
@@ -466,6 +530,10 @@ namespace CosmicShore.Editor.AI
                 s.FreeFastMultiplier = EditorGUILayout.Slider("Shift multiplier", s.FreeFastMultiplier, 1f, 10f);
                 s.OrbitDistance = EditorGUILayout.Slider("Orbit distance", s.OrbitDistance, 5f, 1000f);
                 s.LookSensitivity = EditorGUILayout.Slider("Look sensitivity", s.LookSensitivity, 0.05f, 1f);
+
+                EditorGUILayout.LabelField("Trails", FrogletEditorPalette.SectionLabel);
+                s.TrailSeconds = EditorGUILayout.Slider(new GUIContent("Length (s)",
+                    "Seconds of flown path each pilot's trail keeps."), s.TrailSeconds, 1f, 30f);
             }
             if (EditorGUI.EndChangeCheck()) MarkSettingsDirty();
         }
@@ -500,11 +568,14 @@ namespace CosmicShore.Editor.AI
         void DrawOverlay(Rect rect)
         {
             var s = Settings;
-            if (!_cam || (!s.ShowLabels && !s.ShowThinking)) return;
+            if (!_cam || (!s.ShowLabels && !s.ShowThinking && !s.ShowTrails)) return;
 
             GUI.BeginClip(rect);
             var local = new Rect(0f, 0f, rect.width, rect.height);
             var watched = Watched();
+            if (s.ShowTrails)
+                foreach (var pilot in _pilots)
+                    if (pilot.Alive) DrawTrail(local, pilot);
             foreach (var pilot in _pilots)
             {
                 if (!pilot.Alive) continue;

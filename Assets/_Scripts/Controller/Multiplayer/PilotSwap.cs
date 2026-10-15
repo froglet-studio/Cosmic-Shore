@@ -227,6 +227,11 @@ namespace CosmicShore.Gameplay
                     ServerPlayerVesselInitializerWithAI.ConfigureAIPilotForMode(leftPilot, gameData);
                     leftPilot.TakeModeHooksFrom(takenPilot);
                 }
+                // A Squirrel left to the AI in Skim Race or Regatta flies the racing pilot, as a backfill Squirrel does
+                // (ServerPlayerVesselInitializerWithAI.ConfigureAIPilot). Without it the swapped-in AI flew the platform
+                // autopilot's ring waypoints, which threaded no rings at all (Regatta playtest 2026-10-06; audit 2026-10-14).
+                if (humanHull.Transform)
+                    SkimRaceAIDeployment.TryInstall(humanHull.Transform.gameObject, humanHull, gameData);
                 humanHull.ToggleAIPilot(true);
             }
 
