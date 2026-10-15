@@ -58,6 +58,13 @@ it; `who_works_where.py` reports a session nobody has merged as unattributed.
    more each re-solves what the other already did (below).
 7. **Leave a trail.** When work touches another collaborator's area, the commit or PR says so: "Affects:
    Garrett's Thresher HUD". The next session reads the trail; the owner sees it in review.
+8. **Read the team activity on every prompt** (Yash, 2026-10-15: "stay updated by searching all git repos
+   automatically every time someone works on something"). The `team_activity.py` hook
+   (`.claude/settings.json`) fetches `origin` in the background, at most every 3 minutes. On each prompt it lists
+   the commits pushed to ANY branch since the session's last prompt, or the last 12 hours on its first prompt.
+   It leaves out the session's own commits. A commit is marked **HOT** when it touches a file this session has
+   worked on. Read a HOT commit before you change that file again, build on it, and tell the person. The hook
+   self-tests: `python3 .claude/hooks/team_activity.py --self-test`.
 
 ## What happened without this (2026-10-13, one merge, measured)
 

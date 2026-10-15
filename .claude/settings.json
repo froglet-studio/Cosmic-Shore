@@ -12,6 +12,11 @@
             "type": "command",
             "command": "python3 \"$CLAUDE_PROJECT_DIR/.claude/hooks/team_context.py\" 2>/dev/null || python \"$CLAUDE_PROJECT_DIR/.claude/hooks/team_context.py\" 2>/dev/null || true",
             "timeout": 10
+          },
+          {
+            "type": "command",
+            "command": "python3 \"$CLAUDE_PROJECT_DIR/.claude/hooks/team_activity.py\" 2>/dev/null || python \"$CLAUDE_PROJECT_DIR/.claude/hooks/team_activity.py\" 2>/dev/null || true",
+            "timeout": 10
           }
         ]
       }
