@@ -678,6 +678,12 @@ namespace CosmicShore.Engine
     }
 
     public sealed class GUILayoutOption { }
+
+    /// <summary>Original: UnityEngine.GUIUtility. The clipboard is process-local here (no window system is assumed).</summary>
+    public static class GUIUtility
+    {
+        public static string systemCopyBuffer { get; set; } = "";
+    }
 }
 
 namespace CosmicShore.Engine.Rendering
@@ -709,9 +715,16 @@ namespace CosmicShore.Engine.Profiling
         public static long GetTempAllocatorSize() => 0;
         /// <summary>Set by the renderer (texture + buffer uploads it tracks).</summary>
         public static long GraphicsMemoryBytes;
-        public static void BeginSample(string name) { }
-        public static void BeginSample(string name, Object targetObject) { }
-        public static void EndSample() { }
+        // Begin/EndSample record through the marker collector; EndSample closes the innermost open sample.
+        [ThreadStatic] static Stack<int> t_samples;
+        public static void BeginSample(string name)
+        {
+            int id = MarkerCollector.Register("Scripts", name, declared: true);
+            (t_samples ??= new Stack<int>()).Push(id);
+            MarkerCollector.Begin(id);
+        }
+        public static void BeginSample(string name, Object targetObject) => BeginSample(name);
+        public static void EndSample() { if (t_samples is { Count: > 0 }) MarkerCollector.End(t_samples.Pop()); }
         public static void BeginThreadProfiling(string threadGroupName, string threadName) { }
         public static void EndThreadProfiling() { }
     }
