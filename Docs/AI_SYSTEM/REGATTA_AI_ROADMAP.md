@@ -79,6 +79,11 @@ hull's own bindings, ticked with a read-only context, input-only. Make that the 
 | 6 | **Dolphin**: measure the charge policy in Regatta; tune the discharge runway | Lap times per difficulty |
 | 7 | **Mixed grid**: clear `SO_ArcadeGame.OpponentAIVessel` in `author_regatta_assets.py` (the Squirrel pin is a stopgap, REGATTA.md §6); re-run `regatta_balance.py` against AI times; set `StartingElements` from them | An all-AI domain of each of the six can win; the spread holds |
 
+**2026-10-15 status:** an audit of the five racing hulls (all except the Stoat) found and fixed the race-breakers listed in
+`Arcade/REGATTA.md` §6.1. Step 0 is partly done: Regatta now offers difficulty, and every gate-race AI reports its
+phase, ring, lap and boost decision to the Third Eye (`AIPilot.Objective`, `AIBoostDriver.Status`), with trails.
+The Rhino now has a drive (`RampBoostAIPolicySO`, step 4's first cut). Nothing has been timed yet.
+
 ### 3.1 Stoat, the first one
 
 The user's brief: **better speed control and manoeuvring with the black-hole / white-hole pair.**

@@ -261,7 +261,74 @@ namespace CosmicShore.Gameplay
         public void SetExternalTargetProvider(Func<Vector3> provider) => _externalTargetProvider = provider;
 
         /// <summary>Restores default crystal/player target seeking.</summary>
-        public void ClearExternalTargetProvider() => _externalTargetProvider = null;
+        public void ClearExternalTargetProvider()
+        {
+            _externalTargetProvider = null;
+            _objective = default;
+            _throttleFloor = 0f;
+        }
+
+        // The least throttle a mode asks for (a race: full). The skill throttle still applies above it.
+        float _throttleFloor;
+
+        /// <summary>
+        /// The least throttle this pilot flies while the mode's hooks are installed, 0..1 (0 = none, the skill
+        /// throttle alone). A race asks for full: an AI holding 0.6 throttle in a race is slow by construction
+        /// (2026-10-14 Regatta audit: the Rhino cruised at about 19 u/s, the Dolphin at 54 against a human's 68).
+        /// Cleared with <see cref="ClearExternalTargetProvider"/> and carried by <see cref="TakeModeHooksFrom"/>.
+        /// </summary>
+        public void SetThrottleFloor(float floor) => _throttleFloor = Mathf.Clamp01(floor);
+
+        float SteeringThrottle => Mathf.Clamp(Mathf.Max(throttle, _throttleFloor), 0f, 1f);
+
+        /// <summary>What a mode's steering hook is doing for a pilot (<see cref="ObjectiveReport"/>).</summary>
+        public enum ObjectivePhase
+        {
+            None = 0,
+            Approach = 1,        // flying at the approach point before a ring
+            Through = 2,         // committed: flying through the ring's mouth
+            CrystalDetour = 3,   // a crystal on the way to the ring
+            NotNoticed = 4,      // difficulty: the ring is not noticed yet
+            Misjudged = 5,       // difficulty: the ring's mouth is misjudged
+            Override = 6,        // the mode's own aim (Regatta: an Urchin riding its rail)
+            Finished = 7,        // past the last ring
+        }
+
+        /// <summary>
+        /// What a mode's steering hook is doing for this pilot this frame, for a viewer (the Third Eye) - never read
+        /// by the pilot itself. The mode's provider fills it as it decides (<see cref="ReportObjective"/>). Value data
+        /// only, so reporting every frame allocates nothing; the viewer turns it into words.
+        /// </summary>
+        public struct ObjectiveReport
+        {
+            /// <summary>False until a mode reports.</summary>
+            public bool Has;
+            public ObjectivePhase Phase;
+            /// <summary>The thing the mode is after (a ring's centre, a crystal) - not the steering point.</summary>
+            public Vector3 Objective;
+            /// <summary>Ring on the course (0-based) and lap (1-based), or -1 when the mode has neither.</summary>
+            public int Ring, Lap;
+            /// <summary>True when the phase is a difficulty mistake (GateRaceHandicap): drawn in a warning colour.</summary>
+            public bool Mistake;
+        }
+
+        ObjectiveReport _objective;
+
+        /// <summary>The mode's last report for this pilot (see <see cref="ObjectiveReport"/>).</summary>
+        public ObjectiveReport Objective => _objective;
+
+        /// <summary>A mode's steering hook says what it is doing (presentation only, no allocation).</summary>
+        public void ReportObjective(ObjectivePhase phase, Vector3 objective, int ring = -1, int lap = -1) =>
+            _objective = new ObjectiveReport
+            {
+                Has = true, Phase = phase, Objective = objective, Ring = ring, Lap = lap,
+                Mistake = phase == ObjectivePhase.NotNoticed || phase == ObjectivePhase.Misjudged,
+            };
+
+        /// <summary>The boost policy's name and what its driver is doing, or null when this hull has no live policy.</summary>
+        public string BoostStatus => _boostActive && boostPolicy
+            ? $"{boostPolicy.name}: {_boostDriver.Status ?? "idle"}"
+            : null;
 
         /// <summary>
         /// Optional override for the DRIFT LOOK-DIRECTION only - where the AI points its nose
@@ -305,8 +372,10 @@ namespace CosmicShore.Gameplay
             if (!source || source == this) return;
             _externalTargetProvider = source._externalTargetProvider;
             _driftLookTargetProvider = source._driftLookTargetProvider;
+            _throttleFloor = source._throttleFloor;
             source._externalTargetProvider = null;
             source._driftLookTargetProvider = null;
+            source._throttleFloor = 0f;
         }
 
         /// <summary>
@@ -732,7 +801,7 @@ namespace CosmicShore.Gameplay
 
             if (_commitDriftHeld)
             {
-                _commitDriftHeld = false;
+                SetCommitDriftHeld(false);
                 vessel?.StopShipControllerActions(CommitControl);
             }
         }
@@ -741,6 +810,22 @@ namespace CosmicShore.Gameplay
         // this pilot is holding the commit drift - the two things StopAIPilot has to give back.
         readonly HashSet<AIAbility> _activeAbilities = new();
         bool _commitDriftHeld;
+
+        /// <summary>
+        /// The commit drift is held or let go. While held the pilot also holds the left trigger fully down: on a
+        /// GAMEPAD device the drift's depth IS the trigger (VesselTransformer.GetTriggerSum), and an AI's device is the
+        /// host's, so with a pad plugged in an untriggered commit drifted at depth 0 - the course never locked, the
+        /// Dolphin weaved and never charged (2026-10-14 Regatta audit; the unmerged 0f4ef8c0c's holdDriftTrigger, for
+        /// the Dolphin too). Only the commit loop writes it, and only the Dolphin flies the commit loop (drift: 1).
+        /// </summary>
+        void SetCommitDriftHeld(bool held)
+        {
+            if (_commitDriftHeld == held) return;
+            _commitDriftHeld = held;
+            var status = vessel != null ? vessel.VesselStatus : null;
+            var input = status != null ? status.InputStatus : null;
+            if (input != null) input.LeftTriggerAnalog = held ? 1f : 0f;
+        }
 
         void Update()
         {
@@ -810,7 +895,7 @@ namespace CosmicShore.Gameplay
                 // points, which is exactly the window in which announcing the aim is honest.
                 VesselStatus.Course = desiredDirection;
                 vessel.PerformShipControllerActions(CommitControl);
-                _commitDriftHeld = true;
+                SetCommitDriftHeld(true);
                 EngageAimTelegraph();
                 desiredDirection = ResolveDriftLookDirection(desiredDirection);
             }
@@ -833,7 +918,7 @@ namespace CosmicShore.Gameplay
                 // longer reach until the cell happens to raise OnCellItemsUpdated, which is a
                 // crystal event and not a "this pilot needs a new goal" event.
                 vessel.StopShipControllerActions(CommitControl);
-                _commitDriftHeld = false;
+                SetCommitDriftHeld(false);
                 ReleaseAimTelegraph();
 
                 if (_reseekArmed)
@@ -864,7 +949,7 @@ namespace CosmicShore.Gameplay
                     _inputStatus.XSum = 0;
                     _inputStatus.YSum = 0;
                     _inputStatus.YDiff = 0;
-                    _inputStatus.XDiff = Mathf.Clamp(throttle, 0, 1);
+                    _inputStatus.XDiff = SteeringThrottle;
                 }
                 return;
             }
@@ -889,11 +974,17 @@ namespace CosmicShore.Gameplay
                 _inputStatus.XSum = Mathf.Clamp(angle * combinedLocalCrossProduct.y, -1, 1);
                 _inputStatus.YSum = Mathf.Clamp(angle * combinedLocalCrossProduct.x, -1, 1);
                 _inputStatus.YDiff = Mathf.Clamp(angle * combinedLocalCrossProduct.y, -1, 1);
-                _inputStatus.XDiff = (LookingAtCrystal && ram) ? 1 : Mathf.Clamp(throttle, 0, 1);
+                _inputStatus.XDiff = (LookingAtCrystal && ram) ? 1 : SteeringThrottle;
             }
 
             if (_boostActive && _boostDriver.HoldsLine)
                 CentreStick();
+            if (_boostActive && !VesselStatus.IsSingleStickControls)
+            {
+                if (_boostDriver.HoldsFullThrottle) _inputStatus.XDiff = 1f;
+                float rotationLimit = _boostDriver.RotationLimit;
+                if (rotationLimit >= 0f) LimitRotation(rotationLimit);
+            }
 
             //aggressiveness += aggressivenessIncrease * Time.deltaTime;
             throttle += throttleIncrease * Time.deltaTime;
@@ -987,7 +1078,9 @@ namespace CosmicShore.Gameplay
         /// </summary>
         void UpdateOrbitBreak(Vector3 toObjective)
         {
-            if (!breakOrbits || VesselStatus.IsDrifting)
+            // Riding a rail is not an orbit: the rail's aim point is always a lead ahead, so the range never falls and
+            // a lap of turning would trip the detector (2026-10-14 Regatta audit: an AI Urchin rode at 0.6 throttle).
+            if (!breakOrbits || VesselStatus.IsDrifting || VesselStatus.IsAttached)
             {
                 EndOrbitBreak();
                 return;
@@ -1160,7 +1253,7 @@ namespace CosmicShore.Gameplay
             if (_boostDriver.TakeCommitReleaseRequest() && _commitDriftHeld)
             {
                 vessel.StopShipControllerActions(CommitControl);
-                _commitDriftHeld = false;
+                SetCommitDriftHeld(false);
                 ReleaseAimTelegraph();
             }
         }
@@ -1178,6 +1271,18 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>Hold the line: no turn input this frame, throttle untouched.</summary>
+        /// <summary>Scale the three steering axes down together so their sum stays at or under
+        /// <paramref name="limit"/>: the same direction of turn, gentler.</summary>
+        void LimitRotation(float limit)
+        {
+            float sum = Mathf.Abs(_inputStatus.XSum) + Mathf.Abs(_inputStatus.YSum) + Mathf.Abs(_inputStatus.YDiff);
+            if (sum <= limit || sum <= 1e-6f) return;
+            float k = limit / sum;
+            _inputStatus.XSum *= k;
+            _inputStatus.YSum *= k;
+            _inputStatus.YDiff *= k;
+        }
+
         void CentreStick()
         {
             if (VesselStatus.IsSingleStickControls)
