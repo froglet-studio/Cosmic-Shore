@@ -915,3 +915,14 @@ Entries are grouped by family; within a family, the newest goes at the bottom.
 - Evidence: `SKILL.md` §6 and §7; `CLAUDE.md` vessel section; `.claude/hooks/vessel_studio_nudge.py`;
   `/vessel-studio` §0; https://claude.ai/artifact/JD17sQMeuEUETp6AUPqMmy.
 - Promoted: §6
+
+### L-STU-71 — A vessel lab carries four minigames, one per element, and the element decides the kind
+- Lab: all vessel labs (raised on the Shrike Studio) · Branch: `cece/affectionate-clarke-s738vh` · By: Garrett (owner), 2026-10-15
+- What happened: the Shrike lab flew the two minigames its class document named (Thread the Needle, Den Defense). The owner
+  set a fleet rule: "time is always a racing game, space a destruction game, mass a creation game, and charge a vessel on
+  vessel dogfight", so every vessel's lab tests the kit against the same four kinds of play.
+- Do instead: build the four kinds (`SKILL.md` §1.5). Slot a document's own game by its kind; build the missing kinds as
+  lab proposals. The Shrike lab has the Time race (Thread the Needle); Den Defense is a defense game (not one of the four);
+  Space (Bunker Buster), Mass and Charge are its next round.
+- Evidence: `SKILL.md` §1.5; `Docs/Studios/SHRIKE.md` §6.
+- Promoted: §1.5

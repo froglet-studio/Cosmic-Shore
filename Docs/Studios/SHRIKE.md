@@ -161,6 +161,11 @@ Defense is about ±20 s per cell on five seeds.
 - **Level-5 upgrades** for all four elements: open slots; the document gives none.
 - **Asteroids against a docked hull** outside the den, and missiles' real path-finding: not modelled yet.
 
+- **The four element minigames** (`/labmaker` §1.5, the owner's rule 2026-10-15: Time a race, Space destruction, Mass
+  creation, Charge a vessel-on-vessel dogfight). Round 1 has the Time race (Thread the Needle) and Den Defense (the
+  document's defense game, none of the four). Still to build: Space (the document's Bunker Buster concept), Mass (a
+  creation game: nests and trail kept standing) and Charge (a Shrike dogfight, petals only).
+
 ## 7. Not modelled
 
 The game's prism pools and growth, elemental crystals and the comeback system, the HyperSea ecology (the creatures and

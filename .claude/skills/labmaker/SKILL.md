@@ -44,6 +44,27 @@ races headless in a few seconds.
    writing any `window.claude` code: its `use()` contract is versioned and is the authority over
    any copy in this repo.
 
+## 1.5 A vessel lab plays one minigame per element (the owner's rule, 2026-10-15)
+
+Every lab about a VESSEL ships four minigames, one per element, each with its own four-step intensity
+ladder (I1-I4) and its own scorecard column set. The element decides the KIND of game, whatever the
+vessel's design document calls its games:
+
+| Element | Minigame kind | What it scores | Example shape |
+|---|---|---|---|
+| **Time** | a **race** | time to finish a course (gates, rings, windows, crystals in order) | Thread the Needle (Shrike), Skim Race |
+| **Space** | a **destruction** game | mass destroyed in a time limit, or time to clear a structure | Bunker Buster (Shrike concept), Demolition Derby |
+| **Mass** | a **creation** game | mass built and kept (laid, standing at the end, defended) | Fauna Frenzy (lay trail mass creatures eat) |
+| **Charge** | a **vessel-on-vessel dogfight** | petal hits dealt against taken, eliminations (PvP is petals only, LOCKED) | rivals at Easy / Medium / Hard in one arena |
+
+- A game the design document already has goes in the slot of its KIND, not of the element its document
+  rewards. Where the document has no game for an element, the lab builds the kind above and says it is the
+  lab's (a proposal).
+- The game picker lists them in that order (Time, Space, Mass, Charge) with the element named, and the
+  scorecard runs each one: the levels (Easy / Medium / Hard), the controls (each ability off), and the
+  element-led play style should win its own element's game (the Stoat's "each style wins its column", §2.3).
+- A lab built before this rule records which of the four it still lacks, in its record and in `CATALOG.md`.
+
 ## 2. The lab contract — every lab meets all of it
 
 ### 2.1 A READER of the shipped numbers, never their authority
