@@ -93,6 +93,9 @@ rather than a second one. Its parts:
 
 ### L3 — Learn from players
 
+**Record the situation, not just the sticks:** what to record, compute and learn so the AI knows *why* a player did
+something (target, line-up, obstacles, skims taken and skipped, outcome) is planned in `SITUATION_RECORDING_PLAN.md`.
+
 1. **The flight recorder** (runtime, new). While a human races, it samples about 10 times a second:
    - position, velocity and heading;
    - the sticks and triggers (the same input the AI writes; the input-only contract makes the two comparable);
