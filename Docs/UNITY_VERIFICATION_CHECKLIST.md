@@ -65,6 +65,22 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Style-B menu redesign, item 12 follow-ups: match toasts, ThumbCursors (`claude/new-session-76hnyc`, 2026-10-15) — NOT EDITOR-VERIFIED
+
+`GameCanvas.prefab` was patched by `Tools/Build/author_ingame_hud.py` (`--check`, `--self-test`
+green) - see `Docs/MENU_REDESIGN_B.md` section 22.6. No editor in the session, so `/verify-unity`
+is still owed.
+
+**Verify in editor:**
+1. Finish a match that completes a quest, or unlocks an intensity: the "Quest complete" /
+   "Intensity N unlocked" toast drops in at the bottom centre over the scoreboard, and the
+   scoreboard's buttons stay clickable under it. The console no longer warns "No GameObject named
+   'ToastNotificationContainer'".
+2. Back in Menu_Main, menu toasts still appear at the top (the menu's own container).
+3. GameCanvas no longer has a ThumbCursors object, and nothing logs a missing reference.
+
+---
+
 ### 🔴 Style-B menu redesign, item 12e: spectating, match feed, freestyle HUD (`claude/new-session-76hnyc`, 2026-10-15) — NOT EDITOR-VERIFIED
 
 `SpectatorOverlay.cs`, `GameFeedText.prefab`, `NotificationUI.prefab`, `GameToastSettings.asset`,

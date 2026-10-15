@@ -1005,8 +1005,54 @@ def patch_pause_instance(p):
         p.replace(btn, head + "      m_Calls:\n" + "".join(blocks) + tail)
 
 
+# --------------------------------------------------------------------------------------------
+# Follow-ups - the in-game toast container (quest / intensity toasts at the end of a match)
+# --------------------------------------------------------------------------------------------
+
+TOAST_CONTAINER = "ToastNotificationContainer"   # ToastNotificationAPI finds it BY NAME
+TOAST_H = 132
+
+
+def canvas_root_rt(p):
+    roots = [f for f, d in p.sc.docs.items() if d.startswith("--- !u!224 ") and "  m_Father: {fileID: 0}\n" in d]
+    assert len(roots) == 1, "GameCanvas should have one root RectTransform"
+    return roots[0]
+
+
+def patch_toast_container(p):
+    """ToastNotificationAPI looks for a GameObject named ToastNotificationContainer and drops the
+    toast when there is none - so every quest-complete and intensity-unlocked toast raised at the
+    end of a match (EndGameSequencer) was dropped with a warning: only Menu_Main had one. The match
+    gets its own, bottom centre (the top is the score columns, and at the end the scoreboard's
+    header), as the canvas's LAST child so it draws over the scoreboard, and never taking a click."""
+    root = canvas_root_rt(p)
+    n = N("Toasts", TOAST_CONTAINER, R((0, 0), (1, 0), (0, 24), (0, TOAST_H), (0.5, 0)))
+    n.add("vlg", 114, K.hv_layout(True, (0, 0, 0, 0), 10, 7, (1, 1), (0, 0)))
+    n.add("cg", 225, lambda ctx, go: H.canvas_group(True)(ctx, go).replace("  m_Interactable: 1\n  m_BlocksRaycasts: 1\n",
+                                                                           "  m_Interactable: 0\n  m_BlocksRaycasts: 0\n"))
+    rt = p.emit(n, root, root)
+    p.children(root, [k for k in p.kids(root) if k != rt] + [rt])
+
+
+def retire_thumb_cursors(p):
+    """ThumbCursors (two thumb cursors and two nested ThumbPerimeter instances) is inactive and
+    nothing in the canvas, code or any scene references it - measured 2026-10-15. Of the objects
+    the item 12 inventory called dead, it is the ONLY one that is: LeftDisplay's counters are written
+    by Brood Rush's drone events, the inline Scoreboard text is written unguarded on every reset,
+    and RoundTime, LifeFormCounter and Pip are wired into MultiplayerHUDView and kept on purpose."""
+    gos = [f for f, d in p.sc.docs.items() if d.startswith("--- !u!1 ") and "  m_Name: ThumbCursors\n" in d]
+    for go in gos:
+        assert p.sc.field(go, "m_IsActive") == "0", "ThumbCursors is active again - it is no longer dead"
+        rt = p.sc.rect_of(go)
+        parent = re.search(r"m_Father: \{fileID: (-?\d+)\}", p.doc(rt)).group(1)
+        p.remove_subtree(go)
+        p.children(parent, [k for k in p.kids(parent) if k != rt])
+
+
 def canvas_text(text_):
     p = Patch(text_, "GameCanvas/Item12")
+    retire_thumb_cursors(p)
+    patch_toast_container(p)
     patch_pause_instance(p)
     prune_instance_mods(p, ENDGAME_GUID, LEGACY_REVEAL_IDS)
     patch_scoreboard(p)
@@ -1241,6 +1287,15 @@ def validate(files):
     for name in (SB_ROW, SB_STAT):
         check_local_refs(sb_path(name), files[sb_path(name)])
 
+    assert "  m_Name: ThumbCursors\n" not in cv, "the dead ThumbCursors subtree survives"
+    # Follow-up - toast container
+    names = re.findall(r"^  m_Name: %s$" % TOAST_CONTAINER, cv, re.M)
+    assert len(names) == 1, "GameCanvas needs exactly one ToastNotificationContainer (the toast API finds it by name)"
+    root_rt = next(f for f, d in docs.items() if d.startswith("--- !u!224 ") and "  m_Father: {fileID: 0}\n" in d)
+    kids = re.findall(r"\{fileID: (-?\d+)\}", re.search(r"^  m_Children:\n((?:  - .*\n)*)", docs[root_rt], re.M).group(1))
+    last_go = re.search(r"m_GameObject: \{fileID: (-?\d+)\}", docs[kids[-1]]).group(1)
+    assert f"  m_Name: {TOAST_CONTAINER}\n" in docs[last_go], "the toast container is not drawn last (the scoreboard would cover it)"
+
     # 12e - feed
     fd = files[FEED]
     check_local_refs(FEED, fd)
@@ -1329,6 +1384,7 @@ def self_test(files):
         ("feed rows vanishing again", sub(TOAST_SETTINGS, "  agedAlpha: 0.5\n", "  agedAlpha: 0\n")),
         ("the feed row without its accent bar", lambda f: f.__setitem__(FEED, re.sub(
             r"(  accentImage: )\{fileID: -?\d+\}", r"\1{fileID: 0}", f[FEED]))),
+        ("the match without a toast container", sub(CANVAS, f"  m_Name: {TOAST_CONTAINER}\n", "  m_Name: Toasts\n")),
         ("the column hairline unwired", lambda f: f.__setitem__(PANEL["path"], re.sub(r"(  borderImage: )\{fileID: -?\d+\}", r"\1{fileID: 0}", f[PANEL["path"]]))),
     ]
     ok = all(expect(l, m) for l, m in cases)

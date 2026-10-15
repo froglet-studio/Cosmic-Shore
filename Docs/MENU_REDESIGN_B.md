@@ -1356,3 +1356,24 @@ Item 12's defect list (section 13.3 inventory) is closed except:
 - defect 13: the dead UI on GameCanvas (LeftDisplay, RoundTime, ThumbCursors and others) is still
   there, inactive.
 
+### 22.6 Follow-ups (2026-10-15, awaiting in-editor approval)
+
+- **Defect 5 fixed: quest toasts in a match.** `ToastNotificationAPI` finds its container by NAME
+  (`ToastNotificationContainer`), and only Menu_Main had one. Every "Quest complete" and
+  "Intensity N unlocked" toast `EndGameSequencer` raises at the end of a match was dropped with a
+  warning. GameCanvas now carries its own container, bottom centre: the top is the score columns,
+  and at the end the scoreboard's header. It is the canvas's last child, so it draws over the
+  scoreboard, and its CanvasGroup never takes a click. Validation checks there is exactly one and
+  that it draws last.
+- **Defect 13, measured, mostly wrong.** Of the objects the inventory called dead UI, only
+  `ThumbCursors` is dead: two cursors and two nested ThumbPerimeter instances, inactive, with no
+  reference from the canvas, code or any scene. It is deleted. The rest are live:
+  - `LeftDisplay`'s two counters are written by Brood Rush's mound and queen drone events
+    (`MiniGameHUD.OnMoundDroneSpawned`);
+  - the inline `Scoreboard` text is written, unguarded, by `MinigameHUDView.UpdateScoreUI` on every
+    reset;
+  - `RoundTime`, `LifeFormCounter` and `Pip` are wired into `MultiplayerHUDView` and kept on
+    purpose (switched off, not deleted).
+  Retiring those is a code change across 15 modes, not a prefab cleanup, and is left for a
+  /refactor pass.
+
