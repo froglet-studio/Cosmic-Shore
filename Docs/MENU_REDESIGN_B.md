@@ -39,7 +39,7 @@ Legend: `Planned` ▸ `Mockup` ▸ `Mockup approved` ▸ `Built` ▸ `Approved i
 | 2 | Hangar screen: grid, detail and the spend-crystals panel | Approved in editor (2026-10-14) | `Hangar.dc.html` (interactive), `HangarLocked`, `HangarSpend`, `HangarShort`, `HangarNoArt`, `HangarNotes` on the Menu Redesign B canvas | `661a7f1f`, `7987b896`, `96c81faa` + docs |
 | 3 | Arcade modal (`ArcadeScreenModal`): explore grid plus the party/friends panel | Built | `Arcade.dc.html` (interactive), `ArcadeSolo`, `ArcadeNoFriends`, `ArcadePicks`, `ArcadeNotes` on the Menu Redesign B canvas | `f9b59fd4`, `75cd38e7`, `5cc56adb` + docs |
 | 4 | Game configure: `ArcadeGameConfigureModal`, plus the Maelstrom and Arena configure windows and the weekly leaderboard | Built (2026-10-15, section 14) | `Configure.dc.html` (interactive), `ConfigureArena`, `ConfigureMaelstrom`, `ConfigureWeekly`, `ConfigureWeeklySpent`, `ConfigureGuest`, `ConfigureLocked`, `WeeklyLeaderboard` (interactive), `LeaderboardEmpty`, `ConfigureNotes` | |
-| 5 | Profile screen, Profile modal (avatar / display name), Episodes entry | Mockup approved (2026-10-14) | `Profile.dc.html` (interactive), `ProfileFresh`, `ProfileModal` (interactive), `ProfileName`, `ProfileNameError`, `ProfileNameTaken`, `ProfileNotes` | |
+| 5 | Profile screen, Profile modal (avatar / display name), Episodes entry | Profile screen Built (2026-10-15, section 15); profile window building | `Profile.dc.html` (interactive), `ProfileFresh`, `ProfileModal` (interactive), `ProfileName`, `ProfileNameError`, `ProfileNameTaken`, `ProfileNotes` | |
 | 6 | Home screen: hub row, header, settings and freestyle buttons, invite popup | Mockup approved (2026-10-14) | `Home.dc.html` (interactive), `HomeInvite`, `HomeFocus`, `HomeOffline`, `HomeNotes` | |
 | 7 | Ark screen (Elemental Converter) | Mockup approved (2026-10-14) | `Ark.dc.html` (interactive), `ArkConverting`, `ArkDone`, `ArkNotes` | |
 | 8 | Arena, Toy Box and Mission modals, and Toy configure | Mockup approved (2026-10-14) | `ToyBox.dc.html` (interactive), `ToyBoxClaimed`, `ArenaWindow`, `MissionWindow`, `ToyConfigure` (interactive), `ToyConfigurePaint`, `ToyConfigureSpawn`, `ToyConfigureDomain`, `ModesNotes` | |
@@ -623,7 +623,7 @@ Nothing here is built yet; the builds follow approval, in the order of §3.
 | Q3 | 4 | Podium medal colours have no tokens. | Gold (Light), Light, Gold (Dark). |
 | Q4 | 4 | Reward bands "4-20" and "20+" overlap at 20. | "4th - 20th", "21st and below". |
 | Q5 | 5 | Quest art is two legacy video stills; re-point each quest's Icon to its mode's card art? | Card art; Squirrel render for Vessel Hangar. |
-| Q6 | 5 | Show the profile's unused data (crystals, games, flight time, sessions)? | Not drawn. |
+| Q6 | 5 | Show the profile's unused data (crystals, games, flight time, sessions)? | Drawn (revision 2's pilot record). |
 | Q7 | 6 | Avatar and name open the profile window (today they only play a sound)? | They open it. |
 | Q8 | 8 | Wander's portrait is the conveyor still; Element Charger has none. | `tool_arkway`, `ethirion_omni`. |
 | Q9 | 11 | Toasts move to top centre and gain an optional kind (refusal, success, error, goal) for a leading glyph. | Top centre, glyphs drawn. |
@@ -749,3 +749,35 @@ title from the card list (`games`: "Skim Race", not "SKIMRACE") and counts down 
 Departures: no percentile bar on the best-run card (the board service exposes no total entrant count);
 podium medals are Purchase / Light / Purchase at 55 % (Q3 - no medal tokens exist).
 Retired: `FrogletTools > Interface > Wire Weekly Challenge Leaderboard` (its scene names are gone).
+
+
+---
+
+## 15. Item 5: the Profile screen and the profile window
+
+### 15.1 The Profile screen (built 2026-10-15, awaiting in-editor approval)
+
+`Tools/Build/author_menu_profile.py` authors `QuestCard.prefab` and `ProfileView.prefab` under
+`Assets/_Prefabs/UI Elements/Main Menu Screens/Profile/` and mounts the view on `Screens/ProfileScreen`
+(the old Background, NamePanel, AvatarDisplay, Scroll View and Episodes button are deleted; the root,
+`ProfileScreen`, `QuestTrackView` and the inactive Episodes panel stay, because the switcher and the
+panel are named by fileID).
+
+- **Pilot card:** avatar (opens the Avatar tab), name, Change avatar / Rename, and the pilot record
+  (Q6): crystals (`CrystalCurrencyDisplay`), games completed, flight time, sessions - re-read on every
+  screen enter (`ProfileScreen` is now an `IScreen`; games and flight time raise no event).
+- **Episodes card:** a locked `KitTile` with `CommerceAffordance` + an authored `MenuAvailabilityView`.
+  `EpisodeScreen.refusalHost` points at it, so the refusal (sting, toast) plays on the card, and
+  `MenuAvailabilityView.TryPress` now shakes any refused entry that carries a `KitShake`.
+- **Quests:** five `QuestCard`s fit without scrolling (`scrollRect` and parallax off). Each card is a
+  `KitQuestCard` drawing the legacy `QuestItemCard` state through new hooks (`DrawState`, `SetContext`,
+  `SetActiveFrontier`): art + numeral, state line, two intensity goals marked done / next / to-do from
+  `GetMaxUnlockedIntensity`, and Claim (with a sweep and the ceremony pop) / Play / "Unlocks after X".
+  Its node and segment on the quest track belong to the card; the frontier's segment carries the spark.
+  `QuestTrackView` passes each card its context and writes "N of 5 complete".
+- **Quest art (Q5):** each quest's Icon is its mode's card art; the Vessel Hangar's is the Squirrel render.
+- Buttons are wired by `ProfileScreen` in code (no persistent calls into the generated prefab).
+- `QuestItemState` members now carry explicit values.
+
+Departures: the hangar card shows its blurb without the per-quest "needs" list. The ambient pan on the
+card art is the one Q1 allowed.

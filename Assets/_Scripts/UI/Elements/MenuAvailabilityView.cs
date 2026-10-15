@@ -122,6 +122,8 @@ namespace CosmicShore.UI
 
                 case MenuAvailability.Locked:
                     PlayMenuAudio(MenuAudioCategory.Denied);
+                    // The refused entry shakes once (a no-op unless it carries a KitShake).
+                    KitShake.Play(gameObject);
                     if (!string.IsNullOrWhiteSpace(lockedMessage))
                         ToastNotificationAPI.Show(lockedMessage);
                     return false;

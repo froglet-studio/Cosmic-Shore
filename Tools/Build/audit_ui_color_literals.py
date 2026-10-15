@@ -81,7 +81,7 @@ VERDICTS = {
     "Elements/LoadoutCard.cs:20": ("inactiveLight", "SEE FLAG F2 — deselected is currently white"),
     "Elements/OnlineInfoEntry.cs:39": ("cta", "§3 player online status; SEE FLAG F3 — currently white"),
     "Elements/OnlineInfoEntry.cs:48": ("c", "multiply-identity white"),
-    "Elements/QuestItemCard.cs:42": ("c", "multiply-identity white"),
+    "Elements/QuestItemCard.cs:46": ("c", "multiply-identity white"),
     "Elements/RequestInfoEntry.cs:29": ("cta", "§2 attention reuses CTA; currently white"),
     "Elements/ScoreNumberAnimator.cs:131": ("a", "positive/gain green — §2 gap table proposes no gain hue"),
     "Elements/ScoreNumberAnimator.cs:132": ("b", "HUDAnimationSettingsSO — value is danger (Δ0.008)"),

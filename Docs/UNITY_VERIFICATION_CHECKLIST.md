@@ -65,6 +65,26 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Style-B menu redesign, item 5a: the Profile screen (`claude/new-session-76hnyc`, 2026-10-15) — NOT EDITOR-VERIFIED
+
+`Screens/ProfileScreen` rebuilt from the approved Profile boards (`Docs/MENU_REDESIGN_B.md` section 15)
+by `Tools/Build/author_menu_profile.py` (`--check`, `--self-test` green). No editor in the session:
+`/verify-unity` still owed. Offline: player + editor reference compiles clean.
+
+**Verify in editor:**
+1. PROFILE tab: pilot card shows your avatar, name, crystals, games, flight time ("6h 12m"), sessions;
+   play a freestyle flight, come back - flight time moved.
+2. Avatar and Change avatar open the profile window on Avatar; Rename opens it on Display name.
+3. Episodes card: locked look; pressing it plays Denied, shakes the card, toasts "Episodes arrive with
+   the full release.".
+4. Five quest cards fit with no scroll; card art is each mode's card image; states read Completed /
+   Ready to claim / In progress / Locked; goals tick per intensity; "N of 5 complete" and the bar match.
+5. Claim on a ready card: pop + sweep, the next card unlocks (sequence unchanged); Play opens the Arcade.
+6. The track nodes fill as quests are claimed; the frontier segment carries a spark.
+7. Pad: focus lands on the frontier card's Claim / Play.
+
+---
+
 ### 🔴 Style-B menu redesign, item 4: the game configure windows and the weekly leaderboard (`claude/new-session-76hnyc`, 2026-10-15) — NOT EDITOR-VERIFIED
 
 The arcade card window (`ArcadeGameConfigureModal.prefab`) and the Arena and Maelstrom windows in

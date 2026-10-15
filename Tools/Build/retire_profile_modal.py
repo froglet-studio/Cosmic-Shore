@@ -36,8 +36,9 @@ PREFAB = pathlib.Path("Assets/_Prefabs/UI Elements/Profile.prefab")
 SCREEN_SWITCHER = "4216411968520269688"          # ScreenSwitcher component, on GameObject "Screens"
 SURVIVOR        = "8675064058193410727"          # PlayerDataSelectModal / ProfileIconSelectView
 RETIRED         = "2899345459383930630"          # ProfileModal
-OPENERS         = ["291271916486792912",         # ShowPopupButton  (ProfileScreen / AvatarDisplay)
-                   "1431731438122436423"]        # OnlineIndicator  (HomeScreen / Main_Menu_Panel / AvatarIcon)
+# ShowPopupButton (291271916486792912, ProfileScreen / AvatarDisplay) was an opener too; the style-B
+# Profile screen (author_menu_profile.py) deleted it - its avatar and Change avatar call the window.
+OPENERS         = ["1431731438122436423"]        # OnlineIndicator  (HomeScreen / Main_Menu_Panel / AvatarIcon)
 SCENE_CLOSE     = "2899345458740611223"          # ProfileModal's own CloseButton
 PREFAB_CLOSE    = "6960199310942333857"          # Profile.prefab's CloseButton
 PREFAB_ICON     = "6960199312717497857"          # Profile.prefab's ProfileIconButton
