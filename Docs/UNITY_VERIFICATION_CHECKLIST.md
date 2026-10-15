@@ -9402,5 +9402,7 @@ Checked offline only: unity_refcompile player, player-dev and editor configurati
    the AI flew.
 3. Stop Play, then press **Send to Claude**. **Pass:** the flight appears under `BugLedger/shared/reports/<you>/flights/`
    on your bugledger branch.
+5. Stop Play in the MIDDLE of a recorded race. **Pass:** a flight is still written (`"ended":"play stopped"`, unfinished),
+   and Unity asks "Send to Claude?" with "You recorded a new flight" even when there was no new error.
 4. In a session, run `python3 Tools/Build/learn_from_flights.py`. **Pass:** it lists your races and proposes numbers.
    With `--write`, `SkimRaceAIConfig_Regatta.asset` changes, and the Squirrel AI flies the learned line.

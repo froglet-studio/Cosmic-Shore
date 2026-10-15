@@ -63,12 +63,18 @@ namespace CosmicShore.Editor
                 // only judge captures that reach a branch — so a new one asks too, even on a run
                 // with no new error. Redlog and crash files only ride along: a redlog is written
                 // every session that has reds, and asking for those would ask every run.
-                int newCaptures = 0;
+                // A recorded flight is deliberate too (the Third Eye's Record toggle): the Squirrel AI can only learn
+                // from flights that reach a branch (HumanFlightRecorder, learn_from_flights.py).
+                int newCaptures = 0, newFlights = 0;
                 foreach (var report in BugHuntReports.Candidates("", Environment.UserName))
+                {
                     if (report.Kind == "perf" && asked.Add("perf:" + Path.GetFileName(report.Source)))
                         newCaptures++;
+                    else if (report.Kind == "flights" && asked.Add("flights:" + Path.GetFileName(report.Source)))
+                        newFlights++;
+                }
 
-                if (fresh.Count == 0 && newCaptures == 0) return;
+                if (fresh.Count == 0 && newCaptures == 0 && newFlights == 0) return;
 
                 // Remember them whatever the answer: "Not now" must not become "ask every run".
                 settings.SentFingerprints = string.Join("\n", asked);
@@ -84,7 +90,15 @@ namespace CosmicShore.Editor
                         body.Append("• ").Append(Shorten(fresh[i].Title)).Append('\n');
                     if (fresh.Count > MaxTitlesShown) body.Append($"• and {fresh.Count - MaxTitlesShown} more\n");
                     if (newCaptures > 0) body.Append($"\nPlus {newCaptures} new performance capture(s).\n");
+                    if (newFlights > 0) body.Append($"\nPlus {newFlights} new recorded flight(s) for the AI to learn from.\n");
                     body.Append("\nSend them to Claude to fix? Nothing in your project or branch is changed.");
+                }
+                else if (newCaptures == 0)
+                {
+                    body.Append(newFlights == 1
+                        ? "You recorded a new flight."
+                        : $"You recorded {newFlights} new flights.");
+                    body.Append("\n\nSend to Claude so the Squirrel AI can learn from it? Nothing in your project or branch is changed.");
                 }
                 else
                 {

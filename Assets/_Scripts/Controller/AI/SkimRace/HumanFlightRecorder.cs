@@ -277,8 +277,17 @@ namespace CosmicShore.Gameplay
         static string F(float v, string format = "0.##") =>
             float.IsNaN(v) || float.IsInfinity(v) ? "0" : v.ToString(format, CultureInfo.InvariantCulture);
 
+        // Stopping Play mid-race (or quitting) must not throw the race away: it is written as an unfinished
+        // flight, which the learner ranks below finished ones. Before this, a race stopped short wrote nothing,
+        // so there was no file for Send to Claude to carry and no reason for Unity to ask (Yash, 2026-10-15).
+        void OnApplicationQuit()
+        {
+            if (_course != null) Finish("play stopped");
+        }
+
         void OnDestroy()
         {
+            if (_course != null) Finish("play stopped");
             if (s_instance == this) s_instance = null;
         }
     }
