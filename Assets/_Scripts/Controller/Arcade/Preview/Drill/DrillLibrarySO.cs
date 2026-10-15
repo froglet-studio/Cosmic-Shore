@@ -95,6 +95,9 @@ namespace CosmicShore.Gameplay
             [TextArea(2, 3)] public string MentorClosingLine;
             [Tooltip("Shown on the Play button's place while the first Lesson holds it shut. Empty = nothing.")]
             public string PlayLockedCaption;
+            [Tooltip("Header while the autopilot shows a Ghost Demo step before handing the stick over. " +
+                     "Empty = the Lesson's own header stays up.")]
+            public string GhostDemoTitle;
 
             public List<PadControlLabel> PadControlLabels = new();
             public List<FlightControlLabel> FlightControlLabels = new();
@@ -109,6 +112,18 @@ namespace CosmicShore.Gameplay
 
         [Tooltip("A step's hint appears after this many seconds unless the step authors its own.")]
         [SerializeField, Min(0f)] float defaultHintAfterSeconds = 8f;
+
+        [Header("Ghost demo")]
+        [Tooltip("Seconds the autopilot flies a Ghost Demo step before the stick is handed to the player. " +
+                 "0 = no demos: the cue is ignored and every step goes straight to the player.")]
+        [SerializeField, Min(0f)] float ghostDemoSeconds = 3f;
+
+        [Tooltip("Seconds the demo flies before it presses (so the player sees the ship first), and before " +
+                 "the end that a held control is let go (so the hand-over never starts mid-drift).")]
+        [SerializeField, Min(0f)] float ghostDemoLeadInSeconds = 0.5f;
+
+        [Tooltip("How long the demo holds a tapped control (an ability, a button).")]
+        [SerializeField, Min(0.05f)] float ghostDemoTapSeconds = 0.4f;
 
         [Header("Mentor")]
         [SerializeField] List<MetricTips> metricTips = new();
@@ -143,6 +158,9 @@ namespace CosmicShore.Gameplay
 
         public float LessonSkipDelaySeconds => lessonSkipDelaySeconds;
         public float DefaultHintAfterSeconds => defaultHintAfterSeconds;
+        public float GhostDemoSeconds => ghostDemoSeconds;
+        public float GhostDemoLeadInSeconds => ghostDemoLeadInSeconds;
+        public float GhostDemoTapSeconds => ghostDemoTapSeconds;
         public float MentorDwellSeconds => mentorDwellSeconds;
         public float MentorGapSeconds => mentorGapSeconds;
         public float MomentTimeoutSeconds => momentTimeoutSeconds;

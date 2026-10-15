@@ -19,9 +19,12 @@ applies in shipped builds too, so a fresh install gets every lock open and no gu
 redesign that answers "tooltips" and "a tutor that flies with you" is the **Microgame Training
 plan** (`Docs/ModePreview/TRAINING_PLAN.md`, product-owner decisions locked 2026-09-25): a
 first-login **spotlight guide**, a forced per-ship **Lesson**, then a curated **Mentor** tip
-stream. Its phases 1-4 are written **on the unmerged branch `claude/exciting-bell-69b398`**, which has
-no PR and has never been run in the editor. Landing that branch, playing it once, and measuring it is
-the shortest path to activation.
+stream. Its phases 1-4 were written on `claude/exciting-bell-69b398` and were **merged into
+`Ys-bleeding-edge` on 2026-10-15**, together with the **ghost demo** (the autopilot flies a Lesson's
+button step once, then hands the stick over - TRAINING_PLAN §10.7). None of it has run in the editor.
+Playing it once (§6.2), then measuring it, is the shortest path to activation. The first-login phase
+opts in to running under the master unlock, so the guide reaches a default build without flipping
+the gate; the later quest phases still wait for it.
 
 ---
 
@@ -29,8 +32,8 @@ the shortest path to activation.
 
 | Plan | Where | Status |
 |---|---|---|
-| **Microgame Training** — first-login spotlight guide → Game of the Week microgame → Lesson (forced the first time) → Mentor (curated tips) | `Docs/ModePreview/TRAINING_PLAN.md` **on `claude/exciting-bell-69b398`** | Phases 1-4 written, **unmerged, no PR, never run in the editor.** Phase 5 (non-racing tip lists, relevance-gated leaderboards) and 6 (authoring window, coverage test, `drill_lesson` / `drill_mentor` analytics) not started. §11 lists three open product questions |
-| **Quest graph** (the engine the guide runs on) | `Assets/FTUE/`, `Docs/claude/FTUE_DIALOGUE_AI.md`, `Assets/FTUE/QUEST_GRAPH_TOOL.md` | Built and in `Menu_Main`; **stood down by the master developer unlock**. `MainQuest` P0 is still the freestyle flight school on `bleeding-edge`; the training branch replaces it with the first-login guide and lets that one phase run under the gate (`runsUnderDeveloperUnlock`) |
+| **Microgame Training** — first-login spotlight guide → Game of the Week microgame → Lesson (forced the first time) → Mentor (curated tips) | `Docs/ModePreview/TRAINING_PLAN.md` | Phases 1-4 and the ghost demo (§10.7) on `Ys-bleeding-edge` since 2026-10-15 (from `claude/exciting-bell-69b398`), **not yet on `bleeding-edge`, never run in the editor.** A playtest on 2026-10-06 found the spotlight drew nothing; the fix (`CanvasRenderer` on the code-built graphics) has not been re-tested (`UNITY_VERIFICATION_CHECKLIST.md`). Phase 5 (non-racing tip lists, relevance-gated leaderboards) and 6 (authoring window, coverage test, `drill_lesson` / `drill_mentor` analytics) not started. §11 lists three open product questions |
+| **Quest graph** (the engine the guide runs on) | `Assets/FTUE/`, `Docs/claude/FTUE_DIALOGUE_AI.md`, `Assets/FTUE/QUEST_GRAPH_TOOL.md` | Built and in `Menu_Main`; **stood down by the master developer unlock**, except a phase that opts in (`runsUnderDeveloperUnlock`): on `Ys-bleeding-edge` `MainQuest` P0 is the first-login guide and opts in, and the runner stands down at P1. On `bleeding-edge` P0 is still the freestyle flight school and nothing runs |
 | **Quest Track** (the unlock chain) | `Docs/QUEST_TRACK_AND_BREADCRUMB.md` | Live: Scurry → Hex Race → Joust → Maelstrom → Vessel Hangar. Not persisted (`ProgressionBackendGate.CloudEnabled = false`), and the master unlock opens all of it |
 | **Breadcrumb / call-to-action** | same doc | **Retired 2026-09-08** (`retire_call_to_action.py --check` guards it). The training branch's spotlight is its replacement; it follows the guided-path rule below |
 | **Arcade card teaching** — controls panel, `GameBriefingView` tips | `Docs/ArcadeLaunch/ARCHITECTURE.md` | Controls panel live. **`SO_ArcadeGame.Tips` is authored on 2 of 56 cards** |
@@ -40,9 +43,10 @@ the shortest path to activation.
 | **Starter economy** | `Docs/ECONOMY_AND_PRICING.md` | Open: "a new player who loses their first several games earns zero, sees a 4000-crystal price tag, and has no visible path to it" |
 
 **Not planned anywhere:** a generic hover tooltip component, or an AI companion that flies beside a
-new player in a real match. The Mentor is the planned "friend flying alongside" (TRAINING_PLAN D3),
-and it is curated text in the microgame, not a bot. The only AI wingman is the Toy System's
-`ReleaseCompanion` (`Docs/HomeHub/ARCHITECTURE.md`).
+new player in a real match. The answers that exist are the spotlight (a guided "press this next"), the
+Mentor (TRAINING_PLAN D3: curated text, "a friend flying alongside") and the **ghost demo** (the
+preview's own autopilot shows a step before the player flies it). The only AI wingman is the Toy
+System's `ReleaseCompanion` (`Docs/HomeHub/ARCHITECTURE.md`).
 
 ---
 
@@ -66,16 +70,20 @@ and it is curated text in the microgame, not a bot. The only AI wingman is the T
 
 | Work | Branch / PR | Collides on |
 |---|---|---|
-| Microgame Training + first-login guide | `claude/exciting-bell-69b398` (no PR; last commit 2026-10-13) | `QuestGraphRunner`, quest nodes, `Menu_Main.unity`, `ArcadeExploreView`, `ScreenSwitcher`, `ModalWindowManager`, `MenuHubButton` |
+| Microgame Training + first-login guide | merged into `Ys-bleeding-edge` 2026-10-15 from `claude/exciting-bell-69b398` (no PR of its own; last commit 2026-10-13) | `QuestGraphRunner`, quest nodes, `Menu_Main.unity`, `ArcadeExploreView`, `ScreenSwitcher`, `ModalWindowManager`, `MenuHubButton`, `GateRaceController` (the course-source refactor) |
 | Menu Redesign B — every Menu_Main screen re-styled (Shombith owns Menu_Main UI, per the team roster) | `claude/new-session-76hnyc` (no PR) | `Menu_Main.unity` (heavy), `QuestTrackView`, `ProfileScreen`, `ArcadeExploreView`, `ArcadeGameConfigureModal`; adds a `tooltip` colour token to `UIThemeSO` |
 | Regatta AI seats, racing AI | PR #1098 (`Ys-bleeding-edge`) | `ServerPlayerVesselInitializerWithAI`, `ArcadeGameConfigureModal`; the AI seating any new-player bot would use |
 | Quest dialogue copy (C9) | Caleb, Garrett, Shombith | `QuestDialogueNode` content |
 | Funnel dashboards (C3) | Ian | PostHog |
 
-A test merge of `claude/exciting-bell-69b398` into `Ys-bleeding-edge` (2026-10-15) conflicts in only
-three files, all docs or tooling (`CLAUDE.md`, `Docs/UNITY_VERIFICATION_CHECKLIST.md`,
-`Tools/Build/check_generated_assets.py`), and each is a keep-both resolution. A text-clean merge of
-`Menu_Main.unity` still has to be opened in the editor before anyone trusts it.
+**What the merge cost (2026-10-15)**, for whoever brings `Ys-bleeding-edge` into `bleeding-edge`: three
+text conflicts (`CLAUDE.md`, `Docs/UNITY_VERIFICATION_CHECKLIST.md`, `Tools/Build/check_generated_assets.py`,
+all keep-both); one compile break (Thresher Time was written against the old `GateRaceController` API -
+ported to a `ThresherTimeCourseSource` like Redline's); and eight generator `--check`s that went red on
+a tree whose numbers had not moved (the course-source refactor moved each race's `laps` default into a
+const, which `arcade_mode_lib.cs_field_default` now follows; Warpline's circuit check now reads its
+course source; the Elemental Converter counted every Menu_Main addition as its own). A text-clean merge
+of `Menu_Main.unity` still has to be opened in the editor before anyone trusts it.
 
 ---
 
@@ -92,19 +100,21 @@ The quest graph raises `FTUEEventManager.OnQuestNodeCompleted` at the moment eac
 
 **Declare all three, and every parameter, in the UGS dashboard Event Manager**, or UGS discards them
 silently (PostHog receives them either way). A debug single-phase run (`debugPhaseOverride`) persists
-nothing and raises nothing. With the master unlock on and the training branch not merged, the graph
-does not run, so these stay at zero. That is the gate, not the instrumentation.
+nothing and raises nothing. On `Ys-bleeding-edge` the first-login phase runs under the master unlock,
+so its steps and its `ftue_phase_completed` (phase 0) fire in a default build - the guide's funnel is
+measurable now. The later phases wait for the gate, and stay at zero until it flips.
 
 ---
 
 ## 6. The path to activation, in order
 
-1. **Land the training branch.** Open a PR for `claude/exciting-bell-69b398` (its owner) or merge it
-   into a working branch, then resolve the three doc/tool conflicts.
-2. **Play it once in the editor**: reset quest progress, run *FrogletTools > Quest Graph > Reset
+1. ~~**Land the training branch.**~~ Merged into `Ys-bleeding-edge` 2026-10-15 (§4). It reaches
+   `bleeding-edge` with this branch's next PR.
+2. **Play it once in the editor**: reset quest progress, run *FrogletTools > FTUE > Reset
    Microgame Lessons (testing)*, enter `Menu_Main`, follow the spotlight into the Game of the Week,
-   finish the Lesson, and stay for the Mentor. TRAINING_PLAN §10.6 lists what only the editor can
-   settle.
+   watch the ghost demo on the Time and drift steps, finish the Lesson, and stay for the Mentor.
+   TRAINING_PLAN §10.6 and §10.7 list what only the editor can settle; the steps are in
+   `UNITY_VERIFICATION_CHECKLIST.md` under "Ghost demo + first-login guide".
 3. **Declare the §5 events in UGS and build the funnel**: `game_first_launched → menu_ready →
    ftue_step_completed (guide) → ftue_phase_completed (P0) → game_started → game_completed`, split by
    `invite_wave`.

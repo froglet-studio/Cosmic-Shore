@@ -9233,3 +9233,37 @@ clipboard. Paste it back. What it settles:
 - Is the spotlight's **material/shader** `UI/Default` and supported, and is its CanvasRenderer
   culled or at zero inherited alpha?
 - Does a press at the **target centre** pass the dim and reach the Arcade button?
+
+## 🔴 Ghost demo + first-login guide + FTUE analytics (`Ys-bleeding-edge`, 2026-10-15) — NOT EDITOR-VERIFIED
+
+**What landed.** The Microgame Training branch (`claude/exciting-bell-69b398`) was merged into
+`Ys-bleeding-edge`, plus the **ghost demo** (`Docs/ModePreview/TRAINING_PLAN.md` §10.7: the preview's
+autopilot flies the Lesson's Time and drift steps once, pressing the control, then hands the stick over)
+and the `ftue_step_completed` / `ftue_phase_completed` / `ftue_completed` events (`Docs/ACTIVATION.md` §5).
+Proven offline: `unity_refcompile` player config clean; `drill_harness` 131 checks; every generator
+`--check` that is green on the base is green here. The Unity CLI was not available, so `/verify-unity`
+did not run. Run the 2026-10-06 spotlight re-test above first: the guide must draw before anything below
+can be judged.
+
+**Steps** (fresh profile):
+1. Quest Graph Editor: reset progress. **FrogletTools > FTUE > Reset Microgame Lessons (testing)**.
+   Leave the master developer unlock at its default (ON).
+2. Enter `Menu_Main`. **Pass:** the spotlight frames ARCADE with a caption; everything else is dimmed and
+   dead except the Settings gear.
+3. Follow it: Arcade, the Game of the Week card, tap the preview window. **Pass:** each step frames the next
+   control; nothing opens by itself.
+4. In the window, finish the steer (and throttle) step. On the Time-ability step: **Pass:** the header reads
+   WATCH FIRST, the stick is ignored, and the ship flies itself and fires its Time ability once about half a
+   second in; about 3 s later the header goes back to LEARN TO FLY and the stick works again. The step is
+   NOT already complete: your own press completes it.
+5. Drift step (two-thumb hulls): **Pass:** the ship drifts by itself for about 2 s, then the stick returns.
+   **Watch for:** a drift cut short on a hull whose autopilot has `drift` on (its commit logic can release the
+   drift control). Note the hull if it happens.
+6. Tap out of the window DURING a demo. **Pass:** the ship goes home under AI as usual; tapping back in
+   resumes on that step with a fresh demo; the drift control is not left held.
+7. Finish the Lesson. **Pass:** the Mentor starts (FLIGHT TIPS), Play enables, the guide ends.
+8. With analytics consent granted (FrogletTools > Services > Analytics Consent (Dev)) and the CloudData
+   verbose channel on (FrogletTools > Toolbox > Logging): **Pass:** the console shows `ftue_step_completed`
+   for each guide node and one `ftue_phase_completed` for phase 0.
+9. Report: which hull, whether each demo read as "the ship showing you", and whether 3 s felt right
+   (`DrillLibrary.ghostDemoSeconds`).

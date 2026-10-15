@@ -13,8 +13,14 @@ namespace CosmicShore.Gameplay
     {
         public event Action<InputEvents> OnInputEventStarted;
         public bool HasDrift = true;
-        public bool TryGetInputForAction<T>(out InputEvents e) where T : class { e = default; return HasDrift; }
+        public InputEvents DriftInput = InputEvents.LeftStickAction;
+        public bool TryGetInputForAction<T>(out InputEvents e) where T : class { e = DriftInput; return HasDrift; }
         public void Raise(InputEvents e) => OnInputEventStarted?.Invoke(e);
+        // What a ghost demo pressed and let go, in order ("+X" / "-X"). A press starts the input
+        // event like the real handler does, so the harness proves the demo's presses are not counted.
+        public readonly System.Collections.Generic.List<string> Log = new();
+        public void PerformShipControllerActionsReplicated(InputEvents e) { Log.Add("+" + e); Raise(e); }
+        public void StopShipControllerActionsReplicated(InputEvents e) => Log.Add("-" + e);
         public int Subscribers => OnInputEventStarted?.GetInvocationList().Length ?? 0;
     }
     public interface IVesselStatus

@@ -38,6 +38,8 @@ SCOPES = [
     "Assets/_Scripts/Controller/AI/SkimRace",
     "Assets/_Scripts/Utility/AITraining",
     "Assets/_Scripts/Editor/AI",
+    # The microgame drill: its Ghost Demo presses a control for the autopilot (TRAINING_PLAN §10.7).
+    "Assets/_Scripts/Controller/Arcade/Preview/Drill",
 ]
 
 # Members whose assignment changes the world rather than the pilot's input.

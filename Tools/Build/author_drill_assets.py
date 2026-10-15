@@ -39,7 +39,7 @@ FOLDERS = ["Assets/_SO_Assets/Drills", LESSON_DIR, TIP_DIR]
 # Enum values (asserted against the C# below so a renumbering cannot slip past).
 ELEMENT = {"None": 0, "Charge": 1, "Mass": 2, "Space": 3, "Time": 4}
 ANCHOR = {"Window": 0, "AbilityRow": 1}
-CUE = {"None": 0, "PulseAbilityRow": 1}
+CUE = {"None": 0, "PulseAbilityRow": 1, "GhostDemo": 3}
 APPLIES = {"Always": 0, "HullDrifts": 1, "AbilityHasInput": 2}
 SCHEME = {"TwoThumb": 0, "OneThumb": 1}
 CONTROL = {"Steer": 0, "Throttle": 1, "Drift": 2}
@@ -58,12 +58,14 @@ KNOWN_TEMPLATE_TOKEN = re.compile(r"^(ability|abilityDescription|glyph):E$")
 
 # ── Seed content ────────────────────────────────────────────────────────────────────────────
 
-TIME_STEP = dict(id="time-ability", element="Time", anchor="AbilityRow", cue="PulseAbilityRow",
+# The two button steps are shown before they are asked for (GhostDemo, TRAINING_PLAN §10.7): the
+# autopilot flies the step once and presses the control, then hands the stick over.
+TIME_STEP = dict(id="time-ability", element="Time", anchor="AbilityRow", cue="GhostDemo",
                  applies="AbilityHasInput",
                  prompt="Press {glyph:Time} to use {ability:Time}.",
                  hint="{ability:Time}: {abilityDescription:Time}",
                  cond=("AbilityActivatedCondition", dict(Element=ELEMENT["Time"], Count=1)))
-DRIFT_STEP = dict(id="drift", applies="HullDrifts",
+DRIFT_STEP = dict(id="drift", applies="HullDrifts", cue="GhostDemo",
                   prompt="Hold {glyph:Drift} to drift through a turn.",
                   hint="Hold {glyph:Drift} while you turn.",
                   cond=("DriftHeldCondition", dict(Seconds=0.75)))
@@ -91,6 +93,7 @@ STRINGS = dict(
     NextLabel="NEXT",
     MentorClosingLine="That is everything. Press Play when you are ready.",
     PlayLockedCaption="Finish the lesson to play",
+    GhostDemoTitle="WATCH FIRST",
 )
 PAD_LABELS = [("PadLeftTrigger", "LT"), ("PadRightTrigger", "RT"), ("PadButtonSouth", "A"),
               ("PadButtonEast", "B"), ("PadButtonWest", "X"), ("PadRightShoulder", "RB")]
@@ -281,6 +284,7 @@ def library_asset():
          f"  twoThumbLesson: {{fileID: 11400000, guid: {guid_for(TWO_THUMB)}, type: 2}}\n",
          f"  oneThumbLesson: {{fileID: 11400000, guid: {guid_for(ONE_THUMB)}, type: 2}}\n",
          "  lessonSkipDelaySeconds: 3\n  defaultHintAfterSeconds: 8\n",
+         "  ghostDemoSeconds: 3\n  ghostDemoLeadInSeconds: 0.5\n  ghostDemoTapSeconds: 0.4\n",
          "  metricTips:\n" + "".join(library_rows("metric")),
          "  modeTips:\n" + "".join(library_rows("mode")),
          "  advancedTips: {fileID: 0}\n",
