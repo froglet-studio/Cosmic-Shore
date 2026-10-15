@@ -97,7 +97,7 @@ namespace CosmicShore.Core
                 _ => handheld ? DeviceTierClassifier.OsFromName(SystemInfo.operatingSystem) : DeviceOs.Other,
             };
             return new DeviceFacts(handheld, os, SystemInfo.systemMemorySize, SystemInfo.processorCount,
-                SystemInfo.graphicsDeviceName);
+                SystemInfo.graphicsDeviceName, Application.platform == RuntimePlatform.WebGLPlayer);
         }
 
         /// <summary>The profile set asset, or null if it is missing.</summary>
@@ -125,7 +125,14 @@ namespace CosmicShore.Core
                 ? $"override (device classifies as {s_detectedTier}: {detectedReason})"
                 : detectedReason;
 
-            s_profile = set ? set.For(s_tier) : null;
+            // A WebGL player runs the Web profile whatever its tier (PlatformProfileSetSO.For).
+            s_profile = set ? set.For(s_tier, s_facts.IsWebPlayer) : null;
+            if (set && s_facts.IsWebPlayer)
+            {
+                if (set.Web) s_reason += "; WebGL player: Web profile";
+                else CSDebug.LogWarning($"[Platform] {set.name} has no Web profile assigned: this WebGL player " +
+                                        $"runs the {s_tier} profile. Assign one on the asset.");
+            }
             if (set && !s_profile)
                 CSDebug.LogError($"[Platform] {set.name} has no profile assigned for {s_tier}: this device runs " +
                                "its pre-tier behaviour. Assign one on the asset.");

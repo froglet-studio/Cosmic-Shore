@@ -292,7 +292,7 @@ today), and the 4 GB Samsung lands on `MobileLow` (Garrett's strip).
 | `DeviceTier` enum (Desktop 0, MobileHigh 1, MobileLow 2) | `_Scripts/Data/Enums/DeviceTier.cs` |
 | Pure classifier: `DeviceFacts`, `DeviceTierRules`, `DeviceTierClassifier.Classify` / `OsFromName` (no Unity API; compiled and run outside the editor) | `_Scripts/System/Platform/DeviceTierClassifier.cs` |
 | Resolver: `PlatformProfile.Tier` / `Current` / `Reason` / `TierOverride`, read once per session, reset at `SubsystemRegistration`, logged on `CSLogChannel.Boot`, shown on the DiagnosticsHUD "Platform" rows | `_Scripts/System/Platform/PlatformProfile.cs` |
-| `PlatformProfileSO` (per tier) + `PlatformProfileSetSO` (the three slots + the thresholds) | `_Scripts/ScriptableObjects/`, assets in `_SO_Assets/Platform/` and `Resources/PlatformProfiles.asset` |
+| `PlatformProfileSO` (per tier) + `PlatformProfileSetSO` (the three tier slots, the `web` slot a WebGL player runs whatever its tier — `PlatformProfile_Web`, `WEBGL_TOYBOX.md` §4 — and the thresholds) | `_Scripts/ScriptableObjects/`, assets in `_SO_Assets/Platform/` and `Resources/PlatformProfiles.asset` |
 | Tier-aware first-run recommendation; settings v3 re-seed | `SettingsAutoDetector.RecommendSettings` / `RecommendFromProfile`, `DisplayGraphicsSettings.ReseedUntouchedTierGraphics` |
 | Editor: detected tier + facts, simulate a tier, re-run auto-detect in Play | FrogletTools ▸ Performance ▸ Device Tier (`_Scripts/Editor/DeviceTierWindow.cs`) |
 | Tests | `_Scripts/Tests/Editor/DeviceTierTests.cs` |

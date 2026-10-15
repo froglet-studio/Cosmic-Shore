@@ -141,6 +141,11 @@ namespace CosmicShore.Core
         /// </summary>
         public UniTask<bool> ReconnectAsync(CancellationToken ct = default)
         {
+            // The browser Toybox has no online services to reconnect to (WebToybox). Its UI
+            // never offers this; refusing here keeps any other caller from starting a sign-in.
+            if (WebToybox.IsBuild)
+                return UniTask.FromResult(false);
+
             // The player asked to come back online, so a previously recorded "stay offline"
             // choice no longer applies - clear it BEFORE the boot chain reads it.
             if (_offlineMode != null)
