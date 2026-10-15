@@ -378,6 +378,7 @@
     skimGraceSeconds: 1,
   };
   const U = SHIPPED, SHIPPED_AT_LOAD = Object.assign({}, SHIPPED);
+  const LAB = { manualClock: false };   // window.__lab (filled at the end of setup)
   const CREATION_BLOCK = [2.5, 2.5, 4.5];   // BrittleStarConfigSO.creationBlockSize (a Vector3: not a map row)
   // ================= the older sources, flown on the design document's kit (round 1) =================
   // Neither ships (the game has no Brittle Star yet). "branch" is the last Brittle Star anyone built:
@@ -1609,7 +1610,7 @@
   function frame(now) {
     const dt = Math.min(0.05, (now - last) / 1000); last = now; resize();
     const hin = humanInput();
-    if (W && race === 'running' && !paused) {
+    if (W && race === 'running' && !paused && !LAB.manualClock) {   // the lab contract's manual clock stops the frame loop's sim
       for (let s = 0; s < S.speed; s++) {
         stepWorld(W, dt, W.pilots.map((P, i) => { const inp = i === 0 ? pilotInput(W, P, hin, dt) : aiInput(W, P); P.lastSx = inp.sx; return inp; }));
         if (W.over) { finishRace(); break; }
@@ -1637,6 +1638,17 @@
   requestAnimationFrame((t) => { last = t; frame(t); });
   if (PLATFORM.device === 'phone') setPlayMode(true);   // detected, never asked (D26)
 
+  // the /labmaker contract (window.__lab, verify_lab.cjs): SHIPPED + its SPEC rows, the live numbers, a manual clock,
+  // a seeded reset, the scorecard and a deterministic headless batch (Hard, seed 11, both minigames at I1)
+  Object.assign(LAB, {
+    SHIPPED: SHIPPED_AT_LOAD, SPEC: UNITY_ROWS, P: U, PLATFORM,
+    reset: (seed) => { seedN = seed == null ? 1 : seed; newRace(); race = 'running'; paused = false; $('overlay').hidden = true; },
+    tick: (dt, n) => { for (let i = 0; i < (n || 1); i++) { if (!W || W.over) break; stepWorld(W, dt, W.pilots.map((P, k) => { const inp = k === 0 ? pilotInput(W, P, { sx: 0, sy: 0, ax: 0, ay: 0, fire: false, mode: null, ring: false, active: false }, dt) : aiInput(W, P); P.lastSx = inp.sx; return inp; })); } },
+    state: () => ({ t: W ? +W.t.toFixed(4) : 0, race, ship: S.ship }),
+    score: (done) => runScorecard(S.game, [11, 22, 33], done || (() => {})),
+    runBatch: () => ({ derbyI1: runHeadless('derby', 1, 'Hard', 11).finish, frenzyI1: runHeadless('frenzy', 1, 'Hard', 11).finish }),
+  });
+  window.__lab = LAB;
   // test hook for scripted checks and later sessions (D14); no effect on play
   window.__brittleStarStudio = {
     get state() { return { race, t: +W.t.toFixed(2), game: W.game, intensity: W.I, target: W.target, prisms: W.prisms.filter((p) => !p.dead).length, pilots: W.pilots.map((p) => ({ name: p.domain.name, ai: p.spec.ai, style: p.spec.style, mode: p.mode, ring: p.ring, charge: p.charge, crystals: p.crystals, finishT: p.finishT, destroyed: p.destroyed, mass: p.mass, kills: p.kills, rings: p.rings, speed: +p.speed.toFixed(1), state: p.aiState })) }; },

@@ -26,7 +26,7 @@ ability (`/arenagame` §1).
 | Rhino | none (autopilot ramps by the straight-stick gesture) | **Headlong** (gate race), Cleave | Astro League, Broadside, Brood Rush, Regatta | — |
 | Serpent | 1: `PelletBoostAIPolicySO` | none | Brood Rush, Regatta | — |
 | Termite, Shrike | none (the Shrike class is `_SO_Assets/_TEMP`) | none | none | Not a candidate |
-| **Brittle Star** (16; the Falcon, 9, is its legacy placeholder) | none yet (Demolition Derby / Fauna Frenzy are design minigames) | the executor's input-only autopilot | none | **Studio built and in line with the game** (2026-10-14, `brittlestar.html` round 2): it flies the shipped vessel; `studio_to_unity.py --check` guards its 34 numbers |
+| **Brittle Star** (16; the Falcon, 9, is its legacy placeholder) | none yet (Demolition Derby / Fauna Frenzy are design minigames) | the executor's input-only autopilot | none | **Studio built and in line with the game** (2026-10-14, `brittlestar.html` round 2): it flies the shipped vessel; `studio_to_unity.py --check` guards its 35 numbers |
 
 Every other `AutoPilotEnabled` read in the vessel code (Rhino sword FX, shield swipe, gun spray,
 zoom-out, drift trail, Pip) only skips human-only feedback while the autopilot flies; none of them is

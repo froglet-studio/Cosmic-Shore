@@ -315,7 +315,9 @@ None of that is a play test. In order:
    straight from Speed to Creation: no burst of blocks while the hull coasts down.
 5. **X** (Destruction): with no button held, five unbroken streams pour out of the five turrets — five arms, closing on
    one point ~120 u ahead. Push the right stick out: they open to a 25° splay; let it back in: they close again. Push it
-   round: the ring — and the five arms with it — turns to follow. They should
+   round: the ring — and the five arms with it — turns to follow. The rounds are the Sparrow's, visibly slow (135 u/s),
+   swelling ×3 as they fly and still reaching ~258 u (a wall that far ahead breaks); in Speed Mode the hull outruns
+   them. Watch the Profiler with several AI Brittle Stars in Destruction Mode (1,350+ rounds alive per hull). They should
    read as solid lines, not dashes. Fly through mass: the arms cut it, your own included (friendly fire). **X** again:
    they stop. **RT** outside it: one stream from the cockpit gun; with the right stick pushed, from the aimed turret;
    full deflection opens a cone.
@@ -351,9 +353,20 @@ None of that is a play test. In order:
 - **F6 — Vessel Studio page: DONE** (2026-10-14). `Docs/Studios/VesselStudio/brittlestar.html` (merged from the retired
   `cece/brave-galileo-d95fpj`) flies this build by default (round 2): its `SHIPPED` block holds every number here, and
   `python3 Tools/Build/studio_to_unity.py --vessel brittlestar` writes them into `BrittleStarConfig.asset` and the prefab
-  (`--check`: 34 mapped, 0 drift). Tune there, then clone with `/artifact-to-unity`. Its round-2 scorecard and findings
+  (`--check`: 35 mapped, 0 drift). Tune there, then clone with `/artifact-to-unity`. Its round-2 scorecard and findings
   (the disk breaks your own trail in the Frenzy; half-speed Creation slows it; Overdrive still out-pays the ring):
   `Docs/Studios/BRITTLE_STAR.md` §5.2. Not yet published into the one artifact (it goes through `Ys-bleeding-edge`).
+- **F9 — profile the two big costs** (debt this branch created, measured offline only): the slow rounds keep 1,350–2,160
+  arm rounds alive per hull (§3.4), and each ring explosion runs ten `PrismSpatialIndex.QuerySphere` calls of up to the
+  nucleus radius (392 u). Profile a match with 3–4 AI Brittle Stars in Destruction Mode; the knobs are
+  `destructionFireRate` (9/s keeps the look at a tenth of the rounds) and the sweep count in
+  `BrittleStarExecutor.UpdateWaves`.
+- **F10 — the studio** (`Docs/Studios/BRITTLE_STAR.md` §5.2): publish the page into the one Vessel Studio artifact
+  (through `Ys-bleeding-edge`, with the owner's approval); give it a decision log; re-tune its lab-only pilot for x6
+  (Hard is not the fastest level on Derby I1 / I4 and Frenzy I4).
+- **F11 — `VesselClassType.Falcon = 9`**: the same hull's old name, a non-spawnable Manta copy whose `_TEMP/FalconClassSO`
+  is still in `SO_Classlist_All` and `OneThumbVesselCoverageTests`' list (`Docs/claude/ABOUT_PROJECT.md`). Retire it,
+  rename it, or keep it as a placeholder: Garrett's call.
 - **F8 — a suspended ring**: the concept art floats the ring round the cockpit on energy; the hull joins them with five
   physical arms. Swapping them for energy links (a flame-like domain-coloured beam per arm) is a hull-builder change.
 - **F7 — "Ark maximum range"** (1 cell diameter, a gentle pull back at the edge) is in the document's play-loop section and

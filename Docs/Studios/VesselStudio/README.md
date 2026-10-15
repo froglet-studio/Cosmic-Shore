@@ -114,22 +114,23 @@ reaches it. The findings and what would change them: `../BRITTLE_STAR.md` §5.1.
 
 ### Brittle Star scorecard, round 2: the Unity build (measured 2026-10-14, median of seeds 11/22/33, seconds)
 
-The same races flown on the shipped rules and numbers (Vessel Config > Flight numbers = Unity build, the default):
+The same races flown on the shipped rules and numbers (Vessel Config > Flight numbers = Unity build, the default),
+re-measured 2026-10-15 with the slow Sparrow rounds (135 / 70 u/s for 3 s):
 
 | Game | Course | Easy | Medium | Hard | Hard, no ring | Hard, no modes |
 |---|---|---|---|---|---|---|
-| Derby | I1 | 20.2 | 20.1 | 21.1 | 21.1 | 74.2 |
-| Derby | I2 | 21.6 | 24.1 | 21.3 | 21.3 | 75.5 |
-| Derby | I3 | 26.0 | 23.4 | 22.0 | 22.5 | 78.0 |
+| Derby | I1 | 20.2 | 20.1 | 21.1 | 21.1 | 73.9 |
+| Derby | I2 | 21.6 | 24.1 | 21.3 | 21.3 | 75.0 |
+| Derby | I3 | 26.4 | 22.5 | 22.0 | 21.6 | 77.8 |
 | Derby | I4 | 64.7 | 59.7 | 69.8 | 69.8 | 84.7 |
 | Frenzy | I1 | 26.4 | 26.4 | 26.0 | 26.0 | 78.1 |
-| Frenzy | I2 | 34.4 | 34.4 | 34.0 | 34.0 | 148.3 |
-| Frenzy | I3 | 80.2 | 100.7 | 76.9 | 61.7 | DNF |
-| Frenzy | I4 | 263.7 | 163.7 | 224.0 | DNF | DNF |
+| Frenzy | I2 | 34.4 | 34.4 | 34.0 | 34.0 | 163.7 |
+| Frenzy | I3 | 81.0 | 68.9 | 60.9 | 60.7 | DNF |
+| Frenzy | I4 | DNF | 135.2 | 153.6 | DNF | DNF |
 
 Derby is faster than round 1 (x6 Speed, the arms clear walls in a blink); Frenzy is much slower (Creation at half speed
-lays a third fewer blocks a second, and the nucleus-wide disk breaks the pilot's own built trail, so "no ring" beats Hard
-on I3). Hard is not the fastest level on Derby I1 and I4 or Frenzy I4 (D24 unmet there). Findings: `../BRITTLE_STAR.md` §5.2.
+lays a third fewer blocks a second, and the nucleus-wide disk breaks the pilot's own built trail, so the ring never pays
+there: "no ring" ties Hard on I3). Hard is not the fastest level on Derby I1 and I4 or Frenzy I4 (D24 unmet there). Findings: `../BRITTLE_STAR.md` §5.2.
 
 ## In Amoebius
 

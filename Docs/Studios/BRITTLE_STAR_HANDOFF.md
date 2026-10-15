@@ -3,8 +3,8 @@
 > **Status: DONE except publishing (2026-10-14).** Garrett asked for the value of `cece/brave-galileo-d95fpj` to be kept and
 > retired that branch and its thread. It is merged into `cece/gallant-lamport-sc3khe`: §1's two text follow-ups are made
 > (the Falcon (9) row is the legacy placeholder; the two `BRITTLE_STAR.md` files cross-link); §3 is done (the page's default
-> Flight numbers set is the Unity build, `SHIPPED` holds its numbers, `Tools/Build/studio_to_unity/brittlestar.json` maps 34
-> of them, `--check` 0 drift); §5's checks pass (and `brittlestar_score.cjs` gained the `require` lines it was missing). §4,
+> Flight numbers set is the Unity build, `SHIPPED` holds its numbers, `Tools/Build/studio_to_unity/brittlestar.json` maps 35
+> of them (34 at handoff, then `roundGrowthFactor`), `--check` 0 drift); §5's checks pass (and `brittlestar_score.cjs` gained the `require` lines it was missing). §4,
 > publishing into the one artifact, is still open: it goes through `Ys-bleeding-edge` and needs the owner's approval.
 > Round 2's scorecard and findings: `BRITTLE_STAR.md` §5.2. The rest of this file is the handoff as written.
 

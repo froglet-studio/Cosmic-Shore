@@ -248,41 +248,45 @@ Vessel Config > Flight numbers gained a third set, **Unity build**, and it is th
   Cruise, the ring's 18 deg turn to the nearest point in Destruction, the arms crossing the axis at exactly 120 u, 450 arm
   rounds/s, RT 12/s and none without the trigger, the disk breaking prisms in its plane out to 392 u while sparing ones 5-8 u
   off it and past its edge, and the rebuild landing between 0.3 and 0.6 s. `studio_to_unity.py --vessel brittlestar
-  --check`: 34 mapped, 0 drift (a changed `fireRate` reports drift and exits 1).
+  --check`: 35 mapped, 0 drift (a changed `fireRate` reports drift and exits 1).
 - **The studio pilot** (lab-only) needed one change for x6: near a crystal it now drops to Cruise (presses the lit mode)
   inside 250 u or its stopping distance, where round 1 rode Speed in. At 297 u/s the 25 u pickup sits inside the turn radius
   and every Hard Derby I4 run orbited a crystal until the 300 s limit.
 
-Scorecard at the Unity build (median of seeds 11/22/33, seconds; `brittlestar_score.cjs`):
+Scorecard at the Unity build (median of seeds 11/22/33, seconds; `brittlestar_score.cjs`), re-measured 2026-10-15 with the
+slow Sparrow rounds (135 / 70 u/s for 3 s; the first round-2 run, at 1350 / 700 u/s, differed only in the Frenzy):
 
 | | Easy | Medium | Hard | Hard, no ring | Hard, no modes |
 |---|---|---|---|---|---|
-| Derby I1 | 20.2 | 20.1 | 21.1 | 21.1 | 74.2 |
-| Derby I2 | 21.6 | 24.1 | 21.3 | 21.3 | 75.5 |
-| Derby I3 | 26.0 | 23.4 | 22.0 | 22.5 | 78.0 |
+| Derby I1 | 20.2 | 20.1 | 21.1 | 21.1 | 73.9 |
+| Derby I2 | 21.6 | 24.1 | 21.3 | 21.3 | 75.0 |
+| Derby I3 | 26.4 | 22.5 | 22.0 | 21.6 | 77.8 |
 | Derby I4 | 64.7 | 59.7 | 69.8 | 69.8 | 84.7 |
 | Frenzy I1 | 26.4 | 26.4 | 26.0 | 26.0 | 78.1 |
-| Frenzy I2 | 34.4 | 34.4 | 34.0 | 34.0 | 148.3 |
-| Frenzy I3 | 80.2 | 100.7 | 76.9 | 61.7 | DNF |
-| Frenzy I4 | 263.7 | 163.7 | 224.0 | DNF | DNF |
+| Frenzy I2 | 34.4 | 34.4 | 34.0 | 34.0 | 163.7 |
+| Frenzy I3 | 81.0 | 68.9 | 60.9 | 60.7 | DNF |
+| Frenzy I4 | DNF | 135.2 | 153.6 | DNF | DNF |
 
-Styles at Hard I3, Derby: Zephyr 21.2 s, Balanced 22.0, Shipped 25.1, Hunter 25.7, Rolling Thunder 34.4 (5 rings), Fabricator
-59.7. Frenzy: Hunter 52.8, Shipped 53.5, Fabricator 55.9, Zephyr 58.4, Rolling Thunder 60.6, Balanced 76.9.
+Styles at Hard I3, Derby: Zephyr 18.6 s, Balanced 22.0, Hunter 25.0, Shipped 25.0, Rolling Thunder 36.8 (5 rings), Fabricator
+58.3. Frenzy: Shipped 51.3, Hunter 53.9, Fabricator 55.8, Zephyr 58.4, Balanced 60.9, Rolling Thunder 66.4.
 
 **Findings for Garrett** (round 2):
 
 1. **The ring explosion breaks your own work.** The nucleus-wide disk destroys every prism in its plane, your own trail
-   included once it is a second old. In the Frenzy that is the target mass: "Hard, no ring" beats Hard on I3 (61.7 against
-   76.9). A Domain-Safe Ring (the Charge L5 proposal B) or sparing the pilot's own mass would change it.
-2. **Creation at half speed slows the Frenzy a lot**: Hard I4 is 224 s against round 1's 64. That is the decision working
-   (Creation is now the deliberate mode), but the Frenzy's targets were set for the old pace.
+   included once it is a second old. In the Frenzy that is the target mass: the ring never pays there ("Hard, no ring"
+   60.7 against Hard 60.9 on I3; at the first round-2 speeds it beat Hard outright, 61.7 against 76.9). A Domain-Safe
+   Ring (the Charge L5 proposal B) or sparing the pilot's own mass would change it.
+2. **Creation at half speed slows the Frenzy a lot**: Hard I4 is 154 s against round 1's 64, and Easy does not finish
+   it. That is the decision working (Creation is now the deliberate mode), but the Frenzy's targets were set for the old
+   pace.
 3. **Overdrive still out-pays the ring** in the Derby: Balanced spends 42% of the run in Overdrive and rings once; only
    Rolling Thunder rings often (5 times), and it is the second-slowest style.
 4. **The arms make Derby I1-I3 a level race**: walls vanish in a blink at 450 rounds/s, so Easy, Medium and Hard finish
    within 1 to 4 s of each other and the ladder only separates them at I4 (round 1's finding 3, stronger).
 5. **Speed momentum into Creation is fixed** (round 1's finding 5): output during the coast-down is capped at the cruise
    rate.
-6. **The studio pilot is not the fastest level on Derby I1 / I4 and Frenzy I4** (D24 unmet there). That is the lab-only
+6. **The studio pilot is not the fastest level on Derby I1 / I4 and Frenzy I4** (D24 unmet there; Medium beats Hard on
+   both I4s). That is the lab-only
    pilot, not the vessel; the next studio round should re-tune its Speed-in and threading for x6.
 
 ## 6. Bringing it into the game (done 2026-10-14)
