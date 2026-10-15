@@ -59,6 +59,13 @@ def validity(b):
         out.append("ERROR  no diag in this bundle")
     if not p:
         out.append("WARN   no prof in this bundle (Editor only; or the Profiler window was closed)")
+    cams = b.get("cameras") or ""
+    try:
+        n = int(cams.split(" ")[0]) if cams else 0
+    except ValueError:
+        n = 0
+    if n > 1:
+        out.append(f"WARN   {n} cameras were enabled ({cams[:120]}) - every extra camera (Third Eye, a preview, a Scene view) renders the world again; close them and re-capture to measure the game's frame")
     if "MANAGED" in (b.get("burst") or ""):
         out.append("ERROR  the burst probe job ran MANAGED - the game's jobs are not Burst-compiled; see the burst section")
     return out
@@ -163,7 +170,7 @@ def print_report(bundles, top):
                 print(f"     {r.get('caller','?')[:60]:<60} {r.get('avgMs',0):6.2f} ms  present {r.get('presentPct',0):.0f}%")
 
     print("\n-- 4. the world")
-    for key in ("renderers", "cells", "burst", "prismPath"):
+    for key in ("renderers", "cells", "burst", "prismPath", "cameras"):
         text = (a.get(key) or "").strip()
         if text:
             print(f"   {key}: " + text.replace("\n", "\n      ")[:1500])
@@ -194,6 +201,8 @@ def self_test():
     bad["prof"]["managedJobs"] = [{"caller": "ShellContactQueryJob", "avgMs": 1.3}]
     v = validity(bad)
     assert any("Code Optimization" in x for x in v) and any("Deep Profile" in x for x in v) and any("MANAGED" in x for x in v), v
+    two = json.loads(json.dumps(good)); two["cameras"] = "2 enabled | Main Camera screen depth 0 | ThirdEye 960x540 rt depth 1"
+    assert any("cameras" in x for x in validity(two)), validity(two)
     assert markers(good)[0]["name"] == "A" and len(markers(good)) == 1
     assert delta(10, 5) == "  -50%" and delta(None, 1) == ""
     print("self-test ok")

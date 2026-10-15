@@ -82,12 +82,13 @@ namespace CosmicShore.Utility.PerformanceBenchmark
             _captureLogOrder.Clear();
             Application.logMessageReceived += OnCaptureLog;
             var notes = new List<string>();
-            string burst = "", diagPath = "", profPath = "", renderers = "", cells = "", prismPath = "";
+            string burst = "", diagPath = "", profPath = "", renderers = "", cells = "", prismPath = "", cameras = "";
             try
             {
                 SetStat("Capture", "run", "burst");
                 burst = Safe(() => BurstProbe.Report(), notes, "burst");
                 prismPath = Safe(() => CosmicShore.ECS.PrismRenderService.StatusLine(), notes, "prismpath");
+                cameras = Safe(DescribeCameras, notes, "cameras");
 
                 SetStat("Capture", "run", $"diag {seconds}s");
                 string started = HandleDiagCommand(new[] { label, seconds.ToString(CultureInfo.InvariantCulture) });
@@ -119,7 +120,7 @@ namespace CosmicShore.Utility.PerformanceBenchmark
                 _captureRunning = false;
             }
 
-            string path = WriteBundle(label, seconds, burst, prismPath, diagPath, profPath, renderers, cells, notes);
+            string path = WriteBundle(label, seconds, burst, prismPath, cameras, diagPath, profPath, renderers, cells, notes);
             LastCapturePath = path;
             _lastSavedPath = path;
             _lastSavedShownAt = Time.unscaledTime;
@@ -150,7 +151,28 @@ namespace CosmicShore.Utility.PerformanceBenchmark
         /// The bundle is hand-assembled JSON: the diag and prof files are embedded VERBATIM as objects
         /// (JsonUtility cannot nest arbitrary documents), the text answers as strings.
         /// </summary>
-        string WriteBundle(string label, int seconds, string burst, string prismPath, string diagPath, string profPath,
+        /// <summary>
+        /// Every enabled camera and what it renders to. A second camera drawing the world (the Third Eye
+        /// window, a preview, a Scene view) renders the scene again that frame, so a capture taken with one
+        /// open measures two frames' worth of rendering; the reader warns when it sees more than one.
+        /// </summary>
+        static string DescribeCameras()
+        {
+            var cams = Camera.allCameras;
+            var sb = new StringBuilder();
+            sb.Append(cams.Length).Append(" enabled");
+            for (int i = 0; i < cams.Length; i++)
+            {
+                var c = cams[i];
+                if (!c) continue;
+                sb.Append(" | ").Append(c.name).Append(' ')
+                  .Append(c.targetTexture ? $"{c.targetTexture.width}x{c.targetTexture.height} rt" : "screen")
+                  .Append(" depth ").Append(c.depth.ToString(CultureInfo.InvariantCulture));
+            }
+            return sb.ToString();
+        }
+
+        string WriteBundle(string label, int seconds, string burst, string prismPath, string cameras, string diagPath, string profPath,
                            string renderers, string cells, List<string> notes)
         {
             var sb = new StringBuilder(64 * 1024);
@@ -161,6 +183,7 @@ namespace CosmicShore.Utility.PerformanceBenchmark
             Field(sb, "timestamp", DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture));
             sb.Append("  \"diagSeconds\": ").Append(seconds).Append(",\n");
             Field(sb, "prismPath", prismPath);
+            Field(sb, "cameras", cameras);
             Field(sb, "burst", burst);
             Field(sb, "renderers", renderers);
             Field(sb, "cells", cells);
