@@ -69,6 +69,17 @@ namespace CosmicShore.Gameplay
         static int s_count;
         static float s_countAt = -1f;
 
+        /// <summary>
+        /// What the recorder is doing right now, in words, for the Third Eye's button and <c>flightrec</c>: off; on and
+        /// waiting (for Play, a Regatta race, your hull, the rails); or recording, with the seconds so far. A recorder
+        /// that is on but not recording says which step it is waiting on, so a missing flight is never a mystery.
+        /// </summary>
+        public static string Status =>
+            !On ? "OFF"
+            : !Application.isPlaying ? "ON - press Play"
+            : !s_instance ? "ON - starting"
+            : s_instance._waiting ?? "ON";
+
         /// <summary>The last file written, for the console and the Third Eye.</summary>
         public static string LastFile { get; private set; }
 
@@ -89,6 +100,7 @@ namespace CosmicShore.Gameplay
         float _nextSample, _nextFind, _raceStart, _frameSum;
         int _frames, _hint = -1, _startRings;
         bool _turnWasRunning;
+        string _waiting = "ON - waiting for a race";
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
         static void Boot()
@@ -107,9 +119,8 @@ namespace CosmicShore.Gameplay
             if (verb == "on") On = true;
             else if (verb == "off") On = false;
             else if (verb != "") return $"usage: {CommandName} on | off";
-            string state = On ? "ON: your Regatta races are recorded" : "off";
             string last = string.IsNullOrEmpty(LastFile) ? "" : $" | last: {LastFile}";
-            return $"flight recorder {state} | {SavedCount} saved in {Folder}{last}";
+            return $"flight recorder {Status} | {SavedCount} saved in {Folder}{last}" + (On ? "" : $" | turn on: {CommandName} on");
         }
 
         void Update()
@@ -117,11 +128,14 @@ namespace CosmicShore.Gameplay
             if (!On) { if (_course != null) Finish("recording switched off"); return; }
             float now = Time.time;
             if (!_gameData && now >= _nextFind) FindGameData(now);
-            if (!_gameData) return;
+            if (!_gameData) { _waiting = "ON - waiting for a match"; return; }
 
             bool running = _gameData.IsTurnRunning && _gameData.GameMode == GameModes.Regatta;
             if (!running)
             {
+                _waiting = _gameData.GameMode != GameModes.Regatta
+                    ? $"ON - waiting for Regatta (this is {_gameData.GameMode})"
+                    : "ON - waiting for the race to start";
                 if (_turnWasRunning && _course != null) Finish("race over");
                 _turnWasRunning = false;
                 return;
@@ -131,7 +145,12 @@ namespace CosmicShore.Gameplay
                 _turnWasRunning = true;
                 Begin(now);
             }
-            if (_course == null && !TryEnsureCourse(now)) return;
+            if (_course == null && !TryEnsureCourse(now))
+            {
+                _waiting = !_player ? "ON - waiting for your hull (AI seats are not recorded)" : "ON - waiting for your rail";
+                return;
+            }
+            _waiting = $"\u25CF REC {now - _raceStart:0}s ({_samples.Count} samples)";
 
             _frames++;
             _frameSum += Time.unscaledDeltaTime;
