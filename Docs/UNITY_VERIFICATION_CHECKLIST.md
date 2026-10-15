@@ -65,6 +65,25 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Style-B menu redesign, item 8a: the Arena window (`claude/new-session-76hnyc`, 2026-10-15) — NOT EDITOR-VERIFIED
+
+`ModalWindows/ArenaScreenModal` rebuilt from the approved ArenaWindow board (`Docs/MENU_REDESIGN_B.md`
+section 17.1) by `Tools/Build/author_menu_arena.py` (`--check`, `--self-test` green). No editor in the
+session: `/verify-unity` still owed. Offline: player + editor reference compiles clean; the new
+`ArenaGameCardTests` compile but have not run.
+
+**Verify in editor:**
+1. Open Menu_Main: no missing-script or missing-reference warnings on `ArenaScreenModal`.
+2. HOME > Arena: the window opens full screen with "ARENA / Explore arena", Back (B), the shared party
+   panel on the left and the arena cards in two columns ("ALL GAMES" with the count).
+3. Each card: art, "ARENA - 2 - 6 PILOTS" (its own range), title, tagline, "2 - 3 DOMAINS", one hull chip
+   per seated vessel class (no gaps); the star toggles the favourite and favourites sort first.
+4. A card opens the Arena configure window (item 4) for that game; a locked card shows the lock.
+5. Party: seats, invites and the online list work as in the Arcade window; offline greys the panel.
+6. Pad: focus lands on the first card; D-pad moves through the grid, the panel and Back; B closes.
+
+---
+
 ### 🔴 Style-B menu redesign, item 7: the Ark screen's converter overlay (`claude/new-session-76hnyc`, 2026-10-15) — NOT EDITOR-VERIFIED
 
 `ArkScreen/ElementalConverter` gains the approved Ark / ArkConverting overlay (`Docs/MENU_REDESIGN_B.md`

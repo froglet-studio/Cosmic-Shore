@@ -152,7 +152,12 @@ namespace CosmicShore.UI
 
             UpdateVesselIcon(game);
             UpdateGenrePetal(game);
+            DrawDetails(game);
         }
+
+        /// <summary>Extra card detail drawn from the mode's card data (the arena card's pilots,
+        /// tagline, domains and hull row). The arcade card draws none.</summary>
+        protected virtual void DrawDetails(SO_ArcadeGame game) { }
 
         /// <summary>
         /// Draws the hull this mode is played in. Unconditional: it is card IDENTITY, so it is

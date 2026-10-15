@@ -42,7 +42,7 @@ Legend: `Planned` ▸ `Mockup` ▸ `Mockup approved` ▸ `Built` ▸ `Approved i
 | 5 | Profile screen, Profile modal (avatar / display name), Episodes entry | Built (2026-10-15, section 15): Profile screen and profile window | `Profile.dc.html` (interactive), `ProfileFresh`, `ProfileModal` (interactive), `ProfileName`, `ProfileNameError`, `ProfileNameTaken`, `ProfileNotes` | |
 | 6 | Home screen: hub row, header, settings and freestyle buttons, invite popup | Mockup approved (2026-10-14) | `Home.dc.html` (interactive), `HomeInvite`, `HomeFocus`, `HomeOffline`, `HomeNotes` | |
 | 7 | Ark screen (Elemental Converter) | Built (2026-10-15, section 16) | `Ark.dc.html` (interactive), `ArkConverting`, `ArkDone`, `ArkNotes` | |
-| 8 | Arena, Toy Box and Mission modals, and Toy configure | Mockup approved (2026-10-14) | `ToyBox.dc.html` (interactive), `ToyBoxClaimed`, `ArenaWindow`, `MissionWindow`, `ToyConfigure` (interactive), `ToyConfigurePaint`, `ToyConfigureSpawn`, `ToyConfigureDomain`, `ModesNotes` | |
+| 8 | Arena, Toy Box and Mission modals, and Toy configure | Arena window Built (2026-10-15, section 17); Toy Box and Toy configure building; Mission window held (section 17) | `ToyBox.dc.html` (interactive), `ToyBoxClaimed`, `ArenaWindow`, `MissionWindow`, `ToyConfigure` (interactive), `ToyConfigurePaint`, `ToyConfigureSpawn`, `ToyConfigureDomain`, `ModesNotes` | |
 | 9 | Settings modal and Credits | Mockup approved (2026-10-14) | `Settings.dc.html` (interactive), `SettingsDisplay`, `SettingsPerformance`, `SettingsOther`, `Credits`, `SystemNotes` | |
 | 10 | Closed surfaces: Port (locked), Store (no slot), Episodes panel, purchase confirmation | Mockup approved (2026-10-14) | `ClosedSurfaces.dc.html`, `PurchaseConfirm` (blind), `SystemNotes` | |
 | 11 | Menu toasts | Mockup approved (2026-10-14) | `Toasts.dc.html` (interactive), `SystemNotes` | |
@@ -841,3 +841,32 @@ The 3D picture is still built in code by `ElementalConverterView` and now sits b
 
 Departures: the board's timings were compressed for viewing; the game keeps its own flights (about 22 s a
 run). No economy is drawn (the converter has no inputs or balances yet).
+
+## 17. Item 8: the mode windows
+
+### 17.1 The Arena window (built 2026-10-15, awaiting in-editor approval)
+
+`Tools/Build/author_menu_arena.py` authors `ArenaGameCard.prefab` and `ArenaView.prefab` under
+`Assets/_Prefabs/UI Elements/Main Menu Screens/Arena/` and mounts the view under
+`ArenaScreenModal/Arena_Panel/Explore` - the Arcade window's migration (item 3) applied to the arena:
+the old Header, GameSelectScrollView, ArcadeLobbyList, CloseButton and FriendListPanel are deleted, the
+kept `ArcadeExploreView` is re-pointed into the instance (roster still `ArenaGames`), the window
+stretches full screen, the gradient is off and the two OfflineUIGates gate the new party panel.
+
+- **Party:** the shared `PartyPanel.prefab` from item 3, instanced (D7) - one party layer for every
+  mode window.
+- **Cards:** two columns of `ArenaGameCard`s (682 x 372): art, favourite star, party picks, and what the
+  card's own data says about who plays it - "Arena - 2 - 6 pilots" (Min/MaxPlayersAllowed), the
+  mode's description, "2 - 3 domains" (Min/MaxDomainsAllowed) and one chip per hull it seats
+  (`Vessels`). `KitArenaGameCard` draws them through a new `GameCard.DrawDetails` hook; the hull chips
+  are a pool that leaves the row's layout while hidden.
+- Lock, local pick, focus ring and favourite behave as the arcade card (`KitGameCard`).
+
+### 17.2 The Mission window: held
+
+Not rebuilt. The Mission hub is Unavailable (`MenuAvailabilityView` availability 2), so the window cannot
+be opened, and its explore view cannot draw missions anyway: `MissionGames.asset` is an `SO_MissionList`
+of `SO_Mission`s, which neither `ArcadeExploreView.rosterOverride` (an `SO_GameList`) nor `GameCard`
+(which reads `SO_ArcadeGame`) accepts - with no override it draws the whole arcade master list. The
+approved board (difficulty range, threat count) needs a mission roster the view can draw; that is a
+data change to agree before the window is built.
