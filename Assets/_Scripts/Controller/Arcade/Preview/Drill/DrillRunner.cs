@@ -235,8 +235,12 @@ namespace CosmicShore.Gameplay
                 return true;
             }
 
+            // A Lesson with no steps left after composition ends exactly as one whose every step
+            // is skipped at run time (BeginStep): completed, which is what raises AnyLessonEnded.
+            // Going straight to the Mentor here raised nothing, so a first-login guide waiting on
+            // that event held its dim over the menu forever.
             if (_steps.Count > 0) EnterLesson(0);
-            else EnterMentor(null);
+            else CompleteLesson();
             return true;
         }
 

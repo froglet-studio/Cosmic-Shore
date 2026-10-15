@@ -9012,3 +9012,51 @@ code), the 24 `BrittleStarTests` under Roslyn (`Tools/Build/brittlestar_harness/
    at 135 / 70 u/s for 3 s. The arms should still reach ~258 u (a prism wall that far ahead breaks), and read as five
    ropes. Watch the Profiler with 3-4 AI Brittle Stars in Destruction Mode: 1,350+ rounds alive per hull. If it is hot,
    `destructionFireRate` 9 keeps the look at a tenth of the rounds. In Speed Mode the hull outruns its own arms.
+
+## 🟢 Breakwater preview — one-thumb flight in the microgame window (`claude/fix-breakwater-preview-controls-3evnnj`, 2026-10-07) — EDITOR-VERIFIED (flight, 2026-10-15)
+
+**Reported.** In the Breakwater card's preview (Sparrow), the keyboard did not fly the ship and LMB
+fired the guns, so the forced Lesson could not pass its steer step and the first-login guide never
+released.
+
+**Found and fixed offline.** LMB firing proves `SingleStickMouseInputStrategy` was engaged, and
+that scheme read **no movement keys**: WASD was dead by construction. WASD now steers the same stick
+(`ONE_THUMB_MOUSE_CONTROLS.md` §3), and the one-thumb Steer label reads "the mouse or WASD"
+(`Resources/DrillLibrary`). Separately, `DrillRunner.Begin` sent a Lesson composed with zero steps
+straight to the Mentor without raising `AnyLessonEnded`, so the guide would wait forever; it now
+completes like a Lesson whose every step is skipped live (`drill_harness` §3b, negative control
+confirmed). Gates: `unity_refcompile` OK, `drill_harness` 103/103, every `check_*.py`, both
+author scripts `--check`/`--self-test`.
+
+**First Editor run (2026-10-07): WASD steers, Lesson passes.** Two faults remain:
+- **LMB ended the flight.** The window's "tap outside to release" read the LEFT button at the
+  locked cursor's position (screen centre), so on an off-centre window every Sparrow shot released
+  focus. Fixed: `ModePreviewWindow.WantsRelease` skips the pointer test while the cursor is locked
+  (a flight scheme owns the mouse); Escape and pad Start still release. Re-test: LMB fires the guns
+  and the window stays focused; Escape still exits.
+- **Mouse movement still does not steer in the preview** (it does in matches, §7.1 of
+  `Controller/IO/ONE_THUMB_MOUSE_CONTROLS.md`). Console: `[MouseFlight] mouse 0 px/s` while the
+  mouse circles and both buttons fire; the cursor is hidden (the lock takes). Pressing the Windows
+  key once brings mouse steering back. A cursor relock pulse did not help and was reverted.
+
+**Second fix (2026-10-15, not Editor-verified).** Cause: `Win32RawInputMultiMouseProvider`
+registered mouse raw input to its own hidden window. Windows allows one registration per process,
+so that took WM_INPUT, and with it `Mouse.current.delta`, away from Unity. Buttons arrive as legacy
+messages, so they kept working. Every InputController built one, so the sparring partner spawning
+mid-flight killed mouse steering. The focus round-trip made Unity register again. The provider is
+now opt-in (`MouseFlightConfig` ▸ Dual mouse (Windows), default off) and local-pilot only.
+Re-test: tap into the window and circle the mouse WITHOUT touching the Windows key. The ship turns
+and the console reads `px/s` above 0. Dual-mouse (two physical mice) on Windows now needs that box
+ticked, and with it ticked one-thumb mouse flight is expected to read zero again.
+
+**Editor run (2026-10-15, Caleb): fixed.** Mouse movement steers in the preview without the
+Windows key, WASD steers, LMB fires the guns. Merged into `claude/exciting-bell-69b398`.
+
+**Originally not settled.** Whether MOUSE MOVEMENT turns the ship in the preview. If it does not, the console
+carries an unconditional `[MouseFlight]` warning naming which link is dead.
+
+**To run.** Both resets, open Breakwater, tap into the window.
+- Hold **W** (or A/D) for a second: the ship turns and the steer step passes.
+- Move the **mouse**: the ship turns and the stick widget's knob moves.
+- Finish the Lesson: the dim lifts and Play enables.
+- Paste any `[MouseFlight]` or `[Drill]` console line.
