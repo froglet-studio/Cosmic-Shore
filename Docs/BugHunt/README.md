@@ -7,6 +7,7 @@ and how to handle the same kinds of problems next time.
 |---|---|
 | [`../BUG_HUNT_HANDOFF_2026-09.md`](../BUG_HUNT_HANDOFF_2026-09.md) | **The open backlog.** Every unfixed item, with its trigger, consequence and minimal fix. §0 lists what has shipped. This folder does not repeat that list. |
 | [`FIX_LOG.md`](FIX_LOG.md) | One short report per shipped fix, newest first: symptom, root cause, repro + evidence, fix, verification, PR/commit. Ends with the known open console issues. |
+| [`TeamBugBoard.html`](TeamBugBoard.html) | Source of the **Team Bug Board** artifact (https://claude.ai/artifact/5zNw9wDjMrxvZVjGD7KBno): every collaborator's published editor errors across all branches, the daily sweep's log, shared report files, and a form to file a bug without Unity. Fed by the daily sweep (`/bug-ledger` §6); the Unity half is the Bug Hunt check-in (`../DIAGNOSTICS.md`). |
 | [`PLAYBOOK.md`](PLAYBOOK.md) | Troubleshooting by problem class (native leaks, objects re-spawned during teardown, YAML parse errors, teardown-order NREs, leaked materials) and how to get the Editor log. |
 
 ## Workflow
