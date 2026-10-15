@@ -102,5 +102,6 @@
     <Compile Include="../Shared/AmoebiusTracks.cs" Link="Shared/AmoebiusTracks.cs" />
     <Compile Include="../Shared/AmoebiusBoard.cs" Link="Shared/AmoebiusBoard.cs" />
     <Compile Include="../Shared/Workspace/*.cs" Link="Shared/Workspace/%(Filename)%(Extension)" />
+    <Compile Include="../Shared/NetTestLogFormat.cs" Link="Shared/NetTestLogFormat.cs" />
   </ItemGroup>
 </Project>
