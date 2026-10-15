@@ -79,7 +79,8 @@ report read your Unity flight of 2026-10-16 02:31 (flight/2).
 2. The new `flight_Regatta_Squirrel_*.json` says `"schema":"cosmic-shore.flight/3"`, has `rivalHulls` naming the rivals and a
    `rivals` array as long as `samples`; each sample row has 23 numbers.
 3. `python3 Tools/Build/situation_features.py --dir <the Flights folder>` reports it: rings, skims taken / skipped, phases.
-4. In the Training AI for Regatta page, Flights ▸ Load a Unity flight: paste the file; Replay shows your line.
+4. After three or more such races: `python3 Tools/Build/situation_features.py --write` learns from them (editor flights only).
+5. Optional, to look at a flight: the Training AI for Regatta page, Flights ▸ Load a Unity flight, then Replay.
 
 ### 🔴 Third Eye: a You / AI toggle on every pilot (`Ys-bleeding-edge`, 2026-10-15) — NOT EDITOR-VERIFIED
 

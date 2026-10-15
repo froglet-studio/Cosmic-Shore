@@ -13,6 +13,10 @@ This doc is the plan. It builds on what exists (section 2) and does not replace 
 studyholic, Garrett and Shombith (`who_works_where.py query Assets/_Scripts/Utility/AITraining`), and any change to it
 is agreed with them first.
 
+**Decision (Yash, 2026-10-16): training data comes from playing in the Unity editor only.** The artifact below is a
+prototype and a viewer; its flights and its in-page training are not the data the game's AIs learn from
+(`SITUATION_RECORDING_PLAN.md`).
+
 ## 1. The prototype: Training AI for Regatta (the artifact)
 
 https://claude.ai/artifact/FCC7UWbs2wC6LXYMVW4KA4 (repo `Docs/Studios/RegattaAI/`). It was renamed from "Regatta AI" on

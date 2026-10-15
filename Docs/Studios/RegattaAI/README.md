@@ -61,19 +61,18 @@ then publish `<dir>/index.html` with every other file in `<dir>` as `files`, `ur
   combinations miss far more. So *Exit 0.5* is the first candidate, and the Dolphin at I4 says it wants a per-hull
   setting.
 
-## Flights: what you faced, did and meant (2026-10-16)
+## Flights: a viewer of Unity flights (2026-10-16)
 
-The **Flights** tab (bottom dock). Every race you fly by hand is recorded at 10 Hz (`cosmic-shore.flight/3`, the same
-columns as Unity's `HumanFlightRecorder` plus triggers, skims, rail hits and the rivals); the newest six stay in this
-browser. **Replay** puts your hull back on the course as a white ghost with a line to the target you were going for,
-coloured by phase; green, red and amber dots are skims taken, skims skipped and mistakes. The readout shows the moment's
-situation (ring distance and bearing, nose off the ring, through the mouth if straight, turn needed against the tightest,
-gap to a rail, the cheapest skim, place). **Correct it** sets a stretch's phase and target when the guess is wrong.
-**Legs** compares each leg with the Hard AI flown from where you started it. **Learn from my flights** learns the commit
-distance, when a skim is worth it and when to boost from your clean legs, tests it in your own moments, and offers it as
-the hull's trained AI only when it is not slower. **Load a Unity flight** reads a `flight_*.json` from Unity.
-The maths is `situation.js` (also run by Node and twinned in `Tools/Build/situation_features.py`); the definitions are in
-`Docs/AI_SYSTEM/situation_features.json`; the plan is `Docs/AI_SYSTEM/SITUATION_RECORDING_PLAN.md`.
+Training data comes from playing in the Unity editor only (Yash, 2026-10-16), so this page neither records its own races
+nor learns. The **Flights** tab (bottom dock) loads a `flight_*.json` that Unity's `HumanFlightRecorder` wrote (**Load a
+Unity flight**); the newest six stay in this browser. **Replay** puts your hull back on the course as a white ghost with a
+line to the target you were going for, coloured by phase; green, red and amber dots are skims taken, skims skipped and
+mistakes. The readout shows the moment's situation (ring distance and bearing, nose off the ring, through the mouth if
+straight, turn needed against the tightest, gap to a rail, the cheapest skim, place). **Legs** compares each leg with this
+page's Hard AI flown from where you started it (a guide only). The learning runs on the editor flights:
+`python3 Tools/Build/situation_features.py --write`. The maths is `situation.js` (also run by Node and twinned in
+`Tools/Build/situation_features.py`); the definitions are in `Docs/AI_SYSTEM/situation_features.json`; the plan is
+`Docs/AI_SYSTEM/SITUATION_RECORDING_PLAN.md`.
 
 ## Training (round 2, 2026-10-15)
 

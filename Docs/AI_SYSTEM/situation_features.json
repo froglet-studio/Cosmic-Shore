@@ -42,10 +42,11 @@
     "commit point": "per leg, where the target last switched away from the approach point; none when the leg had no approach"
   },
   "learning": {
-    "good legs": "clean (no missed mouth, no rail hit, no AI holding) and no slower than the Hard AI flown from the leg's start + 10% (the page measures that)",
+    "data": "Unity editor flights only (Yash, 2026-10-16); at least 3 flights of a hull before anything is learned",
+    "good legs": "clean (no missed mouth, no rail hit, no AI holding) and in the faster half of the pilot's own clean times for that ring of that intensity",
     "commit": "least squares commitDist = a + b x legLen over the good legs (>= 3); when it explains < 20% (r2 < 0.2) the median, the same on every leg; a in 60..800, b in -0.5..1",
     "skim": "the rule take-when (detour <= D and timeToMouth >= T), D 1..15, T 0..3 by 0.25, that agrees with the most of the pilot's choices (needs >= 4, both kinds)",
     "boostWithin": "90th percentile of headingErr while boosting (>= 5 moments) -> the hull's drive knob (hold / pellet / scarab err, Soar full and half, Dolphin aim, Rhino maxErr)",
-    "safety": "the page races the learned AI against today's from the same spots on the pilot's own legs; a learned AI that is slower is not offered (AI_TRAINING_PLAN.md L4: nothing deploys itself)"
+    "safety": "nothing deploys itself (AI_TRAINING_PLAN.md L4): situation_features.py --write writes learned_situations.json for review; the knobs reach the game only through the reviewed Unity port, tested against today's AI in the editor"
   }
 }

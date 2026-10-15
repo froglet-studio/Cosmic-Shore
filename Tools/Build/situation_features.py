@@ -13,7 +13,12 @@ and a flight the page recorded give the same answers. The definitions are in Doc
     python3 Tools/Build/situation_features.py                     # every Regatta flight on every origin branch (Send to Claude)
     python3 Tools/Build/situation_features.py --dir <folder>      # ...or a local folder of flight_*.json
     python3 Tools/Build/situation_features.py --json <file>       # one flight: the full analysis as JSON on stdout
+    python3 Tools/Build/situation_features.py --write             # ...and write what was learned (learned_situations.json + LEARNED_SITUATIONS.md)
     python3 Tools/Build/situation_features.py --self-test         # Python against situation.js on the fixture (needs node)
+
+Training data comes from playing in the Unity EDITOR only (Yash, 2026-10-16: "let's not use artifact to train, we will
+play in editor only for perfect training data"): the flights read here are the ones HumanFlightRecorder writes and Send to
+Claude stores. The Training AI for Regatta page only views them.
 """
 import argparse
 import json
@@ -27,13 +32,16 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 REPO = os.path.abspath(os.path.join(HERE, "..", ".."))
 COURSE_JS = os.path.join(REPO, "Docs", "Studios", "RegattaAI", "course.js")
 SITUATION_JS = os.path.join(REPO, "Docs", "Studios", "RegattaAI", "situation.js")
-FIXTURE = os.path.join(HERE, "situation_fixtures", "flight_artifact_squirrel_I1.json")
+FIXTURE = os.path.join(HERE, "situation_fixtures", "flight_artifact_squirrel_I1.json")   # the twin test only, never training data
+LEARNED_JSON = os.path.join(REPO, "Docs", "AI_SYSTEM", "learned_situations.json")
+LEARNED_DOC = os.path.join(REPO, "Docs", "AI_SYSTEM", "LEARNED_SITUATIONS.md")
 sys.path.insert(0, HERE)
 
 VERSION = 1
 DEG = 180 / math.pi
 PRISM_HALF = 3
 LEAD_CAP, LEAD_SHARE, THROUGH = 480, 0.4, 320
+MIN_FLIGHTS = 3   # editor flights of one hull before anything is learned from them
 PHASES = ["cruise", "approach", "line-up", "thread", "exit", "skim run", "boost straight", "recovery"]
 
 
@@ -532,7 +540,42 @@ def self_test():
 
 # ---------------------------------------------------------------- report over recorded flights
 
-def report(sources):
+def good_legs_filter(analyses):
+    """A GOOD leg, judged from the pilot's own flights (no model): clean (no missed mouth, no rail hit, nobody else flying)
+    and in the faster half of the pilot's own clean times for that ring of that intensity."""
+    times = {}
+    for A in analyses:
+        for g in A["legs"]:
+            if g["clean"]:
+                times.setdefault((A["norm"]["intensity"], g["ring"]), []).append(g["time"])
+    med = {k: pct(v, 0.5) for k, v in times.items()}
+    return lambda g, A: g["time"] <= med.get((A["norm"]["intensity"], g["ring"]), 1e9)
+
+
+def write_learned(by_hull, n_flights):
+    import datetime
+    data = {"schema": "cosmic-shore.learned-situations/1", "source": "Unity editor flights (HumanFlightRecorder)", "date": datetime.date.today().isoformat(),
+            "spec": "Docs/AI_SYSTEM/situation_features.json", "hulls": by_hull}
+    with open(LEARNED_JSON, "w", encoding="utf-8") as fh:
+        json.dump(data, fh, indent=2)
+        fh.write("\n")
+    lines = ["# What the AI learned from editor flights", "",
+             f"Written by `python3 Tools/Build/situation_features.py --write` on {data['date']} from {n_flights} Regatta flight(s) flown in the Unity editor",
+             "(training data comes from the editor only, Yash 2026-10-16). Plan: `SITUATION_RECORDING_PLAN.md`. Nothing here changes the game until",
+             "the two knobs are ported to Unity's steering and a person reviews the numbers (team task T-20261015-7fc3).", "",
+             "| Hull | Flights | Good legs | Commit to the ring | When a skim is worth it | Boost within | The AI today |", "|---|---|---|---|---|---|---|"]
+    for hull, L in sorted(by_hull.items()):
+        c, sk, b = L.get("commit"), L.get("skim"), L.get("boostWithin")
+        lines.append(f"| {hull} | {L['flights']} | {L['goodLegs']} | "
+                     + (f"{c['a']} u + {c['b']} x leg (median {c['median']} u, n {c['n']})" if c else "needs 3 good legs with an approach") + " | "
+                     + (f"detour <= {sk['maxDetour']} u and >= {sk['minTimeToMouth']} s to the mouth ({round(sk['agreement'] * 100)}% of {sk['n']} choices)" if sk else "needs skims taken and skipped") + " | "
+                     + (f"{b['deg']} deg (n {b['n']})" if b else "needs boost moments") + " | commit 420 u on every leg; the Squirrel skims whenever it can |")
+    with open(LEARNED_DOC, "w", encoding="utf-8") as fh:
+        fh.write("\n".join(lines) + "\n")
+    print(f"\nwrote {os.path.relpath(LEARNED_JSON, REPO)} and {os.path.relpath(LEARNED_DOC, REPO)}")
+
+
+def report(sources, write=False):
     from learn_from_flights import parse  # the same reader (schema check) as the rail learner
     COURSE = load_course_js()
     analyses = []
@@ -556,11 +599,25 @@ def report(sources):
     if not analyses:
         print("No Regatta flight found. Fly a Regatta race by hand in Unity and press Send to Claude, or pass --dir.")
         return 0
-    L = learn(analyses)
-    print("\nLearned from the clean legs (the Training AI for Regatta page also races it against today's AI from the same spots):")
-    print("  commit to the ring:", L["commit"] or "needs 3 clean legs with an approach")
-    print("  when a skim is worth it:", L["skim"] or "needs skims both taken and skipped")
-    print("  boost within:", L["boostWithin"] or "needs boost moments")
+    by_hull = {}
+    for hull in sorted({A["norm"]["hullKey"] for A in analyses}):
+        mine = [A for A in analyses if A["norm"]["hullKey"] == hull]
+        if len(mine) < MIN_FLIGHTS:
+            print(f"\n{hull}: {len(mine)} editor flight(s); nothing is learned below {MIN_FLIGHTS} (one race says how you flew that race, not how you fly)")
+            continue
+        good = good_legs_filter(mine)
+        L = learn(mine, good)
+        L["flights"] = len(mine)
+        L["goodLegs"] = sum(1 for A in mine for g in A["legs"] if g["clean"] and good(g, A))
+        by_hull[hull] = L
+        print(f"\n{hull}: learned from {L['goodLegs']} good legs of {len(mine)} flight(s) (clean, and in the faster half of your own times for that ring):")
+        print("  commit to the ring:", L["commit"] or "needs 3 good legs with an approach")
+        print("  when a skim is worth it:", L["skim"] or "needs skims both taken and skipped")
+        print("  boost within:", L["boostWithin"] or "needs boost moments")
+    if write and by_hull:
+        write_learned(by_hull, len(analyses))
+    elif write:
+        print(f"\nnothing written: no hull has {MIN_FLIGHTS} editor flights yet")
     return 0
 
 
@@ -569,6 +626,7 @@ def main():
     ap.add_argument("--dir")
     ap.add_argument("--json")
     ap.add_argument("--self-test", action="store_true")
+    ap.add_argument("--write", action="store_true", help="write learned_situations.json and LEARNED_SITUATIONS.md")
     a = ap.parse_args()
     if a.self_test:
         return self_test()
@@ -579,7 +637,7 @@ def main():
         json.dump(A, sys.stdout)
         return 0
     from learn_from_flights import flights_in_dir, flights_on_branches
-    return report(flights_in_dir(a.dir) if a.dir else flights_on_branches())
+    return report(flights_in_dir(a.dir) if a.dir else flights_on_branches(), a.write)
 
 
 if __name__ == "__main__":
