@@ -460,8 +460,9 @@ numbers here. `COSMIC_SHORE_MARKERS=off` turns it back into a no-op.
 | `--session-report` → `markers` | Every marker from frame 30: ms/frame, p50/p95/max, calls/frame, KB/frame, plus an `allocating` list |
 | `tools/amoebius_markers_run.py` | One command: boot headless, drive Menu_Main to a mode (`arcade MODE`, `arcade intensity N`, `arcade players N`, `arcade start`, `arcade ready`), open a window, write JSON. `--compare A B` diffs two runs |
 
-What carries over to Unity: the names, the **allocations** (the game's own IL allocates the same way)
-and the change between two runs. What does not: absolute milliseconds (.NET JIT, no Burst, jobs on
+What carries over to Unity: the names, the **allocations** (the game's own IL allocates the same way - but a stand-in
+that copies on every call charges its copy to the game's marker: `Mesh.Set*(List)` does, because the renderer keys
+on array identity; `Docs/perf/amoebius_known.json` lists such markers) and the change between two runs. What does not: absolute milliseconds (.NET JIT, no Burst, jobs on
 the loop thread). Measure with `DOTNET_TieredCompilation=0` (the script's default): with tiering on,
 a short headless window runs part of the hot code unoptimised and reads ~3x slow.
 

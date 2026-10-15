@@ -141,6 +141,63 @@
       "taskAreas": [
         "Team tools"
       ]
+    },
+    "performance": {
+      "title": "Performance",
+      "aliases": [
+        "perf",
+        "performance",
+        "fps",
+        "frame rate",
+        "optimization",
+        "optimisation",
+        "perf hunt",
+        "performance sweep",
+        "prisms per frame"
+      ],
+      "owner": "Yash",
+      "people": [
+        "Garrett",
+        "Shombith"
+      ],
+      "audience": [
+        "the core four"
+      ],
+      "branch": "Ys-bleeding-edge",
+      "branchNote": "developed on perf/performance-optimization, merged into Ys-bleeding-edge on 2026-10-15; the daily check runs on bleeding-edge",
+      "summary": "The 2x plan (100k prisms at 60 fps on a phone), one-button measurement (capture: burst + diag + prof + renderers + cells + cameras as one JSON), the game's own markers measured in Amoebius with no Unity, baselines, a daily sweep that files a team task per regression, and the /perf-hunt resolve loop.",
+      "paths": [
+        "Assets/_Scripts/Utility/PerformanceBenchmark",
+        "Assets/_Scripts/Editor/PerfCaptureWindow.cs",
+        "Tools/Build/perf_hunt.py",
+        "Tools/Build/perf_capture_report.py",
+        "Tools/Build/scan_perframe_allocations.py",
+        "Tools/Build/check_mathf_params_alloc.py",
+        "Port/tools/amoebius_markers_run.py",
+        "Port/src/CosmicShore.Engine/Profiling",
+        "Docs/perf",
+        ".github/workflows/perf-daily.yml",
+        "Docs/PERFORMANCE_OPTIMIZATION.md",
+        ".claude/skills/perf-hunt"
+      ],
+      "docs": [
+        "Docs/PERFORMANCE_OPTIMIZATION.md",
+        "Docs/Reports/PERFORMANCE.md",
+        "Docs/claude/SHADERS_AND_PERFORMANCE.md",
+        ".claude/skills/perf-hunt/SKILL.md"
+      ],
+      "artifacts": [],
+      "report": "Docs/Reports/PERFORMANCE.md",
+      "taskAreas": [
+        "Performance"
+      ],
+      "test": [
+        "Pull Ys-bleeding-edge, open Unity, Code Optimization = Release, close the Third Eye window.",
+        "Play, Cell Selector > Lattice, wait 8 minutes.",
+        "FrogletTools > Performance > Capture Performance (one file), label S2, 15 s, Capture; wait for READY.",
+        "FrogletTools > Diagnostics > Bug Hunt Check-in > Share now (or paste the clipboard to a Claude session).",
+        "python3 Tools/Build/perf_hunt.py sweep --write shows the capture judged against its baseline in Docs/Reports/PERFORMANCE.md."
+      ]
     }
   }
 }
