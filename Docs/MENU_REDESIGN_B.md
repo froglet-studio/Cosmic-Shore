@@ -48,7 +48,7 @@ Legend: `Planned` ▸ `Mockup` ▸ `Mockup approved` ▸ `Built` ▸ `Approved i
 | 11 | Menu toasts | Built (2026-10-15, section 20) | `Toasts.dc.html` (interactive), `SystemNotes` | |
 | 12 | In-game UI: GameCanvas HUD chrome, scoreboard, ready / countdown / pause, in-match toasts, end-of-game screens, Menu_Main freestyle HUD | Built (2026-10-15, section 22): 12a HUD chrome, 12b Ready / waiting / countdown, 12c pause and connecting, 12d end reveal and scoreboard, 12e spectator, match feed, freestyle | `HudMatch.dc.html` (interactive), `HudCardStates`, `HudNotes`, `Hud<Vessel>` x9, `HudReady` (interactive), `HudPause`, `HudConnecting`, `HudEndReveal`, `HudScoreboard` (interactive), `HudSpectator` - page "In-game HUD" | `6a94bdd1`, `422183de`, `9abadaa9`, `f067dc57` + 12e |
 | 13 | Start flow: Bootstrap splash, connection-lost retry, sign-in, pilot name, the first-run privacy overlay (age gate, consent); the boot-world loading cover | Built (2026-10-15, section 26), awaiting in-editor approval; the loading cover is Built (section 25) | `StartSplash`, `StartRetry`, `StartSignIn`, `StartSignInFailed`, `StartName`, `StartNameTaken`, `StartAgeGate`, `StartConsent`, `StartLoading`, `StartNotes` - page "Start flow" | `dc023d00d` (cover) |
-| 14 | Maelstrom game UI: the hub between rounds, the stats screen, the tournament summary | Mockup (2026-10-15) | `MaelstromHub`, `MaelstromStats`, `MaelstromSummary`, `MaelstromNotes` - page "In-game HUD" | |
+| 14 | Maelstrom game UI: the hub between rounds, the stats screen, the tournament summary | Built (2026-10-15, section 27), awaiting in-editor approval | `MaelstromHub`, `MaelstromStats`, `MaelstromSummary`, `MaelstromNotes` - page "In-game HUD" | |
 
 ---
 
@@ -1638,3 +1638,59 @@ black cover of section 25 is still raised underneath, for the moments the splash
 already falls back to an offline local host on its own, after its offline notice; the retry window
 appears only when that offline host itself failed, so a PLAY OFFLINE button there would lead to the
 path that just failed. The StartNotes board says so.
+
+## 27. Item 14: the Maelstrom game UI (built 2026-10-15, awaiting in-editor approval)
+
+Built from the approved boards (`MaelstromHub`, `MaelstromStats`, `MaelstromSummary`). Written by
+`Tools/Build/author_maelstrom_ui.py` (`--check`, `--self-test`: eight negative controls).
+`MaelstromSceneView` still binds everything by name, and every object it names keeps its name.
+
+**The card prefabs are regenerated in place.** They keep their files and guids; `Maelstrom.unity` is
+the only thing that references them.
+- `MaelstormRoundScoreCardBG` (`MaelstromRoundCard`, 380 x 560): the mode's card art
+  (`SO_Game.CardBackground`, cover-fitted), a "Round n" eyebrow over the mode name, "Winner" with a
+  domain pill (or "Up next" / "-"), ROUND / TOTAL column heads over the rows. The Control Active
+  outline (`currentRoundHighlight`) marks the current card.
+- `MaelStromPlayerScoreCardContainer` (`MaelstromPlayerCard`, one 344 x 40 row): the avatar in a
+  domain ring, the name over the mode's own score for the round ("01:24:30", "12 Crystals" - kept from
+  the old "Round Score" line), the points the round paid the domain ("+5", new), and the domain total.
+  The old "Round Score :" / "Total Score :" prefixes are gone; the column heads carry the meaning.
+- `MaelstromSummaryScoreCardContainer` (`MaelstromSummaryPlayerCard`, 330 x 380): the domain's place
+  ("#1"), the avatar in a ring, the name, a domain pill, "Total score" over the number.
+
+**Hub** (between rounds):
+- Top left: the mode as an eyebrow, "Round n", the win-target line.
+- Top right: chips for the game pool ("10 of 16 modes, intensity 2"), the round, and the leading
+  domain as a pill.
+- **The round cards sit side by side.** The scroll is now horizontal and auto-scrolls to the right
+  end. LB / RB step it one card at a time, except while the player is flying the preview.
+- **The round about to be played is the last card**, outlined (new). It names the drawn mode and
+  shows its art once the draw lands (`SetUpcomingRound`). Before that it reads "To be drawn".
+- The live preview window on the right: "Next round" over the mode's name, LIVE PREVIEW with a
+  breathing dot, the frame and brackets.
+- **"Race to N"** (new): a bar per domain filling toward the win target, from the same standings the
+  leading chip reads.
+- **"Pilots ready"** (new): a face per human pilot, ringed in their domain and ticking (a pulse) when
+  they ready. AI have no button, so they have no seat (`MaelstromLobby.HumanPlayers`).
+- READY (with the tally, "READY 3/4") is a kit button. The countdown is a large number with its
+  "Game starts in" caption, still shown only for the last few seconds. A line under READY explains the
+  all-ready rule; pad hints run along the bottom.
+
+**Stats** (the tournament is decided): the same screen with "<mode> results", "n rounds played",
+"Last arena" in the preview, NEXT in place of READY, "Ruby takes the Maelstrom. Next shows the
+trophy.", and no Pilots ready block.
+
+**Summary:** the mode eyebrow, GAME WON! / GAME OVER, "RUBY WINS" in the winner's colour over a rule
+that grows, the domain ranking as chips (points under each pill), the pilot cards side by side, and
+PLAY AGAIN (host only) / STATS / MAIN MENU as kit buttons.
+
+**Pad:** READY, NEXT and PLAY AGAIN are selected by the view as their screen appears (non-hosts land
+on STATS), so A submits them; they carry no `ControllerButtonPress`, which would press them twice.
+STATS answers Y and MAIN MENU answers B through `ControllerButtonPress`; neither is a submit.
+
+**Open questions from the notes board, answered by the build:** the Race-to-N strip is built (it is
+cheap and reads the same data); a non-host sees no PLAY AGAIN at all, as before.
+
+**Not changed:** the hub still has no reachable MAIN MENU between rounds. The button lives under the
+summary panel, which `MaelstromSceneView.WarnIfHubExitIsUnreachable` already reports; the boards do
+not place one in the hub either.

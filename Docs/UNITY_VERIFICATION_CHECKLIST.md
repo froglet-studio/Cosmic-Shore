@@ -65,6 +65,33 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Style-B Maelstrom game UI: hub, stats, summary (`claude/new-session-76hnyc`, 2026-10-15) — NOT EDITOR-VERIFIED
+
+Section 27 of `Docs/MENU_REDESIGN_B.md`. Written by `Tools/Build/author_maelstrom_ui.py`: the three
+Maelstrom card prefabs (regenerated in place, same guids) and `Maelstrom.unity`. `MaelstromSceneView`,
+`MaelstromRoundCard`, `MaelstromPlayerCard` and `MaelstromSummaryPlayerCard` gained optional fields;
+`MaelstromStandingRow` and `MaelstromReadySeat` are new. There is no editor in the session, so
+`/verify-unity` is still owed. Offline: the player and editor reference compiles are clean apart from
+the known package errors; the generator's `--check` and `--self-test` (eight negative controls) pass.
+
+**Verify in editor:**
+1. Open `Maelstrom.unity` and the three prefabs in `Assets/_Prefabs/MaelStrom/`. No missing scripts;
+   `MaelstromSceneView` shows its new Style B fields wired.
+2. Start a Maelstrom from the Arcade with AI. Hub: "MAELSTROM" / "Round 1" / the win target; the
+   three chips top right; one outlined card reading "To be drawn" that names the mode a moment
+   later; the preview on the right; Race to N bars at zero; your face under Pilots ready.
+3. Press A: READY becomes READY! and the tally moves; your face ticks ready. With everyone ready the
+   countdown shows 3-2-1 and the round loads.
+4. Back in the hub after a round: the played card shows the mode art, the winner pill, each pilot's
+   mode score, +points and total; the bars moved; the upcoming card is last and outlined. LB / RB
+   step the cards; flying the preview, LB / RB do not scroll.
+5. Finish the tournament: the stats screen ("Maelstrom results", NEXT focused, no Pilots ready).
+   NEXT shows the summary: winner line in the winner's colour, the rule grows, the domain chips,
+   the ranked pilot cards. A plays again (host), Y returns to stats, B leaves.
+6. As a client in a party: the summary has no PLAY AGAIN and STATS is focused.
+
+---
+
 ### 🔴 Style-B start flow: Bootstrap splash, connection lost, sign-in, pilot name, privacy overlay (`claude/new-session-76hnyc`, 2026-10-15) — NOT EDITOR-VERIFIED
 
 Section 26 of `Docs/MENU_REDESIGN_B.md`. Affects Yash's boot/auth flow: `AuthenticationSceneController`
