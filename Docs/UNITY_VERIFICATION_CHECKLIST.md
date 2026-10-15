@@ -9326,3 +9326,18 @@ in `AuthenticationServiceFacade.cs`, untouched), `check_console_logging.py`, `ch
 8. Report: whether the card covers anything in the Scene view you need (it sits above the bottom-left of the view),
    and whether the text is readable on the light skin.
 
+## 🔴 Regatta: the Squirrel AI skims its own rail instead of striking the braid (2026-10-15, `Ys-bleeding-edge`) - NOT EDITOR-VERIFIED
+
+What changed: `Docs/SKIM_RACE_AI.md` §15. The skim line clears the rail's shell (`SkimRaceCourse.SkimLift`), rival rails
+are mass, the aim is the own rail's crossing, and direct flight is off in Regatta. Regatta has its own policy asset,
+and the Third Eye has a skim readout. Checked offline only: reference compile, gates, the Skim Race simulator
+(bit-identical) and the new maths run against the real source.
+
+1. Regatta, I1 then I4, Squirrels on AI seats (Hard), the Third Eye on one of them with Trails on.
+   **Pass:** the hull rides just outside its own coloured rail. The skim readout's `lift` reads 7.5, `direct` reads
+   off, and `shell gap` stays mostly between 1.5 and 6. It threads every ring.
+   **Fail:** the hull drives into prisms, `shell gap` sits at 0, or it leaves its rail for the ring centre.
+2. Compare the strike count before and after (the vessel's hull-hit toasts or the console): it should drop to
+   near zero.
+3. Skim Race I2: the Squirrel AI flies exactly as before, and `lift` reads 0.0. **Fail:** slower or more strikes.
+4. Run `RegattaSkimTests` (edit mode). **Pass:** all green.
