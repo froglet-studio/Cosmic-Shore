@@ -50,6 +50,10 @@ namespace CosmicShore.Utility
         [SerializeField] UnityEngine.UI.Image winnerRule;
         [Tooltip("Under the rule: the mode's own number - 'Race time 2:41.37', from the scoring rule.")]
         [SerializeField] TMP_Text detailText;
+        [Tooltip("Played as the reveal comes in - the winner line, the rule growing out, the detail - " +
+                 "each on its own delay. The toast shows through its CanvasGroup, so they are started " +
+                 "here rather than on enable.")]
+        [SerializeField] KitEntrance[] revealEntrances = new KitEntrance[0];
 
         [Header("Timing")]
         [Tooltip("Seconds the reveal toast holds before the scoreboard appears.")]
@@ -326,6 +330,9 @@ namespace CosmicShore.Utility
             toastCanvasGroup.alpha = 0f;
             toastCanvasGroup.blocksRaycasts = false;
             t.localScale = Vector3.one * 0.85f;
+
+            for (int i = 0; i < revealEntrances.Length; i++)
+                if (revealEntrances[i]) revealEntrances[i].Play();
 
             _toastSeq = DOTween.Sequence()
                 .Append(toastCanvasGroup.DOFade(1f, toastInDuration))

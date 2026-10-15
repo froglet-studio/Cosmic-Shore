@@ -273,7 +273,8 @@ def ready_nodes():
         .add("kt", 114, K.kit_text("Button", driven=True))
     cap = N("Ready/Caption", "Caption", R((0.5, 0), (0.5, 0), (0, -16), (720, 24), (0.5, 1)))
     cap.add("cr", 222, K.canvas_renderer()).add("tmp", 114, H.text(READY_CAPTION, "BodySmall", tok("TextLight"), align="center")) \
-        .add("kt", 114, K.kit_text("BodySmall", "TextLight")).add("le", 114, H.le(ignore=True))
+        .add("kt", 114, K.kit_text("BodySmall", "TextLight")).add("le", 114, H.le(ignore=True)) \
+        .add("cg", 225, H.canvas_group(True)).add("in", 114, HM.M.entrance("Fade", delay=0.18))
     return [ring, fill, bord, slot, lab, cap]
 
 
@@ -320,6 +321,9 @@ def patch_ready(p):
     p.children(rt, new_ids)
     p.replace(btn, ready_button_doc(p.doc(btn), p.ctx))
     p.add_comp(go, "hlg", 114, K.hv_layout(False, (32, 32, 0, 0), 14, 4, (1, 1), (0, 0)))
+    # Motion: the button rises in every time it is shown (ToggleReadyButton enables it).
+    p.add_comp(go, "cg", 225, H.canvas_group(True))
+    p.add_comp(go, "in", 114, HM.M.entrance("Rise", distance=18))
 
 
 def chip_template():
@@ -336,13 +340,14 @@ def chip_template():
     st.add("cr", 222, K.canvas_renderer()).add("tmp", 114, H.text("Picking", "Label", tok("NeutralLightest"), align="center"))
     n.add("chip", 114, lambda ctx, go: K.mono(go, S["chip"],
         f"  ring: {{fileID: {ctx.c('Wait/Chip/Ring', 'img')}}}\n  avatar: {{fileID: {ctx.c('Wait/Chip/Avatar', 'img')}}}\n"
-        f"  state: {{fileID: {ctx.c('Wait/Chip/State', 'tmp')}}}\n  group: {{fileID: {ctx.c('Wait/ChipTemplate', 'cg')}}}\n"))
+        f"  state: {{fileID: {ctx.c('Wait/Chip/State', 'tmp')}}}\n  group: {{fileID: {ctx.c('Wait/ChipTemplate', 'cg')}}}\n"
+        "  readyPunch: 0.2\n"))
     return n
 
 
 def waiting_node():
     n = N("Wait", "ReadyWaiting", R((0.5, 0.5), (0.5, 0.5), WAIT_POS, (WAIT_W, WAIT_H)))
-    n.add("cg", 225, H.canvas_group(False))
+    n.add("cg", 225, H.canvas_group(False)).add("in", 114, HM.M.entrance("Rise", distance=18, play_on_enable=False))
     H.framed(n, "Wait", 14, "SurfaceVeryDark", "SurfaceLight", fill_alpha=0.92)
     dia = A.image_node(n, "Wait/Diamond", "Diamond", HM.TL(26, 37, 12, 12), "Cta", K.chrome_sprite("chrome_diamond"), preserve=True)
     dia.add("breathe", 114, HM.M.ambient("Breathe", period=1.6, amplitude=0.6))
@@ -358,6 +363,7 @@ def waiting_node():
         f"  canvasGroup: {{fileID: {ctx.c('Wait', 'cg')}}}\n  countText: {{fileID: {ctx.c('Wait/Count', 'tmp')}}}\n"
         f"  roster: {{fileID: {ctx.rt('Wait/Roster')}}}\n  chipTemplate: {{fileID: {ctx.c('Wait/ChipTemplate', 'chip')}}}\n"
         f"  toastChannel: {K.ref(11400000, TOAST_CHANNEL, 2)}\n"
+        f"  entrance: {{fileID: {ctx.c('Wait', 'in')}}}\n"
         "  readyWord: Ready\n  waitingWord: Picking\n"
         f"  waitingRingToken: {K.TOKEN_INDEX['SurfaceDark']}\n  readyTextToken: {K.TOKEN_INDEX['Cta']}\n"
         f"  waitingTextToken: {K.TOKEN_INDEX['NeutralLightest']}\n  waitingAlpha: 0.5\n"))
@@ -457,8 +463,11 @@ def cbp_body(pad_button, group_key):
 
 
 def pause_button(i, key, caption, variant, opaque, cap, pad):
-    return kit_button(f"Pause/{key}", f"{key}Button", HM.TL(WIN_W - WIN_PAD - BTN_W, 36 + i * (BTN_H + BTN_GAP), BTN_W, BTN_H),
-                      variant, opaque, caption, cap, pad, "Pause/Window", f"Pause{key}Keycap")
+    b = kit_button(f"Pause/{key}", f"{key}Button", HM.TL(WIN_W - WIN_PAD - BTN_W, 36 + i * (BTN_H + BTN_GAP), BTN_W, BTN_H),
+                   variant, opaque, caption, cap, pad, "Pause/Window", f"Pause{key}Keycap")
+    # Motion: the three actions step in after the window, one stagger apart.
+    b.add("cg", 225, H.canvas_group(True)).add("in", 114, HM.M.entrance("Rise", stagger=i + 2, distance=10))
+    return b
 
 
 def kit_button(k, name, r, variant, opaque, caption, cap, pad, group_key=None, keycap_key=None):
@@ -522,7 +531,8 @@ def pause_window():
 def pause_scrim():
     n = N("Pause/Scrim", "Scrim", STRETCH)
     n.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("SurfaceBlack", 0.78), raycast=True)) \
-        .add("th", 114, H.themed("SurfaceBlack", 0.78))
+        .add("th", 114, H.themed("SurfaceBlack", 0.78)) \
+        .add("cg", 225, H.canvas_group(True)).add("in", 114, HM.M.entrance("Fade", duration=0.2))
     return n
 
 
@@ -601,6 +611,7 @@ def connect_text(text_):
     p.replace(CN["mode_tmp"], tmp_restyle(p.doc(CN["mode_tmp"]), "Chakra", 15, True, 14, "left", "NeutralLightest"))
     title = N("Connect/Phase", "PhaseTitle", R((0.5, 0.5), (0.5, 0.5), (0, -232), (COL_X, 58)))
     H.label(title, "Connecting", "Display", "TextLight")
+    title.add("cg", 225, H.canvas_group(True)).add("in", 114, HM.M.entrance("Rise", distance=10))
     p.rect(CN["slider_rt"], R((0.5, 0.5), (0.5, 0.5), (0, -282), (COL_X, 6)))
     p.body(CN["track_img"], HM.img_body(tok("TextLight", 0.16)), CN["track_go"])
     p.body(CN["fill_img"], HM.img_body(tok("ControlActive")), CN["fill_go"])
@@ -621,6 +632,7 @@ def connect_text(text_):
     comp = insert_after_field(comp, "gameModeText", "phaseTitle", f"{{fileID: {p.ctx.c('Connect/Phase', 'tmp')}}}")
     comp = insert_after_field(comp, "phaseTitle", "progressText", f"{{fileID: {p.ctx.c('Connect/Progress', 'tmp')}}}")
     comp = insert_after_field(comp, "progressText", "elapsedText", f"{{fileID: {p.ctx.c('Connect/Elapsed', 'tmp')}}}")
+    comp = insert_after_field(comp, "elapsedText", "phaseTitleEntrance", f"{{fileID: {p.ctx.c('Connect/Phase', 'in')}}}")
     p.replace(CN["comp"], comp)
     return p.text()
 
@@ -664,11 +676,14 @@ def endgame_text(text_):
     scrim = N("Reveal/Scrim", "Scrim", STRETCH)
     scrim.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("SurfaceBlack", 0.5))).add("th", 114, H.themed("SurfaceBlack", 0.5))
     win = N("Reveal/Winner", "Winner", R((0.5, 0.5), (0.5, 0.5), (0, 148), (1600, 28)))
-    win.add("cr", 222, K.canvas_renderer()).add("tmp", 114, sized_text("Jade wins", "Label", "TextLight", 18, spacing=30))
+    win.add("cr", 222, K.canvas_renderer()).add("tmp", 114, sized_text("Jade wins", "Label", "TextLight", 18, spacing=30)) \
+        .add("cg", 225, H.canvas_group(True)).add("in", 114, HM.M.entrance("Drop", delay=0.1, distance=10, play_on_enable=False))
     rule = N("Reveal/Rule", "Rule", R((0.5, 0.5), (0.5, 0.5), (0, 0), (160, 3)))
-    rule.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("TextLight")))
+    rule.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("TextLight"))) \
+        .add("in", 114, HM.M.entrance("GrowX", delay=0.5, play_on_enable=False))
     det = N("Reveal/Detail", "Detail", R((0.5, 0.5), (0.5, 0.5), (0, -36), (1600, 30)))
-    det.add("cr", 222, K.canvas_renderer()).add("tmp", 114, H.text("", "H3", tok("TextLight"), align="center"))
+    det.add("cr", 222, K.canvas_renderer()).add("tmp", 114, H.text("", "H3", tok("TextLight"), align="center")) \
+        .add("cg", 225, H.canvas_group(True)).add("in", 114, HM.M.entrance("Rise", delay=0.65, distance=8, play_on_enable=False))
     ids = [p.emit(n, EG["toast_rt"], EG["seq"]) for n in (scrim, win, rule, det)]
     p.children(EG["toast_rt"], [ids[0], ids[1], EG["msg_rt"], ids[2], ids[3]])
     # The crowd line: Light (never the old teal), 96 px Aldrich, auto-sized down to 48 so the longest
@@ -682,6 +697,8 @@ def endgame_text(text_):
     seq = insert_after_field(seq, "gameOverCounterText", "winnerText", f"{{fileID: {p.ctx.c('Reveal/Winner', 'tmp')}}}")
     seq = insert_after_field(seq, "winnerText", "winnerRule", f"{{fileID: {p.ctx.c('Reveal/Rule', 'img')}}}")
     seq = insert_after_field(seq, "winnerRule", "detailText", f"{{fileID: {p.ctx.c('Reveal/Detail', 'tmp')}}}")
+    seq = re.sub(r"^  revealEntrances:\n(?:  - .*\n)*|^  revealEntrances: \[\]\n", "", seq, flags=re.M)
+    seq = seq.rstrip("\n") + "\n" + K.refs_list("revealEntrances", [p.ctx.c(k, "in") for k in ("Reveal/Winner", "Reveal/Rule", "Reveal/Detail")])
     p.replace(EG["seq"], seq)
     return p.text()
 
@@ -786,23 +803,28 @@ def build_panel():
     root = N("root", SB_PANEL, STRETCH)
     scrim = root.child(N("Scrim", "Scrim", STRETCH))
     scrim.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("SurfaceBlack", 0.86), raycast=True)).add("th", 114, H.themed("SurfaceBlack", 0.86))
+    scrim.add("cg", 225, H.canvas_group(True)).add("in", 114, HM.M.entrance("Fade", duration=0.2))
     head = root.child(N("Header", "Header", R((0.5, 1), (0.5, 1), (0, -56), (LIST_W, 120), (0.5, 1))))
     head.add("in", 114, HM.M.entrance("Rise", distance=14))
     mode = head.child(N("Header/Mode", "Mode", HM.TL(0, 0, LIST_W, 22)))
     mode.add("cr", 222, K.canvas_renderer()).add("tmp", 114, H.text("", "Label", tok("NeutralLightest"), align="center"))
     ban = head.child(N("Header/Banner", "Banner", HM.TL(0, 28, LIST_W, 64)))
-    ban.add("cr", 222, K.canvas_renderer()).add("tmp", 114, sized_text("Game over", "Display", "TextLight", 56))
+    ban.add("cr", 222, K.canvas_renderer()).add("tmp", 114, sized_text("Game over", "Display", "TextLight", 56)) \
+        .add("cg", 225, H.canvas_group(True)).add("in", 114, HM.M.entrance("Pop", delay=0.08))
     rule = head.child(N("Header/Rule", "Rule", R((0.5, 1), (0.5, 1), (0, -102), (220, 3), (0.5, 1))))
-    rule.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("TextLight")))
+    rule.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("TextLight"))) \
+        .add("in", 114, HM.M.entrance("GrowX", delay=0.3))
     view = root.child(N("List", "List", R((0.5, 1), (0.5, 1), (0, -230), (LIST_W, LIST_H), (0.5, 1))))
     view.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image((1.0, 1.0, 1.0, 0.0), raycast=True)) \
         .add("rmask", 114, A.rect_mask()).add("scroll", 114, A.scroll_rect("List/Content", "List", 30))
     content = view.child(N("List/Content", "Content", R((0, 1), (1, 1), (0, 0), (0, 0), (0.5, 1))))
     content.add("vlg", 114, K.hv_layout(True, (0, 0, 0, 0), 12, 1, (1, 1), (0, 0))).add("csf", 114, K.fitter(0, 2))
     stats = root.child(N("Stats", "Stats", R((0.5, 1), (0.5, 1), (0, -650), (LIST_W, 96), (0.5, 1))))
-    stats.add("hlg", 114, K.hv_layout(False, (0, 0, 0, 0), 14, 3, (1, 1), (1, 0)))
+    stats.add("hlg", 114, K.hv_layout(False, (0, 0, 0, 0), 14, 3, (1, 1), (1, 0))) \
+        .add("cg", 225, H.canvas_group(True)).add("in", 114, HM.M.entrance("Rise", delay=0.5))
     row = root.child(N("Buttons", "Buttons", R((0.5, 1), (0.5, 1), (0, -800), (LIST_W, 64), (0.5, 1))))
-    row.add("hlg", 114, K.hv_layout(False, (0, 0, 0, 0), 20, 4, (1, 1), (0, 0)))
+    row.add("hlg", 114, K.hv_layout(False, (0, 0, 0, 0), 20, 4, (1, 1), (0, 0))) \
+        .add("cg", 225, H.canvas_group(True)).add("in", 114, HM.M.entrance("Rise", delay=0.6))
     for key, cap, variant, keycap, pad, w in SB_BUTTONS:
         b = kit_button(f"Sb/{key}", f"{key}Button", R(size=(w, 64)), variant, variant == "Play", cap, keycap, pad,
                        keycap_key=f"Sb{key}Keycap")
@@ -1106,6 +1128,9 @@ def panel_text(text_):
     # The cap: the old bottom accent strip, moved to the top edge and out of the layout.
     p.rect(I["accent_rt"], R((0.5, 1), (0.5, 1), (0, 0), (CAP_W, CAP_H), (0.5, 1)))
     p.add_comp(I["accent_go"], "le", 114, K.layout_element(ignore=True))
+    # Motion: the columns pop in one after another (their own CanvasGroup; scale, so the bar's
+    # HorizontalLayoutGroup is never fought).
+    p.add_comp(PANEL_ROOT_GO, "in", 114, HM.M.entrance("Pop", by_sibling=True))
     p.children(I["root_rt"], [I["glow_rt"], layers["Base"], layers["Tint"], layers["Border"],
                               I["sum_rt"], I["avatars_rt"], I["accent_rt"]])
     comp = p.doc(PANEL_COMP)
@@ -1318,6 +1343,23 @@ def validate(files):
     assert f"  exitGlyph: {K.sprite_ref(CLOSE_GLYPH)}\n" in mh, "the freestyle exit hex has no glyph"
     assert f"guid: {LIBERATION}" not in files[FTUE], "the FTUE bar still draws in LiberationSans"
 
+    # Motion (section 22.7): every surface arrives instead of appearing.
+    kit_entrance = K.kit_script("KitEntrance")
+    def entrances(text_):
+        return text_.count(f"guid: {kit_entrance}, type: 3}}")
+    for path, at_least, what in ((CANVAS, 3, "Ready button, caption and the waiting panel"),
+                                 (PAUSE, 5, "pause scrim, window and the three buttons"),
+                                 (CONNECT, 1, "the connecting headline"), (ENDGAME, 3, "the reveal's three lines"),
+                                 (sb_path(SB_PANEL), 6, "scoreboard scrim, header, banner, rule, stats and buttons"),
+                                 (PANEL["path"], 1, "the score column")):
+        assert entrances(files[path]) >= at_least, f"{path}: {what} have no entrance"
+    sq = docs_of(files[ENDGAME])[EG["seq"]]
+    blk = re.search(r"^  revealEntrances:\n((?:  - .*\n)*)", sq, re.M)
+    assert blk and len(re.findall(r"\{fileID: [1-9-]", blk.group(1))) == 3, "the reveal's entrances are not started by the sequencer"
+    assert re.search(r"^  phaseTitleEntrance: \{fileID: [1-9-]", docs_of(files[CONNECT])[CN["comp"]], re.M), "the connecting headline does not replay on a phase change"
+    assert re.search(r"^  entrance: \{fileID: [1-9-]", docs[next(f for f, d in docs.items() if f"guid: {S['waiting']}" in d)], re.M), \
+        "the waiting panel has no entrance"
+
     pn = files[PANEL["path"]]
     check_local_refs(PANEL["path"], pn)
     pd = docs_of(pn)
@@ -1390,6 +1432,10 @@ def self_test(files):
             r"(  accentImage: )\{fileID: -?\d+\}", r"\1{fileID: 0}", f[FEED]))),
         ("the match without a toast container", sub(CANVAS, f"  m_Name: {TOAST_CONTAINER}\n", "  m_Name: Toasts\n")),
         ("the pause hex without its keycap", sub(CANVAS, "  padKeycap: Start\n", "  padKeycap: \n")),
+        ("the reveal's lines no longer started", lambda f: f.__setitem__(ENDGAME, re.sub(
+            r"^  revealEntrances:\n(?:  - .*\n)*", "  revealEntrances: []\n", f[ENDGAME], flags=re.M))),
+        ("the scoreboard snapping in", lambda f: f.__setitem__(sb_path(SB_PANEL), f[sb_path(SB_PANEL)].replace(
+            f"guid: {K.kit_script('KitEntrance')}, type: 3}}", f"guid: {K.kit_script('KitAmbient')}, type: 3}}"))),
         ("the column hairline unwired", lambda f: f.__setitem__(PANEL["path"], re.sub(r"(  borderImage: )\{fileID: -?\d+\}", r"\1{fileID: 0}", f[PANEL["path"]]))),
     ]
     ok = all(expect(l, m) for l, m in cases)

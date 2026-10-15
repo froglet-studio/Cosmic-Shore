@@ -114,6 +114,7 @@ MonoBehaviour:
   phaseTitle: {fileID: 690033875504355529}
   progressText: {fileID: 235720626373178851}
   elapsedText: {fileID: 1037558536974036636}
+  phaseTitleEntrance: {fileID: 946627596611858583}
   progressSlider: {fileID: 683106203071149611}
   barSmoothing: 0.25
   arenaPreview: {fileID: 5286263388932184343}
@@ -444,6 +445,8 @@ GameObject:
   - component: {fileID: 574776714556941670}
   - component: {fileID: 690033875504355529}
   - component: {fileID: 303596178364725892}
+  - component: {fileID: 213558185891531182}
+  - component: {fileID: 946627596611858583}
   m_Layer: 5
   m_Name: PhaseTitle
   m_TagString: Untagged
@@ -586,6 +589,38 @@ MonoBehaviour:
   theme: {fileID: 11400000, guid: 0aef6398681c4ec98118cc9b9740060a, type: 2}
   colorToken: 0
   colorDrivenExternally: 0
+--- !u!225 &213558185891531182
+CanvasGroup:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 580466577258833433}
+  m_Enabled: 1
+  m_Alpha: 1
+  m_Interactable: 1
+  m_BlocksRaycasts: 1
+  m_IgnoreParentGroups: 0
+--- !u!114 &946627596611858583
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 580466577258833433}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1543fe3a029de045efa884462c2f95d5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  mode: 0
+  ease: 0
+  duration: 0.32
+  distance: 10
+  delay: 0
+  staggerIndex: 0
+  staggerBySibling: 0
+  playOnEnable: 1
 --- !u!1 &195868900474839220
 GameObject:
   m_ObjectHideFlags: 0

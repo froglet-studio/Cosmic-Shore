@@ -51,6 +51,9 @@ namespace CosmicShore.UI
         [Tooltip("Resources/Channels/GameToastChannel - the match feed's channel. PlayerReady " +
                  "raises on it on every client.")]
         [SerializeField] private ScriptableEventGameToastData toastChannel;
+        [Tooltip("Optional. The panel's arrival - a short rise - played on Begin (the panel shows " +
+                 "through its CanvasGroup, so nothing is enabled to start it on its own).")]
+        [SerializeField] private KitEntrance entrance;
 
         [Header("Look")]
         [SerializeField] private string readyWord = "Ready";
@@ -87,8 +90,10 @@ namespace CosmicShore.UI
             // remote one) is kept - the set is cleared only by Hide.
             if (!string.IsNullOrEmpty(localName)) _ready.Add(localName);
             BuildChips();
+            bool wasActive = _active;
             _active = true;
             KitVisibility.SetShown(canvasGroup, true);
+            if (!wasActive && entrance) entrance.Play();
             Redraw();
         }
 
@@ -103,6 +108,8 @@ namespace CosmicShore.UI
         {
             _active = false;
             _ready.Clear();
+            // Stop a running entrance first: it writes the same CanvasGroup's alpha every frame.
+            if (entrance) entrance.Finish();
             KitVisibility.SetShown(canvasGroup, false);
         }
 

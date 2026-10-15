@@ -57,6 +57,7 @@ namespace CosmicShore.UI
         private RectTransform _rect;
         private CanvasGroup _group;
         private Vector2 _restPosition;
+        private Vector2 _lastWritten;
         private Vector3 _restScale = Vector3.one;
         private float _clock = -1f;
 
@@ -81,6 +82,7 @@ namespace CosmicShore.UI
             if (!_rect) return;
             if (IsPlaying) Finish();
             _restPosition = _rect.anchoredPosition;
+            _lastWritten = _restPosition;
             _restScale = _rect.localScale;
             _clock = 0f;
             Apply(0f);
@@ -91,6 +93,8 @@ namespace CosmicShore.UI
         {
             if (!IsPlaying || !_rect) return;
             _clock = -1f;
+            if (mode == KitEntranceMode.Rise || mode == KitEntranceMode.Drop)
+                _restPosition = ReconcileRest(_rect.anchoredPosition, _lastWritten, _restPosition);
             _rect.anchoredPosition = _restPosition;
             _rect.localScale = _restScale;
             if (_group) _group.alpha = 1f;
@@ -108,6 +112,23 @@ namespace CosmicShore.UI
             Apply(Mathf.Max(0f, t));
         }
 
+        /// <summary>
+        /// Where the object should come to rest, given where it is now and where this entrance last
+        /// put it. If something ELSE moved it since - a layout group placing a row that was enabled
+        /// before the layout ran, which is every row a view spawns - that new position is the rest
+        /// pose; otherwise the rest pose stands. Without this a Rise inside a layout group kept
+        /// writing the pre-layout position and Finish() snapped the row there.
+        /// </summary>
+        public static Vector2 ReconcileRest(Vector2 current, Vector2 lastWritten, Vector2 rest)
+            => (current - lastWritten).sqrMagnitude > 0.0001f ? current : rest;
+
+        private void SetPosition(Vector2 offset)
+        {
+            _restPosition = ReconcileRest(_rect.anchoredPosition, _lastWritten, _restPosition);
+            _lastWritten = _restPosition + offset;
+            _rect.anchoredPosition = _lastWritten;
+        }
+
         private void Apply(float t)
         {
             float e = KitMotion.Ease(ease, t);
@@ -115,11 +136,11 @@ namespace CosmicShore.UI
             switch (mode)
             {
                 case KitEntranceMode.Rise:
-                    _rect.anchoredPosition = _restPosition + Vector2.down * (distance * (1f - e));
+                    SetPosition(Vector2.down * (distance * (1f - e)));
                     SetAlpha(fade);
                     break;
                 case KitEntranceMode.Drop:
-                    _rect.anchoredPosition = _restPosition + Vector2.up * (distance * (1f - e));
+                    SetPosition(Vector2.up * (distance * (1f - e)));
                     SetAlpha(fade);
                     break;
                 case KitEntranceMode.Pop:

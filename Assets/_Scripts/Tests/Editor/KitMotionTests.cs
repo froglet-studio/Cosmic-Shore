@@ -1,5 +1,6 @@
 using CosmicShore.UI;
 using NUnit.Framework;
+using UnityEngine;
 
 namespace CosmicShore.Tests
 {
@@ -56,6 +57,27 @@ namespace CosmicShore.Tests
             Assert.That(KitMotion.Std, Is.EqualTo(0.2f));
             Assert.That(KitMotion.Panel, Is.EqualTo(0.32f));
             Assert.That(KitMotion.Ceremony, Is.GreaterThanOrEqualTo(0.5f));
+        }
+
+        /// <summary>
+        /// A row enabled before its layout group ran starts its entrance from the wrong place; the
+        /// layout then moves it. The entrance must adopt that position, not write the stale one back.
+        /// </summary>
+        [Test]
+        public void Entrance_AdoptsAPositionALayoutWroteMidEntrance()
+        {
+            var rest = new Vector2(0f, 0f);
+            var lastWritten = new Vector2(0f, -14f);      // the entrance's own last frame
+            var laidOut = new Vector2(120f, -300f);       // where the layout group put the row
+            Assert.AreEqual(laidOut, KitEntrance.ReconcileRest(laidOut, lastWritten, rest));
+        }
+
+        [Test]
+        public void Entrance_KeepsItsRest_WhenNothingElseMovedIt()
+        {
+            var rest = new Vector2(40f, 10f);
+            var lastWritten = new Vector2(40f, 2f);
+            Assert.AreEqual(rest, KitEntrance.ReconcileRest(lastWritten, lastWritten, rest));
         }
     }
 }

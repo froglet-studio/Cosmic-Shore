@@ -1391,3 +1391,31 @@ Item 12's defect list (section 13.3 inventory) is closed except:
 - Still open: the Menu_Main `Game UI` rect (defect 14), the spectator avatar, and the live legacy
   HUD objects above.
 
+### 22.7 Motion pass (2026-10-15): every surface arrives, every value travels
+
+The user's direction: *all animations should be better than last*. Each item 12 surface was
+measured against what the screen did before and what the board drew. Every one that snapped in
+now has an entrance, and every value that jumped now travels.
+
+| Surface | Before | Now |
+|---|---|---|
+| Goal row | bar jumped to its value; glow flared | bar **travels** (0.32 s, OutCubic; a fresh row grows in from empty); the count **punches** (x1.14) with the glow |
+| Score columns | appeared as built | **pop in** one after another (staggered by sibling; scale, so the bar's layout is never fought) |
+| Ready | appeared | **rises** in each time it is shown; the caption fades in a beat later |
+| Waiting for pilots | (did not exist) | the plate **rises** in on Begin; a chip **ticks** (x1.2 punch) the moment its pilot readies |
+| Countdown | sprite grew 1 -> 1.5 | text 0.7 -> 1.08 overshoot -> settle -> leave at 1.3 (12b) |
+| Pause | Settings panel appeared | scrim **fades**, window **rises**, the three buttons **step in** one stagger apart |
+| Connecting | one text string | the headline **replays a rise** on every phase change; the bar eases (as before) |
+| Reveal | toast punched in | toast punches in, then the winner line **drops** in (0.1 s), the rule **grows out** (0.5 s), the detail **rises** (0.65 s), started by `EndGameSequencer.revealEntrances` |
+| Scoreboard | instant panel (entrance disabled for a drift bug) | scrim **fades**, header **rises**, banner **pops** (0.08 s), rule **grows** (0.3 s), rows **stagger** in (CardEntranceAnimator, as before), stats **rise** (0.5 s), buttons **rise** (0.6 s). All scale/alpha or free-standing, so the drift bug cannot come back |
+| Spectator bar | faded | fades **and drops** 14 px into place (eased with the fade) |
+| Ability keycaps | lit when held | lit and **pressed in** (x0.92) when held |
+| Match feed | slid + faded | unchanged (already the board's motion), rows no longer vanish (12e) |
+
+**A kit bug the pass found:** `KitEntrance` captured an object's position at enable and wrote
+offsets from it every frame. A row a view SPAWNS is enabled before its layout group places it, so
+a Rise inside a layout kept writing the pre-layout position, and `Finish()` snapped the row
+there. Every Rise-by-sibling row in the Settings, Profile and configure windows had this shape.
+`KitEntrance.ReconcileRest` now adopts any position something else wrote mid-entrance as the new
+rest pose (`KitMotionTests` covers both branches).
+

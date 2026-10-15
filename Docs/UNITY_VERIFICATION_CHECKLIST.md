@@ -65,6 +65,29 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Style-B redesign, motion pass: in-game UI + KitEntrance layout fix (`claude/new-session-76hnyc`, 2026-10-15) — NOT EDITOR-VERIFIED
+
+Section 22.7 of `Docs/MENU_REDESIGN_B.md`. No editor in the session, so `/verify-unity` is still
+owed. Offline: the player and editor reference compiles are clean; `author_ingame_hud.py` passes
+`--check` and `--self-test` (24 controls).
+
+**Verify in editor:**
+1. Settings, Profile (quest cards) and the configure windows: rows rise into their **final**
+   places. Before the fix, a row could land stacked at its list's origin until something
+   re-laid the list out.
+2. A match: the score columns pop in one by one. Collecting a crystal makes the goal bar slide
+   and the count swell. READY rises in. Holding an ability's control shrinks its keycap slightly.
+3. Party Ready: the waiting plate rises in, and a chip swells as that pilot readies.
+4. Pause: the dark scrim fades, the window rises, then Resume, Settings and Leave step in.
+5. Connecting: the headline re-rises when it changes from "Building the arena" to "Waiting for
+   pilots".
+6. Match end: the reveal line punches, then "Jade wins" drops in above it, the rule grows
+   outward, and the detail rises in. The scoreboard: banner pop, rule grow, rows stagger, then
+   stats, then buttons.
+7. Spectating: the bar drops into place as it fades in.
+
+---
+
 ### 🔴 Style-B menu redesign, item 12 follow-ups: match toasts, ThumbCursors (`claude/new-session-76hnyc`, 2026-10-15) — NOT EDITOR-VERIFIED
 
 `GameCanvas.prefab` was patched by `Tools/Build/author_ingame_hud.py` (`--check`, `--self-test`

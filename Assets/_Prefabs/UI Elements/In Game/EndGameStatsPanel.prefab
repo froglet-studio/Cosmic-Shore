@@ -696,6 +696,10 @@ MonoBehaviour:
   toastPunchScale: 1.15
   randomizeVesselBehavior: 1
   vesselBehavior: 0
+  revealEntrances:
+  - {fileID: 491037961659229731}
+  - {fileID: 702486889299883382}
+  - {fileID: 858383686452732343}
 --- !u!1 &670852612422102744
 GameObject:
   m_ObjectHideFlags: 0
@@ -707,6 +711,8 @@ GameObject:
   - component: {fileID: 116487824576648733}
   - component: {fileID: 566784333136173829}
   - component: {fileID: 199003685583076890}
+  - component: {fileID: 306244780521621790}
+  - component: {fileID: 858383686452732343}
   m_Layer: 5
   m_Name: Detail
   m_TagString: Untagged
@@ -832,6 +838,38 @@ MonoBehaviour:
   m_hasFontAssetChanged: 0
   m_baseMaterial: {fileID: 0}
   m_maskOffset: {x: 0, y: 0, z: 0, w: 0}
+--- !u!225 &306244780521621790
+CanvasGroup:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 670852612422102744}
+  m_Enabled: 1
+  m_Alpha: 1
+  m_Interactable: 1
+  m_BlocksRaycasts: 1
+  m_IgnoreParentGroups: 0
+--- !u!114 &858383686452732343
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 670852612422102744}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1543fe3a029de045efa884462c2f95d5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  mode: 0
+  ease: 0
+  duration: 0.32
+  distance: 8
+  delay: 0.65
+  staggerIndex: 0
+  staggerBySibling: 0
+  playOnEnable: 0
 --- !u!1 &448019339356768130
 GameObject:
   m_ObjectHideFlags: 0
@@ -843,6 +881,7 @@ GameObject:
   - component: {fileID: 874153325610988130}
   - component: {fileID: 976061822935762744}
   - component: {fileID: 638829638674337294}
+  - component: {fileID: 702486889299883382}
   m_Layer: 5
   m_Name: Rule
   m_TagString: Untagged
@@ -907,6 +946,26 @@ MonoBehaviour:
   m_FillOrigin: 0
   m_UseSpriteMesh: 0
   m_PixelsPerUnitMultiplier: 1
+--- !u!114 &702486889299883382
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 448019339356768130}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1543fe3a029de045efa884462c2f95d5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  mode: 3
+  ease: 1
+  duration: 0.2
+  distance: 14
+  delay: 0.5
+  staggerIndex: 0
+  staggerBySibling: 0
+  playOnEnable: 0
 --- !u!1 &902840761122712513
 GameObject:
   m_ObjectHideFlags: 0
@@ -918,6 +977,8 @@ GameObject:
   - component: {fileID: 470465097946086742}
   - component: {fileID: 476837732584771490}
   - component: {fileID: 120552451088065782}
+  - component: {fileID: 475263883032160513}
+  - component: {fileID: 491037961659229731}
   m_Layer: 5
   m_Name: Winner
   m_TagString: Untagged
@@ -1043,6 +1104,38 @@ MonoBehaviour:
   m_hasFontAssetChanged: 0
   m_baseMaterial: {fileID: 0}
   m_maskOffset: {x: 0, y: 0, z: 0, w: 0}
+--- !u!225 &475263883032160513
+CanvasGroup:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 902840761122712513}
+  m_Enabled: 1
+  m_Alpha: 1
+  m_Interactable: 1
+  m_BlocksRaycasts: 1
+  m_IgnoreParentGroups: 0
+--- !u!114 &491037961659229731
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 902840761122712513}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1543fe3a029de045efa884462c2f95d5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  mode: 1
+  ease: 0
+  duration: 0.32
+  distance: 10
+  delay: 0.1
+  staggerIndex: 0
+  staggerBySibling: 0
+  playOnEnable: 0
 --- !u!1 &79655382108985205
 GameObject:
   m_ObjectHideFlags: 0

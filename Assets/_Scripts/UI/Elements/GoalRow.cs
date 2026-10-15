@@ -113,6 +113,13 @@ namespace CosmicShore.UI
         [Tooltip("Seconds for the punch to ease back to rest.")]
         [SerializeField, Min(0.05f)] float glowPunchSeconds = 0.45f;
 
+        [Header("Motion (style B, Docs/MENU_REDESIGN_B.md section 22.7)")]
+        [Tooltip("Seconds the progress bar takes to travel to a new value. It used to jump; a bar " +
+                 "that jumps reads as a redraw, a bar that travels reads as progress.")]
+        [SerializeField, Min(0f)] float fillSeconds = 0.32f;
+        [Tooltip("How far the count swells when the objective advances, then settles (1 = no punch).")]
+        [SerializeField, Min(1f)] float countPunchScale = 1.14f;
+
         [Tooltip("The slider bed. Dim enough to read as unfilled, present enough to read as a " +
                  "bar that has somewhere to go.")]
         [SerializeField] Color trackColor = new Color(0.902f, 0.914f, 1f, 0.16f);
@@ -123,6 +130,8 @@ namespace CosmicShore.UI
         // the target resolving late over the network) is not something the player just did.
         int _lastCount = -1;
         Tween _glowPunch;
+        Tween _fillTween;
+        Tween _countPunch;
         float _glowRest;
         Color? _accent;
 
@@ -150,7 +159,11 @@ namespace CosmicShore.UI
             Apply(glyph, title, rank);
 
             int shown = Mathf.Clamp(current, 0, Mathf.Max(current, target));
-            if (_lastCount >= 0 && shown > _lastCount) PunchGlow();
+            if (_lastCount >= 0 && shown > _lastCount)
+            {
+                PunchGlow();
+                PunchCount();
+            }
             _lastCount = shown;
             if (value)
             {
@@ -257,8 +270,21 @@ namespace CosmicShore.UI
                 .SetUpdate(true);
         }
 
+        void PunchCount()
+        {
+            if (!value || countPunchScale <= 1f) return;
+            _countPunch?.Kill(true);
+            var t = value.rectTransform;
+            t.localScale = Vector3.one;
+            _countPunch = t.DOPunchScale(Vector3.one * (countPunchScale - 1f), glowPunchSeconds, 1, 0f)
+                .SetLink(gameObject).SetUpdate(true);
+        }
+
         void OnDisable()
         {
+            _fillTween?.Kill();
+            _countPunch?.Kill();
+            if (value) value.rectTransform.localScale = Vector3.one;
             // Pooled/toggled HUD: settle at rest rather than leaving the plate mid-pulse.
             _glowPunch?.Kill();
             _glowPunch = null;
@@ -270,7 +296,12 @@ namespace CosmicShore.UI
             }
         }
 
-        void OnDestroy() => _glowPunch?.Kill();
+        void OnDestroy()
+        {
+            _glowPunch?.Kill();
+            _fillTween?.Kill();
+            _countPunch?.Kill();
+        }
 
         void SetFill(float amount01, GoalRank rank, bool visible)
         {
@@ -283,7 +314,17 @@ namespace CosmicShore.UI
             if (!progressFill) return;
             progressFill.enabled = visible;
             progressFill.color = rank == GoalRank.Primary ? PrimaryFill : secondaryFillColor;
-            progressFill.fillAmount = amount01;
+            // The stack re-applies every row on each monitor tick with the same value, so only a
+            // CHANGE travels; a fresh row (or a disabled one) lands where it is told.
+            if (Mathf.Approximately(progressFill.fillAmount, amount01)) return;
+            _fillTween?.Kill();
+            if (fillSeconds <= 0f || !isActiveAndEnabled || _lastCount < 0)
+            {
+                progressFill.fillAmount = amount01;
+                return;
+            }
+            _fillTween = progressFill.DOFillAmount(amount01, fillSeconds).SetEase(Ease.OutCubic)
+                .SetLink(gameObject).SetUpdate(true);
         }
     }
 }

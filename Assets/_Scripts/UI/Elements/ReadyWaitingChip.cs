@@ -1,3 +1,4 @@
+using DG.Tweening;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -20,10 +21,16 @@ namespace CosmicShore.UI
         [Tooltip("Dims a pilot who has not pressed Ready yet.")]
         [SerializeField] private CanvasGroup group;
 
+        [Tooltip("How far the chip swells the moment its pilot readies (the board's tick), then settles.")]
+        [SerializeField, Min(0f)] private float readyPunch = 0.2f;
+
         public string PilotName { get; private set; }
+        bool _wasReady;
+        Tween _punch;
 
         public void Bind(string pilotName, Sprite avatarSprite)
         {
+            if (PilotName != pilotName) _wasReady = false;
             PilotName = pilotName;
             if (avatar)
             {
@@ -41,6 +48,15 @@ namespace CosmicShore.UI
                 state.color = stateColor;
             }
             if (group) group.alpha = alpha;
+            if (ready && !_wasReady && readyPunch > 0f)
+            {
+                _punch?.Kill(true);
+                transform.localScale = Vector3.one;
+                _punch = transform.DOPunchScale(Vector3.one * readyPunch, 0.32f, 1, 0f).SetLink(gameObject).SetUpdate(true);
+            }
+            _wasReady = ready;
         }
+
+        void OnDestroy() => _punch?.Kill();
     }
 }

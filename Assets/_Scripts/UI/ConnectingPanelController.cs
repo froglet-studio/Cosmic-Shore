@@ -53,6 +53,9 @@ namespace CosmicShore.UI
         [SerializeField] TMP_Text progressText;
         [Tooltip("Seconds in this wait, right-aligned beside the counts.")]
         [SerializeField] TMP_Text elapsedText;
+        [Tooltip("Optional. Replays on the headline whenever the phase changes, so 'Building the arena' " +
+                 "becoming 'Waiting for pilots' reads as a step rather than a text swap.")]
+        [SerializeField] KitEntrance phaseTitleEntrance;
 
         [Header("Progress bar")]
         [Tooltip("Progress of the arena build, 0..1. Forced non-interactable and stripped of its " +
@@ -380,7 +383,11 @@ namespace CosmicShore.UI
                 title = "Connecting";
             }
 
-            phaseTitle.text = title;
+            if (phaseTitle.text != title)
+            {
+                phaseTitle.text = title;
+                if (phaseTitleEntrance) phaseTitleEntrance.Play();
+            }
             if (progressText) progressText.text = TabularText.Wrap(progress, progressText.font);
             if (elapsedText) elapsedText.text = timed ? TabularText.Wrap($"{_dotTimer.ToString("0", inv)} s", elapsedText.font) : string.Empty;
         }

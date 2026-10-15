@@ -6831,6 +6831,8 @@ GameObject:
   - component: {fileID: 6862200546756341092}
   - component: {fileID: 571738763176604834}
   - component: {fileID: 317730145993644851}
+  - component: {fileID: 352983247030962608}
+  - component: {fileID: 957134614041930874}
   m_Layer: 5
   m_Name: ReadyButton
   m_TagString: Untagged
@@ -6838,6 +6840,38 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 0
+--- !u!114 &957134614041930874
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5866792526080073927}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1543fe3a029de045efa884462c2f95d5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  mode: 0
+  ease: 0
+  duration: 0.32
+  distance: 18
+  delay: 0
+  staggerIndex: 0
+  staggerBySibling: 0
+  playOnEnable: 1
+--- !u!225 &352983247030962608
+CanvasGroup:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5866792526080073927}
+  m_Enabled: 1
+  m_Alpha: 1
+  m_Interactable: 1
+  m_BlocksRaycasts: 1
+  m_IgnoreParentGroups: 0
 --- !u!114 &317730145993644851
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -7525,6 +7559,8 @@ GameObject:
   - component: {fileID: 789186268574028048}
   - component: {fileID: 155294138967143144}
   - component: {fileID: 391238370393501853}
+  - component: {fileID: 1150186169611033932}
+  - component: {fileID: 767218485682001450}
   m_Layer: 5
   m_Name: Caption
   m_TagString: Untagged
@@ -7687,6 +7723,38 @@ MonoBehaviour:
   m_FlexibleWidth: -1
   m_FlexibleHeight: -1
   m_LayoutPriority: 1
+--- !u!225 &1150186169611033932
+CanvasGroup:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 531144638066386492}
+  m_Enabled: 1
+  m_Alpha: 1
+  m_Interactable: 1
+  m_BlocksRaycasts: 1
+  m_IgnoreParentGroups: 0
+--- !u!114 &767218485682001450
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 531144638066386492}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1543fe3a029de045efa884462c2f95d5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  mode: 5
+  ease: 0
+  duration: 0.32
+  distance: 14
+  delay: 0.18
+  staggerIndex: 0
+  staggerBySibling: 0
+  playOnEnable: 1
 --- !u!1 &348479288426359754
 GameObject:
   m_ObjectHideFlags: 0
@@ -7697,6 +7765,7 @@ GameObject:
   m_Component:
   - component: {fileID: 892246852724138696}
   - component: {fileID: 1108112172956177670}
+  - component: {fileID: 277740843123558461}
   - component: {fileID: 847311224820027496}
   m_Layer: 5
   m_Name: ReadyWaiting
@@ -7744,6 +7813,26 @@ CanvasGroup:
   m_Interactable: 0
   m_BlocksRaycasts: 0
   m_IgnoreParentGroups: 0
+--- !u!114 &277740843123558461
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 348479288426359754}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1543fe3a029de045efa884462c2f95d5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  mode: 0
+  ease: 0
+  duration: 0.32
+  distance: 18
+  delay: 0
+  staggerIndex: 0
+  staggerBySibling: 0
+  playOnEnable: 0
 --- !u!114 &847311224820027496
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -7761,6 +7850,7 @@ MonoBehaviour:
   roster: {fileID: 836054494429578155}
   chipTemplate: {fileID: 175383630938906618}
   toastChannel: {fileID: 11400000, guid: c23748fb5aed4dbc988a5fb34fcd8b61, type: 2}
+  entrance: {fileID: 277740843123558461}
   readyWord: Ready
   waitingWord: Picking
   waitingRingToken: 5
@@ -8690,6 +8780,7 @@ MonoBehaviour:
   avatar: {fileID: 41833939042364773}
   state: {fileID: 900375296316063256}
   group: {fileID: 1138278988957444390}
+  readyPunch: 0.2
 --- !u!1 &638200571584568099
 GameObject:
   m_ObjectHideFlags: 0

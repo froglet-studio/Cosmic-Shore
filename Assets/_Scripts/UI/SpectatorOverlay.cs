@@ -40,6 +40,8 @@ namespace CosmicShore.UI
         TMP_Text _detailText;
         TMP_Text _cameraText;
         float _targetAlpha;
+        RectTransform _bar;
+        const float DropDistance = 14f;
 
         Action _onPrevious, _onNext, _onToggleCamera, _onLeave;
 
@@ -95,6 +97,13 @@ namespace CosmicShore.UI
             if (!_group) return;
             float step = Time.unscaledDeltaTime / FadeSeconds;
             _group.alpha = Mathf.MoveTowards(_group.alpha, _targetAlpha, step);
+            // The bar drops in as it fades in (and lifts away as it fades out), eased.
+            if (_bar)
+            {
+                float a = _group.alpha;
+                float eased = 1f - (1f - a) * (1f - a) * (1f - a);
+                _bar.anchoredPosition = new Vector2(0f, -136f + DropDistance * (1f - eased));
+            }
             bool live = _targetAlpha > 0f;
             _group.interactable = live;
             _group.blocksRaycasts = live;
@@ -123,6 +132,7 @@ namespace CosmicShore.UI
 
             // ── The bar: one glass plate under the score columns (the HudSpectator board) ──
             var bar = MakeRect("Bar", transform);
+            _bar = bar;
             bar.anchorMin = new Vector2(0.5f, 1f);
             bar.anchorMax = new Vector2(0.5f, 1f);
             bar.pivot = new Vector2(0.5f, 1f);

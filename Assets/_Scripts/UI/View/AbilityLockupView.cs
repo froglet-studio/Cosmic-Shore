@@ -1316,7 +1316,8 @@ namespace CosmicShore.UI
             slot.Keycap.anchorMin = slot.Keycap.anchorMax = slot.Keycap.pivot = new Vector2(0.5f, 0.5f);
             slot.Keycap.sizeDelta = new Vector2(Mathf.Max(width, style.chipHeight), style.chipHeight);
             slot.Keycap.anchoredPosition = Vector2.zero;
-            slot.Keycap.localScale = Vector3.one;
+            // Held, the key reads as pressed IN: lit and a touch smaller.
+            slot.Keycap.localScale = held ? Vector3.one * 0.92f : Vector3.one;
             slot.Keycap.localRotation = Quaternion.identity;
         }
 

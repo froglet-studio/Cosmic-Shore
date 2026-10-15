@@ -92,6 +92,8 @@ GameObject:
   - component: {fileID: 894584922705823358}
   - component: {fileID: 1093536010196813397}
   - component: {fileID: 183231302310452420}
+  - component: {fileID: 609955025484620957}
+  - component: {fileID: 372498078851766734}
   m_Layer: 5
   m_Name: Scrim
   m_TagString: Untagged
@@ -171,6 +173,38 @@ MonoBehaviour:
   theme: {fileID: 11400000, guid: 0aef6398681c4ec98118cc9b9740060a, type: 2}
   token: 3
   alpha: 0.78
+--- !u!225 &609955025484620957
+CanvasGroup:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 280510903315157117}
+  m_Enabled: 1
+  m_Alpha: 1
+  m_Interactable: 1
+  m_BlocksRaycasts: 1
+  m_IgnoreParentGroups: 0
+--- !u!114 &372498078851766734
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 280510903315157117}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1543fe3a029de045efa884462c2f95d5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  mode: 5
+  ease: 0
+  duration: 0.2
+  distance: 14
+  delay: 0
+  staggerIndex: 0
+  staggerBySibling: 0
+  playOnEnable: 1
 --- !u!1 &519614235362473211
 GameObject:
   m_ObjectHideFlags: 0
@@ -2300,6 +2334,8 @@ GameObject:
   - component: {fileID: 852157704667059889}
   - component: {fileID: 1040475885094599715}
   - component: {fileID: 694602706172773728}
+  - component: {fileID: 280648425805663930}
+  - component: {fileID: 805924294626373668}
   m_Layer: 5
   m_Name: ResumeButton
   m_TagString: Untagged
@@ -2435,6 +2471,38 @@ MonoBehaviour:
   AButtonSprite: {fileID: 0}
   XButtonSprite: {fileID: 0}
   canvasGroup: {fileID: 44130015132081261}
+--- !u!225 &280648425805663930
+CanvasGroup:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 234320279143804951}
+  m_Enabled: 1
+  m_Alpha: 1
+  m_Interactable: 1
+  m_BlocksRaycasts: 1
+  m_IgnoreParentGroups: 0
+--- !u!114 &805924294626373668
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 234320279143804951}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1543fe3a029de045efa884462c2f95d5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  mode: 0
+  ease: 0
+  duration: 0.32
+  distance: 10
+  delay: 0
+  staggerIndex: 2
+  staggerBySibling: 0
+  playOnEnable: 1
 --- !u!1 &590381321741075459
 GameObject:
   m_ObjectHideFlags: 0
@@ -3070,6 +3138,8 @@ GameObject:
   - component: {fileID: 784362487285118049}
   - component: {fileID: 848995969974649742}
   - component: {fileID: 517955609389682501}
+  - component: {fileID: 214798343292833106}
+  - component: {fileID: 625247279106898468}
   m_Layer: 5
   m_Name: SettingsButton
   m_TagString: Untagged
@@ -3205,6 +3275,38 @@ MonoBehaviour:
   AButtonSprite: {fileID: 0}
   XButtonSprite: {fileID: 0}
   canvasGroup: {fileID: 44130015132081261}
+--- !u!225 &214798343292833106
+CanvasGroup:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 478251802902219581}
+  m_Enabled: 1
+  m_Alpha: 1
+  m_Interactable: 1
+  m_BlocksRaycasts: 1
+  m_IgnoreParentGroups: 0
+--- !u!114 &625247279106898468
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 478251802902219581}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1543fe3a029de045efa884462c2f95d5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  mode: 0
+  ease: 0
+  duration: 0.32
+  distance: 10
+  delay: 0
+  staggerIndex: 3
+  staggerBySibling: 0
+  playOnEnable: 1
 --- !u!1 &794715576688914458
 GameObject:
   m_ObjectHideFlags: 0
@@ -3840,6 +3942,8 @@ GameObject:
   - component: {fileID: 167203826651714927}
   - component: {fileID: 282206804316694457}
   - component: {fileID: 898496702934760407}
+  - component: {fileID: 552022741099103187}
+  - component: {fileID: 903184713369767996}
   m_Layer: 5
   m_Name: LeaveButton
   m_TagString: Untagged
@@ -3975,6 +4079,38 @@ MonoBehaviour:
   AButtonSprite: {fileID: 0}
   XButtonSprite: {fileID: 0}
   canvasGroup: {fileID: 44130015132081261}
+--- !u!225 &552022741099103187
+CanvasGroup:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 415697354660111500}
+  m_Enabled: 1
+  m_Alpha: 1
+  m_Interactable: 1
+  m_BlocksRaycasts: 1
+  m_IgnoreParentGroups: 0
+--- !u!114 &903184713369767996
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 415697354660111500}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1543fe3a029de045efa884462c2f95d5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  mode: 0
+  ease: 0
+  duration: 0.32
+  distance: 10
+  delay: 0
+  staggerIndex: 4
+  staggerBySibling: 0
+  playOnEnable: 1
 --- !u!1 &78745545619049570
 GameObject:
   m_ObjectHideFlags: 0
