@@ -10,6 +10,8 @@ When a task spans multiple files or systems, complete ALL of them in a single pa
 
 This file holds only the rules every session needs. Everything else moved verbatim into topic files under `Docs/claude/`. Each entry lists the section headings the file contains, so a reference like "CLAUDE.md § Anti-Patterns" can be found by grepping this index. To find a passage quoted from the old single-file CLAUDE.md, search both places: `grep -rn '<phrase>' CLAUDE.md Docs/claude/`.
 
+- [`Docs/TEAM_TASKS.md`](Docs/TEAM_TASKS.md): **The shared to-do board** - tests, playtests, setup, content and decisions one collaborator's session leaves for another (`Tools/Build/team_tasks.py`). Yash has offered to take tasks.
+  Sections: How to use it; The board
 - [`Docs/TEAM.md`](Docs/TEAM.md): **Read before working anywhere.** Who works where (Garrett, Caleb, Shombith, Yash and others, measured from git), the collaboration rules, what doing work twice cost, and the generated map (`Tools/Build/who_works_where.py`).
   Sections: The people; The rules for every session; What happened without this; The map (generated); Open decisions about our tools
 - [`Docs/TOOLING_DECISIONS.md`](Docs/TOOLING_DECISIONS.md): **OPEN decision**: keep, narrow or stop Amoebius and the Vessel Studio, and which one tool builds Froglet's games. Evidence, options, recommendation, decision record. Feedback log: `Docs/TOOLING_FEEDBACK.md`.
@@ -74,6 +76,12 @@ the engine renamed twice, retired tools brought back. **Every session:**
 - **Claim shared numbers only after checking `bleeding-edge` AND the in-flight branches**: enum values, `GameModes`
   ids, learnings ids, Netcode hashes, GUIDs.
 - **Leave a trail**: write "Affects: <person>'s <area>" in the commit or PR whenever you touch someone else's area.
+- **Hand off what others can do** on the shared to-do board, [`Docs/TEAM_TASKS.md`](Docs/TEAM_TASKS.md)
+  (`python3 Tools/Build/team_tasks.py add | list | take | done`): every editor test, playtest, setup step, content gap
+  or decision your work leaves for someone else. Name who can take it (**Yash has offered to take tasks**; name the
+  area's owner, e.g. Shombith for Menu_Main), tell the person what you added, and close the tasks your work finishes.
+  `.claude/hooks/team_tasks_nudge.py` reminds every session; activation / onboarding prompts also get that area's open
+  tasks.
 
 Who is who, the measured map and the full rules: [`Docs/TEAM.md`](Docs/TEAM.md) (identities in `Docs/TEAM.json`).
 **The person is told too, not only Claude** (Yash, 2026-10-15: "let them know of all these whenever they query the

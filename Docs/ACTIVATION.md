@@ -108,6 +108,9 @@ measurable now. The later phases wait for the gate, and stay at zero until it fl
 
 ## 6. The path to activation, in order
 
+**Every step below that needs a person is a task on [`TEAM_TASKS.md`](TEAM_TASKS.md)** (`python3
+Tools/Build/team_tasks.py list --area Activation`). Yash has offered to take tasks; take one before starting it.
+
 1. ~~**Land the training branch.**~~ Merged into `Ys-bleeding-edge` 2026-10-15 (§4). It reaches
    `bleeding-edge` with this branch's next PR.
 2. **Play it once in the editor**: reset quest progress, run *FrogletTools > FTUE > Reset

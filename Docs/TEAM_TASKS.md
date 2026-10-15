@@ -1,0 +1,124 @@
+# Team tasks: hand work to each other
+
+**One board for work that one collaborator's session leaves for another**: a test that needs the Unity
+Editor, a playtest, a dashboard or service to set up, content to write, a decision to take. Almost all of
+our work goes through Claude sessions, and a session cannot open Unity, sign in to a dashboard or watch a
+first-timer play. This is where it says so, and where somebody picks it up (Docs/TEAM.md rule 9).
+
+**Yash has offered to take tasks** (Yash, 2026-10-15): testing in the editor, playtests, UGS and
+dashboard setup, and follow-up fixes. When you add a task he could do, name him in "Who can take it".
+Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your own.
+
+## How to use it
+
+- **Add** a task whenever your work leaves something another person can do or test. Claude sessions do
+  this before they finish (a hook reminds them), and tell the person what they added:
+  `python3 Tools/Build/team_tasks.py add --area Activation --kind test --task "..." --done-when "..." --who "Yash (offered), anyone with the Editor" --see "Docs/..."`
+- **Find** work: `python3 Tools/Build/team_tasks.py list` (open tasks), `--for Yash`, `--area Activation`,
+  `--kind test`.
+- **Take** one, so nobody does it twice: `team_tasks.py take <id> --who <you>`. **Close** it:
+  `team_tasks.py done <id> --note "what happened, commit or result"`. A test that FAILS is not done: write
+  what failed in the note and add the fix as a new `dev` task.
+- **On GitHub**: `/ship` puts `team_tasks.py pr-section` into the pull request body, so a reviewer sees what a
+  branch handed off. The board itself is plain markdown, readable and editable on GitHub.
+- **Kinds:** `test` (run something and report pass or fail), `dev` (code), `content` (words, tips, art),
+  `setup` (a dashboard, a service, a key), `decision` (the owner or the core four decide), `docs`.
+- Ids are `T-<date>-<hash>`, never "the next number", so two branches cannot collide. If two branches both
+  append a task, git conflicts at the end of the file: keep both. `team_tasks.py --check` validates the board.
+- QA's own failures stay in `Docs/QA/DEV_TASKS.md` (written by `/qa-backlog`); vessel and AI test scripts stay
+  in `Docs/UNITY_VERIFICATION_CHECKLIST.md`. A task here may point at either.
+
+## The board
+
+<!-- team-tasks -->
+
+### T-20261015-7b5a · open · test · Activation
+- **Task:** Re-test the first-login spotlight in Unity: the 2026-10-06 playtest saw no dim, no frame, no caption and dead presses; a CanvasRenderer fix landed after it and was never re-tested.
+- **Done when:** On a fresh profile Menu_Main shows the dim, the pulsing frame on ARCADE, its caption and a pressable Settings gear, and the menu takes presses. Result written in the checklist section.
+- **Who can take it:** Yash (offered), anyone with the Unity Editor
+- **Added:** 2026-10-15 by Yash's session (activation) (`Ys-bleeding-edge`)
+- **See:** Docs/UNITY_VERIFICATION_CHECKLIST.md, 'First-login guide - spotlight draws nothing in Unity'
+
+### T-20261015-b47d · open · test · Activation
+- **Task:** Hand-test the first-login guide, the microgame Lesson with its ghost demo, and the ftue_* analytics events, end to end.
+- **Done when:** All nine steps of the checklist section pass, or each failure is written there and added here as a dev task.
+- **Who can take it:** Yash (offered), anyone with the Unity Editor
+- **Added:** 2026-10-15 by Yash's session (activation) (`Ys-bleeding-edge`)
+- **See:** Docs/UNITY_VERIFICATION_CHECKLIST.md, 'Ghost demo + first-login guide + FTUE analytics'; Docs/ModePreview/TRAINING_PLAN.md 10.7
+
+### T-20261015-9809 · open · setup · Activation
+- **Task:** Declare ftue_step_completed (quest_id, phase_index, step_id, step_name, seconds_since_launch), ftue_phase_completed (quest_id, phase_index, seconds_since_launch) and ftue_completed (quest_id, seconds_since_launch) in the UGS dashboard Event Manager; UGS silently drops undeclared events.
+- **Done when:** The three events and their parameters are in the Event Manager, and one test session's events show up in UGS.
+- **Who can take it:** Yash (offered; UGS), Shombith (analytics handoff)
+- **Added:** 2026-10-15 by Yash's session (activation) (`Ys-bleeding-edge`)
+- **See:** Docs/ACTIVATION.md 5; Docs/Analytics/event-taxonomy.md 4
+
+### T-20261015-2fc0 · open · setup · Activation
+- **Task:** Build the activation funnel and D1/D7 retention in PostHog: game_first_launched > menu_ready > ftue_step_completed (guide) > ftue_phase_completed (phase 0) > game_started > game_completed, split by invite_wave.
+- **Done when:** The funnel and the retention charts exist and read real sessions; the paid-EA gate (D1 >= 35%, D7 >= 15%) can be read off them.
+- **Who can take it:** Ian (funnel owner, C3), Yash (offered)
+- **Added:** 2026-10-15 by Yash's session (activation) (`Ys-bleeding-edge`)
+- **See:** Docs/ACTIVATION.md 6.3; Docs/Analytics/POSTHOG_SETUP.md; Docs/Analytics/DATA_ARCHITECTURE.md
+
+### T-20261015-99cd · open · test · Activation
+- **Task:** Watch three to five first-time players on a default build (master unlock at its shipped default) without helping them, and note where each one stalls.
+- **Done when:** Notes per player (where they stalled, how long to the first match, whether they came back) are linked here, and each stall is a new task.
+- **Who can take it:** Andrew, Shombith, Yash (offered)
+- **Added:** 2026-10-15 by Yash's session (activation) (`Ys-bleeding-edge`)
+- **See:** Docs/ACTIVATION.md 6.4; STEAM_EA_INVESTOR_CHECKPOINT C2 / E7
+
+### T-20261015-fb65 · open · decision · Activation
+- **Task:** Decide what Main Quest phases 1-5 become now that first login goes to the Game of the Week microgame; they still assume the freestyle flight school ended phase 0 and a Crystal Capture funnel follows.
+- **Done when:** The decision is recorded in TRAINING_PLAN 11 and the phases are re-authored or retired accordingly.
+- **Who can take it:** Garrett and the core four (product call)
+- **Added:** 2026-10-15 by Yash's session (activation) (`Ys-bleeding-edge`)
+- **See:** Docs/ModePreview/TRAINING_PLAN.md 11.1
+
+### T-20261015-f4c7 · open · dev · Activation
+- **Task:** Reconcile Menu_Main between the first-login guide (merged into Ys-bleeding-edge 2026-10-15) and Menu Redesign B (claude/new-session-76hnyc) before either reaches bleeding-edge: the spotlight must find the restyled ARCADE entry, cards and Settings gear.
+- **Done when:** Both are on one branch, the spotlight walks the restyled menu in the editor, and author_first_login_guide.py --check passes.
+- **Who can take it:** Shombith (Menu_Main owner), Yash (offered)
+- **Added:** 2026-10-15 by Yash's session (activation) (`Ys-bleeding-edge`)
+- **See:** Docs/ACTIVATION.md 4; Docs/MENU_REDESIGN_B.md on claude/new-session-76hnyc
+
+### T-20261015-d364 · open · content · Activation
+- **Task:** Write Mentor tip lists for the non-racing mode families (TRAINING_PLAN phase 5): only the racing family (SwitchesThreaded) and seven racing modes have tips today.
+- **Done when:** Every playable card composes a Mentor list (DrillCoverageTests asserts it once phase 6 lands); author_drill_assets.py --check passes.
+- **Who can take it:** Caleb, Garrett, anyone who writes game copy; Yash (offered) to wire them
+- **Added:** 2026-10-15 by Yash's session (activation) (`Ys-bleeding-edge`)
+- **See:** Docs/ModePreview/TRAINING_PLAN.md 4.2 and 10
+
+### T-20261015-ed8e · open · content · Activation
+- **Task:** Author SO_ArcadeGame.Tips for the 54 of 56 arcade cards that have none, so GameBriefingView has something to teach before a match. Write them in each mode's author_<mode>_assets.py generator, not only in the asset.
+- **Done when:** Every card has two or more tips and every touched generator's --check passes.
+- **Who can take it:** Caleb (arcade mode map), anyone; Yash (offered)
+- **Added:** 2026-10-15 by Yash's session (activation) (`Ys-bleeding-edge`)
+- **See:** Docs/ArcadeLaunch/ARCHITECTURE.md (Tips); the /arcadegame skill
+
+### T-20261015-81b3 · open · dev · Analytics
+- **Task:** Reconcile the two items ANALYTICS_HANDOFF 8 left for the quest-branch merge: the save record's Version vs SchemaVersion, and the second progression key QUEST_GRAPH_PROGRESS beside GAME_MODE_PROGRESSION.
+- **Done when:** One schema field name and a written decision on the two keys, with a test.
+- **Who can take it:** Shombith (handoff addressee), Yash (offered)
+- **Added:** 2026-10-15 by Yash's session (activation) (`Ys-bleeding-edge`)
+- **See:** Docs/Analytics/ANALYTICS_HANDOFF.md 8
+
+### T-20261015-013e · open · test · Activation
+- **Task:** Run the three progression QA items that have never been run: QA-PROGRESSION-GATE-ON, QA-PROGRESSION-GATE-OFF and QA-FTUE-QUEST-ROWS.
+- **Done when:** Results are submitted under Docs/QA/RESULTS and /qa-backlog has applied them.
+- **Who can take it:** Andrew, Caleb, Yash (offered)
+- **Added:** 2026-10-15 by Yash's session (activation) (`Ys-bleeding-edge`)
+- **See:** Docs/QA/QA_BACKLOG.md
+
+### T-20261015-ff1c · open · docs · Activation
+- **Task:** Fix stale activation docs: the unlock-chain tables in MENU_PROGRESSION_AND_IAP.md and QUEST_TRACK_AND_BREADCRUMB.md (live chain: Scurry > Hex Race > Joust > Maelstrom > Vessel Hangar), and QuestMap/QUEST_MAP.html, which still draws the retired breadcrumb nodes.
+- **Done when:** The three docs match the shipped GameModeQuestList.asset and the quest graph.
+- **Who can take it:** anyone; Yash (offered)
+- **Added:** 2026-10-15 by Yash's session (activation) (`Ys-bleeding-edge`)
+- **See:** Docs/ACTIVATION.md 7
+
+### T-20261015-1a5b · open · dev · Performance
+- **Task:** check_mathf_params_alloc.py is red on two sites that predate the activation work: BlackHoleWarp.cs:87 (3-value Mathf.Max) and FlipWave.cs:153 (4-value Mathf.Max), each allocating a params array.
+- **Done when:** Both use MathfNoAlloc or nested two-value calls and the gate passes.
+- **Who can take it:** the owners of the black hole and FlipWave code (check who_works_where.py); Yash (offered)
+- **Added:** 2026-10-15 by Yash's session (activation) (`Ys-bleeding-edge`)
+- **See:** Tools/Build/check_mathf_params_alloc.py
