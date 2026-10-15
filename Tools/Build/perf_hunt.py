@@ -224,9 +224,41 @@ def _remote_branches():
     return [b for b in (out or "").split() if b not in ("origin", "origin/HEAD")]
 
 
+def _stamp(name):
+    """The yyyymmdd_hhmmss in a diag_/prof_/capture_ file name, as seconds, or None."""
+    m = re.search(r"(\d{8})_(\d{6})", name)
+    if not m:
+        return None
+    t = datetime.datetime.strptime(m.group(1) + m.group(2), "%Y%m%d%H%M%S")
+    return t.timestamp()
+
+
+def pair_loose(loose, already=()):
+    """diag_*.json and prof_*.json shared on their own (the separate console commands, before `capture` existed)
+    become one bundle each: a diag, plus the prof of the same scene and label taken within 10 minutes, if any.
+    A diag that a capture bundle already embeds (same scene, label and timestamp: `already`) is skipped."""
+    diags = [x for x in loose if x["name"].startswith("diag_")
+             and (x["doc"].get("scene"), x["doc"].get("label"), x["doc"].get("timestamp")) not in set(already)]
+    profs = [x for x in loose if x["name"].startswith("prof_")]
+    out = []
+    for d in diags:
+        doc = d["doc"]
+        best, best_gap = None, 600
+        for pr in profs:
+            same = pr["doc"].get("scene") == doc.get("scene") and (pr["doc"].get("label") or "") == (doc.get("label") or "")
+            gap = abs((_stamp(pr["name"]) or 0) - (_stamp(d["name"]) or 0))
+            if same and gap < best_gap:
+                best, best_gap = pr, gap
+        bundle = {"kind": "perf-capture", "label": doc.get("label"), "scene": doc.get("scene"), "timestamp": doc.get("timestamp"),
+                  "burst": "", "renderers": "", "cells": "", "cameras": "", "log": [], "diag": doc, "prof": best["doc"] if best else None,
+                  "notes": ["paired from a shared diag" + (" + prof" if best else " (no prof within 10 minutes)") + " - not a capture bundle; no burst/renderers/cameras"]}
+        out.append({"bundle": bundle, "user": d["user"], "name": d["name"], "path": d["path"], "branches": d["branches"]})
+    return out
+
+
 def collect_captures(local_dir=None):
-    """Every shared capture_*.json on every origin branch (deduped by blob), plus a local folder's."""
-    found, blobs = [], {}
+    """Every shared capture_*.json on every origin branch (deduped by blob), loose diag_/prof_ pairs, plus a local folder's."""
+    found, blobs, loose = [], {}, {}
     for ref in _remote_branches():
         listing = git("ls-tree", "-r", "-l", ref, "--", REPORTS_PREFIX) or ""
         for line in listing.splitlines():
@@ -235,27 +267,43 @@ def collect_captures(local_dir=None):
             if len(parts) < 4 or parts[1] != "blob":
                 continue
             rel = path[len(REPORTS_PREFIX):].split("/", 2)
-            if len(rel) != 3 or rel[1] != "perf" or not rel[2].startswith("capture_") or not rel[2].endswith(".json"):
+            if len(rel) != 3 or rel[1] != "perf" or not rel[2].endswith(".json"):
+                continue
+            kind = "capture" if rel[2].startswith("capture_") else "loose" if rel[2].startswith(("diag_", "prof_")) else None
+            if kind is None:
                 continue
             sha = parts[2]
-            if sha in blobs:
-                blobs[sha]["branches"].append(ref[len("origin/"):])
+            store = blobs if kind == "capture" else loose
+            if sha in store:
+                store[sha]["branches"].append(ref[len("origin/"):])
                 continue
             text = git("cat-file", "blob", sha)
             try:
                 b = json.loads(text) if text else None
             except ValueError:
                 b = None
-            if not b or b.get("kind") != "perf-capture":
+            if not b:
                 continue
-            blobs[sha] = {"bundle": b, "user": rel[0], "name": rel[2], "path": path, "branches": [ref[len("origin/"):]]}
+            if kind == "capture":
+                if b.get("kind") == "perf-capture":
+                    blobs[sha] = {"bundle": b, "user": rel[0], "name": rel[2], "path": path, "branches": [ref[len("origin/"):]]}
+            else:
+                loose[sha] = {"doc": b, "user": rel[0], "name": rel[2], "path": path, "branches": [ref[len("origin/"):]]}
     found.extend(blobs.values())
+    embedded = [((c["bundle"].get("diag") or {}).get("scene"), (c["bundle"].get("diag") or {}).get("label"), (c["bundle"].get("diag") or {}).get("timestamp")) for c in found]
+    found.extend(pair_loose(list(loose.values()), embedded))
     if local_dir and os.path.isdir(local_dir):
+        local_loose = []
         for name in sorted(os.listdir(local_dir)):
-            if name.startswith("capture_") and name.endswith(".json"):
-                b = load_json(os.path.join(local_dir, name), None)
-                if b and b.get("kind") == "perf-capture":
-                    found.append({"bundle": b, "user": "local", "name": name, "path": os.path.join(local_dir, name), "branches": []})
+            if not name.endswith(".json"):
+                continue
+            b = load_json(os.path.join(local_dir, name), None)
+            if name.startswith("capture_") and b and b.get("kind") == "perf-capture":
+                found.append({"bundle": b, "user": "local", "name": name, "path": os.path.join(local_dir, name), "branches": []})
+            elif name.startswith(("diag_", "prof_")) and b:
+                local_loose.append({"doc": b, "user": "local", "name": name, "path": os.path.join(local_dir, name), "branches": []})
+        embedded = [((c["bundle"].get("diag") or {}).get("scene"), (c["bundle"].get("diag") or {}).get("label"), (c["bundle"].get("diag") or {}).get("timestamp")) for c in found]
+        found.extend(pair_loose(local_loose, embedded))
     found.sort(key=lambda c: c["bundle"].get("timestamp") or "")
     return found
 
@@ -589,6 +637,13 @@ def self_test():
         c = parse_scan("=== LARGE allocations in Update/LateUpdate/FixedUpdate/OnGUI: 6\n  x\n=== LARGE allocations in per-FRAME coroutines (yield return null): 9\n=== `yield return new ...` INSIDE A LOOP (one alloc per iteration, per instance): 63\n")
         assert c == {"updateAllocations": 6, "yieldNullLoops": 9, "yieldNewInLoop": 63, "total": 78}, c
         assert rose(78, 79, "scanCount") and not rose(78, 78, "scanCount")
+        loose = [{"doc": {"scene": "MinigameSkimRace", "label": "S", "timestamp": "t"}, "user": "ys", "name": "diag_MinigameSkimRace_S_20261008_063523.json", "path": "p", "branches": ["b"]},
+                 {"doc": {"scene": "MinigameSkimRace", "label": "S", "completed": True}, "user": "ys", "name": "prof_MinigameSkimRace_S_20261008_063333.json", "path": "q", "branches": ["b"]},
+                 {"doc": {"scene": "Menu_Main", "label": "S"}, "user": "ys", "name": "prof_Menu_Main_S_20261008_063340.json", "path": "r", "branches": ["b"]}]
+        paired = pair_loose(loose)
+        assert len(paired) == 1 and paired[0]["bundle"]["prof"] is not None and paired[0]["bundle"]["prof"]["scene"] == "MinigameSkimRace", paired
+        assert pair_loose(loose[:1])[0]["bundle"]["prof"] is None
+        assert pair_loose(loose[:1], [("MinigameSkimRace", "S", "t")]) == [], "a diag a capture already embeds must not be paired twice"
     print("self-test ok")
 
 
