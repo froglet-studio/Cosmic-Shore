@@ -541,6 +541,9 @@ def upnext_node():
 def build_invite():
     root = N("root", INVITE, R((1, 1), None, (-40, -250), (520, 132), (1, 1)))
     root.add("cg", 225, lambda ctx, go: H.canvas_group(False)(ctx, go))
+    # Motion (section 22.8): the popup drops in each time it appears. PartyInviteNotificationPanel
+    # starts it (play on enable off) - the popup lives on an always-enabled screen.
+    root.add("in", 114, M.entrance("Drop", distance=18, play_on_enable=False))
     fill = root.child(N("Fill", "Fill", STRETCH))
     fill.add("cr", 222, K.canvas_renderer()) \
         .add("img", 114, K.image(tok("SurfaceBlack"), K.kit_sprite("kit_sliver14_fill"), True, raycast=True))
@@ -580,6 +583,7 @@ def build_invite():
              f"  declineButton: {ref(ctx.iref('DeclineButton', 'root#button'))}\n"
              f"  canvasGroup: {ref(ctx.c('root', 'cg'))}\n"
              f"  partyCountText: {ref(ctx.c('Count', 'tmp'))}\n  timerBar: {ref(ctx.c('Drain/Bar', 'drain'))}\n"
+             f"  entrance: {ref(ctx.c('root', 'in'))}\n"
              f"  profileIcons: {K.ref(11400000, PROFILE_ICONS, 2)}\n  autoHideSeconds: 3\n  inviteReceivedAudio: 9\n"))
     return root
 
@@ -685,6 +689,7 @@ def outputs():
 # --------------------------------------------------------------------------------------------
 
 def validate(files):
+    M.require_entrances(files, {invite_path(): 1})
     sc_text = files[SCENE]
     sc = T.Scene(sc_text)
     I = IDS
@@ -719,7 +724,8 @@ def validate(files):
     pf = files[invite_path()]
     A.check_file(invite_path(), pf, T.known_guids() | P.PACKAGE, {P.asset_guid(INVITE), P.asset_guid("folder/Home")})
     _, panel = A.doc_of(pf, K.FileIds(INVITE)("root#panel"))
-    for f in ("inviterNameText", "inviterAvatarImage", "acceptButton", "declineButton", "canvasGroup", "partyCountText", "timerBar"):
+    for f in ("inviterNameText", "inviterAvatarImage", "acceptButton", "declineButton", "canvasGroup", "partyCountText", "timerBar",
+              "entrance"):
         assert re.search(r"^  %s: \{fileID: [1-9-]" % f, panel, re.M), f"PartyInvitePopup: {f} is not wired"
     anchors = set(re.findall(r"^--- !u!\d+ &(-?\d+)", sc_text, re.M)) | {"0"}
     for m in re.finditer(r"\{fileID: (-?\d+)\}", sc_text):
@@ -762,6 +768,7 @@ def self_test(files):
         j = s.index("--- ", i + 4)
         f[SCENE] = s[:i] + s[i:j].replace("  preferredFocus: 1\n", "  preferredFocus: 0\n") + s[j:]
     cases = [
+        ("the invite's drop-in stripped", lambda f: f.__setitem__(invite_path(), M.strip_entrances(f[invite_path()]))),
         ("the lamp's status label unwired", unwire_status),
         ("Arcade not the pad's first stop", arcade_unfocused),
         ("a hub left a plain Button", lambda f: f.__setitem__(SCENE, f[SCENE].replace(

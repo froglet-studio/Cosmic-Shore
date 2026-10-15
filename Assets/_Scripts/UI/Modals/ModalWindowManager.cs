@@ -264,6 +264,8 @@ namespace CosmicShore.UI
 
                 PlayMenuAudio(MenuAudioCategory.OpenView);
                 isOn = true;
+                // The window never deactivates, so its entrances last played behind it at scene load.
+                KitEntrance.ReplayUnder(transform);
                 OnModalOpened?.Invoke();
             }
         }

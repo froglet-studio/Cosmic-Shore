@@ -1419,3 +1419,51 @@ there. Every Rise-by-sibling row in the Settings, Profile and configure windows 
 `KitEntrance.ReconcileRest` now adopts any position something else wrote mid-entrance as the new
 rest pose (`KitMotionTests` covers both branches).
 
+### 22.8 Motion pass, menu half (2026-10-15): windows arrive every time they open
+
+Measuring the menu prefabs showed two different problems, not one.
+
+**1. Entrances that existed never played where anyone could see them.** Menu windows
+(`ModalWindowManager`) and screens (`ScreenSwitcher`) are never deactivated. They hide by
+CanvasGroup alpha, so `OnEnable` fires once, at scene load, behind a closed window. Every
+play-on-enable `KitEntrance` built in items 4-11 (configure, leaderboard, profile, settings, Ark,
+Home) ran its one entrance invisibly at boot and then never again. **`KitEntrance.ReplayUnder(root)`**
+fixes this. It plays every active entrance that has `playOnEnable` on, and leaves code-started
+ones to their code. `ModalWindowManager.ModalWindowIn` calls it on open, and `ScreenSwitcher`
+calls it on screen enter and on the return from freestyle. No per-prefab wiring is needed, so a
+new window gets it for free.
+
+**A replay must not undo an owner's state.** Some entrances share their CanvasGroup with a
+script that dims or hides the part: `KitDomainTile.columnGroup`, `KitIntensityNode.nodeGroup`,
+`LeaderboardPodiumSlot.group` (a KitVisibility owner) and `HangarVesselTile.canvasGroup`. The old
+`Finish()` wrote alpha 1, so replaying on open would have un-dimmed closed tiles and shown an
+empty podium step. `KitEntrance` now fades up to the alpha the group had when the entrance
+started. `ReconcileAlpha` adopts anything another script writes mid-entrance, the same way
+`ReconcileRest` does for position. A dimmed tile stays dimmed and a hidden step stays hidden.
+`KitMotionTests` covers both cases. The Ark's Omni pop starts at its dim alpha (0.35), and its
+view writes 1 straight after `Play()`, so the reconcile carries it up to 1, as before.
+
+The leaderboard's podium steps are authored hidden (alpha 0), so a step now plays its rise when
+`LeaderboardPodiumSlot.Show` fills it, and finishes the rise before `Clear` hides it. A step
+filled before the window opens rises on open instead. This also fixes an older bug: the boot-time
+entrance used to fade the three empty placeholder steps up to alpha 1.
+
+**2. Surfaces that had no motion at all**:
+
+| Surface | Before | Now |
+|---|---|---|
+| Arcade / Arena / Mission / Toy Box windows | header and body appeared | header **rises** (10 px), body **rises** one stagger later, on every open |
+| Arcade / Arena / Toy Box cards | popped in on open (`CardGridReveal`, as before) | unchanged |
+| Mission cards | appeared | **pop in** on open (`MissionExploreView` now plays `CardGridReveal` on `OnModalOpened`, as the arcade grid does) |
+| Toy configure | appeared | header rises, then preview, variants and about rise one stagger apart; variant tiles **rise by grid position** |
+| Hangar screen | appeared | header and body rise on every screen enter; vessel rows and ability rows **rise by list position** (a locked row keeps its dim) |
+| Purchase confirm | appeared | scrim **fades**, window **pops** |
+| Party seats | appeared | **rise** one after another |
+| Party online / request rows | faded in (`entryFadeInSeconds`, as before) | unchanged (no second entrance on top of the code fade) |
+| Party invite popup | snapped on | **drops in** (18 px) each time it appears. `PartyInviteNotificationPanel.entrance` starts it, and it is finished before the popup hides |
+| Configure ability rows, leaderboard rows | appeared | **rise by sibling** |
+| Scoreboard stat tiles (in game) | appeared | **rise by sibling** under the stats block's own rise |
+
+Each touched generator now requires its entrances (`menu_b_motion.require_entrances`, run first in
+validation) and plants a strip (`strip_entrances`) as a negative control.
+

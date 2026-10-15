@@ -51,6 +51,7 @@ def _load(name):
 
 K = _load("author_ui_kit_prefabs")      # node model, component bodies, tokens, roles
 T = _load("author_menu_topnav")         # Scene (ordered documents), stub writers, normalize
+M = _load("menu_b_motion")              # revision-2 motion (entrances)
 
 REPO = K.REPO
 SCENE = "Assets/_Scenes/Menu_Main.unity"
@@ -234,10 +235,10 @@ def tile_variant_text():
     lines = "".join(f"    - target: {K.ref(K.source_fid('KitTile', k), base)}\n      propertyPath: {p}\n"
                     f"      value: {K.f32(v) if not isinstance(v, str) else v}\n      objectReference: {{fileID: 0}}\n"
                     for k, p, v in mods)
-    tile_c, cg_c, le_c = F("root#hangarTile"), F("root#cg"), F("root#le")
+    tile_c, cg_c, le_c, in_c = F("root#hangarTile"), F("root#cg"), F("root#le"), F("root#in")
     root_go = d("root#go")
     added = "".join(f"    - targetCorrespondingSourceObject: {K.ref(K.source_fid('KitTile', 'root#go'), base)}\n"
-                    f"      insertIndex: -1\n      addedObject: {{fileID: {c}}}\n" for c in (tile_c, cg_c, le_c))
+                    f"      insertIndex: -1\n      addedObject: {{fileID: {c}}}\n" for c in (tile_c, cg_c, le_c, in_c))
     docs = [f"--- !u!1001 &{pid}\nPrefabInstance:\n  m_ObjectHideFlags: 0\n  serializedVersion: 2\n"
             "  m_Modification:\n    serializedVersion: 3\n    m_TransformParent: {fileID: 0}\n"
             "    m_Modifications:\n" + lines
@@ -250,6 +251,9 @@ def tile_variant_text():
                 f"  statusText: {ref(d('Status#kt'))}\n  canvasGroup: {ref(cg_c)}\n"))
     docs.append(f"--- !u!225 &{cg_c}\n" + canvas_group(True)(None, root_go))
     docs.append(f"--- !u!114 &{le_c}\n" + le(ph=TILE_H)(None, root_go))
+    # Motion (section 22.8): rows rise in by list position. The tile dims itself through the same
+    # CanvasGroup; KitEntrance fades up to the alpha it found, so a locked row stays dim.
+    docs.append(f"--- !u!114 &{in_c}\n" + M.entrance("Rise", by_sibling=True, distance=8)(None, root_go))
     return K.unity_empty_scalars(K.HEADER + "".join(docs)), tile_c
 
 
@@ -263,6 +267,7 @@ ROW_W = 492
 def build_row():
     root = N("root", "HangarAbilityRow", R(size=(ROW_W, 100)))
     root.add("vlg", 114, K.hv_layout(True, (0, 0, 0, 0), 8, 0, (1, 1), (1, 0)))
+    root.add("cg", 225, canvas_group(True)).add("in", 114, M.entrance("Rise", by_sibling=True, distance=8))
     label(root.child(N("Name", "Name", R(size=(ROW_W, K.line_height("H3"))))), "Ability", "H3", "TextLight", wrap=True)
     label(root.child(N("Description", "Description", R(size=(ROW_W, K.line_height("BodySmall"))))),
           "What the ability does.", "BodySmall", "TextLight", valign="top", wrap=True)
@@ -302,6 +307,8 @@ def build_view(row_guid):
 
     # ---- header ----
     header = root.child(N("Header", "Header", R((0, 1), (1, 1), (0, -108), (-80, 64), (0.5, 1))))
+    header.add("cg", 225, M.canvas_group()).add("in", 114, M.entrance("Rise", distance=10))
+    # A screen, not a modal: ScreenSwitcher replays these on every enter (KitEntrance.ReplayUnder).
     label(header.child(N("Header/Eyebrow", "Eyebrow", R((0, 1), None, (0, 0), (300, 18), (0, 1)))),
           "HANGAR", "Label", "NeutralLightest")
     label(header.child(N("Header/Title", "Title", R((0, 1), None, (0, -20), (760, 46), (0, 1)))),
@@ -315,6 +322,7 @@ def build_view(row_guid):
     # ---- three zones: the list is fixed; the centre and the column share the rest 62 : 38 ----
     body = root.child(N("Body", "Body", R((0, 0), (1, 1), (-2.5, -78), (-75, -236))))
     body.add("hlg", 114, K.hv_layout(False, (0, 0, 0, 0), 19, 0, (1, 1), (0, 1)))
+    body.add("cg", 225, M.canvas_group()).add("in", 114, M.entrance("Rise", stagger=1))
 
     lz = body.child(N("List", "VesselList", R(size=(350, 844))))
     lz.add("le", 114, le(pw=350, fw=0))
@@ -639,6 +647,8 @@ def target_kind(text, fid, files):
 
 
 def validate_prefabs(files, guids):
+    M.require_entrances(files, {f"{OUT_DIR}/HangarView.prefab": 2, f"{OUT_DIR}/HangarAbilityRow.prefab": 1,
+                                f"{OUT_DIR}/HangarVesselTile.prefab": 1})
     minted = {re.search(r"^guid: (\w+)$", t, re.M).group(1) for p, t in files.items() if p.endswith(".meta")}
     for path, text in files.items():
         if path.endswith(".meta"):
@@ -748,6 +758,7 @@ def self_test(current, files, guids):
     name_ref = re.search(r"vesselNameText: \{fileID: (-?\d+)\}", dbody).group(1)
     desc_ref = re.search(r"vesselDescriptionText: \{fileID: (-?\d+)\}", dbody).group(1)
     plants = {
+        "the screen's entrances stripped": view_plant(M.strip_entrances),
         "detail field swapped onto the wrong kind": view_plant(lambda t: t.replace(
             f"chipLabel: {{fileID:", f"chipLabel: {{fileID: {name_ref}}}\n  chipLabelX: {{fileID:", 1)),
         "detail field unwired": view_plant(lambda t: t.replace(

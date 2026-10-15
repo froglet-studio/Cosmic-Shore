@@ -10,6 +10,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1072430939251367470}
   - component: {fileID: 861207231775141405}
+  - component: {fileID: 1002799244024019823}
   - component: {fileID: 395316660096324623}
   m_Layer: 5
   m_Name: PartyInvitePopup
@@ -57,6 +58,26 @@ CanvasGroup:
   m_Interactable: 0
   m_BlocksRaycasts: 0
   m_IgnoreParentGroups: 0
+--- !u!114 &1002799244024019823
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 943084556780148090}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1543fe3a029de045efa884462c2f95d5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  mode: 1
+  ease: 0
+  duration: 0.32
+  distance: 18
+  delay: 0
+  staggerIndex: 0
+  staggerBySibling: 0
+  playOnEnable: 0
 --- !u!114 &395316660096324623
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -77,6 +98,7 @@ MonoBehaviour:
   canvasGroup: {fileID: 861207231775141405}
   partyCountText: {fileID: 1013015810106429242}
   timerBar: {fileID: 997678277684097343}
+  entrance: {fileID: 1002799244024019823}
   profileIcons: {fileID: 11400000, guid: 3e6cb5b838253c7468480627fd86af5f, type: 2}
   autoHideSeconds: 3
   inviteReceivedAudio: 9

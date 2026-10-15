@@ -50,6 +50,8 @@ GameObject:
   - component: {fileID: 484395227169218839}
   - component: {fileID: 421765927856865620}
   - component: {fileID: 305438080215911105}
+  - component: {fileID: 1054221559899665806}
+  - component: {fileID: 809532857446262799}
   m_Layer: 5
   m_Name: Dim
   m_TagString: Untagged
@@ -129,6 +131,38 @@ MonoBehaviour:
   theme: {fileID: 11400000, guid: 0aef6398681c4ec98118cc9b9740060a, type: 2}
   token: 3
   alpha: 0.82
+--- !u!225 &1054221559899665806
+CanvasGroup:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 920402248068452702}
+  m_Enabled: 1
+  m_Alpha: 1
+  m_Interactable: 1
+  m_BlocksRaycasts: 1
+  m_IgnoreParentGroups: 0
+--- !u!114 &809532857446262799
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 920402248068452702}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1543fe3a029de045efa884462c2f95d5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  mode: 5
+  ease: 0
+  duration: 0.2
+  distance: 14
+  delay: 0
+  staggerIndex: 0
+  staggerBySibling: 0
+  playOnEnable: 1
 --- !u!1 &998162940279006912
 GameObject:
   m_ObjectHideFlags: 0
@@ -1312,6 +1346,8 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 883033257835482464}
+  - component: {fileID: 786634913482080964}
+  - component: {fileID: 332120532770016786}
   m_Layer: 5
   m_Name: Window
   m_TagString: Untagged
@@ -1351,6 +1387,38 @@ RectTransform:
   m_AnchoredPosition: {x: 0, y: 30}
   m_SizeDelta: {x: 1000, y: 360}
   m_Pivot: {x: 0.5, y: 0.5}
+--- !u!225 &786634913482080964
+CanvasGroup:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 845006140704686900}
+  m_Enabled: 1
+  m_Alpha: 1
+  m_Interactable: 1
+  m_BlocksRaycasts: 1
+  m_IgnoreParentGroups: 0
+--- !u!114 &332120532770016786
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 845006140704686900}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1543fe3a029de045efa884462c2f95d5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  mode: 2
+  ease: 2
+  duration: 0.32
+  distance: 14
+  delay: 0.04
+  staggerIndex: 0
+  staggerBySibling: 0
+  playOnEnable: 1
 --- !u!1 &1101839370525534562
 GameObject:
   m_ObjectHideFlags: 0

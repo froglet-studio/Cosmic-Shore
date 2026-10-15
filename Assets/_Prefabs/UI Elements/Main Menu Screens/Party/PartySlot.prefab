@@ -9,6 +9,8 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 511013727882024093}
+  - component: {fileID: 412205000203613223}
+  - component: {fileID: 185422096372308412}
   - component: {fileID: 178353568735873287}
   - component: {fileID: 547807908991037407}
   m_Layer: 5
@@ -39,6 +41,38 @@ RectTransform:
   m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 376, y: 58}
   m_Pivot: {x: 0.5, y: 0.5}
+--- !u!225 &412205000203613223
+CanvasGroup:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 391065143255940378}
+  m_Enabled: 1
+  m_Alpha: 1
+  m_Interactable: 1
+  m_BlocksRaycasts: 1
+  m_IgnoreParentGroups: 0
+--- !u!114 &185422096372308412
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 391065143255940378}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1543fe3a029de045efa884462c2f95d5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  mode: 0
+  ease: 0
+  duration: 0.32
+  distance: 8
+  delay: 0
+  staggerIndex: 0
+  staggerBySibling: 1
+  playOnEnable: 1
 --- !u!114 &178353568735873287
 MonoBehaviour:
   m_ObjectHideFlags: 0

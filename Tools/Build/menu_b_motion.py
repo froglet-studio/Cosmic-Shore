@@ -52,6 +52,22 @@ def entrance(mode="Rise", stagger=0, delay=0.0, by_sibling=False, ease=None, dur
                                   f"  staggerBySibling: {1 if by_sibling else 0}\n  playOnEnable: {1 if play_on_enable else 0}\n")
 
 
+KIT_ENTRANCE = K.kit_script("KitEntrance")
+
+
+def require_entrances(files, wants):
+    """The motion pass's floor (Docs/MENU_REDESIGN_B.md section 22.8): {prefab path: minimum KitEntrance
+    count}. Run it FIRST in a generator's validate, so a planted strip is caught by this message."""
+    for path, n in wants.items():
+        got = files[path].count(f"guid: {KIT_ENTRANCE}")
+        assert got >= n, f"{path}: {got} KitEntrance(s), the motion pass authors {n} (section 22.8)"
+
+
+def strip_entrances(text):
+    """Negative control for require_entrances: every KitEntrance becomes a KitAmbient (a known script)."""
+    return text.replace(f"guid: {KIT_ENTRANCE}", f"guid: {K.kit_script('KitAmbient')}")
+
+
 def ambient(mode="Float", period=3.2, amplitude=6.0, phase=0.0):
     return lambda ctx, go: K.mono(go, K.kit_script("KitAmbient"),
                                   f"  mode: {AMBIENT[mode]}\n  period: {K.f32(period)}\n"

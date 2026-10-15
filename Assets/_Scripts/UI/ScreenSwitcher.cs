@@ -1383,6 +1383,8 @@ namespace CosmicShore.UI
             // Notify the incoming screen
             if (_screenMap.TryGetValue(ScreenIndex, out var enteringScreen))
                 enteringScreen.OnScreenEnter();
+            // Screens hide by alpha and never re-enable, so this is their entrances' cue.
+            KitEntrance.ReplayUnder(GetScreenRootRT(ScreenIndex));
 
             // Slide effect: one viewport width per index, in the viewport's own units, so the
             // screen lands inside the safe area at any aspect ratio.
@@ -1823,6 +1825,7 @@ namespace CosmicShore.UI
             // Notify the current screen that it's being re-entered
             if (_screenMap.TryGetValue(currentScreen, out var enteringScreen))
                 enteringScreen.OnScreenEnter();
+            KitEntrance.ReplayUnder(GetScreenRootRT(currentScreen));
 
             Refocus();
         }

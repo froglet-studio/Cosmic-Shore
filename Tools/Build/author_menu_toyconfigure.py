@@ -66,9 +66,9 @@ def prefab_path(name):
     return f"{OUT_DIR}/{name}.prefab"
 
 
-def panel(root, key, name, r, grid=True):
+def panel(root, key, name, r, stagger, grid=True):
     n = root.child(N(key, name, r))
-    n.add("cg", 225, canvas_group(True))
+    n.add("cg", 225, canvas_group(True)).add("in", 114, M.entrance("Rise", stagger=stagger))
     C.frame(n, f"{key}/Frame", 14, "SurfaceVeryDark", "SurfaceDark", fill_alpha=0.92)
     if grid:
         n.child(M.grid_node(f"{key}/Grid"))
@@ -109,6 +109,8 @@ def build_tile():
              f"  tile: {ref(ctx.c('root', 'tile'))}\n  icon: {ref(ctx.c('Icon', 'img'))}\n"
              f"  detailStyle: {ref(ctx.c('Detail', 'kt'))}\n  vessels: {K.ref(11400000, A.VESSEL_LIST, 2)}\n"))
     root.add("audio", 114, A.menu_audio(11)).add("scroll", 114, A.scroll_into())
+    # Motion (section 22.8): variants rise in by grid position, on spawn and on every open.
+    root.add("cg", 225, canvas_group(True)).add("in", 114, M.entrance("Rise", by_sibling=True, distance=8))
     return root
 
 
@@ -132,7 +134,7 @@ def build_view():
 
     # Sibling order is focus order (ScreenSwitcher.Refocus): the variant panel first, so the pad lands
     # on the first variant; the header's Back last.
-    vp = panel(root, "Variants", "Variants", TR(40, 196, PANEL_W, 844))
+    vp = panel(root, "Variants", "Variants", TR(40, 196, PANEL_W, 844), 2)
     row = vp.child(N("Variants/Head", "Head", TL(28, 24, 844, 40)))
     row.add("hlg", 114, K.hv_layout(False, (0, 0, 0, 0), 14, 3, (0, 0), (0, 0)))
     w, h = K.button_size("BACK", small=True)
@@ -164,7 +166,7 @@ def build_view():
                                   R((1, 0), None, (-x, 30), (bw, bh), (1, 0)), K.button_mods("KitButton", variant, True, cap)))
         x += bw + 14
 
-    pv = panel(root, "Preview", "Preview", TL(40, 196, PANEL_W, 506))
+    pv = panel(root, "Preview", "Preview", TL(40, 196, PANEL_W, 506), 1)
     surf = pv.child(N("Preview/Surface", "Surface", R((0, 0), (1, 1), (0, 0), (-4, -4))))
     surf.add("cr", 222, K.canvas_renderer()).add("raw", 114, C.raw_image()) \
         .add("cam", 114, lambda ctx, go: mono(go, S["preview"],
@@ -176,7 +178,7 @@ def build_view():
     label(pv.child(N("Preview/Caption", "Caption", R((1, 0), None, (-22, 20), (300, 18), (1, 0)))), "", "Label",
           "NeutralLightest", align="right")
 
-    ab = panel(root, "About", "About", TL(40, 722, PANEL_W, 318), grid=False)
+    ab = panel(root, "About", "About", TL(40, 722, PANEL_W, 318), 3, grid=False)
     label(ab.child(N("About/Heading", "Heading", TL(24, 28, 600, 18))), "About", "Label", "TextLight")
     d = ab.child(N("About/Text", "Text", TL(24, 54, 852, 240)))
     d.add("cr", 222, K.canvas_renderer()) \
@@ -184,6 +186,7 @@ def build_view():
         .add("kt", 114, K.kit_text("Body", "TextLight"))
 
     hd = root.child(N("Header", "Header", R((0, 1), (1, 1), (0, -108), (-80, 64), (0.5, 1))))
+    hd.add("cg", 225, M.canvas_group()).add("in", 114, M.entrance("Rise", distance=10))
     label(hd.child(N("Header/Eyebrow", "Eyebrow", R((0, 1), None, (0, 0), (500, 18), (0, 1)))), "Toy", "Label",
           "NeutralLightest")
     t = hd.child(N("Header/Title", "Title", R((0, 1), None, (0, -20), (1100, 46), (0, 1))))
@@ -338,6 +341,7 @@ CARD_FIELDS = dict(nameText=TMP, detailText=TMP, tile=S["tile"], icon=IMG, detai
 
 
 def validate(files):
+    M.require_entrances(files, {prefab_path("ToyConfigureView"): 4, prefab_path("ToyVariantTile"): 1})
     guids = T.known_guids() | P.PACKAGE | {GRID, C.RAW_IMAGE}
     minted = {re.search(r"^guid: (\w+)$", t, re.M).group(1) for p, t in files.items() if p.endswith(".meta")}
     memo = {}
@@ -399,6 +403,7 @@ def self_test(files):
     mount = ViewMount()
     close = A.mono("0", S["close"], "")
     cases = [
+        ("the window's entrances stripped", lambda f: f.__setitem__(prefab_path("ToyConfigureView"), M.strip_entrances(f[prefab_path("ToyConfigureView")]))),
         ("a variant tile with no glyph", lambda f: f.__setitem__(tile, re.sub(r"(  icon: )\{fileID: -?\d+\}", r"\1{fileID: 0}", f[tile]))),
         ("a close-the-window button on the branch-aware Back", lambda f: f.__setitem__(view, f[view] + "--- !u!114 &1\n" + close)),
         ("the card prefab back on the scene template", lambda f: f.__setitem__(SCENE, f[SCENE].replace(

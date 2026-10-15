@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace CosmicShore.UI
@@ -25,10 +26,18 @@ namespace CosmicShore.UI
     /// <see cref="KitMotion.StaggerDelay"/>; set <see cref="staggerBySibling"/> on a row template and
     /// every spawned row picks its own delay from where it lands.
     ///
-    /// <para>Alpha goes through this object's own <see cref="CanvasGroup"/>, which must not be the group
-    /// a <see cref="KitVisibility"/> owner drives - put the entrance on the part's content child.
+    /// <para>Alpha goes through this object's own <see cref="CanvasGroup"/>. If a <see cref="KitVisibility"/>
+    /// owner drives that same group, the owner must <see cref="Finish"/> the entrance before hiding
+    /// (a hide that lands mid-entrance is adopted anyway, see <see cref="ReconcileAlpha"/>).
     /// Position and scale are offsets from the pose the object had when the entrance started, so a
-    /// layout group that placed it is not fought.</para>
+    /// layout group that placed it is not fought. Alpha works the same way: the entrance fades up to
+    /// the alpha the group had when it started, so a tile its owner dimmed or a part its owner hid
+    /// keeps that state through a replay.</para>
+    ///
+    /// <para>Menu windows and screens never deactivate - they hide by CanvasGroup alpha - so OnEnable
+    /// fires once, at scene load, behind a closed window. <see cref="ReplayUnder"/> is the enable they
+    /// never get: <c>ModalWindowManager</c> calls it on open and <c>ScreenSwitcher</c> on screen
+    /// enter, so every play-on-enable entrance in a window plays each time the window appears.</para>
     /// </summary>
     [AddComponentMenu("Cosmic Shore/UI Kit/Kit Entrance")]
     [DisallowMultipleComponent]
@@ -59,9 +68,27 @@ namespace CosmicShore.UI
         private Vector2 _restPosition;
         private Vector2 _lastWritten;
         private Vector3 _restScale = Vector3.one;
+        private float _restAlpha = 1f;
+        private float _lastAlpha = 1f;
         private float _clock = -1f;
 
         public bool IsPlaying => _clock >= 0f;
+
+        private static readonly List<KitEntrance> s_Replay = new();
+
+        /// <summary>
+        /// Replay every active play-on-enable entrance under <paramref name="root"/>: the window
+        /// appeared, which is what those entrances are for. Entrances that only code starts
+        /// (<c>playOnEnable</c> off) are left to that code.
+        /// </summary>
+        public static void ReplayUnder(Transform root)
+        {
+            if (!root) return;
+            root.GetComponentsInChildren(false, s_Replay);
+            foreach (var entrance in s_Replay)
+                if (entrance.playOnEnable) entrance.Play();
+            s_Replay.Clear();
+        }
 
         private void Awake()
         {
@@ -84,6 +111,8 @@ namespace CosmicShore.UI
             _restPosition = _rect.anchoredPosition;
             _lastWritten = _restPosition;
             _restScale = _rect.localScale;
+            _restAlpha = _group ? _group.alpha : 1f;
+            _lastAlpha = _restAlpha;
             _clock = 0f;
             Apply(0f);
         }
@@ -97,7 +126,7 @@ namespace CosmicShore.UI
                 _restPosition = ReconcileRest(_rect.anchoredPosition, _lastWritten, _restPosition);
             _rect.anchoredPosition = _restPosition;
             _rect.localScale = _restScale;
-            if (_group) _group.alpha = 1f;
+            if (_group) _group.alpha = _restAlpha = ReconcileAlpha(_group.alpha, _lastAlpha, _restAlpha);
         }
 
         private float TotalDelay =>
@@ -121,6 +150,14 @@ namespace CosmicShore.UI
         /// </summary>
         public static Vector2 ReconcileRest(Vector2 current, Vector2 lastWritten, Vector2 rest)
             => (current - lastWritten).sqrMagnitude > 0.0001f ? current : rest;
+
+        /// <summary>
+        /// The alpha to come to rest at: the group's alpha when the entrance started, unless
+        /// something else wrote the group since - a tile dimming itself, a KitVisibility show or
+        /// hide - in which case that value is the rest. Same reasoning as <see cref="ReconcileRest"/>.
+        /// </summary>
+        public static float ReconcileAlpha(float current, float lastWritten, float rest)
+            => Mathf.Abs(current - lastWritten) > 0.001f ? current : rest;
 
         private void SetPosition(Vector2 offset)
         {
@@ -161,7 +198,10 @@ namespace CosmicShore.UI
 
         private void SetAlpha(float a)
         {
-            if (_group) _group.alpha = a;
+            if (!_group) return;
+            _restAlpha = ReconcileAlpha(_group.alpha, _lastAlpha, _restAlpha);
+            _lastAlpha = _restAlpha * a;
+            _group.alpha = _lastAlpha;
         }
     }
 }

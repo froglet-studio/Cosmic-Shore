@@ -23,12 +23,17 @@ namespace CosmicShore.UI
         [SerializeField] private TMP_Text timeText;
 
         private Sprite _restAvatar;
+        private KitEntrance _entrance;
         private bool _captured;
 
         public void Show(string displayName, string time, Sprite face)
         {
             Capture();
+            bool appearing = group && group.alpha < 0.01f;
             KitVisibility.SetShown(group, true);
+            // The step's rise shares this group. A step filled while the window is up (the board
+            // loads after it opens) gets its entrance here; one filled earlier gets it on open.
+            if (appearing && _entrance) _entrance.Play();
             if (nameText) nameText.text = displayName ?? string.Empty;
             if (timeText) timeText.text = time ?? string.Empty;
             if (avatar)
@@ -41,6 +46,7 @@ namespace CosmicShore.UI
         public void Clear()
         {
             Capture();
+            if (_entrance) _entrance.Finish();
             KitVisibility.SetShown(group, false);
         }
 
@@ -49,6 +55,7 @@ namespace CosmicShore.UI
             if (_captured) return;
             _captured = true;
             _restAvatar = avatar ? avatar.sprite : null;
+            if (group) group.TryGetComponent(out _entrance);
         }
     }
 }

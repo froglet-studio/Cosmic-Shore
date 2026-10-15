@@ -65,6 +65,37 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Style-B redesign, motion pass: menu windows replay their entrances on open (`claude/new-session-76hnyc`, 2026-10-15) — NOT EDITOR-VERIFIED
+
+Section 22.8 of `Docs/MENU_REDESIGN_B.md`. There is no editor in the session, so `/verify-unity`
+is still owed. Offline checks:
+- The player and editor reference compiles are clean.
+- These generators pass `--check` and `--self-test`, each with a new entrance-strip control:
+  - `author_menu_arcade`, `arena`, `mission`, `toybox`, `toyconfigure`
+  - `author_menu_hangar`, `purchase`, `configure`, `home`
+  - `author_ingame_hud`
+- Every other Menu_Main generator still passes `--check`.
+
+**Verify in editor:**
+1. Open Arcade, close it, open it again. The header and body rise in both times, and the cards
+   still pop in. Do the same for Arena, Toy Box and Missions. The mission cards now pop in too.
+2. Open a game's configure window twice. The tree, steps and panels rise in both times. A
+   **closed domain column and an out-of-range intensity node stay dimmed** after the entrance:
+   this is the regression to look for.
+3. Weekly leaderboard with fewer than three ranked pilots: the empty podium steps stay
+   **hidden** when the window opens.
+4. Go to the Hangar, leave, and come back. The header and body rise in, and the vessel rows rise
+   in order. Locked vessels stay dim.
+5. Go to Profile, Ark and Home from the nav. Their blocks rise in on every visit, not only at
+   launch. Fly freestyle and exit: Home's blocks rise in again.
+6. Pick a toy. The variant tiles rise in by grid position, and the preview, variants and about
+   panels step in.
+7. Receive a party invite. The popup drops in from above. It still auto-hides after 3 s, and
+   Join / Decline still work on a pad.
+8. A match scoreboard: the stat tiles rise one after another.
+
+---
+
 ### 🔴 Style-B redesign, motion pass: in-game UI + KitEntrance layout fix (`claude/new-session-76hnyc`, 2026-10-15) — NOT EDITOR-VERIFIED
 
 Section 22.7 of `Docs/MENU_REDESIGN_B.md`. No editor in the session, so `/verify-unity` is still

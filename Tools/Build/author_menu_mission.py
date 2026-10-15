@@ -136,6 +136,9 @@ def build_view():
     body = root.child(N("Body", "Body", R((0, 0), (1, 1), (5, -78), (-70, -236))))
     body.add("hlg", 114, lambda ctx, go: K.hv_layout(False, (0, 0, 0, 0), 24, 0, (1, 1), (0, 1))(ctx, go)
              .replace("  m_ReverseArrangement: 0\n", "  m_ReverseArrangement: 1\n"))
+    # Motion (section 22.8): the window's two blocks rise in on every open - the modal never
+    # re-enables, so ModalWindowManager replays them (KitEntrance.ReplayUnder).
+    body.add("cg", 225, M.canvas_group()).add("in", 114, M.entrance("Rise", stagger=1))
     ex = body.child(N("Explore", "ExploreScroll", R((0, 1), None, (444, 0), (1406, 844), (0, 1))))
     ex.add("le", 114, le(mw=0, fw=1)).add("scroll", 114, A.scroll_rect("Explore/Viewport/Content", "Explore/Viewport"))
     vp = ex.child(N("Explore/Viewport", "Viewport", R((0, 0), (1, 1), (-5, 0), (-10, 0))))
@@ -159,6 +162,7 @@ def build_view():
                                     R((0, 1), None, (0, 0), (A.PANEL_W, 844), (0, 1)), ()))
 
     header = root.child(N("Header", "Header", R((0, 1), (1, 1), (0, -108), (-80, 64), (0.5, 1))))
+    header.add("cg", 225, M.canvas_group()).add("in", 114, M.entrance("Rise", distance=10))
     label(header.child(N("Header/Eyebrow", "Eyebrow", R((0, 1), None, (0, 0), (300, 18), (0, 1)))), "MISSIONS", "Label",
           "NeutralLightest")
     label(header.child(N("Header/Title", "Title", R((0, 1), None, (0, -20), (760, 46), (0, 1)))), "Explore missions", "H1",
@@ -271,6 +275,7 @@ CARD_FIELDS = dict(tile=S["tile"], art=IMG, eyebrowText=TMP, titleText=TMP, thre
 
 
 def validate(files):
+    M.require_entrances(files, {prefab_path("MissionView"): 2})
     guids = T.known_guids() | P.PACKAGE | {GRID_LAYOUT}
     minted = {re.search(r"^guid: (\w+)$", t, re.M).group(1) for p, t in files.items() if p.endswith(".meta")}
     for path, text_ in files.items():
@@ -335,6 +340,7 @@ def self_test(files):
         return False
     card, view = prefab_path("MissionCard"), prefab_path("MissionView")
     cases = [
+        ("the window's entrances stripped", lambda f: f.__setitem__(prefab_path("MissionView"), M.strip_entrances(f[prefab_path("MissionView")]))),
         ("mission cards shipped Available", lambda f: f.__setitem__(card, f[card].replace("  availability: 1\n", "  availability: 0\n"))),
         ("a card with no threat count", lambda f: f.__setitem__(card, re.sub(r"(  threatsText: )\{fileID: -?\d+\}", r"\1{fileID: 0}", f[card]))),
         ("the view drawing no missions", lambda f: f.__setitem__(view, f[view].replace(

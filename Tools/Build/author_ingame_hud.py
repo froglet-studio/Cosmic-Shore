@@ -787,6 +787,8 @@ def build_row():
 def build_stat():
     root = N("root", SB_STAT, R(size=(300, 96)))
     root.add("le", 114, H.le(fw=1, ph=96))
+    # Rows are spawned into a layout group; each rises from where it lands (KitEntrance.ReconcileRest).
+    root.add("cg", 225, H.canvas_group(True)).add("in", 114, HM.M.entrance("Rise", by_sibling=True, distance=8))
     H.framed(root, "Stat", 10, "SurfaceVeryDark", "SurfaceDark")
     H.label(root.child(N("Label", "Label", HM.TL(20, 16, 220, 18))), "Longest drift", "Label", "NeutralLightest")
     val = root.child(N("Value", "Value", HM.TL(20, 42, 240, 36)))
@@ -1351,7 +1353,8 @@ def validate(files):
                                  (PAUSE, 5, "pause scrim, window and the three buttons"),
                                  (CONNECT, 1, "the connecting headline"), (ENDGAME, 3, "the reveal's three lines"),
                                  (sb_path(SB_PANEL), 6, "scoreboard scrim, header, banner, rule, stats and buttons"),
-                                 (PANEL["path"], 1, "the score column")):
+                                 (PANEL["path"], 1, "the score column"),
+                                 (sb_path(SB_STAT), 1, "the scoreboard stat tiles")):
         assert entrances(files[path]) >= at_least, f"{path}: {what} have no entrance"
     sq = docs_of(files[ENDGAME])[EG["seq"]]
     blk = re.search(r"^  revealEntrances:\n((?:  - .*\n)*)", sq, re.M)

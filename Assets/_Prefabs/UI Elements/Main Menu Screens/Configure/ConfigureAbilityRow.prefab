@@ -10,6 +10,7 @@ GameObject:
   m_Component:
   - component: {fileID: 377569843723399474}
   - component: {fileID: 478421505386529942}
+  - component: {fileID: 226071069817050737}
   - component: {fileID: 747849372744724427}
   - component: {fileID: 443123552272888135}
   m_Layer: 5
@@ -56,6 +57,26 @@ CanvasGroup:
   m_Interactable: 1
   m_BlocksRaycasts: 1
   m_IgnoreParentGroups: 0
+--- !u!114 &226071069817050737
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 761865923973263772}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1543fe3a029de045efa884462c2f95d5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  mode: 0
+  ease: 0
+  duration: 0.32
+  distance: 8
+  delay: 0
+  staggerIndex: 0
+  staggerBySibling: 1
+  playOnEnable: 1
 --- !u!114 &747849372744724427
 MonoBehaviour:
   m_ObjectHideFlags: 0

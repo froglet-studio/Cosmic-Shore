@@ -338,7 +338,7 @@ ROW_W = 396
 
 def build_ability_row():
     root = N("root", "ConfigureAbilityRow", R(size=(ROW_W, 34)))
-    root.add("cg", 225, canvas_group(True))
+    root.add("cg", 225, canvas_group(True)).add("in", 114, M.entrance("Rise", by_sibling=True, distance=8))
     art_node(root, "Icon", "Icon", R((0, 0.5), None, (13, 0), (26, 26)), K.kit_sprite("kit_hex_fill"), preserve=True)
     petal = art_node(root, "Petal", "Petal", R((0, 0.5), None, (24, -8), (12, 12)), None, preserve=True)
     petal.active = False
@@ -1057,7 +1057,8 @@ def color(tok_name, alpha=1.0):
 def build_leaderboard_row():
     root = N("root", "LeaderboardRow", R(size=(LB_ROW_W, LB_ROW_H)))
     root.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("SurfaceDark", 0.35)))
-    root.add("cg", 225, canvas_group(True)).add("le", 114, le(ph=LB_ROW_H))
+    root.add("cg", 225, canvas_group(True)).add("le", 114, le(ph=LB_ROW_H)) \
+        .add("in", 114, M.entrance("Rise", by_sibling=True, distance=8))
     rank = root.child(N("Rank", "Rank", R((0, 0.5), None, (32, 0), (60, 28), (0, 0.5))))
     rank.add("cr", 222, K.canvas_renderer()).add("tmp", 114, text("4", "Data", tok("TextLight"))) \
         .add("kt", 114, K.kit_text("Data", "TextLight", driven=True))
@@ -1605,6 +1606,7 @@ PART_FIELDS = [
 
 
 def validate_prefabs(files):
+    M.require_entrances(files, {prefab_path("ConfigureAbilityRow"): 1, prefab_path("LeaderboardRow"): 1})
     guids = known_guids()
     minted = {re.search(r"^guid: (\w+)$", t, re.M).group(1) for p, t in files.items() if p.endswith(".meta")}
     owned = {asset_guid(n) for n in PREFABS} | {K.prefab_guid(n) for n in KIT_SOURCES}
@@ -1785,7 +1787,10 @@ def self_test(files):
 
     view, node, modal = prefab_path("ConfigureView"), prefab_path("ConfigureIntensityNode"), MODAL_PREFAB
     V = K.FileIds("ConfigureView")
+    lb_row = prefab_path("LeaderboardRow")
     cases = [
+        ("the leaderboard row's entrance stripped", lambda f: f.__setitem__(lb_row, M.strip_entrances(f[lb_row])),
+         validate_prefabs),
         ("an unwired start button", lambda f: f.__setitem__(view, re.sub(r"(  startButton: )\{fileID: -?\d+\}", r"\1{fileID: 0}", f[view])),
          validate_prefabs),
         ("a node that forgot the intensity variable", lambda f: f.__setitem__(node, f[node].replace(INTENSITY_VAR, "0" * 32)),

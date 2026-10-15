@@ -38,8 +38,19 @@ namespace CosmicShore.UI
         [SerializeField, Tooltip("\"1\" beside ALL MISSIONS. Optional.")]
         TMP_Text countText;
 
+        [Header("Card Reveal")]
+        [SerializeField, Tooltip("Timing for the staggered card pop-in played when this grid's window opens " +
+                                 "(the card-entrance block). Leave empty for the fleet defaults in CardGridReveal.")]
+        HUDAnimationSettingsSO cardRevealSettings;
+
         readonly List<KitMissionCard> _cards = new();
+        readonly List<GameObject> _revealCards = new();
         bool _built;
+
+        // The window this grid lives in. It hides by CanvasGroup alpha and never re-enables, so its
+        // OnModalOpened - not OnEnable - is when the cards should come in (the arcade grid's rule).
+        ModalWindowManager _hostModal;
+        Coroutine _reveal;
 
         /// <summary>Raised when an Available mission card is pressed.</summary>
         public event Action<SO_Mission> MissionPicked;
@@ -47,7 +58,29 @@ namespace CosmicShore.UI
         /// <summary>The spawned cards, in roster order.</summary>
         public IReadOnlyList<KitMissionCard> Cards => _cards;
 
-        void Start() => Build();
+        void Start()
+        {
+            Build();
+            _hostModal = GetComponentInParent<ModalWindowManager>(true);
+            if (_hostModal) _hostModal.OnModalOpened += PlayCardReveal;
+        }
+
+        void OnDisable()
+        {
+            // A reveal cut short by the grid going away must not strand a card at alpha 0.
+            CardGridReveal.Snap(this, _revealCards, _reveal);
+            _reveal = null;
+        }
+
+        /// <summary>The staggered pop-in of every card, in roster order, each time the window opens.</summary>
+        void PlayCardReveal()
+        {
+            CardGridReveal.Snap(this, _revealCards, _reveal);
+            _revealCards.Clear();
+            foreach (var card in _cards)
+                if (card) _revealCards.Add(card.gameObject);
+            _reveal = CardGridReveal.Play(this, _revealCards, cardRevealSettings, null);
+        }
 
         public void Build()
         {
@@ -77,6 +110,9 @@ namespace CosmicShore.UI
 
         void OnDestroy()
         {
+            if (_hostModal) _hostModal.OnModalOpened -= PlayCardReveal;
+            CardGridReveal.Snap(this, _revealCards, _reveal);
+            _reveal = null;
             foreach (var c in _cards)
                 if (c) c.Pressed -= OnCardPressed;
         }

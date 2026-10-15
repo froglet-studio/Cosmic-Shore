@@ -13,6 +13,8 @@ GameObject:
   - component: {fileID: 1147637413517092372}
   - component: {fileID: 796699707445823447}
   - component: {fileID: 498287042618882124}
+  - component: {fileID: 301722626076275838}
+  - component: {fileID: 347949965841060174}
   m_Layer: 5
   m_Name: ToyVariantTile
   m_TagString: Untagged
@@ -176,6 +178,38 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   target: {fileID: 0}
   margin: 12
+--- !u!225 &301722626076275838
+CanvasGroup:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3963540964954761}
+  m_Enabled: 1
+  m_Alpha: 1
+  m_Interactable: 1
+  m_BlocksRaycasts: 1
+  m_IgnoreParentGroups: 0
+--- !u!114 &347949965841060174
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3963540964954761}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1543fe3a029de045efa884462c2f95d5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  mode: 0
+  ease: 0
+  duration: 0.32
+  distance: 8
+  delay: 0
+  staggerIndex: 0
+  staggerBySibling: 1
+  playOnEnable: 1
 --- !u!1 &218635554078481803
 GameObject:
   m_ObjectHideFlags: 0

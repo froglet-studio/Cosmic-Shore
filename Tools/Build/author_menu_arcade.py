@@ -59,6 +59,7 @@ def _load(name):
 K = _load("author_ui_kit_prefabs")      # node model, component bodies, tokens, roles
 T = _load("author_menu_topnav")         # Scene (ordered documents), stub writers, normalize
 H = _load("author_menu_hangar")         # text / label / le / canvas_group / themed helpers
+M = _load("menu_b_motion")              # revision-2 motion (entrances)
 
 REPO = K.REPO
 SCENE = "Assets/_Scenes/Menu_Main.unity"
@@ -496,6 +497,9 @@ SLOT_H, ROW_H = 58, 46
 
 def build_slot():
     root = N("root", "PartySlot", R(size=(ROW_W, SLOT_H)))
+    # Motion (section 22.8): the seats rise in one after another. The request and online rows are
+    # not given one - RequestInfoEntry / OnlineInfoEntry already fade them in (entryFadeInSeconds).
+    root.add("cg", 225, canvas_group(True)).add("in", 114, M.entrance("Rise", by_sibling=True, distance=8))
     occ = root.child(N("Occupied", "Occupied", STRETCH)).add("cg", 225, canvas_group(False))
     frame_nodes(occ, "Occupied", 10, "SurfaceVeryDark", "SurfaceDark")
     _, x = avatar_nodes(occ, "Occupied/Avatar", 40, ring=True, x=12)
@@ -900,6 +904,9 @@ def build_view(maelstrom_art, maelstrom_desc, weekly_art):
     body = root.child(N("Body", "Body", R((0, 0), (1, 1), (5, -78), (-70, -236))))
     body.add("hlg", 114, lambda ctx, go: K.hv_layout(False, (0, 0, 0, 0), 24, 0, (1, 1), (0, 1))(ctx, go)
              .replace("  m_ReverseArrangement: 0\n", "  m_ReverseArrangement: 1\n"))
+    # Motion (section 22.8): the window's two blocks rise in on every open - the modal never
+    # re-enables, so ModalWindowManager replays them (KitEntrance.ReplayUnder).
+    body.add("cg", 225, M.canvas_group()).add("in", 114, M.entrance("Rise", stagger=1))
 
     ex = body.child(N("Explore", "ExploreScroll", R((0, 1), None, (444, 0), (1406, 844), (0, 1))))
     ex.add("le", 114, le(mw=0, fw=1)).add("scroll", 114, scroll_rect("Explore/Viewport/Content", "Explore/Viewport"))
@@ -951,6 +958,7 @@ def build_view(maelstrom_art, maelstrom_desc, weekly_art):
     body.children.append(Inst("PartyPanel", "PartyPanel", "PartyPanel", R((0, 1), None, (0, 0), (PANEL_W, 844), (0, 1))))
 
     header = root.child(N("Header", "Header", R((0, 1), (1, 1), (0, -108), (-80, 64), (0.5, 1))))
+    header.add("cg", 225, M.canvas_group()).add("in", 114, M.entrance("Rise", distance=10))
     label(header.child(N("Header/Eyebrow", "Eyebrow", R((0, 1), None, (0, 0), (300, 18), (0, 1)))), "ARCADE", "Label",
           "NeutralLightest")
     label(header.child(N("Header/Title", "Title", R((0, 1), None, (0, -20), (760, 46), (0, 1)))), "Explore games", "H1",
@@ -1230,6 +1238,7 @@ FIELDS = [
 
 
 def validate_prefabs(files, guids):
+    M.require_entrances(files, {prefab_path("ArcadeView"): 2, prefab_path("PartySlot"): 1})
     minted = {re.search(r"^guid: (\w+)$", t, re.M).group(1) for p, t in files.items() if p.endswith(".meta")}
     for path, text in files.items():
         if path.endswith(".meta"):
@@ -1381,6 +1390,7 @@ def self_test(current, files, guids):
     _, cbody = doc_of(files[card], K.FileIds("ArcadeGameCard")("root#card"))
     title = re.search(r"GameTitle: \{fileID: (-?\d+)\}", cbody).group(1)
     plants = {
+        "the window's entrances stripped": prefab_plant(prefab_path("ArcadeView"), M.strip_entrances),
         "two seats share one slot": prefab_plant(panel, lambda t: re.sub(
             r"(  slots:\n  - \{fileID: (-?\d+)\}\n  - \{fileID: )-?\d+", lambda m: m.group(1) + m.group(2), t, count=1)),
         "card field swapped onto the wrong kind": prefab_plant(card, lambda t: t.replace(

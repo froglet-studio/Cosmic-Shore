@@ -35,6 +35,9 @@ namespace CosmicShore.UI
         [SerializeField] private TMP_Text partyCountText;
         [Tooltip("Optional. A bar that drains over the seconds the invite stays up.")]
         [SerializeField] private KitDrain timerBar;
+        [Tooltip("Optional. The drop-in played each time the popup appears (Play On Enable off - this panel " +
+                 "starts it). It shares the visibility CanvasGroup and fades up to whatever alpha it finds.")]
+        [SerializeField] private KitEntrance entrance;
 
         [Header("Data")]
         [SerializeField] private SO_ProfileIconList profileIcons;
@@ -246,9 +249,15 @@ namespace CosmicShore.UI
             if (show)
                 transform.SetAsLastSibling();
 
+            bool appearing = show && canvasGroup.alpha < 0.01f;
+            // A running entrance writes this same group every frame; stop it before hiding.
+            if (!show && entrance) entrance.Finish();
+
             canvasGroup.alpha = show ? 1f : 0f;
             canvasGroup.blocksRaycasts = show;
             canvasGroup.interactable = show;
+
+            if (appearing && entrance) entrance.Play();
         }
 
         private void SetButtonsInteractable(bool interactable)

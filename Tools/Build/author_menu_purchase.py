@@ -101,7 +101,10 @@ def pill(parent, key, name, spr, token, value_key):
 
 def build_view():
     root = N("root", VIEW, STRETCH)
-    image_node(root, "Dim", "Dim", STRETCH, "SurfaceBlack", alpha=0.82, raycast=True)
+    # Motion (section 22.8): the scrim fades and the window pops on every open (ModalWindowManager
+    # replays them - the modal never re-enables).
+    image_node(root, "Dim", "Dim", STRETCH, "SurfaceBlack", alpha=0.82, raycast=True) \
+        .add("cg", 225, M.canvas_group()).add("in", 114, M.entrance("Fade", duration=M.STD))
 
     bal = root.child(N("Balances", "Balances", R((1, 1), None, (-40, -108), (420, 48), (1, 1))))
     bal.add("hlg", 114, K.hv_layout(False, (0, 0, 0, 0), 12, 5, (1, 1), (0, 0)))
@@ -109,6 +112,7 @@ def build_view():
     pill(bal, "Balances/Tickets", "Tickets", sprite(TICKET_SPRITE), "TextLight", "TicketBalanceText")
 
     win = root.child(N("Window", "Window", R((0.5, 0.5), None, (0, 30), (WIN_W, WIN_H))))
+    win.add("cg", 225, M.canvas_group()).add("in", 114, M.entrance("Pop", delay=0.04))
     fill = win.child(N("Window/Fill", "Fill", STRETCH))
     fill.add("cr", 222, K.canvas_renderer()) \
         .add("img", 114, K.image(tok("SurfaceBlack"), K.kit_sprite("kit_sliver14_fill"), True, raycast=True)) \
@@ -286,6 +290,7 @@ def outputs():
 # --------------------------------------------------------------------------------------------
 
 def validate(files):
+    M.require_entrances(files, {prefab_path(): 2})
     guids = T.known_guids() | P.PACKAGE
     minted = {re.search(r"^guid: (\w+)$", t, re.M).group(1) for p, t in files.items() if p.endswith(".meta")}
     view = files[prefab_path()]
@@ -335,6 +340,7 @@ def self_test(files):
         return False
     price_stub = stub(*modal_refs()["PriceLabel"])[0]
     cases = [
+        ("the window's entrances stripped", lambda f: f.__setitem__(prefab_path(), M.strip_entrances(f[prefab_path()]))),
         ("buttons left to the inspector", lambda f: f.__setitem__(SCENE, f[SCENE].replace("  wireButtonsInCode: 1\n", "  wireButtonsInCode: 0\n"))),
         ("the price label unwired", lambda f: f.__setitem__(SCENE, f[SCENE].replace(
             f"  PriceLabel: {{fileID: {price_stub}}}\n", "  PriceLabel: {fileID: 0}\n"))),

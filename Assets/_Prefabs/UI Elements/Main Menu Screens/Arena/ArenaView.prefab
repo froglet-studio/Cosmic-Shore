@@ -231,6 +231,8 @@ GameObject:
   m_Component:
   - component: {fileID: 953989995561736590}
   - component: {fileID: 223806835308107197}
+  - component: {fileID: 1015760274374638253}
+  - component: {fileID: 1140848653824243431}
   m_Layer: 5
   m_Name: Body
   m_TagString: Untagged
@@ -285,6 +287,38 @@ MonoBehaviour:
   m_ChildScaleWidth: 0
   m_ChildScaleHeight: 0
   m_ReverseArrangement: 1
+--- !u!225 &1015760274374638253
+CanvasGroup:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 831950956678988681}
+  m_Enabled: 1
+  m_Alpha: 1
+  m_Interactable: 1
+  m_BlocksRaycasts: 1
+  m_IgnoreParentGroups: 0
+--- !u!114 &1140848653824243431
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 831950956678988681}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1543fe3a029de045efa884462c2f95d5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  mode: 0
+  ease: 0
+  duration: 0.32
+  distance: 14
+  delay: 0
+  staggerIndex: 1
+  staggerBySibling: 0
+  playOnEnable: 1
 --- !u!1 &138462405708510066
 GameObject:
   m_ObjectHideFlags: 0
@@ -1739,6 +1773,8 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 978103477519173521}
+  - component: {fileID: 13948169064228874}
+  - component: {fileID: 584804761486599413}
   m_Layer: 5
   m_Name: Header
   m_TagString: Untagged
@@ -1768,6 +1804,38 @@ RectTransform:
   m_AnchoredPosition: {x: 0, y: -108}
   m_SizeDelta: {x: -80, y: 64}
   m_Pivot: {x: 0.5, y: 1}
+--- !u!225 &13948169064228874
+CanvasGroup:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1044884238531472314}
+  m_Enabled: 1
+  m_Alpha: 1
+  m_Interactable: 1
+  m_BlocksRaycasts: 1
+  m_IgnoreParentGroups: 0
+--- !u!114 &584804761486599413
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1044884238531472314}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1543fe3a029de045efa884462c2f95d5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  mode: 0
+  ease: 0
+  duration: 0.32
+  distance: 10
+  delay: 0
+  staggerIndex: 0
+  staggerBySibling: 0
+  playOnEnable: 1
 --- !u!1 &700452272553619777
 GameObject:
   m_ObjectHideFlags: 0

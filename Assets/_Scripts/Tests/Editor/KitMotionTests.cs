@@ -79,5 +79,21 @@ namespace CosmicShore.Tests
             var lastWritten = new Vector2(40f, 2f);
             Assert.AreEqual(rest, KitEntrance.ReconcileRest(lastWritten, lastWritten, rest));
         }
+
+        [Test]
+        public void Entrance_KeepsAnOwnersDim_ThroughAReplay()
+        {
+            // A configure tile dims itself to 0.4 through the same CanvasGroup its entrance fades.
+            // The window replays the entrance on open; it must come back to 0.4, not to 1.
+            const float dimmed = 0.4f;
+            Assert.AreEqual(dimmed, KitEntrance.ReconcileAlpha(dimmed * 0.5f, dimmed * 0.5f, dimmed));
+        }
+
+        [Test]
+        public void Entrance_AdoptsAHide_ThatLandsMidEntrance()
+        {
+            // KitVisibility hides the part while the entrance is still fading it up.
+            Assert.AreEqual(0f, KitEntrance.ReconcileAlpha(0f, 0.6f, 1f));
+        }
     }
 }
