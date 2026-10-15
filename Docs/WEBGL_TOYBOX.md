@@ -81,8 +81,8 @@ in the Editor, so the toybox path can be played before it is built). Everywhere 
 **Build.** `Editor/Build/WebToyboxBuild.cs`: FrogletTools > Build > WebGL Toybox (+ Development), or
 `-executeMethod CosmicShore.Editor.WebToyboxBuild.Build`. Exactly Bootstrap, Authentication and Menu_Main, with
 `FROGLET_WEB_TOYBOX` passed for that build only (`extraScriptingDefines`), to `Builds/WebGLToybox/`, plus a
-`build_manifest.txt`. It refuses unless the editor is on Web, and sets the editor's Development checkbox to match the
-build, because the release guards exempt any build while it is ticked. Unity Build Automation calls
+`build_manifest.txt`. It refuses unless the editor is on Web. The release guards judge it by its own build options
+(`ReleaseBuildKind`), so the editor's Development checkbox does not matter. Unity Build Automation calls
 `WebToyboxBuild.PreExport` instead (batchmode only): it sets the three scenes and appends the define. The release
 guard checks the scenes a scripted build declares (`UnityPipelineReleaseGuard.DeclareBuildScenes`) as well as Build
 Settings, and `BuildSceneListReconciler` stands down in a toybox-defined editor so UBA's define reload cannot re-add
@@ -226,10 +226,8 @@ Recorded in `Docs/UNITY_VERIFICATION_CHECKLIST.md` under the toybox branch's ent
 
 ## 7. Follow-ups
 
-- **Release guards trust the Development checkbox** (all three: `UnityPipelineReleaseGuard`, `CreditsReleaseGuard`,
-  `WeeklyChallengeTestModeBuildGuard`). A scripted release build made while it is ticked skips them.
-  `WebToyboxBuild` works around it by forcing the checkbox to match; `CosmicShoreBuildPipeline` does not. Filed as a
-  separate task.
+- ~~Release guards trust the Development checkbox~~ — fixed: all three guards ask `ReleaseBuildKind`, which reads only
+  the build's own options.
 - **Display settings in a browser.** The settings modal still shows display mode and resolution, which do nothing
   on WebGL now (`ApplyDisplay` returns). Hide those rows when `Application.platform == WebGLPlayer`.
 - **FMOD on the web.** The toybox waits up to 90 s for the banks (SFX.bank is ~37 MB, downloaded after the build
