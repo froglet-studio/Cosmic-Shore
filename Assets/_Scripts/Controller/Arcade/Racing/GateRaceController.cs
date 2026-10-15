@@ -249,6 +249,25 @@ namespace CosmicShore.Gameplay
         /// </summary>
         protected string CourseFailureDetail { get; set; }
 
+        /// <summary>The least throttle the mode's AI flies (0 = the AI's own skill throttle). Regatta races at full.</summary>
+        protected virtual float AIThrottleFloor => 0f;
+
+        /// <summary>
+        /// The approach point never sits further before a ring than this share of the leg into it. Without the cap a
+        /// short leg (Regatta: 461-858 u against a 480 u lead) put the approach point BEHIND the ring just threaded,
+        /// often inside a fast hull's turning circle, so the AI broke orbit and flew away from the course every ring
+        /// (2026-10-14 Regatta audit, the Manta). 1 = no cap.
+        /// </summary>
+        const float ApproachLeadShareOfLeg = 0.4f;
+
+        /// <summary>The lap (1-based) a pilot on <paramref name="threaded"/> threadings is flying, for the AI report.</summary>
+        int DiagnosticLap(int threaded)
+        {
+            int lead = Mathf.Clamp(LeadInGates, 0, _rings.Count);
+            int lapped = _rings.Count - lead;
+            return threaded < lead || lapped <= 0 ? 1 : 1 + (threaded - lead) / lapped;
+        }
+
         /// <summary>
         /// A mode-specific AI aim point, consulted BEFORE the gate logic. Return false (the
         /// default) to fly at the next gate the ordinary way.
@@ -924,6 +943,7 @@ namespace CosmicShore.Gameplay
                 var captured = p;
                 int lockedIndex = -1;
                 float side = 1f;
+                float approachLead = aiApproachLead;
                 float nextCrystalScan = 0f;
                 Crystal detour = null;
                 // Seeded per seat and per race, so each AI errs differently every race.
@@ -938,17 +958,27 @@ namespace CosmicShore.Gameplay
                     // A mode whose vessel is ATTACHED to geometry aims at the geometry, not the
                     // ring. Asked first, every frame, so the answer can change the instant the
                     // pilot latches on or launches off.
-                    if (TryOverrideAim(captured, out Vector3 overridden)) return overridden;
+                    if (TryOverrideAim(captured, out Vector3 overridden))
+                    {
+                        pilot.ReportObjective(AIPilot.ObjectivePhase.Override, overridden);
+                        return overridden;
+                    }
 
                     int index = captured.RoundStats?.SwitchesThreaded ?? 0;
-                    if (index < 0 || index >= RaceLength) return centre;   // finished: loiter
+                    if (index < 0 || index >= RaceLength)
+                    {
+                        pilot.ReportObjective(AIPilot.ObjectivePhase.Finished, centre);
+                        return centre;   // finished: loiter
+                    }
 
                     // RingIndexFor, not the raw index: on a lapped circuit an AI reading
                     // _course[index] straight would run off the end of the list after one lap
                     // and loiter for the rest of the race. lockedIndex stays RAW on purpose -
                     // arriving at the same ring on the next lap IS a new leg.
-                    var gate = _course[RingIndexFor(index)];
+                    int ringNo = RingIndexFor(index);
+                    var gate = _course[ringNo];
                     Vector3 self = selfTf.position;
+                    int lap = DiagnosticLap(index);
 
                     // What this pilot BELIEVES about its ring (GateRaceHandicap): nothing yet (it flies
                     // straight on), or the mouth off to one side (it flies there and turns back).
@@ -956,15 +986,24 @@ namespace CosmicShore.Gameplay
                     if (handicap != null)
                     {
                         var belief = handicap.Believe(index, gate.Position, gate.Axis, gate.Radius, self, selfTf.forward, Time.time);
-                        if (belief.Unnoticed) return self + selfTf.forward * 200f;
+                        if (belief.Unnoticed)
+                        {
+                            pilot.ReportObjective(AIPilot.ObjectivePhase.NotNoticed, gate.Position, ringNo, lap);
+                            return self + selfTf.forward * 200f;
+                        }
                         ringAt = belief.Point;
                     }
+                    bool misjudged = ringAt != gate.Position;
 
                     if (index != lockedIndex)
                     {
                         lockedIndex = index;
                         side = Vector3.Dot(self - gate.Position, gate.Axis) >= 0f ? 1f : -1f;
                         detour = null;   // a new leg is a new line; re-decide what is on the way
+                        // The leg into this ring: from the ring before it, or from where the pilot is for the first.
+                        Vector3 legFrom = index > 0 ? _course[RingIndexFor(index - 1)].Position : self;
+                        approachLead = Mathf.Min(aiApproachLead,
+                            ApproachLeadShareOfLeg * Vector3.Distance(legFrom, gate.Position));
                     }
 
                     // A crystal ON THE WAY, if there is one. Installing an external target
@@ -987,15 +1026,30 @@ namespace CosmicShore.Gameplay
                             Vector3 c = detour.transform.position;
                             if (Vector3.Distance(self, c) + Vector3.Distance(c, gate.Position)
                                 <= Vector3.Distance(self, gate.Position) + aiCrystalDetourSlack)
+                            {
+                                pilot.ReportObjective(AIPilot.ObjectivePhase.CrystalDetour, c, ringNo, lap);
                                 return c;
+                            }
                             detour = null;
                         }
                     }
 
-                    return (ringAt - self).sqrMagnitude > aiCommitDistance * aiCommitDistance
-                        ? ringAt + gate.Axis * (side * aiApproachLead)
+                    bool approaching = (ringAt - self).sqrMagnitude > aiCommitDistance * aiCommitDistance;
+                    pilot.ReportObjective(
+                        misjudged ? AIPilot.ObjectivePhase.Misjudged
+                        : approaching ? AIPilot.ObjectivePhase.Approach : AIPilot.ObjectivePhase.Through,
+                        gate.Position, ringNo, lap);
+                    return approaching
+                        ? ringAt + gate.Axis * (side * approachLead)
                         : ringAt - gate.Axis * (side * aiThroughDistance);
                 });
+
+                // A race flies flat out, and a drifting hull (the Dolphin's charge) points its nose where it is
+                // going rather than at the cell centre, so a discharge fires down the line to the ring
+                // (2026-10-14 Regatta audit: it fired wide of the ring).
+                pilot.SetThrottleFloor(AIThrottleFloor);
+                var aiPilot = pilot;
+                pilot.SetDriftLookTargetProvider(() => aiPilot && aiPilot.Objective.Has ? aiPilot.TargetPosition : (Vector3?)null);
             }
         }
 
