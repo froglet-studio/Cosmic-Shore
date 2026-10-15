@@ -38,7 +38,7 @@ namespace CosmicShore.Tests
         /// transformer sets <c>IsSingleStickControls</c>; this list is the roster that must
         /// stay true, so adding a hull here without giving it such a transformer fails.</summary>
         static readonly string[] OneThumbVessels =
-            { "Sparrow", "Serpent", "Grizzly", "Termite", "Falcon", "Shrike", "Scarab" };
+            { "Sparrow", "Serpent", "Grizzly", "Termite", "Falcon", "Shrike", "Scarab", "BrittleStar" };
 
         // Unity fileIDs are SIGNED - a negative anchor is ordinary, and a `&(\d+)` regex
         // silently skips those documents (which is how a first pass of this census lost the
@@ -94,6 +94,7 @@ namespace CosmicShore.Tests
                 [GuidOf("ScarabVesselTransformer")] = "ScarabVesselTransformer",
                 [GuidOf("GunVesselTransformer")] = "GunVesselTransformer",
                 [GuidOf("ThresherVesselTransformer")] = "ThresherVesselTransformer",
+                [GuidOf("BrittleStarVesselTransformer")] = "BrittleStarVesselTransformer",
             };
 
             foreach (var path in Directory.GetFiles(VesselDir, "*.prefab"))
@@ -117,6 +118,8 @@ namespace CosmicShore.Tests
         {
             string singleStick = GuidOf("SingleStickVesselTransformer");
             string scarab = GuidOf("ScarabVesselTransformer");
+            // A SingleStickVesselTransformer SUBCLASS sets IsSingleStickControls through the base Initialize.
+            string brittleStar = GuidOf("BrittleStarVesselTransformer");
 
             foreach (var vessel in OneThumbVessels)
             {
@@ -124,7 +127,7 @@ namespace CosmicShore.Tests
                 Assert.IsTrue(File.Exists(path), $"{vessel}.prefab is missing.");
 
                 var guids = ComponentScriptGuids(File.ReadAllText(path));
-                Assert.IsTrue(guids.Contains(singleStick) || guids.Contains(scarab),
+                Assert.IsTrue(guids.Contains(singleStick) || guids.Contains(scarab) || guids.Contains(brittleStar),
                     $"{vessel} is listed as a one-thumb hull but carries neither " +
                     "SingleStickVesselTransformer nor ScarabVesselTransformer, so it never sets " +
                     "IsSingleStickControls and SingleStickMouseInputStrategy will refuse it " +
@@ -140,6 +143,8 @@ namespace CosmicShore.Tests
             // having decided that, and its dual-WASD keys would stop steering.
             string singleStick = GuidOf("SingleStickVesselTransformer");
             string scarab = GuidOf("ScarabVesselTransformer");
+            // A SingleStickVesselTransformer SUBCLASS sets IsSingleStickControls through the base Initialize.
+            string brittleStar = GuidOf("BrittleStarVesselTransformer");
 
             foreach (var path in Directory.GetFiles(VesselDir, "*.prefab"))
             {
@@ -147,7 +152,7 @@ namespace CosmicShore.Tests
                 if (OneThumbVessels.Contains(vessel)) continue;
 
                 var guids = ComponentScriptGuids(File.ReadAllText(path));
-                Assert.IsFalse(guids.Contains(singleStick) || guids.Contains(scarab),
+                Assert.IsFalse(guids.Contains(singleStick) || guids.Contains(scarab) || guids.Contains(brittleStar),
                     $"{vessel} carries a single-stick transformer but is not on the one-thumb " +
                     "roster. Either add it to OneThumbVessels (and to " +
                     "ONE_THUMB_MOUSE_CONTROLS.md's table) or give it the transformer it wants.");

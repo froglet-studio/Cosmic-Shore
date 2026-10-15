@@ -1035,6 +1035,19 @@ shipped a change that changed nothing. Two rules:
 And then §4.ab applies: a stronger shove is a faster vessel, so any mode cut against that
 vessel's curve has to be re-cut (Grizzly Time went 14 gates on 560 u -> 8 on 800 u).
 
+### 4.ab3 "Slower rounds, the same range" multiplies the rounds in the air — size the pool from rate × flight time
+
+Range is `speed × 2T/π` (rule 34: the WHOLE velocity eases to rest, inherited part included), so a gun slowed to a tenth
+of its speed keeps its range only with ten times the flight time — and every gun's rounds-alive is `rate × T`. The
+Brittle Star's arms (2026-10-15: 1350 → 135 u/s, `projectileTime` 0.3 → 3 s) went from ~135 to **1,350–2,160 rounds alive
+per hull**. Unity's `ObjectPool` does not block when empty: a miss instantiates synchronously and a return beyond
+`maxSize` destroys the round, so an undersized pool turns into hundreds of instantiate/destroy calls a second rather
+than an error. When a speed or flight time moves: recompute `rate × muzzles × T × (the Space range multiplier at 10)`,
+size the turret's pool (`defaultCapacity` / `bufferSizeTarget` / `maxSize`, and its refill rates) from it, say the cost in
+the vessel doc with the cheap knob (the fire rate) beside it, and check two side effects: a hull flying faster than its
+own rounds outruns them within T (own-domain hulls are immune, `Projectile.DisallowImpactOnVessel`), and an in-flight
+growth factor (`Gun.FireGun`'s `flightGrowthFactor`, the Sparrow's look) grows the HIT radius too.
+
 ### 4.ac A per-VIEWER rule on something an ability places must fail OPEN — and must know its owner
 
 Some placed objects look different to different pilots: the Butterfly's fold wormhole first
