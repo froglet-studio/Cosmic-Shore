@@ -1541,3 +1541,37 @@ bleeding-edge merge (`17cd51731`), and bleeding-edge's fix (`646fe7f6c`) is now 
 Tests: `KitMotionTests` (four sightline cases, two Breathe owner cases). **Not measured in Unity.**
 There is no editor in the session, and Amoebius cannot model uGUI's native re-batch, so the
 before/after capture is owed to the next editor run.
+
+## 25. The boot world loads before the menu is revealed (2026-10-15)
+
+The owner: *"Toy loading UI should not be there, it can be something subtle. I don't want the user
+to join and see another screen growing Garland - load it first."*
+
+**Before:** Menu_Main appeared. A second or more later (once `OnInitializeGame` and the local
+player had arrived) `Cell` started building Garland, the world the menu boots into (4,259 prisms),
+and `EnvironmentLoadVeil` rose over the menu: a full-screen panel with "GROWING GARLAND..." and
+"BUILDING ARENA 45% (1,912 / 4,259) - 3s". Then the menu came back. That is two reveals with a
+loading screen in between, on every boot and every return from a match.
+
+**Now:** one fade into a finished world.
+- **`Cell.CoverBootWorld`** (from `Start`) raises `EnvironmentLoadVeil.Cover` on the scene's first
+  frame when the cell's expected config is the authored boot world (`CellConfigDataSO.BootDefault`).
+  It is keyed to that data bit, not to a scene name. No game scene carries a BootDefault config, so
+  their connecting screens are untouched.
+- **The cover continues the scene transition.** It is opaque and black from its first frame, like
+  `SceneTransitionManager`'s fade, so the player never sees the menu before the world.
+- **The build is unchanged.** It still waits for the scene to settle. When it starts,
+  `EnvironmentLoadVeil.Hold` claims the cover and engages the load gate at the 80 ms slice, as before.
+- **A cover nothing claims** (a config with nothing to build) lets go after 20 s.
+- **On release, the menu arrives.** `EnvironmentLoadVeil.Released` makes `ScreenSwitcher` replay
+  the current screen's entrances, so Home rises in with the world rather than having settled out
+  of sight.
+- **The readout is subtle.** "LOADING" in small Chakra Petch at 60% Neutral Lightest, over a
+  180 x 2 bar in Control Active, at the bottom of the screen. Before the build starts, a short
+  segment drifts (`BarSpan`, honest about not knowing yet). While laying, it fills to the lay
+  progress; while settling, it holds full. There is no headline and no prism count.
+- **The same readout serves the other veils:** a Cell Selector swap, an Arkway run and the
+  microscene conveyor (the Toy Box's toy loads).
+
+Tests: `EnvironmentLoadVeilTests` (three bar phases). The visual change is small enough that it
+was built without a board, against the owner's own description.

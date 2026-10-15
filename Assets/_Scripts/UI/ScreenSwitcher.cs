@@ -565,11 +565,20 @@ namespace CosmicShore.UI
         private void OnEnable()
         {
             TrySubscribeFreestyleEvents();
+            EnvironmentLoadVeil.Released += PlayCurrentScreenEntrances;
         }
+
+        /// <summary>
+        /// The boot world's veil has started revealing the menu: the screen the player is on plays
+        /// its entrances now, so the menu ARRIVES with the world instead of having settled behind
+        /// the cover where nobody saw it (Docs/MENU_REDESIGN_B.md section 25).
+        /// </summary>
+        private void PlayCurrentScreenEntrances() => KitEntrance.ReplayUnder(GetScreenRootRT(currentScreen));
 
         private void OnDisable()
         {
             UnsubscribeFreestyleEvents();
+            EnvironmentLoadVeil.Released -= PlayCurrentScreenEntrances;
 
             // Scene-unload safety: the UI module's actions live on a shared asset instance
             // that outlives this scene — never leave Submit/Cancel/Move disabled for the

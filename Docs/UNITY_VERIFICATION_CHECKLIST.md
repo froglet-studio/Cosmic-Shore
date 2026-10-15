@@ -65,6 +65,28 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Menu_Main: the boot world loads before the menu is revealed; subtle loading readout (`claude/new-session-76hnyc`, 2026-10-15) — NOT EDITOR-VERIFIED
+
+Section 25 of `Docs/MENU_REDESIGN_B.md`. Affects Garrett's ecology area: one call from
+`Cell.Start` (`CoverBootWorld`). There is no editor in the session, so `/verify-unity` is still
+owed. Offline: the player and editor reference compiles are clean apart from the known package
+errors, and `EnvironmentLoadVeilTests` is new.
+
+**Verify in editor:**
+1. Play from Bootstrap. After sign-in, the screen stays black with a small "LOADING" and a thin bar
+   at the bottom. The menu never shows before Garland is built. Then one fade reveals the finished
+   world with Home's blocks rising in.
+2. There is no "GROWING GARLAND" headline and no prism count, anywhere.
+3. Play a match and return to the menu: same single reveal.
+4. Cell Selector: pick another world. The subtle cover holds while it builds, then lets go.
+5. Toy Box: launch the Arkway and a microscene toy. Their load uses the same subtle readout.
+6. A game scene (Skim Race): the connecting screen is unchanged and no black cover sits on top of
+   it.
+7. Timing to note: how long the black cover holds on boot. Its floor is the time the local player
+   takes to spawn plus Garland's build.
+
+---
+
 ### 🔴 Style-B redesign: the ambient layer sleeps while hidden; spectator bar settles (`claude/new-session-76hnyc`, 2026-10-15) — NOT EDITOR-VERIFIED
 
 Section 24 of `Docs/MENU_REDESIGN_B.md`. There is no editor in the session, so `/verify-unity` is
