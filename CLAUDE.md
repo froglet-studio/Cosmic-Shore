@@ -10,6 +10,10 @@ When a task spans multiple files or systems, complete ALL of them in a single pa
 
 This file holds only the rules every session needs. Everything else moved verbatim into topic files under `Docs/claude/`. Each entry lists the section headings the file contains, so a reference like "CLAUDE.md § Anti-Patterns" can be found by grepping this index. To find a passage quoted from the old single-file CLAUDE.md, search both places: `grep -rn '<phrase>' CLAUDE.md Docs/claude/`.
 
+- [`Docs/TEAM.md`](Docs/TEAM.md): **Read before working anywhere.** Who works where (Garrett, Caleb, Shombith, Yash and others, measured from git), the collaboration rules, what doing work twice cost, and the generated map (`Tools/Build/who_works_where.py`).
+  Sections: The people; The rules for every session; What happened without this; The map (generated); Open decisions about our tools
+- [`Docs/TOOLING_DECISIONS.md`](Docs/TOOLING_DECISIONS.md): **OPEN decision**: keep, narrow or stop Amoebius and the Vessel Studio, and which one tool builds Froglet's games. Evidence, options, recommendation, decision record. Feedback log: `Docs/TOOLING_FEEDBACK.md`.
+  Sections: The questions; What we have today; Amoebius: keep, narrow, or stop?; The Vessel Studio: keep, narrow, or remove?; The one tool; Decision record; How we decide
 - [`Docs/claude/ECOSYSTEM_DESIGN_PRINCIPLES.md`](Docs/claude/ECOSYSTEM_DESIGN_PRINCIPLES.md): LOCKED. Read before any ecology, fauna, flora, or HyperSea change.
   Sections: Ecosystem Design Principles (LOCKED — read before any ecology change)
 - [`Docs/claude/ABOUT_PROJECT.md`](Docs/claude/ABOUT_PROJECT.md): Vessel classes, team domains, tech stack.
@@ -53,10 +57,46 @@ This file holds only the rules every session needs. Everything else moved verbat
 - [`Docs/claude/DESIGN_PHILOSOPHY_EMERGENCE.md`](Docs/claude/DESIGN_PHILOSOPHY_EMERGENCE.md): Read before designing any gameplay feature: fundamentals, order of preference, universality.
   Sections: Design Philosophy: Favor Emergent Systems Over Bespoke Solutions; The fundamentals (working list); Process for curating fundamentals; Order of preference; Don't "cheat" emergence without asking; Universality — one HyperSea, one rule set; When in doubt
 
-## Vessel work starts in the Vessel Studio (recommend it, every time)
+## Team: know who works where, and build on each other's work (read before working)
 
-Before changing how any vessel flies, its AI, its difficulty levels, its play styles or its cameras, **recommend the
-Vessel Studio** to the person in one line: the ONE claude.ai artifact
+Cosmic Shore is built by **Garrett, Caleb, Shombith and Yash** (the core four) plus other collaborators. Almost
+all of it goes through Claude sessions, so git rarely says which person drove a change. On 2026-10-13 one merge
+needed about 110 conflict fixes because work had been done twice: the Stoat in two places, enum value 14 taken twice,
+the engine renamed twice, retired tools brought back. **Every session:**
+- **Look before you touch.** Run `git fetch origin`, then `python3 Tools/Build/who_works_where.py query <the paths you
+  will change>` (about 10 s). It shows who has unmerged work in flight there and who landed what.
+- **Say who else works there**, in a line or two. Read their branch, docs and skill, and build on them.
+- **Never replace, retire, rename or re-tune another collaborator's work** unless the person you work with confirms.
+  Name the owner to check with.
+- **Look for what exists before building anything new** (tool, system, skill, studio, lab, doc), and extend it.
+- **Claim shared numbers only after checking `bleeding-edge` AND the in-flight branches**: enum values, `GameModes`
+  ids, learnings ids, Netcode hashes, GUIDs.
+- **Leave a trail**: write "Affects: <person>'s <area>" in the commit or PR whenever you touch someone else's area.
+
+Who is who, the measured map and the full rules: [`Docs/TEAM.md`](Docs/TEAM.md) (identities in `Docs/TEAM.json`). A
+hook (`.claude/hooks/team_context.py`) reminds each session once.
+
+## Tools under evaluation: Amoebius and the Vessel Studio (OPEN DECISION, 2026-10-15)
+
+**Amoebius** (`Port/`) and **the Vessel Studio** (the artifact and its pages) are in a grey area: the team has not
+decided that they help enough to keep. The single tool that should build Cosmic Shore and Froglet's later games is
+also undecided. The evidence, the options and Claude's recommendation are in
+[`Docs/TOOLING_DECISIONS.md`](Docs/TOOLING_DECISIONS.md). The core four decide, and record the decision in §6 there.
+Until then:
+- **Offer the tools; do not require them.** Recommending the Vessel Studio for vessel work is one line, an option.
+- **Do not grow either tool's scope on your own initiative** (new launcher pages, Sync / jobs / studio-server
+  machinery). Build what the person asks for, and mention once that the tool is under evaluation.
+- **Ask the person, now and then.** At the end of a task that used or touched one of these tools, if
+  [`Docs/TOOLING_FEEDBACK.md`](Docs/TOOLING_FEEDBACK.md) has no row for that tool from the last three days, ask ONE
+  short question: "Did <tool> help with this: keep, change or remove? Why, in a line?". Append their answer as a row
+  and commit it with the work. Record only what they said.
+- **The rules below stay in force while the tools exist.** But before writing artifact numbers over Unity values that
+  someone play-tuned in Unity, ask: `who_works_where.py` shows who tuned them.
+
+### Working with the Vessel Studio (while it is kept)
+
+For vessel work (how a vessel flies, its AI, difficulty levels, play styles or cameras), **offer the Vessel Studio**
+to the person in one line: the ONE claude.ai artifact
 (https://claude.ai/artifact/3igBJJbNvJjsfJoBJnAMPa) where the team flies, watches and decides vessels and their AI on
 phone or PC before the game changes. **Load `/vessel-studio`** for it: §1.5 is the universal panel kit every studio is
 built from (the six settings tabs Scene / Game / AI / Play Style Config, Input and Vessel Config; dropdown rules; the

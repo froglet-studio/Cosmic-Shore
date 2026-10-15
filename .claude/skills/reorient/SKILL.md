@@ -31,6 +31,11 @@ so nothing can be lost in the steps below.
 - Upstream-side changes only: `git diff --stat HEAD...origin/bleeding-edge`
   (three-dot).
 
+Then see who else is working where (`Docs/TEAM.md`): `git fetch origin && python3 Tools/Build/who_works_where.py
+query <the paths this session changes>` lists other collaborators' in-flight branches and recent pull requests there.
+Name any overlap in the verdict: build on it or ask its owner. Refresh the team map while you are here:
+`python3 Tools/Build/who_works_where.py map --write` (commit `Docs/TEAM.md` if it changed).
+
 If there are zero new upstream commits, say so, skip to step 4 (§3.5 is fed by the
 upstream diff, so it has nothing to read), and weigh only context health.
 
