@@ -114,7 +114,8 @@ namespace CosmicShore.Gameplay
             if (Mode == PistolUnroll.GobyUp)
             {
                 float L = (b - a).magnitude; if (L <= 0f) L = 1f; Vector3 tan = (b - a) / L;
-                Vector3 up = Norm(Vector3.LerpUnclamped(_u[k], _u[k + 1], t)), rt = Norm(Vector3.LerpUnclamped(_r[k], _r[k + 1], t));
+                float ft = Mathf.Clamp01(t);   // past the end the frame holds
+                Vector3 up = Norm(Vector3.LerpUnclamped(_u[k], _u[k + 1], ft)), rt = Norm(Vector3.LerpUnclamped(_r[k], _r[k + 1], ft));
                 return Vector3.LerpUnclamped(a, b, t) + tan * extra + up * h + rt * d;
             }
             float hx = _hx[k + 1], hz = _hz[k + 1];   // the segment's own heading (as Map uses it)
@@ -174,8 +175,8 @@ namespace CosmicShore.Gameplay
             Vector3 a = _p[bk], b = _p[bk + 1];
             if (goby)
             {
-                Vector3 c = Vector3.LerpUnclamped(a, b, bt), rel = q - c;
-                Vector3 up = Norm(Vector3.LerpUnclamped(_u[bk], _u[bk + 1], bt)), rt = Norm(Vector3.LerpUnclamped(_r[bk], _r[bk + 1], bt));
+                Vector3 c = Vector3.LerpUnclamped(a, b, bt), rel = q - c; float ft = Mathf.Clamp01(bt);   // past the end the frame holds
+                Vector3 up = Norm(Vector3.LerpUnclamped(_u[bk], _u[bk + 1], ft)), rt = Norm(Vector3.LerpUnclamped(_r[bk], _r[bk + 1], ft));
                 r.H = Vector3.Dot(rel, up); r.D = Vector3.Dot(rel, rt);
             }
             else
@@ -281,8 +282,8 @@ namespace CosmicShore.Gameplay
             k = Mathf.Clamp(k, 0, Mathf.Max(0, _p.Count - 2));
             if (Mode == PistolUnroll.GobyUp)
             {
-                T = Norm(_p[k + 1] - _p[k]);
-                U = Norm(Vector3.LerpUnclamped(_u[k], _u[k + 1], t)); R = Norm(Vector3.LerpUnclamped(_r[k], _r[k + 1], t));
+                T = Norm(_p[k + 1] - _p[k]); float ft = Mathf.Clamp01(t);   // past the end the frame holds
+                U = Norm(Vector3.LerpUnclamped(_u[k], _u[k + 1], ft)); R = Norm(Vector3.LerpUnclamped(_r[k], _r[k + 1], ft));
             }
             else { float hx = _hx[k + 1], hz = _hz[k + 1]; T = new Vector3(hx, 0f, hz); U = Vector3.up; R = new Vector3(-hz, 0f, hx); }
         }

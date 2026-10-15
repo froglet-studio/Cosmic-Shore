@@ -188,10 +188,10 @@ namespace CosmicShore.Gameplay
             GobyAbilities(dt, pos, f, u, r);
             StepFlares(dt);
             Expire(_primed); Expire(_hot);
-            if (_t >= _nextSweep) { _nextSweep = _t + 2f; SweepDead(_lastK); Expire(_barSince); }
+            if (_t >= _nextSweep) { _nextSweep = _t + 2f; SweepDead(_lastK); SweepDead(_barSince); }   // _barSince holds start times: never Expire it
         }
 
-        void SweepDead(Dictionary<Prism, int> marks)
+        void SweepDead<T>(Dictionary<Prism, T> marks)
         {
             _expiredK.Clear();
             foreach (var kv in marks) if (!Live(kv.Key)) _expiredK.Add(kv.Key);
@@ -647,7 +647,7 @@ namespace CosmicShore.Gameplay
         {
             if (!_cam || _rb == null) return;
             _cam.enabled = showSideView;
-            if (!showSideView) return;
+            if (!showSideView) { Draw3D(); return; }   // the rings and flares live in the 3D world: drawn with or without the side view
             using (s_viewMarker.Auto())
             {
                 var main = Camera.main;

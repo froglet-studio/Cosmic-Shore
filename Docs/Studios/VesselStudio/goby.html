@@ -509,8 +509,9 @@
     if (rb.mode === 'goby') {
       const ax = rb.px[k], ay = rb.py[k], az = rb.pz[k], bx = rb.px[k + 1], by = rb.py[k + 1], bz = rb.pz[k + 1];
       const L = Math.hypot(bx - ax, by - ay, bz - az) || 1, tx = (bx - ax) / L, ty = (by - ay) / L, tz = (bz - az) / L;
-      const up = vnorm(V(lerp(rb.ux[k], rb.ux[k + 1], t), lerp(rb.uy[k], rb.uy[k + 1], t), lerp(rb.uz[k], rb.uz[k + 1], t)));
-      const rt = vnorm(V(lerp(rb.rx[k], rb.rx[k + 1], t), lerp(rb.ry[k], rb.ry[k + 1], t), lerp(rb.rz[k], rb.rz[k + 1], t)));
+      const ft = clamp(t, 0, 1);   // past the end the frame holds
+      const up = vnorm(V(lerp(rb.ux[k], rb.ux[k + 1], ft), lerp(rb.uy[k], rb.uy[k + 1], ft), lerp(rb.uz[k], rb.uz[k + 1], ft)));
+      const rt = vnorm(V(lerp(rb.rx[k], rb.rx[k + 1], ft), lerp(rb.ry[k], rb.ry[k + 1], ft), lerp(rb.rz[k], rb.rz[k + 1], ft)));
       out.x = lerp(ax, bx, t) + tx * extra + up.x * h + rt.x * d; out.y = lerp(ay, by, t) + ty * extra + up.y * h + rt.y * d; out.z = lerp(az, bz, t) + tz * extra + up.z * h + rt.z * d;
     } else {
       const hx = rb.hx[k + 1], hz = rb.hz[k + 1];   // the segment's own heading (as ribMap uses it)
@@ -545,8 +546,9 @@
     out.x = X0 + (X1 - X0) * t; out.k = k; out.t = t;
     if (goby) {
       const cx = lerp(rb.px[k], rb.px[k + 1], t), cy = lerp(rb.py[k], rb.py[k + 1], t), cz = lerp(rb.pz[k], rb.pz[k + 1], t), rx = q.x - cx, ry = q.y - cy, rz = q.z - cz;
-      const up = vnorm(V(lerp(rb.ux[k], rb.ux[k + 1], t), lerp(rb.uy[k], rb.uy[k + 1], t), lerp(rb.uz[k], rb.uz[k + 1], t)));
-      const rt = vnorm(V(lerp(rb.rx[k], rb.rx[k + 1], t), lerp(rb.ry[k], rb.ry[k + 1], t), lerp(rb.rz[k], rb.rz[k + 1], t)));
+      const ft = clamp(t, 0, 1);   // past the end the frame holds
+      const up = vnorm(V(lerp(rb.ux[k], rb.ux[k + 1], ft), lerp(rb.uy[k], rb.uy[k + 1], ft), lerp(rb.uz[k], rb.uz[k + 1], ft)));
+      const rt = vnorm(V(lerp(rb.rx[k], rb.rx[k + 1], ft), lerp(rb.ry[k], rb.ry[k + 1], ft), lerp(rb.rz[k], rb.rz[k + 1], ft)));
       out.h = rx * up.x + ry * up.y + rz * up.z; out.d = rx * rt.x + ry * rt.y + rz * rt.z;
     } else {
       const cx = lerp(rb.px[k], rb.px[k + 1], t), cz = lerp(rb.pz[k], rb.pz[k + 1], t), hx = rb.hx[k + 1], hz = rb.hz[k + 1];
@@ -563,8 +565,9 @@
     out.x = X0 + (X1 - X0) * t; out.k = k; out.t = t;
     if (goby) {
       const cx = lerp(rb.px[k], rb.px[k + 1], t), cy = lerp(rb.py[k], rb.py[k + 1], t), cz = lerp(rb.pz[k], rb.pz[k + 1], t), rx = q.x - cx, ry = q.y - cy, rz = q.z - cz;
-      const up = vnorm(V(lerp(rb.ux[k], rb.ux[k + 1], t), lerp(rb.uy[k], rb.uy[k + 1], t), lerp(rb.uz[k], rb.uz[k + 1], t)));
-      const rt = vnorm(V(lerp(rb.rx[k], rb.rx[k + 1], t), lerp(rb.ry[k], rb.ry[k + 1], t), lerp(rb.rz[k], rb.rz[k + 1], t)));
+      const ft = clamp(t, 0, 1);   // past the end the frame holds
+      const up = vnorm(V(lerp(rb.ux[k], rb.ux[k + 1], ft), lerp(rb.uy[k], rb.uy[k + 1], ft), lerp(rb.uz[k], rb.uz[k + 1], ft)));
+      const rt = vnorm(V(lerp(rb.rx[k], rb.rx[k + 1], ft), lerp(rb.ry[k], rb.ry[k + 1], ft), lerp(rb.rz[k], rb.rz[k + 1], ft)));
       out.h = rx * up.x + ry * up.y + rz * up.z; out.d = rx * rt.x + ry * rt.y + rz * rt.z;
     } else {
       const cx = lerp(rb.px[k], rb.px[k + 1], t), cz = lerp(rb.pz[k], rb.pz[k + 1], t), hx = rb.hx[k + 1], hz = rb.hz[k + 1];
@@ -729,8 +732,9 @@
     k = clamp(k, 0, Math.max(0, rb.n - 2));
     if (rb.mode === 'goby') {
       out.T = vnorm(V(rb.px[k + 1] - rb.px[k], rb.py[k + 1] - rb.py[k], rb.pz[k + 1] - rb.pz[k]));
-      out.U = vnorm(V(lerp(rb.ux[k], rb.ux[k + 1], t), lerp(rb.uy[k], rb.uy[k + 1], t), lerp(rb.uz[k], rb.uz[k + 1], t)));
-      out.R = vnorm(V(lerp(rb.rx[k], rb.rx[k + 1], t), lerp(rb.ry[k], rb.ry[k + 1], t), lerp(rb.rz[k], rb.rz[k + 1], t)));
+      const ft = clamp(t, 0, 1);   // past the end the frame holds
+      out.U = vnorm(V(lerp(rb.ux[k], rb.ux[k + 1], ft), lerp(rb.uy[k], rb.uy[k + 1], ft), lerp(rb.uz[k], rb.uz[k + 1], ft)));
+      out.R = vnorm(V(lerp(rb.rx[k], rb.rx[k + 1], ft), lerp(rb.ry[k], rb.ry[k + 1], ft), lerp(rb.rz[k], rb.rz[k + 1], ft)));
     } else { const hx = rb.hx[k + 1], hz = rb.hz[k + 1]; out.T = V(hx, 0, hz); out.U = V(0, 1, 0); out.R = V(-hz, 0, hx); }
     return out;
   }
