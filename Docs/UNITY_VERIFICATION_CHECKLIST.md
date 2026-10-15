@@ -4342,7 +4342,19 @@ author scripts `--check`/`--self-test`.
   (a flight scheme owns the mouse); Escape and pad Start still release. Re-test: LMB fires the guns
   and the window stays focused; Escape still exits.
 - **Mouse movement still does not steer in the preview** (it does in matches, §7.1 of
-  `Controller/IO/ONE_THUMB_MOUSE_CONTROLS.md`). Cause not yet found; needs the console.
+  `Controller/IO/ONE_THUMB_MOUSE_CONTROLS.md`). Console: `[MouseFlight] mouse 0 px/s` while the
+  mouse circles and both buttons fire; the cursor is hidden (the lock takes). Pressing the Windows
+  key once brings mouse steering back. A cursor relock pulse did not help and was reverted.
+
+**Second fix (2026-10-15, not Editor-verified).** Cause: `Win32RawInputMultiMouseProvider`
+registered mouse raw input to its own hidden window. Windows allows one registration per process,
+so that took WM_INPUT, and with it `Mouse.current.delta`, away from Unity. Buttons arrive as legacy
+messages, so they kept working. Every InputController built one, so the sparring partner spawning
+mid-flight killed mouse steering. The focus round-trip made Unity register again. The provider is
+now opt-in (`MouseFlightConfig` ▸ Dual mouse (Windows), default off) and local-pilot only.
+Re-test: tap into the window and circle the mouse WITHOUT touching the Windows key. The ship turns
+and the console reads `px/s` above 0. Dual-mouse (two physical mice) on Windows now needs that box
+ticked, and with it ticked one-thumb mouse flight is expected to read zero again.
 
 **Originally not settled.** Whether MOUSE MOVEMENT turns the ship in the preview. If it does not, the console
 carries an unconditional `[MouseFlight]` warning naming which link is dead.

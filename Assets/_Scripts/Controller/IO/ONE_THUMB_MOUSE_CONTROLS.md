@@ -412,6 +412,14 @@ Two warn-once diagnostics close that, in the shape `PrismOcclusionDiagnostics` a
   `Mouse.current.delta` reading exactly zero for four seconds, which is what a project set to
   *Process Events In Fixed Update* would produce. A player who is flying necessarily moves the
   mouse, so silence that long is the device not reaching us rather than them sitting still.
+  A second cause of the same reading, found in the microgame preview: the Windows raw-input
+  reader behind dual-mouse (`Win32RawInputMultiMouseProvider`) registers mouse raw input to its
+  own hidden window. Windows keeps one registration per device class per PROCESS, so Unity stops
+  receiving WM_INPUT and `delta` reads zero while the buttons (legacy messages) still fire. Every
+  InputController built that reader, so a sparring partner spawning mid-flight was enough; a focus
+  round-trip (the Windows key) masked it by making Unity register again. The reader is now opt-in
+  (`MouseFlightConfig` ▸ *Dual mouse (Windows)*, default off) and never built for an AI or remote
+  player. Ticking it brings the conflict back by design.
 
 *General shape: when a system's failure mode is that another system quietly covers for it, the
 system has to say so itself — nobody downstream can tell the difference.*
