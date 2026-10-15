@@ -287,3 +287,10 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Who can take it:** Garrett (ecology / flora owner)
 - **Added:** 2026-10-15 by the performance session (perf/performance-optimization) (`perf/performance-optimization`)
 - **See:** Docs/PERFORMANCE_OPTIMIZATION.md 1.2 and 3.3 (L1); Docs/Reports/PERFORMANCE.md, Waiting on Garrett
+
+### T-20261015-6009 · open · test · Regatta AI
+- **Task:** Teach the Regatta Squirrel AI from your flying: Third Eye > Record on, fly Regatta as the Squirrel by hand 5 times to the finish, stop Play and Send to Claude; then ask a session to run learn_from_flights.py --write and test the AI
+- **Done when:** LEARNED_FROM_FLIGHTS.md lists your races and the Squirrel AI flies the learned line without striking its rail
+- **Who can take it:** Yash
+- **Added:** 2026-10-15 by Claude for Yash (`Ys-bleeding-edge`)
+- **See:** Docs/SKIM_RACE_AI.md §16

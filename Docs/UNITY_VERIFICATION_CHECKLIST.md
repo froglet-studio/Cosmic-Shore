@@ -9390,3 +9390,19 @@ counts, same effects fire), the logging and conditional-compilation gates.
 2. Temporarily make one effect SO throw (or use an unwired slot): expect ONE red console line naming the effect and
    the impactor, and the rest of that contact's effects still running - the same as before.
 
+
+## 🔴 Human flight recorder + learn_from_flights (2026-10-15, `Ys-bleeding-edge`) - NOT EDITOR-VERIFIED
+
+Checked offline only: unity_refcompile player, player-dev and editor configurations; gates; `learn_from_flights.py --self-test`.
+
+1. In the Third Eye, turn **Record** on. Fly Regatta as the Squirrel by hand to the finish. While racing, the button
+   reads "● Rec". **Pass:** after the race a `flight_Regatta_Squirrel_*.json` is in
+   `Documents/CosmicShore Diagnostics/Flights/`, and HUD console `flightrec` names it.
+2. Hand the hull to the AI for part of a race (You / AI). **Pass:** the file holds fewer samples, with none taken while
+   the AI flew.
+3. Stop Play, then press **Send to Claude**. **Pass:** the flight appears under `BugLedger/shared/reports/<you>/flights/`
+   on your bugledger branch.
+5. Stop Play in the MIDDLE of a recorded race. **Pass:** a flight is still written (`"ended":"play stopped"`, unfinished),
+   and Unity asks "Send to Claude?" with "You recorded a new flight" even when there was no new error.
+4. In a session, run `python3 Tools/Build/learn_from_flights.py`. **Pass:** it lists your races and proposes numbers.
+   With `--write`, `SkimRaceAIConfig_Regatta.asset` changes, and the Squirrel AI flies the learned line.

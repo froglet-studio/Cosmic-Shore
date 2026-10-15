@@ -1813,3 +1813,42 @@ Race was calibrated on.
    recorded there. Never tune `SkimRaceAIConfig.asset` for Regatta: Skim Race I3 flies it.
 
 **Not verified in Unity yet** (no editor in the session that wrote it): `Docs/UNITY_VERIFICATION_CHECKLIST.md`.
+
+## 16. Learning from human flights (Regatta, 2026-10-15)
+
+Yash asked for this: play Regatta a few times as the Squirrel, then the AI learns from those races. It is built in
+two parts (`Docs/AI_SYSTEM/AI_TRAINING_PLAN.md` L3, steps 1 and 4A):
+
+1. **The recorder** (`HumanFlightRecorder`, editor and development builds only, off until switched on). Turn it on
+   with the Third Eye's **Record** toggle or the HUD console's `flightrec on`; the setting is remembered on that
+   machine. During every Regatta race flown BY HAND it samples ten times a second:
+   - position, heading, speed and boost;
+   - the four stick axes and the throttle;
+   - rings threaded;
+   - the flight measured against the pilot's own rail, with this pilot's course model: progress along it, height
+     above it, sideways offset, and the gap to its contact shell.
+
+   Seconds the AI holds the hull (the You / AI toggle) are skipped. At the end of the race it writes one
+   `flight_Regatta_<hull>_<time>.json` (schema `cosmic-shore.flight/1`, about 150-300 KB) to
+   `<Documents>/CosmicShore Diagnostics/Flights/`. **Send to Claude** carries it to
+   `BugLedger/shared/reports/<user>/flights/` on the player's `bugledger/<user>` branch.
+2. **The learner** (`python3 Tools/Build/learn_from_flights.py`) reads every flight on every origin branch, or
+   `--dir <folder>`. It learns from the fastest three finished races, or every race when fewer than three finished:
+
+   | Measured from your flying | Sets |
+   |---|---|
+   | median height above your rail while skimming, minus the course's skim lift | `SkimHeight` |
+   | your closest 10% of skimming gaps x 0.6, **never below the current margins** | `TrackGuardMargin`, `MassGuardMargin` |
+   | the look-ahead your heading points at on your skim line (time, and the shortest distances) | `LookaheadSeconds`, `LookaheadMin` |
+   | stick deflection per degree off that aim | `StickGainPerDegree` |
+   | turns per second, mean stick, speed, boost, contact share | the report only |
+
+   Every number is clamped to a band (`BANDS`). `--write` puts the numbers in the `learn_from_flights` block of
+   `author_skimrace_ai_config.py` as overrides on the Regatta policy only, bumps its `PolicyVersion`, regenerates
+   `SkimRaceAIConfig_Regatta.asset`, and writes `Docs/AI_SYSTEM/LEARNED_FROM_FLIGHTS.md` (per race: time, rings,
+   skimming share, contact share, height, gap, look-ahead, turns; per setting: was, learned, why). `--self-test`
+   holds the maths on synthetic flights.
+
+**What it is not, yet:** behaviour cloning, meaning a network that copies the sticks (AI_TRAINING_PLAN L3 step B),
+and players' flights (that needs the consent step). It learns the AI's existing, readable numbers from your line, so
+a bad recording is easy to see and to undo (`git revert`, or an empty block).
