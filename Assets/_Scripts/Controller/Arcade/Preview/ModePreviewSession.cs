@@ -130,6 +130,10 @@ namespace CosmicShore.Gameplay
         /// device-tier trail policy (MenuCrystalClickHandler): a preview shows a mode as it plays,
         /// trail included, so the menu's trail hold stands down for it.</summary>
         public static bool AnyActive => s_session && s_session.IsActive;
+
+        /// <summary>The scene's preview session (null before its Start). Lets a per-frame reader - the first-login
+        /// guide's step finder - skip a scene-wide FindObjectsByType.</summary>
+        public static ModePreviewSession Current => s_session;
         static ModePreviewSession s_session;
 
         // Enter Play Mode runs without a domain reload: last session's object must not answer.

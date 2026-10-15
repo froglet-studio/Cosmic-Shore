@@ -238,3 +238,17 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Who can take it:** Yash (found it), anyone with the Unity Editor
 - **Added:** 2026-10-15 by Claude for Yash (`Ys-bleeding-edge`)
 - **See:** Docs/SKIM_RACE_AI.md §15; Docs/UNITY_VERIFICATION_CHECKLIST.md (Regatta Squirrel skim)
+
+### T-20261015-7edd · open · test · Performance
+- **Task:** Confirm the lava lamp fps fix in Unity: Release, Third Eye closed, Play Menu_Main, press Capture S2 on the Scene view badge in the first minute, stop, Send to Claude. Then fly close to an omni and a Charge crystal and check their light looks as before.
+- **Done when:** The capture reads well above the 19-30 fps reported on 10-15, and the 2026-10-15 lava-lamp entry in Docs/UNITY_VERIFICATION_CHECKLIST.md passes.
+- **Who can take it:** Yash (reported it), anyone with the Unity Editor
+- **Added:** 2026-10-15 by the performance session (perf/performance-optimization) (`perf/performance-optimization`)
+- **See:** Docs/PERFORMANCE_OPTIMIZATION.md 2 (10-15 lava lamp row); Docs/UNITY_VERIFICATION_CHECKLIST.md
+
+### T-20261015-a5a5 · open · decision · Performance
+- **Task:** The Charge light now sleeps when a crystal is under 24 px in radius on screen (CrystalChargeArcsProfileSO.sleepBelowScreenRadiusPixels; it rebuilt a mesh per crystal per frame and cost more than every other menu script together in the lava lamp). Check the look at the distance it wakes and pick the number; also worth deciding whether the arcs should rebuild at a lower rate mid-distance.
+- **Done when:** Garrett has looked at it in the lava lamp and the field holds his number (generator and asset).
+- **Who can take it:** Garrett (owns the crystals)
+- **Added:** 2026-10-15 by the performance session (perf/performance-optimization) (`perf/performance-optimization`)
+- **See:** Docs/PERFORMANCE_OPTIMIZATION.md 2 (10-15 lava lamp row)

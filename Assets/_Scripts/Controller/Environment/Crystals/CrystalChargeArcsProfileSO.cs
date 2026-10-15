@@ -87,6 +87,16 @@ namespace CosmicShore.Gameplay
         [Tooltip("How fast a bolt's brightness breathes (smooth noise, +-20%).")]
         [SerializeField, Range(0f, 20f)] float flickerSpeed = 4f;
 
+        [Header("Cost")]
+        [Tooltip("A crystal whose radius on screen is under this many pixels sleeps: its bolts and lit plates are not " +
+                 "rebuilt (the clock keeps running, so it wakes mid-beat). The bolts are a few hundredths of the radius " +
+                 "wide, so below this they are under a pixel. The lava lamp sees every crystal at 1-11 px, and rebuilding " +
+                 "them all cost more than every other menu script together (2026-10-15). It wakes at 1.25x this. 0 = never sleep.")]
+        [SerializeField, Range(0f, 200f)] float sleepBelowScreenRadiusPixels = 24f;
+
+        /// <summary>Radius on screen, in pixels, under which a crystal's light sleeps (0 = never).</summary>
+        public float SleepBelowScreenRadiusPixels => sleepBelowScreenRadiusPixels;
+
         public ChargeArcSettings Settings => new()
         {
             Rate = rate, Bolts = boltIntensity, Glow = glowIntensity,

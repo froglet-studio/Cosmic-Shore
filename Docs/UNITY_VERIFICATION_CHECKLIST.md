@@ -9340,3 +9340,21 @@ and the Third Eye has a skim readout. Checked offline only: reference compile, g
    near zero.
 3. Skim Race I2: the Squirrel AI flies exactly as before, and `lift` reads 0.0. **Fail:** slower or more strikes.
 4. Run `RegattaSkimTests` (edit mode). **Pass:** all green.
+
+## 🔴 2026-10-15 — Lava lamp fps regression: Charge arcs sleep when tiny, guide stops searching the scene (unverified: no Unity CLI in the session)
+
+**Files:** `CrystalChargeArcs.cs`, `CrystalChargeArcsProfileSO.cs` + `CrystalChargeArcsProfile.asset` (new field
+`sleepBelowScreenRadiusPixels` = 24) and `Tools/Build/author_omni_crystal_triangles.py`; `QuestGuideToMicrogameNode.cs`;
+`MenuSpotlight.cs`; `ModePreviewSession.cs` (a `Current` accessor). Measured in Amoebius (`Docs/PERFORMANCE_OPTIMIZATION.md`
+§2, 10-15 row): Menu_Main freestyle 8.5 -> 3.45 ms/frame. What ran instead of `/verify-unity`: `unity_refcompile --config
+player-dev` (OK), ported EditMode tests, `author_omni_crystal_triangles.py --check`, logging and conditional-compilation gates.
+
+1. Code Optimization = Release, Third Eye window closed. Play Menu_Main into the lava lamp. Expect fps back near what it
+   was before 10-13 (Yash: 100+). Press **Capture S2** on the Scene view badge in the first minute and send it.
+2. Fly up to an omni crystal and a Charge crystal until each fills a good part of the screen. Expect the flux arcs and the
+   seam walk exactly as before, starting within a beat as you close in, with no flicker as you hover at the edge distance.
+3. Fly away again. Expect the light to go dark (unlit faces) when the crystal is a small dot, never frozen mid-bolt, and a
+   Mass column the arc passed through not left lit.
+4. Fresh profile (first login): the spotlight still finds the Arcade button, then the card, then the preview, and still lets
+   Settings through. Settings opened mid-guide is still pressable within a second.
+

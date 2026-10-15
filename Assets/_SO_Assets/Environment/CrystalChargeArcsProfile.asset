@@ -35,3 +35,4 @@ MonoBehaviour:
   coreWidth: 0.012
   writheSpeed: 3
   flickerSpeed: 4
+  sleepBelowScreenRadiusPixels: 24
