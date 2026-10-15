@@ -248,13 +248,17 @@ def cmd_serve(args):
     return 0
 
 
+_USER_AGENT = "Mozilla/5.0 (publish_toybox.py check)"
+
+
 def _head(url, origin):
     """Status and lower-cased headers of a request the way a browser on `origin` makes it."""
-    req = urllib.request.Request(url, method="GET", headers={
+    # HEAD, not a ranged GET: R2 leaves Content-Encoding off a 206 partial response, so a ranged
+    # probe reports a missing encoding that a browser's full download does carry.
+    req = urllib.request.Request(url, method="HEAD", headers={
         "Origin": origin,
         "Accept-Encoding": "gzip, deflate, br",
-        "Range": "bytes=0-0",   # the headers are the question, not the bytes
-        "User-Agent": "Mozilla/5.0 (publish_toybox.py check)",
+        "User-Agent": _USER_AGENT,
     })
     try:
         with urllib.request.urlopen(req, timeout=30) as r:
@@ -273,7 +277,9 @@ def cmd_check(args):
             problems.append(what)
 
     print(f"{root}/latest.json")
-    req = urllib.request.Request(f"{root}/latest.json", headers={"Origin": args.origin, "Cache-Control": "no-cache"})
+    # Cloudflare refuses Python's default User-Agent (HTTP 403), so every request here names itself.
+    req = urllib.request.Request(f"{root}/latest.json", headers={
+        "Origin": args.origin, "Cache-Control": "no-cache", "User-Agent": _USER_AGENT})
     try:
         with urllib.request.urlopen(req, timeout=30) as r:
             manifest = json.loads(r.read().decode())
