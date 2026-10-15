@@ -75,7 +75,7 @@ namespace CosmicShore.Engine
                     if (f.IsStatic || f.IsInitOnly || f.IsLiteral) continue;
                     if (f.IsDefined(typeof(NonSerializedAttribute), false)) continue;
                     if (f.GetCustomAttributes(false) is var attrs && Array.Exists(attrs, a => a.GetType().Name == "SerializeReferenceAttribute")) continue;
-                    bool serialized = f.IsPublic || Array.Exists(f.GetCustomAttributes(false), a => a.GetType().Name == "SerializeFieldAttribute");
+                    bool serialized = f.IsPublic || Array.Exists(f.GetCustomAttributes(false), a => a.GetType().Name == "SerializeField");
                     if (!serialized) continue;
                     var ft = f.FieldType;
                     if (ft == typeof(string) || ft.IsArray

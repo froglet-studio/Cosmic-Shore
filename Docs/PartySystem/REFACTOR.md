@@ -53,11 +53,14 @@ breakdown (C1-C8) lives in the project root `PLAN.md` plan file under
 retry policy is encoded inline in `CreateAsync` and `JoinByIdAsync`.
 Hard to test, hard to extend to other operations.
 
-**Outline.** Extract `SessionRetryPolicy` as a small testable strategy
-object. Make every method that does a UGS call accept the policy as a
-constructor dependency. The three classifiers
-(`IsHostConflictException`, `IsRateLimitException`,
-`IsTransientSessionException`) become methods on the policy.
+**Landed 2026-10-07 as `UgsRequestPolicy`** (`Assets/_Scripts/Utility/`), one
+step wider than this row planned: the strategy object serves
+`PresenceLobbyService`, `LobbyPropertyWriter` and `MultiplayerSetup` as well,
+because the measurement found the same three retry loops copied there (with
+fixed 2000 ms delays and a classifier that matched the bare word "host").
+Constructor-injected everywhere (AppManager); the three classifiers became
+`UgsRequestPolicy.Classify`; tests in `Tests/Editor/UgsRequestPolicyTests.cs`
+run headlessly against the compiled assemblies.
 
 **Pre-requisite signal.** Wait for NetDiag data from real MPPM runs to
 tell us how often the existing retries actually fire vs. fail through.
@@ -92,22 +95,36 @@ cleanup. Listed here so they survive the doc reorg.
 
 ### D1. Audit / remove the PENDING-sentinel three-phase acceptance protocol
 
-With eager per-user Relay, invites carry the real session ID directly, so the
-PENDING handshake may be dead code. The protocol spans
-`InviteService.PENDING_SESSION_ID`, `AcceptanceSignalService.PublishSignalAsync` /
-`WaitForRealSessionIdAsync` / `RepublishWithRealIdAsync`, and
-`LobbyRefreshScheduler`'s PENDING-republish boost window. **Action:** confirm no
-live path writes PENDING, then remove the protocol across `InviteService`,
-`AcceptanceSignalService`, `LobbyRefreshScheduler`, and their interfaces. Spans
-5+ files. (Touches presence-side refresh — coordinate with
-`../PresenceSystem/REFACTOR.md`.)
+**Closed 2026-10-07.** Measured first: nothing wrote `PENDING_SESSION_ID` (every
+`AddOrRefresh` passed the real id), the only reader of `accepted_invite` was
+`ScanForSignals`, and the only thing the scan triggered was
+`RepublishWithRealIdAsync`, which early-returned whenever no entry was PENDING —
+i.e. always. So the row was right that it was dead, and wrong about the cost of
+leaving it: every Accept still paid one lobby player-update (of 60/min) plus two
+reads for it, in the ten seconds when four players accepting is exactly what trips
+the UGS rate limit. Removed: `AcceptanceSignalService` (whole class + DI
+registration), the `PublishSignalAsync` call and the acceptance scan in
+`HostConnectionService`, `InviteService.PENDING_SESSION_ID` /
+`UpdatePayloadsWithRealSessionId` (+ `IInviteService`), the `accepted_invite` seed
+in both session services, and the scheduler's PENDING comment. The boost window
+itself stays (it still covers the send → poll → accept → join round-trip) until
+the push-based presence of Phase 2 removes the polling it boosts.
 
 ### D2. Extract `RefreshErrorPolicy` helper
 
-Fold `_rateLimitBackoffUntil`, `_consecutiveRefreshErrors`,
-`MAX_REFRESH_ERRORS_BEFORE_RECONNECT`, and the benign/transient/definite
-classification predicates out of `HostConnectionService` into a single testable
-policy object. This is the same surface the YS2 two-layer guard touches (see
+**Classification half landed 2026-10-07** (Phase 0 of
+`../MultiplayerArchitecture/REVIEW_INVITE_AND_RESILIENCE.md`): the
+benign/rate-limit/definite predicates — and the four other copies of the same
+question in `PartySessionService`, `PresenceLobbyService`, `MultiplayerSetup`
+and `BenignLobbyLogFilter` — are now the one `UgsRequestPolicy.Classify`
+(`Assets/_Scripts/Utility/UgsRequestPolicy.cs`, table pinned in
+`Tests/Editor/UgsRequestPolicyTests.cs`). Measured while doing it: the row above
+was wrong about the surface — there were FIVE copies, not one, and the
+`PartyAcceptFlowPlayModeTests` suite reflected into one of them by name.
+
+**Still open:** fold `_rateLimitBackoffUntil`, `_consecutiveRefreshErrors` and
+`MAX_REFRESH_ERRORS_BEFORE_RECONNECT` out of `HostConnectionService` into a
+testable policy object. This is the same surface the YS2 two-layer guard touches (see
 `BUGS.md` B-series), so do it *with* the cross-class refactor so the refresh loop
 observes one transition gate instead of inferring it from
 `PartyInviteController.IsTransitioning`.
@@ -134,6 +151,19 @@ transitions: add `WaitingForProfile` / `JoiningPresenceLobby` states to
 `PartyStateMachine` and delete the `_joining` flag. Lets UI direct-subscribe to
 init progress instead of polling state. (Touches the presence-lobby join step —
 coordinate with `../PresenceSystem/REFACTOR.md`.)
+
+### D6. `Bootstrap.unity` overrides `connectionTimeoutSeconds` on the shared `PartyServices` prefab
+
+Found 2026-10-07 while nesting the transport timeouts (review §5.5): `PartyServices.prefab`
+serializes `PartyInviteController.connectionTimeoutSeconds = 10`, and `Bootstrap.unity`'s
+instance of it carries a `propertyPath: connectionTimeoutSeconds / value: 30` override — so the
+live connect wait is 30 s while the prefab (and now the C# initializer) say 10. CLAUDE.md's
+"a scene override always beats the prefab" shape: a reader of the prefab or the code gets the
+wrong number, and a retune of the prefab changes nothing in the real boot. **Action:** decide
+the one value (10 s already sits outside the new 10 s UTP connect window; 30 s is the more
+forgiving wait for a Relay handshake on a slow link), put it on the prefab or in a config SO,
+and DELETE the scene override — never re-author the same value into the scene. Reader-only
+check: `grep -n -A1 'propertyPath: connectionTimeoutSeconds' Assets/_Scenes/Bootstrap.unity`.
 
 ## Sequencing
 

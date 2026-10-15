@@ -11,13 +11,13 @@
   "summary": {
     "subsystems": {
       "Faithful": 0,
-      "Approximate": 26,
-      "Missing": 6
+      "Approximate": 28,
+      "Missing": 5
     },
     "shaders": {
       "Faithful": 0,
-      "Approximate": 67,
-      "Missing": 14
+      "Approximate": 66,
+      "Missing": 22
     }
   },
   "subsystems": [
@@ -440,23 +440,40 @@
     {
       "id": "netcode-lan",
       "area": "Networking",
-      "name": "Netcode over TCP, LAN parties",
+      "name": "Netcode over TCP, direct or through the relay",
       "status": "Approximate",
       "why": "no parity channel covers it yet",
       "tests": [
         "NetworkingTests",
         "NetWireTests",
-        "MultiplayerSessionTests"
+        "MultiplayerSessionTests",
+        "NetTransportContractTests",
+        "NetDriverTransportTests"
       ],
       "parity": []
     },
     {
       "id": "internet-relay",
       "area": "Networking",
-      "name": "Internet relay and real UGS (gate G2)",
-      "status": "Missing",
-      "why": "not implemented",
-      "tests": [],
+      "name": "START ONLINE: UGS Lobby sessions + UGS Relay match, through NetStack",
+      "status": "Approximate",
+      "why": "no parity channel covers it yet",
+      "tests": [
+        "UgsMultiplayerTests",
+        "NetStackTests"
+      ],
+      "parity": []
+    },
+    {
+      "id": "ugs-steam",
+      "area": "Networking",
+      "name": "Shipping online backend: UGS live in the project (owner's check), or Steam (gate G2)",
+      "status": "Approximate",
+      "why": "no parity channel covers it yet",
+      "tests": [
+        "UgsAuthenticationTests",
+        "UgsMultiplayerTests"
+      ],
       "parity": []
     },
     {
@@ -520,6 +537,13 @@
       "test": ""
     },
     {
+      "path": "Assets/_Graphics/Materials/Graphs/BlackHoleLens.shader",
+      "name": "CosmicShore/BlackHoleLens",
+      "status": "Missing",
+      "why": "hand-written .shader: no translation yet",
+      "test": ""
+    },
+    {
       "path": "Assets/_Graphics/Materials/Graphs/BlockGraph.shadergraph",
       "name": "Shader Graphs/BlockGraph",
       "status": "Approximate",
@@ -546,6 +570,13 @@
       "status": "Approximate",
       "why": "hand translation (Content/Shaders/Hand); frames not yet compared per shader (C2)",
       "test": "HandShaderTests, --check-shaders"
+    },
+    {
+      "path": "Assets/_Graphics/Materials/Graphs/CloakGhost.shader",
+      "name": "CosmicShore/CloakGhost",
+      "status": "Missing",
+      "why": "hand-written .shader: no translation yet",
+      "test": ""
     },
     {
       "path": "Assets/_Graphics/Materials/Graphs/ConicGraph.shadergraph",
@@ -772,6 +803,20 @@
       "test": "ShaderGraphCompilerTests, --check-shaders"
     },
     {
+      "path": "Assets/_Graphics/Materials/Graphs/StoatPathDots.shader",
+      "name": "CosmicShore/StoatPathDots",
+      "status": "Missing",
+      "why": "hand-written .shader: no translation yet",
+      "test": ""
+    },
+    {
+      "path": "Assets/_Graphics/Materials/Graphs/StoatRipple.shader",
+      "name": "CosmicShore/StoatRipple",
+      "status": "Missing",
+      "why": "hand-written .shader: no translation yet",
+      "test": ""
+    },
+    {
       "path": "Assets/_Graphics/Materials/Graphs/SwarmMemberInstanced.shader",
       "name": "CosmicShore/SwarmMemberInstanced",
       "status": "Missing",
@@ -824,7 +869,7 @@
       "path": "Assets/_Graphics/Materials/Graphs/Wormhole.shader",
       "name": "CosmicShore/Wormhole",
       "status": "Approximate",
-      "why": "hand translation (Content/Shaders/Hand); frames not yet compared per shader (C2); approximate nodes: Panorama",
+      "why": "hand translation (Content/Shaders/Hand); frames not yet compared per shader (C2); approximate nodes: Blend [_SrcBlend] [_DstBlend], ZWrite [_ZWrite], Panorama",
       "test": "HandShaderTests, --check-shaders"
     },
     {
@@ -919,6 +964,13 @@
       "test": "ShaderGraphCompilerTests, --check-shaders"
     },
     {
+      "path": "Assets/_Graphics/Materials/Shaders/CrystalChargeArcsShader.shader",
+      "name": "Custom/CrystalChargeArcsShader",
+      "status": "Missing",
+      "why": "hand-written .shader: no translation yet",
+      "test": ""
+    },
+    {
       "path": "Assets/_Graphics/Materials/Shaders/DistortionShader.shader",
       "name": "Custom/TransparentPerlinDistortion",
       "status": "Missing",
@@ -933,18 +985,18 @@
       "test": "engine_parity frames"
     },
     {
-      "path": "Assets/_Graphics/Materials/Shaders/OmniChargeEdgesShader.shader",
-      "name": "Custom/OmniChargeEdgesShader",
-      "status": "Approximate",
-      "why": "hand translation (Content/Shaders/Hand); frames not yet compared per shader (C2); approximate nodes: Fog",
-      "test": "HandShaderTests, --check-shaders"
-    },
-    {
       "path": "Assets/_Graphics/Materials/Shaders/OmniCrystalFresnelShader.shader",
       "name": "Custom/OmniCrystalFresnelShader",
       "status": "Approximate",
       "why": "hand translation (Content/Shaders/Hand); frames not yet compared per shader (C2)",
       "test": "HandShaderTests, --check-shaders"
+    },
+    {
+      "path": "Assets/_Graphics/Materials/Shaders/OmniDepthPrismShader.shader",
+      "name": "Custom/OmniDepthPrismShader",
+      "status": "Missing",
+      "why": "hand-written .shader: no translation yet",
+      "test": ""
     },
     {
       "path": "Assets/_Graphics/Materials/Shaders/OmniShepardFresnelShader.shader",
@@ -977,6 +1029,20 @@
     {
       "path": "Assets/_Graphics/Materials/Shaders/StaticSkyPanorama.shader",
       "name": "CosmicShore/StaticSkyPanorama",
+      "status": "Missing",
+      "why": "hand-written .shader: no translation yet",
+      "test": ""
+    },
+    {
+      "path": "Assets/_Graphics/Materials/Shaders/ThresherBallFresnelShader.shader",
+      "name": "CosmicShore/ThresherBallFresnel",
+      "status": "Missing",
+      "why": "hand-written .shader: no translation yet",
+      "test": ""
+    },
+    {
+      "path": "Assets/_Graphics/Materials/Shaders/ThresherChainFresnelShader.shader",
+      "name": "CosmicShore/ThresherChainFresnel",
       "status": "Missing",
       "why": "hand-written .shader: no translation yet",
       "test": ""

@@ -34,6 +34,14 @@ namespace CosmicShore.Engine.Soap
             OnItemCountChanged?.Invoke();
         }
 
+        /// <summary>Adds the item unless the list already holds it (Soap's TryAdd).</summary>
+        public bool TryAdd(T item)
+        {
+            if (_list.Contains(item)) return false;
+            Add(item);
+            return true;
+        }
+
         public bool Remove(T item)
         {
             if (!_list.Remove(item)) return false;

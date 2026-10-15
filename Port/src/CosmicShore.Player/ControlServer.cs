@@ -240,6 +240,9 @@ namespace CosmicShore.Player
             ["height"] = Screen.height,
             ["frameMs"] = Math.Round(FrameMs?.Invoke() ?? 0, 1),
             ["behaviours"] = CosmicShore.Engine.Object.FindObjectsByType<MonoBehaviour>(FindObjectsSortMode.None).Length,
+            // The current pad's motors (low, high) and how many rumbles it has started: haptics without a controller.
+            ["rumble"] = CosmicShore.Engine.InputSystem.Gamepad.current is { } pad
+                ? $"{pad.MotorSpeeds.low:0.##},{pad.MotorSpeeds.high:0.##} starts {pad.MotorStarts}" : "no pad",
         };
 
         static IEnumerable<Transform> AllTransforms() =>

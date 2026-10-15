@@ -93,7 +93,7 @@ namespace CosmicShore.Editor
         /// </summary>
         public static readonly string[] KnownCorridorExcludedGraphs = { "SuctionGraph" };
 
-        [MenuItem("FrogletTools/Ecology/Prism Animation/Validate Occlusion Corridor")]
+        [MenuItem("FrogletTools/Ecology/Prism Animation/Validate Occlusion Corridor", false, 161)]
         [FrogletTool(FrogletToolCategory.Ecology, Importance = 5,
             Description = "Occlusion-corridor platform law - catches silent holes (a prism that can never fade hides the ship).")]
         public static void Validate()

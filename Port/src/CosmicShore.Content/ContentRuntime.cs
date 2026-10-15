@@ -128,8 +128,8 @@ namespace CosmicShore.Content
 
         void ReadBuildSettings()
         {
-            // The engine's own Scenes In Build (Port/ProjectSettings/PrismaProject.json) wins when authored.
-            var froglet = Prisma.PrismaProjectSettings.Load(Db.ProjectRoot);
+            // The engine's own Scenes In Build (Port/ProjectSettings/AmoebiusProject.json) wins when authored.
+            var froglet = Amoebius.AmoebiusProjectSettings.Load(Db.ProjectRoot);
             if (froglet.Scenes is { Count: > 0 } own)
             {
                 foreach (var s in own) BuildScenes.Add((s.Path, s.Guid, s.Enabled));

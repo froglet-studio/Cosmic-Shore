@@ -669,6 +669,9 @@ namespace CosmicShore.UI
                           or ModalWindows.ARENA_GAME_CONFIGURE)
                 yield break;
 
+            if (WebToybox.IsBuild && !IsModalInWebToybox(modalType))
+                yield break;
+
             foreach (var modal in Modals.Where(modal => modal.ModalType == modalType))
             {
                 modal.ModalWindowIn();
@@ -1097,8 +1100,30 @@ namespace CosmicShore.UI
         private static CommerceSurface? CommerceSurfaceFor(MenuScreens screen)
             => screen == MenuScreens.STORE ? CommerceSurface.StoreScreen : null;
 
+        /// <summary>
+        /// What a closed-off entry says in the browser Toybox (<see cref="WebToybox"/>): it exists,
+        /// and the full game has it. Shared with <see cref="MenuHubButton"/> so every surface says it
+        /// the same way.
+        /// </summary>
+        public const string WebToyboxLockedMessage = "In the full game";
+
+        /// <summary>
+        /// The modals the browser Toybox opens: the toybox itself, its configure panel, Settings and
+        /// Credits. Everything else either needs online services (profile names, leaderboards,
+        /// squads, purchases) or is a mode the toybox does not carry (Arcade, Arena, Mission).
+        /// </summary>
+        public static bool IsModalInWebToybox(ModalWindows modal) =>
+            modal is ModalWindows.NONE
+                  or ModalWindows.TOYBOX
+                  or ModalWindows.TOYBOX_CONFIGURE
+                  or ModalWindows.SETTINGS
+                  or ModalWindows.CREDITS;
+
         private bool IsScreenDisabled(MenuScreens screen)
         {
+            // The browser Toybox is the home screen and its freestyle world, nothing else.
+            if (WebToybox.IsBuild && screen != MenuScreens.HOME) return true;
+
             if (disabledScreens != null && disabledScreens.Contains(screen)) return true;
 
             // A de-scoped commerce screen is skipped for the same reason an authored one is:
@@ -1168,7 +1193,7 @@ namespace CosmicShore.UI
                 var view = MenuAvailabilityView.Ensure(link);
                 if (!view) continue;
 
-                view.SetLockedMessage(disabledScreenMessage);
+                view.SetLockedMessage(WebToybox.IsBuild ? WebToyboxLockedMessage : disabledScreenMessage);
                 view.SetAvailability(MenuAvailability.Locked);
             }
         }
@@ -1398,6 +1423,10 @@ namespace CosmicShore.UI
 
         private void OpenArcadePanel()
         {
+            // The gamepad's A on HOME and the arcade nav both land here; the browser Toybox has no
+            // arcade to open.
+            if (WebToybox.IsBuild) return;
+
             UserActionSystem.Instance.CompleteAction(UserActionType.ViewArcadeMenu);
 
             if (ArcadeModal)
@@ -1416,6 +1445,12 @@ namespace CosmicShore.UI
         public bool OpenModal(ModalWindows modalType)
         {
             if (Modals == null) return false;
+
+            if (WebToybox.IsBuild && !IsModalInWebToybox(modalType))
+            {
+                CSDebug.LogVerbose(CSLogChannel.MenuUI, $"[ScreenSwitcher] '{modalType}' is not in the browser Toybox - not opened.");
+                return false;
+            }
 
             foreach (var modal in Modals)
             {

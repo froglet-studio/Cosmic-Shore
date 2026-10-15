@@ -22,7 +22,7 @@ namespace CosmicShore.Gameplay
     ///
     /// ── The geometry is SOLVED AT EDIT TIME ───────────────────────────────────────────────────
     /// Where the faces land is a property of two assets - the hull mesh in its bind pose and the
-    /// crystal mesh - so <b>FrogletTools > Vessels > Bake Crystal Hull Fusions</b> solves it once
+    /// crystal mesh - so <b>FrogletTools > Vessels > Wiring > Bake Crystal Hull Fusions</b> solves it once
     /// (<see cref="CrystalHullFusionGeometry.Solve"/>) and writes a
     /// <see cref="CrystalHullFusionBakeSO"/> holding the answer and the mesh to draw. With a current
     /// bake a pickup does no geometry at all: it matches faces to patches (a 60×60 assignment),
@@ -33,7 +33,8 @@ namespace CosmicShore.Gameplay
     /// warns once, names the tool, and falls back to running the SAME solve on a worker thread from
     /// arrays captured on the main thread - no <c>UnityEngine.Object</c> off the main thread, and the
     /// main thread polls a volatile flag rather than awaiting it (<c>Docs/THREADING.md</c>). A pickup
-    /// that beats the worker plays the generic capture.
+    /// that beats the worker plays the generic capture. A WebGL player has no worker threads, so there
+    /// the same solve runs inline when it is started (<see cref="GetOrStartJob"/>).
     ///
     /// History, kept because each cut failed in a way the next one is shaped by (doc §0): the first
     /// never ran (the drawn charge mesh is unreadable - <see cref="CrystalEdgeArcMeshBaker.TryGetReadable"/>);
@@ -70,7 +71,7 @@ namespace CosmicShore.Gameplay
         public const int FaceSubdivisions = 3;
 
         /// <summary>The bake tool's menu path, named in every stale/missing-bake warning.</summary>
-        public const string BakeToolMenu = "FrogletTools > Vessels > Bake Crystal Hull Fusions";
+        public const string BakeToolMenu = "FrogletTools > Vessels > Wiring > Bake Crystal Hull Fusions";
 
         static readonly ProfilerMarker s_beginMarker = new("CrystalHullFusion.Begin");
         static readonly ProfilerMarker s_prewarmMarker = new("CrystalHullFusion.Prewarm");
@@ -697,21 +698,30 @@ namespace CosmicShore.Gameplay
             var input = CaptureSolveInput(hull, drawn, entry, out string failure);
             if (input == null) { job.Failure = failure; return job; }
 
-            Task.Run(() =>
-            {
-                try
-                {
-                    var solution = CrystalHullFusionGeometry.Solve(input, out string why);
-                    if (solution == null) { job.Failure = why; return; }
-                    job.Solution = solution;
-                    job.Done = true;
-                }
-                catch (Exception e)
-                {
-                    job.Failure = $"{e.GetType().Name}: {e.Message}";
-                }
-            });
+            // A WebGL player has no worker threads: Task.Run would queue the solve where nothing runs it,
+            // and the pair would play the generic capture forever. It solves inline there instead, as
+            // Swarm, Substrate and the NCA creatures run their sims inline on WebGL. Prewarm calls this at
+            // vessel initialisation, so the one-off cost lands at spawn, not at a pickup - and only for
+            // a pair whose bake is missing or stale, which already warns to re-run the baker.
+            if (Application.platform == RuntimePlatform.WebGLPlayer) Solve(input, job);
+            else Task.Run(() => Solve(input, job));
             return job;
+        }
+
+        /// <summary>The fallback solve, on a worker (or inline on WebGL); touches no <c>UnityEngine.Object</c>.</summary>
+        static void Solve(CrystalHullFusionGeometry.SolveInput input, Job job)
+        {
+            try
+            {
+                var solution = CrystalHullFusionGeometry.Solve(input, out string why);
+                if (solution == null) { job.Failure = why; return; }
+                job.Solution = solution;
+                job.Done = true;
+            }
+            catch (Exception e)
+            {
+                job.Failure = $"{e.GetType().Name}: {e.Message}";
+            }
         }
 
         // ══ A pickup ══════════════════════════════════════════════════════════════════════════

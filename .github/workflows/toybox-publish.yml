@@ -1,0 +1,71 @@
+name: Publish browser Toybox
+
+# Publishes the latest successful Unity Build Automation "WebGL Toybox" build to Cloudflare R2,
+# where www.froglet.games/play loads it. Manual only: a build reaches the public page when someone
+# runs this, never on its own. Docs/WEBGL_TOYBOX.md section 5 has the one-time setup (R2 bucket,
+# play.froglet.games, CORS, the UBA target) and the rollback.
+#
+# Secrets, in the `toybox` environment:
+#   UBA_API_KEY, UBA_ORG_ID, UBA_PROJECT_ID, UBA_TOYBOX_TARGET    Unity Build Automation
+#   R2_ACCOUNT_ID, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY, R2_BUCKET   Cloudflare R2 (object read/write)
+#
+# The heavy lifting is Tools/Build/publish_toybox.py, which also runs by hand against a local build.
+
+on:
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "List every object and its headers, upload nothing"
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: toybox-publish
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    environment: toybox
+    timeout-minutes: 30
+    steps:
+      # Only the script: this is a ~2.7 GB Unity project and nothing else here is needed.
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: Tools/Build/publish_toybox.py
+          sparse-checkout-cone-mode: false
+
+      - name: Install boto3
+        run: python3 -m pip install --quiet "boto3>=1.34,<2"
+
+      - name: Fetch the latest successful WebGL Toybox build
+        env:
+          UBA_API_KEY: ${{ secrets.UBA_API_KEY }}
+          UBA_ORG_ID: ${{ secrets.UBA_ORG_ID }}
+          UBA_PROJECT_ID: ${{ secrets.UBA_PROJECT_ID }}
+          UBA_TOYBOX_TARGET: ${{ secrets.UBA_TOYBOX_TARGET }}
+        run: python3 Tools/Build/publish_toybox.py fetch-uba --out toybox.zip --meta-out uba.json
+
+      - name: Unpack
+        run: |
+          mkdir build
+          unzip -q toybox.zip -d build
+          build_folder=$(find build -type d -name Build -print -quit)
+          if [ -z "$build_folder" ]; then echo "::error::the UBA zip holds no Build/ folder"; exit 1; fi
+          echo "BUILD_DIR=$(dirname "$build_folder")" >> "$GITHUB_ENV"
+          echo "VERSION=$(python3 -c 'import json; print(json.load(open("uba.json"))["build"])')" >> "$GITHUB_ENV"
+
+      - name: Upload to R2 and publish latest.json
+        env:
+          R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
+          R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          R2_BUCKET: ${{ secrets.R2_BUCKET }}
+          DRY_RUN: ${{ inputs.dry_run }}
+        run: |
+          args=(upload --build-dir "$BUILD_DIR" --version "$VERSION")
+          if [ "$DRY_RUN" = "true" ]; then args+=(--dry-run); fi
+          python3 Tools/Build/publish_toybox.py "${args[@]}"

@@ -24,9 +24,19 @@ This file holds only the rules every session needs. Everything else moved verbat
   Sections: Architecture Patterns; ScriptableObject Config Separation; SOAP — Scriptable Object Architecture Pattern (Primary Architecture); Threading & Main-Thread Affinity; Bootstrap & Scene Flow; Authentication & Session Flow; Dependency Injection (Reflex); Input Strategy Pattern
 - [`Docs/claude/IMPACT_EFFECTS_AND_AUDIO.md`](Docs/claude/IMPACT_EFFECTS_AND_AUDIO.md): Impact effects architecture; the LOCKED PvP-is-petals-only rule; the LOCKED FMOD exposed-field convention.
   Sections: Impact Effects Architecture; PvP is petals only (LOCKED, Garrett 2026-10-10); Audio (FMOD) — every sound is an exposed, editable field (LOCKED convention)
-- [`Docs/claude/MULTIPLAYER_AND_SOCIAL.md`](Docs/claude/MULTIPLAYER_AND_SOCIAL.md): Netcode, player spawning, party/invite lobby, friends, AI backfill, SkimRace.
+- [`Docs/MULTIPLAYER_START_HERE.md`](Docs/MULTIPLAYER_START_HERE.md): **Read first for ANY multiplayer work (Unity or Amoebius).** What the owner wants, the standing rules, where everything is, current state, the owner's hand-test list, and the ordered next steps.
+  Sections: What the owner wants; Rules every session keeps; Where everything is; Where things stand; What the owner tests by hand; What comes next, in order; How a session starts here
+- [`Docs/claude/MULTIPLAYER_AND_SOCIAL.md`](Docs/claude/MULTIPLAYER_AND_SOCIAL.md): Netcode, player spawning, party/invite lobby, friends, AI backfill, SkimRace — the party-docs table routes every UGS call to `UgsRequestPolicy` and the invite/resilience review, lists the pinned multiplayer package versions and the protocol-version rule.
   Sections: Multiplayer / Netcode; Party / Invite Lobby System; Friend System; Player Count & AI Backfill Pipeline; SkimRace Game Mode
-- [`Docs/claude/FTUE_DIALOGUE_AI.md`](Docs/claude/FTUE_DIALOGUE_AI.md): The FTUE quest graph, dialogue system, AI opponent system. Holds the LOCKED guided-path rule: to send a player somewhere, spotlight the one control to press next, dim and disable everything else except Settings, and let them press it - never navigate for them.
+- [`Docs/Studios/VESSEL_STUDIO_PLAN.md`](Docs/Studios/VESSEL_STUDIO_PLAN.md): The Vessel Studio — pick a vessel and fly its studio on web, Windows (Amoebius's VESSEL STUDIO page; Unity's FrogletTools > Vessels > Vessel Studio opens the studio home, whose cards open the same pages as the artifact) and phones. Pages in `Docs/Studios/VesselStudio/`; every studio is a reader of the shipped numbers. Read before touching a studio.
+  Sections: What exists; Two kinds of studio; Platforms; The game studio and Amoebius on more platforms; The studio agent; Phases; Branches
+- [`Docs/Studios/VESSEL_STUDIO_VISION.md`](Docs/Studios/VESSEL_STUDIO_VISION.md): **The north star for every studio task**: a Vessel Studio so simple that a non-programmer makes vessels (presets, dice, voice), trains their AI from their own play, makes their mini-games and assigns arena games, with Amoebius as a game engine for non-programmers. The building blocks B1-B9, their order and status (update it in every change that moves a step), and what each step taught.
+  Sections: What "done" looks like; Rules that keep it simple and safe; The building blocks; Status and order; Who does what; What each step taught
+- [`Docs/Studios/VESSEL_TEST_RANGE_PLAN.md`](Docs/Studios/VESSEL_TEST_RANGE_PLAN.md): Plan for testing any vessel and its AI in the REAL game: one dev-only harness in the real mode scenes (AI on any seat, free-fly camera, intensity maps, time scale, Full / Mobile-low / Block look), opened from Unity and Amoebius. The `/vessel-studio` skill builds the web studios and owns the one Vessel Studio artifact.
+  Sections: Three tiers, one catalog; What the game already has; The Test Range harness; Opening it; Phases; Decisions for the user
+- [`Docs/AI_SYSTEM/README.md`](Docs/AI_SYSTEM/README.md): Home for EVERY vessel AI, worked on `Ys-bleeding-edge` (the `ai-system` branch was merged there and retired 2026-10-09) — the branch workflow (bleeding-edge, Ys-bleeding-edge, perf/performance-optimization, claude/peaceful-rubin-hhw49n), the AI roster and layers, the per-AI diagnosis playbook and intake checklist. Run `python3 Tools/Build/ai_branch_sync.py` first in any AI session.
+  Sections: Branch Workflow; Architecture (layers, roster, target); Diagnosis Playbook (tiers, intake, status board); Sync Log
+- [`Docs/claude/FTUE_DIALOGUE_AI.md`](Docs/claude/FTUE_DIALOGUE_AI.md): The FTUE quest graph, dialogue system, AI opponent system — with the table of every AI (platform autopilot + boost policies, the Skim Race pilot and its doc `Docs/SKIM_RACE_AI.md`, the Urchin autopilot), the input-only rule and the AI gates. Holds the LOCKED guided-path rule: to send a player somewhere, spotlight the one control to press next, dim and disable everything else except Settings, and let them press it - never navigate for them. Read before touching any AI.
   Sections: FTUE (First-Time User Experience) — the QUEST GRAPH; Dialogue System; AI Opponent System
 - [`Docs/claude/MENU_AND_LAVA_LAMP.md`](Docs/claude/MENU_AND_LAVA_LAMP.md): Menu_Main screens, ScreenSwitcher, menu freestyle (lava-lamp) HUD.
   Sections: Menu Screen Navigation (Menu_Main Scene); Lava-Lamp Mode (Menu Freestyle Merge)
@@ -36,10 +46,31 @@ This file holds only the rules every session needs. Everything else moved verbat
   Sections: Namespace Convention; Key Systems & Classes; Async Pattern
 - [`Docs/claude/ANTI_PATTERNS.md`](Docs/claude/ANTI_PATTERNS.md): Read before writing or reviewing C#.
   Sections: Anti-Patterns to Avoid
-- [`Docs/claude/SHADERS_AND_PERFORMANCE.md`](Docs/claude/SHADERS_AND_PERFORMANCE.md): HLSL / Shader Graph, performance standards, prism performance.
+- [`Docs/claude/SHADERS_AND_PERFORMANCE.md`](Docs/claude/SHADERS_AND_PERFORMANCE.md): HLSL / Shader Graph, performance standards, prism performance — Performance Standards now routes to the perf record (`Docs/PERFORMANCE_OPTIMIZATION.md` first, `MEMORY_AUDIT.md`, `PLATFORM_UNIFICATION.md`), the in-game instruments (`diag`, `prof`, `freeze`/`ab`, `renderers`), the allocation gates and the editor-vs-build measurement rules. Read before any perf work.
   Sections: Shader & Visual Development; HLSL / Shader Graph; Performance Standards; Prism System Performance
 - [`Docs/claude/DESIGN_PHILOSOPHY_EMERGENCE.md`](Docs/claude/DESIGN_PHILOSOPHY_EMERGENCE.md): Read before designing any gameplay feature: fundamentals, order of preference, universality.
   Sections: Design Philosophy: Favor Emergent Systems Over Bespoke Solutions; The fundamentals (working list); Process for curating fundamentals; Order of preference; Don't "cheat" emergence without asking; Universality — one HyperSea, one rule set; When in doubt
+
+## Vessel work starts in the Vessel Studio (recommend it, every time)
+
+Before changing how any vessel flies, its AI, its difficulty levels, its play styles or its cameras, **recommend the
+Vessel Studio** to the person in one line: the ONE claude.ai artifact
+(https://claude.ai/artifact/3igBJJbNvJjsfJoBJnAMPa) where the team flies, watches and decides vessels and their AI on
+phone or PC before the game changes. **Load `/vessel-studio`** for it: §1.5 is the universal panel kit every studio is
+built from (the six settings tabs Scene / Game / AI / Play Style Config, Input and Vessel Config; dropdown rules; the
+Players list with + / -, domain, difficulty, play style and view; the Easy / Medium / Hard levels; the I1-I4
+intensity ladder; the three cameras). Load `/vessel` for the Unity side. Never publish a second studio artifact.
+**The artifact is the ONE source of truth; Unity is its clone** (the user, 2026-10-10): features and numbers are made
+and decided in the artifact first, then **`/artifact-to-unity`** clones them into the game
+(`Tools/Build/studio_to_unity.py` writes the artifact's values into the vessel's assets, `--check` is the drift gate;
+features are ported line for line with page-golden tests). Never build a Unity tuning window or tabs that re-draw a
+studio's parameters, never rename an artifact parameter on the Unity side, never hand-edit a mapped field.
+**Every Vessel Studio feature lands on all three surfaces in the same change** (the user, 2026-10-14, `/vessel-studio`
+D37): the artifact, Amoebius's VESSEL STUDIO page (and its studio backend), and Unity's studio home; `parity_gate.py`
+fails a native home that misses a hub card. A project hook
+(`.claude/hooks/vessel_studio_nudge.py`, in `.claude/settings.json`) shows the person this notice once per session
+when a prompt is about vessel work. Studio domain colours come from the game's palette (`studio-domains.js`, generated by
+`.claude/skills/vessel-studio/domain_colors.py`), the same values Amoebius renders.
 
 ## Testing
 

@@ -39,7 +39,7 @@ namespace CosmicShore.Editor.Froglet
         string _log = "";
         bool _logIsError;
 
-        [MenuItem("FrogletTools/Game Modes/GameCanvas Unifier", false, 11)]
+        [MenuItem("FrogletTools/Game Modes/GameCanvas Unifier", false, 162)]
         [FrogletTool(FrogletToolCategory.GameModes, Importance = 5,
             Description = "One in-game canvas at 1920x1080: fix the prefab, fix each scene, delete the fork.",
             DocPath = "Docs/GAMECANVAS.md")]

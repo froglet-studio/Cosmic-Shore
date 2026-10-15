@@ -15,6 +15,7 @@ MonoBehaviour:
   desktop: {fileID: 11400000, guid: a0fb73444a944fd798000280c93c606a, type: 2}
   mobileHigh: {fileID: 11400000, guid: b77b1e622d594c3aba0733d51a6a4a79, type: 2}
   mobileLow: {fileID: 11400000, guid: 891487c5d723452ea14a221a8ce4dc30, type: 2}
+  web: {fileID: 11400000, guid: 405d1646319d41b38c2a2c90b295e42c, type: 2}
   iosLowMemoryMB: 2500
   androidHighMinMemoryMB: 5000
   androidHighEndGpuPatterns:

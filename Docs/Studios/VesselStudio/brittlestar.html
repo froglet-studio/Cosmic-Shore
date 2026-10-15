@@ -1,0 +1,1668 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Brittle Star Studio</title>
+<!-- Brittle Star Studio, round 2: models WHAT SHIPS by default (/vessel-studio D2). A page of the Vessel Studio
+     (Docs/Studios/VesselStudio/). The game ships the Brittle Star as VesselClassType.BrittleStar = 16 (branch
+     cece/gallant-lamport-sc3khe; contract Assets/_Scripts/Controller/Vessel/R_VesselActions/BRITTLE_STAR.md). Vessel Config >
+     Flight numbers = "Unity build" (the default) flies its rules and numbers: the SHIPPED block below, read by
+     Tools/Build/studio_to_unity.py. The two older sets (the BrittleStar branch, Falcon.prefab) fly the design document's kit,
+     kept for comparison. Round 1 (the design studio) is described below.
+     What round 1 modelled:
+       - FLIGHT, GUN, TRAIL, CAMERA: the authored numbers of the last Brittle Star built (BrittleStar.prefab on the never-merged
+         branch origin/claude/falcon-brittlestar-reintro-oyx1q1), or Falcon.prefab's (Vessel Config > Flight numbers). Each is
+         named where it is used.
+       - THE KIT: the design document "Class - Brittle Star" (Notion, Design Documents / Class Design Documents): three
+         modes (Speed, Creation, Destruction), the five-turret gun, Ring Detonation, the four element personas and the
+         two minigames (Demolition Derby, Fauna Frenzy). Every number the document does not give is marked lab-only.
+     Everything found about the vessel is in Docs/Studios/BRITTLE_STAR.md. -->
+<style>
+  /* Layout: a cockpit and a race director's desk. The stage owns the screen; the docks hold the settings and the records. */
+  :root {
+    color-scheme: dark;
+    --bg: #0b0d16; --panel: #121524; --panel-2: #181c30; --line: #262b47;
+    --fg: #e9ecff; --muted: #8e95bf;
+    --jade: #13fff2; --ruby: #ff00f9; --gold: #ffa700; --blue: #6680ff;   /* the game's palette; studio-domains.js sets them from it */
+    --charge: #ffd23f; --mass: #ff6a4d; --space: #6aa8ff; --time: #c48bff;
+    --speed: #7fd7ff; --create: #8dffb0; --destroy: #ff6a6a; --ringc: #ffcf8a;
+    --easy: #4be38f; --medium: #ffb454; --hard: #ff5c6c;
+  }
+  [hidden] { display: none !important; }
+  *, *::before, *::after { box-sizing: border-box; }
+  html, body { height: 100%; }
+  body { margin: 0; background: var(--bg); color: var(--fg); -webkit-text-size-adjust: 100%; }
+  img, canvas { max-width: 100%; }
+  a { color: var(--accent); }
+  button, input, select { font: inherit; color: inherit; }
+  button { cursor: pointer; }
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  .wrap { max-width: 1440px; margin: 0 auto; padding-inline: 16px; padding-block: 12px 32px; display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; }
+  header.top { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 16px; }
+  .back { font-size: 13px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); text-decoration: none; }
+  h1 { margin: 0; text-transform: uppercase; }
+  .round { font-size: 12px; color: var(--muted); border: 1px solid var(--line); border-radius: 999px; padding: 4px 8px; }
+  .sub { color: var(--muted); max-width: 78ch; margin: 0; }
+
+  .layout { display: grid; grid-template-columns: minmax(0, 1fr) 360px; gap: 12px; align-items: start; }
+  .layout > section { min-width: 0; }
+  @media (max-width: 1020px) { .layout { grid-template-columns: minmax(0, 1fr); } }
+
+  #viewport { position: relative; border-radius: 10px; overflow: hidden; background: #05060c; border: 1px solid var(--line); aspect-ratio: 16 / 10; max-width: 100%; touch-action: none; user-select: none; -webkit-user-select: none; }
+  #c { display: block; width: 100%; max-width: 100%; height: 100%; outline: none; }
+  .hud { position: absolute; inset: 0; pointer-events: none; font-variant-numeric: tabular-nums; }
+  .hud .tl { position: absolute; left: 12px; top: 10px; display: grid; gap: 2px; text-shadow: 0 1px 2px #000; }
+  .hud .big { font-size: 32px; font-weight: 700; line-height: 1; }
+  .hud .lbl { font-size: 11px; color: var(--muted); letter-spacing: .08em; text-transform: uppercase; }
+  .board { position: absolute; right: 10px; top: 10px; display: grid; gap: 3px; min-width: 220px; background: #0b0d16b3; border: 1px solid var(--line); border-radius: 8px; padding: 6px 8px; font-size: 12px; }
+  .board .hd { display: flex; justify-content: space-between; gap: 10px; color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: .06em; }
+  .board .pl { display: grid; grid-template-columns: 10px minmax(0, 1fr) auto; gap: 6px; align-items: center; }
+  .board .dot { width: 10px; height: 10px; border-radius: 50%; }
+  .board .st { color: var(--muted); font-size: 11px; }
+  .modes { position: absolute; left: 12px; bottom: 12px; display: grid; gap: 6px; width: min(300px, 50%); }
+  .pills { display: flex; gap: 4px; }
+  .pill { flex: 1; text-align: center; font-size: 11px; letter-spacing: .06em; text-transform: uppercase; padding: 4px 2px; border-radius: 5px; border: 1px solid #ffffff22; color: var(--muted); background: #0b0d16b3; }
+  .pill.on { color: #0b0d16; font-weight: 700; }
+  .pill.on.speed { background: var(--speed); border-color: var(--speed); }
+  .pill.on.creation { background: var(--create); border-color: var(--create); }
+  .pill.on.destruction { background: var(--destroy); border-color: var(--destroy); }
+  .pill.ring { flex: 1.3; }
+  .pill.ring.on { background: var(--ringc); border-color: var(--ringc); }
+  .pill.off { opacity: .35; text-decoration: line-through; }
+  .hud .row { display: flex; justify-content: space-between; font-size: 11px; color: var(--muted); text-shadow: 0 1px 2px #000; }
+  .hud .row b { color: var(--fg); font-weight: 500; }
+  .feed { position: absolute; right: 10px; bottom: 10px; display: grid; gap: 4px; justify-items: end; max-width: 46%; }
+  .feed div { font-size: 12px; background: #0b0d16cc; border: 1px solid var(--line); padding: 2px 8px; border-radius: 4px; }
+  .camtag { position: absolute; left: 50%; bottom: 10px; transform: translateX(-50%); font-size: 11px; color: var(--muted); background: #0b0d16b3; border: 1px solid var(--line); border-radius: 999px; padding: 4px 9px; white-space: nowrap; }
+  .alert { position: absolute; left: 50%; top: 14px; transform: translateX(-50%); font-size: 12px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; padding: 4px 10px; border-radius: 6px; background: #ff5c6ccc; color: #1a0306; white-space: nowrap; }
+  .alert.od { background: #ffcf8ae6; color: #1a1200; }
+
+  .overlay { position: absolute; inset: 0; display: grid; place-items: center; background: #05060cb3; padding: 16px; }
+  .overlay .card { max-width: 500px; display: grid; gap: 10px; }
+  .overlay .card h2 { margin: 0; text-transform: uppercase; }
+  .overlay .card p { margin: 0; color: var(--muted); }
+  .keys { font-size: 12px; display: grid; grid-template-columns: auto 1fr; gap: 2px 12px; }
+  .btns { display: flex; flex-wrap: wrap; gap: 8px; }
+  .btn { border: 1px solid var(--line); background: var(--panel-2); border-radius: 6px; padding: 7px 14px; font-weight: 600; }
+  .btn.primary { background: var(--accent); color: #1a1200; border-color: var(--accent); }
+  .btn.small { padding: 4px 10px; font-size: 12px; }
+  .btn[disabled] { opacity: .5; cursor: default; }
+  .stagebtns { position: absolute; left: 12px; bottom: 96px; display: flex; gap: 6px; z-index: 3; }   /* the transport where every studio has it (D29): bottom-left, above the readouts */
+  .stagebtns .btn { padding: 4px 10px; font-size: 12px; background: #121524d9; }
+  body:not(.dev-phone) .phone-only { display: none !important; }   /* each device sees its own interface only (D26) */
+  .transport { display: flex; gap: 2px; }
+  .transport .btn:disabled { opacity: 0.35; cursor: default; }
+  .transport .btn.on { background: var(--accent); color: #1a1200; opacity: 1; }
+  .transport .btn[aria-pressed="true"] { background: #7fd7ff; color: #04131c; }
+
+  aside { display: grid; gap: 10px; min-width: 0; }
+  .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; display: grid; gap: 10px; min-width: 0; }
+  .panel h3 { margin: 0; display: flex; justify-content: space-between; align-items: baseline; gap: 8px; text-transform: uppercase; }
+  .field { display: grid; grid-template-columns: 86px minmax(0, 1fr); gap: 8px; align-items: center; }
+  .field > span { font-size: 12px; color: var(--muted); }
+  .field select { width: 100%; min-width: 0; }
+  .note { font-size: 12px; color: var(--muted); margin: 0; }
+  .check { display: flex; gap: 8px; align-items: center; font-size: 13px; }
+  .el { display: grid; grid-template-columns: 70px minmax(0, 1fr) 26px; align-items: center; gap: 8px; }
+  .el label { font-weight: 600; font-size: 13px; letter-spacing: .08em; text-transform: uppercase; }
+  .el input { width: 100%; accent-color: var(--accent); }
+  .el output { text-align: right; }
+  .el .what { grid-column: 1 / -1; font-size: 12px; color: var(--muted); margin-top: -4px; display: flex; justify-content: space-between; gap: 8px; }
+  .el .what b { color: var(--fg); font-weight: 500; }
+  .l5 { font-size: 10px; padding: 2px 5px; border-radius: 3px; border: 1px dashed var(--line); color: var(--muted); white-space: nowrap; }
+  .abilities { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
+  .ab { border: 1px solid var(--line); border-radius: 8px; padding: 7px 4px; display: grid; gap: 4px; justify-items: center; text-align: center; background: var(--panel-2); position: relative; overflow: hidden; }
+  .ab .ic { width: 28px; height: 28px; border-radius: 50%; border: 2px solid var(--accent); display: grid; place-items: center; font-weight: 700; font-size: 13px; color: var(--accent); }
+  .ab .nm { font-size: 11px; line-height: 1.15; }
+  .ab .st { font-size: 10px; line-height: 1.1; color: var(--muted); }
+  .ab.on { border-color: var(--accent); }
+  .read { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 4px 12px; font-size: 12px; font-variant-numeric: tabular-nums; }
+  .read span { color: var(--muted); }
+  .tbl { width: 100%; border-collapse: collapse; font-size: 12px; font-variant-numeric: tabular-nums; }
+  .tbl td, .tbl th { padding: 3px 4px; border-bottom: 1px solid var(--line); text-align: right; }
+  .tbl th:first-child, .tbl td:first-child { text-align: left; }
+  .tbl th { color: var(--muted); font-weight: 500; }
+  .tblwrap { overflow-x: auto; }
+  details summary { cursor: pointer; color: var(--muted); }
+  details ul { margin: 6px 0 0; padding-left: 18px; color: var(--muted); font-size: 12px; display: grid; gap: 3px; }
+  .slider { display: grid; grid-template-columns: 110px minmax(0, 1fr) 52px; gap: 8px; align-items: center; font-size: 12px; }
+  .slider span:first-child { color: var(--muted); }
+  .slider input { width: 100%; accent-color: var(--accent); }
+  .slider output { text-align: right; }
+
+  .touch { position: absolute; inset: 0; display: none; }
+  body.play .touch { display: block; }
+  body.play .vside-dock, body.play .vside-split, body.play .vside-win { display: none !important; }
+  body.play #viewport { position: fixed; inset: 0; z-index: 50; border-radius: 0; aspect-ratio: auto; border: 0; }
+  body.play .wrap > :not(.layout), body.play aside, body.play .stagebtns, body.play #overlay, body.play .feed, body.play .afternote { display: none !important; }
+  .tz { position: absolute; bottom: 0; top: 30%; width: 50%; }
+  .tz.L { left: 0; } .tz.R { right: 0; }
+  .ts { position: absolute; width: 112px; height: 112px; margin: -56px 0 0 -56px; border-radius: 50%; border: 2px solid #ffffff55; background: #ffffff0d; pointer-events: none; }
+  .ts.idle { opacity: .45; }
+  .ts.fire { border-color: var(--destroy); background: #ff6a6a22; }
+  .ts > i { position: absolute; left: 50%; top: 50%; width: 48px; height: 48px; margin: -24px 0 0 -24px; border-radius: 50%; background: #ffffff40; }
+  .tmodes { position: absolute; right: calc(10px + env(safe-area-inset-right, 0px)); top: calc(54px + env(safe-area-inset-top, 0px)); display: grid; gap: 6px; }
+  .tmodes button { width: 64px; padding: 8px 4px; border-radius: 10px; border: 1px solid #ffffff33; background: #121524cc; font-size: 11px; font-weight: 700; letter-spacing: .06em; }
+  .tmodes button.on { color: #0b0d16; }
+  .tmodes button.on[data-m="speed"] { background: var(--speed); } .tmodes button.on[data-m="creation"] { background: var(--create); } .tmodes button.on[data-m="destruction"] { background: var(--destroy); }
+  .tmodes button[data-m="ring"] { border-color: var(--ringc); color: var(--ringc); }
+  .tbar { position: absolute; top: calc(8px + env(safe-area-inset-top, 0px)); left: 50%; transform: translateX(-50%); display: flex; gap: 6px; }
+  .tbar .btn { padding: 6px 10px; font-size: 13px; background: #121524d9; }
+  .portrait { position: absolute; inset: 0; display: none; place-items: center; background: #05060cf2; text-align: center; padding: 24px; font-size: 22px; font-weight: 700; text-transform: uppercase; }
+  @media (orientation: portrait) { body.play .portrait { display: grid; } }
+  body.play .hud .tl { left: 16px; top: calc(56px + env(safe-area-inset-top, 0px)); }
+  body.play .board { right: 86px; top: calc(56px + env(safe-area-inset-top, 0px)); min-width: 0; }
+  body.play .modes { left: 50%; transform: translateX(-50%); bottom: 10px; }
+  body.play .camtag { bottom: auto; top: calc(56px + env(safe-area-inset-top, 0px)); }
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+<script src="studio-theme.js"></script>   <!-- the one Vessel Studio look (D29): after this page's own <style> so it wins -->
+
+<div class="wrap">
+  <header class="top">
+    <a class="back" href="index.html">&larr; Vessel Studio</a>
+    <h1>Brittle Star Studio</h1>
+    <span class="round">Round 2 · the Unity build</span>
+    <p class="sub">The Brittle Star, the Falcon's comeback: a one-touch flyer with a cockpit dart inside a pentagon support ring of five engines and five guns. Swap between Speed, Creation and Destruction modes, fire one stream or all five, and launch the ring itself as a bomb. Fly its two design minigames (Demolition Derby and Fauna Frenzy) at four intensities, against AI Brittle Stars at Easy, Medium or Hard. Flight, gun and trail are the last Brittle Star built (an unmerged branch); the kit is the design document, and every number neither gives is marked lab-only.</p>
+  </header>
+
+  <div class="layout">
+    <section>
+      <div id="viewport">
+        <canvas id="c" tabindex="0" aria-label="Brittle Star stage"></canvas>
+        <div class="hud">
+          <div class="tl">
+            <span class="lbl" id="hWho">You · speed u/s</span><span class="big" id="hSpeed">0</span>
+            <span class="lbl" id="hSub">60 u/s cruise</span>
+          </div>
+          <div class="board" id="board"></div>
+          <div class="alert" id="hAlert" hidden></div>
+          <div class="modes">
+            <div class="row"><span id="hGoal">Crystal 1/5</span><b id="hMass">0 destroyed</b></div>
+            <div class="pills">
+              <span class="pill speed" id="pSpeed">Speed</span><span class="pill creation" id="pCreation">Creation</span><span class="pill destruction" id="pDestruction">Destruct</span><span class="pill ring" id="pRing">Ring</span>
+            </div>
+            <div class="row"><span id="hGun">gun: cockpit</span><b id="hCharge">charge 0/1</b></div>
+          </div>
+          <div class="feed" id="feed"></div>
+          <div class="camtag" id="camTag">Chase camera</div>
+        </div>
+        <div class="stagebtns"><button class="btn phone-only" id="playBtn" type="button">Back to flying</button><span class="transport" id="transport" role="toolbar" aria-label="Play controls"><button class="btn" id="tpPlay" type="button" aria-pressed="false" title="Play / pause (Enter starts, P pauses and resumes): paused, every pilot and the clock halt, the stage and cameras stay live">▶ Play</button><button class="btn" id="tpStop" type="button" title="Stop (R): end the run, back to the start">■ Stop</button></span></div>
+        <div class="overlay" id="overlay">
+          <div class="card">
+            <h2 id="ovTitle">Demolition Derby, intensity 1</h2>
+            <p id="ovText">Reach each of your crystals as fast as you can. Blast a path with your turrets, or fly round the barricades. Every crystal rebuilds or charges your support ring.</p>
+            <div class="keys">
+              <span>Gamepad</span><span>left stick steers · right stick turns the ring: the aimed turret, and in Destruction the five arms (pushed further: RT's spread, or the arms opening) · A Speed · B Creation · X Destruction, again for Cruise · RT fires · LT throws the ring</span>
+              <span>Keys</span><span>W S pitch · A D turn · arrows aim and spread · Space fire · 1 2 3 modes · F ring</span>
+              <span></span><span>Enter play · P pause / resume · R stop · C next camera</span>
+            </div>
+            <div class="btns"><button class="btn primary" id="startBtn" type="button">Start</button><button class="btn" id="resetBtn" type="button">Reset</button></div>
+          </div>
+        </div>
+        <div class="touch" id="touch">
+          <div class="tz L" id="tzL"><div class="ts idle" id="tsL"><i></i></div></div>
+          <div class="tz R" id="tzR"><div class="ts idle" id="tsR"><i></i></div></div>
+          <div class="tmodes"><button type="button" data-m="speed">SPEED</button><button type="button" data-m="creation">CREATE</button><button type="button" data-m="destruction">DESTROY</button><button type="button" data-m="ring">RING</button></div>
+          <div class="tbar"><button class="btn" id="tStart" type="button">▶ Play</button><button class="btn" id="tCam" type="button">Cam</button><button class="btn" id="tBack" type="button">■ Stop</button><button class="btn" id="tExit" type="button" aria-label="Leave phone play">✕</button></div>
+          <div class="portrait">Turn the phone sideways</div>
+        </div>
+      </div>
+      <p class="note afternote" style="margin-top:8px">Show AI thinking draws each AI's line to the crystal (or creature) it is going for: green = flying for it, amber = has not noticed it yet, red = misjudged it, violet = working the kit (clearing a barricade, lining up a ring).</p>
+    </section>
+
+    <aside>
+      <div class="panel" id="grp-scene">
+        <h3>Scene <span style="font-size:11px;letter-spacing:0;text-transform:none" id="courseInfo"></span></h3>
+        <div id="scenePanel"></div>
+      </div>
+
+      <div class="panel" id="grp-world">
+        <h3>Barricades and fauna</h3>
+        <div id="worldSliders" style="display:grid;gap:8px"></div>
+        <p class="note">Lab-only: how the minigames are laid out. The design gives the intensity ladder in words; these are this studio's numbers for it.</p>
+      </div>
+
+      <div class="panel" id="grp-game">
+        <h3>Minigame</h3>
+        <label class="field"><span>Minigame</span><select id="gameSel" class="arp-seg"><option value="derby">Demolition Derby</option><option value="frenzy">Fauna Frenzy</option></select></label>
+        <p class="note" id="gameNote"></p>
+      </div>
+
+      <div class="panel" id="grp-intensity">
+        <h3>Intensity</h3>
+        <div id="intensityPanel"></div>
+        <p class="note" id="intensityNote"></p>
+      </div>
+
+      <div class="panel" id="grp-players">
+        <h3>Players</h3>
+        <div id="playersPanel"></div>
+      </div>
+
+      <div class="panel" id="grp-ai">
+        <h3>AI</h3>
+        <div id="racePanel"></div>
+        <label class="check"><input type="checkbox" id="idleHold"> AI holds my idle hull (3 s without input)</label>
+      </div>
+
+      <div class="panel" id="grp-score">
+        <h3>Scorecard <span class="btns"><button class="btn small" id="scoreBtn" type="button">Score AI levels</button><button class="btn small" id="styleBtn" type="button">Score styles</button></span></h3>
+        <div class="tblwrap"><table class="tbl"><thead><tr><th>Intensity</th><th>Easy</th><th>Medium</th><th>Hard</th><th>Hard, no ring</th><th>Hard, no modes</th></tr></thead><tbody id="score"></tbody></table></div>
+        <p class="note" id="scoreNote">Each cell races one AI Brittle Star alone, three seeds, headless: median seconds to finish the minigame. The last two columns are controls: the Hard pilot never launching its ring, and the Hard pilot with no modes at all (the old Falcon: one gun, one trail). If the kit earns its place, both controls are slower than Hard.</p>
+        <div class="tblwrap"><table class="tbl"><thead><tr><th>Style (Hard, I3)</th><th>Time</th><th>Destroyed</th><th>Rings</th><th>Speed</th><th>Create</th><th>Destroy</th><th>Overdrive</th></tr></thead><tbody id="styleScore"></tbody></table></div>
+        <p class="note">Each style flies its own brain at Hard on intensity 3. The mode columns are the share of the run spent in each mode (Overdrive: all three at once, from a crystal taken while a charge is held). The personas should read differently here, or they are one pilot with four names.</p>
+      </div>
+
+      <div class="panel" id="grp-style">
+        <h3>Play style <span id="typeName" style="color:var(--fg);letter-spacing:.04em">Balanced</span></h3>
+        <label class="field"><span>Style</span><select id="styleSel" class="arp-seg"></select></label>
+        <p class="note" id="typeInfo"></p>
+        <label class="check"><input type="checkbox" id="typeToAll"> Rivals fly at these element levels too</label>
+      </div>
+
+      <div class="panel" id="grp-elements">
+        <h3>Element levels <span style="font-size:11px;letter-spacing:0">0–10</span></h3>
+        <div id="elements" style="display:grid;gap:12px"></div>
+        <p class="note">The level-5 upgrades are open design slots: the design document gives each element a persona and a parameter, not an upgrade, and this studio does not invent one.</p>
+      </div>
+
+      <div class="panel" id="grp-unity">
+        <h3>Unity build numbers <span class="btns"><button class="btn small" id="unityReset" type="button">Shipped values</button></span></h3>
+        <div id="unitySliders" style="display:grid;gap:8px"></div>
+        <p class="note">BrittleStarConfig.asset's numbers, flown when Flight numbers is the Unity build. A value you settle here goes into this page's <code>SHIPPED</code> block and reaches the game through <code>/artifact-to-unity</code> (<code>Tools/Build/studio_to_unity.py</code>); the tooltips name each field. Speed mode and Charge 10 are ElementalFloat ranges the tool cannot write: change those in the asset too.</p>
+      </div>
+      <div class="panel" id="grp-kit">
+        <h3>The kit (round 1, the design sets)</h3>
+        <div id="kitSliders" style="display:grid;gap:8px"></div>
+        <p class="note">Lab-only numbers for what the design describes in words, flown by the branch and Falcon sets only (the Unity build uses its own numbers above).</p>
+      </div>
+
+      <div class="panel" id="grp-controls">
+        <h3>Controls</h3>
+        <div class="keys">
+          <span>One touch</span><span>the Brittle Star is a one-stick flyer: it always flies at full throttle; the stick only turns it (and banks it into the turn)</span>
+          <span>Gamepad</span><span><b>Unity build</b> (the game's bindings): left stick steer · right stick: direction turns the ring (the aimed turret, and the five arms with it), distance opens RT's spread or moves the arms in and out · A Speed · B Creation · X Destruction (press the lit one again for Cruise) · RT fire · LT Ring Detonation. <b>Design sets</b>: RT or A fire · X Speed · Y Creation · B Destruction</span>
+          <span>Keys</span><span>W S pitch · A D turn · arrows aim / spread · Space fire · 1 Speed · 2 Creation · 3 Destruction · F ring (the game's own keys are Space / R / Q for the modes, Right Shift fire, Left Shift ring; R and Space are the studio's Stop and fire here)</span>
+          <span>Free cam</span><span>drag to turn · wheel to zoom · J L / I K turn · U O zoom</span>
+          <span>Transport</span><span>Enter play · P pause / resume · R stop · C next camera</span>
+          <span>Phone</span><span>opens by itself on a phone: left thumb steers, right thumb is the fire button (drag it to aim and spread), mode and RING buttons on the right</span>
+        </div>
+      </div>
+
+      <div class="panel" id="grp-feel">
+        <h3>Input feel</h3>
+        <label class="field"><span>Keys aim</span><select id="aimFeel" class="arp-seg"><option value="0.5">Half spread</option><option value="1">Full spread</option></select></label>
+        <label class="field"><span>Aim stick</span><select id="aimMode" class="arp-seg"><option value="spread">Spread (the design: drag out to widen it)</option><option value="converge">Convergence (the branch: guns meet 70 to 370 u ahead)</option></select></label>
+        <p class="note">How far the arrow keys push the aim stick. The two readings of the stick's distance disagree: the design document opens a spread, the branch's GunRingTransformer moves the point all five guns converge on (70 + 300 |stick|² u ahead). Fly both and record which one stays.</p>
+      </div>
+
+      <div class="panel" id="grp-abilities">
+        <h3>Ability row</h3>
+        <div class="abilities" id="abilities"></div>
+        <p class="note">The design's four icons: the three modes and Ring Detonation. Element order on the game's row (charge, mass, space, time) is not assigned yet: the modes are not element abilities in the design.</p>
+      </div>
+
+      <div class="panel" id="grp-hull">
+        <h3>Hull</h3>
+        <label class="field"><span>Flight numbers</span><select id="shipSet" class="arp-seg"><option value="unity">Unity build (ships): cruise 45, Speed x6, the five arms, the nucleus-wide disk</option><option value="branch">BrittleStar branch (2026-07): cruise 35, Speed 110, turns 80°/s</option><option value="falcon">Falcon.prefab (bleeding-edge): cruise 60, Speed 210, turns 60 / 40°/s</option></select></label>
+        <p class="note"><b>Unity build</b> is what ships (<code>BrittleStar = 16</code>): its rules (Cruise plus three exclusive modes, the five auto-firing arms, a trail per ring corner, the nucleus-wide ring explosion) and its numbers (the Unity build numbers card, <code>SHIPPED</code> in this page, which <code>studio_to_unity.py</code> clones into <code>BrittleStarConfig.asset</code>). The other two fly round 1's design kit, for comparison: the branch's BrittleStar.prefab (Philip Appoh, May to July 2026, never merged) and the older Falcon.prefab Manta copy.</p>
+        <label class="field"><span>Ring</span><select id="hullRing" class="arp-seg"><option value="auto">By Time level (pentagon to circle)</option><option value="penta">Always pentagon</option><option value="circle">Always circle</option></select></label>
+        <p class="note">The concept art: "a pentagon instead of a circle; each point of the pentagon is an engine in the back and a gun in the front", the ring held to the cockpit by suspended energy, not struts. Element looks from the design: Mass a larger cockpit, Charge larger thrusters and guns, Space longer barrels, Time a ring that curves into a circle.</p>
+      </div>
+
+      <div class="panel" id="grp-live">
+        <h3>Live numbers <span id="readWho" style="font-size:11px;letter-spacing:0;text-transform:none"></span></h3>
+        <div class="read" id="read"></div>
+      </div>
+
+      <div class="panel" id="grp-runs">
+        <h3>Runs</h3>
+        <div class="tblwrap"><table class="tbl"><thead><tr><th>Game</th><th>Pilot</th><th>Style</th><th>Time</th><th>Destroyed</th><th>Place</th></tr></thead><tbody id="runs"></tbody></table></div>
+      </div>
+
+      <div class="panel" id="grp-about">
+        <details open>
+          <summary>Where the numbers come from, and what is not modelled</summary>
+          <ul>
+            <li><b>The Unity build</b> (the default set, round 2): <code>VesselClassType.BrittleStar = 16</code>'s rules and numbers, ported line for line from <code>BrittleStarExecutor</code> / <code>BrittleStarRules</code> (contract: <code>R_VesselActions/BRITTLE_STAR.md</code>). Cruise 45 u/s; A / B / X select Speed (cruise x6, x8 at Time 10), Creation (x0.5, the slowest; a trail behind each ring corner) or Destruction (the five arms: every turret fires on its own, 90 rounds/s of the Sparrow's round at 135 u/s for 3 s, swelling x3, meeting 120 u ahead with the stick in, splayed 25° with it out), and press again for Cruise; the stick's direction turns the ring in every mode. RT outside Destruction: 12 rounds/s at 70 u/s from the aimed turret or the cockpit. LT throws the ring (+240 u/s, 1.1 s fuse): a flat disk in its plane, as thick as the ring (0.22 u x Charge 1 to 4) and as wide as the nucleus (392 u here), swept out over 0.7 s, breaking every prism it passes and scoring one petal hit per rival hull. A stored charge or a crystal rebuilds the ring over 0.5 s; a crystal while charged is 6 s of Overdrive. Camera straight behind, no height. Every number is in <code>SHIPPED</code> (the Unity build numbers card).</li>
+            <li><b>Flight</b> (round 1's design sets; Vessel Config &gt; Flight numbers picks the source). The branch's <code>BrittleStar.prefab</code> (<code>origin/claude/falcon-brittlestar-reintro-oyx1q1</code>): <code>SingleStickVesselTransformer</code>, speed = 10 + 25 × boost, so 35 u/s cruise and 110 u/s in Speed mode (<code>VesselStatus.boostMultiplier</code> 4); there is no throttle axis. Pitch and yaw 80°/s, bank into the turn 30°/s, each plus 0.1 × speed (<code>RotationThrottleScaler</code>). <code>Falcon.prefab</code>: 60 u/s cruise, 210 boosted, pitch 60°/s, yaw 40°/s, bank 15°/s. Both: the nose follows the stick's command at 1.5/s (<code>VesselTransformer.LERP_AMOUNT</code>) and speed eases at the same rate; the stick eases as the game's gamepad strategy does, <code>1 − cos(x·π/2)</code>.</li>
+            <li><b>Gun</b> (authored, the branch): <code>FullAutoAction</code> 30 rounds/s per muzzle; round speed 1500 → 4000 u/s with Space (its <code>speedValue</code> ElementalFloat) and a 0.3 s life. The round decelerates as the game's <code>Projectile</code> does (<code>cos(πt/2T)</code>), so its range is <code>v·2T/π</code>: 286 u at Space 0, 764 u at Space 10. Hit radius 0.5 (<code>FalconProjectile.prefab</code>). The five guns ride <code>GunRingTransformer</code>: the ring spins 20°/s and the guns converge 70 + 300 |right stick|² u ahead. Trail: <code>SparrowPrismController</code>, a (2, 2, 5) block every 7 u, 4 u behind; camera <code>SparrowCameraSettingsSO</code>, 50 u behind and 10 up.</li>
+            <li><b>Modes, the gun's turrets, Ring Detonation, the crystal charge and overdrive, the element parameters, the personas and both minigames</b>: the design document "Class - Brittle Star" (Notion, Class Design Documents). Its words are quoted in <code>Docs/Studios/BRITTLE_STAR.md</code>; every number it does not give is lab-only and sits in The kit or Barricades and fauna.</li>
+            <li><b>Collisions</b> (lab-only): a round destroys the first prism it meets (prisms have no health in the game); a shielded prism loses its shield instead; a super-shielded prism (Derby I4) shrugs off rounds, and only the ring's blast core strips its super shield. The hull ploughs through an ordinary prism at a speed cost and is stopped short by a super-shielded one.</li>
+            <li><b>AI</b>: input-only (one stick, the aim stick and the buttons a player has). Easy and Medium are Hard plus <code>SkimRaceDifficulty.asset</code>'s two mistakes in what the AI believes: a late notice of each new target (0.5 / 0.25 s mean) and a misjudged one (9.9% / 4.5%); and two lab-only Brittle Star mistakes: it reads a barricade later (170 / 240 u ahead against Hard's 320) and changes mode later (0.7 / 0.35 s). The style brains (<code>STYLES[].brain</code>) and the local planner that fans a few headings round each barricade are lab-only.</li>
+            <li>Not modelled: the game's prism pools and growth animation, elemental crystals and comeback, the HyperSea ecology (the Frenzy's creatures are a lab stand-in that eat trail), networking, sound, the ring's flight being blocked by anything but prisms. Read every time as relative: between modes, styles and levels.</li>
+          </ul>
+        </details>
+        <p class="note">Want a change in this studio or a design tried? <a href="index.html#agent">Ask the studio agent</a>.</p>
+      </div>
+    </aside>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="studio-look.js"></script>
+<script src="studio-domains.js"></script>
+<script src="studio-ide.js"></script>
+<script src="ai_race_panel.js"></script>
+<script>
+(function () {
+  'use strict';
+  const $ = (id) => document.getElementById(id);
+  const lerp = (a, b, t) => a + (b - a) * t, clamp = (x, a, b) => Math.max(a, Math.min(b, x));
+
+  // ================= the Unity build: what ships (BrittleStarConfig.asset, BrittleStar.prefab) =================
+  // The studio's decided numbers (D1, D33). Tools/Build/studio_to_unity.py reads this block and writes it into the game
+  // through Tools/Build/studio_to_unity/brittlestar.json (--check is the drift gate). Keys are BrittleStarConfigSO's own field
+  // names; a key the map lacks has no plain field to write (a prefab number, an ElementalFloat's range): --unmapped lists them.
+  const SHIPPED = {
+    // BrittleStarConfig.asset (BrittleStarConfigSO)
+    modeBlendSeconds: 0.35, speedModeSpacingFollow: 1, creationSpeedMultiplier: 0.5, creationSpacing: 6, creationOffset: 2,
+    // slow rounds (Garrett, 2026-10-14): a tenth of the speed, ten times the flight, the same range (speed x 2T/pi);
+    // the Sparrow's round at its own size, swelling x3 in flight (FullAutoAction.growthFactorAtRestingMass)
+    fireRate: 12, projectileSpeed: 70, projectileTime: 3, projectileScale: 1, roundGrowthFactor: 3,
+    destructionFireRate: 90, destructionProjectileSpeed: 135, destructionProjectileScale: 1, armFocusDistance: 120, armSplayDegrees: 25,
+    maxSpreadDegrees: 16, aimDeadzone: 0.25, ringTurnRate: 540,
+    ringLaunchSpeed: 240, ringFuseSeconds: 1.1, ringContactRadiusScale: 1,
+    ringBlastSeconds: 0.7, ringBlastFallbackRadius: 200, ringBlastBandWidth: 6, rebuildSeconds: 0.5, overdriveSeconds: 6, ringBlastHitCooldown: 0.5,
+    // its ElementalFloats, level 0 -> 10 (nested in the asset: the map cannot write them, so a change here is made there by hand)
+    speedModeAt0: 6, speedModeAt10: 8, creationBlockAt10: 1.8, rangeAt10: 1.6, projectileScaleAt10: 1.8, blastScaleAt10: 4,
+    // BrittleStar.prefab: the Sparrow's one-thumb transformer block, BrittleStarHullBuilder, the trail spawner
+    minimumSpeed: 10, throttleScaler: 35, pitchScaler: 80, yawScaler: 80, rollScaler: 30, rotationThrottleScaler: 0.1,
+    ringRadius: 6, ringHalfThickness: 0.22, trailWavelength: 6, trailOffset: 2,
+    // the world: the standard cell's nucleus (Nucleus.prefab, scale 400 x the node mesh's 0.98 u). Lab-only here: the
+    // studio has no cells, the game reads the cell's own nucleus (Cell.NucleusVisualWorldRadius)
+    nucleusRadius: 392,
+    // SelfTrailContactConfig.asset skimGraceSeconds: the pilot's own trail younger than this is spared by its ring
+    skimGraceSeconds: 1,
+  };
+  const U = SHIPPED, SHIPPED_AT_LOAD = Object.assign({}, SHIPPED);
+  const LAB = { manualClock: false };   // window.__lab (filled at the end of setup)
+  const CREATION_BLOCK = [2.5, 2.5, 4.5];   // BrittleStarConfigSO.creationBlockSize (a Vector3: not a map row)
+  // ================= the older sources, flown on the design document's kit (round 1) =================
+  // Neither ships (the game has no Brittle Star yet). "branch" is the last Brittle Star anyone built:
+  // BrittleStar.prefab on origin/claude/falcon-brittlestar-reintro-oyx1q1 (= Bleeding-Edge-Reintroduce-Falcon, Philip
+  // Appoh, 2026-05..07). "falcon" is Falcon.prefab on bleeding-edge, the older, non-spawnable Manta copy.
+  const SHIP_SETS = {
+    unity: {
+      label: 'Unity build (BrittleStar = 16)', unity: true,   // the rules switch: every "SHIP.unity" branch below is the C#
+      minSpeed: U.minimumSpeed, throttle: U.throttleScaler, pitch: U.pitchScaler, yaw: U.yawScaler, bank: U.rollScaler, rotSpeed: U.rotationThrottleScaler,
+      boostMult: U.speedModeAt0, gunRate: U.fireRate, gunSpeed: [U.projectileSpeed, U.projectileSpeed], gunLife: U.projectileTime,
+      shotRadius: 0.5,                     // SparrowProjectile's 0.5 sphere, x projectileScale (RT) or destructionProjectileScale (the arms)
+      ringSpin: 0, focus: [U.armFocusDistance, 0],
+      trailWave: U.trailWavelength, trailScale: CREATION_BLOCK.slice(), trailOffset: U.trailOffset,
+      chase: [0, 0, -38],                  // BrittleStarCameraSettingsSO.followOffset: no height, the vessel is a crosshair
+    },
+    branch: {
+      label: 'BrittleStar branch (2026-07)',
+      minSpeed: 10, throttle: 25,          // SingleStickVesselTransformer DefaultMinimumSpeed / DefaultThrottleScaler: cruise 35 u/s
+      pitch: 80, yaw: 80, bank: 30,        // PitchScaler / YawScaler / RollScaler, deg/s at a full eased stick
+      rotSpeed: 0.1,                       // RotationThrottleScaler: + speed x 0.1 deg/s on each axis
+      boostMult: 4,                        // VesselStatus.boostMultiplier: the branch's Speed mode is BoostAction (IsBoosting) -> 110 u/s
+      gunRate: 30,                         // VesselActions/Sparrow/FullAutoAction.asset (the branch's button 3): 30 rounds/s per muzzle
+      gunSpeed: [1500, 4000], gunLife: 0.3, // FullAutoAction speedValue (ElementalFloat, Space 0 -> 10) and projectileTime
+      shotRadius: 0.5,                     // FalconProjectile.prefab: SphereCollider 0.5 x projectileScale 1
+      ringSpin: 20, focus: [70, 300],      // GunRingTransformer: rotationSpeed 20 deg/s; GunFocus at z = 70 + 300 |right stick|^2
+      trailWave: 7, trailScale: [2, 2, 5], trailOffset: 4,   // SparrowPrismController: initialWavelength 7, BaseScale (2,2,5), offset 4
+      chase: [0, 10, -50],                 // SparrowCameraSettingsSO.followOffset (the branch's camera)
+    },
+    falcon: {
+      label: 'Falcon.prefab (bleeding-edge)',
+      minSpeed: 10, throttle: 50,          // cruise 60 u/s
+      pitch: 60, yaw: 40, bank: 15, rotSpeed: 0,
+      boostMult: 4,                        // VesselStatus.boostMultiplier, Falcon BoostAction -> 210 u/s
+      gunRate: 40, gunSpeed: [2000, 2000], gunLife: 1,   // Falcon's FullAutoAction: 40/s, 2000 u/s, projectileTime 1
+      shotRadius: 1.5,                     // FullAutoAction ProjectileScale 3 x the 0.5 sphere
+      ringSpin: 0, focus: [70, 300],       // GunTransformer: muzzles on a ring turned by the right stick, focus 70 + 300 |R|^2
+      trailWave: 2, trailScale: [5, 5, 5], trailOffset: 20,   // VesselPrismController: wavelength 2, BaseScale (10,5,5)/2, offset 20
+      chase: [0, 10, -30],                 // no CameraSettingsSO: the Manta's 30 u it inherits
+    },
+  };
+  const SHIP = Object.assign({}, SHIP_SETS.unity);   // the live set (VesselStudio Vessel Config > Flight numbers)
+  const FOLLOW = 1.5;   // VesselTransformer.LERP_AMOUNT: the nose follows the command, speed eases, both at 1.5/s
+  // ================= the design's kit, with lab-only numbers (Docs/Studios/BRITTLE_STAR.md) =================
+  const KIT = {   // every field here is lab-only: the design document describes it in words
+    timeBonusAtFull: 1.5,   // Time 10 (Zephyr): the Speed-mode bonus over cruise x1.5 ("increased movement speed bonus")
+    spreadDeg: 7,           // the widest spread, at a full aim stick
+    destructionRadius: 2.5, // Destruction mode: rounds x2.5 bigger ("larger projectiles")
+    chargeShotAtFull: 1.8,  // Charge 10: rounds x1.8 bigger (Rolling Thunder)
+    hitWindow: 0.05,        // PvP is petals only (LOCKED, Docs/claude/IMPACT_EFFECTS_AND_AUDIO.md): a hit on a vessel takes petals and
+                            // nothing else, at most one per victim per 0.05 s (VesselCombatHitByBullet). The design's knockback, slow
+                            // and trail-off on vessels are retired by that rule; friendly fire still breaks allied MASS.
+    creationScale: 1.6, massCreationAtFull: 1.8,   // Creation: five edge blocks of the ring's pentagon, x1.6 thick; Mass 10: x1.8 more (Fabricator)
+    ringRadius: 7,          // the support ring's radius on the hull
+    ringLaunch: 420, ringFuse: 1.4,          // the launched ring: +420 u/s over the hull's speed; bursts on impact or after 1.4 s
+    blastR: 55, planeR: 150, planeT: 10, chargeBlastAtFull: 1.6,   // the burst: a 55 u ball, then a 150 u wave 10 u thick in the ring's plane; Charge 10: x1.6
+    overdrive: 6,           // a crystal while a charge is held: all three modes at once for 6 s
+    hullR: 4, ramSlow: 0.8, ramStop: 0.3,   // ramming an ordinary prism costs 20% speed; a super-shielded one stops you at 30%
+  };
+  const DIFF = { Easy: { reaction: 0.5, mistake: 0.099, look: 170, modeLag: 0.7 }, Medium: { reaction: 0.25, mistake: 0.045, look: 240, modeLag: 0.35 }, Hard: { reaction: 0, mistake: 0, look: 320, modeLag: 0 } };   // reaction + mistake: SkimRaceDifficulty.asset; look + modeLag: lab-only (how far ahead it reads a barricade, how late it changes mode)
+  const ELEMENTS = [
+    { key: 'charge', name: 'Charge', color: '--charge', persona: 'Rolling Thunder', param: 'Round size and ring blast' },
+    { key: 'mass', name: 'Mass', color: '--mass', persona: 'Fabricator', param: 'Creation block size' },
+    { key: 'space', name: 'Space', color: '--space', persona: 'Hunter', param: 'Shot range' },
+    { key: 'time', name: 'Time', color: '--time', persona: 'Zephyr', param: 'Speed mode bonus' },
+  ];
+  // Play styles are named types over the element levels (D6); each also has its AI brain (D23, lab-only).
+  const STYLES = [
+    { name: 'Balanced', lv: { charge: 3, mass: 3, space: 3, time: 3 }, brain: { speedFar: 420, clearAt: 6, ringAt: 40, create: 0.15, hunt: 0, shoot: 1.5, guard: 1.2 , crowd: 4, crystalReach: 450 },
+      info: 'Every element at 3. Speed on open ground, Destruction for a barricade, the ring for the thickest wall.' },
+    { name: 'Fabricator', lv: { charge: 0, mass: 10, space: 0, time: 0 }, brain: { speedFar: 9999, clearAt: 3, ringAt: 70, create: 0.85, hunt: 0, shoot: 1, guard: 1.5 , crowd: 5, crystalReach: 300 },
+      info: 'Mass. Persona: Robot. "Calculating optimal construction parameters..." Avoids combat and uses its guns to clear room for its own structures; flies in Creation whenever the way is clear. Bigger Creation blocks.' },
+    { name: 'Rolling Thunder', lv: { charge: 10, mass: 0, space: 0, time: 0 }, brain: { speedFar: 520, clearAt: 2, ringAt: 18, create: 0, hunt: 0.3, shoot: 0.3, guard: 1.6, parting: true , crowd: 2, crystalReach: 250 },
+      info: 'Charge. Persona: Fox / Falco. "I\'m not just painting the town red, I\'m tearing it down brick by brick." Destroys every clump in its path; detonates eagerly. Bigger rounds and a bigger ring blast.' },
+    { name: 'Hunter', lv: { charge: 0, mass: 0, space: 10, time: 0 }, brain: { speedFar: 500, clearAt: 6, ringAt: 45, create: 0, hunt: 1, shoot: 1.5, guard: 1.2 , crowd: 3, crystalReach: 450 },
+      info: 'Space. Persona: bounty hunter. "In a dogfight, I\'m the judge and the executioner." Turns its guns on any rival in range. Longer shot range (the design\'s "nudge" is retired: PvP is petals only).' },
+    { name: 'Zephyr', lv: { charge: 0, mass: 0, space: 0, time: 10 }, brain: { speedFar: 240, clearAt: 10, ringAt: 30, create: 0, hunt: 0, shoot: 6, guard: 0.8 , crowd: 3, crystalReach: 700 },
+      info: 'Time. Persona: adrenaline junkie. "You can try to keep up, but I\'ll always be one step ahead!" Lives in Speed mode, weaves round barricades rather than through them. A bigger Speed bonus.' },
+    { name: 'Shipped', lv: { charge: 0, mass: 0, space: 0, time: 0 }, brain: { speedFar: 420, clearAt: 6, ringAt: 40, create: 0.15, hunt: 0, shoot: 1.5, guard: 1.2 , crowd: 3, crystalReach: 450 },
+      info: 'The start of a match: every element at 0.' },
+  ];
+  const GAMES = {
+    derby: { name: 'Demolition Derby', note: 'Dodge or destroy the barricades on your way to each crystal. Main objective: time. Side objective: mass destroyed (it breaks ties). Rewards in the design: Time and Charge.',
+      ladder: { 1: 'obstacles only (fly through or round them)', 2: 'walls and obstacles', 3: 'more walls; mass clusters past each crystal', 4: 'walls and obstacles super-shielded' } },
+    frenzy: { name: 'Fauna Frenzy', note: 'Build trail mass and defend it from creatures that eat it. Main objective: reach the target mass fast. Side objective: creatures killed. Rewards in the design: Mass and Space.',
+      ladder: { 1: 'few creatures, low aggression', 2: 'more creatures, low aggression', 3: 'more creatures, medium aggression', 4: 'more creatures, high aggression' } },
+  };
+  const WORLD = {   // lab-only layout of the two minigames (Barricades and fauna)
+    legs: 5, legLen: 650, corridor: 55, wallBlock: 12, obst: [6, 6, 8, 8], walls: [0, 2, 3, 3], clusterN: 5,
+    frenzyTarget: [500, 650, 800, 950], fauna: [4, 6, 8, 9], faunaSpeed: [14, 16, 24, 32], faunaBite: [1.2, 1.0, 0.7, 0.5], faunaHp: 3,
+  };
+  const DOMAINS = VesselStudioDomains.list.map((d) => ({ key: d.key, color: d.hex, css: d.color, name: d.name }));   // the game's palette (studio-domains.js)
+  const domainOf = (k) => DOMAINS.find((d) => d.key === k) || DOMAINS[0];
+
+  // ================= settings =================
+  const S = { game: 'derby', course: 1, players: [{ ai: false, domain: 'jade', level: 'Hard', style: 'Balanced' }], view: 0, cam: 'Chase', speed: 1, thinking: true, autoRestart: false,
+    idleHold: true, typeToAll: false, aimFeel: 1, hullRing: 'auto', ship: 'unity', aimMode: 'spread', style: 'Balanced', lv: Object.assign({}, STYLES[0].lv), kit: {}, world: {} };
+  const LS = 'cs.studio.brittlestar.v2';   // v2: the Unity build became the default set
+  try { const s = JSON.parse(localStorage.getItem(LS) || 'null'); if (s) Object.assign(S, s, { lv: Object.assign({}, S.lv, s.lv || {}), kit: s.kit || {}, world: s.world || {} }); } catch (e) { /* storage blocked */ }
+  Object.assign(KIT, S.kit); Object.assign(WORLD, S.world); Object.assign(U, S.shipped || {}); Object.assign(SHIP, SHIP_SETS[S.ship] || SHIP_SETS.unity);
+  function save() { try { localStorage.setItem(LS, JSON.stringify(S)); } catch (e) { /* storage blocked */ } }
+  const styleOf = (n) => STYLES.find((s) => s.name === n) || STYLES[0];
+  function mults(lv) {
+    const f = (k) => clamp((lv[k] || 0) / 10, 0, 1);
+    const look = { circle: f('time'), cockpit: 1 + 0.5 * f('mass'), pods: 1 + 0.45 * f('charge'), barrels: 1 + 1.1 * f('space') };
+    if (SHIP.unity) {   // BrittleStarConfigSO's four dials, one per element (R_VesselActions/BRITTLE_STAR.md section 5)
+      const speedMode = lerp(U.speedModeAt0, U.speedModeAt10, f('time'));
+      return Object.assign({ shot: lerp(1, U.projectileScaleAt10, f('charge')), blast: lerp(1, U.blastScaleAt10, f('charge')),
+        block: lerp(1, U.creationBlockAt10, f('mass')), range: lerp(1, U.rangeAt10, f('space')), shotSpeed: U.projectileSpeed,
+        speedMode, speedBonus: speedMode - 1 }, look);
+    }
+    return {
+      shot: lerp(1, KIT.chargeShotAtFull, f('charge')), blast: lerp(1, KIT.chargeBlastAtFull, f('charge')),
+      block: lerp(1, KIT.massCreationAtFull, f('mass')),
+      shotSpeed: lerp(SHIP.gunSpeed[0], SHIP.gunSpeed[1], f('space')),   // Space: the authored speedValue ElementalFloat (range)
+      speedBonus: (SHIP.boostMult - 1) * lerp(1, KIT.timeBonusAtFull, f('time')),
+      circle: f('time'), cockpit: 1 + 0.5 * f('mass'), pods: 1 + 0.45 * f('charge'), barrels: 1 + 1.1 * f('space'),
+    };
+  }
+  const rangeOf = (P) => SHIP.unity ? (P.armsOn ? U.destructionProjectileSpeed : U.projectileSpeed) * 2 * U.projectileTime * P.m.range / Math.PI
+    : P.m.shotSpeed * 2 * SHIP.gunLife / Math.PI;
+  const ringR = () => SHIP.unity ? U.ringRadius : KIT.ringRadius;
+  const cruiseOf = () => SHIP.minSpeed + SHIP.throttle;
+  const angDelta = (a, b) => Math.atan2(Math.sin(b - a), Math.cos(b - a));   // the round decelerates (Projectile: cos(pi t / 2T)), so range = v 2T / pi (vessel rule 34)
+  function rng(seed) { let s = (seed >>> 0) || 1; return () => { s ^= s << 13; s >>>= 0; s ^= s >> 17; s ^= s << 5; s >>>= 0; return s / 4294967296; }; }
+  const hash = (a, b) => { let h = (a * 374761393 + b * 668265263) | 0; h = (h ^ (h >>> 13)) * 1274126177 | 0; return ((h ^ (h >>> 16)) >>> 0) / 4294967296; };   // per-shot spread: no global random (vessel rule 18)
+
+  // ================= the world: pure, no rendering, so the scorecard runs it headless (D3) =================
+  const V = THREE.Vector3, Q = THREE.Quaternion;
+  function Grid(cell) { this.cell = cell; this.map = new Map(); }
+  Grid.prototype.h = function (x, y, z) { return ((x * 73856093) ^ (y * 19349663) ^ (z * 83492791)) | 0; };
+  Grid.prototype.add = function (p) { const c = this.cell; const k = this.h(Math.floor(p.pos.x / c), Math.floor(p.pos.y / c), Math.floor(p.pos.z / c)); let a = this.map.get(k); if (!a) this.map.set(k, a = []); a.push(p); p.k = k; };
+  Grid.prototype.remove = function (p) { const a = this.map.get(p.k); if (!a) return; const i = a.indexOf(p); if (i >= 0) a.splice(i, 1); };
+  Grid.prototype.near = function (pos, r, out) {
+    out.length = 0; const c = this.cell, n = Math.ceil(r / c), cx = Math.floor(pos.x / c), cy = Math.floor(pos.y / c), cz = Math.floor(pos.z / c);
+    for (let x = cx - n; x <= cx + n; x++) for (let y = cy - n; y <= cy + n; y++) for (let z = cz - n; z <= cz + n; z++) { const a = this.map.get(this.h(x, y, z)); if (a) for (const p of a) out.push(p); }
+    return out;
+  };
+  function basisQuat(fwd) { const s = new V().crossVectors(fwd, new V(0, 1, 0)); if (s.lengthSq() < 1e-4) s.set(1, 0, 0); s.normalize(); const u = new V().crossVectors(s, fwd).normalize(); return new Q().setFromRotationMatrix(new THREE.Matrix4().makeBasis(s, u, fwd.clone().negate())); }
+  const AX = new V(1, 0, 0), AY = new V(0, 1, 0), AZ = new V(0, 0, 1), dq = new Q(), tmpArr = [];
+  const fwdOf = (q) => new V(0, 0, -1).applyQuaternion(q), upOf = (q) => new V(0, 1, 0).applyQuaternion(q), rightOf = (q) => new V(1, 0, 0).applyQuaternion(q);
+  const POD_ANG = [0, 1, 2, 3, 4].map((k) => Math.PI / 2 + k * Math.PI * 2 / 5);   // the five points of the pentagon, the first at the top
+
+  function addPrism(W, o) { o.flash = 0; o.dead = false; W.prisms.push(o); W.grid.add(o); W.dirty = true; return o; }
+  function killPrism(W, o, by) {
+    if (o.dead) return; W.grid.remove(o); o.dead = true; W.dirty = true;
+    if (o.trailOf != null) { const P = W.pilots[o.trailOf]; if (P) P.mass--; }
+    if (by) { by.destroyed++; if (o.kind === 'cluster') by.bonus++; }
+  }
+  // Demolition Derby: each crystal sits at the end of a CORRIDOR (the design's "Ark maximum range": at the edge you are gently
+  // pulled back), and the barricades span it, so they are blasted or rammed, not flown round (lab-only layout)
+  function buildDerby(W, I) {
+    const r = W.rand, legs = WORLD.legs, CR = WORLD.corridor; let at = new V(0, 0, 0), dir = new V(0, 0, -1);
+    const anchors = []; W.legs = []; W.walls = [];
+    const shield = I >= 4 ? 2 : 0, B = WORLD.wallBlock, step = B * 1.04;
+    for (let k = 0; k < legs; k++) {
+      const yaw = (r() * 2 - 1) * 0.6, pitch = I >= 3 ? (r() * 2 - 1) * 0.3 : (r() * 2 - 1) * 0.12;
+      if (k > 0) { dir = dir.clone().applyAxisAngle(AY, yaw); dir.y = clamp(dir.y + pitch, -0.45, 0.45); dir.normalize(); }
+      const end = at.clone().addScaledVector(dir, WORLD.legLen), q = basisQuat(dir), side = rightOf(q), up = upOf(q);
+      anchors.push(end.clone()); W.legs.push({ a: at.clone(), b: end.clone(), dir: dir.clone() });
+      for (let o = 0; o < WORLD.obst[I - 1]; o++) {   // obstacles: small blocks of mass inside the corridor
+        const t = 0.15 + r() * 0.7, c = at.clone().lerp(end, t).addScaledVector(side, (r() * 2 - 1) * CR * 0.6).addScaledVector(up, (r() * 2 - 1) * CR * 0.6);
+        const nx = 2 + Math.floor(r() * 2), ny = 2 + Math.floor(r() * 2);
+        for (let x = 0; x < nx; x++) for (let y = 0; y < ny; y++) for (let z = 0; z < 2; z++)
+          addPrism(W, { pos: c.clone().addScaledVector(side, (x - (nx - 1) / 2) * 7).addScaledVector(up, (y - (ny - 1) / 2) * 7).addScaledVector(dir, (z - 0.5) * 7), quat: q, scale: [6, 6, 6], owner: -1, domain: 'world', shield, kind: 'obst' });
+      }
+      const nW = WORLD.walls[I - 1], n = Math.ceil(CR * 2 / step) + 1;
+      for (let wI = 0; wI < nW; wI++) {   // walls: a disc of mass across the whole corridor (I4: super-shielded, with one hole to thread)
+        const c = at.clone().lerp(end, 0.22 + (wI + 0.5) / nW * 0.62), hx = Math.floor(r() * (n - 4)) + 1, hy = Math.floor(r() * (n - 4)) + 1, holed = shield === 2;
+        let hole = null;
+        for (let x = 0; x < n; x++) for (let y = 0; y < n; y++) {
+          const ox = (x - (n - 1) / 2) * step, oy = (y - (n - 1) / 2) * step;
+          if (ox * ox + oy * oy > (CR + B * 0.5) ** 2) continue;
+          if (holed && x >= hx && x < hx + 3 && y >= hy && y < hy + 3) { if (x === hx + 1 && y === hy + 1) hole = c.clone().addScaledVector(side, ox).addScaledVector(up, oy); continue; }
+          addPrism(W, { pos: c.clone().addScaledVector(side, ox).addScaledVector(up, oy), quat: q, scale: [B, B, 3], owner: -1, domain: 'world', shield, kind: 'wall' });
+        }
+        W.walls.push({ c, n: dir.clone(), hole, leg: k });
+      }
+      if (I >= 3) {   // mass clusters past the crystal, for a last ring detonation before the pickup (the design's I3)
+        const c = end.clone().addScaledVector(dir, 110), m = WORLD.clusterN;
+        for (let x = 0; x < m; x++) for (let y = 0; y < m; y++) for (let z = 0; z < m; z++)
+          addPrism(W, { pos: c.clone().addScaledVector(side, (x - (m - 1) / 2) * 7).addScaledVector(up, (y - (m - 1) / 2) * 7).addScaledVector(dir, (z - (m - 1) / 2) * 7), quat: q, scale: [5.5, 5.5, 5.5], owner: -1, domain: 'world', shield: 0, kind: 'cluster' });
+      }
+      at = end;
+    }
+    W.anchors = anchors; W.target = legs;
+  }
+  function buildFrenzy(W, I) {
+    W.anchors = []; const r = W.rand;
+    for (let k = 0; k < 3; k++) W.anchors.push(new V((r() * 2 - 1) * 380, (r() * 2 - 1) * 120, -200 - r() * 400));   // three shared crystal sites (ring charges)
+    W.target = WORLD.frenzyTarget[I - 1];
+    W.fauna = [];
+    for (let k = 0; k < WORLD.fauna[I - 1]; k++) spawnFauna(W, I);
+  }
+  function spawnFauna(W, I) {
+    const r = W.rand, a = r() * Math.PI * 2, e = (r() * 2 - 1) * 0.5;
+    W.fauna.push({ pos: new V(Math.cos(a) * 900, Math.sin(e) * 300, -300 + Math.sin(a) * 900), vel: new V(), hp: WORLD.faunaHp, bite: 0, spin: r() * 6, id: W.faunaN++, dead: false, target: null });
+  }
+
+  function makeWorld(game, I, pilotsSpec, seed) {
+    const W = { game, I, prisms: [], grid: new Grid(24), pilots: [], shots: [], rings: [], blasts: [], fauna: [], faunaN: 0, t: 0, rand: rng(seed), events: [], over: false, dirty: true, watch: 0, killed: 0 };
+    if (game === 'derby') buildDerby(W, I); else buildFrenzy(W, I);
+    const q0 = basisQuat(new V(0, 0, -1));
+    pilotsSpec.forEach((spec, i) => {
+      const off = (i - (pilotsSpec.length - 1) / 2) * 30;
+      const P = {
+        i, spec, domain: domainOf(spec.domain), pos: new V(off, 0, 60), quat: q0.clone(), cmd: q0.clone(), speed: SHIP.minSpeed + SHIP.throttle, push: new V(),
+        lv: Object.assign({}, spec.lv), m: mults(spec.lv), style: styleOf(spec.style),
+        mode: SHIP.unity ? null : 'speed', ring: true, charge: 0, overdrive: 0, rebuildAt: 0, armsOwed: 0, armsOn: false, aimedPoint: -1, lastBlastAt: -9, ringAngle: 0, ringTarget: 0, owed: 0, shotN: 0, trailAcc: 0, trailOff: 0, lastHitAt: -1, petalsLost: 0,
+        crystals: 0, crystal: null, finishT: null, destroyed: 0, bonus: 0, rings: 0, hits: 0, mass: 0, kills: 0, modeT: { speed: 0, creation: 0, destruction: 0, overdrive: 0, none: 0 },
+        hc: spec.ai ? { level: DIFF[spec.ai], rng: rng(seed * 31 + i * 7 + 1), tracking: -1, noticeAt: 0, misjudged: false, until: 0, off: new V(), unnoticed: false } : null,
+        aim: null, aiState: '', lastAiIn: null, firing: false, aimX: 0, aimY: 0, idle: 0, held: false, ringWas: false,
+        noRing: !!spec.noRing, noModes: !!spec.noModes, trail: [],
+      };
+      if (P.noModes) P.mode = null;
+      W.pilots.push(P); spawnCrystal(W, P);
+    });
+    return W;
+  }
+  function spawnCrystal(W, P) {
+    if (W.game === 'derby') { P.crystal = P.crystals < W.anchors.length ? { pos: W.anchors[P.crystals].clone(), id: (P.i + 1) * 1000 + P.crystals } : null; return; }
+    const k = (P.crystals + P.i) % W.anchors.length; P.crystal = { pos: W.anchors[k].clone(), id: (P.i + 1) * 1000 + P.crystals };
+  }
+  function activeModes(P, W) {   // the modes in force: one, all three in overdrive, none without a ring (the design: "loses access to its 3 modes entirely")
+    if (!P.ring || P.noModes) return { speed: false, creation: false, destruction: false };
+    if (P.overdrive > W.t) return { speed: true, creation: true, destruction: true };
+    return { speed: P.mode === 'speed', creation: P.mode === 'creation', destruction: P.mode === 'destruction' };
+  }
+
+  // ---- the handicap: SkimRaceHandicap's two mistakes, applied to what the AI believes (D24) ----
+  function believe(W, P, target, id) {
+    const h = P.hc; if (!target) return null;
+    if (!h || (h.level.reaction <= 0 && h.level.mistake <= 0)) return target;
+    if (h.tracking !== id) {
+      h.tracking = id; h.noticeAt = W.t + h.level.reaction * lerp(0.5, 1.5, h.rng()); h.misjudged = h.rng() < h.level.mistake;
+      if (h.misjudged) { P.mistakes = (P.mistakes || 0) + 1; const s = new V(h.rng() * 2 - 1, h.rng() * 2 - 1, h.rng() * 2 - 1).normalize(); h.off.copy(s.multiplyScalar(60)); h.until = W.t + 5; }
+    }
+    h.unnoticed = W.t < h.noticeAt; if (h.unnoticed) return null;
+    if (h.misjudged) { const fake = target.clone().add(h.off), to = fake.clone().sub(P.pos); if (W.t > h.until || to.length() < 15 || to.dot(fwdOf(P.cmd)) < 0) h.misjudged = false; else return fake; }
+    return target;
+  }
+  // ---- the AI: writes the same input a gamepad does (D4): one stick, the aim stick, fire, the mode buttons, the ring ----
+  const easeInv = (e) => { e = clamp(e, -0.999, 0.999); return Math.sign(e) * Math.acos(1 - Math.abs(e)) * 2 / Math.PI; };
+  function corridor(W, P, dir, dist, rad) {   // prisms along a ray from the hull: how many, the nearest, how many super-shielded
+    let n = 0, near = Infinity, sup = 0;
+    for (let d = 25; d <= dist; d += 25) {
+      const c = P.pos.clone().addScaledVector(dir, d);
+      for (const p of W.grid.near(c, rad, tmpArr)) { if (p.dead || p.trailOf === P.i) continue; if (p.pos.distanceToSquared(c) < rad * rad) { n++; if (d < near) near = d; if (p.shield === 2) sup++; } }
+    }
+    return { n, near, sup };
+  }
+  // The studio pilot's local planner (lab-only): fan a few headings round the goal and score each by what blocks it
+  // (super-shielded mass cannot be shot open; ordinary mass can, at the style's price) and by how far it bends away.
+  const FAN = [[0, 0], [-0.35, 0], [0.35, 0], [0, -0.3], [0, 0.3], [-0.7, 0], [0.7, 0], [-0.35, 0.3], [0.35, -0.3], [-1.05, 0], [1.05, 0]];
+  function plan(W, P, goal) {
+    const to = goal.clone().sub(P.pos), dist = to.length(); to.normalize();
+    const q = basisQuat(to), r = rightOf(q), u = upOf(q), look = Math.min(dist, P.hc ? P.hc.level.look : 320);
+    let best = null;
+    for (const [yaw, pitch] of FAN) {
+      const d = to.clone().applyAxisAngle(u, -yaw).applyAxisAngle(r, pitch).normalize(), c = corridor(W, P, d, look, 13);
+      let cost = c.sup * 40 + (c.n - c.sup) * P.style.brain.shoot + (Math.abs(yaw) + Math.abs(pitch)) * 60;
+      if (W.legs) { const L = W.legs[Math.min(P.crystals, W.legs.length - 1)], e = P.pos.clone().addScaledVector(d, look), ab = L.b.clone().sub(L.a), t = clamp(e.clone().sub(L.a).dot(ab) / ab.lengthSq(), 0, 1), out = e.distanceTo(L.a.clone().addScaledVector(ab, t)) - WORLD.corridor; if (out > 0) cost += out * 2; }   // the corridor's edge pulls you back
+      if (!best || cost < best.cost) best = { d, c, cost, bend: Math.abs(yaw) + Math.abs(pitch) };
+      if (cost === 0) break;
+    }
+    return best;
+  }
+  function ownInLine(W, P, dir, dist) {   // is any of my own trail in the line of fire?
+    for (let d = 10; d < dist; d += 12) { const c = P.pos.clone().addScaledVector(dir, d); for (const p of W.grid.near(c, 8, tmpArr)) if (!p.dead && p.trailOf === P.i && p.pos.distanceToSquared(c) < 64) return true; }
+    return false;
+  }
+  function wantMode(W, P, m) {   // the AI holds a mode for a second before it changes its mind (no flicker). m null = Cruise (Unity build)
+    if (P.noModes || !P.ring || m === P.mode || (m === null && !SHIP.unity)) return null;
+    if (W.t < (P.modeHold || 0)) return null;
+    const lag = P.hc ? P.hc.level.modeLag : 0;   // Easy and Medium change mode late (lab-only)
+    if (P.wantM !== m) { P.wantM = m; P.wantAt = W.t; }
+    if (W.t - P.wantAt < lag) return null;
+    P.modeHold = W.t + 1; return m === null ? P.mode : m;   // Cruise: press the lit mode again (BrittleStarRules.Press)
+  }
+  function aiInput(W, P) {
+    const br = P.style.brain, f = fwdOf(P.cmd), up = upOf(P.cmd), right = rightOf(P.cmd);
+    let goal = null, why = 'crystal', fire = false, aim = { x: 0, y: 0 }, mode = null, ring = false, threading = false;
+    if (W.game === 'derby') {
+      const seen = P.crystal ? believe(W, P, P.crystal.pos, P.crystal.id) : null, dist = P.crystal ? P.crystal.pos.distanceTo(P.pos) : 0;
+      if (seen) {
+        if (!P.plan || W.t >= P.planAt) { P.plan = plan(W, P, seen); P.planAt = W.t + 0.2; }
+        goal = P.plan.bend > 0 ? P.pos.clone().addScaledVector(P.plan.d, 150) : seen; if (P.plan.bend > 0) why = 'round';
+        const look = P.hc ? P.hc.level.look : 320;
+        for (const w of W.walls) {   // a sealed wall ahead (I4): thread its hole
+          if (!w.hole || w.leg !== Math.min(P.crystals, W.legs.length - 1)) continue;
+          const ahead = w.c.clone().sub(P.pos).dot(w.n);
+          if (ahead > 6 && ahead < look) { goal = w.hole.clone().addScaledVector(w.n, Math.min(40, ahead)); why = 'thread'; threading = true; break; }
+        }
+      }
+      const look = P.hc ? P.hc.level.look : 320, ahead = corridor(W, P, f, look, 12), soft = ahead.n - ahead.sup;
+      const toGoal = seen ? Math.acos(clamp(seen.clone().sub(P.pos).normalize().dot(f), -1, 1)) : 0;
+      let want;
+      if (soft >= br.clearAt && ahead.near < 300) { want = 'destruction'; fire = true; why = 'clear'; aim = { x: 0, y: 0.3 }; }
+      else {
+        if (soft > 0 && ahead.near < 260) { fire = true; why = 'clear'; }
+        if ((dist < 220 && toGoal > 0.35) || (toGoal > 0.9 && dist < 450)) want = br.create > 0.5 ? 'creation' : 'destruction';   // slow only when the pickup is off the nose: no orbiting the crystal at Speed
+        else if (dist > br.speedFar) want = 'speed';
+        // Unity build: Speed is x6 (297 u/s at Time 3), several times the turn radius of a 25 u pickup, so inside 250 u, or its
+        // stopping distance if that is longer (the speed above cruise eases off at 1.5/s), the pilot drops to Cruise instead of
+        // riding Speed onto the crystal and orbiting it. The floor is the hysteresis: a slowed hull must not re-arm Speed.
+        else want = br.create > 0.5 ? 'creation' : SHIP.unity && dist < Math.max(250, (P.speed - cruiseOf()) / FOLLOW + 60) ? null : 'speed';
+      }
+      if (SHIP.unity && threading) want = 'destruction';   // thread at cruise: at x6 the hull overshoots a 36 u hole
+      mode = wantMode(W, P, want);
+      if (P.ring) {
+        const wall = soft >= br.ringAt && ahead.near > 80 && ahead.near < 260, sealed = W.I >= 4 && ahead.sup >= 6 && ahead.near > 80 && ahead.near < 240;   // the blast core strips a super shield
+        if (br.parting && (sealed || wall) && (P.charge > 0 || (dist < 320 && toGoal < 0.5))) { ring = true; why = 'ring'; }   // never strand yourself ringless far from a crystal
+        else if (wall && dist < 320 && toGoal < 0.5 && P.charge === 0) { ring = true; why = 'ring'; }   // a free ring: the crystal just past the wall rebuilds it
+        if (br.parting && P.charge > 0 && W.I >= 3 && dist > 120 && dist < 260 && toGoal < 0.3) { ring = true; why = 'ring'; }   // the design's I3: a parting shot into the cluster past the crystal (spends the charge an overdrive would have used)
+      }
+    } else {   // Fauna Frenzy: lay mass in Creation; turn on a PACK feeding on it, pick off strays in front
+      let pack = null;
+      for (const c of W.fauna) {
+        if (c.dead || !(c.target && c.target.trailOf === P.i)) continue;
+        let n = 0; for (const o of W.fauna) if (!o.dead && o.pos.distanceToSquared(c.pos) < 4900) n++;
+        if (!pack || n > pack.n || (n === pack.n && c.pos.distanceToSquared(P.pos) < pack.c.pos.distanceToSquared(P.pos))) pack = { c, n };
+      }
+      const needCrystal = P.crystal && P.crystal.pos.distanceTo(P.pos) < br.crystalReach;   // a charge, then an overdrive: Creation at Speed's pace
+      if (!P.ring && P.crystal) { goal = believe(W, P, P.crystal.pos, P.crystal.id); why = 'crystal'; }   // no ring, no modes: a crystal first
+      else if (pack && pack.n >= br.crowd && pack.c.pos.distanceTo(P.pos) < rangeOf(P) * br.guard * 2) {
+        const seen = believe(W, P, pack.c.pos, 50000 + pack.c.id), td = pack.c.pos.distanceTo(P.pos); why = 'hunt';
+        if (seen) { goal = seen; fire = seen.clone().sub(P.pos).normalize().dot(f) > 0.97 && td < rangeOf(P) && !ownInLine(W, P, f, td); }   // friendly fire is on: never through your own trail
+        mode = wantMode(W, P, 'destruction');
+        if (P.ring && P.charge > 0 && pack.n >= 3 && td < 240 && td > 60) { ring = true; why = 'ring'; }
+      } else if (needCrystal) { goal = believe(W, P, P.crystal.pos, P.crystal.id); why = 'crystal'; mode = wantMode(W, P, 'creation'); }
+      else {
+        why = 'build'; mode = wantMode(W, P, 'creation');
+        const t = W.t * 0.3 + P.i * 1.7, R = 240 + P.i * 45;
+        goal = new V(Math.cos(t) * R, Math.sin(t * 0.7) * 70, -300 + Math.sin(t) * R);
+      }
+      if (!fire) for (const c of W.fauna) {   // a stray in the gunsight: one stream is enough
+        if (c.dead) continue; const to = c.pos.clone().sub(P.pos), d = to.length();
+        if (d < rangeOf(P) && to.normalize().dot(f) > 0.975 && !ownInLine(W, P, f, d)) { fire = true; break; }
+      }
+    }
+    if (br.hunt > 0) {   // a rival in the gunsight: take its petals
+      for (const O of W.pilots) {
+        if (O === P || O.finishT != null) continue; const to = O.pos.clone().sub(P.pos), d = to.length();
+        if (d < rangeOf(P) && to.normalize().dot(f) > 0.985 - 0.02 * br.hunt) { fire = true; if (br.hunt >= 1) { goal = O.pos.clone(); why = 'hunt'; } }
+      }
+    }
+    if (P.noModes) mode = null; if (P.noRing) ring = false;
+    if (SHIP.unity) aim = { x: 0, y: 0 };   // BrittleStarExecutor.AimStick: the AI aims with its nose and the cockpit gun
+    P.aim = goal; P.aiState = P.hc && P.hc.unnoticed ? 'not noticed' : P.hc && P.hc.misjudged ? 'misjudged' : why;
+    let sx = 0, sy = 0;
+    if (goal) {
+      const d = goal.clone().sub(P.pos).normalize(), x = d.dot(right), y = d.dot(up), z = d.dot(f);
+      const yawErr = Math.atan2(x, z), pitchErr = Math.atan2(y, Math.max(0.05, Math.hypot(x, z)) * (z < 0 ? -1 : 1));
+      sx = easeInv(clamp(yawErr * 2.2, -1, 1)); sy = easeInv(clamp(pitchErr * 2.2, -1, 1));
+    }
+    return { sx, sy, ax: aim.x, ay: aim.y, fire, mode, ring };
+  }
+
+  // ---- one step of one pilot: the same physics for a player and an AI ----
+  const ease2 = (x) => Math.sign(x) * (1 - Math.cos(clamp(Math.abs(x), 0, 1) * Math.PI / 2));   // BaseInputStrategy: Ease(2 x raw)
+  function stepPilot(W, P, inp, dt) {
+    if (P.finishT != null) { P.speed *= Math.exp(-1.2 * dt); P.pos.addScaledVector(fwdOf(P.quat), P.speed * dt); return; }
+    if (SHIP.unity && !P.ring && P.rebuildAt > 0 && W.t >= P.rebuildAt) { P.ring = true; P.rebuildAt = 0; say(W, P, 'Support ring rebuilt'); }   // RingState.Tick
+    const M = activeModes(P, W);
+    if (P.noModes) P.modeT.none += dt; else if (P.overdrive > W.t && P.ring) P.modeT.overdrive += dt; else if (P.ring && P.mode && !P.noModes) P.modeT[P.mode] += dt; else P.modeT.none += dt;
+    // the mode buttons: one mode at a time; no ring, no modes
+    if (SHIP.unity) {   // BrittleStarRules.Press: select a mode, or press it again for Cruise; a ringless hull keeps its pick, off
+      if (inp.mode && !P.noModes) { P.mode = inp.mode === P.mode ? null : inp.mode; if (P.i === W.watch) W.events.push(P.mode ? modeName(P.mode) + ' mode' : 'Cruise'); }
+    } else if (inp.mode && P.ring && !P.noModes && inp.mode !== P.mode) { P.mode = inp.mode; if (P.i === W.watch) W.events.push(modeName(inp.mode) + ' mode'); }
+    // flight: SingleStickVesselTransformer (roll, then yaw, then pitch into the command; the hull follows at 1.5/s)
+    const sx = ease2(inp.sx || 0), sy = ease2(inp.sy || 0);
+    const R = Math.PI / 180;
+    const sp = P.speed * SHIP.rotSpeed;   // RotationThrottleScaler: each axis turns faster with speed
+    dq.setFromAxisAngle(AZ, -sx * (sp + SHIP.bank) * R * dt); P.cmd.multiply(dq);
+    dq.setFromAxisAngle(AY, -sx * (sp + SHIP.yaw) * R * dt); P.cmd.multiply(dq);
+    dq.setFromAxisAngle(AX, sy * (sp + SHIP.pitch) * R * dt); P.cmd.multiply(dq);
+    P.cmd.normalize(); P.quat.slerp(P.cmd, Math.min(1, FOLLOW * dt)).normalize();
+    // Unity: BrittleStarRules.ModeSpeed on the throttle TARGET (x6 in Speed, x0.5 in Creation, both in Overdrive)
+    const boost = SHIP.unity ? (M.speed ? P.m.speedMode : 1) * (M.creation ? U.creationSpeedMultiplier : 1) : M.speed ? 1 + P.m.speedBonus : 1;
+    const target = SHIP.unity ? cruiseOf() * boost : SHIP.minSpeed + SHIP.throttle * boost;
+    P.speed = lerp(P.speed, target, Math.min(1, FOLLOW * dt));
+    const f = fwdOf(P.quat);
+    P.pos.addScaledVector(f, P.speed * dt).addScaledVector(P.push, dt); P.push.multiplyScalar(Math.exp(-2.5 * dt));
+    // the support ring turns with the firing rotation: GunRingTransformer spins it at 20 deg/s (branch); the Falcon's
+    // GunTransformer turns it to the right stick instead (rotationSpeed 0 here)
+    const am = Math.min(1, Math.hypot(inp.ax || 0, inp.ay || 0));
+    if (SHIP.unity) {   // BrittleStarExecutor.AimRing: the stick's direction brings the nearest point round, the short way, at ringTurnRate
+      if (am > U.aimDeadzone) {
+        const aim = Math.atan2(inp.ay, inp.ax); let best = 0, bd = Infinity;
+        for (let k = 0; k < 5; k++) { const d = Math.abs(angDelta(POD_ANG[k] + P.ringAngle, aim)); if (d < bd) { bd = d; best = k; } }
+        P.aimedPoint = best; const want = P.ringAngle + angDelta(P.ringAngle, aim - POD_ANG[best]), step = U.ringTurnRate * R * dt;
+        P.ringAngle += clamp(want - P.ringAngle, -step, step);
+      } else P.aimedPoint = -1;   // the ring holds its last rotation
+    } else if (SHIP.ringSpin > 0) P.ringAngle += SHIP.ringSpin * R * dt;
+    else { if (am > 0.2) P.ringTarget = Math.atan2(inp.ay, inp.ax) - Math.PI / 2; let da = P.ringTarget - P.ringAngle; da = Math.atan2(Math.sin(da), Math.cos(da)); P.ringAngle += da * Math.min(1, 8 * dt); }
+    P.focus = lerp(P.focus || SHIP.focus[0], SHIP.focus[0] + SHIP.focus[1] * am * am, Math.min(1, 10 * dt));   // GunFocus eases to 70 + 300 |R|^2
+    P.aimX = inp.ax || 0; P.aimY = inp.ay || 0;
+    // the gun: fire is owed in seconds and paid in whole volleys (vessel rule 17)
+    if (SHIP.unity) fireUnity(W, P, inp, f, M, am, dt);
+    else { P.firing = !!inp.fire;
+    if (inp.fire) {
+      P.owed = Math.min(P.owed + dt, 4 / SHIP.gunRate);
+      const iv = 1 / SHIP.gunRate;
+      while (P.owed >= iv) { P.owed -= iv; volley(W, P, f, M, am); }
+    } else P.owed = 0; }
+    // Ring Detonation: a press launches the ring; no cooldown, only a ring (the design)
+    if (inp.ring && !P.ringWas && P.ring && !P.noRing) launchRing(W, P, f);
+    P.ringWas = !!inp.ring;
+    // the trail: the cockpit's small block, or in Creation the ring's pentagon of big blocks
+    if (P.trailOff <= W.t && P.speed > 3) {
+      // Speed mode stretches the wavelength so output per second stays put (the design). Unity: by the hull's ACTUAL speed over
+      // its plain cruise, never below the authored wavelength (BrittleStarExecutor.ApplySpeedMode: no momentum hole)
+      const wave = SHIP.unity ? (M.creation ? U.creationSpacing : SHIP.trailWave) * lerp(1, Math.max(1, P.speed / cruiseOf()), U.speedModeSpacingFollow)
+        : SHIP.trailWave * (M.speed ? boost : 1);
+      P.trailAcc += P.speed * dt;
+      while (P.trailAcc >= wave) { P.trailAcc -= wave; layTrail(W, P, f, M); }
+    }
+    // the corridor (Derby): past its edge the hull is gently pulled back toward the leg's line
+    if (W.game === 'derby' && W.legs) {
+      const L = W.legs[Math.min(P.crystals, W.legs.length - 1)], ab = L.b.clone().sub(L.a), t = clamp(P.pos.clone().sub(L.a).dot(ab) / ab.lengthSq(), -0.2, 1.2);
+      const off = P.pos.clone().sub(L.a.clone().addScaledVector(ab, t)), d = off.length();
+      if (d > WORLD.corridor) { P.push.addScaledVector(off.normalize(), -(d - WORLD.corridor) * 6 * dt); P.outside = true; } else P.outside = false;
+    }
+    // the hull against mass
+    for (const p of W.grid.near(P.pos, KIT.hullR + 8, tmpArr)) {
+      if (p.dead || p.trailOf === P.i) continue;
+      const rr = KIT.hullR + p.scale[0] * 0.5; if (p.pos.distanceToSquared(P.pos) > rr * rr) continue;
+      if (p.shield === 2) { P.speed *= KIT.ramStop; P.push.addScaledVector(P.pos.clone().sub(p.pos).normalize(), 25); if (P.i === W.watch && !P.bumped) W.events.push('Super-shielded: stopped short'); P.bumped = 1; }
+      else { killPrism(W, p, P); P.speed *= KIT.ramSlow; }
+    }
+    P.bumped = Math.max(0, (P.bumped || 0) - dt);
+    // the crystal: a charge, or a new ring, or overdrive
+    if (P.crystal && P.crystal.pos.distanceTo(P.pos) < 25) {
+      P.crystals++;
+      if (SHIP.unity) {   // BrittleStarRules.RingState.CollectCrystal: rebuild a missing ring, else store, else Overdrive
+        if (!P.ring && !(P.rebuildAt > 0)) { P.rebuildAt = W.t + U.rebuildSeconds; say(W, P, 'Support ring rebuilding'); }
+        else if (P.charge < 1) { P.charge = 1; say(W, P, 'Ring charge stored'); }
+        else { P.overdrive = Math.max(P.overdrive, W.t) + U.overdriveSeconds; say(W, P, 'OVERDRIVE: all three modes'); }
+      } else if (!P.ring) { P.ring = true; if (P.mode == null && !P.noModes) P.mode = 'speed'; say(W, P, 'Support ring rebuilt'); }
+      else if (P.charge < 1) { P.charge = 1; say(W, P, 'Ring charge stored'); }
+      else { P.overdrive = W.t + KIT.overdrive; say(W, P, 'OVERDRIVE: all three modes'); }
+      if (W.game === 'derby' && P.crystals >= W.target) { P.finishT = W.t; P.crystal = null; say(W, P, 'Finished in ' + W.t.toFixed(1) + ' s'); }
+      else spawnCrystal(W, P);
+    }
+    if (W.game === 'frenzy' && P.finishT == null && P.mass >= W.target) { P.finishT = W.t; say(W, P, 'Target mass in ' + W.t.toFixed(1) + ' s'); }
+  }
+  const say = (W, P, m) => { if (P.i === W.watch) W.events.push(m); };
+  const modeName = (m) => m === 'speed' ? 'Speed' : m === 'creation' ? 'Creation' : 'Destruction';
+  // the turrets: one stream (the cockpit when the aim stick is centred, else the ring point nearest the stick), all five in Destruction
+  function podWorld(P, k, q) {
+    const a = POD_ANG[k] + P.ringAngle, r = ringR();
+    return P.pos.clone().addScaledVector(rightOf(q), Math.cos(a) * r).addScaledVector(upOf(q), Math.sin(a) * r);
+  }
+  function volley(W, P, f, M, am) {
+    const q = P.quat, r = SHIP.shotRadius * P.m.shot * (M.destruction ? KIT.destructionRadius : 1), T = SHIP.gunLife;
+    const converge = S.aimMode === 'converge', spread = converge ? 0 : am * KIT.spreadDeg * Math.PI / 180, muzzles = [], focusPt = P.pos.clone().addScaledVector(f, P.focus || SHIP.focus[0]);
+    if (M.destruction) for (let k = 0; k < 5; k++) muzzles.push(podWorld(P, k, q));
+    else if (P.ring && am > 0.2) { let best = 0, bd = -9; const sa = Math.atan2(P.aimY, P.aimX); for (let k = 0; k < 5; k++) { const d = Math.cos(POD_ANG[k] + P.ringAngle - sa); if (d > bd) { bd = d; best = k; } } muzzles.push(podWorld(P, best, q)); }
+    else muzzles.push(P.pos.clone().addScaledVector(f, 4));
+    for (const m of muzzles) {
+      const n = P.shotN++, a = hash(P.i + 1, n) * Math.PI * 2, s = Math.sqrt(hash(n, P.i + 7)) * spread;
+      const base = converge ? focusPt.clone().sub(m).normalize() : f;   // converge: every gun LookAt()s the focus (GunRingTransformer); spread: the design's drag-to-spread
+      const d = base.clone().addScaledVector(rightOf(q), Math.cos(a) * Math.tan(s)).addScaledVector(upOf(q), Math.sin(a) * Math.tan(s)).normalize();
+      W.shots.push({ p: m, d, v: P.m.shotSpeed + P.speed, t: 0, T, r, owner: P.i, disable: M.destruction, big: M.destruction, dead: false });
+    }
+  }
+  // ---- the Unity build's guns (BrittleStarExecutor.UpdateFire, line for line) ----
+  const spread01 = (am) => clamp((am - U.aimDeadzone) / Math.max(1e-4, 1 - U.aimDeadzone), 0, 1);   // BrittleStarRules.Spread01
+  function armDirection(fwd, out, r, splay01) {   // BrittleStarRules.ArmDirection: stick in, every arm meets the nose axis armFocusDistance ahead; out, splays
+    const inward = Math.atan2(Math.max(0, r), Math.max(1e-3, U.armFocusDistance)) * 180 / Math.PI;
+    const a = lerp(-inward, U.armSplayDegrees, clamp(splay01, 0, 1)) * Math.PI / 180;
+    return fwd.clone().multiplyScalar(Math.cos(a)).addScaledVector(out, Math.sin(a)).normalize();
+  }
+  function fireUnity(W, P, inp, f, M, am, dt) {
+    const T = U.projectileTime * P.m.range, q = P.quat;
+    P.armsOn = M.destruction && P.speed > 3;   // the five ARMS: they fire on their own while the mode is on and the trail runs
+    P.firing = P.armsOn || !!inp.fire;
+    if (P.armsOn) {
+      const iv = 1 / U.destructionFireRate, splay = spread01(am), r = SHIP.shotRadius * U.destructionProjectileScale * P.m.shot;
+      P.armsOwed = Math.min(P.armsOwed + dt, iv * 4);   // a hitch never discharges as a burst (vessel rule 17)
+      while (P.armsOwed >= iv) {
+        P.armsOwed -= iv;
+        for (let k = 0; k < 5; k++) {
+          const m = podWorld(P, k, q), radial = m.clone().sub(P.pos), dist = radial.length();
+          const d = dist > 1e-4 ? armDirection(f, radial.divideScalar(dist), dist, splay) : f.clone();
+          W.shots.push({ p: m, d, v: U.destructionProjectileSpeed + P.speed, t: 0, T, r, r0: r, g: U.roundGrowthFactor, owner: P.i, disable: true, big: true, dead: false });
+        }
+      }
+      P.owed = 0; return;   // the arms ARE the guns while they run; RT adds nothing
+    }
+    P.armsOwed = 0;
+    if (!inp.fire) { P.owed = 0; return; }
+    const iv = 1 / U.fireRate, r = SHIP.shotRadius * U.projectileScale * P.m.shot, spread = spread01(am) * U.maxSpreadDegrees * Math.PI / 180;
+    P.owed = Math.min(P.owed + dt, iv * 3);
+    while (P.owed >= iv) {   // RT: one stream, from the aimed turret or (stick centred, or ringless) the cockpit gun
+      P.owed -= iv;
+      const m = P.ring && P.aimedPoint >= 0 ? podWorld(P, P.aimedPoint, q) : P.pos.clone().addScaledVector(f, 4);
+      const n = P.shotN++, a = hash(P.i + 1, n) * Math.PI * 2, sp = Math.sqrt(hash(n, P.i + 7)) * spread;
+      const d = f.clone().addScaledVector(rightOf(q), Math.cos(a) * Math.tan(sp)).addScaledVector(upOf(q), Math.sin(a) * Math.tan(sp)).normalize();
+      W.shots.push({ p: m, d, v: U.projectileSpeed + P.speed, t: 0, T, r, r0: r, g: U.roundGrowthFactor, owner: P.i, disable: false, big: false, dead: false });
+    }
+  }
+  function layTrail(W, P, f, M) {
+    const q = P.quat;
+    if (SHIP.unity) {
+      if (M.creation) {   // a trail behind EACH ring corner, creationOffset behind it; the cockpit's own trail is paused meanwhile
+        const s = P.m.block, back = P.pos.clone().addScaledVector(f, -U.creationOffset);
+        for (let k = 0; k < 5; k++) {
+          const phi = POD_ANG[k] + P.ringAngle, pos = back.clone().addScaledVector(rightOf(q), Math.cos(phi) * ringR()).addScaledVector(upOf(q), Math.sin(phi) * ringR());
+          addTrail(W, P, pos, q.clone().multiply(new Q().setFromAxisAngle(AZ, phi + Math.PI / 2)), CREATION_BLOCK.map((x) => x * s));
+        }
+      } else addTrail(W, P, P.pos.clone().addScaledVector(f, -SHIP.trailOffset), q, SHIP.trailScale.slice());
+      return;
+    }
+    if (M.creation) {   // a pentagon of big blocks from the ring's points, turning with the firing rotation
+      const s = KIT.creationScale * P.m.block;
+      const edge = 2 * ringR() * Math.sin(Math.PI / 5), back = P.pos.clone().addScaledVector(f, -SHIP.trailOffset);
+      for (let k = 0; k < 5; k++) {   // one block per EDGE of the pentagon, so the trail is a hollow pentagonal frame (the concept art)
+        const phi = POD_ANG[k] + Math.PI / 5 + P.ringAngle, rm = ringR() * Math.cos(Math.PI / 5);
+        const pos = back.clone().addScaledVector(rightOf(q), Math.cos(phi) * rm).addScaledVector(upOf(q), Math.sin(phi) * rm);
+        addTrail(W, P, pos, q.clone().multiply(new Q().setFromAxisAngle(AZ, phi + Math.PI / 2)), [edge * 0.94, SHIP.trailScale[0] * 0.6 * s, SHIP.trailScale[2] * 0.5 * s]);
+      }
+    } else addTrail(W, P, P.pos.clone().addScaledVector(f, -SHIP.trailOffset), q, SHIP.trailScale.slice());
+  }
+  function addTrail(W, P, pos, q, scale) {
+    P.trail.push(addPrism(W, { pos, quat: q.clone(), scale, owner: P.i, domain: P.domain.key, shield: 0, kind: 'trail', trailOf: P.i, born: W.t }));
+    P.mass++; if (P.trail.length > 4000 || (P.trail.length > 600 && P.trail.length % 200 === 0)) P.trail = P.trail.filter((p) => !p.dead);
+    if (W.game === 'derby' && P.mass > 500) { for (const p of P.trail) if (!p.dead) { killPrism(W, p); break; } }
+  }
+  function launchRing(W, P, f) {
+    if (SHIP.unity) {   // RingState.TryLaunch: a stored charge rebuilds the ring over rebuildSeconds (it blooms back)
+      W.rings.push({ pos: P.pos.clone(), vel: f.clone().multiplyScalar(P.speed + U.ringLaunchSpeed), quat: P.quat.clone(), angle: P.ringAngle, t: 0, owner: P.i, blast: P.m.blast, dead: false });
+      P.rings++; P.ring = false; say(W, P, 'Ring launched');
+      if (P.charge > 0) { P.charge = 0; P.rebuildAt = W.t + U.rebuildSeconds; say(W, P, 'Rebuilding from the stored charge'); }
+      return;
+    }
+    W.rings.push({ pos: P.pos.clone(), vel: f.clone().multiplyScalar(P.speed + KIT.ringLaunch), quat: P.quat.clone(), angle: P.ringAngle, t: 0, owner: P.i, blast: P.m.blast, dead: false });
+    P.rings++; P.ring = false; say(W, P, 'Ring launched');
+    if (P.charge > 0) { P.charge = 0; P.ring = true; say(W, P, 'Ring rebuilt from the stored charge'); }
+  }
+  function stepShots(W, dt) {
+    for (const s of W.shots) {
+      if (s.dead) continue;
+      const step = s.v * Math.cos(Math.PI * Math.min(1, s.t / s.T) / 2) * dt; s.t += dt;   // Projectile: the round eases to rest over its life
+      if (s.g) s.r = s.r0 * lerp(1, s.g, Math.min(1, s.t / s.T));   // Projectile.ApplyFlightGrowth: it swells, and hits, as it flies
+      const a = s.p, b = a.clone().addScaledVector(s.d, step);
+      // prisms along the segment
+      let hit = null, hd = Infinity;
+      for (let x = 0; x <= step + 1; x += 16) {
+        const c = a.clone().addScaledVector(s.d, Math.min(x, step));
+        for (const p of W.grid.near(c, 12, tmpArr)) {
+          if (p.dead) continue; const rr = s.r + p.scale[0] * 0.5, rel = p.pos.clone().sub(a), along = clamp(rel.dot(s.d), 0, step);
+          if (rel.addScaledVector(s.d, -along).lengthSq() < rr * rr && along < hd) { hd = along; hit = p; }
+        }
+        if (hit) break;
+      }
+      // vessels along the segment (friendly fire is on, the design; never the shooter)
+      let vh = null, vd = Infinity;
+      for (const O of W.pilots) {
+        if (O.i === s.owner) continue; const rel = O.pos.clone().sub(a), along = clamp(rel.dot(s.d), 0, step);
+        if (rel.addScaledVector(s.d, -along).lengthSq() < (KIT.hullR + s.r) ** 2 && along < vd) { vd = along; vh = O; }
+      }
+      for (const c of W.fauna) {
+        if (c.dead) continue; const rel = c.pos.clone().sub(a), along = clamp(rel.dot(s.d), 0, step);
+        if (rel.addScaledVector(s.d, -along).lengthSq() < (6 + s.r) ** 2 && along < Math.min(hd, vd)) { c.hp -= s.big ? 2 : 1; s.dead = true; if (c.hp <= 0) { c.dead = true; W.pilots[s.owner].kills++; W.killed++; } break; }
+      }
+      if (s.dead) continue;
+      if (vh && vd < hd) { s.dead = true; petalHit(W, W.pilots[s.owner], vh); continue; }
+      if (hit) {
+        s.dead = true; const by = W.pilots[s.owner];
+        if (hit.shield === 2) { hit.flash = 1; W.dirty = true; }
+        else if (hit.shield === 1) { hit.shield = 0; hit.flash = 1; W.dirty = true; }
+        else killPrism(W, hit, by);
+        continue;
+      }
+      s.p = b; if (s.t >= s.T) s.dead = true;
+    }
+    if (W.shots.length > 600 && (W.shotGc = (W.shotGc || 0) + 1) % 15 === 0) W.shots = W.shots.filter((s) => !s.dead);   // slow rounds: thousands alive, so compact twice a second, not every step
+  }
+  function petalHit(W, by, O) {   // a hit on a vessel: petals only (LOCKED), one per victim per 0.05 s; nothing moves, slows or switches off
+    if (O.finishT != null || W.t - O.lastHitAt < KIT.hitWindow) return;
+    O.lastHitAt = W.t; O.petalsLost++; by.hits++;
+    if (O.i === W.watch && O.petalsLost % 10 === 1) W.events.push('Hit by ' + by.domain.name + ': petals');
+  }
+  function stepRings(W, dt) {
+    for (const R of W.rings) {
+      if (R.dead) continue;
+      R.t += dt; R.pos.addScaledVector(R.vel, dt);
+      const fuse = SHIP.unity ? U.ringFuseSeconds : KIT.ringFuse, reach = ringR() * (SHIP.unity ? U.ringContactRadiusScale : 1);
+      const armed = !SHIP.unity || R.t >= 0.06;   // Unity: clear of the hull it left
+      const spared = (p) => SHIP.unity ? p.trailOf === R.owner && W.t - p.born < U.skimGraceSeconds : p.trailOf === R.owner;
+      let boom = R.t > fuse;
+      if (!boom && armed) for (const p of W.grid.near(R.pos, reach + 10, tmpArr)) if (!p.dead && !spared(p) && p.pos.distanceTo(R.pos) < reach + p.scale[0] * 0.5) { boom = true; break; }
+      if (!boom && armed) for (const O of W.pilots) if (O.i !== R.owner && O.pos.distanceTo(R.pos) < reach + KIT.hullR) { boom = true; break; }
+      if (boom) detonate(W, R);
+    }
+  }
+  function detonate(W, R) {
+    if (SHIP.unity) {   // the RING EXPLOSION: a flat disk in the ring's plane, as thick as the ring (x Charge), as wide as the nucleus
+      R.dead = true;
+      W.blasts.push({ unity: true, owner: R.owner, pos: R.pos.clone(), quat: R.quat.clone(), n: fwdOf(R.quat), t: 0, inner: ringR(),
+        outer: Math.max(ringR(), U.nucleusRadius), half: U.ringHalfThickness * R.blast, last: 0, r: ringR(), gone: 0, hit: new Set(), done: false });
+      return;
+    }
+    R.dead = true; const by = W.pilots[R.owner], br = KIT.blastR * R.blast, pr = KIT.planeR * R.blast, n = fwdOf(R.quat);
+    W.blasts.push({ pos: R.pos.clone(), quat: R.quat.clone(), t: 0, br, pr });
+    let gone = 0;
+    for (const p of W.grid.near(R.pos, pr + 8, []).slice()) {   // the ball, then the wave in the ring's plane; allied mass too (the design)
+      if (p.dead) continue; const rel = p.pos.clone().sub(R.pos), d = rel.length(), off = Math.abs(rel.dot(n));
+      if (d < br) { if (p.shield === 2) { p.shield = 1; p.flash = 1; } else { killPrism(W, p, by); gone++; } }
+      else if (d < pr && off < KIT.planeT) { if (p.shield === 2) { p.flash = 1; } else { killPrism(W, p, by); gone++; } }
+    }
+    W.dirty = true;
+    for (const O of W.pilots) {   // vessels caught in it: a scored hit, petals only (LOCKED); the owner is spared
+      if (O.i === R.owner || O.finishT != null) continue; const rel = O.pos.clone().sub(R.pos), d = rel.length();
+      if (d < br || (d < pr && Math.abs(rel.dot(n)) < KIT.planeT * 2)) { O.lastHitAt = -1; petalHit(W, by, O); if (O.i === W.watch) W.events.push('Caught in ' + by.domain.name + "'s ring blast"); }
+    }
+    for (const c of W.fauna) if (!c.dead && c.pos.distanceTo(R.pos) < br * 1.2) { c.dead = true; by.kills++; W.killed++; }
+    if (R.owner === W.watch) W.events.push('Ring burst: ' + gone + ' prisms');
+  }
+  // BrittleStarExecutor.UpdateWaves / SweepWave: swept out from the ring's radius to the nucleus's over ringBlastSeconds
+  // (ease-out, ten sweeps), breaking every prism it passes, any domain; a rival hull it passes loses petals, once
+  function stepDisk(W, b) {
+    const t01 = Math.min(1, b.t / U.ringBlastSeconds), radius = lerp(b.inner, b.outer, Math.sin(t01 * Math.PI / 2)), stride = (b.outer - b.inner) / 10;
+    if (radius - b.last >= stride * 0.999 || t01 >= 1) { sweepDisk(W, b, b.last, radius); b.last = radius; }
+    b.r = radius;
+    if (t01 >= 1 && !b.done) { b.done = true; if (b.owner === W.watch) W.events.push('Ring explosion: ' + b.gone + ' prisms'); }
+  }
+  const DISK_AX = [new V(), new V(), new V()];
+  function sweepDisk(W, b, from, to) {
+    const by = W.pilots[b.owner], n = b.n, rel = new V();
+    for (const p of W.prisms) {
+      if (p.dead) continue;
+      rel.copy(p.pos).sub(b.pos); const along = rel.dot(n);
+      if (Math.abs(along) > b.half + p.scale[0] + p.scale[1] + p.scale[2]) continue;   // cheap reject before the exact slab test
+      DISK_AX[0].set(1, 0, 0).applyQuaternion(p.quat); DISK_AX[1].set(0, 1, 0).applyQuaternion(p.quat); DISK_AX[2].set(0, 0, 1).applyQuaternion(p.quat);
+      const ext = 0.5 * (Math.abs(DISK_AX[0].dot(n)) * p.scale[0] + Math.abs(DISK_AX[1].dot(n)) * p.scale[1] + Math.abs(DISK_AX[2].dot(n)) * p.scale[2]);
+      if (Math.abs(along) > b.half + ext) continue;   // BrittleStarRules.DiskReaches: a disk, not a sphere
+      const rad = rel.addScaledVector(n, -along).length(); if (rad > to || rad < from) continue;
+      if (p.trailOf === b.owner && W.t - p.born < U.skimGraceSeconds) continue;   // your own fresh trail (SelfTrailContactConfig)
+      if (p.shield === 2) p.flash = 1;   // Prism.Damage: super-shielded mass refuses
+      else if (p.shield === 1) { p.shield = 0; p.flash = 1; }   // a shield pops first
+      else { killPrism(W, p, by); b.gone++; }
+    }
+    W.dirty = true;
+    for (const O of W.pilots) {
+      if (O.i === b.owner || O.finishT != null || b.hit.has(O.i)) continue;
+      rel.copy(O.pos).sub(b.pos); const along = rel.dot(n);
+      if (Math.abs(along) > b.half + KIT.hullR || rel.addScaledVector(n, -along).length() > to + KIT.hullR) continue;
+      b.hit.add(O.i);   // once per hull per explosion
+      if (W.t - O.lastBlastAt < U.ringBlastHitCooldown) continue;   // CombatHitDrain: the MissileBlast cooldown
+      O.lastBlastAt = W.t; O.lastHitAt = -1; petalHit(W, by, O);
+      if (O.i === W.watch) W.events.push('Caught in ' + by.domain.name + "'s ring explosion");
+    }
+    for (const c of W.fauna) {
+      if (c.dead) continue; rel.copy(c.pos).sub(b.pos); const along = rel.dot(n);
+      if (Math.abs(along) <= b.half + 2.2 && rel.addScaledVector(n, -along).length() <= to) { c.dead = true; by.kills++; W.killed++; }
+    }
+  }
+  function stepFauna(W, dt) {
+    const I = W.I, sp = WORLD.faunaSpeed[I - 1];
+    for (const c of W.fauna) {
+      if (c.dead) continue;
+      if (!c.target || c.target.dead || W.rand() < dt * 0.3) {   // the nearest trail block of anyone's
+        let best = null, bd = 700 * 700;
+        for (const p of W.grid.near(c.pos, 60, tmpArr)) { if (p.dead || p.trailOf == null) continue; const d = p.pos.distanceToSquared(c.pos); if (d < bd) { bd = d; best = p; } }
+        if (!best) for (const P of W.pilots) { const L = P.trail, n = L.length; for (let k = 0; k < Math.min(24, n); k++) { const p = L[Math.floor(W.rand() * n)]; if (p.dead) continue; const d = p.pos.distanceToSquared(c.pos); if (d < bd) { bd = d; best = p; } } }
+        if (!best) for (const P of W.pilots) { const d = P.pos.distanceToSquared(c.pos); if (d < bd * 4) { bd = d; best = { pos: P.pos, trailOf: null, dead: false, wander: true }; } }
+        c.target = best;
+      }
+      const goal = c.target ? c.target.pos : new V(0, 0, -300), to = goal.clone().sub(c.pos), d = to.length();
+      c.vel.lerp(to.normalize().multiplyScalar(sp), Math.min(1, dt * 1.5)); c.pos.addScaledVector(c.vel, dt); c.spin += dt * 3;
+      if (c.target && !c.target.wander && d < 8) { c.bite -= dt; if (c.bite <= 0) { c.bite = WORLD.faunaBite[I - 1]; killPrism(W, c.target); c.target = null; } }
+    }
+    const alive = W.fauna.filter((c) => !c.dead).length;
+    if (alive < WORLD.fauna[I - 1] && W.rand() < dt * 0.25) spawnFauna(W, I);
+    if (W.fauna.length > 60) W.fauna = W.fauna.filter((c) => !c.dead);
+  }
+  function stepWorld(W, dt, inputs) {
+    W.t += dt;
+    W.pilots.forEach((P, i) => stepPilot(W, P, inputs[i], dt));
+    stepShots(W, dt); stepRings(W, dt);
+    if (W.game === 'frenzy') stepFauna(W, dt);
+    for (const b of W.blasts) { b.t += dt; if (b.unity && !b.done) stepDisk(W, b); }
+    if (W.blasts.length > 8) W.blasts = W.blasts.filter((b) => (b.unity && !b.done) || b.t < 1.2);
+    for (const p of W.prisms) if (p.flash > 0) { p.flash = Math.max(0, p.flash - dt * 3); W.dirty = true; }
+    if (W.prisms.length > 6000) { W.prisms = W.prisms.filter((p) => !p.dead); W.dirty = true; }
+    if (!W.over && (W.pilots.every((P) => P.finishT != null) || W.t > 300)) W.over = true;
+  }
+
+  // ---- headless runs for the scorecard ----
+  function runHeadless(game, I, level, seed, extra) {
+    const W = makeWorld(game, I, [Object.assign({ ai: level, domain: 'jade', lv: Object.assign({}, styleOf((extra && extra.style) || 'Balanced').lv), style: 'Balanced' }, extra || {})], seed); W.watch = -1;
+    const dt = 1 / 30; while (!W.over) stepWorld(W, dt, [aiInput(W, W.pilots[0])]);
+    const P = W.pilots[0], tot = W.t || 1;
+    return { finish: P.finishT, destroyed: P.destroyed, rings: P.rings, kills: P.kills, share: { speed: P.modeT.speed / tot, creation: P.modeT.creation / tot, destruction: P.modeT.destruction / tot, overdrive: P.modeT.overdrive / tot, none: P.modeT.none / tot } };
+  }
+
+  // ================= rendering =================
+  const canvas = $('c');
+  const renderer = VesselStudioTheme.renderer(THREE, { canvas, antialias: true });   // no WebGL: the stage says so, the rest loads (D34)
+  renderer.setPixelRatio(Math.min(2, window.devicePixelRatio || 1));
+  const scene = new THREE.Scene();
+  const cam = new THREE.PerspectiveCamera(70, 16 / 10, 0.5, 9000);
+  const ENV = VesselStudioLook.install(scene, { field: 2400, prismScale: 2.4 });   // the Vessel Studio look (D19)
+  const mark = VesselStudioLook.marker($('viewport'));
+  const MAXP = 9000;
+  const prismMesh = new THREE.InstancedMesh(new THREE.BoxGeometry(1, 1, 1), new THREE.MeshStandardMaterial({ roughness: 0.5, metalness: 0.05, emissive: 0x0b1b4a, flatShading: true }), MAXP);
+  prismMesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage); scene.add(prismMesh);
+  // (three.js keeps vViewPosition = -mvPosition, so its z is the distance in front of the camera)
+  // prisms right in front of the camera dissolve (a screen-door dither, as the game's prism occlusion dither does), so the
+  // chase camera never looks through a wall of your own Creation trail
+  prismMesh.material.onBeforeCompile = (sh) => {
+    sh.fragmentShader = sh.fragmentShader.replace('#include <dithering_fragment>', '#include <dithering_fragment>\n  { float dz = vViewPosition.z; if (dz < 26.0) { float a = clamp((dz - 8.0) / 18.0, 0.0, 1.0); float n = fract(sin(dot(floor(gl_FragCoord.xy), vec2(12.9898, 78.233))) * 43758.5453); if (n > a) discard; } }');
+  };
+  const shieldMesh = new THREE.InstancedMesh(new THREE.OctahedronGeometry(1, 0), new THREE.MeshBasicMaterial({ color: 0xbfe6ff, wireframe: true, transparent: true, opacity: 0.55 }), MAXP);
+  shieldMesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage); scene.add(shieldMesh);
+  const MAXS = 9000;   // slow rounds: 1350-2160 alive per hull in Destruction Mode
+  const shotMesh = new THREE.InstancedMesh(new THREE.SphereGeometry(1, 8, 6), new THREE.MeshBasicMaterial({ color: 0xffffff }), MAXS);
+  shotMesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage); shotMesh.frustumCulled = false; scene.add(shotMesh);
+  const COL = { world: new THREE.Color(0x3a4380), cluster: new THREE.Color(0x6a4f9a) };
+  for (const d of DOMAINS) COL[d.key] = new THREE.Color(d.color);
+  const WHITE = new THREE.Color(0xffffff), m4 = new THREE.Matrix4(), tmpC = new THREE.Color(), sc = new V(), qI = new Q();
+  function drawPrisms(W) {
+    let n = 0, ns = 0;
+    for (const p of W.prisms) {
+      if (p.dead || n >= MAXP) continue;
+      sc.set(p.scale[0], p.scale[1], p.scale[2]); m4.compose(p.pos, p.quat, sc); prismMesh.setMatrixAt(n, m4);
+      tmpC.copy(p.kind === 'cluster' ? COL.cluster : (COL[p.domain] || COL.world)); if (p.flash > 0) tmpC.lerp(WHITE, p.flash);
+      prismMesh.setColorAt(n, tmpC); n++;
+      if (p.shield && ns < MAXP) { sc.multiplyScalar(p.shield === 2 ? 1.05 : 0.8); m4.compose(p.pos, p.quat, sc); shieldMesh.setMatrixAt(ns++, m4); }
+    }
+    prismMesh.count = n; shieldMesh.count = ns;
+    prismMesh.instanceMatrix.needsUpdate = true; shieldMesh.instanceMatrix.needsUpdate = true;
+    if (prismMesh.instanceColor) prismMesh.instanceColor.needsUpdate = true;
+    W.dirty = false;
+  }
+  function drawShots(W) {
+    let n = 0;
+    for (const s of W.shots) {
+      if (s.dead || n >= MAXS) continue;
+      sc.set(s.r, s.r, s.r * 3); m4.compose(s.p, qI.setFromUnitVectors(AZ, s.d), sc); shotMesh.setMatrixAt(n, m4);
+      shotMesh.setColorAt(n, tmpC.copy(COL[W.pilots[s.owner].domain.key]).lerp(WHITE, s.disable ? 0.15 : 0.55)); n++;
+    }
+    shotMesh.count = n; shotMesh.instanceMatrix.needsUpdate = true; if (shotMesh.instanceColor) shotMesh.instanceColor.needsUpdate = true;
+  }
+  // ---- the hull: a cockpit dart inside a pentagon of five engine-and-gun pods, held by suspended energy (the concept art) ----
+  function makeHull(color) {
+    const g = new THREE.Group(), dom = new THREE.Color(color);
+    const shell = new THREE.MeshStandardMaterial({ color: 0xd9dbe6, roughness: 0.35, metalness: 0.55, flatShading: true });
+    const accent = new THREE.MeshStandardMaterial({ color: dom, roughness: 0.4, metalness: 0.2, emissive: dom.clone().multiplyScalar(0.35), flatShading: true });
+    const cockpit = new THREE.Group(); g.add(cockpit);
+    const body = new THREE.Mesh(new THREE.ConeGeometry(1.5, 7.5, 4), shell); body.rotation.x = -Math.PI / 2; body.rotation.y = Math.PI / 4; body.scale.set(1, 1, 0.55); cockpit.add(body);
+    const fin = new THREE.Mesh(new THREE.BoxGeometry(5.2, 0.25, 2.2), accent); fin.position.z = 1.6; cockpit.add(fin);
+    const canopy = new THREE.Mesh(new THREE.SphereGeometry(0.7, 10, 8), new THREE.MeshStandardMaterial({ color: 0x1a2240, roughness: 0.1, metalness: 0.6, emissive: 0x112244 })); canopy.position.set(0, 0.55, -0.6); canopy.scale.set(1, 0.7, 1.8); cockpit.add(canopy);
+    const cockGlow = new THREE.Mesh(new THREE.CircleGeometry(0.6, 14), new THREE.MeshBasicMaterial({ color: 0xffb066, transparent: true, opacity: 0.9, blending: THREE.AdditiveBlending, depthWrite: false })); cockGlow.position.z = 3.6; cockpit.add(cockGlow);
+    const ringG = new THREE.Group(); g.add(ringG);
+    const pods = [], glows = [], barrels = [], links = [], edges = [], plumes = [];
+    const plumeMat = new THREE.MeshBasicMaterial({ color: 0xff9a4a, transparent: true, opacity: 0.55, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide });
+    const edgeMat = new THREE.MeshBasicMaterial({ color: dom, transparent: true, opacity: 0.75, blending: THREE.AdditiveBlending, depthWrite: false });
+    const linkMat = new THREE.MeshBasicMaterial({ color: dom, transparent: true, opacity: 0.28, blending: THREE.AdditiveBlending, depthWrite: false });
+    for (let k = 0; k < 5; k++) {
+      const a = POD_ANG[k], x = Math.cos(a) * ringR(), y = Math.sin(a) * ringR();
+      const pod = new THREE.Group(); pod.position.set(x, y, 0.5); ringG.add(pod); pods.push(pod);
+      const eng = new THREE.Mesh(new THREE.CylinderGeometry(0.9, 1.15, 3.6, 10), shell); eng.rotation.x = Math.PI / 2; pod.add(eng);
+      const band = new THREE.Mesh(new THREE.TorusGeometry(1.05, 0.16, 6, 16), accent); band.position.z = 0.4; pod.add(band);
+      const barrel = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.22, 2.6, 8), accent); barrel.rotation.x = Math.PI / 2; barrel.position.z = -2.9; pod.add(barrel); barrels.push(barrel);
+      const glow = new THREE.Mesh(new THREE.CircleGeometry(0.7, 14), new THREE.MeshBasicMaterial({ color: 0xffb066, transparent: true, opacity: 0.1, blending: THREE.AdditiveBlending, depthWrite: false })); glow.position.z = 1.85; pod.add(glow); glows.push(glow);
+      const plume = new THREE.Mesh(new THREE.ConeGeometry(0.55, 4, 10, 1, true), plumeMat); plume.rotation.x = Math.PI / 2; plume.position.z = 3.9; pod.add(plume); plumes.push(plume);
+      const len = Math.hypot(x, y) - 2.2, link = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.12, len, 6), linkMat); link.position.set(x / 2, y / 2, 0.5); link.rotation.z = a - Math.PI / 2; ringG.add(link); links.push(link);
+      const b2 = POD_ANG[(k + 1) % 5], x2 = Math.cos(b2) * ringR(), y2 = Math.sin(b2) * ringR(), el = Math.hypot(x2 - x, y2 - y) - 2.0;
+      const edge = new THREE.Mesh(new THREE.BoxGeometry(el, 0.22, 0.22), edgeMat); edge.position.set((x + x2) / 2, (y + y2) / 2, 0.5); edge.rotation.z = Math.atan2(y2 - y, x2 - x); ringG.add(edge); edges.push(edge);
+    }
+    const circle = new THREE.Mesh(new THREE.TorusGeometry(ringR(), 0.14, 6, 48), edgeMat.clone()); circle.position.z = 0.5; ringG.add(circle);
+    g.userData = { cockpit, ringG, pods, glows, barrels, links, edges, circle, edgeMat, cockGlow, plumes };
+    return g;
+  }
+  function poseHull(h, P, W, vis) {
+    const u = h.userData, M = activeModes(P, W), m = P.m;
+    h.position.copy(P.pos); h.quaternion.copy(P.quat);
+    u.cockpit.scale.setScalar(m.cockpit); u.ringG.visible = P.ring; u.ringG.rotation.z = P.ringAngle;
+    for (const pod of u.pods) pod.scale.setScalar(m.pods);
+    for (const b of u.barrels) { b.scale.y = m.barrels; b.position.z = -1.6 - 1.3 * m.barrels; }
+    const circ = S.hullRing === 'circle' ? 1 : S.hullRing === 'penta' ? 0 : m.circle;
+    for (const e of u.edges) e.visible = circ < 0.5; u.circle.visible = circ >= 0.5;
+    // thrusters: the cockpit always; the outer engines as the hull banks, all five in Speed mode (the design)
+    const turn = Math.abs(P.lastSx || 0);
+    u.glows.forEach((gl, k) => { const side = Math.cos(POD_ANG[k] + P.ringAngle); gl.material.opacity = M.speed ? 0.95 : clamp(0.08 + turn * Math.abs(side) * 0.8, 0.08, 0.85); gl.scale.setScalar(M.speed ? 1.25 : 0.9); });
+    u.plumes.forEach((pl, k) => { const on = M.speed ? 1 : u.glows[k].material.opacity; pl.visible = on > 0.15; pl.scale.set(1, 0.4 + on * 1.2 + (M.speed ? 0.25 * Math.sin(performance.now() / 45 + k) : 0), 1); pl.position.z = 1.9 + pl.scale.y * 2; });
+    u.edgeMat.opacity = M.creation ? 1 : 0.6; u.cockGlow.material.opacity = 0.95;
+    h.visible = vis;
+  }
+  const view = { hulls: [], crystals: [], lines: [], rings: [], blastMeshes: [], faunaMeshes: [] };
+  function mountWorld(W) {
+    const lo = new V(Infinity, Infinity, Infinity), hi = new V(-Infinity, -Infinity, -Infinity);
+    for (const a of W.anchors.concat([new V()])) { lo.min(a); hi.max(a); }
+    const ctr = lo.clone().add(hi).multiplyScalar(0.5); let rad = 0; for (const a of W.anchors) rad = Math.max(rad, Math.hypot(a.x - ctr.x, a.z - ctr.z));
+    ENV.placeField(ctr, (rad + 300) / 0.75, Math.max(200, (hi.y - lo.y) * 0.5 + 180));
+    for (const o of [...view.hulls, ...view.crystals, ...view.lines, ...view.rings, ...view.blastMeshes, ...view.faunaMeshes]) scene.remove(o);
+    view.hulls = []; view.crystals = []; view.lines = []; view.rings = []; view.blastMeshes = []; view.faunaMeshes = [];
+    for (const P of W.pilots) {
+      const h = makeHull(P.domain.color); scene.add(h); view.hulls.push(h);
+      const c = VesselStudioLook.crystal(P.domain.color, 7); scene.add(c); view.crystals.push(c);
+      const lg = new THREE.BufferGeometry().setFromPoints([new V(), new V()]);
+      const ln = new THREE.Line(lg, new THREE.LineBasicMaterial({ color: P.domain.color, transparent: true, opacity: 0.85 })); ln.frustumCulled = false; scene.add(ln); view.lines.push(ln);
+    }
+    drawPrisms(W);
+  }
+  const ringPool = [], blastPool = [], faunaPool = [];
+  function ringMesh(i) { if (!ringPool[i]) { const r = makeHull(0xffcf8a); r.userData.cockpit.visible = false; ringPool[i] = r; scene.add(r); } return ringPool[i]; }
+  function blastMesh(i) {
+    if (!blastPool[i]) {
+      const g = new THREE.Group();
+      const ball = new THREE.Mesh(new THREE.SphereGeometry(1, 24, 16), new THREE.MeshBasicMaterial({ color: 0xffcf8a, transparent: true, opacity: 0.5, blending: THREE.AdditiveBlending, depthWrite: false }));
+      const wave = new THREE.Mesh(new THREE.RingGeometry(0.92, 1, 64), new THREE.MeshBasicMaterial({ color: 0xffe3b8, transparent: true, opacity: 0.7, side: THREE.DoubleSide, blending: THREE.AdditiveBlending, depthWrite: false }));
+      const band = new THREE.Mesh(new THREE.RingGeometry(0.985, 1, 128), new THREE.MeshBasicMaterial({ color: 0xffe3b8, transparent: true, opacity: 0.85, side: THREE.DoubleSide, blending: THREE.AdditiveBlending, depthWrite: false }));
+      g.add(ball, wave, band); g.userData = { ball, wave, band }; blastPool[i] = g; scene.add(g);
+    }
+    return blastPool[i];
+  }
+  function faunaMesh(i) {   // the Frenzy's creatures: little brittle stars, five arms that row
+    if (!faunaPool[i]) {
+      const g = new THREE.Group(), mat = new THREE.MeshStandardMaterial({ color: 0xff8fb1, emissive: 0x3a0b20, roughness: 0.6, flatShading: true }), arms = [];
+      g.add(new THREE.Mesh(new THREE.SphereGeometry(2.2, 10, 8), mat));
+      for (let k = 0; k < 5; k++) { const pivot = new THREE.Group(); pivot.rotation.y = k * Math.PI * 2 / 5; const arm = new THREE.Mesh(new THREE.ConeGeometry(0.7, 9, 5), mat); arm.rotation.z = -Math.PI / 2; arm.position.x = 5.5; pivot.add(arm); g.add(pivot); arms.push(pivot); }
+      g.userData.arms = arms; faunaPool[i] = g; scene.add(g);
+    }
+    return faunaPool[i];
+  }
+  function drawWorld(W, t) {
+    if (W.dirty) drawPrisms(W);
+    drawShots(W);
+    W.pilots.forEach((P, i) => {
+      poseHull(view.hulls[i], P, W, true);
+      const c = view.crystals[i]; c.visible = !!P.crystal; if (P.crystal) { c.position.copy(P.crystal.pos); VesselStudioLook.spinCrystal(c, t + i); }
+      const ln = view.lines[i], show = S.thinking && !!P.spec.ai && !!P.aim && P.finishT == null; ln.visible = show;
+      if (show) {
+        const a = ln.geometry.attributes.position; a.setXYZ(0, P.pos.x, P.pos.y, P.pos.z); a.setXYZ(1, P.aim.x, P.aim.y, P.aim.z); a.needsUpdate = true;
+        ln.material.color.set(P.hc && P.hc.misjudged ? 0xff5c6c : P.hc && P.hc.unnoticed ? 0xffb454 : /clear|ring|round|hunt|thread/.test(P.aiState) ? 0xc48bff : 0x4be38f);
+      }
+    });
+    let k = 0;
+    for (const R of W.rings) { if (R.dead) continue; const m = ringMesh(k++); m.visible = true; m.position.copy(R.pos); m.quaternion.copy(R.quat); m.userData.ringG.rotation.z = R.angle + R.t * 9; }
+    for (; k < ringPool.length; k++) ringPool[k].visible = false;
+    k = 0;
+    for (const b of W.blasts) {
+      if (b.unity) {   // the ring explosion's band, in the owner's domain colour, at the disk's edge
+        const fade = b.done ? 1 - (b.t - U.ringBlastSeconds) / 0.25 : 1; if (fade <= 0) continue;
+        const m = blastMesh(k++), u = m.userData; m.visible = true; m.position.copy(b.pos); m.quaternion.copy(b.quat);
+        u.ball.visible = false; u.wave.visible = false; u.band.visible = true; u.band.scale.setScalar(Math.max(0.01, b.r));
+        u.band.material.color.set(W.pilots[b.owner].domain.color); u.band.material.opacity = 0.9 * fade; continue;
+      }
+      if (b.t > 1.1) continue; const m = blastMesh(k++), u = m.userData, e = 1 - Math.pow(1 - Math.min(1, b.t / 0.5), 3);
+      m.visible = true; m.position.copy(b.pos); m.quaternion.copy(b.quat); u.ball.visible = true; u.wave.visible = true; u.band.visible = false;
+      u.ball.scale.setScalar(Math.max(0.01, b.br * e)); u.ball.material.opacity = 0.55 * (1 - b.t / 1.1);
+      u.wave.scale.setScalar(Math.max(0.01, b.pr * Math.min(1, b.t / 0.7))); u.wave.material.opacity = 0.8 * (1 - b.t / 1.1);
+    }
+    for (; k < blastPool.length; k++) blastPool[k].visible = false;
+    k = 0;
+    for (const c of W.fauna) {
+      if (c.dead) continue; const m = faunaMesh(k++); m.visible = true; m.position.copy(c.pos);
+      if (c.vel.lengthSq() > 1) m.quaternion.setFromUnitVectors(AY, c.vel.clone().normalize().multiplyScalar(-1).add(new V(0, 1.5, 0)).normalize());
+      m.userData.arms.forEach((a, j) => { a.rotation.x = Math.sin(c.spin + j * 1.25) * 0.35; });
+    }
+    for (; k < faunaPool.length; k++) faunaPool[k].visible = false;
+  }
+
+  // ---- cameras: Chase · Follow · Free (D16) ----
+  const camPos = new V(), camLook = new V(), free = { yaw: 2.6, pitch: 0.35, dist: 110 };
+  let chased = -1;
+  function viewed(W) { return W.pilots[Math.min(S.view, W.pilots.length - 1)] || W.pilots[0]; }
+  function placeCamera(W, dt, snap) {
+    const P = viewed(W); let tag;
+    if (S.cam === 'Free') {
+      const k = (c) => keys.has(c) ? 1 : 0;
+      free.yaw += (k('KeyJ') - k('KeyL')) * 1.4 * dt; free.pitch = clamp(free.pitch + (k('KeyI') - k('KeyK')) * 1.1 * dt, -1.3, 1.3); free.dist = clamp(free.dist * (1 + (k('KeyO') - k('KeyU')) * 1.2 * dt), 25, 3000);
+      const want = new V(Math.sin(free.yaw) * Math.cos(free.pitch), Math.sin(free.pitch), Math.cos(free.yaw) * Math.cos(free.pitch)).multiplyScalar(free.dist).add(P.pos);
+      cam.position.lerp(want, snap ? 1 : 1 - Math.exp(-12 * dt)); cam.up.set(0, 1, 0); cam.lookAt(P.pos);
+      chased = -1; tag = 'Free: orbiting ' + P.domain.name + ' (drag, wheel)';
+    } else {
+      const wide = S.cam === 'Follow', f = fwdOf(P.quat), up = wide ? new V(0, 1, 0) : upOf(P.quat);
+      // Chase sits at the authored followOffset; the offset from the hull is smoothed, never the position, so the camera keeps up in Speed mode (section 7)
+      const wantOff = new V().addScaledVector(f, wide ? -90 : SHIP.chase[2]).addScaledVector(up, wide ? 30 : SHIP.chase[1]), lookOff = new V().addScaledVector(f, 40).addScaledVector(up, SHIP.chase[1] || wide ? 2 : 0);
+      const k = snap ? 1 : 1 - Math.exp(-6 * dt); camPos.lerp(wantOff, k); camLook.lerp(lookOff, k);
+      cam.position.copy(P.pos).add(camPos); cam.up.copy(up); cam.lookAt(P.pos.clone().add(camLook));
+      chased = P.i; tag = (wide ? 'Following ' : 'Chase: ') + P.domain.name + (P.spec.ai ? ' (AI ' + P.spec.ai + ')' : '');
+    }
+    $('camTag').textContent = tag + ' · ' + S.speed + '×';
+  }
+
+  // ================= input: gamepad, keys, phone =================
+  const keys = new Set(); let armed = false, keyMode = null, keyRing = false;
+  const isForm = (t) => t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.tagName === 'SELECT' || t.isContentEditable);
+  const GAME_KEYS = new Set(['KeyW', 'KeyA', 'KeyS', 'KeyD', 'KeyF', 'KeyR', 'KeyP', 'KeyC', 'KeyI', 'KeyJ', 'KeyK', 'KeyL', 'KeyU', 'KeyO', 'Space', 'Enter', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Digit1', 'Digit2', 'Digit3']);
+  window.addEventListener('keydown', (e) => {
+    if (isForm(e.target) || !armed) return;
+    if (GAME_KEYS.has(e.code)) e.preventDefault(); if (e.repeat) return; keys.add(e.code);
+    if (e.code === 'Enter') startRace(); if (e.code === 'KeyR') stopRace(); if (e.code === 'KeyP') togglePause(); if (e.code === 'KeyC') cycleCamera();
+    if (e.code === 'Digit1') keyMode = 'speed'; if (e.code === 'Digit2') keyMode = 'creation'; if (e.code === 'Digit3') keyMode = 'destruction';
+  });
+  window.addEventListener('keyup', (e) => keys.delete(e.code)); window.addEventListener('blur', () => keys.clear());
+  document.addEventListener('pointerdown', (e) => { armed = $('viewport').contains(e.target); }); canvas.addEventListener('focus', () => { armed = true; });
+  let drag = null;
+  canvas.addEventListener('pointerdown', (e) => { if (S.cam === 'Free' && !playMode) drag = { x: e.clientX, y: e.clientY }; });
+  canvas.addEventListener('wheel', (e) => { if (S.cam !== 'Free') return; e.preventDefault(); free.dist = clamp(free.dist * (1 + Math.sign(e.deltaY) * 0.1), 25, 3000); }, { passive: false });
+  window.addEventListener('pointermove', (e) => { if (!drag) return; free.yaw -= (e.clientX - drag.x) * 0.008; free.pitch = clamp(free.pitch + (e.clientY - drag.y) * 0.006, -1.3, 1.3); drag = { x: e.clientX, y: e.clientY }; });
+  window.addEventListener('pointerup', () => { drag = null; });
+  function readPad() { let pads = []; try { pads = navigator.getGamepads ? Array.from(navigator.getGamepads()) : []; } catch (e) { return null; } for (const g of pads) if (g && g.connected && g.axes.length >= 4) return g; return null; }
+  function dz(x, y) { const m = Math.hypot(x, y); if (m < 0.15) return { x: 0, y: 0 }; const s = Math.min(1, (m - 0.15) / 0.85) / m; return { x: x * s, y: y * s }; }
+  let playMode = false;
+  const touch = { used: false, L: { x: 0, y: 0 }, R: { x: 0, y: 0 }, fire: false, mode: null, ring: false };
+  const STICK_R = 56;
+  function bindStick(zoneId, stickId, side) {
+    const zone = $(zoneId), el = $(stickId), knob = el.firstElementChild; let id = null, ox = 0, oy = 0;
+    const home = () => { el.classList.add('idle'); el.classList.remove('fire'); el.style.left = side === 'L' ? '22%' : '70%'; el.style.top = '72%'; knob.style.transform = ''; touch[side].x = touch[side].y = 0; if (side === 'R') touch.fire = false; };
+    home();
+    zone.addEventListener('pointerdown', (e) => { if (id !== null) return; id = e.pointerId; try { zone.setPointerCapture(id); } catch (err) { /* lost */ } touch.used = true; const r = zone.getBoundingClientRect(); ox = e.clientX - r.left; oy = e.clientY - r.top; el.classList.remove('idle'); if (side === 'R') { touch.fire = true; el.classList.add('fire'); } el.style.left = ox + 'px'; el.style.top = oy + 'px'; e.preventDefault(); });
+    zone.addEventListener('pointermove', (e) => { if (e.pointerId !== id) return; const r = zone.getBoundingClientRect(); let dx = e.clientX - r.left - ox, dy = e.clientY - r.top - oy; const m = Math.hypot(dx, dy); if (m > STICK_R) { dx *= STICK_R / m; dy *= STICK_R / m; } knob.style.transform = 'translate(' + dx + 'px,' + dy + 'px)'; touch[side].x = dx / STICK_R; touch[side].y = -dy / STICK_R; e.preventDefault(); });
+    const end = (e) => { if (e.pointerId !== id) return; id = null; home(); }; zone.addEventListener('pointerup', end); zone.addEventListener('pointercancel', end);
+  }
+  bindStick('tzL', 'tsL', 'L'); bindStick('tzR', 'tsR', 'R');   // the right thumb IS the fire button: touching fires, dragging aims and spreads (the design)
+  for (const b of document.querySelectorAll('.tmodes button')) b.addEventListener('pointerdown', (e) => { e.preventDefault(); e.stopPropagation(); touch.used = true; if (b.dataset.m === 'ring') touch.ring = true; else touch.mode = b.dataset.m; });
+  function setPlayMode(on) {
+    playMode = !!on; document.body.classList.toggle('play', playMode);
+    if (playMode) { const v = $('viewport'), req = v.requestFullscreen || v.webkitRequestFullscreen; if (req) { try { const pr = req.call(v, { navigationUI: 'hide' }); if (pr && pr.catch) pr.catch(() => {}); } catch (e) { /* not allowed */ } } try { if (screen.orientation && screen.orientation.lock) screen.orientation.lock('landscape').catch(() => {}); } catch (e) { /* unsupported */ } }
+    else { const ex = document.exitFullscreen || document.webkitExitFullscreen; if (document.fullscreenElement || document.webkitFullscreenElement) { try { const pr = ex.call(document); if (pr && pr.catch) pr.catch(() => {}); } catch (e) { /* ignore */ } } touch.L.x = touch.L.y = touch.R.x = touch.R.y = 0; touch.fire = false; touch.used = false; }
+    lastW = lastH = 0; resize();
+  }
+  document.addEventListener('fullscreenchange', () => { lastW = lastH = 0; resize(); });
+  $('playBtn').addEventListener('click', () => setPlayMode(true)); $('tExit').addEventListener('click', () => setPlayMode(false));
+  const PLATFORM = VesselStudioIDE.platform();   // detected, never asked (D26): a phone enters touch play at the end of setup
+  $('touch').addEventListener('pointerdown', () => { if (playMode && !document.fullscreenElement && !document.webkitFullscreenElement) { const v = $('viewport'), req = v.requestFullscreen || v.webkitRequestFullscreen; if (req) { try { const pr = req.call(v, { navigationUI: 'hide' }); if (pr && pr.catch) pr.catch(() => {}); } catch (e) { /* not allowed here */ } } } }, { capture: true });
+  const playPause = () => { if (race === 'running') togglePause(); else startRace(); };   // one toggle (D18)
+  $('tStart').addEventListener('click', playPause); $('tBack').addEventListener('click', () => stopRace()); $('tCam').addEventListener('click', () => cycleCamera());
+  $('tpPlay').addEventListener('click', playPause); $('tpStop').addEventListener('click', () => stopRace()); $('startBtn').addEventListener('click', () => startRace()); $('resetBtn').addEventListener('click', () => newRace());
+  let padWas = [];
+  function humanInput() {
+    let inp = null;
+    if (playMode && touch.used) {
+      const L = dz(touch.L.x, touch.L.y), R = touch.R;
+      inp = { sx: L.x, sy: L.y, ax: R.x, ay: R.y, fire: touch.fire, mode: touch.mode, ring: touch.ring };
+      touch.mode = null; touch.ring = false;
+    } else {
+      const g = readPad();
+      if (g) {
+        const L = dz(g.axes[0], -g.axes[1]), R = dz(g.axes[2], -g.axes[3]), b = (i) => !!(g.buttons[i] && g.buttons[i].pressed), edge = (i) => b(i) && !padWas[i];
+        if (edge(9) && race !== 'running') startRace();
+        const rt = !!(g.buttons[7] && g.buttons[7].value > 0.3);
+        inp = SHIP.unity ? { sx: L.x, sy: L.y, ax: R.x, ay: R.y, fire: rt, mode: edge(0) ? 'speed' : edge(1) ? 'creation' : edge(2) ? 'destruction' : null, ring: b(6) }
+          : { sx: L.x, sy: L.y, ax: R.x, ay: R.y, fire: b(0) || rt, mode: edge(2) ? 'speed' : edge(3) ? 'creation' : edge(1) ? 'destruction' : null, ring: b(6) || b(5) };
+        padWas = g.buttons.map((x) => !!(x && x.pressed));
+      } else {
+        const k = (c) => keys.has(c) ? 1 : 0, a = S.aimFeel;
+        inp = { sx: k('KeyD') - k('KeyA'), sy: k('KeyS') - k('KeyW'), ax: (k('ArrowRight') - k('ArrowLeft')) * a, ay: (k('ArrowUp') - k('ArrowDown')) * a, fire: keys.has('Space'), mode: keyMode, ring: keys.has('KeyF') };
+        keyMode = null;
+      }
+    }
+    inp.active = Math.abs(inp.sx) > 0.2 || Math.abs(inp.sy) > 0.2 || Math.abs(inp.ax) > 0.2 || Math.abs(inp.ay) > 0.2 || inp.fire || !!inp.mode || inp.ring;
+    return inp;
+  }
+  // D31: with nobody on the controls for 3 s, the AI flies your hull; the first input hands it straight back
+  function pilotInput(W, P, hin, dt) {
+    if (P.spec.ai) return aiInput(W, P);
+    if (hin.active) { P.idle = 0; P.held = false; P.lastAiIn = null; return hin; }
+    P.idle += dt;
+    if (S.idleHold && P.idle > 3) { P.held = true; const a = aiInput(W, P); return a; }
+    return hin;
+  }
+
+  // ================= race flow =================
+  let W = null, race = 'ready', paused = false, seedN = 1;
+  function pilotsSpec() {
+    const zero = { charge: 0, mass: 0, space: 0, time: 0 };
+    return S.players.map((p, i) => ({ ai: p.ai ? p.level : null, domain: p.domain, style: i === 0 ? (p.ai ? p.style : S.style) : p.style,
+      lv: i === 0 ? Object.assign({}, p.ai ? styleOf(p.style).lv : S.lv) : Object.assign({}, S.typeToAll ? S.lv : styleOf(p.style).lv || zero) }));
+  }
+  function newRace() {
+    W = makeWorld(S.game, S.course, pilotsSpec(), seedN++);
+    mountWorld(W); drawWorld(W, 0); placeCamera(W, 0, true);
+    race = 'ready'; paused = false; feed.length = 0; renderFeed();
+    const G = GAMES[S.game];
+    $('ovTitle').textContent = G.name + ', intensity ' + S.course; $('startBtn').textContent = 'Start'; $('overlay').hidden = false;
+    $('ovText').textContent = S.game === 'derby' ? 'Reach each of your ' + W.target + ' crystals as fast as you can: blast a path with your turrets or fly round the barricades. A crystal charges your support ring (or rebuilds it); a second one while charged gives you all three modes at once.' : 'Lay ' + W.target + ' blocks of trail mass, fast. Creation mode lays five big blocks at a time; the creatures eat trail, so switch to Destruction and shoot them off it. Crystals charge your ring.';
+    $('courseInfo').textContent = G.name + ' · I' + S.course + ' · ' + G.ladder[S.course];
+    $('gameNote').textContent = G.note; $('intensityNote').textContent = 'I1 to I4 as the design describes them: ' + [1, 2, 3, 4].map((i) => 'I' + i + ' ' + G.ladder[i]).join('; ') + '.';
+  }
+  function startRace() { if (race === 'finished') newRace(); race = 'running'; paused = false; $('overlay').hidden = true; canvas.focus({ preventScroll: true }); }
+  function stopRace() { newRace(); }   // Stop ends the run and holds at the start until Play (D18)
+  function togglePause() { if (race !== 'running') return; paused = !paused; say0(paused ? 'Paused' : 'Resumed'); }
+  function finishRace() {
+    race = 'finished';
+    const key = (P) => W.game === 'derby' ? (P.finishT ?? 1e9) - P.destroyed * 1e-4 : (P.finishT ?? 1e9) - P.kills * 1e-4;
+    const order = W.pilots.slice().sort((a, b) => key(a) - key(b) || b.crystals - a.crystals);
+    for (const P of W.pilots) runs.unshift({ game: GAMES[W.game].name + ' I' + W.I, pilot: P.i === 0 ? (P.spec.ai ? 'Your hull (AI ' + P.spec.ai + ')' : 'You') : P.domain.name + ' (AI ' + P.spec.ai + ')', style: P.spec.style, time: P.finishT, destroyed: W.game === 'derby' ? P.destroyed : P.kills, place: order.indexOf(P) + 1 });
+    runs.length = Math.min(runs.length, 40); saveRuns(); renderRuns();
+    const me = W.pilots[0];
+    $('ovTitle').textContent = me.finishT != null ? 'Place ' + (order.indexOf(me) + 1) + ' · ' + me.finishT.toFixed(1) + ' s' : 'Run over';
+    $('ovText').textContent = order.map((P, i) => (i + 1) + '. ' + P.domain.name + (P.spec.ai ? ' (AI ' + P.spec.ai + ')' : '') + ': ' + (P.finishT != null ? P.finishT.toFixed(1) + ' s' : 'DNF') + (W.game === 'derby' ? ', ' + P.destroyed + ' destroyed' : ', ' + P.kills + ' creatures')).join(' · ');
+    $('startBtn').textContent = 'Go again';
+    if (S.autoRestart) setTimeout(() => { if (race === 'finished') { newRace(); startRace(); } }, 1500); else $('overlay').hidden = false;
+  }
+  function cycleCamera() {
+    const n = W ? W.pilots.length : 1;
+    if (S.cam === 'Chase') S.cam = 'Follow';
+    else if (S.cam === 'Follow') { if (S.view + 1 < n) S.view++; else { S.cam = 'Free'; S.view = 0; } }
+    else S.cam = 'Chase';
+    racePanel.set('camera', S.cam, true); racePanel.set('view', S.view, true); save();
+  }
+  const feed = [];
+  function say0(m) { feed.unshift(m); feed.length = Math.min(feed.length, 4); renderFeed(); }
+  function renderFeed() { const el = $('feed'); el.textContent = ''; for (const m of feed) { const d = document.createElement('div'); d.textContent = m; el.appendChild(d); } }
+
+  // ================= the docks' panels =================
+  const elx = (t, c, x) => { const e = document.createElement(t); if (c) e.className = c; if (x != null) e.textContent = x; return e; };
+  const racePanel = StudioRacePanel.mount($('racePanel'), {   // the universal panel (D17), with the Players list (D25)
+    gameHost: $('intensityPanel'), sceneHost: $('scenePanel'),
+    courses: [1, 2, 3, 4].map((v) => ({ v, label: 'I' + v, note: GAMES[S.game].ladder[v] })),
+    players: { host: $('playersPanel'), max: 4, domains: VesselStudioDomains.list.map((d) => ({ key: d.key, name: d.name, color: d.color })) },
+    styles: STYLES.map((s) => s.name),
+    value: { course: S.course, camera: S.cam, speed: S.speed, thinking: S.thinking, autoRestart: S.autoRestart, players: S.players, view: S.view },
+    supports: { rivals: true, thinking: true, autoRestart: true },
+    levelNote: 'Hard is the studio pilot (lab-only: it reads the barricade ahead, picks a mode and fires, lines up the ring). Medium and Easy are Hard plus SkimRaceDifficulty.asset\'s two mistakes in what it believes: it notices each new crystal or creature late (0.25 / 0.5 s mean) and misjudges 4.5% / 9.9% of them; plus two lab-only Brittle Star mistakes: it reads a barricade later (240 / 170 u ahead, Hard 320) and changes mode later (0.35 / 0.7 s). A play style changes its brain as well as its element levels.',
+    onChange: (key, v) => {
+      if (key === 'players') { S.players = v; save(); newRace(); return; }
+      if (key === 'view') { S.view = v; save(); return; }
+      if (key === 'camera') S.cam = v; else if (key === 'course') S.course = v; else if (key === 'speed') S.speed = v; else if (key === 'thinking') S.thinking = v; else if (key === 'autoRestart') S.autoRestart = v;
+      save(); if (key === 'course') newRace();
+    },
+  });
+  $('gameSel').value = S.game; $('gameSel').addEventListener('change', (e) => { S.game = e.target.value; save(); rebuildCourseNotes(); newRace(); });
+  function rebuildCourseNotes() { const sel = document.querySelector('#intensityPanel select'); if (sel) [...sel.options].forEach((o) => { o.textContent = 'I' + o.value + ' · ' + GAMES[S.game].ladder[o.value]; }); }
+  $('idleHold').checked = S.idleHold; $('idleHold').addEventListener('change', (e) => { S.idleHold = e.target.checked; save(); });
+  $('typeToAll').checked = S.typeToAll; $('typeToAll').addEventListener('change', (e) => { S.typeToAll = e.target.checked; save(); newRace(); });
+  $('aimFeel').value = String(S.aimFeel); $('aimFeel').addEventListener('change', (e) => { S.aimFeel = +e.target.value; save(); });
+  $('shipSet').value = S.ship; $('shipSet').addEventListener('change', (e) => { S.ship = e.target.value; Object.assign(SHIP, SHIP_SETS[S.ship]); save(); syncRail(); newRace(); });
+  $('aimMode').value = S.aimMode; $('aimMode').addEventListener('change', (e) => { S.aimMode = e.target.value; save(); });
+  $('hullRing').value = S.hullRing; $('hullRing').addEventListener('change', (e) => { S.hullRing = e.target.value; save(); });
+  for (const st of STYLES) { const o = elx('option', null, st.name + ' · ' + (st.name === 'Balanced' || st.name === 'Shipped' ? 'all elements' : ELEMENTS.find((E) => E.persona === st.name).name)); o.value = st.name; $('styleSel').appendChild(o); }
+  const custom = elx('option', null, 'Custom levels'); custom.value = 'Custom'; $('styleSel').appendChild(custom);
+  $('styleSel').addEventListener('change', (e) => { if (e.target.value === 'Custom') return; S.style = e.target.value; Object.assign(S.lv, styleOf(S.style).lv); syncRail(); save(); applyLevels(); });
+  const elRows = {};
+  for (const E of ELEMENTS) {
+    const row = elx('div', 'el'); row.style.setProperty('--accent', 'var(' + E.color + ')');
+    const lab = elx('label', null, E.name); lab.htmlFor = 'lv-' + E.key; lab.style.color = 'var(' + E.color + ')'; lab.title = E.persona + ': ' + E.param;
+    const inp = document.createElement('input'); inp.type = 'range'; inp.min = 0; inp.max = 10; inp.step = 1; inp.id = 'lv-' + E.key;
+    const out = elx('output'), what = elx('div', 'what'), wl = elx('span'), badge = elx('span', 'l5', 'L5: open'); badge.title = 'The design gives no level-5 upgrade for ' + E.name + ': an open design slot.'; what.append(wl, badge);
+    inp.addEventListener('input', () => { S.lv[E.key] = +inp.value; const m = STYLES.find((t) => ELEMENTS.every((x) => t.lv[x.key] === S.lv[x.key])); S.style = m ? m.name : 'Custom'; syncRail(); save(); applyLevels(); });
+    row.append(lab, inp, out, what); $('elements').appendChild(row); elRows[E.key] = { inp, out, wl };
+  }
+  function applyLevels() { if (!W) return; const P = W.pilots[0]; if (!P.spec.ai) { P.lv = Object.assign({}, S.lv); P.m = mults(P.lv); P.spec.style = S.style; } if (S.typeToAll) for (const O of W.pilots) if (O !== P) { O.lv = Object.assign({}, S.lv); O.m = mults(O.lv); } }
+  function syncRail() {
+    $('styleSel').value = STYLES.some((s) => s.name === S.style) ? S.style : 'Custom';
+    $('typeName').textContent = S.style; const t = STYLES.find((x) => x.name === S.style); $('typeInfo').textContent = t ? t.info : 'Custom element levels.';
+    const m = mults(S.lv);
+    for (const E of ELEMENTS) {
+      const r = elRows[E.key]; r.inp.value = S.lv[E.key]; r.out.textContent = S.lv[E.key];
+      const val = SHIP.unity ? (E.key === 'charge' ? '\u00d7' + m.shot.toFixed(2) + ' rounds, \u00d7' + m.blast.toFixed(2) + ' disk thickness' : E.key === 'mass' ? '\u00d7' + m.block.toFixed(2) + ' corner-trail blocks'
+        : E.key === 'space' ? 'arms reach ' + Math.round(U.destructionProjectileSpeed * 2 * U.projectileTime * m.range / Math.PI) + ' u' : Math.round(cruiseOf() * m.speedMode) + ' u/s in Speed mode')
+        : E.key === 'charge' ? '\u00d7' + m.shot.toFixed(2) + ' rounds, \u00d7' + m.blast.toFixed(2) + ' blast' : E.key === 'mass' ? '\u00d7' + m.block.toFixed(2) + ' Creation blocks' : E.key === 'space' ? Math.round(m.shotSpeed * 2 * SHIP.gunLife / Math.PI) + ' u range' : Math.round(SHIP.minSpeed + SHIP.throttle * (1 + m.speedBonus)) + ' u/s in Speed mode';
+      r.wl.textContent = ''; r.wl.append(document.createTextNode(E.persona + ' '), elx('b', null, val));
+    }
+  }
+  // lab-only sliders: the kit and the minigames' layout; each names what it is and says lab-only (D1, D10)
+  const KIT_ROWS = [
+    ['timeBonusAtFull', 'Zephyr bonus', 1, 3, 0.05, (v) => '\u00d7' + v.toFixed(2), 'Time 10 multiplies the Speed-mode bonus by this ("increased movement speed bonus in speed mode"). The bonus itself is authored: Speed mode is the boost, VesselStatus.boostMultiplier x4. Lab-only.'],
+    ['spreadDeg', 'Widest spread', 0, 20, 0.5, (v) => v.toFixed(1) + '°', 'The spread at a full aim stick: "drag away from the centre of the button to increase spread". Lab-only.'],
+    ['destructionRadius', 'Destruct rounds', 1, 3, 0.1, (v) => '×' + v.toFixed(1), 'Destruction mode: "larger projectiles". Lab-only.'],
+    ['creationScale', 'Creation blocks', 1, 4, 0.1, (v) => '×' + v.toFixed(1), 'Creation: "a large pentagon of blocks flowing from the support ring", five at a time. Lab-only.'],
+    ['ringLaunch', 'Ring launch', 100, 900, 10, (v) => '+' + v + ' u/s', 'Ring Detonation: the ring leaves "forward at high velocity". Lab-only.'],
+    ['ringFuse', 'Ring fuse', 0.4, 3, 0.1, (v) => v.toFixed(1) + ' s', '"On impact, or after a certain amount of time with no impact, the ring explodes." Lab-only.'],
+    ['blastR', 'Blast ball', 20, 120, 5, (v) => v + ' u', '"Destroying both enemy and allied mass within a medium area." Lab-only.'],
+    ['planeR', 'Blast wave', 40, 300, 10, (v) => v + ' u', '"...and then has a further blast that continues out in the plane of the ring." Lab-only.'],
+    ['overdrive', 'Overdrive', 0, 15, 0.5, (v) => v + ' s', 'A crystal while a charge is held: "all 3 modes simultaneously for a short time". Lab-only.'],
+  ];
+  const WORLD_ROWS = [
+    ['legLen', 'Leg length', 300, 1200, 25, (v) => v + ' u', 'Demolition Derby: the distance between crystals.'],
+    ['legs', 'Crystals', 1, 8, 1, (v) => String(v), 'Demolition Derby: crystals per run (the design ends a run at one; the studio strings several).'],
+    ['corridor', 'Corridor', 30, 120, 5, (v) => v + ' u', 'Demolition Derby: the radius of each leg\'s corridor; past it you are gently pulled back (the design\'s "Ark maximum range"). The walls fill it.'],
+    ['wallBlock', 'Wall block', 6, 20, 1, (v) => v + ' u', 'Demolition Derby: the size of one wall block (one round breaks one block).'],
+    ['faunaHp', 'Creature HP', 1, 8, 1, (v) => v + ' hits', 'Fauna Frenzy: rounds to kill a creature (a Destruction round counts twice).'],
+  ];
+  function sliders(host, rows, store, obj, after) {
+    for (const [k, name, lo, hi, step, fmt, tip] of rows) {
+      const row = elx('label', 'slider'); row.title = tip;
+      const inp = document.createElement('input'); inp.type = 'range'; inp.min = lo; inp.max = hi; inp.step = step; inp.value = obj[k];
+      const out = elx('output', null, fmt(obj[k]));
+      inp.addEventListener('input', () => { obj[k] = +inp.value; store[k] = obj[k]; out.textContent = fmt(obj[k]); save(); after && after(k); });
+      row.append(elx('span', null, name), inp, out); host.appendChild(row);
+    }
+  }
+  sliders($('kitSliders'), KIT_ROWS, S.kit, KIT, () => { syncRail(); applyLevels(); });
+  // ['group', 'key', 'label', min, max, step, tip]: the Unity build's numbers (SHIPPED), each tooltip naming its BrittleStarConfigSO field
+  const UNITY_ROWS = [
+    ['speed', 'speedModeAt0', 'Speed mode', 2, 10, 0.5, 'speedModeMultiplier at Time 0: cruise x this in Speed mode (Garrett: x6).'],
+    ['speed', 'creationSpeedMultiplier', 'Creation speed', 0.1, 1, 0.05, 'creationSpeedMultiplier: Creation is the slowest mode (Garrett: x0.5).'],
+    ['arms', 'destructionFireRate', 'Arms rate', 20, 120, 5, 'destructionFireRate: rounds a second from EACH of the five arms. Below ~68 the 15 u spacing opens past the tracer and the arms read as dashes.'],
+    ['arms', 'destructionProjectileSpeed', 'Arms speed', 40, 2500, 5, 'destructionProjectileSpeed, u/s (a tenth of the Sparrow\'s 1350).'],
+    ['arms', 'armFocusDistance', 'Arms meet', 30, 400, 10, 'armFocusDistance: stick in, the five arms meet the nose axis this far ahead (the crosshair).'],
+    ['arms', 'armSplayDegrees', 'Arms splay', 0, 60, 1, 'armSplayDegrees: stick out to the rim, each arm splays this far outward.'],
+    ['rt', 'fireRate', 'RT rate', 2, 40, 1, 'fireRate: RT, one stream outside Destruction Mode.'],
+    ['rt', 'projectileSpeed', 'RT speed', 20, 1000, 5, 'projectileSpeed, u/s. Range = speed x 2T/pi: change projectileTime the other way to keep it.'],
+    ['rt', 'projectileTime', 'Round flight', 0.2, 6, 0.1, 'projectileTime, seconds (both streams). Rounds alive = rate x this: the arms keep 5 x 90 x T in the air.'],
+    ['rt', 'roundGrowthFactor', 'Round swell', 1, 6, 0.5, 'roundGrowthFactor: every round swells to this multiple over its flight, hit radius too (the Sparrow\'s look: 3).'],
+    ['rt', 'maxSpreadDegrees', 'RT spread', 0, 45, 1, 'maxSpreadDegrees: the cone at full stick deflection.'],
+    ['ring', 'ringLaunchSpeed', 'Ring launch', 60, 900, 10, 'ringLaunchSpeed: u/s on top of the hull\'s own.'],
+    ['ring', 'ringFuseSeconds', 'Ring fuse', 0.3, 3, 0.1, 'ringFuseSeconds.'],
+    ['ring', 'ringBlastSeconds', 'Disk sweep', 0.2, 2, 0.05, 'ringBlastSeconds: the disk runs from the ring\'s radius to the nucleus\'s in this long.'],
+    ['ring', 'blastScaleAt10', 'Disk at Charge 10', 1, 8, 0.5, 'blastScale at Charge 10: the disk\'s thickness over the ring\'s (x1 at Charge 0).'],
+    ['ring', 'nucleusRadius', 'Nucleus', 100, 800, 10, 'The disk\'s radius: the cell\'s nucleus (392 for the standard cell). Lab-only: the game reads the real cell.'],
+    ['ring', 'rebuildSeconds', 'Rebuild', 0, 3, 0.1, 'rebuildSeconds: a stored charge (or a crystal) blooms a new ring over this long.'],
+    ['ring', 'overdriveSeconds', 'Overdrive', 0, 15, 0.5, 'overdriveSeconds: a crystal while charged turns all three modes on this long.'],
+  ];
+  for (const [, k, name, lo, hi, step, tip] of UNITY_ROWS) {
+    const row = elx('label', 'slider'); row.title = tip + ' Shipped: ' + SHIPPED_AT_LOAD[k] + '.';
+    const inp = document.createElement('input'); inp.type = 'range'; inp.min = lo; inp.max = hi; inp.step = step; inp.value = U[k];
+    const out = elx('output', null, String(U[k]));
+    inp.addEventListener('input', () => { U[k] = +inp.value; S.shipped = S.shipped || {}; S.shipped[k] = U[k]; out.textContent = String(U[k]); save(); syncRail(); applyLevels(); });
+    row.append(elx('span', null, name), inp, out); $('unitySliders').appendChild(row);
+  }
+  $('unityReset').addEventListener('click', () => { Object.assign(U, SHIPPED_AT_LOAD); S.shipped = {}; save(); for (const [i, r] of UNITY_ROWS.entries()) { const el = $('unitySliders').children[i]; el.querySelector('input').value = U[r[1]]; el.querySelector('output').textContent = String(U[r[1]]); } syncRail(); applyLevels(); });
+  sliders($('worldSliders'), WORLD_ROWS, S.world, WORLD, () => { if (race !== 'running') newRace(); });
+  const AB = [['speed', 'Speed', 'S', '--speed'], ['creation', 'Creation', 'C', '--create'], ['destruction', 'Destruction', 'D', '--destroy'], ['ring', 'Ring Detonation', 'R', '--ringc']];
+  const abCards = {};
+  for (const [k, nm, ic, col] of AB) { const c = elx('div', 'ab'); c.style.setProperty('--accent', 'var(' + col + ')'); const st = elx('div', 'st'); c.append(elx('div', 'ic', ic), elx('div', 'nm', nm), st); $('abilities').appendChild(c); abCards[k] = { c, st }; }
+  let runs = []; try { runs = JSON.parse(localStorage.getItem(LS + '.runs') || '[]') || []; } catch (e) { runs = []; }
+  function saveRuns() { try { localStorage.setItem(LS + '.runs', JSON.stringify(runs)); } catch (e) { /* storage blocked */ } }
+  function renderRuns() {
+    const tb = $('runs'); tb.textContent = '';
+    if (!runs.length) { const tr = elx('tr'), td = elx('td', null, 'No runs yet. Finish one to add it.'); td.colSpan = 6; td.style.color = 'var(--muted)'; tr.appendChild(td); tb.appendChild(tr); return; }
+    for (const r of runs.slice(0, 12)) { const tr = elx('tr'); tr.append(elx('td', null, r.game), elx('td', null, r.pilot), elx('td', null, r.style || ''), elx('td', null, r.time != null ? r.time.toFixed(1) : 'DNF'), elx('td', null, String(r.destroyed)), elx('td', null, String(r.place))); tb.appendChild(tr); }
+  }
+  const COLS = ['Easy', 'Medium', 'Hard', 'NoRing', 'NoModes'];
+  function renderScore(rows) {
+    const tb = $('score'); tb.textContent = '';
+    for (const c of [1, 2, 3, 4]) { const r = rows && rows[c]; const tr = elx('tr'); tr.append(elx('td', null, 'I' + c)); for (const d of COLS) tr.append(elx('td', null, r && d in r ? (r[d] != null ? r[d].toFixed(1) : 'DNF') : '·')); tb.appendChild(tr); }
+  }
+  function renderStyles(rows) {
+    const tb = $('styleScore'); tb.textContent = '';
+    for (const st of STYLES) { const r = rows && rows[st.name]; const tr = elx('tr'); tr.append(elx('td', null, st.name)); if (!r) for (let i = 0; i < 7; i++) tr.append(elx('td', null, '·')); else tr.append(elx('td', null, r.finish != null ? r.finish.toFixed(1) : 'DNF'), elx('td', null, String(r.destroyed)), elx('td', null, String(r.rings)), elx('td', null, Math.round(r.share.speed * 100) + '%'), elx('td', null, Math.round(r.share.creation * 100) + '%'), elx('td', null, Math.round(r.share.destruction * 100) + '%'), elx('td', null, Math.round((r.share.overdrive || 0) * 100) + '%')); tb.appendChild(tr); }
+  }
+  let scoreRows = null, styleRows = null;
+  try { scoreRows = JSON.parse(localStorage.getItem(LS + '.score.' + S.game) || 'null'); styleRows = JSON.parse(localStorage.getItem(LS + '.styles.' + S.game) || 'null'); } catch (e) { /* storage blocked */ }
+  renderScore(scoreRows); renderStyles(styleRows);
+  const med = (a) => { const v = a.filter((x) => x != null).sort((x, y) => x - y); return v.length > a.length / 2 ? v[Math.floor(v.length / 2)] : null; };
+  function runScorecard(game, seeds, done, progress) {
+    const rows = {}, jobs = []; for (const c of [1, 2, 3, 4]) { rows[c] = {}; for (const d of COLS) jobs.push([c, d]); }
+    let j = 0;
+    const next = () => {
+      if (j >= jobs.length) { done(rows); return; }
+      const [c, d] = jobs[j++], extra = d === 'NoRing' ? { noRing: true } : d === 'NoModes' ? { noModes: true, noRing: true } : null;
+      rows[c][d] = med(seeds.map((s) => runHeadless(game, c, extra ? 'Hard' : d, s, extra).finish)); progress && progress(rows); setTimeout(next, 0);
+    };
+    setTimeout(next, 20);
+  }
+  function runStyles(game, seeds, done, progress) {
+    const rows = {}; let j = 0;
+    const next = () => {
+      if (j >= STYLES.length) { done(rows); return; }
+      const st = STYLES[j++], rs = seeds.map((s) => runHeadless(game, 3, 'Hard', s, { style: st.name, lv: Object.assign({}, st.lv) }));
+      const pick = (k) => med(rs.map((r) => r[k]));
+      rows[st.name] = { finish: pick('finish'), destroyed: Math.round(med(rs.map((r) => game === 'derby' ? r.destroyed : r.kills)) || 0), rings: Math.round(med(rs.map((r) => r.rings)) || 0), share: { speed: med(rs.map((r) => r.share.speed)) || 0, creation: med(rs.map((r) => r.share.creation)) || 0, destruction: med(rs.map((r) => r.share.destruction)) || 0, overdrive: med(rs.map((r) => r.share.overdrive)) || 0 } };
+      progress && progress(rows); setTimeout(next, 0);
+    };
+    setTimeout(next, 20);
+  }
+  $('scoreBtn').addEventListener('click', () => {
+    $('scoreBtn').disabled = true; $('scoreNote').textContent = 'Racing every level and both controls on every intensity…';
+    runScorecard(S.game, [11, 22, 33], (rows) => { scoreRows = rows; try { localStorage.setItem(LS + '.score.' + S.game, JSON.stringify(rows)); } catch (e) { /* storage blocked */ } renderScore(rows); $('scoreBtn').disabled = false; $('scoreNote').textContent = GAMES[S.game].name + ': median of three seeds per cell, seconds; DNF = no finish in 300 s. Hard should beat Medium and Easy on every intensity, and both controls should be slower than Hard, or the kit is not earning its place.'; }, renderScore);
+  });
+  $('styleBtn').addEventListener('click', () => {
+    $('styleBtn').disabled = true;
+    runStyles(S.game, [11, 22, 33], (rows) => { styleRows = rows; try { localStorage.setItem(LS + '.styles.' + S.game, JSON.stringify(rows)); } catch (e) { /* storage blocked */ } renderStyles(rows); $('styleBtn').disabled = false; }, renderStyles);
+  });
+
+  // ---- HUD ----
+  function hud() {
+    if (!W) return;
+    const P = viewed(W); W.watch = P.i; const M = activeModes(P, W);
+    $('hWho').textContent = P.domain.name + (P.spec.ai ? ' · AI ' + P.spec.ai : P.held ? ' · AI holding' : '') + ' · speed u/s';
+    $('hSpeed').textContent = Math.round(P.speed);
+    $('hSub').textContent = (M.speed && M.creation ? 'Overdrive: Speed x Creation' : M.speed ? 'Speed mode: all five thrusters' : M.creation && SHIP.unity ? 'Creation: half speed, five corner trails' : 'cruise ' + cruiseOf() + ' u/s') + ' · ' + (P.style ? P.style.name : '');
+    $('hGoal').textContent = W.game === 'derby' ? 'Crystal ' + Math.min(P.crystals + 1, W.target) + '/' + W.target : 'Mass ' + Math.max(0, P.mass) + '/' + W.target + ' · ' + P.kills + ' creatures';
+    $('hMass').textContent = W.game === 'derby' ? P.destroyed + ' destroyed' : W.fauna.filter((c) => !c.dead).length + ' feeding';
+    for (const [k, id] of [['speed', 'pSpeed'], ['creation', 'pCreation'], ['destruction', 'pDestruction']]) { $(id).classList.toggle('on', M[k]); $(id).classList.toggle('off', !P.ring || P.noModes); }
+    $('pRing').classList.toggle('on', P.ring); $('pRing').classList.toggle('off', !P.ring); $('pRing').textContent = P.ring ? (P.charge ? 'Ring +1' : 'Ring') : P.rebuildAt > 0 ? 'Rebuilding' : 'No ring';
+    const amH = Math.hypot(P.aimX, P.aimY);
+    if (SHIP.unity) $('hGun').textContent = P.armsOn ? 'the five arms · ' + (spread01(amH) > 0 ? 'splayed ' + Math.round(lerp(0, U.armSplayDegrees, spread01(amH))) + '°' : 'meeting ' + U.armFocusDistance + ' u ahead')
+      : 'RT: ' + (P.ring && P.aimedPoint >= 0 ? 'ring turret ' + (P.aimedPoint + 1) : 'cockpit') + (spread01(amH) > 0 ? ' · spread ' + (spread01(amH) * U.maxSpreadDegrees).toFixed(1) + '°' : '');
+    else $('hGun').textContent = 'gun: ' + (M.destruction ? 'all five turrets' : P.ring && amH > 0.2 ? 'one ring turret' : 'cockpit') + (amH > 0.2 ? ' · spread ' + (amH * KIT.spreadDeg).toFixed(1) + '°' : '');
+    $('hCharge').textContent = 'charge ' + P.charge + '/1';
+    const al = $('hAlert'); let msg = null, od = false;
+    if (P.overdrive > W.t) { msg = 'Overdrive ' + (P.overdrive - W.t).toFixed(1) + ' s'; od = true; }
+    else if (!P.ring && !P.noRing) msg = 'No support ring: collect a crystal';
+    al.hidden = !msg; if (msg) { al.textContent = msg; al.classList.toggle('od', od); }
+    const b = $('board'); b.textContent = '';
+    const hd = elx('div', 'hd'); hd.append(elx('span', null, GAMES[W.game].name + ' I' + W.I + ' · ' + W.t.toFixed(1) + ' s'), elx('span', null, W.game === 'derby' ? 'crystals / ' + W.target : 'mass / ' + W.target)); b.appendChild(hd);
+    W.pilots.slice().sort((a, c) => (a.finishT ?? 1e9) - (c.finishT ?? 1e9) || (W.game === 'derby' ? c.crystals - a.crystals : c.mass - a.mass)).forEach((X) => {
+      const row = elx('div', 'pl'), dot = elx('span', 'dot'); dot.style.background = X.domain.css;
+      const st = elx('span', 'st', X.finishT != null ? X.finishT.toFixed(1) + ' s' : (W.game === 'derby' ? X.crystals : X.mass) + (X.spec.ai ? ' · ' + X.aiState : ''));
+      if (X.hc && X.hc.misjudged) st.style.color = 'var(--hard)'; else if (X.hc && X.hc.unnoticed) st.style.color = 'var(--medium)';
+      row.append(dot, elx('span', null, X.domain.name + (X.spec.ai ? ' · ' + X.spec.ai : '')), st); b.appendChild(row);
+    });
+    for (const k of ['speed', 'creation', 'destruction']) { abCards[k].c.classList.toggle('on', M[k]); abCards[k].st.textContent = M[k] ? 'on' : P.ring ? (P.mode === k ? 'selected' : 'off') : 'no ring'; }
+    abCards.ring.c.classList.toggle('on', P.ring); abCards.ring.st.textContent = P.ring ? (P.charge ? 'ready +1' : 'ready') : 'need crystal';
+    $('readWho').textContent = P.domain.name + (P.spec.ai ? ' (AI ' + P.spec.ai + ')' : '');
+    const rows = [['speed', P.speed.toFixed(1) + ' u/s'], ['mode', P.ring ? (P.overdrive > W.t ? 'overdrive' : P.mode ? modeName(P.mode) : SHIP.unity ? 'cruise' : 'none') : P.rebuildAt > 0 ? 'rebuilding' : 'no ring'], ['range', Math.round(rangeOf(P)) + ' u'],
+      ['round', (SHIP.unity ? SHIP.shotRadius * P.m.shot * (P.armsOn ? U.destructionProjectileScale : U.projectileScale) : SHIP.shotRadius * P.m.shot * (M.destruction ? KIT.destructionRadius : 1)).toFixed(1) + ' u'],
+      ['destroyed', String(P.destroyed)], ['bonus mass', String(P.bonus)], ['rings', String(P.rings)], ['petal hits dealt', String(P.hits)], ['petal hits taken', String(P.petalsLost)], ['trail mass', String(P.mass)], ['creatures', String(P.kills)], ['AI state', P.spec.ai || P.held ? P.aiState : 'player'], ['mistakes', P.spec.ai ? String(P.mistakes || 0) : '—']];
+    const box = $('read'); if (box.childElementCount !== rows.length * 2) { box.textContent = ''; for (const [k] of rows) box.append(elx('span', null, k), elx('b')); }
+    rows.forEach(([, v], i) => { box.children[i * 2 + 1].textContent = v; });
+    const live = race === 'running' && !paused;   // the universal transport (D18)
+    $('tpPlay').textContent = live ? '❚❚ Pause' : '▶ Play'; $('tpPlay').classList.toggle('on', live); $('tpPlay').setAttribute('aria-pressed', paused ? 'true' : 'false');
+    $('tpStop').disabled = race === 'ready';
+    $('tStart').textContent = live ? '❚❚ Pause' : '▶ Play';
+    for (const bt of document.querySelectorAll('.tmodes button')) bt.classList.toggle('on', bt.dataset.m !== 'ring' && M[bt.dataset.m]);
+    while (W.events.length) say0(W.events.shift());
+  }
+  function markCrystal(W) {
+    const P = viewed(W);
+    if (!P.crystal || race === 'finished') { mark.hide(); return; }
+    cam.updateMatrixWorld();
+    mark.set(cam, P.crystal.pos, (W.game === 'derby' ? 'Crystal ' + (P.crystals + 1) + '/' + W.target : 'Crystal') + ' · ' + Math.round(P.crystal.pos.distanceTo(P.pos)) + ' u', '#' + new THREE.Color(P.domain.color).getHexString(), canvas.clientWidth, canvas.clientHeight);
+  }
+
+  // ================= loop =================
+  let lastW = 0, lastH = 0;
+  function resize() { const w = canvas.clientWidth || 960, h = canvas.clientHeight || Math.round(w * 10 / 16); if (w === lastW && h === lastH) return; lastW = w; lastH = h; renderer.setSize(w, h, false); cam.aspect = w / h; cam.updateProjectionMatrix(); }
+  window.addEventListener('resize', resize);
+  let last = performance.now(), hudT = 0;
+  function frame(now) {
+    const dt = Math.min(0.05, (now - last) / 1000); last = now; resize();
+    const hin = humanInput();
+    if (W && race === 'running' && !paused && !LAB.manualClock) {   // the lab contract's manual clock stops the frame loop's sim
+      for (let s = 0; s < S.speed; s++) {
+        stepWorld(W, dt, W.pilots.map((P, i) => { const inp = i === 0 ? pilotInput(W, P, hin, dt) : aiInput(W, P); P.lastSx = inp.sx; return inp; }));
+        if (W.over) { finishRace(); break; }
+      }
+    }
+    ENV.update(dt);
+    if (W) { drawWorld(W, now / 1000); placeCamera(W, dt, false); markCrystal(W); }
+    renderer.render(scene, cam);
+    hudT += dt; if (hudT > 0.1) { hudT = 0; hud(); }
+    requestAnimationFrame(frame);
+  }
+  // ================= the editor layout (D8, studio-ide.js): the six settings tabs in the universal order (D21, D25, D27) =================
+  const IDE = VesselStudioIDE.build({
+    key: 'brittlestar-studio-ide-v1', host: document.querySelector('.layout'), stage: $('viewport'),
+    right: [['scene', 'Scene Config', [$('grp-scene'), $('grp-world')]], ['game', 'Game Config', [$('grp-game'), $('grp-intensity'), $('grp-players')]], ['ai', 'AI Config', [$('grp-ai'), document.querySelector('.afternote')]],
+      ['style', 'Play Style Config', [$('grp-style'), $('grp-elements'), $('grp-unity'), $('grp-kit')]], ['input', 'Input', [$('grp-controls'), $('grp-feel')]],
+      ['others', 'Vessel Config', [$('grp-abilities'), $('grp-hull'), $('grp-live')]]],
+    bottom: [['score', 'Scorecard', [$('grp-score')]], ['runs', 'Runs', [$('grp-runs')]], ['about', 'About', [document.querySelector('header .sub'), $('grp-about')]]],
+    railW: 390, dockH: 250, winSize: { score: [820, 420], runs: [680, 360] },
+    onLayout: () => { lastW = lastH = 0; },
+  });
+  VesselStudioIDE.sectionPicker(document.querySelector('.vside-pane[data-tab="others"]'), 'brittlestar-studio', 'vessel');   // Vessel Config: one section at a time (D27)
+  syncRail(); renderRuns(); rebuildCourseNotes();
+  newRace(); hud();
+  requestAnimationFrame((t) => { last = t; frame(t); });
+  if (PLATFORM.device === 'phone') setPlayMode(true);   // detected, never asked (D26)
+
+  // the /labmaker contract (window.__lab, verify_lab.cjs): SHIPPED + its SPEC rows, the live numbers, a manual clock,
+  // a seeded reset, the scorecard and a deterministic headless batch (Hard, seed 11, both minigames at I1)
+  Object.assign(LAB, {
+    SHIPPED: SHIPPED_AT_LOAD, SPEC: UNITY_ROWS, P: U, PLATFORM,
+    reset: (seed) => { seedN = seed == null ? 1 : seed; newRace(); race = 'running'; paused = false; $('overlay').hidden = true; },
+    tick: (dt, n) => { for (let i = 0; i < (n || 1); i++) { if (!W || W.over) break; stepWorld(W, dt, W.pilots.map((P, k) => { const inp = k === 0 ? pilotInput(W, P, { sx: 0, sy: 0, ax: 0, ay: 0, fire: false, mode: null, ring: false, active: false }, dt) : aiInput(W, P); P.lastSx = inp.sx; return inp; })); } },
+    state: () => ({ t: W ? +W.t.toFixed(4) : 0, race, ship: S.ship }),
+    score: (done) => runScorecard(S.game, [11, 22, 33], done || (() => {})),
+    runBatch: () => ({ derbyI1: runHeadless('derby', 1, 'Hard', 11).finish, frenzyI1: runHeadless('frenzy', 1, 'Hard', 11).finish }),
+  });
+  window.__lab = LAB;
+  // test hook for scripted checks and later sessions (D14); no effect on play
+  window.__brittleStarStudio = {
+    get state() { return { race, t: +W.t.toFixed(2), game: W.game, intensity: W.I, target: W.target, prisms: W.prisms.filter((p) => !p.dead).length, pilots: W.pilots.map((p) => ({ name: p.domain.name, ai: p.spec.ai, style: p.spec.style, mode: p.mode, ring: p.ring, charge: p.charge, crystals: p.crystals, finishT: p.finishT, destroyed: p.destroyed, mass: p.mass, kills: p.kills, rings: p.rings, speed: +p.speed.toFixed(1), state: p.aiState })) }; },
+    get race() { return race; },
+    set: (k, v) => {
+      if (k === 'you') { const ps = S.players.map((x) => Object.assign({}, x)); ps[0].ai = v !== 'You'; if (v !== 'You') ps[0].level = v; racePanel.set('players', ps); return; }
+      if (k === 'game') { S.game = v; $('gameSel').value = v; save(); rebuildCourseNotes(); newRace(); return; }
+      if (k === 'course') { racePanel.set('course', v); return; }
+      S[k] = v; save(); newRace();
+    },
+    camera: (c) => { S.cam = c; racePanel.set('camera', c, true); save(); }, free,
+    startRace, stopRace, newRace, runHeadless, runScorecard, runStyles, mults, makeWorld, stepWorld, aiInput, KIT, WORLD, SHIP, SHIPPED: U, SHIP_SETS, ide: IDE,
+  };
+})();
+</script>
+</html>
+<script src="sync.js"></script>

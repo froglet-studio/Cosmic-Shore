@@ -1,7 +1,7 @@
 using System;
 using System.IO;
 using System.Linq;
-using Prisma.Parity;
+using Amoebius.Parity;
 
 namespace CosmicShore.Tests
 {

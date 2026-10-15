@@ -1,16 +1,16 @@
 <Project Sdk="Microsoft.NET.Sdk">
-  <!-- Prisma: the one shareable .exe for testing the engine. Picks a branch,
+  <!-- Amoebius: the one shareable .exe for testing the engine. Picks a branch,
        fetches it, builds the player from that branch's own source and starts the game; also
        builds Android/iOS packages. Its UI is drawn with Dear ImGui on our own Silk.NET window. -->
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
-    <AssemblyName>Prisma</AssemblyName>
+    <AssemblyName>Amoebius</AssemblyName>
     <RootNamespace>CosmicShore.Launcher</RootNamespace>
     <Nullable>enable</Nullable>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <ApplicationIcon>app.ico</ApplicationIcon>
     <Version>0.1.0</Version>
-    <Product>Prisma</Product>
+    <Product>Amoebius</Product>
     <Company>Froglet Inc.</Company>
     <InvariantGlobalization>true</InvariantGlobalization>
   </PropertyGroup>
@@ -38,14 +38,17 @@
     <Copy SourceFiles="@(_SilkNatives)" DestinationFolder="$(OutputPath)" SkipUnchangedFiles="true" />
   </Target>
   <ItemGroup>
-    <Compile Include="../Shared/PrismaProjectSettings.cs" Link="Shared/PrismaProjectSettings.cs" />
+    <Compile Include="../Shared/AmoebiusProjectSettings.cs" Link="Shared/AmoebiusProjectSettings.cs" />
     <Compile Include="../Shared/DccLocator.cs" Link="Shared/DccLocator.cs" />
   </ItemGroup>
 
-  <!-- Upgrade path from before the engine was named Prisma: a launcher built then looks for
-       FrogletLauncher(.exe) in what it publishes. Leave a copy under that name so its UPDATE
-       button can still install Prisma; Prisma's own updater deletes the copy. -->
+  <!-- Upgrade path from the engine's earlier names: a launcher built as Prisma looks for
+       Prisma(.exe) in what it publishes, and one from before that for FrogletLauncher(.exe).
+       Leave a copy under each name so their UPDATE buttons can still install Amoebius;
+       Amoebius's own updater deletes the copies. -->
   <Target Name="LegacyLauncherName" AfterTargets="Publish" Condition="'$(PublishSingleFile)' == 'true'">
+    <Copy SourceFiles="$(PublishDir)$(AssemblyName)$(_NativeExecutableExtension)"
+          DestinationFiles="$(PublishDir)Prisma$(_NativeExecutableExtension)" Condition="Exists('$(PublishDir)$(AssemblyName)$(_NativeExecutableExtension)')" />
     <Copy SourceFiles="$(PublishDir)$(AssemblyName)$(_NativeExecutableExtension)"
           DestinationFiles="$(PublishDir)FrogletLauncher$(_NativeExecutableExtension)" Condition="Exists('$(PublishDir)$(AssemblyName)$(_NativeExecutableExtension)')" />
   </Target>
@@ -87,7 +90,8 @@
     </ItemGroup>
   </Target>
   <ItemGroup>
-    <Compile Include="../Shared/PrismaTracks.cs" Link="Shared/PrismaTracks.cs" />
-    <Compile Include="../Shared/PrismaBoard.cs" Link="Shared/PrismaBoard.cs" />
+    <Compile Include="../Shared/AmoebiusTracks.cs" Link="Shared/AmoebiusTracks.cs" />
+    <Compile Include="../Shared/AmoebiusBoard.cs" Link="Shared/AmoebiusBoard.cs" />
+    <Compile Include="../Shared/Workspace/*.cs" Link="Shared/Workspace/%(Filename)%(Extension)" />
   </ItemGroup>
 </Project>

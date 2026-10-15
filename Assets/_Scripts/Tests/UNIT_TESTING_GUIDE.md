@@ -144,6 +144,12 @@ Two riders:
 - **`MainThreadDispatcher` is uninitialised in Edit Mode.** Its `Init` is `[RuntimeInitializeOnLoadMethod(BeforeSceneLoad)]`, so `IsOnMainThread` reports `false` and anything guarding on it (`SceneTransitionManager.SetFadeImmediate`) bails with a `Debug.LogError` — which the Test Framework counts as a failure on top of the assert. Call `EditModeLifecycle.EnsureMainThreadDispatcherInitialized()` in `SetUp`.
 - **`Object.Destroy` in Edit Mode logs an error; it does not throw and it does not destroy.** So a `try`/`catch` around it catches nothing and the unhandled error log fails the test on its own. Declare it up front with `LogAssert.Expect(LogType.Error, new Regex("Destroy may not be called from edit mode"))` — a regex, because the real message runs to a second line. This applies to any code path a test drives into a `Destroy`, not just `AppManager`'s duplicate guard.
 
+### Pattern: A test loads its own subject — never what the session happens to hold
+Two shapes made shipped tests order- or machine-dependent (DT-003, 2026-10-13), and both pass on the author's run:
+
+- **`Resources.FindObjectsOfTypeAll<T>()` returns only what is already LOADED.** `WeeklyChallengeTests.ShippedCatalog_EveryModeHasAnArcadeCard` read the game lists that way: it was `Assert.Ignore`d while nothing had loaded one, and it went red once some earlier test or the editor had loaded only lists that lacked the cards. Load every asset of the type yourself: `AssetDatabase.FindAssets("t:" + nameof(T))` → `LoadAssetAtPath`. Then an empty project is a real failure, not a skip.
+- **Normalise line endings before matching asset text.** `.gitattributes` is `* text=auto`, so a Windows checkout delivers `.unity` / `.prefab` / `.asset` with `\r\n`, and a needle ending in `"\n"` never matches there (`OmniCombineTests` shipped that way). Read with `File.ReadAllText(path).Replace("\r\n", "\n")`, and in a .NET regex write `\r?$`, because multiline `$` matches before `\n`, after any `\r`.
+
 ### Pattern: Mock Implementation of Interfaces
 `TestRoundStats` implements `IRoundStats` without Netcode dependency. Allows testing `Cleanup()` logic in pure C#.
 

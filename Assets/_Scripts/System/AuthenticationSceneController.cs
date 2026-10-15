@@ -135,6 +135,17 @@ namespace CosmicShore.Core
         async UniTaskVoid RunAuthFlowAsync(CancellationToken ct)
         {
             HideAllPanels();
+
+            // The browser Toybox signs in to nothing (WebToybox): no cached session, no username
+            // step, no Relay. Straight to the single-player local host and Menu_Main.
+            if (WebToybox.IsBuild)
+            {
+                ShowLoading(WebToyboxLoadingText);
+                if (!await WaitForWebAudioBanksAsync(ct)) return;
+                NavigateToMainMenu();
+                return;
+            }
+
             ShowLoading(IsOffline ? "No connection. Starting offline…" : "Signing in…");
 
             try
@@ -757,9 +768,9 @@ namespace CosmicShore.Core
             // because "the player has no network" and "UGS is having a bad day" deserve the
             // attempts.
             bool offlinePreferred = _offlineMode != null && _offlineMode.OfflinePreferred;
-            bool attemptRelay = !offlinePreferred
-                                && !IsOffline
-                                && !(_offlineMode?.IsOfflineSession ?? false);
+            var plan = PlanBootNetwork(offlinePreferred, IsOffline, _offlineMode?.IsOfflineSession ?? false,
+                                       webToybox: WebToybox.IsBuild);
+            bool attemptRelay = plan.AttemptRelay;
 
             if (offlinePreferred)
                 CSDebug.LogVerbose(CSLogChannel.Boot, "[AuthScene] Offline preferred by the player - going straight to the local host.");
@@ -797,7 +808,21 @@ namespace CosmicShore.Core
                         {
                             var hcs = HostConnectionService.Instance;
                             if (hcs != null)
-                                await hcs.EnsurePartySessionAsync().AsMainThread();
+                            {
+                                // Bounded by the same per-attempt timeout. Unbounded, a create that
+                                // hangs (UGS reachable but not answering) held the gate as long as it
+                                // liked, so "three attempts" was a minimum and the offline fallback
+                                // could arrive minutes late. Abandoning the wait is safe: the call
+                                // keeps running, and EnsurePartySessionAsync re-checks the offline
+                                // flag before it touches the NetworkManager.
+                                using var retryCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
+                                retryCts.CancelAfter(TimeSpan.FromSeconds(timeout));
+                                await hcs.EnsurePartySessionAsync().AttachExternalCancellation(retryCts.Token).AsMainThread();
+                            }
+                        }
+                        catch (OperationCanceledException) when (!ct.IsCancellationRequested)
+                        {
+                            CSDebug.LogWarning($"[AuthScene] HCS retry did not finish within {timeout:F0}s - counting the attempt as failed.");
                         }
                         catch (Exception hcsEx)
                         {
@@ -826,12 +851,14 @@ namespace CosmicShore.Core
                 // Netcode spawn chain and every AI-backfilled mode runs unchanged, and the
                 // player's last-known-good profile / unlocks load from the local
                 // cloud-cache. The session stays offline until the app restarts.
-                if (offlinePreferred)
-                    ShowLoading("Starting offline…");
-                else
+                // Counted: an unwanted offline start is the failure the request policy exists to prevent
+                // (Docs/MultiplayerArchitecture/REVIEW_INVITE_AND_RESILIENCE.md, B24).
+                if (plan.UnwantedFallback) UgsRequestTelemetry.Count(UgsRequestCounter.OfflineFallback);
+                string startingText = WebToybox.IsBuild ? WebToyboxLoadingText : "Starting offline…";
+                if (plan.UnwantedFallback)
                     await ShowOfflineNoticeAsync(ct);   // explains an UNWANTED offline start
 
-                ShowLoading("Starting offline…");
+                ShowLoading(startingText);
 
                 bool offlineReady;
                 try
@@ -884,6 +911,84 @@ namespace CosmicShore.Core
 
             CSDebug.LogVerbose(CSLogChannel.Boot, $"[AuthScene] Loading {menuScene} via network scene management...");
             NetworkManager.Singleton.SceneManager.LoadScene(menuScene, LoadSceneMode.Single);
+        }
+
+        /// <summary>What the boot gate does about the network. See <see cref="PlanBootNetwork"/>.</summary>
+        internal readonly struct BootNetworkPlan
+        {
+            /// <summary>Walk the bounded Relay attempts before falling back.</summary>
+            public readonly bool AttemptRelay;
+
+            /// <summary>
+            /// If the session ends up offline, nobody asked for it: count it
+            /// (<see cref="UgsRequestCounter.OfflineFallback"/>) and say why on screen. False only for
+            /// the player's own choice, which gets neither.
+            /// </summary>
+            public readonly bool UnwantedFallback;
+
+            public BootNetworkPlan(bool attemptRelay, bool unwantedFallback)
+            {
+                AttemptRelay = attemptRelay;
+                UnwantedFallback = unwantedFallback;
+            }
+        }
+
+        /// <summary>
+        /// The boot gate's network decision, from the three facts it has
+        /// (HARDENING_PLAN_STEAM_LAUNCH.md §4.1 cases 1-3). No attempts when the player chose
+        /// offline (a deliberate choice must not cost them 45 s of attempts they asked not to
+        /// make), when the device reports no network (they cannot succeed), or when an offline
+        /// session is already live. A REACHABLE device whose UGS calls merely fail still walks the
+        /// attempts - "no network" and "UGS is having a bad day" are different failures.
+        ///
+        /// <para>The browser Toybox (<paramref name="webToybox"/>) is offline by design: it never
+        /// attempts Relay and its local session is not a fallback, so it is neither counted nor
+        /// explained on screen.</para>
+        /// </summary>
+        internal static BootNetworkPlan PlanBootNetwork(bool offlinePreferred, bool deviceOffline, bool offlineSessionLive,
+                                                        bool webToybox = false) =>
+            new BootNetworkPlan(
+                attemptRelay: !webToybox && !offlinePreferred && !deviceOffline && !offlineSessionLive,
+                unwantedFallback: !webToybox && !offlinePreferred);
+
+        /// <summary>The loading line the browser Toybox shows while its local session starts.</summary>
+        const string WebToyboxLoadingText = "Starting the Toybox…";
+        const string WebToyboxAudioLoadingText = "Loading sound…";
+        const float WebAudioBankTimeoutSeconds = 90f;
+
+        /// <summary>
+        /// A WebGL player loads FMOD's banks asynchronously, over the network, from StreamingAssets
+        /// (SFX.bank alone is ~37 MB). An event created before its bank arrives fails once and stays
+        /// silent, so the menu's music and the freestyle sounds would be lost. The browser Toybox
+        /// waits here, on the loading text, up to a timeout; past it the menu opens anyway and
+        /// sound joins late. Native players load banks synchronously at start, so this only
+        /// matters on the web. False when the scene went away while waiting.
+        /// </summary>
+        async UniTask<bool> WaitForWebAudioBanksAsync(CancellationToken ct)
+        {
+            if (Application.platform != RuntimePlatform.WebGLPlayer) return true;
+
+            float deadline = Time.realtimeSinceStartup + WebAudioBankTimeoutSeconds;
+            bool shown = false;
+            while (!BanksLoaded())
+            {
+                if (Time.realtimeSinceStartup > deadline)
+                {
+                    CSDebug.LogWarning($"[AuthScene] FMOD banks still loading after {WebAudioBankTimeoutSeconds:0} s; " +
+                                       "opening the Toybox without them. Sounds created before they arrive stay silent.");
+                    return true;
+                }
+                if (!shown) { ShowLoading(WebToyboxAudioLoadingText); shown = true; }
+                await UniTask.Yield(PlayerLoopTiming.Update);
+                if (ct.IsCancellationRequested) return false;
+            }
+            return true;
+
+            static bool BanksLoaded()
+            {
+                try { return FMODUnity.RuntimeManager.HaveAllBanksLoaded; }
+                catch (Exception) { return true; } // FMOD failed to start: nothing to wait for.
+            }
         }
 
         /// <summary>

@@ -15,7 +15,7 @@
 # claude/** BRANCHES DO NOT TRIGGER CI ON THEIR OWN. Agent sessions push often and open many
 # pull requests, so a pull_request event whose head is claude/** skips every job here. CI for such
 # a branch fires only when (a) it lands on bleeding-edge (bleeding-edge-guard.yml and
-# prisma-parity-ci.yml run on that push) or (b) a /ship, /ship-quick, /ship-deep or /ship-tools
+# amoebius-parity-ci.yml run on that push) or (b) a /ship, /ship-quick, /ship-deep or /ship-tools
 # command dispatches this workflow on it with mode=static (.claude/skills/ship/SKILL.md, section 5.5).
 #
 # NO RUNNER IS ATTACHED (since 2026-10-13). The `unity` job is SKIPPED while the repository variable
@@ -236,6 +236,13 @@ jobs:
           set -euo pipefail
           python3 Tools/Build/check_console_logging.py --self-test
           python3 Tools/Build/check_console_logging.py
+
+      # A keystore selected in Publishing Settings is one machine's file (Docs/ANDROID_BUILD.md §1).
+      - name: Check no Android keystore path is committed
+        run: |
+          set -euo pipefail
+          python3 Tools/Build/check_android_signing_settings.py --self-test
+          python3 Tools/Build/check_android_signing_settings.py
 
       # .junie/skills must stay a symlink to .claude/skills (see AGENTS.md).
       - name: Check .junie/skills is a link, not a copy

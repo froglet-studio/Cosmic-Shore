@@ -1004,6 +1004,25 @@ folders that measure 12 MB (coincidence) and **4.4 MB** on disk.
 State which you mean every time: *"reaches a build"* vs *"on disk"*. A removal's headline is
 usually the first and its licence/repo-hygiene argument is the second.
 
+### Trap: a runtime `new Material(shader)` draws a variant the BUILD stripped
+
+A player build keeps only the shader variants some shipped material (or a variant collection) asks for, so
+a material made in code at runtime can ask for a keyword nobody shipped. The Editor has every variant,
+so it works there and fails only in the build: `INSTANCING_ON` is the usual casualty, and the draw comes out
+non-instanced or invisible. When code needs a material with a keyword or instancing, author a material
+ASSET with it set (GPU instancing ticked), keep it reachable (`Resources/`, or a reference from a shipped
+SO), and load it rather than constructing one. `SwarmMemberFallbackDraw` loads
+`Resources/SwarmMemberInstancedFallback.mat` for exactly this (claude/webgl-toybox-kg5qx7, 2026-10-14).
+
+### Technique: check a `.jslib` against a vendor's JS internals by grepping its static library
+
+A WebGL plugin's browser half is often JavaScript embedded as plain strings inside an Emscripten static
+library (`Assets/Plugins/<vendor>/platforms/html5/lib/<ver>/*.a`). A `.jslib` that calls into it
+(`Module.mInputRegistered`, `Module["OutputWebAudio_resumeAudio"]`) can be checked without a build:
+`grep -c -a '<name>' <lib>.a` for each name, against the library version Unity will link (FMOD picks
+`3.1.39` for Unity 6), and `grep -a -o '.{200}<name>.{300}'` to read the code around it. Names that are
+not there mean the `.jslib` does nothing, silently (claude/webgl-toybox-kg5qx7, 2026-10-14).
+
 ## 4. Technique: C# verification — get a real compiler first
 
 **Reach for ROSLYN, not `mcs`.** `mcs` is a C# 7.x compiler and this codebase is
@@ -1071,6 +1090,21 @@ references, m_Script classes). What cost time on the first runs (2026-10-06 to 1
   files that `using` a UGS package no mirror carries (Multiplayer, Friends, Leaderboards); they are
   counted, not judged. Check your own files are not in that bucket (they would be unverified):
   grep the run's `report.json` for each file you changed.
+- **`check_generated_assets.py` used to call a VARIANT-DERIVED fileID "missing"; it resolves them
+  since 2026-10-14.** A variant of a variant (Skim Race's `SkimRaceRingCrystal` → `BigCrystalVariant`
+  → `Crystal.prefab`) overrides, and is referenced through, objects its source INHERITS without
+  writing them out, whose ids are `(instanceFileID XOR sourceFileID) & INT64_MAX` and appear in no
+  document of the source file. The reference check only knew anchors, so all four correct overrides
+  (root `m_LocalScale`, `SphereCollider.m_Enabled`) came back as dangling. `Audit.has_object` now
+  recurses through the source's `PrefabInstance`s; its self-test carries a positive and a negative
+  control. If an older checkout still reports such ids missing, check the XOR before believing it —
+  the old scene reference to `BigCrystalVariant`'s Crystal (`6588436222817790495`) was exactly that
+  kind of id and loaded in play for months.
+- **The `editor` config is RED on bleeding-edge itself (measured 2026-10-14): 3 errors, all in
+  `Assets/_Scripts/System/AuthenticationServiceFacade.cs`** (`Unity.Multiplayer.PlayMode` /
+  `CurrentPlayer` — the Multiplayer Play Mode editor package, not obtainable here). A/B it on a
+  detached worktree of the base before attributing it (`git worktree add --detach <tmp>
+  origin/bleeding-edge`); the line to read is "`0 in files changed since origin/bleeding-edge`".
 - **`--config editor` compiles the Editor-folder scripts as their own `Assembly-CSharp-Editor`**,
   referencing the runtime, as Unity does. Before 2026-10-08 it merged the changed ones INTO the
   runtime compilation, so any branch touching one of the 123 `namespace CosmicShore.Editor` files got
@@ -1100,6 +1134,11 @@ references, m_Script classes). What cost time on the first runs (2026-10-06 to 1
   the same file as an `m_Script` is a package script. Measured 2026-10-13 on
   `claude/serpent-mass-seed-wall`: 3 findings, all 3 false. The fix belongs in the tool (index guids
   from `git ls-tree` plus the refcompile package cache), not in a habit.
+- **`check_generated_assets.py` reports a guid-KEEPING RENAME as a `[deleted]` reference.** `git mv a.png b.png`
+  with its `.meta` keeps the guid, so every reference still resolves — but the audit sees `a.png` deleted since the
+  base and reports `b.png.meta: references a.png (guid …), deleted since the base`. The file it names IS the owner
+  now. Confirm with `grep -c "^guid: <g>$"` over the `.meta` set (exactly one owner, the new path) and call it out
+  as the tool's false positive (Thresher Heavy Iron → Mass Mode icon, 2026-10-13).
 - **`check_generated_assets.py` reports only findings that are NEW against the base's copy of the
   asset — so a negative control must inject a defect the BASE never had.** Re-adding a key you just
   removed (a retired field's `minExplosionScale: 60`, still present in the base asset) is suppressed
@@ -2162,6 +2201,47 @@ this repo that resolves types across the SOAP/Unity boundary without the editor,
 a signature that would have been an editor-only error: **`Obvious.Soap`'s `ScriptableList<T>`
 implements `IList<T>` and NOT `IReadOnlyList<T>`**, so the natural read-only parameter type
 does not accept one. Any helper taking a SOAP list must take `IList<T>`.
+
+### Technique: test a BINARY-FORMAT reader against the real tool's output, not hand-written bytes
+
+A reader for a format you did not author (a protobuf manifest, an ELF header, a signature
+block) is only proven against bytes the real producer wrote. Writing them by hand repeats your
+own understanding of the format back to you. Google's Android tools are reachable from this
+container, so `AndroidBundleCheck` (`Assets/_Scripts/Editor/Build/`) was proven against real
+output (claude/serene-edison-lfv24f, 2026-10-13):
+
+- **A real aapt2 protobuf manifest.** Download aapt2's Linux jar
+  (`dl.google.com/android/maven2/com/android/tools/build/aapt2/<ver>/aapt2-<ver>-linux.jar`) and
+  `android.jar` from `dl.google.com/android/repository/platform-36_r02.zip`, each unpacked into
+  its own empty folder. Then run
+  `aapt2 link --proto-format -I android.jar --manifest AndroidManifest.xml -o x.apk`. The
+  `AndroidManifest.xml` inside `x.apk` is the exact protobuf `XmlNode` an App Bundle carries.
+  Link a clean manifest and one that is wrong in every field you check.
+- **Real ELF alignments.** The repo's FMOD arm64 `.so` has LOAD alignment `0x4000` and Nice
+  Vibrations' `liblofelt_sdk.so` has `0x1000`. Confirm both with `readelf -lW` before relying on
+  them.
+- **Real signatures.** `keytool` and `jarsigner` are installed. Sign one fixture with a
+  release-named key and one with `CN=Android Debug`.
+
+Then build one fixture per verdict (good, unsigned, debug-signed, no 64-bit libraries, not a
+bundle) and require each verdict to differ. **That set caught a check that could never fire:**
+the "no arm64 libraries" error was gated on the list of libraries the check MEASURED, which held
+only 64-bit ones, so a 32-bit-only bundle passed. A check whose precondition is computed from the
+thing it looks for is always silent. Test the precondition on the raw input instead.
+
+### Trap: an SDK-style harness project compiles EVERY `.cs` under its folder
+
+`dotnet` project files glob `**/*.cs` by default, not only the files you `<Compile Include>`.
+A deliberately broken copy of the shipped file (a mutant for a negative control) left in the
+harness folder is compiled beside the real one. Every member then reports
+`CS0111 … already defines a member`, which reads exactly like the shipped file got duplicated.
+The repo file was fine; only the harness was wrong. Moving the mutant into its own folder is
+not enough on its own. If that folder's project also `<Compile Include>`s the mutant, the SDK
+stops with `NETSDK1022 Duplicate 'Compile' items` before any test runs, and a quiet grep for
+`Passed!|Failed!` then prints nothing, which a hurried reader takes as a pass. Give every harness
+project `<EnableDefaultCompileItems>false</EnableDefaultCompileItems>` and list its files.
+Check `git show HEAD:<file>` before believing a duplicate-member error in a harness. Read the
+test count line before believing a mutant run: no line means no run.
 
 ### Trap: you cannot see a PACKAGE API's SHAPE here, so a test written against one is a guess
 
@@ -3333,7 +3413,7 @@ never fold it into a fix for something else.
   a component), pointing at an EXISTING-type asset the game already loaded elsewhere — and an
   `IExplosionPrismPayload` seam on the impactor took the place of the container slot. When a new
   SO type is unavoidable, have the human open its first asset once before the playtest.
-- **The Prisma port is a real compile of `Assets/_Scripts`, available in about a minute.**
+- **The Amoebius port is a real compile of `Assets/_Scripts`, available in about a minute.**
   `Port/src/CosmicShore.Player` live-compiles the game's own source against the port's Unity API
   surface, so `dotnet build Port/src/CosmicShore.Player` binds method bodies — not the
   syntax-only Roslyn pass §0.05 of `/ship` warns about. No SDK in the container? `curl -sSL
@@ -3449,6 +3529,14 @@ never fold it into a fix for something else.
   only when the base is byte-identical and the diff is purely additive (the Sparrow animator
   controller was; the Sparrow prefab was NOT — it had swapped the visible model, which trunk
   must not).
+- **A port that skips a hunk because "the asset it names is gone" must resolve the GUID, not the
+  name.** The Stoat port (`16b41b045`) left out the source branch's Cell Selector entry in
+  Menu_Main, reasoning that it named a "Black Hole cell" the branch no longer carried. That cell had
+  been RENAMED to the Crystal Wormhole Cell with its guid kept (`git log --name-status` shows
+  `R100`), so the entry named the very config the port brought over. The cell then sat selectable
+  by nothing until `CrystalWormholeTests` went red. Before dropping a hunk as dangling, grep the
+  hunk's `guid:` against the source branch's `.meta` files (`git grep <guid> <branch> -- '*.meta'`).
+  A hit means the reference is live, whatever the folder is called now.
 
 - **`$` in a .NET regex does NOT match before `\r`, so every line-anchored pattern
   fails on a Windows checkout.** In multiline mode `$` matches before the `\n` but

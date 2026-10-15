@@ -7,12 +7,12 @@ using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Threading.Tasks;
-using Prisma.Bisect;
+using Amoebius.Bisect;
 
 namespace CosmicShore.Mcp
 {
     /// <summary>
-    /// prisma_bisect (ROADMAP C1b): which commit broke it. <c>git bisect run</c> over the commits
+    /// amoebius_bisect (ROADMAP C1b): which commit broke it. <c>git bisect run</c> over the commits
     /// between good and bad that touch Port/, in a scratch git worktree (the checkout it was asked
     /// from never moves), each candidate built there and judged by this server in
     /// <c>--bisect-step</c> mode: an engine_smoke error signature or a replay diff (engine_parity).
@@ -21,7 +21,7 @@ namespace CosmicShore.Mcp
     {
         public static JsonObject BisectTool()
         {
-            var t = Tool("prisma_bisect",
+            var t = Tool("amoebius_bisect",
                 "Find the commit that broke the engine: git bisect run over the commits between good and bad that touch Port/, each built in a scratch git worktree " +
                 "(this checkout never moves) and judged by an engine_smoke error signature (check=smoke) or a replay diff (check=parity, against the good commit's own " +
                 "replay by default, since Unity goldens may be missing). A candidate that does not build, or predates the replay flags, is skipped. Verifies that bad " +
@@ -220,20 +220,20 @@ namespace CosmicShore.Mcp
         }
 
         /// <summary>
-        /// <c>prisma-mcp --repo WT --bisect-step step.json</c>: what <c>git bisect run</c> calls for each
+        /// <c>amoebius-mcp --repo WT --bisect-step step.json</c>: what <c>git bisect run</c> calls for each
         /// candidate. The exit code is the verdict; a line per step goes to the step log for the report.
         /// </summary>
         public static async Task<int> BisectStep(string repo, string cfgPath)
         {
             JsonObject cfg;
             try { cfg = JsonNode.Parse(await File.ReadAllTextAsync(cfgPath))!.AsObject(); }
-            catch (Exception e) { Console.WriteLine("prisma_bisect step: unreadable " + cfgPath + ": " + e.Message); return BisectVerdict.Abort; }
+            catch (Exception e) { Console.WriteLine("amoebius_bisect step: unreadable " + cfgPath + ": " + e.Message); return BisectVerdict.Abort; }
             var sha = (await Git(repo, "rev-parse", "HEAD")).Output.Trim().Split('\n').Last();
             using var tools = new Tools(repo, cfg["parity_root"]?.GetValue<string>());
             var sw = Stopwatch.StartNew();
             var (code, detail) = await tools.Judge(cfg);
             detail = $"{detail} ({sw.Elapsed.TotalSeconds:0} s)";
-            Console.WriteLine($"prisma_bisect step {sha[..Math.Min(10, sha.Length)]}: {BisectVerdict.Name(code)} - {detail}");
+            Console.WriteLine($"amoebius_bisect step {sha[..Math.Min(10, sha.Length)]}: {BisectVerdict.Name(code)} - {detail}");
             if (cfg["log"]?.GetValue<string>() is { Length: > 0 } log)
                 await File.AppendAllTextAsync(log, $"{sha}\t{BisectVerdict.Name(code)}\t{detail.Replace('\t', ' ').Replace('\n', ' ')}\n");
             return code;

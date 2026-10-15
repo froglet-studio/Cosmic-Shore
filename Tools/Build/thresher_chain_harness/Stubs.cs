@@ -43,6 +43,8 @@ namespace UnityEngine
         public static float Lerp(float a, float b, float t) => a + (b - a) * Clamp01(t);
         public static float InverseLerp(float a, float b, float v) => a != b ? Clamp01((v - a) / (b - a)) : 0f;
         public static float Exp(float v) => (float)Math.Exp(v);
+        public static float Pow(float f, float p) => (float)Math.Pow(f, p);
+        public static int CeilToInt(float f) => (int)Math.Ceiling(f);
         public static float Sqrt(float v) => (float)Math.Sqrt(v);
         public static float Cos(float v) => (float)Math.Cos(v);
         public static float Sin(float v) => (float)Math.Sin(v);

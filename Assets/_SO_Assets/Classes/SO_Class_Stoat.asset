@@ -14,9 +14,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::SO_Vessel
   Class: 15
   Name: Stoat
-  Description: Never flies straight for long. The Stoat throws a wormhole pair across
-    itself - attractor on one side, repulsor on the other - and goes where the pull
-    throws it.
+  Description: Never flies straight for long. In Mass mode the triggers lay a wormhole
+    dipole ahead - a sink and a source you fly through - and a thick trail behind; in
+    Time mode they lay an attractor to orbit and sling off a quarter-turn round. Every
+    pair that dies throws a space-time ripple that strips rivals.
   PrimaryElement: 3
   Element: {fileID: 0}
   InitialResourceLevels:
@@ -24,8 +25,8 @@ MonoBehaviour:
     Charge: 0
     Space: 0
     Time: 0
-  IconActive: {fileID: 21300000, guid: 5d8f022f56d65ef4fae2cea4428a990f, type: 3}
-  IconInactive: {fileID: 21300000, guid: c7a15d77edb2723429254cf708d9d20c, type: 3}
+  IconActive: {fileID: 21300000, guid: 627c06caaa88435fa2c44e98ad1fb611, type: 3}
+  IconInactive: {fileID: 21300000, guid: d845d4e49ee148f9b787599a3755eaa9, type: 3}
   PreviewImage: {fileID: 0}
   SquadImage: {fileID: 0}
   TrailPreviewImage: {fileID: 0}

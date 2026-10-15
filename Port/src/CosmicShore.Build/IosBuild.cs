@@ -6,15 +6,15 @@ using System.Linq;
 namespace CosmicShore.Build
 {
     /// <summary>
-    /// Build Settings → iOS → Build. Three outcomes, picked by where it runs:
+    /// Build Settings → iOS → Build. Two outcomes, picked by where it runs:
     /// <list type="bullet">
     /// <item><b>Not a Mac</b>: exports an <b>Xcode project</b> (<c>CosmicShore.xcodeproj</c> + the player
     /// data), like Unity's iOS export. Open it in Xcode on a Mac, pick a team, Run or Archive.</item>
-    /// <item><b>Mac, <c>--unsigned</c></b>: compiles <c>&lt;product&gt;.ipa</c> with no signature — the
-    /// GitHub-runner path. Sign and install it on Windows with Sideloadly and a free Apple ID.</item>
     /// <item><b>Mac</b>: compiles and signs with the Mac's own identities: CS_IOS_CODESIGN_KEY
     /// ("Apple Development: …") and CS_IOS_PROVISIONING_PROFILE; unset, Xcode's automatic choice.</item>
     /// </list>
+    /// The unsigned .ipa for Sideloadly (<c>--unsigned</c>) was retired on 2026-10-13 with the game's
+    /// free-Apple-ID sideload path: TestFlight is the only route onto a phone.
     /// Bundle id, name, version and build number come from Player Settings
     /// (applicationIdentifier.iPhone, productName, bundleVersion, buildNumber.iPhone).
     /// </summary>
@@ -32,10 +32,12 @@ namespace CosmicShore.Build
             string outDir = Path.GetFullPath(_o.Get("--out") ?? Path.Combine(_project, "Builds", "iOS"));
             string id = _o.Get("--id") ?? builder.ApplicationIdentifier("iPhone");
             string config = _o.Has("--debug") ? "Debug" : "Release";
-            bool unsigned = _o.Has("--unsigned");
+            if (_o.Has("--unsigned"))
+                throw new BuildException("--unsigned was retired on 2026-10-13 with the free-Apple-ID sideload path; " +
+                                         "TestFlight is the only iOS route (Docs/IOS_BUILD.md). Build signed on a Mac, or export the Xcode project.");
             bool xcode = _o.Has("--xcode") || !OperatingSystem.IsMacOS();
             Console.WriteLine($"iOS build: {product} {builder.BundleVersion()} ({builder.IosBuildNumber()}) — {id}, {config}"
-                + (xcode ? ", Xcode project" : unsigned ? ", unsigned .ipa" : ", signed .ipa"));
+                + (xcode ? ", Xcode project" : ", signed .ipa"));
 
             string playerData = Path.Combine(outDir, "PlayerData");
             var report = Toolchain.StagePlayerData(builder, playerData, pakDir: null);
@@ -52,7 +54,6 @@ namespace CosmicShore.Build
                 Console.WriteLine();
                 Console.WriteLine($"exported {proj} — player data {report.ContentHash}, {report.Assets} assets.");
                 Console.WriteLine("On a Mac: open it in Xcode, pick your Team under Signing & Capabilities, then Run or Product > Archive.");
-                Console.WriteLine("No Mac: build an unsigned .ipa on GitHub's free Mac runner instead (launcher BUILD page, or Port/docs/IOS.md).");
                 return 0;
             }
 
@@ -74,15 +75,7 @@ namespace CosmicShore.Build
                 "-p:OutputPath=" + bin + Path.DirectorySeparatorChar,
             };
             if (fmodReal) args.Add("-p:CsFmodRoot=" + fmod);
-            if (unsigned)
-            {
-                // No identity on a CI runner: build the device .app without a signature. Sideloadly
-                // re-signs the whole bundle (nested frameworks included) with the user's Apple ID.
-                args.Add("-p:EnableCodeSigning=false");
-                args.Add("-p:_RequireCodeSigning=false");
-                args.Add("-p:CodesignRequireProvisioningProfile=false");
-            }
-            else AddSigning(args);
+            AddSigning(args);
 
             Toolchain.EnsureWorkload("ios");
             if (Toolchain.Run(Toolchain.Dotnet(), args) != 0) throw new BuildException("the iOS toolchain failed (see above)");
@@ -90,11 +83,9 @@ namespace CosmicShore.Build
             var app = Directory.EnumerateDirectories(bin, "*.app", SearchOption.AllDirectories)
                 .OrderByDescending(Directory.GetLastWriteTimeUtc).FirstOrDefault()
                 ?? throw new BuildException($"no .app was produced under {bin}");
-            var ipa = Path.Combine(outDir, product.Replace(' ', '-') + (unsigned ? "-unsigned" : "") + ".ipa");
+            var ipa = Path.Combine(outDir, product.Replace(' ', '-') + ".ipa");
             PackageIpa(app, ipa);
-            Console.WriteLine(unsigned
-                ? $"built {ipa} — unsigned: install it with Sideloadly (Windows) or AltStore, which sign it with your Apple ID."
-                : $"built {ipa} — install it with Xcode (Window > Devices) or Apple Configurator.");
+            Console.WriteLine($"built {ipa} — install it with Xcode (Window > Devices) or Apple Configurator.");
             return 0;
         }
 

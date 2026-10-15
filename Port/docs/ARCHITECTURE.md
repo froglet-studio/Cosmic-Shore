@@ -1,4 +1,4 @@
-# Prisma v0.1 — Architecture Overview
+# Amoebius v0.1 — Architecture Overview
 
 *The Unity-free engine (the "port") that runs Cosmic Shore: how it is put together, how one frame works, and how to drive it.*
 
@@ -38,7 +38,7 @@ players also reference Content, Render and Engine directly.
 | **CosmicShore.Mobile** | The Android/iOS player: the same `PlayerWindow` on an SDL GL ES view, with touch | same as Player |
 | **CosmicShore.AssetTool** | `cs-asset`: edit scenes, prefabs and assets from the command line | Content, Live, Compat |
 | **CosmicShore.Build** | `cs-build`: Unity-style player builds (player data, Android APK/AAB, iOS) | none (reads files only) |
-| **CosmicShore.Launcher** | `Prisma.exe`: pick a branch, fetch, build and play it; Android/iOS builds. Dear ImGui on Silk.NET | none (drives git, `dotnet`, `cs-build`) |
+| **CosmicShore.Launcher** | `Amoebius.exe`: pick a branch, fetch, build and play it; Android/iOS builds. Dear ImGui on Silk.NET | none (drives git, `dotnet`, `cs-build`) |
 | *Data, Game, Cli, Client* | **Legacy.** Early hand-ported gameplay, headless round drivers and "sprint" windows. The player does not use them; the tests still do | Engine |
 | Tests | `CosmicShore.Tests` (xunit, 1,568 tests); `CosmicShore.Tests.Ported` (the project's Unity EditMode tests, 352) | — |
 
@@ -70,7 +70,7 @@ Everything targets .NET 10 (`Directory.Build.props`). The solution is `Port/Cosm
    first line, `if (NetRpc.Intercept(this, "Name", args)) return;`. That one line routes the call
    over the network, or lets it run locally. An RPC it cannot intercept (a generic method, an
    attribute split over lines, Netcode 2's `[Rpc(SendTo...)]`) is reported as warning
-   **`PRISMA001`** at its file and line, never skipped silently: it would run locally instead of
+   **`AMOEBIUS001`** at its file and line, never skipped silently: it would run locally instead of
    over the network.
 4. **Maps back to the original file.** Each output starts with `#line 1 "<path under Assets/>"`
    and the rewrite keeps line numbers, so compiler errors, stack traces, debugger steps and
@@ -97,18 +97,18 @@ sits behind those names is first-party code.
 | Area | What it does | Key files |
 |---|---|---|
 | Object model | `Object` (a destroyed object compares equal to `null`), `GameObject`, `Component`, `Transform` (local TRS is authoritative; world pose is cached), `RectTransform`, scenes | `Object.cs`, `SceneGraph/` |
-| Lifecycle | Unity messages (`Awake` … `OnDestroy`, `OnTrigger*`) are found by reflection once per type and bound as open-instance delegates (no `Expression.Compile`, which is slow on iOS's interpreter). They run in Script Execution Order: the `.meta` `executionOrder` (read by Content at boot) overrides `[DefaultExecutionOrder]`, and it orders Awake/OnEnable at a scene load, Start, and every per-frame phase | `SceneGraph/MonoBehaviour.cs`, `LifecycleMethodCache.cs`, `ScriptExecutionOrder.cs` |
+| Lifecycle | Unity messages (`Awake` … `OnDestroy`, `OnTrigger*`) are found by reflection once per type and bound as open-instance delegates (no `Expression.Compile`, which is slow on iOS's interpreter). They run in Script Execution Order: the `.meta` `executionOrder` (read by Content at boot) overrides `[DefaultExecutionOrder]`, and it orders Awake/OnEnable at a scene load, Start, and every per-frame phase. The application messages go to every behaviour on an active object: `Application.Quit()` quits at the end of the frame, in Unity's order (`wantsToQuit` may cancel, then `OnApplicationQuit`, then `quitting`), and closing the window runs the same sequence; the window gaining or losing focus sends `OnApplicationFocus` | `SceneGraph/MonoBehaviour.cs`, `LifecycleMethodCache.cs`, `ScriptExecutionOrder.cs`, `ApplicationMessages.cs` |
 | Frame loop | `GameLoop.Tick` (Figure 4). Headless by design: tests tick it directly | `SceneGraph/GameLoop.cs` |
 | Time | Frame clock, fixed-step accumulator (the project's 0.04 s), unscaled clock | `Time.cs` |
 | Physics | Custom trigger physics. Overlap pairs with a Rigidbody on at least one side whose layers meet in the Layer Collision Matrix (Unity's rules) fire `OnTriggerEnter/Stay/Exit` on the collider's GameObject and its Rigidbody's, sweep-sorted, deterministic. Raycast, SphereCast, OverlapSphere/Capsule/Box and `Collider.ClosestPoint` are supported, and Rigidbodies integrate ballistically. Spheres, oriented boxes and capsules are exact; a mesh is the oriented box of its bounds. A contact pass resolves a dynamic Rigidbody's solid SPHERE against solid colliders and fires `OnCollision*` (the census in §13.1); there is no general solver | `Physics/ShapeMath.cs`, `Physics/ContactPass.cs`, `SceneGraph/TriggerPass*.cs`, `Compat/EngineCompat.cs` |
 | Animation | A Mecanim driver: layers, nested state machines, transitions, triggers, 1D/2D/direct blend trees, FBX and `.anim` clips | `Animation/` |
-| Input | The Input System (actions, maps, bindings, composites, devices). `TouchFeed` gives EnhancedTouch semantics on phones | `InputSystem/` |
-| UI | uGUI: anchors, layout groups, masks, `EventSystem` raycasting and navigation, `Selectable` / `Button` / `ScrollRect` / `InputField`. TMP layout builds SDF glyph quads | `UI/` |
+| Input | The Input System (actions, maps, bindings, composites, devices). `TouchFeed` gives EnhancedTouch semantics on phones. A gamepad's `SetMotorSpeeds` reaches the device through its `MotorOutput`: GLFW has no rumble, so on Windows the player sends it to the pad's XInput slot (`XInputSlots` matches GLFW's joysticks to slots), and a backend that exposes motors (SDL's) takes it directly | `InputSystem/`, player `XInputRumble.cs` |
+| UI | uGUI: anchors, layout groups, masks, `EventSystem` raycasting and navigation, `Selectable` / `Button` / `Slider` / `Scrollbar` / `ScrollRect` / `InputField`, ported rule for rule (a slider or scroll bar drives its fill and handle anchors, which Unity saves as zero; a scroll view rubber-bands, flings and remaps the wheel on a one-axis track). Rects are computed on read, so the hierarchy messages are sent from the transform calls that change it, and `OnRectTransformDimensionsChange` is found by comparing the watched rects before and after each layout solve (`RectDimensionWatch`). The canvas update runs `CanvasUpdateRegistry`'s Prelayout/Layout/PostLayout and graphic phases around the queued layout roots. TMP layout builds SDF glyph quads | `UI/`, `SceneGraph/TransformMessages.cs`, `SceneGraph/RectDimensionWatch.cs` |
 | DI and events | Reflex (`[Inject]`, installers, containers) and Obvious SOAP (variables, events, lists) | `Injection/`, `Soap/` |
 | Async | A frame-driven task scheduler; awaits resume on the game-loop thread | `Tasks/` |
 | Rendering data | `Mesh`, `Material`, `Camera`, `RenderTexture`, volumes, change tracking. **Data only:** the Render project draws | `Rendering/` |
 | Audio | The FMOD Studio surface (`EventReference`, `EventInstance`, buses, VCAs). It runs silent on local state, or drives the real FMOD C API when a native backend is installed (which then also answers event descriptions: one-shot, snapshot, length). `RuntimeManager.EventRecorded` is the parity harness's FMOD channel (starts, restarts, stops, FMOD and Unity mixer snapshots); `FmodGuids` names GUID-only references from the build's `GUIDs.txt` | `Audio/` |
-| Networking | Netcode for GameObjects' model over a TCP transport (section 8) | `Networking/` |
+| Networking | Netcode for GameObjects' model over Froglet's UDP transport through UGS Relay, with UGS Lobby for sessions: START ONLINE plays the way the Unity build does (section 8) | `Networking/`, `Networking/Wire/Ugs/` |
 | Services | Authentication, Cloud Save, Friends, Leaderboards and Analytics, kept on local disk | `Services/` |
 
 *More:* `docs/ENGINE_CORE.md`.
@@ -187,7 +187,7 @@ through those entities.
 - **compiled**: every other Shader Graph, compiled node by node to GLSL (`Content/Shaders`) inside
   `GraphProgramCache`'s template. `cs-asset shadergraph-glsl FILE` prints what it draws.
 - **hand**: a hand-written `.shader` translated in `Content/Shaders/Hand/*.glsl` (the crystals:
-  OmniCrystalFresnel, OmniChargeEdges, ChargeCrystal, OmniShepardFresnel, SpreadFresnel). They
+  OmniCrystalFresnel, ChargeCrystal, OmniShepardFresnel, SpreadFresnel). They
   read the mesh's TEXCOORD2/3 (attribute locations 10/11 in a graph draw) and honour `Offset`.
 - **builtin**: Unity's own shaders by name, each by its source's formula — Particles/Standard
   Unlit (the vessel jets' flares), the legacy particle shaders, Sprites/Default, URP Unlit and
@@ -243,7 +243,7 @@ is sorted back to front. A per-instance "clock block" (15 vec4) rides in a textu
 
 ![Network](architecture/network.png)
 
-**Figure 5.** Two instances party up and play together, on one machine or over a LAN.
+**Figure 5.** START ONLINE: players on any network party up and play together through UGS Lobby and UGS Relay (drawn by `tools/draw_network_figure.py`).
 
 **`NetDriver`** carries Netcode for GameObjects' model over TCP. Each frame is
 `[length][kind][payload]`, encoded by `NetWire`. It covers:
@@ -261,23 +261,65 @@ is sorted back to front. A per-instance "clock block" (15 vec4) rides in a textu
 (`Networking/Wire/INetTransport.cs`) through `NetDriver.TransportFactory`, and reads its events
 in `EarlyUpdate`. The contract is reliable, ordered, whole frames; events come only through `Poll`
 on the main thread; peer 0 is the server; a failed connect reports `Disconnected`; a listen on a
-taken port throws. TCP (`NetSocket`, `TcpTransportFactory`) is the first implementation and the
-default. An internet relay is the next one (C6, after gate G2). `NetTransportContractTests` runs
-the same checks against every implementation (TCP and the in-memory loopback the tests use), and
-`NetDriverTransportTests` drives the driver's handshake over both.
+taken port throws. TCP (`NetSocket`, `TcpTransportFactory`) was the first implementation, and stays
+the engine's in-process default for tests; Froglet's UDP transport (`UdpTransport`: reliable-ordered
+fragments with selective acks and RTT-timed resends, plus an unreliable channel) is what every
+networked player uses unless `COSMIC_SHORE_NET_TRANSPORT=tcp` (`MULTIPLAYER.md` §6.6). Below it,
+an `IDatagramLink` decides where its datagrams go: straight to the peer (`DirectLink`), or through a
+relay speaking Unity Relay's protocol (`RelayLink`), which is how players behind home routers reach
+each other. `FrogletRelayServer` speaks the same protocol and REST shape as UGS Relay and is the tests'
+stand-in for it (`MULTIPLAYER.md` §6.7). `NetTransportContractTests` runs the same checks against every
+implementation (TCP, UDP, UDP through the relay, the in-memory loopback the tests use, and each behind
+the network simulator), and `NetDriverTransportTests` and `UgsMultiplayerTests` drive the driver's
+handshake.
 
-**`DirectoryMultiplayerService`** stands in for the UGS Lobby + Relay. It keeps one JSON file per
-session in a shared folder: roster, per-player properties (the game's invite channel), heartbeat,
-host endpoint.
+**Online is UGS, as the Unity build's** (`MULTIPLAYER.md` §6.10). The launcher's **START ONLINE** runs the
+game with networking on, and `UgsSetup.InstallOnline` puts it on Unity Gaming Services through REST (no
+Unity SDK, no Unity package code):
+- **Sign-in** (`UgsAuthentication`): anonymous, then the session token kept in the save profile's
+  folder, so a profile stays one UGS player. The game's own `SignInAnonymouslyAsync` goes through it
+  (`AuthenticationService.RemoteSignIn`), so the game's player id is its UGS id.
+- **Sessions** (`UgsMultiplayerService` over `UgsLobbyClient`): a session is a UGS Lobby lobby, as the
+  Multiplayer Services SDK makes it: roster, per-player properties (the game's invite channel), session
+  properties with their query index (S1..S5), host, private and locked, seats. The host heartbeats every
+  lobby it holds every 15 s. Lobby refusals become the SDK's `SessionException` codes the game's
+  `UgsRequestPolicy` reads (429 rate limited; 404 gone; a full lobby by its words "is full"; 5xx and no
+  answer a transient `RequestFailedException`).
+- **The match** (`RelayedSessions`): creating a Relay-networked session allocates on UGS Relay, starts
+  the NetworkManager host on the allocation, and puts the join code in the lobby as member-visible data
+  (`amoebius_relay`); a joiner joins Relay by that code and starts the client. Frames go over Froglet's
+  UDP transport in Unity Relay's protocol.
+- **Which UGS environment**: `COSMIC_SHORE_UGS_ENVIRONMENT` (the launcher's SETTINGS > ONLINE), else
+  `Network.UgsEnvironment` in `Port/ProjectSettings/AmoebiusProject.json`, else **`amoebius`**, which keeps
+  Amoebius's lobbies apart from the Unity build's (their netcode does not talk to each other). It must
+  exist in the UGS dashboard; `""` means the project's default.
+
+**START** runs with `COSMIC_SHORE_NET=off`: one offline process, sessions in `LocalMultiplayerService`.
+There is no LAN discovery, local server or shared-folder backend (removed 2026-10-14: UGS is the one
+place players meet, as in the Unity build).
+
+**How a player puts it together (`NetStack`, `Wire/NetStack.cs`).** `UgsSetup.InstallOnline` calls one
+method, which installs the layers in the only order that works: the transport (`NetTransports.Select`),
+UGS Relay over it, the session service (UGS Lobby), then the network simulator around the whole transport
+chain and session faults around the service. The player prints the result at boot:
+`[net] stack: simulated > relay > udp; sessions: faults > ugs`. `NetStackTests` holds the order and fails
+if the player stops calling it (a merge on 2026-10-13 dropped the transport, relay, simulator and fault
+wiring while every per-layer test stayed green); `UgsMultiplayerTests` plays a match through it against
+local stand-ins for UGS Lobby (`UgsLobbyStandIn`) and Relay (`FrogletRelayServer`).
 
 **Services** are local stand-ins:
-- Authentication: an anonymous id persisted per install.
+- Authentication: offline, an anonymous id persisted per install; online, the UGS sign-in above (one
+  UGS player per save profile: each player on one machine needs their own `COSMIC_SHORE_PROFILE`).
 - Cloud Save: a JSON file.
 - Friends: an empty friend book.
 - Leaderboards and Analytics: in memory.
 
-**Turning it off:** `COSMIC_SHORE_NET=off` keeps everything in one process. A second player on one
-machine runs with `COSMIC_SHORE_PROFILE=b`.
+**Turning it off:** `COSMIC_SHORE_NET=off` (START) keeps everything in one process. A second player on
+one machine runs with `COSMIC_SHORE_PROFILE=b`. A headless player in a multiplayer run needs
+`--realtime`, which keeps its game clock on the wall clock (`RealtimePacer`).
+
+**The plan, the backends and the test tools** (simulator, stats, faults, the UDP transport) are in
+`MULTIPLAYER.md`.
 
 ---
 
@@ -330,7 +372,7 @@ Numbered badges mark what to click.
 
 ### 11.1 The launcher (start here)
 
-`Prisma.exe` (`Port/dist/Prisma-Windows.zip`) is the one file to give a tester.
+`Amoebius.exe` (`Port/dist/Amoebius-Windows.zip`) is the one file to give a tester.
 Full guide: `docs/LAUNCHER.md`.
 
 ![Launcher PLAY](architecture/launcher_play.png)
@@ -342,13 +384,14 @@ progress and CANCEL.
 
 ![Launcher BUILD](architecture/launcher_build.png)
 
-**Figure 9.** BUILD: one card per phone. Android builds an APK or AAB. iOS builds an unsigned
-`.ipa` on GitHub's free Mac (no Mac needed; install with Sideloadly), exports an Xcode project,
-or on a Mac builds a signed `.ipa`. Everything else is folded under *Options*.
+**Figure 9.** BUILD: one card per phone. Android builds an APK or AAB. iOS exports an Xcode
+project, or on a Mac builds a signed `.ipa` (the unsigned GitHub-Mac `.ipa` for Sideloadly was
+retired on 2026-10-13; TestFlight is the only route onto a phone). Everything else is folded under
+*Options*.
 
 ![Launcher PROJECT](architecture/launcher_project_1.png)
 
-**Figure 10.** PROJECT: the engine's own Project Settings (`Port/ProjectSettings/PrismaProject.json`),
+**Figure 10.** PROJECT: the engine's own Project Settings (`Port/ProjectSettings/AmoebiusProject.json`),
 so Unity's `ProjectSettings/` is never edited. PLAYER (names, version, bundle ids, build numbers),
 SCENES (Scenes In Build, shown), QUALITY (MSAA, render scale, filtering, vsync). Empty fields
 inherit Unity's values.
@@ -382,7 +425,7 @@ ASK reads only, EDIT may change files, AUTO may also run commands.
 | **0** | Screenshot (UI-free) |
 | **F11** | Fullscreen |
 
-Gamepads work as in the Unity build. On phones, touch replaces all of these and the game uses its
+Gamepads work as in the Unity build, rumble included on Windows for Xbox-type pads (XInput; a PlayStation pad rumbles when Steam Input presents it as one). The pad you last pressed a button on is the one that rumbles. On phones, touch replaces all of these and the game uses its
 own touch controls.
 
 ### 11.3 The diagnostics panel (top-left)
@@ -401,6 +444,28 @@ own touch controls.
 | 6 | Command box + **Run** | Type a registered command, e.g. `prisms 50000` (a stress test) or `prisms off` |
 | — | **F7** | Show or hide the panel |
 
+The readout's FPS and frame time come from `Time.unscaledDeltaTime`. Its CPU, GPU and bound verdict come from
+`FrameTimingManager`, which the engine measures on the wall clock (`src/CosmicShore.Engine/Rendering/FrameTimingManager.cs`).
+The game loop times each tick, and the player reports its draw CPU and GPU timer queries. F3 (below), the session
+report's frame times and the control port's `frameMs` read the same measured frames, so in a normal run the two
+panels agree. Only their averaging differs: F7 smooths over about 10 frames, F3 over 240. A scripted run (`--frames`)
+steps every game clock by 1/60 s, so there F7's FPS and frame time read 60 / 16.7 ms while its CPU and GPU rows, and
+all of F3, show the real cost.
+
+**Amoebius's own diagnostics (F3, top right).** The game's panel above is the game's; F3 shows the engine's
+view of the same process (`src/CosmicShore.Player/PlayerDiagnostics.cs`), refreshed twice a second:
+
+![Amoebius diagnostics](architecture/ui_amoebius_diagnostics.png)
+
+| Section | What it shows |
+|---|---|
+| FRAME | fps (green 55+, amber 30+, red below), frame time average / 1% worst / max over the last 240 frames; simulation and render CPU and GPU from timer queries (desktop GL; a GL ES context has none), averaged over the frames since the last refresh and at least the last 10; the game loop's phases. All read from `FrameTimingManager` through `FrameTimingWindow`, the clock F7 reads |
+| MEMORY | managed heap, process working set, allocation per frame, collections per generation and GC pause in the last half second |
+| SCENE | the active scene, resolution, draw calls and instances |
+| NETWORK | offline (START) or online (START ONLINE); the NetStack chain; the UGS sign-in (player id, or why it failed), project and environment; every lobby this player is in (code, host or member, seats, relay join code, properties) and the last Lobby error; the match role, relay code and region, traffic, and each peer's round trip (green under 80 ms, amber under 160); the network simulator and session faults when set |
+
+Start a game with it shown: `--diag`, `COSMIC_SHORE_DIAG=1`, or the launcher's SETTINGS > GAME > Diagnostics overlay.
+
 ### 11.4 Player command-line options (testing)
 
 | Option | Use |
@@ -409,15 +474,17 @@ own touch controls.
 | `--size WxH` | Window size |
 | `--frames N` | Quit after N frames |
 | `--screenshot out.png` / `--shot F:path` | Capture frame F |
-| `--do "F:click X,Y"` · `type TEXT` · `key NAME` · `hold NAME N` · `pad BUTTON` | Scripted input (how these screenshots were made) |
+| `--do "F:click X,Y"` · `type TEXT` · `key NAME` · `hold NAME N` · `pad BUTTON` · `scroll X,Y N` (wheel notches) · `drag X,Y X,Y F` (press, move over F frames, release) | Scripted input (how these screenshots were made) |
 | `--do "F:inspect OBJECT Component"` · `eval Type.Member` | Print live state at frame F |
 | `--record DIR:FROM-TO` | Record frames (`tools/record_session.sh` makes a video) |
 | `--headless` · `--verbose` · `--seed S` | No window · every log channel · reproducible runs |
+| `--diag` | Start with Amoebius's diagnostics overlay shown (F3 toggles it; section 11.3) |
+| `--ugs-relay-check [REGION]` | Signs two UGS players in, allocates, joins by code and times frames through UGS Relay (the launcher's UGS CHECK) |
 | `--train train\|replay\|eval` | The game's AI genetic training (`docs/AI_TRAINING.md`) |
 
 Environment variables:
 - `COSMIC_SHORE_AUDIO=off|wav:PATH|nrt` (`nrt`: the FMOD runtime and banks, no output, mixed only on the engine's tick; what `engine_parity` runs)
-- `COSMIC_SHORE_NET=off`
+- `COSMIC_SHORE_NET=off` (START: offline); online, `COSMIC_SHORE_UGS_ENVIRONMENT` (default `amoebius`), `COSMIC_SHORE_UGS_PROJECT`, `COSMIC_SHORE_RELAY_REGION`, `COSMIC_SHORE_NET_TRANSPORT=tcp`, `COSMIC_SHORE_NET_SIM`, `COSMIC_SHORE_NET_FAULT`
 - `COSMIC_SHORE_PROFILE=b` (second install)
 - `COSMIC_SHORE_PROJECT=DIR` (use another project or packaged data)
 - `COSMIC_SHORE_GLES=1`
@@ -447,18 +514,18 @@ MCP server, so Claude Code drives the engine with tools: `engine_build`, `engine
 `unity_isolation_check`, `game_start` / `game_stop`, `game_screenshot` (returned as an image),
 `game_input`, `game_wait`, `game_find`, `game_hierarchy`, `game_get` / `game_set`, `game_ui_at`,
 `game_dump_ui`, `game_logs`, `game_load_scene`. On a server without a display it runs the game
-under `xvfb-run`. Connect it with `claude mcp add prisma -- dotnet run --project
+under `xvfb-run`. Connect it with `claude mcp add amoebius -- dotnet run --project
 Port/src/CosmicShore.Mcp --` or `claude --mcp-config Port/.mcp.json`; the launcher's CLAUDE page
 connects it on its own. `Port/CLAUDE.md` is the agent's guide.
 
 `--session-report PATH` makes the player write a JSON report when it closes or crashes (scenes,
 frame-time percentiles, distinct errors/warnings/exceptions, crash, branch and commit); the
-launcher passes one for every play session. Prisma folds them into **tracks** (`src/Shared/PrismaTracks.cs`:
+launcher passes one for every play session. Amoebius folds them into **tracks** (`src/Shared/AmoebiusTracks.cs`:
 runs, per-scene performance, features, audio, problems grouped across runs) and keeps a task and
-bug **board** (`src/Shared/PrismaBoard.cs`) that it and its agents suggest items to. Two agent
-scopes run in the app: the Prisma Agent (the game; `Port/` is denied) and milestone sessions
-(the engine; the Unity project is denied). The MCP server exposes `prisma_tracks`, `prisma_board`
-and `prisma_board_suggest`. Where the engine is going: `docs/ROADMAP.md` and `docs/milestones.json`.
+bug **board** (`src/Shared/AmoebiusBoard.cs`) that it and its agents suggest items to. Two agent
+scopes run in the app: the Amoebius Agent (the game; `Port/` is denied) and milestone sessions
+(the engine; the Unity project is denied). The MCP server exposes `amoebius_tracks`, `amoebius_board`
+and `amoebius_board_suggest`. Where the engine is going: `docs/ROADMAP.md` and `docs/milestones.json`.
 
 ---
 
@@ -469,9 +536,9 @@ and `prisma_board_suggest`. Where the engine is going: `docs/ROADMAP.md` and `do
 | Engine, content, networking, services, gameplay | `dotnet test tests/CosmicShore.Tests`: ~1,590 tests in about 70 s, no GPU. Includes execution order, Unity's serialization rules, the tracks/board criteria, and `RenderBoundaryTests` (GL only inside `CosmicShore.Render`) |
 | The project's own Unity tests | `dotnet test tests/CosmicShore.Tests.Ported`: 352 tests, verbatim |
 | File round-trip | `cs-asset roundtrip`: every YAML file parses and writes back byte-identical |
-| Loader vs Unity's serializer | `cs-asset serialization-audit`: every YAML key Unity reads, Prisma reads too, and nothing more (exit 1 otherwise) |
-| RPC coverage | The source sync warns `PRISMA001` for any RPC it cannot intercept (0 today) |
-| Run data | Every launcher play writes a session report (frame, CPU-per-phase, allocation, GC, audio, problems); Prisma's tracks compare it with earlier runs |
+| Loader vs Unity's serializer | `cs-asset serialization-audit`: every YAML key Unity reads, Amoebius reads too, and nothing more (exit 1 otherwise) |
+| RPC coverage | The source sync warns `AMOEBIUS001` for any RPC it cannot intercept (0 today) |
+| Run data | Every launcher play writes a session report (frame, CPU-per-phase, allocation, GC, audio, problems); Amoebius's tracks compare it with earlier runs |
 | Rendering | Scripted windowed runs with screenshots, under xvfb on Linux |
 | Shaders on phones | Every shader is translated and compiled by the Khronos GLSL ES reference compiler (`GlslEsTranslationTests`) |
 | Fidelity | `--train replay` re-scores a generation Unity already scored and reports the difference |
@@ -487,8 +554,10 @@ and `prisma_board_suggest`. Where the engine is going: `docs/ROADMAP.md` and `do
 | Online services | Local stand-ins: no real UGS accounts, cloud or leaderboards |
 | Provenance | No Unity binary is used. Two spots still follow Unity source too closely (TMP SDF text-shader terms, a Voronoi hash from Unity's docs) and are queued for clean rewrites: `docs/LEGAL_REVIEW.md`. Third-party notices: `THIRD_PARTY_NOTICES.md` |
 | Animation Rigging, Timeline, VFX Graph | Data only; they do not animate or emit |
-| GPU-buffer drawing | `GraphicsBuffer`/`ComputeBuffer` hold their data on the CPU, and `Graphics.RenderMeshPrimitives` (procedural instancing) draws nothing. The renderer is GL 3.3 / GL ES 3.0, so `SystemInfo.maxComputeBufferInputsVertex` is 0, as Unity reports on such a device. The swarm and substrate fauna check that and skip their member "hearts"; their bodies are prism entities, which Prisma draws. The swarm cell itself (entered through the Cell Selector in Menu_Main) has not been flown in Prisma yet |
+| GPU-buffer drawing | `GraphicsBuffer`/`ComputeBuffer` hold their data on the CPU, and `Graphics.RenderMeshPrimitives` (procedural instancing) draws nothing. The renderer is GL 3.3 / GL ES 3.0, so `SystemInfo.maxComputeBufferInputsVertex` is 0, as Unity reports on such a device. The swarm and substrate fauna check that and skip their member "hearts"; their bodies are prism entities, which Amoebius draws. The swarm cell itself (entered through the Cell Selector in Menu_Main) has not been flown in Amoebius yet |
+| Rumble | Windows only, through XInput: GLFW has no rumble API, so Linux and macOS players do not rumble, and neither does a PlayStation pad read through DirectInput (Unity drives its HID motors directly). The control port's `state` reports the current pad's motor speeds and rumble count, so the game's haptics are checked without a controller |
 | Phones | Android APK builds, but has not been run on a device yet. iOS needs a Mac. Android audio needs `git lfs pull` |
+| Platform defines | `CosmicShore.Live` defines `DEVELOPMENT_BUILD` but no `UNITY_STANDALONE`, `UNITY_ANDROID` or `UNITY_IOS`, so game code behind those symbols is compiled out in every Amoebius build. One consequence is deliberate and fail-closed: `IAPManager`'s browser checkout, fenced to `UNITY_STANDALONE` since 2026-10-13 (store policy on phones), declines in Amoebius on every platform. Commerce is switched off in the game anyway. Defining the platform symbols would also switch on `MultiMouseService`, `PaintingShareExporter` and `InputController` paths, so it is a separate decision |
 | Branches | `CosmicShore.Live` compiles whatever `Assets/` is checked out. Run the port on the branch it was built for |
 | Legacy projects | Data, Game, Cli and Client are kept for their tests; new work goes into Engine, Content, Render or the players |
 

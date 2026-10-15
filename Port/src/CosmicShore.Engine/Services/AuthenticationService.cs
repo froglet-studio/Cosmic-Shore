@@ -62,6 +62,13 @@ namespace CosmicShore.Engine.Services
         /// </summary>
         public static System.Func<string> AnonymousIdProvider;
 
+        /// <summary>
+        /// When set (the player online: a UGS sign-in), an anonymous sign-in signs in there and takes the
+        /// returned UGS player id, so the game's own id is the one UGS Lobby lists it by. A failure raises
+        /// <see cref="SignInFailed"/> and throws, as the real SDK does; the game then plays offline.
+        /// </summary>
+        public static System.Func<System.Threading.Tasks.Task<string>> RemoteSignIn;
+
         public bool IsSignedIn { get; set; }
 
         /// <summary>True when a cached session token allows silent re-authentication.</summary>
@@ -84,14 +91,25 @@ namespace CosmicShore.Engine.Services
         /// configured, caches the session token, and raises <see cref="SignedIn"/> —
         /// the same observable sequence the real SDK produces.
         /// </summary>
-        public virtual System.Threading.Tasks.Task SignInAnonymouslyAsync(SignInOptions options = null)
+        public virtual async System.Threading.Tasks.Task SignInAnonymouslyAsync(SignInOptions options = null)
         {
             if (string.IsNullOrEmpty(PlayerId))
-                PlayerId = AnonymousIdProvider?.Invoke() ?? "local-player";
+            {
+                if (RemoteSignIn != null)
+                {
+                    try { PlayerId = await RemoteSignIn(); }
+                    catch (System.Exception e)
+                    {
+                        var failure = e as RequestFailedException ?? new RequestFailedException(0, "UGS sign-in failed: " + e.Message, e);
+                        SignInFailed?.Invoke(failure);
+                        throw failure;
+                    }
+                }
+                else PlayerId = AnonymousIdProvider?.Invoke() ?? "local-player";
+            }
             IsSignedIn = true;
             SessionTokenExists = true;
             SignedIn?.Invoke();
-            return System.Threading.Tasks.Task.CompletedTask;
         }
 
         /// <summary>Sign out, keeping the cached session token (the real SDK's default).</summary>

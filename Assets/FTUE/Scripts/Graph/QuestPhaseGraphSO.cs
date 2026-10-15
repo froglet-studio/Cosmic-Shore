@@ -9,7 +9,7 @@ namespace CosmicShore.Core
     /// Holds an ordered/branching set of <see cref="QuestNodeSO"/> sub-assets and the
     /// entry point the <c>QuestGraphRunner</c> starts from. Phases are sequenced by a
     /// <see cref="QuestSO"/>; a <c>QuestPhaseEndNode</c> inside the graph hands control
-    /// to the next phase. Authored visually in FrogletTools ▸ Quest Graph Editor.
+    /// to the next phase. Authored visually in FrogletTools ▸ FTUE ▸ Quest Graph Editor.
     /// </summary>
     [CreateAssetMenu(fileName = "QuestPhase", menuName = "ScriptableObjects/Quests/Quest Phase Graph")]
     public class QuestPhaseGraphSO : ScriptableObject

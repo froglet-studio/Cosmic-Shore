@@ -48,58 +48,80 @@ namespace CosmicShore.Gameplay
             if (!activationButtonImage)
                 return;
 
-            if (Gamepad.current is DualShockGamepad)
-            {
-                switch(activationButton)
-                {
-                    case GamepadButton.North:
-                        activationButtonImage.sprite = TriangleButtonSprite;
-                        break;
-                    case GamepadButton.East:
-                        activationButtonImage.sprite = CircleButtonSprite;
-                        break;
-                    case GamepadButton.South:
-                        activationButtonImage.sprite = CrossButtonSprite;
-                        break;
-                    case GamepadButton.West:
-                        activationButtonImage.sprite = SquareButtonSprite;
-                        break;
-                    default:
-                        activationButtonImage.gameObject.SetActive(false);
-                        break;
-                }
-                CSDebug.LogVerbose(CSLogChannel.Input, "[ControllerButtonPress] DualShock controller connected");
-            }
-            else if (Gamepad.current is XInputController)
-            {
-                switch (activationButton)
-                {
-                    case GamepadButton.North:
-                        activationButtonImage.sprite = YButtonSprite;
-                        break;
-                    case GamepadButton.East:
-                        activationButtonImage.sprite = BButtonSprite;
-                        break;
-                    case GamepadButton.South:
-                        activationButtonImage.sprite = AButtonSprite;
-                        break;
-                    case GamepadButton.West:
-                        activationButtonImage.sprite = XButtonSprite;
-                        break;
-                    default:
-                        activationButtonImage.gameObject.SetActive(false);
-                        break;
-                }
-                CSDebug.LogVerbose(CSLogChannel.Input, "[ControllerButtonPress] Xbox controller connected");
-            }
-            else
-            {
-                activationButtonImage.gameObject.SetActive(false);
-            }
+            ApplyGlyph(Gamepad.current);
         }
+
+        // Which glyph set a pad gets. Explicit values: never reorder.
+        enum PadGlyphs
+        {
+            None = 0,
+            PlayStation = 1,
+            Xbox = 2,
+        }
+
+        // The pad whose glyph is showing. A browser reveals a pad only after one of its buttons is pressed,
+        // which is usually after Start, and a pad can be plugged in mid-session, so Update re-picks the glyph
+        // whenever Gamepad.current changes.
+        Gamepad _glyphPad;
+
+        void ApplyGlyph(Gamepad pad)
+        {
+            _glyphPad = pad;
+            Sprite sprite = GlyphFamilyOf(pad) switch
+            {
+                PadGlyphs.PlayStation => activationButton switch
+                {
+                    GamepadButton.North => TriangleButtonSprite,
+                    GamepadButton.East => CircleButtonSprite,
+                    GamepadButton.South => CrossButtonSprite,
+                    GamepadButton.West => SquareButtonSprite,
+                    _ => null,
+                },
+                PadGlyphs.Xbox => activationButton switch
+                {
+                    GamepadButton.North => YButtonSprite,
+                    GamepadButton.East => BButtonSprite,
+                    GamepadButton.South => AButtonSprite,
+                    GamepadButton.West => XButtonSprite,
+                    _ => null,
+                },
+                _ => null,
+            };
+            if (sprite) activationButtonImage.sprite = sprite;
+
+            // Hide the glyph when there is none to show. If the image sits on this button's own object, only
+            // the image is switched, so this component keeps running and can show it again for the next pad.
+            if (activationButtonImage.gameObject == gameObject) activationButtonImage.enabled = sprite;
+            else activationButtonImage.gameObject.SetActive(sprite);
+        }
+
+        static PadGlyphs GlyphFamilyOf(Gamepad pad)
+        {
+            if (pad is DualShockGamepad) return PadGlyphs.PlayStation;
+            if (pad is XInputController) return PadGlyphs.Xbox;
+
+            // A browser hands every pad over as a generic standard-mapped gamepad (WebGLGamepad), laid out like
+            // an Xbox pad. Its description carries the browser's id string, which names Sony's USB vendor id
+            // (054c) for a PlayStation pad, e.g. "DualSense Wireless Controller (STANDARD GAMEPAD Vendor: 054c ...)".
+            if (pad != null && Application.platform == RuntimePlatform.WebGLPlayer)
+                return IsSonyPad(pad.description.product) || IsSonyPad(pad.description.capabilities)
+                    ? PadGlyphs.PlayStation
+                    : PadGlyphs.Xbox;
+
+            return PadGlyphs.None;
+        }
+
+        static bool IsSonyPad(string id) =>
+            !string.IsNullOrEmpty(id) &&
+            (id.IndexOf("054c", System.StringComparison.OrdinalIgnoreCase) >= 0 ||
+             id.IndexOf("dualsense", System.StringComparison.OrdinalIgnoreCase) >= 0 ||
+             id.IndexOf("dualshock", System.StringComparison.OrdinalIgnoreCase) >= 0);
 
         void Update()
         {
+            if (activationButtonImage && Gamepad.current != _glyphPad)
+                ApplyGlyph(Gamepad.current);
+
             // The appshell-owns-the-gamepad signal: ScreenSwitcher's freestyle gate turns
             // sendNavigationEvents off while the player is flying a vessel. This component
             // polls the pad directly (bypassing the EventSystem), so it must consult the

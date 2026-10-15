@@ -103,11 +103,11 @@ namespace CosmicShore.Build
         public List<(string Path, string Guid)> EnabledScenes()
             => EngineSettings.BuildScenes(Unity).Where(s => s.Enabled).Select(s => (s.Path, s.Guid)).ToList();
 
-        /// <summary>The engine's own Project Settings (Port/ProjectSettings/PrismaProject.json); unset fields inherit Unity's.</summary>
-        Prisma.PrismaProjectSettings EngineSettings => _engineSettings ??= Prisma.PrismaProjectSettings.Load(_project);
-        Prisma.PrismaProjectSettings? _engineSettings;
-        Prisma.PrismaProjectSettings.UnityDefaults Unity => _unity ??= new(_project);
-        Prisma.PrismaProjectSettings.UnityDefaults? _unity;
+        /// <summary>The engine's own Project Settings (Port/ProjectSettings/AmoebiusProject.json); unset fields inherit Unity's.</summary>
+        Amoebius.AmoebiusProjectSettings EngineSettings => _engineSettings ??= Amoebius.AmoebiusProjectSettings.Load(_project);
+        Amoebius.AmoebiusProjectSettings? _engineSettings;
+        Amoebius.AmoebiusProjectSettings.UnityDefaults Unity => _unity ??= new(_project);
+        Amoebius.AmoebiusProjectSettings.UnityDefaults? _unity;
 
         /// <summary>Every guid the build ships, from Unity's three roots.</summary>
         public HashSet<string> Reachable(Report report)
@@ -220,6 +220,15 @@ namespace CosmicShore.Build
 
             // ProjectSettings ships whole (the player reads build scenes, time, physics, graphics, tags).
             CopyTree(Path.Combine(_project, "ProjectSettings"), Path.Combine(outDir, "ProjectSettings"), hash);
+            // The engine's own settings too: the branch's UGS environment (Network) reaches the phone build.
+            var engineSettings = Amoebius.AmoebiusProjectSettings.PathIn(_project);
+            if (File.Exists(engineSettings))
+            {
+                var dest = Amoebius.AmoebiusProjectSettings.PathIn(outDir);
+                Directory.CreateDirectory(Path.GetDirectoryName(dest)!);
+                File.Copy(engineSettings, dest, overwrite: true);
+                hash.AppendData(File.ReadAllBytes(engineSettings));
+            }
 
             // FMOD: the banks the Studio project built (sourceBankPath) and the header version.
             report.FmodHeaderVersion = FmodHeaderVersion();

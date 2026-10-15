@@ -318,7 +318,7 @@ namespace CosmicShore.Editor
             "\"m_OutputSlot\"\\s*:\\s*\\{\\s*\"m_Node\"\\s*:\\s*\\{\\s*\"m_Id\"\\s*:\\s*\"([0-9a-f]+)\"\\s*\\}\\s*,\\s*\"m_SlotId\"\\s*:\\s*(\\d+)\\s*\\}\\s*,\\s*\"m_InputSlot\"\\s*:\\s*\\{\\s*\"m_Node\"\\s*:\\s*\\{\\s*\"m_Id\"\\s*:\\s*\"([0-9a-f]+)\"\\s*\\}\\s*,\\s*\"m_SlotId\"\\s*:\\s*(\\d+)",
             RegexOptions.Compiled);
 
-        [MenuItem("FrogletTools/Ecology/Prism Animation/Validate Clock Wiring")]
+        [MenuItem("FrogletTools/Ecology/Prism Animation/Validate Clock Wiring", false, 160)]
         [FrogletTool(FrogletToolCategory.Ecology, Importance = 5,
             Description = "Clock-material law gate - unwired graphs fail loud here.",
             DocPath = "Docs/PRISM_ANIMATION.md")]

@@ -778,7 +778,7 @@ order-independent: it works whether or not the bars view has already built.
 
 1. **Single source** — `Resources/AbilityLockupStyle`; no per-prefab geometry fields exist.
 2. **Runtime** — `EnsureAbilityLockup` on the shared init path (above).
-3. **Fleet audit** — **FrogletTools > Vessels > Audit Ability Lockups**: asset-only, no play mode.
+3. **Fleet audit** — **FrogletTools > Vessels > Audits > Audit Ability Lockups**: asset-only, no play mode.
    It checks the shared style is sane AND the one thing a single shared style *cannot* absorb —
    **per-vessel icon fit**. The card is a fixed 104 wide while icon size is per-prefab, so a vessel
    authored much larger than the fleet's 80 would overflow after kerning, invisibly, until someone

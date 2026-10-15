@@ -470,6 +470,8 @@ namespace CosmicShore.UI
             if (_generatedHalo) return _generatedHalo;
 
             const int size = 64;
+            // Fraction of the radius that stays fully opaque before the feather begins.
+            const float HALO_CORE = 0.5f;
             var tex = new Texture2D(size, size, TextureFormat.RGBA32, false)
             {
                 name = "RematchHalo (generated)",
@@ -486,7 +488,12 @@ namespace CosmicShore.UI
                 {
                     float dx = x - centre, dy = y - centre;
                     float d = Mathf.Sqrt(dx * dx + dy * dy) / centre;   // 0 at the middle, 1 at the edge
-                    float a = 1f - Mathf.SmoothStep(0.5f, 1f, d);        // solid core, feathered rim
+                    // Solid core out to HALO_CORE, then feathered to nothing at the rim.
+                    // Mathf.SmoothStep(from, to, t) is the INTERPOLATE-BETWEEN-TWO-VALUES
+                    // overload, not the edge0/edge1 gate this needs: it returns 0.5 at d=0,
+                    // so the halo peaked at HALF the authored alpha and had no flat core at
+                    // all - haloReadyMaxAlpha 0.95 could never exceed 0.475 on screen.
+                    float a = 1f - SmoothStep01(HALO_CORE, 1f, d);
                     px[y * size + x] = new Color32(255, 255, 255, (byte)Mathf.RoundToInt(Mathf.Clamp01(a) * 255f));
                 }
             }
@@ -497,6 +504,20 @@ namespace CosmicShore.UI
             _generatedHalo.name = "RematchHalo (generated)";
             _generatedHalo.hideFlags = HideFlags.HideAndDontSave;
             return _generatedHalo;
+        }
+
+        /// <summary>
+        /// The GLSL-style smoothstep: 0 below <paramref name="edge0"/>, 1 above
+        /// <paramref name="edge1"/>, smoothly eased between. Unity's
+        /// <c>Mathf.SmoothStep(from, to, t)</c> interpolates BETWEEN two values with a
+        /// smoothed t and is NOT this gate. Same helper as
+        /// <see cref="PartySlotDomainGlow"/>; the two halo generators stay in step until
+        /// they are folded into one component (Docs/PartySystem/TODOS.md TODO-12).
+        /// </summary>
+        static float SmoothStep01(float edge0, float edge1, float x)
+        {
+            float t = Mathf.Clamp01((x - edge0) / Mathf.Max(1e-5f, edge1 - edge0));
+            return t * t * (3f - 2f * t);
         }
 
         static void Stretch(RectTransform rt, float inset)

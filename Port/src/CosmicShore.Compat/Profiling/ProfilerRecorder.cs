@@ -29,6 +29,11 @@ namespace CosmicShore.Engine.Profiling
         public ProfilerRecorder(string categoryName, string statName, int capacity = 1, ProfilerRecorderOptions options = ProfilerRecorderOptions.Default)
         { _name = statName; _running = (options & ProfilerRecorderOptions.StartImmediately) != 0; }
 
+        /// <summary>Records the marker a <see cref="LowLevel.Unsafe.ProfilerRecorderHandle"/> names; the engine
+        /// enumerates no handles yet, so this is reached only with an invalid one and reads 0.</summary>
+        public ProfilerRecorder(LowLevel.Unsafe.ProfilerRecorderHandle statHandle, int capacity = 1, ProfilerRecorderOptions options = ProfilerRecorderOptions.Default)
+        { _name = LowLevel.Unsafe.ProfilerRecorderHandle.GetDescription(statHandle).Name ?? ""; _running = (options & ProfilerRecorderOptions.StartImmediately) != 0; }
+
         public static ProfilerRecorder StartNew(ProfilerCategory category, string statName, int capacity = 1, ProfilerRecorderOptions options = ProfilerRecorderOptions.Default)
             => new(category, statName, capacity, options | ProfilerRecorderOptions.StartImmediately);
 
@@ -48,7 +53,9 @@ namespace CosmicShore.Engine.Profiling
 
         long Read() => _name switch
         {
-            "Main Thread" or "CPU Main Thread Frame Time" or "CPU Total Frame Time" => (long)(Time.unscaledDeltaTime * 1e9),
+            // The measured frame, not the loop's step (a scripted run's step is a fixed 1/60 s).
+            "Main Thread" or "CPU Main Thread Frame Time" => FrameTimingManager.TryGetLastFrame(out var main) ? (long)(main.cpuMainThreadFrameTime * 1e6) : 0,
+            "CPU Total Frame Time" => FrameTimingManager.TryGetLastFrame(out var total) ? (long)(total.cpuFrameTime * 1e6) : 0,
             "GC Reserved Memory" or "Total Reserved Memory" => GC.GetGCMemoryInfo().HeapSizeBytes,
             "GC Used Memory" or "Total Used Memory" => GC.GetTotalMemory(false),
             "System Used Memory" => Environment.WorkingSet,

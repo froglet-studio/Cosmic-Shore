@@ -79,6 +79,36 @@ MENTION = re.compile(r"(?<![\w.])([A-Z]\w{2,})\b")
 # (`ThemeManager.Current = x`) masks `Current`, not `ThemeManager`, which still needs its using.
 ASSIGN_TARGET = re.compile(r"(?<![\w.])([A-Z]\w*)([ \t]*=(?![=>]))", re.M)
 
+# A call to a method a MonoBehaviour INHERITS from UnityEngine is written bare, exactly like a call
+# to a method the file declares - and the first-party `CosmicShore.Utility.DontDestroyOnLoad`
+# component shares its name with `Object.DontDestroyOnLoad`, so `DontDestroyOnLoad(go);` in a
+# MonoBehaviour read as a missing using for a type the file never mentions. The list is the
+# inherited surface, not a guess: an INVOCATION of one of these names is a call, while the same
+# name after `new`, as an attribute (`[Name(`), as a generic argument or in a declaration is
+# still a type position and is still reported. `,` is deliberately NOT treated as a call site,
+# because `[A, Name(...)]` is an attribute list.
+INHERITED_UNITY_METHODS = (
+    "DontDestroyOnLoad", "Instantiate", "Destroy", "DestroyImmediate",
+    "FindObjectOfType", "FindObjectsOfType", "FindFirstObjectByType", "FindAnyObjectByType",
+    "FindObjectsByType", "StartCoroutine", "StopCoroutine", "StopAllCoroutines", "Invoke",
+    "InvokeRepeating", "CancelInvoke", "IsInvoking", "GetComponent", "GetComponents",
+    "GetComponentInChildren", "GetComponentsInChildren", "GetComponentInParent",
+    "GetComponentsInParent", "TryGetComponent", "SendMessage", "SendMessageUpwards",
+    "BroadcastMessage", "CompareTag",
+)
+INHERITED_CALL = re.compile(
+    r"(?<![\w.])(" + "|".join(INHERITED_UNITY_METHODS) + r")(?=[ \t]*\()")
+
+
+def blank_inherited_calls(src: str) -> str:
+    def repl(m):
+        before = src[:m.start()].rstrip()
+        if before.endswith("[") or before.endswith(",") or re.search(r"\bnew$", before):
+            return m.group(0)          # a type position: constructor or attribute
+        return " " * len(m.group(0))
+    return INHERITED_CALL.sub(repl, src)
+
+
 COMMENT = re.compile(r"//.*?$|/\*.*?\*/", re.S | re.M)
 STRING = re.compile(r'"(?:\\.|[^"\\])*"|\$@?"(?:[^"]|"")*"')
 # `#region <free text>` is PROSE, not code -- C# lets the label be anything to end of line and
@@ -89,8 +119,22 @@ STRING = re.compile(r'"(?:\\.|[^"\\])*"|\$@?"(?:[^"]|"")*"')
 DIRECTIVE_TEXT = re.compile(r"^[ \t]*#[ \t]*(?:region|endregion|error|warning)\b.*?$", re.M)
 
 
+# Comments and strings in ONE left-to-right pass: whichever opens first wins. Stripping comments first read the
+# `//` inside "https://..." as a comment, which ate the closing quote and turned the NEXT string's text (a menu path
+# "FrogletTools/...") into code, reporting a missing using for a type the file never mentions.
+CODE_TEXT = re.compile(
+    r"//[^\n]*|/\*.*?\*/"                      # comments
+    r"|\$?@\$?\"(?:[^\"]|\"\")*\""                # verbatim (and interpolated verbatim) strings
+    r"|\$?\"(?:\\.|[^\"\\\n])*\""                 # regular (and interpolated) strings
+    r"|'(?:\\.|[^'\\\n])'",                       # char literals, so '"' opens nothing
+    re.S)
+
+
 def strip(src: str) -> str:
-    return STRING.sub('""', COMMENT.sub(" ", DIRECTIVE_TEXT.sub(" ", src)))
+    def repl(m):
+        t = m.group(0)
+        return " " if t.startswith("/") else ('""' if t[0] in '"$@' else "' '")
+    return CODE_TEXT.sub(repl, DIRECTIVE_TEXT.sub(" ", src))
 
 
 def index_declarations():
@@ -185,6 +229,7 @@ def check_file(path, decls):
     # own TYPE is still reported. See METHOD_DECL / FIELD_DECL.
     own.update(METHOD_DECL.findall(src))
     scan = FIELD_DECL.sub(lambda m: m.group(0)[:m.start(1) - m.start(0)], src)
+    scan = blank_inherited_calls(scan)
     scan = ASSIGN_TARGET.sub(lambda m: " " * len(m.group(1)) + m.group(2), scan)
 
     bad = []
@@ -204,7 +249,8 @@ def check_file(path, decls):
 def self_test():
     """A gate nobody has watched FAIL is a gate nobody should trust."""
     import tempfile
-    decls = {"WidgetSO": {"CosmicShore.Utility"}, "Thing": {"CosmicShore.Data"}}
+    decls = {"WidgetSO": {"CosmicShore.Utility"}, "Thing": {"CosmicShore.Data"},
+             "DontDestroyOnLoad": {"CosmicShore.Utility"}}
     cases = [
         ("using CosmicShore.Data;\nnamespace CosmicShore.Gameplay { class A { WidgetSO w; } }", 1,
          "missing using is reported"),
@@ -212,6 +258,8 @@ def self_test():
          "present using is silent"),
         ("namespace CosmicShore.Utility { class A { WidgetSO w; } }", 0,
          "own namespace is silent"),
+        ('namespace CosmicShore.Gameplay { class A { const string U = "https://x.y/z";\n[M("WidgetSO/x")] void F() {} } }', 0,
+         "a // inside a string is not a comment, so the next string stays a string"),
         ('namespace CosmicShore.Gameplay { class A { string s = "WidgetSO"; } }', 0,
          "a name inside a STRING is not a reference"),
         ("namespace CosmicShore.Gameplay { class A { /* WidgetSO */ int x; } }", 0,
@@ -242,6 +290,14 @@ def self_test():
          "a FIELD's TYPE is a reference even though its name is a declarator"),
         ("namespace CosmicShore.Gameplay {\nclass A {\n    public WidgetSO WidgetSO;\n}\n}", 1,
          "a field named after its OWN type still reports the TYPE"),
+        ("namespace CosmicShore.Gameplay {\nclass A {\n    void Awake() {\n        DontDestroyOnLoad(gameObject);\n    }\n}\n}", 0,
+         "a call to an INHERITED Unity method sharing a type's name is not a reference"),
+        ("namespace CosmicShore.Gameplay {\nclass A {\n    void Awake() {\n        gameObject.AddComponent<DontDestroyOnLoad>();\n    }\n}\n}", 1,
+         "...but the same name as a GENERIC ARGUMENT is still a type reference"),
+        ("namespace CosmicShore.Gameplay {\n[DontDestroyOnLoad(1)]\nclass A { }\n}", 1,
+         "...and as an ATTRIBUTE"),
+        ("namespace CosmicShore.Gameplay {\nclass A {\n    void B() {\n        var d = new DontDestroyOnLoad();\n    }\n}\n}", 1,
+         "...and after `new`"),
         # 74 of the project's 1,971 .cs files open with a UTF-8 BOM, and \ufeff is category Cf
         # rather than whitespace - so `^\s*using` could not match the FIRST using directive in any
         # of them and the gate reported a using that was right there on line 1. A false POSITIVE is

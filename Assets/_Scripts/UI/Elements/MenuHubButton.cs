@@ -55,6 +55,15 @@ namespace CosmicShore.UI
             if (!screenSwitcher)
                 screenSwitcher = FindFirstObjectByType<ScreenSwitcher>(FindObjectsInactive.Include);
 
+            // The browser Toybox keeps the hub's layout and says what the other entries are:
+            // Locked, "In the full game" (the switcher refuses to open them as well).
+            if (WebToybox.IsBuild && !ScreenSwitcher.IsModalInWebToybox(target))
+            {
+                if (!_availability) _availability = MenuAvailabilityView.Ensure(gameObject);
+                _availability.SetLockedMessage(ScreenSwitcher.WebToyboxLockedMessage);
+                _availability.SetAvailability(MenuAvailability.Locked);
+            }
+
             _button.onClick.AddListener(HandleClick);
         }
 

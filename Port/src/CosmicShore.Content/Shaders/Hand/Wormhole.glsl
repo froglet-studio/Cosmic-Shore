@@ -3,7 +3,7 @@
 // camera carried through, sampled at this pixel's screen position) over the void colour, a fresnel rim
 // in the owning domain's hue, the sealed shell a rival sees, the inside-camera clearance and the
 // camera->ship occlusion corridor's screen door. The partner's six-face panorama is a texture array,
-// which Prisma does not have: its SystemInfo.copyTextureSupport is None, so the game never marks a
+// which Amoebius does not have: its SystemInfo.copyTextureSupport is None, so the game never marks a
 // panorama ready and the void colour stands where the shader would sample one.
 // Per-renderer (WormholeMouth.ApplySurface's property block) and global inputs the Properties block
 // does not declare:

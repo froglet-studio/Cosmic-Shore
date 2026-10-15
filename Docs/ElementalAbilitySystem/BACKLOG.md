@@ -89,8 +89,10 @@ Sparrow HUD indicators (~~roll armed~~ SHIPPED — the boost icon's ring is now 
    revisit after playtest.
 4. **Latch policy default.** Re-lock with 5/4 hysteresis (codebase-symmetric) vs latch-for-turn.
    *Recommendation:* re-lock; debuffs stripping your upgrade is legible elemental counterplay.
-5. **`origin/claude/falcon-brittlestar-reintro-oyx1q1`**: if it is ever merged, it must not land
-   without `f1f278ab4` (its prewarm cap makes the pool-injection NRE strictly worse — AUDIT §2#1).
+5. **`origin/claude/falcon-brittlestar-reintro-oyx1q1`**: do not merge it; the Brittle Star was rebuilt from its class
+   document as `VesselClassType.BrittleStar = 16` (`R_VesselActions/BRITTLE_STAR.md`; research and studio:
+   `Docs/Studios/BRITTLE_STAR.md`). (The "prewarm cap" this row once cited does not exist on the branch; the
+   pool-injection fix is on HEAD — AUDIT §2#1.)
 
 ## Four-icon ability row — follow-ups (from the `vessel-ability-icons` branch)
 
@@ -154,7 +156,7 @@ Mechanics reference: `_Scripts/Controller/Vessel/R_VesselActions/DOLPHIN_ENERGY_
 10. **Serpent's skimmer is dead.** `_nearFieldSkimmer` resolves to a `VacuumSkimmer` whose
     GameObject is INACTIVE *and* which carries no `SkimmerImpactor`/container. Same class of
     fault the Dolphin had; deliberately left untouched by that branch (different vessel).
-    Confirm with `FrogletTools > Vessels > Audit Vessel Skimmers`.
+    Confirm with `FrogletTools > Vessels > Audits > Audit Vessel Skimmers`.
 11. **`ExplosionImpactor.OnBlastResolved` is a static C# event.** CLAUDE.md's anti-patterns
     forbid static events for cross-system communication. It is presentation-only, has one
     self-filtering listener (the Dolphin HUD's prism tally), and subscribes/unsubscribes
@@ -255,7 +257,7 @@ Mechanics reference: `_Scripts/Controller/Vessel/R_VesselActions/DOLPHIN_ENERGY_
     dangling local reference in the file, present since before this branch. Same
     never-pruned-override rot CLAUDE.md documents for `Cell`: Unity retains modifications
     whose `propertyPath` no longer resolves. Fix by running
-    **FrogletTools > Vessels > Wire Elemental Petal Bars** on the Dolphin and re-saving the
+    **FrogletTools > Vessels > Wiring > Wire Elemental Petal Bars** on the Dolphin and re-saving the
     prefab, then re-check with the ability-row audit. Pre-existing; NOT caused by the shard
     toggle removal (verified: the base revision has the same dangling reference).
 24. **`ActionExecutorRegistry._executors` on the Dolphin holds an empty slot** (`{fileID: 0}`
@@ -674,3 +676,34 @@ sweeping instead of throwing, and Lockdown no longer allocates per landing.
   until its super-shield breaks, which in normal play is never. Profile a long match with several
   cloak walls (`ProfilerMarker` around `SerpentWallAssembler.Sweep`) before deciding whether an
   old wall should stop sweeping, or `_maxRing` should be recomputed from the standing bricks.
+
+## From the Rhino plough + Breaker branch (`cece/magical-meitner-56obj5`, 2026-10-13)
+
+Rows only, opened by the §3.6 pass. The plough's own open questions (re-plough hop, pile-ups,
+fauna snap-back, Cleave scoring) are in `R_VesselActions/RHINO_PLOUGH.md` § Follow-ups.
+
+- **[walked past] 35 prefab overrides still target `SkimmerImpactor`'s three retired effect
+  arrays.** `SkimmerImpactor.cs` comments out `vesselSkimmerEffectsSO` / `skimmerPrismEffectsSO` /
+  `skimmerCrystalEffectsSO` (`:14-16`) in favour of `skimmerImpactorDataContainer`, but Unity never
+  prunes an unresolvable modification. Measured with
+  `grep -cE "propertyPath: '?(skimmerPrismEffectsSO|vesselSkimmerEffectsSO|skimmerCrystalEffectsSO|skimmerPrismStayEffectsSO)" Assets/_Prefabs/Spacevessels/*.prefab`:
+  Dolphin 4, Rhino 7, Squirrel 8, Stoat 8, Thresher 8. They are inert, but they read as live wiring
+  (the Rhino's name `SkimmerDamagePrismEffect` on its sword, which it does not run). Delete them
+  through the prefab-drift path (`PrefabDriftFixer`), never by hand-editing the YAML.
+- **[walked past] An orphaned `[FormerlySerializedAs("shipSkimmerEffectsSO")]`** now sits on
+  `skimmerImpactorDataContainer` (`SkimmerImpactor.cs:12`). It belonged to the array the comment-out
+  retired, so it maps an old ARRAY key onto an object reference. Confirm no asset still carries
+  `shipSkimmerEffectsSO:` (`git grep -l "shipSkimmerEffectsSO:" -- '*.prefab' '*.asset' '*.unity'`),
+  then delete the attribute.
+- **[walked past, gate defect] `check_enum_member_references.py` is red on bleeding-edge itself.**
+  At merge base `77fa04c2` it reports `'Placement' has no member 'BodyRadius'` (and `TriggerRadius`,
+  `LookTarget`, `Position`) in `ElementChargerToy.cs`, `PaintingGalleryToy.cs` and `Toy.cs`, resolving
+  `Placement` to the nested enum in the editor-only `CrystalFlipWaveBenchmarkWindow.cs` (`BehindCamera`,
+  `InView`) instead of the toys' own type. A name collision across assemblies, not a defect in the
+  toys. While it stays red, every branch's run of it is noise; scope the lookup by assembly, or by
+  the enclosing type, and add the collision to `--self-test`.
+- **[made visible, tool] `element_ability_table.py` prints no L5 for an element whose ABILITY slot
+  is open.** `print_row` returns at the open-slot check (`:935`, re-grep) before the upgrade lines, so
+  the Rhino's Space-5 Breaker is counted (`L5 gates wired 1/4`) but never shown. Print the
+  `UpgradeLabel` and its gate sites for an open row too, so the table answers "what does Space 5 do on
+  the Rhino" without reading the map asset.

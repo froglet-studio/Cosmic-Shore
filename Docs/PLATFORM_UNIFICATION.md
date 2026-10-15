@@ -292,7 +292,7 @@ today), and the 4 GB Samsung lands on `MobileLow` (Garrett's strip).
 | `DeviceTier` enum (Desktop 0, MobileHigh 1, MobileLow 2) | `_Scripts/Data/Enums/DeviceTier.cs` |
 | Pure classifier: `DeviceFacts`, `DeviceTierRules`, `DeviceTierClassifier.Classify` / `OsFromName` (no Unity API; compiled and run outside the editor) | `_Scripts/System/Platform/DeviceTierClassifier.cs` |
 | Resolver: `PlatformProfile.Tier` / `Current` / `Reason` / `TierOverride`, read once per session, reset at `SubsystemRegistration`, logged on `CSLogChannel.Boot`, shown on the DiagnosticsHUD "Platform" rows | `_Scripts/System/Platform/PlatformProfile.cs` |
-| `PlatformProfileSO` (per tier) + `PlatformProfileSetSO` (the three slots + the thresholds) | `_Scripts/ScriptableObjects/`, assets in `_SO_Assets/Platform/` and `Resources/PlatformProfiles.asset` |
+| `PlatformProfileSO` (per tier) + `PlatformProfileSetSO` (the three tier slots, the `web` slot a WebGL player runs whatever its tier — `PlatformProfile_Web`, `WEBGL_TOYBOX.md` §4 — and the thresholds) | `_Scripts/ScriptableObjects/`, assets in `_SO_Assets/Platform/` and `Resources/PlatformProfiles.asset` |
 | Tier-aware first-run recommendation; settings v3 re-seed | `SettingsAutoDetector.RecommendSettings` / `RecommendFromProfile`, `DisplayGraphicsSettings.ReseedUntouchedTierGraphics` |
 | Editor: detected tier + facts, simulate a tier, re-run auto-detect in Play | FrogletTools ▸ Performance ▸ Device Tier (`_Scripts/Editor/DeviceTierWindow.cs`) |
 | Tests | `_Scripts/Tests/Editor/DeviceTierTests.cs` |
@@ -493,6 +493,7 @@ production iOS id, ARM64-only Android, and bring the two Gradle commits across.
 | `ITSAppUsesNonExemptEncryption = NO` written into every iOS build | `Assets/_Scripts/Editor/Build/IosExportCompliancePostprocess.cs` | Stops App Store Connect holding each build at "Missing Compliance". The declaration: HTTPS + Relay DTLS, standard algorithms, in support of gameplay, under the EAR Cat. 5 Pt. 2 Note 4 games exclusion. **The company owns this answer**; delete the file to answer per upload instead. |
 | NativeShare's photo-library purpose string: the plugin default ("The app requires access to Photos to save media to it.") → a specific one naming paintings and screenshots | `ProjectSettings/NativeShare.json` (the plugin's own settings file; its iOS post-process writes `NSPhotoLibraryUsageDescription` / `NSPhotoLibraryAddUsageDescription` from it) | App Review 5.1.1 rejects purpose strings that don't say what the access is for. |
 | Apple Team ID `9959RFD7XD` + Automatically Sign on; **TestFlight from GitHub Actions** (2026-10-12) | `ProjectSettings.asset`, `.github/workflows/ios-testflight.yml`, `Tools/iOS/set_manual_signing.rb`, `Tools/iOS/asc_api_key_json.py` (manual dispatch only) | Iggy's paid membership is active to 16 Aug 2027, and nobody on the team has a Mac. The job compiles a Windows-made Xcode export on a free `macos-26` runner (Xcode 26, which uploads require), signs it with the company's distribution certificate and uploads it. Setup and secrets: `Docs/IOS_BUILD.md` §2 Path C. **Run 4 (2026-10-12) uploaded the first build to TestFlight**, on the team API key. Run 3 had failed at the upload because `ASC_KEY_P8` held the key body without its BEGIN/END lines; the job now accepts that shape. Run 5 (2026-10-12) uploaded the phone-menu fix the same way. |
+| **Android release build + pre-upload check** (2026-10-13) | `Assets/_Scripts/Editor/Build/CosmicShoreBuildPipeline.Android.cs`, `AndroidBundleCheck.cs`, `Tools/Build/check_android_signing_settings.py` | **FrogletTools > Build > Android App Bundle (Release)** builds a signed `.aab` with a minutes-since-2026 version code, puts Player Settings back, and checks the bundle for everything Play rejects (debug key, target < 36, debuggable, no arm64, over 200 MB) plus 16 KB alignment, app category, Billing and native debug symbols (embedded in the bundle since 2026-10-14). The static CI job fails on a committed keystore path. Not run in Unity yet. Steps: `Docs/ANDROID_BUILD.md`. |
 
 **Found and left open** (setup guide §5):
 
@@ -542,7 +543,7 @@ production iOS id, ARM64-only Android, and bring the two Gradle commits across.
   - branch protection.
 - **CLAUDE.md says "No automated CI/CD pipeline is currently configured", which is stale.**
   `.github/workflows/` holds `unity-ci.yml`, `bleeding-edge-guard.yml`, `ios-testflight.yml` and
-  the Prisma ones. `Docs/BUILD_AND_DELIVERY.md` §10 is the current picture.
+  the Amoebius ones. `Docs/BUILD_AND_DELIVERY.md` §10 is the current picture.
 
 ---
 

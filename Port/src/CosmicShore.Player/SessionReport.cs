@@ -320,7 +320,7 @@ namespace CosmicShore.Player
                     .Select(kv => new { count = kv.Value, message = kv.Key[(prefix.Length + 2)..].Trim() }).ToList();
                 var report = new
                 {
-                    kind = "prisma-session",
+                    kind = "amoebius-session",
                     version = 1,
                     startedUtc = s_start.ToString("O"),
                     seconds = Math.Round(total, 1),
@@ -363,6 +363,7 @@ namespace CosmicShore.Player
                     modes = s_scenes.Select(x => x.scene).Where(n => n.StartsWith("Minigame", StringComparison.Ordinal)).Distinct().ToList(),
                     vessels = Vessels(),
                     audio = Audio(),
+                    net = CosmicShore.Engine.Networking.NetStats.Any ? CosmicShore.Engine.Networking.NetStats.Summary() : null,
                     render = RenderStats(),
                     counts = new { errors = Log?.Errors ?? 0, exceptions = Log?.Exceptions ?? 0, warnings = Log?.Warnings ?? 0 },
                     exceptions = Problems("Exception"),

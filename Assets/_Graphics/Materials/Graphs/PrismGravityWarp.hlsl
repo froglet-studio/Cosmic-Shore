@@ -110,7 +110,31 @@
 
 float4 _PrismGravityWarpCentre[PRISM_GRAVITY_WARP_SLOTS];  // xyz world centre, w horizon radius
 float4 _PrismGravityWarpWeight[PRISM_GRAVITY_WARP_SLOTS];  // x GM·τ² (eased), y reach beyond the horizon
-float4 _PrismGravityWarpParams;                            // (ln max stretch, liveSlotCount, 0, 0)
+float4 _PrismGravityWarpParams;                            // (ln max stretch, liveSlotCount, liveWaveCount, 0)
+
+// THE GRAVITATIONAL WAVE (Docs/BLACK_HOLE.md §5.2, the Vessel Studio's): when a pair annihilates, its mass leaves as a
+// burst moving out at gwSpeed, and every prism it crosses is stretched along its own x and squeezed along its own y by
+// gwPrism × the strain at its centre, then the other way — the studio's writeBodies, scale (1 + gh, 1 − gh). The strain
+// is the studio's gwStrainAt: mass·e^(−u/τ)·sin(2πu/period)·min(1, 60/r)·(1 − cos²) at u = age − r/speed, nothing
+// before the front or after 8 ringdowns. BlackHoleWaves publishes the newest four (BlackHoleWarp.Flush).
+#ifndef PRISM_GRAVITY_WAVE_SLOTS
+#define PRISM_GRAVITY_WAVE_SLOTS 4
+#endif
+float4 _PrismGravityWaveCentre[PRISM_GRAVITY_WAVE_SLOTS];  // xyz where the pair met, w its age (s)
+float4 _PrismGravityWaveAxis[PRISM_GRAVITY_WAVE_SLOTS];    // xyz the line the holes met along (unit, or 0), w mass
+float4 _PrismGravityWaveParams;                            // (gwSpeed, gwPeriod, gwRingdown, gwPrism)
+
+// The strain one wave puts on a point (the studio's gwStrainAt).
+float PrismGravityWaveStrain(float3 at, float4 centre, float4 axis, float4 prm)
+{
+    float3 d = at - centre.xyz;
+    float r = length(d) + 1e-6;
+    float u = centre.w - r / max(1.0, prm.x);
+    float tau = max(0.01, prm.z);
+    if (u <= 0.0 || u > 8.0 * tau) return 0.0;
+    float ca = dot(d, axis.xyz) / r;
+    return axis.w * exp(-u / tau) * sin(6.2831853 * u / max(0.02, prm.y)) * min(1.0, 60.0 / r) * (1.0 - ca * ca);
+}
 
 // The fade to zero at the reach: exactly 1 across the inner half of the shell (the tide is drawn as
 // the physics gives it), then 1 − smoothstep across the outer half — C1 at both ends, so the stretch
@@ -162,8 +186,9 @@ void PrismGravityWarpDeform_float(float3 Position, float3 Normal,
     return;
 #else
     int count = (int)_PrismGravityWarpParams.y;
-    if (count <= 0)
-        return;                                   // master sentinel: no hole is live
+    int waves = (int)_PrismGravityWarpParams.z;
+    if (count <= 0 && waves <= 0)
+        return;                                   // master sentinel: no hole and no wave is live
 
     float nLenSq = dot(Normal, Normal);
     if (!(nLenSq > 1e-8))
@@ -209,12 +234,22 @@ void PrismGravityWarpDeform_float(float3 Position, float3 Normal,
         bestDir = rad / d;
     }
 
-    if (!(abs(bestTide) > 0.0))
-        return;                                   // no hole reaches this prism
+    // The wave's stretch at the prism's centre: the studio's sum over waves, dropped below 0.002, clamped to ±0.8.
+    float h = 0.0;
+    for (int j = 0; j < PRISM_GRAVITY_WAVE_SLOTS; j++)
+    {
+        if (j >= waves) break;
+        h += PrismGravityWaveStrain(c, _PrismGravityWaveCentre[j], _PrismGravityWaveAxis[j], _PrismGravityWaveParams);
+    }
+    if (abs(h) < 0.002) h = 0.0;
+    float gh = clamp(_PrismGravityWaveParams.w * h, -0.8, 0.8);
+
+    if (!(abs(bestTide) > 0.0) && gh == 0.0)
+        return;                                   // no hole and no wave reaches this prism
 
     // Ease into the ceiling: the physics while small, never past ln(maxStretch) — in either sign.
     float ceiling = max(_PrismGravityWarpParams.x, 1e-3);
-    float eps = sign(bestTide) * PrismGravityWarpCeiling(abs(bestTide), ceiling);
+    float eps = abs(bestTide) > 0.0 ? sign(bestTide) * PrismGravityWarpCeiling(abs(bestTide), ceiling) : 0.0;
     float radial = exp(eps);                      // stretch along the line to the hole
     float across = exp(-0.5 * eps);               // squeeze across it — volume conserved
 
@@ -231,6 +266,19 @@ void PrismGravityWarpDeform_float(float3 Position, float3 Normal,
 #else
     float3 nNew = nW;
 #endif
+
+    // The wave: (1 + gh) along the prism's own x, (1 − gh) along its own y, about its centre; the normal by the
+    // inverse transpose. The object axes in world are orthogonal under a TRS model matrix.
+    if (gh != 0.0)
+    {
+        float3 xA = normalize(mul(M, float4(1.0, 0.0, 0.0, 0.0)).xyz);
+        float3 yA = normalize(mul(M, float4(0.0, 1.0, 0.0, 0.0)).xyz);
+        float3 q2 = pNew - c;
+        pNew = c + q2 + xA * (dot(q2, xA) * gh) - yA * (dot(q2, yA) * gh);
+#if PRISM_GRAVITY_WARP_NORMAL_CORRECTION
+        nNew = nNew + xA * (dot(nNew, xA) * (1.0 / (1.0 + gh) - 1.0)) + yA * (dot(nNew, yA) * (1.0 / (1.0 - gh) - 1.0));
+#endif
+    }
 
     // Back to object space: the point through the inverse model, the normal through the model's
     // transpose (the inverse of the inverse-transpose above), renormalised.

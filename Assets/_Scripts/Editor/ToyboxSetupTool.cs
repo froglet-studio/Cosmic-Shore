@@ -34,7 +34,7 @@ namespace CosmicShore.Editor
         const string ToyboxAssetPath = "Assets/Resources/Toybox.asset";
         const string MenuScenePath = "Assets/_Scenes/Menu_Main.unity";
 
-        [MenuItem("FrogletTools/Scene Setup/Setup Freestyle Toybox")]
+        [MenuItem("FrogletTools/Scenes/Setup Freestyle Toybox", false, 190)]
         [FrogletTool(FrogletToolCategory.SceneSetup, Importance = 4,
             Description = "Author the freestyle toybox assets and wire them into Menu_Main.")]
         static void SetupToybox()

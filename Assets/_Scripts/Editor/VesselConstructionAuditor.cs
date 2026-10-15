@@ -40,7 +40,7 @@ namespace CosmicShore.Editor
         const string VesselFolder = "Assets/_Prefabs/Spacevessels";
         const string ModelFolder = "Assets/_Models/Vessel Models";
 
-        [MenuItem("FrogletTools/Vessels/Audit Vessel Construction")]
+        [MenuItem("FrogletTools/Vessels/Audits/Audit Vessel Construction", false, 272)]
         [FrogletTool(FrogletToolCategory.Vessels, Importance = 4,
             Description = "Guid ownership, nested-instance reachability and duplicate coincident " +
                           "hull renderers — the three checks VESSEL_CONSTRUCTION.md exists because of.")]

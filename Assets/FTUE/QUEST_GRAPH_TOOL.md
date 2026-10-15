@@ -38,7 +38,7 @@ the whole quest.
 
 ## Authoring
 
-- **`FrogletTools ▸ Quest Graph Editor`** — the visual editor:
+- **`FrogletTools ▸ FTUE ▸ Quest Graph Editor`** — the visual editor:
   - **Left:** quests with their ordered phases (add / reorder ▲▼ / remove ✕) and per-quest /
     per-phase **enable toggles** (test harness).
   - **Canvas:** wheel = cursor-anchored zoom · middle/alt-drag = pan · **F** = frame · Delete = delete node ·
@@ -54,11 +54,9 @@ the whole quest.
     See "Canvas layout" below.
   - New quests/phases are created at the **default location** (`Assets/FTUE/DataContainer/
     Quests|Phases`) — no file dialogs.
-- **`FrogletTools ▸ Quest Graph ▸ Create Main Quest (Default Content)`** — generates the whole
-  6-phase Main Quest from the design map (see below), with per-phase designer notes baked in.
-- **`FrogletTools ▸ Quest Graph ▸ Setup Runner In Scene`** — drops/wires `QuestGraphRunner`
-  into the open scene (Menu_Main) and auto-resolves references.
-- **`FrogletTools ▸ Quest Graph ▸ Layout All Phases (Rows)`** — applies the row layout to every
+- The Main Quest (6 phases, from the design map below) and the `QuestGraphRunner` in Menu_Main
+  are shipped assets; the one-shot tools that generated them were retired on 2026-10-14.
+- **`FrogletTools ▸ FTUE ▸ Layout All Phases (Rows)`** — applies the row layout to every
   phase graph in the project and saves.
 
 ## Canvas layout — venue rows
@@ -90,8 +88,7 @@ row never breaks on a beat that didn't move the player. **A new node type that m
 between the shell and gameplay must override `Venue`** — otherwise its row break goes missing.
 
 Geometry lives in `QuestGraphLayout` (`OriginX/Y`, `ColumnPitch`, `RowPitch`) — change it there,
-not per-graph. `QuestDefaultContentBuilder` runs the same layout, so generated graphs open
-already arranged.
+not per-graph.
 
 ## Node types
 
