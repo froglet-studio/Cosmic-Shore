@@ -764,7 +764,8 @@ editor:
    - the dialog says "Ready to upload, with 1 warning(s)": `liblofelt_sdk.so` is not 16 KB-aligned;
    - `Builds/Android/CosmicShore-0.2.0-<about 410000+>.aab` and its `.check.txt` exist;
    - the report says package `com.FrogletGames.CosmicShore`, target 36, category `game`,
-     debuggable False, Signed: yes, ABIs: arm64-v8a, **Native debug symbols: in the bundle**;
+     debuggable False, Signed: yes, ABIs: arm64-v8a and armeabi-v7a (32-bit added back 2026-10-15),
+     **Native debug symbols: in the bundle**;
    - a `….symbols.zip` sits beside the `.aab`. If the log says "Could not turn on native debug
      symbols", Unity renamed the enum values; send the message to Claude.
 4. **Player Settings are put back.** `git status` shows no change to `ProjectSettings.asset`
@@ -778,7 +779,10 @@ editor:
 8. **Play.** Upload the `.aab` to Internal testing (`ANDROID_BUILD.md` §5):
    - Play accepts it with no signing, target-SDK or debuggable error, and **no "debug symbols"
      warning**;
-   - it installs from the tester link on the 4 GB Samsung and a flagship.
+   - it installs from the tester link on the 4 GB Samsung and a flagship;
+   - it installs on Caleb's Moto G Power and Yash's Samsung Galaxy M. Both showed "Item not found"
+     with the 64-bit-only build 412826. In Play Console > Device catalog, both models read
+     Supported once this build is uploaded.
 
 ---
 

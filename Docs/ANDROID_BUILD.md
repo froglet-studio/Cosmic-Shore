@@ -22,7 +22,7 @@ build checks the ones Play rejects on, and stops rather than changing them back.
 | Package | `com.FrogletGames.CosmicShore` | Fixed forever by the first upload |
 | Target API | 36 | Play's minimum for new apps and updates since 31 Aug 2026 |
 | Minimum API | 28 (Android 9) | |
-| Architectures | ARM64 only, IL2CPP | Play requires 64-bit; 32-bit was dropped deliberately |
+| Architectures | ARMv7 + ARM64, IL2CPP | Play requires 64-bit. 32-bit was dropped on 2026-10-08 and **added back on 2026-10-15**: two team phones (a Moto G Power and a Samsung Galaxy M) run 32-bit Android on 64-bit chips, and Play showed them "Item not found". Play splits a bundle per ABI, so a phone downloads only its own libraries |
 | R8 minify | On | Unity Ads, the cause of the old R8 launch crash, is removed |
 | Unity IAP | Removed | So no outdated Play Billing library ships |
 | Audio | FMOD's Desktop banks (36 MB) | No platform overrides a bank folder, so Android and iOS ship the same banks |
@@ -139,6 +139,7 @@ and no Java.
 | Error | Target SDK ≥ 36 | Manifest |
 | Error | Not debuggable | Manifest |
 | Error | Has `arm64-v8a` libraries | `base/lib/<abi>/` |
+| Warning | Has `armeabi-v7a` libraries too (32-bit phones) | `base/lib/<abi>/` |
 | Error | Version code between 1 and 2,100,000,000 | Manifest |
 | Error | Base module ≤ 200 MB compressed | Zip entry sizes |
 | Warning | Every 64-bit library is 16 KB page-aligned | Each `.so`'s ELF LOAD segments |
@@ -219,7 +220,7 @@ App bundle explorer > the version > Downloads > Native debug symbols.
 | Dialog: "The editor is not on Android" | File > Build Profiles > Android > Switch Platform |
 | Play: "signed in debug mode" | The check fails on this first. Select the upload key and rebuild |
 | Play: "signed with the wrong key" | Later uploads must use the key the first upload registered. If it is lost: Play Console > Test and release > Setup > App signing > **Request upload key reset** |
-| A tester taps "Download it on Google Play" and gets **"Item not found"**, while the app installs for others on the same list | The Play Store app on their phone is signed into a different Google account than the email on the list. Most often the list has a work address and the phone uses a personal Gmail. Play Store > profile icon shows the active account. Either add THAT account to the list (Testers > the email list > add > Save; no new release needed), or switch Play Store to the listed account. Then open the opt-in link in Chrome, signed into the same account, tap **Accept invite**, and only then **Download it on Google Play**. If it persists, clear the Play Store's cache and wait 10-15 minutes. A Google Workspace account whose admin restricts Play cannot install test apps; use a personal Gmail |
+| A tester taps "Download it on Google Play" and gets **"Item not found"**, while the app installs for others on the same list | **First, is their phone 32-bit?** Play Console > Reach and devices > Device catalog > search the model; "Unsupported" with an ABI reason means their Android is 32-bit. Bundles before 2026-10-15 were 64-bit only and hide the app from those phones; rebuild and upload. **Otherwise it is the account:** The Play Store app on their phone is signed into a different Google account than the email on the list. Most often the list has a work address and the phone uses a personal Gmail. Play Store > profile icon shows the active account. Either add THAT account to the list (Testers > the email list > add > Save; no new release needed), or switch Play Store to the listed account. Then open the opt-in link in Chrome, signed into the same account, tap **Accept invite**, and only then **Download it on Google Play**. If it persists, clear the Play Store's cache and wait 10-15 minutes. A Google Workspace account whose admin restricts Play cannot install test apps; use a personal Gmail |
 | Play: "Version code … has already been used" | Build again (a new minute), or pass `-buildVersionCode` |
 | Play warning: "contains native code, and you've not uploaded debug symbols" | Only a recommendation; the release can go out. The bundle was built without the menu (or before 2026-10-14). The check warns about this too. Rebuild with FrogletTools > Build > Android App Bundle (Release) |
 | Gradle fails during the build | Most Android Gradle failures trace to `Assets/Plugins/Android/*.gradle` and the EDM4U block; see `Docs/PLATFORM_UNIFICATION.md` §2.1. Send the Console error to Claude |
