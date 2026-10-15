@@ -8,10 +8,10 @@
     "result": "50 mapped parameters match the artifact (studio_to_unity.py --check). Cloned the waves: the light shells in and out, the gravitational wave (lens + prisms), dieS, whSizeX. The shared log held no newer decision (only d16-d17, no settings snapshot)."
   },
   "Goby & Pistol": {
-    "artifactVersion": "private prototype https://claude.ai/artifact/6hGNJz2AKFYY5gHvYJa9Up v4 (the lab is not on the shared Vessel Studio artifact yet)",
-    "pageSha": "065950ff",
+    "artifactVersion": "private prototype https://claude.ai/artifact/6hGNJz2AKFYY5gHvYJa9Up v5 (1792038928-3593; the lab is not on the shared Vessel Studio artifact yet)",
+    "pageSha": "6a814aff",
     "decisionsThrough": "none (the prototype's decision log is empty)",
     "clonedAt": "2026-10-15",
-    "result": "40 mapped parameters match the artifact (studio_to_unity.py --check). Cloned the lab's maths line for line (PistolRibbon, PistolBodyMath, VortexRing, PistolAI; GobyPistolMathTests hold them to the page's goldens) and made it playable through the dev-only GobyPistolHarness. 21 keys stay lab-only (--unmapped): the Goby's flight numbers are the Squirrel prefab's own; straight/closeness boosts wait for the duo vessel; seeding, hinge tilt, Goby AI weave, run length, pParallax (unread in the lab), swapCd (= PilotSwap.CooldownSeconds)."
+    "result": "41 mapped parameters match the artifact (studio_to_unity.py --check; pParallax is now read by both the lab and the game). Cloned the lab's maths line for line (PistolRibbon, PistolBodyMath, VortexRing, PistolAI; GobyPistolMathTests hold them to the page's goldens) and the Pistol's VIEW (PistolWarp, PistolWorldMesh, PistolWorld.shader; the lab's own view golden holds the warp, the bar, the zones and the parallax): the Goby.prefab flies it from the vessel changer, the dev-only GobyPistolHarness still works. 20 keys stay lab-only (--unmapped): the Goby's flight numbers are the Squirrel prefab's own; straight/closeness boosts wait for the duo vessel; seeding, hinge tilt, Goby AI weave, run length, swapCd (= PilotSwap.CooldownSeconds)."
   }
 }
