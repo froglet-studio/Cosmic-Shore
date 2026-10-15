@@ -676,7 +676,10 @@ def preview_window(left, kind):
            f"  focusButton: {ref(ctx.c('Preview/Focus', 'button'))}\n"
            f"  focusHint: {ref(ctx.go('Preview/Strip/Hint'))}\n"
            "  renderHeight: 360\n  maxRenderHeight: 1080\n"))
-    pv.add("toast", 114, lambda ctx, go: mono(go, S["toast"],
+    # The "+1" toast's component lives ON THE TOAST: PreviewMicroToast shows and hides by
+    # SetActive on its own GameObject, and on the Preview node every card open (which hides the
+    # toast) switched off the whole preview - frame, live arena and tap-to-play target.
+    toast.add("toast", 114, lambda ctx, go: mono(go, S["toast"],
            f"  group: {ref(ctx.c('Preview/Toast', 'cg'))}\n"
            f"  label: {ref(ctx.c('Preview/Toast/Label', 'tmp'))}\n"
            f"  icon: {ref(ctx.c('Preview/Toast/Icon', 'img'))}\n"
@@ -1065,7 +1068,7 @@ def panel_body(ctx, go, kind):
         fields += (f"  previewWindow: {ref(ctx.c('Preview', 'window'))}\n"
                    f"  controlsPanel: {ref(ctx.c('Controls', 'controls'))}\n"
                    f"  objectiveBox: {ref(ctx.c('Objective', 'view'))}\n"
-                   f"  microToast: {ref(ctx.c('Preview', 'toast'))}\n")
+                   f"  microToast: {ref(ctx.c('Preview/Toast', 'toast'))}\n")
     if kind == "arena":
         fields += (f"  roster: {K.ref(11400000, ARENA_ROSTER, 2)}\n"
                    "  vesselIcon: {fileID: 0}\n  prevButton: {fileID: 0}\n  nextButton: {fileID: 0}\n"
@@ -1736,6 +1739,13 @@ def validate_prefabs(files):
             for field, want in (("previewWindow", S["preview"]), ("controlsPanel", S["controls"]),
                                 ("objectiveBox", S["objective"]), ("microToast", S["toast"])):
                 wired(text, body, field, want, view)
+            # PreviewMicroToast hides by SetActive(false) on ITS OWN GameObject. Sharing one with the
+            # preview window switched the whole window off on every card open.
+            pv_go = str(V("Preview#go"))
+            for fid, d in re.findall(r"^--- !u!114 &(-?\d+)\n((?:(?!--- ).*\n)*)", text, re.M):
+                if f"guid: {S['toast']}" in d:
+                    assert f"m_GameObject: {{fileID: {pv_go}}}" not in d, \
+                        f"{view}: the +1 toast shares the preview's GameObject (hiding it hides the preview)"
         if kind == "arena":
             wired(text, body, "selectVesselButton", S["button"], view)
             hulls = re.findall(r"^  - \{fileID: (-?\d+)\}", body.split("  hullTiles:")[1], re.M)
@@ -1849,6 +1859,10 @@ def self_test(files):
          validate_prefabs),
         ("the AI difficulty row unwired", lambda f: f.__setitem__(view, re.sub(
             r"(  aiDifficultyPicker: )\{fileID: -?\d+\}", r"\1{fileID: 0}", f[view])), validate_prefabs),
+        ("the +1 toast back on the preview's GameObject", lambda f: f.__setitem__(view, f[view].replace(
+            f"m_GameObject: {{fileID: {V('Preview/Toast#go')}}}\n  m_Enabled: 1\n  m_EditorHideFlags: 0\n  m_Script: {{fileID: 11500000, guid: {S['toast']}",
+            f"m_GameObject: {{fileID: {V('Preview#go')}}}\n  m_Enabled: 1\n  m_EditorHideFlags: 0\n  m_Script: {{fileID: 11500000, guid: {S['toast']}", 1)),
+         validate_prefabs),
         ("an unwired start button", lambda f: f.__setitem__(view, re.sub(r"(  startButton: )\{fileID: -?\d+\}", r"\1{fileID: 0}", f[view])),
          validate_prefabs),
         ("a node that forgot the intensity variable", lambda f: f.__setitem__(node, f[node].replace(INTENSITY_VAR, "0" * 32)),

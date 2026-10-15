@@ -1753,3 +1753,10 @@ From the owner's first play of the redesign.
 - **The Arcade grid's right column was cut off** on screens narrower than 16:9 (a MacBook's 16:10).
   The window is 1920 wide and the canvas matched height, so it was only ~1728 wide. The Expand
   scaling from section 28 fixes this; no layout change was needed.
+- **The real reason the configure preview was missing (found after the first try above):** the
+  "+1" toast's `PreviewMicroToast` was authored on the Preview window's own GameObject.
+  `PreviewMicroToast.Hide()` calls `gameObject.SetActive(false)`, and `MinigameLaunchPanel` hides
+  the toast every time a card opens, so every card open switched off the whole preview: frame, live
+  arena and tap-to-play target. The component now sits on its own Toast child (ConfigureView and
+  ConfigureArenaView), and `author_menu_configure.py` fails, with a negative control, if a toast
+  ever shares the preview's GameObject again.

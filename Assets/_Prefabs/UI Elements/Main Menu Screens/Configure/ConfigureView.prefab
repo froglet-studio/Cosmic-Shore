@@ -93,7 +93,7 @@ MonoBehaviour:
   previewWindow: {fileID: 527875319065503173}
   controlsPanel: {fileID: 1125963149305475761}
   objectiveBox: {fileID: 1077647636381733935}
-  microToast: {fileID: 512685875512594959}
+  microToast: {fileID: 408130259376321275}
 --- !u!1 &268070694252173661
 GameObject:
   m_ObjectHideFlags: 0
@@ -10206,7 +10206,6 @@ GameObject:
   - component: {fileID: 558028119440660709}
   - component: {fileID: 944462727865138314}
   - component: {fileID: 527875319065503173}
-  - component: {fileID: 512685875512594959}
   m_Layer: 5
   m_Name: Preview
   m_TagString: Untagged
@@ -10270,24 +10269,6 @@ MonoBehaviour:
   focusHint: {fileID: 905668009159123364}
   renderHeight: 360
   maxRenderHeight: 1080
---- !u!114 &512685875512594959
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 689432001543896569}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 2210ebff9e7641acbadb6f7b9f107743, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  group: {fileID: 893143074128006682}
-  label: {fileID: 116043765245082477}
-  icon: {fileID: 147926050683737030}
-  holdSeconds: 0.8
-  fadeSeconds: 0.4
-  popScale: 1.3
 --- !u!1 &528768640551512027
 GameObject:
   m_ObjectHideFlags: 0
@@ -11299,6 +11280,7 @@ GameObject:
   m_Component:
   - component: {fileID: 480435564039396917}
   - component: {fileID: 893143074128006682}
+  - component: {fileID: 408130259376321275}
   m_Layer: 5
   m_Name: Toast
   m_TagString: Untagged
@@ -11339,6 +11321,24 @@ CanvasGroup:
   m_Interactable: 1
   m_BlocksRaycasts: 1
   m_IgnoreParentGroups: 0
+--- !u!114 &408130259376321275
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 858476998337214040}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2210ebff9e7641acbadb6f7b9f107743, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  group: {fileID: 893143074128006682}
+  label: {fileID: 116043765245082477}
+  icon: {fileID: 147926050683737030}
+  holdSeconds: 0.8
+  fadeSeconds: 0.4
+  popScale: 1.3
 --- !u!1 &192265306715866615
 GameObject:
   m_ObjectHideFlags: 0

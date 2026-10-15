@@ -73,6 +73,9 @@ Section 29 of `Docs/MENU_REDESIGN_B.md`. Affects Yash's FTUE quest and Lesson (s
 1. Fresh profile: no first-login guide, no dim, no "This week's game" caption anywhere.
 2. Open any card with a preview (Skim Race, Skein): the preview window shows at the top left, the
    arena plays in it, tapping it flies the vessel; no Lesson or Mentor lines appear.
+   Root cause fixed: the +1 toast component no longer sits on the preview window's GameObject (its
+   Hide() switched the whole window off on every card open). Score a point in the preview: the +1
+   pops and the window stays.
 3. The configure window hides the Arcade behind it (no "Explore games" title or cards showing through).
 4. A friend in a match shows SPECTATE, not WATCH.
 5. At 16:10 (Game view 1728 x 1080) the Arcade grid's right column is fully on screen.
