@@ -46,7 +46,7 @@ Legend: `Planned` ▸ `Mockup` ▸ `Mockup approved` ▸ `Built` ▸ `Approved i
 | 9 | Settings modal and Credits | Built (2026-10-15, section 18): Settings window and Credits | `Settings.dc.html` (interactive), `SettingsDisplay`, `SettingsPerformance`, `SettingsOther`, `Credits`, `SystemNotes` | |
 | 10 | Closed surfaces: Port (locked), Store (no slot), Episodes panel, purchase confirmation | Built (2026-10-15, section 19): purchase confirmation drawn blind; locked states from items 1 and 5 | `ClosedSurfaces.dc.html`, `PurchaseConfirm` (blind), `SystemNotes` | |
 | 11 | Menu toasts | Built (2026-10-15, section 20) | `Toasts.dc.html` (interactive), `SystemNotes` | |
-| 12 | In-game UI: GameCanvas HUD chrome, scoreboard, ready / countdown / pause, in-match toasts, end-of-game screens, Menu_Main freestyle HUD | Mockup approved (2026-10-15); building (section 22): 12a HUD chrome built | `HudMatch.dc.html` (interactive), `HudCardStates`, `HudNotes`, `Hud<Vessel>` x9, `HudReady` (interactive), `HudPause`, `HudConnecting`, `HudEndReveal`, `HudScoreboard` (interactive), `HudSpectator` - page "In-game HUD" | |
+| 12 | In-game UI: GameCanvas HUD chrome, scoreboard, ready / countdown / pause, in-match toasts, end-of-game screens, Menu_Main freestyle HUD | Mockup approved (2026-10-15); building (section 22): 12a HUD chrome, 12b Ready / waiting / countdown built | `HudMatch.dc.html` (interactive), `HudCardStates`, `HudNotes`, `Hud<Vessel>` x9, `HudReady` (interactive), `HudPause`, `HudConnecting`, `HudEndReveal`, `HudScoreboard` (interactive), `HudSpectator` - page "In-game HUD" | |
 
 ---
 
@@ -1217,4 +1217,31 @@ stays green). One generator owns the item: `Tools/Build/author_ingame_hud.py` (`
   - The pause hex shows no Start keycap under it (the button's own controller hint stays hidden, as
     before).
   - The score columns' pilot chips keep the shipped `PlayerScoreEntry` ring.
+
+### 22.2 Ready, waiting for pilots, the countdown (12b; built 2026-10-15, awaiting in-editor approval)
+
+- **Ready:** the button is re-scripted as a Play-variant `KitButton` under the same fileID: the
+  A keycap and READY, 300 x 76.
+  - Under it, "The match starts when every pilot is ready." in Body small.
+  - The magenta GO sprite and the 48 px corner glyph are gone. `ControllerButtonPress` still fires
+    it on the pad's A (South); its hint image is unwired because the keycap replaces it.
+  - The button still shows and hides as it did (`MiniGameHUD.ToggleReadyButton`).
+- **Waiting for pilots** (new `ReadyWaitingPanel` + `ReadyWaitingChip`, authored under MiniGameHUD
+  and wired to `MiniGameHUDView.readyWaiting`). This answers defect 16 (no waiting state after a
+  multiplayer Ready).
+  - When the local pilot presses Ready and more than one human is flying, a plate appears:
+    "Waiting for pilots", "You are ready. The countdown starts with the last pilot.", and the count
+    ("2 / 3").
+  - Under the plate, one chip per human pilot: an octagonal avatar, ringed in its domain colour
+    once ready, with "Ready" or "Picking" under it.
+  - Readiness comes from the match feed's SOAP channel (`GameToastSituation.PlayerReady`, raised on
+    every client by NotifyPlayerReady), so the panel and the feed cannot disagree.
+  - The panel hides when the countdown starts or the Ready button returns for a new round.
+  - Solo, and against AI only, it never shows, because the countdown follows the press at once.
+- **Countdown:** `CountdownTimer` draws text when its new `countdownText` is wired: 3, 2, 1 in
+  Light, then GO in the CTA green, in Aldrich at 260 px.
+  - Each beat rises from 0.7 to a 1.08 overshoot, settles, holds, and leaves at 1.3 as it fades.
+    The beat length and the (empty) beep slot are unchanged.
+  - The neon sprites stay as the fallback when the text is unwired.
+  - The nested timer instance is wired by two modifications (`countdownText`, `waitingPanel`).
 

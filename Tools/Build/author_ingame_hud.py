@@ -226,10 +226,203 @@ def patch_pause(p):
     p.replace(huds[0], C.field_set(p.doc(huds[0]), "volumeIndicator", f"{{fileID: {fid}}}"))
 
 
+# --------------------------------------------------------------------------------------------
+# 12b - Ready, waiting for pilots, the countdown (GameCanvas)
+# --------------------------------------------------------------------------------------------
+
+READY_W, READY_H = 300, 76
+READY_POS = (0, -200)
+WAIT_W, WAIT_H = 600, 84
+WAIT_POS = (0, -222)
+CHIP_W, CHIP_H, CHIP_RING = 60, 80, 52
+BEAT_SIZE = 260
+READY_CAPTION = "The match starts when every pilot is ready."
+WAIT_TITLE = "Waiting for pilots"
+WAIT_NOTE = "You are ready. The countdown starts with the last pilot."
+TOAST_CHANNEL = K.meta_guid("Assets/Resources/Channels/GameToastChannel.asset")
+COUNTDOWN_PREFAB = K.meta_guid("Assets/_Prefabs/UI Elements/In Game/CountdownTimer.prefab")
+COUNTDOWN_COMP = "1536147401936628604"      # CountdownTimer.prefab's CountdownTimer component
+S.update(kitbutton=K.kit_script("KitButton"), button=A.BUTTON, cbp=script_guid(next(
+    os.path.join(dp, f)[len(REPO) + 1:] for dp, _, fs in os.walk(os.path.join(REPO, "Assets/_Scripts"))
+    for f in fs if f == "ControllerButtonPress.cs")),
+    hudview=script_guid("Assets/_Scripts/UI/View/MultiplayerHUDView.cs"),
+    waiting=C.script("ReadyWaitingPanel"), chip=C.script("ReadyWaitingChip"))
+
+
+def ready_nodes():
+    """FocusRing, Fill, Border, KeycapSlot, Label, Caption - under the Ready button's own RT."""
+    border, fillc, content = K.button_palette("Play", True)
+    ring = N("Ready/FocusRing", "FocusRing", R((0, 0), (1, 1), (0, 0), (10, 10)))
+    ring.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("Cta", 0.0), K.kit_sprite("kit_sliver10_line2"), True)) \
+        .add("le", 114, H.le(ignore=True))
+    fill = N("Ready/Fill", "Fill", STRETCH)
+    fill.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(fillc, K.kit_sprite("kit_sliver10_fill"), True, raycast=True)) \
+        .add("grad", 114, lambda ctx, go: K.mono(go, K.kit_script("KitGradient"), "  lightenRight: 0.5\n")) \
+        .add("le", 114, H.le(ignore=True))
+    bord = N("Ready/Border", "Border", STRETCH)
+    bord.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(border, K.kit_sprite("kit_sliver10_line1"), True)) \
+        .add("le", 114, H.le(ignore=True))
+    kw, kh = K.label_width("A", "Label") + 24, K.line_height("Label") + 8
+    slot = N("Ready/KeycapSlot", "KeycapSlot", R(size=(kw, kh)))
+    slot.add("le", 114, H.le(pw=kw, ph=kh))
+    slot.children.append(P.Inst("ReadyKeycap", "KitKeycap", "Keycap", STRETCH, [("Label#tmp", "m_text", "A", None)]))
+    lab = N("Ready/Label", "Label", R(size=(K.label_width("READY", "Button"), K.line_height("Button"))))
+    lab.add("cr", 222, K.canvas_renderer()).add("tmp", 114, K.tmp("Ready", "Button", content)) \
+        .add("kt", 114, K.kit_text("Button", driven=True))
+    cap = N("Ready/Caption", "Caption", R((0.5, 0), (0.5, 0), (0, -16), (720, 24), (0.5, 1)))
+    cap.add("cr", 222, K.canvas_renderer()).add("tmp", 114, H.text(READY_CAPTION, "BodySmall", tok("TextLight"), align="center")) \
+        .add("kt", 114, K.kit_text("BodySmall", "TextLight")).add("le", 114, H.le(ignore=True))
+    return [ring, fill, bord, slot, lab, cap]
+
+
+def ready_button_doc(old, ctx):
+    head, rest = old.split("  m_Script:", 1)
+    doc = head + f"  m_Script: {K.ref(11500000, S['kitbutton'])}\n" + rest.split("\n", 1)[1]
+    doc = re.sub(r"^  m_TargetGraphic: .*$", f"  m_TargetGraphic: {{fileID: {ctx.c('Ready/Fill', 'img')}}}", doc, flags=re.M)
+    doc = re.sub(r"\n  theme: .*\Z", "\n", doc, flags=re.S)          # re-run: drop the KitButton tail
+    return (doc.rstrip("\n") + "\n"
+            + f"  theme: {K.ref(11400000, K.THEME, 2)}\n  focusRing: {{fileID: {ctx.c('Ready/FocusRing', 'img')}}}\n"
+            + f"  variant: {K.VARIANTS['Play']}\n  fill: 1\n"
+            + f"  fillGraphic: {{fileID: {ctx.c('Ready/Fill', 'img')}}}\n"
+            + f"  borderGraphic: {{fileID: {ctx.c('Ready/Border', 'img')}}}\n"
+            + K.refs_list("contentGraphics", [ctx.c("Ready/Label", "tmp")])
+            + f"  playGradient: {{fileID: {ctx.c('Ready/Fill', 'grad')}}}\n")
+
+
+def hud_view(p):
+    v = p.by_script(S["hudview"])
+    assert len(v) == 1, "GameCanvas should carry one MultiplayerHUDView"
+    return v[0]
+
+
+def patch_ready(p):
+    view = hud_view(p)
+    btn = p.ref(view, "readyButton")
+    go = p.sc.go_of(btn)
+    assert p.sc.field(go, "m_Name") == "ReadyButton", "the Ready button was renamed"
+    rt = p.sc.rect_of(go)
+    img = next(c for c in p.comp_ids(go) if p.sc.has(c) and f"guid: {K.IMAGE}" in p.doc(c))
+    cbp = next(c for c in p.comp_ids(go) if p.sc.has(c) and f"guid: {S['cbp']}" in p.doc(c))
+    # The legacy controller-hint child (a 48 px pad glyph in the corner) is replaced by the A keycap.
+    ours = {str(p.ctx.rt(n.key)) for n in ready_nodes()}
+    for kid in p.kids(rt):
+        if kid not in ours:
+            p.remove_subtree(p.sc.go_of(kid))
+    p.field(cbp, "activationButtonImage", "{fileID: 0}")
+    p.rect(rt, R((0.5, 0.5), (0.5, 0.5), READY_POS, (READY_W, READY_H)))
+    p.body(img, HM.img_body((1.0, 1.0, 1.0, 0.0), raycast=True), go)
+    new_ids, anchor = [], rt
+    for n in ready_nodes():
+        new_ids.append(p.emit(n, rt, anchor))
+        anchor = HM._last_doc(p, n)
+    p.children(rt, new_ids)
+    p.replace(btn, ready_button_doc(p.doc(btn), p.ctx))
+    p.add_comp(go, "hlg", 114, K.hv_layout(False, (32, 32, 0, 0), 14, 4, (1, 1), (0, 0)))
+
+
+def chip_template():
+    n = N("Wait/ChipTemplate", "ChipTemplate", R((0.5, 0), (0.5, 0), (0, -400), (CHIP_W, CHIP_H), (0.5, 1)))
+    n.add("cg", 225, H.canvas_group(False))
+    ring = n.child(N("Wait/Chip/Ring", "Ring", R((0.5, 1), (0.5, 1), (0, 0), (CHIP_RING, CHIP_RING), (0.5, 1))))
+    ring.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("SurfaceDark"), K.kit_sprite("kit_oct_fill"), True))
+    clip = ring.child(N("Wait/Chip/Clip", "Clip", R((0, 0), (1, 1), (0, 0), (-6, -6))))
+    clip.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(K.WHITE, K.kit_sprite("kit_oct_fill"), True)) \
+        .add("mask", 114, A.mask(False))
+    av = clip.child(N("Wait/Chip/Avatar", "Avatar", STRETCH))
+    av.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(K.WHITE, A.AVATAR_PLACEHOLDER))
+    st = n.child(N("Wait/Chip/State", "State", R((0, 0), (1, 0), (0, 0), (20, 18), (0.5, 0))))
+    st.add("cr", 222, K.canvas_renderer()).add("tmp", 114, H.text("Picking", "Label", tok("NeutralLightest"), align="center"))
+    n.add("chip", 114, lambda ctx, go: K.mono(go, S["chip"],
+        f"  ring: {{fileID: {ctx.c('Wait/Chip/Ring', 'img')}}}\n  avatar: {{fileID: {ctx.c('Wait/Chip/Avatar', 'img')}}}\n"
+        f"  state: {{fileID: {ctx.c('Wait/Chip/State', 'tmp')}}}\n  group: {{fileID: {ctx.c('Wait/ChipTemplate', 'cg')}}}\n"))
+    return n
+
+
+def waiting_node():
+    n = N("Wait", "ReadyWaiting", R((0.5, 0.5), (0.5, 0.5), WAIT_POS, (WAIT_W, WAIT_H)))
+    n.add("cg", 225, H.canvas_group(False))
+    H.framed(n, "Wait", 14, "SurfaceVeryDark", "SurfaceLight", fill_alpha=0.92)
+    dia = A.image_node(n, "Wait/Diamond", "Diamond", HM.TL(26, 37, 12, 12), "Cta", K.chrome_sprite("chrome_diamond"), preserve=True)
+    dia.add("breathe", 114, HM.M.ambient("Breathe", period=1.6, amplitude=0.6))
+    H.label(n.child(N("Wait/Title", "Title", HM.TL(54, 18, 420, 20))), WAIT_TITLE, "Label", "TextLight")
+    H.label(n.child(N("Wait/Note", "Note", HM.TL(54, 44, 440, 22))), WAIT_NOTE, "BodySmall", "NeutralLightest")
+    cnt = n.child(N("Wait/Count", "Count", R((1, 0.5), (1, 0.5), (-26, 0), (110, 40), (1, 0.5))))
+    cnt.add("cr", 222, K.canvas_renderer()).add("tmp", 114, H.text("1 / 2", "H2", tok("TextLight"), align="right")) \
+        .add("kt", 114, K.kit_text("H2", "TextLight"))
+    roster = n.child(N("Wait/Roster", "Roster", R((0.5, 0), (0.5, 0), (0, -14), (WAIT_W, CHIP_H), (0.5, 1))))
+    roster.add("hlg", 114, K.hv_layout(False, (0, 0, 0, 0), 14, 1, (0, 0), (0, 0)))
+    n.children.append(chip_template())
+    n.add("panel", 114, lambda ctx, go: K.mono(go, S["waiting"],
+        f"  canvasGroup: {{fileID: {ctx.c('Wait', 'cg')}}}\n  countText: {{fileID: {ctx.c('Wait/Count', 'tmp')}}}\n"
+        f"  roster: {{fileID: {ctx.rt('Wait/Roster')}}}\n  chipTemplate: {{fileID: {ctx.c('Wait/ChipTemplate', 'chip')}}}\n"
+        f"  toastChannel: {K.ref(11400000, TOAST_CHANNEL, 2)}\n"
+        "  readyWord: Ready\n  waitingWord: Picking\n"
+        f"  waitingRingToken: {K.TOKEN_INDEX['SurfaceDark']}\n  readyTextToken: {K.TOKEN_INDEX['Cta']}\n"
+        f"  waitingTextToken: {K.TOKEN_INDEX['NeutralLightest']}\n  waitingAlpha: 0.5\n"))
+    return n
+
+
+def beat_node():
+    n = N("Beat", "Beat", R((0.5, 0.5), (0.5, 0.5), (0, 0), (600, 400)))
+
+    def body(ctx, go):
+        b = H.text("3", "Display", tok("TextLight"), align="center")(ctx, go)
+        return b.replace(f"  m_fontSize: {K.f32(48)}\n  m_fontSizeBase: {K.f32(48)}\n",
+                         f"  m_fontSize: {BEAT_SIZE}\n  m_fontSizeBase: {BEAT_SIZE}\n")
+    n.add("cr", 222, K.canvas_renderer()).add("tmp", 114, body)
+    return n
+
+
+def countdown_instance(p):
+    pis = [f for f, d in p.sc.docs.items() if d.startswith("--- !u!1001 ") and f"m_SourcePrefab: {{fileID: 100100000, guid: {COUNTDOWN_PREFAB}" in d]
+    assert len(pis) == 1, "GameCanvas should nest one CountdownTimer"
+    return pis[0]
+
+
+def set_instance_ref(p, pi, comp_src, prop, fid):
+    """(Re)write one objectReference modification on a nested instance."""
+    d = p.doc(pi)
+    entry = (f"    - target: {{fileID: {comp_src}, guid: {COUNTDOWN_PREFAB},\n        type: 3}}\n"
+             f"      propertyPath: {prop}\n      value: \n      objectReference: {{fileID: {fid}}}\n")
+    d = re.sub(r"    - target: \{fileID: %s, guid: %s,\n        type: 3\}\n      propertyPath: %s\n(?:      .*\n)*?      objectReference: .*\n"
+               % (comp_src, COUNTDOWN_PREFAB, re.escape(prop)), "", d)
+    d = d.replace("    m_Modifications:\n", "    m_Modifications:\n" + entry, 1)
+    p.replace(pi, d)
+
+
+def instance_ref(p, pi, prop):
+    m = re.search(r"      propertyPath: %s\n      value: .*\n      objectReference: \{fileID: (-?\d+)\}" % re.escape(prop), p.doc(pi))
+    return m.group(1) if m else None
+
+
+def patch_waiting_and_countdown(p):
+    view = hud_view(p)
+    hud_rt = p.sc.rect_of(p.sc.go_of(view))
+    ready_rt = p.sc.rect_of(p.sc.go_of(p.ref(view, "readyButton")))
+    wait_rt = p.emit(waiting_node(), hud_rt, HM._last_doc(p, ready_nodes()[-1]))
+    kids = [k for k in p.kids(hud_rt) if k != wait_rt]
+    kids.insert(kids.index(ready_rt) + 1, wait_rt)
+    p.children(hud_rt, kids)
+    p.replace(view, set_field(p.doc(view), "readyWaiting", f"{{fileID: {p.ctx.c('Wait', 'panel')}}}"))
+    # The countdown: a 260 px Aldrich beat under the existing display, wired into the nested timer.
+    pi = countdown_instance(p)
+    disp = instance_ref(p, pi, "countdownDisplay")
+    assert disp, "the CountdownTimer's display is unwired"
+    disp_go = p.sc.go_of(disp)
+    disp_rt = p.sc.rect_of(disp_go)
+    beat_rt = p.emit(beat_node(), disp_rt, disp)
+    p.children(disp_rt, [k for k in p.kids(disp_rt) if k != beat_rt] + [beat_rt])
+    p.rect(disp_rt, R((0.5, 0.5), (0.5, 0.5), (0, 0), (600, 400)))
+    set_instance_ref(p, pi, COUNTDOWN_COMP, "countdownText", p.ctx.c("Beat", "tmp"))
+    set_instance_ref(p, pi, COUNTDOWN_COMP, "waitingPanel", p.ctx.c("Wait", "panel"))
+
+
 def canvas_text(text_):
     p = Patch(text_, "GameCanvas/Item12")
     patch_goal_rows(p)
     patch_pause(p)
+    patch_ready(p)
+    patch_waiting_and_countdown(p)
     return p.text()
 
 
@@ -349,6 +542,31 @@ def validate(files):
     hud = [d for d in docs.values() if f"guid: {S['hud']}" in d]
     assert len(hud) == 1 and f"  volumeIndicator: {{fileID: {vol[0]}}}" in hud[0], "MiniGameHUD.volumeIndicator is not the pause hex"
 
+    # 12b
+    view = next(f for f, d in docs.items() if f"guid: {S['hudview']}" in d)
+    btn = re.search(r"  readyButton: \{fileID: (-?\d+)\}", docs[view]).group(1)
+    assert f"guid: {S['kitbutton']}" in docs[btn], "the Ready button is not a KitButton"
+    assert f"  variant: {K.VARIANTS['Play']}\n" in docs[btn], "the Ready button is not the Play variant"
+    assert "propertyPath: m_text\n      value: A\n" in cv, "the Ready button has no A keycap"
+    cbp = [d for d in docs.values() if f"guid: {S['cbp']}" in d and f"m_GameObject: {{fileID: {re.search(r'm_GameObject: {fileID: (-?[0-9]+)}', docs[btn]).group(1)}}}" in d]
+    assert len(cbp) == 1 and "  activationButton: 6\n" in cbp[0], "the Ready button no longer answers the pad's A (South)"
+    wait = re.search(r"  readyWaiting: \{fileID: (-?\d+)\}", docs[view])
+    assert wait and wait.group(1) in docs, "MiniGameHUDView.readyWaiting is not wired"
+    wd = docs[wait.group(1)]
+    for f in ("canvasGroup", "countText", "roster", "chipTemplate"):
+        assert re.search(r"^  %s: \{fileID: [1-9-]" % f, wd, re.M), f"ReadyWaitingPanel.{f} is not wired"
+    assert f"guid: {TOAST_CHANNEL}" in wd, "ReadyWaitingPanel does not listen to the game toast channel"
+    chip = re.search(r"  chipTemplate: \{fileID: (-?\d+)\}", wd).group(1)
+    for f in ("ring", "avatar", "state", "group"):
+        assert re.search(r"^  %s: \{fileID: [1-9-]" % f, docs[chip], re.M), f"ReadyWaitingChip.{f} is not wired"
+    pi = next(d for d in docs.values() if d.startswith("--- !u!1001 ") and f"guid: {COUNTDOWN_PREFAB}" in d.split("m_SourcePrefab:")[1])
+    for prop in ("countdownText", "waitingPanel", "countdownDisplay"):
+        m = re.search(r"      propertyPath: %s\n      value: .*\n      objectReference: \{fileID: (-?\d+)\}" % prop, pi)
+        assert m and m.group(1) in docs, f"CountdownTimer.{prop} is not wired"
+        assert pi.count(f"propertyPath: {prop}\n") == 1, f"CountdownTimer.{prop} is overridden twice"
+    beat = re.search(r"      propertyPath: countdownText\n      value: .*\n      objectReference: \{fileID: (-?\d+)\}", pi).group(1)
+    assert f"  m_fontSize: {BEAT_SIZE}\n" in docs[beat], "the countdown beat is not 260 px"
+
     pn = files[PANEL["path"]]
     check_local_refs(PANEL["path"], pn)
     pd = docs_of(pn)
@@ -398,6 +616,10 @@ def self_test(files):
         ("a goal plate left a trapezoid", trapezoid_plate),
         ("the pause hex without its glyph", sub(CANVAS, f"  centreGlyph: {K.sprite_ref(PAUSE_GLYPH)}", "  centreGlyph: {fileID: 0}")),
         ("the score column a full team fill", sub(PANEL["path"], "  indicatorAlpha: 0.12\n", "  indicatorAlpha: 1\n")),
+        ("the Ready button left a plain Button", sub(CANVAS, f"guid: {S['kitbutton']}", f"guid: {S['button']}")),
+        ("the waiting panel deaf to PlayerReady", sub(CANVAS, f"  toastChannel: {K.ref(11400000, TOAST_CHANNEL, 2)}", "  toastChannel: {fileID: 0}")),
+        ("the countdown still drawn in sprites", lambda f: f.__setitem__(CANVAS, re.sub(
+            r"(      propertyPath: countdownText\n      value: \n      objectReference: )\{fileID: -?\d+\}", r"\1{fileID: 0}", f[CANVAS]))),
         ("the column hairline unwired", lambda f: f.__setitem__(PANEL["path"], re.sub(r"(  borderImage: )\{fileID: -?\d+\}", r"\1{fileID: 0}", f[PANEL["path"]]))),
     ]
     ok = all(expect(l, m) for l, m in cases)

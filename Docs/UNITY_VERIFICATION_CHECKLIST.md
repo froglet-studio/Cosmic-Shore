@@ -65,6 +65,25 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Style-B menu redesign, item 12b: Ready, waiting for pilots, countdown (`claude/new-session-76hnyc`, 2026-10-15) — NOT EDITOR-VERIFIED
+
+`GameCanvas.prefab` was patched in place by `Tools/Build/author_ingame_hud.py` (`--check` and
+`--self-test` green) - see `Docs/MENU_REDESIGN_B.md` section 22.2. No editor in the session, so
+`/verify-unity` is still owed. Offline: the player reference compile is clean.
+
+**Verify in editor:**
+1. Solo Skim Race: after the intro, READY shows as a green Play button with an A keycap and the
+   caption under it. A on the pad (or a click) presses it. The countdown reads 3, 2, 1 in white and
+   GO in green, large and centred, about one second per beat, and the race starts on GO as before.
+2. Two clients (party): the first to press sees "Waiting for pilots 1 / 2" with both avatars, the
+   other pilot dimmed as "Picking". When the second presses, their chip lights in their domain
+   colour, then the panel hides as the countdown starts.
+3. Play Again: READY returns and the waiting panel is gone.
+4. A client that leaves while the other waits: the countdown still starts (the existing ready gate),
+   and the panel hides with it.
+
+---
+
 ### 🔴 Style-B menu redesign, item 12a: in-game HUD chrome (`claude/new-session-76hnyc`, 2026-10-15) — NOT EDITOR-VERIFIED
 
 `GameCanvas.prefab`, `DomainScorePanel.prefab`, `AbilityLockupStyle.asset` and
