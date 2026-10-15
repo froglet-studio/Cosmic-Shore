@@ -155,25 +155,25 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Done:** 2026-10-15, Fixed on perf/performance-optimization: BlackHoleWarp.cs uses MathfNoAlloc.Max, FlipWave.cs nests two-value Max. Proof: python3 Tools/Build/check_mathf_params_alloc.py -> OK (2093 files); unity_refcompile player-dev RESULT OK; Amoebius Debug build. /verify-unity unavailable in the session.
 
 ### T-20261015-56dd · open · test · Performance
-- **Task:** First editor performance capture, S2 Lattice: Code Optimization = Release, Play, Cell Selector > Lattice, wait 8 minutes, FrogletTools > Performance > Capture Performance (one file) with label S2, 15 s, then paste the clipboard into a Claude session (it is one JSON holding burst, diag, prof, renderers, cells and the console). Close the Third Eye window and any preview first: an extra camera renders the world again and the capture says so.
+- **Task:** First editor performance capture, S2 Lattice: Code Optimization = Release, Play, Cell Selector > Lattice, wait 8 minutes, press Capture S2 on the Bug Hunt & Performance badge (bottom-left of the Scene view), stop playing and press Share on the same badge (the file is one JSON holding burst, diag, prof, renderers, cells and the console; pasting it into a Claude session also works). Close the Third Eye window and any preview first: an extra camera renders the world again and the capture says so.
 - **Done when:** A capture_Menu_Main_S2_*.json whose reader output (python3 Tools/Build/perf_capture_report.py) shows no ERROR line (Release, Burst on, no managed job time) is pasted and recorded in Docs/PERFORMANCE_OPTIMIZATION.md 2 with its numbers.
 - **Who can take it:** Yash (offered), anyone with the Unity Editor
 - **Added:** 2026-10-15 by the performance session (perf/performance-optimization) (`perf/performance-optimization`)
-- **See:** Docs/PERFORMANCE_OPTIMIZATION.md 3.6 and 4.6; FrogletTools > Performance > Capture Performance (one file)
+- **See:** Docs/PERFORMANCE_OPTIMIZATION.md 3.6 and 4.6; Docs/DIAGNOSTICS.md, the Bug Hunt & Performance badge
 
 ### T-20261015-3e0b · open · test · Performance
-- **Task:** Skim Race I2 with 2 AI, Release: capture SkimRace 15 (same window). This is the Burst check the 10-08 fix still owes (burst must read BURST and the Profiler must show no managed job time) and the test of the PoolRefill.Squirrel Prism ~9 KB/frame allocation lead from the Amoebius run.
-- **Done when:** The capture is pasted; its burst section reads Run() BURST, Schedule() BURST; prof.managedJobMs < 0.2; the Profiler top-allocators list confirms or clears PoolRefill.Squirrel Prism. Recorded in Docs/PERFORMANCE_OPTIMIZATION.md 2.
+- **Task:** Skim Race I2 with 2 AI, Release: press Capture SkimRace on the Scene view badge, then Share. This is the Burst check the 10-08 fix still owes (burst must read BURST and the Profiler must show no managed job time) and the test of the PoolRefill.Squirrel Prism ~9 KB/frame allocation lead from the Amoebius run.
+- **Done when:** The capture is shared or pasted; its burst section reads Run() BURST, Schedule() BURST; prof.managedJobMs < 0.2; the Profiler top-allocators list confirms or clears PoolRefill.Squirrel Prism. Recorded in Docs/PERFORMANCE_OPTIMIZATION.md 2.
 - **Who can take it:** Yash (offered), anyone with the Unity Editor
 - **Added:** 2026-10-15 by the performance session (perf/performance-optimization) (`perf/performance-optimization`)
-- **See:** Docs/PERFORMANCE_OPTIMIZATION.md 3.6 and 4.6; FrogletTools > Performance > Capture Performance (one file)
+- **See:** Docs/PERFORMANCE_OPTIMIZATION.md 3.6 and 4.6; Docs/DIAGNOSTICS.md, the Bug Hunt & Performance badge
 
 ### T-20261015-3972 · open · test · Performance
-- **Task:** S5 Wildlife Liberation, Release: capture S5 15, two minutes into a match. It is the go/no-go for lever L8 (batched creature body re-sync): Fauna.BodySync must average 8 ms or more for L8 to be worth building.
-- **Done when:** The capture is pasted and the Fauna.BodySync / LightFauna.Update rows are read; the L8 decision is written in Docs/PERFORMANCE_OPTIMIZATION.md 3.3.
+- **Task:** S5 Wildlife Liberation, Release: two minutes into a match, press Capture S5 on the Scene view badge, then Share. It is the go/no-go for lever L8 (batched creature body re-sync): Fauna.BodySync must average 8 ms or more for L8 to be worth building.
+- **Done when:** The capture is shared or pasted and the Fauna.BodySync / LightFauna.Update rows are read; the L8 decision is written in Docs/PERFORMANCE_OPTIMIZATION.md 3.3.
 - **Who can take it:** Yash (offered), anyone with the Unity Editor
 - **Added:** 2026-10-15 by the performance session (perf/performance-optimization) (`perf/performance-optimization`)
-- **See:** Docs/PERFORMANCE_OPTIMIZATION.md 3.6 and 4.6; FrogletTools > Performance > Capture Performance (one file)
+- **See:** Docs/PERFORMANCE_OPTIMIZATION.md 3.6 and 4.6; Docs/DIAGNOSTICS.md, the Bug Hunt & Performance badge
 
 ### T-20261015-949d · open · test · diagnostics
 - **Task:** Test the Bug Hunt check-in and Team Bug Board in Unity: FrogletTools > Diagnostics > Bug Hunt Check-in, Share now; play with an error; daily sweep picks it up
@@ -209,3 +209,10 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Who can take it:** Garrett (bleeding-edge / repo settings), Shombith (CI), Yash (offered)
 - **Added:** 2026-10-15 by the performance session (perf-hunt) (`perf/performance-optimization`)
 - **See:** .github/workflows/perf-daily.yml; Docs/PERFORMANCE_OPTIMIZATION.md 3.4; /perf-hunt section 0
+
+### T-20261015-7d29 · open · test · Performance
+- **Task:** Test the Bug Hunt & Performance badge in the Scene view: open Unity, check the card shows bugs and perf with no dialog on load, fold/unfold/hide it, press Release if shown, then in Play mode on Menu_Main press Capture S2, stop and press Share.
+- **Done when:** Every step of the 2026-10-15 badge entry in Docs/UNITY_VERIFICATION_CHECKLIST.md passes (or the failing step is reported to a Claude session), and the entry is moved to verified.
+- **Who can take it:** Yash (offered), anyone with the Unity Editor
+- **Added:** 2026-10-15 by the performance session (perf/performance-optimization) (`perf/performance-optimization`)
+- **See:** Docs/UNITY_VERIFICATION_CHECKLIST.md 2026-10-15; Docs/DIAGNOSTICS.md, The Bug Hunt & Performance badge

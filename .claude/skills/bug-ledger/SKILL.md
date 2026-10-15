@@ -82,8 +82,9 @@ never delete files from `shared/` — closing is the editor's job, after validat
 
 ## 5. "Automatically after each test"
 
-The editor half is the auto-publish setting plus the **Bug Hunt check-in** (`BugHuntCheckIn`: at most
-once a day, on load or after a play test, and only when something is new, it asks the collaborator
+The editor half is the auto-publish setting plus the **Bug Hunt check-in** (since 2026-10-15 it has no
+dialog: at most once a day, and only when something is new, the Scene view's Bug Hunt & Performance
+badge, `BugHuntPerfBadge`, unfolds with a Share button that asks the collaborator
 to share their errors, redlog sessions, crash reports and perf JSONs — `BugHuntReports` copies those
 into `BugLedger/shared/reports/<user>/<kind>/`). The Claude half is the **daily sweep** below, run
 by a scheduled task (Yash asked for once a day, 2026-10-15) or by hand with `/bug-ledger sweep`.

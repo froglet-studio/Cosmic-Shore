@@ -14,9 +14,11 @@ namespace CosmicShore.Editor
     /// <para>Every collaborator's editor already records what goes wrong: the Bug Ledger files every
     /// red error, redlog keeps each play session's reds with context, the Crash Detector writes
     /// abnormal-exit reports and the DiagnosticsHUD writes performance JSONs. None of it leaves the
-    /// machine on its own. At most once per <c>CheckInReminderHours</c> (default 24) — on editor load
-    /// or after a play test, and only when there is something NEW — this asks the collaborator to share
-    /// it. <b>Share now</b> publishes the pending ledger changes plus the new report files
+    /// machine on its own. The ask itself lives on the Scene view's Bug Hunt &amp; Performance badge
+    /// (<see cref="BugHuntPerfBadge"/>): at most once per <c>CheckInReminderHours</c> (default 24), and
+    /// only when there is something NEW, the badge unfolds with a Share button instead of a modal
+    /// dialog (Yash, 2026-10-15: no extra editor UI). The menu item below still asks on demand.
+    /// <b>Share now</b> publishes the pending ledger changes plus the new report files
     /// (<see cref="BugHuntReports"/>) through the ledger's own scoped commit: only <c>BugLedger/</c>
     /// paths, the current branch, refused while origin is ahead. <b>Share automatically</b> also turns
     /// on the after-play auto-publish, so the question never needs asking again.</para>
@@ -25,10 +27,8 @@ namespace CosmicShore.Editor
     /// and mirrors the whole picture into the Team Bug Board artifact (<see cref="TeamBoardUrl"/>), where
     /// anyone can read it — and file a bug — without Unity.</para>
     ///
-    /// <para>Never prompts in batch mode, while playing, or while a publish is running. A dialog is the
-    /// whole UI: one question a day does not need a window.</para>
+    /// <para>Never prompts while playing or while a publish is running.</para>
     /// </summary>
-    [InitializeOnLoad]
     public static class BugHuntCheckIn
     {
         /// <summary>The Team Bug Board — the claude.ai artifact the daily sweep keeps current.</summary>
@@ -36,24 +36,12 @@ namespace CosmicShore.Editor
 
         const string ToolName = "Bug Hunt Check-in";
 
-        static BugHuntCheckIn()
-        {
-            if (Application.isBatchMode) return;
-            EditorApplication.delayCall += () => MaybePrompt(force: false);
-            EditorApplication.playModeStateChanged += change =>
-            {
-                // After the ledger's own EnteredEditMode handling (auto-publish) has had its turn.
-                if (change == PlayModeStateChange.EnteredEditMode)
-                    EditorApplication.delayCall += () => MaybePrompt(force: false);
-            };
-        }
-
         [MenuItem("FrogletTools/Diagnostics/Bug Hunt Check-in", false, 133)]
         [FrogletTool(FrogletToolCategory.Diagnostics, Importance = 4,
             Description = "Share this machine's console errors, redlog sessions, crash reports and perf JSONs " +
                           "with the team now — the daily Claude bug sweep reads and fixes them.",
             DocPath = "Docs/DIAGNOSTICS.md#the-bug-hunt-check-in")]
-        public static void CheckInNow() => MaybePrompt(force: true);
+        public static void CheckInNow() => Prompt();
 
         [MenuItem("FrogletTools/Diagnostics/Open Team Bug Board", false, 134)]
         [FrogletTool(FrogletToolCategory.Diagnostics, Importance = 3,
@@ -72,33 +60,22 @@ namespace CosmicShore.Editor
             Application.OpenURL(TeamBoardUrl);
         }
 
-        static void MaybePrompt(bool force)
+        static void Prompt()
         {
             try
             {
                 if (EditorApplication.isPlayingOrWillChangePlaymode || BugLedgerPublisher.IsBusy) return;
 
                 var settings = BugLedgerSettings.instance;
-                if (!force)
-                {
-                    if (settings.CheckInReminderHours <= 0) return;
-                    if (TryParseUtc(settings.LastCheckInPromptUtc, out var last)
-                        && DateTime.UtcNow - last < TimeSpan.FromHours(settings.CheckInReminderHours))
-                        return;
-                }
-
                 var pending = BugLedger.ComputePendingChanges();
                 BugLedger.HasMaterialChange(pending, out int material);
                 var reports = BugHuntReports.Plan();
 
                 if (material == 0 && reports.Count == 0)
                 {
-                    // Nothing new: no nag, and the clock is not reset, so the next new error is asked
-                    // about promptly rather than a day later.
-                    if (force)
-                        EditorUtility.DisplayDialog(ToolName,
-                            "Nothing new to share — no new or changed bugs, and no new redlog, crash or " +
-                            "performance files since your last share.", "OK");
+                    EditorUtility.DisplayDialog(ToolName,
+                        "Nothing new to share — no new or changed bugs, and no new redlog, crash or " +
+                        "performance files since your last share.", "OK");
                     return;
                 }
 
@@ -181,9 +158,5 @@ namespace CosmicShore.Editor
                 auto: true, reportCopies: reports);
             DiagnosticsWindow.OpenBugLedger();
         }
-
-        static bool TryParseUtc(string text, out DateTime utc)
-            => DateTime.TryParse(text, CultureInfo.InvariantCulture,
-                                 DateTimeStyles.AdjustToUniversal | DateTimeStyles.AssumeUniversal, out utc);
     }
 }

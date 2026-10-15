@@ -15,8 +15,14 @@ number: the editor shares its captures by itself, the sweep judges them, and the
 | Runs | What | Reads |
 |---|---|---|
 | **Every day** (`.github/workflows/perf-daily.yml`, 05:40 UTC, `bleeding-edge`) | `perf_hunt.py sweep` (static gates, every shared capture vs baseline) and `perf_hunt.py amoebius` (the game's own markers in Amoebius, allocations vs baseline) | the workflow run's `perf-sweep` artifact; red = a regression |
-| **After every play test** (editor, when the person turned on *Auto-publish* or answers the *Bug Hunt check-in*) | `BugHuntReports` copies `capture_*.json` into `BugLedger/shared/reports/<user>/perf/` on their branch | `perf_hunt.py collect` (every origin branch) |
-| **Any session** | `perf_hunt.py sweep --write --tasks` refreshes `Docs/Reports/PERFORMANCE.md` and files one team task per NEW regression | `Docs/Reports/PERFORMANCE.md`, `Docs/TEAM_TASKS.md` (area Performance) |
+| **After every play test** (editor, when the person turned on *Auto-publish* or pressed Share on the Bug Hunt & Performance badge) | `BugHuntReports` copies `capture_*.json` into `BugLedger/shared/reports/<user>/perf/` on their branch | `perf_hunt.py collect` (every origin branch) |
+| **Any session** | `perf_hunt.py sweep --write --tasks` refreshes `Docs/Reports/PERFORMANCE.md` and `Docs/perf/status.json`, and files one team task per NEW regression | `Docs/Reports/PERFORMANCE.md`, `Docs/TEAM_TASKS.md` (area Performance) |
+| **When someone asks** "performance status", "what next", "what to test" | `.claude/hooks/health_status.py` hands the session `Docs/perf/status.json` | `python3 Tools/Build/perf_hunt.py status [--refresh]` |
+
+**Where people see it: two surfaces only** (Yash, 2026-10-15: no extra editor UI). In the editor, the Scene view's
+**Bug Hunt & Performance badge** (`BugHuntPerfBadge`, Docs/DIAGNOSTICS.md): the counts, the first next step, and the
+Share / Auto / Capture / Release buttons. Everything else is answered in Claude from the status file. Do not add an
+editor window, a menu tool or a dashboard for this system; extend the status file and the badge instead.
 
 Baselines: `Docs/perf/baselines.json` (editor captures, keyed `scene|label`) and `Docs/perf/amoebius_baselines.json`
 (per mode). The first VALID measurement of a key is adopted; `--adopt` replaces one after a confirmed improvement.
@@ -41,9 +47,9 @@ python3 Tools/Build/perf_capture_report.py <capture.json> # one capture, judged 
   `Mesh.SetVertices/SetUVs/SetTriangles(List)`, because the renderer keys on array identity), it belongs in
   `Docs/perf/amoebius_known.json` with the evidence and a task for the engine's owner (Shombith), not in a game fix.
   The sweep lists known entries as "engine shim" and never counts them.
-- **No shared capture yet?** The person has not shared: FrogletTools > Performance > Capture Performance (one file),
-  then FrogletTools > Diagnostics > Bug Hunt Check-in > *Share now* (or *Auto-publish after each play test*). Say that
-  in one line. Never ask for pasted JSON when the pipe exists; accept a paste when they offer one.
+- **No shared capture yet?** The person has not shared: in Play mode, **Capture** on the Scene view's Bug Hunt &
+  Performance badge, then **Share** on the same badge after stopping (or **Auto**, which shares after every play
+  test). Say that in one line. Never ask for pasted JSON when the pipe exists; accept a paste when they offer one.
 
 ## 2. Rank by measured cost, then pick with the record
 

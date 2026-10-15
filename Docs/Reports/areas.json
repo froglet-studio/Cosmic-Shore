@@ -168,7 +168,7 @@
       "summary": "The 2x plan (100k prisms at 60 fps on a phone), one-button measurement (capture: burst + diag + prof + renderers + cells + cameras as one JSON), the game's own markers measured in Amoebius with no Unity, baselines, a daily sweep that files a team task per regression, and the /perf-hunt resolve loop.",
       "paths": [
         "Assets/_Scripts/Utility/PerformanceBenchmark",
-        "Assets/_Scripts/Editor/PerfCaptureWindow.cs",
+        "Assets/_Scripts/Editor/Diagnostics/BugHuntPerfBadge.cs",
         "Tools/Build/perf_hunt.py",
         "Tools/Build/perf_capture_report.py",
         "Tools/Build/scan_perframe_allocations.py",
@@ -194,8 +194,8 @@
       "test": [
         "Pull Ys-bleeding-edge, open Unity, Code Optimization = Release, close the Third Eye window.",
         "Play, Cell Selector > Lattice, wait 8 minutes.",
-        "FrogletTools > Performance > Capture Performance (one file), label S2, 15 s, Capture; wait for READY.",
-        "FrogletTools > Diagnostics > Bug Hunt Check-in > Share now (or paste the clipboard to a Claude session).",
+        "On the Bug Hunt & Performance badge (bottom-left of the Scene view) press Capture S2; wait until it says Saved.",
+        "Stop playing and press Share on the same badge.",
         "python3 Tools/Build/perf_hunt.py sweep --write shows the capture judged against its baseline in Docs/Reports/PERFORMANCE.md."
       ]
     }

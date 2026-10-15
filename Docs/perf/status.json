@@ -1,0 +1,164 @@
+{
+  "amoebius": [
+    {
+      "key": "SkimRace|I2|3p",
+      "topGameAllocators": [
+        [
+          "PoolRefill.Squirrel Prism",
+          8.29
+        ],
+        [
+          "VesselImpactor.AcceptImpactee",
+          3.831
+        ],
+        [
+          "PoolActivate.Squirrel Prism",
+          0.678
+        ],
+        [
+          "ForcefieldCrackleController.Update",
+          0.564
+        ],
+        [
+          "PoolRefill.FastGrowPrism",
+          0.526
+        ]
+      ],
+      "verdict": "within baseline"
+    }
+  ],
+  "baselines": [],
+  "bugs": {
+    "open": 3,
+    "top": [
+      {
+        "id": "E-76d7341dae",
+        "state": "open",
+        "title": "[Regatta] Turn started with no course on this peer - gates flown now cannot be credited. The SyncCourse broadc"
+      },
+      {
+        "id": "E-8cd155dc89",
+        "state": "open",
+        "title": "[BugLedgerTest] Synthetic error \u2014 file me, mark me fixed, then watch validation close me."
+      },
+      {
+        "id": "E-cdf0c783c1",
+        "state": "open",
+        "title": "[FMODOneShotVolumeHelper] '{59f0cd35-6a01-4476-9879-318f40186599} (event:/SFX/Oneshots/Gameplay sfx/Boost Acti"
+      }
+    ],
+    "validating": 0
+  },
+  "captures": [
+    {
+      "cpuBusyMs": 13.124348640441895,
+      "gcKB": 30.218769073486328,
+      "key": "MinigameSkimRace|S_SkimRace_I2",
+      "timestamp": "2026-10-08 06:35:23",
+      "user": "yskha",
+      "valid": false,
+      "verdict": "invalid: not compared"
+    },
+    {
+      "cpuBusyMs": 16.666672,
+      "gcKB": 48.797226,
+      "key": "MinigameSkimRace|prisma",
+      "timestamp": "2026-10-09 13:02:22",
+      "user": "local",
+      "valid": false,
+      "verdict": "invalid: not compared"
+    },
+    {
+      "cpuBusyMs": 16.666664,
+      "gcKB": 73.90112,
+      "key": "Menu_Main|S1test",
+      "timestamp": "2026-10-14 17:11:54",
+      "user": "local",
+      "valid": false,
+      "verdict": "invalid: not compared"
+    }
+  ],
+  "gates": [
+    {
+      "gate": "mathf params alloc",
+      "ok": true
+    },
+    {
+      "gate": "burst MathF (swarm pose)",
+      "ok": true
+    },
+    {
+      "gate": "burst MathF (substrate)",
+      "ok": true
+    },
+    {
+      "gate": "console logging",
+      "ok": true
+    },
+    {
+      "gate": "per-frame allocation scan",
+      "ok": true
+    }
+  ],
+  "gatesOk": true,
+  "generatedUtc": "2026-10-15T16:07:02Z",
+  "next": [
+    "Capture S2 Lattice in Release (no valid baseline yet): Menu_Main, Cell Selector > Lattice, wait 8 minutes, then Capture on the Scene view's Bug Hunt & Performance badge [T-20261015-56dd]",
+    "Capture Skim Race I2 in Release (no valid baseline yet): Arcade > Skim Race, intensity 2, 2 AI, then Capture on the badge - also proves the Burst fix [T-20261015-3e0b]",
+    "Capture S5 Wildlife Liberation in Release (no valid baseline yet): Arcade > Wildlife Liberation, two minutes in, then Capture on the badge - the L8 go/no-go [T-20261015-3972]",
+    "3 open console bug(s) on the Bug Ledger: /bug-ledger fixes them (top: [Regatta] Turn started with no course on this peer - gates flown now cannot be credited. The SyncCourse broadc)"
+  ],
+  "openPerformanceTasks": [
+    {
+      "id": "T-20261015-56dd",
+      "kind": "test",
+      "task": "First editor performance capture, S2 Lattice: Code Optimization = Release, Play, Cell Selector > Lattice, wait 8 minutes, press Capture S2 on the Bug Hunt & Per"
+    },
+    {
+      "id": "T-20261015-3e0b",
+      "kind": "test",
+      "task": "Skim Race I2 with 2 AI, Release: press Capture SkimRace on the Scene view badge, then Share. This is the Burst check the 10-08 fix still owes (burst must read B"
+    },
+    {
+      "id": "T-20261015-3972",
+      "kind": "test",
+      "task": "S5 Wildlife Liberation, Release: two minutes into a match, press Capture S5 on the Scene view badge, then Share. It is the go/no-go for lever L8 (batched creatu"
+    },
+    {
+      "id": "T-20261015-72e1",
+      "kind": "dev",
+      "task": "Amoebius: Mesh.SetVertices(List)/SetUVs(List<Vector4>)/SetTriangles(List) copy their lists into fresh arrays on every call (ToArray), and the renderer detects a"
+    },
+    {
+      "id": "T-20261015-f106",
+      "kind": "setup",
+      "task": "Switch on the daily performance check: GitHub runs a scheduled workflow only from the repository's DEFAULT branch, so .github/workflows/perf-daily.yml (merged i"
+    },
+    {
+      "id": "T-20261015-7d29",
+      "kind": "test",
+      "task": "Test the Bug Hunt & Performance badge in the Scene view: open Unity, check the card shows bugs and perf with no dialog on load, fold/unfold/hide it, press Relea"
+    }
+  ],
+  "regressions": [],
+  "scenarios": [
+    {
+      "label": "S2",
+      "owed": true,
+      "scene": "Menu_Main",
+      "title": "S2 Lattice"
+    },
+    {
+      "label": "SkimRace",
+      "owed": true,
+      "scene": "MinigameSkimRace",
+      "title": "Skim Race I2"
+    },
+    {
+      "label": "S5",
+      "owed": true,
+      "scene": "MinigameWildlifeLiberation",
+      "title": "S5 Wildlife Liberation"
+    }
+  ]
+}

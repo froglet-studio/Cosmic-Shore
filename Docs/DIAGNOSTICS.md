@@ -336,6 +336,25 @@ next play run ◄── editor ADOPTS the published fix (open → validating) �
   Refresh, and at `ExitingEditMode`, so a fix pulled with no C# change (no domain reload — this
   project enters play mode without one) is adopted BEFORE the run that should validate it.
 
+### The Bug Hunt & Performance badge
+
+**The one piece of editor UI the bug hunt and the performance system have** (Yash, 2026-10-15: "no extra UIs in
+our editor ... a small indicator at the start of each Unity editor, with few options to do the most basic
+necessary steps"). `BugHuntPerfBadge` draws a small card in the bottom-left corner of every Scene view. It opens
+expanded once per editor start and folds to a one-line pill (`–`); `×` hides it until the next start.
+
+- **Bugs:** the Bug Ledger's open and validating counts, and how many bug changes and report files this machine
+  has not shared.
+- **Perf:** the gates, the regressions and the scenarios still owed a Release capture, read from
+  `Docs/perf/status.json` (written by every `perf_hunt.py sweep`), plus the first next step.
+- **Buttons, each shown only when it applies:** **Share** (the check-in's scoped publish), **Auto** (share after
+  every play test from now on), **Capture** (Play mode: `capture <label> 15`, the label taken from the scene's
+  scenario in the status file), **Release** (Code Optimization is Debug, so a capture would not count).
+
+It replaced the check-in's automatic dialog and the Capture Performance window. Every other question (what
+regressed, what to test, what to fix next) is answered by Claude: the `health_status.py` hook hands any session
+that is asked the same status file (`python3 Tools/Build/perf_hunt.py status`).
+
 ### The Bug Hunt check-in
 
 The **perf** kind it shares (`capture_*.json`, `diag_*`, `prof_*`) is read by the performance system's sweep
@@ -347,8 +366,9 @@ Every editor already records what goes wrong — the ledger (one issue per red s
 **redlog** (`Logs/RedConsole/redconsole_*.log`, every red line of a play session with context), the
 Crash Detector (`Logs/CrashDetector/Crash-*.log`) and the DiagnosticsHUD's performance JSONs
 (`Documents/CosmicShore Diagnostics/*.json`) — but none of it leaves the machine on its own.
-`BugHuntCheckIn` asks, at most once per **Bug Hunt check-in (hours)** (Settings, default 24, 0 = never),
-on editor load or after a play test, and **only when something is new**:
+At most once per **Bug Hunt check-in (hours)** (Settings, default 24, 0 = never), and **only when something
+is new**, the badge above unfolds itself with a **Share** button (it used to be a modal dialog;
+**FrogletTools ▸ Diagnostics ▸ Bug Hunt Check-in** still opens that dialog on demand):
 
 - **Share now** — one scoped publish: the pending ledger changes plus the new report files, copied by
   `BugHuntReports` into `BugLedger/shared/reports/<user>/<redlog|crash|perf>/` (recent files only:
@@ -357,8 +377,8 @@ on editor load or after a play test, and **only when something is new**:
 - **Always share after play tests** — turns on the after-play auto-publish (which now carries report
   files too) and shares now.
 
-**Reporting is one button: Share with team** (the check-in dialog, or the green button in the Bug
-Ledger window's header). A reporter never presses a row's **Fix** — that is for whoever changed the
+**Reporting is one button: Share** (on the badge, or the green button in the Bug Ledger window's
+header). A reporter never presses a row's **Fix** — that is for whoever changed the
 code, and it now asks first: a bug marked fixed by someone who only meant to report it starts the
 validation clock on an unfixed bug, and an intermittent error can close itself after two lucky runs
 (Yash, 2026-10-15, did exactly that with six issues because Fix looked like "send").
@@ -439,6 +459,7 @@ a clean run. Copy that shape.
 | Ledger settings (`ScriptableSingleton`) | `Assets/_Scripts/Editor/Diagnostics/BugLedgerSettings.cs` |
 | Agent side of the ledger (list / show / mark-fixed / collect / file) | `Tools/Build/bug_ledger.py` + `.claude/skills/bug-ledger/SKILL.md` |
 | Bug Hunt check-in + report sharing | `Assets/_Scripts/Editor/Diagnostics/BugHuntCheckIn.cs`, `BugHuntReports.cs` |
+| Bug Hunt & Performance badge (Scene view) | `Assets/_Scripts/Editor/Diagnostics/BugHuntPerfBadge.cs`, reads `Docs/perf/status.json` |
 | Team Bug Board (artifact page source) | `Docs/BugHunt/TeamBugBoard.html` → https://claude.ai/artifact/5zNw9wDjMrxvZVjGD7KBno |
 | Ledger tab view | `Assets/_Scripts/Editor/Diagnostics/BugLedgerView.cs` |
 | Stage & Push tab view | `Assets/_Scripts/Editor/Diagnostics/BugLedgerStageView.cs` |

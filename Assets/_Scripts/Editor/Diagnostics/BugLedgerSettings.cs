@@ -50,10 +50,10 @@ namespace CosmicShore.Editor
                                  "default: it pushes on your behalf.")]
         bool autoPublishAfterPlay;
 
-        [SerializeField, Range(0, 168), Tooltip("Bug Hunt check-in: at most this often (hours) the editor asks, " +
-                                                "on load or after a play test, whether to share the errors and " +
-                                                "report files (redlog, crash, perf JSONs) this machine has " +
-                                                "collected — only when there is something new. 0 = never ask.")]
+        [SerializeField, Range(0, 168), Tooltip("Bug Hunt check-in: at most this often (hours) the Scene view's " +
+                                                "Bug Hunt & Performance badge unfolds to offer sharing the errors " +
+                                                "and report files (redlog, crash, perf JSONs) this machine has " +
+                                                "collected — only when there is something new. 0 = never unfold.")]
         int checkInReminderHours = 24;
 
         [SerializeField, HideInInspector] string lastCheckInPromptUtc = "";
