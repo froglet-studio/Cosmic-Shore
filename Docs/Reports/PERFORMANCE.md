@@ -25,6 +25,23 @@
   Unity asks "Send to Claude?" and Send pushes it; the daily sweep judges it against its baseline and files a team task when something got
   worse. Ask any Claude session "performance status" or "what should I test" for the rest.
 
+## 1a. Waiting on Garrett (Yash, 2026-10-15: "tell this to Garrett, this has to [reach him] next time he works")
+
+Four performance items need Garrett, because each sits in his code or is his design call. A Claude session shows them to
+him on its first prompt that touches crystals, ecology, flora, spindles, projectiles, explosions, the Squirrel or
+Regatta (`.claude/hooks/team_tasks_nudge.py`, "tasks waiting on a person").
+
+1. **Pick the Charge light's sleep size** (T-20261015-a5a5). The crystal arcs cost 21 ms of a 36 ms lava-lamp frame in
+   Yash's Profiler; they now sleep when a crystal is under 24 px across on screen. Fly up to a crystal, see where the
+   light wakes, and set `sleepBelowScreenRadiusPixels` in the profile and its generator.
+2. **Pool the AOE explosions** (T-20261015-fafa, lever L13). Every omni collect instantiates the Squirrel's ring
+   explosion and destroys it after; it is the whole of the impactor's 5.6 KB/frame in the Amoebius Skim Race run.
+3. **Decide the spindles** (T-20261015-641c, lever L1). Every prism is already on entities; the spindles are not prisms
+   and are the last big per-object renderer cost (~40k in a grown Lattice, +5.3 ms measured). Entities, or one mesh
+   per plant, keeping the wither fade.
+4. **Switch on the daily performance check** (T-20261015-f106). GitHub runs the scheduled workflow only from the
+   default branch; it is merged into `bleeding-edge` now, so it needs one manual run to confirm its artifacts.
+
 ## 2. How a number reaches this report
 
 1. Someone plays with Code Optimization = Release and presses **Capture** on the Scene view's Bug Hunt & Performance
