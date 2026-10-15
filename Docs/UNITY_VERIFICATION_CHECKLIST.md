@@ -65,6 +65,27 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Style-B menu redesign, item 6b: Home - Up next, party invite (`claude/new-session-76hnyc`, 2026-10-15) — NOT EDITOR-VERIFIED
+
+Up next cards and the new `PartyInvitePopup` were added by `Tools/Build/author_menu_home.py`
+(`Docs/MENU_REDESIGN_B.md` section 21.2). No editor in the session, so `/verify-unity` is still
+owed. Offline: the player and editor reference compiles are clean, and `HomeUpNextTests` compiles.
+
+**Verify in editor:**
+1. HOME shows two cards above the hubs:
+   - the weekly challenge, with its mode art, objective, a countdown ticking each second, and your
+     best (or "None yet");
+   - the current quest, with its art, its next goal and the intensity meter filled to your unlock.
+2. Press the weekly card: the Arcade opens with this week's challenge in the configure window.
+   Press the quest card: Profile opens.
+3. Open any window from Home: the Up next cards fade with the hub row and return when it closes.
+4. Party invite (two clients): the invite drops in under Settings, showing the host's avatar, name
+   and "Party N / M". The Jade bar drains over 3 s and the invite hides; Join joins, Decline
+   declines. Going offline hides it.
+5. FrogletTools > Interface > Wire Offline Menu Surfaces still reports the invite as gated.
+
+---
+
 ### 🔴 Style-B menu redesign, item 6a: Home - hubs, pilot chip, settings (`claude/new-session-76hnyc`, 2026-10-15) — NOT EDITOR-VERIFIED
 
 Home was restyled in place in Menu_Main by `Tools/Build/author_menu_home.py` (`--check` and

@@ -1411,6 +1411,18 @@ namespace CosmicShore.UI
 
         #region Arcade Panel Logic
 
+        /// <summary>
+        /// Home's weekly-challenge card: open the Arcade window and, inside it, this week's challenge in
+        /// the configure window - the same path the weekly card in the Arcade grid takes.
+        /// </summary>
+        public void OpenWeeklyChallenge()
+        {
+            OpenArcadePanel();
+            var explore = ArcadeModal ? ArcadeModal.GetComponentInChildren<ArcadeExploreView>(true) : null;
+            if (explore) explore.SelectWeeklyChallenge();
+            else CSDebug.LogWarning("[ScreenSwitcher] The Arcade window has no ArcadeExploreView - the weekly challenge cannot open.");
+        }
+
         private void OpenArcadePanel()
         {
             UserActionSystem.Instance.CompleteAction(UserActionType.ViewArcadeMenu);

@@ -40,7 +40,7 @@ Legend: `Planned` ▸ `Mockup` ▸ `Mockup approved` ▸ `Built` ▸ `Approved i
 | 3 | Arcade modal (`ArcadeScreenModal`): explore grid plus the party/friends panel | Built | `Arcade.dc.html` (interactive), `ArcadeSolo`, `ArcadeNoFriends`, `ArcadePicks`, `ArcadeNotes` on the Menu Redesign B canvas | `f9b59fd4`, `75cd38e7`, `5cc56adb` + docs |
 | 4 | Game configure: `ArcadeGameConfigureModal`, plus the Maelstrom and Arena configure windows and the weekly leaderboard | Built (2026-10-15, section 14) | `Configure.dc.html` (interactive), `ConfigureArena`, `ConfigureMaelstrom`, `ConfigureWeekly`, `ConfigureWeeklySpent`, `ConfigureGuest`, `ConfigureLocked`, `WeeklyLeaderboard` (interactive), `LeaderboardEmpty`, `ConfigureNotes` | |
 | 5 | Profile screen, Profile modal (avatar / display name), Episodes entry | Built (2026-10-15, section 15): Profile screen and profile window | `Profile.dc.html` (interactive), `ProfileFresh`, `ProfileModal` (interactive), `ProfileName`, `ProfileNameError`, `ProfileNameTaken`, `ProfileNotes` | |
-| 6 | Home screen: hub row, header, settings and freestyle buttons, invite popup | 6a built (2026-10-15, section 21): hub row, pilot chip, question bar, settings, freestyle hint; 6b (Up next, party invite) in progress | `Home.dc.html` (interactive), `HomeInvite`, `HomeFocus`, `HomeOffline`, `HomeNotes` | |
+| 6 | Home screen: hub row, header, settings and freestyle buttons, invite popup | Built (2026-10-15, section 21): hub row, pilot chip, question bar, settings, freestyle hint, Up next cards, party invite | `Home.dc.html` (interactive), `HomeInvite`, `HomeFocus`, `HomeOffline`, `HomeNotes` | |
 | 7 | Ark screen (Elemental Converter) | Built (2026-10-15, section 16) | `Ark.dc.html` (interactive), `ArkConverting`, `ArkDone`, `ArkNotes` | |
 | 8 | Arena, Toy Box and Mission modals, and Toy configure | Built (2026-10-15, section 17): Arena window, Toy Box, Toy configure and the Mission window | `ToyBox.dc.html` (interactive), `ToyBoxClaimed`, `ArenaWindow`, `MissionWindow`, `ToyConfigure` (interactive), `ToyConfigurePaint`, `ToyConfigureSpawn`, `ToyConfigureDomain`, `ModesNotes` | |
 | 9 | Settings modal and Credits | Built (2026-10-15, section 18): Settings window and Credits | `Settings.dc.html` (interactive), `SettingsDisplay`, `SettingsPerformance`, `SettingsOther`, `Credits`, `SystemNotes` | |
@@ -1140,4 +1140,33 @@ children change.
     retired modal is unregistered) instead of looking for an opener's method name, which the lamp no
     longer carries.
   - `OfflineMenuWirer` leaves a style-B answer button alone.
+
+### 21.2 Up next and the party invite (6b; built 2026-10-15, awaiting in-editor approval)
+
+Same generator (`author_menu_home.py`).
+
+- **Up next** (Q10): two cards above the hub row, drawn by the new `HomeUpNext`.
+  - **Weekly challenge** (Gold border): the mode and its art from `ArcadeGames`, the objective, a
+    live "Ends in" countdown (`WeeklyChallengeCard.FormatCountdown`) and your best (a race time, a
+    score, or "None yet").
+  - **Current quest:** the frontier quest's mode and art, its next goal (claimable, the quest's own
+    objective, then the Intensity 3 / 4 goal descriptions), and a four-step intensity meter.
+  - The weekly card opens this week's challenge in the Arcade's configure window through the new
+    `ScreenSwitcher.OpenWeeklyChallenge`, the same path as the Arcade grid's weekly card. The quest
+    card opens the Profile screen.
+  - A card with nothing to show hides through its CanvasGroup.
+  - Up next is a `hubCompanion`, so it fades with the hub row when a window opens.
+  - The frontier logic moved out of `QuestTrackView` into a shared `QuestFrontier`, so Home and
+    Profile cannot disagree about which quest is current.
+- **Party invite:** a new `PartyInvitePopup.prefab` (`Main Menu Screens/Home/`) replaces the old
+  `PartyInviteNotificationPanel Variant` instance, which carried 64 overrides. The new instance keeps
+  the name `PartyInviteNotificationPanel` so `OfflineMenuWirer` still finds it, and the online-only
+  gate is re-pointed to it.
+  - It drops in under Settings: the host's avatar in a CTA octagon, "Party invite", the name,
+    "Party 2 / 4" (the new `partyCountText`, read from the host's presence entry), and Join (CTA) /
+    Decline (Cancel) on the bottom edge.
+  - A Jade bar (`KitDrain`, the new `timerBar`) drains over the 3 s the invite stays up.
+  - The old instance's stray entry in another object's child list is removed.
+  - Departure from the board: no member avatars, because an invitee knows the host's party count
+    but not who is in it.
 

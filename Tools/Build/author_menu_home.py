@@ -57,7 +57,9 @@ image_node = A.image_node
 
 S = dict(kitbutton=K.kit_script("KitButton"), hub=C.script("MenuHubButton"), avail=C.script("MenuAvailabilityView"),
          lamp=C.script("OnlineStatusIndicator"), bar=C.script("ConfirmQuestionBar"), home=C.script("HomeScreen"),
-         crystals=C.script("CrystalCurrencyDisplay"), cbp=C.script("ControllerButtonPress"), button=A.BUTTON)
+         crystals=C.script("CrystalCurrencyDisplay"), cbp=C.script("ControllerButtonPress"), button=A.BUTTON,
+         upnext=C.script("HomeUpNext"), invite=C.script("PartyInviteNotificationPanel"), drain=K.kit_script("KitDrain"),
+         gate=C.script("OfflineUIGate"), switcher=C.script("ScreenSwitcher"), themed=H.KIT_THEMED)
 MASK = A.MASK
 
 # Menu_Main, measured 2026-10-15 (HomeScreen go 319175480197462205).
@@ -87,6 +89,18 @@ HUBS = [  # key, go, rt, root img, button, hub comp, avail comp, label go, label
     ("Mission", "895856520", "895856521", "895856524", "895856523", "895856527", "895856526", "25247041", "25247042", "25247043", "Mission", "chrome_target", "Inactive"),
 ]
 HUB_PAD, HUB_MIN_W, HUB_H = (28, 28, 18, 18), 210, 66
+
+# 6b
+OUT_DIR = "Assets/_Prefabs/UI Elements/Main Menu Screens/Home"
+INVITE = "PartyInvitePopup"
+ARCADE_GAMES = "402ca7eefc2aeb64baaa140c43312bcd"       # ArcadeGames.asset (SO_GameList)
+CONNECTION_DATA = "69a7bf449c11416dac2d81ebd3ff61f5"    # HostConnectionDataSO
+PROFILE_ICONS = "3e6cb5b838253c7468480627fd86af5f"      # SO_ProfileIconList
+OLD_INVITE = dict(pi="1955618632100232137", rt="1078298652", go="1955618632100232138",
+                  stray_parent="4432980322083613555", gate="6613135569115853855")
+HOME_RT = "3251318990371052344"
+SWITCHER = "4216411968520269688"
+CARD_W, CARD_H = 600, 132
 
 
 def ctx_new():
@@ -451,6 +465,187 @@ def patch_header(p):
     p.children(I["panel_rt"], [chip_rt] + kids + [hint_rt])
 
 
+# --------------------------------------------------------------------------------------------
+# 6b: Up next cards (scene) and the party invite (prefab)
+# --------------------------------------------------------------------------------------------
+
+def upnext_card(key, eyebrow, eyebrow_token, border_token, x):
+    k = f"UpNext/{key}"
+    c = N(k, key, TL(x, 0, CARD_W, CARD_H))
+    c.add("cg", 225, H.canvas_group(True)).add("in", 114, M.entrance("Rise", by_sibling=True, distance=14))
+    fill = c.child(N(f"{k}/Fill", "Fill", STRETCH))
+    fill.add("cr", 222, K.canvas_renderer()) \
+        .add("img", 114, K.image(tok("SurfaceVeryDark", 0.9), K.kit_sprite("kit_sliver14_fill"), True, raycast=True))
+    clip = c.child(N(f"{k}/Clip", "Clip", R((0, 0), (0, 1), (101, 0), (198, -2), (0.5, 0.5))))
+    clip.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(K.WHITE, K.kit_sprite("kit_sliver14_fill"), True)) \
+        .add("mask", 114, A.mask(False)) \
+        .add("cover", 114, lambda ctx, go: mono(go, A.S["cover"], f"  image: {ref(ctx.c(f'{k}/Clip/Art', 'img'))}\n"))
+    A.art_node(clip, f"{k}/Clip/Art", "Art", R(size=(198, 132)), None)
+    bord = c.child(N(f"{k}/Border", "Border", STRETCH))
+    bord.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok(border_token), K.kit_sprite("kit_sliver14_line1"), True))
+    label(c.child(N(f"{k}/Eyebrow", "Eyebrow", TL(222, 20, 360, 16))), eyebrow, "Label", eyebrow_token)
+    t = c.child(N(f"{k}/Title", "Title", TL(222, 42, 360, 28)))
+    t.add("cr", 222, K.canvas_renderer()).add("tmp", 114, A.ellipsis(text("Mode", "H3", tok("TextLight")))) \
+        .add("kt", 114, K.kit_text("H3", "TextLight"))
+    o = c.child(N(f"{k}/Line", "Line", TL(222, 72, 360, 20)))
+    o.add("cr", 222, K.canvas_renderer()).add("tmp", 114, A.ellipsis(text("", "BodySmall", tok("NeutralLightest")))) \
+        .add("kt", 114, K.kit_text("BodySmall", "NeutralLightest"))
+    c.add("button", 114, lambda ctx, go: mono(go, A.BUTTON,
+          A.selectable().replace("  m_Transition: 0\n", "  m_Transition: 1\n").replace(
+              "    m_SelectedColor: {r: 0.9607843, g: 0.9607843, b: 0.9607843, a: 1}\n",
+              f"    m_SelectedColor: {K.col(tok('Cta'))}\n").replace(
+              "    m_HighlightedColor: {r: 0.9607843, g: 0.9607843, b: 0.9607843, a: 1}\n",
+              f"    m_HighlightedColor: {K.col(tok('TextLight'))}\n")
+          + f"  m_TargetGraphic: {ref(ctx.c(f'{k}/Border', 'img'))}\n" + A.calls([])))
+    c.add("audio", 114, A.menu_audio(2))
+    return c
+
+
+def upnext_node():
+    root = N("UpNext", "UpNext", R((0.5, 0), None, (0, 178), (2 * CARD_W + 40, CARD_H), (0.5, 0)))
+    w = upnext_card("Weekly", "Weekly challenge", "Purchase", "Purchase", 0)
+    label(w.child(N("UpNext/Weekly/EndsLabel", "EndsLabel", TL(222, 100, 64, 18))), "Ends in", "Label", "TextLight")
+    cd = w.child(N("UpNext/Weekly/Countdown", "Countdown", TL(290, 98, 110, 20)))
+    cd.add("cr", 222, K.canvas_renderer()).add("tmp", 114, text("0d 00:00", "DataSmall", tok("TextLight"))) \
+        .add("kt", 114, K.kit_text("DataSmall", "TextLight"))
+    label(w.child(N("UpNext/Weekly/BestLabel", "BestLabel", TL(404, 100, 76, 18))), "Your best", "Label", "NeutralLightest")
+    b = w.child(N("UpNext/Weekly/Best", "Best", TL(484, 98, 100, 20)))
+    b.add("cr", 222, K.canvas_renderer()).add("tmp", 114, text("None yet", "DataSmall", tok("TextLight"))) \
+        .add("kt", 114, K.kit_text("DataSmall", "TextLight"))
+    root.children.append(w)
+    q = upnext_card("Quest", "Current quest", "NeutralLightest", "TextLight", CARD_W + 40)
+    for i, h in enumerate((13, 16, 19, 22)):
+        seg = q.child(N(f"UpNext/Quest/Meter{i + 1}", f"Meter{i + 1}", R((0, 1), None, (222 + i * 11, -120), (8, h), (0, 0))))
+        seg.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("SurfaceDark"))).add("th", 114, H.themed("SurfaceDark"))
+    mt = q.child(N("UpNext/Quest/MeterText", "MeterText", TL(274, 98, 300, 20)))
+    mt.add("cr", 222, K.canvas_renderer()).add("tmp", 114, text("", "DataSmall", tok("TextLight"))) \
+        .add("kt", 114, K.kit_text("DataSmall", "TextLight"))
+    root.children.append(q)
+    root.add("upnext", 114, lambda ctx, go: mono(go, S["upnext"],
+             f"  weeklyButton: {ref(ctx.c('UpNext/Weekly', 'button'))}\n  weeklyGroup: {ref(ctx.c('UpNext/Weekly', 'cg'))}\n"
+             f"  weeklyArt: {ref(ctx.c('UpNext/Weekly/Clip/Art', 'img'))}\n"
+             f"  weeklyModeText: {ref(ctx.c('UpNext/Weekly/Title', 'tmp'))}\n"
+             f"  weeklyObjectiveText: {ref(ctx.c('UpNext/Weekly/Line', 'tmp'))}\n"
+             f"  weeklyCountdownText: {ref(ctx.c('UpNext/Weekly/Countdown', 'tmp'))}\n"
+             f"  weeklyBestText: {ref(ctx.c('UpNext/Weekly/Best', 'tmp'))}\n"
+             f"  questButton: {ref(ctx.c('UpNext/Quest', 'button'))}\n  questGroup: {ref(ctx.c('UpNext/Quest', 'cg'))}\n"
+             f"  questArt: {ref(ctx.c('UpNext/Quest/Clip/Art', 'img'))}\n"
+             f"  questTitleText: {ref(ctx.c('UpNext/Quest/Title', 'tmp'))}\n"
+             f"  questNextText: {ref(ctx.c('UpNext/Quest/Line', 'tmp'))}\n"
+             f"  questMeterText: {ref(ctx.c('UpNext/Quest/MeterText', 'tmp'))}\n"
+             + K.refs_list("questMeterSegments", [ctx.c(f"UpNext/Quest/Meter{i + 1}", "th") for i in range(4)])
+             + f"  games: {K.ref(11400000, ARCADE_GAMES, 2)}\n  screenSwitcher: {ref(SWITCHER)}\n  refreshSeconds: 1\n"))
+    return root
+
+
+def build_invite():
+    root = N("root", INVITE, R((1, 1), None, (-40, -250), (520, 132), (1, 1)))
+    root.add("cg", 225, lambda ctx, go: H.canvas_group(False)(ctx, go))
+    fill = root.child(N("Fill", "Fill", STRETCH))
+    fill.add("cr", 222, K.canvas_renderer()) \
+        .add("img", 114, K.image(tok("SurfaceBlack"), K.kit_sprite("kit_sliver14_fill"), True, raycast=True))
+    bord = root.child(N("Border", "Border", STRETCH))
+    bord.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("TextLight"), K.kit_sprite("kit_sliver14_line1"), True))
+    ring = root.child(N("Ring", "Ring", TL(24, 22, 70, 70)))
+    ring.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("Cta"), K.kit_sprite("kit_oct_fill"), True))
+    clip = ring.child(N("Ring/Clip", "Clip", R((0, 0), (1, 1), (0, 0), (-6, -6))))
+    clip.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(K.WHITE, K.kit_sprite("kit_oct_fill"), True)) \
+        .add("mask", 114, A.mask(False))
+    av = clip.child(N("Ring/Clip/Avatar", "Avatar", STRETCH))
+    av.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(K.WHITE, A.AVATAR_PLACEHOLDER))
+    label(root.child(N("Eyebrow", "Eyebrow", TL(112, 24, 380, 16))), "Party invite", "Label", "Cta")
+    nm = root.child(N("Name", "Name", TL(112, 44, 380, 28)))
+    nm.add("cr", 222, K.canvas_renderer()).add("tmp", 114, A.ellipsis(text("Pilot", "H3", tok("TextLight")))) \
+        .add("kt", 114, K.kit_text("H3", "TextLight"))
+    cnt = root.child(N("Count", "Count", TL(112, 74, 380, 20)))
+    cnt.add("cr", 222, K.canvas_renderer()).add("tmp", 114, text("", "DataSmall", tok("NeutralLightest"))) \
+        .add("kt", 114, K.kit_text("DataSmall", "NeutralLightest"))
+    track = root.child(N("Drain", "DrainTrack", R((0, 0), (1, 0), (0, 0), (0, 3), (0.5, 0))))
+    track.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("ControlActive", 0.2)))
+    bar = track.child(N("Drain/Bar", "Bar", R((0, 0), (1, 1), (0, 0), (0, 0), (0, 0.5))))
+    bar.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("ControlActive"))) \
+        .add("drain", 114, lambda ctx, go: mono(go, S["drain"], "  duration: 3\n  playOnEnable: 0\n"))
+    btns = root.child(N("Buttons", "Buttons", R((0, 0), None, (24, 0), (360, 40), (0, 0.5))))
+    btns.add("hlg", 114, K.hv_layout(False, (0, 0, 0, 0), 12, 3, (0, 0), (0, 0)))
+    for key, cap, variant in (("Join", "JOIN", "Cta"), ("Decline", "DECLINE", "Cancel")):
+        w, h = K.button_size(cap, small=True)
+        holder = btns.child(N(f"Buttons/{key}", key, R((0, 0.5), None, (0, 0), (w, h), (0, 0.5))))
+        holder.add("le", 114, le(pw=w, ph=h))
+        holder.children.append(P.Inst(f"{key}Button", "KitButtonSmall", f"{key}Button", STRETCH,
+                                      K.button_mods("KitButtonSmall", variant, True, cap, small=True)))
+    root.add("panel", 114, lambda ctx, go: mono(go, S["invite"],
+             f"  connectionData: {K.ref(11400000, CONNECTION_DATA, 2)}\n"
+             f"  inviterNameText: {ref(ctx.c('Name', 'tmp'))}\n  inviterAvatarImage: {ref(ctx.c('Ring/Clip/Avatar', 'img'))}\n"
+             f"  acceptButton: {ref(ctx.iref('JoinButton', 'root#button'))}\n"
+             f"  declineButton: {ref(ctx.iref('DeclineButton', 'root#button'))}\n"
+             f"  canvasGroup: {ref(ctx.c('root', 'cg'))}\n"
+             f"  partyCountText: {ref(ctx.c('Count', 'tmp'))}\n  timerBar: {ref(ctx.c('Drain/Bar', 'drain'))}\n"
+             f"  profileIcons: {K.ref(11400000, PROFILE_ICONS, 2)}\n  autoHideSeconds: 3\n  inviteReceivedAudio: 9\n"))
+    return root
+
+
+def invite_path():
+    return f"{OUT_DIR}/{INVITE}.prefab"
+
+
+def prefab_outputs():
+    return {invite_path(): P.prefab_text(build_invite(), INVITE),
+            invite_path() + ".meta": K.PREFAB_META.format(g=P.asset_guid(INVITE)),
+            OUT_DIR + ".meta": K.FOLDER_META.format(g=P.asset_guid("folder/Home"))}
+
+
+def invite_ids():
+    ctx = ctx_new()
+    inst, stub = str(ctx.fid("Invite#inst")), str(ctx.fid("Invite#stub"))
+    go_stub = str(C.derived(K.FileIds(INVITE)("root#go"), inst))
+    return inst, stub, go_stub
+
+
+def patch_upnext(p):
+    I = IDS
+    node = upnext_node()
+    after = _last_doc(p, hint_node())
+    rt = p.emit(node, I["panel_rt"], after)
+    kids = [k for k in p.kids(I["panel_rt"]) if k != rt]
+    p.children(I["panel_rt"], kids + [rt])
+    go = str(p.ctx.go("UpNext"))
+    sw = p.doc(SWITCHER)
+    m = re.search(r"^  hubCompanions:\n((?:  - .*\n)*)", sw, re.M)
+    comp = re.findall(r"\{fileID: (-?\d+)\}", m.group(1)) if m else []
+    if go not in comp:
+        comp.append(go)
+    p.replace(SWITCHER, T.set_block(sw, "hubCompanions", K.refs_list("hubCompanions", comp)))
+
+
+def patch_invite(p):
+    O = OLD_INVITE
+    inst, stub, go_stub = invite_ids()
+    if p.sc.has(O["pi"]):
+        for fid in C.instance_docs(p.sc, O["pi"]):
+            if p.sc.has(fid):
+                p.sc.remove(fid)
+        sp = p.doc(O["stray_parent"])
+        p.replace(O["stray_parent"], sp.replace(f"  - {{fileID: {O['rt']}}}\n", ""))
+        if "  m_Children:\n" in p.doc(O["stray_parent"]) and not re.search(r"^  m_Children:\n  - ", p.doc(O["stray_parent"]), re.M):
+            p.replace(O["stray_parent"], p.doc(O["stray_parent"]).replace("  m_Children:\n", "  m_Children: []\n", 1))
+    for fid in (inst, stub, go_stub):
+        if p.sc.has(fid):
+            p.sc.remove(fid)
+    out = []
+    K.emit_instance(p.ctx, K.Instance("Invite", INVITE, P.asset_guid(INVITE), "PartyInviteNotificationPanel",
+                                      R((1, 1), None, (-40, -250), (520, 132), (1, 1)), ()), HOME_RT, out)
+    out.append(T.stub_go(go_stub, K.FileIds(INVITE)("root#go"), P.asset_guid(INVITE), inst))
+    anchor = HOME_RT
+    for d in (K.unity_empty_scalars(d) for d in out):
+        p.sc.insert_after(anchor, T.doc_fid(d), d)
+        anchor = T.doc_fid(d)
+    kids = [k for k in p.kids(HOME_RT) if k not in (O["rt"], stub)]
+    p.children(HOME_RT, kids + [stub])
+    gate = p.doc(O["gate"])
+    gate = gate.replace(f"{{fileID: {O['go']}}}", f"{{fileID: {go_stub}}}")
+    p.replace(O["gate"], gate)
+
+
 def sc_go(p, comp):
     return p.sc.go_of(comp)
 
@@ -474,11 +669,15 @@ def transform(text_):
         p.children(I["panel_rt"], [k for k in p.kids(I["panel_rt"]) if k != lrt])
     patch_hubs(p)
     patch_header(p)
+    patch_upnext(p)
+    patch_invite(p)
     return p.text()
 
 
 def outputs():
-    return {SCENE: transform(open(os.path.join(REPO, SCENE), encoding="utf-8").read())}
+    files = prefab_outputs()
+    files[SCENE] = transform(open(os.path.join(REPO, SCENE), encoding="utf-8").read())
+    return files
 
 
 # --------------------------------------------------------------------------------------------
@@ -505,6 +704,23 @@ def validate(files):
     assert f"  noteLabel: {{fileID: {ctx.c('Bar/Note', 'tmp')}}}" in sc.docs[I["bar_comp"]], "the question bar has no note line"
     assert not sc.has(I["settings_cbp"]), "Settings still carries its ControllerButtonPress"
     assert re.search(r"  m_Calls: \[\]\n", sc.docs[I["bar_btn"]]), "the question bar still opens the display-name window"
+    # 6b
+    up = sc.docs[str(ctx.c("UpNext", "upnext"))]
+    for f in ("weeklyButton", "weeklyModeText", "weeklyCountdownText", "weeklyBestText", "questButton", "questTitleText", "questNextText"):
+        assert re.search(r"^  %s: \{fileID: [1-9]" % f, up, re.M), f"HomeUpNext.{f} is not wired"
+    assert f"guid: {ARCADE_GAMES}" in up, "HomeUpNext.games is not the arcade card list"
+    assert up.count("  - {fileID: ") == 4, "the quest meter needs four segments"
+    assert f"  - {{fileID: {ctx.go('UpNext')}}}" in sc.docs[SWITCHER], "Up next does not fade with the hub row (hubCompanions)"
+    inst, stub, go_stub = invite_ids()
+    assert not sc.has(OLD_INVITE["pi"]), "the old invite instance survives"
+    assert sc_text.count(f"m_SourcePrefab: {{fileID: 100100000, guid: {P.asset_guid(INVITE)}") == 1, "Menu_Main must hold one PartyInvitePopup"
+    assert f"{{fileID: {go_stub}}}" in sc.docs[OLD_INVITE["gate"]], "the online-only gate no longer gates the invite"
+    assert "m_Name\n      value: PartyInviteNotificationPanel" in sc.docs[inst], "OfflineMenuWirer finds the invite by name"
+    pf = files[invite_path()]
+    A.check_file(invite_path(), pf, T.known_guids() | P.PACKAGE, {P.asset_guid(INVITE), P.asset_guid("folder/Home")})
+    _, panel = A.doc_of(pf, K.FileIds(INVITE)("root#panel"))
+    for f in ("inviterNameText", "inviterAvatarImage", "acceptButton", "declineButton", "canvasGroup", "partyCountText", "timerBar"):
+        assert re.search(r"^  %s: \{fileID: [1-9-]" % f, panel, re.M), f"PartyInvitePopup: {f} is not wired"
     anchors = set(re.findall(r"^--- !u!\d+ &(-?\d+)", sc_text, re.M)) | {"0"}
     for m in re.finditer(r"\{fileID: (-?\d+)\}", sc_text):
         assert m.group(1) in anchors, f"Menu_Main: dangling local fileID {m.group(1)}"
@@ -550,6 +766,10 @@ def self_test(files):
         ("Arcade not the pad's first stop", arcade_unfocused),
         ("a hub left a plain Button", lambda f: f.__setitem__(SCENE, f[SCENE].replace(
             f"guid: {S['kitbutton']}", f"guid: {S['button']}", 1))),
+        ("the invite with no drain bar", lambda f: f.__setitem__(invite_path(), re.sub(
+            r"(  timerBar: )\{fileID: -?\d+\}", r"\1{fileID: 0}", f[invite_path()]))),
+        ("Up next left out of the hub fade", lambda f: f.__setitem__(SCENE, f[SCENE].replace(
+            f"  - {{fileID: {ctx_new().go('UpNext')}}}\n", "", 1))),
     ]
     ok = all(expect(l, m) for l, m in cases)
     print("OK: every negative control fires" if ok else "FAIL: a negative control did not fire")
@@ -573,6 +793,7 @@ def main():
         print("OK: no drift" if not stale else f"FAIL: {len(stale)} file(s) drifted")
         return 1 if stale else 0
     for path in stale:
+        os.makedirs(os.path.dirname(os.path.join(REPO, path)), exist_ok=True)
         with open(os.path.join(REPO, path), "w", encoding="utf-8", newline="\n") as fh:
             fh.write(files[path])
         print(f"wrote {path}")

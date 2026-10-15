@@ -186,25 +186,8 @@ namespace CosmicShore.UI
 
         // ── Card State ────────────────────────────────────────────────────────
 
-        QuestItemState GetCardState(int questIndex)
-        {
-            var quest = questList.Quests[questIndex];
-            var service = GameModeProgressionService.Instance;
-            bool isUnlocked = questIndex == 0 || (service != null && service.IsGameModeUnlocked(quest.GameMode));
-            if (!isUnlocked) return QuestItemState.Locked;
-
-            if (questIndex + 1 < questList.Quests.Count && service != null
-                && service.IsGameModeUnlocked(questList.Quests[questIndex + 1].GameMode))
-                return QuestItemState.Claimed;
-
-            if (quest.IsPlaceholder)
-                return QuestItemState.ReadyToClaim;
-
-            if (service != null && service.IsQuestCompleted(quest.GameMode))
-                return QuestItemState.ReadyToClaim;
-
-            return QuestItemState.Unlocked;
-        }
+        QuestItemState GetCardState(int questIndex) =>
+            QuestFrontier.StateOf(questList, questIndex, GameModeProgressionService.Instance);
 
         void RefreshAllCards()
         {
@@ -238,16 +221,8 @@ namespace CosmicShore.UI
         /// Returns the index of the first quest that is Unlocked or ReadyToClaim (the frontier).
         /// Falls back to the last card if all are claimed.
         /// </summary>
-        int GetActiveQuestIndex()
-        {
-            for (int i = 0; i < questList.Quests.Count; i++)
-            {
-                var state = GetCardState(i);
-                if (state == QuestItemState.Unlocked || state == QuestItemState.ReadyToClaim)
-                    return i;
-            }
-            return _cards.Count > 0 ? _cards.Count - 1 : -1;
-        }
+        int GetActiveQuestIndex() =>
+            _cards.Count > 0 ? QuestFrontier.FrontierIndex(questList, GameModeProgressionService.Instance) : -1;
 
         void UpdateActivePulse()
         {
