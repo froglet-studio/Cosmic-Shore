@@ -74,7 +74,9 @@ MapNear / LapExtent / Curvature`), then corrected by a three-design review (the 
 in view space, Cull Off, material-driven ZWrite/Blend). Headless proof: `unity_refcompile` player 0 errors; Amoebius built AND ran it
 (the Goby as the menu hull, into freestyle, the Pistol taken, Q / F / a dive pressed): prisms mapped, warped, boxed and tiled every
 frame, zero exceptions from the duo; `PistolWorldMathTests` (17) + `PistolViewMathTests` (10) + `PistolTargetsTests` (1) +
-`GobyPistolMathTests` (10): 39/39 outside Unity. Amoebius cannot composite the side camera, so the PICTURE is unseen.
+`GobyPistolMathTests` (17: the 10 sim goldens plus 7 VIEW goldens the lab's own `window.__lab.view` emitted - the lap's extent,
+three bend boxes' corners, the bar's extent, the zones and the parallax, so Unity's warp is held to the LAB's numbers as the
+ribbon and the AI already are): 46/46 outside Unity. Amoebius cannot composite the side camera, so the PICTURE is unseen.
 
 1. **Vessel Changer ▸ Goby, look at the inset:** no green, no curtain. A domain-coloured LINE rides the hills (warm orange on the
    downslopes) with the trail's blocks sitting on it in two rails; the orange Pistol end on (a cone: its near cap big, its far cap

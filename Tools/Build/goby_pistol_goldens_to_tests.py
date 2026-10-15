@@ -189,5 +189,65 @@ for name, a in ai.items():
         w('            }')
     w('            Assert.AreEqual(3, scans, "one scan per thought (0.1 s apart or more)");')
     w('        }\n')
+# ---- the VIEW golden: Unity's warp held to the LAB's numbers (PistolWarp / PistolRibbon's drawing mappers)
+view = g.get('view')
+if view:
+    w("""        // ---- the view: the lab's own lap of radius 29 (1.2 laps, 400 steps laid 4 u a sample), its boxes, zones and parallax
+        static PistolRibbon LabLap()
+        {
+            const float R = 29f; var lay = Shipped().Lay;
+            Vector3 On(float th) => new(R * Mathf.Cos(th), 0f, R * Mathf.Sin(th));
+            Vector3 Tan(float th) => new(-Mathf.Sin(th), 0f, Mathf.Cos(th));
+            var rb = new PistolRibbon(PistolUnroll.WorldUp); var f0 = Tan(0f);
+            rb.Begin(On(0f), f0, Vector3.up, Vector3.Cross(f0, Vector3.up).normalized, lay);
+            const int steps = 400; float total = 2f * Mathf.PI * 1.2f;
+            for (int i = 1; i <= steps; i++) { float a = (i - 1) * total / steps, b = i * total / steps; var f = Tan(b); rb.Lay(On(a), On(b), f, Vector3.up, Vector3.Cross(f, Vector3.up).normalized, lay); }
+            return rb;
+        }
+""")
+    lap = view['lap']
+    w('        [Test]\n        public void View_LabLap_MatchesTheLab()\n        {')
+    w('            var rb = LabLap();')
+    w('            Assert.AreEqual(%d, rb.Count, "samples"); Near(%s, rb.X(rb.Count - 1), Tol, "last x"); Near(%s, rb.GobyX, Tol, "the Goby\'s x");' % (lap['n'], f(lap['lastX']), f(lap['gx'])))
+    w('        }\n')
+    for bi, bx in enumerate(view['boxes']):
+        c = bx['centre']; hs = bx['halfSize']
+        w('        [Test]\n        public void View_Box%d_r%d_MatchesTheLab()\n        {' % (bi, int(bx['r'])))
+        w('            var rb = LabLap(); var lay = Shipped().Lay; const float hs = %sf; float hd = hs * Mathf.Sqrt(3f);' % hs)
+        w('            var corners = new Vector3[8]; var xhd = new Vector3[8]; Vector3 c = new(%sf, 0f, 0f);' % (-bx['r']))
+        w('            PistolWarp.BoxCorners(c, Vector3.right * hs, Vector3.up * hs, Vector3.forward * hs, corners);')
+        w('            var m = rb.Map(c, -1e9f, 1e9f); Assert.IsTrue(m.Ok);')
+        if bx['kind'] != 'BAR':
+            w('            Near(%s, m.X, Tol, "centre x"); Near(%s, m.H, Tol, "centre h"); Near(%s, m.D, Tol, "centre d"); Assert.AreEqual(%d, m.K, "centre segment");' % (f(c['x']), f(c['h']), f(c['d']), c['k']))
+            w('            Near(%s, rb.Curvature(m.K), 2e-4f, "curvature");' % f(bx['curvature']))
+            w('            var kind = PistolWarp.Classify(hd, rb.Curvature(m.K), m.D, lay.SampleGap, rb.Count, out int window);')
+            w('            Assert.AreEqual(PistolWarp.Kind.%s, kind); Assert.AreEqual(%d, window, "window");' % (bx['kind'].capitalize(), bx['window']))
+            w('            Near(%s, PistolWarp.TearBound(hd, rb.Curvature(m.K), m.D, lay.SampleGap), 0.05f, "tear bound");' % f(bx['tearBound']))
+            w('            Assert.IsTrue(PistolWarp.WarpBox(rb, m.K, corners, -1e9f, 1e9f, window, xhd));')
+            for i, cc in enumerate(bx['corners']):
+                w('            Near(%s, xhd[%d], 0.05f, "corner %d");' % (v3(cc), i, i))
+        else:
+            # the centre's segment is a nearest-by-noise pick on a perfect circle: the run and the bar do not depend on it
+            w('            Near(%s, Mathf.Abs(m.D), Tol, "the centre is R beside the path");' % f(abs(c['d'])))
+            w('            Near(%s, rb.Curvature(m.K), 2e-4f, "curvature");' % f(bx['curvature']))
+            w('            var kind = PistolWarp.Classify(hd, rb.Curvature(m.K), m.D, lay.SampleGap, rb.Count, out int window);')
+            w('            Assert.AreEqual(PistolWarp.Kind.Bar, kind); Assert.AreEqual(rb.Count, window, "the window is everything");')
+            L = bx['lap']; B = bx['bar']
+            w('            float rho = 1f / Mathf.Abs(rb.Curvature(m.K));')
+            w('            rb.LapExtent(c, m.K, rho + hd + 2f, -1e9f, 1e9f, out int kLo, out int kHi, out bool loByDist, out bool hiByDist);')
+            w('            Assert.AreEqual(%d, kLo); Assert.AreEqual(%d, kHi); Assert.AreEqual(%s, loByDist); Assert.AreEqual(%s, hiByDist);' % (L['kLo'], L['kHi'], 'true' if L['loByDist'] else 'false', 'true' if L['hiByDist'] else 'false'))
+            w('            PistolWarp.BarExtent(rb, c, m.K, rho, hd, corners, -1e9f, 1e9f, out float xA, out float xB);')
+            w('            Near(%s, xA, Tol, "bar xA"); Near(%s, xB, Tol, "bar xB");' % (f(B['xA']), f(B['xB'])))
+        w('        }\n')
+    w('        [Test]\n        public void View_Zones_MatchTheLab()\n        {')
+    w('            var c = Shipped(); float band = c.Vision + 4f, vision = c.Vision, D = c.Parallax; Object.DestroyImmediate(c);')
+    for z in view['zones']:
+        w('            { var z = PistolWarp.ZoneOf(%sf, band, vision, D, false); Assert.IsTrue(z.Drawn, "d=%s drawn"); Near(%s, z.Reach, 1e-4f, "reach@%s"); Near(%s, z.Fog, 1e-4f, "fog@%s"); Near(%s, z.Alpha, 1e-4f, "alpha@%s"); Assert.AreEqual(%s, z.Solid, "solid@%s"); Assert.AreEqual(%s, z.Warped, "warped@%s"); }'
+          % (z['d'], z['d'], f(z['reach']), z['d'], f(z['fog']), z['d'], f(z['alpha']), z['d'], 'true' if z['solid'] else 'false', z['d'], 'true' if z['warped'] else 'false', z['d']))
+    w('        }\n')
+    w('        [Test]\n        public void View_Parallax_MatchesTheLab()\n        {')
+    for pt in view['parallax']:
+        w('            Near(%s, PistolWarp.Parallax(100f, 27f, %sf, 192f, 40f, 100f, 17f, 160f), 1e-3f, "parallax@%s");' % (v3(pt['p']), pt['d'], pt['d']))
+    w('        }\n')
 w('    }\n}\n#endif')
 print('\n'.join(o))

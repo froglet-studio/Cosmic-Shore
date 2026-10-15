@@ -441,6 +441,140 @@ namespace CosmicShore.Tests
             Assert.AreEqual(3, scans, "one scan per thought (0.1 s apart or more)");
         }
 
+        // ---- the view: the lab's own lap of radius 29 (1.2 laps, 400 steps laid 4 u a sample), its boxes, zones and parallax
+        static PistolRibbon LabLap()
+        {
+            const float R = 29f; var lay = Shipped().Lay;
+            Vector3 On(float th) => new(R * Mathf.Cos(th), 0f, R * Mathf.Sin(th));
+            Vector3 Tan(float th) => new(-Mathf.Sin(th), 0f, Mathf.Cos(th));
+            var rb = new PistolRibbon(PistolUnroll.WorldUp); var f0 = Tan(0f);
+            rb.Begin(On(0f), f0, Vector3.up, Vector3.Cross(f0, Vector3.up).normalized, lay);
+            const int steps = 400; float total = 2f * Mathf.PI * 1.2f;
+            for (int i = 1; i <= steps; i++) { float a = (i - 1) * total / steps, b = i * total / steps; var f = Tan(b); rb.Lay(On(a), On(b), f, Vector3.up, Vector3.Cross(f, Vector3.up).normalized, lay); }
+            return rb;
+        }
+
+        [Test]
+        public void View_LabLap_MatchesTheLab()
+        {
+            var rb = LabLap();
+            Assert.AreEqual(55, rb.Count, "samples"); Near(215.825622f, rb.X(rb.Count - 1), Tol, "last x"); Near(218.477233f, rb.GobyX, Tol, "the Goby's x");
+        }
+
+        [Test]
+        public void View_Box0_r6_MatchesTheLab()
+        {
+            var rb = LabLap(); var lay = Shipped().Lay; const float hs = 2f; float hd = hs * Mathf.Sqrt(3f);
+            var corners = new Vector3[8]; var xhd = new Vector3[8]; Vector3 c = new(-6f, 0f, 0f);
+            PistolWarp.BoxCorners(c, Vector3.right * hs, Vector3.up * hs, Vector3.forward * hs, corners);
+            var m = rb.Map(c, -1e9f, 1e9f); Assert.IsTrue(m.Ok);
+            Near(90.161794f, m.X, Tol, "centre x"); Near(0.0f, m.H, Tol, "centre h"); Near(22.934777f, m.D, Tol, "centre d"); Assert.AreEqual(22, m.K, "centre segment");
+            Near(0.034548f, rb.Curvature(m.K), 2e-4f, "curvature");
+            var kind = PistolWarp.Classify(hd, rb.Curvature(m.K), m.D, lay.SampleGap, rb.Count, out int window);
+            Assert.AreEqual(PistolWarp.Kind.Bend, kind); Assert.AreEqual(7, window, "window");
+            Near(57.36531f, PistolWarp.TearBound(hd, rb.Curvature(m.K), m.D, lay.SampleGap), 0.05f, "tear bound");
+            Assert.IsTrue(PistolWarp.WarpBox(rb, m.K, corners, -1e9f, 1e9f, window, xhd));
+            Near(new Vector3(97.975587f, -2.0f, 20.684325f), xhd[0], 0.05f, "corner 0");
+            Near(new Vector3(105.692696f, -2.0f, 24.463406f), xhd[1], 0.05f, "corner 1");
+            Near(new Vector3(97.975587f, 2.0f, 20.684325f), xhd[2], 0.05f, "corner 2");
+            Near(new Vector3(105.692696f, 2.0f, 24.463406f), xhd[3], 0.05f, "corner 3");
+            Near(new Vector3(82.502038f, -2.0f, 20.703313f), xhd[4], 0.05f, "corner 4");
+            Near(new Vector3(77.890655f, -2.0f, 24.458575f), xhd[5], 0.05f, "corner 5");
+            Near(new Vector3(82.502038f, 2.0f, 20.703313f), xhd[6], 0.05f, "corner 6");
+            Near(new Vector3(77.890655f, 2.0f, 24.458575f), xhd[7], 0.05f, "corner 7");
+        }
+
+        [Test]
+        public void View_Box1_r10_MatchesTheLab()
+        {
+            var rb = LabLap(); var lay = Shipped().Lay; const float hs = 2f; float hd = hs * Mathf.Sqrt(3f);
+            var corners = new Vector3[8]; var xhd = new Vector3[8]; Vector3 c = new(-10f, 0f, 0f);
+            PistolWarp.BoxCorners(c, Vector3.right * hs, Vector3.up * hs, Vector3.forward * hs, corners);
+            var m = rb.Map(c, -1e9f, 1e9f); Assert.IsTrue(m.Ok);
+            Near(90.31313f, m.X, Tol, "centre x"); Near(0.0f, m.H, Tol, "centre h"); Near(18.937641f, m.D, Tol, "centre d"); Assert.AreEqual(22, m.K, "centre segment");
+            Near(0.034548f, rb.Curvature(m.K), 2e-4f, "curvature");
+            var kind = PistolWarp.Classify(hd, rb.Curvature(m.K), m.D, lay.SampleGap, rb.Count, out int window);
+            Assert.AreEqual(PistolWarp.Kind.Bend, kind); Assert.AreEqual(5, window, "window");
+            Near(44.038744f, PistolWarp.TearBound(hd, rb.Curvature(m.K), m.D, lay.SampleGap), 0.05f, "tear bound");
+            Assert.IsTrue(PistolWarp.WarpBox(rb, m.K, corners, -1e9f, 1e9f, window, xhd));
+            Near(new Vector3(94.718663f, -2.0f, 16.790302f), xhd[0], 0.05f, "corner 0");
+            Near(new Vector3(97.975587f, -2.0f, 20.684325f), xhd[1], 0.05f, "corner 1");
+            Near(new Vector3(94.718663f, 2.0f, 16.790302f), xhd[2], 0.05f, "corner 2");
+            Near(new Vector3(97.975587f, 2.0f, 20.684325f), xhd[3], 0.05f, "corner 3");
+            Near(new Vector3(86.058427f, -2.0f, 16.765687f), xhd[4], 0.05f, "corner 4");
+            Near(new Vector3(82.502038f, -2.0f, 20.703313f), xhd[5], 0.05f, "corner 5");
+            Near(new Vector3(86.058427f, 2.0f, 16.765687f), xhd[6], 0.05f, "corner 6");
+            Near(new Vector3(82.502038f, 2.0f, 20.703313f), xhd[7], 0.05f, "corner 7");
+        }
+
+        [Test]
+        public void View_Box2_r20_MatchesTheLab()
+        {
+            var rb = LabLap(); var lay = Shipped().Lay; const float hs = 2f; float hd = hs * Mathf.Sqrt(3f);
+            var corners = new Vector3[8]; var xhd = new Vector3[8]; Vector3 c = new(-20f, 0f, 0f);
+            PistolWarp.BoxCorners(c, Vector3.right * hs, Vector3.up * hs, Vector3.forward * hs, corners);
+            var m = rb.Map(c, -1e9f, 1e9f); Assert.IsTrue(m.Ok);
+            Near(90.691471f, m.X, Tol, "centre x"); Near(0.0f, m.H, Tol, "centre h"); Near(8.944801f, m.D, Tol, "centre d"); Assert.AreEqual(22, m.K, "centre segment");
+            Near(0.034548f, rb.Curvature(m.K), 2e-4f, "curvature");
+            var kind = PistolWarp.Classify(hd, rb.Curvature(m.K), m.D, lay.SampleGap, rb.Count, out int window);
+            Assert.AreEqual(PistolWarp.Kind.Bend, kind); Assert.AreEqual(4, window, "window");
+            Near(34.026719f, PistolWarp.TearBound(hd, rb.Curvature(m.K), m.D, lay.SampleGap), 0.05f, "tear bound");
+            Assert.IsTrue(PistolWarp.WarpBox(rb, m.K, corners, -1e9f, 1e9f, window, xhd));
+            Near(new Vector3(93.721674f, -2.0f, 6.840125f), xhd[0], 0.05f, "corner 0");
+            Near(new Vector3(94.12047f, -2.0f, 10.820196f), xhd[1], 0.05f, "corner 1");
+            Near(new Vector3(93.721674f, 2.0f, 6.840125f), xhd[2], 0.05f, "corner 2");
+            Near(new Vector3(94.12047f, 2.0f, 10.820196f), xhd[3], 0.05f, "corner 3");
+            Near(new Vector3(88.768571f, -2.0f, 6.870564f), xhd[4], 0.05f, "corner 4");
+            Near(new Vector3(87.110751f, -2.0f, 10.85869f), xhd[5], 0.05f, "corner 5");
+            Near(new Vector3(88.768571f, 2.0f, 6.870564f), xhd[6], 0.05f, "corner 6");
+            Near(new Vector3(87.110751f, 2.0f, 10.85869f), xhd[7], 0.05f, "corner 7");
+        }
+
+        [Test]
+        public void View_Box3_r0_MatchesTheLab()
+        {
+            var rb = LabLap(); var lay = Shipped().Lay; const float hs = 3f; float hd = hs * Mathf.Sqrt(3f);
+            var corners = new Vector3[8]; var xhd = new Vector3[8]; Vector3 c = new(0f, 0f, 0f);
+            PistolWarp.BoxCorners(c, Vector3.right * hs, Vector3.up * hs, Vector3.forward * hs, corners);
+            var m = rb.Map(c, -1e9f, 1e9f); Assert.IsTrue(m.Ok);
+            Near(28.929904f, Mathf.Abs(m.D), Tol, "the centre is R beside the path");
+            Near(0.034446f, rb.Curvature(m.K), 2e-4f, "curvature");
+            var kind = PistolWarp.Classify(hd, rb.Curvature(m.K), m.D, lay.SampleGap, rb.Count, out int window);
+            Assert.AreEqual(PistolWarp.Kind.Bar, kind); Assert.AreEqual(rb.Count, window, "the window is everything");
+            float rho = 1f / Mathf.Abs(rb.Curvature(m.K));
+            rb.LapExtent(c, m.K, rho + hd + 2f, -1e9f, 1e9f, out int kLo, out int kHi, out bool loByDist, out bool hiByDist);
+            Assert.AreEqual(0, kLo); Assert.AreEqual(53, kHi); Assert.AreEqual(false, loByDist); Assert.AreEqual(false, hiByDist);
+            PistolWarp.BarExtent(rb, c, m.K, rho, hd, corners, -1e9f, 1e9f, out float xA, out float xB);
+            Near(0.0f, xA, Tol, "bar xA"); Near(215.825622f, xB, Tol, "bar xB");
+        }
+
+        [Test]
+        public void View_Zones_MatchTheLab()
+        {
+            var c = Shipped(); float band = c.Vision + 4f, vision = c.Vision, D = c.Parallax; Object.DestroyImmediate(c);
+            { var z = PistolWarp.ZoneOf(0f, band, vision, D, false); Assert.IsTrue(z.Drawn, "d=0 drawn"); Near(1.0f, z.Reach, 1e-4f, "reach@0"); Near(0.0f, z.Fog, 1e-4f, "fog@0"); Near(1.0f, z.Alpha, 1e-4f, "alpha@0"); Assert.AreEqual(true, z.Solid, "solid@0"); Assert.AreEqual(true, z.Warped, "warped@0"); }
+            { var z = PistolWarp.ZoneOf(49f, band, vision, D, false); Assert.IsTrue(z.Drawn, "d=49 drawn"); Near(1.0f, z.Reach, 1e-4f, "reach@49"); Near(0.0f, z.Fog, 1e-4f, "fog@49"); Near(1.0f, z.Alpha, 1e-4f, "alpha@49"); Assert.AreEqual(true, z.Solid, "solid@49"); Assert.AreEqual(true, z.Warped, "warped@49"); }
+            { var z = PistolWarp.ZoneOf(55f, band, vision, D, false); Assert.IsTrue(z.Drawn, "d=55 drawn"); Near(0.5f, z.Reach, 1e-4f, "reach@55"); Near(0.024419f, z.Fog, 1e-4f, "fog@55"); Near(1.0f, z.Alpha, 1e-4f, "alpha@55"); Assert.AreEqual(true, z.Solid, "solid@55"); Assert.AreEqual(true, z.Warped, "warped@55"); }
+            { var z = PistolWarp.ZoneOf(61f, band, vision, D, false); Assert.IsTrue(z.Drawn, "d=61 drawn"); Near(0.0f, z.Reach, 1e-4f, "reach@61"); Near(0.048837f, z.Fog, 1e-4f, "fog@61"); Near(1.0f, z.Alpha, 1e-4f, "alpha@61"); Assert.AreEqual(true, z.Solid, "solid@61"); Assert.AreEqual(true, z.Warped, "warped@61"); }
+            { var z = PistolWarp.ZoneOf(100f, band, vision, D, false); Assert.IsTrue(z.Drawn, "d=100 drawn"); Near(0.0f, z.Reach, 1e-4f, "reach@100"); Near(0.207558f, z.Fog, 1e-4f, "fog@100"); Near(1.0f, z.Alpha, 1e-4f, "alpha@100"); Assert.AreEqual(true, z.Solid, "solid@100"); Assert.AreEqual(true, z.Warped, "warped@100"); }
+            { var z = PistolWarp.ZoneOf(135f, band, vision, D, false); Assert.IsTrue(z.Drawn, "d=135 drawn"); Near(0.0f, z.Reach, 1e-4f, "reach@135"); Near(0.35f, z.Fog, 1e-4f, "fog@135"); Near(1.0f, z.Alpha, 1e-4f, "alpha@135"); Assert.AreEqual(true, z.Solid, "solid@135"); Assert.AreEqual(true, z.Warped, "warped@135"); }
+            { var z = PistolWarp.ZoneOf(136f, band, vision, D, false); Assert.IsTrue(z.Drawn, "d=136 drawn"); Near(0.0f, z.Reach, 1e-4f, "reach@136"); Near(0.351449f, z.Fog, 1e-4f, "fog@136"); Near(0.998406f, z.Alpha, 1e-4f, "alpha@136"); Assert.AreEqual(false, z.Solid, "solid@136"); Assert.AreEqual(false, z.Warped, "warped@136"); }
+            { var z = PistolWarp.ZoneOf(480f, band, vision, D, false); Assert.IsTrue(z.Drawn, "d=480 drawn"); Near(0.0f, z.Reach, 1e-4f, "reach@480"); Near(0.85f, z.Fog, 1e-4f, "fog@480"); Near(0.45f, z.Alpha, 1e-4f, "alpha@480"); Assert.AreEqual(false, z.Solid, "solid@480"); Assert.AreEqual(false, z.Warped, "warped@480"); }
+            { var z = PistolWarp.ZoneOf(-49f, band, vision, D, false); Assert.IsTrue(z.Drawn, "d=-49 drawn"); Near(1.0f, z.Reach, 1e-4f, "reach@-49"); Near(0.0f, z.Fog, 1e-4f, "fog@-49"); Near(1.0f, z.Alpha, 1e-4f, "alpha@-49"); Assert.AreEqual(true, z.Solid, "solid@-49"); Assert.AreEqual(true, z.Warped, "warped@-49"); }
+            { var z = PistolWarp.ZoneOf(-80f, band, vision, D, false); Assert.IsTrue(z.Drawn, "d=-80 drawn"); Near(0.0f, z.Reach, 1e-4f, "reach@-80"); Near(0.15f, z.Fog, 1e-4f, "fog@-80"); Near(0.08f, z.Alpha, 1e-4f, "alpha@-80"); Assert.AreEqual(false, z.Solid, "solid@-80"); Assert.AreEqual(true, z.Warped, "warped@-80"); }
+        }
+
+        [Test]
+        public void View_Parallax_MatchesTheLab()
+        {
+            Near(new Vector3(-92.0f, 37.0f, -80.0f), PistolWarp.Parallax(100f, 27f, -80f, 192f, 40f, 100f, 17f, 160f), 1e-3f, "parallax@-80");
+            Near(new Vector3(-92.0f, 31.414414f, -49.0f), PistolWarp.Parallax(100f, 27f, -49f, 192f, 40f, 100f, 17f, 160f), 1e-3f, "parallax@-49");
+            Near(new Vector3(-92.0f, 27.0f, 0.0f), PistolWarp.Parallax(100f, 27f, 0f, 192f, 40f, 100f, 17f, 160f), 1e-3f, "parallax@0");
+            Near(new Vector3(-92.0f, 24.655502f, 49.0f), PistolWarp.Parallax(100f, 27f, 49f, 192f, 40f, 100f, 17f, 160f), 1e-3f, "parallax@49");
+            Near(new Vector3(-92.0f, 22.0f, 160.0f), PistolWarp.Parallax(100f, 27f, 160f, 192f, 40f, 100f, 17f, 160f), 1e-3f, "parallax@160");
+            Near(new Vector3(-92.0f, 19.5f, 480.0f), PistolWarp.Parallax(100f, 27f, 480f, 192f, 40f, 100f, 17f, 160f), 1e-3f, "parallax@480");
+        }
+
     }
 }
 #endif
