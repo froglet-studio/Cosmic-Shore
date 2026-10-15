@@ -5,7 +5,7 @@
 | Tool | Question it answers | Data it writes |
 |---|---|---|
 | **Crash Detector** | *Why did my editor die?* — even when Unity itself never got to say | `Logs/CrashDetector/` (machine-local, gitignored) |
-| **Bug Ledger** (+ its **Stage & Push** tab) | *What is broken right now, and is the fix actually proven?* | `BugLedger/local/` (gitignored live store) → published to the tracked `BugLedger/shared/` only through the Stage & Push tab |
+| **Bug Ledger** (no window: one "Send to Claude?" question after a play test) | *What is broken right now, and is the fix actually proven?* | `BugLedger/local/` (gitignored live store) → sent to the sender's own `bugledger/<user>` branch |
 | **Compile Timing** | *What does an edit cost?* — compile + domain-reload seconds, and which assemblies rebuilt | `Logs/CompileTiming/` (machine-local, gitignored) |
 | **Report On-Screen UI** (menu item, not a tab) | *What is that thing covering my screen?* — every enabled `Graphic` ≥2% of the display, biggest first | nothing — console + clipboard |
 
@@ -118,8 +118,14 @@ hang-dump threshold seconds (0 = off).
 
 ## The Bug Ledger
 
-The team's live bug list, inside the editor, with one hard rule: **a fix is not believed until
-the game proves it.**
+The team's live bug list, with one hard rule: **a fix is not believed until the game proves it.**
+
+**It has no window and nothing to configure (2026-10-15).** Yash, after using the first version:
+*"We cannot have this type of diagnostic panels. It's too much... just after I stop the game, it
+shows me a panel: send console logs to Claude... no complex UI toolboxes in Unity."* So the whole
+UI is ONE question after a play test (§ "Send to Claude"); capture, fixing, validation and
+reopening all run unseen. The Bug Ledger window, its Stage & Push tab, the daily check-in reminder
+and every per-issue button (Fix / Ignore / Reopen / pause / delete / severity) were deleted.
 
 ### `timesSeen` is a FLOOR, and it is most wrong for the issue you care about
 
@@ -166,7 +172,8 @@ BugLedger/shared/issues/   ← tracked. The PUBLISHED set — written only durin
 - outside `Assets/` → Unity never imports it, no `.meta` churn, invisible to the asset pipeline;
 - **git never sees the ledger working** → auto-capture, occurrence updates, fixes, validation and
   resolution all land in the gitignored `local/`; `git status` stays clean however hard the
-  ledger is used. A change reaches version control only through the **Stage & Push** tab;
+  ledger is used. Issues leave the machine only through **Send to Claude**, onto the sender's
+  own `bugledger/<user>` branch (never the branch they are working on);
 - **merge-friendly** → different bugs are different files (no conflicts possible); one field per
   line in a stable order (a diff is exactly the fields that changed); a reviewer only sees the
   issues a push actually published;
@@ -206,7 +213,7 @@ same ledger issues. Keep it a pure function — no editor types, no statics with
 | Route | Id | How |
 |---|---|---|
 | **Auto-capture** | `E-…` | Every distinct error/exception/assert signature files itself, once — captured via `logMessageReceivedThreaded` into a background worker (the log path never blocks on file IO). A thousand repeats update one issue. |
-| **Custom** | `C-…` | The window's **+ New Bug** form — for anything auto-capture cannot see ("the quest screen is empty"). Title, notes, severity. |
+| **Custom** | `C-…` | For anything auto-capture cannot see ("the quest screen is empty"): filed on the Team Bug Board artifact (no Unity needed) and imported by the daily sweep with `bug_ledger.py file`. |
 | **Tool findings** | `T-…` | `BugLedger.ReportFromTool` / `ReportToolFindings` — auditors and validators file their failures as tracked issues. The crash detector's File Bug button uses the same route. |
 
 Auto-capture guard rails: own `[BugLedger]`/`[CrashDetector]` console lines are excluded, a
@@ -221,7 +228,7 @@ occurrence.
             auto / custom / tool
                     │
                     ▼
-                 ┌──────┐   Mark Fixed    ┌────────────┐   clean-session quota met
+                 ┌──────┐ fix (in HEAD)   ┌────────────┐   clean-session quota met
       ┌────────► │ OPEN │ ──────────────► │ VALIDATING │ ─────────────────────────► resolved
       │          └──────┘                 └────────────┘                            (archived,
       │              │                      │       │                               removed from
@@ -233,8 +240,9 @@ occurrence.
       └─────────────────────────────────────────────┘
 ```
 
-- **Mark Fixed** stamps who/when and moves the issue to VALIDATING (a signatureless custom issue
-  resolves via a confirm instead — there is nothing to auto-validate).
+- **Marked fixed by whoever fixed it** — in practice a Claude session, `bug_ledger.py mark-fixed`,
+  which writes VALIDATING plus the fix commit onto the sender's `bugledger/<user>` branch. The
+  editor adopts it only once that commit is in its HEAD (§ "Send to Claude").
 - **Validation evidence** is scope-matched, and only counts while auto-capture is ON (a clean
   session proves nothing while nothing listens):
   - `PlayMode` issues: each play run ≥ the minimum length where the signature stays silent
@@ -248,148 +256,85 @@ occurrence.
   per issue) it is **resolved**: removed from the live store, stamped (`state: resolved`,
   `resolvedUtc`, `resolution`) into **`BugLedger/local/resolved/`** (pruned to a cap), and one
   console line says so. The stamp is unconditional — it is also the TOMBSTONE that keeps the
-  sync-down from re-importing a shared copy, which is why deleting an issue writes one too. If
-  the issue had been published, its shared file becomes a pending **DEL** to stage.
+  sync-down from re-importing a shared copy, which is why deleting an issue writes one too. A
+  closed issue simply drops out of the next send, so it disappears from the sender's branch.
 - **A recurrence while validating reopens the issue as a regression** — the loudest thing the
   ledger says, because a fix that didn't fix is its whole reason to exist.
-- Per issue: **pause/resume validation** (nothing counts either way), **Ignore** (parks it;
-  matching errors never reopen it and the signature is never re-filed), **Resolve Now**
-  (bypass), **Delete** (discard outright; if the error is real it will re-file), editable notes,
-  and a click-to-cycle **severity** (`blocker` / `major` / `minor` — sorts within each state).
+- The `Ignore`, `Pause`, `Reopen`, `ResolveNow`, `Delete` and `SetSeverity` calls remain in
+  `BugLedger`'s API for tools and Claude; no person is asked to drive them.
 
-### Staging and pushing
+### Send to Claude — the only UI
 
-The **Stage & Push** tab is the ledger's own version-control surface (`BugLedgerStageView` over
-`BugLedgerPublisher`). It shows the difference between your local live store and the published
-`shared/` set as **pending changes**:
+`BugHuntAutoSend` (editor, `[InitializeOnLoad]`). When a play test ends and it logged a red error
+Claude does not have yet (an OPEN issue seen this run whose `id:regressions` fingerprint was never
+asked about), ONE dialog: *"This play test logged N new console errors… Send them to Claude to
+fix?"* — **Send to Claude** / **Not now**. Either answer records the fingerprints
+(`BugLedgerSettings.SentFingerprints`), so the same error never asks twice; only a new error, or one
+that came BACK after a fix (its regression count moved), asks again. "Not now" errors ride along on
+the next send.
 
-| Badge | Meaning |
-|---|---|
-| `ADD` | live locally, never published |
-| `MOD` | published, but your local copy differs (new occurrences, state, notes…) |
-| `DEL` | published, but resolved/deleted locally — staging removes the shared file |
+**Send** (`BugLedgerSender`, background thread) pushes this machine's whole live ledger to its own
+branch, **`bugledger/<user>`**, containing only `BugLedger/shared/`:
 
-Stage a selection with the per-row **`+` / `−`** buttons (or Stage All / Unstage All), write a
-**commit comment**, and press **Commit & Push**. Staging is a UI selection until that moment —
-nothing touches a tracked file while you are still choosing. The publish then runs on a background
-thread with a **step progress bar**, exactly like any VCS client:
+- `issues/<id>.bug.json` — every live issue (a closed one simply drops out);
+- `reports/<user>/<redlog|crash|perf>/<file>` — new redlog sessions (`Logs/RedConsole/`), crash
+  reports (`Logs/CrashDetector/`) and DiagnosticsHUD JSONs (`Documents/CosmicShore Diagnostics/`),
+  ≤ 14 days old, ≤ 512 KB, ≤ 12 per send, append-only (`BugHuntReports`).
 
-```
-fetch origin → check branch state → publish staged files into shared/ → git add → commit → push
-```
+It never touches the person's work: blobs go straight into the object store (`hash-object -w`), the
+tree is built in a THROWAWAY index (`GIT_INDEX_FILE` under `Library/`), the commit is
+`commit-tree`d onto the branch's last commit and pushed to `refs/heads/bugledger/<user>`. Their
+working tree, staged changes and current branch are never read or written, so there is nothing to
+pull first and nothing to conflict; a send whose tree equals the branch's pushes nothing; a push
+rejected because Claude pushed in between retries once from a fresh fetch. (The command sequence
+was replayed against a throwaway repo on 2026-10-15: first send creates the branch, the second
+appends a report and replaces the issue, an unchanged third pushes nothing, the user's HEAD and
+staged change untouched.)
 
-The guarantees, in order of importance:
+**Fixes come back the same way.** `bug_ledger.py mark-fixed <id> --note … [--commit <sha>]` (default
+HEAD; push the fix first) rewrites the issue as VALIDATING with `fixCommit` on every
+`origin/bugledger/*` branch that carries it — same throwaway-index technique, held by
+`--self-test` with a negative control. The editor syncs at load and before every send, and adopts
+the fix (`BugLedger.AdoptPublishedFix`) **only once `fixCommit` is in its HEAD** — play runs on code
+without the fix must never credit it. Until then a send keeps Claude's claim on the branch instead
+of overwriting it. Then the lifecycle above runs unseen: clean play runs close it, a recurrence
+reopens it and the next play test asks again.
 
-- **Scope**: `git add` takes the explicit staged ledger paths (plus the store's README and
-  `.gitignore`) — never `-A`, never a wildcard — and the commit carries the same pathspec, so
-  nothing else in your working tree, staged or not, can ride along. This tool can only ever
-  commit bug data.
-- **Safety before commit**: if the fetch shows `origin/<branch>` ahead, the publish stops BEFORE
-  applying or committing anything and asks you to pull in your git client first — it never pulls
-  or rebases your repo itself.
-- **Branch policy**: pushes go to the CURRENT branch after a confirm dialog that names it.
-  Deliberate deviation from the ship panel's protected-branch refusal: ledger issues are team
-  DATA, not tool output — "file a bug the whole team sees" must not require a feature branch and
-  a PR.
-- **Fetch** (its own button) is read-only: `git fetch origin`, an ahead/behind readout, and the
-  list of incoming ledger files that will land on your next pull.
-- A failed push after a successful commit says so explicitly — the commit exists locally, and
-  pressing Commit & Push again (or pushing from any git client) finishes the job.
+**Claude's side** is the `/bug-ledger` skill over `Tools/Build/bug_ledger.py` (`collect` reads every
+`origin/*` branch, `bugledger/*` included; `show`, `mark-fixed`, `file`). "Is it fixed?" is answered
+from the sender's branch: open / fixed in `<sha>` (pull it) / validating k of n / gone (closed) /
+reopened. A daily scheduled sweep does the same unattended and mirrors the result into the **Team
+Bug Board** artifact (https://claude.ai/artifact/5zNw9wDjMrxvZVjGD7KBno), where anyone can read it
+and file a bug without Unity.
 
-The Bug Ledger tab shows an **N UNPUBLISHED** pill whenever local and shared differ — clicking it
-jumps here.
+**Stack excerpts skip the logging plumbing.** With Unity's native trace format an error's first ~10
+frames are the stack walker, `DebugLogHandler`, `Logger` and `BenignLobbyLogFilter`; the excerpt now
+drops those and the native address prefix, so its first line is the code that logged. (The first
+shared "Rpc methods can only be invoked after starting the NetworkManager!" arrived with nothing
+but plumbing, so its sender could not be found.)
 
-### The agent loop — errors to Claude, fixes back, after every play test
+**Older path, still read:** issues published before this into a branch's working-tree
+`BugLedger/shared/issues/` are still imported at load and still read by `collect`.
 
-The ledger is also how a Claude session fixes console errors without anyone copying them out of
-the Console. Three pieces, one per direction:
+### The Bug Hunt & Performance badge — the one indicator
 
-```
-play test ──► auto-capture (local/) ──► Auto-publish after each play test ──► shared/ on the branch
-                                                                                    │
-            /bug-ledger skill: bug_ledger.py list → root-cause + fix → mark-fixed ◄─┘
-                                                                                    │
-next play run ◄── editor ADOPTS the published fix (open → validating) ◄── pull ◄────┘
-     │
-     ├─ silent across cleanSessionsRequired runs → the issue closes itself (DEL publishes)
-     └─ fires again → reopens with a regression count → the next auto-publish sends it back
-```
+The after-play question above is the only dialog. Beside it there is ONE passive indicator (Yash, 2026-10-15: "no
+extra UIs in our editor ... at the start of each Unity editor, a small indicator which says the bug hunt and
+performance report, with few options to do the most basic necessary steps"). `BugHuntPerfBadge` draws a small card in
+the bottom-left corner of every Scene view. It opens expanded once per editor start and folds to a one-line pill
+(`–`); `×` hides it until the next start. It never opens a dialog and runs nothing slow.
 
-- **Auto-publish after each play test** (Settings, machine-local, OFF by default because it
-  pushes on your behalf). At `EnteredEditMode`, if the run changed the ledger MATERIALLY — a new
-  signature (ADD), a validated close (DEL), or a MOD whose `state` or `regressions` moved — every
-  pending change is published through the same scoped commit as Commit & Push: ledger paths only,
-  current branch, refused while `origin` is ahead. Counter-only drift (an already-published error
-  firing again) does not push on its own, so a known error does not mint a commit per run. A
-  failure is a console warning, since nobody is watching the tab.
-- **`/bug-ledger`** (`.claude/skills/bug-ledger/SKILL.md`) over **`Tools/Build/bug_ledger.py`**
-  (`list` / `show` / `mark-fixed`, `--self-test`). The script writes issue files byte-for-byte as
-  `BugLedgerIssue.ToJson` does — verified by round-tripping its output through the real C#
-  `FromJson → ToJson` (identical) — and `mark-fixed` sets the SHARED copy to `validating` with a
-  fresh `fixedUtc` and the root cause appended to `notes`.
-- **Fix adoption** (`BugLedger.TryAdoptPublishedFix`). "Local wins" would otherwise leave the
-  issue OPEN forever on the one machine that reproduces it. A published `validating` copy whose
-  `fixedUtc` is strictly newer than the local copy's last fix moves a local OPEN issue to
-  VALIDATING exactly as Mark Fixed would (clean count reset, fixer and notes carried). Ignored and
-  already-validating issues are left alone, and after a regression the SAME fix is never
-  re-adopted — it takes a new fix to put the issue back on the clock. Sync runs at load, on
-  Refresh, and at `ExitingEditMode`, so a fix pulled with no C# change (no domain reload — this
-  project enters play mode without one) is adopted BEFORE the run that should validate it.
-
-### The Bug Hunt & Performance badge
-
-**The one piece of editor UI the bug hunt and the performance system have** (Yash, 2026-10-15: "no extra UIs in
-our editor ... a small indicator at the start of each Unity editor, with few options to do the most basic
-necessary steps"). `BugHuntPerfBadge` draws a small card in the bottom-left corner of every Scene view. It opens
-expanded once per editor start and folds to a one-line pill (`–`); `×` hides it until the next start.
-
-- **Bugs:** the Bug Ledger's open and validating counts, and how many bug changes and report files this machine
-  has not shared.
+- **Bugs:** the ledger's open count and how many fixed issues your next play runs are still checking.
 - **Perf:** the gates, the regressions and the scenarios still owed a Release capture, read from
-  `Docs/perf/status.json` (written by every `perf_hunt.py sweep`), plus the first next step.
-- **Buttons, each shown only when it applies:** **Share** (the check-in's scoped publish), **Auto** (share after
-  every play test from now on), **Capture** (Play mode: `capture <label> 15`, the label taken from the scene's
-  scenario in the status file), **Release** (Code Optimization is Debug, so a capture would not count).
+  `Docs/perf/status.json` (written by every `perf_hunt.py sweep`), the age of that status, and the first next step.
+- **Buttons, each shown only when it applies:** **Send to Claude** (open errors exist; the same `BugLedgerSender`
+  push as the after-play question), **Capture** (Play mode: `capture <label> 15`, the label taken from the scene's
+  scenario in the status file; a new capture then asks "Send to Claude?" after Play), **Release** (Code Optimization
+  is Debug, so a capture would not count).
 
-It replaced the check-in's automatic dialog and the Capture Performance window. Every other question (what
-regressed, what to test, what to fix next) is answered by Claude: the `health_status.py` hook hands any session
-that is asked the same status file (`python3 Tools/Build/perf_hunt.py status`).
-
-### The Bug Hunt check-in
-
-The **perf** kind it shares (`capture_*.json`, `diag_*`, `prof_*`) is read by the performance system's sweep
-(`Tools/Build/perf_hunt.py collect`, every branch) and judged against `Docs/perf/baselines.json`; a regression
-becomes a Performance task on `Docs/TEAM_TASKS.md` and `/perf-hunt` resolves it (`Docs/PERFORMANCE_OPTIMIZATION.md` §3.4).
-
-
-Every editor already records what goes wrong — the ledger (one issue per red signature), Yash's
-**redlog** (`Logs/RedConsole/redconsole_*.log`, every red line of a play session with context), the
-Crash Detector (`Logs/CrashDetector/Crash-*.log`) and the DiagnosticsHUD's performance JSONs
-(`Documents/CosmicShore Diagnostics/*.json`) — but none of it leaves the machine on its own.
-At most once per **Bug Hunt check-in (hours)** (Settings, default 24, 0 = never), and **only when something
-is new**, the badge above unfolds itself with a **Share** button (it used to be a modal dialog;
-**FrogletTools ▸ Diagnostics ▸ Bug Hunt Check-in** still opens that dialog on demand):
-
-- **Share now** — one scoped publish: the pending ledger changes plus the new report files, copied by
-  `BugHuntReports` into `BugLedger/shared/reports/<user>/<redlog|crash|perf>/` (recent files only:
-  ≤ 14 days, ≤ 512 KB each, ≤ 12 per share, newest first; a file whose copy exists is never sent twice).
-- **Remind me later** — asks again after the interval.
-- **Always share after play tests** — turns on the after-play auto-publish (which now carries report
-  files too) and shares now.
-
-**Reporting is one button: Share** (on the badge, or the green button in the Bug Ledger window's
-header). A reporter never presses a row's **Fix** — that is for whoever changed the
-code, and it now asks first: a bug marked fixed by someone who only meant to report it starts the
-validation clock on an unfixed bug, and an intermittent error can close itself after two lucky runs
-(Yash, 2026-10-15, did exactly that with six issues because Fix looked like "send").
-
-**FrogletTools ▸ Diagnostics ▸ Bug Hunt Check-in** asks immediately; **Open Team Bug Board** opens the
-board artifact (https://claude.ai/artifact/5zNw9wDjMrxvZVjGD7KBno). The board is a reader of the
-**daily sweep** (`/bug-ledger` §6): a scheduled Claude session runs `bug_ledger.py collect` over every
-`origin/*` branch, fixes what it can on `Ys-bleeding-edge`, imports bugs filed on the board
-(`bug_ledger.py file`, so they reach every editor's ledger) and mirrors issues, reports and a run log
-into the board's database. Access: everyone the board is shared with reads it; Contributors file bugs;
-only editors (and the sweep) write the mirrored data.
+It replaced the Capture Performance window. Every other question (what regressed, what to test, what to fix next) is
+answered in Claude: the `.claude/hooks/health_status.py` hook hands any session that is asked the same status file
+(`python3 Tools/Build/perf_hunt.py status`).
 
 ### Honest limits
 
@@ -428,25 +373,14 @@ a clean run. Copy that shape.
 1. **Crash tab ▸ Test Error** → the entry appears in the session journal (Open Journal).
 2. Kill the editor from the OS while it runs → relaunch → red verdict card + a `Crash-*.log`
    containing the journal and Unity's log tail.
-3. **Bugs tab ▸ Test Capture** → one `E-…` issue appears (and only one, however many times you
-   click) — and `git status` stays CLEAN, because the live store is gitignored. **Mark Fixed** →
-   VALIDATING. Two play runs ≥ the minimum length → the issue resolves itself, archived under
-   `BugLedger/local/resolved/`.
-4. Test Capture again *while* validating → the issue reopens as a regression with a console
-   warning.
-5. **Vessels ▸ Audit Vessel Skimmers** with a known fault → dialog files `T-…` findings; fix the
-   fault, re-run the audit clean → the findings resolve themselves.
-6. **Stage & Push tab** → the surviving issues show as pending ADDs; stage one with `+`, comment,
-   **Commit & Push** → the progress bar walks fetch → publish → add → commit → push, and exactly
-   one file appears in `BugLedger/shared/issues/` on the branch. Resolve that issue and its DEL
-   shows up here to stage.
-7. **The agent loop**: Settings ▸ **Auto-publish after each play test** ON → Test Capture, then
-   a play run → a `bugledger: auto-publish after play test` commit lands on the branch with that
-   issue. Run `python3 Tools/Build/bug_ledger.py mark-fixed <id> --note test`, commit, push, pull
-   → on the next play-mode entry the console says `Adopted a published fix` and the issue reads
-   VALIDATING. A second play run with no change publishes nothing (counter drift only).
-
----
+3. **Send to Claude**: in Play, run `Debug.LogError("bugledger test")` from any script (or hit a real
+   error), stop Play → the dialog lists it → Send. Within seconds the console says `Sent to Claude`
+   and `origin/bugledger/<you>` has `BugLedger/shared/issues/E-….bug.json`. `git status` is
+   unchanged and you are still on your branch.
+4. Play and stop again with the same error → **no** dialog (already sent).
+5. A Claude session runs `bug_ledger.py mark-fixed <id> --note test`; pull the fix commit; restart
+   the editor → the console says `Fix received`, and two clean play runs close the issue (it drops
+   off your branch at the next send).
 
 ## Files
 
@@ -458,14 +392,13 @@ a clean run. Copy that shape.
 | Issue model + hand-rolled JSON | `Assets/_Scripts/Editor/Diagnostics/BugLedgerIssue.cs` |
 | Ledger settings (`ScriptableSingleton`) | `Assets/_Scripts/Editor/Diagnostics/BugLedgerSettings.cs` |
 | Agent side of the ledger (list / show / mark-fixed / collect / file) | `Tools/Build/bug_ledger.py` + `.claude/skills/bug-ledger/SKILL.md` |
-| Bug Hunt check-in + report sharing | `Assets/_Scripts/Editor/Diagnostics/BugHuntCheckIn.cs`, `BugHuntReports.cs` |
-| Bug Hunt & Performance badge (Scene view) | `Assets/_Scripts/Editor/Diagnostics/BugHuntPerfBadge.cs`, reads `Docs/perf/status.json` |
+| The one UI: the after-play "Send to Claude?" question | `Assets/_Scripts/Editor/Diagnostics/BugHuntAutoSend.cs` |
+| The one indicator: the Scene view's Bug Hunt & Performance badge (reads `Docs/perf/status.json`) | `Assets/_Scripts/Editor/Diagnostics/BugHuntPerfBadge.cs` |
+| Sender to `bugledger/<user>` + fix pickup (throwaway index, off-thread) | `Assets/_Scripts/Editor/Diagnostics/BugLedgerSender.cs` |
+| Report files that ride along (redlog / crash / perf) | `Assets/_Scripts/Editor/Diagnostics/BugHuntReports.cs` |
 | Team Bug Board (artifact page source) | `Docs/BugHunt/TeamBugBoard.html` → https://claude.ai/artifact/5zNw9wDjMrxvZVjGD7KBno |
-| Ledger tab view | `Assets/_Scripts/Editor/Diagnostics/BugLedgerView.cs` |
-| Stage & Push tab view | `Assets/_Scripts/Editor/Diagnostics/BugLedgerStageView.cs` |
-| Scoped git publisher (fetch/apply/add/commit/push, off-thread) | `Assets/_Scripts/Editor/Diagnostics/BugLedgerPublisher.cs` |
 | Compile-timing recorder (`[InitializeOnLoad]`, opt-in) | `Assets/_Scripts/Editor/Diagnostics/CompileTimingMonitor.cs` |
-| The window (all four tabs) | `Assets/_Scripts/Editor/Diagnostics/DiagnosticsWindow.cs` |
+| The window (Crash Detector + Compile Timing tabs) | `Assets/_Scripts/Editor/Diagnostics/DiagnosticsWindow.cs` |
 | On-screen UI report (reader, play mode only) | `Assets/_Scripts/Editor/Diagnostics/OnScreenUIReport.cs` |
 | Live-store gitignore (committed, self-healed by the tool) | `BugLedger/.gitignore` |
 | Shared signature core (**runtime-safe**) | `Assets/_Scripts/Utility/BugSignature.cs` |

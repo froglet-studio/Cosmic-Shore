@@ -9304,27 +9304,26 @@ runtime command ran end to end in Prisma (`console capture S1test 5` wrote a bun
    Bug Hunt & Performance badge, checked in the 2026-10-15 entry below.)
 5. `python3 Tools/Build/perf_capture_report.py <file>` prints validity, the frame, markers, Profiler top self/GC, the world.
 
-## 🔴 2026-10-15 — Bug Hunt & Performance badge replaces the check-in dialog and the Capture window (unverified: no Unity CLI in the session)
+## 🔴 2026-10-15 — Bug Hunt & Performance badge, the one editor indicator (unverified: no Unity CLI in the session)
 
-**Files:** `Assets/_Scripts/Editor/Diagnostics/BugHuntPerfBadge.cs` (new), `BugHuntCheckIn.cs` (no automatic dialog; the
-menu item still asks), `BugLedgerSettings.cs` (tooltip), `Assets/_Scripts/Editor/PerfCaptureWindow.cs` (deleted). What ran
-instead of `/verify-unity`: `unity_refcompile --config editor` (0 errors in the changed files; the 3 project errors are
-in `AuthenticationServiceFacade.cs`, untouched), `check_console_logging.py`, `check_conditional_compilation.py`.
+**Files:** `Assets/_Scripts/Editor/Diagnostics/BugHuntPerfBadge.cs` (new), `Assets/_Scripts/Editor/PerfCaptureWindow.cs`
+(deleted). It sits beside the after-play "Send to Claude?" question that replaced the Bug Ledger window the same day
+(`BugHuntAutoSend`, `BugLedgerSender`). What ran instead of `/verify-unity`: `unity_refcompile --config editor` against
+the merged sender API (0 errors in the changed files; the 3 project errors are in `AuthenticationServiceFacade.cs`,
+untouched), `check_console_logging.py`, `check_conditional_compilation.py`.
 
 1. Open the editor with any scene and a Scene view. Expect a card in the Scene view's bottom-left corner titled
-   "Bug Hunt & Performance" with a Bugs row (open · validating · to share) and a Perf row (gates · regressions ·
-   captures owed · checked N ago) and a "Next:" line. No modal dialog appears on load.
+   "Bug Hunt & Performance" with a Bugs row, a Perf row (gates · regressions · captures owed · checked N ago) and a
+   "Next:" line. The badge itself opens no dialog.
 2. Press `–`: it folds to a one-line pill; click the pill: it unfolds. Press `×`: it disappears until the editor restarts.
 3. With Code Optimization = Debug (the bug icon in the status bar): a yellow **Release** button shows; pressing it
    recompiles in Release and the button goes away.
 4. Play Menu_Main: the card shows **Capture S2**. Press it: the Profiler window opens, the button reads
-   "Capturing... hands off", then the card says "Saved capture_Menu_Main_S2_*.json". Stop playing.
-5. Back in Edit mode (within a minute): **Share (N)** shows when there is something new; pressing it opens the usual
-   "Share with team?" confirm and publishes only `BugLedger/` files. **Auto** turns on Auto-publish after play tests.
-6. Set Bug Hunt check-in (hours) to 0 in the Bug Ledger's settings: the card no longer unfolds itself; the counts stay.
-7. FrogletTools ▸ Diagnostics ▸ Bug Hunt Check-in still opens the dialog on demand.
-8. Report: whether the card covers anything in the Scene view you need (it sits above the bottom-left of the view),
-   and whether the text is readable on the light skin.
+   "Capturing... hands off", then the card says "Saved capture_Menu_Main_S2_*.json". Stop playing: Unity asks
+   "Send to Claude?" for the new capture.
+5. With an open console error in the ledger, Edit mode shows **Send to Claude**; pressing it reads "Sending...", then
+   "Sent to Claude", and `origin/bugledger/<you>` carries the issue. Your branch and `git status` are unchanged.
+6. Report: whether the card covers anything in the Scene view you need, and whether it reads well on the light skin.
 
 ## 🔴 Regatta: the Squirrel AI skims its own rail instead of striking the braid (2026-10-15, `Ys-bleeding-edge`) - NOT EDITOR-VERIFIED
 

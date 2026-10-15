@@ -19,16 +19,16 @@ namespace CosmicShore.Editor
     ///
     /// <para>A small card in the bottom-left corner of every Scene view. It opens expanded once per
     /// editor start, then folds to a one-line pill. It reads two things and runs nothing slow:
-    /// the Bug Ledger's own counts (open, validating, what this machine has not shared yet) and
-    /// <c>Docs/perf/status.json</c>, which every <c>Tools/Build/perf_hunt.py sweep</c> writes (the
-    /// gates, regressions, the scenarios still owed a Release capture, the next step).</para>
+    /// the Bug Ledger's counts (open, being validated) and <c>Docs/perf/status.json</c>, which every
+    /// <c>Tools/Build/perf_hunt.py sweep</c> writes (the gates, regressions, the scenarios still owed
+    /// a Release capture, the next step).</para>
     ///
     /// <para>Its only buttons are the basic steps, each shown only when it applies:
-    /// <b>Share</b> (the check-in's scoped publish), <b>Auto</b> (share after every play test from
-    /// now on), <b>Capture</b> (Play mode: the HUD's <c>capture</c> command, labelled by the scene's
-    /// scenario) and <b>Release</b> (switch Code Optimization, since a Debug capture is not a
-    /// number). It replaces the check-in's automatic dialog: when there is something new to share
-    /// and the reminder interval has passed, the badge opens itself instead of a modal.</para>
+    /// <b>Send to Claude</b> (open errors exist: <see cref="BugLedgerSender"/>'s push to
+    /// <c>bugledger/&lt;user&gt;</c>, which never touches the working tree and pushes nothing when
+    /// nothing changed), <b>Capture</b> (Play mode: the HUD's <c>capture</c> command, labelled by the
+    /// scene's scenario) and <b>Release</b> (switch Code Optimization, since a Debug capture is not a
+    /// number). It never opens a dialog: the one after-play question is <see cref="BugHuntAutoSend"/>'s.</para>
     ///
     /// <para>Reader-plus-launcher: it writes nothing under Assets, so it needs no ship panel
     /// (Docs/TOOLING.md). Hidden with × until the next editor start.</para>
@@ -63,9 +63,9 @@ namespace CosmicShore.Editor
 
         static Status _status;
         static DateTime _statusWrite;
-        static int _open, _validating, _bugsToShare, _filesToShare;
+        static int _open, _validating;
         static double _nextRefresh;
-        static bool _wasCapturing;
+        static bool _wasCapturing, _wasSending;
         static string _note;
 
         static BugHuntPerfBadge()
@@ -75,7 +75,7 @@ namespace CosmicShore.Editor
             EditorApplication.update += Tick;
             EditorApplication.playModeStateChanged += change =>
             {
-                // Stopping play is when a new error, a new capture or an auto-publish lands.
+                // Stopping play is when a new error or a new capture lands.
                 if (change == PlayModeStateChange.EnteredEditMode) _nextRefresh = 0;
             };
         }
@@ -90,7 +90,7 @@ namespace CosmicShore.Editor
                 string file = DiagnosticsHUD.LastCapturePath;
                 _note = string.IsNullOrEmpty(file)
                     ? "Capture finished."
-                    : $"Saved {Path.GetFileName(file)}. Stop playing, then Share sends it to the team.";
+                    : $"Saved {Path.GetFileName(file)}. Stop playing: Unity asks to send it to Claude.";
                 SceneView.RepaintAll();
             }
             else if (capturing != _wasCapturing)
@@ -98,6 +98,15 @@ namespace CosmicShore.Editor
                 SceneView.RepaintAll();
             }
             _wasCapturing = capturing;
+
+            bool sending = BugLedgerSender.IsBusy;
+            if (_wasSending && !sending)
+            {
+                _note = "Sent to Claude (or nothing had changed since the last send).";
+                _nextRefresh = 0;
+            }
+            if (sending != _wasSending) SceneView.RepaintAll();
+            _wasSending = sending;
 
             if (EditorApplication.timeSinceStartup < _nextRefresh) return;
             _nextRefresh = EditorApplication.timeSinceStartup + RefreshSeconds;
@@ -133,12 +142,6 @@ namespace CosmicShore.Editor
             try
             {
                 BugLedger.CountsByState(out _open, out _validating, out _);
-                // The pending diff reads the shared folder; never while playing or mid-publish.
-                if (EditorApplication.isPlayingOrWillChangePlaymode || BugLedgerPublisher.IsBusy) return;
-                var pending = BugLedger.ComputePendingChanges();
-                BugLedger.HasMaterialChange(pending, out _bugsToShare);
-                _filesToShare = BugHuntReports.Plan().Count;
-                AskForAttentionIfDue();
             }
             catch (Exception e)
             {
@@ -146,26 +149,8 @@ namespace CosmicShore.Editor
             }
         }
 
-        /// <summary>The check-in's reminder, without the modal: when something new is waiting and
-        /// <c>CheckInReminderHours</c> has passed, the badge unfolds itself and restarts the clock.</summary>
-        static void AskForAttentionIfDue()
-        {
-            if (_bugsToShare + _filesToShare == 0) return;
-            var settings = BugLedgerSettings.instance;
-            if (settings.CheckInReminderHours <= 0) return;
-            if (DateTime.TryParse(settings.LastCheckInPromptUtc, CultureInfo.InvariantCulture,
-                    DateTimeStyles.AdjustToUniversal | DateTimeStyles.AssumeUniversal, out var last)
-                && DateTime.UtcNow - last < TimeSpan.FromHours(settings.CheckInReminderHours))
-                return;
-            settings.LastCheckInPromptUtc = DateTime.UtcNow.ToString("o", CultureInfo.InvariantCulture);
-            settings.SaveNow();
-            SessionState.SetBool(ExpandedKey, true);
-            SessionState.SetBool(HiddenKey, false);
-        }
-
         // ── Summary text ────────────────────────────────────────────────────────
 
-        static int ToShare => _bugsToShare + _filesToShare;
         static int Regressions => _status?.regressions?.Length ?? 0;
 
         static int Owed
@@ -184,13 +169,15 @@ namespace CosmicShore.Editor
             get
             {
                 if (_status != null && (!_status.gatesOk || Regressions > 0)) return FrogletEditorPalette.Error;
-                if (_open > 0 || ToShare > 0 || Owed > 0 || _status == null) return FrogletEditorPalette.Warn;
+                if (_open > 0 || Owed > 0 || _status == null) return FrogletEditorPalette.Warn;
                 return FrogletEditorPalette.Ok;
             }
         }
 
         static string BugLine =>
-            $"{_open} open · {_validating} validating · " + (ToShare > 0 ? $"{ToShare} to share" : "all shared");
+            BugLedgerSender.IsBusy ? $"{_open} open · sending to Claude..."
+            : _open + _validating == 0 ? "no open console errors"
+            : $"{_open} open · {_validating} fixed, being checked by your next play runs";
 
         static string PerfLine
         {
@@ -258,7 +245,7 @@ namespace CosmicShore.Editor
 
         static void DrawPill(float viewHeight)
         {
-            string text = $"Bug Hunt: {_open} open" + (ToShare > 0 ? $", {ToShare} to share" : "") +
+            string text = $"Bug Hunt: {_open} open" +
                           "   Performance: " + (_status == null ? "no status"
                               : !_status.gatesOk ? "gates RED"
                               : Regressions > 0 ? $"{Regressions} regression(s)"
@@ -323,7 +310,7 @@ namespace CosmicShore.Editor
         static void DrawButtons(float x, float y, float width)
         {
             bool playing = EditorApplication.isPlaying;
-            bool busy = BugLedgerPublisher.IsBusy;
+            bool busy = BugLedgerSender.IsBusy;
             float bx = x;
 
             bool Button(string label, Color accent, string tooltip, bool enabled = true)
@@ -335,24 +322,14 @@ namespace CosmicShore.Editor
                 return FrogletEditorPalette.ColorButton(rect, label, accent, tooltip, enabled);
             }
 
-            if (!playing && (ToShare > 0 || busy)
-                && Button(busy ? "Sharing..." : $"Share ({ToShare})", FrogletEditorPalette.Ok,
-                    "Publish this machine's new bugs and report files (redlog, crash, perf JSONs) to the team: " +
-                    "only BugLedger/ files, to the current branch. A daily Claude sweep reads and fixes them.", !busy))
+            if (!playing && (_open > 0 || busy)
+                && Button(busy ? "Sending..." : "Send to Claude", FrogletEditorPalette.Ok,
+                    "Push this machine's console errors (and any new redlog, crash and perf files) to your own " +
+                    "bugledger/<you> branch for Claude to fix. Your working tree and branch are not touched; " +
+                    "nothing is pushed when nothing changed.", !busy))
             {
-                BugHuntCheckIn.ShareWithTeam();
-                _nextRefresh = 0;
-            }
-
-            if (!playing && ToShare > 0 && !BugLedgerSettings.instance.AutoPublishAfterPlay
-                && Button("Auto", FrogletEditorPalette.Info,
-                    "Share automatically after every play test from now on (turn off in the Bug Ledger's settings)."))
-            {
-                var settings = BugLedgerSettings.instance;
-                settings.AutoPublishAfterPlay = true;
-                settings.SaveNow();
-                BugLedger.ApplySettings(settings);
-                _note = "Auto-share is on: every play test's new bugs and captures go to the team when you stop playing.";
+                BugLedgerSender.SendInBackground();
+                _note = "Sending to Claude in the background.";
             }
 
             if (playing)

@@ -12,8 +12,8 @@ namespace CosmicShore.Editor
     /// deterministic for the whole team (e.g. how many clean sessions close an issue) is stamped
     /// INTO the issue file at creation, so a later local change never rewrites history.
     ///
-    /// The window is the only writer; it applies values through the properties and then calls
-    /// <see cref="SaveNow"/> once per change.
+    /// There is no settings UI any more (the Bug Ledger window was removed 2026-10-15 — "no complex
+    /// UI toolboxes"); the defaults below are the policy. Edit the asset only to tune a machine.
     /// </summary>
     [FilePath("UserSettings/BugLedgerSettings.asset", FilePathAttribute.Location.ProjectFolder)]
     public sealed class BugLedgerSettings : ScriptableSingleton<BugLedgerSettings>
@@ -41,22 +41,7 @@ namespace CosmicShore.Editor
                                                   "dropped with one console warning.")]
         int maxAutoIssues = 150;
 
-        [SerializeField, Tooltip("After every play test that changed the ledger materially (a new error, a " +
-                                 "reopened regression, a validated close), publish ALL pending ledger changes " +
-                                 "to the CURRENT branch — the same scoped commit Stage & Push makes (ledger " +
-                                 "paths only, refused while origin is ahead) together with any new report files " +
-                                 "(BugHuntReports). This is what lets a Claude session " +
-                                 "read and fix the errors without you staging them (/bug-ledger skill). Off by " +
-                                 "default: it pushes on your behalf.")]
-        bool autoPublishAfterPlay;
-
-        [SerializeField, Range(0, 168), Tooltip("Bug Hunt check-in: at most this often (hours) the Scene view's " +
-                                                "Bug Hunt & Performance badge unfolds to offer sharing the errors " +
-                                                "and report files (redlog, crash, perf JSONs) this machine has " +
-                                                "collected — only when there is something new. 0 = never unfold.")]
-        int checkInReminderHours = 24;
-
-        [SerializeField, HideInInspector] string lastCheckInPromptUtc = "";
+        [SerializeField, HideInInspector] string sentFingerprints = "";
 
         // Note: closing an issue ALWAYS stamps it into BugLedger/local/resolved/ — the archive
         // doubles as the tombstone that keeps a published-then-resolved issue from re-importing
@@ -67,9 +52,10 @@ namespace CosmicShore.Editor
         public int MinValidationPlaySeconds { get => minValidationPlaySeconds; set => minValidationPlaySeconds = Mathf.Clamp(value, 0, 300); }
         public int MinEditorSessionMinutes { get => minEditorSessionMinutes; set => minEditorSessionMinutes = Mathf.Clamp(value, 0, 120); }
         public int MaxAutoIssues { get => maxAutoIssues; set => maxAutoIssues = Mathf.Clamp(value, 10, 1000); }
-        public bool AutoPublishAfterPlay { get => autoPublishAfterPlay; set => autoPublishAfterPlay = value; }
-        public int CheckInReminderHours { get => checkInReminderHours; set => checkInReminderHours = Mathf.Clamp(value, 0, 168); }
-        public string LastCheckInPromptUtc { get => lastCheckInPromptUtc; set => lastCheckInPromptUtc = value ?? ""; }
+        /// <summary>"id:regressions" of every open error this machine already sent or chose not to
+        /// send, newline-separated — so the after-play question is asked once per new error,
+        /// never again for the same one (<see cref="BugHuntAutoSend"/>).</summary>
+        public string SentFingerprints { get => sentFingerprints; set => sentFingerprints = value ?? ""; }
 
         public void SaveNow() => Save(true);
     }

@@ -10,7 +10,7 @@ What it checks, and where each number comes from:
             the two Burst MathF gates, console logging, and scan_perframe_allocations.py's counts
             (per-frame allocations in Update/LateUpdate, yield-return-new in loops) compared with the
             recorded counts, so a new per-frame allocation is a regression on the day it lands.
-  collect   every capture_*.json a collaborator's editor shared through the Bug Hunt check-in
+  collect   every capture_*.json a collaborator's editor sent with "Send to Claude" (bugledger/<user> and every other branch)
             (BugLedger/shared/reports/<user>/perf/ on EVERY origin branch, like bug_ledger.py collect),
             plus any local Documents/CosmicShore Diagnostics folder. Each one is judged with
             perf_capture_report.py (validity first) and compared with its baseline.
@@ -353,7 +353,8 @@ def cmd_collect(args):
         if not verdicts:
             print("no shared captures yet (BugLedger/shared/reports/*/perf/capture_*.json on any branch, or a local "
                   "CosmicShore Diagnostics folder). Ask for one: in Play mode, Capture on the Scene view's Bug Hunt & "
-                  "Performance badge (or `capture <label>` in the HUD console), then Share on the same badge.")
+                  "Performance badge (or `capture <label>` in the HUD console), then stop Play and press Send to Claude "
+                  "when Unity asks (a new capture asks on its own).")
     return board
 
 
@@ -489,7 +490,7 @@ def render_report(gates, gate_failures, board, amoebius, tasks_filed):
         lines.append(f"| {g['gate']} | {'OK' if g['ok'] else 'FAIL'} - {g['line']} |")
     lines.append("")
     caps = board["captures"] if board else []
-    lines.append(f"**Editor captures shared through the Bug Hunt check-in:** {len(caps)} on {board['branchesScanned'] if board else 0} branch(es)")
+    lines.append(f"**Editor captures sent to Claude from the editor:** {len(caps)} on {board['branchesScanned'] if board else 0} branch(es)")
     lines.append("")
     if caps:
         lines.append("| Scene / label | By | When | CPU busy ms | p95 ms | GC KB/f | Prisms | Verdict |")
@@ -502,7 +503,7 @@ def render_report(gates, gate_failures, board, amoebius, tasks_filed):
                          f"{cell(s.get('gcKB'))} | {cell(s.get('prismEnts'))} | {cell(verdict)} |")
     else:
         lines.append("_None yet. A capture reaches this report when an editor runs FrogletTools > Performance > Capture "
-                     "Performance and then shares it (FrogletTools > Diagnostics > Bug Hunt Check-in, or Auto-publish)._")
+                     "Performance and then presses Send to Claude when Unity asks after the play test)._")
     lines.append("")
     if amoebius is not None:
         lines.append("**Amoebius marker run (allocations are the gate; milliseconds are watched):**")

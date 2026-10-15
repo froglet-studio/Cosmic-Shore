@@ -1,6 +1,6 @@
 ---
 name: bug-closeout
-description: Close out a FIXED bug in every record that tracks it, in one pass - the Bug Ledger (FrogletTools > Diagnostics > Bug Ledger; bug_ledger.py mark-fixed), Amoebius's BOARD (the engine's bug and task cards, amoebius_board / amoebius_board_suggest), the team task board (Docs/TEAM_TASKS.md, team_tasks.py done), the QA records (Docs/QA/DEV_TASKS.md and QA_BACKLOG.md via /qa-backlog), the owning doc's dated log row, and the verification record (Docs/UNITY_VERIFICATION_CHECKLIST.md or the PR body's Verification status). Use whenever a session - any collaborator's, any branch - fixes a bug, closes a dev task, resolves a board card or makes a listed test pass, and on "the bug is fixed, update the lists", "close this out", "mark DT-00N done", "what do I update now that X works". Never marks anything done without naming the check that proved it.
+description: Close out a FIXED bug in every record that tracks it, in one pass - the Bug Ledger (sent from Unity's after-play "Send to Claude" to bugledger/<user> branches; bug_ledger.py mark-fixed), Amoebius's BOARD (the engine's bug and task cards, amoebius_board / amoebius_board_suggest), the team task board (Docs/TEAM_TASKS.md, team_tasks.py done), the QA records (Docs/QA/DEV_TASKS.md and QA_BACKLOG.md via /qa-backlog), the owning doc's dated log row, and the verification record (Docs/UNITY_VERIFICATION_CHECKLIST.md or the PR body's Verification status). Use whenever a session - any collaborator's, any branch - fixes a bug, closes a dev task, resolves a board card or makes a listed test pass, and on "the bug is fixed, update the lists", "close this out", "mark DT-00N done", "what do I update now that X works". Never marks anything done without naming the check that proved it.
 ---
 
 # Bug closeout — one fix, every record
@@ -20,7 +20,7 @@ and leave the record open in that state.
 
 | Record | Where | Search |
 |---|---|---|
-| **Bug Ledger** (editor) | `BugLedger/shared/issues/*.bug.json` (published by the editor's Auto-publish after each play test) and the user's gitignored `BugLedger/local/` | `python3 Tools/Build/bug_ledger.py list` / `show <id>` (`/bug-ledger` is the fixing skill) |
+| **Bug Ledger** (editor) | `BugLedger/shared/issues/*.bug.json` on each sender's `origin/bugledger/<user>` branch (pushed by Unity's after-play "Send to Claude") and the user's gitignored `BugLedger/local/` | `python3 Tools/Build/bug_ledger.py list` / `show <id>` (`/bug-ledger` is the fixing skill) |
 | **Team task board** | `Docs/TEAM_TASKS.md` (`T-<date>-<hash>`: the tests, playtests and setup steps sessions hand each other) | `python3 Tools/Build/team_tasks.py list --all` |
 | **Amoebius BOARD** (engine) | `%LOCALAPPDATA%/Amoebius/tracks/board.json` on the user's machine; reachable from a session ONLY through the `amoebius_board` / `amoebius_board_suggest` MCP tools | `amoebius_board` when the tools are connected; otherwise ask the user for the card id |
 | **QA dev tasks** | `Docs/QA/DEV_TASKS.md` (`DT-00N`, each tied to a `QA-...` item in `Docs/QA/QA_BACKLOG.md`) | `grep -n "<symptom>" Docs/QA/DEV_TASKS.md Docs/QA/QA_BACKLOG.md` |

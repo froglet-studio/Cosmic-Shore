@@ -195,7 +195,7 @@
         "Pull Ys-bleeding-edge, open Unity, Code Optimization = Release, close the Third Eye window.",
         "Play, Cell Selector > Lattice, wait 8 minutes.",
         "On the Bug Hunt & Performance badge (bottom-left of the Scene view) press Capture S2; wait until it says Saved.",
-        "Stop playing and press Share on the same badge.",
+        "Stop playing and press Send to Claude when Unity asks.",
         "python3 Tools/Build/perf_hunt.py sweep --write shows the capture judged against its baseline in Docs/Reports/PERFORMANCE.md."
       ]
     }

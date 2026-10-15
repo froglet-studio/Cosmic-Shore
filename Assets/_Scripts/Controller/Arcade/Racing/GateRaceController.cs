@@ -819,6 +819,12 @@ namespace CosmicShore.Gameplay
             if (_finalResultsSent) return;
             if (gameData == null || !gameData.IsTurnRunning) return;
 
+            // Despawned (leaving play mode, a scene teardown): OnNetworkDespawn cleared the course
+            // on purpose while the turn can still read as running for a frame. Without this the
+            // check below reported a "missed SyncCourse" that never happened (Bug Ledger
+            // E-76d7341dae, captured after a Regatta run ended).
+            if (!IsSpawned) return;
+
             if (_rings.Count == 0)
             {
                 // Flying with no course is silent by construction - the pilot simply is never

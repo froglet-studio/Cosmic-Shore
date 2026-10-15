@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
 """
-The agent's side of the Bug Ledger (FrogletTools > Diagnostics > Bug Ledger).
+The agent's side of the Bug Ledger.
 
-The editor captures every console error into BugLedger/local/ (gitignored) and, with
-"Auto-publish after each play test" on, pushes the material changes to
-BugLedger/shared/issues/ on the current branch. This script is how a Claude session
-(the /bug-ledger skill) reads that set and hands a fix back:
+The editor captures every console error into BugLedger/local/ (gitignored). After a play
+test that logged a new error it asks ONE question, "Send to Claude?"; Send pushes this
+machine's issues and report files to its own branch, origin/bugledger/<user> (under
+BugLedger/shared/), without touching the person's working tree or branch. This script is
+how a Claude session (the /bug-ledger skill) reads those branches and hands a fix back:
 
     python3 Tools/Build/bug_ledger.py list                 # open issues, worst first
     python3 Tools/Build/bug_ledger.py list --state all --json
@@ -25,11 +26,14 @@ mirrors into the Team Bug Board artifact.
 file creates a hand-filed `C-` issue in shared/ — how a bug filed on the Team Bug Board
 (no Unity needed) reaches every editor's ledger once the branch is pulled.
 
-mark-fixed writes the SHARED file as `validating`, stamped with a fresh fixedUtc. The
-editor adopts it on its next sync (domain reload, play-mode entry, or Refresh) exactly
-as if Mark Fixed had been pressed on that machine: the issue validates over its own
-cleanSessionsRequired play runs and closes itself, or reopens with a regression count
-if the error fires again — which the next auto-publish sends straight back here.
+mark-fixed <id> --note ... [--commit <sha>, default HEAD] rewrites the issue as
+`validating` ON EVERY origin/bugledger/* BRANCH that carries it (a throwaway index and a
+push; HEAD, the index and the working tree are untouched), recording the fix commit. The
+sender's editor adopts it at its next sync (editor load, or before a send) only once that
+commit is in its HEAD; its next clean play runs then close the issue, and if the error
+fires again it reopens and the next "Send to Claude" brings it straight back here. Push
+the fix commit first. An issue that only exists in the working tree's shared/ folder (the
+older publish path) is written there instead.
 
 The files are written byte-for-byte the way BugLedgerIssue.ToJson writes them (stable
 field order, one field per line, C#'s escaping), so a round trip through this script
@@ -57,7 +61,7 @@ FIELDS = [
     ("id", "s"), ("kind", "s"), ("state", "s"), ("severity", "s"), ("title", "s"),
     ("notes", "s"), ("signature", "s"), ("sample", "s"), ("stack", "s"), ("scope", "s"),
     ("logType", "s"), ("reporter", "s"), ("machine", "s"), ("createdUtc", "s"),
-    ("lastSeenUtc", "s"), ("fixedBy", "s"), ("fixedUtc", "s"), ("resolvedUtc", "s"),
+    ("lastSeenUtc", "s"), ("fixedBy", "s"), ("fixedUtc", "s"), ("fixCommit", "s"), ("resolvedUtc", "s"),
     ("resolution", "s"), ("timesSeen", "i"), ("regressions", "i"), ("cleanSessions", "i"),
     ("cleanSessionsRequired", "i"), ("validationPaused", "b"),
 ]
@@ -180,7 +184,10 @@ def _find(issue_id):
     issues = load_all()
     issue = issues.get(issue_id.lower())
     if issue is None:
-        sys.exit("no issue %r in %s" % (issue_id, SHARED))
+        # Sent from an editor: it lives on a reporter's bugledger/<user> branch, not in this tree.
+        for _, branch_issue in _bugledger_copies(issue_id):
+            return branch_issue
+        sys.exit("no issue %r in %s or on any origin/bugledger/* branch (git fetch origin first)" % (issue_id, SHARED))
     return issue
 
 
@@ -203,21 +210,88 @@ def cmd_mark_fixed(args):
         print("note: %s has no signature, so no play run can validate it — the editor will show it "
               "validating but only a human Resolve closes it." % issue["id"], file=sys.stderr)
 
+    commit = args.commit or (_git("rev-parse", "HEAD") or "").strip()
     stamp = now_iso()
-    entry = "Fix %s by %s: %s" % (stamp[:10], args.by, args.note.strip())
-    issue["notes"] = (issue["notes"].rstrip() + "\n\n" + entry) if issue["notes"].strip() else entry
-    issue["state"] = "validating"
-    issue["fixedBy"] = args.by
-    issue["fixedUtc"] = stamp
-    issue["cleanSessions"] = 0
-    issue["validationPaused"] = False
 
+    def apply_fix(target):
+        entry = "Fix %s by %s (%s): %s" % (stamp[:10], args.by, commit[:10] or "no commit", args.note.strip())
+        target["notes"] = (target["notes"].rstrip() + "\n\n" + entry) if target["notes"].strip() else entry
+        target.update(state="validating", fixedBy=args.by, fixedUtc=stamp, fixCommit=commit,
+                      cleanSessions=0, validationPaused=False)
+        return target
+
+    # Where the editor will look: every reporter's bugledger/<user> branch that carries the issue.
+    # The machine adopts the fix once `commit` is in its HEAD, then validates it by play runs.
+    written = 0
+    for branch, ledger_issue in _bugledger_copies(issue["id"]):
+        _write_to_branch(branch, "%s/%s.bug.json" % (SHARED_REL, ledger_issue["id"]),
+                         to_json(apply_fix(ledger_issue)),
+                         "bugledger: %s fixed in %s" % (ledger_issue["id"], commit[:10]))
+        print("%s -> validating on %s (fix %s)" % (ledger_issue["id"], branch, commit[:10]))
+        written += 1
+    if written:
+        return 0
+
+    # Legacy: an issue published into the working tree's shared/ folder.
     os.makedirs(SHARED, exist_ok=True)
     path = os.path.join(SHARED, issue["id"] + ".bug.json")
     with open(path, "w", encoding="utf-8", newline="\n") as f:
-        f.write(to_json(issue))
+        f.write(to_json(apply_fix(issue)))
     print("%s -> validating (%s)" % (issue["id"], os.path.relpath(path, REPO)))
     return 0
+
+
+# ------------------------------------------------------------------ bugledger/<user> branches
+
+SHARED_REL = "BugLedger/shared/issues"
+
+
+def _run(args, env=None, stdin=None):
+    """git in REPO; returns stdout, raises on failure (unlike _git, which returns None)."""
+    full_env = dict(os.environ, **env) if env else None
+    r = subprocess.run(["git", "-C", REPO] + list(args), capture_output=True, text=True,
+                       encoding="utf-8", errors="replace", env=full_env, input=stdin)
+    if r.returncode != 0:
+        raise RuntimeError("git %s: %s" % (" ".join(args[:3]), r.stderr.strip()))
+    return r.stdout
+
+
+def _bugledger_copies(issue_id):
+    """(branch, issue) for every origin/bugledger/* branch whose ledger holds this issue."""
+    out = _git("for-each-ref", "--format=%(refname:short)", "refs/remotes/origin/bugledger")
+    for ref in (out or "").split():
+        text = _git("show", "%s:%s/%s.bug.json" % (ref, SHARED_REL, issue_id))
+        if not text:
+            continue
+        try:
+            issue = from_json(text)
+        except ValueError:
+            continue
+        if issue:
+            yield ref[len("origin/"):], issue
+
+
+def _write_to_branch(branch, repo_path, text, message):
+    """Commit one file onto origin/<branch> without touching HEAD, the index or the working
+    tree (throwaway GIT_INDEX_FILE), and push it. One retry from a fresh fetch if the editor
+    pushed in between."""
+    import tempfile
+    for attempt in range(2):
+        _git("fetch", "-q", "origin", "+refs/heads/%s:refs/remotes/origin/%s" % (branch, branch))
+        parent = _run(["rev-parse", "--verify", "origin/%s^{commit}" % branch]).strip()
+        with tempfile.TemporaryDirectory() as tmp:
+            env = {"GIT_INDEX_FILE": os.path.join(tmp, "index")}
+            _run(["read-tree", parent], env=env)
+            blob = _run(["hash-object", "-w", "--stdin"], stdin=text).strip()
+            _run(["update-index", "--add", "--cacheinfo", "100644,%s,%s" % (blob, repo_path)], env=env)
+            tree = _run(["write-tree"], env=env).strip()
+        commit = _run(["commit-tree", tree, "-p", parent, "-m", message]).strip()
+        try:
+            _run(["push", "-q", "origin", "%s:refs/heads/%s" % (commit, branch)])
+            return
+        except RuntimeError:
+            if attempt == 1:
+                raise
 
 
 def cmd_file(args):
@@ -358,6 +432,7 @@ _FIXTURE = (
     '  "lastSeenUtc": "2026-10-15T18:19:55.000Z",\n'
     '  "fixedBy": "",\n'
     '  "fixedUtc": "",\n'
+    '  "fixCommit": "",\n'
     '  "resolvedUtc": "",\n'
     '  "resolution": "",\n'
     '  "timesSeen": 2,\n'
@@ -390,12 +465,14 @@ def self_test():
         os.makedirs(SHARED)
         with open(os.path.join(SHARED, "E-1a2b3c4d5e.bug.json"), "w", encoding="utf-8") as f:
             f.write(_FIXTURE)
-        cmd_mark_fixed(argparse.Namespace(id="e-1A2B3C4D5E", note="widened the band", by="claude", force=False))
+        cmd_mark_fixed(argparse.Namespace(id="e-1A2B3C4D5E", note="widened the band", by="claude", force=False,
+                                          commit="abc1234def"))
         with open(os.path.join(SHARED, "E-1a2b3c4d5e.bug.json"), encoding="utf-8") as f:
             fixed = from_json(f.read())
         assert fixed["state"] == "validating" and fixed["fixedBy"] == "claude"
         assert fixed["fixedUtc"].endswith("Z") and len(fixed["fixedUtc"]) == 24, fixed["fixedUtc"]
-        assert fixed["notes"].endswith("by claude: widened the band")
+        assert fixed["notes"].endswith("by claude (abc1234def): widened the band"), fixed["notes"]
+        assert fixed["fixCommit"] == "abc1234def", "the fix must name its commit, or no editor can gate on it"
         assert fixed["timesSeen"] == 2 and fixed["signature"] == issue["signature"], "mark-fixed touched a durable field"
 
         # Negative control: an ignored issue is a human's call and must not be overwritten.
@@ -403,7 +480,7 @@ def self_test():
         with open(os.path.join(SHARED, "E-1a2b3c4d5e.bug.json"), "w", encoding="utf-8") as f:
             f.write(to_json(fixed))
         try:
-            cmd_mark_fixed(argparse.Namespace(id="E-1a2b3c4d5e", note="x", by="claude", force=False))
+            cmd_mark_fixed(argparse.Namespace(id="E-1a2b3c4d5e", note="x", by="claude", force=False, commit="abc"))
         except SystemExit:
             pass
         else:
@@ -427,8 +504,56 @@ def self_test():
         assert len(c["id"]) == len("C-20261015-181224-abcd") and filed[0] == c["id"] + ".bug.json", c["id"]
 
     _self_test_collect()
+    _self_test_branch_fix()
     print("bug_ledger.py self-test: OK")
     return 0
+
+
+def _self_test_branch_fix():
+    """mark-fixed against a sender's bugledger/<user> branch: the fix lands ON THE BRANCH (with
+    its commit) and nothing else moves - not HEAD, not the index, not the working tree."""
+    global REPO
+    import tempfile
+
+    saved = REPO
+    with tempfile.TemporaryDirectory() as tmp:
+        origin, work = os.path.join(tmp, "origin.git"), os.path.join(tmp, "work")
+        subprocess.run(["git", "init", "-q", "--bare", origin], check=True, capture_output=True)
+        subprocess.run(["git", "init", "-q", work], check=True, capture_output=True)
+
+        def g(*a):
+            return subprocess.run(["git", "-C", work] + list(a), check=True, capture_output=True,
+                                  text=True).stdout
+
+        g("config", "user.name", "t")
+        g("config", "user.email", "t@t")
+        base = from_json(_FIXTURE)
+        rel = "%s/%s.bug.json" % (SHARED_REL, base["id"])
+        os.makedirs(os.path.join(work, SHARED_REL))
+        with open(os.path.join(work, rel), "w", encoding="utf-8", newline="\n") as f:
+            f.write(to_json(base))
+        g("add", "-A")
+        g("commit", "-q", "-m", "sent from an editor")
+        g("remote", "add", "origin", origin)
+        g("push", "-q", "origin", "HEAD:refs/heads/bugledger/ys")
+        g("fetch", "-q", "origin")
+        head_before = g("rev-parse", "HEAD")
+
+        REPO = work
+        try:
+            cmd_mark_fixed(argparse.Namespace(id=base["id"], note="fixed it", by="claude", force=False,
+                                              commit="deadbeef01"))
+        finally:
+            REPO = saved
+
+        g("fetch", "-q", "origin")
+        on_branch = from_json(g("show", "origin/bugledger/ys:" + rel))
+        assert on_branch["state"] == "validating" and on_branch["fixCommit"] == "deadbeef01", on_branch
+        assert on_branch["timesSeen"] == base["timesSeen"], "the fix must not touch the sighting counters"
+        assert g("rev-parse", "HEAD") == head_before, "mark-fixed moved HEAD"
+        assert g("status", "--porcelain").strip() == "", "mark-fixed touched the working tree or index"
+        with open(os.path.join(work, rel), encoding="utf-8") as f:
+            assert from_json(f.read())["state"] == "open", "mark-fixed wrote the working-tree copy"
 
 
 def _self_test_collect():
@@ -495,6 +620,8 @@ def main():
     p.add_argument("id")
     p.add_argument("--note", required=True, help="root cause and what changed (lands in the issue's notes)")
     p.add_argument("--by", default="claude")
+    p.add_argument("--commit", help="the commit that carries the fix (default: HEAD). The reporter's "
+                                    "editor starts validating only once this commit is in their HEAD")
     p.add_argument("--force", action="store_true", help="also mark an IGNORED issue")
     p.set_defaults(func=cmd_mark_fixed)
     p = sub.add_parser("collect", help="merge BugLedger/shared from every origin branch (fetch first)")

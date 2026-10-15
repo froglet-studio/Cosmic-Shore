@@ -20,7 +20,7 @@ TOPIC = re.compile(r"\b(?:perf(?:ormance)?|fps|frame ?rate|frame ?time|lag|stutt
                    r"console errors?|bug ledger|regressions?|baselines?)\b", re.IGNORECASE)
 ASK = re.compile(r"\b(?:status|report|state|where (?:do|does|are|is) (?:we|it|things) stand|what(?:'s| is) next|"
                  r"what (?:should|do|can) (?:i|we) (?:do|test|run|fix|capture)|what to (?:do|test)|next steps?|to-?do|"
-                 r"how (?:are|is) (?:we|it|things) doing|any(?:thing)? (?:regress|broken|red)|recheck|check)\b", re.IGNORECASE)
+                 r"how (?:are|is) (?:we|it|things) doing|any(?:thing)? (?:regress\w*|broken|red)|recheck|check)\b", re.IGNORECASE)
 WHAT_TO_TEST = re.compile(r"\bwhat (?:should|do|can) (?:i|we) test\b|\bwhat to test\b|\bwhat(?:'s| is) next\b|\bnext steps?\b",
                           re.IGNORECASE)
 
@@ -76,9 +76,6 @@ def self_test():
 
 
 def main():
-    if "--self-test" in sys.argv:
-        self_test()
-        return
     try:
         payload = json.load(sys.stdin)
     except ValueError:
@@ -89,6 +86,9 @@ def main():
 
 
 if __name__ == "__main__":
+    if "--self-test" in sys.argv:
+        self_test()   # outside the guard below: a failing self-test must fail loudly
+        sys.exit(0)
     try:
         main()
     except Exception:  # noqa: BLE001

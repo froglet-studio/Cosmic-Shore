@@ -21,7 +21,7 @@ number: the editor shares its captures by itself, the sweep judges them, and the
 
 **Where people see it: two surfaces only** (Yash, 2026-10-15: no extra editor UI). In the editor, the Scene view's
 **Bug Hunt & Performance badge** (`BugHuntPerfBadge`, Docs/DIAGNOSTICS.md): the counts, the first next step, and the
-Share / Auto / Capture / Release buttons. Everything else is answered in Claude from the status file. Do not add an
+Send to Claude / Capture / Release buttons. The one dialog is Unity's after-play "Send to Claude?" (`BugHuntAutoSend`). Everything else is answered in Claude from the status file. Do not add an
 editor window, a menu tool or a dashboard for this system; extend the status file and the badge instead.
 
 Baselines: `Docs/perf/baselines.json` (editor captures, keyed `scene|label`) and `Docs/perf/amoebius_baselines.json`
@@ -48,8 +48,9 @@ python3 Tools/Build/perf_capture_report.py <capture.json> # one capture, judged 
   `Docs/perf/amoebius_known.json` with the evidence and a task for the engine's owner (Shombith), not in a game fix.
   The sweep lists known entries as "engine shim" and never counts them.
 - **No shared capture yet?** The person has not shared: in Play mode, **Capture** on the Scene view's Bug Hunt &
-  Performance badge, then **Share** on the same badge after stopping (or **Auto**, which shares after every play
-  test). Say that in one line. Never ask for pasted JSON when the pipe exists; accept a paste when they offer one.
+  Performance badge, then stop Play and press *Send to Claude* when Unity asks (a new capture asks on its own; the file
+  lands on their `bugledger/<user>` branch). Say that in one line. Never ask for pasted JSON when the pipe exists;
+  accept a paste when they offer one.
 
 ## 2. Rank by measured cost, then pick with the record
 
