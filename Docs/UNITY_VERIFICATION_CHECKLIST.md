@@ -65,6 +65,35 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 The Pistol's world: warped prisms, 2.5D depth, the trail as the ground (`cece/sharp-tesla-j0kd7z`, 2026-10-15) — NOT EDITOR-VERIFIED
+
+`GobyPistolDuo`'s side view rebuilt as one mesh a frame (`PistolWorldMesh`, `CosmicShore/PistolWorld` via `Resources/PistolWorld.mat`;
+`PistolWarp`, `PistolRibbon.MapFast / MapNear / Curvature`). No editor and no `unity` CLI here, so `/verify-unity` did NOT run, and the
+shader has NOT been compiled by Unity (a hand-written URP shader; `ddx/ddy` flat shading, Cull Off, alpha blend, ZWrite On). Headless proof:
+`unity_refcompile` player 0 errors; Amoebius built AND ran it (the Goby as the menu hull, into freestyle, the Pistol taken, Q and F
+pressed): ~290 prisms mapped and warped a frame, the tail / squash / pops firing, zero exceptions from the duo. `PistolWorldMathTests`
+(12) + `GobyPistolMathTests` (10) 22/22 outside Unity. Amoebius cannot composite the side camera, so the PICTURE is unseen.
+
+1. **Fly the Goby (Vessel Changer ▸ Goby), look at the inset:** no green floor, no curtain. The ground is a road of the Goby's own
+   trail blocks in the domain colour, rising and falling with the hills; the Pistol (orange tube, end on, a lit cap, a bright eye)
+   rides it with a thin trail behind. A domain-coloured diamond with a white dot is the Goby at the road's end.
+2. **Depth:** prisms beside the path show at full colour with a rim; prisms further off to the Goby's side (the camera is on its
+   right) draw smaller and sink into dark-blue fog; prisms on the near side draw bigger and see-through. Fly past a cluster: the
+   layers slide at different rates (parallax). Nothing should pop in or out at the window's edges harder than a fade.
+3. **The stretch (the point of it):** fly a tight circle round a prism cluster (the Squirrel turns in ~29 u). In the inset the prisms
+   inside your circle STRETCH along the ground direction into bars; the one nearest the circle's centre spans most of the screen;
+   prisms outside the circle compress slightly. Nothing tears into slivers across the screen except, momentarily, a prism you fly
+   exactly round the centre of.
+4. **Press 2 (the Pistol), full screen:** everything above at full size. Ahead of the Goby the world is drawn fogged (the forecast)
+   and firms up as the Goby reaches it. Dive down a hill and land: the tube squashes and a ring puffs at the ground; a hard landing
+   (into a slope) also shakes the view. Hit a prism: a pop in its colour, a small shake. Q: the ring flies out; the prisms it carries
+   turn light blue; its collapse flashes a big ring and shakes.
+5. **Prime from the Goby (3) then take the Pistol:** primed prisms pulse amber in the side view, even far off the path (fog lifted);
+   after the Pistol breaks one, its neighbours flash red (hot).
+6. **Never:** the Pistol breaking the Goby's own trail (it rides it); a trail block drawn anywhere but on the road; a prism drawn
+   twice; the frame rate dropping with the inset on (the view caps at 1200 prisms, 60 000 vertices — say the counts from the
+   Profiler if it does).
+
 ### 🔴 The Goby (VesselClassType 16): the Goby & Pistol duo as a vessel you fly from the Vessel Changer (`cece/sharp-tesla-j0kd7z`, 2026-10-15) — NOT EDITOR-VERIFIED
 
 `Tools/Build/author_goby_assets.py` cloned `Squirrel.prefab` into `Goby.prefab` (fresh Netcode hash, `vesselType: 16`,

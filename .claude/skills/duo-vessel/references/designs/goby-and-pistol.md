@@ -277,6 +277,19 @@ the hull's), the world's seeding, the hinge tilt, the Goby AI's weave (in the ga
 `pParallax` (declared in the lab, read nowhere). The duo vessel class itself (one seat, two hulls, architecture A or B,
 networking) is §8's open question and not started.
 
+**The Pistol's view (2026-10-15, Garrett: "the green under the trail is not needed; it should perceive its surroundings
+much more effectively; if the Goby spins around a prism the prism should stretch out").** Built in Unity first
+(`GobyPistolDuo`'s side view; `PistolWarp`, `PistolWorldMesh`, `PistolWorld.shader`), the lab's side view being brought to the
+same rules: (a) no floor or curtain — the Goby's own trail IS the ground, block by block on the hinge hills, and is never a
+target; (b) every prism in a depth window of −½·pParallax … 3·pParallax is drawn with 2.5D parallax on an orthographic camera
+(pParallax, the lab's own key, finally read: a layer that deep draws at half size), fogged beyond the band the body spans and
+rimmed inside it, see-through in the foreground, a fogged FORECAST past the Goby (the drawing mapper extrapolates the ribbon's
+last segment); (c) the stretch is the unroll's honest image: a prism's eight corners are mapped through `MapNear` in a window
+sized from the path's curvature (`CornerWindow`), its mesh deformed trilinearly inside the warped box, so a prism at distance r
+inside a lap of radius R draws R/r times as long and one holding the centre spans the lap (`PistolWorldMathTests`); (d) feel:
+squash and puff on landing, a shake on a hard one, pops on hits, a flash on launch, the collapse ring, primed/hot/carried prisms
+pulsing in their own colour, the tiny trail, the Pistol leaning along its velocity with a lit cap and a glowing eye.
+
 **What the Goby is today (2026-10-15).** One hull, one Player: the Goby is a Squirrel clone (model, flight, its four
 abilities and HUD, camera, containers), so architecture A/B (§8) is still open and the Pistol is not a second
 networked object: `GobyPistolDuo` simulates it on the LOCAL pilot's machine only, wakes only while a human flies the
@@ -324,5 +337,8 @@ the line it settled.
   becomes a free Snap: a vortex ring fired on the next hit, with no cooldown **[read]**. Then: push it to Unity.
   Done the same day (§10.1): the lab's maths, numbers and AI are cloned and playable in Play mode through a dev-only
   harness on the local vessel; the duo vessel class is not.
+- 2026-10-15, Garrett: the Pistol's view is crude — no green under the trail; perceive the surroundings much more
+  effectively; a prism the Goby spins round should stretch out; make the shrimp a thoughtful, enjoyable experience to test in
+  Unity. Built (§10.1 "The Pistol's view"); the lab's side view follows the same rules so the artifact stays the source.
 - 2026-10-14, round 1 of the lab built (§9.1). Nothing decided yet: Garrett picks the unroll in the lab (its
   Decisions tab writes to the shared log).
