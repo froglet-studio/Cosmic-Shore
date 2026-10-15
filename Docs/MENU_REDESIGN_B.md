@@ -42,7 +42,7 @@ Legend: `Planned` ▸ `Mockup` ▸ `Mockup approved` ▸ `Built` ▸ `Approved i
 | 5 | Profile screen, Profile modal (avatar / display name), Episodes entry | Built (2026-10-15, section 15): Profile screen and profile window | `Profile.dc.html` (interactive), `ProfileFresh`, `ProfileModal` (interactive), `ProfileName`, `ProfileNameError`, `ProfileNameTaken`, `ProfileNotes` | |
 | 6 | Home screen: hub row, header, settings and freestyle buttons, invite popup | Mockup approved (2026-10-14) | `Home.dc.html` (interactive), `HomeInvite`, `HomeFocus`, `HomeOffline`, `HomeNotes` | |
 | 7 | Ark screen (Elemental Converter) | Built (2026-10-15, section 16) | `Ark.dc.html` (interactive), `ArkConverting`, `ArkDone`, `ArkNotes` | |
-| 8 | Arena, Toy Box and Mission modals, and Toy configure | Arena window, Toy Box and Toy configure Built (2026-10-15, section 17); Mission window held (section 17.2) | `ToyBox.dc.html` (interactive), `ToyBoxClaimed`, `ArenaWindow`, `MissionWindow`, `ToyConfigure` (interactive), `ToyConfigurePaint`, `ToyConfigureSpawn`, `ToyConfigureDomain`, `ModesNotes` | |
+| 8 | Arena, Toy Box and Mission modals, and Toy configure | Built (2026-10-15, section 17): Arena window, Toy Box, Toy configure and the Mission window | `ToyBox.dc.html` (interactive), `ToyBoxClaimed`, `ArenaWindow`, `MissionWindow`, `ToyConfigure` (interactive), `ToyConfigurePaint`, `ToyConfigureSpawn`, `ToyConfigureDomain`, `ModesNotes` | |
 | 9 | Settings modal and Credits | Built (2026-10-15, section 18): Settings window and Credits | `Settings.dc.html` (interactive), `SettingsDisplay`, `SettingsPerformance`, `SettingsOther`, `Credits`, `SystemNotes` | |
 | 10 | Closed surfaces: Port (locked), Store (no slot), Episodes panel, purchase confirmation | Built (2026-10-15, section 19): purchase confirmation drawn blind; locked states from items 1 and 5 | `ClosedSurfaces.dc.html`, `PurchaseConfirm` (blind), `SystemNotes` | |
 | 11 | Menu toasts | Mockup approved (2026-10-14) | `Toasts.dc.html` (interactive), `SystemNotes` | |
@@ -862,14 +862,36 @@ stretches full screen, the gradient is off and the two OfflineUIGates gate the n
   are a pool that leaves the row's layout while hidden.
 - Lock, local pick, focus ring and favourite behave as the arcade card (`KitGameCard`).
 
-### 17.2 The Mission window: held
+### 17.2 The Mission window (built 2026-10-15, awaiting in-editor approval)
 
-Not rebuilt. The Mission hub is Unavailable (`MenuAvailabilityView` availability 2), so the window cannot
-be opened, and its explore view cannot draw missions anyway: `MissionGames.asset` is an `SO_MissionList`
-of `SO_Mission`s, which neither `ArcadeExploreView.rosterOverride` (an `SO_GameList`) nor `GameCard`
-(which reads `SO_ArcadeGame`) accepts - with no override it draws the whole arcade master list. The
-approved board (difficulty range, threat count) needs a mission roster the view can draw; that is a
-data change to agree before the window is built.
+Built as the Arena window's look **without its data path**. Missions are separate games:
+`SO_Mission` derives from `SO_Game`, not `SO_ArcadeGame`, and stays that way (decided
+2026-10-15). The mission feature itself is untouched: `SO_Mission`, `MissionGames`,
+`Arcade.LaunchMission`, the Protect mission and its scene, and the faction-mission code. The hub
+entry stays Unavailable, so the window still cannot be opened from Home.
+
+`Tools/Build/author_menu_mission.py` authors `MissionCard.prefab` and `MissionView.prefab` (in
+`Main Menu Screens/Mission/`) and mounts the view under `MissionScreenModal/Mission_Panel/Explore`.
+This is the Arena migration:
+- The old Header, scroll view, lobby list, close button and friends panel are deleted.
+- The window stretches full screen, the gradient is off, and the panel's OfflineUIGate gates the
+  party panel.
+- The `ArcadeExploreView` that sat on Explore is removed and `ArcadeScreen.ExploreView` is cleared
+  (that field is optional). With no roster set, that view drew the arcade master list in a mission
+  window.
+
+What the window draws:
+- **Grid:** a new `MissionExploreView` draws `MissionGames` (the `SO_MissionList` that
+  `Arcade.LaunchMission` reads) into two columns of `KitMissionCard`s, with "ALL MISSIONS" and the
+  count above them.
+- **Card:** the art; "Mission - difficulty 1 - 9" (`MinDifficulty` / `MaxDifficulty`); the name;
+  "N threats" (`PotentialThreats`); the description.
+- **Locked:** each card carries a `MenuAvailabilityView` set to Locked and drawn undimmed, as the
+  board draws it. A press refuses with the Denied sting, a shake and "Missions open with the full
+  release." An Available card would raise `MissionExploreView.MissionPicked` instead.
+- **Party:** the shared `PartyPanel` (D7), as in Arena.
+
+Departure from the board: no favourite star, because favourites are keyed to arcade games.
 
 ### 17.3 The Toy Box (built 2026-10-15, awaiting in-editor approval)
 

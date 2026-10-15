@@ -65,6 +65,28 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Style-B menu redesign, item 8d: the Mission window (`claude/new-session-76hnyc`, 2026-10-15) — NOT EDITOR-VERIFIED
+
+`MissionScreenModal` was rebuilt in the Arena window's style (`Docs/MENU_REDESIGN_B.md` section
+17.2) by `Tools/Build/author_menu_mission.py` (`--check` and `--self-test` green). Missions keep
+their own data path: `SO_Mission` is unchanged and the window draws `MissionGames` through the new
+`MissionExploreView`. No editor in the session, so `/verify-unity` is still owed. Offline: the
+player and editor reference compiles are clean, and the new `MissionCardTests` compiles.
+
+**Verify in editor:**
+1. Open Menu_Main: no missing-script or missing-reference warnings on `MissionScreenModal`. The
+   Home Mission hub still reads Unavailable.
+2. To see the window, temporarily set the Mission hub's `MenuAvailabilityView` to Available
+   (do not commit). Opening it should show "MISSIONS / Explore missions" with Back (B), the party
+   panel, and "ALL MISSIONS 1" above a Protect Mission card reading "Mission - difficulty 1 - 9",
+   "Protect Mission", the threat count and "Can you protect the cell?".
+3. Press the card. It shakes, plays the Denied sting and toasts "Missions open with the full
+   release.". Nothing launches.
+4. Pad: focus lands on the card, and B closes the window.
+5. Revert the hub's availability.
+
+---
+
 ### 🔴 Style-B menu redesign, item 10: purchase confirmation, drawn blind (`claude/new-session-76hnyc`, 2026-10-15) — NOT EDITOR-VERIFIED
 
 `PurchaseItemConfirmationModal` in Menu_Main was rebuilt from the approved PurchaseConfirm board
