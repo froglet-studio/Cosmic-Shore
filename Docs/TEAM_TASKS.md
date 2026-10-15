@@ -122,3 +122,32 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Who can take it:** the owners of the black hole and FlipWave code (check who_works_where.py); Yash (offered)
 - **Added:** 2026-10-15 by Yash's session (activation) (`Ys-bleeding-edge`)
 - **See:** Tools/Build/check_mathf_params_alloc.py
+
+### T-20261015-18e7 · taken by Yash · test · Regatta AI
+- **Task:** Playtest Regatta in Unity on Ys-bleeding-edge: five hulls (Squirrel, Manta, Rhino, Urchin, Dolphin) on AI seats, Hard, I1 then I3, watched in the Third Eye with Trails on.
+- **Done when:** Every hull finishes three laps at I1 (and I3, or the ring it fails at is noted); AIs read Approach then Through near rings and break off straight after a miss; result written in the 2026-10-15 Regatta section of Docs/UNITY_VERIFICATION_CHECKLIST.md.
+- **Who can take it:** Yash (testing it), anyone with the Unity Editor
+- **Added:** 2026-10-15 by Yash's session (regatta-ai) (`Ys-bleeding-edge`)
+- **See:** Docs/Reports/REGATTA_AI.md section 2
+- **Taken:** 2026-10-15, Yash
+
+### T-20261015-0064 · open · decision · AI training
+- **Task:** Decide the AI-training direction: extend the genetic trainer (Assets/_Scripts/Utility/AITraining) for Regatta rather than build a second one; where consented player flights are stored and the privacy wording; whether a neural-network AI may ever ship.
+- **Done when:** The answers are written in Docs/AI_SYSTEM/AI_TRAINING_PLAN.md section 5.
+- **Who can take it:** Garrett and the core four; studyholic and Shombith for the trainer
+- **Added:** 2026-10-15 by Yash's session (regatta-ai) (`Ys-bleeding-edge`)
+- **See:** Docs/AI_SYSTEM/AI_TRAINING_PLAN.md
+
+### T-20261015-cb8f · open · decision · Regatta AI
+- **Task:** Decide whether the gate-race steering fix (commit at the approach point, re-attack after a missed ring; on in Regatta only) is turned on for Headlong, Switchback, Breakwater, Skein and Redline (inspector switch aiCommitFromApproachPoint) after a playtest.
+- **Done when:** Each mode's switch is set by its owner and the choice noted in REGATTA.md section 6.1.
+- **Who can take it:** Garrett (gate races owner)
+- **Added:** 2026-10-15 by Yash's session (regatta-ai) (`Ys-bleeding-edge`)
+- **See:** Docs/Reports/REGATTA_AI.md section 3
+
+### T-20261015-2082 · open · dev · AI training
+- **Task:** Build T1 of the AI training plan: the AI Lab (Test Range R1-R3) in MinigameRegatta - any hull on any seat (trained or untrained), 0.25x-8x time, the Third Eye's trails and readout in a development build, speed graph and phase timeline, a scorecard JSON per run.
+- **Done when:** A development build of Regatta opens the AI Lab, races chosen hulls at chosen speed, and writes a scorecard file the artifact's numbers can be compared with.
+- **Who can take it:** Yash (offered), with Garrett for the trainer hand-off
+- **Added:** 2026-10-15 by Yash's session (regatta-ai) (`Ys-bleeding-edge`)
+- **See:** Docs/AI_SYSTEM/AI_TRAINING_PLAN.md section 3 L1, Docs/Studios/VESSEL_TEST_RANGE_PLAN.md

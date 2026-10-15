@@ -77,6 +77,17 @@ it; `who_works_where.py` reports a session nobody has merged as unattributed.
    reviewers see the hand-offs. The `team_tasks_nudge.py` hook reminds every session and gives activation /
    onboarding prompts that area's open tasks. Self-tests: `team_tasks.py --self-test`,
    `.claude/hooks/team_tasks_nudge.py --self-test`.
+10. **Give a report to whoever asks** (Yash, 2026-10-15: "if someone asks you about a report of some other person
+   working on some shared field, you should be able to give those reports to them"). Garrett asking for Yash's
+   Regatta AI work, Shombith asking what changed in an area he shares: build the report from the system, never from
+   memory. `python3 Tools/Build/team_report.py area <key>` (list: `areas`; any paths: `paths <paths>`; one person:
+   `person <name>`) adds what changed (recent commits and where they are, other branches in flight there, open tasks)
+   to the area's hand-written report in [`Reports/`](Reports/) (registered in `Reports/areas.json`; `--write` refreshes
+   the doc's generated block). Answer in plain words: what was built and why, where it is, how to try it (artifact
+   links, Unity steps), what is untested, what decisions wait on the reader. An area somebody works on with others
+   gets a row and a report doc when the work starts; keep the hand-written half current when the work moves. The
+   `report_request.py` hook reminds a session whenever a prompt asks for a report. Self-tests:
+   `team_report.py --self-test`, `.claude/hooks/report_request.py --self-test`.
 
 ## What happened without this (2026-10-13, one merge, measured)
 
