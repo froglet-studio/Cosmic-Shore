@@ -821,3 +821,17 @@ Entries are grouped by family; within a family, the newest goes at the bottom.
   before gating on it.
 - Evidence: `Tools/Build/converter_round5_harness` section 9; `OMNI_COMBINE_LAB.md` revision 8.
 - Promoted: no
+
+### L-STU-64 — A cyclic input switched at the drive's zero crossings earns exactly nothing; centre the stroke on the drive's peak
+- Lab: Pump Rider Lab (`Docs/Studios/PumpRiderLab.html`) · Branch: `cece/charming-rubin-ro74tj` · Date: 2026-10-15
+- What happened: pumping pays `∫ bend · d(knees)`. The first AI stood up when a dip began (`bend > 0`) and crouched when a hump began, a square wave switched where the bend crosses zero, so every stroke happened at zero bend: 0.04 u/s² of pumping and an average of 123.3 u/s, the same as coasting. The rookie beat the skilled pilot, because its late, jittered strokes landed nearer the peaks. Standing up while the load is FALLING (i.e. across the dip's peak, led by half a knee stroke) gives 10.95 u/s² and 197.8 u/s on the same rollers. Earlier, writing the law as `N·dh` (load × hip travel) instead of `v²·bend·dh` counted the pull's share as speed; the Flat course (a straight rail) read −0.85 u/s² against 0.00.
+- Do instead: for any mechanic where a phase-timed input pumps energy (pumping, swinging, a timed release), derive the work integral first and put the stroke where the integrand peaks, not where it changes sign. Give the lab a course where the mechanic must earn exactly zero, show it as a scorecard column, and plant the wrong law once to prove the column fires. When a rookie beats the skilled AI, suspect the skilled AI's timing before the mechanic.
+- Evidence: `PumpRiderLab.html` `aiInput` (`extend = kQ < kP`), `simStep` (the pumping law); `PUMP_RIDER_LAB.md` round 1 "Checked" and "Found".
+- Promoted: no
+
+### L-STU-65 — When two choices pay the same, a "best" AI that always picks one of them wastes its time switching
+- Lab: Pump Rider Lab · Branch: `cece/charming-rubin-ro74tj` · Date: 2026-10-15
+- What happened: on a rail you can roll round, every bend is a dip on one side and a hump on the other, and both pay (stand in the dip, crouch over the hump). The first AI always rolled onto the bend's inside, so on rollers it spun 180° every half roller (0.67 s of every 1.33 s spent rolling) and pumped less than staying put. Taking the NEARER equivalent side, and switching only when a hump would throw it off, removed the spin.
+- Do instead: before scripting an AI's target, list the targets the mechanic scores as equal and pick the nearest one. "The AI looks busy" (the page's `busy` column) is a cue to check for an equivalence it is ignoring.
+- Evidence: `PumpRiderLab.html` `aiInput` (the `a1` / `a2` side choice); `PUMP_RIDER_LAB.md` round 1 "Found".
+- Promoted: no

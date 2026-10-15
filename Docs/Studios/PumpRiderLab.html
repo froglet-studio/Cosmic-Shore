@@ -1,0 +1,888 @@
+<!doctype html>
+<!--
+  PUMP RIDER LAB — a /labmaker browser lab (round 1).
+  The question: a new vessel latches onto prismscapes the way the Urchin does, but it makes its speed
+  the way a longboarder does on a pump track — leaning into the bends and bending / extending the knees.
+  Which way of doing that is worth building?
+
+  Contract (.claude/skills/labmaker/SKILL.md §2): SHIPPED names every number's source (Urchin numbers it
+  would inherit; pp* = lab-only proposals), SPEC drives every slider, simStep never draws or reads a device,
+  every run is seeded, the AI writes only the input object, window.__lab is the test surface, and the
+  decision log goes to the artifact db (collection "decisions") with a browser fallback.
+  Verify: node .claude/skills/labmaker/verify_lab.cjs Docs/Studios/PumpRiderLab.html
+  Write-up: Docs/Studios/PUMP_RIDER_LAB.md
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Pump Rider Lab</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;700&family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&display=swap">
+<style>
+  /* Layout: the studio editor — header / stage + right settings dock / bottom records dock. Dark-first, the Vessel Studio's tokens. */
+  :root {
+    --bg: #0b1026; --panel: #121a3a; --panel-2: #0e1531; --line: #27336a; --fg: #e8ecff; --dim: #9aa6d6;
+    --accent: #ffb347; --accent-2: #7fd7ff; --good: #6fe39a; --warn: #ffcf5c; --bad: #ff7a8a;
+    --stage: #05081a; --jade: #13fff2; --ruby: #ff00f9;
+    --display: "Chakra Petch", "Segoe UI", system-ui, sans-serif;
+    --body: "Atkinson Hyperlegible", "Segoe UI", system-ui, sans-serif;
+    color-scheme: dark;
+  }
+  @media (prefers-color-scheme: light) {
+    :root:not([data-theme="dark"]) {
+      --bg: #eef1fb; --panel: #ffffff; --panel-2: #f5f7ff; --line: #c9d0ee; --fg: #141a3a; --dim: #4b567f;
+      --accent: #a65f00; --accent-2: #0a6fa8; --good: #1f8a4c; --warn: #8a6100; --bad: #b3243a; color-scheme: light;
+    }
+  }
+  :root[data-theme="light"] {
+    --bg: #eef1fb; --panel: #ffffff; --panel-2: #f5f7ff; --line: #c9d0ee; --fg: #141a3a; --dim: #4b567f;
+    --accent: #a65f00; --accent-2: #0a6fa8; --good: #1f8a4c; --warn: #8a6100; --bad: #b3243a; color-scheme: light;
+  }
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  html, body { margin: 0; height: 100%; }
+  body { background: var(--bg); color: var(--fg); font: 15px/1.45 var(--body); overflow: hidden; }
+  #app { display: grid; height: 100%; grid-template-columns: minmax(0, 1fr) 350px; grid-template-rows: auto minmax(0, 1fr) 236px; grid-template-areas: "head head" "stage dock" "bottom dock"; }
+  header { grid-area: head; display: flex; gap: 12px; align-items: center; padding-block: 8px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); border-bottom: 1px solid var(--line); background: var(--panel); flex-wrap: wrap; }
+  header h1 { font: 700 1.05rem var(--display); letter-spacing: 0.02em; margin: 0; }
+  .chip { font: 700 0.75rem var(--display); text-transform: uppercase; letter-spacing: 0.06em; padding: 2px 8px; border-radius: 999px; border: 1px solid var(--line); color: var(--dim); }
+  .chip.way { color: var(--accent); border-color: var(--accent); }
+  #diff { color: var(--accent-2); font-size: 0.85rem; }
+  .spacer { flex: 1; }
+  #stageWrap { grid-area: stage; position: relative; min-height: 0; background: var(--stage); overflow: hidden; }
+  #stage { width: 100%; height: 100%; display: block; touch-action: none; }
+  #hud { position: absolute; left: 12px; top: 10px; color: #e8ecff; font: 600 0.85rem/1.5 var(--display); pointer-events: none; text-shadow: 0 1px 2px #000; }
+  #hud .big { font-size: 1.6rem; color: #ffb347; }
+  #takeover { position: absolute; right: 12px; top: 10px; display: flex; gap: 6px; }
+  #dock { grid-area: dock; border-left: 1px solid var(--line); background: var(--panel); overflow: auto; padding: 8px 14px 16px; }
+  #bottom { grid-area: bottom; border-top: 1px solid var(--line); background: var(--panel); overflow: auto; padding-block: 8px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: 16px; }
+  .tabs { display: flex; gap: 4px; flex-wrap: wrap; margin-bottom: 8px; }
+  .tabs button, .btn { border: 1px solid var(--line); background: var(--panel-2); color: var(--fg); border-radius: 6px; padding: 5px 9px; cursor: pointer; font: 700 0.8rem var(--display); letter-spacing: 0.02em; }
+  .tabs button[aria-selected="true"], .btn.primary { background: var(--accent); color: #1a1200; border-color: var(--accent); }
+  .btn:focus-visible, .tabs button:focus-visible, select:focus-visible, input:focus-visible { outline: 2px solid var(--accent-2); outline-offset: 1px; }
+  .sec { font: 700 0.8rem var(--display); text-transform: uppercase; letter-spacing: 0.04em; color: var(--dim); margin: 12px 0 4px; }
+  .row { display: grid; grid-template-columns: 1fr 70px; gap: 2px 8px; margin: 8px 0; }
+  .row label { display: flex; gap: 6px; align-items: baseline; font-size: 0.9rem; }
+  .row label .key { color: var(--dim); font: 0.7rem var(--display); }
+  .row input[type=range] { grid-column: 1 / -1; width: 100%; accent-color: var(--accent); }
+  .row output { text-align: right; font: 600 0.85rem var(--display); font-variant-numeric: tabular-nums; }
+  .row output.changed { color: var(--accent-2); text-decoration: underline; }
+  .row .tip { grid-column: 1 / -1; color: var(--dim); font-size: 0.8rem; }
+  .pick { display: grid; grid-template-columns: 96px minmax(0, 1fr); gap: 8px; align-items: center; margin: 8px 0; font-size: 0.9rem; }
+  .pick .tip { grid-column: 1 / -1; color: var(--dim); font-size: 0.8rem; margin-top: -4px; }
+  select, textarea, input[type=text] { width: 100%; font: inherit; font-size: 0.9rem; color: var(--fg); background: var(--panel-2); border: 1px solid var(--line); border-radius: 6px; padding: 5px 7px; }
+  table { border-collapse: collapse; width: 100%; font-variant-numeric: tabular-nums; font-size: 0.85rem; }
+  th, td { text-align: left; padding: 3px 8px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+  th { font: 700 0.75rem var(--display); text-transform: uppercase; letter-spacing: 0.04em; color: var(--dim); }
+  td.num { text-align: right; } th.num { text-align: right; }
+  .best { font-weight: 700; color: var(--good); }
+  .bad { color: var(--bad); }
+  .hint { color: var(--dim); font-size: 0.85rem; margin: 4px 0; }
+  .status-ok { color: var(--good); } .status-warn { color: var(--warn); }
+  .ways { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 8px; }
+  .way { border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; background: var(--panel-2); min-width: 0; }
+  .way h3 { margin: 0 0 2px; font: 700 0.9rem var(--display); color: var(--accent); }
+  .way p { margin: 2px 0; font-size: 0.85rem; }
+  .law { font: 600 0.9rem var(--display); color: var(--accent-2); }
+  .tablewrap { overflow-x: auto; }
+  #touchUI { position: absolute; inset: auto 0 0 0; height: 38%; display: flex; pointer-events: none; }
+  #touchUI div { flex: 1; margin: 8px; border: 1px dashed rgba(232,236,255,0.22); border-radius: 12px; color: rgba(232,236,255,0.5); font: 700 0.65rem var(--display); display: flex; align-items: flex-end; justify-content: center; padding-bottom: 8px; }
+  @media (max-width: 900px) {
+    body { overflow: auto; }
+    #app { display: block; height: auto; }
+    #stageWrap { aspect-ratio: 4 / 3; max-width: 100%; }
+    #dock, #bottom { border: 0; border-top: 1px solid var(--line); padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+  }
+  @media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto !important; } }
+</style>
+</head>
+<body>
+<div id="app">
+  <header>
+    <h1 id="title"></h1>
+    <span class="chip" id="meta"></span>
+    <span class="chip way" id="wayChip"></span>
+    <span id="diff"></span>
+    <span class="spacer"></span>
+    <span class="chip" id="platform"></span>
+    <button class="btn" id="pause">Pause</button>
+    <button class="btn" id="restart">Restart</button>
+    <button class="btn" id="resetAll">Shipped</button>
+  </header>
+  <div id="stageWrap">
+    <canvas id="stage" aria-label="Chase view of the vessel riding a prism rail"></canvas>
+    <div id="hud"></div>
+    <div id="takeover"><button class="btn" id="letAi">Let the AI fly</button></div>
+    <div id="touchUI" hidden><div>LEAN — drag left / right</div><div>KNEES — hold to crouch</div></div>
+  </div>
+  <aside id="dock"><div class="tabs" id="dockTabs" role="tablist"></div><div id="dockBody"></div></aside>
+  <section id="bottom"><div class="tabs" id="bottomTabs" role="tablist"></div><div id="bottomBody"></div></section>
+</div>
+<script>
+(() => {
+  'use strict';
+  const $ = (id) => document.getElementById(id);
+
+  // ================= (1) LAB meta + the numbers =================
+  // A READER of the shipped numbers. The vessel does not exist yet, so SHIPPED holds the Urchin numbers it
+  // would inherit (each names its source) plus lab-only proposals, prefixed pp* / ai*, that no game field has.
+  const LAB = { name: 'Pump Rider Lab', branch: 'cece/charming-rubin-ro74tj', round: 1, doc: 'Docs/Studios/PUMP_RIDER_LAB.md' };
+  const SHIPPED = {
+    FriendlyTerrainSpeed: 300, // Urchin.prefab TrailFollower.FriendlyTerrainSpeed (u/s, own ribbon)
+    HostileTerrainSpeed: 20,   // Urchin.prefab TrailFollower.HostileTerrainSpeed (u/s, enemy ribbon)
+    speedTrackingRate: 5,      // TrailFollower.speedTrackingRate C# default (1/s chase of the ride speed)
+    DefaultThrottleScaler: 65, // Urchin.prefab: free-flight cruise (u/s) — the speed a rider ARRIVES with
+    rideSurfaceClearance: 1.5, // GunVesselTransformer.rideSurfaceClearance C# default (u)
+    prismSpacing: 8,           // UrchinTrackAction.asset prismSpacing (u) — rail drawn with it
+    // ---- lab-only proposals (no game field yet) ----
+    ppStartSpeed: 150,  // lab: speed at the moment of latching on
+    ppPull: 1200,       // lab: the prismscape's pull on a latched rider (u/s²); sets crest fly-off and grip
+    ppLegTravel: 4,     // lab: knee travel, crouched to extended (u)
+    ppLegRate: 8,       // lab: fastest knee extension (u/s)
+    ppLegStiff: 30,     // lab: how hard the knees chase the stick (1/s)
+    ppRollRate: 270,    // lab: lean (roll around the rail) rate at full stick (°/s)
+    ppLeanMax: 180,     // lab: lean limit either side of the landing side (°); 180 = roll freely like the Urchin
+    ppDrag0: 1,         // lab: rolling drag (u/s²)
+    ppDrag2: 10,        // lab: speed drag (×10⁻⁵ /u)
+    ppGrip: 600,        // lab: sideways load the rider holds without scrubbing (u/s²)
+    ppScrub: 0.15,      // lab: fraction of the excess sideways load that bleeds speed
+    ppBead: 3,          // lab: "falls outward" lean model — how fast the bend throws you to the outside (rad/s)
+    ppAutoBank: 4,      // lab: "auto-bank" lean model — how fast the hull rolls into the bend (1/s)
+    ppAutoEff: 0.8,     // lab: Lean way — efficiency of the hull's automatic knees
+    ppTapLegs: 1.5,     // lab: Tap way — knee speed multiplier for the digital button
+    ppBeatKick: 12,     // lab: Beat way — kick for a release at the tightest point of a dip (u/s)
+    ppHostileDrag: 4,   // lab: drag multiplier on an enemy ribbon (the Urchin's 15× speed cliff, re-priced)
+    ppRollerR: 70,      // lab: course — tightest roller radius (u)
+    ppRollerLen: 360,   // lab: course — roller wavelength (u)
+    aiNoise: 0.6,       // lab: how sloppy the rookie AI is (0 = skilled)
+  };
+  const RAIL_R = 1.5;   // UrchinTrackAction.asset prismScale {3,3,6}: half-thickness of a rail prism (u)
+  const LEG_MIN = 1;    // lab: hip height with the knees fully bent (u)
+
+  // ================= (2) SPEC: one row per slider =================
+  // [tab, key, min, max, step, label, tooltip]
+  const SPEC = [
+    ['Scene Config', 'ppRollerR', 50, 300, 5, 'Roller radius (u)', 'Tightest bend radius of a roller or berm. Tighter bends load harder and pay more per pump, and throw you off sooner.'],
+    ['Scene Config', 'ppRollerLen', 200, 1200, 20, 'Roller length (u)', 'Distance from one dip to the next. Short rollers come faster than slow knees can follow.'],
+    ['Scene Config', 'ppStartSpeed', 0, 400, 5, 'Latch-on speed (u/s)', 'How fast the rider is going when it latches on. The Urchin cruises at 65 u/s (DefaultThrottleScaler).'],
+    ['AI Config', 'aiNoise', 0, 1, 0.05, 'Rookie sloppiness', 'Late reactions, mistimed pumps and a wandering lean. 0 flies like the skilled AI.'],
+    ['Play Style Config', 'ppAutoEff', 0.2, 1, 0.05, 'Lean: auto-knee efficiency', 'The Lean way pumps for you; this is how much of a perfect pump the hull gets.'],
+    ['Play Style Config', 'ppTapLegs', 1, 4, 0.25, 'Tap: knee speed ×', 'The Tap way snaps the knees; this multiplies the knee rate.'],
+    ['Play Style Config', 'ppBeatKick', 0, 40, 0.5, 'Beat: kick (u/s)', 'The Beat way kicks you forward when you let go in a dip; this is the kick for a release at the tightest point of the tightest dip. Letting go on a hump costs the same.'],
+    ['Input', 'ppRollRate', 60, 540, 10, 'Lean rate (°/s)', 'How fast full stick rolls the rider around the rail.'],
+    ['Input', 'ppLeanMax', 30, 180, 5, 'Lean limit (°)', 'How far either side of where you landed you can lean. 180 rolls all the way round like the Urchin; ~45 is a longboard deck.'],
+    ['Input', 'ppLegRate', 2, 30, 0.5, 'Knee rate (u/s)', 'Fastest knee extension. Slow knees cannot follow short rollers at speed, which is what caps pumping.'],
+    ['Input', 'ppLegStiff', 5, 60, 1, 'Knee follow (1/s)', 'How hard the knees chase the trigger.'],
+    ['Input', 'ppBead', 0, 8, 0.25, 'Falls-outward strength', 'Only with the "falls outward" lean model: how fast a bend rolls you to its outside.'],
+    ['Input', 'ppAutoBank', 0, 10, 0.25, 'Auto-bank strength', 'Only with the "auto-bank" lean model: how fast the hull rolls onto the nearer side of each bend for you (under it, when crests can throw you).'],
+    ['Vessel Config', 'ppPull', 300, 3000, 50, 'Prismscape pull (u/s²)', 'How hard a latched rider is held. Over a crest faster than √(pull × radius) the rider flies off (when crests can throw you).'],
+    ['Vessel Config', 'ppLegTravel', 0.5, 6, 0.25, 'Knee travel (u)', 'Crouched to extended. Every pump is worth about speed × 2 × travel / radius.'],
+    ['Vessel Config', 'ppDrag0', 0, 6, 0.1, 'Rolling drag (u/s²)', 'Constant drag. Sets the speed below which pumping cannot keep up.'],
+    ['Vessel Config', 'ppDrag2', 0, 30, 0.5, 'Speed drag (×10⁻⁵/u)', 'Drag that grows with speed².'],
+    ['Vessel Config', 'ppGrip', 100, 3000, 25, 'Sideways grip (u/s²)', 'Sideways load held without scrubbing. Not leaning into a bend past this bleeds speed.'],
+    ['Vessel Config', 'ppScrub', 0, 1, 0.05, 'Scrub', 'How much of the excess sideways load becomes braking.'],
+    ['Vessel Config', 'ppHostileDrag', 1, 15, 0.5, 'Enemy ribbon drag ×', 'The Urchin crawls on an enemy ribbon (300 → 20 u/s). A pump rider pays drag instead.'],
+    ['Vessel Config', 'FriendlyTerrainSpeed', 50, 600, 10, 'Grind speed, own (u/s)', 'Urchin.prefab TrailFollower. Used by the Urchin grind and Grind + knees ways.'],
+    ['Vessel Config', 'HostileTerrainSpeed', 0, 300, 5, 'Grind speed, enemy (u/s)', 'Urchin.prefab TrailFollower.'],
+    ['Vessel Config', 'speedTrackingRate', 0.5, 20, 0.5, 'Grind speed chase (1/s)', 'TrailFollower C# default: how fast the grind motor reaches its speed.'],
+    ['Vessel Config', 'DefaultThrottleScaler', 20, 200, 5, 'Free-flight cruise (u/s)', 'Urchin.prefab. The "from cruise" scorecard column latches on at this speed.'],
+    ['Vessel Config', 'rideSurfaceClearance', 0, 5, 0.25, 'Ride clearance (u)', 'GunVesselTransformer: gap between the rail prism face and the board.'],
+    ['Vessel Config', 'prismSpacing', 4, 20, 1, 'Rail prism spacing (u)', 'UrchinTrackAction.asset. Drawing only.'],
+  ];
+
+  // Choices that are not numbers (dropdowns). Not part of SHIPPED; saved per viewer.
+  const WAYS = [
+    { v: 'knees', label: 'Knees', short: 'Analog knees + lean', pump: 'work', input: 'Trigger = knees (pull to crouch, let go to stand). Stick = lean.' },
+    { v: 'tap',   label: 'Tap', short: 'One button + lean', pump: 'work', input: 'Hold the button to crouch, let go to stand. Stick = lean.' },
+    { v: 'beat',  label: 'Beat', short: 'Timed release kick', pump: 'beat', input: 'Hold through the humps, let go at the bottom of each dip. Stick = lean.' },
+    { v: 'lean',  label: 'Lean', short: 'Lean only, hull pumps', pump: 'auto', input: 'Stick = lean. The hull bends its own knees.' },
+    { v: 'grind', label: 'Grind + knees', short: 'Urchin motor + pump past it', pump: 'work', input: 'The Urchin grind holds its speed; the trigger pumps you past it. Stick = lean.' },
+    { v: 'coast', label: 'Coast', short: 'Ability off (control)', pump: 'none', input: 'Stick = lean. No pumping at all.' },
+    { v: 'urchin', label: 'Urchin grind', short: 'Shipped Urchin (reference)', pump: 'none', input: 'Throttle sets the speed, as the Urchin rides today.' },
+  ];
+  const COURSES = [
+    { v: 'pumptrack', label: 'Pump track oval', note: 'Four rollers, a 180° berm, four rollers, a berm. A real pump-track loop.' },
+    { v: 'rollers', label: 'Rollers', note: 'Endless humps in one plane. Pure knee pumping.' },
+    { v: 'slalom', label: 'Slalom', note: 'Endless left-right bends, no humps. Only leaning into them pumps.' },
+    { v: 'twister', label: 'Twister', note: 'Rollers whose bend turns around the rail. Lean to keep the dip under you.' },
+    { v: 'wake', label: 'Vessel wake', note: 'A smooth random 3D ribbon, like a wake you would find in a cell.' },
+    { v: 'flat', label: 'Flat (control)', note: 'A straight rail. Pumping must earn nothing here.' },
+  ];
+  const OPT_DEFAULT = { way: 'knees', course: 'pumptrack', lean: 'free', crest: 'latched', owner: 'own', pilot: 'skilled', cam: 'side', simSpeed: 1, runLen: 20 };
+
+  const LS_KEY = 'lab:' + LAB.name + ':P', LS_OPT = 'lab:' + LAB.name + ':opt';
+  const lsGet = (k, d) => { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch (e) { return d; } };
+  const lsSet = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) { /* private window */ } };
+  const P = Object.assign({}, SHIPPED, lsGet(LS_KEY, {}));
+  for (const k of Object.keys(P)) if (!(k in SHIPPED)) delete P[k];
+  const OPT = Object.assign({}, OPT_DEFAULT, lsGet(LS_OPT, {}));
+  for (const k of Object.keys(OPT)) if (!(k in OPT_DEFAULT)) delete OPT[k];
+
+  function mulberry32(a) { return () => { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+  const clamp = (x, a, b) => x < a ? a : x > b ? b : x;
+  const wrapPi = (a) => { a = (a + Math.PI) % (2 * Math.PI); if (a < 0) a += 2 * Math.PI; return a - Math.PI; };
+  const D2R = Math.PI / 180;
+
+  // ================= (3) THE COURSE: a rail defined by its bend =================
+  // The rail is a curve given by its bend in a rotation-minimising frame: k1 bends toward N1 ("up" at the
+  // start), k2 toward N2. A rider sits at a roll angle phi around the rail; the bend's direction alpha and
+  // size kap decide whether the rail dips under the rider (a trough) or humps away (a crest).
+  // The wake course's shape is a FIXED seed so every run and every viewer rides the same ribbon.
+  const WAKE = (() => { const r = mulberry32(90210), w = []; for (let i = 0; i < 4; i++) w.push({ a1: (0.4 + r()) / 260, a2: (0.4 + r()) / 260, l1: 300 + r() * 1100, l2: 300 + r() * 1100, p1: r() * 6.283, p2: r() * 6.283 }); return w; })();
+  function bend(s, out) {
+    const A = 1 / P.ppRollerR, L = P.ppRollerLen, TAU = 2 * Math.PI;
+    let k1 = 0, k2 = 0;
+    switch (OPT.course) {
+      case 'rollers': k1 = A * Math.sin(TAU * s / L); break;
+      case 'slalom': k2 = A * Math.sin(TAU * s / L); break;
+      case 'twister': { const k = A * Math.sin(TAU * s / L), a = TAU * s / (4 * L); k1 = k * Math.cos(a); k2 = k * Math.sin(a); break; }
+      case 'wake': for (const w of WAKE) { k1 += w.a1 * Math.sin(TAU * s / w.l1 + w.p1); k2 += w.a2 * Math.sin(TAU * s / w.l2 + w.p2); } break;
+      case 'pumptrack': {
+        const roll = 4 * L, berm = Math.max(300, 6 * P.ppRollerR), per = 2 * (roll + berm);
+        let u = s % per; if (u < 0) u += per;
+        const half = u >= roll + berm ? u - roll - berm : u;
+        if (half < roll) k1 = A * Math.sin(TAU * half / L);
+        else { const x = (half - roll) / berm; k2 = (Math.PI * Math.PI / (2 * berm)) * Math.sin(Math.PI * x); }   // integrates to exactly 180°
+        break;
+      }
+      default: break;   // flat
+    }
+    out.k1 = k1; out.k2 = k2; out.kap = Math.hypot(k1, k2); out.alpha = Math.atan2(k2, k1);
+    return out;
+  }
+  const _b = { k1: 0, k2: 0, kap: 0, alpha: 0 }, _b2 = { k1: 0, k2: 0, kap: 0, alpha: 0 };
+
+  // A frame on the rail: p (point), T (tangent), N1, N2. Advanced by midpoint integration of the bend.
+  const v3 = { add: (a, b, s) => [a[0] + b[0] * s, a[1] + b[1] * s, a[2] + b[2] * s], dot: (a, b) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2], sub: (a, b) => [a[0] - b[0], a[1] - b[1], a[2] - b[2]], cross: (a, b) => [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]], len: (a) => Math.hypot(a[0], a[1], a[2]), norm: (a) => { const l = Math.hypot(a[0], a[1], a[2]) || 1; return [a[0] / l, a[1] / l, a[2] / l]; }, scale: (a, s) => [a[0] * s, a[1] * s, a[2] * s] };
+  function newFrame() { return { s: 0, p: [0, 0, 0], T: [1, 0, 0], N1: [0, 1, 0], N2: [0, 0, 1] }; }
+  function copyFrame(f) { return { s: f.s, p: f.p.slice(), T: f.T.slice(), N1: f.N1.slice(), N2: f.N2.slice() }; }
+  function advance(f, ds) {
+    bend(f.s + ds / 2, _b2);
+    const T0 = f.T, T1 = v3.norm([T0[0] + (_b2.k1 * f.N1[0] + _b2.k2 * f.N2[0]) * ds, T0[1] + (_b2.k1 * f.N1[1] + _b2.k2 * f.N2[1]) * ds, T0[2] + (_b2.k1 * f.N1[2] + _b2.k2 * f.N2[2]) * ds]);
+    f.p = v3.add(f.p, v3.norm([T0[0] + T1[0], T0[1] + T1[1], T0[2] + T1[2]]), ds);
+    let N1 = v3.add(f.N1, T0, -_b2.k1 * ds); N1 = v3.norm(v3.add(N1, T1, -v3.dot(N1, T1)));
+    f.T = T1; f.N1 = N1; f.N2 = v3.cross(T1, N1); f.s += ds;
+  }
+  function advanceBy(f, dist) { const n = Math.max(1, Math.ceil(Math.abs(dist) / 2)); for (let i = 0; i < n; i++) advance(f, dist / n); }
+  const upOf = (f, phi) => v3.norm(v3.add(v3.scale(f.N1, Math.cos(phi)), f.N2, Math.sin(phi)));
+
+  // ================= (4) THE MODEL =================
+  // The pumping law (every way that pumps uses it): moving your hips along your own "up" by dh while the rail
+  // bends under you by kf (kap·cos(alpha − phi), + = dipping toward you) changes speed by
+  //     d(v²/2) = v² · kf · dh         (angular momentum about the bend: pull toward its centre, speed up)
+  // The pull's own share (pull · dh) goes into height, not speed — so on a straight rail pumping earns 0.
+  // The Flat course is the control that proves it.
+  let world = null, seed = 7;
+  const legH = () => P.ppLegTravel;
+  function rideRadius(h) { return RAIL_R + P.rideSurfaceClearance + LEG_MIN + h; }
+  function reset(s) {
+    if (s != null) seed = s >>> 0;
+    const rnd = mulberry32(seed);
+    const s0 = Math.floor(rnd() * 4) * P.ppRollerLen * 0.25;       // start phase: one of four points on a roller
+    const f = newFrame(); f.s = s0;
+    world = {
+      t: 0, s: s0, v: OPT._startSpeed != null ? OPT._startSpeed : P.ppStartSpeed, phi: 0, phiHome: 0, h: legH() * 0.5, hv: 0,
+      frame: f, air: null, btn: false, up: upOf(f, 0), rnd,
+      ai: { phiT: 0, jit: 0, extend: false, ph: rnd() * 6.283, held: true },
+      stats: { sumV: 0, n: 0, pump: 0, scrub: 0, flyoffs: 0, lost: 0, landLoss: 0, busy: 0, minV: 1e9 },
+      last: { N: P.ppPull, kf: 0, lat: 0, roll: 0, crouch: 0 },
+      trace: [],
+    };
+  }
+  function wayOf() { return WAYS.find((w) => w.v === OPT.way) || WAYS[0]; }
+  function loadAt(w, s, phi) { bend(s, _b); return { kf: _b.kap * Math.cos(_b.alpha - phi), lat: _b.kap * Math.sin(_b.alpha - phi), kap: _b.kap, alpha: _b.alpha }; }
+
+  // input = { roll: −1..1 (lean), crouch: 0..1 (knees), btn: bool, throttle: 0..1 } — the same object a pad writes
+  function simStep(dt, input) {
+    const w = world, st = w.stats, way = wayOf(), H = legH(), pull = P.ppPull;
+    const inp = input || NO_INPUT;
+    st.busy += (Math.abs(inp.roll - w.last.roll) * 0.5 + Math.abs(inp.crouch - w.last.crouch));
+    w.last.roll = inp.roll; w.last.crouch = inp.crouch;
+    if (w.air) { airStep(dt, inp); w.t += dt; return; }
+
+    // ---- the bend under the rider ----
+    bend(w.s, _b);
+    const d = _b.alpha - w.phi, kf = _b.kap * Math.cos(d), latK = _b.kap * Math.sin(d), v0 = w.v;
+    const N = pull + w.v * w.v * kf, lat = w.v * w.v * latK;
+    w.last.N = N; w.last.kf = kf; w.last.lat = lat;
+
+    // ---- lean: roll around the rail ----
+    let phiDot = P.ppRollRate * D2R * clamp(inp.roll, -1, 1);
+    if (OPT.lean === 'bead') phiDot += -P.ppBead * clamp(lat / P.ppGrip, -3, 3);            // a bend throws you to its outside
+    if (OPT.lean === 'auto' && w.v * w.v * _b.kap > 0.1 * pull) {                    // the hull rolls onto the nearer side of the bend
+      const e1 = wrapPi(_b.alpha - w.phi), e2 = wrapPi(_b.alpha + Math.PI - w.phi);
+      phiDot += P.ppAutoBank * (OPT.crest === 'fly' || Math.abs(e1) <= Math.abs(e2) ? e1 : e2);
+    }
+    const lim = P.ppLeanMax * D2R;
+    w.phi += phiDot * dt;
+    if (lim < Math.PI - 1e-6) w.phi = w.phiHome + clamp(wrapPi(w.phi - w.phiHome), -lim, lim);
+
+    // ---- knees ----
+    let hT = H * 0.5, rate = P.ppLegRate;
+    if (way.v === 'knees' || way.v === 'grind') hT = H * (1 - clamp(inp.crouch, 0, 1));
+    else if (way.v === 'tap' || way.v === 'beat') { hT = inp.btn ? 0 : H; rate *= way.v === 'tap' ? P.ppTapLegs : 4; }
+    else if (way.v === 'lean') hT = loadAt(w, w.s + Math.max(1, w.v) * 0.02, w.phi).kf < kf ? H : 0;   // the hull stands up as the load passes its peak
+    w.hv = clamp((hT - w.h) * P.ppLegStiff, -rate, rate);
+    const hNew = clamp(w.h + w.hv * dt, 0, H), dh = hNew - w.h; w.h = hNew;
+
+    // ---- speed ----
+    const terrainMul = OPT.owner === 'own' ? 1 : P.ppHostileDrag;
+    if (way.pump === 'work') {                                        // the pumping law
+      w.v = Math.sqrt(Math.max(0, w.v * w.v * (1 + 2 * kf * dh)));
+    } else if (way.pump === 'auto') {
+      w.v = Math.sqrt(Math.max(0, w.v * w.v * (1 + 2 * kf * dh * P.ppAutoEff)));
+    } else if (way.pump === 'beat' && w.btn && !inp.btn) {          // the release edge
+      w.v = Math.max(0, w.v + P.ppBeatKick * clamp(kf * P.ppRollerR, -1, 1));
+    }
+    w.btn = !!inp.btn;
+    st.pump += w.v - v0;                                             // pumping only; the motor and drag come after
+    if (way.v === 'urchin') {                                        // shipped: the grind motor IS the speed
+      const target = clamp(inp.throttle, 0, 1) * (OPT.owner === 'own' ? P.FriendlyTerrainSpeed : P.HostileTerrainSpeed);
+      w.v += (target - w.v) * (1 - Math.exp(-P.speedTrackingRate * dt));
+    } else {
+      const motor = way.v === 'grind' ? clamp(inp.throttle, 0, 1) * (OPT.owner === 'own' ? P.FriendlyTerrainSpeed : P.HostileTerrainSpeed) : 0;
+      if (w.v < motor) w.v += (motor - w.v) * (1 - Math.exp(-P.speedTrackingRate * dt));
+      else w.v = Math.max(motor, w.v - (P.ppDrag0 + P.ppDrag2 * 1e-5 * w.v * w.v) * terrainMul * dt);
+      const ex = Math.max(0, Math.abs(lat) - P.ppGrip), sc = Math.min(w.v, P.ppScrub * ex * dt);
+      w.v -= sc; st.scrub += sc;
+    }
+
+    // ---- crest: thrown off when the pull cannot hold the hump ----
+    const up = upOf(w.frame, w.phi);
+    if (OPT.crest === 'fly' && way.v !== 'urchin' && N < 0) { launch(up); }
+    else {
+      advanceBy(w.frame, w.v * dt); w.s = w.frame.s;
+    }
+    w.up = up;
+    st.sumV += w.v; st.n++; st.minV = Math.min(st.minV, w.v);
+    w.t += dt;
+  }
+
+  // Flying: the prismscape still pulls toward the nearest rail point within reach; land when you touch it.
+  function launch(up) {
+    const w = world, f = w.frame, pts = [];
+    const g = copyFrame(f); advanceBy(g, -40);
+    for (let i = 0; i < 560; i++) { pts.push(copyFrame(g)); advanceBy(g, 4); }
+    const pos = v3.add(f.p, up, rideRadius(w.h));
+    w.air = { pos, vel: v3.add(v3.scale(f.T, w.v), up, Math.max(0, w.hv)), pts, idx: 10, t: 0, up };
+    w.stats.flyoffs++;
+  }
+  function airStep(dt) {
+    const w = world, a = w.air, reach = 120;
+    let best = a.idx, bd = Infinity;
+    for (let i = Math.max(0, a.idx - 20); i < Math.min(a.pts.length, a.idx + 60); i++) { const d = v3.len(v3.sub(a.pos, a.pts[i].p)); if (d < bd) { bd = d; best = i; } }
+    a.idx = best;
+    const rp = a.pts[best], dv = v3.sub(a.pos, rp.p), dist = v3.len(dv), dn = v3.scale(dv, 1 / (dist || 1));
+    if (dist < reach) a.vel = v3.add(a.vel, dn, -P.ppPull * dt);
+    const sp = v3.len(a.vel), drag = (P.ppDrag2 * 1e-5 * sp * sp) * dt;
+    if (sp > 0) a.vel = v3.scale(a.vel, Math.max(0, sp - drag) / sp);
+    const radial = v3.dot(a.vel, dn), rr = rideRadius(w.h);
+    a.pos = v3.add(a.pos, a.vel, dt); a.t += dt;
+    w.v = v3.len(a.vel); w.stats.sumV += w.v; w.stats.n++;
+    if (dist <= rr + Math.max(0, -radial) * dt && radial <= 0) {      // touch down
+      const vt = Math.max(0, v3.dot(a.vel, rp.T));
+      w.stats.landLoss += w.v - vt;
+      w.frame = copyFrame(rp); w.s = rp.s; w.v = vt;
+      w.phi = Math.atan2(v3.dot(dv, rp.N2), v3.dot(dv, rp.N1)); w.phiHome = w.phi; w.air = null;
+    } else if (a.t > 4 || best >= a.pts.length - 2 || dist > 600) {   // lost the ribbon: put back, half speed
+      w.stats.lost++; w.frame = copyFrame(rp); w.s = rp.s; w.v *= 0.5; w.phi = w.phiHome; w.air = null;
+    }
+  }
+
+  // ================= (5) THE AI: input only =================
+  // Reads the rail ahead (what a pilot sees) and writes the same input object a gamepad writes. Never touches
+  // the rider's state. The rookie is the skilled pilot plus late reactions, timing jitter and a wandering lean.
+  const NO_INPUT = { roll: 0, crouch: 0, btn: false, throttle: 0 };
+  function aiInput(noise) {
+    const w = world, a = w.ai, way = wayOf(), v = Math.max(w.v, 1), pull = P.ppPull;
+    const out = { roll: 0, crouch: 0.5, btn: false, throttle: 1 };
+    if (w.air) return out;
+    const late = noise * 0.16 + a.jit;
+    // lean: put the coming bend under you (aim at it ~0.3 s early), stay within the lean limit
+    const kA = loadAt(w, w.s + v * Math.max(0.05, 0.3 - late), w.phi);
+    if (v * v * kA.kap > 0.12 * pull) {
+      // a dip pumps by standing up and a hump by crouching, so either side of the rail pays the same: take the
+      // nearer one, unless crests throw you and this hump would — then get the bend under you
+      const a1 = kA.alpha, a2 = wrapPi(kA.alpha + Math.PI), throwOff = OPT.crest === 'fly' && v * v * kA.kap > 0.75 * pull;
+      a.phiT = throwOff || Math.abs(wrapPi(a1 - w.phi)) <= Math.abs(wrapPi(a2 - w.phi)) ? a1 : a2;
+    }
+    let target = a.phiT + noise * 0.9 * Math.sin(0.8 * w.t + a.ph);
+    const lim = P.ppLeanMax * D2R;
+    if (lim < Math.PI - 1e-6) target = w.phiHome + clamp(wrapPi(target - w.phiHome), -lim, lim);
+    let err = wrapPi(target - w.phi);
+    if (OPT.lean === 'bead') err += 0.35 * clamp(world.last.lat / P.ppGrip, -3, 3) * (1 - noise);    // lean against the throw
+    out.roll = clamp(err * (3.5 - 2 * noise), -1, 1);
+    // knees: a stroke pays bend × travel, so stand up across the bottom of each dip (the load's peak) and crouch
+    // across the top of each hump (its trough) — i.e. be extended while the load is falling — led by half a stroke
+    const lead = 0.5 * legH() / Math.max(0.5, P.ppLegRate * (way.v === 'tap' ? P.ppTapLegs : 1));
+    const sA = w.s + v * Math.max(0, lead - late), kP = loadAt(w, sA, w.phi).kf, kQ = loadAt(w, sA + Math.max(1, v * 0.02), w.phi).kf;
+    const extend = kQ < kP;
+    if (extend !== a.extend) { a.extend = extend; a.jit = (w.rnd() - 0.5) * noise * 0.25; }
+    out.crouch = extend ? 0 : 1;
+    out.btn = !extend;
+    if (way.v === 'beat') {                                            // hold through the hump, let go at the deepest load
+      const now = loadAt(w, w.s, w.phi).kf, soon = loadAt(w, w.s + v * Math.max(0.02, 0.06 - late), w.phi).kf;
+      if (a.held && now > 0.15 / P.ppRollerR && soon <= now) a.held = false;
+      else if (!a.held && now <= 0) a.held = true;
+      out.btn = a.held;
+    }
+    return out;
+  }
+
+  // ================= (6) SCORE + BATCH =================
+  function score() {
+    const s = world.stats, T = Math.max(world.t, 1e-6);
+    return { avgSpeed: +(s.sumV / Math.max(1, s.n)).toFixed(1), endSpeed: +world.v.toFixed(1), pumpPerSec: +(s.pump / T).toFixed(2), scrubPerSec: +(s.scrub / T).toFixed(2), flyoffsPerMin: +(60 * s.flyoffs / T).toFixed(1), lost: s.lost, busy: +(s.busy / T).toFixed(2), t: +world.t.toFixed(2) };
+  }
+  function runOne(way, course, noise, sd, seconds, startSpeed) {
+    const oWay = OPT.way, oCourse = OPT.course;
+    OPT.way = way; OPT.course = course; OPT._startSpeed = startSpeed;
+    reset(sd);
+    const dt = 1 / 60, n = Math.round(seconds / dt);
+    for (let i = 0; i < n; i++) simStep(dt, aiInput(noise));
+    const r = score();
+    OPT.way = oWay; OPT.course = oCourse; delete OPT._startSpeed;
+    return r;
+  }
+  const avg = (rows, k) => +(rows.reduce((a, r) => a + r[k], 0) / rows.length).toFixed(2);
+  // Default batch: every way on the current course, skilled + rookie, two seeds; plus the controls:
+  // pumping on the Flat course (must be ~0) and the skilled run latching on at the free-flight cruise.
+  function runBatch(opts) {
+    opts = opts || {};
+    const seeds = opts.seeds || [1, 2], seconds = opts.seconds || OPT.runLen, course = opts.course || OPT.course;
+    const keep = { world, seed }, rows = [];
+    for (const wy of WAYS) {
+      const sk = seeds.map((sd) => runOne(wy.v, course, 0, sd, seconds));
+      const rk = seeds.map((sd) => runOne(wy.v, course, P.aiNoise, sd, seconds));
+      const flat = runOne(wy.v, 'flat', 0, seeds[0], seconds);
+      const cruise = runOne(wy.v, course, 0, seeds[0], seconds, P.DefaultThrottleScaler);
+      rows.push({ way: wy.label, course, skilled: avg(sk, 'avgSpeed'), rookie: avg(rk, 'avgSpeed'), skilledEnd: avg(sk, 'endSpeed'), pump: avg(sk, 'pumpPerSec'), scrub: avg(sk, 'scrubPerSec'), flyoffs: avg(sk, 'flyoffsPerMin'), lost: avg(sk, 'lost'), busy: avg(sk, 'busy'), flatPump: flat.pumpPerSec, fromCruise: cruise.avgSpeed });
+    }
+    world = keep.world; seed = keep.seed;
+    return rows;
+  }
+  function runCourseGrid(opts) {
+    opts = opts || {};
+    const seeds = opts.seeds || [1, 2], seconds = opts.seconds || OPT.runLen, keep = { world, seed }, grid = [];
+    for (const wy of WAYS) {
+      const row = { way: wy.label };
+      for (const c of COURSES) { row[c.v] = avg(seeds.map((sd) => runOne(wy.v, c.v, 0, sd, seconds)), 'avgSpeed'); row[c.v + ':rookie'] = avg(seeds.map((sd) => runOne(wy.v, c.v, P.aiNoise, sd, seconds)), 'avgSpeed'); }
+      grid.push(row);
+    }
+    world = keep.world; seed = keep.seed;
+    return grid;
+  }
+
+  // ================= (7) PLATFORM =================
+  function detectPlatform() {
+    const host = window.__labHost || {};
+    const ua = navigator.userAgent || '';
+    const mobileUA = (navigator.userAgentData && navigator.userAgentData.mobile) || /Android|iPhone|iPad|iPod|Mobile/i.test(ua) || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1);
+    const coarseOnly = matchMedia('(pointer: coarse)').matches && !matchMedia('(any-pointer: fine)').matches;
+    return { shell: host.shell || 'web', device: host.device || ((mobileUA || coarseOnly) ? 'phone' : 'pc') };
+  }
+  const PLATFORM = detectPlatform();
+  $('platform').textContent = (PLATFORM.shell === 'web' ? 'Web' : PLATFORM.shell) + ' · ' + (PLATFORM.device === 'phone' ? 'Phone' : 'PC');
+  if (PLATFORM.device === 'phone') $('touchUI').hidden = false;
+
+  // ================= (8) HUMAN INPUT: keys, gamepad, touch → the same input object =================
+  const keys = new Set();
+  const human = { roll: 0, crouch: 0, btn: false, throttle: 1, touchedAt: -1 };
+  const isField = (e) => /^(INPUT|TEXTAREA|SELECT)$/.test((e.target && e.target.tagName) || '');
+  const CONTROL_KEYS = ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'KeyA', 'KeyD', 'KeyW', 'KeyS', 'Space'];
+  addEventListener('keydown', (e) => { if (isField(e) || !CONTROL_KEYS.includes(e.code)) return; keys.add(e.code); takeOver(); e.preventDefault(); });
+  addEventListener('keyup', (e) => { keys.delete(e.code); });
+  addEventListener('blur', () => keys.clear());
+  const touch = { lean: null, knee: null };
+  const canvas = $('stage');
+  canvas.addEventListener('pointerdown', (e) => {
+    if (e.pointerType === 'mouse') return;
+    const r = canvas.getBoundingClientRect(), left = e.clientX - r.left < r.width / 2;
+    if (left) touch.lean = { id: e.pointerId, x0: e.clientX, x: e.clientX }; else touch.knee = { id: e.pointerId };
+    takeOver();
+    if (PLATFORM.device === 'phone' && document.fullscreenElement == null && document.documentElement.requestFullscreen) document.documentElement.requestFullscreen().catch(() => {});
+  });
+  canvas.addEventListener('pointermove', (e) => { if (touch.lean && touch.lean.id === e.pointerId) touch.lean.x = e.clientX; });
+  const endTouch = (e) => { if (touch.lean && touch.lean.id === e.pointerId) touch.lean = null; if (touch.knee && touch.knee.id === e.pointerId) touch.knee = null; };
+  canvas.addEventListener('pointerup', endTouch); canvas.addEventListener('pointercancel', endTouch);
+  function readHuman() {
+    let roll = (keys.has('ArrowRight') || keys.has('KeyD') ? 1 : 0) - (keys.has('ArrowLeft') || keys.has('KeyA') ? 1 : 0);
+    let crouch = keys.has('Space') || keys.has('KeyS') || keys.has('ArrowDown') ? 1 : 0;
+    let throttle = keys.has('ArrowUp') || keys.has('KeyW') || OPT.way !== 'urchin' ? 1 : 0.6;
+    let btn = crouch > 0.5;
+    try {
+      const pads = navigator.getGamepads ? navigator.getGamepads() : [];
+      for (const gp of pads) {
+        if (!gp) continue;
+        const lx = gp.axes[0] || 0, rt = gp.buttons[7] ? gp.buttons[7].value : 0, a = gp.buttons[0] && gp.buttons[0].pressed;
+        if (Math.abs(lx) > 0.12 || rt > 0.05 || a) takeOver();
+        if (Math.abs(lx) > 0.12) roll = lx;
+        if (rt > 0.02) crouch = Math.max(crouch, rt);
+        if (a) { btn = true; crouch = Math.max(crouch, 1); }
+        if (!btn && rt > 0.5) btn = true;
+        break;
+      }
+    } catch (e) { /* the claude.ai viewer may block the Gamepad API — open the repo file in Chrome */ }
+    if (touch.lean) roll = clamp((touch.lean.x - touch.lean.x0) / 60, -1, 1);
+    if (touch.knee) { crouch = 1; btn = true; }
+    human.roll = roll; human.crouch = crouch; human.btn = btn; human.throttle = throttle;
+    return human;
+  }
+  function takeOver() { if (OPT.pilot !== 'you') { OPT.pilot = 'you'; saveOpt(); refreshPilotUI(); } }
+
+  // ================= (9) RENDER: chase view + instruments =================
+  const ctx = canvas.getContext('2d');
+  const STARS = (() => { const r = mulberry32(4242), s = []; for (let i = 0; i < 260; i++) { const z = r() * 2 - 1, a = r() * 6.283, q = Math.sqrt(1 - z * z); s.push([q * Math.cos(a), z, q * Math.sin(a), 0.3 + r() * 0.7]); } return s; })();
+  let camUp = [0, 1, 0];
+  function riderPose() {
+    const w = world;
+    if (w.air) { const up = w.air.up; return { body: w.air.pos, up, T: v3.norm(w.air.vel), board: v3.add(w.air.pos, up, -(LEG_MIN + w.h + P.rideSurfaceClearance * 0.5)) }; }
+    const up = upOf(w.frame, w.phi);
+    return { up, T: w.frame.T, board: v3.add(w.frame.p, up, RAIL_R + P.rideSurfaceClearance), body: v3.add(w.frame.p, up, rideRadius(w.h)) };
+  }
+  function render(dtReal) {
+    const W = canvas.width, Hh = canvas.height, dpr = W / Math.max(1, canvas.clientWidth || W);
+    const w = world, pose = riderPose();
+    ctx.fillStyle = '#05081a'; ctx.fillRect(0, 0, W, Hh);
+    // camera: behind and above the rider, rolling with the rider's "up" so the rail is always under you
+    const k = 1 - Math.exp(-6 * (dtReal || 1 / 60));
+    camUp = v3.norm(v3.add(camUp, v3.sub(pose.up, camUp), k));
+    const cam = OPT.cam === 'chase' ? { back: 34, up: 11, side: 0, ahead: 90 } : OPT.cam === 'wide' ? { back: 120, up: 60, side: 0, ahead: 90 } : { back: 70, up: 16, side: 55, ahead: 110 };
+    const sideV = v3.norm(v3.cross(pose.T, camUp));
+    const eye = v3.add(v3.add(v3.add(pose.body, pose.T, -cam.back), camUp, cam.up), sideV, cam.side), look = v3.add(pose.body, pose.T, cam.ahead);
+    const F = v3.norm(v3.sub(look, eye)), R = v3.norm(v3.cross(F, camUp)), U = v3.cross(R, F);
+    const f = Hh * 0.95, cx = W / 2, cy = Hh * 0.5;
+    const proj = (p) => { const r = v3.sub(p, eye), z = v3.dot(r, F); if (z < 0.5) return null; return [cx + f * v3.dot(r, R) / z, cy - f * v3.dot(r, U) / z, z]; };
+    // stars at infinity
+    for (const s of STARS) { const z = v3.dot(s, F); if (z <= 0.05) continue; const x = cx + f * v3.dot(s, R) / z, y = cy - f * v3.dot(s, U) / z; if (x < 0 || y < 0 || x > W || y > Hh) continue; ctx.fillStyle = 'rgba(200,215,255,' + (s[3] * 0.7).toFixed(2) + ')'; ctx.fillRect(x, y, 1.5 * dpr, 1.5 * dpr); }
+    // rail prisms, far to near, tinted by how the bend loads THIS rider at THIS lean and speed
+    const spacing = P.prismSpacing, pts = [];
+    if (w.air) { for (let i = 0; i < w.air.pts.length; i += 2) pts.push(w.air.pts[i]); }
+    else { const g = copyFrame(w.frame); advanceBy(g, -60); for (let d = -60; d <= 1600; d += spacing) { pts.push(copyFrame(g)); advanceBy(g, spacing); } }
+    const own = OPT.owner === 'own', base = own ? [19, 255, 242] : [255, 0, 249], phi = w.phi, vv = w.v * w.v, pull = P.ppPull;
+    const quads = [];
+    for (const q of pts) {
+      bend(q.s, _b);
+      const felt = vv * _b.kap * Math.cos(_b.alpha - phi) / pull;      // + dip toward you (stand up), − hump (crouch)
+      const side = v3.norm(v3.cross(q.T, v3.sub(q.p, eye)));
+      const a = v3.add(v3.add(q.p, q.T, -3), side, -RAIL_R), b = v3.add(v3.add(q.p, q.T, 3), side, -RAIL_R), c = v3.add(v3.add(q.p, q.T, 3), side, RAIL_R), d = v3.add(v3.add(q.p, q.T, -3), side, RAIL_R);
+      const A = proj(a), B = proj(b), C = proj(c), D = proj(d); if (!A || !B || !C || !D) continue;
+      let col = base;
+      if (felt > 0.04) col = mix(base, [255, 179, 71], Math.min(1, felt / 0.4));          // a dip toward you: stand up at its deepest
+      else if (felt < -0.04) col = mix(base, [102, 128, 255], Math.min(1, -felt / 0.4));  // a hump: crouch at its top
+      if (OPT.crest === 'fly' && 1 + felt < 0) col = [255, 255, 255];
+      quads.push({ z: (A[2] + C[2]) / 2, pts: [A, B, C, D], col });
+    }
+    quads.sort((p, q) => q.z - p.z);
+    for (const qd of quads) {
+      const fog = clamp(1 - qd.z / 1700, 0.08, 1);
+      ctx.fillStyle = 'rgba(' + qd.col[0] + ',' + qd.col[1] + ',' + qd.col[2] + ',' + (0.85 * fog).toFixed(3) + ')';
+      ctx.beginPath(); ctx.moveTo(qd.pts[0][0], qd.pts[0][1]); for (let i = 1; i < 4; i++) ctx.lineTo(qd.pts[i][0], qd.pts[i][1]); ctx.closePath(); ctx.fill();
+    }
+    // the rider: board, knees, hips (an urchin-ish body)
+    const Bp = proj(pose.board), Cp = proj(pose.body);
+    if (Bp && Cp) {
+      const knee = proj(v3.add(v3.scale(v3.add(pose.board, pose.body), 0.5), pose.T, -(legH() - w.h) * 0.7 - 0.4));
+      const nose = proj(v3.add(pose.board, pose.T, 3)), tail = proj(v3.add(pose.board, pose.T, -3));
+      ctx.lineCap = 'round';
+      if (nose && tail) { ctx.strokeStyle = '#ffb347'; ctx.lineWidth = Math.max(2, 900 / Bp[2]); ctx.beginPath(); ctx.moveTo(tail[0], tail[1]); ctx.lineTo(nose[0], nose[1]); ctx.stroke(); }
+      if (knee) { ctx.strokeStyle = '#e8ecff'; ctx.lineWidth = Math.max(1.5, 500 / Bp[2]); ctx.beginPath(); ctx.moveTo(Bp[0], Bp[1]); ctx.lineTo(knee[0], knee[1]); ctx.lineTo(Cp[0], Cp[1]); ctx.stroke(); }
+      const rad = Math.max(3, f * 1.6 / Cp[2]);
+      ctx.strokeStyle = own ? '#13fff2' : '#ff00f9'; ctx.lineWidth = Math.max(1, rad * 0.18);
+      for (let i = 0; i < 12; i++) { const a = i * Math.PI / 6 + w.t * 1.5; ctx.beginPath(); ctx.moveTo(Cp[0] + Math.cos(a) * rad, Cp[1] + Math.sin(a) * rad); ctx.lineTo(Cp[0] + Math.cos(a) * rad * 1.7, Cp[1] + Math.sin(a) * rad * 1.7); ctx.stroke(); }
+      ctx.fillStyle = '#0b1026'; ctx.beginPath(); ctx.arc(Cp[0], Cp[1], rad, 0, 7); ctx.fill(); ctx.stroke();
+    }
+    drawInstruments(W, Hh, dpr);
+    const way = wayOf(), s = w.stats;
+    $('hud').innerHTML = '<span class="big"></span> u/s<br><span></span>';
+    $('hud').children[0].textContent = w.v.toFixed(0);
+    $('hud').children[2].textContent = PLATFORM.device === 'phone' || W < 700 * dpr ? (w.air ? 'airborne · ' : '') + way.label + ' · ' + pilotLabel() : (w.air ? 'AIRBORNE · ' : '') + 'load ' + (w.last.N / pull).toFixed(2) + '× pull · knees ' + Math.round(100 * w.h / legH()) + '% · ' + way.label + ' · ' + pilotLabel() + ' · ' + (COURSES.find((c) => c.v === OPT.course) || {}).label + (s.flyoffs ? ' · fly-offs ' + s.flyoffs : '') + (paused ? ' · paused' : '');
+  }
+  const mix = (a, b, t) => [Math.round(a[0] + (b[0] - a[0]) * t), Math.round(a[1] + (b[1] - a[1]) * t), Math.round(a[2] + (b[2] - a[2]) * t)];
+  function panelBox(x, y, w, h, title, dpr) {
+    ctx.fillStyle = 'rgba(11,16,38,0.78)'; ctx.strokeStyle = 'rgba(154,166,214,0.35)'; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.roundRect ? ctx.roundRect(x, y, w, h, 8 * dpr) : ctx.rect(x, y, w, h); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = '#9aa6d6'; ctx.font = (700 * 1) + ' ' + Math.round(10 * dpr) + 'px "Chakra Petch", system-ui, sans-serif'; ctx.fillText(title, x + 8 * dpr, y + 14 * dpr);
+  }
+  function drawInstruments(W, Hh, dpr) {
+    const w = world, pull = P.ppPull, small = W < 700 * dpr;
+    const pad = 10 * dpr, sz = (small ? 84 : 128) * dpr;
+    // On a phone the bottom of the stage belongs to the thumbs: the instruments go up the right edge instead.
+    const gwFelt = (small ? 150 : 300) * dpr, ghFelt = (small ? 84 : 128) * dpr;
+    const dialX = small ? W - sz - gwFelt - 2 * pad : pad, dialY = small ? pad : Hh - sz - pad;
+    const feltX = W - gwFelt - pad, feltY = small ? pad : Hh - ghFelt - pad;
+    // BEND DIAL: the rail's cross-section with you on top; the arrow is where the rail bends (toward you = a dip to pump)
+    {
+      const x = dialX, y = dialY; panelBox(x, y, sz, sz, small ? 'BEND' : 'BEND UNDER YOU', dpr);
+      const cx = x + sz / 2, cy = y + sz * 0.58, r = sz * 0.2;
+      ctx.strokeStyle = '#9aa6d6'; ctx.lineWidth = 1.5 * dpr; ctx.beginPath(); ctx.arc(cx, cy, r, 0, 7); ctx.stroke();
+      if (!w.air) {
+        bend(w.s, _b);
+        const rel = _b.alpha - w.phi, mag = clamp(w.v * w.v * _b.kap / pull, 0, 2), L = r + mag * sz * 0.14;
+        const ax = cx + Math.sin(rel) * L, ay = cy - Math.cos(rel) * L, good = Math.cos(rel) > 0;
+        ctx.strokeStyle = good ? '#ffb347' : '#7fd7ff'; ctx.lineWidth = 3 * dpr; ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(ax, ay); ctx.stroke();
+        ctx.beginPath(); ctx.arc(ax, ay, 3 * dpr, 0, 7); ctx.fillStyle = ctx.strokeStyle; ctx.fill();
+      }
+      ctx.fillStyle = '#13fff2'; ctx.beginPath(); ctx.arc(cx, cy - r - 5 * dpr, 4.5 * dpr, 0, 7); ctx.fill();
+      if (!small) { ctx.fillStyle = '#9aa6d6'; ctx.font = Math.round(9 * dpr) + 'px "Atkinson Hyperlegible", system-ui'; ctx.fillText('amber = a dip toward you', x + 8 * dpr, y + sz - 8 * dpr); }
+    }
+    // FELT PROFILE: the load you will feel over the next 2 s at your current lean and speed
+    {
+      const gw = gwFelt, gh = ghFelt, x = feltX, y = feltY;
+      panelBox(x, y, gw, gh, small ? 'LOAD AHEAD · 2 s' : 'LOAD AHEAD (× PULL) · NEXT 2 s', dpr);
+      const gx = x + 26 * dpr, gy = y + 20 * dpr, ww = gw - 34 * dpr, hh = gh - 30 * dpr, ymin = -1, ymax = 3;
+      const Y = (val) => gy + hh * (1 - (clamp(val, ymin, ymax) - ymin) / (ymax - ymin));
+      ctx.strokeStyle = 'rgba(154,166,214,0.35)'; ctx.lineWidth = 1;
+      for (const g of [0, 1, 2]) { ctx.beginPath(); ctx.moveTo(gx, Y(g)); ctx.lineTo(gx + ww, Y(g)); ctx.stroke(); ctx.fillStyle = '#9aa6d6'; ctx.font = Math.round(9 * dpr) + 'px "Chakra Petch", system-ui'; ctx.fillText(String(g), x + 10 * dpr, Y(g) + 3 * dpr); }
+      if (!w.air) {
+        const v = Math.max(w.v, 1), N = 60;
+        ctx.beginPath();
+        for (let i = 0; i <= N; i++) { const t = 2 * i / N, l = loadAt(w, w.s + v * t, w.phi), val = 1 + v * v * l.kf / pull; const X = gx + ww * i / N; i ? ctx.lineTo(X, Y(val)) : ctx.moveTo(X, Y(val)); }
+        ctx.strokeStyle = '#ffb347'; ctx.lineWidth = 2 * dpr; ctx.stroke();
+        if (!small) { ctx.fillStyle = '#9aa6d6'; ctx.font = Math.round(9 * dpr) + 'px "Atkinson Hyperlegible", system-ui'; } else ctx.fillStyle = 'transparent';
+        ctx.fillText(OPT.crest === 'fly' ? 'below 0 = thrown off' : 'stand up on each peak, crouch in each valley', gx + 4 * dpr, gy + hh - 3 * dpr);
+      }
+      // knee gauge
+      const kx = x + 6 * dpr, kh = hh * w.h / legH();
+      ctx.fillStyle = 'rgba(232,236,255,0.18)'; ctx.fillRect(kx, gy, 8 * dpr, hh); ctx.fillStyle = '#e8ecff'; ctx.fillRect(kx, gy + hh - kh, 8 * dpr, kh);
+    }
+    // SPEED TRACE: the last 10 s, with the Urchin's own-ribbon grind speed for scale (PC only)
+    if (!small) {
+      const gw = 300 * dpr, gh = 64 * dpr, x = W - gw - pad, y = pad;
+      panelBox(x, y, gw, gh, 'SPEED · LAST 10 s', dpr);
+      const tr = w.trace, gx = x + 8 * dpr, gy = y + 18 * dpr, ww = gw - 16 * dpr, hh = gh - 24 * dpr, vmax = Math.max(400, ...tr.map((p) => p[1]));
+      const ref = gy + hh * (1 - P.FriendlyTerrainSpeed / vmax);
+      ctx.setLineDash([4 * dpr, 4 * dpr]); ctx.strokeStyle = 'rgba(19,255,242,0.5)'; ctx.beginPath(); ctx.moveTo(gx, ref); ctx.lineTo(gx + ww, ref); ctx.stroke(); ctx.setLineDash([]);
+      if (tr.length > 1) { const t0 = w.t - 10; ctx.beginPath(); tr.forEach((p, i) => { const X = gx + ww * (p[0] - t0) / 10, Yv = gy + hh * (1 - p[1] / vmax); i ? ctx.lineTo(X, Yv) : ctx.moveTo(X, Yv); }); ctx.strokeStyle = '#ffb347'; ctx.lineWidth = 2 * dpr; ctx.stroke(); }
+      ctx.fillStyle = '#9aa6d6'; ctx.font = Math.round(9 * dpr) + 'px "Atkinson Hyperlegible", system-ui'; ctx.fillText('dashed = Urchin grind ' + P.FriendlyTerrainSpeed, gx + ww - 130 * dpr, gy + hh);
+    }
+  }
+
+  // ================= (10) UI: tabs, dropdowns, sliders, shipped-vs-yours =================
+  const outputs = {};
+  function fmt(v, step) { const dec = step < 1 ? Math.min(3, (String(step).split('.')[1] || '').length) : 0; return Number(v).toFixed(dec); }
+  function diffOnly() { const o = {}; for (const k of Object.keys(SHIPPED)) if (Math.abs(P[k] - SHIPPED[k]) > 1e-9) o[k] = P[k]; return o; }
+  function refreshDiff() {
+    const changed = Object.keys(diffOnly());
+    $('diff').textContent = changed.length ? changed.length + ' setting' + (changed.length > 1 ? 's differ' : ' differs') + ' from shipped' : 'shipped numbers';
+    for (const [, key, , , step] of SPEC) { const o = outputs[key]; if (!o) continue; o.out.textContent = fmt(P[key], step); o.out.classList.toggle('changed', Math.abs(P[key] - SHIPPED[key]) > 1e-9); o.out.title = 'shipped ' + SHIPPED[key] + ' · yours ' + P[key]; }
+    $('wayChip').textContent = wayOf().label;
+  }
+  function setParam(key, v) { P[key] = v; lsSet(LS_KEY, diffOnly()); refreshDiff(); }
+  function saveOpt() { const o = Object.assign({}, OPT); delete o._startSpeed; lsSet(LS_OPT, o); }
+  function setOpt(k, v) { OPT[k] = v; saveOpt(); if (k === 'way' || k === 'course' || k === 'crest' || k === 'owner') reset(); refreshDiff(); refreshPilotUI(); if (showDock) rebuildDock(); }
+  function pilotLabel() { return OPT.pilot === 'you' ? 'You fly' : OPT.pilot === 'rookie' ? 'AI rookie' : 'AI skilled'; }
+  function refreshPilotUI() { $('letAi').hidden = OPT.pilot !== 'you'; const sel = document.getElementById('opt-pilot'); if (sel) sel.value = OPT.pilot; }
+
+  function makeTabs(barId, bodyId, tabs, storeKey) {
+    const bar = $(barId), body = $(bodyId), sel = lsGet(storeKey, tabs[0].name);
+    function show(name) {
+      for (const b of bar.children) b.setAttribute('aria-selected', String(b.dataset.name === name));
+      body.replaceChildren(tabs.find((t) => t.name === name).build()); lsSet(storeKey, name);
+    }
+    for (const t of tabs) { const b = document.createElement('button'); b.textContent = t.name; b.dataset.name = t.name; b.setAttribute('role', 'tab'); b.onclick = () => show(t.name); bar.appendChild(b); }
+    show(tabs.some((t) => t.name === sel) ? sel : tabs[0].name);
+    return show;
+  }
+  function pick(box, key, label, options, tip) {
+    const row = document.createElement('div'); row.className = 'pick';
+    const lab = document.createElement('label'); lab.textContent = label; lab.htmlFor = 'opt-' + key;
+    const sel = document.createElement('select'); sel.id = 'opt-' + key;
+    for (const o of options) { const op = document.createElement('option'); op.value = String(o.v); op.textContent = o.label; sel.appendChild(op); }
+    sel.value = String(OPT[key]);
+    sel.onchange = () => { const v = typeof OPT_DEFAULT[key] === 'number' ? parseFloat(sel.value) : sel.value; setOpt(key, v); };
+    row.append(lab, sel);
+    if (tip) { const t = document.createElement('div'); t.className = 'tip'; t.textContent = typeof tip === 'function' ? tip() : tip; row.appendChild(t); }
+    box.appendChild(row);
+  }
+  function sec(box, text) { const h = document.createElement('div'); h.className = 'sec'; h.textContent = text; box.appendChild(h); }
+  function sliders(box, group) {
+    for (const [g, key, lo, hi, step, label, tip] of SPEC) {
+      if (g !== group) continue;
+      const row = document.createElement('div'); row.className = 'row';
+      row.innerHTML = '<label><span></span><span class="key"></span></label><output></output><input type="range"><div class="tip"></div>';
+      row.querySelector('label span').textContent = label; row.querySelector('.key').textContent = key; row.querySelector('.tip').textContent = tip;
+      const inp = row.querySelector('input'); Object.assign(inp, { min: lo, max: hi, step, value: P[key], id: 'p-' + key }); inp.setAttribute('aria-label', label);
+      inp.oninput = () => setParam(key, parseFloat(inp.value));
+      outputs[key] = { out: row.querySelector('output'), inp };
+      box.appendChild(row);
+    }
+    queueMicrotask(refreshDiff);
+  }
+  const DOCK = [
+    { name: 'Scene Config', build: () => { const b = document.createElement('div');
+      pick(b, 'course', 'Course', COURSES, () => (COURSES.find((c) => c.v === OPT.course) || {}).note);
+      pick(b, 'cam', 'Camera', [{ v: 'side', label: 'Three-quarter (see the humps)' }, { v: 'chase', label: 'Chase (rolls with you)' }, { v: 'wide', label: 'Wide chase' }], 'Every camera rolls with the rider, so the rail is always under you and a hump looks like a hump.');
+      pick(b, 'simSpeed', 'Speed', [{ v: 1, label: '1× (game time)' }, { v: 0.5, label: '0.5× slow motion' }, { v: 0.25, label: '0.25× read the pump' }]);
+      sec(b, 'Course shape'); sliders(b, 'Scene Config'); return b; } },
+    { name: 'Game Config', build: () => { const b = document.createElement('div');
+      pick(b, 'owner', 'Ribbon', [{ v: 'own', label: 'Your own (friendly)' }, { v: 'enemy', label: 'An enemy’s (hostile)' }], 'The Urchin grinds 300 u/s on its own ribbon and 20 on an enemy’s.');
+      pick(b, 'crest', 'Crests', [{ v: 'latched', label: 'Latched (like the Urchin)' }, { v: 'fly', label: 'Throw you off past the pull' }], 'Latched: the rider never leaves the rail over a hump. Throw off: faster than √(pull × radius) over a hump and you fly, then land where the pull brings you back.');
+      pick(b, 'runLen', 'Score runs', [{ v: 20, label: '20 s' }, { v: 30, label: '30 s' }, { v: 60, label: '60 s' }]);
+      return b; } },
+    { name: 'AI Config', build: () => { const b = document.createElement('div');
+      pick(b, 'pilot', 'Who flies', [{ v: 'skilled', label: 'AI skilled' }, { v: 'rookie', label: 'AI rookie' }, { v: 'you', label: 'You' }], 'Touch any control to take over. The AI writes the same inputs a pad does.');
+      sliders(b, 'AI Config');
+      const p = document.createElement('p'); p.className = 'hint'; p.textContent = 'Skilled: leans onto the nearer side of each coming bend ~0.3 s early (under it, if crests can throw you) and centres each knee stroke on the load\u2019s peak and valley. Rookie: the same pilot, late by up to 0.16 s, with jittered pumps and a lean that wanders up to 50°. Both lab-only; the game has no pump AI.'; b.appendChild(p);
+      return b; } },
+    { name: 'Play Style Config', build: () => { const b = document.createElement('div');
+      pick(b, 'way', 'Way', WAYS.map((w) => ({ v: w.v, label: w.label + ' — ' + w.short })), () => wayOf().input);
+      sec(b, 'Per-way dials'); sliders(b, 'Play Style Config'); return b; } },
+    { name: 'Input', build: () => { const b = document.createElement('div');
+      pick(b, 'lean', 'Lean model', [{ v: 'free', label: 'Free roll (Urchin: attitude is yours)' }, { v: 'bead', label: 'Falls outward (balance it)' }, { v: 'auto', label: 'Auto-bank (hull leans in)' }], 'Free: the bend never moves you. Falls outward: a bend rolls you to its outside, as it would a bead on a wire; leaning in is a balance. Auto-bank: the hull rolls into each bend for you.');
+      const p = document.createElement('div'); p.className = 'hint';
+      p.innerHTML = '<b>Keys</b>: A / D or ← → lean · Space / S / ↓ crouch (hold) · W / ↑ throttle (Urchin grind).<br><b>Pad</b>: left stick lean · right trigger knees (analog) · A tap.<br><b>Phone</b>: drag on the left half to lean, hold the right half to crouch.<br>The claude.ai viewer may block gamepads; open the repo file in Chrome for a pad.';
+      b.appendChild(p); sec(b, 'Feel'); sliders(b, 'Input'); return b; } },
+    { name: 'Vessel Config', build: () => { const b = document.createElement('div'); sliders(b, 'Vessel Config'); return b; } },
+  ];
+  let showDock = null;
+  function rebuildDock() { const cur = lsGet('lab:' + LAB.name + ':dock', DOCK[0].name); showDock(cur); }
+  showDock = makeTabs('dockTabs', 'dockBody', DOCK, 'lab:' + LAB.name + ':dock');
+
+  // ================= (11) THE DECISION LOG =================
+  let db = null, me = '', remote = [], localLog = lsGet('lab:' + LAB.name + ':log', []);
+  function snapshot() { const o = Object.assign({}, OPT); delete o._startSpeed; return { round: LAB.round, seed, options: o, changed: diffOnly() }; }
+  async function record(topic, choice, note) {
+    const doc = { topic, choice, note: note || '', createdAt: Date.now(), by: me, settings: snapshot() };
+    if (db) { try { await db.collection('decisions').add(doc); return 'shared'; } catch (e) { /* fall through */ } }
+    localLog.push(doc); lsSet('lab:' + LAB.name + ':log', localLog); return 'local';
+  }
+  const TOPICS = ['Which way', 'Lean: free roll or a deck limit', 'Crests: latched or thrown off', 'Motor or pure pump', 'Lean model', 'Enemy ribbons', 'General'];
+  function logPanel() {
+    const box = document.createElement('div');
+    box.innerHTML = '<p class="hint" id="logStatus"></p><div class="pick"><label for="logTopic">Topic</label><select id="logTopic"></select></div><textarea id="logChoice" rows="2" placeholder="Your decision"></textarea><p><button class="btn primary" id="logSave">Record decision</button> <button class="btn" id="logCopy">Copy log</button></p><div class="tablewrap"><table id="logTable"></table></div>';
+    const status = box.querySelector('#logStatus'), sel = box.querySelector('#logTopic');
+    for (const t of TOPICS) { const o = document.createElement('option'); o.textContent = t; sel.appendChild(o); }
+    status.textContent = db ? 'Shared log: saved with the lab, readable by Claude at the start of the next round.' : 'Kept in this browser (Copy log to send it).';
+    status.className = db ? 'status-ok' : 'status-warn';
+    box.querySelector('#logChoice').value = wayOf().label + ' on ' + (COURSES.find((c) => c.v === OPT.course) || {}).label + '; lean ' + OPT.lean + ', crests ' + OPT.crest + (Object.keys(diffOnly()).length ? '; ' + JSON.stringify(diffOnly()) : '');
+    box.querySelector('#logSave').onclick = async () => { const where = await record(sel.value, box.querySelector('#logChoice').value); status.textContent = where === 'shared' ? 'Recorded in the shared log.' : 'Recorded in this browser.'; renderLog(box); };
+    box.querySelector('#logCopy').onclick = () => { const t = remote.concat(localLog).map((d) => new Date(d.createdAt).toISOString() + ' · ' + d.topic + ': ' + d.choice + ' ' + JSON.stringify(d.settings)).join('\n'); try { navigator.clipboard.writeText(t).catch(() => {}); } catch (e) { /* no clipboard */ } };
+    renderLog(box);
+    return box;
+  }
+  function renderLog(box) {
+    const t = (box || document).querySelector('#logTable'); if (!t) return;
+    const rows = remote.concat(localLog).sort((a, b) => b.createdAt - a.createdAt).slice(0, 50);
+    t.innerHTML = '<tr><th>When</th><th>Topic</th><th>Decision</th></tr>';
+    if (!rows.length) { const tr = document.createElement('tr'); const td = document.createElement('td'); td.colSpan = 3; td.className = 'hint'; td.textContent = 'No decisions yet. Fly a way, compare the scorecard, then record what you picked here.'; tr.appendChild(td); t.appendChild(tr); }
+    for (const d of rows) { const tr = document.createElement('tr'); for (const v of [new Date(d.createdAt).toLocaleString(), d.topic, d.choice]) { const td = document.createElement('td'); td.textContent = v; tr.appendChild(td); } t.appendChild(tr); }
+  }
+  (async function connect() {
+    const c = window.claude;
+    if (!c || typeof c.use !== 'function') return;
+    try { db = await c.use('db'); } catch (e) { db = null; }
+    try { const u = await c.use('user'); if (u) me = (await u.id()) || ''; } catch (e) { me = ''; }
+    if (!db) return;
+    db.collection('decisions').orderBy('createdAt', 'desc').limit(300).onSnapshot((snap) => { remote = snap.docs.map((d) => Object.assign({ id: d.id }, d.data())); renderLog(); }, () => { db = null; });
+  })();
+
+  // ================= (12) RECORDS DOCK: ways, scorecard, decisions, about =================
+  function waysPanel() {
+    const box = document.createElement('div');
+    box.innerHTML = '<p class="law">The law every pumping way runs on: d(v²/2) = v² · bend-toward-you · d(knees). Stand up at the bottom of each dip (the load peaks), crouch at the top of each hump (the load is lightest). On a straight rail it earns nothing.</p><div class="ways"></div>';
+    const g = box.querySelector('.ways');
+    const CARDS = [
+      ['Knees', 'The trigger is your knees and the stick is your lean, so the pilot has two jobs, as on a real pump track. Most skill, most expression. Shares the Urchin’s free roll: lean all the way round the rail and every bend can be a dip.'],
+      ['Tap', 'One button: hold to crouch, let go to stand. The same physics as Knees, digital. Easier on a phone; loses the half-pump.'],
+      ['Beat', 'Hold through the humps, let go at the bottom of each dip for a kick sized by the load. Arcade and readable; the rhythm is the skill, the legs are not simulated.'],
+      ['Lean', 'The longboard carve: you only lean, and the hull bends its own knees. One stick. The skill is finding the dip and getting under it.'],
+      ['Grind + knees', 'Keeps the Urchin’s grind motor (300 u/s on your own ribbon) and lets pumping take you past it. The safest port: the Urchin stays the Urchin, pumping is the expert layer.'],
+      ['Coast · Urchin grind', 'The two baselines: the ability off, and the Urchin as it rides today.'],
+    ];
+    for (const [h, p] of CARDS) { const d = document.createElement('div'); d.className = 'way'; d.innerHTML = '<h3></h3><p></p>'; d.children[0].textContent = h; d.children[1].textContent = p; g.appendChild(d); }
+    return box;
+  }
+  function table(rows, cols, bestCols) {
+    const t = document.createElement('table');
+    t.innerHTML = '<tr>' + cols.map((c) => '<th class="' + (c.num ? 'num' : '') + '"></th>').join('') + '</tr>';
+    cols.forEach((c, i) => { t.rows[0].cells[i].textContent = c.label; t.rows[0].cells[i].title = c.tip || ''; });
+    const best = {};
+    for (const k of bestCols || []) best[k] = Math.max(...rows.filter((r) => !/Urchin|Coast/.test(r.way)).map((r) => r[k]));
+    for (const r of rows) {
+      const tr = document.createElement('tr');
+      for (const c of cols) { const td = document.createElement('td'); const v = r[c.key]; td.textContent = typeof v === 'number' ? (Math.abs(v) >= 100 ? v.toFixed(0) : v.toFixed(c.dec == null ? 1 : c.dec)) : v; if (c.num) td.className = 'num'; if (best[c.key] != null && v === best[c.key]) td.classList.add('best'); if (c.warn && c.warn(v)) td.classList.add('bad'); tr.appendChild(td); }
+      t.appendChild(tr);
+    }
+    const wrap = document.createElement('div'); wrap.className = 'tablewrap'; wrap.appendChild(t); return wrap;
+  }
+  let lastRows = null, lastGrid = null;
+  function scorecardPanel() {
+    const box = document.createElement('div');
+    box.innerHTML = '<p><button class="btn primary" id="runBatch">Score every way on this course</button> <button class="btn" id="runGrid">Score every course</button> <span class="hint" id="scoreNote">Headless, AI pilots, seeds 1–2, at 60 Hz.</span></p><div id="scoreOut"></div>';
+    const out = box.querySelector('#scoreOut'), note = box.querySelector('#scoreNote');
+    const COLS = [
+      { key: 'way', label: 'Way' },
+      { key: 'skilled', label: 'Skilled avg', num: true, tip: 'Average speed, skilled AI (u/s)' },
+      { key: 'rookie', label: 'Rookie avg', num: true, tip: 'Average speed, rookie AI (u/s)' },
+      { key: 'skilledEnd', label: 'End', num: true, tip: 'Skilled speed at the end of the run (u/s)' },
+      { key: 'fromCruise', label: 'From cruise', num: true, tip: 'Skilled average when latching on at the free-flight cruise (DefaultThrottleScaler)' },
+      { key: 'pump', label: 'Pump /s', num: true, dec: 2, tip: 'Speed the pumping itself added, per second (u/s²)' },
+      { key: 'flatPump', label: 'Flat pump', num: true, dec: 2, tip: 'CONTROL: pumping on a straight rail. Must be ~0.', warn: (v) => Math.abs(v) > 0.05 },
+      { key: 'scrub', label: 'Scrub /s', num: true, dec: 2, tip: 'Speed lost to sideways load (not leaning in), per second' },
+      { key: 'flyoffs', label: 'Fly-offs /min', num: true, tip: 'Times thrown off a crest per minute (only when crests throw you)' },
+      { key: 'busy', label: 'Busy', num: true, dec: 2, tip: 'Input changes per second: how hard the pilot works' },
+    ];
+    const show = () => {
+      out.replaceChildren();
+      if (lastRows) out.appendChild(table(lastRows, COLS, ['skilled', 'rookie', 'fromCruise']));
+      if (lastGrid) {
+        const cols = [{ key: 'way', label: 'Way (skilled / rookie avg u/s)' }].concat(COURSES.map((c) => ({ key: c.v, label: c.label, num: true })));
+        const rows = lastGrid.map((r) => { const o = { way: r.way }; for (const c of COURSES) o[c.v] = r[c.v].toFixed(0) + ' / ' + r[c.v + ':rookie'].toFixed(0); return o; });
+        const h = document.createElement('div'); h.className = 'sec'; h.textContent = 'Every course'; out.appendChild(h); out.appendChild(table(rows, cols));
+      }
+    };
+    box.querySelector('#runBatch').onclick = () => { const t0 = performance.now(); lastRows = runBatch(); note.textContent = 'Done in ' + Math.round(performance.now() - t0) + ' ms. ' + (COURSES.find((c) => c.v === OPT.course) || {}).label + ', ' + OPT.runLen + ' s runs.'; show(); };
+    box.querySelector('#runGrid').onclick = () => { const t0 = performance.now(); lastGrid = runCourseGrid(); note.textContent = 'Every course in ' + Math.round(performance.now() - t0) + ' ms.'; show(); };
+    show();
+    return box;
+  }
+  function aboutPanel() {
+    const box = document.createElement('div');
+    box.innerHTML = '<p></p><p class="hint"><b>What this lab does not model.</b> Only 1D prismscapes (trails); riding a 2D surface (the Urchin’s marble roll), where carving S-turns is the real longboard case, is the next round. The ribbons are stand-in bend functions, not laid trails. No free flight, no approach or latching, no Slip, no prism payoff (grow / steal / restore) and no spikes. No other vessels. The legs, hull and camera are lab drawings. Drag, pull, grip and every pp* number are lab proposals with no game field; only the numbers that name an Urchin asset are shipped. The CoM radius change is folded into the pumping law to first order. Frame time is not measured on a real GPU.</p><p class="hint"><b>Ideas not built yet</b>: an ollie (stand up hard on a crest to jump to another ribbon); pressing into the prismscape to dig your own dip (the Urchin’s cradle drape); a 2D sheet pump track.</p>';
+    box.firstChild.textContent = LAB.name + ' · round ' + LAB.round + ' · ' + LAB.branch + ' · write-up ' + LAB.doc;
+    return box;
+  }
+  makeTabs('bottomTabs', 'bottomBody', [{ name: 'Ways', build: waysPanel }, { name: 'Scorecard', build: scorecardPanel }, { name: 'Decisions', build: logPanel }, { name: 'About', build: aboutPanel }], 'lab:' + LAB.name + ':bottom');
+
+  $('title').textContent = LAB.name; $('meta').textContent = 'round ' + LAB.round;
+  let paused = false;
+  $('pause').onclick = () => { paused = !paused; $('pause').textContent = paused ? 'Resume' : 'Pause'; };
+  $('restart').onclick = () => reset(seed + 1);
+  $('letAi').onclick = () => { OPT.pilot = 'skilled'; saveOpt(); refreshPilotUI(); };
+  $('resetAll').onclick = () => { Object.assign(P, SHIPPED); lsSet(LS_KEY, {}); for (const k in outputs) outputs[k].inp.value = P[k]; reset(); refreshDiff(); };
+
+  // ================= (13) LOOP + the test surface =================
+  function resize() { const r = canvas.getBoundingClientRect(), dpr = Math.min(2, devicePixelRatio || 1); const w = Math.max(1, Math.round(r.width * dpr)), h = Math.max(1, Math.round(r.height * dpr)); if (canvas.width !== w || canvas.height !== h) { canvas.width = w; canvas.height = h; } }
+  addEventListener('resize', resize);
+  function liveInput() { return OPT.pilot === 'you' ? readHuman() : aiInput(OPT.pilot === 'rookie' ? P.aiNoise : 0); }
+  function stepLive(dt) {
+    simStep(dt, liveInput());
+    world.trace.push([world.t, world.v]); while (world.trace.length && world.trace[0][0] < world.t - 10) world.trace.shift();
+  }
+  let manualClock = false, last = performance.now(), acc = 0;
+  function frame(now) {
+    const real = Math.min(0.1, Math.max(0, (now - last) / 1000)); last = now;
+    if (!manualClock) {
+      resize();
+      if (!paused) { acc += real * OPT.simSpeed; let n = 0; while (acc >= 1 / 60 && n < 8) { stepLive(1 / 60); acc -= 1 / 60; n++; } if (n === 8) acc = 0; }
+      render(real);
+    }
+    requestAnimationFrame(frame);
+  }
+  reset(); resize(); refreshDiff(); refreshPilotUI(); render(1 / 60); requestAnimationFrame(frame);
+
+  window.__lab = {
+    LAB, SHIPPED, SPEC, P, OPT, PLATFORM, WAYS, COURSES,
+    set manualClock(v) { manualClock = !!v; }, get manualClock() { return manualClock; },
+    tick(dt, n) { dt = dt || 1 / 60; n = n || 1; for (let i = 0; i < n; i++) stepLive(dt); resize(); render(dt); },
+    reset, score, runBatch, runCourseGrid, runOne, setParam, setOpt, record,
+    state: () => ({ t: world.t, seed, s: world.s, v: world.v, phi: world.phi, h: world.h, air: !!world.air, N: world.last.N, way: OPT.way, course: OPT.course }),
+  };
+  window.__pumpRiderLab = window.__lab;
+})();
+</script>
+</body>
+</html>
