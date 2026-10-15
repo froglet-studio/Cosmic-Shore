@@ -150,3 +150,14 @@ Amoebius and the Vessel Studio are **under evaluation**: we have not decided tha
 The single tool that should build Cosmic Shore, and later Froglet's other games, is also undecided. The
 evidence, the options and how we decide: [`TOOLING_DECISIONS.md`](TOOLING_DECISIONS.md). What people say
 after using them: [`TOOLING_FEEDBACK.md`](TOOLING_FEEDBACK.md).
+
+**Everyone is told, not only Claude.** Two hooks show the person a notice once per session:
+- `team_context.py`:
+  - on the first prompt, whatever it is about: who the team is, that Claude checks who works where, and this open
+    decision;
+  - on the first prompt about the engine or the tools ("Amoebius", "engine", `Port/`, "launcher", "which tool"):
+    the status line.
+- `vessel_studio_nudge.py`: the same for vessel work.
+
+Claude's answer to any question about these tools opens with the status line. Once §6 of
+`TOOLING_DECISIONS.md` records a decision, `team_context.py` reports that instead.

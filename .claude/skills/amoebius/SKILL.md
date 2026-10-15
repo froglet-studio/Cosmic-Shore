@@ -11,7 +11,9 @@ checklist.
 **Status: under evaluation** (`Docs/TOOLING_DECISIONS.md` §3). Build what is asked, without growing the launcher's
 scope unasked. At the end of a task, if `Docs/TOOLING_FEEDBACK.md` has no Amoebius row from the last three days, ask
 the person whether Amoebius helped (keep, change or remove?) and log the answer. Shombith drives the engine, Yash the
-launcher: run `python3 Tools/Build/who_works_where.py query Port/...` before changing their parts.
+launcher: run `python3 Tools/Build/who_works_where.py query Port/...` before changing their parts. **Tell the person
+this status in the first line of your answer**, even for a plain question about the engine (CLAUDE.md "Tools under
+evaluation").
 
 1. **Tools.** If `mcp__amoebius__*` tools are available, use them. If not, either connect
    them (`claude mcp add amoebius -- dotnet run --project Port/src/CosmicShore.Mcp --`, or

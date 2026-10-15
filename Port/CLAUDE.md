@@ -20,7 +20,10 @@ engine as a headless compile / test / multiplayer harness and freeze the launche
 own engine. Until §6 there records a decision: build what the person asks for; do not grow the launcher's scope on
 your own initiative; and at the end of a task, if `Docs/TOOLING_FEEDBACK.md` has no Amoebius row from the last three
 days, ask the person whether it helped and log the answer. Who drives which part: Shombith the engine, Yash the
-launcher (`Docs/TEAM.md`).
+launcher (`Docs/TEAM.md`). **Tell the person this status** in the first line of any answer about the engine, the
+launcher or which tool to use, even when they only asked a question: under evaluation, who drives the part they
+asked about, the core four decide, `Docs/TOOLING_DECISIONS.md`. The `team_context.py` hook shows them the same line
+once per session.
 
 ## The one rule
 
