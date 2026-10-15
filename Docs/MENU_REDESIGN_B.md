@@ -40,7 +40,7 @@ Legend: `Planned` ▸ `Mockup` ▸ `Mockup approved` ▸ `Built` ▸ `Approved i
 | 3 | Arcade modal (`ArcadeScreenModal`): explore grid plus the party/friends panel | Built | `Arcade.dc.html` (interactive), `ArcadeSolo`, `ArcadeNoFriends`, `ArcadePicks`, `ArcadeNotes` on the Menu Redesign B canvas | `f9b59fd4`, `75cd38e7`, `5cc56adb` + docs |
 | 4 | Game configure: `ArcadeGameConfigureModal`, plus the Maelstrom and Arena configure windows and the weekly leaderboard | Built (2026-10-15, section 14) | `Configure.dc.html` (interactive), `ConfigureArena`, `ConfigureMaelstrom`, `ConfigureWeekly`, `ConfigureWeeklySpent`, `ConfigureGuest`, `ConfigureLocked`, `WeeklyLeaderboard` (interactive), `LeaderboardEmpty`, `ConfigureNotes` | |
 | 5 | Profile screen, Profile modal (avatar / display name), Episodes entry | Built (2026-10-15, section 15): Profile screen and profile window | `Profile.dc.html` (interactive), `ProfileFresh`, `ProfileModal` (interactive), `ProfileName`, `ProfileNameError`, `ProfileNameTaken`, `ProfileNotes` | |
-| 6 | Home screen: hub row, header, settings and freestyle buttons, invite popup | Mockup approved (2026-10-14) | `Home.dc.html` (interactive), `HomeInvite`, `HomeFocus`, `HomeOffline`, `HomeNotes` | |
+| 6 | Home screen: hub row, header, settings and freestyle buttons, invite popup | 6a built (2026-10-15, section 21): hub row, pilot chip, question bar, settings, freestyle hint; 6b (Up next, party invite) in progress | `Home.dc.html` (interactive), `HomeInvite`, `HomeFocus`, `HomeOffline`, `HomeNotes` | |
 | 7 | Ark screen (Elemental Converter) | Built (2026-10-15, section 16) | `Ark.dc.html` (interactive), `ArkConverting`, `ArkDone`, `ArkNotes` | |
 | 8 | Arena, Toy Box and Mission modals, and Toy configure | Built (2026-10-15, section 17): Arena window, Toy Box, Toy configure and the Mission window | `ToyBox.dc.html` (interactive), `ToyBoxClaimed`, `ArenaWindow`, `MissionWindow`, `ToyConfigure` (interactive), `ToyConfigurePaint`, `ToyConfigureSpawn`, `ToyConfigureDomain`, `ModesNotes` | |
 | 9 | Settings modal and Credits | Built (2026-10-15, section 18): Settings window and Credits | `Settings.dc.html` (interactive), `SettingsDisplay`, `SettingsPerformance`, `SettingsOther`, `Credits`, `SystemNotes` | |
@@ -1089,4 +1089,55 @@ lower-left quadrant, under the party panels, cutting most messages off.
 Unchanged: the timing (fade in 0.25 s, hold 5 s, fade out 0.2 s, unscaled), the queue of 10, the
 three-visible limit and drag-to-dismiss. Toasts no longer block clicks: the old squares were
 raycast plates, and now only the toast itself takes the pointer, for the drag.
+
+## 21. Item 6: Home
+
+### 21.1 Hub row, pilot chip, settings, hint (6a; built 2026-10-15, awaiting in-editor approval)
+
+Home is restyled **in place**, not as a prefab. `Tools/Build/author_menu_home.py` (`--check`,
+`--self-test`) patches Menu_Main directly because several tools and scripts find these objects:
+- `wire_home_hub_scene.py`, `HomeHubWiringWindow` and `OfflineMenuWirer` find them by name.
+- `ScreenSwitcher` finds them by component: the hub row is the parent of the first `MenuHubButton`,
+  and `hubCompanions` lists the avatar and the name.
+
+So every one of those objects keeps its GameObject, fileID and name; only its look, rect and
+children change.
+
+- **Hub row:** along the bottom, 30 apart.
+  - Each hub's Button is now a `KitButton` under the same fileID, with the kit's
+    FocusRing / Fill / Border, a hub glyph and its label: Toy Box (cube), Arcade (gamepad), Arena
+    (crossed blades), Mission (target). These are new chrome glyphs.
+  - `MenuHubButton` requires a Button, and `KitButton` is one; the press-sound call stays.
+  - **Arcade** is the opaque Play button with the A keycap, and it is the pad's first stop
+    (`MenuHubButton.preferredFocus`).
+  - **Mission** draws Inactive and stays Unavailable.
+  - Before this, all four hubs pointed their press feedback at the legacy, inactive ArcadeButton's
+    Image, so none showed any press. That object is deleted, along with `QuestGraphRunner`'s stale
+    `arcadeNavButton` field that pointed at it.
+- **Pilot chip (top left):**
+  - A framed plate behind the octagonal avatar. `HomeScreen.avatarImage` is now an image inside a
+    masked octagon.
+  - The name, an Online / Offline label (the lamp's `statusLabel`, which was never wired), a
+    divider, and the crystal balance (`CrystalCurrencyDisplay`).
+  - The lamp sits on the avatar's corner. Its stray `OnClickProfileModal` call is gone: it used to
+    open the profile window and ask Go offline? at the same time.
+- **Question bar:** under the chip.
+  - The question (now sentence case), plus a note on what it changes ("Party, friends and the weekly
+    board pause until you come back.").
+  - The note uses the new `ConfirmQuestionBar.noteLabel`, fed by `OnlineStatusIndicator`'s new note
+    strings.
+  - Yes (CTA) and No (Cancel) straddle the bottom edge. The bar's own stray `OpenDisplayName` call
+    is gone.
+- **Settings:** a hex with a slowly turning gear and the X keycap under it. Its
+  `ControllerButtonPress` (bound to North, so it was a second Settings opener) is removed.
+- **"Tap the cell to fly"** breathes at the centre. The freestyle tap target leaves pad navigation.
+- **Pad A:** A on a focused Home control now does only that control's Submit; it used to open the
+  Arcade on top. With nothing focused, A still opens the Arcade.
+- **`HomeScreen`:** it now re-subscribes to profile changes on every enable. Before, it went deaf
+  after its first disable.
+- **Tool stand-downs:**
+  - `retire_profile_modal.py --check` now reads the retirement itself (survivor is PROFILE, the
+    retired modal is unregistered) instead of looking for an opener's method name, which the lamp no
+    longer carries.
+  - `OfflineMenuWirer` leaves a style-B answer button alone.
 

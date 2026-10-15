@@ -62,6 +62,10 @@ namespace CosmicShore.UI
 
         [SerializeField] string goOfflineQuestion = "GO OFFLINE?";
         [SerializeField] string goOnlineQuestion = "GO ONLINE?";
+        [SerializeField, Tooltip("The question bar's note line when asking to go offline: what that pauses.")]
+        string goOfflineNote = "Party, friends and the weekly board pause until you come back.";
+        [SerializeField, Tooltip("The question bar's note line when asking to go online.")]
+        string goOnlineNote = "Reconnects to party, friends and the weekly board.";
 
         [Header("Feel")]
         [SerializeField, Tooltip("Seconds for the colour crossfade when the state changes.")]
@@ -237,7 +241,8 @@ namespace CosmicShore.UI
                 return;
             }
 
-            questionBar.Ask(offline ? goOnlineQuestion : goOfflineQuestion, () => Switch(offline));
+            questionBar.Ask(offline ? goOnlineQuestion : goOfflineQuestion, offline ? goOnlineNote : goOfflineNote,
+                            () => Switch(offline));
         }
 
         void Switch(bool currentlyOffline)

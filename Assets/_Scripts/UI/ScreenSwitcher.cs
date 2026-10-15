@@ -414,6 +414,16 @@ namespace CosmicShore.UI
             if (target) eventSystem.SetSelectedGameObject(target.gameObject);
         }
 
+        /// <summary>True while the EventSystem's selection is a live control on the HOME screen.</summary>
+        private bool HomeControlSelected()
+        {
+            var es = EventSystem.current;
+            var selected = es ? es.currentSelectedGameObject : null;
+            var root = CurrentScreenRoot();
+            return selected && root && selected.activeInHierarchy && selected.transform.IsChildOf(root.transform)
+                   && selected.TryGetComponent<Selectable>(out var s) && s.IsInteractable();
+        }
+
         private GameObject CurrentScreenRoot()
         {
             if (screens == null || currentScreen < 0 || currentScreen >= screens.Count) return null;
@@ -428,6 +438,16 @@ namespace CosmicShore.UI
         /// </summary>
         private static Selectable PreferredSelectable(GameObject scope)
         {
+            // The flagged hub first (Arcade): the first available one in hierarchy order is Toy Box,
+            // which made A on a fresh Home open the Toy Box while the A keycap sat on Arcade.
+            foreach (var hub in scope.GetComponentsInChildren<MenuHubButton>(false))
+            {
+                if (!hub.PreferredFocus) continue;
+                var view = hub.GetComponent<MenuAvailabilityView>();
+                if (view && !view.IsAvailable) continue;
+                if (hub.TryGetComponent(out Selectable s) && s.IsInteractable()) return s;
+            }
+
             foreach (var hub in scope.GetComponentsInChildren<MenuHubButton>(false))
             {
                 var view = hub.GetComponent<MenuAvailabilityView>();
@@ -733,7 +753,10 @@ namespace CosmicShore.UI
 
             if (ScreenIsActive(MenuScreens.HOME))
             {
-                if (Gamepad.current.buttonSouth.wasPressedThisFrame)
+                // A on a focused Home control is that control's Submit (a hub opens its own window);
+                // answering it here too opened the Arcade on top of whatever the pad was on. The
+                // shortcut stands only while nothing on Home holds the pad's selection.
+                if (Gamepad.current.buttonSouth.wasPressedThisFrame && !HomeControlSelected())
                 {
                     OpenArcadePanel();
                     return;

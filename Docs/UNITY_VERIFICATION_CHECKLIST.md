@@ -65,6 +65,31 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Style-B menu redesign, item 6a: Home - hubs, pilot chip, settings (`claude/new-session-76hnyc`, 2026-10-15) — NOT EDITOR-VERIFIED
+
+Home was restyled in place in Menu_Main by `Tools/Build/author_menu_home.py` (`--check` and
+`--self-test` green; `wire_home_hub_scene.py --check` clean) - see `Docs/MENU_REDESIGN_B.md`
+section 21.1. No editor in the session, so `/verify-unity` is still owed. Offline: the player and
+editor reference compiles are clean.
+
+**Verify in editor:**
+1. Open Menu_Main: no missing-script or missing-reference warnings under `HomeScreen`, and no
+   console noise about a removed component.
+2. Play to HOME:
+   - the hub row sits along the bottom: Toy Box, Arcade (gradient, A keycap), Arena, Mission
+     (grey), each with its glyph;
+   - hover shows press feedback; pressing a hub opens its window; Mission does nothing.
+3. Pad: focus lands on Arcade. D-pad moves the CTA ring. A on Toy Box opens only the Toy Box, not
+   the Arcade too. With nothing focused, A opens the Arcade.
+4. The pilot chip shows the avatar in an octagon, your name, Online in green, and your crystal
+   balance. Changing the avatar or name in the profile window updates the chip.
+5. Press the lamp: only the question opens ("Go offline?" with its note line). Yes switches,
+   No closes.
+6. X opens Settings once. The gear turns slowly. "Tap the cell to fly" breathes, and tapping the
+   cell starts freestyle.
+
+---
+
 ### 🔴 Style-B menu redesign, item 11: menu toasts (`claude/new-session-76hnyc`, 2026-10-15) — NOT EDITOR-VERIFIED
 
 The menu toasts were rebuilt from the approved Toasts board (`Docs/MENU_REDESIGN_B.md` section 20)

@@ -276,6 +276,14 @@ namespace CosmicShore.Editor.Froglet
         {
             if (button == null) return;
 
+            // The style-B Home (Tools/Build/author_menu_home.py) authors its answers - a kit fill, a
+            // glyph and a word under a child named "Label". Restyling one would undo that look.
+            if (FindChild(button.gameObject, "Label") != null)
+            {
+                report.Add($"• '{button.name}' is already styled (style-B) - left as is.");
+                return;
+            }
+
             // Tint the button's own graphic and give it real pressed/hover states, so the answer
             // controls read as controls rather than as two identical glyphs.
             if (button.TryGetComponent<Image>(out var bg))

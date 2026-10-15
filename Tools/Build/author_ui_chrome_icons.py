@@ -31,7 +31,8 @@ seat and the game card's favourite star, off and on; `chrome_globe`, `chrome_pin
 `chrome_people` for the weekly leaderboard's scope tabs (item 4); `chrome_diamond` for a display-name
 rule not yet met in the profile window (item 5 - a met rule wears `chrome_confirm`); `chrome_shuffle` for the
 Toy Box's shuffle card (item 8); `chrome_gear`, `chrome_display`, `chrome_gauge` and `chrome_sliders` for
-the settings window's four tabs (item 9).
+the settings window's four tabs (item 9); `chrome_cube`, `chrome_pad`, `chrome_blades` and `chrome_target` for
+Home's four hub buttons - Toy Box, Arcade, Arena, Mission (item 6).
 
 Usage:
     python3 Tools/Build/author_ui_chrome_icons.py            # write the PNGs + .meta files
@@ -261,6 +262,46 @@ def chrome_people():
     return m
 
 
+def chrome_cube():
+    """Home, Toy Box - an isometric cube: the hexagon outline and the three edges meeting at its front corner."""
+    hexa = [(0.00, 0.86), (0.74, 0.44), (0.74, -0.44), (0.00, -0.86), (-0.74, -0.44), (-0.74, 0.44)]
+    m = ring(hexa, w=W * 1.05)
+    m |= stroke([(-0.74, 0.44), (0.00, 0.02), (0.74, 0.44)], w=W * 1.0)
+    m |= stroke([(0.00, 0.02), (0.00, -0.86)], w=W * 1.0)
+    return m
+
+
+def chrome_pad():
+    """Home, Arcade - a gamepad: a faceted body, the d-pad cross on the left and two buttons on the right."""
+    m = ring([(-0.86, 0.10), (-0.62, 0.40), (0.62, 0.40), (0.86, 0.10), (0.86, -0.30), (0.56, -0.52),
+              (0.30, -0.24), (-0.30, -0.24), (-0.56, -0.52), (-0.86, -0.30)], w=W * 1.0)
+    m |= stroke([(-0.50, 0.08), (-0.18, 0.08)], w=W * 0.9)
+    m |= stroke([(-0.34, 0.24), (-0.34, -0.08)], w=W * 0.9)
+    m |= fill([(0.26, 0.20), (0.40, 0.20), (0.40, 0.06), (0.26, 0.06)])
+    m |= fill([(0.46, 0.02), (0.60, 0.02), (0.60, -0.12), (0.46, -0.12)])
+    return m
+
+
+def chrome_blades():
+    """Home, Arena - two crossed blades, each with its cross-guard."""
+    m = stroke([(-0.74, 0.78), (0.42, -0.38)], w=W * 1.05)
+    m |= stroke([(0.74, 0.78), (-0.42, -0.38)], w=W * 1.05)
+    m |= stroke([(0.22, -0.56), (0.60, -0.18)], w=W * 1.0)
+    m |= stroke([(-0.22, -0.56), (-0.60, -0.18)], w=W * 1.0)
+    m |= stroke([(0.50, -0.46), (0.80, -0.76)], w=W * 1.0)
+    m |= stroke([(-0.50, -0.46), (-0.80, -0.76)], w=W * 1.0)
+    return m
+
+
+def chrome_target():
+    """Home, Mission - a target: two octagonal rings (section 5: no circles) and four ticks."""
+    m = ring(_octagon(0.62), w=W * 1.0)
+    m |= ring(_octagon(0.26), w=W * 0.95)
+    for a, b in (((0, 0.70), (0, 0.92)), ((0, -0.70), (0, -0.92)), ((0.70, 0), (0.92, 0)), ((-0.70, 0), (-0.92, 0))):
+        m |= stroke([a, b], w=W * 1.0)
+    return m
+
+
 GLYPHS = [
     ("chrome_close",      chrome_close),
     ("chrome_reroll",     chrome_reroll),
@@ -281,6 +322,10 @@ GLYPHS = [
     ("chrome_display",    chrome_display),
     ("chrome_gauge",      chrome_gauge),
     ("chrome_sliders",    chrome_sliders),
+    ("chrome_cube",       chrome_cube),
+    ("chrome_pad",        chrome_pad),
+    ("chrome_blades",     chrome_blades),
+    ("chrome_target",     chrome_target),
 ]
 
 

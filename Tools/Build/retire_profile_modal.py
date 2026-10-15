@@ -133,7 +133,14 @@ def retarget_opener(listing):
 
 
 def already_done():
-    return METHOD in SCENE.read_text(encoding="utf-8")
+    """The retirement is a fact about the MODALS: the survivor holds PROFILE (3) and the retired one is
+    out of the switcher's list. It used to be read off an opener's method name, which made the check
+    fail the day the Home restyle (author_menu_home.py) took the stray profile call off the online
+    lamp - the lamp asks Go offline?, it was never a profile opener."""
+    text = SCENE.read_text(encoding="utf-8")
+    docs = {m.group(1): m.group(2) for m in re.finditer(r"^--- !u!\d+ &(-?\d+)\n(.*?)(?=^--- |\Z)", text, re.M | re.S)}
+    survivor, switcher = docs.get(SURVIVOR, ""), docs.get(SCREEN_SWITCHER, "")
+    return bool(re.search(r"^\s*ModalType: 3$", survivor, re.M)) and f"  - {{fileID: {RETIRED}}}\n" not in switcher
 
 
 def main():

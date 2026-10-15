@@ -1,0 +1,585 @@
+#!/usr/bin/env python3
+"""
+Author ITEM 6a of the style-B menu redesign - the HOME screen - in place in Menu_Main.unity
+(Docs/MENU_REDESIGN_B.md section 21; the approved Home / HomeFocus / HomeOffline boards, revision 2).
+
+Home is the one screen restyled IN PLACE rather than as a prefab: the four hub buttons, the avatar and
+name (ScreenSwitcher.hubCompanions), the online lamp and its question bar are found BY NAME by
+wire_home_hub_scene.py, HomeHubWiringWindow and OfflineMenuWirer, and by component by ScreenSwitcher
+(the hub row is "the parent of the first MenuHubButton"). Every one of those objects keeps its
+GameObject, its fileID and its name; only its look, its rect and its children change.
+
+    Hub row (ButtonLayouts): along the bottom, 30 apart. Each hub's Button becomes a KitButton under the
+        SAME fileID (MenuHubButton requires a Button and KitButton is one; the press-sound call stays),
+        with the kit's FocusRing / Fill / Border children, a hub glyph and its label - Toy Box, Arcade,
+        Arena, Mission. Arcade is the opaque Play button with the A keycap and the pad's preferred
+        focus; Mission draws Inactive (its MenuAvailabilityView stays Unavailable, no double dim). All
+        four used to point m_TargetGraphic at the legacy, inactive ArcadeButton's Image, so none gave
+        any press feedback; that legacy object is deleted.
+    Pilot chip (top left): a framed plate behind the octagonal avatar (HomeScreen.avatarImage moves to
+        an Avatar image inside a masked octagon), the name, an Online / Offline label (the lamp's
+        statusLabel, unwired until now), a divider and the crystal balance (CrystalCurrencyDisplay).
+        The lamp sits on the avatar's corner; its stray ScreenSwitcher.OnClickProfileModal call is
+        removed (it opened the profile window AND asked Go offline?).
+    Question bar: under the chip - the question, a note line on what it changes (ConfirmQuestionBar.
+        noteLabel, fed by OnlineStatusIndicator), Yes / No straddling the bottom edge. Its own Button's
+        stray OpenDisplayName call is removed.
+    Settings: a hex with a slowly turning gear and the X keycap under it (ScreenSwitcher answers X);
+        its ControllerButtonPress (bound to North, a second Settings opener) is removed.
+    Freestyle hint: "Tap the cell to fly" breathing at the centre; the tap target leaves pad navigation.
+
+STANDING DOWN: everything is re-derived on each run from the objects above (the legacy deletion runs
+while the legacy object exists); a re-run is a no-op (--check).
+
+    python3 Tools/Build/author_menu_home.py              # write
+    python3 Tools/Build/author_menu_home.py --check      # fail if any output drifted
+    python3 Tools/Build/author_menu_home.py --self-test  # planted defects must all be caught
+"""
+
+import argparse
+import importlib.util
+import os
+import re
+import sys
+
+HERE = os.path.dirname(os.path.abspath(__file__))
+_spec = importlib.util.spec_from_file_location("author_menu_profile_window", os.path.join(HERE, "author_menu_profile_window.py"))
+W = importlib.util.module_from_spec(_spec)
+_spec.loader.exec_module(W)
+
+P, C, A, K, T, H, M = W.P, W.C, W.A, W.K, W.T, W.H, W.M
+REPO = K.REPO
+SCENE = "Assets/_Scenes/Menu_Main.unity"
+N, STRETCH, R, tok = K.Node, K.STRETCH, K.rect, K.tok
+TL, TR, ref, mono = C.TL, C.TR, C.ref, C.mono
+text, label, le = H.text, H.label, H.le
+image_node = A.image_node
+
+S = dict(kitbutton=K.kit_script("KitButton"), hub=C.script("MenuHubButton"), avail=C.script("MenuAvailabilityView"),
+         lamp=C.script("OnlineStatusIndicator"), bar=C.script("ConfirmQuestionBar"), home=C.script("HomeScreen"),
+         crystals=C.script("CrystalCurrencyDisplay"), cbp=C.script("ControllerButtonPress"), button=A.BUTTON)
+MASK = A.MASK
+
+# Menu_Main, measured 2026-10-15 (HomeScreen go 319175480197462205).
+IDS = dict(
+    home_comp="371568359735741370", panel_go="4911894174371205549", panel_rt="1769152617528871830",
+    panel_img="4360237291221735427",
+    settings_go="1473612410234841810", settings_rt="2424854552953781345", settings_img="8371738735330142046",
+    settings_cbp="1462554587758757933",
+    legacy_arcade_go="1435369059175607397",
+    bar_go="995474914", bar_rt="995474915", bar_img="995474918", bar_btn="995474917", bar_comp="995474920",
+    bar_text_rt="1060766722", bar_text="1060766723",
+    accept_go="909973148", accept_rt="909973149", accept_img="909973151", accept_icon_rt="1829191283", accept_icon="1829191284",
+    cancel_go="1110576754", cancel_rt="1110576755", cancel_img="1110576757", cancel_icon_rt="1002720939", cancel_icon="1002720940",
+    name_go="7613213338458363602", name_rt="8076153094407706410", name_img="1014305526008866599",
+    name_text_rt="8019494028173304602", name_text="1674904252436572557",
+    avatar_go="3602970348709213962", avatar_rt="5738383061455623117", avatar_img="7652523670908676547",
+    avatar_btn="4628693416680068390",
+    lamp_go="4168599694251083979", lamp_rt="2878099680163335616", lamp_img="4937294643886484420",
+    lamp_btn="1431731438122436423", lamp_comp="4937294643886484421",
+    row_go="1613024078", row_rt="1613024079", row_hlg="1613024080",
+    tap_btn="797780469", quest_runner="654228613",
+)
+HUBS = [  # key, go, rt, root img, button, hub comp, avail comp, label go, label rt, label tmp, caption, glyph, variant
+    ("Toybox", "200217508", "200217509", "200217512", "200217511", "200217515", "200217514", "1681475207", "1681475208", "1681475209", "Toy Box", "chrome_cube", "Default"),
+    ("Arcade", "1749518386", "1749518387", "1749518390", "1749518389", "1749518393", "1749518392", "466012893", "466012894", "466012895", "Arcade", "chrome_pad", "Play"),
+    ("Arena", "1015093819", "1015093820", "1015093823", "1015093822", "1015093826", "1015093825", "2097070915", "2097070916", "2097070917", "Arena", "chrome_blades", "Default"),
+    ("Mission", "895856520", "895856521", "895856524", "895856523", "895856527", "895856526", "25247041", "25247042", "25247043", "Mission", "chrome_target", "Inactive"),
+]
+HUB_PAD, HUB_MIN_W, HUB_H = (28, 28, 18, 18), 210, 66
+
+
+def ctx_new():
+    return P.Ctx("Menu_Main/Home")
+
+
+# --------------------------------------------------------------------------------------------
+# Scene patch helpers
+# --------------------------------------------------------------------------------------------
+
+class Patch:
+    def __init__(self, text_):
+        self.sc = T.Scene(text_)
+        self.ctx = ctx_new()
+
+    def doc(self, fid):
+        return self.sc.docs[fid]
+
+    def replace(self, fid, doc):
+        self.sc.replace(fid, doc)
+
+    def body(self, fid, fn, go):
+        """Replace a document's body with a generated one, keeping its header (class + fileID)."""
+        head = self.doc(fid).split("\n", 1)[0]
+        self.replace(fid, head + "\n" + fn(self.ctx, go))
+
+    def field(self, fid, name, value):
+        self.replace(fid, C.field_set(self.doc(fid), name, value))
+
+    def rect(self, rt, r):
+        d = self.doc(rt)
+        for f, v in (("m_AnchorMin", K.v2(*r["amin"])), ("m_AnchorMax", K.v2(*r["amax"])),
+                     ("m_AnchoredPosition", K.v2(*r["pos"])), ("m_SizeDelta", K.v2(*r["size"])),
+                     ("m_Pivot", K.v2(*r["pivot"]))):
+            d = C.field_set(d, f, v)
+        self.replace(rt, d)
+
+    def children(self, rt, ids):
+        self.replace(rt, T.set_block(self.doc(rt), "m_Children", K.refs_list("m_Children", ids)))
+
+    def kids(self, rt):
+        m = re.search(r"^  m_Children:\n((?:  - .*\n)*)", self.doc(rt), re.M)
+        return re.findall(r"\{fileID: (-?\d+)\}", m.group(1)) if m else []
+
+    def emit(self, node, parent_rt, after):
+        """Emit a node subtree under `parent_rt`, after document `after`; returns its root RT."""
+        self.ctx.register(node)
+        out = []
+        C.emit_node(self.ctx, node, parent_rt, out)
+        out += list(self.ctx.stubs.values())
+        self.ctx.stubs.clear()
+        anchor = after
+        for d in (K.unity_empty_scalars(d) for d in out):
+            fid = T.doc_fid(d)
+            if self.sc.has(fid):
+                self.sc.remove(fid)
+            self.sc.insert_after(anchor, fid, d)
+            anchor = fid
+        return str(self.ctx.rt(node.key))
+
+    def comp_ids(self, go):
+        return re.findall(r"  - component: \{fileID: (-?\d+)\}", self.doc(go))
+
+    def add_comp(self, go, key, cls, fn):
+        fid = str(self.ctx.fid(f"{go}#{key}"))
+        doc = f"--- !u!{cls} &{fid}\n" + fn(self.ctx, go)
+        if self.sc.has(fid):
+            self.replace(fid, doc)
+        else:
+            g = self.doc(go)
+            self.replace(go, re.sub(r"(  m_Component:\n(?:  - component: .*\n)*)",
+                                    lambda m: m.group(1) + f"  - component: {{fileID: {fid}}}\n", g, count=1))
+            self.sc.insert_after(go, fid, doc)
+        return fid
+
+    def remove_comp(self, go, fid):
+        if self.sc.has(fid):
+            self.sc.remove(fid)
+        self.replace(go, self.doc(go).replace(f"  - component: {{fileID: {fid}}}\n", ""))
+
+    def remove_subtree(self, go):
+        for fid in dict.fromkeys(C.subtree(self.sc, go)):
+            if self.sc.has(fid):
+                self.sc.remove(fid)
+
+    def text(self):
+        return self.sc.text()
+
+
+def no_calls(doc):
+    """Empty a Button's persistent onClick list."""
+    return re.sub(r"(  m_OnClick:\n    m_PersistentCalls:\n      m_Calls:)(?: \[\]\n|\n(?:      .*\n)*)",
+                  r"\1 []\n", doc, count=1)
+
+
+def img_body(color, sprite=None, sliced=False, raycast=False, preserve=False, enabled=True):
+    def body(ctx, go):
+        b = K.image(color, sprite, sliced, raycast, preserve)(ctx, go)
+        return b if enabled else b.replace("  m_Enabled: 1\n", "  m_Enabled: 0\n", 1)
+    return body
+
+
+# --------------------------------------------------------------------------------------------
+# The hub row
+# --------------------------------------------------------------------------------------------
+
+def hub_children(key, glyph, variant):
+    """FocusRing, Fill, Border, [Keycap], Icon - emitted under the hub's own RectTransform."""
+    opaque = variant == "Play"
+    border, fillc, content = K.button_palette(variant, opaque)
+    nodes = []
+    ring = N(f"Hub/{key}/FocusRing", "FocusRing", R((0, 0), (1, 1), (0, 0), (10, 10)))
+    ring.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("Cta", 0.0), K.kit_sprite("kit_sliver10_line2"), True)) \
+        .add("le", 114, le(ignore=True))
+    nodes.append(ring)
+    fill = N(f"Hub/{key}/Fill", "Fill", STRETCH)
+    fill.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(fillc, K.kit_sprite("kit_sliver10_fill"), True, raycast=True)) \
+        .add("grad", 114, lambda ctx, go: K.mono(go, K.kit_script("KitGradient"), "  lightenRight: 0.5\n", enabled=opaque)) \
+        .add("le", 114, le(ignore=True))
+    nodes.append(fill)
+    bord = N(f"Hub/{key}/Border", "Border", STRETCH)
+    bord.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(border, K.kit_sprite("kit_sliver10_line1"), True)) \
+        .add("le", 114, le(ignore=True))
+    nodes.append(bord)
+    if key == "Arcade":
+        kw = K.label_width("A", "Label") + 24
+        holder = N(f"Hub/{key}/KeycapSlot", "KeycapSlot", R(size=(kw, K.line_height("Label") + 8)))
+        holder.add("le", 114, le(pw=kw, ph=K.line_height("Label") + 8))
+        holder.children.append(P.Inst(f"Hub{key}Keycap", "KitKeycap", "Keycap", STRETCH, [("Label#tmp", "m_text", "A", None)]))
+        nodes.append(holder)
+    icon = N(f"Hub/{key}/Icon", "Icon", R(size=(22, 22)))
+    icon.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(content, K.chrome_sprite(glyph), preserve=True)) \
+        .add("le", 114, le(pw=22, ph=22))
+    nodes.append(icon)
+    return nodes, content
+
+
+def kit_button_doc(old, ctx, key, variant, label_tmp):
+    """The hub's Button document re-scripted as a KitButton: Selectable fields and onClick kept."""
+    opaque = variant == "Play"
+    head, rest = old.split("  m_Script:", 1)
+    tail = rest.split("\n", 1)[1]
+    doc = head + f"  m_Script: {K.ref(11500000, S['kitbutton'])}\n" + tail
+    doc = re.sub(r"^  m_TargetGraphic: .*$", f"  m_TargetGraphic: {ref(ctx.c(f'Hub/{key}/Fill', 'img'))}", doc, flags=re.M)
+    doc = re.sub(r"^  m_EditorClassIdentifier: .*$", "  m_EditorClassIdentifier: ", doc, flags=re.M)
+    for f in ("theme", "focusRing", "variant", "fill", "fillGraphic", "borderGraphic", "contentGraphics", "playGradient"):
+        assert not re.search(r"^  %s:" % f, doc, re.M) or True
+    doc = re.sub(r"\n  theme: .*\Z", "\n", doc, flags=re.S)       # re-run: drop the KitButton tail we wrote
+    return (doc.rstrip("\n") + "\n"
+            + f"  theme: {K.ref(11400000, K.THEME, 2)}\n  focusRing: {ref(ctx.c(f'Hub/{key}/FocusRing', 'img'))}\n"
+            + f"  variant: {K.VARIANTS[variant]}\n  fill: {1 if opaque else 0}\n"
+            + f"  fillGraphic: {ref(ctx.c(f'Hub/{key}/Fill', 'img'))}\n"
+            + f"  borderGraphic: {ref(ctx.c(f'Hub/{key}/Border', 'img'))}\n"
+            + K.refs_list("contentGraphics", [label_tmp, ctx.c(f"Hub/{key}/Icon", "img")])
+            + f"  playGradient: {ref(ctx.c(f'Hub/{key}/Fill', 'grad'))}\n")
+
+
+def patch_hubs(p):
+    I = IDS
+    p.rect(I["row_rt"], R((0, 0), (1, 0), (0, 56), (0, HUB_H + 20), (0.5, 0)))
+    hlg = p.doc(I["row_hlg"])
+    for f, v in (("m_ChildAlignment", "4"), ("m_Spacing", "30"), ("m_ChildControlWidth", "1"), ("m_ChildControlHeight", "1"),
+                 ("m_ChildForceExpandWidth", "0"), ("m_ChildForceExpandHeight", "0")):
+        hlg = C.field_set(hlg, f, v)
+    p.replace(I["row_hlg"], hlg)
+    for key, go, rt, img, btn, hub, avail, lgo, lrt, ltmp, caption, glyph, variant in HUBS:
+        p.body(img, img_body((1.0, 1.0, 1.0, 0.0), raycast=True), go)
+        nodes, content = hub_children(key, glyph, variant)
+        # Children first in the old order: the kit chrome, then the label last so it draws on top.
+        old_kids = [k for k in p.kids(rt) if k == lrt]
+        anchor = rt
+        new_ids = []
+        for n in nodes:
+            new_ids.append(p.emit(n, rt, anchor))
+            anchor = T.doc_fid(p.doc(new_ids[-1])) if False else _last_doc(p, n)
+        p.children(rt, new_ids + old_kids)
+        p.replace(btn, kit_button_doc(p.doc(btn), p.ctx, key, variant, ltmp))
+        p.add_comp(go, "hlg", 114, K.hv_layout(False, HUB_PAD, 10, 4, (1, 1), (0, 0)))
+        p.add_comp(go, "le", 114, le(mw=HUB_MIN_W, ph=HUB_H))
+        role = "Button"
+        p.body(ltmp, lambda ctx, g, c=caption, col=content: K.tmp(c, role, col)(ctx, g), lgo)
+        p.add_comp(lgo, "kt", 114, K.kit_text(role, driven=True))
+        p.rect(lrt, R(size=(K.label_width(caption.upper(), role), K.line_height(role))))
+        hb = p.doc(hub)
+        hb = re.sub(r"^  preferredFocus: .*\n", "", hb, flags=re.M)
+        hb = hb.rstrip("\n") + f"\n  preferredFocus: {1 if key == 'Arcade' else 0}\n"
+        p.replace(hub, hb)
+        if variant == "Inactive":
+            p.field(avail, "dimOwnGraphics", "0")
+
+
+def _last_doc(p, node):
+    """The fileID of the last document emitted for `node` (its deepest last descendant's last doc)."""
+    ids = [p.ctx.go(node.key), p.ctx.rt(node.key)] + [p.ctx.c(node.key, k) for k, _, _ in node.comps]
+    last = str(ids[-1])
+    for ch in node.children:
+        if A.is_instance(ch):
+            pid = str(p.ctx.fid(ch.key + "#inst"))
+            stub = str(p.ctx.fid(ch.key + "#stub"))
+            last = stub if p.sc.has(stub) else pid
+        else:
+            last = _last_doc(p, ch)
+    return str(last)
+
+
+# --------------------------------------------------------------------------------------------
+# Pilot chip, question bar, settings, hint
+# --------------------------------------------------------------------------------------------
+
+CHIP = dict(x=40, y=108, w=600, h=112)
+
+
+def chip_node():
+    n = N("Chip", "PilotChip", TL(CHIP["x"], CHIP["y"], CHIP["w"], CHIP["h"]))
+    n.add("in", 114, M.entrance("Rise", distance=14)).add("cg", 225, H.canvas_group(True))
+    H.framed(n, "Chip", 14, "SurfaceVeryDark", "SurfaceDark", fill_alpha=0.86)
+    image_node(n, "Chip/Divider", "Divider", TL(436, 28, 1, 56), "SurfaceDark")
+    cr = n.child(N("Chip/Crystals", "Crystals", TL(456, 26, 130, 60)))
+    label(cr.child(N("Chip/Crystals/Label", "Label", TL(0, 0, 130, 16))), "Crystals", "Label", "NeutralLightest")
+    image_node(cr, "Chip/Crystals/Glyph", "Glyph", TL(0, 26, 20, 20), "Purchase", K.chrome_sprite("chrome_crystal"), preserve=True)
+    amt = cr.child(N("Chip/Crystals/Amount", "Amount", TL(28, 22, 100, 28)))
+    amt.add("cr", 222, K.canvas_renderer()).add("tmp", 114, text("0", "Data", tok("Purchase"))) \
+        .add("kt", 114, K.kit_text("Data", "Purchase"))
+    cr.add("display", 114, lambda ctx, go: mono(go, S["crystals"], f"  balanceText: {ref(ctx.c('Chip/Crystals/Amount', 'tmp'))}\n"))
+    return n
+
+
+def avatar_nodes():
+    clip = N("Avatar/Clip", "Clip", R((0, 0), (1, 1), (0, 0), (-4, -4)))
+    clip.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(K.WHITE, K.kit_sprite("kit_oct_fill"), True)) \
+        .add("mask", 114, A.mask(False))
+    av = clip.child(N("Avatar/Clip/Avatar", "Avatar", STRETCH))
+    av.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(K.WHITE, A.AVATAR_PLACEHOLDER, preserve=False))
+    return clip
+
+
+def name_nodes():
+    st = N("Name/Status", "Status", R((0, 1), (1, 1), (0, -44), (0, 18), (0.5, 1)))
+    st.add("cr", 222, K.canvas_renderer()).add("tmp", 114, text("Online", "Label", tok("Cta"))) \
+        .add("kt", 114, K.kit_text("Label", "Cta"))
+    return st
+
+
+def bar_nodes():
+    bord = N("Bar/Border", "Border", STRETCH)
+    bord.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("TextLight"), K.kit_sprite("kit_sliver10_line1"), True))
+    note = N("Bar/Note", "Note", TL(22, 52, 396, 20))
+    note.add("cr", 222, K.canvas_renderer()).add("tmp", 114, text("", "BodySmall", tok("NeutralLightest"))) \
+        .add("kt", 114, K.kit_text("BodySmall", "NeutralLightest"))
+    return bord, note
+
+
+def answer_label(key, word):
+    n = N(f"Bar/{key}/Label", "Label", R((0, 0), (1, 1), (20, 0), (-52, 0)))
+    n.add("cr", 222, K.canvas_renderer()).add("tmp", 114, K.tmp(word, "ButtonSmall", tok("SurfaceBlack"))) \
+        .add("kt", 114, K.kit_text("ButtonSmall", "SurfaceBlack", driven=True))
+    return n
+
+
+def settings_nodes():
+    bord = N("Settings/Border", "Border", STRETCH)
+    bord.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("SurfaceLight"), K.kit_sprite("kit_hex_line1"), True))
+    gear = N("Settings/Gear", "Gear", R(size=(36, 36)))
+    gear.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("TextLight"), K.chrome_sprite("chrome_gear"), preserve=True)) \
+        .add("spin", 114, M.ambient("Spin", period=24.0, amplitude=0.0))
+    kw = K.label_width("X", "Label") + 24
+    slot = N("Settings/KeycapSlot", "KeycapSlot", R((0.5, 0), None, (0, -8), (kw, K.line_height("Label") + 8), (0.5, 1)))
+    slot.children.append(P.Inst("SettingsKeycap", "KitKeycap", "Keycap", STRETCH, [("Label#tmp", "m_text", "X", None)]))
+    return [bord, gear, slot]
+
+
+def hint_node():
+    n = N("Hint", "FlyHint", R((0.5, 1), None, (0, -500), (260, 36), (0.5, 1)))
+    n.add("cg", 225, H.canvas_group(True)).add("breathe", 114, M.ambient("Breathe", period=3.2, amplitude=0.45))
+    n.add("cr", 222, K.canvas_renderer()) \
+        .add("img", 114, K.image(tok("SurfaceVeryDark", 0.6), K.kit_sprite("kit_sliver10_fill"), True))
+    lab = n.child(N("Hint/Label", "Label", STRETCH))
+    label(lab, "Tap the cell to fly", "Label", "TextLight", align="center")
+    return n
+
+
+def patch_header(p):
+    I = IDS
+    p.body(I["panel_img"], img_body((1.0, 1.0, 1.0, 0.0), enabled=False), I["panel_go"])
+
+    # Pilot chip plate + hint: new children of Main_Menu_Panel, the plate drawn under the avatar.
+    chip_rt = p.emit(chip_node(), I["panel_rt"], I["panel_rt"])
+    hint_rt = p.emit(hint_node(), I["panel_rt"], _last_doc(p, chip_node()))
+
+    # Avatar: octagon ring (its own Image), a masked octagon holding the avatar art, the lamp on top.
+    p.rect(I["avatar_rt"], TL(CHIP["x"] + 14, CHIP["y"] + 14, 84, 84))
+    p.body(I["avatar_img"], img_body(tok("TextLight"), K.kit_sprite("kit_oct_fill"), True, raycast=True), I["avatar_go"])
+    clip_rt = p.emit(avatar_nodes(), I["avatar_rt"], I["avatar_rt"])
+    p.children(I["avatar_rt"], [clip_rt, I["lamp_rt"]])
+    p.field(I["home_comp"], "avatarImage", ref(p.ctx.c("Avatar/Clip/Avatar", "img")))
+
+    # Lamp: a diamond on the avatar's corner; no profile call (it asks Go offline?).
+    p.rect(I["lamp_rt"], R((1, 0), (1, 0), (4, 4), (28, 28), (0.5, 0.5)))
+    p.replace(I["lamp_btn"], no_calls(p.doc(I["lamp_btn"])))
+    lamp = p.doc(I["lamp_comp"])
+    for f, v in (("onlineText", "Online"), ("offlineText", "Offline"), ("goOfflineQuestion", "Go offline?"),
+                 ("goOnlineQuestion", "Go online?")):
+        lamp = C.field_set(lamp, f, v)
+    lamp = re.sub(r"^  (goOfflineNote|goOnlineNote): .*\n", "", lamp, flags=re.M)
+    lamp = lamp.rstrip("\n") + ("\n  goOfflineNote: Party, friends and the weekly board pause until you come back.\n"
+                                "  goOnlineNote: Reconnects to party, friends and the weekly board.\n")
+    status_rt = None
+
+    # Name + status.
+    p.rect(I["name_rt"], TL(CHIP["x"] + 120, CHIP["y"] + 18, 290, 72))
+    p.body(I["name_img"], img_body((1.0, 1.0, 1.0, 0.0), raycast=True), I["name_go"])
+    p.rect(I["name_text_rt"], R((0, 1), (1, 1), (0, 0), (0, 34), (0.5, 1)))
+    p.body(I["name_text"], lambda ctx, g: A.ellipsis(text("Pilot", "H2", tok("TextLight")))(ctx, g),
+           sc_go(p, I["name_text"]))
+    status_rt = p.emit(name_nodes(), I["name_rt"], I["name_text_rt"])
+    p.children(I["name_rt"], [I["name_text_rt"], status_rt])
+    lamp = C.field_set(lamp, "statusLabel", ref(p.ctx.c("Name/Status", "tmp")))
+    p.replace(I["lamp_comp"], lamp)
+
+    # Question bar.
+    p.rect(I["bar_rt"], TL(CHIP["x"], CHIP["y"] + CHIP["h"] + 16, 440, 96))
+    p.body(I["bar_img"], img_body(tok("SurfaceBlack"), K.kit_sprite("kit_sliver10_fill"), True, raycast=True), I["bar_go"])
+    p.replace(I["bar_btn"], no_calls(p.doc(I["bar_btn"])))
+    bord, note = bar_nodes()
+    bord_rt = p.emit(bord, I["bar_rt"], I["bar_rt"])
+    note_rt = p.emit(note, I["bar_rt"], _last_doc(p, bord))
+    p.rect(I["bar_text_rt"], TL(22, 18, 396, 28))
+    p.body(I["bar_text"], lambda ctx, g: text("Go offline?", "H3", tok("TextLight"))(ctx, g), sc_go(p, I["bar_text"]))
+    for key, go, rt, img, icon_rt, icon, x, word, token, glyph in (
+            ("Accept", I["accept_go"], I["accept_rt"], I["accept_img"], I["accept_icon_rt"], I["accept_icon"], 22, "Yes", "Cta", "chrome_confirm"),
+            ("Cancel", I["cancel_go"], I["cancel_rt"], I["cancel_img"], I["cancel_icon_rt"], I["cancel_icon"], 146, "No", "NeutralLightest", "chrome_close")):
+        p.rect(rt, R((0, 0), None, (x, 0), (112, 44), (0, 0.5)))
+        p.body(img, img_body(tok(token), K.kit_sprite("kit_sliver10_fill"), True, raycast=True), go)
+        p.rect(icon_rt, R((0, 0.5), None, (16, 0), (18, 18), (0, 0.5)))
+        p.body(icon, img_body(tok("SurfaceBlack"), K.chrome_sprite(glyph), preserve=True), sc_go(p, icon))
+        lab = answer_label(key, word)
+        lab_rt = p.emit(lab, rt, icon_rt)
+        p.children(rt, [icon_rt, lab_rt])
+    p.children(I["bar_rt"], [bord_rt, I["bar_text_rt"], note_rt, I["accept_rt"], I["cancel_rt"]])
+    p.field(I["bar_comp"], "questionLabel", ref(I["bar_text"]))
+    bc = p.doc(I["bar_comp"])
+    bc = re.sub(r"^  noteLabel: .*\n", "", bc, flags=re.M)
+    bc = bc.replace("  acceptButton:", f"  noteLabel: {ref(p.ctx.c('Bar/Note', 'tmp'))}\n  acceptButton:", 1)
+    p.replace(I["bar_comp"], bc)
+
+    # Settings hex.
+    p.rect(I["settings_rt"], TR(40, 108, 96, 84))
+    p.body(I["settings_img"], img_body(tok("SurfaceVeryDark", 0.9), K.kit_sprite("kit_hex_fill"), True, raycast=True), I["settings_go"])
+    p.remove_comp(I["settings_go"], I["settings_cbp"])
+    ids, anchor = [], I["settings_rt"]
+    for n in settings_nodes():
+        ids.append(p.emit(n, I["settings_rt"], anchor))
+        anchor = _last_doc(p, n)
+    p.children(I["settings_rt"], ids)
+
+    # Freestyle tap target out of pad navigation.
+    tap = p.doc(I["tap_btn"])
+    p.replace(I["tap_btn"], re.sub(r"(  m_Navigation:\n    m_Mode: )\d+", r"\g<1>0", tap, count=1))
+
+    # Main_Menu_Panel children: chip plate first (under everything), the existing objects, the hint.
+    kids = [k for k in p.kids(I["panel_rt"]) if k not in (chip_rt, hint_rt)]
+    p.children(I["panel_rt"], [chip_rt] + kids + [hint_rt])
+
+
+def sc_go(p, comp):
+    return p.sc.go_of(comp)
+
+
+def transform(text_):
+    p = Patch(text_)
+    I = IDS
+    assert p.sc.field(I["panel_go"], "m_Name") == "Main_Menu_Panel", "Main_Menu_Panel moved"
+    assert p.sc.script(I["home_comp"]) == S["home"], "HomeScreen moved"
+    for key, go, *_ in HUBS:
+        assert p.sc.field(go, "m_Name") == f"{key}Button", f"{key}Button moved"
+    assert p.sc.script(I["lamp_comp"]) == S["lamp"] and p.sc.script(I["bar_comp"]) == S["bar"], "lamp / question bar moved"
+    if p.sc.has(I["legacy_arcade_go"]):
+        assert p.sc.field(I["legacy_arcade_go"], "m_IsActive") == "0", "the legacy ArcadeButton is no longer inactive"
+        lrt = p.sc.rect_of(I["legacy_arcade_go"])
+        p.remove_subtree(I["legacy_arcade_go"])
+        # QuestGraphRunner still carries `arcadeNavButton`, a field no code declares any more (Unity drops
+        # it on the next save); it pointed at this object's Button.
+        qgr = p.doc(I["quest_runner"])
+        p.replace(I["quest_runner"], re.sub(r"^  arcadeNavButton: .*\n", "", qgr, flags=re.M))
+        p.children(I["panel_rt"], [k for k in p.kids(I["panel_rt"]) if k != lrt])
+    patch_hubs(p)
+    patch_header(p)
+    return p.text()
+
+
+def outputs():
+    return {SCENE: transform(open(os.path.join(REPO, SCENE), encoding="utf-8").read())}
+
+
+# --------------------------------------------------------------------------------------------
+# Validation
+# --------------------------------------------------------------------------------------------
+
+def validate(files):
+    sc_text = files[SCENE]
+    sc = T.Scene(sc_text)
+    I = IDS
+    assert not sc.has(I["legacy_arcade_go"]), "the legacy ArcadeButton survives"
+    ctx = ctx_new()
+    for key, go, rt, img, btn, hub, avail, lgo, lrt, ltmp, caption, glyph, variant in HUBS:
+        d = sc.docs[btn]
+        assert S["kitbutton"] in d, f"{key}Button is not a KitButton"
+        assert f"  m_TargetGraphic: {{fileID: {ctx.c(f'Hub/{key}/Fill', 'img')}}}" in d, f"{key}Button: press feedback targets another object"
+        assert f"  variant: {K.VARIANTS[variant]}\n" in d, f"{key}Button: wrong variant"
+        assert "m_MethodName: PlayAudio" in d, f"{key}Button lost its press sound"
+        assert f"  preferredFocus: {1 if key == 'Arcade' else 0}\n" in sc.docs[hub], f"{key}: preferredFocus wrong"
+    assert re.search(r"  m_Calls: \[\]\n", sc.docs[I["lamp_btn"]]), "the lamp still opens the profile window"
+    lamp = sc.docs[I["lamp_comp"]]
+    assert f"  statusLabel: {{fileID: {ctx.c('Name/Status', 'tmp')}}}" in lamp, "the lamp's status label is unwired"
+    assert f"  avatarImage: {{fileID: {ctx.c('Avatar/Clip/Avatar', 'img')}}}" in sc.docs[I["home_comp"]], "HomeScreen.avatarImage is not the masked avatar"
+    assert f"  noteLabel: {{fileID: {ctx.c('Bar/Note', 'tmp')}}}" in sc.docs[I["bar_comp"]], "the question bar has no note line"
+    assert not sc.has(I["settings_cbp"]), "Settings still carries its ControllerButtonPress"
+    assert re.search(r"  m_Calls: \[\]\n", sc.docs[I["bar_btn"]]), "the question bar still opens the display-name window"
+    anchors = set(re.findall(r"^--- !u!\d+ &(-?\d+)", sc_text, re.M)) | {"0"}
+    for m in re.finditer(r"\{fileID: (-?\d+)\}", sc_text):
+        assert m.group(1) in anchors, f"Menu_Main: dangling local fileID {m.group(1)}"
+    # Every RectTransform listed as a child names this one as its father, and vice versa (Home only).
+    for rt in [I["row_rt"], I["avatar_rt"], I["name_rt"], I["bar_rt"], I["settings_rt"], I["panel_rt"]] + [h[2] for h in HUBS]:
+        for kid in re.findall(r"\{fileID: (-?\d+)\}", re.search(r"^  m_Children:\n((?:  - .*\n)*)|^  m_Children: \[\]", sc.docs[rt], re.M).group(0)):
+            assert f"  m_Father: {{fileID: {rt}}}" in sc.docs[kid], f"child {kid} of {rt} names another father"
+
+
+def drift(files):
+    return [p for p, t in files.items()
+            if not os.path.exists(os.path.join(REPO, p)) or open(os.path.join(REPO, p), encoding="utf-8").read() != t]
+
+
+def self_test(files):
+    def expect(label_, mutate):
+        bad = dict(files)
+        mutate(bad)
+        try:
+            validate(bad)
+        except AssertionError as e:
+            print(f"  caught: {label_} ({e})")
+            return True
+        print(f"  MISSED: {label_}")
+        return False
+    I = IDS
+    lamp_hdr = f"--- !u!114 &{I['lamp_comp']}\n"
+
+    def unwire_status(f):
+        s = f[SCENE]
+        i = s.index(lamp_hdr)
+        j = s.index("--- ", i + 4)
+        f[SCENE] = s[:i] + re.sub(r"(  statusLabel: )\{fileID: -?\d+\}", r"\1{fileID: 0}", s[i:j]) + s[j:]
+
+    def arcade_unfocused(f):
+        hub = HUBS[1][5]
+        s = f[SCENE]
+        i = s.index(f"--- !u!114 &{hub}\n")
+        j = s.index("--- ", i + 4)
+        f[SCENE] = s[:i] + s[i:j].replace("  preferredFocus: 1\n", "  preferredFocus: 0\n") + s[j:]
+    cases = [
+        ("the lamp's status label unwired", unwire_status),
+        ("Arcade not the pad's first stop", arcade_unfocused),
+        ("a hub left a plain Button", lambda f: f.__setitem__(SCENE, f[SCENE].replace(
+            f"guid: {S['kitbutton']}", f"guid: {S['button']}", 1))),
+    ]
+    ok = all(expect(l, m) for l, m in cases)
+    print("OK: every negative control fires" if ok else "FAIL: a negative control did not fire")
+    return ok
+
+
+def main():
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--check", action="store_true")
+    ap.add_argument("--self-test", action="store_true")
+    args = ap.parse_args()
+    files = outputs()
+    validate(files)
+    print("OK: Home validates in Menu_Main")
+    if args.self_test:
+        return 0 if self_test(files) else 1
+    stale = drift(files)
+    if args.check:
+        for p in stale:
+            print(f"DRIFT: {p}")
+        print("OK: no drift" if not stale else f"FAIL: {len(stale)} file(s) drifted")
+        return 1 if stale else 0
+    for path in stale:
+        with open(os.path.join(REPO, path), "w", encoding="utf-8", newline="\n") as fh:
+            fh.write(files[path])
+        print(f"wrote {path}")
+    if not stale:
+        print("no files written (already current)")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
