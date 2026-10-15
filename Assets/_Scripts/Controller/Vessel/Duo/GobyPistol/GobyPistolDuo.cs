@@ -156,6 +156,7 @@ namespace CosmicShore.Gameplay
             _p = PistolBodyMath.Spawn(_rb, 0f, _body.pMinSpeed + 25f, _body);   // the lab's makeWorld: the Pistol at x = 0
             _ai = new PistolAI(31337u + 17u);
             _scLive = false; _frameLive = false; _lastK.Clear(); _barSince.Clear();
+            _tail.Clear(); _fx.Clear();   // the old ribbon's marks: a tail kept here streaks across the new screen
         }
 
         void OnDisable() => Unbind();
@@ -913,7 +914,7 @@ namespace CosmicShore.Gameplay
 
         void Draw3D()
         {
-            foreach (var run in _rings) Draw(_torus, Matrix4x4.TRS(run.Ring.C, Quaternion.LookRotation(run.Ring.N), Vector3.one * _vs.pVortexR), _ringMat);
+            foreach (var run in _rings) Draw(_torus, Matrix4x4.TRS(run.Ring.C, Quaternion.LookRotation(run.Ring.N, Mathf.Abs(run.Ring.N.y) < 0.9f ? Vector3.up : Vector3.right), Vector3.one * _vs.pVortexR), _ringMat);
             foreach (var F in _flares) Draw(_cube, Matrix4x4.TRS(F.P, Quaternion.identity, Vector3.one * 1.5f), _flareMat);
             FlushDraws();
         }

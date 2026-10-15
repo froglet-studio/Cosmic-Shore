@@ -345,7 +345,7 @@ namespace CosmicShore.Gameplay
         public void Lay(Vector3 a, Vector3 b, Vector3 f, Vector3 u, Vector3 r, in LaySettings s)
         {
             float L = (b - a).magnitude; if (L <= 0f) { Ends(b, f); return; }
-            float gap = s.SampleGap, d = gap - _acc;
+            float gap = Mathf.Max(1e-3f, s.SampleGap), d = gap - _acc;   // a gap of 0 would lay forever (the lab has no input for it)
             while (d <= L)
             {
                 Vector3 p = a + (b - a) * (d / L); AddSample(p, u, f); _blockAcc += gap;

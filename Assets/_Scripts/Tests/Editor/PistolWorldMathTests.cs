@@ -54,6 +54,18 @@ namespace CosmicShore.Tests
         }
 
         [Test]
+        public void Lay_WithANonPositiveSampleGap_StillTerminates()
+        {
+            // a mis-written asset (tSampleGap 0) would otherwise lay samples forever from Update; the lab has no input for the gap
+            var rb = new PistolRibbon(PistolUnroll.WorldUp);
+            var bad = new PistolRibbon.LaySettings { SampleGap = 0f, BlockGap = 16f, HillEvery = 4f, HillAmp = 26f };
+            rb.Begin(Vector3.zero, Vector3.forward, Vector3.up, Vector3.right, bad);
+            rb.Lay(Vector3.zero, new Vector3(0f, 0f, 2f), Vector3.forward, Vector3.up, Vector3.right, bad);
+            Assert.Less(rb.Count, 3000, "the gap is floored, so a 2 u move lays a bounded number of samples");
+            Assert.Greater(rb.Count, 1);
+        }
+
+        [Test]
         public void MapFast_AgreesWithTheLabsMap_AwayFromFolds([Values(PistolUnroll.WorldUp, PistolUnroll.ArcLength, PistolUnroll.GobyUp)] PistolUnroll mode)
         {
             var rb = Golden(mode);
