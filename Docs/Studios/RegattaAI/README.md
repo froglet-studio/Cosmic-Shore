@@ -30,6 +30,12 @@ then publish `<dir>/index.html` with every other file in `<dir>` as `files`, `ur
   of the leg, commit 420 u, through 320 u, side latched per ring), full throttle (`AIThrottleFloor`), and
   `AIPilot.UpdateOrbitBreak` (extend and re-attack). Difficulty: `GateRaceHandicap` with `SkimRaceDifficulty.asset`.
 - **Each hull's drive** (how it spends its speed verb) is lab-only and named in the page.
+- **The studio kit (`/vessel-studio` §1.5), for every AI:** the six settings tabs in a dock on the RIGHT of the stage
+  (it stays there down to 600 px wide: `stackBelow: 600`; the Vessel Studio pages stack at 900), records below; AI
+  Config holds **AI tuning** (pick any of the eight AIs and tune its drive with lab-only sliders, Reset this AI) and the
+  shared **Gate steering** as sliders starting at the scene's shipped values; Play Style Config's **Custom** style puts a
+  Time-level slider on every hull Time reaches; the Free camera **orbits or flies** (D16); the scorecard's **Hard
+  fastest?** column is the levels check (D24). The scorecard always races the current tuning.
 - **Lab fix (AI Config, on by default; a candidate to port):** commit no earlier than the approach point, and after a
   missed mouth re-latch the side and extend at once. Off = the game's steering.
 
@@ -57,5 +63,7 @@ then publish `<dir>/index.html` with every other file in `<dir>` as `files`, `ur
 - **The fast hulls are far off the model** (the Rhino 3-6×): the model is a competent pilot on the best line with
   instant braking; the AI coasts down from 840 u/s at 120 u/s² and misses mouths. That is the Rhino drive's work
   (roadmap step 4).
+- **A first tuning lead:** the Rhino's "Let go early" at 300 u (default 60) races I1 in 29.0 s instead of 67.9 s:
+  it lets go of the ramp far enough out to coast down to the corner speed (it cannot brake), and stops missing mouths.
 - **Levels order correctly** for the Serpent and the Manta (Hard < Medium < Easy). The Squirrel's Medium beats its Hard
   on two courses (rail rams reset its boost, which is noise larger than the belief mistakes).

@@ -12,6 +12,7 @@
        bottom: [['score', 'Scorecard', [el]], ...],
        railW: 380, dockH: 230,                     // defaults
        winSize: { score: [900, 380] },             // a tab's popped-out window size
+       stackBelow: 900,                            // optional: the width (px) below which the docks stack under the stage
        onLayout() {},                              // called after any resize (the stage re-measures itself)
      }) -> { openWindow(key), dockWindow(key, select), selectTab(key), state }
 
@@ -19,7 +20,7 @@
    ASCII only: served beside the pages without a charset. */
 (function () {
   'use strict';
-  const CSS = [
+  const cssFor = (bp) => [
     'body.vside-on { height: 100vh; height: 100dvh; overflow: hidden; margin: 0; }',
     'body.vside-on .wrap { box-sizing: border-box; max-width: none; height: 100%; padding-block: 6px; padding-inline: 8px; display: grid; grid-template-rows: auto minmax(0, 1fr); gap: 6px; }',
     '.vside { display: grid !important; grid-template-columns: minmax(0, 1fr) 6px var(--vside-railW, 380px); gap: 0 !important; min-height: 0; height: 100%; align-items: stretch !important; }',
@@ -46,7 +47,7 @@
     '.vside-win { position: fixed; z-index: 60; display: grid; grid-template-rows: auto minmax(0, 1fr); min-width: 260px; min-height: 140px; max-width: calc(100vw - 16px); max-height: calc(100vh - 16px); resize: both; overflow: hidden; background: var(--panel, #121524); border: 1px solid var(--line, #262b47); border-radius: 8px; box-shadow: 0 10px 40px #000a; }',
     '.vside-win .vside-fbar { display: flex; align-items: center; gap: 8px; padding: 5px 8px; background: var(--panel-2, #181c30); border-bottom: 1px solid var(--line, #262b47); cursor: move; user-select: none; touch-action: none; }',
     '.vside-win .vside-fbar b { font: 700 12px/1 var(--display, system-ui, sans-serif); letter-spacing: .06em; text-transform: uppercase; color: var(--accent, #35e0b0); flex: 1; }',
-    '@media (max-width: 900px) {',
+    '@media (max-width: ' + bp + 'px) {',
     '  body.vside-on { height: auto; overflow: auto; }',
     '  body.vside-on .wrap { height: auto; display: flex; flex-direction: column; }',
     '  .vside { grid-template-columns: minmax(0, 1fr); height: auto; }',
@@ -60,7 +61,7 @@
   ].join('\n');
 
   function build(o) {
-    if (!document.getElementById('vside-css')) { const st = document.createElement('style'); st.id = 'vside-css'; st.textContent = CSS; document.head.appendChild(st); }
+    if (!document.getElementById('vside-css')) { const st = document.createElement('style'); st.id = 'vside-css'; st.textContent = cssFor(Math.max(0, +o.stackBelow || 900)); document.head.appendChild(st); }
     const KEY = o.key || 'vessel-studio-ide';
     let saved = {}; try { saved = JSON.parse(localStorage.getItem(KEY) || '{}') || {}; } catch (e) { saved = {}; }
     const st = Object.assign({ R: o.right[0] && o.right[0][0], B: o.bottom[0] && o.bottom[0][0], railW: o.railW || 380, dockH: o.dockH || 230, wins: {} }, saved);
