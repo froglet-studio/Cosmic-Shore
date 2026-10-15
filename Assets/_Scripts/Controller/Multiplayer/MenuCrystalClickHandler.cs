@@ -64,8 +64,27 @@ namespace CosmicShore.Gameplay
                                  "the camera barely moves and stray input would be the most jarring thing.")]
         bool lockInputDuringEnterTransition = true;
 
+        [SerializeField, Tooltip("Seconds the home screen must have been settled - local vessel ready, and no cell " +
+                                 "still building, initialising or swapping its world (the Garland grow-in at boot) - " +
+                                 "before freestyle can be ENTERED. A press during the intro (the HOME screen's " +
+                                 "full-screen fly button, Submit, the pad's Y) is ignored instead of launching the " +
+                                 "player into the HyperSea before the menu has appeared. Leaving freestyle is never gated.")]
+        float enterFreestyleSettleSeconds = 1.5f;
+
         bool _isInFreestyle;
         bool _isTransitioning;
+
+        // Home-screen settle gate (enterFreestyleSettleSeconds). Polled, not per frame, and only
+        // until it opens: once the menu has settled it stays open for this scene.
+        const float SettlePollSeconds = 0.25f;
+        // A ceiling, so a cell that never reports itself built (an environment spawn that returned
+        // nothing) cannot lock the player out of freestyle: past this, counted from the moment the
+        // local vessel exists, the gate opens whatever the cells say.
+        const float SettleCeilingSeconds = 12f;
+        bool _menuSettled;
+        float _settleCandidateSince = -1f;
+        float _vesselReadySince = -1f;
+        float _nextSettlePollAt;
         CancellationTokenSource _cts;
 
         // Saved menu alphas so we restore to the pre-freestyle state
@@ -139,6 +158,8 @@ namespace CosmicShore.Gameplay
 
         void Update()
         {
+            if (!_menuSettled) PollMenuSettled();
+
             // The two exemptions apply the frame they start or stop, not up to a second later: a
             // Wanderway tether begun under a held pen would start with no trail to ride.
             bool wander = WanderwayRun.AnyRunning, preview = ModePreviewSession.AnyActive;
@@ -161,6 +182,14 @@ namespace CosmicShore.Gameplay
         {
             if (_isTransitioning) return;
 
+            // Entering is refused until the home screen has settled; leaving never is.
+            if (!_isInFreestyle && !_menuSettled)
+            {
+                CSDebug.LogVerbose(CSLogChannel.MenuUI,
+                    "[MenuCrystalClickHandler] Enter freestyle ignored: the home screen has not settled yet.");
+                return;
+            }
+
             var localPlayer = gameData.LocalPlayer;
             if (localPlayer?.Vessel == null) return;
 
@@ -174,6 +203,56 @@ namespace CosmicShore.Gameplay
             else
                 TransitionToFreestyle().Forget();
         }
+
+        /// <summary>
+        /// True once the home screen has been settled for <see cref="enterFreestyleSettleSeconds"/>:
+        /// the local vessel exists and no <see cref="Cell"/> is still building, post-initialising or
+        /// swapping its world. Until then <see cref="ToggleTransition"/> will not ENTER freestyle.
+        /// </summary>
+        public bool IsMenuSettled => _menuSettled;
+
+        void PollMenuSettled()
+        {
+            if (Time.unscaledTime < _nextSettlePollAt) return;
+            _nextSettlePollAt = Time.unscaledTime + SettlePollSeconds;
+
+            float now = Time.unscaledTime;
+            bool vesselReady = gameData?.LocalPlayer?.Vessel != null;
+            if (!vesselReady)
+            {
+                _vesselReadySince = _settleCandidateSince = -1f;
+                return;
+            }
+            if (_vesselReadySince < 0f) _vesselReadySince = now;
+
+            if (!CellsSettledNow())
+            {
+                _settleCandidateSince = -1f;
+                if (now - _vesselReadySince < SettleCeilingSeconds) return;
+                CSDebug.LogVerbose(CSLogChannel.MenuUI,
+                    $"[MenuCrystalClickHandler] A cell still reports itself building after {SettleCeilingSeconds:0} s; " +
+                    "opening freestyle anyway.");
+            }
+            else
+            {
+                if (_settleCandidateSince < 0f) _settleCandidateSince = now;
+                if (now - _settleCandidateSince < enterFreestyleSettleSeconds) return;
+                CSDebug.LogVerbose(CSLogChannel.MenuUI, "[MenuCrystalClickHandler] Home screen settled: freestyle can be entered.");
+            }
+            _menuSettled = true;
+        }
+
+        static bool CellsSettledNow()
+        {
+            foreach (var cell in FindObjectsByType<Cell>(FindObjectsSortMode.None))
+                if (IsCellBusy(cell.IsPostInitialized, cell.IsEnvironmentBuildPending, cell.IsSwappingConfig))
+                    return false;
+            return true;
+        }
+
+        /// <summary>A cell is still putting its world together (the Garland grow-in at boot).</summary>
+        internal static bool IsCellBusy(bool postInitialized, bool environmentBuildPending, bool swappingConfig) =>
+            !postInitialized || environmentBuildPending || swappingConfig;
 
         #region Transitions
 

@@ -65,6 +65,27 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Menu_Main: no launch into the HyperSea during the intro; the browser Toybox opens on the menu (`claude/menu-click-through-kg5qx7`, 2026-10-15) — NOT EDITOR-VERIFIED
+
+**What landed:** `MenuCrystalClickHandler.ToggleTransition` refuses to ENTER freestyle until the home screen has
+settled: the local vessel exists and no `Cell` is still post-initialising, building its environment or swapping its
+config (the Garland grow-in at boot), held for `enterFreestyleSettleSeconds` (1.5 s, inspector), with a 12 s ceiling
+so a cell that never reports itself built cannot lock freestyle out. Every route in is covered (HOME's full-screen
+fly button, Submit, the pad's Y, the toybox modals). Leaving freestyle is never gated. The browser Toybox no longer
+enters freestyle by itself at the first menu-ready (`MainMenuController`).
+
+**Verified without the editor:** `unity_refcompile` player, webgl and editor: 0 errors in changed files.
+`MenuFreestyleSettleGateTests` compile, not run.
+
+**Verify in editor and in a build:**
+1. Start the game and click (and press Space / Enter / the pad's Y) repeatedly while the Garland grows in: the menu
+   stays; nothing launches.
+2. About 1.5 s after the Garland has finished, click HOME: freestyle starts as before.
+3. Escape out of freestyle and straight back in: no delay (the gate opens once per scene load).
+4. The browser Toybox: boots to the home menu; clicking flies.
+5. MenuUI log channel on: "Enter freestyle ignored: the home screen has not settled yet" for the early presses,
+   then "Home screen settled".
+
 ### 🔴 Third Eye: a You / AI toggle on every pilot (`Ys-bleeding-edge`, 2026-10-15) — NOT EDITOR-VERIFIED
 
 **What landed:** FrogletTools ▸ AI ▸ Third Eye has a **Pilots** panel: each pilot's row has **You | AI**. Your own hull:
@@ -178,7 +199,7 @@ best for the catch against 59.6 s for the field.
 ### 🔴 The browser Toybox: a WebGL build of Menu_Main's freestyle for www.froglet.games/play (`claude/webgl-toybox-kg5qx7`, 2026-10-14) — NOT EDITOR-VERIFIED
 
 **What landed:** everything in `Docs/WEBGL_TOYBOX.md`. The `FROGLET_WEB_TOYBOX` define (read through
-`WebToybox.IsBuild`); a boot with no UGS, an in-memory `SinglePlayerTransport` host and straight into freestyle; a
+`WebToybox.IsBuild`); a boot with no UGS, an in-memory `SinglePlayerTransport` host and the home menu (no longer straight into freestyle, 2026-10-15); a
 menu with only the toybox, settings and credits; the build entry point `FrogletTools > Build > WebGL Toybox` and UBA's
 `WebToyboxBuild.PreExport`; WebGL player settings (Brotli, hashed names, 256 MB / 4 GB memory, the FrogletToybox
 template); `PlatformProfile_Web`; inline solves where threads were used; a browser download for painting SHARE; a
@@ -206,7 +227,7 @@ compiler, any build, any browser.
 
 **Verify in a browser** (`python3 Tools/Build/publish_toybox.py serve --build-dir Builds/WebGLToybox`, then
 http://localhost:8000 in Chrome or Edge):
-1. It boots past "Starting the Toybox…" (and "Loading sound…" while the banks download) straight into freestyle.
+1. It boots past "Starting the Toybox…" (and "Loading sound…" while the banks download) to the home menu, not into freestyle.
    No sign-in, no age gate, no online indicator or reconnect button.
 2. Every screen but HOME, and the Arcade / Arena / Mission entries, read "In the full game". The toybox, its
    configure modal, settings and credits open.
