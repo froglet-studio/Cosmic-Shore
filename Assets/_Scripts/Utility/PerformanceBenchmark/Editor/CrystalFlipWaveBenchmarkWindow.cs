@@ -75,7 +75,7 @@ namespace CosmicShore.Utility.PerformanceBenchmark.Editor
         ProfilerRecorder[] recorders;
         Vector2 scroll;
 
-        [MenuItem("FrogletTools/Performance/Crystal Flip Wave Benchmark", false, 40)]
+        [MenuItem("FrogletTools/Performance/Benchmarks/Crystal Flip Wave", false, 211)]
         [FrogletTool(FrogletToolCategory.Performance, Importance = 2,
             Description = "A/B frame cost of N Time crystals: the procedural flip wave vs the legacy Animator + take it replaced.")]
         public static void Open()

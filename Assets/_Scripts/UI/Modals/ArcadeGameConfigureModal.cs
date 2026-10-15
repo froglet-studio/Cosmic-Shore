@@ -1159,6 +1159,7 @@ namespace CosmicShore.UI
             }
 
             session.Attach(window);
+            session.SetDrillNames(game ? game.DisplayName : null, ResolveModeVesselName(game));
             session.SetDefinition(definition && definition.CanTestFlight ? definition : null,
                                   ResolveModeVessel(game),
                                   config != null ? config.Intensity : 1,
@@ -1283,6 +1284,7 @@ namespace CosmicShore.UI
 
             session.OnPreviewEnded += HandlePreviewEnded;
             session.OnObjectiveProgress += HandleObjectiveProgress;
+            session.OnDrillGateChanged += RefreshStartAvailability;
             _previewSessionSubscribed = true;
         }
 
@@ -1295,9 +1297,17 @@ namespace CosmicShore.UI
             {
                 session.OnPreviewEnded -= HandlePreviewEnded;
                 session.OnObjectiveProgress -= HandleObjectiveProgress;
+                session.OnDrillGateChanged -= RefreshStartAvailability;
             }
             _previewSessionSubscribed = false;
         }
+
+        /// <summary>The single hull's display name, for the coach's {vessel} token; null when the
+        /// card allows several (a line that names the vessel is then dropped, never guessed).</summary>
+        static string ResolveModeVesselName(SO_ArcadeGame game) =>
+            game != null && game.Vessels != null && game.Vessels.Count == 1 && game.Vessels[0]
+                ? game.Vessels[0].Name
+                : null;
 
         /// <summary>
         /// The hull a mode locks to, or <see cref="VesselClassType.Any"/> when it allows several
@@ -1886,6 +1896,15 @@ namespace CosmicShore.UI
                 return;
             }
 
+            // The microgame's first Lesson is forced (TRAINING_PLAN D2): Play opens the moment the
+            // Mentor starts. The caption is authored in the drill library.
+            var session = previewSession ? previewSession : _resolvedPreviewSession;
+            if (session && session.DrillHoldsPlay)
+            {
+                _activePanel.SetStartAvailable(false, session.DrillHoldCaption);
+                return;
+            }
+
             // A SPENT challenge still opens - that is the point. Today's run is gone, so Start is
             // dead, but everything else the window shows (the objective, this week's mode, and the
             // leaderboard the button beside it opens) is still worth reading. Closing the card
@@ -2402,26 +2421,22 @@ namespace CosmicShore.UI
         }
 
         /// <summary>
-        /// Draw one AI chip's hull. Opponent seat (no human on its domain, card pins a hull):
-        /// that hull's icon, not tappable. Ally seat: the picked hull's icon (the random avatar
-        /// while nobody has picked), tappable when it is on the LOCAL pilot's own team.
+        /// Draw one AI chip's hull (<see cref="AIHullSeating.SeatHull"/>): the picked hull's icon, else the
+        /// card's pinned opponent hull on an opponent seat, else the random avatar. Tappable for the HOST
+        /// on every seat (a whole test grid from one panel) and for anyone else on their own team's allies.
         /// </summary>
         void DrawAiSeatHull(DomainAvatarChip seat, int ordinal, Domains domain, bool placed,
                             ICollection<Domains> humanDomains, Domains localDomain)
         {
-            if (AIHullSeating.IsOpponentSeat(OpponentHull, domain, humanDomains))
-            {
-                var opponent = CardVessel(OpponentHull);
-                seat.SetHull(opponent ? opponent.IconActive : null, null);
-                return;
-            }
+            bool picker = AllyHullPickerAvailable && config != null;
+            bool opponent = AIHullSeating.IsOpponentSeat(OpponentHull, domain, humanDomains);
+            if (!picker && !opponent) return;
 
-            if (!AllyHullPickerAvailable || config == null) return;
-
-            var picked = CardVessel(config.AIVesselAt(ordinal));
-            bool mine = placed && domain == localDomain && humanDomains.Contains(domain);
-            seat.SetHull(picked ? picked.IconActive : null,
-                         mine ? () => HandleAllyHullChipClicked(ordinal) : null);
+            var pick = picker ? config.AIVesselAt(ordinal) : VesselClassType.Random;
+            var shown = CardVessel(AIHullSeating.SeatHull(OpponentHull, domain, humanDomains, pick));
+            bool mine = domain == localDomain && humanDomains.Contains(domain);
+            bool tappable = picker && placed && (!IsClientMode || mine);   // AIHullSeating.MayPick, read from this machine
+            seat.SetHull(shown ? shown.IconActive : null, tappable ? () => HandleAllyHullChipClicked(ordinal) : null);
         }
 
         /// <summary>A tap on one of the local pilot's ally chips: ask the host to step its hull.
@@ -2456,10 +2471,11 @@ namespace CosmicShore.UI
         }
 
         /// <summary>
-        /// HOST: step ally AI <paramref name="ordinal"/>'s hull for <paramref name="requester"/>.
-        /// Refused unless the seat is on the requester's own team - a pilot picks for their
-        /// allies, never for another team's AI. Under arena seating the step skips hulls another
-        /// pilot has claimed and hulls another ally already flies.
+        /// HOST: step AI <paramref name="ordinal"/>'s hull for <paramref name="requester"/>
+        /// (<see cref="AIHullSeating.MayPick"/>): the host may step any seat, an opponent's included;
+        /// a guest only their own team's allies. Under arena seating the step skips hulls another
+        /// pilot has claimed and hulls another AI already flies. On an opponent seat "auto" is the
+        /// card's pinned hull.
         /// </summary>
         void ApplyAllyVesselCycle(Player requester, int ordinal, int direction)
         {
@@ -2467,7 +2483,8 @@ namespace CosmicShore.UI
             if (ordinal < 0 || ordinal >= config.AIDomains.Count) return;
 
             var seatDomain = config.AIDomains[ordinal];
-            if (!requester || requester.NetDomain.Value != seatDomain)
+            if (!requester || !AIHullSeating.MayPick(requester.OwnerClientId == NetworkManager.ServerClientId,
+                    requester.NetDomain.Value, seatDomain))
             {
                 CSDebug.LogVerbose(CSLogChannel.ArcadeLaunch,
                     $"[ArcadeLaunch] Ally hull pick refused - AI {ordinal} ({seatDomain}) is not on " +
@@ -3008,7 +3025,7 @@ namespace CosmicShore.UI
             if (!window)
             {
                 CSDebug.LogWarning("[ArcadeConfigModal] No WeeklyChallengeLeaderboardModal in the " +
-                                 "scene - wire one on this modal, or run FrogletTools > Interface " +
+                                 "scene - wire one on this modal, or run FrogletTools > UI " +
                                  "> Wire Weekly Challenge Leaderboard.");
                 return;
             }

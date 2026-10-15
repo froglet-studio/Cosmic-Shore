@@ -32,7 +32,7 @@ false. So a vessel can carry a perfectly wired skimmer — trigger sphere, kinem
 anywhere, because the reference points at a different (or disabled) skimmer object. The Dolphin
 shipped that way for its whole life: an active `EnergySkimmer` doing the physics and a disabled
 legacy nested `Skimmer.prefab` holding the reference. **Audit it, don't infer it from feel:**
-`FrogletTools > Vessels > Audit Vessel Skimmers` checks assignment, active state up the whole
+`FrogletTools > Vessels > Audits > Audit Vessel Skimmers` checks assignment, active state up the whole
 ancestor chain, the components the trigger path needs, and whether the container holds any
 prism effects — asset-only, no play mode. *(Serpent currently fails it.)* Note that a skim's
 feedback signals are each individually invisible — the haptic is a **no-op on desktop**,

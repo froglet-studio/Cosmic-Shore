@@ -122,7 +122,7 @@ namespace CosmicShore.Mcp
                     ["scene"] = P("string", "start in this scene instead of build scene 0 (Bootstrap)"),
                     ["size"] = P("string", "window size WxH (default 1280x720)"),
                     ["headless"] = P("boolean", "no window: fast ticks, no screenshots"),
-                    ["online"] = P("boolean", "real networking (default false: one offline process)"),
+                    ["online"] = P("boolean", "START ONLINE (default false: offline). Online, the game signs in to the game's live UGS project and plays through UGS Lobby and Relay: only with the owner's go-ahead"),
                     ["audio"] = P("boolean", "FMOD audio (default false)"),
                     ["profile"] = P("string", "save profile name (COSMIC_SHORE_PROFILE); a new name is a first-time user"),
                     ["build"] = P("boolean", "compile first (default true)"),
@@ -165,7 +165,7 @@ namespace CosmicShore.Mcp
                 new JsonObject { ["lines"] = P("integer", "how many (default 200)"), ["grep"] = P("string", "only lines containing this") }),
             Tool("game_load_scene", "Load a scene by name or build index.",
                 new JsonObject { ["scene"] = P("string", "scene name or build index") }, "scene"),
-        }.AddAll(MultiplayerTools());
+        };
 
         public static JsonObject Text(string s) => new() { ["type"] = "text", ["text"] = s };
 
@@ -177,8 +177,6 @@ namespace CosmicShore.Mcp
 
         public async Task<JsonArray> Call(string name, JsonObject a)
         {
-            if (name.StartsWith("net_", StringComparison.Ordinal) && await CallMultiplayer(name, a) is { } mp)
-                return new JsonArray(Text(mp));
             switch (name)
             {
                 case "engine_build": return new JsonArray(Text(await Build(Str(a, "target", "player"))));
@@ -702,7 +700,6 @@ namespace CosmicShore.Mcp
         public void Dispose()
         {
             if (_game is { HasExited: false }) try { _game.Kill(entireProcessTree: true); } catch { }
-            _mp?.Dispose();
         }
     }
 }

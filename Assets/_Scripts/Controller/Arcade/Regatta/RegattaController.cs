@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using CosmicShore.Data;
 using CosmicShore.ScriptableObjects;
 using CosmicShore.Utility;
 using UnityEngine;
@@ -46,7 +47,7 @@ namespace CosmicShore.Gameplay
 
         [Tooltip("How far behind gate 0, along its axis, the start line sits. Every hull spawns " +
                  "here pointed through the first ring, which is fair by symmetry.")]
-        [SerializeField, Min(1f)] float startLineStandoff = 260f;
+        [SerializeField, Min(1f)] float startLineStandoff = RegattaCourseSource.SceneStartLineStandoff;
 
         [Tooltip("Radius of the start ring around gate 0's axis. Wider than the mouth so the " +
                  "grid is not stacked on the rails.")]
@@ -57,6 +58,8 @@ namespace CosmicShore.Gameplay
         [SerializeField, Min(1f)] float aiRailLeadDistance = 260f;
 
         protected override string ModeName => "Regatta";
+
+        protected override RaceCourseSource CreateCourseSource() => new RegattaCourseSource();
 
         /// <summary>Points, not golf: a pilot scores their own gates and a team the SUM of its
         /// pilots' (<see cref="RegattaScoringRuleSO"/>), highest total winning - so the end-game
@@ -69,74 +72,19 @@ namespace CosmicShore.Gameplay
         /// a two-pilot team "reached halfway" on with each pilot a quarter of the way round.</summary>
         protected override bool RaceToastsSumTeams => true;
 
-        /// <summary>Laps = authored gate threadings / the arena's rings per lap. ONE authority:
-        /// the arena lays exactly RingsPerLap rings, the target is authored once in the end-game
-        /// conditions, and the generator asserts the target is a whole number of laps.</summary>
-        protected override int LapsPerRace =>
-            Mathf.Max(1, AuthoredGateTarget() / RegattaCourse.RingsPerLap);
-
-        public override int AuthoredGateTarget()
-        {
-            var overrides = EndConditionOverridesSO.Instance;
-            return overrides != null
-                ? overrides.GetRegattaGateTarget()
-                : EndConditionOverridesSO.DefaultRegattaGateTarget;
-        }
-
-        /// <summary>
-        /// The arena's rings, cell-local. <paramref name="seed"/>, <paramref name="inner"/> and
-        /// <paramref name="outer"/> are IGNORED by design: the circuit is a property of the ARENA
-        /// (the rails are laid through it), authored on the cell config, so a seed or a shell
-        /// invented here could only disagree with it. <paramref name="gateCount"/> is honoured
-        /// through <see cref="LapsPerRace"/>.
-        /// </summary>
-        protected override List<RaceGate> BuildCourse(int seed, int gateCount, float inner, float outer)
-        {
-            if (!TryResolveArena(out var arena, out string why))
-            {
-                // Reported, not logged: the platform retries this every frame until its window
-                // closes, and until then this is simply "not yet".
-                CourseFailureDetail = why;
-                return null;
-            }
-
-            if (gateCount % RegattaCourse.RingsPerLap != 0)
-                CSDebug.LogWarning($"[Regatta] Authored target {gateCount} is not a whole number of " +
-                                   $"{RegattaCourse.RingsPerLap}-ring laps; racing " +
-                                   $"{LapsPerRace} lap(s). Author a multiple of {RegattaCourse.RingsPerLap}.");
-
-            return arena.BuildGatesNow();
-        }
-
         /// <summary>
         /// The arena prefab, off the cell's EXPECTED config - never <c>Config</c>, which is a latch
-        /// that lands a second after this runs (SKEIN.md 13.2). Requires an IntensityWise cell,
-        /// whose choice is derivable from the intensity the server already holds.
+        /// that lands a second after the first build attempt (SKEIN.md 13.2). Requires an
+        /// IntensityWise cell, whose choice is derivable from the intensity the server holds.
         /// </summary>
-        bool TryResolveArena(out SpawnableRegattaRails arena, out string why)
+        protected override CellConfigDataSO ResolveCourseConfig()
         {
-            arena = null;
             var cell = arenaCell != null ? arenaCell : FindAnyObjectByType<Cell>();
-            var config = cell != null ? cell.ExpectedConfig : null;
-
-            if (config == null)
-            {
-                why = "No Cell whose config is knowable - the circuit's seed lives on the cell " +
-                      "config's arena prefab. A Regatta cell must be IntensityWise.";
-                return false;
-            }
-
-            arena = config.EnvironmentPrefab as SpawnableRegattaRails;
-            if (arena == null)
-            {
-                why = $"The cell config '{config.name}' authors no SpawnableRegattaRails " +
-                      "EnvironmentPrefab, so there are no rails to hang rings on.";
-                return false;
-            }
-
-            why = null;
-            return true;
+            return cell != null ? cell.ExpectedConfig : null;
         }
+
+        bool TryResolveArena(out SpawnableRegattaRails arena, out string why) =>
+            RegattaCourseSource.TryResolveArena(ResolveCourseConfig(), out arena, out why);
 
         /// <summary>
         /// Everyone starts on a ring behind gate 0, pointed through it. The platform's cell ring
@@ -173,6 +121,17 @@ namespace CosmicShore.Gameplay
         /// </summary>
         UrchinAutopilotDriver _urchinAI;
         UrchinAutopilotDriver UrchinAI => _urchinAI ??= new UrchinAutopilotDriver();
+
+        /// <summary>A race flies flat out: every Regatta AI holds full throttle (the hull's own speed verb still decides
+        /// its boost). Before, the AI flew its skill throttle, 0.3-0.9.</summary>
+        protected override float AIThrottleFloor => 1f;
+
+        /// <summary>
+        /// Regatta's short legs (461-858 u) are where committing from 420 u out crosses the plane beside the
+        /// mouth and then circles the far-side point: the Regatta AI studio finished 17/32 Hard hull x intensity
+        /// races with the shipped steering and 30/32 with this on (2026-10-15, Docs/Studios/RegattaAI).
+        /// </summary>
+        protected override bool AICommitFromApproachPoint => true;
 
         /// <summary>
         /// While ATTACHED, ride the rail toward this pilot's next ring; while FREE, fly at the
@@ -237,6 +196,73 @@ namespace CosmicShore.Gameplay
             }
 
             if (hasGate) UrchinAI.TryProjectTrackToward(pilot, gate.Position, gate.Axis);
+
+            // Free and an Urchin: head for ITS OWN lane, a little ahead of where it is, rather than the ring's spine the
+            // three braided lanes wrap round. Aiming at the spine left the first lane it touched to the spawn slot -
+            // two times in three a rival's, ridden at 20 u/s or slipped and re-latched (2026-10-14 Regatta audit).
+            if (hasGate && status.VesselType == VesselClassType.Urchin && TryOwnLaneAhead(pilot, tf.position, out target))
+                return true;
+            return false;
+        }
+
+        [Tooltip("A free AI Urchin aims this many lane prisms ahead of the nearest point of its own-domain lane, so it " +
+                 "joins the lane going the way the race goes. Lane prisms sit a few units apart.")]
+        [SerializeField, Min(0)] int aiOwnLaneLeadPrisms = 12;
+
+        SpawnableRegattaRails _railsForAI;
+        readonly Dictionary<Domains, List<Prism>> _laneByDomain = new();
+
+        /// <summary>
+        /// A point on <paramref name="pilot"/>'s own-domain lane just ahead of the lane point nearest
+        /// <paramref name="from"/>. The lanes are laid in gate order and close on themselves, so "ahead" is the next
+        /// prisms in the list. False when the rails are not laid yet or the domain has no lane.
+        /// </summary>
+        bool TryOwnLaneAhead(IPlayer pilot, Vector3 from, out Vector3 target)
+        {
+            target = default;
+            if (PrismTrailBuilder.IsLayingInProgress) return false;
+            if (!_railsForAI) _railsForAI = FindAnyObjectByType<SpawnableRegattaRails>();
+            if (!_railsForAI) return false;
+
+            if (!_laneByDomain.TryGetValue(pilot.Domain, out var lane) || lane == null || lane.Count == 0)
+            {
+                lane = null;
+                var trails = _railsForAI.GetTrails();
+                if (trails != null)
+                    foreach (var trail in trails)
+                    {
+                        var list = trail?.TrailList;
+                        if (list == null) continue;
+                        foreach (var prism in list)
+                        {
+                            if (!prism) continue;
+                            if (prism.Domain == pilot.Domain) lane = list;
+                            break;   // a lane is one colour: its first live prism says which
+                        }
+                        if (lane != null) break;
+                    }
+                _laneByDomain[pilot.Domain] = lane;
+                if (lane == null) return false;
+            }
+
+            int nearest = -1;
+            float best = float.MaxValue;
+            for (int i = 0; i < lane.Count; i++)
+            {
+                var prism = lane[i];
+                if (!prism) continue;
+                float d = (prism.transform.position - from).sqrMagnitude;
+                if (d < best) { best = d; nearest = i; }
+            }
+            if (nearest < 0) return false;
+
+            for (int step = aiOwnLaneLeadPrisms; step >= 0; step--)
+            {
+                var ahead = lane[(nearest + step) % lane.Count];
+                if (!ahead) continue;
+                target = ahead.transform.position;
+                return true;
+            }
             return false;
         }
 

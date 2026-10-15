@@ -26,9 +26,9 @@ Material:
     m_Ints: []
     m_Floats:
     - _RippleBand: 2
-    - _RippleBend: 0.025
+    - _RippleBend: 0.008
     - _RippleRadius: 10
-    - _RippleSplit: 0.12
+    - _RippleSplit: 0.03
     m_Colors:
     - _RippleTint: {r: 0, g: 0, b: 0, a: 0}
   m_BuildTextureStacks: []

@@ -49,6 +49,7 @@ namespace CosmicShore.Core
         SquadRepository _squad;
         LoadoutRepository _loadout;
         QuestProgressRepository _questGraph;
+        DrillProgressRepository _drill;
 
         ICloudSaveProvider _provider;
         List<ICloudDataWriter> _allRepos;
@@ -70,6 +71,7 @@ namespace CosmicShore.Core
         public ICloudDataReader<SquadCloudData> Squad => _squad;
         public ICloudDataReader<LoadoutCloudData> Loadout => _loadout;
         public ICloudDataReader<QuestProgressCloudData> QuestGraph => _questGraph;
+        public ICloudDataReader<DrillProgressCloudData> Drill => _drill;
 
         // Typed write access (for game systems that mutate + mark dirty)
         public PlayerProfileRepository ProfileRepo => _profile;
@@ -83,6 +85,7 @@ namespace CosmicShore.Core
         public SquadRepository SquadRepo => _squad;
         public LoadoutRepository LoadoutRepo => _loadout;
         public QuestProgressRepository QuestGraphRepo => _questGraph;
+        public DrillProgressRepository DrillRepo => _drill;
 
         void Awake()
         {
@@ -144,12 +147,13 @@ namespace CosmicShore.Core
             _squad = new SquadRepository(_provider);
             _loadout = new LoadoutRepository(_provider);
             _questGraph = new QuestProgressRepository(_provider);
+            _drill = new DrillProgressRepository(_provider);
 
             _allRepos = new List<ICloudDataWriter>
             {
                 _profile, _modeStats, _progression,
                 _hangar, _episodes, _settings,
-                _weeklyChallenge, _training, _squad, _loadout, _questGraph
+                _weeklyChallenge, _training, _squad, _loadout, _questGraph, _drill
             };
         }
 
@@ -223,7 +227,8 @@ namespace CosmicShore.Core
                 _training.LoadAsync(ct),
                 _squad.LoadAsync(ct),
                 _loadout.LoadAsync(ct),
-                _questGraph.LoadAsync(ct)
+                _questGraph.LoadAsync(ct),
+                _drill.LoadAsync(ct)
             ).AsMainThread();
 
             // Restore vessel unlock state from cloud → SO_Vessel assets
@@ -265,7 +270,8 @@ namespace CosmicShore.Core
                     _training.ResetAsync(ct),
                     _squad.ResetAsync(ct),
                     _loadout.ResetAsync(ct),
-                    _questGraph.ResetAsync(ct)
+                    _questGraph.ResetAsync(ct),
+                    _drill.ResetAsync(ct)
                 ).AsMainThread();
 
                 CSDebug.LogVerbose(CSLogChannel.CloudData, "[UGSDataService] All player data reset successfully.");

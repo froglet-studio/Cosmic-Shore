@@ -202,12 +202,25 @@ namespace CosmicShore.Engine
             logMessageReceivedThreaded?.Invoke(condition, stackTrace, type);
         }
 
-        public static void SetFocus(bool focused) { isFocused = focused; focusChanged?.Invoke(focused); }
         public static bool CanQuit() { foreach (Func<bool> f in wantsToQuit?.GetInvocationList() ?? Array.Empty<Delegate>()) if (!f()) return false; return true; }
         public static void RaiseLowMemory() => lowMemory?.Invoke();
         internal static void RaiseUnloading() => unloading?.Invoke();
         public static bool HasProLicense() => true;
         public static void Quit(int exitCode) => Quit();
+
+        /// <summary>
+        /// Original contract: true when the scene named <paramref name="levelName"/> (a bare name
+        /// or an asset path) can be loaded by name, which in a Unity player means it is an enabled
+        /// entry of the build list. Answered from the content backend's build list
+        /// (<see cref="SceneManagement.ISceneContentBackend.IsInBuildList"/>), not from what this
+        /// engine happens to be able to load: the port loads any project scene by name, a Unity
+        /// player does not, and game code asks this to predict the player. No backend installed
+        /// (a headless harness) answers false.
+        /// </summary>
+        public static bool CanStreamedLevelBeLoaded(string levelName) =>
+            !string.IsNullOrEmpty(levelName) &&
+            SceneManagement.SceneManager.Backend is { } backend &&
+            backend.IsInBuildList(levelName);
     }
 
     public struct RefreshRate : IEquatable<RefreshRate>, IComparable<RefreshRate>

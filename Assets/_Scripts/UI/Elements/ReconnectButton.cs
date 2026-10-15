@@ -47,7 +47,17 @@ namespace CosmicShore.UI
         Button _button;
         bool _subscribed;
 
-        void Awake() => _button = GetComponent<Button>();
+        void Awake()
+        {
+            // The browser Toybox cannot go online, so there is nothing to reconnect to.
+            if (WebToybox.IsBuild)
+            {
+                gameObject.SetActive(false);
+                return;
+            }
+
+            _button = GetComponent<Button>();
+        }
 
         void OnEnable()
         {

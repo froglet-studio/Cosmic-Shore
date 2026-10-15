@@ -55,6 +55,8 @@ namespace CosmicShore.Player
 
         public static int Main(string[] args)
         {
+            // The diagnostics overlay (F3) shown from the start: --diag, or the launcher's SETTINGS > GAME switch.
+            if (Environment.GetEnvironmentVariable("COSMIC_SHORE_DIAG") == "1") PlayerDiagnostics.StartVisible = true;
             string scene = null, screenshot = null;
             int frames = -1, width = 1600, height = 900;
             bool headless = false, quiet = false, reportRender = false;
@@ -85,6 +87,7 @@ namespace CosmicShore.Player
                     case "--frames" when i + 1 < args.Length: int.TryParse(args[++i], out frames); break;
                     case "--headless": headless = true; break;
                     case "--realtime": s_realtime = true; break;
+                    case "--diag": PlayerDiagnostics.StartVisible = true; break;
                     case "--render-from" when i + 1 < args.Length: int.TryParse(args[++i], out PlayerWindow.RenderFrom); break;
                     case "--quiet": quiet = true; break;
                     case "--yaml-roundtrip" when i + 2 < args.Length:
@@ -128,15 +131,6 @@ namespace CosmicShore.Player
                         break;
                     }
                     case "--view-model" when i + 1 < args.Length: ModelViewer.Path = args[++i]; break;
-                    case "--relay-server":
-                    {
-                        // --relay-server [UDP_PORT] [HTTP_PORT] [ADVERTISED_HOST]: run Froglet's relay and nothing else.
-                        int udp = 0, http = 0;
-                        if (i + 1 < args.Length && int.TryParse(args[i + 1], out int u)) { udp = u; i++; }
-                        if (i + 1 < args.Length && int.TryParse(args[i + 1], out int h)) { http = h; i++; }
-                        string host = i + 1 < args.Length && !args[i + 1].StartsWith("--") ? args[++i] : "127.0.0.1";
-                        return RelayServerMain(udp, http, host);
-                    }
                     case "--ugs-relay-check":
                     {
                         // --ugs-relay-check [REGION]: sign in two UGS players, allocate, join by code, connect through UGS
@@ -256,32 +250,6 @@ namespace CosmicShore.Player
         }
 
         /// <summary>
-        /// Froglet's relay as a process (docs/MULTIPLAYER.md §6.7): the Relay Allocations REST shape on HTTP_PORT
-        /// and Unity Relay's message protocol on UDP_PORT. Players use it with COSMIC_SHORE_RELAY=&lt;the URL it prints&gt;.
-        /// COSMIC_SHORE_RELAY_SECRET makes allocating need that bearer token. Runs until killed (Ctrl+C).
-        /// </summary>
-        static int RelayServerMain(int udpPort, int httpPort, string advertisedHost)
-        {
-            using var relay = CosmicShore.Engine.Networking.FrogletRelayServer.Start(udpPort, httpPort, advertisedHost);
-            relay.Secret = Environment.GetEnvironmentVariable("COSMIC_SHORE_RELAY_SECRET") is { Length: > 0 } secret ? secret.Trim() : null;
-            Console.WriteLine($"[relay] listening: udp {relay.UdpPort}, allocations {relay.BaseUrl} (COSMIC_SHORE_RELAY={relay.BaseUrl})");
-            Console.WriteLine(relay.Secret != null
-                ? "[relay] allocating needs the secret: players set COSMIC_SHORE_RELAY_SECRET to the same value"
-                : "[relay] allocating is open to anyone who reaches this port (set COSMIC_SHORE_RELAY_SECRET before facing the internet)");
-            var quit = new System.Threading.ManualResetEventSlim();
-            Console.CancelKeyPress += (_, e) => { e.Cancel = true; quit.Set(); };
-            AppDomain.CurrentDomain.ProcessExit += (_, _) => quit.Set();
-            long lastForwarded = -1;
-            while (!quit.Wait(30000))
-            {
-                if (relay.Forwarded == lastForwarded) continue;
-                lastForwarded = relay.Forwarded;
-                Console.WriteLine($"[relay] {relay.AllocationCount} allocation(s), {relay.Forwarded} forwarded, {relay.Refused} refused, binds {relay.BindsAccepted} ok / {relay.BindsRejected} rejected");
-            }
-            return 0;
-        }
-
-        /// <summary>
         /// The owner's one-command proof that UGS Relay works from Amoebius (docs/MULTIPLAYER.md §6.8): two UGS
         /// players (each keeps its session token in this profile's folder, so repeated runs reuse the same two),
         /// a host allocation and join code, a join, a connection through the relay and timed frames both ways.
@@ -341,6 +309,7 @@ namespace CosmicShore.Player
                 long tickStart = System.Diagnostics.Stopwatch.GetTimestamp();
                 if (control is { WantsFrame: true }) control.AfterPresent(_ => throw new InvalidOperationException("a --headless player draws nothing; start it with a window (xvfb-run on a server) to take screenshots"), width, height);
                 boot.Tick(1f / 60f);
+                if (boot.QuitNow) quit = true;
                 ParityRun.AfterTick(f);
                 double tickMs = System.Diagnostics.Stopwatch.GetElapsedTime(tickStart).TotalMilliseconds;
                 SessionReport.FrameTime(tickMs); // headless: a frame is one simulation tick

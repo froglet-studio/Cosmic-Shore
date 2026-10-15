@@ -7,9 +7,9 @@ namespace CosmicShore.Tests
 {
     /// <summary>
     /// The Stoat's own-vessel pass (<c>R_VesselActions/STOAT_DIPOLE.md</c> §1a–§1e), as pure arithmetic: the Charge
-    /// ripple's reach, front and victims (<see cref="StoatRippleMath"/>), and Time mode's timed slingshot and the orbit
-    /// arc the pathfinder draws (<see cref="StoatSlingMath.SweetSpot"/>, <see cref="StoatSlingMath.TimedKick"/>,
-    /// <see cref="StoatSlingMath.OrbitArc"/>).
+    /// ripple's reach, front and victims (<see cref="StoatRippleMath"/>), and Time mode's timed slingshot
+    /// (<see cref="StoatSlingMath.SweetSpot"/>, <see cref="StoatSlingMath.TimedKick"/>; the catch and its rings are held by
+    /// <c>StoatSlingTests</c>).
     /// </summary>
     public class StoatRippleTests
     {
@@ -84,23 +84,6 @@ namespace CosmicShore.Tests
             Assert.AreEqual(54f * 0.2f, StoatSlingMath.TimedKick(54f, 0f, 0.2f, 1f), 1e-4f, "missed: the miss share");
             Assert.AreEqual(108f, StoatSlingMath.TimedKick(54f, 1f, 0.2f, 2f), 1e-4f, "Time 10 doubles it");
             Assert.AreEqual(54f, StoatSlingMath.TimedKick(54f, 1f, 0.2f, 0.5f), 1e-4f, "Time never cuts it (floored at 1)");
-        }
-
-        [Test]
-        public void OrbitArc_RunsRoundTheCentreTheWayTheHullIsFlying_ToTheEndOfTheWindow()
-        {
-            var points = new Vector3[512];
-            var hull = new Vector3(100f, 0f, 0f);
-            var centre = Vector3.zero;
-            int n = StoatSlingMath.OrbitArc(hull, Vector3.forward, centre, 0f, 135f, 3f, points);
-            Assert.Greater(n, 10);
-            Assert.AreEqual(hull, points[0]);
-            for (int i = 0; i < n; i++) Assert.AreEqual(100f, points[i].magnitude, 1e-3f, "every point on the orbit");
-            Assert.Greater(points[1].z, 0f, "the arc leaves along the hull's heading");
-            float swept = Vector3.Angle(points[0], points[n - 1]);
-            Assert.AreEqual(135f, swept, 3f, "to the far edge of the window");
-            Assert.AreEqual(0, StoatSlingMath.OrbitArc(hull, Vector3.forward, centre, 140f, 135f, 3f, points) - 1,
-                "past the window there is nothing left to draw but the hull's own point");
         }
     }
 }

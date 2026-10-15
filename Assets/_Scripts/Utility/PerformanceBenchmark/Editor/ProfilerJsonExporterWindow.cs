@@ -32,7 +32,7 @@ namespace CosmicShore.Utility.PerformanceBenchmark.Editor
 
         const int MaxExportFrames = 2000;
 
-        [MenuItem("FrogletTools/Performance/Export Profiler Frames to JSON", false, 21)]
+        [MenuItem("FrogletTools/Performance/Export Profiler Frames to JSON", false, 171)]
         [FrogletTool(FrogletToolCategory.Performance, Importance = 4,
             Description = "Export what the Profiler holds (Play mode, a connected Development build, or a loaded .data file) as the prof JSON report.")]
         public static void Open()

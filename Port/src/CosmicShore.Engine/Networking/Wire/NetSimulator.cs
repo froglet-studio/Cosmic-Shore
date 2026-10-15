@@ -144,9 +144,10 @@ namespace CosmicShore.Engine.Networking
         }
     }
 
-    internal sealed class SimulatedTransportFactory : INetTransportFactory
+    internal sealed class SimulatedTransportFactory : INetTransportFactory, IWrappingTransportFactory
     {
         readonly INetTransportFactory _inner;
+        public INetTransportFactory Inner => _inner;
         readonly Func<NetSimSettings> _settings;
 
         public SimulatedTransportFactory(INetTransportFactory inner, Func<NetSimSettings> settings)

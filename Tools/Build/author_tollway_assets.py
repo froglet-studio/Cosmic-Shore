@@ -335,9 +335,10 @@ for _dirpath, _dirnames, _filenames in os.walk(os.path.join(ROOT, SCRIPTS_DIR)):
             _script_names[_m.group(1)] = _fn[:-len(".cs.meta")]
 
 # Which of those classes are actually flora GROWTH RULES. Read from the declaration rather than
-# assumed from the file name, because two prefabs in the flora folder carry components that are
-# not Flora at all (SeaweedFlora's SegmentSpawner, oldWallFlora's GyroidAssembler) and counting
-# them would inflate "how many families does the project ship" by two.
+# assumed from the file name, because a prefab in the flora folder can carry a component that is
+# not a Flora at all (SeaweedFlora's SegmentSpawner; oldWallFlora's GyroidAssembler was the second
+# until that prefab was deleted, 2026-10-14) and counting it would inflate "how many families does
+# the project ship".
 _flora_subclasses = set()
 for _dirpath, _dirnames, _filenames in os.walk(os.path.join(ROOT, SCRIPTS_DIR)):
     for _fn in _filenames:
@@ -1115,7 +1116,7 @@ if _anchor_outer_world - _anchor_inner_world < 100.0:
 # is that each setting is visibly a different place. The bar is DERIVED from what the project
 # actually ships rather than written as a literal - count the distinct growth components across
 # the flora prefabs (a component that derives from Flora, which is what excludes SeaweedFlora's
-# SegmentSpawner and oldWallFlora's GyroidAssembler), and require the roster to span as many of
+# SegmentSpawner), and require the roster to span as many of
 # them as four intensities can.
 _families_available = set()
 for _fn in sorted(os.listdir(os.path.join(ROOT, FLORA_PREFAB_DIR))):

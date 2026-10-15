@@ -52,7 +52,12 @@ namespace CosmicShore.Player
             if (device is IGamepad g)
             {
                 if (connected) Hook(g);
-                else if (_pads.Remove(g, out var pad)) InputSystem.RemoveDevice(pad);
+                else if (_pads.Remove(g, out var pad))
+                {
+                    pad.ResetHaptics();
+                    InputSystem.RemoveDevice(pad);
+                }
+                MapXInputSlots();
             }
         }
 
@@ -167,9 +172,47 @@ namespace CosmicShore.Player
             if (_pads.ContainsKey(g)) return;
             var pad = InputSystem.AddDevice<Gamepad>(g.Name);
             _pads[g] = pad;
-            g.ButtonDown += (_, b) => { if (PadButton(pad, b.Name) is { } c) Press(c); };
+            // The pad a player presses becomes Gamepad.current, as in Unity: the game rumbles that one.
+            g.ButtonDown += (_, b) => { pad.MakeCurrent(); if (PadButton(pad, b.Name) is { } c) Press(c); };
             g.ButtonUp += (_, b) => { if (PadButton(pad, b.Name) is { } c) Release(c); };
+            pad.MotorOutput = (low, high) => Rumble(g, low, high);
+            MapXInputSlots();
         }
+
+        // ── rumble ───────────────────────────────────────────────────────
+
+        /// <summary>GLFW joystick id → XInput slot (Windows); see <see cref="XInputSlots"/>.</summary>
+        Dictionary<int, int> _xinputSlots = new();
+
+        void MapXInputSlots()
+        {
+            if (!XInputRumble.Available) return;
+            _lastMap = Environment.TickCount64;
+            var glfw = Silk.NET.GLFW.Glfw.GetApi();
+            var joysticks = new List<(int, string)>();
+            foreach (var g in _pads.Keys) joysticks.Add((g.Index, glfw.GetJoystickGUID(g.Index)));
+            _xinputSlots = XInputSlots.Assign(joysticks, XInputRumble.ConnectedSlots());
+        }
+
+        /// <summary>
+        /// The game's motor speeds to the device. A backend that exposes the pad's motors (SDL's, on
+        /// phones) takes them directly; GLFW exposes none, so on Windows they go to the pad's XInput slot.
+        /// </summary>
+        void Rumble(IGamepad g, float low, float high)
+        {
+            var motors = g.VibrationMotors;
+            if (motors.Count >= 2) { motors[0].Speed = low; motors[1].Speed = high; return; }
+            if (motors.Count == 1) { motors[0].Speed = Math.Max(low, high); return; }
+            if (!_xinputSlots.TryGetValue(g.Index, out var slot) && (low > 0f || high > 0f) && Environment.TickCount64 - _lastMap > 2000)
+            {
+                // XInput can report a slot a moment after GLFW reports the pad: match again, at most every 2 s.
+                MapXInputSlots();
+                _xinputSlots.TryGetValue(g.Index, out slot);
+            }
+            if (_xinputSlots.ContainsKey(g.Index)) XInputRumble.Set(slot, low, high);
+        }
+
+        long _lastMap;
 
         static ButtonControl PadButton(Gamepad pad, ButtonName b) => b switch
         {
@@ -233,6 +276,8 @@ namespace CosmicShore.Player
         public void Dispose()
         {
             _input.ConnectionChanged -= OnConnectionChanged;
+            // A pad left rumbling when the game closes keeps rumbling.
+            foreach (var pad in _pads.Values) pad.ResetHaptics();
             InputSystem.RemoveDevice(_keyboard);
             InputSystem.RemoveDevice(_mouse);
             foreach (var pad in _pads.Values) InputSystem.RemoveDevice(pad);

@@ -1,10 +1,14 @@
-# STOAT — the slingshot vessel (prototype, 2026-10-08)
-
-> **2026-10-13 — ITS OWN VESSEL.** The orbit sling below is back as **TIME MODE** (B switches Mass and Time;
-> `STOAT_DIPOLE.md` §1a–§1b), now with a **timed** release: the whole kick a quarter-turn round, a fifth outside the
-> window. Mass mode flies the round-15 **field dipole** (`STOAT_DIPOLE.md`). The Squirrel prefab this was cloned from
-> is gone from it: §4's "kept as prototype debt" paragraph is resolved (stage 6 of the generator), and §6's open slots
-> are designed and shipped (`STOAT_DIPOLE.md` §5). Read STOAT_DIPOLE.md first; this file is the orbit's own record.
+> **2026-10-14 — TIME MODE IS THE CATCH, NOT THIS ORBIT.** Played, the orbit below put the attractor square beside the
+> hull (off the chase camera) and started circling on the press, so the pilot "couldn't see the poles at all and was just
+> pulled right or left". Time mode is now the studio's round-6 dipole sling: a LIGHT pair laid ahead, two rings
+> (detection and orbit radius) in place of the path, a catch as you pass, the 90° timed release
+> (`STOAT_DIPOLE.md` §1b). §1–§2 below are the round-4 orbit's own record; what they say about where the pair is laid,
+> `orbitHorizons` and the circular-orbit GM no longer ships.
+>
+> **2026-10-13 — ITS OWN VESSEL.** B switches Mass and Time (`STOAT_DIPOLE.md` §1a). Mass mode flies the round-15
+> **field dipole** (`STOAT_DIPOLE.md`). The Squirrel prefab this was cloned from is gone from it: §4's "kept as
+> prototype debt" paragraph is resolved (stage 6 of the generator), and §6's open slots are designed and shipped
+> (`STOAT_DIPOLE.md` §5). Read STOAT_DIPOLE.md first; this file is the orbit's own record.
 
 > **Naming.** Player-facing, the Stoat lays **WORMHOLES**: an **attractor** (pulls) and a
 > **repulsor** (pushes), an attractor–repulsor pair. In code they are still the black-hole system's

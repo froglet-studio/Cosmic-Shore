@@ -223,8 +223,8 @@ always-on sphere cannot dust in Mass mode. Fleet-wide nothing reacts to a skimme
 side either (measured 2026-10-09: eight `VesselContainers/*.asset` author `vesselSkimmerEffects: []`
 and Dolphin/Urchin omit the key; `PrismImpactor`'s skimmer list is never assigned). It vacuums crystals toward the hull like every other skimmer
 (`vacuumCrystal`, 80). Both are authored by `Tools/Build/author_butterfly_dust.py` (its `--check`
-fails if the far field stops pointing at the catcher or its container gains an effect) and mirrored
-by the Create Butterfly Vessel tool.
+fails if the far field stops pointing at the catcher or its container gains an effect); the shipped
+`Butterfly.prefab` carries the same wiring.
 
 The same pass wired the dust capsule's `onSkimmerShipImpact` (`EventOnSkimmerShipCollision`, as
 every other hull): it was null, and `Skimmer.ExecuteImpactOnShip` raises it unguarded after the
@@ -473,8 +473,9 @@ carries a `NetworkObject` whose `GlobalObjectIdHash` Unity computes — a hand-a
 collides breaks scene synchronization for every later joiner with no error
 (`Docs/PartySystem/BUGS.md` B16), and the same is true of the nested prefab instances.
 
-Run **FrogletTools ▸ Vessels ▸ Create Butterfly Vessel**, read its report, then use its
-**Validate & Push** panel. Anything the report lists as `UNWIRED` is a real gap, not a warning.
+The Create Butterfly Vessel tool built `Assets/_Prefabs/Spacevessels/Butterfly.prefab`, its HUD
+variant, class, actions and camera assets, and was retired on 2026-10-14 once they shipped. Verify
+the prefab with the fleet audits under **FrogletTools ▸ Vessels ▸ Audits**.
 
 ## 8. In-editor verification
 

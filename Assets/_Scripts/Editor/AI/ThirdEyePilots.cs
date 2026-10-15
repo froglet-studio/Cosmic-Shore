@@ -37,6 +37,42 @@ namespace CosmicShore.Editor.AI
         }
     }
 
+    /// <summary>
+    /// One pilot's recent path: a ring buffer of (position, game time) the Third Eye draws as its trajectory.
+    /// Fixed capacity, so sampling allocates nothing after the first point.
+    /// </summary>
+    public sealed class ThirdEyeTrail
+    {
+        readonly Vector3[] _points;
+        readonly float[] _times;
+        int _start;
+
+        public ThirdEyeTrail(int capacity)
+        {
+            _points = new Vector3[Mathf.Max(2, capacity)];
+            _times = new float[_points.Length];
+        }
+
+        public int Count { get; private set; }
+
+        public void Add(Vector3 point, float time)
+        {
+            int at = (_start + Count) % _points.Length;
+            _points[at] = point;
+            _times[at] = time;
+            if (Count < _points.Length) Count++;
+            else _start = (_start + 1) % _points.Length;
+        }
+
+        /// <summary>Point <paramref name="i"/>, oldest first.</summary>
+        public void Get(int i, out Vector3 point, out float time)
+        {
+            int at = (_start + i) % _points.Length;
+            point = _points[at];
+            time = _times[at];
+        }
+    }
+
     /// <summary>What an AI is doing this frame, read from its pilot's public diagnostics.</summary>
     public struct ThirdEyeThinking
     {
@@ -126,7 +162,9 @@ namespace CosmicShore.Editor.AI
         /// <summary>
         /// The pilot's aim this frame. The Skim Race pilot reports its aim point, its state and its
         /// difficulty mistakes (the colours the Squirrel studio uses: amber = not noticed yet,
-        /// ruby = misjudged); any other hull on the platform autopilot reports the point it wants to reach.
+        /// ruby = misjudged); any other hull on the platform autopilot reports the point it wants to reach,
+        /// and - where the mode says (<see cref="AIPilot.Objective"/>, every gate race) - the ring it is after, the lap,
+        /// the phase ("Approach ring 3", "Riding the rail", a difficulty mistake) and its boost policy's decision.
         /// </summary>
         public static ThirdEyeThinking Read(ThirdEyePilot pilot)
         {
@@ -181,14 +219,40 @@ namespace CosmicShore.Editor.AI
             var ai = pilot.Autopilot;
             if (ai && ai.AutoPilotEnabled)
             {
+                var o = ai.Objective;
                 t.Has = true;
                 t.Pilot = "Platform autopilot";
                 t.Aim = ai.TargetPosition;
-                t.State = ai.IsBreakingOrbit ? "Breaking orbit" : "Seeking";
-                t.Color = ai.IsBreakingOrbit ? FrogletEditorPalette.Violet : FrogletEditorPalette.Azure;
-                t.Detail = $"target {Vector3.Distance(pilot.Hull.position, ai.TargetPosition):F0} u away";
+                t.HasTarget = o.Has;
+                t.Target = o.Objective;
+                t.State = ai.IsBreakingOrbit ? "Breaking orbit" : o.Has ? PhaseText(o, pilot) : "Seeking";
+                t.Color = ai.IsBreakingOrbit ? FrogletEditorPalette.Violet
+                    : o.Has && o.Mistake ? FrogletEditorPalette.Ruby
+                    : FrogletEditorPalette.Azure;
+                string lap = o.Has && o.Lap > 0 ? $"lap {o.Lap}, " : "";
+                string objective = o.Has ? $"{Vector3.Distance(pilot.Hull.position, o.Objective):F0} u to it, " : "";
+                string boost = ai.BoostStatus;
+                t.Detail = $"{lap}{objective}steering at a point {Vector3.Distance(pilot.Hull.position, ai.TargetPosition):F0} u away" +
+                           (boost != null ? $" | boost {boost}" : "");
             }
             return t;
+        }
+
+        /// <summary>The mode's report in words. Editor-side, so the game never formats a string per frame.</summary>
+        static string PhaseText(in AIPilot.ObjectiveReport o, ThirdEyePilot pilot)
+        {
+            string ring = o.Ring >= 0 ? $" ring {o.Ring + 1}" : "";
+            return o.Phase switch
+            {
+                AIPilot.ObjectivePhase.Approach => "Approach" + ring,
+                AIPilot.ObjectivePhase.Through => "Through" + ring,
+                AIPilot.ObjectivePhase.CrystalDetour => "Crystal on the way to" + ring,
+                AIPilot.ObjectivePhase.NotNoticed => "Not noticed yet:" + ring,
+                AIPilot.ObjectivePhase.Misjudged => "Misjudged" + ring,
+                AIPilot.ObjectivePhase.Override => pilot.Status && pilot.Status.IsAttached ? "Riding the rail" : "Heading for its own rail",
+                AIPilot.ObjectivePhase.Finished => "Finished",
+                _ => "Seeking",
+            };
         }
 
         const string GameColorSetPath = "Assets/_SO_Assets/Color Palettes/OriginalColorSetSO.asset";

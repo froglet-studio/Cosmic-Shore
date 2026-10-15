@@ -96,8 +96,8 @@ Material:
     m_Floats:
     - _DepthDriven: 0
     - _FaceSplit: 0.5
-    - _PlateScaleStart: 0.5
-    - _Reach: 2.0
+    - _PlateScaleStart: 0.6
+    - _Reach: 3
     - _SplitUnit: 0.236983
     - _Thickness: 1
     - _ThicknessInward: 1
@@ -137,5 +137,6 @@ Material:
     - _EmissionColor: {r: 0, g: 0, b: 0, a: 1}
     - _SpecColor: {r: 0.19999996, g: 0.19999996, b: 0.19999996, a: 1}
     - _Spread: {r: 0.01, g: 0.01, b: 0.01, a: 0}
+    - _StrikeColor: {r: 0.85, g: 0.95, b: 1, a: 1}
   m_BuildTextureStacks: []
   m_AllowLocking: 1

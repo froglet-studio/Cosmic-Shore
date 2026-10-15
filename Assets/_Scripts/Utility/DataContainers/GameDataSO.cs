@@ -176,11 +176,11 @@ namespace CosmicShore.Utility
         [NonSerialized] public AIDifficulty RequestedAIDifficulty = AIDifficultyRules.Default;
 
         /// <summary>
-        /// The HULLS teammates picked for their ally AI on the launch panel, parallel to
-        /// <see cref="RequestedAIDomains"/> (entry i is bot i). <see cref="VesselClassType.Random"/>
-        /// - and anything past the end of the list - means "no pick: draw from the card". Only
-        /// ally seats read it; an opponent seat flies <see cref="OpponentAIVesselClass"/> when
-        /// the card pins one (<see cref="AIHullSeating"/>). Host-side, [NonSerialized], same
+        /// The HULLS picked for the AI seats on the launch panel (a teammate's for an ally, the
+        /// host's for any seat), parallel to <see cref="RequestedAIDomains"/> (entry i is bot i).
+        /// <see cref="VesselClassType.Random"/> - and anything past the end of the list - means "no
+        /// pick": an opponent seat then flies <see cref="OpponentAIVesselClass"/> when the card pins
+        /// one, any other seat draws from the card (<see cref="AIHullSeating.SeatHull"/>). Host-side, [NonSerialized], same
         /// lifetime as the domain list.
         /// </summary>
         [NonSerialized] public List<VesselClassType> RequestedAIVessels = new();
