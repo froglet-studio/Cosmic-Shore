@@ -215,6 +215,7 @@ bond), which is why the scenario set gains an S6.
 | 10-09 | **Per-system profiling without Unity.** Amoebius's (the engine under `Port/`, renamed from Prisma 2026-10-09) `ProfilerMarker` was a no-op, so every `diag` marker read 0 there. The engine now records each marker the game times (time, calls and **bytes allocated** per frame, loop thread), and the game's unchanged `diag` reports real numbers in Amoebius's Debug player (`--do console diag`). Also closed the 9 live-compile gaps that kept the game from building in Amoebius. One command runs a match and writes the markers: `python3 Port/tools/amoebius_markers_run.py` (`Port/docs/ARCHITECTURE.md` §11.3b) | Skim Race I2, 3 seats (2 AI), 1800 frames, fully-optimised JIT: the ranking matches the 10-08 Unity `diag` (`Pilot.Update` 0.49, `Decide` 0.45, `TrackMpc` 0.40, `PoolRefill.Squirrel Prism` 0.07, `ShellContact.Query` 0.06 ms/frame). **New lead: `PoolRefill.Squirrel Prism` allocates ~9 KB/frame**, about a third of the 30 KB/frame in Unity, and `PoolActivate` ~0.7 KB; `LightFauna.Feed` ~1.2 KB when fauna are in the cell. Hypothesis until a Unity `prof` (sort GC) confirms it. Repeatability: allocations ~1%, ms 5-10% between identical runs |
 | 10-14 | Merged `bleeding-edge` `d0ee1c45d` (668 commits; Prisma → **Amoebius**; the Vessel Studio; UGS-only online play; the FrogletTools menu reorganised) and re-checked this effort on the result. Upstream had closed five of the nine engine gaps this branch filled on 10-09 (`attachedRigidbody`, `OverlapBoxNonAlloc`, `EventStopTrigger`, `CopyTexture`, `CullMode`/`RenderQueue`) its own way; those took upstream's version and this branch's duplicates were deleted. The marker collector, `capture`, the Capture Performance window and the reader are not upstream and stay. **None of §3.6's five owed tests was done upstream**, and the perf record itself had no upstream change. Upstream's `Docs/QA/DEV_TASKS.md` DT-003 lists the 35 red edit-mode tests, which covers the `RaceRankToastDriver` and `SparrowCombatTier` failures this branch's Amoebius run of the suite showed (559/569, pre-existing). `Tools/Build/prisma_markers_run.py` is now `amoebius_markers_run.py` | Amoebius Debug build, engine tests, `unity_refcompile player-dev` (RESULT OK) all green on the merged tree; `/verify-unity` still unavailable |
 | 10-15 | Merged this effort into **`Ys-bleeding-edge`** (the owner's working branch; it already carried `bleeding-edge` `d9b143d38`), so the capture tooling runs there. Amoebius did not build on that tree: upstream `41a53b61c` (browser Toybox boot) made `OfflineModeService` use Netcode's `SinglePlayerTransport`, which the engine lacked - a stand-in was added. `capture` now records **every enabled camera**: a second camera (the Third Eye window, a preview, a Scene view) renders the world again, and the reader warns when it sees more than one, so "fewer frames with Third Eye open" is a measured fact, not a guess | Amoebius Debug build + a real `capture` on the Ys tree (cameras: `1 enabled`), engine tests 1979/1979, `unity_refcompile player-dev` OK, gates clean |
+| 10-15 | **The perf-hunt system** (§3.4): `perf_hunt.py` (gates, collect every shared capture from every branch, compare with baselines, the Amoebius allocation gate, the sweep that writes `Docs/Reports/PERFORMANCE.md` and files team tasks), `/perf-hunt` (the resolve loop and the checklist every C# change is held to), `.github/workflows/perf-daily.yml` (once a day from `bleeding-edge`), the Performance area in `Docs/Reports/areas.json`. Rides the Bug Hunt check-in's shared perf JSONs (Yash's `BugHuntReports`) exactly as `/bug-ledger` rides its issues. First run: gates green except as recorded; 68 scan findings recorded as the count to beat; the first Amoebius Skim Race allocation baseline committed | Before this nothing checked performance on a schedule: `unity-ci` compiles weekly and `amoebius-parity-ci` smokes the engine on push, neither measures a frame |
 
 ### 2.1 How the picture changed
 
@@ -375,11 +376,24 @@ overrides (`PrismSwaySpan*`/`Axis`/`Timing`, 48 B per entity) for the health-pri
 (`ECOSYSTEM.md §47`). That is more per-instance data to upload per prism; nothing measured says it
 matters. Watch the GPU row in S2/S6.
 
-### 3.4 Step 3 — a performance gate
+### 3.4 Step 3 — the performance gate (built 2026-10-15: the perf-hunt system)
 
-CI runs no Unity job (`UNITY_RUNNER_LABEL` unset), so nothing stops a regression. The pieces
-exist (`-csmbench` dev-build self-runner, `BenchmarkComparison`, `MetricDeltaTests`). Once the
-scenario set exists, a nightly `-csmbench` on S1–S6 with a budget per scenario is the gate.
+CI still runs no Unity job (`UNITY_RUNNER_LABEL` unset), so the gate is built from what runs without one,
+and the editor's numbers reach it through the Bug Hunt check-in. Three pieces, one script
+(`Tools/Build/perf_hunt.py`, `--self-test`), one skill (`/perf-hunt`), one workflow:
+
+| Piece | What | When |
+|---|---|---|
+| **`perf_hunt.py gates`** | the static allocation gates (`check_mathf_params_alloc`, the two Burst MathF gates, console logging) and `scan_perframe_allocations.py`'s counts against the recorded counts (`Docs/perf/perf_hunt_state.json`): a new per-frame allocation site is a regression the day it lands | every sweep |
+| **`perf_hunt.py collect` / `compare`** | every `capture_*.json` an editor shared (`BugLedger/shared/reports/<user>/perf/`, every origin branch, the way `bug_ledger.py collect` reads issues), judged by `perf_capture_report.py` (validity first) and compared with `Docs/perf/baselines.json` per `scene\|label`: CPU busy +15 % (≥ 0.5 ms), p95 +15 %, GC +25 % (≥ 2 KB/f), a marker +30 % (≥ 0.2 ms), or a prism-path change | every sweep |
+| **`perf_hunt.py amoebius`** | `amoebius_markers_run.py` for a mode; **allocations per marker vs `Docs/perf/amoebius_baselines.json`** (+10 %, ≥ 0.05 KB/f; they repeat to ~1 %, so this is a same-day gate); milliseconds only watched (+25 %) | daily, and before/after a fix |
+| **`perf_hunt.py sweep --write --tasks`** | gates + collect (+ `--amoebius`) → the generated block of `Docs/Reports/PERFORMANCE.md`, and one `Docs/TEAM_TASKS.md` task (area Performance) per NEW regression | daily, any session |
+| **`.github/workflows/perf-daily.yml`** | 05:40 UTC on `bleeding-edge`: the sweep (strict: red on a gate or a baseline count), and the Amoebius Skim Race run against the committed allocation baseline; artifacts `perf-sweep`, `perf-amoebius` | every day |
+| **`/perf-hunt`** | the resolve loop: validity → rank by measured ms and KB → pick by §3.3 / never §3.5 → fix against the checklist → prove before/after → `/bug-closeout` + `--adopt` the new baseline | a scheduled session, or anyone |
+
+The first measurement of a key becomes its baseline (bootstrap); a baseline is only ever replaced after a
+confirmed improvement (`--adopt`), never to make a run green. The `-csmbench` dev-build self-runner stays the
+build-side instrument for the day a Unity runner exists.
 
 ### 3.5 Do NOT redo these — measured dead
 

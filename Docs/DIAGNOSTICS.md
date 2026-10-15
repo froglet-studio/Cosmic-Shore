@@ -306,6 +306,11 @@ next play run ◄── editor ADOPTS the published fix (open → validating) �
 
 ### The Bug Hunt check-in
 
+The **perf** kind it shares (`capture_*.json`, `diag_*`, `prof_*`) is read by the performance system's sweep
+(`Tools/Build/perf_hunt.py collect`, every branch) and judged against `Docs/perf/baselines.json`; a regression
+becomes a Performance task on `Docs/TEAM_TASKS.md` and `/perf-hunt` resolves it (`Docs/PERFORMANCE_OPTIMIZATION.md` §3.4).
+
+
 Every editor already records what goes wrong — the ledger (one issue per red signature), Yash's
 **redlog** (`Logs/RedConsole/redconsole_*.log`, every red line of a play session with context), the
 Crash Detector (`Logs/CrashDetector/Crash-*.log`) and the DiagnosticsHUD's performance JSONs

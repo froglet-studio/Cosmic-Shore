@@ -35,6 +35,11 @@
   list, how to measure without fooling yourself). Then `Docs/MEMORY_AUDIT.md` (what the game HOLDS) and
   `Docs/PLATFORM_UNIFICATION.md` (device tiers: Desktop / MobileHigh / MobileLow, the trail cap, one codebase
   for Windows, iOS and Android). The next session's brief: `Docs/prompts/PERFORMANCE_NEXT_SESSION_PROMPT.md`.
+- **The performance system** (`/perf-hunt`, `Tools/Build/perf_hunt.py`, `.github/workflows/perf-daily.yml`): once a day
+  from `bleeding-edge` the static gates run, every capture a collaborator's editor shared is judged against its baseline,
+  and the game's markers are measured in Amoebius with allocations as the gate; a regression becomes a team task and
+  `/perf-hunt` is how it is resolved (rank by measured cost, fix against the checklist, prove before/after, adopt the
+  new baseline). `Docs/PERFORMANCE_OPTIMIZATION.md` §3.4.
 - **One measurement, one file:** `capture <label> 15` in the HUD console (or FrogletTools ▸ Performance ▸ Capture
   Performance) runs burst + diag + prof + renderers + cells and leaves ONE JSON on the clipboard;
   `Tools/Build/perf_capture_report.py` judges it (validity first). Ask for this, never for screenshots.
