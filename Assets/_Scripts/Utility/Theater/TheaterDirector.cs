@@ -164,6 +164,28 @@ namespace CosmicShore.Utility
                 return;
             }
 
+            PlayFile(path);
+        }
+
+        /// <summary>
+        /// Load and play one recording by path. The key (8) plays the newest one through here, and
+        /// the replay service plays a chosen replay through here, so both get the same stage, shots
+        /// and transport. False, with the reason on the overlay, when it cannot play.
+        /// </summary>
+        public bool PlayFile(string path)
+        {
+            if (_recorder.IsRecording)
+            {
+                Report("Theater: stop recording (9) before playing back.");
+                return false;
+            }
+
+            if (string.IsNullOrEmpty(path) || !File.Exists(path))
+            {
+                Report($"Theater: no recording at {path}");
+                return false;
+            }
+
             TheaterRecording recording;
             string error;
             try
@@ -172,23 +194,24 @@ namespace CosmicShore.Utility
                 if (!TheaterRecording.TryRead(stream, out recording, out error))
                 {
                     Report($"Theater: cannot read {Path.GetFileName(path)} - {error}");
-                    return;
+                    return false;
                 }
             }
-            catch (IOException e) { Report($"Theater: cannot open recording - {e.Message}"); return; }
-            catch (UnauthorizedAccessException e) { Report($"Theater: cannot open recording - {e.Message}"); return; }
+            catch (IOException e) { Report($"Theater: cannot open recording - {e.Message}"); return false; }
+            catch (UnauthorizedAccessException e) { Report($"Theater: cannot open recording - {e.Message}"); return false; }
 
             if (_cameraManager == null) _cameraManager = FindAnyObjectByType<CameraManager>();
 
             if (!_playback.Begin(recording, Config, _cameraManager))
             {
                 Report("Theater: recording has no tracks.");
-                return;
+                return false;
             }
 
             Report($"Theater: playing {Path.GetFileName(path)} " +
                    $"({recording.Tracks.Count} vessels, {recording.Duration:0.0}s)");
             CSDebug.LogVerbose(CSLogChannel.ArcadeMatch, $"[Theater] playing {path}");
+            return true;
         }
 
         static string FindMostRecent(string folder)
