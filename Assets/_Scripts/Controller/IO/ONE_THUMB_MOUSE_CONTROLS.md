@@ -236,6 +236,16 @@ deflection (then clamped to the unit circle); they never touch the mouse stick's
 go of a key leaves the mouse exactly where it was. The silent-mouse diagnostics still watch the
 **mouse's** share only, so WASD steering cannot hide a dead mouse delta.
 
+**The cursor lock is taken twice (2026-10-15).** In the Breakwater preview the mouse buttons and
+keys worked but `Mouse.current.delta` read 0 px/s for the whole flight (no gamepad connected, Game
+view, Play Focused), while clicks in the Game view changed nothing. The one cure the playtester
+found was a focus round-trip — pressing the Windows key — after which the mouse flew perfectly.
+A lock taken mid-play with no focus change evidently does not always take in the Editor; a match
+never showed it because its lock is taken as play starts. So activation and resume now arm a
+**relock pulse** (`ArmRelock`): one frame later the lock is released and re-taken, the in-process
+version of that round-trip. If the mouse is still dead after it, the 3 s `[MouseFlight]` warning
+says so and names this.
+
 **The keys live in the QWER + Space cluster**, so one resting left hand reaches every one of them
 without the right hand leaving the mouse. They are assigned in **reverse priority order**: the two
 mouse buttons carry the highest-priority abilities, so only two more keys are needed — Space takes

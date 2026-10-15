@@ -140,6 +140,7 @@ namespace CosmicShore.Gameplay
             ResetInput();
             ResetStrategyState();
             LockCursor(true);
+            ArmRelock();
             activeSince = Time.unscaledTime;
             sawMouseMovement = false;
 
@@ -181,6 +182,7 @@ namespace CosmicShore.Gameplay
         {
             base.OnResumed();
             LockCursor(true);
+            ArmRelock();
             SnapshotButtons();
         }
 
@@ -189,6 +191,8 @@ namespace CosmicShore.Gameplay
             var mouse = Mouse.current;
             var keyboard = Keyboard.current;
             if (mouse == null) return;
+
+            StepRelock();
 
             var pixelDelta = mouse.delta.ReadValue();
             ReportIfMouseIsSilent(pixelDelta);
@@ -255,7 +259,9 @@ namespace CosmicShore.Gameplay
                     "half-working. Check the Input System's Update Mode (a project set to " +
                     "'Process Events In Fixed Update' delivers no delta to Update - this project " +
                     "ships NO InputSystem settings asset, so it is on the package default) and " +
-                    "that the Game view has focus with the cursor captured.");
+                    "that the Game view has focus with the cursor captured. In the Editor, if a " +
+                    "focus round-trip (alt-tab away and back) makes the mouse start working, the " +
+                    "cursor lock did not take - see ArmRelock.");
             }
             else if (deltaPixelsSinceActive < deadZonePixels)
             {
@@ -645,6 +651,36 @@ namespace CosmicShore.Gameplay
                           || (mouse != null && mouse.middleButton.isPressed);
         }
 
+        /// <summary>
+        /// Frames left in the relock pulse - see <see cref="ArmRelock"/>. 0 = idle.
+        /// </summary>
+        int relockFrames;
+
+        /// <summary>
+        /// Lock the cursor a SECOND time, a frame after the first, by releasing and re-taking it.
+        ///
+        /// <para><b>Why.</b> In the Editor, a lock taken mid-play with no focus change - which is
+        /// exactly what tapping into a microgame preview does - can leave the cursor hidden while
+        /// <c>Mouse.current.delta</c> reads zero for the rest of the flight: buttons and keys
+        /// work, mouse movement never arrives. Reported from the Breakwater preview, where the
+        /// only cure the playtester found was a focus round-trip (pressing the Windows key), which
+        /// makes Unity re-apply the lock. A match never hit it because its lock is taken as play
+        /// starts, alongside a focus change. Releasing and re-taking the lock is the in-process
+        /// version of that round-trip. Costs two frames of a hidden, unlocked cursor, once per
+        /// activation or resume.</para>
+        /// </summary>
+        void ArmRelock() => relockFrames = 2;
+
+        void StepRelock()
+        {
+            if (relockFrames <= 0) return;
+            relockFrames--;
+            if (relockFrames == 1)
+                Cursor.lockState = CursorLockMode.None;   // stays hidden: Cursor.visible is untouched
+            else
+                LockCursor(true);
+        }
+
         static void LockCursor(bool locked)
         {
             Cursor.lockState = locked ? CursorLockMode.Locked : CursorLockMode.None;
@@ -664,6 +700,7 @@ namespace CosmicShore.Gameplay
             minimumSpeedStraightEffectsStarted = false;
             publishedDeflection = Vector2.zero;
             mouseDeflection = Vector2.zero;
+            relockFrames = 0;
             deadFlightReported = false;
             deltaPixelsSinceActive = 0f;
         }
