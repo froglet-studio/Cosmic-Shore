@@ -264,6 +264,8 @@ vessel-telemetry discovery, so the priority chain becomes explicit â†’ profile â
 | HUD (base / derived) | `Assets/_Scripts/UI/MiniGameHUD.cs`, `MultiplayerHUD.cs` |
 | HUD views | `Assets/_Scripts/UI/View/MinigameHUDView.cs`, `MultiplayerHUDView.cs` |
 | End-game scoreboard | `Assets/_Scripts/UI/Scoreboard.cs` |
+| End-game scoreboard panel (style B, item 12d - replaced the nested `GameOverPanel` instance) | `Assets/_Prefabs/UI Elements/In Game/ScoreboardPanel.prefab`, `ScoreboardRow.prefab`, `ScoreboardStat.prefab` |
+| Style-B in-game UI generator (owns the HUD chrome, pause, connecting, reveal, scoreboard, feed) | `Tools/Build/author_ingame_hud.py` (`--check`, `--self-test`); `Docs/MENU_REDESIGN_B.md` section 22 |
 | Per-mode stats | `Assets/_Scripts/Controller/Vessel/EventDrivenStatsProvider.cs` |
 | Kit config asset | `Assets/Resources/GameModePrefabKit.asset` |
 | Kit window | `Assets/_Scripts/Editor/FrogletTools/GameModePrefabKitWindow.cs` |

@@ -13,10 +13,10 @@ MonoBehaviour:
   m_Name: GameToastSettings
   m_EditorClassIdentifier: 
   slideInDuration: 0.25
-  slideInOffset: 120
+  slideInOffset: -120
   slideInEase: 9
-  ageAfterSeconds: 3
-  agedAlpha: 0
+  ageAfterSeconds: 6
+  agedAlpha: 0.5
   ageFadeDuration: 1
   maxRetainedEntries: 5
   autoScrollToBottom: 1

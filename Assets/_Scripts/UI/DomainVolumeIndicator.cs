@@ -178,6 +178,17 @@ namespace CosmicShore.UI
             EnsureCentreGlyph();
         }
 
+        /// <summary>
+        /// Give a runtime-added indicator its centre glyph (MenuMiniGameHUD adds the component in
+        /// code, so it cannot carry the serialized one). Safe before or after the hex is built.
+        /// </summary>
+        public void SetCentreGlyph(Sprite glyph, float size = 44f)
+        {
+            centreGlyph = glyph;
+            centreGlyphSize = size;
+            if (hexGraphic) EnsureCentreGlyph();
+        }
+
         void EnsureCentreGlyph()
         {
             if (!centreGlyph) return;

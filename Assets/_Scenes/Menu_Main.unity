@@ -7966,6 +7966,7 @@ MonoBehaviour:
   canvasGroup: {fileID: 1960000003}
   volumePauseButton: {fileID: 1960000012}
   domainVolumeIndicator: {fileID: 0}
+  exitGlyph: {fileID: 21300000, guid: 61e79068f1c80011533b39811125f577, type: 3}
   crystalClickHandler: {fileID: 1486013850}
   onShipHUDInitialized: {fileID: 11400000, guid: a03bc39518f9381478a7a3957f9d44af,
     type: 2}

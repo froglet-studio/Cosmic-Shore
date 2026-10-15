@@ -884,6 +884,83 @@ def patch_scoreboard(p):
     p.replace(sb, d)
 
 
+# --------------------------------------------------------------------------------------------
+# 12e - the in-match feed (GameFeedText.prefab, NotificationUI.prefab, GameToastSettings.asset)
+# --------------------------------------------------------------------------------------------
+
+FEED = "Assets/_Prefabs/UI Elements/In Game/GameFeedText.prefab"
+FEED_UI = "Assets/_Prefabs/UI Elements/In Game/NotificationUI.prefab"
+TOAST_SETTINGS = "Assets/_SO_Assets/Game Toasts/GameToastSettings.asset"
+FD = dict(go="5396139043551737779", rt="764802058328981548", plate="6895495377854868985", item="5570562861110427101",
+          content_vlg="7355427487428714261")
+FEED_H = 36
+TOAST_FIELDS = {"slideInOffset": "-120", "ageAfterSeconds": "6", "agedAlpha": "0.5"}
+
+
+def feed_text(text_):
+    p = Patch(text_, "Feed/Item12")
+    # The root carried the TMP itself, so it could have no plate: the TMP becomes the plate (same
+    # fileID) and the text moves to a child beside a domain accent bar.
+    p.body(FD["plate"], HM.img_body(tok("SurfaceVeryDark", 0.5), K.kit_sprite("kit_sliver10_fill"), sliced=True), FD["go"])
+    p.add_comp(FD["go"], "th", 114, K.themed("SurfaceVeryDark", 0.5))
+    p.add_comp(FD["go"], "hlg", 114, K.hv_layout(False, (13, 14, 0, 0), 0, 3, (1, 1), (0, 0)))
+    p.add_comp(FD["go"], "csf", 114, K.fitter(2, 0))
+    p.rect(FD["rt"], R((0, 0), (0, 0), (0, 0), (300, FEED_H), (0, 0.5)))
+    acc = N("Feed/Accent", "Accent", R((0, 0), (0, 1), (0, 0), (3, 0), (0, 0.5)))
+    acc.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("SurfaceLight"))).add("le", 114, H.le(ignore=True))
+    txt = N("Feed/Text", "Text", R(size=(260, FEED_H)))
+    txt.add("cr", 222, K.canvas_renderer()).add("tmp", 114, H.text("Pilot collected a crystal", "Body", tok("TextLight")))
+    ids = [p.emit(n, FD["rt"], FD["item"]) for n in (acc, txt)]
+    p.children(FD["rt"], ids)
+    item = p.doc(FD["item"])
+    for f, v in (("messageText", f"{{fileID: {p.ctx.c('Feed/Text', 'tmp')}}}"),
+                 ("accentImage", f"{{fileID: {p.ctx.c('Feed/Accent', 'img')}}}"),
+                 ("background", f"{{fileID: {FD['plate']}}}")):
+        item = set_field(item, f, v)
+    p.replace(FD["item"], item)
+    return p.text()
+
+
+def feed_ui_text(text_):
+    p = Patch(text_, "FeedUI/Item12")
+    p.replace(FD["content_vlg"], C.field_set(p.doc(FD["content_vlg"]), "m_Spacing", "4"))
+    return p.text()
+
+
+def toast_settings_text(text_):
+    for k, v in TOAST_FIELDS.items():
+        text_ = C.field_set(text_, k, v)
+    return text_
+
+
+# --------------------------------------------------------------------------------------------
+# 12e - the Menu_Main freestyle HUD: the exit glyph and the FTUE counter's face
+# --------------------------------------------------------------------------------------------
+
+MENU = "Assets/_Scenes/Menu_Main.unity"
+FTUE = "Assets/_Prefabs/UI Elements/Quest/InGameInstructionSet.prefab"
+LIBERATION = "8f586378b4e144a9851e7b34d9b748ee"
+CLOSE_GLYPH = K.chrome_sprite("chrome_close")
+S.update(menuhud=script_guid("Assets/_Scripts/UI/MenuMiniGameHUD.cs"))
+
+
+def menu_text(text_):
+    p = Patch(text_, "Menu_Main/Item12")
+    huds = p.by_script(S["menuhud"])
+    assert len(huds) == 1, "Menu_Main should carry one MenuMiniGameHUD"
+    d = p.doc(huds[0])
+    p.replace(huds[0], insert_after_field(d, "domainVolumeIndicator", "exitGlyph", K.sprite_ref(CLOSE_GLYPH)))
+    return p.text()
+
+
+def ftue_text(text_):
+    # The counter ("0 / 10") was the only off-spec face in the bar - LiberationSans, TMP's default.
+    return (text_.replace(f"m_fontAsset: {{fileID: 11400000, guid: {LIBERATION}, type: 2}}",
+                          f"m_fontAsset: {K.ref(11400000, K.ALDRICH[0], 2)}")
+                 .replace(f"m_sharedMaterial: {{fileID: 2180264, guid: {LIBERATION}, type: 2}}",
+                          f"m_sharedMaterial: {K.ref(K.ALDRICH[1], K.ALDRICH[0], 2)}"))
+
+
 def pause_instance(p):
     pis = [f for f, d in p.sc.docs.items() if d.startswith("--- !u!1001 ") and f"m_SourcePrefab: {{fileID: 100100000, guid: {PAUSE_GUID}" in d]
     assert len(pis) == 1, "GameCanvas should nest one R_Pause_Menu_Panel"
@@ -1001,7 +1078,8 @@ def panel_text(text_):
 # --------------------------------------------------------------------------------------------
 
 TRANSFORMS = {LOCKUP: lockup_text, GLYPHS: glyphs_text, CANVAS: canvas_text, PANEL["path"]: panel_text, PAUSE: pause_text,
-              CONNECT: connect_text, ENDGAME: endgame_text}
+              CONNECT: connect_text, ENDGAME: endgame_text, FEED: feed_text, FEED_UI: feed_ui_text,
+              TOAST_SETTINGS: toast_settings_text, MENU: menu_text, FTUE: ftue_text}
 
 
 def outputs():
@@ -1163,6 +1241,24 @@ def validate(files):
     for name in (SB_ROW, SB_STAT):
         check_local_refs(sb_path(name), files[sb_path(name)])
 
+    # 12e - feed
+    fd = files[FEED]
+    check_local_refs(FEED, fd)
+    fdd = docs_of(fd)
+    assert f"guid: {K.IMAGE}" in fdd[FD["plate"]], "the feed row has no plate"
+    for f in ("messageText", "accentImage", "background"):
+        assert re.search(r"^  %s: \{fileID: [1-9-]" % f, fdd[FD["item"]], re.M), f"GameToastItemView.{f} is not wired"
+    ts = files[TOAST_SETTINGS]
+    for k, v in TOAST_FIELDS.items():
+        assert f"  {k}: {v}\n" in ts, f"GameToastSettings.{k} is not {v}"
+    assert "  agedAlpha: 0\n" not in ts, "aged feed rows vanish (agedAlpha 0)"
+    assert "  m_Spacing: 4\n" in docs_of(files[FEED_UI])[FD["content_vlg"]], "the feed rows have no gap"
+
+    # 12e - freestyle
+    mh = next(d for d in docs_of(files[MENU]).values() if f"guid: {S['menuhud']}" in d)
+    assert f"  exitGlyph: {K.sprite_ref(CLOSE_GLYPH)}\n" in mh, "the freestyle exit hex has no glyph"
+    assert f"guid: {LIBERATION}" not in files[FTUE], "the FTUE bar still draws in LiberationSans"
+
     pn = files[PANEL["path"]]
     check_local_refs(PANEL["path"], pn)
     pd = docs_of(pn)
@@ -1230,6 +1326,9 @@ def self_test(files):
             docs_of(f[sb_path(SB_PANEL)])[str(K.FileIds(SB_PANEL)("Sb/MainMenu#cbp"))],
             docs_of(f[sb_path(SB_PANEL)])[str(K.FileIds(SB_PANEL)("Sb/MainMenu#cbp"))].replace("  activationButton: 5\n", "  activationButton: 6\n")))),
         ("the scoreboard row a full team fill", sub(sb_path(SB_ROW), "  backgroundTintAlpha: 0.12\n", "  backgroundTintAlpha: 1\n")),
+        ("feed rows vanishing again", sub(TOAST_SETTINGS, "  agedAlpha: 0.5\n", "  agedAlpha: 0\n")),
+        ("the feed row without its accent bar", lambda f: f.__setitem__(FEED, re.sub(
+            r"(  accentImage: )\{fileID: -?\d+\}", r"\1{fileID: 0}", f[FEED]))),
         ("the column hairline unwired", lambda f: f.__setitem__(PANEL["path"], re.sub(r"(  borderImage: )\{fileID: -?\d+\}", r"\1{fileID: 0}", f[PANEL["path"]]))),
     ]
     ok = all(expect(l, m) for l, m in cases)

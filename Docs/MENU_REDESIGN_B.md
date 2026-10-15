@@ -46,7 +46,7 @@ Legend: `Planned` ▸ `Mockup` ▸ `Mockup approved` ▸ `Built` ▸ `Approved i
 | 9 | Settings modal and Credits | Built (2026-10-15, section 18): Settings window and Credits | `Settings.dc.html` (interactive), `SettingsDisplay`, `SettingsPerformance`, `SettingsOther`, `Credits`, `SystemNotes` | |
 | 10 | Closed surfaces: Port (locked), Store (no slot), Episodes panel, purchase confirmation | Built (2026-10-15, section 19): purchase confirmation drawn blind; locked states from items 1 and 5 | `ClosedSurfaces.dc.html`, `PurchaseConfirm` (blind), `SystemNotes` | |
 | 11 | Menu toasts | Built (2026-10-15, section 20) | `Toasts.dc.html` (interactive), `SystemNotes` | |
-| 12 | In-game UI: GameCanvas HUD chrome, scoreboard, ready / countdown / pause, in-match toasts, end-of-game screens, Menu_Main freestyle HUD | Mockup approved (2026-10-15); building (section 22): 12a HUD chrome, 12b Ready / waiting / countdown, 12c pause and connecting, 12d end reveal and scoreboard built | `HudMatch.dc.html` (interactive), `HudCardStates`, `HudNotes`, `Hud<Vessel>` x9, `HudReady` (interactive), `HudPause`, `HudConnecting`, `HudEndReveal`, `HudScoreboard` (interactive), `HudSpectator` - page "In-game HUD" | |
+| 12 | In-game UI: GameCanvas HUD chrome, scoreboard, ready / countdown / pause, in-match toasts, end-of-game screens, Menu_Main freestyle HUD | Built (2026-10-15, section 22): 12a HUD chrome, 12b Ready / waiting / countdown, 12c pause and connecting, 12d end reveal and scoreboard, 12e spectator, match feed, freestyle | `HudMatch.dc.html` (interactive), `HudCardStates`, `HudNotes`, `Hud<Vessel>` x9, `HudReady` (interactive), `HudPause`, `HudConnecting`, `HudEndReveal`, `HudScoreboard` (interactive), `HudSpectator` - page "In-game HUD" | `6a94bdd1`, `422183de`, `9abadaa9`, `f067dc57` + 12e |
 
 ---
 
@@ -1317,4 +1317,42 @@ stays green). One generator owns the item: `Tools/Build/author_ingame_hud.py` (`
 - **Departures:** the board's stats strip has four tiles, but the strip draws however many the mode
   tracks (Skim Race has five). The rematch note text ("NovaKite wants a rematch") stays in the match
   feed, not under the buttons.
+
+### 22.5 Spectating, the match feed, the freestyle HUD (12e; built 2026-10-15, awaiting in-editor approval)
+
+- **Spectating** (`SpectatorOverlay`, built in code by `SpectatorController`): one glass bar under
+  the score columns (top 136), in theme tokens and theme faces, loaded from TMP's `Resources`
+  because the overlay has no serialized references.
+  - The bar reads: SPECTATING, a rule, the pilot in their domain colour, "2 / 4", the < > buttons,
+    and CAM: PILOT / CAM: DOLLY.
+  - LEAVE is a Danger outline at the right, not a filled red slab.
+  - The hint line names the real keys: LB RB / Q E to switch pilot, Y / C for the camera, Esc to
+    leave.
+  - The four over-1 / literal button colours are gone, taking the colour audit from 193 to 191.
+  - Departure: the board's avatar and "Ruby - Sparrow" sub-line need the spectated pilot's avatar
+    and hull, which `SetSpectated` is not given. The bar keeps the name, in its domain colour.
+- **Match feed** (`GameFeedText.prefab`, `NotificationUI.prefab`, `GameToastSettings.asset`):
+  - Each row is now a glass plate (Neutral Very Dark at 50%) that hugs its text, with a 3 px accent
+    bar in the toast's domain colour (`GameToastItemView.accentImage`, unwired until now). The text
+    is Aldrich 18.
+  - The root's TMP was re-scripted as the plate under the same fileID, and the text moved to a
+    child.
+  - The rows sit 4 px apart and slide in from the LEFT, as the board draws them.
+  - Defect 17: aged rows no longer vanish. They fade to 50% after 6 s; `agedAlpha` was 0.
+- **Freestyle HUD** (Menu_Main): it inherits 12a through the shared assets (the ability row's plates
+  and keycaps, the goal row, the hex).
+  - Its exit hex now draws an X: `chrome_close`, through the new `MenuMiniGameHUD.exitGlyph` and
+    `DomainVolumeIndicator.SetCentreGlyph`, since the indicator is added in code there.
+  - The FTUE bar's "0 / 10" counter drops TMP's default LiberationSans for Aldrich.
+  - Departure: the `Game UI` rect (defect 14, a 1 x 0 rect whose children are placed by offsets)
+    is left as it is. It renders correctly today, and re-anchoring it blind would move every child.
+- **Fleet doc:** the Serpent row in `Docs/claude/VESSEL_HUD_AND_ELEMENTS.md` now records Mass =
+  Seed Wall / Lockdown on B. Only the Rhino still has open card slots.
+
+Item 12's defect list (section 13.3 inventory) is closed except:
+- defect 14 (above);
+- defect 5: quest toasts dropped in a match. `EndGameSequencer` still posts them to a menu
+  container the game scenes do not have, and the fix belongs with the quest flow;
+- defect 13: the dead UI on GameCanvas (LeftDisplay, RoundTime, ThumbCursors and others) is still
+  there, inactive.
 

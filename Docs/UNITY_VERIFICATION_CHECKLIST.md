@@ -65,6 +65,27 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Style-B menu redesign, item 12e: spectating, match feed, freestyle HUD (`claude/new-session-76hnyc`, 2026-10-15) — NOT EDITOR-VERIFIED
+
+`SpectatorOverlay.cs`, `GameFeedText.prefab`, `NotificationUI.prefab`, `GameToastSettings.asset`,
+`InGameInstructionSet.prefab` and Menu_Main's `MenuMiniGameHUD` were changed (the assets through
+`Tools/Build/author_ingame_hud.py`, `--check` and `--self-test` green; 20 controls) - see
+`Docs/MENU_REDESIGN_B.md` section 22.5. No editor in the session, so `/verify-unity` is still owed.
+Offline: the player and editor reference compiles are clean.
+
+**Verify in editor:**
+1. Spectate (join a match as a viewer): one navy bar under the score columns reading SPECTATING |
+   the pilot in their domain colour, "1 / 3", < >, CAM: PILOT; LEAVE outlined in red at top right;
+   the hint line under it. LB/RB, Q/E, Y/C and Esc behave as before. No default-font text.
+2. Match feed (Skim Race with AI): rows appear bottom left, sliding in from the left. Each is a
+   dark glass strip that hugs its text, with a coloured bar on its left in the toaster's domain.
+   Older rows dim to half after about 6 s instead of disappearing, and at most 5 are kept.
+3. Menu_Main freestyle (tap the cell): the exit hex shows an X in its centre and still exits. The
+   ability row matches the in-game one (keycaps). The FTUE "Skim prisms ... 0 / 10" counter is in
+   Aldrich.
+
+---
+
 ### 🔴 Style-B menu redesign, item 12d: end reveal, scoreboard (`claude/new-session-76hnyc`, 2026-10-15) — NOT EDITOR-VERIFIED
 
 `EndGameStatsPanel.prefab` and `GameCanvas.prefab` were patched, and `ScoreboardPanel.prefab`,
