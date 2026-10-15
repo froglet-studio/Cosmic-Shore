@@ -24,6 +24,12 @@ namespace CosmicShore.UI
         [Tooltip("Optional outline / ring GameObject enabled only for the local player's chip.")]
         [SerializeField] GameObject localPlayerOutline;
 
+        [Header("Seat Row (optional)")]
+        [Tooltip("The pilot's name. Optional: an avatar-only chip leaves it empty.")]
+        [SerializeField] TMPro.TMP_Text nameText;
+        [Tooltip("\"You / Host\", \"Pilot\", \"AI\" and so on. Optional.")]
+        [SerializeField] TMPro.TMP_Text roleText;
+
         [Header("Kick")]
         [Tooltip("Optional ✕ shown on a kickable AI chip (Add AI placements, host only). Leave " +
                  "empty and a plain generated ✕ stands in until the art is authored.")]
@@ -63,6 +69,16 @@ namespace CosmicShore.UI
             SetHullPickable(false);
 
             gameObject.SetActive(true);
+        }
+
+        /// <summary>
+        /// The seat row's words: who sits here and in what role. A chip with no name or role label
+        /// ignores it, so the avatar-only chip keeps working.
+        /// </summary>
+        public void SetLabel(string displayName, string role)
+        {
+            if (nameText) nameText.text = displayName ?? string.Empty;
+            if (roleText) roleText.text = role ?? string.Empty;
         }
 
         /// <summary>

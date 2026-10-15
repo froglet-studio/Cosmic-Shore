@@ -38,7 +38,7 @@ Legend: `Planned` ▸ `Mockup` ▸ `Mockup approved` ▸ `Built` ▸ `Approved i
 | 1 | Top nav (`Safe Area/NavBar`) | Approved in editor (2026-10-14); **revision approved 2026-10-14**: translucent band, see §13.1 | `Main.dc.html` (interactive), `TopNavHover.dc.html`, `TopNavLocked.dc.html` on the Menu Redesign B canvas | `8d6d2acb`, `99ef3ccd` + docs |
 | 2 | Hangar screen: grid, detail and the spend-crystals panel | Approved in editor (2026-10-14) | `Hangar.dc.html` (interactive), `HangarLocked`, `HangarSpend`, `HangarShort`, `HangarNoArt`, `HangarNotes` on the Menu Redesign B canvas | `661a7f1f`, `7987b896`, `96c81faa` + docs |
 | 3 | Arcade modal (`ArcadeScreenModal`): explore grid plus the party/friends panel | Built | `Arcade.dc.html` (interactive), `ArcadeSolo`, `ArcadeNoFriends`, `ArcadePicks`, `ArcadeNotes` on the Menu Redesign B canvas | `f9b59fd4`, `75cd38e7`, `5cc56adb` + docs |
-| 4 | Game configure: `ArcadeGameConfigureModal`, plus the Maelstrom and Arena configure windows and the weekly leaderboard | Mockup approved (2026-10-14) | `Configure.dc.html` (interactive), `ConfigureArena`, `ConfigureMaelstrom`, `ConfigureWeekly`, `ConfigureWeeklySpent`, `ConfigureGuest`, `ConfigureLocked`, `WeeklyLeaderboard` (interactive), `LeaderboardEmpty`, `ConfigureNotes` | |
+| 4 | Game configure: `ArcadeGameConfigureModal`, plus the Maelstrom and Arena configure windows and the weekly leaderboard | Configure windows Built (2026-10-15, section 14); weekly leaderboard building | `Configure.dc.html` (interactive), `ConfigureArena`, `ConfigureMaelstrom`, `ConfigureWeekly`, `ConfigureWeeklySpent`, `ConfigureGuest`, `ConfigureLocked`, `WeeklyLeaderboard` (interactive), `LeaderboardEmpty`, `ConfigureNotes` | |
 | 5 | Profile screen, Profile modal (avatar / display name), Episodes entry | Mockup approved (2026-10-14) | `Profile.dc.html` (interactive), `ProfileFresh`, `ProfileModal` (interactive), `ProfileName`, `ProfileNameError`, `ProfileNameTaken`, `ProfileNotes` | |
 | 6 | Home screen: hub row, header, settings and freestyle buttons, invite popup | Mockup approved (2026-10-14) | `Home.dc.html` (interactive), `HomeInvite`, `HomeFocus`, `HomeOffline`, `HomeNotes` | |
 | 7 | Ark screen (Elemental Converter) | Mockup approved (2026-10-14) | `Ark.dc.html` (interactive), `ArkConverting`, `ArkDone`, `ArkNotes` | |
@@ -683,3 +683,50 @@ recipe panel with the element crystals and the omni result; Toy Box, Arena and T
 grid, staggered cards, floating portraits and the shuffle roll; Settings gains option descriptions (Q12)
 and Credits a title band; the weekly leaderboard gains a podium, your outlined reward band and a
 percentile bar.
+
+
+---
+
+## 14. Item 4: the game configure windows (built 2026-10-15, awaiting in-editor approval)
+
+`Tools/Build/author_menu_configure.py` authors nine prefabs under
+`Assets/_Prefabs/UI Elements/Main Menu Screens/Configure/` and mounts them:
+
+| Prefab | Root component | Role |
+|---|---|---|
+| `ConfigureView` | `MinigameLaunchPanel` | the arcade card window body (in `ArcadeGameConfigureModal.prefab`) |
+| `ConfigureArenaView` | `ArenaLaunchPanel` | the Arena window body (scene, `hostModal` = its window's modal copy) |
+| `ConfigureMaelstromView` | `MaelstromLaunchPanel` | the Maelstrom window body (scene, same) |
+| `ConfigureIntensityNode` | `KitIntensityNode` (+ `KitTile`) | one intensity node: numeral, caption, meter, lock + goal, route stub |
+| `ConfigureDomainColumn` | `KitDomainTile` (+ `KitTile`) | one domain: tile, seat strip, open seat with "+ AI" |
+| `ConfigureHullTile` | `KitHullTile` (+ `KitTile`) | one hull of the Arena strip |
+| `ConfigureSeatChip` | `DomainAvatarChip` | one seat row - the modal's `chipPrefab` |
+| `ConfigureAbilityRow` | `VesselControlRow` | one controls row |
+| `ConfigurePoolRow` | `MaelstromPoolEntry` | one Maelstrom pool row |
+
+The three views come from one builder because each root needs a different launch-panel class, which
+a Prefab Variant cannot change; everything they share is a nested prefab.
+
+**Code (all through the existing contract; the modal still owns every decision):**
+- `IntensitySelectButton` and `DomainInfoData` draw through protected hooks; `KitIntensityNode` /
+  `KitDomainTile` override them. `DomainInfoData.avatarStrip` widened to
+  `HorizontalOrVerticalLayoutGroup` (seat rows stack); it gained an optional `addAiButton`.
+- "+ AI" per domain (Q2): the modal wires each tile's `AddAIButton` to `AddAiToDomain` and drives the
+  open seats through `ArcadeLaunchPanel.SetSeatSummary`; the armed toggle is no longer authored.
+- Seat rows are named (`DomainAvatarChip.SetLabel`): "You / Host", "Pilot", and an AI by its hull.
+- Start's line: "Ready to launch" / the refusal reason / "Waiting for others..." - the ready path now
+  goes through `SetReadyUpState` (it was dead code); refusal copy is sentence case.
+- Locked intensity: one `LockedIntensityGoal` answers the node and the toast for every level, with
+  the Denied sting and a shake; a weekly challenge's pinned level is never drawn locked.
+- The d-pad focus row and the hidden player/domain steppers are gone; the pad moves through the tree
+  with ordinary navigation.
+- Favourite star wired by the modal in code (it was dead on the Arena and Maelstrom copies).
+- Arena: a hull strip (`KitHullTile`, `OnVesselPickRequested`) replaces the carousel arrows; the
+  controls block follows the shown hull. Maelstrom: the format block (race target, game cap, points by
+  place, seats) and the pool summary are wired.
+- `ArcadeGameConfigureModal` ModalType 10 -> 1 (10 is the Arcade window's own: one B closed both).
+
+**Departures from the boards:** the slow pan on the preview is dropped (the preview is a live render,
+not a still; Q1 allowed each ambient piece to go alone). The hint lines under each step are static.
+
+**Retired:** `Tools/Build/author_arena_launch_panel_layout.py` now stands down (its carousel is gone).
