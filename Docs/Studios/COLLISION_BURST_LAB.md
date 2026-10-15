@@ -5,7 +5,7 @@ effects they stand in for, running the shipped shader code in WebGL2, with a mea
 a shared decision log: **destruction** (explosion → shatter → glitter) and **stealing** (the grade → a
 bloom, unravel or flake shed). Round 1 looked at the four level-1 collision bursts alone.
 
-- **Live page:** https://claude.ai/artifact/F47yG1UjBkK662rEnhk7m9 (decision log: `decisions`) — round 3
+- **Live page:** https://claude.ai/artifact/F47yG1UjBkK662rEnhk7m9 (decision log: `decisions`) — round 4
 - **Page (generated, never edit by hand):** `Docs/Studios/PrismCollisionBurstLab.html`
 - **Source:** `Tools/Build/prism_collision_burst_lab/lab.src.html`; `build.py` stamps the shipped
   numbers and shader code into it (`--check` fails when the page is stale).
@@ -35,7 +35,77 @@ ordinary effect on the same prism at the same moment.
 The burst mesh is `HighPolyPrismMesh.GetUnwelded(10)` rebuilt on the page in float32 (`Math.fround`), as
 C# builds it.
 
-## Round 3 — 2026-10-14 (`cece/dreamy-pascal-7xxx1m`): glitter sizes, shed resolutions, the amount
+## Round 4 — 2026-10-15 (`cece/dreamy-pascal-7xxx1m`): the Sierpinski cut
+
+**Your decision applied** (the designer, in the session): *"a serpinski inspired cut would give a nice
+distribution and range that you could scale with recursion depth without the need for shatter and using the
+base explosion as the first depth."*
+
+### What changed, in the game and in the lab
+
+- **Destruction is one cut, scaled by recursion depth** (`PrismSierpinskiTiling`, `HighPolyPrismMesh.GetSierpinski`).
+  Depth 0 is the explosion's own cut — four isoceles wedges a face fanned from its centre — and the game draws it
+  as the ordinary explosion. Each deeper depth splits every corner triangle at its edge midpoints: the MIDDLE stays
+  whole (the gasket's hole, here a fragment) and the three CORNERS recurse. 24 × 1 / 4 / 13 / 40 / 121 triangles at
+  depths 0–4 (364 at 5). Per face at depth 4: 4 middles of a sixteenth of the face, 12 of 1/64, 36 of 1/256 and 432
+  corners of 1/1024 — a self-similar range of sizes. Each depth is the next with its finest corners merged into
+  their parent, so every depth is the whole prism at rest.
+- **The ladder**: explosion (depth 0) → depth 1 (≥ 5% of the screen height) → 2 (≥ 10%) → 3 (≥ 16%) → 4 (≥ 24%),
+  `depthMinScreen` in `PrismInteractionLodConfig` (an array: its length is the deepest cut, up to 5), coarser by
+  the amount as before. The **shatter** and round 3's **quadtree glitter** left the ladder (`PrismGlitterTiling` and
+  `GetGlitter` deleted); the shader is unchanged — each Sierpinski triangle is a glitter shard about its own
+  centroid, and the shatter kind stays in the shader as its fallback for an unknown kind.
+- **The lab**: the Destruction line-up is the explosion and depths 1–4; round 3's ladder is in the Archive tab.
+
+### Scorecards (shipped settings)
+
+**Squint against the explosion** (band 0.097, held whole 0.315): depth 1 0.320, depth 2 0.309, depth 3 0.303, depth 4
+0.306 — closer than round 3's shatter (0.346) and quadtree glitter (0.318–0.322), still not the band; depths 2–4 now
+score below the never-breaking prism ("close").
+
+**LOD steps** at each line's true pixel size (a 1,080 px screen; band = the deeper depth on another prism):
+
+| Step | At | Prism px | Band | Step | Step ÷ band |
+|---|---|---|---|---|---|
+| Depth 4 → 3 | 24% | 259 | 0.923 | 0.511 | 0.55 |
+| Depth 3 → 2 | 16% | 173 | 0.915 | 0.663 | 0.72 |
+| Depth 2 → 1 | 10% | 108 | 0.919 | 0.733 | 0.80 |
+| Depth 1 → the explosion | 5% | 54 | 0.879 | 0.864 | 0.98 |
+
+Sheds unchanged from round 3. The same limit applies: a destruction band is two different deaths, near its ceiling.
+
+### Found
+
+1. **The explosion IS depth 0, exactly.** Depth 0 of the cut, placed on the six faces, is the same 24 triangles as
+   `Prism.asset` (parity.py) — so the ladder's first rung needs no new effect at all.
+2. **The first depth is uniform.** Depth 1 is 16 equal triangles a face (the middle and the three corners of a wedge
+   are the same size); the range of sizes starts at depth 2. If the first rung should already vary, the split could
+   keep a corner whole as well as the middle — a design call.
+3. **The motion is still the glitter's, not the explosion's.** Every depth's shards drift and spin about their own
+   centroids; the explosion's wedges slide and turn on its graph. That — not the cut — is what keeps every depth from
+   the squint band (size 0.79–0.82). Carrying each shard on its root wedge's explosion motion (round 1's archived
+   proposal) would close it, now that every shard has a root wedge.
+
+### Checked
+
+- `parity.py` — **PASS**: the cut against `PrismSierpinskiTiling.cs` compiled with .NET, 2,172 face triangles over
+  depths 0–5, 0 differ; depth 0 = Prism.asset's 24 wedges; the page's depth meshes cover the surface (area 6, the C#'s
+  counts); shed meshes 0 straddles; the burst (108,000 vertices, 0 outliers) and the explosion; controls FIRED (the
+  next depth's cut 6/6, next kind 76.7%, ExplosiveRotation ×2 100%).
+- The cut's properties run under .NET (every depth covers the face once, counter-clockwise; every deeper triangle in
+  exactly one shallower): 0 failures.
+- `verify_prism_collision_burst.py` PASS (shader unchanged); `verify_lab.cjs` PASS (screenshots read);
+  `build.py --check` OK; `unity_refcompile` player + editor — 0 errors in project code.
+- **Not run:** the Unity editor, so `PrismCollisionBurstTests` — filed in `Docs/UNITY_VERIFICATION_CHECKLIST.md`.
+
+### Decision needed (designer)
+
+1. **The depth lines** (5% / 10% / 16% / 24%) and the **deepest cut** (4 = 2,904 fragments; 5 = 8,736 is available).
+2. **Depth 1's uniformity** — keep it, or vary the first split.
+3. **Carry the shards on the explosion's motion?** The cut now gives every fragment a root wedge; riding it would make
+   every depth move as the explosion does, with the shard detail on top.
+
+## Round 3 — 2026-10-14 (`cece/dreamy-pascal-7xxx1m`): glitter sizes, shed resolutions, the amount — superseded where round 4 differs (the shatter and the quadtree glitter left the ladder)
 
 **Your decisions applied** (the designer, in the session): *"lets have glitter create a range of fragment
 sizes that are triangles of different sizes. then from far away it will look like we just aren't seeing the

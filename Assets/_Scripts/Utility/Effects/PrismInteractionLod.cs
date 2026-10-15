@@ -10,10 +10,10 @@ namespace CosmicShore.Utility
     /// for every prism in the game (Docs/PRISM_ANIMATION.md §4.11; config <see cref="PrismInteractionLodConfigSO"/>):
     ///
     /// <list type="table">
-    /// <item><b>Destruction</b> — coarse to fine: the ordinary EXPLOSION → SHATTER → GLITTER LARGE → MEDIUM → FULL.
-    /// The glitter's three levels are one nested tiling of triangles of three sizes
-    /// (<see cref="PrismGlitterTiling"/>): a coarser one is the finer with its small fragments merged back into their
-    /// parents, so from far away it looks like the small ones are simply too small to see.</item>
+    /// <item><b>Destruction</b> — a Sierpinski cut scaled by recursion DEPTH (<see cref="PrismSierpinskiTiling"/>):
+    /// depth 0 is the ordinary EXPLOSION (its four wedges a face); each deeper depth splits the corner triangles at
+    /// their edge midpoints and keeps the middles whole. A shallower depth is the deeper one with its finest fragments
+    /// merged back into their parents, so from far away it looks like the small ones are simply too small to see.</item>
     /// <item><b>Stealing</b> — the GRADE (the prism's 0.8 s colour lerp) → a SHED (bloom, unravel or flake) at three
     /// mesh resolutions. Every shed is the grade squinted at.</item>
     /// </list>
@@ -28,16 +28,6 @@ namespace CosmicShore.Utility
     /// </summary>
     public static class PrismInteractionLod
     {
-        /// <summary>Destruction's levels, coarse to fine. Explicit values: a tuning vocabulary.</summary>
-        public enum DestructionLevel
-        {
-            Explosion = 0,
-            Shatter = 1,
-            GlitterLarge = 2,
-            GlitterMedium = 3,
-            GlitterFull = 4,
-        }
-
         /// <summary>Stealing's levels, coarse to fine. Explicit values: a tuning vocabulary.</summary>
         public enum StealLevel
         {
@@ -77,24 +67,24 @@ namespace CosmicShore.Utility
             float line3 = float.PositiveInfinity, float line4 = float.PositiveInfinity) =>
             fraction >= line4 ? 4 : fraction >= line3 ? 3 : fraction >= line2 ? 2 : fraction >= line1 ? 1 : 0;
 
-        /// <summary>The destruction level for a size on screen and an amount. Pure, for the tests and the lab.</summary>
-        public static DestructionLevel PickDestruction(float fraction, int crowdSteps, float shatter, float glitterLarge,
-            float glitterMedium, float glitterFull) =>
-            (DestructionLevel)Mathf.Max(0, LevelForSize(fraction, shatter, glitterLarge, glitterMedium, glitterFull) - crowdSteps);
+        /// <summary>
+        /// The destruction DEPTH for a size on screen and an amount: the deepest depth whose line
+        /// <paramref name="fraction"/> reaches, less the amount's steps, never below 0 (the explosion). Pure.
+        /// </summary>
+        public static int PickDepth(float fraction, int crowdSteps, PrismInteractionLodConfigSO cfg)
+        {
+            int depth = 0;
+            for (int d = 1; d <= cfg.MaxDepth; d++)
+                if (fraction >= cfg.DepthLine(d)) depth = d;
+            return Mathf.Max(0, depth - crowdSteps);
+        }
 
         /// <summary>The steal level for a size on screen and an amount. Pure, for the tests and the lab.</summary>
         public static StealLevel PickSteal(float fraction, int crowdSteps, float shed, float fine, float finest) =>
             (StealLevel)Mathf.Max(0, LevelForSize(fraction, shed, fine, finest) - crowdSteps);
 
-        /// <summary>The mesh destruction level <paramref name="level"/> draws (null for the explosion).</summary>
-        public static Mesh MeshOf(DestructionLevel level, PrismInteractionLodConfigSO cfg) => level switch
-        {
-            DestructionLevel.Shatter => HighPolyPrismMesh.GetUnwelded(cfg.BurstSubdivision),
-            DestructionLevel.GlitterLarge => HighPolyPrismMesh.GetGlitter(PrismGlitterTiling.LargeLeg),
-            DestructionLevel.GlitterMedium => HighPolyPrismMesh.GetGlitter(2),
-            DestructionLevel.GlitterFull => HighPolyPrismMesh.GetGlitter(1),
-            _ => null,
-        };
+        /// <summary>The mesh a death cut to <paramref name="depth"/> draws (null at 0: the explosion draws itself).</summary>
+        public static Mesh MeshOfDepth(int depth) => depth <= 0 ? null : HighPolyPrismMesh.GetSierpinski(depth);
 
         /// <summary>The mesh steal level <paramref name="level"/> draws (null for the grade).</summary>
         public static Mesh MeshOf(StealLevel level, PrismInteractionLodConfigSO cfg) =>
@@ -120,9 +110,9 @@ namespace CosmicShore.Utility
         }
 
         /// <summary>
-        /// A DESTRUCTION at its detail level: a shatter or a glitter when the prism is big enough on screen and the
-        /// budget has room, drawn on the explosion's own flight and palette. False means the explosion — the
-        /// caller (<c>PrismFactory.SpawnExplosion</c>) draws it.
+        /// A DESTRUCTION at its depth: the Sierpinski cut as deep as the prism's size on screen and the amount allow,
+        /// each fragment a shard (the burst's glitter kind) on the explosion's own flight and palette. False means
+        /// depth 0 — the caller (<c>PrismFactory.SpawnExplosion</c>) draws the explosion.
         /// </summary>
         public static bool TryDestruction(Vector3 position, Quaternion rotation, Vector3 scale, Color bright, Color dark,
             Vector3 impactVelocity, float speedLimitOverride, PrismKind tier)
@@ -132,16 +122,13 @@ namespace CosmicShore.Utility
             if (!TryMeasure(position, scale, out float fraction)) return false;
 
             int steps = CrowdSteps(PrismCollisionBurst.Fill(cfg), cfg.CrowdedFill, cfg.PackedFill);
-            var level = PickDestruction(fraction, steps, cfg.ShatterMinScreen, cfg.GlitterMinScreen,
-                cfg.GlitterMediumScreen, cfg.GlitterFullScreen);
-            // A level whose mesh does not fit the triangle budget steps down until one does.
-            for (; level > DestructionLevel.Explosion; level--)
+            // A depth whose mesh does not fit the triangle budget steps up until one does; depth 0 is the explosion.
+            for (int depth = PickDepth(fraction, steps, cfg); depth > 0; depth--)
             {
-                var mesh = MeshOf(level, cfg);
+                var mesh = MeshOfDepth(depth);
                 if (!PrismCollisionBurst.FitsTriangles(cfg, PrismCollisionBurst.TrianglesOf(mesh))) continue;
-                int kind = level == DestructionLevel.Shatter ? PrismCollisionBurst.Shatter : PrismCollisionBurst.Glitter;
                 return PrismCollisionBurst.TryRequestDestruction(position, rotation, scale, bright, dark,
-                    impactVelocity, speedLimitOverride, tier, kind, mesh);
+                    impactVelocity, speedLimitOverride, tier, PrismCollisionBurst.Glitter, mesh);
             }
             return false;
         }

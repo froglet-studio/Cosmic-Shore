@@ -15,14 +15,15 @@ Playwright + headless Chromium):
   2. EXPLOSION: for random velocities, speeds and times, every vertex of the 72-vertex Prism.asset —
      the page's closed form of RotateFacesAlongAxis against the shipped .shadersubgraph EVALUATED as a
      dataflow graph (Tools/Shaders/verify_prism_face_pivot.py's evaluator).
-  3. GLITTER TILING: the page's port of PrismGlitterTiling against the shipped C# file COMPILED and run
-     with the .NET SDK — every block of every face at every level, exactly; and the page's meshes: the
-     glitter's three levels each cover the whole surface (area 6) with the C#'s triangle count, and no
-     triangle of the shed meshes straddles either face diagonal (the union-jack cut).
+  3. THE SIERPINSKI CUT: the page's port of PrismSierpinskiTiling against the shipped C# file COMPILED and
+     run with the .NET SDK — every triangle of a face at every depth, exactly; depth 0 against the 24
+     triangles of Prism.asset (the explosion's own wedges); and the page's meshes: every depth covers the
+     whole surface (area 6) with the C#'s triangle count, and no triangle of the shed meshes straddles
+     either face diagonal (the union-jack cut).
   NEGATIVE CONTROLS (each must FAIL):
   4. the burst compared against the NEXT kind's C++ pose;
   5. the explosion compared against the graph run with ExplosiveRotation doubled;
-  6. the page's tiling compared against the C#'s for the NEXT face.
+  6. the page's cut compared against the C#'s at the NEXT depth.
 
     python3 Tools/Build/prism_collision_burst_lab/parity.py      # exit 0 = every check passed
 """
@@ -67,8 +68,7 @@ const { chromium } = require('playwright');
   const out = await p.evaluate((cases) => {
     const L = window.__lab;
     if (L.state().glError) return { error: L.state().glError };
-    const tiling = {};
-    for (const m of [4, 2, 1]) tiling[m] = [0, 1, 2, 3, 4, 5].map((f) => L.glitterBlocks(f, m));
+    const tiling = [0, 1, 2, 3, 4, 5].map((d) => L.sierpinskiTriangles(d));
     return { burst: cases.burst.map((c) => L.probeBurstCase(c)), explosion: cases.explosion.map((c) => L.probeExplosionCase(c)), tiling, meshes: L.meshChecks() };
   }, cases);
   out.pageErrors = errors;
@@ -233,44 +233,65 @@ def compare_explosion(page, cases, rotation_scale=1.0):
 
 MESH = None
 
-TILING_CS = os.path.join(ROOT, "Assets/_Scripts/Utility/PrismGlitterTiling.cs")
+TILING_CS = os.path.join(ROOT, "Assets/_Scripts/Utility/PrismSierpinskiTiling.cs")
 TILING_MAIN = r"""
 using System.Collections.Generic;
+using System.Globalization;
 using System.Text;
 using CosmicShore.Utility;
-var sb = new StringBuilder("{");
-foreach (int m in new[] { 4, 2, 1 })
+var sb = new StringBuilder("{\"cut\":[");
+for (int d = 0; d <= PrismSierpinskiTiling.MaxDepth; d++)
 {
-    sb.Append(m == 4 ? "" : ",").Append('"').Append(m).Append("\":[");
-    for (int f = 0; f < 6; f++)
-    {
-        var b = new List<int>();
-        PrismGlitterTiling.Blocks(f, m, b);
-        sb.Append(f == 0 ? "[" : ",[").Append(string.Join(",", b)).Append(']');
-    }
+    var t = new List<float>();
+    PrismSierpinskiTiling.Triangles(d, t);
+    sb.Append(d == 0 ? "[" : ",[");
+    for (int i = 0; i < t.Count; i++) sb.Append(i == 0 ? "" : ",").Append(t[i].ToString("G9", CultureInfo.InvariantCulture));
     sb.Append(']');
 }
-sb.Append(",\"triangles\":{\"4\":").Append(PrismGlitterTiling.TriangleCount(4)).Append(",\"2\":")
-  .Append(PrismGlitterTiling.TriangleCount(2)).Append(",\"1\":").Append(PrismGlitterTiling.TriangleCount(1)).Append("}}");
+sb.Append("],\"triangles\":[");
+for (int d = 0; d <= PrismSierpinskiTiling.MaxDepth; d++) sb.Append(d == 0 ? "" : ",").Append(PrismSierpinskiTiling.TriangleCount(d));
+sb.Append("]}");
 System.Console.Write(sb.ToString());
 """
 
+FACES = [((1, 0, 0), (0, 1, 0), (0, 0, 1)), ((-1, 0, 0), (0, 0, 1), (0, 1, 0)), ((0, 1, 0), (0, 0, 1), (1, 0, 0)),
+         ((0, -1, 0), (1, 0, 0), (0, 0, 1)), ((0, 0, 1), (1, 0, 0), (0, 1, 0)), ((0, 0, -1), (0, 1, 0), (1, 0, 0))]
+
 
 def run_tiling_cs(work):
-    """Compile the SHIPPED PrismGlitterTiling.cs with the .NET SDK and dump every block."""
+    """Compile the SHIPPED PrismSierpinskiTiling.cs with the .NET SDK and dump every depth's cut."""
     dotnet = shutil.which("dotnet") or os.path.expanduser("~/.dotnet/dotnet")
     proj = os.path.join(work, "tiling")
     os.makedirs(proj, exist_ok=True)
     with open(os.path.join(proj, "tiling.csproj"), "w") as f:
         f.write('<Project Sdk="Microsoft.NET.Sdk"><PropertyGroup><OutputType>Exe</OutputType>'
                 '<TargetFramework>net8.0</TargetFramework><Nullable>disable</Nullable></PropertyGroup></Project>')
-    shutil.copy(TILING_CS, os.path.join(proj, "PrismGlitterTiling.cs"))
+    shutil.copy(TILING_CS, os.path.join(proj, "PrismSierpinskiTiling.cs"))
     with open(os.path.join(proj, "Program.cs"), "w") as f:
         f.write(TILING_MAIN)
     r = subprocess.run([dotnet, "run", "--project", proj], capture_output=True, text=True, timeout=600,
                        env=dict(os.environ, DOTNET_CLI_TELEMETRY_OPTOUT="1", DOTNET_NOLOGO="1"))
     assert r.returncode == 0, r.stdout + r.stderr
     return json.loads(r.stdout.strip().splitlines()[-1])
+
+
+def same_cut(a, b):
+    return len(a) == len(b) and all(abs(x - y) <= 1e-9 for x, y in zip(a, b))
+
+
+def depth0_is_the_explosion(cut0, prism_mesh):
+    """Depth 0 on all six faces, placed as HighPolyPrismMesh places it, against Prism.asset's 24 triangles."""
+    key = lambda tri: frozenset(tuple(round(c, 5) for c in v) for v in tri)
+    ours = set()
+    for n, u, v in FACES:
+        for k in range(0, len(cut0), 7):
+            tri = []
+            for j in range(3):
+                pu, pv = cut0[k + 2 * j], cut0[k + 2 * j + 1]
+                tri.append(tuple(0.5 * n[i] + u[i] * (pu - 0.5) + v[i] * (pv - 0.5) for i in range(3)))
+            ours.add(key(tri))
+    theirs = {key([tuple(prism_mesh[(t + j) * 11:(t + j) * 11 + 3]) for j in range(3)]) for t in range(0, len(prism_mesh) // 11, 3)}
+    return ours == theirs, len(ours), len(theirs)
 
 
 def main():
@@ -326,26 +347,31 @@ def main():
               f"worst {ew:.2e}; {ebad} past tolerance -> {'PASS' if egood else 'FAIL'}")
         ok &= egood
 
-        # the glitter's tiling, against the C# compiled
+        # the Sierpinski cut, against the C# compiled — and depth 0 against the explosion's own mesh
         cs = run_tiling_cs(work)
-        tmiss = sum(page["tiling"][str(m)][f] != cs[str(m)][f] for m in (4, 2, 1) for f in range(6))
-        tblocks = sum(len(cs[str(m)][f]) // 4 for m in (4, 2, 1) for f in range(6))
+        depths = len(cs["cut"])
+        tmiss = sum(not same_cut(page["tiling"][d], cs["cut"][d]) for d in range(depths))
+        ttris = sum(len(c) // 7 for c in cs["cut"])
         tgood = tmiss == 0
-        print(f"glitter tiling: {tblocks} blocks over 3 levels x 6 faces vs PrismGlitterTiling.cs compiled; "
-              f"{tmiss} face(s) differ -> {'PASS' if tgood else 'FAIL'}")
+        print(f"sierpinski cut: {ttris} face triangles over depths 0-{depths - 1} vs PrismSierpinskiTiling.cs compiled; "
+              f"{tmiss} depth(s) differ -> {'PASS' if tgood else 'FAIL'}")
         ok &= tgood
+        same, n_ours, n_theirs = depth0_is_the_explosion(cs["cut"][0], MESH)
+        print(f"depth 0 vs Prism.asset: {n_ours} triangles vs the explosion's {n_theirs} -> {'PASS (the same wedges)' if same else 'FAIL'}")
+        ok &= same
         mg = page["meshes"]
-        mgood = all(abs(mg["glitter" + str(m)]["area"] - 6.0) < 1e-3 and mg["glitter" + str(m)]["triangles"] == cs["triangles"][str(m)]
-                    for m in (4, 2, 1)) and all(mg["shed" + str(l)]["straddles"] == 0 for l in (1, 2, 3))
-        print("meshes: glitter " + ", ".join(f"{mg['glitter' + str(m)]['triangles']} tris area {mg['glitter' + str(m)]['area']}" for m in (4, 2, 1))
+        sier = sorted(k for k in mg if k.startswith("sier"))
+        mgood = bool(sier) and all(abs(mg[k]["area"] - 6.0) < 1e-3 and mg[k]["triangles"] == cs["triangles"][int(k[4:])] for k in sier) \
+            and all(mg["shed" + str(l)]["straddles"] == 0 for l in (1, 2, 3))
+        print("meshes: " + ", ".join(f"depth {k[4:]} {mg[k]['triangles']} tris area {mg[k]['area']}" for k in sier)
               + "; shed " + ", ".join(f"{mg['shed' + str(l)]['subdivision']}: {mg['shed' + str(l)]['straddles']} straddles" for l in (1, 2, 3))
               + f" -> {'PASS' if mgood else 'FAIL'}")
         ok &= mgood
 
         # negative controls
-        tnext = sum(page["tiling"][str(m)][f] != cs[str(m)][(f + 1) % 6] for m in (4, 2, 1) for f in range(6))
-        tfired = tnext > 0
-        print(f"negative control [next face's tiling]: {tnext} of 18 faces differ -> {'FIRED' if tfired else 'DID NOT FIRE'}")
+        tnext = sum(not same_cut(page["tiling"][d], cs["cut"][(d + 1) % depths]) for d in range(depths))
+        tfired = tnext == depths
+        print(f"negative control [the next depth's cut]: {tnext} of {depths} depths differ -> {'FIRED' if tfired else 'DID NOT FIRE'}")
         ok &= tfired
         nref = run_cpp(work, cases["burst"], kind_shift=1)
         nbad, ntotal, _, _ = compare_burst(page["burst"], nref, cases["burst"])

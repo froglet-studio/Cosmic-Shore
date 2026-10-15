@@ -1,3 +1,4 @@
+using CosmicShore.Utility;
 using UnityEngine;
 
 namespace CosmicShore.ScriptableObjects
@@ -9,10 +10,11 @@ namespace CosmicShore.ScriptableObjects
     /// detail and the budget allows, and as the ordinary effect otherwise. <c>PrismInteractionLod</c> decides.
     ///
     /// <list type="bullet">
-    /// <item><b>Destruction</b> is one spectrum, coarse to fine: the ordinary EXPLOSION (far away, off screen,
-    /// over budget) → SHATTER → GLITTER, itself graded LARGE → MEDIUM → FULL (fragments of three sizes; each
-    /// coarser glitter is the finer one with its small fragments merged back into their parents). Every finer
-    /// level shares the explosion's flight, size, colours and linear fade, so squinted at it IS the explosion.</item>
+    /// <item><b>Destruction</b> is one Sierpinski cut scaled by recursion depth (<c>PrismSierpinskiTiling</c>):
+    /// depth 0 IS the ordinary explosion (its four wedges a face — far away, off screen, over budget), and each
+    /// deeper depth splits the corner triangles at their edge midpoints, keeping the middles whole — a self-similar
+    /// range of fragment sizes. Each depth is the next with its finest fragments merged into their parents, and every
+    /// depth shares the explosion's flight, size, colours and linear fade, so squinted at it IS the explosion.</item>
     /// <item><b>Stealing</b> is the GRADE (the 0.8 s colour lerp) far away and a SHED close up — bloom, unravel or
     /// flake on a skin in the old colours — graded by mesh resolution (12, 18, 24 subdivisions), on the grade's own
     /// curve over the grade's own length, so squinted at it IS the grade.</item>
@@ -34,9 +36,6 @@ namespace CosmicShore.ScriptableObjects
                  "are authored on it; the shape below is written onto a runtime copy.")]
         [SerializeField] Material burstMaterial;
 
-        [Tooltip("Subdivision of the unwelded prism the SHATTER draws (10 = 1,200 triangles, the slice's mesh).")]
-        [SerializeField] int burstSubdivision = 10;
-
         [Tooltip("Detail-level entities alive at once, destruction and sheds together. Past it, every interaction " +
                  "draws its ordinary effect — never nothing.")]
         [SerializeField] int maxLiveBursts = 48;
@@ -52,22 +51,15 @@ namespace CosmicShore.ScriptableObjects
         [Tooltip("AMOUNT: at least this full, two levels coarser.")]
         [Range(0f, 1f)] [SerializeField] float packedFill = 0.8f;
 
-        [Header("Destruction — explosion, shatter, glitter large / medium / full")]
+        [Header("Destruction — the explosion (depth 0), then the Sierpinski cut, deeper as the prism nears")]
         [Tooltip("Off: every destruction is the ordinary explosion.")]
         [SerializeField] bool destructionEnabled = true;
 
-        [Tooltip("The prism's projected diameter, as a fraction of the screen height, at and above which a death " +
-                 "SHATTERS instead of exploding.")]
-        [Range(0f, 1f)] [SerializeField] float shatterMinScreen = 0.05f;
-
-        [Tooltip("At and above this, a death GLITTERS in its LARGE fragments only (a quarter of a face across).")]
-        [Range(0f, 1f)] [SerializeField] float glitterMinScreen = 0.12f;
-
-        [Tooltip("At and above this, the glitter adds its MEDIUM fragments (an eighth of a face).")]
-        [Range(0f, 1f)] [SerializeField] float glitterMediumScreen = 0.17f;
-
-        [Tooltip("At and above this, the FULL glitter: its small fragments too (a sixteenth of a face).")]
-        [Range(0f, 1f)] [SerializeField] float glitterFullScreen = 0.24f;
+        [Tooltip("One line per recursion depth, from depth 1: the prism's projected diameter, as a fraction of the " +
+                 "screen height, at and above which a death is cut that deep (24 x 1, 4, 13, 40, 121, 364 triangles at " +
+                 "depths 0-5). Below the first line, depth 0: the ordinary explosion. Ascending; the array's length is " +
+                 "the deepest cut drawn (at most PrismSierpinskiTiling.MaxDepth, 5).")]
+        [SerializeField] float[] depthMinScreen = { 0.05f, 0.10f, 0.16f, 0.24f };
 
         [Header("Stealing — the grade, or a shed at one of three resolutions")]
         [Tooltip("Off: every steal is the ordinary grade.")]
@@ -133,16 +125,18 @@ namespace CosmicShore.ScriptableObjects
         [SerializeField] float dissolveGrain = 0.35f;
 
         public Material BurstMaterial => burstMaterial;
-        public int BurstSubdivision => Mathf.Clamp(burstSubdivision, 2, 32);
         public int MaxLiveBursts => Mathf.Max(0, maxLiveBursts);
         public int MaxLiveTriangles => Mathf.Max(0, maxLiveTriangles);
         public float CrowdedFill => Mathf.Clamp01(crowdedFill);
         public float PackedFill => Mathf.Clamp01(packedFill);
         public bool DestructionEnabled => destructionEnabled;
-        public float ShatterMinScreen => Mathf.Clamp01(shatterMinScreen);
-        public float GlitterMinScreen => Mathf.Clamp01(glitterMinScreen);
-        public float GlitterMediumScreen => Mathf.Clamp01(glitterMediumScreen);
-        public float GlitterFullScreen => Mathf.Clamp01(glitterFullScreen);
+
+        /// <summary>The deepest cut a death can be drawn at (the number of depth lines, capped).</summary>
+        public int MaxDepth => depthMinScreen == null ? 0 : Mathf.Min(depthMinScreen.Length, PrismSierpinskiTiling.MaxDepth);
+
+        /// <summary>The screen-size line of depth <paramref name="depth"/> (1 – <see cref="MaxDepth"/>); depth 0 has none.</summary>
+        public float DepthLine(int depth) =>
+            depth >= 1 && depth <= MaxDepth ? Mathf.Clamp01(depthMinScreen[depth - 1]) : depth <= 0 ? 0f : float.PositiveInfinity;
         public bool ShedEnabled => shedEnabled;
         public float ShedMinScreen => Mathf.Clamp01(shedMinScreen);
         public float ShedFineScreen => Mathf.Clamp01(shedFineScreen);
@@ -163,16 +157,6 @@ namespace CosmicShore.ScriptableObjects
         public int ShardsPerFaceEdge => Mathf.Clamp(shardsPerFaceEdge, 1, 6);
         public float DissolveGrain => Mathf.Clamp01(dissolveGrain);
 
-        /// <summary>The screen-size lines of the destruction ladder, coarse to fine (shatter, glitter L, M, F).</summary>
-        public float DestructionLine(int level) => level switch
-        {
-            1 => ShatterMinScreen,
-            2 => GlitterMinScreen,
-            3 => GlitterMediumScreen,
-            4 => GlitterFullScreen,
-            _ => 0f,
-        };
-
         /// <summary>The screen-size lines of the steal ladder, coarse to fine (shed, fine, finest).</summary>
         public float StealLine(int level) => level switch
         {
@@ -187,15 +171,21 @@ namespace CosmicShore.ScriptableObjects
 
         /// <summary>The most triangles one entity of any level can draw.</summary>
         public int LargestEntityTriangles =>
-            Mathf.Max(12 * BurstSubdivision * BurstSubdivision, 12 * ShedFinestSubdivision * ShedFinestSubdivision);
+            Mathf.Max(PrismSierpinskiTiling.TriangleCount(MaxDepth), 12 * ShedFinestSubdivision * ShedFinestSubdivision);
+
+        bool DepthLinesAscend()
+        {
+            for (int d = 2; d <= MaxDepth; d++)
+                if (DepthLine(d) < DepthLine(d - 1)) return false;
+            return true;
+        }
 
         /// <summary>
         /// The one predicate the tests and the runtime share: each ladder is ordered, the crowding steps are ordered,
         /// a shed has a kind to pick, the budget is bounded and holds at least one entity of every level.
         /// </summary>
         public bool IsSane =>
-            ShatterMinScreen <= GlitterMinScreen && GlitterMinScreen <= GlitterMediumScreen &&
-            GlitterMediumScreen <= GlitterFullScreen &&
+            DepthLinesAscend() &&
             ShedMinScreen <= ShedFineScreen && ShedFineScreen <= ShedFinestScreen &&
             ShedSubdivision <= ShedFineSubdivision && ShedFineSubdivision <= ShedFinestSubdivision &&
             CrowdedFill <= PackedFill &&

@@ -70,7 +70,7 @@ namespace CosmicShore.Utility
 
         static readonly Dictionary<int, Mesh> s_cache = new();
         static readonly Dictionary<int, Mesh> s_unweldedCache = new();
-        static readonly Dictionary<int, Mesh> s_glitterCache = new();
+        static readonly Dictionary<int, Mesh> s_sierpinskiCache = new();
         static readonly Dictionary<int, Mesh> s_shedCache = new();
 
         /// <summary>
@@ -132,31 +132,33 @@ namespace CosmicShore.Utility
         }
 
         /// <summary>
-        /// The GLITTER's mesh at one detail level (<see cref="PrismGlitterTiling"/>): the same solid tiled by right
-        /// triangles of a range of sizes — legs of 1/4, 1/8 and 1/16 of a face — every triangle owning its vertices
-        /// with <see cref="TriangleUVChannel"/> = its own centroid, so each is one shard. <paramref name="minSize"/>
-        /// 4 is the LARGE level, 2 MEDIUM, 1 FULL: each coarser level is the finer one with its small triangles
-        /// merged back into the one they came from, so every level is the whole prism at rest. Same vertex layout
-        /// as <see cref="GetUnwelded"/>; shared and cached; never mutate it.
+        /// The DESTRUCTION's mesh at one recursion depth (<see cref="PrismSierpinskiTiling"/>): the prism cut the
+        /// Sierpinski way — depth 0 the explosion's own four wedges a face, each deeper depth splitting every corner
+        /// triangle into four at its edge midpoints and keeping the middle whole — every triangle owning its vertices
+        /// with <see cref="TriangleUVChannel"/> = its own centroid, so each is one shard (the burst's glitter kind).
+        /// Depth d is depth d+1 with its finest corners merged into their parents, so every depth is the whole prism at
+        /// rest. Same vertex layout as <see cref="GetUnwelded"/>; shared and cached; never mutate it.
         /// </summary>
-        public static Mesh GetGlitter(int minSize)
+        public static Mesh GetSierpinski(int depth)
         {
-            minSize = minSize >= PrismGlitterTiling.LargeLeg ? PrismGlitterTiling.LargeLeg : minSize >= 2 ? 2 : 1;
-            if (s_glitterCache.TryGetValue(minSize, out var mesh) && mesh != null)
+            depth = Mathf.Clamp(depth, 0, PrismSierpinskiTiling.MaxDepth);
+            if (s_sierpinskiCache.TryGetValue(depth, out var mesh) && mesh != null)
                 return mesh;
 
-            mesh = new Mesh { name = $"Prism_Glitter_{minSize}" };
-            PopulateGlitter(mesh, minSize);
-            s_glitterCache[minSize] = mesh;
+            mesh = new Mesh { name = $"Prism_Sierpinski_{depth}" };
+            PopulateSierpinski(mesh, depth);
+            s_sierpinskiCache[depth] = mesh;
             return mesh;
         }
 
-        /// <summary>Rewrite <paramref name="mesh"/> as the glitter's tiling at <paramref name="minSize"/> (<see cref="GetGlitter"/>).</summary>
-        public static void PopulateGlitter(Mesh mesh, int minSize)
+        /// <summary>Rewrite <paramref name="mesh"/> as the Sierpinski cut at <paramref name="depth"/> (<see cref="GetSierpinski"/>).</summary>
+        public static void PopulateSierpinski(Mesh mesh, int depth)
         {
             if (mesh == null) return;
-            int triCount = PrismGlitterTiling.TriangleCount(minSize);
-            int vertCount = triCount * 3;
+            var face = new List<float>(PrismSierpinskiTiling.PerWedge(depth) * 4 * PrismSierpinskiTiling.Stride);
+            PrismSierpinskiTiling.Triangles(depth, face);
+            int perFace = face.Count / PrismSierpinskiTiling.Stride;
+            int vertCount = perFace * 6 * 3;
             var verts = new Vector3[vertCount];
             var norms = new Vector3[vertCount];
             var tangents = new Vector4[vertCount];
@@ -164,56 +166,39 @@ namespace CosmicShore.Utility
             var cents = new List<Vector3>(vertCount);
             var tris = new List<Vector3>(vertCount);
             var indices = new int[vertCount];
-            var blocks = new List<int>(512);
-            var corner = new Vector2[4];
-            const float grid = PrismGlitterTiling.Grid;
 
             int vi = 0;
+            int tri = 0;
             for (int f = 0; f < 6; f++)
             {
                 Vector3 nrm = FaceNormals[f];
                 Vector3 u = FaceU[f];
                 Vector3 v = FaceV[f];
                 Vector3 centre = nrm * HalfExtent;
-                blocks.Clear();
-                PrismGlitterTiling.Blocks(f, minSize, blocks);
 
-                for (int k = 0; k < blocks.Count; k += 4)
+                for (int k = 0; k < face.Count; k += PrismSierpinskiTiling.Stride, tri++)
                 {
-                    int x = blocks[k], y = blocks[k + 1], size = blocks[k + 2];
-                    corner[0] = new Vector2(x / grid, y / grid);
-                    corner[1] = new Vector2((x + size) / grid, y / grid);
-                    corner[2] = new Vector2((x + size) / grid, (y + size) / grid);
-                    corner[3] = new Vector2(x / grid, (y + size) / grid);
+                    var a = new Vector2(face[k], face[k + 1]);
+                    var b = new Vector2(face[k + 2], face[k + 3]);
+                    var c = new Vector2(face[k + 4], face[k + 5]);
+                    Vector2 centroid = (a + b + c) / 3f;
+                    var triangle = new Vector3(centroid.x, centroid.y, TriangleRandom(f, tri));
 
-                    // Diagonal 0: (00,10,11)+(00,11,01), the unwelded mesh's cut. Diagonal 1: (00,10,01)+(10,11,01).
-                    // Both wind counter-clockwise in (u, v), like every prism face.
-                    bool other = blocks[k + 3] != 0;
-                    for (int t = 0; t < 2; t++)
+                    AddVertex(a);
+                    AddVertex(b);
+                    AddVertex(c);
+
+                    void AddVertex(Vector2 uv)
                     {
-                        Vector2 a = other ? corner[t] : corner[0];
-                        Vector2 b = corner[t + 1];
-                        Vector2 c = other ? corner[3] : corner[t + 2];
-                        Vector2 centroid = (a + b + c) / 3f;
-                        float random = PrismGlitterTiling.Hash(f, size, x, y, 3 + t) / 4294967296f;
-                        var triangle = new Vector3(centroid.x, centroid.y, random);
-
-                        AddVertex(a);
-                        AddVertex(b);
-                        AddVertex(c);
-
-                        void AddVertex(Vector2 uv)
-                        {
-                            verts[vi] = centre + u * ((uv.x - 0.5f) * 2f * HalfExtent)
-                                               + v * ((uv.y - 0.5f) * 2f * HalfExtent);
-                            norms[vi] = nrm;
-                            tangents[vi] = new Vector4(u.x, u.y, u.z, -1f);
-                            uvs.Add(uv);
-                            cents.Add(centre);
-                            tris.Add(triangle);
-                            indices[vi] = vi;
-                            vi++;
-                        }
+                        verts[vi] = centre + u * ((uv.x - 0.5f) * 2f * HalfExtent)
+                                           + v * ((uv.y - 0.5f) * 2f * HalfExtent);
+                        norms[vi] = nrm;
+                        tangents[vi] = new Vector4(u.x, u.y, u.z, -1f);
+                        uvs.Add(uv);
+                        cents.Add(centre);
+                        tris.Add(triangle);
+                        indices[vi] = vi;
+                        vi++;
                     }
                 }
             }
@@ -242,7 +227,7 @@ namespace CosmicShore.Utility
             foreach (var kv in s_unweldedCache)
                 if (ReferenceEquals(kv.Value, mesh))
                     return true;
-            foreach (var kv in s_glitterCache)
+            foreach (var kv in s_sierpinskiCache)
                 if (ReferenceEquals(kv.Value, mesh))
                     return true;
             foreach (var kv in s_shedCache)
@@ -256,7 +241,7 @@ namespace CosmicShore.Utility
         {
             s_cache.Clear();
             s_unweldedCache.Clear();
-            s_glitterCache.Clear();
+            s_sierpinskiCache.Clear();
             s_shedCache.Clear();
         }
 

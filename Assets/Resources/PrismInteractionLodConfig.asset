@@ -13,16 +13,16 @@ MonoBehaviour:
   m_Name: PrismInteractionLodConfig
   m_EditorClassIdentifier: Assembly-CSharp::CosmicShore.ScriptableObjects.PrismInteractionLodConfigSO
   burstMaterial: {fileID: 2100000, guid: bb416e904a654a8597031d364831aa5d, type: 2}
-  burstSubdivision: 10
   maxLiveBursts: 48
   maxLiveTriangles: 80000
   crowdedFill: 0.5
   packedFill: 0.8
   destructionEnabled: 1
-  shatterMinScreen: 0.05
-  glitterMinScreen: 0.12
-  glitterMediumScreen: 0.17
-  glitterFullScreen: 0.24
+  depthMinScreen:
+  - 0.05
+  - 0.1
+  - 0.16
+  - 0.24
   shedEnabled: 1
   shedMinScreen: 0.08
   shedFineScreen: 0.16

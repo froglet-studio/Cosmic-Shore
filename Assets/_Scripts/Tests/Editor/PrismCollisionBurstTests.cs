@@ -180,38 +180,45 @@ namespace CosmicShore.Tests
         }
 
         [Test]
-        public void DestructionGetsFinerAsThePrismGrowsOnScreen()
+        public void DestructionCutsDeeperAsThePrismGrowsOnScreen()
         {
-            PrismInteractionLod.DestructionLevel Pick(float f, int crowd = 0) =>
-                PrismInteractionLod.PickDestruction(f, crowd, 0.05f, 0.12f, 0.17f, 0.24f);
-            Assert.AreEqual(PrismInteractionLod.DestructionLevel.Explosion, Pick(0.01f));
-            Assert.AreEqual(PrismInteractionLod.DestructionLevel.Shatter, Pick(0.05f));
-            Assert.AreEqual(PrismInteractionLod.DestructionLevel.GlitterLarge, Pick(0.12f));
-            Assert.AreEqual(PrismInteractionLod.DestructionLevel.GlitterMedium, Pick(0.2f));
-            Assert.AreEqual(PrismInteractionLod.DestructionLevel.GlitterFull, Pick(0.24f));
-            Assert.AreEqual(PrismInteractionLod.DestructionLevel.GlitterFull, Pick(5f));
-
-            // Monotone: walking the camera in never steps back to a coarser level.
-            var previous = PrismInteractionLod.DestructionLevel.Explosion;
-            for (float d = 400f; d > 1f; d *= 0.97f)
+            var cfg = ScriptableObject.CreateInstance<PrismInteractionLodConfigSO>();   // lines 5% / 10% / 16% / 24%
+            try
             {
-                var level = Pick(PrismInteractionLod.ScreenFraction(2.25f, d, 60f));
-                Assert.GreaterOrEqual((int)level, (int)previous);
-                previous = level;
+                Assert.AreEqual(4, cfg.MaxDepth);
+                Assert.AreEqual(0, PrismInteractionLod.PickDepth(0.01f, 0, cfg), "depth 0: the explosion");
+                Assert.AreEqual(1, PrismInteractionLod.PickDepth(0.05f, 0, cfg));
+                Assert.AreEqual(2, PrismInteractionLod.PickDepth(0.12f, 0, cfg));
+                Assert.AreEqual(3, PrismInteractionLod.PickDepth(0.2f, 0, cfg));
+                Assert.AreEqual(4, PrismInteractionLod.PickDepth(0.24f, 0, cfg));
+                Assert.AreEqual(4, PrismInteractionLod.PickDepth(5f, 0, cfg), "never deeper than the last line");
+
+                // The amount: one depth shallower crowded, two packed, never below the explosion.
+                Assert.AreEqual(3, PrismInteractionLod.PickDepth(0.3f, 1, cfg));
+                Assert.AreEqual(0, PrismInteractionLod.PickDepth(0.06f, 2, cfg));
+
+                // Monotone: walking the camera in never cuts shallower.
+                int previous = 0;
+                for (float d = 400f; d > 1f; d *= 0.97f)
+                {
+                    int depth = PrismInteractionLod.PickDepth(PrismInteractionLod.ScreenFraction(2.25f, d, 60f), 0, cfg);
+                    Assert.GreaterOrEqual(depth, previous);
+                    previous = depth;
+                }
+                Assert.AreEqual(4, previous);
             }
-            Assert.AreEqual(PrismInteractionLod.DestructionLevel.GlitterFull, previous);
+            finally
+            {
+                Object.DestroyImmediate(cfg);
+            }
         }
 
         [Test]
-        public void TheAmountMakesEveryLevelCoarser()
+        public void TheAmountMakesEveryStealCoarser()
         {
             Assert.AreEqual(0, PrismInteractionLod.CrowdSteps(0.49f, 0.5f, 0.8f));
             Assert.AreEqual(1, PrismInteractionLod.CrowdSteps(0.5f, 0.5f, 0.8f));
             Assert.AreEqual(2, PrismInteractionLod.CrowdSteps(0.8f, 0.5f, 0.8f));
-            Assert.AreEqual(PrismInteractionLod.DestructionLevel.GlitterMedium,
-                PrismInteractionLod.PickDestruction(0.3f, 1, 0.05f, 0.12f, 0.17f, 0.24f), "crowded: one level coarser");
-            Assert.AreEqual(PrismInteractionLod.DestructionLevel.Explosion,
-                PrismInteractionLod.PickDestruction(0.06f, 2, 0.05f, 0.12f, 0.17f, 0.24f), "never below the explosion");
             Assert.AreEqual(PrismInteractionLod.StealLevel.ShedFine,
                 PrismInteractionLod.PickSteal(0.3f, 1, 0.08f, 0.16f, 0.28f));
             Assert.AreEqual(PrismInteractionLod.StealLevel.Grade,
@@ -228,13 +235,8 @@ namespace CosmicShore.Tests
         }
 
         [Test]
-        public void LevelsCarryExplicitValues_Interactions()
+        public void LevelsCarryExplicitValues_Steal()
         {
-            Assert.AreEqual(0, (int)PrismInteractionLod.DestructionLevel.Explosion);
-            Assert.AreEqual(1, (int)PrismInteractionLod.DestructionLevel.Shatter);
-            Assert.AreEqual(2, (int)PrismInteractionLod.DestructionLevel.GlitterLarge);
-            Assert.AreEqual(3, (int)PrismInteractionLod.DestructionLevel.GlitterMedium);
-            Assert.AreEqual(4, (int)PrismInteractionLod.DestructionLevel.GlitterFull);
             Assert.AreEqual(0, (int)PrismInteractionLod.StealLevel.Grade);
             Assert.AreEqual(1, (int)PrismInteractionLod.StealLevel.Shed);
             Assert.AreEqual(2, (int)PrismInteractionLod.StealLevel.ShedFine);
@@ -274,86 +276,94 @@ namespace CosmicShore.Tests
             }
         }
 
-        // ---------------------------------------------------------------- the glitter's tiling
+        // ---------------------------------------------------------------- the Sierpinski cut
+
+        static float SignedArea(System.Collections.Generic.List<float> t, int k) =>
+            0.5f * ((t[k + 2] - t[k]) * (t[k + 5] - t[k + 1]) - (t[k + 4] - t[k]) * (t[k + 3] - t[k + 1]));
 
         [Test]
-        public void EveryGlitterLevelTilesEveryFaceExactlyOnce()
+        public void EachDepthTilesTheFaceCounterClockwiseWithTheSierpinskiCounts()
         {
-            const int g = PrismGlitterTiling.Grid;
-            var blocks = new System.Collections.Generic.List<int>();
-            foreach (int minSize in new[] { 4, 2, 1 })
-            for (int face = 0; face < 6; face++)
+            var tris = new System.Collections.Generic.List<float>();
+            int[] perWedge = { 1, 4, 13, 40, 121, 364 };
+            for (int depth = 0; depth <= PrismSierpinskiTiling.MaxDepth; depth++)
             {
-                blocks.Clear();
-                PrismGlitterTiling.Blocks(face, minSize, blocks);
-                var cover = new int[g * g];
-                for (int k = 0; k < blocks.Count; k += 4)
+                tris.Clear();
+                PrismSierpinskiTiling.Triangles(depth, tris);
+                Assert.AreEqual(4 * perWedge[depth] * PrismSierpinskiTiling.Stride, tris.Count, $"depth {depth}");
+                Assert.AreEqual(24 * perWedge[depth], PrismSierpinskiTiling.TriangleCount(depth));
+                float area = 0f;
+                for (int k = 0; k < tris.Count; k += PrismSierpinskiTiling.Stride)
                 {
-                    int x = blocks[k], y = blocks[k + 1], size = blocks[k + 2];
-                    Assert.That(size, Is.EqualTo(4).Or.EqualTo(2).Or.EqualTo(1));
-                    Assert.GreaterOrEqual(size, minSize, "no block below the level's size");
-                    Assert.AreEqual(0, x % size, "blocks sit on the quadtree");
-                    Assert.AreEqual(0, y % size);
-                    for (int j = y; j < y + size; j++)
-                    for (int i = x; i < x + size; i++)
-                        cover[j * g + i]++;
+                    float a = SignedArea(tris, k);
+                    Assert.Greater(a, 0f, "counter-clockwise, like the face");
+                    area += a;
                 }
-                foreach (int c in cover) Assert.AreEqual(1, c, $"level {minSize} face {face}: a hole or an overlap");
+                Assert.AreEqual(1f, area, 1e-5f, $"depth {depth}: the whole face, no holes, no overlap");
             }
         }
 
         [Test]
-        public void ACoarserGlitterIsTheFinerWithItsSmallFragmentsMerged()
+        public void DepthZeroIsTheExplosionsWedges()
         {
-            var fine = new System.Collections.Generic.List<int>();
-            var coarse = new System.Collections.Generic.List<int>();
-            for (int face = 0; face < 6; face++)
-            foreach (var (f, c) in new[] { (1, 2), (2, 4) })
+            var tris = new System.Collections.Generic.List<float>();
+            PrismSierpinskiTiling.Triangles(0, tris);
+            for (int k = 0; k < tris.Count; k += PrismSierpinskiTiling.Stride)
             {
-                fine.Clear(); coarse.Clear();
-                PrismGlitterTiling.Blocks(face, f, fine);
-                PrismGlitterTiling.Blocks(face, c, coarse);
-                // Every fine block lies inside exactly one coarse block, and a coarse block bigger than the
-                // coarse level's size is a fine block too (it never split).
-                for (int k = 0; k < fine.Count; k += 4)
+                Assert.AreEqual(0.5f, tris[k], 0f, "every wedge fans from the face centre");
+                Assert.AreEqual(0.5f, tris[k + 1], 0f);
+                Assert.AreEqual(0.25f, SignedArea(tris, k), 1e-7f, "a quarter of the face");
+            }
+        }
+
+        [Test]
+        public void AShallowerDepthIsTheDeeperWithItsFinestCornersMerged()
+        {
+            var deep = new System.Collections.Generic.List<float>();
+            var shallow = new System.Collections.Generic.List<float>();
+            for (int depth = 1; depth <= PrismSierpinskiTiling.MaxDepth; depth++)
+            {
+                deep.Clear(); shallow.Clear();
+                PrismSierpinskiTiling.Triangles(depth, deep);
+                PrismSierpinskiTiling.Triangles(depth - 1, shallow);
+                // Every deep triangle's centroid lies in exactly one shallow triangle, and a shallow triangle that
+                // stopped above the last level is in the deep cut unchanged (only the finest corners split).
+                for (int k = 0; k < deep.Count; k += PrismSierpinskiTiling.Stride)
                 {
+                    float cu = (deep[k] + deep[k + 2] + deep[k + 4]) / 3f, cv = (deep[k + 1] + deep[k + 3] + deep[k + 5]) / 3f;
                     int inside = 0;
-                    for (int m = 0; m < coarse.Count; m += 4)
-                        if (fine[k] >= coarse[m] && fine[k] + fine[k + 2] <= coarse[m] + coarse[m + 2] &&
-                            fine[k + 1] >= coarse[m + 1] && fine[k + 1] + fine[k + 2] <= coarse[m + 1] + coarse[m + 2])
-                            inside++;
-                    Assert.AreEqual(1, inside);
+                    for (int m = 0; m < shallow.Count; m += PrismSierpinskiTiling.Stride)
+                        if (Inside(shallow, m, cu, cv)) inside++;
+                    Assert.AreEqual(1, inside, $"depth {depth}");
                 }
+                int kept = 0;
+                for (int m = 0; m < shallow.Count; m += PrismSierpinskiTiling.Stride)
+                    if (shallow[m + 6] < depth - 1) kept++;
+                int keptDeep = 0;
+                for (int k = 0; k < deep.Count; k += PrismSierpinskiTiling.Stride)
+                    if (deep[k + 6] < depth - 1) keptDeep++;
+                Assert.AreEqual(kept, keptDeep, "the middles cut out above the last level are untouched");
             }
-        }
 
-        [Test]
-        public void TheFullGlitterHasEverySize()
-        {
-            var blocks = new System.Collections.Generic.List<int>();
-            var sizes = new System.Collections.Generic.HashSet<int>();
-            for (int face = 0; face < 6; face++)
+            static bool Inside(System.Collections.Generic.List<float> t, int m, float u, float v)
             {
-                blocks.Clear();
-                PrismGlitterTiling.Blocks(face, 1, blocks);
-                for (int k = 2; k < blocks.Count; k += 4) sizes.Add(blocks[k]);
+                float d1 = (t[m + 2] - t[m]) * (v - t[m + 1]) - (t[m + 3] - t[m + 1]) * (u - t[m]);
+                float d2 = (t[m + 4] - t[m + 2]) * (v - t[m + 3]) - (t[m + 5] - t[m + 3]) * (u - t[m + 2]);
+                float d3 = (t[m] - t[m + 4]) * (v - t[m + 5]) - (t[m + 1] - t[m + 5]) * (u - t[m + 4]);
+                return d1 > 0f && d2 > 0f && d3 > 0f;
             }
-            CollectionAssert.AreEquivalent(new[] { 1, 2, 4 }, sizes);
-            Assert.Less(PrismGlitterTiling.TriangleCount(4), PrismGlitterTiling.TriangleCount(2));
-            Assert.Less(PrismGlitterTiling.TriangleCount(2), PrismGlitterTiling.TriangleCount(1));
-            Assert.AreEqual(6 * 16 * 2, PrismGlitterTiling.TriangleCount(4), "the large level: sixteen blocks a face");
         }
 
         [Test]
-        public void TheGlitterMeshIsTheTilingWithACentroidPerShard()
+        public void TheSierpinskiMeshIsTheCutWithACentroidPerShard()
         {
             HighPolyPrismMesh.InvalidateCache();
-            foreach (int minSize in new[] { 4, 2, 1 })
+            for (int depth = 1; depth <= 4; depth++)
             {
-                var mesh = HighPolyPrismMesh.GetGlitter(minSize);
-                Assert.AreSame(mesh, HighPolyPrismMesh.GetGlitter(minSize), "shared and cached");
+                var mesh = HighPolyPrismMesh.GetSierpinski(depth);
+                Assert.AreSame(mesh, HighPolyPrismMesh.GetSierpinski(depth), "shared and cached");
                 Assert.IsTrue(HighPolyPrismMesh.IsHighPoly(mesh));
-                Assert.AreEqual(PrismGlitterTiling.TriangleCount(minSize) * 3, mesh.vertexCount);
+                Assert.AreEqual(PrismSierpinskiTiling.TriangleCount(depth) * 3, mesh.vertexCount);
                 var verts = mesh.vertices;
                 var normals = mesh.normals;
                 var tris = new System.Collections.Generic.List<Vector3>();
@@ -436,9 +446,9 @@ namespace CosmicShore.Tests
             Assert.LessOrEqual(cfg.MaxLiveTriangles, 80_000, "the detail levels' triangle budget");
             Assert.LessOrEqual(cfg.LargestEntityTriangles, cfg.MaxLiveTriangles);
             Assert.LessOrEqual(cfg.Spread, 1f, "a cloud wider than the prism stops squinting as the explosion");
-            Assert.Less(cfg.ShatterMinScreen, cfg.GlitterMinScreen, "the spectrum runs coarse to fine as the prism nears");
-            Assert.Less(cfg.GlitterMinScreen, cfg.GlitterMediumScreen);
-            Assert.Less(cfg.GlitterMediumScreen, cfg.GlitterFullScreen);
+            Assert.GreaterOrEqual(cfg.MaxDepth, 1, "at least one Sierpinski depth beyond the explosion");
+            for (int d = 2; d <= cfg.MaxDepth; d++)
+                Assert.Less(cfg.DepthLine(d - 1), cfg.DepthLine(d), "the cut deepens as the prism nears");
             Assert.Less(cfg.ShedMinScreen, cfg.ShedFineScreen);
             Assert.Less(cfg.ShedFineScreen, cfg.ShedFinestScreen);
             Assert.Less(cfg.CrowdedFill, cfg.PackedFill);

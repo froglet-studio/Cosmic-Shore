@@ -631,6 +631,13 @@ Entries are grouped by family; within a family, the newest goes at the bottom.
 - Evidence: `__lab.runSteps()`; `Docs/Studios/COLLISION_BURST_LAB.md` round 3 table
 - Promoted: no
 
+### L-STU-69 — When the cheapest level is an existing effect, make it the seed of the recursion and prove the identity
+- Lab: Collision Burst Lab round 4 · Branch: `cece/dreamy-pascal-7xxx1m` · Date: 2026-10-15
+- What happened: the designer proposed a Sierpinski cut "using the base explosion as the first depth". The explosion's mesh is four wedges a face fanned from the centre, which is exactly a Sierpinski seed; each deeper depth splits the corners and keeps the middle. Making depth 0 the explosion's own cut, and checking it (depth 0 on six faces = `Prism.asset`'s 24 triangles, in parity.py), removed an entire rung (the shatter) and a second tiling (the quadtree glitter), and every depth now nests in the explosion's wedges.
+- Do instead: when an LOD ladder ends in an effect the game already ships, derive the finer levels FROM that effect's geometry and gate the identity of level 0 against the shipped asset, so the ladder's coarse end cannot drift from what players already see.
+- Evidence: `PrismSierpinskiTiling.cs`; `parity.py` "depth 0 vs Prism.asset"
+- Promoted: no
+
 ## NCA — swarm / neural-CA research rigs (Tools/NCA)
 
 ### L-NCA-1 — The yardstick was wrong four times before the creatures were

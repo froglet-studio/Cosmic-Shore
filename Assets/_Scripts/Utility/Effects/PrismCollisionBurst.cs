@@ -11,13 +11,15 @@ namespace CosmicShore.Utility
     /// <summary>
     /// The CARRIER of the prism's fine DETAIL LEVELS (Docs/PRISM_ANIMATION.md §4.11): the pure render
     /// entities that draw a destruction or a steal on a shared high-resolution prism mesh — the unwelded
-    /// prism (<see cref="HighPolyPrismMesh.GetUnwelded"/>) at the shatter's and the sheds' resolutions, or the
-    /// glitter's tiling (<see cref="HighPolyPrismMesh.GetGlitter"/>) at one of its three levels — each run entirely
+    /// prism cut union-jack (<see cref="HighPolyPrismMesh.GetShed"/>) at the sheds' resolutions, or the destruction's
+    /// Sierpinski cut (<see cref="HighPolyPrismMesh.GetSierpinski"/>) at one recursion depth — each run entirely
     /// on the GPU off one stamp (<c>PrismCollisionBurst.hlsl</c>; the class keeps the name of its first use, prism
     /// movement's collision). <see cref="PrismInteractionLod"/> decides WHICH level and mesh; this class only draws.
     ///
     /// <list type="bullet">
-    /// <item><b>Destruction</b> (<see cref="TryRequestDestruction"/>): a SHATTER or a GLITTER, leaving on the
+    /// <item><b>Destruction</b> (<see cref="TryRequestDestruction"/>): the Sierpinski cut at a depth, every
+    /// fragment a shard (the <see cref="Glitter"/> kind; the shader's <see cref="Shatter"/> kind is its fallback),
+    /// leaving on the
     /// explosion's own flight (<see cref="PrismDebris.ResolveExplosionFlight"/>) for the explosion's own life,
     /// in the explosion's palette, inside a prism-sized envelope of the travelling centre, fading linearly —
     /// so squinted at it is the explosion.</item>
@@ -198,7 +200,8 @@ namespace CosmicShore.Utility
         public static int TrianglesOf(Mesh mesh) => mesh != null ? (int)(mesh.GetIndexCount(0) / 3) : 0;
 
         /// <summary>
-        /// Queues a DESTRUCTION of <paramref name="kind"/> (<see cref="Shatter"/> or <see cref="Glitter"/>) for the
+        /// Queues a DESTRUCTION of <paramref name="kind"/> on <paramref name="mesh"/> (the game draws the Sierpinski cut
+        /// with <see cref="Glitter"/>) for the
         /// prism that was at (<paramref name="position"/>, <paramref name="rotation"/>, <paramref name="scale"/>).
         /// <paramref name="impactVelocity"/>, <paramref name="speedLimitOverride"/> and <paramref name="tier"/>
         /// are exactly what the explosion would have been handed, so the cloud leaves exactly like it. Returns

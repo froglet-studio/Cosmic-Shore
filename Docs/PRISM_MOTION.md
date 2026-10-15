@@ -113,8 +113,7 @@ Destruction is one spectrum, coarse to fine, by the prism's projected diameter o
 | Level | Size on screen | Up close |
 |---|---|---|
 | **Explosion** | under `shatterMinScreen` (5%), off screen, or over budget | the ordinary 24-wedge explosion |
-| **Shatter** | from 5% | each face fractures into ~9 Voronoi shards that tumble away about their own seeds |
-| **Glitter large / medium / full** | from 12% / 17% / 24% | every triangle of a nested tiling is its own shard — triangles with legs of 1/4, 1/8 and 1/16 of a face; a coarser level is the finer with its small fragments merged into their parents (192 / 528 / 1,386 triangles) |
+| **Sierpinski depth 1 / 2 / 3 / 4** | from 5% / 10% / 16% / 24% | the explosion's own wedges (depth 0) cut deeper: each corner triangle splits at its edge midpoints, the middle stays whole — 96 / 312 / 960 / 2,904 shards of a self-similar range of sizes; a shallower depth is the deeper with its finest corners merged |
 
 The AMOUNT grades it too: once the shared budget is half full every new death is one level coarser, at 80%
 two (`PrismInteractionLodConfig`).
@@ -175,8 +174,8 @@ steps down, and past every level the ordinary effect.
 | `_Scripts/Utility/Effects/PrismInteractionLod.cs` | Picks the level: destruction (explosion / shatter / glitter) and stealing (grade / shed) |
 | `_Scripts/Utility/Effects/PrismCollisionBurst.cs` | The carrier: culling bounds, stamp, drain, retire (destruction and sheds on separate expiry queues) |
 | `_Graphics/Materials/Graphs/PrismCollisionBurst.hlsl` / `.shader`, `_Graphics/Materials/PrismCollisionBurstMaterial.mat` | The five kinds, the two fade curves, the URP passes |
-| `_Scripts/Utility/HighPolyPrismMesh.cs` | `GetUnwelded` (TEXCOORD2 = triangle centroid + random); `GetGlitter` (the glitter's three nested levels); `GetShed` (the union-jack cut the sheds draw) |
-| `_Scripts/Utility/PrismGlitterTiling.cs` | The glitter's quadtree of triangles of three sizes — pure, held to the lab's port by `parity.py` (.NET) |
+| `_Scripts/Utility/HighPolyPrismMesh.cs` | `GetUnwelded` (TEXCOORD2 = triangle centroid + random); `GetSierpinski` (the destruction's cut at a depth); `GetShed` (the union-jack cut the sheds draw) |
+| `_Scripts/Utility/PrismSierpinskiTiling.cs` | The destruction's Sierpinski cut by recursion depth — pure, held to the lab's port and to `Prism.asset` (depth 0) by `parity.py` (.NET) |
 | `_Scripts/Utility/Effects/PrismDebris.cs` | `ResolveExplosionFlight` — the explosion's flight, shared |
 | `_Scripts/Controller/Vessel/Prism.cs`, `PrismEventChannelWithReturnSO.cs`, `PrismFactory.cs` | `DamageByCollision` → `PrismEventData.PlainDeath` (above level 1) → the factory's slice, detail level, explosion |
 | `Tools/Shaders/verify_prism_collision_burst.py` | Executes the shipped HLSL (12 properties, 5 negative controls, the shipped grade executed) and glslang-compiles every pass |

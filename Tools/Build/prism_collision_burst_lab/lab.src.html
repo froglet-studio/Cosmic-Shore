@@ -161,15 +161,11 @@
   const GLSL_EROSION = `/*@@GLSL_EROSION@@*/`;
   const GLSL_GRADE = `/*@@GLSL_GRADE@@*/`;
 
-  const LAB = { name: 'Collision Burst Lab', branch: 'cece/dreamy-pascal-7xxx1m', round: 3, doc: 'Docs/Studios/COLLISION_BURST_LAB.md' };
+  const LAB = { name: 'Collision Burst Lab', branch: 'cece/dreamy-pascal-7xxx1m', round: 4, doc: 'Docs/Studios/COLLISION_BURST_LAB.md' };
   const C = DATA.config, LOOK = DATA.look, X = DATA.explosion;
 
   // ================= SHIPPED: every value names where it came from =================
   const SHIPPED = {
-    shatterMinScreen: C.shatterMinScreen, // PrismInteractionLodConfig.shatterMinScreen (diameter ÷ screen height)
-    glitterMinScreen: C.glitterMinScreen, // PrismInteractionLodConfig.glitterMinScreen (glitter, large fragments)
-    glitterMediumScreen: C.glitterMediumScreen, // PrismInteractionLodConfig.glitterMediumScreen (+ medium)
-    glitterFullScreen: C.glitterFullScreen, // PrismInteractionLodConfig.glitterFullScreen (+ small)
     shedMinScreen: C.shedMinScreen,   // PrismInteractionLodConfig.shedMinScreen   (shed at shedSubdivision)
     shedFineScreen: C.shedFineScreen, // PrismInteractionLodConfig.shedFineScreen  (at shedFineSubdivision)
     shedFinestScreen: C.shedFinestScreen, // PrismInteractionLodConfig.shedFinestScreen (at shedFinestSubdivision)
@@ -197,18 +193,18 @@
     labFill: 0,                       // lab: how full the detail budget already is (the AMOUNT)
     labShedRes: 0,                    // lab: shed resolution shown — 0 by size, else level 1 / 2 / 3
     propOvershoot: DATA.overshoot,    // PrismCollisionBurst.hlsl PRISM_BURST_DISSOLVE_OVERSHOOT (the Archive tab moves it)
+    labArchive: 0,                    // lab: 1 shows round 3's ladder (shatter, quadtree glitter) — superseded
     propShedLift: 1,                  // PROPOSAL, not shipped: a shed's spread = spread × this (1 = shipped)
     propShedCurl: 1,                  // PROPOSAL, not shipped: a shed's curl turns = turns × this (1 = shipped)
   };
+  // PrismInteractionLodConfig.depthMinScreen[d-1]: the line of Sierpinski depth d (diameter ÷ screen height).
+  const DEPTHS = C.depthMinScreen.length;
+  C.depthMinScreen.forEach((v, i) => { SHIPPED['depth' + (i + 1) + 'Screen'] = v; });
   const SOURCE = {};
-  for (const k of Object.keys(SHIPPED)) SOURCE[k] = k.startsWith('lab') ? 'lab only' : (k === 'propShedLift' || k === 'propShedCurl') ? 'PROPOSAL — not in the shipped asset (1 = shipped)' : k === 'propOvershoot' ? 'PrismCollisionBurst.hlsl · PRISM_BURST_DISSOLVE_OVERSHOOT' : k === 'gradeSeconds' ? 'MaterialPropertyAnimator.DefaultTransitionSeconds' : (k in C ? 'PrismInteractionLodConfig.asset · ' + k : 'PrismCollisionBurstMaterial.mat');
+  for (const k of Object.keys(SHIPPED)) SOURCE[k] = k.startsWith('lab') ? 'lab only' : /^depth\d+Screen$/.test(k) ? 'PrismInteractionLodConfig.asset · depthMinScreen[' + (parseInt(k.slice(5), 10) - 1) + ']' : (k === 'propShedLift' || k === 'propShedCurl') ? 'PROPOSAL — not in the shipped asset (1 = shipped)' : k === 'propOvershoot' ? 'PrismCollisionBurst.hlsl · PRISM_BURST_DISSOLVE_OVERSHOOT' : k === 'gradeSeconds' ? 'MaterialPropertyAnimator.DefaultTransitionSeconds' : (k in C ? 'PrismInteractionLodConfig.asset · ' + k : 'PrismCollisionBurstMaterial.mat');
 
   // [group, key, min, max, step, label, tooltip]
   const SPEC = [
-    ['Levels', 'shatterMinScreen', 0, 0.6, 0.005, 'Shatter from (screen)', 'A death SHATTERS instead of exploding when the prism is at least this much of the screen height across. Zoom the stage to watch the pick change.'],
-    ['Levels', 'glitterMinScreen', 0, 0.6, 0.005, 'Glitter, large (screen)', 'A death GLITTERS from this size up, in its LARGE fragments only (a quarter of a face across): the medium and small ones are merged into them.'],
-    ['Levels', 'glitterMediumScreen', 0, 0.6, 0.005, 'Glitter, + medium (screen)', 'From this size the glitter adds its MEDIUM fragments (an eighth of a face).'],
-    ['Levels', 'glitterFullScreen', 0, 0.6, 0.005, 'Glitter, + small (screen)', 'From this size, the FULL glitter: its small fragments too (a sixteenth of a face).'],
     ['Levels', 'shedMinScreen', 0, 0.6, 0.005, 'Shed from (screen)', 'A steal SHEDS its old colours instead of grading from this size up, on the ' + C.shedSubdivision + '-subdivision mesh.'],
     ['Levels', 'shedFineScreen', 0, 0.6, 0.005, 'Shed fine from (screen)', 'From this size the shed is drawn at ' + C.shedFineSubdivision + ' subdivisions.'],
     ['Levels', 'shedFinestScreen', 0, 0.6, 0.005, 'Shed finest from (screen)', 'From this size the shed is drawn at ' + C.shedFinestSubdivision + ' subdivisions (' + (12 * C.shedFinestSubdivision * C.shedFinestSubdivision).toLocaleString() + ' triangles).'],
@@ -239,8 +235,16 @@
     ['Scene', 'labScreenPx', 360, 2160, 10, 'Screen height (px)', 'Lab only. For the readout of how many pixels the prism covers in the game at the size shown.'],
     ['Proposal', 'propShedLift', 0, 1, 0.01, 'Shed lift (× spread)', 'PROPOSAL, not shipped: how far a shed\'s skin leaves the prism, as a share of the destruction\'s spread. A skin that hugs the prism squints as the grade; the game would need a per-shed channel for it (today sheds share the destruction\'s spread).'],
     ['Proposal', 'propShedCurl', 0, 1, 0.01, 'Shed curl (× turns)', 'PROPOSAL, not shipped: how far a shed\'s petals and ribbons roll, as a share of the bloom / unravel turns. Less curl, a smaller silhouette.'],
+    ['Archive', 'labArchive', 0, 1, 1, 'Round 3 ladder (superseded)', 'Lab only. 1: the Destruction line-up shows round 3\'s ladder — shatter, then the quadtree glitter large / medium / full — in place of the Sierpinski depths, for comparison. Not in the game.'],
     ['Archive', 'propOvershoot', 0, 0.4, 0.002, 'Fade overshoot', 'Round 1 proposal, kept for comparison. The fade ends at life ÷ (1 + this). Shipped ends at 94% of the life; the explosion\'s erosion ends at 85% (its END_MARGIN 0.15), which is 0.176 here.'],
   ];
+
+  // The depth lines, first in the Levels tab.
+  for (let d = DEPTHS; d >= 1; d--) {
+    const tris = 24 * sierpinskiPerWedge(d);
+    SPEC.unshift(['Levels', 'depth' + d + 'Screen', 0, 0.6, 0.005, 'Depth ' + d + ' from (screen)', 'A death is cut to Sierpinski depth ' + d + ' (' + tris.toLocaleString() + ' fragments) from this size up' + (d === 1 ? '; below it, depth 0: the ordinary explosion. Zoom the stage to watch the pick change.' : '.')]);
+  }
+  function sierpinskiPerWedge(d) { return d <= 0 ? 1 : 1 + 3 * sierpinskiPerWedge(d - 1); }
 
   const LS = 'lab:' + LAB.name + ':';
   const lsGet = (k, d) => { try { const v = localStorage.getItem(LS + k); return v ? JSON.parse(v) : d; } catch (e) { return d; } };
@@ -272,13 +276,38 @@
   // PrismInteractionLod.CrowdSteps / LevelForSize / PickDestruction / PickSteal
   function crowdSteps(fill, crowded, packed) { return fill >= packed ? 2 : fill >= crowded ? 1 : 0; }
   function levelForSize(f, lines) { let l = 0; lines.forEach((line, i) => { if (f >= line) l = i + 1; }); return l; }
-  const DESTRUCTION = ['Explosion', 'Shatter', 'Glitter · large', 'Glitter · medium', 'Glitter · full'];
-  const DESTRUCTION_MESH = [null, 'shatter', 'glitter4', 'glitter2', 'glitter1'];
-  function pickDestruction(f, steps) { return Math.max(0, levelForSize(f, [P.shatterMinScreen, P.glitterMinScreen, P.glitterMediumScreen, P.glitterFullScreen]) - steps); }
+  // PrismSierpinskiTiling.Triangles, line for line: one face's triangles at a depth, (u0,v0,u1,v1,u2,v2,level)
+  // each — the explosion's four wedges, then the corners split at their midpoints and the middles kept whole.
+  function sierpinskiTriangles(depth) {
+    depth = Math.max(0, Math.min(C.sierpinskiMaxDepth, depth));
+    const fr = Math.fround, out = [];
+    const split = (au, av, bu, bv, cu, cv, level) => {
+      if (level >= depth) { out.push(au, av, bu, bv, cu, cv, level); return; }
+      const abu = fr((au + bu) * 0.5), abv = fr((av + bv) * 0.5);
+      const bcu = fr((bu + cu) * 0.5), bcv = fr((bv + cv) * 0.5);
+      const cau = fr((cu + au) * 0.5), cav = fr((cv + av) * 0.5);
+      out.push(abu, abv, bcu, bcv, cau, cav, level + 1);
+      split(au, av, abu, abv, cau, cav, level + 1);
+      split(abu, abv, bu, bv, bcu, bcv, level + 1);
+      split(cau, cav, bcu, bcv, cu, cv, level + 1);
+    };
+    const cu = [0, 1, 1, 0], cv = [0, 0, 1, 1];
+    for (let k = 0; k < 4; k++) { const n = (k + 1) % 4; split(0.5, 0.5, cu[k], cv[k], cu[n], cv[n], 0); }
+    return out;
+  }
+  // The destruction ladder: depth 0 is the ordinary explosion, depth d the Sierpinski cut (each triangle a
+  // glitter shard). Round 3's ladder stays in the Archive tab for comparison.
+  const DESTRUCTION = ['Explosion'].concat(Array.from({ length: DEPTHS }, (_, i) => 'Depth ' + (i + 1)));
+  const DESTRUCTION_MESH = [null].concat(Array.from({ length: DEPTHS }, (_, i) => 'sier' + (i + 1)));
+  const ARCHIVE_LADDER = ['Explosion', 'Shatter', 'Glitter · large', 'Glitter · medium', 'Glitter · full'];
+  const ARCHIVE_MESH = [null, 'shatter', 'glitter4', 'glitter2', 'glitter1'];
+  function depthLines() { return Array.from({ length: DEPTHS }, (_, i) => P['depth' + (i + 1) + 'Screen']); }
+  function pickDestruction(f, steps) { return Math.max(0, levelForSize(f, depthLines()) - steps); }
   function pickSteal(f, steps) { return Math.max(0, levelForSize(f, [P.shedMinScreen, P.shedFineScreen, P.shedFinestScreen]) - steps); }
   const SHED_SUB = [0, C.shedSubdivision, C.shedFineSubdivision, C.shedFinestSubdivision];
   // PrismGlitterTiling, line for line (integer-only; parity.py compiles the C# and compares block for block).
-  const TILING = { grid: C.tilingGrid, large: C.tilingLargeLeg, splitLarge: C.tilingSplitLargePercent, splitMedium: C.tilingSplitMediumPercent };
+  // ARCHIVED (round 3, superseded by the Sierpinski cut; no longer in the game): the quadtree glitter tiling.
+  const TILING = { grid: 16, large: 4, splitLarge: 60, splitMedium: 60 };
   function tilingHash(face, size, x, y, salt) {
     let h = (Math.imul((((face * 8 + size) * 64 + y) * 64 + x) >>> 0, 2654435761) + Math.imul(salt, 40503)) >>> 0;
     h = (h ^ (h >>> 16)) >>> 0;
@@ -393,6 +422,36 @@
         }
       }
     });
+    return { pos, nrm, tan, uv, tri, count: cnt };
+  }
+  // HighPolyPrismMesh.PopulateSierpinski, line for line: one face's cut on all six faces, TEXCOORD2 = each
+  // triangle's own centroid (float arithmetic, as C# does it).
+  function buildSierpinski(depth) {
+    const FN = [[1, 0, 0], [-1, 0, 0], [0, 1, 0], [0, -1, 0], [0, 0, 1], [0, 0, -1]];
+    const FU = [[0, 1, 0], [0, 0, 1], [0, 0, 1], [1, 0, 0], [1, 0, 0], [0, 1, 0]];
+    const FV = [[0, 0, 1], [0, 1, 0], [1, 0, 0], [0, 0, 1], [0, 1, 0], [1, 0, 0]];
+    const fr = Math.fround, face = sierpinskiTriangles(depth), per = face.length / 7, cnt = per * 6 * 3;
+    const pos = new Float32Array(cnt * 3), nrm = new Float32Array(cnt * 3), tan = new Float32Array(cnt * 4), uv = new Float32Array(cnt * 2), tri = new Float32Array(cnt * 3);
+    let vi = 0, t = 0;
+    for (let f = 0; f < 6; f++) {
+      const N = FN[f], U = FU[f], V = FV[f];
+      for (let k = 0; k < face.length; k += 7, t++) {
+        const a = [face[k], face[k + 1]], b = [face[k + 2], face[k + 3]], c = [face[k + 4], face[k + 5]];
+        const cu = fr(fr(fr(a[0] + b[0]) + c[0]) / 3), cv = fr(fr(fr(a[1] + b[1]) + c[1]) / 3);
+        const xr = Math.sin(t * 12.9898 + f * 78.233) * 43758.5453, rnd = xr - Math.floor(xr);
+        for (const q of [a, b, c]) {
+          for (let m = 0; m < 3; m++) {
+            pos[vi * 3 + m] = N[m] * 0.5 + U[m] * (q[0] - 0.5) + V[m] * (q[1] - 0.5);
+            nrm[vi * 3 + m] = N[m];
+            tan[vi * 4 + m] = U[m];
+          }
+          tan[vi * 4 + 3] = -1;
+          uv[vi * 2] = q[0]; uv[vi * 2 + 1] = q[1];
+          tri[vi * 3] = cu; tri[vi * 3 + 1] = cv; tri[vi * 3 + 2] = rnd;
+          vi++;
+        }
+      }
+    }
     return { pos, nrm, tan, uv, tri, count: cnt };
   }
   // Prism.asset: the authored 72-vertex prism the explosion draws (pos3 nrm3 tan3 uv2 per vertex).
@@ -618,10 +677,11 @@ void main() {
       progPrism = program(EXPLOSION_VS, PRISM_FS, 'prism');
       probeBurst = program(BURST_VS, PROBE_FS, 'burst probe', ['vPosWS', 'vNrmWS']);
       probeExplosion = program(EXPLOSION_VS, PROBE_FS, 'explosion probe', ['vSubPos', 'vSubNrm']);
-      meshBurst = vao(buildUnwelded(Math.round(C.burstSubdivision)));
+      meshBurst = vao(buildUnwelded(10));   // the slice's subdivision: the parity probes' mesh, and round 3's shatter (Archive)
       meshPrism = vao(buildPrism72());
       MESHES.shatter = meshBurst;
-      for (const m of [4, 2, 1]) MESHES['glitter' + m] = vao(buildGlitter(m));
+      for (let d = 1; d <= DEPTHS; d++) MESHES['sier' + d] = vao(buildSierpinski(d));
+      for (const m of [4, 2, 1]) MESHES['glitter' + m] = vao(buildGlitter(m));   // archived (round 3)
       for (const l of [1, 2, 3]) MESHES['shed' + l] = vao(buildUnwelded(SHED_SUB[l], true));
     } catch (e) { glError = String(e.message || e); console.error(e); }
   }
@@ -645,7 +705,7 @@ void main() {
   const srgbToLinear = (c) => c.map((x) => Math.pow(Math.max(0, x), 2.2));
 
   // ================= the scene =================
-  // DESTRUCTION: the explosion, the shatter and the glitter — coarse to fine — on one shared flight.
+  // DESTRUCTION: the explosion (depth 0) and the Sierpinski depths — coarse to fine — on one shared flight.
   // STEALING: four standing prisms stolen at clock 0 — the GRADE, and the three SHEDS (the prism snaps to
   // its new colour under a skin in the old colours). COLLISION: a mover runs into a resting prism; both
   // die at the destruction level this camera's distance picks.
@@ -682,7 +742,9 @@ void main() {
       const fl = shed ? STILL : impactFlight(1);
       const cells = shed
         ? (() => { const res = P.labShedRes > 0 ? Math.round(P.labShedRes) : Math.max(1, liveLevels().stealLevel); return [{ type: 'prism', label: 'Grade', steal: 'grade' }].concat([BLOOM, UNRAVEL, FLAKE].map((k) => ({ type: 'burst', kind: k, label: KINDS[k] + ' · ' + SHED_SUB[res], steal: 'shed', mesh: 'shed' + res, level: res }))); })()
-        : DESTRUCTION.map((name, l) => l === 0 ? { type: 'explosion', label: name, level: 0 } : { type: 'burst', kind: l === 1 ? SHATTER : GLITTER, carry, mesh: DESTRUCTION_MESH[l], level: l, label: name + (carry ? ' · carried' : '') });
+        : P.labArchive >= 0.5
+          ? ARCHIVE_LADDER.map((name, l) => l === 0 ? { type: 'explosion', label: name, level: -1 } : { type: 'burst', kind: l === 1 ? SHATTER : GLITTER, carry, mesh: ARCHIVE_MESH[l], level: -1, label: name + ' (round 3)' + (carry ? ' · carried' : '') })
+          : DESTRUCTION.map((name, l) => l === 0 ? { type: 'explosion', label: name, level: 0 } : { type: 'burst', kind: GLITTER, carry, mesh: DESTRUCTION_MESH[l], level: l, label: name + (carry ? ' · carried' : '') });
       cells.forEach((c, i) => {
         const origin = v3.add(home(), [(i - (cells.length - 1) / 2) * spacing, 0, 0]);
         items.push(Object.assign(c, { origin, flight: fl, start: 0, intact: clock < 0 }));
@@ -697,7 +759,7 @@ void main() {
       const moverPos = pre ? v3.add(moverAtContact, [closing * clock, 0, 0]) : moverAtContact;
       const one = (origin, flight, who) => level === 0
         ? { type: 'explosion', origin, flight, start: 0, intact: pre, label: who + ' · Explosion' }
-        : { type: 'burst', kind: level === 1 ? SHATTER : GLITTER, mesh: DESTRUCTION_MESH[level], carry, origin, flight, start: 0, intact: pre, label: who + ' · ' + DESTRUCTION[level] + (carry ? ' · carried' : '') };
+        : { type: 'burst', kind: GLITTER, mesh: DESTRUCTION_MESH[level], carry, origin, flight, start: 0, intact: pre, label: who + ' · ' + DESTRUCTION[level] + (carry ? ' · carried' : '') };
       items.push(one(moverPos, fMover, 'Mover'), one(struck, fStruck, 'Struck'));
     }
     return items;
@@ -762,7 +824,7 @@ void main() {
       gl.uniform3fv(u.uCamPos, cam.eye); gl.uniform3fv(u.uDark, c.dark);
       gl.uniform1f(u.uFresnelPower, P.fresnelPower); gl.uniform1f(u.uInnerGlow, P.innerGlow);
     }
-    const mesh = MESHES[it.mesh || (it.kind === GLITTER ? 'glitter1' : shed ? 'shed1' : 'shatter')] || meshBurst;
+    const mesh = MESHES[it.mesh || (it.kind === GLITTER ? 'sier' + DEPTHS : shed ? 'shed1' : 'shatter')] || meshBurst;
     gl.bindVertexArray(mesh.v); gl.drawArrays(gl.TRIANGLES, 0, mesh.count);
   }
   function drawExplosion(prog, it, cam, clock) {
@@ -840,14 +902,14 @@ void main() {
       b.title = (it.type === 'explosion' ? 'The shipped explosion (the baseline). ' : it.type === 'prism' ? 'The shipped grade (the baseline). ' : '') + (picked ? 'The game draws this at the size shown. ' : '') + (cam.focus === i ? 'Back to the whole stage' : 'Fly the camera to this one');
     });
     const pct = (lv.fraction * 100).toFixed(1) + '% of the screen height (' + Math.round(lv.fraction * P.labScreenPx) + ' px of ' + P.labScreenPx + ')';
-    const head = view === 'destruction' ? 'Destruction, coarse to fine: the explosion, the shatter, the glitter'
+    const head = view === 'destruction' ? (P.labArchive >= 0.5 ? 'Destruction, round 3 (archived): the explosion, the shatter, the quadtree glitter' : 'Destruction, the Sierpinski cut: the explosion is depth 0, then depths 1-' + DEPTHS)
       : view === 'stealing' ? 'Stealing: the grade, and the three sheds (' + domain + ' stolen by ' + thief + ')'
         : 'Collision: a moving prism runs into a resting one; both die';
     const pc = (x) => (x * 100).toFixed(1) + '%';
     const crowd = lv.steps ? '   — budget ' + Math.round(P.labFill * 100) + '% full: ' + lv.steps + ' level' + (lv.steps > 1 ? 's' : '') + ' coarser' : '';
     const lod = view === 'stealing'
       ? 'At this size (' + pct + ') a steal ' + (lv.shed ? 'SHEDS at ' + SHED_SUB[lv.stealLevel] + ' subdivisions' : 'GRADES') + crowd + '\n(shed ' + pc(P.shedMinScreen) + ', fine ' + pc(P.shedFineScreen) + ', finest ' + pc(P.shedFinestScreen) + ')'
-      : 'At this size (' + pct + ') a death is ' + lv.destruction.toUpperCase() + crowd + '\n(shatter ' + pc(P.shatterMinScreen) + ', glitter large ' + pc(P.glitterMinScreen) + ', + medium ' + pc(P.glitterMediumScreen) + ', + small ' + pc(P.glitterFullScreen) + ')';
+      : 'At this size (' + pct + ') a death is ' + lv.destruction.toUpperCase() + (lv.destructionLevel > 0 ? ' (' + (24 * sierpinskiPerWedge(lv.destructionLevel)).toLocaleString() + ' fragments)' : '') + crowd + '\n(' + depthLines().map((l, i) => 'depth ' + (i + 1) + ' ' + pc(l)).join(', ') + ')';
     $('hud').textContent = head + '\n' + lod + '\nt ' + clock.toFixed(2) + ' s   seed ' + labSeed + (clock < 0 ? '   (before the ' + (view === 'stealing' ? 'steal' : 'event') + ')' : '');
     $('scrub').value = clock; $('clockOut').textContent = clock.toFixed(2) + ' s';
   }
@@ -938,7 +1000,7 @@ void main() {
     const destruction = [
       { name: 'Explosion, another prism', control: 'band', runs: [dShots(make('explosion', -1, 1, { flight: { v: turned, speed: fl.speed } }))] },
       { name: 'Prism held whole', control: 'negative', runs: [dShots(make('burst', SHATTER, 0, { intact: true }))] },
-    ].concat([1, 2, 3, 4].map((l) => ({ name: DESTRUCTION[l], runs: seeds.map((s) => dShots(make('burst', l === 1 ? SHATTER : GLITTER, s, { mesh: DESTRUCTION_MESH[l] }))) })))
+    ].concat(Array.from({ length: DEPTHS }, (_, i) => i + 1).map((l) => ({ name: DESTRUCTION[l], runs: seeds.map((s) => dShots(make('burst', GLITTER, s, { mesh: DESTRUCTION_MESH[l] }))) })))
       .map((c) => Object.assign(c, { table: 'destruction' }));
     // Sheds against the grade: standing prisms, stolen at t = 0.
     const sShots = (it) => shedTimes().map((t) => shoot(it, t));
@@ -966,15 +1028,11 @@ void main() {
   function stepCandidates() {
     const fl = impactFlight(1), still = { flight: STILL };
     const dz = (mesh, kind) => mesh ? { type: 'burst', kind, mesh } : { type: 'explosion', kind: -1 };
-    return [
-      { name: 'Glitter full → medium', line: P.glitterFullScreen, fine: dz('glitter1', GLITTER), coarse: dz('glitter2', GLITTER), flight: fl },
-      { name: 'Glitter medium → large', line: P.glitterMediumScreen, fine: dz('glitter2', GLITTER), coarse: dz('glitter4', GLITTER), flight: fl },
-      { name: 'Glitter large → shatter', line: P.glitterMinScreen, fine: dz('glitter4', GLITTER), coarse: dz('shatter', SHATTER), flight: fl },
-      { name: 'Shatter → explosion', line: P.shatterMinScreen, fine: dz('shatter', SHATTER), coarse: dz(null), flight: fl },
+    return Array.from({ length: DEPTHS }, (_, i) => DEPTHS - i).map((d) => ({ name: 'Depth ' + d + ' → ' + (d > 1 ? 'depth ' + (d - 1) : 'the explosion'), line: P['depth' + d + 'Screen'], fine: dz('sier' + d, GLITTER), coarse: d > 1 ? dz('sier' + (d - 1), GLITTER) : dz(null), flight: fl })).concat([
       { name: 'Shed ' + SHED_SUB[3] + ' → ' + SHED_SUB[2] + ' (bloom)', line: P.shedFinestScreen, fine: Object.assign({ type: 'burst', kind: BLOOM, steal: 'shed', mesh: 'shed3' }, still), coarse: Object.assign({ type: 'burst', kind: BLOOM, steal: 'shed', mesh: 'shed2' }, still), shed: true },
       { name: 'Shed ' + SHED_SUB[2] + ' → ' + SHED_SUB[1] + ' (bloom)', line: P.shedFineScreen, fine: Object.assign({ type: 'burst', kind: BLOOM, steal: 'shed', mesh: 'shed2' }, still), coarse: Object.assign({ type: 'burst', kind: BLOOM, steal: 'shed', mesh: 'shed1' }, still), shed: true },
       { name: 'Shed ' + SHED_SUB[1] + ' (bloom) → grade', line: P.shedMinScreen, fine: Object.assign({ type: 'burst', kind: BLOOM, steal: 'shed', mesh: 'shed1' }, still), coarse: Object.assign({ type: 'prism' }, still), shed: true },
-    ];
+    ]);
   }
   function runSteps() {
     if (!gl || glError) return [];
@@ -1188,7 +1246,7 @@ void main() {
   }
   function logPanel() {
     const box = document.createElement('div');
-    box.innerHTML = '<p class="hint" id="logStatus"></p><div class="twocol"><div><select id="logTopic" aria-label="Topic"><option>Destruction levels</option><option>Shatter</option><option>Glitter sizes</option><option>Sheds</option><option>Shed resolutions</option><option>LOD steps</option><option>Amount (crowding)</option><option>Bloom</option><option>Unravel</option><option>Flake</option><option>Squint verdict</option><option>Ladder</option><option>Overall</option></select><textarea id="logChoice" rows="4" aria-label="Your decision"></textarea><p><button class="btn primary" id="logSave">Record decision</button> <button class="btn" id="logCopy">Copy log</button></p></div><div class="tablewrap"><table id="logTable"></table></div></div>';
+    box.innerHTML = '<p class="hint" id="logStatus"></p><div class="twocol"><div><select id="logTopic" aria-label="Topic"><option>Destruction depths</option><option>Sierpinski cut</option><option>Sheds</option><option>Shed resolutions</option><option>LOD steps</option><option>Amount (crowding)</option><option>Bloom</option><option>Unravel</option><option>Flake</option><option>Squint verdict</option><option>Ladder</option><option>Overall</option></select><textarea id="logChoice" rows="4" aria-label="Your decision"></textarea><p><button class="btn primary" id="logSave">Record decision</button> <button class="btn" id="logCopy">Copy log</button></p></div><div class="tablewrap"><table id="logTable"></table></div></div>';
     const status = box.querySelector('#logStatus');
     status.textContent = db ? 'Shared log: saved with the lab and readable by Claude at the start of the next round.' : 'Kept in this browser. Use Copy log to send it.';
     status.className = db ? 'ok' : 'warn';
@@ -1215,7 +1273,7 @@ void main() {
 
   function aboutPanel() {
     const box = document.createElement('div');
-    box.innerHTML = '<div class="twocol"><div><p><b>What you are looking at.</b> The prism\'s two fundamental interactions, each at its DETAIL LEVELS. <b>Destruction</b> is one spectrum, coarse to fine: the ordinary explosion far away, a shatter nearer, then the glitter — triangles of three sizes, graded large → + medium → + small as the prism nears (a coarser glitter is the finer with its small fragments merged into their parents) — every level the explosion when you squint. <b>Stealing</b> is the ordinary grade (the 0.8 s colour lerp) far away and a SHED close up: the prism takes its new colour at once and a skin in the old colours comes off it (bloom, unravel or flake), on the grade\'s own curve, so squinted at it is the grade, at one of three mesh resolutions (' + C.shedSubdivision + ', ' + C.shedFineSubdivision + ', ' + C.shedFinestSubdivision + ' subdivisions). The game picks the level by how big the prism is on the screen and by how full the budget already is (the AMOUNT: Levels tab); zoom the stage and the ◆ moves. No white accents: the brighter inside colour is the only contrast. Click a label to fly the camera to it.</p><p class="hint" id="aboutSource"></p></div><div><p><b>What this lab does not model</b></p><ul class="plain"><li>Bloom, HDR and tonemapping.</li><li>The prism\'s and the explosion\'s own shader colouring. Every prism here wears the burst\'s skin shading (dark face, bright rim), so the differences are the detail levels, not the lab. The explosion\'s MOTION and FADE and the grade\'s CURVE are the shipped code.</li><li>The occlusion corridor (prisms between camera and ship go see-through).</li><li>The real collision test: Collision mode meets at touching x-extents, not the swept box test.</li><li>Shielded, danger and super-shielded tiers (other colour pairs, the danger gain).</li><li>The budget (48 alive): the lab always draws the level; the game draws the ordinary effect past it.</li><li>The game\'s float32 clock and a phone GPU\'s precision; frame time on a real device.</li></ul></div></div>';
+    box.innerHTML = '<div class="twocol"><div><p><b>What you are looking at.</b> The prism\'s two fundamental interactions, each at its DETAIL LEVELS. <b>Destruction</b> is one Sierpinski cut scaled by recursion depth: depth 0 is the ordinary explosion (its four wedges a face); each deeper depth splits the corner triangles at their edge midpoints and keeps the middles whole, so the fragments come in a self-similar range of sizes, and a shallower depth is the deeper one with its finest fragments merged into their parents — every depth the explosion when you squint. Round 3\'s shatter and quadtree glitter are in the Archive tab. <b>Stealing</b> is the ordinary grade (the 0.8 s colour lerp) far away and a SHED close up: the prism takes its new colour at once and a skin in the old colours comes off it (bloom, unravel or flake), on the grade\'s own curve, so squinted at it is the grade, at one of three mesh resolutions (' + C.shedSubdivision + ', ' + C.shedFineSubdivision + ', ' + C.shedFinestSubdivision + ' subdivisions). The game picks the level by how big the prism is on the screen and by how full the budget already is (the AMOUNT: Levels tab); zoom the stage and the ◆ moves. No white accents: the brighter inside colour is the only contrast. Click a label to fly the camera to it.</p><p class="hint" id="aboutSource"></p></div><div><p><b>What this lab does not model</b></p><ul class="plain"><li>Bloom, HDR and tonemapping.</li><li>The prism\'s and the explosion\'s own shader colouring. Every prism here wears the burst\'s skin shading (dark face, bright rim), so the differences are the detail levels, not the lab. The explosion\'s MOTION and FADE and the grade\'s CURVE are the shipped code.</li><li>The occlusion corridor (prisms between camera and ship go see-through).</li><li>The real collision test: Collision mode meets at touching x-extents, not the swept box test.</li><li>Shielded, danger and super-shielded tiers (other colour pairs, the danger gain).</li><li>The budget (48 alive, 80,000 triangles): the lab always draws the level; the game steps down past it (the Budget slider imitates the amount).</li><li>The game\'s float32 clock and a phone GPU\'s precision; frame time on a real device.</li></ul></div></div>';
     box.querySelector('#aboutSource').textContent = LAB.name + ' · round ' + LAB.round + ' · ' + LAB.branch + ' · write-up ' + LAB.doc + ' · the detail levels run ' + DATA.sources.burst + '; the explosion\'s fade runs ' + DATA.sources.erosion + '; its motion is ' + DATA.sources.explosionMap + '; the grade runs ' + DATA.sources.grade + '.';
     return box;
   }
@@ -1277,18 +1335,18 @@ void main() {
     setClock(t) { clock = t; render(); },
     state: () => ({ t: elapsed, clock, view, seed: labSeed, playing, glError }),
     probeBurstCase, probeExplosionCase, nextLevel, pickShed, pickDestruction, screenFraction, shedLife, skinScale, resolveFlight,
-    levels: liveLevels, runSteps, glitterBlocks, crowdSteps,
+    levels: liveLevels, runSteps, sierpinskiTriangles, crowdSteps,
     // parity.py: the glitter meshes cover the whole surface (area 6 for the unit cube) and no shed-mesh
     // triangle straddles either face diagonal (the union-jack cut).
     meshChecks() {
       const out = {};
-      for (const m of [4, 2, 1]) {
-        const g = MESHES['glitter' + m].mesh, P3 = g.pos; let area = 0;
+      for (let m = 1; m <= DEPTHS; m++) {
+        const g = MESHES['sier' + m].mesh, P3 = g.pos; let area = 0;
         for (let t = 0; t < g.count; t += 3) {
           const a = [P3[t * 3], P3[t * 3 + 1], P3[t * 3 + 2]], b = [P3[t * 3 + 3], P3[t * 3 + 4], P3[t * 3 + 5]], c = [P3[t * 3 + 6], P3[t * 3 + 7], P3[t * 3 + 8]];
           const cr = v3.cross(v3.sub(b, a), v3.sub(c, a)); area += 0.5 * Math.hypot(cr[0], cr[1], cr[2]);
         }
-        out['glitter' + m] = { triangles: g.count / 3, area: +area.toFixed(5) };
+        out['sier' + m] = { triangles: g.count / 3, area: +area.toFixed(5) };
       }
       for (const l of [1, 2, 3]) {
         const g = MESHES['shed' + l].mesh, uv = g.uv; let straddles = 0;

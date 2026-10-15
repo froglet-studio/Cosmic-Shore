@@ -2605,10 +2605,20 @@ effect) and by the shared budget (`PrismInteractionLod`, config `Resources/Prism
 
 | Interaction | Far / over budget | Nearer | Close up |
 |---|---|---|---|
-| **Destruction** (every explosion death; a collision above motion level 1 asks for plain) | the EXPLOSION | SHATTER (≥ 5%) | GLITTER LARGE (≥ 12%) → MEDIUM (≥ 17%) → FULL (≥ 24%) |
+| **Destruction** (every explosion death; a collision above motion level 1 asks for plain) | the EXPLOSION — depth 0 of the Sierpinski cut | DEPTH 1 (≥ 5%) → DEPTH 2 (≥ 10%) | DEPTH 3 (≥ 16%) → DEPTH 4 (≥ 24%) |
 | **Stealing** (`PrismTeamManager.Steal`) | the GRADE — the 0.8 s smoothstep colour lerp (`PrismColorLerp`) | a SHED (≥ 8%): BLOOM, UNRAVEL or FLAKE by weight, on 12 subdivisions | the same shed on 18 (≥ 16%), then 24 (≥ 28%) subdivisions |
 
-**Round 3 (the designer, the same day):** *"lets have glitter create a range of fragment sizes that are
+**Round 4 (the designer, 2026-10-15) — supersedes the shatter and the glitter tiling below:** *"a serpinski
+inspired cut would give a nice distribution and range that you could scale with recursion depth without the need
+for shatter and using the base explosion as the first depth."* Destruction is one cut scaled by recursion depth
+(`PrismSierpinskiTiling`, `HighPolyPrismMesh.GetSierpinski`): depth 0 is the explosion's own four wedges a face (the
+same 24 triangles as `Prism.asset`, held by `parity.py`) and the game draws it as the explosion; each deeper depth
+splits the corner triangles at their edge midpoints, keeping the middle whole — 24 × 1, 4, 13, 40, 121 triangles at
+depths 0–4, a self-similar range of sizes, each depth the next with its finest corners merged. Each triangle is a
+glitter shard (shader unchanged). The lines are `depthMinScreen` (an array: its length is the deepest cut). The
+shatter kind stays in the shader as the fallback for an unknown kind; no ladder draws it.
+
+**Round 3 (the designer, the same day; its glitter tiling is superseded by round 4):** *"lets have glitter create a range of fragment sizes that are
 triangles of different sizes. then from far away it will look like we just aren't seeing the small ones. then
 you can grade the effect with more LOD based on distance and amount."* — *"the steal effects are looking
 great, but these should have even higher resolution versions that also grade LOD."*
