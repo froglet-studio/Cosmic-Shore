@@ -35,14 +35,14 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 ### T-20261015-7b5a · open · test · Activation
 - **Task:** Re-test the first-login spotlight in Unity: the 2026-10-06 playtest saw no dim, no frame, no caption and dead presses; a CanvasRenderer fix landed after it and was never re-tested.
 - **Done when:** On a fresh profile Menu_Main shows the dim, the pulsing frame on ARCADE, its caption and a pressable Settings gear, and the menu takes presses. Result written in the checklist section.
-- **Who can take it:** Yash (offered), anyone with the Unity Editor
+- **Who can take it:** Yash (offered), Andrew, anyone with the Unity Editor
 - **Added:** 2026-10-15 by Yash's session (activation) (`Ys-bleeding-edge`)
 - **See:** Docs/UNITY_VERIFICATION_CHECKLIST.md, 'First-login guide - spotlight draws nothing in Unity'
 
 ### T-20261015-b47d · open · test · Activation
 - **Task:** Hand-test the first-login guide, the microgame Lesson with its ghost demo, and the ftue_* analytics events, end to end.
 - **Done when:** All nine steps of the checklist section pass, or each failure is written there and added here as a dev task.
-- **Who can take it:** Yash (offered), anyone with the Unity Editor
+- **Who can take it:** Yash (offered), Andrew, anyone with the Unity Editor
 - **Added:** 2026-10-15 by Yash's session (activation) (`Ys-bleeding-edge`)
 - **See:** Docs/UNITY_VERIFICATION_CHECKLIST.md, 'Ghost demo + first-login guide + FTUE analytics'; Docs/ModePreview/TRAINING_PLAN.md 10.7
 
@@ -157,21 +157,21 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 ### T-20261015-56dd · open · test · Performance
 - **Task:** First editor performance capture, S2 Lattice: Code Optimization = Release, Play, Cell Selector > Lattice, wait 8 minutes, press Capture S2 on the Bug Hunt & Performance badge (bottom-left of the Scene view), stop playing and press Send to Claude when Unity asks (the file is one JSON holding burst, diag, prof, renderers, cells and the console; pasting it into a Claude session also works). Close the Third Eye window and any preview first: an extra camera renders the world again and the capture says so.
 - **Done when:** A capture_Menu_Main_S2_*.json whose reader output (python3 Tools/Build/perf_capture_report.py) shows no ERROR line (Release, Burst on, no managed job time) is pasted and recorded in Docs/PERFORMANCE_OPTIMIZATION.md 2 with its numbers.
-- **Who can take it:** Yash (offered), anyone with the Unity Editor
+- **Who can take it:** Yash (offered), Andrew, anyone with the Unity Editor
 - **Added:** 2026-10-15 by the performance session (perf/performance-optimization) (`perf/performance-optimization`)
 - **See:** Docs/PERFORMANCE_OPTIMIZATION.md 3.6 and 4.6; Docs/DIAGNOSTICS.md, the Bug Hunt & Performance badge
 
 ### T-20261015-3e0b · open · test · Performance
 - **Task:** Skim Race I2 with 2 AI, Release: press Capture SkimRace on the Scene view badge, stop, then Send to Claude. This is the Burst check the 10-08 fix still owes (burst must read BURST and the Profiler must show no managed job time) and the test of the PoolRefill.Squirrel Prism ~9 KB/frame allocation lead from the Amoebius run.
 - **Done when:** The capture is shared or pasted; its burst section reads Run() BURST, Schedule() BURST; prof.managedJobMs < 0.2; the Profiler top-allocators list confirms or clears PoolRefill.Squirrel Prism. Recorded in Docs/PERFORMANCE_OPTIMIZATION.md 2.
-- **Who can take it:** Yash (offered), anyone with the Unity Editor
+- **Who can take it:** Yash (offered), Andrew, anyone with the Unity Editor
 - **Added:** 2026-10-15 by the performance session (perf/performance-optimization) (`perf/performance-optimization`)
 - **See:** Docs/PERFORMANCE_OPTIMIZATION.md 3.6 and 4.6; Docs/DIAGNOSTICS.md, the Bug Hunt & Performance badge
 
 ### T-20261015-3972 · open · test · Performance
 - **Task:** S5 Wildlife Liberation, Release: two minutes into a match, press Capture S5 on the Scene view badge, stop, then Send to Claude. It is the go/no-go for lever L8 (batched creature body re-sync): Fauna.BodySync must average 8 ms or more for L8 to be worth building.
 - **Done when:** The capture is shared or pasted and the Fauna.BodySync / LightFauna.Update rows are read; the L8 decision is written in Docs/PERFORMANCE_OPTIMIZATION.md 3.3.
-- **Who can take it:** Yash (offered), anyone with the Unity Editor
+- **Who can take it:** Yash (offered), Andrew, anyone with the Unity Editor
 - **Added:** 2026-10-15 by the performance session (perf/performance-optimization) (`perf/performance-optimization`)
 - **See:** Docs/PERFORMANCE_OPTIMIZATION.md 3.6 and 4.6; Docs/DIAGNOSTICS.md, the Bug Hunt & Performance badge
 
@@ -193,7 +193,7 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 ### T-20261015-e266 · open · test · AI / Third Eye
 - **Task:** Play-test the Third Eye You / AI toggle in Regatta: hand your hull to the AI, take over a rival AI hull, all-AI
 - **Done when:** Steps 1-6 of the 'Third Eye: a You / AI toggle' entry pass in the editor
-- **Who can take it:** Yash
+- **Who can take it:** Yash, Andrew
 - **Added:** 2026-10-15 by Claude (Yash's session) (`Ys-bleeding-edge`)
 - **See:** Docs/UNITY_VERIFICATION_CHECKLIST.md
 
@@ -214,14 +214,14 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 ### T-20261015-7d29 · open · test · Performance
 - **Task:** Test the Bug Hunt & Performance badge in the Scene view: open Unity, check the card shows bugs and perf with no dialog on load, fold/unfold/hide it, press Release if shown, then in Play mode on Menu_Main press Capture S2, stop, and check Unity asks Send to Claude.
 - **Done when:** Every step of the 2026-10-15 badge entry in Docs/UNITY_VERIFICATION_CHECKLIST.md passes (or the failing step is reported to a Claude session), and the entry is moved to verified.
-- **Who can take it:** Yash (offered), anyone with the Unity Editor
+- **Who can take it:** Yash (offered), Andrew, anyone with the Unity Editor
 - **Added:** 2026-10-15 by the performance session (perf/performance-optimization) (`perf/performance-optimization`)
 - **See:** Docs/UNITY_VERIFICATION_CHECKLIST.md 2026-10-15; Docs/DIAGNOSTICS.md, The Bug Hunt & Performance badge
 
 ### T-20261015-0bc6 · open · test · diagnostics
 - **Task:** Test the one-button bug flow in Unity: play until a red error appears (or Debug.LogError from any script), stop Play, press Send to Claude; play and stop again with the same error
 - **Done when:** The dialog appears once; origin/bugledger/<you> gets BugLedger/shared/issues/E-*.bug.json; git status unchanged and you are still on your branch; the second stop shows no dialog
-- **Who can take it:** Yash
+- **Who can take it:** Yash, Andrew
 - **Added:** 2026-10-15 by a Claude session (`Ys-bleeding-edge`)
 - **See:** Docs/DIAGNOSTICS.md#send-to-claude--the-only-ui
 
@@ -235,14 +235,14 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 ### T-20261015-aa0d · open · test · Regatta AI
 - **Task:** Playtest the Squirrel AI skimming Regatta's rails: Squirrels on AI seats at I1 and I4, the Third Eye's skim readout on one (lift 7.5, direct off, shell gap 1.5-6), and tune Resources/SkimRaceAIConfig_Regatta.asset live if it still strikes or drifts off its rail
 - **Done when:** The Squirrel rides outside its own rail, strikes near zero, threads every ring; any tuned numbers recorded in author_skimrace_ai_config.py
-- **Who can take it:** Yash (found it), anyone with the Unity Editor
+- **Who can take it:** Yash (found it), Andrew, anyone with the Unity Editor
 - **Added:** 2026-10-15 by Claude for Yash (`Ys-bleeding-edge`)
 - **See:** Docs/SKIM_RACE_AI.md §15; Docs/UNITY_VERIFICATION_CHECKLIST.md (Regatta Squirrel skim)
 
 ### T-20261015-7edd · open · test · Performance
 - **Task:** Confirm the lava lamp fps fix in Unity: Release, Third Eye closed, Play Menu_Main, press Capture S2 on the Scene view badge in the first minute, stop, Send to Claude. Then fly close to an omni and a Charge crystal and check their light looks as before.
 - **Done when:** The capture reads well above the 19-30 fps reported on 10-15, and the 2026-10-15 lava-lamp entry in Docs/UNITY_VERIFICATION_CHECKLIST.md passes.
-- **Who can take it:** Yash (reported it), anyone with the Unity Editor
+- **Who can take it:** Yash (reported it), Andrew, anyone with the Unity Editor
 - **Added:** 2026-10-15 by the performance session (perf/performance-optimization) (`perf/performance-optimization`)
 - **See:** Docs/PERFORMANCE_OPTIMIZATION.md 2 (10-15 lava lamp row); Docs/UNITY_VERIFICATION_CHECKLIST.md
 
@@ -256,6 +256,20 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 ### T-20261015-1551 · open · test · Performance
 - **Task:** Find why Regatta runs at 10 fps in the editor: in MinigameRegatta (Release code optimization, Deep Profile off), press Capture on the Scene view's Bug Hunt & Performance badge once with the Third Eye CLOSED and once with it OPEN (label R_editor_A / R_editor_B), stop Play and Send to Claude each time
 - **Done when:** Both captures are on bugledger/yskha and the report names what the 10 fps is spent on (game vs Third Eye vs editor state)
-- **Who can take it:** Yash (offered), anyone with the Unity Editor
+- **Who can take it:** Yash (offered), Andrew, anyone with the Unity Editor
 - **Added:** 2026-10-15 by Claude for Yash (`Ys-bleeding-edge`)
 - **See:** Docs/PERFORMANCE_OPTIMIZATION.md §4.2a
+
+### T-20261015-4354 · open · test · Multiplayer
+- **Task:** Run the Unity multiplayer hand tests on Ys-bleeding-edge: the eleven QA-NET items in Docs/QA/QA_BACKLOG.md (QA-NET-SDK-UPGRADE first, it is the gate), in the order in Docs/QA/ANDREW_TEST_HANDOFF.md. Give each Multiplayer Play Mode virtual player its own tag (P2, P3, P4) first. Plus two checks with no QA item yet: host drops then the new host invites at once (5 times), and 5 minutes idle in the menu with no 429s.
+- **Done when:** Every QA-NET item has a verdict in a Docs/QA/RESULTS/<date>-<name>.md file that was Submitted (BLOCKED is a valid verdict, e.g. QA-NET-ARCADE-LOBBY-FOLLOW without three machines); the two extra checks are written in its 'Anything else' section; then tell Claude to apply the results.
+- **Who can take it:** Andrew, Yash (offered)
+- **Added:** 2026-10-15 by Yash's session (multiplayer) (`Ys-bleeding-edge`)
+- **See:** Docs/QA/ANDREW_TEST_HANDOFF.md; Docs/QA/README.md; Docs/MULTIPLAYER_START_HERE.md 5.2; Docs/PartySystem/TESTS.md
+
+### T-20261015-0426 · open · test · Multiplayer
+- **Task:** Hand-test Amoebius multiplayer on Windows from Prisma.exe: the eight steps of Docs/MULTIPLAYER_START_HERE.md 5.1 (four players tile, party up, simulated 4G, pulled cable, session fault 'party is full', capture, TCP still works, through the relay). Do NOT run the live UGS test (5.3); that touches the real UGS project and waits for the owner's go-ahead.
+- **Done when:** Each of the eight steps is PASS or FAIL in the 'Anything else' section of a QA results file, with the log text verbatim for any FAIL; a FAIL is also added here as a dev task.
+- **Who can take it:** Andrew, Yash (offered), a Windows machine
+- **Added:** 2026-10-15 by Yash's session (multiplayer) (`Ys-bleeding-edge`)
+- **See:** Docs/QA/ANDREW_TEST_HANDOFF.md; Docs/MULTIPLAYER_START_HERE.md 5.1; Port/docs/MULTIPLAYER.md
