@@ -209,3 +209,10 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Who can take it:** Garrett (bleeding-edge / repo settings), Shombith (CI), Yash (offered)
 - **Added:** 2026-10-15 by the performance session (perf-hunt) (`perf/performance-optimization`)
 - **See:** .github/workflows/perf-daily.yml; Docs/PERFORMANCE_OPTIMIZATION.md 3.4; /perf-hunt section 0
+
+### T-20261015-aa0d · open · test · Regatta AI
+- **Task:** Playtest the Squirrel AI skimming Regatta's rails: Squirrels on AI seats at I1 and I4, the Third Eye's skim readout on one (lift 7.5, direct off, shell gap 1.5-6), and tune Resources/SkimRaceAIConfig_Regatta.asset live if it still strikes or drifts off its rail
+- **Done when:** The Squirrel rides outside its own rail, strikes near zero, threads every ring; any tuned numbers recorded in author_skimrace_ai_config.py
+- **Who can take it:** Yash (found it), anyone with the Unity Editor
+- **Added:** 2026-10-15 by Claude for Yash (`Ys-bleeding-edge`)
+- **See:** Docs/SKIM_RACE_AI.md §15; Docs/UNITY_VERIFICATION_CHECKLIST.md (Regatta Squirrel skim)

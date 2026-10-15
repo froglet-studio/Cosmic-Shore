@@ -78,6 +78,12 @@ namespace CosmicShore.Gameplay
         /// </summary>
         public SkimRaceReplanGate ReplanGate { get; set; }
 
+        /// <summary>
+        /// False stands direct flight down for good: the pilot keeps to its skim line even with a
+        /// full boost bank. Set from <see cref="SkimRaceObjective.AllowsDirectFlight"/>.
+        /// </summary>
+        public bool AllowDirectFlight { get; set; } = true;
+
         Mode _mode = Mode.Idle;
         float _recoveryUntil;
         int _recoveries;
@@ -144,7 +150,7 @@ namespace CosmicShore.Gameplay
             Frame(course, sTarget, out Vector3 cp, out Vector3 t, out Vector3 n, out Vector3 l);
             Vector3 rel = o.TargetPosition - cp;
             float cl = Vector3.Dot(rel, l), ch = Vector3.Dot(rel, n), ct = Vector3.Dot(rel, t);
-            float H = LaneSkimHeight;
+            float H = LaneSkimHeight(course);
             float R = Mathf.Max(2f, (o.TargetRadius > 0f ? o.TargetRadius : _cfg.DefaultCaptureRadius) - _cfg.PassMargin);
             float clearH = _cfg.RibbonClearHeight;
 
@@ -1122,7 +1128,7 @@ namespace CosmicShore.Gameplay
         Vector3 LinePoint(SkimRaceCourse c, float s)
         {
             Frame(c, s, out Vector3 p, out _, out Vector3 n, out Vector3 l);
-            float H = LaneSkimHeight;
+            float H = LaneSkimHeight(c);
             if (!_bumpActive) return p + n * (_side * H);
 
             float ds = SignedDelta(c, s, _bumpCentre);
@@ -1209,7 +1215,14 @@ namespace CosmicShore.Gameplay
         float _speed;                  // the hull's speed this decision (sizes the crossing lead)
         float _crossOriginDs = -1e6f;  // where (signed, relative to the crystal) the current face change was decided
         float _crossForCentre = float.NaN;
-        float LaneSkimHeight => Mathf.Abs(_cfg.SkimHeight) + Lane * _cfg.LaneHeightStep;
+        /// <summary>
+        /// The line's height off the course's prism centres: the tuned skim height, the lane step,
+        /// and the course's <see cref="SkimRaceCourse.SkimLift"/> - so on a course whose contact
+        /// shell stands taller than Skim Race's plates (Regatta's rails) the line keeps the same gap
+        /// above the shell instead of flying inside it.
+        /// </summary>
+        float LaneSkimHeight(SkimRaceCourse course) =>
+            Mathf.Abs(_cfg.SkimHeight) + Lane * _cfg.LaneHeightStep + (course != null ? course.SkimLift : 0f);
 
         /// <summary>
         /// A racing-line point from its frame offsets - never inside the slab band: within the
@@ -1317,7 +1330,7 @@ namespace CosmicShore.Gameplay
             Vector3 passPoint = _bumpActive ? _passWorld : o.TargetPosition;
             float passDist = Vector3.Distance(o.Position, passPoint);
 
-            if (_cfg.DirectBoost > 0f && o.HasTarget)
+            if (_cfg.DirectBoost > 0f && AllowDirectFlight && o.HasTarget)
             {
                 if (!_direct && o.BoostMultiplier >= _cfg.DirectBoost) _direct = true;
                 else if (_direct && o.BoostMultiplier < _cfg.DirectBoost - _cfg.DirectBoostHysteresis) _direct = false;
