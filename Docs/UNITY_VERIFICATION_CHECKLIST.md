@@ -9635,3 +9635,30 @@ verification, steps 2-9. The short version:
 4. **Trails**: a smaller block (1.5 × 1.5 × 3) everywhere, the same in Creation's five lines; Speed Mode stretches them.
 5. **LT** needs a spare ring (Charge card: half per crystal, two at most); the ring regrows on its own after a throw.
 6. Touch caveat: Charge Mode is `FlipAction`, which a phone raises when turned — expect a landscape flip to toggle it.
+## 🔴 Match replays on Will's Theater + AstroLeague goal replay port (2026-10-15, `claude/youthful-hopper-5t3dbr`) - NOT EDITOR-VERIFIED
+
+No Unity CLI in the session, so `/verify-unity` could not run. Checked offline only: `Tools/Build/unity_refcompile/run.sh`
+player (0 errors in project code, no changed file in any unverified bucket) and editor (0 errors in changed files; the 3
+known `AuthenticationServiceFacade` MPPM errors); `ReplayStoreTests` compiled and RUN outside Unity with Roslyn + the
+cached NUnit (20/20; negative control: an overwrite and an open path guard fail 7); the out-of-editor gates. Design:
+`Docs/REPLAYS.md`, `Docs/THEATER.md`.
+
+1. **Theater itself** (Will Bogen's P0, never opened in Unity after his last fixes): run `Docs/THEATER.md` §7's list.
+   Press 9, 9; a file lands in `<repo>/Recordings/`; press 8; the world and its prisms are in shot and the HUD is gone;
+   press 1 and fly the free camera; press 2 and a loop returns to the same vantage; press 8 and the HUD and live ships
+   come back.
+2. **Regatta records itself.** Arcade > Regatta, race to the end screen. **Pass:** `<repo>/Recordings/` holds
+   `Regatta_<date>_<time>.cstheater` and `Regatta_<date>_<time>.replay.json`; the JSON lists every pilot (yours has
+   `"IsLocal": true`), `"HasResults": true`, and its winner and scores match the scoreboard.
+3. **Watch it.** Still in the Regatta scene after that race, press 8. **Pass:** the Theater plays that race; the ghosts
+   are the right hulls in their domain colours; Free / Pilot / Orbit / Chase all work.
+4. **Leaving keeps the replay.** Leave a Regatta race from the pause menu mid-race. **Pass:** a replay is still saved,
+   with `"EndedBecause": "left the match"` and `"HasResults": false`.
+5. **Retention.** Create `Resources/ReplayConfig` with Keep Newest = 2 and race three times, after making one hand
+   recording with 9. **Pass:** exactly the two newest replay pairs remain, and the hand-made recording is untouched.
+6. **Only the configured modes record.** Play a Skim Race. **Pass:** no new replay.
+7. **Online.** Host and guest race Regatta together. **Pass:** each machine saves its own replay of the race.
+8. **AstroLeague goal replay** (ported onto Theater's poses and interpolation). Score a goal. **Pass:** the ghost ball
+   blooms in, retraces the shot on the broadcast camera, shrinks out, and the gameplay camera comes back, as before.
+9. **Cloud index.** Signed in, after a Regatta replay: the UGS dashboard shows player data key `REPLAY_INDEX` holding
+   that replay's summary (no frames).
