@@ -374,9 +374,13 @@ the bottom-left corner of every Scene view. It opens expanded once per editor st
 - **Perf:** the gates, the regressions and the scenarios still owed a Release capture, read from
   `Docs/perf/status.json` (written by every `perf_hunt.py sweep`), the age of that status, and the first next step.
 - **Buttons, each shown only when it applies:** **Send to Claude** (open errors exist; the same `BugLedgerSender`
-  push as the after-play question), **Capture** (Play mode: `capture <label> 15`, the label taken from the scene's
-  scenario in the status file; a new capture then asks "Send to Claude?" after Play), **Release** (Code Optimization
-  is Debug, so a capture would not count).
+  push as the after-play question) and **Release** (Code Optimization is Debug, so a capture would not count).
+- **No Capture button** (Yash, 2026-10-15: "captures should happen automatic"). `PerfAutoCapture` runs
+  `capture <label> 15` by itself in Play, once per scene per session, after the scene's time from the status file
+  (S2 8 min, Skim Race 90 s, S5 2 min; any other gameplay scene 90 s under its own name). It skips Debug code
+  optimization, a paused editor and the boot scenes. While playing, the badge shows its countdown. A new capture
+  then asks "Send to Claude?" after Play. It costs one short hitch per scene (a 180-frame Profiler recording and a
+  renderer census). Turn it off on one machine with the EditorPrefs key `CosmicShore.PerfAutoCapture.Off`.
 
 It replaced the Capture Performance window. Every other question (what regressed, what to test, what to fix next) is
 answered in Claude: the `.claude/hooks/health_status.py` hook hands any session that is asked the same status file

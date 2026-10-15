@@ -9465,3 +9465,21 @@ Checked offline only: unity_refcompile player, player-dev and editor configurati
    and Unity asks "Send to Claude?" with "You recorded a new flight" even when there was no new error.
 4. In a session, run `python3 Tools/Build/learn_from_flights.py`. **Pass:** it lists your races and proposes numbers.
    With `--write`, `SkimRaceAIConfig_Regatta.asset` changes, and the Squirrel AI flies the learned line.
+
+## 🔴 2026-10-15 — Automatic performance captures; the badge's Capture button removed (unverified: no Unity CLI in the session)
+
+**Files:** `Assets/_Scripts/Editor/Diagnostics/PerfAutoCapture.cs` (new), `BugHuntPerfBadge.cs` (button removed, countdown
+shown), `Tools/Build/perf_hunt.py` (scenario times in `status.json`; `status --refresh` keeps the Amoebius verdicts).
+What ran instead of `/verify-unity`: `unity_refcompile --config editor` (0 errors in the changed files),
+`perf_hunt.py --self-test`, the logging and conditional-compilation gates.
+
+1. Code Optimization = Release. Play Menu_Main. Expect the badge to read "Auto-capture: S2 in 7:59" counting down, and
+   NO Capture button anywhere.
+2. Load MinigameSkimRace (or any arcade scene) and play 90 s. Expect "Auto-capture: SkimRace running", a short hitch
+   while the Profiler records 180 frames (the Profiler window does NOT need to be open), then "Auto-capture saved
+   capture_MinigameSkimRace_SkimRace_*.json".
+3. Stop Play. Expect Unity's one "Send to Claude?" question naming the new capture.
+4. Stay in the same scene longer: no second capture in that session. Re-enter Play: it captures again.
+5. Code Optimization = Debug: the badge says auto-capture is off while Debug; nothing is captured.
+6. EditorPrefs `CosmicShore.PerfAutoCapture.Off` = true: no countdown, no capture.
+

@@ -6,7 +6,6 @@ using CosmicShore.Utility.PerformanceBenchmark;
 using UnityEditor;
 using UnityEditor.Compilation;
 using UnityEngine;
-using UnityEngine.SceneManagement;
 
 namespace CosmicShore.Editor
 {
@@ -26,9 +25,10 @@ namespace CosmicShore.Editor
     /// <para>Its only buttons are the basic steps, each shown only when it applies:
     /// <b>Send to Claude</b> (open errors exist: <see cref="BugLedgerSender"/>'s push to
     /// <c>bugledger/&lt;user&gt;</c>, which never touches the working tree and pushes nothing when
-    /// nothing changed), <b>Capture</b> (Play mode: the HUD's <c>capture</c> command, labelled by the
-    /// scene's scenario) and <b>Release</b> (switch Code Optimization, since a Debug capture is not a
-    /// number). It never opens a dialog: the one after-play question is <see cref="BugHuntAutoSend"/>'s.</para>
+    /// nothing changed) and <b>Release</b> (switch Code Optimization, since a Debug capture is not a
+    /// number). There is no Capture button: <see cref="PerfAutoCapture"/> captures by itself in Play mode, and its
+    /// status line ("Auto-capture: S2 in 6:12") shows here while playing. It never opens a dialog: the one
+    /// after-play question is <see cref="BugHuntAutoSend"/>'s.</para>
     ///
     /// <para>Reader-plus-launcher: it writes nothing under Assets, so it needs no ship panel
     /// (Docs/TOOLING.md). Hidden with × until the next editor start.</para>
@@ -39,7 +39,6 @@ namespace CosmicShore.Editor
         const string HiddenKey = "CosmicShore.BugHuntPerfBadge.Hidden";
         const string ExpandedKey = "CosmicShore.BugHuntPerfBadge.Expanded";
         const double RefreshSeconds = 60.0;
-        const int CaptureSeconds = 15;
         const float Margin = 8f, CardWidth = 400f, Pad = 8f, RowHeight = 18f, ButtonHeight = 22f;
 
         [Serializable]
@@ -90,7 +89,7 @@ namespace CosmicShore.Editor
                 string file = DiagnosticsHUD.LastCapturePath;
                 _note = string.IsNullOrEmpty(file)
                     ? "Capture finished."
-                    : $"Saved {Path.GetFileName(file)}. Stop playing: Unity asks to send it to Claude.";
+                    : $"Auto-capture saved {Path.GetFileName(file)}. Stop Play: Unity asks to send it to Claude.";
                 SceneView.RepaintAll();
             }
             else if (capturing != _wasCapturing)
@@ -206,19 +205,6 @@ namespace CosmicShore.Editor
 
         static string NextLine => _status?.next is { Length: > 0 } ? _status.next[0] : null;
 
-        static string CaptureLabel
-        {
-            get
-            {
-                string scene = SceneManager.GetActiveScene().name;
-                if (_status?.scenarios != null)
-                    foreach (var s in _status.scenarios)
-                        if (s != null && string.Equals(s.scene, scene, StringComparison.OrdinalIgnoreCase))
-                            return s.label;
-                return string.IsNullOrEmpty(scene) ? "capture" : scene;
-            }
-        }
-
         static bool DebugCode => CompilationPipeline.codeOptimization == CodeOptimization.Debug;
 
         // ── Drawing ─────────────────────────────────────────────────────────────
@@ -267,6 +253,8 @@ namespace CosmicShore.Editor
             float inner = width - 2f * Pad;
             var wrapped = FrogletEditorPalette.CardBodyWrapped;
             string next = NextLine;
+            if (EditorApplication.isPlaying && !string.IsNullOrEmpty(PerfAutoCapture.StatusLine) && !DiagnosticsHUD.CaptureRunning)
+                _note = PerfAutoCapture.StatusLine;
             float nextHeight = next == null ? 0f : wrapped.CalcHeight(new GUIContent("Next: " + next), inner);
             float noteHeight = string.IsNullOrEmpty(_note) ? 0f : wrapped.CalcHeight(new GUIContent(_note), inner);
             float height = Pad + RowHeight + 2f + 2f * RowHeight + nextHeight + noteHeight + 6f + ButtonHeight + Pad;
@@ -332,17 +320,6 @@ namespace CosmicShore.Editor
                 _note = "Sending to Claude in the background.";
             }
 
-            if (playing)
-            {
-                bool capturing = DiagnosticsHUD.CaptureRunning;
-                string label = CaptureLabel;
-                if (Button(capturing ? "Capturing... hands off" : $"Capture {label}", FrogletEditorPalette.Ok,
-                        $"Runs 'capture {label} {CaptureSeconds}' in the HUD console: burst + diag + prof + renderers + " +
-                        "cells as one JSON. Opens the Profiler first (prof reads its frames). Keep the Game view focused.",
-                        !capturing))
-                    StartCapture(label);
-            }
-
             if (DebugCode && Button("Release", FrogletEditorPalette.Warn,
                     "Code Optimization is Debug: C# runs ~5x slower, so a capture is not a number. Switch to Release " +
                     "(recompiles; the same as the bug icon in the status bar).", !playing))
@@ -350,20 +327,6 @@ namespace CosmicShore.Editor
                 CompilationPipeline.codeOptimization = CodeOptimization.Release;
                 _note = "Code Optimization set to Release.";
             }
-        }
-
-        static void StartCapture(string label)
-        {
-            // prof reads frames from the Profiler window; without it open there are no frames to read.
-            var profilerType = Type.GetType("UnityEditor.ProfilerWindow,UnityEditor");
-            if (profilerType != null) EditorWindow.GetWindow(profilerType, false, "Profiler", false);
-
-            string answer = DiagnosticsHUD.RunConsole($"{DiagnosticsHUD.CaptureCommand} {label} {CaptureSeconds}");
-            _note = DebugCode
-                ? "Capturing in Debug code optimization: the sweep will not count this one. " + answer
-                : answer;
-            _wasCapturing = DiagnosticsHUD.CaptureRunning;
-            SceneView.RepaintAll();
         }
     }
 }

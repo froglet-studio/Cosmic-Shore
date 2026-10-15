@@ -503,8 +503,9 @@ scenario, Release, `diag` 15 s, §4.7 protocol:
 | **5** | **Gate.** Nightly `-csmbench` on S1–S6 per tier (§3.4) plus the Amoebius marker run as the no-editor allocation gate (§2, 10-09) | tooling | a regression fails a run |
 
 **How a test is run now (2026-10-14).** One command in the HUD console, `capture <label> 15`, or the
-**Capture** button on the Scene view's Bug Hunt & Performance badge (2026-10-15; it replaced the Capture Performance
-window); after Play, Unity's "Send to Claude?" sends the file, or paste it.
+automatic capture: since 2026-10-15 the editor runs it by itself in Play, once per scene, after the scene's time
+(`PerfAutoCapture`; S2 480 s, Skim Race 90 s, S5 120 s from `perf_hunt.py SCENARIOS`, other scenes 90 s; skipped in
+Debug code optimization). There is no Capture button; after Play, Unity's "Send to Claude?" sends the file, or paste it.
 The agent reads it with `Tools/Build/perf_capture_report.py`, which refuses a Debug-optimization, Deep-Profile
 or managed-job capture before it ranks anything. **First editor test asked for: S2 Lattice** - Menu_Main,
 Cell Selector → Lattice, let it grow 8 minutes, `capture S2 15`. It is the owner's "40k prisms under 60 fps"
@@ -533,7 +534,7 @@ editor window, and screenshots re-typed by hand.
 
 | Question | Tool | Output |
 |---|---|---|
-| **Everything, once, with nothing to transcribe** | `capture <label> 15` (or **Capture** on the Scene view's Bug Hunt & Performance badge), then Send to Claude after Play, or paste the file (§4.6) | One JSON: burst + diag + prof + renderers + cells + console; `perf_capture_report.py` reads it |
+| **Everything, once, with nothing to transcribe** | Just play: the editor captures by itself (`PerfAutoCapture`; or `capture <label> 15` in the console), then Send to Claude after Play, or paste the file (§4.6) | One JSON: burst + diag + prof + renderers + cells + console; `perf_capture_report.py` reads it |
 | **What is costing the frame?** | **Unity Profiler**, Hierarchy + Timeline, Deep Profile **off** | Names the caller. **Always start here.** |
 | **Where does the GC come from?** | Profiler Hierarchy, sort by **GC Alloc** — or `prof <label>` (`topGc` ranks by SELF allocation) | Names the caller |
 | **The Hierarchy as text** | `prof <label> [frames] [root=…] [sort=…]` (§4.5) | `prof_*.json`: averaged tree, top self, top GC, threads, typical + spike frame |
@@ -573,8 +574,8 @@ order (the cost estimates are from this record and `Docs/SKIM_RACE_AI.md` §14.4
 | 4 | **The Third Eye: open only while watching, Resolution 0.5, Trails off unless needed** | A second full render (post, shadows, AA) at window pixels x display scale |
 | 5 | **Game view no larger than 1440p**; Burst on; Game view focused | GPU pixels; managed jobs (10-20x); an unfocused editor throttles |
 
-**To find out which it is, measure, do not guess:** in Play, press **Capture** on the Scene view's Bug Hunt &
-Performance badge, once with the Third Eye closed and once with it open, then **Send to Claude** when Unity asks.
+**To find out which it is, measure, do not guess:** play two sessions past the auto-capture time (90 s for a scene with no
+scenario), once with the Third Eye closed and once with it open, then **Send to Claude** when Unity asks.
 A capture now records the editor's own state (`editor`: Scene views open, Game view size, deep profiling, editor
 profiling) beside the camera list, and `perf_capture_report.py` flags each one.
 

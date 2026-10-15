@@ -21,7 +21,7 @@ number: the editor shares its captures by itself, the sweep judges them, and the
 
 **Where people see it: two surfaces only** (Yash, 2026-10-15: no extra editor UI). In the editor, the Scene view's
 **Bug Hunt & Performance badge** (`BugHuntPerfBadge`, Docs/DIAGNOSTICS.md): the counts, the first next step, and the
-Send to Claude / Capture / Release buttons. The one dialog is Unity's after-play "Send to Claude?" (`BugHuntAutoSend`). Everything else is answered in Claude from the status file. Do not add an
+Send to Claude / Release buttons and, while playing, the auto-capture countdown (`PerfAutoCapture`: no Capture button). The one dialog is Unity's after-play "Send to Claude?" (`BugHuntAutoSend`). Everything else is answered in Claude from the status file. Do not add an
 editor window, a menu tool or a dashboard for this system; extend the status file and the badge instead.
 
 Baselines: `Docs/perf/baselines.json` (editor captures, keyed `scene|label`) and `Docs/perf/amoebius_baselines.json`
@@ -47,8 +47,8 @@ python3 Tools/Build/perf_capture_report.py <capture.json> # one capture, judged 
   `Mesh.SetVertices/SetUVs/SetTriangles(List)`, because the renderer keys on array identity), it belongs in
   `Docs/perf/amoebius_known.json` with the evidence and a task for the engine's owner (Shombith), not in a game fix.
   The sweep lists known entries as "engine shim" and never counts them.
-- **No shared capture yet?** The person has not shared: in Play mode, **Capture** on the Scene view's Bug Hunt &
-  Performance badge, then stop Play and press *Send to Claude* when Unity asks (a new capture asks on its own; the file
+- **No shared capture yet?** The person has not shared: play the scene in Release past its auto-capture time (the editor
+  captures by itself; the badge counts down), then stop Play and press *Send to Claude* when Unity asks (a new capture asks on its own; the file
   lands on their `bugledger/<user>` branch). Say that in one line. Never ask for pasted JSON when the pipe exists;
   accept a paste when they offer one.
 

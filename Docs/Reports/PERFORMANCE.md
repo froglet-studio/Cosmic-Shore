@@ -20,8 +20,9 @@
   SRP-batchable already) and the snow shards: levers L1 and L6, Garrett's ecology area.
 - **No phone has ever been measured.** The device gate may drop every prism to the 12.9x slower legacy path on a
   phone without compute/Vulkan. That is the first thing the phone plan measures (§3.6 of the record).
-- **Measuring is one button, and there is no other editor UI.** In Play mode, **Capture** on the Scene view's Bug
-  Hunt & Performance badge writes burst + diag + prof + renderers + cells + console + cameras as ONE JSON; after Play
+- **Measuring is automatic, and there is no other editor UI.** In Play mode the editor captures by itself, once per
+  scene, after the scene has run long enough (S2 8 min, Skim Race 90 s, S5 2 min, any other scene 90 s;
+  `PerfAutoCapture`), and writes burst + diag + prof + renderers + cells + console + cameras as ONE JSON; after Play
   Unity asks "Send to Claude?" and Send pushes it; the daily sweep judges it against its baseline and files a team task when something got
   worse. Ask any Claude session "performance status" or "what should I test" for the rest.
 
@@ -44,8 +45,8 @@ Regatta (`.claude/hooks/team_tasks_nudge.py`, "tasks waiting on a person").
 
 ## 2. How a number reaches this report
 
-1. Someone plays with Code Optimization = Release and presses **Capture** on the Scene view's Bug Hunt & Performance
-   badge (it labels the capture by the scene's scenario: S2, SkimRace, S5).
+1. Someone plays with Code Optimization = Release; the editor captures by itself after the scene's time (labelled by
+   the scene's scenario: S2, SkimRace, S5; the badge counts down).
 2. The editor shares the file: after Play stops, Unity asks "Send to Claude?" (a new capture asks on its own) and Send pushes it to the person's `bugledger/<user>` branch.
 3. `perf_hunt.py sweep` (daily, or any session) reads every branch, judges validity first (Debug, Deep Profile, a frame
    cap, Burst off, a second camera: not a number), compares with `Docs/perf/baselines.json`, and writes the block below.
