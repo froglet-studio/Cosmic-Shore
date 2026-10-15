@@ -65,6 +65,26 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Style-B menu redesign, item 8b: the Toy Box (`claude/new-session-76hnyc`, 2026-10-15) — NOT EDITOR-VERIFIED
+
+`ModalWindows/ToyboxScreenModal` rebuilt from the approved ToyBox board (`Docs/MENU_REDESIGN_B.md`
+section 17.3) by `Tools/Build/author_menu_toybox.py` (`--check`, `--self-test` green). No editor in the
+session: `/verify-unity` still owed. Offline: player + editor reference compiles clean.
+
+**Verify in editor:**
+1. Open Menu_Main: no missing-script or missing-reference warnings on `ToyboxScreenModal`.
+2. HOME > Toy Box: "TOY BOX / Explore toys", Back (B), the party panel, today's activity (green border,
+   portrait, activity, toy, "ENDS IN" countdown ticking, "TRY IT +10") and the shuffle card.
+3. ALL TOYS shows the live count; each toy card shows its accent stripe, portrait, section, name and
+   tagline; a card opens Toy configure for that toy.
+4. Today's activity opens the toy with the activity selected; after trying it the chip reads "DONE".
+5. Shuffle: the window closes into freestyle and the world / domain / hull re-roll; the detail line then
+   names what changed. With no toy standing it reads "Nothing to shuffle".
+6. With freestyle not built yet, the grid is empty and "No toys are standing right now." shows.
+7. Pad: focus lands on today's activity; the grid, the panel and Back are reachable; B closes.
+
+---
+
 ### 🔴 Style-B menu redesign, item 8a: the Arena window (`claude/new-session-76hnyc`, 2026-10-15) — NOT EDITOR-VERIFIED
 
 `ModalWindows/ArenaScreenModal` rebuilt from the approved ArenaWindow board (`Docs/MENU_REDESIGN_B.md`

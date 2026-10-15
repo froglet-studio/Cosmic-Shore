@@ -42,7 +42,7 @@ Legend: `Planned` ▸ `Mockup` ▸ `Mockup approved` ▸ `Built` ▸ `Approved i
 | 5 | Profile screen, Profile modal (avatar / display name), Episodes entry | Built (2026-10-15, section 15): Profile screen and profile window | `Profile.dc.html` (interactive), `ProfileFresh`, `ProfileModal` (interactive), `ProfileName`, `ProfileNameError`, `ProfileNameTaken`, `ProfileNotes` | |
 | 6 | Home screen: hub row, header, settings and freestyle buttons, invite popup | Mockup approved (2026-10-14) | `Home.dc.html` (interactive), `HomeInvite`, `HomeFocus`, `HomeOffline`, `HomeNotes` | |
 | 7 | Ark screen (Elemental Converter) | Built (2026-10-15, section 16) | `Ark.dc.html` (interactive), `ArkConverting`, `ArkDone`, `ArkNotes` | |
-| 8 | Arena, Toy Box and Mission modals, and Toy configure | Arena window Built (2026-10-15, section 17); Toy Box and Toy configure building; Mission window held (section 17) | `ToyBox.dc.html` (interactive), `ToyBoxClaimed`, `ArenaWindow`, `MissionWindow`, `ToyConfigure` (interactive), `ToyConfigurePaint`, `ToyConfigureSpawn`, `ToyConfigureDomain`, `ModesNotes` | |
+| 8 | Arena, Toy Box and Mission modals, and Toy configure | Arena window and Toy Box Built (2026-10-15, section 17); Toy configure building; Mission window held (section 17.2) | `ToyBox.dc.html` (interactive), `ToyBoxClaimed`, `ArenaWindow`, `MissionWindow`, `ToyConfigure` (interactive), `ToyConfigurePaint`, `ToyConfigureSpawn`, `ToyConfigureDomain`, `ModesNotes` | |
 | 9 | Settings modal and Credits | Mockup approved (2026-10-14) | `Settings.dc.html` (interactive), `SettingsDisplay`, `SettingsPerformance`, `SettingsOther`, `Credits`, `SystemNotes` | |
 | 10 | Closed surfaces: Port (locked), Store (no slot), Episodes panel, purchase confirmation | Mockup approved (2026-10-14) | `ClosedSurfaces.dc.html`, `PurchaseConfirm` (blind), `SystemNotes` | |
 | 11 | Menu toasts | Mockup approved (2026-10-14) | `Toasts.dc.html` (interactive), `SystemNotes` | |
@@ -870,3 +870,27 @@ of `SO_Mission`s, which neither `ArcadeExploreView.rosterOverride` (an `SO_GameL
 (which reads `SO_ArcadeGame`) accepts - with no override it draws the whole arcade master list. The
 approved board (difficulty range, threat count) needs a mission roster the view can draw; that is a
 data change to agree before the window is built.
+
+### 17.3 The Toy Box (built 2026-10-15, awaiting in-editor approval)
+
+`Tools/Build/author_menu_toybox.py` authors `ToyCard.prefab` and `ToyboxView.prefab` under
+`Assets/_Prefabs/UI Elements/Main Menu Screens/Toybox/` and mounts the view under
+`ToyboxScreenModal/Toybox_Panel/Explore`. The old Explore children (Header, GameSelectScrollView,
+TopButtons), ArcadeLobbyList, CloseButton, ToyboxEmptyState, FriendListPanel and the inactive
+ToyCardTemplate are deleted; `ToyboxModal` is kept (the switcher names the window) and re-pointed.
+
+- **Party:** the shared `PartyPanel.prefab`, instanced.
+- **Today's activity:** the offering toy's codex portrait, "Today's activity", the activity, the toy,
+  "Ends in 7h 12m" and a CTA reward chip ("Try it +10" / "Done"); drawn in the selected (CTA) border, as
+  the board marks it. `DailyActivityCard` gained optional `countdownText`, `rewardText` and `portrait`.
+- **Shuffle:** the new `chrome_shuffle` glyph, "Shuffle the toy box", the detail line (what a press
+  will do, or what the last one did) and a SHUFFLE button.
+- **Toys:** a four-column grid of `ToyCard`s - the toy's accent as a 3px stripe, its codex portrait,
+  the section, the name and the tagline; `ALL TOYS` carries the live count (`ToyboxModal.countText`).
+- `ToyboxModal.cardPrefab` is now `ToyCard.prefab` (it was a scene template), and its
+  `crystalClickHandler` is wired (it was found at Start).
+- The Toy Box strings are sentence case (config asset and code defaults); the Label role still sets
+  the eyebrows in capitals.
+- `author_toybox_top_buttons.py` stands down once `ToyboxView` is in the scene (it keeps the config
+  asset); its self-test proves the guard. `author_toybox_layout.py` now only finds the Toy configure
+  half it still owns (item 8c) and notes the retired template as not found.

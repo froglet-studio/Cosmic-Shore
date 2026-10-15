@@ -21,7 +21,7 @@ supersampling, margin or PNG encoding. Docs/STYLE_FOUNDATION.md sections 1.2, 5 
   * 256x256 with a 24px margin, matching the vendor sub-sprites they replace so no
     RectTransform moves.
 
-FOURTEEN glyphs. Five arrived with the vendor swap - FOUR of them for six replaced references, and one consolidation is deliberate. `CancelButton`
+FIFTEEN glyphs. Five arrived with the vendor swap - FOUR of them for six replaced references, and one consolidation is deliberate. `CancelButton`
 (Menu_Main) and `Close Button` (Arcade Screen) wore two DIFFERENT vendor glyphs while
 meaning the same thing; the style guide's icon list names one "X Button", so they share
 `chrome_close` here. That is the one intentional look change in the swap. `chrome_lock` and
@@ -29,7 +29,8 @@ meaning the same thing; the style guide's icon list names one "X Button", so the
 `chrome_plus`, `chrome_star` and `chrome_star_fill` for the arcade (item 3): the party panel's open
 seat and the game card's favourite star, off and on; `chrome_globe`, `chrome_pin` and
 `chrome_people` for the weekly leaderboard's scope tabs (item 4); `chrome_diamond` for a display-name
-rule not yet met in the profile window (item 5 - a met rule wears `chrome_confirm`).
+rule not yet met in the profile window (item 5 - a met rule wears `chrome_confirm`); `chrome_shuffle` for the
+Toy Box's shuffle card (item 8).
 
 Usage:
     python3 Tools/Build/author_ui_chrome_icons.py            # write the PNGs + .meta files
@@ -105,6 +106,16 @@ def chrome_diamond():
     """A rule not yet met - a small hollow diamond, the open counterpart of the confirm tick in
     the profile window's display-name rules (Docs/MENU_REDESIGN_B.md, item 5)."""
     return ring([(0.00, 0.62), (0.62, 0.00), (0.00, -0.62), (-0.62, 0.00)], w=W * 1.05)
+
+
+def chrome_shuffle():
+    """Shuffle - two crossing paths, each ending in a right-pointing arrowhead (the Toy Box's shuffle
+    card, Docs/MENU_REDESIGN_B.md item 8)."""
+    m = stroke([(-0.82, 0.50), (-0.36, 0.50), (0.36, -0.50), (0.78, -0.50)], w=W * 1.05)
+    m |= stroke([(-0.82, -0.50), (-0.36, -0.50), (0.36, 0.50), (0.78, 0.50)], w=W * 1.05)
+    m |= stroke([(0.56, 0.74), (0.80, 0.50), (0.56, 0.26)], w=W * 1.05)
+    m |= stroke([(0.56, -0.26), (0.80, -0.50), (0.56, -0.74)], w=W * 1.05)
+    return m
 
 
 def chrome_arrow_down():
@@ -221,6 +232,7 @@ GLYPHS = [
     ("chrome_pin",        chrome_pin),
     ("chrome_people",     chrome_people),
     ("chrome_diamond",    chrome_diamond),
+    ("chrome_shuffle",    chrome_shuffle),
 ]
 
 
