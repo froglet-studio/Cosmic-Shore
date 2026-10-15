@@ -76,7 +76,7 @@ for k in ['pVortexR','pVortexSpeed','pVortexLife','pVortexCapture','pVortexSpin'
 for k, n in [('tSampleGap','SampleGap'),('tBlockGap','BlockGap'),('tHillEvery','HillEvery'),('tHillAmp','HillAmp')]:
     w('            Assert.AreEqual(%s, l.%s, 1e-6f, "%s");' % (f(sh[k]), n, k))
 w('            Assert.AreEqual(%s, ai.aiHighDive, 1e-6f, "aiHighDive");' % f(sh['aiHighDive']))
-for k, n in [('gPrimerCharges','PrimerCharges'),('gPrimerCd','PrimerCd'),('gPrimerRange','PrimerRange'),('gPrimeSplash','PrimeSplash'),('gPrimeLife','PrimeLife'),('gFlareCharges','FlareCharges'),('gFlareCd','FlareCd'),('gFlareRange','FlareRange'),('gFlareMax','FlareMax'),('gFlareSpeed','FlareSpeed'),('pVision','Vision'),('pBodyR','BodyR'),('pViewWidth','ViewWidth'),('pChain','Chain'),('pHotRing','HotRing'),('pHotLife','HotLife')]:
+for k, n in [('gPrimerCharges','PrimerCharges'),('gPrimerCd','PrimerCd'),('gPrimerRange','PrimerRange'),('gPrimeSplash','PrimeSplash'),('gPrimeLife','PrimeLife'),('gFlareCharges','FlareCharges'),('gFlareCd','FlareCd'),('gFlareRange','FlareRange'),('gFlareMax','FlareMax'),('gFlareSpeed','FlareSpeed'),('pVision','Vision'),('pBodyR','BodyR'),('pViewWidth','ViewWidth'),('pParallax','Parallax'),('pChain','Chain'),('pHotRing','HotRing'),('pHotLife','HotLife')]:
     w('            Assert.AreEqual(%s, c.%s, 1e-6f, "%s");' % (f(sh[k]), n, k))
 w('            Object.DestroyImmediate(c);\n        }\n')
 for mode, cs in modes.items():

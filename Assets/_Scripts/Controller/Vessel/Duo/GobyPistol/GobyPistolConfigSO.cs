@@ -80,6 +80,9 @@ namespace CosmicShore.ScriptableObjects
         [Tooltip("Screen width u. How much ribbon the Pistol's screen shows.")]
         [SerializeField] float pViewWidth = 460f;
 
+        [Tooltip("Parallax depth. Layers this deep draw at half size.")]
+        [SerializeField] float pParallax = 160f;
+
         [Header("Pistol: launch and ghost (the artifact's Pistol section)")]
         [Tooltip("Launch range")]
         [SerializeField] float pLaunchRange = 240f;
@@ -165,6 +168,7 @@ namespace CosmicShore.ScriptableObjects
         public float Vision => pVision;
         public float BodyR => pBodyR;
         public float ViewWidth => pViewWidth;
+        public float Parallax => pParallax;
         public float Chain => pChain;
         public float HotRing => pHotRing;
         public float HotLife => pHotLife;

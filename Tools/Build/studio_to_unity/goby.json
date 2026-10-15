@@ -1,5 +1,5 @@
 {
-  "comment": "The Goby & Pistol duo: where each artifact parameter lives in the game. key = the lab's own key (its SHIPPED block and SPEC rows in the page); asset + field = the Unity config field it becomes (GobyPistolConfigSO names its fields by the artifact's keys, so key = field). A lab key that is not here has no home in the game yet: --unmapped lists them (the Goby's flight numbers are the Squirrel prefab's own; the straight and closeness boosts wait for the duo vessel's speed executor; the world's seeding, the hinge tilt, the parallax depth (the lab declares it but its side view never reads it: the depth comes from the camera), the Goby AI's weave and the run length shape only the lab). Edit this file, never the asset by hand.",
+  "comment": "The Goby & Pistol duo: where each artifact parameter lives in the game. key = the lab's own key (its SHIPPED block and SPEC rows in the page); asset + field = the Unity config field it becomes (GobyPistolConfigSO names its fields by the artifact's keys, so key = field). A lab key that is not here has no home in the game yet: --unmapped lists them (the Goby's flight numbers are the Squirrel prefab's own; the straight and closeness boosts wait for the duo vessel's speed executor; the world's seeding, the hinge tilt, the Goby AI's weave and the run length shape only the lab). Edit this file, never the asset by hand.",
   "vessel": "Goby & Pistol",
   "page": "Docs/Studios/VesselStudio/goby.html",
   "rows": [
@@ -21,6 +21,7 @@
     {"key": "pVision", "asset": "Assets/_SO_Assets/VesselActions/GobyPistol/GobyPistolConfig.asset", "field": "pVision"},
     {"key": "pBodyR", "asset": "Assets/_SO_Assets/VesselActions/GobyPistol/GobyPistolConfig.asset", "field": "pBodyR"},
     {"key": "pViewWidth", "asset": "Assets/_SO_Assets/VesselActions/GobyPistol/GobyPistolConfig.asset", "field": "pViewWidth"},
+    {"key": "pParallax", "asset": "Assets/_SO_Assets/VesselActions/GobyPistol/GobyPistolConfig.asset", "field": "pParallax"},
     {"key": "pLaunchRange", "asset": "Assets/_SO_Assets/VesselActions/GobyPistol/GobyPistolConfig.asset", "field": "pLaunchRange"},
     {"key": "pLaunchSpeed", "asset": "Assets/_SO_Assets/VesselActions/GobyPistol/GobyPistolConfig.asset", "field": "pLaunchSpeed"},
     {"key": "pLaunchCharges", "asset": "Assets/_SO_Assets/VesselActions/GobyPistol/GobyPistolConfig.asset", "field": "pLaunchCharges"},

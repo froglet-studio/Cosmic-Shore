@@ -156,6 +156,14 @@ namespace CosmicShore.Gameplay
             if (bk < 0) return r;
             float sd = float.PositiveInfinity; int sk = -1;
             for (int k = k0; k <= k1; k++) { if (Mathf.Abs(k - bk) <= 6) continue; float d2 = SegD2(k, q, goby, out _); if (d2 < sd) { sd = d2; sk = k; } }
+            Resolve(ref r, q, bk, bt, goby);
+            r.Ambiguous = sk >= 0 && Mathf.Sqrt(sd) < Mathf.Sqrt(bd) * 1.25f + 4f && Mathf.Abs(X(sk) - r.X) > 60f;
+            return r;
+        }
+
+        /// <summary>(x, h, d) of q against segment bk at fraction bt: the tail of the lab's <c>ribMap</c>.</summary>
+        void Resolve(ref MapResult r, Vector3 q, int bk, float bt, bool goby)
+        {
             float X0 = X(bk), X1 = X(bk + 1);
             r.X = X0 + (X1 - X0) * bt; r.K = bk; r.T = bt;
             Vector3 a = _p[bk], b = _p[bk + 1];
@@ -170,8 +178,82 @@ namespace CosmicShore.Gameplay
                 float cx = Mathf.LerpUnclamped(a.x, b.x, bt), cz = Mathf.LerpUnclamped(a.z, b.z, bt), hx = _hx[bk + 1], hz = _hz[bk + 1];
                 r.H = q.y; r.D = (q.x - cx) * -hz + (q.z - cz) * hx;
             }
-            r.Ambiguous = sk >= 0 && Mathf.Sqrt(sd) < Mathf.Sqrt(bd) * 1.25f + 4f && Mathf.Abs(X(sk) - r.X) > 60f;
-            r.Ok = true; return r;
+            r.Ok = true;
+        }
+
+        /// <summary>The map for DRAWING: the same nearest segment as <see cref="Map"/> away from a fold, found coarse-to-fine
+        /// (every <see cref="CoarseStep"/>th segment, then the segments round the best) and without the ambiguity pass — a
+        /// third of the cost, so hundreds of prisms can be mapped a frame. At a fold (two passes of the path within ~12 u of
+        /// each other from q) it may pick the other pass; the gameplay asks <see cref="Map"/>, which never does.</summary>
+        public MapResult MapFast(Vector3 q, float xLo, float xHi, bool beyondEnd = false)
+        {
+            var r = new MapResult();
+            if (_p.Count < 2) return r;
+            bool goby = Mode == PistolUnroll.GobyUp; int k0 = Index(xLo), k1 = Mathf.Min(_p.Count - 2, Index(xHi));
+            if (k1 < k0) return r;
+            int ck = -1; float cd = float.PositiveInfinity;
+            for (int k = k0; k <= k1; k += CoarseStep) { float d2 = SegD2(k, q, goby, out _); if (d2 < cd) { cd = d2; ck = k; } }
+            if (ck < 0) return r;
+            { float d2 = SegD2(k1, q, goby, out _); if (d2 < cd) { cd = d2; ck = k1; } }
+            int bk = -1; float bt = 0f, bd = float.PositiveInfinity;
+            for (int k = Mathf.Max(k0, ck - CoarseStep); k <= Mathf.Min(k1, ck + CoarseStep); k++)
+            { float d2 = SegD2(k, q, goby, out float t); if (d2 < bd) { bd = d2; bk = k; bt = t; } }
+            if (beyondEnd) bt = BeyondEnd(bk, q, goby, bt);
+            Resolve(ref r, q, bk, bt, goby);
+            return r;
+        }
+
+        /// <summary>For DRAWING what lies ahead of the Goby: on the ribbon's last segment the projection is not clamped,
+        /// so a point past the end maps to x = the end plus its distance along the Goby's heading (a straight
+        /// forecast of the world to come), instead of piling up at the Goby's x as the lab's map (rightly) has it.</summary>
+        float BeyondEnd(int bk, Vector3 q, bool goby, float bt)
+        {
+            if (bk != _p.Count - 2 || bt < 1f - 1e-6f) return bt;
+            Vector3 a = _p[bk], b = _p[bk + 1];
+            if (goby) { Vector3 ab = b - a; float L2 = ab.sqrMagnitude; return L2 > 1e-9f ? Mathf.Max(1f, Vector3.Dot(q - a, ab) / L2) : bt; }
+            float abx = b.x - a.x, abz = b.z - a.z, L2h = abx * abx + abz * abz;
+            return L2h > 1e-9f ? Mathf.Max(1f, ((q.x - a.x) * abx + (q.z - a.z) * abz) / L2h) : bt;
+        }
+
+        public const int CoarseStep = 3;
+
+        /// <summary>The nearest segment to q among the <paramref name="halfWindow"/> segments either side of
+        /// <paramref name="kCentre"/>, inside [xLo, xHi]: how a prism's CORNERS are mapped once its centre is, so the
+        /// corners stretch along the path exactly as far as the unroll says and never jump to another pass of it.</summary>
+        public MapResult MapNear(Vector3 q, int kCentre, int halfWindow, float xLo, float xHi, bool beyondEnd = false)
+        {
+            var r = new MapResult();
+            if (_p.Count < 2) return r;
+            bool goby = Mode == PistolUnroll.GobyUp;
+            int k0 = Mathf.Max(Index(xLo), kCentre - halfWindow), k1 = Mathf.Min(Mathf.Min(_p.Count - 2, Index(xHi)), kCentre + halfWindow);
+            if (k1 < k0) return r;
+            int bk = -1; float bt = 0f, bd = float.PositiveInfinity;
+            for (int k = k0; k <= k1; k++) { float d2 = SegD2(k, q, goby, out float t); if (d2 < bd) { bd = d2; bk = k; bt = t; } }
+            if (beyondEnd) bt = BeyondEnd(bk, q, goby, bt);
+            Resolve(ref r, q, bk, bt, goby);
+            return r;
+        }
+
+        /// <summary>The path's signed curvature at segment k (1/radius; 0 on a straight), positive when the path bends
+        /// toward +R (the centre of curvature at d = +1/κ), negative toward -R. Measured over the headings of the segments
+        /// either side of k, so one noisy sample does not read as a hairpin.</summary>
+        public float Curvature(int k)
+        {
+            int n = _p.Count; if (n < 3) return 0f;
+            int ka = Mathf.Clamp(k - 1, 0, n - 2), kb = Mathf.Clamp(k + 1, 0, n - 2); if (kb <= ka) return 0f;
+            float arc = X(kb) - X(ka); if (arc <= 1e-4f) return 0f;   // segment ka's heading to segment kb's: their midpoints are X(kb) - X(ka) apart
+            if (Mode == PistolUnroll.GobyUp)
+            {
+                Vector3 ta = Norm(_p[ka + 1] - _p[ka]), tb = Norm(_p[kb + 1] - _p[kb]);
+                float ang = Mathf.Atan2(Vector3.Cross(ta, tb).magnitude, Vector3.Dot(ta, tb));
+                return Mathf.Sign(Vector3.Dot(tb - ta, _r[k + 1 < n ? k + 1 : k])) * ang / arc;
+            }
+            float hxa = _hx[ka + 1], hza = _hz[ka + 1], hxb = _hx[kb + 1], hzb = _hz[kb + 1];
+            // R = (-hz, 0, hx): the bend is toward +R when the heading turns that way
+            float cross = hxa * hzb - hza * hxb, dot = hxa * hxb + hza * hzb;
+            float a2 = Mathf.Atan2(Mathf.Abs(cross), dot);
+            float toR = (hxb - hxa) * -hza + (hzb - hza) * hxa;
+            return (toR >= 0f ? 1f : -1f) * a2 / arc;
         }
 
         /// <summary>The lab's <c>ribFrame</c>: T along the unrolled path, U its up, R across (the screen's depth).</summary>

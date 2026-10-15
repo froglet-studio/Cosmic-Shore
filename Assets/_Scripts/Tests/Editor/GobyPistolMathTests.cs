@@ -91,6 +91,7 @@ namespace CosmicShore.Tests
             Assert.AreEqual(45.0f, c.Vision, 1e-6f, "pVision");
             Assert.AreEqual(5.0f, c.BodyR, 1e-6f, "pBodyR");
             Assert.AreEqual(460.0f, c.ViewWidth, 1e-6f, "pViewWidth");
+            Assert.AreEqual(160.0f, c.Parallax, 1e-6f, "pParallax");
             Assert.AreEqual(40.0f, c.Chain, 1e-6f, "pChain");
             Assert.AreEqual(80.0f, c.HotRing, 1e-6f, "pHotRing");
             Assert.AreEqual(10.0f, c.HotLife, 1e-6f, "pHotLife");

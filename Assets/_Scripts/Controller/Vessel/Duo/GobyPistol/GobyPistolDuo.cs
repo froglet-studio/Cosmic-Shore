@@ -45,8 +45,6 @@ namespace CosmicShore.Gameplay
         [SerializeField] bool showSideView = true;
 
         const float TeleportU = 400f;           // the Goby moved further than this in a frame: a respawn, start a new ribbon
-        const float Pfov = 32f;                 // the lab's side camera (PFOV)
-        const int GroundSamples = 96;           // the lab's GN
         static readonly Vector3 Stage = new(0f, -40000f, 0f);   // where the flat world is drawn, far from the real one
 
         sealed class RingRun { public VortexRing Ring; public readonly List<Prism> Prisms = new(); }
@@ -70,11 +68,23 @@ namespace CosmicShore.Gameplay
         // the human Pistol's pointer and pad (the lab's humanPistol)
         bool _mouseDown, _aiming; Vector2 _mouseFrom; Vector2? _mouseAim, _padAim;
 
-        // the side view
+        // the side view (what the Pistol sees: the section below)
+        const int ViewSides = 18;                 // the Pistol's tube and the rings
+        const int MaxViewPrisms = 1200;           // prisms drawn a frame, nearest-sphere first
+        const float ForegroundDepth = 0.5f, BackgroundDepth = 3f;   // × pParallax: the depth window drawn (layers at ×2 .. ×1/4)
+        struct Seen { public Prism Prism; public PistolRibbon.MapResult M; public bool Ground; }
+        struct Fx { public Vector3 At; public float T0, Life, R0, R1; public Color32 Color; }
+        readonly List<Seen> _seen = new(MaxViewPrisms);
+        static readonly System.Comparison<Seen> s_farFirst = (a, b) => b.M.D.CompareTo(a.M.D);
+        readonly List<Fx> _fx = new();
+        readonly List<Vector3> _tail = new(32);
+        readonly Vector3[] _corners = new Vector3[8], _xhd = new Vector3[8];
+        readonly Dictionary<Domains, Color32> _domainColor = new();
+        readonly PistolWorldMesh _world = new();
         GameObject _view; Camera _cam; float _scX, _scY; bool _scLive;
-        Mesh _ground, _cube, _cylinder, _torus;
-        Material _groundMat, _bodyMat, _ghostMat, _gobyMat, _primedMat, _hotMat, _ringMat, _aimMat, _flareMat;
-        readonly Vector3[] _gv = new Vector3[GroundSamples * 4];
+        float _squash, _shake;
+        // the 3D world's share of the Pistol's effects: the rings and flares the Goby pilot sees, instanced
+        Mesh _cube, _torus; Material _ringMat, _flareMat;
 
         GobyPistolConfigSO Config => config;
 
@@ -115,7 +125,8 @@ namespace CosmicShore.Gameplay
             if (_human == Half.Pistol) SetHuman(Half.Goby);
             ReleaseAllRings(); _flares.Clear(); _primed.Clear(); _hot.Clear();
             if (_view) Destroy(_view);
-            foreach (var o in new UnityEngine.Object[] { _ground, _torus, _groundMat, _bodyMat, _ghostMat, _gobyMat, _primedMat, _hotMat, _ringMat, _aimMat, _flareMat })
+            _world.Dispose(); _fx.Clear(); _tail.Clear(); _seen.Clear();
+            foreach (var o in new UnityEngine.Object[] { _torus, _ringMat, _flareMat })
                 if (o) Destroy(o);
             _goby = null; _gt = null; _rb = null; _cam = null; _view = null;
         }
@@ -155,6 +166,7 @@ namespace CosmicShore.Gameplay
             var inp = _human == Half.Pistol ? HumanPistol() : _ai.Think(_p, _rb, _t, Level(), _ais, Scan);
             var ev = PistolBodyMath.Step(_p, _rb, _rb.GobyX, gobySpeed, _t, dt, inp, _body);
             if (ev.FireSnap) _rings.Add(new RingRun { Ring = VortexRing.Fire(_rb, _p, ev.SnapAim, _vs.pVortexLife) });
+            Feel(ev, dt);
             BodyHits();
             StepRings(dt);
             GobyAbilities(dt, pos, f, u, r);
@@ -180,6 +192,15 @@ namespace CosmicShore.Gameplay
         bool IsHot(Prism prism) => _hot.TryGetValue(prism, out float until) && until > _t;
         bool Friendly(Prism prism) => prism.Domain == _goby.VesselStatus.Domain;
 
+        /// <summary>The Goby's OWN trail is the ground the Pistol rides, never a target: not seen, not hit, not primed, not
+        /// carried (the lab keeps its trail blocks out of the prism arrays for the same reason). Identity of the Trail, not
+        /// the player name: the hull's other lay sites (the Squirrel's tube) are friendly prisms like any other.</summary>
+        bool IsGround(Prism prism)
+        {
+            var pc = _goby?.VesselStatus?.VesselPrismController;
+            return pc != null && prism.Trail != null && (ReferenceEquals(prism.Trail, pc.Trail) || ReferenceEquals(prism.Trail, pc.SecondaryTrail));
+        }
+
         void Expire(Dictionary<Prism, float> marks)
         {
             _expired.Clear();
@@ -194,7 +215,7 @@ namespace CosmicShore.Gameplay
             float reach = PistolAI.ScanReach(_ais);
             idx.QuerySphere(_p.wpos, reach, _qScan);
             foreach (var prism in _qScan)
-                if (Live(prism) && PistolAI.TrySee(_rb, _p, prism.GetInstanceID(), prism.transform.position, IsPrimed(prism), Friendly(prism), reach, _ais, out var seen))
+                if (Live(prism) && !IsGround(prism) && PistolAI.TrySee(_rb, _p, prism.GetInstanceID(), prism.transform.position, IsPrimed(prism), Friendly(prism), reach, _ais, out var seen))
                     into.Add(seen);
         }
 
@@ -207,10 +228,11 @@ namespace CosmicShore.Gameplay
             idx.QuerySphere(_p.wpos, reach, _qBody);
             foreach (var prism in _qBody)
             {
-                if (!Live(prism)) continue;
+                if (!Live(prism) || IsGround(prism)) continue;
                 var m = _rb.Map(prism.transform.position, _p.x - reach - 30f, _p.x + reach + 30f);
                 if (!PistolBodyMath.Touches(_p, m, Config.Vision, Config.BodyR)) continue;
                 Break(prism, By.Body, PistolVelocity());
+                Pop(new Vector3(m.X, m.H, m.D), PrismColor(prism), 3f, 14f, 0.3f); _shake = Mathf.Max(_shake, 0.12f);
                 if (_p.grounded) _p.v *= 0.97f; else _p.vx *= 0.97f;
             }
         }
@@ -242,7 +264,7 @@ namespace CosmicShore.Gameplay
                 idx.QuerySphere(c, Mathf.Max(Config.Chain, Config.HotRing), _qChain);
                 foreach (var prism in _qChain)
                 {
-                    if (!Live(prism)) continue;
+                    if (!Live(prism) || IsGround(prism)) continue;
                     Vector3 w = prism.transform.position; float d2 = (w - c).sqrMagnitude;
                     if (IsPrimed(prism) && d2 <= c2)
                     {
@@ -270,7 +292,7 @@ namespace CosmicShore.Gameplay
                     foreach (var prism in _qRing)
                     {
                         if (ring.Full(_vs)) break;
-                        if (!Live(prism) || _held.Contains(prism) || prism.IsGrowing || prism.prismProperties is { IsSuperShielded: true }) continue;
+                        if (!Live(prism) || IsGround(prism) || _held.Contains(prism) || prism.IsGrowing || prism.prismProperties is { IsSuperShielded: true }) continue;
                         if (ring.TryCapture(run.Prisms.Count, prism.transform.position, _vs)) { run.Prisms.Add(prism); _held.Add(prism); }
                     }
                 }
@@ -283,6 +305,7 @@ namespace CosmicShore.Gameplay
                     prism.NotifyPositionChanged();
                 }
                 if (alive) continue;
+                { var m = _rb.MapFast(ring.C, _scX - 2f * Config.ViewWidth, _scX + 2f * Config.ViewWidth, true); if (m.Ok) Pop(new Vector3(m.X, m.H, m.D), new Color32(159, 232, 255, 255), _vs.pVortexR * 0.3f, _vs.pVortexR * 1.6f, 0.5f); _shake = Mathf.Max(_shake, 0.35f); }
                 foreach (var prism in run.Prisms)
                 {
                     _held.Remove(prism);
@@ -305,7 +328,7 @@ namespace CosmicShore.Gameplay
             idx.QuerySphere(pos, Config.PrimerRange, _qGoby);
             foreach (var prism in _qGoby)
             {
-                if (!Live(prism)) continue;
+                if (!Live(prism) || IsGround(prism)) continue;
                 Vector3 d = prism.transform.position - pos; float dist = d.magnitude;
                 if (dist > Config.PrimerRange || dist < 1e-6f || Vector3.Dot(d, f) / dist < cosMax) continue;
                 if (dist < bd) { bd = dist; best = prism; }
@@ -347,7 +370,7 @@ namespace CosmicShore.Gameplay
                 if (target && idx != null)
                 {
                     idx.QuerySphere(target.transform.position, Config.PrimeSplash, _qGoby);
-                    foreach (var prism in _qGoby) if (Live(prism)) _primed[prism] = _t + Config.PrimeLife;
+                    foreach (var prism in _qGoby) if (Live(prism) && !IsGround(prism)) _primed[prism] = _t + Config.PrimeLife;
                 }
             }
             _prevPrimer = primer;
@@ -492,21 +515,23 @@ namespace CosmicShore.Gameplay
             w = ray.origin + ray.direction * s - Stage; return true;
         }
 
-        // ================================ the side view (the lab's renderSide3D) ================================
+        // ================================ the side view (the lab's renderSide3D, grown up) ================================
+        // What the Pistol SEES. Every prism in a wide depth window, warped through the unroll (PistolWarp: a prism the
+        // Goby circles stretches out, as the unroll says it must) and laid on the screen plane with 2.5D parallax (the
+        // lab's pParallax: a layer that deep draws at half size), sunk into fog with depth beyond the band its body spans
+        // and rimmed while inside it (what it can reach). The Goby's own trail is the GROUND it rides, block by block,
+        // on the hinge hills; past the Goby, a straight forecast of what is coming. The Pistol end on, its tiny trail,
+        // the rings, the flares, the aim, and the pops, puffs and shakes that say what just happened. One mesh a frame.
 
         void BuildView()
         {
             _view = new GameObject("PistolSideView");   // at the scene root: the hull's scale and pose are not the view's
             _cam = _view.AddComponent<Camera>();
-            _cam.clearFlags = CameraClearFlags.Skybox; _cam.fieldOfView = Pfov; _cam.nearClipPlane = 1f; _cam.cullingMask = 1;
-            _ground = new Mesh { name = "PistolGround" }; _ground.MarkDynamic();
+            _cam.clearFlags = CameraClearFlags.Skybox; _cam.orthographic = true; _cam.nearClipPlane = 0.1f; _cam.cullingMask = 1;
             _cube = Resources.GetBuiltinResource<Mesh>("Cube.fbx");
-            _cylinder = Resources.GetBuiltinResource<Mesh>("Cylinder.fbx");
             _torus = BuildTorus(1f, 0.08f, 40, 8);
-            _groundMat = Unlit(new Color(0.12f, 0.55f, 0.5f));
-            _bodyMat = Unlit(new Color(1f, 0.55f, 0.24f)); _ghostMat = Unlit(new Color(0.45f, 0.3f, 0.2f));
-            _gobyMat = Unlit(new Color(0.3f, 1f, 0.85f)); _primedMat = Unlit(new Color(1f, 0.78f, 0.2f)); _hotMat = Unlit(new Color(1f, 0.25f, 0.15f));
-            _ringMat = Unlit(new Color(0.62f, 0.91f, 1f)); _aimMat = Unlit(Color.white); _flareMat = Unlit(new Color(1f, 0.9f, 0.5f));
+            _ringMat = Unlit(new Color(0.62f, 0.91f, 1f)); _flareMat = Unlit(new Color(1f, 0.9f, 0.5f));
+            _scLive = false; _squash = _shake = 0f; _tail.Clear(); _fx.Clear();
         }
 
         static Material Unlit(Color c)
@@ -532,11 +557,50 @@ namespace CosmicShore.Gameplay
             var m = new Mesh { name = "VortexRing", vertices = v, triangles = tri }; m.RecalculateNormals(); return m;
         }
 
-        // the frame at the ribbon there, as the rotation that unrolls a world rotation into the flat world
-        Quaternion Unroll(int k, float t)
+        Color32 DomainColor(Domains domain)
         {
-            _rb.Frame(k, t, out _, out var U, out var R);
-            return Quaternion.Inverse(Quaternion.LookRotation(R, U));
+            if (!_domainColor.TryGetValue(domain, out var c)) { c = PrismLit.DomainTint(domain); _domainColor[domain] = c; }
+            return c;
+        }
+
+        /// <summary>The colour the prism is DRAWN in (parity with the 3D view): its material animator's bright colour,
+        /// brought down from HDR to a peak of 1; the domain's signal colour when it has none.</summary>
+        Color32 PrismColor(Prism prism)
+        {
+            if (prism.TryGetComponent(out MaterialPropertyAnimator mpa))
+            {
+                var b = mpa.TargetBrightColor; float peak = Mathf.Max(b.r, Mathf.Max(b.g, b.b));
+                if (peak > 0.001f) return new Color(b.r / peak, b.g / peak, b.b / peak, 1f);
+            }
+            return DomainColor(prism.Domain);
+        }
+
+        static Color32 Tint(Color32 c, Color32 toward, float k) => Color.Lerp(c, toward, k);
+        static Color32 Alpha(Color32 c, float a) { c.a = (byte)Mathf.Clamp(Mathf.RoundToInt(a * 255f), 0, 255); return c; }
+
+        // ---- feel: what the step did, drawn and felt (a squash on landing, a puff, a shake on a hard one)
+        void Feel(in PistolBodyMath.Events ev, float dt)
+        {
+            if (ev.Landed)
+            {
+                _squash = 1f;
+                var ground = DomainColor(_goby.VesselStatus.Domain);
+                Pop(new Vector3(_p.x, _p.y - Config.BodyR, 0f), Alpha(ground, 0.8f), 2f, ev.SmoothLanding ? 10f : 18f, ev.SmoothLanding ? 0.3f : 0.45f);
+                if (!ev.SmoothLanding) _shake = Mathf.Max(_shake, 0.5f);
+            }
+            if (ev.Launched) Pop(new Vector3(_p.x, _p.y, 0f), new Color32(255, 255, 255, 200), 2f, 9f, 0.25f);
+            if (ev.GhostStarted) Pop(new Vector3(_p.x, _p.y, 0f), new Color32(255, 138, 61, 160), Config.BodyR, Config.BodyR * 3f, 0.4f);
+            _squash = Mathf.Max(0f, _squash - dt * 4f);
+            _shake = Mathf.Max(0f, _shake - dt * 2.5f);
+            // the tiny trail: where the Pistol has just been
+            if (_tail.Count == 0 || (new Vector3(_p.x, _p.y, 0f) - _tail[_tail.Count - 1]).sqrMagnitude > 1f) _tail.Add(new Vector3(_p.x, _p.y, 0f));
+            if (_tail.Count > 26) _tail.RemoveAt(0);
+        }
+
+        /// <summary>A ring that grows from r0 to r1 over <paramref name="life"/> s and fades, at (x, h, d).</summary>
+        void Pop(Vector3 at, Color32 color, float r0, float r1, float life)
+        {
+            if (_fx.Count < 64) _fx.Add(new Fx { At = at, T0 = _t, Life = life, R0 = r0, R1 = r1, Color = color });
         }
 
         void LateUpdate()
@@ -547,116 +611,161 @@ namespace CosmicShore.Gameplay
             var main = Camera.main;
             _cam.depth = (main ? main.depth : 0f) + 5f;
             _cam.rect = _human == Half.Pistol ? new Rect(0f, 0f, 1f, 1f) : new Rect(0.62f, 0.03f, 0.35f, 0.35f);
-            float W = Config.ViewWidth, aspect = Mathf.Max(0.2f, _cam.aspect);
+            float W = Config.ViewWidth, aspect = Mathf.Max(0.2f, _cam.aspect), D = Mathf.Max(20f, Config.Parallax);
             // the lab's sideCam: a fifth of a screen ahead of the Pistol, easing in height
             float tx = _p.x + 0.2f * W, gy = _rb.Ground(_p.x), ty = Mathf.Max(_p.y, gy) + 0.08f * (W / aspect);
             _scX = tx; _scY = _scLive ? Mathf.LerpUnclamped(_scY, ty, Mathf.Clamp01(Time.deltaTime * 4f)) : ty; _scLive = true;
-            float dist = W * 0.5f / (Mathf.Tan(Pfov * 0.5f * Mathf.Deg2Rad) * aspect);
-            _cam.fieldOfView = Pfov; _cam.farClipPlane = dist + 4000f;
-            _cam.transform.SetPositionAndRotation(Stage + new Vector3(0f, _scY, -dist), Quaternion.identity);
+            _cam.orthographicSize = 0.5f * W / aspect;
+            _cam.farClipPlane = (BackgroundDepth + 1f) * D + 50f;
+            var shake = _shake > 0f ? new Vector3(Mathf.Sin(_t * 47f), Mathf.Cos(_t * 31f), 0f) * (_shake * _shake * 3f) : Vector3.zero;
+            _cam.transform.SetPositionAndRotation(Stage + new Vector3(0f, _scY, -D) + shake, Quaternion.identity);
 
-            DrawPrisms(W);
-            DrawGround(W);
-            DrawActors(W);
-            FlushDraws();
+            _world.Begin(Stage, _scX, _scY, D);
+            float xLo = _scX - 2f * W, xHi = _scX + 2f * W;   // the ribbon the far background can still show
+            DrawPrisms(W, aspect, D, xLo, xHi);
+            DrawActors(W, D, xLo, xHi);
+            DrawFx();
+            _world.End(_cam);
+            Draw3D();
         }
 
-        Vector3 Flat(float x, float h, float d) => Stage + new Vector3(x - _scX, h, d);
-
-        // prisms: their own mesh and material, at their unrolled place, turned by the ribbon there (the lab's sideList)
-        void DrawPrisms(float W)
+        // ---- the prisms: gathered, mapped, sorted far to near (the fade blends), then warped into the mesh
+        void DrawPrisms(float W, float aspect, float D, float xLo, float xHi)
         {
             var idx = Index(); if (idx == null) return;
-            float half = W * 0.75f;
-            idx.QuerySphere(_p.wpos, half + 260f, _qView);
+            float dLo = -ForegroundDepth * D, dHi = BackgroundDepth * D;
+            Vector3 centre = _rb.Unmap(_scX, _scY, 0f);
+            idx.QuerySphere(centre, Mathf.Max(0.8f * W, dHi) + 80f, _qView);
+            _seen.Clear();
             foreach (var prism in _qView)
             {
-                if (!Live(prism) || !prism.TryGetComponent(out MeshRenderer mr) || !mr.sharedMaterial || !mr.sharedMaterial.enableInstancing) continue;
-                var tr = prism.transform;
-                var m = _rb.Map(tr.position, _p.x - half, _p.x + half); if (!m.Ok) continue;
-                bool primed = IsPrimed(prism), faint = Mathf.Abs(m.D) > Config.Vision; if (faint && !primed) continue;
-                var mesh = prism.EffectiveRenderMesh(); if (!mesh) continue;
-                Vector3 at = Flat(m.X, m.H, faint ? Mathf.Clamp(m.D, -Config.Vision, Config.Vision) : m.D);
-                Draw(mesh, Matrix4x4.TRS(at, Unroll(m.K, m.T) * tr.rotation, tr.lossyScale), mr.sharedMaterial);
-                if (primed || IsHot(prism))
-                    Draw(_cube, Matrix4x4.TRS(at + Vector3.up * 4f, Quaternion.identity, Vector3.one * 1.6f), primed ? _primedMat : _hotMat);
+                if (_seen.Count >= MaxViewPrisms) break;
+                if (!Live(prism)) continue;
+                var m = _rb.MapFast(prism.transform.position, xLo, xHi, true); if (!m.Ok) continue;
+                if (m.D < dLo || m.D > dHi) continue;
+                float s = D / (D + m.D);
+                if (Mathf.Abs(m.X - _scX) * s > 0.5f * W + 60f * s || Mathf.Abs(m.H - _scY) * s > 0.5f * W / aspect + 60f * s) continue;
+                _seen.Add(new Seen { Prism = prism, M = m, Ground = IsGround(prism) });
             }
+            _seen.Sort(s_farFirst);
+            int kSpan = Mathf.Max(2, _rb.Index(xHi) - _rb.Index(xLo));
+            float band = Config.Vision + 4f;
+            for (int i = 0; i < _seen.Count; i++) DrawPrism(_seen[i], band, dLo, dHi, xLo, xHi, kSpan);
         }
 
-        // the ground: the floor across the band and a curtain down from its far edge (the lab's gFloor / gCurtain)
-        void DrawGround(float W)
+        void DrawPrism(in Seen e, float band, float dLo, float dHi, float xLo, float xHi, int kSpan)
         {
-            if (_rb.ControlPointCount == 0) return;
-            float xa = Mathf.Max(_rb.CX.Count > 0 ? _rb.CX[0] : _rb.EndX, _scX - W * 0.75f), xb = Mathf.Min(_rb.GobyX, _scX + W * 0.75f);
-            if (xb <= xa) return;
-            float v = Config.Vision;
-            for (int k = 0; k < GroundSamples; k++)
+            var prism = e.Prism; var tr = prism.transform; var m = e.M;
+            var mesh = prism.EffectiveRenderMesh();
+            var data = PistolWorldMesh.DataOf(mesh);
+            Bounds b = mesh ? mesh.bounds : new Bounds(Vector3.zero, Vector3.one);
+            Vector3 c = tr.TransformPoint(b.center);
+            Vector3 ax = tr.TransformVector(new Vector3(b.extents.x, 0f, 0f)), ay = tr.TransformVector(new Vector3(0f, b.extents.y, 0f)), az = tr.TransformVector(new Vector3(0f, 0f, b.extents.z));
+            PistolWarp.BoxCorners(c, ax, ay, az, _corners);
+            float halfDiag = Mathf.Sqrt(ax.sqrMagnitude + ay.sqrMagnitude + az.sqrMagnitude);
+            int window = PistolWarp.CornerWindow(halfDiag, _rb.Curvature(m.K), m.D, _lay.SampleGap, kSpan);
+            if (!PistolWarp.WarpBox(_rb, m.K, _corners, xLo, xHi, window, _xhd, true)) return;
+
+            Color32 color = PrismColor(prism);
+            if (e.Ground)
             {
-                float x = Mathf.LerpUnclamped(xa, xb, k / (float)(GroundSamples - 1)), y = _rb.Ground(x), fx = x - _scX;
-                _gv[k * 4] = new Vector3(fx, y, -v); _gv[k * 4 + 1] = new Vector3(fx, y, v);
-                _gv[k * 4 + 2] = new Vector3(fx, y, v); _gv[k * 4 + 3] = new Vector3(fx, y - 600f, v);
+                // the trail is the ground: each block sits on the hinge hills, tilted to the slope (the lab's pBlock)
+                float gy = _rb.Ground(m.X, out float slope), th = Mathf.Atan(slope), cs = Mathf.Cos(th), sn = Mathf.Sin(th);
+                for (int i = 0; i < 8; i++)
+                {
+                    var v = _xhd[i]; float rx = v.x - m.X, rh = v.y - m.H;
+                    _xhd[i] = new Vector3(m.X + rx * cs - rh * sn, gy + rx * sn + rh * cs, v.z);
+                }
+                _world.AddWarped(data, _xhd, Tint(color, new Color32(0, 0, 0, 255), 0.18f), 0f, 1f, 0f);
+                return;
             }
-            if (_ground.vertexCount != _gv.Length)
-            {
-                var tri = new List<int>((GroundSamples - 1) * 12);
-                for (int k = 0; k < GroundSamples - 1; k++)
-                    for (int s = 0; s < 4; s += 2)
-                    {
-                        int a = k * 4 + s, b = a + 1, c = a + 4, d = a + 5;
-                        tri.Add(a); tri.Add(c); tri.Add(b); tri.Add(b); tri.Add(c); tri.Add(d);
-                        tri.Add(a); tri.Add(b); tri.Add(c); tri.Add(b); tri.Add(d); tri.Add(c);   // both faces
-                    }
-                _ground.Clear(); _ground.vertices = _gv; _ground.SetTriangles(tri, 0);
-            }
-            else _ground.vertices = _gv;
-            _ground.RecalculateBounds();
-            Draw(_ground, Matrix4x4.TRS(Stage, Quaternion.identity, Vector3.one), _groundMat);
+
+            float ad = Mathf.Abs(m.D), reach = 1f - Mathf.Clamp01((ad - band) / 12f), fog, alpha, glow = 0f;
+            if (m.D >= 0f) { fog = Mathf.Clamp01((m.D - band) / Mathf.Max(1f, dHi - band)); alpha = 1f - 0.65f * fog; }
+            else { float f = Mathf.Clamp01((-m.D - band) / Mathf.Max(1f, -dLo - band)); fog = 0.15f * f; alpha = Mathf.Lerp(0.6f, 0.05f, f); }   // foreground: see through it
+            if (m.X > _rb.GobyX + 2f) { fog = Mathf.Max(fog, 0.55f); alpha *= 0.6f; }   // the forecast: not laid yet
+            if (IsPrimed(prism)) { color = Tint(color, new Color32(255, 200, 51, 255), 0.75f); glow = 0.35f + 0.25f * Mathf.Sin(_t * 6f); fog *= 0.3f; alpha = Mathf.Max(alpha, 0.7f); }
+            else if (IsHot(prism)) { color = Tint(color, new Color32(255, 64, 38, 255), 0.6f); glow = 0.3f + 0.2f * Mathf.Sin(_t * 9f); }
+            if (_held.Contains(prism)) { color = Tint(color, new Color32(159, 232, 255, 255), 0.5f); glow = Mathf.Max(glow, 0.5f); }
+            _world.AddWarped(data, _xhd, Alpha(color, alpha), glow, reach, fog);
         }
 
-        void DrawActors(float W)
+        // ---- the Pistol, its trail, the Goby, the rings, the flares, the aim
+        void DrawActors(float W, float D, float xLo, float xHi)
         {
-            // the Pistol: the cylinder END ON (its length runs into the screen, across the band)
-            float half = Config.Vision + 4f;
-            var spin = Quaternion.Euler(90f, 0f, 0f) * Quaternion.Euler(0f, _t * 2f * Mathf.Rad2Deg, 0f);
-            Draw(_cylinder, Matrix4x4.TRS(Flat(_p.x, _p.y, 0f), spin, new Vector3(2f * Config.BodyR, half, 2f * Config.BodyR)),
-                _t < _p.ghostUntil ? _ghostMat : _bodyMat);
-            // the Goby, at the end of the ground
-            Draw(_cube, Matrix4x4.TRS(Flat(_rb.GobyX, _rb.EndY, 0f), Quaternion.identity, Vector3.one * 6f), _gobyMat);
-            // vortex rings: in the real world, and mapped into the Pistol's
+            float half = Config.Vision + 4f, r = Config.BodyR * (1f + 0.3f * _squash);
+            bool ghost = _t < _p.ghostUntil;
+            var body = new Color32(255, 138, 61, (byte)(ghost ? 90 : 255));
+            var vel = PlaneVelocity(); var lean = vel.sqrMagnitude > 1f ? vel.normalized * 0.12f : Vector2.zero;
+            // the tiny trail, then the tube END ON (its length runs into the screen, across the band), capped, with a glowing eye
+            _world.AddStrip(_tail, 1.1f, Alpha(body, ghost ? 0.3f : 0.75f), Alpha(body, 0f), 0.6f);
+            _world.AddTube(_p.x, _p.y, -half, half, r, r * 0.92f, ViewSides, body, 0.1f, 1f, lean);
+            _world.AddDisc(new Vector3(_p.x - lean.x * half, _p.y - lean.y * half, -half + 0.05f), r, ViewSides, body, Tint(body, new Color32(0, 0, 0, 255), 0.25f), 0.1f);
+            _world.AddDisc(new Vector3(_p.x - lean.x * half, _p.y - lean.y * half, -half - 0.3f), r * 0.42f, 12, new Color32(255, 250, 230, 255), Alpha(body, 1f), 1f);
+            // the Goby, at the end of the ground, nosing along it
+            {
+                float gx = _rb.GobyX, gyEnd = _rb.EndY; _rb.Ground(Mathf.Max(0f, gx - 3f), out float slope); float th = Mathf.Atan(slope);
+                var goby = DomainColor(_goby.VesselStatus.Domain);
+                Vector3 axv = new Vector3(Mathf.Cos(th), Mathf.Sin(th), 0f) * 7f, ayv = new Vector3(-Mathf.Sin(th), Mathf.Cos(th), 0f) * 2.4f, azv = new Vector3(0f, 0f, 2.4f);
+                _world.AddBox(new Vector3(gx, gyEnd, 0f), axv, ayv, azv, goby, 0.6f, 1f, 0f);
+                _world.AddDisc(new Vector3(gx + axv.x * 0.6f, gyEnd + axv.y * 0.6f, -2.6f), 1.2f, 8, new Color32(255, 255, 255, 255), goby, 1f);
+            }
+            // vortex rings, mapped into the Pistol's world with their axis unrolled
             foreach (var run in _rings)
             {
-                var ring = run.Ring; var look = Quaternion.LookRotation(ring.N);
-                Draw(_torus, Matrix4x4.TRS(ring.C, look, Vector3.one * _vs.pVortexR), _ringMat);
-                var m = _rb.Map(ring.C, _p.x - W, _p.x + W);
-                if (m.Ok && Mathf.Abs(m.D) < Config.Vision * 3f)
-                    Draw(_torus, Matrix4x4.TRS(Flat(m.X, m.H, m.D), Unroll(m.K, m.T) * look, Vector3.one * _vs.pVortexR), _ringMat);
+                var ring = run.Ring; var m = _rb.MapFast(ring.C, xLo, xHi, true);
+                if (!m.Ok) continue;
+                _rb.FrameAt(m.X, out var T, out var U, out var R);
+                var axis = new Vector3(Vector3.Dot(ring.N, T), Vector3.Dot(ring.N, U), Vector3.Dot(ring.N, R));
+                float fade = Mathf.Clamp01(ring.Life / 0.35f);
+                _world.AddRing(new Vector3(m.X, m.H, m.D), axis, _vs.pVortexR, 0.9f, 28, 6, new Color32(159, 232, 255, (byte)(255 * fade)), 1f);
             }
             foreach (var F in _flares)
             {
-                Draw(_cube, Matrix4x4.TRS(F.P, Quaternion.identity, Vector3.one * 1.5f), _flareMat);
-                var m = _rb.Map(F.P, _p.x - W, _p.x + W);
-                if (m.Ok && Mathf.Abs(m.D) < Config.Vision * 3f)
-                    Draw(_cube, Matrix4x4.TRS(Flat(m.X, m.H, m.D), Quaternion.identity, Vector3.one * 1.5f), _flareMat);
+                var m = _rb.MapFast(F.P, xLo, xHi, true); if (!m.Ok) continue;
+                _world.AddDot(new Vector3(m.X, m.H, m.D), 1.4f, new Color32(255, 230, 128, 255));
+                var back = _rb.MapFast(F.P - F.V * 0.05f, xLo, xHi, true); if (back.Ok) _world.AddDot(new Vector3(back.X, back.H, back.D), 0.8f, new Color32(255, 200, 90, 140));
             }
             // the launch aim: yours while you drag (or hold RT), the AI's when it has one
             Vector2? aim = _human == Half.Pistol ? _mouseAim ?? _padAim : _ai.LaunchAim.HasValue ? _ai.LaunchAim.Value - new Vector2(_p.x, _p.y) : (Vector2?)null;
             if (!aim.HasValue) return;
             float dx = aim.Value.x, dy = aim.Value.y, L = Mathf.Sqrt(dx * dx + dy * dy);
             if (L > _body.pLaunchRange) { dx *= _body.pLaunchRange / L; dy *= _body.pLaunchRange / L; }
-            float T = Mathf.Max(0.35f, Mathf.Sqrt(dx * dx + dy * dy) / _body.pLaunchSpeed), vx = dx / T, vy = dy / T + 0.5f * _body.pGravity * T;
+            float Tt = Mathf.Max(0.35f, Mathf.Sqrt(dx * dx + dy * dy) / _body.pLaunchSpeed), vx = dx / Tt, vy = dy / Tt + 0.5f * _body.pGravity * Tt;
             for (float s = 0f; s <= 1.0001f; s += 0.08f)
             {
-                float tt = s * T;
-                Draw(_cube, Matrix4x4.TRS(Flat(_p.x + vx * tt, _p.y + vy * tt - 0.5f * _body.pGravity * tt * tt, 0f), Quaternion.identity, Vector3.one * 1.2f), _aimMat);
+                float tt = s * Tt;
+                _world.AddDot(new Vector3(_p.x + vx * tt, _p.y + vy * tt - 0.5f * _body.pGravity * tt * tt, 0f), 1.1f, new Color32(255, 255, 255, 230));
+            }
+            _world.AddRing(new Vector3(_p.x + dx, _p.y + dy, 0f), Vector3.forward, 5f, 0.5f, 16, 4, new Color32(255, 255, 255, 230), 1f);
+        }
+
+        Vector2 PlaneVelocity() => _p.grounded ? new Vector2(_p.v, 0f) : new Vector2(_p.vx, _p.vy);
+
+        void DrawFx()
+        {
+            for (int i = _fx.Count - 1; i >= 0; i--)
+            {
+                var f = _fx[i]; float age = _t - f.T0, k = age / f.Life;
+                if (k >= 1f) { _fx.RemoveAt(i); continue; }
+                float e = 1f - (1f - k) * (1f - k);   // ease out
+                _world.AddRing(f.At, Vector3.forward, Mathf.LerpUnclamped(f.R0, f.R1, e), 0.5f + 0.5f * (1f - k), 20, 4, Alpha(f.Color, (1f - k) * f.Color.a / 255f), 1f);
             }
         }
 
-        // ---- drawing: one instanced submission per (mesh, material) a frame, the one draw API Unity and Amoebius share.
-        // There is no camera in it, so the flat world is drawn at Stage, 40 000 u below the real one: past every vessel
-        // camera's far plane (12 000, check_vessel_camera_farclip.py), and only the side camera looks there.
+        // ---- the 3D world's share: one instanced submission per (mesh, material), the one draw API Unity and Amoebius share.
+        // (The flat world is drawn at Stage, 40 000 u below the real one: past every vessel camera's far plane,
+        // check_vessel_camera_farclip.py; only the side camera looks there.)
         sealed class Batch { public Mesh Mesh; public Material Material; public Matrix4x4[] M = new Matrix4x4[32]; public int N; public Bounds Bounds; }
         readonly List<Batch> _batches = new();
         int _batchesUsed;
+
+        void Draw3D()
+        {
+            foreach (var run in _rings) Draw(_torus, Matrix4x4.TRS(run.Ring.C, Quaternion.LookRotation(run.Ring.N), Vector3.one * _vs.pVortexR), _ringMat);
+            foreach (var F in _flares) Draw(_cube, Matrix4x4.TRS(F.P, Quaternion.identity, Vector3.one * 1.5f), _flareMat);
+            FlushDraws();
+        }
 
         void Draw(Mesh mesh, Matrix4x4 m, Material material)
         {
