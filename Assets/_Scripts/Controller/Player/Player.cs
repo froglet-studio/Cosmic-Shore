@@ -229,8 +229,18 @@ namespace CosmicShore.Gameplay
             }
 
             _nextPilotSwapServerTime = Time.unscaledTime + PilotSwap.CooldownSeconds * 0.8f;
+            ExecutePilotSwapServer(ai);
+        }
 
+        /// <summary>
+        /// Server: exchange hulls with <paramref name="ai"/> and apply it on every peer. The caller has already
+        /// decided the swap is allowed: <see cref="RequestPilotSwap_ServerRpc"/> through
+        /// <see cref="PilotSwap.TryValidateServer"/>, the Third Eye's dev toggle through <see cref="PilotControl"/>.
+        /// </summary>
+        internal void ExecutePilotSwapServer(Player ai)
+        {
             ulong ownHullId = Vessel.VesselNetId;
+            ulong targetHullId = ai.Vessel.VesselNetId;
             PilotSwap.TransferOwnershipServer(this, ai);
             NetVesselId.Value = targetHullId;
             ai.NetVesselId.Value = ownHullId;

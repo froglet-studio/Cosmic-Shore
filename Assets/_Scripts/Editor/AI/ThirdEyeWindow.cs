@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using CosmicShore.Editor.Froglet;
+using CosmicShore.Gameplay;
 using CosmicShore.Utility;
 using UnityEditor;
 using UnityEngine;
@@ -27,7 +28,12 @@ namespace CosmicShore.Editor.AI
     /// <para><b>Known limit.</b> The prism occlusion corridor and vision shading are bound to the
     /// gameplay camera, so prisms between THAT camera and your hull may look dithered from here.</para>
     ///
-    /// <para>A READER: it writes no asset and changes no game state. Its settings live in
+    /// <para><b>Who flies which hull.</b> The <i>Pilots</i> panel lists every pilot with a <b>You / AI</b> toggle
+    /// (Yash, 2026-10-15): hand your own hull to the AI and watch from here, take over any AI-flown hull on either
+    /// team, or leave every hull to the AI. The window changes nothing else; the toggle goes through
+    /// <see cref="PilotControl"/> (the game's own AI hand-back and arena pilot swap), host only.</para>
+    ///
+    /// <para>It writes no asset. Its settings live in
     /// <c>UserSettings/ThirdEyeSettings.asset</c> (gitignored). See <c>.claude/skills/vessel-ai/SKILL.md</c>.</para>
     /// </summary>
     public sealed class ThirdEyeWindow : EditorWindow
@@ -66,6 +72,8 @@ namespace CosmicShore.Editor.AI
         bool _shift;
         bool _visible = true;
         bool _showSettings;
+        bool _showPilots = true;
+        string _pilotRefusal;
         bool _settingsDirty;
         double _nextScan, _nextRepaint, _nextPausedRender, _saveAt, _lastStep;
         Rect _viewRect;
@@ -444,6 +452,7 @@ namespace CosmicShore.Editor.AI
                 "Watch Play mode from any pilot while you play: Chase, Follow or Free, with each AI's aim drawn over the view.",
                 FrogletEditorPalette.ColorFor(FrogletToolCategory.Vessels));
             DrawToolbar();
+            if (_showPilots && EditorApplication.isPlaying) DrawPilotsPanel();
             if (_showSettings) DrawSettings();
 
             Rect view = GUILayoutUtility.GetRect(10f, 10f, GUILayout.ExpandWidth(true), GUILayout.ExpandHeight(true));
@@ -497,8 +506,100 @@ namespace CosmicShore.Editor.AI
                     "Name every pilot and pin off-screen pilots to the edge."), EditorStyles.toolbarButton);
                 if (labels != s.ShowLabels) { s.ShowLabels = labels; MarkSettingsDirty(); }
 
+                _showPilots = GUILayout.Toggle(_showPilots, new GUIContent("Pilots",
+                    "Who flies each hull: You or the AI. Hand your hull to the AI, or take over any AI's hull."), EditorStyles.toolbarButton);
                 _showSettings = GUILayout.Toggle(_showSettings, "Settings", EditorStyles.toolbarButton);
             }
+        }
+
+        // ── Who flies which hull ─────────────────────────────────────────────────
+
+        static readonly GUIContent s_you = new("You", "You fly this hull. On an AI's hull: take it over (the AI flies the one you leave).");
+        static readonly GUIContent s_ai = new("AI", "The AI flies this hull. On your own hull: hand it to the AI and watch.");
+
+        void DrawPilotsPanel()
+        {
+            using (new EditorGUILayout.VerticalScope(EditorStyles.helpBox))
+            {
+                EditorGUILayout.LabelField("Pilots: who flies each hull", FrogletEditorPalette.SectionLabel);
+                if (_pilots.Count == 0)
+                {
+                    EditorGUILayout.LabelField("No pilots yet.", FrogletEditorPalette.CardBody);
+                    return;
+                }
+
+                bool host = PilotControl.CanControl;
+                Player you = LocalHuman();
+                foreach (var pilot in _pilots)
+                {
+                    if (!pilot.Alive) continue;
+                    using (new EditorGUILayout.HorizontalScope())
+                    {
+                        Rect stripe = GUILayoutUtility.GetRect(4f, 18f, GUILayout.Width(4f));
+                        if (Event.current.type == EventType.Repaint)
+                            FrogletEditorPalette.DrawRect(stripe, ThirdEyePilots.DomainColor(pilot));
+
+                        if (GUILayout.Button(new GUIContent(pilot.Label, "Watch this pilot."), FrogletEditorPalette.CardBody, GUILayout.MinWidth(120f)))
+                            WatchPilot(pilot);
+
+                        bool otherHuman = !pilot.IsLocalHuman && !pilot.IsAI;
+                        bool aiFlies = pilot.AIFlying;
+                        using (new EditorGUI.DisabledScope(!host || otherHuman || pilot.Player == null || you == null))
+                        {
+                            bool pickYou = GUILayout.Toggle(!aiFlies && !otherHuman, s_you, EditorStyles.miniButtonLeft, GUILayout.Width(44f));
+                            bool pickAI = GUILayout.Toggle(aiFlies, s_ai, EditorStyles.miniButtonRight, GUILayout.Width(44f));
+                            if (pickYou && aiFlies) SetFlier(pilot, you, youFly: true);
+                            else if (pickAI && !aiFlies) SetFlier(pilot, you, youFly: false);
+                        }
+                    }
+                }
+
+                string note = !host ? "Only the host (or a solo game) can change who flies a hull."
+                    : you == null ? "No local pilot in this match."
+                    : _pilotRefusal;
+                if (!string.IsNullOrEmpty(note))
+                    EditorGUILayout.LabelField(note, FrogletEditorPalette.CardBody);
+            }
+        }
+
+        void SetFlier(ThirdEyePilot pilot, Player you, bool youFly)
+        {
+            _pilotRefusal = null;
+            string refusal;
+            bool ok = pilot.IsLocalHuman
+                ? PilotControl.TrySetAIFlies(you, aiFlies: !youFly, LoadGameData(), out refusal)
+                : youFly ? PilotControl.TryTakeOver(you, pilot.Player, out refusal)
+                : Refuse("that hull is already flown by the AI", out refusal);
+            if (!ok) _pilotRefusal = $"Not changed: {refusal}.";
+            _nextScan = 0;   // re-read who flies what on the next update
+        }
+
+        static bool Refuse(string why, out string refusal)
+        {
+            refusal = why;
+            return false;
+        }
+
+        // The local human's Player, wherever they sit now (their own hull, or one they took over).
+        Player LocalHuman()
+        {
+            foreach (var pilot in _pilots)
+                if (pilot.IsLocalHuman && pilot.Player) return pilot.Player;
+            return null;
+        }
+
+        static GameDataSO s_gameData;
+        static GameDataSO LoadGameData()
+        {
+            if (s_gameData) return s_gameData;
+            var found = Resources.FindObjectsOfTypeAll<GameDataSO>();
+            return s_gameData = found.Length > 0 ? found[0] : null;
+        }
+
+        void WatchPilot(ThirdEyePilot pilot)
+        {
+            int i = _pilots.IndexOf(pilot);
+            if (i >= 0) Watch(i);
         }
 
         void DrawSettings()

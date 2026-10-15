@@ -142,6 +142,10 @@ Game view, enter Play mode and play normally: the window shows the same match fr
   and its difficulty's mistakes.
 - **Labels**: each pilot's name, hull and speed; off-screen pilots pinned to the edge you would turn to.
 - **Paused** (the editor's pause button), it keeps rendering on demand: fly round a frozen frame.
+- **Pilots** (toolbar, on by default): every pilot with a **You / AI** toggle. On your own hull, **AI** hands it to the
+  AI (input paused, the mode's AI steering armed through `IAIPilotArming`) and **You** takes it back; on an AI's hull,
+  **You** takes it over on either team and the AI flies the hull you left (the arena `PilotSwap`, without its
+  same-team rule). Leave your own hull on AI and every hull is AI-flown. Host / solo only (`PilotControl`).
 - Settings (distances, smoothing, FOV, resolution) live in `UserSettings/ThirdEyeSettings.asset`, per machine.
 - **Known limit**: the occlusion corridor follows the GAMEPLAY camera, so prisms between that camera and your
   hull may look dithered from the Third Eye. Lower Resolution if the second render costs too much.
