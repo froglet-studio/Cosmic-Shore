@@ -69,6 +69,11 @@ namespace CosmicShore.Gameplay
             }
 
             var crystal = ResolveCrystal(origin);
+
+            // A bodyless crystal is not a failure: there is no cage to carry. The boost ring is
+            // still laid by the sibling effect - only this animation stands down.
+            if (crystal != null && !crystal.HasBody) return null;
+
             if (crystal == null)
             {
                 CSDebug.LogWarning($"[SquirrelCrystalMorph] no crystal with id {origin.CrystalId} on " +

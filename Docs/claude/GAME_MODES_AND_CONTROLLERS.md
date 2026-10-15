@@ -1328,7 +1328,7 @@ MiniGameControllerBase (abstract, NetworkBehaviour)
     │
     │
     └── MultiplayerDomainGamesController
-        ├── SkimRaceController              — crystal race, deterministic track, golf scoring
+        ├── SkimRaceController              — crystal race (crystals drawn as race rings), deterministic track, golf scoring
         ├── JoustController      — collision tracking, golf scoring
         ├── OnlineDuelForTheCellController — vessel ownership swap between rounds (mode 29 retired; CoOp Wildlife Blitz's scene runs it)
         ├── ScurryController — minimal (1 round, 1 turn)
