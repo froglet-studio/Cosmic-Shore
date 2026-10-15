@@ -108,15 +108,15 @@ namespace CosmicShore.Editor
                 BugLedgerPublisher.Warm();
                 string branch = BugLedgerPublisher.Branch;
                 string message =
-                    "Your editor collected things the team's daily bug sweep can use:\n\n" +
-                    $"• {material} new or changed bug(s) in the Bug Ledger\n" +
+                    "Your editor caught errors the team should know about:\n\n" +
+                    $"• {material} new or changed bug(s)\n" +
                     $"• {BugHuntReports.Describe(reports)}\n\n" +
-                    $"Share them now? They are committed to '{branch}' — only BugLedger/ files, nothing " +
-                    "else in your project — and a Claude session reads and fixes them. Fixes come back as " +
-                    "issues your next play tests validate.";
+                    "Press Share with team. That is all you need to do: a daily Claude sweep reads them and " +
+                    "fixes what it can. You do not need to press Fix on anything.\n\n" +
+                    $"Only BugLedger/ files are committed, to '{branch}'. Nothing else in your project.";
 
                 int choice = EditorUtility.DisplayDialogComplex(ToolName, message,
-                    "Share now", "Remind me later", "Always share after play tests");
+                    "Share with team", "Not now", "Always share automatically");
                 switch (choice)
                 {
                     case 0:
@@ -136,6 +136,31 @@ namespace CosmicShore.Editor
                 // A reminder must never break the editor (same doctrine as the ledger itself).
                 Debug.LogWarning($"[BugLedger] Bug Hunt check-in failed: {e.GetType().Name}: {e.Message}");
             }
+        }
+
+        /// <summary>The Bug Ledger window's <b>Share with team</b> button: everything pending plus the
+        /// new report files, one confirm, one scoped publish. Unlike the check-in it ignores the
+        /// reminder clock and counts counter-only drift too — the person asked.</summary>
+        public static void ShareWithTeam()
+        {
+            if (BugLedgerPublisher.IsBusy) return;
+            var pending = BugLedger.ComputePendingChanges();
+            BugLedger.HasMaterialChange(pending, out int material);
+            var reports = BugHuntReports.Plan();
+            if (pending.Count == 0 && reports.Count == 0)
+            {
+                EditorUtility.DisplayDialog(ToolName,
+                    "Nothing new to share — the team already has every bug and report file from this machine.", "OK");
+                return;
+            }
+
+            BugLedgerPublisher.Warm();
+            if (!EditorUtility.DisplayDialog(ToolName,
+                    $"Share {pending.Count} bug change(s) and {BugHuntReports.Describe(reports)} with the team?\n\n" +
+                    $"Committed to '{BugLedgerPublisher.Branch}' — only BugLedger/ files, nothing else in your project.",
+                    "Share with team", "Cancel"))
+                return;
+            Share(pending, Math.Max(material, pending.Count), reports);
         }
 
         static void Share(List<BugLedger.BugLedgerPendingChange> pending, int material,

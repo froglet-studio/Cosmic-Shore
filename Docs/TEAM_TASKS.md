@@ -182,6 +182,13 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Added:** 2026-10-15 by a Claude session (`Ys-bleeding-edge`)
 - **See:** Docs/DIAGNOSTICS.md#the-bug-hunt-check-in
 
+### T-20261015-8bae · open · decision · diagnostics
+- **Task:** Assets/_Models/shield1.blend makes every machine without Blender log a red 'Blender could not be found' on import (Bug Ledger E-fd64b43840). Nothing in Assets references its guid. Delete it, or export it to .fbx?
+- **Done when:** The .blend is gone or replaced by an .fbx, and the error stops on a machine without Blender
+- **Who can take it:** Garrett (decides); Yash can do it
+- **Added:** 2026-10-15 by a Claude session (`Ys-bleeding-edge`)
+- **See:** Docs/DIAGNOSTICS.md#the-bug-hunt-check-in
+
 ### T-20261015-e266 · open · test · AI / Third Eye
 - **Task:** Play-test the Third Eye You / AI toggle in Regatta: hand your hull to the AI, take over a rival AI hull, all-AI
 - **Done when:** Steps 1-6 of the 'Third Eye: a You / AI toggle' entry pass in the editor

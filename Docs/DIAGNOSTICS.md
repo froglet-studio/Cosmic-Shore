@@ -325,6 +325,12 @@ on editor load or after a play test, and **only when something is new**:
 - **Always share after play tests** — turns on the after-play auto-publish (which now carries report
   files too) and shares now.
 
+**Reporting is one button: Share with team** (the check-in dialog, or the green button in the Bug
+Ledger window's header). A reporter never presses a row's **Fix** — that is for whoever changed the
+code, and it now asks first: a bug marked fixed by someone who only meant to report it starts the
+validation clock on an unfixed bug, and an intermittent error can close itself after two lucky runs
+(Yash, 2026-10-15, did exactly that with six issues because Fix looked like "send").
+
 **FrogletTools ▸ Diagnostics ▸ Bug Hunt Check-in** asks immediately; **Open Team Bug Board** opens the
 board artifact (https://claude.ai/artifact/5zNw9wDjMrxvZVjGD7KBno). The board is a reader of the
 **daily sweep** (`/bug-ledger` §6): a scheduled Claude session runs `bug_ledger.py collect` over every
