@@ -65,6 +65,52 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 The browser Toybox: a WebGL build of Menu_Main's freestyle for www.froglet.games/play (`claude/webgl-toybox-kg5qx7`, 2026-10-14) — NOT EDITOR-VERIFIED
+
+**What landed:** everything in `Docs/WEBGL_TOYBOX.md`. The `FROGLET_WEB_TOYBOX` define (read through
+`WebToybox.IsBuild`); a boot with no UGS, an in-memory `SinglePlayerTransport` host and straight into freestyle; a
+menu with only the toybox, settings and credits; the build entry point `FrogletTools > Build > WebGL Toybox` and UBA's
+`WebToyboxBuild.PreExport`; WebGL player settings (Brotli, hashed names, 256 MB / 4 GB memory, the FrogletToybox
+template); `PlatformProfile_Web`; inline solves where threads were used; a browser download for painting SHARE; a
+key press starts audio; the toybox waits for FMOD's banks; no full-screen jump; swarm members and substrate agents
+drawn through a new SM 3.5 instanced path (`SwarmMemberFallbackDraw`); a LineRenderer stand-in for the arc lightning.
+
+**Verified without the editor:** `unity_refcompile --config webgl` and `--config player`, 0 project errors (a planted
+error inside `#if UNITY_WEBGL && !UNITY_EDITOR` and one inside `#if FROGLET_WEB_TOYBOX` each failed the webgl config);
+`--config editor`, 0 errors in changed files; `check_conditional_compilation.py`, `check_console_logging.py`;
+`author_swarm_fauna` / `author_substrate_fauna` / `author_builders --check`. The member shader: old and new HLSL agree
+bit for bit over 400,000 random members, and the fallback lowers to GLSL ES 3.00 with no storage buffers (DXC +
+glslang). The FMOD internals the keydown resume calls exist in `html5/lib/3.1.39`. Not run: Unity's own shader
+compiler, any build, any browser.
+
+**Verify in editor:**
+1. Pull and let it compile: no errors. `SwarmMemberInstancedFallback.shader` shows no errors with Web as the build
+   target, and `Assets/Resources/SwarmMemberInstancedFallback.mat` has GPU instancing ticked.
+2. Edit-mode tests: `WebToyboxTests` and `DeviceTierTests` pass.
+3. Play Menu_Main normally (no define): nothing changed: sign-in, every screen, Arcade, party.
+4. `memberdraw sm35` in the dev console, re-enter the Swarm cell: members look as with `memberdraw auto` (colours,
+   bloom on births, molts, spread at range, see-through near the camera, a kill hides the member at once). The same
+   on a substrate cell. Frame Debugger: member draws are instanced draws of 128 or fewer. Then `memberdraw auto`.
+5. Switch the platform to Web, run **FrogletTools > Build > WebGL Toybox**: exit 0, `Builds/WebGLToybox/build_manifest.txt`
+   lists Bootstrap, Authentication and Menu_Main.
+
+**Verify in a browser** (`python3 Tools/Build/publish_toybox.py serve --build-dir Builds/WebGLToybox`, then
+http://localhost:8000 in Chrome or Edge):
+1. It boots past "Starting the Toybox…" (and "Loading sound…" while the banks download) straight into freestyle.
+   No sign-in, no age gate, no online indicator or reconnect button.
+2. Every screen but HOME, and the Arcade / Arena / Mission entries, read "In the full game". The toybox, its
+   configure modal, settings and credits open.
+3. Every toy works, including Wanderway with its lifeforms, and swarms and substrate render (the `Ecology` channel
+   logs "SM 3.5 instanced path"). Record fps on a laptop with integrated graphics.
+4. The platform log line reads "WebGL player: Web profile".
+5. Audio starts on the first click, and on the first key press alone. Music plays from the menu's first frame.
+6. No full-screen jump on the first click. The page's own full-screen button works.
+7. A controller (Xbox and PlayStation): press a button, then it flies (sticks, A/B/X, triggers, RB flips) and the
+   keyboard takes back over when touched. Menu button glyphs appear once the pad is pressed: Cross/Circle on a
+   PlayStation pad, A/B on an Xbox pad. In the editor, plugging a pad in mid-session now shows the glyphs too.
+8. Painting SHARE downloads an `.html` that opens and spins.
+9. On www.froglet.games/play: the progress bar fills, "Controller connected" appears on a pad press.
+
 ### 🔴 No more "Script Updating Consent" prompt: MPPM calls moved to the engine API (`Ys-bleeding-edge`, 2026-10-14) — NOT EDITOR-VERIFIED
 
 **What landed:** Multiplayer Play Mode 2.0 moved `CurrentPlayer` into the Unity 6.3 engine as
@@ -8924,3 +8970,21 @@ executor edit was checked by reading only.
 3. No AI may peel away from a crystal it is flying straight at (final approach is untouched).
 4. Skein / Regatta: an AI riding a rail must keep its grind speed (the rail lead point must not
    trip the detector).
+
+## 🔴 Brittle Star — new vessel, round 4 (`cece/gallant-lamport-sc3khe`, 2026-10-14) — NOT EDITOR-VERIFIED
+
+No `unity` CLI in the session that wrote it. Proved offline: player and editor `unity_refcompile` (0 errors in project
+code), the 24 `BrittleStarTests` under Roslyn (`Tools/Build/brittlestar_harness/run.sh`, plus negative controls),
+`author_brittlestar_assets.py --check` / `--self-test`, the element table. The full walk is
+`R_VesselActions/BRITTLE_STAR.md` § In-editor verification; this round's changes:
+1. **Destruction Mode (X)**: push the right stick round — the ring and the five arms turn with it (they had lost it).
+   Deflection still opens / closes the arms.
+2. **Creation Mode (B)**: the hull drops to half cruise (the slowest mode). Speed → Creation: no burst of blocks while
+   the hull coasts down from ×6.
+3. **LT**: the ring explosion is a flat, domain-coloured band racing out in the ring's plane to the nucleus's width
+   (~780 u) in 0.7 s; prisms in the plane break (any domain), prisms a few units above / below survive; a rival it
+   crosses loses petals once and is not moved. No leftover band objects after a turn ends.
+4. **Slow Sparrow rounds** (2026-10-15): the arms and RT fire the Sparrow's round at its own size, swelling ×3 in flight,
+   at 135 / 70 u/s for 3 s. The arms should still reach ~258 u (a prism wall that far ahead breaks), and read as five
+   ropes. Watch the Profiler with 3-4 AI Brittle Stars in Destruction Mode: 1,350+ rounds alive per hull. If it is hot,
+   `destructionFireRate` 9 keeps the look at a tenth of the rounds. In Speed Mode the hull outruns its own arms.

@@ -73,9 +73,10 @@ namespace CosmicShore.Gameplay
         [Tooltip("Run each swarm's tick (simulation step + the frame it draws) on a worker thread. The main " +
                  "thread then only swaps buffers. Off = run it inline on the main thread (WebGL always does).")]
         public bool SimulateOffMainThread = true;
-        [Tooltip("Draw every LIVING member from one GPU buffer (SwarmMemberInstanced). Off, or on a device " +
-                 "without vertex-stage structured buffers, every member gets a real GameObject again (the " +
-                 "pre-round-7 cost).")]
+        [Tooltip("Draw every LIVING member instanced (SwarmMemberInstanced): from one GPU buffer, or on a device " +
+                 "without vertex-stage structured buffers (WebGL2) through the SM 3.5 per-instance path " +
+                 "(SwarmMemberFallbackDraw). Off, or with neither path available, every member gets a real " +
+                 "GameObject again (the pre-round-7 cost).")]
         public bool DrawMembersOnGpu = true;
         [Tooltip("The instanced member shader (Assets/_Graphics/Materials/Graphs/SwarmMemberInstanced.shader). " +
                  "Referenced here so a player build includes it.")]

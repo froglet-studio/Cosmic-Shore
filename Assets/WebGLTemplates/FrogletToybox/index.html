@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en-us">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, height=device-height, initial-scale=1.0, user-scalable=no">
+    <title>{{{ PRODUCT_NAME }}}</title>
+    <!--
+      The browser Toybox's player page (Docs/WEBGL_TOYBOX.md). Deliberately minimal: the canvas and
+      Unity's loader, nothing branded. The real loader page lives on the website and embeds this one;
+      it hears the load through postMessage and can reach the instance through window.frogletUnity.
+
+      Messages to window.parent (no secrets, so any origin may read them):
+        { source: "froglet-toybox", type: "progress", progress: 0..1 }
+        { source: "froglet-toybox", type: "ready" }
+        { source: "froglet-toybox", type: "warning" | "error", message: "..." }
+
+      Query parameters: ?buildUrl= and ?streamingAssetsUrl= point the loader at another copy of the
+      build, on this page's own origin only.
+    -->
+    <style>
+      html, body { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: #05070f; }
+      #unity-canvas { display: block; width: 100%; height: 100%; background: #05070f; outline: none; }
+    </style>
+  </head>
+  <body>
+    <canvas id="unity-canvas" tabindex="-1"></canvas>
+    <script>
+      (function () {
+        "use strict";
+
+        var canvas = document.getElementById("unity-canvas");
+        var query = new URLSearchParams(window.location.search);
+
+        // Only a same-origin override is honoured: a cross-origin URL would let any link run
+        // somebody else's script as this page.
+        function sameOriginUrl(value, fallback) {
+          if (!value) return fallback;
+          try {
+            var url = new URL(value, window.location.href);
+            return url.origin === window.location.origin ? url.href.replace(/\/+$/, "") : fallback;
+          } catch (e) {
+            return fallback;
+          }
+        }
+
+        function post(type, fields) {
+          if (window.parent === window) return;
+          var message = { source: "froglet-toybox", type: type };
+          for (var key in fields) message[key] = fields[key];
+          window.parent.postMessage(message, "*");
+        }
+
+        var buildUrl = sameOriginUrl(query.get("buildUrl"), "Build");
+        var loaderUrl = buildUrl + "/{{{ LOADER_FILENAME }}}";
+
+        var config = {
+          dataUrl: buildUrl + "/{{{ DATA_FILENAME }}}",
+          frameworkUrl: buildUrl + "/{{{ FRAMEWORK_FILENAME }}}",
+#if USE_THREADS
+          workerUrl: buildUrl + "/{{{ WORKER_FILENAME }}}",
+#endif
+#if USE_WASM
+          codeUrl: buildUrl + "/{{{ CODE_FILENAME }}}",
+#endif
+#if MEMORY_FILENAME
+          memoryUrl: buildUrl + "/{{{ MEMORY_FILENAME }}}",
+#endif
+#if SYMBOLS_FILENAME
+          symbolsUrl: buildUrl + "/{{{ SYMBOLS_FILENAME }}}",
+#endif
+          streamingAssetsUrl: sameOriginUrl(query.get("streamingAssetsUrl"), "StreamingAssets"),
+          companyName: {{{ JSON.stringify(COMPANY_NAME) }}},
+          productName: {{{ JSON.stringify(PRODUCT_NAME) }}},
+          productVersion: {{{ JSON.stringify(PRODUCT_VERSION) }}},
+
+          // Unity's own warnings and errors (a bad Content-Encoding header, a missing file).
+          showBanner: function (message, type) {
+            var kind = type === "error" ? "error" : "warning";
+            (kind === "error" ? console.error : console.warn)(message);
+            post(kind, { message: String(message) });
+          },
+
+          // With Data Caching on, the loader keeps what this returns a policy for in IndexedDB.
+          // Build files carry their content hash in their names (Name Files As Hashes), so a cached
+          // copy can never be stale. The data file and the FMOD banks are revalidated. Everything
+          // else is left to the browser's own cache.
+          cacheControl: function (url) {
+            var path = url.split("?")[0];
+            if (/\/[0-9a-f]{32}\.[^\/]+$/i.test(path)) return "immutable";
+            if (/\.(data|bank)(\.br|\.gz|\.unityweb)?$/i.test(path)) return "must-revalidate";
+            return "no-store";
+          },
+        };
+
+        var resolveReady, rejectReady;
+        var froglet = {
+          canvas: canvas,
+          config: config,
+          buildUrl: buildUrl,
+          progress: 0,
+          instance: null,
+          ready: new Promise(function (resolve, reject) { resolveReady = resolve; rejectReady = reject; }),
+        };
+        froglet.ready.catch(function () {});   // reported through post(); a host may still attach its own handler
+        window.frogletUnity = froglet;
+
+        function fail(message) {
+          console.error(message);
+          post("error", { message: String(message) });
+          rejectReady(new Error(String(message)));
+        }
+
+        var script = document.createElement("script");
+        script.src = loaderUrl;
+        script.onerror = function () { fail("Could not load " + loaderUrl); };
+        script.onload = function () {
+          createUnityInstance(canvas, config, function (progress) {
+            froglet.progress = progress;
+            post("progress", { progress: progress });
+          }).then(function (instance) {
+            froglet.instance = instance;
+            froglet.progress = 1;
+            post("ready", {});
+            resolveReady(instance);
+          }).catch(fail);
+        };
+        document.body.appendChild(script);
+      })();
+    </script>
+  </body>
+</html>

@@ -23,6 +23,14 @@ namespace CosmicShore.Gameplay
         /// </summary>
         protected virtual bool IsDomainMatching(Domains domain) => true;
 
+        /// <summary>
+        /// May a vessel of <paramref name="domain"/> collect this crystal? The same predicate the
+        /// impact path enforces, exposed so a collector that is NOT a physics contact (a
+        /// <see cref="CrystalRaceRing"/> threaded by its mouth) can skip a pilot the crystal would
+        /// refuse anyway - rather than running the vessel's half of a pickup that never happens.
+        /// </summary>
+        public bool AcceptsDomain(Domains domain) => IsDomainMatching(domain);
+
         // Null manager = a manager-less local mint (e.g. the freestyle conveyor toy's omni pickups):
         // treat it as a local single-machine collect, never a network client.
         bool IsNetworkClient() => Crystal.CrystalManager != null && Crystal.CrystalManager.IsSpawned && !Crystal.CrystalManager.IsServer;

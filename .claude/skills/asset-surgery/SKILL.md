@@ -1004,6 +1004,25 @@ folders that measure 12 MB (coincidence) and **4.4 MB** on disk.
 State which you mean every time: *"reaches a build"* vs *"on disk"*. A removal's headline is
 usually the first and its licence/repo-hygiene argument is the second.
 
+### Trap: a runtime `new Material(shader)` draws a variant the BUILD stripped
+
+A player build keeps only the shader variants some shipped material (or a variant collection) asks for, so
+a material made in code at runtime can ask for a keyword nobody shipped. The Editor has every variant,
+so it works there and fails only in the build: `INSTANCING_ON` is the usual casualty, and the draw comes out
+non-instanced or invisible. When code needs a material with a keyword or instancing, author a material
+ASSET with it set (GPU instancing ticked), keep it reachable (`Resources/`, or a reference from a shipped
+SO), and load it rather than constructing one. `SwarmMemberFallbackDraw` loads
+`Resources/SwarmMemberInstancedFallback.mat` for exactly this (claude/webgl-toybox-kg5qx7, 2026-10-14).
+
+### Technique: check a `.jslib` against a vendor's JS internals by grepping its static library
+
+A WebGL plugin's browser half is often JavaScript embedded as plain strings inside an Emscripten static
+library (`Assets/Plugins/<vendor>/platforms/html5/lib/<ver>/*.a`). A `.jslib` that calls into it
+(`Module.mInputRegistered`, `Module["OutputWebAudio_resumeAudio"]`) can be checked without a build:
+`grep -c -a '<name>' <lib>.a` for each name, against the library version Unity will link (FMOD picks
+`3.1.39` for Unity 6), and `grep -a -o '.{200}<name>.{300}'` to read the code around it. Names that are
+not there mean the `.jslib` does nothing, silently (claude/webgl-toybox-kg5qx7, 2026-10-14).
+
 ## 4. Technique: C# verification — get a real compiler first
 
 **Reach for ROSLYN, not `mcs`.** `mcs` is a C# 7.x compiler and this codebase is
@@ -1071,6 +1090,21 @@ references, m_Script classes). What cost time on the first runs (2026-10-06 to 1
   files that `using` a UGS package no mirror carries (Multiplayer, Friends, Leaderboards); they are
   counted, not judged. Check your own files are not in that bucket (they would be unverified):
   grep the run's `report.json` for each file you changed.
+- **`check_generated_assets.py` used to call a VARIANT-DERIVED fileID "missing"; it resolves them
+  since 2026-10-14.** A variant of a variant (Skim Race's `SkimRaceRingCrystal` → `BigCrystalVariant`
+  → `Crystal.prefab`) overrides, and is referenced through, objects its source INHERITS without
+  writing them out, whose ids are `(instanceFileID XOR sourceFileID) & INT64_MAX` and appear in no
+  document of the source file. The reference check only knew anchors, so all four correct overrides
+  (root `m_LocalScale`, `SphereCollider.m_Enabled`) came back as dangling. `Audit.has_object` now
+  recurses through the source's `PrefabInstance`s; its self-test carries a positive and a negative
+  control. If an older checkout still reports such ids missing, check the XOR before believing it —
+  the old scene reference to `BigCrystalVariant`'s Crystal (`6588436222817790495`) was exactly that
+  kind of id and loaded in play for months.
+- **The `editor` config is RED on bleeding-edge itself (measured 2026-10-14): 3 errors, all in
+  `Assets/_Scripts/System/AuthenticationServiceFacade.cs`** (`Unity.Multiplayer.PlayMode` /
+  `CurrentPlayer` — the Multiplayer Play Mode editor package, not obtainable here). A/B it on a
+  detached worktree of the base before attributing it (`git worktree add --detach <tmp>
+  origin/bleeding-edge`); the line to read is "`0 in files changed since origin/bleeding-edge`".
 - **`--config editor` compiles the Editor-folder scripts as their own `Assembly-CSharp-Editor`**,
   referencing the runtime, as Unity does. Before 2026-10-08 it merged the changed ones INTO the
   runtime compilation, so any branch touching one of the 123 `namespace CosmicShore.Editor` files got
