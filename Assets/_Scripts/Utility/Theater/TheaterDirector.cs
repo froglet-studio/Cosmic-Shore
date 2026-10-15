@@ -119,7 +119,7 @@ namespace CosmicShore.Utility
             var scene = UnityEngine.SceneManagement.SceneManager.GetActiveScene();
             _recorder.Begin(Config, scene.name, gameMode: 0, cellConfigName: string.Empty);
             Report($"Theater: RECORDING {scene.name}.");
-            CSDebug.LogVerbose(CSLogChannel.Theater, $"[Theater] recording started in {scene.name}");
+            CSDebug.LogVerbose(CSLogChannel.ArcadeMatch, $"[Theater] recording started in {scene.name}");
         }
 
         public void StopRecording()
@@ -138,7 +138,7 @@ namespace CosmicShore.Utility
             Report($"Theater: saved {Path.GetFileName(path)} " +
                    $"({_recorder.TrackCount} vessels, {_recorder.PoseCount} poses, " +
                    $"{_recorder.EstimatedBytes / 1024f:0} KB)");
-            CSDebug.LogVerbose(CSLogChannel.Theater, $"[Theater] wrote {path}");
+            CSDebug.LogVerbose(CSLogChannel.ArcadeMatch, $"[Theater] wrote {path}");
         }
 
         public void TogglePlayback()
@@ -188,7 +188,7 @@ namespace CosmicShore.Utility
 
             Report($"Theater: playing {Path.GetFileName(path)} " +
                    $"({recording.Tracks.Count} vessels, {recording.Duration:0.0}s)");
-            CSDebug.LogVerbose(CSLogChannel.Theater, $"[Theater] playing {path}");
+            CSDebug.LogVerbose(CSLogChannel.ArcadeMatch, $"[Theater] playing {path}");
         }
 
         static string FindMostRecent(string folder)
