@@ -1,0 +1,38 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b8a2e3e663c26e91f5a93413228a372c, type: 3}
+  m_Name: CrystalChargeArcsProfile
+  m_EditorClassIdentifier: 
+  rate: 1
+  boltIntensity: 1
+  glowIntensity: 1
+  seamStrikeSeconds: 0.07
+  seamDwellMinSeconds: 0.1
+  seamDwellMaxSeconds: 0.28
+  seamFadeSeconds: 0.85
+  seamPetalGlow: 0.35
+  fluxGapSeconds: 0.9
+  fluxChargeSeconds: 0.45
+  fluxStrikeSeconds: 0.06
+  fluxHoldSeconds: 0.45
+  fluxFadeSeconds: 0.45
+  fluxFork: 0.3
+  fluxMinDegrees: 55
+  fluxMaxDegrees: 125
+  fluxBundle: 0.016
+  fluxTurns: 1
+  strikeProtractionFrom: 0.15
+  strikeProtractionFull: 0.45
+  coreWidth: 0.012
+  writheSpeed: 3
+  flickerSpeed: 4
+  sleepBelowScreenRadiusPixels: 24

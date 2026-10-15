@@ -81,6 +81,19 @@ namespace CosmicShore.Engine.Audio.Fmod
         static int s_nextId;
         public readonly int Id = System.Threading.Interlocked.Increment(ref s_nextId);
         public readonly Dictionary<PARAMETER_ID, float> Parameters = new();
+
+        // Live instances by Id, so a native-style handle (an EVENT_CALLBACK's IntPtr) resolves
+        // back to its state; an entry leaves on release().
+        static readonly Dictionary<int, EventInstanceState> s_live = new();
+
+        public EventInstanceState() { lock (s_live) s_live[Id] = this; }
+
+        internal static EventInstanceState Find(System.IntPtr handle)
+        {
+            lock (s_live) return s_live.TryGetValue((int)handle, out var state) ? state : null;
+        }
+
+        internal static void Forget(EventInstanceState state) { lock (s_live) s_live.Remove(state.Id); }
     }
 
     /// <summary>
@@ -92,6 +105,9 @@ namespace CosmicShore.Engine.Audio.Fmod
     public struct EventInstance
     {
         internal EventInstanceState State;
+
+        /// <summary>Original contract: wraps a native handle (the IntPtr an EVENT_CALLBACK receives).</summary>
+        public EventInstance(System.IntPtr ptr) { State = EventInstanceState.Find(ptr); }
 
         public bool isValid() => State != null && !State.Released;
 
@@ -121,9 +137,11 @@ namespace CosmicShore.Engine.Audio.Fmod
         public RESULT start()
         {
             if (State == null) return RESULT.ERR_INVALID_HANDLE;
+            bool restart = State.Started && !State.Stopped;
             State.Started = true; State.Stopped = false;
             RuntimeManager.RecordStart(State);
             FmodBackend.Current?.Start(State);
+            RuntimeManager.InvokeDescriptionCallback(State, restart ? EVENT_CALLBACK_TYPE.RESTARTED : EVENT_CALLBACK_TYPE.STARTED);
             return RESULT.OK;
         }
 
@@ -180,6 +198,7 @@ namespace CosmicShore.Engine.Audio.Fmod
         {
             if (State == null) return RESULT.ERR_INVALID_HANDLE;
             State.Released = true;
+            EventInstanceState.Forget(State);
             FmodBackend.Current?.Release(State);
             return RESULT.OK;
         }
@@ -422,9 +441,28 @@ namespace CosmicShore.Engine.Audio.Fmod
         public static void RecordMixerSnapshot(string mixer, string snapshot)
             => EventRecorded?.Invoke("fmod-snapshot", $"start:mixer:{mixer}/{snapshot}");
 
+        // EventDescription.setCallback, by event path: the game's ParityProbe hooks STARTED |
+        // RESTARTED on every loaded description, and start() invokes it with the instance's
+        // handle. One callback per description, as the original keeps one.
+        static readonly Dictionary<string, (EVENT_CALLBACK callback, EVENT_CALLBACK_TYPE mask)> s_descriptionCallbacks = new();
+
+        internal static void SetDescriptionCallback(string path, EVENT_CALLBACK callback, EVENT_CALLBACK_TYPE mask)
+        {
+            if (path == null) return;
+            if (callback == null) s_descriptionCallbacks.Remove(path);
+            else s_descriptionCallbacks[path] = (callback, mask);
+        }
+
+        internal static void InvokeDescriptionCallback(EventInstanceState state, EVENT_CALLBACK_TYPE type)
+        {
+            if (state.Path == null || !s_descriptionCallbacks.TryGetValue(state.Path, out var c) || (c.mask & type) == 0) return;
+            c.callback(type, (System.IntPtr)state.Id, System.IntPtr.Zero);
+        }
+
         /// <summary>Clears buses, the started log, and the failure seam (test isolation).</summary>
         public static void ResetForTests()
         {
+            s_descriptionCallbacks.Clear();
             Buses.Clear();
             Vcas.Clear();
             StudioSystem.Globals.Clear();

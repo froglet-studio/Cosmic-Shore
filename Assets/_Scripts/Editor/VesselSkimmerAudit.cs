@@ -31,7 +31,7 @@ namespace CosmicShore.Editor
 
         const string ToolName = "Audit Vessel Skimmers";
 
-        [MenuItem("FrogletTools/Vessels/Audit Vessel Skimmers")]
+        [MenuItem("FrogletTools/Vessels/Audits/Audit Vessel Skimmers", false, 274)]
         [FrogletTool(FrogletToolCategory.Vessels, Importance = 4,
             Description = "Checks every vessel's near/far skimmer reference actually reaches the " +
                           "object doing the physics — an unreachable or inactive skimmer skims " +
@@ -77,11 +77,11 @@ namespace CosmicShore.Editor
             else if (EditorUtility.DisplayDialog("Vessel skimmer audit",
                          $"{faults} fault(s) found (details in the console report).\n\n" +
                          "File/refresh them in the Bug Ledger so they are tracked and " +
-                         "auto-validated by the next clean audit run?",
+                         "auto-validated by the next clean audit run? They go to Claude with " +
+                         "your next \"Send to Claude\" after a play test.",
                          "File in Bug Ledger", "Skip"))
             {
                 BugLedger.ReportToolFindings(ToolName, findings);
-                DiagnosticsWindow.OpenBugLedger();
             }
         }
 

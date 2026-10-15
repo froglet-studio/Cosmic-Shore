@@ -32,7 +32,7 @@ namespace CosmicShore.Tests
             // If someone adds or removes a vessel, this test forces them to
             // update the test suite - ensuring new vessels get tested too.
             var values = Enum.GetValues(typeof(VesselClassType));
-            Assert.AreEqual(17, values.Length,
+            Assert.AreEqual(18, values.Length,
                 "VesselClassType member count changed. Update tests if a vessel was added/removed.");
         }
 
@@ -54,6 +54,7 @@ namespace CosmicShore.Tests
         [TestCase(VesselClassType.Butterfly, 13)]
         [TestCase(VesselClassType.Thresher, 14)]
         [TestCase(VesselClassType.Stoat, 15)]
+        [TestCase(VesselClassType.BrittleStar, 16)]
         public void VesselClassType_HasCorrectIntegerValue(VesselClassType vessel, int expectedValue)
         {
             // Locks the serialized integer value so Unity assets don't drift.
@@ -162,8 +163,9 @@ namespace CosmicShore.Tests
             // 61 -> 59 on 2026-10-08: MultiplayerFreestyle (28) and OnlineDuelForTheCell (29)
             // retired; both IDs stay reserved. 59 -> 60 the same day: Slingshot (64), the Stoat's.
             // 60 -> 61 on 2026-10-09: Warpline (65), the Stoat's time race.
+            // 61 -> 62 on 2026-10-13: ThresherTime (66), the Thresher's circuit race.
             var values = Enum.GetValues(typeof(GameModes));
-            Assert.AreEqual(61, values.Length,
+            Assert.AreEqual(62, values.Length,
                 "GameModes member count changed. Update tests if a game mode was added/removed.");
         }
 
@@ -203,6 +205,7 @@ namespace CosmicShore.Tests
         [TestCase(GameModes.GrizzlyTime, 63)]
         [TestCase(GameModes.Slingshot, 64)]
         [TestCase(GameModes.Warpline, 65)]
+        [TestCase(GameModes.ThresherTime, 66)]
         public void GameModes_KeyValues_AreCorrect(GameModes mode, int expectedValue)
         {
             Assert.AreEqual(expectedValue, (int)mode,

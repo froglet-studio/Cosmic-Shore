@@ -1,0 +1,9 @@
+{
+  "filed": {},
+  "scanCounts": {
+    "total": 78,
+    "updateAllocations": 6,
+    "yieldNewInLoop": 63,
+    "yieldNullLoops": 9
+  }
+}

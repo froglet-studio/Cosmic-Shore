@@ -239,6 +239,11 @@ namespace CosmicShore.Gameplay
         /// </summary>
         public void SetSpawnerPaused(bool paused) => trailPenUp = paused;
 
+        /// <summary>Read-only: is the spawn loop running (started by the turn, not stopped by an ability)? An ability
+        /// that lays its own trail beside this one (the Brittle Star's Creation Mode pentagon) lays only while this
+        /// is, so it never builds before the turn starts or after an ability stopped the trail.</summary>
+        public bool SpawnerEnabled => spawnerEnabled;
+
         /// <summary>
         /// Device-tier creation hold: a THIRD independent axis beside <see cref="spawnerEnabled"/>
         /// and the pen, owned only by <c>MenuCrystalClickHandler</c>'s tier trail policy (on

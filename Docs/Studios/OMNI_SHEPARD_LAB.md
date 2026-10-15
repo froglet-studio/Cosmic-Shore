@@ -177,7 +177,7 @@ CLAUDE.md: profile first. A cloud session cannot profile, so this branch built t
 nothing on speculation. The designer chose to skip profiling for now and put the run on QA's list for Yash
 (`Docs/QA/QA_BACKLOG.md`, **QA-P2-BENCH-DEPTH-PRISMS**).
 
-**The instrument:** **FrogletTools ▸ Performance ▸ Crystal Depth Prism Benchmark**
+**The instrument:** **FrogletTools ▸ Performance ▸ Benchmarks ▸ Crystal Depth Prism**
 (`Assets/_Scripts/Utility/PerformanceBenchmark/Editor/CrystalDepthPrismBenchmarkWindow.cs`, a READER).
 - Spawns N omni and N Mass crystals (N = 10 / 50 / 200; omni only or Mass only for attribution) in a
   ring, stripped to their visuals.

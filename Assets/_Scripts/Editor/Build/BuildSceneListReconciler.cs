@@ -64,6 +64,13 @@ namespace CosmicShore.Editor
             if (EditorApplication.isPlayingOrWillChangePlaymode || BuildPipeline.isBuildingPlayer)
                 return;
 
+            // An editor compiled with the browser Toybox's define is a Unity Build Automation machine
+            // after WebToyboxBuild.PreExport, which set the list to the toybox's three scenes on purpose
+            // and whose define change is what reloaded the domain. Re-adding every arcade card's scene
+            // here would quietly turn that build back into the full game.
+            if (CosmicShore.Core.WebToybox.IsBuild)
+                return;
+
             Build(out var missing);
             if (missing.Count == 0) return;
 

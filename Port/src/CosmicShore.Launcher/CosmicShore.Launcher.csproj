@@ -15,14 +15,23 @@
     <InvariantGlobalization>true</InvariantGlobalization>
   </PropertyGroup>
 
+  <!-- On Windows the launcher targets Windows 10 (2004) too, for Windows.Media.SpeechRecognition:
+       the CLAUDE page's mic uses the same online dictation as Win + H, which knows technical words
+       the old System.Speech engine never learned. Built anywhere else (or with
+       -p:AmoebiusPlainTarget=true) it stays net10.0 and the mic falls back to System.Speech. -->
+  <PropertyGroup Condition="$([MSBuild]::IsOSPlatform('Windows')) and '$(AmoebiusPlainTarget)' != 'true'">
+    <TargetFramework>net10.0-windows10.0.19041.0</TargetFramework>
+    <SupportedOSPlatformVersion>10.0.17763.0</SupportedOSPlatformVersion>
+  </PropertyGroup>
+
   <ItemGroup>
     <PackageReference Include="Silk.NET.Windowing" Version="2.22.0" />
     <PackageReference Include="Silk.NET.Input" Version="2.22.0" />
     <PackageReference Include="Silk.NET.OpenGL" Version="2.22.0" />
     <PackageReference Include="Silk.NET.OpenGL.Extensions.ImGui" Version="2.22.0" />
     <PackageReference Include="StbImageSharp" Version="2.30.16" />
-    <!-- Voice in the CLAUDE page: Windows' built-in speech recognition and synthesis (Microsoft's
-         package; it compiles everywhere and is only called on Windows). -->
+    <!-- Voice in the CLAUDE page: Windows' built-in speech synthesis, and the fallback recognizer
+         (Microsoft's package; it compiles everywhere and is only called on Windows). -->
     <PackageReference Include="System.Speech" Version="10.0.0" />
   </ItemGroup>
 
@@ -92,7 +101,6 @@
   <ItemGroup>
     <Compile Include="../Shared/AmoebiusTracks.cs" Link="Shared/AmoebiusTracks.cs" />
     <Compile Include="../Shared/AmoebiusBoard.cs" Link="Shared/AmoebiusBoard.cs" />
-    <Compile Include="../Shared/MultiplayerRun.cs" Link="Shared/MultiplayerRun.cs" />
     <Compile Include="../Shared/Workspace/*.cs" Link="Shared/Workspace/%(Filename)%(Extension)" />
   </ItemGroup>
 </Project>

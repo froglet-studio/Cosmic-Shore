@@ -290,7 +290,10 @@ namespace CosmicShore.UI
             PauseSystem.TogglePauseGame(true);
             Show();
 
-            wasLocalPlayerInputPausedBefore = gameData.LocalPlayer.InputStatus.Paused;
+            // No live local pilot (its Player was despawned or destroyed - LocalPlayer self-heals to
+            // null): there is no input to pause, so treat it as already paused and leave it alone.
+            var localInput = gameData.LocalPlayer?.InputStatus;
+            wasLocalPlayerInputPausedBefore = localInput == null || localInput.Paused;
             if (!wasLocalPlayerInputPausedBefore)
                 _ = TogglePlayerPauseWithDelay(true);
         }
@@ -387,7 +390,7 @@ namespace CosmicShore.UI
         async UniTaskVoid TogglePlayerPauseWithDelay(bool toggle)
         {
             await UniTask.Yield();
-            gameData.LocalPlayer?.InputController.SetPause(toggle);
+            gameData.LocalPlayer?.InputController?.SetPause(toggle);
         }
     }
 }

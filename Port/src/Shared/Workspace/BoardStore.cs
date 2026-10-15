@@ -8,14 +8,14 @@ using System.Threading;
 namespace Amoebius.Workspace
 {
     /// <summary>What a store held: the board's text, or null when there is none yet.</summary>
-    public readonly record struct BoardRead(string? Text);
+    internal readonly record struct BoardRead(string? Text);
 
     /// <summary>
     /// Where a board lives. The board does the parsing and merging; a store only moves text,
     /// replaces it atomically, copies an unreadable board aside, and says when it changed.
     /// Today: board.json (<see cref="FileBoardStore"/>). Later: a shared workspace.
     /// </summary>
-    public interface IBoardStore
+    internal interface IBoardStore
     {
         /// <summary>The stored text, or null when nothing is stored yet.</summary>
         BoardRead Read();
@@ -35,7 +35,7 @@ namespace Amoebius.Workspace
     /// <c>board.json.corrupt-yyyyMMdd-HHmmss</c> once (an identical copy is not made twice).
     /// Writers serialise on <c>board.json.lock</c>.
     /// </summary>
-    public sealed class FileBoardStore : IBoardStore
+    internal sealed class FileBoardStore : IBoardStore
     {
         public string Dir { get; }
         public string Path => FileIn(Dir);
@@ -123,7 +123,7 @@ namespace Amoebius.Workspace
     }
 
     /// <summary>A board kept in memory: for tests, and a model of what a shared store must do.</summary>
-    public sealed class MemoryBoardStore : IBoardStore
+    internal sealed class MemoryBoardStore : IBoardStore
     {
         readonly object _gate = new();
         int _version;

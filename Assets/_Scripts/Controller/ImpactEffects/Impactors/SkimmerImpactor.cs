@@ -239,12 +239,13 @@ namespace CosmicShore.Gameplay
             if (!isInitialized)
                 return;
 
-            // The legacy Components/Skimmer.prefab predates the container refactor (it still
-            // serializes the retired per-list fields), so vessels that nest it without a
-            // per-instance override run this impactor with a null container. Every branch
+            // The legacy Components/Skimmer.prefab predated the container refactor, so the six
+            // vessels that nest it without a per-instance override (Urchin, Manta, Grizzly,
+            // Shrike, Termite, Falcon) ran this impactor with a null container. Every branch
             // below derefs it before its secondary calls, so a bare deref threw per contact —
-            // an exception storm inside PhysX callbacks that froze the editor. Report once,
-            // skip the contact.
+            // an exception storm inside PhysX callbacks that froze the editor. The prefab now
+            // defaults to NoEffectsSkimmerImpactorDataContainer (exactly the legacy, empty
+            // lists); this guard stays for any impactor wired by hand: report once, skip.
             if (IsEffectContainerMissing(skimmerImpactorDataContainer, nameof(skimmerImpactorDataContainer)))
                 return;
 

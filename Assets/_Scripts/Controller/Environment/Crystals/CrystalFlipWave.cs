@@ -19,6 +19,10 @@ namespace CosmicShore.Gameplay
     /// <see cref="FlipWaveProfileSO"/>; <c>TimeCrystalFlipWaveProfile.asset</c> is generated from the take and
     /// the edit-mode parity test holds this component to it. Design record: <c>Docs/TIME_CRYSTAL.md</c>.
     ///
+    /// On the omni, an <see cref="OmniCrystalCadence"/> on the same root CUES the waves: one wave per wave beat, from a
+    /// new start vertex each time, at rest between - so the rhombi flip only while the Space squares are still (Omni
+    /// Motion Lab round 1). Without a cadence the wave loops on its own clock, as the Time crystal's does.
+    ///
     /// Cost: one profile sample per ring and one bone write per plate whose ring is mid-flip, only while the
     /// renderer is visible - no Animator, no clip evaluation. The skinned mesh renders as before.
     /// </summary>
@@ -44,6 +48,9 @@ namespace CosmicShore.Gameplay
         float clockStart;
         int start;
         int cycle;
+        OmniCrystalCadence cadence;
+        long cuedWave = -1;
+        bool atRest = true;
 
         void Awake()
         {
@@ -75,6 +82,7 @@ namespace CosmicShore.Gameplay
             }
 
             ringSamples = new FlipSample[rig.RingCount];
+            TryGetComponent(out cadence);
             // A per-instance stream: the global UnityEngine.Random is seeded for deterministic content, and a
             // per-frame visual must not consume from it.
             rng = new System.Random(GetInstanceID());
@@ -85,6 +93,8 @@ namespace CosmicShore.Gameplay
         {
             if (rig == null) return;
             rig.ResetToRest();
+            atRest = true;
+            cuedWave = -1;
             clockStart = Time.time;
             cycle = 0;
             start = rng.Next(rig.StartCount);
@@ -93,6 +103,11 @@ namespace CosmicShore.Gameplay
         void LateUpdate()
         {
             using var _ = UpdateMarker.Auto();
+            if (cadence && cadence.enabled)
+            {
+                Cued();
+                return;
+            }
 
             float elapsed = Time.time - clockStart;
             float loop = profile.LoopSeconds;
@@ -112,6 +127,33 @@ namespace CosmicShore.Gameplay
             float seconds = elapsed - now * loop;
             for (int ring = 0; ring < ringSamples.Length; ring++) ringSamples[ring] = profile.Sample(ring, seconds);
             rig.Apply(start, ringSamples);
+        }
+
+        /// <summary>One wave per wave beat of the cadence, from a new vertex each; at rest between beats (a finished wave
+        /// is the rest SHAPE, so the snap back to the rest pose is invisible).</summary>
+        void Cued()
+        {
+            if (!cadence.WaveNow(out float profileSeconds, out long wave))
+            {
+                if (!atRest)
+                {
+                    rig.ResetToRest();
+                    atRest = true;
+                }
+                return;
+            }
+            if (wave != cuedWave)
+            {
+                cuedWave = wave;
+                // Any vertex but the one just used, each equally likely.
+                int next = rng.Next(rig.StartCount - 1);
+                start = next >= start ? next + 1 : next;
+            }
+            if (!plates.isVisible) return;
+            float seconds = profile.FirstRingStartSeconds + profileSeconds;
+            for (int ring = 0; ring < ringSamples.Length; ring++) ringSamples[ring] = profile.Sample(ring, seconds);
+            rig.Apply(start, ringSamples);
+            atRest = false;
         }
     }
 }

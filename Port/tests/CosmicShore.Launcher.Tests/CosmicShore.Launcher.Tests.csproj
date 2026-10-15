@@ -5,6 +5,11 @@
     <IsPackable>false</IsPackable>
     <Nullable>enable</Nullable>
   </PropertyGroup>
+  <!-- Same target as the launcher it references (its Windows build adds the Windows 10 target). -->
+  <PropertyGroup Condition="$([MSBuild]::IsOSPlatform('Windows')) and '$(AmoebiusPlainTarget)' != 'true'">
+    <TargetFramework>net10.0-windows10.0.19041.0</TargetFramework>
+    <SupportedOSPlatformVersion>10.0.17763.0</SupportedOSPlatformVersion>
+  </PropertyGroup>
   <ItemGroup>
     <Using Include="Xunit" />
   </ItemGroup>

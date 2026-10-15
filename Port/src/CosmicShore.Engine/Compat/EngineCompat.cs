@@ -172,7 +172,13 @@ namespace CosmicShore.Engine
             }
         }
         public static event Action quitting;
-        public static void Quit() => quitting?.Invoke();
+
+        /// <summary>
+        /// Asks the player to quit, as Unity's does: nothing happens at once; at the end of the frame
+        /// the host runs <see cref="RunQuitSequence"/> (wantsToQuit, OnApplicationQuit, quitting) and
+        /// then closes the window.
+        /// </summary>
+        public static void Quit() => QuitRequested = true;
 
         /// <summary>
         /// Original-contract URL open (e.g. the painting toy's web-share viewer). Headless has no

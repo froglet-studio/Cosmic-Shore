@@ -45,17 +45,18 @@ size at the far end and full size on the surface (PLATE_SCALE_START), plates are
 breathing shell needs no rim to hide its turn: the stationary rim (once slot 4) was retired
 with this look. (Breathe and the rim and their eight materials were retired on 2026-10-13.)
 
-Charge owns the PENTAGONS, and its signature is the charge crystal's EDGE DISCHARGE
-(plasma crackling vertex to vertex along the crease edges). A sixth child,
-OmniCrystalChargeEdges, draws exactly that on the 12 pentagonal prisms and nothing else:
-the body's own mesh, filtered at runtime by CrystalEdgeArcs (plateCorners 10 - a
-pentagonal prism has 10 corners) and edge-baked by CrystalEdgeArcMeshBaker, on
-OmniChargeEdgesShader, which adds ChargeCrystal.hlsl's discharge term over the body.
-It is a plain child, NOT a crystalModels slot - an overlay has no husk to burst and no
-team material to clone - and CrystalAccentTint paints its bolt halo from the body's
-material so a team crystal's bolts wear its domain colour. Its arc dials are cloned from
-ChargeCrystalMaterial (one look for one element - retune the charge crystal and --check
-names this material as drifted), its _BrightColor and _Spread from OmniCrystalBody.
+Charge owns the PENTAGONS. Since the Omni Motion Lab round 5 (2026-10-13) its light is CrystalChargeArcs on
+OmniCrystalChargeArcs, a plain child of Crystal.prefab (NOT a crystalModels slot - an overlay has no husk to burst and no
+team material to clone): chained FLUX ARCS - a pentagon charges, an arc leaps to one 55-125 degrees away, both fade, and
+the next leaps on from the sink; only those two pentagons light; the arc is five strands, each one plasma ribbon from a
+source corner to a sink corner, fanned onto the corners at each end and running as one coaxial braided bundle between. The Charge crystal (CrystalCharge.prefab, also authored here) gets the
+same component as ChargeCrystalArcs in SEAM WALK mode - one bolt walking the seams between its twelve blooms forever -
+and its shell's edge crawl is held at zero while it runs. Both draw on CrystalChargeArcsShader (OmniChargeArcs.mat /
+ChargeCrystalArcs.mat: the crystal's bright colour, ChargeCrystalMaterial's arc core colour) with one timing profile,
+CrystalChargeArcsProfile.asset. CrystalAccentTint paints the omni's from the body, so a team crystal's lit pentagons
+wear its domain colour. The edge-crawl overlay that came before (OmniCrystalChargeEdges.prefab: ChargeCrystal.hlsl's
+discharge on the pentagons' crease edges) is retired, with its OmniChargeEdges material and shader (the Elemental
+Converter moved to the flux arcs too, 2026-10-13).
 
 A team crystal: `ThemeManagerDataContainerSO.GetTeamCrystalMaterial(domain, material)` finds the base-set slot
 that holds a model's OWN default material and hands back that slot's domain clone (since 2026-10-13; it was by
@@ -170,8 +171,10 @@ DEPTH_SHADER_GUID = hashlib.md5(b"CosmicShore/OmniCrystal/OmniDepthPrismShader.s
 DEPTH_NAME = "OmniDepthPrisms"
 MAT_DEPTH = mat_guid(DEPTH_NAME)
 MAT_DEPTH_INACTIVE = mat_guid(DEPTH_NAME + "Inactive")
-DEPTH_REACH = OUTER_REACH                # the top of a column, x the prism's seated radius (lab start / stop)
-DEPTH_PLATE_SCALE_START = 0.5            # a prism's size at the top of its column, x its seated size
+# Omni Motion Lab round 3 (shipped with round 5, 2026-10-13): taller columns and bigger prisms at the top, so the
+# Mass that the horizon seal had made subtle stands out again (it was OUTER_REACH 2 / 0.5).
+DEPTH_REACH = 3                          # the top of a column, x the prism's seated radius
+DEPTH_PLATE_SCALE_START = 0.6            # a prism's size at the top of its column, x its seated size
 DEPTH_THICKNESS = 8                      # the omni's pick (thickness grows INWARD, so a sealed prism is flush)
 DEPTH_THICKNESS_INWARD = 1
 # The thickness is BAKED INTO the prism mesh (thicken()) and the materials ship _Thickness 1, so the shader's
@@ -190,35 +193,56 @@ DEPTH_PROFILE_GUID = hashlib.md5(b"CosmicShore/Crystals/CrystalDepthPrismProfile
 # The free turn (15 deg/s about a 25-degree axis) was dropped 2026-10-12: the crystal holds still in game.
 # Round 10 (2026-10-13): reseat -0.87 (the far-range bound: -0.8 was seen once the camera moves) and a random pose
 # per crystal (orientationJitter 1, seeded from the spawn position by CrystalDepthPrisms).
-DEPTH_PROFILE_VALUES = [("openDepth", -0.88), ("sealDepth", 1), ("profilePower", 1), ("reseatDepth", -0.87),
-                        ("reseatFadeSeconds", 0.6), ("orientationJitter", 1)]
+# Omni Motion Lab rounds 1 and 3 (shipped with round 5, 2026-10-13): seal at the camera's horizon (every prism the camera
+# sees is flush, so none clips into the squares), rise while hidden (a prism climbs only while its column top is behind
+# the body, so every hidden prism stands out and none is seen rising), a later descent (open -0.25) and the reseat
+# pushed back to -0.97 now that it is a fallback. The Mass crystal shares this profile.
+DEPTH_PROFILE_VALUES = [("openDepth", -0.25), ("sealDepth", 1), ("profilePower", 1), ("reseatDepth", -0.97),
+                        ("reseatFadeSeconds", 0.6), ("sealAtHorizon", 1), ("horizonMargin", 0.05),
+                        ("riseWhileHidden", 1), ("riseRate", 1.5), ("occluderRadius", 0.936),
+                        ("orientationJitter", 1)]
 
 
 MAT_BODY = mat_guid("OmniCrystalBody")
 MAT_BODY_INACTIVE = mat_guid("OmniCrystalBodyInactive")
 
-# ── charge edges (the pentagons) ──
-CHARGE_PREFAB = "Assets/_Prefabs/Environment/OmniCrystalChargeEdges.prefab"
-CHARGE_PREFAB_GUID = hashlib.md5(b"CosmicShore/OmniCrystal/OmniCrystalChargeEdges.prefab").hexdigest()
-CHARGE_SHADER_GUID = "fea45e80b3e94b3e34515f9ff6446e87"   # OmniChargeEdgesShader.shader
-CHARGE_MAT_NAME = "OmniChargeEdges"
-MAT_CHARGE = mat_guid(CHARGE_MAT_NAME)
-CHARGE_DONOR = "ChargeCrystalMaterial"                   # the charge crystal's own dials
-EDGE_ARCS_GUID = "ed80837ca1fd4d9ebeb185fec643a226"      # CrystalEdgeArcs.cs
+CHARGE_DONOR = "ChargeCrystalMaterial"                   # the charge crystal's own material: the arcs' core colour
 ACCENT_TINT_GUID = "599565cac0fff6c38bbe40a3fcc53207"    # CrystalAccentTint.cs
-PENTAGON_PLATE_CORNERS = 10                              # a pentagonal prism: 2 x 5 corners
 TRUNC_OCTA_PREFAB = "Assets/_Prefabs/Environment/TrucatedOctahedron.prefab"
 BODY_PREFAB = "Assets/_Prefabs/Environment/OmniCrystalBody.prefab"
 BODY_PREFAB_GUID = hashlib.md5(b"CosmicShore/OmniCrystal/OmniCrystalBody.prefab").hexdigest()
 FLIP_WAVE_GUID = "c1b251f1ac8f4a15b1bc5681c1d6bcc5"          # CrystalFlipWave.cs
 FLIP_PROFILE_GUID = "7ae6c13f991929b01f383003cb5d9277"       # TimeCrystalFlipWaveProfile.asset
-# The shader's whole property set: (name, kind, source) - source is the material it is copied from.
-CHARGE_PROPS = [("_ArcCoreColor", "c", CHARGE_DONOR), ("_ArcDuty", "f", CHARGE_DONOR),
-                ("_ArcIntensity", "f", CHARGE_DONOR), ("_ArcJitter", "f", CHARGE_DONOR),
-                ("_ArcLength", "f", CHARGE_DONOR), ("_ArcShimmer", "f", CHARGE_DONOR),
-                ("_ArcSpeed", "f", CHARGE_DONOR), ("_ArcWidth", "f", CHARGE_DONOR),
-                ("_BrightColor", "c", "OmniCrystalBody"), ("_NodeIntensity", "f", CHARGE_DONOR),
-                ("_NodeRadius", "f", CHARGE_DONOR), ("_Spread", "c", "OmniCrystalBody")]
+# ── the Charge light (Omni Motion Lab round 5) ──
+ARCS_GUID = hashlib.md5(b"CosmicShore/Crystals/CrystalChargeArcs.cs").hexdigest()
+ARCS_PROFILE_SO_GUID = hashlib.md5(b"CosmicShore/Crystals/CrystalChargeArcsProfileSO.cs").hexdigest()
+ARCS_CORE_GUID = hashlib.md5(b"CosmicShore/Utility/ChargeArcs.cs").hexdigest()
+SQUARE_TURN_FIT_GUID = hashlib.md5(b"CosmicShore/Utility/SquareTurnFit.cs").hexdigest()   # the square turns' fit, shared
+ARCS_SHADER = "Assets/_Graphics/Materials/Shaders/CrystalChargeArcsShader.shader"
+ARCS_SHADER_GUID = hashlib.md5(b"CosmicShore/Crystals/CrystalChargeArcsShader.shader").hexdigest()
+ARCS_PROFILE = "Assets/_SO_Assets/Environment/CrystalChargeArcsProfile.asset"
+ARCS_PROFILE_GUID = hashlib.md5(b"CosmicShore/Crystals/CrystalChargeArcsProfile.asset").hexdigest()
+OMNI_ARCS_MAT = "OmniChargeArcs"
+CHARGE_ARCS_MAT = "ChargeCrystalArcs"
+ARCS_SEAM_WALK, ARCS_FLUX = 1, 2                          # CrystalChargeArcs.Effect
+# CrystalChargeArcsProfileSO's fields, as the lab picked them (its JT and FX_T, round 4; the SO's defaults match).
+ARCS_PROFILE_VALUES = [("rate", 1), ("boltIntensity", 1), ("glowIntensity", 1),
+                       ("seamStrikeSeconds", 0.07), ("seamDwellMinSeconds", 0.1), ("seamDwellMaxSeconds", 0.28),
+                       ("seamFadeSeconds", 0.85), ("seamPetalGlow", 0.35), ("fluxGapSeconds", 0.9), ("fluxChargeSeconds", 0.45),
+                       ("fluxStrikeSeconds", 0.06), ("fluxHoldSeconds", 0.45), ("fluxFadeSeconds", 0.45), ("fluxFork", 0.3),
+                       ("fluxMinDegrees", 55), ("fluxMaxDegrees", 125), ("fluxBundle", 0.016), ("fluxTurns", 1), ("strikeProtractionFrom", 0.15), ("strikeProtractionFull", 0.45), ("coreWidth", 0.012), ("writheSpeed", 3), ("flickerSpeed", 4),
+                       ("sleepBelowScreenRadiusPixels", 24)]  # cost: not the lab's pick (the performance session, 2026-10-15)
+# The omni's light: a plain child of Crystal.prefab (GameObject, Transform, MeshFilter, MeshRenderer, CrystalChargeArcs,
+# CrystalAccentTint). The Charge crystal's: a plain child of CrystalCharge.prefab (no tint: its body has no _BrightColor).
+OMNI_ARCS_IDS = (3086241560104200061, 3086241560104200062, 3086241560104200063, 3086241560104200064,
+                 3086241560104200065, 3086241560104200066)
+CHARGE_CRYSTAL_PREFAB = "Assets/_Prefabs/Environment/CrystalCharge.prefab"
+CHARGE_CRYSTAL_ROOT_TR = 6588436222817790493
+CHARGE_CRYSTAL_SHELL_TR, CHARGE_CRYSTAL_SHELL_MF, CHARGE_CRYSTAL_SHELL_MR = (2842750437815966002, 2842750437815966003,
+                                                                            2842750437815966004)
+CHARGE_ARCS_IDS = (2842750437815966011, 2842750437815966012, 2842750437815966013, 2842750437815966014,
+                   2842750437815966015, None)
+CRYSTAL_ROOT_TR = 5535990081244205889
 
 
 def _donor(name):
@@ -232,17 +256,27 @@ def _sub1(text, pattern, repl, label):
     return out
 
 
-def depth_material(name, body_name, body_text, thickness, top_height, split_unit):
+def depth_material(name, body_name, body_text, thickness, top_height, split_unit, reach=DEPTH_REACH,
+                   face_split=DEPTH_FACE_SPLIT):
     """A depth-prism material: the body material (same colours, same _Spread) moved onto
-    OmniDepthPrismShader, plus the prism's shape dials. OPAQUE (queue Geometry), like the body."""
+    OmniDepthPrismShader, plus the prism's shape dials. OPAQUE (queue Geometry), like the body. The Mass crystal
+    passes its own reach and face split (author_mass_crystal_look.py); the omni's triangles take the defaults."""
     t = _sub1(body_text, rf"^  m_Name: {re.escape(body_name)}$", f"  m_Name: {name}", name + " m_Name")
     t = _sub1(t, r"^  m_Shader: \{fileID: 4800000, guid: \w+, type: 3\}",
               f"  m_Shader: {{fileID: 4800000, guid: {DEPTH_SHADER_GUID}, type: 3}}", name + " m_Shader")
-    floats = (f"    - _DepthDriven: 0\n    - _FaceSplit: {DEPTH_FACE_SPLIT}\n"
-              f"    - _PlateScaleStart: {DEPTH_PLATE_SCALE_START}\n    - _Reach: {DEPTH_REACH}\n"
+    floats = (f"    - _DepthDriven: 0\n    - _FaceSplit: {face_split}\n"
+              f"    - _PlateScaleStart: {DEPTH_PLATE_SCALE_START}\n    - _Reach: {reach}\n"
               f"    - _SplitUnit: {split_unit}\n    - _Thickness: {thickness}\n"
               f"    - _ThicknessInward: {DEPTH_THICKNESS_INWARD}\n    - _TopHeight: {top_height}\n")
-    return _sub1(t, r"^    m_Floats:\n", lambda m: m.group(0) + floats, name + " m_Floats")
+    t = _sub1(t, r"^    m_Floats:\n", lambda m: m.group(0) + floats, name + " m_Floats")
+    # The Charge strike glow (OmniDepthPrismShader's _StrikeColor): ChargeCrystalMaterial's arc core colour, so a bolt
+    # through a Mass column lights the prism in the bolt's own colour. Kept in Unity's sorted order.
+    strike = f"    - _StrikeColor: {_saved(_donor(CHARGE_DONOR), '_ArcCoreColor', 'c')}\n"
+
+    def with_strike(m):
+        rows = [r + "\n" for r in m.group(1).splitlines() if not r.startswith("    - _StrikeColor:")] + [strike]
+        return "    m_Colors:\n" + "".join(sorted(rows, key=lambda r: r.split(":")[0]))
+    return _sub1(t, r"^    m_Colors:\n((?:    - .*\n)+)", with_strike, name + " m_Colors")
 
 
 def material_texts():
@@ -253,7 +287,8 @@ def material_texts():
                   f"  m_Shader: {{fileID: 4800000, guid: {OMNI_SHADER_GUID}, type: 3}}", name + " m_Shader")
         out[name] = t
     body, body_inactive = out["OmniCrystalBody"], out["OmniCrystalBodyInactive"]
-    out[CHARGE_MAT_NAME] = charge_material_text(body)
+    out[OMNI_ARCS_MAT] = arcs_material_text(OMNI_ARCS_MAT, _saved(body, "_BrightColor", "c"))
+    out[CHARGE_ARCS_MAT] = arcs_material_text(CHARGE_ARCS_MAT, _saved(_donor(CHARGE_DONOR), "_BrightCrystalColor", "c"))
     top_h, split = prism_shape(bake_tri_mesh()[0])
     out[DEPTH_NAME] = depth_material(DEPTH_NAME, "OmniCrystalBody", body, MATERIAL_THICKNESS, top_h, split)
     out[DEPTH_NAME + "Inactive"] = depth_material(DEPTH_NAME + "Inactive", "OmniCrystalBodyInactive", body_inactive,
@@ -272,19 +307,18 @@ def _saved(text, name, kind):
     return m[0]
 
 
-def charge_material_text(body_text):
-    """OmniChargeEdges: ChargeCrystalMaterial's arc dials + the body's halo colour and spread, on
-    OmniChargeEdgesShader. Built from the charge material (donor-cloned for its header) with its
-    saved properties REPLACED by exactly the new shader's set, so no stale body property rides along."""
-    sources = {CHARGE_DONOR: _donor(CHARGE_DONOR), "OmniCrystalBody": body_text}
-    t = _sub1(sources[CHARGE_DONOR], rf"^  m_Name: {CHARGE_DONOR}$", f"  m_Name: {CHARGE_MAT_NAME}",
-              "charge m_Name")
+def arcs_material_text(name, bright):
+    """A CrystalChargeArcsShader material: the crystal's bright colour (the lit faces' tint) and ChargeCrystalMaterial's
+    arc core colour (the bolts), at full intensity. Cloned from ChargeCrystalMaterial for its header, with its saved
+    properties replaced by exactly the new shader's set, so no stale property rides along."""
+    t = _sub1(_donor(CHARGE_DONOR), rf"^  m_Name: {CHARGE_DONOR}$", f"  m_Name: {name}", name + " m_Name")
     t = _sub1(t, r"^  m_Shader: \{fileID: 4800000, guid: \w+, type: 3\}",
-              f"  m_Shader: {{fileID: 4800000, guid: {CHARGE_SHADER_GUID}, type: 3}}", "charge m_Shader")
-    floats = "".join(f"    - {n}: {_saved(sources[s], n, k)}\n" for n, k, s in CHARGE_PROPS if k == "f")
-    colors = "".join(f"    - {n}: {_saved(sources[s], n, k)}\n" for n, k, s in CHARGE_PROPS if k == "c")
-    t = _sub1(t, r"^    m_Floats:\n(?:    - .*\n)+", lambda _: "    m_Floats:\n" + floats, "charge m_Floats")
-    t = _sub1(t, r"^    m_Colors:\n(?:    - .*\n)+", lambda _: "    m_Colors:\n" + colors, "charge m_Colors")
+              f"  m_Shader: {{fileID: 4800000, guid: {ARCS_SHADER_GUID}, type: 3}}", name + " m_Shader")
+    core = _saved(_donor(CHARGE_DONOR), "_ArcCoreColor", "c")
+    t = _sub1(t, r"^    m_Floats:\n(?:    - .*\n)+", lambda _: "    m_Floats:\n    - _BoltIntensity: 1\n    - _GlowIntensity: 1\n",
+              name + " m_Floats")
+    t = _sub1(t, r"^    m_Colors:\n(?:    - .*\n)+",
+              lambda _: f"    m_Colors:\n    - _ArcCoreColor: {core}\n    - _BrightColor: {bright}\n", name + " m_Colors")
     return t
 
 
@@ -315,6 +349,24 @@ SQUARES_DRIVER_GUID = hashlib.md5(b"CosmicShore/Crystals/CrystalSpaceSquares.cs"
 SQUARES_PLAYBACK_SPEED = 1               # the art file's own 25 fps: a 4.8 s loop
 SQUARES_MATCH = 1e-4                     # CrystalSpaceSquaresBaker.MatchTolerance, x the body's radius
 
+# THE CADENCE since the Omni Motion Lab round 5 (decision 2026-10-13): the Space squares and the Time rhombi take turns
+# (pentagon turn, wave, triangle turn, wave, a gap between each) so they never move at once; each square turn is ONE
+# rigid turn that hops just clear of its neighbours (CrystalSpaceSquares fits it to the art file's own keys at runtime);
+# and the body's squares, rhombi and pentagons are drawn 10% thicker. OmniCrystalCadence on the Crystal root is the
+# clock; CrystalFlipWave (same root) and CrystalSpaceSquares (the body) ask it what to play.
+CADENCE_ASSET = "Assets/_SO_Assets/Environment/OmniCrystalCadence.asset"
+CADENCE_ASSET_GUID = hashlib.md5(b"CosmicShore/Crystals/OmniCrystalCadence.asset").hexdigest()
+CADENCE_SO_GUID = hashlib.md5(b"CosmicShore/Crystals/OmniCrystalCadenceSO.cs").hexdigest()
+CADENCE_GUID = hashlib.md5(b"CosmicShore/Crystals/OmniCrystalCadence.cs").hexdigest()
+OMNI_CADENCE_GUID = hashlib.md5(b"CosmicShore/Utility/OmniCadence.cs").hexdigest()
+FLIP_PROFILE = "Assets/_SO_Assets/Environment/TimeCrystalFlipWaveProfile.asset"
+CADENCE_COMPONENT = 3086241560104200051                     # OmniCrystalCadence on the Crystal root
+FLIP_WAVE_COMPONENT = 5535990081244205930                   # CrystalFlipWave on the Crystal root (preserved)
+SQUARES_PENTAGON_SECONDS = round(1.56 / 0.9, 3)             # the art file's 1.56 s, slowed 10% (round 4)
+CADENCE_VALUES = [("pentagonTurnSeconds", SQUARES_PENTAGON_SECONDS), ("triangleTurnSeconds", 2.4), ("gapSeconds", 0.15),
+                  ("waveActiveSeconds", None), ("waveSpeed", 1), ("pentagonLift", 0.14), ("triangleLift", 1.5),
+                  ("triangleSide", 1.5), ("framesPerTurn", 24), ("plateThickness", 1.1)]
+
 # Crystal.prefab: the four child slots, in crystalModels order. The stripped
 # Transform/GameObject ids are PRESERVED across this rewrite so the root's
 # m_Children list and the crystalModels model references stay valid.
@@ -332,13 +384,9 @@ SLOTS = [
     # stationary rim (3086241560104200021/22/23), went with the Breathe look before it.
 ]
 
-# The charge-edges overlay: a sixth child of Crystal.prefab that is deliberately NOT a crystalModels
-# slot (see the module docstring). Ids inside OmniCrystalChargeEdges.prefab, then its instance in
-# Crystal.prefab (PrefabInstance, stripped Transform, stripped GameObject).
-CHARGE_GO, CHARGE_TR, CHARGE_MF, CHARGE_MR, CHARGE_ARCS, CHARGE_TINT = (
-    3086241560104200031, 3086241560104200032, 3086241560104200033,
-    3086241560104200034, 3086241560104200035, 3086241560104200036)
-CHARGE_CHILD = (3086241560104200041, 3086241560104200042, 3086241560104200043, "OmniCrystalChargeEdges")
+# The Charge light is a plain child of Crystal.prefab, deliberately NOT a crystalModels slot (see the module docstring;
+# OMNI_ARCS_IDS). The edge-crawl overlay instance it replaced (3086241560104200041/42/43, from
+# OmniCrystalChargeEdges.prefab) was retired 2026-10-13.
 
 # Per slot: (default, inactive). Slot 0 is the body; slot 1 the depth prisms.
 SLOT_MATERIALS = [(MAT_BODY, MAT_BODY_INACTIVE), (MAT_DEPTH, MAT_DEPTH_INACTIVE)]
@@ -810,76 +858,104 @@ def body_mesh_ref():
     return refs[0]
 
 
-def charge_prefab_text():
-    """The pentagon discharge overlay: the body's own mesh at the body's own pose (identity, scale 1 -
-    the body instance overrides nothing else), filtered to the 10-corner plates by CrystalEdgeArcs.
-    The renderer block is the tone shell's with shadows off: an additive overlay neither casts nor
-    receives them (its shader has no shadow pass anyway)."""
-    shell = shell_prefab_text(1)
-    renderer = shell[shell.index(f"--- !u!23 &{SHELL_MR}"):shell.index(f"--- !u!114 &{SHELL_FADE}")]
-    renderer = renderer.replace(f"&{SHELL_MR}", f"&{CHARGE_MR}").replace(
-        f"m_GameObject: {{fileID: {SHELL_GO}}}", f"m_GameObject: {{fileID: {CHARGE_GO}}}")
-    renderer = _sub1(renderer, r"^  m_CastShadows: 1$", "  m_CastShadows: 0", "charge shadows")
-    renderer = _sub1(renderer, r"^  m_ReceiveShadows: 1$", "  m_ReceiveShadows: 0", "charge receive")
-    renderer = _sub1(renderer, rf"^  - \{{fileID: 2100000, guid: {MAT_DEPTH}, type: 2\}}$",
-                     f"  - {{fileID: 2100000, guid: {MAT_CHARGE}, type: 2}}", "charge material")
+def arcs_profile_text():
+    fields = "".join(f"  {k}: {v}\n" for k, v in ARCS_PROFILE_VALUES)
+    return ("%YAML 1.1\n%TAG !u! tag:unity3d.com,2011:\n--- !u!114 &11400000\nMonoBehaviour:\n"
+            "  m_ObjectHideFlags: 0\n  m_CorrespondingSourceObject: {fileID: 0}\n"
+            "  m_PrefabInstance: {fileID: 0}\n  m_PrefabAsset: {fileID: 0}\n  m_GameObject: {fileID: 0}\n"
+            "  m_Enabled: 1\n  m_EditorHideFlags: 0\n"
+            f"  m_Script: {{fileID: 11500000, guid: {ARCS_PROFILE_SO_GUID}, type: 3}}\n"
+            "  m_Name: CrystalChargeArcsProfile\n  m_EditorClassIdentifier: \n" + fields)
+
+
+ARCS_PROFILE_META = f"""fileFormatVersion: 2
+guid: {ARCS_PROFILE_GUID}
+NativeFormatImporter:
+  externalObjects: {{}}
+  mainObjectFileID: 11400000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+"""
+
+ARCS_SHADER_META = f"""fileFormatVersion: 2
+guid: {ARCS_SHADER_GUID}
+ShaderImporter:
+  externalObjects: {{}}
+  defaultTextures: []
+  nonModifiableTextures: []
+  preprocessorOverride: 0
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+"""
+
+
+def arcs_child_docs(ids, name, layer, father, source_mesh, material, effect, silence):
+    """A Charge light child, as documents embedded in its crystal's prefab: a GameObject at the crystal's own pose
+    (identity, scale 1, so it shares the model's space) with an empty MeshFilter (CrystalChargeArcs fills it each frame),
+    an additive renderer with no shadows or probes, CrystalChargeArcs and - on the omni - CrystalAccentTint."""
+    go, tr, mf, mr, arcs, tint = ids
+    components = [tr, mf, mr, arcs] + ([tint] if tint else [])
+
+    def head(kind, cls, fid):
+        return (f"--- !u!{kind} &{fid}\n{cls}:\n  m_ObjectHideFlags: 0\n  m_CorrespondingSourceObject: {{fileID: 0}}\n"
+                f"  m_PrefabInstance: {{fileID: 0}}\n  m_PrefabAsset: {{fileID: 0}}\n")
 
     def behaviour(fid, guid, fields):
-        return (f"--- !u!114 &{fid}\nMonoBehaviour:\n  m_ObjectHideFlags: 0\n"
-                f"  m_CorrespondingSourceObject: {{fileID: 0}}\n  m_PrefabInstance: {{fileID: 0}}\n"
-                f"  m_PrefabAsset: {{fileID: 0}}\n  m_GameObject: {{fileID: {CHARGE_GO}}}\n"
-                f"  m_Enabled: 1\n  m_EditorHideFlags: 0\n"
-                f"  m_Script: {{fileID: 11500000, guid: {guid}, type: 3}}\n"
-                f"  m_Name: \n  m_EditorClassIdentifier: \n{fields}")
+        return (head(114, "MonoBehaviour", fid) + f"  m_GameObject: {{fileID: {go}}}\n  m_Enabled: 1\n  m_EditorHideFlags: 0\n"
+                f"  m_Script: {{fileID: 11500000, guid: {guid}, type: 3}}\n  m_Name: \n  m_EditorClassIdentifier: \n{fields}")
 
-    return (f"""%YAML 1.1
-%TAG !u! tag:unity3d.com,2011:
---- !u!1 &{CHARGE_GO}
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {{fileID: 0}}
-  m_PrefabInstance: {{fileID: 0}}
-  m_PrefabAsset: {{fileID: 0}}
-  serializedVersion: 6
-  m_Component:
-  - component: {{fileID: {CHARGE_TR}}}
-  - component: {{fileID: {CHARGE_MF}}}
-  - component: {{fileID: {CHARGE_MR}}}
-  - component: {{fileID: {CHARGE_ARCS}}}
-  - component: {{fileID: {CHARGE_TINT}}}
-  m_Layer: 0
-  m_Name: OmniCrystalChargeEdges
-  m_TagString: Untagged
-  m_Icon: {{fileID: 0}}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!4 &{CHARGE_TR}
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {{fileID: 0}}
-  m_PrefabInstance: {{fileID: 0}}
-  m_PrefabAsset: {{fileID: 0}}
-  m_GameObject: {{fileID: {CHARGE_GO}}}
-  serializedVersion: 2
-  m_LocalRotation: {{x: 0, y: 0, z: 0, w: 1}}
-  m_LocalPosition: {{x: 0, y: 0, z: 0}}
-  m_LocalScale: {{x: 1, y: 1, z: 1}}
-  m_ConstrainProportionsScale: 1
-  m_Children: []
-  m_Father: {{fileID: 0}}
-  m_LocalEulerAnglesHint: {{x: 0, y: 0, z: 0}}
---- !u!33 &{CHARGE_MF}
-MeshFilter:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {{fileID: 0}}
-  m_PrefabInstance: {{fileID: 0}}
-  m_PrefabAsset: {{fileID: 0}}
-  m_GameObject: {{fileID: {CHARGE_GO}}}
-  m_Mesh: {body_mesh_ref()}
-""" + renderer
-            + behaviour(CHARGE_ARCS, EDGE_ARCS_GUID, f"  plateCorners: {PENTAGON_PLATE_CORNERS}\n")
-            + behaviour(CHARGE_TINT, ACCENT_TINT_GUID, "  crystal: {fileID: 0}\n"))
+    out = (head(1, "GameObject", go) + "  serializedVersion: 6\n  m_Component:\n"
+           + "".join(f"  - component: {{fileID: {c}}}\n" for c in components)
+           + f"  m_Layer: {layer}\n  m_Name: {name}\n  m_TagString: Untagged\n  m_Icon: {{fileID: 0}}\n"
+           "  m_NavMeshLayer: 0\n  m_StaticEditorFlags: 0\n  m_IsActive: 1\n"
+           + head(4, "Transform", tr) + f"  m_GameObject: {{fileID: {go}}}\n  serializedVersion: 2\n"
+           "  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}\n  m_LocalPosition: {x: 0, y: 0, z: 0}\n"
+           "  m_LocalScale: {x: 1, y: 1, z: 1}\n  m_ConstrainProportionsScale: 1\n  m_Children: []\n"
+           f"  m_Father: {{fileID: {father}}}\n  m_LocalEulerAnglesHint: {{x: 0, y: 0, z: 0}}\n"
+           + head(33, "MeshFilter", mf) + f"  m_GameObject: {{fileID: {go}}}\n  m_Mesh: {{fileID: 0}}\n"
+           + head(23, "MeshRenderer", mr) + f"  m_GameObject: {{fileID: {go}}}\n  m_Enabled: 1\n"
+           "  m_CastShadows: 0\n  m_ReceiveShadows: 0\n  m_DynamicOccludee: 1\n  m_StaticShadowCaster: 0\n"
+           "  m_MotionVectors: 2\n  m_LightProbeUsage: 0\n  m_ReflectionProbeUsage: 0\n  m_RayTracingMode: 0\n"
+           "  m_RayTraceProcedural: 0\n  m_RayTracingAccelStructBuildFlagsOverride: 0\n"
+           "  m_RayTracingAccelStructBuildFlags: 1\n  m_SmallMeshCulling: 1\n  m_RenderingLayerMask: 1\n"
+           "  m_RendererPriority: 0\n  m_Materials:\n"
+           f"  - {{fileID: 2100000, guid: {material}, type: 2}}\n"
+           "  m_StaticBatchInfo:\n    firstSubMesh: 0\n    subMeshCount: 0\n  m_StaticBatchRoot: {fileID: 0}\n"
+           "  m_ProbeAnchor: {fileID: 0}\n  m_LightProbeVolumeOverride: {fileID: 0}\n  m_ScaleInLightmap: 1\n"
+           "  m_ReceiveGI: 1\n  m_PreserveUVs: 0\n  m_IgnoreNormalsForChartDetection: 0\n  m_ImportantGI: 0\n"
+           "  m_StitchLightmapSeams: 1\n  m_SelectedEditorRenderState: 3\n  m_MinimumChartSize: 4\n"
+           "  m_AutoUVMaxDistance: 0.5\n  m_AutoUVMaxAngle: 89\n  m_LightmapParameters: {fileID: 0}\n"
+           "  m_SortingLayerID: 0\n  m_SortingLayer: 0\n  m_SortingOrder: 0\n  m_AdditionalVertexStreams: {fileID: 0}\n"
+           + behaviour(arcs, ARCS_GUID, f"  effect: {effect}\n  profile: {{fileID: 11400000, guid: {ARCS_PROFILE_GUID}, type: 2}}\n"
+                                        f"  sourceMesh: {source_mesh}\n  silenceCrawlOn: {{fileID: {silence}}}\n"))
+    if tint:
+        out += behaviour(tint, ACCENT_TINT_GUID, "  crystal: {fileID: 0}\n")
+    return out
+
+
+def _without_docs(text, ids):
+    for fid in ids:
+        if fid:
+            text = re.sub(rf"^--- !u!\d+ &{fid}\n(?:(?!--- ).*\n)*", "", text, flags=re.M)
+    return text
+
+
+def build_charge_crystal_prefab(existing):
+    """CrystalCharge.prefab with its seam-walk child: the shell's own mesh and space, the shell's crawl silenced."""
+    t = _without_docs(existing, CHARGE_ARCS_IDS)
+    mesh = re.findall(rf"^--- !u!33 &{CHARGE_CRYSTAL_SHELL_MF}\n(?:(?!--- ).*\n)*?  m_Mesh: (\{{[^}}]*\}})$", t, re.M)
+    if len(mesh) != 1:
+        raise SystemExit(f"{CHARGE_CRYSTAL_PREFAB}: the shell's MeshFilter not found")
+    entry = f"  - {{fileID: {CHARGE_ARCS_IDS[1]}}}\n"
+    shell_entry = f"  - {{fileID: {CHARGE_CRYSTAL_SHELL_TR}}}\n"
+    if entry not in t:
+        if t.count(shell_entry) != 1:
+            raise SystemExit(f"{CHARGE_CRYSTAL_PREFAB}: the root's child list (the shell) not found exactly once")
+        t = t.replace(shell_entry, shell_entry + entry)
+    return t + arcs_child_docs(CHARGE_ARCS_IDS, "ChargeCrystalArcs", 0, CHARGE_CRYSTAL_ROOT_TR, mesh[0],
+                               mat_guid(CHARGE_ARCS_MAT), ARCS_SEAM_WALK, CHARGE_CRYSTAL_SHELL_MR)
 
 
 def body_prefab_text():
@@ -1125,16 +1201,6 @@ def check_flip_wave(crystal_text):
     return [f"{CRYSTAL_PREFAB}: {p}" for p in problems]
 
 
-CHARGE_META = f"""fileFormatVersion: 2
-guid: {CHARGE_PREFAB_GUID}
-PrefabImporter:
-  externalObjects: {{}}
-  userData: 
-  assetBundleName: 
-  assetBundleVariant: 
-"""
-
-
 SHELL_META = f"""fileFormatVersion: 2
 guid: {SHELL_PREFAB_GUID}
 PrefabImporter:
@@ -1195,9 +1261,64 @@ GameObject:
 """
 
 
+def wave_active_seconds():
+    """Seconds a Time wave's rings move: the flip profile's loop less its lead-in (the profile's own contract is that
+    every ring lands inside the loop, so this is the span from the lead ring's start to the last ring's landing)."""
+    text = open(os.path.join(ROOT, FLIP_PROFILE)).read()
+    head = {k: float(v) for k, v in re.findall(r"^  (loopSeconds|firstRingStartSeconds): (\S+)$", text, re.M)}
+    if len(head) != 2:
+        raise SystemExit(f"{FLIP_PROFILE}: loopSeconds / firstRingStartSeconds not found")
+    return round(head["loopSeconds"] - head["firstRingStartSeconds"], 4)
+
+
+def cadence_text():
+    values = [(k, wave_active_seconds() if v is None else v) for k, v in CADENCE_VALUES]
+    fields = "".join(f"  {k}: {v}\n" for k, v in values)
+    return ("%YAML 1.1\n%TAG !u! tag:unity3d.com,2011:\n--- !u!114 &11400000\nMonoBehaviour:\n"
+            "  m_ObjectHideFlags: 0\n  m_CorrespondingSourceObject: {fileID: 0}\n"
+            "  m_PrefabInstance: {fileID: 0}\n  m_PrefabAsset: {fileID: 0}\n  m_GameObject: {fileID: 0}\n"
+            "  m_Enabled: 1\n  m_EditorHideFlags: 0\n"
+            f"  m_Script: {{fileID: 11500000, guid: {CADENCE_SO_GUID}, type: 3}}\n"
+            "  m_Name: OmniCrystalCadence\n  m_EditorClassIdentifier: \n" + fields)
+
+
+CADENCE_ASSET_META = f"""fileFormatVersion: 2
+guid: {CADENCE_ASSET_GUID}
+NativeFormatImporter:
+  externalObjects: {{}}
+  mainObjectFileID: 11400000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+"""
+
+CADENCE_DOC = re.compile(rf"^--- !u!114 &{CADENCE_COMPONENT}\nMonoBehaviour:\n(?:  .*\n)+", re.M)
+
+
+def with_cadence(head):
+    """The Crystal root's OmniCrystalCadence, authored into the part of Crystal.prefab this script otherwise preserves:
+    listed right after CrystalFlipWave on the root and serialized after it."""
+    doc = (f"--- !u!114 &{CADENCE_COMPONENT}\nMonoBehaviour:\n  m_ObjectHideFlags: 0\n"
+           "  m_CorrespondingSourceObject: {fileID: 0}\n  m_PrefabInstance: {fileID: 0}\n  m_PrefabAsset: {fileID: 0}\n"
+           "  m_GameObject: {fileID: 5535990081244205914}\n  m_Enabled: 1\n  m_EditorHideFlags: 0\n"
+           f"  m_Script: {{fileID: 11500000, guid: {CADENCE_GUID}, type: 3}}\n"
+           "  m_Name: \n  m_EditorClassIdentifier: \n"
+           f"  settings: {{fileID: 11400000, guid: {CADENCE_ASSET_GUID}, type: 2}}\n")
+    head = CADENCE_DOC.sub("", head)
+    entry = f"  - component: {{fileID: {CADENCE_COMPONENT}}}\n"
+    flip_entry = f"  - component: {{fileID: {FLIP_WAVE_COMPONENT}}}\n"
+    if entry not in head:
+        if head.count(flip_entry) != 1:
+            raise SystemExit(f"{CRYSTAL_PREFAB}: the root's CrystalFlipWave entry not found exactly once")
+        head = head.replace(flip_entry, flip_entry + entry)
+    if not head.endswith("\n"):
+        raise SystemExit(f"{CRYSTAL_PREFAB}: unexpected head")
+    return head + doc
+
+
 def crystal_children_text():
-    """Crystal.prefab's child PrefabInstances: the four crystalModels slots in order, then the
-    charge-edges overlay (a child, not a slot)."""
+    """Crystal.prefab's children: the crystalModels slots' PrefabInstances in order, then the Charge light (a plain
+    child, not a slot)."""
     out = []
     for i, (inst, stripped_tr, stripped_go, name) in enumerate(SLOTS):
         body = i == 0
@@ -1207,9 +1328,8 @@ def crystal_children_text():
         mat = SLOT_MATERIALS[i][0]
         out.append(_instance_block(inst, guid, t_go, t_tr, t_mr, name, mat))
         out.append(_stripped_blocks(inst, guid, stripped_tr, stripped_go, t_tr, t_go))
-    inst, stripped_tr, stripped_go, name = CHARGE_CHILD
-    out.append(_instance_block(inst, CHARGE_PREFAB_GUID, CHARGE_GO, CHARGE_TR, CHARGE_MR, name, MAT_CHARGE))
-    out.append(_stripped_blocks(inst, CHARGE_PREFAB_GUID, stripped_tr, stripped_go, CHARGE_TR, CHARGE_GO))
+    out.append(arcs_child_docs(OMNI_ARCS_IDS, "OmniCrystalChargeArcs", 0, CRYSTAL_ROOT_TR, body_mesh_ref(),
+                               mat_guid(OMNI_ARCS_MAT), ARCS_FLUX, 0))
     return "".join(out)
 
 
@@ -1271,14 +1391,14 @@ MODELS_BLOCK = re.compile(r"^  crystalModels:\n(?:  - model:.*?\n(?:    .*\n)*)+
 def build_crystal_prefab(existing):
     head = existing[:CHILDREN_START.search(existing).start()]
     head, n = MODELS_BLOCK.subn(crystal_models_text(), head)
-    children = "".join(f"  - {{fileID: {tr}}}\n" for _, tr, _, _ in SLOTS + [CHARGE_CHILD])
+    children = "".join(f"  - {{fileID: {tr}}}\n" for _, tr, _, _ in SLOTS) + f"  - {{fileID: {OMNI_ARCS_IDS[1]}}}\n"
     head, m = re.subn(r"(^  m_Children:\n)(?:  - \{fileID: \d+\}\n){3,6}", lambda x: x.group(1) + children,
                       head, count=1, flags=re.M)
     if m != 1:
         raise SystemExit(f"{CRYSTAL_PREFAB}: root m_Children (3-6 entries) not found")
     if n != 1:
         raise SystemExit(f"{CRYSTAL_PREFAB}: expected exactly one crystalModels block, found {n}")
-    return head + crystal_children_text()
+    return with_cadence(head) + crystal_children_text()
 
 
 # ── entry point ──────────────────────────────────────────────────────────────
@@ -1305,8 +1425,6 @@ def main():
         TRI_MESH_ASSET + ".meta": TRI_MESH_META,
         SHELL_PREFAB: shell_prefab_text(shell_scale),
         SHELL_PREFAB + ".meta": SHELL_META,
-        CHARGE_PREFAB: charge_prefab_text(),
-        CHARGE_PREFAB + ".meta": CHARGE_META,
         BODY_PREFAB: body_prefab_text(),
         BODY_PREFAB + ".meta": BODY_META,
         DEPTH_PROFILE: depth_profile_text(),
@@ -1319,12 +1437,25 @@ def main():
         "Assets/_Scripts/Controller/Environment/Crystals/CrystalDepthPrisms.cs.meta": script_meta(DEPTH_PRISMS_GUID),
         "Assets/_Scripts/Controller/Environment/Crystals/CrystalDepthPrismProfileSO.cs.meta": script_meta(DEPTH_PROFILE_SO_GUID),
         "Assets/_Scripts/Utility/DepthRatchet.cs.meta": script_meta(DEPTH_RATCHET_GUID),
+        CADENCE_ASSET: cadence_text(),
+        CADENCE_ASSET + ".meta": CADENCE_ASSET_META,
+        "Assets/_Scripts/Controller/Environment/Crystals/OmniCrystalCadenceSO.cs.meta": script_meta(CADENCE_SO_GUID),
+        "Assets/_Scripts/Controller/Environment/Crystals/OmniCrystalCadence.cs.meta": script_meta(CADENCE_GUID),
+        "Assets/_Scripts/Utility/OmniCadence.cs.meta": script_meta(OMNI_CADENCE_GUID),
+        ARCS_PROFILE: arcs_profile_text(),
+        ARCS_PROFILE + ".meta": ARCS_PROFILE_META,
+        ARCS_SHADER + ".meta": ARCS_SHADER_META,
+        "Assets/_Scripts/Controller/Environment/Crystals/CrystalChargeArcs.cs.meta": script_meta(ARCS_GUID),
+        "Assets/_Scripts/Controller/Environment/Crystals/CrystalChargeArcsProfileSO.cs.meta": script_meta(ARCS_PROFILE_SO_GUID),
+        "Assets/_Scripts/Utility/ChargeArcs.cs.meta": script_meta(ARCS_CORE_GUID),
+        "Assets/_Scripts/Utility/SquareTurnFit.cs.meta": script_meta(SQUARE_TURN_FIT_GUID),
     }
     for path, text in material_texts().items():
         want[path] = text
         want[path + ".meta"] = material_meta(os.path.basename(path)[:-4])
     crystal_path = os.path.join(ROOT, CRYSTAL_PREFAB)
     want[CRYSTAL_PREFAB] = build_crystal_prefab(open(crystal_path).read())
+    want[CHARGE_CRYSTAL_PREFAB] = build_charge_crystal_prefab(open(os.path.join(ROOT, CHARGE_CRYSTAL_PREFAB)).read())
     want[BASE_MATERIAL_SET] = build_base_material_set(open(os.path.join(ROOT, BASE_MATERIAL_SET)).read())
 
     failures = []

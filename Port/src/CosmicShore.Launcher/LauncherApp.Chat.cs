@@ -601,7 +601,7 @@ namespace CosmicShore.Launcher
                 if (listening) _voice.StopListening(); else _voice.StartListening();
             }
             Neon.Tooltip(!_voice.Supported ? "Voice needs Windows (its built-in speech recognition)." :
-                listening ? "Listening - click to stop." : _voice.Error ?? "Talk instead of typing.");
+                listening ? $"Listening ({_voice.Engine}) - click to stop." : _voice.Error ?? "Talk instead of typing.");
             ImGui.SameLine(0, 6);
             bool speak = _s.VoiceReplies;
             if (Neon.IconButton("spk", (dl, c, col) => IconSpeaker(dl, c, speak ? Neon.U(Neon.Cyan) : col), 42, _voice.Supported))

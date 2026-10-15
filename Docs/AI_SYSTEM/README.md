@@ -10,7 +10,9 @@ test ladder: the **`/vessel-ai`** skill.
 
 | Read | When |
 |---|---|
+| [`REGATTA_AI_ROADMAP.md`](REGATTA_AI_ROADMAP.md) | **The current plan (2026-10-14):** six racing AIs for Regatta (Squirrel, Stoat, Manta, Rhino, Urchin, Dolphin), the one way to build a racing AI (a hull drive on the shared course / belief / steering), measuring in Amoebius, and the order. Stoat is next |
 | [`BRANCH_WORKFLOW.md`](BRANCH_WORKFLOW.md) | Before any merge into or out of `Ys-bleeding-edge`: the branches, which way work flows, conflict rules, verification |
+| [`AI_TRAINING_PLAN.md`](AI_TRAINING_PLAN.md) | AI training end to end: the Training AI for Regatta artifact (prototype), what Unity has today, the four layers (watch in the AI Lab, AIs train each other in the genetic trainer, learn from players with consent, nothing ships itself) and the order of work |
 | [`ARCHITECTURE.md`](ARCHITECTURE.md) | Before touching any AI: the six layers, the roster of every AI (source of truth), what is wrong today, the target architecture |
 | [`DIAGNOSIS_PLAYBOOK.md`](DIAGNOSIS_PLAYBOOK.md) | Before diagnosing an AI or taking a new one in: the five tiers of evidence, the procedure, the intake checklist, the user's test script, the status board |
 | [`SYNC_LOG.md`](SYNC_LOG.md) | One row per merge |

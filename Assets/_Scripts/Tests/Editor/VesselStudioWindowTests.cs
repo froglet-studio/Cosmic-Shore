@@ -45,6 +45,45 @@ namespace CosmicShore.Tests
             }
         }
 
+        /// <summary>The home's cards draw studios.json's card model (/vessel-studio D35): the same buttons in the same order as Amoebius.</summary>
+        [Test]
+        public void CardButtons_AreTheCatalogsInOrder_EveryOneInItsPlace()
+        {
+            const string json = "{\"mirror\":\"https://m/\",\"cardActions\":[" +
+                "{\"id\":\"open\",\"label\":\"Open studio\",\"on\":\"web,amoebius,unity\"}," +
+                "{\"id\":\"engine\",\"label\":\"PLAY IN ENGINE\",\"on\":\"amoebius,unity\",\"needs\":\"engineMode\"}," +
+                "{\"id\":\"live\",\"label\":\"OPEN LIVE IN BROWSER\",\"on\":\"amoebius,unity\",\"needs\":\"mirror\"}]," +
+                "\"studios\":[{\"id\":\"a\",\"name\":\"A\",\"file\":\"a.html\",\"engineMode\":\"SkimRace\"},{\"id\":\"b\",\"name\":\"B\",\"file\":\"b.html\"}]}";
+            var cat = UnityEngine.JsonUtility.FromJson<VesselStudioWindow.Catalog>(json);
+            var a = VesselStudioWindow.CardButtons(cat, cat.studios[0]);
+            CollectionAssert.AreEqual(new[] { "open", "engine", "live" }, a.ConvertAll(x => x.Id));
+            CollectionAssert.AreEqual(new[] { true, true, true }, a.ConvertAll(x => x.Enabled));
+            var b = VesselStudioWindow.CardButtons(cat, cat.studios[1]);
+            CollectionAssert.AreEqual(new[] { true, false, true }, b.ConvertAll(x => x.Enabled));
+            StringAssert.Contains("no game mode", b[1].Tip);
+        }
+
+        [Test]
+        public void TheShippedCatalogHasTheHubsCards()
+        {
+            var cat = UnityEngine.JsonUtility.FromJson<VesselStudioWindow.Catalog>(File.ReadAllText("Docs/Studios/VesselStudio/studios.json"));
+            if (cat.cardActions == null || cat.cardActions.Length == 0) Assert.Ignore("a branch from before the card fields (D35)");
+            foreach (var s in cat.studios)
+            {
+                Assert.IsFalse(string.IsNullOrEmpty(s.chip), s.id + ": chip");
+                Assert.IsNotEmpty(s.spec, s.id + ": spec");
+                Assert.IsTrue(File.Exists("Docs/Studios/VesselStudio/" + s.preview), s.id + ": " + s.preview);
+            }
+            CollectionAssert.AreEqual(VesselStudioWindow.ParseFleet(File.ReadAllText("Docs/Studios/VesselStudio/index.html")), cat.fleet);
+            // the hub's "+ New studio" card (D36/D37) is in the catalog, so the home draws it with the hub's text
+            if (File.ReadAllText("Docs/Studios/VesselStudio/index.html").Contains("class=\"bay add\""))
+            {
+                Assert.IsFalse(string.IsNullOrEmpty(cat.newCard?.name), "studios.json newCard");
+                StringAssert.IsMatch("^[A-Za-z0-9-]{1,40}$", cat.newCard.fragment);
+                StringAssert.Contains(cat.newCard.fragment, File.ReadAllText("Docs/Studios/VesselStudio/studio-new.js"));
+            }
+        }
+
         [Test]
         public void EveryPreviewDrawsSomethingOnTheNight()
         {

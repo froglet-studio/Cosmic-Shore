@@ -89,8 +89,10 @@ Sparrow HUD indicators (~~roll armed~~ SHIPPED — the boost icon's ring is now 
    revisit after playtest.
 4. **Latch policy default.** Re-lock with 5/4 hysteresis (codebase-symmetric) vs latch-for-turn.
    *Recommendation:* re-lock; debuffs stripping your upgrade is legible elemental counterplay.
-5. **`origin/claude/falcon-brittlestar-reintro-oyx1q1`**: if it is ever merged, it must not land
-   without `f1f278ab4` (its prewarm cap makes the pool-injection NRE strictly worse — AUDIT §2#1).
+5. **`origin/claude/falcon-brittlestar-reintro-oyx1q1`**: do not merge it; the Brittle Star was rebuilt from its class
+   document as `VesselClassType.BrittleStar = 16` (`R_VesselActions/BRITTLE_STAR.md`; research and studio:
+   `Docs/Studios/BRITTLE_STAR.md`). (The "prewarm cap" this row once cited does not exist on the branch; the
+   pool-injection fix is on HEAD — AUDIT §2#1.)
 
 ## Four-icon ability row — follow-ups (from the `vessel-ability-icons` branch)
 
@@ -154,7 +156,7 @@ Mechanics reference: `_Scripts/Controller/Vessel/R_VesselActions/DOLPHIN_ENERGY_
 10. **Serpent's skimmer is dead.** `_nearFieldSkimmer` resolves to a `VacuumSkimmer` whose
     GameObject is INACTIVE *and* which carries no `SkimmerImpactor`/container. Same class of
     fault the Dolphin had; deliberately left untouched by that branch (different vessel).
-    Confirm with `FrogletTools > Vessels > Audit Vessel Skimmers`.
+    Confirm with `FrogletTools > Vessels > Audits > Audit Vessel Skimmers`.
 11. **`ExplosionImpactor.OnBlastResolved` is a static C# event.** CLAUDE.md's anti-patterns
     forbid static events for cross-system communication. It is presentation-only, has one
     self-filtering listener (the Dolphin HUD's prism tally), and subscribes/unsubscribes
@@ -255,7 +257,7 @@ Mechanics reference: `_Scripts/Controller/Vessel/R_VesselActions/DOLPHIN_ENERGY_
     dangling local reference in the file, present since before this branch. Same
     never-pruned-override rot CLAUDE.md documents for `Cell`: Unity retains modifications
     whose `propertyPath` no longer resolves. Fix by running
-    **FrogletTools > Vessels > Wire Elemental Petal Bars** on the Dolphin and re-saving the
+    **FrogletTools > Vessels > Wiring > Wire Elemental Petal Bars** on the Dolphin and re-saving the
     prefab, then re-check with the ability-row audit. Pre-existing; NOT caused by the shard
     toggle removal (verified: the base revision has the same dangling reference).
 24. **`ActionExecutorRegistry._executors` on the Dolphin holds an empty slot** (`{fileID: 0}`
