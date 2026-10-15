@@ -987,7 +987,7 @@
   $('tStart').addEventListener('click', playPause); $('tBack').addEventListener('click', () => stopRace()); $('tCam').addEventListener('click', () => cycleCamera());
   $('tpPlay').addEventListener('click', playPause); $('tpStop').addEventListener('click', () => stopRace()); $('startBtn').addEventListener('click', () => startRace());
   function humanInput(dt) {
-    camTouch = S.cam === 'Free' && S.players[0].ai;
+    camTouch = S.cam === 'Free' && !youPilot();
     let inp, on = false;
     if (playMode && touch.used) {
       inp = camTouch ? { pad: true, L: { x: 0, y: 0 }, R: { x: 0, y: 0 }, lt: 0, rt: 0 } : { pad: true, L: stick(touch.L.x, touch.L.y), R: stick(touch.R.x, touch.R.y), lt: touch.lt, rt: touch.rt };
@@ -1027,20 +1027,41 @@
   // Keep the human's flight of this hull on this course once it has flown at least one lap: the trainer can then ask
   // the AI to fly like it ("Learn from my flight"). One flight per hull and course, the latest kept.
   function keepDemo() {
-    const P = W && W.pilots[0]; if (!P || P.spec.ai || !P.demo || P.gates < W.C.gates.length) { if (P) P.demo = null; return; }
+    const P = youPilot(); if (!P || P.spec.ai || !P.demo || P.gates < W.C.gates.length) { if (P) P.demo = null; return; }
     S.demos[P.h.key + '@' + W.course] = { pts: P.demo, gates: P.gates, time: P.finishT != null ? +P.finishT.toFixed(1) : null, at: Date.now() };
     P.demo = null; save(); say('Your ' + P.h.name + ' flight on I' + W.course + ' is saved: the trainer can learn from it'); renderTrain();
   }
   function finishRace() {
     keepDemo();
     race = 'finished';
-    const order = standings(W), win = order[0], me = W.pilots[0], teams = teamGates(W);
+    const order = standings(W), win = order[0], me = youPilot() || W.pilots[0], teams = teamGates(W);
     runs.unshift({ course: S.course, winner: win.h.name + (win.tag || '') + ' · ' + win.domain.name, time: win.finishT, team: teams[0][0] + ' ' + teams[0][1], you: me.h.name + ' #' + (order.indexOf(me) + 1) });
     runs.length = Math.min(runs.length, 40); saveRuns(); renderRuns();
     $('ovTitle').textContent = win.finishT != null ? win.h.name + (win.tag || '') + ' wins in ' + win.finishT.toFixed(1) + ' s' : 'Race over';
     $('ovText').textContent = order.map((P, i) => (i + 1) + '. ' + P.h.name + (P.tag || '') + ' (' + P.domain.name + '): ' + (P.finishT != null ? P.finishT.toFixed(1) + ' s' : P.gates + '/' + W.raceLen)).join(' · ') + '  ·  Team gates: ' + teams.map((x) => x[0] + ' ' + x[1]).join(', ');
     $('startBtn').textContent = 'Race again';
     if (S.autoRestart) setTimeout(() => { if (race === 'finished') { newRace(); startRace(); } }, 1500); else $('overlay').hidden = false;
+  }
+  // ---- who flies which hull, live (the Unity Third Eye's You / AI toggle, Yash 2026-10-15) ----
+  // A You / AI change mid-race keeps the race going: the hull you take stops being AI-flown, the one you leave is flown by
+  // the AI at its player's level, and the camera follows the hull you now fly. Anything else about the players restarts.
+  const youPilot = () => W && W.pilots.find((P) => !P.spec.ai);
+  function onlyWhoFliesChanged(a, b) {
+    if (!a || !b || a.length !== b.length) return false;
+    return a.every((p, i) => p.vessel === b[i].vessel && p.domain === b[i].domain && p.level === b[i].level && p.style === b[i].style);
+  }
+  function applyWhoFlies() {
+    W.pilots.forEach((P, i) => {
+      const p = S.players[i]; if (!p) return;
+      const ai = p.ai ? p.level : null; if (ai === P.spec.ai) return;
+      P.spec = Object.assign({}, P.spec, { ai });
+      P.hc = ai ? { level: DIFF[ai] || DIFF.Hard, rng: rng((Date.now() >>> 0) + i * 7 + 1), tracking: -1, noticeAt: 0, misjudged: false, until: 0, off: new V(), unnoticed: false } : null;
+      P.idleAI = false; P.ltWas = 0; P.rtWas = 0; P.locked = -1;   // nothing held across the hand-over; re-latch the ring side
+      if (!ai) { S.view = i; racePanel.set('view', i, true); }
+      say(P.h.name + ' · ' + P.domain.name + (ai ? ': the AI flies it (' + ai + ')' : ': you fly it'));
+    });
+    if (!youPilot()) say('Every hull is AI-flown: watch, or press You on any player');
+    save();
   }
   function cycleCamera() { S.cam = S.cam === 'Chase' ? 'Follow' : S.cam === 'Follow' ? 'Free' : 'Chase'; racePanel.set('camera', S.cam, true); save(); }
   function cycleView() { S.view = (S.view + 1) % S.players.length; racePanel.set('view', S.view, true); save(); }
@@ -1053,13 +1074,14 @@
   const racePanel = StudioRacePanel.mount($('racePanel'), {
     gameHost: $('intensityPanel'), sceneHost: $('scenePanel'),
     courses: [1, 2, 3, 4].map((v) => ({ v, label: 'I' + v, note: COURSE[v].gates[0].r + ' u mouths, spine ' + Math.round(COURSE[v].spine) + ' u' })),
-    players: { host: $('playersPanel'), max: 8, domains: DOMAINS.map((d) => ({ key: d.key, name: d.name + (LANE_OF[d.key] == null ? ' (no rail)' : ''), color: d.css })),
+    players: { host: $('playersPanel'), max: 8, anyHuman: true, domains: DOMAINS.map((d) => ({ key: d.key, name: d.name + (LANE_OF[d.key] == null ? ' (no rail)' : ''), color: d.css })),
       vessels: HULLS.map((h) => ({ key: h.key, name: h.name, note: h.src })) },
     styles: STYLES.map((s) => s.name),
     value: { course: S.course, players: S.players, view: S.view, camera: S.cam, speed: S.speed, thinking: S.thinking, autoRestart: S.autoRestart },
     supports: { rivals: true, thinking: true, autoRestart: true },
     levelNote: 'Easy and Medium are GateRaceHandicap with the Skim Race numbers (SkimRaceDifficulty.asset), applied to the next ring: Easy notices it 0.5 s late on average and misjudges 9.9% of rings; Medium 0.25 s and 4.5%. Hard is the shipped gate pilot. A riding Urchin follows its rail, so its level bites only off the rail.',
     onChange: (key, v) => {
+      if (key === 'players' && race !== 'ready' && onlyWhoFliesChanged(S.players, v)) { S.players = v; save(); applyWhoFlies(); return; }
       if (key === 'course') S.course = v; else if (key === 'players') { S.players = v; S.vsHull = null; } else if (key === 'view') S.view = v;
       else if (key === 'camera') S.cam = v; else if (key === 'speed') S.speed = v; else if (key === 'thinking') S.thinking = v; else if (key === 'autoRestart') S.autoRestart = v;
       save(); if (key === 'course' || key === 'players') newRace();
@@ -1326,7 +1348,7 @@
     const live = race === 'running' && !paused;
     $('tpPlay').textContent = live ? '❚❚ Pause' : '▶ Play'; $('tpPlay').classList.toggle('on', live); $('tpPlay').setAttribute('aria-pressed', paused ? 'true' : 'false');
     $('tpStop').disabled = race === 'ready'; $('tStart').textContent = live ? '❚❚ Pause' : '▶ Play';
-    $('holdTag').hidden = !(W.pilots[0].idleAI && race === 'running');
+    const you = youPilot(); $('holdTag').hidden = !(you && you.idleAI && race === 'running');
     while (W.events.length) say(W.events.shift());
   }
   function markRing(W) {

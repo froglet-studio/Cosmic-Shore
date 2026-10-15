@@ -39,7 +39,7 @@ then publish `<dir>/index.html` with every other file in `<dir>` as `files`, `ur
   phone opens touch play anyway), records below; AI
   Config holds **AI tuning** (pick any of the eight AIs and tune its drive with lab-only sliders, Reset this AI) and the
   shared **Gate steering** as sliders starting at the scene's shipped values; Play Style Config's **Custom** style puts a
-  Time-level slider on every hull Time reaches; the Free camera **orbits or flies** (D16); **right-drag (or middle-drag) pans any camera**, double-click resets (the user, 2026-10-15); the scorecard's **Hard
+  Time-level slider on every hull Time reaches; the Free camera **orbits or flies** (D16); **right-drag (or middle-drag) pans any camera**, double-click resets (the user, 2026-10-15); every player has a **You / AI** toggle in its heading (Game Config ▸ Players): fly any one hull, or none, and switch mid-race without a restart (the hull you leave goes to the AI at its level, the camera follows the one you take); the same toggle as the Unity Third Eye's Pilots panel (`PilotControl`, Yash 2026-10-15); the scorecard's **Hard
   fastest?** column is the levels check (D24). The scorecard always races the current tuning.
 - **Lab fix (AI Config, on by default):** commit no earlier than the approach point, and after a missed mouth re-latch
   the side and extend at once. **Ported to Unity for Regatta on `Ys-bleeding-edge` (2026-10-15,
