@@ -4344,12 +4344,6 @@ author scripts `--check`/`--self-test`.
 - **Mouse movement still does not steer in the preview** (it does in matches, §7.1 of
   `Controller/IO/ONE_THUMB_MOUSE_CONTROLS.md`). Cause not yet found; needs the console.
 
-**2026-10-15 run (no gamepad, Game view, Play Focused).** LMB fires guns, RMB missiles, WASD
-steers; mouse movement reads 0 px/s until a focus round-trip (Windows key), then flies perfectly.
-Clicking in the Game view does not help. Fix attempted: a relock pulse after the strategy
-activates (`SingleStickMouseInputStrategy.ArmRelock`). **Re-test:** tap into the window and move
-the mouse WITHOUT touching the Windows key; the ship turns and `[MouseFlight]` reports px/s > 0.
-
 **Originally not settled.** Whether MOUSE MOVEMENT turns the ship in the preview. If it does not, the console
 carries an unconditional `[MouseFlight]` warning naming which link is dead.
 
