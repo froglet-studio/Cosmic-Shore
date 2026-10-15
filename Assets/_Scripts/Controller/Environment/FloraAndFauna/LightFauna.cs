@@ -549,6 +549,11 @@ namespace CosmicShore.Gameplay
                 }
             }
 
+            // The leash (Fauna.Leash): a leashed creature heads where its holder says. Written through Goal's setter,
+            // so the cell's pens still clamp it.
+            if (Leash != null && Leash.TrySteer(this, out var leashGoal, out _, out _))
+                Goal = leashGoal;
+
             Vector3 goalDirection = (Goal - transform.position).normalized;
 
             int neighborCount = 0;
@@ -709,6 +714,9 @@ namespace CosmicShore.Gameplay
             // makes the grazing read as deliberate.
             if (diet == FaunaDiet.Herbivore)
             {
+                // A leashed creature eats only what its holder orders (re-checked by its own diet); unordered, it follows
+                // and does not graze.
+                if (Leash != null) feedCandidate = LeashedMeal();
                 if (!IsFeedingHold)
                     _feedTarget = feedCandidate;
                 if (_feedTarget && !_feedTarget.destroyed)
@@ -825,8 +833,11 @@ namespace CosmicShore.Gameplay
             {
                 _feedHoldUntil = -1f;
                 if (!_feedTarget || _feedTarget.destroyed)
-                    _feedTarget = FindNearestEdibleInFeedingRange();
+                    _feedTarget = Leash != null ? LeashedMeal() : FindNearestEdibleInFeedingRange();
             }
+
+            // Leashed: the order IS the meal, re-read every frame so a new order (a throw, a recall) takes over at once.
+            if (Leash != null) _feedTarget = LeashedMeal();
 
             var target = _feedTarget;
             if (!target || target.destroyed)
@@ -944,6 +955,47 @@ namespace CosmicShore.Gameplay
                 Mathf.Clamp01(Time.deltaTime * data.feedingBrakeSharpness));
         }
 
+        // --- The leash (Fauna.Leash, per-frame) ------------------------------
+
+        /// <summary>The holder's ordered meal if THIS creature may eat it (its own diet decides), else null.</summary>
+        Prism LeashedMeal()
+        {
+            var meal = Leash?.OrderedMeal(this);
+            return meal && IsEdibleForHerbivore(meal) ? meal : null;
+        }
+
+        /// <summary>
+        /// Per-frame steer toward the holder's goal, the predator's homing (<see cref="UpdateHunting"/>) generalised: the
+        /// heading slerps toward the goal at the holder's turn rate (or this creature's own rotationLerpSpeed) and the
+        /// speed eases to the holder's at 2.5/s. The behaviour tick's separation still applies on its own cadence.
+        /// </summary>
+        void SteerOnLeash()
+        {
+            if (!Leash.TrySteer(this, out var goal, out float speed, out float turnRate)) return;
+            Vector3 to = goal - transform.position;
+            if (to.sqrMagnitude < 1e-4f) return;
+            float current = currentVelocity.magnitude;
+            Vector3 heading = current > 1e-3f ? currentVelocity / current : transform.forward;
+            float turn = turnRate > 0f ? turnRate : Mathf.Max(0.01f, data.rotationLerpSpeed);
+            heading = Vector3.Slerp(heading, to.normalized, Mathf.Clamp01(Time.deltaTime * turn));
+            current = Mathf.Lerp(current, Mathf.Max(0f, speed), Mathf.Clamp01(Time.deltaTime * 2.5f));
+            currentVelocity = heading * current;
+            if (current > 1e-3f && SafeLookRotation.TryGet(currentVelocity, out var rotation, this))
+                desiredRotation = rotation;
+        }
+
+        public override void LeashLaunch(Vector3 velocity)
+        {
+            if (!IsSimAuthority || !IsFinite(velocity)) return;
+            currentVelocity = velocity;
+            if (velocity.sqrMagnitude > 1e-6f && SafeLookRotation.TryGet(velocity, out var rotation, this))
+                desiredRotation = rotation;
+        }
+
+        public override float LeashTopSpeed => data ? Mathf.Max(0f, data.maxSpeed) * GetAggressionSpeedMultiplier() : 0f;
+        public override float LeashMinSpeed => data ? Mathf.Max(0f, data.minSpeed) : 0f;
+        public override float LeashMouthReach => data ? Mathf.Max(0f, data.consumeRadius) * GetAggressionConsumeRadiusMultiplier() : 0f;
+
         // --- Hunting (predator, per-frame) -----------------------------------
 
         /// <summary>
@@ -1056,6 +1108,7 @@ namespace CosmicShore.Gameplay
                 if (diet == FaunaDiet.Herbivore)
                 {
                     using (s_FeedMarker.Auto()) UpdateFeeding();
+                    if (Leash != null && !IsFeedingEngaged) SteerOnLeash();
                 }
                 else if (diet == FaunaDiet.Predator)
                 {

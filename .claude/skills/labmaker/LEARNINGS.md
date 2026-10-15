@@ -892,3 +892,19 @@ Entries are grouped by family; within a family, the newest goes at the bottom.
 - Evidence: `ANGLER_COMMAND_LAB.md` "What it says" (the last two bullets); `leashTow`, `formBack`, `lureCruise`.
 - Promoted: no
 
+
+### L-GEN-12 — A golden table from random inputs can miss a planted change; plant the change before trusting it
+- Lab: Angler Command Lab, Unity clone · Branch: `cece/zealous-feynman-po8k8d` · Date: 2026-10-15
+- What happened: the parity gate runs the page's `CORE` functions in headless Chromium on a seeded table of inputs and writes the results into the NUnit test as goldens. Its first `--self-test` planted six one-number changes in the C# port, and two of them passed every golden:
+  - The claim penalty, changed from 900 to 800: no random pick case sat near enough to the boundary for the penalty to change the winner.
+  - The esca's 2.5 u lift: every lure case used the world up vector, and the plant changed only the x component, which is always zero there.
+- Do instead: plant every constant before believing a golden table. When a plant survives, add the cases that reach it, here pick cases with two candidates either side of one claim's cost, and a lure case with a general (non-axis) up vector. Make each plant change every component it can. The gate is only evidence once every plant fails it.
+- Evidence: `Tools/Build/angler_command_parity/run.sh --self-test` (6/6), `goldens.cjs` (the boundary pick and tilted-lure cases).
+- Promoted: no
+
+### L-STU-69 — A nested enum named like a common word trips the repo's enum-member gate; name it for its owner
+- Lab: Angler Command Lab, Unity clone · Branch: `cece/zealous-feynman-po8k8d` · Date: 2026-10-15
+- What happened: the executor's per-creature state enum was first called `Order`, matching the lab's word. `check_enum_member_references.py` resolves `X.Member` by enum NAME across the repo, so every `Order.Add(...)` elsewhere (a list called `Order` in `ProfilerCapture.cs`) read as a reference to a missing member of the new enum. The gate went red on code the change never touched.
+- Do instead: give a nested enum a name only its owner would use (`LeashOrder`), even when the lab calls it something shorter. Keep the lab's word in the doc comment.
+- Evidence: `AnglerCommandExecutor.LeashOrder`; the gate's output before and after the rename.
+- Promoted: no

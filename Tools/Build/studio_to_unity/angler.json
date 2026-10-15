@@ -1,0 +1,117 @@
+{
+  "comment": "The Angler: where each Angler Command Lab parameter lives in the game. key = the lab's own key (the SHIPPED block in Docs/Studios/AnglerCommandLab.html); asset + field = the Unity field it becomes. AnglerConfig.asset rows use AnglerConfigSO's own field names (each the lab's key, its tooltip the lab's label). 'cruise' is the Angler.prefab transformer's DefaultThrottleScaler (cruise = MinimumSpeed 0 + ThrottleScaler at full throttle). Not mapped, and listed by --unmapped: boost (the game stores it as MaxBoostMultiplier = boost / cruise, which author_angler_assets.py writes and checks), turnRate (the lab's flight is a stand-in; the hull turns by the Stoat's two-stick scalers), the game's own creature numbers (claw*/quad*/tad*/lf*, read FROM the game's assets, never written back), the cell (cellR, nucleusR, dietAny), urgency (commanded creatures run at the cell's own aggression), the lab-only schemes (paint/flare/gaze/lasso/sling/feral knobs, which no longer ship) and the lab's missions and AI (taskClear, taskTimeout, rookie*, aiErase). Edit this file, never the assets by hand.",
+  "vessel": "Angler",
+  "page": "Docs/Studios/AnglerCommandLab.html",
+  "rows": [
+    {
+      "key": "lureAhead",
+      "asset": "Assets/_SO_Assets/VesselActions/Angler/AnglerConfig.asset",
+      "field": "lureAhead"
+    },
+    {
+      "key": "lureCruise",
+      "asset": "Assets/_SO_Assets/VesselActions/Angler/AnglerConfig.asset",
+      "field": "lureCruise"
+    },
+    {
+      "key": "lureRadius",
+      "asset": "Assets/_SO_Assets/VesselActions/Angler/AnglerConfig.asset",
+      "field": "lureRadius"
+    },
+    {
+      "key": "tameRadius",
+      "asset": "Assets/_SO_Assets/VesselActions/Angler/AnglerConfig.asset",
+      "field": "tameRadius"
+    },
+    {
+      "key": "tameTime",
+      "asset": "Assets/_SO_Assets/VesselActions/Angler/AnglerConfig.asset",
+      "field": "tameTime"
+    },
+    {
+      "key": "tameDecay",
+      "asset": "Assets/_SO_Assets/VesselActions/Angler/AnglerConfig.asset",
+      "field": "tameDecay"
+    },
+    {
+      "key": "squadCap",
+      "asset": "Assets/_SO_Assets/VesselActions/Angler/AnglerConfig.asset",
+      "field": "squadCap"
+    },
+    {
+      "key": "leashTow",
+      "asset": "Assets/_SO_Assets/VesselActions/Angler/AnglerConfig.asset",
+      "field": "leashTow"
+    },
+    {
+      "key": "formBack",
+      "asset": "Assets/_SO_Assets/VesselActions/Angler/AnglerConfig.asset",
+      "field": "formBack"
+    },
+    {
+      "key": "tadTurn",
+      "asset": "Assets/_SO_Assets/VesselActions/Angler/AnglerConfig.asset",
+      "field": "tadTurn"
+    },
+    {
+      "key": "spareOwn",
+      "asset": "Assets/_SO_Assets/VesselActions/Angler/AnglerConfig.asset",
+      "field": "spareOwn"
+    },
+    {
+      "key": "paintRange",
+      "asset": "Assets/_SO_Assets/VesselActions/Angler/AnglerConfig.asset",
+      "field": "paintRange"
+    },
+    {
+      "key": "paintCone",
+      "asset": "Assets/_SO_Assets/VesselActions/Angler/AnglerConfig.asset",
+      "field": "paintCone"
+    },
+    {
+      "key": "brushMin",
+      "asset": "Assets/_SO_Assets/VesselActions/Angler/AnglerConfig.asset",
+      "field": "brushMin"
+    },
+    {
+      "key": "eraseCone",
+      "asset": "Assets/_SO_Assets/VesselActions/Angler/AnglerConfig.asset",
+      "field": "eraseCone"
+    },
+    {
+      "key": "slingAhead",
+      "asset": "Assets/_SO_Assets/VesselActions/Angler/AnglerConfig.asset",
+      "field": "slingAhead"
+    },
+    {
+      "key": "slingSpeed",
+      "asset": "Assets/_SO_Assets/VesselActions/Angler/AnglerConfig.asset",
+      "field": "slingSpeed"
+    },
+    {
+      "key": "homeTurn",
+      "asset": "Assets/_SO_Assets/VesselActions/Angler/AnglerConfig.asset",
+      "field": "homeTurn"
+    },
+    {
+      "key": "slingTime",
+      "asset": "Assets/_SO_Assets/VesselActions/Angler/AnglerConfig.asset",
+      "field": "slingTime"
+    },
+    {
+      "key": "slingCatch",
+      "asset": "Assets/_SO_Assets/VesselActions/Angler/AnglerConfig.asset",
+      "field": "slingCatch"
+    },
+    {
+      "key": "slingCluster",
+      "asset": "Assets/_SO_Assets/VesselActions/Angler/AnglerConfig.asset",
+      "field": "slingCluster"
+    },
+    {
+      "key": "cruise",
+      "asset": "Assets/_Prefabs/Spacevessels/Angler.prefab",
+      "field": "DefaultThrottleScaler"
+    }
+  ]
+}

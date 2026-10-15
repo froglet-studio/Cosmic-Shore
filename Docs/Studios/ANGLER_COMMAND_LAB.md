@@ -43,8 +43,8 @@ it against round 1's, and is the version the Unity port copies.
 | **RT (hold)** | Paints prisms with a beam from the nose. The squeeze sets the brush: just past halfway paints `brushMin` (0.35) of the full brush, a full pull the whole 8° cone. Meanwhile the picked squad balls up 12 u ahead. |
 | **LT (hold)** | Erases paint with a narrower beam (4° at a full pull, the same squeeze rule), so a neighbour can be picked out of the paint. While LT is held RT does not paint, and the ball keeps gathering. |
 | **RT (let go)** | The throw. Each creature in the ball is given its own painted prism (nearest, spread by claims, the round-1 `pickTarget`) and flies at it at throw speed (150 u/s), homing at 12/s. Inside its mouth's reach the throw ends, the creature lands at its own swim speed and eats by its own mouthful rule, and its order is the painted set. Creatures still swimming to the ball join the order without the throw. With nothing painted, it throws like the Pack sling. |
-| **RB** | The lure. **It moved here from LT**, because LT is now the eraser. |
-| A boost · LB squad · B recall | unchanged |
+| **X (hold)** | The lure. **It moved here from LT**, because LT is now the eraser. (This write-up first proposed RB. The game's RB is already throttle and boost, and its LB raises no input event, so the page's pad map was aligned to the game's: X lure, A squad, B recall, RB boost.) |
+| A squad · B recall · RB boost | the game's own buttons (`GamepadInputStrategy`) |
 
 Every round-1 scheme is still selectable (Command ▸ Command scheme), so the comparison stays one click away.
 
@@ -91,8 +91,9 @@ seed 1 21.0 · 5.4 · 3.5 · 10.4; seed 2 25.2 · 5.3 · 4.4 · 11.8; seed 3 21.
 
 ### Decision needed (designer)
 
-1. **The lure on RB.** The other trigger is the eraser now, so the lure needed a new home. The bumpers are free
-   in the game's map apart from LB (squad), so RB is proposed. A face button would also work.
+1. **The lure on X.** The other trigger is the eraser now, so the lure needed a new home. RB was proposed first,
+   but in the game RB is throttle and boost and LB raises no input event, so the lure is on X (Button3, keyboard Q)
+   in both the page's pad map and the Unity Angler.
 2. **Trigger depth sets the brush width** (`brushMin` 0.35). If you would rather have a fixed brush, set
    `brushMin` to 1.
 3. Round 1's open questions on taming, the lure brake and the leash tow still stand.

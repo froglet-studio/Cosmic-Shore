@@ -1,10 +1,12 @@
 # The Angler: a strategist vessel (proposal)
 
-**Status: design proposal, round 1. Nothing is in the game yet.** The command gesture is being decided in
-the [Angler Command Lab](ANGLER_COMMAND_LAB.md). Following the Vessel Studio rule (the artifact decides, Unity
-clones), no C#, prefab or asset is written until the designer records the decisions below. After that, the
-Angler gets its page in the one Vessel Studio (`/vessel-studio` §2) and is cloned into Unity with
-`/artifact-to-unity`.
+**Status: in Unity (2026-10-15), unverified in the editor.** The designer kept the Angler and picked the
+**Sling painter** in round 2 of the [Angler Command Lab](ANGLER_COMMAND_LAB.md). Following the Vessel Studio rule (the
+artifact decides, Unity clones), the lab's numbers and its `CORE` arithmetic were cloned into a new vessel,
+`VesselClassType.Angler = 17`. Its design and wiring are in `Assets/_Scripts/Controller/Vessel/R_VesselActions/ANGLER.md`,
+its Editor test steps in `Docs/UNITY_VERIFICATION_CHECKLIST.md`. Still proposals, not built: the element map and the
+level-5 upgrades below, the Angler's own hull, and its AI. The Angler gets its page in the one Vessel Studio
+(`/vessel-studio` §2) when the team wants it flown there; until then the lab is its source of truth.
 
 ## The idea
 

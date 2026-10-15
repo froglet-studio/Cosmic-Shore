@@ -6,5 +6,13 @@
     "decisionsThrough": "2026-10-09T21:35:00.000Z",
     "clonedAt": "2026-10-12",
     "result": "50 mapped parameters match the artifact (studio_to_unity.py --check). Cloned the waves: the light shells in and out, the gravitational wave (lens + prisms), dieS, whSizeX. The shared log held no newer decision (only d16-d17, no settings snapshot)."
+  },
+  "Angler": {
+    "artifactVersion": "v3 (1792038278-d715)",
+    "artifact": "https://claude.ai/artifact/CwuwJcgaGkJqBYC5UHfdE6 (the Angler Command Lab, its own decision log)",
+    "pageSha": "3ee59e23",
+    "decisionsThrough": "2026-10-15T00:00:00.000Z",
+    "clonedAt": "2026-10-15",
+    "result": "First clone. 22 mapped parameters match the artifact (studio_to_unity.py --vessel Angler --check). Cloned the Sling painter (RT paint + gather, LT erase, release = homing throw), the lure and taming, the school and the squad pick: AnglerCommandMath.cs is the page's CORE line for line (Tools/Build/angler_command_parity: 169 page-generated cases, 6/6 planted changes caught). The log's one decision (r2-sling-painter, the designer's chat pick) carries no settings.changed."
   }
 }

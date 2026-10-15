@@ -26,5 +26,6 @@ namespace CosmicShore.Data
         Thresher = 14,
         Stoat = 15,
         BrittleStar = 16,
+        Angler = 17,
     }
 }

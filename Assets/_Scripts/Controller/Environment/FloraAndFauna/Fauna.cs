@@ -145,6 +145,71 @@ namespace CosmicShore.Gameplay
             cell != null && IsInsideBand(position) &&
             cell.IsPreyForHerbivore(position, eaterDomain, preyDomain);
 
+        // ── The leash ─────────────────────────────────────────────────────────
+        //
+        // A vessel that tames and commands fauna (the Angler, R_VesselActions/ANGLER.md) holds an IFaunaLeash. While
+        // leashed, a creature steers where its holder says and eats only the prism its holder orders, re-checked by its
+        // OWN edibility rule and eaten by its OWN mouthful. Behaviour only: nothing is spawned, killed or recoloured, the
+        // starvation clock keeps running, and the cell's pens still clamp every goal (Goal's setter). One holder at a
+        // time; only the peer that SIMULATES the creature can leash it (a puppet's pose is replicated).
+
+        /// <summary>The holder steering this creature, or null when it is wild.</summary>
+        public IFaunaLeash Leash { get; private set; }
+
+        /// <summary>True while a holder steers this creature.</summary>
+        public bool IsLeashed => Leash != null;
+
+        /// <summary>Which creatures a leash can hold: those that eat prisms. A predator eats creatures, never prisms, so
+        /// there is nothing to order it to eat.</summary>
+        protected virtual bool CanBeLeashed => diet == FaunaDiet.Herbivore;
+
+        /// <summary>Put this creature on <paramref name="holder"/>'s leash. False when it cannot be leashed, is dying,
+        /// is a puppet on this peer, or another holder already has it.</summary>
+        public bool TryLeash(IFaunaLeash holder)
+        {
+            if (holder == null || !CanBeLeashed || !IsSimAuthority || _diedThisLife) return false;
+            if (Leash != null && !ReferenceEquals(Leash, holder)) return false;
+            Leash = holder;
+            return true;
+        }
+
+        /// <summary>Let go (a no-op unless <paramref name="holder"/> holds it). The holder's own release, so it is not told.</summary>
+        public void Unleash(IFaunaLeash holder)
+        {
+            if (ReferenceEquals(Leash, holder)) Leash = null;
+        }
+
+        /// <summary>The creature's own release: it is dying or being destroyed. The holder is told so it drops it.</summary>
+        void DropLeash()
+        {
+            var holder = Leash;
+            Leash = null;
+            holder?.Released(this);
+        }
+
+        /// <summary>The speed a leash plans with: this creature's top swim speed as it swims now (u/s).</summary>
+        public virtual float LeashTopSpeed => 0f;
+
+        /// <summary>This creature's minimum swim speed (u/s).</summary>
+        public virtual float LeashMinSpeed => 0f;
+
+        /// <summary>How far this creature's mouth reaches (it eats from this far; u).</summary>
+        public virtual float LeashMouthReach => 0f;
+
+        /// <summary>Set the creature's velocity outright (a holder's throw: the creature leaves the ball at throw speed
+        /// instead of easing up to it, and lands at its own swim speed). A no-op on a creature that does not integrate
+        /// its own velocity, and on a puppet.</summary>
+        public virtual void LeashLaunch(Vector3 velocity) { }
+
+        /// <summary>A creature that DASHES toward a far goal (a forager boid's arrival-capped hunt) reports the dash
+        /// multiplier and its behaviour tick, which cap how fast it can follow; false for a steady swimmer.</summary>
+        public virtual bool TryGetLeashDash(out float dashMultiplier, out float tickSeconds)
+        {
+            dashMultiplier = 1f;
+            tickSeconds = 1f;
+            return false;
+        }
+
         // Stable per-instance offset so each fauna orbits its resolved goal at a
         // different point. Seeded once at Start so the spread is deterministic per
         // spawn but varied across the pack.
@@ -489,6 +554,7 @@ namespace CosmicShore.Gameplay
 
         protected virtual void OnDestroy()
         {
+            DropLeash();
             if (lineageRegistered && hostCell)
                 hostCell.UnregisterLiveFauna(this);
             lineageRegistered = false;
@@ -1096,6 +1162,7 @@ namespace CosmicShore.Gameplay
         protected void Die(string killerName = "")
         {
             _diedThisLife = true;
+            DropLeash();
             // the stomach closes its books: what is left (0 after a predator took it) and the upkeep burned since the
             // last settle go to the soil - the stomach never holds mass past its creature (round 11f)
             if (_stomachLive)

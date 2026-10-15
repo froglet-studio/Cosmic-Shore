@@ -11571,3 +11571,33 @@ each heart must show `ElementalCrystalImpactor` (`Crystal` set, one collection e
 `ImpactCollider` (pointing at it), its `Crystal` component unchecked, and no Missing (Mono Script)
 rows. A living QuadFish's heart must still be joustable: `SetEmbeddedIn` enables the collider, and
 that doesn't depend on the `Crystal` component being enabled.
+
+## 61. The fauna leash — a vessel can steer a creature, never rewrite it (Oct 2026)
+
+The Angler (vessel 17, `R_VesselActions/ANGLER.md`) lures, tames and commands fauna. It does that through one narrow
+contract, `IFaunaLeash` (`Controller/Environment/FloraAndFauna/IFaunaLeash.cs`), and the contract is narrow on
+purpose: **a leash bends behaviour and nothing else.**
+
+### 61.1 What a leash may do
+
+- **`TrySteer(creature, out goal, out speed, out turnRate)`.** It replaces the creature's own goal for this tick:
+  - `LightFauna` slerps its body to that goal (`SteerOnLeash`) and eases its speed at 2.5/s.
+  - A `Boid` uses the goal as its steering target, at the leash's turn rate.
+- **`OrderedMeal(creature)`.** Picks which edible prism the creature's next mouthful faces. The creature re-reads it every frame.
+- **`Released(creature)`.** The creature tells its holder it has left the leash.
+
+### 61.2 What a leash may NOT do (the invariants, each held by the creature's code, not the holder's)
+
+- **The diet decides.** An ordered prism is re-checked against the creature's own edibility rule. It is eaten with the creature's own mouthful (`UpdateFeeding`), so a leash cannot make a herbivore eat what it could not eat wild.
+- **No imposed death, and no reprieve.** The starvation clock keeps running. A tamed creature that is never ordered to eat follows the school without grazing, and may starve on its own clock. That is the ordinary rule; whether a following creature should graze in passing is an open designer call (`ANGLER.md` §8).
+- **One fauna colour per cell.** A tamed creature keeps the cell's colour (LOCKED, `ECOSYSTEM_DESIGN_PRINCIPLES.md`). "My squad" is a leash relationship, not a team.
+- **The heart, body prisms, wither and mass conservation** are untouched. A leashed creature dies exactly as a wild one does.
+- **Who can be leashed:**
+  - Herbivores only (`Fauna.CanBeLeashed`). A `Boid` must also be a forager.
+  - Only on the peer that simulates the creature (`IsSimAuthority`), so consequences never fork across peers.
+  - Never while dying. `Die()` and `OnDestroy()` call `DropLeash()` before anything else, so a holder never steers a corpse.
+
+### 61.3 What is inert without a holder
+
+Every hook is gated on `Leash != null`. With no Angler in the cell, `LightFauna` and `Boid` run exactly the code they ran
+before: the same goal, the same feed candidate, the same speed.
