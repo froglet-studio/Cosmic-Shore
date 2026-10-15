@@ -129,6 +129,7 @@
     <div id="touch" hidden>
       <div id="stickZone"></div>
       <div class="tb" id="tLure" style="right: 92px; bottom: 150px">LURE</div>
+      <div class="tb" id="tErase" style="right: 172px; bottom: 120px">ERASE</div>
       <div class="tb" id="tCmd" style="right: 12px; bottom: 182px">CMD</div>
       <div class="tb" id="tSquad" style="right: 12px; bottom: 100px">SQUAD</div>
       <div class="tb" id="tBoost" style="right: 92px; bottom: 68px">BOOST</div>
@@ -147,7 +148,7 @@
   // (1) LAB meta + SHIPPED: a READER of the game's numbers. Every constant names the asset / field it was
   //     copied from. "lab" = no game field exists yet (the Angler is a design), shown as a proposal.
   // ===================================================================================================
-  const LAB = { name: 'Angler Command Lab', branch: 'cece/zealous-feynman-po8k8d', round: 1, doc: 'Docs/Studios/ANGLER_COMMAND_LAB.md', models: 'design (the Angler does not ship)' };
+  const LAB = { name: 'Angler Command Lab', branch: 'cece/zealous-feynman-po8k8d', round: 2, doc: 'Docs/Studios/ANGLER_COMMAND_LAB.md', models: 'design (the Angler does not ship)' };
   const DOMAIN_HEX = { jade: 0x13fff2, ruby: 0xff00f9, gold: 0xffa700 };   // studio-domains.js (OriginalColorSetSO GetDomainSignalColor)
   const SHIPPED = {
     // --- the cell ---
@@ -189,6 +190,11 @@
     gazeRange: 240, gazeCone: 5, gazeDwell: 0.35,   // Gaze lock
     loopStep: 4, loopClose: 18, loopDepth: 40, loopMin: 120,   // Lasso
     slingAhead: 12, slingSpeed: 150, slingCatch: 8, slingCluster: 24, slingTime: 3,   // Pack sling
+    // Sling painter (round 2, the designer's pick: the sling + the painter, the other trigger erases). All lab.
+    brushMin: 0.35,       // a light squeeze paints with this share of the full brush; a full pull uses all of it
+    eraseCone: 4,         // the eraser's half-angle at a full pull (deg); the paint brush uses paintCone
+    homeTurn: 12,         // how sharply a thrown creature homes on its painted prism (/s)
+    aiErase: 1,           // the commander AI uses the eraser (0 = never; the eraser's own control)
     feralSense: 40,       // Feral baseline: a tamed creature attacks enemy prisms within this of itself
     // --- missions (lab) ---
     taskClear: 0.6, taskTimeout: 50,
@@ -219,6 +225,14 @@
     ['Command', 'slingCatch', 2, 30, 1, 'Catch radius (u)', 'A thrown creature that passes within this of an enemy prism latches on.', 'sling'],
     ['Command', 'slingCluster', 4, 80, 1, 'Latch cluster (u)', 'It then eats that prism\'s domain within this of the latch.', 'sling'],
     ['Command', 'slingTime', 0.5, 8, 0.1, 'Throw lasts (s)', 'A creature that latches onto nothing returns after this.', 'sling'],
+    ['Command', 'paintRange', 40, 400, 5, 'Brush reach (u)', 'How far the paint brush and the eraser reach.', 'slingpaint'],
+    ['Command', 'paintCone', 2, 25, 0.5, 'Brush half-angle (°)', 'The paint brush at a full pull of RT. A light squeeze paints a narrower line.', 'slingpaint'],
+    ['Command', 'brushMin', 0.1, 1, 0.05, 'Light-squeeze brush', 'Share of the full brush a just-past-halfway squeeze paints with (and the same for the eraser). 1 = the trigger depth does not matter.', 'slingpaint'],
+    ['Command', 'eraseCone', 1, 25, 0.5, 'Eraser half-angle (°)', 'The eraser (LT) at a full pull. Narrower than the brush, so it can pick a neighbour out.', 'slingpaint'],
+    ['Command', 'slingAhead', 4, 40, 1, 'Ball distance (u)', 'While RT is held the squad balls up this far ahead.', 'slingpaint'],
+    ['Command', 'slingSpeed', 40, 400, 5, 'Throw speed (u/s)', 'How fast the ball flies at the painted prisms.', 'slingpaint'],
+    ['Command', 'homeTurn', 1, 40, 0.5, 'Homing (/s)', 'How sharply each thrown creature turns toward its own painted prism.', 'slingpaint'],
+    ['Command', 'aiErase', 0, 1, 1, 'AI uses the eraser', 'Scorecard commander: 1 erases painted neighbours before throwing, 0 never erases (the eraser\'s control).', 'slingpaint'],
     ['Command', 'feralSense', 5, 120, 1, 'Feral sense (u)', 'Baseline: tamed creatures attack any enemy prism within this, unbidden.', 'feral'],
     ['Lure', 'lureAhead', 4, 40, 1, 'Esca distance (u)', 'Where the lure light hangs, ahead of the nose.'],
     ['Lure', 'lureCruise', 0, 60, 1, 'Speed while luring (u/s)', 'Holding the lure slows the Angler to this. Lured fauna swim 16–38 u/s, so a hull at cruise outruns its own catch. Boost still overrides.'],
@@ -256,6 +270,7 @@
   // The command schemes the lab exists to compare. One trigger (RT / Space) drives every one, so both thumbs keep
   // flying: the game flies on two sticks (InputController's dual-stick mix), leaving triggers and bumpers free.
   const SCHEMES = [
+    { key: 'slingpaint', name: 'Sling painter', how: 'Hold RT: paint prisms with the beam (squeeze harder for a wider brush) while the squad balls up ahead. Hold LT: erase paint with a narrower beam. Let go of RT: the ball is thrown and each creature homes on its own painted prism, then eats only painted prisms. Nothing painted: it throws like the Pack sling.' },
     { key: 'paint', name: 'Spotlight paint', how: 'Hold the command trigger: a beam from the nose paints every prism it sweeps. Let go: the squad eats what you painted.' },
     { key: 'flare', name: 'Pheromone dart', how: 'Tap the command trigger: a dart flies along your aim and sticks in the first prism. The squad eats that prism\'s domain around the dart.' },
     { key: 'gaze', name: 'Gaze lock', how: 'Keep the reticle on a structure until its brackets lock, then tap the command trigger: the squad takes the whole structure.' },
@@ -277,8 +292,8 @@
   const lsSet = (k, v) => { try { localStorage.setItem(LS + k, JSON.stringify(v)); } catch (e) { /* private window */ } };
   const P = Object.assign({}, SHIPPED, lsGet('P', {}));
   for (const k of Object.keys(P)) if (!(k in SHIPPED)) delete P[k];
-  const S = Object.assign({ scheme: 'paint', mode: 'missions', cam: 'chase' }, lsGet('S', {}));
-  if (!SCHEMES.some((s) => s.key === S.scheme)) S.scheme = 'paint';
+  const S = Object.assign({ scheme: 'slingpaint', mode: 'missions', cam: 'chase' }, lsGet('S', {}));
+  if (!SCHEMES.some((s) => s.key === S.scheme)) S.scheme = 'slingpaint';
 
   // ===================================================================================================
   // seeded RNG + small vector helpers
@@ -377,7 +392,7 @@
   function makeFauna(w, sp, p, state) {
     const s = SPECIES[sp];
     w.fauna.push({ sp, x: p[0], y: p[1], z: p[2], hx: 0, hy: 0, hz: -1, spd: P[s.min], state, tame: state === ST.IDLE ? 1 : 0,
-      set: null, target: -1, hold: 0, focus: null, flungT: 0, home: p.slice(), wander: [0, 0, 0], feralT: w.rnd() * 0.25, slot: 0, nextTick: w.rnd() * P.tadTick, dash: 1 });
+      set: null, target: -1, hold: 0, focus: null, flungT: 0, home: p.slice(), wander: [0, 0, 0], feralT: w.rnd() * 0.25, homing: false, slot: 0, nextTick: w.rnd() * P.tadTick, dash: 1 });
   }
   function reset(s, opts) {
     if (s != null) seed = s >>> 0;
@@ -391,7 +406,7 @@
       paintedList: [],
       v: { p: START_P.slice(), f: [0, 0, -1], u: [0, 1, 0], r: [1, 0, 0], speed: P.cruise },
       fauna: [], squadSel: -1, lureOn: false, L: [0, 0, 0],
-      prev: { cmd: false, squad: false, recall: false },
+      prev: { cmd: false, squad: false, recall: false }, lastInput: {},
       cmd: { holding: false, holdT: 0, loop: [], loopLen: 0, loopShow: null, flares: [], flareCd: 0, gazeSt: -1, gazeDwell: 0, gazeLock: -1, sling: 0 },
       fx: { blooms: [] },
       task: null, taskIdx: -1, structAlive0: SCENE.structs.map((s) => s.ids.length),
@@ -422,7 +437,7 @@
     if (w.taskIdx >= TASKS.length) { w.task = null; w.done = true; return; }
     const T = TASKS[w.taskIdx];
     w.task = { sq: T.sq, st: T.st, start: w.t, firstOrder: null, alive0: countAlive(w, T.st) };
-    w.ai.phase = 'approach'; w.ai.plan = null; w.ai.runT = 0; w.ai.recalled = false; w.ai.sqT = 0;
+    w.ai.phase = 'approach'; w.ai.plan = null; w.ai.runT = 0; w.ai.recalled = false; w.ai.sqT = 0; w.ai.spT = 0; w.ai.erT = 0;
   }
   function countAlive(w, st) { let c = 0; for (const i of SCENE.structs[st].ids) c += w.alive[i]; return c; }
   function edible(w, i, eaterSet) {
@@ -556,18 +571,67 @@
         if (C.loopLen > P.loopMin && len(sub(v.p, C.loop[0])) < P.loopClose) { closeLoop(w); C.holding = false; }
       }
       if (edgeUp && C.holding) { closeLoop(w); C.holding = false; }
+    } else if (sch === 'slingpaint') {
+      // ===== SLING PAINTER (round 2): the block the Unity port copies line for line (AnglerSlingPainter.cs) =====
+      const erasing = (inp.erase || 0) > 0.5;
+      if (erasing) brushStroke(w, P.eraseCone * brushScale(inp.erase), false);
+      else if (held) brushStroke(w, P.paintCone * brushScale(inp.cmd), true);
+      if (held) for (const f of w.fauna) if (inSquad(w, f) && (f.state === ST.IDLE || f.state === ST.ATTACK)) { releaseClaim(w, f); f.set = null; f.state = ST.GATHER; }
+      if (edgeUp) throwAtPaint(w);
     } else if (sch === 'sling') {
       if (held) { C.sling += dt; for (const f of w.fauna) if (inSquad(w, f) && (f.state === ST.IDLE || f.state === ST.ATTACK)) { releaseClaim(w, f); f.set = null; f.state = ST.GATHER; } }
-      if (edgeUp) {
-        let n = 0;
-        for (const f of w.fauna) if (f.state === ST.GATHER) {
-          const j = [gauss(w.rnd) * 0.05, gauss(w.rnd) * 0.05, gauss(w.rnd) * 0.05], d = norm(add(v.f, j));
-          f.state = ST.FLUNG; f.flungT = 0; f.hx = d[0]; f.hy = d[1]; f.hz = d[2]; f.spd = P.slingSpeed; n++;
-        }
-        if (n) w.m.orders++;
-        C.sling = 0;
-      }
+      if (edgeUp) { slingThrow(w); C.sling = 0; }
     }
+  }
+  // ---- Sling painter helpers ----
+  // brushScale: trigger depth (0.5 = the press threshold, 1 = a full pull) -> share of the full brush.
+  function brushScale(depth) { return P.brushMin + (1 - P.brushMin) * clamp(((depth || 0) - 0.5) / 0.5, 0, 1); }
+  // brushStroke: every alive prism inside the cone (half-angle coneDeg, reach paintRange) is painted (paint) or cleaned.
+  function brushStroke(w, coneDeg, paint) {
+    const v = w.v, cosC = Math.cos(coneDeg * D2R);
+    let removed = false;
+    for (let i = 0; i < SCENE.n; i++) {
+      if (!w.alive[i] || (paint ? w.painted[i] : !w.painted[i])) continue;
+      if (paint && P.spareOwn && SCENE.dom[i] === 0) continue;
+      const dx = SCENE.px[i] - v.p[0], dy = SCENE.py[i] - v.p[1], dz = SCENE.pz[i] - v.p[2], d = Math.hypot(dx, dy, dz);
+      if (d > P.paintRange || d < 1) continue;
+      if ((dx * v.f[0] + dy * v.f[1] + dz * v.f[2]) / d <= cosC) continue;
+      if (paint) { w.painted[i] = 1; w.paintedList.push(i); } else { w.painted[i] = 0; removed = true; }
+    }
+    if (removed) w.paintedList = w.paintedList.filter((i) => w.painted[i]);
+  }
+  // throwAtPaint: the release. Every gathered creature of the picked squad is thrown and homes on the painted prism
+  // pickTarget gives it (nearest, spread by claims); a creature still swimming to the ball joins the order on foot.
+  function throwAtPaint(w) {
+    const ids = w.paintedList.filter((i) => w.alive[i]);
+    for (const i of w.paintedList) w.painted[i] = 0;
+    w.paintedList = [];
+    if (!ids.length) { slingThrow(w); return; }
+    let n = 0;
+    for (const f of w.fauna) {
+      if (!inSquad(w, f) || f.state === ST.FLUNG || f.state === ST.WILD || f.state === ST.LURED) continue;
+      const gathered = f.state === ST.GATHER;
+      releaseClaim(w, f); f.set = ids; f.hold = 0; f.focus = null; f.state = ST.ATTACK;
+      pickTarget(w, f); if (f.state !== ST.ATTACK) continue;
+      if (gathered) {
+        f.state = ST.FLUNG; f.homing = true; f.flungT = 0; f.spd = P.slingSpeed;
+        const d = norm([SCENE.px[f.target] - f.x, SCENE.py[f.target] - f.y, SCENE.pz[f.target] - f.z]); f.hx = d[0]; f.hy = d[1]; f.hz = d[2];
+      }
+      n++;
+    }
+    if (!n) return;
+    w.m.orders++;
+    for (const i of ids) w.ordered[i] = w.t;
+    if (w.task && w.task.firstOrder == null && ids.some((i) => SCENE.st[i] === w.task.st)) { w.task.firstOrder = w.t; w.m.orderT.push(w.t - w.task.start); }
+  }
+  // the Pack sling's own throw (used by the Sling painter when nothing is painted)
+  function slingThrow(w) {
+    const v = w.v; let n = 0;
+    for (const f of w.fauna) if (f.state === ST.GATHER) {
+      const j = [gauss(w.rnd) * 0.05, gauss(w.rnd) * 0.05, gauss(w.rnd) * 0.05], d = norm(add(v.f, j));
+      f.state = ST.FLUNG; f.homing = false; f.flungT = 0; f.hx = d[0]; f.hy = d[1]; f.hz = d[2]; f.spd = P.slingSpeed; n++;
+    }
+    if (n) w.m.orders++;
   }
   function closeLoop(w) {
     const C = w.cmd, L = C.loop;
@@ -682,6 +746,15 @@
         steer(f, bx, by, bz, clamp(d * 2, minS, Math.max(maxS * aSpd, v.speed * 1.2)), turn * 2, dt);
         continue;
       }
+      if (f.state === ST.FLUNG && f.homing) {
+        // Sling painter: home on the painted prism at throw speed; inside the mouth's reach the throw ends and the
+        // creature lands at its own swim speed and eats by its own mouthful rule (painted prisms only, as its order)
+        f.flungT += dt;
+        if (f.target < 0 || !w.alive[f.target]) { pickTarget(w, f); if (f.state === ST.IDLE) { f.homing = false; continue; } }
+        const t = f.target, d = steer(f, SCENE.px[t], SCENE.py[t], SCENE.pz[t], P.slingSpeed, P.homeTurn, dt);
+        if (d < reach || f.flungT > P.slingTime * 2) { f.state = ST.ATTACK; f.homing = false; f.spd = Math.min(f.spd, maxS * aSpd); }
+        continue;
+      }
       if (f.state === ST.FLUNG) {
         f.flungT += dt; f.spd = P.slingSpeed * Math.exp(-0.25 * f.flungT);
         const x0 = f.x, y0 = f.y, z0 = f.z;
@@ -747,7 +820,7 @@
     const cmdHeld = (inp.cmd || 0) > 0.5, edgeDown = cmdHeld && !w.prev.cmd, edgeUp = !cmdHeld && w.prev.cmd;
     const sqEdge = !!inp.squad && !w.prev.squad, rcEdge = !!inp.recall && !w.prev.recall;
     if (edgeDown) { w.m.inputs++; w.m.presses++; } if (sqEdge) w.m.inputs++; if (rcEdge) w.m.inputs++;
-    w.prev.cmd = cmdHeld; w.prev.squad = !!inp.squad; w.prev.recall = !!inp.recall;
+    w.prev.cmd = cmdHeld; w.prev.squad = !!inp.squad; w.prev.recall = !!inp.recall; w.lastInput = inp;
     flyVessel(w, inp, dt);
     if (sqEdge) w.squadSel = w.squadSel >= SPECIES.length - 1 ? -1 : w.squadSel + 1;
     if (rcEdge) for (const f of w.fauna) if (inSquad(w, f)) { releaseClaim(w, f); f.set = null; f.state = ST.IDLE; f.hold = 0; }
@@ -803,7 +876,7 @@
   const ppos = (i) => [SCENE.px[i], SCENE.py[i], SCENE.pz[i]];
   function squadBusy(w) { for (const f of w.fauna) if (inSquad(w, f) && (f.state === ST.ATTACK || f.state === ST.FLUNG)) return true; return false; }
   function commander(w, brain) {
-    const inp = { pitch: 0, yaw: 0, boost: 0, lure: 0, cmd: 0, squad: false, recall: false }, ai = w.ai, v = w.v;
+    const inp = { pitch: 0, yaw: 0, boost: 0, lure: 0, cmd: 0, erase: 0, squad: false, recall: false }, ai = w.ai, v = w.v;
     // the belief's drift: an Ornstein-Uhlenbeck error, per axis, from the run's seeded stream
     ai.noise = ai.noise.map((x) => x * Math.exp(-0.8 * w.dt) + gauss(w.rnd) * Math.sqrt(1.6 * w.dt));
     if (w.mode === 'lure') return lurePilot(w, inp, brain);
@@ -831,7 +904,7 @@
       return inp;
     }
     if (sch === 'lasso') return lassoPilot(w, inp, brain, ids, c, S0, T);
-    const reach = sch === 'paint' ? P.paintRange : sch === 'flare' ? P.flareRange * 0.6 : sch === 'gaze' ? P.gazeRange * 0.7 : Math.min(P.slingSpeed * 1.2, 180);
+    const reach = sch === 'paint' || sch === 'slingpaint' ? P.paintRange : sch === 'flare' ? P.flareRange * 0.6 : sch === 'gaze' ? P.gazeRange * 0.7 : Math.min(P.slingSpeed * 1.2, 180);
     const tooClose = Math.max(25, S0.kind === 'trail' ? 25 : S0.r + 15);
     if (ai.phase === 'away') { breakAway(Math.min(reach * 0.8, 160)); return inp; }
     if (w.squadSel !== T.sq) { steerInput(w, inp, cB); return inp; }
@@ -861,6 +934,24 @@
       for (const i of ids) { const d = len(sub(ppos(i), c)); if (d < bd) { bd = d; best = i; } }
       steerInput(w, inp, believe(w, ppos(best), brain), 4);
       if (w.cmd.gazeLock === T.st && !w.prev.cmd) { inp.cmd = 1; ai.phase = 'away'; }
+      return inp;
+    }
+    if (sch === 'slingpaint') {
+      // 1. sweep the brush over the ordered structure with RT held (the ball gathers meanwhile);
+      // 2. with aiErase, hold LT on painted neighbours that are NOT the ordered structure (RT still held, no throw);
+      // 3. let go of RT: the throw
+      ai.spT = (ai.spT || 0) + w.dt;
+      inp.cmd = 1;
+      let lit = 0, best = -1, bc = -2;
+      for (const i of ids) { if (w.painted[i]) { lit++; continue; } const d = norm(sub(ppos(i), v.p)), cc = dot(d, v.f); if (cc > bc) { bc = cc; best = i; } }
+      if (best >= 0 && lit < ids.length * 0.9 && ai.spT < 3 && dist > tooClose * 1.3) { steerInput(w, inp, believe(w, ppos(best), brain), 4); return inp; }
+      if (P.aiErase) {
+        let stray = -1, sc = -2;
+        for (const i of w.paintedList) { if (!w.alive[i] || SCENE.st[i] === T.st) continue; const d = norm(sub(ppos(i), v.p)), cc = dot(d, v.f); if (cc > sc) { sc = cc; stray = i; } }
+        ai.erT = ai.erT || 0;
+        if (stray >= 0 && ai.erT < 1.5 && dist > tooClose * 1.1) { ai.erT += w.dt; steerInput(w, inp, believe(w, ppos(stray), brain), 5); inp.erase = 1; return inp; }
+      }
+      inp.cmd = 0; ai.phase = 'away'; ai.spT = 0; ai.erT = 0;
       return inp;
     }
     if (sch === 'sling') {
@@ -980,17 +1071,18 @@
   });
   addEventListener('keyup', (e) => keys.delete(e.code));
   addEventListener('blur', () => keys.clear());
-  const touch = { stick: null, sx: 0, sy: 0, lure: false, cmd: false, squad: false, boost: false };
+  const touch = { stick: null, sx: 0, sy: 0, lure: false, cmd: false, erase: false, squad: false, boost: false };
   let lastHumanT = -1e9;
   function easeIn(x) { return x < 0 ? Math.cos(x * Math.PI / 4) - 1 : -(Math.cos(x * Math.PI / 4) - 1); }   // InputController ease
   function humanInput() {
-    const inp = { pitch: 0, yaw: 0, boost: 0, lure: 0, cmd: 0, squad: false, recall: false };
+    const inp = { pitch: 0, yaw: 0, boost: 0, lure: 0, cmd: 0, erase: 0, squad: false, recall: false };
     const k = (c) => keys.has(c);
     inp.yaw = (k('KeyD') || k('ArrowRight') ? 1 : 0) - (k('KeyA') || k('ArrowLeft') ? 1 : 0);
     inp.pitch = (k('KeyW') || k('ArrowUp') ? 1 : 0) - (k('KeyS') || k('ArrowDown') ? 1 : 0);
     inp.boost = k('ShiftLeft') || k('ShiftRight') ? 1 : 0;
     inp.cmd = k('Space') || mouse.left ? 1 : 0;
-    inp.lure = k('KeyF') || k('KeyE') || mouse.right ? 1 : 0;
+    inp.lure = k('KeyF') || k('KeyE') ? 1 : 0;
+    inp.erase = k('KeyV') || k('ControlLeft') || mouse.right ? 1 : 0;
     inp.squad = k('KeyQ') || k('Tab');
     inp.recall = k('KeyX');
     let pads = [];
@@ -1004,13 +1096,14 @@
       if (Math.abs(yaw) > 0.02) inp.yaw = clamp(yaw, -1, 1);
       if (Math.abs(pitch) > 0.02) inp.pitch = clamp(pitch, -1, 1);
       const b = (i) => (g.buttons[i] && (g.buttons[i].value || (g.buttons[i].pressed ? 1 : 0))) || 0;
-      inp.cmd = Math.max(inp.cmd, b(7)); inp.lure = Math.max(inp.lure, b(6));
-      inp.squad = inp.squad || b(4) > 0.5; inp.boost = Math.max(inp.boost, b(5), b(0));
+      // round 2: RT paints / commands, LT erases, RB lures, A boosts (the triggers were RT command + LT lure in round 1)
+      inp.cmd = Math.max(inp.cmd, b(7)); inp.erase = Math.max(inp.erase, b(6)); inp.lure = Math.max(inp.lure, b(5));
+      inp.squad = inp.squad || b(4) > 0.5; inp.boost = Math.max(inp.boost, b(0));
       inp.recall = inp.recall || b(1) > 0.5;
     }
     if (touch.stick) { inp.yaw = clamp(touch.sx, -1, 1); inp.pitch = clamp(-touch.sy, -1, 1); }
-    if (touch.lure) inp.lure = 1; if (touch.cmd) inp.cmd = 1; if (touch.squad) inp.squad = true; if (touch.boost) inp.boost = 1;
-    if (inp.yaw || inp.pitch || inp.cmd || inp.lure || inp.squad || inp.boost || inp.recall) lastHumanT = performance.now();
+    if (touch.lure) inp.lure = 1; if (touch.cmd) inp.cmd = 1; if (touch.erase) inp.erase = 1; if (touch.squad) inp.squad = true; if (touch.boost) inp.boost = 1;
+    if (inp.yaw || inp.pitch || inp.cmd || inp.erase || inp.lure || inp.squad || inp.boost || inp.recall) lastHumanT = performance.now();
     return inp;
   }
   const mouse = { left: false, right: false };
@@ -1128,9 +1221,11 @@
       R3.esca.position.set(0, 1.6 + 0.9, -P.lureAhead);
       R3.glow.position.set(...w.L); const gs = w.lureOn ? P.lureRadius : 3; R3.glow.scale.set(gs, gs, gs); R3.glow.material.opacity = w.lureOn ? 0.07 + 0.03 * Math.sin(now * 6) : 0.35;
       // the spotlight beam
-      const painting = w.scheme === 'paint' && w.prev.cmd;
+      const sp = w.scheme === 'slingpaint', erasing = sp && (w.lastInput.erase || 0) > 0.5, painting = (w.scheme === 'paint' || sp) && (w.prev.cmd || erasing);
       R3.beam.visible = painting;
-      if (painting) { const rr = Math.tan(P.paintCone * D2R) * P.paintRange; R3.beam.position.set(...v.p); R3.beam.quaternion.setFromRotationMatrix(basis); R3.beam.scale.set(rr, rr, P.paintRange); }
+      R3.beam.material.color.setHex(erasing ? 0x7fd7ff : 0xffd27a);
+      const cone = !sp ? P.paintCone : erasing ? P.eraseCone * brushScale(w.lastInput.erase) : P.paintCone * brushScale(w.lastInput.cmd);
+      if (painting) { const rr = Math.tan(cone * D2R) * P.paintRange; R3.beam.position.set(...v.p); R3.beam.quaternion.setFromRotationMatrix(basis); R3.beam.scale.set(rr, rr, P.paintRange); }
       // attack lines from each attacking creature to its meal
       const ap = R3.atkG.attributes.position.array, ac = R3.atkG.attributes.color.array; let na = 0;
       for (const f of w.fauna) {
@@ -1207,7 +1302,7 @@
       }
     }
     // painted count
-    if (w.scheme === 'paint' && w.paintedList.length) { hctx.fillStyle = '#ffd27a'; hctx.textAlign = 'center'; hctx.fillText(w.paintedList.length + ' painted', W / 2, H - 60 * dpr); }
+    if ((w.scheme === 'paint' || w.scheme === 'slingpaint') && w.paintedList.length) { hctx.fillStyle = '#ffd27a'; hctx.textAlign = 'center'; hctx.fillText(w.paintedList.length + ' painted', W / 2, H - 60 * dpr); }
     // text overlays
     const T = w.task, s = score();
     if (w.mode === 'missions') {
@@ -1227,11 +1322,11 @@
     bar.innerHTML = '';
     for (const [name, k] of rows) {
       const el = document.createElement('div'); el.className = 'sq' + (w.squadSel === k ? ' on' : '');
-      const list = k < 0 ? tamed.flat() : tamed[k], busy = list.filter((f) => f.state >= ST.ATTACK).length;
-      el.textContent = name + ' ' + list.length + (busy ? ' · ' + busy + ' hunting' : '');
+      const list = k < 0 ? tamed.flat() : tamed[k], busy = list.filter((f) => f.state === ST.ATTACK || f.state === ST.FLUNG).length, ball = list.filter((f) => f.state === ST.GATHER).length;
+      el.textContent = name + ' ' + list.length + (ball ? ' · ' + ball + ' in the ball' : '') + (busy ? ' · ' + busy + ' hunting' : '');
       bar.appendChild(el);
     }
-    $('hint').textContent = PLATFORM.device === 'phone' ? '' : 'W A S D steer · Shift boost · F / right mouse LURE · Space / left mouse COMMAND · Q / Tab SQUAD · X recall · C camera · P pause · R restart. Pad: two sticks fly, LT lure, RT command, LB squad, RB boost, B recall.';
+    $('hint').textContent = PLATFORM.device === 'phone' ? '' : 'W A S D steer · Shift boost · F LURE · Space / left mouse PAINT + COMMAND · V / right mouse ERASE · Q / Tab SQUAD · X recall · C camera · P pause · R restart. Pad: two sticks fly, RT paint + command, LT erase, RB lure, LB squad, A boost, B recall.';
   }
   function box(w, st, color, label) {
     const ids = aliveIds(w, st); if (!ids.length) return;
@@ -1449,7 +1544,7 @@
     zone.addEventListener('pointermove', (e) => { if (!touch.stick || e.pointerId !== touch.stick.id) return; touch.sx = (e.clientX - touch.stick.x) / 50; touch.sy = (e.clientY - touch.stick.y) / 50; });
     const endStick = (e) => { if (touch.stick && e.pointerId === touch.stick.id) { touch.stick = null; touch.sx = touch.sy = 0; } };
     zone.addEventListener('pointerup', endStick); zone.addEventListener('pointercancel', endStick);
-    for (const [id, key] of [['tLure', 'lure'], ['tCmd', 'cmd'], ['tSquad', 'squad'], ['tBoost', 'boost']]) {
+    for (const [id, key] of [['tLure', 'lure'], ['tCmd', 'cmd'], ['tErase', 'erase'], ['tSquad', 'squad'], ['tBoost', 'boost']]) {
       const el = $(id);
       el.addEventListener('pointerdown', (e) => { e.preventDefault(); touch[key] = true; el.classList.add('on'); });
       const up = () => { touch[key] = false; el.classList.remove('on'); };

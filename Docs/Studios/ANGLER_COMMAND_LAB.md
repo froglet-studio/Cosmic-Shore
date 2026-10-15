@@ -30,7 +30,76 @@ creatures, the cell and the way they eat are the game's own, read from the asset
 Everything else (the Angler's speeds, the lure, the leash, every command scheme) is lab-only and labelled
 that way in the page.
 
+## Round 2 (2026-10-15): the Sling painter
+
+**The designer's decision** (in chat, 2026-10-15): keep the Angler; command with *the Pack sling combined with
+the painter, with the other trigger as an eraser*; then bring it into Unity. Round 2 builds that scheme, scores
+it against round 1's, and is the version the Unity port copies.
+
+### The gesture
+
+| Input | What it does |
+|---|---|
+| **RT (hold)** | Paints prisms with a beam from the nose. The squeeze sets the brush: just past halfway paints `brushMin` (0.35) of the full brush, a full pull the whole 8° cone. Meanwhile the picked squad balls up 12 u ahead. |
+| **LT (hold)** | Erases paint with a narrower beam (4° at a full pull, the same squeeze rule), so a neighbour can be picked out of the paint. While LT is held RT does not paint, and the ball keeps gathering. |
+| **RT (let go)** | The throw. Each creature in the ball is given its own painted prism (nearest, spread by claims, the round-1 `pickTarget`) and flies at it at throw speed (150 u/s), homing at 12/s. Inside its mouth's reach the throw ends, the creature lands at its own swim speed and eats by its own mouthful rule, and its order is the painted set. Creatures still swimming to the ball join the order without the throw. With nothing painted, it throws like the Pack sling. |
+| **RB** | The lure. **It moved here from LT**, because LT is now the eraser. |
+| A boost · LB squad · B recall | unchanged |
+
+Every round-1 scheme is still selectable (Command ▸ Command scheme), so the comparison stays one click away.
+
+### Scorecard (seeds 1–3, the whole batch re-run on the round-2 page, 4.4 s)
+
+| Scheme | Clear s | Order s | On target % | Off target | Yours lost | Fails /4 | Rookie clear s | Rookie on % |
+|---|---|---|---|---|---|---|---|---|
+| **Sling painter** | 10.4 | 4.43 | 91.1 | 21.0 | 5.3 | **0** | 13.9 | **94.1** |
+| Sling painter, AI never erases | 10.2 | 3.65 | 84.1 | 46.0 | 5.3 | 0 | 11.7 | 91.6 |
+| Spotlight paint | 12.1 | 5.30 | 81.7 | 53.0 | 4.7 | 0 | 11.9 | 82.1 |
+| Pack sling | 28.2 | 4.57 | 90.2 | 14.3 | 4.7 | 2 | 28.5 | 89.7 |
+| Gaze lock | 9.9 | 2.67 | 92.6 | 15.3 | 5.0 | 0 | 10.2 | 88.6 |
+| Feral (baseline) | 6.1 | – | 60.8 | 147.3 | 5.0 | 0 | 7.0 | 63.6 |
+| No squad (control) | 50 | 50 | – | 0 | 0 | 4 | 50 | – |
+
+Over seeds 1–8 (skilled, on target %): the Sling painter reads 82.5–98.1 (mean 94.0), and 74.3–95.8 (mean 88.3)
+when the AI never erases. Gaze lock's band from round 1 was 90.6–95.1.
+
+Per order (s; Clawfish→Ruby trail · QuadFish→lattice · Tadpoles→knot · all→Gold trail):
+seed 1 21.0 · 5.4 · 3.5 · 10.4; seed 2 25.2 · 5.3 · 4.4 · 11.8; seed 3 21.3 · 8.3 · 4.3 · 4.0.
+
+### What it says
+
+- **The combination keeps what each half was good at.** It is as fast as Gaze lock (10.4 s against 9.9 s) and
+  as precise (mean 94% against 91–95% over eight seeds), while still choosing particular prisms. It **never
+  fails a trail**, where the Pack sling failed both every time, because the throw spreads across whatever the
+  brush painted instead of latching onto one 24 u cluster.
+- **The eraser is worth about 6 points of precision** (94.0% against 88.3% over eight seeds) for 0.8 s more per
+  order to issue. It earns them where a structure sits in front of another: on seed 2 the painted cone caught
+  the Gold trail behind the Ruby knot.
+- **It is forgiving.** The rookie's precision (94%) is the best of any scheme, because a sloppy sweep is what
+  the eraser cleans up. The rookie is about 3.5 s slower per order.
+- **What a command cannot fix is the mouthful.** Off-target and friendly losses that remain come from the
+  2-second mouthful eating neighbours within 12 u (the game's own rule). With the diet set to "opposing only",
+  your losses on the Sling painter are 0, 0, 0 (seeds 1–3).
+
+### Checked
+
+- `verify_lab.cjs` **PASS** on the round-2 page; desktop and phone screenshots read (the brush, 26 prisms
+  painted on the Ruby trail, the squad balling up).
+- Decoy (every order aimed at the wrong structure): **0%** on target.
+- Diet control (`dietAny` 0): 0 of yours lost, seeds 1–3.
+- Every number above came from one run of the committed page in headless Chromium.
+
+### Decision needed (designer)
+
+1. **The lure on RB.** The other trigger is the eraser now, so the lure needed a new home. The bumpers are free
+   in the game's map apart from LB (squad), so RB is proposed. A face button would also work.
+2. **Trigger depth sets the brush width** (`brushMin` 0.35). If you would rather have a fixed brush, set
+   `brushMin` to 1.
+3. Round 1's open questions on taming, the lure brake and the leash tow still stand.
+
 ## Round 1 (2026-10-15)
+
+*Superseded for the command scheme by round 2 (the designer picked the Sling painter). Kept for the comparison.*
 
 ### What it is
 
