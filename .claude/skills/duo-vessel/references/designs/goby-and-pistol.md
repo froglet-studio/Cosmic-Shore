@@ -257,6 +257,25 @@ See `../ANCHORS.md`. In short:
 - **Primer, hot, flares, speed gauge, proximity speed, shared cooldowns, the shared meter, the
   warped render:** none exist. See ANCHORS.md §3.
 
+### 10.1 The Unity clone (2026-10-15)
+
+The lab's arithmetic is in the game, line for line, held to the lab's own numbers:
+
+| Piece | Unity | Proof |
+|---|---|---|
+| The unrolled world: map / unmap, frames, the hinge ground (all three unrolls) | `PistolRibbon` (`Assets/_Scripts/Controller/Vessel/Duo/GobyPistol/`) | `GobyPistolMathTests` (goldens from `Tools/Build/goby_pistol_goldens.cjs`, tests written by `goby_pistol_goldens_to_tests.py`) |
+| The ride, launch, ghost, Snap trigger, the body test | `PistolBodyMath` | same |
+| The vortex ring (capture, toroidal flow, collapse) | `VortexRing` | same |
+| The Pistol AI and its levels, `mulberry32` bit for bit | `PistolAI` | same |
+| 40 numbers | `GobyPistolConfigSO` / `GobyPistolConfig.asset` | `studio_to_unity.py --vessel goby --check` |
+| Playing it: the local vessel is the Goby, the Pistol rides it side on, on real prisms; the arena's swap | `GobyPistolHarness` (dev only), **FrogletTools ▸ Vessels ▸ Goby and Pistol (Play mode)** | `Docs/UNITY_VERIFICATION_CHECKLIST.md` (not yet run in an editor) |
+
+**Still lab-only:** the Goby's straight and closeness boosts (they need the duo vessel's own speed executor; the harness
+cannot change a borrowed hull's speed), flora counting as hot, the crystal restock and the free Snap (crystal pickup is
+the hull's), the world's seeding, the hinge tilt, the Goby AI's weave (in the game the Goby's AI is the vessel's own) and
+`pParallax` (declared in the lab, read nowhere). The duo vessel class itself (one seat, two hulls, architecture A or B,
+networking) is §8's open question and not started.
+
 ## 11. Decisions log
 
 Add a dated line each time an **[open]**, **[read]** or **[proposed]** item is settled, and update
@@ -288,5 +307,7 @@ the line it settled.
 - 2026-10-15, Garrett: **drop the self-explosion; the vortex ring IS the Snap.** The Pistol's row is now launch,
   Snap (vortex ring), dive, ghost (the four, closing the five-for-four question). The crystal's "free explosion on impact"
   becomes a free Snap: a vortex ring fired on the next hit, with no cooldown **[read]**. Then: push it to Unity.
+  Done the same day (§10.1): the lab's maths, numbers and AI are cloned and playable in Play mode through a dev-only
+  harness on the local vessel; the duo vessel class is not.
 - 2026-10-14, round 1 of the lab built (§9.1). Nothing decided yet: Garrett picks the unroll in the lab (its
   Decisions tab writes to the shared log).

@@ -1,0 +1,55 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7bc9e5bc966d4d6a99ca80a7b057d717, type: 3}
+  m_Name: GobyPistolConfig
+  m_EditorClassIdentifier: 
+  unroll: 0
+  gPrimerCharges: 6
+  gPrimerCd: 1.5
+  gPrimerRange: 380
+  gPrimeSplash: 34
+  gPrimeLife: 12
+  gFlareCharges: 2
+  gFlareCd: 10
+  gFlareRange: 420
+  gFlareMax: 10
+  gFlareSpeed: 240
+  pGravity: 140
+  pDiveMul: 3.2
+  pMinSpeed: 35
+  pDrag: 0.04
+  pGoodLand: 28
+  pVision: 45
+  pBodyR: 5
+  pViewWidth: 460
+  pLaunchRange: 240
+  pLaunchSpeed: 280
+  pLaunchCharges: 2
+  pLaunchCd: 4
+  pGhostTime: 2.5
+  pGhostCd: 8
+  pChain: 40
+  pHotRing: 80
+  pHotLife: 10
+  pVortexR: 22
+  pVortexSpeed: 120
+  pVortexLife: 2.6
+  pVortexCapture: 24
+  pVortexSpin: 7
+  pVortexMax: 30
+  pVortexCd: 4
+  pVortexCollapse: 1
+  tSampleGap: 4
+  tBlockGap: 16
+  tHillEvery: 4
+  tHillAmp: 26
+  aiHighDive: 120

@@ -1619,7 +1619,9 @@
     set: (k, v) => { S[k] = v; save(); applyViews(); newRace(); },
     get manualClock() { return manualClock; }, set manualClock(v) { manualClock = !!v; },
     startRace, stopRace, swap: () => { lastSwapAt = -9; swap(); }, tick, reset, score, runBatch, runDuo, unrollTest, duoScorecard,
-    world: () => W, ribbon: { makeRibbon, ribAdd, ribMap, ribUnmap, groundAt }, SHIPPED, SPEC, P, PLATFORM, ide: IDE,
+    world: () => W, ribbon: { makeRibbon, ribAdd, ribMap, ribUnmap, groundAt },
+    core: { mulberry32, makeRibbon, ribAdd, ribMap, ribUnmap, ribFrame, ribFrameAt, groundAt, cpCount, layPath, addBlock, gobyEnds, flyScripted, PATHS, makeWorld, stepWorld, pistolStep, fireVortex, vortexStep, pistolAI, mix, unmix, get GS() { return GS; } },   // the golden source for the Unity port (Tools/Build/goby_pistol_goldens.cjs)
+    SHIPPED, SPEC, P, PLATFORM, ide: IDE,
   };
   window.__gobyStudio = hook; window.__lab = hook;
 })();

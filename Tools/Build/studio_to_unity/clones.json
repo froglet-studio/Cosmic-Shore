@@ -6,5 +6,12 @@
     "decisionsThrough": "2026-10-09T21:35:00.000Z",
     "clonedAt": "2026-10-12",
     "result": "50 mapped parameters match the artifact (studio_to_unity.py --check). Cloned the waves: the light shells in and out, the gravitational wave (lens + prisms), dieS, whSizeX. The shared log held no newer decision (only d16-d17, no settings snapshot)."
+  },
+  "Goby & Pistol": {
+    "artifactVersion": "private prototype https://claude.ai/artifact/6hGNJz2AKFYY5gHvYJa9Up v4 (the lab is not on the shared Vessel Studio artifact yet)",
+    "pageSha": "065950ff",
+    "decisionsThrough": "none (the prototype's decision log is empty)",
+    "clonedAt": "2026-10-15",
+    "result": "40 mapped parameters match the artifact (studio_to_unity.py --check). Cloned the lab's maths line for line (PistolRibbon, PistolBodyMath, VortexRing, PistolAI; GobyPistolMathTests hold them to the page's goldens) and made it playable through the dev-only GobyPistolHarness. 21 keys stay lab-only (--unmapped): the Goby's flight numbers are the Squirrel prefab's own; straight/closeness boosts wait for the duo vessel; seeding, hinge tilt, Goby AI weave, run length, pParallax (unread in the lab), swapCd (= PilotSwap.CooldownSeconds)."
   }
 }

@@ -65,6 +65,38 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Goby & Pistol duo: the lab cloned into Unity, playable through a Play-mode harness (`cece/sharp-tesla-j0kd7z`, 2026-10-15) — NOT EDITOR-VERIFIED
+
+`.claude/skills/duo-vessel/references/designs/goby-and-pistol.md` §9-§10. The Goby & Pistol lab
+(`Docs/Studios/VesselStudio/goby.html`) ported line for line: `PistolRibbon` (the unrolled path and the Pistol's ground),
+`PistolBodyMath` + `VortexRing` (the ride, launch, ghost, the vortex-ring Snap), `PistolAI` (Easy / Medium / Hard), all in
+`Assets/_Scripts/Controller/Vessel/Duo/GobyPistol/`; `GobyPistolConfigSO` + `Assets/_SO_Assets/VesselActions/GobyPistol/GobyPistolConfig.asset`
+(40 numbers written by `studio_to_unity.py --vessel goby`); the dev-only `GobyPistolHarness` (`Assets/_Scripts/Utility/Tools/`).
+No editor and no `unity` CLI in this session, so `/verify-unity` did NOT run. Headless proof: `unity_refcompile` player,
+player-dev and editor configs (0 project errors); `GobyPistolMathTests` (10 tests) run OUTSIDE Unity against a float
+`Vector3`/`Mathf` stand-in, 10/10 green, and a perturbed constant in the port fails 2 of them; `studio_to_unity.py --check`
+0 drift (a hand-edited value reports drift); conditional-compilation, console-logging and using-directive gates.
+
+1. **Test Runner ▸ EditMode ▸ `GobyPistolMathTests`**: all 10 pass in the editor too (they ran only against the stand-in).
+2. **Open a free-flight mode (not an arena match), fly the Squirrel**, then in Play mode **FrogletTools ▸ Vessels ▸ Goby
+   and Pistol (Play mode)**. An inset appears bottom right: a teal ground line with hills, an orange cylinder (the
+   Pistol) riding it end on, a teal cube (the Goby) at its right end. A text box top left says `you fly: GOBY`.
+3. **Fly on.** The Pistol keeps up but never passes the cube; the ground keeps being laid at the cube. Prisms near your
+   path appear in the inset with their own mesh and colours; ones far to the side do not.
+4. **Press D-pad right (or 2).** The side view goes full screen, the box says `you fly: PISTOL`, and the Squirrel keeps
+   flying on its own (its AI). Your WASD no longer steers it.
+5. **As the Pistol:** hold Space (or the mouse, or A) going downhill and let go uphill: it launches off the crests.
+   Drag the mouse across the view and let go: a white dotted arc shows the aim and the Pistol flies it (or F for a
+   preset launch; RT + right stick on a pad). Hitting prisms breaks them with the game's own explosion, in the 3D world
+   too. G ghosts (the cylinder darkens; nothing breaks for 2.5 s). Q or E fires the Snap: a light-blue ring flies out,
+   prisms it passes start circling its core (watch them in the 3D view as well), and after 2.6 s it collapses and they break.
+6. **Press D-pad left (or 1).** Back to flying the Squirrel; the Pistol AI rides, launches into clusters and fires the
+   Snap on its own. **3 / D-pad up** fires the primer at what is ahead (primed prisms get an amber marker in the
+   inset); when the Pistol breaks one, nearby primed prisms go with it and the ring round turns hot (red markers);
+   **4 / D-pad down** sends a flare to each hot prism.
+7. **Look for:** no prism popping in or out in the 3D world; no console errors; a super-shielded prism is never carried or
+   broken; the frame rate holds with the inset on.
+
 ### 🔴 Stoat play fixes: no flash at the poles' birth, a subtle ripple, the path drawn again, Time mode is the catch-sling (`cece/admiring-cannon-lhmv6t`, 2026-10-14) — NOT EDITOR-VERIFIED
 
 `R_VesselActions/STOAT_DIPOLE.md` §1a, §1b, §1c, §3b. Play feedback on the own-vessel pass below: the annihilation
