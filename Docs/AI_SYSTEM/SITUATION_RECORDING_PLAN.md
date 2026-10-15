@@ -123,14 +123,18 @@ their own consent question; no personal data is recorded.
 
 ## 5. Order of work
 
-| Step | What | Done when |
+| Step | What | Status (2026-10-16) |
 |---|---|---|
-| **S1** | Feature spec (§2.3) and labels (§2.4) agreed | Yash signs off the list |
-| **S2** | Artifact: record `flight/3`, compute the features in the page, draw them on a replay (target, phase, skipped skims) | You can scrub a flight and see what the page thinks you were doing, and say if it is right |
-| **S3** | `situation_features.py` over Unity's `flight/2` files (most features can be derived from positions and the course already) | It reproduces the artifact's labels on the same flight (golden test) |
-| **S4** | Unity recorder `flight/3` | A Regatta race writes it; size under 1 MB |
-| **S5** | Learning step 1 (situation curves) and step 2 (decision rules), with the situation library as the test | The learned AI agrees with your good choices more often than the current AI, and is not slower over seeded races |
+| **S1** | Feature spec (§2.3) and labels (§2.4) | **Written**: `Docs/AI_SYSTEM/situation_features.json` (every feature, label and learning rule, with its exact definition). Waiting on your sign-off: say what is missing or wrong |
+| **S2** | Artifact: record `flight/3`, compute the features in the page, replay them | **Built**: the Training AI for Regatta page records every race you fly by hand; its **Flights** tab replays one on the stage (your hull as a white ghost, a line to the target you were going for coloured by phase, green / red / amber dots for skims taken / skipped and mistakes), shows every feature of the moment, lets you **correct** a stretch's phase and target, and compares each leg with the Hard AI flown from the same spot. `Docs/Studios/RegattaAI/situation.js` |
+| **S3** | `situation_features.py` over Unity's flights | **Built**: `Tools/Build/situation_features.py` reads flight/2 and flight/3, line for line the same as `situation.js`; `--self-test` runs both on `Tools/Build/situation_fixtures/` and fails on any difference (with a negative control). First real flight (your Squirrel, 2026-10-16 02:31, 24 rings): commit about 431 u out (the AI's is 420), 22 skims taken and 7 skipped, a skim taken when its detour is 10 u or less (69% of your choices) |
+| **S4** | Unity recorder `flight/3` | **Built, not editor-verified**: `HumanFlightRecorder` adds both triggers, the course and every other pilot's position and rings each sample. Rail hits and skims are still inferred (speed drop, boost rise) |
+| **S5** | Learning step 1 (commit curve) and step 2 (skim rule, boost angle), with the situation library as the test | **Built in the page**: *Learn from my flights* learns from your clean legs only, then puts today's AI and the learned AI in your own moments (skim choices, leg starts) and reports how often each does what you did and how fast; a learned AI that is slower than today's is not offered. *Use as this hull's trained AI* hands it to the Training tab (races, trained vs untrained, Copy JSON). **Not yet in Unity**: the learned commit curve and skim rule need their two knobs ported to `GateRaceController` / the Skim Race pilot (with the AI's owners) |
 | **S6** | Behaviour cloning | Only if S5 leaves a measured gap |
+
+Measured with AI-flown "flights" as stand-ins for yours (the mechanism, not your skill): the learned Manta raced your legs
+in 74.3 s against today's 80.0 s and the learned Sparrow in 168.9 s against 191.7 s; a Squirrel learned from an Easy AI
+was slower (173 s against 107 s) and was correctly not offered.
 
 Everything on `Ys-bleeding-edge` first. The recorder and `learn_from_flights.py` are session 013Gr's work from today
 (Yash's sessions): extend them, do not fork them. The genetic trainer (`Assets/_Scripts/Utility/AITraining/`) belongs to

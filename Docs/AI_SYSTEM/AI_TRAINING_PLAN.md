@@ -50,6 +50,7 @@ everything (section 3, the noise warning).
 | Amoebius headless trainer (`--train` / `replay` / `eval`) | Built, **under evaluation** (`Docs/TOOLING_DECISIONS.md`) | `Port/docs/AI_TRAINING.md` | Not to be grown here |
 | AI simulation scene, Test Range | **Planned only** | `Docs/Studios/VESSEL_TEST_RANGE_PLAN.md` (R1–R6 unbuilt) | — |
 | Recording a player's flight; learning the Regatta Squirrel's numbers from it | **Built 2026-10-15** (L3 steps 1 and 4A, your own flights, editor and dev builds) | `HumanFlightRecorder.cs`, `Tools/Build/learn_from_flights.py`, `Docs/SKIM_RACE_AI.md` §16 | Ghosts, behaviour cloning, players' flights (consent) |
+| Situations: what the pilot faced, did and meant, per moment; learning the commit distance, the skim choice and the boost angle from them | **Built 2026-10-16** (S1-S5 in the page, S3 / S4 in Unity's tools) | `SITUATION_RECORDING_PLAN.md`, `situation_features.json`, `Docs/Studios/RegattaAI/situation.js`, `Tools/Build/situation_features.py`, `HumanFlightRecorder` flight/3 | The learned knobs are not in Unity's steering yet |
 | Neural inference | Package only | `com.unity.ai.inference` 2.6.1 (Sentis) is in `Packages/manifest.json`; no code or model uses it | — |
 | Consent, analytics, Cloud Save | Built | `AnalyticsServiceFacade.cs` (opt-in consent, COPPA age gate), `UI/Privacy/PrivacyConsentOverlay.cs` (text from `PrivacyConsentConfigSO`), `UGSDataService.cs` (Cloud Save 3.4.0, key-value only) | No AI-training consent; no store for flight files |
 

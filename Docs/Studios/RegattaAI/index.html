@@ -64,6 +64,7 @@
   .feed { position: absolute; right: 10px; bottom: 10px; display: grid; gap: 4px; justify-items: end; max-width: 46%; }
   .feed div { font-size: 12px; background: #0b0d16cc; border: 1px solid var(--line); padding: 2px 8px; border-radius: 4px; }
   .camtag { position: absolute; left: 50%; bottom: 10px; transform: translateX(-50%); font-size: 11px; color: var(--muted); background: #0b0d16b3; border: 1px solid var(--line); border-radius: 999px; padding: 4px 9px; white-space: nowrap; }
+  #viewport.replaying .hud .tl, #viewport.replaying .board, #viewport.replaying .bars { visibility: hidden; }   /* a replay: the live race's readouts are not the flight's */
   .holdtag { position: absolute; left: 50%; top: 10px; transform: translateX(-50%); font-size: 11px; color: #04131c; background: #7fd7ff; border-radius: 999px; padding: 4px 9px; white-space: nowrap; }
 
   .overlay { position: absolute; inset: 0; z-index: 4; display: grid; place-items: center; background: #05060cb3; padding: 16px; }   /* above the transport bar: the card has its own Start */
@@ -164,6 +165,7 @@
           </div>
           <div class="feed" id="feed"></div>
           <div class="camtag" id="camTag">Chase camera</div>
+          <div class="holdtag" id="replayTag" hidden style="top:auto;bottom:40px;background:#0b0d16e6;color:var(--fg);border:1px solid var(--line)"></div>
           <div class="holdtag" id="holdTag" hidden>AI HOLDING YOUR HULL · touch any control to fly</div>
         </div>
         <div class="stagebtns"><button class="btn phone-only" id="playBtn" type="button">Back to flying</button><span class="transport" id="transport" role="toolbar" aria-label="Play controls"><button class="btn" id="tpPlay" type="button" aria-pressed="false" title="Play / pause (Enter starts, P pauses and resumes)">▶ Play</button><button class="btn" id="tpStop" type="button" title="Stop (R): end the race, back to the grid">■ Stop</button></span></div>
@@ -294,6 +296,25 @@
         <div class="tblwrap"><table class="tbl" id="trTbl"></table></div>
       </div>
 
+      <div class="panel" id="grp-flights">
+        <h3>Your flights <span class="hbtns"><button class="btn small primary" id="flOpen" type="button">Replay</button> <button class="btn small" id="flClose" type="button" disabled>Close replay</button> <button class="btn small" id="flLearn" type="button">Learn from my flights</button></span></h3>
+        <p class="note">Every race you fly by hand is recorded ten times a second: where you are, your sticks and triggers, and the rings, rails and rivals around you. <b>Replay</b> one to see what the page thinks you were doing at each moment: the target you were going for, the phase (approach, line-up, thread, skim run...), the skims you took and the ones you skipped to keep your speed. Correct a label that is wrong, then <b>Learn</b>: the AI learns when to commit to a ring, when a skim is worth its detour and when to boost, from your clean legs only, and is tested on your own moments (Docs/AI_SYSTEM/SITUATION_RECORDING_PLAN.md).</p>
+        <div class="frow"><span>Flight</span><select class="sel" id="flSel" aria-label="Recorded flight"></select></div>
+        <p class="note" id="flSum"></p>
+        <div class="frow"><span>Time</span><span style="display:flex;gap:8px;align-items:center"><button class="btn small" id="flPlay" type="button" aria-label="Play or pause the replay">&#9654;</button><input type="range" id="flT" min="0" max="0" step="1" style="flex:1" aria-label="Replay time"><output id="flTO"></output></span></div>
+        <div class="read" id="flRead"></div>
+        <div class="frow" title="If the page got this stretch wrong, say what you were doing: it learns from your correction, not its guess."><span>Correct it</span><span style="display:flex;gap:6px;flex-wrap:wrap"><select class="sel" id="flPhase" aria-label="Phase of this stretch" style="width:auto"></select><select class="sel" id="flTarget" aria-label="Target of this stretch" style="width:auto"></select><button class="btn small" id="flFix" type="button">Set for this stretch</button><button class="btn small" id="flUnfix" type="button">Clear corrections</button></span></div>
+        <h4>Legs: you against the Hard AI from the same spot</h4>
+        <div class="tblwrap"><table class="tbl" id="flLegs"></table></div>
+        <h4>Skims taken and skipped</h4>
+        <div class="tblwrap"><table class="tbl" id="flSkims"></table></div>
+        <h4>What the AI learned from your flights</h4>
+        <p class="note" id="flLearnNote">Press Learn from my flights.</p>
+        <div class="tblwrap"><table class="tbl" id="flLearnTbl"></table></div>
+        <div class="btns"><button class="btn small" id="flApply" type="button" disabled title="Make what was learned this hull's trained AI (Training tab: Races use the trained AIs, Race trained vs untrained, Copy JSON)">Use as this hull's trained AI</button><button class="btn small" id="flCopy" type="button" title="The flight with every moment's situation and label, for the Unity side">Copy flight JSON</button><button class="btn small" id="flPaste" type="button" title="Paste a flight_*.json that Unity recorded (HumanFlightRecorder)">Load a Unity flight</button><button class="btn small" id="flDel" type="button">Delete flight</button></div>
+        <textarea id="flPasteBox" hidden rows="5" style="width:100%;font:12px var(--mono);background:var(--panel-2);color:var(--fg);border:1px solid var(--line);border-radius:6px" placeholder="Paste a flight_*.json here, then press Load a Unity flight again"></textarea>
+      </div>
+
       <div class="panel" id="grp-runs">
         <h3>Runs</h3>
         <div class="tblwrap"><table class="tbl"><thead><tr><th>Race</th><th>Winner</th><th>Time</th><th>Team (gates)</th><th>Your hull</th></tr></thead><tbody id="runs"></tbody></table></div>
@@ -323,6 +344,7 @@
 <script src="../VesselStudio/ai_race_panel.js"></script>
 <script src="course.js"></script>
 <script src="fleet.js"></script>
+<script src="situation.js"></script>   <!-- what you faced, did and meant, moment by moment (SITUATION_RECORDING_PLAN.md) -->
 <script>
 (function () {
   'use strict';
@@ -447,6 +469,10 @@
   const S = { course: 1, players: testGrid(), view: 0, cam: 'Chase', speed: 1, thinking: true, autoRestart: false, labels: true, trails: true, route: true, trailSec: 5, endFirst: false, idleHold: true, inspect: 'Card', fixMiss: true, freeMode: 'Orbit', tuneHull: 'rhino', tune: {}, trained: {}, useTrained: true, demos: {}, vsHull: null,
     train: { hull: 'rhino', courses: [1, 2], pop: 12, gens: 8, imit: 0 }, custom: { manta: -5, dolphin: 0, serpent: 10, sparrow: 10, scarab: 10 } };
   const LS = 'cs.regatta-ai.v1';
+  // Your recorded flights (the Flights tab) and the replay state. Declared up here: the first newRace() already reads them.
+  const FL = LS + '.flights';
+  let flights = []; try { flights = JSON.parse(localStorage.getItem(FL) || '[]'); if (!Array.isArray(flights)) flights = []; } catch (e) { flights = []; }
+  const RP = { on: false, fi: -1, A: null, i: 0, playing: false, acc: 0, pilot: null, objs: [], ghost: null, line: null, learned: null, learnedHull: null };
   try { const s = JSON.parse(localStorage.getItem(LS) || 'null'); if (s) Object.assign(S, s); } catch (e) { /* storage blocked */ }
   for (const k in TUNE_SPEC) S.tune[k] = Object.assign(tuneDefaults(k), S.tune[k] || {});   // a saved tuning keeps any new knob's default
   const T = (k) => S.tune[k];
@@ -524,6 +550,9 @@
   // A pilot flies the shared steering and its hull's drive, or its OWN trained copy of them (the Training tab): P.steer /
   // P.drive are set when a race seats a trained AI or the trainer races a candidate.
   const SP = (P) => P.steer || T('steer');
+  // Learned from your flights (the Flights tab): the commit distance as a curve over the leg (cA + cB x leg). Unset, the
+  // shipped constant (aiCommitDistance).
+  const commitOf = (P, g) => SP(P).cA != null ? clamp(SP(P).cA + (SP(P).cB || 0) * g.leg, 150, 800) : SP(P).commit;
   const DP = (P, k) => (P.drive && k === P.h.key ? P.drive : T(k));
 
   // ---- GateRaceHandicap: the ring noticed late, the ring misjudged (belief only) ----
@@ -576,6 +605,13 @@
     if (unreachable || orbiting) { P.ext = { since: W.t }; o.sweep = 0; o.start = range; P.breaks = (P.breaks || 0) + 1; }
     return aim;
   }
+  // Learned from your flights: a skim is taken only when its detour and the time left to the mouth say it is worth it
+  // (skipD / skipT on the Squirrel's drive). Unset, the Squirrel skims its rail whenever it can, as before.
+  function skimWorth(P, g, q) {
+    const dr = DP(P, 'squirrel'); if (P.h.verb !== 'skim' || dr.skipD == null) return true;
+    const d0 = g.p.distanceTo(P.pos), det = P.pos.distanceTo(q) + q.distanceTo(g.p) - d0;
+    return det <= dr.skipD && d0 / Math.max(1, P.speed) >= dr.skipT;
+  }
   function aiInput(W, P) {
     const h = P.h, fwd = new V(0, 0, -1).applyQuaternion(P.quat), up = new V(0, 1, 0).applyQuaternion(P.quat), right = new V(1, 0, 0).applyQuaternion(P.quat);
     if (P.finishT != null) { P.aiState = 'finished'; P.aim = null; return { pad: true, L: { x: -1, y: 0 }, R: { x: 1, y: 0 }, lt: 0, rt: 0 }; }
@@ -599,7 +635,7 @@
     P.plan = null;
     if (!ringAt) { aim = P.pos.clone().addScaledVector(fwd, 200); why = 'not noticed'; }
     else {
-      const commit = W.fixMiss ? Math.min(SP(P).commit, P.lead + 0.5 * P.speed / Math.max(1e-3, turnRate(P))) : SP(P).commit;   // lab fix: never commit before the approach point
+      const commit = W.fixMiss ? Math.min(commitOf(P, g), P.lead + 0.5 * P.speed / Math.max(1e-3, turnRate(P))) : commitOf(P, g);   // lab fix: never commit before the approach point
       const toRing = ringAt.clone().sub(P.pos), dist = toRing.length(), inDir = g.a.clone().multiplyScalar(-P.side);
       // Easier route (lab): already coming at the mouth within the set angle of the axis? Fly straight through.
       const linedUp = SP(P).direct > 0 && dist > 1e-3 && toRing.dot(inDir) / dist >= Math.cos(SP(P).direct * Math.PI / 180);
@@ -621,7 +657,7 @@
       const lp = C.lanes[P.lane], nn = nearestOnLane(C, P.lane, P.pos, P.ownHint); P.ownHint = nn.k;
       const ahead = (nn.k + (h.verb === 'skim' ? Math.round(clamp(P.speed * DP(P, 'squirrel').look, 30, 90) / 8) : Math.round(DP(P, 'urchin').ahead))) % lp.length;
       const toGate = g.p.clone().sub(P.pos), onLane = lp[ahead].clone().sub(P.pos);
-      if (nn.d < 260 && onLane.dot(toGate) > 0) {
+      if (nn.d < 260 && onLane.dot(toGate) > 0 && skimWorth(P, g, lp[ahead])) {
         aim = lp[ahead].clone();
         if (h.verb === 'skim') { const t = C.tans[P.lane][ahead], off = new V().crossVectors(t, up); if (off.lengthSq() < 1e-4) off.copy(right); aim.addScaledVector(off.normalize(), DP(P, 'squirrel').offset); why = 'skimming its rail'; }
         else why = 'heading for its rail';
@@ -668,7 +704,7 @@
     else { XSum = inp.kYaw; YSum = -inp.kPitch; YDiff = inp.kRoll; XDiff = inp.kThrottle; }
     XDiff = clamp(Math.max(XDiff, inp.floor || 0), 0, 1); P.throttle = XDiff;
     const lt = clamp(inp.lt || 0, 0, 1), rt = clamp(inp.rt || 0, 0, 1), ltPress = lt > 0.5 && P.ltWas <= 0.5, rtPress = rt > 0.5 && P.rtWas <= 0.5;
-    P.ltWas = lt; P.rtWas = rt;
+    P.ltWas = lt; P.rtWas = rt; P.inp = [XSum, YSum, XDiff, YDiff, lt, rt];
     if (P.slowT > 0) P.slowT = Math.max(0, P.slowT - dt);
     const thr = XDiff * (P.slowT > 0 ? 0.5 : 1);   // VesselChangeSpeedByPrism: throttle x0.5 for 1 s
     // ---- riding a rail (the Urchin): the cable drives; a slip or a reverse is the pilot's ----
@@ -760,7 +796,45 @@
     if (W.rec && (W.recT = (W.recT || 0) + dt) >= 0.1) {   // a human's flight, every 0.1 s, for "learn from my flight"
       W.recT = 0; for (const P of W.pilots) if (!P.spec.ai && !P.idleAI && P.finishT == null) (P.demo || (P.demo = [])).push(+P.pos.x.toFixed(1), +P.pos.y.toFixed(1), +P.pos.z.toFixed(1));
     }
+    if (W.fr) recordFlight(W, W.fr, dt);
     if (!W.over && (W.pilots.every((P) => P.finishT != null) || W.t > LIMIT || (W.endFirst && W.firstFinish != null))) W.over = true;
+  }
+  // ---- the flight recorder (Docs/AI_SYSTEM/SITUATION_RECORDING_PLAN.md): cosmic-shore.flight/3, ten times a second, the
+  // same columns as Unity's HumanFlightRecorder plus triggers, skims, rail hits and who was flying; rivals aligned ----
+  const FLIGHT_COLS = ['t', 'x', 'y', 'z', 'fx', 'fy', 'fz', 'ux', 'uy', 'uz', 'speed', 'boost', 'xSum', 'ySum', 'xDiff', 'yDiff', 'throttle', 'rings', 'lt', 'rt', 'skims', 'rams', 'held'];
+  function beginFlight(W, P, forceHand) {
+    if (!P) return null; const h = P.h;
+    return { schema: 'cosmic-shore.flight/3', source: 'artifact', mode: 'Regatta', hull: h.name, hullKey: h.key, verb: h.verb, domain: P.domain.key, intensity: W.course,
+      date: new Date().toISOString().slice(0, 19).replace('T', ' '), sampleHz: 10, turn: { p: h.p, y: h.y, rts: h.rts }, skimReach: h.verb === 'skim' ? h.skimR : 0,
+      raceTarget: W.raceLen, finished: false, rings: 0, raceSeconds: 0, columns: FLIGHT_COLS, samples: [], rivalHulls: W.pilots.filter((Q) => Q !== P).map((Q) => Q.h.key), rivals: [],
+      overrides: [], _pi: P.i, _acc: 0.1, _hand: !!forceHand };
+  }
+  const flightBoost = (P) => P.h.verb === 'skim' ? P.boost : P.h.verb === 'charge' ? 1 + P.charge : 1;
+  function recordFlight(W, fr, dt) {
+    fr._acc += dt; if (fr._acc < 0.1 - 1e-6) return; fr._acc = 0;
+    const P = W.pilots[fr._pi]; if (!P || P.finishT != null) return;
+    const f = new V(0, 0, -1).applyQuaternion(P.quat), u = new V(0, 1, 0).applyQuaternion(P.quat), q = P.inp || [0, 0, 1, 0, 0, 0];
+    const r1 = (x) => Math.round(x * 100) / 100, r3 = (x) => Math.round(x * 1000) / 1000, held = !fr._hand && (P.spec.ai || P.idleAI) ? 1 : 0;
+    fr.samples.push([r1(W.t), r1(P.pos.x), r1(P.pos.y), r1(P.pos.z), r3(f.x), r3(f.y), r3(f.z), r3(u.x), r3(u.y), r3(u.z), r1(P.speed), r3(flightBoost(P)),
+      r3(q[0]), r3(q[1]), r3(q[2]), r3(q[3]), r3(P.throttle), P.gates, r3(q[4]), r3(q[5]), P.skims, P.rams, held]);
+    const rv = []; for (const Q of W.pilots) if (Q !== P) rv.push(r1(Q.pos.x), r1(Q.pos.y), r1(Q.pos.z), Q.gates); fr.rivals.push(rv);
+  }
+  function closeFlight(W, fr) {
+    const P = W.pilots[fr._pi]; fr.finished = P.finishT != null; fr.rings = P.gates; fr.raceSeconds = fr.samples.length ? fr.samples[fr.samples.length - 1][0] : 0;
+    delete fr._pi; delete fr._acc; delete fr._hand; return fr;
+  }
+  // ---- the AI from the same spot: a Hard AI (current, or with a learned tune) placed where a flight was, flown on ----
+  function aiFromSample(N, i, tune, untilRing, seconds) {
+    const key = HULL[N.hullKey] ? N.hullKey : 'squirrel';
+    const Wx = makeWorld(N.intensity, [{ vessel: key, domain: N.domain || 'jade', style: 'Card', ai: 'Hard', tune: tune || undefined, tuneMode: tune ? undefined : 'default' }], 7);
+    Wx.watch = -1; Wx.fixMiss = S.fixMiss;
+    const P = Wx.pilots[0], f = new V(...N.f[i]), u = new V(...N.u[i]), r = new V().crossVectors(f, u).normalize(); u.crossVectors(r, f).normalize();
+    P.pos.set(...N.p[i]); P.prev.copy(P.pos); P.quat.setFromRotationMatrix(new THREE.Matrix4().makeBasis(r, u, f.clone().negate())); P.course.copy(f);
+    P.speed = N.spd[i]; P.gates = N.rings[i]; P.locked = -1;
+    if (P.h.verb === 'skim') P.boost = Math.max(1, N.boost[i]); else if (P.h.verb === 'charge') P.charge = clamp(N.boost[i] - 1, 0, 1);
+    const dt = 1 / 30, g0 = P.gates, sk0 = P.skims; let t = 0;
+    while (t < seconds && !(untilRing && P.gates > g0) && P.finishT == null) { stepWorld(Wx, dt, [aiInput(Wx, P)]); t += dt; }
+    return { time: untilRing && P.gates > g0 ? t : null, skimmed: P.skims > sk0 };
   }
   const standings = (W) => W.pilots.slice().sort((a, b) => (a.finishT ?? 1e9) - (b.finishT ?? 1e9) || b.gates - a.gates);
   function pilotResult(P) {
@@ -873,7 +947,7 @@
   // its place in the view's frame of motion. Chase / Follow / Orbit keep the pan as an offset re-applied each frame (it
   // resets on a camera or player change, or a double-click on the stage); Fly moves the camera itself.
   const pan = { x: 0, y: 0, applied: new V(), cam: null, view: -1 };
-  const viewed = () => W.pilots[Math.min(S.view, W.pilots.length - 1)] || W.pilots[0];
+  const viewed = () => RP.on && RP.pilot ? RP.pilot : W.pilots[Math.min(S.view, W.pilots.length - 1)] || W.pilots[0];
   function placeCamera(W, dt, snap) {
     const P = viewed(); let tag; chased = -1;
     cam.position.sub(pan.applied); pan.applied.set(0, 0, 0);   // back to the unpanned camera before this frame's placement
@@ -1011,7 +1085,7 @@
   const specs = () => S.players.map((p, i) => ({ vessel: p.vessel, domain: p.domain, style: p.style, ai: p.ai ? p.level : null,
     tuneMode: S.vsHull && p.vessel === S.vsHull && p.ai ? (i === 0 ? 'trained' : 'default') : undefined }));
   function newRace() {
-    keepDemo();
+    keepDemo(); keepFlight();
     W = makeWorld(S.course, specs(), seedN++); W.endFirst = S.endFirst; W.fixMiss = S.fixMiss; W.rec = true;
     mountWorld(W); drawWorld(W, 0, 0); placeCamera(W, 0, true);
     race = 'ready'; paused = false; feed.length = 0; renderFeed();
@@ -1020,7 +1094,7 @@
     $('courseInfo').textContent = 'I' + S.course + ' · spine ' + Math.round(W.C.spine) + ' u · mouth ' + g[0].r + ' u · ' + W.pilots.length + ' hulls';
     $('leadTxt').textContent = String(T('steer').lead);
   }
-  function startRace() { if (race === 'finished') newRace(); race = 'running'; paused = false; $('overlay').hidden = true; canvas.focus({ preventScroll: true }); }
+  function startRace() { if (RP.on) closeReplay(); if (race === 'finished') newRace(); if (!W.fr) W.fr = beginFlight(W, youPilot()); race = 'running'; paused = false; $('overlay').hidden = true; canvas.focus({ preventScroll: true }); }
   function stopRace() { if (race === 'ready') return; newRace(); }   // Stop ends the race and holds on the grid until Play (D18)
   function togglePause() { if (race !== 'running') return; paused = !paused; say(paused ? 'Paused' : 'Resumed'); }
   function teamGates(W) { const t = {}; for (const P of W.pilots) t[P.domain.name] = (t[P.domain.name] || 0) + P.gates; return Object.entries(t).sort((a, b) => b[1] - a[1]); }
@@ -1032,7 +1106,7 @@
     P.demo = null; save(); say('Your ' + P.h.name + ' flight on I' + W.course + ' is saved: the trainer can learn from it'); renderTrain();
   }
   function finishRace() {
-    keepDemo();
+    keepDemo(); keepFlight();
     race = 'finished';
     const order = standings(W), win = order[0], me = youPilot() || W.pilots[0], teams = teamGates(W);
     runs.unshift({ course: S.course, winner: win.h.name + (win.tag || '') + ' · ' + win.domain.name, time: win.finishT, team: teams[0][0] + ' ' + teams[0][1], you: me.h.name + ' #' + (order.indexOf(me) + 1) });
@@ -1312,6 +1386,179 @@
   renderTrain();
 
   // ---- HUD ----
+
+  // ================= Flights: record, replay, correct, learn (Docs/AI_SYSTEM/SITUATION_RECORDING_PLAN.md) =================
+  const PHASE_COLOR = { cruise: '#9aa3c7', approach: '#4be38f', 'line-up': '#ffc93c', thread: '#35e0ff', exit: '#7fa8ff', 'skim run': '#b48bff', 'boost straight': '#ff8ad8', recovery: '#ff5c6c' };
+  const TARGETS = ['mouth', 'approach', 'through', 'next ring', 'skim', 'rival'];
+  function saveFlights() {
+    for (let k = 0; k < 4; k++) { try { localStorage.setItem(FL, JSON.stringify(flights)); return; } catch (e) { if (flights.length <= 1) return; flights.pop(); } }
+  }
+  function keepFlight() {
+    const fr = W && W.fr; if (!fr) return; W.fr = null; closeFlight(W, fr);
+    if (fr.samples.filter((r) => !r[22]).length < 50) return;   // at least five seconds flown by hand
+    fr.id = Date.now(); flights.unshift(fr); flights.length = Math.min(flights.length, 6); saveFlights(); renderFlights();
+    say('Your ' + fr.hull + ' flight is recorded: Flights tab');
+  }
+  const flightCourse = (fl) => RegattaSituation.courseFrom(COURSE, +fl.intensity || 1);
+  const analyzeFlightAt = (k) => flights[k] ? RegattaSituation.analyze(flights[k], flightCourse(flights[k])) : null;
+  const flLabel = (fl) => (fl.source === 'unity' ? 'Unity · ' : '') + fl.hull + ' · I' + fl.intensity + ' · ' + (fl.date || '') + ' · ' + (fl.finished ? fl.raceSeconds.toFixed(1) + ' s' : fl.rings + ' rings');
+  function renderFlights() {
+    const sel = $('flSel'), cur = Math.max(0, Math.min(flights.length - 1, +sel.value || 0)); sel.textContent = '';
+    flights.forEach((fl, k) => { const o = elx('option', null, flLabel(fl)); o.value = k; sel.appendChild(o); });
+    if (!flights.length) { const o = elx('option', null, 'No flight yet: fly a race yourself (Is AI off)'); o.value = -1; sel.appendChild(o); }
+    sel.value = flights.length ? cur : -1;
+    ['flOpen', 'flLearn', 'flCopy', 'flDel'].forEach((id) => { $(id).disabled = !flights.length; });
+    $('flSum').textContent = flights.length ? flights.length + ' flight(s) kept in this browser (the newest six).' : '';
+  }
+  function legAI(A, tune) {   // each leg: a Hard AI from where you started it, until it threads the same ring
+    return A.legs.map((L) => { const r = aiFromSample(A.norm, L.i0, tune, true, 30); return r.time; });
+  }
+  function openReplay(k) {
+    const fl = flights[k]; if (!fl) return;
+    closeReplay(true);
+    if (race === 'running') stopRace();
+    if (S.course !== (+fl.intensity || 1)) { S.course = +fl.intensity || 1; racePanel.set('course', S.course, true); save(); newRace(); }
+    const A = RegattaSituation.analyze(fl, flightCourse(fl)); A.legAI = legAI(A);
+    Object.assign(RP, { on: true, fi: k, A, i: 0, playing: false, acc: 0 });
+    for (const o of [...view.hulls, ...view.labels, ...view.lines, ...view.trails, ...view.plans]) o.visible = false;
+    const h = HULL[A.norm.hullKey] || HULLS[0];
+    RP.ghost = makeHull(h, 0xffffff); scene.add(RP.ghost); RP.objs.push(RP.ghost);
+    RP.line = new THREE.Line(new THREE.BufferGeometry().setFromPoints([new V(), new V()]), new THREE.LineBasicMaterial({ color: 0xffffff })); RP.line.frustumCulled = false; scene.add(RP.line); RP.objs.push(RP.line);
+    const path = new THREE.Line(new THREE.BufferGeometry().setFromPoints(A.norm.p.map((q) => new V(...q))), new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.35 })); path.frustumCulled = false; scene.add(path); RP.objs.push(path);
+    const dotAt = (q, color, r) => { const m = new THREE.Mesh(new THREE.SphereGeometry(r || 3, 10, 8), new THREE.MeshBasicMaterial({ color })); m.position.set(...q); scene.add(m); RP.objs.push(m); };
+    A.skims.forEach((c) => dotAt(A.norm.p[c.i], c.taken ? 0x4be38f : 0xff5c6c, 1.6));   // green: a skim you took; red: one you skipped
+    A.mistakes.forEach((m) => dotAt(A.norm.p[m.i], 0xffb454, 2.2));                     // amber: a missed mouth or a rail hit
+    RP.pilot = { i: -1, h, domain: DOMAIN_BY[A.norm.domain] || DOMAINS[0], spec: { ai: null }, idleAI: false, pos: new V(), quat: new Q(), course: new V(0, 0, -1), speed: 0, gates: 0, finishT: null, aiState: '', tag: ' (replay)' };
+    $('viewport').classList.add('replaying');
+    $('flT').max = A.norm.n - 1; $('flT').value = 0; $('overlay').hidden = true; $('flClose').disabled = false; $('replayTag').hidden = false;
+    renderPhaseControls(); renderFlightTables(); setReplay(0);
+    $('flSum').textContent = summaryText(A);
+  }
+  function closeReplay(quiet) {
+    for (const o of RP.objs) scene.remove(o); RP.objs = []; RP.ghost = null; RP.line = null;
+    const was = RP.on; RP.on = false; RP.playing = false; $('viewport').classList.remove('replaying'); $('flClose').disabled = true; $('replayTag').hidden = true; $('flPlay').innerHTML = '&#9654;';
+    if (was && !quiet) newRace();
+  }
+  function summaryText(A) {
+    const m = A.summary, sh = Object.entries(m.phaseShare).filter(([, v]) => v > 0).sort((a, b) => b[1] - a[1]).map(([k, v]) => k + ' ' + Math.round(v * 100) + '%').join(', ');
+    return m.seconds + ' s flown, ' + m.rings + ' rings, ' + m.missed + ' missed mouths, ' + m.rams + ' rail hits, ' + m.skimsTaken + ' skims taken and ' + m.skimsSkipped + ' skipped, ' + m.boostPresses + ' boost presses. Time spent: ' + sh + '.';
+  }
+  function setReplay(i) {
+    const A = RP.A; if (!A) return; i = clamp(Math.round(i), 0, A.norm.n - 1); RP.i = i;
+    const N = A.norm, x = A.feats[i], L = A.labels[i], f = new V(...N.f[i]), u = new V(...N.u[i]), r = new V().crossVectors(f, u).normalize(); u.crossVectors(r, f).normalize();
+    const P = RP.pilot; P.pos.set(...N.p[i]); P.quat.setFromRotationMatrix(new THREE.Matrix4().makeBasis(r, u, f.clone().negate())); P.course.copy(f); P.speed = N.spd[i]; P.gates = N.rings[i]; P.aiState = L.phase;
+    RP.ghost.position.copy(P.pos); RP.ghost.quaternion.copy(P.quat);
+    const a = RP.line.geometry.attributes.position; a.setXYZ(0, ...N.p[i]); a.setXYZ(1, ...L.targetAt); a.needsUpdate = true; RP.line.material.color.set(PHASE_COLOR[L.phase] || '#ffffff');
+    W.C.gates.forEach((g, k) => { const ring = gateObjs[k * 2]; if (!ring) return; const isNext = k === x.ring; ring.material.color.set(isNext ? 0xffc93c : 0x9fb4ff); ring.material.opacity = isNext ? 0.95 : 0.45; });
+    $('flT').value = i; $('flTO').textContent = N.t[i].toFixed(1) + ' s';
+    $('replayTag').textContent = 'REPLAY · ' + L.phase.toUpperCase() + ' · going for the ' + L.target + ' (' + Math.round(L.conf * 100) + '% sure)' + (L.corrected ? ' · corrected by you' : '');
+    $('replayTag').style.borderColor = PHASE_COLOR[L.phase] || '';
+    const yn = (b) => b ? 'yes' : 'no', rows = [
+      ['phase', L.phase + (L.corrected ? ' (yours)' : '')], ['target', L.target + ' · ' + Math.round(L.conf * 100) + '% sure'],
+      ['ring', (x.ring + 1) + ' · lap ' + x.lap], ['distance to it', Math.round(x.dist) + ' u · ' + x.timeToMouth.toFixed(1) + ' s'],
+      ['bearing / elevation', Math.round(x.bearing) + '° / ' + Math.round(x.elevation) + '°'], ['nose off the ring', Math.round(x.headingErr) + '°'],
+      ['through the mouth if straight', yn(x.threadsIfStraight) + (x.mouthOffset >= 0 ? ' (' + Math.round(x.mouthOffset) + ' u from centre, mouth ' + x.mouthRadius + ')' : '')],
+      ['turn needed / tightest', (x.rNeed > 9e5 ? 'none' : Math.round(x.rNeed) + ' u') + ' / ' + Math.round(x.rMin) + ' u' + (x.canTurn ? '' : ' (too tight)')],
+      ['turning', Math.round(x.turnRate) + '°/s'], ['speed · throttle', Math.round(x.speed) + ' u/s · ' + Math.round(x.throttle * 100) + '%'],
+      ['gap to a rail', x.gap > 9e5 ? 'none near' : x.gap.toFixed(1) + ' u (' + (x.gapOwnRail ? 'yours' : 'rival') + ')'], ['rails ahead', x.aheadPrisms + (x.aheadPrisms ? ' · nearest ' + Math.round(x.aheadGap) + ' u' : '')],
+      ['cheapest skim', x.skimPoint ? '+' + x.skimDetour.toFixed(1) + ' u detour, ' + x.skimTime.toFixed(1) + ' s away' : 'none on the way'],
+      ['boost', (N.verb === 'skim' ? '×' + x.boost.toFixed(2) : x.lt > 0.5 ? 'held' : 'off')], ['place', x.place != null ? String(x.place) : '—'],
+    ];
+    const box = $('flRead'); box.textContent = ''; rows.forEach(([k, v]) => { box.appendChild(elx('span', null, k)); box.appendChild(elx('b', null, v)); });
+    $('flPhase').value = L.phase; $('flTarget').value = L.target;
+  }
+  function stepReplay(dt) {
+    if (!RP.playing || !RP.A) return;
+    RP.acc += dt * RP.A.norm.hz * S.speed; const k = Math.floor(RP.acc); if (k < 1) return; RP.acc -= k;
+    if (RP.i + k >= RP.A.norm.n - 1) { RP.playing = false; $('flPlay').innerHTML = '&#9654;'; }
+    setReplay(RP.i + k);
+  }
+  function renderPhaseControls() {
+    const ph = $('flPhase'), tg = $('flTarget'); ph.textContent = ''; tg.textContent = '';
+    RegattaSituation.PHASES.forEach((p) => { const o = elx('option', null, p); o.value = p; ph.appendChild(o); });
+    TARGETS.forEach((p) => { const o = elx('option', null, 'going for the ' + p); o.value = p; tg.appendChild(o); });
+  }
+  function renderFlightTables() {
+    const A = RP.A, mk = (tbl, head, rows) => { tbl.textContent = ''; const tr = elx('tr'); head.forEach((h) => tr.appendChild(elx('th', null, h))); const th = elx('thead'); th.appendChild(tr); tbl.appendChild(th);
+      const tb = elx('tbody'); rows.forEach((r) => { const row = elx('tr'); r.forEach((c) => row.appendChild(elx('td', null, c))); tb.appendChild(row); }); tbl.appendChild(tb); };
+    mk($('flLegs'), ['Ring', 'Leg', 'Turn into it', 'You', 'Hard AI from there', 'Faster', 'You committed at', 'Clean'], A.legs.map((L, k) => {
+      const ai = A.legAI && A.legAI[k];
+      return [String(L.ring + 1), L.legLen + ' u', L.legTurn + '°', L.time.toFixed(1) + ' s', ai != null ? ai.toFixed(1) + ' s' : 'did not thread', ai == null ? 'you' : L.time <= ai ? 'you by ' + (ai - L.time).toFixed(1) + ' s' : 'AI by ' + (L.time - ai).toFixed(1) + ' s', L.commitDist + ' u', L.clean ? 'yes' : L.missed ? 'missed a mouth' : L.rams ? L.rams + ' rail hit(s)' : 'AI held it'];
+    }));
+    mk($('flSkims'), ['At', 'You', 'Detour', 'To the mouth', 'Nose off', 'Speed'], A.skims.map((c) => [c.t.toFixed(1) + ' s', c.taken ? 'took it' : 'skipped it', '+' + c.detour + ' u', c.timeToMouth + ' s', c.headingErr + '°', c.speed + ' u/s']));
+  }
+  // ---- learning from every flight of one hull, then the situation library test ----
+  function learnedTune(hull, Lr) {
+    const tr = S.trained[hull] || {}, steer = Object.assign({}, T('steer'), tr.steer || {}), drive = Object.assign({}, T(hull), tr.drive || {}), v = HULL[hull].verb;
+    if (Lr.commit) { steer.cA = Lr.commit.a; steer.cB = Lr.commit.b; }
+    if (Lr.skim && v === 'skim') { drive.skipD = Lr.skim.maxDetour; drive.skipT = Lr.skim.minTimeToMouth; }
+    if (Lr.boostWithin) { const d = Lr.boostWithin.deg;
+      if (v === 'hold' || v === 'pellet' || v === 'scarab') drive.err = d; else if (v === 'soar') { drive.full = Math.max(2, Math.round(d / 2)); drive.half = d; } else if (v === 'charge') drive.aim = d; else if (v === 'ramp') drive.maxErr = d; }
+    return { steer, drive };
+  }
+  function runLearn(hullArg) {
+    const hull = hullArg || (flights[+$('flSel').value] && (flights[+$('flSel').value].hullKey || flights[+$('flSel').value].hull.toLowerCase()));
+    const mine = flights.filter((fl) => (fl.hullKey || String(fl.hull).toLowerCase()) === hull);
+    if (!hull || !HULL[hull] || !mine.length) { $('flLearnNote').textContent = 'No flight of this hull to learn from.'; return null; }
+    const As = mine.map((fl) => { const A = RegattaSituation.analyze(fl, flightCourse(fl)); A.legAI = legAI(A); return A; });
+    // a GOOD leg: clean (no missed mouth, no rail hit, flown by you) and no slower than the Hard AI from the same spot + 10%
+    const Lr = RegattaSituation.learn(As, { goodLeg: (g, A) => { const k = A.legs.indexOf(g), ai = A.legAI[k]; return ai == null || g.time <= ai * 1.1; } });
+    const tune = learnedTune(hull, Lr);
+    // the situation library: put each AI in your own moments and count how often it does what you did
+    let sN = 0, sCur = 0, sNew = 0, legCur = 0, legNew = 0, legYou = 0, legsN = 0;
+    As.forEach((A) => {
+      A.skims.forEach((c) => { sN++; if (aiFromSample(A.norm, c.i, null, false, 2).skimmed === c.taken) sCur++; if (aiFromSample(A.norm, c.i, tune, false, 2).skimmed === c.taken) sNew++; });
+      A.legs.forEach((L, k) => { const a = A.legAI[k], b = aiFromSample(A.norm, L.i0, tune, true, 30).time; if (a == null || b == null) return; legsN++; legCur += a; legNew += b; legYou += L.time; });
+    });
+    RP.learned = { Lr, tune, sN, sCur, sNew, legsN, legCur, legNew, legYou }; RP.learnedHull = hull;
+    const rows = [];
+    rows.push(['When to commit to a ring', Lr.commit ? Lr.commit.a + ' u + ' + Lr.commit.b + ' × the leg (median ' + Lr.commit.median + ' u, ' + Lr.commit.n + ' clean legs)' : 'needs 3 clean legs', 'Commit: ' + T('steer').commit + ' u on every leg']);
+    if (HULL[hull].verb === 'skim') rows.push(['When a skim is worth it', Lr.skim ? 'detour ≤ ' + Lr.skim.maxDetour + ' u and ≥ ' + Lr.skim.minTimeToMouth + ' s to the mouth (agrees with ' + Math.round(Lr.skim.agreement * 100) + '% of your ' + Lr.skim.n + ' choices)' : 'needs skims both taken and skipped', 'skims its rail whenever it can']);
+    rows.push(['When to boost', Lr.boostWithin ? 'nose within ' + Lr.boostWithin.deg + '° of the target (' + Lr.boostWithin.n + ' moments)' : 'needs boost moments', HULL[hull].verb === 'skim' ? 'the skim boost is not a button' : 'the drive slider in AI Config']);
+    if (sN) rows.push(['Your skim choices, AI in the same spot', 'learned AI agrees ' + sNew + ' of ' + sN, 'current AI agrees ' + sCur + ' of ' + sN]);
+    if (legsN) rows.push(['Your legs, AI from the same spot', 'learned ' + legNew.toFixed(1) + ' s', 'current ' + legCur.toFixed(1) + ' s · you ' + legYou.toFixed(1) + ' s']);
+    const tbl = $('flLearnTbl'); tbl.textContent = ''; const hd = elx('tr'); ['', 'Learned from you', 'The AI today'].forEach((h) => hd.appendChild(elx('th', null, h))); const th = elx('thead'); th.appendChild(hd); tbl.appendChild(th);
+    const tb = elx('tbody'); rows.forEach((r) => { const tr = elx('tr'); r.forEach((c) => tr.appendChild(elx('td', null, c))); tb.appendChild(tr); }); tbl.appendChild(tb);
+    $('flLearnNote').textContent = HULL[hull].name + ', from ' + mine.length + ' flight(s) of yours. Only clean legs no slower than the Hard AI from the same spot count; mistakes are left out.';
+    // nothing deploys itself (AI_TRAINING_PLAN.md L4): a learned AI that is slower than today's on your own legs is not offered
+    const slower = legsN && legNew > legCur * 1.02;
+    $('flApply').disabled = !!slower;
+    if (slower) $('flLearnNote').textContent += ' The learned AI is SLOWER than today\'s on your legs (' + legNew.toFixed(1) + ' s against ' + legCur.toFixed(1) + ' s), so it is not offered: fly more clean races, or correct the labels that are wrong.';
+    return RP.learned;
+  }
+
+  $('flSel').addEventListener('change', () => { if (RP.on) openReplay(+$('flSel').value); });
+  $('flOpen').addEventListener('click', () => openReplay(+$('flSel').value));
+  $('flClose').addEventListener('click', () => closeReplay());
+  $('flPlay').addEventListener('click', () => { if (!RP.on) return; RP.playing = !RP.playing; $('flPlay').innerHTML = RP.playing ? '&#10074;&#10074;' : '&#9654;'; });
+  $('flT').addEventListener('input', () => { if (RP.on) { RP.playing = false; $('flPlay').innerHTML = '&#9654;'; setReplay(+$('flT').value); } });
+  $('flFix').addEventListener('click', () => {
+    if (!RP.on) return; const seg = RP.A.segments.find((g) => RP.i >= g.i0 && RP.i <= g.i1); if (!seg) return;
+    const fl = flights[RP.fi]; (fl.overrides || (fl.overrides = [])).push({ t0: seg.t0, t1: seg.t1, phase: $('flPhase').value, target: $('flTarget').value }); saveFlights();
+    const i = RP.i; openReplay(RP.fi); setReplay(i); say('Corrected: ' + seg.t0 + '-' + seg.t1 + ' s is ' + $('flPhase').value);
+  });
+  $('flUnfix').addEventListener('click', () => { if (!RP.on) return; flights[RP.fi].overrides = []; saveFlights(); const i = RP.i; openReplay(RP.fi); setReplay(i); });
+  $('flLearn').addEventListener('click', () => { $('flLearnNote').textContent = 'Learning...'; setTimeout(() => runLearn(), 30); });
+  $('flApply').addEventListener('click', () => {
+    const L = RP.learned, hull = RP.learnedHull; if (!L) return;
+    S.trained[hull] = Object.assign({}, S.trained[hull] || {}, L.tune, { from: 'your flights', at: Date.now() }); save(); renderTrain();
+    $('flApply').disabled = true; say(HULL[hull].name + ': the AI learned from your flights is its trained AI (Training tab)');
+  });
+  $('flCopy').addEventListener('click', () => {
+    const k = +$('flSel').value, fl = flights[k]; if (!fl) return; const A = analyzeFlightAt(k);
+    const out = Object.assign({}, fl, { situations: { version: A.version, summary: A.summary, segments: A.segments, legs: A.legs, skims: A.skims, boosts: A.boosts, mistakes: A.mistakes,
+      labels: A.labels.map((l) => [l.phase, l.target, Math.round(l.conf * 100)]) } });
+    const txt = JSON.stringify(out); try { navigator.clipboard.writeText(txt); say('Flight JSON copied (' + Math.round(txt.length / 1024) + ' KB)'); } catch (e) { say('Copy failed: the browser blocked the clipboard'); }
+  });
+  $('flPaste').addEventListener('click', () => {
+    const box = $('flPasteBox'); if (box.hidden) { box.hidden = false; box.focus(); return; }
+    try {
+      const fl = JSON.parse(box.value); if (!/^cosmic-shore\.flight\//.test(fl.schema || '') || fl.mode !== 'Regatta' || !COURSE[+fl.intensity]) throw new Error('not a Regatta flight_*.json');
+      fl.source = fl.source || 'unity'; fl.hullKey = fl.hullKey || String(fl.hull).toLowerCase(); fl.id = Date.now(); fl.overrides = fl.overrides || [];
+      flights.unshift(fl); flights.length = Math.min(flights.length, 6); saveFlights(); renderFlights(); box.value = ''; box.hidden = true; say('Unity flight loaded: ' + flLabel(fl));
+    } catch (e) { say('Could not load it: ' + e.message); }
+  });
+  $('flDel').addEventListener('click', () => { const k = +$('flSel').value; if (!flights[k]) return; if (RP.on && RP.fi === k) closeReplay(); flights.splice(k, 1); saveFlights(); renderFlights(); });
   function hud() {
     if (!W) return;
     const P = viewed(); W.watch = P.i; const h = P.h;
@@ -1373,11 +1620,12 @@
   function frame(now) {
     const dt = Math.min(0.05, (now - last) / 1000); last = now; resize();
     const hin = humanInput(dt);
-    if (W && race === 'running' && !paused) { for (let s = 0; s < S.speed; s++) { stepWorld(W, dt, pilotInputs(hin)); if (W.over) { finishRace(); break; } } }
+    if (RP.on) stepReplay(dt);
+    else if (W && race === 'running' && !paused) { for (let s = 0; s < S.speed; s++) { stepWorld(W, dt, pilotInputs(hin)); if (W.over) { finishRace(); break; } } }
     ENV.update(dt);
-    if (W) { drawWorld(W, now / 1000, dt); placeCamera(W, dt, false); markRing(W); }
+    if (W) { if (!RP.on) drawWorld(W, now / 1000, dt); placeCamera(W, dt, false); markRing(W); }
     renderer.render(scene, cam);
-    hudT += dt; if (hudT > 0.1) { hudT = 0; hud(); }
+    hudT += dt; if (hudT > 0.1) { hudT = 0; if (!RP.on) hud(); }
     requestAnimationFrame(frame);
   }
   // ================= the editor layout (D8, studio-ide.js): the six settings tabs (D21, D25, D27) =================
@@ -1385,9 +1633,9 @@
     key: 'regatta-ai-ide-v1', host: document.querySelector('.layout'), stage: $('viewport'),
     right: [['scene', 'Scene Config', [$('grp-scene')]], ['game', 'Game Config', [$('grp-intensity'), $('grp-players')]], ['ai', 'AI Config', [$('grp-ai'), $('grp-aitune'), $('grp-steer')]],
       ['style', 'Play Style Config', [$('grp-style')]], ['input', 'Input', [$('grp-controls')]], ['others', 'Vessel Config', [$('grp-hulls'), $('grp-moves'), $('grp-live')]]],
-    bottom: [['score', 'Scorecard', [$('grp-score')]], ['train', 'Training', [$('grp-train')]], ['runs', 'Runs', [$('grp-runs')]], ['about', 'About', [document.querySelector('header .sub'), $('grp-about')]]],
+    bottom: [['score', 'Scorecard', [$('grp-score')]], ['train', 'Training', [$('grp-train')]], ['flights', 'Flights', [$('grp-flights')]], ['runs', 'Runs', [$('grp-runs')]], ['about', 'About', [document.querySelector('header .sub'), $('grp-about')]]],
     railW: 380, dockH: 230, stackBelow: DOCK_RIGHT_ABOVE,   // the settings dock stays beside the stage (the user, 2026-10-15: tabs on the right of the view)
-    winSize: { score: [880, 440], runs: [640, 360], train: [880, 560] },
+    winSize: { score: [880, 440], runs: [640, 360], train: [880, 560], flights: [920, 600] },
     onLayout: () => { lastW = lastH = 0; },
   });
   // The settings dock stays on the RIGHT of the stage whatever studio-ide.js version the browser has cached (an older copy
@@ -1409,7 +1657,7 @@
     document.head.appendChild(st);
   })();
   VesselStudioIDE.sectionPicker(document.querySelector('.vside-pane[data-tab="others"]'), 'regatta-ai', 'vessel');
-  renderStyle(); renderHulls(); renderRuns();
+  renderStyle(); renderHulls(); renderRuns(); renderFlights();
   newRace(); hud();
   requestAnimationFrame((t) => { last = t; frame(t); });
   if (PLATFORM.device === 'phone') setPlayMode(true);
@@ -1426,6 +1674,17 @@
     startRace, stopRace, raceHeadless, scoreHulls, hulls: HULLS, model: MODEL, course: getCourse, get tune() { return S.tune; }, tuneDefaults,
     train: (opts) => { Object.assign(S.train, opts || {}); startTraining(); }, get training() { return { running: !!trainJob, hist: TR.hist.slice(), best: TR.best && { time: TR.best.time, fin: TR.best.fin, tune: TR.best.tune } }; },
     keepBest: () => $('trApply').click(), get trained() { return S.trained; }, costOf, recordDemo: (hull, course, pts) => { S.demos[hull + '@' + course] = { pts, gates: 24, time: null, at: Date.now() }; },
+    get flights() { return flights; }, analyzeFlight: (k) => analyzeFlightAt(k), learnFrom: (hull) => runLearn(hull), openReplay: (k) => openReplay(k), closeReplay: () => closeReplay(),
+    get replay() { return { on: RP.on, i: RP.i, n: RP.A ? RP.A.norm.n : 0, label: RP.A && RP.A.labels[RP.i] }; }, replayAt: (i) => setReplay(i),
+    // an AI flies a race and it is recorded as if it were a person's flight (the fixture the Python twin is tested on)
+    recordAIFlight: (hull, level, course, seconds, rivals) => {
+      const specs = [{ vessel: hull || 'squirrel', domain: 'jade', style: 'Card', ai: level || 'Hard' }].concat((rivals || []).map((r, k) => ({ vessel: r, domain: ['ruby', 'gold', 'blue'][k % 3], style: 'Card', ai: 'Hard' })));
+      const Wx = makeWorld(course || 1, specs, 11); Wx.watch = -1; Wx.fixMiss = S.fixMiss;
+      Wx.fr = beginFlight(Wx, Wx.pilots[0], true); const dt = 1 / 30;
+      while (!Wx.over && Wx.t < (seconds || 60)) stepWorld(Wx, dt, Wx.pilots.map((P) => aiInput(Wx, P)));
+      return closeFlight(Wx, Wx.fr);
+    },
+    addFlight: (fl) => { flights.unshift(fl); saveFlights(); renderFlights(); },
     get routesShown() { return view.plans.filter((p) => p.visible).length; },   // AIs whose planned-route line is drawn
     tick(seconds) { const dt = 1 / 30; for (let s = 0; s < seconds * 30 && !W.over; s++) stepWorld(W, dt, pilotInputs(humanInput(dt))); return this.state; },
   };

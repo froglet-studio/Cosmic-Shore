@@ -294,3 +294,17 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Who can take it:** Yash
 - **Added:** 2026-10-15 by Claude for Yash (`Ys-bleeding-edge`)
 - **See:** Docs/SKIM_RACE_AI.md §16
+
+### T-20261015-1188 · open · test · AI / training
+- **Task:** Fly 3-5 Regatta races by hand (Squirrel first) in Unity and in the Training AI for Regatta page; replay them in the page's Flights tab, correct any wrong phase or target, then Learn from my flights
+- **Done when:** The Flights replay shows what you were doing (or you corrected it), Learn offers a learned AI that is not slower, and situation_features.py reads your Unity flight/3 files
+- **Who can take it:** Yash
+- **Added:** 2026-10-15 by Claude (Yash's session) (`Ys-bleeding-edge`)
+- **See:** Docs/AI_SYSTEM/SITUATION_RECORDING_PLAN.md
+
+### T-20261015-7fc3 · open · dev · AI / Regatta
+- **Task:** Port the two learned knobs to Unity: the commit distance as a curve over the leg (GateRaceController aiCommitDistance -> a + b x leg) and the skim-worth rule (the Squirrel's Skim Race pilot in Regatta), behind inspector switches, off by default
+- **Done when:** A learned tune from the page's Copy JSON sets them in Unity and the Third Eye shows the AI committing / skipping skims as the page does
+- **Who can take it:** Garrett (gate races) with Yash
+- **Added:** 2026-10-15 by Claude (Yash's session) (`Ys-bleeding-edge`)
+- **See:** Docs/AI_SYSTEM/SITUATION_RECORDING_PLAN.md S5

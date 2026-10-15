@@ -18,12 +18,14 @@ namespace CosmicShore.Gameplay
     /// stops. Single player for now; recording every online player's inputs is later.
     ///
     /// <para>Ten times a second, for the local player's own vessel while they fly it by hand: position, heading and
-    /// up, speed, boost, the four stick axes and the throttle (the same input an AI writes), and rings threaded. Seconds
+    /// up, speed, boost, the four stick axes, the throttle and both triggers (the same input an AI writes), the course,
+    /// rings threaded, and every other pilot's position and rings (the situation the pilot was in:
+    /// <c>Docs/AI_SYSTEM/SITUATION_RECORDING_PLAN.md</c>; <c>Tools/Build/situation_features.py</c> reads it). Seconds
     /// the AI holds the hull (the You / AI toggle) are not recorded. Where the mode lays a rail (Regatta) the pilot's
     /// own rail is copied from the arena at the end (<see cref="RegattaCourseSource.TryResolveLiveRails"/>), so
     /// <c>Tools/Build/learn_from_flights.py</c> can measure the flight against it.</para>
     ///
-    /// <para>One <c>flight_&lt;Mode&gt;_&lt;Vessel&gt;_&lt;time&gt;.json</c> per match (schema <c>cosmic-shore.flight/2</c>,
+    /// <para>One <c>flight_&lt;Mode&gt;_&lt;Vessel&gt;_&lt;time&gt;.json</c> per match (schema <c>cosmic-shore.flight/3</c>,
     /// with the mode, the vessel and the training type) in <c>&lt;Diagnostics folder&gt;/Flights/</c>. After Play, Unity
     /// asks "Store AI training record?" naming the vessel, the mode and the training type, and stores it on the
     /// person's <c>bugledger/&lt;user&gt;</c> branch (<c>BugHuntAutoSend</c>, <c>BugHuntReports</c> kind <c>flights</c>). A
@@ -34,7 +36,7 @@ namespace CosmicShore.Gameplay
     public sealed class HumanFlightRecorder : MonoBehaviour
     {
         public const string CommandName = "flightrec";
-        public const string Schema = "cosmic-shore.flight/2";
+        public const string Schema = "cosmic-shore.flight/3";   // /3: triggers, course and the rivals each sample (SITUATION_RECORDING_PLAN.md)
 
         /// <summary>The kind of AI training a record serves, as Unity's "Store AI training record?" names it.</summary>
         public const string TrainingType = "imitation: learning from your flying";
@@ -76,12 +78,15 @@ namespace CosmicShore.Gameplay
 
         struct Sample
         {
-            public float T, Speed, Boost, XSum, YSum, XDiff, YDiff, Throttle;
-            public Vector3 Pos, Fwd, Up;
+            public float T, Speed, Boost, XSum, YSum, XDiff, YDiff, Throttle, Lt, Rt;
+            public Vector3 Pos, Fwd, Up, Course;
             public int Rings;
+            public int RivalStart, RivalCount;   // into _rivals: x, y, z, rings per rival (Docs/AI_SYSTEM/SITUATION_RECORDING_PLAN.md)
         }
 
         readonly List<Sample> _samples = new(2048);
+        readonly List<float> _rivals = new(2048 * 16);
+        readonly List<string> _rivalHulls = new(8);
         GameDataSO _gameData;
         Player _player;
         float _nextSample, _nextLook, _raceStart, _frameSum;
@@ -163,6 +168,8 @@ namespace CosmicShore.Gameplay
         void Begin(float now)
         {
             _samples.Clear();
+            _rivals.Clear();
+            _rivalHulls.Clear();
             _player = null;
             _recording = false;
             _frames = 0;
@@ -200,15 +207,37 @@ namespace CosmicShore.Gameplay
             var input = status.InputStatus;
             var tf = _player.Vessel.Transform;
             if (input == null || !tf) return;
+            int rivalStart = _rivals.Count;
+            RecordRivals();
             _samples.Add(new Sample
             {
                 T = now - _raceStart,
-                Pos = tf.position, Fwd = tf.forward, Up = tf.up,
+                Pos = tf.position, Fwd = tf.forward, Up = tf.up, Course = status.Course,
                 Speed = status.Speed, Boost = status.BoostMultiplier,
                 XSum = input.XSum, YSum = input.YSum, XDiff = input.XDiff, YDiff = input.YDiff,
-                Throttle = input.Throttle,
+                Throttle = input.Throttle, Lt = input.LeftTriggerAnalog, Rt = input.RightTriggerAnalog,
                 Rings = (_player.RoundStats?.SwitchesThreaded ?? 0) - _startRings,
+                RivalStart = rivalStart, RivalCount = (_rivals.Count - rivalStart) / 4,
             });
+        }
+
+        /// <summary>Every other pilot's hull this sample: position and rings threaded, in the match's player order (the
+        /// rival part of the situation: who is near, who is ahead). Their hull classes are named once, from the first sample.</summary>
+        void RecordRivals()
+        {
+            var players = _gameData ? _gameData.Players : null;
+            if (players == null) return;
+            bool first = _samples.Count == 0;
+            for (int i = 0; i < players.Count; i++)
+            {
+                if (players[i] is not Player p || !p || p == _player) continue;
+                var vessel = p.Vessel;
+                if (vessel?.VesselStatus == null || !vessel.Transform) continue;
+                Vector3 at = vessel.Transform.position;
+                _rivals.Add(at.x); _rivals.Add(at.y); _rivals.Add(at.z);
+                _rivals.Add(p.RoundStats?.SwitchesThreaded ?? 0);
+                if (first) _rivalHulls.Add(vessel.VesselStatus.VesselType.ToString().ToLowerInvariant());
+            }
         }
 
         // Stopping Play mid-race (or quitting) writes the race so far as an unfinished flight.
@@ -248,6 +277,8 @@ namespace CosmicShore.Gameplay
                 Debug.LogWarning($"[HumanFlightRecorder] AI training record not stored ({why}): {e.GetType().Name}: {e.Message}");
             }
             _samples.Clear();
+            _rivals.Clear();
+            _rivalHulls.Clear();
         }
 
         /// <summary>The pilot's own rail, straight from the arena: the lane in the player's domain colour (else the
@@ -306,6 +337,7 @@ namespace CosmicShore.Gameplay
             sb.Append("{\n");
             sb.Append("\"schema\":\"").Append(Schema).Append("\",\n");
             sb.Append("\"mode\":\"").Append(_gameData ? _gameData.GameMode.ToString() : "Unknown").Append("\",\"hull\":\"").Append(hull).Append("\",");
+            sb.Append("\"source\":\"unity\",\"hullKey\":\"").Append(hull.ToLowerInvariant()).Append("\",");
             sb.Append("\"training\":\"").Append(TrainingType).Append("\",");
             sb.Append("\"domain\":\"").Append(_player ? _player.Domain.ToString() : "").Append("\",");
             sb.Append("\"intensity\":").Append(intensity).Append(',');
@@ -330,7 +362,24 @@ namespace CosmicShore.Gameplay
             }
             sb.Append("],\n");
 
-            sb.Append("\"columns\":[\"t\",\"x\",\"y\",\"z\",\"fx\",\"fy\",\"fz\",\"ux\",\"uy\",\"uz\",\"speed\",\"boost\",\"xSum\",\"ySum\",\"xDiff\",\"yDiff\",\"throttle\",\"rings\"],\n");
+            sb.Append("\"rivalHulls\":[");
+            for (int i = 0; i < _rivalHulls.Count; i++) sb.Append(i > 0 ? ",\"" : "\"").Append(_rivalHulls[i]).Append('"');
+            sb.Append("],\n\"rivals\":[");
+            for (int i = 0; i < _samples.Count; i++)
+            {
+                var m = _samples[i];
+                sb.Append(i > 0 ? ",[" : "[");
+                for (int k = 0; k < m.RivalCount * 4; k++)
+                {
+                    if (k > 0) sb.Append(',');
+                    float v = _rivals[m.RivalStart + k];
+                    sb.Append(k % 4 == 3 ? ((int)v).ToString(c) : F(v));
+                }
+                sb.Append(']');
+            }
+            sb.Append("],\n");
+
+            sb.Append("\"columns\":[\"t\",\"x\",\"y\",\"z\",\"fx\",\"fy\",\"fz\",\"ux\",\"uy\",\"uz\",\"speed\",\"boost\",\"xSum\",\"ySum\",\"xDiff\",\"yDiff\",\"throttle\",\"rings\",\"lt\",\"rt\",\"cx\",\"cy\",\"cz\"],\n");
             sb.Append("\"samples\":[\n");
             for (int i = 0; i < _samples.Count; i++)
             {
@@ -343,7 +392,9 @@ namespace CosmicShore.Gameplay
                   .Append(F(m.Speed)).Append(',').Append(F(m.Boost)).Append(',')
                   .Append(F(m.XSum, "0.###")).Append(',').Append(F(m.YSum, "0.###")).Append(',')
                   .Append(F(m.XDiff, "0.###")).Append(',').Append(F(m.YDiff, "0.###")).Append(',')
-                  .Append(F(m.Throttle, "0.###")).Append(',').Append(m.Rings).Append(']');
+                  .Append(F(m.Throttle, "0.###")).Append(',').Append(m.Rings).Append(',')
+                  .Append(F(m.Lt, "0.###")).Append(',').Append(F(m.Rt, "0.###")).Append(',')
+                  .Append(F(m.Course.x, "0.###")).Append(',').Append(F(m.Course.y, "0.###")).Append(',').Append(F(m.Course.z, "0.###")).Append(']');
             }
             sb.Append("\n]\n}\n");
             if (regatta && !haveLane)
