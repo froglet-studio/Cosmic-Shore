@@ -900,3 +900,18 @@ Entries are grouped by family; within a family, the newest goes at the bottom.
   each half removed (L-GEN-3 for your own changes).
 - Evidence: `Docs/Studios/SHRIKE.md` §5 finding 3; `shrike.html` `aiDen` (`worth`).
 - Promoted: no
+
+### L-STU-70 — A lab publishes its own artifact; a hub's "one artifact" rule is the hub's, not every lab's
+- Lab: Shrike Studio round 1 · Branch: `cece/affectionate-clarke-s738vh` · By: Garrett (owner), 2026-10-15
+- What happened: the Vessel Studio's rule "never publish a second studio artifact" (its skill §0, a `CLAUDE.md` line,
+  the vessel-work prompt hook) read as covering any lab about a vessel. So the Shrike lab, built with `/labmaker`, was
+  steered into the shared hub: a catalog row, a hub card, and a publish blocked on reading someone else's artifact.
+  The owner's call: "labmaker should be capable of making artifacts just fine ... I just want to explore here and then
+  bring our insights into Unity."
+- Do instead: publish every lab as its own private artifact (§6), with its own decision log. A lab page that loads a
+  hub's shared scripts ships them beside it through `files` and drops the hub-only parts (the Shrike's
+  `build_standalone.py` strips the Sync panel and the hub links, and refuses to build when they move). Joining a hub
+  is optional, later, and its owner's decision. The three places the rule lived now say it is the hub's only.
+- Evidence: `SKILL.md` §6 and §7; `CLAUDE.md` vessel section; `.claude/hooks/vessel_studio_nudge.py`;
+  `/vessel-studio` §0; https://claude.ai/artifact/JD17sQMeuEUETp6AUPqMmy.
+- Promoted: §6

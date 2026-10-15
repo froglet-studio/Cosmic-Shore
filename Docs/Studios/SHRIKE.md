@@ -3,7 +3,9 @@
 The Shrike Studio (`Docs/Studios/VesselStudio/shrike.html`, round 1, 2026-10-15) is a **design studio** (`/vessel-studio`
 D2): it flies the Notion class document "Class - Shrike" (Design Documents / Class Design Documents / Sparrow Chain),
 not a shipped vessel. It is a page of the one Vessel Studio artifact (https://claude.ai/artifact/3igBJJbNvJjsfJoBJnAMPa),
-built with `/labmaker` and `/vessel-studio`. This file holds what the document says, what the game ships, how the studio
+built with `/labmaker` and `/vessel-studio`. It is published on its own as **https://claude.ai/artifact/JD17sQMeuEUETp6AUPqMmy** (private; its own decision
+log), from the repo page by `Docs/Studios/Shrike/build_standalone.py`. Explore there, record decisions, then bring them
+to Unity (`/labmaker` §7). This file holds what the document says, what the game ships, how the studio
 turned the document's words into numbers, what the scorecard measured, and what is left for the designer.
 
 ## 1. What the game ships today (measured 2026-10-15, bleeding-edge)
@@ -171,6 +173,7 @@ path-finding beyond a look-ahead swerve. Read every number as relative: between 
 |---|---|
 | `Docs/Studios/VesselStudio/shrike.html` | The studio page (one self-contained page; `window.__lab` and `window.__shrikeStudio`) |
 | `Docs/Studios/Shrike/shrike_score.cjs` | The scorecard, headless |
+| `Docs/Studios/Shrike/build_standalone.py` | Builds the standalone artifact folder from the repo page (`--self-test`); publish `shrike.html` with the scripts as `files`, capabilities `db` + `user`, to https://claude.ai/artifact/JD17sQMeuEUETp6AUPqMmy |
 | `Docs/Studios/VesselStudio/studios.json`, `index.html`, `previews/shrike.png` | Its catalog row, hub card and preview |
 
 Gates run 2026-10-15: `verify_lab.cjs` PASS, `check_studio.cjs --hook __shrikeStudio` PASS, `parity_gate.py` ok,

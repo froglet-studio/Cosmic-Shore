@@ -209,6 +209,11 @@ For a research lab run as parallel autonomous sessions (the NCA and ecology prog
 
 ## 6. Publishing
 
+- **Every lab publishes its own artifact**, private to whoever made it, even when its subject is a vessel. The
+  Vessel Studio's "exactly one artifact" rule (`/vessel-studio` §0, the `CLAUDE.md` line, the vessel-work hook) is
+  about that shared hub: it never stops a lab from publishing. A lab whose page lives in `Docs/Studios/VesselStudio/`
+  and loads the hub's shared scripts publishes them beside it with `files` and leaves out `sync.js` (the hub's own
+  Sync panel). Joining the hub's catalog is optional and later (§7), and its owner decides. (L-STU-70)
 - The **repo copy is the source**. The artifact is published FROM it, and the URL goes in the lab's
   README and in `CATALOG.md`. Re-publish to the same URL; a new URL forks the decision log.
 - Declare only the capabilities the page calls (`db` + `user` for the log; `sample` for an Ask
@@ -228,7 +233,7 @@ For a research lab run as parallel autonomous sessions (the NCA and ecology prog
 | A scorecard claim ("each style wins its column") | An edit-mode test that asserts it on the C# model |
 | A model the game should run | A pure-C# core plus a parity harness that scores it with the lab's UNCHANGED yardstick (`Tools/Build/swarm_core_harness/`, `nca_creature_harness/`) |
 | A design question | **Decision needed** in the write-up and the owning `Docs/` file. Never decided by the porter |
-| The lab itself, for designers | A hub entry (`Docs/Studios/VesselStudio/studios.json`), Amoebius's STUDIOS page, `FrogletTools ▸ Vessels ▸ Vessel Studio` |
+| The lab itself, for designers | Its own artifact first (§6). Optionally, later: a hub entry (`Docs/Studios/VesselStudio/studios.json`), Amoebius's STUDIOS page, `FrogletTools ▸ Vessels ▸ Vessel Studio` |
 
 - **Port the pick's per-frame ENTRY POINT, not just its physics, and call it from both sides.** Thresholds,
   slews and "when to switch" decisions that live in the lab's harness class escape a parity gate that only

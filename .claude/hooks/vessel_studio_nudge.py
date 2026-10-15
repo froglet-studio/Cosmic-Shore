@@ -38,7 +38,9 @@ CONTEXT = (
     'universal AI race panel, cameras, difficulties, intensity ladders, domains or publishing; load /vessel '
     'for the Unity side. The artifact is the ONE source of truth: to bring something from it into the game, load '
     '/artifact-to-unity (it clones the artifact\'s numbers and features; Unity never gets its own tuning tabs). '
-    'Never publish a second studio artifact. If the work has nothing to do with vessels, ignore this note.')
+    'Never publish a second Vessel Studio (hub) artifact; that rule is the shared hub\'s only: a /labmaker lab, a vessel\'s '
+    'included, publishes its own artifact to explore in (/labmaker section 6). If the work has nothing to do with vessels, '
+    'ignore this note.')
 
 
 def wants_nudge(prompt):
