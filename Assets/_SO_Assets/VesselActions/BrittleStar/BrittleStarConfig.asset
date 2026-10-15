@@ -57,10 +57,19 @@ MonoBehaviour:
     element: 1
     UseFloor: 1
     Floor: 0.6
-  destructionFireRate: 90
-  destructionProjectileSpeed: 135
-  destructionProjectileScale: 1
   roundGrowthFactor: 3
+  cordLength: 80
+  cordLinks: 12
+  cordCutRadius: 0.6
+  cordRootRate: 30
+  cordTipRate: 4
+  cordDrag: 6
+  cordDebrisRestitution: 0.5
+  cordDebrisSpeedLimit: 200
+  cordRenderSubdivisions: 4
+  cordColor: {r: 0.07, g: 0.065, b: 0.065, a: 1}
+  cordRimBrightness: 0.75
+  cordFallbackRim: {r: 0.3, g: 0.9, b: 0.85, a: 1}
   armFocusDistance: 120
   armSplayDegrees: 25
   maxSpreadDegrees: 16
@@ -85,6 +94,7 @@ MonoBehaviour:
   overdriveSeconds: 6
   ringBlastHitClass: 3
   ringBlastHitCooldown: 0.5
+  cordHitCooldown: 0.5
   onCombatHitLanded: {fileID: 11400000, guid: 45fb43a0cddb5cc3cc4dc448df994152, type: 2}
   aiModeIntervalSeconds: 3
   aiFireMinTargets: 2
@@ -121,6 +131,13 @@ MonoBehaviour:
       Data4: 0
     Path: 
   fireEvent:
+    Guid:
+      Data1: 0
+      Data2: 0
+      Data3: 0
+      Data4: 0
+    Path: 
+  cordSliceEvent:
     Guid:
       Data1: 0
       Data2: 0

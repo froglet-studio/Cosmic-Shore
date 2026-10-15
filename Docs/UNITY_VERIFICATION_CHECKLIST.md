@@ -8988,3 +8988,24 @@ code), the 24 `BrittleStarTests` under Roslyn (`Tools/Build/brittlestar_harness/
    at 135 / 70 u/s for 3 s. The arms should still reach ~258 u (a prism wall that far ahead breaks), and read as five
    ropes. Watch the Profiler with 3-4 AI Brittle Stars in Destruction Mode: 1,350+ rounds alive per hull. If it is hot,
    `destructionFireRate` 9 keeps the look at a tenth of the rounds. In Speed Mode the hull outruns its own arms.
+
+## 🔴 Brittle Star — Destruction Mode is five CORDS (`cece/beautiful-knuth-j3atgk`, 2026-10-15) — NOT EDITOR-VERIFIED
+
+No `unity` CLI in the session that wrote it (`/verify-unity` could not run). Proved offline: player and editor
+`unity_refcompile` (0 errors in project code; a planted typo in `BrittleStarExecutor` was caught), the 29
+`BrittleStarTests` under Roslyn (`Tools/Build/brittlestar_harness/run.sh --self-test`: three negative controls, one a
+cord that stretches), `author_brittlestar_assets.py --check` / `--self-test` (11/11), `studio_to_unity.py --vessel
+brittlestar --check` (39 mapped, 0 drift), `check_studio.cjs` on the studio page. Contract: `R_VesselActions/BRITTLE_STAR.md` §3.4.
+1. **X** (Destruction): five cords (fresnel tubes, domain-coloured rim) grow out of the five turrets, ~80 u long, tips
+   nearly meeting ahead. No rounds are fired. Console clean.
+2. **Right stick**: direction turns the ring and the cords with it, the tips whipping round after the roots; deflection
+   splays them to 25° and back. Turn hard: they bow and straighten. Speed Mode (×6) straight: they stay ahead.
+3. **Slicing**: fly them through mass — each prism touched is cut in two along the cord's sweep (the Thresher's slice
+   look), any domain (friendly fire) except trail laid in the last second; a shielded block loses its shield, then dies;
+   super-shielded refuses.
+4. **A rival**: drawn across a cord they lose petals (a Strike, at most every 0.5 s) and are not moved.
+5. **X again / ring thrown / turn end**: the cords draw back in or vanish; no leftover `BrittleStarCords::` objects
+   after the vessel is despawned.
+6. **RT** outside Destruction: unchanged (one stream). RT does nothing while the cords are out.
+7. **Profiler** with 3-4 AI Brittle Stars in Destruction Mode: 60 `QuerySegment`s a frame per hull, no rounds (the
+   turrets' pool is back to 90 / 320).

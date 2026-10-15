@@ -22,9 +22,10 @@ namespace CosmicShore.Gameplay
     /// base trail's spacing stretched so production per second does not rise.</item>
     /// <item><b>Creation Mode</b> (Mass): a trail behind EACH of the ring's five corners instead of the cockpit's one,
     /// turning with the ring's firing rotation.</item>
-    /// <item><b>Destruction Mode</b> (Space): the FIVE ARMS — every turret fires on its own, unspread, at the Sparrow's
-    /// full-auto cadence, a stream steady enough to read as the brittle star's arms; the right stick moves them in (meeting
-    /// ahead, a crosshair) and out (splayed). <b>Fire</b> (RT, held) outside it:
+    /// <item><b>Destruction Mode</b> (Space): the FIVE CORDS — one hangs from every turret's muzzle, the Thresher's
+    /// rope without the ball (<see cref="BrittleStarCord"/>), and slices every prism it is drawn through; the right stick
+    /// turns them with the ring and moves them in (meeting ahead, a crosshair) and out (splayed). <b>Fire</b> (RT, held)
+    /// outside it:
     /// one stream from the turret the right stick points at (the cockpit gun with the stick centred), the stick's
     /// deflection opening the spread. Friendly fire is on (the round's prefab).</item>
     /// <item><b>Ring Detonation</b> (Charge, LT): throw the ring forward; it blows on contact or on its fuse — an
@@ -38,8 +39,8 @@ namespace CosmicShore.Gameplay
     /// server, crystal pickups run through <c>NetworkVesselImpactor</c>'s ClientRpc, and the right stick that aims is a
     /// replicated input NetworkVariable — so every machine's copy holds the same mode, the same ring and the same charge,
     /// and lays the same trail (vessel rule 48: nothing simulated keys off a local-only state). Prism destruction is per
-    /// peer by design; each peer's copy of the ring and the rounds breaks its own copy of the mass. Scored hits are decided
-    /// once, on the shooter's owner (<see cref="ElementalTransfer.IsDecidedHere"/>).</para>
+    /// peer by design; each peer's copy of the ring, the cords and the rounds breaks its own copy of the mass. Scored hits
+    /// are decided once, on the shooter's owner (<see cref="ElementalTransfer.IsDecidedHere"/>).</para>
     ///
     /// <para><b>PvP is petals only (LOCKED).</b> Nothing here moves, slows or disables another pilot's vessel; a hit on
     /// an enemy hull is a scored combat hit that moves petals (see the config's type doc).</para>
@@ -53,10 +54,13 @@ namespace CosmicShore.Gameplay
         [SerializeField] BrittleStarConfigSO config;
         [Tooltip("The procedural hull: the ring, the six muzzles, the ring mesh a detonation throws.")]
         [SerializeField] BrittleStarHullBuilder hull;
-        [Tooltip("Fires every turret's rounds (its ProjectileFactory pools the round prefab).")]
+        [Tooltip("Fires RT's rounds from the aimed turret or the cockpit (its ProjectileFactory pools the round prefab).")]
         [SerializeField] Gun gun;
         [Tooltip("The fleet's shared turn-end channel: the trigger lets go and every thrown ring is cleared.")]
         [SerializeField] ScriptableEventNoParam OnMiniGameTurnEnd;
+        [Tooltip("Destruction Mode's five cords are drawn with this: ThresherChainMaterial (ThresherChainFresnelShader - a " +
+                 "fresnel TUBE across a view-aligned ribbon, the Thresher's chain). Empty falls back to a vertex-colour line.")]
+        [SerializeField] Material cordMaterial;
 
         [Inject] GameDataSO _gameData;
 
@@ -70,7 +74,7 @@ namespace CosmicShore.Gameplay
         int _aimedPoint = -1;        // the turret the stick points at, or -1 (the cockpit gun)
         bool _firing;
         float _fireOwed;
-        float _armsOwed;
+        float _cordsOut01;           // eased 0..1: how far the five cords are grown out of their muzzles
         uint _shotSerial;
         bool _penHeld;
         float _creationOwed;
@@ -106,6 +110,8 @@ namespace CosmicShore.Gameplay
         readonly List<Wave> _waves = new();
         readonly List<GameObject> _idleBodies = new();
         readonly List<Prism> _candidates = new();
+        readonly HashSet<Prism> _cutThisFrame = new();
+        BrittleStarCord[] _cords;
         readonly List<ShipActionSO> _bindScratch = new();
         readonly Dictionary<BrittleStarControl, InputEvents> _boundInputs = new();
 
@@ -149,6 +155,8 @@ namespace CosmicShore.Gameplay
         }
         /// <summary>The turret the right stick points at, or -1 (the cockpit gun).</summary>
         public int AimedPoint => _aimedPoint;
+        /// <summary>Eased 0..1: how far Destruction Mode's five cords are grown out of their muzzles.</summary>
+        public float CordsOut01 => _cordsOut01;
         public BrittleStarConfigSO Config => config;
 
         // ------------------------------------------------------------------ lifecycle
@@ -170,8 +178,8 @@ namespace CosmicShore.Gameplay
             _aimedPoint = -1;
             _firing = false;
             _fireOwed = 0f;
-            _armsOwed = 0f;
             _shotSerial = 0;
+            ClearCords();
             _creationOwed = 0f;
             _hasLastHullPosition = false;
             for (int i = 0; i < _cornerTrails.Length; i++) _cornerTrails[i].Clear();
@@ -202,6 +210,7 @@ namespace CosmicShore.Gameplay
             if (OnMiniGameTurnEnd != null) OnMiniGameTurnEnd.OnRaised -= OnTurnEnd;
             _firing = false;
             ClearFlights();
+            ClearCords();
             ReleasePen();
             if (_status?.VesselTransformer is BrittleStarVesselTransformer transformer) transformer.SpeedModeMultiplier = 1f;
             if (_status?.VesselPrismController is BrittleStarPrismController prisms) prisms.SpacingMultiplier = 1f;
@@ -209,6 +218,8 @@ namespace CosmicShore.Gameplay
 
         void OnDestroy()
         {
+            if (_cordRoot) Destroy(_cordRoot);
+            _cordRoot = null;
             for (int i = 0; i < _idleBodies.Count; i++)
                 if (_idleBodies[i]) Destroy(_idleBodies[i]);
             _idleBodies.Clear();
@@ -227,6 +238,7 @@ namespace CosmicShore.Gameplay
         {
             _firing = false;
             ClearFlights();
+            ClearCords();
             ReleasePen();
         }
 
@@ -292,6 +304,7 @@ namespace CosmicShore.Gameplay
             ApplySpeedMode();
             AimRing(dt);
             UpdateCreation();
+            UpdateCords(dt);
             UpdateFire(dt);
             UpdateFlights(dt);
             UpdateWaves();
@@ -342,8 +355,8 @@ namespace CosmicShore.Gameplay
         void AimRing(float dt)
         {
             Vector2 stick = AimStick();
-            // The stick's DIRECTION turns the ring in every mode (in Destruction Mode it turns the five arms with it);
-            // its DEFLECTION opens RT's spread, or moves the arms in and out (UpdateFire).
+            // The stick's DIRECTION turns the ring in every mode (in Destruction Mode it turns the five cords with it);
+            // its DEFLECTION opens RT's spread, or moves the cords in and out (UpdateCords).
             float? aim = BrittleStarRules.AimAngle(stick, config.AimDeadzone);
             if (aim == null)
             {
@@ -462,51 +475,293 @@ namespace CosmicShore.Gameplay
             if (prisms) prisms.SetSpawnerPaused(false);
         }
 
+        // ------------------------------------------------------------------ Destruction Mode: the five cords
+
+        /// <summary>
+        /// The FIVE CORDS (Garrett, 2026-10-15: "instead of a ton of projectiles lets create 5 cords similar to the
+        /// thresher's cord but without the weight at the end"). One hangs from each turret's muzzle and is posed along the
+        /// arm's direction — the right stick's direction turns them with the ring, its deflection moves them in (meeting
+        /// ahead, a crosshair) and out (splayed), exactly as it aimed the five streams of rounds they replace — and each is
+        /// a rope (<see cref="BrittleStarCord"/>) that bends and whips as the hull turns and the ring flicks round. They grow
+        /// out of the muzzles while the mode comes on and draw back in as it goes off; they run only while the trail does
+        /// (the turn's own clock), and with the ring, since they hang from it.
+        /// </summary>
+        void UpdateCords(float dt)
+        {
+            var prisms = _status.VesselPrismController;
+            bool want = IsOn(Mode.Destruction) && hull && prisms && prisms.SpawnerEnabled;
+            _cordsOut01 = Mathf.MoveTowards(_cordsOut01, want ? 1f : 0f, dt / config.ModeBlendSeconds);
+            float length = config.CordLength * Mathf.Max(0.1f, config.RangeMultiplier.EvaluateReplicated(_status))
+                         * _cordsOut01 * RingPresence01;
+            if (length < 0.5f || !hull)
+            {
+                ClearCords();
+                return;
+            }
+
+            int links = Mathf.Max(2, config.CordLinks);
+            if (_cords == null || _cords[0].Count != links + 1)
+            {
+                _cords = new BrittleStarCord[BrittleStarHullForm.Points];
+                for (int i = 0; i < _cords.Length; i++) _cords[i] = new BrittleStarCord(links);
+            }
+
+            var settings = new BrittleStarCord.Settings
+            {
+                RootRate = config.CordRootRate,
+                TipRate = config.CordTipRate,
+                Drag = config.CordDrag,
+            };
+            float splay01 = BrittleStarRules.Spread01(AimStick(), config.AimDeadzone);
+            Vector3 forward = _status.Transform.forward;
+            Vector3 axis = HullPosition;
+            Vector3 velocity = _status.Course * _status.Speed;
+            for (int i = 0; i < _cords.Length; i++)
+            {
+                var muzzle = hull.Muzzle(i);
+                if (!muzzle) continue;
+                Vector3 radial = Vector3.ProjectOnPlane(muzzle.position - axis, forward);
+                float distance = radial.magnitude;
+                Vector3 dir = distance > 1e-4f
+                    ? BrittleStarRules.ArmDirection(forward, radial / distance, distance, splay01,
+                                                    config.ArmFocusDistance, config.ArmSplayDegrees)
+                    : forward;
+                _cords[i].Step(muzzle.position, dir, length, settings, dt, velocity);
+            }
+
+            float cut = config.CordCutRadius * Mathf.Max(0.1f, config.ProjectileScaleMultiplier.EvaluateReplicated(_status));
+            CutWithCords(cut);
+            StrikeHullsWithCords(cut);
+            DrawCords(cut);
+        }
+
+        /// <summary>
+        /// Every prism a cord's link touches is <see cref="Prism.Slice"/>d along the plane that link is sweeping, debris
+        /// at the link's own velocity — the Thresher's chain cut. Friendly fire, as the rounds had it ("players need to be
+        /// careful not to destroy allied blocks"): any domain, but never this pilot's own FRESH trail (the fleet's grace
+        /// window), and super-shielded mass refuses. A shielded prism loses its shield to the first cut and dies to the next.
+        /// Each prism is cut once a frame however many links reach it.
+        /// </summary>
+        void CutWithCords(float cut)
+        {
+            var index = PrismSpatialIndex.Instance;
+            if (!index || !index.IsAvailable) return;
+            const float candidateExtent = 8f;
+            _cutThisFrame.Clear();
+            for (int c = 0; c < _cords.Length; c++)
+            {
+                var cord = _cords[c];
+                if (!cord.Seeded) continue;
+                var pts = cord.Points;
+                for (int s = 0; s < pts.Length - 1; s++)
+                {
+                    Vector3 a = pts[s], b = pts[s + 1];
+                    index.QuerySegment(a, b, cut + candidateExtent, _candidates);
+                    if (_candidates.Count == 0) continue;
+                    Vector3 ab = b - a;
+                    float abLenSq = ab.sqrMagnitude;
+                    for (int i = 0; i < _candidates.Count; i++)
+                    {
+                        var prism = _candidates[i];
+                        if (!prism || prism.destroyed || _cutThisFrame.Contains(prism)) continue;
+                        if (prism.prismProperties is { IsSuperShielded: true }) continue;
+                        if (SelfTrailContactConfigSO.SuppressesSkimContact(prism, _status)) continue;
+
+                        Vector3 centre = prism.transform.position;
+                        float t = abLenSq > 1e-8f ? Mathf.Clamp01(Vector3.Dot(centre - a, ab) / abLenSq) : 0f;
+                        float contact = cut + 0.5f * prism.transform.lossyScale.magnitude;
+                        Vector3 onCord = a + ab * t;
+                        if ((centre - onCord).sqrMagnitude > contact * contact) continue;
+
+                        _cutThisFrame.Add(prism);
+                        Vector3 v = Vector3.Lerp(cord.NodeVelocity(s), cord.NodeVelocity(s + 1), t);
+                        Vector3 cutNormal = Vector3.Cross(ab, v);
+                        if (cutNormal.sqrMagnitude < 1e-8f) cutNormal = Vector3.Cross(ab, _status.Transform.up);
+                        if (cutNormal.sqrMagnitude < 1e-8f) cutNormal = Vector3.right;
+                        prism.Slice(v * config.CordDebrisRestitution, _status.Domain, _status.PlayerName,
+                                    onCord, cutNormal.normalized, debrisSpeedLimit: config.CordDebrisSpeedLimit);
+                        PlayAt(config.CordSliceEvent, onCord);
+                    }
+                }
+            }
+            _candidates.Clear();
+        }
+
+        /// <summary>A cord drawn across an enemy hull: a scored STRIKE (the contact verb: a blade, nothing fired) at the
+        /// fleet price, admitted through <see cref="CombatHitDrain.TryAdmit"/> (<c>cordHitCooldown</c> per victim; a warded
+        /// pilot is neither scored on nor robbed). Petals only — it never moves the victim. Decided once, on the shooter's
+        /// owner.</summary>
+        void StrikeHullsWithCords(float cut)
+        {
+            if (_gameData == null || _gameData.Players == null || !ElementalTransfer.IsDecidedHere(_status)) return;
+            float reach = cut + VesselHitRadius;
+            var players = _gameData.Players;
+            for (int p = 0; p < players.Count; p++)
+            {
+                var victim = EnemyStatus(players[p]);
+                if (victim == null) continue;
+                Vector3 at = victim.Transform.position;
+                for (int c = 0; c < _cords.Length; c++)
+                {
+                    var cord = _cords[c];
+                    if (!cord.Seeded || !TouchesCord(cord, at, reach, out Vector3 velocity)) continue;
+                    ScoreCordHit(victim, velocity);
+                    break;
+                }
+            }
+        }
+
+        static bool TouchesCord(BrittleStarCord cord, Vector3 at, float reach, out Vector3 velocity)
+        {
+            var pts = cord.Points;
+            for (int s = 0; s < pts.Length - 1; s++)
+            {
+                Vector3 a = pts[s], ab = pts[s + 1] - a;
+                float abLenSq = ab.sqrMagnitude;
+                float t = abLenSq > 1e-8f ? Mathf.Clamp01(Vector3.Dot(at - a, ab) / abLenSq) : 0f;
+                if ((at - (a + ab * t)).sqrMagnitude > reach * reach) continue;
+                velocity = Vector3.Lerp(cord.NodeVelocity(s), cord.NodeVelocity(s + 1), t);
+                return true;
+            }
+            velocity = Vector3.zero;
+            return false;
+        }
+
+        void ScoreCordHit(IVesselStatus victim, Vector3 velocity)
+        {
+            const CombatHitClass hitClass = CombatHitClass.Strike;
+            if (!CombatHitDrain.TryAdmit(victim, _status, hitClass, config.CordHitCooldown,
+                                         ElementalDebuffSources.VesselContact, out int superseded))
+                return;
+            // Strike's take is normally authored per weapon; the cords author none, so it is taken at the fleet price.
+            CombatHitDrain.ApplyPriced(victim, _status, hitClass, superseded, velocity, ElementalDebuffSources.VesselContact);
+            if (config.OnCombatHitLanded)
+                config.OnCombatHitLanded.Raise(new CombatHitStats
+                {
+                    ShooterName = _status.PlayerName,
+                    VictimName = victim.PlayerName,
+                    HitClass = hitClass,
+                    SupersededRank = superseded,
+                });
+        }
+
+        void ClearCords()
+        {
+            if (_cords != null)
+                for (int i = 0; i < _cords.Length; i++) _cords[i].Clear();
+            if (_cordRoot && _cordRoot.activeSelf) _cordRoot.SetActive(false);
+        }
+
+        // ---- the cords' look: the Thresher's chain, five times, one LineRenderer each (cosmetic; every peer draws its own)
+
+        GameObject _cordRoot;
+        LineRenderer[] _cordLines;
+        Vector3[] _cordDrawn;
+        MaterialPropertyBlock _cordMpb;
+        static Material s_cordFallbackMaterial;
+        static readonly int DarkColorId = Shader.PropertyToID("_DarkColor");
+        static readonly int BrightColorId = Shader.PropertyToID("_BrightColor");
+
+        void DrawCords(float cut)
+        {
+            if (!EnsureCordVisuals()) return;
+            if (!_cordRoot.activeSelf) _cordRoot.SetActive(true);
+
+            Color body = config.CordColor;
+            body.a = 1f;
+            Color rim = WithMaxChannel(CordRimHue(), config.CordRimBrightness);
+            _cordMpb.Clear();
+            _cordMpb.SetColor(DarkColorId, body);
+            _cordMpb.SetColor(BrightColorId, rim);
+
+            int drawn = ThresherChainLinks.SmoothedCount(_cords[0].Count, config.CordRenderSubdivisions);
+            if (_cordDrawn == null || _cordDrawn.Length != drawn) _cordDrawn = new Vector3[drawn];
+            for (int i = 0; i < _cordLines.Length; i++)
+            {
+                var line = _cordLines[i];
+                var cord = _cords[i];
+                if (!cord.Seeded)
+                {
+                    line.positionCount = 0;
+                    continue;
+                }
+                // Drawn at the width that CUTS, as a smooth curve through the gameplay links (it passes through each).
+                line.startWidth = line.endWidth = 2f * cut;
+                line.SetPropertyBlock(_cordMpb);
+                line.startColor = line.endColor = rim;   // the vertex-colour fallback material
+                int written = ThresherChainLinks.Smooth(cord.Points, config.CordRenderSubdivisions, _cordDrawn);
+                if (line.positionCount != written) line.positionCount = written;
+                line.SetPositions(_cordDrawn);
+            }
+        }
+
+        bool EnsureCordVisuals()
+        {
+            if (_cordRoot) return true;
+            var material = cordMaterial ? cordMaterial : CordFallbackMaterial();
+            if (!material) return false;   // headless: no graphics, no visuals
+
+            _cordRoot = new GameObject($"BrittleStarCords::{(_status != null ? _status.PlayerName : name)}");
+            _cordMpb = new MaterialPropertyBlock();
+            _cordLines = new LineRenderer[BrittleStarHullForm.Points];
+            for (int i = 0; i < _cordLines.Length; i++)
+            {
+                var go = new GameObject($"Cord{i}");
+                go.transform.SetParent(_cordRoot.transform, false);
+                var line = go.AddComponent<LineRenderer>();
+                line.sharedMaterial = material;
+                line.useWorldSpace = true;
+                line.alignment = LineAlignment.View;   // the fresnel tube is computed across a VIEW-aligned ribbon
+                line.numCapVertices = 2;
+                line.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+                line.receiveShadows = false;
+                line.positionCount = 0;
+                _cordLines[i] = line;
+            }
+            return true;
+        }
+
+        static Material CordFallbackMaterial()
+        {
+            if (s_cordFallbackMaterial) return s_cordFallbackMaterial;
+            var shader = Shader.Find("Sprites/Default");
+            if (!shader) shader = Shader.Find("Universal Render Pipeline/Unlit");
+            if (!shader) return null;
+            s_cordFallbackMaterial = new Material(shader) { name = "BrittleStarCord (runtime)", renderQueue = 3000 };
+            return s_cordFallbackMaterial;
+        }
+
+        /// <summary>The rim's hue: the pilot's domain signal colour from the palette (the Thresher chain's rule), else the
+        /// configured fallback.</summary>
+        Color CordRimHue()
+        {
+            var palette = _gameData && _gameData.ThemeManagerData ? _gameData.ThemeManagerData.ColorSet : null;
+            if (_status == null || _status.Domain == Domains.Blue || !palette) return config.CordFallbackRim;
+            return palette.GetDomainSignalColor(_status.Domain);
+        }
+
+        static Color WithMaxChannel(Color c, float max)
+        {
+            float m = Mathf.Max(c.r, Mathf.Max(c.g, c.b));
+            return m > 1e-4f
+                ? new Color(c.r / m * max, c.g / m * max, c.b / m * max, 1f)
+                : new Color(max, max, max, 1f);
+        }
+
         // ------------------------------------------------------------------ shooting
 
         void UpdateFire(float dt)
         {
             if (!gun || !hull) return;
+            // Destruction Mode's cords ARE its weapon while they are out: RT adds nothing to them.
+            if (IsOn(Mode.Destruction)) return;
+
+            // RT: one stream, from the aimed turret or the cockpit gun, its spread opened by the stick.
+            if (!_firing) return;
             float time = config.ProjectileTime * Mathf.Max(0.1f, config.RangeMultiplier.EvaluateReplicated(_status));
             float charge = Mathf.Max(0.1f, config.ProjectileScaleMultiplier.EvaluateReplicated(_status));
             Vector3 inherit = _status.Course * _status.Speed;
             Vector3 up = _status.Transform.up;
-
-            // DESTRUCTION MODE: the five arms. Every turret fires on its own, unspread, at the Sparrow's full-auto
-            // cadence, for as long as the mode is on and the trail is running (the turn's own clock) - a stream that
-            // steady reads as five arms reaching ahead of the ring, the brittle star's.
-            var prisms = _status.VesselPrismController;
-            if (IsOn(Mode.Destruction) && prisms && prisms.SpawnerEnabled)
-            {
-                float armInterval = 1f / Mathf.Max(1f, config.DestructionFireRate);
-                _armsOwed = Mathf.Min(_armsOwed + dt, armInterval * 4f);   // a hitch never discharges as a burst (rule 17)
-                int volleys = Mathf.FloorToInt(_armsOwed / armInterval);
-                _armsOwed -= volleys * armInterval;
-                float armScale = config.DestructionProjectileScale * charge;
-                // The stick moves the arms in and out: centred they meet ahead (a crosshair), at the rim they splay.
-                float splay01 = BrittleStarRules.Spread01(AimStick(), config.AimDeadzone);
-                Vector3 forward = _status.Transform.forward;
-                Vector3 axis = HullPosition;
-                for (int v = 0; v < volleys; v++)
-                    for (int i = 0; i < BrittleStarHullForm.Points; i++)
-                    {
-                        var muzzle = hull.Muzzle(i);
-                        if (!muzzle) continue;
-                        Vector3 radial = Vector3.ProjectOnPlane(muzzle.position - axis, forward);
-                        float distance = radial.magnitude;
-                        Vector3 dir = distance > 1e-4f
-                            ? BrittleStarRules.ArmDirection(forward, radial / distance, distance, splay01,
-                                                            config.ArmFocusDistance, config.ArmSplayDegrees)
-                            : forward;
-                        FireAlong(muzzle, dir, config.DestructionProjectileSpeed, armScale, time, inherit);
-                    }
-                if (volleys > 0) PlayAt(config.FireEvent, HullPosition);
-                return;   // the arms ARE the guns while they run; RT adds nothing to them
-            }
-            _armsOwed = 0f;
-
-            // RT: one stream, from the aimed turret or the cockpit gun, its spread opened by the stick.
-            if (!_firing) return;
             float interval = 1f / Mathf.Max(0.01f, config.FireRate);
             _fireOwed = Mathf.Min(_fireOwed + dt, interval * 3f);
             int shots = Mathf.FloorToInt(_fireOwed / interval);

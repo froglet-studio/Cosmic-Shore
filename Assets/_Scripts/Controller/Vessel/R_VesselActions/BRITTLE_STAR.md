@@ -24,8 +24,8 @@ the fleet's one-thumb model (`SingleStickVesselTransformer`, via `BrittleStarVes
 | Speed Mode | **A** | Space | Select Speed Mode (press again: back to Cruise) |
 | Creation Mode | **B** | R | Select Creation Mode (press again: Cruise) |
 | Destruction Mode | **X** | Q / middle mouse | Select Destruction Mode (press again: Cruise) |
-| Fire (held) | **RT** | Right Shift / LMB | Shoot one stream (outside Destruction Mode, which fires on its own) |
-| Aim / spread | **right stick** | P ; L ' (no aim on the mouse scheme) | Direction turns the ring (picks RT's turret; in Destruction Mode turns the five arms); deflection opens RT's spread, or moves the arms in and out |
+| Fire (held) | **RT** | Right Shift / LMB | Shoot one stream (outside Destruction Mode, whose five cords are its weapon) |
+| Aim / spread | **right stick** | P ; L ' (no aim on the mouse scheme) | Direction turns the ring (picks RT's turret; in Destruction Mode turns the five cords); deflection opens RT's spread, or moves the cords in and out |
 | Ring Detonation | **LT** | Left Shift / RMB | Throw the ring |
 
 Bindings are in the **shared** list (`_inputEventShipActions`), the Sparrow's shape, so touch reaches Fire and Ring
@@ -98,22 +98,47 @@ struts — the shipped hull still has physical arms (follow-up F8).
 - "A single small block when not in creation mode": `BaseScale (2.5, 2.5, 4.5)`, wavelength 6, `prismType` Sparrow,
   laid 2 u behind the cockpit, skimmer clearance on.
 
-### 3.4 Destruction Mode (the five arms) and shooting — SPACE
-- **Destruction Mode fires on its own: the FIVE ARMS** (Garrett, 2026-10-14). Every turret fires, unspread, at the
-  Sparrow's full-auto cadence (`destructionFireRate` 90 rounds/s each, `destructionProjectileSpeed` **135 u/s** — slow
-  rounds, below — the Sparrow's tracer at `destructionProjectileScale` 1) — "such a steady stream that they give the
-  appearance of five arms, hence the name brittle star". Spacing between rounds is speed / rate = 1.5 u, so each arm is
-  an unbroken rope of rounds. The arms run while the mode is on and the trail is running (the turn's clock), and RT adds
-  nothing to them.
-- **The right stick moves the arms in and out** (Garrett, 2026-10-14; the class document's "drag away from the centre to
-  increase spread"): with the stick IN (centred) every arm angles inward to cross the nose axis `armFocusDistance` 120 u
-  ahead — the five arms close on one point, the whole vessel a crosshair — and pushed OUT to the rim each splays
-  `armSplayDegrees` 25° outward; between, the angle moves linearly with the stick's deflection
-  (`BrittleStarRules.ArmDirection`, tested). The stick's **direction** still turns the ring (Garrett, 2026-10-14: "the guns
-  lost their rotation control when in Space mode"), and the five arms turn with it — direction rotates, deflection opens.
-  On the one-thumb mouse
-  scheme there is no right stick, so the arms stay focused; on one-thumb touch the steering thumb is mirrored onto the
-  right stick, so hard turns open the arms. Fire is owed in seconds and paid in whole volleys, capped at 4 per frame (rule 17).
+### 3.4 Destruction Mode (the five cords) and shooting — SPACE
+- **Destruction Mode is FIVE CORDS** (Garrett, 2026-10-15: "instead of a ton of projectiles lets create 5 cords similar
+  to the thresher's cord but without the weight at the end. so the 5 cords are still controlled by the right thumbstick
+  and slice through prisms"). They replace the five auto-firing streams of rounds (2026-10-14, "the five arms"). One cord
+  hangs from each turret's muzzle, `cordLength` **80 u** × `rangeMultiplier` (**Space**: ×1 → ×1.6, 128 u at Space 10),
+  and grows out of its muzzle as the mode eases on (`modeBlendSeconds`) and draws back in as it goes off. They run only
+  while the trail does (the turn's clock) and only with the ring mounted — they hang from it.
+- **The Thresher's rope with no ball** (`BrittleStarCord`, pure, tested). The Thresher's chain hangs between two pins,
+  the hull and the ball; a cord has one pin (its muzzle) and a free tip, so with no weight to pull it straight it is held
+  out by a **pose**: each of its `cordLinks` 12 links is drawn toward its place on the straight line from the muzzle along
+  the arm's direction — hard at the root (`cordRootRate` 30/s), softly at the tip (`cordTipRate` 4/s) — with its own
+  swing damped against the motion of its place (`cordDrag` 6/s), and a follow-the-leader pass caps every link at
+  `length / links` (a cord never reads stretched). So it rides along with the hull at any speed (no lag flying straight,
+  even at ×6), and a turn or a flick of the ring bends it, the tip whipping round after the root (a 72° ring flick:
+  the tip strays ~17 u and is back on its pose within a second). Sub-stepped at 1/120 s (at most 8 a frame), so a 30 fps
+  and a 144 fps peer bend it alike (tested within 20%).
+- **The right stick, exactly as before** (`BrittleStarRules.ArmDirection`, tested): its **direction** turns the ring and
+  the five cords with it; its **deflection** moves them in and out — stick IN (centred), every cord angles inward to cross
+  the nose axis `armFocusDistance` 120 u ahead (with 80 u cords the tips nearly meet: the vessel as a crosshair); pushed
+  OUT to the rim each splays `armSplayDegrees` 25°. On the one-thumb mouse scheme there is no right stick, so the cords
+  stay in; on one-thumb touch the steering thumb is mirrored onto the right stick, so hard turns open them.
+- **They slice through prisms** — the Thresher's chain cut, line for line (`BrittleStarExecutor.CutWithCords`): every
+  frame each link is swept through `PrismSpatialIndex.QuerySegment`, and every prism within `cordCutRadius` **0.6** ×
+  `projectileScaleMultiplier` (**Charge**: ×1 → ×1.8) of it is `Prism.Slice`d along the plane that link is sweeping,
+  debris at `cordDebrisRestitution` 0.5 of the link's own velocity (capped `cordDebrisSpeedLimit` 200 u/s). **Friendly
+  fire**, as the rounds had it ("players need to be careful not to destroy allied blocks"): any domain, except this
+  pilot's own FRESH trail (`SelfTrailContactConfigSO`'s grace window); a shield pops on the first cut and the prism dies
+  to the next; super-shielded mass refuses. Each prism is cut once a frame however many links reach it. (The Thresher
+  shields its OWN mass with its chain; the Brittle Star does not — its design has friendly fire.)
+- **A cord across an enemy hull** (within `cordCutRadius` + the hull's 6 u): a scored **Strike** — `CombatHitClass`'s
+  contact verb, a blade, nothing fired — taken at the fleet price through `CombatHitDrain.TryAdmit` / `ApplyPriced`
+  (a warded pilot is neither scored on nor robbed), once per victim per `cordHitCooldown` 0.5 s, decided on the shooter's
+  owner. Petals only: nothing moves the victim.
+- **The look**: each cord is drawn as the Thresher's chain is — `ThresherChainMaterial` (the fresnel tube across a
+  view-aligned ribbon, `cordMaterial` on the executor), a smooth Catmull-Rom curve through the gameplay links
+  (`ThresherChainLinks.Smooth`, `cordRenderSubdivisions` 4) at exactly the width that cuts; an iron body (`cordColor`)
+  under a rim in the pilot's domain colour (`cordRimBrightness` 0.75, the Thresher's taut rim). One `LineRenderer` per
+  cord, built at runtime and drawn on every peer. **Audio**: `cordSliceEvent`, shipped EMPTY (LOCKED FMOD convention).
+- **Cost**: 5 cords × 12 links = **60 segment queries a frame** per Brittle Star in Destruction Mode (the Thresher's chain
+  runs 24), and no rounds at all — the five streams kept 1,350–2,160 swept rounds alive per hull. The turrets' pool is
+  back to the Sparrow's size (`defaultCapacity` 90, `maxSize` 320) for RT's one stream.
 - **Fire (RT, held) outside Destruction Mode**: one stream at `fireRate` 12 rounds/s, **70 u/s**, from the turret the right
   stick points at — the ring turns (`ringTurnRate` 540°/s, always the short way round, never more than 36°) to bring the
   nearest point onto the aim — or from the **cockpit gun** with the stick inside `aimDeadzone`. Ringless, only the
@@ -127,20 +152,12 @@ struts — the shipped hull still has physical arms (follow-up F8).
   Sparrow's: every round grows to `roundGrowthFactor` ×3 over its flight, hit radius too (`Gun.FireGun`'s
   `flightGrowthFactor`, the Sparrow's `growthFactorAtRestingMass`; fixed here, because Mass is Creation's dial). One
   difference kept: the Brittle Star's rounds inherit the hull's velocity, the Sparrow's do not (`inherit: 0`).
-- **Slow rounds, the same range** (Garrett, 2026-10-14): both streams fly at a tenth of their first speed (arms 1350 →
-  135 u/s, RT 700 → 70 u/s) for ten times as long (`projectileTime` 0.3 → **3 s**), so the range, speed × 2T/π (rule 34:
-  rounds decelerate), is unchanged: × **`rangeMultiplier` ×1 → ×1.6 at Space 10**, the arms reach **258 u → 413 u** and
-  RT's stream 134 u → 214 u. Every round's size × `projectileScaleMultiplier` (Charge, below). Because the whole velocity
-  eases to rest over the flight, inherited part included, a hull flying faster than its rounds outruns them: at cruise
-  (45 u/s) the arms reach ~220 u ahead of the hull; in Speed Mode (×6, 270 u/s) the hull overtakes the ends of its own
-  arms within the 3 s — in Overdrive the arms trail back past the ship. Own-domain hulls are never hit
-  (`Projectile.DisallowImpactOnVessel`).
-- **Cost to watch — ten times the rounds in the air:** the arms fire 450 rounds/s per hull and each now lives 3–4.8 s, so
-  **1,350–2,160 rounds are alive per Brittle Star** in Destruction Mode (was 135–216), each a per-frame swept prism
-  query. The turrets' pool is sized for it (`defaultCapacity` / `bufferSizeTarget` 1400, `maxSize` 2400, refills at up
-  to 600/s; an empty pool instantiates synchronously, a full one destroys returns). Profile a match with several AI
-  Brittle Stars first. The cheap knob that keeps the look: `destructionFireRate` 90 → 9 restores the old 15 u spacing and
-  the old rounds-alive count at the slow speed (arms read as beads rather than a rope, and break prisms a tenth as fast).
+- **Slow rounds, the same range** (Garrett, 2026-10-14): RT's stream flies at a tenth of its first speed (700 → 70 u/s)
+  for ten times as long (`projectileTime` 0.3 → **3 s**), so its range, speed × 2T/π (rule 34: rounds decelerate), is
+  unchanged: 134 u → 214 u with **`rangeMultiplier` ×1 → ×1.6 at Space 10**. Every round's size ×
+  `projectileScaleMultiplier` (Charge, below). The whole velocity eases to rest over the flight, inherited part included,
+  so in Speed Mode (×6, 270 u/s) the hull overtakes its own rounds. Own-domain hulls are never hit
+  (`Projectile.DisallowImpactOnVessel`). 12 rounds/s × 3–4.8 s = 36–58 rounds alive per hull while RT is held.
 
 ### 3.5 Ring Detonation — CHARGE
 - **LT throws the ring** forward at `ringLaunchSpeed` 240 u/s on top of the hull's velocity, spinning. It blows on
@@ -184,8 +201,8 @@ The class document predates the rule *"no other pvp in the game … we should on
 
 | Document | Shipped |
 |---|---|
-| Shots "knock back enemy vessels, reducing their momentum", stacking per hit | Every round on an enemy hull is a **scored bullet hit** (petals ejected, 1 point). Nothing moves or slows the hull. |
-| Destruction Mode hits "disable enemy vessel mass production temporarily" | Retired (CONTROL tier). Destruction Mode's five unbroken arms take petals five times as fast (`VesselCombatHitByBullet` still admits one hit per victim per 0.05 s — at most 20 hits, two petals, a second — however many rounds land). |
+| Shots "knock back enemy vessels, reducing their momentum", stacking per hit | Every RT round on an enemy hull is a **scored bullet hit** (petals ejected, 1 point); a Destruction Mode cord across one is a scored **Strike** (8 points, once per victim per 0.5 s). Nothing moves or slows the hull. |
+| Destruction Mode hits "disable enemy vessel mass production temporarily" | Retired (CONTROL tier). Destruction Mode's five cords strike instead: a cord drawn across a hull is a scored Strike at the fleet price, once per victim per `cordHitCooldown` 0.5 s, however many cords touch it. |
 | Ring blast: knocked back, momentum reduced, trail disabled | The ring explosion's scored **MissileBlast** hit, once per hull per explosion, through `CombatHitDrain.TryAdmit` (a warded pilot is neither scored on nor robbed). |
 | Space (Hunter): "increased shot range and **nudge intensity**" | Range only — the nudge went with knockback. |
 | Friendly fire "accidentally disable allied mass production" | Friendly fire stays on **mass** (rounds and blasts break allied prisms); nothing touches an allied hull. |
@@ -202,9 +219,9 @@ a copy of `StoatHUDVariant` (same internal fileIDs, so the vessel's nesting bloc
 
 | Element | Ability | Input | The one dial | L5 |
 |---|---|---|---|---|
-| Charge | Ring Detonation | LT (2) | disk thickness ×1 → ×4, rounds ×1 → ×1.8 | **open** |
+| Charge | Ring Detonation | LT (2) | disk thickness ×1 → ×4, rounds and cord width ×1 → ×1.8 | **open** |
 | Mass | Creation Mode | B (7) | corner-trail blocks ×1 → ×1.8 (the mode flies ×0.5) | **open** |
-| Space | Destruction Mode (the five arms; + Fire on RT) | X (8) | range ×1 → ×1.6 | **open** |
+| Space | Destruction Mode (the five cords; + Fire on RT) | X (8) | cord length and RT's range ×1 → ×1.6 | **open** |
 | Time | Speed Mode | A (6) | speed ×6 → ×8 | **open** |
 
 `element_ability_table.py BrittleStar`: abilities 4/4, scaling 4/4, L5 gates 0/4, **0 disagreements**.
@@ -216,7 +233,7 @@ open slots (empty `UpgradeLabel`). Proposals for Garrett to mark up (none implem
 |---|---|---|
 | Charge | **Chain Reaction** — the disk's edge sets off a second, smaller ring explosion where it ends | **Domain-Safe Ring** — the disk spares your own domain's mass (the Sparrow's Charge 5 shape) |
 | Mass | **Shielded Corners** — the corner trails arrive shielded (the Stoat / Thresher Mass 5 shape) | **Webbing** — every fifth block bridges to the next corner, stitching the five lines into a tube |
-| Space | **Piercing Arms** — the arms' rounds pass through the first prism (the Sparrow's Space 5, `stopOnFirstPrismImpact`) | **Long Arms** — the arms' range ×1.25 |
+| Space | **Shielding Cords** — the cords armour your own mass instead of cutting it (the Thresher's chain) | **Long Cords** — the cords' length ×1.25 |
 | Time | **Afterburner Ring** — a thrown ring inherits Speed Mode's speed and fuses later | **Quick Build** — the rebuild is instant |
 
 ## 6. AI (input-only)
@@ -235,7 +252,8 @@ document's four element personas) is follow-up F3.
 |---|---|
 | Pure hull geometry + morphs | `_Scripts/Controller/Vessel/BrittleStarHullForm.cs` |
 | Hull emitter (meshes, muzzles, materials) | `_Scripts/Controller/Vessel/BrittleStarHullBuilder.cs` |
-| Pure rules (ring life, modes, mode speed, aim, spread, arms, the disk, range) | `_Scripts/Controller/Vessel/BrittleStarRules.cs` |
+| Pure rules (ring life, modes, mode speed, aim, spread, arm direction, the disk, range) | `_Scripts/Controller/Vessel/BrittleStarRules.cs` |
+| Pure cord physics (Destruction Mode's five cords) | `_Scripts/Controller/Vessel/BrittleStarCord.cs` |
 | Flight model (Speed Mode multiplier) | `_Scripts/Controller/Vessel/BrittleStarVesselTransformer.cs` |
 | Base trail (Speed Mode spacing) | `_Scripts/Controller/Vessel/BrittleStarPrismController.cs` |
 | Executor (everything) | `R_VesselActions/Executors/BrittleStarExecutor.cs` |
@@ -246,7 +264,7 @@ document's four element personas) is follow-up F3.
 | HUD | `_Scripts/UI/Controller/BrittleStarHUDController.cs`, `_Scripts/UI/View/BrittleStarHUDView.cs`, `_Prefabs/UI Elements/VesselHUD/BrittleStarHUDVariant.prefab` |
 | Prefab | `_Prefabs/Spacevessels/BrittleStar.prefab` |
 | Assets | `_SO_Assets/VesselActions/BrittleStar/` (config + 5 controls), `_SO_Assets/Camera/BrittleStarCameraSettingsSO.asset`, `…/VesselContainers/BrittleStarImpactorDataContainer.asset`, `…/SkimmerContainers/BrittleStarSkimmerImpactorDataContainer.asset`, `_SO_Assets/AI Boost Policies/BrittleStarAIBoostPolicy.asset`, `_SO_Assets/Classes/SO_Class_BrittleStar.asset`, `Resources/ElementalAbilityMaps/BrittleStar.asset` |
-| Tests | `_Scripts/Tests/Editor/BrittleStarTests.cs` (24) |
+| Tests | `_Scripts/Tests/Editor/BrittleStarTests.cs` (29: five on the cords) |
 | Creation tool | `Tools/Build/author_brittlestar_assets.py` (`--check`, `--self-test`) |
 | Offline test runner | `Tools/Build/brittlestar_harness/run.sh` (`--self-test`, `--obj DIR`) |
 | Art | `Tools/Build/author_brittlestar_icons.py`, `Tools/Build/render_brittlestar_card_icon.py`; concept art `Docs/Studios/BrittleStar/` |
@@ -279,8 +297,11 @@ identical on the Stoat and Sparrow and shared by all 16 vessel prefabs — inher
 | `rangeMultiplier` (Space) | `BrittleStarConfig` | 1 → 1.6 |
 | `projectileScale` / `projectileScaleMultiplier` (Charge) | `BrittleStarConfig` | 1 (the Sparrow's) / 1 → 1.8 |
 | `roundGrowthFactor` (in-flight swell, the Sparrow's look) | `BrittleStarConfig` | ×3 |
-| `destructionFireRate` / `destructionProjectileSpeed` / `destructionProjectileScale` (the arms) | `BrittleStarConfig` | 90 /s each / 135 / 1 |
-| Round pool | `BrittleStar.prefab` turrets | 1400 / max 2400 (1,350–2,160 arm rounds alive) |
+| `cordLength` (× Space) / `cordLinks` / `cordCutRadius` (× Charge) | `BrittleStarConfig` | 80 u / 12 / 0.6 u |
+| `cordRootRate` / `cordTipRate` / `cordDrag` (the cord's stiffness and whip) | `BrittleStarConfig` | 30 /s / 4 /s / 6 /s |
+| `cordDebrisRestitution` / `cordDebrisSpeedLimit` / `cordHitCooldown` | `BrittleStarConfig` | 0.5 / 200 u/s / 0.5 s |
+| `cordRenderSubdivisions` / `cordColor` / `cordRimBrightness` / `cordMaterial` | `BrittleStarConfig`, executor | 4 / iron / 0.75 / `ThresherChainMaterial` |
+| Round pool | `BrittleStar.prefab` turrets | 90 / max 320 (RT's 36–58 rounds alive; the Sparrow's own pool) |
 | `maxSpreadDegrees` / `aimDeadzone` / `ringTurnRate` | `BrittleStarConfig` | 16° / 0.25 / 540°/s |
 | `ringLaunchSpeed` / `ringFuseSeconds` | `BrittleStarConfig` | 240 u/s / 1.1 s |
 | `blastScale` (Charge — the disk's thickness) | `BrittleStarConfig` | 1 → 4 (× the ring's 0.22 u half-thickness) |
@@ -295,12 +316,12 @@ identical on the Stoat and Sparrow and shared by all 16 vessel prefabs — inher
 | Hull proportions | `BrittleStarHullBuilder` field initializers (`BrittleStarHullForm.Defaults`) | ring radius 6 (2.5× the first cut), struts 0.22, arms 0.14 |
 | Flames / bank | `BrittleStarAnimation` | lit 3.2 u, ember 0.12 u, bank 28° |
 | Camera | `BrittleStarCameraSettingsSO` | offset (0, 0, −38) — no height: the vessel is a crosshair — far 12000 |
-| `armFocusDistance` / `armSplayDegrees` (the arms in / out) | `BrittleStarConfig` | 120 u / 25° |
+| `armFocusDistance` / `armSplayDegrees` (the cords in / out) | `BrittleStarConfig` | 120 u / 25° |
 
 ## In-editor verification
 
 Nothing here has been opened in Unity. What has been proved offline: the player and editor reference compiles
-(`unity_refcompile`), the 24 edit-mode tests run against the shipped code (`brittlestar_harness`, plus two negative
+(`unity_refcompile`), the 29 edit-mode tests run against the shipped code (`brittlestar_harness`, plus three negative
 controls), the peer-press harness (0 divergences), the element table (0 disagreements), and the fleet's static gates.
 None of that is a play test. In order:
 
@@ -313,14 +334,16 @@ None of that is a play test. In order:
 4. **B** (Creation): the hull slows to **half** cruise (the slowest mode), the cockpit's trail stops and five trails run
    behind the ring's five corners. Push the right stick round: the ring turns and the five lines twist with it. Go
    straight from Speed to Creation: no burst of blocks while the hull coasts down.
-5. **X** (Destruction): with no button held, five unbroken streams pour out of the five turrets — five arms, closing on
-   one point ~120 u ahead. Push the right stick out: they open to a 25° splay; let it back in: they close again. Push it
-   round: the ring — and the five arms with it — turns to follow. The rounds are the Sparrow's, visibly slow (135 u/s),
-   swelling ×3 as they fly and still reaching ~258 u (a wall that far ahead breaks); in Speed Mode the hull outruns
-   them. Watch the Profiler with several AI Brittle Stars in Destruction Mode (1,350+ rounds alive per hull). They should
-   read as solid lines, not dashes. Fly through mass: the arms cut it, your own included (friendly fire). **X** again:
-   they stop. **RT** outside it: one stream from the cockpit gun; with the right stick pushed, from the aimed turret;
-   full deflection opens a cone.
+5. **X** (Destruction): five cords — fresnel tubes in your domain's colour — grow out of the five turrets over a third
+   of a second, ~80 u long, their tips nearly meeting ahead. Push the right stick out: they open to a 25° splay; let it
+   back in: they close again. Push it round: the ring — and the five cords with it — turns to follow, and the tips whip
+   round after the roots; turn the hull hard and they bow, then straighten. Fly straight in Speed Mode (×6): they stay
+   ahead, never streaming back. Fly the cords through mass: every prism they touch is sliced in two along the cord's
+   sweep (the Thresher's slice), your own included (friendly fire) — except trail you laid in the last second. A shielded
+   block loses its shield, then dies. Draw a cord across a rival: they lose petals and are not moved. **X** again: the
+   cords draw back in. **RT** outside it: one stream from the cockpit gun; with the right stick pushed, from the aimed
+   turret; full deflection opens a cone. RT does nothing while the cords are out. Profiler: 60 segment queries a frame
+   per Brittle Star in Destruction Mode, no rounds.
 6. **LT**: the ring flies off and blows on the first mass it touches — a thin band in your domain's colour races out
    across the ring's plane to the width of the nucleus (~780 u) in 0.7 s, cutting a flat slice through every prism it
    passes and nothing above or below it; a rival it crosses loses petals and is not moved. The hull is now **ringless**: A/B/X do nothing, RT fires only the cockpit gun, the Ring card is empty.
@@ -346,7 +369,7 @@ None of that is a play test. In order:
 - **F2 — level-5 upgrades** (§5): Garrett's call.
 - **F3 — persona AI**: the document gives each element a persona (Fabricator builds, Rolling Thunder destroys clumps,
   Hunter chases pilots, Zephyr chases crystals into enemy zones). Today one autopilot serves all four.
-- **F4 — FMOD**: ten empty `EventReference` slots on `BrittleStarConfig` (mode cues, fire, ring launch / blast / rebuild,
+- **F4 — FMOD**: eleven empty `EventReference` slots on `BrittleStarConfig` (mode cues, fire, cord slice, ring launch / blast / rebuild,
   charge stored, Overdrive) — audio's to author.
 - **F5 — minigames**: *Demolition Derby* (Time/Charge rewards) and *Fauna Frenzy* (Mass/Space rewards) from the
   document (`/arcadegame`).
@@ -356,11 +379,10 @@ None of that is a play test. In order:
   (`--check`: 35 mapped, 0 drift). Tune there, then clone with `/artifact-to-unity`. Its round-2 scorecard and findings
   (the disk breaks your own trail in the Frenzy; half-speed Creation slows it; Overdrive still out-pays the ring):
   `Docs/Studios/BRITTLE_STAR.md` §5.2. Not yet published into the one artifact (it goes through `Ys-bleeding-edge`).
-- **F9 — profile the two big costs** (debt this branch created, measured offline only): the slow rounds keep 1,350–2,160
-  arm rounds alive per hull (§3.4), and each ring explosion runs ten `PrismSpatialIndex.QuerySphere` calls of up to the
-  nucleus radius (392 u). Profile a match with 3–4 AI Brittle Stars in Destruction Mode; the knobs are
-  `destructionFireRate` (9/s keeps the look at a tenth of the rounds) and the sweep count in
-  `BrittleStarExecutor.UpdateWaves`.
+- **F9 — profile the ring explosion** (measured offline only): each ring explosion runs ten
+  `PrismSpatialIndex.QuerySphere` calls of up to the nucleus radius (392 u); the knob is the sweep count in
+  `BrittleStarExecutor.UpdateWaves`. (The other cost this row named — 1,350–2,160 arm rounds alive per hull — went with
+  the rounds on 2026-10-15: the five cords are 60 segment queries a frame and nothing else.)
 - **F10 — the studio** (`Docs/Studios/BRITTLE_STAR.md` §5.2): publish the page into the one Vessel Studio artifact
   (through `Ys-bleeding-edge`, with the owner's approval); give it a decision log; re-tune its lab-only pilot for x6
   (Hard is not the fastest level on Derby I1 / I4 and Frenzy I4).

@@ -17,7 +17,7 @@ namespace CosmicShore.Gameplay
     /// <item><b>Mass — Creation Mode</b> (Fabricator: "increased block size in creation mode"): a trail behind each of
     /// the ring's five corners, <see cref="CreationBlockScale"/>.</item>
     /// <item><b>Space — Destruction Mode &amp; Shooting</b> (Hunter: "increased shot range"):
-    /// <see cref="RangeMultiplier"/>. The document's "nudge intensity" is retired with knockback itself — see below.</item>
+    /// <see cref="RangeMultiplier"/> — RT's range and the five cords' length. The document's "nudge intensity" is retired with knockback itself — see below.</item>
     /// <item><b>Time — Speed Mode</b> (Zephyr: "increased movement speed bonus in speed mode"):
     /// <see cref="SpeedModeMultiplier"/>.</item>
     /// </list></para>
@@ -27,7 +27,7 @@ namespace CosmicShore.Gameplay
     /// vessel any more: every hit on an enemy hull is a SCORED combat hit that moves petals, through the fleet's
     /// reporters (the bullet's <c>VesselCombatHitByBullet</c>) and, for the ring explosion,
     /// <see cref="CombatHitDrain.TryAdmit"/> directly. Destruction Mode's "disable mass production" is
-    /// carried by what it can still do: five unbroken streams take petals five times as fast.</para>
+    /// carried by what it can still do: a cord drawn across a hull is a scored strike.</para>
     /// </summary>
     [CreateAssetMenu(fileName = "BrittleStarConfig", menuName = "ScriptableObjects/Vessel Actions/Brittle Star Config")]
     public sealed class BrittleStarConfigSO : ScriptableObject
@@ -68,34 +68,57 @@ namespace CosmicShore.Gameplay
         [Tooltip("Muzzle speed, u/s. Range = speed × 2T/π (Projectile's ease-out, vessel rule 34). A tenth of the first " +
                  "cut's 700 with ten times the flight time (Garrett, 2026-10-14: slow rounds, the same range).")]
         [SerializeField, Min(10f)] float projectileSpeed = 70f;
-        [Tooltip("Flight time at Space 0, seconds - both streams' (RT's and the arms'). 3 s: the first cut's 0.3 x 10, so the " +
-                 "rounds at a tenth of the speed reach exactly as far. Rounds alive scale with it: see the turrets' pool.")]
+        [Tooltip("RT's flight time at Space 0, seconds. 3 s: the first cut's 0.3 x 10, so the rounds at a tenth of the " +
+                 "speed reach exactly as far. Rounds alive scale with it: see the turrets' pool.")]
         [SerializeField, Min(0.05f)] float projectileTime = 3f;
-        [Tooltip("SPACE: multiplier on the flight time (and so the range). The Hunter's element.")]
+        [Tooltip("SPACE: multiplier on RT's flight time (and so its range) and on the five cords' length. The Hunter's element.")]
         [SerializeField] ElementalFloat rangeMultiplier = ElementalFloat.Multiplier(1f, 1.6f, Element.Space, 0.7f);
         [Tooltip("Round size multiplier on the projectile prefab's own size, at Charge 0 (the Sparrow's own: 1).")]
         [SerializeField, Min(0.1f)] float projectileScale = 1f;
-        [Tooltip("CHARGE: the rounds' size multiplier. Rolling Thunder's element.")]
+        [Tooltip("CHARGE: the rounds' size multiplier, and the cords' cut width. Rolling Thunder's element.")]
         [SerializeField] ElementalFloat projectileScaleMultiplier = ElementalFloat.Multiplier(1f, 1.8f, Element.Charge, 0.6f);
-        [Header("Destruction Mode (the five arms)")]
-        [Tooltip("Rounds per second from EACH of the five turrets while Destruction Mode is on. It fires on its own, with " +
-                 "no spread, at the Sparrow's full-auto cadence: a stream this steady reads as five ARMS - the brittle star's.")]
-        [SerializeField, Min(1f)] float destructionFireRate = 90f;
-        [Tooltip("The arms' muzzle speed, u/s: a tenth of the Sparrow's full-auto 1350 (Garrett, 2026-10-14), with " +
-                 "projectileTime ten times the Sparrow's, so the reach is the same 258 u. Spacing between rounds = speed / rate " +
-                 "(1.5 u at 135 / 90).")]
-        [SerializeField, Min(10f)] float destructionProjectileSpeed = 135f;
-        [Tooltip("The arms' round size, as a multiple of the round prefab's own (the Sparrow's tracer at 1).")]
-        [SerializeField, Min(0.1f)] float destructionProjectileScale = 1f;
-        [Tooltip("In-flight growth of every round: it leaves the muzzle at its size and swells to this multiple over its " +
+        [Tooltip("In-flight growth of RT's rounds: each leaves the muzzle at its size and swells to this multiple over its " +
                  "flight, its hit radius with it - the Sparrow's look (FullAutoAction.growthFactorAtRestingMass 3). A fixed " +
                  "factor here: Mass is Creation Mode's dial on this hull, so it does not also scale the rounds.")]
         [SerializeField, Min(0.01f)] float roundGrowthFactor = 3f;
-        [Tooltip("With the right stick IN (centred), the five arms angle inward to meet the nose axis this far ahead, " +
+        [Header("Destruction Mode (the five cords)")]
+        [Tooltip("Length of each of the five CORDS at Space 0, world units (Garrett, 2026-10-15: five cords like the " +
+                 "Thresher's, without the weight). x rangeMultiplier (SPACE: the Hunter's longer reach). Each hangs from its " +
+                 "turret's muzzle; the cords grow out as the mode comes on and draw back in as it goes off.")]
+        [SerializeField, Min(1f)] float cordLength = 80f;
+        [Tooltip("Gameplay links per cord (the Thresher's chain has 24 over 140 u; these are shorter). Each link is " +
+                 "swept against prisms and hulls every frame: 5 cords x this many segment queries.")]
+        [SerializeField, Range(2, 32)] int cordLinks = 12;
+        [Tooltip("Half-width of what a cord cuts, world units, at Charge 0 (the Thresher's chainCutRadius 0.6). " +
+                 "x projectileScaleMultiplier (CHARGE). Drawn at exactly this width.")]
+        [SerializeField, Min(0.05f)] float cordCutRadius = 0.6f;
+        [Tooltip("1/s: how hard the link at the muzzle is drawn to its place on the arm's line (BrittleStarCord). Stiff: " +
+                 "the root goes where the stick puts it.")]
+        [SerializeField, Min(0f)] float cordRootRate = 30f;
+        [Tooltip("1/s: the same at the free tip. Softer, so a turn or a flick of the ring bends the cord and its tip whips " +
+                 "round after the root.")]
+        [SerializeField, Min(0f)] float cordTipRate = 4f;
+        [Tooltip("1/s: how fast a link's own swing dies against the motion of its place on the line (the cord rides along " +
+                 "with the hull at any speed; only the swing decays).")]
+        [SerializeField, Min(0f)] float cordDrag = 6f;
+        [Tooltip("Debris of a cut prism leaves at this share of the cutting link's velocity (the Thresher's 0.5).")]
+        [SerializeField, Min(0f)] float cordDebrisRestitution = 0.5f;
+        [Tooltip("Cap on that debris speed, u/s (0 = none). A whipping tip moves several hundred u/s.")]
+        [SerializeField, Min(0f)] float cordDebrisSpeedLimit = 200f;
+        [Tooltip("Drawn segments per gameplay link: the cord is drawn as a smooth curve through its links " +
+                 "(ThresherChainLinks.Smooth), passing through every one of them exactly.")]
+        [SerializeField, Range(1, 12)] int cordRenderSubdivisions = 4;
+        [Tooltip("The cord's body (the fresnel tube's dark colour), under the bloom threshold.")]
+        [SerializeField] Color cordColor = new(0.07f, 0.065f, 0.065f);
+        [Tooltip("The rim's brightness: the pilot's domain colour normalised to this max channel (the Thresher's taut 0.75).")]
+        [SerializeField, Range(0f, 1f)] float cordRimBrightness = 0.75f;
+        [Tooltip("The rim's colour when no palette is loaded (and for Domains.Blue, which the palette does not author).")]
+        [SerializeField] Color cordFallbackRim = new(0.3f, 0.9f, 0.85f);
+        [Tooltip("With the right stick IN (centred), the five cords angle inward to meet the nose axis this far ahead, " +
                  "world units - the vessel as a crosshair.")]
         [SerializeField, Min(1f)] float armFocusDistance = 120f;
-        [Tooltip("With the right stick pushed OUT to the rim, each arm splays this many degrees outward from the nose. " +
-                 "Between in and out the arms move linearly (BrittleStarRules.ArmDirection).")]
+        [Tooltip("With the right stick pushed OUT to the rim, each cord splays this many degrees outward from the nose. " +
+                 "Between in and out the cords move linearly (BrittleStarRules.ArmDirection).")]
         [SerializeField, Range(0f, 60f)] float armSplayDegrees = 25f;
         [Tooltip("Widest cone the right stick (or a touch drag) opens, in degrees off each muzzle's axis.")]
         [SerializeField, Range(0f, 45f)] float maxSpreadDegrees = 16f;
@@ -138,6 +161,9 @@ namespace CosmicShore.Gameplay
         [SerializeField] CombatHitClass ringBlastHitClass = CombatHitClass.MissileBlast;
         [Tooltip("Seconds before the same victim can be scored by this pilot's ring explosion again.")]
         [SerializeField, Min(0f)] float ringBlastHitCooldown = 0.5f;
+        [Tooltip("A cord across an enemy hull is a scored STRIKE (a blade: CombatHitClass's contact verb) at the fleet " +
+                 "price. Seconds before the same victim can be struck by this pilot's cords again.")]
+        [SerializeField, Min(0.05f)] float cordHitCooldown = 0.5f;
         [Tooltip("Shared combat-hit channel (StatsManager scores from it).")]
         [SerializeField] ScriptableEventCombatHitStats onCombatHitLanded;
 
@@ -163,6 +189,8 @@ namespace CosmicShore.Gameplay
         [SerializeField] EventReference destructionModeEvent;
         [SerializeField] EventReference modeOffEvent;
         [SerializeField] EventReference fireEvent;
+        [Tooltip("A cord cuts a prism (one per cut, at the cut).")]
+        [SerializeField] EventReference cordSliceEvent;
         [SerializeField] EventReference ringLaunchEvent;
         [SerializeField] EventReference ringBlastEvent;
         [SerializeField] EventReference ringRebuildEvent;
@@ -185,9 +213,19 @@ namespace CosmicShore.Gameplay
         public ElementalFloat RangeMultiplier => rangeMultiplier;
         public float ProjectileScale => projectileScale;
         public ElementalFloat ProjectileScaleMultiplier => projectileScaleMultiplier;
-        public float DestructionProjectileScale => destructionProjectileScale;
-        public float DestructionFireRate => destructionFireRate;
-        public float DestructionProjectileSpeed => destructionProjectileSpeed;
+        public float CordLength => cordLength;
+        public int CordLinks => cordLinks;
+        public float CordCutRadius => cordCutRadius;
+        public float CordRootRate => cordRootRate;
+        public float CordTipRate => cordTipRate;
+        public float CordDrag => cordDrag;
+        public float CordDebrisRestitution => cordDebrisRestitution;
+        public float CordDebrisSpeedLimit => cordDebrisSpeedLimit;
+        public int CordRenderSubdivisions => cordRenderSubdivisions;
+        public Color CordColor => cordColor;
+        public float CordRimBrightness => cordRimBrightness;
+        public Color CordFallbackRim => cordFallbackRim;
+        public float CordHitCooldown => cordHitCooldown;
         public float CreationOffset => creationOffset;
         public float CreationSpeedMultiplier => creationSpeedMultiplier;
         public float RoundGrowthFactor => roundGrowthFactor;
@@ -220,6 +258,7 @@ namespace CosmicShore.Gameplay
         public EventReference DestructionModeEvent => destructionModeEvent;
         public EventReference ModeOffEvent => modeOffEvent;
         public EventReference FireEvent => fireEvent;
+        public EventReference CordSliceEvent => cordSliceEvent;
         public EventReference RingLaunchEvent => ringLaunchEvent;
         public EventReference RingBlastEvent => ringBlastEvent;
         public EventReference RingRebuildEvent => ringRebuildEvent;

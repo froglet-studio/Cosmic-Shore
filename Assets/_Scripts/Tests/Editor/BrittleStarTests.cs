@@ -9,8 +9,8 @@ namespace CosmicShore.Tests
 {
     /// <summary>
     /// The Brittle Star (<c>R_VesselActions/BRITTLE_STAR.md</c>): the pure hull form (parts, accents, element morphs,
-    /// winding, bounds) and the pure rules (the ring's life cycle clause by clause from the class document, mode
-    /// selection, the aim math and the deterministic spread).
+    /// winding, bounds), the pure rules (the ring's life cycle clause by clause from the class document, mode
+    /// selection, the aim math and the deterministic spread) and Destruction Mode's cords (<see cref="BrittleStarCord"/>).
     /// </summary>
     [TestFixture]
     public class BrittleStarTests
@@ -378,6 +378,110 @@ namespace CosmicShore.Tests
         public void Range_IsSpeedTimesTwoTOverPi()
         {
             Assert.AreEqual(700f * 0.6f / Mathf.PI, BrittleStarRules.RangeFor(700f, 0.3f), 1e-3f);
+        }
+
+        // ------------------------------------------------------------------ Destruction Mode: the five cords
+
+        // The shipped dials (BrittleStarConfigSO's cord block).
+        static readonly BrittleStarCord.Settings Cord = new() { RootRate = 30f, TipRate = 4f, Drag = 6f };
+        const int CordLinks = 12;
+        const float CordLength = 80f;
+
+        /// <summary>A ring flick: the muzzle sits 6 u out on a ring that turns 72° at 540 °/s after 0.2 s, its cord posed
+        /// splayed 25° outward. Returns the largest distance the tip strays from its place on the pose, and the cord.</summary>
+        static float Flick(float dt, out BrittleStarCord cord, float seconds = 1.5f)
+        {
+            cord = new BrittleStarCord(CordLinks);
+            float phase = 0f, target = 72f * Mathf.Deg2Rad, worst = 0f;
+            for (float t = 0f; t < seconds; t += dt)
+            {
+                if (t > 0.2f) phase = Mathf.Min(target, phase + 540f * Mathf.Deg2Rad * dt);
+                var outward = new Vector3(Mathf.Cos(phase), Mathf.Sin(phase), 0f);
+                var anchor = outward * 6f;
+                float splay = 25f * Mathf.Deg2Rad;
+                var dir = (Vector3.forward * Mathf.Cos(splay) + outward * Mathf.Sin(splay)).normalized;
+                cord.Step(anchor, dir, CordLength, Cord, dt, Vector3.zero);
+                worst = Mathf.Max(worst, (cord.Tip - (anchor + dir * CordLength)).magnitude);
+            }
+            return worst;
+        }
+
+        [Test]
+        public void Cord_UnseededIsLaidStraightAlongItsPose()
+        {
+            var cord = new BrittleStarCord(CordLinks);
+            Assert.IsFalse(cord.Seeded);
+            cord.Step(new Vector3(6f, 0f, 0f), Vector3.forward, CordLength, Cord, 1f / 60f, Vector3.zero);
+            Assert.IsTrue(cord.Seeded);
+            Assert.AreEqual(CordLinks + 1, cord.Count);
+            for (int i = 0; i < cord.Count; i++)
+                Assert.AreEqual(0f, (cord.Points[i] - new Vector3(6f, 0f, CordLength * i / CordLinks)).magnitude, 1e-4f);
+            cord.Clear();
+            Assert.IsFalse(cord.Seeded, "a cleared cord is laid afresh, never resumed from where it was drawn back");
+        }
+
+        [Test]
+        public void Cord_RidesAlongWithTheHull_AtAnySpeed()
+        {
+            // Speed Mode at x6: 270 u/s straight ahead for two seconds. The cord must not stream back behind the muzzle.
+            foreach (float speed in new[] { 45f, 270f })
+            {
+                var cord = new BrittleStarCord(CordLinks);
+                var velocity = Vector3.forward * speed;
+                var anchor = new Vector3(6f, 0f, 0f);
+                for (int f = 0; f < 120; f++)
+                {
+                    anchor += velocity / 60f;
+                    cord.Step(anchor, Vector3.forward, CordLength, Cord, 1f / 60f, velocity);
+                }
+                Assert.AreEqual(0f, (cord.Tip - (anchor + Vector3.forward * CordLength)).magnitude, 0.05f,
+                    $"at {speed} u/s the tip holds its place on the pose");
+            }
+        }
+
+        [Test]
+        public void Cord_TipWhipsAfterTheRoot_ThenSettles()
+        {
+            float stray = Flick(1f / 60f, out var cord);
+            Assert.Greater(stray, 5f, "a flick of the ring bends the cord: the tip lags its place");
+            Assert.Less(stray, CordLength, "and never more than the cord is long");
+            // 1.5 s on (the flick ended at ~0.33 s) the cord is back on its pose.
+            float phase = 72f * Mathf.Deg2Rad, splay = 25f * Mathf.Deg2Rad;
+            var outward = new Vector3(Mathf.Cos(phase), Mathf.Sin(phase), 0f);
+            var dir = (Vector3.forward * Mathf.Cos(splay) + outward * Mathf.Sin(splay)).normalized;
+            Assert.AreEqual(0f, (cord.Tip - (outward * 6f + dir * CordLength)).magnitude, 0.5f, "settled");
+            Assert.AreEqual(0f, (cord.Points[0] - outward * 6f).magnitude, 1e-4f, "pinned to its muzzle");
+        }
+
+        [Test]
+        public void Cord_NeverStretchesPastItsLength()
+        {
+            // The worst case the hull can make: a flick of the ring while the hull yaws hard at Speed Mode's pace.
+            var cord = new BrittleStarCord(CordLinks);
+            float seg = CordLength / CordLinks, yaw = 0f, phase = 0f;
+            var pos = Vector3.zero;
+            for (int f = 0; f < 240; f++)
+            {
+                const float dt = 1f / 30f;
+                yaw += 107f * Mathf.Deg2Rad * dt;
+                phase += 540f * Mathf.Deg2Rad * dt * (f % 40 < 8 ? 1f : 0f);
+                var fwd = new Vector3(Mathf.Sin(yaw), 0f, Mathf.Cos(yaw));
+                var right = new Vector3(Mathf.Cos(yaw), 0f, -Mathf.Sin(yaw));
+                var outward = right * Mathf.Cos(phase) + Vector3.up * Mathf.Sin(phase);
+                pos += fwd * 270f * dt;
+                cord.Step(pos + outward * 6f, (fwd + outward * 0.4f).normalized, CordLength, Cord, dt, fwd * 270f);
+                for (int i = 1; i < cord.Count; i++)
+                    Assert.LessOrEqual((cord.Points[i] - cord.Points[i - 1]).magnitude, seg + 1e-3f,
+                        $"frame {f}, link {i}: a cord reads stretched");
+            }
+        }
+
+        [Test]
+        public void Cord_BendsAlikeAt30And144Fps()
+        {
+            float at30 = Flick(1f / 30f, out _), at60 = Flick(1f / 60f, out _), at144 = Flick(1f / 144f, out _);
+            Assert.AreEqual(at144, at30, at144 * 0.2f, "sub-stepped: a 30 fps peer sees the same whip");
+            Assert.AreEqual(at144, at60, at144 * 0.2f);
         }
     }
 }

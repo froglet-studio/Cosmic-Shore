@@ -289,6 +289,47 @@ Styles at Hard I3, Derby: Zephyr 18.6 s, Balanced 22.0, Hunter 25.0, Shipped 25.
    both I4s). That is the lab-only
    pilot, not the vessel; the next studio round should re-tune its Speed-in and threading for x6.
 
+### 5.3 Round 3: the five cords (2026-10-15)
+
+Garrett: *"instead of a ton of projectiles lets create 5 cords similar to the thresher's cord but without the weight at
+the end. so the 5 cords are still controlled by the right thumbstick and slice through prisms."* Destruction Mode's five
+streams of rounds are gone; one cord hangs from each turret (`BrittleStarCord`, contract
+`R_VesselActions/BRITTLE_STAR.md` §3.4). The studio's Unity build steps the same model line for line (`stepCords`:
+pose spring stiff at the root and soft at the tip, follow-the-leader length cap, 1/120 s sub-steps) and draws each link
+as a thin cylinder in the pilot's colour; Vessel Config's Unity sliders gained Cord length / width / root / tip / drag.
+In the studio a cord also hits a creature (2 hit points, once per `cordHitCooldown`) — lab-only, the game's fauna die
+by their prisms.
+
+Scorecard with the cords (median of seeds 11/22/33, seconds; `brittlestar_score.cjs`, 2026-10-15; round 2's arms in
+brackets where they differ):
+
+| | Easy | Medium | Hard | Hard, no ring | Hard, no modes |
+|---|---|---|---|---|---|
+| Derby I1 | 20.2 | 20.1 | 21.1 | 21.1 | 73.9 |
+| Derby I2 | 21.6 | 24.1 | 22.8 (21.3) | 22.8 (21.3) | 75.0 |
+| Derby I3 | 24.5 (26.4) | 22.3 (22.5) | 22.0 | 21.6 | 77.8 |
+| Derby I4 | 64.7 | 59.7 | 69.8 | 69.8 | 84.7 |
+| Frenzy I1 | 26.4 | 26.4 | 26.0 | 26.0 | 78.1 |
+| Frenzy I2 | 34.4 | 34.4 | 34.0 | 34.0 | 163.7 |
+| Frenzy I3 | 66.8 (81.0) | 78.2 (68.9) | 57.1 (60.9) | 57.1 (60.7) | DNF |
+| Frenzy I4 | 148.7 (DNF) | 100.7 (135.2) | 106.8 (153.6) | 74.5 (DNF) | DNF |
+
+Styles at Hard I3, Derby: Balanced 22.0, Zephyr 22.0 (18.6), Hunter 25.6, Shipped 27.0, Rolling Thunder 42.3 (36.8, 5
+rings), Fabricator 50.2. Frenzy: Zephyr 55.5, Fabricator 55.8, Balanced 57.1, Hunter 57.9, Shipped 64.0, Rolling Thunder 71.7.
+
+**Findings** (round 3):
+
+1. **The Derby barely moves.** Walls in a corridor fall as fast to five 80 u cords flown through them as to 450 rounds a
+   second: I1, I4 and "no modes" are unchanged to the tenth, I2/I3 within 2 s. Round 2's finding 4 (a level race on
+   I1-I3) still stands; the cords did not make the ladder bite.
+2. **The Frenzy got easier at I3-I4**: Easy now finishes I4 (148.7 s, was DNF) and Hard I4 drops 154 → 107 s. The cords
+   kill creatures that cross them without the pilot aiming, and they only cut what they touch, so they no longer pour
+   rounds down a line that runs through the pilot's own target mass.
+3. **The ring still does not pay in the Frenzy** ("no ring" 74.5 against Hard 106.8 on I4: round 2's finding 1).
+4. **Zephyr lost its Derby lead** (18.6 → 22.0 s): at x6 in Overdrive the arms' rounds used to reach far ahead; the cords
+   are 80 u, so the fastest pilot now meets walls with less ahead of it. Cord length is the Space dial (x1.6 at Space 10);
+   the Hunter's 25.6 s is where a longer reach would show.
+
 ## 6. Bringing it into the game (done 2026-10-14)
 
 Built as `VesselClassType.BrittleStar = 16` on `cece/gallant-lamport-sc3khe` (`R_VesselActions/BRITTLE_STAR.md`). What this

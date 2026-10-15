@@ -113,6 +113,7 @@ NEW_SCRIPTS = tuple((rel, guid_for(os.path.basename(rel))) for rel in (
     "Controller/Vessel/BrittleStarHullForm.cs",
     "Controller/Vessel/BrittleStarHullBuilder.cs",
     "Controller/Vessel/BrittleStarRules.cs",
+    "Controller/Vessel/BrittleStarCord.cs",
     "Controller/Vessel/BrittleStarVesselTransformer.cs",
     "Controller/Vessel/BrittleStarPrismController.cs",
     "Controller/Animation/BrittleStarAnimation.cs",
@@ -170,6 +171,7 @@ POOL_SCRIPT = "b5daed71d21246db9fdb15a9d495e1ec"
 SPARROW_ROUND = "{fileID: 7632677803272750685, guid: 1bdcea9e9329dd141af7ab874a4d31a2, type: 3}"   # SparrowProjectile
 COMBAT_HIT_CHANNEL = "45fb43a0cddb5cc3cc4dc448df994152"
 TURN_END_CHANNEL = "498a06d44bde9184f985c938c803b2a1"
+CORD_MATERIAL = "02033cc2904f4f25bf3b6888ce3c98f9"         # ThresherChainMaterial: the cords are the Thresher's chain
 SO_VESSEL_SCRIPT = "0309a5343d820c14abd73b35f6fa50f1"
 MAP_SCRIPT = "4b3f2a8c8f344355b16a4d4296ae3f98"
 CAMERA_SCRIPT = "fd4e6f3597f7439ba7333b35a3a9e164"
@@ -208,7 +210,8 @@ def executor_block() -> str:
             f"  config: {{fileID: 11400000, guid: {CONFIG}, type: 2}}\n"
             f"  hull: {{fileID: {HULL_BUILDER_ID}}}\n"
             f"  gun: {{fileID: {GUN_ID}}}\n"
-            f"  OnMiniGameTurnEnd: {{fileID: 11400000, guid: {TURN_END_CHANNEL}, type: 2}}\n")
+            f"  OnMiniGameTurnEnd: {{fileID: 11400000, guid: {TURN_END_CHANNEL}, type: 2}}\n"
+            f"  cordMaterial: {{fileID: 2100000, guid: {CORD_MATERIAL}, type: 2}}\n")
 
 
 def turret_blocks() -> str:
@@ -256,15 +259,15 @@ def turret_blocks() -> str:
             f"    poolManager: {{fileID: {POOL_ID}}}\n" +
             mb(POOL_ID, TURRETS_GO, POOL_SCRIPT) +
             f"  prefab: {SPARROW_ROUND}\n"
-            # The five arms: 5 streams x 90 rounds/s x 3-4.8 s of flight (Space 0..10; slow rounds, Garrett 2026-10-14) =
-            # 1350-2160 rounds alive at once, plus RT's stream; the Sparrow's pool is 90/320 for its two.
-            "  defaultCapacity: 1400\n"
-            "  maxSize: 2400\n"
+            # RT's one stream only (Destruction Mode's five cords fire nothing, 2026-10-15): 12 rounds/s x 3-4.8 s of flight
+            # = 36-58 rounds alive. The Sparrow's own pool, which serves two weapons.
+            "  defaultCapacity: 90\n"
+            "  maxSize: 320\n"
             "  enableBufferMaintenance: 1\n"
-            "  bufferSizeTarget: 1400\n"
-            "  maxInstantiateRate: 600\n"
-            "  baseInstantiateRate: 200\n"
-            "  maxAddsPerFrame: 64\n")
+            "  bufferSizeTarget: 90\n"
+            "  maxInstantiateRate: 90\n"
+            "  baseInstantiateRate: 30\n"
+            "  maxAddsPerFrame: 24\n")
 
 
 def bindings() -> str:
@@ -481,10 +484,19 @@ def config_asset() -> str:
             "  rangeMultiplier:\n" + ef(1, 1, 1.6, 3, 0.7) +
             "  projectileScale: 1\n"
             "  projectileScaleMultiplier:\n" + ef(1, 1, 1.8, 1, 0.6) +
-            "  destructionFireRate: 90\n"
-            "  destructionProjectileSpeed: 135\n"
-            "  destructionProjectileScale: 1\n"
             "  roundGrowthFactor: 3\n"
+            "  cordLength: 80\n"
+            "  cordLinks: 12\n"
+            "  cordCutRadius: 0.6\n"
+            "  cordRootRate: 30\n"
+            "  cordTipRate: 4\n"
+            "  cordDrag: 6\n"
+            "  cordDebrisRestitution: 0.5\n"
+            "  cordDebrisSpeedLimit: 200\n"
+            "  cordRenderSubdivisions: 4\n"
+            "  cordColor: {r: 0.07, g: 0.065, b: 0.065, a: 1}\n"
+            "  cordRimBrightness: 0.75\n"
+            "  cordFallbackRim: {r: 0.3, g: 0.9, b: 0.85, a: 1}\n"
             "  armFocusDistance: 120\n"
             "  armSplayDegrees: 25\n"
             "  maxSpreadDegrees: 16\n"
@@ -502,6 +514,7 @@ def config_asset() -> str:
             "  overdriveSeconds: 6\n"
             "  ringBlastHitClass: 3\n"
             "  ringBlastHitCooldown: 0.5\n"
+            "  cordHitCooldown: 0.5\n"
             f"  onCombatHitLanded: {g(COMBAT_HIT_CHANNEL)}\n"
             "  aiModeIntervalSeconds: 3\n"
             "  aiFireMinTargets: 2\n"
@@ -510,7 +523,7 @@ def config_asset() -> str:
             "  aiSpeedModeDegrees: 50\n"
             "  aiTriggerMinSeconds: 0.4\n" +
             "".join(S.empty_event(n) for n in ("speedModeEvent", "creationModeEvent", "destructionModeEvent", "modeOffEvent",
-                                               "fireEvent", "ringLaunchEvent", "ringBlastEvent", "ringRebuildEvent",
+                                               "fireEvent", "cordSliceEvent", "ringLaunchEvent", "ringBlastEvent", "ringRebuildEvent",
                                                "chargeStoredEvent", "overdriveEvent")))
 
 
@@ -804,6 +817,8 @@ def check(files: "dict[str, str]") -> "list[str]":
     ex = d.get(EXECUTOR_ID, "")
     need(f"guid: {CONFIG}" in ex and f"hull: {{fileID: {HULL_BUILDER_ID}}}" in ex and f"gun: {{fileID: {GUN_ID}}}" in ex
          and TURN_END_CHANNEL in ex, "BrittleStarExecutor is not wired (config / hull / gun / turn-end channel)")
+    need(f"cordMaterial: {{fileID: 2100000, guid: {CORD_MATERIAL}, type: 2}}" in ex,
+         "BrittleStarExecutor.cordMaterial is not ThresherChainMaterial (the cords would draw as flat lines)")
     need(f"projectileFactory: {{fileID: {FACTORY_ID}}}" in d.get(GUN_ID, "") and SPARROW_ROUND in d.get(POOL_ID, ""),
          "the turrets' Gun / ProjectileFactory / pool are not wired")
     need(f"guid: {SCRIPT['BrittleStarVesselTransformer']}" in d.get(TRANSFORMER_ID, "") and "vectorFlightModel: 0" in d.get(TRANSFORMER_ID, ""),
@@ -928,6 +943,7 @@ def self_test() -> int:
         "unregistered from the container": (CONTAINER, lambda t: t.replace(PREFAB_GUID, "0" * 32)),
         "the map drifted": (MAP, lambda t: t.replace("Input: 6", "Input: 0")),
         "Fire unbound": (PREFAB, lambda t: t.replace(CONTROL_GUID["BrittleStarFire"], "f" * 32)),
+        "cord material unwired": (PREFAB, lambda t: t.replace(f"guid: {CORD_MATERIAL}", "guid: " + "e" * 32)),
         "fusion entries missing": (FUSION, lambda t: t.replace(f"  - vessel: {CLASS_ID}\n", "  - vessel: 99\n")),
         "roster entry missing": (os.path.join(SCRIPTS, "Controller/Toys/ToyVesselRoster.cs"), lambda t: t.replace("VesselClassType.BrittleStar", "")),
     }

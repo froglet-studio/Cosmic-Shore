@@ -1250,6 +1250,7 @@ MonoBehaviour:
   hull: {fileID: 5137264980012345614}
   gun: {fileID: 4419001122334455012}
   OnMiniGameTurnEnd: {fileID: 11400000, guid: 498a06d44bde9184f985c938c803b2a1, type: 2}
+  cordMaterial: {fileID: 2100000, guid: 02033cc2904f4f25bf3b6888ce3c98f9, type: 2}
 --- !u!1001 &5313661885591395716
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -1843,10 +1844,10 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   prefab: {fileID: 7632677803272750685, guid: 1bdcea9e9329dd141af7ab874a4d31a2, type: 3}
-  defaultCapacity: 1400
-  maxSize: 2400
+  defaultCapacity: 90
+  maxSize: 320
   enableBufferMaintenance: 1
-  bufferSizeTarget: 1400
-  maxInstantiateRate: 600
-  baseInstantiateRate: 200
-  maxAddsPerFrame: 64
+  bufferSizeTarget: 90
+  maxInstantiateRate: 90
+  baseInstantiateRate: 30
+  maxAddsPerFrame: 24

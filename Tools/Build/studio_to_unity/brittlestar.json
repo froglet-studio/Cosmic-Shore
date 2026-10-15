@@ -49,19 +49,34 @@
       "field": "projectileScale"
     },
     {
-      "key": "destructionFireRate",
+      "key": "cordLength",
       "asset": "Assets/_SO_Assets/VesselActions/BrittleStar/BrittleStarConfig.asset",
-      "field": "destructionFireRate"
+      "field": "cordLength"
     },
     {
-      "key": "destructionProjectileSpeed",
+      "key": "cordLinks",
       "asset": "Assets/_SO_Assets/VesselActions/BrittleStar/BrittleStarConfig.asset",
-      "field": "destructionProjectileSpeed"
+      "field": "cordLinks"
     },
     {
-      "key": "destructionProjectileScale",
+      "key": "cordCutRadius",
       "asset": "Assets/_SO_Assets/VesselActions/BrittleStar/BrittleStarConfig.asset",
-      "field": "destructionProjectileScale"
+      "field": "cordCutRadius"
+    },
+    {
+      "key": "cordRootRate",
+      "asset": "Assets/_SO_Assets/VesselActions/BrittleStar/BrittleStarConfig.asset",
+      "field": "cordRootRate"
+    },
+    {
+      "key": "cordTipRate",
+      "asset": "Assets/_SO_Assets/VesselActions/BrittleStar/BrittleStarConfig.asset",
+      "field": "cordTipRate"
+    },
+    {
+      "key": "cordDrag",
+      "asset": "Assets/_SO_Assets/VesselActions/BrittleStar/BrittleStarConfig.asset",
+      "field": "cordDrag"
     },
     {
       "key": "roundGrowthFactor",
@@ -137,6 +152,11 @@
       "key": "ringBlastHitCooldown",
       "asset": "Assets/_SO_Assets/VesselActions/BrittleStar/BrittleStarConfig.asset",
       "field": "ringBlastHitCooldown"
+    },
+    {
+      "key": "cordHitCooldown",
+      "asset": "Assets/_SO_Assets/VesselActions/BrittleStar/BrittleStarConfig.asset",
+      "field": "cordHitCooldown"
     },
     {
       "key": "minimumSpeed",
