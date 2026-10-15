@@ -51,6 +51,14 @@ namespace CosmicShore.UI
         [Tooltip("The procedural hexagon gauge. Leave null to auto-create a full-rect child graphic.")]
         [SerializeField] DomainVolumeHexGraphic hexGraphic;
 
+        [Header("Centre glyph (style B)")]
+        [Tooltip("What the button DOES, drawn in the middle of the hex: the pause bars in a match. " +
+                 "Created after the host face is hidden, so it survives the cleanup that hides " +
+                 "every other child graphic. Empty = no glyph (the menu's freestyle button).")]
+        [SerializeField] Sprite centreGlyph;
+        [Tooltip("Size of that glyph, in the button's own units.")]
+        [Min(1f)] [SerializeField] float centreGlyphSize = 44f;
+
         [Header("Theme")]
         [Tooltip("Optional override. By default colors are pulled from GameDataSO.ThemeManagerData.ColorSet, matching MultiplayerHUD and every other domain-tinted UI.")]
         [SerializeField] ThemeManagerDataContainerSO themeDataOverride;
@@ -167,6 +175,27 @@ namespace CosmicShore.UI
             hexGraphic.raycastTarget = false; // never intercept the button click
 
             HideHostButtonFace();
+            EnsureCentreGlyph();
+        }
+
+        void EnsureCentreGlyph()
+        {
+            if (!centreGlyph) return;
+            const string name = "CentreGlyph (auto)";
+            if (transform.Find(name)) return;
+
+            var go = new GameObject(name, typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
+            var rt = (RectTransform)go.transform;
+            rt.SetParent(transform, false);
+            rt.anchorMin = rt.anchorMax = rt.pivot = new Vector2(0.5f, 0.5f);
+            rt.sizeDelta = new Vector2(centreGlyphSize, centreGlyphSize);
+            rt.anchoredPosition = Vector2.zero;
+
+            var img = go.GetComponent<Image>();
+            img.sprite = centreGlyph;
+            img.preserveAspect = true;
+            img.raycastTarget = false;
+            img.color = UITheme.Resolve(null, UIColorToken.TextLight);
         }
 
         /// <summary>

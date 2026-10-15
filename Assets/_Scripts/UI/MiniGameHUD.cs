@@ -1006,10 +1006,27 @@ namespace CosmicShore.UI
             var stack = view != null ? view.GoalStack : null;
             if (stack == null) return;
 
+            stack.SetAccent(LocalDomainAccent());
+
             var rule = gameData != null ? gameData.ScoringRule : null;
             stack.SetObjective(rule != null ? rule.Metric : (ScoringMetric?)null,
                                rule != null ? rule.TargetFor(gameData) : 0,
                                ResolveTurnMonitor()?.PublishesSecondsRemaining ?? false);
+        }
+
+        /// <summary>
+        /// The local pilot's domain colour (its bright crystal colour, the one the score column's
+        /// number wears), or null when there is no domain to wear.
+        /// </summary>
+        Color? LocalDomainAccent()
+        {
+            var domain = gameData != null && gameData.LocalPlayer != null ? gameData.LocalPlayer.Domain : Domains.Blue;
+            if (domain == Domains.Blue || (int)domain == 0) return null;
+            var palette = gameData.ThemeManagerData != null ? gameData.ThemeManagerData.ColorSet : null;
+            if (palette == null || !palette.TryGetColorSetByDomain(domain, out var set) || set == null) return null;
+            var c = set.BrightCrystalColor;
+            c.a = 1f;
+            return c;
         }
 
         TurnMonitor _turnMonitor;

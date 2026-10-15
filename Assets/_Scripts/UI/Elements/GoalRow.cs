@@ -80,8 +80,10 @@ namespace CosmicShore.UI
         [SerializeField] float primaryIconSize = 19f;
         [Tooltip("How lit the plate is. The win condition is the one row worth lighting.")]
         [SerializeField, Range(0f, 1f)] float primaryGlowAlpha = 0.3f;
-        [Tooltip("The win condition wears the reward green.")]
-        [SerializeField] Color primaryFillColor = new Color(0.224f, 0.843f, 0.627f, 1f);
+        [Tooltip("The win condition's bar, until the HUD names the local pilot's domain " +
+                 "(SetAccent) - then it wears the team colour, as every other 'this is yours' " +
+                 "mark on the HUD does (Docs/MENU_REDESIGN_B.md section 22).")]
+        [SerializeField] UIColorToken primaryFillToken = UIColorToken.ControlActive;
 
         [Header("Style - secondary")]
         [SerializeField] float secondaryHeight = 37f;
@@ -97,9 +99,9 @@ namespace CosmicShore.UI
         [Tooltip("Glyph and label tint. Style Foundation section 2: Light E6E9FF for HUD chrome.")]
         [SerializeField] Color chromeTint = new Color(0.902f, 0.914f, 1f, 1f);
 
-        [Tooltip("The '/target' half, as a hex string TMP rich text can take. Dim enough that " +
-                 "the current count reads first, close enough that the pair reads as one number.")]
-        [SerializeField] string targetHexColor = "FFFFFF5C";
+        [Tooltip("The '/target' half. Dim enough that the current count reads first, close " +
+                 "enough that the pair reads as one number (style B: Neutral Lightest).")]
+        [SerializeField] UIColorToken targetToken = UIColorToken.NeutralLightest;
 
         [Tooltip("The bloom's colour. Its ALPHA is overwritten per rank - author the hue here.")]
         [SerializeField] Color glowColor = new Color(0.96f, 0.96f, 1f, 1f);
@@ -122,6 +124,22 @@ namespace CosmicShore.UI
         int _lastCount = -1;
         Tween _glowPunch;
         float _glowRest;
+        Color? _accent;
+
+        /// <summary>
+        /// The local pilot's domain colour: the primary row's progress bar wears it. Null goes
+        /// back to <see cref="primaryFillToken"/> (no domain known - the menu's freestyle HUD).
+        /// </summary>
+        public void SetAccent(Color? accent)
+        {
+            _accent = accent;
+            if (progressFill && progressFill.enabled && _lastRank == GoalRank.Primary)
+                progressFill.color = PrimaryFill;
+        }
+
+        GoalRank _lastRank = GoalRank.Primary;
+
+        Color PrimaryFill => _accent ?? UITheme.Resolve(null, primaryFillToken);
 
         /// <summary>
         /// Show a counted objective - a current value against a target, with the progress
@@ -135,9 +153,14 @@ namespace CosmicShore.UI
             if (_lastCount >= 0 && shown > _lastCount) PunchGlow();
             _lastCount = shown;
             if (value)
+            {
+                // Tabular digits (STYLE_FOUNDATION section 4) so the count never reflows as a 1
+                // becomes an 8. Each number is wrapped on its own: the colour tag's hex must not be.
+                var face = value.font;
                 value.text = target > 0
-                    ? $"{shown}<color=#{targetHexColor}>/{target}</color>"
-                    : shown.ToString();
+                    ? $"{TabularText.Wrap(shown.ToString(), face)}<color=#{ColorUtility.ToHtmlStringRGB(UITheme.Resolve(null, targetToken))}>/{TabularText.Wrap(target.ToString(), face)}</color>"
+                    : TabularText.Wrap(shown.ToString(), face);
+            }
 
             SetFill(target > 0 ? Mathf.Clamp01((float)shown / target) : 0f, rank, target > 0);
             gameObject.SetActive(true);
@@ -150,7 +173,7 @@ namespace CosmicShore.UI
         public void ShowText(Sprite glyph, string title, string text, GoalRank rank)
         {
             Apply(glyph, title, rank);
-            if (value) value.text = text;
+            if (value) value.text = TabularText.Wrap(text, value.font);
             SetFill(0f, rank, false);
             _lastCount = -1;          // a clock has no count; don't punch off a stale one later
             gameObject.SetActive(true);
@@ -165,6 +188,7 @@ namespace CosmicShore.UI
         void Apply(Sprite glyph, string title, GoalRank rank)
         {
             bool primary = rank == GoalRank.Primary;
+            _lastRank = rank;
 
             if (icon)
             {
@@ -258,7 +282,7 @@ namespace CosmicShore.UI
 
             if (!progressFill) return;
             progressFill.enabled = visible;
-            progressFill.color = rank == GoalRank.Primary ? primaryFillColor : secondaryFillColor;
+            progressFill.color = rank == GoalRank.Primary ? PrimaryFill : secondaryFillColor;
             progressFill.fillAmount = amount01;
         }
     }

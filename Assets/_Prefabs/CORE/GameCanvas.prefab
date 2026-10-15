@@ -1200,6 +1200,7 @@ GameObject:
   - component: {fileID: 3388401311528402577}
   - component: {fileID: 794949912533300227}
   - component: {fileID: 1480892213816704249}
+  - component: {fileID: 479025292011858730}
   m_Layer: 5
   m_Name: Plate
   m_TagString: Untagged
@@ -1207,6 +1208,21 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
+--- !u!114 &479025292011858730
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 922886409773338984}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e3dbee08efed7987c9042239c1b0992d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  theme: {fileID: 11400000, guid: 0aef6398681c4ec98118cc9b9740060a, type: 2}
+  token: 4
+  alpha: 0.55
 --- !u!224 &3388401311528402577
 RectTransform:
   m_ObjectHideFlags: 0
@@ -1243,24 +1259,27 @@ MonoBehaviour:
   m_GameObject: {fileID: 922886409773338984}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 571d3b9d08b3451f996795e5cc54291f, type: 3}
+  m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   m_Material: {fileID: 0}
-  m_Color: {r: 0.024, g: 0.031, b: 0.063, a: 0.9}
+  m_Color: {r: 0, g: 0.015686275, b: 0.12156863, a: 0.55}
   m_RaycastTarget: 0
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  topWidth: 1
-  bottomWidth: 0.93
-  fillAmount: 1
-  edgeThickness: 2
-  edgeColor: {r: 0.51, g: 0.53, b: 0.61, a: 0.85}
-  edgeWrap: 28
-  edgeAntialias: 1
+  m_Sprite: {fileID: 21300000, guid: 9a86abd8613e387afc691f6e48d9830a, type: 3}
+  m_Type: 1
+  m_PreserveAspect: 0
+  m_FillCenter: 1
+  m_FillMethod: 4
+  m_FillAmount: 1
+  m_FillClockwise: 1
+  m_FillOrigin: 0
+  m_UseSpriteMesh: 0
+  m_PixelsPerUnitMultiplier: 1
 --- !u!1 &946499683697326052
 GameObject:
   m_ObjectHideFlags: 0
@@ -1451,24 +1470,24 @@ MonoBehaviour:
   canvasGroup: {fileID: 2153362591090483888}
   layoutElement: {fileID: 22904428401827264}
   primaryHeight: 48
-  primaryLabelSize: 16
+  primaryLabelSize: 15
   primaryValueSize: 22
   primaryIconSize: 19
-  primaryGlowAlpha: 0.3
-  primaryFillColor: {r: 0.224, g: 0.843, b: 0.627, a: 1}
+  primaryGlowAlpha: 0
   secondaryHeight: 37
   secondaryLabelSize: 13
   secondaryValueSize: 16
   secondaryIconSize: 14
-  secondaryGlowAlpha: 0.12
+  secondaryGlowAlpha: 0
   secondaryFillColor: {r: 0.247, g: 0.498, b: 0.847, a: 1}
   secondaryAlpha: 0.6
   chromeTint: {r: 0.902, g: 0.914, b: 1, a: 1}
-  targetHexColor: FFFFFF5C
   glowColor: {r: 0.96, g: 0.96, b: 1, a: 1}
-  glowPunchAlpha: 1
+  glowPunchAlpha: 0.6
   glowPunchSeconds: 0.45
   trackColor: {r: 0.902, g: 0.914, b: 1, a: 0.16}
+  primaryFillToken: 10
+  targetToken: 7
 --- !u!1 &1112561153188261545
 GameObject:
   m_ObjectHideFlags: 0
@@ -1953,9 +1972,8 @@ MonoBehaviour:
       m_Calls: []
   m_text: COLLECT CRYSTALS
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: 137312175295ff84fbe0b8c18ec605aa, type: 2}
-  m_sharedMaterial: {fileID: -1508558789793029919, guid: 137312175295ff84fbe0b8c18ec605aa,
-    type: 2}
+  m_fontAsset: {fileID: 11400000, guid: 9f6e2fcf98f99f3ed5ff96934bb43d6d, type: 2}
+  m_sharedMaterial: {fileID: 4519786210045101501, guid: 9f6e2fcf98f99f3ed5ff96934bb43d6d, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -1979,17 +1997,17 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 16
-  m_fontSizeBase: 16
+  m_fontSize: 15
+  m_fontSizeBase: 15
   m_fontWeight: 400
   m_enableAutoSizing: 0
   m_fontSizeMin: 18
   m_fontSizeMax: 72
-  m_fontStyle: 17
+  m_fontStyle: 16
   m_HorizontalAlignment: 1
   m_VerticalAlignment: 512
   m_textAlignment: 65535
-  m_characterSpacing: 0
+  m_characterSpacing: 12
   m_characterHorizontalScale: 1
   m_wordSpacing: 0
   m_lineSpacing: 0
@@ -2533,24 +2551,24 @@ MonoBehaviour:
   canvasGroup: {fileID: 1351689006916412854}
   layoutElement: {fileID: 3491949864146606815}
   primaryHeight: 48
-  primaryLabelSize: 16
+  primaryLabelSize: 15
   primaryValueSize: 22
   primaryIconSize: 19
-  primaryGlowAlpha: 0.3
-  primaryFillColor: {r: 0.224, g: 0.843, b: 0.627, a: 1}
+  primaryGlowAlpha: 0
   secondaryHeight: 37
   secondaryLabelSize: 13
   secondaryValueSize: 16
   secondaryIconSize: 14
-  secondaryGlowAlpha: 0.12
+  secondaryGlowAlpha: 0
   secondaryFillColor: {r: 0.247, g: 0.498, b: 0.847, a: 1}
   secondaryAlpha: 0.6
   chromeTint: {r: 0.902, g: 0.914, b: 1, a: 1}
-  targetHexColor: FFFFFF5C
   glowColor: {r: 0.96, g: 0.96, b: 1, a: 1}
-  glowPunchAlpha: 1
+  glowPunchAlpha: 0.6
   glowPunchSeconds: 0.45
   trackColor: {r: 0.902, g: 0.914, b: 1, a: 0.16}
+  primaryFillToken: 10
+  targetToken: 7
 --- !u!1 &1888266738445159706
 GameObject:
   m_ObjectHideFlags: 0
@@ -3181,9 +3199,8 @@ MonoBehaviour:
       m_Calls: []
   m_text: COLLECT CRYSTALS
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: 137312175295ff84fbe0b8c18ec605aa, type: 2}
-  m_sharedMaterial: {fileID: -1508558789793029919, guid: 137312175295ff84fbe0b8c18ec605aa,
-    type: 2}
+  m_fontAsset: {fileID: 11400000, guid: 9f6e2fcf98f99f3ed5ff96934bb43d6d, type: 2}
+  m_sharedMaterial: {fileID: 4519786210045101501, guid: 9f6e2fcf98f99f3ed5ff96934bb43d6d, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -3207,17 +3224,17 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 16
-  m_fontSizeBase: 16
+  m_fontSize: 15
+  m_fontSizeBase: 15
   m_fontWeight: 400
   m_enableAutoSizing: 0
   m_fontSizeMin: 18
   m_fontSizeMax: 72
-  m_fontStyle: 17
+  m_fontStyle: 16
   m_HorizontalAlignment: 2
   m_VerticalAlignment: 512
   m_textAlignment: 513
-  m_characterSpacing: 0
+  m_characterSpacing: 12
   m_characterHorizontalScale: 1
   m_wordSpacing: 0
   m_lineSpacing: 0
@@ -4467,6 +4484,7 @@ GameObject:
   - component: {fileID: 1607507081023974193}
   - component: {fileID: 2152402402159125478}
   - component: {fileID: 2008999991146941712}
+  - component: {fileID: 607751472975541414}
   m_Layer: 5
   m_Name: Plate
   m_TagString: Untagged
@@ -4474,6 +4492,21 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
+--- !u!114 &607751472975541414
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3262010862103887776}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e3dbee08efed7987c9042239c1b0992d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  theme: {fileID: 11400000, guid: 0aef6398681c4ec98118cc9b9740060a, type: 2}
+  token: 4
+  alpha: 0.55
 --- !u!224 &1607507081023974193
 RectTransform:
   m_ObjectHideFlags: 0
@@ -4510,24 +4543,27 @@ MonoBehaviour:
   m_GameObject: {fileID: 3262010862103887776}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 571d3b9d08b3451f996795e5cc54291f, type: 3}
+  m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   m_Material: {fileID: 0}
-  m_Color: {r: 0.024, g: 0.031, b: 0.063, a: 0.9}
+  m_Color: {r: 0, g: 0.015686275, b: 0.12156863, a: 0.55}
   m_RaycastTarget: 0
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  topWidth: 1
-  bottomWidth: 0.93
-  fillAmount: 1
-  edgeThickness: 2
-  edgeColor: {r: 0.51, g: 0.53, b: 0.61, a: 0.85}
-  edgeWrap: 28
-  edgeAntialias: 1
+  m_Sprite: {fileID: 21300000, guid: 9a86abd8613e387afc691f6e48d9830a, type: 3}
+  m_Type: 1
+  m_PreserveAspect: 0
+  m_FillCenter: 1
+  m_FillMethod: 4
+  m_FillAmount: 1
+  m_FillClockwise: 1
+  m_FillOrigin: 0
+  m_UseSpriteMesh: 0
+  m_PixelsPerUnitMultiplier: 1
 --- !u!1 &3407497958283817037
 GameObject:
   m_ObjectHideFlags: 0
@@ -4900,6 +4936,7 @@ GameObject:
   - component: {fileID: 2282465419494431385}
   - component: {fileID: 2751414123099818382}
   - component: {fileID: 265659260245961142}
+  - component: {fileID: 706887998815024497}
   m_Layer: 5
   m_Name: Plate
   m_TagString: Untagged
@@ -4907,6 +4944,21 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
+--- !u!114 &706887998815024497
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3619050944131640926}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e3dbee08efed7987c9042239c1b0992d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  theme: {fileID: 11400000, guid: 0aef6398681c4ec98118cc9b9740060a, type: 2}
+  token: 4
+  alpha: 0.55
 --- !u!224 &2282465419494431385
 RectTransform:
   m_ObjectHideFlags: 0
@@ -4943,24 +4995,27 @@ MonoBehaviour:
   m_GameObject: {fileID: 3619050944131640926}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 571d3b9d08b3451f996795e5cc54291f, type: 3}
+  m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   m_Material: {fileID: 0}
-  m_Color: {r: 0.024, g: 0.031, b: 0.063, a: 0.9}
+  m_Color: {r: 0, g: 0.015686275, b: 0.12156863, a: 0.55}
   m_RaycastTarget: 0
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  topWidth: 1
-  bottomWidth: 0.93
-  fillAmount: 1
-  edgeThickness: 2
-  edgeColor: {r: 0.51, g: 0.53, b: 0.61, a: 0.85}
-  edgeWrap: 28
-  edgeAntialias: 1
+  m_Sprite: {fileID: 21300000, guid: 9a86abd8613e387afc691f6e48d9830a, type: 3}
+  m_Type: 1
+  m_PreserveAspect: 0
+  m_FillCenter: 1
+  m_FillMethod: 4
+  m_FillAmount: 1
+  m_FillClockwise: 1
+  m_FillOrigin: 0
+  m_UseSpriteMesh: 0
+  m_PixelsPerUnitMultiplier: 1
 --- !u!1 &3872191422014618827
 GameObject:
   m_ObjectHideFlags: 0
@@ -5028,9 +5083,8 @@ MonoBehaviour:
       m_Calls: []
   m_text: COLLECT CRYSTALS
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: 137312175295ff84fbe0b8c18ec605aa, type: 2}
-  m_sharedMaterial: {fileID: -1508558789793029919, guid: 137312175295ff84fbe0b8c18ec605aa,
-    type: 2}
+  m_fontAsset: {fileID: 11400000, guid: 9f6e2fcf98f99f3ed5ff96934bb43d6d, type: 2}
+  m_sharedMaterial: {fileID: 4519786210045101501, guid: 9f6e2fcf98f99f3ed5ff96934bb43d6d, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -5054,17 +5108,17 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 16
-  m_fontSizeBase: 16
+  m_fontSize: 15
+  m_fontSizeBase: 15
   m_fontWeight: 400
   m_enableAutoSizing: 0
   m_fontSizeMin: 18
   m_fontSizeMax: 72
-  m_fontStyle: 17
+  m_fontStyle: 16
   m_HorizontalAlignment: 2
   m_VerticalAlignment: 512
   m_textAlignment: 513
-  m_characterSpacing: 0
+  m_characterSpacing: 12
   m_characterHorizontalScale: 1
   m_wordSpacing: 0
   m_lineSpacing: 0
@@ -5291,24 +5345,24 @@ MonoBehaviour:
   canvasGroup: {fileID: 2627122966063103476}
   layoutElement: {fileID: 4447792627082007696}
   primaryHeight: 48
-  primaryLabelSize: 16
+  primaryLabelSize: 15
   primaryValueSize: 22
   primaryIconSize: 19
-  primaryGlowAlpha: 0.3
-  primaryFillColor: {r: 0.224, g: 0.843, b: 0.627, a: 1}
+  primaryGlowAlpha: 0
   secondaryHeight: 37
   secondaryLabelSize: 13
   secondaryValueSize: 16
   secondaryIconSize: 14
-  secondaryGlowAlpha: 0.12
+  secondaryGlowAlpha: 0
   secondaryFillColor: {r: 0.247, g: 0.498, b: 0.847, a: 1}
   secondaryAlpha: 0.6
   chromeTint: {r: 0.902, g: 0.914, b: 1, a: 1}
-  targetHexColor: FFFFFF5C
   glowColor: {r: 0.96, g: 0.96, b: 1, a: 1}
-  glowPunchAlpha: 1
+  glowPunchAlpha: 0.6
   glowPunchSeconds: 0.45
   trackColor: {r: 0.902, g: 0.914, b: 1, a: 0.16}
+  primaryFillToken: 10
+  targetToken: 7
 --- !u!1 &4317406367824203895
 GameObject:
   m_ObjectHideFlags: 0
@@ -7904,6 +7958,7 @@ GameObject:
   - component: {fileID: 5497835174443352333}
   - component: {fileID: 5428165463410687127}
   - component: {fileID: 5115705029824641603}
+  - component: {fileID: 252725036186423832}
   m_Layer: 5
   m_Name: Volume / Pause Button
   m_TagString: Untagged
@@ -7911,6 +7966,25 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
+--- !u!114 &252725036186423832
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5497835174443352335}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2feb4c0a7e452442882f3dbc3b38cec4, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  hexGraphic: {fileID: 0}
+  centreGlyph: {fileID: 21300000, guid: 341712d17b6ba4a54eb1539a923368d9, type: 3}
+  centreGlyphSize: 44
+  themeDataOverride: {fileID: 0}
+  sampleIntervalSeconds: 0.25
+  fillLerpSpeed: 8
+  explicitCell: {fileID: 0}
 --- !u!224 &5497835174443352332
 RectTransform:
   m_ObjectHideFlags: 0
@@ -8279,7 +8353,7 @@ MonoBehaviour:
   scoreboard: {fileID: 4080277108912208582}
   connectingPanel: {fileID: 6435547373083305165}
   volumePauseButton: {fileID: 0}
-  volumeIndicator: {fileID: 0}
+  volumeIndicator: {fileID: 252725036186423832}
   onMoundDroneSpawned: {fileID: 11400000, guid: 14f15b4cda639404cae764ee683d8c3e,
     type: 2}
   onQueenDroneSpawned: {fileID: 11400000, guid: 6aaabf7a28722bd4e926935472d614ba,

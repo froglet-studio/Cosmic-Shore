@@ -65,6 +65,31 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Style-B menu redesign, item 12a: in-game HUD chrome (`claude/new-session-76hnyc`, 2026-10-15) — NOT EDITOR-VERIFIED
+
+`GameCanvas.prefab`, `DomainScorePanel.prefab`, `AbilityLockupStyle.asset` and
+`ControlGlyphSet.asset` were restyled in place by `Tools/Build/author_ingame_hud.py` (`--check`
+and `--self-test` green; `gamecanvas_unification_report.py --check` green) - see
+`Docs/MENU_REDESIGN_B.md` section 22.1. No editor in the session, so `/verify-unity` is still owed.
+Offline: the player and editor reference compiles are clean.
+
+**Verify in editor (any domain mode, e.g. Skim Race with AI):**
+1. Ability row: same cards in the same places on every vessel, now on a navy plate with a grey-blue
+   slant edge. Each chip is a keycap reading LT / RT / A / B on a pad, LSHIFT / RSHIFT / SPACE on a
+   keyboard. Switching device swaps the names. Holding a control lights its keycap. A locked slot
+   shows a dash and no keycap. Check the Squirrel's steal count still fits (`check_squirrel_card_fit.py`
+   passed offline).
+2. Goal row (top left): a slivered glass plate, "COLLECT CRYSTALS" in Chakra Petch, the count in
+   tabular digits with a dim /target, and a bar in your domain's colour. A score flares the plate.
+3. Score columns (top centre): Team Dark tint with a light hairline and a team-colour cap on top,
+   the score in the team colour. A score punches the number and flares the column; nothing breathes
+   at rest.
+4. Pause hex (top right): pause bars in the centre of the volume gauge, and pressing it still opens
+   pause. In Menu_Main freestyle, the exit button shows no glyph (unchanged).
+5. Hangar: the ability row there uses the same style asset, so its plates and keycaps change too.
+
+---
+
 ### 🔴 Style-B menu redesign, item 6b: Home - Up next, party invite (`claude/new-session-76hnyc`, 2026-10-15) — NOT EDITOR-VERIFIED
 
 Up next cards and the new `PartyInvitePopup` were added by `Tools/Build/author_menu_home.py`

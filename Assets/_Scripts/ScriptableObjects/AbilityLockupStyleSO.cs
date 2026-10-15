@@ -106,6 +106,41 @@ namespace CosmicShore.ScriptableObjects
         [Tooltip("How far the bloom extends past the plate on every side.")]
         [Min(0f)] public float bloomPadding = 26f;
 
+        [Header("Control chip - the style-B keycap (Docs/MENU_REDESIGN_B.md section 22)")]
+        [Tooltip("Draw each control chip as a KEYCAP - a slivered socket carrying the control's name " +
+                 "(LT, RT, A, B; LSHIFT on a keyboard) - the same keycap every menu hint wears. Off " +
+                 "falls back to the glyph set's pad artwork. A control with no name authored " +
+                 "(ControlGlyphSetSO padLabel empty) still shows its artwork either way.")]
+        public bool keycapChips = true;
+
+        [Tooltip("The keycap's fill: kit_sliver10_fill, 9-sliced, tinted by keycapFillToken.")]
+        public Sprite keycapFillSprite;
+
+        [Tooltip("The keycap's hairline: kit_sliver10_line1, 9-sliced, tinted by keycapBorderToken.")]
+        public Sprite keycapBorderSprite;
+
+        [Tooltip("The keycap face. Chakra Petch SemiBold, the kit's Label face. Empty = the TMP " +
+                 "default font.")]
+        public TMPro.TMP_FontAsset keycapFont;
+
+        [Tooltip("Point size of the control's name on the keycap.")]
+        [Min(1f)] public float keycapTextSize = 13f;
+
+        [Tooltip("Space either side of the name, in px. The keycap hugs its text, so LT and LSHIFT " +
+                 "are different widths and both stay centred under their card.")]
+        [Min(0f)] public float keycapPadding = 8f;
+
+        [Tooltip("Keycap fill at rest (style B: Neutral Very Dark).")]
+        public CosmicShore.UI.UIColorToken keycapFillToken = CosmicShore.UI.UIColorToken.SurfaceVeryDark;
+        [Tooltip("Keycap hairline at rest (style B: Neutral Light).")]
+        public CosmicShore.UI.UIColorToken keycapBorderToken = CosmicShore.UI.UIColorToken.SurfaceLight;
+        [Tooltip("Keycap text at rest.")]
+        public CosmicShore.UI.UIColorToken keycapTextToken = CosmicShore.UI.UIColorToken.TextLight;
+        [Tooltip("Keycap fill while the control is HELD - the key reads as pressed in.")]
+        public CosmicShore.UI.UIColorToken keycapHeldFillToken = CosmicShore.UI.UIColorToken.TextLight;
+        [Tooltip("Keycap text while held, dark on the lit fill.")]
+        public CosmicShore.UI.UIColorToken keycapHeldTextToken = CosmicShore.UI.UIColorToken.SurfaceBlack;
+
         [Header("Slant edge (sloped sides only)")]
         [Tooltip("Thickness of the band drawn INSIDE each plate along its two sloped sides. It is " +
                  "not a border - it never closes - so the plate's core stays transparent while the " +

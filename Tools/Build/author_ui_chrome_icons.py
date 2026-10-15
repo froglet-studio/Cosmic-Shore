@@ -32,7 +32,8 @@ seat and the game card's favourite star, off and on; `chrome_globe`, `chrome_pin
 rule not yet met in the profile window (item 5 - a met rule wears `chrome_confirm`); `chrome_shuffle` for the
 Toy Box's shuffle card (item 8); `chrome_gear`, `chrome_display`, `chrome_gauge` and `chrome_sliders` for
 the settings window's four tabs (item 9); `chrome_cube`, `chrome_pad`, `chrome_blades` and `chrome_target` for
-Home's four hub buttons - Toy Box, Arcade, Arena, Mission (item 6).
+Home's four hub buttons - Toy Box, Arcade, Arena, Mission (item 6); `chrome_pause` for the centre of the
+in-game pause hex (item 12).
 
 Usage:
     python3 Tools/Build/author_ui_chrome_icons.py            # write the PNGs + .meta files
@@ -302,6 +303,13 @@ def chrome_target():
     return m
 
 
+def chrome_pause():
+    """In-game pause (item 12) - two upright bars, square-ended, in the centre of the volume hex."""
+    m = fill([(-0.46, 0.66), (-0.14, 0.66), (-0.14, -0.66), (-0.46, -0.66)])
+    m |= fill([(0.14, 0.66), (0.46, 0.66), (0.46, -0.66), (0.14, -0.66)])
+    return m
+
+
 GLYPHS = [
     ("chrome_close",      chrome_close),
     ("chrome_reroll",     chrome_reroll),
@@ -326,6 +334,7 @@ GLYPHS = [
     ("chrome_pad",        chrome_pad),
     ("chrome_blades",     chrome_blades),
     ("chrome_target",     chrome_target),
+    ("chrome_pause",      chrome_pause),
 ]
 
 

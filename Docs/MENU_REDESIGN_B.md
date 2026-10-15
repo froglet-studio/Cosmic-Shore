@@ -46,7 +46,7 @@ Legend: `Planned` ▸ `Mockup` ▸ `Mockup approved` ▸ `Built` ▸ `Approved i
 | 9 | Settings modal and Credits | Built (2026-10-15, section 18): Settings window and Credits | `Settings.dc.html` (interactive), `SettingsDisplay`, `SettingsPerformance`, `SettingsOther`, `Credits`, `SystemNotes` | |
 | 10 | Closed surfaces: Port (locked), Store (no slot), Episodes panel, purchase confirmation | Built (2026-10-15, section 19): purchase confirmation drawn blind; locked states from items 1 and 5 | `ClosedSurfaces.dc.html`, `PurchaseConfirm` (blind), `SystemNotes` | |
 | 11 | Menu toasts | Built (2026-10-15, section 20) | `Toasts.dc.html` (interactive), `SystemNotes` | |
-| 12 | In-game UI: GameCanvas HUD chrome, scoreboard, ready / countdown / pause, in-match toasts, end-of-game screens, Menu_Main freestyle HUD | Planned (inventory running) | | |
+| 12 | In-game UI: GameCanvas HUD chrome, scoreboard, ready / countdown / pause, in-match toasts, end-of-game screens, Menu_Main freestyle HUD | Mockup approved (2026-10-15); building (section 22): 12a HUD chrome built | `HudMatch.dc.html` (interactive), `HudCardStates`, `HudNotes`, `Hud<Vessel>` x9, `HudReady` (interactive), `HudPause`, `HudConnecting`, `HudEndReveal`, `HudScoreboard` (interactive), `HudSpectator` - page "In-game HUD" | |
 
 ---
 
@@ -1169,4 +1169,52 @@ Same generator (`author_menu_home.py`).
   - The old instance's stray entry in another object's child list is removed.
   - Departure from the board: no member avatars, because an invitee knows the host's party count
     but not who is in it.
+
+## 22. Item 12: the in-game UI
+
+The approved boards are on the canvas's second page, "In-game HUD" (18 boards, approved 2026-10-15
+as drawn). The in-game canvas is ONE prefab, `_Prefabs/CORE/GameCanvas.prefab` (`Docs/GAMECANVAS.md`),
+so item 12 restyles it IN PLACE: every object keeps its GameObject, fileID and name, and no
+game-mode scene carries an override of anything written (`gamecanvas_unification_report.py --check`
+stays green). One generator owns the item: `Tools/Build/author_ingame_hud.py` (`--check`,
+`--self-test`).
+
+### 22.1 The HUD's always-on chrome (12a; built 2026-10-15, awaiting in-editor approval)
+
+- **Ability row** (the LOCKED structure, `Docs/claude/VESSEL_HUD_AND_ELEMENTS.md`): no geometry,
+  icon, slot or petal-ladder change - the generator asserts the locked numbers.
+  - `AbilityLockupStyle.asset` takes the style-B plate, Neutral Very Dark (`#00041F`) at 86%, and a
+    Neutral Lightest (`#747BAD`) slant edge. The locked plate is the same surface at 55%. The
+    upgraded state (Light edge, lifted plate, bloom) is unchanged.
+  - The control chip is a style-B **keycap** carrying the control's name: `LT`, `RT`, `A`, `B`, or
+    `LSHIFT` / `SPACE` on a keyboard. It is drawn by `AbilityLockupView.DrawKeycap` from new style
+    fields (`keycapChips`, the kit sliver-10 fill and line, Chakra Petch SemiBold 13, theme tokens).
+    While the control is held, the key reads as pressed in: a Light fill with dark text.
+  - `ControlGlyphSet.asset` names each pad control (the new `padLabel`). A control with no name
+    still falls back to its pad artwork. A locked slot draws no chip.
+  - `ControlChipBindingTests.EveryOneThumbAbilityHasAPadKeycapName` holds the names.
+- **Goal stack:** each row's trapezoid plate is re-scripted under the same fileID as a slivered
+  glass Image (`kit_sliver10_fill`, Neutral Very Dark at 55%).
+  - The label is Chakra Petch SemiBold 15 caps.
+  - The `/target` half of the count wears Neutral Lightest, and both numbers are tabular
+    (`TabularText`).
+  - The bloom rests dark and only flares on a score.
+  - The win condition's bar wears the local pilot's domain colour (`GoalStack.SetAccent`, fed by
+    `MiniGameHUD.RefreshGoalStack`), falling back to the Control Active token.
+  - `author_goal_stack.py` still owns the stack's structure and stands down once it exists.
+- **Domain score columns** (`DomainScorePanel.prefab`, instantiated per domain): 168 x 96.
+  - Layers: a black base at 35%, under Team Dark at 12% (never a full team fill), with a slivered
+    hairline in the domain's Light tone (the new `borderImage`).
+  - A 44 x 3 cap in the team colour sits on the top edge (the old bottom accent strip, moved).
+  - The score is Aldrich 44, with the pilot chips under it.
+  - The breathing glow is retired at rest and only flares on a score.
+- **Pause hex:** a `DomainVolumeIndicator` is now authored on the pause button, carrying the new
+  `centreGlyph` (`chrome_pause`, the 24th chrome icon). The gauge used to hide every child graphic,
+  so nothing said what pressing it does. `MiniGameHUD.volumeIndicator` points at it.
+- **Departures from the boards:**
+  - The objective arrow keeps its generated colour. It is shared with three toy runners, and its
+    restyle lands with the toy HUDs.
+  - The pause hex shows no Start keycap under it (the button's own controller hint stays hidden, as
+    before).
+  - The score columns' pilot chips keep the shipped `PlayerScoreEntry` ring.
 

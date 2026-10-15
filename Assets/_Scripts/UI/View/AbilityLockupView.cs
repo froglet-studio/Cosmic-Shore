@@ -68,6 +68,10 @@ namespace CosmicShore.UI
             public RectTransform ChipSocket;
             public Image ChipGlyph;
             public TMP_Text ChipLabel;
+            public RectTransform Keycap;
+            public Image KeycapFill;
+            public Image KeycapBorder;
+            public TMP_Text KeycapLabel;
             public InputDeviceIconSetSwitcher.HintBinding PadBinding;
             public InputDeviceIconSetSwitcher.HintBinding KeyBinding;
             public Tween Tween;
@@ -1227,17 +1231,25 @@ namespace CosmicShore.UI
             if (!set || !slot.ChipSocket) return;
 
             var binding = _chipKeyboard ? slot.KeyBinding : slot.PadBinding;
-            var glyph = set.For(binding);
-
-            // A passive ability has no button, and several pad buttons have no keyboard equivalent.
-            // Both draw NOTHING rather than borrowing another device's picture.
-            bool showGlyph = glyph != null && !_chipKeyboard && glyph.padGlyph;
-            bool showLabel = glyph != null && _chipKeyboard && !string.IsNullOrEmpty(glyph.keyboardLabel);
+            // A locked slot has no ability, so it has no control to name (the board's "dim plate,
+            // a dash, no chip").
+            var glyph = slot.Locked ? null : set.For(binding);
 
             // A chip depicts a BUTTON, so it wears the button's own held art while the ability is
             // firing - the one thing the retired hint visuals did that the card cannot say, since
             // the card lights the ability and this lights the control. Both are the same press.
             bool held = slot.Pressed;
+
+            // Style B: the control's NAME on a keycap, on either device. A pad control with no
+            // name authored falls through to its artwork below.
+            string keyName = glyph == null ? null : _chipKeyboard ? glyph.keyboardLabel : glyph.padLabel;
+            bool keycap = style && style.keycapChips && !string.IsNullOrEmpty(keyName);
+            DrawKeycap(slot, keycap ? keyName : null, held, set);
+
+            // A passive ability has no button, and several pad buttons have no keyboard equivalent.
+            // Both draw NOTHING rather than borrowing another device's picture.
+            bool showGlyph = !keycap && glyph != null && !_chipKeyboard && glyph.padGlyph;
+            bool showLabel = !keycap && glyph != null && _chipKeyboard && !string.IsNullOrEmpty(glyph.keyboardLabel);
 
             if (showGlyph || slot.ChipGlyph)
             {
@@ -1258,6 +1270,54 @@ namespace CosmicShore.UI
                 slot.ChipLabel.color = held ? set.heldColor : set.restColor;
                 slot.ChipLabel.enabled = showLabel;
             }
+        }
+
+        /// <summary>
+        /// The style-B keycap: a slivered socket that hugs the control's name, centred in the
+        /// chip socket under its card. <paramref name="keyName"/> null hides it. Held, the key
+        /// reads as pressed in - a lit fill with dark text - which is the same press the card's
+        /// flash shows, said by the control rather than by the ability.
+        /// </summary>
+        void DrawKeycap(Slot slot, string keyName, bool held, ControlGlyphSetSO set)
+        {
+            if (string.IsNullOrEmpty(keyName))
+            {
+                if (slot.Keycap) slot.Keycap.gameObject.SetActive(false);
+                return;
+            }
+
+            if (!slot.Keycap)
+            {
+                var existing = slot.ChipSocket.Find("Keycap") as RectTransform;
+                if (!existing)
+                {
+                    existing = (RectTransform)new GameObject("Keycap", typeof(RectTransform)).transform;
+                    existing.SetParent(slot.ChipSocket, false);
+                }
+                slot.Keycap = existing;
+                slot.KeycapFill = ResolveChildImage(existing, "Fill", style.keycapFillSprite);
+                slot.KeycapBorder = ResolveChildImage(existing, "Border", style.keycapBorderSprite);
+                StretchTo(slot.KeycapFill.rectTransform, 0f);
+                StretchTo(slot.KeycapBorder.rectTransform, 0f);
+                slot.KeycapLabel = ResolveChipLabel(existing, set);
+                slot.KeycapLabel.fontSize = style.keycapTextSize;
+                if (style.keycapFont) slot.KeycapLabel.font = style.keycapFont;
+                slot.KeycapLabel.textWrappingMode = TextWrappingModes.NoWrap;
+            }
+
+            slot.Keycap.gameObject.SetActive(true);
+            slot.KeycapLabel.text = keyName;
+            slot.KeycapLabel.color = CosmicShore.UI.UITheme.Resolve(null, held ? style.keycapHeldTextToken : style.keycapTextToken);
+            slot.KeycapFill.color = CosmicShore.UI.UITheme.Resolve(null, held ? style.keycapHeldFillToken : style.keycapFillToken);
+            slot.KeycapBorder.color = CosmicShore.UI.UITheme.Resolve(null, style.keycapBorderToken);
+
+            float width = Mathf.Min(style.plateWidth,
+                                    slot.KeycapLabel.GetPreferredValues(keyName).x + style.keycapPadding * 2f);
+            slot.Keycap.anchorMin = slot.Keycap.anchorMax = slot.Keycap.pivot = new Vector2(0.5f, 0.5f);
+            slot.Keycap.sizeDelta = new Vector2(Mathf.Max(width, style.chipHeight), style.chipHeight);
+            slot.Keycap.anchoredPosition = Vector2.zero;
+            slot.Keycap.localScale = Vector3.one;
+            slot.Keycap.localRotation = Quaternion.identity;
         }
 
         TMP_Text ResolveChipLabel(RectTransform socket, ControlGlyphSetSO set)

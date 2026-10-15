@@ -61,6 +61,28 @@ namespace CosmicShore.Tests
             }
         }
 
+        /// <summary>
+        /// Style B draws the chip as a KEYCAP carrying the control's name (Docs/MENU_REDESIGN_B.md
+        /// section 22). A pad control with no name falls back to its artwork, which is honest but
+        /// reads as a different product beside the keycaps, so every control the fleet binds must
+        /// be named - and named the way the pad prints it.
+        /// </summary>
+        [Test]
+        public void EveryOneThumbAbilityHasAPadKeycapName()
+        {
+            var set = LoadSet();
+
+            foreach (var input in SparrowInputs)
+            {
+                var binding = InputHintBindingMap.BindingFor(input, keyboard: false);
+                var glyph = set.For(binding);
+                Assert.IsNotNull(glyph, $"{input} → {binding} has no glyph entry.");
+                Assert.IsNotEmpty(glyph.padLabel, $"{input} → {binding} has no keycap name (padLabel).");
+                Assert.That(glyph.padLabel, Does.Match("^(A|B|X|Y|LB|RB|LT|RT)$"),
+                    $"{input} → {binding} is named '{glyph.padLabel}', which is not a name a pad prints.");
+            }
+        }
+
         [Test]
         public void EveryOneThumbAbilityHasAPadGlyph()
         {

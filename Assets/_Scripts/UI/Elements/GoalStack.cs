@@ -104,6 +104,17 @@ namespace CosmicShore.UI
         /// a ScoringRuleSO names exactly one objective, the one that ends the turn - so this is
         /// the seam a mode-authored list plugs into, and the layout below already handles it.
         /// </summary>
+        /// <summary>
+        /// The local pilot's domain colour, for the win condition's progress bar. Null = no
+        /// domain (the rows fall back to their token).
+        /// </summary>
+        public void SetAccent(Color? accent)
+        {
+            if (rows == null) return;
+            for (int i = 0; i < rows.Length; i++)
+                if (rows[i] != null) rows[i].SetAccent(accent);
+        }
+
         public void SetGoals(IReadOnlyList<GoalEntry> goals)
         {
             _entries.Clear();
