@@ -9340,6 +9340,9 @@ and the Third Eye has a skim readout. Checked offline only: reference compile, g
    near zero.
 3. Skim Race I2: the Squirrel AI flies exactly as before, and `lift` reads 0.0. **Fail:** slower or more strikes.
 4. Run `RegattaSkimTests` (edit mode). **Pass:** all green.
+5. (Second round) Hand your own Squirrel to the AI with the Third Eye's **You / AI** toggle. **Pass:** the Third Eye
+   reads "Skim Race pilot" with the skim line (lift 7.5) and the hull rides its rail. Toggle **You**: the sticks are
+   yours again at once.
 
 ## 🔴 2026-10-15 — Lava lamp fps regression: Charge arcs sleep when tiny, guide stops searching the scene (unverified: no Unity CLI in the session)
 

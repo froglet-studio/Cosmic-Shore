@@ -82,8 +82,11 @@ namespace CosmicShore.Gameplay
                 pts.Add(tr.position);
                 nrm.Add(tr.up);
                 rot.Add(tr.rotation);
-                // Super-shielded: the contact shell reaches 1.5 x the leaf (SkimRaceCourseSource).
-                half.Add(tr.lossyScale * SkimRaceShell.SuperShieldHalfScale);
+                // Super-shielded: the contact shell reaches 1.5 x the leaf (SkimRaceCourseSource). Sized from the
+                // AUTHORED scale, never the live one: a laid prism grows in from zero (the continuity law), and a
+                // course built while the rails were still growing recorded them as slivers - the pilot then flew
+                // its skim line inside their real shells for the whole race.
+                half.Add(AuthoredWorldScale(prism, tr) * SkimRaceShell.SuperShieldHalfScale);
             }
 
             if (pts.Count < 3) return false;
@@ -106,6 +109,14 @@ namespace CosmicShore.Gameplay
 
         /// <summary>Off: a straight line from rail to ring crosses the braid.</summary>
         public override bool AllowsDirectFlight => false;
+
+        /// <summary>The prism's full-grown world scale: its target scale, through its parent's.</summary>
+        static Vector3 AuthoredWorldScale(Prism prism, Transform tr)
+        {
+            Vector3 target = prism.TargetScale;
+            if (target.sqrMagnitude < 1e-8f) return tr.lossyScale;
+            return tr.parent ? Vector3.Scale(target, tr.parent.lossyScale) : target;
+        }
 
         static Domains LaneDomain(List<Prism> lane)
         {

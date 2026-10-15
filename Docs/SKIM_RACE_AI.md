@@ -1772,6 +1772,13 @@ the course. Skim Race never exposed them because it lays one thin track.
 | **Rival rails were invisible.** `FillObstacles` skipped every super-shielded prism as "the track". In Regatta two of the three rails are not this pilot's course. | The mass guard never steered round them. | `SkimRaceObjective.IsCourseMass`: Regatta counts only its own lane (by domain) as course. Other super-shielded prisms reach the mass guard as boxes the size of their shell (`SkimRaceShell.SuperShieldHalfScale`). |
 | **It aimed at the ring's centre**, which sits on the braid's spine. Direct flight (boost >= 3.14) went straight there. | Both the aim and the chord cut across the rival rails. | `RegattaRingObjective.TryLaneCrossing`: aim where the pilot's OWN rail crosses the ring plane, 3 u outside its shell on the outer face. The rail runs 22 u from the centre, inside every mouth (54-110 u). `AllowsDirectFlight` is false in Regatta. |
 
+**Second round (same day, Yash: "still hitting the Regatta rails continuously", at 100 fps):**
+
+| Cause | Fix |
+|---|---|
+| **The course was sized from the rails' LIVE scale.** A laid prism grows in from zero (the continuity law), so a course built while the rails were still growing recorded them as slivers. The pilot then flew its skim line, and planned its shell clearance, inside their real shells for the whole race. | `RegattaRingObjective` sizes each rail prism from its authored `TargetScale` (through its parent's scale). |
+| **A Squirrel handed to the AI with the Third Eye's You / AI toggle never got the Skim Race pilot.** `PilotControl` armed only the platform autopilot, which flies ring waypoints straight through the braid. The Skim Race pilot also stood down on any human-owned hull. | `PilotControl.TrySetAIFlies` installs the pilot (`SkimRaceAIDeployment.TryInstall`) and sets `SkimRacePilot.FlyingForHuman`, so the pilot flies a human's hull while it is held. `IsHeldByAI` reads that flag. |
+
 **Skim Race is unchanged.** Its course has zero lift, every super-shielded prism is still its track, and direct
 flight stays on. The simulator gives bit-identical races before and after (I2, 2 seats, 12 races). Tests:
 `RegattaSkimTests`.

@@ -103,6 +103,13 @@ namespace CosmicShore.Gameplay
 
         public bool IsBound => _bound;
         public bool RaceActive => _raceActive;
+
+        /// <summary>
+        /// A HUMAN's hull handed to this pilot (the Third Eye's You / AI toggle, <c>PilotControl</c>): fly it
+        /// although its player is not an AI. Without this the pilot stands down on any human-owned hull, so a
+        /// Squirrel handed to the AI fell back to the platform autopilot, which knows nothing of skimming.
+        /// </summary>
+        public bool FlyingForHuman { get; set; }
         public SkimRaceAIConfigSO Config => _config;
         public SkimRaceDriver Driver => _driver;
         public SkimRaceCourse Course => _course;
@@ -191,7 +198,7 @@ namespace CosmicShore.Gameplay
 
             // A human took this hull (arena pilot swap): the sticks are theirs now. Stand down
             // without writing anything; the departed-pilot path re-binds when the AI gets it back.
-            if (_status.Player != null && !_status.Player.IsInitializedAsAI)
+            if (_status.Player != null && !_status.Player.IsInitializedAsAI && !FlyingForHuman)
             {
                 if (_raceActive) { _raceActive = false; ReleaseDrift(); if (_ringPressed) ReleaseRing(); }
                 return;

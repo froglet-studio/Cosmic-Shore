@@ -33,7 +33,9 @@ namespace CosmicShore.Gameplay
 
         /// <summary>Is <paramref name="human"/>'s hull being flown by the AI right now?</summary>
         public static bool IsHeldByAI(Player human) =>
-            human && human.Vessel is Component hull && hull && hull.TryGetComponent(out AIPilot pilot) && pilot.AutoPilotEnabled;
+            human && human.Vessel is Component hull && hull &&
+            ((hull.TryGetComponent(out SkimRacePilot skim) && skim.FlyingForHuman) ||
+             (hull.TryGetComponent(out AIPilot pilot) && pilot.AutoPilotEnabled));
 
         /// <summary>
         /// Let the AI fly <paramref name="human"/>'s hull (<paramref name="aiFlies"/> true), or give it back to them.
@@ -47,7 +49,7 @@ namespace CosmicShore.Gameplay
                 refusal = $"{hull.VesselStatus.VesselType} has no AIPilot";
                 return false;
             }
-            if (aiFlies == pilot.AutoPilotEnabled) return true;
+            if (aiFlies == IsHeldByAI(human)) return true;
 
             if (aiFlies)
             {
@@ -58,9 +60,18 @@ namespace CosmicShore.Gameplay
                 ArmModeSteering(human);
                 human.InputController.SetPause(true);
                 hull.ToggleAIPilot(true);
+                // A Squirrel in Skim Race or Regatta flies the racing pilot, as its AI seats do (it stands the platform
+                // autopilot down itself). Without it the handed-over Squirrel flew ring waypoints straight through the
+                // rails (Regatta playtest 2026-10-15).
+                if (gameData != null)
+                {
+                    var skim = SkimRaceAIDeployment.TryInstall(c.gameObject, hull, gameData);
+                    if (skim) skim.FlyingForHuman = true;
+                }
             }
             else
             {
+                if (c.TryGetComponent(out SkimRacePilot skim)) skim.FlyingForHuman = false;
                 hull.ToggleAIPilot(false);
                 hull.VesselStatus.ActionHandler.ReleaseHeldInputs();
                 human.InputController.SetPause(false);
