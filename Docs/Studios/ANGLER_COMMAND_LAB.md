@@ -30,6 +30,24 @@ creatures, the cell and the way they eat are the game's own, read from the asset
 Everything else (the Angler's speeds, the lure, the leash, every command scheme) is lab-only and labelled
 that way in the page.
 
+## After the first Unity playtest (2026-10-15)
+
+The designer flew the cloned Angler in Unity. Taming and throwing worked ("which is fun"). Painting and erasing showed
+nothing, and the designer asked for one new thing. Two changes followed, the lab first:
+
+- **The omni crystal tames every herbivore near the hull** (the designer's ask).
+  - New key `omniTameRadius` (300 u, Lure tab, "Omni tame reach (u)").
+  - New `CORE` function `omniTameOrder`: nearest first, ties by index, up to the leash capacity's room.
+  - The lab has no crystals, so **O** stands in for the pickup.
+  - Headless check in free play, seed 7: one press tamed all 8 wild creatures within 300 u, and a held key counted once.
+  - Unity: `AnglerTameByCrystalEffectSO`, run from the Angler's own forked impactor container.
+- **Paint is now drawn the lab's way, on the prisms themselves.**
+  - The lab's `render()` has always drawn a painted prism 75% toward white, and an ordered one 50%, fading over 1.2 s.
+  - The first Unity cut drew a dot at each prism's centre instead, inside the prism, where nobody could see it.
+  - Unity now lifts the prism's own colour (`Prism.SetColorLift`) with those numbers.
+
+`verify_lab.cjs` still passes, and the scorecard is unchanged: the batch never presses O.
+
 ## Round 2 (2026-10-15): the Sling painter
 
 **The designer's decision** (in chat, 2026-10-15): keep the Angler; command with *the Pack sling combined with

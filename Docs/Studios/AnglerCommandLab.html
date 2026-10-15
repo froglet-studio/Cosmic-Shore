@@ -167,6 +167,7 @@
     tameTime: 2.5,        // lab: seconds held to tame
     tameDecay: 0.6,       // lab: taming lost per second outside the hold
     squadCap: 24,         // lab: most creatures on the leash at once
+    omniTameRadius: 300,  // lab: an OMNI crystal tames every wild herbivore this close to the hull, nearest first, up to the leash capacity (the designer, 2026-10-15)
     leashTow: 1.6,        // lab: a FOLLOWING creature may swim this × its own max to hold formation (attacks stay at game speed)
     formBack: 6,          // lab: how far behind the hull the school's ring sits (u)
     // --- commanded behaviour ---
@@ -243,6 +244,7 @@
     ['Lure', 'leashTow', 1, 4, 0.05, 'Leash tow ×', 'A following creature may swim this many times its own max speed to keep formation. 1 = no tow: at 1 the squad (32–40 u/s) cannot catch a 40 u/s hull and falls out of sight behind the chase camera. Attacks always run at the game\'s own speeds.'],
     ['Lure', 'formBack', -20, 60, 1, 'School ring behind (u)', 'Where the squad\'s ring sits behind the hull. Small values keep the school in the chase camera\'s view.'],
     ['Lure', 'squadCap', 3, 60, 1, 'Leash capacity', 'Most creatures you can lead at once.'],
+    ['Lure', 'omniTameRadius', 50, 1200, 10, 'Omni tame reach (u)', 'Collecting an omni crystal tames every wild herbivore within this of the hull at once, nearest first, up to the leash capacity. The lab has no crystals: press O for the pickup.'],
     ['Squad', 'clawN', 0, 12, 1, 'Clawfish', 'Squad size in missions.'],
     ['Squad', 'quadN', 0, 12, 1, 'QuadFish', 'Squad size in missions.'],
     ['Squad', 'tadN', 0, 30, 1, 'Tadpoles', 'Squad size in missions.'],
@@ -350,6 +352,17 @@
     tameStep(tame, inHold, dt, tameTime, decay) { return inHold ? tame + dt / tameTime : Math.max(0, tame - decay * dt); },
     // where the esca hangs
     lurePoint(p, f, u, ahead) { return [p[0] + f[0] * ahead + u[0] * 2.5, p[1] + f[1] * ahead + u[1] * 2.5, p[2] + f[2] * ahead + u[2] * 2.5]; },
+    // the omni crystal's tame: the indices of the points within radius of from, nearest first (ties by index), at most room
+    omniTameOrder(from, pts, radius, room) {
+      if (room <= 0) return [];
+      const r2 = radius * radius, near = [];
+      for (let i = 0; i < pts.length; i++) {
+        const dx = pts[i][0] - from[0], dy = pts[i][1] - from[1], dz = pts[i][2] - from[2], d2 = dx * dx + dy * dy + dz * dz;
+        if (d2 <= r2) near.push([d2, i]);
+      }
+      near.sort((a, b) => a[0] - b[0] || a[1] - b[1]);
+      return near.slice(0, room).map((n) => n[1]);
+    },
   };
 
   // ===================================================================================================
@@ -448,7 +461,7 @@
       paintedList: [],
       v: { p: START_P.slice(), f: [0, 0, -1], u: [0, 1, 0], r: [1, 0, 0], speed: P.cruise },
       fauna: [], squadSel: -1, lureOn: false, L: [0, 0, 0],
-      prev: { cmd: false, squad: false, recall: false }, lastInput: {},
+      prev: { cmd: false, squad: false, recall: false, omni: false }, lastInput: {},
       cmd: { holding: false, holdT: 0, loop: [], loopLen: 0, loopShow: null, flares: [], flareCd: 0, gazeSt: -1, gazeDwell: 0, gazeLock: -1, sling: 0 },
       fx: { blooms: [] },
       task: null, taskIdx: -1, structAlive0: SCENE.structs.map((s) => s.ids.length),
@@ -846,17 +859,31 @@
     return lured;
   }
 
+  // An OMNI crystal (the game's omni pickup; the lab has no crystals, so O stands in for it): every wild or lured
+  // herbivore within omniTameRadius of the hull is tamed at once, nearest first, up to the leash capacity.
+  function omniTame(w) {
+    const wild = w.fauna.filter((f) => f.state === ST.WILD || f.state === ST.LURED);
+    const picks = CORE.omniTameOrder(w.v.p, wild.map((f) => [f.x, f.y, f.z]), P.omniTameRadius, P.squadCap - w.m.tamed);
+    for (const k of picks) {
+      const f = wild[k]; f.state = ST.IDLE; f.tame = 1; w.m.tamed++;
+      if (w.m.firstTameT == null) w.m.firstTameT = w.t;
+      if (w.m.tamed >= 6 && w.m.tame6T == null) w.m.tame6T = w.t;
+    }
+    return picks.length;
+  }
+
   // ---------- the step ----------
   function simStep(dt, inp) {
     const w = world; if (!w) return;
     inp = inp || {};
     const cmdHeld = (inp.cmd || 0) > 0.5, edgeDown = cmdHeld && !w.prev.cmd, edgeUp = !cmdHeld && w.prev.cmd;
-    const sqEdge = !!inp.squad && !w.prev.squad, rcEdge = !!inp.recall && !w.prev.recall;
+    const sqEdge = !!inp.squad && !w.prev.squad, rcEdge = !!inp.recall && !w.prev.recall, omEdge = !!inp.omni && !w.prev.omni;
     if (edgeDown) { w.m.inputs++; w.m.presses++; } if (sqEdge) w.m.inputs++; if (rcEdge) w.m.inputs++;
-    w.prev.cmd = cmdHeld; w.prev.squad = !!inp.squad; w.prev.recall = !!inp.recall; w.lastInput = inp;
+    w.prev.cmd = cmdHeld; w.prev.squad = !!inp.squad; w.prev.recall = !!inp.recall; w.prev.omni = !!inp.omni; w.lastInput = inp;
     flyVessel(w, inp, dt);
     if (sqEdge) w.squadSel = w.squadSel >= SPECIES.length - 1 ? -1 : w.squadSel + 1;
     if (rcEdge) for (const f of w.fauna) if (inSquad(w, f)) { releaseClaim(w, f); f.set = null; f.state = ST.IDLE; f.hold = 0; }
+    if (omEdge) omniTame(w);
     w.lureOn = (inp.lure || 0) > 0.5;
     w.L = CORE.lurePoint(w.v.p, w.v.f, w.v.u, P.lureAhead);
     commandStep(w, inp, edgeDown, edgeUp, dt);
@@ -1108,7 +1135,7 @@
   let lastHumanT = -1e9;
   function easeIn(x) { return x < 0 ? Math.cos(x * Math.PI / 4) - 1 : -(Math.cos(x * Math.PI / 4) - 1); }   // InputController ease
   function humanInput() {
-    const inp = { pitch: 0, yaw: 0, boost: 0, lure: 0, cmd: 0, erase: 0, squad: false, recall: false };
+    const inp = { pitch: 0, yaw: 0, boost: 0, lure: 0, cmd: 0, erase: 0, squad: false, recall: false, omni: false };
     const k = (c) => keys.has(c);
     inp.yaw = (k('KeyD') || k('ArrowRight') ? 1 : 0) - (k('KeyA') || k('ArrowLeft') ? 1 : 0);
     inp.pitch = (k('KeyW') || k('ArrowUp') ? 1 : 0) - (k('KeyS') || k('ArrowDown') ? 1 : 0);
@@ -1118,6 +1145,7 @@
     inp.erase = k('KeyV') || k('ControlLeft') || mouse.right ? 1 : 0;
     inp.squad = k('KeyQ') || k('Tab');
     inp.recall = k('KeyX');
+    inp.omni = k('KeyO');
     let pads = [];
     try { pads = navigator.getGamepads ? Array.from(navigator.getGamepads()).filter(Boolean) : []; } catch (e) { pads = []; }
     const g = pads[0];
@@ -1360,7 +1388,7 @@
       el.textContent = name + ' ' + list.length + (ball ? ' · ' + ball + ' in the ball' : '') + (busy ? ' · ' + busy + ' hunting' : '');
       bar.appendChild(el);
     }
-    $('hint').textContent = PLATFORM.device === 'phone' ? '' : 'W A S D steer · Shift boost · F LURE · Space / left mouse PAINT + COMMAND · V / right mouse ERASE · Q / Tab SQUAD · X recall · C camera · P pause · R restart. Pad (the game\'s map): two sticks fly, RT paint + command, LT erase, X lure, A squad, B recall, RB boost.';
+    $('hint').textContent = PLATFORM.device === 'phone' ? '' : 'W A S D steer · Shift boost · F LURE · Space / left mouse PAINT + COMMAND · V / right mouse ERASE · Q / Tab SQUAD · X recall · O omni crystal (tames all near) · C camera · P pause · R restart. Pad (the game\'s map): two sticks fly, RT paint + command, LT erase, X lure, A squad, B recall, RB boost.';
   }
   function box(w, st, color, label) {
     const ids = aliveIds(w, st); if (!ids.length) return;
