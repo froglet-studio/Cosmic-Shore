@@ -18,4 +18,5 @@ The team decides with this log ([`TOOLING_DECISIONS.md`](TOOLING_DECISIONS.md) Â
 
 | Date | Who | Tool | Task | Helped? | Keep / change / remove | In their words |
 |---|---|---|---|---|---|---|
+| 2026-10-15 | Yash | Amoebius | The lava-lamp fps regression: found by an Amoebius A/B of two commits (per-script, no editor), then confirmed in Unity's Profiler | yes | (not said) | "Anything running things in Amoebas is more efficient and performant than in editor." |
 | 2026-10-15 | Yash | Amoebius, Vessel Studio | Raising the question | (undecided) | (undecided) | "This Amoebius development is in a grey area: we need to decide whether it will help us in future or not, and whether the Vessel Studio needs to be removed or not." |
