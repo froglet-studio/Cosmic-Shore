@@ -340,5 +340,18 @@ the line it settled.
 - 2026-10-15, Garrett: the Pistol's view is crude — no green under the trail; perceive the surroundings much more
   effectively; a prism the Goby spins round should stretch out; make the shrimp a thoughtful, enjoyable experience to test in
   Unity. Built (§10.1 "The Pistol's view"); the lab's side view follows the same rules so the artifact stays the source.
+- 2026-10-15, a design review of that view (three designs, three judges, synthesized) corrected it, in both the lab and
+  Unity: the parallax is centred on the PISTOL (camera-centred, the end-on body's caps drew 62 u apart); the corner window
+  uses asin; a prism holding a lap's centre is drawn as one deterministic BAR (the run of path it is beside, with hysteresis
+  and a grow-in) instead of corner-mapped slivers; a tear guard draws a prism rigid when a corner lands on another pass; the
+  world draws in two passes (solid with depth, glass far-to-near); the lab's own marks (violet primed 0xb98bff, orange hot
+  0xff6a2a, light-blue held 0x9fe8ff) and block tint (lerp to white 0.35) are the source — Unity had invented amber/red; the
+  ground LINE is back (domain colour, warm on downslopes, the dive Tiny Wings is about), the tiles rigid on it at their own
+  depth; the deep background (d > 3·pVision) is rigid boxes; a contact dash under an airborne Pistol; the ghost cue; the AI's
+  aim as the lab's line; the sky turns with the frame at the Pistol. **[read] for Garrett:** the brief's §4.4 [stated] band-only
+  visibility is replaced by limited REACH with fogged awareness of depth (reverting = the depth window to the band, one
+  constant); the bar's half-lap → whole-lap jump as the Goby tightens a lap is the geometry, softened; `tAngle` is not cloned
+  until the Goby's real trail alternates its angles; `pViewFog` / `pForeAlpha` / `pDepthView` are OFFERED as lab keys (not
+  shipped) should the fog, foreground opacity or depth reach want tuning.
 - 2026-10-14, round 1 of the lab built (§9.1). Nothing decided yet: Garrett picks the unroll in the lab (its
   Decisions tab writes to the shared log).

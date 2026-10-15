@@ -67,32 +67,36 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ### 🔴 The Pistol's world: warped prisms, 2.5D depth, the trail as the ground (`cece/sharp-tesla-j0kd7z`, 2026-10-15) — NOT EDITOR-VERIFIED
 
-`GobyPistolDuo`'s side view rebuilt as one mesh a frame (`PistolWorldMesh`, `CosmicShore/PistolWorld` via `Resources/PistolWorld.mat`;
-`PistolWarp`, `PistolRibbon.MapFast / MapNear / Curvature`). No editor and no `unity` CLI here, so `/verify-unity` did NOT run, and the
-shader has NOT been compiled by Unity (a hand-written URP shader; `ddx/ddy` flat shading, Cull Off, alpha blend, ZWrite On). Headless proof:
-`unity_refcompile` player 0 errors; Amoebius built AND ran it (the Goby as the menu hull, into freestyle, the Pistol taken, Q and F
-pressed): ~290 prisms mapped and warped a frame, the tail / squash / pops firing, zero exceptions from the duo. `PistolWorldMathTests`
-(12) + `GobyPistolMathTests` (10) 22/22 outside Unity. Amoebius cannot composite the side camera, so the PICTURE is unseen.
+`GobyPistolDuo`'s side view rebuilt as one mesh a frame in two passes (`PistolWorldMesh`; `CosmicShore/PistolWorld` via
+`Resources/PistolWorld.mat` solid + `Resources/PistolWorldGlass.mat` glass; `PistolWarp`, `PistolTargets`, `PistolRibbon.MapFast /
+MapNear / LapExtent / Curvature`), then corrected by a three-design review (the brief's decisions log, 2026-10-15). No editor and no
+`unity` CLI here, so `/verify-unity` did NOT run, and the shader has NOT been compiled by Unity (hand-written URP; `ddx/ddy` flat shading
+in view space, Cull Off, material-driven ZWrite/Blend). Headless proof: `unity_refcompile` player 0 errors; Amoebius built AND ran it
+(the Goby as the menu hull, into freestyle, the Pistol taken, Q / F / a dive pressed): prisms mapped, warped, boxed and tiled every
+frame, zero exceptions from the duo; `PistolWorldMathTests` (17) + `PistolViewMathTests` (10) + `PistolTargetsTests` (1) +
+`GobyPistolMathTests` (10): 39/39 outside Unity. Amoebius cannot composite the side camera, so the PICTURE is unseen.
 
-1. **Fly the Goby (Vessel Changer ▸ Goby), look at the inset:** no green floor, no curtain. The ground is a road of the Goby's own
-   trail blocks in the domain colour, rising and falling with the hills; the Pistol (orange tube, end on, a lit cap, a bright eye)
-   rides it with a thin trail behind. A domain-coloured diamond with a white dot is the Goby at the road's end.
-2. **Depth:** prisms beside the path show at full colour with a rim; prisms further off to the Goby's side (the camera is on its
-   right) draw smaller and sink into dark-blue fog; prisms on the near side draw bigger and see-through. Fly past a cluster: the
-   layers slide at different rates (parallax). Nothing should pop in or out at the window's edges harder than a fade.
-3. **The stretch (the point of it):** fly a tight circle round a prism cluster (the Squirrel turns in ~29 u). In the inset the prisms
-   inside your circle STRETCH along the ground direction into bars; the one nearest the circle's centre spans most of the screen;
-   prisms outside the circle compress slightly. Nothing tears into slivers across the screen except, momentarily, a prism you fly
-   exactly round the centre of.
-4. **Press 2 (the Pistol), full screen:** everything above at full size. Ahead of the Goby the world is drawn fogged (the forecast)
-   and firms up as the Goby reaches it. Dive down a hill and land: the tube squashes and a ring puffs at the ground; a hard landing
-   (into a slope) also shakes the view. Hit a prism: a pop in its colour, a small shake. Q: the ring flies out; the prisms it carries
-   turn light blue; its collapse flashes a big ring and shakes.
-5. **Prime from the Goby (3) then take the Pistol:** primed prisms pulse amber in the side view, even far off the path (fog lifted);
-   after the Pistol breaks one, its neighbours flash red (hot).
-6. **Never:** the Pistol breaking the Goby's own trail (it rides it); a trail block drawn anywhere but on the road; a prism drawn
-   twice; the frame rate dropping with the inset on (the view caps at 1200 prisms, 60 000 vertices — say the counts from the
-   Profiler if it does).
+1. **Vessel Changer ▸ Goby, look at the inset:** no green, no curtain. A domain-coloured LINE rides the hills (warm orange on the
+   downslopes) with the trail's blocks sitting on it in two rails; the orange Pistol end on (a cone: its near cap big, its far cap
+   small, both on one screen point, the facets slowly turning, a bright eye) with a thin trail behind; a domain-coloured diamond
+   with a white dot is the Goby at the line's end. The sky yaws as the Goby turns.
+2. **Depth:** prisms beside the path are vivid with a rim; further to the Goby's side they draw smaller and sink into dark-blue fog
+   (past ~135 u they are plain boxes); on the near side they draw bigger and see-through. Fly past a cluster: layers slide at
+   different rates. Nothing pops at the window's edges harder than a fade. Ahead of the Goby the world is fogged (the forecast).
+3. **The stretch (the point of it):** circle a prism cluster twice at the Squirrel's radius (~29 u). The prisms inside the circle
+   STRETCH along the line into bars; the one at the circle's centre becomes ONE bar across most of the screen (growing in over a
+   quarter second), and they relax as you fly on. Prisms outside the circle compress slightly. No slivers tearing across the screen
+   (a prism caught on a fold draws as a plain box instead).
+4. **Press 2 (the Pistol), full screen:** a prism drawn inside the cone's cross-section at its depth is hit (a pop in its colour, a
+   small shake); one outside is not. Airborne, a short dash marks the ground under you. Land: the tube squashes and a ring puffs;
+   a hard landing shakes. Q: the ring flies out; carried prisms turn light blue; its collapse flashes a light-blue disc and shakes.
+   G: the body goes translucent. The Goby off screen: a domain-coloured arrow at the right edge.
+5. **Prime from the Goby (3), then take the Pistol:** primed prisms pulse VIOLET at any depth (the lab's colour); after the Pistol
+   breaks one, its neighbours burn ORANGE (hot). A friendly block just ahead pulses faintly while ghost is ready.
+6. **While the AI flies the Pistol (you on the Goby):** its launch aim is a line — green, amber while it has not noticed its target
+   yet, red while it misjudges (Easy / Medium).
+7. **Never:** the Pistol breaking the Goby's own trail; a tile drawn off the line; a prism drawn twice; the dev box's `view` line
+   over ~400 warped / 120 000 segTests, or the frame rate dropping with the inset on (say the counts if it does).
 
 ### 🔴 The Goby (VesselClassType 16): the Goby & Pistol duo as a vessel you fly from the Vessel Changer (`cece/sharp-tesla-j0kd7z`, 2026-10-15) — NOT EDITOR-VERIFIED
 

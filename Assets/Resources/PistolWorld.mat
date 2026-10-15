@@ -16,7 +16,7 @@ Material:
   m_LightmapFlags: 4
   m_EnableInstancingVariants: 1
   m_DoubleSidedGI: 0
-  m_CustomRenderQueue: -1
+  m_CustomRenderQueue: 2450
   stringTagMap: {}
   disabledShaderPasses: []
   m_LockedProperties: 
@@ -26,7 +26,10 @@ Material:
     m_Ints: []
     m_Floats:
     - _Ambient: 0.42
+    - _DstBlend: 0
     - _Rim: 0.9
+    - _SrcBlend: 1
+    - _ZWrite: 1
     m_Colors:
     - _FogColor: {r: 0.05, g: 0.06, b: 0.12, a: 1}
     - _KeyDir: {r: -0.45, g: 0.8, b: -0.4, a: 0}

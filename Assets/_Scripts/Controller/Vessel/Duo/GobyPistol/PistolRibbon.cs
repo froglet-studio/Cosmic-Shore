@@ -130,8 +130,13 @@ namespace CosmicShore.Gameplay
             return Mathf.LerpUnclamped(_p[k].y, _p[k + 1].y, X1 > X0 ? Mathf.Clamp01((x - X0) / (X1 - X0)) : 1f);
         }
 
+        /// <summary>Segment tests this frame (the view resets it): the drawing side's budget, so a dense cell degrades
+        /// to straight-drawn prisms instead of a long frame.</summary>
+        public int SegTests;
+
         float SegD2(int k, Vector3 q, bool goby, out float t)
         {
+            SegTests++;
             Vector3 a = _p[k], b = _p[k + 1];
             if (goby)
             {
@@ -232,6 +237,20 @@ namespace CosmicShore.Gameplay
             if (beyondEnd) bt = BeyondEnd(bk, q, goby, bt);
             Resolve(ref r, q, bk, bt, goby);
             return r;
+        }
+
+        /// <summary>The run of segments round <paramref name="kCentre"/> that q is within <paramref name="maxDist"/> of,
+        /// inside [xLo, xHi]: the bar a prism holding a lap's centre is drawn as (it is beside every point of the lap).
+        /// A deterministic threshold on a smooth function of q, never a nearest-by-noise pick. Each end says whether it
+        /// stopped on the distance (an exit from the lap) or at the window's edge.</summary>
+        public void LapExtent(Vector3 q, int kCentre, float maxDist, float xLo, float xHi, out int kLo, out int kHi, out bool loByDistance, out bool hiByDistance)
+        {
+            bool goby = Mode == PistolUnroll.GobyUp; float m2 = maxDist * maxDist;
+            int k0 = Index(xLo), k1 = Mathf.Min(_p.Count - 2, Index(xHi));
+            kCentre = Mathf.Clamp(kCentre, k0, Mathf.Max(k0, k1));
+            kLo = kHi = kCentre; loByDistance = hiByDistance = false;
+            while (kLo - 1 >= k0) { if (SegD2(kLo - 1, q, goby, out _) > m2) { loByDistance = true; break; } kLo--; }
+            while (kHi + 1 <= k1) { if (SegD2(kHi + 1, q, goby, out _) > m2) { hiByDistance = true; break; } kHi++; }
         }
 
         /// <summary>The path's signed curvature at segment k (1/radius; 0 on a straight), positive when the path bends

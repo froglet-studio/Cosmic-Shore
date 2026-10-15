@@ -103,7 +103,107 @@ namespace CosmicShore.Tests
             Assert.Less(Mathf.Abs(straight.Curvature(2)), 1f / 150f, "the golden path's start is nearly straight");
         }
 
+        [Test]
+        public void CornerWindow_UsesAsin_AndClassifies()
+        {
+            const float gap = 4f, kappa = 1f / 29f;   // ρ = 29, the centre at d = +29
+            Assert.AreEqual(6, PistolWarp.CornerWindow(5f, kappa, 19f, gap, 100), "r = 10: ρ·asin(0.5) = 15.2 u → 4 segments + 2");
+            int w = PistolWarp.CornerWindow(10f, kappa, 29f - 12.5f, gap, 100);
+            Assert.AreEqual(9, w, "hd = 10 at r = 12.5: ρ·asin(0.8) = 26.9 u → 7 + 2");
+            Assert.Greater(w, Mathf.CeilToInt(10f / 12.5f * 29f / gap) + 2, "the small-angle form (23.2 u → 8) falls short here");
+            Assert.AreEqual(2, PistolWarp.CornerWindow(5f, 0f, 19f, gap, 100), "a straight path");
+            Assert.AreEqual(PistolWarp.Kind.Straight, PistolWarp.Classify(5f, 0f, 19f, gap, 100, out _));
+            Assert.AreEqual(PistolWarp.Kind.Bend, PistolWarp.Classify(5f, kappa, 19f, gap, 100, out _));
+            Assert.AreEqual(PistolWarp.Kind.Bar, PistolWarp.Classify(5f, kappa, 29f - 6.5f, gap, 100, out int bar), "r ≤ hd + half a sample holds the centre");
+            Assert.AreEqual(100, bar, "and its window is everything");
+            Assert.AreEqual(4, PistolWarp.CornerWindow(5f, kappa, 19f, gap, 4), "clamped to the ribbon's span");
+            Assert.AreEqual(PistolWarp.Kind.Bend, PistolWarp.Classify(5f, kappa, -19f, gap, 100, out int outside), "outside the bend (r = 48) the corners barely spread: ρ·asin(5/48) = 3 u");
+            Assert.AreEqual(3, outside);
+        }
+
+        [Test]
+        public void OutsideTheBend_APrismCompresses()
+        {
+            var rb = Lap(); const float s = 2f;
+            var corners = new Vector3[8]; var xhd = new Vector3[8];
+            Vector3 c = new(-(R + 20f), 0f, 0f);   // 20 u outside the lap, opposite the seam
+            PistolWarp.BoxCorners(c, Vector3.right * s, Vector3.up * s, Vector3.forward * s, corners);
+            var centre = rb.Map(c, -1e9f, 1e9f); Assert.IsTrue(centre.Ok);
+            int window = PistolWarp.CornerWindow(s * Mathf.Sqrt(3f), rb.Curvature(centre.K), centre.D, Lay.SampleGap, rb.Count);
+            Assert.IsTrue(PistolWarp.WarpBox(rb, centre.K, corners, -1e9f, 1e9f, window, xhd));
+            float expected = 2f * s * R / (R + 20f);   // the arc the box's 4 u subtend at r = 49, on the lap's radius
+            Assert.AreEqual(expected, PistolWarp.XRange(xhd), expected * 0.12f + 0.3f, "4 u at r = 49 is 2.4 u along the lap");
+            Assert.Less(PistolWarp.XRange(xhd), 2f * s, "compressed, not stretched");
+        }
+
+        [Test]
+        public void LapExtent_IsTheLap_StopsAtTheExit_AndDoesNotJitter()
+        {
+            // 1.2 laps, then a 200 u straight exit along the tangent
+            var rb = Lap(); float thEnd = 2f * Mathf.PI * 1.2f; Vector3 exitFrom = OnCircle(thEnd), f = Tangent(thEnd);
+            var r = Vector3.Cross(f, Vector3.up).normalized;
+            rb.Lay(exitFrom, exitFrom + f * 200f, f, Vector3.up, r, Lay);
+            const float hd = 5.2f;
+            var corners = new Vector3[8];
+            PistolWarp.BoxCorners(Vector3.zero, Vector3.right * 3f, Vector3.up * 3f, Vector3.forward * 3f, corners);
+            var centre = rb.Map(Vector3.zero, -1e9f, 1e9f);
+            rb.LapExtent(Vector3.zero, centre.K, R + hd + 2f, -1e9f, 1e9f, out int kLo, out int kHi, out bool loByDist, out bool hiByDist);
+            Assert.AreEqual(0, kLo, "the run starts where the ribbon starts (the lap's first segment)");
+            Assert.IsFalse(loByDist, "it stopped at the ribbon's start, not on the distance");
+            Assert.IsTrue(hiByDist, "and left the lap on the straight exit");
+            float lap = 1.2f * 2f * Mathf.PI * R;
+            Assert.AreEqual(lap, rb.X(kHi + 1), hd + Lay.SampleGap + 22f, "the run reaches the exit, overshooting it by less than the threshold's reach down the tangent");
+            PistolWarp.BarExtent(rb, Vector3.zero, centre.K, R, hd, corners, -1e9f, 1e9f, out float xA, out float xB);
+            Assert.AreEqual(0f, xA, 1e-3f);
+            Assert.AreEqual(lap, xB, hd + Lay.SampleGap, "tightened to the corners' own x at the exit");
+            // a nudge of the point moves each end by at most a sample; the same call twice is identical
+            PistolWarp.BarExtent(rb, new Vector3(0.3f, 0f, 0f), centre.K, R, hd, corners, -1e9f, 1e9f, out float xA2, out float xB2);
+            Assert.AreEqual(xA, xA2, Lay.SampleGap); Assert.AreEqual(xB, xB2, Lay.SampleGap + 0.5f);
+            PistolWarp.BarExtent(rb, Vector3.zero, centre.K, R, hd, corners, -1e9f, 1e9f, out float xA3, out float xB3);
+            Assert.AreEqual(xA, xA3); Assert.AreEqual(xB, xB3);
+        }
+
+        [Test]
+        public void BeyondEnd_ForecastsAlongTheHeading()
+        {
+            var rb = new PistolRibbon(PistolUnroll.WorldUp);
+            rb.Begin(Vector3.zero, Vector3.forward, Vector3.up, Vector3.right, Lay);
+            rb.Lay(Vector3.zero, new Vector3(0f, 0f, 400f), Vector3.forward, Vector3.up, Vector3.right, Lay);
+            var q = new Vector3(7f, 3f, rb.EndX + 40f);
+            var ahead = rb.MapFast(q, -1e9f, 1e9f, true);
+            Assert.IsTrue(ahead.Ok); Assert.AreEqual(rb.EndX + 40f, ahead.X, 0.1f, "40 u past the end along the heading"); Assert.AreEqual(7f, Mathf.Abs(ahead.D), 0.1f);
+            var piled = rb.MapFast(q, -1e9f, 1e9f, false);
+            Assert.AreEqual(rb.X(rb.Count - 1), piled.X, 0.1f, "without it the point piles up at the end (the lab's map)");
+            var near = rb.MapNear(q, rb.Count - 2, 3, -1e9f, 1e9f, true);
+            Assert.AreEqual(ahead.X, near.X, 1e-3f, "the corner mapper forecasts the same way");
+        }
+
+        [Test]
+        public void TearGuard_FallsBackOnAFold()
+        {
+            // a WorldUp helix: radius 20, pitch 30 a turn - every pass projects onto the same circle
+            var rb = new PistolRibbon(PistolUnroll.WorldUp);
+            Vector3 At(float th) => new(20f * Mathf.Cos(th), 30f * th / (2f * Mathf.PI), 20f * Mathf.Sin(th));
+            Vector3 Tan(float th) => new Vector3(-Mathf.Sin(th), 30f / (2f * Mathf.PI * 20f), Mathf.Cos(th)).normalized;
+            rb.Begin(At(0f), Tan(0f), Vector3.up, Vector3.Cross(Tan(0f), Vector3.up).normalized, Lay);
+            const int steps = 600; float total = 2f * Mathf.PI * 3f;
+            for (int i = 1; i <= steps; i++) { float a = (i - 1) * total / steps, b = i * total / steps; var f = Tan(b); rb.Lay(At(a), At(b), f, Vector3.up, Vector3.Cross(f, Vector3.up).normalized, Lay); }
+            // a box near the helix's axis, between the passes: its corners' nearest ground-track segments scatter along the lap
+            var corners = new Vector3[8]; var xhd = new Vector3[8];
+            Vector3 c = new(1.5f, 45f, 0f);
+            PistolWarp.BoxCorners(c, Vector3.right * 2f, Vector3.up * 2f, Vector3.forward * 2f, corners);
+            var centre = rb.Map(c, -1e9f, 1e9f); float hd = 2f * Mathf.Sqrt(3f), kappa = rb.Curvature(centre.K);
+            int window = PistolWarp.CornerWindow(hd, kappa, centre.D, Lay.SampleGap, rb.Count);
+            Assert.IsTrue(PistolWarp.WarpBox(rb, centre.K, corners, -1e9f, 1e9f, window, xhd));
+            float bound = PistolWarp.TearBound(hd, kappa, centre.D, Lay.SampleGap);
+            Assert.Greater(PistolWarp.XRange(xhd), bound, "the corners tore across the lap: beyond the honest bound");
+            rb.Frame(centre.K, centre.T, out var T, out var U, out var Rr);
+            PistolWarp.RigidCorners(new Vector3(centre.X, centre.H, centre.D), Vector3.right * 2f, Vector3.up * 2f, Vector3.forward * 2f, T, U, Rr, xhd);
+            Assert.LessOrEqual(PistolWarp.XRange(xhd), 2f * hd + 1e-3f, "the rigid box is the prism's own size");
+        }
+
         /// <summary>A 4 u box at distance r inside the lap: its image along x spans the arc its corners subtend, R·Δθ.</summary>
+        [TestCase(4f)]
         [TestCase(10f)]
         [TestCase(6f)]
         [TestCase(20f)]
