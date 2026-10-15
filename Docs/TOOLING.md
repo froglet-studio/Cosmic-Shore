@@ -327,7 +327,7 @@ Menu items previously lived under three roots. All first-party items were moved 
 | `Tools/Cosmic Shore/End Game Conditions` | `FrogletTools/Game Modes/End Game Conditions` |
 | `Tools/Cosmic Shore/Prism Animation/…` | `FrogletTools/Ecology/Prism Animation/…` |
 | `Tools/Cosmic Shore/Measure Cell Environment Baselines` | `FrogletTools/Ecology/…` |
-| `Tools/Cosmic Shore/Strip Crystal AudioSources` | retired 2026-10-14 (never run; the crystal prefabs still carry the dead `AudioSource`s) |
+| `Tools/Cosmic Shore/Strip Crystal AudioSources` | retired 2026-10-14; its job (never run until then) was done by hand on 2026-10-15: the 9 crystal prefabs' dead `AudioSource`s and `TadPoleFauna`'s override on one were removed |
 | `Tools/Cosmic Shore/Validate Lifeform Crystals` | `FrogletTools/Ecology/…` |
 | `Tools/Cosmic Shore/Audit Vessel *`, `Wire/Bake Elemental Petal Bars`, `Plan Vessel Rig Swap` | `FrogletTools/Vessels/Audits/…`, `FrogletTools/Vessels/Wiring/…` |
 | `Tools/Cosmic Shore/Setup Freestyle Toybox`, `Setup Prism Grid Explosion Scene` | `FrogletTools/Scenes/…` |
