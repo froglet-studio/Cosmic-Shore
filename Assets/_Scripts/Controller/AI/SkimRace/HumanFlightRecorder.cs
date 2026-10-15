@@ -53,6 +53,22 @@ namespace CosmicShore.Gameplay
         /// <summary>True while a race is being recorded.</summary>
         public static bool Recording => s_instance && s_instance._course != null && s_instance._samples.Count > 0;
 
+        /// <summary>Flights saved in <see cref="Folder"/> (counted at most every two seconds), for the Third Eye.</summary>
+        public static int SavedCount
+        {
+            get
+            {
+                float now = Time.realtimeSinceStartup;
+                if (now < s_countAt) return s_count;
+                s_countAt = now + 2f;
+                try { s_count = Directory.Exists(Folder) ? Directory.GetFiles(Folder, "flight_*.json").Length : 0; }
+                catch (Exception) { s_count = 0; }
+                return s_count;
+            }
+        }
+        static int s_count;
+        static float s_countAt = -1f;
+
         /// <summary>The last file written, for the console and the Third Eye.</summary>
         public static string LastFile { get; private set; }
 
@@ -93,7 +109,7 @@ namespace CosmicShore.Gameplay
             else if (verb != "") return $"usage: {CommandName} on | off";
             string state = On ? "ON: your Regatta races are recorded" : "off";
             string last = string.IsNullOrEmpty(LastFile) ? "" : $" | last: {LastFile}";
-            return $"flight recorder {state} | folder: {Folder}{last}";
+            return $"flight recorder {state} | {SavedCount} saved in {Folder}{last}";
         }
 
         void Update()
@@ -212,6 +228,7 @@ namespace CosmicShore.Gameplay
                 string file = Path.Combine(Folder, $"flight_Regatta_{hull}_{DateTime.Now:yyyyMMdd_HHmmss}.json");
                 File.WriteAllText(file, Serialize(course, hull, why));
                 LastFile = file;
+                s_countAt = -1f;
                 CSDebug.LogVerbose(CSLogChannel.AITraining, $"[HumanFlightRecorder] {_samples.Count} samples ({why}) -> {file}");
             }
             catch (Exception e)

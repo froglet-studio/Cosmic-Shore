@@ -29,6 +29,7 @@ namespace CosmicShore.Editor
     public static class BugHuntReports
     {
         const long MaxFileBytes = 512 * 1024;
+        const long MaxFlightBytes = 8L * 1024 * 1024;
         const int MaxFilesPerSend = 12;
         const int MaxAgeDays = 14;
 
@@ -65,7 +66,9 @@ namespace CosmicShore.Editor
             try { perfDir = DiagnosticsHUD.OutputDirectory; } catch { /* no Documents folder */ }
             if (perfDir != null) Collect(candidates, perfDir, "*.json", "perf", cutoff);
             // Human Regatta flights for the Squirrel AI to learn from (HumanFlightRecorder, learn_from_flights.py).
-            if (perfDir != null) Collect(candidates, Path.Combine(perfDir, "Flights"), "flight_*.json", "flights", cutoff);
+            // A flight is ~130 bytes a sample at 10 Hz plus its rail, so a long race passes the 512 KB report cap; a
+            // flight over it was skipped SILENTLY (no file sent, no question asked). Flights get their own cap.
+            if (perfDir != null) Collect(candidates, Path.Combine(perfDir, "Flights"), "flight_*.json", "flights", cutoff, MaxFlightBytes);
 
             candidates.Sort((a, b) => b.file.LastWriteTimeUtc.CompareTo(a.file.LastWriteTimeUtc));
             var reports = new List<Report>(candidates.Count);
@@ -87,7 +90,8 @@ namespace CosmicShore.Editor
             return new string(chars);
         }
 
-        static void Collect(List<(FileInfo, string)> into, string dir, string pattern, string kind, DateTime cutoff)
+        static void Collect(List<(FileInfo, string)> into, string dir, string pattern, string kind, DateTime cutoff,
+                            long maxBytes = MaxFileBytes)
         {
             try
             {
@@ -95,7 +99,7 @@ namespace CosmicShore.Editor
                 foreach (var path in Directory.GetFiles(dir, pattern))
                 {
                     var info = new FileInfo(path);
-                    if (info.Length == 0 || info.Length > MaxFileBytes) continue;
+                    if (info.Length == 0 || info.Length > maxBytes) continue;
                     if (info.LastWriteTimeUtc < cutoff) continue;
                     into.Add((info, kind));
                 }

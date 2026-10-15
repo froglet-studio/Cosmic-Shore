@@ -539,7 +539,8 @@ namespace CosmicShore.Editor.AI
 
                 // The human flight recorder (HumanFlightRecorder; learn_from_flights.py reads what it writes).
                 bool rec = HumanFlightRecorder.On;
-                string recLabel = rec && HumanFlightRecorder.Recording ? "\u25CF Rec" : "Record";
+                int saved = HumanFlightRecorder.SavedCount;
+                string recLabel = (rec && HumanFlightRecorder.Recording ? "\u25CF Rec" : "Record") + (saved > 0 ? $" ({saved})" : "");
                 bool recNew = GUILayout.Toggle(rec, new GUIContent(recLabel,
                     "Record YOUR Regatta flights (stick, throttle, line against your rail) so the Squirrel AI can learn from " +
                     "them. One file per race, sent with Send to Claude. Seconds the AI holds your hull are not recorded."),
