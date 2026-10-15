@@ -118,6 +118,7 @@ namespace CosmicShore.Editor
         static volatile int _minPlaySeconds = 15;
         static volatile int _minEditorMinutes = 10;
         static volatile int _maxAutoIssues = 150;
+        static volatile bool _autoPublish;
 
         /// <summary>Bumped on every mutation; the window polls it to know when to repaint.</summary>
         public static int ChangeStamp => _changeStamp;
@@ -179,6 +180,7 @@ namespace CosmicShore.Editor
             _minPlaySeconds = s.MinValidationPlaySeconds;
             _minEditorMinutes = s.MinEditorSessionMinutes;
             _maxAutoIssues = s.MaxAutoIssues;
+            _autoPublish = s.AutoPublishAfterPlay;
         }
 
         public static void SetAutoCaptureEnabled(bool on)
@@ -371,6 +373,18 @@ namespace CosmicShore.Editor
         {
             switch (change)
             {
+                case PlayModeStateChange.ExitingEditMode:
+                    // Adopt any fix published since the last sync (a pull with no C# change
+                    // triggers no domain reload, and this project runs play mode without one)
+                    // BEFORE the run starts, so this very run counts toward validating it.
+                    lock (StoreLock) SyncFromSharedLocked();
+                    break;
+
+                case PlayModeStateChange.EnteredEditMode:
+                    if (_autoPublish)
+                        EditorApplication.delayCall += AutoPublishAfterPlay;
+                    break;
+
                 case PlayModeStateChange.EnteredPlayMode:
                     _inPlayMode = true;
                     _playStartUtc = DateTime.UtcNow;
@@ -396,6 +410,62 @@ namespace CosmicShore.Editor
                         why: $"{Math.Max(1, (int)seconds)}s play run");
                     break;
             }
+        }
+
+        /// <summary>
+        /// The "after each test" half of the agent loop (Docs/DIAGNOSTICS.md § "The agent loop"):
+        /// when the run just ended changed the ledger MATERIALLY — a new signature, an issue whose
+        /// state or regression count moved, a validated close — publish every pending change through
+        /// the same scoped commit Stage &amp; Push makes. Counter-only drift (an already-published
+        /// error firing again) does not push on its own; it rides along with the next material one,
+        /// so a known error that fires every run does not mint a commit every run.
+        /// </summary>
+        static void AutoPublishAfterPlay()
+        {
+            if (!_autoPublish || EditorApplication.isPlayingOrWillChangePlaymode) return;
+            if (BugLedgerPublisher.IsBusy) return;
+
+            var pending = ComputePendingChanges();
+            if (!HasMaterialChange(pending, out int material)) return;
+
+            BugLedgerPublisher.Warm();
+            if (!BugLedgerPublisher.CanPush)
+            {
+                Debug.LogWarning("[BugLedger] Auto-publish skipped: git is unavailable or HEAD is detached, so " +
+                                 $"{material} ledger change(s) stay local. Publish from the Stage & Push tab.");
+                return;
+            }
+
+            var ids = new List<string>(pending.Count);
+            foreach (var change in pending) ids.Add(change.Id);
+            BugLedgerPublisher.StartPublish(ids,
+                $"bugledger: auto-publish after play test ({material} new/changed issue(s))", auto: true);
+        }
+
+        /// <summary>True when any pending change is more than a counter bump: an ADD, a REMOVE, or a
+        /// MODIFY whose state or regression count differs from the published copy.</summary>
+        static bool HasMaterialChange(List<BugLedgerPendingChange> pending, out int material)
+        {
+            material = 0;
+            foreach (var change in pending)
+            {
+                if (change.Kind != BugLedgerChangeKind.Modify) { material++; continue; }
+
+                BugLedgerIssue local, published;
+                lock (StoreLock) Issues.TryGetValue(change.Id, out local);
+                try
+                {
+                    var path = Path.Combine(SharedIssuesDir, change.Id + ".bug.json");
+                    published = File.Exists(path) ? BugLedgerIssue.FromJson(File.ReadAllText(path)) : null;
+                }
+                catch { published = null; }
+
+                if (local == null || published == null
+                    || local.State != published.State
+                    || local.Regressions != published.Regressions)
+                    material++;
+            }
+            return material > 0;
         }
 
         /// <summary>Bounded wait for the worker to finish the already-captured backlog. Only ever
@@ -706,7 +776,9 @@ namespace CosmicShore.Editor
         /// Adopts teammates' PUBLISHED issues into the local live store: every file under
         /// <c>shared/issues/</c> that is neither live locally nor tombstoned (resolved/deleted
         /// here) is imported. Local always wins for an issue that exists on both sides — the
-        /// difference is what the Stage &amp; Push tab shows as a pending MODIFY.
+        /// difference is what the Stage &amp; Push tab shows as a pending MODIFY — with ONE
+        /// exception, <see cref="TryAdoptPublishedFix"/>: a fix published after the local copy's
+        /// last fix moves a local OPEN issue to VALIDATING.
         /// </summary>
         static void SyncFromSharedLocked()
         {
@@ -717,7 +789,11 @@ namespace CosmicShore.Editor
                 {
                     var id = Path.GetFileName(path);
                     id = id[..^".bug.json".Length];
-                    if (Issues.ContainsKey(id)) continue;
+                    if (Issues.TryGetValue(id, out var live))
+                    {
+                        TryAdoptPublishedFix(live, path);
+                        continue;
+                    }
                     if (File.Exists(TombstonePath(id))) continue;
 
                     var issue = BugLedgerIssue.FromJson(File.ReadAllText(path));
@@ -727,6 +803,39 @@ namespace CosmicShore.Editor
                 }
             }
             catch { }
+        }
+
+        /// <summary>
+        /// The return half of the agent loop. Someone else — a teammate, or a Claude session running
+        /// the /bug-ledger skill (<c>Tools/Build/bug_ledger.py mark-fixed</c>) — fixed this bug and
+        /// published it as VALIDATING. "Local wins" would leave it OPEN here forever, and the fix
+        /// would never be validated by the machine that actually reproduces the bug. So a published
+        /// fix whose <c>fixedUtc</c> is NEWER than the local copy's last fix is adopted exactly like
+        /// pressing Mark Fixed: validating, clean count reset, the fixer and their notes carried.
+        /// Only an OPEN issue adopts (an ignored one stays parked, a validating one is already on the
+        /// clock), and only a strictly newer fix — after a regression reopens it, the same fix is
+        /// never re-adopted; it takes a NEW fix to put it back on the clock.
+        /// </summary>
+        static void TryAdoptPublishedFix(BugLedgerIssue live, string sharedPath)
+        {
+            if (!live.IsOpen) return;
+            var published = BugLedgerIssue.FromJson(File.ReadAllText(sharedPath));
+            if (published == null || !published.IsValidating) return;
+            if (!TryParseIso(published.FixedUtc, out var publishedFix)) return;
+            if (TryParseIso(live.FixedUtc, out var localFix) && publishedFix <= localFix) return;
+
+            live.State = BugLedgerIssueState.Validating;
+            live.CleanSessions = 0;
+            live.ValidationPaused = false;
+            live.FixedBy = published.FixedBy;
+            live.FixedUtc = published.FixedUtc;
+            if (!string.Equals(live.Notes, published.Notes, StringComparison.Ordinal))
+                live.Notes = string.IsNullOrEmpty(live.Notes) || published.Notes.Contains(live.Notes)
+                    ? published.Notes
+                    : live.Notes + "\n\n" + published.Notes;
+            WriteLocked(live);
+            Debug.Log($"[BugLedger] Adopted a published fix by {published.FixedBy}: \"{live.Title}\" is now validating " +
+                      $"({live.CleanSessionsRequired} clean {live.Scope} session(s) close it; a recurrence reopens it).");
         }
 
         /// <summary>Pre-split layouts wrote the live store directly under <c>BugLedger/issues|resolved</c>

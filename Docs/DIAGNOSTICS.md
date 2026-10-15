@@ -267,6 +267,43 @@ The guarantees, in order of importance:
 The Bug Ledger tab shows an **N UNPUBLISHED** pill whenever local and shared differ — clicking it
 jumps here.
 
+### The agent loop — errors to Claude, fixes back, after every play test
+
+The ledger is also how a Claude session fixes console errors without anyone copying them out of
+the Console. Three pieces, one per direction:
+
+```
+play test ──► auto-capture (local/) ──► Auto-publish after each play test ──► shared/ on the branch
+                                                                                    │
+            /bug-ledger skill: bug_ledger.py list → root-cause + fix → mark-fixed ◄─┘
+                                                                                    │
+next play run ◄── editor ADOPTS the published fix (open → validating) ◄── pull ◄────┘
+     │
+     ├─ silent across cleanSessionsRequired runs → the issue closes itself (DEL publishes)
+     └─ fires again → reopens with a regression count → the next auto-publish sends it back
+```
+
+- **Auto-publish after each play test** (Settings, machine-local, OFF by default because it
+  pushes on your behalf). At `EnteredEditMode`, if the run changed the ledger MATERIALLY — a new
+  signature (ADD), a validated close (DEL), or a MOD whose `state` or `regressions` moved — every
+  pending change is published through the same scoped commit as Commit & Push: ledger paths only,
+  current branch, refused while `origin` is ahead. Counter-only drift (an already-published error
+  firing again) does not push on its own, so a known error does not mint a commit per run. A
+  failure is a console warning, since nobody is watching the tab.
+- **`/bug-ledger`** (`.claude/skills/bug-ledger/SKILL.md`) over **`Tools/Build/bug_ledger.py`**
+  (`list` / `show` / `mark-fixed`, `--self-test`). The script writes issue files byte-for-byte as
+  `BugLedgerIssue.ToJson` does — verified by round-tripping its output through the real C#
+  `FromJson → ToJson` (identical) — and `mark-fixed` sets the SHARED copy to `validating` with a
+  fresh `fixedUtc` and the root cause appended to `notes`.
+- **Fix adoption** (`BugLedger.TryAdoptPublishedFix`). "Local wins" would otherwise leave the
+  issue OPEN forever on the one machine that reproduces it. A published `validating` copy whose
+  `fixedUtc` is strictly newer than the local copy's last fix moves a local OPEN issue to
+  VALIDATING exactly as Mark Fixed would (clean count reset, fixer and notes carried). Ignored and
+  already-validating issues are left alone, and after a regression the SAME fix is never
+  re-adopted — it takes a new fix to put the issue back on the clock. Sync runs at load, on
+  Refresh, and at `ExitingEditMode`, so a fix pulled with no C# change (no domain reload — this
+  project enters play mode without one) is adopted BEFORE the run that should validate it.
+
 ### Honest limits
 
 - A clean session only proves the code paths that session exercised. Two clean sessions of menu
@@ -316,6 +353,11 @@ a clean run. Copy that shape.
    **Commit & Push** → the progress bar walks fetch → publish → add → commit → push, and exactly
    one file appears in `BugLedger/shared/issues/` on the branch. Resolve that issue and its DEL
    shows up here to stage.
+7. **The agent loop**: Settings ▸ **Auto-publish after each play test** ON → Test Capture, then
+   a play run → a `bugledger: auto-publish after play test` commit lands on the branch with that
+   issue. Run `python3 Tools/Build/bug_ledger.py mark-fixed <id> --note test`, commit, push, pull
+   → on the next play-mode entry the console says `Adopted a published fix` and the issue reads
+   VALIDATING. A second play run with no change publishes nothing (counter drift only).
 
 ---
 
@@ -328,6 +370,7 @@ a clean run. Copy that shape.
 | Ledger core (capture, store, validation, tool findings) | `Assets/_Scripts/Editor/Diagnostics/BugLedger.cs` |
 | Issue model + hand-rolled JSON | `Assets/_Scripts/Editor/Diagnostics/BugLedgerIssue.cs` |
 | Ledger settings (`ScriptableSingleton`) | `Assets/_Scripts/Editor/Diagnostics/BugLedgerSettings.cs` |
+| Agent side of the ledger (list / show / mark-fixed) | `Tools/Build/bug_ledger.py` + `.claude/skills/bug-ledger/SKILL.md` |
 | Ledger tab view | `Assets/_Scripts/Editor/Diagnostics/BugLedgerView.cs` |
 | Stage & Push tab view | `Assets/_Scripts/Editor/Diagnostics/BugLedgerStageView.cs` |
 | Scoped git publisher (fetch/apply/add/commit/push, off-thread) | `Assets/_Scripts/Editor/Diagnostics/BugLedgerPublisher.cs` |

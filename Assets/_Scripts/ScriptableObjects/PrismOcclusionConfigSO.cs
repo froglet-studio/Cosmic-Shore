@@ -81,9 +81,12 @@ namespace CosmicShore.ScriptableObjects
         [Tooltip("Measured hull radii are clamped into [min, max] and the clamp screams once. " +
                  "Since the corridor is now sized ENTIRELY by the measurement, a bad one is not " +
                  "cosmetic: too small and the ship is hidden anyway, too large and the world " +
-                 "dissolves in front of you. The clamp turns either into a visible, named error.")]
+                 "dissolves in front of you. The clamp turns either into a visible, named error. " +
+                 "The floor must sit BELOW the smallest real hull: the Urchin measures 0.53 u (a " +
+                 "~1 u ship under a 6.7 u camera), and the old floor of 2 clamped it every spawn — " +
+                 "a red error per play and a corridor four times its hull.")]
         [Min(0f)]
-        [SerializeField] float minVesselRadius = 2f;
+        [SerializeField] float minVesselRadius = 0.25f;
 
         [Min(0f)]
         [SerializeField] float maxVesselRadius = 80f;
