@@ -863,3 +863,40 @@ Entries are grouped by family; within a family, the newest goes at the bottom.
   someone other than its author has run it.
 - Evidence: commit "merge the Brittle Star research and studio" (the `require` lines added).
 - Promoted: no
+
+### L-STU-67 — A control that equals Hard to the decimal is a bug until shown otherwise, even when equality is plausible
+- Lab: Shrike Studio round 1 (`Docs/Studios/VesselStudio/shrike.html`) · Branch: `cece/affectionate-clarke-s738vh` · Date: 2026-10-15
+- What happened: Den Defense's "Hard, no array" column matched Hard byte for byte, twice, for two different bugs. First
+  the AI let go of the paint the moment it turned to lance: of each burst only the first missile hit, the rest flew out
+  their 8 s life, and the run fell at the same 209.3 s as the no-array run. Later, at I4, the boss-wave test `wave % 2 === 2` could never be true, so no creature ever spawned and
+  nothing needed missiles. Both read as a believable finding ("the lance is enough") until the runs were traced.
+- Do instead: when a control ties exactly, count what the ablated piece DID in the full run (missiles fired and what
+  each one hit; creatures spawned). A real "worth nothing" shows the piece working and not mattering; a bug shows it not working.
+  And test every modulo/latch against the values it must fire on (L-ECO-5 is the same family).
+- Evidence: `Docs/Studios/SHRIKE.md` §5 finding 7; the trace scripts behind `Docs/Studios/Shrike/shrike_score.cjs`.
+- Promoted: no
+
+### L-STU-68 — A survival score decided by one event measures luck; make the loss a sum of many events
+- Lab: Shrike Studio round 1 · Branch: `cece/affectionate-clarke-s738vh` · Date: 2026-10-15
+- What happened: the first Den Defense ended the run when any asteroid reached the den's core. Five seeds of one cell
+  spread from 75 s to 296 s, so Easy, Medium and Hard overlapped completely. Wearing the den down instead (a core hit
+  breaks 3 of its 40 blocks; it falls with a quarter left) cut the band to about +-20 s, and the levels separated.
+- Do instead: before reading a survival or "first failure" column, print one cell over five seeds. If the spread is
+  wider than the gaps you hope to measure, change the loss into an accumulated quantity (labelled lab-only, and put
+  to the designer) rather than adding seeds.
+- Evidence: `Docs/Studios/SHRIKE.md` §3 (Den Defense) and §4.
+- Promoted: no
+
+### L-STU-69 — When an easier AI level beats Hard, find what Hard spends its aim on; change one thing per measurement
+- Lab: Shrike Studio round 1 · Branch: `cece/affectionate-clarke-s738vh` · Date: 2026-10-15
+- What happened: in Den Defense, Medium outlived Hard at I1 and I2 (288.9 s against 274.4 s, 242.4 against 228.8). Hard
+  painted asteroids for missiles while its hitscan lance (0.48 s cooldown in a nest) could have killed them on the spot,
+  and painting holds the nose on one target until the missiles land. The fix was the paint rule (paint creatures only).
+  It was shipped together with a target-pick hysteresis, and the first learning written here credited the hysteresis.
+  A control copy with the hysteresis removed showed the opposite: Hard still beat Medium and survived longer without it
+  (I1 300 s against 283.4), so the hysteresis was taken out.
+- Do instead: when an easier level wins, trace what the Hard pilot does with its time (here: frames spent painting
+  against lances fired). Change one thing per scorecard run, and before you write down why a fix worked, re-run with
+  each half removed (L-GEN-3 for your own changes).
+- Evidence: `Docs/Studios/SHRIKE.md` §5 finding 3; `shrike.html` `aiDen` (`worth`).
+- Promoted: no
