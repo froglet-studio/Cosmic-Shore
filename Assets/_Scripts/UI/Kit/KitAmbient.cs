@@ -21,6 +21,13 @@ namespace CosmicShore.UI
     /// The ambient layer of Docs/MENU_REDESIGN_B.md §13.4 (decision Q1): a slow, endless loop that
     /// carries no state of its own. Each instance is separable - disable the component and the object
     /// returns to rest. Runs on unscaled time and from a phase offset, so neighbours never move in step.
+    ///
+    /// <para>It SLEEPS while nobody can see it (<see cref="KitSightline"/>): under a closed window, or on a
+    /// screen the strip has slid off. Every move re-batches the canvas it lives on, so a loop that ran
+    /// behind a closed modal cost the whole menu a canvas rebuild every frame for nothing.</para>
+    ///
+    /// <para>A Breathe modulates the alpha its OWNER set rather than replacing it: a part a script hid
+    /// (a KitVisibility owner writing 0) stays hidden, and a dimmed one breathes around its dim.</para>
     /// </summary>
     [AddComponentMenu("Cosmic Shore/UI Kit/Kit Ambient")]
     [DisallowMultipleComponent]
@@ -41,12 +48,19 @@ namespace CosmicShore.UI
         private Vector3 _restScale = Vector3.one;
         private Quaternion _restRotation = Quaternion.identity;
         private float _clock;
+        private KitSightline _sight;
+        private float _restAlpha = 1f;
+        private float _lastAlpha = -1f;
 
         private void Awake()
         {
             _rect = transform as RectTransform;
             TryGetComponent(out _group);
+            _sight = new KitSightline(transform, mode == KitAmbientMode.Breathe ? _group : null,
+                                      GetComponentInChildren<CanvasRenderer>(true));
         }
+
+        private void OnTransformParentChanged() => _sight?.Refresh(transform);
 
         private void OnEnable()
         {
@@ -55,6 +69,7 @@ namespace CosmicShore.UI
             _restScale = _rect.localScale;
             _restRotation = _rect.localRotation;
             _clock = phase;
+            _lastAlpha = -1f;
         }
 
         private void OnDisable()
@@ -63,12 +78,29 @@ namespace CosmicShore.UI
             _rect.anchoredPosition = _restPosition;
             _rect.localScale = _restScale;
             _rect.localRotation = _restRotation;
-            if (_group && mode == KitAmbientMode.Breathe) _group.alpha = 1f;
+            // Hand the group back at its owner's alpha - but only if the last write was ours.
+            if (_group && mode == KitAmbientMode.Breathe && _lastAlpha >= 0f
+                && Mathf.Abs(_group.alpha - _lastAlpha) < 0.001f)
+                _group.alpha = _restAlpha;
         }
+
+        /// <summary>
+        /// The alpha a Breathe breathes around: the owner's value, unless the owner has not written
+        /// since our last frame. Same rule as KitEntrance.ReconcileAlpha.
+        /// </summary>
+        public static float OwnerAlpha(float current, float lastWritten, float rest)
+            => lastWritten < 0f || Mathf.Abs(current - lastWritten) > 0.001f ? current : rest;
 
         private void Update()
         {
             if (!_rect) return;
+            if (mode == KitAmbientMode.Breathe && _group)
+            {
+                _restAlpha = OwnerAlpha(_group.alpha, _lastAlpha, _restAlpha);
+                _lastAlpha = _group.alpha;
+                if (_restAlpha < KitSightline.HiddenAlpha) return;   // its owner hid it
+            }
+            if (!_sight.Visible) return;
             _clock += Time.unscaledDeltaTime;
             float cycle = _clock / period;
             float wave = Mathf.Sin(cycle * Mathf.PI * 2f);
@@ -78,7 +110,8 @@ namespace CosmicShore.UI
                     _rect.anchoredPosition = _restPosition + Vector2.up * (wave * amplitude * 0.5f);
                     break;
                 case KitAmbientMode.Breathe:
-                    if (_group) _group.alpha = Mathf.Lerp(Mathf.Clamp01(amplitude), 1f, wave * 0.5f + 0.5f);
+                    if (_group)
+                        _group.alpha = _lastAlpha = _restAlpha * Mathf.Lerp(Mathf.Clamp01(amplitude), 1f, wave * 0.5f + 0.5f);
                     break;
                 case KitAmbientMode.Spin:
                     _rect.localRotation = _restRotation * Quaternion.Euler(0f, 0f, -360f * (cycle % 1f));

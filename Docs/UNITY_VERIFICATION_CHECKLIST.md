@@ -65,6 +65,27 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Style-B redesign: the ambient layer sleeps while hidden; spectator bar settles (`claude/new-session-76hnyc`, 2026-10-15) — NOT EDITOR-VERIFIED
+
+Section 24 of `Docs/MENU_REDESIGN_B.md`. There is no editor in the session, so `/verify-unity` is
+still owed. Offline: the player and editor reference compiles are clean apart from the known
+Playmode package errors, and `KitMotionTests` has 6 new cases.
+
+**Verify in editor:**
+1. **Profiler, Menu_Main, Home, not flying:** `Canvas.BuildBatch` / `Canvas.SendWillRenderCanvases`
+   should no longer show every frame from objects under closed windows. Open Arcade, then the
+   configure window: the sparks and loops run there, and stop when the window closes.
+2. Fly freestyle (the lava lamp): no UI rebuild every frame from the menu behind it. Compare frame
+   time with bleeding-edge (`CrystalChargeArcs` is fixed on both now).
+3. Configure window, solo: "Waiting for others..." is NOT shown. In a party, after confirming, it
+   shows and breathes.
+4. A match: Profiler, GameCanvas should not re-batch every frame while the spectator bar and the
+   connecting panel are hidden.
+5. Hangar, Profile, Ark: their loops (Ark's sparks, the quest cards' pulse) run while you are on
+   that screen and still run after you return to it.
+
+---
+
 ### 🔴 Style-B redesign: bleeding-edge merged, AI difficulty row in style B, Home avatar opens the profile window (`claude/new-session-76hnyc`, 2026-10-15) — NOT EDITOR-VERIFIED
 
 Section 23 of `Docs/MENU_REDESIGN_B.md`. The whole-session playtest script is

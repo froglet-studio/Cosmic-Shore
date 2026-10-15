@@ -40,6 +40,7 @@ namespace CosmicShore.UI
         TMP_Text _detailText;
         TMP_Text _cameraText;
         float _targetAlpha;
+        bool _settled;
         RectTransform _bar;
         const float DropDistance = 14f;
 
@@ -57,8 +58,8 @@ namespace CosmicShore.UI
             return overlay;
         }
 
-        public void Show() => _targetAlpha = 1f;
-        public void Hide() => _targetAlpha = 0f;
+        public void Show() { _targetAlpha = 1f; _settled = false; }
+        public void Hide() { _targetAlpha = 0f; _settled = false; }
 
         /// <summary>
         /// The spectated pilot: name in their domain colour, and under it the board's detail line -
@@ -95,6 +96,10 @@ namespace CosmicShore.UI
         void Update()
         {
             if (!_group) return;
+            // Settled: nothing to write. This overlay lives on GameCanvas for the whole match, and
+            // re-writing the group and the bar's position every frame re-batched that canvas every
+            // frame while the bar was hidden (Docs/MENU_REDESIGN_B.md section 24).
+            if (_group.alpha == _targetAlpha && _settled) return;
             float step = Time.unscaledDeltaTime / FadeSeconds;
             _group.alpha = Mathf.MoveTowards(_group.alpha, _targetAlpha, step);
             // The bar drops in as it fades in (and lifts away as it fades out), eased.
@@ -105,8 +110,9 @@ namespace CosmicShore.UI
                 _bar.anchoredPosition = new Vector2(0f, -136f + DropDistance * (1f - eased));
             }
             bool live = _targetAlpha > 0f;
-            _group.interactable = live;
-            _group.blocksRaycasts = live;
+            if (_group.interactable != live) _group.interactable = live;
+            if (_group.blocksRaycasts != live) _group.blocksRaycasts = live;
+            _settled = _group.alpha == _targetAlpha;
         }
 
         // ── Construction ────────────────────────────────────────────────────

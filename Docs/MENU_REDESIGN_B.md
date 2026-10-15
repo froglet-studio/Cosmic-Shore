@@ -1509,3 +1509,35 @@ and covered by a negative control.
   pass.
 
 The playtest script for the first full session is `Docs/MENU_REDESIGN_B_PLAYTEST.md`.
+
+## 24. Performance: the ambient layer sleeps while nobody can see it (2026-10-15)
+
+The owner reported a large frame-rate drop after the new UI. There were two causes.
+
+**1. Not the UI, but merged with it.** `CrystalChargeArcs` (the Charge light on the converter
+crystals) rebuilt an arc mesh for every visible crystal every frame. Unity's Profiler on
+bleeding-edge measured 21.1 ms of a 36.5 ms lava-lamp frame. It reached this branch through the
+bleeding-edge merge (`17cd51731`), and bleeding-edge's fix (`646fe7f6c`) is now merged too
+(`57ab59d22`). The record is `Docs/PERFORMANCE_OPTIMIZATION.md`, 10-15.
+
+**2. The UI's own share.**
+- **The loops.** About 70 endless loops (`KitAmbient`, `KitSpark`) shipped in Menu_Main: Ark 10,
+  the three configure views 16, about 3 per quest card, and the 12 intensity nodes.
+- **Where they ran.** Almost every one sat under a CLOSED modal (modals stay active at
+  CanvasGroup alpha 0) or on a screen the strip had slid outside its RectMask2D. Two more ran on
+  GameCanvas for the whole match.
+- **What each one cost.** Every frame, each moved a RectTransform or wrote a CanvasGroup on a canvas
+  holding thousands of graphics. That makes Unity re-batch the whole canvas every frame, for objects
+  nobody could see.
+- **`SpectatorOverlay`** re-wrote its group and its bar's position every frame while hidden.
+
+| Fix | Where |
+|---|---|
+| A loop does nothing while hidden: the product of the CanvasGroups above it is ~0, or a renderer that is not self-masked was culled by a RectMask2D. The groups are cached (re-cached on a reparent), and there is no scene search. | `KitSightline`, `KitAmbient`, `KitSpark` |
+| A spark tests its PARENT's renderer for the cull, because it parks itself outside its own mask between passes. | `KitSpark` |
+| A Breathe modulates the alpha its owner set. Before this, the configure footer's "Waiting for others..." (hidden through KitVisibility) was forced back to 0.5-1 every frame, so it was always on screen. | `KitAmbient.OwnerAlpha` |
+| The spectator bar stops writing once settled. | `SpectatorOverlay` |
+
+Tests: `KitMotionTests` (four sightline cases, two Breathe owner cases). **Not measured in Unity.**
+There is no editor in the session, and Amoebius cannot model uGUI's native re-batch, so the
+before/after capture is owed to the next editor run.

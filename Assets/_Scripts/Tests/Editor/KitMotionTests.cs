@@ -95,5 +95,75 @@ namespace CosmicShore.Tests
             // KitVisibility hides the part while the entrance is still fading it up.
             Assert.AreEqual(0f, KitEntrance.ReconcileAlpha(0f, 0.6f, 1f));
         }
+
+        // ---- The ambient layer sleeps while nobody can see it (section 24) ----
+
+        static (GameObject window, GameObject part) Window(float windowAlpha)
+        {
+            var window = new GameObject("Window", typeof(RectTransform), typeof(CanvasGroup));
+            window.GetComponent<CanvasGroup>().alpha = windowAlpha;
+            var part = new GameObject("Part", typeof(RectTransform));
+            part.transform.SetParent(window.transform, false);
+            return (window, part);
+        }
+
+        [Test]
+        public void Sightline_SeesAPartInAnOpenWindow()
+        {
+            var (window, part) = Window(1f);
+            try { Assert.IsTrue(new KitSightline(part.transform, null, null).Visible); }
+            finally { Object.DestroyImmediate(window); }
+        }
+
+        [Test]
+        public void Sightline_DoesNotSeeAPartInAClosedWindow()
+        {
+            // A closed modal stays active at alpha 0 - the case every ambient loop used to run through.
+            var (window, part) = Window(0f);
+            try { Assert.IsFalse(new KitSightline(part.transform, null, null).Visible); }
+            finally { Object.DestroyImmediate(window); }
+        }
+
+        [Test]
+        public void Sightline_StopsAtAGroupThatIgnoresItsParents()
+        {
+            var (window, part) = Window(0f);
+            try
+            {
+                var own = part.AddComponent<CanvasGroup>();
+                own.ignoreParentGroups = true;
+                Assert.IsTrue(new KitSightline(part.transform, null, null).Visible);
+            }
+            finally { Object.DestroyImmediate(window); }
+        }
+
+        [Test]
+        public void Sightline_LeavesOutTheGroupABreatheDrives()
+        {
+            // A Breathe writes its own group; the low point of the pulse must not put it to sleep.
+            var (window, part) = Window(1f);
+            try
+            {
+                var own = part.AddComponent<CanvasGroup>();
+                own.alpha = 0f;
+                Assert.IsTrue(new KitSightline(part.transform, own, null).Visible);
+                Assert.IsFalse(new KitSightline(part.transform, null, null).Visible);
+            }
+            finally { Object.DestroyImmediate(window); }
+        }
+
+        [Test]
+        public void Breathe_KeepsAPartItsOwnerHid_Hidden()
+        {
+            // The configure footer's "Waiting for others..." is hidden by KitVisibility (alpha 0) and
+            // breathes. The owner's 0 is adopted as the rest, so the pulse cannot show it.
+            Assert.AreEqual(0f, KitAmbient.OwnerAlpha(0f, 0.75f, 1f));
+        }
+
+        [Test]
+        public void Breathe_KeepsItsRest_WhenOnlyItWroteTheGroup()
+        {
+            Assert.AreEqual(1f, KitAmbient.OwnerAlpha(0.75f, 0.75f, 1f));
+        }
     }
 }

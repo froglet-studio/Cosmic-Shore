@@ -10,6 +10,10 @@ namespace CosmicShore.UI
     ///
     /// <para>A spark is ambient (decision Q1): it says nothing a static route does not, and can be
     /// switched off per instance. A sweep is the same component with a pause between passes.</para>
+    ///
+    /// <para>It sleeps while nobody can see it (<see cref="KitSightline"/>). The cull test reads the
+    /// PARENT's renderer: the streak parks itself outside its own mask between passes, so its own
+    /// renderer is culled exactly when it is meant to wake.</para>
     /// </summary>
     [AddComponentMenu("Cosmic Shore/UI Kit/Kit Spark")]
     [RequireComponent(typeof(RectTransform))]
@@ -27,18 +31,26 @@ namespace CosmicShore.UI
         private RectTransform _rect;
         private RectTransform _parent;
         private float _clock;
+        private KitSightline _sight;
 
         private void Awake()
         {
             _rect = (RectTransform)transform;
             _parent = transform.parent as RectTransform;
+            _sight = new KitSightline(transform, null, _parent ? _parent.GetComponent<CanvasRenderer>() : null);
+        }
+
+        private void OnTransformParentChanged()
+        {
+            _parent = transform.parent as RectTransform;
+            _sight = new KitSightline(transform, null, _parent ? _parent.GetComponent<CanvasRenderer>() : null);
         }
 
         private void OnEnable() => _clock = -delay;
 
         private void Update()
         {
-            if (!_parent) return;
+            if (!_parent || !_sight.Visible) return;
             _clock += Time.unscaledDeltaTime;
             float length = vertical ? _rect.rect.height : _rect.rect.width;
             float span = (vertical ? _parent.rect.height : _parent.rect.width) + length;
