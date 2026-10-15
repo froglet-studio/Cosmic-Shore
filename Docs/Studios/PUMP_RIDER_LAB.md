@@ -13,13 +13,26 @@ the bends and bending and extending its knees**. The question it puts to the des
   (the 1D grind, latching, the speed carry) and `URCHIN_TRACK_PROJECTOR.md` (the rail prism size).
 - **Gate:** `node .claude/skills/labmaker/verify_lab.cjs Docs/Studios/PumpRiderLab.html` (PASS, round 1).
 
-The stage is a three-quarter chase view of the rider on a ribbon of rail prisms (3 × 3 × 6 u every 8 u,
-`UrchinTrackAction.asset`). Every camera rolls with the rider, so the rail is always under you. Prisms
-are tinted by how the bend loads **you, at your lean and speed**: amber where the rail dips toward you,
-blue where it humps away, white where a hump would throw you off. Two instruments: **Bend under you**
-(the rail's cross-section with you on top; the arrow is the bend) and **Load ahead** (the next 2 s of
-load, in multiples of the prismscape's pull, with the knee gauge beside it). The skilled AI flies at
-load; touch any control to take over. Slow motion (0.5×, 0.25×) is in Scene Config.
+The stage is a **3D world** (three.js r128): the rail drawn as real 3 × 3 × 6 u prisms every 8 u
+(`UrchinTrackAction.asset`), and fixed things to read speed, height and lean against. A floor grid under the
+oval (the rollers rise from it like dirt humps), seeded pillars, prism clusters and crystals along the
+course, a gate every 600 u (white start gate on the oval), space dust that stays put while you pass through
+it, a nebula sky, and the line of the rest of the course. Prisms are tinted by how the bend loads **you, at
+your lean and speed**: amber where the rail dips toward you, blue where it humps away, white where a hump
+would throw you off. The rider is a board, two legs whose knees visibly bend and extend, and an urchin body.
+
+**Cameras** (Scene Config): *Chase (world up)* (default; the floor and sky stay still, so you see yourself
+lean round the rail and climb each roller), *Trackside* (a TV camera beside the track; best for seeing
+the humps), *Chase (rolls with you)*, and *Overhead* (the whole oval). The field of view widens with speed.
+
+**Instruments:** the speed bar with the Urchin's 300 u/s grind marked; a **lap timer** (current, best,
+last) on the oval, 1000 u splits elsewhere; a 10 s speed trace; the **bend dial**; and the **pump lane**,
+a rhythm-game strip of the next 2.4 s: an amber STAND bar on each dip's deepest point and a blue CROUCH bar
+on each hump's top, each as wide as one knee stroke, with your knees beside the hit line. **Every stroke is
+rated** on screen: PERFECT / GOOD / EARLY / LATE / WRONG WAY with the speed it earned. **Sound** (header
+button): wind and rolling that rise with speed and load, and a tone per rated stroke. A start card
+explains the controls; the skilled AI rides until you touch a control. Slow motion (0.5×, 0.25×) is in
+Scene Config.
 
 ---
 
@@ -83,7 +96,72 @@ shapes (roller radius 70 u, wavelength 360 u), the per-way dials and the AI.
 
 ---
 
-## Round 1 (2026-10-15)
+## Round 1b (2026-10-15): fidelity — a world to ride through
+
+The designer's verdict on round 1: *"without frames of reference this is very hard to appreciate at all.
+Increase the lab fidelity heavily so I can try to enjoy this."* Round 1 drew a 2D-canvas rail in empty
+space with a camera that rolled with the rider, so nothing in view was fixed: no up, no ground, nothing to
+pass. Round 1b rebuilds the view in 3D around fixed references (above) and adds the game-feel layer (pump
+lane, stroke ratings, laps, sound). **The physics is unchanged**; two things in the model moved:
+
+- **The rail is integrated once per course shape and cached every 2 u**, so the world is fixed and the
+  physics, AI, prisms, scenery and camera all read the same points. Runs now start one roller later
+  (`s0 = (1 + k/4) × roller length`, so s never goes negative), which shifts the oval's and the wake's
+  numbers by 1–4 u/s; the courses that repeat every roller are identical to round 1.
+- **Stroke ratings** are an observer: each knee stroke is compared with the best placement of a stroke of
+  the same length within half a roller (so it judges timing, not knee speed). PERFECT ≥ 85%, GOOD ≥ 55%,
+  otherwise EARLY / LATE by which side of the best placement it fell, and WRONG WAY when it cost speed.
+  New scorecard column **Perfect %**.
+
+**Re-measured** (page `runBatch` / `runCourseGrid`, seeds 1–2, 20 s, latch on at 150 u/s; noise band over
+8 seeds 0.5–1.1 u/s, 3.1 for Beat). The oval, latched, free roll:
+
+| Way | Skilled | Rookie | End | From cruise | Pump (u/s²) | Flat pump | Perfect % skilled / rookie |
+|---|---|---|---|---|---|---|---|
+| Knees | 180.9 | 171.6 | 216 | 62.4 | 7.63 | 0.00 | 94.4 / 88.9 |
+| Tap | 187.3 | 175.8 | 235 | 62.6 | 8.82 | 0.00 | 85.7 / 88.9 |
+| Beat | 154.5 | 153.3 | 162 | 66.2 | 3.98 | 0.00 | 71.4 / 85.7 |
+| Lean | 152.3 | 151.2 | 157 | 59.5 | 3.68 | 0.00 | 0 / 0 |
+| Grind + knees | 362.1 | 322.7 | 409 | 360.4 | 20.87 | 0.00 | 87.1 / 66.0 |
+| Coast | 122.6 | 122.6 | 100 | 51.8 | 0 | 0 | — |
+| Urchin grind | 298.6 | 298.6 | 300 | 297.7 | 0 | 0 | — |
+
+Every course (skilled / rookie): Knees 181/172 · 198/183 · 199/183 · 196/182 · 135/132 · 123/123 (oval,
+rollers, slalom, twister, wake, flat); Grind + knees 362/323 · 399/336 · 399/335 · 360/321 · 301/300 ·
+299/299. Rollers, slalom, twister and flat re-measure identically to round 1 (their shapes repeat every roller); the oval and the wake (which never repeats) move by 1–4 u/s, e.g. Knees on an enemy's oval ribbon 92.5 → 89.5.
+
+### What the ratings add
+
+- **The rating has a control.** Planting round 1's zero-crossing AI back (`extend = kP > 0`) rates 0.0%
+  of its strokes PERFECT on rollers (and earns 0.04 u/s²), against 95.5% (10.95 u/s²) for the real AI.
+- **Speed makes timing harder.** On rollers after 60 s, the skilled AI is going 500+ u/s and only 50.8%
+  of its Knees strokes are PERFECT (the rookie, at ~275 u/s, 77.7%): the dips come faster than its lead
+  allows for. The rating shows the player where the skill ceiling is.
+- **The Lean way's automatic knees are always late** (0% PERFECT): they react to the load passing its
+  peak instead of leading it. That is why Lean pumps at half the rate of Knees, and a human leaning cannot
+  fix it.
+
+### Checked (round 1b)
+
+- `verify_lab.cjs` PASS (desktop and iPhone 13; WebGL stage, so the blank check is replaced by reading
+  the screenshots); determinism within a page and across loads unchanged.
+- Screenshots read: chase on the oval (climbing a roller over the floor grid, pillars and clusters
+  passing), trackside (the humps in profile, a gate, the dips amber ahead), overhead (the oval laid out),
+  slalom chase (the rider leaned 90° into a bend), phone portrait (instruments clear of the rider and the
+  thumb zones), and the start card on both.
+- Planted wrong law (`N·dh`): Flat pump −0.85 (Knees, Tap), −0.59 (Grind + knees), 0.00 for the real law.
+
+### Found (round 1b)
+
+- **three.js r128 sizes `instanceColor` from the CURRENT instance count.** Zeroing `count` before the
+  first `setColorAt` made a zero-length colour buffer: every per-prism tint was silently dropped (no error),
+  and the rail drew in one flat colour. Colour every slot first, then zero the count.
+- **Lighting and ACES tone mapping washed the load tint out**; the rail and gates are now unlit (they
+  glow, like the game's prisms) and the scenery is dark, so the amber/blue reads at a glance.
+- **A rating against an instant stroke punished slow knees, not bad timing** (the skilled AI rated 16% on
+  the oval at Grind speed); rating against the best placement of the same-length stroke fixed it.
+
+## Round 1 (2026-10-15) — superseded view; numbers kept as measured
 
 Measured with the page's own `runBatch` / `runCourseGrid` (headless, AI pilots, 60 Hz, seeds 1–2, latch
 on at 150 u/s, 20 s unless stated). Columns: average speed for the skilled and rookie AI, the skilled end
