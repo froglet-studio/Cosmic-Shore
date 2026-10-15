@@ -1048,7 +1048,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d2768c501e334340b521378573d77c78, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  vesselImpactorDataContainerSO: {fileID: 11400000, guid: 63a1b912028e471b9b7a2df570e90be8, type: 2}
+  vesselImpactorDataContainerSO: {fileID: 11400000, guid: 32f7a48c89d73a603853abb5c598bca2, type: 2}
   networkVesselImpactor: {fileID: 7965853245772039612}
 --- !u!114 &7965853245772039612
 MonoBehaviour:

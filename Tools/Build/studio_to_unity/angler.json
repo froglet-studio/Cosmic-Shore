@@ -39,6 +39,11 @@
       "field": "squadCap"
     },
     {
+      "key": "omniTameRadius",
+      "asset": "Assets/_SO_Assets/VesselActions/Angler/AnglerConfig.asset",
+      "field": "omniTameRadius"
+    },
+    {
       "key": "leashTow",
       "asset": "Assets/_SO_Assets/VesselActions/Angler/AnglerConfig.asset",
       "field": "leashTow"

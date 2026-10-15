@@ -24,7 +24,7 @@ function table() {
   const r = () => { s = (Math.imul(s, 1664525) + 1013904223) >>> 0; return s / 4294967296; };
   const v = (k) => [(r() - 0.5) * k, (r() - 0.5) * k, (r() - 0.5) * k];
   const unit = (a) => { const l = Math.hypot(a[0], a[1], a[2]); return [a[0] / l, a[1] / l, a[2] / l]; };
-  const t = { brush: [], cone: [], pick: [], slot: [], follow: [], light: [], tad: [], gather: [], tame: [], lure: [] };
+  const t = { brush: [], cone: [], pick: [], slot: [], follow: [], light: [], tad: [], gather: [], tame: [], lure: [], omni: [] };
   for (const d of [0, 0.3, 0.5, 0.6, 0.75, 0.9, 0.99, 1]) for (const m of [0.1, 0.35, 1]) t.brush.push([d, m]);
   const o = [12, -40, 300], f = unit([0.3, -0.2, -0.93]);
   for (let i = 0; i < 48; i++) {
@@ -55,6 +55,15 @@ function table() {
   for (const [tm, hold, dt, tt, dec] of [[0, true, 1 / 60, 2.5, 0.6], [0.5, false, 0.5, 2.5, 0.6], [0.1, false, 1, 2.5, 0.6], [0.9, true, 0.3, 0.5, 0]]) t.tame.push([tm, hold, dt, tt, dec]);
   for (const a of [14, 0, 30]) t.lure.push({ p, f: fw, u: up, a });
   t.lure.push({ p: [3, -7, 11], f: [1, 0, 0], u: [0.6, 0.8, 0], a: 10 });   // an up vector with every component non-zero
+  for (let c = 0; c < 8; c++) {
+    const from = v(200), pts = [];
+    for (let i = 0; i < 4 + c * 2; i++) pts.push(v(700));
+    t.omni.push({ from, pts, radius: [300, 150, 450][c % 3], room: [24, 3, 0, 5][c % 4] });
+  }
+  // exact cases (integer coordinates, so float32 and float64 agree to the bit): a tie broken by index, and a point ON the
+  // reach, which counts
+  t.omni.push({ from: [0, 0, 0], pts: [[5, 0, 0], [1, 0, 0], [0, 9, 0], [0, -1, 0], [400, 0, 0], [3, 4, 0]], radius: 5, room: 4 });
+  t.omni.push({ from: [1, 1, 1], pts: [[4, 5, 1], [1, 1, 6], [1, 1, 1]], radius: 5, room: 24 });
   return t;
 }
 
@@ -77,6 +86,7 @@ function table() {
       gather: t.gather.map(([d, m, top, h]) => C.gatherSpeed(d, m, top, h)),
       tame: t.tame.map(([tm, h, dt, tt, dec]) => C.tameStep(tm, h, dt, tt, dec)),
       lure: t.lure.map((c) => C.lurePoint(c.p, c.f, c.u, c.a)),
+      omni: t.omni.map((c) => C.omniTameOrder(c.from, c.pts, c.radius, c.room)),
     };
   }, t);
   await browser.close();
@@ -87,6 +97,12 @@ function table() {
     const dx = c.p[0] - c.o[0], dy = c.p[1] - c.o[1], dz = c.p[2] - c.o[2], d = Math.hypot(dx, dy, dz);
     const margin = Math.min(Math.abs(d - c.reach), Math.abs(d - 1), Math.abs((dx * c.f[0] + dy * c.f[1] + dz * c.f[2]) / d - Math.cos(c.cone * Math.PI / 180)));
     if (margin < 1e-4) { console.error('goldens: a cone case sits on an edge; move the table'); process.exit(1); }
+  }
+
+  // An omni case with a point a hair off the reach (but not exactly on it) would let rounding decide; refuse one.
+  for (const c of t.omni) for (const q of c.pts) {
+    const d2 = (q[0] - c.from[0]) ** 2 + (q[1] - c.from[1]) ** 2 + (q[2] - c.from[2]) ** 2, r2 = c.radius * c.radius;
+    if (d2 !== r2 && Math.abs(d2 - r2) < 1e-2 * r2 * 1e-3) { console.error('goldens: an omni case sits on its reach; move the table'); process.exit(1); }
   }
 
   const F = (x) => { const s = Number(x).toPrecision(9); return (s.includes('e') ? Number(s).toString() : s) + 'f'; };
@@ -113,6 +129,8 @@ function table() {
   L.push('        {'); t.tame.forEach(([tm, h, dt, tt, dec], i) => L.push(`            (${F(tm)}, ${h}, ${F(dt)}, ${F(tt)}, ${F(dec)}, ${F(out.tame[i])}),`)); L.push('        };');
   L.push('        static readonly (Vector3 p, Vector3 f, Vector3 u, float ahead, Vector3 want)[] LureCases =');
   L.push('        {'); t.lure.forEach((c, i) => L.push(`            (${V(c.p)}, ${V(c.f)}, ${V(c.u)}, ${F(c.a)}, ${V(out.lure[i])}),`)); L.push('        };');
+  L.push('        static readonly (Vector3 from, Vector3[] points, float radius, int room, int[] want)[] OmniCases =');
+  L.push('        {'); t.omni.forEach((c, i) => L.push(`            (${V(c.from)}, new Vector3[] { ${c.pts.map(V).join(', ')} }, ${F(c.radius)}, ${c.room}, new int[] { ${out.omni[i].join(', ')} }),`)); L.push('        };');
   const block = L.join('\n') + '\n';
 
   const src = fs.readFileSync(TEST, 'utf8');
@@ -123,7 +141,7 @@ function table() {
   const have = lines.slice(open[0] + 1, close[0]).join('\n') + '\n';
   if (process.argv.includes('--check')) {
     if (have !== block) { console.error('goldens: AnglerCommandMathTests.cs is not the page\'s - re-run without --check (the page or the table moved)'); process.exit(1); }
-    console.log(`goldens: OK - the test's ${t.brush.length + t.cone.length + t.pick.length + t.slot.length + t.follow.length + t.light.length + t.tad.length + t.gather.length + t.tame.length + t.lure.length} cases are the page's`);
+    console.log(`goldens: OK - the test's ${t.brush.length + t.cone.length + t.pick.length + t.slot.length + t.follow.length + t.light.length + t.tad.length + t.gather.length + t.tame.length + t.lure.length + t.omni.length} cases are the page's`);
     return;
   }
   const next = lines.slice(0, open[0] + 1).join('\n') + '\n' + block + lines.slice(close[0]).join('\n');

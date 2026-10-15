@@ -65,6 +65,40 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Angler playtest fixes: painted prisms light up; an omni crystal tames every herbivore near the hull (`cece/zealous-feynman-po8k8d`, 2026-10-15) — NOT EDITOR-VERIFIED
+
+`R_VesselActions/ANGLER.md` §1, §1a. The first playtest found that taming and throwing worked, but painting and
+erasing changed nothing visible. The paint marks were dots at the prisms' centres, inside the prisms. No `unity` CLI
+was available, so `/verify-unity` did NOT run.
+
+Headless proof:
+
+- `unity_refcompile` player + editor: no errors in changed files.
+- The parity gate: 179 cases, 8 out of 8 planted changes caught, including the two omni plants.
+- `author_angler_assets.py --check`, with `--self-test` 14/14.
+- `studio_to_unity --vessel Angler --check`: 23 mapped, 0 drift.
+- The lab's `verify_lab.cjs`: PASS.
+
+**What landed:**
+
+- **The lit state.** `Prism.SetColorLift` (with `PrismRenderService.StampShadeTransition`) lifts a prism toward white with one fading clock stamp.
+- **The Angler's paint uses it:**
+  - painted = 75% toward white;
+  - at the throw, 50% fading over 1.2 s;
+  - erased = a 0.12 s fade back.
+- **The omni tame.** `AnglerTameByCrystalEffectSO` sits in a forked `AnglerImpactorDataContainer`. Before this change the Angler shared the Stoat's container, so an omni crystal ran the Stoat's Overclock.
+- **Config.** The new `omniTameRadius` (300 u) is in `AnglerConfig`, and the lab gained it too (key O).
+
+1. **Paint.** Squeeze RT at enemy prisms: every prism under the beam turns near-white within a blink, and stays lit while you keep flying.
+   - Your own prisms never light.
+   - With LT, the lit ones fade back to their own colour.
+2. **Throw.** Let go of RT: the lit prisms drop to a softer glow and fade back over ~1 s while the squad flies at them.
+3. **Nothing else changed colour.** No prism you did not paint changes colour. A painted prism that a rival's hit turns dangerous or shielded still shows that state.
+4. **Omni crystal.** Fly the Angler through an omni crystal near a school of wild herbivores: every one within ~300 u falls in behind the hull at once (the leash gauge jumps), up to 24.
+   - Sharks are not tamed.
+   - The console shows no `[StoatOverclock]` warning (that was the shared container).
+5. **Two clients.** Only the painting pilot sees the lit prisms. A client Angler's omni pickup tames server-simulated fauna.
+
 ### 🔴 The Angler (17): lure, tame and command fauna with the Sling painter (`cece/zealous-feynman-po8k8d`, 2026-10-15) — NOT EDITOR-VERIFIED
 
 `R_VesselActions/ANGLER.md`; the lab `Docs/Studios/AnglerCommandLab.html` (round 2). No editor and no `unity` CLI in the
@@ -105,7 +139,7 @@ authoring session, so `/verify-unity` did NOT run. Headless proof:
    - Let a half-tamed one drift out: its taming fades.
    - Sharks and other carnivores never come.
 4. **Paint.** Squeeze **RT** (keyboard Right Shift) at a field of enemy prisms.
-   - Dots appear on every prism inside the beam.
+   - Every prism inside the beam lights up (see the playtest-fixes entry above; the first cut's dots were never visible).
    - A light squeeze paints a thin line and a full pull a wider one.
    - Your own domain's prisms are never painted.
    - While RT is held, the squad balls up ~12 u ahead of the nose.

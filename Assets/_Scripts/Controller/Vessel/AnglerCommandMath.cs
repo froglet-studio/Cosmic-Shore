@@ -86,5 +86,30 @@ namespace CosmicShore.Gameplay
         /// <summary>Where the esca hangs: <paramref name="ahead"/> along the nose and 2.5 u up.</summary>
         public static Vector3 LurePoint(Vector3 p, Vector3 f, Vector3 u, float ahead) =>
             new(p.x + f.x * ahead + u.x * 2.5f, p.y + f.y * ahead + u.y * 2.5f, p.z + f.z * ahead + u.z * 2.5f);
+
+        /// <summary>The omni crystal's tame: the indices of <paramref name="points"/> within <paramref name="radius"/> of
+        /// <paramref name="from"/>, nearest first (ties by index), at most <paramref name="room"/>, written into
+        /// <paramref name="into"/> (cleared first). Returns how many.</summary>
+        public static int OmniTameOrder(Vector3 from, IReadOnlyList<Vector3> points, float radius, int room, List<int> into)
+        {
+            into.Clear();
+            if (room <= 0) return 0;
+            float r2 = radius * radius;
+            for (int i = 0; i < points.Count; i++)
+                if (SqrDistance(from, points[i]) <= r2) into.Add(i);
+            into.Sort((a, b) =>
+            {
+                float da = SqrDistance(from, points[a]), db = SqrDistance(from, points[b]);
+                return da != db ? da.CompareTo(db) : a.CompareTo(b);
+            });
+            if (into.Count > room) into.RemoveRange(room, into.Count - room);
+            return into.Count;
+        }
+
+        static float SqrDistance(Vector3 a, Vector3 b)
+        {
+            float dx = b.x - a.x, dy = b.y - a.y, dz = b.z - a.z;
+            return dx * dx + dy * dy + dz * dz;
+        }
     }
 }

@@ -908,3 +908,10 @@ Entries are grouped by family; within a family, the newest goes at the bottom.
 - Do instead: give a nested enum a name only its owner would use (`LeashOrder`), even when the lab calls it something shorter. Keep the lab's word in the doc comment.
 - Evidence: `AnglerCommandExecutor.LeashOrder`; the gate's output before and after the rename.
 - Promoted: no
+
+### L-STU-70 — Port the lab's LOOK of a state with its rules; a marker at an object's centre is inside the object
+- Lab: Angler Command Lab, Unity clone · Branch: `cece/zealous-feynman-po8k8d` · Date: 2026-10-15
+- What happened: the lab draws a painted prism by recolouring the prism itself (75% toward white in `render()`). The Unity port kept the paint arithmetic line for line, but drew the state as camera-facing dots at each prism's centre. Every dot sat inside an opaque prism, so the first playtest reported that painting did nothing. Every gate was green, because no gate looks at pixels.
+- Do instead: when a lab state is shown by changing an object's own look, port that look onto the object with the lab's numbers (here a per-prism lift toward white, one fading stamp per change). Then list in the verification entry what the player must SEE, not only what the code does. A world-space marker for a solid object goes on its surface or above it, never at its pivot.
+- Evidence: `AnglerCommandLab.html` `render()` (the `col.lerp(WHITE, 0.75)` line); `Prism.SetColorLift`; `ANGLER.md` §1a.
+- Promoted: no

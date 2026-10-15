@@ -47,7 +47,7 @@ namespace CosmicShore.Gameplay
         [SerializeField] ScriptableEventNoParam OnMiniGameTurnEnd;
 
         [Header("Presentation (game only)")]
-        [Tooltip("Painted prisms, the paint brush's rim and the ball (the lab's #ffd27a).")]
+        [Tooltip("The paint brush's rim and the ball (the lab's #ffd27a).")]
         [SerializeField] Color paintColor = new(1f, 0.824f, 0.478f, 1f);
         [Tooltip("The eraser's rim (the lab's #7fd7ff).")]
         [SerializeField] Color eraseColor = new(0.498f, 0.843f, 1f, 1f);
@@ -55,10 +55,14 @@ namespace CosmicShore.Gameplay
         [SerializeField] Color escaColor = new(0.075f, 1f, 0.949f, 1f);
         [Tooltip("A creature being tamed: its taming shows as a dot that fills from this colour to the esca's.")]
         [SerializeField] Color tamingColor = new(0.6f, 0.6f, 0.7f, 1f);
-        [Tooltip("World size of a paint mark (u).")]
-        [SerializeField, Min(0.01f)] float markSize = 1.6f;
-        [Tooltip("A mark never draws smaller than this many pixels.")]
-        [SerializeField, Min(0f)] float markMinPixels = 4f;
+        [Tooltip("A painted prism is drawn LIT: its own colour lifted this far toward white (Prism.SetColorLift; the lab's render(): col.lerp(WHITE, 0.75)).")]
+        [SerializeField, Range(0f, 1f)] float paintedLift = 0.75f;
+        [Tooltip("At the throw the painted prisms drop to this lift and fade back to their own colour (the lab's 0.5).")]
+        [SerializeField, Range(0f, 1f)] float orderedLift = 0.5f;
+        [Tooltip("Seconds the thrown-at prisms take to fade back (the lab's 1.2 s).")]
+        [SerializeField, Min(0f)] float orderedFade = 1.2f;
+        [Tooltip("Seconds a prism takes to light when painted and to go dark when erased, so a mark never pops.")]
+        [SerializeField, Min(0f)] float markFade = 0.12f;
 
         sealed class Member
         {
@@ -91,6 +95,9 @@ namespace CosmicShore.Gameplay
         readonly List<Prism> _candidates = new();
         readonly List<Fauna> _scratch = new();
         readonly List<Member> _memberScratch = new();
+        readonly List<Fauna> _omniWild = new();
+        readonly List<Vector3> _omniPoints = new();
+        readonly List<int> _omniPicks = new();
         AnglerWorldMarks _marks;
         int _squad = -1;           // -1 = the whole school, else an index into _species
         bool _luring;
@@ -184,6 +191,63 @@ namespace CosmicShore.Gameplay
                 if (InSquad(_tamed[i])) ToFollow(_tamed[i]);
         }
 
+        /// <summary>
+        /// The OMNI crystal (<see cref="AnglerTameByCrystalEffectSO"/>; the lab's <c>omniTame</c>): every wild or lured
+        /// herbivore within <c>omniTameRadius</c> of the hull is tamed at once, nearest first
+        /// (<see cref="AnglerCommandMath.OmniTameOrder"/>), up to the leash capacity. A creature can be leashed only by the
+        /// peer that simulates it (<see cref="Fauna.TryLeash"/>), so this tames on the creatures' authority and nowhere
+        /// else, exactly as the lure does. Returns how many joined the school.
+        /// </summary>
+        public int OmniTame()
+        {
+            if (_status == null || !config || !_status.Transform) return 0;
+            _omniWild.Clear();
+            _omniPoints.Clear();
+            var cells = Cell.ActiveCellsSnapshot;
+            for (int ci = 0; ci < cells.Count; ci++)
+            {
+                var cell = cells[ci];
+                if (!cell) continue;
+                var live = cell.LiveFauna;
+                for (int i = 0; i < live.Count; i++)
+                {
+                    var f = live[i];
+                    if (!f || f.IsDying) continue;
+                    // the lab's WILD or LURED: not already in the school, and not on someone else's leash
+                    if (_members.TryGetValue(f, out var held) ? held.Order != LeashOrder.Lured : f.IsLeashed) continue;
+                    _omniWild.Add(f);
+                    _omniPoints.Add(f.transform.position);
+                }
+            }
+            int n = AnglerCommandMath.OmniTameOrder(_status.Transform.position, _omniPoints, config.OmniTameRadius,
+                config.SquadCap - _tamed.Count, _omniPicks);
+            int joined = 0;
+            for (int k = 0; k < n; k++)
+            {
+                var f = _omniWild[_omniPicks[k]];
+                if (_members.TryGetValue(f, out var m)) _lured.Remove(m);
+                else
+                {
+                    if (!f.TryLeash(this)) continue;   // a predator, a puppet on this peer
+                    m = new Member { Creature = f, Species = SpeciesOf(f), Phase = f.GetInstanceID() * 0.137f };
+                    _members[f] = m;
+                    _slipped.Remove(f);
+                }
+                JoinSchool(m);
+                joined++;
+            }
+            return joined;
+        }
+
+        /// <summary>Tamed: the creature follows the school (the lab's state IDLE) and its kind becomes a squad.</summary>
+        void JoinSchool(Member m)
+        {
+            m.Tame = 1f;
+            m.Order = LeashOrder.Follow;
+            _tamed.Add(m);
+            if (!_species.Contains(m.Species)) _species.Add(m.Species);
+        }
+
         // ------------------------------------------------------------------ the step
 
         void Update()
@@ -247,8 +311,8 @@ namespace CosmicShore.Gameplay
                 // is never a meal for another (both rejected again by every creature's own diet).
                 if (paint && (Fauna.IsShieldedMass(p) || (p is HealthPrism hp && hp.ResolveOwnerFauna()))) continue;
                 if (!AnglerCommandMath.InCone(o, f, p.transform.position, coneDeg, reach)) continue;
-                if (paint) { _paintedSet.Add(p); _painted.Add(p); }
-                else { _paintedSet.Remove(p); removed = true; }
+                if (paint) { _paintedSet.Add(p); _painted.Add(p); if (ShowsMarks) p.SetColorLift(paintedLift, markFade); }
+                else { _paintedSet.Remove(p); removed = true; Unlight(p, markFade); }
             }
             if (removed) _painted.RemoveAll(p => !_paintedSet.Contains(p));
         }
@@ -262,6 +326,9 @@ namespace CosmicShore.Gameplay
                 if (_painted[i] && !_painted[i].destroyed) _candidates.Add(_painted[i]);
             _painted.Clear();
             _paintedSet.Clear();
+            // The order is given: the marks drop to the lab's "ordered" glow and fade back to the prisms' own colour.
+            for (int i = 0; i < _candidates.Count; i++)
+                if (_candidates[i].ColorLift > 0f) _candidates[i].SetColorLift(0f, orderedFade, orderedLift);
             if (_candidates.Count == 0) { SlingThrow(); return; }
 
             var order = new List<Prism>(_candidates);
@@ -465,11 +532,8 @@ namespace CosmicShore.Gameplay
                 m.Tame = AnglerCommandMath.TameStep(m.Tame, dL < config.TameRadius, dt, config.TameTime, config.TameDecay);
                 if (m.Tame >= 1f && _tamed.Count < config.SquadCap)
                 {
-                    m.Tame = 1f;
-                    m.Order = LeashOrder.Follow;
                     _lured.RemoveAt(i);
-                    _tamed.Add(m);
-                    if (!_species.Contains(m.Species)) _species.Add(m.Species);
+                    JoinSchool(m);
                 }
             }
 
@@ -624,16 +688,25 @@ namespace CosmicShore.Gameplay
             _lured.Clear();
             _slipped.Clear();
             _claims.Clear();
+            for (int i = 0; i < _painted.Count; i++) Unlight(_painted[i], markFade);
             _painted.Clear();
             _paintedSet.Clear();
+        }
+
+        /// <summary>Only the pilot sees the paint (the marks are the pilot's instrument, and a rival's would be noise).</summary>
+        bool ShowsMarks => _status != null && !_status.IsInitializedAsAI && _status.IsLocalUser;
+
+        /// <summary>Back to the prism's own colour, if this machine lit it.</summary>
+        static void Unlight(Prism p, float fade)
+        {
+            if (p && !p.destroyed && p.ColorLift > 0f) p.SetColorLift(0f, fade);
         }
 
         // ------------------------------------------------------------------ presentation
 
         void DrawMarks()
         {
-            // Only the pilot sees the marks: they are the pilot's instrument, and a rival's paint would be noise.
-            if (_status.IsInitializedAsAI || !_status.IsLocalUser) return;
+            if (!ShowsMarks) return;
             var cam = ResolveCamera();
             if (!cam) return;
             _marks ??= new AnglerWorldMarks();
@@ -647,14 +720,8 @@ namespace CosmicShore.Gameplay
                 var c = _lured[i].Creature;
                 if (c) _marks.Dot(c.transform.position + t.up * 3f, Color.Lerp(tamingColor, escaColor, _lured[i].Tame), 1.2f, 4f);
             }
-            int shown = 0;
-            for (int i = 0; i < _painted.Count && shown < config.MaxPaintMarkers; i++)
-            {
-                var p = _painted[i];
-                if (!p || p.destroyed) continue;
-                _marks.Dot(p.transform.position, paintColor, markSize, markMinPixels);
-                shown++;
-            }
+            // Painted prisms are not dotted here: they are drawn LIT (Prism.SetColorLift, BrushStroke). A dot at a prism's
+            // centre sat inside the prism and was never seen.
             bool erasing = _eraseDepth > 0.5f;
             if (_cmdHeld || erasing)
             {

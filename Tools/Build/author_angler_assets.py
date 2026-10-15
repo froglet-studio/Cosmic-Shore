@@ -23,10 +23,13 @@ WHAT IT MAKES
           Squirrel tube bound - exactly as on the Stoat); no Angler autopilot yet (ANGLER.md follow-ups);
         - the HUD: AnglerHUDVariant (a copy of StoatHUDVariant: same internal fileIDs, the view swapped to
           AnglerHUDView, the four gauges renamed, the four icons swapped) and AnglerHUDController;
-        - the camera: AnglerCameraSettingsSO (the lab's chase framing).
+        - the camera: AnglerCameraSettingsSO (the lab's chase framing);
+        - the vessel impactor: AnglerImpactorDataContainer, a fork of the Stoat's with the omni crystal's effect swapped
+          from the Stoat's Overclock to the Angler's mass tame (AnglerTameByCrystalEffect). Applied to the committed
+          prefab too, as an idempotent patch (patch_prefab).
     KEPT FROM THE DONOR ON PURPOSE (a stand-in body until the Angler has its own, ANGLER.md §5): the Stoat's procedural
-    hull (StoatHullBuilder) and its lope (StoatAnimation), the two jets, the tails, the hit box, the impactor and skimmer
-    containers (shared effect SOs; the Angler adds no effect of its own).
+    hull (StoatHullBuilder) and its lope (StoatAnimation), the two jets, the tails, the hit box, the skimmer container
+    and the shared prism / haptics effects the vessel container keeps.
     Assets: AnglerConfig + the three control assets (VesselActions/Angler/), the camera, SO_Class_Angler, every new
     script's .meta, the doc's .meta. Registrations: Vessel Prefab Container (root TRANSFORM), DefaultNetworkPrefabs (root
     GAMEOBJECT), SO_Classlist_All / _Classes, four CrystalHullFusionConfig entries (copied from the Stoat's: same hull).
@@ -73,6 +76,10 @@ FUSION = A("Resources", "CrystalHullFusionConfig.asset")
 CAMERA = A("_SO_Assets", "Camera", "AnglerCameraSettingsSO.asset")
 SCRIPTS = A("_Scripts")
 DOC = os.path.join(SCRIPTS, "Controller", "Vessel", "R_VesselActions", "ANGLER.md")
+EFFECTS = A("_SO_Assets", "Effects")
+OMNI_EFFECT = os.path.join(EFFECTS, "Vessel Crystal Effects", "AnglerTameByCrystalEffect.asset")
+IMPACT_CONTAINER = os.path.join(EFFECTS, "Effect Containers", "VesselContainers", "AnglerImpactorDataContainer.asset")
+STOAT_IMPACT_CONTAINER_PATH = os.path.join(EFFECTS, "Effect Containers", "VesselContainers", "StoatImpactorDataContainer.asset")
 
 CLASS_ID = 17
 STOAT_CLASS_ID = 15
@@ -89,6 +96,10 @@ CLASS_GUID = guid_for("SO_Class_Angler.asset")
 CAMERA_GUID = guid_for("AnglerCameraSettingsSO.asset")
 ACTIONS_FOLDER_GUID = guid_for("VesselActions/Angler")
 DOC_GUID = guid_for("ANGLER.md")
+OMNI_EFFECT_GUID = guid_for("AnglerTameByCrystalEffect.asset")
+IMPACT_CONTAINER_GUID = guid_for("AnglerImpactorDataContainer.asset")
+STOAT_IMPACT_CONTAINER = "63a1b912028e471b9b7a2df570e90be8"     # StoatImpactorDataContainer.asset
+STOAT_OVERCLOCK = "6b508a166e124e95a6490871697185de"            # StoatOverclockByCrystalEffect.asset (the Stoat's omni effect)
 
 # (control name, AnglerControl value, InputEvents it is bound to). The InputEvents numbers: Button1=6 (A / Space),
 # Button2=7 (B / R), Button3=8 (X / Q). The triggers (RightStickAction=1, LeftStickAction=2) stay unbound: the Sling
@@ -108,6 +119,7 @@ NEW_SCRIPTS = tuple((rel, guid_for(os.path.basename(rel))) for rel in (
     "UI/Controller/AnglerHUDController.cs",
     "UI/View/AnglerHUDView.cs",
     "Tests/Editor/AnglerCommandMathTests.cs",
+    "Controller/ImpactEffects/EffectsSO/Vessel Crystal Effects/AnglerTameByCrystalEffectSO.cs",
 ))
 SCRIPT = {os.path.basename(rel)[:-3]: guid for rel, guid in NEW_SCRIPTS}
 
@@ -237,7 +249,14 @@ def build_prefab(donor: str) -> str:
             chunk = chunk.replace("CosmicShore.UI.StoatHUDView", "CosmicShore.UI.AnglerHUDView")
             S.set_doc(docs, fid, chunk)
 
-    return S.join_docs(head, docs)
+    return patch_prefab(S.join_docs(head, docs))
+
+
+def patch_prefab(text: str) -> str:
+    """Idempotent edits the committed prefab takes too (the clone itself is a spent one-shot): the vessel impactor reads
+    the Angler's own container, so an omni crystal runs the Angler's mass tame rather than the Stoat's Overclock."""
+    return text.replace(f"vesselImpactorDataContainerSO: {{fileID: 11400000, guid: {STOAT_IMPACT_CONTAINER}, type: 2}}",
+                        f"vesselImpactorDataContainerSO: {{fileID: 11400000, guid: {IMPACT_CONTAINER_GUID}, type: 2}}")
 
 
 # ===================================================================================================== the HUD variant
@@ -270,6 +289,7 @@ def config_asset() -> str:
             "  tameTime: 2.5\n"
             "  tameDecay: 0.6\n"
             "  squadCap: 24\n"
+            "  omniTameRadius: 300\n"
             "  leashTow: 1.6\n"
             "  formBack: 6\n"
             "  tadTurn: 4\n"
@@ -284,8 +304,19 @@ def config_asset() -> str:
             "  slingTime: 3\n"
             "  slingCatch: 8\n"
             "  slingCluster: 24\n"
-            "  maxPaintMarkers: 400\n"
             "  brushInterval: 0\n")
+
+
+def omni_effect_asset() -> str:
+    return S.so_header(SCRIPT["AnglerTameByCrystalEffectSO"], "AnglerTameByCrystalEffect")
+
+
+def impact_container_asset() -> str:
+    """SEEDED once from the Stoat's vessel container (the shared prism / haptics effects the clone already ran), with the
+    Stoat's omni Overclock swapped for the Angler's mass tame. Fork, never share, before changing behaviour (vessel rule 8)."""
+    text = open(STOAT_IMPACT_CONTAINER_PATH, encoding="utf-8", newline="").read()
+    text = S.replace_once(text, "  m_Name: StoatImpactorDataContainer\n", "  m_Name: AnglerImpactorDataContainer\n", "container name")
+    return S.replace_once(text, f"guid: {STOAT_OVERCLOCK}, type: 2}}", f"guid: {OMNI_EFFECT_GUID}, type: 2}}", "the Stoat's omni effect")
 
 
 def control_asset(name: str, value: int) -> str:
@@ -378,6 +409,8 @@ def owned_files() -> "dict[str, str]":
         PREFAB + ".meta": prefab_meta(PREFAB_GUID),
         HUD_VARIANT_PATH + ".meta": prefab_meta(HUD_VARIANT),
         DOC + ".meta": text_meta(DOC_GUID),
+        OMNI_EFFECT: omni_effect_asset(), OMNI_EFFECT + ".meta": S.asset_meta(OMNI_EFFECT_GUID),
+        IMPACT_CONTAINER + ".meta": S.asset_meta(IMPACT_CONTAINER_GUID),
     }
     for name, value, _ in CONTROLS:
         path = os.path.join(ACTIONS_DIR, name + ".asset")
@@ -389,7 +422,8 @@ def owned_files() -> "dict[str, str]":
 
 
 SEEDED = {CONFIG_PATH: (config_asset, SCRIPT["AnglerConfigSO"], "AnglerConfig"),
-          CAMERA: (camera_asset, CAMERA_SCRIPT, "AnglerCameraSettingsSO")}
+          CAMERA: (camera_asset, CAMERA_SCRIPT, "AnglerCameraSettingsSO"),
+          IMPACT_CONTAINER: (impact_container_asset, "fde7d8c2dacf45f99e46799ffeea15e6", "AnglerImpactorDataContainer")}
 
 
 # ===================================================================================================== registrations
@@ -470,6 +504,12 @@ def check(files: "dict[str, str]") -> "list[str]":
          and f"angler: {{fileID: {EXECUTOR_ID}}}" in d.get(HUD_CONTROLLER_ID, ""), "the HUD controller is not AnglerHUDController wired to the executor")
     need(f"guid: {HUD_VARIANT}" in d.get(HUD_INSTANCE_ID, ""), "the HUD instance is not AnglerHUDVariant")
     need(f"guid: {CAMERA_GUID}" in d.get(CAMERA_CUSTOMIZER_ID, ""), "the camera is not AnglerCameraSettingsSO")
+    need(f"vesselImpactorDataContainerSO: {{fileID: 11400000, guid: {IMPACT_CONTAINER_GUID}, type: 2}}" in prefab
+         and STOAT_IMPACT_CONTAINER not in prefab, "the vessel impactor does not read AnglerImpactorDataContainer")
+    container = files.get(IMPACT_CONTAINER, "")
+    omni = re.search(r"  vesselCrystalEffects:\n((?:  - \{[^}]*\}\n)*)", container)
+    need(omni and f"guid: {OMNI_EFFECT_GUID}" in omni.group(1) and STOAT_OVERCLOCK not in container,
+         "AnglerImpactorDataContainer's omni list does not run the Angler's mass tame (or still runs the Stoat's Overclock)")
     need("  abilities: []\n" in d.get(AI_PILOT_ID, ""), "the AIPilot runs a blind ability cycle (the Angler has no autopilot yet)")
     need(f"boostPolicy: {{fileID: 11400000, guid: {SKIM_RING_POLICY}, type: 2}}" in d.get(AI_PILOT_ID, ""),
          "the AIPilot's boost policy is not the donor's SkimRingAIPolicy (inert without a Squirrel tube; the shared-channel gate wants it wired)")
@@ -519,7 +559,7 @@ def check(files: "dict[str, str]") -> "list[str]":
 
 
 def read_all() -> "dict[str, str]":
-    paths = {PREFAB, HUD_VARIANT_PATH, CONTAINER, NETWORK_PREFABS, FUSION, MAP, *CLASS_LISTS, *owned_files(), *SEEDED,
+    paths = {PREFAB, HUD_VARIANT_PATH, CONTAINER, IMPACT_CONTAINER, NETWORK_PREFABS, FUSION, MAP, *CLASS_LISTS, *owned_files(), *SEEDED,
              os.path.join(ROOT, "Assets/_Graphics/CardImages/Angler.png.meta"),
              os.path.join(ROOT, "Assets/_Graphics/CardImages/Angler_Inactive.png.meta"),
              os.path.join(SCRIPTS, "Data/Enums/VesselClassType.cs"),
@@ -545,6 +585,10 @@ def author() -> None:
         print("cloned Stoat.prefab -> Angler.prefab")
     else:
         print("Angler.prefab exists - the clone stands down (spent one-shot)")
+        patched = patch_prefab(files[PREFAB])
+        if patched != files[PREFAB]:
+            write(PREFAB, patched)
+            print("patched Angler.prefab (the Angler's impactor container)")
     if HUD_VARIANT_PATH not in files:
         write(HUD_VARIANT_PATH, build_hud_variant(open(HUD_DONOR, encoding="utf-8", newline="").read()))
         print("cloned StoatHUDVariant.prefab -> AnglerHUDVariant.prefab")
@@ -584,6 +628,8 @@ def self_test() -> int:
         "fusion entries missing": (FUSION, lambda t: t.replace(f"  - vessel: {CLASS_ID}\n", "  - vessel: 99\n")),
         "roster entry missing": (os.path.join(SCRIPTS, "Controller/Toys/ToyVesselRoster.cs"), lambda t: t.replace("VesselClassType.Angler", "")),
         "an unapproved map authored": (MAP, lambda t: "authored"),
+        "the Stoat's impactor container back": (PREFAB, lambda t: t.replace(IMPACT_CONTAINER_GUID, STOAT_IMPACT_CONTAINER)),
+        "the Stoat's Overclock on the omni list": (IMPACT_CONTAINER, lambda t: t.replace(OMNI_EFFECT_GUID, STOAT_OVERCLOCK)),
     }
     failed = 0
     for name, (path, mutate) in mutations.items():

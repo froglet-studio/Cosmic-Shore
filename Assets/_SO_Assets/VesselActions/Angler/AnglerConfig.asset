@@ -19,6 +19,7 @@ MonoBehaviour:
   tameTime: 2.5
   tameDecay: 0.6
   squadCap: 24
+  omniTameRadius: 300
   leashTow: 1.6
   formBack: 6
   tadTurn: 4
@@ -33,5 +34,4 @@ MonoBehaviour:
   slingTime: 3
   slingCatch: 8
   slingCluster: 24
-  maxPaintMarkers: 400
   brushInterval: 0

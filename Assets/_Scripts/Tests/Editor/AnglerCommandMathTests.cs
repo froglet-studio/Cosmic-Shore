@@ -41,6 +41,16 @@ namespace CosmicShore.Tests
         }
 
         [Test]
+        public void OmniTameOrder_TakesTheNearestWithinReach_UpToTheRoomLeft()
+        {
+            var pts = new[] { new Vector3(5f, 0f, 0f), new Vector3(1f, 0f, 0f), new Vector3(0f, 9f, 0f), new Vector3(1f, 0f, 0f) };
+            var into = new System.Collections.Generic.List<int>();
+            Assert.AreEqual(3, AnglerCommandMath.OmniTameOrder(Vector3.zero, pts, 10f, 3, into));
+            Assert.AreEqual("1,3,0", string.Join(",", into), "nearest first, a tie by index, the fourth left wild");
+            Assert.AreEqual(0, AnglerCommandMath.OmniTameOrder(Vector3.zero, pts, 10f, 0, into), "a full leash tames nobody");
+        }
+
+        [Test]
         public void EveryFunction_MatchesTheLabPage()
         {
             foreach (var c in BrushCases)
@@ -63,6 +73,12 @@ namespace CosmicShore.Tests
                 Assert.AreEqual(c.want, AnglerCommandMath.TameStep(c.tame, c.hold, c.dt, c.tameTime, c.decay), Tol, $"TameStep({c.tame}, {c.hold})");
             foreach (var c in LureCases)
                 Near(c.want, AnglerCommandMath.LurePoint(c.p, c.f, c.u, c.ahead), $"LurePoint({c.ahead})");
+            var picked = new System.Collections.Generic.List<int>();
+            foreach (var c in OmniCases)
+            {
+                AnglerCommandMath.OmniTameOrder(c.from, c.points, c.radius, c.room, picked);
+                Assert.AreEqual(string.Join(",", c.want), string.Join(",", picked), $"OmniTameOrder from {c.from} radius {c.radius} room {c.room}");
+            }
         }
 
         static void Near(Vector3 want, Vector3 have, string what)
@@ -272,6 +288,19 @@ namespace CosmicShore.Tests
             (new Vector3(5.00000000f, 10.0000000f, -20.0000000f), new Vector3(0.0975900073f, 0.195180015f, -0.975900073f), new Vector3(0.00000000f, 0.980580676f, 0.196116135f), 0.00000000f, new Vector3(5.00000000f, 12.4514517f, -19.5097097f)),
             (new Vector3(5.00000000f, 10.0000000f, -20.0000000f), new Vector3(0.0975900073f, 0.195180015f, -0.975900073f), new Vector3(0.00000000f, 0.980580676f, 0.196116135f), 30.0000000f, new Vector3(7.92770022f, 18.3068521f, -48.7867119f)),
             (new Vector3(3.00000000f, -7.00000000f, 11.0000000f), new Vector3(1.00000000f, 0.00000000f, 0.00000000f), new Vector3(0.600000000f, 0.800000000f, 0.00000000f), 10.0000000f, new Vector3(14.5000000f, -5.00000000f, 11.0000000f)),
+        };
+        static readonly (Vector3 from, Vector3[] points, float radius, int room, int[] want)[] OmniCases =
+        {
+            (new Vector3(-86.4365092f, -83.1871940f, 83.0726909f), new Vector3[] { new Vector3(63.3815638f, -137.341990f, -210.262812f), new Vector3(-141.119678f, -166.452906f, 42.3119762f), new Vector3(-292.571265f, 80.4604032f, 317.819350f), new Vector3(-281.343256f, 82.7789644f, -179.032474f) }, 300.000000f, 24, new int[] { 1 }),
+            (new Vector3(39.1390544f, -18.2784392f, -71.7237300f), new Vector3[] { new Vector3(-330.494538f, -255.765445f, 287.452375f), new Vector3(130.293801f, -46.1337416f, 99.0163112f), new Vector3(290.618866f, -167.393706f, -43.3381658f), new Vector3(-195.111050f, 45.3424722f, -156.220996f), new Vector3(312.217288f, 347.251122f, 139.796370f), new Vector3(17.6925992f, 238.913430f, -158.078982f) }, 150.000000f, 3, new int[] {  }),
+            (new Vector3(70.7562346f, -31.3869428f, 96.1902929f), new Vector3[] { new Vector3(-19.5084075f, 233.296096f, 250.137841f), new Vector3(154.229265f, -66.5993649f, 57.4183624f), new Vector3(-35.0389806f, 206.010953f, 146.653180f), new Vector3(-150.023960f, 232.537347f, 93.0869034f), new Vector3(-56.8662365f, 292.904128f, -90.5597135f), new Vector3(-41.8979293f, 314.446022f, 129.650004f), new Vector3(38.0369856f, 78.7458878f, -335.782864f), new Vector3(-306.243820f, 171.189207f, -120.510672f) }, 450.000000f, 0, new int[] {  }),
+            (new Vector3(-46.0558231f, -21.8075594f, 19.4143848f), new Vector3[] { new Vector3(-83.7288169f, 56.3429451f, -194.007454f), new Vector3(208.696054f, 63.8210630f, -79.9324738f), new Vector3(264.279892f, -346.874066f, -89.6933890f), new Vector3(-23.1464709f, 285.708160f, -260.426143f), new Vector3(-161.007560f, -343.092962f, -47.3340840f), new Vector3(-100.935651f, 51.5982880f, 305.546060f), new Vector3(21.5357939f, 32.5525888f, -136.956112f), new Vector3(193.008877f, -234.171965f, 274.785484f), new Vector3(-227.731937f, 63.2272334f, -124.142997f), new Vector3(343.221354f, -111.190464f, 157.501880f) }, 300.000000f, 5, new int[] { 6, 0, 8, 1 }),
+            (new Vector3(-33.6719519f, 41.5559144f, -94.3322984f), new Vector3[] { new Vector3(-75.9820492f, 44.7630575f, -6.47942682f), new Vector3(-102.684349f, -100.862312f, 325.729673f), new Vector3(348.705027f, 299.998592f, -178.591988f), new Vector3(-263.234118f, -205.015825f, -300.070922f), new Vector3(-185.779568f, 229.483276f, -85.1556613f), new Vector3(138.142643f, -251.939199f, -129.741007f), new Vector3(15.7317817f, -190.744325f, -231.713581f), new Vector3(116.963017f, -169.367451f, -290.371737f), new Vector3(249.367973f, -310.271563f, -208.789106f), new Vector3(78.7887513f, 311.533824f, 202.952183f), new Vector3(-153.056203f, -11.1924750f, -189.245860f), new Vector3(-99.2862748f, 78.6890831f, 311.307504f) }, 150.000000f, 24, new int[] { 0 }),
+            (new Vector3(25.1435347f, 89.3712131f, 65.7498946f), new Vector3[] { new Vector3(-33.2011394f, 338.731565f, -276.481224f), new Vector3(-344.503825f, 36.0254567f, -61.4969705f), new Vector3(20.5038025f, 57.1112016f, -311.989504f), new Vector3(-264.295159f, -234.327153f, 261.016440f), new Vector3(254.488897f, -302.702308f, -294.447492f), new Vector3(-245.703555f, -344.586111f, 268.525584f), new Vector3(213.141477f, -117.569222f, 155.225315f), new Vector3(282.528868f, -271.494982f, 180.147273f), new Vector3(104.567168f, -169.202881f, -59.7125793f), new Vector3(84.2089076f, -2.85816365f, -119.600631f), new Vector3(-174.670079f, -348.428242f, 146.388570f), new Vector3(-301.070832f, 38.5815870f, 81.3515546f), new Vector3(-338.326335f, 323.101999f, 120.490680f), new Vector3(114.036325f, 278.679874f, 81.9425354f) }, 450.000000f, 3, new int[] { 13, 9, 6 }),
+            (new Vector3(-38.8388637f, -12.4621038f, -36.0907088f), new Vector3[] { new Vector3(-139.500762f, 258.781568f, 55.4329320f), new Vector3(-133.600156f, 265.023799f, 303.554621f), new Vector3(-279.908547f, -208.894934f, 325.552930f), new Vector3(155.913608f, 63.6962650f, 90.6876626f), new Vector3(-153.170007f, 259.614515f, -183.975129f), new Vector3(63.3513635f, -6.49602583f, 267.850506f), new Vector3(28.1709205f, -233.363629f, -329.456698f), new Vector3(-345.743438f, 268.729513f, 158.453294f), new Vector3(134.802009f, -21.1054088f, -115.271405f), new Vector3(129.816304f, 348.675740f, -148.593496f), new Vector3(-124.256053f, -241.036995f, 61.7850998f), new Vector3(-291.477245f, -295.364728f, -308.451470f), new Vector3(-218.376154f, 98.1138632f, 343.340870f), new Vector3(26.6013450f, 269.109429f, -263.027613f), new Vector3(-172.831590f, 162.928286f, 169.973367f), new Vector3(-215.487120f, -33.9807030f, -164.343700f) }, 300.000000f, 0, new int[] {  }),
+            (new Vector3(-94.8774345f, -14.4064831f, 95.9954654f), new Vector3[] { new Vector3(347.598417f, 20.5539462f, 222.533446f), new Vector3(-50.2532495f, 275.131433f, 213.825226f), new Vector3(-200.146280f, -120.765601f, -296.727186f), new Vector3(-153.756190f, 343.362048f, 278.951445f), new Vector3(-80.3556791f, 28.4868212f, -108.663872f), new Vector3(133.434227f, -327.990151f, -140.475542f), new Vector3(313.652701f, -172.735523f, -230.925009f), new Vector3(215.139282f, 278.163287f, -188.921155f), new Vector3(-20.7641853f, 159.785347f, -229.512115f), new Vector3(12.0120105f, -343.035639f, 167.724678f), new Vector3(-315.585860f, -87.9891042f, -298.481639f), new Vector3(-85.6214176f, -224.910514f, 92.4574653f), new Vector3(127.662672f, 273.831319f, -157.806249f), new Vector3(-81.4623764f, 303.089931f, -266.576399f), new Vector3(85.2797324f, 211.793705f, -17.7720694f), new Vector3(111.373445f, 248.469244f, 334.298059f), new Vector3(141.121205f, 238.361864f, 146.692130f), new Vector3(282.885224f, -6.92565520f, -160.979093f) }, 150.000000f, 5, new int[] {  }),
+            (new Vector3(0.00000000f, 0.00000000f, 0.00000000f), new Vector3[] { new Vector3(5.00000000f, 0.00000000f, 0.00000000f), new Vector3(1.00000000f, 0.00000000f, 0.00000000f), new Vector3(0.00000000f, 9.00000000f, 0.00000000f), new Vector3(0.00000000f, -1.00000000f, 0.00000000f), new Vector3(400.000000f, 0.00000000f, 0.00000000f), new Vector3(3.00000000f, 4.00000000f, 0.00000000f) }, 5.00000000f, 4, new int[] { 1, 3, 0, 5 }),
+            (new Vector3(1.00000000f, 1.00000000f, 1.00000000f), new Vector3[] { new Vector3(4.00000000f, 5.00000000f, 1.00000000f), new Vector3(1.00000000f, 1.00000000f, 6.00000000f), new Vector3(1.00000000f, 1.00000000f, 1.00000000f) }, 5.00000000f, 24, new int[] { 2, 0, 1 }),
         };
         // </goldens>
     }

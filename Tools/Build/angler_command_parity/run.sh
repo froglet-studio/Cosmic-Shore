@@ -54,5 +54,7 @@ if [ "${1:-}" = "--self-test" ]; then
   plant "the school ring 3.2 -> 3.0" 's/Mathf.Sqrt(i) \* 3\.2f/Mathf.Sqrt(i) * 3.0f/'
   plant "the cone's 1 u floor dropped" 's/if (d > reach || d < 1f) return false;/if (d > reach) return false;/'
   plant "the esca 2.5 u up -> 2 u" 's/u\.\([xyz]\) \* 2\.5f/u.\1 * 2f/g'
-  echo "angler_command_parity --self-test: 6/6 planted changes caught"
+  plant "the omni reach made exclusive" 's/points\[i\]) <= r2)/points[i]) < r2)/'
+  plant "the omni room ignored" 's/if (into.Count > room) into.RemoveRange/if (false) into.RemoveRange/'
+  echo "angler_command_parity --self-test: 8/8 planted changes caught"
 fi

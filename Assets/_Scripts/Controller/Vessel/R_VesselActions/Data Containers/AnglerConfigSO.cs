@@ -27,6 +27,8 @@ namespace CosmicShore.Gameplay
         [SerializeField, Min(0f)] float tameDecay = 0.6f;
         [Tooltip("Leash capacity: most creatures you can lead at once.")]
         [SerializeField, Min(0)] int squadCap = 24;
+        [Tooltip("Omni tame reach (u): collecting an omni crystal tames every wild herbivore within this of the hull at once, nearest first, up to the leash capacity.")]
+        [SerializeField, Min(0f)] float omniTameRadius = 300f;
         [Tooltip("Leash tow x: a following creature may swim this many times its own max speed to keep formation. Attacks always run at the creature's own speeds.")]
         [SerializeField, Min(1f)] float leashTow = 1.6f;
         [Tooltip("School ring behind (u): where the squad's ring sits behind the hull.")]
@@ -59,8 +61,6 @@ namespace CosmicShore.Gameplay
         [SerializeField, Min(0f)] float slingCluster = 24f;
 
         [Header("Presentation (game only: the lab draws its own)")]
-        [Tooltip("Most painted prisms marked on screen at once (the order itself has no cap).")]
-        [SerializeField, Min(0)] int maxPaintMarkers = 400;
         [Tooltip("How often the brush re-reads the prisms under it while a trigger is held (s). The lab paints every frame; 0 does the same here.")]
         [SerializeField, Min(0f)] float brushInterval = 0f;
 
@@ -71,6 +71,7 @@ namespace CosmicShore.Gameplay
         public float TameTime => Mathf.Max(0.01f, tameTime);
         public float TameDecay => tameDecay;
         public int SquadCap => squadCap;
+        public float OmniTameRadius => omniTameRadius;
         public float LeashTow => Mathf.Max(1f, leashTow);
         public float FormBack => formBack;
         public float TadTurn => tadTurn;
@@ -85,7 +86,6 @@ namespace CosmicShore.Gameplay
         public float SlingTime => slingTime;
         public float SlingCatch => slingCatch;
         public float SlingCluster => slingCluster;
-        public int MaxPaintMarkers => maxPaintMarkers;
         public float BrushInterval => brushInterval;
     }
 }
