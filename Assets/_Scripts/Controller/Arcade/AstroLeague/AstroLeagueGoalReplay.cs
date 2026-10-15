@@ -1,5 +1,6 @@
 using System;
 using System.Threading;
+using CosmicShore.Utility;
 using Cysharp.Threading.Tasks;
 using UnityEngine;
 
@@ -18,21 +19,26 @@ namespace CosmicShore.Gameplay
     /// Added at runtime by <see cref="AstroLeagueController"/> (no scene wiring) and driven
     /// through <see cref="Configure"/> / <see cref="Play"/> / <see cref="Stop"/> /
     /// <see cref="ClearRecording"/>.
+    ///
+    /// <para>The samples and their interpolation are the Theater's (<see cref="TheaterPose"/>,
+    /// <see cref="TheaterTrack.TryEvaluate"/>), the same ones every match replay plays back through
+    /// (<c>Docs/REPLAYS.md</c>), so a goal replay and a match replay cannot disagree about where a
+    /// recorded object was between two samples. What stays here is what only this shot needs: the
+    /// short ring buffer, the ghost ball and the broadcast camera.</para>
     /// </summary>
     public class AstroLeagueGoalReplay : MonoBehaviour
     {
-        struct Sample
-        {
-            public float Time;
-            public Vector3 Position;
-            public Quaternion Rotation;
-        }
+        /// <summary>
+        /// How far back, in replay seconds, the ghost looks to find its direction of travel. About
+        /// one physics step, so the heading is the slope of the segment the ghost is on.
+        /// </summary>
+        const float TravelProbeSeconds = 0.02f;
 
         AstroLeagueBall _ball;
         AstroLeagueSettingsSO _settings;
         CameraManager _cameraManager;
 
-        Sample[] _samples;
+        TheaterPose[] _samples;
         int _head = -1; // index of the newest sample
         int _count;
 
@@ -54,7 +60,7 @@ namespace CosmicShore.Gameplay
 
             float recordSeconds = Mathf.Max(1f, settings != null ? settings.goalReplayRecordSeconds : 4f);
             int capacity = Mathf.Max(8, Mathf.CeilToInt(recordSeconds / Time.fixedDeltaTime));
-            _samples = new Sample[capacity];
+            _samples = new TheaterPose[capacity];
             ClearRecording();
         }
 
@@ -67,7 +73,7 @@ namespace CosmicShore.Gameplay
             if (_ball.IsHidden || _ball.IsFrozen) return;
 
             _head = (_head + 1) % _samples.Length;
-            _samples[_head] = new Sample
+            _samples[_head] = new TheaterPose
             {
                 Time = Time.time,
                 Position = _ball.transform.position,
@@ -112,19 +118,21 @@ namespace CosmicShore.Gameplay
             {
                 // Snapshot the ring oldest → newest; recording is paused while IsPlaying.
                 int n = _count;
-                var flight = new Sample[n];
+                var flight = new TheaterTrack();
+                flight.Poses.Capacity = n;
                 for (int i = 0; i < n; i++)
-                    flight[i] = _samples[(_head - (n - 1 - i) + _samples.Length * 2) % _samples.Length];
+                    flight.Poses.Add(_samples[(_head - (n - 1 - i) + _samples.Length * 2) % _samples.Length]);
 
-                float span = flight[n - 1].Time - flight[0].Time;
+                var first = flight.Poses[0];
+                float span = flight.EndTime - flight.StartTime;
                 if (span < 0.2f) return;
 
                 float playWindow = Mathf.Max(0.5f, windowSeconds * _settings.goalReplayWindowFraction);
                 float speed = Mathf.Max(_settings.goalReplayMinPlaybackSpeed, span / playWindow);
 
-                BuildGhost(flight[0]);
+                BuildGhost(first);
                 // Aim the ghost down the shot from frame one (orients its motion trail).
-                Vector3 firstTravel = flight[1].Position - flight[0].Position;
+                Vector3 firstTravel = flight.Poses[1].Position - first.Position;
                 if (firstTravel.sqrMagnitude > 0.0001f)
                     _ghostRoot.transform.rotation = Quaternion.LookRotation(firstTravel.normalized, Vector3.up);
 
@@ -134,8 +142,8 @@ namespace CosmicShore.Gameplay
                 _replayCam = _cameraManager != null ? _cameraManager.BeginManualReplayCamera() : null;
                 if (_replayCam != null)
                 {
-                    _replayCam.position = ComputeVantage(flight, n);
-                    Vector3 toStart = flight[0].Position - _replayCam.position;
+                    _replayCam.position = ComputeVantage(flight);
+                    Vector3 toStart = first.Position - _replayCam.position;
                     if (toStart.sqrMagnitude > 0.01f)
                         _replayCam.rotation = Quaternion.LookRotation(toStart.normalized, Vector3.up);
                 }
@@ -144,21 +152,20 @@ namespace CosmicShore.Gameplay
                 await ScaleGhostAsync(Vector3.zero, _ghostVisualScale, 0.25f, token);
 
                 float elapsed = 0f;
-                int cursor = 0;
                 while (elapsed * speed < span)
                 {
                     token.ThrowIfCancellationRequested();
 
-                    float replayTime = flight[0].Time + elapsed * speed;
-                    while (cursor < n - 2 && flight[cursor + 1].Time < replayTime) cursor++;
+                    float replayTime = flight.StartTime + elapsed * speed;
+                    if (!flight.TryEvaluate(replayTime, out Vector3 position, out Quaternion tumble, out _))
+                        break;
 
-                    Sample a = flight[cursor];
-                    Sample b = flight[Mathf.Min(cursor + 1, n - 1)];
-                    float dt = Mathf.Max(1e-4f, b.Time - a.Time);
-                    float t = Mathf.Clamp01((replayTime - a.Time) / dt);
-
-                    Vector3 position = Vector3.LerpUnclamped(a.Position, b.Position, t);
-                    Vector3 travel = (b.Position - a.Position) / dt;
+                    // Direction of travel: the slope just behind the ghost, measured in replay time
+                    // so it does not depend on the frame rate.
+                    Vector3 travel = Vector3.zero;
+                    float back = Mathf.Min(TravelProbeSeconds, replayTime - flight.StartTime);
+                    if (back > 1e-4f && flight.TryEvaluate(replayTime - back, out Vector3 behind, out _, out _))
+                        travel = (position - behind) / back;
 
                     _ghostRoot.transform.position = position;
                     // Root faces the direction of travel (orients the motion trail, smoothed);
@@ -184,7 +191,7 @@ namespace CosmicShore.Gameplay
                         }
                     }
                     if (_ghostVisual != null)
-                        _ghostVisual.rotation = Quaternion.SlerpUnclamped(a.Rotation, b.Rotation, t);
+                        _ghostVisual.rotation = tumble;
 
                     // Unscaled: the solo celebration slow-mo must not crawl the replay itself.
                     await UniTask.Yield(PlayerLoopTiming.Update);
@@ -213,17 +220,20 @@ namespace CosmicShore.Gameplay
         /// line), elevated, pulled back far enough that the whole flight fits the camera's field
         /// of view times the framing margin. The camera then only PANS from here.
         /// </summary>
-        Vector3 ComputeVantage(Sample[] flight, int n)
+        Vector3 ComputeVantage(TheaterTrack flight)
         {
+            var poses = flight.Poses;
+            int n = poses.Count;
+
             Vector3 centroid = Vector3.zero;
-            for (int i = 0; i < n; i++) centroid += flight[i].Position;
+            for (int i = 0; i < n; i++) centroid += poses[i].Position;
             centroid /= n;
 
             float pathRadius = 10f * _arenaScale; // floor so a short tap-in still frames sanely
             for (int i = 0; i < n; i++)
-                pathRadius = Mathf.Max(pathRadius, Vector3.Distance(centroid, flight[i].Position));
+                pathRadius = Mathf.Max(pathRadius, Vector3.Distance(centroid, poses[i].Position));
 
-            Vector3 shotLine = flight[n - 1].Position - flight[0].Position;
+            Vector3 shotLine = poses[n - 1].Position - poses[0].Position;
             Vector3 side = Vector3.Cross(
                 shotLine.sqrMagnitude > 0.01f ? shotLine.normalized : Vector3.forward, Vector3.up);
             if (side.sqrMagnitude < 1e-4f) side = Vector3.right;
@@ -239,7 +249,7 @@ namespace CosmicShore.Gameplay
                    + Vector3.up * (distance * _settings.goalReplayVantageElevation);
         }
 
-        void BuildGhost(Sample first)
+        void BuildGhost(TheaterPose first)
         {
             _ghostRoot = new GameObject("AstroLeagueGoalReplayGhost");
             _ghostRoot.transform.position = first.Position;
