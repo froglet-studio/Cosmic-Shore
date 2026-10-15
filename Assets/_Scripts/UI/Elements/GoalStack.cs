@@ -63,6 +63,9 @@ namespace CosmicShore.UI
 
         readonly List<GoalEntry> _entries = new();
 
+        /// <summary>The goals as last drawn - the pause window's summary reads them.</summary>
+        public IReadOnlyList<GoalEntry> Entries => _entries;
+
         ScoringMetric? _metric;
         int _target;
         bool _secondsMode;

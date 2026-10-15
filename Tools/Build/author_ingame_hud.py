@@ -204,14 +204,14 @@ def patch_goal_rows(p):
         p.replace(label, label_doc(p.doc(label), "15"))
 
 
-def pause_button(p):
+def pause_button_go(p):
     vui = p.by_script(S["vui"])
     assert len(vui) == 1, "GameCanvas should carry exactly one VolumeUI (the pause button)"
     return p.sc.go_of(vui[0])
 
 
 def patch_pause(p):
-    go = pause_button(p)
+    go = pause_button_go(p)
     assert p.sc.field(go, "m_Name") == "Volume / Pause Button", "the pause button was renamed"
     fid = p.add_comp(go, "volume", 114, lambda ctx, g: K.mono(g, S["volume"],
         "  hexGraphic: {fileID: 0}\n"
@@ -417,8 +417,253 @@ def patch_waiting_and_countdown(p):
     set_instance_ref(p, pi, COUNTDOWN_COMP, "waitingPanel", p.ctx.c("Wait", "panel"))
 
 
+# --------------------------------------------------------------------------------------------
+# 12c - the pause window (R_Pause_Menu_Panel.prefab, nested in GameCanvas)
+# --------------------------------------------------------------------------------------------
+
+PAUSE = "Assets/_Prefabs/UI Elements/Panels/R_Pause_Menu_Panel.prefab"
+PAUSE_GUID = K.meta_guid(PAUSE)
+PAUSE_ROOT_GO, PAUSE_ROOT_RT, PAUSE_COMP = "2010564259793320838", "2565551909505468755", "5080318904164001789"
+# The legacy Buttons subtree (RESUME on Y, MAIN MENU on A), measured 2026-10-15. Deleted here; the
+# canvas's overrides into it are pruned with it, and validation proves none survives.
+LEGACY_PAUSE_IDS = frozenset("""2798801317077596910 2771496209953452151 7953647533024396834 1647945603392338223
+7897223945397071121 3047425174249578987 7426885803112301023 2187375227035800055 7981886868796528559 9048880161382045756
+1629839579805033125 3912233643792528712 917713729474389886 4371548018803103402 1584814524383992767 2510543142522570841
+3270211977748828679 3662333403955279312 833406477967934425 2015185681349518760 5188429541548807423 1655856202926348515
+5099527740768031357 8521775435001194992 8468013336432161012 8794888177767081067 2138776890088369646 7265396418819021505
+8533151908561320973 4533968937199431159 6660150165728680669 732860958106874703""".split())
+WIN_W, WIN_H, WIN_PAD = 1000, 440, 44
+BTN_W, BTN_H, BTN_GAP = 340, 64, 14
+ROWS_Y, ROW_H = 160, 52
+S.update(pause=script_guid("Assets/_Scripts/UI/PauseMenu.cs"))
+# GamepadButton: North 4, East 5, South 6, West 7.
+PAUSE_BUTTONS = [  # key, caption, variant, opaque, keycap, pad button (ControllerButtonPress)
+    ("Resume", "Resume", "Play", True, "Start", 5),
+    ("Settings", "Settings", "Default", False, "X", 7),
+    ("Leave", "Leave match", "Cancel", False, "Y", 4),
+]
+
+
+def cbp_body(pad_button, group_key):
+    return lambda ctx, go: K.mono(go, S["cbp"],
+        "  ActiveMenuScreens: \n  ActiveModalWindows: \n"
+        f"  activationButton: {pad_button}\n  activationButtonImage: {{fileID: 0}}\n"
+        "  TriangleButtonSprite: {fileID: 0}\n  CircleButtonSprite: {fileID: 0}\n  CrossButtonSprite: {fileID: 0}\n"
+        "  SquareButtonSprite: {fileID: 0}\n  YButtonSprite: {fileID: 0}\n  BButtonSprite: {fileID: 0}\n"
+        "  AButtonSprite: {fileID: 0}\n  XButtonSprite: {fileID: 0}\n"
+        f"  canvasGroup: {{fileID: {ctx.c(group_key, 'cg')}}}\n")
+
+
+def pause_button(i, key, caption, variant, opaque, cap, pad):
+    k = f"Pause/{key}"
+    border, fillc, content = K.button_palette(variant, opaque)
+    n = N(k, f"{key}Button", HM.TL(WIN_W - WIN_PAD - BTN_W, 36 + i * (BTN_H + BTN_GAP), BTN_W, BTN_H))
+    ring = n.child(N(f"{k}/FocusRing", "FocusRing", R((0, 0), (1, 1), (0, 0), (10, 10))))
+    ring.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("Cta", 0.0), K.kit_sprite("kit_sliver10_line2"), True)) \
+        .add("le", 114, H.le(ignore=True))
+    fill = n.child(N(f"{k}/Fill", "Fill", STRETCH))
+    fill.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(fillc, K.kit_sprite("kit_sliver10_fill"), True, raycast=True)) \
+        .add("grad", 114, lambda ctx, go: K.mono(go, K.kit_script("KitGradient"), "  lightenRight: 0.5\n", enabled=opaque)) \
+        .add("le", 114, H.le(ignore=True))
+    bord = n.child(N(f"{k}/Border", "Border", STRETCH))
+    bord.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(border, K.kit_sprite("kit_sliver10_line1"), True)) \
+        .add("le", 114, H.le(ignore=True))
+    kw, kh = K.label_width(cap.upper(), "Label") + 24, K.line_height("Label") + 8
+    slot = n.child(N(f"{k}/KeycapSlot", "KeycapSlot", R(size=(kw, kh))))
+    slot.add("le", 114, H.le(pw=kw, ph=kh))
+    slot.children.append(P.Inst(f"Pause{key}Keycap", "KitKeycap", "Keycap", STRETCH, [("Label#tmp", "m_text", cap, None)]))
+    lab = n.child(N(f"{k}/Label", "Label", R(size=(K.label_width(caption.upper(), "Button"), K.line_height("Button")))))
+    lab.add("cr", 222, K.canvas_renderer()).add("tmp", 114, K.tmp(caption, "Button", content)) \
+        .add("kt", 114, K.kit_text("Button", driven=True))
+    n.add("button", 114, lambda ctx, go: K.mono(go, S["kitbutton"],
+        K.SELECTABLE_FIELDS
+        + f"  m_TargetGraphic: {{fileID: {ctx.c(f'{k}/Fill', 'img')}}}\n"
+        "  m_OnClick:\n    m_PersistentCalls:\n      m_Calls: []\n"
+        f"  theme: {K.ref(11400000, K.THEME, 2)}\n  focusRing: {{fileID: {ctx.c(f'{k}/FocusRing', 'img')}}}\n"
+        f"  variant: {K.VARIANTS[variant]}\n  fill: {1 if opaque else 0}\n"
+        f"  fillGraphic: {{fileID: {ctx.c(f'{k}/Fill', 'img')}}}\n"
+        f"  borderGraphic: {{fileID: {ctx.c(f'{k}/Border', 'img')}}}\n"
+        + K.refs_list("contentGraphics", [ctx.c(f"{k}/Label", "tmp")])
+        + f"  playGradient: {{fileID: {ctx.c(f'{k}/Fill', 'grad')}}}\n"))
+    n.add("hlg", 114, K.hv_layout(False, (24, 24, 0, 0), 12, 3, (1, 1), (0, 0)))
+    n.add("cbp", 114, cbp_body(pad, "Pause/Window"))
+    return n
+
+
+def pause_window():
+    w = N("Pause/Window", "Window", R((0.5, 0.5), (0.5, 0.5), (0, 0), (WIN_W, WIN_H)))
+    w.add("cg", 225, H.canvas_group(True)).add("in", 114, HM.M.entrance("Rise", distance=14))
+    H.framed(w, "Pause/Window", 14, "SurfaceBlack", "TextLight")
+    H.label(w.child(N("Pause/Eyebrow", "Eyebrow", HM.TL(WIN_PAD, 36, 520, 20))), "Paused", "Label", "NeutralLightest")
+    H.label(w.child(N("Pause/Title", "Title", HM.TL(WIN_PAD, 62, 520, 46))), "Skim Race", "H1", "TextLight")
+    H.label(w.child(N("Pause/Detail", "Detail", HM.TL(WIN_PAD, 114, 520, 22))), "", "BodySmall", "NeutralLightest")
+    for i in range(3):
+        y = ROWS_Y + i * ROW_H
+        row = w.child(N(f"Pause/Row{i}", f"Row{i}", HM.TL(WIN_PAD, y, 520, ROW_H)))
+        row.add("cg", 225, H.canvas_group(True))
+        A.image_node(row, f"Pause/Row{i}/Rule", "Rule", HM.TL(0, 0, 520, 1), "SurfaceDark")
+        H.label(row.child(N(f"Pause/Row{i}/Label", "Label", HM.TL(0, 14, 300, 26))), "", "Body", "NeutralLightest")
+        H.label(row.child(N(f"Pause/Row{i}/Value", "Value", HM.TL(240, 12, 280, 30))), "", "H3", "TextLight", align="right")
+    for i, b in enumerate(PAUSE_BUTTONS):
+        w.children.append(pause_button(i, *b))
+    H.label(w.child(N("Pause/Note", "Note", HM.TL(WIN_W - WIN_PAD - BTN_W, 36 + 3 * (BTN_H + BTN_GAP) + 4, BTN_W, 22))),
+            "B also resumes.", "BodySmall", "NeutralLightest")
+    return w
+
+
+def pause_scrim():
+    n = N("Pause/Scrim", "Scrim", STRETCH)
+    n.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("SurfaceBlack", 0.78), raycast=True)) \
+        .add("th", 114, H.themed("SurfaceBlack", 0.78))
+    return n
+
+
+def pause_text(text_):
+    p = Patch(text_, "PauseMenu/Item12")
+    assert p.sc.script(PAUSE_COMP) == S["pause"], "PauseMenu moved"
+    if p.sc.has("2798801317077596910"):
+        p.remove_subtree("2798801317077596910")
+    scrim = p.emit(pause_scrim(), PAUSE_ROOT_RT, PAUSE_COMP)
+    win = p.emit(pause_window(), PAUSE_ROOT_RT, HM._last_doc(p, pause_scrim()))
+    rest = [k for k in p.kids(PAUSE_ROOT_RT) if k not in (scrim, win) and k not in LEGACY_PAUSE_IDS]
+    p.children(PAUSE_ROOT_RT, [scrim, win] + rest)
+    c = p.ctx.c
+    comp = p.doc(PAUSE_COMP)
+    for f, v in (("replayButton", "{fileID: 0}"), ("mainMenuButton", f"{{fileID: {p.ctx.go('Pause/Leave')}}}"),
+                 ("mainMenuButtonLabel", f"{{fileID: {c('Pause/Leave/Label', 'tmp')}}}"),
+                 ("gameController", "{fileID: 0}"),
+                 ("resumeButton", f"{{fileID: {c('Pause/Resume', 'button')}}}"),
+                 ("settingsButton", f"{{fileID: {c('Pause/Settings', 'button')}}}"),
+                 ("leaveButton", f"{{fileID: {c('Pause/Leave', 'button')}}}"),
+                 ("windowGroup", f"{{fileID: {c('Pause/Window', 'cg')}}}"),
+                 ("modeTitle", f"{{fileID: {c('Pause/Title', 'tmp')}}}"),
+                 ("modeDetail", f"{{fileID: {c('Pause/Detail', 'tmp')}}}")):
+        comp = set_field(comp, f, v)
+    for f, v in (("hostLeaveLabel", "Leave match"), ("guestLeaveLabel", "Leave party")):
+        comp = set_field(comp, f, v)
+    for name, key, kind in (("rowLabels", "Label", "tmp"), ("rowValues", "Value", "tmp"), ("rowGroups", None, "cg")):
+        comp = re.sub(r"^  %s:\n(?:  - .*\n)*|^  %s: \[\]\n" % (name, name), "", comp, flags=re.M)
+        ids = [c(f"Pause/Row{i}/{key}" if key else f"Pause/Row{i}", kind) for i in range(3)]
+        comp = comp.rstrip("\n") + "\n" + K.refs_list(name, ids)
+    p.replace(PAUSE_COMP, comp)
+    return p.text()
+
+
+# --------------------------------------------------------------------------------------------
+# 12c - the connecting panel (ConnectingPanel.prefab, nested in GameCanvas)
+# --------------------------------------------------------------------------------------------
+
+CONNECT = "Assets/_Prefabs/UI Elements/In Game/ConnectingPanel.prefab"
+WHITRABT = K.meta_guid("Assets/Unity Assests/TextMesh Pro/Resources/Fonts & Materials/whitrabt SDF.asset")
+CN = dict(comp="6370090134550638757", safe_rt="268860854097267997", status_rt="7647039353653187114",
+          status_tmp="5105126948944046106", mode_rt="7234322143272291273", mode_tmp="6280339008487199906",
+          rank_tmp="1901962995261546283", preview_rt="4036379287790713793", slider_rt="4629373923633661124",
+          track_go="5177954019794184100", track_img="8125581187658145292", fill_go="8684485316077403885",
+          fill_img="6946419630781211910")
+S.update(connect=script_guid("Assets/_Scripts/UI/ConnectingPanelController.cs"))
+COL_X = 1000           # the readout column: 1000 wide, centred, as the board draws it
+
+
+def tmp_restyle(doc, face, size, upper, spacing, align, token):
+    font = K.SEMIBOLD if face == "Chakra" else K.ALDRICH
+    doc = C.field_set(doc, "m_fontAsset", K.ref(11400000, font[0], 2))
+    doc = C.field_set(doc, "m_sharedMaterial", K.ref(font[1], font[0], 2))
+    for f, v in (("m_fontSize", size), ("m_fontSizeBase", size), ("m_fontStyle", 16 if upper else 0),
+                 ("m_characterSpacing", spacing), ("m_HorizontalAlignment", {"left": 1, "center": 2, "right": 4}[align]),
+                 ("m_enableAutoSizing", 0)):
+        doc = C.field_set(doc, f, str(v))
+    c = tok(token)
+    doc = C.field_set(doc, "m_Color", K.col(c))
+    doc = C.field_set(doc, "m_fontColor", K.col(c))
+    doc = re.sub(r"(  m_fontColor32:\n    serializedVersion: 2\n    rgba: )\d+", lambda m: m.group(1) + str(K.col32(c)), doc, count=1)
+    return doc
+
+
+def connect_text(text_):
+    p = Patch(text_, "ConnectingPanel/Item12")
+    assert p.sc.script(CN["comp"]) == S["connect"], "ConnectingPanelController moved"
+    # Status: a quiet top-left line beside a breathing diamond (the board's "Connecting to Shore").
+    p.rect(CN["status_rt"], R((0, 1), (0, 1), (64, -36), (600, 20), (0, 1)))
+    p.replace(CN["status_tmp"], tmp_restyle(p.doc(CN["status_tmp"]), "Chakra", 14, True, 14, "left", "TextLight"))
+    dia = N("Connect/Diamond", "Diamond", R((0, 1), (0, 1), (40, -40), (12, 12), (0, 1)))
+    dia.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("ControlActive"), K.chrome_sprite("chrome_diamond"), preserve=True)) \
+        .add("th", 114, H.themed("ControlActive")).add("breathe", 114, HM.M.ambient("Breathe", period=1.6, amplitude=0.6))
+    # The readout column, bottom centre: mode, phase headline, bar, counts and seconds.
+    p.rect(CN["mode_rt"], R((0.5, 0.5), (0.5, 0.5), (0, -190), (COL_X, 22)))
+    p.replace(CN["mode_tmp"], tmp_restyle(p.doc(CN["mode_tmp"]), "Chakra", 15, True, 14, "left", "NeutralLightest"))
+    title = N("Connect/Phase", "PhaseTitle", R((0.5, 0.5), (0.5, 0.5), (0, -232), (COL_X, 58)))
+    H.label(title, "Connecting", "Display", "TextLight")
+    p.rect(CN["slider_rt"], R((0.5, 0.5), (0.5, 0.5), (0, -282), (COL_X, 6)))
+    p.body(CN["track_img"], HM.img_body(tok("TextLight", 0.16)), CN["track_go"])
+    p.body(CN["fill_img"], HM.img_body(tok("ControlActive")), CN["fill_go"])
+    prog = N("Connect/Progress", "ProgressText", R((0.5, 0.5), (0.5, 0.5), (0, -308), (COL_X, 26)))
+    H.label(prog, "", "Data", "TextLight")
+    secs = N("Connect/Elapsed", "ElapsedText", R((0.5, 0.5), (0.5, 0.5), (0, -308), (COL_X, 26)))
+    H.label(secs, "", "Data", "NeutralLightest", align="right")
+    p.rect(CN["preview_rt"], R((0.5, 0.5), (0.5, 0.5), (0, 110), (960, 540)))
+    rank = p.doc(CN["rank_tmp"])
+    rank = C.field_set(rank, "m_fontAsset", K.ref(11400000, K.ALDRICH[0], 2))
+    p.replace(CN["rank_tmp"], C.field_set(rank, "m_sharedMaterial", K.ref(K.ALDRICH[1], K.ALDRICH[0], 2)))
+    added = []
+    for n in (dia, title, prog, secs):
+        added.append(p.emit(n, CN["safe_rt"], CN["comp"]))
+    p.children(CN["safe_rt"], [k for k in p.kids(CN["safe_rt"]) if k not in added] + added)
+    comp = p.doc(CN["comp"])
+    comp = set_field(comp, "statusBaseText", "Connecting to Shore")
+    comp = insert_after_field(comp, "gameModeText", "phaseTitle", f"{{fileID: {p.ctx.c('Connect/Phase', 'tmp')}}}")
+    comp = insert_after_field(comp, "phaseTitle", "progressText", f"{{fileID: {p.ctx.c('Connect/Progress', 'tmp')}}}")
+    comp = insert_after_field(comp, "progressText", "elapsedText", f"{{fileID: {p.ctx.c('Connect/Elapsed', 'tmp')}}}")
+    p.replace(CN["comp"], comp)
+    return p.text()
+
+
+def pause_instance(p):
+    pis = [f for f, d in p.sc.docs.items() if d.startswith("--- !u!1001 ") and f"m_SourcePrefab: {{fileID: 100100000, guid: {PAUSE_GUID}" in d]
+    assert len(pis) == 1, "GameCanvas should nest one R_Pause_Menu_Panel"
+    return pis[0]
+
+
+def patch_pause_instance(p):
+    """Prune the canvas's overrides into the deleted legacy buttons, and the two PauseMenu fields
+    the canvas pointed at them (replayButton - the Resume button, hidden for every guest - and
+    mainMenuButton). The prefab now wires its own buttons, so the canvas overrides none of them."""
+    pi = pause_instance(p)
+    d = p.doc(pi)
+    entry = re.compile(r"    - target: \{fileID: (-?\d+), guid: %s,\s*type: 3\}\n      propertyPath: (.*)\n      value: .*\n      objectReference: .*\n(?:        .*\n)?" % PAUSE_GUID)
+
+    def keep(m):
+        fid, prop = m.group(1), m.group(2)
+        if fid in LEGACY_PAUSE_IDS:
+            return ""
+        if fid == PAUSE_COMP and prop in ("replayButton", "mainMenuButton", "mainMenuButtonLabel"):
+            return ""
+        return m.group(0)
+    p.replace(pi, entry.sub(keep, d))
+    for fid, doc in list(p.sc.docs.items()):
+        m = re.search(r"m_CorrespondingSourceObject: \{fileID: (-?\d+), guid: %s," % PAUSE_GUID, doc)
+        if m and m.group(1) in LEGACY_PAUSE_IDS and " stripped\n" in doc.split("\n", 1)[0] + "\n":
+            p.sc.remove(fid)
+    # The pause button opened the window twice (Show, then OnClickPauseGameButton -> Show): one
+    # call now, and that call toggles.
+    btn = next(c for c in p.comp_ids(pause_button_go(p)) if p.sc.has(c) and f"guid: {S['button']}" in p.doc(c))
+    bd = p.doc(btn)
+    head, calls = bd.split("      m_Calls:\n", 1) if "      m_Calls:\n" in bd else (bd, "")
+    if calls:
+        blocks = re.split(r"(?=^      - m_Target: )", calls, flags=re.M)
+        tail = ""
+        if blocks and not blocks[-1].startswith("      - m_Target: "):
+            tail = blocks.pop()
+        last = blocks[-1] if blocks else ""
+        m = re.search(r"^(?!      [ -]).*", last, re.M) if last else None
+        if m and m.start() > 0:          # whatever follows the last call (the rest of the doc)
+            blocks[-1], tail = last[:m.start()], last[m.start():] + tail
+        blocks = [b for b in blocks if "        m_MethodName: Show\n" not in b]
+        p.replace(btn, head + "      m_Calls:\n" + "".join(blocks) + tail)
+
+
 def canvas_text(text_):
     p = Patch(text_, "GameCanvas/Item12")
+    patch_pause_instance(p)
     patch_goal_rows(p)
     patch_pause(p)
     patch_ready(p)
@@ -486,7 +731,8 @@ def panel_text(text_):
 # Outputs, validation
 # --------------------------------------------------------------------------------------------
 
-TRANSFORMS = {LOCKUP: lockup_text, GLYPHS: glyphs_text, CANVAS: canvas_text, PANEL["path"]: panel_text}
+TRANSFORMS = {LOCKUP: lockup_text, GLYPHS: glyphs_text, CANVAS: canvas_text, PANEL["path"]: panel_text, PAUSE: pause_text,
+              CONNECT: connect_text}
 
 
 def outputs():
@@ -567,6 +813,44 @@ def validate(files):
     beat = re.search(r"      propertyPath: countdownText\n      value: .*\n      objectReference: \{fileID: (-?\d+)\}", pi).group(1)
     assert f"  m_fontSize: {BEAT_SIZE}\n" in docs[beat], "the countdown beat is not 260 px"
 
+    # 12c
+    pz = files[PAUSE]
+    check_local_refs(PAUSE, pz)
+    zd = docs_of(pz)
+    assert not (LEGACY_PAUSE_IDS & set(zd)), "the legacy pause buttons survive"
+    comp = zd[PAUSE_COMP]
+    for f in ("resumeButton", "settingsButton", "leaveButton", "windowGroup", "modeTitle", "modeDetail",
+              "mainMenuButton", "mainMenuButtonLabel", "settingsModalWindowManager"):
+        assert re.search(r"^  %s: \{fileID: [1-9-]" % f, comp, re.M), f"PauseMenu.{f} is not wired"
+    assert "  replayButton: {fileID: 0}\n" in comp, "PauseMenu.replayButton still hides a button from guests"
+    for name in ("rowLabels", "rowValues", "rowGroups"):
+        block = re.search(r"^  %s:\n((?:  - .*\n)*)" % name, comp, re.M)
+        assert block and len(re.findall(r"\{fileID: [1-9-]", block.group(1))) == 3, f"PauseMenu.{name} needs three wired rows"
+    pads = {}
+    for f, d in zd.items():
+        if f"guid: {S['cbp']}" in d:
+            pads[re.search(r"  activationButton: (\d+)", d).group(1)] = d
+    assert set(pads) == {"4", "5", "7"}, f"the pause window's pad buttons are {sorted(pads)}, not Y/B/X (4/5/7)"
+    assert "6" not in pads, "a pause button answers A"
+    for d in pads.values():
+        assert re.search(r"  canvasGroup: \{fileID: [1-9-]", d), "a pause shortcut is not gated by the window (B would also resume under Settings)"
+    pi = next(d for d in docs.values() if d.startswith("--- !u!1001 ") and f"guid: {PAUSE_GUID}" in d.split("m_SourcePrefab:")[1])
+    for fid in re.findall(r"- target: \{fileID: (-?\d+), guid: %s" % PAUSE_GUID, pi):
+        assert fid not in LEGACY_PAUSE_IDS, f"GameCanvas still overrides the deleted pause button object {fid}"
+    assert not re.search(r"propertyPath: (replayButton|mainMenuButton)\n", pi), "GameCanvas still overrides PauseMenu's buttons"
+    pb = next(d for d in docs.values() if f"guid: {S['button']}" in d and "m_MethodName: OnClickPauseGameButton" in d)
+    assert "m_MethodName: Show\n" not in pb, "the pause button still opens the window twice"
+
+    cn = files[CONNECT]
+    check_local_refs(CONNECT, cn)
+    assert f"guid: {WHITRABT}" not in cn, "the connecting panel still draws in the off-spec whitrabt face"
+    cd = docs_of(cn)
+    for f in ("phaseTitle", "progressText", "elapsedText", "statusText", "gameModeText", "progressSlider"):
+        assert re.search(r"^  %s: \{fileID: [1-9-]" % f, cd[CN["comp"]], re.M), f"ConnectingPanelController.{f} is not wired"
+    for key in ("status_tmp", "mode_tmp"):
+        assert f"guid: {K.SEMIBOLD[0]}" in cd[CN[key]], f"the connecting panel's {key} is not Chakra Petch SemiBold"
+    assert "m_Sprite: {fileID: 0}" in cd[CN["fill_img"]], "the connecting bar still wears the legacy loading sprite"
+
     pn = files[PANEL["path"]]
     check_local_refs(PANEL["path"], pn)
     pd = docs_of(pn)
@@ -620,6 +904,14 @@ def self_test(files):
         ("the waiting panel deaf to PlayerReady", sub(CANVAS, f"  toastChannel: {K.ref(11400000, TOAST_CHANNEL, 2)}", "  toastChannel: {fileID: 0}")),
         ("the countdown still drawn in sprites", lambda f: f.__setitem__(CANVAS, re.sub(
             r"(      propertyPath: countdownText\n      value: \n      objectReference: )\{fileID: -?\d+\}", r"\1{fileID: 0}", f[CANVAS]))),
+        ("a pause button on A", sub(PAUSE, "  activationButton: 4\n", "  activationButton: 6\n")),
+        ("the pause button still calls Show", lambda f: f.__setitem__(CANVAS, f[CANVAS].replace(
+            "m_MethodName: OnClickPauseGameButton", "m_MethodName: Show\n        m_Mode: 1\n      - m_Target: {fileID: 0}\n        m_MethodName: OnClickPauseGameButton", 1))),
+        ("guests lose Resume again", sub(PAUSE, "  replayButton: {fileID: 0}\n", f"  replayButton: {{fileID: {PAUSE_ROOT_GO}}}\n")),
+        ("the connecting rank text back in whitrabt", lambda f: f.__setitem__(CONNECT, f[CONNECT].replace(
+            f"guid: {K.ALDRICH[0]}", f"guid: {WHITRABT}", 1))),
+        ("the connecting headline unwired", lambda f: f.__setitem__(CONNECT, re.sub(
+            r"(  phaseTitle: )\{fileID: -?\d+\}", r"\1{fileID: 0}", f[CONNECT]))),
         ("the column hairline unwired", lambda f: f.__setitem__(PANEL["path"], re.sub(r"(  borderImage: )\{fileID: -?\d+\}", r"\1{fileID: 0}", f[PANEL["path"]]))),
     ]
     ok = all(expect(l, m) for l, m in cases)

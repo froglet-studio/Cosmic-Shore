@@ -65,6 +65,29 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Style-B menu redesign, item 12c: pause window, connecting panel (`claude/new-session-76hnyc`, 2026-10-15) — NOT EDITOR-VERIFIED
+
+`R_Pause_Menu_Panel.prefab`, `ConnectingPanel.prefab` and `GameCanvas.prefab` were patched by
+`Tools/Build/author_ingame_hud.py` (`--check` and `--self-test` green; 15 controls) - see
+`Docs/MENU_REDESIGN_B.md` section 22.3. No editor in the session, so `/verify-unity` is still owed.
+Offline: the player and editor reference compiles are clean, and `PauseMenuTests` compiles.
+
+**Verify in editor:**
+1. Solo match: Start (or the pause hex) opens one window over a dark scrim (the pause SFX plays
+   once): "Paused", the mode name, the setup line, and your goal rows matching the HUD. Time is
+   frozen.
+2. B resumes, Start resumes, and Resume resumes. X opens Settings over the window. B closes
+   Settings and leaves you on the pause window (the match stays paused). Y leaves to the menu, and
+   A does nothing.
+3. As a party guest: Resume is visible and works, and the leave button reads "Leave party" and
+   leaves the party.
+4. Connecting (any multiplayer launch): "CONNECTING TO SHORE" top left with a breathing diamond,
+   then the headline "Building the arena" with a filling cyan bar, "42%  (n / m prisms)" and the
+   seconds counting on the right. Then "Waiting for pilots" with "1 / 2 ready". No pixel font
+   anywhere, including the Maelstrom rank list.
+
+---
+
 ### 🔴 Style-B menu redesign, item 12b: Ready, waiting for pilots, countdown (`claude/new-session-76hnyc`, 2026-10-15) — NOT EDITOR-VERIFIED
 
 `GameCanvas.prefab` was patched in place by `Tools/Build/author_ingame_hud.py` (`--check` and

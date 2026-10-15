@@ -44,6 +44,16 @@ namespace CosmicShore.UI
         [Header("Game mode + intensity")]
         [SerializeField] TMP_Text gameModeText;
 
+        [Header("Style-B readout (Docs/MENU_REDESIGN_B.md section 22.3)")]
+        [Tooltip("The phase as a headline - 'Building the arena', 'Waiting for pilots'. When wired, " +
+                 "the status line stays a quiet 'Connecting to Shore' and the live numbers move to " +
+                 "the two texts below; unwired keeps the one-string readout.")]
+        [SerializeField] TMP_Text phaseTitle;
+        [Tooltip("The phase's real counts - '42%  (1,234 / 2,900 prisms)', '2 / 3 ready'.")]
+        [SerializeField] TMP_Text progressText;
+        [Tooltip("Seconds in this wait, right-aligned beside the counts.")]
+        [SerializeField] TMP_Text elapsedText;
+
         [Header("Progress bar")]
         [Tooltip("Progress of the arena build, 0..1. Forced non-interactable and stripped of its " +
                  "handle at Awake - it is a READOUT, and a slider a player can drag is a lie about " +
@@ -162,6 +172,11 @@ namespace CosmicShore.UI
 
             if (!statusText) return;
             _dotTimer += Time.unscaledDeltaTime;
+            if (phaseTitle)
+            {
+                DrawPhase();
+                return;
+            }
             int dots = 1 + (int)(_dotTimer / dotInterval) % 4;   // 1..4 on a loop
 
             // While the arena build holds this panel up, run a live readout under the status
@@ -330,6 +345,44 @@ namespace CosmicShore.UI
             {
                 _waitingForPeers = false;
             }
+        }
+
+        /// <summary>
+        /// The style-B readout: one headline per phase and the phase's real counts under it, in the
+        /// theme fonts. Same phases, same numbers, same order as the one-string readout above -
+        /// only the layout changes. Invariant culture, so a German machine never draws "42 %".
+        /// </summary>
+        void DrawPhase()
+        {
+            var inv = System.Globalization.CultureInfo.InvariantCulture;
+            statusText.text = statusBaseText;
+            string title, progress = string.Empty;
+            bool timed = true;
+            if (PrismTrailBuilder.IsLayingInProgress)
+            {
+                title = "Building the arena";
+                progress = $"{(PrismTrailBuilder.LayProgress * 100f).ToString("0", inv)}%  " +
+                           $"({PrismTrailBuilder.LayDoneCount.ToString("N0", inv)} / {PrismTrailBuilder.LayQueuedCount.ToString("N0", inv)} prisms)";
+            }
+            else if (PrismTrailBuilder.GrowRemainingCount > 0)
+            {
+                title = "Settling the arena";
+                progress = $"{PrismTrailBuilder.GrowRemainingCount.ToString("N0", inv)} prisms settling";
+            }
+            else if (_waitingForPeers && playerRoster)
+            {
+                title = "Waiting for pilots";
+                progress = $"{playerRoster.ReadyHumanCount} / {playerRoster.HumanCount} ready";
+                timed = false;
+            }
+            else
+            {
+                title = "Connecting";
+            }
+
+            phaseTitle.text = title;
+            if (progressText) progressText.text = TabularText.Wrap(progress, progressText.font);
+            if (elapsedText) elapsedText.text = timed ? TabularText.Wrap($"{_dotTimer.ToString("0", inv)} s", elapsedText.font) : string.Empty;
         }
 
         void RenderGameMode()

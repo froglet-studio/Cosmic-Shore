@@ -46,7 +46,7 @@ Legend: `Planned` ▸ `Mockup` ▸ `Mockup approved` ▸ `Built` ▸ `Approved i
 | 9 | Settings modal and Credits | Built (2026-10-15, section 18): Settings window and Credits | `Settings.dc.html` (interactive), `SettingsDisplay`, `SettingsPerformance`, `SettingsOther`, `Credits`, `SystemNotes` | |
 | 10 | Closed surfaces: Port (locked), Store (no slot), Episodes panel, purchase confirmation | Built (2026-10-15, section 19): purchase confirmation drawn blind; locked states from items 1 and 5 | `ClosedSurfaces.dc.html`, `PurchaseConfirm` (blind), `SystemNotes` | |
 | 11 | Menu toasts | Built (2026-10-15, section 20) | `Toasts.dc.html` (interactive), `SystemNotes` | |
-| 12 | In-game UI: GameCanvas HUD chrome, scoreboard, ready / countdown / pause, in-match toasts, end-of-game screens, Menu_Main freestyle HUD | Mockup approved (2026-10-15); building (section 22): 12a HUD chrome, 12b Ready / waiting / countdown built | `HudMatch.dc.html` (interactive), `HudCardStates`, `HudNotes`, `Hud<Vessel>` x9, `HudReady` (interactive), `HudPause`, `HudConnecting`, `HudEndReveal`, `HudScoreboard` (interactive), `HudSpectator` - page "In-game HUD" | |
+| 12 | In-game UI: GameCanvas HUD chrome, scoreboard, ready / countdown / pause, in-match toasts, end-of-game screens, Menu_Main freestyle HUD | Mockup approved (2026-10-15); building (section 22): 12a HUD chrome, 12b Ready / waiting / countdown, 12c pause and connecting built | `HudMatch.dc.html` (interactive), `HudCardStates`, `HudNotes`, `Hud<Vessel>` x9, `HudReady` (interactive), `HudPause`, `HudConnecting`, `HudEndReveal`, `HudScoreboard` (interactive), `HudSpectator` - page "In-game HUD" | |
 
 ---
 
@@ -1244,4 +1244,42 @@ stays green). One generator owns the item: `Tools/Build/author_ingame_hud.py` (`
     The beat length and the (empty) beep slot are unchanged.
   - The neon sprites stay as the fallback when the text is unwired.
   - The nested timer instance is wired by two modifications (`countdownText`, `waitingPanel`).
+
+### 22.3 The pause window and the connecting panel (12c; built 2026-10-15, awaiting in-editor approval)
+
+- **Pause** (`R_Pause_Menu_Panel.prefab`, nested in GameCanvas; `PauseMenu` keeps its fileID). One
+  1000 x 440 window over a black scrim at 78%.
+  - Left half: "Paused", the mode name (`PauseMenu.SpacedName` of the `GameModes` id, covered by
+    `PauseMenuTests`), the setup ("Intensity 3 - 3 domains - you fly Squirrel for Jade"), and up to
+    three rows. The rows are the HUD's live goals, read from the new `GoalStack.Entries`, so the
+    pause window and the HUD always show the same score.
+  - Right half, three buttons wired in code (the item 10 precedent): Resume (Play, Start keycap; B
+    on the pad), Settings (X), and Leave match (Cancel, Y). Leave match reads "Leave party" for a
+    guest.
+  - Settings opens the item 9 window **over** the pause window; closing it returns to the pause
+    window. The window's CanvasGroup goes non-interactable meanwhile, which also silences its pad
+    shortcuts, so B closing Settings does not also resume the match.
+  - Start toggles: pressing pause again resumes.
+  - Defects fixed:
+    - 2: a guest could not resume. The canvas pointed `replayButton` at RESUME, which is hidden for
+      every client; that override is gone.
+    - 3: MAIN MENU sat on A. Leave is on Y now.
+    - 4: the pause button opened the window twice, through a stray `Show` call next to
+      `OnClickPauseGameButton`; the `Show` call is removed.
+  - The legacy Buttons subtree and the canvas's 40 overrides into it are deleted. Validation
+    proves none survives.
+  - The legacy `Options_Menu_Panel` instance (inactive) is left as it was.
+- **Connecting** (`ConnectingPanel.prefab`): the off-spec `whitrabt` face is gone (Maelstrom's rank
+  text is Aldrich).
+  - The status line is a quiet top-left "Connecting to Shore" beside a breathing diamond.
+  - A bottom-centre readout column holds the mode (Chakra Petch caps) and a phase headline in
+    Display: Building the arena, Settling the arena, Waiting for pilots, or Connecting.
+  - Under the headline: a 6 px bar (Control Active over Light at 16%), the phase's real counts
+    ("42%  (1,234 / 2,900 prisms)", "2 / 3 ready") and the seconds waited, all tabular and in the
+    invariant culture.
+  - The new `phaseTitle`, `progressText` and `elapsedText` are optional, so an unwired panel keeps
+    the one-string readout.
+  - The arena preview shrinks to 960 x 540 above the column. The pilot roster is unchanged.
+  - Departure: the board's "about 3 s" is an estimate the builder does not make. The panel shows
+    the seconds waited instead.
 
