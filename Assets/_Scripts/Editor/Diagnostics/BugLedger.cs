@@ -426,25 +426,29 @@ namespace CosmicShore.Editor
             if (BugLedgerPublisher.IsBusy) return;
 
             var pending = ComputePendingChanges();
-            if (!HasMaterialChange(pending, out int material)) return;
+            var reports = BugHuntReports.Plan();
+            HasMaterialChange(pending, out int material);
+            if (material == 0 && reports.Count == 0) return;
 
             BugLedgerPublisher.Warm();
             if (!BugLedgerPublisher.CanPush)
             {
                 Debug.LogWarning("[BugLedger] Auto-publish skipped: git is unavailable or HEAD is detached, so " +
-                                 $"{material} ledger change(s) stay local. Publish from the Stage & Push tab.");
+                                 $"{material} ledger change(s) and {reports.Count} report file(s) stay local. " +
+                                 "Publish from the Stage & Push tab.");
                 return;
             }
 
             var ids = new List<string>(pending.Count);
             foreach (var change in pending) ids.Add(change.Id);
             BugLedgerPublisher.StartPublish(ids,
-                $"bugledger: auto-publish after play test ({material} new/changed issue(s))", auto: true);
+                $"bugledger: auto-publish after play test ({material} new/changed issue(s), " +
+                $"{BugHuntReports.Describe(reports)})", auto: true, reportCopies: reports);
         }
 
         /// <summary>True when any pending change is more than a counter bump: an ADD, a REMOVE, or a
         /// MODIFY whose state or regression count differs from the published copy.</summary>
-        static bool HasMaterialChange(List<BugLedgerPendingChange> pending, out int material)
+        internal static bool HasMaterialChange(List<BugLedgerPendingChange> pending, out int material)
         {
             material = 0;
             foreach (var change in pending)

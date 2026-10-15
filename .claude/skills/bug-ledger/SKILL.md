@@ -82,7 +82,38 @@ never delete files from `shared/` — closing is the editor's job, after validat
 
 ## 5. "Automatically after each test"
 
-The editor half is the auto-publish setting. The Claude half is either the person running
-`/bug-ledger` after a test, or a **scheduled task** (claude.ai cloud) that runs this skill on the
-branch on a cadence and pushes fixes — offer to create one when they ask for hands-free fixing;
-it is their call, since it commits to their branch unattended.
+The editor half is the auto-publish setting plus the **Bug Hunt check-in** (`BugHuntCheckIn`: at most
+once a day, on load or after a play test, and only when something is new, it asks the collaborator
+to share their errors, redlog sessions, crash reports and perf JSONs — `BugHuntReports` copies those
+into `BugLedger/shared/reports/<user>/<kind>/`). The Claude half is the **daily sweep** below, run
+by a scheduled task (Yash asked for once a day, 2026-10-15) or by hand with `/bug-ledger sweep`.
+
+## 6. The daily sweep (every collaborator, every branch)
+
+Collaborators publish to whatever branch they are on, so the sweep reads ALL of them:
+
+```
+git fetch origin
+python3 Tools/Build/bug_ledger.py collect --out /tmp/board.json   # every origin/* branch, merged
+```
+
+1. **Triage** `board.json` worst first (open, then regressions, then times seen). An issue on several
+   branches is ONE bug. Read the shared report files it points at (`git show origin/<branch>:<path>`)
+   — a redlog session gives the full context around a ledger signature.
+2. **Fix on `Ys-bleeding-edge`** (the sweep's working branch), one commit per issue, §2-§4 rules,
+   `mark-fixed` in the same commit. **Team rules apply** (CLAUDE.md § Team): run
+   `who_works_where.py query` on the files a fix touches; a fix in another collaborator's area that
+   is more than a wiring/data repair is a REPORT (a `team_tasks.py add` for the owner), not a commit —
+   and every commit there says `Affects: <person>'s <area>`.
+3. **Import bugs filed on the board** — `ArtifactData list` of `filed`, rows with `status == "new"`:
+   `bug_ledger.py file --title … --notes … --severity … --reporter "Team Bug Board"`, commit, then
+   `update` the row to `{status: "imported", importedAs: "<C-id>"}`.
+4. **Mirror the board** into the Team Bug Board artifact
+   (https://claude.ai/artifact/5zNw9wDjMrxvZVjGD7KBno, `BugHuntCheckIn.TeamBoardUrl`) with
+   `ArtifactData` batch writes (≤ 50 per batch): one `issues/<id>` doc per issue from `board.json`
+   (drop `signature`; keep `stack` ≤ 1500 chars), delete `issues/<id>` docs no longer on any branch,
+   `board/meta` = `{generatedUtc, branchesScanned, reports}` (reports capped at 300 rows), and one
+   `runs/<yyyy-mm-dd>` doc `{date, branch, summary, fixed: ["<id> — <one line>"], commit}`.
+   Never republish the page for data — it reads the store.
+5. **Report** in the run doc: found / fixed / left for a human (and why). Nothing found is a valid
+   run — write the run doc anyway, so the board shows the sweep is alive.

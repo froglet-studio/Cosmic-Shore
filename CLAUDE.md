@@ -78,6 +78,9 @@ the engine renamed twice, retired tools brought back. **Every session:**
 - **Claim shared numbers only after checking `bleeding-edge` AND the in-flight branches**: enum values, `GameModes`
   ids, learnings ids, Netcode hashes, GUIDs.
 - **Leave a trail**: write "Affects: <person>'s <area>" in the commit or PR whenever you touch someone else's area.
+- **Report on request**: when anyone asks for a report on a shared area or another person's work, build it with
+  `python3 Tools/Build/team_report.py area <key>` (or `person <name>` / `paths <paths>`) plus the area's report in
+  `Docs/Reports/`, never from memory (`Docs/TEAM.md` rule 10; the `report_request.py` hook reminds you).
 - **Hand off what others can do** on the shared to-do board, [`Docs/TEAM_TASKS.md`](Docs/TEAM_TASKS.md)
   (`python3 Tools/Build/team_tasks.py add | list | take | done`): every editor test, playtest, setup step, content gap
   or decision your work leaves for someone else. Name who can take it (**Yash has offered to take tasks**; name the

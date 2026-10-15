@@ -304,6 +304,30 @@ next play run ◄── editor ADOPTS the published fix (open → validating) �
   Refresh, and at `ExitingEditMode`, so a fix pulled with no C# change (no domain reload — this
   project enters play mode without one) is adopted BEFORE the run that should validate it.
 
+### The Bug Hunt check-in
+
+Every editor already records what goes wrong — the ledger (one issue per red signature), Yash's
+**redlog** (`Logs/RedConsole/redconsole_*.log`, every red line of a play session with context), the
+Crash Detector (`Logs/CrashDetector/Crash-*.log`) and the DiagnosticsHUD's performance JSONs
+(`Documents/CosmicShore Diagnostics/*.json`) — but none of it leaves the machine on its own.
+`BugHuntCheckIn` asks, at most once per **Bug Hunt check-in (hours)** (Settings, default 24, 0 = never),
+on editor load or after a play test, and **only when something is new**:
+
+- **Share now** — one scoped publish: the pending ledger changes plus the new report files, copied by
+  `BugHuntReports` into `BugLedger/shared/reports/<user>/<redlog|crash|perf>/` (recent files only:
+  ≤ 14 days, ≤ 512 KB each, ≤ 12 per share, newest first; a file whose copy exists is never sent twice).
+- **Remind me later** — asks again after the interval.
+- **Always share after play tests** — turns on the after-play auto-publish (which now carries report
+  files too) and shares now.
+
+**FrogletTools ▸ Diagnostics ▸ Bug Hunt Check-in** asks immediately; **Open Team Bug Board** opens the
+board artifact (https://claude.ai/artifact/5zNw9wDjMrxvZVjGD7KBno). The board is a reader of the
+**daily sweep** (`/bug-ledger` §6): a scheduled Claude session runs `bug_ledger.py collect` over every
+`origin/*` branch, fixes what it can on `Ys-bleeding-edge`, imports bugs filed on the board
+(`bug_ledger.py file`, so they reach every editor's ledger) and mirrors issues, reports and a run log
+into the board's database. Access: everyone the board is shared with reads it; Contributors file bugs;
+only editors (and the sweep) write the mirrored data.
+
 ### Honest limits
 
 - A clean session only proves the code paths that session exercised. Two clean sessions of menu
@@ -370,7 +394,9 @@ a clean run. Copy that shape.
 | Ledger core (capture, store, validation, tool findings) | `Assets/_Scripts/Editor/Diagnostics/BugLedger.cs` |
 | Issue model + hand-rolled JSON | `Assets/_Scripts/Editor/Diagnostics/BugLedgerIssue.cs` |
 | Ledger settings (`ScriptableSingleton`) | `Assets/_Scripts/Editor/Diagnostics/BugLedgerSettings.cs` |
-| Agent side of the ledger (list / show / mark-fixed) | `Tools/Build/bug_ledger.py` + `.claude/skills/bug-ledger/SKILL.md` |
+| Agent side of the ledger (list / show / mark-fixed / collect / file) | `Tools/Build/bug_ledger.py` + `.claude/skills/bug-ledger/SKILL.md` |
+| Bug Hunt check-in + report sharing | `Assets/_Scripts/Editor/Diagnostics/BugHuntCheckIn.cs`, `BugHuntReports.cs` |
+| Team Bug Board (artifact page source) | `Docs/BugHunt/TeamBugBoard.html` → https://claude.ai/artifact/5zNw9wDjMrxvZVjGD7KBno |
 | Ledger tab view | `Assets/_Scripts/Editor/Diagnostics/BugLedgerView.cs` |
 | Stage & Push tab view | `Assets/_Scripts/Editor/Diagnostics/BugLedgerStageView.cs` |
 | Scoped git publisher (fetch/apply/add/commit/push, off-thread) | `Assets/_Scripts/Editor/Diagnostics/BugLedgerPublisher.cs` |

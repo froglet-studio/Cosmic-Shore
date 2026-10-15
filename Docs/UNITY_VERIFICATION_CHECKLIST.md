@@ -65,6 +65,27 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Third Eye: a You / AI toggle on every pilot (`Ys-bleeding-edge`, 2026-10-15) — NOT EDITOR-VERIFIED
+
+**What landed:** FrogletTools ▸ AI ▸ Third Eye has a **Pilots** panel: each pilot's row has **You | AI**. Your own hull:
+**AI** lets the AI fly it (your input pauses; in a gate race it gets the race steering, `GateRaceController.ArmAIPilot`),
+**You** takes it back. An AI's hull, either team: **You** takes it over and the AI flies the hull you left
+(`PilotControl.TryTakeOver`, the arena pilot swap's exchange without its same-team / AI-teammate rule). Host or solo only.
+`GateRaceController.ArmRacers` was split into `ArmRacer` per pilot (no change for AI seats) and also arms a human hull the
+AI is already holding at the start. `Player.ExecutePilotSwapServer` is the arena swap's server half, extracted unchanged.
+**Verified without the editor:** `unity_refcompile` (see the commit), the AI-state, logging, using, conditional-compilation
+gates. Nothing has been played.
+**Verify in editor:**
+1. Regatta, solo, Hard, five hulls seated. Open FrogletTools ▸ AI ▸ Third Eye; the Pilots panel lists six rows.
+2. On your row press **AI**. Your hull keeps racing: it threads the rings (readout *Approach* / *Through*), your sticks do
+   nothing. Press **You**: control comes back, nothing held (no stuck drift or boost).
+3. On a rival AI's row (another domain) press **You**. The gameplay camera and your sticks move to that hull; your old
+   hull keeps racing under the AI. Rings you thread now count for you.
+4. Press **AI** on the hull you now fly: every hull is AI-flown; watch from the Third Eye.
+5. Do 2-4 with a Squirrel and with a Dolphin. A human's own Squirrel handed to the AI flies the platform autopilot on the
+   race line (not the Skim Race pilot): it should still thread rings.
+6. In a client (not host) session the toggles are greyed out with "Only the host ... can change who flies a hull".
+
 ### 🔴 Regatta: the AI commits at its approach point and re-attacks after a missed mouth (`Ys-bleeding-edge`, 2026-10-15) — NOT EDITOR-VERIFIED
 
 Ported from the Regatta AI studio (https://claude.ai/artifact/FCC7UWbs2wC6LXYMVW4KA4, its *Commit at the approach point,

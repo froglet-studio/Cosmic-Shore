@@ -122,6 +122,36 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Who can take it:** the owners of the black hole and FlipWave code (check who_works_where.py); Yash (offered)
 - **Added:** 2026-10-15 by Yash's session (activation) (`Ys-bleeding-edge`)
 - **See:** Tools/Build/check_mathf_params_alloc.py
+
+### T-20261015-18e7 · taken by Yash · test · Regatta AI
+- **Task:** Playtest Regatta in Unity on Ys-bleeding-edge: five hulls (Squirrel, Manta, Rhino, Urchin, Dolphin) on AI seats, Hard, I1 then I3, watched in the Third Eye with Trails on.
+- **Done when:** Every hull finishes three laps at I1 (and I3, or the ring it fails at is noted); AIs read Approach then Through near rings and break off straight after a miss; result written in the 2026-10-15 Regatta section of Docs/UNITY_VERIFICATION_CHECKLIST.md.
+- **Who can take it:** Yash (testing it), anyone with the Unity Editor
+- **Added:** 2026-10-15 by Yash's session (regatta-ai) (`Ys-bleeding-edge`)
+- **See:** Docs/Reports/REGATTA_AI.md section 2
+- **Taken:** 2026-10-15, Yash
+
+### T-20261015-0064 · open · decision · AI training
+- **Task:** Decide the AI-training direction: extend the genetic trainer (Assets/_Scripts/Utility/AITraining) for Regatta rather than build a second one; where consented player flights are stored and the privacy wording; whether a neural-network AI may ever ship.
+- **Done when:** The answers are written in Docs/AI_SYSTEM/AI_TRAINING_PLAN.md section 5.
+- **Who can take it:** Garrett and the core four; studyholic and Shombith for the trainer
+- **Added:** 2026-10-15 by Yash's session (regatta-ai) (`Ys-bleeding-edge`)
+- **See:** Docs/AI_SYSTEM/AI_TRAINING_PLAN.md
+
+### T-20261015-cb8f · open · decision · Regatta AI
+- **Task:** Decide whether the gate-race steering fix (commit at the approach point, re-attack after a missed ring; on in Regatta only) is turned on for Headlong, Switchback, Breakwater, Skein and Redline (inspector switch aiCommitFromApproachPoint) after a playtest.
+- **Done when:** Each mode's switch is set by its owner and the choice noted in REGATTA.md section 6.1.
+- **Who can take it:** Garrett (gate races owner)
+- **Added:** 2026-10-15 by Yash's session (regatta-ai) (`Ys-bleeding-edge`)
+- **See:** Docs/Reports/REGATTA_AI.md section 3
+
+### T-20261015-2082 · open · dev · AI training
+- **Task:** Build T1 of the AI training plan: the AI Lab (Test Range R1-R3) in MinigameRegatta - any hull on any seat (trained or untrained), 0.25x-8x time, the Third Eye's trails and readout in a development build, speed graph and phase timeline, a scorecard JSON per run.
+- **Done when:** A development build of Regatta opens the AI Lab, races chosen hulls at chosen speed, and writes a scorecard file the artifact's numbers can be compared with.
+- **Who can take it:** Yash (offered), with Garrett for the trainer hand-off
+- **Added:** 2026-10-15 by Yash's session (regatta-ai) (`Ys-bleeding-edge`)
+- **See:** Docs/AI_SYSTEM/AI_TRAINING_PLAN.md section 3 L1, Docs/Studios/VESSEL_TEST_RANGE_PLAN.md
+
 - **Done:** 2026-10-15, Fixed on perf/performance-optimization: BlackHoleWarp.cs uses MathfNoAlloc.Max, FlipWave.cs nests two-value Max. Proof: python3 Tools/Build/check_mathf_params_alloc.py -> OK (2093 files); unity_refcompile player-dev RESULT OK; Amoebius Debug build. /verify-unity unavailable in the session.
 
 ### T-20261015-56dd · open · test · Performance
@@ -144,3 +174,17 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Who can take it:** Yash (offered), anyone with the Unity Editor
 - **Added:** 2026-10-15 by the performance session (perf/performance-optimization) (`perf/performance-optimization`)
 - **See:** Docs/PERFORMANCE_OPTIMIZATION.md 3.6 and 4.6; FrogletTools > Performance > Capture Performance (one file)
+
+### T-20261015-949d · open · test · diagnostics
+- **Task:** Test the Bug Hunt check-in and Team Bug Board in Unity: FrogletTools > Diagnostics > Bug Hunt Check-in, Share now; play with an error; daily sweep picks it up
+- **Done when:** A check-in commit with BugLedger/shared/issues + reports lands on the branch, and the next sweep shows the issue on https://claude.ai/artifact/5zNw9wDjMrxvZVjGD7KBno
+- **Who can take it:** Yash
+- **Added:** 2026-10-15 by a Claude session (`Ys-bleeding-edge`)
+- **See:** Docs/DIAGNOSTICS.md#the-bug-hunt-check-in
+
+### T-20261015-e266 · open · test · AI / Third Eye
+- **Task:** Play-test the Third Eye You / AI toggle in Regatta: hand your hull to the AI, take over a rival AI hull, all-AI
+- **Done when:** Steps 1-6 of the 'Third Eye: a You / AI toggle' entry pass in the editor
+- **Who can take it:** Yash
+- **Added:** 2026-10-15 by Claude (Yash's session) (`Ys-bleeding-edge`)
+- **See:** Docs/UNITY_VERIFICATION_CHECKLIST.md
