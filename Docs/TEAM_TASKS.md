@@ -116,9 +116,31 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Added:** 2026-10-15 by Yash's session (activation) (`Ys-bleeding-edge`)
 - **See:** Docs/ACTIVATION.md 7
 
-### T-20261015-1a5b · open · dev · Performance
+### T-20261015-1a5b · done · dev · Performance
 - **Task:** check_mathf_params_alloc.py is red on two sites that predate the activation work: BlackHoleWarp.cs:87 (3-value Mathf.Max) and FlipWave.cs:153 (4-value Mathf.Max), each allocating a params array.
 - **Done when:** Both use MathfNoAlloc or nested two-value calls and the gate passes.
 - **Who can take it:** the owners of the black hole and FlipWave code (check who_works_where.py); Yash (offered)
 - **Added:** 2026-10-15 by Yash's session (activation) (`Ys-bleeding-edge`)
 - **See:** Tools/Build/check_mathf_params_alloc.py
+- **Done:** 2026-10-15, Fixed on perf/performance-optimization: BlackHoleWarp.cs uses MathfNoAlloc.Max, FlipWave.cs nests two-value Max. Proof: python3 Tools/Build/check_mathf_params_alloc.py -> OK (2093 files); unity_refcompile player-dev RESULT OK; Amoebius Debug build. /verify-unity unavailable in the session.
+
+### T-20261015-56dd · open · test · Performance
+- **Task:** First editor performance capture, S2 Lattice: Code Optimization = Release, Play, Cell Selector > Lattice, wait 8 minutes, FrogletTools > Performance > Capture Performance (one file) with label S2, 15 s, then paste the clipboard into a Claude session (it is one JSON holding burst, diag, prof, renderers, cells and the console). Close the Third Eye window and any preview first: an extra camera renders the world again and the capture says so.
+- **Done when:** A capture_Menu_Main_S2_*.json whose reader output (python3 Tools/Build/perf_capture_report.py) shows no ERROR line (Release, Burst on, no managed job time) is pasted and recorded in Docs/PERFORMANCE_OPTIMIZATION.md 2 with its numbers.
+- **Who can take it:** Yash (offered), anyone with the Unity Editor
+- **Added:** 2026-10-15 by the performance session (perf/performance-optimization) (`perf/performance-optimization`)
+- **See:** Docs/PERFORMANCE_OPTIMIZATION.md 3.6 and 4.6; FrogletTools > Performance > Capture Performance (one file)
+
+### T-20261015-3e0b · open · test · Performance
+- **Task:** Skim Race I2 with 2 AI, Release: capture SkimRace 15 (same window). This is the Burst check the 10-08 fix still owes (burst must read BURST and the Profiler must show no managed job time) and the test of the PoolRefill.Squirrel Prism ~9 KB/frame allocation lead from the Amoebius run.
+- **Done when:** The capture is pasted; its burst section reads Run() BURST, Schedule() BURST; prof.managedJobMs < 0.2; the Profiler top-allocators list confirms or clears PoolRefill.Squirrel Prism. Recorded in Docs/PERFORMANCE_OPTIMIZATION.md 2.
+- **Who can take it:** Yash (offered), anyone with the Unity Editor
+- **Added:** 2026-10-15 by the performance session (perf/performance-optimization) (`perf/performance-optimization`)
+- **See:** Docs/PERFORMANCE_OPTIMIZATION.md 3.6 and 4.6; FrogletTools > Performance > Capture Performance (one file)
+
+### T-20261015-3972 · open · test · Performance
+- **Task:** S5 Wildlife Liberation, Release: capture S5 15, two minutes into a match. It is the go/no-go for lever L8 (batched creature body re-sync): Fauna.BodySync must average 8 ms or more for L8 to be worth building.
+- **Done when:** The capture is pasted and the Fauna.BodySync / LightFauna.Update rows are read; the L8 decision is written in Docs/PERFORMANCE_OPTIMIZATION.md 3.3.
+- **Who can take it:** Yash (offered), anyone with the Unity Editor
+- **Added:** 2026-10-15 by the performance session (perf/performance-optimization) (`perf/performance-optimization`)
+- **See:** Docs/PERFORMANCE_OPTIMIZATION.md 3.6 and 4.6; FrogletTools > Performance > Capture Performance (one file)
