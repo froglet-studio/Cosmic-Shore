@@ -863,3 +863,32 @@ Entries are grouped by family; within a family, the newest goes at the bottom.
   someone other than its author has run it.
 - Evidence: commit "merge the Brittle Star research and studio" (the `require` lines added).
 - Promoted: no
+
+### L-STU-67 — three.js r128 instanced meshes: colour before count, and turn culling off
+- Lab: Angler Command Lab (`Docs/Studios/AnglerCommandLab.html`) · Branch: `cece/zealous-feynman-po8k8d` · Date: 2026-10-15
+- What happened: every creature drew grey, then not at all. `InstancedMesh.setColorAt` creates `instanceColor` sized from the mesh's CURRENT `count`, and the page had set `count = 0` first, so the buffer was empty (`instanceColor.array.length` 0) and nothing errored. Separately, r128 frustum-culls an InstancedMesh by its geometry's bounding sphere at the mesh origin, so creatures 450 u from the origin vanished whenever the origin left the view. The verifier passed both: a WebGL stage skips the blank check.
+- Do instead: call `setColorAt` for every slot before lowering `count`, and set `frustumCulled = false` on any instanced mesh whose instances spread out. Expose a `gl()` hook (draw calls, instance counts, the first colour) so a probe can tell "not drawn" from "drawn black" without a screenshot.
+- Evidence: `initGL` (`fmesh`, `trails.frustumCulled`); `window.__lab.gl()`.
+- Promoted: no
+
+### L-GEN-10 — Before calling a failing column a design finding, trace one failing run frame by frame
+- Lab: Angler Command Lab, round 1 · Branch: `cece/zealous-feynman-po8k8d` · Date: 2026-10-15
+- What happened: the Pack sling failed 3–4 of 4 orders, which read as "the sling is a bad gesture". A per-second trace of one run showed two bugs first. The commander let go after one frame because it counted the gathering ball as "busy". Creatures that latched beside a prism circled it forever: at minimum speed their turn could not catch the bearing, and at d ≈ 0 "facing it" is undefined. With both fixed, the sling turned out to be the fastest scheme on blobs, and its remaining failure (every trail, one 24 u cluster per throw) is the real design finding. A per-order breakdown (`perOrderS`) is what separated the two.
+- Do instead: when a variant fails, print its state machine every 0.5 s for one seed before writing it up. Report per-order times, not only a mean, so "fails on lines, wins on blobs" cannot hide inside "slow". For any seek-and-face creature, brake to a hover inside reach and count a meal in the mouth as faced.
+- Evidence: `ANGLER_COMMAND_LAB.md` round 1 "Found"; `faunaStep` (the hover and `d < 3`); `squadBusy`.
+- Promoted: no
+
+### L-GEN-11 — An attribution column needs a decoy control and per-order state resets
+- Lab: Angler Command Lab, round 1 · Branch: `cece/zealous-feynman-po8k8d` · Date: 2026-10-15
+- What happened: "on target %" charges each kill to the CURRENT order. The commander recalled its squad only before the first order (a flag never reset per order), so creatures kept eating the last order's structure and every later kill read as off-target. That made precision look about 20 points worse than it was. A planted decoy (`runMission(…, decoy = true)`: the commander aims every order at the wrong structure) must read 0% on target, and it does on all five schemes. A diet control (`dietAny` 0: "yours lost" must go to 0) proved the friendly losses come from the mouthful, not the targeting.
+- Do instead: reset every per-order flag in the function that starts an order. Plant a decoy that must drive the attribution column to zero, and a control that must zero each loss column you explain by one cause.
+- Evidence: `nextTask` (`w.ai.recalled = false`); `runMission`'s `decoy`; `ANGLER_COMMAND_LAB.md` "Checked".
+- Promoted: no
+
+### L-STU-68 — A companion slower than the hull is invisible from the chase camera; measure follower lag
+- Lab: Angler Command Lab, round 1 · Branch: `cece/zealous-feynman-po8k8d` · Date: 2026-10-15
+- What happened: the tamed squad runs at the game's fauna speeds (at most 40 u/s at L1), the same as the Angler's cruise, so it sat on average 79 u from the hull (max 102), behind a 40 u chase camera. Every screenshot showed no squad. A speed proportional to the gap added a steady ~27 u lag on top. The same speed gap broke taming: with the lure held at cruise, six creatures were never tamed in 90 s, against 14–19 s with the lure slowing the hull to 20 u/s or less.
+- Do instead: in any lab where companions follow a vessel, measure their mean and max distance from it, feed the leader's speed forward in the follow law, and put the speed gap on the page as a design question (here a lure brake and a follower-only leash tow), never as a quiet speed-up of the creature.
+- Evidence: `ANGLER_COMMAND_LAB.md` "What it says" (the last two bullets); `leashTow`, `formBack`, `lureCruise`.
+- Promoted: no
+
