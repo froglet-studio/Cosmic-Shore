@@ -21,14 +21,15 @@ supersampling, margin or PNG encoding. Docs/STYLE_FOUNDATION.md sections 1.2, 5 
   * 256x256 with a 24px margin, matching the vendor sub-sprites they replace so no
     RectTransform moves.
 
-THIRTEEN glyphs. Five arrived with the vendor swap - FOUR of them for six replaced references, and one consolidation is deliberate. `CancelButton`
+FOURTEEN glyphs. Five arrived with the vendor swap - FOUR of them for six replaced references, and one consolidation is deliberate. `CancelButton`
 (Menu_Main) and `Close Button` (Arcade Screen) wore two DIFFERENT vendor glyphs while
 meaning the same thing; the style guide's icon list names one "X Button", so they share
 `chrome_close` here. That is the one intentional look change in the swap. `chrome_lock` and
 `chrome_crystal` were added for the style-B component kit (Docs/MENU_REDESIGN_B.md, item 0);
 `chrome_plus`, `chrome_star` and `chrome_star_fill` for the arcade (item 3): the party panel's open
 seat and the game card's favourite star, off and on; `chrome_globe`, `chrome_pin` and
-`chrome_people` for the weekly leaderboard's scope tabs (item 4).
+`chrome_people` for the weekly leaderboard's scope tabs (item 4); `chrome_diamond` for a display-name
+rule not yet met in the profile window (item 5 - a met rule wears `chrome_confirm`).
 
 Usage:
     python3 Tools/Build/author_ui_chrome_icons.py            # write the PNGs + .meta files
@@ -98,6 +99,12 @@ def chrome_reroll():
 def chrome_confirm():
     """Confirm / save - a check mark, mitred rather than rounded."""
     return stroke([(-0.70, 0.06), (-0.20, -0.54), (0.72, 0.62)], w=W * 1.30)
+
+
+def chrome_diamond():
+    """A rule not yet met - a small hollow diamond, the open counterpart of the confirm tick in
+    the profile window's display-name rules (Docs/MENU_REDESIGN_B.md, item 5)."""
+    return ring([(0.00, 0.62), (0.62, 0.00), (0.00, -0.62), (-0.62, 0.00)], w=W * 1.05)
 
 
 def chrome_arrow_down():
@@ -213,6 +220,7 @@ GLYPHS = [
     ("chrome_globe",      chrome_globe),
     ("chrome_pin",        chrome_pin),
     ("chrome_people",     chrome_people),
+    ("chrome_diamond",    chrome_diamond),
 ]
 
 

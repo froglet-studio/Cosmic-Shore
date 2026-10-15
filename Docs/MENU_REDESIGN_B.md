@@ -39,7 +39,7 @@ Legend: `Planned` ▸ `Mockup` ▸ `Mockup approved` ▸ `Built` ▸ `Approved i
 | 2 | Hangar screen: grid, detail and the spend-crystals panel | Approved in editor (2026-10-14) | `Hangar.dc.html` (interactive), `HangarLocked`, `HangarSpend`, `HangarShort`, `HangarNoArt`, `HangarNotes` on the Menu Redesign B canvas | `661a7f1f`, `7987b896`, `96c81faa` + docs |
 | 3 | Arcade modal (`ArcadeScreenModal`): explore grid plus the party/friends panel | Built | `Arcade.dc.html` (interactive), `ArcadeSolo`, `ArcadeNoFriends`, `ArcadePicks`, `ArcadeNotes` on the Menu Redesign B canvas | `f9b59fd4`, `75cd38e7`, `5cc56adb` + docs |
 | 4 | Game configure: `ArcadeGameConfigureModal`, plus the Maelstrom and Arena configure windows and the weekly leaderboard | Built (2026-10-15, section 14) | `Configure.dc.html` (interactive), `ConfigureArena`, `ConfigureMaelstrom`, `ConfigureWeekly`, `ConfigureWeeklySpent`, `ConfigureGuest`, `ConfigureLocked`, `WeeklyLeaderboard` (interactive), `LeaderboardEmpty`, `ConfigureNotes` | |
-| 5 | Profile screen, Profile modal (avatar / display name), Episodes entry | Profile screen Built (2026-10-15, section 15); profile window building | `Profile.dc.html` (interactive), `ProfileFresh`, `ProfileModal` (interactive), `ProfileName`, `ProfileNameError`, `ProfileNameTaken`, `ProfileNotes` | |
+| 5 | Profile screen, Profile modal (avatar / display name), Episodes entry | Built (2026-10-15, section 15): Profile screen and profile window | `Profile.dc.html` (interactive), `ProfileFresh`, `ProfileModal` (interactive), `ProfileName`, `ProfileNameError`, `ProfileNameTaken`, `ProfileNotes` | |
 | 6 | Home screen: hub row, header, settings and freestyle buttons, invite popup | Mockup approved (2026-10-14) | `Home.dc.html` (interactive), `HomeInvite`, `HomeFocus`, `HomeOffline`, `HomeNotes` | |
 | 7 | Ark screen (Elemental Converter) | Mockup approved (2026-10-14) | `Ark.dc.html` (interactive), `ArkConverting`, `ArkDone`, `ArkNotes` | |
 | 8 | Arena, Toy Box and Mission modals, and Toy configure | Mockup approved (2026-10-14) | `ToyBox.dc.html` (interactive), `ToyBoxClaimed`, `ArenaWindow`, `MissionWindow`, `ToyConfigure` (interactive), `ToyConfigurePaint`, `ToyConfigureSpawn`, `ToyConfigureDomain`, `ModesNotes` | |
@@ -781,3 +781,33 @@ panel are named by fileID).
 
 Departures: the hangar card shows its blurb without the per-quest "needs" list. The ambient pan on the
 card art is the one Q1 allowed.
+
+### 15.2 The profile window (built 2026-10-15, awaiting in-editor approval)
+
+`Tools/Build/author_menu_profile_window.py` authors `ProfileAvatarButton.prefab` and
+`ProfileWindowView.prefab` in the same folder and mounts the view on `PlayerDataSelectModal` (the old
+AvatarContent and DisplayNameContent subtrees are deleted; the `ProfileIconSelectView` component keeps
+its fileID, so ScreenSwitcher.Modals, `ProfileScreen.profileWindow`, the arcade profile widget and the
+persistent calls that name it all still resolve).
+
+- **One window, two tabs:** AVATAR / DISPLAY NAME are `KitTextTab`s (new kit control: a Selectable word
+  tab with a ControlActive underline and the CTA focus ring). Pages hide by CanvasGroup;
+  `ProfileIconSelectView.SelectTab(int)` switches without reopening. A bare `ModalWindowIn` (the lamp,
+  the arcade widget) opens on the last tab shown instead of stacking both pages, as it used to.
+- **Preview column:** "How others see you" - the avatar, the name (the typed name while the Display
+  name tab is up), Online, and the party-slot chip.
+- **Avatar page:** the 6 x 3 grid of `ProfileAvatarButton`s (octagon `KitTile`: selected ring, pad focus
+  ring; `ProfileIconSelectButton` gained an optional `tile` and null guards). A pick saves at once and
+  the note reads "Saved to your profile."; the highlight re-syncs to the profile on every open.
+- **Display name page:** the field with a live "N / 25" count; the four rules tick as you type
+  (`DisplayNameValidator.EvaluateRules` judges them exactly as `Validate` does, captions from
+  `RuleCaptions()` so they follow the config); the danger strip carries `Validate`'s message once the
+  name is long enough to judge, and the service's refusal ("already taken") after Submit; a spinning hex
+  while the service checks; Submit greys until the name is valid; Enter submits; a refusal shakes the
+  field. The character limit comes from the config at runtime.
+- Save, Cancel, Done, the tabs and Enter are wired in code; the name buttons are now wired before the
+  avatar early-returns (a missing avatar reference used to leave Save and Cancel dead).
+- New glyph `chrome_diamond` (a rule not yet met; a met rule wears `chrome_confirm`).
+
+Departures: the window keeps one height (680) on both tabs - the board shortens it to 560 on Display
+name. The unpicked avatars are not dimmed to 80%.

@@ -215,6 +215,59 @@ namespace CosmicShore.Tests
                 DisplayNameValidator.NormalizeForUniqueness("Pilot5678"));
         }
 
+        // ── Live rules (the profile window's ticks) ─────────────────────────
+
+        [Test]
+        public void EvaluateRules_AllFalseForAnEmptyName()
+        {
+            var r = DisplayNameValidator.EvaluateRules("   ");
+            for (int i = 0; i < DisplayNameRuleState.Count; i++)
+                Assert.IsFalse(r[i], $"rule {i} ticked for an empty name");
+        }
+
+        [TestCase("Gradies", true, true, true, true)]
+        [TestCase("Gr__adies", true, true, true, false)]
+        [TestCase("Gr", false, true, true, true)]
+        [TestCase("_Gradies", true, true, false, true)]
+        [TestCase("Grad!es", true, false, true, true)]
+        [TestCase("  Sky   Walker  ", true, true, true, true)] // judged after sanitizing, as Validate does
+        public void EvaluateRules_TicksEachRule(string name, bool length, bool chars, bool edges, bool noDoubles)
+        {
+            var r = DisplayNameValidator.EvaluateRules(name);
+            Assert.AreEqual(length, r.Length, "length");
+            Assert.AreEqual(chars, r.Characters, "characters");
+            Assert.AreEqual(edges, r.Edges, "edges");
+            Assert.AreEqual(noDoubles, r.NoDoubles, "no doubles");
+        }
+
+        [TestCase("Gradies")]
+        [TestCase("Gr__adies")]
+        [TestCase("Gr")]
+        [TestCase("_Gradies")]
+        [TestCase("Grad!es")]
+        [TestCase("Sky Walker")]
+        [TestCase("a.b-c_d")]
+        public void EvaluateRules_AgreesWithValidate(string name)
+        {
+            // A name that ticks all four rules (and has a letter) never fails Validate on length,
+            // characters or format - the ticks cannot promise a name the submit will refuse.
+            var r = DisplayNameValidator.EvaluateRules(name);
+            bool allTicked = r.Length && r.Characters && r.Edges && r.NoDoubles;
+            var error = DisplayNameValidator.Validate(name).Error;
+            bool formatFailure = error is DisplayNameError.TooShort or DisplayNameError.TooLong
+                or DisplayNameError.InvalidCharacters or DisplayNameError.InvalidFormat;
+            Assert.AreEqual(!allTicked, formatFailure, $"'{name}': ticks {allTicked}, Validate {error}");
+        }
+
+        [Test]
+        public void RuleCaptions_FollowTheConfig()
+        {
+            var captions = DisplayNameValidator.RuleCaptions();
+            Assert.AreEqual(DisplayNameRuleState.Count, captions.Length);
+            Assert.AreEqual($"{_config.MinLength} to {_config.MaxLength} characters", captions[0]);
+            Assert.AreEqual("Letters, numbers, spaces, _ - .", captions[1]);
+        }
+
         // ── Helpers ─────────────────────────────────────────────────────────
 
         /// <summary>

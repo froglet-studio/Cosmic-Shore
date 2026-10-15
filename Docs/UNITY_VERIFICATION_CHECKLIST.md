@@ -65,6 +65,33 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Style-B menu redesign, item 5b: the profile window (`claude/new-session-76hnyc`, 2026-10-15) — NOT EDITOR-VERIFIED
+
+`PlayerDataSelectModal` (ProfileIconSelectView) rebuilt from the approved ProfileModal / ProfileName /
+ProfileNameError boards (`Docs/MENU_REDESIGN_B.md` section 15.2) by
+`Tools/Build/author_menu_profile_window.py` (`--check`, `--self-test` green). No editor in the session:
+`/verify-unity` still owed. Offline: player + editor reference compiles clean; new
+`DisplayNameValidatorTests` cases (live rules) compile but have not run.
+
+**Verify in editor:**
+1. Open Menu_Main: no missing-script or missing-reference warnings on `PlayerDataSelectModal`.
+2. Profile > Change avatar: the window pops in on AVATAR (one page only, underline under AVATAR); the
+   preview column shows your avatar, name, Online and the party-slot chip.
+3. Pick an avatar: the ring moves, the preview and the Profile screen update, the note reads "Saved to
+   your profile."; close and reopen - the ring is on the saved avatar.
+4. DISPLAY NAME tab (and Rename): the field holds your name with "N / 25"; type `Gr__adies` - three rules
+   tick, "No doubled spaces or punctuation" stays open, the red strip reads "Names cannot contain
+   back-to-back spaces or punctuation.", the border turns red, Submit greys; the preview name follows.
+5. Type a taken name and Submit (or Enter): the hex spins, then the strip reads the taken message and
+   the field shakes; type again - the strip clears.
+6. A valid new name: Submit saves and closes; Profile, Home and the party slot show it. Cancel restores
+   the old name and closes.
+7. Pad: focus lands on the first avatar (Avatar) or the field (Display name); the tabs, Done, Submit,
+   Cancel and Close are reachable; B closes.
+8. The lamp (Online indicator) still opens the window.
+
+---
+
 ### 🔴 Style-B menu redesign, item 5a: the Profile screen (`claude/new-session-76hnyc`, 2026-10-15) — NOT EDITOR-VERIFIED
 
 `Screens/ProfileScreen` rebuilt from the approved Profile boards (`Docs/MENU_REDESIGN_B.md` section 15)
