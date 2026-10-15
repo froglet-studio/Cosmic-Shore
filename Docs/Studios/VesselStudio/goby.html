@@ -181,7 +181,7 @@
         </div>
         <div class="acts" id="acts" aria-label="Abilities of the half you fly">
           <span class="goby-only hintx">Goby: F primer · G flares</span><button class="btn goby-only" id="aPrimer" type="button">Primer</button><button class="btn goby-only" id="aFlare" type="button">Flares</button>
-          <span class="pistol-only hintx">Pistol: hold to dive · drag to launch</span><button class="btn pistol-only" id="aVortex" type="button">Vortex (Q)</button><button class="btn pistol-only" id="aBoom" type="button">Snap (E)</button><button class="btn pistol-only" id="aGhost" type="button">Ghost (G)</button>
+          <span class="pistol-only hintx">Pistol: hold to dive · drag to launch</span><button class="btn pistol-only" id="aVortex" type="button">Snap: vortex ring (Q)</button><button class="btn pistol-only" id="aGhost" type="button">Ghost (G)</button>
         </div>
         <div class="stagebtns"><button class="btn phone-only" id="playBtn" type="button">Back to flying</button><span class="transport" id="transport" role="toolbar" aria-label="Play controls"><button class="btn" id="tpPlay" type="button" aria-pressed="false" title="Play / pause (Enter starts, P pauses and resumes)">▶ Play</button><button class="btn" id="tpStop" type="button" title="Stop (R): end the run, back to the start">■ Stop</button></span></div>
         <div class="overlay" id="overlay">
@@ -190,7 +190,7 @@
             <p id="ovText">One duo, two halves. You fly one; the AI flies the other. Swap any time: D-pad left / right, or 1 / 2. The Goby hunts and primes; the Pistol rides the Goby's path in 2D and breaks everything in its band.</p>
             <div class="keys">
               <span>Goby</span><span>two thumbs like the Squirrel: both sticks (or W S pitch · A D yaw · Q E roll · ↑ ↓ throttle) · F primer · G flares</span>
-              <span>Pistol</span><span>press and hold on its view (or Space) to dive · drag to aim, release to launch · Q vortex ring · E snap · G ghost (pad: A dive, RT + right stick launch, Y vortex, X snap, B ghost)</span>
+              <span>Pistol</span><span>press and hold on its view (or Space) to dive · drag to aim, release to launch · Q or E Snap (a vortex ring) · G ghost (pad: A dive, RT + right stick launch, Y or X Snap, B ghost)</span>
               <span>Swap</span><span>1 / 2 or D-pad left / right</span>
               <span></span><span>Enter play · P pause · R stop · C camera · V views</span>
             </div>
@@ -201,7 +201,7 @@
           <div class="tz L" id="tzL"><div class="ts idle" id="tsL"><i></i></div></div>
           <div class="tz R" id="tzR"><div class="ts idle" id="tsR"><i></i></div></div>
           <div class="tbar"><button class="btn" id="tStart" type="button">▶ Play</button><button class="btn" id="tSwap" type="button">⇄ Swap</button><button class="btn" id="tCam" type="button">Cam</button><button class="btn" id="tBack" type="button">■ Stop</button><button class="btn" id="tExit" type="button" aria-label="Leave phone play">✕</button></div>
-          <div class="tacts"><button class="btn goby-only" id="tPrimer" type="button">Primer</button><button class="btn goby-only" id="tFlare" type="button">Flares</button><button class="btn pistol-only" id="tVortex" type="button">Vortex</button><button class="btn pistol-only" id="tBoom" type="button">Explode</button><button class="btn pistol-only" id="tGhost" type="button">Ghost</button></div>
+          <div class="tacts"><button class="btn goby-only" id="tPrimer" type="button">Primer</button><button class="btn goby-only" id="tFlare" type="button">Flares</button><button class="btn pistol-only" id="tVortex" type="button">Snap</button><button class="btn pistol-only" id="tGhost" type="button">Ghost</button></div>
           <div class="portrait">Turn the phone sideways</div>
         </div>
       </div>
@@ -233,7 +233,7 @@
         <h3>AI</h3>
         <div id="racePanel"></div>
         <label class="check"><input type="checkbox" id="chkIdle"> AI holds my idle half (after 3 s with no input)</label>
-        <p class="note">Goby AI: 1. the crystal, 2. hunt flora and fauna (and enemy walls), 3. lay the Pistol a path (it eases off when the Pistol falls behind, and weaves in height to give it hills). Pistol AI: dive on downslopes, let go on upslopes (Tiny Wings), launch at the densest target ahead, explode on 3+ targets or a primed one, ghost through friendly blocks. Both write the same inputs a player does.</p>
+        <p class="note">Goby AI: 1. the crystal, 2. hunt flora and fauna (and enemy walls), 3. lay the Pistol a path (it eases off when the Pistol falls behind, and weaves in height to give it hills). Pistol AI: dive on downslopes, let go on upslopes (Tiny Wings), launch at the densest target ahead, Snap a vortex ring at the densest group ahead, ghost through friendly blocks. Both write the same inputs a player does.</p>
         <div class="spec" id="specAI"></div>
       </div>
 
@@ -250,10 +250,10 @@
           <span>Goby keys</span><span>W S pitch · A D yaw · Q E roll · ↑ ↓ throttle · F primer · G flares (the Squirrel studio's keys)</span>
           <span>Goby pad</span><span>two thumbs like the Squirrel: both sticks up = nose up, sticks apart = throttle, one up one down = roll · RT primer · LT flares</span>
           <span>Goby phone</span><span>two thumb sticks · Primer · Flares</span>
-          <span>Pistol mouse</span><span>press and hold on its view to dive (Tiny Wings) · drag to aim, release to launch · Snap and Ghost buttons on the stage</span>
-          <span>Pistol keys</span><span>Space dive · F quick launch · Q vortex ring · E snap · G ghost</span>
-          <span>Pistol pad</span><span>A or LT dive · hold RT, aim with the right stick, release to launch · X explode · B ghost</span>
-          <span>Pistol phone</span><span>hold anywhere to dive · drag to aim, release to launch · Vortex · Explode · Ghost</span>
+          <span>Pistol mouse</span><span>press and hold on its view to dive (Tiny Wings) · drag to aim, release to launch · Snap (vortex ring) and Ghost buttons on the stage</span>
+          <span>Pistol keys</span><span>Space dive · F quick launch · Q or E Snap (vortex ring) · G ghost</span>
+          <span>Pistol pad</span><span>A or LT dive · hold RT, aim with the right stick, release to launch · Y or X Snap (vortex ring) · B ghost</span>
+          <span>Pistol phone</span><span>hold anywhere to dive · drag to aim, release to launch · Snap · Ghost</span>
           <span>Cameras</span><span>C cycles Chase / Follow / Free (3D) · Free: drag to orbit, wheel to zoom · V switches views</span>
           <span>Transport</span><span>Enter play · P pause / resume · R stop</span>
         </div>
@@ -305,9 +305,9 @@
             <li>Straight boost: the Rhino's ramp (<code>RhinoRampBoostAction.asset</code>: up at 220 u/s², bleed 300 u/s²) to a lab-only ceiling of ×4, against the Rhino's ×16.8 ("like the Rhino's but less").</li>
             <li>Swap: <code>PilotSwap</code> (cooldown 0.75 s) on <code>PilotSwapGesture</code>'s keys: D-pad left / right, 1 / 2.</li>
             <li>AI levels: Hard is the skilled pilot; Medium and Easy notice each new target late (0.25 / 0.5 s mean) and misjudge 4.5% / 9.9% of them (<code>SkimRaceDifficulty.asset</code>, the Vessel Studio's universal levels).</li>
-            <li>Everything else is lab-only: the closeness boost, the primer, heat and flares, the Pistol's gravity, dive, launch, blast and ghost, its vision band and body, the hills, and the world (clusters of flora, fauna, enemy walls and friendly blocks, seeded per intensity).</li>
+            <li>Everything else is lab-only: the closeness boost, the primer, heat and flares, the Pistol's gravity, dive, launch, Snap (the vortex ring) and ghost, its vision band and body, the hills, and the world (clusters of flora, fauna, enemy walls and friendly blocks, seeded per intensity).</li>
             <li>Not modelled: rival ships (the brief says ships are hot by default), the element meter and its mappings, network ownership of the two halves, co-op (two humans: the offer / accept swap), death and respawn, sound, the real game's prisms and their shields, the phone flip (a Swap button stands in).</li>
-            <li>The Pistol's world is drawn by three.js with the same prism mesh, materials, lights, sky and stars as the Goby's view (rendering parity); only position and orientation are warped: each prism sits at its unrolled place, turned by the ribbon's frame there, and the sky is turned by the frame at the Pistol. A side camera gives the depth its parallax. Not mapped: the drifting background field. The vortex ring is the snap shot as a ring: prisms near its core are pulled into a toroidal flow and carried, then broken when it collapses (lab-only, a setting). The world keeps seeding clusters just ahead of the Goby (lab-only, Trail and hills).</li>
+            <li>The Pistol's world is drawn by three.js with the same prism mesh, materials, lights, sky and stars as the Goby's view (rendering parity); only position and orientation are warped: each prism sits at its unrolled place, turned by the ribbon's frame there, and the sky is turned by the frame at the Pistol. A side camera gives the depth its parallax. Not mapped: the drifting background field. The Snap is a vortex ring (the self-explosion was dropped, Garrett 2026-10-15): prisms near its core are pulled into a toroidal flow and carried, then broken when it collapses (lab-only, a setting). The world keeps seeding clusters just ahead of the Goby (lab-only, Trail and hills).</li>
             <li>The 2D world's prisms are drawn where the unroll puts them, at a parallax by depth; prisms off the band are hidden unless primed. Near tight turns two passes of the path compete for a point: the Unroll test counts how often.</li>
           </ul>
         </details>
@@ -368,21 +368,18 @@
     pLaunchSpeed: 280,    // lab-only
     pLaunchCharges: 2,    // lab-only
     pLaunchCd: 4,         // lab-only
-    pBlastR: 46,          // lab-only: the snap's radius in the plane
-    pBlastDepth: 70,      // lab-only: how far the snap reaches off the plane
-    pExplodeCd: 6,        // lab-only
     pGhostTime: 2.5,      // lab-only
     pGhostCd: 8,          // lab-only
     pChain: 40,           // lab-only: a detonating primed block sets off primed blocks this close
     pHotRing: 80,         // lab-only: blocks this close to a detonation (and not primed) turn hot
     pHotLife: 10,         // lab-only
-    pVortexR: 22,         // lab-only: the vortex ring's radius (the pistol shrimp's snap, shot as a ring)
+    pVortexR: 22,         // lab-only: the vortex ring's radius. The vortex ring IS the Snap (Garrett, 2026-10-15: the self-explosion is dropped)
     pVortexSpeed: 120,    // lab-only
     pVortexLife: 2.6,     // lab-only, seconds
     pVortexCapture: 24,   // lab-only: prisms this close to the ring's core are pulled into it
     pVortexSpin: 7,       // lab-only: how fast captured prisms circle the core (rad/s, the toroidal flow)
     pVortexMax: 30,       // lab-only: prisms one ring can carry
-    pVortexCd: 4,         // lab-only
+    pVortexCd: 4,         // lab-only: the Snap's cooldown
     pVortexCollapse: 1,   // lab-only: 1 = the ring collapses and breaks what it carries; 0 = it lets them go
     wStreamGap: 140,      // lab-only: every this many u the Goby flies, the world may seed a cluster ahead of it
     wStreamChance: 0.75,  // lab-only (scaled by intensity)
@@ -424,13 +421,10 @@
     ['Pistol', 'pParallax', 40, 600, 10, 'Parallax depth', 'Lab-only. Layers this deep draw at half size.'],
     ['Pistol', 'pLaunchRange', 80, 500, 5, 'Launch range', 'Lab-only.'],
     ['Pistol', 'pLaunchCd', 0.5, 12, 0.5, 'Launch s / charge', 'Lab-only.'],
-    ['Pistol', 'pBlastR', 15, 120, 1, 'Snap radius', 'Lab-only. The explosion in the plane.'],
-    ['Pistol', 'pBlastDepth', 10, 200, 1, 'Snap depth', 'Lab-only. How far the explosion reaches off the plane.'],
-    ['Pistol', 'pExplodeCd', 1, 20, 0.5, 'Snap cooldown s', 'Lab-only.'],
     ['Pistol', 'pGhostTime', 0.5, 6, 0.1, 'Ghost s', 'Lab-only.'],
     ['Pistol', 'pChain', 10, 120, 1, 'Chain u', 'Lab-only. Primed blocks this close go up together.'],
     ['Pistol', 'pHotRing', 20, 200, 1, 'Heat ring u', 'Lab-only. Unprimed blocks this close to a detonation turn hot.'],
-    ['Pistol', 'pVortexR', 6, 60, 1, 'Vortex radius', 'Lab-only. The snap shot as a vortex ring: its radius.'],
+    ['Pistol', 'pVortexR', 6, 60, 1, 'Vortex radius', 'Lab-only. The Snap: a vortex ring. Its radius.'],
     ['Pistol', 'pVortexSpeed', 20, 400, 5, 'Vortex speed', 'Lab-only.'],
     ['Pistol', 'pVortexLife', 0.5, 8, 0.1, 'Vortex life s', 'Lab-only.'],
     ['Pistol', 'pVortexCapture', 4, 60, 1, 'Vortex pull u', 'Lab-only. Prisms this close to the ring\'s core are pulled into its toroidal flow.'],
@@ -586,7 +580,7 @@
     const PP = o.P, rng = mulberry32((o.seed * 7919 + o.intensity * 104729) >>> 0), I = INTENSITY[o.intensity];
     const W = { o, P: PP, t: 0, rng, rngAI: mulberry32((o.seed * 31337 + 17) >>> 0), rb: makeRibbon(o.mode), events: [], fx: [], flares: [], endX: 0, endY: 0, gx: 0,
       px: [], py: [], pz: [], kind: [], alive: [], primed: [], hot: [], ra: [], rb2: [], capt: [], clusters: [], crystals: [], N: 0, aliveN: 0, vortices: [], streamAcc: 0,
-      stats: { pistolKills: 0, chainKills: 0, flareKills: 0, vortexKills: 0, vortexShots: 0, seeded: 0, friendly: 0, crystals: 0, primers: 0, volleys: 0, detonations: 0, launches: 0, explodes: 0, goodLand: 0, badLand: 0, air: 0, gapSum: 0, steps: 0, speedSum: 0 },
+      stats: { pistolKills: 0, chainKills: 0, flareKills: 0, vortexKills: 0, vortexShots: 0, seeded: 0, friendly: 0, crystals: 0, primers: 0, volleys: 0, detonations: 0, launches: 0, goodLand: 0, badLand: 0, air: 0, gapSum: 0, steps: 0, speedSum: 0 },
       aiG: { key: null, noticeAt: 0, mis: false, misOff: V(0, 0, 0), misUntil: 0, aim: null, cluster: null, out: {} }, aiP: { scanAt: 0, vis: [], key: -1, noticeAt: 0, mis: false, out: {}, aim: null } };
     for (let ci = 0; ci < I.clusters; ci++) {
       let cx, cy, cz, kind;
@@ -607,7 +601,7 @@
     const start = V(0, 0, -160); layPath(W, W.g.pos, start); W.g.pos = start; gobyEnds(W);
     if (!o.noPistol) {
       const y0 = groundAt(W, 0);
-      W.p = { x: 0, y: y0, vx: 0, vy: 0, v: PP.pMinSpeed + 25, grounded: true, vortexAt: 0, prevVortex: false, launch: PP.pLaunchCharges, launchT: 0, lastLaunchAt: -9, explodeAt: 0, ghostAt: 0, ghostUntil: -1, freeBoom: false, prevExplode: false, prevGhost: false, wpos: V(0, y0, 0) };
+      W.p = { x: 0, y: y0, vx: 0, vy: 0, v: PP.pMinSpeed + 25, grounded: true, vortexAt: 0, prevVortex: false, launch: PP.pLaunchCharges, launchT: 0, lastLaunchAt: -9, ghostAt: 0, ghostUntil: -1, freeBoom: false, prevGhost: false, wpos: V(0, y0, 0) };
       ribUnmap(W.rb, 0, y0, 0, W.p.wpos);
     } else W.p = null;
     return W;
@@ -796,15 +790,6 @@
     }
   }
   const MP = {}, MP2 = {};
-  function blast(W, free) {   // the snap: in the plane to pBlastR, and off it to pBlastDepth
-    const p = W.p, P = W.P, q = p.wpos, reach = Math.hypot(P.pBlastR, P.pBlastDepth) + 30, r2 = reach * reach;
-    W.fx.push({ kind: 'boom', x: p.x, y: p.y, w: V(q.x, q.y, q.z), t: W.t, free }); W.stats.explodes++;
-    for (let i = 0; i < W.N; i++) {
-      if (!W.alive[i]) continue; if ((W.px[i] - q.x) ** 2 + (W.py[i] - q.y) ** 2 + (W.pz[i] - q.z) ** 2 > r2) continue;
-      const m = ribMap(W.rb, ppos(W, i), p.x - reach, p.x + reach, MP); if (!m.ok) continue;
-      if (Math.abs(m.d) <= P.pBlastDepth && Math.hypot(m.x - p.x, m.h - p.y) <= P.pBlastR) kill(W, i, 'blast');
-    }
-  }
   function pistolStep(W, dt, inp) {
     const p = W.p, P = W.P; if (!p) return;
     const dive = clamp(inp.dive || 0, 0, 1), g = P.pGravity * (1 + (P.pDiveMul - 1) * dive);
@@ -836,8 +821,6 @@
       p.vx = dx / T; p.vy = dy / T + 0.5 * P.pGravity * T; p.grounded = false; p.launch--; p.lastLaunchAt = W.t; W.stats.launches++;
     }
     ribUnmap(W.rb, p.x, p.y, 0, p.wpos);
-    if (inp.explode && !p.prevExplode && W.t >= p.explodeAt) { blast(W, false); p.explodeAt = W.t + P.pExplodeCd; }
-    p.prevExplode = !!inp.explode;
     if (inp.ghost && !p.prevGhost && W.t >= p.ghostAt) { p.ghostUntil = W.t + P.pGhostTime; p.ghostAt = W.t + P.pGhostCd; }
     p.prevGhost = !!inp.ghost;
     if (inp.vortex && !p.prevVortex && W.t >= p.vortexAt) { fireVortex(W, inp.vortex); p.vortexAt = W.t + P.pVortexCd; }
@@ -848,8 +831,7 @@
       if (!W.alive[i]) continue; if ((W.px[i] - q.x) ** 2 + (W.py[i] - q.y) ** 2 + (W.pz[i] - q.z) ** 2 > r2) continue;
       const m = ribMap(W.rb, ppos(W, i), p.x - reach - 30, p.x + reach + 30, MP); if (!m.ok) continue;
       if (Math.abs(m.d) > half || Math.hypot(m.x - p.x, m.h - p.y) > P.pBodyR + 3) continue;
-      if (p.freeBoom) { p.freeBoom = false; blast(W, true); }
-      if (!W.alive[i]) continue;
+      if (p.freeBoom) { p.freeBoom = false; fireVortex(W, null); W.fx.push({ kind: 'collapse', w: V(q.x, q.y, q.z), t: W.t }); }   // the crystal's free Snap: a vortex ring on the next hit, no cooldown
       kill(W, i, 'body');
       if (p.grounded) p.v *= 0.97; else p.vx *= 0.97;
     }
@@ -870,8 +852,8 @@
   function takeCrystal(W, c, who) {   // a crystal restocks BOTH halves (Garrett, 2026-10-14); the Pistol's own bonus on top
     const g = W.g, P = W.P, p = W.p;
     g.primer = P.gPrimerCharges; g.flare = P.gFlareCharges; g.primerT = g.flareT = 0;
-    if (p) { p.launch = P.pLaunchCharges; p.launchT = 0; p.explodeAt = W.t; p.ghostAt = W.t; p.vortexAt = W.t; if (who === 'pistol') p.freeBoom = true; }
-    W.stats.crystals++; W.events.push(who === 'pistol' ? 'Pistol took the crystal: cooldowns reset, a free snap on its next hit' : 'Goby took the crystal: both halves restocked');
+    if (p) { p.launch = P.pLaunchCharges; p.launchT = 0; p.ghostAt = W.t; p.vortexAt = W.t; if (who === 'pistol') p.freeBoom = true; }
+    W.stats.crystals++; W.events.push(who === 'pistol' ? 'Pistol took the crystal: cooldowns reset, a free Snap (vortex ring) on its next hit' : 'Goby took the crystal: both halves restocked');
     c.p = crystalSpot(W);
   }
   function crystalStep(W) {
@@ -956,11 +938,7 @@
     // Tiny Wings: heavy on the way down, light on the way up
     const dive = p.grounded ? (slope < -0.02 ? 1 : 0) : ((p.vy < 0 && aSlope < -0.02) || p.y - gy > P.aiHighDive ? 1 : 0);
     if (t >= B.scanAt) { B.scanAt = t + 0.1; pistolScan(W, B); }
-    let explode = false, launch = null, ghost = false;
-    if (t >= p.explodeAt) {
-      let n = 0, pr = 0; for (const v of B.vis) { if (v.friendly || Math.abs(v.d) > P.pBlastDepth) continue; if (Math.hypot(v.x - p.x, v.h - p.y) <= P.pBlastR * 0.9) { n++; if (v.primed) pr++; } }
-      explode = n >= 3 || pr >= 1;
-    }
+    let launch = null, ghost = false;
     B.aimL = null;
     if (p.launch > 0 && t - p.lastLaunchAt > 1.2) {
       let best = null, bs = 0;
@@ -982,8 +960,8 @@
       for (const v of B.vis) { if (v.friendly || v.x < p.x + 20 || v.x > p.x + 200 || Math.abs(v.h - p.y) > 120) continue; let sc = 0; for (const o of B.vis) if (!o.friendly && Math.hypot(o.x - v.x, o.h - v.h) < P.pVortexR + P.pVortexCapture) sc++; if (sc > bs) { bs = sc; best = v; } }
       if (best && bs >= 4) vortex = { dx: best.x - p.x, dy: best.h - p.y };
     }
-    const out = { dive, launch, explode: explode && !B.out.explode, ghost: ghost && !B.out.ghost, vortex: vortex && !B.out.vortex ? vortex : false };
-    B.out = { explode, ghost, vortex: !!vortex }; return out;
+    const out = { dive, launch, ghost: ghost && !B.out.ghost, vortex: vortex && !B.out.vortex ? vortex : false };
+    B.out = { ghost, vortex: !!vortex }; return out;
   }
 
   // ================= headless: the scorecard =================
@@ -1121,7 +1099,7 @@
     for (const f of W.fx) {
       const age = W.t - f.t;
       if (f.kind === 'oil' && age < 0.4 && ln < 16) { la.set([f.a.x, f.a.y, f.a.z, f.b.x, f.b.y, f.b.z], ln * 6); ln++; }
-      if (f.kind === 'boom' && age < 0.5 && bi < booms.length) { const m = booms[bi++]; m.visible = true; m.position.set(f.w.x, f.w.y, f.w.z); m.scale.setScalar(Math.max(1, W.P.pBlastR * (0.3 + age / 0.5))); m.material.opacity = 0.5 * (1 - age / 0.5); }
+      if (f.kind === 'collapse' && age < 0.5 && bi < booms.length) { const m = booms[bi++]; m.visible = true; m.position.set(f.w.x, f.w.y, f.w.z); m.scale.setScalar(Math.max(1, W.P.pVortexR * (0.3 + age / 0.5))); m.material.opacity = 0.5 * (1 - age / 0.5); }
     }
     for (; bi < booms.length; bi++) booms[bi].visible = false;
     fxGeo.setDrawRange(0, ln * 2); fxGeo.attributes.position.needsUpdate = true;
@@ -1254,7 +1232,7 @@
     pFlare.geometry.setDrawRange(0, fn); pFlare.geometry.attributes.position.needsUpdate = true;
     pTori.forEach((m, i) => { const v = W.vortices[i]; const mm = v && win(v.c); m.visible = !!mm; if (!mm) return; const q = flatFrame(ribFrame(W.rb, MPR.k, MPR.t, FR)); m.position.set(mm.x - SC.x, mm.h, mm.d); tv.set(v.n.x, v.n.y, v.n.z).applyQuaternion(q); m.quaternion.setFromUnitVectors(ZAX, tv); m.scale.setScalar(P.pVortexR); });
     let bi = 0;
-    for (const f of W.fx) { const age = W.t - f.t; if ((f.kind === 'boom' || f.kind === 'collapse') && age < 0.5 && bi < pBooms.length) { const mm = win(f.w); if (!mm) continue; const m = pBooms[bi++]; m.visible = true; m.position.set(mm.x - SC.x, mm.h, mm.d); m.scale.setScalar(Math.max(1, (f.kind === 'boom' ? P.pBlastR : P.pVortexR) * (0.3 + age / 0.5))); m.material.opacity = 0.5 * (1 - age / 0.5); m.material.color.setHex(f.kind === 'boom' ? 0xffb070 : 0x9fe8ff); } }
+    for (const f of W.fx) { const age = W.t - f.t; if (f.kind === 'collapse' && age < 0.5 && bi < pBooms.length) { const mm = win(f.w); if (!mm) continue; const m = pBooms[bi++]; m.visible = true; m.position.set(mm.x - SC.x, mm.h, mm.d); m.scale.setScalar(Math.max(1, P.pVortexR * (0.3 + age / 0.5))); m.material.opacity = 0.5 * (1 - age / 0.5); m.material.color.setHex(0x9fe8ff); } }
     for (; bi < pBooms.length; bi++) pBooms[bi].visible = false;
     r2.render(pscene, pcam);
   }
@@ -1287,7 +1265,7 @@
     g.font = '600 ' + (12 * dpr) + 'px sans-serif'; g.fillStyle = '#e9ecff';
     const cd = (at) => (W.t >= at ? 'ready' : (at - W.t).toFixed(1) + ' s');
     const lines = ['PISTOL · ' + (halfIsAI('pistol') ? 'AI ' + levelOf('pistol') : 'you') + ' · ' + Math.round(p.grounded ? p.v : Math.hypot(p.vx, p.vy)) + ' u/s · ' + (p.grounded ? 'ground' : 'air'),
-      'Launch ' + p.launch + '/' + P.pLaunchCharges + ' · Vortex ' + cd(p.vortexAt) + ' · Snap ' + cd(p.explodeAt) + ' · Ghost ' + (W.t < p.ghostUntil ? 'on' : cd(p.ghostAt)) + (p.freeBoom ? ' · FREE SNAP' : '')];
+      'Launch ' + p.launch + '/' + P.pLaunchCharges + ' · Snap ' + cd(p.vortexAt) + ' · Ghost ' + (W.t < p.ghostUntil ? 'on' : cd(p.ghostAt)) + (p.freeBoom ? ' · FREE SNAP' : '')];
     const inset = $('viewport').classList.contains('v-goby') && S.views === 'inset';
     const hx = inset ? 8 : (S.views === 'split' ? 12 : 232), hy = inset ? 16 : (S.views === 'split' ? 20 : 58);
     lines.forEach((s, i) => g.fillText(s, hx * dpr, hy * dpr + i * 15 * dpr));
@@ -1335,7 +1313,7 @@
   canvas.addEventListener('wheel', (e) => { if (S.cam !== 'Free') return; orbit.dist = clamp(orbit.dist * (e.deltaY > 0 ? 1.1 : 0.9), 30, 1500); e.preventDefault(); }, { passive: false });
   // touch play: the Goby's two thumb sticks; for the Pistol, both halves of the screen take its one gesture
   const touch = { used: false, L: { x: 0, y: 0, id: null, x0: 0, y0: 0 }, R: { x: 0, y: 0, id: null, x0: 0, y0: 0 } };
-  const btn = { primer: false, flares: false, boom: false, ghost: false, vortex: false };   // the on-stage and phone ability buttons
+  const btn = { primer: false, flares: false, ghost: false, vortex: false };   // the on-stage and phone ability buttons
   function bindZone(zone, key, ring) {
     const el = $(zone), ts = $(ring);
     el.addEventListener('pointerdown', (e) => {
@@ -1350,7 +1328,7 @@
   }
   bindZone('tzL', 'L', 'tsL'); bindZone('tzR', 'R', 'tsR');
   const pulse = (k) => (e) => { btn[k] = true; touched(); if (e) e.stopPropagation(); };
-  for (const [id, k] of [['tPrimer', 'primer'], ['tFlare', 'flares'], ['tBoom', 'boom'], ['tGhost', 'ghost'], ['aPrimer', 'primer'], ['aFlare', 'flares'], ['aBoom', 'boom'], ['aGhost', 'ghost'], ['aVortex', 'vortex'], ['tVortex', 'vortex']]) $(id).addEventListener('click', pulse(k));
+  for (const [id, k] of [['tPrimer', 'primer'], ['tFlare', 'flares'], ['tGhost', 'ghost'], ['aPrimer', 'primer'], ['aFlare', 'flares'], ['aGhost', 'ghost'], ['aVortex', 'vortex'], ['tVortex', 'vortex']]) $(id).addEventListener('click', pulse(k));
   function takeBtn(k) { const v = btn[k]; btn[k] = false; return v; }
   function humanGoby(dt) {
     const g = readPad(), primerB = takeBtn('primer'), flaresB = takeBtn('flares');
@@ -1363,16 +1341,16 @@
   }
   function humanPistol() {
     const g = readPad(); let launch = pendingLaunch; pendingLaunch = null;
-    const boomB = takeBtn('boom'), ghostB = takeBtn('ghost'), vortexB = takeBtn('vortex'), pressDive = ptr.on && !ptr.aiming ? 1 : 0;
+    const ghostB = takeBtn('ghost'), vortexB = takeBtn('vortex'), pressDive = ptr.on && !ptr.aiming ? 1 : 0;
     if (g && (g.axes.some((a) => Math.abs(a) > 0.12) || g.buttons.some((b) => b && b.pressed))) {
       touched(); const rt = g.buttons[7] ? g.buttons[7].value : 0;
       if (rt > 0.5) padAim = { dx: dz(g.axes[2]) * P.pLaunchRange, dy: -dz(g.axes[3]) * P.pLaunchRange };
       else if (padAim) { if (Math.hypot(padAim.dx, padAim.dy) > 10) launch = padAim; padAim = null; }
-      return { dive: Math.max(pressDive, g.buttons[0] && g.buttons[0].pressed ? 1 : 0, g.buttons[6] ? g.buttons[6].value : 0), launch, explode: boomB || !!(g.buttons[2] && g.buttons[2].pressed), ghost: ghostB || !!(g.buttons[1] && g.buttons[1].pressed), vortex: (vortexB || !!(g.buttons[3] && g.buttons[3].pressed)) && (aimNow(W) || { dx: 1, dy: 0 }) };
+      return { dive: Math.max(pressDive, g.buttons[0] && g.buttons[0].pressed ? 1 : 0, g.buttons[6] ? g.buttons[6].value : 0), launch, ghost: ghostB || !!(g.buttons[1] && g.buttons[1].pressed), vortex: (vortexB || !!(g.buttons[3] && g.buttons[3].pressed) || !!(g.buttons[2] && g.buttons[2].pressed)) && (aimNow(W) || { dx: 1, dy: 0 }) };
     }
     if (keys.has('KeyF') && !padPrev.f) launch = { dx: 0.7 * P.pLaunchRange, dy: 0.45 * P.pLaunchRange };
     padPrev.f = keys.has('KeyF');
-    return { dive: Math.max(pressDive, keys.has('Space') || keys.has('KeyS') || keys.has('ArrowDown') ? 1 : 0), launch, explode: boomB || keys.has('KeyE'), ghost: ghostB || keys.has('KeyG'), vortex: (vortexB || keys.has('KeyQ')) && (aimNow(W) || { dx: 1, dy: 0 }) };
+    return { dive: Math.max(pressDive, keys.has('Space') || keys.has('KeyS') || keys.has('ArrowDown') ? 1 : 0), launch, ghost: ghostB || keys.has('KeyG'), vortex: (vortexB || keys.has('KeyQ') || keys.has('KeyE')) && (aimNow(W) || { dx: 1, dy: 0 }) };
   }
   function padSwapCheck() {
     const g = readPad(); if (!g) return;
@@ -1395,7 +1373,7 @@
   function swap() {   // the arena pilot swap, unified (PilotSwap: 0.75 s cooldown); nothing about either half resets
     const now = performance.now() / 1000; if (now - lastSwapAt < P.swapCd) return; lastSwapAt = now;
     S.fly = S.fly === 'goby' ? 'pistol' : 'goby'; $('selFly').value = S.fly; keys.clear(); padAim = null; pendingLaunch = null; ptr.on = false; ptr.aiming = false;
-    if (W) { W.aiG.out = {}; W.aiP.out = {}; W.g.prevPrimer = W.g.prevFlare = false; if (W.p) { W.p.prevExplode = W.p.prevGhost = false; } W.swaps = (W.swaps || 0) + 1; }
+    if (W) { W.aiG.out = {}; W.aiP.out = {}; W.g.prevPrimer = W.g.prevFlare = false; if (W.p) { W.p.prevVortex = W.p.prevGhost = false; } W.swaps = (W.swaps || 0) + 1; }
     applyViews(); save(); say('You fly the ' + (S.fly === 'goby' ? 'Goby' : 'Pistol') + '; the AI took the ' + (S.fly === 'goby' ? 'Pistol' : 'Goby'));
   }
   function applyViews() {

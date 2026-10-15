@@ -285,5 +285,8 @@ the line it settled.
   carries what it catches and breaks it when it collapses [read]); and the world needs enough to interact with (the lab
   seeds clusters ahead of the Goby). **[open]:** the Pistol's row now has five candidates (launch, snap / explode,
   vortex ring, dive, ghost) for four slots.
+- 2026-10-15, Garrett: **drop the self-explosion; the vortex ring IS the Snap.** The Pistol's row is now launch,
+  Snap (vortex ring), dive, ghost (the four, closing the five-for-four question). The crystal's "free explosion on impact"
+  becomes a free Snap: a vortex ring fired on the next hit, with no cooldown **[read]**. Then: push it to Unity.
 - 2026-10-14, round 1 of the lab built (§9.1). Nothing decided yet: Garrett picks the unroll in the lab (its
   Decisions tab writes to the shared log).
