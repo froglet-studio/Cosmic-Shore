@@ -63,11 +63,11 @@ asset, the prefab, and the code are the record.** Before changing a vessel:
    including HUD icons that live in the **vessel** prefab, not the HUD variant (the Rhino's row
    was missed for exactly this reason), and `m_Modifications` overrides on nested prefabs.
 3. Run (or, since you cannot run Unity, reason from the source of) the fleet auditors:
-   **FrogletTools > Vessels > Wire Vessel Ability Row** (`VesselAbilityRowWirer` — builds or repairs
+   **FrogletTools > Vessels > Wiring > Wire Vessel Ability Row** (`VesselAbilityRowWirer` — builds or repairs
    ANY vessel's four-icon row from nothing at the fleet-standard bands; idempotent, never touches
    sprites, adopts authored gauges by name. This is the mechanical half of taking a vessel from 0/4
    to 4/4 once its map is designed),
-   **FrogletTools > Vessels > Audit Vessel Ability Rows**, **Audit Vessel Skimmers** and **Audit
+   **FrogletTools > Vessels > Audits > Audit Vessel Ability Rows**, **Audit Vessel Skimmers** and **Audit
    Vessel Elemental Morphs** — all asset-only, all reuse the exact runtime discovery code, so
    report and game cannot disagree.
 4. **Per-vessel NUMBERS come from the prefab, never the class default.** Reasoning about a
@@ -903,7 +903,7 @@ actually draws — take their size from the **transform chain**, which is precis
 - **Scale the TRANSFORM, not the particle module**, and only because these systems are
   `Hierarchy`-scaled: it moves particle size, emission shape, particle speed AND the nested
   `Trail` child's standoff together. `startSizeMultiplier` would move one of the four.
-- Audit rather than remember: *FrogletTools > Vessels > Audit Vessel Tails and Jets* reports each
+- Audit rather than remember: *FrogletTools > Vessels > Audits > Audit Vessel Tails and Jets* reports each
   hull's effective plume against its camera-derived target and flags `UNSIZED`. Sparrow, Rhino,
   Grizzly and Scarab are still unsized — known, deliberate, recorded in the doc's follow-ups.
 
@@ -1219,7 +1219,7 @@ up the enforcement ladder the shipped systems use:
 5. **Record it**: CLAUDE.md + this skill's CONTRACT.md + the ship checklist.
 
 **Worked example (2026-08):** the skimmer half of that gap is now closed —
-`VesselSkimmerAudit` (`FrogletTools > Vessels > Audit Vessel Skimmers`) walks every vessel
+`VesselSkimmerAudit` (`FrogletTools > Vessels > Audits > Audit Vessel Skimmers`) walks every vessel
 prefab's `NearFieldSkimmer`/`FarFieldSkimmer` to its GameObject and checks active state up the
 whole ancestor chain, the impactor/`ImpactCollider`/trigger-collider/`Rigidbody` the trigger path
 needs, and whether the container holds prism effects; when a container asks for the forcefield

@@ -65,8 +65,8 @@ namespace CosmicShore.Editor.AI
         double _nextScan, _nextRepaint, _nextPausedRender, _saveAt, _lastStep;
         Rect _viewRect;
 
-        [MenuItem("FrogletTools/AI/Third Eye", false, 1)]
-        [FrogletTool(FrogletToolCategory.Vessels, Importance = 4,
+        [MenuItem("FrogletTools/AI/Third Eye", false, 100)]
+        [FrogletTool(FrogletToolCategory.Ai, Importance = 4,
             Description = "Watch Play mode from a second camera while you play: any pilot, Chase / Follow / Free, " +
                           "with each AI's aim drawn over the view.",
             DocPath = ".claude/skills/vessel-ai/SKILL.md")]

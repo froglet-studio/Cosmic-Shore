@@ -11,6 +11,7 @@ instead of copying them:
 
 | Read | For |
 |---|---|
+| `Docs/AI_SYSTEM/REGATTA_AI_ROADMAP.md` | **The current plan**: the Regatta six, the hull-drive pattern every new racing AI follows (§2), measuring in Amoebius (§4), the order |
 | `Docs/AI_SYSTEM/README.md` | Start here: the branch AI work lives on (`Ys-bleeding-edge`), the first command of every AI session (`python3 Tools/Build/ai_branch_sync.py`) |
 | `Docs/AI_SYSTEM/ARCHITECTURE.md` | The six layers (§1) and **the roster of every AI** (§2, the source of truth). A new AI gets a row there first |
 | `Docs/AI_SYSTEM/DIAGNOSIS_PLAYBOOK.md` | The five tiers of evidence, the intake checklist, the user's test-script template, the status board |
@@ -77,8 +78,9 @@ Copy this list into the AI's doc and tick it.
 
 ### 3.1 Difficulty levels
 
-- **Today only Skim Race offers a difficulty** (`AIDifficultyRules.IsOfferedFor(GameModes.SkimRace)`). In
-  every other mode the AI's skill follows the **intensity** (Grizzly Time: skill = intensity × 0.25, throttle
+- **Three cards offer a difficulty** (`AIDifficultyRules.IsOfferedFor`): Skim Race (`SkimRaceHandicap` on crystals) and,
+  since 2026-10-10, Slingshot and Warpline (`GateRaceHandicap` on rings, applied by `GateRaceController`, so any
+  gate race can join by being named there). In every other mode the AI's skill follows the **intensity** (Grizzly Time: skill = intensity × 0.25, throttle
   0.7 → 1.0). Say which one your AI uses.
 - **To add a difficulty to a mode**, follow Skim Race's pattern (`SKIM_RACE_AI.md` §10) and do not invent a
   second one:

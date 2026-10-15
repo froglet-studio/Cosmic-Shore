@@ -22,7 +22,7 @@ namespace Amoebius.Workspace
     /// already had keeps it, and ours gets the next free one. The counters end past every key on
     /// either side.
     /// </summary>
-    public static class BoardMerge
+    internal static class BoardMerge
     {
         public static string Json(AmoebiusBoard.Item item) => BoardJson.Serialize(item);
 

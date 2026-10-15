@@ -2753,7 +2753,7 @@ First pass, in Menu_Main freestyle:
 
 1. **Import clean.** Pull, let Unity reimport, confirm zero compile errors and that the
    four new prefabs open without "Missing (Mono Script)" rows. Run
-   **FrogletTools > Validation > Validate Lifeform Crystals** — every segment's heart is
+   **FrogletTools > Ecology > Validate Lifeform Crystals** — every segment's heart is
    runtime-provisioned by design (and the validator only inspects `LifeForm`/`LightFauna`
    prefabs anyway), so it should stay quiet about the worm.
 2. **Spawn**: freestyle → Spawn Matrix toy → "Worm Colony" → any element station.
@@ -4725,7 +4725,7 @@ NOT re-run after the octagon conversion and remain open:
    Confirm it still reads as topiary in the garden.
 7. Re-run `python3 Tools/Build/author_flora_populations.py --check` after any asset tuning,
    `python3 Tools/Build/verify_gyroid_octagon_tables.py` after any bond-table or octagon-table
-   edit, and `FrogletTools ▸ Validation ▸ Validate Lifeform Crystals` (every octagon is a lifeform
+   edit, and `FrogletTools ▸ Ecology ▸ Validate Lifeform Crystals` (every octagon is a lifeform
    now, so the one-crystal rule is being asserted far more often than before).
 
 ### 32.7 The octagon colony — a crystal in every window (Aug 2026, second pass)
@@ -5227,7 +5227,7 @@ Menu_Main freestyle (Blob cell) is the fastest read:
    SHOULD show a size gradient with the founders largest.
 5. **The reward tracks** — collect a level-1 heart and a levelled one and confirm the element
    flowers move further on the second.
-6. Re-run `FrogletTools ▸ Validation ▸ Validate Lifeform Crystals` (no prefab changed, but the
+6. Re-run `FrogletTools ▸ Ecology ▸ Validate Lifeform Crystals` (no prefab changed, but the
    sizing path did) and `FrogletTools ▸ Ecology ▸ Measure Cell Environment Baselines` for
    Rampage per consequence 1 above.
 ## 34. Schwarz P grows on its own TILE — the hyperbolic {6,4}, which is one half-period cube (Aug 2026)
@@ -6227,7 +6227,7 @@ fit against and no equivalent measurement; nobody has looked at them.
    construction (nothing in `Spindle` reads `leafSize`) and they compose, but the *look* of a
    Charge gyroid's join is the one thing this branch cannot predict. Check it on the same plant as
    step 5.
-8. After the flora config edits: `FrogletTools ▸ Validation ▸ Validate Lifeform Crystals`.
+8. After the flora config edits: `FrogletTools ▸ Ecology ▸ Validate Lifeform Crystals`.
 
 ---
 
@@ -6704,7 +6704,7 @@ five-playtest failure class).
 7. **The food web:** graze a strut (any vessel ability) — the edge frees and the plant regrows
    it; strip a whole plant — it withers to its crystal on the standard path, and the freed
    heart is re-plantable by the colony.
-8. After the flora config edits: `FrogletTools ▸ Validation ▸ Validate Lifeform Crystals`.
+8. After the flora config edits: `FrogletTools ▸ Ecology ▸ Validate Lifeform Crystals`.
 
 ### 37.9 A prism is a LEAF of the hierarchy — and the lattice doubles (Aug 2026, second pass)
 
@@ -9099,7 +9099,7 @@ Everything above is offline. Specifically:
    of bluntness, are the prefab's `density` (0.5–1.3), then `Blossoms`/`Crowns`/`Falls`.
 4. **Confirm the garden grows and stops.** Plant count should settle at 21 and stay there; the
    cell should reach Restless within the first minutes and never reach Frenzy.
-5. **FrogletTools > Validation > Validate Lifeform Crystals** after any lifeform-prefab change.
+5. **FrogletTools > Ecology > Validate Lifeform Crystals** after any lifeform-prefab change.
 
 **Known gaps, stated rather than hidden:** the cell wears the project-wide placeholder card icon
 (as 15 of the 16 shipped cell configs do — a Garland-specific one is an art task); the flora
@@ -11491,3 +11491,83 @@ scenario can never freeze the next one. And it is not a lever: nothing in gamepl
 mode that wants less production tunes its spawn profile or its volume ladder, the way every shipped
 mode does. Explicit player acts are deliberately not gated (the Lifeform Matrix toy's releases).
 
+
+## 60. A dead QuadFish's heart followed the vessel and could not be taken (Oct 2026)
+
+**Reported (2026-10-14):** the crystals left behind by dead QuadFish "look like they are part of a
+different transform — they get warped and don't like to be collected, but they follow the player
+around; they interact with the vessel skimmer but not the hull". Two independent defects, both in
+how the heart is authored rather than in the death path.
+
+**Landed in two PRs:** #1091 (the runtime wiring in `LifeFormCrystal`, the QuadFish scale move and
+`Crystal.ReparentToCell`) and #1094 (the authoring half below: the collection pair on five prefabs,
+and `Tools/Build/author_lifeform_heart_collection.py`).
+
+### 60.1 Vacuumable, never collectable — the collection pair was missing
+
+A heart is collected through `ElementalCrystalImpactor` + `ImpactCollider` on the crystal. The
+standalone elemental prefabs in `Resources/ElementalCrystalSet` carry **neither** (`CrystalSpace`
+is `Crystal` + a trigger `SphereCollider` + audio), and lifeform prefabs add the pair as inspector
+overrides. Swept 2026-10-14: **six** lifeform prefabs never did — QuadFish, Clawfish, Nerve, Pine,
+Wall and oldWall flora (the other 25 lifeform hearts do).
+
+The skimmer's VACUUM (`SkimmerImpactor.OnTriggerStay`) only needs the `Crystal` on the trigger, so
+once death cleared `IsEmbedded` the heart was dragged after the vessel for as long as it stayed in
+range, while no contact could ever reach `ElementalCrystalImpactor.AcceptImpactee`. Only the
+**Space** QuadFish showed it: `LifeFormCrystal.EnsureElementalCrystal(owner, element)` REPLACES an
+authored crystal of the wrong element with a set prefab and wires the pair onto the replacement
+(`WireCollection`), but returned an authored crystal of the right element untouched — and the
+QuadFish authors a Space crystal. Charge, Mass and Time QuadFish were always collectable.
+
+**Fix:** both `EnsureElementalCrystal` overloads now run `WireCollection` on a crystal they KEEP.
+It is a no-op when an impactor is already present, so the 25 prefabs that author it are unchanged. The
+same call makes the Space QuadFish's heart reachable by the crystal-joust chain, which also goes
+through the impactor. The runtime wiring is the backstop that makes "every lifeform drops a
+collectable crystal" hold regardless of authoring.
+
+**The authoring half (same day):** `Tools/Build/author_lifeform_heart_collection.py` adds the pair to
+any lifeform heart that lacks it, in the exact shape the 25 already carry — an
+`ElementalCrystalImpactor` (`Crystal` -> the instance's Crystal, the one collection effect
+`0ac04a74…` every authored heart uses) and an `ImpactCollider` pointing at it, both as added
+components on the nested crystal instance, plus the `Crystal` component overridden to DISABLED. That
+last part was a second inconsistency the sweep found: all 25 working hearts author `m_Enabled: 0` on
+their Crystal, so a living heart stays out of `Crystal.Active` and its `Start` (the `crystalValue`
+stamp) waits for `ActivateCrystal`; QuadFish and Clawfish did not (the four flora already did). The
+script authored QuadFish, Clawfish, Nerve, Pine and Wall flora. oldWallFlora, the sixth bare heart,
+was skipped because no config, scene or prefab referenced its guid, and was then deleted (#1097). `--check` is the gate: it fails naming any lifeform
+prefab whose heart lacks the pair (negative-controlled — it named exactly these five before the
+write), and a second write is byte-identical. Nested ids follow Unity's rule
+(`instanceFileID XOR sourceFileID`, 63-bit), which reproduces all 25 existing hearts' stubs.
+
+### 60.2 Warped — a non-uniform creature root
+
+The QuadFish ROOT was authored at `(1, 1, 1.31)`. The heart hangs off the root, so it was stretched
+31% along the fish, and its spinning model children sheared as they turned (a rotating child of a
+non-uniformly scaled parent cannot stay rigid). `transform.parent = cell` on release preserved that
+lossy scale by baking a non-uniform `localScale` into the crystal itself, so the dropped pickup kept
+warping long after the fish was gone.
+
+**Fix, two layers:**
+- **Prefab:** the elongation moved from the root onto the body child, `BezierCurve` `5,5,5 → 5,5,6.55`,
+  root now `1,1,1`. The root has exactly two children (the body and the heart at the origin), and
+  `QuadFishSwimDriver` banks the body only about **z** — a rotation about z commutes with a z-only
+  scale — so every body and fin world pose is identical at every bank angle.
+  `author_lifeform_heart_sizes.py --check` still measures the body at **22.9** and the band at 1.75.
+- **Code backstop:** `Crystal.ReparentToCell` (behind `DetachHeartToCell` and `ActivateCrystal`)
+  reparents with world pose kept and then restates the crystal's **x** world size uniformly on the
+  cell. x is the axis `LifeFormCrystal.SetWorldScale` sizes a heart along and the axis the collect
+  reward reads (`lossyScale.x`), so no payout moves. Every crystal prefab root is authored uniform
+  (swept 2026-10-14), so a crystal that was already uniform is unaffected.
+
+### 60.3 Invariants
+
+Touches the locked "every lifeform drops exactly one elemental crystal" invariant only to make it
+hold more often (a dropped heart is now always collectable). No collider is added — the
+`ImpactCollider` is a component on the heart's existing `SphereCollider`, not a new collider — so the
+collider budget is unchanged. Not editor-verified: kill a Space QuadFish in Garland or Wildlife
+Liberation, fly the HULL through its dropped heart (it must collect), and confirm the heart and a
+living fish both look undistorted. Then open QuadFish, Clawfish, NerveFlora, PineFlora and WallFlora:
+each heart must show `ElementalCrystalImpactor` (`Crystal` set, one collection effect) and
+`ImpactCollider` (pointing at it), its `Crystal` component unchecked, and no Missing (Mono Script)
+rows. A living QuadFish's heart must still be joustable: `SetEmbeddedIn` enables the collider, and
+that doesn't depend on the `Crystal` component being enabled.

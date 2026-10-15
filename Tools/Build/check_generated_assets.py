@@ -338,6 +338,34 @@ class Audit:
         p = self.guids.get(guid)
         return p[0] if p else None
 
+    def has_object(self, rel, fid, depth=0):
+        """True when `fid` names an object of prefab/scene `rel`: one of its own documents, OR an
+        object it inherits through a PrefabInstance that it never writes out. Unity gives such an
+        object the id `(instanceFileID XOR sourceFileID) & INT64_MAX` - so a variant of a variant
+        references, and overrides, ids that appear in no document of its source. Checking anchors
+        alone reported every one of those as missing (the Skim Race ring crystal, a variant of
+        BigCrystalVariant, which is itself a variant of Crystal.prefab)."""
+        anchors = self.anchors(rel)
+        if anchors is None or fid in anchors:
+            return True
+        if depth > 8:
+            return False
+        try:
+            want = int(fid)
+        except ValueError:
+            return False
+        for inst_fid, doc in anchors.items():
+            if doc.cls != 1001:
+                continue
+            src = (doc.data or {}).get("m_SourcePrefab") if isinstance(doc.data, dict) else None
+            src_rel = self.resolve(src.get("guid")) if isinstance(src, dict) else None
+            if not src_rel or not src_rel.endswith(YAML_EXT) or not self.tree.exists(src_rel):
+                continue
+            sid = ((want & 0xFFFFFFFFFFFFFFFF) ^ (int(inst_fid) & 0xFFFFFFFFFFFFFFFF)) & 0x7FFFFFFFFFFFFFFF
+            if self.has_object(src_rel, str(sid), depth + 1):
+                return True
+        return False
+
     def class_of(self, rel, doc):
         """Full schema name of a MonoBehaviour doc's script class, or None."""
         if doc.cls != 114 or not isinstance(doc.data, dict):
@@ -402,8 +430,7 @@ class Audit:
         if not target:
             return [("guid", rel, "%s.%s -> guid %s resolves to no asset in Assets/" % (where, path, guid))]
         if target.endswith(YAML_EXT) and self.tree.exists(target):
-            anchors = self.anchors(target)
-            if anchors is not None and fid not in anchors:
+            if not self.has_object(target, fid):
                 return [("guid", rel, "%s.%s -> fileID %s does not exist in %s" % (where, path, fid, target))]
         return []
 
@@ -829,6 +856,15 @@ def self_test(schema, base):
     hit = [f for f in found if f[0] == "deleted"]
     print("  [%s] %-60s %s" % ("ok" if hit else "MISSED", "reference to a deleted asset", hit[0][2][:110] if hit else ""))
     ok &= bool(hit)
+    # an object a variant inherits without writing it out: its derived id must resolve, and a
+    # neighbouring id must not (BigCrystalVariant -> Crystal.prefab; root Transform 5535990081244205889)
+    audit = Audit(Tree(ROOT), schema, build_guid_index(Tree(ROOT))[0])
+    variant = "Assets/_Prefabs/Environment/BigCrystalVariant.prefab"
+    derived_ok = audit.has_object(variant, str(5535990081244205889 ^ 1710552517093063004))
+    bogus_ok = not audit.has_object(variant, str((5535990081244205889 ^ 1710552517093063004) - 1))
+    print("  [%s] %-60s" % ("ok" if derived_ok else "MISSED", "variant-derived fileID resolves"))
+    print("  [%s] %-60s" % ("ok" if bogus_ok else "MISSED", "a fileID derivable from nothing is still missing"))
+    ok &= derived_ok and bogus_ok
     print("self-test " + ("passed" if ok else "FAILED"))
     return 0 if ok else 1
 

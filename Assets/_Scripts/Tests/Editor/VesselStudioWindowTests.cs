@@ -75,6 +75,13 @@ namespace CosmicShore.Tests
                 Assert.IsTrue(File.Exists("Docs/Studios/VesselStudio/" + s.preview), s.id + ": " + s.preview);
             }
             CollectionAssert.AreEqual(VesselStudioWindow.ParseFleet(File.ReadAllText("Docs/Studios/VesselStudio/index.html")), cat.fleet);
+            // the hub's "+ New studio" card (D36/D37) is in the catalog, so the home draws it with the hub's text
+            if (File.ReadAllText("Docs/Studios/VesselStudio/index.html").Contains("class=\"bay add\""))
+            {
+                Assert.IsFalse(string.IsNullOrEmpty(cat.newCard?.name), "studios.json newCard");
+                StringAssert.IsMatch("^[A-Za-z0-9-]{1,40}$", cat.newCard.fragment);
+                StringAssert.Contains(cat.newCard.fragment, File.ReadAllText("Docs/Studios/VesselStudio/studio-new.js"));
+            }
         }
 
         [Test]

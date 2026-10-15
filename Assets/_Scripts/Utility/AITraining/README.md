@@ -110,13 +110,13 @@ _Scripts/Utility/AITraining/
 ├── Runner/                          Scenario SO, session state SO, runner MonoBehaviour
 ├── Persistence/                     Archive SO, JSON sidecars
 ├── Telemetry/                       SOAP telemetry data container
-├── Editor/                          FrogletTools / AI Training window
+├── Editor/                          FrogletTools / AI / AI Training window
 └── Tests/Editor/                    Edit-mode tests for the search-side primitives
 ```
 
 ## Operator
 
-Open **FrogletTools → AI Training**. Four tabs sit under Learn and Stop.
+Open **FrogletTools → AI → AI Training**. Four tabs sit under Learn and Stop.
 Quick Setup creates `Assets/_SO_Assets/AI Training/` the first time anything
 is missing and does not overwrite a scenario that already exists.
 
@@ -169,7 +169,7 @@ archive keys that stay distinct.
 
 ## One-click training: press Learn and walk away
 
-1. **`FrogletTools → AI Training`** to open the window.
+1. **`FrogletTools → AI → AI Training`** to open the window.
 2. **Press the big "Learn" button.**
 
 That's it. The button:
@@ -231,7 +231,7 @@ edit-mode test covers the generation math
 (`Loop_ThreeMatchesAtPopulationSize_IncrementsGeneration`) and does not
 substitute for these steps.
 
-1. Open **FrogletTools → AI Training → Quick Setup** once, so
+1. Open **FrogletTools → AI → AI Training Quick Setup** once, so
    `Assets/_SO_Assets/AI Training/` exists. If a previous run already
    keyed `SessionState` to `Squirrel_SkimRace_I4`, delete that asset (or
    clear its population) before changing size. `EnsureStateInitialized`

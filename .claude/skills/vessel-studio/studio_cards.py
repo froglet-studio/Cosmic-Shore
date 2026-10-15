@@ -15,10 +15,11 @@ HOSTS = {'web', 'amoebius', 'unity'}
 
 
 class _Hub(HTMLParser):
-    """The hub's bays (<a class="bay">), its fleet chips, its lede: the text exactly as a reader sees it."""
+    """The hub's bays (<a class="bay">), its "+ New studio" card (<button class="bay add">, D36), its fleet chips, its lede:
+    the text exactly as a reader sees it."""
     def __init__(self):
         super().__init__(convert_charrefs=True)
-        self.cards, self.fleet, self.lede, self.fleet_note = [], [], None, None
+        self.cards, self.fleet, self.lede, self.fleet_note, self.new_card = [], [], None, None, None
         self._card, self._cls, self._grab, self._buf, self._depth = None, [], None, '', 0
         self._in_fleet = False
         self._spec_key = None
@@ -26,8 +27,8 @@ class _Hub(HTMLParser):
     def handle_starttag(self, tag, attrs):
         a = dict(attrs)
         cls = (a.get('class') or '').split()
-        if tag == 'a' and 'bay' in cls:
-            self._card = {'file': a.get('href'), 'accent': _accent_var(a.get('style') or ''), 'spec': []}
+        if (tag == 'a' and 'bay' in cls) or (tag == 'button' and 'bay' in cls and 'add' in cls):
+            self._card = {'file': a.get('href'), 'accent': _accent_var(a.get('style') or ''), 'spec': [], '_tag': tag}
             self._depth = 0
         if self._card is not None:
             self._depth += 1
@@ -66,9 +67,11 @@ class _Hub(HTMLParser):
             if tag == 'div' and self._card.get('_spec') and self._card.get('_specopen', True) and self._grab is None and self._spec_key is not None and tag == 'div':
                 self._card['_specopen'] = False
             self._depth -= 1
-            if tag == 'a':
+            if tag == self._card.get('_tag'):
                 c = {k: v for k, v in self._card.items() if not k.startswith('_')}
-                self.cards.append(c); self._card = None; self._spec_key = None
+                if tag == 'button': self.new_card = {k: c.get(k) for k in ('name', 'summary', 'open')}
+                else: self.cards.append(c)
+                self._card = None; self._spec_key = None
         if tag == 'div' and self._in_fleet and self._grab is None: self._in_fleet = False
 
 
@@ -81,7 +84,7 @@ def hub(html_text):
     """The hub's cards (file, name, chip, summary, spec, open, accent var, canvas id), fleet and lede."""
     p = _Hub(); p.feed(html_text)
     roots = dict(re.findall(r'--([\w-]+):\s*(#[0-9a-fA-F]{6})', html_text.split(':root', 1)[1].split('}', 1)[0])) if ':root' in html_text else {}
-    return {'cards': p.cards, 'fleet': p.fleet, 'fleetNote': p.fleet_note, 'lede': p.lede, 'vars': roots}
+    return {'cards': p.cards, 'newCard': p.new_card, 'fleet': p.fleet, 'fleetNote': p.fleet_note, 'lede': p.lede, 'vars': roots}
 
 
 def preview_source(html_text):
@@ -131,6 +134,22 @@ def differences(root):
         pv = s.get('preview')
         if not pv: errs.append(f'{n}: no "preview" (the baked thumbnail the native homes show)')
         elif not os.path.exists(os.path.join(root, DIR, pv)): errs.append(f'{n}: preview {pv} is missing: node .claude/skills/vessel-studio/bake_previews.cjs')
+    # the "+ New studio" card (D36): on the hub, so on every native home, drawn from studios.json "newCard"
+    nc, hn = cat.get('newCard'), h.get('newCard')
+    if hn and not nc:
+        errs.append('the hub has the + New studio card but studios.json has no "newCard": the native homes cannot draw it')
+    elif nc and not hn:
+        errs.append('studios.json has a "newCard" but the hub has no + New studio card (<button class="bay add">)')
+    elif nc and hn:
+        for k in ('name', 'summary', 'open'):
+            if (hn.get(k) or '') != (nc.get(k) or ''):
+                errs.append(f'the hub\'s + New studio {k} is "{(hn.get(k) or "")[:60]}", studios.json newCard "{(nc.get(k) or "")[:60]}": copy the hub\'s')
+        fr = nc.get('fragment') or ''
+        panel = os.path.join(root, DIR, 'studio-new.js')
+        if not re.fullmatch(r'[A-Za-z0-9-]{1,40}', fr):
+            errs.append('studios.json newCard "fragment" must be one page-hash word (letters, digits, dashes)')
+        elif os.path.exists(panel) and fr not in open(panel, encoding='utf-8').read():
+            errs.append(f'studio-new.js does not open on #{fr} (studios.json newCard "fragment")')
     if h['fleet'] != (cat.get('fleet') or []):
         errs.append(f'the hub\'s fleet {h["fleet"]} differs from studios.json {cat.get("fleet")}')
     if h['lede'] and h['lede'] != cat.get('lede'):

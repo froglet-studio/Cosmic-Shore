@@ -183,7 +183,7 @@ vertices it moves, so summing them counts moved vertices a second time. Both def
 reproducible; only one describes the hull.
 
 **The finding that changes the plan: a labelled shape is not a shape.** `VesselAnimation`
-discovers element shapes **by name**, and `FrogletTools ▸ Vessels ▸ Audit Vessel Elemental Morphs`
+discovers element shapes **by name**, and `FrogletTools ▸ Vessels ▸ Audits ▸ Audit Vessel Elemental Morphs`
 reports what it discovers. Swap the Rhino or Urchin rig in and both would report **4 labelled
 shapes — a green audit — while the hull morphs by exactly nothing.** That is worse than the
 current honest zero. Any morph audit or acceptance check must measure **shape magnitude**, not
@@ -289,7 +289,7 @@ Two different phenomena, and telling them apart matters:
 
 ### 4.5 The offline mirror and the in-editor audit disagree by a constant — and both are right
 
-Running **FrogletTools ▸ Vessels ▸ Audit Vessel Elemental Morphs** on the swapped Dolphin and
+Running **FrogletTools ▸ Vessels ▸ Audits ▸ Audit Vessel Elemental Morphs** on the swapped Dolphin and
 `measure_vessel_models.py` on the same FBX gives two different sets of numbers for the same four
 shapes:
 

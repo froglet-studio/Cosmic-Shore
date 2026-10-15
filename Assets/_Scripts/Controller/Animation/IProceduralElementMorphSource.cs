@@ -8,7 +8,7 @@ namespace CosmicShore.Gameplay
     /// A component that morphs a vessel's hull for element levels WITHOUT blend shapes — the
     /// procedural path (the Scarab's <see cref="ScarabHullBuilder"/> re-blends baked geometry
     /// deltas instead of driving FBX shape keys). Exists so the fleet's morph accounting stays
-    /// honest: FrogletTools &gt; Vessels &gt; Audit Vessel Elemental Morphs reports these sources
+    /// honest: FrogletTools &gt; Vessels &gt; Audits &gt; Audit Vessel Elemental Morphs reports these sources
     /// as real coverage, and — the half that prevents a LIE — uses
     /// <see cref="HiddenLegacyModelRoot"/> to mark blend shapes that only exist on a hidden
     /// placeholder model as inert, rather than counting them as the vessel's morph surface.

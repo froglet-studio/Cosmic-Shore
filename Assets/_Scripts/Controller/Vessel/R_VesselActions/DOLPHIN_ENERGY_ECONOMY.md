@@ -448,7 +448,7 @@ and the gape froze.
 
 Fleet-standard row (charge → mass → space → time, the same order as the element flowers), on
 the Squirrel's exact anchor bands. `DolphinHUDVariant.prefab` is authored;
-**FrogletTools > Vessels > Wire Vessel Ability Row** re-binds a broken one without
+**FrogletTools > Vessels > Wiring > Wire Vessel Ability Row** re-binds a broken one without
 re-deriving the layout.
 
 | slot | icon | shows |
@@ -523,7 +523,7 @@ The Dolphin carried an active `EnergySkimmer` doing the physics *and* a disabled
 nested `Skimmer.prefab` instance — and `_nearFieldSkimmer` pointed at the **disabled** one.
 Perfect wiring on the object that never ran; no wiring on the object that did.
 
-**FrogletTools > Vessels > Audit Vessel Skimmers** checks this from assets alone (no play
+**FrogletTools > Vessels > Audits > Audit Vessel Skimmers** checks this from assets alone (no play
 mode): assignment, active state up the whole ancestor chain, the
 impactor/`ImpactCollider`/trigger-collider/`Rigidbody` the trigger path needs, and whether
 the container holds any prism effects. *(Serpent still fails it — its `_nearFieldSkimmer`
@@ -568,8 +568,8 @@ Play Menu_Main, enter freestyle on the Dolphin.
 
 | check | expect |
 |---|---|
-| **FrogletTools > Vessels > Audit Vessel Skimmers** | Dolphin `NearFieldSkimmer: 'EnergySkimmer' OK` |
-| **FrogletTools > Vessels > Audit Vessel Ability Rows** | Dolphin: map complete, 4/4 icons, order ✅ |
+| **FrogletTools > Vessels > Audits > Audit Vessel Skimmers** | Dolphin `NearFieldSkimmer: 'EnergySkimmer' OK` |
+| **FrogletTools > Vessels > Audits > Audit Vessel Ability Rows** | Dolphin: map complete, 4/4 icons, order ✅ |
 | fly through cell mass | crackle arcs across the skimmer sphere per prism; jaw icon punches; gape widens |
 | fly through cell mass | **no beam** stretches from the hull to the skimmed prisms — the crackle is the only skim visual |
 | at zero energy | jaws sit slightly open (4.76°/side), NOT shut — hull and Time icon agree |

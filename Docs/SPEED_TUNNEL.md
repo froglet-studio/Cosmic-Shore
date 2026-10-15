@@ -52,7 +52,7 @@ Four structural properties, mirroring the occlusion corridor's four layers:
 | 1 | **Binding** | `VesselController.Initialize` under `IPlayer.IsLocalPilot` — the one method every vessel must call to become a player's vessel, on every spawn path (single-player, multiplayer, menu autopilot, runtime swap). Nothing per-vessel, nothing per-scene, therefore nothing to forget. `IsLocalPilot` (not `IsLocalUser`) so the legacy non-networked single-player path is covered — that gap is exactly the escape hatch the law must not have. `ChangePlayer` re-evaluates too (for BOTH platform laws), so the Cellular Duel ownership swap can't strand either of them on the hull the AI inherited. |
 | 2 | **One driver** | `VesselSpeedTunnel` is a **static class** with a single hidden `DontDestroyOnLoad` `LateUpdate` publisher installed by `[RuntimeInitializeOnLoadMethod(BeforeSceneLoad)]`. Not tidiness: `PostProcessingManager.SetSpeedTunnelPanini` is one global override with **no ref-counting**, so N per-vessel writers race it and an outgoing vessel's teardown stomps the incoming vessel's value mid-swap. One driver cannot race itself. |
 | 3 | **Fail loud** | Missing `PostProcessingManager` (Panini half inert) and an unexpected camera-controller type (FOV half inert) each warn **once per session**, naming the fix. A null controller — Cinemachine driving the menu — is a designed state and is deliberately silent. |
-| 4 | **Gates** | `SpeedTunnelLawTests` (edit-mode, asset-only) + **FrogletTools > Vessels > Validate Speed Tunnel Law**. Both assert that no vessel prefab carries its own driver *or a missing-script residue of the retired one*, that **every** bind site sits under an `IsLocalPilot` guard, that **every** drive site passes **raw** speed (the warp field's scale divided back out, `Speed / warp`, is the one divisor admitted: it is a function of position, the same for every vessel, and exactly 1 with no field — `Docs/WARP_FIELD.md` §2), and that the config is sane. Every one of those predicates lives once — `SpeedTunnelConfigSO.IsSane` and `SpeedTunnelLawSource` — and all three gates call it, so they cannot drift. Two of these checks are written the way they are because the obvious version is *vacuous*: prefab YAML records a script by GUID and never by class name, and a whole-file `Contains("IsLocalPilot")` stopped being a gate the moment `ChangePlayer` grew a second occurrence. |
+| 4 | **Gates** | `SpeedTunnelLawTests` (edit-mode, asset-only) + **FrogletTools > Vessels > Audits > Validate Speed Tunnel Law**. Both assert that no vessel prefab carries its own driver *or a missing-script residue of the retired one*, that **every** bind site sits under an `IsLocalPilot` guard, that **every** drive site passes **raw** speed (the warp field's scale divided back out, `Speed / warp`, is the one divisor admitted: it is a function of position, the same for every vessel, and exactly 1 with no field — `Docs/WARP_FIELD.md` §2), and that the config is sane. Every one of those predicates lives once — `SpeedTunnelConfigSO.IsSane` and `SpeedTunnelLawSource` — and all three gates call it, so they cannot drift. Two of these checks are written the way they are because the obvious version is *vacuous*: prefab YAML records a script by GUID and never by class name, and a whole-file `Contains("IsLocalPilot")` stopped being a gate the moment `ChangePlayer` grew a second occurrence. |
 
 The sanctioned hold is `VesselSpeedTunnel.SetSuppressed`, and it has exactly one shape: **a
 vantage posed independently of the pilot's vessel**. It is a **hold, not an opt-out** — the vessel
@@ -157,7 +157,7 @@ the vessel's **real** boost source to the *scaler only* and then adds the minimu
 (`DefaultThrottleScaler × boost + DefaultMinimumSpeed` — the minimum is added AFTER the multiply,
 per `VesselTransformer.ComputeThrottleTarget`; that is why the Rhino's ×6 gives 310 and not 360).
 
-**FrogletTools > Vessels > Validate Speed Tunnel Law** prints the **cruise** column live and is
+**FrogletTools > Vessels > Audits > Validate Speed Tunnel Law** prints the **cruise** column live and is
 the gate for it. Its `top(rest)` column is NOT this table's top: the tool reads only the prefab's
 resting `VesselStatus.boostMultiplier`, while four vessels get their real top from elsewhere —
 the Rhino's ×6 from `RhinoRampBoostAction.asset`, the Squirrel's ×5 from the skim-boost clamp, the
@@ -221,7 +221,7 @@ throttle change, which is a flight-feel decision that belongs to whoever tuned i
 6. **MPPM, two clients**: a remote or AI vessel boosting must not move YOUR camera or post stack.
 7. **Astro League goal replay**: during the replay the tunnel is held closed and the replay
    framing is unaffected; it resumes on return to play.
-8. **Gates**: run **FrogletTools > Vessels > Validate Speed Tunnel Law** (expect PASS + the fleet
+8. **Gates**: run **FrogletTools > Vessels > Audits > Validate Speed Tunnel Law** (expect PASS + the fleet
    table) and the `SpeedTunnelLawTests` fixture in the Test Runner (expect all green).
 
 ## §5.1 Verification matrix
