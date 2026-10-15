@@ -7,7 +7,7 @@ race in the Third Eye, improve, repeat.
 
 | File | What |
 |---|---|
-| `index.html` | The page. The card's eight hulls (Rhino, Manta, Dolphin, Urchin, Squirrel, Serpent, Sparrow, Scarab) on their shipped numbers (the keys `Tools/Build/regatta_balance.py` reads), up to 8 players (vessel, domain, difficulty, starting-element style, view), the three cameras, trajectory trails, AI thinking lines, phone play, and the scorecard: race time per hull × Easy / Medium / Hard against the balance model. Hook `window.__regattaAI` (`state`, `set`, `startRace`, `stopRace`, `tick(s)`, `raceHeadless(intensity, hull, level, seed, style, fixMiss)`, `scoreHulls`, `course`). |
+| `index.html` | The page. The card's eight hulls (Rhino, Manta, Dolphin, Urchin, Squirrel, Serpent, Sparrow, Scarab) on their shipped numbers (the keys `Tools/Build/regatta_balance.py` reads), up to 8 players (vessel, domain, difficulty, starting-element style, view), the three cameras, trajectory trails, AI thinking lines, phone play, and the scorecard: race time per hull × Easy / Medium / Hard against the balance model. Hook `window.__regattaAI` (`state`, `set`, `startRace`, `stopRace`, `tick(s)`, `raceHeadless(intensity, hull, level, seed, style, fixMiss)`, `scoreHulls`, `course`, `routesShown`). |
 | `course.js` | GENERATED. The circuit as the game builds it: `RegattaCourse.BuildGates` / `BuildRails` per intensity (8 gates, three braided lanes, one point per prism). Never edit by hand. |
 | `export_course.sh` + `ExportCourse.cs` | Regenerates `course.js` from the shipped C# (the same compile as `Tools/Build/regatta_course_harness`; needs a dotnet 8 SDK). `--check` exits 1 when `course.js` is stale. Re-run after any edit to `RegattaCourse.cs`, `HeadlongCircuit.cs` or `RaceCourseGeometry.cs`. |
 | `build.py` | The publish folder: copies the page, `course.js` and the shared Vessel Studio scripts it loads (`../VesselStudio/studio-theme.js`, `studio-look.js`, `studio-domains.js`, `studio-ide.js`, `ai_race_panel.js`) flat beside it. `--check` also runs `export_course.sh --check`. |
@@ -38,8 +38,25 @@ then publish `<dir>/index.html` with every other file in `<dir>` as `files`, `ur
   shared **Gate steering** as sliders starting at the scene's shipped values; Play Style Config's **Custom** style puts a
   Time-level slider on every hull Time reaches; the Free camera **orbits or flies** (D16); **right-drag (or middle-drag) pans any camera**, double-click resets (the user, 2026-10-15); the scorecard's **Hard
   fastest?** column is the levels check (D24). The scorecard always races the current tuning.
-- **Lab fix (AI Config, on by default; a candidate to port):** commit no earlier than the approach point, and after a
-  missed mouth re-latch the side and extend at once. Off = the game's steering.
+- **Lab fix (AI Config, on by default):** commit no earlier than the approach point, and after a missed mouth re-latch
+  the side and extend at once. **Ported to Unity for Regatta on `Ys-bleeding-edge` (2026-10-15,
+  `GateRaceController.CommitDistanceFor`, `AIPilot.BreakOffNow`), waiting on a playtest.** Off = the game before it.
+- **Easier routes (AI Config ▸ Gate steering; lab-only, candidates to port; at their defaults they are the game)** - for
+  an AI that swings wide and comes back (Yash, 2026-10-15). *Show each AI's planned route* draws a dashed line from each
+  AI through its approach point, the ring and the point past it, so the cause is visible. Then:
+  - **Go straight when lined up** (0-90 deg, default 0): when the pilot is already coming at the mouth within this angle
+    of the ring's axis, it skips the approach point and flies at the ring's centre, then through.
+  - **Exit toward the next ring** (0-1, default 0): the point past the ring bends toward the next ring, growing with the
+    square of closeness (none at the commit distance, full at the ring), so the line still crosses near the centre.
+  - **Break-off distance** (x0.25-1, default 1): how far a break-off flies before it turns back.
+  - *Reset steering* puts all of Gate steering back to the game.
+
+  **Measured (Hard, seed 11, all 8 hulls x I1-I4, lab fix on):** game 30/32 finished, 2635 s for the finishers, 298
+  missed mouths, 43 break-offs. *Exit 0.5*: 30/32, 2400 s (-9%), 261 missed, 37 break-offs (Rhino I1 68 -> 29 s, Manta
+  I4 116 -> 81 s, Dolphin I3 127 -> 103 s, Scarab I4 DNF -> 89 s; but Dolphin I4 133 s -> DNF). *Straight 25 deg*: 29/32,
+  2495 s, 441 missed. *Break-off x0.5*: 28/32, 925 missed (turning back sooner traps it again). *Exit 1* and the
+  combinations miss far more. So *Exit 0.5* is the first candidate, and the Dolphin at I4 says it wants a per-hull
+  setting.
 
 ## First measurements (2026-10-15, Hard, seed 11, card's elements; seconds for three laps; model in brackets)
 

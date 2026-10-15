@@ -226,10 +226,12 @@
       </div>
 
       <div class="panel" id="grp-steer">
-        <h3>Gate steering <span class="note">MinigameRegatta.unity</span></h3>
+        <h3>Gate steering <span class="hbtns"><button class="btn small" id="steerReset" type="button" title="Put the shared steering back to the game's values">Reset steering</button></span></h3>
         <p class="note">The shared gate-race pilot every AI flies (<code>GateRaceController.ArmRacers</code>): far out it aims at a point behind the ring on its axis (capped at a share of the leg), inside the commit distance it aims past the ring, the side latched when the ring changes. A misjudged ring is believed two radii plus 6 u off its centre, in its plane, for up to 6 s. The sliders start at the scene's shipped values (<span id="leadTxt">480</span> u lead).</p>
         <div id="steerTune" style="display:grid;gap:8px"></div>
-        <label class="check" title="Lab-only fix, a candidate to port. The game commits to the far-side point 420 u out whether or not the pilot is lined up, so on Regatta's short legs a pilot can cross the plane outside the mouth; and it latches the ring's side once per ring, so after a miss it circles the far-side point until a break-off fires (REGATTA.md section 6.1, still open). On: the pilot commits no earlier than its approach point (commit = min(420, lead + half a turning radius), so a short leg's 40% lead is actually flown), and after a miss the side is re-latched from where it is (a ring threads from either side) and it extends and re-attacks at once (AIPilot's own break-off) instead of waiting for the orbit detector. Off: the game's behaviour."><input type="checkbox" id="fixChk"> <span>Commit at the approach point, re-aim after a miss (lab fix; off = the game today)</span></label>
+        <p class="note"><b>An AI swinging wide and coming back?</b> Turn on <i>Show each AI's planned route</i> (below) and watch the dashed line: it runs from the hull to its approach point, the ring and the point past it. Then try the three easier-route sliders: <i>Go straight when lined up</i> (skip the approach point when it is already coming at the mouth), <i>Exit toward the next ring</i> (no overshoot straight out after the ring) and <i>Break-off distance</i> (turn back sooner after a break-off). At their defaults they are the game. Rescore to see whether it got faster and still threads every ring.</p>
+        <label class="check"><input type="checkbox" id="routeChk"> <span>Show each AI's planned route (dashed: approach point, ring, point past it)</span></label>
+        <label class="check" title="Ported to Unity for Regatta on Ys-bleeding-edge (2026-10-15, GateRaceController.CommitDistanceFor and the missed-mouth re-attack), waiting on a playtest. The game commits to the far-side point 420 u out whether or not the pilot is lined up, so on Regatta's short legs a pilot can cross the plane outside the mouth; and it latches the ring's side once per ring, so after a miss it circles the far-side point until a break-off fires (REGATTA.md section 6.1, still open). On: the pilot commits no earlier than its approach point (commit = min(420, lead + half a turning radius), so a short leg's 40% lead is actually flown), and after a miss the side is re-latched from where it is (a ring threads from either side) and it extends and re-attacks at once (AIPilot's own break-off) instead of waiting for the orbit detector. Off: the game's behaviour."><input type="checkbox" id="fixChk"> <span>Commit at the approach point, re-aim after a miss (in Unity's Regatta since 2026-10-15; off = the game before it)</span></label>
       </div>
 
       <div class="panel" id="grp-style">
@@ -364,7 +366,12 @@
       ['lead', 'Approach lead', 100, 800, 10, 'u', 'Far out, aim this far behind the ring on its axis (aiApproachLead, shipped 480).', 480],
       ['share', 'Lead cap', 0.2, 0.8, 0.05, '× leg', 'The approach lead never exceeds this share of the leg into the ring (ApproachLeadShareOfLeg, shipped 0.4).', 0.4],
       ['commit', 'Commit', 150, 800, 10, 'u', 'Inside this distance of the ring, aim past it instead (aiCommitDistance, shipped 420).', 420],
-      ['through', 'Through', 100, 600, 10, 'u', 'How far past the ring that point sits (aiThroughDistance, shipped 320).', 320]] },
+      ['through', 'Through', 100, 600, 10, 'u', 'How far past the ring that point sits (aiThroughDistance, shipped 320).', 320],
+      // The easier-route knobs (Yash, 2026-10-15: "the AI moves too far from the target and then comes back"). Lab-only,
+      // candidates to port; at their defaults every one is the game's steering.
+      ['direct', 'Go straight when lined up', 0, 90, 5, '\u00b0', 'Easier route: when the pilot is already coming at the mouth within this angle of the ring\'s axis, it flies straight through instead of first going out to the approach point behind the ring. 0 = the game (always lines up first).', 0],
+      ['exit', 'Exit toward the next ring', 0, 1, 0.05, '', 'Easier route: bends the point past the ring toward the next ring as the pilot closes in, so it stops overshooting straight out and then turning back. 0 = the game (straight out along the ring\'s axis), 1 = fully toward the next ring.', 0],
+      ['breakRun', 'Break-off distance', 0.25, 1, 0.05, '\u00d7 game', 'Easier route: how far an AI flies away before turning back after a break-off. 1 = the game (twice its turning circle or 1.5 s of flight, at most 6 s); 0.5 = half as far. Too short and it can be trapped in the same circle again.', 1]] },
     rhino: { title: 'Rhino: ramp drive', src: 'lab-only (RampBoostAIPolicySO\'s rule: ramp on a straight with runway, let go before the turn)', rows: [
       ['plateau', 'Stick use', 0.5, 1, 0.05, '× 0.3', 'On a runway the AI keeps its stick inside this share of the 0.3 plateau, so the ramp keeps building.', 0.95],
       ['runway', 'Let go early', 0, 400, 10, 'u', 'Extra distance, beyond the coast-down distance to the corner speed, at which it lets go of the ramp for the turn.', 60],
@@ -408,7 +415,7 @@
   const cardGrid = () => HULLS.map((h, i) => ({ ai: true, vessel: h.key, domain: ['jade', 'ruby', 'gold'][i % 3], level: 'Hard', style: 'Card' }));
 
   // ================= settings =================
-  const S = { course: 1, players: testGrid(), view: 0, cam: 'Chase', speed: 1, thinking: true, autoRestart: false, labels: true, trails: true, trailSec: 5, endFirst: false, idleHold: true, inspect: 'Card', fixMiss: true, freeMode: 'Orbit', tuneHull: 'rhino', tune: {}, custom: { manta: -5, dolphin: 0, serpent: 10, sparrow: 10, scarab: 10 } };
+  const S = { course: 1, players: testGrid(), view: 0, cam: 'Chase', speed: 1, thinking: true, autoRestart: false, labels: true, trails: true, route: true, trailSec: 5, endFirst: false, idleHold: true, inspect: 'Card', fixMiss: true, freeMode: 'Orbit', tuneHull: 'rhino', tune: {}, custom: { manta: -5, dolphin: 0, serpent: 10, sparrow: 10, scarab: 10 } };
   const LS = 'cs.regatta-ai.v1';
   try { const s = JSON.parse(localStorage.getItem(LS) || 'null'); if (s) Object.assign(S, s); } catch (e) { /* storage blocked */ }
   for (const k in TUNE_SPEC) S.tune[k] = Object.assign(tuneDefaults(k), S.tune[k] || {});   // a saved tuning keeps any new knob's default
@@ -513,10 +520,10 @@
   const ORBIT = { bias: 0.35, run: 1.5, min: 0.6, max: 6, capture: 18, closing: 0.5, sweep: Math.PI * 2, progress: 0.9, jump: 1.6 };
   function orbitBreak(W, P, aim, fwd) {
     const to = aim.clone().sub(P.pos), range = to.length(), R = P.speed / Math.max(1e-3, turnRate(P));
-    const runway = Math.max(2 * R + ORBIT.capture, P.speed * ORBIT.run);
+    const short = T('steer').breakRun, runway = Math.max(2 * R + ORBIT.capture, P.speed * ORBIT.run) * short;   // easier route: a shorter break-off (1 = the game)
     if (P.ext) {
       const t = W.t - P.ext.since;
-      if ((range >= runway && t >= ORBIT.min) || t >= ORBIT.max) P.ext = null;
+      if ((range >= runway && t >= ORBIT.min) || t >= ORBIT.max * short) P.ext = null;
       else { const away = P.pos.clone().sub(aim).normalize(), d = fwd.clone().addScaledVector(away, ORBIT.bias).normalize(); return P.pos.clone().addScaledVector(d, 300); }
     }
     const dir = range > 1e-3 ? to.clone().divideScalar(range) : fwd.clone(), closing = dir.dot(fwd) > ORBIT.closing;
@@ -549,12 +556,25 @@
       const from = P.gates > 0 ? C.gates[(P.gates - 1) % n].p : P.pos;
       P.lead = Math.min(T('steer').lead, T('steer').share * from.distanceTo(g.p));
     }
+    P.plan = null;
     if (!ringAt) { aim = P.pos.clone().addScaledVector(fwd, 200); why = 'not noticed'; }
     else {
       const commit = W.fixMiss ? Math.min(T('steer').commit, P.lead + 0.5 * P.speed / Math.max(1e-3, turnRate(P))) : T('steer').commit;   // lab fix: never commit before the approach point
-      const approaching = ringAt.distanceTo(P.pos) > commit;
-      aim = approaching ? ringAt.clone().addScaledVector(g.a, P.side * P.lead) : ringAt.clone().addScaledVector(g.a, -P.side * T('steer').through);
-      why = P.hc && P.hc.misjudged ? 'misjudged' : approaching ? 'approach' : 'through';
+      const toRing = ringAt.clone().sub(P.pos), dist = toRing.length(), inDir = g.a.clone().multiplyScalar(-P.side);
+      // Easier route (lab): already coming at the mouth within the set angle of the axis? Fly straight through.
+      const linedUp = T('steer').direct > 0 && dist > 1e-3 && toRing.dot(inDir) / dist >= Math.cos(T('steer').direct * Math.PI / 180);
+      const approaching = !linedUp && dist > commit;   // lined up: no approach point
+      // Easier route (lab): the point past the ring bends toward the next ring, more as the pilot closes in, so the
+      // line still crosses near the mouth's centre (the bend grows with the square of closeness: ~0 at the commit
+      // distance, full at the ring).
+      const near = clamp(1 - dist / Math.max(1, commit), 0, 1), out = inDir.clone(), bend = T('steer').exit * near * near;
+      if (bend > 0) { const toNext = gNext.p.clone().sub(ringAt); if (toNext.lengthSq() > 1e-6) out.lerp(toNext.normalize(), bend).normalize(); }
+      const before = ringAt.clone().addScaledVector(g.a, P.side * P.lead), after = ringAt.clone().addScaledVector(out, T('steer').through);
+      // Lined up and still far: straight at the ring's centre (aiming at the point past it from far out would cross
+      // the plane beside the mouth); inside the commit distance, through as usual.
+      aim = approaching ? before : linedUp && dist > commit ? ringAt.clone() : after;
+      P.plan = approaching ? [before, ringAt.clone(), after] : [ringAt.clone(), after];
+      why = P.hc && P.hc.misjudged ? 'misjudged' : linedUp && dist > commit ? 'straight in (lined up)' : approaching ? 'approach' : 'through';
     }
     // the rail hulls fly their own lane: the Squirrel beside it (skim, never ram), the Urchin onto it
     if (ringAt && P.lane >= 0 && (h.verb === 'skim' || h.verb === 'rail')) {
@@ -768,15 +788,16 @@
     s.scale.set(40 * (size || 1), 10 * (size || 1), 1); s.renderOrder = 5; return s;
   }
   const TRAIL_N = 360;
-  const view = { hulls: [], labels: [], lines: [], trails: [] };
+  const view = { hulls: [], labels: [], lines: [], trails: [], plans: [] };
   function mountWorld(W) {
     mountCourse(W.C);
-    for (const o of [...view.hulls, ...view.labels, ...view.lines, ...view.trails]) scene.remove(o);
-    view.hulls = []; view.labels = []; view.lines = []; view.trails = [];
+    for (const o of [...view.hulls, ...view.labels, ...view.lines, ...view.trails, ...view.plans]) scene.remove(o);
+    view.hulls = []; view.labels = []; view.lines = []; view.trails = []; view.plans = [];
     for (const P of W.pilots) {
       const hm = makeHull(P.h, P.domain.color); scene.add(hm); view.hulls.push(hm);
       const l = makeLabel(P.h.name + (P.i === 0 ? ' • P1' : ''), P.domain.css); scene.add(l); view.labels.push(l);
       const ln = new THREE.Line(new THREE.BufferGeometry().setFromPoints([new V(), new V()]), new THREE.LineBasicMaterial({ color: P.domain.color, transparent: true, opacity: 0.85 })); ln.frustumCulled = false; scene.add(ln); view.lines.push(ln);
+      const pl = new THREE.Line(new THREE.BufferGeometry().setFromPoints([new V(), new V(), new V(), new V()]), new THREE.LineDashedMaterial({ color: 0xffffff, transparent: true, opacity: 0.45, dashSize: 14, gapSize: 10 })); pl.frustumCulled = false; scene.add(pl); view.plans.push(pl);
       const tg = new THREE.BufferGeometry(); tg.setAttribute('position', new THREE.BufferAttribute(new Float32Array(TRAIL_N * 3), 3)); tg.setDrawRange(0, 0);
       const tr = new THREE.Line(tg, new THREE.LineBasicMaterial({ color: P.domain.color, transparent: true, opacity: 0.6 })); tr.frustumCulled = false; scene.add(tr); view.trails.push(tr);
     }
@@ -792,6 +813,9 @@
       const ln = view.lines[i], show = S.thinking && !!P.aim && (!!P.spec.ai || P.idleAI); ln.visible = show;
       if (show) { const a = ln.geometry.attributes.position; a.setXYZ(0, P.pos.x, P.pos.y, P.pos.z); a.setXYZ(1, P.aim.x, P.aim.y, P.aim.z); a.needsUpdate = true;
         const s = P.aiState; ln.material.color.set(s.startsWith('misjudged') ? 0xff5c6c : s.startsWith('not noticed') ? 0xffb454 : /rail|riding|slipping|crawling|reversing/.test(s) ? 0xb48bff : 0x4be38f); }
+      // The route it plans (S.route): from the hull through its approach point, the ring and the point past it.
+      const pl = view.plans[i], plan = S.route && show && P.plan; pl.visible = !!plan;
+      if (plan) { const a = pl.geometry.attributes.position, pts = [P.pos, ...plan]; for (let k = 0; k < 4; k++) { const q = pts[Math.min(k, pts.length - 1)]; a.setXYZ(k, q.x, q.y, q.z); } a.needsUpdate = true; pl.computeLineDistances(); }
       const tr = view.trails[i]; tr.visible = S.trails;
       if (sample && race === 'running' && !paused) { P.trail.push(P.pos.x, P.pos.y, P.pos.z); if (P.trail.length > TRAIL_N * 3) P.trail.splice(0, 3); const arr = tr.geometry.attributes.position.array; arr.set(P.trail); tr.geometry.attributes.position.needsUpdate = true; tr.geometry.setDrawRange(0, P.trail.length / 3); }
     });
@@ -989,7 +1013,7 @@
   function seat(list) { S.players = list; S.view = 0; racePanel.set('players', list, true); racePanel.set('view', 0, true); save(); newRace(); }
   $('gridBtn').addEventListener('click', () => seat(testGrid())); $('gridBtn2').addEventListener('click', () => seat(testGrid())); $('cardBtn').addEventListener('click', () => seat(cardGrid()));
   const bindCheck = (id, k, after) => { $(id).checked = !!S[k]; $(id).addEventListener('change', (e) => { S[k] = e.target.checked; save(); if (after) after(); }); };
-  bindCheck('labelsChk', 'labels'); bindCheck('trailsChk', 'trails'); bindCheck('idleChk', 'idleHold'); bindCheck('endChk', 'endFirst', () => { if (W) W.endFirst = S.endFirst; }); bindCheck('fixChk', 'fixMiss', () => { if (W) W.fixMiss = S.fixMiss; });
+  bindCheck('labelsChk', 'labels'); bindCheck('trailsChk', 'trails'); bindCheck('routeChk', 'route'); bindCheck('idleChk', 'idleHold'); bindCheck('endChk', 'endFirst', () => { if (W) W.endFirst = S.endFirst; }); bindCheck('fixChk', 'fixMiss', () => { if (W) W.fixMiss = S.fixMiss; });
   $('freeSel').value = S.freeMode; $('freeSel').addEventListener('change', (e) => { S.freeMode = e.target.value; fly.pos = null; save(); });
   // AI tuning (/vessel-studio 1.5.6: the AI's own tuning, sliders, lab-only) and the shared gate steering
   function tuneRows(host, key) {
@@ -1008,6 +1032,7 @@
   $('tuneHull').value = S.tuneHull; $('tuneHull').addEventListener('change', (e) => { S.tuneHull = e.target.value; save(); tuneRows($('hullTune'), S.tuneHull); });
   $('tuneReset').addEventListener('click', () => { S.tune[S.tuneHull] = tuneDefaults(S.tuneHull); save(); tuneRows($('hullTune'), S.tuneHull); });
   tuneRows($('hullTune'), S.tuneHull); tuneRows($('steerTune'), 'steer');
+  $('steerReset').addEventListener('click', () => { S.tune.steer = tuneDefaults('steer'); save(); tuneRows($('steerTune'), 'steer'); $('leadTxt').textContent = String(T('steer').lead); });
   $('trailR').value = S.trailSec; $('trailO').textContent = S.trailSec + ' s'; $('trailR').addEventListener('input', (e) => { S.trailSec = +e.target.value; $('trailO').textContent = S.trailSec + ' s'; save(); });
   for (const s of STYLES) { const o = elx('option', null, s.name + ' · ' + s.info); o.value = s.name; $('styleSel').appendChild(o); }
   $('styleSel').value = S.inspect; $('styleSel').addEventListener('change', (e) => { S.inspect = e.target.value; save(); renderStyle(); });
@@ -1210,6 +1235,7 @@
       save(); newRace();
     },
     startRace, stopRace, raceHeadless, scoreHulls, hulls: HULLS, model: MODEL, course: getCourse, get tune() { return S.tune; }, tuneDefaults,
+    get routesShown() { return view.plans.filter((p) => p.visible).length; },   // AIs whose planned-route line is drawn
     tick(seconds) { const dt = 1 / 30; for (let s = 0; s < seconds * 30 && !W.over; s++) stepWorld(W, dt, pilotInputs(humanInput(dt))); return this.state; },
   };
 })();
