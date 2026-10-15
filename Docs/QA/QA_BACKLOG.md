@@ -87,7 +87,9 @@ One Editor session for everything except the two **player builds** (Windows, iOS
 build machine and can run in parallel. QA-ARCADE-ROSTER-SMOKE is the cheapest check on the whole
 list — run it first in every session that will touch a mode block, on the build you are testing.
 
-### QA-ARCADE-ROSTER-SMOKE ⬜ — every Arcade and Arena card opens, launches and forces the right ship
+### QA-ARCADE-ROSTER-SMOKE 🔴 — every Arcade and Arena card opens, launches and forces the right ship
+**Last QA:** FAIL on `fb4cd7f97` (2026-10-15, akouroshm) — Two findings. (1) **Scurry forces the Squirrel** with no vessel picker, but its card `ArcadeGameScurry.asset` authors **3 vessels** and this item expects it pickable (Sparrow/Manta/Squirrel) — a real regression (DT-005), most likely the collapsed single-panel arcade launch dropping the picker for a multi-vessel card. (2) The **roster has grown past the item's expected 24**: five new cards are now registered (GrizzlyCharge, GrizzlyTime on **Grizzly**; Slingshot, Warpline on the new **Stoat** vessel; ThresherTime on the new **Thresher** vessel — all confirmed in `ArcadeGames.asset`, which now holds 30 entries incl. Maelstrom; VesselClassType adds Thresher=14, Stoat=15). The item's 24-card count and ship table are stale (updated here); those 5 new in-development modes + 2 new vessels are themselves untested and need their own QA items. The listed existing cards were not reported as failing; the 5 new cards' per-card launch was not verified this run.
+
 **Source:** the arcade/arena audit of 2026-10-05 (29 cards on the two live rosters; 16 say
 in their own docs they were never opened in Unity, 11 more were played only in part). This
 is the cheapest possible check across the whole roster and it runs before every mode block
@@ -96,17 +98,20 @@ Rosters: `_SO_Assets/Games/GameLists/ArcadeGames.asset` (25) and `ArenaGames.ass
 
 1. Open `Menu_Main` and press Play. Wait for the main menu.
 2. Open the **Arcade** screen. Count the cards, scrolling to the very bottom. There must be
-   **24 cards in the grid** plus the wide **Maelstrom banner** (Maelstrom is not a grid card). Scroll to the
+   **~29 cards in the grid** (the roster is growing — count them, don't assume 24) plus the wide **Maelstrom banner** (Maelstrom is not a grid card). Scroll to the
    last card and click it.
 3. For each Arcade card, open it, set **intensity 1**, launch with the default lobby (you +
    AI), and wait until the countdown ends and you can fly. Look at your own ship, then
    press **Esc** and return to the menu. Write down any card that does not reach "fly".
    The ship must be: **Squirrel** for Skim Race and Joust; the ship you picked (Sparrow, Manta
-   or Squirrel) for Scurry; **Dolphin** for Rampage, The Bends and Switchback; **Rhino** for
+   or Squirrel) for Scurry **(currently FAILING — Scurry forces Squirrel with no picker, DT-005)**; **Dolphin** for Rampage, The Bends and Switchback; **Rhino** for
    Cleave and Headlong; **Sparrow** for Wildlife Liberation, Dog Fight, Salvo and Breakwater;
    **Scarab** for Scarab Scramble, Tollway, Wrecking Ball and Undertow; **Urchin** for Hijack
    and Skein; **Manta** for Bloomrush and Redline; **Butterfly** for Waystation, Dustup,
-   Tapestry and Sirocco.
+   Tapestry and Sirocco; **Grizzly** for Grizzly Charge and Grizzly Time; **Stoat** for
+   Slingshot and Warpline; **Thresher** for Thresher Time. (Those last five — GameModes 62–66 on
+   the new Stoat/Thresher hulls — are in development; confirm they open and force their hull, but
+   their full play is covered by their own mode items, not here.)
 4. Open the **Arena** screen. There must be **4 cards**: Astro League, Brood Rush, Regatta,
    Broadside. For each: open it, step through the ship picker, pick one ship, press the
    select button under the ship picture, launch at intensity 1, fly for a moment, return.
