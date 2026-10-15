@@ -2,8 +2,8 @@
 <html lang="en">
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Regatta AI</title>
-<!-- Regatta AI, round 1: the race studio for every racing AI on the Regatta card (GameModes.Regatta = 56,
+<title>Training AI for Regatta</title>
+<!-- Training AI for Regatta (was "Regatta AI"), round 2: the race and training studio for every racing AI on the Regatta card (GameModes.Regatta = 56,
      Assets/_Scripts/Controller/Arcade/REGATTA.md). Its OWN artifact, separate from the Vessel Studio (Yash, 2026-10-15,
      Docs/AI_SYSTEM/REGATTA_AI_ROADMAP.md: "the Regatta AIs are designed and tested in their own Regatta artifact").
      A READER of the shipped numbers, never their authority:
@@ -143,8 +143,8 @@
 
 <div class="wrap">
   <header class="top">
-    <h1>Regatta AI</h1>
-    <span class="round">Round 1 · the race studio</span>
+    <h1>Training AI for Regatta</h1>
+    <span class="round">Round 2 · race, watch and train</span>
     <p class="sub">The Regatta card's hulls on the game's own circuit: eight switch rings, three laps, three super-shielded domain rails braided along the racing line. Every AI flies its hull's speed verb through the same sticks and triggers a player has (ramp, soar, charge, ride, skim, pellets, afterburner, throttle), at Easy, Medium or Hard. Watch any of them, take one over, and time every hull against the balance model.</p>
   </header>
 
@@ -278,6 +278,22 @@
         <div class="tblwrap"><table class="tbl" id="allTbl"></table></div>
       </div>
 
+      <div class="panel" id="grp-train">
+        <h3>Train an AI <span class="hbtns"><button class="btn small primary" id="trGo" type="button">Train</button> <button class="btn small" id="trStop" type="button" disabled>Stop</button></span></h3>
+        <p class="note">Pick a hull and let its AIs race each other. Each generation races a population of AIs with different steering and drive settings (the sliders in AI Config) on the intensities you tick, keeps the fastest, and breeds the next generation around them; the current champion races in every generation, so a new AI only takes over by beating it. <b>Learn from me</b>: fly that hull yourself for at least one lap (untick Is AI on player 1), and the trainer also rewards flying close to your line. Lab-only: what it finds is exported as JSON for the Unity side (Docs/AI_SYSTEM/AI_TRAINING_PLAN.md).</p>
+        <div class="frow"><span>Hull</span><select class="sel" id="trHull" aria-label="Hull to train"></select></div>
+        <div class="frow"><span>Intensities</span><span id="trCourses" style="display:flex;gap:10px;flex-wrap:wrap"></span></div>
+        <div class="field" title="AIs raced in each generation (the champion is one of them)."><span>Population</span><input type="range" id="trPop" min="6" max="24" step="2"><output id="trPopO"></output></div>
+        <div class="field" title="How many generations to breed."><span>Generations</span><input type="range" id="trGens" min="1" max="30" step="1"><output id="trGensO"></output></div>
+        <div class="field" title="0 = only race time counts. Higher: the AI is also scored by how far it strays from your recorded line (needs a flight of yours on that intensity)."><span>Learn from me</span><input type="range" id="trImit" min="0" max="1" step="0.05"><output id="trImitO"></output></div>
+        <p class="note" id="trDemo"></p>
+        <div class="btns"><button class="btn small" id="trApply" type="button" disabled title="Make the best AI this hull's trained AI">Keep best</button><button class="btn small" id="trVs" type="button" title="A live race: this hull's trained AI against its untrained one">Race trained vs untrained</button><button class="btn small" id="trExport" type="button" title="Copy this hull's trained AI as JSON (the Unity hand-off)">Copy JSON</button><button class="btn small" id="trForget" type="button" title="Drop this hull's trained AI">Forget trained</button></div>
+        <label class="check"><input type="checkbox" id="useTrainedChk"> <span>Races use the trained AIs (an AI seat on a hull with a trained AI flies it)</span></label>
+        <p class="note" id="trStatus" aria-live="polite"></p>
+        <svg id="trChart" viewBox="0 0 360 150" style="width:100%;max-width:560px;height:auto;display:block" role="img" aria-label="Best and average race time per generation"></svg>
+        <div class="tblwrap"><table class="tbl" id="trTbl"></table></div>
+      </div>
+
       <div class="panel" id="grp-runs">
         <h3>Runs</h3>
         <div class="tblwrap"><table class="tbl"><thead><tr><th>Race</th><th>Winner</th><th>Time</th><th>Team (gates)</th><th>Your hull</th></tr></thead><tbody id="runs"></tbody></table></div>
@@ -306,6 +322,7 @@
 <script src="../VesselStudio/studio-ide.js"></script>
 <script src="../VesselStudio/ai_race_panel.js"></script>
 <script src="course.js"></script>
+<script src="fleet.js"></script>
 <script>
 (function () {
   'use strict';
@@ -324,6 +341,15 @@
     { key: 'sparrow', name: 'Sparrow', ms: 10, ts: 25, p: 80, y: 80, r: 30, rts: 0.1, verb: 'hold', mult: 5, ram: 'slow', shape: 'fighter', src: 'Sparrow.prefab (boostMultiplier 5)' },
     { key: 'scarab', name: 'Scarab', ms: 0, ts: 216, p: 100, y: 100, r: 30, rts: 0.1, verb: 'scarab', accel: 90, coast: 120, dash: 100, dashT: 0.4, aiCd: 2, ram: 'none', shape: 'beetle', src: 'Scarab.prefab, ScarabVesselTransformer (baseTopSpeed 216, C# default)' },
   ];
+  // Every other vessel class (fleet.js, GENERATED from the shipped prefabs by export_fleet.py) flies a GENERIC drive the
+  // page labels as such: cruise from its throttle numbers and, where its prefab has a boostMultiplier above 1, that boost
+  // held on lined-up straights (the Sparrow's afterburner shape). Not its real abilities: a hull's own drive is modelled
+  // when its racing AI is built. The eight card hulls above keep their modelled speed verbs.
+  for (const f of (window.REGATTA_FLEET || [])) {
+    if (HULLS.some((h) => h.key === f.key)) continue;
+    HULLS.push({ key: f.key, name: f.name, ms: f.ms, ts: f.ts, p: f.p, y: f.y, r: f.r, rts: f.rts, verb: f.boost > 1 ? 'hold' : 'none', mult: f.boost, ram: 'none', shape: 'fighter', generic: true,
+      src: f.src + (f.boost > 1 ? ' (generic drive: boost x' + f.boost + ' held on straights)' : ' (generic drive: throttle only)') });
+  }
   const HULL = Object.fromEntries(HULLS.map((h) => [h.key, h]));
   // regatta_balance.py, three laps on the card's elements (python3 Tools/Build/regatta_balance.py, 2026-10-15)
   const MODEL = {
@@ -399,6 +425,9 @@
       ['offset', 'Skim offset', 4, 14, 0.5, 'u', 'Fly this far from its lane\'s centre line: the prism face is 3 u out and the skimmer reaches 7.5 u past it, so 6 to 10 skims without ramming.', 9],
       ['look', 'Look ahead', 0.1, 0.6, 0.05, 's', 'Aim this many seconds of flight down its rail.', 0.25]] },
   };
+  for (const h of HULLS) if (h.generic) TUNE_SPEC[h.key] = h.verb === 'hold'
+    ? { title: h.name + ': generic boost drive', src: 'lab-only and generic (its real abilities are not modelled yet)', rows: [['err', 'Boost within', 3, 60, 1, '\u00b0', 'Hold the boost while the nose is this close to its aim.', 12]] }
+    : { title: h.name + ': generic drive', src: 'lab-only and generic: throttle only (its prefab has no boost)', rows: [] };
   const tuneDefaults = (key) => Object.fromEntries(TUNE_SPEC[key].rows.map((r) => [r[0], r[7]]));
   const LAPS = 3, LIMIT = 300;
   const DOCK_RIGHT_ABOVE = 520;   // px: wider than this, the settings tabs dock on the right of the stage
@@ -412,10 +441,11 @@
   }
   function rng(seed) { let s = (seed >>> 0) || 1; return () => { s ^= s << 13; s >>>= 0; s ^= s >> 17; s ^= s << 5; s >>>= 0; return s / 4294967296; }; }
   const testGrid = () => ['squirrel', 'manta', 'rhino', 'urchin', 'dolphin'].map((v, i) => ({ ai: true, vessel: v, domain: ['jade', 'ruby', 'gold'][i % 3], level: 'Hard', style: 'Card' }));
-  const cardGrid = () => HULLS.map((h, i) => ({ ai: true, vessel: h.key, domain: ['jade', 'ruby', 'gold'][i % 3], level: 'Hard', style: 'Card' }));
+  const cardGrid = () => HULLS.filter((h) => !h.generic).map((h, i) => ({ ai: true, vessel: h.key, domain: ['jade', 'ruby', 'gold'][i % 3], level: 'Hard', style: 'Card' }));
 
   // ================= settings =================
-  const S = { course: 1, players: testGrid(), view: 0, cam: 'Chase', speed: 1, thinking: true, autoRestart: false, labels: true, trails: true, route: true, trailSec: 5, endFirst: false, idleHold: true, inspect: 'Card', fixMiss: true, freeMode: 'Orbit', tuneHull: 'rhino', tune: {}, custom: { manta: -5, dolphin: 0, serpent: 10, sparrow: 10, scarab: 10 } };
+  const S = { course: 1, players: testGrid(), view: 0, cam: 'Chase', speed: 1, thinking: true, autoRestart: false, labels: true, trails: true, route: true, trailSec: 5, endFirst: false, idleHold: true, inspect: 'Card', fixMiss: true, freeMode: 'Orbit', tuneHull: 'rhino', tune: {}, trained: {}, useTrained: true, demos: {}, vsHull: null,
+    train: { hull: 'rhino', courses: [1, 2], pop: 12, gens: 8, imit: 0 }, custom: { manta: -5, dolphin: 0, serpent: 10, sparrow: 10, scarab: 10 } };
   const LS = 'cs.regatta-ai.v1';
   try { const s = JSON.parse(localStorage.getItem(LS) || 'null'); if (s) Object.assign(S, s); } catch (e) { /* storage blocked */ }
   for (const k in TUNE_SPEC) S.tune[k] = Object.assign(tuneDefaults(k), S.tune[k] || {});   // a saved tuning keeps any new knob's default
@@ -481,10 +511,20 @@
         hc: spec.ai ? { level: DIFF[spec.ai] || DIFF.Hard, rng: rng(seed * 31 + i * 7 + 1), tracking: -1, noticeAt: 0, misjudged: false, until: 0, off: new V(), unnoticed: false } : null,
         aim: null, aiState: '', trail: [],
       });
+      const Pn = W.pilots[W.pilots.length - 1];
+      // spec.tune: the trainer's candidate; spec.tuneMode 'trained' / 'default' (the trained-vs-untrained race); else the
+      // trained AI when "Races use the trained AIs" is on
+      const tn = spec.tune || (spec.tuneMode === 'default' ? null : (spec.tuneMode === 'trained' || S.useTrained) && spec.ai ? S.trained[h.key] : null);
+      if (tn) { Pn.steer = Object.assign({}, T('steer'), tn.steer || {}); Pn.drive = Object.assign({}, T(h.key), tn.drive || {}); Pn.lead = Pn.steer.lead; Pn.tuned = true; }
+      Pn.tag = spec.tuneMode === 'trained' ? ' (trained)' : spec.tuneMode === 'default' ? ' (untrained)' : Pn.tuned && !spec.tune ? ' (trained)' : '';
     });
     return W;
   }
   const gateOf = (W, P) => W.C.gates[P.gates % W.C.gates.length];
+  // A pilot flies the shared steering and its hull's drive, or its OWN trained copy of them (the Training tab): P.steer /
+  // P.drive are set when a race seats a trained AI or the trainer races a candidate.
+  const SP = (P) => P.steer || T('steer');
+  const DP = (P, k) => (P.drive && k === P.h.key ? P.drive : T(k));
 
   // ---- GateRaceHandicap: the ring noticed late, the ring misjudged (belief only) ----
   function believe(W, P, g) {
@@ -520,7 +560,7 @@
   const ORBIT = { bias: 0.35, run: 1.5, min: 0.6, max: 6, capture: 18, closing: 0.5, sweep: Math.PI * 2, progress: 0.9, jump: 1.6 };
   function orbitBreak(W, P, aim, fwd) {
     const to = aim.clone().sub(P.pos), range = to.length(), R = P.speed / Math.max(1e-3, turnRate(P));
-    const short = T('steer').breakRun, runway = Math.max(2 * R + ORBIT.capture, P.speed * ORBIT.run) * short;   // easier route: a shorter break-off (1 = the game)
+    const short = SP(P).breakRun, runway = Math.max(2 * R + ORBIT.capture, P.speed * ORBIT.run) * short;   // easier route: a shorter break-off (1 = the game)
     if (P.ext) {
       const t = W.t - P.ext.since;
       if ((range >= runway && t >= ORBIT.min) || t >= ORBIT.max * short) P.ext = null;
@@ -542,7 +582,7 @@
     const C = W.C, g = gateOf(W, P), n = C.gates.length, gNext = C.gates[(P.gates + 1) % n];
     // the Urchin riding: hold the stick, let the cable drive (TryOverrideAim); slip a rival lane unless the ring is close
     if (P.ride) {
-      const rival = P.ride.lane !== P.lane, ringNear = g.p.distanceTo(P.pos) < T('urchin').ringNear;
+      const rival = P.ride.lane !== P.lane, ringNear = g.p.distanceTo(P.pos) < DP(P, 'urchin').ringNear;
       if (P.ride.dir < 0 && !rival) { P.aiState = 'reversing'; return { pad: true, L: { x: 0, y: 0 }, R: { x: 0, y: 0 }, lt: 0, rt: 0, reverse: true }; }
       P.aiState = rival ? (ringNear ? 'crawling (ring close)' : 'slipping a rival rail') : 'riding its rail';
       P.aim = P.pos.clone().addScaledVector(P.course, 120);
@@ -554,22 +594,22 @@
     if (P.locked !== P.gates) {
       P.locked = P.gates; P.side = (P.pos.clone().sub(g.p)).dot(g.a) >= 0 ? 1 : -1;
       const from = P.gates > 0 ? C.gates[(P.gates - 1) % n].p : P.pos;
-      P.lead = Math.min(T('steer').lead, T('steer').share * from.distanceTo(g.p));
+      P.lead = Math.min(SP(P).lead, SP(P).share * from.distanceTo(g.p));
     }
     P.plan = null;
     if (!ringAt) { aim = P.pos.clone().addScaledVector(fwd, 200); why = 'not noticed'; }
     else {
-      const commit = W.fixMiss ? Math.min(T('steer').commit, P.lead + 0.5 * P.speed / Math.max(1e-3, turnRate(P))) : T('steer').commit;   // lab fix: never commit before the approach point
+      const commit = W.fixMiss ? Math.min(SP(P).commit, P.lead + 0.5 * P.speed / Math.max(1e-3, turnRate(P))) : SP(P).commit;   // lab fix: never commit before the approach point
       const toRing = ringAt.clone().sub(P.pos), dist = toRing.length(), inDir = g.a.clone().multiplyScalar(-P.side);
       // Easier route (lab): already coming at the mouth within the set angle of the axis? Fly straight through.
-      const linedUp = T('steer').direct > 0 && dist > 1e-3 && toRing.dot(inDir) / dist >= Math.cos(T('steer').direct * Math.PI / 180);
+      const linedUp = SP(P).direct > 0 && dist > 1e-3 && toRing.dot(inDir) / dist >= Math.cos(SP(P).direct * Math.PI / 180);
       const approaching = !linedUp && dist > commit;   // lined up: no approach point
       // Easier route (lab): the point past the ring bends toward the next ring, more as the pilot closes in, so the
       // line still crosses near the mouth's centre (the bend grows with the square of closeness: ~0 at the commit
       // distance, full at the ring).
-      const near = clamp(1 - dist / Math.max(1, commit), 0, 1), out = inDir.clone(), bend = T('steer').exit * near * near;
+      const near = clamp(1 - dist / Math.max(1, commit), 0, 1), out = inDir.clone(), bend = SP(P).exit * near * near;
       if (bend > 0) { const toNext = gNext.p.clone().sub(ringAt); if (toNext.lengthSq() > 1e-6) out.lerp(toNext.normalize(), bend).normalize(); }
-      const before = ringAt.clone().addScaledVector(g.a, P.side * P.lead), after = ringAt.clone().addScaledVector(out, T('steer').through);
+      const before = ringAt.clone().addScaledVector(g.a, P.side * P.lead), after = ringAt.clone().addScaledVector(out, SP(P).through);
       // Lined up and still far: straight at the ring's centre (aiming at the point past it from far out would cross
       // the plane beside the mouth); inside the commit distance, through as usual.
       aim = approaching ? before : linedUp && dist > commit ? ringAt.clone() : after;
@@ -579,11 +619,11 @@
     // the rail hulls fly their own lane: the Squirrel beside it (skim, never ram), the Urchin onto it
     if (ringAt && P.lane >= 0 && (h.verb === 'skim' || h.verb === 'rail')) {
       const lp = C.lanes[P.lane], nn = nearestOnLane(C, P.lane, P.pos, P.ownHint); P.ownHint = nn.k;
-      const ahead = (nn.k + (h.verb === 'skim' ? Math.round(clamp(P.speed * T('squirrel').look, 30, 90) / 8) : Math.round(T('urchin').ahead))) % lp.length;
+      const ahead = (nn.k + (h.verb === 'skim' ? Math.round(clamp(P.speed * DP(P, 'squirrel').look, 30, 90) / 8) : Math.round(DP(P, 'urchin').ahead))) % lp.length;
       const toGate = g.p.clone().sub(P.pos), onLane = lp[ahead].clone().sub(P.pos);
       if (nn.d < 260 && onLane.dot(toGate) > 0) {
         aim = lp[ahead].clone();
-        if (h.verb === 'skim') { const t = C.tans[P.lane][ahead], off = new V().crossVectors(t, up); if (off.lengthSq() < 1e-4) off.copy(right); aim.addScaledVector(off.normalize(), T('squirrel').offset); why = 'skimming its rail'; }
+        if (h.verb === 'skim') { const t = C.tans[P.lane][ahead], off = new V().crossVectors(t, up); if (off.lengthSq() < 1e-4) off.copy(right); aim.addScaledVector(off.normalize(), DP(P, 'squirrel').offset); why = 'skimming its rail'; }
         else why = 'heading for its rail';
       }
     }
@@ -598,19 +638,19 @@
     let lt = 0, rt = 0;
     const vCorner = cornerSpeed(P, g.corner), brake = Math.max(0, P.speed * P.speed - vCorner * vCorner) / (2 * (h.coast || 120)) + 60;
     if (h.verb === 'ramp') {   // keep the stick inside the plateau while the runway pays for the ramp; let go before the turn
-      const tr = T('rhino'), runway = dist > brake + tr.runway - 60 && err < tr.maxErr, cap = h.plateau * tr.plateau;
+      const tr = DP(P, 'rhino'), runway = dist > brake + tr.runway - 60 && err < tr.maxErr, cap = h.plateau * tr.plateau;
       if (runway) { const m = Math.hypot(yawCmd, pitchCmd); if (m > cap) { yawCmd *= cap / m; pitchCmd *= cap / m; } }
       why += runway ? ' · ramping' : ' · turning';
     } else if (h.verb === 'soar') {   // soar on a lined-up leg; cut it before a corner it cannot yaw round
-      const tm = T('manta'), cut = dist < Math.max(200, P.speed * tm.cutT) && cornerSpeed(P, g.corner) < P.speed * tm.cut;
+      const tm = DP(P, 'manta'), cut = dist < Math.max(200, P.speed * tm.cutT) && cornerSpeed(P, g.corner) < P.speed * tm.cut;
       lt = err < tm.full && !cut ? 1 : err < tm.half && !cut ? 0.5 : 0;
     } else if (h.verb === 'charge') {   // a cycle, as ChargeBoostAIPolicySO: charge to full (speed held), spend it with the nose on the ring, recharge
-      if (P.dmode !== 'out' && P.charge >= T('dolphin').full && err < T('dolphin').aim) P.dmode = 'out'; else if (P.dmode === 'out' && P.charge <= 0.02) P.dmode = 'in';
+      if (P.dmode !== 'out' && P.charge >= DP(P, 'dolphin').full && err < DP(P, 'dolphin').aim) P.dmode = 'out'; else if (P.dmode === 'out' && P.charge <= 0.02) P.dmode = 'in';
       lt = P.dmode === 'out' ? 0 : 1;
     }
-    else if (h.verb === 'pellet') { lt = err < T('serpent').err && dist > T('serpent').runway && P.boostT <= 0.05 && P.res >= h.cost && P.ltWas < 0.5 ? 1 : 0; }
-    else if (h.verb === 'hold') { lt = err < T('sparrow').err ? 1 : 0; }
-    else if (h.verb === 'scarab') { lt = P.time >= 5 && err < T('scarab').err && dist > T('scarab').runway && W.t >= P.dashReady && P.ltWas < 0.5 ? 1 : 0; }
+    else if (h.verb === 'pellet') { lt = err < DP(P, 'serpent').err && dist > DP(P, 'serpent').runway && P.boostT <= 0.05 && P.res >= h.cost && P.ltWas < 0.5 ? 1 : 0; }
+    else if (h.verb === 'hold') { lt = err < DP(P, h.generic ? h.key : 'sparrow').err ? 1 : 0; }
+    else if (h.verb === 'scarab') { lt = P.time >= 5 && err < DP(P, 'scarab').err && dist > DP(P, 'scarab').runway && W.t >= P.dashReady && P.ltWas < 0.5 ? 1 : 0; }
     const sx = easeInv(yawCmd), sy = easeInv(pitchCmd), dy = easeInv(rollCmd), dx = Math.min(2, 2 - Math.abs(sx));
     const R = { x: (sx + dx) / 2, y: clamp((sy + dy) / 2, -1, 1) }, L = { x: (sx - dx) / 2, y: clamp((sy - dy) / 2, -1, 1) };
     P.aiState = why;
@@ -717,6 +757,9 @@
   function stepWorld(W, dt, inputs) {
     W.t += dt;
     W.pilots.forEach((P, i) => stepPilot(W, P, inputs[i], dt));
+    if (W.rec && (W.recT = (W.recT || 0) + dt) >= 0.1) {   // a human's flight, every 0.1 s, for "learn from my flight"
+      W.recT = 0; for (const P of W.pilots) if (!P.spec.ai && !P.idleAI && P.finishT == null) (P.demo || (P.demo = [])).push(+P.pos.x.toFixed(1), +P.pos.y.toFixed(1), +P.pos.z.toFixed(1));
+    }
     if (!W.over && (W.pilots.every((P) => P.finishT != null) || W.t > LIMIT || (W.endFirst && W.firstFinish != null))) W.over = true;
   }
   const standings = (W) => W.pilots.slice().sort((a, b) => (a.finishT ?? 1e9) - (b.finishT ?? 1e9) || b.gates - a.gates);
@@ -725,10 +768,12 @@
       avgSpeed: +(P.sumSpeed / Math.max(1, P.nSpeed)).toFixed(1), topSpeed: Math.round(P.topSpeed), rams: P.rams, skims: P.skims, breaks: P.breaks || 0, mistakes: P.mistakes, missed: P.missedPlane, riding: +P.riding.toFixed(1), state: P.aiState };
   }
   // ---- headless race for the scorecard: the same step ----
-  function raceHeadless(course, hull, level, seed, style, fixMiss) {
-    const W = makeWorld(course, [{ vessel: hull, domain: 'jade', style: style || 'Card', ai: level || 'Hard' }], seed); W.watch = -1; W.fixMiss = fixMiss != null ? fixMiss : S.fixMiss;
-    const dt = 1 / 30; while (!W.over) stepWorld(W, dt, W.pilots.map((P) => aiInput(W, P)));
-    return pilotResult(W.pilots[0]);
+  function raceHeadless(course, hull, level, seed, style, fixMiss, opts) {
+    const o = opts || {};
+    const W = makeWorld(course, [{ vessel: hull, domain: 'jade', style: style || 'Card', ai: level || 'Hard', tune: o.tune, tuneMode: o.tuneMode }], seed); W.watch = -1; W.fixMiss = fixMiss != null ? fixMiss : S.fixMiss;
+    const dt = 1 / 30, trace = o.trace ? [] : null; let tt = 0;
+    while (!W.over) { stepWorld(W, dt, W.pilots.map((P) => aiInput(W, P))); if (trace && (tt += dt) >= 0.25) { tt = 0; const q = W.pilots[0].pos; trace.push(q.x, q.y, q.z); } }
+    const r = pilotResult(W.pilots[0]); if (trace) r.trace = trace; r.raceLen = W.raceLen; return r;
   }
 
   // ================= rendering =================
@@ -795,7 +840,7 @@
     view.hulls = []; view.labels = []; view.lines = []; view.trails = []; view.plans = [];
     for (const P of W.pilots) {
       const hm = makeHull(P.h, P.domain.color); scene.add(hm); view.hulls.push(hm);
-      const l = makeLabel(P.h.name + (P.i === 0 ? ' • P1' : ''), P.domain.css); scene.add(l); view.labels.push(l);
+      const l = makeLabel(P.h.name + (P.tag || '') + (P.i === 0 ? ' • P1' : ''), P.domain.css); scene.add(l); view.labels.push(l);
       const ln = new THREE.Line(new THREE.BufferGeometry().setFromPoints([new V(), new V()]), new THREE.LineBasicMaterial({ color: P.domain.color, transparent: true, opacity: 0.85 })); ln.frustumCulled = false; scene.add(ln); view.lines.push(ln);
       const pl = new THREE.Line(new THREE.BufferGeometry().setFromPoints([new V(), new V(), new V(), new V()]), new THREE.LineDashedMaterial({ color: 0xffffff, transparent: true, opacity: 0.45, dashSize: 14, gapSize: 10 })); pl.frustumCulled = false; scene.add(pl); view.plans.push(pl);
       const tg = new THREE.BufferGeometry(); tg.setAttribute('position', new THREE.BufferAttribute(new Float32Array(TRAIL_N * 3), 3)); tg.setDrawRange(0, 0);
@@ -963,9 +1008,11 @@
 
   // ================= race flow =================
   let W = null, race = 'ready', paused = false, seedN = 1;
-  const specs = () => S.players.map((p) => ({ vessel: p.vessel, domain: p.domain, style: p.style, ai: p.ai ? p.level : null }));
+  const specs = () => S.players.map((p, i) => ({ vessel: p.vessel, domain: p.domain, style: p.style, ai: p.ai ? p.level : null,
+    tuneMode: S.vsHull && p.vessel === S.vsHull && p.ai ? (i === 0 ? 'trained' : 'default') : undefined }));
   function newRace() {
-    W = makeWorld(S.course, specs(), seedN++); W.endFirst = S.endFirst; W.fixMiss = S.fixMiss;
+    keepDemo();
+    W = makeWorld(S.course, specs(), seedN++); W.endFirst = S.endFirst; W.fixMiss = S.fixMiss; W.rec = true;
     mountWorld(W); drawWorld(W, 0, 0); placeCamera(W, 0, true);
     race = 'ready'; paused = false; feed.length = 0; renderFeed();
     $('ovTitle').textContent = 'Regatta, intensity ' + S.course; $('startBtn').textContent = 'Start'; $('overlay').hidden = false;
@@ -977,13 +1024,21 @@
   function stopRace() { if (race === 'ready') return; newRace(); }   // Stop ends the race and holds on the grid until Play (D18)
   function togglePause() { if (race !== 'running') return; paused = !paused; say(paused ? 'Paused' : 'Resumed'); }
   function teamGates(W) { const t = {}; for (const P of W.pilots) t[P.domain.name] = (t[P.domain.name] || 0) + P.gates; return Object.entries(t).sort((a, b) => b[1] - a[1]); }
+  // Keep the human's flight of this hull on this course once it has flown at least one lap: the trainer can then ask
+  // the AI to fly like it ("Learn from my flight"). One flight per hull and course, the latest kept.
+  function keepDemo() {
+    const P = W && W.pilots[0]; if (!P || P.spec.ai || !P.demo || P.gates < W.C.gates.length) { if (P) P.demo = null; return; }
+    S.demos[P.h.key + '@' + W.course] = { pts: P.demo, gates: P.gates, time: P.finishT != null ? +P.finishT.toFixed(1) : null, at: Date.now() };
+    P.demo = null; save(); say('Your ' + P.h.name + ' flight on I' + W.course + ' is saved: the trainer can learn from it'); renderTrain();
+  }
   function finishRace() {
+    keepDemo();
     race = 'finished';
     const order = standings(W), win = order[0], me = W.pilots[0], teams = teamGates(W);
-    runs.unshift({ course: S.course, winner: win.h.name + ' · ' + win.domain.name, time: win.finishT, team: teams[0][0] + ' ' + teams[0][1], you: me.h.name + ' #' + (order.indexOf(me) + 1) });
+    runs.unshift({ course: S.course, winner: win.h.name + (win.tag || '') + ' · ' + win.domain.name, time: win.finishT, team: teams[0][0] + ' ' + teams[0][1], you: me.h.name + ' #' + (order.indexOf(me) + 1) });
     runs.length = Math.min(runs.length, 40); saveRuns(); renderRuns();
-    $('ovTitle').textContent = win.finishT != null ? win.h.name + ' wins in ' + win.finishT.toFixed(1) + ' s' : 'Race over';
-    $('ovText').textContent = order.map((P, i) => (i + 1) + '. ' + P.h.name + ' (' + P.domain.name + '): ' + (P.finishT != null ? P.finishT.toFixed(1) + ' s' : P.gates + '/' + W.raceLen)).join(' · ') + '  ·  Team gates: ' + teams.map((x) => x[0] + ' ' + x[1]).join(', ');
+    $('ovTitle').textContent = win.finishT != null ? win.h.name + (win.tag || '') + ' wins in ' + win.finishT.toFixed(1) + ' s' : 'Race over';
+    $('ovText').textContent = order.map((P, i) => (i + 1) + '. ' + P.h.name + (P.tag || '') + ' (' + P.domain.name + '): ' + (P.finishT != null ? P.finishT.toFixed(1) + ' s' : P.gates + '/' + W.raceLen)).join(' · ') + '  ·  Team gates: ' + teams.map((x) => x[0] + ' ' + x[1]).join(', ');
     $('startBtn').textContent = 'Race again';
     if (S.autoRestart) setTimeout(() => { if (race === 'finished') { newRace(); startRace(); } }, 1500); else $('overlay').hidden = false;
   }
@@ -1005,12 +1060,12 @@
     supports: { rivals: true, thinking: true, autoRestart: true },
     levelNote: 'Easy and Medium are GateRaceHandicap with the Skim Race numbers (SkimRaceDifficulty.asset), applied to the next ring: Easy notices it 0.5 s late on average and misjudges 9.9% of rings; Medium 0.25 s and 4.5%. Hard is the shipped gate pilot. A riding Urchin follows its rail, so its level bites only off the rail.',
     onChange: (key, v) => {
-      if (key === 'course') S.course = v; else if (key === 'players') S.players = v; else if (key === 'view') S.view = v;
+      if (key === 'course') S.course = v; else if (key === 'players') { S.players = v; S.vsHull = null; } else if (key === 'view') S.view = v;
       else if (key === 'camera') S.cam = v; else if (key === 'speed') S.speed = v; else if (key === 'thinking') S.thinking = v; else if (key === 'autoRestart') S.autoRestart = v;
       save(); if (key === 'course' || key === 'players') newRace();
     },
   });
-  function seat(list) { S.players = list; S.view = 0; racePanel.set('players', list, true); racePanel.set('view', 0, true); save(); newRace(); }
+  function seat(list) { S.vsHull = null; S.players = list; S.view = 0; racePanel.set('players', list, true); racePanel.set('view', 0, true); save(); newRace(); }
   $('gridBtn').addEventListener('click', () => seat(testGrid())); $('gridBtn2').addEventListener('click', () => seat(testGrid())); $('cardBtn').addEventListener('click', () => seat(cardGrid()));
   const bindCheck = (id, k, after) => { $(id).checked = !!S[k]; $(id).addEventListener('change', (e) => { S[k] = e.target.checked; save(); if (after) after(); }); };
   bindCheck('labelsChk', 'labels'); bindCheck('trailsChk', 'trails'); bindCheck('routeChk', 'route'); bindCheck('idleChk', 'idleHold'); bindCheck('endChk', 'endFirst', () => { if (W) W.endFirst = S.endFirst; }); bindCheck('fixChk', 'fixMiss', () => { if (W) W.fixMiss = S.fixMiss; });
@@ -1037,7 +1092,7 @@
   for (const s of STYLES) { const o = elx('option', null, s.name + ' · ' + s.info); o.value = s.name; $('styleSel').appendChild(o); }
   $('styleSel').value = S.inspect; $('styleSel').addEventListener('change', (e) => { S.inspect = e.target.value; save(); renderStyle(); });
   function verbTop(h, tm) {
-    return { ramp: h.ts * h.max + h.ms, soar: h.ts * h.mult * tm + h.ms, charge: h.ts * h.mult * h.mult + h.ms, rail: h.rail, skim: (h.ts + h.ms) * h.max, pellet: h.ts * h.mult * tm + h.ms, hold: h.ts * h.mult * tm + h.ms, scarab: h.ts * tm }[h.verb];
+    return { none: h.ts + h.ms, ramp: h.ts * h.max + h.ms, soar: h.ts * h.mult * tm + h.ms, charge: h.ts * h.mult * h.mult + h.ms, rail: h.rail, skim: (h.ts + h.ms) * h.max, pellet: h.ts * h.mult * tm + h.ms, hold: h.ts * h.mult * tm + h.ms, scarab: h.ts * tm }[h.verb];
   }
   function renderStyle() {
     const s = STYLE_BY[S.inspect] || STYLES[0], t = $('styleTbl'); t.textContent = ''; $('styleName').textContent = s.name;
@@ -1060,7 +1115,7 @@
     const hd = elx('tr'); for (const x of ['Hull', 'Cruise', 'Top', 'Turn', '+/100 u/s', 'Speed verb', 'Rail ram', 'Model I' + S.course]) hd.appendChild(elx('th', null, x)); t.appendChild(elx('thead')).appendChild(hd);
     const tb = elx('tbody'); t.appendChild(tb);
     const RAM = { none: 'nothing', slow: 'rival: throttle ×0.5, 1 s', slowcharge: 'rival: ×0.5, 1 s, half charge', reset: 'resets boost' };
-    for (const h of HULLS) { const tr = elx('tr'); tr.title = h.src; tr.append(elx('td', null, h.name), elx('td', null, String(h.ms + h.ts)), elx('td', null, String(Math.round(verbTop(h, 1)))), elx('td', null, Math.min(h.p, h.y) + '°/s'), elx('td', null, '+' + Math.round(100 * h.rts) + '°/s'), elx('td', null, h.verb), elx('td', 'wrap', RAM[h.ram]), elx('td', null, MODEL[S.course][h.key].toFixed(1) + ' s')); tb.appendChild(tr); }
+    for (const h of HULLS) { const tr = elx('tr'); tr.title = h.src; tr.append(elx('td', null, h.name), elx('td', null, String(h.ms + h.ts)), elx('td', null, String(Math.round(verbTop(h, 1)))), elx('td', null, Math.min(h.p, h.y) + '°/s'), elx('td', null, '+' + Math.round(100 * h.rts) + '°/s'), elx('td', null, h.verb), elx('td', 'wrap', RAM[h.ram]), elx('td', null, MODEL[S.course][h.key] != null ? MODEL[S.course][h.key].toFixed(1) + ' s' : '\u2014')); tb.appendChild(tr); }
     const m = $('moveTbl'); m.textContent = '';
     const mh = elx('tr'); for (const x of ['Hull', 'Move', 'Limiter', 'Shipped numbers', 'Here']) mh.appendChild(elx('th', null, x)); m.appendChild(elx('thead')).appendChild(mh);
     const mb = elx('tbody'); m.appendChild(mb);
@@ -1076,7 +1131,7 @@
 
   // ---- the scorecard (D5): race time per hull x difficulty, beside the balance model ----
   const med = (a) => { const v = a.filter((x) => x != null).sort((x, y) => x - y); return v.length > a.length / 2 ? v[Math.floor(v.length / 2)] : null; };
-  const grade = (t, m) => t == null ? 'bad' : t <= m * 1.25 ? 'good' : t <= m * 2 ? 'warn' : 'bad';
+  const grade = (t, m) => t == null ? 'bad' : m == null ? null : t <= m * 1.25 ? 'good' : t <= m * 2 ? 'warn' : 'bad';   // no model for a generic hull
   function renderScore(rows) {
     const t = $('scoreTbl'); t.textContent = ''; if (!rows) return;
     const hd = elx('tr'); for (const x of ['Hull · I' + rows.course, 'Easy', 'Medium', 'Hard', 'Hard fastest?', 'Model', 'Hard vs model', 'Hard avg u/s', 'rams', 'ridden']) hd.appendChild(elx('th', null, x)); t.appendChild(elx('thead')).appendChild(hd);
@@ -1087,7 +1142,7 @@
       for (const lv of ['Easy', 'Medium', 'Hard']) tr.appendChild(elx('td', lv in r ? grade(r[lv], m) : null, lv in r ? (r[lv] != null ? r[lv].toFixed(1) : 'DNF') : '\u00b7'));
       const done = 'Easy' in r && 'Medium' in r && 'Hard' in r, fastest = r.Hard != null && [r.Easy, r.Medium].every((x) => x == null || r.Hard <= x + 0.05);   // D24: Hard must be the skilled pilot
       tr.appendChild(elx('td', done ? (fastest ? 'good' : 'bad') : null, done ? (fastest ? '\u2713' : '\u2717') : '\u00b7'));
-      tr.append(elx('td', null, m.toFixed(1)), elx('td', null, r.Hard != null ? '×' + (r.Hard / m).toFixed(2) : '—'), elx('td', null, r.stats ? String(r.stats.avgSpeed) : '·'), elx('td', null, r.stats ? String(r.stats.rams) : '·'), elx('td', null, r.stats ? r.stats.riding + ' s' : '·'));
+      tr.append(elx('td', null, m != null ? m.toFixed(1) : '\u2014'), elx('td', null, r.Hard != null && m != null ? '×' + (r.Hard / m).toFixed(2) : '—'), elx('td', null, r.stats ? String(r.stats.avgSpeed) : '·'), elx('td', null, r.stats ? String(r.stats.rams) : '·'), elx('td', null, r.stats ? r.stats.riding + ' s' : '·'));
       tb.appendChild(tr);
     }
   }
@@ -1107,7 +1162,7 @@
     const t = $('allTbl'); t.textContent = ''; if (!rows) return;
     const hd = elx('tr'); hd.appendChild(elx('th', null, 'Hard, every intensity')); for (const i of [1, 2, 3, 4]) { hd.appendChild(elx('th', null, 'I' + i)); hd.appendChild(elx('th', null, 'model')); } t.appendChild(elx('thead')).appendChild(hd);
     const tb = elx('tbody'); t.appendChild(tb);
-    for (const h of HULLS) { const tr = elx('tr'); tr.appendChild(elx('td', null, h.name)); for (const i of [1, 2, 3, 4]) { const v = rows[i] && rows[i][h.key], m = MODEL[i][h.key]; tr.appendChild(elx('td', rows[i] && h.key in rows[i] ? grade(v, m) : null, rows[i] && h.key in rows[i] ? (v != null ? v.toFixed(1) : 'DNF') : '·')); tr.appendChild(elx('td', null, m.toFixed(1))); } tb.appendChild(tr); }
+    for (const h of HULLS) { const tr = elx('tr'); tr.appendChild(elx('td', null, h.name)); for (const i of [1, 2, 3, 4]) { const v = rows[i] && rows[i][h.key], m = MODEL[i][h.key]; tr.appendChild(elx('td', rows[i] && h.key in rows[i] ? grade(v, m) : null, rows[i] && h.key in rows[i] ? (v != null ? v.toFixed(1) : 'DNF') : '·')); tr.appendChild(elx('td', null, m != null ? m.toFixed(1) : '\u2014')); } tb.appendChild(tr); }
   }
   let scoreRows = null, allRows = null; try { scoreRows = JSON.parse(localStorage.getItem(LS + '.score') || 'null'); allRows = JSON.parse(localStorage.getItem(LS + '.all') || 'null'); } catch (e) { /* storage blocked */ }
   renderScore(scoreRows); renderAll(allRows);
@@ -1121,6 +1176,118 @@
       rows[i] = {}; for (const h of HULLS) rows[i][h.key] = raceHeadless(i, h.key, 'Hard', 11).finishT; renderAll(rows); i++; setTimeout(one, 0); };
     setTimeout(one, 20);
   });
+
+  // ---- Training (round 2): AIs racing each other, cross-entropy search over the steering and drive sliders ----
+  // A candidate is one value per slider (the shared steering rows plus the hull's own drive rows). Each generation races
+  // the population headless (Hard, seed 11: deterministic) on the ticked intensities; cost = race time (a DNF costs the
+  // limit plus 10 s per ring short) plus, with "Learn from me", the mean distance from the human's recorded line / 10.
+  // The best quarter set the next generation's centre and spread; the champion (the best so far) races every time.
+  const knobsFor = (hull) => [...TUNE_SPEC.steer.rows.map((r) => ({ g: 'steer', k: r[0], lo: r[2], hi: r[3], step: r[4], label: r[1], def: r[7] })),
+    ...TUNE_SPEC[hull].rows.map((r) => ({ g: 'drive', k: r[0], lo: r[2], hi: r[3], step: r[4], label: r[1], def: r[7] }))];
+  const toTune = (ks, v) => { const t = { steer: {}, drive: {} }; ks.forEach((q, i) => { t[q.g][q.k] = +v[i].toFixed(q.step < 1 ? 3 : 1); }); return t; };
+  const fromTune = (ks, hull) => { const tr = S.trained[hull]; return ks.map((q) => tr && tr[q.g] && tr[q.g][q.k] != null ? tr[q.g][q.k] : q.g === 'steer' ? T('steer')[q.k] : T(hull)[q.k]); };
+  function gauss(rnd) { let u = 0, v = 0; while (u === 0) u = rnd(); v = rnd(); return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v); }
+  function demoDist(trace, pts) {   // mean distance from each traced point to the nearest recorded point (both subsampled)
+    if (!pts || pts.length < 6) return 0; let sum = 0, n = 0;
+    const stride = Math.max(3, Math.floor(pts.length / 3 / 600) * 3);
+    for (let i = 0; i < trace.length; i += 3) { let best = Infinity; for (let j = 0; j < pts.length; j += stride) { const dx = trace[i] - pts[j], dy = trace[i + 1] - pts[j + 1], dz = trace[i + 2] - pts[j + 2], d = dx * dx + dy * dy + dz * dz; if (d < best) best = d; } sum += Math.sqrt(best); n++; }
+    return n ? sum / n : 0;
+  }
+  function costOf(hull, tune, courses, imit) {
+    let cost = 0, time = 0, fin = 0, miss = 0;
+    for (const c of courses) {
+      const demo = imit > 0 ? S.demos[hull + '@' + c] : null;
+      const r = raceHeadless(c, hull, 'Hard', 11, 'Card', true, { tune, trace: !!demo });
+      const t = r.finishT != null ? r.finishT : LIMIT + 10 * (r.raceLen - r.gates);
+      cost += t; time += t; if (r.finishT != null) fin++; miss += r.missed;
+      if (demo) cost += imit * demoDist(r.trace, demo.pts) / 10;
+    }
+    return { cost, time, fin, miss };
+  }
+  let trainJob = null;
+  const TR = { hist: [], best: null, ks: null, hull: null };
+  function startTraining() {
+    if (trainJob) return;
+    if (HULL[S.train.hull]) $('trHull').value = S.train.hull; renderTrain();
+    const hull = S.train.hull, ks = knobsFor(hull), courses = S.train.courses.slice().sort(), rnd = rng(Date.now() & 0xffff);
+    if (!courses.length) { $('trStatus').textContent = 'Tick at least one intensity.'; return; }
+    let mean = fromTune(ks, hull), sd = ks.map((q) => (q.hi - q.lo) * 0.2);
+    const champTune = toTune(ks, mean), champ = Object.assign({ v: mean.slice(), tune: champTune }, costOf(hull, champTune, courses, S.train.imit));
+    Object.assign(TR, { hist: [], best: champ, start: champ, ks, hull, courses });
+    let gen = 0;
+    trainJob = { stop: false };
+    $('trGo').disabled = true; $('trStop').disabled = false; $('trApply').disabled = true;
+    const step = () => {
+      if (trainJob.stop || gen >= S.train.gens) { finishTraining(); return; }
+      const pop = [TR.best];
+      while (pop.length < S.train.pop) {
+        const v = mean.map((m, i) => { const q = ks[i]; return clamp(m + sd[i] * gauss(rnd), q.lo, q.hi); });
+        const tune = toTune(ks, v); pop.push(Object.assign({ v, tune }, costOf(hull, tune, courses, S.train.imit)));
+      }
+      pop.sort((a, b) => a.cost - b.cost);
+      const elite = pop.slice(0, Math.max(2, Math.round(pop.length / 4)));
+      mean = mean.map((m, i) => 0.3 * m + 0.7 * elite.reduce((a, e) => a + e.v[i], 0) / elite.length);
+      sd = sd.map((d, i) => { const mu = elite.reduce((a, e) => a + e.v[i], 0) / elite.length, va = elite.reduce((a, e) => a + (e.v[i] - mu) ** 2, 0) / elite.length; return Math.max((ks[i].hi - ks[i].lo) * 0.02, 0.3 * d + 0.7 * Math.sqrt(va)); });
+      if (pop[0].cost < TR.best.cost) TR.best = pop[0];
+      gen++; TR.hist.push({ best: TR.best.time / courses.length, mean: pop.reduce((a, q) => a + q.time, 0) / pop.length / courses.length, fin: TR.best.fin });
+      $('trStatus').textContent = 'Generation ' + gen + ' / ' + S.train.gens + ': best ' + (TR.best.time / courses.length).toFixed(1) + ' s a race (' + TR.best.fin + ' / ' + courses.length + ' finished), started at ' + (TR.start.time / courses.length).toFixed(1) + ' s.';
+      renderTrainResult(); setTimeout(step, 0);
+    };
+    $('trStatus').textContent = 'Racing generation 1 of ' + S.train.gens + '\u2026'; setTimeout(step, 20);
+  }
+  function finishTraining() {
+    trainJob = null; renderTrain(); $('trGo').disabled = false; $('trStop').disabled = true; $('trApply').disabled = !TR.best || TR.best === TR.start;
+    if (TR.best) $('trStatus').textContent += TR.best === TR.start ? ' Nothing beat the current AI.' : ' Press Keep best to make it ' + HULL[TR.hull].name + '\'s trained AI.';
+  }
+  function renderTrainResult() {
+    const svg = $('trChart'); svg.textContent = ''; const H = TR.hist; const NS = 'http://www.w3.org/2000/svg';
+    const mk = (t, a) => { const e = document.createElementNS(NS, t); for (const k in a) e.setAttribute(k, a[k]); svg.appendChild(e); return e; };
+    if (H.length) {
+      const vals = H.flatMap((h) => [h.best, h.mean]), lo = Math.min(...vals) * 0.95, hi = Math.max(...vals) * 1.02, X = (i) => 40 + (H.length > 1 ? i / (H.length - 1) : 0.5) * 300, Y = (v) => 130 - (v - lo) / Math.max(1e-6, hi - lo) * 110;
+      mk('line', { x1: 40, y1: 130, x2: 340, y2: 130, stroke: 'var(--line)' }); mk('line', { x1: 40, y1: 20, x2: 40, y2: 130, stroke: 'var(--line)' });
+      for (const v of [lo, (lo + hi) / 2, hi]) { const t = mk('text', { x: 36, y: Y(v) + 4, 'text-anchor': 'end', 'font-size': 10, fill: 'var(--muted)' }); t.textContent = v.toFixed(0) + ' s'; }
+      const lab = mk('text', { x: 190, y: 146, 'text-anchor': 'middle', 'font-size': 10, fill: 'var(--muted)' }); lab.textContent = 'generation (1 to ' + H.length + ')';
+      mk('polyline', { points: H.map((h, i) => X(i) + ',' + Y(h.mean)).join(' '), fill: 'none', stroke: 'var(--muted)', 'stroke-width': 1.5, 'stroke-dasharray': '4 3' });
+      mk('polyline', { points: H.map((h, i) => X(i) + ',' + Y(h.best)).join(' '), fill: 'none', stroke: 'var(--accent)', 'stroke-width': 2 });
+      const l1 = mk('text', { x: 340, y: 14, 'text-anchor': 'end', 'font-size': 10, fill: 'var(--accent)' }); l1.textContent = 'best (champion)';
+      const l2 = mk('text', { x: 250, y: 14, 'text-anchor': 'end', 'font-size': 10, fill: 'var(--muted)' }); l2.textContent = 'generation average';
+    }
+    const t = $('trTbl'); t.textContent = ''; if (!TR.ks || !TR.best) return;
+    const hd = elx('tr'); for (const x of ['Setting', 'Default', 'Trained before', 'Best now']) hd.appendChild(elx('th', null, x)); t.appendChild(elx('thead')).appendChild(hd);
+    const tb = elx('tbody'); t.appendChild(tb); const before = fromTune(TR.ks, TR.hull);
+    TR.ks.forEach((q, i) => { const f = (v) => (q.step < 1 ? (+v).toFixed(2) : String(Math.round(v))); const tr = elx('tr'); tr.append(elx('td', null, q.label + (q.g === 'steer' ? '' : ' (drive)')), elx('td', null, f(q.def)), elx('td', null, f(before[i])), elx('td', null, f(TR.best.v[i]))); tb.appendChild(tr); });
+  }
+  function renderTrain() {
+    if (!$('trHull')) return;
+    const hull = S.train.hull, ds = [1, 2, 3, 4].filter((c) => S.demos[hull + '@' + c]).map((c) => 'I' + c + ' (' + (S.demos[hull + '@' + c].time != null ? S.demos[hull + '@' + c].time + ' s' : S.demos[hull + '@' + c].gates + ' rings') + ')');
+    $('trDemo').textContent = (ds.length ? 'Your recorded ' + HULL[hull].name + ' flights: ' + ds.join(', ') + '.' : 'No flight of yours on the ' + HULL[hull].name + ' yet: fly it for a lap to teach the AI your line.') + (S.trained[hull] ? ' It has a trained AI.' : ' It has no trained AI yet.');
+  }
+  for (const h of HULLS) { const o = elx('option', null, h.name + (h.generic ? ' (generic drive)' : '')); o.value = h.key; $('trHull').appendChild(o); }
+  $('trHull').value = HULL[S.train.hull] ? S.train.hull : 'rhino'; S.train.hull = $('trHull').value;
+  $('trHull').addEventListener('change', (e) => { S.train.hull = e.target.value; save(); renderTrain(); });
+  for (const c of [1, 2, 3, 4]) { const l = elx('label', 'check'), i = document.createElement('input'); i.type = 'checkbox'; i.checked = S.train.courses.includes(c); i.addEventListener('change', () => { S.train.courses = [1, 2, 3, 4].filter((x, k) => $('trCourses').querySelectorAll('input')[k].checked); save(); }); l.append(i, elx('span', null, 'I' + c)); $('trCourses').appendChild(l); }
+  const bindRange = (id, k, fmt) => { const r = $(id), o = $(id + 'O'); r.value = S.train[k]; o.textContent = fmt(S.train[k]); r.addEventListener('input', () => { S.train[k] = +r.value; o.textContent = fmt(S.train[k]); save(); }); };
+  bindRange('trPop', 'pop', String); bindRange('trGens', 'gens', String); bindRange('trImit', 'imit', (v) => (+v).toFixed(2));
+  $('trGo').addEventListener('click', startTraining); $('trStop').addEventListener('click', () => { if (trainJob) trainJob.stop = true; });
+  $('trApply').addEventListener('click', () => { if (!TR.best || !TR.hull) return; S.trained[TR.hull] = Object.assign({}, TR.best.tune, { time: +(TR.best.time / TR.courses.length).toFixed(1), courses: TR.courses, gens: TR.hist.length, imit: S.train.imit, at: Date.now() }); save(); $('trApply').disabled = true; renderTrain(); renderTrainResult(); say(HULL[TR.hull].name + ': trained AI kept'); });
+  $('trForget').addEventListener('click', () => { delete S.trained[S.train.hull]; save(); renderTrain(); });
+  $('trVs').addEventListener('click', () => {
+    const hull = S.train.hull; if (!S.trained[hull]) { $('trStatus').textContent = 'Train ' + HULL[hull].name + ' and press Keep best first.'; return; }
+    const list = [{ ai: true, vessel: hull, domain: 'jade', level: 'Hard', style: 'Card' }, { ai: true, vessel: hull, domain: 'ruby', level: 'Hard', style: 'Card' }];
+    seat(list); S.vsHull = hull; save(); newRace(); startRace();
+  });
+  $('trExport').addEventListener('click', () => {
+    const hull = S.train.hull, tr = S.trained[hull]; if (!tr) { $('trStatus').textContent = HULL[hull].name + ' has no trained AI to copy.'; return; }
+    // The Unity hand-off (AI_TRAINING_PLAN.md section 4): the steering keys map to GateRaceController fields where the game has them.
+    const UNITY = { lead: 'aiApproachLead', share: 'ApproachLeadShareOfLeg', commit: 'aiCommitDistance', through: 'aiThroughDistance' };
+    const out = { schema: 'cosmic-shore.ai-tuning/1', mode: 'Regatta', hull: HULL[hull].name, steer: tr.steer, drive: tr.drive, unityFields: UNITY,
+      raceSeconds: tr.time, courses: tr.courses, generations: tr.gens, learnedFromPlayer: tr.imit > 0, at: new Date(tr.at).toISOString() };
+    const text = JSON.stringify(out, null, 2);
+    const done = () => { $('trStatus').textContent = 'Copied ' + HULL[hull].name + '\'s trained AI as JSON.'; };
+    try { navigator.clipboard.writeText(text).then(done, () => { $('trStatus').textContent = text; }); } catch (e) { $('trStatus').textContent = text; }
+  });
+  $('useTrainedChk').checked = !!S.useTrained; $('useTrainedChk').addEventListener('change', (e) => { S.useTrained = e.target.checked; save(); newRace(); });
+  renderTrain();
 
   // ---- HUD ----
   function hud() {
@@ -1136,7 +1303,7 @@
     else if (h.verb === 'rail') { lbl = 'Rail'; val = P.ride ? (P.ride.lane === P.lane ? 'riding own rail' : 'on a rival rail') : 'free'; w = P.ride ? 1 : 0; }
     else if (h.verb === 'skim') { lbl = 'Skim boost'; val = '×' + P.boost.toFixed(2); w = (P.boost - 1) / (h.max - 1); }
     else if (h.verb === 'pellet') { lbl = 'Pellets (LT)'; val = Math.floor(P.res / h.cost + 1e-6) + ' / 4' + (P.boostT > 0 ? ' · ' + P.boostT.toFixed(1) + ' s' : ''); w = P.res; }
-    else if (h.verb === 'hold') { lbl = 'Afterburner (LT)'; val = Math.round(P.speed) + ' u/s'; w = P.speed / verbTop(h, P.tm); }
+    else if (h.verb === 'hold') { lbl = h.generic ? 'Boost (LT, generic)' : 'Afterburner (LT)'; val = Math.round(P.speed) + ' u/s'; w = P.speed / verbTop(h, P.tm); }
     else if (h.verb === 'scarab') { lbl = P.time >= 5 ? 'Throttle · Snap Dash (LT)' : 'Throttle (dash needs Time 5)'; val = Math.round(P.speed) + ' / ' + Math.round(h.ts * P.tm); w = P.speed / (h.ts * P.tm); }
     $('hVerbLbl').textContent = lbl; $('hVerb').textContent = val; $('mVerb').style.width = clamp(w, 0, 1) * 100 + '%';
     const lap = Math.min(LAPS, Math.floor(P.gates / W.C.gates.length) + 1);
@@ -1145,7 +1312,7 @@
     const hd = elx('div', 'hd'); hd.append(elx('span', null, 'I' + S.course + ' · ' + W.t.toFixed(1) + ' s'), elx('span', null, 'rings / ' + W.raceLen)); b.appendChild(hd);
     standings(W).forEach((X, i) => {
       const row = elx('div', 'pl'), dot = elx('span', 'dot'); dot.style.background = X.domain.css;
-      const nm = elx('span', X === P ? 'me' : null, (i + 1) + '. ' + X.h.name + (X.spec.ai ? ' · ' + X.spec.ai : ' •'));
+      const nm = elx('span', X === P ? 'me' : null, (i + 1) + '. ' + X.h.name + (X.tag || '') + (X.spec.ai ? ' · ' + X.spec.ai : ' •'));
       const st = elx('span', 'st', X.finishT != null ? X.finishT.toFixed(1) + ' s' : X.gates + (X.spec.ai || X.idleAI ? ' · ' + X.aiState.split(' · ')[0] : ''));
       if (X.aiState.startsWith('misjudged')) st.style.color = 'var(--hard)'; else if (X.aiState.startsWith('not noticed')) st.style.color = 'var(--medium)';
       row.append(dot, nm, st); b.appendChild(row);
@@ -1196,9 +1363,9 @@
     key: 'regatta-ai-ide-v1', host: document.querySelector('.layout'), stage: $('viewport'),
     right: [['scene', 'Scene Config', [$('grp-scene')]], ['game', 'Game Config', [$('grp-intensity'), $('grp-players')]], ['ai', 'AI Config', [$('grp-ai'), $('grp-aitune'), $('grp-steer')]],
       ['style', 'Play Style Config', [$('grp-style')]], ['input', 'Input', [$('grp-controls')]], ['others', 'Vessel Config', [$('grp-hulls'), $('grp-moves'), $('grp-live')]]],
-    bottom: [['score', 'Scorecard', [$('grp-score')]], ['runs', 'Runs', [$('grp-runs')]], ['about', 'About', [document.querySelector('header .sub'), $('grp-about')]]],
+    bottom: [['score', 'Scorecard', [$('grp-score')]], ['train', 'Training', [$('grp-train')]], ['runs', 'Runs', [$('grp-runs')]], ['about', 'About', [document.querySelector('header .sub'), $('grp-about')]]],
     railW: 380, dockH: 230, stackBelow: DOCK_RIGHT_ABOVE,   // the settings dock stays beside the stage (the user, 2026-10-15: tabs on the right of the view)
-    winSize: { score: [880, 440], runs: [640, 360] },
+    winSize: { score: [880, 440], runs: [640, 360], train: [880, 560] },
     onLayout: () => { lastW = lastH = 0; },
   });
   // The settings dock stays on the RIGHT of the stage whatever studio-ide.js version the browser has cached (an older copy
@@ -1235,6 +1402,8 @@
       save(); newRace();
     },
     startRace, stopRace, raceHeadless, scoreHulls, hulls: HULLS, model: MODEL, course: getCourse, get tune() { return S.tune; }, tuneDefaults,
+    train: (opts) => { Object.assign(S.train, opts || {}); startTraining(); }, get training() { return { running: !!trainJob, hist: TR.hist.slice(), best: TR.best && { time: TR.best.time, fin: TR.best.fin, tune: TR.best.tune } }; },
+    keepBest: () => $('trApply').click(), get trained() { return S.trained; }, costOf, recordDemo: (hull, course, pts) => { S.demos[hull + '@' + course] = { pts, gates: 24, time: null, at: Date.now() }; },
     get routesShown() { return view.plans.filter((p) => p.visible).length; },   // AIs whose planned-route line is drawn
     tick(seconds) { const dt = 1 / 30; for (let s = 0; s < seconds * 30 && !W.over; s++) stepWorld(W, dt, pilotInputs(humanInput(dt))); return this.state; },
   };

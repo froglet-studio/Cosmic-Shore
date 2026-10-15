@@ -89,6 +89,8 @@ in another session), not in the Vessel Studio. The loop is: test the AIs in the 
 watch the real vessels race in the Third Eye (trajectories, behaviour, who wins and why), improve, repeat. §2.5's
 "one race studio" is that artifact.
 
+**Training (2026-10-15):** the artifact is now **Training AI for Regatta** (all 16 hulls, AIs racing each other, learn from a player's line, JSON hand-off); the end-to-end training plan is `AI_TRAINING_PLAN.md`.
+
 **Built (2026-10-15):** the **Regatta AI** artifact, https://claude.ai/artifact/FCC7UWbs2wC6LXYMVW4KA4 (repo
 `Docs/Studios/RegattaAI/`, README there). The course is `RegattaCourse`'s own output, the steering is
 `GateRaceController.ArmRacers` with the scene's values, difficulty is `GateRaceHandicap`, and the scorecard times every

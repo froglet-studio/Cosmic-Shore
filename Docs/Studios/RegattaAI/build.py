@@ -44,6 +44,10 @@ def main():
         print(r.stdout.strip() or r.stderr.strip()[-300:])
         if r.returncode:
             errors.append('course.js is stale or export_course.sh failed')
+        r = subprocess.run([sys.executable, os.path.join(HERE, 'export_fleet.py'), '--check'], capture_output=True, text=True)
+        print(r.stdout.strip() or r.stderr.strip()[-300:])
+        if r.returncode:
+            errors.append('fleet.js is stale (run export_fleet.py)')
     for e in errors:
         print('FAIL ' + e)
     if errors:

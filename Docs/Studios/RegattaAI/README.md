@@ -1,4 +1,6 @@
-# Regatta AI — the race studio for every Regatta AI
+# Training AI for Regatta — race, watch and train every Regatta AI
+
+(Named "Regatta AI" until 2026-10-15. The plan it prototypes: `Docs/AI_SYSTEM/AI_TRAINING_PLAN.md`.)
 
 **Artifact:** https://claude.ai/artifact/FCC7UWbs2wC6LXYMVW4KA4 (private: share it from its Share menu).
 **Its own artifact, separate from the Vessel Studio** (Yash, 2026-10-15; `Docs/AI_SYSTEM/REGATTA_AI_ROADMAP.md`
@@ -7,7 +9,8 @@ race in the Third Eye, improve, repeat.
 
 | File | What |
 |---|---|
-| `index.html` | The page. The card's eight hulls (Rhino, Manta, Dolphin, Urchin, Squirrel, Serpent, Sparrow, Scarab) on their shipped numbers (the keys `Tools/Build/regatta_balance.py` reads), up to 8 players (vessel, domain, difficulty, starting-element style, view), the three cameras, trajectory trails, AI thinking lines, phone play, and the scorecard: race time per hull × Easy / Medium / Hard against the balance model. Hook `window.__regattaAI` (`state`, `set`, `startRace`, `stopRace`, `tick(s)`, `raceHeadless(intensity, hull, level, seed, style, fixMiss)`, `scoreHulls`, `course`, `routesShown`). |
+| `index.html` | The page. The card's eight hulls (Rhino, Manta, Dolphin, Urchin, Squirrel, Serpent, Sparrow, Scarab) on their shipped numbers (the keys `Tools/Build/regatta_balance.py` reads), up to 8 players (vessel, domain, difficulty, starting-element style, view), the three cameras, trajectory trails, AI thinking lines, phone play, and the scorecard: race time per hull × Easy / Medium / Hard against the balance model. Hook `window.__regattaAI` (`state`, `set`, `startRace`, `stopRace`, `tick(s)`, `raceHeadless(intensity, hull, level, seed, style, fixMiss)`, `scoreHulls`, `course`, `routesShown`, `train`, `training`, `keepBest`, `trained`, `costOf`, `recordDemo`). |
+| `fleet.js` | GENERATED. Every vessel class's flight numbers off its shipped prefab (`export_fleet.py`, with `regatta_balance.py`'s reader; `--check` exits 1 when stale). The 8 card hulls keep their modelled speed verbs; the other 8 fly a labelled generic drive (cruise, plus the prefab's boost held on straights). |
 | `course.js` | GENERATED. The circuit as the game builds it: `RegattaCourse.BuildGates` / `BuildRails` per intensity (8 gates, three braided lanes, one point per prism). Never edit by hand. |
 | `export_course.sh` + `ExportCourse.cs` | Regenerates `course.js` from the shipped C# (the same compile as `Tools/Build/regatta_course_harness`; needs a dotnet 8 SDK). `--check` exits 1 when `course.js` is stale. Re-run after any edit to `RegattaCourse.cs`, `HeadlongCircuit.cs` or `RaceCourseGeometry.cs`. |
 | `build.py` | The publish folder: copies the page, `course.js` and the shared Vessel Studio scripts it loads (`../VesselStudio/studio-theme.js`, `studio-look.js`, `studio-domains.js`, `studio-ide.js`, `ai_race_panel.js`) flat beside it. `--check` also runs `export_course.sh --check`. |
@@ -57,6 +60,19 @@ then publish `<dir>/index.html` with every other file in `<dir>` as `files`, `ur
   2495 s, 441 missed. *Break-off x0.5*: 28/32, 925 missed (turning back sooner traps it again). *Exit 1* and the
   combinations miss far more. So *Exit 0.5* is the first candidate, and the Dolphin at I4 says it wants a per-hull
   setting.
+
+## Training (round 2, 2026-10-15)
+
+The **Training** tab: pick any of the 16 hulls, tick intensities, set population and generations, and the hull's AIs
+race each other. It is a cross-entropy search over the AI Config sliders (shared steering + the hull's drive): every
+generation races the population headless (Hard, seed 11), the fastest quarter set the next generation, and the champion
+races every generation. Cost = race time (a DNF costs 300 s plus 10 s a ring short), plus, with **Learn from me**, the
+mean distance from your recorded line / 10. Your line is kept when you fly a hull yourself for at least a lap (one per
+hull and intensity). **Keep best** makes it the hull's trained AI (used by AI seats while *Races use the trained AIs* is
+on); **Race trained vs untrained** seats both in a live race; **Copy JSON** exports `cosmic-shore.ai-tuning/1` for Unity.
+
+Measured: the Rhino, I1 + I2, 10 AIs x 6 generations: 62.7 s -> 28.5 s a race; live, trained 20.2 s vs untrained 41.5 s
+on I1. A generic hull races (the Grizzly finishes I1 Hard in 83.1 s).
 
 ## First measurements (2026-10-15, Hard, seed 11, card's elements; seconds for three laps; model in brackets)
 
