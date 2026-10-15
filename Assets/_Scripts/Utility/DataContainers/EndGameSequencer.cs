@@ -325,7 +325,7 @@ namespace CosmicShore.Utility
         void HandleQuestCompleted(SO_UnlockData quest)
         {
             if (quest == null || quest.IsPlaceholder) return;
-            ToastNotificationAPI.Show($"Quest Complete!\n{quest.DisplayName}");
+            ToastNotificationAPI.Show($"Quest Complete!\n{quest.DisplayName}", ToastKind.Success);
         }
 
         void HandleIntensityUnlocked(GameModes mode, int intensity)
@@ -333,7 +333,7 @@ namespace CosmicShore.Utility
             var progression = GameModeProgressionService.Instance;
             var quest = progression != null ? progression.GetQuestForMode(mode) : null;
             string label = quest != null ? quest.DisplayName : mode.ToString();
-            ToastNotificationAPI.Show($"{label} Intensity {intensity} Unlocked!");
+            ToastNotificationAPI.Show($"{label} Intensity {intensity} Unlocked!", ToastKind.Success);
         }
     }
 }

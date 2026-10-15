@@ -45,7 +45,7 @@ Legend: `Planned` ▸ `Mockup` ▸ `Mockup approved` ▸ `Built` ▸ `Approved i
 | 8 | Arena, Toy Box and Mission modals, and Toy configure | Built (2026-10-15, section 17): Arena window, Toy Box, Toy configure and the Mission window | `ToyBox.dc.html` (interactive), `ToyBoxClaimed`, `ArenaWindow`, `MissionWindow`, `ToyConfigure` (interactive), `ToyConfigurePaint`, `ToyConfigureSpawn`, `ToyConfigureDomain`, `ModesNotes` | |
 | 9 | Settings modal and Credits | Built (2026-10-15, section 18): Settings window and Credits | `Settings.dc.html` (interactive), `SettingsDisplay`, `SettingsPerformance`, `SettingsOther`, `Credits`, `SystemNotes` | |
 | 10 | Closed surfaces: Port (locked), Store (no slot), Episodes panel, purchase confirmation | Built (2026-10-15, section 19): purchase confirmation drawn blind; locked states from items 1 and 5 | `ClosedSurfaces.dc.html`, `PurchaseConfirm` (blind), `SystemNotes` | |
-| 11 | Menu toasts | Mockup approved (2026-10-14) | `Toasts.dc.html` (interactive), `SystemNotes` | |
+| 11 | Menu toasts | Built (2026-10-15, section 20) | `Toasts.dc.html` (interactive), `SystemNotes` | |
 | 12 | In-game UI: GameCanvas HUD chrome, scoreboard, ready / countdown / pause, in-match toasts, end-of-game screens, Menu_Main freestyle HUD | Planned (inventory running) | | |
 
 ---
@@ -1053,4 +1053,40 @@ Wiring:
   disabled `StoreScreen.PurchaseConfirmationButton` are re-pointed into the view.
 - The buttons are wired in code (`wireButtonsInCode`), because a button inside a prefab cannot
   carry a persistent call to a scene component.
+
+## 20. Item 11: menu toasts (built 2026-10-15, awaiting in-editor approval)
+
+**The defect.** Menu_Main has no `ToastNotificationManager`; `ToastNotificationAPI` creates one at
+runtime with no item prefab, so every menu toast was the code fallback: a 100 x 100 square in the
+lower-left quadrant, under the party panels, cutting most messages off.
+
+`Tools/Build/author_menu_toasts.py` (`--check`, `--self-test`) now authors:
+- **`Resources/UI/ToastNotificationItem.prefab`.** The manager loads it whenever no prefab is
+  wired (`ToastNotificationManager.ItemResourcePath`) and keeps the code fallback only for the
+  case where that load fails. The toast:
+  - hugs its text: `ToastNotificationItem` measures the message and asks for 360 to 720 wide,
+    wrapping past 720;
+  - is drawn Neutral Very Dark with a Neutral Light hairline, in Body 18;
+  - has a Jade drain bar along its bottom edge that empties over the 5 s hold;
+  - keeps everything visible in a Body child that drops in from above (`dropDistance` 16) while
+    it fades in.
+- **The container in Menu_Main**, moved to the top centre below the nav (108 down) and stacked
+  10 apart. Its layout group now sizes each toast from the toast's own layout instead of a fixed
+  square.
+- **`ToastNotificationSettings`**, which gains `newestOnTop` (on, per the board) and
+  `dropDistance`.
+
+**Kinds.** `ToastNotificationAPI.Show(message, ToastKind)` draws a leading glyph for the kind;
+`Show(message)` still works and draws none. Callers now pass a kind:
+
+| Kind | Glyph | Callers |
+|---|---|---|
+| Refusal | lock, Light | every `MenuAvailabilityView` Locked press (the Port tab, Episodes, locked missions, every commerce refusal); "That party can't be joined right now." and "That match can't be spectated right now." |
+| Success | check, CTA | "Friend request accepted!", quest complete, intensity unlocked |
+| Error | danger diamond, Danger | the friends and party failures, the cloud-save failure |
+| Goal | crystal, Neutral | the locked-intensity goal in game configure |
+
+Unchanged: the timing (fade in 0.25 s, hold 5 s, fade out 0.2 s, unscaled), the queue of 10, the
+three-visible limit and drag-to-dismiss. Toasts no longer block clicks: the old squares were
+raycast plates, and now only the toast itself takes the pointer, for the drag.
 

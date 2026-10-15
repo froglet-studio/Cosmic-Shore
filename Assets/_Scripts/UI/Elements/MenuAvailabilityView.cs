@@ -125,7 +125,7 @@ namespace CosmicShore.UI
                     // The refused entry shakes once (a no-op unless it carries a KitShake).
                     KitShake.Play(gameObject);
                     if (!string.IsNullOrWhiteSpace(lockedMessage))
-                        ToastNotificationAPI.Show(lockedMessage);
+                        ToastNotificationAPI.Show(lockedMessage, ToastKind.Refusal);
                     return false;
 
                 default:

@@ -2540,7 +2540,7 @@ namespace CosmicShore.UI
             if (intensity >= 1 && intensity <= row.Count && row[intensity - 1])
                 KitShake.Play(row[intensity - 1].gameObject);
 
-            ToastNotificationAPI.Show(LockedIntensityGoal(_selectedGame, intensity));
+            ToastNotificationAPI.Show(LockedIntensityGoal(_selectedGame, intensity), ToastKind.Goal);
         }
 
         /// <summary>

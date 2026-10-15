@@ -692,7 +692,7 @@ namespace CosmicShore.UI
         {
             if (HostConnectionService.Instance == null)
             {
-                ToastNotificationAPI.Show("Connection service not ready. Try again shortly.");
+                ToastNotificationAPI.Show("Connection service not ready. Try again shortly.", ToastKind.Error);
                 FindEntryByPlayerId<OnlineInfoEntry>(_spawnedOnline, playerId)?.ResetInviteState();
                 return;
             }
@@ -761,7 +761,7 @@ namespace CosmicShore.UI
         {
             if (!TryGetOnlinePlayer(playerId, out var player) || !player.HasJoinableSession)
             {
-                ToastNotificationAPI.Show("That party can't be joined right now.");
+                ToastNotificationAPI.Show("That party can't be joined right now.", ToastKind.Refusal);
                 PopulateOnlineSection();
                 return;
             }
@@ -769,7 +769,7 @@ namespace CosmicShore.UI
             var controller = PartyInviteController.Instance;
             if (controller == null)
             {
-                ToastNotificationAPI.Show("Party controller not available.");
+                ToastNotificationAPI.Show("Party controller not available.", ToastKind.Error);
                 PopulateOnlineSection();
                 return;
             }
@@ -781,7 +781,7 @@ namespace CosmicShore.UI
             catch (System.Exception e)
             {
                 CSDebug.LogWarning($"[FriendsListPanel] Join party failed: {e.Message}");
-                ToastNotificationAPI.Show("Failed to join party.");
+                ToastNotificationAPI.Show("Failed to join party.", ToastKind.Error);
                 PopulateOnlineSection();
             }
         }
@@ -793,7 +793,7 @@ namespace CosmicShore.UI
         {
             if (!TryGetOnlinePlayer(playerId, out var player) || !player.HasJoinableSession)
             {
-                ToastNotificationAPI.Show("That match can't be spectated right now.");
+                ToastNotificationAPI.Show("That match can't be spectated right now.", ToastKind.Refusal);
                 PopulateOnlineSection();
                 return;
             }
@@ -801,7 +801,7 @@ namespace CosmicShore.UI
             var controller = PartyInviteController.Instance;
             if (controller == null)
             {
-                ToastNotificationAPI.Show("Party controller not available.");
+                ToastNotificationAPI.Show("Party controller not available.", ToastKind.Error);
                 PopulateOnlineSection();
                 return;
             }
@@ -813,7 +813,7 @@ namespace CosmicShore.UI
             catch (System.Exception e)
             {
                 CSDebug.LogWarning($"[FriendsListPanel] Spectate failed: {e.Message}");
-                ToastNotificationAPI.Show("Failed to spectate.");
+                ToastNotificationAPI.Show("Failed to spectate.", ToastKind.Error);
                 PopulateOnlineSection();
             }
         }
@@ -822,19 +822,19 @@ namespace CosmicShore.UI
         {
             if (friendsService == null || !friendsService.IsInitialized)
             {
-                ToastNotificationAPI.Show("Friends service not ready.");
+                ToastNotificationAPI.Show("Friends service not ready.", ToastKind.Error);
                 return;
             }
 
             try
             {
                 await friendsService.AcceptFriendRequestAsync(playerId);
-                ToastNotificationAPI.Show("Friend request accepted!");
+                ToastNotificationAPI.Show("Friend request accepted!", ToastKind.Success);
             }
             catch (System.Exception e)
             {
                 CSDebug.LogWarning($"[FriendsListPanel] Failed to accept request: {e.Message}");
-                ToastNotificationAPI.Show($"Failed to accept: {e.Message}");
+                ToastNotificationAPI.Show($"Failed to accept: {e.Message}", ToastKind.Error);
             }
         }
 
@@ -867,7 +867,7 @@ namespace CosmicShore.UI
             var controller = PartyInviteController.Instance;
             if (controller == null)
             {
-                ToastNotificationAPI.Show("Party controller not available.");
+                ToastNotificationAPI.Show("Party controller not available.", ToastKind.Error);
                 return;
             }
 
@@ -878,7 +878,7 @@ namespace CosmicShore.UI
             catch (System.Exception e)
             {
                 CSDebug.LogWarning($"[FriendsListPanel] Accept party invite failed: {e.Message}");
-                ToastNotificationAPI.Show("Failed to accept party invite.");
+                ToastNotificationAPI.Show("Failed to accept party invite.", ToastKind.Error);
             }
         }
 

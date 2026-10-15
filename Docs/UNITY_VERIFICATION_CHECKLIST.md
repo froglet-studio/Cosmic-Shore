@@ -65,6 +65,29 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Style-B menu redesign, item 11: menu toasts (`claude/new-session-76hnyc`, 2026-10-15) — NOT EDITOR-VERIFIED
+
+The menu toasts were rebuilt from the approved Toasts board (`Docs/MENU_REDESIGN_B.md` section 20)
+by `Tools/Build/author_menu_toasts.py` (`--check` and `--self-test` green). There is a new
+`ToastKind` argument on `ToastNotificationAPI.Show`. No editor in the session, so `/verify-unity`
+is still owed. Offline: the player and editor reference compiles are clean.
+
+**Verify in editor:**
+1. Play Menu_Main and press the locked PORT tab. A toast drops in at the top centre below the nav,
+   reading "Not open yet." with a lock glyph. It hugs the text (not a 100 x 100 square), its Jade
+   bar drains over 5 s, and it fades out.
+2. Press PORT four times quickly. Three toasts show, newest on top, and the fourth waits and
+   appears as one leaves.
+3. Drag a toast to the right past about 60 px: it dismisses. Click a button under the empty stack
+   area: the click goes through.
+4. Fire a long message (for example a cloud-save failure). It wraps at 720 wide and the toast
+   grows taller.
+5. Success, error and goal toasts show the check (green), the diamond (red) and the crystal
+   (neutral). Trigger them with a friend accept, a party-join failure, and a locked intensity in
+   game configure.
+
+---
+
 ### 🔴 Style-B menu redesign, item 8d: the Mission window (`claude/new-session-76hnyc`, 2026-10-15) — NOT EDITOR-VERIFIED
 
 `MissionScreenModal` was rebuilt in the Arena window's style (`Docs/MENU_REDESIGN_B.md` section
