@@ -89,6 +89,14 @@ in another session), not in the Vessel Studio. The loop is: test the AIs in the 
 watch the real vessels race in the Third Eye (trajectories, behaviour, who wins and why), improve, repeat. §2.5's
 "one race studio" is that artifact.
 
+**Built (2026-10-15):** the **Regatta AI** artifact, https://claude.ai/artifact/FCC7UWbs2wC6LXYMVW4KA4 (repo
+`Docs/Studios/RegattaAI/`, README there). The course is `RegattaCourse`'s own output, the steering is
+`GateRaceController.ArmRacers` with the scene's values, difficulty is `GateRaceHandicap`, and the scorecard times every
+card hull × level against `regatta_balance.py`. **First finding: the shipped gate steering finishes 17 of the 32 Hard
+hull × intensity races; a lab fix (commit no earlier than the approach point; after a missed mouth re-latch the side and
+extend at once) finishes 30.** That fix is the first candidate to port to `GateRaceController` (every gate race). The
+card's Time-10 Scarab cannot make I3–I4 under the full-throttle floor (the corner floors were cut for 216 u/s).
+
 ### 3.1 Stoat, the first one
 
 The user's brief: **better speed control and manoeuvring with the black-hole / white-hole pair.**

@@ -15,7 +15,6 @@ they say so and link to the artifact. Plan: `../VESSEL_STUDIO_PLAN.md`.
 | `squirrel.html` | **Squirrel Studio, round 2: AI sim lab** (2026-10-09). The racer on its shipped numbers, on the game's four Skim Race courses (I1–I4, read from `MinigameSkimRace.unity`). AI Squirrels at Easy / Medium / Hard (Hard is a simplified stand-in for `SkimRaceDriver`; Easy and Medium add `SkimRaceHandicap`'s two mistakes), your own hull flown by you or by the AI, chase / follow / free camera, 1–4× speed, auto-restart, "Show AI thinking", and a headless scorecard (every difficulty × course, three seeds). Six play-style types over its four element levels. |
 | `brittlestar.html` | **Brittle Star Studio, round 2: the Unity build** (2026-10-14). The default Flight numbers set flies the shipped vessel (`BrittleStar = 16`) line for line: Cruise plus A / B / X modes, x6 Speed, the slowest Creation with a trail per ring corner, the five auto-firing arms the right stick turns and opens, the nucleus-wide ring explosion, a 0.5 s rebuild, the level camera; its numbers are the page's `SHIPPED` block, which `Tools/Build/studio_to_unity.py` (map `studio_to_unity/brittlestar.json`, 34 fields) clones into `BrittleStarConfig.asset` and the prefab. Round 1 (still selectable): the Falcon reintroduced as the design document "Class - Brittle Star" describes it: a one-stick hull (the never-merged branch's `BrittleStar.prefab` numbers, or `Falcon.prefab`'s, picked in Vessel Config), three modes (Speed / Creation / Destruction), the five-turret gun (spread or convergence aim), Ring Detonation with the crystal charge and overdrive, a procedural pentagon hull with the four element looks, and the design's two minigames, Demolition Derby and Fauna Frenzy, at four intensities. Players list (D25), AI Easy / Medium / Hard with four persona brains, three cameras, phone play, and a scorecard of levels × intensities with two controls (no ring, no modes) plus a style table. Everything found about the vessel: `../BRITTLE_STAR.md`. |
 | `studios.json` + `previews/` | **The catalog and the card** (`/vessel-studio` D35): every studio, and its hub card as text (`chip`, `summary`, `spec`, `cardActions`, `fleet`) and as a picture (`previews/<id>.png`, baked from the hub's live canvas by `.claude/skills/vessel-studio/bake_previews.cjs`). Amoebius's VESSEL STUDIO page and Unity's studio home draw the hub's cards from it; `parity_gate.py` fails when it and `index.html` differ. |
-| `hypersea.html` | **HyperSea Studio, round 1: the fleet AI simulation** (2026-10-14). Every vessel prefab (12 registered + the planned Falcon, Shrike and Termite) in one cell, under one rule set, AI-flown at Easy / Medium / Hard on its shipped cruise, turn rates and trail (each row names its prefab), with its boost modelled by kind (skim, charge, ramp, pellets, hold, rail, dash, rush) and a lab-only stand-in for its signature move. Up to 16 players, each with a **Vessel** dropdown (the race panel's `players.vessels`, `/vessel-studio` D39); opens with the whole fleet seated. Scorecard: **Score the fleet** (one of every hull, three seeds, ranked) and **Score AI levels** (Hard must collect the most). Hook `window.__hyperseaStudio` (`state`, `set`, `startRace`, `stopRace`, `tick(s)`, `raceHeadless`, `scoreFleet`, `scoreLevels`). |
 | `studio-look.js` | **The Vessel Studio look** (`/vessel-studio` D19): the Stoat's sky, stars, lights and drifting prism field, the crystal and the screen marker, as one file every studio loads. Listed under `shared` in `studios.json`. |
 | `studio-ide.js` | **The Vessel Studio editor layout** (`/vessel-studio` D8): the game view in the middle, every panel a tab in the right or bottom dock, pop-out windows, splitters, no page scroll. Listed under `shared` in `studios.json`. |
 | `ai_race_panel.js` | The **universal AI race config panel** (`StudioRacePanel.mount`): Course · Your hull (You / AI Easy / Medium / Hard) · one row per AI rival seat with its own level (Off / Easy / Medium / Hard, D20) · Camera (Chase / Follow / Free) · Speed · Show AI thinking · Auto-restart. The Squirrel and the Stoat both mount it, and every arcade-game studio after them does too (`/vessel-studio` D17, §3.4). Listed under `shared` in `studios.json`. |
@@ -93,73 +92,6 @@ Read it as relative. The studio pilot finishes every course at every level withi
 on I1–I3 (it is faster on I4, where the game's pilot is conservative). Its difficulty gaps are smaller
 than the game's (game: Medium +14–19%, Easy +23–54%). It plans only ~100 u ahead, so a late notice rarely
 costs it, and it recovers from a missed crystal in ~2 s where the game's pilot loses ~10. The page says so.
-
-### HyperSea scorecards, measured 2026-10-14 (I2, all AI Hard; median of seeds 11/22/33)
-
-| Hull | Score | Crystals | Destroyed | Stolen | Standing | Avg u/s |
-|---|---|---|---|---|---|---|
-| Scarab | 290 | 29 | 0 | 0 | 20 | 161 |
-| Grizzly | 219 | 4 | 175 | 0 | 55 | 44 |
-| Manta | 210 | 21 | 0 | 0 | 60 | 150 |
-| Serpent | 200 | 20 | 0 | 0 | 160 | 96 |
-| Rhino | 180 | 8 | 100 | 0 | 70 | 55 |
-| Butterfly | 168 | 2 | 0 | 74 | 148 | 43 |
-| Sparrow | 158 | 14 | 18 | 0 | 0 | 64 |
-| Termite (planned) | 150 | 15 | 0 | 0 | 0 | 81 |
-| Falcon (planned) | 141 | 14 | 0 | 0 | 57 | 80 |
-| Shrike (planned) | 110 | 11 | 1 | 0 | 57 | 79 |
-| Squirrel | 90 | 9 | 0 | 0 | 119 | 54 |
-| Dolphin | 90 | 9 | 0 | 0 | 108 | 61 |
-| Stoat | 90 | 9 | 0 | 0 | 118 | 81 |
-| Thresher | 70 | 5 | 20 | 0 | 99 | 78 |
-| Urchin | 50 | 2 | 2 | 25 | 108 | 61 |
-
-AI levels, the whole fleet at one level (two seeds): crystals a minute Easy 4.38, Medium 5.12, Hard 5.45; mean score
-121, 129, 140. Hard is ahead on both, so the levels decide.
-
-Read it as relative, and read the abilities as lab-only. The crystal race is won on raw cruise (the Scarab's 216 and the
-Manta's 180), the mass war by the area moves (the Grizzly's 100 u bomb on a lab-only 6 s cooldown, the Rhino's sword),
-and the skim hulls (Squirrel, Stoat, Thresher) gain little skim boost because the rule set lets nobody skim their own
-trail. The Urchin barely rides: one shared AI does not plan rails the way `UrchinAutopilotDriver` does.
-
-### Brittle Star scorecard, measured 2026-10-14 (median of seeds 11/22/33, seconds)
-
-Demolition Derby (5 crystals) and Fauna Frenzy (target mass 500 / 650 / 800 / 950), one AI Brittle Star alone, Balanced:
-
-| Game | Course | Easy | Medium | Hard | Hard, no ring | Hard, no modes |
-|---|---|---|---|---|---|---|
-| Derby | I1 | 29.1 | 27.8 | 28.5 | 28.5 | 94.3 |
-| Derby | I2 | 30.0 | 29.0 | 29.3 | 29.3 | 95.4 |
-| Derby | I3 | 30.9 | 31.4 | 30.7 | 30.7 | 95.9 |
-| Derby | I4 | 55.3 | 59.2 | 54.4 | 54.4 | 107.9 |
-| Frenzy | I1 | 19.1 | 19.0 | 19.9 | 19.9 | 150.8 |
-| Frenzy | I2 | 25.1 | 25.0 | 25.9 | 25.9 | DNF |
-| Frenzy | I3 | 32.1 | 33.4 | 33.5 | 33.5 | DNF |
-| Frenzy | I4 | 85.0 | 66.2 | 63.8 | 63.8 | DNF |
-
-The modes earn their place (no modes is 3× slower); the ring does not yet (overdrive pays more than a detonation, so the
-Hard pilot never rings); the AI levels separate on I4 only, because Destruction clears a Derby wall faster than the hull
-reaches it. The findings and what would change them: `../BRITTLE_STAR.md` §5.1.
-
-### Brittle Star scorecard, round 2: the Unity build (measured 2026-10-14, median of seeds 11/22/33, seconds)
-
-The same races flown on the shipped rules and numbers (Vessel Config > Flight numbers = Unity build, the default),
-re-measured 2026-10-15 with the slow Sparrow rounds (135 / 70 u/s for 3 s):
-
-| Game | Course | Easy | Medium | Hard | Hard, no ring | Hard, no modes |
-|---|---|---|---|---|---|---|
-| Derby | I1 | 20.2 | 20.1 | 21.1 | 21.1 | 73.9 |
-| Derby | I2 | 21.6 | 24.1 | 21.3 | 21.3 | 75.0 |
-| Derby | I3 | 26.4 | 22.5 | 22.0 | 21.6 | 77.8 |
-| Derby | I4 | 64.7 | 59.7 | 69.8 | 69.8 | 84.7 |
-| Frenzy | I1 | 26.4 | 26.4 | 26.0 | 26.0 | 78.1 |
-| Frenzy | I2 | 34.4 | 34.4 | 34.0 | 34.0 | 163.7 |
-| Frenzy | I3 | 81.0 | 68.9 | 60.9 | 60.7 | DNF |
-| Frenzy | I4 | DNF | 135.2 | 153.6 | DNF | DNF |
-
-Derby is faster than round 1 (x6 Speed, the arms clear walls in a blink); Frenzy is much slower (Creation at half speed
-lays a third fewer blocks a second, and the nucleus-wide disk breaks the pilot's own built trail, so the ring never pays
-there: "no ring" ties Hard on I3). Hard is not the fastest level on Derby I1 and I4 or Frenzy I4 (D24 unmet there). Findings: `../BRITTLE_STAR.md` §5.2.
 
 ## In Amoebius
 
