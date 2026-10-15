@@ -375,7 +375,14 @@ every reply, so they appear after the first one and are remembered.
   SESSION, PARITY CHECK (compares one system with the Unity game, in plan mode).
 - **Commands**: `/new /clear /rename TITLE /usage /plan /edit /auto /model NAME /effort LEVEL /test /smoke /session`.
   Up arrow recalls earlier messages.
-- **Voice** (Windows): the microphone dictates into the box; the speaker reads replies aloud.
+- **Voice** (Windows): the microphone dictates into the box; the speaker reads replies aloud. Dictation
+  uses Windows' modern recognizer (`Windows.Media.SpeechRecognition`, the same online model as
+  Win + H), so it hears "Unity", "prism" and "vessel". It needs **Settings > Privacy & security >
+  Speech > Online speech recognition** on (and the microphone allowed for desktop apps). If either
+  is off, the mic falls back to the old offline System.Speech engine. The mic's tooltip names the
+  engine that is listening and, when it falls back, the setting that would fix it. The modern
+  recognizer exists only in a launcher built on Windows (`net10.0-windows10.0.19041.0`; elsewhere
+  the project stays `net10.0`), in `Voice.cs`.
 
 Runs the official **Claude Code** CLI in the workspace, so it reads (and, if allowed, edits) the
 branch you are building. If it is not installed, the page offers INSTALL: it downloads Claude Code
@@ -419,7 +426,14 @@ a chat changed files.
 **In GitHub Desktop:** with *Beside my clone* the workspace shares your clone, so a commit here
 is a local branch in GitHub Desktop at once (you can push from there). With the managed clone,
 push here, then **Fetch origin** in GitHub Desktop and pick the branch. Pushing from Amoebius uses
-git's own sign-in, or the GitHub token in SETTINGS > SOURCE (Contents: read & write).
+the GitHub token in SETTINGS > SOURCE (Contents: read & write) when one is pasted, otherwise git's own
+sign-in. Every git step runs with prompts off, and Git Credential Manager honours that too. So when
+GitHub refuses a push and no token is pasted, Amoebius pushes once more with prompts allowed. Git
+Credential Manager then opens its GitHub sign-in (browser or window, up to 5 minutes) and keeps the
+result for later pushes. GitHub Desktop's own git has no credential helper, and GitHub Desktop's
+sign-in is not shared with other programs. With only GitHub Desktop installed, install Git for
+Windows (it includes Git Credential Manager) or paste a token. The error names which case it was
+(`SourceControl.PushRefused`).
 
 **START never throws edits away.** With unsaved changes in the workspace, START plays them as
 they are and skips pulling the branch (the CONSOLE says so); UPDATE refuses until they are

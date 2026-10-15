@@ -214,6 +214,15 @@ POLICIES = {
     },
 }
 
+# Regatta flies its OWN copy of the general policy (SkimRaceAIConfigSO.LoadForRegatta), so the Squirrel can be
+# tuned on Regatta's rails - live in the Inspector, watched in the Third Eye - without moving a number Skim Race
+# was calibrated on. Record a tuned value here as an override on top of the general policy, bump PolicyVersion,
+# and re-run; --check names the asset when an Inspector edit was not recorded here (Docs/SKIM_RACE_AI.md §15).
+POLICIES["SkimRaceAIConfig_Regatta"] = {
+    **POLICIES["SkimRaceAIConfig"],
+    "PolicyVersion": "regatta-v1-from-general",
+}
+
 
 # The lobby AI difficulty's deliberate mistakes (SkimRaceHandicap), ONE setting per difficulty for
 # every intensity: tuned once on intensity 2 with `run.sh handicap` (Docs/SKIM_RACE_AI.md section 10).

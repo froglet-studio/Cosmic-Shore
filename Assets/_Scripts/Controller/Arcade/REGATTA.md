@@ -162,7 +162,8 @@ pilot flies back at the ring through the braid and may re-latch a rival's lane (
 playtest number. Every other hull is untouched — none attaches, and the driver finds every
 control by capability. `AIPilot` is unchanged. The AI templates are
 `Random`, so the bot grid draws its hulls from the card. The Manta's boost has an autopilot
-drive and the Rhino's ramp engages off a straight stick an AI naturally holds; every other
+drive; the Rhino's ramp did NOT engage for an AI (2026-10-14 audit: the press only comes from a human input
+strategy) and is now driven by `RampBoostAIPolicySO`; every other
 hull's AI now spends its boost through a per-hull **AI boost policy**
 (`AI/AI_BOOST.md`): the Sparrow holds its afterburner down each straight, the Serpent stacks
 pellets on long legs, the Dolphin discharges its drift charge onto the straight instead of
@@ -197,6 +198,39 @@ hull backstop alike):
   `GameDataSO.RequestedAIVessels` (entry *i* = bot *i*); the spawner honours a pick that is on the
   card, built and still free, and otherwise draws from the card as before. *Auto* (no pick) is
   the old behaviour. Picks are per session — not remembered with the launch preference.
+- **The host picks every seat** (2026-10-14, for testing a mixed grid): the host may tap ANY AI chip,
+  an opponent's included, and step it through *auto → the card's hulls → auto*. On an opponent seat
+  *auto* is the pinned Squirrel; a pick replaces the pin for that seat only and then follows arena
+  seating like any pick (one pilot per hull). A guest still picks only their own allies.
+  `AIHullSeating.MayPick` / `SeatHull`, read by the chips, the host's check and the spawner.
+
+### 6.1 The five-AI audit (2026-10-14) — what was fixed, what is still open
+
+Five read-only audits traced each racing AI's Regatta path (Squirrel, Manta, Rhino, Urchin, Dolphin). NOT
+EDITOR-VERIFIED; compiled headless only.
+
+| Hull | Found | Done |
+|---|---|---|
+| Rhino | **The ramp never engaged for an AI** (only a human input raises its press): it cruised at ~19–50 u/s and could not finish 3 laps | `RampBoostAIPolicySO` on `Rhino.prefab` (`AI/AI_BOOST.md`) |
+| All | AIs raced at their skill throttle (0.3–0.9) | Regatta asks full throttle (`AIThrottleFloor`, `AIPilot.SetThrottleFloor`, carried by a pilot swap) |
+| Manta (fast hulls) | The approach point sat up to 480 u before a ring on 461–858 u legs, i.e. behind the ring just threaded, inside a fast hull's turn: break-offs every ring | The approach lead is capped at 40% of the leg into the ring (`GateRaceController`, every gate race) |
+| Dolphin | In a drift the nose pointed at the cell centre, so the discharge fired wide of the ring; on a gamepad host the AI's drift had depth 0 and never locked the course | Gate races aim the drift nose at the AI's own target (`SetDriftLookTargetProvider`); the charge driver spends only with the nose on the objective; the AI holds the drift trigger while it holds its commit drift |
+| Urchin | Free, it aimed at the ring's spine, so the first lane it touched was its own only one time in three; a rival lane is a 20 u/s crawl or a slip / re-latch loop. Riding, the orbit detector fired and dropped it to 0.6 throttle | A free AI Urchin heads for its own-domain lane just ahead (`RegattaController.TryOwnLaneAhead`); no orbit break while attached |
+| Squirrel | A pilot swap handed the AI a Squirrel on the old ring-blind autopilot; Regatta flew Skim Race's per-intensity tuning files | `PilotSwap` installs the Skim Race pilot; outside Skim Race the general policy |
+| All | Difficulty did nothing in Regatta | Regatta offers Easy / Medium / Hard (`AIDifficultyRules`) |
+| All (2026-10-15, from the Regatta AI studio) | The AI committed to the far-side point 420 u out whether lined up or not, so on a short leg it crossed the plane beside the mouth; the side was latched once per ring, so after a miss it circled the far-side point until a break-off fired. The studio finished 17/32 Hard hull x intensity races this way | It commits no earlier than its approach point (`GateRaceController.CommitDistanceFor`: the smaller of `aiCommitDistance` and the approach lead plus half the turning radius) and, after crossing the plane outside the mouth (`RaceGateRing.PlaneCrossing`), re-latches the side and breaks off at once (`AIPilot.BreakOffNow`). The studio's lab fix, ported line for line: 30/32. On in Regatta only (`AICommitFromApproachPoint`); the other gate races keep their shipped steering until their owners test it |
+
+**Still open (not fixed, by priority):** the Manta's Soar cuts only after a corner has started (needs the roadmap's
+corner look-ahead); an
+Urchin riding a tight inside-lane corner at I3–I4 can flip its ride direction; Skim Race lane heights stack across
+every AI seat instead of per domain (Squirrels lift off their rail); the Rhino at full ramp may overshoot I3–I4
+corners (nothing brakes; it coasts down at 120 u/s²). The bleeding-edge commit `fb2bff7ac` (Skim Race ring
+crystals) merges cleanly and does not change Regatta.
+
+**Watching them:** FrogletTools ▸ AI ▸ Third Eye. Every pilot now leaves a **trail** of its last seconds of flight
+(toolbar *Trails*, length in Settings), and each AI's readout names its phase (Approach / Through ring N, Crystal on
+the way, Not noticed yet, Misjudged, Riding the rail, Heading for its own rail, Finished), its lap, the ring it is
+after (the cyan ring marker), and its boost decision (the Rhino's ramp, the Dolphin's charge).
 
 ## 6.5 Scoring — the team sum
 
@@ -255,6 +289,15 @@ files against a UnityEngine math stub with Roslyn and RUNS them (the four shippe
 assets; the generator reads both.
 
 ## 8. Verification status and known limitations
+
+- **The five-hull test race (2026-10-14) — NOT EDITOR-VERIFIED.** Solo, Arcade ▸ Regatta, 6 seats
+  (you + 5 AI) over 3 domains. Tap each AI chip (as host you can tap every team's) to put **Squirrel,
+  Manta, Rhino, Urchin, Dolphin** on the grid, and fly a sixth hull yourself (or one of the five, leaving
+  that AI on *auto*). Intensity 1, Hard. Record per hull: finished 3 laps or not, place, rings missed,
+  where it got stuck. The model's skilled-pilot I1 times for these five are Rhino 17.8 s, Manta 23.9 s,
+  Dolphin 41.9 s, Urchin 48.3 s, Squirrel 48.5 s (`regatta_balance.py`): a 2.7× spread before any AI
+  error. The result decides the next step: AI fixes for a hull that does not finish, then
+  `StartingElements` or a pursuit start for the spread.
 
 **Authored headless and never run in the editor.** The pure course code was compiled and run
 for real (Roslyn, 244 circuits, every contract the editor tests assert held); the C# that

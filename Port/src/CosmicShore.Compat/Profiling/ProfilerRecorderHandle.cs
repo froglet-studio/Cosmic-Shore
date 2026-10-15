@@ -23,10 +23,9 @@ namespace CosmicShore.Engine.Profiling.LowLevel.Unsafe
     /// <summary>
     /// Original contract: one entry per profiler marker or counter the running player knows,
     /// enumerated with <see cref="GetAvailable"/> and named by <see cref="GetDescription"/>, and
-    /// recordable with <c>new ProfilerRecorder(handle, ...)</c>. This engine has no marker
-    /// collector yet (see <c>Profiling.cs</c>), so it knows no markers: <see cref="GetAvailable"/>
-    /// returns an empty list and a caller that looks a marker up by name finds nothing, which is
-    /// what <c>diag</c> reports (<c>found: false</c>) instead of a number the engine never measured.
+    /// recordable with <c>new ProfilerRecorder(handle, ...)</c>. Here: one entry per marker a
+    /// <see cref="ProfilerMarker"/> has declared so far (<see cref="MarkerCollector"/>), all in
+    /// nanoseconds. Engine counters are not enumerated; a recorder names them directly.
     /// </summary>
     public readonly struct ProfilerRecorderHandle
     {
@@ -34,14 +33,35 @@ namespace CosmicShore.Engine.Profiling.LowLevel.Unsafe
         ProfilerRecorderHandle(ulong handle) { _handle = handle; }
 
         public bool Valid => _handle != 0;
+        internal int MarkerId => (int)_handle;
 
-        public static void GetAvailable(List<ProfilerRecorderHandle> outRecorderHandleList) => outRecorderHandleList.Clear();
+        public static void GetAvailable(List<ProfilerRecorderHandle> outRecorderHandleList)
+        {
+            outRecorderHandleList.Clear();
+            var ids = new List<int>();
+            MarkerCollector.GetDeclared(ids);
+            foreach (int id in ids) outRecorderHandleList.Add(new ProfilerRecorderHandle((ulong)id));
+        }
 
-        public static ProfilerRecorderDescription GetDescription(ProfilerRecorderHandle handle) => default;
+        public static ProfilerRecorderDescription GetDescription(ProfilerRecorderHandle handle)
+        {
+            string name = MarkerCollector.NameOf(handle.MarkerId);
+            return name == null ? default : new ProfilerRecorderDescription(
+                new ProfilerCategory(MarkerCollector.CategoryOf(handle.MarkerId)), name, ProfilerMarkerDataUnit.TimeNanoseconds);
+        }
     }
 
     public readonly struct ProfilerRecorderDescription
     {
+        internal ProfilerRecorderDescription(ProfilerCategory category, string name, ProfilerMarkerDataUnit unit)
+        {
+            Category = category;
+            Name = name;
+            UnitType = unit;
+            DataType = ProfilerMarkerDataType.Int64;
+            Flags = MarkerFlags.Script;
+        }
+
         public ProfilerCategory Category { get; }
         public MarkerFlags Flags { get; }
         public ProfilerMarkerDataType DataType { get; }

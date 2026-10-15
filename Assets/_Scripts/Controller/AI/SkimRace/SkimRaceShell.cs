@@ -25,6 +25,10 @@ namespace CosmicShore.Gameplay
     /// </summary>
     public static class SkimRaceShell
     {
+        /// <summary>A super-shield's box half-extents per unit of the prism's lossy scale (3x the
+        /// leaf's 0.5 half-extent, "a shield is 3x the prism it replaces").</summary>
+        public const float SuperShieldHalfScale = 1.5f;
+
         static readonly Vector3[] A = { new(1, 1, 1), new(1, -1, -1), new(-1, 1, -1), new(-1, -1, 1) };
         static readonly Vector3[] B = { new(-1, -1, -1), new(-1, 1, 1), new(1, -1, 1), new(1, 1, -1) };
 

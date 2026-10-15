@@ -25,6 +25,7 @@ namespace CosmicShore.Core
         public const string Squad                 = "SQUAD_DATA";
         public const string Loadout               = "LOADOUT_DATA";
         public const string QuestGraph            = "QUEST_GRAPH_PROGRESS";
+        public const string DrillProgress         = "DRILL_PROGRESS";
 
         // ── Analytics Events ──
         // Every event (and its parameters) must also be declared in the UGS
@@ -44,6 +45,9 @@ namespace CosmicShore.Core
         public const string EventModeUnlocked      = "mode_unlocked";
         public const string EventIntensityUnlocked = "intensity_unlocked";
         public const string EventSettingChanged    = "setting_changed";
+        public const string EventFtueStepCompleted  = "ftue_step_completed";
+        public const string EventFtuePhaseCompleted = "ftue_phase_completed";
+        public const string EventFtueCompleted      = "ftue_completed";
 
         // Phase 2 - economy
         public const string EventCrystalsEarned        = "crystals_earned";

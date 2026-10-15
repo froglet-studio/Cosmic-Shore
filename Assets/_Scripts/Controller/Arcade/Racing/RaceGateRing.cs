@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using CosmicShore.Data;
 using CosmicShore.ScriptableObjects;
 using Cysharp.Threading.Tasks;
@@ -188,21 +189,45 @@ namespace CosmicShore.Gameplay
         /// plane INSIDE the mouth? Direction-agnostic: a gate threaded backwards is still
         /// threaded, which is the honest reading for a race - you still had to fly there.
         /// </summary>
-        public bool CrossedMouth(Vector3 prev, Vector3 cur)
-        {
-            if (_retired) return false;
+        public bool CrossedMouth(Vector3 prev, Vector3 cur) =>
+            !_retired && PlaneCrossing(prev, cur, transform.position, Axis, Radius) == GatePlaneCrossing.InsideMouth;
 
-            Vector3 c = transform.position;
-            float dPrev = Vector3.Dot(prev - c, Axis);
-            float dCur = Vector3.Dot(cur - c, Axis);
-            if (dPrev * dCur > 0f) return false;              // same side of the plane
-            if (Mathf.Approximately(dPrev, dCur)) return false;
+        /// <summary>
+        /// Where the segment <paramref name="prev"/> to <paramref name="cur"/> crossed the plane of a
+        /// ring at <paramref name="centre"/>: not at all, inside the mouth (threaded), or outside it
+        /// (a miss). The one formula the ring counts threads with and the AI counts misses with
+        /// (<see cref="GateRaceController"/>), so the two can never disagree about a crossing.
+        /// </summary>
+        public static GatePlaneCrossing PlaneCrossing(Vector3 prev, Vector3 cur, Vector3 centre, Vector3 axis, float radius)
+        {
+            float dPrev = Vector3.Dot(prev - centre, axis);
+            float dCur = Vector3.Dot(cur - centre, axis);
+            if (dPrev * dCur > 0f) return GatePlaneCrossing.None;              // same side of the plane
+            if (Mathf.Approximately(dPrev, dCur)) return GatePlaneCrossing.None;
 
             float t = Mathf.Clamp01(dPrev / (dPrev - dCur));
             Vector3 hit = Vector3.Lerp(prev, cur, t);
-            Vector3 rel = hit - c;
-            Vector3 lateral = rel - Vector3.Dot(rel, Axis) * Axis;
-            return lateral.sqrMagnitude <= Radius * Radius;
+            Vector3 rel = hit - centre;
+            Vector3 lateral = rel - Vector3.Dot(rel, axis) * axis;
+            return lateral.sqrMagnitude <= radius * radius ? GatePlaneCrossing.InsideMouth : GatePlaneCrossing.OutsideMouth;
+        }
+
+        /// <summary>
+        /// An EARLIER ring standing in exactly the place of gate <paramref name="index"/>, or null -
+        /// the one ring a coincident gate forwards its drawing to (Skein's course opens and closes
+        /// on the same collar). Shared by the match and the arcade preview so both draw one hoop.
+        /// Within a unit: two gates from the SAME expression coincide exactly or not at all.
+        /// </summary>
+        public static RaceGateRing FindCoincident(IReadOnlyList<RaceGate> course,
+                                                  IReadOnlyList<RaceGateRing> rings, int index)
+        {
+            for (int j = 0; j < index && j < rings.Count; j++)
+            {
+                if ((course[j].Position - course[index].Position).sqrMagnitude > 1f) continue;
+                if (Mathf.Abs(course[j].Radius - course[index].Radius) > 1f) continue;
+                if (rings[j]) return rings[j];
+            }
+            return null;
         }
 
         /// <summary>
@@ -219,5 +244,13 @@ namespace CosmicShore.Gameplay
             _retired = true;
             ToyFactory.ScaleOutAndDestroy(gameObject, Mathf.Max(0.01f, seconds)).Forget();
         }
+    }
+
+    /// <summary>How a segment crossed a race ring's plane (<see cref="RaceGateRing.PlaneCrossing"/>).</summary>
+    public enum GatePlaneCrossing
+    {
+        None = 0,
+        InsideMouth = 1,
+        OutsideMouth = 2,
     }
 }

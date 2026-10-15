@@ -4,9 +4,9 @@
 // substitutes the {{PLACEHOLDER}} tokens and writes the result into the gitignored work folder.
 //
 // Tokens:
-//   {{APPID}}       Steam application id                (env STEAM_APPID)
-//   {{DEPOTID}}     Steam depot id                      (env STEAM_DEPOTID)
-//   {{DESC}}        Build description shown in Steamworks - we stamp version + commit
+//   {{APPID}}       Steam application id                (env STEAM_APPID, or STEAM_PLAYTEST_APPID for --target playtest)
+//   {{DEPOTID}}     Steam depot id                      (env STEAM_DEPOTID, or STEAM_PLAYTEST_DEPOTID for --target playtest)
+//   {{DESC}}        Build description shown in Steamworks - we stamp version + commit + target
 //   {{CONTENTROOT}} Absolute path to the built player folder
 //   {{BUILDOUTPUT}} Absolute path for SteamPipe's logs and chunk cache
 //   {{SETLIVE}}     Branch to set live, or empty to upload without publishing
