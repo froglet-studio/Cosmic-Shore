@@ -36,6 +36,11 @@ python3 Tools/Build/perf_capture_report.py <capture.json> # one capture, judged 
   off, with managed job time, or with a second camera enabled (the Third Eye window) is NOT a number. The reader says
   so in its first section; the sweep refuses to compare it. Ask for a clean one (the team task template is in
   `Docs/TEAM_TASKS.md`, area Performance) rather than reading a tainted one.
+- **An Amoebius allocation is the game's only when the engine API does not copy.** Before filing a game task from the
+  Amoebius run, read the marker's code: if its bytes come from an engine stand-in that copies on every call (today:
+  `Mesh.SetVertices/SetUVs/SetTriangles(List)`, because the renderer keys on array identity), it belongs in
+  `Docs/perf/amoebius_known.json` with the evidence and a task for the engine's owner (Shombith), not in a game fix.
+  The sweep lists known entries as "engine shim" and never counts them.
 - **No shared capture yet?** The person has not shared: FrogletTools > Performance > Capture Performance (one file),
   then FrogletTools > Diagnostics > Bug Hunt Check-in > *Share now* (or *Auto-publish after each play test*). Say that
   in one line. Never ask for pasted JSON when the pipe exists; accept a paste when they offer one.

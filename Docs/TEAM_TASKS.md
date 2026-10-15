@@ -188,3 +188,10 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Who can take it:** Yash
 - **Added:** 2026-10-15 by Claude (Yash's session) (`Ys-bleeding-edge`)
 - **See:** Docs/UNITY_VERIFICATION_CHECKLIST.md
+
+### T-20261015-72e1 · open · dev · Performance
+- **Task:** Amoebius: Mesh.SetVertices(List)/SetUVs(List<Vector4>)/SetTriangles(List) copy their lists into fresh arrays on every call (ToArray), and the renderer detects a changed mesh by array identity (SceneRenderer ReferenceEquals on RenderVertices / RenderUvWide / RenderSubmesh), so a per-frame mesh upload allocates the whole buffer each frame: CrystalChargeArcs.LateUpdate reads ~708 KB/frame in the Skim Race marker run while the game's own code is allocation-free (it reuses its writer lists). Unity's SetVertices(List) allocates nothing. Make the setters copy in place when the length matches, bump mesh.version, and have the renderer's dirty check key on version (or a per-buffer stamp) instead of array identity, so the engine's allocation numbers mean the game's.
+- **Done when:** python3 Tools/Build/perf_hunt.py amoebius --no-build reads CrystalChargeArcs.LateUpdate under 1 KB/frame with the mesh still animating (a screenshot or the flux arcs visibly moving), engine tests green, and the CrystalChargeArcs entry removed from Docs/perf/amoebius_known.json.
+- **Who can take it:** Shombith (the Amoebius engine), Yash (offered)
+- **Added:** 2026-10-15 by the performance session (perf-hunt) (`perf/performance-optimization`)
+- **See:** Docs/perf/amoebius_known.json; Port/src/CosmicShore.Engine/Rendering/Mesh.cs:249,289; Mesh.Extras.cs:78,139; Port/src/CosmicShore.Render/SceneRenderer.cs:2676,1428,2501; Port/docs/ARCHITECTURE.md 11.3b
