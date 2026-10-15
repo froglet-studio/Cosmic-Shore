@@ -236,8 +236,8 @@ Vessel Config > Flight numbers gained a third set, **Unity build**, and it is th
   (`BrittleStarRules.Press`); a ringless hull keeps its pick, switched off. **Speed** is cruise x6 (x8 at Time 10) on the
   throttle target, **Creation** x0.5, Overdrive both. Trail spacing follows the hull's actual speed over cruise.
 - **The ring** turns to the stick's direction in every mode (nearest point, the short way, 540 deg/s). **Destruction**: the
-  five arms fire on their own (90 rounds/s each, 1350 u/s), meeting 120 u ahead with the stick in and splaying 25 deg with it
-  out (`BrittleStarRules.ArmDirection`). **RT** outside it: 12 rounds/s at 700 u/s from the aimed turret or the cockpit, spread
+  five arms fire on their own (90 rounds/s each, 1350 u/s; since slowed to 135 u/s for 3 s, the same range), meeting 120 u ahead with the stick in and splaying 25 deg with it
+  out (`BrittleStarRules.ArmDirection`). **RT** outside it: 12 rounds/s at 700 u/s (since 70 u/s for 3 s) from the aimed turret or the cockpit, spread
   to 16 deg. **Creation**: five corner trails, the cockpit trail paused.
 - **Ring Detonation**: +240 u/s, 1.1 s fuse, contact after 0.06 s; a flat disk in the ring's plane, half-thickness 0.22 x
   Charge (x1 to x4), swept from the ring's radius to the nucleus's (392 u here, lab-only: the game reads the cell) over

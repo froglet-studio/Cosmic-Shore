@@ -529,8 +529,11 @@ namespace CosmicShore.Gameplay
 
         void FireAlong(Transform muzzle, Vector3 direction, float speed, float scale, float time, Vector3 inherit)
         {
+            // The Sparrow's round, fired the Sparrow's way: its prefab (look and impact effects), detached, stopped by the
+            // first prism, swelling in flight (FullAutoActionExecutor's flightGrowthFactor).
             gun.FireGun(muzzle, speed, inherit, scale, true, time, 0f, FiringPatterns.Default, 0,
-                        detachAfterSpawn: true, stopOnFirstPrismImpact: true, aimDirection: direction);
+                        detachAfterSpawn: true, stopOnFirstPrismImpact: true, aimDirection: direction,
+                        flightGrowthFactor: config.RoundGrowthFactor);
         }
 
         // ------------------------------------------------------------------ Ring Detonation

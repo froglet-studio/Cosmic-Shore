@@ -38,8 +38,8 @@ MonoBehaviour:
   creationSpeedMultiplier: 0.5
   creationWaitTime: 0.6
   fireRate: 12
-  projectileSpeed: 700
-  projectileTime: 0.3
+  projectileSpeed: 70
+  projectileTime: 3
   rangeMultiplier:
     Enabled: 1
     Value: 1
@@ -48,7 +48,7 @@ MonoBehaviour:
     element: 3
     UseFloor: 1
     Floor: 0.7
-  projectileScale: 1.6
+  projectileScale: 1
   projectileScaleMultiplier:
     Enabled: 1
     Value: 1
@@ -58,8 +58,9 @@ MonoBehaviour:
     UseFloor: 1
     Floor: 0.6
   destructionFireRate: 90
-  destructionProjectileSpeed: 1350
+  destructionProjectileSpeed: 135
   destructionProjectileScale: 1
+  roundGrowthFactor: 3
   armFocusDistance: 120
   armSplayDegrees: 25
   maxSpreadDegrees: 16

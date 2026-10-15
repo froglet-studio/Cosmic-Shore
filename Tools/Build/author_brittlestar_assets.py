@@ -256,15 +256,15 @@ def turret_blocks() -> str:
             f"    poolManager: {{fileID: {POOL_ID}}}\n" +
             mb(POOL_ID, TURRETS_GO, POOL_SCRIPT) +
             f"  prefab: {SPARROW_ROUND}\n"
-            # The five arms: 5 streams x 90 rounds/s x 0.3-0.48 s of flight (Space 0..10) = 135-216 rounds alive at
-            # once, plus RT's stream; the Sparrow's pool is 90/320 for its two.
-            "  defaultCapacity: 240\n"
-            "  maxSize: 640\n"
+            # The five arms: 5 streams x 90 rounds/s x 3-4.8 s of flight (Space 0..10; slow rounds, Garrett 2026-10-14) =
+            # 1350-2160 rounds alive at once, plus RT's stream; the Sparrow's pool is 90/320 for its two.
+            "  defaultCapacity: 1400\n"
+            "  maxSize: 2400\n"
             "  enableBufferMaintenance: 1\n"
-            "  bufferSizeTarget: 240\n"
-            "  maxInstantiateRate: 240\n"
-            "  baseInstantiateRate: 90\n"
-            "  maxAddsPerFrame: 32\n")
+            "  bufferSizeTarget: 1400\n"
+            "  maxInstantiateRate: 600\n"
+            "  baseInstantiateRate: 200\n"
+            "  maxAddsPerFrame: 64\n")
 
 
 def bindings() -> str:
@@ -476,14 +476,15 @@ def config_asset() -> str:
             "  creationSpeedMultiplier: 0.5\n"
             "  creationWaitTime: 0.6\n"
             "  fireRate: 12\n"
-            "  projectileSpeed: 700\n"
-            "  projectileTime: 0.3\n"
+            "  projectileSpeed: 70\n"
+            "  projectileTime: 3\n"
             "  rangeMultiplier:\n" + ef(1, 1, 1.6, 3, 0.7) +
-            "  projectileScale: 1.6\n"
+            "  projectileScale: 1\n"
             "  projectileScaleMultiplier:\n" + ef(1, 1, 1.8, 1, 0.6) +
             "  destructionFireRate: 90\n"
-            "  destructionProjectileSpeed: 1350\n"
+            "  destructionProjectileSpeed: 135\n"
             "  destructionProjectileScale: 1\n"
+            "  roundGrowthFactor: 3\n"
             "  armFocusDistance: 120\n"
             "  armSplayDegrees: 25\n"
             "  maxSpreadDegrees: 16\n"
@@ -629,7 +630,7 @@ MAP_ENTRIES = (
      "blocks x1 -> x1.8 at level 10 (BrittleStarConfigSO.creationBlockScale)."),
     (3, "Destruction Mode", 8,
      "X. The FIVE ARMS: while the mode is on, every turret fires on its own - unspread, at the Sparrow's full-auto "
-     "cadence (90 rounds/s each, 1350 u/s) - a stream steady enough to read as five arms reaching ahead of the ring. "
+     "cadence (90 rounds/s each; slow rounds, 135 u/s, swelling as they fly) - a stream steady enough to read as five arms reaching ahead of the ring. "
      "The right stick's direction turns the ring, and the arms with it; its deflection moves them in and out: centred "
      "they meet 120 u ahead (the vessel a crosshair), pushed to the rim they splay 25 degrees. "
      "Outside it, Fire on RT (held) is one stream from the turret the right stick points at (the ring turns to bring it "

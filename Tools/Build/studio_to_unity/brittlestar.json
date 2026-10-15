@@ -64,6 +64,11 @@
       "field": "destructionProjectileScale"
     },
     {
+      "key": "roundGrowthFactor",
+      "asset": "Assets/_SO_Assets/VesselActions/BrittleStar/BrittleStarConfig.asset",
+      "field": "roundGrowthFactor"
+    },
+    {
       "key": "armFocusDistance",
       "asset": "Assets/_SO_Assets/VesselActions/BrittleStar/BrittleStarConfig.asset",
       "field": "armFocusDistance"

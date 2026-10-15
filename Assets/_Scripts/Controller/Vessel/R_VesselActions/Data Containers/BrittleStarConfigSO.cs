@@ -65,25 +65,32 @@ namespace CosmicShore.Gameplay
         [Header("Shooting (RT: one turret, or the cockpit gun)")]
         [Tooltip("Rounds per second from EACH stream.")]
         [SerializeField, Min(0.5f)] float fireRate = 12f;
-        [Tooltip("Muzzle speed, u/s. Range = speed × 2T/π (Projectile's ease-out, vessel rule 34).")]
-        [SerializeField, Min(10f)] float projectileSpeed = 700f;
-        [Tooltip("Flight time at Space 0, seconds.")]
-        [SerializeField, Min(0.05f)] float projectileTime = 0.3f;
+        [Tooltip("Muzzle speed, u/s. Range = speed × 2T/π (Projectile's ease-out, vessel rule 34). A tenth of the first " +
+                 "cut's 700 with ten times the flight time (Garrett, 2026-10-14: slow rounds, the same range).")]
+        [SerializeField, Min(10f)] float projectileSpeed = 70f;
+        [Tooltip("Flight time at Space 0, seconds - both streams' (RT's and the arms'). 3 s: the first cut's 0.3 x 10, so the " +
+                 "rounds at a tenth of the speed reach exactly as far. Rounds alive scale with it: see the turrets' pool.")]
+        [SerializeField, Min(0.05f)] float projectileTime = 3f;
         [Tooltip("SPACE: multiplier on the flight time (and so the range). The Hunter's element.")]
         [SerializeField] ElementalFloat rangeMultiplier = ElementalFloat.Multiplier(1f, 1.6f, Element.Space, 0.7f);
-        [Tooltip("Round size multiplier on the projectile prefab's own size, at Charge 0.")]
-        [SerializeField, Min(0.1f)] float projectileScale = 1.6f;
+        [Tooltip("Round size multiplier on the projectile prefab's own size, at Charge 0 (the Sparrow's own: 1).")]
+        [SerializeField, Min(0.1f)] float projectileScale = 1f;
         [Tooltip("CHARGE: the rounds' size multiplier. Rolling Thunder's element.")]
         [SerializeField] ElementalFloat projectileScaleMultiplier = ElementalFloat.Multiplier(1f, 1.8f, Element.Charge, 0.6f);
         [Header("Destruction Mode (the five arms)")]
         [Tooltip("Rounds per second from EACH of the five turrets while Destruction Mode is on. It fires on its own, with " +
                  "no spread, at the Sparrow's full-auto cadence: a stream this steady reads as five ARMS - the brittle star's.")]
         [SerializeField, Min(1f)] float destructionFireRate = 90f;
-        [Tooltip("The arms' muzzle speed, u/s (the Sparrow's full-auto: 1350). With the tracer's own length, this and the " +
-                 "fire rate decide whether the stream reads as solid: spacing = speed / rate (15 u at 1350 / 90).")]
-        [SerializeField, Min(10f)] float destructionProjectileSpeed = 1350f;
+        [Tooltip("The arms' muzzle speed, u/s: a tenth of the Sparrow's full-auto 1350 (Garrett, 2026-10-14), with " +
+                 "projectileTime ten times the Sparrow's, so the reach is the same 258 u. Spacing between rounds = speed / rate " +
+                 "(1.5 u at 135 / 90).")]
+        [SerializeField, Min(10f)] float destructionProjectileSpeed = 135f;
         [Tooltip("The arms' round size, as a multiple of the round prefab's own (the Sparrow's tracer at 1).")]
         [SerializeField, Min(0.1f)] float destructionProjectileScale = 1f;
+        [Tooltip("In-flight growth of every round: it leaves the muzzle at its size and swells to this multiple over its " +
+                 "flight, its hit radius with it - the Sparrow's look (FullAutoAction.growthFactorAtRestingMass 3). A fixed " +
+                 "factor here: Mass is Creation Mode's dial on this hull, so it does not also scale the rounds.")]
+        [SerializeField, Min(0.01f)] float roundGrowthFactor = 3f;
         [Tooltip("With the right stick IN (centred), the five arms angle inward to meet the nose axis this far ahead, " +
                  "world units - the vessel as a crosshair.")]
         [SerializeField, Min(1f)] float armFocusDistance = 120f;
@@ -183,6 +190,7 @@ namespace CosmicShore.Gameplay
         public float DestructionProjectileSpeed => destructionProjectileSpeed;
         public float CreationOffset => creationOffset;
         public float CreationSpeedMultiplier => creationSpeedMultiplier;
+        public float RoundGrowthFactor => roundGrowthFactor;
         public float ArmFocusDistance => armFocusDistance;
         public float ArmSplayDegrees => armSplayDegrees;
         public float MaxSpreadDegrees => maxSpreadDegrees;

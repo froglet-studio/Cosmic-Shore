@@ -8853,3 +8853,7 @@ code), the 24 `BrittleStarTests` under Roslyn (`Tools/Build/brittlestar_harness/
 3. **LT**: the ring explosion is a flat, domain-coloured band racing out in the ring's plane to the nucleus's width
    (~780 u) in 0.7 s; prisms in the plane break (any domain), prisms a few units above / below survive; a rival it
    crosses loses petals once and is not moved. No leftover band objects after a turn ends.
+4. **Slow Sparrow rounds** (2026-10-15): the arms and RT fire the Sparrow's round at its own size, swelling ×3 in flight,
+   at 135 / 70 u/s for 3 s. The arms should still reach ~258 u (a prism wall that far ahead breaks), and read as five
+   ropes. Watch the Profiler with 3-4 AI Brittle Stars in Destruction Mode: 1,350+ rounds alive per hull. If it is hot,
+   `destructionFireRate` 9 keeps the look at a tenth of the rounds. In Speed Mode the hull outruns its own arms.

@@ -326,7 +326,7 @@
         <details open>
           <summary>Where the numbers come from, and what is not modelled</summary>
           <ul>
-            <li><b>The Unity build</b> (the default set, round 2): <code>VesselClassType.BrittleStar = 16</code>'s rules and numbers, ported line for line from <code>BrittleStarExecutor</code> / <code>BrittleStarRules</code> (contract: <code>R_VesselActions/BRITTLE_STAR.md</code>). Cruise 45 u/s; A / B / X select Speed (cruise x6, x8 at Time 10), Creation (x0.5, the slowest; a trail behind each ring corner) or Destruction (the five arms: every turret fires on its own, 90 rounds/s at 1350 u/s, meeting 120 u ahead with the stick in, splayed 25° with it out), and press again for Cruise; the stick's direction turns the ring in every mode. RT outside Destruction: 12 rounds/s at 700 u/s from the aimed turret or the cockpit. LT throws the ring (+240 u/s, 1.1 s fuse): a flat disk in its plane, as thick as the ring (0.22 u x Charge 1 to 4) and as wide as the nucleus (392 u here), swept out over 0.7 s, breaking every prism it passes and scoring one petal hit per rival hull. A stored charge or a crystal rebuilds the ring over 0.5 s; a crystal while charged is 6 s of Overdrive. Camera straight behind, no height. Every number is in <code>SHIPPED</code> (the Unity build numbers card).</li>
+            <li><b>The Unity build</b> (the default set, round 2): <code>VesselClassType.BrittleStar = 16</code>'s rules and numbers, ported line for line from <code>BrittleStarExecutor</code> / <code>BrittleStarRules</code> (contract: <code>R_VesselActions/BRITTLE_STAR.md</code>). Cruise 45 u/s; A / B / X select Speed (cruise x6, x8 at Time 10), Creation (x0.5, the slowest; a trail behind each ring corner) or Destruction (the five arms: every turret fires on its own, 90 rounds/s of the Sparrow's round at 135 u/s for 3 s, swelling x3, meeting 120 u ahead with the stick in, splayed 25° with it out), and press again for Cruise; the stick's direction turns the ring in every mode. RT outside Destruction: 12 rounds/s at 70 u/s from the aimed turret or the cockpit. LT throws the ring (+240 u/s, 1.1 s fuse): a flat disk in its plane, as thick as the ring (0.22 u x Charge 1 to 4) and as wide as the nucleus (392 u here), swept out over 0.7 s, breaking every prism it passes and scoring one petal hit per rival hull. A stored charge or a crystal rebuilds the ring over 0.5 s; a crystal while charged is 6 s of Overdrive. Camera straight behind, no height. Every number is in <code>SHIPPED</code> (the Unity build numbers card).</li>
             <li><b>Flight</b> (round 1's design sets; Vessel Config &gt; Flight numbers picks the source). The branch's <code>BrittleStar.prefab</code> (<code>origin/claude/falcon-brittlestar-reintro-oyx1q1</code>): <code>SingleStickVesselTransformer</code>, speed = 10 + 25 × boost, so 35 u/s cruise and 110 u/s in Speed mode (<code>VesselStatus.boostMultiplier</code> 4); there is no throttle axis. Pitch and yaw 80°/s, bank into the turn 30°/s, each plus 0.1 × speed (<code>RotationThrottleScaler</code>). <code>Falcon.prefab</code>: 60 u/s cruise, 210 boosted, pitch 60°/s, yaw 40°/s, bank 15°/s. Both: the nose follows the stick's command at 1.5/s (<code>VesselTransformer.LERP_AMOUNT</code>) and speed eases at the same rate; the stick eases as the game's gamepad strategy does, <code>1 − cos(x·π/2)</code>.</li>
             <li><b>Gun</b> (authored, the branch): <code>FullAutoAction</code> 30 rounds/s per muzzle; round speed 1500 → 4000 u/s with Space (its <code>speedValue</code> ElementalFloat) and a 0.3 s life. The round decelerates as the game's <code>Projectile</code> does (<code>cos(πt/2T)</code>), so its range is <code>v·2T/π</code>: 286 u at Space 0, 764 u at Space 10. Hit radius 0.5 (<code>FalconProjectile.prefab</code>). The five guns ride <code>GunRingTransformer</code>: the ring spins 20°/s and the guns converge 70 + 300 |right stick|² u ahead. Trail: <code>SparrowPrismController</code>, a (2, 2, 5) block every 7 u, 4 u behind; camera <code>SparrowCameraSettingsSO</code>, 50 u behind and 10 up.</li>
             <li><b>Modes, the gun's turrets, Ring Detonation, the crystal charge and overdrive, the element parameters, the personas and both minigames</b>: the design document "Class - Brittle Star" (Notion, Class Design Documents). Its words are quoted in <code>Docs/Studios/BRITTLE_STAR.md</code>; every number it does not give is lab-only and sits in The kit or Barricades and fauna.</li>
@@ -359,8 +359,10 @@
   const SHIPPED = {
     // BrittleStarConfig.asset (BrittleStarConfigSO)
     modeBlendSeconds: 0.35, speedModeSpacingFollow: 1, creationSpeedMultiplier: 0.5, creationSpacing: 6, creationOffset: 2,
-    fireRate: 12, projectileSpeed: 700, projectileTime: 0.3, projectileScale: 1.6,
-    destructionFireRate: 90, destructionProjectileSpeed: 1350, destructionProjectileScale: 1, armFocusDistance: 120, armSplayDegrees: 25,
+    // slow rounds (Garrett, 2026-10-14): a tenth of the speed, ten times the flight, the same range (speed x 2T/pi);
+    // the Sparrow's round at its own size, swelling x3 in flight (FullAutoAction.growthFactorAtRestingMass)
+    fireRate: 12, projectileSpeed: 70, projectileTime: 3, projectileScale: 1, roundGrowthFactor: 3,
+    destructionFireRate: 90, destructionProjectileSpeed: 135, destructionProjectileScale: 1, armFocusDistance: 120, armSplayDegrees: 25,
     maxSpreadDegrees: 16, aimDeadzone: 0.25, ringTurnRate: 540,
     ringLaunchSpeed: 240, ringFuseSeconds: 1.1, ringContactRadiusScale: 1,
     ringBlastSeconds: 0.7, ringBlastFallbackRadius: 200, ringBlastBandWidth: 6, rebuildSeconds: 0.5, overdriveSeconds: 6, ringBlastHitCooldown: 0.5,
@@ -860,7 +862,7 @@
         for (let k = 0; k < 5; k++) {
           const m = podWorld(P, k, q), radial = m.clone().sub(P.pos), dist = radial.length();
           const d = dist > 1e-4 ? armDirection(f, radial.divideScalar(dist), dist, splay) : f.clone();
-          W.shots.push({ p: m, d, v: U.destructionProjectileSpeed + P.speed, t: 0, T, r, owner: P.i, disable: true, big: true, dead: false });
+          W.shots.push({ p: m, d, v: U.destructionProjectileSpeed + P.speed, t: 0, T, r, r0: r, g: U.roundGrowthFactor, owner: P.i, disable: true, big: true, dead: false });
         }
       }
       P.owed = 0; return;   // the arms ARE the guns while they run; RT adds nothing
@@ -874,7 +876,7 @@
       const m = P.ring && P.aimedPoint >= 0 ? podWorld(P, P.aimedPoint, q) : P.pos.clone().addScaledVector(f, 4);
       const n = P.shotN++, a = hash(P.i + 1, n) * Math.PI * 2, sp = Math.sqrt(hash(n, P.i + 7)) * spread;
       const d = f.clone().addScaledVector(rightOf(q), Math.cos(a) * Math.tan(sp)).addScaledVector(upOf(q), Math.sin(a) * Math.tan(sp)).normalize();
-      W.shots.push({ p: m, d, v: U.projectileSpeed + P.speed, t: 0, T, r, owner: P.i, disable: false, big: false, dead: false });
+      W.shots.push({ p: m, d, v: U.projectileSpeed + P.speed, t: 0, T, r, r0: r, g: U.roundGrowthFactor, owner: P.i, disable: false, big: false, dead: false });
     }
   }
   function layTrail(W, P, f, M) {
@@ -919,6 +921,7 @@
     for (const s of W.shots) {
       if (s.dead) continue;
       const step = s.v * Math.cos(Math.PI * Math.min(1, s.t / s.T) / 2) * dt; s.t += dt;   // Projectile: the round eases to rest over its life
+      if (s.g) s.r = s.r0 * lerp(1, s.g, Math.min(1, s.t / s.T));   // Projectile.ApplyFlightGrowth: it swells, and hits, as it flies
       const a = s.p, b = a.clone().addScaledVector(s.d, step);
       // prisms along the segment
       let hit = null, hd = Infinity;
@@ -951,7 +954,7 @@
       }
       s.p = b; if (s.t >= s.T) s.dead = true;
     }
-    if (W.shots.length > 600) W.shots = W.shots.filter((s) => !s.dead);
+    if (W.shots.length > 600 && (W.shotGc = (W.shotGc || 0) + 1) % 15 === 0) W.shots = W.shots.filter((s) => !s.dead);   // slow rounds: thousands alive, so compact twice a second, not every step
   }
   function petalHit(W, by, O) {   // a hit on a vessel: petals only (LOCKED), one per victim per 0.05 s; nothing moves, slows or switches off
     if (O.finishT != null || W.t - O.lastHitAt < KIT.hitWindow) return;
@@ -1091,7 +1094,7 @@
   };
   const shieldMesh = new THREE.InstancedMesh(new THREE.OctahedronGeometry(1, 0), new THREE.MeshBasicMaterial({ color: 0xbfe6ff, wireframe: true, transparent: true, opacity: 0.55 }), MAXP);
   shieldMesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage); scene.add(shieldMesh);
-  const MAXS = 1500;
+  const MAXS = 9000;   // slow rounds: 1350-2160 alive per hull in Destruction Mode
   const shotMesh = new THREE.InstancedMesh(new THREE.SphereGeometry(1, 8, 6), new THREE.MeshBasicMaterial({ color: 0xffffff }), MAXS);
   shotMesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage); shotMesh.frustumCulled = false; scene.add(shotMesh);
   const COL = { world: new THREE.Color(0x3a4380), cluster: new THREE.Color(0x6a4f9a) };
@@ -1470,11 +1473,13 @@
     ['speed', 'speedModeAt0', 'Speed mode', 2, 10, 0.5, 'speedModeMultiplier at Time 0: cruise x this in Speed mode (Garrett: x6).'],
     ['speed', 'creationSpeedMultiplier', 'Creation speed', 0.1, 1, 0.05, 'creationSpeedMultiplier: Creation is the slowest mode (Garrett: x0.5).'],
     ['arms', 'destructionFireRate', 'Arms rate', 20, 120, 5, 'destructionFireRate: rounds a second from EACH of the five arms. Below ~68 the 15 u spacing opens past the tracer and the arms read as dashes.'],
-    ['arms', 'destructionProjectileSpeed', 'Arms speed', 400, 2500, 50, 'destructionProjectileSpeed, u/s.'],
+    ['arms', 'destructionProjectileSpeed', 'Arms speed', 40, 2500, 5, 'destructionProjectileSpeed, u/s (a tenth of the Sparrow\'s 1350).'],
     ['arms', 'armFocusDistance', 'Arms meet', 30, 400, 10, 'armFocusDistance: stick in, the five arms meet the nose axis this far ahead (the crosshair).'],
     ['arms', 'armSplayDegrees', 'Arms splay', 0, 60, 1, 'armSplayDegrees: stick out to the rim, each arm splays this far outward.'],
     ['rt', 'fireRate', 'RT rate', 2, 40, 1, 'fireRate: RT, one stream outside Destruction Mode.'],
-    ['rt', 'projectileSpeed', 'RT speed', 200, 2000, 50, 'projectileSpeed, u/s.'],
+    ['rt', 'projectileSpeed', 'RT speed', 20, 1000, 5, 'projectileSpeed, u/s. Range = speed x 2T/pi: change projectileTime the other way to keep it.'],
+    ['rt', 'projectileTime', 'Round flight', 0.2, 6, 0.1, 'projectileTime, seconds (both streams). Rounds alive = rate x this: the arms keep 5 x 90 x T in the air.'],
+    ['rt', 'roundGrowthFactor', 'Round swell', 1, 6, 0.5, 'roundGrowthFactor: every round swells to this multiple over its flight, hit radius too (the Sparrow\'s look: 3).'],
     ['rt', 'maxSpreadDegrees', 'RT spread', 0, 45, 1, 'maxSpreadDegrees: the cone at full stick deflection.'],
     ['ring', 'ringLaunchSpeed', 'Ring launch', 60, 900, 10, 'ringLaunchSpeed: u/s on top of the hull\'s own.'],
     ['ring', 'ringFuseSeconds', 'Ring fuse', 0.3, 3, 0.1, 'ringFuseSeconds.'],

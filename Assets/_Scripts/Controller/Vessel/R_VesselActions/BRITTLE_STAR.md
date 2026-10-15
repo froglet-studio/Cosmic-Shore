@@ -100,10 +100,10 @@ struts — the shipped hull still has physical arms (follow-up F8).
 
 ### 3.4 Destruction Mode (the five arms) and shooting — SPACE
 - **Destruction Mode fires on its own: the FIVE ARMS** (Garrett, 2026-10-14). Every turret fires, unspread, at the
-  Sparrow's full-auto cadence (`destructionFireRate` 90 rounds/s each, `destructionProjectileSpeed` 1350 u/s, the
-  Sparrow's tracer at `destructionProjectileScale` 1) — "such a steady stream that they give the appearance of five arms,
-  hence the name brittle star". Spacing between rounds is speed / rate = 15 u, under the tracer's own ~20 u length, so
-  each arm reads as solid. The arms run while the mode is on and the trail is running (the turn's clock), and RT adds
+  Sparrow's full-auto cadence (`destructionFireRate` 90 rounds/s each, `destructionProjectileSpeed` **135 u/s** — slow
+  rounds, below — the Sparrow's tracer at `destructionProjectileScale` 1) — "such a steady stream that they give the
+  appearance of five arms, hence the name brittle star". Spacing between rounds is speed / rate = 1.5 u, so each arm is
+  an unbroken rope of rounds. The arms run while the mode is on and the trail is running (the turn's clock), and RT adds
   nothing to them.
 - **The right stick moves the arms in and out** (Garrett, 2026-10-14; the class document's "drag away from the centre to
   increase spread"): with the stick IN (centred) every arm angles inward to cross the nose axis `armFocusDistance` 120 u
@@ -114,20 +114,33 @@ struts — the shipped hull still has physical arms (follow-up F8).
   On the one-thumb mouse
   scheme there is no right stick, so the arms stay focused; on one-thumb touch the steering thumb is mirrored onto the
   right stick, so hard turns open the arms. Fire is owed in seconds and paid in whole volleys, capped at 4 per frame (rule 17).
-- **Fire (RT, held) outside Destruction Mode**: one stream at `fireRate` 12 rounds/s, 700 u/s, from the turret the right
+- **Fire (RT, held) outside Destruction Mode**: one stream at `fireRate` 12 rounds/s, **70 u/s**, from the turret the right
   stick points at — the ring turns (`ringTurnRate` 540°/s, always the short way round, never more than 36°) to bring the
   nearest point onto the aim — or from the **cockpit gun** with the stick inside `aimDeadzone`. Ringless, only the
   cockpit gun is left. The stick's deflection past the deadzone opens a cone up to `maxSpreadDegrees` 16°; each round's
   deflection is a pure hash of a per-shot serial (rule 18), so peers that agree on the shot count agree on every round.
-- Rounds are the Sparrow's pooled `SparrowProjectile` (friendly fire on — "players need to be careful not to destroy
-  allied blocks" — swept prism and vessel hits, the fleet's scored `VesselCombatHitByBullet`), fired by a `Gun` on the
-  `BrittleStarTurrets` object, whose pool is sized for the arms (240 / 640: up to 216 rounds alive at Space 10).
-- Flight `projectileTime` 0.3 s × **`rangeMultiplier` ×1 → ×1.6 at Space 10**, so the arms reach 1350 × 2T/π =
-  **258 u → 413 u** and RT's stream 134 u → 214 u (rule 34: rounds decelerate). Every round's size ×
-  `projectileScaleMultiplier` (Charge, below).
-- **Cost to watch:** the arms are 450 rounds/s per hull (the Sparrow's held trigger is 180), each a swept prism query.
-  `destructionFireRate` is the knob if a match with several Brittle Stars profiles hot; below ~68/s the 15 u spacing
-  opens past the tracer's length and the arms start to read as dashes.
+- **The Sparrow's rounds, fired the Sparrow's way** (Garrett, 2026-10-14: "use the sparrow projectiles for the look and
+  effects"): the pooled `SparrowProjectile` prefab, so its look and its impact and end effects are the Sparrow's
+  (`ProjectileImpactor`'s container lives on the prefab: friendly fire on mass — "players need to be careful not to
+  destroy allied blocks" — swept prism and vessel hits, the fleet's scored `VesselCombatHitByBullet`), at the Sparrow's
+  own size (`projectileScale` 1, was 1.6), detached, stopped by the first prism, and **swelling in flight** like the
+  Sparrow's: every round grows to `roundGrowthFactor` ×3 over its flight, hit radius too (`Gun.FireGun`'s
+  `flightGrowthFactor`, the Sparrow's `growthFactorAtRestingMass`; fixed here, because Mass is Creation's dial). One
+  difference kept: the Brittle Star's rounds inherit the hull's velocity, the Sparrow's do not (`inherit: 0`).
+- **Slow rounds, the same range** (Garrett, 2026-10-14): both streams fly at a tenth of their first speed (arms 1350 →
+  135 u/s, RT 700 → 70 u/s) for ten times as long (`projectileTime` 0.3 → **3 s**), so the range, speed × 2T/π (rule 34:
+  rounds decelerate), is unchanged: × **`rangeMultiplier` ×1 → ×1.6 at Space 10**, the arms reach **258 u → 413 u** and
+  RT's stream 134 u → 214 u. Every round's size × `projectileScaleMultiplier` (Charge, below). Because the whole velocity
+  eases to rest over the flight, inherited part included, a hull flying faster than its rounds outruns them: at cruise
+  (45 u/s) the arms reach ~220 u ahead of the hull; in Speed Mode (×6, 270 u/s) the hull overtakes the ends of its own
+  arms within the 3 s — in Overdrive the arms trail back past the ship. Own-domain hulls are never hit
+  (`Projectile.DisallowImpactOnVessel`).
+- **Cost to watch — ten times the rounds in the air:** the arms fire 450 rounds/s per hull and each now lives 3–4.8 s, so
+  **1,350–2,160 rounds are alive per Brittle Star** in Destruction Mode (was 135–216), each a per-frame swept prism
+  query. The turrets' pool is sized for it (`defaultCapacity` / `bufferSizeTarget` 1400, `maxSize` 2400, refills at up
+  to 600/s; an empty pool instantiates synchronously, a full one destroys returns). Profile a match with several AI
+  Brittle Stars first. The cheap knob that keeps the look: `destructionFireRate` 90 → 9 restores the old 15 u spacing and
+  the old rounds-alive count at the slow speed (arms read as beads rather than a rope, and break prisms a tenth as fast).
 
 ### 3.5 Ring Detonation — CHARGE
 - **LT throws the ring** forward at `ringLaunchSpeed` 240 u/s on top of the hull's velocity, spinning. It blows on
@@ -262,11 +275,12 @@ identical on the Stoat and Sparrow and shared by all 16 vessel prefabs — inher
 | `speedModeSpacingFollow` | `BrittleStarConfig` | 1 |
 | `creationBlockSize` / `creationBlockScale` (Mass) | `BrittleStarConfig` | (2.5, 2.5, 4.5) / 1 → 1.8 |
 | `creationSpacing` / `creationRadiusScale` / `creationOffset` | `BrittleStarConfig` | 6 u / 1 / 2 u |
-| `fireRate` / `projectileSpeed` / `projectileTime` | `BrittleStarConfig` | 12 /s / 700 / 0.3 s |
+| `fireRate` / `projectileSpeed` / `projectileTime` | `BrittleStarConfig` | 12 /s / 70 / 3 s (slow rounds, same range) |
 | `rangeMultiplier` (Space) | `BrittleStarConfig` | 1 → 1.6 |
-| `projectileScale` / `projectileScaleMultiplier` (Charge) | `BrittleStarConfig` | 1.6 / 1 → 1.8 |
-| `destructionFireRate` / `destructionProjectileSpeed` / `destructionProjectileScale` (the arms) | `BrittleStarConfig` | 90 /s each / 1350 / 1 |
-| Round pool | `BrittleStar.prefab` turrets | 240 / max 640 |
+| `projectileScale` / `projectileScaleMultiplier` (Charge) | `BrittleStarConfig` | 1 (the Sparrow's) / 1 → 1.8 |
+| `roundGrowthFactor` (in-flight swell, the Sparrow's look) | `BrittleStarConfig` | ×3 |
+| `destructionFireRate` / `destructionProjectileSpeed` / `destructionProjectileScale` (the arms) | `BrittleStarConfig` | 90 /s each / 135 / 1 |
+| Round pool | `BrittleStar.prefab` turrets | 1400 / max 2400 (1,350–2,160 arm rounds alive) |
 | `maxSpreadDegrees` / `aimDeadzone` / `ringTurnRate` | `BrittleStarConfig` | 16° / 0.25 / 540°/s |
 | `ringLaunchSpeed` / `ringFuseSeconds` | `BrittleStarConfig` | 240 u/s / 1.1 s |
 | `blastScale` (Charge — the disk's thickness) | `BrittleStarConfig` | 1 → 4 (× the ring's 0.22 u half-thickness) |
