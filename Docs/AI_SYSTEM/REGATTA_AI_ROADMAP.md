@@ -84,6 +84,11 @@ hull's own bindings, ticked with a read-only context, input-only. Make that the 
 phase, ring, lap and boost decision to the Third Eye (`AIPilot.Objective`, `AIBoostDriver.Status`), with trails.
 The Rhino now has a drive (`RampBoostAIPolicySO`, step 4's first cut). Nothing has been timed yet.
 
+**Decision (Yash, 2026-10-15):** the Regatta AIs are designed and tested in their own **Regatta artifact** (being built
+in another session), not in the Vessel Studio. The loop is: test the AIs in the Regatta artifact, port them to Unity,
+watch the real vessels race in the Third Eye (trajectories, behaviour, who wins and why), improve, repeat. §2.5's
+"one race studio" is that artifact.
+
 ### 3.1 Stoat, the first one
 
 The user's brief: **better speed control and manoeuvring with the black-hole / white-hole pair.**
