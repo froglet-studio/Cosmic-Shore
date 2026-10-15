@@ -44,7 +44,7 @@ Legend: `Planned` ▸ `Mockup` ▸ `Mockup approved` ▸ `Built` ▸ `Approved i
 | 7 | Ark screen (Elemental Converter) | Built (2026-10-15, section 16) | `Ark.dc.html` (interactive), `ArkConverting`, `ArkDone`, `ArkNotes` | |
 | 8 | Arena, Toy Box and Mission modals, and Toy configure | Arena window, Toy Box and Toy configure Built (2026-10-15, section 17); Mission window held (section 17.2) | `ToyBox.dc.html` (interactive), `ToyBoxClaimed`, `ArenaWindow`, `MissionWindow`, `ToyConfigure` (interactive), `ToyConfigurePaint`, `ToyConfigureSpawn`, `ToyConfigureDomain`, `ModesNotes` | |
 | 9 | Settings modal and Credits | Built (2026-10-15, section 18): Settings window and Credits | `Settings.dc.html` (interactive), `SettingsDisplay`, `SettingsPerformance`, `SettingsOther`, `Credits`, `SystemNotes` | |
-| 10 | Closed surfaces: Port (locked), Store (no slot), Episodes panel, purchase confirmation | Mockup approved (2026-10-14) | `ClosedSurfaces.dc.html`, `PurchaseConfirm` (blind), `SystemNotes` | |
+| 10 | Closed surfaces: Port (locked), Store (no slot), Episodes panel, purchase confirmation | Built (2026-10-15, section 19): purchase confirmation drawn blind; locked states from items 1 and 5 | `ClosedSurfaces.dc.html`, `PurchaseConfirm` (blind), `SystemNotes` | |
 | 11 | Menu toasts | Mockup approved (2026-10-14) | `Toasts.dc.html` (interactive), `SystemNotes` | |
 | 12 | In-game UI: GameCanvas HUD chrome, scoreboard, ready / countdown / pause, in-match toasts, end-of-game screens, Menu_Main freestyle HUD | Planned (inventory running) | | |
 
@@ -992,4 +992,43 @@ That fallback stays in the code as the licence backstop.
 - The manifest's headings are now sentence case, and its two non-ASCII characters are replaced
   ("(c)", " - "). The FMOD line and both credits gates (`CreditsReleaseGuard`,
   `check_credits_manifest.py`) are unchanged.
+
+## 19. Item 10: the closed surfaces (built 2026-10-15, awaiting in-editor approval)
+
+Decision D4 limits this item to what a player can see. Each surface:
+
+| Surface | State | Where it was built |
+|---|---|---|
+| **Port tab** | Locked: grey with a lock glyph, still pressable. Pressing it plays the Denied sting and toasts "Not open yet."; LT / RT skip it. | Item 1 |
+| **Episodes entry** | Locked on the Profile screen: grey, lock glyph, pressable. Pressing it toasts "Episodes arrive with the full release." | Item 5 |
+| **Store** | No tab and no reachable button, so nothing to draw. If a Store entry ever returns, it takes the Port tab's locked look and needs a refusal message (`storeScreenMessage` is empty). | n/a |
+| **Purchase confirmation** | Drawn blind (below). | This item |
+
+The toast copy is unchanged here; how the toasts look is item 11.
+
+**Purchase confirmation, drawn blind.** `catalogPurchase` is Locked, so every buy is refused
+("Purchases open with the full release.") before this window can open. The window can only be
+seen by unlocking that surface in `SO_CommerceAvailability`.
+
+`Tools/Build/author_menu_purchase.py` authors `PurchaseConfirmView.prefab`
+(`Main Menu Screens/Purchase/`) and mounts it under the Content of Menu_Main's
+`PurchaseItemConfirmationModal`, which is a scene object. The old Border and Content List subtrees
+are deleted. That removes the Cancel button's `ControllerButtonPress`, which closed the window on
+the same B press the modal already handles.
+
+What the view draws:
+- **Balance pills** for crystals and tickets, top right.
+- **"Confirm"**, then the spend line: "Spend [crystal] 400 to unlock Manta?".
+- **The balance bar.** The part you keep is Light, the spend is Gold, and it is captioned "You keep
+  850" / "Spend 400 of 1,250" (`DrawSpend`; numbers use the invariant culture, so they stay ASCII).
+- **The item tile:** captain, game or ticket art.
+- **SPEND 400** (Purchase) and **CANCEL** (Cancel) on the window's bottom edge.
+
+Wiring:
+- The `PurchaseConfirmationModal` component keeps its fileID, so `StoreScreen` and
+  `HangarCaptainsView` still resolve.
+- Its fields, the `IconEmitter`'s (crystals fly from the balance pill to the spend line), and the
+  disabled `StoreScreen.PurchaseConfirmationButton` are re-pointed into the view.
+- The buttons are wired in code (`wireButtonsInCode`), because a button inside a prefab cannot
+  carry a persistent call to a scene component.
 

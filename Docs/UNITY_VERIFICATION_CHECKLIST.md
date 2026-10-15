@@ -65,6 +65,30 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Style-B menu redesign, item 10: purchase confirmation, drawn blind (`claude/new-session-76hnyc`, 2026-10-15) — NOT EDITOR-VERIFIED
+
+`PurchaseItemConfirmationModal` in Menu_Main was rebuilt from the approved PurchaseConfirm board
+(`Docs/MENU_REDESIGN_B.md` section 19) by `Tools/Build/author_menu_purchase.py` (`--check` and
+`--self-test` green). No editor in the session, so `/verify-unity` is still owed. Offline: the
+player and editor reference compiles are clean.
+
+**Verify in editor:**
+1. Open Menu_Main: no missing-script or missing-reference warnings on
+   `PurchaseItemConfirmationModal`, `StoreScreen` or the modal's `IconEmitter`.
+2. Shipping state: a captain upgrade buy in the Hangar still refuses with "Purchases open with the
+   full release." and the window never opens.
+3. Blind check: temporarily set `catalogPurchase` to Available in `SO_CommerceAvailability`
+   (do not commit), then buy an upgrade. Expected:
+   - the window pops in with "Spend [crystal] N to upgrade <captain>?" and the captain art;
+   - the bar's Gold share matches N against your balance, and the captions read "You keep ..." /
+     "Spend N of ...";
+   - the button reads SPEND N.
+4. SPEND confirms once: one purchase, the crystals fly to the spend line, and the balance counts
+   down. CANCEL and pad B each close the window once.
+5. Revert `SO_CommerceAvailability`.
+
+---
+
 ### 🔴 Style-B menu redesign, item 9b: Credits (`claude/new-session-76hnyc`, 2026-10-15) — NOT EDITOR-VERIFIED
 
 `Panels/CreditsModal.prefab` authored from the approved Credits board (`Docs/MENU_REDESIGN_B.md`
