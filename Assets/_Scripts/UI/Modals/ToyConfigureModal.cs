@@ -110,6 +110,23 @@ namespace CosmicShore.UI
                  "gamepad B follows, so the two cannot disagree.")]
         Button backButton;
 
+        [Header("Style-B panel (all optional)")]
+        [SerializeField, Tooltip("The breadcrumb over the variants: 'Spawn Matrix / Fauna / Shark'.")]
+        TMP_Text pathText;
+        [SerializeField, Tooltip("How many variants the layer offers.")]
+        TMP_Text countText;
+        [SerializeField, Tooltip("The panel's own Back, shown inside a branch. Wiring it drops the " +
+                 "'<  Back' row the list otherwise carries.")]
+        Button layerBackButton;
+        [SerializeField, Tooltip("Shows / hides the panel's Back.")]
+        CanvasGroup layerBackGroup;
+        [SerializeField, Tooltip("The footer's status line: 'Mass selected', or 'Pick a variation.'.")]
+        TMP_Text statusText;
+        [SerializeField, Tooltip("The preview's caption: the selected variant's name.")]
+        TMP_Text previewCaption;
+        [SerializeField, Tooltip("The description panel's heading: what it is describing.")]
+        TMP_Text aboutHeading;
+
         [Header("Freestyle handoff")]
         [SerializeField, Tooltip("The scene's freestyle toggle. REQUIRED - without it Navigate " +
                  "can only warn.")]
@@ -393,6 +410,12 @@ namespace CosmicShore.UI
                 backButton.onClick.RemoveListener(OnBackPressed);
                 backButton.onClick.AddListener(OnBackPressed);
             }
+
+            if (layerBackButton)
+            {
+                layerBackButton.onClick.RemoveListener(OnBackPressed);
+                layerBackButton.onClick.AddListener(OnBackPressed);
+            }
         }
 
         /// <summary>
@@ -436,6 +459,7 @@ namespace CosmicShore.UI
             if (navigateButton) navigateButton.onClick.RemoveListener(Navigate);
             if (switchButton) switchButton.onClick.RemoveListener(SwitchToSelected);
             if (backButton) backButton.onClick.RemoveListener(OnBackPressed);
+            if (layerBackButton) layerBackButton.onClick.RemoveListener(OnBackPressed);
             OnModalClosed -= HandleSelfClosed;
             ToyShellRegistry.OnChanged -= HandleRegistryChanged;
 
@@ -590,7 +614,9 @@ namespace CosmicShore.UI
         void DrawRows()
         {
             _rows.Clear();
-            _backRow = _stack.Count > 1 ? MakeBackRow() : null;
+            // The panel's own Back replaces the row when it is wired (style B); the row stays the
+            // way out of a branch for a window that has none.
+            _backRow = _stack.Count > 1 && !layerBackButton ? MakeBackRow() : null;
             if (_backRow != null) _rows.Add(_backRow);
             if (_stack.Count > 0) _rows.AddRange(_stack[^1].Options);
 
@@ -617,6 +643,46 @@ namespace CosmicShore.UI
             AutoSelectLoneRow();
             UpdateSwitchButton();
             UpdateDescription();
+            DrawLabels();
+        }
+
+        /// <summary>
+        /// The style-B panel's words: where the player is (the toy, then each row that opened a
+        /// layer), how many variants this layer offers, what is selected, and the panel's Back
+        /// inside a branch. Every field is optional.
+        /// </summary>
+        void DrawLabels()
+        {
+            var def = LiveSurface?.ShellDefinition;
+            if (pathText)
+            {
+                var path = new System.Text.StringBuilder(def ? def.DisplayName : "");
+                foreach (var layer in _stack)
+                    if (!string.IsNullOrEmpty(layer.OpenedBy)) path.Append(" / ").Append(layer.OpenedBy);
+                pathText.text = path.ToString();
+            }
+
+            int offered = _rows.Count - (_backRow != null ? 1 : 0);
+            if (countText) countText.text = offered.ToString();
+
+            bool inBranch = _stack.Count > 1;
+            KitVisibility.SetShown(layerBackGroup, inBranch);
+            // Out of the header row's layout while hidden, so the breadcrumb starts at the edge.
+            if (layerBackGroup && layerBackGroup.TryGetComponent(out LayoutElement backLayout))
+                backLayout.ignoreLayout = !inBranch;
+            if (layerBackButton) layerBackButton.interactable = inBranch;
+
+            bool picked = _selected >= 0 && _selected < _rows.Count;
+            string selectedLabel = picked ? _rows[_selected].Label : "";
+            if (statusText) statusText.text = picked ? $"{selectedLabel} selected" : offered > 0 ? "Pick a variation." : "";
+            if (previewCaption) previewCaption.text = selectedLabel;
+            if (aboutHeading)
+            {
+                string opened = inBranch ? _stack[^1].OpenedBy : null;
+                aboutHeading.text = picked && !string.IsNullOrEmpty(_rows[_selected].Description) ? selectedLabel
+                    : !string.IsNullOrEmpty(opened) ? opened
+                    : "About";
+            }
         }
 
         /// <summary>
@@ -778,6 +844,7 @@ namespace CosmicShore.UI
 
             UpdateSwitchButton();
             UpdateDescription();
+            DrawLabels();
         }
 
         void SwitchToSelected()

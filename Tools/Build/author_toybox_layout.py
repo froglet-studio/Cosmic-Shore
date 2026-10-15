@@ -568,10 +568,26 @@ def author(sc):
         set_band(sc, go, lo, hi, f"{path} ({label})")
 
 
+# The style-B rebuild (Docs/MENU_REDESIGN_B.md sections 17.3 and 17.4) replaced both windows this tool
+# lays out - the Toy Box (author_menu_toybox.py) and Toy configure (author_menu_toyconfigure.py) - with
+# generated views whose layout is their generators'. With both views in the scene this tool STANDS DOWN:
+# every object it walks is gone, and re-authoring would have nothing to edit but its own absence.
+STYLE_B_VIEWS = [hashlib.md5(f"CosmicShore/MenuB/assets/{n}".encode()).hexdigest()
+                 for n in ("ToyboxView", "ToyConfigureView")]
+
+
+def stood_down(text):
+    return all(f"guid: {g}, type: 3" in text for g in STYLE_B_VIEWS)
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--check", action="store_true")
     args = ap.parse_args()
+
+    if stood_down(open(SCENE, errors="ignore").read()):
+        print("OK  stood down: the style-B Toy Box and Toy configure views own these windows now")
+        return 0
 
     sc = Scene(SCENE)
     author(sc)

@@ -42,7 +42,7 @@ Legend: `Planned` ▸ `Mockup` ▸ `Mockup approved` ▸ `Built` ▸ `Approved i
 | 5 | Profile screen, Profile modal (avatar / display name), Episodes entry | Built (2026-10-15, section 15): Profile screen and profile window | `Profile.dc.html` (interactive), `ProfileFresh`, `ProfileModal` (interactive), `ProfileName`, `ProfileNameError`, `ProfileNameTaken`, `ProfileNotes` | |
 | 6 | Home screen: hub row, header, settings and freestyle buttons, invite popup | Mockup approved (2026-10-14) | `Home.dc.html` (interactive), `HomeInvite`, `HomeFocus`, `HomeOffline`, `HomeNotes` | |
 | 7 | Ark screen (Elemental Converter) | Built (2026-10-15, section 16) | `Ark.dc.html` (interactive), `ArkConverting`, `ArkDone`, `ArkNotes` | |
-| 8 | Arena, Toy Box and Mission modals, and Toy configure | Arena window and Toy Box Built (2026-10-15, section 17); Toy configure building; Mission window held (section 17.2) | `ToyBox.dc.html` (interactive), `ToyBoxClaimed`, `ArenaWindow`, `MissionWindow`, `ToyConfigure` (interactive), `ToyConfigurePaint`, `ToyConfigureSpawn`, `ToyConfigureDomain`, `ModesNotes` | |
+| 8 | Arena, Toy Box and Mission modals, and Toy configure | Arena window, Toy Box and Toy configure Built (2026-10-15, section 17); Mission window held (section 17.2) | `ToyBox.dc.html` (interactive), `ToyBoxClaimed`, `ArenaWindow`, `MissionWindow`, `ToyConfigure` (interactive), `ToyConfigurePaint`, `ToyConfigureSpawn`, `ToyConfigureDomain`, `ModesNotes` | |
 | 9 | Settings modal and Credits | Mockup approved (2026-10-14) | `Settings.dc.html` (interactive), `SettingsDisplay`, `SettingsPerformance`, `SettingsOther`, `Credits`, `SystemNotes` | |
 | 10 | Closed surfaces: Port (locked), Store (no slot), Episodes panel, purchase confirmation | Mockup approved (2026-10-14) | `ClosedSurfaces.dc.html`, `PurchaseConfirm` (blind), `SystemNotes` | |
 | 11 | Menu toasts | Mockup approved (2026-10-14) | `Toasts.dc.html` (interactive), `SystemNotes` | |
@@ -894,3 +894,30 @@ ToyCardTemplate are deleted; `ToyboxModal` is kept (the switcher names the windo
 - `author_toybox_top_buttons.py` stands down once `ToyboxView` is in the scene (it keeps the config
   asset); its self-test proves the guard. `author_toybox_layout.py` now only finds the Toy configure
   half it still owns (item 8c) and notes the retired template as not found.
+
+### 17.4 Toy configure (built 2026-10-15, awaiting in-editor approval)
+
+`Tools/Build/author_menu_toyconfigure.py` authors `ToyVariantTile.prefab` and `ToyConfigureView.prefab`
+(Toybox folder) and mounts the view under `ToyboxGameConfigureModal/Content` (the window's open
+animation scales Content). Content's old Border and ConfigurationContent and the inactive
+ToyVariantTemplate are deleted; `ToyConfigureModal` is kept and re-pointed, and spawns
+`ToyVariantTile.prefab` (it was a scene template).
+
+- **Header:** the toy's section (eyebrow), its name, Back - which steps out of a branch first and closes
+  the window only from the toy's top layer (no `ModalWindowCloseButton` on it, by design).
+- **Live preview** (`ToyPreviewCamera` on the view's surface, same settings) with "Live preview" and the
+  selected variant's name; **About** carries the description under a heading naming what it describes.
+- **Variant panel:** breadcrumb ("Spawn Matrix / Fauna / Shark") with the panel's own Back inside a
+  branch (it replaces the "<  Back" row and leaves the row's layout while hidden), the count, a
+  three-column grid of `ToyVariantTile`s, the status line ("Mass selected" / "Pick a variation."), and
+  SWITCH (the toy's own verb: Spawn, Start...) / NAVIGATE.
+- **Variant tile:** `KitToyVariantCard` through a new `ToyVariantCard.Draw` hook - glyph, name, second
+  line (CTA on the row you are already on); the selected row is the tile's selected state. The glyph is
+  the new `ToyShellOption.Icon` (Spawn Matrix element rows carry their petal) or, for a hull row, the
+  vessel's own icon.
+- The two `ControllerButtonPress` objects that fired Navigate and Close on the same press as the focused
+  control (the double-fire and the B-closes-from-a-branch defects) went with the old tree.
+- `author_toybox_layout.py` and the Home Hub Wiring window's toy passes stand down once the style-B
+  views are in the scene.
+
+Departure: the lab card's accent tint, glow and lift are not drawn (theme colours only).

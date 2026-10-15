@@ -65,6 +65,29 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Style-B menu redesign, item 8c: Toy configure (`claude/new-session-76hnyc`, 2026-10-15) — NOT EDITOR-VERIFIED
+
+`ModalWindows/ToyboxGameConfigureModal` rebuilt from the approved ToyConfigure boards
+(`Docs/MENU_REDESIGN_B.md` section 17.4) by `Tools/Build/author_menu_toyconfigure.py` (`--check`,
+`--self-test` green). No editor in the session: `/verify-unity` still owed. Offline: player + editor
+reference compiles clean.
+
+**Verify in editor:**
+1. Open Menu_Main: no missing-script or missing-reference warnings on `ToyboxGameConfigureModal`.
+2. Toy Box > Vessel Changer: the window pops in with "PILOT / Vessel Changer", the live preview orbiting
+   the toy, About with its description, and one tile per offered hull (icon, name; the hull you fly reads
+   "flying" in green and is not pressable); the count matches the tiles.
+3. Pick a hull: its tile takes the selected border, the status reads "<Hull> selected", the preview
+   caption names it, SWITCH lights; SWITCH swaps the hull.
+4. Spawn Matrix > Fauna > Shark: the breadcrumb follows, the panel's BACK appears (no "< Back" row), the
+   element tiles show their petals, the button reads SPAWN; BACK steps one layer at a time; the header
+   Back steps out of the branch before it closes the window.
+5. NAVIGATE takes the player to the toy.
+6. Pad: focus lands on the first tile; A on a tile selects it without also navigating; B inside a branch
+   steps back one layer and only B on the top layer closes the window.
+
+---
+
 ### 🔴 Style-B menu redesign, item 8b: the Toy Box (`claude/new-session-76hnyc`, 2026-10-15) — NOT EDITOR-VERIFIED
 
 `ModalWindows/ToyboxScreenModal` rebuilt from the approved ToyBox board (`Docs/MENU_REDESIGN_B.md`
