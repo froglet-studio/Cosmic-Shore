@@ -82,13 +82,14 @@ namespace CosmicShore.Utility.PerformanceBenchmark
             _captureLogOrder.Clear();
             Application.logMessageReceived += OnCaptureLog;
             var notes = new List<string>();
-            string burst = "", diagPath = "", profPath = "", renderers = "", cells = "", prismPath = "", cameras = "";
+            string burst = "", diagPath = "", profPath = "", renderers = "", cells = "", prismPath = "", cameras = "", editor = "";
             try
             {
                 SetStat("Capture", "run", "burst");
                 burst = Safe(() => BurstProbe.Report(), notes, "burst");
                 prismPath = Safe(() => CosmicShore.ECS.PrismRenderService.StatusLine(), notes, "prismpath");
                 cameras = Safe(DescribeCameras, notes, "cameras");
+                editor = Safe(DescribeEditor, notes, "editor");
 
                 SetStat("Capture", "run", $"diag {seconds}s");
                 string started = HandleDiagCommand(new[] { label, seconds.ToString(CultureInfo.InvariantCulture) });
@@ -120,7 +121,7 @@ namespace CosmicShore.Utility.PerformanceBenchmark
                 _captureRunning = false;
             }
 
-            string path = WriteBundle(label, seconds, burst, prismPath, cameras, diagPath, profPath, renderers, cells, notes);
+            string path = WriteBundle(label, seconds, burst, prismPath, cameras, editor, diagPath, profPath, renderers, cells, notes);
             LastCapturePath = path;
             _lastSavedPath = path;
             _lastSavedShownAt = Time.unscaledTime;
@@ -172,7 +173,28 @@ namespace CosmicShore.Utility.PerformanceBenchmark
             return sb.ToString();
         }
 
-        string WriteBundle(string label, int seconds, string burst, string prismPath, string cameras, string diagPath, string profPath,
+        /// <summary>
+        /// The editor's own share of the frame, which no game camera shows: open Scene views (a visible
+        /// one renders the world again every Play frame), the Game view's size, and whether the Profiler
+        /// is deep-profiling or profiling the editor too (either multiplies the cost of every C# call).
+        /// Read before the capture opens the Profiler, so it is the state the person was playing in.
+        /// Empty in a build. The reader judges it (perf_capture_report.py, validity).
+        /// </summary>
+        static string DescribeEditor()
+        {
+#if UNITY_EDITOR
+            return string.Format(CultureInfo.InvariantCulture,
+                "sceneViews {0} | gameView {1}x{2} | deepProfile {3} | profileEditor {4} | profilerRecording {5}",
+                UnityEditor.SceneView.sceneViews.Count, Screen.width, Screen.height,
+                UnityEditorInternal.ProfilerDriver.deepProfiling ? 1 : 0,
+                UnityEditorInternal.ProfilerDriver.profileEditor ? 1 : 0,
+                UnityEditorInternal.ProfilerDriver.enabled ? 1 : 0);
+#else
+            return "";
+#endif
+        }
+
+        string WriteBundle(string label, int seconds, string burst, string prismPath, string cameras, string editor, string diagPath, string profPath,
                            string renderers, string cells, List<string> notes)
         {
             var sb = new StringBuilder(64 * 1024);
@@ -184,6 +206,7 @@ namespace CosmicShore.Utility.PerformanceBenchmark
             sb.Append("  \"diagSeconds\": ").Append(seconds).Append(",\n");
             Field(sb, "prismPath", prismPath);
             Field(sb, "cameras", cameras);
+            Field(sb, "editor", editor);
             Field(sb, "burst", burst);
             Field(sb, "renderers", renderers);
             Field(sb, "cells", cells);

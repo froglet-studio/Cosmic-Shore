@@ -9340,3 +9340,16 @@ and the Third Eye has a skim readout. Checked offline only: reference compile, g
    near zero.
 3. Skim Race I2: the Squirrel AI flies exactly as before, and `lift` reads 0.0. **Fail:** slower or more strikes.
 4. Run `RegattaSkimTests` (edit mode). **Pass:** all green.
+
+## 🔴 Slow-editor tools: Third Eye cost cut, capture's editor line, `timescale` (2026-10-15, `Ys-bleeding-edge`) - NOT EDITOR-VERIFIED
+
+Checked offline only: `unity_refcompile` player, player-dev and editor configurations (no new errors); the gates;
+the `perf_capture_report.py --self-test`.
+
+1. Third Eye with Trails on: the trails look as before (fading tails behind every pilot, no gaps at the fade steps).
+   **Fail:** missing trail pieces, or a hard break where the fade steps.
+2. Play with the Third Eye open: the Game view's frame rate is the same or better than before the change.
+3. Press Capture on the badge; the report's world section prints an `editor:` line (Scene views, Game view size,
+   deep profile, editor profiling, Profiler recording).
+4. HUD console (F7): `timescale 0.25` slows the race to quarter speed; `timescale` reports it; `timescale off`
+   restores it. Leaving the scene restores it with a warning.

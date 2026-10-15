@@ -76,6 +76,12 @@ namespace CosmicShore.Editor.AI
         string _pilotRefusal;
         bool _settingsDirty;
         double _nextScan, _nextRepaint, _nextPausedRender, _saveAt, _lastStep;
+        int _repaintedFrame = -1;
+
+        // Trail polyline runs, reused: one DrawAAPolyLine per run of segments in the same fade band
+        // instead of one per segment (8 s x 15 Hz = 120 draws per pilot per repaint before).
+        const int TrailFadeBands = 4;
+        Vector3[] _trailRun = new Vector3[64];
         Rect _viewRect;
 
         [MenuItem("FrogletTools/AI/Third Eye", false, 100)]
@@ -156,9 +162,13 @@ namespace CosmicShore.Editor.AI
                 RenderNow();
             }
 
-            if (now >= _nextRepaint)
+            // At most once per GAME frame: the window's repaint runs on the main thread between the game's
+            // frames, so repainting at 60 Hz while the game manages 10 only takes time from the game.
+            // Paused, the Free camera still moves, so it repaints on the clock.
+            if (now >= _nextRepaint && (EditorApplication.isPaused || Time.frameCount != _repaintedFrame))
             {
                 _nextRepaint = now + RepaintInterval;
+                _repaintedFrame = Time.frameCount;
                 Repaint();
             }
         }
@@ -261,19 +271,52 @@ namespace CosmicShore.Editor.AI
             if (!_trails.TryGetValue(pilot.Id, out var trail) || trail.Count < 2) return;
             float now = Time.time, keep = Settings.TrailSeconds, near = _cam.nearClipPlane + 0.01f;
             Color domain = ThirdEyePilots.DomainColor(pilot);
+            // Segments are joined into runs and each run is one polyline: a run breaks where a segment is
+            // clipped by the near plane or skipped, and where the fade steps to the next band (the fade is
+            // drawn in TrailFadeBands steps, oldest faintest, rather than per segment).
+            int count = 0, band = -1;
             for (int i = 1; i < trail.Count; i++)
             {
-                trail.Get(i - 1, out Vector3 pa, out float ta);
+                trail.Get(i - 1, out Vector3 pa, out _);
                 trail.Get(i, out Vector3 pb, out float tb);
                 float age = now - tb;
-                if (age > keep) continue;
+                if (age > keep) { FlushTrailRun(ref count, band, keep, domain); continue; }
                 Vector3 va = _cam.WorldToViewportPoint(pa), vb = _cam.WorldToViewportPoint(pb);
-                if (!ThirdEyeRig.ClipToFront(pa, va.z, pb, vb.z, near, out Vector3 wa, out Vector3 wb)) continue;
+                if (!ThirdEyeRig.ClipToFront(pa, va.z, pb, vb.z, near, out Vector3 wa, out Vector3 wb))
+                {
+                    FlushTrailRun(ref count, band, keep, domain);
+                    continue;
+                }
                 Vector2 ga = ToGui(local, _cam.WorldToViewportPoint(wa));
                 Vector2 gb = ToGui(local, _cam.WorldToViewportPoint(wb));
-                Handles.color = domain.WithAlpha(0.85f * (1f - age / keep));
-                Handles.DrawAAPolyLine(2.5f, new Vector3(ga.x, ga.y, 0f), new Vector3(gb.x, gb.y, 0f));
+                int b = Mathf.Min(TrailFadeBands - 1, (int)(age / keep * TrailFadeBands));
+                bool joins = count > 0 && b == band && wa == pa
+                             && (_trailRun[count - 1] - new Vector3(ga.x, ga.y, 0f)).sqrMagnitude < 0.01f;
+                if (!joins)
+                {
+                    // A new run starts at the end of the old one when only the band changed, so the line stays whole.
+                    bool continues = count > 0 && wa == pa;
+                    Vector3 last = count > 0 ? _trailRun[count - 1] : default;
+                    FlushTrailRun(ref count, band, keep, domain);
+                    _trailRun[count++] = continues ? last : new Vector3(ga.x, ga.y, 0f);
+                    band = b;
+                }
+                if (count == _trailRun.Length) System.Array.Resize(ref _trailRun, count * 2);
+                _trailRun[count++] = new Vector3(gb.x, gb.y, 0f);
             }
+            FlushTrailRun(ref count, band, keep, domain);
+        }
+
+        void FlushTrailRun(ref int count, int band, float keep, Color domain)
+        {
+            if (count >= 2)
+            {
+                // The band's middle age sets its fade, as each segment's own age did before.
+                float age = (band + 0.5f) / TrailFadeBands * keep;
+                Handles.color = domain.WithAlpha(0.85f * (1f - age / keep));
+                Handles.DrawAAPolyLine(2.5f, count, _trailRun);
+            }
+            count = 0;
         }
 
         // Paused, the player loop renders nothing; draw this one camera on request so the Free camera
