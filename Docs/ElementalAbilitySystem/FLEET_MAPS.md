@@ -68,6 +68,7 @@ day after the channel it referred to had been deleted.
 | **Butterfly** | **4/4** | **4/4** | **4/4** | *(added 2026-09-22; `Butterfly.prefab` shipped afterwards and its one-shot builder was retired 2026-10-14)* |
 | **Thresher** | **4/4** | **4/4** | **4/4** | *(added 2026-10-08, measured on the branch — prototype; see `R_VesselActions/THRESHER.md`)* |
 | **Stoat** | **4/4** | **4/4** | **4/4** | *(own vessel 2026-10-13 — Space = Field Dipole (L5 **Accretion**, Theft fused in), Time = Pathfinder / Time Mode (L5 **Foresight**), Charge = **Ripple** (L5 **Siphon**), Mass = **Mass / Time Mode** on B (L5 **Armoured Wake**); `R_VesselActions/STOAT_DIPOLE.md` §1a–§1e, §5)* |
+| **Brittle Star** | **4/4** | **4/4** | **0/4** | *(added 2026-10-14 from the Notion class document — Charge = Ring Detonation, Mass = Creation Mode (a trail per ring corner), Space = Destruction Mode (the five arms) + Fire, Time = Speed Mode (×6); the document names no level 5, so all four are OPEN, proposals below; `R_VesselActions/BRITTLE_STAR.md`)* |
 
 Everything the tool still flags is a **design gap, not a wiring bug** — three rows: the Rhino's
 Charge and Space (Space has its L5, Breaker, but still no ability or scaling), and the Serpent's Mass. The full list, with what each one would cost to fill, is
@@ -584,6 +585,22 @@ proposals below, and shipped the same day (`_Scripts/Controller/Vessel/R_VesselA
 Claude's calls inside those decisions, each recorded in STOAT_DIPOLE.md and open to retune: the 90° window's width
 (±15°, 30° falloff, a fifth of the kick outside it), the Mass-mode thickness numbers, the ripple's reach formula and
 its one petal per element, B as the mode button, Siphon and Armoured Wake as the two L5s the brief left open.
+
+### Brittle Star — modes + five turrets + ring detonation — ABILITIES SHIPPED, L5 OPEN (2026-10-14)
+
+The four abilities are the class document's (Notion "Class - Brittle Star"), mapped by its own element personas:
+**Charge = Ring Detonation** (Rolling Thunder: "larger projectile size and larger AOE on support ring detonation"),
+**Mass = Creation Mode** (Fabricator: "increased block size in creation mode"), **Space = Destruction Mode + Fire**
+(Hunter: "increased shot range"; its "nudge intensity" retired with knockback under the LOCKED PvP rule), **Time = Speed
+Mode** (Zephyr: "increased movement speed bonus in speed mode"). The document names **no level-5 upgrades**, so all four
+slots are open (empty `UpgradeLabel`) — proposals, NOT implemented, for mark-up:
+
+| Slot | Proposal A | Proposal B |
+|---|---|---|
+| Charge L5 | **Chain Reaction** — the disk's edge sets off a second, smaller ring explosion where it ends | **Domain-Safe Ring** — the disk spares your own domain's mass (the Sparrow's Charge 5 shape) |
+| Mass L5 | **Shielded Corners** — the corner trails arrive shielded | **Webbing** — every fifth block bridges to the next corner |
+| Space L5 | **Piercing Arms** — the arms' rounds pass through the first prism (the Sparrow's Space 5) | **Long Arms** — the arms' range ×1.25 |
+| Time L5 | **Afterburner Ring** — a thrown ring inherits Speed Mode's speed and fuses later | **Quick Build** — instant ring rebuild |
 
 ## 3. Implementation notes for approved rows
 

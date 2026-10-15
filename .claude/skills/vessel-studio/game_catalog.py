@@ -87,9 +87,13 @@ def build():
     for gm in games:
         for h in gm['vessels']:
             by_name[h]['games'].append(gm['name'])
+    # A studio's display name may be two words for a one-word enum member ('Brittle Star' / BrittleStar): match on the
+    # name with spaces and case dropped, so a two-word vessel's studio is not silently reported as missing.
+    key = lambda n: (n or '').replace(' ', '').lower()
+    by_key = {key(v['name']): v for v in vessels}
     for s in json.loads(read(STUDIOS)).get('studios', []):
-        if s.get('name') in by_name:
-            by_name[s['name']]['studio'] = s['id']
+        if key(s.get('name')) in by_key:
+            by_key[key(s['name'])]['studio'] = s['id']
     games.sort(key=lambda x: x['name'].lower())
     return {'vessels': vessels, 'games': games}
 

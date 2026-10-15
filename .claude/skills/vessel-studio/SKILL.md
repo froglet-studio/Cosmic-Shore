@@ -634,9 +634,23 @@ the manual replay rig, `MouseOrbitCamera`, `Vessel.ToggleAIPilot`, `DeviceTier` 
 - **The latest trigger sample is not the squeeze** (`L-STU-1`), and **gamepad Y is inverted**
   (`L-STU-8`).
 
+- **An open-space minigame lets every pilot fly round the obstacles** (Brittle Star, 2026-10-14). Demolition Derby's walls
+  were flown round at no cost, so every level and every intensity finished within a second of each other and the ladder
+  measured nothing. Bound the course (a corridor with a gentle pull-back, the design's "Ark maximum range") so a barricade
+  has to be dealt with, and plan the AI over a fan of headings scored by what blocks each one.
+- **A studio pilot tuned at one speed orbits at another** (Brittle Star, 2026-10-14). Round 1's pilot rode Speed onto a
+  crystal at x4 (110 u/s); at the Unity build's x6 (297 u/s) the 25 u pickup sat inside its turn radius and every Hard Derby
+  I4 run circled a crystal until the 300 s limit. Whenever a hull's numbers change, re-score every level before reading
+  the result, and give an approach rule hysteresis (a slowed hull must not re-arm its speed mode on the next decision).
+- **A scorecard control that ties is a finding, not a bug.** "Hard, no ring" equalled Hard because overdrive (a crystal
+  while charged) out-paid the ring; the Hard pilot rightly never rang. Report it to the designer rather than forcing the
+  AI to use an ability the numbers do not reward.
+
 **Pages and checks**
 - **The start card covered Play on phone on a sideways phone.** Only a real tap at phone size finds it.
 - **A 400 px check under phone emulation passes everything**: the emulated phone zooms out to fit.
+- **three.js stores `vViewPosition` already negated** (`= -mvPosition.xyz`): its `z` is the distance IN FRONT of the camera.
+  A near-camera dither written as `-vViewPosition.z` discarded every prism and the trail vanished with no error.
 - **WebGL canvases read back blank** without `preserveDrawingBuffer`: judge the stage from a screenshot.
 - **A page that detects a phone may skip the button** (the Stoat goes straight to touch play).
   Accept `body.play`.

@@ -181,6 +181,13 @@
       "Slingshot",
       "Warpline"
      ]
+    },
+    {
+     "name": "BrittleStar",
+     "value": 16,
+     "hasClass": true,
+     "studio": "brittlestar",
+     "games": []
     }
    ],
    "games": [

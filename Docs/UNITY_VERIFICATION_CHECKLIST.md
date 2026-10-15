@@ -8970,3 +8970,21 @@ executor edit was checked by reading only.
 3. No AI may peel away from a crystal it is flying straight at (final approach is untouched).
 4. Skein / Regatta: an AI riding a rail must keep its grind speed (the rail lead point must not
    trip the detector).
+
+## 🔴 Brittle Star — new vessel, round 4 (`cece/gallant-lamport-sc3khe`, 2026-10-14) — NOT EDITOR-VERIFIED
+
+No `unity` CLI in the session that wrote it. Proved offline: player and editor `unity_refcompile` (0 errors in project
+code), the 24 `BrittleStarTests` under Roslyn (`Tools/Build/brittlestar_harness/run.sh`, plus negative controls),
+`author_brittlestar_assets.py --check` / `--self-test`, the element table. The full walk is
+`R_VesselActions/BRITTLE_STAR.md` § In-editor verification; this round's changes:
+1. **Destruction Mode (X)**: push the right stick round — the ring and the five arms turn with it (they had lost it).
+   Deflection still opens / closes the arms.
+2. **Creation Mode (B)**: the hull drops to half cruise (the slowest mode). Speed → Creation: no burst of blocks while
+   the hull coasts down from ×6.
+3. **LT**: the ring explosion is a flat, domain-coloured band racing out in the ring's plane to the nucleus's width
+   (~780 u) in 0.7 s; prisms in the plane break (any domain), prisms a few units above / below survive; a rival it
+   crosses loses petals once and is not moved. No leftover band objects after a turn ends.
+4. **Slow Sparrow rounds** (2026-10-15): the arms and RT fire the Sparrow's round at its own size, swelling ×3 in flight,
+   at 135 / 70 u/s for 3 s. The arms should still reach ~258 u (a prism wall that far ahead breaks), and read as five
+   ropes. Watch the Profiler with 3-4 AI Brittle Stars in Destruction Mode: 1,350+ rounds alive per hull. If it is hot,
+   `destructionFireRate` 9 keeps the look at a tenth of the rounds. In Speed Mode the hull outruns its own arms.
