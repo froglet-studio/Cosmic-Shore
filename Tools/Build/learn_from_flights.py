@@ -3,8 +3,8 @@
 
 Yash, 2026-10-15: "I play Regatta five times with the Squirrel, then my AI reads that data and makes new paths."
 
-Unity writes one flight_*.json per race the player flies by hand (HumanFlightRecorder: the Third Eye's Record toggle, or
-the HUD console's `flightrec on`), and Send to Claude puts it on the player's bugledger/<user> branch under
+Unity writes one flight_*.json per Regatta race the player flies by hand (HumanFlightRecorder, automatic: Go to the
+Play Again menu, or to stopping Play), and Send to Claude puts it on the player's bugledger/<user> branch under
 BugLedger/shared/reports/<user>/flights/. This script reads those flights and measures, against the pilot's own rail:
 
   height      how high above the rail the human skims   -> SkimHeight (the line's height minus the course's skim lift)
@@ -43,7 +43,8 @@ REPO = os.path.abspath(os.path.join(HERE, "..", ".."))
 AUTHOR = os.path.join(HERE, "author_skimrace_ai_config.py")
 REPORT_DOC = os.path.join(REPO, "Docs", "AI_SYSTEM", "LEARNED_FROM_FLIGHTS.md")
 REPORTS_PREFIX = "BugLedger/shared/reports/"
-SCHEMA = "cosmic-shore.flight/1"
+SCHEMA = "cosmic-shore.flight/2"
+SCHEMAS = ("cosmic-shore.flight/1", SCHEMA)   # /1 carried the rail measures; /2 is measured here
 SKIM_REACH = 7.5              # the Squirrel's skimmer sphere (SkimRaceAIConfigSO.PlannerSkimReach)
 BEGIN = "# learn_from_flights:begin"
 END = "# learn_from_flights:end"
@@ -101,8 +102,8 @@ def parse(name, text):
         d = json.loads(text)
     except ValueError as e:
         return None, f"{name}: not JSON ({e})"
-    if d.get("schema") != SCHEMA:
-        return None, f"{name}: schema {d.get('schema')!r}, want {SCHEMA}"
+    if d.get("schema") not in SCHEMAS:
+        return None, f"{name}: schema {d.get('schema')!r}, want one of {SCHEMAS}"
     cols = d.get("columns") or []
     rows = d.get("samples") or []
     d["rows"] = [dict(zip(cols, r)) for r in rows]
@@ -123,6 +124,26 @@ class Lane:
         for i in range(n):
             self.cum.append(self.cum[-1] + dist(self.p[i], self.p[(i + 1) % n]))
         self.length = max(self.cum[-1], 1e-3)
+
+    def project(self, pos, hint):
+        """Closest point on the rail to pos: (arc length s, point, up, segment). A window round hint, else everything."""
+        n = len(self.p)
+        rng = range(n) if hint is None else (k % n for k in range(hint - 40, hint + 41))
+        best = None
+        for i in rng:
+            a, b = self.p[i], self.p[(i + 1) % n]
+            ab = tuple(y - x for x, y in zip(a, b))
+            l2 = sum(x * x for x in ab) or 1e-9
+            t = max(0.0, min(1.0, sum((q - x) * y for q, x, y in zip(pos, a, ab)) / l2))
+            c = tuple(x + y * t for x, y in zip(a, ab))
+            d2 = sum((q - x) ** 2 for q, x in zip(pos, c))
+            if best is None or d2 < best[0]:
+                best = (d2, i, t, c)
+        if hint is not None and best[0] > 400.0 ** 2:
+            return self.project(pos, None)
+        _, i, t, c = best
+        up = norm(lerp(self.u[i], self.u[(i + 1) % n], t))
+        return self.cum[i] + t * (self.cum[i + 1] - self.cum[i]), c, up, i
 
     def at(self, s):
         s %= self.length
@@ -168,8 +189,30 @@ def pct(values, q):
 
 # ---------------------------------------------------------------- measuring one flight
 
+def derive(f, lane):
+    """Flight format 2 records the raw flight; measure each sample against the rail here: arc length s, height above
+    the rail, sideways offset, and the gap to its contact shell (the distance to the shell's BOX, which holds the
+    stella, so it never overstates the gap)."""
+    hx, hy = (f.get("shellHalf") or [9.0, 9.0, 12.0])[:2]
+    hint = None
+    for r in f["rows"]:
+        pos = (r["x"], r["y"], r["z"])
+        s, c, up, hint = lane.project(pos, hint)
+        rel = tuple(q - x for q, x in zip(pos, c))
+        h = sum(a * b for a, b in zip(rel, up))
+        lat = math.sqrt(max(0.0, sum(a * a for a in rel) - h * h))
+        r["s"], r["height"], r["lateral"] = s, h, lat
+        r["gap"] = math.hypot(max(0.0, abs(h) - hy), max(0.0, lat - hx))
+    if "skimLift" not in f:
+        f["skimLift"] = max(0.0, hy - f.get("referenceShellHeight", 1.5))
+
+
 def measure(f):
+    if not f.get("lane"):
+        return None
     lane = Lane(f["lane"])
+    if f["rows"] and "s" not in f["rows"][0]:
+        derive(f, lane)
     rows = [r for r in f["rows"] if r.get("speed", 0) > 5]
     skim = [r for r in rows if 0 <= r.get("gap", -1) < SKIM_REACH]
     line_h = statistics.median([r["height"] for r in skim]) if skim else None
@@ -336,6 +379,9 @@ def run(sources, write):
             problems.append(f"{os.path.basename(name)}: {f.get('mode')} / {f.get('hull')} - only Regatta Squirrel flights teach this policy")
             continue
         m = measure(f)
+        if m is None:
+            problems.append(f"{os.path.basename(name)}: no rail in the file ({f.get('laneError') or 'empty lane'})")
+            continue
         if m["samples"] < 50:
             problems.append(f"{m['name']}: only {m['samples']} moving samples")
             continue
@@ -343,8 +389,8 @@ def run(sources, write):
     for p in problems:
         print("skipped:", p)
     if not ms:
-        print("No Regatta Squirrel flights to learn from. Record with the Third Eye's Record toggle (or HUD console "
-              "'flightrec on'), fly Regatta as the Squirrel, stop Play and press Send to Claude.")
+        print("No Regatta Squirrel flights to learn from. Fly Regatta as the Squirrel by hand (recording is automatic), "
+              "stop Play and press Send to Claude.")
         return 1
     base, _ = current_policy()
     learned, notes, used, why_used = learn(ms, base)
@@ -409,6 +455,19 @@ def self_test():
         # A flight inside the shell (gap 0) cannot pull the margins in, and a height below the plate is clamped.
         low = learn([measure(parse("x", json.dumps(flight(30, True, h=7.0)))[0])], {"TrackGuardMargin": 1.642, "MassGuardMargin": 1.3})[0]
         assert low["TrackGuardMargin"] == 1.642 and low["SkimHeight"] == BANDS["SkimHeight"][0], low
+    # Format 2: the raw flight only (no rail columns); the learner measures it against the rail itself.
+    raw = flight(30, True)
+    keep = ["t", "x", "y", "z", "fx", "fy", "fz", "speed", "boost", "xSum", "ySum", "xDiff", "yDiff", "throttle", "rings"]
+    idx = [raw["columns"].index(c) for c in keep]
+    raw["samples"] = [[r[i] for i in idx] for r in raw["samples"]]
+    raw["columns"] = keep
+    raw["shellHalf"] = [9.0, 9.0, 12.0]
+    raw["referenceShellHeight"] = 1.5
+    del raw["skimLift"]
+    m2 = measure(parse("raw", json.dumps(raw))[0])
+    assert abs(m2["lineHeight"] - 11.0) < 0.3 and abs(m2["skimLift"] - 7.5) < 1e-6, m2
+    assert m2["gapP10"] is not None and abs(m2["gapP10"] - 2.0) < 0.3, m2          # 11 above, shell reaches 9
+    assert abs(learn([m2], {"TrackGuardMargin": 1.642, "MassGuardMargin": 1.3})[0]["SkimHeight"] - 3.5) < 0.3
     # The author script carries the block this writes into.
     text = open(AUTHOR, encoding="utf-8").read()
     assert BEGIN in text and END in text, "author_skimrace_ai_config.py lost its learn_from_flights block"

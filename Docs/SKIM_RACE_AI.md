@@ -1819,21 +1819,19 @@ Race was calibrated on.
 Yash asked for this: play Regatta a few times as the Squirrel, then the AI learns from those races. It is built in
 two parts (`Docs/AI_SYSTEM/AI_TRAINING_PLAN.md` L3, steps 1 and 4A):
 
-1. **The recorder** (`HumanFlightRecorder`, editor and development builds only, off until switched on). Turn it on
-   with the Third Eye's **Record** toggle or the HUD console's `flightrec on`; the setting is remembered on that
-   machine. During every Regatta race flown BY HAND it samples ten times a second:
-   - position, heading, speed and boost;
-   - the four stick axes and the throttle;
-   - rings threaded;
-   - the flight measured against the pilot's own rail, with this pilot's course model: progress along it, height
-     above it, sideways offset, and the gap to its contact shell.
-
-   Seconds the AI holds the hull (the You / AI toggle) are skipped. At the end of the race it writes one
-   `flight_Regatta_<hull>_<time>.json` (schema `cosmic-shore.flight/1`, about 150-300 KB) to
-   `<Documents>/CosmicShore Diagnostics/Flights/`. **Send to Claude** carries it to
-   `BugLedger/shared/reports/<user>/flights/` on the player's `bugledger/<user>` branch.
+1. **The recorder** (`HumanFlightRecorder`, editor and development builds only). **It is automatic** (Yash,
+   2026-10-15: the Record button kept reading on with nothing saved, so it was removed). It starts when a Regatta race
+   starts (Go) and stops when the race ends (the Play Again menu) or when Play stops. Only races the local player
+   flies BY HAND are recorded; seconds the AI holds the hull (You / AI) are skipped. Ten times a second it records
+   position, heading and up, speed, boost, the four stick axes, the throttle and rings threaded. Nothing during the
+   race reads the rail. At the end it copies the pilot's own rail from the arena (prism positions, up axes, contact
+   shell size) and writes `flight_Regatta_<hull>_<time>.json` (schema `cosmic-shore.flight/2`) to
+   `<Documents>/CosmicShore Diagnostics/Flights/`. Unity's after-play **Send to Claude** asks about every new flight
+   and carries it to `BugLedger/shared/reports/<user>/flights/`. A race that cannot be saved says why in one Console
+   warning. HUD `flightrec` reports the state and the saved count.
 2. **The learner** (`python3 Tools/Build/learn_from_flights.py`) reads every flight on every origin branch, or
-   `--dir <folder>`. It learns from the fastest three finished races, or every race when fewer than three finished:
+   `--dir <folder>`, and measures each sample against the rail itself (arc length, height, sideways offset, gap to the
+   shell's box). It learns from the fastest three finished races, or every race when fewer than three finished:
 
    | Measured from your flying | Sets |
    |---|---|

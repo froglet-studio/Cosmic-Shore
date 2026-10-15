@@ -537,22 +537,6 @@ namespace CosmicShore.Editor.AI
 
                 GUILayout.FlexibleSpace();
 
-                // The human flight recorder (HumanFlightRecorder; learn_from_flights.py reads what it writes).
-                // The label says the state in words (Rec: OFF / ON - waiting for ... / ● REC 42s) and the saved count:
-                // a plain "Record" looked the same on and off, so a second click to "make sure" switched it off again.
-                bool rec = HumanFlightRecorder.On;
-                int saved = HumanFlightRecorder.SavedCount;
-                string recLabel = "Rec: " + HumanFlightRecorder.Status + $" | {saved} saved";
-                var prevColor = GUI.backgroundColor;
-                if (rec) GUI.backgroundColor = HumanFlightRecorder.Recording ? FrogletEditorPalette.Ruby : FrogletEditorPalette.Gold;
-                bool recNew = GUILayout.Toggle(rec, new GUIContent(recLabel,
-                    "Click to switch recording ON or OFF. Records YOUR Regatta flights (stick, throttle, line against your " +
-                    "rail) so the Squirrel AI can learn from them: one file per race, sent with Send to Claude. Seconds the AI " +
-                    "holds your hull are not recorded."),
-                    EditorStyles.toolbarButton);
-                GUI.backgroundColor = prevColor;
-                if (recNew != rec) HumanFlightRecorder.On = recNew;
-
                 bool thinking = GUILayout.Toggle(s.ShowThinking, new GUIContent("AI thinking",
                     "Draw each AI's aim, the ring or crystal it is after, and what it is doing."), EditorStyles.toolbarButton);
                 if (thinking != s.ShowThinking) { s.ShowThinking = thinking; MarkSettingsDirty(); }

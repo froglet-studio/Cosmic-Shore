@@ -9395,8 +9395,8 @@ counts, same effects fire), the logging and conditional-compilation gates.
 
 Checked offline only: unity_refcompile player, player-dev and editor configurations; gates; `learn_from_flights.py --self-test`.
 
-1. In the Third Eye, turn **Record** on. Fly Regatta as the Squirrel by hand to the finish. While racing, the button
-   reads "● Rec". **Pass:** after the race a `flight_Regatta_Squirrel_*.json` is in
+1. (Automatic since 2026-10-15; no Record button.) Fly Regatta as the Squirrel by hand to the finish. While racing,
+   HUD `flightrec` reads "RECORDING". **Pass:** after the race a `flight_Regatta_Squirrel_*.json` is in
    `Documents/CosmicShore Diagnostics/Flights/`, and HUD console `flightrec` names it.
 2. Hand the hull to the AI for part of a race (You / AI). **Pass:** the file holds fewer samples, with none taken while
    the AI flew.
