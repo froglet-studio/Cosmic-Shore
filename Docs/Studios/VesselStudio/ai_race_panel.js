@@ -83,6 +83,8 @@
     '.arp-phead b{color:var(--fg,#e9ecff);font-size:13px;margin-right:auto}',
     '.arp-pbtn{min-width:26px;height:24px;padding:0 7px;border:1px solid var(--line,#262b47);border-radius:5px;background:transparent;color:var(--fg,#e9ecff);font:700 13px/1 ui-monospace,monospace;cursor:pointer}',
     '.arp-pbtn:disabled{opacity:.35;cursor:default}',
+    '.arp-flown{margin-left:auto;display:inline-flex;gap:2px;flex:none}',
+    '.arp-flown .arp-pbtn{height:20px;font-size:11px}',
     '.arp-pbtn[aria-pressed="true"]{color:var(--accent,var(--jade,#35e0b0));border-color:var(--accent,var(--jade,#35e0b0))}',
     '.arp-player{border:1px solid var(--line,#262b47);border-radius:6px;padding:5px 8px;display:grid;gap:6px}',
     '.arp-player>summary{cursor:pointer;font-size:12px;display:flex;gap:6px;align-items:center;list-style:none}',
@@ -171,6 +173,9 @@
     var PL = cfg.players && cfg.players.host ? cfg.players : null;
     var domains = PL && PL.domains && PL.domains.length ? PL.domains : GAME_DOMAINS.map(function (x) { return { key: x.key, name: x.name, color: x.color }; });
     var maxPlayers = PL ? Math.max(1, Math.min(16, PL.max || 4)) : 0, openCards = { 0: true };
+    // players.anyHuman: a You / AI toggle on EVERY player (the Unity Third Eye's Pilots panel, Yash 2026-10-15). You fly
+    // any one hull or none (all AI); taking a hull hands the one you left to the AI. Off: player 1 is your hull, as before.
+    var anyHuman = !!(PL && PL.anyHuman);
     var vessels = PL && Array.isArray(PL.vessels) && PL.vessels.length ? PL.vessels : null;
     function vesselOf(key) { for (var i = 0; i < vessels.length; i++) if (vessels[i].key === key) return vessels[i]; return vessels[0]; }
     function domainOf(key) { for (var i = 0; i < domains.length; i++) if (domains[i].key === key) return domains[i]; return domains[0]; }
@@ -178,11 +183,12 @@
       var out = [];
       (Array.isArray(arr) ? arr : []).slice(0, maxPlayers).forEach(function (p, i) {
         p = p || {};
-        var q = { ai: i === 0 ? !!p.ai : true, domain: domainOf(p.domain).key, level: LEVELS.indexOf(p.level) >= 0 ? p.level : 'Hard', style: styles && styles.indexOf(p.style) >= 0 ? p.style : (styles ? styles[0] : '') };
+        var q = { ai: i === 0 || anyHuman ? !!p.ai : true, domain: domainOf(p.domain).key, level: LEVELS.indexOf(p.level) >= 0 ? p.level : 'Hard', style: styles && styles.indexOf(p.style) >= 0 ? p.style : (styles ? styles[0] : '') };
         if (vessels) q.vessel = vesselOf(p.vessel).key;
         out.push(q);
       });
       if (!out.length) { out.push({ ai: false, domain: domains[0].key, level: 'Hard', style: styles ? styles[0] : '' }); if (vessels) out[0].vessel = vessels[0].key; }
+      if (anyHuman) { var human = false; out.forEach(function (q) { if (!q.ai) { if (human) q.ai = true; human = true; } }); }   // one human at most
       return out;
     }
     function derive() {   // the older keys, kept in step for pages that still read them
@@ -220,7 +226,23 @@
         var d = domainOf(p.domain), card = el('details', 'arp-player'); card.open = !!openCards[i];
         card.addEventListener('toggle', function () { openCards[i] = card.open; });
         var sum = el('summary'), dot = el('span', 'arp-dot'); dot.style.background = d.color;
-        sum.appendChild(dot); sum.appendChild(el('span', null, 'Player ' + (i + 1) + (i === 0 ? ' (your hull)' : '') + (vessels ? ' \u00b7 ' + vesselOf(p.vessel).name : '') + ' \u00b7 ' + (p.ai ? 'AI ' + p.level : 'You fly') + ' \u00b7 ' + d.name + (p.style ? ' \u00b7 ' + p.style : '') + (state.view === i ? ' \u00b7 viewed' : '')));
+        sum.appendChild(dot); sum.appendChild(el('span', null, 'Player ' + (i + 1) + (i === 0 && !anyHuman ? ' (your hull)' : '') + (vessels ? ' \u00b7 ' + vesselOf(p.vessel).name : '') + ' \u00b7 ' + (p.ai ? 'AI ' + p.level : 'You fly') + ' \u00b7 ' + d.name + (p.style ? ' \u00b7 ' + p.style : '') + (state.view === i ? ' \u00b7 viewed' : '')));
+        if (anyHuman) {   // You | AI, in the heading so it works with the card closed, mid-race
+          var flown = el('span', 'arp-flown'); flown.setAttribute('role', 'group'); flown.setAttribute('aria-label', 'Player ' + (i + 1) + ': who flies this hull');
+          [['You', false, 'You fly this hull. The hull you were flying goes to the AI.'], ['AI', true, p.ai ? 'The AI flies this hull.' : 'Hand this hull to the AI: every hull is then AI-flown, and you watch.']].forEach(function (b) {
+            var btn = el('button', 'arp-pbtn' + (p.ai === b[1] ? ' on' : ''), b[0]); btn.type = 'button'; btn.title = b[2];
+            btn.setAttribute('aria-pressed', String(p.ai === b[1]));
+            btn.addEventListener('click', function (ev) {
+              ev.preventDefault(); ev.stopPropagation();
+              if (p.ai === b[1]) return;
+              var arr = state.players.map(function (x, k) { var c = Object.assign({}, x); if (!b[1]) c.ai = k !== i; return c; });
+              if (b[1]) arr[i].ai = true;
+              set('players', arr);
+            });
+            flown.appendChild(btn);
+          });
+          sum.appendChild(flown);
+        }
         card.appendChild(sum);
         var edit = function (k, val) { var arr = state.players.map(function (x) { return Object.assign({}, x); }); arr[i][k] = val; set('players', arr); };
         var row = function (label, node) { var r = el('div', 'arp-row'); r.appendChild(el('span', null, label)); r.appendChild(node); card.appendChild(r); };
@@ -232,9 +254,13 @@
           s.addEventListener('change', function () { onPick(s.value); }); row(label, s); return s;
         };
         var ai = document.createElement('input'); ai.type = 'checkbox'; ai.checked = p.ai; ai.setAttribute('aria-label', 'Player ' + (i + 1) + ' is AI');
-        if (i > 0) { ai.disabled = true; ai.title = 'Only player 1 can be flown by you: every other player is an AI.'; }
-        ai.addEventListener('change', function () { edit('ai', ai.checked); });
-        var aiWrap = el('label', 'arp-check'); aiWrap.appendChild(ai); aiWrap.appendChild(el('span', null, i === 0 ? (p.ai ? 'the AI flies your hull' : 'you fly it') : 'always (one human per studio)'));
+        if (i > 0 && !anyHuman) { ai.disabled = true; ai.title = 'Only player 1 can be flown by you: every other player is an AI.'; }
+        ai.addEventListener('change', function () {
+          if (!anyHuman || ai.checked) { edit('ai', ai.checked); return; }
+          set('players', state.players.map(function (x, k) { var c = Object.assign({}, x); c.ai = k !== i; return c; }));   // one human: you move here
+        });
+        var aiWrap = el('label', 'arp-check'); aiWrap.appendChild(ai);
+        aiWrap.appendChild(el('span', null, anyHuman ? (p.ai ? 'the AI flies it' : 'you fly it') : i === 0 ? (p.ai ? 'the AI flies your hull' : 'you fly it') : 'always (one human per studio)'));
         row('Is AI', aiWrap);
         if (vessels) { var vs = pick('Vessel', vessels, p.vessel, function (x) { edit('vessel', x); }); vs.title = vesselOf(p.vessel).note || ''; }
         pick('Domain', domains, p.domain, function (x) { edit('domain', x); });

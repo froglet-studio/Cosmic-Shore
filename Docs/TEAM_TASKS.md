@@ -273,3 +273,10 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Who can take it:** Andrew, Yash (offered), a Windows machine
 - **Added:** 2026-10-15 by Yash's session (multiplayer) (`Ys-bleeding-edge`)
 - **See:** Docs/QA/ANDREW_TEST_HANDOFF.md; Docs/MULTIPLAYER_START_HERE.md 5.1; Port/docs/MULTIPLAYER.md
+
+### T-20261015-fafa · open · dev · Performance
+- **Task:** Pool the AOE explosions: ExplosionHelper.SpawnAllAndDetonate does Object.Instantiate(prefab) per detonation and AOEExplosion Destroys itself after (Projectiles/AOEExplosion.cs), so every crystal collect and every explodable projectile mints a GameObject tree. Measured in Amoebius (Skim Race I2, 2026-10-15): VesselImpactor.AcceptImpactee 5.6 KB/frame, all of it SquirrelVesselExplosionByCrystalEffect (the Squirrel's boost ring, ~300 KB per omni collect in .NET; the ring's prisms are the design, the un-pooled explosion object is the practice gap). A GenericPoolManager<AOEExplosion> per prefab (like PrismExplosionPoolManager) with Release instead of Destroy at the end of ExplodeAsync; keep the reset-for-replay cleanup. Go/no-go: a Unity Release capture's Instantiate / GC rows on a crystal collect.
+- **Done when:** AOE explosions come from a pool; perf_hunt.py amoebius shows VesselImpactor.AcceptImpactee under 1 KB/frame on Skim Race I2 and the baseline is adopted; a Release capture of Skim Race shows no Instantiate on a crystal collect.
+- **Who can take it:** Garrett (projectiles / the Squirrel's ring), Yash (offered)
+- **Added:** 2026-10-15 by the performance session (perf/performance-optimization) (`perf/performance-optimization`)
+- **See:** Docs/PERFORMANCE_OPTIMIZATION.md 3.3 (L13) and 2 (10-15 rows)

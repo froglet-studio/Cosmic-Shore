@@ -146,7 +146,7 @@ namespace CosmicShore.Gameplay
                             nameof(SkimmerImpactorDataContainerSO.SkimmerPrismEffects), e))
                         continue;
                     var ep = esp[e];
-                    RunEffectIsolated(() => ep.Execute(this, prismImpactor), ep);
+                    try { ep.Execute(this, prismImpactor); } catch (System.Exception ex) { ReportEffectThrow(ex, ep); }
                 }
             }
         }
@@ -265,7 +265,7 @@ namespace CosmicShore.Gameplay
                                 nameof(SkimmerImpactorDataContainerSO.VesselSkimmerEffects), i))
                             continue;
                         var ev = evs[i];
-                        RunEffectIsolated(() => ev.Execute(shipImpactor, this), ev);
+                        try { ev.Execute(shipImpactor, this); } catch (System.Exception ex) { ReportEffectThrow(ex, ev); }
                     }
 
                     skimmer.ExecuteImpactOnShip(shipImpactor.Vessel); // secondary call
@@ -301,7 +301,7 @@ namespace CosmicShore.Gameplay
                                 nameof(SkimmerImpactorDataContainerSO.SkimmerPrismEffects), i))
                             continue;
                         var ep = esp[i];
-                        RunEffectIsolated(() => ep.Execute(this, prismImpactor), ep);
+                        try { ep.Execute(this, prismImpactor); } catch (System.Exception ex) { ReportEffectThrow(ex, ep); }
                     }
 
 
@@ -347,7 +347,7 @@ namespace CosmicShore.Gameplay
                                     nameof(SkimmerImpactorDataContainerSO.SkimmerLifeformCrystalEffects), i))
                                 continue;
                             var le = lifeformEffects[i];
-                            RunEffectIsolated(() => le.Execute(this, crystal), le);
+                            try { le.Execute(this, crystal); } catch (System.Exception ex) { ReportEffectThrow(ex, le); }
                         }
                         return;
                     }
@@ -363,7 +363,7 @@ namespace CosmicShore.Gameplay
                             continue;
                         if (!elemental && !esc[i].AlsoAppliesToOmniCrystals) continue;
                         var ec = esc[i];
-                        RunEffectIsolated(() => ec.Execute(this, crystalImpactor), ec);
+                        try { ec.Execute(this, crystalImpactor); } catch (System.Exception ex) { ReportEffectThrow(ex, ec); }
                     }
 
                     break;
