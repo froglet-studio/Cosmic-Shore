@@ -12,27 +12,32 @@ using UnityEngine;
 namespace CosmicShore.Gameplay
 {
     /// <summary>
-    /// Records a HUMAN's Regatta flight so the Squirrel AI can learn from it (Docs/AI_SYSTEM/AI_TRAINING_PLAN.md
-    /// L3 step 1; Docs/SKIM_RACE_AI.md §16). AUTOMATIC (Yash, 2026-10-15: "when I press Go the recording starts; when
-    /// the Play Again menu comes or I stop the editor it stops; then I send it to Claude"): no button, no switch.
+    /// The AI training recorder: records how a HUMAN flies, in every game mode and every vessel, so the AIs can learn
+    /// from it (Docs/AI_SYSTEM/AI_TRAINING_PLAN.md L3; Docs/SKIM_RACE_AI.md §16). AUTOMATIC (Yash, 2026-10-15/16): no
+    /// button. Recording starts when a match's turn starts (Go) and stops when it ends (the Play Again menu) or when Play
+    /// stops. Single player for now; recording every online player's inputs is later.
     ///
-    /// <para>Every Regatta race the local player flies by hand is recorded from the moment the race starts until it
-    /// ends (the Play Again menu), or until Play stops. Ten times a second: position, heading and up, speed, boost,
-    /// the four stick axes and the throttle (the same input an AI writes), and rings threaded. Seconds the AI holds
-    /// the hull (the You / AI toggle) are not recorded. At the end the pilot's own rail is copied from the arena
-    /// (its prisms, their up axes, its contact-shell size), so <c>Tools/Build/learn_from_flights.py</c> measures the
-    /// flight against the rail afterwards. Nothing during the race depends on the rail, so a race is never lost to it.</para>
+    /// <para>Ten times a second, for the local player's own vessel while they fly it by hand: position, heading and
+    /// up, speed, boost, the four stick axes and the throttle (the same input an AI writes), and rings threaded. Seconds
+    /// the AI holds the hull (the You / AI toggle) are not recorded. Where the mode lays a rail (Regatta) the pilot's
+    /// own rail is copied from the arena at the end (<see cref="RegattaCourseSource.TryResolveLiveRails"/>), so
+    /// <c>Tools/Build/learn_from_flights.py</c> can measure the flight against it.</para>
     ///
-    /// <para>One <c>flight_*.json</c> per race (schema <c>cosmic-shore.flight/2</c>) in
-    /// <c>&lt;Diagnostics folder&gt;/Flights/</c>; Unity's after-play <b>Send to Claude</b> asks about it and carries it
-    /// to the person's <c>bugledger/&lt;user&gt;</c> branch (<c>BugHuntReports</c> kind <c>flights</c>). A Regatta race
-    /// that could not be saved says why in one Console warning. Editor and development builds only; nothing leaves the
-    /// machine unless its owner presses Send. Players get their own consent question before any of this ships.</para>
+    /// <para>One <c>flight_&lt;Mode&gt;_&lt;Vessel&gt;_&lt;time&gt;.json</c> per match (schema <c>cosmic-shore.flight/2</c>,
+    /// with the mode, the vessel and the training type) in <c>&lt;Diagnostics folder&gt;/Flights/</c>. After Play, Unity
+    /// asks "Store AI training record?" naming the vessel, the mode and the training type, and stores it on the
+    /// person's <c>bugledger/&lt;user&gt;</c> branch (<c>BugHuntAutoSend</c>, <c>BugHuntReports</c> kind <c>flights</c>). A
+    /// match that could not be stored says why in one Console warning. Editor and development builds only; nothing
+    /// leaves the machine unless its owner presses Store. Players get their own consent question before any of this
+    /// ships.</para>
     /// </summary>
     public sealed class HumanFlightRecorder : MonoBehaviour
     {
         public const string CommandName = "flightrec";
         public const string Schema = "cosmic-shore.flight/2";
+
+        /// <summary>The kind of AI training a record serves, as Unity's "Store AI training record?" names it.</summary>
+        public const string TrainingType = "imitation: learning from your flying";
         const float SampleHz = 10f;
         const float LookEvery = 0.5f;
 
@@ -82,7 +87,7 @@ namespace CosmicShore.Gameplay
         float _nextSample, _nextLook, _raceStart, _frameSum;
         int _frames, _startRings;
         bool _recording, _turnWasRunning;
-        string _waiting = "waiting for a Regatta race";
+        string _waiting = "waiting for a match";
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
         static void Boot()
@@ -99,7 +104,7 @@ namespace CosmicShore.Gameplay
         public static string Handle(string[] args)
         {
             string last = string.IsNullOrEmpty(LastFile) ? "" : $" | last: {Path.GetFileName(LastFile)}";
-            return $"flight recorder (automatic in Regatta): {Status} | {SavedCount} saved in {Folder}{last}";
+            return $"AI training recorder (automatic, every mode): {Status} | {SavedCount} stored in {Folder}{last}";
         }
 
         void Update()
@@ -112,7 +117,8 @@ namespace CosmicShore.Gameplay
             }
             if (!_gameData) return;
 
-            bool running = _gameData.IsTurnRunning && _gameData.GameMode == GameModes.Regatta;
+            // Every game mode: an AI training record of whichever vessel the local player flies by hand.
+            bool running = _gameData.IsTurnRunning;
             if (!running)
             {
                 if (_recording) Finish("race over");
@@ -151,9 +157,7 @@ namespace CosmicShore.Gameplay
                 if (all[i] && all[i].LocalPlayer != null) _gameData = all[i];
             for (int i = 0; i < all.Length && !_gameData; i++)
                 if (all[i] && all[i].Players != null && all[i].Players.Count > 0) _gameData = all[i];
-            _waiting = !_gameData ? "waiting for a match"
-                : _gameData.GameMode != GameModes.Regatta ? $"waiting for Regatta (this is {_gameData.GameMode})"
-                : "waiting for the race to start";
+            _waiting = !_gameData ? "waiting for a match" : $"waiting for the {_gameData.GameMode} race to start";
         }
 
         void Begin(float now)
@@ -224,7 +228,7 @@ namespace CosmicShore.Gameplay
             _recording = false;
             if (_samples.Count < 2 * SampleHz)
             {
-                Debug.LogWarning($"[HumanFlightRecorder] Regatta race not saved ({why}): only {_samples.Count} hand-flown samples.");
+                Debug.LogWarning($"[HumanFlightRecorder] AI training record not stored ({why}): only {_samples.Count} hand-flown samples.");
                 _samples.Clear();
                 return;
             }
@@ -232,7 +236,8 @@ namespace CosmicShore.Gameplay
             {
                 Directory.CreateDirectory(Folder);
                 string hull = _player && _player.Vessel?.VesselStatus != null ? _player.Vessel.VesselStatus.VesselType.ToString() : "Unknown";
-                string file = Path.Combine(Folder, $"flight_Regatta_{hull}_{DateTime.Now:yyyyMMdd_HHmmss}.json");
+                string mode = _gameData ? _gameData.GameMode.ToString() : "Unknown";
+                string file = Path.Combine(Folder, $"flight_{mode}_{hull}_{DateTime.Now:yyyyMMdd_HHmmss}.json");
                 File.WriteAllText(file, Serialize(hull, why));
                 LastFile = file;
                 s_countAt = -1f;
@@ -240,7 +245,7 @@ namespace CosmicShore.Gameplay
             }
             catch (Exception e)
             {
-                Debug.LogWarning($"[HumanFlightRecorder] Regatta race not saved ({why}): {e.GetType().Name}: {e.Message}");
+                Debug.LogWarning($"[HumanFlightRecorder] AI training record not stored ({why}): {e.GetType().Name}: {e.Message}");
             }
             _samples.Clear();
         }
@@ -250,8 +255,7 @@ namespace CosmicShore.Gameplay
         bool TryReadLane(List<Vector3> points, List<Vector3> ups, out Vector3 shellHalf, out string why)
         {
             shellHalf = Vector3.zero;
-            var rails = FindAnyObjectByType<SpawnableRegattaRails>();
-            if (!rails) { why = "no Regatta rails in the scene"; return false; }
+            if (!RegattaCourseSource.TryResolveLiveRails(out var rails, out why)) return false;
             var trails = rails.GetTrails();
             if (trails == null || trails.Count == 0) { why = "the rails have no lanes"; return false; }
             Domains domain = _player ? _player.Domain : Domains.Jade;
@@ -290,14 +294,19 @@ namespace CosmicShore.Gameplay
             var c = CultureInfo.InvariantCulture;
             var lane = new List<Vector3>(2048);
             var ups = new List<Vector3>(2048);
-            bool haveLane = TryReadLane(lane, ups, out Vector3 shellHalf, out string laneWhy);
+            // A rail to measure the flight against exists only where the mode lays one (Regatta, for now).
+            bool regatta = _gameData && _gameData.GameMode == GameModes.Regatta;
+            Vector3 shellHalf = Vector3.zero;
+            string laneWhy = "";
+            bool haveLane = regatta && TryReadLane(lane, ups, out shellHalf, out laneWhy);
             var sb = new StringBuilder(64 * 1024 + _samples.Count * 150);
             int target = _gameData ? _gameData.SwitchTargetCount : 0;
             int rings = _samples[_samples.Count - 1].Rings;
             int intensity = _gameData && _gameData.SelectedIntensity != null ? _gameData.SelectedIntensity.Value : 0;
             sb.Append("{\n");
             sb.Append("\"schema\":\"").Append(Schema).Append("\",\n");
-            sb.Append("\"mode\":\"Regatta\",\"hull\":\"").Append(hull).Append("\",");
+            sb.Append("\"mode\":\"").Append(_gameData ? _gameData.GameMode.ToString() : "Unknown").Append("\",\"hull\":\"").Append(hull).Append("\",");
+            sb.Append("\"training\":\"").Append(TrainingType).Append("\",");
             sb.Append("\"domain\":\"").Append(_player ? _player.Domain.ToString() : "").Append("\",");
             sb.Append("\"intensity\":").Append(intensity).Append(',');
             sb.Append("\"date\":\"").Append(DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss", c)).Append("\",");
@@ -337,8 +346,8 @@ namespace CosmicShore.Gameplay
                   .Append(F(m.Throttle, "0.###")).Append(',').Append(m.Rings).Append(']');
             }
             sb.Append("\n]\n}\n");
-            if (!haveLane)
-                Debug.LogWarning($"[HumanFlightRecorder] Regatta flight saved WITHOUT its rail ({laneWhy}); the learner cannot measure it against the rail.");
+            if (regatta && !haveLane)
+                Debug.LogWarning($"[HumanFlightRecorder] Regatta record stored WITHOUT its rail ({laneWhy}); the learner cannot measure it against the rail.");
             return sb.ToString();
         }
 

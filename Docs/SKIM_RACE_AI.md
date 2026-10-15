@@ -1779,6 +1779,16 @@ the course. Skim Race never exposed them because it lays one thin track.
 | **The course was sized from the rails' LIVE scale.** A laid prism grows in from zero (the continuity law), so a course built while the rails were still growing recorded them as slivers. The pilot then flew its skim line, and planned its shell clearance, inside their real shells for the whole race. | `RegattaRingObjective` sizes each rail prism from its authored `TargetScale` (through its parent's scale). |
 | **A Squirrel handed to the AI with the Third Eye's You / AI toggle never got the Skim Race pilot.** `PilotControl` armed only the platform autopilot, which flies ring waypoints straight through the braid. The Skim Race pilot also stood down on any human-owned hull. | `PilotControl.TrySetAIFlies` installs the pilot (`SkimRaceAIDeployment.TryInstall`) and sets `SkimRacePilot.FlyingForHuman`, so the pilot flies a human's hull while it is held. `IsHeldByAI` reads that flag. |
 
+**Third round, the root cause (2026-10-16, found from Yash's first recorded flight, which said "no Regatta rails in
+the scene"):** the Cell builds its environment by calling `Spawn()` on the config's `EnvironmentPrefab` ASSET. That lays
+the rail prisms into a plain container and fills the asset's own lane list, but no `SpawnableRegattaRails` ever exists
+in the scene. So `FindAnyObjectByType<SpawnableRegattaRails>()` returned null in all three of its readers:
+`RegattaRingObjective.TryBuildCourse` (the Squirrel pilot's course), `RegattaController.TryOwnLaneAhead` (the riders'
+own-lane aim) and the flight recorder. **The Squirrel AI never had a rail in Regatta**: with no course it flew from ring
+to ring straight through the braid, and none of the skim fixes above could show. `RegattaCourseSource.TryResolveLiveRails`
+asks the cells' configs for the rails asset whose lanes are laid (it still takes an authored scene instance first), and
+all three readers use it.
+
 **Skim Race is unchanged.** Its course has zero lift, every super-shielded prism is still its track, and direct
 flight stays on. The simulator gives bit-identical races before and after (I2, 2 seats, 12 races). Tests:
 `RegattaSkimTests`.
@@ -1819,7 +1829,9 @@ Race was calibrated on.
 Yash asked for this: play Regatta a few times as the Squirrel, then the AI learns from those races. It is built in
 two parts (`Docs/AI_SYSTEM/AI_TRAINING_PLAN.md` L3, steps 1 and 4A):
 
-1. **The recorder** (`HumanFlightRecorder`, editor and development builds only). **It is automatic** (Yash,
+1. **The recorder** (`HumanFlightRecorder`, editor and development builds only), now the **AI training recorder for every
+   game mode and vessel** (single player; online players later), files `flight_<Mode>_<Vessel>_<time>.json` with a
+   `training` field. After Play, Unity asks **"Store AI training record?"** and names the vessel, mode and training type. **It is automatic** (Yash,
    2026-10-15: the Record button kept reading on with nothing saved, so it was removed). It starts when a Regatta race
    starts (Go) and stops when the race ends (the Play Again menu) or when Play stops. Only races the local player
    flies BY HAND are recorded; seconds the AI holds the hull (You / AI) are skipped. Ten times a second it records

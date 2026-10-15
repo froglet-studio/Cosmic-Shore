@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Text;
 using UnityEditor;
+using CosmicShore.Gameplay;
 using UnityEngine;
 
 namespace CosmicShore.Editor
@@ -63,15 +64,20 @@ namespace CosmicShore.Editor
                 // only judge captures that reach a branch — so a new one asks too, even on a run
                 // with no new error. Redlog and crash files only ride along: a redlog is written
                 // every session that has reds, and asking for those would ask every run.
-                // A recorded flight is deliberate too (the Third Eye's Record toggle): the Squirrel AI can only learn
-                // from flights that reach a branch (HumanFlightRecorder, learn_from_flights.py).
+                // An AI training record (HumanFlightRecorder, automatic in every mode) asks too: the AIs can only learn from
+                // records that reach a branch (learn_from_flights.py). The question names each vessel and mode.
                 int newCaptures = 0, newFlights = 0;
+                var records = new List<string>();
                 foreach (var report in BugHuntReports.Candidates("", Environment.UserName))
                 {
                     if (report.Kind == "perf" && asked.Add("perf:" + Path.GetFileName(report.Source)))
                         newCaptures++;
                     else if (report.Kind == "flights" && asked.Add("flights:" + Path.GetFileName(report.Source)))
+                    {
                         newFlights++;
+                        string what = DescribeRecord(Path.GetFileName(report.Source));
+                        if (!records.Contains(what)) records.Add(what);
+                    }
                 }
 
                 if (fresh.Count == 0 && newCaptures == 0 && newFlights == 0) return;
@@ -90,15 +96,23 @@ namespace CosmicShore.Editor
                         body.Append("• ").Append(Shorten(fresh[i].Title)).Append('\n');
                     if (fresh.Count > MaxTitlesShown) body.Append($"• and {fresh.Count - MaxTitlesShown} more\n");
                     if (newCaptures > 0) body.Append($"\nPlus {newCaptures} new performance capture(s).\n");
-                    if (newFlights > 0) body.Append($"\nPlus {newFlights} new recorded flight(s) for the AI to learn from.\n");
+                    if (newFlights > 0)
+                        body.Append($"\nPlus {newFlights} new AI training record(s): {string.Join(", ", records)} " +
+                                    $"({HumanFlightRecorder.TrainingType}).\n");
                     body.Append("\nSend them to Claude to fix? Nothing in your project or branch is changed.");
                 }
                 else if (newCaptures == 0)
                 {
-                    body.Append(newFlights == 1
-                        ? "You recorded a new flight."
-                        : $"You recorded {newFlights} new flights.");
-                    body.Append("\n\nSend to Claude so the Squirrel AI can learn from it? Nothing in your project or branch is changed.");
+                    // Only AI training records: the question is about storing them, not about bugs.
+                    body.Append(newFlights == 1 ? "New AI training record:\n\n" : $"{newFlights} new AI training records:\n\n");
+                    for (int i = 0; i < records.Count && i < MaxTitlesShown; i++)
+                        body.Append("• ").Append(records[i]).Append('\n');
+                    if (records.Count > MaxTitlesShown) body.Append($"• and {records.Count - MaxTitlesShown} more\n");
+                    body.Append($"\nTraining type: {HumanFlightRecorder.TrainingType}.\n");
+                    body.Append("\nStore it so the AI learns from how you fly? Nothing in your project or branch is changed.");
+                    if (EditorUtility.DisplayDialog("Store AI training record?", body.ToString(), "Store AI record", "Not now"))
+                        BugLedgerSender.SendInBackground();
+                    return;
                 }
                 else
                 {
@@ -116,6 +130,13 @@ namespace CosmicShore.Editor
                 // The question must never break the editor (same doctrine as the ledger itself).
                 Debug.LogWarning($"[BugLedger] After-play send prompt failed: {e.GetType().Name}: {e.Message}");
             }
+        }
+
+        /// <summary>"Squirrel in Regatta" from "flight_Regatta_Squirrel_20261016_023117.json".</summary>
+        static string DescribeRecord(string file)
+        {
+            var parts = Path.GetFileNameWithoutExtension(file).Split('_');
+            return parts.Length >= 3 ? $"{parts[2]} in {parts[1]}" : file;
         }
 
         static string Fingerprint(BugLedgerIssue issue) => issue.Id + ":" + issue.Regressions;

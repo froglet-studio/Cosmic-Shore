@@ -221,8 +221,7 @@ namespace CosmicShore.Gameplay
         {
             target = default;
             if (PrismTrailBuilder.IsLayingInProgress) return false;
-            if (!_railsForAI) _railsForAI = FindAnyObjectByType<SpawnableRegattaRails>();
-            if (!_railsForAI) return false;
+            if (!_railsForAI && !RegattaCourseSource.TryResolveLiveRails(out _railsForAI, out _)) return false;
 
             if (!_laneByDomain.TryGetValue(pilot.Domain, out var lane) || lane == null || lane.Count == 0)
             {
