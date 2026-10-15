@@ -97,7 +97,7 @@
     }
   ],
   "gatesOk": true,
-  "generatedUtc": "2026-10-15T18:26:47Z",
+  "generatedUtc": "2026-10-15T23:25:35Z",
   "next": [
     "Resolve: Allocation regression in Amoebius SkimRace|I2|3p: VesselImpactor.AcceptImpactee allocates 3.831 -> 5.578 KB/frame (+46%)",
     "Resolve: Allocation regression in Amoebius SkimRace|I2|3p: PoolRefill.FastGrowPrism allocates 0.526 -> 0.7 KB/frame (+33%)",
@@ -157,6 +157,26 @@
       "id": "T-20261015-fafa",
       "kind": "dev",
       "task": "Pool the AOE explosions: ExplosionHelper.SpawnAllAndDetonate does Object.Instantiate(prefab) per detonation and AOEExplosion Destroys itself after (Projectiles/"
+    },
+    {
+      "id": "T-20261015-641c",
+      "kind": "decision",
+      "task": "Spindles are the last big GameObject-renderer cost in the lava lamp (lever L1): one Renderer per limb, ~40k enabled in a grown Lattice with ~4.6k visible, +5.3 "
+    },
+    {
+      "id": "T-20261015-d7f8",
+      "kind": "dev",
+      "task": "Allocation regression in Amoebius SkimRace|I2|3p: VesselImpactor.AcceptImpactee allocates 3.831 -> 5.578 KB/frame (+46%)"
+    },
+    {
+      "id": "T-20261015-c8e2",
+      "kind": "dev",
+      "task": "Allocation regression in Amoebius SkimRace|I2|3p: PoolRefill.FastGrowPrism allocates 0.526 -> 0.7 KB/frame (+33%)"
+    },
+    {
+      "id": "T-20261015-c7db",
+      "kind": "dev",
+      "task": "Allocation regression in Amoebius SkimRace|I2|3p: new allocating marker PoolRefill.PrismImplosion: 0.122 KB/frame"
     }
   ],
   "regressions": [
