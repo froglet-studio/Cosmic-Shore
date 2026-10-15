@@ -41,6 +41,14 @@ namespace CosmicShore.Editor
                                                   "dropped with one console warning.")]
         int maxAutoIssues = 150;
 
+        [SerializeField, Tooltip("After every play test that changed the ledger materially (a new error, a " +
+                                 "reopened regression, a validated close), publish ALL pending ledger changes " +
+                                 "to the CURRENT branch — the same scoped commit Stage & Push makes (ledger " +
+                                 "paths only, refused while origin is ahead). This is what lets a Claude session " +
+                                 "read and fix the errors without you staging them (/bug-ledger skill). Off by " +
+                                 "default: it pushes on your behalf.")]
+        bool autoPublishAfterPlay;
+
         // Note: closing an issue ALWAYS stamps it into BugLedger/local/resolved/ — the archive
         // doubles as the tombstone that keeps a published-then-resolved issue from re-importing
         // off a teammate's shared copy, so it is deliberately not a setting.
@@ -50,6 +58,7 @@ namespace CosmicShore.Editor
         public int MinValidationPlaySeconds { get => minValidationPlaySeconds; set => minValidationPlaySeconds = Mathf.Clamp(value, 0, 300); }
         public int MinEditorSessionMinutes { get => minEditorSessionMinutes; set => minEditorSessionMinutes = Mathf.Clamp(value, 0, 120); }
         public int MaxAutoIssues { get => maxAutoIssues; set => maxAutoIssues = Mathf.Clamp(value, 10, 1000); }
+        public bool AutoPublishAfterPlay { get => autoPublishAfterPlay; set => autoPublishAfterPlay = value; }
 
         public void SaveNow() => Save(true);
     }

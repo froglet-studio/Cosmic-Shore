@@ -424,6 +424,13 @@ namespace CosmicShore.Editor
                 new GUIContent("Auto-issue cap",
                     "A runaway error generator must not mint files; past the cap new signatures are dropped with one warning."),
                 settings.MaxAutoIssues, 10, 1000);
+            bool autoPublish = EditorGUILayout.ToggleLeft(
+                new GUIContent("  Auto-publish after each play test (pushes to the current branch)",
+                    "After a play run that filed a new error, reopened a regression or closed an issue, push every " +
+                    "pending ledger change — the same scoped commit Stage & Push makes, ledger paths only, refused " +
+                    "while origin is ahead. A Claude session running /bug-ledger then reads and fixes them; its " +
+                    "fixes come back as VALIDATING issues the next play runs close."),
+                settings.AutoPublishAfterPlay);
 
             if (EditorGUI.EndChangeCheck())
             {
@@ -431,6 +438,7 @@ namespace CosmicShore.Editor
                 settings.MinValidationPlaySeconds = minPlay;
                 settings.MinEditorSessionMinutes = minEditor;
                 settings.MaxAutoIssues = maxAuto;
+                settings.AutoPublishAfterPlay = autoPublish;
                 settings.SaveNow();
                 BugLedger.ApplySettings(settings);
 

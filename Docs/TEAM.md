@@ -65,6 +65,18 @@ it; `who_works_where.py` reports a session nobody has merged as unattributed.
    It leaves out the session's own commits. A commit is marked **HOT** when it touches a file this session has
    worked on. Read a HOT commit before you change that file again, build on it, and tell the person. The hook
    self-tests: `python3 .claude/hooks/team_activity.py --self-test`.
+9. **Hand work to each other on the board** (Yash, 2026-10-15: "ask them during their work to make to-dos and
+   tests for other collaborators; Yash is willing to do some of the work if you assign it there"). A session
+   cannot open Unity, sign in to a dashboard or watch a first-timer play, so whatever its work leaves for a person
+   goes on [`TEAM_TASKS.md`](TEAM_TASKS.md) through `python3 Tools/Build/team_tasks.py add`: the editor test, the
+   playtest, the UGS or PostHog step, the missing content, the owner's decision. Each task names who can take it.
+   **Yash has offered to take tasks** (editor tests, playtests, UGS and dashboard setup, follow-up fixes); name the
+   area's owner where it is theirs. Tell the person what you added and suggest who to hand it to. Take a task
+   before starting it (`take <id> --who <name>`) and close it with a note (`done <id> --note ...`); a failed test
+   is not done, it becomes a new `dev` task. `/ship` puts `team_tasks.py pr-section` in the PR body, so GitHub
+   reviewers see the hand-offs. The `team_tasks_nudge.py` hook reminds every session and gives activation /
+   onboarding prompts that area's open tasks. Self-tests: `team_tasks.py --self-test`,
+   `.claude/hooks/team_tasks_nudge.py --self-test`.
 
 ## What happened without this (2026-10-13, one merge, measured)
 
