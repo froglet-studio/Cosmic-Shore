@@ -42,7 +42,8 @@ python3 Tools/Build/perf_capture_report.py <capture.json> # one capture, judged 
   `Docs/perf/amoebius_known.json` with the evidence and a task for the engine's owner (Shombith), not in a game fix.
   The sweep lists known entries as "engine shim" and never counts them.
 - **No shared capture yet?** The person has not shared: FrogletTools > Performance > Capture Performance (one file),
-  then FrogletTools > Diagnostics > Bug Hunt Check-in > *Share now* (or *Auto-publish after each play test*). Say that
+  then stop Play and press *Send to Claude* when Unity asks (a new capture asks on its own; the file lands on their
+  `bugledger/<user>` branch). Say that
   in one line. Never ask for pasted JSON when the pipe exists; accept a paste when they offer one.
 
 ## 2. Rank by measured cost, then pick with the record

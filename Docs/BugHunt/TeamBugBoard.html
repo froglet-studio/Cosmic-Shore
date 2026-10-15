@@ -182,7 +182,7 @@ button.primary:disabled{opacity:.55;cursor:default}
       const e = el("div", "empty");
       if (!S.issues.length){
         e.append(el("strong", null, "No issues published yet. "),
-          document.createTextNode("In Unity, FrogletTools ▸ Diagnostics ▸ Bug Hunt Check-in shares your editor's errors, redlog sessions and perf files. Or turn on Bug Ledger ▸ Settings ▸ Auto-publish after each play test and they arrive after every test."));
+          document.createTextNode("When a play test logs a new error, Unity asks \"Send to Claude?\" as you stop Play. Press Send and the errors, redlog sessions and perf files arrive here after the next daily sweep."));
       } else e.textContent = "Nothing matches this filter.";
       box.append(e); return;
     }

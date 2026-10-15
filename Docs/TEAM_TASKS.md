@@ -175,12 +175,13 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Added:** 2026-10-15 by the performance session (perf/performance-optimization) (`perf/performance-optimization`)
 - **See:** Docs/PERFORMANCE_OPTIMIZATION.md 3.6 and 4.6; FrogletTools > Performance > Capture Performance (one file)
 
-### T-20261015-949d · open · test · diagnostics
+### T-20261015-949d · done · test · diagnostics
 - **Task:** Test the Bug Hunt check-in and Team Bug Board in Unity: FrogletTools > Diagnostics > Bug Hunt Check-in, Share now; play with an error; daily sweep picks it up
 - **Done when:** A check-in commit with BugLedger/shared/issues + reports lands on the branch, and the next sweep shows the issue on https://claude.ai/artifact/5zNw9wDjMrxvZVjGD7KBno
 - **Who can take it:** Yash
 - **Added:** 2026-10-15 by a Claude session (`Ys-bleeding-edge`)
 - **See:** Docs/DIAGNOSTICS.md#the-bug-hunt-check-in
+- **Done:** 2026-10-15, Superseded 2026-10-15: the Bug Ledger window, check-in and Stage & Push were removed; the one 'Send to Claude' question replaces them (new test task added).
 
 ### T-20261015-8bae · open · decision · diagnostics
 - **Task:** Assets/_Models/shield1.blend makes every machine without Blender log a red 'Blender could not be found' on import (Bug Ledger E-fd64b43840). Nothing in Assets references its guid. Delete it, or export it to .fbx?
@@ -209,3 +210,17 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Who can take it:** Garrett (bleeding-edge / repo settings), Shombith (CI), Yash (offered)
 - **Added:** 2026-10-15 by the performance session (perf-hunt) (`perf/performance-optimization`)
 - **See:** .github/workflows/perf-daily.yml; Docs/PERFORMANCE_OPTIMIZATION.md 3.4; /perf-hunt section 0
+
+### T-20261015-0bc6 · open · test · diagnostics
+- **Task:** Test the one-button bug flow in Unity: play until a red error appears (or Debug.LogError from any script), stop Play, press Send to Claude; play and stop again with the same error
+- **Done when:** The dialog appears once; origin/bugledger/<you> gets BugLedger/shared/issues/E-*.bug.json; git status unchanged and you are still on your branch; the second stop shows no dialog
+- **Who can take it:** Yash
+- **Added:** 2026-10-15 by a Claude session (`Ys-bleeding-edge`)
+- **See:** Docs/DIAGNOSTICS.md#send-to-claude--the-only-ui
+
+### T-20261015-4996 · open · content · audio
+- **Task:** Boost Activate (event:/SFX/Oneshots/Gameplay sfx/Boost Activate) has a loop region but is fired as a one-shot, so the code refuses to play it: the Manta's boost is silent and logs one error per session (Bug Ledger E-cdf0c783c1). Remove the loop region, or tell engineering it is a held boost sound
+- **Done when:** Boosting the Manta plays a sound and the [FMODOneShotVolumeHelper] looping error stops
+- **Who can take it:** Charles (audio owner)
+- **Added:** 2026-10-15 by a Claude session (`Ys-bleeding-edge`)
+- **See:** Docs/AudioSystem/CHARLES_TASKS.md (C2)

@@ -20,7 +20,7 @@
 ## 2. How a number reaches this report
 
 1. Someone plays with Code Optimization = Release and presses **Capture** (label = the scenario: S1..S6, SkimRace).
-2. The editor shares the file (Bug Hunt check-in ▸ Share now, or Auto-publish after each play test).
+2. The editor shares the file: after Play stops, Unity asks "Send to Claude?" (a new capture asks on its own) and Send pushes it to the person's `bugledger/<user>` branch.
 3. `perf_hunt.py sweep` (daily, or any session) reads every branch, judges validity first (Debug, Deep Profile, a frame
    cap, Burst off, a second camera: not a number), compares with `Docs/perf/baselines.json`, and writes the block below.
 4. A regression becomes a `Docs/TEAM_TASKS.md` task (area Performance); `/perf-hunt` fixes it with a before/after.
