@@ -25,5 +25,6 @@ namespace CosmicShore.Data
         Butterfly = 13,
         Thresher = 14,
         Stoat = 15,
+        Goby = 16,   // the Goby & Pistol duo (two craft, one slot): .claude/skills/duo-vessel
     }
 }

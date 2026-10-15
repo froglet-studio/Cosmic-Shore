@@ -1,32 +1,36 @@
-#if DEVELOPMENT_BUILD || UNITY_EDITOR
 using System.Collections.Generic;
 using CosmicShore.Data;
-using CosmicShore.Gameplay;
 using CosmicShore.ScriptableObjects;
+using CosmicShore.Utility;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
-namespace CosmicShore.Utility
+namespace CosmicShore.Gameplay
 {
     /// <summary>
-    /// The Goby &amp; Pistol duo, playable in the REAL game before its vessel class exists (dev-only). Rides on the local
-    /// vessel, which stands in for the Goby (fly the Squirrel: the Goby is a two-thumb flier on the Squirrel's numbers):
-    /// its path is unrolled into the Pistol's 2D world (<see cref="PistolRibbon"/>) and the Pistol rides the ground its
-    /// trail's hinges make, seen side on through a second camera. The Pistol's body, its launch, ghost and Snap (the
-    /// vortex ring) act on the scene's REAL prisms; the Goby's primer and flares do too. One human flies one half and the
-    /// AI flies the other; the swap is the arena's (D-pad left / right, keyboard 1 / 2, <see cref="PilotSwapGesture"/>).
+    /// The Goby &amp; Pistol duo (VesselClassType.Goby): the hull you fly is the GOBY (a two-thumb flier on the Squirrel's
+    /// numbers, the Squirrel's own abilities); its path is unrolled into the PISTOL's 2D world (<see cref="PistolRibbon"/>)
+    /// and the Pistol rides the ground its trail's hinges make, seen side on through a second camera. The Pistol's body,
+    /// its launch, ghost and Snap (the vortex ring) act on the scene's REAL prisms; the Goby's primer and flares do too.
+    /// One human flies one half and the AI flies the other; the swap is the arena's gesture (D-pad left / right, keyboard
+    /// 1 / 2, <see cref="PilotSwapGesture"/>). The design: <c>.claude/skills/duo-vessel/references/designs/goby-and-pistol.md</c>.
+    ///
+    /// <para>It lives on <c>Goby.prefab</c> and wakes only on the LOCAL pilot's hull while a human flies it (not on an AI
+    /// or remote copy, not while the menu's autopilot flies it): the Pistol is simulated on that one machine, so its
+    /// breaks are local until the duo is networked (§8 of the brief). <c>FrogletTools ▸ Vessels ▸ Goby and Pistol (Play
+    /// mode)</c> adds the same component to any vessel you are flying.</para>
     ///
     /// <para>Everything it computes is the lab's arithmetic, ported line for line and held to the lab's numbers by
     /// <c>GobyPistolMathTests</c>; every number is <see cref="GobyPistolConfigSO"/>, cloned from the Vessel Studio artifact
     /// (<c>Docs/Studios/VesselStudio/goby.html</c>). This file is only the glue to the scene: which prisms, which camera,
-    /// which buttons. Open it from <c>FrogletTools ▸ Vessels ▸ Goby and Pistol (Play mode)</c>.</para>
+    /// which buttons.</para>
     ///
     /// <para>Prisms are moved the sanctioned way (transform, then <see cref="Prism.NotifyPositionChanged"/>; never a
     /// super-shielded or growing one) and broken only by an active force (<see cref="Prism.Damage"/>, the game's own
     /// explosion), so mass is conserved and nothing pops. The side view draws each prism's own mesh and material at its
     /// unrolled place, turned by the ribbon there: the Pistol's world, not a copy of it.</para>
     /// </summary>
-    public sealed class GobyPistolHarness : MonoBehaviour
+    public sealed class GobyPistolDuo : MonoBehaviour
     {
         enum Half { Goby = 0, Pistol = 1 }
         enum By { Body = 0, Vortex = 1, Chain = 2, Flare = 3 }
@@ -48,10 +52,10 @@ namespace CosmicShore.Utility
         sealed class RingRun { public VortexRing Ring; public readonly List<Prism> Prisms = new(); }
         struct Flare { public Vector3 P, V; public Prism Target; public float Life; }
 
-        IVessel _goby; Transform _gt;
+        IVessel _goby; Transform _gt;   // bound while this is the local pilot's hull, flown by a human
         PistolRibbon _rb; PistolBodyMath.State _p; PistolAI _ai;
         PistolBodyMath.Settings _body; VortexRing.Settings _vs; PistolAI.Settings _ais; PistolRibbon.LaySettings _lay;
-        float _t, _lastSwapAt = -9f; Vector3 _lastPos; Half _human = Half.Goby; bool _weTookGoby;
+        float _t, _lastSwapAt = -9f; Vector3 _lastPos; Half _human = Half.Goby; bool _weTookGoby; IInputStatus _pausedInput;
         readonly List<RingRun> _rings = new();
         readonly HashSet<Prism> _held = new();
         readonly Dictionary<Prism, float> _primed = new(), _hot = new();
@@ -67,32 +71,53 @@ namespace CosmicShore.Utility
         bool _mouseDown, _aiming; Vector2 _mouseFrom; Vector2? _mouseAim, _padAim;
 
         // the side view
-        Camera _cam; float _scX, _scY; bool _scLive;
+        GameObject _view; Camera _cam; float _scX, _scY; bool _scLive;
         Mesh _ground, _cube, _cylinder, _torus;
         Material _groundMat, _bodyMat, _ghostMat, _gobyMat, _primedMat, _hotMat, _ringMat, _aimMat, _flareMat;
         readonly Vector3[] _gv = new Vector3[GroundSamples * 4];
 
         GobyPistolConfigSO Config => config;
 
-        /// <summary>Attach to the local vessel (the Goby's stand-in). Null when no local vessel is flying.</summary>
-        public static GobyPistolHarness Attach(GobyPistolConfigSO cfg)
+        /// <summary>Add the duo to the vessel you are flying (it then stands in for the Goby). False when no local
+        /// vessel is flying. A hull that already carries it (the Goby) is left as it is.</summary>
+        public static bool AttachToLocalVessel(GobyPistolConfigSO cfg)
         {
             var vt = VesselVisionShading.LocalVessel;
-            if (!vt || !vt.TryGetComponent(out IVessel vessel)) return null;
-            foreach (var old in FindObjectsByType<GobyPistolHarness>(FindObjectsSortMode.None)) Destroy(old.gameObject);
-            var h = new GameObject("GobyPistolHarness").AddComponent<GobyPistolHarness>();
-            h.config = cfg; h.Bind(vessel, vt);
-            return h;
+            if (!vt || !vt.TryGetComponent(out IVessel _)) return false;
+            if (vt.TryGetComponent(out GobyPistolDuo _)) return true;
+            var duo = vt.gameObject.AddComponent<GobyPistolDuo>();
+            if (cfg) duo.config = cfg;
+            return true;
         }
 
-        void Bind(IVessel vessel, Transform t)
+        // the local pilot's own hull, flown by a human (or handed to the AI by this component's own swap)
+        bool ShouldRun(out IVessel vessel)
         {
-            _goby = vessel; _gt = t;
+            vessel = null;
+            if (VesselVisionShading.LocalVessel != transform || !TryGetComponent(out vessel)) return false;
+            return _weTookGoby || vessel.VesselStatus == null || !vessel.VesselStatus.AutoPilotEnabled;
+        }
+
+        void Bind(IVessel vessel)
+        {
+            _goby = vessel; _gt = transform;
             if (!config) config = ScriptableObject.CreateInstance<GobyPistolConfigSO>();
             _body = Config.Body; _vs = Config.Vortex; _ais = Config.AI; _lay = Config.Lay;
             _primer = Mathf.RoundToInt(Config.PrimerCharges); _flare = Mathf.RoundToInt(Config.FlareCharges);
+            _t = 0f; _lastSwapAt = -9f; _human = Half.Goby;
             BuildView();
             ResetWorld();
+        }
+
+        void Unbind()
+        {
+            if (_goby == null) return;
+            if (_human == Half.Pistol) SetHuman(Half.Goby);
+            ReleaseAllRings(); _flares.Clear(); _primed.Clear(); _hot.Clear();
+            if (_view) Destroy(_view);
+            foreach (var o in new UnityEngine.Object[] { _ground, _torus, _groundMat, _bodyMat, _ghostMat, _gobyMat, _primedMat, _hotMat, _ringMat, _aimMat, _flareMat })
+                if (o) Destroy(o);
+            _goby = null; _gt = null; _rb = null; _cam = null; _view = null;
         }
 
         void ResetWorld()
@@ -107,20 +132,15 @@ namespace CosmicShore.Utility
             _scLive = false;
         }
 
-        void OnDisable()
-        {
-            if (_human == Half.Pistol) SetHuman(Half.Goby);
-            ReleaseAllRings();
-            if (_cam) Destroy(_cam.gameObject);
-            foreach (var o in new Object[] { _ground, _torus, _groundMat, _bodyMat, _ghostMat, _gobyMat, _primedMat, _hotMat, _ringMat, _aimMat, _flareMat })
-                if (o) Destroy(o);
-        }
+        void OnDisable() => Unbind();
 
         // ================================ the step (the lab's stepWorld) ================================
 
         void Update()
         {
-            if (!_gt || _goby == null) { enabled = false; return; }
+            bool run = ShouldRun(out var vessel);
+            if (!run) { Unbind(); return; }
+            if (_goby == null) Bind(vessel);
             float dt = Time.deltaTime; if (dt <= 0f) return;
             _t += dt;
 
@@ -392,20 +412,26 @@ namespace CosmicShore.Utility
 
         void SetHuman(Half half)
         {
-            if (_goby == null || !_gt) { _human = half; return; }   // the hull is gone: nothing to hand back
-            var input = _goby.VesselStatus.InputStatus;
+            if (half == Half.Goby && _pausedInput != null)
+            {
+                // the input paused is the PLAYER's, which outlives this hull (a swap re-homes it): restore that one
+                if (_pausedInput is not UnityEngine.Object o || o) _pausedInput.Paused = false;   // skip a destroyed component
+                _pausedInput = null;
+            }
+            if (_goby == null || !_gt) { _human = half; _weTookGoby = false; return; }   // the hull is gone: nothing to hand back
             if (half == Half.Pistol)
             {
                 // the AI takes the Goby; the human's sticks stop reaching it (they fly the Pistol now)
                 _weTookGoby = !_goby.VesselStatus.AutoPilotEnabled;
                 if (_weTookGoby) _goby.ToggleAIPilot(true);
-                if (input != null) input.Paused = true;
+                var player = _goby.VesselStatus.Player;
+                _pausedInput = player != null ? player.InputStatus : null;
+                if (_pausedInput != null) _pausedInput.Paused = true;
             }
             else
             {
                 if (_weTookGoby) _goby.ToggleAIPilot(false);
                 _weTookGoby = false;
-                if (input != null) input.Paused = false;
             }
             _human = half;
             // a press carried across the swap is not a press (the lab's swap)
@@ -470,8 +496,8 @@ namespace CosmicShore.Utility
 
         void BuildView()
         {
-            var go = new GameObject("PistolSideCamera"); go.transform.SetParent(transform, false);
-            _cam = go.AddComponent<Camera>();
+            _view = new GameObject("PistolSideView");   // at the scene root: the hull's scale and pose are not the view's
+            _cam = _view.AddComponent<Camera>();
             _cam.clearFlags = CameraClearFlags.Skybox; _cam.fieldOfView = Pfov; _cam.nearClipPlane = 1f; _cam.cullingMask = 1;
             _ground = new Mesh { name = "PistolGround" }; _ground.MarkDynamic();
             _cube = Resources.GetBuiltinResource<Mesh>("Cube.fbx");
@@ -532,6 +558,7 @@ namespace CosmicShore.Utility
             DrawPrisms(W);
             DrawGround(W);
             DrawActors(W);
+            FlushDraws();
         }
 
         Vector3 Flat(float x, float h, float d) => Stage + new Vector3(x - _scX, h, d);
@@ -544,15 +571,15 @@ namespace CosmicShore.Utility
             idx.QuerySphere(_p.wpos, half + 260f, _qView);
             foreach (var prism in _qView)
             {
-                if (!Live(prism) || !prism.TryGetComponent(out MeshRenderer mr) || !mr.sharedMaterial) continue;
+                if (!Live(prism) || !prism.TryGetComponent(out MeshRenderer mr) || !mr.sharedMaterial || !mr.sharedMaterial.enableInstancing) continue;
                 var tr = prism.transform;
                 var m = _rb.Map(tr.position, _p.x - half, _p.x + half); if (!m.Ok) continue;
                 bool primed = IsPrimed(prism), faint = Mathf.Abs(m.D) > Config.Vision; if (faint && !primed) continue;
                 var mesh = prism.EffectiveRenderMesh(); if (!mesh) continue;
                 Vector3 at = Flat(m.X, m.H, faint ? Mathf.Clamp(m.D, -Config.Vision, Config.Vision) : m.D);
-                Graphics.DrawMesh(mesh, Matrix4x4.TRS(at, Unroll(m.K, m.T) * tr.rotation, tr.lossyScale), mr.sharedMaterial, 0, _cam);
+                Draw(mesh, Matrix4x4.TRS(at, Unroll(m.K, m.T) * tr.rotation, tr.lossyScale), mr.sharedMaterial);
                 if (primed || IsHot(prism))
-                    Graphics.DrawMesh(_cube, Matrix4x4.TRS(at + Vector3.up * 4f, Quaternion.identity, Vector3.one * 1.6f), primed ? _primedMat : _hotMat, 0, _cam);
+                    Draw(_cube, Matrix4x4.TRS(at + Vector3.up * 4f, Quaternion.identity, Vector3.one * 1.6f), primed ? _primedMat : _hotMat);
             }
         }
 
@@ -583,7 +610,7 @@ namespace CosmicShore.Utility
             }
             else _ground.vertices = _gv;
             _ground.RecalculateBounds();
-            Graphics.DrawMesh(_ground, Matrix4x4.TRS(Stage, Quaternion.identity, Vector3.one), _groundMat, 0, _cam);
+            Draw(_ground, Matrix4x4.TRS(Stage, Quaternion.identity, Vector3.one), _groundMat);
         }
 
         void DrawActors(float W)
@@ -591,25 +618,25 @@ namespace CosmicShore.Utility
             // the Pistol: the cylinder END ON (its length runs into the screen, across the band)
             float half = Config.Vision + 4f;
             var spin = Quaternion.Euler(90f, 0f, 0f) * Quaternion.Euler(0f, _t * 2f * Mathf.Rad2Deg, 0f);
-            Graphics.DrawMesh(_cylinder, Matrix4x4.TRS(Flat(_p.x, _p.y, 0f), spin, new Vector3(2f * Config.BodyR, half, 2f * Config.BodyR)),
-                _t < _p.ghostUntil ? _ghostMat : _bodyMat, 0, _cam);
+            Draw(_cylinder, Matrix4x4.TRS(Flat(_p.x, _p.y, 0f), spin, new Vector3(2f * Config.BodyR, half, 2f * Config.BodyR)),
+                _t < _p.ghostUntil ? _ghostMat : _bodyMat);
             // the Goby, at the end of the ground
-            Graphics.DrawMesh(_cube, Matrix4x4.TRS(Flat(_rb.GobyX, _rb.EndY, 0f), Quaternion.identity, Vector3.one * 6f), _gobyMat, 0, _cam);
+            Draw(_cube, Matrix4x4.TRS(Flat(_rb.GobyX, _rb.EndY, 0f), Quaternion.identity, Vector3.one * 6f), _gobyMat);
             // vortex rings: in the real world, and mapped into the Pistol's
             foreach (var run in _rings)
             {
                 var ring = run.Ring; var look = Quaternion.LookRotation(ring.N);
-                Graphics.DrawMesh(_torus, Matrix4x4.TRS(ring.C, look, Vector3.one * _vs.pVortexR), _ringMat, 0);
+                Draw(_torus, Matrix4x4.TRS(ring.C, look, Vector3.one * _vs.pVortexR), _ringMat);
                 var m = _rb.Map(ring.C, _p.x - W, _p.x + W);
                 if (m.Ok && Mathf.Abs(m.D) < Config.Vision * 3f)
-                    Graphics.DrawMesh(_torus, Matrix4x4.TRS(Flat(m.X, m.H, m.D), Unroll(m.K, m.T) * look, Vector3.one * _vs.pVortexR), _ringMat, 0, _cam);
+                    Draw(_torus, Matrix4x4.TRS(Flat(m.X, m.H, m.D), Unroll(m.K, m.T) * look, Vector3.one * _vs.pVortexR), _ringMat);
             }
             foreach (var F in _flares)
             {
-                Graphics.DrawMesh(_cube, Matrix4x4.TRS(F.P, Quaternion.identity, Vector3.one * 1.5f), _flareMat, 0);
+                Draw(_cube, Matrix4x4.TRS(F.P, Quaternion.identity, Vector3.one * 1.5f), _flareMat);
                 var m = _rb.Map(F.P, _p.x - W, _p.x + W);
                 if (m.Ok && Mathf.Abs(m.D) < Config.Vision * 3f)
-                    Graphics.DrawMesh(_cube, Matrix4x4.TRS(Flat(m.X, m.H, m.D), Quaternion.identity, Vector3.one * 1.5f), _flareMat, 0, _cam);
+                    Draw(_cube, Matrix4x4.TRS(Flat(m.X, m.H, m.D), Quaternion.identity, Vector3.one * 1.5f), _flareMat);
             }
             // the launch aim: yours while you drag (or hold RT), the AI's when it has one
             Vector2? aim = _human == Half.Pistol ? _mouseAim ?? _padAim : _ai.LaunchAim.HasValue ? _ai.LaunchAim.Value - new Vector2(_p.x, _p.y) : (Vector2?)null;
@@ -620,17 +647,60 @@ namespace CosmicShore.Utility
             for (float s = 0f; s <= 1.0001f; s += 0.08f)
             {
                 float tt = s * T;
-                Graphics.DrawMesh(_cube, Matrix4x4.TRS(Flat(_p.x + vx * tt, _p.y + vy * tt - 0.5f * _body.pGravity * tt * tt, 0f), Quaternion.identity, Vector3.one * 1.2f), _aimMat, 0, _cam);
+                Draw(_cube, Matrix4x4.TRS(Flat(_p.x + vx * tt, _p.y + vy * tt - 0.5f * _body.pGravity * tt * tt, 0f), Quaternion.identity, Vector3.one * 1.2f), _aimMat);
             }
+        }
+
+        // ---- drawing: one instanced submission per (mesh, material) a frame, the one draw API Unity and Amoebius share.
+        // There is no camera in it, so the flat world is drawn at Stage, 40 000 u below the real one: past every vessel
+        // camera's far plane (12 000, check_vessel_camera_farclip.py), and only the side camera looks there.
+        sealed class Batch { public Mesh Mesh; public Material Material; public Matrix4x4[] M = new Matrix4x4[32]; public int N; public Bounds Bounds; }
+        readonly List<Batch> _batches = new();
+        int _batchesUsed;
+
+        void Draw(Mesh mesh, Matrix4x4 m, Material material)
+        {
+            if (!mesh || !material) return;
+            Batch b = null;
+            for (int i = 0; i < _batchesUsed; i++) if (_batches[i].Mesh == mesh && _batches[i].Material == material) { b = _batches[i]; break; }
+            if (b == null)
+            {
+                if (_batchesUsed == _batches.Count) _batches.Add(new Batch());
+                b = _batches[_batchesUsed++]; b.Mesh = mesh; b.Material = material; b.N = 0;
+            }
+            if (b.N == b.M.Length)
+            {
+                if (b.N >= 1023) return;   // one call's instance cap; the view never needs more of one kind
+                System.Array.Resize(ref b.M, Mathf.Min(1023, b.N * 2));
+            }
+            // what the instance covers (its mesh's bounds at its largest scale), for culling
+            Vector3 c = m.GetColumn(3);
+            float scale = Mathf.Max(((Vector3)m.GetColumn(0)).magnitude, Mathf.Max(((Vector3)m.GetColumn(1)).magnitude, ((Vector3)m.GetColumn(2)).magnitude));
+            var box = new Bounds(c, Vector3.one * (2f * scale * (mesh.bounds.extents.magnitude + mesh.bounds.center.magnitude)));
+            if (b.N == 0) b.Bounds = box; else b.Bounds.Encapsulate(box);
+            b.M[b.N++] = m;
+        }
+
+        void FlushDraws()
+        {
+            for (int i = 0; i < _batchesUsed; i++)
+            {
+                var b = _batches[i]; if (b.N == 0) continue;
+                var rp = new RenderParams(b.Material) { shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off, receiveShadows = false, worldBounds = b.Bounds };
+                Graphics.RenderMeshInstanced(rp, b.Mesh, 0, b.M, b.N);
+                b.N = 0;
+            }
+            _batchesUsed = 0;
         }
 
         void OnGUI()
         {
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
             if (_rb == null) return;
             var box = new Rect(10f, 10f, 520f, 132f);
-            GUI.Box(box, GUIContent.none);
+            GUI.Box(box, string.Empty);
             GUILayout.BeginArea(new Rect(box.x + 8f, box.y + 6f, box.width - 16f, box.height - 12f));
-            GUILayout.Label($"GOBY & PISTOL (dev harness)   you fly: {(_human == Half.Goby ? "GOBY" : "PISTOL")}   AI: {aiLevel}   swap: D-pad left/right or 1/2");
+            GUILayout.Label($"GOBY & PISTOL   you fly: {(_human == Half.Goby ? "GOBY" : "PISTOL")}   AI: {aiLevel}   swap: D-pad left/right or 1/2");
             GUILayout.Label($"Pistol  launch {_p.launch}/{Mathf.RoundToInt(_body.pLaunchCharges)}   ghost {Ready(_p.ghostAt)}   snap {Ready(_p.vortexAt)}   " +
                             $"{(_p.grounded ? "on the ground" : "in the air")}   {_rb.GobyX - _p.x:0} u behind the Goby");
             GUILayout.Label($"Goby    primer {_primer}/{Mathf.RoundToInt(Config.PrimerCharges)}   flares {_flare}/{Mathf.RoundToInt(Config.FlareCharges)}   " +
@@ -639,9 +709,9 @@ namespace CosmicShore.Utility
                 ? "Pistol: hold Space / mouse / A to dive; drag (or RT + right stick) and let go to launch; F launch; G / B ghost; Q E / X Y Snap"
                 : "Goby: fly the vessel as usual; 3 / D-pad up primer; 4 / D-pad down flares");
             GUILayout.EndArea();
+#endif
         }
 
         string Ready(float at) => _t >= at ? "ready" : $"{at - _t:0.0}s";
     }
 }
-#endif

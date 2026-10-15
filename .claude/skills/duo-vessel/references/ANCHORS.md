@@ -175,7 +175,7 @@ one-Player-one-Vessel assumption. Do not start A without Garrett's call.
 | Per-viewer rendering of prisms or a curve | **generic** | the Serpent cloak's `IsLocalUser` alpha |
 | Speed gauge on the HUD | generic | `ThresherHUDView` fill |
 | Speed from distance to another object | per duo (Goby) | `StoatPathfinderExecutor` `FlightTimeScale`, `SkimmerModifyThrotleByPrismEffectSO` |
-| The unrolled-ribbon world: map world points to (s, h, d) and back, constrain the Pistol to the plane, draw parallax depth layers and distorted prisms, on the Pistol's client only | per duo (Pistol) | **The maths exists** (2026-10-15): `PistolRibbon`, `PistolBodyMath`, `VortexRing`, `PistolAI` in `Controller/Vessel/Duo/GobyPistol/`; the dev-only `GobyPistolHarness` draws the warped world through a second camera. Not yet a vessel: no seat, no networking, no per-client render path |
+| The unrolled-ribbon world: map world points to (s, h, d) and back, constrain the Pistol to the plane, draw parallax depth layers and distorted prisms, on the Pistol's client only | per duo (Pistol) | **The maths exists** (2026-10-15): `PistolRibbon`, `PistolBodyMath`, `VortexRing`, `PistolAI` in `Controller/Vessel/Duo/GobyPistol/`; `GobyPistolDuo` (on `Goby.prefab`, `VesselClassType.Goby`) draws the warped world through a second camera on the local pilot's machine. Still no seat, no networking |
 | A side-on sidescroller camera mode | generic | `CameraSettingsSO.CameraMode` |
 | Alternating-angle trail blocks | per duo (Goby) | `VesselPrismController.CreateBlock` |
 | Drag-to-aim launch on mobile | generic | `ThresherLaunchSight` (stick aim only) |

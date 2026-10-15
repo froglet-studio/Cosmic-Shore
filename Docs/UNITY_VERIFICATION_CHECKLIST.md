@@ -65,13 +65,41 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 The Goby (VesselClassType 16): the Goby & Pistol duo as a vessel you fly from the Vessel Changer (`cece/sharp-tesla-j0kd7z`, 2026-10-15) — NOT EDITOR-VERIFIED
+
+`Tools/Build/author_goby_assets.py` cloned `Squirrel.prefab` into `Goby.prefab` (fresh Netcode hash, `vesselType: 16`,
+`GobyPistolDuo` on the root wired to `GobyPistolConfig.asset`) and registered it: Vessel Prefab Container, DefaultNetworkPrefabs,
+`SO_Class_Goby` + both class lists, `ElementalAbilityMaps/Goby` (the Squirrel's map), four CrystalHullFusion entries (the
+Squirrel's bakes); `ToyVesselRoster.Default` and `EnumIntegrityTests` by hand. The dev harness became the runtime
+`GobyPistolDuo` (no longer `#if`-guarded: it ships on the prefab). No editor and no `unity` CLI here, so `/verify-unity` did NOT
+run. Headless proof: `unity_refcompile` player + editor (0 project errors); Amoebius built and RAN it (menu hull set to the Goby,
+then reverted): the Goby spawned with `GobyPistolDuo`, the Vessel Changer listed "Goby · flying", in freestyle the duo bound, key
+2 gave the human the Pistol (the Goby's AI on, its input paused), Q fired a vortex ring, key 1 gave the Goby back. Amoebius cannot
+show the side view (no second-camera viewports, no `OnGUI`) - Unity has to. The tool's `--check` and `--self-test`; network-hash,
+prefab-container, class-icon, shared-channel and far-clip gates OK.
+
+1. **Test Runner ▸ EditMode:** `EnumIntegrityTests`, `ToyVesselRosterCoverageTests`, `CrystalHullFusionConfigTests`,
+   `GobyPistolMathTests` pass.
+2. **Menu_Main ▸ TOYBOX ▸ Vessel Changer:** the list ends with **Goby**. NAVIGATE, fly into the hangar and pick the Goby station
+   (or in the window). You swap into a Squirrel-looking hull named Goby(Clone).
+3. **Flying it:** a bottom-right inset shows the Pistol's world (teal ground with hills, the orange Pistol riding it, the teal
+   cube = the Goby at its right end) and a box top left says `you fly: GOBY`. Prisms near your path appear in the inset with
+   their own look. **3 / D-pad up** primes what is ahead (amber markers); **4 / D-pad down** fires flares at hot (red) prisms.
+4. **D-pad right / 2:** the inset goes full screen and the Goby flies itself; **Space / mouse / A** dives, drag-release or **F**
+   launches, **G** ghosts, **Q / E** fires the vortex ring (prisms circle it in the 3D view too, and break when it collapses).
+   **D-pad left / 1** takes the Goby back; your sticks steer it again at once (the AI let go, the input is not left paused).
+5. **Swap to another hull in the Vessel Changer while flying the Pistol:** the side view goes away, nothing stays paused, the new
+   hull flies. **Main menu:** the Goby as the menu hull shows NO inset (it only wakes for a human pilot).
+6. Expected console lines: four `[HullFusion] 'Squirrel_*_HullFusionBake' is STALE` warnings (the Squirrel has them too; the
+   fusion solves at runtime). Anything else from `GobyPistolDuo` is a bug.
+
 ### 🔴 Goby & Pistol duo: the lab cloned into Unity, playable through a Play-mode harness (`cece/sharp-tesla-j0kd7z`, 2026-10-15) — NOT EDITOR-VERIFIED
 
 `.claude/skills/duo-vessel/references/designs/goby-and-pistol.md` §9-§10. The Goby & Pistol lab
 (`Docs/Studios/VesselStudio/goby.html`) ported line for line: `PistolRibbon` (the unrolled path and the Pistol's ground),
 `PistolBodyMath` + `VortexRing` (the ride, launch, ghost, the vortex-ring Snap), `PistolAI` (Easy / Medium / Hard), all in
 `Assets/_Scripts/Controller/Vessel/Duo/GobyPistol/`; `GobyPistolConfigSO` + `Assets/_SO_Assets/VesselActions/GobyPistol/GobyPistolConfig.asset`
-(40 numbers written by `studio_to_unity.py --vessel goby`); the dev-only `GobyPistolHarness` (`Assets/_Scripts/Utility/Tools/`).
+(40 numbers written by `studio_to_unity.py --vessel goby`); the Play-mode harness (since 2026-10-15 the runtime `GobyPistolDuo`, see the Goby vessel entry above).
 No editor and no `unity` CLI in this session, so `/verify-unity` did NOT run. Headless proof: `unity_refcompile` player,
 player-dev and editor configs (0 project errors); `GobyPistolMathTests` (10 tests) run OUTSIDE Unity against a float
 `Vector3`/`Mathf` stand-in, 10/10 green, and a perturbed constant in the port fails 2 of them; `studio_to_unity.py --check`

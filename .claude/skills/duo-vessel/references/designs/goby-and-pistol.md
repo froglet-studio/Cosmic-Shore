@@ -268,13 +268,28 @@ The lab's arithmetic is in the game, line for line, held to the lab's own number
 | The vortex ring (capture, toroidal flow, collapse) | `VortexRing` | same |
 | The Pistol AI and its levels, `mulberry32` bit for bit | `PistolAI` | same |
 | 40 numbers | `GobyPistolConfigSO` / `GobyPistolConfig.asset` | `studio_to_unity.py --vessel goby --check` |
-| Playing it: the local vessel is the Goby, the Pistol rides it side on, on real prisms; the arena's swap | `GobyPistolHarness` (dev only), **FrogletTools ▸ Vessels ▸ Goby and Pistol (Play mode)** | `Docs/UNITY_VERIFICATION_CHECKLIST.md` (not yet run in an editor) |
+| Playing it: the Pistol rides your hull side on, on real prisms; the Goby's primer and flares; the arena's swap | `GobyPistolDuo` (a runtime component; **FrogletTools ▸ Vessels ▸ Goby and Pistol (Play mode)** adds it to any hull you fly) | Amoebius, 2026-10-15: spawned, bound, swapped both ways, fired a ring (below) |
+| **The vessel: `VesselClassType.Goby` (16)**, flyable from the freestyle Vessel Changer | `Goby.prefab` (a Squirrel clone carrying `GobyPistolDuo`), `SO_Class_Goby`, the container / network / class-list / fusion entries, `ElementalAbilityMaps/Goby` (the Squirrel's map), `ToyVesselRoster.Default` | `Tools/Build/author_goby_assets.py --check` / `--self-test` |
 
 **Still lab-only:** the Goby's straight and closeness boosts (they need the duo vessel's own speed executor; the harness
 cannot change a borrowed hull's speed), flora counting as hot, the crystal restock and the free Snap (crystal pickup is
 the hull's), the world's seeding, the hinge tilt, the Goby AI's weave (in the game the Goby's AI is the vessel's own) and
 `pParallax` (declared in the lab, read nowhere). The duo vessel class itself (one seat, two hulls, architecture A or B,
 networking) is §8's open question and not started.
+
+**What the Goby is today (2026-10-15).** One hull, one Player: the Goby is a Squirrel clone (model, flight, its four
+abilities and HUD, camera, containers), so architecture A/B (§8) is still open and the Pistol is not a second
+networked object: `GobyPistolDuo` simulates it on the LOCAL pilot's machine only, wakes only while a human flies the
+hull (not on an AI or remote copy, not under the menu's autopilot), and its prism breaks are local. Fine for freestyle;
+not for a match until the duo is networked. The Goby's own element row (primer, flares, the Pistol's four) is an OPEN
+design slot: its map is the Squirrel's, unchanged.
+
+**Seen in Amoebius** (the repo's engine, which compiles the game live): with `Menu_Main`'s menu hull set to the Goby,
+it spawned carrying `GobyPistolDuo`, idle under the menu autopilot; the Vessel Changer listed "Goby · flying"; in
+freestyle the duo bound (side camera parked over the flat world at y -40 222), key 2 handed the Pistol to the human
+(the Goby's AI on, its input paused, the side view full screen), Q fired a vortex ring, key 1 handed the Goby back
+(AI off, input live). Amoebius does not yet composite a second camera's viewport or run `OnGUI`, so the side view
+and the HUD text are not visible there: an engine row, not a game bug. Unity is the place to SEE them.
 
 ## 11. Decisions log
 

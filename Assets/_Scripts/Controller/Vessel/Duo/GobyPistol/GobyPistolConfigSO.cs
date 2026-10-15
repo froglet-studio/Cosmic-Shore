@@ -13,7 +13,7 @@ namespace CosmicShore.ScriptableObjects
     /// seconds; the Pistol's numbers are in its unrolled plane (x along the Goby's path, h up).
     ///
     /// <para>The Goby flies on the Squirrel's own prefab numbers (two thumbs), so its cruise and turn rates have no
-    /// field here. Read by <c>GobyPistolHarness</c>, the dev-only Play-mode harness, until the duo vessel class lands.</para>
+    /// field here. Read by <c>GobyPistolDuo</c> (on <c>Goby.prefab</c>, or added to any hull from the Play-mode menu).</para>
     /// </summary>
     [CreateAssetMenu(fileName = "GobyPistolConfig", menuName = "ScriptableObjects/Vessel Actions/Goby Pistol Config")]
     public sealed class GobyPistolConfigSO : ScriptableObject

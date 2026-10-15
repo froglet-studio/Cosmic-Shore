@@ -68,6 +68,7 @@ day after the channel it referred to had been deleted.
 | **Butterfly** | **4/4** | **4/4** | **4/4** | *(added 2026-09-22 — code + map only; its prefab is built by `FrogletTools ▸ Vessels ▸ Create Butterfly Vessel` and is NOT on the branch yet, so the tool cannot see it until that has been run)* |
 | **Thresher** | **4/4** | **4/4** | **4/4** | *(added 2026-10-08, measured on the branch — prototype; see `R_VesselActions/THRESHER.md`)* |
 | **Stoat** | **4/4** | **4/4** | **4/4** | *(own vessel 2026-10-13 — Space = Field Dipole (L5 **Accretion**, Theft fused in), Time = Pathfinder / Time Mode (L5 **Foresight**), Charge = **Ripple** (L5 **Siphon**), Mass = **Mass / Time Mode** on B (L5 **Armoured Wake**); `R_VesselActions/STOAT_DIPOLE.md` §1a–§1e, §5)* |
+| **Goby** | 4/4 *(the Squirrel's)* | 4/4 *(the Squirrel's)* | 4/4 *(the Squirrel's)* | *(duo prototype 2026-10-15 — `ElementalAbilityMaps/Goby.asset` is the Squirrel's map unchanged: the Goby flies the Squirrel's abilities. The duo's own row (primer, flares, the Pistol's launch / Snap / ghost) is an OPEN design slot, not filled — duo brief §8)* |
 
 Everything the tool still flags is a **design gap, not a wiring bug** — three rows: the Rhino's
 Charge and Space (Space has its L5, Breaker, but still no ability or scaling), and the Serpent's Mass. The full list, with what each one would cost to fill, is
