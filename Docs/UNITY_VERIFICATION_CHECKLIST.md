@@ -65,6 +65,30 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Style-B menu redesign, item 9b: Credits (`claude/new-session-76hnyc`, 2026-10-15) — NOT EDITOR-VERIFIED
+
+`Panels/CreditsModal.prefab` authored from the approved Credits board (`Docs/MENU_REDESIGN_B.md`
+section 18.2) by `Tools/Build/author_menu_credits.py` (`--check`, `--self-test` green), with one
+instance in Menu_Main under `ModalWindows`, registered in `ScreenSwitcher.Modals`. `CreditsModal`
+gained row styles, grouped entries, right-stick scrolling and open entrances. No editor in the
+session: `/verify-unity` still owed. Offline: player + editor reference compiles clean.
+
+**Verify in editor:**
+1. Open Menu_Main: `ModalWindows/CreditsModal` exists, is invisible at start, and has no
+   missing-script or missing-reference warnings. In Play mode, no `CreditsModal (built)` appears
+   under the root canvas.
+2. Settings > General > CREDITS: the window pops in over Settings. The band drops in, the list
+   rises in, and "Credits" is the title.
+3. The rows read in hierarchy: "Cosmic Shore", "Middleware" and "Third-party notices" as section
+   headings; entry names larger than their roles; a rule above each entry; notices dimmer than
+   roles. The FMOD line is legible: "Made with FMOD Studio by Firelight Technologies Pty Ltd."
+4. Scroll to the bottom with the mouse wheel, the scrollbar, and the pad's right stick. The
+   EmojiOne notice is reachable, and the list neither stops short nor overshoots.
+5. Close with CLOSE, then re-open and close with B. Each closes only Credits and returns to
+   Settings. Re-opening starts at the top.
+
+---
+
 ### 🔴 Style-B menu redesign, item 9a: the Settings window (`claude/new-session-76hnyc`, 2026-10-15) — NOT EDITOR-VERIFIED
 
 `SettingsModal.prefab` rebuilt from the approved Settings boards (`Docs/MENU_REDESIGN_B.md`

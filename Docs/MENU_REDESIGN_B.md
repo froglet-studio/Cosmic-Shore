@@ -43,7 +43,7 @@ Legend: `Planned` ▸ `Mockup` ▸ `Mockup approved` ▸ `Built` ▸ `Approved i
 | 6 | Home screen: hub row, header, settings and freestyle buttons, invite popup | Mockup approved (2026-10-14) | `Home.dc.html` (interactive), `HomeInvite`, `HomeFocus`, `HomeOffline`, `HomeNotes` | |
 | 7 | Ark screen (Elemental Converter) | Built (2026-10-15, section 16) | `Ark.dc.html` (interactive), `ArkConverting`, `ArkDone`, `ArkNotes` | |
 | 8 | Arena, Toy Box and Mission modals, and Toy configure | Arena window, Toy Box and Toy configure Built (2026-10-15, section 17); Mission window held (section 17.2) | `ToyBox.dc.html` (interactive), `ToyBoxClaimed`, `ArenaWindow`, `MissionWindow`, `ToyConfigure` (interactive), `ToyConfigurePaint`, `ToyConfigureSpawn`, `ToyConfigureDomain`, `ModesNotes` | |
-| 9 | Settings modal and Credits | Settings window Built (2026-10-15, section 18.1); Credits in progress | `Settings.dc.html` (interactive), `SettingsDisplay`, `SettingsPerformance`, `SettingsOther`, `Credits`, `SystemNotes` | |
+| 9 | Settings modal and Credits | Built (2026-10-15, section 18): Settings window and Credits | `Settings.dc.html` (interactive), `SettingsDisplay`, `SettingsPerformance`, `SettingsOther`, `Credits`, `SystemNotes` | |
 | 10 | Closed surfaces: Port (locked), Store (no slot), Episodes panel, purchase confirmation | Mockup approved (2026-10-14) | `ClosedSurfaces.dc.html`, `PurchaseConfirm` (blind), `SystemNotes` | |
 | 11 | Menu toasts | Mockup approved (2026-10-14) | `Toasts.dc.html` (interactive), `SystemNotes` | |
 | 12 | In-game UI: GameCanvas HUD chrome, scoreboard, ready / countdown / pause, in-match toasts, end-of-game screens, Menu_Main freestyle HUD | Planned (inventory running) | | |
@@ -962,4 +962,34 @@ dropped, because Content now stretches.
 The generator keeps the retired object ids as a fixed list, so `--check` still guards against an
 orphaned override after the rewrite is on disk. A target that was already stale before this change
 (EndGameStatsPanel carries one) is left alone.
+
+### 18.2 Credits (built 2026-10-15, awaiting in-editor approval)
+
+`Tools/Build/author_menu_credits.py` authors `Panels/CreditsModal.prefab` and places one instance
+in Menu_Main. The instance is the last child of `ModalWindows`, so it draws over Settings, and is
+wired to the ScreenSwitcher and added to `ScreenSwitcher.Modals`. `EnsureCreditsModal` therefore
+finds an authored CREDITS window and the code-built fallback (`CreditsModal.Build`) stands down.
+That fallback stays in the code as the licence backstop.
+
+- **Window:** the same window style as Settings (1200 x 900) with "Credits" as the H1 (the
+  manifest's title, written into `titleText`). The right-stick hint and Close (B) sit top right.
+  The scroll view has a thin ControlActive scrollbar.
+- **Rows** are still generated from `Resources/CreditsManifest`, so the text has one copy. They
+  now follow a real hierarchy, each level copying a hidden style in the prefab:
+  - section heading: H2
+  - blurb: Body
+  - entry name: H3
+  - role: BodySmall NeutralLightest
+  - notice: BodySmall InactiveLight
+  - a SurfaceDark rule above each entry
+
+  Each section and each entry is one layout group, so a name, its role and its notice stay
+  together.
+- **Title band** ("Froglet Inc. presents / Cosmic Shore") opens the list. On every open, the band
+  drops in, the list rises in, and the scroll resets to the top.
+- **The right stick scrolls the list.** Before this the pad could not scroll it, because nothing
+  in it is selectable.
+- The manifest's headings are now sentence case, and its two non-ASCII characters are replaced
+  ("(c)", " - "). The FMOD line and both credits gates (`CreditsReleaseGuard`,
+  `check_credits_manifest.py`) are unchanged.
 

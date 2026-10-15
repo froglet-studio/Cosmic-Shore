@@ -2,6 +2,7 @@ using CosmicShore.ScriptableObjects;
 using CosmicShore.Utility;
 using TMPro;
 using UnityEngine;
+using UnityEngine.InputSystem;
 using UnityEngine.UI;
 
 namespace CosmicShore.UI
@@ -52,12 +53,78 @@ namespace CosmicShore.UI
         [SerializeField, Tooltip("Padding inside the content column, in canvas units.")]
         RectOffset contentPadding;
 
+        [Header("Style-B window (optional - Docs/MENU_REDESIGN_B.md section 18.2)")]
+        [SerializeField, Tooltip("The window title. When wired, the manifest's title is written here " +
+                                 "instead of being the list's first row.")]
+        TMP_Text titleText;
+
+        [SerializeField, Tooltip("Optional. The style an entry's NAME copies (H3). Falls back to the body style.")]
+        TMP_Text entryNameTemplate;
+
+        [SerializeField, Tooltip("Optional. The style an entry's ROLE copies (Body small). Falls back to the body style.")]
+        TMP_Text entryRoleTemplate;
+
+        [SerializeField, Tooltip("Optional. The style a licence NOTICE copies. Falls back to the role style.")]
+        TMP_Text noticeTemplate;
+
+        [SerializeField, Tooltip("Optional. A rule drawn above every entry; its sprite and colour are copied.")]
+        Image dividerTemplate;
+
+        [SerializeField, Tooltip("Gap between the rows inside one section, in canvas units.")]
+        float sectionRowSpacing = 14f;
+
+        [SerializeField, Tooltip("Gap between an entry's name, role and notice, in canvas units.")]
+        float entryLineSpacing = 4f;
+
+        [SerializeField, Tooltip("Space above and below an entry's lines (the rule sits on the top edge).")]
+        float entryPadding = 12f;
+
+        [Header("Gamepad scrolling")]
+        [SerializeField, Tooltip("Canvas units per second the right stick scrolls the list at full tilt.")]
+        float stickScrollSpeed = 1400f;
+
+        [SerializeField, Range(0f, 0.9f), Tooltip("Right-stick tilt below this is ignored.")]
+        float stickDeadZone = 0.2f;
+
+        [SerializeField, Tooltip("Entrances replayed every time the window opens (the title band, the list).")]
+        KitEntrance[] openEntrances;
+
         bool _built;
+        ScrollRect _scroll;
 
         protected override void Start()
         {
             base.Start();
+            OnModalOpened += ReplayEntrances;
             Build();
+        }
+
+        void OnDestroy() => OnModalOpened -= ReplayEntrances;
+
+        void ReplayEntrances()
+        {
+            if (_scroll) _scroll.verticalNormalizedPosition = 1f;   // every open starts at the top
+            if (openEntrances == null) return;
+            foreach (var entrance in openEntrances)
+                if (entrance) entrance.Play();
+        }
+
+        protected override void Update()
+        {
+            base.Update();
+            if (!IsOpen || !_scroll || !_scroll.content || !_scroll.viewport) return;
+
+            // The pad could not scroll this list at all: nothing in it is selectable, so the
+            // EventSystem's navigation has nothing to move between. The right stick drives it.
+            var pad = Gamepad.current;
+            if (pad == null) return;
+            float tilt = pad.rightStick.y.ReadValue();
+            if (Mathf.Abs(tilt) < stickDeadZone) return;
+
+            float overflow = _scroll.content.rect.height - _scroll.viewport.rect.height;
+            if (overflow <= 0f) return;
+            float step = tilt * stickScrollSpeed * Time.unscaledDeltaTime / overflow;
+            _scroll.verticalNormalizedPosition = Mathf.Clamp01(_scroll.verticalNormalizedPosition + step);
         }
 
         /// <summary>
@@ -95,37 +162,44 @@ namespace CosmicShore.UI
 
             var heading = headingTemplate ? headingTemplate : FindStyleSource();
             var body = bodyTemplate ? bodyTemplate : heading;
+            var entryName = entryNameTemplate ? entryNameTemplate : body;
+            var entryRole = entryRoleTemplate ? entryRoleTemplate : body;
+            var notice = noticeTemplate ? noticeTemplate : entryRole;
 
             PrepareColumn(column);
 
-            AddRow(column, manifest.Title, heading, "CreditsTitle");
+            if (titleText) titleText.text = manifest.Title;
+            else AddRow(column, manifest.Title, heading, "CreditsTitle", true);
 
             foreach (var section in manifest.Sections)
             {
                 if (section == null) continue;
 
+                // One group per section, so the gap between sections is the column's spacing and
+                // the gap inside one is the section's own.
+                var group = AddGroup(column, "Section", sectionRowSpacing, 0f, true);
+
                 if (!string.IsNullOrWhiteSpace(section.Heading))
-                    AddRow(column, section.Heading, heading, "Heading");
+                    AddRow(group, section.Heading, heading, "Heading");
 
                 if (!string.IsNullOrWhiteSpace(section.Blurb))
-                    AddRow(column, section.Blurb, body, "Blurb");
+                    AddRow(group, section.Blurb, body, "Blurb");
 
                 if (section.Entries == null) continue;
 
                 foreach (var entry in section.Entries)
                 {
-                    if (entry == null) continue;
+                    if (entry == null || string.IsNullOrWhiteSpace(entry.Name) && string.IsNullOrWhiteSpace(entry.Role)
+                                      && string.IsNullOrWhiteSpace(entry.Notice))
+                        continue;
 
-                    // Name and role read as one credit, so they are one row: a person's name and
-                    // what they did should not be separable by a scroll position.
-                    string headline = string.IsNullOrWhiteSpace(entry.Role)
-                        ? entry.Name
-                        : $"{entry.Name}\n{entry.Role}";
-                    if (!string.IsNullOrWhiteSpace(headline))
-                        AddRow(column, headline, body, "Entry");
-
-                    if (!string.IsNullOrWhiteSpace(entry.Notice))
-                        AddRow(column, entry.Notice, body, "Notice");
+                    // Name, role and notice are one credit, so they are one group: a person's name
+                    // and what they did should not be separable by a scroll position.
+                    var credit = AddGroup(group, "Entry", entryLineSpacing, entryPadding, false);
+                    AddDivider(credit);
+                    if (!string.IsNullOrWhiteSpace(entry.Name)) AddRow(credit, entry.Name, entryName, "Name");
+                    if (!string.IsNullOrWhiteSpace(entry.Role)) AddRow(credit, entry.Role, entryRole, "Role");
+                    if (!string.IsNullOrWhiteSpace(entry.Notice)) AddRow(credit, entry.Notice, notice, "Notice");
                 }
             }
 
@@ -138,9 +212,9 @@ namespace CosmicShore.UI
         /// <summary>The ScrollRect content, wired or found.</summary>
         RectTransform ResolveContent()
         {
+            _scroll = GetComponentInChildren<ScrollRect>(true);
             if (content) return content;
-            var scroll = GetComponentInChildren<ScrollRect>(true);
-            if (scroll && scroll.content) content = scroll.content;
+            if (_scroll && _scroll.content) content = _scroll.content;
             return content;
         }
 
@@ -188,11 +262,51 @@ namespace CosmicShore.UI
             column.pivot = new Vector2(0.5f, 1f);
         }
 
-        void AddRow(RectTransform column, string text, TMP_Text style, string rowName)
+        /// <summary>
+        /// A vertical group that sizes itself to its rows. Top-level groups carry the generated
+        /// marker so a rebuild removes them; nested ones go with their parent.
+        /// </summary>
+        RectTransform AddGroup(RectTransform parent, string groupName, float spacing, float padding, bool topLevel)
+        {
+            var go = new GameObject($"Credits_{groupName}", typeof(RectTransform));
+            go.transform.SetParent(parent, false);
+            if (topLevel) go.AddComponent<GeneratedCreditsRow>();
+            var layout = go.AddComponent<VerticalLayoutGroup>();
+            layout.spacing = spacing;
+            int pad = Mathf.RoundToInt(padding);
+            layout.padding = new RectOffset(0, 0, pad, pad);
+            layout.childControlWidth = true;
+            layout.childControlHeight = true;
+            layout.childForceExpandWidth = true;
+            layout.childForceExpandHeight = false;
+            return (RectTransform)go.transform;
+        }
+
+        /// <summary>The rule on an entry's top edge, outside the layout so it adds no height.</summary>
+        void AddDivider(RectTransform entry)
+        {
+            if (!dividerTemplate) return;
+            var go = new GameObject("Credits_Rule", typeof(RectTransform));
+            var rect = (RectTransform)go.transform;
+            rect.SetParent(entry, false);
+            rect.anchorMin = new Vector2(0f, 1f);
+            rect.anchorMax = new Vector2(1f, 1f);
+            rect.pivot = new Vector2(0.5f, 1f);
+            rect.sizeDelta = new Vector2(0f, Mathf.Max(1f, dividerTemplate.rectTransform.rect.height));
+            rect.anchoredPosition = Vector2.zero;
+            go.AddComponent<LayoutElement>().ignoreLayout = true;
+            var image = go.AddComponent<Image>();
+            image.sprite = dividerTemplate.sprite;
+            image.type = dividerTemplate.type;
+            image.color = dividerTemplate.color;
+            image.raycastTarget = false;
+        }
+
+        void AddRow(RectTransform column, string text, TMP_Text style, string rowName, bool topLevel = false)
         {
             var go = new GameObject($"Credits_{rowName}", typeof(RectTransform));
             go.transform.SetParent(column, false);
-            go.AddComponent<GeneratedCreditsRow>();
+            if (topLevel) go.AddComponent<GeneratedCreditsRow>();
 
             var label = go.AddComponent<TextMeshProUGUI>();
             if (style)
@@ -200,6 +314,8 @@ namespace CosmicShore.UI
                 label.font = style.font;
                 label.fontSize = style.fontSize;
                 label.fontStyle = style.fontStyle;
+                label.characterSpacing = style.characterSpacing;
+                label.lineSpacing = style.lineSpacing;
                 label.color = style.color;
                 label.alignment = style.alignment;
             }

@@ -446,6 +446,19 @@ failure looks like so it cannot be mistaken for working.
 `creditsButton` in `SettingsModal.prefab`. Each ensure checks for the authored thing first and
 does nothing when it finds it, so neither needs a code change to stand down.
 
+**Both fallbacks now stand down (2026-10-15, style-B menu item 9, `Docs/MENU_REDESIGN_B.md`
+section 18).** Both are authored, so `EnsureCreditsRow` and `EnsureCreditsModal` find them and
+do nothing:
+- `SettingsView.prefab` wires a real `creditsButton` in the General links.
+- `Panels/CreditsModal.prefab` sits in `Menu_Main` under `ModalWindows` and is listed in
+  `ScreenSwitcher.Modals`; it was authored by `Tools/Build/author_menu_credits.py`.
+
+The code paths stay as the backstop, because deleting the authored window brings the built one
+back. Steps 1 and 2 above therefore describe the fallback. On the authored window, look for
+`CreditsModal` (not `(built)`) under `ModalWindows`, and for a CREDITS button in the General
+links. The section headings are now sentence case ("Middleware").
+
+
 ### §7.4 What is NOT proved
 
 * **That the screen renders.** Both gates check the **data**, so the modal's layout, the generated
