@@ -180,6 +180,13 @@ namespace CosmicShore.Gameplay
         protected override float AIThrottleFloor => 1f;
 
         /// <summary>
+        /// Regatta's short legs (461-858 u) are where committing from 420 u out crosses the plane beside the
+        /// mouth and then circles the far-side point: the Regatta AI studio finished 17/32 Hard hull x intensity
+        /// races with the shipped steering and 30/32 with this on (2026-10-15, Docs/Studios/RegattaAI).
+        /// </summary>
+        protected override bool AICommitFromApproachPoint => true;
+
+        /// <summary>
         /// While ATTACHED, ride the rail toward this pilot's next ring; while FREE, fly at the
         /// ring the platform's way (and lay a Track Projector rail when the ring is a long,
         /// straight, lined-up shot). Skein's override, on Regatta's course.

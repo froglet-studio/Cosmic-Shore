@@ -1160,6 +1160,25 @@ namespace CosmicShore.Gameplay
             UpdateCellContent();
         }
 
+        /// <summary>
+        /// Extend and re-attack NOW, without waiting for the turning-circle test or the orbit detector:
+        /// for a caller that already knows the pursuit failed. A gate race calls it when its pilot crosses
+        /// the ring's plane outside the mouth (<see cref="GateRaceController"/>), because by then the far-side
+        /// point is behind it and close, which the detector only notices after a lap of circling it
+        /// (2026-10-15 Regatta AI studio: 17/32 Hard races finished without this, 30/32 with it).
+        /// The break-off then ends by <see cref="UpdateOrbitBreak"/>'s own rules. No-op where a break-off
+        /// could not run (breaking off, drifting or attached).
+        /// </summary>
+        public void BreakOffNow()
+        {
+            if (!breakOrbits || vessel == null) return;
+            var status = VesselStatus;
+            if (status == null || status.IsDrifting || status.IsAttached) return;
+            _extending = true;
+            _extendElapsed = 0f;
+            _orbitDetector.Reset();
+        }
+
         void EndOrbitBreak()
         {
             if (!_extending) return;

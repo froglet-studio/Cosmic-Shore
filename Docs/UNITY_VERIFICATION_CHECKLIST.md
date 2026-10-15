@@ -65,6 +65,23 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Regatta: the AI commits at its approach point and re-attacks after a missed mouth (`Ys-bleeding-edge`, 2026-10-15) — NOT EDITOR-VERIFIED
+
+Ported from the Regatta AI studio (https://claude.ai/artifact/FCC7UWbs2wC6LXYMVW4KA4, its *Commit at the approach point,
+re-aim after a miss* switch): 17/32 Hard hull x intensity races finished without it, 30/32 with it. No `unity` CLI in
+the session that wrote it. Proved offline: player-dev and editor `unity_refcompile` (no error in the changed files; the
+16 in changed files are the unfetchable Reflex / Unity.Services packages), the 9 `GateRaceSteeringTests` cases run in a
+.NET harness against the shipped methods (the studio's numbers as goldens), with a negative control.
+
+1. Arcade ▸ Regatta, solo, Hard, I1 then I3. Seat Squirrel, Manta, Rhino, Urchin and Dolphin. Open FrogletTools ▸ AI ▸
+   Third Eye with *Trails* on.
+2. On the short legs, an AI's readout should say *Approach* until it is close to the ring, then *Through*; it should not
+   turn in from far out and cross the ring's plane beside the mouth.
+3. When an AI does miss a mouth, it should break off at once (readout *break-off*, the trail swinging out) and come back
+   for the same ring from whichever side it is on, never loop round the far side of the ring.
+4. Every AI should finish 3 laps at I1. Note any hull that does not, and at which ring.
+5. Headlong, Switchback, Breakwater, Skein, Redline: unchanged (their `aiCommitFromApproachPoint` is off).
+
 ### 🔴 Regatta: five racing AIs fixed from the audit, and the Third Eye shows their paths (`Ys-bleeding-edge`, 2026-10-15) — NOT EDITOR-VERIFIED
 
 **What landed** (`REGATTA.md` §6.1 has the table):

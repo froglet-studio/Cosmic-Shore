@@ -94,7 +94,9 @@ watch the real vessels race in the Third Eye (trajectories, behaviour, who wins 
 `GateRaceController.ArmRacers` with the scene's values, difficulty is `GateRaceHandicap`, and the scorecard times every
 card hull × level against `regatta_balance.py`. **First finding: the shipped gate steering finishes 17 of the 32 Hard
 hull × intensity races; a lab fix (commit no earlier than the approach point; after a missed mouth re-latch the side and
-extend at once) finishes 30.** That fix is the first candidate to port to `GateRaceController` (every gate race). The
+extend at once) finishes 30.** **Ported (2026-10-15, `Ys-bleeding-edge`, for testing):** `GateRaceController`
+(`CommitDistanceFor`, `RaceGateRing.PlaneCrossing`, `AIPilot.BreakOffNow`), on in Regatta only; the other gate races
+keep their shipped steering until their owners turn `aiCommitFromApproachPoint` on. Not editor-verified. The
 card's Time-10 Scarab cannot make I3–I4 under the full-throttle floor (the corner floors were cut for 216 u/s).
 
 ### 3.1 Stoat, the first one

@@ -218,9 +218,10 @@ EDITOR-VERIFIED; compiled headless only.
 | Urchin | Free, it aimed at the ring's spine, so the first lane it touched was its own only one time in three; a rival lane is a 20 u/s crawl or a slip / re-latch loop. Riding, the orbit detector fired and dropped it to 0.6 throttle | A free AI Urchin heads for its own-domain lane just ahead (`RegattaController.TryOwnLaneAhead`); no orbit break while attached |
 | Squirrel | A pilot swap handed the AI a Squirrel on the old ring-blind autopilot; Regatta flew Skim Race's per-intensity tuning files | `PilotSwap` installs the Skim Race pilot; outside Skim Race the general policy |
 | All | Difficulty did nothing in Regatta | Regatta offers Easy / Medium / Hard (`AIDifficultyRules`) |
+| All (2026-10-15, from the Regatta AI studio) | The AI committed to the far-side point 420 u out whether lined up or not, so on a short leg it crossed the plane beside the mouth; the side was latched once per ring, so after a miss it circled the far-side point until a break-off fired. The studio finished 17/32 Hard hull x intensity races this way | It commits no earlier than its approach point (`GateRaceController.CommitDistanceFor`: the smaller of `aiCommitDistance` and the approach lead plus half the turning radius) and, after crossing the plane outside the mouth (`RaceGateRing.PlaneCrossing`), re-latches the side and breaks off at once (`AIPilot.BreakOffNow`). The studio's lab fix, ported line for line: 30/32. On in Regatta only (`AICommitFromApproachPoint`); the other gate races keep their shipped steering until their owners test it |
 
 **Still open (not fixed, by priority):** the Manta's Soar cuts only after a corner has started (needs the roadmap's
-corner look-ahead); a missed ring mouth makes a fast AI loop round the far-side point until a break-off; an
+corner look-ahead); an
 Urchin riding a tight inside-lane corner at I3–I4 can flip its ride direction; Skim Race lane heights stack across
 every AI seat instead of per domain (Squirrels lift off their rail); the Rhino at full ramp may overshoot I3–I4
 corners (nothing brakes; it coasts down at 120 u/s²). The bleeding-edge commit `fb2bff7ac` (Skim Race ring

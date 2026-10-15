@@ -125,6 +125,15 @@ namespace CosmicShore.Gameplay
                  "its target and through it, so the target has to be on the other side of the mouth.")]
         [SerializeField, Min(1f)] float aiThroughDistance = 220f;
 
+        [Tooltip("Commit to the fly-through point no earlier than the approach point (commit = the smaller of " +
+                 "aiCommitDistance and the approach lead plus half the hull's turning radius), and after crossing a " +
+                 "ring's plane OUTSIDE the mouth, re-latch the side from where the pilot is and break off at once. " +
+                 "Off: commit at aiCommitDistance whatever the line, and circle the far-side point after a miss " +
+                 "until AIPilot's orbit detector fires. Ported from the Regatta AI studio (17/32 Hard races " +
+                 "finished off, 30/32 on). Regatta turns it on in code; every other gate race keeps its shipped " +
+                 "steering until its owner tests it on.")]
+        [SerializeField] bool aiCommitFromApproachPoint;
+
         [Tooltip("Extra distance an AI will accept flying to take a crystal ON THE WAY to its next " +
                  "gate. The crystal is the Dolphin's only blast trigger, and the external target " +
                  "provider below replaces AIPilot's own crystal seeking outright - so without this " +
@@ -253,12 +262,33 @@ namespace CosmicShore.Gameplay
         protected virtual float AIThrottleFloor => 0f;
 
         /// <summary>
+        /// Whether this mode's AIs commit at the approach point and re-attack after a missed mouth
+        /// (<see cref="CommitDistanceFor"/>, <see cref="RaceGateRing.PlaneCrossing"/>). The inspector switch by
+        /// default; a mode that measured the fix overrides it on.
+        /// </summary>
+        protected virtual bool AICommitFromApproachPoint => aiCommitFromApproachPoint;
+
+        /// <summary>
         /// The approach point never sits further before a ring than this share of the leg into it. Without the cap a
         /// short leg (Regatta: 461-858 u against a 480 u lead) put the approach point BEHIND the ring just threaded,
         /// often inside a fast hull's turning circle, so the AI broke orbit and flew away from the course every ring
         /// (2026-10-14 Regatta audit, the Manta). 1 = no cap.
         /// </summary>
         const float ApproachLeadShareOfLeg = 0.4f;
+
+        /// <summary>
+        /// The range inside which an AI stops lining up and aims through the ring. Shipped behaviour is the
+        /// fixed <paramref name="commitDistance"/>; with <paramref name="fromApproachPoint"/> it is never more than
+        /// the approach lead plus half the hull's turning radius, so on a short leg the pilot actually flies to
+        /// its approach point (the 40% lead) before it turns in, instead of committing from wherever it is and
+        /// crossing the plane outside the mouth. Line for line from the Regatta AI studio
+        /// (<c>Docs/Studios/RegattaAI/index.html</c>, <c>aiInput</c>'s <c>commit</c>).
+        /// </summary>
+        public static float CommitDistanceFor(float commitDistance, float approachLead, float minTurnRadius, bool fromApproachPoint)
+        {
+            if (!fromApproachPoint || float.IsNaN(minTurnRadius)) return commitDistance;
+            return Mathf.Min(commitDistance, approachLead + 0.5f * Mathf.Max(0f, minTurnRadius));
+        }
 
         /// <summary>The lap (1-based) a pilot on <paramref name="threaded"/> threadings is flying, for the AI report.</summary>
         int DiagnosticLap(int threaded)
@@ -946,6 +976,8 @@ namespace CosmicShore.Gameplay
                 float approachLead = aiApproachLead;
                 float nextCrystalScan = 0f;
                 Crystal detour = null;
+                Vector3 lastSelf = default;
+                bool hasLastSelf = false;
                 // Seeded per seat and per race, so each AI errs differently every race.
                 var handicap = handicapLevel.IsNone ? null
                     : new GateRaceHandicap(handicapLevel, unchecked(System.Environment.TickCount * 31 + (int)p.PlayerNetId));
@@ -954,6 +986,12 @@ namespace CosmicShore.Gameplay
                 {
                     var selfTf = captured.Vessel?.Transform;
                     if (selfTf == null) return centre;
+
+                    // Where the pilot was on the previous call, for the missed-mouth test below.
+                    Vector3 previousSelf = lastSelf;
+                    bool hadPreviousSelf = hasLastSelf;
+                    lastSelf = selfTf.position;
+                    hasLastSelf = true;
 
                     // A mode whose vessel is ATTACHED to geometry aims at the geometry, not the
                     // ring. Asked first, every frame, so the answer can change the instant the
@@ -995,6 +1033,19 @@ namespace CosmicShore.Gameplay
                     }
                     bool misjudged = ringAt != gate.Position;
 
+                    // Crossed this ring's plane OUTSIDE the mouth: a miss. The side latched for this ring is now
+                    // the wrong one and the far-side point is behind the pilot and close, so it would circle that
+                    // point until the orbit detector fired (REGATTA.md section 6.1). Re-latch from where it is (a
+                    // ring threads from either side) and extend and re-attack now. A crossing INSIDE the mouth is
+                    // the ring's to count; the same formula decides both (RaceGateRing.PlaneCrossing).
+                    if (AICommitFromApproachPoint && hadPreviousSelf &&
+                        RaceGateRing.PlaneCrossing(previousSelf, self, gate.Position, gate.Axis, gate.Radius)
+                            == GatePlaneCrossing.OutsideMouth)
+                    {
+                        lockedIndex = -1;
+                        pilot.BreakOffNow();
+                    }
+
                     if (index != lockedIndex)
                     {
                         lockedIndex = index;
@@ -1034,7 +1085,10 @@ namespace CosmicShore.Gameplay
                         }
                     }
 
-                    bool approaching = (ringAt - self).sqrMagnitude > aiCommitDistance * aiCommitDistance;
+                    var transformer = captured.Vessel?.VesselStatus?.VesselTransformer;
+                    float commit = CommitDistanceFor(aiCommitDistance, approachLead,
+                        transformer != null ? transformer.MinTurnRadius : 0f, AICommitFromApproachPoint);
+                    bool approaching = (ringAt - self).sqrMagnitude > commit * commit;
                     pilot.ReportObjective(
                         misjudged ? AIPilot.ObjectivePhase.Misjudged
                         : approaching ? AIPilot.ObjectivePhase.Approach : AIPilot.ObjectivePhase.Through,
