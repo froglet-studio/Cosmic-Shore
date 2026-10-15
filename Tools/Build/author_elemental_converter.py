@@ -244,7 +244,12 @@ def edit_scene(text, view_guid):
     return text
 
 
-def validate_scene(before, after, view_guid):
+def validate_scene(before, after, view_guid, current=None):
+    """`before` is the merge base's scene (for NEW dangling references); `current` is the file as it is on
+    disk before this run's edit, which the document count is measured against. Measuring the count against
+    the merge base made every other branch's Menu_Main addition read as this tool's (found 2026-10-15: the
+    first-login guide's spotlight components)."""
+    current = before if current is None else current
     d = docs(after)
     for fid in (NEW_GO, NEW_RT, NEW_VIEW):
         if int(fid) > INT64_MAX:
@@ -264,7 +269,7 @@ def validate_scene(before, after, view_guid):
     new = dangling(after) - dangling(before)
     if new:
         raise SystemExit(f"the edit leaves {len(new)} new dangling reference(s): {sorted(new)[:5]}")
-    if after.count("\n--- !u!") != before.count("\n--- !u!") + (3 if f"&{NEW_GO}\n" not in before else 0) - (1 if f"&{ARK_GATE}\n" in before else 0):
+    if after.count("\n--- !u!") != current.count("\n--- !u!") + (3 if f"&{NEW_GO}\n" not in current else 0) - (1 if f"&{ARK_GATE}\n" in current else 0):
         raise SystemExit("the document count moved by something other than +3 converter / -1 gate")
 
 
@@ -293,11 +298,7 @@ def planned():
     out[CONFIG + ".meta"] = asset_meta(guid("OmniCombineConfig.asset"))
     before = read(SCENE)
     after = edit_scene(before, guids["ElementalConverterView"])
-    # Judged against the scene it edits, not the merge base: every later Menu_Main edit (the style-B
-    # menu items, item 7 the converter's own overlay) moved the document count and the dangling set
-    # relative to the merge base, so the old comparison failed --check on a scene this tool had
-    # nothing left to do to. Once the converter exists the edit is a no-op and the deltas are zero.
-    validate_scene(before, after, guids["ElementalConverterView"])
+    validate_scene(base_scene(before), after, guids["ElementalConverterView"], current=before)
     out[SCENE] = after
     return out, guids
 
@@ -369,6 +370,11 @@ def self_test():
     check("editing an edited scene changes nothing", edit_scene(after, g) == after)
     check("ARK is open and PORT still closed", f"disabledScreens: {DISABLED_AFTER}\n" in after and DISABLED_AFTER == "03000000")
     check("the new fileIDs fit a signed int64", all(int(f) <= INT64_MAX for f in (NEW_GO, NEW_RT, NEW_VIEW)))
+    extra = after + "--- !u!1 &424243\nGameObject:\n  m_Name: Stray\n"
+    check("a document added beside the converter's three is refused", refused(lambda: validate_scene(base, extra, g)))
+    other_branch = base + "--- !u!1 &424244\nGameObject:\n  m_Name: OtherBranch\n"
+    check("another branch's Menu_Main addition is not counted as this tool's",
+          not refused(lambda: validate_scene(base, edit_scene(other_branch, g), g, current=other_branch)))
     broken = after.replace(f"  - {{fileID: {NEW_RT}}}\n", "", 1)
     check("a converter missing from ArkScreen's children is refused", refused(lambda: validate_scene(base, broken, g)))
     broken = after.replace(f"config: {{fileID: 11400000", "config: {fileID: 11400001", 1) + f"  stray: {{fileID: 424242}}\n"

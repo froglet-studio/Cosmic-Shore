@@ -79,6 +79,28 @@ hull's own bindings, ticked with a read-only context, input-only. Make that the 
 | 6 | **Dolphin**: measure the charge policy in Regatta; tune the discharge runway | Lap times per difficulty |
 | 7 | **Mixed grid**: clear `SO_ArcadeGame.OpponentAIVessel` in `author_regatta_assets.py` (the Squirrel pin is a stopgap, REGATTA.md §6); re-run `regatta_balance.py` against AI times; set `StartingElements` from them | An all-AI domain of each of the six can win; the spread holds |
 
+**2026-10-15 status:** an audit of the five racing hulls (all except the Stoat) found and fixed the race-breakers listed in
+`Arcade/REGATTA.md` §6.1. Step 0 is partly done: Regatta now offers difficulty, and every gate-race AI reports its
+phase, ring, lap and boost decision to the Third Eye (`AIPilot.Objective`, `AIBoostDriver.Status`), with trails.
+The Rhino now has a drive (`RampBoostAIPolicySO`, step 4's first cut). Nothing has been timed yet.
+
+**Decision (Yash, 2026-10-15):** the Regatta AIs are designed and tested in their own **Regatta artifact** (being built
+in another session), not in the Vessel Studio. The loop is: test the AIs in the Regatta artifact, port them to Unity,
+watch the real vessels race in the Third Eye (trajectories, behaviour, who wins and why), improve, repeat. §2.5's
+"one race studio" is that artifact.
+
+**Training (2026-10-15):** the artifact is now **Training AI for Regatta** (all 16 hulls, AIs racing each other, learn from a player's line, JSON hand-off); the end-to-end training plan is `AI_TRAINING_PLAN.md`.
+
+**Built (2026-10-15):** the **Regatta AI** artifact, https://claude.ai/artifact/FCC7UWbs2wC6LXYMVW4KA4 (repo
+`Docs/Studios/RegattaAI/`, README there). The course is `RegattaCourse`'s own output, the steering is
+`GateRaceController.ArmRacers` with the scene's values, difficulty is `GateRaceHandicap`, and the scorecard times every
+card hull × level against `regatta_balance.py`. **First finding: the shipped gate steering finishes 17 of the 32 Hard
+hull × intensity races; a lab fix (commit no earlier than the approach point; after a missed mouth re-latch the side and
+extend at once) finishes 30.** **Ported (2026-10-15, `Ys-bleeding-edge`, for testing):** `GateRaceController`
+(`CommitDistanceFor`, `RaceGateRing.PlaneCrossing`, `AIPilot.BreakOffNow`), on in Regatta only; the other gate races
+keep their shipped steering until their owners turn `aiCommitFromApproachPoint` on. Not editor-verified. The
+card's Time-10 Scarab cannot make I3–I4 under the full-throttle floor (the corner floors were cut for 216 u/s).
+
 ### 3.1 Stoat, the first one
 
 The user's brief: **better speed control and manoeuvring with the black-hole / white-hole pair.**

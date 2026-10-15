@@ -439,7 +439,7 @@ lerped to rim by fresnel - the prism shader's defining read). Every card states 
 | tier | cards | what is drawn |
 |---|---|---|
 | RUN | Cleave, Wildlife Liberation, Undertow, Dog Fight, Salvo, Broadside, Hijack, Skein, Regatta, Skim Race, Joust, Scurry | the shipped generator's own lay list, prism for prism (Swell 14,277, Switchyard 3,978, concentric shells 24,966 - each the documented count) |
-| COURSE | Switchback, Headlong, Redline, Breakwater | the shipped course generator at intensity 2 on the card's fixed seed, shell and gate count mirrored from `GateRaceController.BuildCourse` |
+| COURSE | Switchback, Headlong, Redline, Breakwater | the shipped course generator at intensity 2 on the card's fixed seed, shell and gate count mirrored from the mode's `RaceCourseSource` (`SwitchbackCourseSource` etc.) |
 | MODEL | Rampage, Bends, Bloomrush, Wrecking Ball, Tollway, Scarab Scramble, Astro League, Brood Rush | what exists only at runtime: the planting measured as the preview measures it with each plant a species glyph, or a court read off the controller's own settings asset |
 | MONTAGE | Maelstrom | slanted strips of the cards of the modes it can draw at intensity 2 (its cumulative ladder) |
 
@@ -1744,3 +1744,126 @@ it drift on every one. So "better" cannot quietly become "a different colour".
 > a sprited one freezes its slant into the art and is exact only at the size it was exported at.
 > This pass stayed a sprite because eight elements draw it at four aspects and a swap is a scene
 > change; the resolution and the crop were the reported problem, and both are asset-side.
+
+---
+
+## 8. Guiding a player: SHOW the path, never walk it (LOCKED rule)
+
+**When the app wants a player to go to one place - the microgame on first login, the Hangar or
+Profile early on - it SIGNALS that one place and lets the player go there themselves.** It never
+navigates, opens, selects or flies anything on the player's behalf.
+
+In practice, for every step of the path:
+
+1. **The one control to press next has a call to action on it** - a spotlight cut-out with a
+   pulsing frame in the palette's CTA colour, and an optional authored caption beside it.
+2. **Everything else is under a semi-transparent dim, and dimmed means dead.** A press anywhere
+   off the path lands on the dim and does nothing. The pad's own shortcuts that lead elsewhere
+   (Y for freestyle, the triggers for screen paging, B to back out of a window on the path) stand
+   down, and a pad selection that wanders off the path is put back on it.
+3. **Settings is never taken away** (and the credits it opens). It is cut out of the dim on every
+   step, and while it is open the spotlight stands aside entirely. A player who cannot turn the
+   volume down while being guided has been trapped, not guided.
+4. **The player presses the real control.** The cut-out is a hole, not a button: a press inside
+   it falls through to the actual Arcade entry, card or window underneath.
+
+**Why.** A player who was carried somewhere has no idea how they got there and cannot get back. A
+player who walked a locked path by hand - even one with only one door open at each step - has
+learned where the thing lives. The guide is a lesson in the app's geography as much as a route.
+
+**Three properties the implementation keeps, and a new guide must too:**
+
+- **The step is re-derived from where the player IS, every frame**, never advanced through a
+  sequence. A resumed quest, a window that closed, a detour into Settings - each lands on the
+  right step with no counter to drift.
+- **It fails open.** If no step can be found for more than a moment the spotlight fades away
+  rather than dimming a screen with no way forward. Trapping a new player is the one outcome worse
+  than not guiding them.
+- **A guide may open the one door it points at** (`MenuGuide.ExemptsMode`) - a progression-locked
+  card at the end of the path is pressable while the path leads to it - and it never closes one
+  permanently. That is why a guide is not an `AppliesLock` node and runs under the master
+  developer unlock: it takes nothing away beyond the length of its own beat.
+
+**The pieces.** `MenuGuide` (`_Scripts/UI/Guide/`) is the shared state the menu reads - whether a
+guide is on, which card it leads to, which windows are always available, and the derived list of
+controls that open them (any Button whose inspector-wired onClick opens an always-available
+`ModalWindowManager`, any `MenuHubButton` targeting one, anything carrying
+`MenuGuideAlwaysAvailable`). `MenuSpotlight` draws it on its own screen-space overlay canvas,
+built in code so no scene can be missing it: `SpotlightDimGraphic` is the dim, drawn as the cells
+of the grid its cut-outs make and an `ICanvasRaycastFilter` that refuses every press except inside
+a cut-out; `SpotlightFrameGraphic` is the CTA frame. It fades in and out, and the cut-out glides
+between steps - continuity of existence applies to UI too. The first driver is the Quest Graph's
+`QuestGuideToMicrogameNode` (Home → Arcade entry → this week's card → the preview window).
+
+**What the rule retires.** The first-login "railroad" shipped in phase 4 of the training plan
+opened the Arcade itself, pressed the card itself (`ArcadeExploreView.TrySelectMode`) and flew the
+vessel into the preview by itself (`ModePreviewSession.ArmForcedEntry`). All three are deleted,
+not merely unused, so nothing can reach for them again. The Quest Graph's `Navigate` and
+`EnterFreestyle` nodes still exist for the older phases 1-5 and break this rule; those phases
+stand down under the developer unlock today, and converting them to guides is part of
+re-deciding them (`Docs/ModePreview/TRAINING_PLAN.md` §11). `author_first_login_guide.py --check`
+fails if a carrying node ever appears in the first-login phase.
+
+### 8.1 First playtest: the dim drew nothing in Unity, and Settings was never cut out
+
+Reported from the Unity editor: the caption appeared over the Arcade button and nothing else did -
+no dim, no CTA frame, every hub button and the nameplate lit as normal. Three changes followed, and
+the flow was then walked end to end in **Prisma** (`Port/`), which runs the real Menu_Main and
+compiles `Assets/_Scripts` live: Home (dim, frame on ARCADE, Settings cut out) → Toybox press
+ignored → Settings opens and the spotlight stands aside → pad B closes it and the guide returns →
+Arcade opens and the light moves to this week's card → the card opens and the light moves to the
+preview, with B refused → tap in and the spotlight fades.
+
+- **All spotlight geometry is in the overlay's LOCAL space, never `Screen.*`.** The dim built its
+  mesh from `Screen.width`/`Screen.height` at rebuild time; in the Editor a canvas rebuild can run
+  while another window is the one being painted, which places every cell somewhere other than the
+  Game view. The mesh now reads its own `rectTransform.rect`, the cut-outs are converted into that
+  space once (`ScreenPointToLocalPointInRectangle`), and the raycast filter converts the press the
+  same way - one coordinate space for drawing and for blocking. Prisma drew it correctly either way,
+  so this is the Unity-only difference; it is the strongest candidate rather than a proven cause.
+  **It was not the cause - see 8.2.** The change stays: one coordinate space is still right.
+- **Settings is marked, not only found.** Finding it from its inspector-wired onClick works in Unity
+  but depends on persistent-listener introspection (Prisma's port of `UnityEvent` cannot answer it),
+  so Menu_Main's `SettingsButton` now carries `MenuGuideAlwaysAvailable`. Both routes stay.
+- **A Settings cut-out is punched only where a press would actually reach Settings** (an
+  `EventSystem` raycast at its centre, ignoring the spotlight). The configure window is drawn over
+  the gear; cutting a hole there showed an empty square and passed the press to the window beneath.
+- **The caption has a dark backing**, because white text over dimmed card art is still unreadable.
+
+**Open, and not the guide's to fix:** inside the Arcade and the launch window, the menu's own panels
+are drawn over the gear (`Arcade_Panel` covers it), so Settings cannot be pressed there with or
+without a guide. "Settings is always reachable" therefore holds on Home only today. Making it hold
+everywhere is a menu change - the gear above every window, or pad West opening Settings from any
+menu window - and wants its own decision.
+
+### 8.2 Second playtest: the real cause - the dim had no CanvasRenderer
+
+The second Unity run still drew nothing, the menu ignored every press, and the console said
+**"There is no 'CanvasRenderer' attached to the 'Dim' game object, but a script is trying to access
+it."** That one line explains every symptom:
+
+- `UnityEngine.UI.Graphic` does not itself require a `CanvasRenderer`. `Image`, `RawImage` and TMP
+  each declare `[RequireComponent(typeof(CanvasRenderer))]` on their own class. `SpotlightDimGraphic`
+  and `SpotlightFrameGraphic` did not, and `MenuSpotlight` builds them with `AddComponent<T>()` on a
+  bare GameObject, so they had no renderer. (The caption is TMP, which is why it was the one thing
+  that drew in the first playtest.)
+- In the Unity Editor every access to the missing renderer throws `MissingComponentException`. The
+  dim and frame drew nothing. And because the dim is a raycast target, `GraphicRaycaster` threw on
+  it for every pointer event, so **no UI press anywhere in the menu reached anything**. That is the
+  "nothing works when I click", not the dim's filter.
+- Prisma's port adds the renderer on demand, so it drew everything correctly from the same code. The
+  Editor-only failure is why the walk in 8.1 passed.
+
+**Fix.** Both spotlight graphics now carry `[RequireComponent(typeof(CanvasRenderer))]`. So do the
+other first-party Graphics without it: `ScopeRingGraphic` and `ScopeCrosshairGraphic` are built
+exactly this way by `SniperScopeOverlay` (see `SERPENT_SNIPER_SCOPE.md`), and `TrapezoidGraphic` and
+`MouseFlightWidget` get theirs some other way today but carry the attribute anyway.
+**Gate:** `python3 Tools/Build/check_graphic_canvas_renderer.py` (`--self-test`) fails on any
+`Graphic`/`MaskableGraphic` subclass under `Assets/_Scripts` or `Assets/FTUE` without the attribute.
+It flagged all six on the old tree.
+
+**Lesson.** A port that is more forgiving than the engine passes exactly the bugs that live in that
+gap. Prisma's walk proved the guide's logic, not that Unity would build its parts. **Read the Unity
+console first**; the answer was on screen in red in the playtest screenshot.
+
+

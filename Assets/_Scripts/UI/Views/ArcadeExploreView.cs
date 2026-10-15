@@ -95,6 +95,8 @@ namespace CosmicShore.UI
             QuestArcadeConstraints.OnChanged += HandleConstraintsChanged;
             // Flipping the master developer unlock changes every card's lock state.
             DeveloperUnlockGate.OnChanged += HandleConstraintsChanged;
+            // A guided path may open the one card it points at, so its start and end re-lock.
+            MenuGuide.Changed += HandleConstraintsChanged;
             // Guarded + idempotent, and retried from Start() — supersedes the raw
             // subscribe here, which would double-add alongside it.
             TrySubscribeToProgression();
@@ -112,6 +114,7 @@ namespace CosmicShore.UI
             CatalogManager.OnLoadInventory -= PopulateGameSelectionList;
             QuestArcadeConstraints.OnChanged -= HandleConstraintsChanged;
             DeveloperUnlockGate.OnChanged -= HandleConstraintsChanged;
+            MenuGuide.Changed -= HandleConstraintsChanged;
 
             // A reveal cut short by the grid going away must not strand a card at alpha 0.
             CardGridReveal.Snap(this, _revealCards, _reveal);
@@ -272,9 +275,11 @@ namespace CosmicShore.UI
                 gameCard.ExploreView = this;
 
                 // Locked when the quest progression hasn't unlocked the mode, or the running
-                // quest graph has funneled the arcade down to one tutorial mode.
-                bool isLocked = (progressionService != null && !progressionService.IsGameModeUnlocked(game.Mode))
-                                || QuestArcadeConstraints.IsModeBlocked(game.Mode);
+                // quest graph has funneled the arcade down to one tutorial mode - unless a guided
+                // path points at this card, which may always open the one door it leads to.
+                bool isLocked = ((progressionService != null && !progressionService.IsGameModeUnlocked(game.Mode))
+                                 || QuestArcadeConstraints.IsModeBlocked(game.Mode))
+                                && !MenuGuide.ExemptsMode(game.Mode);
                 gameCard.SetLocked(isLocked);
 
                 if (isLocked) _lockedSlots.Add(i);
@@ -769,6 +774,41 @@ namespace CosmicShore.UI
         public void SelectMaelstrom()
         {
             if (ArcadeGameConfigureModal) ArcadeGameConfigureModal.OpenMaelstrom();
+        }
+
+        /// <summary>
+        /// The shown card for <paramref name="mode"/>, scrolled into view - so a guided path
+        /// (<see cref="MenuGuide"/>) can spotlight it for the player to press. It finds and reveals
+        /// the card and deliberately does NOT press it: a guide shows the way, the player walks it.
+        /// </summary>
+        public bool TryRevealCard(CosmicShore.Data.GameModes mode, out RectTransform card)
+        {
+            card = null;
+            if (GameCards == null) return false;
+
+            foreach (var c in GameCards)
+                if (c && c.gameObject.activeInHierarchy && c.GameMode == mode)
+                {
+                    card = (RectTransform)c.transform;
+                    break;
+                }
+            if (!card) return false;
+
+            var scroll = GameSelectionGrid ? GameSelectionGrid.GetComponentInParent<ScrollRect>() : null;
+            if (scroll && scroll.content)
+            {
+                var viewport = scroll.viewport ? scroll.viewport : (RectTransform)scroll.transform;
+                var b = RectTransformUtility.CalculateRelativeRectTransformBounds(viewport, card);
+                var v = viewport.rect;
+                float shift = 0f;
+                if (b.max.y > v.yMax) shift = v.yMax - b.max.y;          // above: move content down
+                else if (b.min.y < v.yMin) shift = v.yMin - b.min.y;     // below: move content up
+                if (Mathf.Abs(shift) > 0.5f)
+                {
+                    scroll.content.anchoredPosition += new Vector2(0f, shift);
+                }
+            }
+            return true;
         }
 
         /// <summary>

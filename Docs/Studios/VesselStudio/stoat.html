@@ -306,7 +306,8 @@
           <tr><td><b>X</b></td><td><kbd>Space</kbd></td><td>Hold still (the stance; the clock keeps running); a sling breaks it</td></tr>
           <tr><td><b>A</b> / Menu</td><td><kbd>Enter</kbd></td><td>Start, or fly again (or resume when stopped)</td></tr>
           <tr><td><b>❚❚ Pause</b> on the stage</td><td><kbd>P</kbd></td><td>Pause: the Stoat halts and the clock pauses while the world carries on; press again (<b>▶ Resume</b>) to resume</td></tr>
-          <tr><td><b>B</b> / View</td><td><kbd>R</kbd></td><td>Back to the start line</td></tr>
+          <tr><td><b>B</b></td><td><kbd>T</kbd></td><td>Switch mode, as in the game: Mass = the field trajectory, Time = the catch sling. Whatever the triggers hold is let go.</td></tr>
+          <tr><td>View</td><td><kbd>R</kbd></td><td>Back to the start line</td></tr>
         </tbody>
       </table></div>
       <p class="hint">Compare view: drag to orbit, wheel to zoom; on a gamepad the right stick orbits and the left stick zooms. If your controller isn't detected here, this viewer may be blocking gamepads: open <code>Docs/Studios/StoatFlightStudio.html</code> from the repo directly in Chrome (the log is then kept on that machine; use Copy log).</p>
@@ -485,6 +486,9 @@
     // the dipole sling (round 6 — the studio's; the game still runs the orbit sling)
     dpAhead: 150, dpSide: 45, dpSMin: 0.5, dpSMax: 12, dpRsMin: 1.5, dpRsMax: 6, dpWhite: 0.5, dpCaptureX: 1.5, dpCatchDeg: 50, dpSettle: 3, dpGrip: 2,
     dpMaxTurn: 360, dpBoostMin: 0.25, dpBoostMax: 0.9, dpBoostSeconds: 1.5, dpKeySqueeze: 0.5, dpAccelCap: 3000, dpTurnCap: 12, dpAssistFade: 2, dpCarry: 0.4, dpFlowFade: 5, dpFlowCap: 1.5, dpKickSweep: 0,
+    // the catch sling's pace and timing (2026-10-14): the field's warp while the black hole holds you (the same ftBoost, ftRise,
+    // ftFade), and the game's 90 deg release window (StoatSlingConfig sweetSpot*), brought back here so the artifact is the source
+    dpWarp: 1.15, dpWarpHeld: 1, dpSweetDeg: 90, dpSweetHalf: 15, dpSweetFall: 30, dpMissShare: 0.2,
     // the field trajectory (round 15 — LAB-ONLY: the game has no such mode and no such fields). The pair's strength,
     // horizon, push, force ceiling and fastest bend are the Dipole sling's rows; these are the mode's own.
     ftAhead: 250, ftStrength: 6, ftHorizon: 3.5, ftWhite: 1, ftSepMax: 200, ftSepLong: 120, ftSepFollow: 6, ftWarpDeg: 3, ftDotPx: 4, ftDotGap: 10,
@@ -560,6 +564,12 @@
     ['D', 'dpFlowFade', 'Momentum fades (s)', 0.5, 20, 0.1],
     ['D', 'dpFlowCap', 'Most momentum (× cruise)', 0, 5, 0.05],
     ['D', 'dpKickSweep', 'Full kick only after going round (°, 0 = always)', 0, 360, 5],
+    ['D', 'dpWarp', 'Warp while caught (share of the loop boost, 0 = none)', 0, 1.5, 0.05],
+    ['D', 'dpWarpHeld', 'Warp from the press (1) or only once caught (0)', 0, 1, 1],
+    ['D', 'dpSweetDeg', 'Best release, degrees round (0 = off)', 0, 360, 5],
+    ['D', 'dpSweetHalf', 'Full kick within (± °)', 0, 90, 1],
+    ['D', 'dpSweetFall', 'Kick eases off over (°)', 1, 180, 1],
+    ['D', 'dpMissShare', 'Kick outside the window (share)', 0, 1, 0.05],
     ['D', 'dpAccelCap', 'Force ceiling (u/s²)', 50, 6000, 10],
     ['D', 'dpTurnCap', 'Fastest bend (rad/s)', 0.5, 20, 0.1],
     ['F', 'ftTurnScale', 'Pitch & yaw in this mode (× the Stoat\'s)', 0.1, 1, 0.05],
@@ -1292,7 +1302,10 @@
     // The field trajectory's boost is a TIME WARP, not a push: the hull's own flight (steering, engine, field) runs at
     // ftMul × the clock, so it covers the very path the line shows, sooner, and nothing it does bends that path. In
     // the field the Stoat also turns at ftTurnScale × its pitch/yaw, so a boosting circle takes a big input.
-    const inField = style === 'A' && slingMode === 'field', warp = inField ? ftMul : 1, kdt = dt * warp;
+    // The catch sling (slingMode 'dipole') shares the warp while the black hole holds you (dpWarp), so both mechanics run
+    // at one pace; only the field turns at ftTurnScale.
+    const inField = style === 'A' && slingMode === 'field', inCatch = style === 'A' && slingMode === 'dipole';
+    const warp = inField || inCatch ? ftMul : 1, kdt = dt * warp;
     const turn = P.pitchYaw * (inField ? P.ftTurnScale : 1);
     if (race !== 'ready') {
       dq.setFromAxisAngle(X, -YSum * turn * rad * kdt); hull.quaternion.multiply(dq);    // Unity +X = nose down; three +X = nose up
@@ -1499,7 +1512,9 @@
     // stacks, up to the cap, and fades only slowly. The rest is the classic punch that fades over the boost time.
     // dpKickSweep > 0: the kick is earned by going round — none if it never caught you, the full kick only after that
     // many degrees (0 = the round-6 rule: every release kicks, even a tap the moment it catches you).
-    const earned = P.dpKickSweep > 0 ? (sd.captured ? Math.min(1, sd.sweep * 180 / Math.PI / P.dpKickSweep) : 0) : 1;
+    // dpSweetDeg > 0 (the game's rule): none before a catch, the whole kick inside the window, dpMissShare well outside it.
+    const earned = P.dpSweetDeg > 0 ? (sd.captured ? P.dpMissShare + (1 - P.dpMissShare) * sweetSpot(sd.sweep * 180 / Math.PI) : 0)
+      : P.dpKickSweep > 0 ? (sd.captured ? Math.min(1, sd.sweep * 180 / Math.PI / P.dpKickSweep) : 0) : 1;
     const kick = earned * Math.max(speed + flow, 1) * (P.dpBoostMin + (P.dpBoostMax - P.dpBoostMin) * squeezeT(sd.q));
     const keep = clamp01(P.dpCarry) * kick;
     flow = Math.max(flow, Math.min(P.dpFlowCap * P.cruise, flow + keep));
@@ -1533,7 +1548,9 @@
     }
     const sd = slingDipole, pr = sd.pair;
     dipoleFlying = true;
-    const n = Math.max(1, Math.ceil(dt / 0.004)), h = dt / n;
+    // the flight runs on its own (warped) clock, kdt; the pair's life and the squeeze on the real one (holdDipole, dt)
+    const fdt = kdt != null ? kdt : dt;
+    const n = Math.max(1, Math.ceil(fdt / 0.004)), h = fdt / n;
     for (let i = 0; i < n; i++) {
       dipoleSubstep(pr, h); basis(); hull.position.addScaledVector(fwd, (speed + gravSpeed + flow) * h);
       tv.subVectors(hull.position, pr.att); const rA = tv.length();
@@ -1797,6 +1814,7 @@
   }
   // Every frame of flight: predict, colour, boost. The boost arrives at ftRise /s and fades over ftFade s once the loop opens.
   function stepFieldBoost(dt) {
+    if (style === 'A' && slingMode === 'dipole') { stepCatchBoost(dt); return; }
     const on = style === 'A' && slingMode === 'field' && race === 'running' && !stopped && !stance;
     if (!on) { ftMul = 1; ftLive.n = 0; ftLive.nj = 0; ftLive.thru = false; ftLive.lime = false; ftLive.end = 'none'; return; }
     const f = fieldStanding();
@@ -1808,6 +1826,26 @@
     if (ftLive.lime) ftMul += (Math.max(1, P.ftBoost) - ftMul) * (1 - Math.exp(-Math.max(0.1, P.ftRise) * dt));
     else ftMul = 1 + (ftMul - 1) * Math.exp(-dt / Math.max(0.01, P.ftFade));
     if (raceStats) { if (ftLive.lime) { raceStats.limeT += dt; if (!was) raceStats.limeOn++; } raceStats.mulTop = Math.max(raceStats.mulTop, ftMul); }
+  }
+  // The catch sling's pace: while the black hole has caught you, the flight clock warps up to dpWarp of the loop boost at
+  // ftRise /s, and fades over ftFade s once you are let go — the field's own rule, with "caught" in place of "lime".
+  function stepCatchBoost(dt) {
+    ftLive.n = 0; ftLive.nj = 0; ftLive.thru = false; ftLive.lime = false; ftLive.end = 'none';
+    const on = race === 'running' && !stopped && !stance;
+    const caught = on && !!(slingDipole && slingDipole.pair.held && (slingDipole.captured || P.dpWarpHeld >= 0.5));
+    const top = 1 + (Math.max(1, P.ftBoost) - 1) * Math.max(0, P.dpWarp);
+    if (!on) ftMul = 1;
+    else if (caught) ftMul += (top - ftMul) * (1 - Math.exp(-Math.max(0.1, P.ftRise) * dt));
+    else ftMul = 1 + (ftMul - 1) * Math.exp(-dt / Math.max(0.01, P.ftFade));
+    if (raceStats) raceStats.mulTop = Math.max(raceStats.mulTop, ftMul);
+  }
+  // The game's timing (StoatSlingMath.SweetSpot): 1 within dpSweetHalf of dpSweetDeg degrees swept, easing (smoothstep) to 0
+  // over the next dpSweetFall degrees.
+  function sweetSpot(deg) {
+    const off = Math.abs(Math.abs(deg) - P.dpSweetDeg), full = Math.max(0, P.dpSweetHalf);
+    if (off <= full) return 1;
+    const t = clamp01((off - full) / Math.max(1e-3, P.dpSweetFall));
+    return 1 - t * t * (3 - 2 * t);
   }
   const ftTrailBuf = new Float32Array(NT * 3), ftKin = { v: 0, vT: 0, mul: 1, flow: 0, g: 0, portal: true };
   let ftThrottleTarget = 0;
@@ -1971,6 +2009,7 @@
     if (e.code === 'Enter') startRace();
     if (e.code === 'Space') stance = !stance && race === 'running';
     if (e.code === 'KeyR') stopRace();
+    if (e.code === 'KeyT') toggleMechanic();   // the game's B (T on its keyboard): field trajectory <-> catch sling
     if (e.code === 'KeyP') setStopped(!stopped);
     if (e.code === 'KeyC') nextCamera();
   });
@@ -2107,7 +2146,8 @@
       const e = [];
       for (let i = 0; i < 10; i++) { const b = !!(g.buttons[i] && g.buttons[i].pressed); e[i] = b && !prevBtn[i]; prevBtn[i] = b; }
       if (e[0] || e[9]) startRace();
-      if ((e[1] || e[8]) && mode === 'fly') stopRace();
+      if (e[1]) toggleMechanic();   // B, as in the game: the Stoat's mode switch
+      if (e[8] && mode === 'fly') stopRace();
       if (e[2]) stance = !stance && race === 'running';
     }
     const k = (c) => keys.has(c) ? 1 : 0;
@@ -2293,7 +2333,7 @@
       const turned = gripped && ai.prevOff != null && off > ai.prevOff && ai.prevOff <= Math.max(ai.cone, 30);
       ai.prevOff = gripped ? off : null;
       if (lost && ai.t > 0.2) ai.phase = 'cruise';
-      else if ((gripped && (off <= ai.cone || turned) && (!(P.dpKickSweep > 0) || sd.sweep * 180 / Math.PI >= P.dpKickSweep)) || (!gripped && ai.t > P.aiGiveUp) || (sd && sd.sweep * 180 / Math.PI > Math.max(330, P.dpKickSweep + 300))) ai.phase = 'cruise';
+      else if ((gripped && (off <= ai.cone || turned || (P.dpSweetDeg > 0 && sweetSpot(sd.sweep * 180 / Math.PI) >= 0.999 && off <= 3 * ai.cone)) && (P.dpSweetDeg > 0 || !(P.dpKickSweep > 0) || sd.sweep * 180 / Math.PI >= P.dpKickSweep)) || (!gripped && ai.t > P.aiGiveUp) || (sd && sd.sweep * 180 / Math.PI > Math.max(330, P.dpKickSweep + 300))) ai.phase = 'cruise';
     }
     const trig = ai.phase === 'hold' ? Math.max(0.06, ai.q) : 0;
     inp.lt = ai.side === 'L' ? trig : 0; inp.rt = ai.side === 'R' ? trig : 0;
@@ -2967,7 +3007,7 @@
     wellMarkers(c, cam, 0, cw, ch, sc, font, W.filter((w) => w.pr.owned), true);
     // top-left: the pair being flown
     c.textAlign = 'left'; c.font = font(14, 700); c.fillStyle = style === 'A' ? colA : colB;
-    c.fillText(style === 'A' ? (slingMode === 'dipole' ? 'DIPOLE SLING' : slingMode === 'field' ? 'FIELD TRAJECTORY (round 15)' : 'ORBIT SLING (round 4)') : 'CRYSTAL PAIR (archived)', padL, pad + 12 * sc);
+    c.fillText(style === 'A' ? (slingMode === 'dipole' ? 'CATCH SLING (Time mode, T)' : slingMode === 'field' ? 'FIELD TRAJECTORY (Mass mode, T)' : 'ORBIT SLING (round 4)') : 'CRYSTAL PAIR (archived)', padL, pad + 12 * sc);
     c.font = font(11, 500); c.fillStyle = dim;
     c.fillText(style === 'A' ? 'black hole + white hole' : 'cece/charming-cerf-alf1j1', padL, pad + 27 * sc);
     c.fillText((portal[style] ? 'portal ON' : 'portal off') + (stance ? '  ·  HOLDING STILL' : ''), padL, pad + 41 * sc);
@@ -3988,6 +4028,12 @@
     dpCarry: { scene: 'sling', cfg: { q: 0.8, release: 180, T: 9 }, d: 'How much of the release kick you KEEP as momentum instead of a punch that fades. Kept momentum stacks over a chain of slings — this is how a skilled pilot climbs past cruise and stays there.', lo: 'All punch: fast for a moment, then back to cruise.', hi: 'All momentum: a smaller jump that lasts.' },
     dpFlowFade: { scene: 'sling', cfg: { q: 0.8, release: 180, T: 9 }, d: 'How long kept momentum takes to fade (to about a third). Sling again before it is gone and the next kick builds on it.', lo: 'Momentum bleeds off quickly.', hi: 'Momentum lingers — chains stack high.' },
     dpFlowCap: { scene: 'sling', cfg: { q: 1, release: 180, T: 9 }, d: 'The most momentum you can carry, as a multiple of cruise speed. It is the ceiling a perfect chain of slings climbs to.', lo: 'A low ceiling.', hi: 'A high ceiling: 60 cruise + 1.5 × 60 = 150 u/s of lasting speed.' },
+    dpWarp: { scene: 'sling', cfg: { q: 0.8, release: 90, T: 9 }, d: 'The catch sling\'s pace. While the black hole has caught you, your own flight runs faster — the same time warp the field trajectory gives a lime path (its Loop boost, arriving and fading at its rates) — so going round the hole is as fast as flying the field. This is the share of that boost the catch gets: 1 = the same pace as the field, 0 = no warp (round 6).', lo: 'Slower round the hole.', hi: 'Faster round the hole.' },
+    dpWarpHeld: { scene: 'sling', cfg: { q: 0.8, release: 90, T: 9 }, d: 'When the catch sling\'s warp starts. 1: as soon as the pair is laid and held — flying at the black hole is already fast, as in the field, where any bend of your path warps it. 0: only once the black hole has caught you.', lo: 'Fast only on the orbit.', hi: 'Fast from the press.' },
+    dpSweetDeg: { scene: 'sling', cfg: { q: 0.8, release: 90, T: 9 }, d: 'The game\'s timing rule for the catch sling: the whole kick is paid for a release this many degrees round the black hole (90 = a quarter turn: out on a tangent square to the way you came in). A release never caught pays nothing. 0 turns the window off and the older rule (Full kick only after going round) applies.', lo: 'Let go earlier in the swing.', hi: 'Let go later in the swing.' },
+    dpSweetHalf: { scene: 'sling', cfg: { q: 0.8, release: 90, T: 9 }, d: 'How many degrees either side of the best release still pay the whole kick.', lo: 'A tighter window: timing matters more.', hi: 'A wider window: easier to hit.' },
+    dpSweetFall: { scene: 'sling', cfg: { q: 0.8, release: 120, T: 9 }, d: 'Past the window, the kick eases down to the miss share over this many degrees.', lo: 'Drops off sharply outside the window.', hi: 'Fades gently outside the window.' },
+    dpMissShare: { scene: 'sling', cfg: { q: 0.8, release: 200, T: 9 }, d: 'The share of the kick a release well outside the window still gets.', lo: 'A missed timing pays almost nothing.', hi: 'A missed timing still pays most of the kick.' },
     dpKickSweep: { scene: 'sling', cfg: { q: 0.8, release: 180, T: 9 }, d: 'Whether the release kick has to be EARNED by going round the hole. At 0 every release kicks, so a skilled pilot can tap — caught and let go at once — for a free boost. Above 0, the kick grows with how far round you went and is full only after this many degrees; a release before it catches you gives none.', lo: 'Every release kicks (a tap works).', hi: 'Only a long swing round pays.' },
     dpAssistFade: { scene: 'sling', cfg: { q: 0.35, hold: 2.6 }, d: 'Speed that gravity gave you while you were NOT caught (a fast bend past the hole) fades away over about this long after you let go.', lo: 'The gravity speed is gone sooner.', hi: 'You carry the gravity speed for longer.' },
     dpAccelCap: { scene: 'sling', cfg: { q: 1, over: { dpSide: 14 } }, d: 'A safety ceiling on how hard the pair can pull or push you, so a pass right at the horizon cannot fling you absurdly. Mostly reached only very close in — the preview passes close.', lo: 'Close passes are softened: less violent, less turning.', hi: 'Close passes get more of the full, violent pull.' },
@@ -4269,7 +4315,7 @@
     document.querySelectorAll('.stylebtn').forEach((b) => b.setAttribute('aria-pressed', b.dataset.s === s ? 'true' : 'false'));
     $('grp-A').hidden = !(s === 'A' && slingMode === 'orbit'); $('grp-B').hidden = s !== 'B'; $('grp-D').hidden = !(s === 'A' && slingMode !== 'orbit');
     const fieldOn = s === 'A' && slingMode === 'field';
-    $('mainH').textContent = fieldOn ? 'The field trajectory' : s === 'A' && slingMode === 'orbit' ? 'The orbit sling (round 4)' : s === 'B' ? 'The crystal pair (archived)' : 'The dipole sling (archived)';
+    $('mainH').textContent = fieldOn ? 'The field trajectory' : s === 'A' && slingMode === 'orbit' ? 'The orbit sling (round 4)' : s === 'B' ? 'The crystal pair (archived)' : 'The catch sling (Time mode; the dipole sling)';
     $('mainP').innerHTML = fieldOn
       ? 'Squeeze a trigger: a black hole and a white hole open ahead. The difference between the triggers pulls them apart sideways, the sum lengthways (black hole nearer, white hole beyond); let go of both and they close and annihilate. No catch and no hold circle: it is only a field. The line ahead of your nose is where your inputs take you; whenever the poles <b style="color:#9dff2e">warp it at all</b> it turns lime and you travel down it 3× faster. Settings: the <b>Field</b> tab.'
       : 'Squeeze depth = the black hole\'s strength. Hold time = how far round it carries you. Release = slingshot out on the tangent. The white hole mirrors it on the other side.';
@@ -4282,6 +4328,14 @@
     if (race === 'ready') showOverlay();
   }
   document.querySelectorAll('.stylebtn').forEach((b) => b.addEventListener('click', () => setStyle(b.dataset.s)));
+  // T / pad B: the Stoat's two modes, as the game has them — Mass = the field trajectory, Time = the catch sling. Whatever
+  // the triggers hold is let go (setSlingMode), as the game's switch does.
+  function toggleMechanic() {
+    if (mode !== 'fly') return;
+    if (style !== 'A') setStyle('A');
+    setSlingMode(slingMode === 'field' ? 'dipole' : 'field');
+    toast(slingMode === 'field' ? 'Mass mode: the field trajectory (T switches)' : 'Time mode: the catch sling (T switches)');
+  }
   function setSlingMode(m) {
     slingMode = m === 'orbit' ? 'orbit' : m === 'field' ? 'field' : 'dipole';
     if (fieldSling && fieldSling.pair.alive) fieldSling.pair.held = false;
@@ -4741,7 +4795,8 @@
   window.__stoatStudio = { openWindow, dockWindow, selectTab, ide, PLATFORM, get layout() { return layout; }, set manualClock(v) { manualClock = !!v; }, tick(dt, n) { n = n || 1; for (let i = 0; i < n - 1; i++) { manualNow += dt * 1000; simStep(dt, pilotInput(dt), true); } manualNow += dt * 1000; advance(dt, manualNow); }, sim(dt, n) { for (let i = 0; i < n; i++) { manualNow += dt * 1000; simStep(dt, pilotInput(dt), true); } }, set courseKind(v) { courseKind = v; buildCourse(); spawn(); }, set intensity(v) { intensity = v; buildCourse(); spawn(); markIntensity(); }, get gates() { return gates; }, runBatch, batchTable, batchWinners, batchSummary, set lastBatchQs(v) { lastBatchQs = v; }, get flow() { return flow; }, get raceStats() { return raceStats; }, get aiOn() { return aiOn; }, set aiOn(v) { aiOn = !!v; }, get idleTakeover() { return idleTakeover; }, set idleTakeover(v) { idleTakeover = !!v; idleFor = 0; }, set simSpeed(v) { simSpeed = v; }, set camMode(v) { camMode = v; }, ai, setPlayMode, touch, get playMode() { return playMode; }, GROUP_TYPES, applyType, activeType, showTypeTip: (g, i) => { const b = document.querySelector('#types-' + g + ' button[data-i="' + i + '"]'); showTypeTip(g, i, b, true); }, nextGate: () => gates[threaded % 8].p.clone(), BP, STYLES, styleBump, recomputeP, refreshAllOuts, get liveStyles() { return liveStyles; }, set liveStyles(v) { liveStyles = !!v; }, get crystals() { return crystals; }, get waves() { return waves; }, get stopped() { return stopped; }, setStopped, get myPair() { return myPair; }, get dipole() { return slingDipole; }, get lastDipole() { return lastDipole; }, get gravSpeed() { return gravSpeed; }, get speed() { return speed; }, setSlingMode, get orbit2() { return slingOrbit; }, aimAt(x, y, z) { const m = new THREE.Matrix4().lookAt(hull.position, new V3(x, y, z), Y); hull.quaternion.setFromRotationMatrix(m); }, orbit, P, get style() { return style; }, sling, startRace, setMode, setStyle, holds, hull, get pairs() { return pairs; }, get race() { return race; }, vg, vf,
     get rivals() { return rivals; }, standings, raceOnce, runLevelScorecard, levelTable, levelCell, AI_LEVELS, STYLE_BRAIN, get youLevel() { return youLevel; }, get watchIdx() { return watchIdx; }, nextCamera, get threaded() { return threaded; }, get raceT() { return raceT; }, panel: () => racePanelRef };
   // The labmaker contract (.claude/skills/labmaker/SKILL.md §2.2): the same object, with the members verify_lab.cjs reads.
-  Object.assign(window.__stoatStudio, {
+  // defineProperties, not assign: assign copies a getter's value once, so slingMode / ftLive / ftMul read stale forever.
+  Object.defineProperties(window.__stoatStudio, Object.getOwnPropertyDescriptors({
     SHIPPED, SPEC,
     reset(sd) { if (sd != null) seed = sd; ai.seed = 1; buildCourse(); spawn(); },
     state() { return { t: simT, race, raceT, threaded, speed, ftMul, gravSpeed, flow, slingMode, style, pos: hull.position.toArray(), path: { n: ftLive.n, end: ftLive.end, lime: ftLive.lime, loop: ftLive.loop, len: ftLive.len } }; },
@@ -4749,7 +4804,7 @@
     get slingMode() { return slingMode; },
     fieldScan, fieldScanAll, fieldPath, runFieldBatch, fieldTable, fieldSummary, fieldStanding, layField, dipoleOffsets,
     get ftLive() { return ftLive; }, get ftMul() { return ftMul; }, get ftRates() { return ftRates; },
-  });
+  }));
   window.__lab = window.__stoatStudio;
 })();
 </script>

@@ -23,6 +23,9 @@ Confidence scale:
 
 ## Merge log (bleeding-edge → Bug_Hunt)
 
+- **2026-10-13 — the remaining rows reached `bleeding-edge`.** BH-2.4 to BH-5.7 and the BH-4.7 follow-ups,
+  kept on `Bug_Hunt` while their retests waited, landed through `Ys-bleeding-edge` in PR #1078 (merge
+  `8bcdde930`). Their retests are still owed: see each row's Verification line in `BugHunt/FIX_LOG.md`.
 - **2026-10-06 — merged `bleeding-edge @ 0c48d08f5` (PR #965 tip) into `Bug_Hunt`** (merge commit
   `eb05ce26b`, Bug_Hunt first parent; merge-base `3ba8ea1d2`). Brought in **158 BE commits** (115
   non-merge): swarm fauna (#960) with substrate / builder colonies / threat flora / ecology LOD,

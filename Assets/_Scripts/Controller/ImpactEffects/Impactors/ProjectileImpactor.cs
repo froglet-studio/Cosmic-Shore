@@ -26,7 +26,7 @@ namespace CosmicShore.Gameplay
             foreach (var effect in projectileImpactorDataContainer.ProjectileEndEffects)
             {
                 var e = effect; // capture per iteration - the lambda outlives the loop variable
-                RunEffectIsolated(() => e.Execute(this, this), e);   // impactee = self: end effects have none
+                try { e.Execute(this, this); } catch (System.Exception ex) { ReportEffectThrow(ex, e); }   // impactee = self: end effects have none
             }
         }
         
@@ -53,7 +53,7 @@ namespace CosmicShore.Gameplay
                     foreach (var effect in projectileImpactorDataContainer.ProjectileShipEffects)
                     {
                         var e = effect;
-                        RunEffectIsolated(() => e.Execute(shipImpactee, this), e);
+                        try { e.Execute(shipImpactee, this); } catch (System.Exception ex) { ReportEffectThrow(ex, e); }
                     }
                     break;
                 
@@ -74,7 +74,7 @@ namespace CosmicShore.Gameplay
                     foreach (var effect in projectileImpactorDataContainer.ProjectilePrismEffects)
                     {
                         var e = effect;
-                        RunEffectIsolated(() => e.Execute(this, prismImpactee), e);
+                        try { e.Execute(this, prismImpactee); } catch (System.Exception ex) { ReportEffectThrow(ex, e); }
                     }
 
                     // SPACE < 5 default: the bullet is destroyed on its first prism impact.
@@ -96,7 +96,7 @@ namespace CosmicShore.Gameplay
                     foreach (var effect in projectileImpactorDataContainer.ProjectileMineEffect)
                     {
                         var e = effect;
-                        RunEffectIsolated(() => e.Execute(this, mineImpactee), e);
+                        try { e.Execute(this, mineImpactee); } catch (System.Exception ex) { ReportEffectThrow(ex, e); }
                     }
                     break;
             }

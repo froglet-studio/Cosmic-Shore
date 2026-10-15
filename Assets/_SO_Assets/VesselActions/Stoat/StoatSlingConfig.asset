@@ -53,6 +53,8 @@ MonoBehaviour:
       Data3: 0
       Data4: 0
     Path: 
+  catchWarpShare: 1.15
+  catchWarpFromPress: 1
   driftSpeed: 40
   lifetime: 12
   minStrength: 2

@@ -18,5 +18,5 @@ MonoBehaviour:
   innerRadiusScale: 0.25
   coreAlpha: 0
   fallbackVesselRadius: 6
-  minVesselRadius: 2
+  minVesselRadius: 0.25
   maxVesselRadius: 80

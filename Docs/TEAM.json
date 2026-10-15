@@ -1,0 +1,145 @@
+{
+  "comment": "Who is who in git, for Tools/Build/who_works_where.py and Docs/TEAM.md. Most commits are authored by Claude, so a person is found by their own commits, by the pull requests they merge, by a Claude commit they committed, and by branch prefixes they own. 'confirmed': false marks an identity inferred from history that the person has not confirmed; correct it here (any collaborator may) and run who_works_where.py map.",
+  "core": [
+    "Garrett",
+    "Caleb",
+    "Shombith",
+    "Yash"
+  ],
+  "people": [
+    {
+      "name": "Garrett",
+      "names": [
+        "Garrett Milliron",
+        "Garrett"
+      ],
+      "emails": [
+        "gradies@gmail.com",
+        "garrett@froglet.studio"
+      ],
+      "branch_prefixes": [],
+      "role": "Owner of bleeding-edge: reviews and merges most pull requests (vessels, tests, environment / ecology, arcade modes, impact effects). Own work: AI training, crystal hull fusion, the Regatta AI roadmap, multiplayer (MPPM) roadmap, the labs (Omni, Thresher Plant Lab).",
+      "confirmed": true
+    },
+    {
+      "name": "Caleb",
+      "names": [
+        "Caleb Steinhagen",
+        "FenrysUnchained"
+      ],
+      "emails": [
+        "belacstein@gmail.com",
+        "108491327+FenrysUnchained@users.noreply.github.com"
+      ],
+      "branch_prefixes": [],
+      "role": "QA sessions (Docs/QA/RESULTS), arcade mode map and previews, card art.",
+      "confirmed": true
+    },
+    {
+      "name": "Shombith",
+      "names": [
+        "Shombith03",
+        "Shombith"
+      ],
+      "emails": [
+        "shombithofficial@outlook.com",
+        "165906963+Shombith03@users.noreply.github.com",
+        "shombith@froglet.studio"
+      ],
+      "branch_prefixes": [],
+      "role": "UI (Menu_Main, UI prefabs, colour tokens, Codex), multiplayer scenes; drives the Amoebius ENGINE milestones (Port/src/CosmicShore.Engine, Player, tests) and merges those pull requests.",
+      "confirmed": true
+    },
+    {
+      "name": "Yash",
+      "names": [
+        "Yash Sadhukhan",
+        "YsKhan61"
+      ],
+      "emails": [
+        "yskhan61@gmail.com",
+        "30847550+YsKhan61@users.noreply.github.com"
+      ],
+      "branch_prefixes": [
+        "Ys-",
+        "Bug_Hunt",
+        "vessel-studio",
+        "amoebius-",
+        "prisma-",
+        "unity-studio-home",
+        "fix/weekly-challenge",
+        "feat/red-console-logger"
+      ],
+      "role": "Bug Hunt, party / multiplayer (UGS), diagnostics (redlog), leaderboards; the Vessel Studio and the Amoebius LAUNCHER / studio server / artifact library.",
+      "confirmed": true
+    },
+    {
+      "name": "Andrew",
+      "names": [
+        "Andrew Mokhtary"
+      ],
+      "emails": [
+        "149095320+Soncub@users.noreply.github.com"
+      ],
+      "branch_prefixes": [],
+      "role": "QA sessions and QA results.",
+      "confirmed": true
+    },
+    {
+      "name": "aradia1",
+      "names": [
+        "aradia1"
+      ],
+      "emails": [
+        "111031894+aradia1@users.noreply.github.com"
+      ],
+      "branch_prefixes": [],
+      "role": "Audio and haptics (FMOD project, drift / boost sounds), vessel feel tuning.",
+      "confirmed": false
+    },
+    {
+      "name": "dbrutus",
+      "names": [
+        "dbrutus"
+      ],
+      "emails": [
+        "135898188+dbrutus93@users.noreply.github.com"
+      ],
+      "branch_prefixes": [],
+      "role": "Arcade and multiplayer code, tests.",
+      "confirmed": false
+    },
+    {
+      "name": "studyholic",
+      "names": [
+        "studyholic"
+      ],
+      "emails": [
+        "studyholic@iMac.fios-router.home",
+        "studyholic@studyholics-iMac.local"
+      ],
+      "branch_prefixes": [],
+      "role": "Skim Race AI hand-play runs, prism animation docs. Which collaborator's machine this is is not known: confirm here.",
+      "confirmed": false
+    },
+    {
+      "name": "Grok Bot",
+      "names": [
+        "Grok Bot"
+      ],
+      "emails": [
+        "box@local"
+      ],
+      "branch_prefixes": [],
+      "role": "An automated agent (not a person). Its commits reached bleeding-edge through Yash's merge #1078; whose it is is not confirmed.",
+      "confirmed": false,
+      "bot": true
+    }
+  ],
+  "unattributed_prefixes": {
+    "claude/": "a Claude Code session; the person is the one who merges or pushes it",
+    "cece/": "a Claude Code session; merged mostly by Garrett, sometimes Shombith",
+    "codex/": "a Codex session",
+    "qa/": "QA results"
+  }
+}

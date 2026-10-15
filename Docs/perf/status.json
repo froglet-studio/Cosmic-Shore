@@ -1,0 +1,187 @@
+{
+  "amoebius": [
+    {
+      "key": "SkimRace|I2|3p",
+      "topGameAllocators": [
+        [
+          "PoolRefill.Squirrel Prism",
+          8.898
+        ],
+        [
+          "VesselImpactor.AcceptImpactee",
+          5.578
+        ],
+        [
+          "PoolActivate.Squirrel Prism",
+          0.725
+        ],
+        [
+          "PoolRefill.FastGrowPrism",
+          0.7
+        ]
+      ],
+      "verdict": "REGRESSION"
+    }
+  ],
+  "baselines": [],
+  "bugs": {
+    "open": 2,
+    "top": [
+      {
+        "id": "E-8cd155dc89",
+        "state": "open",
+        "title": "[BugLedgerTest] Synthetic error \u2014 file me, mark me fixed, then watch validation close me."
+      },
+      {
+        "id": "E-cdf0c783c1",
+        "state": "open",
+        "title": "[FMODOneShotVolumeHelper] '{59f0cd35-6a01-4476-9879-318f40186599} (event:/SFX/Oneshots/Gameplay sfx/Boost Acti"
+      },
+      {
+        "id": "E-76d7341dae",
+        "state": "validating",
+        "title": "[Regatta] Turn started with no course on this peer - gates flown now cannot be credited. The SyncCourse broadc"
+      }
+    ],
+    "validating": 1
+  },
+  "captures": [
+    {
+      "cpuBusyMs": 13.124348640441895,
+      "gcKB": 30.218769073486328,
+      "key": "MinigameSkimRace|S_SkimRace_I2",
+      "timestamp": "2026-10-08 06:35:23",
+      "user": "yskha",
+      "valid": false,
+      "verdict": "invalid: not compared"
+    },
+    {
+      "cpuBusyMs": 16.666672,
+      "gcKB": 48.797226,
+      "key": "MinigameSkimRace|prisma",
+      "timestamp": "2026-10-09 13:02:22",
+      "user": "local",
+      "valid": false,
+      "verdict": "invalid: not compared"
+    },
+    {
+      "cpuBusyMs": 16.666664,
+      "gcKB": 73.90112,
+      "key": "Menu_Main|S1test",
+      "timestamp": "2026-10-14 17:11:54",
+      "user": "local",
+      "valid": false,
+      "verdict": "invalid: not compared"
+    }
+  ],
+  "gates": [
+    {
+      "gate": "mathf params alloc",
+      "ok": true
+    },
+    {
+      "gate": "burst MathF (swarm pose)",
+      "ok": true
+    },
+    {
+      "gate": "burst MathF (substrate)",
+      "ok": true
+    },
+    {
+      "gate": "console logging",
+      "ok": true
+    },
+    {
+      "gate": "per-frame allocation scan",
+      "ok": true
+    }
+  ],
+  "gatesOk": true,
+  "generatedUtc": "2026-10-15T18:26:47Z",
+  "next": [
+    "Resolve: Allocation regression in Amoebius SkimRace|I2|3p: VesselImpactor.AcceptImpactee allocates 3.831 -> 5.578 KB/frame (+46%)",
+    "Resolve: Allocation regression in Amoebius SkimRace|I2|3p: PoolRefill.FastGrowPrism allocates 0.526 -> 0.7 KB/frame (+33%)",
+    "Resolve: Allocation regression in Amoebius SkimRace|I2|3p: new allocating marker PoolRefill.PrismImplosion: 0.122 KB/frame",
+    "Capture S2 Lattice in Release (no valid baseline yet): Menu_Main, Cell Selector > Lattice, wait 8 minutes, then Capture on the Scene view's Bug Hunt & Performance badge [T-20261015-56dd]",
+    "Capture Skim Race I2 in Release (no valid baseline yet): Arcade > Skim Race, intensity 2, 2 AI, then Capture on the badge - also proves the Burst fix [T-20261015-3e0b]",
+    "Capture S5 Wildlife Liberation in Release (no valid baseline yet): Arcade > Wildlife Liberation, two minutes in, then Capture on the badge - the L8 go/no-go [T-20261015-3972]",
+    "2 open console bug(s) on the Bug Ledger: /bug-ledger fixes them (top: [BugLedgerTest] Synthetic error \u2014 file me, mark me fixed, then watch validation close me.)"
+  ],
+  "openPerformanceTasks": [
+    {
+      "id": "T-20261015-56dd",
+      "kind": "test",
+      "task": "First editor performance capture, S2 Lattice: Code Optimization = Release, Play, Cell Selector > Lattice, wait 8 minutes, press Capture S2 on the Bug Hunt & Per"
+    },
+    {
+      "id": "T-20261015-3e0b",
+      "kind": "test",
+      "task": "Skim Race I2 with 2 AI, Release: press Capture SkimRace on the Scene view badge, stop, then Send to Claude. This is the Burst check the 10-08 fix still owes (bu"
+    },
+    {
+      "id": "T-20261015-3972",
+      "kind": "test",
+      "task": "S5 Wildlife Liberation, Release: two minutes into a match, press Capture S5 on the Scene view badge, stop, then Send to Claude. It is the go/no-go for lever L8 "
+    },
+    {
+      "id": "T-20261015-72e1",
+      "kind": "dev",
+      "task": "Amoebius: Mesh.SetVertices(List)/SetUVs(List<Vector4>)/SetTriangles(List) copy their lists into fresh arrays on every call (ToArray), and the renderer detects a"
+    },
+    {
+      "id": "T-20261015-f106",
+      "kind": "setup",
+      "task": "Switch on the daily performance check: GitHub runs a scheduled workflow only from the repository's DEFAULT branch, so .github/workflows/perf-daily.yml (merged i"
+    },
+    {
+      "id": "T-20261015-7d29",
+      "kind": "test",
+      "task": "Test the Bug Hunt & Performance badge in the Scene view: open Unity, check the card shows bugs and perf with no dialog on load, fold/unfold/hide it, press Relea"
+    },
+    {
+      "id": "T-20261015-7edd",
+      "kind": "test",
+      "task": "Confirm the lava lamp fps fix in Unity: Release, Third Eye closed, Play Menu_Main, press Capture S2 on the Scene view badge in the first minute, stop, Send to C"
+    },
+    {
+      "id": "T-20261015-a5a5",
+      "kind": "decision",
+      "task": "The Charge light now sleeps when a crystal is under 24 px in radius on screen (CrystalChargeArcsProfileSO.sleepBelowScreenRadiusPixels; it rebuilt a mesh per cr"
+    },
+    {
+      "id": "T-20261015-1551",
+      "kind": "test",
+      "task": "Find why Regatta runs at 10 fps in the editor: in MinigameRegatta (Release code optimization, Deep Profile off), press Capture on the Scene view's Bug Hunt & Pe"
+    },
+    {
+      "id": "T-20261015-fafa",
+      "kind": "dev",
+      "task": "Pool the AOE explosions: ExplosionHelper.SpawnAllAndDetonate does Object.Instantiate(prefab) per detonation and AOEExplosion Destroys itself after (Projectiles/"
+    }
+  ],
+  "regressions": [
+    "Allocation regression in Amoebius SkimRace|I2|3p: VesselImpactor.AcceptImpactee allocates 3.831 -> 5.578 KB/frame (+46%)",
+    "Allocation regression in Amoebius SkimRace|I2|3p: PoolRefill.FastGrowPrism allocates 0.526 -> 0.7 KB/frame (+33%)",
+    "Allocation regression in Amoebius SkimRace|I2|3p: new allocating marker PoolRefill.PrismImplosion: 0.122 KB/frame"
+  ],
+  "scenarios": [
+    {
+      "label": "S2",
+      "owed": true,
+      "scene": "Menu_Main",
+      "title": "S2 Lattice"
+    },
+    {
+      "label": "SkimRace",
+      "owed": true,
+      "scene": "MinigameSkimRace",
+      "title": "Skim Race I2"
+    },
+    {
+      "label": "S5",
+      "owed": true,
+      "scene": "MinigameWildlifeLiberation",
+      "title": "S5 Wildlife Liberation"
+    }
+  ]
+}

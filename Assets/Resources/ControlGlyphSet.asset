@@ -32,7 +32,7 @@ MonoBehaviour:
     padGlyph: {fileID: 21300000, guid: b611b9e51b8b5f14b9d9dc8dd392fc60, type: 3}
     padGlyphHeld: {fileID: 0}
     padLabel: B
-    keyboardLabel: R
+    keyboardLabel: T
   - binding: 4
     padGlyph: {fileID: 21300000, guid: 10b26c3d0d51d9c46bc5fe94b93bde08, type: 3}
     padGlyphHeld: {fileID: 0}
