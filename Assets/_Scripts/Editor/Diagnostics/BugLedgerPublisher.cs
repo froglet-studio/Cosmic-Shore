@@ -96,16 +96,23 @@ namespace CosmicShore.Editor
         /// <summary>Applies the staged ids into shared/, then add → commit → push, all scoped to
         /// the ledger's paths. The view confirms (naming the branch) before calling this; the
         /// after-play auto-publish (<paramref name="auto"/>) is pre-authorised by its setting.</summary>
-        public static void StartPublish(List<string> stagedIds, string message, bool auto = false)
+        /// <param name="reportCopies">Bug Hunt reports (redlog sessions, perf/diag JSONs, crash
+        /// reports — <see cref="BugHuntReports.Plan"/>) to copy into <c>BugLedger/shared/reports/</c>
+        /// as part of this publish. Copied on the worker AFTER the ahead/behind check, so a refused
+        /// publish leaves the working tree untouched.</param>
+        public static void StartPublish(List<string> stagedIds, string message, bool auto = false,
+                                        List<BugHuntReports.Copy> reportCopies = null)
         {
-            if (IsBusy || stagedIds == null || stagedIds.Count == 0) return;
+            stagedIds ??= new List<string>();
+            reportCopies ??= new List<BugHuntReports.Copy>();
+            if (IsBusy || (stagedIds.Count == 0 && reportCopies.Count == 0)) return;
             Warm();
             if (!CanPush) return;
             if (string.IsNullOrWhiteSpace(message)) message = "bugledger: update";
             var op = new Operation(auto ? "Auto-publish" : "Commit & Push", auto);
             Current = op;
             var branch = Branch;
-            StartThread("BugLedger.Publish", () => PublishOp(op, branch, stagedIds, message.Trim()));
+            StartThread("BugLedger.Publish", () => PublishOp(op, branch, stagedIds, reportCopies, message.Trim()));
         }
 
         static void StartThread(string name, ThreadStart body)
@@ -163,7 +170,8 @@ namespace CosmicShore.Editor
             op.Running = false;
         }
 
-        static void PublishOp(Operation op, string branch, List<string> stagedIds, string message)
+        static void PublishOp(Operation op, string branch, List<string> stagedIds,
+                              List<BugHuntReports.Copy> reportCopies, string message)
         {
             op.Step = "Fetching origin…";
             op.Progress = 0.1f;
@@ -193,6 +201,15 @@ namespace CosmicShore.Editor
                 var rel = FrogletGit.ToRepoRelative(abs);
                 if (rel != null) paths.Add(rel);
             }
+            if (reportCopies.Count > 0)
+            {
+                op.Step = $"Copying {reportCopies.Count} report file(s)…";
+                op.Progress = 0.42f;
+                BugHuntReports.CopyAll(reportCopies);
+            }
+            // The whole reports folder rides along, so a copy stranded by an earlier failed push is
+            // committed now instead of being skipped forever as "already shared". Still ledger-scoped.
+            AddIfExists(paths, BugHuntReports.SharedReportsDir);
             // The store stays self-describing on its first ever push.
             AddIfExists(paths, System.IO.Path.Combine(BugLedger.RootDir, "README.md"));
             AddIfExists(paths, System.IO.Path.Combine(BugLedger.RootDir, ".gitignore"));
@@ -228,7 +245,8 @@ namespace CosmicShore.Editor
 
             op.Progress = 1f;
             op.Result = committed
-                ? $"Pushed {stagedIds.Count} ledger change(s) to origin/{branch}."
+                ? $"Pushed {stagedIds.Count} ledger change(s)" +
+                  (reportCopies.Count > 0 ? $" and {reportCopies.Count} report file(s)" : "") + $" to origin/{branch}."
                 : $"Nothing new to commit — origin/{branch} already has these files. Pushed.";
             op.Running = false;
             Debug.Log($"[BugLedger] {op.Result}");
@@ -283,7 +301,8 @@ namespace CosmicShore.Editor
 
         static void AddIfExists(List<string> paths, string absolutePath)
         {
-            if (!System.IO.File.Exists(absolutePath)) return;
+            if (string.IsNullOrEmpty(absolutePath)) return;
+            if (!System.IO.File.Exists(absolutePath) && !System.IO.Directory.Exists(absolutePath)) return;
             var rel = FrogletGit.ToRepoRelative(absolutePath);
             if (rel != null && !paths.Contains(rel)) paths.Add(rel);
         }
