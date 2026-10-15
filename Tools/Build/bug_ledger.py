@@ -11,7 +11,19 @@ BugLedger/shared/issues/ on the current branch. This script is how a Claude sess
     python3 Tools/Build/bug_ledger.py list --state all --json
     python3 Tools/Build/bug_ledger.py show <id>            # the full captured record
     python3 Tools/Build/bug_ledger.py mark-fixed <id> --note "what was wrong, what changed"
+    python3 Tools/Build/bug_ledger.py collect [--out board.json]   # EVERY origin branch, merged
+    python3 Tools/Build/bug_ledger.py file --title "..." --notes "..." --reporter "..."
     python3 Tools/Build/bug_ledger.py --self-test
+
+collect is the daily sweep's input: collaborators publish to whatever branch they are on,
+so it reads BugLedger/shared/issues and BugLedger/shared/reports from every
+refs/remotes/origin/* branch (git, no checkout), merges each issue across branches (the
+worst state and the newest copy win, every branch it lives on is listed) and lists the
+report files per collaborator. Run `git fetch origin` first. Its JSON is what the sweep
+mirrors into the Team Bug Board artifact.
+
+file creates a hand-filed `C-` issue in shared/ — how a bug filed on the Team Bug Board
+(no Unity needed) reaches every editor's ledger once the branch is pulled.
 
 mark-fixed writes the SHARED file as `validating`, stamped with a fresh fixedUtc. The
 editor adopts it on its next sync (domain reload, play-mode entry, or Refresh) exactly
@@ -31,6 +43,8 @@ import argparse
 import datetime
 import json
 import os
+import secrets
+import subprocess
 import sys
 
 REPO = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -206,6 +220,121 @@ def cmd_mark_fixed(args):
     return 0
 
 
+def cmd_file(args):
+    """A hand-filed issue, shaped exactly like BugLedger.ReportCustom's (C-yyyyMMdd-HHmmss-xxxx)."""
+    now = datetime.datetime.now(datetime.timezone.utc)
+    stamp = now_iso()
+    title = (args.title.strip().splitlines() or ["(no title)"])[0][:120]
+    issue = dict(DEFAULTS)
+    issue.update(
+        id="C-%s-%s" % (now.strftime("%Y%m%d-%H%M%S"), secrets.token_hex(2)),
+        kind="custom", state="open", severity=args.severity, title=title,
+        notes=args.notes.strip(), reporter=args.reporter, machine=args.machine,
+        createdUtc=stamp, lastSeenUtc=stamp, timesSeen=1,
+    )
+    os.makedirs(SHARED, exist_ok=True)
+    path = os.path.join(SHARED, issue["id"] + ".bug.json")
+    with open(path, "w", encoding="utf-8", newline="\n") as f:
+        f.write(to_json(issue))
+    print(issue["id"])
+    return 0
+
+
+# ------------------------------------------------------------------ every branch
+
+STATE_RANK = {"open": 0, "validating": 1, "ignored": 2}
+
+
+def _git(*args):
+    r = subprocess.run(["git", "-C", REPO] + list(args), capture_output=True,
+                       text=True, encoding="utf-8", errors="replace")
+    return r.stdout if r.returncode == 0 else None
+
+
+def _remote_branches():
+    out = _git("for-each-ref", "--format=%(refname:short)", "refs/remotes/origin")
+    return [b for b in (out or "").split() if b not in ("origin", "origin/HEAD")]
+
+
+def collect_board():
+    """Every origin branch's published ledger, merged. An issue lives on several branches when
+    several collaborators hit it (the id is the signature hash): the WORST state wins (open over
+    validating — a fix on one branch has not reached the others), ties go to the newest
+    lastSeenUtc, counters take the max, and every branch it is on is listed."""
+    issues, reports, blobs = {}, {}, {}
+    branches = _remote_branches()
+    for ref in branches:
+        branch = ref[len("origin/"):]
+        listing = _git("ls-tree", "-r", "-l", ref, "--", "BugLedger/shared")
+        if not listing:
+            continue
+        for line in listing.splitlines():
+            meta, _, path = line.partition("\t")
+            parts = meta.split()
+            if len(parts) < 4 or parts[1] != "blob":
+                continue
+            sha, size = parts[2], parts[3]
+            if path.startswith("BugLedger/shared/issues/") and path.endswith(".bug.json"):
+                if sha not in blobs:
+                    text = _git("cat-file", "blob", sha)
+                    try:
+                        blobs[sha] = from_json(text) if text else None
+                    except ValueError:
+                        blobs[sha] = None
+                issue = blobs[sha]
+                if not issue:
+                    continue
+                key = issue["id"].lower()
+                have = issues.get(key)
+                if have is None:
+                    merged = dict(issue, branches=[branch])
+                else:
+                    worse = (STATE_RANK.get(issue["state"], 3), _neg_time(issue["lastSeenUtc"])) < \
+                            (STATE_RANK.get(have["state"], 3), _neg_time(have["lastSeenUtc"]))
+                    merged = dict(issue if worse else have)
+                    merged["branches"] = have["branches"] + [branch]
+                    for counter in ("timesSeen", "regressions"):
+                        merged[counter] = max(int(issue[counter]), int(have[counter]))
+                issues[key] = merged
+            elif path.startswith("BugLedger/shared/reports/"):
+                rel = path[len("BugLedger/shared/reports/"):].split("/", 2)
+                if len(rel) != 3:
+                    continue
+                user, kind, name = rel
+                rkey = (user, kind, name)
+                entry = reports.setdefault(rkey, {
+                    "user": user, "kind": kind, "name": name, "bytes": int(size) if size.isdigit() else 0,
+                    "path": path, "branches": [],
+                })
+                entry["branches"].append(branch)
+    return {
+        "generatedUtc": now_iso(),
+        "branchesScanned": len(branches),
+        "issues": sorted(issues.values(), key=sort_key),
+        "reports": sorted(reports.values(), key=lambda r: (r["user"], r["kind"], r["name"]), reverse=False),
+    }
+
+
+def _neg_time(iso):
+    """Sort key making NEWER timestamps compare smaller (ISO-8601 Z strings sort lexically)."""
+    if not iso:
+        return (1,)   # unknown time sorts as the OLDEST
+    return tuple(-ord(c) for c in iso)
+
+
+def cmd_collect(args):
+    board = collect_board()
+    text = json.dumps(board, indent=2, ensure_ascii=False)
+    if args.out:
+        with open(args.out, "w", encoding="utf-8", newline="\n") as f:
+            f.write(text + "\n")
+        print("%d issue(s), %d report file(s) from %d branch(es) -> %s" % (
+            len(board["issues"]), len(board["reports"]), board["branchesScanned"], args.out))
+    else:
+        print(text)
+    return 0
+
+
 # ------------------------------------------------------------------ self-test
 
 # Exactly what BugLedgerIssue.ToJson emits for an issue carrying every escape class.
@@ -287,8 +416,67 @@ def self_test():
             f.write(to_json(local))
         assert load_all()["e-1a2b3c4d5e"]["title"] == "local copy", "local did not win"
 
+        # file: a board-filed bug lands as a C- issue the editor's parser accepts.
+        cmd_file(argparse.Namespace(title="HUD overlaps\nsecond line", notes="seen on phone",
+                                    severity="minor", reporter="caleb", machine="team-bug-board"))
+        filed = [n for n in os.listdir(SHARED) if n.startswith("C-")]
+        assert len(filed) == 1, filed
+        with open(os.path.join(SHARED, filed[0]), encoding="utf-8") as f:
+            c = from_json(f.read())
+        assert c["kind"] == "custom" and c["state"] == "open" and c["title"] == "HUD overlaps", c
+        assert len(c["id"]) == len("C-20261015-181224-abcd") and filed[0] == c["id"] + ".bug.json", c["id"]
+
+    _self_test_collect()
     print("bug_ledger.py self-test: OK")
     return 0
+
+
+def _self_test_collect():
+    """collect over a throwaway repo with two fake origin branches carrying the SAME issue in two
+    states, plus a report file: one merged issue, worst state wins, both branches listed."""
+    global REPO
+    import tempfile
+
+    saved = REPO
+    with tempfile.TemporaryDirectory() as tmp:
+        REPO = tmp
+        try:
+            def git(*a):
+                subprocess.run(["git", "-C", tmp, "-c", "user.name=t", "-c", "user.email=t@t"] + list(a),
+                               check=True, capture_output=True)
+
+            issues_dir = os.path.join(tmp, "BugLedger", "shared", "issues")
+            reports_dir = os.path.join(tmp, "BugLedger", "shared", "reports", "ys", "redlog")
+            os.makedirs(issues_dir)
+            os.makedirs(reports_dir)
+            base = from_json(_FIXTURE)
+            path = os.path.join(issues_dir, base["id"] + ".bug.json")
+
+            git("init", "-q")
+            with open(path, "w", encoding="utf-8", newline="\n") as f:
+                f.write(to_json(dict(base, state="validating", timesSeen=9, lastSeenUtc="2026-10-16T00:00:00.000Z")))
+            git("add", "-A")
+            git("commit", "-q", "-m", "a")
+            git("update-ref", "refs/remotes/origin/fixed-branch", "HEAD")
+
+            with open(path, "w", encoding="utf-8", newline="\n") as f:
+                f.write(to_json(dict(base, state="open", timesSeen=3)))
+            with open(os.path.join(reports_dir, "redconsole_x.log"), "w") as f:
+                f.write("red\n")
+            git("add", "-A")
+            git("commit", "-q", "-m", "b")
+            git("update-ref", "refs/remotes/origin/tester-branch", "HEAD")
+
+            board = collect_board()
+            assert board["branchesScanned"] == 2, board["branchesScanned"]
+            assert len(board["issues"]) == 1, board["issues"]
+            merged = board["issues"][0]
+            assert merged["state"] == "open", "a fix on one branch hid the open copy on another"
+            assert sorted(merged["branches"]) == ["fixed-branch", "tester-branch"], merged["branches"]
+            assert merged["timesSeen"] == 9, "counters must take the max across branches"
+            assert [(r["user"], r["kind"], r["name"]) for r in board["reports"]] == [("ys", "redlog", "redconsole_x.log")]
+        finally:
+            REPO = saved
 
 
 def main():
@@ -309,6 +497,16 @@ def main():
     p.add_argument("--by", default="claude")
     p.add_argument("--force", action="store_true", help="also mark an IGNORED issue")
     p.set_defaults(func=cmd_mark_fixed)
+    p = sub.add_parser("collect", help="merge BugLedger/shared from every origin branch (fetch first)")
+    p.add_argument("--out", help="write the board JSON here instead of stdout")
+    p.set_defaults(func=cmd_collect)
+    p = sub.add_parser("file", help="file a hand-written C- issue into shared/ (e.g. from the Team Bug Board)")
+    p.add_argument("--title", required=True)
+    p.add_argument("--notes", default="")
+    p.add_argument("--severity", default="major", choices=["blocker", "major", "minor"])
+    p.add_argument("--reporter", required=True)
+    p.add_argument("--machine", default="team-bug-board")
+    p.set_defaults(func=cmd_file)
     args = ap.parse_args()
     return args.func(args)
 

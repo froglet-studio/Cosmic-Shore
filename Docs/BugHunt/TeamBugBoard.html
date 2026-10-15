@@ -1,0 +1,304 @@
+<title>Cosmic Shore Bug Hunt</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: a console-room board — summary strip, then the issue list (the work), then reports, sweep log and the filing desk. */
+:root{
+  --bg:#f3f4f7; --panel:#ffffff; --ink:#1c2230; --muted:#5d6678; --line:#dde1ea; --sunk:#eceef3;
+  --accent:#c8323a;           /* console red: the colour every one of these started as */
+  --open:#c8323a; --validating:#b7791f; --ignored:#7a8394; --ok:#2f855a;
+  --display:"Barlow Condensed","Arial Narrow",system-ui,sans-serif;
+  --body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#12151c; --panel:#1a1f29; --ink:#e6e9f0; --muted:#98a1b3; --line:#2a3140; --sunk:#151922;
+  --accent:#f0646b; --open:#f0646b; --validating:#e2a64a; --ignored:#8892a5; --ok:#5fbf8a; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#12151c; --panel:#1a1f29; --ink:#e6e9f0; --muted:#98a1b3; --line:#2a3140; --sunk:#151922;
+  --accent:#f0646b; --open:#f0646b; --validating:#e2a64a; --ignored:#8892a5; --ok:#5fbf8a; color-scheme:dark}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.5;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:20px 48px}
+.wrap{max-width:1080px;margin:0 auto;display:grid;gap:28px}
+h1,h2{font-family:var(--display);font-weight:700;letter-spacing:.01em;margin:0;text-wrap:balance}
+h1{font-size:40px;line-height:1}
+h2{font-size:24px}
+.eyebrow{font-family:var(--mono);font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.mono{font-family:var(--mono)}
+.muted{color:var(--muted)}
+header{display:grid;gap:10px}
+header p{margin:0;max-width:68ch;color:var(--muted)}
+.strip{display:flex;flex-wrap:wrap;gap:10px 22px;align-items:baseline;padding:14px 16px;background:var(--panel);border:1px solid var(--line);border-radius:8px}
+.stat{display:flex;gap:8px;align-items:baseline;font-variant-numeric:tabular-nums}
+.stat b{font-family:var(--display);font-size:30px;line-height:1}
+.stat span{color:var(--muted);font-size:13px}
+.stat.open b{color:var(--open)} .stat.validating b{color:var(--validating)}
+.strip .when{margin-left:auto;font-size:13px;color:var(--muted)}
+section{display:grid;gap:12px;min-width:0}
+.sechead{display:flex;flex-wrap:wrap;gap:10px 16px;align-items:center;justify-content:space-between}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{font:500 13px var(--body);border:1px solid var(--line);background:var(--panel);color:var(--ink);padding:4px 11px;border-radius:999px;cursor:pointer}
+.chip[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.chip:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible,summary:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+input[type=search],input[type=text],select,textarea{font:inherit;color:var(--ink);background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:7px 10px;min-width:0}
+.list{display:grid;gap:8px}
+.issue{background:var(--panel);border:1px solid var(--line);border-left:4px solid var(--sev);border-radius:6px;min-width:0}
+.issue summary{list-style:none;cursor:pointer;display:grid;grid-template-columns:auto 1fr auto;gap:4px 12px;align-items:center;padding:10px 14px}
+.issue summary::-webkit-details-marker{display:none}
+.pill{font:600 11px var(--mono);letter-spacing:.06em;text-transform:uppercase;padding:2px 8px;border-radius:4px;border:1px solid currentColor;white-space:nowrap}
+.pill.open{color:var(--open)} .pill.validating{color:var(--validating)} .pill.ignored{color:var(--ignored)}
+.title{font-weight:600;min-width:0;overflow-wrap:anywhere}
+.meta{grid-column:2 / 4;display:flex;flex-wrap:wrap;gap:4px 14px;font-size:13px;color:var(--muted);font-variant-numeric:tabular-nums}
+.meta .reg{color:var(--open);font-weight:600}
+.count{font:500 13px var(--mono);color:var(--muted);font-variant-numeric:tabular-nums;white-space:nowrap}
+.pips{display:inline-flex;gap:3px;vertical-align:middle}
+.pips i{width:8px;height:8px;border-radius:50%;border:1.5px solid var(--validating)}
+.pips i.on{background:var(--validating)}
+.detail{padding:0 14px 14px;display:grid;gap:10px;min-width:0}
+.detail h3{font:600 12px var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin:0}
+pre{margin:0;font:12.5px/1.5 var(--mono);background:var(--sunk);border:1px solid var(--line);border-radius:6px;padding:10px 12px;overflow-x:auto;white-space:pre}
+pre.wrap{white-space:pre-wrap;overflow-wrap:anywhere}
+.empty{background:var(--panel);border:1px dashed var(--line);border-radius:8px;padding:22px;color:var(--muted)}
+.empty strong{color:var(--ink)}
+.cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:28px}
+table{border-collapse:collapse;width:100%;font-size:13.5px;font-variant-numeric:tabular-nums}
+.tablebox{overflow-x:auto;background:var(--panel);border:1px solid var(--line);border-radius:8px}
+th,td{text-align:left;padding:8px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font:600 11px var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+tr:last-child td{border-bottom:0}
+.run{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:12px 14px;display:grid;gap:6px}
+.run .date{font:600 13px var(--mono)}
+.run ul{margin:0;padding-left:18px}
+form{display:grid;gap:10px;background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:16px}
+form label{display:grid;gap:4px;font-size:13px;font-weight:600}
+form .row{display:flex;flex-wrap:wrap;gap:10px;align-items:end}
+form .row label{flex:1 1 160px}
+button.primary{font:600 14px var(--body);background:var(--accent);color:#fff;border:0;border-radius:6px;padding:9px 16px;cursor:pointer}
+button.primary:disabled{opacity:.55;cursor:default}
+.note{font-size:13px;color:var(--muted)}
+.note.err{color:var(--open)} .note.ok{color:var(--ok)}
+.filed{display:grid;gap:6px}
+.filed div{display:flex;flex-wrap:wrap;gap:4px 10px;font-size:13.5px;align-items:baseline}
+@media (max-width:520px){h1{font-size:32px}.strip .when{margin-left:0;width:100%}.issue summary{grid-template-columns:auto 1fr}.count{grid-column:2}.meta{grid-column:1 / 3}}
+@media (prefers-reduced-motion:no-preference){.issue{transition:border-color .15s}}
+</style>
+
+<div class="wrap">
+  <header>
+    <div class="eyebrow">Cosmic Shore · Bug Hunt</div>
+    <h1>Team Bug Board</h1>
+    <p>Every console error the team's Unity editors captured, merged across all branches. A Claude sweep reads it once a day, fixes what it can and marks those issues <em>validating</em>: they close themselves after two clean play runs on the machine that hit them, or reopen if the error comes back.</p>
+  </header>
+
+  <div class="strip" id="strip" aria-live="polite">
+    <div class="stat open"><b id="n-open">–</b><span>open</span></div>
+    <div class="stat validating"><b id="n-val">–</b><span>validating</span></div>
+    <div class="stat"><b id="n-ign">–</b><span>parked</span></div>
+    <div class="stat"><b id="n-branches">–</b><span>branches scanned</span></div>
+    <div class="when" id="when">Waiting for the first sweep</div>
+  </div>
+
+  <section aria-labelledby="h-issues">
+    <div class="sechead">
+      <h2 id="h-issues">Issues</h2>
+      <div class="chips" role="group" aria-label="Filter by state">
+        <button class="chip" data-state="open" aria-pressed="true">Open</button>
+        <button class="chip" data-state="validating" aria-pressed="false">Validating</button>
+        <button class="chip" data-state="ignored" aria-pressed="false">Parked</button>
+        <button class="chip" data-state="all" aria-pressed="false">All</button>
+      </div>
+      <input type="search" id="q" placeholder="Search message, id, branch…" aria-label="Search issues">
+    </div>
+    <div class="list" id="issues"></div>
+  </section>
+
+  <div class="cols">
+    <section aria-labelledby="h-runs">
+      <h2 id="h-runs">Daily sweeps</h2>
+      <div class="list" id="runs"></div>
+    </section>
+    <section aria-labelledby="h-file">
+      <h2 id="h-file">File a bug</h2>
+      <form id="fileform" novalidate>
+        <label for="f-title">What went wrong
+          <input type="text" id="f-title" maxlength="120" required placeholder="e.g. Skein: Urchin HUD missing after the countdown">
+        </label>
+        <label for="f-notes">Steps, mode, vessel, branch
+          <textarea id="f-notes" rows="4" placeholder="What you did, what you expected, what happened. Paste the red console line if you have it."></textarea>
+        </label>
+        <div class="row">
+          <label for="f-sev">Severity
+            <select id="f-sev"><option value="major">Major</option><option value="blocker">Blocker</option><option value="minor">Minor</option></select>
+          </label>
+          <button class="primary" type="submit" id="f-go">File bug</button>
+        </div>
+        <div class="note" id="f-note">The next sweep files it into the Bug Ledger, so it shows up in everyone's Unity editor.</div>
+      </form>
+      <div class="filed" id="filed"></div>
+    </section>
+  </div>
+
+  <section aria-labelledby="h-reports">
+    <h2 id="h-reports">Shared reports</h2>
+    <p class="note" style="margin:0">Files the editors attached at check-in: <span class="mono">redlog</span> sessions, crash reports and performance JSONs, under <span class="mono">BugLedger/shared/reports/</span> on the branch listed.</p>
+    <div id="reports"></div>
+  </section>
+</div>
+
+<script>
+(function(){
+  const $ = (id) => document.getElementById(id);
+  const el = (tag, cls, text) => { const n = document.createElement(tag); if (cls) n.className = cls; if (text != null) n.textContent = text; return n; };
+  const S = { issues: [], meta: null, runs: [], filed: [], state: "open", q: "" };
+  const SEV = { blocker: 0, major: 1, minor: 2 };
+  const STATE = { open: 0, validating: 1, ignored: 2 };
+  const SEVCOLOR = { blocker: "var(--open)", major: "var(--validating)", minor: "var(--ignored)" };
+
+  function ago(iso){
+    const t = Date.parse(iso); if (!t) return "";
+    const m = Math.round((Date.now() - t) / 60000);
+    if (m < 60) return m + " min ago";
+    const h = Math.round(m / 60); if (h < 48) return h + " h ago";
+    return Math.round(h / 24) + " days ago";
+  }
+
+  function renderStrip(){
+    const c = { open: 0, validating: 0, ignored: 0 };
+    for (const i of S.issues) if (c[i.state] != null) c[i.state]++;
+    $("n-open").textContent = c.open; $("n-val").textContent = c.validating; $("n-ign").textContent = c.ignored;
+    $("n-branches").textContent = S.meta ? S.meta.branchesScanned : "–";
+    $("when").textContent = S.meta && S.meta.generatedUtc ? "Last sweep " + ago(S.meta.generatedUtc) + " · " + S.meta.generatedUtc.slice(0, 16).replace("T", " ") + " UTC" : "Waiting for the first sweep";
+  }
+
+  function renderIssues(){
+    const box = $("issues"); box.replaceChildren();
+    const q = S.q.trim().toLowerCase();
+    const rows = S.issues.filter(i => (S.state === "all" || i.state === S.state) &&
+      (!q || [i.id, i.title, i.sample, (i.branches || []).join(" "), i.reporter].join(" ").toLowerCase().includes(q)))
+      .sort((a, b) => (STATE[a.state] ?? 3) - (STATE[b.state] ?? 3) || (SEV[a.severity] ?? 1) - (SEV[b.severity] ?? 1) ||
+        (b.regressions || 0) - (a.regressions || 0) || (b.timesSeen || 0) - (a.timesSeen || 0));
+    if (!rows.length){
+      const e = el("div", "empty");
+      if (!S.issues.length){
+        e.append(el("strong", null, "No issues published yet. "),
+          document.createTextNode("In Unity, FrogletTools ▸ Diagnostics ▸ Bug Hunt Check-in shares your editor's errors, redlog sessions and perf files. Or turn on Bug Ledger ▸ Settings ▸ Auto-publish after each play test and they arrive after every test."));
+      } else e.textContent = "Nothing matches this filter.";
+      box.append(e); return;
+    }
+    for (const i of rows){
+      const d = el("details", "issue"); d.style.setProperty("--sev", SEVCOLOR[i.severity] || "var(--ignored)");
+      const s = el("summary");
+      s.append(el("span", "pill " + i.state, i.state === "ignored" ? "parked" : i.state), el("span", "title", i.title || i.id));
+      const count = el("span", "count", "×" + (i.timesSeen || 0)); count.title = "Times seen (highest count on any machine)";
+      s.append(count);
+      const meta = el("div", "meta");
+      meta.append(el("span", "mono", i.id), el("span", null, i.severity), el("span", null, i.scope || i.kind));
+      if (i.reporter) meta.append(el("span", null, "first hit by " + i.reporter));
+      meta.append(el("span", null, (i.branches || []).join(", ")));
+      if (i.regressions) meta.append(el("span", "reg", "regressed ×" + i.regressions));
+      if (i.state === "validating"){
+        const p = el("span", "pips"); p.title = (i.cleanSessions || 0) + " of " + (i.cleanSessionsRequired || 2) + " clean play runs";
+        for (let k = 0; k < (i.cleanSessionsRequired || 2); k++) p.append(el("i", k < (i.cleanSessions || 0) ? "on" : ""));
+        const w = el("span"); w.append(p, document.createTextNode(" fixed by " + (i.fixedBy || "?")));
+        meta.append(w);
+      }
+      s.append(meta); d.append(s);
+      const det = el("div", "detail");
+      if (i.sample){ det.append(el("h3", null, "Console message")); det.append(el("pre", "wrap", i.sample)); }
+      if (i.stack){ det.append(el("h3", null, "Stack")); det.append(el("pre", null, i.stack)); }
+      if (i.notes){ det.append(el("h3", null, "Notes and fixes")); det.append(el("pre", "wrap", i.notes)); }
+      det.append(el("div", "note", "Last seen " + (i.lastSeenUtc || "?").slice(0, 16).replace("T", " ") + " UTC on " + (i.machine || "?")));
+      d.append(det); box.append(d);
+    }
+  }
+
+  function renderRuns(){
+    const box = $("runs"); box.replaceChildren();
+    if (!S.runs.length){ box.append(el("div", "empty", "The daily sweep writes a line here each time it runs: what it found, what it fixed and the commit.")); return; }
+    for (const r of S.runs){
+      const d = el("div", "run");
+      d.append(el("div", "date", r.date + (r.branch ? " · " + r.branch : "")), el("div", null, r.summary || ""));
+      if (Array.isArray(r.fixed) && r.fixed.length){
+        const ul = el("ul"); for (const f of r.fixed) ul.append(el("li", null, f)); d.append(ul);
+      }
+      if (r.commit) d.append(el("div", "note mono", "commit " + r.commit));
+      box.append(d);
+    }
+  }
+
+  function renderReports(){
+    const box = $("reports"); box.replaceChildren();
+    const list = (S.meta && S.meta.reports) || [];
+    if (!list.length){ box.append(el("div", "empty", "No report files shared yet. A Bug Hunt check-in attaches up to 12 recent files per share: redlog sessions, crash reports and performance JSONs.")); return; }
+    const wrap = el("div", "tablebox"), t = el("table"), head = el("tr");
+    for (const h of ["Who", "Kind", "File", "Size", "Branch"]) head.append(el("th", null, h));
+    t.append(head);
+    for (const r of list){
+      const tr = el("tr");
+      tr.append(el("td", null, r.user), el("td", "mono", r.kind), el("td", "mono", r.name),
+        el("td", null, Math.max(1, Math.round((r.bytes || 0) / 1024)) + " KB"), el("td", "mono", (r.branches || []).join(", ")));
+      t.append(tr);
+    }
+    wrap.append(t); box.append(wrap);
+  }
+
+  function renderFiled(){
+    const box = $("filed"); box.replaceChildren();
+    if (!S.filed.length) return;
+    box.append(el("h3", "eyebrow", "Filed here"));
+    for (const f of S.filed){
+      const row = el("div");
+      row.append(el("span", "pill " + (f.status === "imported" ? "validating" : "open"), f.status === "imported" ? "in ledger" : "waiting"),
+        el("span", null, f.title), el("span", "muted mono", f.importedAs || (f.createdUtc || "").slice(0, 10)));
+      box.append(row);
+    }
+  }
+
+  function render(){ renderStrip(); renderIssues(); renderRuns(); renderReports(); renderFiled(); }
+
+  document.querySelectorAll(".chip").forEach(b => b.addEventListener("click", () => {
+    S.state = b.dataset.state;
+    document.querySelectorAll(".chip").forEach(o => o.setAttribute("aria-pressed", String(o === b)));
+    renderIssues();
+  }));
+  $("q").addEventListener("input", e => { S.q = e.target.value; renderIssues(); });
+  render();
+
+  (async function connect(){
+    const db = await window.claude?.use?.("db");
+    const user = await window.claude?.use?.("user");
+    if (!db){
+      $("f-go").disabled = true;
+      $("f-note").textContent = "Sign in to claude.ai to see the live board and file bugs.";
+      return;
+    }
+    const fail = () => {};
+    db.collection("issues").onSnapshot(s => { S.issues = s.docs.map(d => Object.assign({ id: d.id }, d.data())); renderStrip(); renderIssues(); }, fail);
+    db.doc("board/meta").onSnapshot(s => { S.meta = s.exists ? s.data() : null; renderStrip(); renderReports(); }, fail);
+    db.collection("runs").orderBy("date", "desc").limit(14).onSnapshot(s => { S.runs = s.docs.map(d => d.data()); renderRuns(); }, fail);
+    db.collection("filed").orderBy("createdUtc", "desc").limit(30).onSnapshot(s => { S.filed = s.docs.map(d => d.data()); renderFiled(); }, fail);
+
+    $("fileform").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const title = $("f-title").value.trim(), note = $("f-note");
+      if (!title){ note.className = "note err"; note.textContent = "Give the bug a one-line title first."; $("f-title").focus(); return; }
+      $("f-go").disabled = true;
+      try {
+        const reporterId = user ? await user.id() : null;
+        await db.collection("filed").add({
+          title, notes: $("f-notes").value.trim(), severity: $("f-sev").value,
+          reporterId: reporterId || "", createdUtc: new Date().toISOString(), status: "new", importedAs: ""
+        });
+        $("f-title").value = ""; $("f-notes").value = "";
+        note.className = "note ok"; note.textContent = "Filed. The next daily sweep moves it into the Bug Ledger.";
+      } catch (err){
+        note.className = "note err";
+        note.textContent = err && err.code === "invalid_argument"
+          ? "Your access to this board is view-only. Ask its owner for Contributor access, or file it in Unity: Bug Ledger ▸ + New Bug."
+          : "Could not file it right now. Try again in a moment.";
+      } finally { $("f-go").disabled = false; }
+    });
+  })();
+})();
+</script>

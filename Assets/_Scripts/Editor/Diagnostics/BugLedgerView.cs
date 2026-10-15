@@ -431,6 +431,12 @@ namespace CosmicShore.Editor
                     "while origin is ahead. A Claude session running /bug-ledger then reads and fixes them; its " +
                     "fixes come back as VALIDATING issues the next play runs close."),
                 settings.AutoPublishAfterPlay);
+            int checkInHours = EditorGUILayout.IntSlider(
+                new GUIContent("Bug Hunt check-in (hours)",
+                    "At most this often, on load or after a play test, ask whether to share new bugs and report " +
+                    "files (redlog, crash, perf JSONs) — only when there is something new. 0 = never ask. " +
+                    "FrogletTools > Diagnostics > Bug Hunt Check-in asks now."),
+                settings.CheckInReminderHours, 0, 168);
 
             if (EditorGUI.EndChangeCheck())
             {
@@ -439,6 +445,7 @@ namespace CosmicShore.Editor
                 settings.MinEditorSessionMinutes = minEditor;
                 settings.MaxAutoIssues = maxAuto;
                 settings.AutoPublishAfterPlay = autoPublish;
+                settings.CheckInReminderHours = checkInHours;
                 settings.SaveNow();
                 BugLedger.ApplySettings(settings);
 

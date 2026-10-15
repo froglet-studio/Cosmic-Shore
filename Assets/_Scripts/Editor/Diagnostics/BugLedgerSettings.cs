@@ -44,10 +44,19 @@ namespace CosmicShore.Editor
         [SerializeField, Tooltip("After every play test that changed the ledger materially (a new error, a " +
                                  "reopened regression, a validated close), publish ALL pending ledger changes " +
                                  "to the CURRENT branch — the same scoped commit Stage & Push makes (ledger " +
-                                 "paths only, refused while origin is ahead). This is what lets a Claude session " +
+                                 "paths only, refused while origin is ahead) together with any new report files " +
+                                 "(BugHuntReports). This is what lets a Claude session " +
                                  "read and fix the errors without you staging them (/bug-ledger skill). Off by " +
                                  "default: it pushes on your behalf.")]
         bool autoPublishAfterPlay;
+
+        [SerializeField, Range(0, 168), Tooltip("Bug Hunt check-in: at most this often (hours) the editor asks, " +
+                                                "on load or after a play test, whether to share the errors and " +
+                                                "report files (redlog, crash, perf JSONs) this machine has " +
+                                                "collected — only when there is something new. 0 = never ask.")]
+        int checkInReminderHours = 24;
+
+        [SerializeField, HideInInspector] string lastCheckInPromptUtc = "";
 
         // Note: closing an issue ALWAYS stamps it into BugLedger/local/resolved/ — the archive
         // doubles as the tombstone that keeps a published-then-resolved issue from re-importing
@@ -59,6 +68,8 @@ namespace CosmicShore.Editor
         public int MinEditorSessionMinutes { get => minEditorSessionMinutes; set => minEditorSessionMinutes = Mathf.Clamp(value, 0, 120); }
         public int MaxAutoIssues { get => maxAutoIssues; set => maxAutoIssues = Mathf.Clamp(value, 10, 1000); }
         public bool AutoPublishAfterPlay { get => autoPublishAfterPlay; set => autoPublishAfterPlay = value; }
+        public int CheckInReminderHours { get => checkInReminderHours; set => checkInReminderHours = Mathf.Clamp(value, 0, 168); }
+        public string LastCheckInPromptUtc { get => lastCheckInPromptUtc; set => lastCheckInPromptUtc = value ?? ""; }
 
         public void SaveNow() => Save(true);
     }
