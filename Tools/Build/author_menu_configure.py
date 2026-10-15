@@ -629,7 +629,10 @@ def header(root, kind):
 def preview_window(left, kind):
     """The live arena (ModePreviewWindow) or, for Maelstrom, the clip (ModeVideoView)."""
     pv = left.child(N("Preview", "Preview", R((0, 1), (1, 1), (0, 0), (0, PREVIEW_H), (0.5, 1))))
-    pv.add("cg", 225, canvas_group(True)).add("in", 114, M.entrance("Rise"))
+    # No entrance on the preview: the window opens by a CanvasGroup fade, and a rise that started
+    # under it could leave the preview at alpha 0 - the frame, the live arena and the tap-to-play
+    # target all invisible. The preview is the window's main feature; it is simply always there.
+    pv.add("cg", 225, canvas_group(True))
     frame(pv, "Preview/Frame", 14, "SurfaceBlack", "SurfaceDark")
     surf = pv.child(N("Preview/Surface", "Surface", R((0, 0), (1, 1), (0, 0), (-4, -4))))
     surf.add("cr", 222, K.canvas_renderer()).add("raw", 114, raw_image(enabled=False))
@@ -1000,7 +1003,9 @@ def tree_panel(root, kind):
 
 def build_view(kind):
     root = N("root", VIEW_NAME[kind], STRETCH)
-    image_node(root, "Veil", "Veil", R((0, 0), (1, 1), (0, -42), (0, -84)), "SurfaceBlack", alpha=0.72, raycast=True)
+    # Near-opaque (the owner, 2026-10-15: "make the bg of these tabs a little less transparent"):
+    # at 72% the Arcade's own title and game grid read through the window.
+    image_node(root, "Veil", "Veil", R((0, 0), (1, 1), (0, -42), (0, -84)), "SurfaceBlack", alpha=0.94, raycast=True)
 
     # Sibling order is FOCUS order (ScreenSwitcher.Refocus takes the first live Selectable): the
     # tree comes first so the pad lands on an intensity node or a domain, never on Back.

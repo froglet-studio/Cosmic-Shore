@@ -9,7 +9,7 @@ on the "Menu Redesign B" canvas).
                                 (domain ring, avatar, name, role, kick) over the "Open slot" tile
         PartyRequestRow.prefab  one party invite / friend request: KitRequestRow (RequestInfoEntry)
         PartyOnlineRow.prefab   one online pilot: KitOnlineRow (OnlineInfoEntry) - Invite, Join /
-                                Watch, and the cancel / kick icon button
+                                Spectate, and the cancel / kick icon button
         PartyPanel.prefab       the unified panel: ArcadeLobbyList + FriendsListPanel on one root,
                                 four seats, Leave, then the INVITES and ONLINE lists in one scroll
     Assets/_Prefabs/UI Elements/Main Menu Screens/Arcade/
@@ -636,7 +636,8 @@ def build_online_row():
              f"  joinLabel: {ref(ctx.iref('JoinButton', 'Label#kt'))}\n"
              f"  inviteGroup: {ref(ctx.c('InviteSlot', 'cg'))}\n"
              f"  joinGroup: {ref(ctx.c('JoinSlot', 'cg'))}\n"
-             f"  cancelGroup: {ref(ctx.c('CancelSlot', 'cg'))}\n"))
+             f"  cancelGroup: {ref(ctx.c('CancelSlot', 'cg'))}\n"
+             "  joinWord: Join\n  spectateWord: Spectate\n  inviteWord: Invite\n  invitedWord: Invited\n"))
     root.add("cg", 225, canvas_group(True)).add("le", 114, le(ph=ROW_H, mw=0, fw=1))
     return root
 

@@ -228,6 +228,9 @@ namespace CosmicShore.Gameplay
                 return false;
             }
 
+            // The coaching is switched off in the library (tutorialsEnabled): nothing starts.
+            if (!_library.TutorialsEnabled) return false;
+
             _ctx = context;
             var status = Status;
             if (status == null) return false;

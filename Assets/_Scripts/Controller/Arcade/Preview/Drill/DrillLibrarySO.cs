@@ -103,6 +103,12 @@ namespace CosmicShore.Gameplay
             public List<FlightControlLabel> FlightControlLabels = new();
         }
 
+        [Header("Switch")]
+        [Tooltip("Run the preview's coaching at all - the Lesson, its ghost demo and the Mentor's tips. " +
+                 "Off (the owner, 2026-10-15: \"I do not want the tutorial at all\"): every preview flies " +
+                 "plainly, exactly as before the drill existed.")]
+        [SerializeField] bool tutorialsEnabled = false;
+
         [Header("Lesson")]
         [SerializeField] LessonTemplateSO twoThumbLesson;
         [SerializeField] LessonTemplateSO oneThumbLesson;
@@ -163,6 +169,7 @@ namespace CosmicShore.Gameplay
 
         public float LessonSkipDelaySeconds => lessonSkipDelaySeconds;
         public bool EveryLessonSkippable => everyLessonSkippable;
+        public bool TutorialsEnabled => tutorialsEnabled;
         public float DefaultHintAfterSeconds => defaultHintAfterSeconds;
         public float GhostDemoSeconds => ghostDemoSeconds;
         public float GhostDemoLeadInSeconds => ghostDemoLeadInSeconds;

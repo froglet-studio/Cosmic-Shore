@@ -89,6 +89,10 @@ MonoBehaviour:
   inviteGroup: {fileID: 79457520533893932}
   joinGroup: {fileID: 68351534581473734}
   cancelGroup: {fileID: 474028343948866485}
+  joinWord: Join
+  spectateWord: Spectate
+  inviteWord: Invite
+  invitedWord: Invited
 --- !u!225 &849706908014141055
 CanvasGroup:
   m_ObjectHideFlags: 0

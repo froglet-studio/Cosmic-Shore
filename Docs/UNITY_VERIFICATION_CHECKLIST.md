@@ -65,6 +65,20 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Tutorial off, Spectate label, configure preview visible, opaque configure veil (`claude/new-session-76hnyc`, 2026-10-15) — NOT EDITOR-VERIFIED
+
+Section 29 of `Docs/MENU_REDESIGN_B.md`. Affects Yash's FTUE quest and Lesson (switched off in data).
+
+**Verify in editor:**
+1. Fresh profile: no first-login guide, no dim, no "This week's game" caption anywhere.
+2. Open any card with a preview (Skim Race, Skein): the preview window shows at the top left, the
+   arena plays in it, tapping it flies the vessel; no Lesson or Mentor lines appear.
+3. The configure window hides the Arcade behind it (no "Explore games" title or cards showing through).
+4. A friend in a match shows SPECTATE, not WATCH.
+5. At 16:10 (Game view 1728 x 1080) the Arcade grid's right column is fully on screen.
+
+---
+
 ### 🔴 Style-B playtest fixes: guide Skip, connecting backdrop + random camera, pause D-pad, touch keycaps (`claude/new-session-76hnyc`, 2026-10-15) — NOT EDITOR-VERIFIED
 
 Section 28 of `Docs/MENU_REDESIGN_B.md`. Affects Yash's FTUE guide, Lesson and input detection

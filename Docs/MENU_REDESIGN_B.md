@@ -1732,3 +1732,24 @@ From the owner's first play of the redesign.
   cover use the same scaling; the cover used raw pixels before.
 - **Authored words:** the Maelstrom view, cards and seats, and the privacy overlay's eyebrows and
   keycaps now read their words from serialized fields (CLAUDE.md, player-facing text rule).
+
+## 29. Tutorial off, Spectate, configure preview and opacity (2026-10-15)
+
+- **The tutorial is switched off** (the owner: "I do not want the tutorial at all"). Both switches are
+  data, so turning it back on is one tick each:
+  - `MainQuest.asset` `questEnabled: 0`. The first-login guide ("This week's game. Open it.") and
+    every later quest phase never start. `QuestGraphRunner.TryStart` already honours the flag.
+  - `DrillLibrary.asset` `tutorialsEnabled: 0` (new field on `DrillLibrarySO`). The preview's
+    Lesson, ghost demo and Mentor tips never start; the preview flies plainly, tap to play as before.
+  - The Skip button from section 28 stays in the code for the day the tutorial returns.
+- **WATCH reads SPECTATE** on the party list. `KitOnlineRow`'s Join / Spectate / Invite / Invited
+  words are serialized fields on the row (authored in `PartyOnlineRow.prefab`).
+- **The configure window's preview is always there.** The live arena window (tap it to fly) carried
+  a rise entrance; the window opens by a CanvasGroup fade, and the preview could come to rest at
+  alpha 0, so the frame, the arena and the tap target were all invisible. The preview has no
+  entrance now.
+- **The configure window's veil is 94% opaque** (was 72%), so the Arcade's title and game grid no
+  longer read through it.
+- **The Arcade grid's right column was cut off** on screens narrower than 16:9 (a MacBook's 16:10).
+  The window is 1920 wide and the canvas matched height, so it was only ~1728 wide. The Expand
+  scaling from section 28 fixes this; no layout change was needed.

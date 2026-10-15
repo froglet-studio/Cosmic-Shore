@@ -165,7 +165,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_Material: {fileID: 0}
-  m_Color: {r: 0, g: 0.003921569, b: 0.039215688, a: 0.72}
+  m_Color: {r: 0, g: 0.003921569, b: 0.039215688, a: 0.94}
   m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
@@ -196,7 +196,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   theme: {fileID: 11400000, guid: 0aef6398681c4ec98118cc9b9740060a, type: 2}
   token: 3
-  alpha: 0.72
+  alpha: 0.94
 --- !u!1 &493292553777427594
 GameObject:
   m_ObjectHideFlags: 0
@@ -9116,7 +9116,6 @@ GameObject:
   m_Component:
   - component: {fileID: 951527812659943533}
   - component: {fileID: 306127904319733622}
-  - component: {fileID: 815535127525765935}
   - component: {fileID: 316310080012312141}
   - component: {fileID: 427251235358540491}
   m_Layer: 5
@@ -9164,26 +9163,6 @@ CanvasGroup:
   m_Interactable: 1
   m_BlocksRaycasts: 1
   m_IgnoreParentGroups: 0
---- !u!114 &815535127525765935
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 449320430221492058}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 1543fe3a029de045efa884462c2f95d5, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  mode: 0
-  ease: 0
-  duration: 0.32
-  distance: 14
-  delay: 0
-  staggerIndex: 0
-  staggerBySibling: 0
-  playOnEnable: 1
 --- !u!114 &316310080012312141
 MonoBehaviour:
   m_ObjectHideFlags: 0

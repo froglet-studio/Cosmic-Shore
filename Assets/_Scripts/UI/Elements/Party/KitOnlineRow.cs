@@ -11,7 +11,7 @@ namespace CosmicShore.UI
     /// <para>The status line takes the state's colour - CTA while the pilot can be invited or
     /// joined, Purchase while they are in a match, Neutral while their party is full or our invite
     /// is out. The buttons are kit buttons that leave the row's layout when hidden: Invite (Default),
-    /// Join (CTA) or Watch (Purchase) on the one join control, and the ✕ that retracts an invite or
+    /// Join (CTA) or Spectate (Purchase) on the one join control, and the ✕ that retracts an invite or
     /// kicks a member. While our invite is out the Invite button stays in place, inactive, reading
     /// "Invited".</para>
     /// </summary>
@@ -22,8 +22,14 @@ namespace CosmicShore.UI
         [SerializeField] private KitText statusText;
         [Tooltip("The Invite button's label, which reads \"Invited\" while our invite is out.")]
         [SerializeField] private KitText inviteLabel;
-        [Tooltip("The join button's label: \"Join\" or \"Watch\".")]
+        [Tooltip("The join button's label: joinWord or spectateWord.")]
         [SerializeField] private KitText joinLabel;
+
+        [Header("Words (empty = blank label)")]
+        [SerializeField] private string joinWord = "Join";
+        [SerializeField] private string spectateWord = "Spectate";
+        [SerializeField] private string inviteWord = "Invite";
+        [SerializeField] private string invitedWord = "Invited";
         [SerializeField] private CanvasGroup inviteGroup;
         [SerializeField] private CanvasGroup joinGroup;
         [SerializeField] private CanvasGroup cancelGroup;
@@ -53,7 +59,7 @@ namespace CosmicShore.UI
             // Not pressable reads as the kit's Inactive look through the button's own interactable flag.
             if (JoinButton is KitButton button)
                 button.Variant = spectate ? KitButtonVariant.Purchase : KitButtonVariant.Cta;
-            if (joinLabel) joinLabel.SetText(spectate ? "Watch" : "Join");
+            if (joinLabel) joinLabel.SetText(spectate ? spectateWord : joinWord);
         }
 
         // The kit row has no tinted background: the status line carries the state.
@@ -66,7 +72,7 @@ namespace CosmicShore.UI
                 KitVisibility.SetShown(inviteGroup, true);
                 InviteButton.interactable = false;
             }
-            if (inviteLabel) inviteLabel.SetText(pending ? "Invited" : "Invite");
+            if (inviteLabel) inviteLabel.SetText(pending ? invitedWord : inviteWord);
         }
     }
 }
