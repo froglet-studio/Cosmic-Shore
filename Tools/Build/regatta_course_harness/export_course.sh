@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
-# Regenerate course.js (the Regatta circuit the page races on) from the SHIPPED course code.
+# Regenerate course.js (the Regatta circuit: ring and rail geometry for Tools/Build/situation_features.py) from the SHIPPED course code.
 # Same compile as Tools/Build/regatta_course_harness/run.sh (its Stubs.cs, the three pure course files),
 # with ExportCourse.cs as the entry point. Needs a dotnet 8 SDK ($DOTNET_ROOT, default ~/.dotnet).
-#   bash Docs/Studios/RegattaAI/export_course.sh            # rewrite course.js
-#   bash Docs/Studios/RegattaAI/export_course.sh --check    # exit 1 if course.js is stale
+#   bash Tools/Build/regatta_course_harness/export_course.sh            # rewrite course.js
+#   bash Tools/Build/regatta_course_harness/export_course.sh --check    # exit 1 if course.js is stale
 set -euo pipefail
 HERE="$(cd "$(dirname "$0")" && pwd)"
 ROOT="$(cd "$HERE/../../.." && pwd)"
-H="$ROOT/Tools/Build/regatta_course_harness"
+H="$HERE"
 DOTNET_ROOT="${DOTNET_ROOT:-$HOME/.dotnet}"
 DOTNET="$DOTNET_ROOT/dotnet"
 CSC=$(ls "$DOTNET_ROOT"/sdk/*/Roslyn/bincore/csc.dll | head -1)

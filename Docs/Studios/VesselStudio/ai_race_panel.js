@@ -16,7 +16,7 @@
  *     styles: ['Balanced', 'Comet', ...],   // optional: each rival seat also picks a play style (D23); state.rivalStyles
  *     players: { host: element, max: 4, domains: VesselStudioDomains.list } (studio-domains.js; the default) },
  *                           // optional players.vessels: [{ key, name, note }] gives each player a Vessel dropdown
- *                           // (a multi-hull page such as the Regatta AI artifact, /vessel-studio D39); state.players[i].vessel
+ *                           // (a multi-hull page; the Regatta AI page that used it was deleted 2026-10-16); state.players[i].vessel
  *                           // optional (D25): a Players list in the studio's Game Config tab, + / - to add or remove
  *                           // a player, each opening with Is AI, Domain, Difficulty, Play style, View and Camera.
  *                           // It replaces the Your hull / seat rows; state.players, state.view; onChange('players' | 'view')

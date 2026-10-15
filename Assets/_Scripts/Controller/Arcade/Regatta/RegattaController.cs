@@ -129,7 +129,7 @@ namespace CosmicShore.Gameplay
         /// <summary>
         /// Regatta's short legs (461-858 u) are where committing from 420 u out crosses the plane beside the
         /// mouth and then circles the far-side point: the Regatta AI studio finished 17/32 Hard hull x intensity
-        /// races with the shipped steering and 30/32 with this on (2026-10-15, Docs/Studios/RegattaAI).
+        /// races with the shipped steering and 30/32 with this on (2026-10-15, the Regatta AI page, since deleted; REGATTA_AI_ROADMAP.md keeps its numbers).
         /// </summary>
         protected override bool AICommitFromApproachPoint => true;
 

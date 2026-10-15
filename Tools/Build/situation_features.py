@@ -5,20 +5,22 @@ Yash, 2026-10-15: "record the situations: what target the player was aiming at, 
 the obstacles are, how we skim, how quickly we change direction, how we ignore some skims when we must keep speed... This
 is how we can actually train the AI, not just by input."
 
-The Python twin of Docs/Studios/RegattaAI/situation.js (the Training AI for Regatta page): the same features, labels,
-legs, skim choices and learning, line for line, so a flight Unity recorded (HumanFlightRecorder, flight/2 or flight/3)
-and a flight the page recorded give the same answers. The definitions are in Docs/AI_SYSTEM/situation_features.json.
---self-test runs both on the same fixture flight and fails on any difference.
+It turns a flight Unity recorded while someone played in the editor (HumanFlightRecorder, flight/2 or flight/3) into
+situations (target, line-up, obstacles, skim, manoeuvre, race), labels (what the pilot was going for, the phase, skims
+taken and skipped, mistakes), legs, and what to learn. The definitions are in Docs/AI_SYSTEM/situation_features.json.
+The ring and rail geometry comes from Tools/Build/regatta_course_harness/course.js, generated from RegattaCourse.
+(It was written as the twin of a browser page's situation.js; the page was deleted on 2026-10-16 and this is now the
+only implementation. --self-test checks it against the golden output both agreed on, with a negative control.)
 
     python3 Tools/Build/situation_features.py                     # every Regatta flight on every origin branch (stored with Store AI record)
     python3 Tools/Build/situation_features.py --dir <folder>      # ...or a local folder of flight_*.json
     python3 Tools/Build/situation_features.py --json <file>       # one flight: the full analysis as JSON on stdout
     python3 Tools/Build/situation_features.py --write             # ...and write what was learned (learned_situations.json + LEARNED_SITUATIONS.md)
-    python3 Tools/Build/situation_features.py --self-test         # Python against situation.js on the fixture (needs node)
+    python3 Tools/Build/situation_features.py --self-test         # the fixture flight against its golden output
 
 Training data comes from playing in the Unity EDITOR only (Yash, 2026-10-16: "let's not use artifact to train, we will
 play in editor only for perfect training data"): the flights read here are the ones HumanFlightRecorder writes and Send to
-Claude stores. The Training AI for Regatta page only views them.
+Claude stores.
 """
 import argparse
 import json
@@ -30,9 +32,9 @@ import sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 REPO = os.path.abspath(os.path.join(HERE, "..", ".."))
-COURSE_JS = os.path.join(REPO, "Docs", "Studios", "RegattaAI", "course.js")
-SITUATION_JS = os.path.join(REPO, "Docs", "Studios", "RegattaAI", "situation.js")
-FIXTURE = os.path.join(HERE, "situation_fixtures", "flight_artifact_squirrel_I1.json")   # the twin test only, never training data
+COURSE_JS = os.path.join(HERE, "regatta_course_harness", "course.js")
+FIXTURE = os.path.join(HERE, "situation_fixtures", "flight_fixture_squirrel_I1.json")   # the self-test only, never training data
+GOLDEN = os.path.join(HERE, "situation_fixtures", "flight_fixture_squirrel_I1.golden.json")
 LEARNED_JSON = os.path.join(REPO, "Docs", "AI_SYSTEM", "learned_situations.json")
 LEARNED_DOC = os.path.join(REPO, "Docs", "AI_SYSTEM", "LEARNED_SITUATIONS.md")
 sys.path.insert(0, HERE)
@@ -475,64 +477,47 @@ def comparable(A):
     }
 
 
-def js_comparable(flight_path):
-    """Run situation.js in node on the same flight and return the same comparable shape."""
-    script = r"""
-const S = require(process.argv[1]); global.window = {}; require(process.argv[2]); const C = S.courseFrom(window.REGATTA_COURSE, %INT%);
-const fl = JSON.parse(require('fs').readFileSync(process.argv[3], 'utf8')); const A = S.analyze(fl, C);
-const r2 = (x) => Math.round(x * 100) / 100, keys = %KEYS%;
-process.stdout.write(JSON.stringify({ feats: A.feats.map((x) => keys.map((k) => typeof x[k] === 'boolean' ? +x[k] : r2(Math.min(x[k], 1e5)))), threads: A.feats.map((x) => +x.threadsIfStraight),
-  labels: A.labels.map((l) => [l.phase, l.target]), segments: A.segments, legs: A.legs, skims: A.skims, boosts: A.boosts, mistakes: A.mistakes, summary: A.summary }));
-"""
-    fl = json.load(open(flight_path, encoding="utf-8"))
-    keys = ["dist", "bearing", "elevation", "headingErr", "axisAngle", "mouthOffset", "timeToMouth", "legLen", "legTurn", "rMin", "turnRate", "gap", "aheadPrisms", "skimDetour"]
-    script = script.replace("%INT%", str(int(fl.get("intensity") or 1))).replace("%KEYS%", json.dumps(keys))
-    r = subprocess.run(["node", "-e", script, SITUATION_JS, COURSE_JS, flight_path], capture_output=True, text=True)
-    if r.returncode != 0:
-        raise RuntimeError("node failed: " + r.stderr[-800:])
-    return json.loads(r.stdout)
-
-
-def diff(py, js, path="", out=None, tol=0.02):
+def diff(py, js, path="", out=None, tol=0.02):   # py: this run, js: the golden
     out = [] if out is None else out
     if len(out) > 12:
         return out
     if isinstance(py, dict) and isinstance(js, dict):
         for k in sorted(set(py) | set(js)):
             if k not in py or k not in js:
-                out.append(f"{path}.{k}: only in {'python' if k in py else 'js'}")
+                out.append(f"{path}.{k}: only in {'this run' if k in py else 'the golden'}")
             else:
                 diff(py[k], js[k], f"{path}.{k}", out, tol)
     elif isinstance(py, list) and isinstance(js, list):
         if len(py) != len(js):
-            out.append(f"{path}: length {len(py)} (python) vs {len(js)} (js)")
+            out.append(f"{path}: length {len(py)} (this run) vs {len(js)} (golden)")
         for i, (a, b) in enumerate(zip(py, js)):
             diff(a, b, f"{path}[{i}]", out, tol)
     elif isinstance(py, (int, float)) and isinstance(js, (int, float)) and not isinstance(py, bool):
         if abs(py - js) > tol * max(1, abs(js)):
-            out.append(f"{path}: {py} (python) vs {js} (js)")
+            out.append(f"{path}: {py} (this run) vs {js} (golden)")
     elif py != js:
-        out.append(f"{path}: {py!r} (python) vs {js!r} (js)")
+        out.append(f"{path}: {py!r} (this run) vs {js!r} (golden)")
     return out
 
 
 def self_test():
-    if not os.path.exists(FIXTURE):
-        print(f"self-test: fixture missing: {FIXTURE}")
+    if not os.path.exists(FIXTURE) or not os.path.exists(GOLDEN):
+        print(f"self-test: fixture or golden missing ({FIXTURE}, {GOLDEN})")
         return 1
     fl = json.load(open(FIXTURE, encoding="utf-8"))
     C = course_from(load_course_js(), int(fl.get("intensity") or 1))
-    py = comparable(analyze(fl, C))
-    js = js_comparable(FIXTURE)
-    problems = diff(json.loads(json.dumps(py)), js)
-    # negative control: a changed definition must be caught
-    neg = json.loads(json.dumps(py))
-    neg["labels"][len(neg["labels"]) // 2][0] = "cruise" if neg["labels"][len(neg["labels"]) // 2][0] != "cruise" else "approach"
-    caught = bool(diff(neg, js))
-    ok = not problems and caught and py["summary"]["rings"] > 0
-    print(f"self-test: {'OK' if ok else 'FAILED'}  ({py['summary']['samples']} samples, {py['summary']['rings']} rings, "
-          f"{py['summary']['skimsTaken']} skims taken, {py['summary']['skimsSkipped']} skipped; Python and situation.js "
-          f"{'agree' if not problems else 'DIFFER'}; negative control {'caught' if caught else 'NOT caught'})")
+    got = json.loads(json.dumps(comparable(analyze(fl, C))))
+    want = json.load(open(GOLDEN, encoding="utf-8"))
+    problems = diff(got, want)
+    # negative control: a changed label must be caught
+    neg = json.loads(json.dumps(got))
+    mid = len(neg["labels"]) // 2
+    neg["labels"][mid][0] = "cruise" if neg["labels"][mid][0] != "cruise" else "approach"
+    caught = bool(diff(neg, want))
+    ok = not problems and caught and got["summary"]["rings"] > 0
+    print(f"self-test: {'OK' if ok else 'FAILED'}  ({got['summary']['samples']} samples, {got['summary']['rings']} rings, "
+          f"{got['summary']['skimsTaken']} skims taken, {got['summary']['skimsSkipped']} skipped; "
+          f"{'matches' if not problems else 'DIFFERS FROM'} the golden output; negative control {'caught' if caught else 'NOT caught'})")
     for p in problems:
         print("   ", p)
     return 0 if ok else 1

@@ -9,9 +9,10 @@ This plan extends `AI_TRAINING_PLAN.md` L3 (learn from players) and the recorder
 (`HumanFlightRecorder.cs`, `Tools/Build/learn_from_flights.py`, schema `cosmic-shore.flight/2`). It does not replace them.
 
 **Decision (Yash, 2026-10-16): training data comes from playing in the Unity editor only.** "Let's not use artifact to
-train, we will play in editor only for perfect training data." The Training AI for Regatta page's model is a simplified
-flight model, so its flights are not training data: the page no longer records its own races or learns from them; its
-Flights tab only views Unity flights. Learning runs on the editor flights (`Tools/Build/situation_features.py`).
+train, we will play in editor only for perfect training data." Then (2026-10-16): "delete the artifact, it's not needed;
+only tests will happen in the Unity editor itself." The Training AI for Regatta page was deleted with
+`Docs/Studios/RegattaAI/`. Recording, learning and testing all happen on the editor side: `HumanFlightRecorder` records,
+`Tools/Build/situation_features.py` turns flights into situations and learns, the Third Eye is where the AI is watched.
 
 ## 1. Why sticks alone cannot teach
 
@@ -127,10 +128,10 @@ Good data only: segments from finished races, and moments that beat the Hard AI 
 | Piece | Where | Notes |
 |---|---|---|
 | Recorder `flight/3` (§2.1, §2.2) | `HumanFlightRecorder.cs` (extend) | Cheap per sample; no feature maths in the game |
-| One **feature spec** | `Docs/AI_SYSTEM/situation_features.json` | The names, units and formulas of §2.3, so Python, the artifact and C# compute the same thing; golden files test it |
+| One **feature spec** | `Docs/AI_SYSTEM/situation_features.json` | The names, units and formulas of §2.3; `situation_features.py` implements them and its golden file tests them |
 | Offline feature + label extraction (§2.3–2.5) | `Tools/Build/situation_features.py` (new, beside `learn_from_flights.py`) | Re-runnable over every saved flight |
 | Learning (§3 steps 1–2) | `learn_from_flights.py` (extend) | Writes reviewed SO tables, never lower safety margins (its existing rule) |
-| Viewer | Training AI for Regatta page, Flights tab | Loads a Unity flight and replays it with each moment's situation and label (target line, skims taken / skipped, phase colour). Not a source of training data |
+| Viewer | (none: the page was deleted 2026-10-16) | Watching happens in the editor's Third Eye; a recorded flight's situations are read with `situation_features.py --json` |
 | Situation library in Unity | The AI Lab (`AI_TRAINING_PLAN.md` T1) | Spawn a hull in a recorded state |
 | Other modes | A per-mode situation provider (targets, hazards, resources) | Regatta first; Skim Race (crystals, track) next; the same groups of §2.3 |
 
@@ -142,8 +143,8 @@ their own consent question; no personal data is recorded.
 | Step | What | Status (2026-10-16) |
 |---|---|---|
 | **S1** | Feature spec (§2.3) and labels (§2.4) | **Written**: `Docs/AI_SYSTEM/situation_features.json` (every feature, label and learning rule, with its exact definition). Waiting on your sign-off: say what is missing or wrong |
-| **S2** | A replay of a flight with its situations | **Built, now a viewer of Unity flights only** (decision above): its **Flights** tab loads a Unity flight and replays it on the stage (your hull as a white ghost, a line to the target you were going for coloured by phase, green / red / amber dots for skims taken / skipped and mistakes), shows every feature of the moment, and compares each leg with the page's Hard AI from the same spot (a guide, not data). `Docs/Studios/RegattaAI/situation.js` |
-| **S3** | `situation_features.py` over Unity's flights | **Built**: `Tools/Build/situation_features.py` reads flight/2 and flight/3, line for line the same as `situation.js`; `--self-test` runs both on `Tools/Build/situation_fixtures/` and fails on any difference (with a negative control). First real flight (your Squirrel, 2026-10-16 02:31, 24 rings): commit about 431 u out (the AI's is 420), 22 skims taken and 7 skipped, a skim taken when its detour is 10 u or less (69% of your choices) |
+| **S2** | A replay of a flight with its situations | Built in the page on 2026-10-16, then **deleted with it** (tests happen in the editor). The maths lives on in `situation_features.py`; an in-editor replay (the Third Eye drawing a recorded flight) is the editor-side follow-up if wanted |
+| **S3** | `situation_features.py` over Unity's flights | **Built**: `Tools/Build/situation_features.py` reads flight/2 and flight/3, now the only implementation (it matched the page's `situation.js` exactly before the page was deleted); `--self-test` checks the fixture flight against its golden output, with a negative control. First real flight (your Squirrel, 2026-10-16 02:31, 24 rings): commit about 431 u out (the AI's is 420), 22 skims taken and 7 skipped, a skim taken when its detour is 10 u or less (69% of your choices) |
 | **S4** | Unity recorder `flight/3` | **Built, not editor-verified**: `HumanFlightRecorder` adds both triggers, the course and every other pilot's position and rings each sample; since 2026-10-16 everything else in §2.1-2.2 (hull state, element levels, `held`, camera, rival velocities, crystals, every ring and rail, rail holes as `railEvents`). Skims are still inferred (speed drop, boost rise); rail hits can now be read from `railEvents` |
 | **S5** | Learning step 1 (commit curve) and step 2 (skim rule, boost angle) | **Built in `situation_features.py --write`**, over editor flights only: from clean legs in the faster half of your own times for each ring, once a hull has 3 editor flights; writes `learned_situations.json` and `LEARNED_SITUATIONS.md` for review. **Not yet in Unity's steering**: the commit curve and skim rule need their two knobs ported to `GateRaceController` / the Skim Race pilot (task T-20261015-7fc3). The situation-library test (the AI put in your own moments) moves to the editor with that port |
 | **S6** | Behaviour cloning | Only if S5 leaves a measured gap |

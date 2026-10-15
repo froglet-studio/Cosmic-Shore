@@ -1,11 +1,11 @@
 {
   "schema": "cosmic-shore.situation-spec/1",
   "plan": "Docs/AI_SYSTEM/SITUATION_RECORDING_PLAN.md",
-  "implementations": ["Docs/Studios/RegattaAI/situation.js", "Tools/Build/situation_features.py"],
-  "test": "python3 Tools/Build/situation_features.py --self-test (both run on Tools/Build/situation_fixtures/, any difference fails)",
+  "implementations": ["Tools/Build/situation_features.py"],
+  "test": "python3 Tools/Build/situation_features.py --self-test (the fixture flight against its golden output, with a negative control)",
   "frame": "Hull-relative: forward f, up u, right = f x u. Angles in degrees, distances in u, times in s, speed in u/s. The target ring is the next one to thread (rings % ring count).",
   "recorded": {
-    "once": ["intensity (the course is generated from RegattaCourse: Docs/Studios/RegattaAI/course.js)", "hull", "domain", "rivalHulls", "turn {p, y, rts} when known", "skimReach (Squirrel 7.5)"],
+    "once": ["intensity (the course is generated from RegattaCourse: Tools/Build/regatta_course_harness/course.js)", "hull", "domain", "rivalHulls", "turn {p, y, rts} when known", "skimReach (Squirrel 7.5)"],
     "per_sample_10hz": ["t", "position", "forward", "up", "speed", "boost (skim multiplier, or 1 + charge)", "xSum ySum xDiff yDiff throttle", "lt rt", "rings threaded",
       "skims, rams, held (the page; Unity infers skims from a boost rise and rail hits from a speed drop)", "rivals: x y z rings per other pilot"]
   },

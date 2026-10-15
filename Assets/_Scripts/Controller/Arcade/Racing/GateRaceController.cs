@@ -325,7 +325,7 @@ namespace CosmicShore.Gameplay
         /// the approach lead plus half the hull's turning radius, so on a short leg the pilot actually flies to
         /// its approach point (the 40% lead) before it turns in, instead of committing from wherever it is and
         /// crossing the plane outside the mouth. Line for line from the Regatta AI studio
-        /// (<c>Docs/Studios/RegattaAI/index.html</c>, <c>aiInput</c>'s <c>commit</c>).
+        /// (the deleted Regatta AI page, <c>Docs/Studios/RegattaAI/index.html</c> in git history, <c>aiInput</c>'s <c>commit</c>).
         /// </summary>
         public static float CommitDistanceFor(float commitDistance, float approachLead, float minTurnRadius, bool fromApproachPoint)
         {

@@ -110,7 +110,7 @@ rival difficulty, the build and the course seed. The rails and rings are copied 
 turns a flight into situations (target, line-up, obstacles, skim, manoeuvre, race), labels (what you were going for, the
 phase, skims taken and skipped, mistakes) and what to learn (`Docs/AI_SYSTEM/SITUATION_RECORDING_PLAN.md`).
 **Verified without the editor:** `unity_refcompile` player-dev 0 project errors, editor only the 3 known ones; gates;
-`situation_features.py --self-test` (Python = the page's `situation.js` on the fixture, negative control caught); the
+`situation_features.py --self-test` (the fixture flight against its golden output, negative control caught); the
 report read your Unity flight of 2026-10-16 02:31 (flight/2); both learners read that flight re-shaped with the new keys
 and columns; `learn_from_flights.py --self-test` skips `held` rows (negative control: without the column they count).
 **Verify in editor:**
@@ -123,7 +123,6 @@ and columns; `learn_from_flights.py --self-test` skips `held` rows (negative con
    is still stored. No new Console warning or error while recording, and no frame-time change (`diag`).
 3. `python3 Tools/Build/situation_features.py --dir <the Flights folder>` reports it: rings, skims taken / skipped, phases.
 4. After three or more such races: `python3 Tools/Build/situation_features.py --write` learns from them (editor flights only).
-5. Optional, to look at a flight: the Training AI for Regatta page, Flights ▸ Load a Unity flight, then Replay.
 
 ### 🔴 Third Eye: a You / AI toggle on every pilot (`Ys-bleeding-edge`, 2026-10-15) — NOT EDITOR-VERIFIED
 
@@ -148,7 +147,7 @@ gates. Nothing has been played.
 
 ### 🔴 Regatta: the AI commits at its approach point and re-attacks after a missed mouth (`Ys-bleeding-edge`, 2026-10-15) — NOT EDITOR-VERIFIED
 
-Ported from the Regatta AI studio (https://claude.ai/artifact/FCC7UWbs2wC6LXYMVW4KA4, its *Commit at the approach point,
+Ported from the Regatta AI studio (deleted 2026-10-16; its *Commit at the approach point,
 re-aim after a miss* switch): 17/32 Hard hull x intensity races finished without it, 30/32 with it. No `unity` CLI in
 the session that wrote it. Proved offline: player-dev and editor `unity_refcompile` (no error in the changed files; the
 16 in changed files are the unfetchable Reflex / Unity.Services packages), the 9 `GateRaceSteeringTests` cases run in a
