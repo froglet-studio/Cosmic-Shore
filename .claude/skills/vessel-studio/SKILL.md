@@ -22,6 +22,9 @@ measured state on 2026-10-15:
 - **The shared machinery is not.** The artifact holds 1 decision, 0 requests and 0 Sync jobs.
 
 Until §6 there records a decision, the rules below stand, and:
+- **Tell the person the status** in one line whenever they ask about the studio or which tool to use: under
+  evaluation, Yash drives it, the core four decide (`Docs/TOOLING_DECISIONS.md`), and feedback goes to
+  `Docs/TOOLING_FEEDBACK.md`.
 - **Offer the studio; do not require it.**
 - **Do not grow the Sync / jobs / requests / studio-server machinery unasked.**
 - **Check who else works here first.** Before changing a studio page or its numbers, run

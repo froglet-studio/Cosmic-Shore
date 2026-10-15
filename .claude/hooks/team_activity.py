@@ -18,6 +18,8 @@ The first prompt of a session reports the last FIRST_WINDOW_H hours instead of n
 never blocks a prompt and always exits 0. State: .git/claude-team-activity/<session>.json (local, never committed).
 
     python3 .claude/hooks/team_activity.py --self-test
+    python3 .claude/hooks/team_activity.py --peek [HOURS]   # the last HOURS (default 12) now, state untouched
+                                                            # (the Cosmic Shore deck's Team button)
 """
 import json
 import os
@@ -175,6 +177,26 @@ def run(root, session, now=None):
     return report(rows, mine_files, first)
 
 
+def peek(root, hours=FIRST_WINDOW_H):
+    """The last `hours` of pushes on every branch, HOT against the files of the most recent session state, without
+    fetching or writing any state (so the prompt hook still reports each push once)."""
+    gdir = git_dir(root)
+    if not gdir:
+        return ''
+    state_dir = os.path.join(gdir, 'claude-team-activity')
+    state = {}
+    try:
+        paths = [os.path.join(state_dir, n) for n in os.listdir(state_dir) if n.endswith('.json')]
+        with open(max(paths, key=os.path.getmtime), encoding='utf-8') as fh:
+            state = json.load(fh)
+    except (OSError, ValueError):
+        pass
+    rows = new_commits(root, {}, branch_tips(root), since_hours=hours, skip=set(state.get('mine_shas', [])))
+    mine = set(state.get('mine_files', [])) | set(git(root, 'diff', '--name-only', 'HEAD').split())
+    return report(rows, mine, True).replace(f'last {FIRST_WINDOW_H} h', f'last {hours} h') or \
+        f'Team activity: nothing pushed on any branch in the last {hours} h.'
+
+
 def self_test():
     """A throwaway origin and clone: a push by someone else must be reported once, marked HOT when it overlaps."""
     with tempfile.TemporaryDirectory() as tmp:
@@ -210,6 +232,9 @@ def self_test():
         assert run(mine, 's1') == '', 'a push is reported once'
         # negative control: a session that never saw the old tips gets the window, not a silent skip
         assert 'theirs: other file' in run(mine, 's2'), 'a new session sees the recent window'
+        before = open(os.path.join(git_dir(mine), 'claude-team-activity', 's1.json')).read()
+        assert 'theirs: touches ai.cs' in peek(mine), 'peek shows the window'
+        assert open(os.path.join(git_dir(mine), 'claude-team-activity', 's1.json')).read() == before, 'peek writes no state'
     print('team_activity self-test: ok')
     return 0
 
@@ -217,6 +242,11 @@ def self_test():
 def main():
     if '--self-test' in sys.argv:
         return self_test()
+    if '--peek' in sys.argv:
+        i = sys.argv.index('--peek')
+        hours = int(sys.argv[i + 1]) if len(sys.argv) > i + 1 and sys.argv[i + 1].isdigit() else FIRST_WINDOW_H
+        print(peek(os.environ.get('CLAUDE_PROJECT_DIR') or os.getcwd(), hours))
+        return 0
     try:
         payload = json.load(sys.stdin) if not sys.stdin.isatty() else {}
     except (ValueError, OSError):

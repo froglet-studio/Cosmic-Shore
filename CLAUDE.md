@@ -54,6 +54,8 @@ This file holds only the rules every session needs. Everything else moved verbat
   Sections: Anti-Patterns to Avoid
 - [`Docs/claude/SHADERS_AND_PERFORMANCE.md`](Docs/claude/SHADERS_AND_PERFORMANCE.md): HLSL / Shader Graph, performance standards, prism performance — Performance Standards now routes to the perf record (`Docs/PERFORMANCE_OPTIMIZATION.md` first, `MEMORY_AUDIT.md`, `PLATFORM_UNIFICATION.md`), the in-game instruments (`diag`, `prof`, `freeze`/`ab`, `renderers`), the allocation gates and the editor-vs-build measurement rules. Read before any perf work.
   Sections: Shader & Visual Development; HLSL / Shader Graph; Performance Standards; Prism System Performance
+- [`Docs/claude/SESSION_DECK.md`](Docs/claude/SESSION_DECK.md): The session deck plugin: `/deck` pane of buttons (team activity, gates, reference compile, sync, ship), band, status line.
+  Sections: What it adds; What each button runs; How it loads; Changing it
 - [`Docs/claude/DESIGN_PHILOSOPHY_EMERGENCE.md`](Docs/claude/DESIGN_PHILOSOPHY_EMERGENCE.md): Read before designing any gameplay feature: fundamentals, order of preference, universality.
   Sections: Design Philosophy: Favor Emergent Systems Over Bespoke Solutions; The fundamentals (working list); Process for curating fundamentals; Order of preference; Don't "cheat" emergence without asking; Universality — one HyperSea, one rule set; When in doubt
 
@@ -73,8 +75,11 @@ the engine renamed twice, retired tools brought back. **Every session:**
   ids, learnings ids, Netcode hashes, GUIDs.
 - **Leave a trail**: write "Affects: <person>'s <area>" in the commit or PR whenever you touch someone else's area.
 
-Who is who, the measured map and the full rules: [`Docs/TEAM.md`](Docs/TEAM.md) (identities in `Docs/TEAM.json`). A
-hook (`.claude/hooks/team_context.py`) reminds each session once.
+Who is who, the measured map and the full rules: [`Docs/TEAM.md`](Docs/TEAM.md) (identities in `Docs/TEAM.json`).
+**The person is told too, not only Claude** (Yash, 2026-10-15: "let them know of all these whenever they query the
+engine or anything"). On a session's first prompt, whatever it is about, `.claude/hooks/team_context.py` shows them a
+one-line team notice. Claude's first reply then says who else works in the area the task touches, or that nobody
+does. `team_activity.py` lists what the others pushed since the last prompt.
 
 ## Tools under evaluation: Amoebius and the Vessel Studio (OPEN DECISION, 2026-10-15)
 
@@ -83,6 +88,15 @@ decided that they help enough to keep. The single tool that should build Cosmic 
 also undecided. The evidence, the options and Claude's recommendation are in
 [`Docs/TOOLING_DECISIONS.md`](Docs/TOOLING_DECISIONS.md). The core four decide, and record the decision in §6 there.
 Until then:
+- **Tell people, every time they ask.** When anyone asks about Amoebius, "the engine", `Port/`, the launcher, the
+  Vessel Studio or which tool to use, open the answer with one line covering:
+  - that the tool is under evaluation;
+  - who drives it: Shombith the engine; Yash the launcher and the Vessel Studio;
+  - that the core four decide after the feedback date in `Docs/TOOLING_DECISIONS.md` §7;
+  - where to say whether it helped (`Docs/TOOLING_FEEDBACK.md`).
+
+  Do this even for a plain question. The hooks show the person the same line, once per session (`team_context.py`
+  for the engine and tools, `vessel_studio_nudge.py` for vessels). Claude's answer carries it every time.
 - **Offer the tools; do not require them.** Recommending the Vessel Studio for vessel work is one line, an option.
 - **Do not grow either tool's scope on your own initiative** (new launcher pages, Sync / jobs / studio-server
   machinery). Build what the person asks for, and mention once that the tool is under evaluation.

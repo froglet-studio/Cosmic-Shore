@@ -132,7 +132,9 @@ The feedback log is how we find out.
 When a decision is recorded:
 - update CLAUDE.md's "Tools under evaluation" section, `Port/CLAUDE.md`, and the `/vessel-studio`,
   `/amoebius` and `/amoebius-artifact` skills;
-- update the two hooks that mention the tools (`.claude/hooks/vessel_studio_nudge.py`, `team_context.py`).
+- update `.claude/hooks/vessel_studio_nudge.py`. `team_context.py` reads this section itself: once it holds a
+  dated row, its notices say a decision was recorded, and they stop saying "under evaluation". Reword them if the
+  decision needs more than that.
 
 ## 7. How we decide
 
