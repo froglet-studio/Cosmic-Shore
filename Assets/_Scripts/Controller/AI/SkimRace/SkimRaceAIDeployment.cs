@@ -47,7 +47,10 @@ namespace CosmicShore.Gameplay
             if (pilot == null) pilot = vesselObject.AddComponent<SkimRacePilot>();
             // No upper clamp: an intensity with no tuning file of its own flies the general policy.
             int intensity = gameData.SelectedIntensity != null ? Mathf.Max(1, gameData.SelectedIntensity.Value) : 1;
-            var config = PolicyFor(intensity);
+            // The per-intensity tuning files were tuned on Skim Race's tracks; any other race (Regatta) flies the
+            // general policy, which is tuned to finish any track. PolicyFor's map check cannot catch it there: a
+            // Regatta scene has no Skim Race track to fingerprint, so the check passed silently.
+            var config = gameData.GameMode == GameModes.SkimRace ? PolicyFor(intensity) : SkimRaceAIConfigSO.LoadDefault();
             // The host's lobby pick, independent of intensity (intensity is the map, difficulty is
             // the opponent): the same per-intensity policy, plus the difficulty's deliberate mistakes
             // (none for Hard). Every seat - backfill and adopted hull alike - is installed under it.

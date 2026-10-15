@@ -65,6 +65,34 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Regatta: five racing AIs fixed from the audit, and the Third Eye shows their paths (`Ys-bleeding-edge`, 2026-10-15) — NOT EDITOR-VERIFIED
+
+**What landed** (`REGATTA.md` §6.1 has the table):
+- **Rhino:** new `RampBoostAIPolicySO`, wired on `Rhino.prefab`. Before this, an AI Rhino never ramped.
+- **Full throttle:** every Regatta AI holds full throttle.
+- **Approach point:** capped at 40% of the leg into each ring. This applies to every gate race.
+- **Dolphin:** its drift nose aims at its own target, it spends its charge only with the nose on the ring, and it holds the drift trigger on a gamepad host.
+- **Urchin:** a free Urchin heads for its own lane, and there is no orbit break while it is attached to a rail.
+- **Squirrel:** a pilot swap now installs the Skim Race pilot, and Regatta uses the general tuning.
+- **Difficulty:** Regatta offers Easy / Medium / Hard.
+- **Third Eye:** each pilot has a trajectory trail, and each AI shows its phase, ring, lap and boost decision.
+
+**Verified without the editor:**
+- `unity_refcompile` player-dev and editor: 0 errors in the 13 changed C# files. The only red is the unfetchable Reflex and Unity.Services packages.
+- `check_ai_no_state_writes`, console-logging, using-directive and conditional-compilation gates: all pass.
+- Nothing has been played.
+
+**Verify in editor:**
+1. Arcade ▸ Regatta, solo, Hard. Tap the AI chips to seat Squirrel, Manta, Rhino, Urchin and Dolphin, then launch.
+2. Open FrogletTools ▸ AI ▸ Third Eye and turn on Trails. Step through each AI with Tab: its trail should pass through every ring.
+3. The readout should read Approach ring N, then Through ring N, with the lap climbing. A cyan ring marks the ring it is after.
+4. **Rhino:** the readout shows "ramping on the straight" on long legs. Speed climbs well past 100 u/s, then it lets go before each ring and still threads it.
+5. **Urchin:** "Heading for its own rail", then "Riding the rail" on its OWN colour at about 300 u/s. It should not crawl at 20 u/s on a rival lane.
+6. **Dolphin:** "charging in the drift", then "discharging on the straight". The boost should carry it toward the ring, not off to the side. Repeat with a gamepad plugged in.
+7. **Manta:** no break-off right after it threads a ring. A short break-off is still possible after a missed mouth (open item).
+8. Every AI finishes 3 laps. Note the order and anything stuck.
+9. Lobby: Easy, Medium and Hard are offered. On Easy the readout shows "Not noticed yet" or "Misjudged" now and then.
+
 ### 🔴 Regatta: the host picks every AI seat's hull, so five hulls race at once (`Ys-bleeding-edge`, 2026-10-14) — NOT EDITOR-VERIFIED
 
 **What landed:** `AIHullSeating.MayPick` / `SeatHull`. The host may tap any AI chip on the launch panel,

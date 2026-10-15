@@ -162,5 +162,17 @@ namespace CosmicShore.Gameplay
 
         /// <summary>One-shot: the driver wants the pilot to let go of its commit drift now.</summary>
         public virtual bool TakeCommitReleaseRequest() => false;
+
+        /// <summary>While true the pilot holds its throttle full (the Rhino's ramp: a lifted throttle is a bend in
+        /// the straight-line gesture, and grades the ramp down).</summary>
+        public virtual bool HoldsFullThrottle => false;
+
+        /// <summary>While 0 or more, the pilot keeps its total steering (|XSum| + |YSum| + |YDiff|) at or under this,
+        /// scaling every axis down together so it still steers toward the objective, only gentler. -1 = no limit.</summary>
+        public virtual float RotationLimit => -1f;
+
+        /// <summary>What the driver is doing, in a few words, for a viewer (the Third Eye); null when it has nothing to
+        /// say. Never read by the pilot.</summary>
+        public virtual string Status => null;
     }
 }
