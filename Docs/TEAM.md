@@ -74,7 +74,8 @@ it; `who_works_where.py` reports a session nobody has merged as unattributed.
    area's owner where it is theirs. Tell the person what you added and suggest who to hand it to. Take a task
    before starting it (`take <id> --who <name>`) and close it with a note (`done <id> --note ...`); a failed test
    is not done, it becomes a new `dev` task. `/ship` puts `team_tasks.py pr-section` in the PR body, so GitHub
-   reviewers see the hand-offs. The `team_tasks_nudge.py` hook reminds every session and gives activation /
+   reviewers see the hand-offs, and every task is mirrored to a GitHub issue labelled `team-task`
+   (`team_tasks.py gh-sync`, run by `.github/workflows/team-tasks-sync.yml`); the board stays the source. The `team_tasks_nudge.py` hook reminds every session and gives activation /
    onboarding prompts that area's open tasks. Self-tests: `team_tasks.py --self-test`,
    `.claude/hooks/team_tasks_nudge.py --self-test`.
 10. **Give a report to whoever asks** (Yash, 2026-10-15: "if someone asks you about a report of some other person

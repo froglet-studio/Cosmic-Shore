@@ -19,8 +19,15 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Take** one, so nobody does it twice: `team_tasks.py take <id> --who <you>`. **Close** it:
   `team_tasks.py done <id> --note "what happened, commit or result"`. A test that FAILS is not done: write
   what failed in the note and add the fix as a new `dev` task.
-- **On GitHub**: `/ship` puts `team_tasks.py pr-section` into the pull request body, so a reviewer sees what a
-  branch handed off. The board itself is plain markdown, readable and editable on GitHub.
+- **On GitHub**: every task is mirrored to an issue (issues #1105-#1144 hold the first 40), titled `[<id>] <task>`
+  and labelled `team-task`, `kind:<kind>`, `area:<area>` and `taken`. Filter the repository's issues by `team-task`
+  to see the board on GitHub or a phone, and comment on an issue to discuss a task. **The board is the source**: take
+  and close tasks here (`take`, `done`); the sync rewrites an issue's body and closes it when the task is done. It
+  runs on every push of this file to `bleeding-edge` or `Ys-bleeding-edge`
+  (`.github/workflows/team-tasks-sync.yml`), nightly, and by hand (`team_tasks.py gh-sync`, `--dry-run` to preview).
+  It never reopens an issue or moves one backwards, so an older copy of the board on another branch cannot undo a
+  newer one; a task closed on GitHub but still open here is reported, so it can be closed here with `done`. `/ship`
+  also puts `team_tasks.py pr-section` into the pull request body, so a reviewer sees what a branch handed off.
 - **Kinds:** `test` (run something and report pass or fail), `dev` (code), `content` (words, tips, art),
   `setup` (a dashboard, a service, a key), `decision` (the owner or the core four decide), `docs`.
 - Ids are `T-<date>-<hash>`, never "the next number", so two branches cannot collide. If two branches both
