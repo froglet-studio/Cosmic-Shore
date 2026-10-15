@@ -27,10 +27,17 @@
 
 **The performance record and how to measure (2026-10-07) - start here before any perf work:**
 
+- **Plugins first (2026-10-08):** check `Docs/claude/PLUGINS_AND_CONNECTORS.md`. The **unity-perf** plugin
+  (`/unity-performance`, `/csharp-zero-gc`, `/code-standards`) runs the performance restart, and Unity's official
+  plugin covers URP, TMP, uGUI, physics and the Unity CLI. If a fitting plugin is not enabled, suggest it once and
+  carry on; this repo's measured rules win over its general advice.
 - **Read first:** `Docs/PERFORMANCE_OPTIMIZATION.md` (where the game stands, what was done, the ranked lever
   list, how to measure without fooling yourself). Then `Docs/MEMORY_AUDIT.md` (what the game HOLDS) and
   `Docs/PLATFORM_UNIFICATION.md` (device tiers: Desktop / MobileHigh / MobileLow, the trail cap, one codebase
   for Windows, iOS and Android). The next session's brief: `Docs/prompts/PERFORMANCE_NEXT_SESSION_PROMPT.md`.
+- **One measurement, one file:** `capture <label> 15` in the HUD console (or FrogletTools ▸ Performance ▸ Capture
+  Performance) runs burst + diag + prof + renderers + cells and leaves ONE JSON on the clipboard;
+  `Tools/Build/perf_capture_report.py` judges it (validity first). Ask for this, never for screenshots.
 - **Instruments in the game:** the console commands `diag` (per-system timings, a report to JSON),
   `prof` (the Profiler Hierarchy as JSON; flags Burst jobs that ran as managed code), `freeze` / `ab`
   (a same-state A/B in one line), `renderers` (a renderer census; `hide <prefix>` / `show` to A/B a family's
@@ -38,6 +45,10 @@
   (`_Scripts/Utility/PerformanceBenchmark/BENCHMARK_TOOL.md`). `diag` records the editor's Code Optimization
   mode: **measure in Release** (the bug icon, bottom right); Debug runs all C# about 5x slower and a number taken
   there says nothing about a build.
+- **The same markers with no Unity (Amoebius, the engine under `Port/`):** `python3 Port/tools/amoebius_markers_run.py --mode <Mode>` boots the
+  game headless in Amoebius, drives the menu to a match and writes every marker's ms, calls and **KB per frame**
+  (`--compare A B` diffs two runs; `Port/docs/ARCHITECTURE.md` §11.3b). Trust its **allocations** and
+  run-to-run deltas; its milliseconds are .NET's, without Burst, so a timing win still needs a Unity Release `diag`.
 - **Every per-frame cost gets a `ProfilerMarker` named `System.Part`** (`SkimRace.Pilot.Decide`,
   `SkimRace.Driver.TrackMpc`, `RaceTrailCap.Hold`, ...) so `prof` and `diag` can name it; the AI's are listed
   in `Docs/SKIM_RACE_AI.md` §12.

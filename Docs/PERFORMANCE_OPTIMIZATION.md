@@ -211,6 +211,10 @@ bond), which is why the scenario set gains an S6.
 | 10-07 | Compared with `claude/confident-pascal-w76l2o` @ `41e27e9d2`. It already contains this branch up to the stagger (`e8fc01dcd`) plus 37 commits: retuned AI policies (v5-i1, v3-i2, v2-i4, v3-general), its own fixed-grid re-plan stagger (dropped in favour of `SkimRaceReplanGate`), the objective refactor, Regatta, Hijack ownership replication, toasts, Urchin AI/HUD, fleet boost policies and the party/netcode request policy. `SkimRaceDriver.cs` is identical | AI cost the same within noise (simulator, Mono double precision, 2 seats, 18 ms frames, 6 races): per seat I2 1.67 vs 1.61 ms, I1 0.150 vs 0.155, I4 0.46 vs 0.51 (`MassGuardSeconds` +3-6%). No new per-frame allocations (`scan_perframe_allocations.py` identical once line numbers are dropped); the new `Update`s are 0.5 s toast polls and Hijack's 0.1 s ownership flush; no package, project-setting or Burst-job change, so the managed-Burst regression (§8.0j) is on both |
 | 10-08 | Burst follow-up (`SKIM_RACE_AI.md` §8.0j): the Burst Inspector compiles all eight flagged jobs, and four `prof`s with Synchronous Compilation on still show the game's jobs managed (1.3-1.9 ms a frame on the main thread). So it is neither a compile error nor a compile still in flight. New `burst` console command (Burst's switches, an attached debugger, the Code Optimization, and a probe job that reports how it really ran); `prof` reports now carry the run environment, and `diag`'s gains the job compiler switch and an attached debugger | Cause still open; the `burst` line decides between a runtime switch, a debugger and Burst not reaching Assembly-CSharp |
 | 10-08 | **Cause found and fixed** (`SKIM_RACE_AI.md` §8.0k). `Editor.log`: `` Unable to find internal function `System.MathF::Sqrt` `` (and Acos, Pow, Exp, Sin, Cos), then `Burst is disabled for` the game's jobs, "due to a failure to resolve one or more `extern` methods". In Unity's Mono those `MathF` members are InternalCalls Burst cannot link. `SubstrateAgentJob` and `SwarmPoseJob` (from `bleeding-edge`, 10-05) called them, and Burst builds every Assembly-CSharp job into one library, so every game job ran managed. Both kernels now call `(float)System.Math` helpers (Burst intrinsics); both text gates (which had recommended `MathF`) fail on any other `MathF` member and name exactly the six on the old sources. `burst` now prints Burst's refusal from the log. First the cache-clean (`Library/BurstCache`) fixed a separate Release hang at "Building arena 42%" (stale compiled jobs) | Release baseline with the jobs still managed: 65.8 fps, frame avg 15.2 / p95 19.9 ms, CPU busy 13.1, `Decide` 2.35 / p95 4.83, `ShellContact.Query` 0.39, managed jobs 0.32 ms of main thread. Expected: ~0.3 ms back in Skim Race (`ShellContact.Query` to ~0.1) plus worker time; more in ecology modes. Harnesses: substrate group K 100% bit-identical (206,100 agent-steps) once its reference uses the same primitives; swarm, ecology-LOD, showcase-cell pass. **Not yet measured in Unity** |
+| 10-08 | Merged `Ys-bleeding-edge` (`280c0475f`, which carries `bleeding-edge` `afd66621d`) and re-checked this effort's work on the result. 8 conflicts: the Skim Race pilot/objective/deployment take theirs (the team plan moved into the objective) and keep the seat-stagger `ReplanGate`; the rest are doc or identical-fix conflicts. None of the simulator's AI files, the policy assets, the Burst job files' math, the perf tools or `SkimRaceDriver` changed in the merge. New on their side and checked for cost: `Prism.ApplyColorShade` (a float compare per material sync unless a gyroid shades the prism), a held-input map in `R_VesselActionHandler`, `SubstrateSiege` (managed tick, not Burst), and their fix to complete the swarm pose job before its inputs are disposed | All C# gates, both Burst MathF gates, the substrate (K 100% bit-identical) and swarm harnesses, both glue type-checks (the swarm one after adding `EventStopTrigger` to its FMOD stub: red on `Ys-bleeding-edge` too), `burst` tests, unity_refcompile player and player-dev OK (editor: the 4 old ones only), Froglet Engine tests 1596/1596 and 352/352. The port's live compile has 9 errors from upstream files (Nca creature, nested gyroid, swarm audio, wormhole, Grizzly claw: engine gaps; `Ys-bleeding-edge` has the same 9 plus 19 this branch fixed). Then merged its next 7 commits (`9096b5482`: party size enforced by the session, the net session record, edit-mode suites on Prisma), no conflicts. That harness (`Tools/Build/prisma_edit_mode_tests`) runs this effort's own suites with no Editor, on Prisma's Unity runtime: SkimRaceAITests 37, ProfilerCaptureTests 42, BurstProbeTests 4, MarkerBudget 22, ABComparison 32, FrameBoundness 20, RendererCensus 13, SkimRaceCourseQuery 5, **175/175 pass**. Its default suites: 559/569, the 10 failures being exactly the pre-existing ones `REVIEW_INVITE_AND_RESILIENCE.md` F8 lists. Unity test steps unchanged (`SKIM_RACE_AI.md` §8.0k) |
+| 10-09 | **Per-system profiling without Unity.** Amoebius's (the engine under `Port/`, renamed from Prisma 2026-10-09) `ProfilerMarker` was a no-op, so every `diag` marker read 0 there. The engine now records each marker the game times (time, calls and **bytes allocated** per frame, loop thread), and the game's unchanged `diag` reports real numbers in Amoebius's Debug player (`--do console diag`). Also closed the 9 live-compile gaps that kept the game from building in Amoebius. One command runs a match and writes the markers: `python3 Port/tools/amoebius_markers_run.py` (`Port/docs/ARCHITECTURE.md` §11.3b) | Skim Race I2, 3 seats (2 AI), 1800 frames, fully-optimised JIT: the ranking matches the 10-08 Unity `diag` (`Pilot.Update` 0.49, `Decide` 0.45, `TrackMpc` 0.40, `PoolRefill.Squirrel Prism` 0.07, `ShellContact.Query` 0.06 ms/frame). **New lead: `PoolRefill.Squirrel Prism` allocates ~9 KB/frame**, about a third of the 30 KB/frame in Unity, and `PoolActivate` ~0.7 KB; `LightFauna.Feed` ~1.2 KB when fauna are in the cell. Hypothesis until a Unity `prof` (sort GC) confirms it. Repeatability: allocations ~1%, ms 5-10% between identical runs |
+| 10-14 | Merged `bleeding-edge` `d0ee1c45d` (668 commits; Prisma → **Amoebius**; the Vessel Studio; UGS-only online play; the FrogletTools menu reorganised) and re-checked this effort on the result. Upstream had closed five of the nine engine gaps this branch filled on 10-09 (`attachedRigidbody`, `OverlapBoxNonAlloc`, `EventStopTrigger`, `CopyTexture`, `CullMode`/`RenderQueue`) its own way; those took upstream's version and this branch's duplicates were deleted. The marker collector, `capture`, the Capture Performance window and the reader are not upstream and stay. **None of §3.6's five owed tests was done upstream**, and the perf record itself had no upstream change. Upstream's `Docs/QA/DEV_TASKS.md` DT-003 lists the 35 red edit-mode tests, which covers the `RaceRankToastDriver` and `SparrowCombatTier` failures this branch's Amoebius run of the suite showed (559/569, pre-existing). `Tools/Build/prisma_markers_run.py` is now `amoebius_markers_run.py` | Amoebius Debug build, engine tests, `unity_refcompile player-dev` (RESULT OK) all green on the merged tree; `/verify-unity` still unavailable |
+| 10-15 | Merged this effort into **`Ys-bleeding-edge`** (the owner's working branch; it already carried `bleeding-edge` `d9b143d38`), so the capture tooling runs there. Amoebius did not build on that tree: upstream `41a53b61c` (browser Toybox boot) made `OfflineModeService` use Netcode's `SinglePlayerTransport`, which the engine lacked - a stand-in was added. `capture` now records **every enabled camera**: a second camera (the Third Eye window, a preview, a Scene view) renders the world again, and the reader warns when it sees more than one, so "fewer frames with Third Eye open" is a measured fact, not a guess | Amoebius Debug build + a real `capture` on the Ys tree (cameras: `1 enabled`), engine tests 1979/1979, `unity_refcompile player-dev` OK, gates clean |
 
 ### 2.1 How the picture changed
 
@@ -388,6 +392,83 @@ scenario set exists, a nightly `-csmbench` on S1–S6 with a budget per scenario
 | GC comes from Entities Graphics / prisms / the HUD / coroutines | Legacy path allocates more; empty scene allocates more; hidden overlay same; arithmetic 100× short | `§0.11`–`§0.11.3`, `§0.9` |
 | The stress cloud inflated the boot-world numbers | Reproduced without it | `§0.11.4` |
 
+### 3.6 The 2× plan: 100,000 prisms at 60+ fps on a phone (set 2026-10-14)
+
+**The ask.** The owner saw ~40k prisms under 60 fps and wants 100k at 60+ on a phone: at least
+twice today's performance. This section states what the record already proves, what it does not,
+and the order of work. Every number below is from §1.0, the archive or §3.3; nothing here is new
+measurement.
+
+**Why 40k prisms read under 60 fps — the prisms are not the cost.**
+
+| Fact | Evidence |
+|---|---|
+| 103,823 prisms on the instanced path: **122 fps, 4.8 ms CPU, 2.1 ms GPU** (lab, desktop editor) | archive §0.10 |
+| S4 Scurry i4 with **69,094** prisms: **74.8 fps**, 10.6 ms CPU — the most prisms of any scenario and the fastest | §1.0 |
+| S2 Lattice with 42,076 prisms: 38.6 fps, 21.4 ms CPU — but 89–93% of its draws are **not prisms** (2,401 transparent draws: ~40k spindle renderers, 4,189 snow objects, crystals); prisms are 23 opaque draws | §1.0, archive §0.11.4–5 |
+| S5 Wildlife Liberation with only 13,419 prisms: **19.8 fps**, 46 ms CPU — all script: UniTask continuations 20.2 ms, `LightFauna.Update` 13.1 ms, behaviour tick 12.7 ms | §1.0 |
+| Marginal cost per prism in a real world: 0.24–0.43 µs/frame on top of a **fixed ~10 ms** that is there at 0 prisms | archive §0.11.4 |
+| Collider-LOD sweep spikes **15.9 ms every 0.25 s** at ~69k prisms | L11 |
+
+So a scene "with 40k prisms" is slow because of what grows alongside them (spindles, snow, fauna,
+AI, the sweep) and a 10 ms floor, not because of the prism draw path, which is already near its
+limit. Doubling prism count on the instanced path costs ~2–4 ms; doubling the rest costs the frame.
+
+**What the record does NOT contain: a single phone measurement.** Every row above is a desktop
+editor. The only phone data are two anecdotes (`PLATFORM_UNIFICATION.md` §40–66): a 4 GB Samsung at
+~4 fps, an iPhone at 30–40 fps. Nobody has recorded which **prism path** a phone takes. The device
+gate (`EntitiesGraphicsSupportProbe`, `PRISM_ECS_MIGRATION.md` §8) drops every prism to the legacy
+MeshRenderer path — the **12.9× costlier** one — when compute shaders or the `SparseUploader`
+kernels are missing; `PRISM_ECS_MIGRATION.md` says BRG needs Vulkan/Metal and the Android build is
+Auto [Vulkan, GLES3]. A phone that lands on GLES3 may be running the path the lab measured at 14 fps
+for 100k prisms. That one unknown could be the whole "phone is slow" story, and it is a 10-minute test.
+
+**Three ceilings 100k on a phone must clear, in the order they bite:**
+
+1. **Which path** — legacy vs instanced is 12.9×. Nothing else matters until this is known per device.
+2. **Memory** — each prism is still a GameObject with 7 MonoBehaviours and a collider (~2–4 KB) plus a
+   ~375 B render entity; 103k prisms read 1.8 GB managed in the editor (`MEMORY_AUDIT.md`). A MobileLow
+   phone has < 5 GB total. 100k GameObject prisms will not fit; **L4 pure-entity prisms** is structural,
+   not optional, for this target.
+3. **GPU** — 100k × 24 tris = 2.4M prism tris/frame, 2.1 ms on a desktop GPU. A mid phone GPU is
+   ~10–20× slower: 20–40 ms. Fine on MobileHigh at 71% render scale, doubtful on MobileLow. And the
+   non-prism transparent load (spindles/snow overdraw) hits tile-based phone GPUs far harder than a desktop.
+
+**Definition of "2×" (so it can be passed or failed).** Two numbers, both on the same phone, same
+scenario, Release, `diag` 15 s, §4.7 protocol:
+- **A.** CPU busy ms at the §1.0 scenario set (S2 and S4 are the prism-heavy ones) — halve it.
+- **B.** The largest prism count that holds 60 fps p95 in S4 (the fastest prism-heavy scene) — double it,
+  on each tier device.
+
+**Order of work.** Each step ends in a measurement; the next step is chosen from it, not from this list.
+
+| Step | What | Owner | Proof |
+|---|---|---|---|
+| **0** | **Phone baseline.** Development build (Android Vulkan, Android GLES3 forced, iOS). On each: F7, `diag phone 15` in S2 and S4, `prisms 50000` then `diag`, `renderers`, and the HUD's prism path line. Pull `persistentDataPath/CosmicShore Diagnostics/*.json`. Two devices minimum: one MobileLow (Adreno 610 / Mali-G52 class), one MobileHigh | human + tool | `diag` JSONs committed under `Docs/perf/phone/`; `prismPath` field says `instanced` or `legacy` per device |
+| **1** | **Guarantee the instanced path on phone.** If step 0 shows `legacy` anywhere: decide GLES3 (drop it, or make the probe fall back to a cheap non-BRG instanced path) — the "biggest open product decision" in `PRISM_ECS_MIGRATION.md` §417. If `instanced` everywhere, this step is free | code | re-run step 0: every device `instanced` |
+| **2** | **Non-prism render load** (phone GPU): L1 spindles onto the instanced path keeping the alpha fade; L6 snow distance; cap transparent draws per tier. S2 is the scene | code | S2 `diag`: transparent draws and GPU ms halved on the MobileLow device |
+| **3** | **Script floor**: L8 fauna body-sync (gated on `Fauna.BodySync` ≥ 8 ms in S5 — Amoebius reads 0.06 ms in Skim Race, so measure S5 first), L9 gunfight continuations, L11 slice the collider sweep, L5 spatial-index early-out, L3 GC (`PoolRefill` ~9 KB/frame lead) | code | S5 and S4 `diag`: CPU busy ms; no 15 ms sweep spike at 69k |
+| **4** | **L4 pure-entity prisms** — the structural change for 100k on a phone: no GameObject per prism, collider only within the 200 m LOD radius, data in chunks. Largest step; design exists (Checkpoint D) | code | 100k `prisms` cloud on the MobileHigh device: memory and fps recorded; S4 at 2× its prism count |
+| **5** | **Gate.** Nightly `-csmbench` on S1–S6 per tier (§3.4) plus the Amoebius marker run as the no-editor allocation gate (§2, 10-09) | tooling | a regression fails a run |
+
+**How a test is run now (2026-10-14).** One command in the HUD console, `capture <label> 15`, or the
+FrogletTools ▸ Performance ▸ Capture Performance button; paste the one file it leaves on the clipboard.
+The agent reads it with `Tools/Build/perf_capture_report.py`, which refuses a Debug-optimization, Deep-Profile
+or managed-job capture before it ranks anything. **First editor test asked for: S2 Lattice** - Menu_Main,
+Cell Selector → Lattice, let it grow 8 minutes, `capture S2 15`. It is the owner's "40k prisms under 60 fps"
+scene, and the bundle also answers the Burst question (`burst` + the Profiler's managed-job rows).
+
+**Tests owed before any lever is built** (this is the list the owner asked for):
+1. Phone `diag` S2 + S4 + `prisms 50000` on a MobileLow and a MobileHigh device, Vulkan and GLES3 — the baseline and the path answer.
+2. Unity Release `burst` + `diag` + `prof` in Skim Race I2 — confirms the 10-08 Burst fix (still unmeasured) and the `PoolRefill` allocation lead.
+3. `prof` of S5 for `Fauna.BodySync` average — the L8 go/no-go.
+4. Memory reading in a build (not editor) at 50k and 100k prisms — sizes L4.
+5. S3 Rampage intensity 1 — still owed from §1.0.
+
+**What this plan refuses.** Re-keying prototypes, chunk locality, opaque snow/spindles, "prism draw
+calls are the cost" — all measured dead (§3.5). And no lever is built on a desktop number when the
+target is a phone: step 0 comes first.
+
 ---
 
 ## 4. How to measure — simply
@@ -400,6 +481,7 @@ editor window, and screenshots re-typed by hand.
 
 | Question | Tool | Output |
 |---|---|---|
+| **Everything, once, with nothing to transcribe** | `capture <label> 15` (or FrogletTools ▸ Performance ▸ Capture Performance), then paste the file (§4.6) | One JSON: burst + diag + prof + renderers + cells + console; `perf_capture_report.py` reads it |
 | **What is costing the frame?** | **Unity Profiler**, Hierarchy + Timeline, Deep Profile **off** | Names the caller. **Always start here.** |
 | **Where does the GC come from?** | Profiler Hierarchy, sort by **GC Alloc** — or `prof <label>` (`topGc` ranks by SELF allocation) | Names the caller |
 | **The Hierarchy as text** | `prof <label> [frames] [root=…] [sort=…]` (§4.5) | `prof_*.json`: averaged tree, top self, top GC, threads, typical + spike frame |
@@ -409,6 +491,8 @@ editor window, and screenshots re-typed by hand.
 | **Is it GPU-bound?** | HUD `Bound` row, after `fps uncap` | |
 | **Prism-only questions** | Lab scene `PrismGridExplosionTest` (`grid`, `lab mix …`) | Fixed population, no Bootstrap |
 | **The real number** | A Development build, run the §4.7 way, `diag` per scenario | The only number to judge against the target |
+| **Which system allocates, with no Unity?** | `python3 Port/tools/amoebius_markers_run.py --mode <Mode>` (Amoebius, headless) | Per-marker ms and **KB/frame**; allocations carry over to Unity, milliseconds do not (no Burst, .NET JIT) |
+| **Did my change help (allocations, scaling)?** | Two `amoebius_markers_run.py` runs, then `--compare A B` | Per-marker delta; confirm a timing win in a Unity Release `diag` |
 | **The Hierarchy of a BUILD** | Profiler attached to the build → **FrogletTools ▸ Performance ▸ Export Profiler Frames to JSON** | The same `prof_*.json` as the in-Editor command |
 
 ### 4.2 Pre-flight — every time
@@ -567,6 +651,7 @@ Three ways to satisfy the rule, simplest first:
 | `freeze on` / `freeze off` | Hold ecology production in every cell (§4.5); released on scene change |
 | `ab "<A>" "<B>" [seconds] [rounds]` | Counterbalanced A/B of two commands → one line of paired deltas + `ab_*.json`; `ab stop` cancels (§4.5) |
 | `burst` | Are this project's Burst jobs running as Burst? Prints Burst's switches (`enabled`, `compilation`, `synchronous`, the job system's `jobCompiler`, `jobsDebugger`), an attached debugger and the Code Optimization, then runs a probe job in Assembly-CSharp (`Run()` and `Schedule()`) that reports `BURST` or `MANAGED` from how it actually executed, then Burst's own refusal from the editor log (jobs disabled, the reason, unresolved InternalCalls), since the last domain reload (`SKIM_RACE_AI.md` §8.0j, §8.0k) |
+| **`capture [label] [seconds]`** | **The whole measurement in one file** (added 2026-10-14): runs `burst`, `diag`, `prof` (Editor), `renderers` and `cells` in sequence, collects the console's warnings/errors meanwhile, lists every enabled camera (an extra one - the Third Eye window, a preview - renders the world again and the reader warns), and writes `capture_<scene>_<label>_*.json` with the diag and prof JSON embedded verbatim. `capture copy` puts the file's text on the clipboard. **FrogletTools ▸ Performance ▸ Capture Performance (one file)** is the same with a button, opens the Profiler for `prof`, and copies the file when done. `Tools/Build/perf_capture_report.py <file>` prints the judgement (validity first: Debug optimization, Deep Profile, frame cap, Burst, managed job time); two files = a before/after |
 | `prof [label] [frames] [root=…] [sort=…] [min=…] [mingc=…] [depth=…] [top=…]` | Editor only: record + read back Profiler frames → averaged tree, top self time, top allocators, thread busy/wait, typical + spike frame in `prof_*.json`; `prof stop` cancels (§4.5). For a BUILD, use FrogletTools ▸ Performance ▸ Export Profiler Frames to JSON |
 
 ### 4.7 The test protocol (industry standard, adopted 2026-09-26)

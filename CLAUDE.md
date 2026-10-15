@@ -58,6 +58,8 @@ This file holds only the rules every session needs. Everything else moved verbat
   Sections: Shader & Visual Development; HLSL / Shader Graph; Performance Standards; Prism System Performance
 - [`Docs/claude/SESSION_DECK.md`](Docs/claude/SESSION_DECK.md): The session deck plugin: `/deck` pane of buttons (team activity, gates, reference compile, sync, ship), band, status line.
   Sections: What it adds; What each button runs; How it loads; Changing it
+- [`Docs/claude/PLUGINS_AND_CONNECTORS.md`](Docs/claude/PLUGINS_AND_CONNECTORS.md): Claude plugins and connectors that help build this game (unity-perf, Unity's official plugin, Sentry, Figma), the check-and-suggest rule a session follows before Unity perf, C# review, URP, UI, physics or package work, and the plugin-driven performance restart.
+  Sections: The rule every session follows; Plugins; Connectors; The performance restart (planned 2026-10-08)
 - [`Docs/claude/DESIGN_PHILOSOPHY_EMERGENCE.md`](Docs/claude/DESIGN_PHILOSOPHY_EMERGENCE.md): Read before designing any gameplay feature: fundamentals, order of preference, universality.
   Sections: Design Philosophy: Favor Emergent Systems Over Bespoke Solutions; The fundamentals (working list); Process for curating fundamentals; Order of preference; Don't "cheat" emergence without asking; Universality — one HyperSea, one rule set; When in doubt
 
