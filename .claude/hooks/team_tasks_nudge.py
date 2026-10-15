@@ -14,6 +14,11 @@ work, and recommend it to anyone, Shombith or someone else").
       * the person sees the open activation tasks count;
       * Claude gets those tasks and is asked to make to-dos and tests for the other collaborators as it works.
   - A prompt naming another area on the board ("Analytics", "Performance", ...) gets that area's open tasks, once.
+  - TASKS WAITING ON A PERSON (Yash, 2026-10-15: "make sure to tell this to Garrett, this has to [reach him] next time
+    he works"): the tasks whose "Who can take it" names a core collaborator FIRST (the owner, not the offer) are shown
+    to that person - on the first prompt when git's user.email is theirs (Docs/TEAM.json), and once whenever a prompt
+    names them or touches their area (OWNER_TOPICS). Cloud sessions commit as a shared address, so the topic match is
+    what reaches them there.
 
 It never blocks a prompt and always exits 0.
 
@@ -30,6 +35,14 @@ ACTIVATION = re.compile(
     r'new players?|quest ?(?:graph|track|map)|breadcrumbs?|spotlight|guided path|menu ?guide|lessons?|mentor|'
     r'drills?|ghost ?demo|coach ?marks?|retention|funnels?|d1|d7)\b', re.IGNORECASE)
 MAX_LISTED = 8
+
+# A prompt touching one of these areas is, most likely, that person's session (or work they must hear about).
+OWNER_TOPICS = {
+    'Garrett': re.compile(
+        r'\b(?:garrett|crystals?|omni|charge arcs?|seam walk|depth prisms?|mass columns?|ecology|ecosystem|flora|'
+        r'fauna|spindles?|lattice|arboretum|snow ?(?:shards?|changer)|projectiles?|explosions?|aoe|impactors?|'
+        r'squirrel|regatta|bleeding-edge)\b', re.IGNORECASE),
+}
 OFFER = 'Yash has offered to take tasks: editor tests, playtests, UGS and dashboard setup, follow-up fixes.'
 
 
@@ -52,6 +65,42 @@ def open_tasks(base):
 
 def names_yash(t):
     return 'yash' in t.fields.get('Who can take it', '').lower()
+
+
+def owner_of(t):
+    """The first name in "Who can take it" - the person the task waits on (later names are offers)."""
+    who = t.fields.get('Who can take it', '')
+    m = re.match(r'\s*([A-Z][a-z]+)', who)
+    return m.group(1) if m else ''
+
+
+def waiting_on(tasks, name):
+    # Performance first: the team asked for those to reach the owner before anything else (Yash, 2026-10-15).
+    mine = [t for t in tasks if owner_of(t) == name]
+    return sorted(mine, key=lambda t: t.area.lower() != 'performance')
+
+
+def person_from_git(base):
+    """The TEAM.json person whose email git is configured with, or None (cloud sessions use a shared address)."""
+    try:
+        import subprocess
+        email = subprocess.run(['git', 'config', 'user.email'], cwd=base, capture_output=True, text=True,
+                               timeout=3).stdout.strip().lower()
+        with open(os.path.join(base, 'Docs', 'TEAM.json'), encoding='utf-8') as fh:
+            for p in json.load(fh).get('people', []):
+                if email and email in [e.lower() for e in p.get('emails', [])]:
+                    return p.get('name')
+    except Exception:
+        pass
+    return None
+
+
+def waiting_context(name, mine):
+    return (f'TASKS WAITING ON {name.upper()} (Docs/TEAM_TASKS.md, owner named first). Tell {name} about them in your '
+            f'first reply, in plain words and one line each, before or beside the work asked for - teammates left '
+            f'them for {name} to pick up "next time he works" (Yash, 2026-10-15). The performance ones carry their '
+            f'measurements in Docs/PERFORMANCE_OPTIMIZATION.md (section 2, the 10-15 rows; levers L1, L13) and '
+            f'Docs/Reports/PERFORMANCE.md "Waiting on Garrett". Do not do them unasked; offer.\n' + listing(mine))
 
 
 def listing(tasks):
@@ -101,6 +150,16 @@ def respond(payload, base=None):
             ' Suggest Yash for what he can do, and Shombith (Menu_Main / UI), Garrett (product decisions) or Caleb / '
             'Andrew (QA) where it is theirs.\n' + (listing(act) or '- (no open activation tasks)'))
 
+    me = person_from_git(base)
+    for name, topic in OWNER_TOPICS.items():
+        mine = waiting_on(tasks, name)
+        if not mine:
+            continue
+        if (me == name or topic.search(prompt)) and once(session, 'waiting-' + name.lower()):
+            notices.append(f'{len(mine)} team task(s) wait on {name} (Docs/TEAM_TASKS.md): '
+                           + ', '.join(t.id for t in mine[:6]) + ('...' if len(mine) > 6 else '') + '.')
+            context.append(waiting_context(name, mine))
+
     low = prompt.lower()
     for area in sorted({t.area for t in tasks if t.area.lower() != 'activation'}):
         if re.search(r'\b' + re.escape(area.lower()) + r'\b', low) and once(session, 'area-' + area.lower()):
@@ -136,13 +195,15 @@ def self_test():
     bad = []
     base = root()
     sid = 'selftest-%d' % os.getpid()
-    kinds = ('board', 'activation', 'area-analytics', 'area-performance')
+    kinds = ('board', 'activation', 'area-analytics', 'area-performance', 'waiting-garrett')
     try:
         first = respond({'prompt': 'fix the party invite toast', 'session_id': sid}, base)
         again = respond({'prompt': 'and the lobby', 'session_id': sid}, base)
         act = respond({'prompt': 'improve onboarding for new players', 'session_id': sid}, base)
         act2 = respond({'prompt': 'more FTUE work', 'session_id': sid}, base)
         area = respond({'prompt': 'the analytics funnel next', 'session_id': sid}, base)
+        garrett = respond({'prompt': 'tune the omni crystal flux arcs', 'session_id': sid}, base)
+        garrett2 = respond({'prompt': 'more crystal work', 'session_id': sid}, base)
     finally:
         for k in kinds:
             try:
@@ -167,6 +228,14 @@ def self_test():
     if any(t.area == 'Analytics' for t in tasks) and (not area or 'Analytics' not in
                                                       area['hookSpecificOutput']['additionalContext']):
         bad.append('a prompt naming a board area did not get that area\'s tasks')
+    if waiting_on(tasks, 'Garrett'):
+        if not garrett or 'TASKS WAITING ON GARRETT' not in garrett['hookSpecificOutput']['additionalContext'] or \
+                'Garrett' not in garrett.get('systemMessage', ''):
+            bad.append('a prompt in Garrett\'s area did not show the tasks waiting on him')
+        if garrett2 and 'TASKS WAITING ON GARRETT' in garrett2['hookSpecificOutput']['additionalContext']:
+            bad.append('the tasks waiting on Garrett repeated in one session')
+    if OWNER_TOPICS['Garrett'].search('fix the party invite toast'):
+        bad.append('a party prompt matched Garrett\'s topics')
     for yes in ('onboarding', 'FTUE', 'the first-login guide', 'tooltips', 'tool tip', 'new player retention',
                 'the Mentor tips', 'ghost demo', 'D1 retention', 'quest graph'):
         if not ACTIVATION.search(yes):
