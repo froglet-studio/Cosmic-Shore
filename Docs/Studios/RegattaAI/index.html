@@ -87,6 +87,8 @@
   aside { display: grid; gap: 10px; min-width: 0; }
   .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; display: grid; gap: 10px; min-width: 0; }
   .panel h3 { margin: 0; display: flex; justify-content: space-between; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+  .panel h3 > .hbtns { margin-left: auto; display: flex; flex-wrap: wrap; gap: 6px; justify-content: flex-end; }   /* a heading's buttons sit on its right, beside the fold button */
+  .panel h3 > .hbtns + .vsc-btn { margin-left: 0; }
   .field { display: grid; grid-template-columns: 86px minmax(0, 1fr) 44px; gap: 8px; align-items: center; }
   .field > span { font-size: 12px; color: var(--muted); }
   .field input[type=range] { width: 100%; accent-color: var(--accent); }
@@ -200,7 +202,7 @@
       </div>
 
       <div class="panel" id="grp-players">
-        <h3>Players <span><button class="btn small" id="gridBtn" type="button" title="REGATTA.md section 8: Squirrel, Manta, Rhino, Urchin, Dolphin over three domains">Five-hull test</button> <button class="btn small" id="cardBtn" type="button" title="One of every hull on the Regatta card">Whole card</button></span></h3>
+        <h3>Players <span class="hbtns"><button class="btn small" id="gridBtn" type="button" title="REGATTA.md section 8: Squirrel, Manta, Rhino, Urchin, Dolphin over three domains">Five-hull test</button> <button class="btn small" id="cardBtn" type="button" title="One of every hull on the Regatta card">Whole card</button></span></h3>
         <div id="playersPanel"></div>
       </div>
 
@@ -253,7 +255,7 @@
       </div>
 
       <div class="panel" id="grp-score">
-        <h3>Scorecard <span><button class="btn small" id="scoreBtn" type="button">Time every hull</button> <button class="btn small" id="scoreAllBtn" type="button">All intensities (Hard)</button></span></h3>
+        <h3>Scorecard <span class="hbtns"><button class="btn small" id="scoreBtn" type="button">Time every hull</button> <button class="btn small" id="scoreAllBtn" type="button">All intensities (Hard)</button></span></h3>
         <p class="note" id="scoreNote">Time every hull: each card hull races alone at this intensity at Easy, Medium and Hard (Hard once, Easy and Medium the median of three seeds), beside the balance model's skilled-pilot time. Hulls never touch each other on Regatta (the rails are static, PvP is petals only), so a solo time is the grid time. Green: within 25% of the model; amber: within 2×; red: slower, or did not finish.</p>
         <div class="tblwrap"><table class="tbl" id="scoreTbl"></table></div>
         <div class="tblwrap"><table class="tbl" id="allTbl"></table></div>
