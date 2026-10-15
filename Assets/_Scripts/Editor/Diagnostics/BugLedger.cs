@@ -816,13 +816,15 @@ namespace CosmicShore.Editor
         /// would never be validated by the machine that actually reproduces the bug. So a published
         /// fix whose <c>fixedUtc</c> is NEWER than the local copy's last fix is adopted exactly like
         /// pressing Mark Fixed: validating, clean count reset, the fixer and their notes carried.
-        /// Only an OPEN issue adopts (an ignored one stays parked, a validating one is already on the
-        /// clock), and only a strictly newer fix — after a regression reopens it, the same fix is
+        /// An OPEN or VALIDATING issue adopts it (an ignored one stays parked), and only a strictly newer fix — after a regression reopens it, the same fix is
         /// never re-adopted; it takes a NEW fix to put it back on the clock.
         /// </summary>
         static void TryAdoptPublishedFix(BugLedgerIssue live, string sharedPath)
         {
-            if (!live.IsOpen) return;
+            // OPEN adopts the fix; VALIDATING adopts a NEWER one too (a reporter who pressed Fix
+            // before anyone fixed it would otherwise never see the real fix's notes, and the clean
+            // runs counted so far were against the old code, so the count restarts).
+            if (!live.IsOpen && !live.IsValidating) return;
             var published = BugLedgerIssue.FromJson(File.ReadAllText(sharedPath));
             if (published == null || !published.IsValidating) return;
             if (!TryParseIso(published.FixedUtc, out var publishedFix)) return;
@@ -1071,6 +1073,37 @@ namespace CosmicShore.Editor
             return s.Length > max ? s[..max] + "…" : s;
         }
 
+        /// <summary>
+        /// Frames that are the LOGGING itself, not the code that logged. With Unity's native
+        /// ("Full") stack trace, every <c>Debug.LogError</c> starts with ~10 of these — the
+        /// engine's stack walker, <c>DebugLogHandler</c>, <c>Logger</c>, and our own
+        /// <c>BenignLobbyLogFilter</c> — so a 10-line excerpt kept ONLY plumbing and cut off the
+        /// caller (the 2026-10-15 "Rpc methods can only be invoked after starting the
+        /// NetworkManager!" issue arrived with no way to tell who sent the RPC).
+        /// </summary>
+        static readonly string[] PlumbingFrames =
+        {
+            "(Unity) ", "StackWalker", "Stacktrace::", "DebugStringToFile", "DebugLogHandler",
+            "UnityEngine.Logger:", "UnityEngine.Debug:", "(wrapper managed-to-native)",
+            "BenignLobbyLogFilter", "FilteringLogHandler", "CosmicShore.Utility.CSDebug",
+        };
+
+        static bool IsPlumbing(string line)
+        {
+            foreach (var marker in PlumbingFrames)
+                if (line.Contains(marker, StringComparison.Ordinal)) return true;
+            return false;
+        }
+
+        /// <summary>Native frames read <c>0x0000023e8f67b363 (Mono JIT Code) Ns.Type:Method (…)</c>;
+        /// keep only the managed part after the address and the JIT tag.</summary>
+        static string StripNativePrefix(string line)
+        {
+            const string jit = "(Mono JIT Code) ";
+            int idx = line.IndexOf(jit, StringComparison.Ordinal);
+            return idx >= 0 && line.StartsWith("0x", StringComparison.Ordinal) ? line[(idx + jit.Length)..] : line;
+        }
+
         static string StackExcerpt(string stack)
         {
             if (string.IsNullOrEmpty(stack)) return "";
@@ -1079,12 +1112,14 @@ namespace CosmicShore.Editor
             foreach (var raw in stack.Split('\n'))
             {
                 var line = raw.TrimEnd();
-                if (line.Length == 0) continue;
+                if (line.Length == 0 || IsPlumbing(line)) continue;
+                line = StripNativePrefix(line);
                 if (lines > 0) sb.Append('\n');
                 sb.Append(line);
                 if (++lines >= MaxStackLines || sb.Length >= MaxStackChars) break;
             }
             var result = sb.ToString();
+            if (result.Length == 0) return Truncate(stack, MaxStackChars);   // nothing but plumbing: keep it raw
             return result.Length > MaxStackChars ? result[..MaxStackChars] : result;
         }
 

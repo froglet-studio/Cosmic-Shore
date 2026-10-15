@@ -98,7 +98,7 @@ namespace CosmicShore.Editor
                     var pendRect = GUILayoutUtility.GetRect(112f, 18f, GUILayout.Width(112f));
                     FrogletEditorPalette.StatusPill(pendRect, $"{_pending} UNPUBLISHED", FrogletEditorPalette.Info);
                     if (GUI.Button(pendRect, new GUIContent("",
-                            "Local changes version control has not seen — stage and push them from the Stage & Push tab."),
+                            "Changes the team has not got yet (new bugs, notes, fixes, closes). Press Share with team to send them all, or stage them one by one in the Stage & Push tab."),
                             GUIStyle.none))
                         openStageTab();
                 }
@@ -106,15 +106,15 @@ namespace CosmicShore.Editor
                 GUILayout.FlexibleSpace();
 
                 if (FrogletEditorPalette.ColorButton("Refresh", FrogletEditorPalette.Info, 66f, 20f,
-                        "Re-scan BugLedger/issues/ — picks up pulls and teammates' pushes.", outline: true))
+                        "Re-read the bug files from disk. Press it after a git pull to see teammates' bugs and the fixes Claude or others pushed.", outline: true))
                     defer(BugLedger.RefreshFromDisk);
                 GUILayout.Space(4f);
                 if (FrogletEditorPalette.ColorButton("Open Folder", FrogletEditorPalette.Info, 90f, 20f,
-                        "Reveal the committable BugLedger/ store in the file browser.", outline: true))
+                        "Open the BugLedger/ folder in your file browser: one small JSON file per bug.", outline: true))
                     defer(RevealStore);
                 GUILayout.Space(4f);
                 if (FrogletEditorPalette.ColorButton(_showNewForm ? "Cancel" : "+ New Bug", FrogletEditorPalette.Info, 84f, 20f,
-                        "File a custom bug by hand — for anything auto-capture cannot see.", outline: !_showNewForm))
+                        "Write a bug by hand, for problems that print no red error: wrong behaviour, a visual glitch, a stuck menu. Add steps to reproduce in the notes.", outline: !_showNewForm))
                 {
                     _showNewForm = !_showNewForm;
                     GUI.FocusControl(null);
@@ -127,6 +127,16 @@ namespace CosmicShore.Editor
                         "commit (BugLedger/ files only). The daily Claude sweep reads and fixes them."))
                     defer(BugHuntCheckIn.ShareWithTeam);
                 GUILayout.Space(6f);
+            }
+            using (new EditorGUILayout.HorizontalScope())
+            {
+                GUILayout.Space(8f);
+                GUILayout.Label(
+                    "OPEN: not fixed yet.   VALIDATING: someone fixed it; it closes itself after clean play runs, or reopens " +
+                    "if the error comes back.   IGNORED: parked on purpose.   To report bugs, press Share with team. Hover any " +
+                    "button for what it does.",
+                    EditorStyles.wordWrappedMiniLabel);
+                GUILayout.Space(8f);
             }
             GUILayout.Space(4f);
         }
@@ -148,7 +158,7 @@ namespace CosmicShore.Editor
                 GUILayout.Label(line, FrogletEditorPalette.Subtitle);
                 GUILayout.FlexibleSpace();
                 if (FrogletEditorPalette.ColorButton("Test Capture", FrogletEditorPalette.Warn, 92f, 20f,
-                        "Logs one synthetic error so you can watch it get filed, fixed and validated.",
+                        "Logs one fake red error so you can watch how the ledger files it. Delete it afterwards with the X button.",
                         enabled: BugLedger.AutoCaptureEnabled, outline: true))
                     defer(() => Debug.LogError("[BugLedgerTest] Synthetic error — file me, mark me fixed, then watch validation close me."));
                 GUILayout.Space(6f);
@@ -238,12 +248,12 @@ namespace CosmicShore.Editor
             GUI.Label(new Rect(rect.x + 10f, rect.y + 3f, rect.width - buttonsWidth - 84f, 16f),
                 issue.Title, FrogletEditorPalette.CardTitle);
             GUI.Label(new Rect(rect.x + 10f, rect.y + 19f, rect.width - buttonsWidth - 84f, 14f),
-                MetaLine(issue), FrogletEditorPalette.CardBody);
+                new GUIContent(MetaLine(issue), MetaTooltip(issue)), FrogletEditorPalette.CardBody);
 
             // Severity pill — click cycles blocker → major → minor.
             var sevRect = new Rect(rect.xMax - buttonsWidth - 64f, rect.y + 9f, 58f, 18f);
             FrogletEditorPalette.StatusPill(sevRect, issue.Severity.ToUpperInvariant(), SeverityColor(issue.Severity));
-            if (GUI.Button(sevRect, new GUIContent("", "Severity — click to cycle blocker → major → minor."), GUIStyle.none))
+            if (GUI.Button(sevRect, new GUIContent("", "How bad is it? Click to change.\nBLOCKER: you cannot play or test.\nMAJOR: wrong, but the game still works.\nMINOR: cosmetic.\nThe daily sweep fixes the worst first."), GUIStyle.none))
                 BugLedger.SetSeverity(issue.Id, BugLedgerIssueSeverity.Next(issue.Severity));
 
             float x = rect.xMax - buttonsWidth;
@@ -251,7 +261,7 @@ namespace CosmicShore.Editor
 
             bool expanded = _expandedId == issue.Id;
             if (FrogletEditorPalette.ColorButton(new Rect(x, y, 26f, 20f), expanded ? "▾" : "▸",
-                    FrogletEditorPalette.Info, "Details, notes, and the captured sample.", outline: true))
+                    FrogletEditorPalette.Info, "Show the details: the full console message, the code it came from, who hit it and when, and the notes (including what any fix changed).", outline: true))
             {
                 _expandedId = expanded ? null : issue.Id;
                 GUI.FocusControl(null);
@@ -263,26 +273,26 @@ namespace CosmicShore.Editor
             {
                 if (FrogletEditorPalette.ColorButton(new Rect(x, y, 44f, 20f), "Fix", FrogletEditorPalette.Ok,
                         issue.HasSignature
-                            ? "For whoever CHANGED THE CODE that fixes this: moves it to VALIDATING, and it closes itself once the error stays silent for its clean-session quota. Just reporting it? Use Share with team."
+                            ? $"I CHANGED THE CODE that fixes this. It moves to VALIDATING: it closes itself after {issue.CleanSessionsRequired} {ScopeWord(issue)} without the error, and reopens if the error comes back.\n\nJust reporting it? Do not press this. Use Share with team."
                             : "No signature to auto-validate — resolves after a confirm."))
                     defer(() => MarkFixedFlow(issue));
                 x += 48f;
                 if (FrogletEditorPalette.ColorButton(new Rect(x, y, 52f, 20f), "Ignore", FrogletEditorPalette.Muted,
-                        "Park it. Matching errors never reopen it, and the same signature is never re-filed.", outline: true))
+                        "Park it: not a real bug, or not worth fixing now (for example a tool missing on your machine). It stays listed as IGNORED, never reopens and is never filed again. Reopen un-parks it.", outline: true))
                     BugLedger.Ignore(id);
                 x += 56f;
             }
             else if (issue.IsValidating)
             {
                 if (FrogletEditorPalette.ColorButton(new Rect(x, y, 56f, 20f), "Reopen", FrogletEditorPalette.Warn,
-                        "Back to OPEN (clean-session progress resets).", outline: true))
+                        "The fix did not work, or it was marked fixed by mistake. Puts it back to OPEN so it gets fixed; the clean-run count starts over.", outline: true))
                     BugLedger.Reopen(id);
                 x += 60f;
                 bool paused = issue.ValidationPaused;
                 if (FrogletEditorPalette.ColorButton(new Rect(x, y, 26f, 20f), paused ? "▶" : "❚❚",
                         paused ? FrogletEditorPalette.Ok : FrogletEditorPalette.Warn,
-                        paused ? "Resume auto-validation for this issue."
-                               : "Pause auto-validation — nothing counts for or against it until resumed.",
+                        paused ? "Resume counting: play runs without this error count toward closing it again."
+                               : "Pause the clean-run count. Use it when your next play runs will not reach the code where this bug happens (a Skein bug while you test the menu), so they do not count as proof it is fixed. Nothing counts for or against it until you resume.",
                         outline: true))
                     BugLedger.SetValidationPaused(id, !paused);
                 x += 30f;
@@ -290,13 +300,13 @@ namespace CosmicShore.Editor
             else // ignored
             {
                 if (FrogletEditorPalette.ColorButton(new Rect(x, y, 56f, 20f), "Reopen", FrogletEditorPalette.Warn,
-                        "Un-park it — back to OPEN.", outline: true))
+                        "Un-park it: back to OPEN, so it gets fixed and the error is tracked again.", outline: true))
                     BugLedger.Reopen(id);
                 x += 60f;
             }
 
             if (FrogletEditorPalette.ColorButton(new Rect(x, y, 26f, 20f), "✕", FrogletEditorPalette.Error,
-                    "Delete this issue outright (no validation, file removed).", outline: true))
+                    "Delete it outright. Use it for junk: a test error or a duplicate. If the error is real it is filed again the next time it happens. To report a bug do not delete it: Share with team.", outline: true))
                 defer(() =>
                 {
                     if (EditorUtility.DisplayDialog("Delete issue",
@@ -331,6 +341,16 @@ namespace CosmicShore.Editor
             }
             if (issue.Regressions > 0) parts.Add($"{issue.Regressions} regression{(issue.Regressions == 1 ? "" : "s")}");
             return string.Join(" · ", parts);
+        }
+
+        static string MetaTooltip(BugLedgerIssue issue)
+        {
+            var tip = "ID (the same bug has the same ID on every machine) · auto = caught from the console, custom = written by hand, tool = found by an audit tool · how many times it fired · when it last fired.";
+            if (issue.IsValidating)
+                tip += $"\n\nclean {issue.CleanSessions}/{issue.CleanSessionsRequired}: someone marked it fixed. Each {ScopeWord(issue).TrimEnd('s')} that ends without this error counts one; at {issue.CleanSessionsRequired} it closes itself. If the error fires again it reopens.";
+            if (issue.Regressions > 0)
+                tip += "\n\nregressions: how many times it came back after being marked fixed.";
+            return tip;
         }
 
         static string ScopeWord(BugLedgerIssue issue)
@@ -368,11 +388,12 @@ namespace CosmicShore.Editor
                     {
                         bool dirty = _notesDraft != (issue.Notes ?? "");
                         if (FrogletEditorPalette.ColorButton("Save Notes", FrogletEditorPalette.Ok, 84f, 20f,
+                                "Save your notes: steps to reproduce, the mode and vessel, what you tried. They travel with the bug on the next Share.",
                                 enabled: dirty, outline: true))
                             BugLedger.SaveNotes(issue.Id, _notesDraft);
                         GUILayout.Space(4f);
                         if (FrogletEditorPalette.ColorButton("Resolve Now", FrogletEditorPalette.Warn, 92f, 20f,
-                                "Close and delete this issue immediately, bypassing validation.", outline: true))
+                                "Close it now, without waiting for clean play runs. Only when you are sure it is fixed or no longer matters.", outline: true))
                         {
                             var id = issue.Id;
                             var title = issue.Title;
