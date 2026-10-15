@@ -14,7 +14,8 @@ namespace CosmicShore.Utility
     /// depth 0 is the ordinary EXPLOSION (its four wedges a face); each deeper depth splits the corner triangles at
     /// their edge midpoints and keeps the middles whole. A shallower depth is the deeper one with its finest fragments
     /// merged back into their parents, so from far away it looks like the small ones are simply too small to see.
-    /// Every fragment of every depth moves by the explosion's own tuned law, as a wedge scaled to its size.</item>
+    /// Every fragment of every depth moves by the explosion's own tuned law — about its root wedge's two axes, the
+    /// wedge's tangent and cross(velocity, normal) — as a wedge scaled to its size.</item>
     /// <item><b>Stealing</b> — the GRADE (the prism's 0.8 s colour lerp) → a SHED (the bloom, cut into rings and
     /// segments, peeling with its own noise every steal) at three mesh resolutions. Every shed is the grade squinted
     /// at.</item>

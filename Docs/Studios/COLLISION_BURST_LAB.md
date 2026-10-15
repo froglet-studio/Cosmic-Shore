@@ -6,7 +6,7 @@ a shared decision log: **destruction** (the explosion → the Sierpinski cut, ev
 explosion's own law) and **stealing** (the grade → the bloom shed). Round 1 looked at the four level-1 collision
 bursts alone.
 
-- **Live page:** https://claude.ai/artifact/F47yG1UjBkK662rEnhk7m9 (decision log: `decisions`) — round 5
+- **Live page:** https://claude.ai/artifact/F47yG1UjBkK662rEnhk7m9 (decision log: `decisions`) — round 6
 - **Page (generated, never edit by hand):** `Docs/Studios/PrismCollisionBurstLab.html`
 - **Source:** `Tools/Build/prism_collision_burst_lab/lab.src.html`; `build.py` stamps the shipped
   numbers and shader code into it (`--check` fails when the page is stale).
@@ -36,7 +36,57 @@ ordinary effect on the same prism at the same moment.
 The burst mesh is `HighPolyPrismMesh.GetUnwelded(10)` rebuilt on the page in float32 (`Math.fround`), as
 C# builds it.
 
-## Round 5 — 2026-10-15 (`cece/dreamy-pascal-7xxx1m`): every depth moves as the explosion; the bloom alone, cut finer
+## Round 6 — 2026-10-15 (`cece/dreamy-pascal-7xxx1m`): every fragment spins on its ROOT wedge's axes
+
+**Your report applied** (the designer, after trying round 5 in the game): *"the velocity vector should be using a
+cross product with the normal to determine rotation axis etc. like the explosion shader"*.
+
+### What was wrong
+
+The cross product was already there — `PrismBurstExplosionMap` turns about cross(velocity, N) with the raw world
+velocity and the object-space normal, exactly as `ExplodingBlockGraph` feeds RotateFacesAlongAxis (traced edge by
+edge: the graph's `Velocity` property goes straight into the subgraph's Cross Product with the object-space Normal
+Vector; `PrismDebris` and the burst stamp the same resolved flight). What differed was the OTHER axis and the slide:
+round 5 gave each fragment its own tangent, the direction from its face centre to its centroid, so every fragment
+turned about a different first axis and slid in a different radial direction — a starburst in which the
+velocity-driven spin read as random. The explosion has four tangents a face, one per wedge.
+
+### What changed
+
+- `PrismBurstWedgeTangent`: a fragment takes its ROOT wedge's tangent — the face's in-plane object axis, signed, along
+  which its centroid lies furthest from the face centre (Prism.asset's tangent for that wedge). So every fragment turns
+  about its wedge's own two axes — the tangent and cross(velocity, N) — by the explosion's angle, and slides with its
+  wedge, about its own centre: the pieces of a wedge spin in step as the explosion spins that wedge, and are sent the
+  way it is sent. Depth 0 is unchanged (a wedge's centroid direction IS its tangent).
+- The harness proves it (W7): every vertex of every fragment at depths 0–3 has its root wedge's explosion normal
+  (worst 1.8e-7); a new control (the round-5 radial tangent) fires on 82,944 checks.
+
+### Scorecards (shipped settings)
+
+| | Size | Centre | Fade | Colour | Squint | Without the inside colour |
+|---|---|---|---|---|---|---|
+| Depth 1 | 1.002 | 0.108 | 0.062 | 0.116 | 0.184 | 0.053 |
+| Depth 2 | 0.962 | 0.180 | 0.059 | 0.117 | 0.176 | 0.058 |
+| Depth 3 | 0.934 | 0.136 | 0.060 | 0.119 | 0.172 | 0.058 |
+| Depth 4 | 0.918 | 0.190 | 0.055 | 0.119 | 0.173 | 0.064 |
+| *the band: the explosion, another flight* | 1.132 | 0.208 | 0.099 | 0.012 | 0.097 | |
+
+The centre is now inside the band (0.11–0.19, was 0.19–0.38) and the squint fell from 0.21–0.22 to 0.17–0.18. Drawn
+without the inside colour (a scratch copy, not shipped) every depth now squints CLOSER to the explosion than two
+explosions are to each other (0.053–0.064 against 0.097). LOD steps: depth 4 → 3 0.34, 3 → 2 0.49, 2 → 1 0.67,
+1 → the explosion 1.06 of their bands — all unnoticeable.
+
+### Checked
+
+`verify_prism_collision_burst.py` PASS (8 controls fire); `parity.py` PASS (wedge depths 0–3 vs the HLSL executed,
+depth 0 vs the explosion's graph, UVs); `verify_lab.cjs` PASS; `build.py --check` OK. The change is HLSL only; the C#
+diff is comments. **Not run:** the Unity editor.
+
+### Decision needed (designer)
+
+1. **The inside colour on destruction fragments** — the gap is now ALL colour: 0.17–0.18 with it, 0.05–0.06 without.
+
+## Round 5 — 2026-10-15 (`cece/dreamy-pascal-7xxx1m`): every depth moves as the explosion; the bloom alone, cut finer — superseded where round 6 differs (each fragment's tangent)
 
 **Your decisions applied** (the designer, in the session): *"lets use just the bloom for stealing and we can have
 more noise in how it peels so it looks different each time. the lets have it peal from more cuts so one peal curls

@@ -659,6 +659,13 @@ Entries are grouped by family; within a family, the newest goes at the bottom.
 - Evidence: `Docs/Studios/COLLISION_BURST_LAB.md` round 5, Scorecards and Found 2
 - Promoted: no
 
+### L-STU-73 — "Same law" is not "same motion" when an input the law takes per PIECE is chosen per fragment
+- Lab: Collision Burst Lab round 6 · Branch: `cece/dreamy-pascal-7xxx1m` · Date: 2026-10-15
+- What happened: round 5 moved every Sierpinski fragment by the explosion's exact closed form and parity proved depth 0 IS the explosion — yet in the game the designer saw the fragments spin the wrong way. The law's tangent input, which the explosion takes per WEDGE (four a face), had been chosen per FRAGMENT (its centroid direction), so every fragment had its own first axis and slide direction. Giving each fragment its root wedge's tangent dropped the squint from 0.21–0.22 to 0.17–0.18 (0.05–0.06 without the inside colour, inside the two-explosion band).
+- Do instead: when a law is applied to finer pieces of something, list each of its inputs and decide whether the original takes it per piece or per parent; prove the property the player sees (here: every fragment's normal equals its parent wedge's — W7, with the per-fragment choice as a negative control), not only that the coarsest level matches.
+- Evidence: `PrismCollisionBurst.hlsl` `PrismBurstWedgeTangent`; `verify_prism_collision_burst.py` W7 and the radial-tangent control
+- Promoted: no
+
 ## NCA — swarm / neural-CA research rigs (Tools/NCA)
 
 ### L-NCA-1 — The yardstick was wrong four times before the creatures were

@@ -35,7 +35,9 @@ A. EXECUTION (clang++, /asset-surgery §4.5c). The file under Assets/ is transla
   W. THE WEDGE (destruction, every Sierpinski depth 0-3): amount 0 is the prism; level 0 IS the explosion —
      equal to the harness's own Rodrigues statement of RotateFacesAlongAxis' closed form with the graph's
      constants; every fragment is rigid in the world; normals unit; every pose inside PrismBurstWedgeReach
-     (the CPU's bounds); and no fragment turns faster than the explosion's own cap (2 x amount x rotation).
+     (the CPU's bounds); no fragment turns faster than the explosion's own cap (2 x amount x rotation); and every
+     fragment SPINS as its root wedge does in the explosion (W7: the wedge's tangent and cross(velocity, N), so
+     its normal is the wedge's).
   NEGATIVE CONTROLS, each must FAIL the test it guards:
   12. -DPRISM_BURST_DISSOLVE_OVERSHOOT=0  — fragments survive to retirement (test 9 fires).
   13. -DPRISM_BURST_UNIFORM_VALUE=0       — the fade sags off the explosion's curve (test 8 fires).
@@ -44,6 +46,7 @@ A. EXECUTION (clang++, /asset-surgery §4.5c). The file under Assets/ is transla
   16. -DPRISM_BURST_GRADE_SMOOTH=0        — a shed fades linearly, off the grade (test 9b fires).
   17. -DPRISM_BURST_PIVOT_BIAS=0          — level 0 leaves the explosion (test W fires).
   18. -DPRISM_BURST_WEDGE_PIVOT_UNSCALED=1 — the turn in the unscaled frame shears fragments (test W fires).
+  19. -DPRISM_BURST_WEDGE_OWN_TANGENT=1    — each fragment's own radial tangent: off its wedge's spin (W7 fires).
 
 B. FRONT-END COMPILE (glslang, HLSL mode). Every pass of PrismCollisionBurst.shader, vertex and
    fragment, plain and DOTS-instanced, against a mock of the URP library (the slice verifier's). It
@@ -415,7 +418,7 @@ static void explosionReference(float3 P, float3 N, float3 T, float3 os, float am
 }
 static void run_wedge_tests() {
     const float3 S(0.18f, 0.1f, 0.1f); const float ER = 0.0169f, ES = 0.05f;
-    float worstReach = 0, worstLevel0 = 0, worstSpin = 0;
+    float worstReach = 0, worstLevel0 = 0, worstSpin = 0, worstWedgeSpin = 0;
     for (int depth = 0; depth <= 3; depth++) {
         std::vector<WVert> m = sierpinski(depth);
         for (int trial = 0; trial < 8; trial++) {
@@ -447,6 +450,17 @@ static void run_wedge_tests() {
                     float turn = std::acos(std::min(1.0f, std::max(-1.0f, dot(nrm, v.n))));
                     if (amount > 0) worstSpin = std::max(worstSpin, turn / (2 * amount * ER));
                     CHECK(turn <= 2 * amount * ER + 1e-3f, "wedge: a fragment turned %g rad, more than the explosion's 2 x %g", turn, amount * ER);
+                    // W7. every fragment SPINS as its root wedge does in the explosion: the same two axes (the wedge's
+                    // tangent, cross(velocity, N)) and angle, so its normal is the explosion wedge's normal.
+                    {
+                        float3 off = v.centroid - v.n * dot(v.pos, v.n), a = abs(off);
+                        float3 Tw = a.x >= a.y && a.x >= a.z ? float3(off.x >= 0 ? 1.f : -1.f, 0, 0)
+                                  : a.y >= a.z ? float3(0, off.y >= 0 ? 1.f : -1.f, 0) : float3(0, 0, off.z >= 0 ? 1.f : -1.f);
+                        float3 rp, rn;
+                        explosionReference(v.pos, v.n, Tw, P.s, amount, vel, S, ER, ES, rp, rn);
+                        worstWedgeSpin = std::max(worstWedgeSpin, length(rn - nrm));
+                        CHECK(length(rn - nrm) <= 1e-4f, "wedge depth %d: a fragment turned off its root wedge's spin by %g", depth, length(rn - nrm));
+                    }
                     // W2. level 0 IS the explosion
                     if (v.level == 0.0f) {
                         float3 T = normalize(v.centroid - v.n * dot(v.pos, v.n));
@@ -467,7 +481,7 @@ static void run_wedge_tests() {
             }
         }
     }
-    printf("wedge: worst reach use %.3f, worst level-0 departure %.2g radii, worst spin %.3f of the explosion's cap\n", worstReach, worstLevel0, worstSpin);
+    printf("wedge: worst reach use %.3f, worst level-0 departure %.2g radii, worst spin %.3f of the explosion's cap, worst departure from the root wedge's spin %.2g\n", worstReach, worstLevel0, worstSpin, worstWedgeSpin);
 }
 
 // 10. voronoi; 11. unknown kind.
@@ -573,7 +587,8 @@ def main():
                                  ("-DPRISM_BURST_BEND_NORMAL=0", "bend", "cheap-normal control"),
                                  ("-DPRISM_BURST_GRADE_SMOOTH=0", "grade", "linear-shed control"),
                                  ("-DPRISM_BURST_PIVOT_BIAS=0.0", "wedge", "wedge-pivot control"),
-                                 ("-DPRISM_BURST_WEDGE_PIVOT_UNSCALED=1", "wedge", "unscaled-turn control")):
+                                 ("-DPRISM_BURST_WEDGE_PIVOT_UNSCALED=1", "wedge", "unscaled-turn control"),
+                                 ("-DPRISM_BURST_WEDGE_OWN_TANGENT=1", "wedge", "radial-tangent control")):
             rc, out = build_and_run(work, [flag], arg, label)
             fired = rc != 0
             print(f"negative control [{label}]: {'FIRED' if fired else 'DID NOT FIRE'} ({out.splitlines()[-1]})")

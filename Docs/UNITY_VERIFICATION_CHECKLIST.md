@@ -8888,7 +8888,8 @@ imports without errors (magenta = rejected), the config asset loads (not a missi
    two levels coarser, never as nothing; `prof` shows one `SpawnSliceDebrisBatch` per mesh per frame.
 6. **Round 5 — the explosion's law at every depth, the bloom alone**: ram prisms near the camera at different
    speeds and angles: the fragments fly the way the explosion's wedges fly for the same hit (direction, spin
-   sense), never spin faster than the explosion's, and erode away on the explosion's wipe; at a distance the
+   sense — round 6: the pieces of each of a face's four wedges spin in step about that wedge's axes, not each its
+   own way), never spin faster than the explosion's, and erode away on the explosion's wipe; at a distance the
    ordinary explosion and the cut must be hard to tell apart. Check a fragment's culling: nothing pops out at the
    screen edge late in its 7.5 s (the `WedgeReach` bounds). The burst material shows the explosion's dials copied
    onto `_ExplosionSpread` / `_ExplosionDials` (Frame Debugger) once the explosion pool exists. Steal while

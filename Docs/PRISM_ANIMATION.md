@@ -2619,7 +2619,8 @@ etc. Each depth should adopt the fine tuning that was put into the base explosio
   `PrismBurstWedgePose`): RotateFacesAlongAxis' closed form in object space — turned about its tangent and about
   cross(velocity, N) by amount × `_ExplosiveRotation` in the object-scaled frame, slid along its tangent by amount ×
   `_ExplosiveSpead`, amount = the explosion's clamped speed × t (so the spin rate is capped where the explosion caps
-  it) — as a wedge scaled to the fragment (tangent = face centre → centroid; pivot = centroid + the explosion's
+  it) — as a wedge scaled to the fragment (tangent = its ROOT wedge's, so it turns about the wedge's own two axes, the
+  tangent and cross(velocity, N), and slides with it — round 6; pivot = centroid + the explosion's
   pivot offset × 2^−level). Depth 0 IS the explosion (parity: 144 vertices against the graph evaluated on
   `Prism.asset`). The dials are copied from the explosion pool's live material at runtime
   (`PrismCollisionBurst.TryGetExplosionTuning`). The fade is the explosion's erosion over each fragment's

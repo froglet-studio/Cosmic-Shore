@@ -466,11 +466,22 @@ vec3 PrismBurstWedgePivot(vec3 P, vec3 N, vec3 T, vec3 spreadValue)
 {
     return dot(P, N) * N + (spreadValue - PRISM_BURST_PIVOT_BIAS) * T * PRISM_BURST_SLIDER_GAIN;
 }
+vec3 PrismBurstWedgeTangent(vec3 offsetInFace)
+{
+    vec3 a = abs(offsetInFace);
+    if (a.x >= a.y && a.x >= a.z) return vec3(offsetInFace.x >= 0.0 ? 1.0 : -1.0, 0.0, 0.0);
+    if (a.y >= a.z) return vec3(0.0, offsetInFace.y >= 0.0 ? 1.0 : -1.0, 0.0);
+    return vec3(0.0, 0.0, offsetInFace.z >= 0.0 ? 1.0 : -1.0);
+}
 void PrismBurstWedgePose(vec3 P, vec3 N, vec3 pieceCentroid, float level, vec3 objectScale, float amount,
     vec3 velocity, vec3 spreadValue, float rotation, float spreadPerAmount, out vec3 pos, out vec3 nrm)
 {
     vec3 faceCentre = dot(P, N) * N;
+#ifdef PRISM_BURST_WEDGE_OWN_TANGENT
     vec3 T = PrismBurstAxis(pieceCentroid - faceCentre, vec3(0.0, 0.0, 0.0));
+#else
+    vec3 T = PrismBurstWedgeTangent(pieceCentroid - faceCentre);
+#endif
     vec3 wedgeOffset = (spreadValue - PRISM_BURST_PIVOT_BIAS) * T * PRISM_BURST_SLIDER_GAIN - T * (1.0 / 3.0);
     vec3 pivot = pieceCentroid + wedgeOffset * exp2(-max(level, 0.0));
     PrismBurstExplosionMap(P, N, T, pivot, objectScale, amount, velocity, rotation, spreadPerAmount, pos, nrm);
@@ -590,7 +601,7 @@ void PrismErosionFade_float(vec3 UV, vec3 Velocity, float BaseOpacity,
     Spread = mix(StartSpread, TargetSpread, t);
 }`;
 
-  const LAB = { name: 'Collision Burst Lab', branch: 'cece/dreamy-pascal-7xxx1m', round: 5, doc: 'Docs/Studios/COLLISION_BURST_LAB.md' };
+  const LAB = { name: 'Collision Burst Lab', branch: 'cece/dreamy-pascal-7xxx1m', round: 6, doc: 'Docs/Studios/COLLISION_BURST_LAB.md' };
   const C = DATA.config, LOOK = DATA.look, X = DATA.explosion;
 
   // ================= SHIPPED: every value names where it came from =================
@@ -736,7 +747,8 @@ void PrismErosionFade_float(vec3 UV, vec3 Velocity, float BaseOpacity,
     return out;
   }
   // The destruction ladder: depth 0 is the ordinary explosion, depth d the Sierpinski cut — each triangle a WEDGE,
-  // moved by the explosion's own law as a wedge scaled to it. Rounds 3 and 4 stay in the Archive tab.
+  // turning about its ROOT wedge's two axes (the wedge's tangent and cross(velocity, N)) and sliding with it, by
+  // the explosion's own law. Rounds 3 and 4 stay in the Archive tab.
   const DESTRUCTION = ['Explosion'].concat(Array.from({ length: DEPTHS }, (_, i) => 'Depth ' + (i + 1)));
   const DESTRUCTION_MESH = [null].concat(Array.from({ length: DEPTHS }, (_, i) => 'sier' + (i + 1)));
   const ARCHIVE_LADDER = ['Explosion', 'Shatter', 'Glitter · large', 'Glitter · medium', 'Glitter · full'];
@@ -1769,7 +1781,7 @@ void main() {
 
   function aboutPanel() {
     const box = document.createElement('div');
-    box.innerHTML = '<div class="twocol"><div><p><b>What you are looking at.</b> The prism\'s two fundamental interactions, each at its DETAIL LEVELS. <b>Destruction</b> is one Sierpinski cut scaled by recursion depth: depth 0 is the ordinary explosion (its four wedges a face); each deeper depth splits the corner triangles at their edge midpoints and keeps the middles whole, so the fragments come in a self-similar range of sizes, and a shallower depth is the deeper one with its finest fragments merged into their parents. Every fragment of every depth moves by the explosion\'s own tuned law — its response to the impact velocity, its two spin axes, its spin rate capped by its clamped speed, its slide, its erosion fade — as a wedge scaled to the fragment, so depth 0 IS the explosion. Round 3\'s shatter and quadtree glitter and round 4\'s glitter shards are in the Archive tab. <b>Stealing</b> is the ordinary grade (the 0.8 s colour lerp) far away and a SHED close up: the prism takes its new colour at once and a skin in the old colours BLOOMS off it — cut into rings from each edge inward and segments along it, each piece short so it curls tight and stays close to the surface, each peeling with its own noise, a new seed every steal — on the grade\'s own curve, so squinted at it is the grade, at one of three mesh resolutions (' + C.shedSubdivision + ', ' + C.shedFineSubdivision + ', ' + C.shedFinestSubdivision + ' subdivisions). The game picks the level by how big the prism is on the screen and by how full the budget already is (the AMOUNT: Levels tab); zoom the stage and the ◆ moves. No white accents: the brighter inside colour is the only contrast. Click a label to fly the camera to it.</p><p class="hint" id="aboutSource"></p></div><div><p><b>What this lab does not model</b></p><ul class="plain"><li>Bloom, HDR and tonemapping.</li><li>The prism\'s and the explosion\'s own shader colouring. Every prism here wears the burst\'s skin shading (dark face, bright rim), so the differences are the detail levels, not the lab. The explosion\'s MOTION and FADE and the grade\'s CURVE are the shipped code.</li><li>The occlusion corridor (prisms between camera and ship go see-through).</li><li>The real collision test: Collision mode meets at touching x-extents, not the swept box test.</li><li>Shielded, danger and super-shielded tiers (other colour pairs, the danger gain).</li><li>The budget (48 alive, 80,000 triangles): the lab always draws the level; the game steps down past it (the Budget slider imitates the amount).</li><li>The game\'s float32 clock and a phone GPU\'s precision; frame time on a real device.</li></ul></div></div>';
+    box.innerHTML = '<div class="twocol"><div><p><b>What you are looking at.</b> The prism\'s two fundamental interactions, each at its DETAIL LEVELS. <b>Destruction</b> is one Sierpinski cut scaled by recursion depth: depth 0 is the ordinary explosion (its four wedges a face); each deeper depth splits the corner triangles at their edge midpoints and keeps the middles whole, so the fragments come in a self-similar range of sizes, and a shallower depth is the deeper one with its finest fragments merged into their parents. Every fragment of every depth moves by the explosion\'s own tuned law — its response to the impact velocity, its two spin axes, its spin rate capped by its clamped speed, its slide, its erosion fade — each fragment turning about its ROOT wedge\'s own two axes (the wedge\'s tangent and cross(velocity, normal)) and sliding with that wedge, about its own centre, so the pieces of a wedge spin in step as the wedge would and depth 0 IS the explosion. Round 3\'s shatter and quadtree glitter and round 4\'s glitter shards are in the Archive tab. <b>Stealing</b> is the ordinary grade (the 0.8 s colour lerp) far away and a SHED close up: the prism takes its new colour at once and a skin in the old colours BLOOMS off it — cut into rings from each edge inward and segments along it, each piece short so it curls tight and stays close to the surface, each peeling with its own noise, a new seed every steal — on the grade\'s own curve, so squinted at it is the grade, at one of three mesh resolutions (' + C.shedSubdivision + ', ' + C.shedFineSubdivision + ', ' + C.shedFinestSubdivision + ' subdivisions). The game picks the level by how big the prism is on the screen and by how full the budget already is (the AMOUNT: Levels tab); zoom the stage and the ◆ moves. No white accents: the brighter inside colour is the only contrast. Click a label to fly the camera to it.</p><p class="hint" id="aboutSource"></p></div><div><p><b>What this lab does not model</b></p><ul class="plain"><li>Bloom, HDR and tonemapping.</li><li>The prism\'s and the explosion\'s own shader colouring. Every prism here wears the burst\'s skin shading (dark face, bright rim), so the differences are the detail levels, not the lab. The explosion\'s MOTION and FADE and the grade\'s CURVE are the shipped code.</li><li>The occlusion corridor (prisms between camera and ship go see-through).</li><li>The real collision test: Collision mode meets at touching x-extents, not the swept box test.</li><li>Shielded, danger and super-shielded tiers (other colour pairs, the danger gain).</li><li>The budget (48 alive, 80,000 triangles): the lab always draws the level; the game steps down past it (the Budget slider imitates the amount).</li><li>The game\'s float32 clock and a phone GPU\'s precision; frame time on a real device.</li></ul></div></div>';
     box.querySelector('#aboutSource').textContent = LAB.name + ' · round ' + LAB.round + ' · ' + LAB.branch + ' · write-up ' + LAB.doc + ' · the detail levels run ' + DATA.sources.burst + '; the explosion\'s fade runs ' + DATA.sources.erosion + '; its motion is ' + DATA.sources.explosionMap + '; the grade runs ' + DATA.sources.grade + '.';
     return box;
   }

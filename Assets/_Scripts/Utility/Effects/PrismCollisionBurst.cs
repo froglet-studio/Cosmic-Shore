@@ -20,8 +20,9 @@ namespace CosmicShore.Utility
     /// <item><b>Destruction</b> (<see cref="TryRequestDestruction"/>): the Sierpinski cut at a depth, every
     /// fragment a <see cref="Wedge"/> — moved by the EXPLOSION's own tuned law (RotateFacesAlongAxis' closed form:
     /// its response to the impact velocity, its two spin axes, its spin rate capped by its clamped speed, its slide,
-    /// all with the explosion material's own dials, copied at runtime) as a wedge scaled to the fragment — on the
-    /// explosion's own flight (<see cref="PrismDebris.ResolveExplosionFlight"/>) for the explosion's own life, in the
+    /// all with the explosion material's own dials, copied at runtime), each fragment turning about its ROOT wedge's
+    /// two axes (the wedge's tangent and cross(velocity, N)) and sliding with that wedge, about its own centre — on
+    /// the explosion's own flight (<see cref="PrismDebris.ResolveExplosionFlight"/>) for the explosion's own life, in the
     /// explosion's palette, fading on the explosion's own erosion. Depth 0 of the cut IS the explosion.</item>
     /// <item><b>Shed</b> (<see cref="TryRequestShed"/>): a skin in the prism's OLD colours, a hair outside it,
     /// coming off as a BLOOM (the game's one shed; <see cref="Unravel"/> and <see cref="Flake"/> stay in the shader

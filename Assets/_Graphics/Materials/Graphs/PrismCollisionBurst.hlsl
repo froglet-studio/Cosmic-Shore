@@ -50,8 +50,9 @@
 //   4 FLAKE   — shed. The skin lifts off as rigid SCALES, a grid twice as fine as the shatter's, in a
 //     wave that runs the prism's long axis: each scale tips up on its far edge as the front nears and
 //     is gone when the front reaches it.
-//   5 WEDGE   — destruction. Each triangle of the Sierpinski cut moves as an explosion wedge
-//     (PrismBurstWedgePose); fades on the explosion's erosion (the shader's clip).
+//   5 WEDGE   — destruction. Each triangle of the Sierpinski cut turns about its root wedge's two axes (the
+//     wedge's tangent and cross(velocity, N)) and slides with it, by the explosion's law (PrismBurstWedgePose);
+//     fades on the explosion's erosion (the shader's clip).
 //
 // EXACTNESS. Rigid pieces rotate their normal with them (Rodrigues). A bend's normal is the bend's
 // derivative: the strip at arc length s is rotated by a = κ·s about the hinge, so its normal is that
@@ -473,15 +474,33 @@ float3 PrismBurstWedgePivot(float3 P, float3 N, float3 T, float3 spreadValue)
     return dot(P, N) * N + (spreadValue - PRISM_BURST_PIVOT_BIAS) * T * PRISM_BURST_SLIDER_GAIN;
 }
 
-// A Sierpinski fragment as a SCALED WEDGE (kind WEDGE). Its tangent is the direction from its face's centre
-// to its centroid (a wedge's own tangent at level 0); its pivot keeps the explosion's pivot-to-centroid
-// offset, scaled by the fragment's size (2^-level), so at level 0 — the explosion's own wedges — this IS
-// the explosion, and every finer fragment turns, slides and spins by the same tuned law. All in object space.
+// The tangent of the explosion WEDGE a face point belongs to: the face's in-plane object axis, signed, along which
+// the point lies furthest from the face centre (the prism is the axis-aligned unit cube in object space, and its
+// faces are cut into four wedges along their diagonals — Prism.asset's tangent for each). A fragment's centroid
+// lies strictly inside its wedge, so it is never on a diagonal.
+float3 PrismBurstWedgeTangent(float3 offsetInFace)
+{
+    float3 a = abs(offsetInFace);
+    if (a.x >= a.y && a.x >= a.z) return float3(offsetInFace.x >= 0.0 ? 1.0 : -1.0, 0.0, 0.0);
+    if (a.y >= a.z) return float3(0.0, offsetInFace.y >= 0.0 ? 1.0 : -1.0, 0.0);
+    return float3(0.0, 0.0, offsetInFace.z >= 0.0 ? 1.0 : -1.0);
+}
+
+// A Sierpinski fragment as a SCALED WEDGE (kind WEDGE). It turns about its ROOT WEDGE's own two axes — the wedge's
+// tangent T and cross(velocity, N), the explosion's velocity response — by the explosion's angle, and slides along
+// that same T: every fragment of a wedge spins exactly as the explosion spins that wedge and is sent the way it is
+// sent. Its pivot keeps the explosion's pivot-to-centroid offset, scaled by the fragment's size (2^-level), so the
+// pieces tumble apart about their own centres; at level 0 — the explosion's own wedges — this IS the explosion.
+// All in object space, as the explosion's graph.
 void PrismBurstWedgePose(float3 P, float3 N, float3 pieceCentroid, float level, float3 objectScale, float amount,
     float3 velocity, float3 spreadValue, float rotation, float spreadPerAmount, out float3 pos, out float3 nrm)
 {
     float3 faceCentre = dot(P, N) * N;
-    float3 T = PrismBurstAxis(pieceCentroid - faceCentre, float3(0.0, 0.0, 0.0));
+#ifdef PRISM_BURST_WEDGE_OWN_TANGENT
+    float3 T = PrismBurstAxis(pieceCentroid - faceCentre, float3(0.0, 0.0, 0.0));   // negative control only: round 5's radial tangent
+#else
+    float3 T = PrismBurstWedgeTangent(pieceCentroid - faceCentre);
+#endif
     // A wedge's centroid lies a third of its height from the face centre; the explosion pivots it at
     // (spread - pivotBias) × gain. The fragment keeps that offset at its own scale.
     float3 wedgeOffset = (spreadValue - PRISM_BURST_PIVOT_BIAS) * T * PRISM_BURST_SLIDER_GAIN - T * (1.0 / 3.0);
