@@ -19,6 +19,9 @@ namespace CosmicShore.Editor
     /// (<c>Documents/CosmicShore Diagnostics/*.json</c>).</item>
     /// <item><b>flights</b> — human Regatta flights the Squirrel AI learns from
     /// (<c>Documents/CosmicShore Diagnostics/Flights/flight_*.json</c>, <c>HumanFlightRecorder</c>).</item>
+    /// <item><b>net</b> — the logs of a multiplayer play test, one file per player (the main editor and each
+    /// MPPM virtual player): its session record and console (<c>Logs/NetSessions/net_*.json</c>,
+    /// <see cref="NetTestLogs"/>; read with <c>Tools/Build/net_logs.py</c>).</item>
     /// </list>
     ///
     /// Each lands at <c>BugLedger/shared/reports/&lt;user&gt;/&lt;kind&gt;/&lt;file&gt;</c> on the sender's
@@ -69,6 +72,17 @@ namespace CosmicShore.Editor
             // A flight is ~130 bytes a sample at 10 Hz plus its rail, so a long race passes the 512 KB report cap; a
             // flight over it was skipped SILENTLY (no file sent, no question asked). Flights get their own cap.
             if (perfDir != null) Collect(candidates, Path.Combine(perfDir, "Flights"), "flight_*.json", "flights", cutoff, MaxFlightBytes);
+            // Multiplayer test logs (NetTestLogs). Virtual players write into the main project's folder; the
+            // Library/VP scan is the fallback for a layout where one could not tell it was a virtual player.
+            Collect(candidates, Path.Combine(projectRoot, "Logs", NetTestLogs.FolderName), "net_*.json", "net", cutoff);
+            try
+            {
+                var vp = Path.Combine(projectRoot, "Library", "VP");
+                if (Directory.Exists(vp))
+                    foreach (var dir in Directory.GetDirectories(vp))
+                        Collect(candidates, Path.Combine(dir, "Logs", NetTestLogs.FolderName), "net_*.json", "net", cutoff);
+            }
+            catch { /* unreadable VP folder contributes nothing */ }
 
             candidates.Sort((a, b) => b.file.LastWriteTimeUtc.CompareTo(a.file.LastWriteTimeUtc));
             var reports = new List<Report>(candidates.Count);

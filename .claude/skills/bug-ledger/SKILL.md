@@ -32,6 +32,27 @@ them in one line: after the next play test, press **Send to Claude** when Unity 
 Kinds: `E-…` captured error (validated by play runs) · `T-…` editor-tool finding (closed only by a
 clean re-run of that tool — tell the person which) · `C-…` hand-filed (no signature).
 
+### Multiplayer test logs (the `net` report kind)
+
+A multiplayer test (Unity MPPM, or Amoebius START ONLINE with + PLAYER 2) writes one log per player
+at stop, and the same "Send to Claude" carries them to `reports/<user>/net/`. **Never ask the person
+to paste a multiplayer console**: read the logs.
+
+```
+python3 Tools/Build/net_logs.py collect                 # every test on every origin/* branch
+python3 Tools/Build/net_logs.py show 1                  # players' summaries + ONE merged timeline
+python3 Tools/Build/net_logs.py show 1 --lines          # ... with every log line
+python3 Tools/Build/net_logs.py collect --dir <folder>  # a local Logs/NetSessions or Amoebius netlogs
+```
+
+Each player's line gives its role, CLEAN/DIRTY (the record's verdict), errors, warnings, lobby
+reads, 429s and lifecycle events; the timeline interleaves every player's lifecycle (party,
+clientApproved, clientLeft, leaverToAI, refused, bounce) and warnings/errors in wall-clock order.
+Use it to find which player saw what first. A test missing a player means that player never stopped cleanly
+(a killed process writes nothing). A test with no logs at all means the person did not press
+Send, or the main editor saw no other player (solo online play writes nothing): say so in one
+line. The mechanism is in `Docs/DIAGNOSTICS.md` § "Multiplayer test logs".
+
 ## 2. Fix each one — properly
 
 Worst first (open, then regressions, then times seen). One issue on several branches is ONE bug.

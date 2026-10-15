@@ -280,6 +280,8 @@ branch, **`bugledger/<user>`**, containing only `BugLedger/shared/`:
 - `reports/<user>/<redlog|crash|perf>/<file>` — new redlog sessions (`Logs/RedConsole/`), crash
   reports (`Logs/CrashDetector/`) and DiagnosticsHUD JSONs (`Documents/CosmicShore Diagnostics/`),
   ≤ 14 days old, ≤ 512 KB, ≤ 12 per send, append-only (`BugHuntReports`).
+- `reports/<user>/net/<file>` — multiplayer test logs (`Logs/NetSessions/`, one per player; see
+  "Multiplayer test logs" below).
 
 It never touches the person's work: blobs go straight into the object store (`hash-object -w`), the
 tree is built in a THROWAWAY index (`GIT_INDEX_FILE` under `Library/`), the commit is
@@ -315,6 +317,50 @@ but plumbing, so its sender could not be found.)
 
 **Older path, still read:** issues published before this into a branch's working-tree
 `BugLedger/shared/issues/` are still imported at load and still read by `collect`.
+
+### Multiplayer test logs — collected by themselves (Unity and Amoebius)
+
+Yash, 2026-10-15: *"auto collect the logs whenever we test the game, just like bug hunt and
+performance"*. Nobody pastes a console after a multiplayer test any more. Every player writes its
+own log when it stops, the after-play question sends them all, and Claude lines them up into one
+timeline.
+
+**What a log is.** One JSON file per player per test, schema `cosmicshore.nettestlog.v1`:
+`net_<utc>_<peer>.json` holding that player's `NetSessionRecord` (role, UGS counters, verdict, the
+lifecycle timeline: start, signedIn, party, clientApproved, clientLeft, leaverToAI, refused,
+bounce...) plus its console (every line, the first game stack frame of each warning/error; the
+oldest lines go first if the file would pass 450 KB, and `dropped` counts them).
+
+**Unity (MPPM).** `NetTestLogs` (editor, `[InitializeOnLoad]`) keeps the console from Play start and,
+at Play stop, writes the file **if this was a multiplayer test**: always in an MPPM virtual player;
+in the main editor when its record shows ANOTHER player (role client/spectator, a client approved
+other than its own client 0, a client left, a leaver handed to the AI, a join refused or bounced) or
+a virtual player's editor is running. Solo online play (the presence lobby only) writes nothing.
+Virtual players run from `Library/VP/<id>/`, so they write into the MAIN project's
+`Logs/NetSessions/` (peer = the MPPM tag, e.g. `p2`, else `vp-<id>`); the main editor's file is
+`main`. The main editor waits 4 s for the virtual players' files, then asks ONE question: *"This
+multiplayer test saved logs from main, p2 and p3... Send them to Claude?"* (or adds "Plus the
+multiplayer test's logs from ..." to the error question). The virtual players never ask. **Send**
+is the same `BugLedgerSender` as above: the files go to `reports/<user>/net/` on `bugledger/<user>`.
+
+**Amoebius (START ONLINE, + PLAYER 2).** The launcher passes `COSMIC_SHORE_NET_LOG_DIR`
+(`<Amoebius data>/netlogs`) and `COSMIC_SHORE_NET_PEER` (`main`, `p2`) to online games; each game
+writes the same file when it closes (`Port/src/CosmicShore.Player/NetTestLog.cs`, format in
+`Port/src/Shared/NetTestLogFormat.cs`, `engine: "amoebius"`). Player 2 always writes; `main` by the
+same evidence rule. When the last player has closed, a notification asks *"Send this online test's
+logs to Claude?"*. **SEND TO CLAUDE** (`NetLogSender`) adds them to the same `bugledger/<user>`
+branch and folder with the same throwaway-index technique. It keeps every other file on the branch
+(the Unity editor's issues and reports) and never sends a log the branch already has. **CLOSE P2**
+closes player 2's window first so it writes its log (it is only killed if it does not close within
+5 s). Closing a player some other way also writes its log; a killed process writes nothing.
+
+**Claude's side:** `python3 Tools/Build/net_logs.py collect` lists every test found on every
+`origin/*` branch (`bugledger/*` included), grouping files from the same user and engine within
+2 minutes of each other into one test, `main` first. `show <n|id>` prints each player's summary
+(role, CLEAN/DIRTY, errors, warnings, lobby reads, 429s, events) and ONE merged wall-clock
+timeline: lifecycle events plus warnings and errors (`--lines` adds every log line). `--dir PATH`
+reads a local folder instead (`Logs/NetSessions`, or Amoebius's `netlogs`); `--self-test` holds the
+reader. Read with the `/bug-ledger` skill's "Multiplayer test logs" section.
 
 ### The Bug Hunt & Performance badge — the one indicator
 
