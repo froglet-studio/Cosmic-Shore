@@ -1,0 +1,1145 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>HyperSea Studio</title>
+<!-- HyperSea Studio, round 1: the AI simulation of the whole fleet. A page of the Vessel Studio (Docs/Studios/VesselStudio/).
+     Every vessel prefab in Assets/_Prefabs/Spacevessels/ flies here at once, AI-piloted, in one cell under one rule set
+     ("one HyperSea, one rule set", Docs/claude/DESIGN_PHILOSOPHY_EMERGENCE.md). A READER of the shipped numbers, never
+     their authority: every FLEET row names the prefab or asset its flight numbers were copied from (read 2026-10-14);
+     everything the page models on top of those numbers (abilities, element effects, the cell ladder, scoring) is marked
+     lab-only. It models a DESIGN question over what ships: which hull holds the HyperSea when every hull shares it. -->
+<style>
+  :root {
+    color-scheme: dark;
+    --bg: #0b0d16; --panel: #121524; --panel-2: #181c30; --line: #262b47;
+    --fg: #e9ecff; --muted: #8e95bf;
+    --jade: #13fff2; --ruby: #ff00f9; --gold: #ffa700; --blue: #6680ff;   /* studio-domains.js sets them from the game */
+    --charge: #ffd23f; --mass: #ff6a4d; --space: #6aa8ff; --time: #c48bff;
+    --easy: #4be38f; --medium: #ffb454; --hard: #ff5c6c;
+  }
+  [hidden] { display: none !important; }
+  *, *::before, *::after { box-sizing: border-box; }
+  html, body { height: 100%; }
+  body { margin: 0; background: var(--bg); color: var(--fg); -webkit-text-size-adjust: 100%; }
+  img, canvas { max-width: 100%; }
+  a { color: var(--accent); }
+  button, input, select { font: inherit; color: inherit; }
+  button { cursor: pointer; }
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  code { font-family: var(--mono); font-size: .9em; }
+
+  .wrap { max-width: 1440px; margin: 0 auto; padding-inline: 16px; padding-block: 12px 32px; display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; }
+  header.top { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 16px; }
+  .back { font-size: 13px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); text-decoration: none; }
+  h1 { margin: 0; text-transform: uppercase; }
+  .round { font-size: 12px; color: var(--muted); border: 1px solid var(--line); border-radius: 999px; padding: 4px 8px; }
+  .sub { color: var(--muted); max-width: 78ch; margin: 0; }
+
+  .layout { display: grid; grid-template-columns: minmax(0, 1fr) 360px; gap: 12px; align-items: start; }
+  .layout > section { min-width: 0; }
+  @media (max-width: 1020px) { .layout { grid-template-columns: minmax(0, 1fr); } }
+
+  #viewport { position: relative; border-radius: 10px; overflow: hidden; background: #05060c; border: 1px solid var(--line); aspect-ratio: 16 / 10; max-width: 100%; touch-action: none; user-select: none; -webkit-user-select: none; }
+  #c { display: block; width: 100%; max-width: 100%; height: 100%; outline: none; }
+  .hud { position: absolute; inset: 0; pointer-events: none; font-variant-numeric: tabular-nums; }
+  .hud .tl { position: absolute; left: 12px; top: 10px; display: grid; gap: 2px; text-shadow: 0 1px 2px #000; }
+  .hud .big { font-size: 32px; line-height: 1; font-family: var(--font-display); font-weight: 700; }
+  .hud .lbl { font-size: 11px; color: var(--muted); letter-spacing: .08em; text-transform: uppercase; }
+  .board { position: absolute; right: 10px; top: 10px; display: grid; gap: 3px; min-width: 220px; background: #0b0d16b3; border: 1px solid var(--line); border-radius: 8px; padding: 6px 8px; font-size: 12px; }
+  .board .hd { display: flex; justify-content: space-between; gap: 10px; color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: .06em; }
+  .board .pl { display: grid; grid-template-columns: 10px minmax(0, 1fr) auto; gap: 6px; align-items: center; }
+  .board .dot { width: 10px; height: 10px; border-radius: 50%; }
+  .board .st { color: var(--muted); font-size: 11px; }
+  .board .me { color: var(--accent); }
+  .bars { position: absolute; left: 12px; bottom: 12px; display: grid; gap: 5px; width: min(250px, 44%); }
+  .meter { height: 7px; border-radius: 4px; background: #ffffff1a; overflow: hidden; }
+  .meter > i { display: block; height: 100%; width: 0; }
+  .meter.boost > i { background: linear-gradient(90deg, var(--jade), var(--time)); }
+  .meter.ab > i { background: var(--mass); }
+  .hud .row { display: flex; justify-content: space-between; font-size: 11px; color: var(--muted); }
+  .hud .row b { color: var(--fg); font-weight: 500; }
+  .feed { position: absolute; right: 10px; bottom: 10px; display: grid; gap: 4px; justify-items: end; max-width: 46%; }
+  .feed div { font-size: 12px; background: #0b0d16cc; border: 1px solid var(--line); padding: 2px 8px; border-radius: 4px; }
+  .camtag { position: absolute; left: 50%; bottom: 10px; transform: translateX(-50%); font-size: 11px; color: var(--muted); background: #0b0d16b3; border: 1px solid var(--line); border-radius: 999px; padding: 4px 9px; white-space: nowrap; }
+  .holdtag { position: absolute; left: 50%; top: 10px; transform: translateX(-50%); font-size: 11px; color: #04131c; background: #7fd7ff; border-radius: 999px; padding: 4px 9px; white-space: nowrap; }
+
+  .overlay { position: absolute; inset: 0; display: grid; place-items: center; background: #05060cb3; padding: 16px; }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 16px 18px; max-width: 520px; display: grid; gap: 10px; }
+  .card h2 { margin: 0; text-transform: uppercase; }
+  .card p { margin: 0; color: var(--muted); }
+  .keys { font-size: 12px; display: grid; grid-template-columns: auto 1fr; gap: 2px 12px; }
+  .btns { display: flex; flex-wrap: wrap; gap: 8px; }
+  .btn { border: 1px solid var(--line); background: var(--panel-2); border-radius: 6px; padding: 7px 14px; font-weight: 600; }
+  .btn.primary { background: var(--accent); color: #1a1200; border-color: var(--accent); }
+  .btn.small { padding: 4px 10px; font-size: 12px; }
+  .btn[disabled] { opacity: .5; cursor: default; }
+  .stagebtns { position: absolute; left: 12px; bottom: 96px; display: flex; gap: 6px; z-index: 3; }
+  .stagebtns .btn { padding: 4px 10px; font-size: 12px; background: #121524d9; }
+  body:not(.dev-phone) .phone-only { display: none !important; }
+  .transport { display: flex; gap: 2px; }
+  .transport .btn:disabled { opacity: 0.35; cursor: default; }
+  .transport .btn.on { background: var(--accent); color: #1a1200; opacity: 1; }
+  .transport .btn[aria-pressed="true"] { background: #7fd7ff; color: #04131c; }
+
+  aside { display: grid; gap: 10px; min-width: 0; }
+  .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; display: grid; gap: 10px; min-width: 0; }
+  .panel h3 { margin: 0; display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+  .field { display: grid; grid-template-columns: 86px minmax(0, 1fr) 44px; gap: 8px; align-items: center; }
+  .field > span { font-size: 12px; color: var(--muted); }
+  .field input[type=range] { width: 100%; accent-color: var(--accent); }
+  .field output { font-size: 12px; text-align: right; font-variant-numeric: tabular-nums; }
+  .note { font-size: 12px; color: var(--muted); margin: 0; }
+  .check { display: flex; gap: 8px; align-items: center; font-size: 13px; }
+  .el { display: grid; grid-template-columns: 70px minmax(0, 1fr) 26px; align-items: center; gap: 8px; }
+  .el label { font-size: 13px; letter-spacing: .08em; text-transform: uppercase; font-weight: 600; }
+  .el input { width: 100%; accent-color: var(--accent); }
+  .el output { text-align: right; }
+  .el .what { grid-column: 1 / -1; font-size: 12px; color: var(--muted); margin-top: -4px; }
+  .read { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 4px 12px; font-size: 12px; font-variant-numeric: tabular-nums; }
+  .read span { color: var(--muted); }
+  .tbl { width: 100%; border-collapse: collapse; font-size: 12px; font-variant-numeric: tabular-nums; }
+  .tbl td, .tbl th { padding: 3px 4px; border-bottom: 1px solid var(--line); text-align: right; white-space: nowrap; }
+  .tbl th:first-child, .tbl td:first-child { text-align: left; }
+  .tbl th { color: var(--muted); font-weight: 500; }
+  .tbl td.planned { color: var(--muted); }
+  .tblwrap { overflow-x: auto; }
+  details summary { cursor: pointer; color: var(--muted); }
+  details ul { margin: 6px 0 0; padding-left: 18px; color: var(--muted); font-size: 12px; display: grid; gap: 3px; }
+  select.sel { width: 100%; background: var(--panel-2); border: 1px solid var(--line); border-radius: 6px; padding: 5px 6px; font-size: 12px; }
+
+  .touch { position: absolute; inset: 0; display: none; }
+  body.play .touch { display: block; }
+  body.play .vside-dock, body.play .vside-split, body.play .vside-win { display: none !important; }
+  body.play #viewport { position: fixed; inset: 0; z-index: 50; border-radius: 0; aspect-ratio: auto; border: 0; }
+  body.play .wrap > :not(.layout), body.play aside, body.play .stagebtns, body.play #overlay, body.play .feed { display: none !important; }
+  .tz { position: absolute; bottom: 0; top: 30%; width: 50%; }
+  .tz.L { left: 0; } .tz.R { right: 0; }
+  .ts { position: absolute; width: 112px; height: 112px; margin: -56px 0 0 -56px; border-radius: 50%; border: 2px solid #ffffff55; background: #ffffff0d; pointer-events: none; }
+  .ts.idle { opacity: .45; }
+  .ts > i { position: absolute; left: 50%; top: 50%; width: 48px; height: 48px; margin: -24px 0 0 -24px; border-radius: 50%; background: #ffffff40; }
+  .tt { position: absolute; top: calc(8px + env(safe-area-inset-top, 0px)); width: 64px; height: 42%; border-radius: 12px; border: 1px solid #ffffff33; background: #ffffff0a; overflow: hidden; }
+  .tt.L { left: calc(10px + env(safe-area-inset-left, 0px)); } .tt.R { right: calc(10px + env(safe-area-inset-right, 0px)); }
+  .tt .tfill { position: absolute; left: 0; right: 0; top: 0; height: 0; background: #6aa8ff44; }
+  .tt.R .tfill { background: #ff6a4d44; }
+  .tt .thandle { position: absolute; left: 6px; right: 6px; top: 6px; height: 32px; border-radius: 8px; background: #ffffff33; display: grid; place-items: center; font-size: 12px; letter-spacing: .08em; font-weight: 700; }
+  .tbar { position: absolute; top: calc(8px + env(safe-area-inset-top, 0px)); left: 50%; transform: translateX(-50%); display: flex; gap: 6px; }
+  .tbar .btn { padding: 6px 10px; font-size: 13px; background: #121524d9; }
+  .portrait { position: absolute; inset: 0; display: none; place-items: center; background: #05060cf2; text-align: center; padding: 24px; font-size: 22px; text-transform: uppercase; }
+  @media (orientation: portrait) { body.play .portrait { display: grid; } }
+  body.play .hud .tl { left: 86px; top: calc(56px + env(safe-area-inset-top, 0px)); }
+  body.play .board { right: 86px; top: calc(56px + env(safe-area-inset-top, 0px)); min-width: 0; }
+  body.play .bars { left: 50%; transform: translateX(-50%); bottom: 10px; }
+  body.play .camtag { bottom: auto; top: calc(56px + env(safe-area-inset-top, 0px)); }
+  @media (max-width: 700px) { .board { min-width: 0; max-width: 46%; } }
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+<script src="studio-theme.js"></script>   <!-- the one Vessel Studio look (D29): after this page's own <style> so it wins -->
+
+<div class="wrap">
+  <header class="top">
+    <a class="back" href="index.html">&larr; Vessel Studio</a>
+    <h1>HyperSea Studio</h1>
+    <span class="round">Round 1 · fleet AI simulation</span>
+    <p class="sub">Every vessel in the project in one cell, under one rule set, flown by AI at Easy, Medium or Hard. Each hull flies on its shipped speed, turn rates and trail, chases crystals, skims and rams the mass the others lay, and works its own signature move. Watch any of them, take one over, and score the whole fleet in seconds to see which hull holds the HyperSea.</p>
+  </header>
+
+  <div class="layout">
+    <section>
+      <div id="viewport">
+        <canvas id="c" tabindex="0" aria-label="HyperSea stage"></canvas>
+        <div class="hud">
+          <div class="tl">
+            <span class="lbl" id="hWho">Squirrel · speed u/s</span><span class="big" id="hSpeed">0</span>
+            <span class="lbl" id="hBoostTxt">×1.00</span>
+          </div>
+          <div class="board" id="board"></div>
+          <div class="bars">
+            <div class="row"><span id="hBoostLbl">Boost</span><b id="hBoost">×1.00</b></div><div class="meter boost"><i id="mBoost"></i></div>
+            <div class="row"><span id="hAbLbl">Ability</span><b id="hAb">ready</b></div><div class="meter ab"><i id="mAb"></i></div>
+          </div>
+          <div class="feed" id="feed"></div>
+          <div class="camtag" id="camTag">Chase camera</div>
+          <div class="holdtag" id="holdTag" hidden>AI HOLDING YOUR HULL · touch any control to fly</div>
+        </div>
+        <div class="stagebtns"><button class="btn phone-only" id="playBtn" type="button">Back to flying</button><span class="transport" id="transport" role="toolbar" aria-label="Play controls"><button class="btn" id="tpPlay" type="button" aria-pressed="false" title="Play / pause (Enter starts, P pauses and resumes)">▶ Play</button><button class="btn" id="tpStop" type="button" title="Stop (R): end the match, back to the start">■ Stop</button></span></div>
+        <div class="overlay" id="overlay">
+          <div class="card">
+            <h2 id="ovTitle">The HyperSea, intensity 2</h2>
+            <p id="ovText">The whole fleet in one cell. Crystals drift in the cell; every hull lays its own trail, skims and rams the others' mass, and works its signature move. Highest score when the clock runs out holds the HyperSea.</p>
+            <div class="keys">
+              <span>Gamepad</span><span>both sticks steer (the game's mix), LT boost, RT ability</span>
+              <span>Keys</span><span>W S pitch · A D yaw · Q E roll · ↑ ↓ throttle · Space boost · F ability</span>
+              <span>Free cam</span><span>orbits the viewed hull: drag · wheel · J L / I K turn · U O zoom</span>
+              <span></span><span>Enter play · P pause / resume · R stop · C next camera · V next player</span>
+            </div>
+            <div class="btns"><button class="btn primary" id="startBtn" type="button">Start</button><button class="btn" id="fleetBtn2" type="button">Seat the whole fleet</button></div>
+          </div>
+        </div>
+        <div class="touch" id="touch">
+          <div class="tz L" id="tzL"><div class="ts idle" id="tsL"><i></i></div></div>
+          <div class="tz R" id="tzR"><div class="ts idle" id="tsR"><i></i></div></div>
+          <div class="tt L" id="ttL"><div class="tfill"></div><div class="thandle">LT</div></div>
+          <div class="tt R" id="ttR"><div class="tfill"></div><div class="thandle">RT</div></div>
+          <div class="tbar"><button class="btn" id="tStart" type="button">▶ Play</button><button class="btn" id="tCam" type="button">Cam</button><button class="btn" id="tBack" type="button">■ Stop</button><button class="btn" id="tExit" type="button" aria-label="Leave phone play">✕</button></div>
+          <div class="portrait">Turn the phone sideways</div>
+        </div>
+      </div>
+    </section>
+
+    <aside>
+      <div class="panel" id="grp-scene">
+        <h3>Scene <span class="note" id="cellInfo"></span></h3>
+        <div id="scenePanel"></div>
+        <label class="check"><input type="checkbox" id="labelsChk"> <span>Show vessel names over the hulls</span></label>
+        <label class="check"><input type="checkbox" id="membraneChk"> <span>Show the cell membrane</span></label>
+      </div>
+
+      <div class="panel" id="grp-world">
+        <h3>The HyperSea's rules</h3>
+        <div class="field" title="How long a laid prism stands before it fades (lab-only: in the game a trail stands until something destroys it; a cap keeps the page fast)."><span>Trail life</span><input type="range" id="lifeR" min="20" max="180" step="10"><output id="lifeO"></output></div>
+        <div class="field" title="Most prisms one hull keeps standing; the oldest goes first (lab-only, for speed)."><span>Prism cap</span><input type="range" id="capR" min="40" max="400" step="20"><output id="capO"></output></div>
+        <div class="field" title="Crystals drifting in the cell at once (each intensity sets a default)."><span>Crystals</span><input type="range" id="crysR" min="4" max="40" step="1"><output id="crysO"></output></div>
+        <p class="note">Every hull follows the same rules: its prisms stand in its domain colour; flying past any prism within the skimmer reach counts a skim; touching a rival prism with the hull destroys it and costs what that hull's ram costs; capture reach 25.5 u (the Squirrel's shipped reach) for every crystal.</p>
+      </div>
+
+      <div class="panel" id="grp-intensity">
+        <h3>Intensity</h3>
+        <div id="intensityPanel"></div>
+      </div>
+
+      <div class="panel" id="grp-players">
+        <h3>Players <button class="btn small" id="fleetBtn" type="button" title="One player per vessel in the project, domains in turn, every one AI Hard">Seat the whole fleet</button></h3>
+        <div id="playersPanel"></div>
+      </div>
+
+      <div class="panel" id="grp-ai">
+        <h3>AI</h3>
+        <div id="racePanel"></div>
+        <label class="check" title="With Is AI off and nobody on the controls for 3 s, the AI flies your hull until you touch a control (/vessel-studio D31)."><input type="checkbox" id="idleChk"> <span>AI holds my idle hull</span></label>
+      </div>
+
+      <div class="panel" id="grp-aitune">
+        <h3>AI tuning <span class="note">lab-only</span></h3>
+        <div class="field" title="How readily a hull with a weapon leaves its crystal to go after rival mass. 0 = only crystals; 1 = hunts whenever rival mass is nearer than its crystal."><span>Hunt</span><input type="range" id="huntR" min="0" max="1" step="0.05"><output id="huntO"></output></div>
+        <div class="field" title="How far ahead each AI looks for rival prisms to steer round (hulls whose ram costs them)."><span>Look ahead</span><input type="range" id="lookR" min="0" max="80" step="5"><output id="lookO"></output></div>
+      </div>
+
+      <div class="panel" id="grp-style">
+        <h3>Play style <span class="note" id="styleName"></span></h3>
+        <p class="note">A style is a set of element levels (Charge · Mass · Space · Time) every player can fly; pick it per player in Game Config. What each level does here is one universal, lab-only rule per element, the same for every hull, so styles compare across the fleet.</p>
+        <select class="sel" id="styleSel" aria-label="Style to inspect"></select>
+        <div id="elements" style="display:grid;gap:12px"></div>
+      </div>
+
+      <div class="panel" id="grp-controls">
+        <h3>Controls</h3>
+        <div class="keys">
+          <span>Gamepad</span><span>both sticks steer (the game's mix), LT boost (each hull's own kind), RT signature ability</span>
+          <span>Keys</span><span>W S pitch · A D yaw · Q E roll · ↑ ↓ throttle · Space boost · F ability</span>
+          <span>Free cam</span><span>drag to turn · wheel to zoom · J L / I K turn · U O zoom</span>
+          <span>Transport</span><span>Enter play · P pause / resume · R stop · C next camera · V next player</span>
+          <span>Phone</span><span>opens by itself on a phone: two thumb sticks, LT / RT handles</span>
+        </div>
+      </div>
+
+      <div class="panel" id="grp-fleet">
+        <h3>Fleet</h3>
+        <p class="note">The shipped numbers of every hull, read from its prefab (2026-10-14). Cruise = <code>DefaultMinimumSpeed + DefaultThrottleScaler</code> (<code>VesselTransformer.CruiseSpeed</code>). Turn rates are <code>Pitch/Yaw/RollScaler</code>. Trail = <code>VesselPrismController</code> wait and <code>BaseScale</code>. Grey rows are not registered in <code>Vessel Prefab Container.asset</code> (planned hulls).</p>
+        <div class="tblwrap"><table class="tbl" id="fleetTbl"></table></div>
+      </div>
+
+      <div class="panel" id="grp-abilities">
+        <h3>Signature moves</h3>
+        <p class="note">How each hull's boost and signature move is modelled here. The source is named; numbers marked lab-only are this page's stand-ins, never the game's.</p>
+        <div class="tblwrap"><table class="tbl" id="abTbl"></table></div>
+      </div>
+
+      <div class="panel" id="grp-live">
+        <h3>Live numbers <span class="note" id="readWho"></span></h3>
+        <div class="read" id="read"></div>
+      </div>
+
+      <div class="panel" id="grp-score">
+        <h3>Scorecard <span><button class="btn small" id="scoreFleetBtn" type="button">Score the fleet</button> <button class="btn small" id="scoreLvBtn" type="button">Score AI levels</button></span></h3>
+        <p class="note" id="scoreNote">Score the fleet: one of every hull, all AI Hard, at this intensity, three seeds (median). Which hull holds the HyperSea, and by what: crystals, rival mass destroyed or stolen, mass still standing. Score AI levels: the whole fleet at Easy, then Medium, then Hard; Hard must collect the most.</p>
+        <div class="tblwrap"><table class="tbl" id="scoreTbl"></table></div>
+        <div class="tblwrap"><table class="tbl" id="lvTbl"></table></div>
+      </div>
+
+      <div class="panel" id="grp-runs">
+        <h3>Runs</h3>
+        <div class="tblwrap"><table class="tbl"><thead><tr><th>Match</th><th>Winner</th><th>Score</th><th>Your hull</th><th>Place</th></tr></thead><tbody id="runs"></tbody></table></div>
+      </div>
+
+      <div class="panel" id="grp-about">
+        <details open>
+          <summary>Where the numbers come from, and what is not modelled</summary>
+          <ul>
+            <li>Flight: each hull's prefab in <code>Assets/_Prefabs/Spacevessels/</code>: cruise, pitch, yaw and roll rates, trail wait and prism size, its <code>VesselStatus.boostMultiplier</code>. The Manta's yaw is capped at its <code>maxYawDegPerSec</code> (60). The Scarab's 216 u/s is <code>ScarabVesselTransformer.baseTopSpeed</code>, a C# default (not serialized). The Termite carries two transformers; this page flies its single-stick one.</li>
+            <li>Boost, by hull: Squirrel, Stoat, Thresher skim energy (+0.1 a skim, decay 0.3/s, up to 5×, the Squirrel's shipped numbers); Dolphin drift-charge then discharge (<code>ChargeBoostAction.asset</code>: 3.636 s to full, 2.5 s out, up to 2.259×); Rhino ramp on a straight stick (<code>RhinoRampBoostAction.asset</code>: +220 u/s², up to 16.8×); Serpent fuel pellets (<code>ConsumeBoostAction.asset</code>: 3× for 3 s, 4 pellets, one back every 3.6 s); Sparrow and Manta hold-to-boost at their <code>boostMultiplier</code> (5, 4; the Manta's Soar halves its yaw, lab-only); Urchin rides its own colour at <code>FriendlyTerrainSpeed</code> 300; Scarab a 100 u/s Snap Dash for 0.4 s; Grizzly Rush (3 charges, 2 s apart, burst lab-only).</li>
+            <li>Signature moves (lab-only stand-ins, ranges named where the game's are known): Grizzly trigger bomb, 100 u blast reach (<code>GRIZZLY_TRIGGER_BOMBS.md</code>), own trail spared; Serpent sniper, 1.5° cone, pierces everything (<code>SERPENT_SNIPER_SCOPE.md</code>); Sparrow guns, one rocket per 25 prisms shot (<code>SPARROW_SKYBURST_BAY.md</code>); Squirrel Boost Ring, 8 danger prisms 100 u ahead every 20 s (<code>SquirrelTubeAction</code>); Rhino energy sword; Urchin chain spikes; Manta Sting bombs armed by skimming, set off by a crystal; Butterfly dust steals mass; Thresher wrecking ball; Stoat slingshot kick. Dolphin's and Scarab's moves are their boosts. Falcon, Shrike and Termite are planned hulls with no moves; the Sparrow's prefab has no prism trail and the Termite's trail never starts (<code>startDelay</code> 100000), and both are flown that way.</li>
+            <li>Element levels (lab-only, one rule per element for every hull): Time ×1 → ×1.5 boost and top speed at 10 (the fleet table measures ×1.3 to ×1.6); Space skimmer 15 → 30 u and move reach ×1 → ×1.5; Mass prism size ×1 → ×2; Charge move cooldown ×1 → ×0.5. No level-5 upgrades are modelled.</li>
+            <li>AI: one simplified pilot for every hull, through the same sticks and triggers a player has. It picks the crystal it can reach soonest, steers round rival mass when its ram costs it, hunts rival mass when it carries a weapon, and works its boost and move by its kind. Easy and Medium are the Skim Race levels (<code>SkimRaceDifficulty.asset</code>): Easy notices each new crystal 0.5 s late on average and misjudges 9.9% of them; Medium 0.25 s and 4.5%. The game's per-hull pilots (<code>AIPilot</code> plus each hull's boost policy and autopilot driver, <code>Docs/AI_SYSTEM/ARCHITECTURE.md</code>) are richer; read every result here as relative, hull against hull.</li>
+            <li>Cell ladder (lab-only): radius 700 / 900 / 1180 / 1500 u (1180 is the <code>BandOuterRadius</code> 16 of the game's cell configs share), 10 / 14 / 18 / 24 crystals, 90 / 120 / 150 / 180 s.</li>
+            <li>Score (lab-only): 10 a crystal, 1 a rival prism destroyed, 2 a rival prism stolen. Not modelled: lifeforms, flora and fauna, shields beyond one hit, super-shields, petals and elemental crystals, teams scoring together, level-5 upgrades, sound.</li>
+          </ul>
+        </details>
+        <p class="note">Want a change in this studio or a design tried? <a href="index.html#agent">Ask the studio agent</a>.</p>
+      </div>
+    </aside>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="studio-look.js"></script>
+<script src="studio-domains.js"></script>
+<script src="studio-ide.js"></script>
+<script src="ai_race_panel.js"></script>
+<script>
+(function () {
+  'use strict';
+  const $ = (id) => document.getElementById(id);
+
+  // ================= the fleet: shipped numbers, one row per prefab =================
+  // min + thr = cruise (VesselTransformer.CruiseSpeed); p/y/r = Pitch/Yaw/RollScaler (deg/s); boost = VesselStatus.boostMultiplier;
+  // trail = VesselPrismController defaultWaitTime (s) and BaseScale; reg = in Vessel Prefab Container.asset.
+  // boost.kind and move.kind say how the page models them (see the Signature moves panel).
+  const FLEET = [
+    { key: 'squirrel', name: 'Squirrel', id: 6, reg: true, min: 0, thr: 60, p: 120, y: 120, r: 130, boost: { kind: 'skim', max: 5, decay: 0.3, add: 0.1 }, trail: { wait: 0.5, scale: [20, 0.75, 5.5] }, ram: 'reset', move: { kind: 'ring', cd: 20 }, shape: 'dart', src: 'Squirrel.prefab' },
+    { key: 'manta', name: 'Manta', id: 1, reg: true, min: 0, thr: 180, p: 50, y: 60, r: 100, boost: { kind: 'hold', mult: 4, yawCost: 0.5 }, trail: { wait: 1, scale: [20, 1, 5] }, ram: 'slow', move: { kind: 'sting', skims: 6, max: 3, reach: 50 }, shape: 'ray', src: 'Manta.prefab (yaw capped at maxYawDegPerSec 60)' },
+    { key: 'dolphin', name: 'Dolphin', id: 2, reg: true, min: 0, thr: 68, p: 110, y: 110, r: 110, boost: { kind: 'charge', mult: 2.259, full: 3.636, out: 2.5 }, trail: { wait: 0.5, scale: [3, 1.5, 8] }, ram: 'slow', move: { kind: 'none' }, shape: 'sleek', src: 'Dolphin.prefab, ChargeBoostAction.asset' },
+    { key: 'rhino', name: 'Rhino', id: 3, reg: true, min: 0, thr: 50, p: 90, y: 90, r: 90, boost: { kind: 'ramp', accel: 220, mult: 16.8 }, trail: { wait: 0.8, scale: [3, 3, 0.5] }, ram: 'plough', move: { kind: 'sword', reach: 18 }, shape: 'rhino', src: 'Rhino.prefab, RhinoRampBoostAction.asset' },
+    { key: 'urchin', name: 'Urchin', id: 4, reg: true, min: 0, thr: 65, p: 90, y: 90, r: 90, boost: { kind: 'rail', speed: 300, reach: 22 }, trail: { wait: 0.5, scale: [10, 2.5, 4] }, ram: 'none', move: { kind: 'spikes', cd: 8, reach: 35 }, shape: 'urchin', src: 'Urchin.prefab (GunVesselTransformer, FriendlyTerrainSpeed 300)' },
+    { key: 'grizzly', name: 'Grizzly', id: 5, reg: true, min: 0, thr: 50, p: 90, y: 90, r: 25, boost: { kind: 'rush', add: 100, dur: 1, charges: 3, refill: 4, gap: 2 }, trail: { wait: 1, scale: [10, 5, 5], shield: true }, ram: 'none', move: { kind: 'bomb', cd: 6, reach: 100 }, shape: 'tank', src: 'Grizzly.prefab (SingleStickVesselTransformer; trail shielded)' },
+    { key: 'serpent', name: 'Serpent', id: 7, reg: true, min: 10, thr: 50, p: 80, y: 80, r: 20, boost: { kind: 'pellet', mult: 3, dur: 3, pellets: 4, regen: 3.6 }, trail: { wait: 0.2, scale: [3, 6, 0.5] }, ram: 'none', move: { kind: 'sniper', cd: 12, deg: 1.5, range: 3000 }, shape: 'serpent', src: 'Serpent.prefab, ConsumeBoostAction.asset' },
+    { key: 'sparrow', name: 'Sparrow', id: 11, reg: true, min: 10, thr: 25, p: 80, y: 80, r: 30, boost: { kind: 'hold', mult: 5 }, trail: null, ram: 'slow', move: { kind: 'guns', rate: 0.25, deg: 4, range: 400, perRocket: 25, rocket: 40 }, shape: 'fighter', src: 'Sparrow.prefab (no VesselPrismController found)' },
+    { key: 'scarab', name: 'Scarab', id: 12, reg: true, min: 0, thr: 216, p: 100, y: 100, r: 30, boost: { kind: 'dash', add: 100, dur: 0.4, cd: 2 }, trail: { wait: 3, scale: [2, 2, 5] }, ram: 'none', move: { kind: 'none' }, shape: 'beetle', src: 'Scarab.prefab, ScarabVesselTransformer.baseTopSpeed 216 (C# default)' },
+    { key: 'butterfly', name: 'Butterfly', id: 13, reg: true, min: 12, thr: 55, p: 45, y: 45, r: 70, boost: { kind: 'none' }, trail: { wait: 0.5, scale: [26, 1.2, 3.4] }, ram: 'none', move: { kind: 'dust', reach: 15 }, shape: 'butterfly', src: 'Butterfly.prefab' },
+    { key: 'thresher', name: 'Thresher', id: 14, reg: true, min: 15, thr: 110, p: 120, y: 120, r: 130, boost: { kind: 'skim', max: 5, decay: 0.3, add: 0.1 }, trail: { wait: 0.5, scale: [20, 0.75, 5.5] }, ram: 'reset', move: { kind: 'ball', chain: 30, reach: 9 }, shape: 'thresher', src: 'Thresher.prefab (ThresherVesselTransformer)' },
+    { key: 'stoat', name: 'Stoat', id: 15, reg: true, min: 0, thr: 60, p: 48, y: 48, r: 52, boost: { kind: 'skim', max: 5, decay: 0.3, add: 0.1 }, trail: { wait: 0.5, scale: [20, 0.75, 5.5] }, ram: 'reset', move: { kind: 'sling', cd: 6, kick: 2 }, shape: 'stoat', src: 'Stoat.prefab' },
+    { key: 'falcon', name: 'Falcon', id: 9, reg: false, min: 10, thr: 50, p: 60, y: 40, r: 15, boost: { kind: 'hold', mult: 4 }, trail: { wait: 1, scale: [10, 5, 5] }, ram: 'none', move: { kind: 'none' }, shape: 'generic', src: 'Falcon.prefab (planned; vesselType unset)' },
+    { key: 'shrike', name: 'Shrike', id: 10, reg: false, min: 10, thr: 50, p: 60, y: 40, r: 15, boost: { kind: 'hold', mult: 4 }, trail: { wait: 1, scale: [10, 5, 5] }, ram: 'none', move: { kind: 'none' }, shape: 'generic', src: 'Shrike.prefab (planned; vesselType unset)' },
+    { key: 'termite', name: 'Termite', id: 8, reg: false, min: 10, thr: 50, p: 60, y: 40, r: 15, boost: { kind: 'hold', mult: 4 }, trail: null, ram: 'none', move: { kind: 'none' }, shape: 'generic', src: 'Termite.prefab (planned; trail startDelay 100000)' },
+  ];
+  const FLEET_BY = Object.fromEntries(FLEET.map((F) => [F.key, F]));
+  const BOOST_TEXT = {
+    skim: (b) => 'skim energy +' + b.add + ' a skim, decay ' + b.decay + '/s, up to ' + b.max + '×',
+    hold: (b) => 'hold LT: ×' + b.mult + (b.yawCost ? ' (Soar: yaw ×' + b.yawCost + ', lab-only)' : ''),
+    charge: (b) => 'hold LT to charge (' + b.full + ' s), release to discharge (' + b.out + ' s, up to ×' + b.mult + ')',
+    ramp: (b) => 'straight stick ramps +' + b.accel + ' u/s² up to ×' + b.mult,
+    pellet: (b) => 'press LT: ×' + b.mult + ' for ' + b.dur + ' s, ' + b.pellets + ' pellets, one back every ' + b.regen + ' s',
+    rail: (b) => 'rides its own colour at ' + b.speed + ' u/s (within ' + b.reach + ' u, lab-only reach)',
+    rush: (b) => 'press LT: +' + b.add + ' u/s easing out over ' + b.dur + ' s, ' + b.charges + ' charges, ' + b.gap + ' s apart (burst lab-only)',
+    dash: (b) => 'press LT: Snap Dash +' + b.add + ' u/s for ' + b.dur + ' s (' + b.cd + ' s cooldown lab-only)',
+    none: () => 'none',
+  };
+  const MOVE_TEXT = {
+    ring: (m) => 'RT: Boost Ring, 8 danger prisms 100 u ahead, every ' + m.cd + ' s; skimming them is boost',
+    sting: (m) => 'every ' + m.skims + ' skims arms a Sting bomb (up to ' + m.max + '); a crystal sets them off, ' + m.reach + ' u each (lab-only)',
+    none: () => 'none (its boost is its move)',
+    sword: (m) => 'hold RT: energy sword cuts rival prisms within ' + m.reach + ' u ahead (lab-only reach); its hull ploughs, never destroys',
+    spikes: (m) => 'RT: chain spikes turn rival prisms within ' + m.reach + ' u to its colour, every ' + m.cd + ' s (lab-only)',
+    bomb: (m) => 'RT: trigger bomb, ' + m.reach + ' u blast reach, own trail spared, every ' + m.cd + ' s (cooldown lab-only)',
+    sniper: (m) => 'RT: sniper shot, ' + m.deg + '° cone to ' + m.range + ' u, pierces everything, every ' + m.cd + ' s (cooldown lab-only)',
+    guns: (m) => 'hold RT: guns, a prism every ' + m.rate + ' s in a ' + m.deg + '° cone to ' + m.range + ' u; a rocket every ' + m.perRocket + ' prisms shot, ' + m.rocket + ' u blast (lab-only rate and reach)',
+    dust: (m) => 'hold RT: dust mode steals rival prisms within ' + m.reach + ' u (lab-only)',
+    ball: (m) => 'wrecking ball on a ' + m.chain + ' u chain smashes rival prisms within ' + m.reach + ' u of the ball (lab-only)',
+    sling: (m) => 'RT: slingshot kick, +' + m.kick + ' boost every ' + m.cd + ' s (lab-only)',
+  };
+  const RAM_TEXT = { reset: 'resets boost', slow: 'slows 40%', plough: 'ploughs aside (no kill, no slow)', none: 'no cost' };
+
+  const CELLS = {
+    1: { R: 700, crystals: 10, time: 90, note: 'small cell, 10 crystals, 90 s' },
+    2: { R: 900, crystals: 14, time: 120, note: 'cell, 14 crystals, 120 s' },
+    3: { R: 1180, crystals: 18, time: 150, note: 'wide cell, 18 crystals, 150 s' },
+    4: { R: 1500, crystals: 24, time: 180, note: 'vast cell, 24 crystals, 180 s' },
+  };
+  const SHIP = { captureReach: 25.5, hullReach: 2.2, skimR: [15, 30] };   // Squirrel.prefab capture reach and skimmer scale 15-30
+  const DIFF = { Easy: { reaction: 0.5, mistake: 0.099 }, Medium: { reaction: 0.25, mistake: 0.045 }, Hard: { reaction: 0, mistake: 0 } };   // SkimRaceDifficulty.asset
+  const ELEMENTS = [
+    { key: 'charge', name: 'Charge', color: '--charge', what: (v) => 'move cooldown ×' + lerp(1, 0.5, v / 10).toFixed(2) },
+    { key: 'mass', name: 'Mass', color: '--mass', what: (v) => 'prism size ×' + lerp(1, 2, v / 10).toFixed(2) },
+    { key: 'space', name: 'Space', color: '--space', what: (v) => 'skimmer ' + lerp(SHIP.skimR[0], SHIP.skimR[1], v / 10).toFixed(0) + ' u, move reach ×' + lerp(1, 1.5, v / 10).toFixed(2) },
+    { key: 'time', name: 'Time', color: '--time', what: (v) => 'boost and top speed ×' + lerp(1, 1.5, v / 10).toFixed(2) },
+  ];
+  const STYLES = [
+    { name: 'Shipped', lv: { charge: 0, mass: 0, space: 0, time: 0 }, info: 'The start of a match: every element at 0.' },
+    { name: 'Racer', lv: { charge: 0, mass: 0, space: 0, time: 10 }, info: 'Time 10: half again the boost and top speed.' },
+    { name: 'Builder', lv: { charge: 0, mass: 10, space: 0, time: 0 }, info: 'Mass 10: twice the prism size, so twice the wall.' },
+    { name: 'Reach', lv: { charge: 0, mass: 0, space: 10, time: 0 }, info: 'Space 10: a 30 u skimmer and half again the move reach.' },
+    { name: 'Striker', lv: { charge: 10, mass: 0, space: 0, time: 0 }, info: 'Charge 10: the move comes back twice as often.' },
+    { name: 'Balanced', lv: { charge: 5, mass: 5, space: 5, time: 5 }, info: 'Every element at 5.' },
+  ];
+  const STYLE_BY = Object.fromEntries(STYLES.map((s) => [s.name, s]));
+  const DOMAINS = VesselStudioDomains.list.map((d) => ({ key: d.key, name: d.name, color: d.hex, css: d.color }));   // the game's palette (studio-domains.js)
+  const DOMAIN_BY = Object.fromEntries(DOMAINS.map((d) => [d.key, d]));
+  const lerp = (a, b, t) => a + (b - a) * t, clamp = (x, a, b) => Math.max(a, Math.min(b, x));
+  function rng(seed) { let s = (seed >>> 0) || 1; return () => { s ^= s << 13; s >>>= 0; s ^= s >> 17; s ^= s << 5; s >>>= 0; return s / 4294967296; }; }
+  function mults(lv) {
+    const f = (k) => clamp((lv[k] || 0) / 10, 0, 1);
+    return { cd: lerp(1, 0.5, f('charge')), size: lerp(1, 2, f('mass')), skimR: lerp(SHIP.skimR[0], SHIP.skimR[1], f('space')), reach: lerp(1, 1.5, f('space')), speed: lerp(1, 1.5, f('time')) };
+  }
+  function fleetPlayers() { return FLEET.map((F, i) => ({ ai: true, vessel: F.key, domain: DOMAINS[i % DOMAINS.length].key, level: 'Hard', style: 'Shipped' })); }
+
+  // ================= settings =================
+  const S = { course: 2, players: fleetPlayers(), view: 0, cam: 'Chase', speed: 1, thinking: true, autoRestart: false, labels: true, membrane: true, life: 60, cap: 160, crystals: null, idleHold: true, hunt: 0.5, look: 40, inspect: 'Shipped' };
+  const LS = 'cs.studio.hypersea.v1';
+  try { const s = JSON.parse(localStorage.getItem(LS) || 'null'); if (s) Object.assign(S, s); } catch (e) { /* storage blocked */ }
+  function save() { try { localStorage.setItem(LS, JSON.stringify(S)); } catch (e) { /* storage blocked */ } }
+
+  // ================= the world (no rendering, so the scorecard runs it headless) =================
+  const V = THREE.Vector3, Q = THREE.Quaternion;
+  function Grid(cell) { this.cell = cell; this.map = new Map(); }
+  Grid.prototype.h = function (x, y, z) { return ((x * 73856093) ^ (y * 19349663) ^ (z * 83492791)) | 0; };
+  Grid.prototype.add = function (p) { const c = this.cell; const k = this.h(Math.floor(p.pos.x / c), Math.floor(p.pos.y / c), Math.floor(p.pos.z / c)); let a = this.map.get(k); if (!a) this.map.set(k, a = []); a.push(p); p.k = k; };
+  Grid.prototype.remove = function (p) { const a = this.map.get(p.k); if (!a) return; const i = a.indexOf(p); if (i >= 0) a.splice(i, 1); };
+  Grid.prototype.near = function (pos, r, out) {
+    out.length = 0; const c = this.cell, n = Math.ceil(r / c), cx = Math.floor(pos.x / c), cy = Math.floor(pos.y / c), cz = Math.floor(pos.z / c);
+    for (let x = cx - n; x <= cx + n; x++) for (let y = cy - n; y <= cy + n; y++) for (let z = cz - n; z <= cz + n; z++) { const a = this.map.get(this.h(x, y, z)); if (a) for (const p of a) out.push(p); }
+    return out;
+  };
+  function lookQuat(dir) { const t = dir.clone().normalize(), s = new V().crossVectors(t, new V(0, 1, 0)); if (s.lengthSq() < 1e-4) s.set(1, 0, 0); s.normalize(); const u = new V().crossVectors(s, t).normalize(); return new Q().setFromRotationMatrix(new THREE.Matrix4().makeBasis(s, u, t.clone().negate())); }
+
+  function makeWorld(course, specs, seed, opt) {
+    opt = opt || {};
+    const C = CELLS[course], W = { course, R: C.R, prisms: [], grid: new Grid(32), pilots: [], crystals: [], fx: [], t: 0, duration: C.time, rand: rng(seed), events: [], over: false, dirty: true, watch: 0,
+      life: opt.life || S.life, cap: opt.cap || S.cap, hunt: opt.hunt != null ? opt.hunt : S.hunt, look: opt.look != null ? opt.look : S.look };
+    const nCrys = opt.crystals || S.crystals || C.crystals;
+    for (let i = 0; i < nCrys; i++) W.crystals.push({ id: i, gen: 0, pos: randInCell(W, 0.85) });
+    specs.forEach((spec, i) => {
+      const F = FLEET_BY[spec.vessel] || FLEET[0], a = i / specs.length * Math.PI * 2, y = ((i % 3) - 1) * 0.12 * C.R;
+      const pos = new V(Math.cos(a) * C.R * 0.6, y, Math.sin(a) * C.R * 0.6), facing = new V(-Math.sin(a), 0, Math.cos(a)).addScaledVector(pos.clone().normalize(), -0.4).normalize();
+      const lv = Object.assign({}, (STYLE_BY[spec.style] || STYLES[0]).lv);
+      W.pilots.push({
+        i, spec, F, domain: DOMAIN_BY[spec.domain] || DOMAINS[i % DOMAINS.length], lv, m: mults(lv),
+        pos, quat: lookQuat(facing), course: facing.clone(), speed: F.min + F.thr, factor: 1, extra: 0, throttle: 1,
+        boost: 1, charge: 0, discharge: 0, ramp: 0, boostT: 0, pellets: F.boost.pellets || 0, pelletAt: 0, dashT: 0, readyAt: 0, charges: F.boost.charges || 0, chargeAt: 0, ltWas: 0, rtWas: 0,
+        moveReadyAt: 0, gunAt: 0, gunKills: 0, rockets: 0, armed: 0, skimCount: 0, ballPos: pos.clone(), ballVel: new V(), onRail: false,
+        waitAcc: 0, own: [], laid: 0, crystalsGot: 0, destroyed: 0, stolen: 0, skims: 0, contacts: 0, moves: 0, sumSpeed: 0, nSpeed: 0, topSpeed: 0, mistakes: 0,
+        hc: spec.ai ? { level: DIFF[spec.ai] || DIFF.Hard, rng: rng(seed * 31 + i * 7 + 1), tracking: -1, noticeAt: 0, misjudged: false, until: 0, off: new V(), unnoticed: false } : null,
+        target: null, aim: null, aiState: '', moveName: '',
+      });
+    });
+    return W;
+  }
+  function randInCell(W, frac) { const r = W.rand; let j; do { j = new V(r() * 2 - 1, r() * 2 - 1, r() * 2 - 1); } while (j.lengthSq() > 1); return j.multiplyScalar(W.R * frac); }
+  function addPrism(W, o) { o.cool = Object.create(null); o.flash = 0; o.iq = o.quat.clone().invert(); o.half = [o.scale[0] / 2, o.scale[1] / 2, o.scale[2] / 2]; W.prisms.push(o); W.grid.add(o); W.dirty = true; return o; }
+  function removePrism(W, o) { if (o.dead) return; W.grid.remove(o); o.dead = true; W.dirty = true; const P = W.pilots[o.owner]; if (P) { const k = P.own.indexOf(o); if (k >= 0) P.own.splice(k, 1); } }
+  const tv = new V();
+  function boxDist(p, pos) {   // distance from a point to a prism's box
+    tv.copy(pos).sub(p.pos).applyQuaternion(p.iq);
+    const dx = Math.max(0, Math.abs(tv.x) - p.half[0]), dy = Math.max(0, Math.abs(tv.y) - p.half[1]), dz = Math.max(0, Math.abs(tv.z) - p.half[2]);
+    return Math.sqrt(dx * dx + dy * dy + dz * dz);
+  }
+  const rival = (P, p) => !p.dead && p.domain !== P.domain.key;
+  function hitPrism(W, P, p, how) {   // a rival prism hit by P's hull or move: a shield takes one hit, else it is destroyed
+    if (p.shield) { p.shield = false; p.flash = 1; W.dirty = true; return false; }
+    removePrism(W, p); P.destroyed++; return true;
+  }
+  function stealPrism(W, P, p) {
+    if (p.shield) { p.shield = false; p.flash = 1; W.dirty = true; return; }
+    const prev = W.pilots[p.owner]; if (prev) { const k = prev.own.indexOf(p); if (k >= 0) prev.own.splice(k, 1); }
+    p.domain = P.domain.key; p.owner = P.i; p.born = W.t; p.flash = 1; P.own.push(p); P.stolen++; W.dirty = true;
+  }
+  function blast(W, P, at, reach) {   // own domain spared (GRIZZLY_TRIGGER_BOMBS.md: own trail spared)
+    const near = W.grid.near(at, reach + 14, tmpA); let n = 0;
+    for (const p of near.slice()) if (rival(P, p) && boxDist(p, at) < reach) { if (hitPrism(W, P, p)) n++; }
+    W.fx.push({ kind: 'blast', pos: at.clone(), r: reach, color: P.domain.color, t: W.t, life: 0.6 });
+    return n;
+  }
+  function inCone(P, fwd, p, deg, range) { tv.copy(p.pos).sub(P.pos); const d = tv.length(); if (d > range || d < 1) return false; return tv.dot(fwd) / d > Math.cos(deg * Math.PI / 180); }
+
+  // ---- the handicap: SkimRaceHandicap's two mistakes, applied to what the AI believes (D24) ----
+  function believe(W, P, c) {
+    const h = P.hc; if (!c) return null;
+    if (!h || (h.level.reaction <= 0 && h.level.mistake <= 0)) return c.pos;
+    const id = c.id * 1000 + c.gen;
+    if (h.tracking !== id) {
+      h.tracking = id; h.noticeAt = W.t + h.level.reaction * lerp(0.5, 1.5, h.rng());
+      h.misjudged = h.rng() < h.level.mistake;
+      if (h.misjudged) { P.mistakes++; const r = h.rng; h.off.set(r() - 0.5, r() - 0.5, r() - 0.5).normalize().multiplyScalar(2 * SHIP.captureReach + 4); h.until = W.t + 6; }
+    }
+    h.unnoticed = W.t < h.noticeAt;
+    if (h.unnoticed) return null;
+    if (h.misjudged) {
+      const fake = c.pos.clone().add(h.off), to = fake.clone().sub(P.pos), fwd = new V(0, 0, -1).applyQuaternion(P.quat);
+      if (W.t > h.until || to.length() < 12 || to.dot(fwd) < 0) h.misjudged = false; else return fake;
+    }
+    return c.pos;
+  }
+
+  // ---- the AI: one pilot for every hull, through the same sticks and triggers a player has (D4) ----
+  const easeInv = (e) => { e = clamp(e, -0.999, 0.999); return Math.sign(e) * (4 / Math.PI) * Math.acos(1 - Math.abs(e)); };
+  const HUNTERS = { sword: 1, guns: 1, bomb: 1, sniper: 1, spikes: 1, ball: 1, dust: 1 };
+  const RANGED = { guns: 1, sniper: 1 };
+  const tmpA = [], tmpB = [];
+  function scan(W, P, fwd) {   // rival mass near this hull, refreshed twice a second: nearest ahead, and counts for each move's test
+    if (P.scanAt > W.t && P.seen) return P.seen;
+    const M = P.F.move, reach = (M.reach || 0) * P.m.reach, out = { nearest: null, nd: Infinity, inReach: 0, inCone: 0 };
+    for (const p of W.prisms) {
+      if (!rival(P, p)) continue;
+      const d = p.pos.distanceTo(P.pos);
+      if (d < 240 && d < out.nd && p.pos.clone().sub(P.pos).dot(fwd) > -0.2 * d) { out.nd = d; out.nearest = p; }
+      if (reach && d < reach) out.inReach++;
+      if ((M.kind === 'sniper' || M.kind === 'guns') && inCone(P, fwd, p, M.deg, M.range)) out.inCone++;
+    }
+    P.seen = out; P.scanAt = W.t + 0.5; return out;
+  }
+  function pickCrystal(W, P, fwd) {
+    let best = null, bs = Infinity;
+    for (const c of W.crystals) {
+      const to = c.pos.clone().sub(P.pos), d = to.length(), ang = Math.acos(clamp(to.dot(fwd) / Math.max(d, 1e-3), -1, 1));
+      const turnTime = ang / ((Math.max(P.F.p, P.F.y) * Math.PI / 180) || 1), s = d / Math.max(20, P.speed) + turnTime;
+      if (s < bs) { bs = s; best = c; }
+    }
+    return best;
+  }
+  function aiInput(W, P) {
+    const F = P.F, fwd = new V(0, 0, -1).applyQuaternion(P.quat), up = new V(0, 1, 0).applyQuaternion(P.quat), right = new V(1, 0, 0).applyQuaternion(P.quat);
+    if (!P.target || W.t >= (P.retarget || 0) || P.target.gen !== P.targetGen) { P.target = pickCrystal(W, P, fwd); P.targetGen = P.target ? P.target.gen : 0; P.retarget = W.t + 1; }
+    const b = believe(W, P, P.target); let aim = b, why = b ? 'crystal' : 'searching';
+    if (!b) aim = P.pos.clone().addScaledVector(fwd, 100);
+    // a hull with a weapon goes for rival mass when it is nearer than its crystal
+    if (HUNTERS[F.move.kind] && W.hunt > 0) {
+      const sn = scan(W, P, fwd), bp = sn.nearest && !sn.nearest.dead ? sn.nearest : null, bd = sn.nd;
+      const cd = b ? b.distanceTo(P.pos) : Infinity;
+      if (bp && bd * (1 + 2 * (1 - W.hunt)) < cd && !(RANGED[F.move.kind] && bd < 120)) { aim = bp.pos.clone(); why = 'hunting'; }   // a gun stands off
+    }
+    // the Urchin rides its own colour: lined up along its own prisms, it follows them
+    if (F.boost.kind === 'rail' && why === 'crystal' && P.own.length) {
+      const near = W.grid.near(P.pos, 80, tmpA);
+      for (const p of near) if (!p.dead && p.owner === P.i && W.t - p.born > 1) { const ax = new V(0, 0, -1).applyQuaternion(p.quat); if (ax.dot(fwd) < 0) ax.negate(); if (ax.dot(aim.clone().sub(P.pos).normalize()) > 0.8) { aim = p.pos.clone().addScaledVector(ax, 70); why = 'riding'; break; } }
+    }
+    // stay inside the cell
+    if (P.pos.length() > W.R * 0.92) { aim = new V(0, 0, 0); why = 'membrane'; }
+    // steer round rival mass when the ram costs this hull
+    if ((F.ram === 'reset' || F.ram === 'slow') && W.look > 0 && (why !== 'hunting' || RANGED[F.move.kind])) {   // a gun hunts from range, never by ramming
+      const probe = P.pos.clone().addScaledVector(fwd, W.look), near = W.grid.near(probe, 26, tmpB);
+      for (const p of near) if (rival(P, p) && boxDist(p, probe) < 9) { const away = probe.clone().sub(p.pos); away.addScaledVector(fwd, -away.dot(fwd)); if (away.lengthSq() < 1) away.copy(up); aim = probe.clone().add(away.normalize().multiplyScalar(60)); why = 'avoiding'; break; }
+    }
+    P.aim = aim;
+    const dir = aim.clone().sub(P.pos).normalize(), x = dir.dot(right), y = dir.dot(up), z = dir.dot(fwd);
+    const yawErr = Math.atan2(x, z), pitchErr = Math.atan2(y, Math.max(0.05, Math.hypot(x, z)) * (z < 0 ? -1 : 1));
+    const yawCmd = clamp(yawErr * 2.4, -1, 1), pitchCmd = clamp(pitchErr * 2.4, -1, 1), rollCmd = clamp(-right.y * 2, -1, 1);
+    const err = Math.acos(clamp(z, -1, 1)) * 180 / Math.PI, dist = aim.distanceTo(P.pos);
+    const sx = easeInv(yawCmd), sy = easeInv(pitchCmd), dy = easeInv(rollCmd), dx = Math.min(2, 2 - Math.abs(sx));
+    const R = { x: (sx + dx) / 2, y: clamp((sy + dy) / 2, -1, 1) }, L = { x: (sx - dx) / 2, y: clamp((sy - dy) / 2, -1, 1) };
+    // LT: each hull's own boost, worked the way its kind wants
+    let lt = 0; const bk = F.boost.kind, straight = err < 12 && dist > 150;
+    if (bk === 'hold') lt = straight ? 1 : 0;
+    else if (bk === 'charge') lt = err > 35 ? 1 : (P.charge > 0.25 && !straight ? 1 : 0);
+    else if (bk === 'pellet') lt = straight && P.boostT <= 0.05 && P.pellets > 0 && P.ltWas < 0.5 ? 1 : 0;
+    else if (bk === 'dash' || bk === 'rush') lt = straight && P.ltWas < 0.5 ? 1 : 0;
+    // RT: the signature move, when it would land
+    let rt = 0; const mk = F.move.kind, reach = (F.move.reach || 0) * P.m.reach;
+    if (W.t >= P.moveReadyAt) {
+      if (mk === 'ring') rt = straight && P.boost < 3 ? 1 : 0;
+      else if (mk === 'sling') rt = err > 50 ? 1 : 0;
+      else if (mk === 'bomb' || mk === 'spikes') rt = scan(W, P, fwd).inReach >= (mk === 'bomb' ? 6 : 4) ? 1 : 0;
+      else if (mk === 'sniper') rt = scan(W, P, fwd).inCone >= 4 ? 1 : 0;
+    }
+    if (mk === 'sword' || mk === 'dust') { for (const p of W.grid.near(P.pos, 60, tmpB)) if (rival(P, p) && p.pos.distanceTo(P.pos) < 60) { rt = 1; break; } }
+    if (mk === 'guns') rt = scan(W, P, fwd).inCone > 0 ? 1 : 0;
+    P.aiState = P.hc && P.hc.unnoticed ? 'not noticed' : P.hc && P.hc.misjudged ? 'misjudged' : why;
+    return { pad: true, L, R, lt, rt };
+  }
+
+  // ---- one step of one pilot: the same physics for a player and an AI ----
+  const ease = (x) => x < 0 ? Math.cos(x * Math.PI / 4) - 1 : -(Math.cos(x * Math.PI / 4) - 1);
+  const AX = new V(1, 0, 0), AY = new V(0, 1, 0), AZ = new V(0, 0, 1), dq = new Q();
+  function stepPilot(W, P, inp, dt) {
+    const F = P.F, B = F.boost;
+    let XSum, YSum, YDiff, XDiff;
+    if (inp.pad) { XSum = ease(inp.R.x + inp.L.x); YSum = -ease(inp.R.y + inp.L.y); YDiff = ease(inp.R.y - inp.L.y); XDiff = (inp.R.x - inp.L.x + 2) / 4; }
+    else { XSum = inp.kYaw; YSum = -inp.kPitch; YDiff = inp.kRoll; XDiff = inp.kThrottle; }
+    XDiff = clamp(XDiff, 0, 1); P.throttle = XDiff;
+    const lt = clamp(inp.lt || 0, 0, 1), rt = clamp(inp.rt || 0, 0, 1), ltPress = lt > 0.5 && P.ltWas <= 0.5, rtPress = rt > 0.5 && P.rtWas <= 0.5;
+    // boost, by kind
+    let factor = 1, add = 0, yawMul = 1;
+    if (B.kind === 'skim') { if (P.boost > 1) P.boost = Math.max(1, P.boost - B.decay * dt); factor = P.boost; }
+    else if (B.kind === 'hold') { const want = lt > 0.5 ? B.mult : 1; P.factor += (want - P.factor) * (1 - Math.exp(-3 * dt)); factor = P.factor; if (B.yawCost && lt > 0.5) yawMul = B.yawCost; }
+    else if (B.kind === 'charge') {
+      if (lt > 0.5) P.charge = Math.min(1, P.charge + dt / B.full);   // holdSpeedWhileDrifting: no boost while charging
+      else P.charge = Math.max(0, P.charge - dt / B.out);
+      factor = lt > 0.5 ? 1 : 1 + (B.mult - 1) * P.charge;
+    }
+    else if (B.kind === 'ramp') { if (Math.abs(XSum) < 0.15 && Math.abs(YSum) < 0.15) P.ramp = Math.min((F.min + F.thr) * (B.mult - 1), P.ramp + B.accel * dt); else P.ramp *= Math.exp(-3 * dt); add = P.ramp; }
+    else if (B.kind === 'pellet') {
+      if (P.pellets < B.pellets && W.t >= P.pelletAt) { P.pellets++; P.pelletAt = W.t + B.regen; }
+      if (ltPress && P.pellets > 0) { if (P.pellets === B.pellets) P.pelletAt = W.t + B.regen; P.pellets--; P.boostT += B.dur; }
+      P.boostT = Math.max(0, P.boostT - dt); factor = P.boostT > 0 ? B.mult : 1;
+    }
+    else if (B.kind === 'rail') { P.onRail = false; for (const p of W.grid.near(P.pos, B.reach + 14, tmpA)) if (!p.dead && p.domain === P.domain.key && W.t - p.born > 0.6 && boxDist(p, P.pos) < B.reach) { P.onRail = true; break; } }
+    else if (B.kind === 'dash') { if (ltPress && W.t >= P.readyAt) { P.dashT = B.dur; P.readyAt = W.t + B.cd; } P.dashT = Math.max(0, P.dashT - dt); add = P.dashT > 0 ? B.add : 0; }
+    else if (B.kind === 'rush') {
+      if (P.charges < B.charges && W.t >= P.chargeAt) { P.charges++; P.chargeAt = W.t + B.refill; }
+      if (ltPress && P.charges > 0 && W.t >= P.readyAt) { if (P.charges === B.charges) P.chargeAt = W.t + B.refill; P.charges--; P.dashT = B.dur; P.readyAt = W.t + B.gap; }
+      P.dashT = Math.max(0, P.dashT - dt); add = P.dashT > 0 ? B.add * (0.5 + Math.cos((1 - P.dashT / B.dur) * Math.PI / 2)) : 0;
+    }
+    P.ltWas = lt; P.rtWas = rt;
+    // turn: Pitch/Yaw/RollScaler as degrees a second at full stick
+    const k = Math.PI / 180;
+    dq.setFromAxisAngle(AX, -YSum * F.p * k * dt); P.quat.multiply(dq);
+    dq.setFromAxisAngle(AY, -XSum * F.y * yawMul * k * dt); P.quat.multiply(dq);
+    dq.setFromAxisAngle(AZ, YDiff * F.r * k * dt); P.quat.multiply(dq);
+    P.quat.normalize();
+    const fwd = new V(0, 0, -1).applyQuaternion(P.quat), right = new V(1, 0, 0).applyQuaternion(P.quat), up = new V(0, 1, 0).applyQuaternion(P.quat);
+    const boosted = factor > 1.01 || add > 1 || P.onRail;
+    let target = (F.min + F.thr * XDiff) * (factor > 1 ? 1 + (factor - 1) * P.m.speed : 1) + add * P.m.speed;
+    if (P.onRail) target = Math.max(target, B.speed * P.m.speed);
+    P.speed += (target - P.speed) * (1 - Math.exp(-(boosted ? 2.5 : 1.5) * dt));
+    P.course.lerp(fwd, 1 - Math.exp(-12 * dt)).normalize();
+    P.pos.addScaledVector(P.course, P.speed * dt);
+    P.sumSpeed += P.speed; P.nSpeed++; P.topSpeed = Math.max(P.topSpeed, P.speed);
+    // the trail
+    if (F.trail && W.t > 2) { P.waitAcc += dt; if (P.waitAcc >= F.trail.wait) { P.waitAcc -= F.trail.wait; layPrism(W, P, fwd); } }
+    // skim and ram
+    const near = W.grid.near(P.pos, P.m.skimR + 14, tmpA);
+    for (const p of near) {
+      if (p.dead || (p.cool[P.i] || 0) > W.t) continue;
+      const d = boxDist(p, P.pos), own = p.owner === P.i;
+      if (d < SHIP.hullReach && !own && p.domain !== P.domain.key) {
+        p.cool[P.i] = W.t + 0.6; P.contacts++;
+        if (F.ram === 'plough') { const push = p.pos.clone().sub(P.pos); push.addScaledVector(fwd, -push.dot(fwd)); if (push.lengthSq() < 0.1) push.copy(right); W.grid.remove(p); p.pos.addScaledVector(push.normalize(), 12); W.grid.add(p); W.dirty = true; continue; }
+        hitPrism(W, P, p);
+        if (F.ram === 'reset') P.boost = 1; else if (F.ram === 'slow') { P.speed *= 0.6; if (B.kind === 'charge') P.charge *= 0.5; }
+        if (P.i === W.watch) W.events.push('Rammed ' + (DOMAIN_BY[p.domain] || {}).name + ' mass');
+        continue;
+      }
+      if (d > P.m.skimR || own) continue;
+      p.cool[P.i] = W.t + 0.6; p.flash = Math.max(p.flash, 0.6); W.dirty = true; P.skims++;
+      if (B.kind === 'skim') P.boost = clamp(P.boost + B.add * (p.danger ? 3 : 1), 1, B.max);
+      if (F.move.kind === 'sting' && ++P.skimCount >= F.move.skims) { P.skimCount = 0; if (P.armed < F.move.max) { P.armed++; if (P.i === W.watch) W.events.push('Sting bomb armed (' + P.armed + ')'); } }
+    }
+    // the signature move
+    doMove(W, P, fwd, right, up, rt, rtPress, dt);
+    // crystals
+    for (const c of W.crystals) if (c.pos.distanceTo(P.pos) < SHIP.captureReach) {
+      P.crystalsGot++; c.pos = randInCell(W, 0.85); c.gen++;
+      if (P.i === W.watch) W.events.push('Crystal ' + P.crystalsGot);
+      if (F.move.kind === 'sting' && P.armed > 0) { let n = 0; for (let b = 0; b < P.armed; b++) n += blast(W, P, P.pos.clone().addScaledVector(fwd, -20 - b * 25), F.move.reach * P.m.reach); P.moves += P.armed; P.armed = 0; if (P.i === W.watch) W.events.push('Kabloom: ' + n + ' prisms'); }
+    }
+  }
+  function layPrism(W, P, fwd) {
+    const sc = P.F.trail.scale, m = P.m.size;
+    const p = addPrism(W, { pos: P.pos.clone().addScaledVector(fwd, -(sc[2] * m / 2 + 6)), quat: P.quat.clone(), scale: [sc[0] * m, sc[1] * m, sc[2] * m], owner: P.i, domain: P.domain.key, shield: !!P.F.trail.shield, danger: false, born: W.t, life: W.life });
+    P.own.push(p); P.laid++;
+    while (P.own.length > W.cap) removePrism(W, P.own[0]);
+  }
+  function doMove(W, P, fwd, right, up, rt, rtPress, dt) {
+    const M = P.F.move, reach = (M.reach || 0) * P.m.reach, ready = W.t >= P.moveReadyAt, cd = (M.cd || 0) * P.m.cd;
+    P.moveName = M.kind;
+    if (M.kind === 'ring' && rtPress && ready) {
+      const c = P.pos.clone().addScaledVector(fwd, 100);
+      for (let i = 0; i < 8; i++) { const a = i / 8 * Math.PI * 2; const p = addPrism(W, { pos: c.clone().addScaledVector(right, Math.cos(a) * 8).addScaledVector(up, Math.sin(a) * 8), quat: P.quat.clone(), scale: [2, 2, 4], owner: P.i, domain: P.domain.key, shield: false, danger: true, born: W.t, life: 14 }); p.ring = true; }
+      P.moveReadyAt = W.t + cd; P.moves++; if (P.i === W.watch) W.events.push('Boost Ring placed');
+    } else if (M.kind === 'sling' && rtPress && ready) {
+      P.boost = Math.min(P.F.boost.max, P.boost + M.kick); P.moveReadyAt = W.t + cd; P.moves++;
+      W.fx.push({ kind: 'blast', pos: P.pos.clone(), r: 30, color: P.domain.color, t: W.t, life: 0.4 }); if (P.i === W.watch) W.events.push('Slingshot');
+    } else if (M.kind === 'bomb' && rtPress && ready) {
+      const n = blast(W, P, P.pos.clone().addScaledVector(fwd, 40), reach); P.moveReadyAt = W.t + cd; P.moves++; if (P.i === W.watch) W.events.push('Bomb: ' + n + ' prisms');
+    } else if (M.kind === 'spikes' && rtPress && ready) {
+      let n = 0; for (const p of W.grid.near(P.pos, reach + 10, tmpB).slice()) if (rival(P, p) && boxDist(p, P.pos) < reach) { stealPrism(W, P, p); n++; }
+      W.fx.push({ kind: 'blast', pos: P.pos.clone(), r: reach, color: P.domain.color, t: W.t, life: 0.5 }); P.moveReadyAt = W.t + cd; P.moves++; if (P.i === W.watch) W.events.push('Chain spikes: ' + n + ' prisms');
+    } else if (M.kind === 'sniper' && rtPress && ready) {
+      let n = 0; for (const p of W.prisms.slice()) if (rival(P, p) && inCone(P, fwd, p, M.deg, M.range)) { if (hitPrism(W, P, p)) n++; }
+      W.fx.push({ kind: 'beam', pos: P.pos.clone(), to: P.pos.clone().addScaledVector(fwd, Math.min(M.range, W.R * 2.2)), color: P.domain.color, t: W.t, life: 0.5 });
+      P.moveReadyAt = W.t + cd; P.moves++; if (P.i === W.watch) W.events.push('Sniper shot: ' + n + ' prisms');
+    } else if ((M.kind === 'sword' || M.kind === 'dust') && rt > 0.5) {
+      for (const p of W.grid.near(P.pos, reach + 14, tmpB).slice()) if (rival(P, p) && boxDist(p, P.pos) < reach && (M.kind === 'dust' || p.pos.clone().sub(P.pos).dot(fwd) > 0)) { if (M.kind === 'sword') hitPrism(W, P, p); else stealPrism(W, P, p); }
+    } else if (M.kind === 'guns' && rt > 0.5 && W.t >= P.gunAt) {
+      P.gunAt = W.t + M.rate * P.m.cd; let best = null, bd = Infinity;
+      for (const p of W.prisms) if (rival(P, p) && inCone(P, fwd, p, M.deg, M.range)) { const d = p.pos.distanceTo(P.pos); if (d < bd) { bd = d; best = p; } }
+      W.fx.push({ kind: 'beam', pos: P.pos.clone(), to: best ? best.pos.clone() : P.pos.clone().addScaledVector(fwd, M.range), color: P.domain.color, t: W.t, life: 0.12 });
+      if (best && hitPrism(W, P, best)) { if (++P.gunKills >= M.perRocket) { P.gunKills = 0; P.rockets++; } }
+      if (P.rockets > 0 && best) { let n = 0; for (const p of W.grid.near(best.pos, M.rocket, tmpA)) if (rival(P, p) && p.pos.distanceTo(best.pos) < M.rocket) n++; if (n >= 5) { P.rockets--; P.moves++; const k = blast(W, P, best.pos.clone(), M.rocket * P.m.reach); if (P.i === W.watch) W.events.push('Rocket: ' + k + ' prisms'); } }
+    } else if (M.kind === 'ball') {   // the ball swings behind on its chain: a damped spring to a point the chain's length back
+      const anchor = P.pos.clone().addScaledVector(P.course, -M.chain), toA = anchor.sub(P.ballPos);
+      P.ballVel.addScaledVector(toA, 18 * dt).multiplyScalar(Math.exp(-1.2 * dt)); P.ballPos.addScaledVector(P.ballVel, dt);
+      const tether = P.ballPos.clone().sub(P.pos); if (tether.length() > M.chain * 1.4) P.ballPos.copy(P.pos).addScaledVector(tether.normalize(), M.chain * 1.4);
+      for (const p of W.grid.near(P.ballPos, reach + 14, tmpB).slice()) if (rival(P, p) && boxDist(p, P.ballPos) < reach) hitPrism(W, P, p);
+    }
+  }
+  function stepWorld(W, dt, inputs) {
+    W.t += dt;
+    W.pilots.forEach((P, i) => stepPilot(W, P, inputs[i], dt));
+    let dead = 0;
+    for (const p of W.prisms) {
+      if (p.flash > 0) { p.flash = Math.max(0, p.flash - dt * 3); W.dirty = true; }
+      if (!p.dead && p.life && W.t - p.born > p.life) removePrism(W, p);
+      if (p.dead) dead++;
+    }
+    if (dead > 300) W.prisms = W.prisms.filter((p) => !p.dead);
+    W.fx = W.fx.filter((f) => W.t - f.t < f.life);
+    if (!W.over && W.t >= W.duration) W.over = true;
+  }
+  const scoreOf = (P) => P.crystalsGot * 10 + P.destroyed + P.stolen * 2;
+  function standings(W) { return W.pilots.slice().sort((a, b) => scoreOf(b) - scoreOf(a) || b.crystalsGot - a.crystalsGot); }
+  function pilotResult(P) {
+    return { vessel: P.F.name, key: P.F.key, domain: P.domain.name, level: P.spec.ai || 'You', score: scoreOf(P), crystals: P.crystalsGot, destroyed: P.destroyed, stolen: P.stolen, standing: P.own.length, laid: P.laid,
+      avgSpeed: +(P.sumSpeed / Math.max(1, P.nSpeed)).toFixed(1), topSpeed: Math.round(P.topSpeed), skims: P.skims, contacts: P.contacts, moves: P.moves, mistakes: P.mistakes };
+  }
+
+  // ---- headless match for the scorecard: the same step, AI on every seat ----
+  function raceHeadless(course, specs, seed, opt) {
+    const W = makeWorld(course, specs.map((s) => Object.assign({}, s, { ai: s.ai || 'Hard' })), seed, opt); W.watch = -1;
+    const dt = 1 / 20; while (!W.over) stepWorld(W, dt, W.pilots.map((P) => aiInput(W, P)));
+    return W.pilots.map(pilotResult);
+  }
+
+  // ================= rendering =================
+  const canvas = $('c');
+  const renderer = VesselStudioTheme.renderer(THREE, { canvas, antialias: true });   // no WebGL: the stage says so, the rest loads (D34)
+  renderer.setPixelRatio(Math.min(2, window.devicePixelRatio || 1));
+  const scene = new THREE.Scene();
+  const cam = new THREE.PerspectiveCamera(70, 16 / 10, 0.5, 12000);
+  const ENV = VesselStudioLook.install(scene, { field: 2400, prismScale: 2.4 });   // the Vessel Studio look (D19)
+  const mark = VesselStudioLook.marker($('viewport'));
+  const MAXP = 9000;
+  const prismMesh = new THREE.InstancedMesh(new THREE.BoxGeometry(1, 1, 1), new THREE.MeshStandardMaterial({ roughness: 0.5, metalness: 0.05, emissive: 0x0b1b4a, flatShading: true }), MAXP);
+  prismMesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage); scene.add(prismMesh);
+  const shieldMesh = new THREE.InstancedMesh(new THREE.BoxGeometry(1, 1, 1), new THREE.MeshBasicMaterial({ color: 0xbfe6ff, wireframe: true, transparent: true, opacity: 0.45 }), MAXP);
+  shieldMesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage); scene.add(shieldMesh);
+  const COL = Object.fromEntries(DOMAINS.map((d) => [d.key, new THREE.Color(d.color)]));
+  const DANGER = new THREE.Color(0xff2a2a), WHITE = new THREE.Color(0xffffff), m4 = new THREE.Matrix4(), tmpC = new THREE.Color(), sc = new V();
+  function drawPrisms(W) {
+    let n = 0, ns = 0;
+    for (const p of W.prisms) {
+      if (p.dead || n >= MAXP) continue;
+      if (p.owner === chased && W.t - p.born < 1.2) continue;   // in Chase, the slab just laid would sit across the lens (like the chased skimmer, section 7)
+      const fade = p.life ? clamp((p.life - (W.t - p.born)) / 3, 0.15, 1) : 1;
+      sc.set(p.scale[0], p.scale[1], p.scale[2]).multiplyScalar(fade < 1 ? 0.6 + 0.4 * fade : 1); m4.compose(p.pos, p.quat, sc); prismMesh.setMatrixAt(n, m4);
+      tmpC.copy(COL[p.domain] || WHITE); if (p.danger) tmpC.lerp(DANGER, 0.5); if (p.flash > 0) tmpC.lerp(WHITE, p.flash * 0.7);
+      prismMesh.setColorAt(n, tmpC); n++;
+      if (p.shield && ns < MAXP) { sc.multiplyScalar(1.3); m4.compose(p.pos, p.quat, sc); shieldMesh.setMatrixAt(ns++, m4); }
+    }
+    prismMesh.count = n; shieldMesh.count = ns;
+    prismMesh.instanceMatrix.needsUpdate = true; shieldMesh.instanceMatrix.needsUpdate = true;
+    if (prismMesh.instanceColor) prismMesh.instanceColor.needsUpdate = true;
+    W.dirty = false;
+  }
+  // one silhouette per hull, so the fleet reads at a glance (shapes are the studio's, not the game's models)
+  function makeHull(F, color) {
+    const g = new THREE.Group(), mat = new THREE.MeshStandardMaterial({ color, roughness: 0.4, metalness: 0.2, emissive: new THREE.Color(color).multiplyScalar(0.22), flatShading: true });
+    const M = (geo, x, y, z, rx, ry, rz) => { const m = new THREE.Mesh(geo, mat); m.position.set(x || 0, y || 0, z || 0); m.rotation.set(rx || 0, ry || 0, rz || 0); g.add(m); return m; };
+    const cone = (r, l, s) => new THREE.ConeGeometry(r, l, s || 6), box = (a, b, c) => new THREE.BoxGeometry(a, b, c);
+    switch (F.shape) {
+      case 'ray': M(box(16, 0.6, 8), 0, 0, 1); M(cone(1.8, 8), 0, 0, -3, -Math.PI / 2); M(box(0.5, 0.5, 9), 0, 0, 8); break;
+      case 'sleek': M(cone(1.8, 12, 10), 0, 0, 0, -Math.PI / 2); M(box(6, 0.3, 2), 0, 0, 2); M(box(0.3, 2.4, 2), 0, 1.2, 4); break;
+      case 'rhino': M(box(5, 3.5, 9), 0, 0, 1); M(cone(1.1, 6, 5), 0, 1, -6, -Math.PI / 2); break;
+      case 'urchin': M(new THREE.IcosahedronGeometry(3.2, 0)); for (let i = 0; i < 10; i++) { const a = i * 2.4, e = Math.acos(1 - 2 * (i + 0.5) / 10), d = new V(Math.sin(e) * Math.cos(a), Math.cos(e), Math.sin(e) * Math.sin(a)); const s = M(cone(0.5, 4, 4), d.x * 4, d.y * 4, d.z * 4); s.quaternion.setFromUnitVectors(new V(0, 1, 0), d); } break;
+      case 'tank': M(box(8, 5, 10)); M(box(1.4, 1.4, 6), 0, 1.5, -6); M(box(10, 1.2, 3), 0, -1.8, 2); break;
+      case 'serpent': for (let i = 0; i < 5; i++) M(box(1.6 - i * 0.2, 1.6 - i * 0.2, 3), 0, 0, i * 3.4); M(cone(1, 3, 5), 0, 0, -3, -Math.PI / 2); break;
+      case 'fighter': M(cone(1.4, 7, 6), 0, 0, 0, -Math.PI / 2); M(box(8, 0.3, 2.2), 0, 0, 1.5); M(box(0.3, 0.3, 4), -2.5, -0.4, -1); M(box(0.3, 0.3, 4), 2.5, -0.4, -1); break;
+      case 'beetle': M(new THREE.SphereGeometry(3.5, 10, 6, 0, Math.PI * 2, 0, Math.PI / 2), 0, -0.5, 0); M(box(7, 0.8, 7), 0, -0.8, 0); break;
+      case 'butterfly': M(box(0.8, 0.8, 7)); for (const s of [-1, 1]) { M(box(8, 0.2, 5), s * 4.5, 0, -1.5, 0, s * 0.3, s * 0.15); M(box(6, 0.2, 4), s * 3.8, 0, 3, 0, -s * 0.3, s * 0.15); } break;
+      case 'thresher': M(cone(1.3, 6, 6), 0, 0, 0, -Math.PI / 2); M(box(5, 0.3, 1.6), 0, 0, 1.5); break;
+      case 'stoat': for (let i = 0; i < 4; i++) M(box(3 - i * 0.4, 1.8 - i * 0.2, 2.4), 0, 0.2 * i, -3 + i * 2.5, 0.12, 0, 0); M(cone(1.2, 3, 5), 0, 0, -5.5, -Math.PI / 2); break;
+      case 'generic': mat.color.lerp(new THREE.Color(0x888888), 0.5); M(cone(2, 8, 4), 0, 0, 0, -Math.PI / 2); M(box(7, 0.4, 2.4), 0, 0, 2); break;   // a planned hull reads grey
+      default: M(cone(2.2, 9, 6), 0, 0, 0, -Math.PI / 2); M(box(9, 0.4, 2.6), 0, 0, 2); M(box(0.4, 2.6, 2.2), 0, 1.2, 3.2);
+    }
+    return g;
+  }
+  function makeLabel(text, color) {
+    const c = document.createElement('canvas'); c.width = 256; c.height = 64; const x = c.getContext('2d');
+    x.font = '600 30px "Chakra Petch", system-ui, sans-serif'; x.textAlign = 'center'; x.textBaseline = 'middle';
+    x.fillStyle = 'rgba(5,6,12,0.55)'; const w = Math.min(250, x.measureText(text).width + 24); x.fillRect(128 - w / 2, 10, w, 44);
+    x.fillStyle = color; x.fillText(text, 128, 33);
+    const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(c), depthTest: false, transparent: true }));
+    s.scale.set(32, 8, 1); s.renderOrder = 5; return s;
+  }
+  const fxSphere = new THREE.IcosahedronGeometry(1, 1);
+  const membrane = new THREE.Mesh(new THREE.IcosahedronGeometry(1, 3), new THREE.MeshBasicMaterial({ color: 0x6aa8ff, wireframe: true, transparent: true, opacity: 0.08 }));
+  scene.add(membrane);
+  const view = { hulls: [], labels: [], lines: [], balls: [], crystals: [], fx: [] };
+  function mountWorld(W) {
+    ENV.placeField(new V(), (W.R + 200) / 0.75, W.R * 0.6 + 160);
+    membrane.scale.setScalar(W.R);
+    for (const o of [...view.hulls, ...view.labels, ...view.lines, ...view.balls, ...view.crystals, ...view.fx.map((f) => f.obj), ...view.balls.filter(Boolean).map((b) => b.userData.chain)]) scene.remove(o);
+    view.hulls = []; view.labels = []; view.lines = []; view.balls = []; view.crystals = []; view.fx = [];
+    for (const P of W.pilots) {
+      const h = makeHull(P.F, P.domain.color); scene.add(h); view.hulls.push(h);
+      const l = makeLabel(P.F.name + (P.i === 0 ? ' • P1' : ''), P.domain.css); scene.add(l); view.labels.push(l);
+      const lg = new THREE.BufferGeometry().setFromPoints([new V(), new V()]);
+      const ln = new THREE.Line(lg, new THREE.LineBasicMaterial({ color: P.domain.color, transparent: true, opacity: 0.8 })); ln.frustumCulled = false; scene.add(ln); view.lines.push(ln);
+      let ball = null;
+      if (P.F.move.kind === 'ball') { ball = new THREE.Group(); ball.add(new THREE.Mesh(new THREE.IcosahedronGeometry(4, 1), new THREE.MeshStandardMaterial({ color: P.domain.color, emissive: new THREE.Color(P.domain.color).multiplyScalar(0.3), flatShading: true }))); const cg = new THREE.BufferGeometry().setFromPoints([new V(), new V()]); const ch = new THREE.Line(cg, new THREE.LineBasicMaterial({ color: 0xcfd6ff })); ch.frustumCulled = false; ball.userData.chain = ch; scene.add(ch); scene.add(ball); }
+      view.balls.push(ball);
+    }
+    for (const c of W.crystals) { const m = VesselStudioLook.crystal(0x35e0b0, 7); scene.add(m); view.crystals.push(m); }
+  }
+  function drawWorld(W, t) {
+    if (W.dirty || chased >= 0) drawPrisms(W);
+    membrane.visible = S.membrane;
+    W.pilots.forEach((P, i) => {
+      const h = view.hulls[i]; h.position.copy(P.pos); h.quaternion.copy(P.quat);
+      const l = view.labels[i]; l.visible = S.labels && i !== chased; l.position.copy(P.pos).add(new V(0, 9, 0));
+      const ln = view.lines[i], show = S.thinking && !!P.aim && (!!P.spec.ai || P.idleAI); ln.visible = show;
+      if (show) { const a = ln.geometry.attributes.position; a.setXYZ(0, P.pos.x, P.pos.y, P.pos.z); a.setXYZ(1, P.aim.x, P.aim.y, P.aim.z); a.needsUpdate = true;
+        ln.material.color.set(P.aiState === 'misjudged' ? 0xff5c6c : P.aiState === 'not noticed' ? 0xffb454 : P.aiState === 'hunting' ? 0xff6a4d : P.aiState === 'riding' || P.aiState === 'avoiding' ? 0xb48bff : 0x4be38f); }
+      const b = view.balls[i]; if (b) { b.position.copy(P.ballPos); const ch = b.userData.chain.geometry.attributes.position; ch.setXYZ(0, P.pos.x, P.pos.y, P.pos.z); ch.setXYZ(1, P.ballPos.x, P.ballPos.y, P.ballPos.z); ch.needsUpdate = true; }
+    });
+    W.crystals.forEach((c, i) => { const m = view.crystals[i]; if (m) { m.position.copy(c.pos); VesselStudioLook.spinCrystal(m, t + i); } });
+    // effects: blasts and beams (a few at a time, made and dropped as they come)
+    for (const f of view.fx) { scene.remove(f.obj); if (f.obj.geometry !== fxSphere) f.obj.geometry.dispose(); f.obj.material.dispose(); }
+    view.fx = [];
+    for (const f of W.fx) {
+      const age = (W.t - f.t) / f.life; let obj;
+      if (f.kind === 'blast') { obj = new THREE.Mesh(fxSphere, new THREE.MeshBasicMaterial({ color: f.color, wireframe: true, transparent: true, opacity: 0.5 * (1 - age) })); obj.position.copy(f.pos); obj.scale.setScalar(f.r * (0.4 + 0.6 * age)); }
+      else { obj = new THREE.Line(new THREE.BufferGeometry().setFromPoints([f.pos, f.to]), new THREE.LineBasicMaterial({ color: f.color, transparent: true, opacity: 1 - age })); obj.frustumCulled = false; }
+      scene.add(obj); view.fx.push({ obj });
+    }
+  }
+
+  // ---- cameras (D16): chase the viewed hull, follow it wider, or orbit it ----
+  const camPos = new V(), camLook = new V(), free = { yaw: 2.6, pitch: 0.35, dist: 140 };
+  let chased = -1;
+  const viewed = () => W.pilots[Math.min(S.view, W.pilots.length - 1)] || W.pilots[0];
+  function placeCamera(W, dt, snap) {
+    const P = viewed(); let tag;
+    chased = -1;
+    if (S.cam === 'Free') {
+      const k = (c) => keys.has(c) ? 1 : 0;
+      free.yaw += (k('KeyJ') - k('KeyL')) * 1.4 * dt; free.pitch = clamp(free.pitch + (k('KeyI') - k('KeyK')) * 1.1 * dt, -1.3, 1.3); free.dist = clamp(free.dist * (1 + (k('KeyO') - k('KeyU')) * 1.2 * dt), 25, 5000);
+      if (playMode && touch.used && camTouch) { free.yaw -= touch.R.x * dt * 1.6; free.pitch = clamp(free.pitch + touch.R.y * dt * 1.2, -1.3, 1.3); free.dist = clamp(free.dist * (1 + touch.L.y * dt * 1.5), 25, 5000); }
+      const want = new V(Math.sin(free.yaw) * Math.cos(free.pitch), Math.sin(free.pitch), Math.cos(free.yaw) * Math.cos(free.pitch)).multiplyScalar(free.dist).add(P.pos);
+      cam.position.lerp(want, snap ? 1 : 1 - Math.exp(-12 * dt)); cam.up.set(0, 1, 0); cam.lookAt(P.pos);
+      tag = 'Free: orbiting ' + P.F.name + ' (drag, wheel)';
+    } else {
+      const fwd = new V(0, 0, -1).applyQuaternion(P.quat), up = S.cam === 'Chase' ? new V(0, 1, 0).applyQuaternion(P.quat) : new V(0, 1, 0);
+      const back = S.cam === 'Chase' ? 34 + P.speed * 0.03 : 70 + P.speed * 0.08, high = S.cam === 'Chase' ? 15 : 26;   // above the wide trail slabs laid just behind
+      const wantOff = new V().addScaledVector(P.course, -back).addScaledVector(up, high), lookOff = new V().addScaledVector(fwd, 30);
+      const k = snap ? 1 : 1 - Math.exp(-6 * dt); camPos.lerp(wantOff, k); camLook.lerp(lookOff, k);   // the offset is smoothed, not the position
+      cam.position.copy(P.pos).add(camPos); cam.up.copy(up); cam.lookAt(P.pos.clone().add(camLook));
+      chased = S.cam === 'Chase' ? P.i : -1;
+      tag = (S.cam === 'Follow' ? 'Following ' : 'Chase: ') + P.F.name + ' · ' + P.domain.name + (P.spec.ai ? ' (AI ' + P.spec.ai + ')' : P.idleAI ? ' (AI holding)' : ' (you)');
+    }
+    $('camTag').textContent = tag + ' · ' + S.speed + '×';
+  }
+
+  // ================= input: gamepad, keys, phone =================
+  const keys = new Set(); let kbThrottle = 1, armed = false, lastHuman = -1e9;
+  const isForm = (t) => t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.tagName === 'SELECT' || t.isContentEditable);
+  const FLY_KEYS = new Set(['KeyW', 'KeyA', 'KeyS', 'KeyD', 'KeyQ', 'KeyE', 'KeyF', 'Space', 'ArrowUp', 'ArrowDown']);
+  const GAME_KEYS = new Set([...FLY_KEYS, 'KeyR', 'KeyP', 'KeyC', 'KeyV', 'KeyI', 'KeyJ', 'KeyK', 'KeyL', 'KeyU', 'KeyO', 'Enter']);
+  window.addEventListener('keydown', (e) => {
+    if (isForm(e.target) || !armed) return;
+    if (GAME_KEYS.has(e.code)) e.preventDefault(); if (e.repeat) return; keys.add(e.code);
+    if (e.code === 'Enter') startRace(); if (e.code === 'KeyR') stopRace(); if (e.code === 'KeyP') togglePause(); if (e.code === 'KeyC') cycleCamera(); if (e.code === 'KeyV') cycleView();
+  });
+  window.addEventListener('keyup', (e) => keys.delete(e.code)); window.addEventListener('blur', () => keys.clear());
+  document.addEventListener('pointerdown', (e) => { armed = $('viewport').contains(e.target); }); canvas.addEventListener('focus', () => { armed = true; });
+  let drag = null;
+  canvas.addEventListener('pointerdown', (e) => { if (S.cam === 'Free' && !playMode) drag = { x: e.clientX, y: e.clientY }; });
+  canvas.addEventListener('wheel', (e) => { if (S.cam !== 'Free') return; e.preventDefault(); free.dist = clamp(free.dist * (1 + Math.sign(e.deltaY) * 0.1), 25, 5000); }, { passive: false });
+  window.addEventListener('pointermove', (e) => { if (!drag) return; free.yaw -= (e.clientX - drag.x) * 0.008; free.pitch = clamp(free.pitch + (e.clientY - drag.y) * 0.006, -1.3, 1.3); drag = { x: e.clientX, y: e.clientY }; });
+  window.addEventListener('pointerup', () => { drag = null; });
+  function readPad() { let pads = []; try { pads = navigator.getGamepads ? Array.from(navigator.getGamepads()) : []; } catch (e) { return null; } for (const g of pads) if (g && g.connected && g.axes.length >= 4) return g; return null; }
+  function stick(x, y) { const m = Math.hypot(x, y); if (m < 0.15) return { x: 0, y: 0 }; const s = Math.min(1, (m - 0.15) / 0.85) / m; return { x: x * s, y: y * s }; }
+  let playMode = false, camTouch = false;
+  const touch = { used: false, L: { x: 0, y: 0 }, R: { x: 0, y: 0 }, lt: 0, rt: 0 };
+  const STICK_R = 56, TRIG_TRAVEL = () => Math.max(80, $('ttL').clientHeight - 44);
+  function bindStick(zoneId, stickId, side) {
+    const zone = $(zoneId), el = $(stickId), knob = el.firstElementChild; let id = null, ox = 0, oy = 0;
+    const home = () => { el.classList.add('idle'); el.style.left = side === 'L' ? '22%' : '78%'; el.style.top = '72%'; knob.style.transform = ''; touch[side].x = touch[side].y = 0; };
+    home();
+    zone.addEventListener('pointerdown', (e) => { if (id !== null) return; id = e.pointerId; try { zone.setPointerCapture(id); } catch (err) { /* lost */ } touch.used = true; const r = zone.getBoundingClientRect(); ox = e.clientX - r.left; oy = e.clientY - r.top; el.classList.remove('idle'); el.style.left = ox + 'px'; el.style.top = oy + 'px'; e.preventDefault(); });
+    zone.addEventListener('pointermove', (e) => { if (e.pointerId !== id) return; const r = zone.getBoundingClientRect(); let dx = e.clientX - r.left - ox, dy = e.clientY - r.top - oy; const m = Math.hypot(dx, dy); if (m > STICK_R) { dx *= STICK_R / m; dy *= STICK_R / m; } knob.style.transform = 'translate(' + dx + 'px,' + dy + 'px)'; touch[side].x = dx / STICK_R; touch[side].y = -dy / STICK_R; e.preventDefault(); });
+    const end = (e) => { if (e.pointerId !== id) return; id = null; home(); }; zone.addEventListener('pointerup', end); zone.addEventListener('pointercancel', end);
+  }
+  function bindTrigger(trigId, side) {
+    const el = $(trigId), handle = el.querySelector('.thandle'), fill = el.querySelector('.tfill'), key = side === 'L' ? 'lt' : 'rt'; let id = null, y0 = 0;
+    const show = (v) => { handle.style.transform = 'translateY(' + (v * TRIG_TRAVEL()) + 'px)'; fill.style.height = (v * 100) + '%'; };
+    el.addEventListener('pointerdown', (e) => { if (id !== null) return; id = e.pointerId; try { el.setPointerCapture(id); } catch (err) { /* lost */ } y0 = e.clientY; touch.used = true; touch[key] = 1; show(1); e.preventDefault(); });
+    el.addEventListener('pointermove', (e) => { if (e.pointerId !== id) return; const d = (e.clientY - y0) / TRIG_TRAVEL(); if (Math.abs(d) < 0.04) return; const v = clamp(d, 0.06, 1); touch[key] = v; show(v); e.preventDefault(); });
+    const end = (e) => { if (e.pointerId !== id) return; id = null; touch[key] = 0; show(0); }; el.addEventListener('pointerup', end); el.addEventListener('pointercancel', end);
+  }
+  bindStick('tzL', 'tsL', 'L'); bindStick('tzR', 'tsR', 'R'); bindTrigger('ttL', 'L'); bindTrigger('ttR', 'R');
+  function setPlayMode(on) {
+    playMode = !!on; document.body.classList.toggle('play', playMode);
+    if (playMode) { const v = $('viewport'), req = v.requestFullscreen || v.webkitRequestFullscreen; if (req) { try { const pr = req.call(v, { navigationUI: 'hide' }); if (pr && pr.catch) pr.catch(() => {}); } catch (e) { /* not allowed */ } } try { if (screen.orientation && screen.orientation.lock) screen.orientation.lock('landscape').catch(() => {}); } catch (e) { /* unsupported */ } }
+    else { const ex = document.exitFullscreen || document.webkitExitFullscreen; if (document.fullscreenElement || document.webkitFullscreenElement) { try { const pr = ex.call(document); if (pr && pr.catch) pr.catch(() => {}); } catch (e) { /* ignore */ } } touch.lt = touch.rt = 0; touch.L.x = touch.L.y = touch.R.x = touch.R.y = 0; touch.used = false; }
+    lastW = lastH = 0; resize();
+  }
+  document.addEventListener('fullscreenchange', () => { lastW = lastH = 0; resize(); });
+  $('playBtn').addEventListener('click', () => setPlayMode(true)); $('tExit').addEventListener('click', () => setPlayMode(false));
+  const PLATFORM = VesselStudioIDE.platform();   // detected, never asked (D26)
+  $('touch').addEventListener('pointerdown', () => { if (playMode && !document.fullscreenElement && !document.webkitFullscreenElement) { const v = $('viewport'), req = v.requestFullscreen || v.webkitRequestFullscreen; if (req) { try { const pr = req.call(v, { navigationUI: 'hide' }); if (pr && pr.catch) pr.catch(() => {}); } catch (e) { /* not allowed here */ } } } }, { capture: true });
+  const playPause = () => { if (race === 'running') togglePause(); else startRace(); };
+  $('tStart').addEventListener('click', playPause); $('tBack').addEventListener('click', () => stopRace()); $('tCam').addEventListener('click', () => cycleCamera());
+  $('tpPlay').addEventListener('click', playPause); $('tpStop').addEventListener('click', () => stopRace()); $('startBtn').addEventListener('click', () => startRace());
+  function humanInput(dt) {
+    camTouch = S.cam === 'Free' && S.players[0].ai;
+    let inp, on = false;
+    if (playMode && touch.used) {
+      inp = camTouch ? { pad: true, L: { x: 0, y: 0 }, R: { x: 0, y: 0 }, lt: 0, rt: 0 } : { pad: true, L: stick(touch.L.x, touch.L.y), R: stick(touch.R.x, touch.R.y), lt: touch.lt, rt: touch.rt };
+      on = !camTouch && (Math.hypot(inp.L.x, inp.L.y) > 0.2 || Math.hypot(inp.R.x, inp.R.y) > 0.2 || inp.lt > 0.05 || inp.rt > 0.05);
+    } else {
+      const g = readPad();
+      if (g) { if (g.buttons[9] && g.buttons[9].pressed && race !== 'running') startRace(); inp = { pad: true, L: stick(g.axes[0], -g.axes[1]), R: stick(g.axes[2], -g.axes[3]), lt: g.buttons[6] ? g.buttons[6].value : 0, rt: g.buttons[7] ? g.buttons[7].value : 0 }; on = Math.hypot(inp.L.x, inp.L.y) > 0.2 || Math.hypot(inp.R.x, inp.R.y) > 0.2 || inp.lt > 0.05 || inp.rt > 0.05 || g.buttons.some((b) => b && b.pressed); }
+      else {
+        const k = (c) => keys.has(c) ? 1 : 0;
+        if (keys.has('ArrowUp')) kbThrottle = Math.min(1, kbThrottle + dt * 0.6); if (keys.has('ArrowDown')) kbThrottle = Math.max(0, kbThrottle - dt * 0.6);
+        inp = { pad: false, kYaw: k('KeyD') - k('KeyA'), kPitch: k('KeyS') - k('KeyW'), kRoll: k('KeyE') - k('KeyQ'), kThrottle: kbThrottle, lt: keys.has('Space') ? 1 : 0, rt: keys.has('KeyF') ? 1 : 0 };
+        on = [...FLY_KEYS].some((c) => keys.has(c));
+      }
+    }
+    if (on) lastHuman = performance.now();
+    return inp;
+  }
+
+  // ================= match flow =================
+  let W = null, race = 'ready', paused = false, seedN = 1;
+  const specs = () => S.players.map((p) => ({ vessel: p.vessel, domain: p.domain, style: p.style, ai: p.ai ? p.level : null }));
+  function newRace() {
+    W = makeWorld(S.course, specs(), seedN++);
+    mountWorld(W); drawWorld(W, 0); placeCamera(W, 0, true);
+    race = 'ready'; paused = false; feed.length = 0; renderFeed();
+    $('ovTitle').textContent = 'The HyperSea, intensity ' + S.course; $('startBtn').textContent = 'Start'; $('overlay').hidden = false;
+    $('cellInfo').textContent = 'I' + S.course + ' · radius ' + W.R + ' u · ' + W.crystals.length + ' crystals · ' + W.duration + ' s · ' + W.pilots.length + ' hulls';
+  }
+  function startRace() { if (race === 'finished' || race === 'stopped') newRace(); race = 'running'; paused = false; $('overlay').hidden = true; canvas.focus({ preventScroll: true }); }
+  function stopRace() { if (race === 'ready') return; newRace(); }   // Stop ends the match and holds at the start until Play (D18)
+  function togglePause() { if (race !== 'running') return; paused = !paused; say(paused ? 'Paused' : 'Resumed'); }
+  function finishRace() {
+    race = 'finished';
+    const order = standings(W), win = order[0], me = W.pilots[0];
+    runs.unshift({ course: S.course, winner: win.F.name + ' · ' + win.domain.name, score: scoreOf(win), you: me.F.name, place: order.indexOf(me) + 1 });
+    runs.length = Math.min(runs.length, 40); saveRuns(); renderRuns();
+    $('ovTitle').textContent = win.F.name + ' holds the HyperSea';
+    $('ovText').textContent = order.slice(0, 6).map((P, i) => (i + 1) + '. ' + P.F.name + ' (' + P.domain.name + '): ' + scoreOf(P)).join(' · ') + (order.length > 6 ? ' …' : '');
+    $('startBtn').textContent = 'Again';
+    if (S.autoRestart) setTimeout(() => { if (race === 'finished') { newRace(); startRace(); } }, 1500); else $('overlay').hidden = false;
+  }
+  function cycleCamera() { S.cam = S.cam === 'Chase' ? 'Follow' : S.cam === 'Follow' ? 'Free' : 'Chase'; racePanel.set('camera', S.cam, true); save(); }
+  function cycleView() { S.view = (S.view + 1) % S.players.length; racePanel.set('view', S.view, true); save(); }
+  const feed = [];
+  function say(m) { feed.unshift(m); feed.length = Math.min(feed.length, 4); renderFeed(); }
+  function renderFeed() { const el = $('feed'); el.textContent = ''; for (const m of feed) { const d = document.createElement('div'); d.textContent = m; el.appendChild(d); } }
+
+  // ================= panels =================
+  const elx = (t, c, x) => { const e = document.createElement(t); if (c) e.className = c; if (x != null) e.textContent = x; return e; };
+  // The universal AI race config panel (ai_race_panel.js, D17) with a Players list (D25) whose players also pick a Vessel (D39)
+  const racePanel = StudioRacePanel.mount($('racePanel'), {
+    gameHost: $('intensityPanel'), sceneHost: $('scenePanel'),
+    courses: [1, 2, 3, 4].map((v) => ({ v, label: 'I' + v, note: CELLS[v].note })),
+    players: { host: $('playersPanel'), max: 16, domains: DOMAINS.map((d) => ({ key: d.key, name: d.name, color: d.css })),
+      vessels: FLEET.map((F) => ({ key: F.key, name: F.name + (F.reg ? '' : ' (planned)'), note: F.src })) },
+    styles: STYLES.map((s) => s.name),
+    value: { course: S.course, players: S.players, view: S.view, camera: S.cam, speed: S.speed, thinking: S.thinking, autoRestart: S.autoRestart },
+    supports: { rivals: true, thinking: true, autoRestart: true },
+    levelNote: 'Easy and Medium are the Skim Race levels (SkimRaceDifficulty.asset), applied to what each AI believes: Easy notices each new crystal 0.5 s late on average and misjudges 9.9% of them; Medium 0.25 s and 4.5%. Hard is the skilled pilot. Every hull flies the same pilot; only its numbers and moves differ.',
+    onChange: (key, v) => {
+      if (key === 'course') S.course = v; else if (key === 'players') S.players = v; else if (key === 'view') S.view = v;
+      else if (key === 'camera') S.cam = v; else if (key === 'speed') S.speed = v; else if (key === 'thinking') S.thinking = v; else if (key === 'autoRestart') S.autoRestart = v;
+      save(); if (key === 'course' || key === 'players') { S.crystals = null; syncWorldSliders(); newRace(); }
+    },
+  });
+  function seatFleet() { S.players = fleetPlayers(); racePanel.set('players', S.players, true); save(); newRace(); }
+  $('fleetBtn').addEventListener('click', seatFleet); $('fleetBtn2').addEventListener('click', seatFleet);
+  const bindCheck = (id, k, after) => { $(id).checked = !!S[k]; $(id).addEventListener('change', (e) => { S[k] = e.target.checked; save(); if (after) after(); }); };
+  bindCheck('labelsChk', 'labels'); bindCheck('membraneChk', 'membrane'); bindCheck('idleChk', 'idleHold');
+  function bindRange(id, out, k, fmt, rebuild) {
+    const r = $(id); r.addEventListener('input', () => { S[k] = +r.value; $(out).textContent = fmt(S[k]); save(); if (W) { if (k === 'hunt') W.hunt = S.hunt; if (k === 'look') W.look = S.look; if (k === 'life') W.life = S.life; if (k === 'cap') W.cap = S.cap; } });
+    if (rebuild) r.addEventListener('change', () => newRace());
+  }
+  bindRange('lifeR', 'lifeO', 'life', (v) => v + ' s'); bindRange('capR', 'capO', 'cap', (v) => String(v));
+  bindRange('crysR', 'crysO', 'crystals', (v) => String(v), true);
+  bindRange('huntR', 'huntO', 'hunt', (v) => v.toFixed(2)); bindRange('lookR', 'lookO', 'look', (v) => v + ' u');
+  function syncWorldSliders() {
+    $('lifeR').value = S.life; $('lifeO').textContent = S.life + ' s'; $('capR').value = S.cap; $('capO').textContent = String(S.cap);
+    const c = S.crystals || CELLS[S.course].crystals; $('crysR').value = c; $('crysO').textContent = String(c);
+    $('huntR').value = S.hunt; $('huntO').textContent = S.hunt.toFixed(2); $('lookR').value = S.look; $('lookO').textContent = S.look + ' u';
+  }
+  // Play style: inspect a style's element levels (each player picks its style in Game Config)
+  for (const s of STYLES) { const o = elx('option', null, s.name + ' · ' + s.info); o.value = s.name; $('styleSel').appendChild(o); }
+  $('styleSel').value = S.inspect; $('styleSel').addEventListener('change', (e) => { S.inspect = e.target.value; save(); renderStyle(); });
+  function renderStyle() {
+    const s = STYLE_BY[S.inspect] || STYLES[0], box = $('elements'); box.textContent = ''; $('styleName').textContent = s.name;
+    for (const E of ELEMENTS) {
+      const row = elx('div', 'el'), lab = elx('label', null, E.name), inp = document.createElement('input'), out = elx('output', null, String(s.lv[E.key]));
+      lab.style.color = 'var(' + E.color + ')'; inp.type = 'range'; inp.min = 0; inp.max = 10; inp.value = s.lv[E.key]; inp.disabled = true; inp.setAttribute('aria-label', E.name + ' level');
+      row.append(lab, inp, out, elx('div', 'what', E.what(s.lv[E.key]))); box.appendChild(row);
+    }
+  }
+  function renderFleet() {
+    const t = $('fleetTbl'); t.textContent = '';
+    const hd = elx('tr'); for (const h of ['Hull', 'Cruise', 'Pitch', 'Yaw', 'Roll', 'Trail', 'Prism', 'Ram']) hd.appendChild(elx('th', null, h)); t.appendChild(elx('thead')).appendChild(hd);
+    const tb = elx('tbody'); t.appendChild(tb);
+    for (const F of FLEET) {
+      const tr = elx('tr'); tr.title = F.src;
+      [F.name + (F.reg ? '' : ' *'), String(F.min + F.thr), String(F.p), String(F.y), String(F.r), F.trail ? F.trail.wait + ' s' : 'none', F.trail ? F.trail.scale.join('×') : '—', RAM_TEXT[F.ram]].forEach((v) => { const td = elx('td', F.reg ? null : 'planned', v); tr.appendChild(td); });
+      tb.appendChild(tr);
+    }
+    const a = $('abTbl'); a.textContent = '';
+    const ah = elx('tr'); for (const h of ['Hull', 'Boost (LT)', 'Signature move']) ah.appendChild(elx('th', null, h)); a.appendChild(elx('thead')).appendChild(ah);
+    const ab = elx('tbody'); a.appendChild(ab);
+    for (const F of FLEET) { const tr = elx('tr'); tr.append(elx('td', F.reg ? null : 'planned', F.name), elx('td', null, BOOST_TEXT[F.boost.kind](F.boost)), elx('td', null, MOVE_TEXT[F.move.kind](F.move))); for (const td of tr.children) { td.style.whiteSpace = 'normal'; td.style.textAlign = 'left'; } ab.appendChild(tr); }
+  }
+  let runs = []; try { runs = JSON.parse(localStorage.getItem(LS + '.runs') || '[]') || []; } catch (e) { runs = []; }
+  function saveRuns() { try { localStorage.setItem(LS + '.runs', JSON.stringify(runs)); } catch (e) { /* storage blocked */ } }
+  function renderRuns() {
+    const tb = $('runs'); tb.textContent = '';
+    if (!runs.length) { const tr = elx('tr'), td = elx('td', null, 'No matches yet. Finish one to add it.'); td.colSpan = 5; td.style.color = 'var(--muted)'; tr.appendChild(td); tb.appendChild(tr); return; }
+    for (const r of runs.slice(0, 12)) { const tr = elx('tr'); tr.append(elx('td', null, 'I' + r.course), elx('td', null, r.winner), elx('td', null, String(r.score)), elx('td', null, r.you), elx('td', null, String(r.place))); tb.appendChild(tr); }
+  }
+
+  // ---- the scorecard (D5): one column per question, hull against hull ----
+  const med = (a) => { const v = a.slice().sort((x, y) => x - y); return v[Math.floor(v.length / 2)]; };
+  const COLS = [['score', 'Score'], ['crystals', 'Crystals'], ['destroyed', 'Destroyed'], ['stolen', 'Stolen'], ['standing', 'Standing'], ['avgSpeed', 'Avg u/s'], ['contacts', 'Rams'], ['moves', 'Moves']];
+  function renderFleetScore(rows) {
+    const t = $('scoreTbl'); t.textContent = ''; if (!rows) return;
+    const hd = elx('tr'); hd.appendChild(elx('th', null, 'Hull · I' + rows.course)); for (const [, h] of COLS) hd.appendChild(elx('th', null, h)); t.appendChild(elx('thead')).appendChild(hd);
+    const tb = elx('tbody'); t.appendChild(tb);
+    rows.list.slice().sort((a, b) => b.score - a.score).forEach((r, i) => { const tr = elx('tr'); tr.appendChild(elx('td', FLEET_BY[r.key].reg ? null : 'planned', (i + 1) + '. ' + r.vessel)); for (const [k] of COLS) tr.appendChild(elx('td', null, String(r[k]))); tb.appendChild(tr); });
+  }
+  function scoreFleet(course, seeds, done) {
+    const sp = fleetPlayers(), per = sp.map(() => ({}));
+    let j = 0;
+    const next = () => {
+      if (j >= seeds.length) { const list = sp.map((p, i) => { const r = { vessel: FLEET_BY[p.vessel].name, key: p.vessel }; for (const [k] of COLS) r[k] = +med(per[i][k]).toFixed(k === 'avgSpeed' ? 1 : 0); return r; }); done({ course, list }); return; }
+      const res = raceHeadless(course, sp, seeds[j++]);
+      res.forEach((r, i) => { for (const [k] of COLS) (per[i][k] = per[i][k] || []).push(r[k]); });
+      setTimeout(next, 0);
+    };
+    setTimeout(next, 20);
+  }
+  function renderLevels(rows) {
+    const t = $('lvTbl'); t.textContent = ''; if (!rows) return;
+    const hd = elx('tr'); for (const h of ['Fleet at · I' + rows.course, 'Crystals / min (fleet mean)', 'Score (fleet mean)', 'Mistakes']) hd.appendChild(elx('th', null, h)); t.appendChild(elx('thead')).appendChild(hd);
+    const tb = elx('tbody'); t.appendChild(tb);
+    for (const lv of ['Easy', 'Medium', 'Hard']) { const r = rows[lv]; if (!r) continue; const tr = elx('tr'); tr.append(elx('td', null, lv), elx('td', null, r.cpm.toFixed(2)), elx('td', null, r.score.toFixed(1)), elx('td', null, String(r.mistakes))); tb.appendChild(tr); }
+  }
+  function scoreLevels(course, seeds, done) {
+    const rows = { course }, jobs = []; for (const lv of ['Easy', 'Medium', 'Hard']) for (const s of seeds) jobs.push([lv, s]);
+    const acc = {}; let j = 0;
+    const next = () => {
+      if (j >= jobs.length) { for (const lv in acc) rows[lv] = { cpm: acc[lv].c / acc[lv].n, score: acc[lv].s / acc[lv].n, mistakes: acc[lv].m }; done(rows); return; }
+      const [lv, s] = jobs[j++], sp = fleetPlayers().map((p) => Object.assign(p, { level: lv })), res = raceHeadless(course, sp.map((p) => ({ vessel: p.vessel, domain: p.domain, style: p.style, ai: lv })), s);
+      const a = acc[lv] = acc[lv] || { c: 0, s: 0, n: 0, m: 0 }; for (const r of res) { a.c += r.crystals / (CELLS[course].time / 60); a.s += r.score; a.n++; a.m += r.mistakes; }
+      rows[lv] = { cpm: a.c / a.n, score: a.s / a.n, mistakes: a.m }; renderLevels(rows);
+      setTimeout(next, 0);
+    };
+    setTimeout(next, 20);
+  }
+  let scoreRows = null, lvRows = null; try { scoreRows = JSON.parse(localStorage.getItem(LS + '.score') || 'null'); lvRows = JSON.parse(localStorage.getItem(LS + '.levels') || 'null'); } catch (e) { /* storage blocked */ }
+  renderFleetScore(scoreRows); renderLevels(lvRows);
+  $('scoreFleetBtn').addEventListener('click', () => {
+    $('scoreFleetBtn').disabled = true; $('scoreNote').textContent = 'Racing the whole fleet three times…';
+    scoreFleet(S.course, [11, 22, 33], (rows) => { scoreRows = rows; try { localStorage.setItem(LS + '.score', JSON.stringify(rows)); } catch (e) { /* storage blocked */ } renderFleetScore(rows); $('scoreFleetBtn').disabled = false; $('scoreNote').textContent = 'Median of three seeds per cell: one of every hull, all AI Hard, domains in turn. Standing = its prisms still up at the whistle. Grey rows are planned hulls.'; });
+  });
+  $('scoreLvBtn').addEventListener('click', () => {
+    $('scoreLvBtn').disabled = true; $('scoreNote').textContent = 'Racing the fleet at Easy, Medium and Hard…';
+    scoreLevels(S.course, [11, 22], (rows) => { lvRows = rows; try { localStorage.setItem(LS + '.levels', JSON.stringify(rows)); } catch (e) { /* storage blocked */ } renderLevels(rows); $('scoreLvBtn').disabled = false; $('scoreNote').textContent = 'The whole fleet at one level, two seeds each. Hard must collect the most crystals a minute, or the levels decide nothing.'; });
+  });
+
+  // ---- HUD ----
+  function hud() {
+    if (!W) return;
+    const P = viewed(); W.watch = P.i;
+    $('hWho').textContent = P.F.name + ' · ' + P.domain.name + (P.spec.ai ? ' · AI ' + P.spec.ai : P.idleAI ? ' · AI holding' : ' · you') + ' · u/s';
+    $('hSpeed').textContent = Math.round(P.speed);
+    const B = P.F.boost; let bl = 'Boost', bv = '—', bw = 0;
+    if (B.kind === 'skim') { bl = 'Skim boost'; bv = '×' + P.boost.toFixed(2); bw = (P.boost - 1) / (B.max - 1); }
+    else if (B.kind === 'hold') { bl = 'Boost (hold LT)'; bv = '×' + P.factor.toFixed(2); bw = (P.factor - 1) / (B.mult - 1); }
+    else if (B.kind === 'charge') { bl = 'Charge (LT)'; bv = Math.round(P.charge * 100) + '%'; bw = P.charge; }
+    else if (B.kind === 'ramp') { bl = 'Ramp (straight stick)'; bv = '+' + Math.round(P.ramp) + ' u/s'; bw = P.ramp / ((P.F.min + P.F.thr) * (B.mult - 1)); }
+    else if (B.kind === 'pellet') { bl = 'Pellets (LT)'; bv = P.pellets + ' / ' + B.pellets + (P.boostT > 0 ? ' · ' + P.boostT.toFixed(1) + ' s' : ''); bw = P.pellets / B.pellets; }
+    else if (B.kind === 'rail') { bl = 'Rail'; bv = P.onRail ? 'riding' : 'off rail'; bw = P.onRail ? 1 : 0; }
+    else if (B.kind === 'dash' || B.kind === 'rush') { bl = B.kind === 'dash' ? 'Snap Dash (LT)' : 'Rush (LT)'; const left = Math.max(0, P.readyAt - W.t); bv = B.kind === 'rush' ? P.charges + ' charges' : left > 0 ? left.toFixed(1) + ' s' : 'ready'; bw = B.kind === 'rush' ? P.charges / B.charges : 1 - left / B.cd; }
+    $('hBoostLbl').textContent = bl; $('hBoost').textContent = bv; $('mBoost').style.width = clamp(bw, 0, 1) * 100 + '%';
+    $('hBoostTxt').textContent = 'skims ' + P.skims + ' · crystals ' + P.crystalsGot + ' · score ' + scoreOf(P);
+    const M = P.F.move, cd = (M.cd || 0) * P.m.cd, left = Math.max(0, P.moveReadyAt - W.t);
+    $('hAbLbl').textContent = M.kind === 'none' ? 'Move' : 'Move: ' + M.kind;
+    $('hAb').textContent = M.kind === 'none' ? 'none' : M.kind === 'sting' ? P.armed + ' armed' : M.kind === 'guns' ? P.rockets + ' rockets · ' + P.gunKills + '/' + M.perRocket : cd ? (left > 0 ? left.toFixed(1) + ' s' : 'ready') : 'hold RT';
+    $('mAb').style.width = (M.kind === 'sting' ? P.armed / M.max : M.kind === 'guns' ? P.gunKills / M.perRocket : cd ? 1 - left / cd : 1) * 100 + '%';
+    const b = $('board'); b.textContent = '';
+    const hd = elx('div', 'hd'); hd.append(elx('span', null, 'I' + S.course + ' · ' + Math.max(0, W.duration - W.t).toFixed(0) + ' s left'), elx('span', null, 'score')); b.appendChild(hd);
+    const order = standings(W), top = order.slice(0, 8); if (!top.includes(P)) top.push(P);
+    top.forEach((X) => {
+      const row = elx('div', 'pl'), dot = elx('span', 'dot'); dot.style.background = X.domain.css;
+      const nm = elx('span', X === P ? 'me' : null, (order.indexOf(X) + 1) + '. ' + X.F.name + (X.spec.ai ? '' : ' •'));
+      const st = elx('span', 'st', scoreOf(X) + (X.spec.ai || X.idleAI ? ' · ' + X.aiState : ''));
+      if (X.aiState === 'misjudged') st.style.color = 'var(--hard)'; else if (X.aiState === 'not noticed') st.style.color = 'var(--medium)';
+      row.append(dot, nm, st); b.appendChild(row);
+    });
+    $('readWho').textContent = P.F.name + ' · ' + P.domain.name;
+    const r = pilotResult(P);
+    const rows = [['speed', Math.round(P.speed) + ' u/s'], ['top speed', r.topSpeed + ' u/s'], ['avg speed', r.avgSpeed + ' u/s'], ['crystals', String(r.crystals)], ['destroyed', String(r.destroyed)], ['stolen', String(r.stolen)],
+      ['laid', String(r.laid)], ['standing', String(r.standing)], ['skims', String(r.skims)], ['rams', String(r.contacts)], ['moves', String(r.moves)], ['mistakes', P.spec.ai ? String(r.mistakes) : '—'], ['AI state', P.spec.ai || P.idleAI ? P.aiState : 'player'], ['style', P.spec.style || 'Shipped']];
+    const box = $('read'); if (box.childElementCount !== rows.length * 2) { box.textContent = ''; for (const [k] of rows) box.append(elx('span', null, k), elx('b')); }
+    rows.forEach(([, v], i) => { box.children[i * 2 + 1].textContent = v; });
+    const live = race === 'running' && !paused;
+    $('tpPlay').textContent = live ? '❚❚ Pause' : '▶ Play'; $('tpPlay').classList.toggle('on', live); $('tpPlay').setAttribute('aria-pressed', paused ? 'true' : 'false');
+    $('tpStop').disabled = race === 'ready'; $('tStart').textContent = live ? '❚❚ Pause' : '▶ Play';
+    $('holdTag').hidden = !(W.pilots[0].idleAI && race === 'running');
+    while (W.events.length) say(W.events.shift());
+  }
+  function markTarget(W) {   // the viewed AI's crystal, marked on screen like the Stoat's ring marker
+    const P = viewed(), c = P.target;
+    if (!c || race === 'finished') { mark.hide(); return; }
+    cam.updateMatrixWorld();
+    mark.set(cam, c.pos, P.F.name + ' → crystal · ' + Math.round(c.pos.distanceTo(P.pos)) + ' u', '#35e0b0', canvas.clientWidth, canvas.clientHeight);
+  }
+
+  // ================= loop =================
+  let lastW = 0, lastH = 0;
+  function resize() { const w = canvas.clientWidth || 960, h = canvas.clientHeight || Math.round(w * 10 / 16); if (w === lastW && h === lastH) return; lastW = w; lastH = h; renderer.setSize(w, h, false); cam.aspect = w / h; cam.updateProjectionMatrix(); }
+  window.addEventListener('resize', resize);
+  // your hull is never left unattended (D31): Is AI off and no input for 3 s, the AI flies it until you touch a control
+  function pilotInputs(hin) {
+    const idle = S.idleHold && performance.now() - lastHuman > 3000;
+    return W.pilots.map((P, i) => {
+      if (P.spec.ai) return aiInput(W, P);
+      const wasAI = P.idleAI; P.idleAI = idle;
+      if (wasAI !== P.idleAI) { P.ltWas = 0; P.rtWas = 0; }
+      if (P.idleAI) { const a = aiInput(W, P); return a; }
+      if (!P.target) P.target = pickCrystal(W, P, new V(0, 0, -1).applyQuaternion(P.quat));
+      return hin;
+    });
+  }
+  let last = performance.now(), hudT = 0;
+  function frame(now) {
+    const dt = Math.min(0.05, (now - last) / 1000); last = now; resize();
+    const hin = humanInput(dt);
+    if (W && race === 'running' && !paused) {
+      for (let s = 0; s < S.speed; s++) { stepWorld(W, dt, pilotInputs(hin)); if (W.over) { finishRace(); break; } }
+    }
+    ENV.update(dt);
+    if (W) { drawWorld(W, now / 1000); placeCamera(W, dt, false); markTarget(W); }
+    renderer.render(scene, cam);
+    hudT += dt; if (hudT > 0.1) { hudT = 0; hud(); }
+    requestAnimationFrame(frame);
+  }
+  // ================= the editor layout (D8, studio-ide.js): the six settings tabs (D21, D25, D27) =================
+  const IDE = VesselStudioIDE.build({
+    key: 'hypersea-studio-ide-v1', host: document.querySelector('.layout'), stage: $('viewport'),
+    right: [['scene', 'Scene Config', [$('grp-scene'), $('grp-world')]], ['game', 'Game Config', [$('grp-intensity'), $('grp-players')]], ['ai', 'AI Config', [$('grp-ai'), $('grp-aitune')]],
+      ['style', 'Play Style Config', [$('grp-style')]], ['input', 'Input', [$('grp-controls')]], ['others', 'Vessel Config', [$('grp-fleet'), $('grp-abilities'), $('grp-live')]]],
+    bottom: [['score', 'Scorecard', [$('grp-score')]], ['runs', 'Runs', [$('grp-runs')]], ['about', 'About', [document.querySelector('header .sub'), $('grp-about')]]],
+    railW: 400, dockH: 240, winSize: { score: [820, 420], runs: [640, 360] },
+    onLayout: () => { lastW = lastH = 0; },
+  });
+  VesselStudioIDE.sectionPicker(document.querySelector('.vside-pane[data-tab="others"]'), 'hypersea-studio', 'vessel');   // Vessel Config: one section at a time (D27)
+  syncWorldSliders(); renderStyle(); renderFleet(); renderRuns();
+  newRace(); hud();
+  requestAnimationFrame((t) => { last = t; frame(t); });
+  if (PLATFORM.device === 'phone') setPlayMode(true);
+
+  // test hook for scripted checks (no effect on play)
+  window.__hyperseaStudio = {
+    get state() { return { race, t: +W.t.toFixed(2), course: S.course, R: W.R, prisms: W.prisms.filter((p) => !p.dead).length, pilots: W.pilots.map(pilotResult) }; },
+    get race() { return race; },
+    set: (k, v) => {
+      if (k === 'you') { const ps = S.players.map((p) => Object.assign({}, p)); ps[0].ai = v !== 'You'; if (v !== 'You') ps[0].level = v; S.players = ps; racePanel.set('players', ps, true); }
+      else { S[k] = v; if (k === 'players') racePanel.set('players', v, true); else if (k === 'course') racePanel.set('course', v, true); }
+      save(); newRace();
+    },
+    startRace, stopRace, raceHeadless, scoreFleet, scoreLevels, fleet: FLEET, fleetPlayers, ide: IDE,
+    tick(seconds) { const dt = 1 / 30; for (let s = 0; s < seconds * 30 && !W.over; s++) stepWorld(W, dt, pilotInputs(humanInput(dt))); return this.state; },
+  };
+})();
+</script>
+</html>
+<script src="sync.js"></script>

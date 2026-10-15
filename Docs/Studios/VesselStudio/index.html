@@ -118,6 +118,15 @@
         </div>
         <span class="open">Open studio &rarr;</span>
       </a>
+      <a class="bay" href="hypersea.html" style="--accent: var(--blue)">
+        <canvas id="pvHyperSea" width="640" height="300" aria-hidden="true"></canvas>
+        <div style="display:grid;gap:8px">
+          <div class="name"><b>HyperSea</b><span class="chip" style="color:var(--blue)">fleet AI simulation · round 1</span></div>
+          <p>Every vessel in the project in one cell, under one rule set, flown by AI at Easy, Medium or Hard on its shipped speed, turn rates and trail, each working its signature move. Watch any hull, take one over, and score the whole fleet to see which one holds the HyperSea.</p>
+          <div class="spec"><span>Fleet</span><b>15 hulls (12 registered, 3 planned)</b><span>Players</span><b>up to 16, a vessel each</b><span>Scorecard</span><b>fleet ranking · AI levels</b></div>
+        </div>
+        <span class="open">Open studio &rarr;</span>
+      </a>
       <button type="button" class="bay add" id="newStudioCard" aria-haspopup="dialog">
         <span class="plus" aria-hidden="true">+</span>
         <div style="display:grid;gap:8px">
@@ -127,10 +136,10 @@
         <span class="open">Start &rarr;</span>
       </button>
     </div>
-    <div class="fleet" aria-label="Vessels without a studio yet">
+    <div class="fleet" aria-label="Vessels without a studio of their own yet (all fly in the HyperSea)">
       <span>Manta</span><span>Dolphin</span><span>Rhino</span><span>Serpent</span><span>Sparrow</span><span>Urchin</span><span>Grizzly</span><span>Scarab</span><span>Butterfly</span><span>Termite</span><span>Falcon</span><span>Shrike</span>
     </div>
-    <p class="lede hint" style="margin-top:8px">No studio yet. Press a vessel, or <b>+ New studio</b>, to start one; each needs the vessel's own numbers read from its assets first.</p>
+    <p class="lede hint" style="margin-top:8px">No studio of their own yet; every one of them flies in the HyperSea. Press a vessel, or <b>+ New studio</b>, to start one; each needs the vessel's own numbers read from its assets first.</p>
   </section>
 
   <section aria-labelledby="h-plat">
@@ -157,7 +166,7 @@
         <p>Ask for a design idea, a new play-style type, or what a number does. The answer comes from Claude with the studio's numbers in hand.</p>
         <div class="row">
           <label for="askVessel" class="hint" style="color:var(--muted)">Vessel</label>
-          <select id="askVessel"><option>Squirrel</option><option>Stoat</option></select>
+          <select id="askVessel"><option>Squirrel</option><option>Stoat</option><option>HyperSea</option></select>
         </div>
         <textarea id="askText" placeholder="Example: suggest a play-style type for a Squirrel that wins by blocking with Boost Rings."></textarea>
         <div class="row"><button class="btn primary" id="askBtn" type="button">Ask</button><span class="hint" id="askState" style="color:var(--muted)"></span></div>
@@ -167,7 +176,7 @@
         <h3>Development requests</h3>
         <p>File a change for a studio or a vessel. A Claude Code session, or Amoebius's AGENT page, reads this list and does the work on the <code>vessel-studio</code> branch.</p>
         <div class="row">
-          <select id="reqVessel" aria-label="Vessel"><option>Squirrel</option><option>Stoat</option><option>Studio hub</option><option>New vessel</option></select>
+          <select id="reqVessel" aria-label="Vessel"><option>Squirrel</option><option>Stoat</option><option>HyperSea</option><option>Studio hub</option><option>New vessel</option></select>
           <select id="reqKind" aria-label="Kind"><option>Change the studio</option><option>Try a design</option><option>Bug</option><option>New studio</option></select>
         </div>
         <textarea id="reqText" placeholder="Example: add an AI rival on Hard that flies the real Skim Race pilot's line."></textarea>
@@ -230,10 +239,24 @@
     g.fillStyle = '#c48bff'; g.beginPath(); g.arc(px, py, 6, 0, Math.PI * 2); g.fill();
   });
 
+  preview('pvHyperSea', (g, w, h, t) => {   // the fleet circling one cell, each trailing its domain colour
+    g.fillStyle = '#05060c'; g.fillRect(0, 0, w, h);
+    const cx = w / 2, cy = h / 2, R = Math.min(w, h) * 0.44, keys = ['jade', 'ruby', 'gold', 'blue'];
+    g.strokeStyle = '#6aa8ff33'; g.beginPath(); g.ellipse(cx, cy, R * 1.6, R, 0, 0, Math.PI * 2); g.stroke();
+    for (let i = 0; i < 15; i++) {
+      const sp = 0.35 + (i % 5) * 0.12, a0 = i * 2.39, rr = 0.35 + (i * 0.37) % 0.6, col = DOM(keys[i % 4]);
+      for (let k = 0; k < 10; k++) { const a = a0 + (t - k * 0.09) * sp * (i % 2 ? 1 : -1); g.globalAlpha = 0.55 - k * 0.05; g.fillStyle = col; g.fillRect(cx + Math.cos(a) * R * 1.6 * rr - 3, cy + Math.sin(a) * R * rr - 1.5, 6, 3); }
+      const a = a0 + t * sp * (i % 2 ? 1 : -1); g.globalAlpha = 1; g.fillStyle = col; g.beginPath(); g.arc(cx + Math.cos(a) * R * 1.6 * rr, cy + Math.sin(a) * R * rr, 4, 0, Math.PI * 2); g.fill();
+    }
+    g.globalAlpha = 1; g.fillStyle = '#35e0b0';
+    for (let i = 0; i < 6; i++) { const x = cx + Math.cos(i * 1.7 + t * 0.2) * R * 1.1, y = cy + Math.sin(i * 2.3) * R * 0.6; g.beginPath(); g.moveTo(x, y - 6); g.lineTo(x + 4, y); g.lineTo(x, y + 6); g.lineTo(x - 4, y); g.closePath(); g.fill(); }
+  });
+
   // ---- the studio agent ----
   const SPEC = {
     Squirrel: 'Squirrel (racer). Flight: speed = throttle x 60 u/s x boost (boost 1-5x, decays 0.3/s); pitch/yaw 120 deg/s, roll 130 deg/s. Drift on LT (analog): turn x1 -> x1.8, grip -> 0.25 (course lags nose). RT: Boost Ring = ring of 8 danger prisms, radius 8, 100 u ahead, cooldown 20 s x Mass (1 -> 0.5, floor 0.35). Elements 0-10, L5 unlock at 5: Charge = Crystal Joust (overtake steals petals x1 -> x2.5; L5 Shepherd nourishes own lifeforms); Mass = Boost Ring cooldown (L5 Twin Rings); Space = Steal reach, skimmer 15 -> 30 (L5 Iron Grip steals shielded prisms keeping the shield); Time = Skimming energy +0.1/prism x1 -> x2 (L5 Live Wire: danger prisms x10). Studio types: Shipped, Thief, Speedster, Skimmer, Brawler, Maxed. Studio round 2 is an AI sim lab on the four Skim Race intensity courses (I1 flat octagon 3 laps 24 crystals, I2 tilted spline 3 laps 30, I3 long spline 2 laps 56, I4 3D course 2 laps 54); AI difficulty: Hard = the shipped pilot, Medium = 0.25 s reaction + 4.5% misjudged crystals, Easy = 0.5 s + 9.9% (SkimRaceHandicap).',
     Stoat: 'Stoat (slinger, design stage). LT/RT squeeze lays a black/white hole pair; squeeze depth sets strength 0.5-12 (GM = 20000 x strength); the hold radius catches and orbits you, release slings you out on the tangent with a boost 0.25-0.9 x speed over 1.5 s; the pair then closes and annihilates. Part of each release kick is kept as lasting momentum (share 0.4, fades over 5 s, up to 1.5 x cruise), so a chain of slings stacks. Five play styles linked to elements: Time->Comet (velocity), Space->Anchor (control), Mass->Maelstrom (gravity), Charge->Flare (surge), plus Needle (precision, earned by clean releases).',
+    HyperSea: 'HyperSea (fleet AI simulation, round 1). Every vessel prefab (Squirrel, Manta, Dolphin, Rhino, Urchin, Grizzly, Serpent, Sparrow, Scarab, Butterfly, Thresher, Stoat, and the planned Falcon, Shrike, Termite) flies AI-piloted in one cell under one rule set. Shipped numbers per hull: cruise = DefaultMinimumSpeed + DefaultThrottleScaler (Squirrel 60, Manta 180, Dolphin 68, Rhino 50, Urchin 65, Grizzly 50, Serpent 60, Sparrow 35, Scarab 216, Butterfly 67, Thresher 125, Stoat 60, planned 60); Pitch/Yaw/RollScaler turn rates; VesselPrismController wait and BaseScale for the trail (Sparrow has none, Termite never starts). Boost by kind: skim energy (Squirrel, Stoat, Thresher), drift-charge (Dolphin, 2.259x), ramp (Rhino, up to 16.8x), pellets (Serpent, 3x for 3 s), hold (Sparrow 5x, Manta 4x Soar), own-colour rail 300 u/s (Urchin), Snap Dash (Scarab), Rush (Grizzly). Signature moves are lab-only stand-ins: Grizzly bomb 100 u, Serpent sniper 1.5 deg pierce-all, Sparrow guns + rocket per 25 kills, Squirrel Boost Ring, Rhino sword (hull ploughs), Urchin chain spikes (steal), Manta Sting bombs, Butterfly dust (steal), Thresher wrecking ball, Stoat sling kick. Score = 10 per crystal + 1 per rival prism destroyed + 2 per stolen. AI levels = SkimRaceDifficulty.asset belief mistakes. Cell ladder I1-I4 radius 700/900/1180/1500, lab-only.',
   };
   let sample = null, db = null, user = null, me = '';
   (async function connect() {

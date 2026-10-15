@@ -84,6 +84,31 @@
       "docs": "Docs/Studios/STOAT_PLAY_STYLES.md",
       "engineNote": "The game's own Stoat in the Slingshot race (the round-4 orbit sling the game ships today, not the studio's dipole sling).",
       "engineMode": "Slingshot"
+    },
+    {
+      "id": "hypersea",
+      "name": "HyperSea",
+      "file": "hypersea.html",
+      "kind": "fleet AI simulation - round 1",
+      "chip": "fleet AI simulation · round 1",
+      "summary": "Every vessel in the project in one cell, under one rule set, flown by AI at Easy, Medium or Hard on its shipped speed, turn rates and trail, each working its signature move. Watch any hull, take one over, and score the whole fleet to see which one holds the HyperSea.",
+      "spec": [
+        {
+          "k": "Fleet",
+          "v": "15 hulls (12 registered, 3 planned)"
+        },
+        {
+          "k": "Players",
+          "v": "up to 16, a vessel each"
+        },
+        {
+          "k": "Scorecard",
+          "v": "fleet ranking · AI levels"
+        }
+      ],
+      "preview": "previews/hypersea.png",
+      "accent": "blue",
+      "docs": "Docs/Studios/VesselStudio/README.md"
     }
   ],
   "newCard": {
@@ -106,7 +131,7 @@
     "Falcon",
     "Shrike"
   ],
-  "fleetNote": "No studio yet. Press a vessel, or + New studio, to start one; each needs the vessel's own numbers read from its assets first.",
+  "fleetNote": "No studio of their own yet; every one of them flies in the HyperSea. Press a vessel, or + New studio, to start one; each needs the vessel's own numbers read from its assets first.",
   "shared": [
     "studio-look.js",
     "studio-ide.js",

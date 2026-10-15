@@ -15,6 +15,8 @@
  *     onChange: (key, value, state) => { ... },                              // after every user change
  *     styles: ['Balanced', 'Comet', ...],   // optional: each rival seat also picks a play style (D23); state.rivalStyles
  *     players: { host: element, max: 4, domains: VesselStudioDomains.list } (studio-domains.js; the default) },
+ *                           // optional players.vessels: [{ key, name, note }] gives each player a Vessel dropdown
+ *                           // (a multi-hull studio such as the HyperSea, /vessel-studio D39); state.players[i].vessel
  *                           // optional (D25): a Players list in the studio's Game Config tab, + / - to add or remove
  *                           // a player, each opening with Is AI, Domain, Difficulty, Play style, View and Camera.
  *                           // It replaces the Your hull / seat rows; state.players, state.view; onChange('players' | 'view')
@@ -168,15 +170,19 @@
     // ---- D25: the Players list (Game Config). Player 1 is your hull; every other player is an AI rival ----
     var PL = cfg.players && cfg.players.host ? cfg.players : null;
     var domains = PL && PL.domains && PL.domains.length ? PL.domains : GAME_DOMAINS.map(function (x) { return { key: x.key, name: x.name, color: x.color }; });
-    var maxPlayers = PL ? Math.max(1, Math.min(8, PL.max || 4)) : 0, openCards = { 0: true };
+    var maxPlayers = PL ? Math.max(1, Math.min(16, PL.max || 4)) : 0, openCards = { 0: true };
+    var vessels = PL && Array.isArray(PL.vessels) && PL.vessels.length ? PL.vessels : null;
+    function vesselOf(key) { for (var i = 0; i < vessels.length; i++) if (vessels[i].key === key) return vessels[i]; return vessels[0]; }
     function domainOf(key) { for (var i = 0; i < domains.length; i++) if (domains[i].key === key) return domains[i]; return domains[0]; }
     function cleanPlayers(arr) {
       var out = [];
       (Array.isArray(arr) ? arr : []).slice(0, maxPlayers).forEach(function (p, i) {
         p = p || {};
-        out.push({ ai: i === 0 ? !!p.ai : true, domain: domainOf(p.domain).key, level: LEVELS.indexOf(p.level) >= 0 ? p.level : 'Hard', style: styles && styles.indexOf(p.style) >= 0 ? p.style : (styles ? styles[0] : '') });
+        var q = { ai: i === 0 ? !!p.ai : true, domain: domainOf(p.domain).key, level: LEVELS.indexOf(p.level) >= 0 ? p.level : 'Hard', style: styles && styles.indexOf(p.style) >= 0 ? p.style : (styles ? styles[0] : '') };
+        if (vessels) q.vessel = vesselOf(p.vessel).key;
+        out.push(q);
       });
-      if (!out.length) out.push({ ai: false, domain: domains[0].key, level: 'Hard', style: styles ? styles[0] : '' });
+      if (!out.length) { out.push({ ai: false, domain: domains[0].key, level: 'Hard', style: styles ? styles[0] : '' }); if (vessels) out[0].vessel = vessels[0].key; }
       return out;
     }
     function derive() {   // the older keys, kept in step for pages that still read them
@@ -205,14 +211,16 @@
       plus.addEventListener('click', function () {
         var used = ps.map(function (p) { return p.domain; }), d = domains.filter(function (x) { return used.indexOf(x.key) < 0; })[0] || domains[ps.length % domains.length];
         openCards[ps.length] = true;
-        set('players', ps.concat([{ ai: true, domain: d.key, level: 'Hard', style: styles ? styles[ps.length % styles.length] : '' }]));
+        var np = { ai: true, domain: d.key, level: 'Hard', style: styles ? styles[ps.length % styles.length] : '' };
+        if (vessels) { var usedV = ps.map(function (p) { return p.vessel; }); np.vessel = (vessels.filter(function (x) { return usedV.indexOf(x.key) < 0; })[0] || vessels[ps.length % vessels.length]).key; }
+        set('players', ps.concat([np]));
       });
       head.appendChild(minus); head.appendChild(plus); playerBox.appendChild(head);
       ps.forEach(function (p, i) {
         var d = domainOf(p.domain), card = el('details', 'arp-player'); card.open = !!openCards[i];
         card.addEventListener('toggle', function () { openCards[i] = card.open; });
         var sum = el('summary'), dot = el('span', 'arp-dot'); dot.style.background = d.color;
-        sum.appendChild(dot); sum.appendChild(el('span', null, 'Player ' + (i + 1) + (i === 0 ? ' (your hull)' : '') + ' \u00b7 ' + (p.ai ? 'AI ' + p.level : 'You fly') + ' \u00b7 ' + d.name + (p.style ? ' \u00b7 ' + p.style : '') + (state.view === i ? ' \u00b7 viewed' : '')));
+        sum.appendChild(dot); sum.appendChild(el('span', null, 'Player ' + (i + 1) + (i === 0 ? ' (your hull)' : '') + (vessels ? ' \u00b7 ' + vesselOf(p.vessel).name : '') + ' \u00b7 ' + (p.ai ? 'AI ' + p.level : 'You fly') + ' \u00b7 ' + d.name + (p.style ? ' \u00b7 ' + p.style : '') + (state.view === i ? ' \u00b7 viewed' : '')));
         card.appendChild(sum);
         var edit = function (k, val) { var arr = state.players.map(function (x) { return Object.assign({}, x); }); arr[i][k] = val; set('players', arr); };
         var row = function (label, node) { var r = el('div', 'arp-row'); r.appendChild(el('span', null, label)); r.appendChild(node); card.appendChild(r); };
@@ -228,6 +236,7 @@
         ai.addEventListener('change', function () { edit('ai', ai.checked); });
         var aiWrap = el('label', 'arp-check'); aiWrap.appendChild(ai); aiWrap.appendChild(el('span', null, i === 0 ? (p.ai ? 'the AI flies your hull' : 'you fly it') : 'always (one human per studio)'));
         row('Is AI', aiWrap);
+        if (vessels) { var vs = pick('Vessel', vessels, p.vessel, function (x) { edit('vessel', x); }); vs.title = vesselOf(p.vessel).note || ''; }
         pick('Domain', domains, p.domain, function (x) { edit('domain', x); });
         pick('Difficulty', LEVELS, p.level, function (x) { edit('level', x); }, { lv: true, off: p.ai ? null : 'You are flying this hull: the difficulty applies when the AI does.' });
         if (styles) pick('Play style', styles, p.style, function (x) { edit('style', x); });

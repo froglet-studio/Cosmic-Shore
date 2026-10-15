@@ -65,11 +65,11 @@ status) in every change that moves a step**, and add what a step taught to §6.
 |---|---|---|
 | B1 + New studio on all three surfaces | **Done** 2026-10-14 | the card on the hub, Amoebius and Unity; Create reaches Claude Code or an AGENT chat (`parity_gate.py`, `StudioServerTests`) |
 | B2 Start from like / preset / dice / doc | next | the + panel offers the four; a dice roll is reproducible from its seed; the form stays editable |
-| B3 Vessel recipe + instant studio | after B2 (the big one) | a recipe JSON opens as a playable studio with an AI on Easy/Medium/Hard, with no code written; `check_studio.cjs` passes it |
+| B3 Vessel recipe + instant studio | after B2 (the big one); groundwork 2026-10-14: `hypersea.html`'s FLEET rows are one data row per hull (flight, trail, boost kind, move kind) flown by one generic AI | a recipe JSON opens as a playable studio with an AI on Easy/Medium/Hard, with no code written; `check_studio.cjs` passes it |
 | B4 Voice tweaks in every studio | after B3 | a spoken line becomes a before → after on the recipe; Accept records a decision; `/artifact-to-unity` can clone it |
 | B5 Learn from me | after B3 (can run beside B4) | Record + Learn in a studio makes the AI's line measurably closer to the person's (scorecard column), still input-only |
 | B6 Mini-game studio | after B3 | a templated mode is playable in the studio, then built for real by `/arcadegame` |
-| B7 Arena studio + assignment | after B6 | every vessel shows recommended arenas with a reason; an assignment lands in the arena roster |
+| B7 Arena studio + assignment | after B6; groundwork 2026-10-14: the HyperSea's **Score the fleet** ranks every hull in one cell | every vessel shows recommended arenas with a reason; an assignment lands in the arena roster |
 | B8 Amoebius-only workflow | throughout | each step above works with Unity closed |
 | B9 Scale | last | ten vessels from presets in one go, each passing the quality checks |
 
@@ -88,3 +88,4 @@ status) in every change that moves a step**, and add what a step taught to §6.
   first, and the owner looked for it in Amoebius. Hence D37 and a gate that fails a native home without a hub card. The
   first version of Amoebius's stand-in for Claude Code ignored the request's prompt and still answered "sent", so a
   backend stand-in must do the real thing or say it cannot.
+- **2026-10-14, the HyperSea (fleet AI simulation).** Every prefab flies as ONE data row (shipped cruise, turn rates, trail, a boost KIND and a move KIND) under one generic AI, and that was enough for fifteen hulls to read differently and rank in 1.3 s headless: the B3 recipe shape works for flight, trail and boost. What a row could NOT express is each hull's signature move; those are lab-only stand-ins coded per kind, and they decide the mass war (the Grizzly's bomb on a guessed cooldown tops it). So a recipe needs its moves as data too, with the game's real ranges and cooldowns, before an assignment (B7) can trust the ranking.
