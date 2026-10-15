@@ -355,3 +355,16 @@ the line it settled.
   shipped) should the fog, foreground opacity or depth reach want tuning.
 - 2026-10-14, round 1 of the lab built (§9.1). Nothing decided yet: Garrett picks the unroll in the lab (its
   Decisions tab writes to the shared log).
+- 2026-10-15, the view's first runtime pass and an adversarial audit (four lenses, three refuters per finding; the Unity
+  clone, not the design): Amoebius's scripted flight caught `PistolRibbon.FrameAt` reading `X(k + 1)` on the one-sample
+  ribbon of the first frames after the Goby spawns — the lab's `ribFrameAt` had the same hole (JS gave NaN) — so both now
+  answer with the one sample's heading, else the world's forward; the re-run flew clean. The audit's confirmed fixes: a
+  teleport/respawn keeps the Pistol's old `_tail` (one strip streaked across the new screen); the bars' START times ran
+  through `Expire` every 2 s (every bar on screen re-grew from half length); `showSideView` off also hid the 3D rings and
+  flares; the torus's `LookRotation` with an exactly-up axis; a sample gap of 0 laid forever; the GobyUp frame swung past
+  the ribbon's end (both sides now hold the last sample's frame, the centre still extrapolates); a re-bind (menu round
+  trip) kept the old clock's primer / flare deadlines. Refuted and left: a prism on a Read/Write-off FBX draws as a unit
+  box (no shipped prism is one); the actors are emitted after the prisms, so a near field that filled the 60 000-vertex
+  mesh would drop the Pistol's own body first (the shipped meshes stay well under it; a reservation is one line should a
+  bigger prism ever ship). **[read] for Garrett:** none of these change what the lab shows; the artifact (v7) carries
+  the two lab-side guards.

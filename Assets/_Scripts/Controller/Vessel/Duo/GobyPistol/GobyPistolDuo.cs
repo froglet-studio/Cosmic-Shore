@@ -130,6 +130,9 @@ namespace CosmicShore.Gameplay
             _body = Config.Body; _vs = Config.Vortex; _ais = Config.AI; _lay = Config.Lay;
             _primer = Mathf.RoundToInt(Config.PrimerCharges); _flare = Mathf.RoundToInt(Config.FlareCharges);
             _t = 0f; _lastSwapAt = -9f; _human = Half.Goby;
+            // every clock the step reads against _t restarts with it: a re-bind (the menu round trip hands the hull to the
+            // autopilot and back) otherwise held the AI Goby's primer and flares until the OLD clock's last fire had passed
+            _nextSweep = 0f; _lastPrimerAt = _lastFlareAt = -9f; _primerT = _flareT = 0f; _prevPrimer = _prevFlare = false;
             BuildView();
             ResetWorld();
         }

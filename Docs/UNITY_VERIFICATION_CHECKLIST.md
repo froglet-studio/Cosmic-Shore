@@ -73,10 +73,17 @@ MapNear / LapExtent / Curvature`), then corrected by a three-design review (the 
 `unity` CLI here, so `/verify-unity` did NOT run, and the shader has NOT been compiled by Unity (hand-written URP; `ddx/ddy` flat shading
 in view space, Cull Off, material-driven ZWrite/Blend). Headless proof: `unity_refcompile` player 0 errors; Amoebius built AND ran it
 (the Goby as the menu hull, into freestyle, the Pistol taken, Q / F / a dive pressed): prisms mapped, warped, boxed and tiled every
-frame, zero exceptions from the duo; `PistolWorldMathTests` (17) + `PistolViewMathTests` (10) + `PistolTargetsTests` (1) +
-`GobyPistolMathTests` (17: the 10 sim goldens plus 7 VIEW goldens the lab's own `window.__lab.view` emitted - the lap's extent,
-three bend boxes' corners, the bar's extent, the zones and the parallax, so Unity's warp is held to the LAB's numbers as the
-ribbon and the AI already are): 46/46 outside Unity. Amoebius cannot composite the side camera, so the PICTURE is unseen.
+frame. That flight CAUGHT one crash - `PistolRibbon.FrameAt` read `X(k + 1)` on the one-sample ribbon of the first frames after
+the Goby spawned (three `ArgumentOutOfRange` from `LateUpdate`) - fixed on both sides (the lab's `ribFrameAt` had the same hole)
+and the flight re-run clean: zero exceptions from the duo (3618 prisms mapped, 31 warped, 600 boxes, 383 tiles on the last
+frame). An adversarial audit (four lenses, three refuters per finding) then fixed: a teleport/respawn keeping the old `_tail`
+(a streak across the screen); the bar's start times run through `Expire` every 2 s (every bar re-grew from half length);
+`showSideView` off also hiding the 3D rings and flares; the ring's `LookRotation` with an exactly-up axis; a sample gap of 0
+laying forever; the GobyUp frame swinging past the ribbon's end; a re-bind (menu round trip) keeping the old clock's primer /
+flare deadlines. `PistolWorldMathTests` (18) + `PistolViewMathTests` (11) + `PistolTargetsTests` (1) + `GobyPistolMathTests`
+(17: the 10 sim goldens plus 7 VIEW goldens the lab's own `window.__lab.view` emitted - the lap's extent, three bend boxes'
+corners, the bar's extent, the zones and the parallax, so Unity's warp is held to the LAB's numbers as the ribbon and the AI
+already are): 48/48 outside Unity. Amoebius cannot composite the side camera, so the PICTURE is unseen.
 
 1. **Vessel Changer ▸ Goby, look at the inset:** no green, no curtain. A domain-coloured LINE rides the hills (warm orange on the
    downslopes) with the trail's blocks sitting on it in two rails; the orange Pistol end on (a cone: its near cap big, its far cap
