@@ -8,16 +8,168 @@ puts to the designer, from the brief ("Maverick and Goose"):
 > If there is no other player, an AI flies. The D-pad swaps players between flyer and puzzler, as if
 > they had another squad mate.
 
-The lab does not decide this. It puts four navigator consoles side by side against a solo pilot, lets
-you sit in either seat with an AI squad mate in the other, and scores every console headless.
+The lab does not decide this. **Round 2 (current)** builds the navigator as a 2D character with no vessel of its
+own: it lives in the flying vessel's x-z plane, the 3D map projects onto that plane, one thumb plays it, and twelve
+presets compare controls, jobs, frames and depth rules. Round 1 (four consoles on a flat stand-in) is kept below.
+
+How to use round 2: **Navigate** (or just touch the board) to play the 2D seat while an AI flies; **Fly** to fly with
+keys or a pad (A/D yaw, W/S pitch, Q/E roll, Space boost, Shift brake); **Watch**; or **Couch** for two people. Pick a
+preset in the Presets tab. Swap seats with the D-pad left/right, 1 / 2 or the header button.
 
 - **Source (the page is published from it):** `Docs/Studios/CrewVesselLab.html`. Open it in Chrome to use a
   gamepad (the claude.ai viewer can block the Gamepad API).
 - **Live page:** https://claude.ai/artifact/JtQptDHQhNdC2CxPmspfct (private to the owner until shared from the page's
   Share menu; decisions recorded there land in the shared log Claude reads at the start of each round).
-- **Verify:** `node .claude/skills/labmaker/verify_lab.cjs Docs/Studios/CrewVesselLab.html` (PASS, round 1).
+- **Verify:** `node .claude/skills/labmaker/verify_lab.cjs Docs/Studios/CrewVesselLab.html` (PASS, round 2).
 
-## How to use it
+## Round 2 (2026-10-16): the 2D navigator on the vessel's plane
+
+**Input this round** (the decision log was empty; the designer's direction, in substance): keep the radar
+character's best traits. It needs no vessel of its own, it suits a phone, and it appeals to people who want
+2D play. But round 1 did not look fun and did not make sense in 3D without a way to rotate the slice. So:
+the character always lives in the **x-z plane of the flying vessel**, the rest of the map projects onto that
+plane, and it is played with **one thumb**. Explore it with many presets.
+
+### What changed
+
+- **The flight is 3D now.** The vessel yaws, pitches and rolls (Sparrow `YawScaler` 80, `PitchScaler` 80,
+  `RollScaler` 30 plus speed × 0.1), crystals and the rival's danger trail fill a sphere, and the AI pilot banks
+  into turns (`pilotBank`). The pilot's view is a plain chase view (a picture-in-picture on a phone).
+- **The navigator's board is the vessel's own x-z plane.** Every object casts a shadow `(x, z)` on it, and its
+  height `y` above or below the plane decides whether the shadow can be touched (`reachY`, ±40 u by default).
+  The pilot's banks and pitches rotate and sweep the board, so **the pilot aims the navigator's slice**.
+- **The navigator is a kite** that moves on the board. Forward is up the screen and the board's centre sits ahead
+  of the vessel (`anchor` 0.3), so the world flows in from the top like a vertical scrolling shooter.
+- **Twelve presets**, each bundling a one-thumb control, a job, a frame and a depth rule:
+
+| Preset | One-thumb control | Job | Frame | Off-plane shadows |
+|---|---|---|---|---|
+| Glide | Follow the thumb (the kite rides 0.12 radii above it) | catch + pop | Eased | Ghosts |
+| Thumbstick | Floating stick | catch + pop | Eased | Ghosts |
+| Hopper | Tap to dash (0.5 s cooldown) | catch + combo | Eased | Ghosts |
+| Pinball | Pull and sling (bounces off the rim) | catch + pop | Eased | Ghosts |
+| Lasso | Draw a loop (ink refills) | catch + pop | Eased | Ghosts |
+| Pathfinder | Draw a path, the kite runs it | catch | Eased | Ghosts |
+| Chain Glide | Follow the thumb | catch + combo | Eased | Ghosts |
+| Guardian | Follow the thumb | pop only | Eased | Ghosts |
+| Slice Surfer | Follow the thumb | catch + pop | Locked | Slab, ±18 u |
+| Everything Flat | Follow the thumb | catch + pop | Eased | Flatten, ±400 u |
+| Glide, locked | Follow the thumb | catch + pop | Locked | Ghosts |
+| Glide, level | Follow the thumb | catch + pop | Level (yaw only) | Ghosts |
+
+Frames: **Locked** is the vessel's plane every frame; **Eased** follows it at `easeRate` 3/s; **Level** keeps the
+board horizontal and turns it only with heading. It is a control, not the brief. Jobs: a caught crystal is reeled
+into the hull as one petal; a pop removes a danger prism (an active force, so mass rules hold; it acts on mass,
+not on another pilot, so the LOCKED "PvP is petals only" rule is not touched); a combo of three same-element catches
+in a row is a temporary buff (`ApplyElementalEffect` with a duration, never a held level).
+
+- **The navigator AI is a thumb.** It moves at a finite speed (Easy 1.0, Medium 2.0, Hard 3.4 board radii per
+  second), aims with noise, reacts late, and presses and releases exactly as a person does. Every control reads the
+  same `{x, z, down}` whether a finger or the AI wrote it. The Easy navigator also chases untouchable shadows
+  (`reachAware` 0.4).
+- **Touching the board takes the navigator seat.** Seats, the AI squad mate and the D-pad swap carry over from
+  round 1. Round 1's page is kept as `CrewVesselLab.round1.html`, and its scorecard is in the Archive tab.
+
+### Scorecard
+
+`runBatch()` defaults: 4 seeds × 90 s at 30 Hz, AI Hard pilot. Each preset runs with a Hard, an Easy and an
+idle navigator (one who never touches the screen). Re-run with **Score every preset** (about 11 s).
+
+| Preset | Petals/min | Lift % | Kite share % | Skill % | Idle % | Moments/min | Dry spell (s) | Thumb down % | Thumb travel | Board turn °/s | Touchable % | ± SE |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| Solo pilot | 16.17 | 0 | 0 | 0 | 0 | 0 | | | | | | 0.17 |
+| Glide | 37.34 | +130.9 | 99.1 | 97.9 | +20.6 | 51.7 | 2.5 | 100 | 50.5 | 47.4 | 15 | 0.90 |
+| Thumbstick | 38.50 | +138.1 | 98.7 | 95.9 | +20.6 | 46.5 | 2.7 | 100 | 30.6 | 48.9 | 14 | 1.40 |
+| **Hopper** | **52.83** | **+226.8** | 99.7 | **149.5** | +16.5 | 51.7 | 4.0 | **3** | 39.6 | 56.5 | 11 | 1.95 |
+| Pinball | 20.16 | +24.7 | 33.0 | 9.3 | +20.6 | 10.3 | 21.7 | 11 | 18.3 | 36.3 | 24 | 0.96 |
+| Lasso | 19.67 | +21.6 | 41.5 | 17.5 | 0 | 10.8 | 13.2 | 24 | 25.6 | 38.6 | 22 | 1.14 |
+| Pathfinder | 23.00 | +42.3 | 50.7 | 18.6 | +16.5 | 11.5 | 18.5 | 45 | 62.6 | 43.5 | 22 | 0.19 |
+| Chain Glide | 47.17 | +191.7 | 99.3 | 122.7 | +16.5 | 42.4 | 5.0 | 100 | 37.1 | 49.9 | 15 | 1.53 |
+| Guardian | 16.50 | +2.1 | 0 | −4.1 | +3.1 | 34.0 | 11.6 | 100 | 36.0 | 36.1 | 23 | 0.32 |
+| Slice Surfer | 35.67 | +120.6 | 100 | 90.7 | +19.6 | 49.0 | 3.3 | 100 | 54.5 | 67.5 | 13 | 2.78 |
+| Everything Flat | 74.50 | +360.8 | 97.0 | 204.1 | +57.7 | 48.7 | 2.1 | 100 | 51.9 | 46.0 | 99 | 2.60 |
+| Glide, locked | 40.33 | +149.5 | 99.6 | 115.5 | +19.6 | 51.3 | 3.0 | 100 | 56.5 | 70.4 | 18 | 2.05 |
+| Glide, level | 31.17 | +92.8 | 94.8 | 70.1 | +30.9 | 52.5 | 3.1 | 100 | 51.9 | 52.6 | 11 | 1.97 |
+
+Columns: **Lift** against the same pilot alone; **Kite share** of the hull's petals; **Skill** Hard minus Easy
+navigator as % of solo; **Idle** what a navigator who never touches earns; **Moments/min** the navigator's beats
+(a catch, pop or combo, with events under 0.4 s apart counted once); **Dry spell** the longest wait between two
+moments; **Thumb down / travel** the one-thumb load; **Board turn** how fast the board turns under the thumb (mean,
+°/s); **Touchable** the share of crystals on the board near enough the plane to touch. The table is the
+navigator-AI's play, not a person's: fun is the designer's call on a phone.
+
+### Found
+
+1. **The kite takes the pilot's catches.** Kite share is 97–100% on every steering preset: a crystal the pilot flies
+   at is in the vessel's plane by construction, so the kite reaches it first. The pilot's job becomes *aiming the
+   plane*, not catching. That may be the design (the pilot's 3D flying matters only through the slice it sweeps),
+   or the kite needs a reason to leave the pilot's line alone. **Decision needed.**
+2. **Tap to dash is the strongest and the lightest control.** Hopper catches the most of any real preset (+227%,
+   navigator skill 150%) with the thumb on the glass 3% of the time, against 100% for Follow and Floating stick. The
+   thumb hides nothing between taps, and every tap is a decision. On a phone that is the shape to beat.
+3. **The gesture controls are slow in these hands.** Pinball, Lasso and Pathfinder's navigators catch 7–12 crystals a minute on average, with dry
+   spells of 13–22 s. Part of that is the AI: a planned gesture (aim a sling, loop a cluster, draw a route) is
+   overtaken by a board that scrolls and turns while it is drawn, and the AI does not plan for the turn. A person may
+   do better; these three need a hand on a phone before they are judged.
+4. **The board turns about 47 °/s under the thumb on average**, mostly from the vessel's yaw. Eased (47) is calmer
+   than Locked (70), and calmer than Level (53) too, because Level follows every heading change at once while Eased
+   smooths all three axes. Easing helps; a heading-up board that turns with every yaw is still the biggest comfort
+   question. **Decision needed:** whether the board's in-plane rotation may lag the heading (it stays the vessel's
+   plane; only how it is turned on screen changes).
+5. **Only 11–24% of the board is touchable at ±40 u.** Most shadows are ghosts, which gives the pilot's pitch and
+   roll their meaning (sweep the plane through them). Everything Flat makes 99% touchable and wins every catch column
+   (+361%), but its idle navigator earns +58% without touching the screen: the 3D world stops mattering to anyone.
+6. **A navigator who never touches still earns 16–31%** on every kite preset: shadows drift onto a parked kite.
+   Lasso is the only control with no passive income (0%), because the line is the character.
+7. **Guardian has nothing to guard.** The AI pilot dodges the rival's trail on its own (0.17 hits a minute solo), so
+   popping prisms saves nothing (+2%). A defence job needs a world where the pilot cannot see the danger coming.
+8. **Combos lift the steady controls.** Chain Glide (Glide with combos, no pops) beats Glide by 26% in petals and
+   keeps skill high (123%), because it rewards choosing one element at a time.
+
+**Fixed in the lab before any number above was taken** (each would have frozen a human's kite too):
+- the AI thumb measured "arrived" against its goal without its own aim noise, so a noisy aim never arrived and the
+  Pinball and Pathfinder AIs froze (L-STU-66);
+- a dash target or path point past the board's rim could never be reached, so the kite froze at the rim for the rest
+  of the run (Hopper seed 2 caught one crystal in the 57 s after it froze at 33 s; Pathfinder seed 3 one in 45 s after 3 s) (L-STU-67);
+- a sweep through a trail counted every prism as a separate moment (Glide read 160–230 moments a minute), so events
+  under 0.4 s apart are now one moment;
+- the Lasso AI looped clusters of prisms rather than crystals; it now anchors its loop on crystals.
+
+### Checked
+
+- `node .claude/skills/labmaker/verify_lab.cjs Docs/Studios/CrewVesselLab.html`: PASS (no console errors, desktop
+  1600×900 fits, phone 390 px does not scroll sideways, `__lab` hooks, `SPEC` ⊂ `SHIPPED` within range, manual clock,
+  `runBatch` deterministic within a page and across two loads, stage not blank). Both screenshots read: on a phone the
+  board fills the stage with the pilot's chase view as a picture-in-picture; on a PC they sit side by side.
+- Per-seed values for every preset (8 seeds × 90 s) were printed before the table was trusted; after the fixes the
+  steering presets sit within about ±15% of their mean.
+- The two frozen-kite seeds were traced frame by frame to the rim clamp before the fix and re-run after it.
+
+### What round 2 does not model
+
+- The 3D world is points with no prism shapes, lighting or camera feel. The board is what is under test.
+- Element effects are stand-ins; no hull ability fires; one hull, one rival, no mode, no scoring rule.
+- The rival's trail recycles its oldest prism (the game conserves mass).
+- Two players in one hull, networking, and which machine runs the board.
+- A real thumb hides what is under it, tires and misses. The AI thumb only has a speed, a reaction time and aim noise.
+
+### Decisions needed (designer)
+
+1. **Which presets are fun on your phone?** The table cannot say. Play Hopper, Chain Glide, Glide and Lasso first.
+2. **Should the kite take the pilot's catches?** (Found 1.)
+3. **May the board's on-screen rotation lag the heading?** (Found 4.)
+4. **How far off the plane is touchable?** ±40 u leaves 11–24% touchable; ±400 makes the 3D world irrelevant.
+5. **Is popping danger prisms part of the job?** It is legal, it keeps the thumb busy, and it saves nothing while the
+   pilot can see the danger.
+
+## Round 1 (2026-10-14): four navigator consoles (superseded)
+
+> **Superseded by the designer (2026-10-16):** "I like that the radar character needs no vessel of its own, can be
+> optimized for mobile, and appeals to people who want more 2d gameplay. it does not look fun, and it doesn't make
+> sense in 3d without a way to rotate your slice." Round 2 keeps the vessel-less 2D character and rebuilds it. The
+> round-1 page is kept at `Docs/Studios/CrewVesselLab.round1.html`; its scorecard is in the live page's Archive tab.
+
+### How to use it
 
 - **Your seat** is in the header: **Fly**, **Navigate**, **Watch** (two AIs) or **Couch** (two people on one
   screen: keyboard or pad flies, mouse or touch navigates).
@@ -35,7 +187,7 @@ The pilot view is a heading-up stand-in for the chase camera. Anything outside t
 is fogged out and its crystals are hidden, which is the limit a 3D chase view puts on the pilot. The navigator
 console sits beside it (or below it on a phone).
 
-## The four consoles
+### The four consoles
 
 | Console | What the navigator does | Reads the world? | Economy |
 |---|---|---|---|
@@ -46,7 +198,7 @@ console sits beside it (or below it on a phone).
 
 The empty seat (solo pilot) is the baseline every console is measured against.
 
-## The model, and where its numbers come from
+### The model, and where its numbers come from
 
 | Lab key | Value | Source |
 |---|---|---|
@@ -68,9 +220,8 @@ moves a cursor and clicks exactly as a mouse does. Difficulty changes what the A
 reacts (bearing noise, reaction delay, cursor speed and jitter, blunder rate), never the stick
 (`/vessel-ai`).
 
-## Round 1 (2026-10-14)
 
-### Scorecard
+#### Scorecard
 
 `runBatch()` defaults: 8 seeds × 120 s at 30 Hz, 8 crews per console. Petals/min is crystals caught per
 minute. Percentages are against the solo pilot of the same skill. Hard + Hard unless the column says
@@ -107,7 +258,7 @@ Sweeps (same scorecard, one knob moved; full tables reproduced with `runBatch` a
 | `crystalCount` 10 → 4 (sparse cell) | −13.8% | +18.6% (rookie rescue +50.6%) | +75.9% | −0.7% | Seeing matters more when there is little to see. |
 | `pilotFov` 120 → 60 (narrow chase view) | +2.7% | +24.9% (rookie rescue +61.9%) | +107.7% | +10.0% | Scope Call grows as the pilot sees less. |
 
-### Found
+#### Found
 
 1. **Lock & Reel is the only console that changes what a crew is.** It doubles the hull's catch rate, both seats'
    skill shows (navigator 41%, pilot 57%), and an Easy pilot with a good navigator catches three times as much.
@@ -142,7 +293,7 @@ Sweeps (same scorecard, one knob moved; full tables reproduced with `runBatch` a
 is 0, so the console causes it, but the mechanism is not shown. One candidate: Time buffs raise speed and with it
 the turn radius, which costs catches when crystals are scattered. Check this before reading it as a finding.
 
-### Checked
+#### Checked
 
 - `node .claude/skills/labmaker/verify_lab.cjs Docs/Studios/CrewVesselLab.html`: PASS (no console errors,
   desktop 1600×900 fits, phone 390 px does not scroll sideways, `__lab` hooks answer, every `SPEC` key in
@@ -154,7 +305,7 @@ the turn radius, which costs catches when crystals are scattered. Check this bef
 - Power Split's AI was traced pip by pip over 25 s to confirm the 200 clicks/min is the situation flipping, not a
   stuck click (an earlier verb, "add, stealing from the biggest column", did loop; it now has add and free).
 
-### What this lab does not model
+#### What this lab does not model
 
 - The pilot view is a 2D top-down stand-in for the 3D chase camera.
 - Element effects are stand-ins that follow the element conventions. No real hull's four abilities are modelled,
@@ -164,7 +315,7 @@ the turn radius, which costs catches when crystals are scattered. Check this bef
 - Human players are proxied in the scorecard by AI skill levels, plus a guessed re-orientation time (`swapOrient`).
 - Networking. See "What the game would need" below.
 
-### Decisions needed (designer)
+#### Decisions needed (designer)
 
 1. **Which console** does the first multiplayer vessel carry? Lock & Reel is the only one that clearly changes the
    crew; Scope Call is the purest "read a map, call the shot" Goose; Gem Feed is the only one with no spatial
@@ -192,6 +343,10 @@ the turn radius, which costs catches when crystals are scattered. Check this bef
   owner applies and that replicate, never write the hull's state directly (`/vessel` rule 48).
 - **Both AIs must stay input-only.** `AIPilot` already fits the pilot seat. The navigator seat needs its own
   input-only console AI, as the lab's does.
+- **(Round 2) The board is a pure function of the hull's pose**, which already replicates, so any peer, a phone
+  included, can draw the navigator's board without new state. What the kite *does* (a catch, a pop, a combo buff) is
+  a consequence on shared state, so it must be sent as an input and applied where every peer applies it, never
+  decided by the board's own machine (`/vessel` rule 48).
 - **Score credit for two pilots in one hull** is undefined. `RoundStats` rides the `Player` and hits are credited
   through `VesselStatus.Player`.
 
@@ -200,3 +355,4 @@ the turn radius, which costs catches when crystals are scattered. Check this bef
 The repo copy is the source. Publish it as its own artifact (not inside the Vessel Studio: this is a lab for a
 vessel that does not exist yet), with `capabilities: {db: {}, user: {}}` for the shared decision log.
 Round 1 is published at https://claude.ai/artifact/JtQptDHQhNdC2CxPmspfct; republish to that URL so the log stays one log.
+

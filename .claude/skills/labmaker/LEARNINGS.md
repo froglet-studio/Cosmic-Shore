@@ -603,6 +603,20 @@ Entries are grouped by family; within a family, the newest goes at the bottom.
 - Evidence: `CrewVesselLab.html` `runBatch` (`navMatters`, `navApm`); `CREW_VESSEL_LAB.md` round 1 scorecard.
 - Promoted: no
 
+### L-STU-66 — An AI's "arrived" test must measure against the point it is actually aiming at, noise included
+- Lab: Crew Vessel Lab round 2 (`Docs/Studios/CrewVesselLab.html`) · Branch: `cece/compassionate-babbage-gc13io` · Date: 2026-10-16
+- What happened: the navigator AI moves a thumb toward `goal + aim noise` but returned its distance to `goal`. Whenever the noise was larger than the arrival tolerance (the sling's was 0.01 board radii, about the Hard AI's noise), the thumb sat on its noisy point forever, one phase short of releasing. Pinball and Pathfinder caught almost nothing on some seeds, which read as "these controls are weak" until a frame trace showed `plan=1/0` unchanged for 10 s.
+- Do instead: an agent that aims with noise judges arrival against its own aim point, and any multi-phase gesture plan gets a trace of its phase over time before its column is quoted. A phase that never changes is a stuck agent.
+- Evidence: `CrewVesselLab.html` `moveThumb` (returns the distance to `tx, tz`); `CREW_VESSEL_LAB.md` round 2, "Fixed in the lab".
+- Promoted: no
+
+### L-STU-67 — A target outside the playfield's clamp freezes the mover forever: clamp the TARGET at input, not only the mover
+- Lab: Crew Vessel Lab round 2 · Branch: `cece/compassionate-babbage-gc13io` · Date: 2026-10-16
+- What happened: the kite is kept on its round board every frame. A dash target or a drawn path point just past the rim was never reached (the clamp pulled the kite back each frame), so the dash and path never finished and no new one could start. Hopper seed 2 froze at 33 s and Pathfinder seed 3 at 3 s. A person tapping near the edge would have hit the same freeze; the AI found it first.
+- Do instead: clamp every target a player can set (tap, drag end, drawn point) into the reachable area when it is recorded, inside the mover's own clamp. Look for a mover whose position stops changing while it still has a target.
+- Evidence: `CrewVesselLab.html` `onBoard(x, z)` applied to `dashTo` and path points.
+- Promoted: no
+
 ## NCA — swarm / neural-CA research rigs (Tools/NCA)
 
 ### L-NCA-1 — The yardstick was wrong four times before the creatures were
