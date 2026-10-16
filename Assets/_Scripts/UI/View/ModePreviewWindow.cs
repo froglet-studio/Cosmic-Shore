@@ -21,7 +21,7 @@ namespace CosmicShore.UI
     /// </list>
     ///
     /// <para><b>Focus, not full screen.</b> Tapping the live window moves input from the UI to the
-    /// vessel (the AI hands over); tapping outside (unless a flight scheme has locked the cursor),
+    /// vessel (the AI hands over); tapping outside (unless the mouse flies the vessel or a flight scheme has locked the cursor),
     /// Escape, or gamepad Start hands it back and the AI resumes. Gamepad <b>B is deliberately NOT a release</b> — while flying, the pad belongs
     /// to the vessel, and B doubling as "close the modal" is exactly the input double-driving this
     /// platform's focus gating exists to prevent (see <see cref="AnyHasFocus"/>).</para>
@@ -81,6 +81,10 @@ namespace CosmicShore.UI
 
         /// <summary>True while input belongs to this window rather than the UI.</summary>
         public bool HasFocus { get; private set; }
+
+        /// <summary>True while the focused vessel flies on the mouse (a one-thumb hull), so a
+        /// mouse button is a flight control and never "tapped outside".</summary>
+        bool _mouseFlies;
 
         /// <summary>True while the live gameplay camera is drawing here.</summary>
         public bool IsLive => _state == State.Live;
@@ -307,10 +311,13 @@ namespace CosmicShore.UI
         /// Grant focus. Called by the session once it has actually handed input to the vessel —
         /// the window never grants its own focus.
         /// </summary>
-        public void GrantFocus()
+        /// <param name="mouseFlies">The vessel flies on the mouse (a one-thumb hull). Its mouse
+        /// buttons then never release focus, whichever input scheme holds the frame.</param>
+        public void GrantFocus(bool mouseFlies = false)
         {
             if (HasFocus) return;
             HasFocus = true;
+            _mouseFlies = mouseFlies;
             AnyHasFocus = true;
             RefreshHint();
         }
@@ -344,12 +351,13 @@ namespace CosmicShore.UI
             if (keyboard != null && keyboard.escapeKey.wasPressedThisFrame)
                 return true;
 
-            // Not while a flight scheme holds the cursor. A locked cursor's position is the middle
-            // of the screen, not where the player is pointing, and its LEFT BUTTON is a flight
-            // control (the one-thumb mouse scheme's right trigger: the Sparrow's guns). Testing it
-            // here read every shot as "pressed outside the window" whenever the window sat off
-            // centre, and ended the flight. Escape still releases.
-            if (Cursor.lockState == CursorLockMode.None &&
+            // Not while the mouse flies the ship. On a one-thumb hull the LEFT BUTTON is a flight
+            // control (the Sparrow's guns) and a locked cursor sits mid-screen, so testing it here
+            // read shots as "pressed outside the window" whenever the window sat off centre, and
+            // ended the flight. The cursor lock alone was not enough: it lapses for a frame
+            // whenever another scheme takes over (a connected pad's stick, a pause), and the click
+            // that hands flight back to the mouse lands in that frame. Escape still releases.
+            if (!_mouseFlies && Cursor.lockState == CursorLockMode.None &&
                 PressedOutsideWindow(Mouse.current != null && Mouse.current.leftButton.wasPressedThisFrame,
                     Mouse.current?.position.ReadValue() ?? default))
                 return true;
