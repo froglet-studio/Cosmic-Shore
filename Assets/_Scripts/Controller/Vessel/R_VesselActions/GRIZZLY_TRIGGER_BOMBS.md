@@ -62,9 +62,9 @@ momentum."*
   `minConeHalfAngle` (25 u / 12°) to `range` / `coneHalfAngle` (60 u / 25°); no analog = full.
   Apexes sit `sideOffset` 3 to each side and `noseOffset` 4 ahead. Each cone ignites on its own.
   60 u is the Grizzly's shortest reach on purpose.
-- **Sniper:** pressure is ignored. The scope fills the screen while held
-  (`GrizzlyHUDView.scopeFillsScreen`; off = the old PiP). Releasing LT hands the view back to the
-  ship; the round flies on.
+- **Sniper:** pressure is ignored. The scope is the HUD's **PiP** (picture-in-picture), not the
+  main view (design owner, 2026-10-16: "the scope is supposed to be a PiP"). Releasing LT closes
+  it, and the round flies on unwatched.
 - **Bombs off elsewhere:** leaving Explosives retires every live bomb silently, and the autopilot
   bombs only in Explosives. Speed you carry is the launch's momentum (2 s) or Rush (B).
 - **X / Q / middle mouse:** unbound on `Grizzly.prefab`.
@@ -346,8 +346,8 @@ Not run in the editor — no Unity in the authoring sessions. Steps:
 11. **X does nothing** in any mode (2026-10-16).
 11b. **Claw:** LB to PLASMA CLAW. Feather LT: a small cone from the left front; squeeze: the full
     60 u cone. RT the same on the right. Both at once: two cones. Enemy prisms in them burn.
-11c. **Sniper:** LB to SNIPER. Hold LT: the scope fills the screen. RT: a round; the view rides it
-    while LT is held; let go and you are back on the ship. RT again within 3 s does nothing.
+11c. **Sniper:** LB to SNIPER. Hold LT: the scope PiP opens. RT: a round; the PiP rides it
+    while LT is held; let go and the PiP closes. RT again within 3 s does nothing.
 11d. **Bombs off:** fire a bomb, switch to the claw: the bomb vanishes without a blast; the
     triggers spray, they do not bomb.
 12. **AI** — an AI Grizzly fires, freezes, flies past and blows its bombs, lunging forward each

@@ -39,8 +39,6 @@ namespace CosmicShore.UI
         [SerializeField] RawImage scopeImage;
         [SerializeField] Camera scopeCamera;
         [SerializeField] int scopeTextureSize = 512;
-        [SerializeField, Tooltip("While the scope is open, stretch the scope panel and image over the whole screen, so LT CHANGES the view to the scope (and to the round in flight) instead of opening a picture-in-picture (design ask, 2026-10-16). Off = the authored PiP layout.")]
-        bool scopeFillsScreen = true;
 
         [Header("Scope reticle (shrinks with aim distance)")]
         [SerializeField] Image reticle;
@@ -76,9 +74,6 @@ namespace CosmicShore.UI
         Vector3 _scopeRestLocalPos;
         Quaternion _scopeRestLocalRot;
         bool _scopeRestCaptured;
-        readonly RectLayout _panelLayout = new();
-        readonly RectLayout _imageLayout = new();
-        bool _filledScreen;
         float _reticleSizeVelocity;
         Domains _ownDomain = Domains.Blue;
 
@@ -142,7 +137,6 @@ namespace CosmicShore.UI
 
             bool visible = scoped || _chasedRound != null;
             if (scopePanel) scopePanel.SetActive(visible);
-            ApplyScreenFill(visible);
 
             if (scopeCamera)
             {
@@ -238,7 +232,6 @@ namespace CosmicShore.UI
             _roundCamForwardOffset = MeasureNoseClearance(round);
 
             if (scopePanel) scopePanel.SetActive(true);
-            ApplyScreenFill(true);
             if (scopeCamera)
             {
                 EnsureScopeTexture();
@@ -257,23 +250,14 @@ namespace CosmicShore.UI
 
             if (reticle) reticle.enabled = true;
             if (scopePanel) scopePanel.SetActive(_scoped);
-            ApplyScreenFill(_scoped);
             if (scopeCamera) scopeCamera.enabled = _scoped;
         }
 
-        /// <summary>The scope's render target: square for the PiP, the screen's aspect when the
-        /// scope fills the screen. Recreated when that shape changes.</summary>
+        /// <summary>The PiP's square render target, created on first use.</summary>
         void EnsureScopeTexture()
         {
-            if (!scopeCamera) return;
-            int height = Mathf.Max(64, scopeTextureSize);
-            int width = scopeFillsScreen && Screen.height > 0
-                ? Mathf.Max(64, Mathf.RoundToInt(height * (float)Screen.width / Screen.height))
-                : height;
-
-            if (_scopeRT != null && _scopeRT.width == width && _scopeRT.height == height) return;
-            ReleaseScopeTexture();
-            _scopeRT = new RenderTexture(width, height, 16) { name = "GrizzlyScopeRT" };
+            if (!scopeCamera || _scopeRT != null) return;
+            _scopeRT = new RenderTexture(scopeTextureSize, scopeTextureSize, 16) { name = "GrizzlyScopeRT" };
             scopeCamera.targetTexture = _scopeRT;
             if (scopeImage) scopeImage.texture = _scopeRT;
         }
@@ -285,59 +269,6 @@ namespace CosmicShore.UI
             _scopeRT.Release();
             Destroy(_scopeRT);
             _scopeRT = null;
-        }
-
-        /// <summary>Stretch the scope over the screen while it is up, and put the authored PiP
-        /// layout back when it closes.</summary>
-        void ApplyScreenFill(bool fill)
-        {
-            fill &= scopeFillsScreen;
-            if (fill == _filledScreen) return;
-            var panelRect = scopePanel ? scopePanel.transform as RectTransform : null;
-            var imageRect = scopeImage ? scopeImage.rectTransform : null;
-
-            if (fill)
-            {
-                _panelLayout.CaptureAndStretch(panelRect);
-                _imageLayout.CaptureAndStretch(imageRect);
-            }
-            else
-            {
-                _panelLayout.Restore(panelRect);
-                _imageLayout.Restore(imageRect);
-            }
-            _filledScreen = fill;
-        }
-
-        /// <summary>A RectTransform's authored layout, kept while it is stretched full-screen.</summary>
-        sealed class RectLayout
-        {
-            Vector2 _anchorMin, _anchorMax, _offsetMin, _offsetMax, _pivot;
-            bool _captured;
-
-            public void CaptureAndStretch(RectTransform rect)
-            {
-                if (!rect) return;
-                _anchorMin = rect.anchorMin; _anchorMax = rect.anchorMax;
-                _offsetMin = rect.offsetMin; _offsetMax = rect.offsetMax;
-                _pivot = rect.pivot;
-                _captured = true;
-
-                rect.anchorMin = Vector2.zero;
-                rect.anchorMax = Vector2.one;
-                rect.pivot = new Vector2(0.5f, 0.5f);
-                rect.offsetMin = Vector2.zero;
-                rect.offsetMax = Vector2.zero;
-            }
-
-            public void Restore(RectTransform rect)
-            {
-                if (!rect || !_captured) return;
-                rect.anchorMin = _anchorMin; rect.anchorMax = _anchorMax;
-                rect.pivot = _pivot;
-                rect.offsetMin = _offsetMin; rect.offsetMax = _offsetMax;
-                _captured = false;
-            }
         }
 
         /// <summary>
