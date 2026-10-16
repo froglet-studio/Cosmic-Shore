@@ -97,6 +97,23 @@ shapes (roller radius 70 u, wavelength 360 u), the per-way dials and the AI.
 
 ---
 
+## Round 2c (2026-10-16): the designer prefers Knees
+
+The designer, verbatim: *"i just tried the "knees" way and it was better"*. **Decided:** Knees (trigger = knees,
+stick = lean round the rail, A = push) is the page's default way and the lead candidate; Dual stick stays on the
+page for comparison. Recorded in the shared decision log (`decisions/r2c-knees-preferred`).
+
+Likely reasons, from round 2's measurements (not yet confirmed by the designer):
+
+- **No hand conflict.** On Dual stick, A takes the right thumb off a stick that is half the knee control, so the
+  knees half-straighten during every push (−4.1 u/s and −22 points of PERFECT for the AI on the oval from a
+  stop). On Knees, A is pressed by a thumb that is not doing anything else.
+- **One input, one job.** The trigger is only the knees and the stick only the lean; on Dual stick the same two
+  sticks carry knees (XDiff), roll (YDiff) and look (XSum / YSum), so moving one disturbs the others.
+
+**Open:** Knees has no look input yet. If look while attached matters, the free right stick could carry it
+(the Urchin's pitch / yaw on one stick), which keeps the trigger for the knees.
+
 ## Round 2b (2026-10-16): spin round the rail; speed from knees against the curvature
 
 The designer, verbatim: *"when i move one joystick up and the other down that produces ydiff that should be
@@ -132,7 +149,7 @@ fully straight legs. players will take their thumb off a joystick to hit the a b
 them down the line to build speed from a stop. this will feel like taking you foot off a skateboard to
 push, but once you get pumping you wont need it."*
 
-**Built as the new default way, Dual stick:**
+**Built as a new way, Dual stick (the default until round 2c):**
 
 - **The game's mix, line for line** (`DualStickMix.Mix`, `GamepadInputStrategy`): `XSum = Ease(rx + lx)`,
   `YSum = −Ease(ry + ly)`, `XDiff = (rx − lx + 2) / 4`, `YDiff = Ease(ry − ly)`, `Ease(x) = ±(1 − cos(x · 0.785))`.

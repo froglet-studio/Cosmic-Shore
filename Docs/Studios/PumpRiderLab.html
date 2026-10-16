@@ -228,8 +228,8 @@
 
   // Choices that are not numbers (dropdowns). Not part of SHIPPED; saved per viewer.
   const WAYS = [
+    { v: 'knees', label: 'Knees', short: 'Trigger knees + stick lean (designer\u2019s pick)', pump: 'work', input: 'Trigger = knees (pull to crouch, let go to stand). Stick = lean.' },
     { v: 'dual', label: 'Dual stick', short: 'Urchin sticks: apart = knees bent, A = push', pump: 'work', input: 'XDiff = knees: sticks fully apart = fully bent, together = straight. YDiff (one up, one down) = roll round the rail. XSum / YSum only turn your look. A = push: a thumb comes off a stick to press it.' },
-    { v: 'knees', label: 'Knees', short: 'Analog knees + lean', pump: 'work', input: 'Trigger = knees (pull to crouch, let go to stand). Stick = lean.' },
     { v: 'tap',   label: 'Tap', short: 'One button + lean', pump: 'work', input: 'Hold the button to crouch, let go to stand. Stick = lean.' },
     { v: 'beat',  label: 'Beat', short: 'Timed release kick', pump: 'beat', input: 'Hold through the humps, let go at the bottom of each dip. Stick = lean.' },
     { v: 'lean',  label: 'Lean', short: 'Lean only, hull pumps', pump: 'auto', input: 'Stick = lean. The hull bends its own knees.' },
@@ -245,7 +245,7 @@
     { v: 'wake', label: 'Vessel wake', note: 'A smooth random 3D ribbon, like a wake you would find in a cell.' },
     { v: 'flat', label: 'Flat (control)', note: 'A straight rail. Pumping must earn nothing here.' },
   ];
-  const OPT_DEFAULT = { way: 'dual', course: 'pumptrack', lean: 'free', crest: 'latched', owner: 'own', pilot: 'skilled', cam: 'chase', simSpeed: 1, runLen: 20, lookFrame: 'rail' };
+  const OPT_DEFAULT = { way: 'knees', course: 'pumptrack', lean: 'free', crest: 'latched', owner: 'own', pilot: 'skilled', cam: 'chase', simSpeed: 1, runLen: 20, lookFrame: 'rail' };
 
   const LS_KEY = 'lab:' + LAB.name + ':P', LS_OPT = 'lab:' + LAB.name + ':opt2';      // opt2: round 2 made Dual stick the default
   const lsGet = (k, d) => { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch (e) { return d; } };
@@ -1267,8 +1267,8 @@
     box.innerHTML = '<p class="law">Your speed changes with your extension or contraction against the curvature you feel: d(v²/2) = v² · bend-toward-you · d(knees). Spin round the rail with YDiff and the same bend changes meaning: on the side it bends toward it is a dip (extend at its bottom to gain), on the opposite side a hump (contract at its top to gain), and 90° round your knees do nothing. On a straight rail pumping earns nothing. The ring round the rail at your rider shows the dip side in amber and the hump side in blue.</p><div class="ways"></div>';
     const g = box.querySelector('.ways');
     const CARDS = [
-      ['Dual stick (the pick to try first)', 'The Urchin\u2019s sticks with the throttle swapped for legs. XDiff is the knees: pull the sticks apart to bend, bring them together to stand. YDiff rolls you round the rail, the sums only turn your look. A pushes you off from a stop, and pressing it takes a thumb off a stick, so your knees half-straighten while you push, as on a real board.'],
-      ['Knees', 'The trigger is your knees and the stick is your lean, so the pilot has two jobs, as on a real pump track. Most skill, most expression. Shares the Urchin’s free roll: lean all the way round the rail and every bend can be a dip.'],
+      ['Dual stick', 'The Urchin\u2019s sticks with the throttle swapped for legs. XDiff is the knees: pull the sticks apart to bend, bring them together to stand. YDiff rolls you round the rail, the sums only turn your look. A pushes you off from a stop, and pressing it takes a thumb off a stick, so your knees half-straighten while you push, as on a real board.'],
+      ['Knees (the designer\u2019s pick, 2026-10-16)', 'Ridden by the designer against Dual stick and preferred. The trigger is your knees and the stick is your lean, so the pilot has two jobs, as on a real pump track. Most skill, most expression. Shares the Urchin’s free roll: lean all the way round the rail and every bend can be a dip.'],
       ['Tap', 'One button: hold to crouch, let go to stand. The same physics as Knees, digital. Easier on a phone; loses the half-pump.'],
       ['Beat', 'Hold through the humps, let go at the bottom of each dip for a kick sized by the load. Arcade and readable; the rhythm is the skill, the legs are not simulated.'],
       ['Lean', 'The longboard carve: you only lean, and the hull bends its own knees. One stick. The skill is finding the dip and getting under it.'],
