@@ -6,7 +6,8 @@ change direction, how we ignore some skims when we must keep speed. All these pa
 understand the situation that is right for that manoeuvre. This is how we can actually train the AI, not just by input."
 
 This plan extends `AI_TRAINING_PLAN.md` L3 (learn from players) and the recorder built for it on 2026-10-15
-(`HumanFlightRecorder.cs`, `Tools/Build/learn_from_flights.py`, schema `cosmic-shore.flight/2`). It does not replace them.
+(`HumanFlightRecorder.cs`, `Tools/Build/learn_from_flights.py`; schema `cosmic-shore.flight/2` then, `cosmic-shore.flight/3`
+since 2026-10-16). It does not replace them.
 
 **Decision (Yash, 2026-10-16): training data comes from playing in the Unity editor only.** "Let's not use artifact to
 train, we will play in editor only for perfect training data." Then (2026-10-16): "delete the artifact, it's not needed;
@@ -48,7 +49,8 @@ in `lane`):
 
 ### 2.2 Recorded 10 times a second (dynamic world)
 
-What `flight/2` has today: position, heading and up, speed, boost, the four stick axes, throttle, rings threaded.
+What `flight/2` had: position, heading and up, speed, boost, the four stick axes, throttle, rings threaded. Every record
+is now `flight/3`.
 
 Added in `flight/3`:
 
@@ -64,8 +66,10 @@ since the last sample), `charge`, `state` (bits in the header's `stateBits`: boo
 attached, stationary), `lvC lvM lvS lvT`, `held` (AI-holding samples are now kept and marked; every reader skips them),
 `camx camy camz camfx camfy camfz fov camMode` (Caleb's V1 view); `rivalVel` (vx, vy, vz per rival, aligned with
 `rivals`); `crystals` (the 12 nearest: x, y, z, element); `railEvents` ([t, rail, prism, 1 destroyed / 0 restored]).
-Not recorded: the hull-specific speed-verb phases (ramp, soar, skim boost) beyond `boost`, `charge` and `state`; they
-have no shared field on the vessel status.
+Since 2026-10-17 also: the hull's resource meters `m0..m3` (names in the header's `meterNames`, the boost meter's
+index in `boostMeter`; the Dolphin's charge is read from them) and `timeMode` (the Stoat's Mass / Time mode). Not
+recorded: the hull-specific speed-verb phases (ramp, soar, skim boost) beyond `boost`, the meters and `state`; they have
+no shared field on the vessel status.
 
 ### 2.3 Computed offline, per sample (the situation, in the pilot's own frame)
 
@@ -149,7 +153,7 @@ their own consent question; no personal data is recorded.
 | **S2** | A replay of a flight with its situations | Built in the page on 2026-10-16, then **deleted with it** (tests happen in the editor). The maths lives on in `situation_features.py`; an in-editor replay (the Third Eye drawing a recorded flight) is the editor-side follow-up if wanted |
 | **S3** | `situation_features.py` over Unity's flights | **Built**: `Tools/Build/situation_features.py` reads flight/2 and flight/3, now the only implementation (it matched the page's `situation.js` exactly before the page was deleted); `--self-test` checks the fixture flight against its golden output, with a negative control. First real flight (your Squirrel, 2026-10-16 02:31, 24 rings): commit about 431 u out (the AI's is 420), 22 skims taken and 7 skipped, a skim taken when its detour is 10 u or less (69% of your choices) |
 | **S4** | Unity recorder `flight/3` | **Built, not editor-verified**: `HumanFlightRecorder` adds both triggers, the course and every other pilot's position and rings each sample; since 2026-10-16 everything else in §2.1-2.2 (hull state, element levels, `held`, camera, rival velocities, crystals, every ring and rail, rail holes as `railEvents`). Skims are still inferred (speed drop, boost rise); rail hits can now be read from `railEvents` |
-| **S5** | Learning step 1 (commit curve) and step 2 (skim rule, boost angle) | **Built in `situation_features.py --write`**, over editor flights only: from clean legs in the faster half of your own times for each ring, once a hull has 3 editor flights; writes `learned_situations.json` and `LEARNED_SITUATIONS.md` for review. **Not yet in Unity's steering**: the commit curve and skim rule need their two knobs ported to `GateRaceController` / the Skim Race pilot (task T-20261015-7fc3). The situation-library test (the AI put in your own moments) moves to the editor with that port |
+| **S5** | Learning step 1 (commit curve) and step 2 (skim rule, boost angle) | **Built in `situation_features.py --write`**, over editor flights only: from clean legs in the faster half of your own times for each ring, once a hull has 3 editor flights; `--write` would write `learned_situations.json` and `LEARNED_SITUATIONS.md` for review. **Neither file has been written yet** (planned output, not in the repo). **Not yet in Unity's steering**: the commit curve and skim rule need their two knobs ported to `GateRaceController` / the Skim Race pilot (task T-20261015-7fc3). The situation-library test (the AI put in your own moments) moves to the editor with that port |
 | **S6** | Behaviour cloning | Only if S5 leaves a measured gap |
 
 
@@ -207,13 +211,13 @@ Regatta's world is recorded once (§2.1). So with the **camera pose** recorded, 
 | Step | Change | Where |
 |---|---|---|
 | **V1** | **Record the camera each sample:** position, rotation (quaternion), vertical FOV, aspect, and camera mode / look-behind. About 10 floats, so the file stays in KB. §2.2 already lists "the camera mode" but S4 did not record it. Read the camera that renders the player's view through `CameraManager`, cached once, with no per-sample search or allocation. S4 is not editor-verified and no player data exists yet, so adding this to `flight/3` now is cheaper than a `flight/4` later (Yash's call). | `HumanFlightRecorder.cs` |
-| **V2** | **A `view` feature group,** from the camera pose and the static world. For the target ring, the ring after it, the skim candidate, the nearest prism ahead and each rival, compute: `onScreen`, `screenX` / `screenY` (-1..1), `angularSize`, `occluded` (a ray from the camera against the rail prisms' contact boxes) and `tau` = angular size / its growth rate (time to contact, the cue humans judge closing by). Plus a coarse **view grid**, 8×5 screen cells, each holding the nearest depth and kind (own rail, rival rail, ring, rival hull, empty). That grid is the "compressed screenshot". | `situation_features.json`, then `situation.js` and `situation_features.py` (the self-test keeps the twins equal; regenerate the fixture) |
+| **V2** | **A `view` feature group,** from the camera pose and the static world. (As built, `situation_features.py` only: `situation.js` was deleted with the page.) For the target ring, the ring after it, the skim candidate, the nearest prism ahead and each rival, compute: `onScreen`, `screenX` / `screenY` (-1..1), `angularSize`, `occluded` (a ray from the camera against the rail prisms' contact boxes) and `tau` = angular size / its growth rate (time to contact, the cue humans judge closing by). Plus a coarse **view grid**, 8×5 screen cells, each holding the nearest depth and kind (own rail, rival rail, ring, rival hull, empty). That grid is the "compressed screenshot". | `situation_features.json`, then `situation.js` and `situation_features.py` (the self-test keeps the twins equal; regenerate the fixture) |
 | **V3** | **Gate the labels on what was seen.** A target candidate counts only if it is on screen or was seen within the last ~1 s (memory). A *skipped skim* needs the skim visible and not occluded for at least ~0.3 s before the choice. Otherwise label it `unseen` and leave it out of the skim-rule fit. Split *mistake* into: missed with the ring visible (control) and missed with the ring off screen (navigation). | the same three files |
 | **V4** | **Measure the reaction lag** per pilot: the shift that best correlates the target's `screenX` with the yaw stick (and `screenY` with pitch). Fit S5's rules on situation(t - lag). `learn_from_flights` reports the lag. Proposing it as a measured `ReactionSeconds` per difficulty goes to the handicaps' owners (Garrett) and changes no AI by itself. | `situation_features.py` / `situation.js`, `learn_from_flights.py` |
 | **V5** | *Later, only if S5/S6 show the gap:* an **AI perception filter**. The AI's belief updates only for what lies inside a virtual chase camera's view, with the measured lag. This is a belief handicap, so the input-only contract is unchanged. It is the step that makes the AI fly *like* a person and not only as fast. | the AI's handicap layer, with its owners |
 
-Also in the artifact's Flights tab: draw the pilot's frustum on the replay, and grey out skims and rivals that were off
-screen or occluded. Then a person correcting a stretch sees what the pilot saw.
+~~Also in the artifact's Flights tab: draw the pilot's frustum on the replay.~~ Gone: the page, its Flights tab and
+`situation.js` were deleted on 2026-10-16. `situation_features.py` is the only implementation.
 
 *Optional audit, not training data:* in development builds, one tiny greyscale capture every 2 s (async GPU readback,
 nothing on the frame) to check that V2's view grid matches what was really on screen. Drop it if it costs a frame.
@@ -233,7 +237,7 @@ without a camera are kept and read as **all-seeing**: their labels are not gated
 | **V1** | Each sample: camera position, forward and up (= its rotation), vertical FOV, aspect, mode, look-behind (`camx..camfz`, `camux..camuz`, `fov`, `camAspect`, `camMode`, `camRear`). Read from `CameraManager.ViewCamera` (resolved once a frame; nothing searched or allocated) | `HumanFlightRecorder.cs` | `unity_refcompile`; NOT run in Unity |
 | **V2** | `view` per sample: for the target ring, the next ring, the skim candidate, the nearest prism ahead and each rival, `onScreen`, `sx` / `sy`, `angSize`, `occluded`, `tau`; the 8 x 5 view grid (`gridKind`, `gridDepth`); `visible`. A rail prism is not hidden by its own rail's next 8 prisms (the 64 u stretch being looked at); a ring is hidden only when its centre and four rim points all are | `situation_features.py` (`Viewer`, `view`) | self-test: straight ahead is centre screen, right is right, behind / far off-axis are off screen, a prism on the line of sight hides, one beside it does not (negative control), tau = 1.0 s at 100 u / 100 u/s, the grid shows the ring |
 | **V3** | A target candidate counts only if it was in plain view within 1 s; a SKIPPED skim needs its prism in plain view for the 0.3 s before the choice, asked of that prism from the camera at each of those samples, else `seen: false` and left out of the skim fit; a missed mouth is `cause: control` (ring in view) or `navigation` | `intent`, `skim_choices`, `analyze`, `learn` | self-test on the fixture with a chase camera: every skipped skim seen; the same flight with the camera looking behind: ring on screen 9% of the time and every skipped skim unseen and left out; no camera: nothing left out, labels unchanged |
-| **V4** | The reaction lag: the shift 0..1 s that best lines the ring's screen position (or, with no camera, its bearing / elevation) up with the yaw / pitch sticks, refined between samples. Per hull, the median of its flights; the commit, skim choices and boosts are then read that long before the action and the rules fitted on those. Reported by `situation_features.py` (per flight and per hull, and in `learned_situations.json`) and by `learn_from_flights.py` | `lag_from_signals`, `measure_lag`, `hull_lag`; `learn_from_flights.reaction_lag` | self-test: a stick 0.25 s late measures 0.25 s, pure noise measures nothing; the fixture, flown by the Medium AI whose reaction is 0.25 s (`SkimRaceDifficultySO.MediumReactionSeconds`), measures **0.26 s** from the hull and from the screen |
+| **V4** | The reaction lag: the shift 0..1 s that best lines the ring's screen position (or, with no camera, its bearing / elevation) up with the yaw / pitch sticks, refined between samples. Per hull, the median of its flights; the commit, skim choices and boosts are then read that long before the action and the rules fitted on those. Reported by `situation_features.py` (per flight and per hull; `learned_situations.json` once `--write` is run) and by `learn_from_flights.py` | `lag_from_signals`, `measure_lag`, `hull_lag`; `learn_from_flights.reaction_lag` | self-test: a stick 0.25 s late measures 0.25 s, pure noise measures nothing; the fixture, flown by the Medium AI whose reaction is 0.25 s (`SkimRaceDifficultySO.MediumReactionSeconds`), measures **0.26 s** from the hull and from the screen |
 
 **First real reading.** Yash's flight of 2026-10-16 02:31 (no camera, so from the hull's frame) measures a lag of
 **0.0 s** (fit 0.35). A person flying a course they know anticipates the next ring instead of reacting to it, so a
@@ -246,6 +250,10 @@ replay ideas in §7 went with the page (deleted 2026-10-16).
 ## 8. What the first 29 editor flights say (2026-10-17)
 
 Data: Yash 23 named Regatta flights at I1 (Jade and Gold lanes), `belac` 6 at I3 (Ruby); all Squirrel, Medium rivals.
+**Which count is which.** 14 = the first I1 batch `RACING_LINE.md` §2 measured (2026-10-16); 29 = the set this section
+and the Squirrel learning run used (`LEARNED_FROM_FLIGHTS.md`, 2026-10-16); 32 = the Squirrel flights on the bugledger
+branches when §9 was written; 46 = every stored Squirrel flight that evening (`RACING_LINE.md` §2.1). On 2026-10-17
+(after `git fetch`) the bugledger branches hold 49 Squirrel, 5 Urchin, 2 Serpent and 4 unnamed Regatta flights.
 The racing line, the per-leg mistake map and the capture plan are in **`RACING_LINE.md`** (built from the same flights
 by `racing_line.py`); this section adds what the situation and rail readers found. The 23/24 recorder bug (the last
 ring never sampled) was fixed in `HumanFlightRecorder` and `learn_from_flights.finished_of` by the same session as
@@ -253,7 +261,7 @@ ring never sampled) was fixed in `HumanFlightRecorder` and `learn_from_flights.f
 
 | Finding | Number | What it means for the AI |
 |---|---|---|
-| **When they skim, pilots use the rail's - face**, the side every ring is on (each ring sits 22 u off every rail on that face) | 94% of skimming, every lane, both pilots; 13.6 u from the rail's centre (4.6 u outside the 9 u shell) | The Regatta Squirrel AI skims the **+ face** (`SkimHeight` +4.35, 11.9 u from the centre) and must cross the rail to reach a ring: a likely cause of its rail hits. `learn_from_flights` now learns the face as `SkimHeight`'s sign (the driver's own convention): **-6.5** |
+| **When they skim, pilots use the rail's - face**, the side every ring is on (each ring sits 22 u off every rail on that face) | 94% of skimming, every lane, both pilots; 13.6 u from the rail's centre (4.6 u outside the 9 u shell) | The Regatta Squirrel AI skimmed the **+ face** (`SkimHeight` +4.35 before the change, 11.9 u from the centre) and had to cross the rail to reach a ring: a likely cause of its rail hits. `learn_from_flights` learns the face as `SkimHeight`'s sign (the driver's own convention); it is now **-6.498** (applied 2026-10-17, plan step 1 below) |
 | **Speed is the race** | race time vs mean speed r = -0.99; vs mean skim boost r = -0.91 (about 3.0 in the fast races); vs slowed episodes r = +0.55 (17 won races) | Optimise held speed and fewer hits. How many skims are taken or skipped does not move the time (r 0.04 / 0.14) |
 | **The AI is far behind** | when Yash won, the Medium rivals had 14 of 24 rings (median, 9..21) | About 58% of a human's pace; no AI flight is recorded, so it cannot yet be compared leg by leg |
 | **Humans anticipate** | reaction lag 0.06 s (median of 24 camera flights, from the screen; fit 0.4-0.5) | Medium's 0.25 s and Easy's 0.5 s are slower than a person who knows the course (task T-20261016-f695, Garrett) |
@@ -287,8 +295,8 @@ ring, the larger stick axis, the runway = distance / speed).
 
 | Hull | The AI decides with | What your flights teach it | Written as (Regatta only) |
 |---|---|---|---|
-| Rhino | `RhinoAIBoostPolicy` (`RampBoostAIPolicySO`) | when you start the ramp (lined up within, stick under, runway left), when you stop it, your steering while ramping, your shortest ramp and rest | `Resources/AIBoostPolicies/RhinoAIBoostPolicy_Regatta` |
-| Dolphin | `DolphinAIBoostPolicy` (`ChargeBoostAIPolicySO`) | when you discharge, and at what charge (the boost meter, newly recorded as `m0..m3` with `meterNames` and `boostMeter`) | `…/DolphinAIBoostPolicy_Regatta` |
+| Rhino | `RhinoAIBoostPolicy` (`RampBoostAIPolicySO`) | when you start the ramp (lined up within, stick under, runway left), when you stop it, your steering while ramping, your shortest ramp and rest, and `cornerSpeed` (your median speed at each ring you thread) | `Resources/AIBoostPolicies/RhinoAIBoostPolicy_Regatta` |
+| Dolphin | `DolphinAIBoostPolicy` (`ChargeBoostAIPolicySO`) | when you discharge, and at what charge (the boost meter, recorded as `m0..m3` with `meterNames` and `boostMeter`); reported only: `redriftShareOfPeak`, the speed your next drift froze over the discharge's top speed (the AI drifts again at the peak by design, 2026-10-17) | `…/DolphinAIBoostPolicy_Regatta` |
 | Manta | `MantaAnalogTurnBoostExecutor`'s Soar bands | the stick band you Soar flat inside, the yaw band past which you split the triggers: fitted to the executor's own trigger formula | `…/MantaSoarAITuning_Regatta` (`MantaSoarAITuningSO`) |
 | Urchin | `RegattaController`'s rail riding + `UrchinAutopilotConfig` | how much of the race you ride, and on your own rail: **report only** (its Regatta riding numbers are scene fields) | nothing |
 | Stoat (on the card 2026-10-17) | three autopilots: `StoatModeAction` (when to switch to Time mode), `StoatDipoleConfig` (Mass mode's field dipole), `StoatSlingConfig` (Time mode's catch sling) | the angle you switch to Time mode at; Mass mode: your squeeze, the ring's distance when you press, how long you hold, how often, how far round you let it carry you; Time mode: the turn and distance you sling at, how often, your squeeze, where the ring is when you let go. Needs the new `timeMode` column | `StoatModeAction_Regatta`, `StoatDipoleConfig_Regatta`, `StoatSlingConfig_Regatta` (read through `AIModeTuning`, autopilot numbers only) |
@@ -304,8 +312,9 @@ AI today", so flipping the Third Eye's You / AI to AI for a lap gives a side-by-
 **Checked:** `learn_drives_from_flights.py --self-test` (synthetic pilots with known rules: the Rhino's start / stop
 rule recovered within a degree and 0.02 stick, a random pilot rejected as a negative control, the Dolphin's spend charge
 0.80, the Manta's bands 0.50 / 0.80 exactly; under 3 finished races, unfinished races and AI-held seconds write
-nothing); `RegattaDriveTuningTests` (no variant = the hull's own policy; the Manta trigger formula). No human flight of
-these hulls exists yet: all 32 so far are Squirrel.
+nothing); `RegattaDriveTuningTests` (no variant = the hull's own policy; the Manta trigger formula). On 2026-10-17 the
+only flights of these hulls are 5 Urchin (3 by `belac`, 2 by Yash; 2 finished; report only: rides 87% of the race, 94% on
+its own rail); no Rhino, Dolphin, Manta or Stoat flight exists yet, so nothing has been written.
 
 **What to fly** (Regatta I1 first, the course the Squirrel data is on; store every race):
 

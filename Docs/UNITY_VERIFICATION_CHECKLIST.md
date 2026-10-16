@@ -90,6 +90,26 @@ League on Easy with the Third Eye open (FrogletTools > AI > Third Eye). The AI's
 reaches the ball later than on Hard. On Hard the strip shows no reaction/mistake line. (4) Repeat in Broadside and
 Brood Rush. (5) Regatta on Easy: the AI threads rings visibly worse than on Hard. (6) Arcade window: the row
 still sits under the intensity row on Skim Race and is still hidden on a card without it.
+### 🔴 The Manta AI holds Soar deeper into turns in Regatta (`Ys-bleeding-edge`, 2026-10-17) — NOT EDITOR-VERIFIED
+
+**What landed:** `Resources/AIBoostPolicies/MantaSoarAITuning_Regatta.asset` (`BoostStickBand` 0.8, `YastriStickBand`
+0.85, written with `learn_drives_from_flights.py`'s own writer). In Regatta only, the AI Manta keeps both triggers flat
+until its stick passes 0.8 (was 0.35) and pivots past 0.85 (was 0.75). Every other mode keeps the executor's bands.
+A person's Manta flights replace these numbers (`learn_drives_from_flights.py --write`).
+**Why:**
+- In the offline model (`manta_drive_sim.py`; seconds for three laps), default → Regatta bands: I1 26.5 → 25.0,
+  I2 32.8 → 31.0, I3 37.5 → 35.6, I4 37.6 → 35.5. Soar raises the Manta's turn rate (0.2 v + 30 deg/s), so it turns
+  better fast.
+- A corner brake (the Rhino's idea) was tested and NOT shipped: slower on every course.
+
+**Verified without the editor:** `learn_drives_from_flights.py --check`, `unity_refcompile` (0 errors in changed files),
+`RegattaDriveTuningTests.MantaRegattaTuning_LoadsWithThePivotBandAboveTheBoostBand` written (not run).
+**Verify in editor:**
+1. Run `RegattaDriveTuningTests`: all pass.
+2. Arcade ▸ Regatta with an AI Manta, Third Eye on it. It soars (~700 u/s) through most of each leg, splits its
+   triggers (Yastri pivot) only in hard turns, and threads rings without circling. Note I1–I4 times.
+3. Any other mode with an AI Manta (Redline): unchanged.
+
 ### 🔴 The Dolphin AI drifts again at the discharge's peak; Regatta AIs aim through the ring's centre (`Ys-bleeding-edge`, 2026-10-17) — NOT EDITOR-VERIFIED
 
 **What landed:**

@@ -310,6 +310,14 @@ hold — but it is a real balance change and wants a play-test before it is deci
 
 ## 2a. The drift is a momentum LOCK — and why it has to be
 
+> **Note (2026-10-17, what the prefab and code say today; the rest of this section is unchanged).**
+> `Dolphin.prefab` has `vectorFlightModel: 0` (the scalar model) and `holdSpeedWhileDrifting: 1`, and
+> `VesselTransformer.cs` has that field (around line 65) with `_driftSpeedHeld` (around line 394): the drift
+> freezes the speed it starts at. `driftThrottlePolicy: 1` (Locked) is still authored, but only the vector model
+> reads it (`ComputeNoseAcceleration`). So the vector + Locked setup below and "Correcting the record" do not
+> describe the shipped Dolphin. The Dolphin AI (`ChargeBoostAIPolicySO`, `AI/AI_BOOST.md`) is built on the scalar
+> hold. Which one is intended is Garrett's call.
+
 The Dolphin runs the **vector flight model** (`vectorFlightModel: 1`) with
 `driftThrottlePolicy: Locked`. Full model, the no-drift identity proof and the constraints it had
 to respect are in `SQUIRREL_DRIFT.md` §3–§4; this section is the Dolphin's half and the reasoning

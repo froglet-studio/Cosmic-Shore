@@ -63,5 +63,16 @@ namespace CosmicShore.Tests
             Assert.Less(lt, rt, "a hard right yaw pivots on the right trigger");
             Assert.AreEqual(0.2f, lt, 1e-4f, "hold eases off linearly past the boost band: (1 - 0.9) / (1 - 0.5)");
         }
+
+        [Test]
+        public void MantaRegattaTuning_LoadsWithThePivotBandAboveTheBoostBand()
+        {
+            // Resources/AIBoostPolicies/MantaSoarAITuning_Regatta (2026-10-17, from manta_drive_sim.py; a person's
+            // Regatta flights replace it through learn_drives_from_flights.py --write).
+            var tuning = MantaSoarAITuningSO.LoadForMode(GameModes.Regatta);
+            Assert.IsNotNull(tuning, "the Regatta Manta flies its own bands");
+            Assert.Greater(tuning.YastriStickBand, tuning.BoostStickBand, "the pivot starts past the boost band");
+            Assert.IsNull(MantaSoarAITuningSO.LoadForMode(GameModes.Rampage), "every other mode keeps the executor's bands");
+        }
     }
 }
