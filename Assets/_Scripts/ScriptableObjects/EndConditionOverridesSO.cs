@@ -95,12 +95,11 @@ namespace CosmicShore.ScriptableObjects
         /// cone takes hundreds at once.</summary>
         public const int DefaultSiroccoPrismTarget = 600;
 
-        /// <summary>Serpent Charge target used when <see cref="serpentChargePrismTarget"/> is 0 -
-        /// hostile prisms a DOMAIN must destroy, with every sniped rival pilot folded in at
-        /// <c>SerpentChargeScoringRuleSO.PilotSnipePoints</c> prisms. Above Sirocco's 600 because a
-        /// rifle round pierces EVERYTHING hostile in its cone (a stand down its length is 100+),
-        /// far under Rampage's 2000 because it fires once every 5.4-12 s.</summary>
-        public const int DefaultSerpentChargePrismTarget = 800;
+        /// <summary>Serpent Charge SNIPE target used when <see cref="serpentChargeSnipeTarget"/> is 0 -
+        /// rival pilots a DOMAIN must strip with the Sniper Shot. The Charge game scores hits on
+        /// pilots, never prisms. Eight: a rifle that fires every 5.4-12 s at a ten-unit hull through
+        /// a 1.5 deg cone lands a few a minute, so a domain of one finishes in ~3-4 minutes.</summary>
+        public const int DefaultSerpentChargeSnipeTarget = 8;
 
         /// <summary>Broadside points PER PILOT used when <see cref="broadsidePointsPerPilot"/>
         /// is 0. The mixed-fleet brawl prices a hit by its VERB (BroadsideScoringRuleSO): a round
@@ -389,11 +388,9 @@ namespace CosmicShore.ScriptableObjects
                  "mass never counts. 0 = default (600).")]
         [Min(0)] public int siroccoPrismTarget = 600;
 
-        [Tooltip("Serpent Charge: hostile prisms (Rampage's cactus forest, rival trails, fauna " +
-                 "bodies) a DOMAIN must destroy with the sniper rifle (race to N). Every rival " +
-                 "pilot a round strips counts as PilotSnipePoints prisms (SerpentChargeScoringRule). " +
-                 "0 = default (800).")]
-        [Min(0)] public int serpentChargePrismTarget = 800;
+        [Tooltip("Serpent Charge: rival PILOTS a DOMAIN must snipe to win (race to N) - a Sniper Shot " +
+                 "round that strips an opposing pilot is one snipe; prisms score nothing. 0 = default (8).")]
+        [Min(0)] public int serpentChargeSnipeTarget = 8;
 
         [Tooltip("Broadside: points PER PILOT on a domain. The number a domain actually races " +
                  "to is this x (1 + 0.6 x (teamSize - 1)) - 100/160/220/280 for a 1/2/3/4 pilot " +
@@ -439,7 +436,7 @@ namespace CosmicShore.ScriptableObjects
         [Min(0)] public int dustupPointTargetBuild = 10;
         [Min(0)] public int tapestryRoundSecondsBuild = 150;
         [Min(0)] public int siroccoPrismTargetBuild = 600;
-        [Min(0)] public int serpentChargePrismTargetBuild = 800;
+        [Min(0)] public int serpentChargeSnipeTargetBuild = 8;
         [Min(0)] public int broadsidePointsPerPilotBuild = 100;
 
         [Tooltip("When on, a build first copies the Build baseline onto the Live counts, so test values are never shipped.")]
@@ -747,13 +744,12 @@ namespace CosmicShore.ScriptableObjects
             siroccoPrismTarget > 0 ? siroccoPrismTarget : DefaultSiroccoPrismTarget;
 
         /// <summary>
-        /// Serpent Charge target ("race to N" hostile prisms destroyed, sniped pilots folded in):
-        /// the configured value when &gt; 0, otherwise <see cref="DefaultSerpentChargePrismTarget"/>.
-        /// Compared against a DOMAIN's folded score (SerpentChargeScoringRuleSO.DomainValue), so
-        /// teammates pool.
+        /// Serpent Charge snipe target ("race to N" rival pilots stripped): the configured value when
+        /// &gt; 0, otherwise <see cref="DefaultSerpentChargeSnipeTarget"/>. Compared against a DOMAIN's
+        /// summed CombatPoints (one per snipe), so teammates pool.
         /// </summary>
-        public int GetSerpentChargePrismTarget() =>
-            serpentChargePrismTarget > 0 ? serpentChargePrismTarget : DefaultSerpentChargePrismTarget;
+        public int GetSerpentChargeSnipeTarget() =>
+            serpentChargeSnipeTarget > 0 ? serpentChargeSnipeTarget : DefaultSerpentChargeSnipeTarget;
 
         /// <summary>
         /// Broadside points PER PILOT: the configured value when &gt; 0, otherwise
@@ -822,7 +818,7 @@ namespace CosmicShore.ScriptableObjects
                 GameModes.Undertow                  => undertowPointTarget > 0 ? undertowPointTarget : DefaultUndertowPointTarget,
                 GameModes.Dustup                    => GetDustupPointTarget(),
                 GameModes.Sirocco                   => GetSiroccoPrismTarget(),
-                GameModes.SerpentCharge             => GetSerpentChargePrismTarget(),
+                GameModes.SerpentCharge             => GetSerpentChargeSnipeTarget(),
                 // Tapestry is TIMED (tapestryRoundSeconds): it has no race target, so it is
                 // deliberately absent here and reads as "no target", like Bloomrush.
                 // Per PILOT, not a total - the race target scales with team size and is only known at
@@ -883,7 +879,7 @@ namespace CosmicShore.ScriptableObjects
             dustupPointTarget == dustupPointTargetBuild &&
             tapestryRoundSeconds == tapestryRoundSecondsBuild &&
             siroccoPrismTarget == siroccoPrismTargetBuild &&
-            serpentChargePrismTarget == serpentChargePrismTargetBuild &&
+            serpentChargeSnipeTarget == serpentChargeSnipeTargetBuild &&
             broadsidePointsPerPilot == broadsidePointsPerPilotBuild;
 
         /// <summary>Copy the Build baseline onto the Live counts (build → live) - used by the build auto-restore.</summary>
@@ -922,7 +918,7 @@ namespace CosmicShore.ScriptableObjects
             dustupPointTarget = dustupPointTargetBuild;
             tapestryRoundSeconds = tapestryRoundSecondsBuild;
             siroccoPrismTarget = siroccoPrismTargetBuild;
-            serpentChargePrismTarget = serpentChargePrismTargetBuild;
+            serpentChargeSnipeTarget = serpentChargeSnipeTargetBuild;
             broadsidePointsPerPilot = broadsidePointsPerPilotBuild;
         }
 
@@ -962,7 +958,7 @@ namespace CosmicShore.ScriptableObjects
             dustupPointTargetBuild = dustupPointTarget;
             tapestryRoundSecondsBuild = tapestryRoundSeconds;
             siroccoPrismTargetBuild = siroccoPrismTarget;
-            serpentChargePrismTargetBuild = serpentChargePrismTarget;
+            serpentChargeSnipeTargetBuild = serpentChargeSnipeTarget;
             broadsidePointsPerPilotBuild = broadsidePointsPerPilot;
         }
     }

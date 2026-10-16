@@ -35,7 +35,7 @@ MonoBehaviour:
   dustupPointTarget: 10
   tapestryRoundSeconds: 150
   siroccoPrismTarget: 600
-  serpentChargePrismTarget: 800
+  serpentChargeSnipeTarget: 8
   broadsidePointsPerPilot: 100
   salvoPrismTarget: 700
   switchbackGateTarget: 20
@@ -74,7 +74,7 @@ MonoBehaviour:
   dustupPointTargetBuild: 10
   tapestryRoundSecondsBuild: 150
   siroccoPrismTargetBuild: 600
-  serpentChargePrismTargetBuild: 800
+  serpentChargeSnipeTargetBuild: 8
   broadsidePointsPerPilotBuild: 100
   salvoPrismTargetBuild: 700
   switchbackGateTargetBuild: 20

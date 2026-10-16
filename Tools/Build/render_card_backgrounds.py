@@ -1106,21 +1106,23 @@ def accents(s, layers, stage, cam, pal, R, card_path):
         glow(v_add(top, [0, -span * 0.3, 0]), span * 0.05, JADE, 0.9, 0.35)
         stage["vessels"] = vessels([(JADE, 0.25, 10, 30, 70), (RUBY, 0.3, -10, 200, 70)])
     elif s == "SerpentCharge":
-        # The SNIPER ROUND: one long, thin tracer from a scoped Serpent straight down the length of
-        # a stand, the prisms it pierced bursting along the line, a flare where it stops, and the
+        # The SNIPE: one long, thin tracer from a scoped Jade Serpent, threaded through the forest
+        # (cover, not the score) onto a RUBY pilot - the one thing that scores. The hit is a Jade
+        # flare on a Ruby hull with the stripped element motes shedding off it in Ruby, plus the
         # Charge crystals that buy the next round sooner. The cone is a glyph (wider than the
         # rifle's 1.5 deg) - at card size the true one is a hairline.
         tgt = jitter(0.25)
         d = v_norm([-0.55, -0.12, 0.83])
         apex = v_sub(tgt, v_mul(d, span * 0.6))
-        far = v_add(tgt, v_mul(d, span * 0.6))
+        far = v_add(tgt, v_mul(d, span * 0.35))
         cone(apex, far, 1.8, JADE, 0.7, 1.0)
         glow(apex, span * 0.025, JADE, 1.4, 0.7)   # the muzzle
-        for k in range(36):
-            f = 0.35 + 0.65 * (k / 35)
-            p = v_add(v_add(apex, v_mul(v_sub(far, apex), f)), v_mul(rng.unit(), span * 0.025))
-            glow(p, span * rng.range(0.008, 0.016), JADE, 1.5, 0.75)
-        glow(far, span * 0.06, JADE, 1.6, 0.6)
+        glow(far, span * 0.035, RUBY, 1.3, 0.85)   # the rival pilot's hull
+        glow(far, span * 0.075, JADE, 1.6, 0.5)    # the strike
+        for k in range(28):                         # the stripped element, shed in the victim's colour
+            f = rng.u()
+            p = v_add(v_add(far, v_mul(d, span * 0.18 * f)), v_mul(rng.unit(), span * 0.07 * f))
+            glow(p, span * rng.range(0.006, 0.012), RUBY, 1.4, 0.7)
         for k in range(4):
             crystal(jitter(0.85), span * 0.03, (1.4, 1.05, 0.25))
         stage["vessels"] = vessels([(JADE, 0.3, 6, 140, 40), (RUBY, 0.32, -8, 300, 60)])

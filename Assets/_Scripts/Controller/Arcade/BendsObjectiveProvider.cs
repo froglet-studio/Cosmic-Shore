@@ -54,6 +54,10 @@ namespace CosmicShore.Gameplay
                 var vessel = player.Vessel;
                 if (vessel == null) continue;
 
+                // A cloaked pilot is hidden from everyone, so no arrow may point at them - the
+                // same predicate the AIs use (CloakSeedWallActionExecutor.IsCloaked).
+                if (CloakSeedWallActionExecutor.IsCloaked(vessel.VesselStatus)) continue;
+
                 var t = vessel.Transform;
                 if (t == null) continue;
 

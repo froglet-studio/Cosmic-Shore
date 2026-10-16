@@ -7,51 +7,43 @@ using UnityEngine;
 namespace CosmicShore.Gameplay
 {
     /// <summary>
-    /// Serpent Charge scoring - Rampage's rule on <see cref="ScoringMetric.PrismsDestroyed"/>
-    /// (first DOMAIN to <see cref="GameDataSO.PrismTargetCount"/>, golf-timed, team-major results)
-    /// with ONE fold on top: every rival PILOT a sniper round strips is worth
-    /// <see cref="PilotSnipePoints"/> prisms.
+    /// Serpent Charge scoring: <b>SNIPES</b>. A CHARGE game is about hitting other pilots with your
+    /// abilities (the Space games are the ones about destroying prisms - Garrett, 2026-10-16), so
+    /// the only thing that scores here is a Sniper Shot that strips a rival pilot. First DOMAIN to
+    /// <see cref="GameDataSO.CombatPointTargetCount"/> wins, golf-timed - the Dustup shape
+    /// (<see cref="DustupScoringRuleSO"/>), on <see cref="ScoringMetric.CombatPoints"/>.
     ///
-    /// <para><b>Why a fold and not a new metric.</b> Both halves are already counted platform-wide.
-    /// A round's prism kills reach <c>HostilePrismsDestroyed</c> through <c>StatsManager</c> like
-    /// every other destruction mode, and the round's pilot strip is already a landed combat hit of
-    /// class <see cref="CombatHitClass.Debuff"/> (<c>SniperShotAction.asset</c> authors
-    /// <c>hitClass: 2</c>), which <c>CombatHitScoring.Credit</c> pays into
-    /// <c>IRoundStats.CombatPoints</c> at whatever <see cref="PointsForCombatHit"/> says. So this
-    /// rule PRICES the strip and folds CombatPoints into <see cref="DomainValue"/> - the Undertow
-    /// shape (two stats, one score). The end condition, the remaining count, the winner, the HUD's
-    /// domain boxes and the comeback all read DomainValue, so they cannot disagree.</para>
+    /// <para><b>Nothing new is counted.</b> The round's pilot strip was already a landed combat hit
+    /// of class <see cref="CombatHitClass.Debuff"/> (<c>SniperShotAction.asset</c> authors
+    /// <c>hitClass: 2</c>), credited platform-wide by <c>CombatHitScoring.Credit</c> into
+    /// <c>DebuffHitsLanded</c> (the raw count) and <c>CombatPoints</c> (at this rule's price). This
+    /// rule prices it and every other class at zero. Prisms the round destroys are still destroyed
+    /// and still counted by <c>StatsManager</c>, and they pay nothing here.</para>
     ///
-    /// <para><b>Why a pilot is worth a stand.</b> A pilot is a hull ten units across at the end of
-    /// a 1.5° cone, moving, on a rifle that fires once every 5.4-12 s - hitting one is the hardest
-    /// shot in the mode, and the round that does it also takes everything hostile in front of the
-    /// pilot. Priced at roughly one good line through a cactus stand, so a duel can swing a match
-    /// without the forest ever becoming irrelevant. The same-victim window is the weapon's own
-    /// (<c>sameVictimCooldownSeconds</c>, 0.5 s), far under the cooldown, so every connecting round
-    /// pays.</para>
+    /// <para>The same-victim window is the weapon's own (<c>sameVictimCooldownSeconds</c>, 0.5 s),
+    /// far under the rifle's 5.4-12 s cooldown, so every round that connects pays.</para>
     /// </summary>
     [CreateAssetMenu(menuName = "ScriptableObjects/Scoring Rules/Serpent Charge", fileName = "SerpentChargeScoringRule")]
-    public class SerpentChargeScoringRuleSO : RampageScoringRuleSO
+    public class SerpentChargeScoringRuleSO : ScoringRuleSO
     {
         [Header("Point values")]
-        [Tooltip("Prisms one sniped rival PILOT is worth. Paid into CombatPoints by " +
-                 "CombatHitScoring.Credit for every round that strips an opposing pilot (the " +
-                 "sniper's hit class is Debuff) and folded into the domain score beside " +
-                 "HostilePrismsDestroyed. Authored by Tools/Build/author_serpent_charge_assets.py.")]
-        [Min(0)] [SerializeField] int pilotSnipePoints = 60;
+        [Tooltip("Points for one SNIPE - a Sniper Shot that strips an opposing pilot (the sniper's hit " +
+                 "class is Debuff). Paid into CombatPoints by CombatHitScoring.Credit. Authored by " +
+                 "Tools/Build/author_serpent_charge_assets.py.")]
+        [Min(0)] [SerializeField] int snipePoints = 1;
 
         [Tooltip("Points for any OTHER combat-hit class. Zero on purpose: the Serpent fires nothing " +
                  "but the rifle, and a rule that paid for bullets or rockets would hide a " +
                  "mis-authored vessel roster behind a working scoreboard.")]
         [Min(0)] [SerializeField] int otherHitPoints = 0;
 
-        public int PilotSnipePoints => pilotSnipePoints;
+        public int SnipePoints => snipePoints;
 
         // Priced explicitly per class (CombatHitClass's own warning: an `x == A ? a : b` rule
         // silently prices every future member as b).
         public override int PointsForCombatHit(CombatHitClass hitClass) => hitClass switch
         {
-            CombatHitClass.Debuff => pilotSnipePoints,
+            CombatHitClass.Debuff => snipePoints,
             CombatHitClass.Bullet => otherHitPoints,
             CombatHitClass.MissileDirect => otherHitPoints,
             CombatHitClass.MissileBlast => otherHitPoints,
@@ -60,21 +52,14 @@ namespace CosmicShore.Gameplay
             _ => 0,
         };
 
-        /// <summary>Hostile prisms destroyed plus sniped pilots (already weighted, in CombatPoints).</summary>
-        public override int DomainValue(GameDataSO gameData, Domains domain) =>
-            ScoringMetrics.SumByDomain(gameData, metric, domain)
-            + ScoringMetrics.SumByDomain(gameData, ScoringMetric.CombatPoints, domain);
+        protected override int TargetCount(GameDataSO gameData) => gameData.CombatPointTargetCount;
 
-        /// <summary>
-        /// Rampage's end condition reads the raw metric sum; this one must read the FOLD, or a
-        /// domain whose snipes carried it past the target would be shown 0 remaining and never
-        /// win. Same never-end-on-zero guard.
-        /// </summary>
         public override bool IsObjectiveReached(GameDataSO gameData, out Domains winner)
         {
             int target = TargetCount(gameData);
             if (target <= 0)
             {
+                // Target not resolved yet (monitor hasn't started / synced) - never end on 0.
                 winner = Domains.Blue;
                 return false;
             }
@@ -93,13 +78,25 @@ namespace CosmicShore.Gameplay
             return false;
         }
 
+        public override void AssignScores(GameDataSO gameData, Domains winner, float finishTime)
+        {
+            // Same sentinel scheme as every time-based golf mode (GolfScoreSentinels is the single
+            // source of truth): winners carry their finish time, losers their team's snipes left.
+            foreach (var stats in gameData.RoundStatsList)
+            {
+                if (stats == null) continue;
+                stats.Score = stats.Domain == winner
+                    ? finishTime
+                    : GolfScoreSentinels.EncodeSkimRaceLoserScore(Remaining(gameData, stats.Domain));
+            }
+        }
+
         public override List<ScoreResult> BuildResults(GameDataSO gameData)
         {
-            // Rampage's ordering (team-major golf, then the pilot's own contribution, then name so
-            // every peer builds the same list), with the secondary line naming both halves.
             var ordered = gameData.RoundStatsList
+                .Where(s => s != null)
                 .OrderBy(s => s.Score)
-                .ThenByDescending(s => s.HostilePrismsDestroyed + s.CombatPoints)
+                .ThenByDescending(s => s.CombatPoints)
                 .ThenBy(s => s.Name, System.StringComparer.Ordinal);
 
             var rows = ordered.Select(s => new ScoreResultBuilder.Row(
@@ -108,8 +105,8 @@ namespace CosmicShore.Gameplay
                 s.Score,
                 GolfScoreSentinels.IsFinishTime(s.Score)
                     ? ScoreResultBuilder.FormatTime(s.Score)
-                    : $"{Remaining(gameData, s.Domain)} Prisms Left",
-                $"{LiveMetric(s)} Prisms, {s.DebuffHitsLanded} Snipes")).ToList();
+                    : $"{Remaining(gameData, s.Domain)} Snipes Left",
+                $"{s.DebuffHitsLanded} Snipes")).ToList();
 
             return ScoreResultBuilder.BuildRanked(rows);
         }
@@ -117,6 +114,6 @@ namespace CosmicShore.Gameplay
         public override ScoreReveal BuildReveal(GameDataSO gameData, IRoundStats localStats, bool didWin) =>
             didWin
                 ? new ScoreReveal("VICTORY", "SERPENT CHARGE TIME", (int)localStats.Score, true)
-                : new ScoreReveal("DEFEAT", "PRISMS LEFT", Remaining(gameData, localStats.Domain), false);
+                : new ScoreReveal("DEFEAT", "SNIPES LEFT", Remaining(gameData, localStats.Domain), false);
     }
 }

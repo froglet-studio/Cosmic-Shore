@@ -513,10 +513,10 @@ namespace CosmicShore.UI
                     // steer to. NOT Rampage's crystal: here the crystal is a pickup, not the weapon.
                     return CreateProviderComponent<HostileMassObjectiveProvider>("ObjectiveProvider_Sirocco");
                 case GameModes.SerpentCharge:
-                    // Same provider, same forest: the densest standing hostile stand is the
-                    // fattest line a round can be put down - and the region Serpent Charge's AI
-                    // samples its firing lines from, so the arrow and the bots agree.
-                    return CreateProviderComponent<HostileMassObjectiveProvider>("ObjectiveProvider_SerpentCharge");
+                    // The Bends' provider: the nearest pilot this player may snipe. Serpent Charge
+                    // scores pilots, so the arrow names one - and it skips a cloaked pilot, exactly
+                    // as the marksman AI does, so the arrow never gives a cloak away.
+                    return CreateProviderComponent<BendsObjectiveProvider>("ObjectiveProvider_SerpentCharge");
                 case GameModes.WildlifeLiberation:
                     // The nearest living creature, any colour - wildlife is quarry whatever it
                     // wears, and fauna are client-local, so this peer's registry IS what the

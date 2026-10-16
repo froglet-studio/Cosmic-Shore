@@ -11,17 +11,15 @@ using Object = UnityEngine.Object;
 namespace CosmicShore.Tests
 {
     /// <summary>
-    /// <see cref="SerpentChargeScoringRuleSO"/> folds two platform stats into one domain score:
-    /// hostile prisms destroyed, plus every sniped rival pilot priced at
-    /// <see cref="SerpentChargeScoringRuleSO.PilotSnipePoints"/> (paid into CombatPoints by
-    /// <see cref="CombatHitScoring.Credit"/>, because the sniper's hit class is Debuff). The trap
-    /// these hold: Rampage's <c>IsObjectiveReached</c> reads the RAW metric sum, so a rule that
-    /// inherited it would show a domain 0 prisms left and never end the race.
+    /// <see cref="SerpentChargeScoringRuleSO"/> scores SNIPES and nothing else: a Charge game is about
+    /// hitting other pilots (Garrett, 2026-10-16). A sniped pilot is the sniper's Debuff-class hit,
+    /// paid into CombatPoints by <see cref="CombatHitScoring.Credit"/>; prisms the round destroys
+    /// are still counted platform-wide and must pay nothing here.
     /// </summary>
     [TestFixture]
     public class SerpentChargeScoringRuleTests
     {
-        const int Snipe = 60;
+        const int Snipe = 1;
 
         readonly List<Object> _owned = new();
         T Track<T>(T o) where T : Object { _owned.Add(o); return o; }
@@ -38,8 +36,8 @@ namespace CosmicShore.Tests
             var rule = Track(ScriptableObject.CreateInstance<SerpentChargeScoringRuleSO>());
             const System.Reflection.BindingFlags flags =
                 System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic;
-            typeof(ScoringRuleSO).GetField("metric", flags).SetValue(rule, ScoringMetric.PrismsDestroyed);
-            typeof(SerpentChargeScoringRuleSO).GetField("pilotSnipePoints", flags).SetValue(rule, Snipe);
+            typeof(ScoringRuleSO).GetField("metric", flags).SetValue(rule, ScoringMetric.CombatPoints);
+            typeof(SerpentChargeScoringRuleSO).GetField("snipePoints", flags).SetValue(rule, Snipe);
             return rule;
         }
 
@@ -47,13 +45,13 @@ namespace CosmicShore.Tests
         {
             var gameData = Track(ScriptableObject.CreateInstance<GameDataSO>());
             gameData.RequestedDomainCount = 2;
-            gameData.PrismTargetCount = target;
+            gameData.CombatPointTargetCount = target;
             foreach (var p in pilots) gameData.RoundStatsList.Add(p);
             return gameData;
         }
 
         [Test]
-        public void ASnipe_IsPricedAtPilotSnipePoints_AndNothingElsePays()
+        public void ASnipe_IsPricedAtSnipePoints_AndNothingElsePays()
         {
             var rule = MakeRule();
             Assert.AreEqual(Snipe, rule.PointsForCombatHit(CombatHitClass.Debuff));
@@ -73,28 +71,29 @@ namespace CosmicShore.Tests
         }
 
         [Test]
-        public void DomainValue_FoldsPrismsAndSnipes_AcrossTeammates()
+        public void PrismsPayNothing_OnlySnipesScore()
         {
             var rule = MakeRule();
-            var match = MakeMatch(800,
-                new FakeStats { Name = "A", Domain = Domains.Jade, HostilePrismsDestroyed = 300, CombatPoints = Snipe },
-                new FakeStats { Name = "B", Domain = Domains.Jade, HostilePrismsDestroyed = 100 },
-                new FakeStats { Name = "C", Domain = Domains.Ruby, HostilePrismsDestroyed = 500 });
-            Assert.AreEqual(460, rule.DomainValue(match, Domains.Jade));
-            Assert.AreEqual(500, rule.DomainValue(match, Domains.Ruby));
-            Assert.AreEqual(340, rule.Remaining(match, Domains.Jade));
+            var match = MakeMatch(8,
+                new FakeStats { Name = "A", Domain = Domains.Jade, HostilePrismsDestroyed = 5000, CombatPoints = 2 },
+                new FakeStats { Name = "B", Domain = Domains.Jade, CombatPoints = 1 },
+                new FakeStats { Name = "C", Domain = Domains.Ruby, HostilePrismsDestroyed = 9000 });
+            Assert.AreEqual(3, rule.DomainValue(match, Domains.Jade));
+            Assert.AreEqual(0, rule.DomainValue(match, Domains.Ruby),
+                "a forest destroyed is not a pilot hit - the Charge game scores pilots only");
+            Assert.AreEqual(5, rule.Remaining(match, Domains.Jade));
         }
 
         [Test]
-        public void TheRaceEnds_OnTheFold_NotTheRawPrismSum()
+        public void TheRaceEnds_WhenADomainReachesTheSnipeTarget()
         {
             var rule = MakeRule();
-            // 760 prisms is short of 800; one snipe carries it over.
-            var match = MakeMatch(800,
-                new FakeStats { Name = "A", Domain = Domains.Jade, HostilePrismsDestroyed = 760, CombatPoints = Snipe },
-                new FakeStats { Name = "C", Domain = Domains.Ruby, HostilePrismsDestroyed = 790 });
+            var match = MakeMatch(8,
+                new FakeStats { Name = "A", Domain = Domains.Jade, CombatPoints = 5 },
+                new FakeStats { Name = "B", Domain = Domains.Jade, CombatPoints = 3 },
+                new FakeStats { Name = "C", Domain = Domains.Ruby, CombatPoints = 7 });
             Assert.IsTrue(rule.IsObjectiveReached(match, out var winner));
-            Assert.AreEqual(Domains.Jade, winner);
+            Assert.AreEqual(Domains.Jade, winner, "teammates pool their snipes");
             Assert.AreEqual(Domains.Jade, rule.ResolveWinner(match));
         }
 
@@ -102,7 +101,7 @@ namespace CosmicShore.Tests
         public void AnUnresolvedTarget_NeverEndsTheRace()
         {
             var rule = MakeRule();
-            var match = MakeMatch(0, new FakeStats { Name = "A", Domain = Domains.Jade, HostilePrismsDestroyed = 5000 });
+            var match = MakeMatch(0, new FakeStats { Name = "A", Domain = Domains.Jade, CombatPoints = 50 });
             Assert.IsFalse(rule.IsObjectiveReached(match, out var winner));
             Assert.AreEqual(Domains.Blue, winner);
         }

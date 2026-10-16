@@ -24,18 +24,8 @@ MonoBehaviour:
     resetOnSituation: 0
     idleSeconds: 60
     repeatWhileIdle: 1
-  - situation: 83
-    messageTemplate: '<b>{0}</b> has shot down {1} prisms'
-    tintWithDomainColor: 1
-    useDomainColoredNames: 0
-    alpha: 1
-    everyN: 200
-    isIdleHint: 0
-    resetOnSituation: 0
-    idleSeconds: 60
-    repeatWhileIdle: 1
   - situation: 128
-    messageTemplate: '{0} is a quarter of the way to {2}'
+    messageTemplate: '{0} has landed a quarter of {2} snipes'
     tintWithDomainColor: 1
     useDomainColoredNames: 0
     alpha: 1
@@ -45,7 +35,7 @@ MonoBehaviour:
     idleSeconds: 60
     repeatWhileIdle: 1
   - situation: 129
-    messageTemplate: '{0} is halfway to {2} - {1} down'
+    messageTemplate: '{0} is halfway - {1} of {2} snipes'
     tintWithDomainColor: 1
     useDomainColoredNames: 0
     alpha: 1
@@ -55,7 +45,7 @@ MonoBehaviour:
     idleSeconds: 60
     repeatWhileIdle: 1
   - situation: 130
-    messageTemplate: '{0} takes the lead - {1}/{2}'
+    messageTemplate: '{0} takes the lead - {1}/{2} snipes'
     tintWithDomainColor: 1
     useDomainColoredNames: 0
     alpha: 1
@@ -65,7 +55,7 @@ MonoBehaviour:
     idleSeconds: 60
     repeatWhileIdle: 1
   - situation: 131
-    messageTemplate: '{0} is closing in - {1}/{2}'
+    messageTemplate: '{0} is one shot from winning - {1}/{2}'
     tintWithDomainColor: 1
     useDomainColoredNames: 0
     alpha: 1
@@ -75,7 +65,7 @@ MonoBehaviour:
     idleSeconds: 60
     repeatWhileIdle: 1
   - situation: 137
-    messageTemplate: 'Hold the left trigger to scope, line the reticle down a whole stand, fire with the right'
+    messageTemplate: 'Hold the left trigger to scope, put the reticle on a rival pilot, fire with the right'
     tintWithDomainColor: 0
     useDomainColoredNames: 1
     alpha: 1

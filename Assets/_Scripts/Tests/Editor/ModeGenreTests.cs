@@ -91,7 +91,7 @@ namespace CosmicShore.Tests
         [TestCase(ScoringMetric.VolumeDestroyed,   Element.Space)]  // Bloomrush
         [TestCase(ScoringMetric.LifeformsKilled,   Element.Space)]  // Wildlife Liberation
         [TestCase(ScoringMetric.Jousts,            Element.Charge)] // Joust
-        [TestCase(ScoringMetric.CombatPoints,      Element.Charge)] // Dog Fight, The Bends, Undertow, Broadside
+        [TestCase(ScoringMetric.CombatPoints,      Element.Charge)] // Dog Fight, The Bends, Undertow, Broadside, Dustup, Serpent Charge
         public void Metric_ResolvesToItsShippedGenre(ScoringMetric metric, Element expected)
         {
             Assert.IsTrue(ModeGenre.TryElementForMetric(metric, out var element),
@@ -111,7 +111,7 @@ namespace CosmicShore.Tests
                 "Metric_ResolvesToItsShippedGenre's TestCase list.");
         }
 
-        // The MODE table's own rows - the four cards whose genre their metric gets wrong, and
+        // The MODE table's own rows - the three cards whose genre their metric gets wrong, and
         // which are therefore the entire reason ModeGenre is keyed on the mode at all. Each is
         // asked with the metric its shipped preview definition carries, so the test fails if a
         // row is deleted and the card silently falls back.
@@ -119,7 +119,6 @@ namespace CosmicShore.Tests
         [TestCase(GameModes.Scurry,    ScoringMetric.Crystals, Element.Mass,  Element.None)]
         [TestCase(GameModes.Tollway,   ScoringMetric.Goals,    Element.Mass,  Element.None)]
         [TestCase(GameModes.BroodRush, ScoringMetric.Goals,    Element.Mass,  Element.Space)]
-        [TestCase(GameModes.SerpentCharge, ScoringMetric.PrismsDestroyed, Element.Charge, Element.Space)]
         public void Mode_OverridesItsMetricsGenre(GameModes mode, ScoringMetric metric,
                                                   Element expectedPrimary, Element expectedSecondary)
         {
@@ -164,8 +163,7 @@ namespace CosmicShore.Tests
                 Assert.That(mode,
                     Is.EqualTo(GameModes.Scurry)
                       .Or.EqualTo(GameModes.Tollway)
-                      .Or.EqualTo(GameModes.BroodRush)
-                      .Or.EqualTo(GameModes.SerpentCharge),
+                      .Or.EqualTo(GameModes.BroodRush),
                     $"GameModes.{mode} answers with no metric, so it has a row in ModeGenre that " +
                     "is not in this list. Add it here and to Mode_OverridesItsMetricsGenre, so a " +
                     "shipped card's genre is pinned rather than merely present.");

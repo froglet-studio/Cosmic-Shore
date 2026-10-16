@@ -65,6 +65,58 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Serpent Charge redesigned as a sniper DUEL (snipes on pilots score, prisms do not); a cloak hides the whole vessel, tail included (`cece/vibrant-archimedes-n3xn3x`, 2026-10-16) — NOT EDITOR-VERIFIED
+
+**What landed:**
+- **A Charge game scores pilot hits, not prisms** (Garrett: "Charge game should about hitting
+  other players with you abilities. space games are about destroy prisms"). `SerpentChargeScoringRuleSO`
+  is now a plain `ScoringRuleSO` on `ScoringMetric.CombatPoints`. A snipe (the rifle's Debuff-class
+  pilot strip) is worth 1, and every other class 0. `SerpentChargeSnipeTurnMonitor : CombatPointTurnMonitorBase`
+  replaced `SerpentChargePrismTurnMonitor`, and the target is `serpentChargeSnipeTarget` = **8**.
+  The retired `serpentChargePrismTarget` keys are removed from `EndConditionOverrides.asset`.
+- **The arena is Rampage Cell Config 4 alone** (the measured 58.7 FPS rung), not the four-config
+  intensity ladder. Intensity now changes only the AI.
+- **The AI hunts pilots.** `SerpentMarksmanAI` no longer searches the forest for lines. It steers at
+  the visible rival it can bring to bear most cheaply and fires only when a rival is inside the cone
+  and inside the round's reach. Its one physics query runs only after a cheap in-cone test.
+- **The cloak hides every renderer under the vessel root from observers**, the VesselTail (the
+  model's tail, not the jets) included. Before, only the hull renderer was turned off.
+- The arrow is `BendsObjectiveProvider` (nearest visible rival), which now skips cloaked pilots in
+  every mode that uses it. The card art is re-rendered (a tracer striking a Ruby pilot).
+
+Headless proof: `author_serpent_charge_assets.py --check` with three negative controls;
+`unity_refcompile` player (0 errors) and editor (0 in changed files; 3 pre-existing in upstream UI
+files); the standing gates. `/verify-unity` was NOT available (no editor, no `unity` binary).
+
+**Verify in editor - PROFILE FIRST:**
+
+1. **Frame rate, measured, not judged by eye.** Check the editor setup first
+   (`Docs/PERFORMANCE_OPTIMIZATION.md` §4.2a: Code Optimization = **Release**, Deep Profile off, no
+   visible Scene view, Third Eye closed). Then play Serpent Charge vs AI at intensity 4 **past the
+   90 s auto-capture** and press **Send to Claude** when Unity asks. That one file answers whether
+   the 2 FPS report is the editor's setup, the forest's planting window, or something else.
+2. **The tail disappears.** Solo vs AI: when an AI Serpent cloaks, its hull, its **tail**, its jets
+   and its trail must all vanish. At the reveal they come back, with no streak drawn from where it
+   cloaked to where it reappears. Your own cloak must still show you your own hull (local viewer).
+3. **Snipes score, prisms do not.** Snipe an AI: the toast "… sniped a rival pilot!" fires, the
+   domain box goes up by **1**, and the results row reads `K Snipes`. Firing into the forest
+   destroys prisms and scores **0**.
+4. **The AI hunts and hits.** At intensity 4 a bot should turn onto you, close to about 300-700 u,
+   and fire when its nose is on you. If it never fires, check `SerpentMarksmanAI.EnsureScoped` (the
+   scope latch). At intensity 1 it should miss most of its shots.
+5. **The match ends at 8** and the golf time is recorded for the winner.
+
+**First-pass tuning (re-run the generator after changing any):**
+
+| Knob | Value | Where it lives |
+|---|---|---|
+| Snipe target | **8** | `SNIPE_TARGET` (+ `EndConditionOverridesSO.DefaultSerpentChargeSnipeTarget`) |
+| Comeback | **0.6** | `COMEBACK_RATE` |
+| AI aim error at I1..I4 | **3.0 / 2.0 / 1.2 / 0.5°** | `AI_LADDERS` (+ the settings SO's initializers) |
+| AI reaction at I1..I4 | **1.0 / 0.6 / 0.3 / 0.12 s** | `AI_LADDERS` |
+
+---
+
 ### 🔴 PERFORMANCE: the Rampage forest cut to 1.3x at intensity 1 (was 5x, ran at 2 FPS); Serpent Charge renumbered 66 -> 67 (`cece/vibrant-archimedes-n3xn3x`, 2026-10-13) — NOT EDITOR-VERIFIED
 
 **What landed:**
@@ -127,6 +179,10 @@ The change compiles clean against real Unity references (player + editor, with a
 ---
 
 ### 🔴 Serpent Charge (`GameModes.SerpentCharge = 67`) — the Serpent's sniper race, with a marksman AI (`cece/vibrant-archimedes-n3xn3x`, 2026-10-13) — NOT EDITOR-VERIFIED
+
+> **Superseded on 2026-10-16** by the sniper-duel redesign above: the prism target, the 60-point
+> pilot price, the line-scoring marksman and the four-config arena below no longer exist. Steps 1, 2
+> and 5 still apply.
 
 **What landed:** a Serpent-only arcade card over Rampage's cactus forest
 (`_Scripts/Controller/Arcade/SERPENTCHARGE.md`), with five new scripts under `Arcade/SerpentCharge/`

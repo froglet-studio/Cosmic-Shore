@@ -187,8 +187,8 @@ namespace CosmicShore.Data
         SalvoWingReload = 136,
 
         // Serpent Charge. The hint takes no args: hold the scope (left trigger), put the reticle
-        // down the LENGTH of a stand, fire (right trigger). Posted by the toast system's idle
-        // timer, not by the controller.
+        // on a rival pilot, fire (right trigger). Posted by the toast system's idle timer, not by
+        // the controller.
         SerpentChargeScopeHint = 137,
 
         // END-OF-GAME LOBBY. Shared across every multiplayer mode, so 100+ rather than crowding

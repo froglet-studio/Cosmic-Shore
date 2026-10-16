@@ -11,18 +11,18 @@
   "Bends": {
    "cell": "Rampage Cell Config 2",
    "environment": null,
-   "prisms": 4480,
+   "prisms": 1384,
    "tier": "MODEL",
    "track": null,
-   "triangles": 58112
+   "triangles": 20960
   },
   "Bloomrush": {
    "cell": "Rampage Cell Config 2",
    "environment": null,
-   "prisms": 4474,
+   "prisms": 1400,
    "tier": "MODEL",
    "track": null,
-   "triangles": 81168
+   "triangles": 44280
   },
   "Breakwater": {
    "cell": "Breakwater Cell Config 2",
@@ -128,10 +128,10 @@
   "Rampage": {
    "cell": "Rampage Cell Config 2",
    "environment": null,
-   "prisms": 4486,
+   "prisms": 1402,
    "tier": "MODEL",
    "track": null,
-   "triangles": 58208
+   "triangles": 21200
   },
   "Redline": {
    "cell": "Skim Race Cell Config",
@@ -173,13 +173,21 @@
    "track": "SpawnableConcetricSpheres",
    "triangles": 332032
   },
+  "SerpentCharge": {
+   "cell": "Rampage Cell Config 4",
+   "environment": null,
+   "prisms": 1232,
+   "tier": "MODEL",
+   "track": null,
+   "triangles": 146788
+  },
   "Sirocco": {
    "cell": "Rampage Cell Config 2",
    "environment": null,
-   "prisms": 4478,
+   "prisms": 1380,
    "tier": "MODEL",
    "track": null,
-   "triangles": 242844
+   "triangles": 205668
   },
   "Skein": {
    "cell": "Skein Cell Config 2",
@@ -283,5 +291,5 @@
   768,
   510
  ],
- "source_hash": "120f55204a2702b004e73660e3078c248ae9de5c4e8f101bdca900b71e0094a7"
+ "source_hash": "e857d7d56865ac3133ece9ec0ab1c84382b2cb6daf3af87b35695fc9391bdbdf"
 }

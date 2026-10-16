@@ -2,19 +2,23 @@
 """
 Authors every serialized asset the Serpent Charge game mode needs (GameModes.SerpentCharge = 67).
 
-Serpent Charge is the Serpent's CHARGE game - a sniper race through Rampage's cactus forest. On the
-Serpent, Charge is the Sniper Shot's RECOVERY (12 s at rest -> 5.4 s at Charge 10); the round is a
-1.5 deg, 3,000 u hitscan cone that destroys everything hostile it contains and strips any rival
-pilot inside its reach. First DOMAIN to the target wins on ScoringMetric.PrismsDestroyed with every
-sniped pilot folded in at PILOT_SNIPE_POINTS (SerpentChargeScoringRuleSO). The arena is seeded
-with waves of CHARGE crystals, and the AI is a marksman (SerpentMarksmanAI) whose difficulty is a
-per-intensity ladder. See Assets/_Scripts/Controller/Arcade/SERPENTCHARGE.md.
+Serpent Charge is the Serpent's CHARGE game - a sniper DUEL. A Charge game is about hitting other
+pilots with your abilities (the Space games are the ones about destroying prisms - Garrett,
+2026-10-16), so the only thing that scores is a SNIPE: a Sniper Shot (1.5 deg, 3,000 u hitscan
+cone) that strips a rival pilot - a Debuff-class combat hit, credited into CombatPoints at
+SNIPE_POINTS (SerpentChargeScoringRuleSO). First DOMAIN to SNIPE_TARGET wins, golf-timed (the
+Dustup shape, ScoringMetric.CombatPoints). On the Serpent, Charge is the rifle's RECOVERY (12 s at
+rest -> 5.4 s at Charge 10), and the arena is seeded with waves of CHARGE crystals. The AI is a
+pilot hunter (SerpentMarksmanAI) whose difficulty is a per-intensity ladder. See
+Assets/_Scripts/Controller/Arcade/SERPENTCHARGE.md.
 
-THE ARENA IS RAMPAGE'S, referenced read-only - the four cactus-forest configs The Bends, Bloomrush
-and Sirocco reference. THE SCENE is a clone of MinigameSirocco.unity (Rampage's forest, Rampage's
-spawn ring, a controller block of settings / rule / arenaCell - the field names this controller
-declares), with the identity swapped and the four AI hulls Butterfly(13) -> Serpent(7). Once the
-scene is committed the clone STANDS DOWN (arcade_mode_lib.committed_scene).
+THE ARENA IS RAMPAGE'S, referenced read-only - ONE config, Rampage Cell Config 4 (the forest is
+COVER, not the score, and config 4 is the rung measured at 58.7 FPS in a build). THE SCENE is a
+clone of MinigameSirocco.unity (Rampage's spawn ring, a controller block of settings / rule /
+arenaCell - the field names this controller declares), with the identity swapped, the four AI
+hulls Butterfly(13) -> Serpent(7) and the cell narrowed to config 4. Once the scene is committed
+the clone STANDS DOWN (arcade_mode_lib.committed_scene); the snipe redesign's two scene edits (the
+turn monitor and the cell block) are applied to the committed scene as an idempotent PATCH.
 
 Idempotent and deterministic (arcade_mode_lib): re-running produces byte-identical output.
 
@@ -26,7 +30,6 @@ import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import arcade_mode_lib as lib              # noqa: E402
-import rampage_intensity as rampage        # noqa: E402
 
 MODE_ID = 67
 g = lib.Generator(MODE_ID, "SerpentCharge")
@@ -37,7 +40,7 @@ SCRIPT_PATHS = {
     "SerpentChargeSettingsSO":       "Assets/_Scripts/Controller/Arcade/SerpentCharge/SerpentChargeSettingsSO.cs",
     "SerpentChargeScoringRuleSO":    "Assets/_Scripts/Controller/Arcade/SerpentCharge/SerpentChargeScoringRuleSO.cs",
     "SerpentMarksmanAI":             "Assets/_Scripts/Controller/Arcade/SerpentCharge/SerpentMarksmanAI.cs",
-    "SerpentChargePrismTurnMonitor": "Assets/_Scripts/Controller/Arcade/TurnMonitors/SerpentChargePrismTurnMonitor.cs",
+    "SerpentChargeSnipeTurnMonitor": "Assets/_Scripts/Controller/Arcade/TurnMonitors/SerpentChargeSnipeTurnMonitor.cs",
     "SerpentChargeScoringRuleTests": "Assets/_Scripts/Tests/Editor/SerpentChargeScoringRuleTests.cs",
 }
 G_SCRIPT = {k: guid(f"script/{k}") for k in SCRIPT_PATHS}
@@ -58,6 +61,12 @@ RAMPAGE_DIR = "Assets/_SO_Assets/Cell Configs/Rampage Cell"
 RAMPAGE = [lib.existing_guid(f"{RAMPAGE_DIR}/Rampage Cell Config {i}.asset") for i in range(1, 5)]
 for i, gd in enumerate(RAMPAGE, 1):
     EXISTING[f"RampageCellConfig{i}"] = gd
+ARENA_CONFIG = RAMPAGE[3]   # Rampage Cell Config 4 - the only arena
+# The prism-race design's turn monitor, retired by the snipe redesign. Its guid is still minted by
+# the same function, so the scene patch can find it and the validation can prove it is gone.
+RETIRED_MONITOR = guid("script/SerpentChargePrismTurnMonitor")
+RETIRED_MONITOR_PATH = "Assets/_Scripts/Controller/Arcade/TurnMonitors/SerpentChargePrismTurnMonitor.cs"
+g.stale += [RETIRED_MONITOR_PATH, RETIRED_MONITOR_PATH + ".meta"]
 # The donor's mode-specific wiring - minted by author_sirocco_assets.py, so the same guid function
 # reproduces it; asserted to resolve like any other reference.
 DONOR_SCENE = f"{lib.SCENES_DIR}/MinigameSirocco.unity"
@@ -78,36 +87,33 @@ EXISTING["SniperScopeAction"] = lib.existing_guid(SNIPER_SCOPE)
 SERPENT_ID = lib.VESSEL_CLASS_ID["Serpent"]
 BUTTERFLY_ID = lib.VESSEL_CLASS_ID["Butterfly"]
 
-# ── The race ─────────────────────────────────────────────────────────────────
-# Hostile prisms a domain must destroy (sniped pilots folded in). Kept in sync with
-# EndConditionOverridesSO.DefaultSerpentChargePrismTarget. REASONED, NOT MEASURED: a good line down
-# a stand takes ~60 prisms (a plant averages ~178), the rifle fires every 12 s at rest, so a solo
-# pilot finishes in ~2.5 min and a Charge-fed pair in well under two.
-PRISM_TARGET = 800
-# One sniped rival pilot, in prisms - about one good line through a stand (the rule's own doc).
-PILOT_SNIPE_POINTS = 60
-# Comeback - a FUNCTION OF THE TARGET. A quarter behind (200) buys 1.6 element levels, and the
-# element that matters here is Charge: a trailing domain fires sooner.
-COMEBACK_RATE = 0.008
+# ── The duel ─────────────────────────────────────────────────────────────────
+# Snipes a domain must land. Kept in sync with EndConditionOverridesSO.DefaultSerpentChargeSnipeTarget.
+# REASONED, NOT MEASURED: the rifle fires every 12 s at rest (5.4 s fully Charged); a pilot who
+# connects with one round in three lands a snipe every ~25 s, so a lone pilot finishes in ~3.5 min
+# and a Charge-fed pair in about two - Dustup's (10 points) neighbourhood.
+SNIPE_TARGET = 8
+# One snipe = one point; every other combat-hit class pays zero (the rule's own doc).
+SNIPE_POINTS = 1
+# Comeback - a FUNCTION OF THE TARGET (Dustup's rate on Dustup's scale). A quarter behind (2 snipes)
+# buys 1.2 element levels, and the element that matters here is Charge: a trailing domain fires sooner.
+COMEBACK_RATE = 0.6
 
 SPAWN = ("  arrangeSpawnPointsAroundCell: 1\n  spawnDistanceOutsideNucleus: 500\n"
          "  spawnRingRadiusFloor: 0\n  spawnFormation: 0\n")   # Rampage's own ring
 
 # ── The marksman ladders (index = intensity - 1), and which way is HARDER ─────
 # Each tuple: (settings key, values, +1 if a bigger number is harder, -1 if smaller is harder).
+# The marksman no longer searches the forest for lines (the 2026-10-13 frame-time ladder is gone);
+# its one physics query is a reach check that runs only when a rival is already inside the cone.
 AI_LADDERS = [
-    ("aiSolveSecondsByIntensity",       [1.6, 1.1, 0.75, 0.5],     -1),
-    # Each candidate is one full-range QueryCone (a linear scan of the spatial index once the
-    # 3,000 u cone's AABB spans the cell), so this is the ladder that costs frame time. Halved on
-    # 2026-10-13 after a 2 FPS report; the bots are also staggered across the re-plan interval.
-    ("aiCandidateLinesByIntensity",     [4, 6, 9, 12],             +1),
-    ("aiAimJitterDegreesByIntensity",   [2.5, 1.5, 0.75, 0.25],    -1),
+    ("aiSolveSecondsByIntensity",       [1.2, 0.9, 0.6, 0.4],      -1),
+    ("aiAimJitterDegreesByIntensity",   [3.0, 2.0, 1.2, 0.5],      -1),
     ("aiReactionSecondsByIntensity",    [1.0, 0.6, 0.3, 0.12],     -1),
-    ("aiFireFractionByIntensity",       [0.5, 0.6, 0.7, 0.8],      +1),
-    ("aiPatienceSecondsByIntensity",    [2.5, 3.0, 3.5, 4.0],      +1),
-    ("aiPilotHuntRangeByIntensity",     [0, 1200, 2000, 2800],     +1),
+    ("aiPilotHuntRangeByIntensity",     [1500, 2000, 2500, 3000],  +1),
     ("aiChargeDetourRangeByIntensity",  [0, 450, 700, 1000],       +1),
 ]
+LADDER = {key: values for key, values, _ in AI_LADDERS}
 CHARGE_CRYSTALS_PER_WAVE = 10
 CHARGE_WAVE_SECONDS = 40
 SCATTER_INNER, SCATTER_OUTER = 320, 1000
@@ -122,10 +128,10 @@ for k, p in SCRIPT_PATHS.items():
 g.folder_meta(MODE_DIR)
 g.text_meta(DOC_REL)
 
-# ── 2. Scoring rule: metric 5 = PrismsDestroyed, pilots folded in ────────────
+# ── 2. Scoring rule: metric 8 = CombatPoints, snipes only ────────────────────
 g.emit_asset("Assets/_SO_Assets/Scoring Rules/SerpentChargeScoringRule.asset", G_ASSET["SerpentChargeScoringRule"],
              lib.header_for(G_SCRIPT["SerpentChargeScoringRuleSO"], "SerpentChargeScoringRule") +
-             f"  metric: 5\n  golfRules: 1\n  pilotSnipePoints: {PILOT_SNIPE_POINTS}\n  otherHitPoints: 0\n")
+             f"  metric: 8\n  golfRules: 1\n  snipePoints: {SNIPE_POINTS}\n  otherHitPoints: 0\n")
 
 
 # ── 3. Settings ──────────────────────────────────────────────────────────────
@@ -142,11 +148,8 @@ settings = (lib.header_for(G_SCRIPT["SerpentChargeSettingsSO"], "SerpentChargeSe
 for key, values, _ in AI_LADDERS:
     settings += f"  {key}:\n" + yaml_list(values)
 settings += """  aiTickSeconds: 0.1
-  aiMinShotValue: 8
-  aiMinAimDistance: 250
-  aiStandSampleRadius: 260
-  aiAheadSampleDistance: 900
-  aiAheadSampleRadius: 450
+  aiMinAimDistance: 300
+  aiStandoffDistance: 700
   aiTurnPenaltyFloor: 0.35
   aiDetourMinCooldownSeconds: 2.5
   aiCloakMinCooldownSeconds: 5
@@ -155,16 +158,15 @@ settings += """  aiTickSeconds: 0.1
 g.emit_asset("Assets/_SO_Assets/Games/SerpentChargeSettings.asset", G_ASSET["SerpentChargeSettings"], settings)
 
 # ── 4. Arcade card ───────────────────────────────────────────────────────────
-# MinPlayers 1 / MinDomains 2: a race against the ARENA - a solo pilot has the whole forest and an
-# AI marksman to beat (the Rampage / Sirocco shape).
+# MinPlayers 1 / MinDomains 2: a solo pilot duels the AI marksmen (the Dustup shape).
 g.emit_asset(CARD_REL, G_ASSET["ArcadeGameSerpentCharge"],
              lib.header_for(EXISTING["SO_ArcadeGame"], "ArcadeGameSerpentCharge") + f"""  Mode: {MODE_ID}
   IsMultiplayer: 1
   DisplayName: Serpent Charge
-  Description: Serpents only, over Rampage's cactus forest. Hold the scope, lay the reticle
-    down the length of a stand and fire - one round tears through everything hostile in its
-    line, and a rival pilot caught in it is worth a whole stand. Charge is your reload, so
-    grab every Charge crystal. The AI marksmen hunt you back. First team to the target wins.
+  Description: A sniper duel between Serpents in Rampage's cactus forest. Hold the scope,
+    put the reticle on a rival pilot and fire - only a hit on a pilot scores. Lay a seed to
+    vanish from their sights, and use the forest as cover. Charge is your reload, so grab
+    every Charge crystal. First team to the snipe target wins.
   IconActive: {{fileID: 21300000, guid: {EXISTING['IconActive']}, type: 3}}
   IconInactive: {{fileID: 21300000, guid: {EXISTING['IconInactive']}, type: 3}}
   CardBackground: {{fileID: 21300000, guid: {lib.card_background(CARD_REL)}, type: 3}}
@@ -184,38 +186,37 @@ g.emit_asset(CARD_REL, G_ASSET["ArcadeGameSerpentCharge"],
 """)
 
 # ── 5. Toasts ────────────────────────────────────────────────────────────────
-# 82 (DebuffHitsLanded rose) IS a pilot snipe here - the sniper's hit class is Debuff. The race
-# beats (128-131) come from DomainRaceToasts in the controller; 137 is the mode's idle hint.
+# 82 (DebuffHitsLanded rose) IS a snipe here - the sniper's hit class is Debuff. The race beats
+# (128-131) come from DomainRaceToasts in the controller; 137 is the mode's idle hint. The prism
+# milestone (83) is gone: prisms pay nothing in a Charge game.
 g.emit_asset("Assets/_SO_Assets/Game Toasts/GameToastConfig_SerpentCharge.asset", G_ASSET["GameToastConfigSerpentCharge"],
              lib.header_for(EXISTING["GameToastConfigSO"], "GameToastConfig_SerpentCharge") +
              f"  gameMode: {MODE_ID}\n  toasts:\n" +
              lib.toast(82, "<b>{0}</b> sniped a rival pilot!", tint_domain=1, domain_names=0) +
-             lib.toast(83, "<b>{0}</b> has shot down {1} prisms", tint_domain=1, domain_names=0, every_n=200) +
-             lib.toast(128, "{0} is a quarter of the way to {2}", tint_domain=1, domain_names=0) +
-             lib.toast(129, "{0} is halfway to {2} - {1} down", tint_domain=1, domain_names=0) +
-             lib.toast(130, "{0} takes the lead - {1}/{2}", tint_domain=1, domain_names=0) +
-             lib.toast(131, "{0} is closing in - {1}/{2}", tint_domain=1, domain_names=0) +
-             lib.toast(137, "Hold the left trigger to scope, line the reticle down a whole stand, fire with the right",
+             lib.toast(128, "{0} has landed a quarter of {2} snipes", tint_domain=1, domain_names=0) +
+             lib.toast(129, "{0} is halfway - {1} of {2} snipes", tint_domain=1, domain_names=0) +
+             lib.toast(130, "{0} takes the lead - {1}/{2} snipes", tint_domain=1, domain_names=0) +
+             lib.toast(131, "{0} is one shot from winning - {1}/{2}", tint_domain=1, domain_names=0) +
+             lib.toast(137, "Hold the left trigger to scope, put the reticle on a rival pilot, fire with the right",
                        idle=1, idle_seconds=25) +
              lib.toast(30, "Comeback system is on", domain_names=0, alpha=0.9))
 g.register_toast_config(G_ASSET["GameToastConfigSerpentCharge"])
 
 # ── 6. Mode preview ──────────────────────────────────────────────────────────
-PREVIEW_CELLS = "".join(f"  - {{fileID: 11400000, guid: {gd}, type: 2}}\n" for gd in RAMPAGE)
 g.emit_asset("Assets/_SO_Assets/Mode Previews/ModePreview_SerpentCharge.asset", G_ASSET["ModePreviewSerpentCharge"],
              lib.header_for(EXISTING["ModePreviewDefinitionSO"], "ModePreview_SerpentCharge") + f"""  Mode: {MODE_ID}
-  Notes: 'Reuses Rampage''s cactus forest outright - referenced, not forked, exactly as the mode
-    does; intensity is the forest''s density. What the preview teaches is the scope and the
-    rifle: a round down the length of a stand. Vessel pinned to Serpent({SERPENT_ID}).'
-  PreviewCell: {{fileID: 11400000, guid: {RAMPAGE[0]}, type: 2}}
-  PreviewCellsByIntensity:
-{PREVIEW_CELLS}  StructurePrefab: {{fileID: 0}}
+  Notes: 'Reuses Rampage Cell Config 4 outright - referenced, not forked, exactly as the mode
+    does; the forest is cover, not the score. What the preview teaches is the scope and the
+    rifle: a round laid on a rival pilot. Vessel pinned to Serpent({SERPENT_ID}).'
+  PreviewCell: {{fileID: 11400000, guid: {ARENA_CONFIG}, type: 2}}
+  PreviewCellsByIntensity: []
+  StructurePrefab: {{fileID: 0}}
   TrackSpawnablesByIntensity: []
   PreviewFauna: {{fileID: 0}}
   PreviewFaunaCount: 4
   Vessel: {SERPENT_ID}
-  ObjectiveText: Scope in and snipe down the length of a stand
-  ObjectiveMetric: 5
+  ObjectiveText: Scope in and snipe the rival pilots
+  ObjectiveMetric: 8
   ObjectiveTarget: 0
   DurationSeconds: 60
   SpawnFromCellRing: 1
@@ -230,59 +231,83 @@ g.register_preview(G_ASSET["ModePreviewSerpentCharge"])
 # ── 7. Scene: clone MinigameSirocco, swap the identity and the AI hulls ──────
 CONTROLLER_BLOCK = (f"  settings: {{fileID: 11400000, guid: {G_ASSET['SerpentChargeSettings']}, type: 2}}\n"
                     f"  rule: {{fileID: 11400000, guid: {G_ASSET['SerpentChargeScoringRule']}, type: 2}}\n")
+RAMPAGE_LADDER_BLOCK = ("  CellConfigs:\n" +
+                        "".join(f"  - {{fileID: 11400000, guid: {gd}, type: 2}}\n" for gd in RAMPAGE) +
+                        "  cellTypeChoiceOptions: 1\n")
+ARENA_BLOCK = (f"  CellConfigs:\n  - {{fileID: 11400000, guid: {ARENA_CONFIG}, type: 2}}\n"
+               "  cellTypeChoiceOptions: 0\n")
+
+
+def patch_snipe_redesign(scene: str) -> str:
+    """The snipe redesign's two scene edits, IDEMPOTENT so they apply to the committed scene as
+    well as to a fresh clone: the retired prism monitor's script guid becomes the snipe monitor's
+    (same component, same fields - neither declares a serialized field beyond TurnMonitor's own),
+    and the Rampage ladder becomes config 4."""
+    scene = scene.replace(RETIRED_MONITOR, G_SCRIPT["SerpentChargeSnipeTurnMonitor"])
+    if RAMPAGE_LADDER_BLOCK in scene:
+        scene = lib.replace_block(scene, RAMPAGE_LADDER_BLOCK, ARENA_BLOCK, "Rampage cell ladder")
+    return scene
 
 
 def build_clone() -> str:
     scene = g.read(DONOR_SCENE)
     scene = lib.swap_guid(scene, DONOR["SiroccoController"], G_SCRIPT["SerpentChargeController"], "controller")
-    scene = lib.swap_guid(scene, DONOR["SiroccoPrismTurnMonitor"], G_SCRIPT["SerpentChargePrismTurnMonitor"],
+    scene = lib.swap_guid(scene, DONOR["SiroccoPrismTurnMonitor"], G_SCRIPT["SerpentChargeSnipeTurnMonitor"],
                           "turn monitor")
     scene = lib.swap_guid(scene, DONOR["SiroccoSettings"], G_ASSET["SerpentChargeSettings"], "settings")
     scene = lib.swap_guid(scene, DONOR["SiroccoScoringRule"], G_ASSET["SerpentChargeScoringRule"], "scoring rule")
     scene = lib.swap_guid(scene, f"  - vesselClass: {BUTTERFLY_ID}\n    PlayerName: AI",
                           f"  - vesselClass: {SERPENT_ID}\n    PlayerName: AI", "AI templates", expected=4)
     assert SPAWN in scene, "the Sirocco donor no longer carries Rampage's spawn ring"
-    return scene
+    assert RAMPAGE_LADDER_BLOCK in scene, "the Sirocco donor no longer carries Rampage's cell ladder"
+    return patch_snipe_redesign(scene)
 
 
 SCENE_REL = f"{lib.SCENES_DIR}/MinigameSerpentCharge.unity"
 scene, scene_errors = lib.committed_scene(SCENE_REL, build_clone, authored_blocks=[CONTROLLER_BLOCK, SPAWN])
+scene = patch_snipe_redesign(scene)
 g.emit_scene("MinigameSerpentCharge", G_ASSET["MinigameSerpentCharge.unity"], scene)
 
 # ── 8. Registries ────────────────────────────────────────────────────────────
 g.register_arcade_card(G_ASSET["ArcadeGameSerpentCharge"])
 g.register_always_unlocked()
 g.register_build_scene("MinigameSirocco", "MinigameSerpentCharge", G_ASSET["MinigameSerpentCharge.unity"])
-g.set_end_condition("serpentChargePrismTarget", after="siroccoPrismTarget", value=PRISM_TARGET)
+# The prism race's target is retired with it (EndConditionOverridesSO no longer declares it, and
+# Unity never prunes a serialized key the class lost).
+_endcond = g.read_current(lib.END_CONDITIONS)
+g.emit(lib.END_CONDITIONS, re.sub(r"^  serpentChargePrismTarget(Build)?: \d+\n", "", _endcond, flags=re.M))
+g.set_end_condition("serpentChargeSnipeTarget", after="siroccoPrismTarget", value=SNIPE_TARGET)
 
 # ══ VALIDATE EVERYTHING BEFORE WRITING ANYTHING ═════════════════════════════
 errors = list(scene_errors)
 
-if 0.25 * PRISM_TARGET * COMEBACK_RATE < 1.0:
-    errors.append(f"comeback rate {COMEBACK_RATE} is dead against target {PRISM_TARGET}: a quarter-of-target "
-                  f"deficit buys {0.25 * PRISM_TARGET * COMEBACK_RATE:.2f} element levels (< 1)")
+if 0.25 * SNIPE_TARGET * COMEBACK_RATE < 1.0:
+    errors.append(f"comeback rate {COMEBACK_RATE} is dead against target {SNIPE_TARGET}: a quarter-of-target "
+                  f"deficit buys {0.25 * SNIPE_TARGET * COMEBACK_RATE:.2f} element levels (< 1)")
 
 # The C# defaults and the authored numbers must agree (EndConditionOverridesSO's default target and
 # the rule's field initializer) - a fresh asset must not play a different game.
 endcond_cs = g.read("Assets/_Scripts/ScriptableObjects/EndConditionOverridesSO.cs")
-m = re.search(r"DefaultSerpentChargePrismTarget = (\d+);", endcond_cs)
-if not m or int(m.group(1)) != PRISM_TARGET:
-    errors.append("EndConditionOverridesSO.DefaultSerpentChargePrismTarget is not PRISM_TARGET")
+m = re.search(r"DefaultSerpentChargeSnipeTarget = (\d+);", endcond_cs)
+if not m or int(m.group(1)) != SNIPE_TARGET:
+    errors.append("EndConditionOverridesSO.DefaultSerpentChargeSnipeTarget is not SNIPE_TARGET")
+if "serpentChargePrismTarget" in endcond_cs or "serpentChargePrismTarget" in g.files[lib.END_CONDITIONS]:
+    errors.append("the retired serpentChargePrismTarget is still declared or serialized")
 rule_cs = g.read(SCRIPT_PATHS["SerpentChargeScoringRuleSO"])
-m = re.search(r"int pilotSnipePoints = (\d+);", rule_cs)
-if not m or int(m.group(1)) != PILOT_SNIPE_POINTS:
-    errors.append("SerpentChargeScoringRuleSO.pilotSnipePoints' initializer is not PILOT_SNIPE_POINTS")
+m = re.search(r"int snipePoints = (\d+);", rule_cs)
+if not m or int(m.group(1)) != SNIPE_POINTS:
+    errors.append("SerpentChargeScoringRuleSO.snipePoints' initializer is not SNIPE_POINTS")
+# The settings SO's ladder initializers must match what is authored here.
+settings_cs = g.read(SCRIPT_PATHS["SerpentChargeSettingsSO"])
+for key, values, _ in AI_LADDERS:
+    mm = re.search(rf"float\[\] {key} = \{{ ([^}}]*) \}};", settings_cs)
+    cs_values = [float(v.strip().rstrip("f")) for v in mm.group(1).split(",")] if mm else None
+    if cs_values != [float(v) for v in values]:
+        errors.append(f"SerpentChargeSettingsSO.{key}'s initializer {cs_values} is not the authored {values}")
 
-# A pilot must be worth more than a thin line and never a match on its own.
-if not (10 <= PILOT_SNIPE_POINTS <= PRISM_TARGET // 8):
-    errors.append(f"PILOT_SNIPE_POINTS {PILOT_SNIPE_POINTS} is outside [10, target/8]: either a pilot is "
-                  f"cheaper than a stray prism line or a handful of snipes decides the match")
-
-# The forest must be big enough that a match ENDS with forest standing: the target sits well under
-# a quarter of the sparsest rung's forest (a domain's hostile share is about two thirds of it).
-smallest_forest = min(rampage.forest(i)[2] for i in range(1, 5))
-if PRISM_TARGET > 0.25 * smallest_forest:
-    errors.append(f"the target would strip most of the sparsest forest ({smallest_forest} prisms) - lower it")
+# A match must take several snipes: one lucky round never decides it.
+if not (4 <= SNIPE_TARGET <= 20):
+    errors.append(f"SNIPE_TARGET {SNIPE_TARGET} is outside [4, 20]")
 
 # The weapon the mode is built on: a piercing round whose pilot strip is a Debuff-class hit on a
 # same-victim window far under its cooldown - the rule prices exactly that class.
@@ -297,7 +322,7 @@ def field(text, name):
 if field(shot, "hitClass") != 2:
     errors.append("SniperShotAction's hitClass is no longer Debuff (2) - the rule's pilot price would never pay")
 if field(shot, "pierceCount") != 0:
-    errors.append("SniperShotAction no longer pierces everything (pierceCount != 0) - the target assumes it does")
+    errors.append("SniperShotAction no longer pierces everything (pierceCount != 0) - the AI's reach check assumes it does")
 if (field(shot, "vesselStripPerElement") or 0) <= 0:
     errors.append("SniperShotAction no longer strips pilots (vesselStripPerElement <= 0) - snipes would never land")
 cooldown = field(shot, "cooldownSeconds") or 0
@@ -318,11 +343,14 @@ for key, values, harder in AI_LADDERS:
     for a, b in zip(values, values[1:]):
         if (b - a) * harder < 0:
             errors.append(f"{key} makes a higher intensity EASIER ({values})")
-# Intensity 4's aim error must sit inside the cone (1.5 deg) or the marksman cannot hit a pilot.
+# Intensity 4's aim error must sit inside the cone (1.5 deg) or the marksman cannot hit a pilot -
+# and intensity 1's must sit OUTSIDE it, or the easiest bot is as accurate as the hardest.
 cone = field(shot, "coneHalfAngleDegrees") or 0
-if AI_LADDERS[2][1][3] >= cone:
-    errors.append("intensity-4 aim jitter is not inside the rifle's cone - the hardest bot could not snipe")
-if max(AI_LADDERS[6][1]) > (field(shot, "rangeUnits") or 0):
+jitter = LADDER["aiAimJitterDegreesByIntensity"]
+if not (jitter[3] < cone < jitter[0]):
+    errors.append(f"aim jitter {jitter} does not straddle the rifle's {cone} deg cone - intensity 4 must "
+                  f"be inside it and intensity 1 outside it")
+if max(LADDER["aiPilotHuntRangeByIntensity"]) > (field(shot, "rangeUnits") or 0):
     errors.append("a pilot-hunt range exceeds the rifle's reach")
 
 # The marksman lowers its scope to cloak and re-raises it aiScopeRetrySeconds later, so the cloak
@@ -338,22 +366,23 @@ if not re.search(rf"  - Ability: {{fileID: 11400000, guid: {CLOAK_ACTION}, type:
     errors.append("Serpent.prefab's AIPilot cloak entry is not ReplicateThroughInput - an AI cloak "
                   "would hide the hull and trail on the server only")
 
-# The scene: our identity in, the donor's out, four Serpent AI templates, Rampage's four cells.
+# The scene: our identity in, the donor's and the prism race's out, four Serpent AI templates, and
+# exactly one cell config - Rampage's fourth.
 if scene is not None:
     for name, gd in {"SerpentChargeController": G_SCRIPT["SerpentChargeController"],
-                     "SerpentChargePrismTurnMonitor": G_SCRIPT["SerpentChargePrismTurnMonitor"],
+                     "SerpentChargeSnipeTurnMonitor": G_SCRIPT["SerpentChargeSnipeTurnMonitor"],
                      "SerpentChargeSettings": G_ASSET["SerpentChargeSettings"],
-                     "SerpentChargeScoringRule": G_ASSET["SerpentChargeScoringRule"],
-                     **{f"Rampage {i}": gd for i, gd in enumerate(RAMPAGE, 1)}}.items():
+                     "SerpentChargeScoringRule": G_ASSET["SerpentChargeScoringRule"]}.items():
         if gd not in scene:
             errors.append(f"scene missing {name}")
-    for name, gd in DONOR.items():
+    for name, gd in {**DONOR, "SerpentChargePrismTurnMonitor": RETIRED_MONITOR,
+                     **{f"Rampage {i}": gd for i, gd in enumerate(RAMPAGE[:3], 1)}}.items():
         if gd in scene:
             errors.append(f"scene still references {name}")
     if scene.count(f"  - vesselClass: {SERPENT_ID}\n") != 4 or re.search(r"  - vesselClass: (?!7\n)\d+\n", scene):
         errors.append("scene does not carry exactly 4 Serpent AI templates")
-    if "  cellTypeChoiceOptions: 1\n" not in scene:
-        errors.append("scene is not IntensityWise over the Rampage ladder")
+    if ARENA_BLOCK not in scene:
+        errors.append("scene's cell is not Rampage Cell Config 4 alone")
 
 g.finish(errors, referenced=EXISTING,
          minted=list(G_SCRIPT.values()) + list(G_ASSET.values())

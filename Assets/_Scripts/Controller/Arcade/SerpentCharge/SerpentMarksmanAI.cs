@@ -9,54 +9,48 @@ using UnityEngine;
 namespace CosmicShore.Gameplay
 {
     /// <summary>
-    /// Serpent Charge's AI: every autopiloted Serpent becomes a MARKSMAN that holds its scope,
-    /// plans the fattest firing line it can bring to bear, steers its nose down it, and fires the
-    /// moment the rifle is ready and the live line is worth the cooldown.
+    /// Serpent Charge's AI: every autopiloted Serpent becomes a MARKSMAN that hunts rival pilots -
+    /// it holds its scope, picks the rival it can best bring to bear, steers its nose at them, and
+    /// fires the moment the rifle is ready and a rival is inside the live cone.
     ///
     /// <para><b>Why a mode needs this at all.</b> <see cref="AIPilot"/> writes a stick and a
     /// throttle and nothing else. Its generic ability cycler toggles the Serpent's cloak on a timer
     /// and never touches the scope, and the rifle only fires while the scope is up
     /// (<see cref="SniperShotActionExecutor"/>'s gate). Without this driver every AI Serpent would
-    /// fly the whole match unable to score anything but what its hull rams - an opponent that
-    /// cannot play, which the Tollway rule calls a defect.</para>
+    /// fly the whole match unable to score - an opponent that cannot play, which the Tollway rule
+    /// calls a defect.</para>
     ///
-    /// <para><b>What makes it hard to beat.</b> It asks the SAME question the round answers. A
-    /// candidate line is scored with <see cref="PrismSpatialIndex.QueryCone"/> using the rifle's own
-    /// range, half-angle and radius floor, the rifle's own target filter (never its own domain;
-    /// super-shielded mass only once Charge 5 "Pierce" is up), and the round's own reach rule for
-    /// pilots (a strip reaches only as far as the farthest prism the round kills). So a line it
-    /// plans is a line it will actually be paid for. It samples aim points from the densest
-    /// hostile stand (the same <see cref="Cell.GetExplosionTarget"/> question the objective arrow
-    /// asks) and from the mass ahead of its nose, weighs each by how far it must turn to bring it
-    /// to bear, and - from intensity 2 - hunts rival PILOTS, which the rule prices as a stand of
-    /// forest. On a long cooldown it detours to Charge crystals, which shorten the next one.</para>
+    /// <para><b>It is a hunter, not a lumberjack.</b> A CHARGE game scores hits on PILOTS
+    /// (<see cref="SerpentChargeScoringRuleSO"/>), so the only thing worth a round is a rival in the
+    /// cone. The first cut planned fat lines through the forest with dozens of full-range cone
+    /// queries a plan; that whole search is gone. A plan is now one pass over the roster (a
+    /// distance and an angle per rival), the fire gate is <see cref="PrismSpatialIndex.ConeContains"/>
+    /// per rival - pure arithmetic - and the ONE spatial query left runs only when a rival is
+    /// already in the cone, to apply the round's reach rule (a strip reaches only as far as the
+    /// farthest hostile prism the round kills, or the full range when it kills none -
+    /// <c>SniperShotActionExecutor.StripVessels</c>), so a round the forest would stop short is not
+    /// spent.</para>
     ///
-    /// <para><b>What keeps it beatable.</b> Every one of those strengths is a per-intensity
-    /// ladder on <see cref="SerpentChargeSettingsSO"/>: how often it re-plans, how many lines it
-    /// considers, how much aim error it carries (in degrees, against a 1.5° cone), how long it
-    /// takes to react to a ready rifle, how picky it is, how far it hunts pilots and how far it
-    /// will go for a crystal. Intensity 1 is a slow, wobbly bot that never hunts you; intensity 4
-    /// re-plans twice a second with a quarter-degree of error and hunts across the whole range.</para>
-    ///
-    /// <para><b>Replicated, never local.</b> An AI runs on the server only, and the shot resolves
-    /// on EVERY peer (each one destroys the same conserved mass), so both the scope and the
-    /// trigger go through <see cref="R_VesselActionHandler.PerformShipControllerActionsReplicated"/>,
-    /// found by capability (<see cref="R_VesselActionHandler.TryGetInputForAction{T}"/>) so no
-    /// control is named here. The scope is a LATCH (press engages, release disengages), so it is
-    /// pressed once and held; <see cref="Disarm"/> releases it, because a release is an input event
-    /// and nothing else would send one. While it is held the Serpent's cloak declines on its own
-    /// (<c>CloakSeedWallActionSO</c> asks the scope), which retires AIPilot's blind cloak cycler
-    /// for the match without touching it.</para>
+    /// <para><b>Difficulty edits BELIEF, never the stick</b> (the vessel-AI rule). Every rung is
+    /// a per-intensity ladder on <see cref="SerpentChargeSettingsSO"/>: how often the bot re-reads
+    /// the field, how wrong its aim point is (an offset of up to N degrees against a 1.5 degree
+    /// cone, fixed per plan so it reads as a miss rather than a shiver), how long it takes to react
+    /// to a ready rifle, how far it hunts, and how far it will go for a Charge crystal. AIPilot then
+    /// flies to that belief exactly as it flies anything else.</para>
     ///
     /// <para><b>It cloaks, and it cannot see you when you do.</b> The right trigger is the cloak
     /// unscoped and the rifle scoped, so the marksman owns it outright: it asks AIPilot's ability
     /// cycler to keep off the cloak (<see cref="AIPilot.SuppressCycledAbility{T}"/>) and, once per
     /// reload long enough to be worth it, lowers its scope, presses the cloak (replicated, so the
-    /// hull vanishes, the trail fades and the seed is laid on every machine) and raises the scope
-    /// again before the rifle is ready. And a rival whose hull is cloaked
-    /// (<see cref="CloakSeedWallActionExecutor.IsCloaked"/>) is not a target and not worth anything
-    /// in a line: the bot loses them where it last saw them, exactly as AIPilot's own player
-    /// seeking does.</para>
+    /// hull, its tail and the seed all vanish on every machine) and raises the scope again before
+    /// the rifle is ready. A rival whose hull is cloaked
+    /// (<see cref="CloakSeedWallActionExecutor.IsCloaked"/>) is not a target and never fired at; the
+    /// bot flies to where it last saw them.</para>
+    ///
+    /// <para><b>Replicated, never local.</b> An AI runs on the server only, and the shot resolves on
+    /// EVERY peer, so the scope, the trigger and the cloak go through
+    /// <see cref="R_VesselActionHandler.PerformShipControllerActionsReplicated"/>, found by
+    /// capability (<see cref="R_VesselActionHandler.TryGetInputForAction{T}"/>).</para>
     ///
     /// <para>Server-only, plain C#: the controller owns one, arms it when the turn starts, ticks it
     /// from Update on the server, and disarms it at the whistle, on replay and on despawn.</para>
@@ -78,33 +72,31 @@ namespace CosmicShore.Gameplay
             public float ScopePressedAt = float.NegativeInfinity;
 
             public float NextPlanAt;
-            public bool HasPlan;
-            public Vector3 AimPoint;
-            public int PlannedValue;
 
-            // When the plan is a rival pilot, the aim follows the pilot every frame; the jitter is
-            // fixed for the plan's life (a constant error reads as a miss, not as a shiver).
+            // The rival being hunted, followed live while visible. The aim error is fixed for the
+            // plan's life (a constant error reads as a miss, not as a shiver).
             public IPlayer Quarry;
-            public Vector3 QuarryOffset;
+            public Vector3 AimOffset;
+
+            // Where the last hunted rival was last SEEN - the bot flies there when they cloak.
+            public bool HasLastSeen;
+            public Vector3 LastSeen;
 
             public float ReadySince = -1f;
             public Transform Detour;
         }
 
-        // A per-frame AI cost gets a marker (Docs/AI_SYSTEM): Tick is the whole server-side cost
-        // per throttled frame, Plan the burst one bot's line search spends, ScoreLine one cone.
+        // A per-frame AI cost gets a marker (Docs/AI_SYSTEM): Tick is the whole server-side cost per
+        // throttled frame, Plan one bot's re-read of the field, Reach the one spatial query left.
         static readonly ProfilerMarker s_TickMarker = new("SerpentCharge.Marksman.Tick");
         static readonly ProfilerMarker s_PlanMarker = new("SerpentCharge.Marksman.Plan");
-        static readonly ProfilerMarker s_ScoreLineMarker = new("SerpentCharge.Marksman.ScoreLine");
+        static readonly ProfilerMarker s_ReachMarker = new("SerpentCharge.Marksman.Reach");
 
         readonly List<Marksman> _marksmen = new();
         readonly List<Prism> _hits = new();
-        readonly List<Prism> _samples = new();
-        readonly List<Vector3> _candidates = new();
 
         GameDataSO _gameData;
         SerpentChargeSettingsSO _settings;
-        SerpentChargeScoringRuleSO _rule;
         Cell _arena;
         Func<IReadOnlyList<ElementalCrystalImpactor>> _crystals;
         int _intensity = 1;
@@ -113,24 +105,24 @@ namespace CosmicShore.Gameplay
         public bool IsArmed => _marksmen.Count > 0;
 
         /// <summary>
-        /// SERVER. Takes every AI pilot on the roster: installs the steering provider and starts
-        /// the fire loop. <paramref name="crystals"/> answers the live Charge crystals (may be
-        /// empty). Safe to call again - it disarms first.
+        /// SERVER. Takes every AI pilot on the roster: installs the steering provider and starts the
+        /// fire loop. <paramref name="crystals"/> answers the live Charge crystals (may be empty).
+        /// Safe to call again - it disarms first.
         /// </summary>
-        public void Arm(GameDataSO gameData, SerpentChargeSettingsSO settings, ScoringRuleSO rule,
-                        Cell arena, Func<IReadOnlyList<ElementalCrystalImpactor>> crystals)
+        public void Arm(GameDataSO gameData, SerpentChargeSettingsSO settings, Cell arena,
+                        Func<IReadOnlyList<ElementalCrystalImpactor>> crystals)
         {
             Disarm();
             if (gameData == null || settings == null) return;
 
             _gameData = gameData;
             _settings = settings;
-            _rule = rule as SerpentChargeScoringRuleSO;
             _arena = arena;
             _crystals = crystals;
             _intensity = Mathf.Clamp(gameData.SelectedIntensity != null ? gameData.SelectedIntensity.Value : 1, 1, 4);
             _nextTick = 0f;
 
+            float solve = Mathf.Max(0.1f, SerpentChargeSettingsSO.Pick(settings.aiSolveSecondsByIntensity, _intensity, 1f));
             int ordinal = 0;
             foreach (var p in gameData.Players)
             {
@@ -141,17 +133,15 @@ namespace CosmicShore.Gameplay
                 var m = new Marksman
                 {
                     Player = p,
-                    // Seeded per bot so two bots sampling the same stand do not pick the same line.
+                    // Seeded per bot so two bots do not carry the same aim error.
                     Rng = new System.Random(unchecked(settings.crystalScatterSeed * 7919 + ++ordinal)),
+                    // Spread the bots across the re-plan interval rather than all in one frame.
+                    NextPlanAt = Time.time + solve * ordinal / 4f,
                 };
-                // Spread the bots across the re-plan interval, so their full-range cone queries
-                // never all land in one frame (a plan is ~lines+rivals QueryCones each).
-                m.NextPlanAt = Time.time + Mathf.Max(0.1f,
-                    SerpentChargeSettingsSO.Pick(settings.aiSolveSecondsByIntensity, _intensity, 1f)) * ordinal / 4f;
                 _marksmen.Add(m);
                 pilot.SetExternalTargetProvider(() => SteerPoint(m));
-                // The marksman owns the right trigger (cloak unscoped, rifle scoped) - see the
-                // class doc. Restored in Disarm.
+                // The marksman owns the right trigger (cloak unscoped, rifle scoped) - see the class
+                // doc. Restored in Disarm.
                 pilot.SuppressCycledAbility<CloakSeedWallActionSO>();
             }
         }
@@ -188,17 +178,14 @@ namespace CosmicShore.Gameplay
             if (now < _nextTick) return;
             _nextTick = now + _settings.aiTickSeconds;
 
-            var index = PrismSpatialIndex.EnsureInstance();
-            if (index == null || !index.IsAvailable) return;
-
             using var tickScope = s_TickMarker.Auto();
             for (int i = 0; i < _marksmen.Count; i++)
-                TickOne(_marksmen[i], index, now);
+                TickOne(_marksmen[i], now);
         }
 
         // ── Per bot ─────────────────────────────────────────────────────────
 
-        void TickOne(Marksman m, PrismSpatialIndex index, float now)
+        void TickOne(Marksman m, float now)
         {
             var status = m.Player?.Vessel?.VesselStatus;
             var handler = status?.ActionHandler;
@@ -209,8 +196,8 @@ namespace CosmicShore.Gameplay
 
             if (!ResolveExecutors(m, status)) return;
 
-            // A hunted rival who cloaks is lost; the plan falls back to the forest next tick.
-            if (m.Quarry != null && CloakSeedWallActionExecutor.IsCloaked(m.Quarry.Vessel?.VesselStatus))
+            // A hunted rival who cloaks is lost where they were last seen; re-plan next tick.
+            if (m.Quarry != null && !IsVisibleRival(m.Quarry, status.Domain))
             {
                 m.Quarry = null;
                 m.NextPlanAt = now;
@@ -220,7 +207,7 @@ namespace CosmicShore.Gameplay
 
             EnsureScoped(m, handler, now);
 
-            if (now >= m.NextPlanAt) Plan(m, status, index, now);
+            if (now >= m.NextPlanAt) Plan(m, status, now);
 
             ChooseDetour(m, status);
 
@@ -233,22 +220,11 @@ namespace CosmicShore.Gameplay
             }
 
             if (m.ReadySince < 0f) m.ReadySince = now;
-            float waited = now - m.ReadySince;
-            if (waited < SerpentChargeSettingsSO.Pick(_settings.aiReactionSecondsByIntensity, _intensity, 0.3f))
+            if (now - m.ReadySince < SerpentChargeSettingsSO.Pick(_settings.aiReactionSecondsByIntensity, _intensity, 0.3f))
                 return;
 
             var tf = status.ShipTransform;
-            if (tf == null) return;
-
-            int live = ScoreLine(status, m.Shot, index, tf.position, tf.forward);
-
-            int required = _settings.aiMinShotValue;
-            if (waited < SerpentChargeSettingsSO.Pick(_settings.aiPatienceSecondsByIntensity, _intensity, 3f))
-            {
-                float fraction = SerpentChargeSettingsSO.Pick(_settings.aiFireFractionByIntensity, _intensity, 0.6f);
-                required = Mathf.Max(required, Mathf.CeilToInt(fraction * m.PlannedValue));
-            }
-            if (live < required) return;
+            if (tf == null || !RoundWouldStrikeRival(status, m.Shot, tf.position, tf.forward)) return;
 
             if (!handler.TryGetInputForAction<SniperShotActionSO>(out var shotInput)) return;
             // The shot fires on PRESS (its StopAction is a no-op), and the release keeps the
@@ -258,15 +234,14 @@ namespace CosmicShore.Gameplay
 
             m.ReadySince = -1f;
             m.CloakedThisReload = false;
-            m.NextPlanAt = now;   // the round just changed the arena - re-plan on the next tick
+            m.NextPlanAt = now;   // re-read the field (and re-roll the aim error) after every round
         }
 
         /// <summary>
-        /// The cloak, once per reload that leaves time for it: lower the scope, then (next tick,
-        /// once the latch is down - RT is the RIFLE while scoped) press the cloak through the
-        /// replicated input. Returns true while it is busy doing that, so the scope is not
-        /// re-raised under it; <see cref="EnsureScoped"/> raises it again afterwards, well inside
-        /// the reload.
+        /// The cloak, once per reload that leaves time for it: lower the scope, then (next tick, once
+        /// the latch is down - RT is the RIFLE while scoped) press the cloak through the replicated
+        /// input. Returns true while it is busy doing that, so the scope is not re-raised under it;
+        /// <see cref="EnsureScoped"/> raises it again afterwards, well inside the reload.
         /// </summary>
         bool TryCloak(Marksman m, R_VesselActionHandler handler, float now)
         {
@@ -322,9 +297,9 @@ namespace CosmicShore.Gameplay
             m.ScopePressedAt = now;
         }
 
-        // ── Planning ────────────────────────────────────────────────────────
+        // ── Planning: which rival, and how wrong the bot is about where they are ──
 
-        void Plan(Marksman m, IVesselStatus status, PrismSpatialIndex index, float now)
+        void Plan(Marksman m, IVesselStatus status, float now)
         {
             using var planScope = s_PlanMarker.Auto();
             m.NextPlanAt = now + Mathf.Max(0.1f,
@@ -335,112 +310,41 @@ namespace CosmicShore.Gameplay
             Vector3 origin = tf.position;
             Vector3 forward = tf.forward;
             Domains own = status.Domain;
-            float range = m.Shot.RangeUnits;
-            float minAim = _settings.aiMinAimDistance;
+            float hunt = Mathf.Min(SerpentChargeSettingsSO.Pick(_settings.aiPilotHuntRangeByIntensity, _intensity, 2000f),
+                                   m.Shot.RangeUnits);
 
-            // ── Candidate aim points ──
-            _candidates.Clear();
-            int lines = Mathf.Max(1, SerpentChargeSettingsSO.Pick(_settings.aiCandidateLinesByIntensity, _intensity, 8));
-            if (m.HasPlan && m.Quarry == null) _candidates.Add(m.AimPoint);   // the incumbent stays in the running
-            if (_arena)
-                Sample(m, index, _arena.GetExplosionTarget(own), _settings.aiStandSampleRadius, (lines + 1) / 2, own);
-            Sample(m, index, origin + forward * _settings.aiAheadSampleDistance, _settings.aiAheadSampleRadius,
-                   lines / 2, own);
-
-            float bestUtility = 0f;
-            int bestValue = 0;
-            Vector3 bestPoint = default;
-            IPlayer bestQuarry = null;
-
-            for (int i = 0; i < _candidates.Count; i++)
+            // Best visible rival: the cheapest to bring to bear - distance stretched by how far the
+            // bot must turn. Within the hunt range if any rival is; otherwise the nearest visible
+            // rival anywhere, so a bot never idles while somebody is out there.
+            IPlayer best = null, bestAnywhere = null;
+            float bestCost = float.MaxValue, bestAnywhereSq = float.MaxValue;
+            var players = _gameData.Players;
+            for (int i = 0; i < players.Count; i++)
             {
-                Vector3 to = _candidates[i] - origin;
-                float d = to.magnitude;
-                if (d < minAim || d > range) continue;
-                Vector3 dir = to / d;
-                int value = ScoreLine(status, m.Shot, index, origin, dir);
-                float utility = value * TurnFactor(forward, dir);
-                if (utility <= bestUtility) continue;
-                bestUtility = utility;
-                bestValue = value;
-                bestPoint = _candidates[i];
-                bestQuarry = null;
+                var rival = players[i];
+                if (!IsVisibleRival(rival, own)) continue;
+                Vector3 to = rival.Vessel.Transform.position - origin;
+                float dSq = to.sqrMagnitude;
+                if (dSq < bestAnywhereSq) { bestAnywhereSq = dSq; bestAnywhere = rival; }
+
+                float d = Mathf.Sqrt(dSq);
+                if (d > hunt || d < 1e-3f) continue;
+                float cost = d / TurnFactor(forward, to / d);
+                if (cost < bestCost) { bestCost = cost; best = rival; }
             }
 
-            // ── Rival pilots ──
-            float hunt = SerpentChargeSettingsSO.Pick(_settings.aiPilotHuntRangeByIntensity, _intensity, 0f);
-            if (hunt > 0f && _rule != null && _rule.PilotSnipePoints > 0)
-            {
-                var players = _gameData.Players;
-                for (int i = 0; i < players.Count; i++)
-                {
-                    var rival = players[i];
-                    if (rival == null || rival.Domain == own) continue;
-                    if (CloakSeedWallActionExecutor.IsCloaked(rival.Vessel?.VesselStatus)) continue;
-                    var rtf = rival.Vessel?.Transform;
-                    if (rtf == null) continue;
+            m.Quarry = best ?? bestAnywhere;
+            if (m.Quarry == null) return;   // nobody visible: SteerPoint flies to the last sighting
 
-                    Vector3 to = rtf.position - origin;
-                    float d = to.magnitude;
-                    if (d < minAim || d > Mathf.Min(hunt, range)) continue;
-                    Vector3 dir = to / d;
-                    // ScoreLine prices the pilot itself (it is inside its own line) plus the mass
-                    // the round would take on the way.
-                    int value = ScoreLine(status, m.Shot, index, origin, dir);
-                    float utility = value * TurnFactor(forward, dir);
-                    if (utility <= bestUtility) continue;
-                    bestUtility = utility;
-                    bestValue = value;
-                    bestPoint = rtf.position;
-                    bestQuarry = rival;
-                }
-            }
-
-            if (bestValue <= 0)
-            {
-                // Nothing in reach worth a round: fly at the densest stand and look again soon.
-                m.HasPlan = _arena;
-                m.Quarry = null;
-                m.PlannedValue = 0;
-                if (_arena) m.AimPoint = _arena.GetExplosionTarget(own);
-                return;
-            }
-
-            // Aim error, fixed for this plan: an offset perpendicular to the line whose angle is
-            // the intensity's jitter. Against a 1.5° cone, 2.5° misses a pilot outright and shaves
-            // a stand; 0.25° is a marksman.
-            Vector3 line = bestPoint - origin;
+            // Aim error, fixed for this plan: an offset perpendicular to the line, of up to the
+            // intensity's jitter in angle. Against a 1.5 deg cone, 3 deg misses more than it hits;
+            // 0.5 deg is a marksman.
+            Vector3 line = m.Quarry.Vessel.Transform.position - origin;
             float jitter = SerpentChargeSettingsSO.Pick(_settings.aiAimJitterDegreesByIntensity, _intensity, 0f);
-            Vector3 offset = jitter > 0f
+            m.AimOffset = jitter > 0f && line.sqrMagnitude > 1e-6f
                 ? Perpendicular(line.normalized, m.Rng) * (line.magnitude * Mathf.Tan(jitter * Mathf.Deg2Rad)
                                                            * (float)m.Rng.NextDouble())
                 : Vector3.zero;
-
-            m.HasPlan = true;
-            m.PlannedValue = bestValue;
-            m.Quarry = bestQuarry;
-            m.QuarryOffset = offset;
-            m.AimPoint = bestPoint + offset;
-        }
-
-        void Sample(Marksman m, PrismSpatialIndex index, Vector3 centre, float radius, int count, Domains own)
-        {
-            if (count <= 0) return;
-            index.QuerySphere(centre, radius, _samples);
-            int n = _samples.Count;
-            if (n == 0) return;
-
-            // A few draws per wanted point, so a sphere that is mostly the bot's own colour still
-            // yields hostile aim points without walking the whole list.
-            int added = 0;
-            for (int attempt = 0; attempt < count * 3 && added < count; attempt++)
-            {
-                var prism = _samples[m.Rng.Next(n)];
-                if (prism == null || prism.destroyed || prism.Domain == own) continue;
-                _candidates.Add(prism.transform.position);
-                added++;
-            }
-            _samples.Clear();
         }
 
         float TurnFactor(Vector3 forward, Vector3 dir)
@@ -457,26 +361,53 @@ namespace CosmicShore.Gameplay
             return a * Mathf.Cos(theta) + b * Mathf.Sin(theta);
         }
 
-        // ── The round, predicted ────────────────────────────────────────────
+        /// <summary>An opposing pilot with a live hull that is NOT cloaked - the only kind the bot
+        /// can see, hunt or fire at.</summary>
+        static bool IsVisibleRival(IPlayer rival, Domains own)
+        {
+            if (rival == null || rival.Domain == own) return false;
+            var vessel = rival.Vessel;
+            if (vessel == null || vessel.Transform == null) return false;
+            return !CloakSeedWallActionExecutor.IsCloaked(vessel.VesselStatus);
+        }
+
+        // ── The fire gate: would THIS round, fired now, strip a rival? ──────
 
         /// <summary>
-        /// What a round fired from <paramref name="origin"/> along <paramref name="dir"/> would be
-        /// worth to this bot's domain, priced the way the rule pays it: one per hostile prism the
-        /// cone contains, plus <see cref="SerpentChargeScoringRuleSO.PilotSnipePoints"/> for every
-        /// rival pilot inside the cone and within the round's reach (the farthest prism it kills,
-        /// or the full range when it kills none - <c>SniperShotActionExecutor.StripVessels</c>).
+        /// True when a round fired from <paramref name="origin"/> along <paramref name="dir"/> would
+        /// strip a visible rival: the rival is inside the cone (arithmetic, per rival) AND within
+        /// the round's reach - which only the one spatial query below can answer, so it runs only
+        /// once a rival is already in the cone.
         /// </summary>
-        int ScoreLine(IVesselStatus status, SniperShotActionExecutor shot, PrismSpatialIndex index,
-                      Vector3 origin, Vector3 dir)
+        bool RoundWouldStrikeRival(IVesselStatus status, SniperShotActionExecutor shot, Vector3 origin, Vector3 dir)
         {
-            using var lineScope = s_ScoreLineMarker.Auto();
             float range = shot.RangeUnits;
             float half = shot.ConeHalfAngleDegrees;
             float minRadius = shot.MinPathRadius;
+            float tanHalf = Mathf.Tan(Mathf.Deg2Rad * Mathf.Clamp(half, 0f, 89f));
             Domains own = status.Domain;
+
+            float nearestRival = float.MaxValue;
+            var players = _gameData.Players;
+            for (int i = 0; i < players.Count; i++)
+            {
+                var rival = players[i];
+                if (!IsVisibleRival(rival, own)) continue;
+                Vector3 p = rival.Vessel.Transform.position;
+                if (!PrismSpatialIndex.ConeContains(p, origin, dir, range, tanHalf, minRadius)) continue;
+                float along = Vector3.Dot(p - origin, dir);
+                if (along < nearestRival) nearestRival = along;
+            }
+            if (nearestRival == float.MaxValue) return false;
+
+            // The reach rule (SniperShotActionExecutor.StripVessels): the strip reaches as far as the
+            // farthest prism the round kills, or the full range when it kills none.
+            using var reachScope = s_ReachMarker.Auto();
+            var index = PrismSpatialIndex.EnsureInstance();
+            if (index == null || !index.IsAvailable) return true;
+
             bool pierce = status.ElementalAbilityHandler != null &&
                           status.ElementalAbilityHandler.IsUpgradeActive(Element.Charge);
-
             index.QueryCone(origin, dir, range, half, minRadius, _hits);
             int prisms = 0;
             float farthest = 0f;
@@ -491,25 +422,8 @@ namespace CosmicShore.Gameplay
             }
             _hits.Clear();
 
-            int value = prisms;
-            if (_rule == null || _rule.PilotSnipePoints <= 0) return value;
-
             float reach = prisms > 0 ? farthest : range;
-            float tanHalf = Mathf.Tan(Mathf.Deg2Rad * Mathf.Clamp(half, 0f, 89f));
-            var players = _gameData.Players;
-            for (int i = 0; i < players.Count; i++)
-            {
-                var rival = players[i];
-                if (rival == null || rival.Domain == own) continue;
-                // A cloaked pilot is invisible to the bot, so it is worth nothing in a line it is
-                // weighing - it may still be hit by a round fired for the forest, and that pays.
-                if (CloakSeedWallActionExecutor.IsCloaked(rival.Vessel?.VesselStatus)) continue;
-                var rtf = rival.Vessel?.Transform;
-                if (rtf == null) continue;
-                if (PrismSpatialIndex.ConeContains(rtf.position, origin, dir, reach, tanHalf, minRadius))
-                    value += _rule.PilotSnipePoints;
-            }
-            return value;
+            return nearestRival <= reach;
         }
 
         // ── Steering ────────────────────────────────────────────────────────
@@ -538,21 +452,29 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>Where AIPilot steers this bot this frame: a crystal it is detouring for, the
-        /// rival it is hunting (followed live), or its planned line.</summary>
+        /// rival it is hunting (followed live, through its aim error, and stood off from when it is
+        /// too close to line up), the last place a cloaked rival was seen, or the arena.</summary>
         Vector3 SteerPoint(Marksman m)
         {
             if (m.Detour != null) return m.Detour.position;
 
-            if (m.Quarry != null && !CloakSeedWallActionExecutor.IsCloaked(m.Quarry.Vessel?.VesselStatus))
+            var self = m.Player?.Vessel?.Transform;
+            if (m.Quarry != null && self != null && IsVisibleRival(m.Quarry, m.Player.Domain))
             {
-                var qtf = m.Quarry.Vessel?.Transform;
-                if (qtf != null) return qtf.position + m.QuarryOffset;
-                m.Quarry = null;
+                Vector3 quarry = m.Quarry.Vessel.Transform.position;
+                m.HasLastSeen = true;
+                m.LastSeen = quarry;
+
+                // Too close to line a sniper round up: pull away to a standoff point and come back.
+                Vector3 away = self.position - quarry;
+                if (away.sqrMagnitude < _settings.aiMinAimDistance * _settings.aiMinAimDistance)
+                    return quarry + (away.sqrMagnitude > 1e-6f ? away.normalized : self.forward)
+                                  * _settings.aiStandoffDistance;
+
+                return quarry + m.AimOffset;
             }
 
-            if (m.HasPlan) return m.AimPoint;
-
-            var self = m.Player?.Vessel?.Transform;
+            if (m.HasLastSeen) return m.LastSeen;
             if (_arena) return _arena.transform.position;
             return self != null ? self.position + self.forward * 500f : Vector3.zero;
         }

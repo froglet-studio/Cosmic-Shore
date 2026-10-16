@@ -1286,27 +1286,29 @@ because a toggle a driver counts drifts the first time a press is lost or double
 authored headless (`author_dustup/tapestry/sirocco_assets.py`, `--check`) and have not been run in
 the editor; their targets are reasoned, not measured. See `DUSTUP.md`, `TAPESTRY.md`, `SIROCCO.md`.
 
-`SerpentCharge(67)` is **the Serpent's CHARGE game** — a sniper race through Rampage's cactus forest.
-On the Serpent, Charge is the Sniper Shot's RECOVERY (12 s → 5.4 s at Charge 10); the round is a
-1.5° × 3,000 u hitscan cone that destroys everything hostile it contains and strips any rival pilot
-inside its reach, so the skill is the ANGLE — a round down the length of a stand, not across it.
-Rampage's metric and rule with ONE fold (`SerpentChargeScoringRuleSO`): the round's pilot strip was
-already a `CombatHitClass.Debuff` hit (`SniperShotAction.asset`), so the rule prices it (**60**
-prisms) into `CombatPoints` and folds that into `DomainValue` (the Undertow shape) — and overrides
-`IsObjectiveReached`, because Rampage's reads the raw metric sum. Target **800**, comeback 0.008,
-waves of Charge crystals (10 every 40 s, peer-local, re-laid by a broadcast wave INDEX so per-peer
-collection never accumulates). Its `ModeGenre` row reads **Charge, then Space** (the metric alone
-reads Space). The AI is a mode-local **marksman** (`SerpentMarksmanAI`): AIPilot never touches the
-scope and the rifle only fires scoped, so without it every AI Serpent is the Tollway defect. It
-latches the scope with one replicated LT press, scores candidate lines with the RIFLE'S OWN QUERY
-(`QueryCone` at its range/half-angle/`MinPathRadius`, its target filter, its pilot-reach rule —
-`SniperShotActionExecutor.MinPathRadius` was exposed for this), steers down the best one, fires a
-replicated RT when the live nose line is worth a fraction of the plan, hunts pilots from intensity
-2 and detours to Charge crystals on a long cooldown. **Its difficulty is the intensity row**: eight
-four-rung ladders on `SerpentChargeSettings.asset` (re-plan cadence, candidate count, aim error vs
-the 1.5° cone, reaction, pickiness, patience, hunt range, detour range), asserted monotone by the
-generator. Scene cloned from Sirocco's (six lines). Authored headless
-(`author_serpent_charge_assets.py --check`); see `_Scripts/Controller/Arcade/SERPENTCHARGE.md`.
+`SerpentCharge(67)` is **the Serpent's CHARGE game** — a **sniper duel**. A Charge game is about
+hitting other pilots with your abilities; the Space games are the ones about destroying prisms
+(Garrett, 2026-10-16). So only a **snipe** scores: a Sniper Shot (1.5° × 3,000 u hitscan cone) that
+strips a rival pilot, which was already a `CombatHitClass.Debuff` hit (`SniperShotAction.asset`),
+credited into `CombatPoints`. Dustup's shape: `SerpentChargeScoringRuleSO : ScoringRuleSO` prices
+`Debuff` at 1 and every other class at 0, `SerpentChargeSnipeTurnMonitor : CombatPointTurnMonitorBase`,
+target **8 snipes**, golf-timed, comeback 0.6. On the Serpent, Charge is the rifle's RECOVERY
+(12 s → 5.4 s at Charge 10), so the arena carries waves of Charge crystals (10 every 40 s,
+peer-local, re-laid by a broadcast wave INDEX so per-peer collection never accumulates). The arena
+is **Rampage Cell Config 4 alone**: the forest is cover, not the score, and config 4 is the
+measured-good rung. The arrow is `BendsObjectiveProvider` (nearest visible rival; it skips a
+cloaked pilot). The AI is a mode-local **pilot hunter** (`SerpentMarksmanAI`): AIPilot never
+touches the scope and the rifle only fires scoped, so without it every AI Serpent is the Tollway
+defect. It latches the scope with one replicated LT press, hunts the visible rival it can bring to
+bear most cheaply, ignores cloaked pilots, fires a replicated RT only when a rival is inside the
+cone AND inside the round's reach (the RIFLE'S OWN `QueryCone`, run only after the cheap in-cone
+test), cloaks through the replicated input once per long reload, and detours to Charge crystals.
+**Its difficulty is the intensity row**: five four-rung ladders on `SerpentChargeSettings.asset`
+(re-plan cadence, aim error vs the 1.5° cone, reaction, hunt range, detour range), asserted
+monotone by the generator. A cloak now hides every renderer under the vessel root from observers,
+the VesselTail included. Scene cloned from Sirocco's; the committed scene carries the redesign as
+an idempotent generator patch. Authored headless (`author_serpent_charge_assets.py --check`); see
+`_Scripts/Controller/Arcade/SERPENTCHARGE.md`.
 
 **ARENA SEATING — six seats, one pilot per hull, and a human can take an AI teammate's ship.**
 One authored bit, `SO_ArcadeGame.ArenaRules` (on the four `ArenaGames` cards and nowhere else,
@@ -1385,7 +1387,7 @@ MiniGameControllerBase (abstract, NetworkBehaviour)
         └── DustupController                    — Butterfly-only dust duel in the Boneyard; a pass OVER a rival is a Strike point (CombatPoints)
         └── TapestryController                  — Butterfly-only timed painting war in the Barren cell; volume standing at the whistle (VolumeRemaining)
         └── SiroccoController                   — Butterfly-only erosion race through Rampage's forest; prisms-destroyed scoring
-        └── SerpentChargeController             — Serpent-only sniper race through Rampage's forest; prisms + sniped pilots, marksman AI
+        └── SerpentChargeController             — Serpent-only sniper duel; snipes on rival pilots score, pilot-hunter AI
 ```
 
 #### Game Launch Pipeline

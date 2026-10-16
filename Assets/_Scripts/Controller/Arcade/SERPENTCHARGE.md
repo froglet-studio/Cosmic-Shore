@@ -1,16 +1,19 @@
 # Serpent Charge (`GameModes.SerpentCharge = 67`)
 
-The Serpent's **CHARGE** game: a sniper race through Rampage's cactus forest. On the Serpent,
-**Charge is the Sniper Shot's recovery**. The rifle waits 12 s between rounds at rest and 5.4 s at
-Charge 10. The round is the same at every level: a 1.5° hitscan cone, 3,000 u long, that destroys
-**everything hostile it contains**, because it pierces by default. It also strips any rival pilot
-inside its reach. So the mode works like this:
+The Serpent's **CHARGE** game: a **sniper duel**. A Charge game is about hitting other pilots with
+your abilities; the Space games are the ones about destroying prisms (Garrett, 2026-10-16). So the
+only thing that scores here is a **snipe**: a Sniper Shot that strips a rival pilot. On the
+Serpent, **Charge is the Sniper Shot's recovery**. The rifle waits 12 s between rounds at rest and
+5.4 s at Charge 10. The round is the same at every level: a 1.5° hitscan cone, 3,000 u long. It
+pierces everything hostile it contains, and it strips any rival pilot inside its reach. So the mode
+works like this:
 
 1. Hold the scope.
-2. Lay the reticle down the **length** of a stand rather than across it, and fire.
-3. Spend the cooldown collecting Charge so the next round comes sooner.
+2. Put the reticle on a rival pilot and fire.
+3. Lay a seed to vanish from their sights, and use the forest as cover.
+4. Spend the cooldown collecting Charge so the next round comes sooner.
 
-The first **DOMAIN** to the target wins. A sniped rival pilot counts as a whole stand.
+The first **DOMAIN** to **8 snipes** wins, golf-timed (Dustup's shape).
 
 It follows the `<Hull><Element>` family: Sirocco (Butterfly · Space), Grizzly Charge, Grizzly Time
 and Warpline (Stoat · Time).
@@ -19,54 +22,51 @@ and Warpline (Stoat · Time).
 |---|---|
 | Scene | `Assets/_Scenes/Multiplayer Scenes/MinigameSerpentCharge.unity` (cloned from `MinigameSirocco.unity`) |
 | Controller | `SerpentChargeController : MultiplayerDomainGamesController` |
-| AI | `SerpentMarksmanAI`, a mode-local server driver (below) |
-| Metric | `ScoringMetric.PrismsDestroyed` (5). **Reused**, with sniped pilots folded in |
-| Rule | `SerpentChargeScoringRuleSO : RampageScoringRuleSO`, with `pilotSnipePoints` **60** |
-| Turn monitor | `SerpentChargePrismTurnMonitor` (Sirocco's shape, its own getter) |
-| Target | `EndConditionOverridesSO.serpentChargePrismTarget` (**800**) |
-| Comeback | rate **0.008**: a quarter behind (200) buys 1.6 element levels |
-| Arena | **Rampage's cactus forest**, referenced read-only (four intensity configs) |
+| AI | `SerpentMarksmanAI`, a mode-local server driver that hunts pilots (below) |
+| Metric | `ScoringMetric.CombatPoints` (8), reused. A snipe is a `Debuff`-class combat hit |
+| Rule | `SerpentChargeScoringRuleSO : ScoringRuleSO`. `snipePoints` **1**, every other hit class **0** |
+| Turn monitor | `SerpentChargeSnipeTurnMonitor : CombatPointTurnMonitorBase` (Dustup's shape, its own getter) |
+| Target | `EndConditionOverridesSO.serpentChargeSnipeTarget` (**8**) |
+| Comeback | rate **0.6** (Dustup's): a quarter behind (2 snipes) buys 1.2 element levels |
+| Arena | **Rampage Cell Config 4 only**, referenced read-only. The forest is cover, not the score |
 | Economy | waves of **Charge crystals**, 10 every 40 s |
-| Objective arrow | `HostileMassObjectiveProvider`, pointing at the densest standing hostile stand |
-| Genre petal | **Charge** first, **Space** second (a `ModeGenre` row; the metric alone reads Space) |
+| Objective arrow | `BendsObjectiveProvider`: the nearest visible rival pilot (cloaked pilots are skipped) |
+| Genre petal | **Charge**, from the metric alone (no `ModeGenre` row) |
 | Generator | `Tools/Build/author_serpent_charge_assets.py` (`--check`) |
 
 ## The loop
 
-1. **Scope** (hold the left trigger). The eyepiece opens and the right trigger becomes the rifle;
-   unscoped, the right trigger is still the cloak (`SERPENT_SNIPER_SCOPE.md`).
-2. **Find the long line.** A plant averages ~178 prisms. A round put *across* a stand takes a
-   handful of them, while one put *down its length*, or through two stands that line up, takes
-   dozens to a hundred. The angle is the whole skill.
-3. **Fire** (right trigger, while scoped). Everything hostile in the cone dies, super-shielded mass
-   included once Charge 5 "Pierce" is up. Any rival pilot inside the round's reach is stripped,
-   and that pays **60**.
-4. **Collect Charge while you reload.** Each Charge crystal shortens the next cooldown, and the
+1. **Scope** (hold the left trigger). The eyepiece opens and the right trigger becomes the rifle.
+   Unscoped, the right trigger is the cloak (`SERPENT_SNIPER_SCOPE.md`).
+2. **Find a rival.** The arrow points at the nearest rival pilot you can see. The forest is cover:
+   a round reaches only as far as the farthest prism it kills (the full 3,000 u if it kills none),
+   so a pilot tucked behind a stand is out of reach of a round that dies in the stand.
+3. **Fire** (right trigger, while scoped). A rival pilot inside the round's reach is stripped, and
+   that is **one snipe**. Prisms in the cone die too, and they pay nothing.
+4. **Cloak** (right trigger, unscoped). The seed wall goes down and your hull, its tail, its jets
+   and its trail vanish from every other player. No AI tracks a cloaked pilot, and the arrow skips
+   one.
+5. **Collect Charge while you reload.** Each Charge crystal shortens the next cooldown, and the
    comeback hands a trailing domain extra element levels on top.
-
-Hull ramming still destroys hostile mass (`VesselDamagePrismEffect` on the Serpent's container)
-and it counts, but it is the slow way.
 
 ## Reused, and why
 
-- **The metric and rule are Rampage's**, with one fold on top. A round's kills reach
-  `HostilePrismsDestroyed` through `StatsManager` exactly as every destruction mode's do: the round
-  resolves on every peer and is credited once, by whichever machine simulates the shooter. The
-  pilot strip was **already** a landed combat hit of class `Debuff` (`SniperShotAction.asset`
-  `hitClass: 2`), so `CombatHitScoring.Credit` already pays it into `CombatPoints` at the rule's
-  price. The rule prices it at 60 and folds `CombatPoints` into `DomainValue`, the Undertow shape.
-  The end condition, remaining count, winner, HUD domain boxes and comeback all read `DomainValue`,
-  so they agree by construction. `IsObjectiveReached` is overridden for that reason, because
-  Rampage's reads the raw metric sum.
-- **The arena is Rampage's**, the same four configs The Bends, Bloomrush and Sirocco reference.
-  Intensity comes with it as the forest's density: 89 / 78 / 74 / 67 plants, 15,962 → 11,918
-  prisms (it was 335 → 67 and 59,590 → 11,918 until a 2 FPS play test on 2026-10-13, see
-  `RAMPAGE.md` § "Four intensities"). A forest suits a piercing round because the value of a shot lives entirely in its angle.
-- **The scene** is a six-line delta from Sirocco's: identity guids, plus the four AI hulls going
-  from Butterfly (13) to Serpent (7). The spawn ring is Rampage's own, 500 outside the nucleus.
+- **The metric and the turn monitor are Dustup's shape.** The pilot strip was **already** a landed
+  combat hit of class `Debuff` (`SniperShotAction.asset` `hitClass: 2`), so `CombatHitScoring.Credit`
+  already paid it into `DebuffHitsLanded` (the raw count) and `CombatPoints` (at the rule's price).
+  Nothing new is counted. The rule prices `Debuff` at 1 and every other class at 0 explicitly per
+  class, so a mis-authored vessel roster cannot hide behind a working scoreboard. The same-victim
+  window (0.5 s) sits far under the rifle's 5.4-12 s cooldown, so every round that connects pays.
+- **The arena is Rampage's fourth config, alone** (`cellTypeChoiceOptions: 0` over one config).
+  It was the four-config intensity ladder while prisms were the score. Now the forest is only
+  cover, and config 4 is the rung measured at **58.7 FPS in a build** (`RAMPAGE.md`). Intensity no
+  longer changes the forest. It changes only the AI ladder below.
+- **The scene** is a small delta from Sirocco's: identity guids, the four AI hulls going from
+  Butterfly (13) to Serpent (7), and the cell narrowed to config 4. The spawn ring is Rampage's own,
+  500 outside the nucleus. The scene is committed, so the clone stands down. The redesign's two
+  scene edits (the monitor's script guid and the cell block) are an idempotent patch the generator
+  applies to the committed scene.
 - **The forest PLANTS IN over the opening ~45 s** (2026-10-13, Rampage's own change, inherited).
-  It used to land one plant per frame, so intensity 2's 245 plants arrived in about half a second.
-  The final forest is unchanged. See `RAMPAGE.md` § "The forest".
 
 ## Charge crystals (the mode's economy)
 
@@ -82,87 +82,91 @@ never accumulates drift. That is tolerable for the same reason it is there: a cr
 nothing. It only shortens a cooldown, and the cooldown is owner-authoritative anyway
 (`SniperShotActionExecutor`'s documented limitation).
 
-## AI: the marksman (`SerpentMarksmanAI`)
+## AI: the pilot hunter (`SerpentMarksmanAI`)
 
 `AIPilot` writes a stick and a throttle and nothing else. On the Serpent prefab its generic ability
 cycler toggles the cloak on a timer and never touches the scope, and the rifle only fires while the
 scope is up. Without a driver every AI Serpent would fly the whole match unable to fire, which is
-the Tollway rule's defect: an all-AI domain that cannot play. So every AI Serpent becomes a marksman.
+the Tollway rule's defect: an all-AI domain that cannot play. So every AI Serpent becomes a hunter.
 
-- **It holds the scope** with one replicated LT press (the scope is a latch) and re-presses only if
+- **It holds the scope** with one replicated LT press (the scope is a latch). It re-presses only if
   the latch did not take, for example if input was muted for the countdown.
 - **It owns the right trigger, so it cloaks deliberately.** RT is the cloak unscoped and the rifle
   scoped, so AIPilot's ability cycler is told to keep off the cloak
-  (`AIPilot.SuppressCycledAbility<CloakSeedWallActionSO>`; restored on disarm). Otherwise a cycler
+  (`AIPilot.SuppressCycledAbility<CloakSeedWallActionSO>`, restored on disarm). Otherwise a cycler
   press while the scope was up would fire the rifle. Once per reload, and only when at least
-  `aiCloakMinCooldownSeconds` (5) of it remains, the marksman does three things: it lowers its
-  scope, presses the cloak **through the replicated input**, and raises the scope again a second
-  later. Because the press is replicated, the hull vanishes, the trail fades and the seed wall is
-  laid on every machine.
+  `aiCloakMinCooldownSeconds` (5) of it remains, the hunter does three things: it lowers its scope,
+  presses the cloak **through the replicated input**, and raises the scope again a second later.
+  The hull, its tail, its jets and its trail vanish on every machine.
+- **It hunts the rival it can bring to bear most cheaply.** Every re-plan it takes the visible
+  rival with the smallest distance divided by a turn factor (1 dead ahead, falling to
+  `aiTurnPenaltyFloor` straight behind), within its hunt range. Past that range it flies at the
+  nearest visible rival. It steers at that pilot plus a fixed aim error for the plan's life
+  (`SetExternalTargetProvider`). Inside `aiMinAimDistance` it pulls away to `aiStandoffDistance` and
+  turns back in, because a sniper cannot line up a pilot it is about to ram.
 - **It cannot see a cloaked pilot.** A rival whose hull is cloaked
-  (`CloakSeedWallActionExecutor.IsCloaked`) is not a hunting target and is worth nothing in a
-  line the bot is weighing. A rival it was already hunting is dropped the moment they cloak, and
-  the bot flies to where it last saw them. A round fired for the forest can still catch a cloaked
-  pilot by accident, and that still pays.
-- **It plans the fattest line it can bring to bear.** It samples aim points from the densest
-  hostile stand (`Cell.GetExplosionTarget`, the same question the objective arrow asks) and from
-  the mass ahead of its nose. It scores each line **with the rifle's own query**: `QueryCone` at
-  the rifle's range, half-angle and radius floor, the rifle's target filter (never its own domain;
-  armour only at Charge 5), and the round's reach rule for pilots. It weighs each line by how far
-  it must turn to bring it to bear and steers down the winner (`SetExternalTargetProvider`).
-- **It fires when the rifle is ready and the LIVE nose line is worth it.** "Worth it" means a
-  fraction of what it planned. Once it has waited past its patience, anything worth
-  `aiMinShotValue` will do, so a bot that cannot settle its nose still keeps the rifle working. The
-  trigger is a replicated RT press, because the round resolves on every peer.
-- **It hunts pilots** from intensity 2, pricing a rival in a line at the rule's 60. It follows the
-  rival live and carries a fixed aim error for the plan's life.
+  (`CloakSeedWallActionExecutor.IsCloaked`) is not a target. A rival it was hunting is dropped the
+  moment they cloak, and the bot flies to where it last saw them.
+- **It fires only when the round would strike a rival.** The fire gate first checks, cheaply,
+  whether any visible rival is inside the rifle's cone. Only then does it ask the rifle's own
+  `QueryCone` (the rifle's range, half-angle, radius floor and target filter) for the round's
+  reach, and fire if the rival is inside it. The trigger is a replicated RT press, because the
+  round resolves on every peer. The hunter makes **no forest-wide line searches**. The prism-race
+  design's per-candidate full-range cone queries are gone with it.
 - **On a long cooldown it detours to Charge crystals**, but only when at least
   `aiDetourMinCooldownSeconds` of reload remain, so a detour never costs a shot.
 
 **Difficulty is the intensity row.** Every strength is a four-rung ladder on
-`SerpentChargeSettings.asset`, and the generator asserts each one is monotone in the hard
-direction:
+`SerpentChargeSettings.asset`. The generator asserts each one is monotone in the hard direction,
+that intensity 4's aim error is inside the cone and intensity 1's outside it, and that the C#
+initializers match the asset:
 
 | Ladder | I1 | I2 | I3 | I4 |
 |---|---|---|---|---|
-| re-plan every (s) | 1.6 | 1.1 | 0.75 | 0.5 |
-| candidate lines | 6 | 10 | 16 | 24 |
-| aim error (°, vs a 1.5° cone) | 2.5 | 1.5 | 0.75 | 0.25 |
+| re-plan every (s) | 1.2 | 0.9 | 0.6 | 0.4 |
+| aim error (°, vs a 1.5° cone) | 3.0 | 2.0 | 1.2 | 0.5 |
 | reaction to a ready rifle (s) | 1.0 | 0.6 | 0.3 | 0.12 |
-| fire at ≥ this fraction of the plan | 0.5 | 0.6 | 0.7 | 0.8 |
-| patience before settling (s) | 2.5 | 3 | 3.5 | 4 |
-| pilot-hunt range (u) | — | 1,200 | 2,000 | 2,800 |
+| pilot-hunt range (u) | 1,500 | 2,000 | 2,500 | 3,000 |
 | Charge-crystal detour range (u) | — | 450 | 700 | 1,000 |
 
-At intensity 1 the bot is slow and wobbly and never hunts you. At intensity 4 it re-plans twice a
-second, aims within a quarter-degree, reacts in about a tenth of a second, will not waste a round
-on a thin line, hunts you across nearly the whole range and keeps its Charge topped up.
+At intensity 1 the bot aims outside the cone, so it misses more than it hits, reacts in a second
+and never detours for Charge. At intensity 4 it re-plans every 0.4 s, aims within half a degree,
+reacts in about a tenth of a second, hunts you across the rifle's whole range and keeps its Charge
+topped up. The only thing that beats it is cover and the cloak.
 
 ## Platform changes (and the rule each one records)
 
 - **`GameModes.SerpentCharge = 67`**, and `EnumIntegrityTests` moves to 63 members (ThresherTime took 66 on bleeding-edge first).
-- **`EndConditionOverridesSO.serpentChargePrismTarget`** gets the full row set (field, build twin,
+- **`EndConditionOverridesSO.serpentChargeSnipeTarget`** gets the full row set (field, build twin,
   getter, authored-target row, live/build compare, apply, capture) plus the editor window's field,
-  "effective now" and build-summary rows.
+  "effective now" and build-summary rows. It replaced `serpentChargePrismTarget` with the prism
+  race. The generator removes the retired keys from `EndConditionOverrides.asset`, because Unity
+  never prunes a serialized key the class lost.
 - **`GameToastSituation.SerpentChargeScopeHint = 137`**, an idle hint. The rest is reuse: `82`
-  (`DebuffHitsLanded` rose) **is** a pilot snipe in this mode, `83` is a prism milestone, and
-  `128-131` are the race beats from `DomainRaceToasts`.
-- **`MiniGameHUD`**: SerpentCharge → `HostileMassObjectiveProvider`.
-- **`ModeGenre`** gets a row of **Charge first, then Space**, with `ModeGenreTests` updated. The
-  metric alone reads Space, but this is the Serpent's Charge game: the rifle's rate is Charge, and
-  a pilot is the most valuable thing a round can pass through.
+  (`DebuffHitsLanded` rose) **is** a snipe in this mode, and `128-131` are the race beats from
+  `DomainRaceToasts`. The prism milestone (`83`) is gone.
+- **`MiniGameHUD`**: SerpentCharge → `BendsObjectiveProvider`. That provider now also **skips a
+  cloaked pilot** in every mode that uses it, because an arrow that points at an invisible pilot
+  gives the cloak away.
 - **AI cloaks reach every player** (2026-10-13). `AIAbility.ReplicateThroughInput` is a new
   opt-in on AIPilot's ability cycler. When it is set, the entry presses the vessel's own control
   through `PerformShipControllerActionsReplicated` instead of starting the ability locally on the
   server. It is ticked on the Serpent's cloak entry, and it fixes the cloak in **every** mode that
-  flies AI Serpents: before, an AI cloak hid the hull, faded the trail and laid the seed on the
+  flies AI Serpents. Before, an AI cloak hid the hull, faded the trail and laid the seed on the
   server only. `R_VesselActionHandler.TryGetInputForAsset` answers which control runs a given
   authored asset. General rule: an AI press whose output rides no other replicated channel must
   be replicated (that method's own doc states it).
+- **A cloak hides the WHOLE vessel from observers** (2026-10-16). It used to disable only the hull
+  renderer, so the **VesselTail** (the model's tail TrailRenderer, not the jets,
+  `Docs/VESSEL_TAIL_AND_JETS.md`), the jets and every other renderer under the vessel root stayed
+  visible on an "invisible" pilot. `CloakSeedWallActionExecutor` now sets `forceRenderingOff` on
+  every renderer under the vessel root for non-local viewers (prisms excluded; `enabled` is left
+  to the owners that toggle it, as `VesselTailAndJets.HideTails` does) and lifts exactly those at
+  the reveal, clearing a TrailRenderer first so it does not draw the route flown under the cloak.
 - **AIs do not track a cloaked pilot** (2026-10-13). `CloakSeedWallActionExecutor.IsCloaked` is
   one predicate, true from cloak to reveal. AIPilot's platform player seeking (Joust, Dog Fight,
   Broadside) skips a cloaked candidate and breaks an existing lock when its target cloaks, and the
-  marksman does the same. `AIPilot.SuppressCycledAbility<T>` lets a mode drive an ability itself.
+  hunter does the same. `AIPilot.SuppressCycledAbility<T>` lets a mode drive an ability itself.
 - **`SniperShotActionExecutor.MinPathRadius`** is a new read-only accessor, so a caller that
   *predicts* a shot asks exactly the cone the shot fires. General rule: an AI that scores its own
   options should score them with the weapon's own geometry, never a copy of its numbers.
@@ -172,20 +176,25 @@ on a thin line, hunts you across nearly the whole range and keeps its Charge top
 **Authored headless; nothing has been opened in the editor.**
 
 Proved:
-- The generator's `--check`, watched failing twice: once on a mutated asset, and once on a ladder
-  edited to make intensity 4 easier. Both passed once restored.
+- The generator's `--check`, watched failing on three negative controls for the snipe redesign:
+  a drifted `DefaultSerpentChargeSnipeTarget`, a settings-SO ladder initializer that disagreed with
+  the asset, and the scene's cell reverted to the intensity ladder. All passed once restored.
 - The stand-down path, watched by drifting the Sirocco donor's AI templates.
 - The standing out-of-editor gates.
 - `/cardart`'s `--check` / `--strict`.
 - **The C# compiles against real Unity references** (`Tools/Build/unity_refcompile`): the player
-  config and the editor config both report no errors in project code, the editor config also
-  gating the new test and the end-conditions window. The negative control works: a misspelled
-  member injected into `SerpentMarksmanAI` failed the player compile in its own method body.
+  config reports no errors in project code. The editor config reports none in files this branch
+  changed, gating the test and the end-conditions window. (It reports three pre-existing errors in
+  upstream UI files, an `OnValidate` override the editor references do not declare.) The negative
+  control works: a misspelled member injected into `SerpentMarksmanAI` failed the player compile in
+  its own method body.
 
 Not proved:
-- That it plays.
+- That it plays, or that it runs at a playable frame rate. **The 2 FPS report has not been
+  re-measured.** Config 4 is the measured-good rung, and the hunter no longer runs forest queries,
+  but the number that matters is a capture from this mode.
 - That the AI's aim settles on the Serpent's turn rate.
-- That 800 is the right length.
+- That 8 is the right length.
 - That `SerpentChargeScoringRuleTests` passes: it compiles, but EditMode tests need the editor.
 
 `/verify-unity` was not available in this session (no editor, no `unity` binary), so the change is
@@ -193,16 +202,12 @@ filed in `Docs/UNITY_VERIFICATION_CHECKLIST.md`.
 
 ## Known limitations
 
-- **The target is reasoned, not measured.** It assumes a good line takes ~60 prisms and the rifle
-  fires every 12 s at rest, which puts a solo pilot at ~2.5 minutes. Play-test it.
-- **The pilot price (60) is a balance guess.** It is roughly one good line, so a duel can swing a
-  match without the forest becoming irrelevant.
+- **The target is reasoned, not measured.** It assumes a pilot connects with about one round in
+  three. Play-test it.
 - **An AI cloaks at most once per reload**, and only in a reload of 5 s or more, because it must
   lower its scope to do it. At rest that is every other shot or so (the cloak itself runs 15 s).
 - **Charge-crystal collection is per-peer** (see above). A client can see a crystal still standing
   that a remote pilot has already collected on its own machine, until the next wave replaces it.
-- **Rampage intensity 1 is the heaviest cell in any arcade mode and is not profiled.** That is
-  inherited, not added. The marksman's cone and sphere queries are server-only and throttled (one
-  plan per 0.5-1.6 s and one live-line query per 0.1 s per bot), and have not been profiled either.
-- **Card art** has not been rendered yet: run `/cardart`. Until then the card wears the shared
-  placeholder.
+- **Rampage's creation queue polls every pending prism every frame** while the forest plants in.
+  It is inherited, not added, and it is the leading suspect for the opening seconds' cost. It is
+  recorded as a follow-up, not fixed here.

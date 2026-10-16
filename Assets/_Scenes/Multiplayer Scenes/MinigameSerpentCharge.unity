@@ -729,7 +729,7 @@ MonoBehaviour:
   m_GameObject: {fileID: 1628508325}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 2ea30b04196ca6a09119009878a54238, type: 3}
+  m_Script: {fileID: 11500000, guid: 01646375b3bd84d037cbe465c1005f88, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   ShowTopMostFoldoutHeaderGroup: 1
@@ -962,11 +962,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   ID: 0
   CellConfigs:
-  - {fileID: 11400000, guid: fc20698b2b983f9e1e9c20733ea92760, type: 2}
-  - {fileID: 11400000, guid: 398abbfc433510307e154b76aa4191b4, type: 2}
-  - {fileID: 11400000, guid: 789e13b3381f614d997ba4b7a830ff22, type: 2}
   - {fileID: 11400000, guid: c6959b0e548d4f26bdde820ca48ac26e, type: 2}
-  cellTypeChoiceOptions: 1
+  cellTypeChoiceOptions: 0
   retireSuctionSeconds: 0
   runtime: {fileID: 11400000, guid: 8d4e8398eedc76c4dadb8604f89b9e1b, type: 2}
   nucleusScaleMultiplier: 1

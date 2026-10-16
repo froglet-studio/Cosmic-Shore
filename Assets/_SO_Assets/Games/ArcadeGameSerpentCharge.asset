@@ -15,10 +15,10 @@ MonoBehaviour:
   Mode: 67
   IsMultiplayer: 1
   DisplayName: Serpent Charge
-  Description: Serpents only, over Rampage's cactus forest. Hold the scope, lay the reticle
-    down the length of a stand and fire - one round tears through everything hostile in its
-    line, and a rival pilot caught in it is worth a whole stand. Charge is your reload, so
-    grab every Charge crystal. The AI marksmen hunt you back. First team to the target wins.
+  Description: A sniper duel between Serpents in Rampage's cactus forest. Hold the scope,
+    put the reticle on a rival pilot and fire - only a hit on a pilot scores. Lay a seed to
+    vanish from their sights, and use the forest as cover. Charge is your reload, so grab
+    every Charge crystal. First team to the snipe target wins.
   IconActive: {fileID: 21300000, guid: 1dc25875d7cbd3e478fc5a133e65eedb, type: 3}
   IconInactive: {fileID: 21300000, guid: fa9b62abd1b217b4ba3d7c5a4a2c0916, type: 3}
   CardBackground: {fileID: 21300000, guid: a326afd8716a4082912de8de662e0005, type: 3}
@@ -34,4 +34,4 @@ MonoBehaviour:
   MaxIntensity: 4
   ViewUserAction: 0
   PlayUserAction: 0
-  ComebackRatePerScoreDeficit: 0.008
+  ComebackRatePerScoreDeficit: 0.6

@@ -105,9 +105,8 @@ namespace CosmicShore.Editor
                 "wins), default " + EndConditionOverridesSO.DefaultTapestryRoundSeconds + ".\n" +
                 "  • Sirocco: hostile prisms a DOMAIN must destroy with the Scale Dust (race to N), " +
                 "default " + EndConditionOverridesSO.DefaultSiroccoPrismTarget + ".\n" +
-                "  • Serpent Charge: hostile prisms a DOMAIN must destroy with the sniper rifle " +
-                "(race to N) - a sniped rival pilot counts as a stand of prisms (the rule's " +
-                "PilotSnipePoints), default " + EndConditionOverridesSO.DefaultSerpentChargePrismTarget + ".\n" +
+                "  • Serpent Charge: rival PILOTS a DOMAIN must snipe (race to N) - a Sniper Shot that " +
+                "strips an opposing pilot is one snipe; prisms score nothing, default " + EndConditionOverridesSO.DefaultSerpentChargeSnipeTarget + ".\n" +
                 "  • Broadside: points a DOMAIN needs in the mixed-fleet brawl - a hit is priced by " +
                 "its VERB (round 1, contact strike 8, area debuff 12, rocket 10/20/30), default " +
                 EndConditionOverridesSO.DefaultBroadsidePointsPerPilot + " PER PILOT (the race target scales with team size: x1 / x1.6 / x2.2 / x2.8).\n" +
@@ -226,7 +225,7 @@ namespace CosmicShore.Editor
             int du  = Mathf.Max(0, EditorGUILayout.IntField("Dustup - Point Target", _config.dustupPointTarget));
             int tp  = Mathf.Max(0, EditorGUILayout.IntField("Tapestry - Round Seconds", _config.tapestryRoundSeconds));
             int sc  = Mathf.Max(0, EditorGUILayout.IntField("Sirocco - Prism Target", _config.siroccoPrismTarget));
-            int sch = Mathf.Max(0, EditorGUILayout.IntField("Serpent Charge - Prism Target", _config.serpentChargePrismTarget));
+            int sch = Mathf.Max(0, EditorGUILayout.IntField("Serpent Charge - Snipe Target", _config.serpentChargeSnipeTarget));
             int bs  = Mathf.Max(0, EditorGUILayout.IntField("Broadside - Points PER PILOT", _config.broadsidePointsPerPilot));
             if (EditorGUI.EndChangeCheck())
                 Persist("Edit End Game Conditions", () =>
@@ -264,7 +263,7 @@ namespace CosmicShore.Editor
                     _config.dustupPointTarget = du;
                     _config.tapestryRoundSeconds = tp;
                     _config.siroccoPrismTarget = sc;
-                    _config.serpentChargePrismTarget = sch;
+                    _config.serpentChargeSnipeTarget = sch;
                     _config.broadsidePointsPerPilot = bs;
                 });
 
@@ -307,7 +306,7 @@ namespace CosmicShore.Editor
             EditorGUILayout.LabelField("Dustup", du > 0 ? du.ToString() : EndConditionOverridesSO.DefaultDustupPointTarget + " (default)");
             EditorGUILayout.LabelField("Tapestry (seconds)", tp > 0 ? tp.ToString() : EndConditionOverridesSO.DefaultTapestryRoundSeconds + " (default)");
             EditorGUILayout.LabelField("Sirocco", sc > 0 ? sc.ToString() : EndConditionOverridesSO.DefaultSiroccoPrismTarget + " (default)");
-            EditorGUILayout.LabelField("Serpent Charge", sch > 0 ? sch.ToString() : EndConditionOverridesSO.DefaultSerpentChargePrismTarget + " (default)");
+            EditorGUILayout.LabelField("Serpent Charge", sch > 0 ? sch.ToString() : EndConditionOverridesSO.DefaultSerpentChargeSnipeTarget + " (default)");
             EditorGUILayout.LabelField("Broadside (per pilot)", bs > 0 ? bs.ToString() : EndConditionOverridesSO.DefaultBroadsidePointsPerPilot + " (default)");
             EditorGUI.indentLevel--;
 
@@ -370,7 +369,7 @@ namespace CosmicShore.Editor
                    "Dustup: " + Fmt(_config.dustupPointTargetBuild, "default " + EndConditionOverridesSO.DefaultDustupPointTarget) + "\n" +
                    "Tapestry (seconds): " + Fmt(_config.tapestryRoundSecondsBuild, "default " + EndConditionOverridesSO.DefaultTapestryRoundSeconds) + "\n" +
                    "Sirocco: " + Fmt(_config.siroccoPrismTargetBuild, "default " + EndConditionOverridesSO.DefaultSiroccoPrismTarget) + "\n" +
-                   "Serpent Charge: " + Fmt(_config.serpentChargePrismTargetBuild, "default " + EndConditionOverridesSO.DefaultSerpentChargePrismTarget) + "\n" +
+                   "Serpent Charge: " + Fmt(_config.serpentChargeSnipeTargetBuild, "default " + EndConditionOverridesSO.DefaultSerpentChargeSnipeTarget) + "\n" +
                    "Broadside (per pilot): " + Fmt(_config.broadsidePointsPerPilotBuild, "default " + EndConditionOverridesSO.DefaultBroadsidePointsPerPilot);
 
             static string Fmt(int value, string zeroMeaning) => value > 0 ? value.ToString() : "0 (" + zeroMeaning + ")";

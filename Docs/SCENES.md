@@ -320,7 +320,7 @@ MiniGameControllerBase (abstract, NetworkBehaviour)
 | 64 | `Slingshot` | MP | MinigameSlingshot | `SlingshotController` (Stoat wormhole-sling circuit race — see `SLINGSHOT.md`) |
 | 65 | `Warpline` | MP | MinigameWarpline | `WarplineController` (the Stoat's time race on the field dipole — see `WARPLINE.md`) |
 | 66 | `ThresherTime` | MP | MinigameThresherTime | `ThresherTimeController` (Thresher sling circuit race — see `THRESHERTIME.md`) |
-| 67 | `SerpentCharge` | MP | MinigameSerpentCharge | `SerpentChargeController` (Serpent sniper race, Charge — prisms destroyed + sniped pilots through Rampage's forest, marksman AI. See `SERPENTCHARGE.md`) |
+| 67 | `SerpentCharge` | MP | MinigameSerpentCharge | `SerpentChargeController` (Serpent sniper duel, Charge — snipes on rival pilots, Rampage Cell Config 4 as cover, pilot-hunter AI. See `SERPENTCHARGE.md`) |
 | 56 | `Regatta` | MP | MinigameRegatta | `RegattaController` (the ARENA race — every playable hull on a rail circuit; see `REGATTA.md`) |
 | 57 | `Broadside` | MP | MinigameBroadside | `BroadsideController` (the ARENA brawl — seven hulls, each with its own weapon, priced per VERB; see `BROADSIDE.md`) |
 | 58 | `Waystation` | MP | MinigameWaystation | `WaystationController` (Butterfly migration race — clusters you weave, folds between them; a teleport threads nothing. See `WAYSTATION.md`) |
@@ -583,7 +583,7 @@ Turn monitors determine when a turn ends. They are scene-placed components manag
 | `DustupPointTurnMonitor` | `TurnMonitors/` | A domain's summed dustings (Strike-class CombatPoints) reach the Dustup target (on `CombatPointTurnMonitorBase`) |
 | `TapestryTimeTurnMonitor` | `TurnMonitors/` | Timed: the round ends when `EndConditionOverridesSO.tapestryRoundSeconds` runs out (on `NetworkTimeBasedTurnMonitor`, duration read at `StartMonitor` on every peer) |
 | `SiroccoPrismTurnMonitor` | `TurnMonitors/` | A domain's summed hostile-prism destruction reaches the Sirocco target |
-| `SerpentChargePrismTurnMonitor` | `TurnMonitors/` | A domain's folded score (hostile prisms + sniped pilots at 60) reaches the Serpent Charge target |
+| `SerpentChargeSnipeTurnMonitor` | `TurnMonitors/` | A domain's snipes (CombatPoints) reach the Serpent Charge target |
 
 All turn monitors live in `Assets/_Scripts/Controller/Arcade/TurnMonitors/`.
 

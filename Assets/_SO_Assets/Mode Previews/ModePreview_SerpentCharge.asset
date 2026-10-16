@@ -13,22 +13,18 @@ MonoBehaviour:
   m_Name: ModePreview_SerpentCharge
   m_EditorClassIdentifier:
   Mode: 67
-  Notes: 'Reuses Rampage''s cactus forest outright - referenced, not forked, exactly as the mode
-    does; intensity is the forest''s density. What the preview teaches is the scope and the
-    rifle: a round down the length of a stand. Vessel pinned to Serpent(7).'
-  PreviewCell: {fileID: 11400000, guid: fc20698b2b983f9e1e9c20733ea92760, type: 2}
-  PreviewCellsByIntensity:
-  - {fileID: 11400000, guid: fc20698b2b983f9e1e9c20733ea92760, type: 2}
-  - {fileID: 11400000, guid: 398abbfc433510307e154b76aa4191b4, type: 2}
-  - {fileID: 11400000, guid: 789e13b3381f614d997ba4b7a830ff22, type: 2}
-  - {fileID: 11400000, guid: c6959b0e548d4f26bdde820ca48ac26e, type: 2}
+  Notes: 'Reuses Rampage Cell Config 4 outright - referenced, not forked, exactly as the mode
+    does; the forest is cover, not the score. What the preview teaches is the scope and the
+    rifle: a round laid on a rival pilot. Vessel pinned to Serpent(7).'
+  PreviewCell: {fileID: 11400000, guid: c6959b0e548d4f26bdde820ca48ac26e, type: 2}
+  PreviewCellsByIntensity: []
   StructurePrefab: {fileID: 0}
   TrackSpawnablesByIntensity: []
   PreviewFauna: {fileID: 0}
   PreviewFaunaCount: 4
   Vessel: 7
-  ObjectiveText: Scope in and snipe down the length of a stand
-  ObjectiveMetric: 5
+  ObjectiveText: Scope in and snipe the rival pilots
+  ObjectiveMetric: 8
   ObjectiveTarget: 0
   DurationSeconds: 60
   SpawnFromCellRing: 1

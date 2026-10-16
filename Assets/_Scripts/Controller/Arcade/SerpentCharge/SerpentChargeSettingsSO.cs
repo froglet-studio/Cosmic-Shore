@@ -3,8 +3,8 @@ using UnityEngine;
 namespace CosmicShore.Gameplay
 {
     /// <summary>
-    /// Serpent Charge's tunables other than the prism target (EndConditionOverridesSO) and the
-    /// pilot price (SerpentChargeScoringRuleSO): the Charge-crystal economy and the marksman AI.
+    /// Serpent Charge's tunables other than the snipe target (EndConditionOverridesSO) and the
+    /// snipe price (SerpentChargeScoringRuleSO): the Charge-crystal economy and the marksman AI.
     /// Config separation - authored by <c>Tools/Build/author_serpent_charge_assets.py</c>, never by
     /// hand.
     ///
@@ -42,71 +42,45 @@ namespace CosmicShore.Gameplay
                  "so every peer lays the same crystals in the same places.")]
         public int crystalScatterSeed = 66;
 
-        [Header("AI - cadence (per intensity, 1..4)")]
-        [Tooltip("Seconds between an AI's re-plans of its best firing line. Shorter = a bot that " +
-                 "notices a fatter line (or an exposed rival) sooner.")]
-        public float[] aiSolveSecondsByIntensity = { 1.6f, 1.1f, 0.75f, 0.5f };
+        [Header("AI - difficulty (per intensity, 1..4) - BELIEF, never the stick")]
+        [Tooltip("Seconds between an AI's re-reads of the field: which rival to hunt, and a fresh roll " +
+                 "of its aim error. Shorter = a bot that switches to the exposed rival sooner.")]
+        public float[] aiSolveSecondsByIntensity = { 1.2f, 0.9f, 0.6f, 0.4f };
 
-        [Tooltip("Candidate lines an AI scores per plan - aim points sampled from the densest " +
-                 "hostile stand and from the mass ahead of its nose. More = better lines found, and " +
-                 "each is one full-range cone query, so this is the AI's frame-time dial.")]
-        public int[] aiCandidateLinesByIntensity = { 4, 6, 9, 12 };
+        [Tooltip("Degrees of error in where the AI believes its rival is (an aim-point offset of up to " +
+                 "this, fixed per plan). The rifle's cone is 1.5 deg half-angle, so an error past it " +
+                 "misses more than it hits.")]
+        public float[] aiAimJitterDegreesByIntensity = { 3.0f, 2.0f, 1.2f, 0.5f };
 
-        [Tooltip("Degrees of error added to every aim point. The cone is 1.5 deg half-angle, so " +
-                 "anything near that visibly costs prisms per shot and most pilot snipes.")]
-        public float[] aiAimJitterDegreesByIntensity = { 2.5f, 1.5f, 0.75f, 0.25f };
-
-        [Tooltip("Seconds between the rifle coming off cooldown and the AI being allowed to fire - " +
-                 "a reaction time.")]
+        [Tooltip("Seconds between the rifle coming off cooldown and the AI being allowed to fire - a " +
+                 "reaction time.")]
         public float[] aiReactionSecondsByIntensity = { 1.0f, 0.6f, 0.3f, 0.12f };
 
-        [Tooltip("Fraction of its PLANNED line's value the live nose line must reach before the AI " +
-                 "fires. Higher = pickier, fatter shots (it waits for the line it found).")]
-        public float[] aiFireFractionByIntensity = { 0.5f, 0.6f, 0.7f, 0.8f };
-
-        [Tooltip("Seconds of readiness after which an AI stops waiting for its planned line and " +
-                 "fires anything worth aiMinShotValue - so a bot that cannot settle its nose still " +
-                 "keeps the rifle working.")]
-        public float[] aiPatienceSecondsByIntensity = { 2.5f, 3f, 3.5f, 4f };
-
-        [Tooltip("Range (u) within which an AI will hunt a rival PILOT as a line. 0 = never hunts " +
-                 "(it still takes a pilot that wanders into a line it was firing anyway). The " +
-                 "rifle reaches 3,000.")]
-        public float[] aiPilotHuntRangeByIntensity = { 0f, 1200f, 2000f, 2800f };
+        [Tooltip("Range (u) within which an AI prefers its hunt target by how cheaply it can bring them " +
+                 "to bear; past it, it simply flies at the nearest visible rival. The rifle reaches 3,000.")]
+        public float[] aiPilotHuntRangeByIntensity = { 1500f, 2000f, 2500f, 3000f };
 
         [Tooltip("Range (u) within which an AI on a long cooldown detours to a Charge crystal. " +
                  "0 = never - the bot keeps its resting recovery all match.")]
         public float[] aiChargeDetourRangeByIntensity = { 0f, 450f, 700f, 1000f };
 
         [Header("AI - fixed")]
-        [Tooltip("Seconds between AI fire-gate ticks (scope check, live-line score, trigger).")]
+        [Tooltip("Seconds between AI fire-gate ticks (scope check, rival-in-cone test, trigger).")]
         [Min(0.02f)] public float aiTickSeconds = 0.1f;
 
-        [Tooltip("The least a shot must be worth (prisms, a sniped pilot priced by the rule) " +
-                 "before an impatient AI will spend the cooldown on it.")]
-        [Min(1)] public int aiMinShotValue = 8;
+        [Tooltip("Inside this distance (u) of its rival the AI is too close to line a sniper round up " +
+                 "and pulls away to aiStandoffDistance before turning back in.")]
+        [Min(0f)] public float aiMinAimDistance = 300f;
 
-        [Tooltip("Closest an aim point may be (u). A point the hull is about to fly through is not " +
-                 "a line, and steering at it orbits.")]
-        [Min(0f)] public float aiMinAimDistance = 250f;
+        [Tooltip("How far (u) past its rival the AI aims when it pulls away to re-line-up.")]
+        [Min(0f)] public float aiStandoffDistance = 700f;
 
-        [Tooltip("Radius (u) of the sphere around the densest hostile stand that aim points are " +
-                 "drawn from.")]
-        [Min(10f)] public float aiStandSampleRadius = 260f;
-
-        [Tooltip("Distance (u) ahead of the nose of the second sample sphere - opportunities that " +
-                 "cost little turning.")]
-        [Min(0f)] public float aiAheadSampleDistance = 900f;
-
-        [Tooltip("Radius (u) of the ahead sample sphere.")]
-        [Min(10f)] public float aiAheadSampleRadius = 450f;
-
-        [Tooltip("Value multiplier for a line straight BEHIND the nose (interpolated from 1 at " +
-                 "dead ahead). Below 1 so a bot prefers a slightly thinner line it can bring to " +
-                 "bear now over a fat one it must turn around for.")]
+        [Tooltip("Cost multiplier for a rival straight BEHIND the nose (interpolated from 1 at dead " +
+                 "ahead). Below 1 so a bot prefers a slightly farther rival it can bring to bear now " +
+                 "over a nearer one it must turn around for.")]
         [Range(0.05f, 1f)] public float aiTurnPenaltyFloor = 0.35f;
 
-        [Tooltip("Seconds of rifle cooldown that must remain before an AI will leave its line for a " +
+        [Tooltip("Seconds of rifle cooldown that must remain before an AI will leave its rival for a " +
                  "Charge crystal - a detour that outlasts the cooldown wastes a shot.")]
         [Min(0f)] public float aiDetourMinCooldownSeconds = 2.5f;
 
@@ -127,11 +101,5 @@ namespace CosmicShore.Gameplay
             return ladder[Mathf.Clamp(intensity - 1, 0, ladder.Length - 1)];
         }
 
-        /// <inheritdoc cref="Pick(float[], int, float)"/>
-        public static int Pick(int[] ladder, int intensity, int fallback)
-        {
-            if (ladder == null || ladder.Length == 0) return fallback;
-            return ladder[Mathf.Clamp(intensity - 1, 0, ladder.Length - 1)];
-        }
     }
 }

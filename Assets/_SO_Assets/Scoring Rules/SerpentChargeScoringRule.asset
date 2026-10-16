@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: cabaae2109624d1ebab3a15cbb5f23cb, type: 3}
   m_Name: SerpentChargeScoringRule
   m_EditorClassIdentifier:
-  metric: 5
+  metric: 8
   golfRules: 1
-  pilotSnipePoints: 60
+  snipePoints: 1
   otherHitPoints: 0
