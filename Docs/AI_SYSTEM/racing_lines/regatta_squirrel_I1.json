@@ -382,6 +382,15 @@
      0.0
     ]
    },
+   "styles": {
+    "plain": {
+     "clean": 11,
+     "median": 5.08,
+     "best": 4.73,
+     "hitShare": 0.21,
+     "runs": 14
+    }
+   },
    "mistakeCost": 1.03
   },
   {
@@ -735,6 +744,15 @@
      0.11,
      0.11
     ]
+   },
+   "styles": {
+    "plain": {
+     "clean": 18,
+     "median": 3.73,
+     "best": 2.84,
+     "hitShare": 0.33,
+     "runs": 27
+    }
    },
    "mistakeCost": 2.11
   },
@@ -1090,6 +1108,15 @@
      0.0
     ]
    },
+   "styles": {
+    "plain": {
+     "clean": 24,
+     "median": 4.36,
+     "best": 2.98,
+     "hitShare": 0.41,
+     "runs": 41
+    }
+   },
    "mistakeCost": 1.87
   },
   {
@@ -1443,6 +1470,15 @@
      0.0,
      0.0
     ]
+   },
+   "styles": {
+    "plain": {
+     "clean": 29,
+     "median": 3.19,
+     "best": 2.32,
+     "hitShare": 0.29,
+     "runs": 41
+    }
    },
    "mistakeCost": 2.5
   },
@@ -1798,6 +1834,15 @@
      0.0
     ]
    },
+   "styles": {
+    "plain": {
+     "clean": 29,
+     "median": 3.48,
+     "best": 2.55,
+     "hitShare": 0.29,
+     "runs": 41
+    }
+   },
    "mistakeCost": 3.47
   },
   {
@@ -2151,6 +2196,15 @@
      0.0,
      0.0
     ]
+   },
+   "styles": {
+    "plain": {
+     "clean": 33,
+     "median": 3.4,
+     "best": 2.7,
+     "hitShare": 0.2,
+     "runs": 41
+    }
    },
    "mistakeCost": 4.02
   },
@@ -2506,6 +2560,15 @@
      0.0
     ]
    },
+   "styles": {
+    "plain": {
+     "clean": 24,
+     "median": 3.59,
+     "best": 2.99,
+     "hitShare": 0.41,
+     "runs": 41
+    }
+   },
    "mistakeCost": 3.04
   },
   {
@@ -2860,6 +2923,15 @@
      0.0
     ]
    },
+   "styles": {
+    "plain": {
+     "clean": 30,
+     "median": 3.5,
+     "best": 2.51,
+     "hitShare": 0.25,
+     "runs": 40
+    }
+   },
    "mistakeCost": 2.17
   },
   {
@@ -3213,6 +3285,15 @@
      0.0,
      0.0
     ]
+   },
+   "styles": {
+    "plain": {
+     "clean": 24,
+     "median": 3.16,
+     "best": 2.52,
+     "hitShare": 0.17,
+     "runs": 29
+    }
    },
    "mistakeCost": 1.36
   }

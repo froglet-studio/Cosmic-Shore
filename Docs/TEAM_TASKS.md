@@ -370,7 +370,7 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **See:** Docs/AI_SYSTEM/SITUATION_RECORDING_PLAN.md §7 Status
 
 ### T-20261016-6695 · open · test · AI training
-- **Task:** Fly the Regatta capture plan in the Unity editor (Docs/AI_SYSTEM/RACING_LINE.md §4): 20 more normal Squirrel races at I1, then 10 each tagged rail / drift / abilities / hard (HUD console: flightrec tag <word>), then 10 each at I2-I4; store every race, the bad ones too
+- **Task:** Race the Squirrel in Regatta in the Unity editor, about 100 races (Docs/AI_SYSTEM/RACING_LINE.md §4). Nothing to type: each leg's style (rail riding, drift, abilities, boost) and the rival difficulty are read from the recording. Mix it up: ride your rail, drift, press abilities, pick Hard rivals in the lobby for some races, play I2-I4 too. Store every race, the bad ones too
 - **Done when:** about 100 stored Squirrel flights; racing_line.py reports every leg trusted and stable on each course
 - **Who can take it:** Yash
 - **Added:** 2026-10-16 by a Claude session (`Ys-bleeding-edge`)

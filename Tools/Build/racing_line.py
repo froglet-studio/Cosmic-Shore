@@ -39,6 +39,12 @@ POINTS = 32          # resampled points per leg
 MIN_CLEAN = 5        # clean legs before a leg's line is trusted
 KEEP_SHARE = 0.5     # the faster half of the clean legs make the line
 STATE_BOOST, STATE_DRIFT, STATE_SLOWED = 1, 4, 8
+# A leg's STYLE is read from what the recorder already writes, so the pilot never labels anything (Yash, 2026-10-16:
+# "I cannot type commands and fly at the same time; record rail riding, drifting, abilities, hard AIs automatically"):
+RAIL_SHARE = 0.4     # rail: within skim reach of the pilot's OWN rail for this share of the leg
+DRIFT_SHARE = 0.2    # drift: the Drifting state bit on for this share of the leg
+ABILITY_EVENTS = ("Button1Action", "Button2Action", "Button3Action")   # ability buttons pressed during the leg
+STYLES = ("plain", "rail", "drift", "ability", "boost")
 
 
 def resample(pts, vals, n=POINTS):
@@ -71,6 +77,13 @@ def leg_runs(A, flight_name):
         k = f["columns"].index("state")
         state = [int(r[k] or 0) for r in f["samples"]]
     skims = set(ev.get("skim", []))
+    F = A["feats"]
+    reach = N["skimReach"] or 7.5
+    presses = []   # (t, name) of the pilot's own presses (flight/3 buttonEvents, 2026-10-16 on)
+    if f and f.get("buttonEvents"):
+        names = {v: k for k, v in (f.get("buttonNames") or {}).items()}
+        presses = [(e[0], names.get(int(e[1]), str(e[1]))) for e in f["buttonEvents"] if int(e[2]) == 1]
+    rivals = (f or {}).get("rivalDifficulty") or "unknown"
     runs = []
     for n, g in enumerate(A["legs"]):
         i0, i1 = g["i0"], g["i1"]
@@ -84,10 +97,16 @@ def leg_runs(A, flight_name):
         skim = [1.0 if i in skims else 0.0 for i in idx]
         rp, (rs, rb, rd, rk), length = resample(pts, [spd, boost, drift, skim])
         key = "start" if n == 0 and i0 == 0 else str(g["ring"])
+        t0, t1 = N["t"][i0], N["t"][i1]
+        on_rail = sum(1 for i in idx if F[i].get("gapOwnRail") and 0 <= F[i]["gap"] < reach) / len(idx)
+        pressed = [name for (t, name) in presses if t0 <= t < t1]
+        styles = [s for s, on in (("rail", on_rail >= RAIL_SHARE), ("drift", sum(drift) / len(drift) >= DRIFT_SHARE),
+                                  ("ability", any(p in ABILITY_EVENTS for p in pressed)),
+                                  ("boost", any(N["lt"][i] > 0.5 for i in idx))) if on] or ["plain"]
         runs.append({"flight": flight_name, "key": key, "ring": g["ring"], "time": g["time"], "clean": g["clean"],
                      "rams": g["rams"], "missed": g["missed"], "length": length, "path": rp, "speed": rs,
                      "boost": sum(boost) / len(boost), "drift": sum(drift) / len(drift), "skims": sum(skim),
-                     "boostAt": rb, "driftAt": rd})
+                     "boostAt": rb, "driftAt": rd, "styles": styles, "onRail": on_rail, "pressed": pressed, "rivals": rivals})
     return runs
 
 
@@ -124,6 +143,17 @@ def build(runs):
                         "drift": round(statistics.mean(r["drift"] for r in kept), 2),
                         "skims": round(statistics.mean(r["skims"] for r in kept), 1),
                         "line": average_line(kept)})
+        by_style = {}
+        for st in STYLES:
+            sr = [r for r in clean if st in r["styles"]]
+            if sr:
+                by_style[st] = {"clean": len(sr), "median": round(statistics.median(r["time"] for r in sr), 2),
+                                "best": round(min(r["time"] for r in sr), 2)}
+            all_st = [r for r in mine if st in r["styles"]]
+            if all_st:
+                by_style.setdefault(st, {})["hitShare"] = round(sum(1 for r in all_st if r["rams"]) / len(all_st), 2)
+                by_style[st]["runs"] = len(all_st)
+        leg["styles"] = by_style
         dirty = [r for r in mine if not r["clean"]]
         if dirty and clean:
             leg["mistakeCost"] = round(statistics.mean(r["time"] for r in dirty) - statistics.median(r["time"] for r in clean), 2)
@@ -187,6 +217,31 @@ def report(analyses, skipped, write):
             print(f"  | {l['key']} | {l['runs']} | {l['clean']} | {l.get('best', '-')} | {l.get('median', '-')} | {int(l['hitShare'] * 100)}% | "
                   f"{l['railHits']} | {l.get('mistakeCost', '-')} | {int(l.get('boost', 0) * 100)}% | {int(l.get('drift', 0) * 100)}% | "
                   f"{l.get('skims', '-')} | {sp} | {'yes' if l['trusted'] else 'no'} |")
+        print("  styles, read from the recording (clean legs: count / median s; hit share over all legs of that style):")
+        print("  | Leg | " + " | ".join(STYLES) + " |")
+        print("  |---|" + "---|" * len(STYLES))
+        for l in legs:
+            cells = []
+            for st in STYLES:
+                d = l["styles"].get(st)
+                cells.append("-" if not d else f"{d.get('clean', 0)} / {d.get('median', '-')} s, hits {int(d.get('hitShare', 0) * 100)}%")
+            print(f"  | {l['key']} | " + " | ".join(cells) + " |")
+        for l in legs:
+            p = l["styles"].get("plain", {})
+            for st in ("rail", "drift", "ability", "boost"):
+                d = l["styles"].get(st, {})
+                if d.get("clean", 0) >= 3 and p.get("clean", 0) >= 3 and d["median"] < p["median"]:
+                    print(f"  -> leg {l['key']}: {st} is faster than plain ({d['median']} s vs {p['median']} s, {d['clean']} clean runs)")
+        diffs = {}
+        for r in runs:
+            diffs[r["rivals"]] = diffs.get(r["rivals"], set()) | {r["flight"]}
+        print("  rival difficulty per flight: " + ", ".join(f"{k}: {len(v)}" for k, v in sorted(diffs.items())))
+        counts = {}
+        for r in runs:
+            for name in r["pressed"]:
+                counts[name] = counts.get(name, 0) + 1
+        print("  buttons pressed: " + (", ".join(f"{k} x{v}" for k, v in sorted(counts.items(), key=lambda kv: -kv[1])) or
+                                       "none recorded (flights before 2026-10-16's recorder have no buttonEvents)"))
         risky = sorted([l for l in legs if l["runs"]], key=lambda l: -l["hitShare"])[:3]
         print("  most dangerous legs: " + ", ".join(f"{l['key']} ({int(l['hitShare'] * 100)}% of runs hit)" for l in risky))
         need = [l["key"] for l in legs if not l["trusted"]]
@@ -212,14 +267,16 @@ def self_test():
     # Dirty legs never make the line; only the faster half of the clean ones do.
     mk = lambda t, clean, x: {"flight": "f", "key": "3", "ring": 3, "time": t, "clean": clean, "rams": 0 if clean else 1, "missed": False,
                               "length": 100, "path": [[x, 0, k] for k in range(POINTS)], "speed": [100] * POINTS, "boost": 0, "drift": 0,
-                              "skims": 0, "boostAt": [0] * POINTS, "driftAt": [0] * POINTS}
+                              "skims": 0, "boostAt": [0] * POINTS, "driftAt": [0] * POINTS,
+                              "styles": ["plain"] if x == 0 else ["drift"], "onRail": 0, "pressed": [], "rivals": "Medium"}
     legs = build([mk(5, True, 0), mk(6, True, 0), mk(9, True, 50), mk(10, True, 50), mk(3, False, 99)])
     l = legs[0]
     assert l["clean"] == 4 and l["kept"] == 2 and l["best"] == 5 and l["line"]["path"][0][0] == 0 and l["railHits"] == 1, l
+    assert l["styles"]["plain"]["clean"] == 2 and l["styles"]["drift"]["median"] == 9.5, l["styles"]
     # Negative control: if the dirty leg were kept it would drag the line to x = 99.
     bad = average_line([mk(3, False, 99), mk(5, True, 0)])
     assert bad["path"][0][0] != 0
-    print("racing_line self-test: OK (resample, average, dirty legs excluded, faster half kept, negative control)")
+    print("racing_line self-test: OK (resample, average, dirty legs excluded, faster half kept, styles split, negative control)")
 
 
 def main():
