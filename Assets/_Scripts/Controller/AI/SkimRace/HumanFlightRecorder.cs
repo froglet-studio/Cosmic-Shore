@@ -97,6 +97,7 @@ namespace CosmicShore.Gameplay
             public float Charge;                 // charged-boost charge
             public int State;                    // State* bits
             public float LvC, LvM, LvS, LvT;     // element levels, 0..1 (charge, mass, space, time)
+            public float M0, M1, M2, M3;         // the hull's first four resource meters (CurrentAmount), -1 if absent
             public bool Held;                    // the AI held the hull (the You / AI toggle)
             public Vector3 CamPos, CamFwd, CamUp;    // forward + up = the camera's full rotation
             public float Fov, Aspect;            // vertical field of view (degrees), width / height
@@ -127,6 +128,10 @@ namespace CosmicShore.Gameplay
         // The pilot's own button presses and releases (InputEvents: abilities, the sticks' actions, flip): t, event, 1 / 0.
         // Only the local pilot's input strategies raise these events, so an AI's presses never arrive here.
         readonly List<float> _buttonEvents = new(512);
+        // The hull's resource meters, named once (the Dolphin's drift charge, ammo, ...), and which one its charged
+        // boost spends (ChargeBoostActionSO.BoostResourceIndex; -1 when it has none): what the Dolphin AI decides on.
+        readonly List<string> _meterNames = new(4);
+        int _boostMeter = -1;
         ScriptableEventInputEvents _pressed, _released;
         GameDataSO _gameData;
         Player _player;
@@ -328,6 +333,7 @@ namespace CosmicShore.Gameplay
             _prevSampleT = t;
             _havePrevRot = true;
 
+            NameMeters(status);
             var resources = status.ResourceSystem;
             int state = (status.IsBoosting ? StateBoosting : 0) | (status.IsChargedBoostDischarging ? StateDischarging : 0)
                         | (status.IsDrifting ? StateDrifting : 0) | (status.IsSlowed ? StateSlowed : 0)
@@ -347,12 +353,33 @@ namespace CosmicShore.Gameplay
                 Charge = status.ChargedBoostCharge, State = state,
                 LvC = Level(resources, Element.Charge), LvM = Level(resources, Element.Mass),
                 LvS = Level(resources, Element.Space), LvT = Level(resources, Element.Time),
+                M0 = Meter(resources, 0), M1 = Meter(resources, 1), M2 = Meter(resources, 2), M3 = Meter(resources, 3),
                 // The AI holding this hull (the Third Eye's You / AI toggle) is not the human's flight: kept, marked,
                 // and skipped by every learner (situation_features.py, situation.js, learn_from_flights.py).
                 Held = PilotControl.IsHeldByAI(_player),
                 CamPos = camPos, CamFwd = camFwd, CamUp = camUp, Fov = fov, Aspect = aspect, CamMode = camMode, RearView = rearView,
                 CrystalStart = crystalStart, CrystalCount = (_crystals.Count - crystalStart) / 4,
             });
+        }
+
+        static float Meter(ResourceSystem resources, int index)
+        {
+            if (!resources || resources.Resources == null || (uint)index >= (uint)resources.Resources.Count) return -1f;
+            var res = resources.Resources[index];
+            return res != null ? res.CurrentAmount : -1f;
+        }
+
+        /// <summary>Name the hull's meters once per race (the first sample).</summary>
+        void NameMeters(IVesselStatus status)
+        {
+            if (_meterNames.Count > 0) return;
+            var resources = status.ResourceSystem;
+            if (resources && resources.Resources != null)
+                for (int i = 0; i < resources.Resources.Count && i < 4; i++)
+                    _meterNames.Add(resources.Resources[i] != null ? resources.Resources[i].Name ?? "" : "");
+            if (_meterNames.Count == 0) _meterNames.Add("");
+            _boostMeter = status.ActionHandler != null && status.ActionHandler.TryGetBoundAction<ChargeBoostActionSO>(out var charge, out _)
+                ? charge.BoostResourceIndex : -1;
         }
 
         static float Level(ResourceSystem resources, Element element)
@@ -521,6 +548,8 @@ namespace CosmicShore.Gameplay
             _rails.Clear();
             _railEvents.Clear();
             _buttonEvents.Clear();
+            _meterNames.Clear();
+            _boostMeter = -1;
             StopListening();
             _ringData.Clear();
             _ownRail = -1;
@@ -633,6 +662,9 @@ namespace CosmicShore.Gameplay
             sb.Append("\"shellHalf\":[").Append(F(shellHalf.x)).Append(',').Append(F(shellHalf.y)).Append(',').Append(F(shellHalf.z)).Append("],");
             sb.Append("\"laneError\":\"").Append(haveLane ? "" : Esc(_railWhy)).Append("\",\n");
             sb.Append("\"camera\":\"camx..camfz: position and forward, camux..camuz: up, fov: vertical degrees, camAspect: width / height, camRear: look-behind\",\n");
+            sb.Append("\"meterNames\":[");
+            for (int i = 0; i < _meterNames.Count; i++) sb.Append(i > 0 ? ",\"" : "\"").Append(Esc(_meterNames[i])).Append('"');
+            sb.Append("],\"boostMeter\":").Append(_boostMeter).Append(",\n");
             sb.Append("\"stateBits\":{\"boosting\":").Append(StateBoosting).Append(",\"discharging\":").Append(StateDischarging)
               .Append(",\"drifting\":").Append(StateDrifting).Append(",\"slowed\":").Append(StateSlowed)
               .Append(",\"attached\":").Append(StateAttached).Append(",\"stationary\":").Append(StateStationary).Append("},");
@@ -735,7 +767,8 @@ namespace CosmicShore.Gameplay
 
             sb.Append("\"columns\":[\"t\",\"x\",\"y\",\"z\",\"fx\",\"fy\",\"fz\",\"ux\",\"uy\",\"uz\",\"speed\",\"boost\",\"xSum\",\"ySum\",\"xDiff\",\"yDiff\",\"throttle\",\"rings\",\"lt\",\"rt\",\"cx\",\"cy\",\"cz\","
                     + "\"vx\",\"vy\",\"vz\",\"pitchRate\",\"yawRate\",\"rollRate\",\"charge\",\"state\",\"lvC\",\"lvM\",\"lvS\",\"lvT\",\"held\","
-                    + "\"camx\",\"camy\",\"camz\",\"camfx\",\"camfy\",\"camfz\",\"fov\",\"camMode\",\"camux\",\"camuy\",\"camuz\",\"camAspect\",\"camRear\"],\n");
+                    + "\"camx\",\"camy\",\"camz\",\"camfx\",\"camfy\",\"camfz\",\"fov\",\"camMode\",\"camux\",\"camuy\",\"camuz\",\"camAspect\",\"camRear\","
+                    + "\"m0\",\"m1\",\"m2\",\"m3\"],\n");
             sb.Append("\"samples\":[\n");
             for (int i = 0; i < _samples.Count; i++)
             {
@@ -760,7 +793,8 @@ namespace CosmicShore.Gameplay
                   .Append(F(m.CamFwd.x, "0.###")).Append(',').Append(F(m.CamFwd.y, "0.###")).Append(',').Append(F(m.CamFwd.z, "0.###")).Append(',')
                   .Append(F(m.Fov, "0.#")).Append(',').Append(m.CamMode).Append(',')
                   .Append(F(m.CamUp.x, "0.###")).Append(',').Append(F(m.CamUp.y, "0.###")).Append(',').Append(F(m.CamUp.z, "0.###")).Append(',')
-                  .Append(F(m.Aspect, "0.###")).Append(',').Append(m.RearView ? '1' : '0').Append(']');
+                  .Append(F(m.Aspect, "0.###")).Append(',').Append(m.RearView ? '1' : '0').Append(',')
+                  .Append(F(m.M0, "0.###")).Append(',').Append(F(m.M1, "0.###")).Append(',').Append(F(m.M2, "0.###")).Append(',').Append(F(m.M3, "0.###")).Append(']');
             }
             sb.Append("\n]\n}\n");
             if (regatta && !haveLane)

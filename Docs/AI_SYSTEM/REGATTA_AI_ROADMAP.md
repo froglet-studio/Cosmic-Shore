@@ -84,6 +84,10 @@ hull's own bindings, ticked with a read-only context, input-only. Make that the 
 phase, ring, lap and boost decision to the Third Eye (`AIPilot.Objective`, `AIBoostDriver.Status`), with trails.
 The Rhino now has a drive (`RampBoostAIPolicySO`, step 4's first cut). Nothing has been timed yet.
 
+**2026-10-17: the Regatta AIs learn from people's editor flights.** The Squirrel's skim line came from 29 flights
+(`SITUATION_RECORDING_PLAN.md` §8); the Rhino, Dolphin and Manta drives learn the same way through Regatta-only variants
+(`learn_drives_from_flights.py`, §9), waiting on flights of those hulls. The Stoat needs to be on the Regatta card first.
+
 **Decision (Yash, 2026-10-16): the Regatta AIs are tested in the Unity editor only, and the Regatta artifact is
 deleted.** "Delete the artifact, it's not needed; only tests will happen in the Unity editor itself." The loop is: change
 the AI in Unity, watch the real vessels race in the Third Eye (trajectories, behaviour, the You / AI toggle on every

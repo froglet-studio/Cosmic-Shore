@@ -152,6 +152,13 @@ namespace CosmicShore.Gameplay
         /// <summary>
         /// Configure AI behavior at runtime (called after spawning for solo-play AI opponents).
         /// </summary>
+        /// <summary>The mode this pilot races in, once its game data is known (a hull's drive reads its mode's tuning).</summary>
+        public bool TryGetGameMode(out GameModes mode)
+        {
+            mode = gameData != null ? gameData.GameMode : default;
+            return gameData != null;
+        }
+
         public void ConfigureForGameMode(GameDataSO gameDataRef, bool shouldSeekPlayers, float skill)
         {
             gameData = gameDataRef;
@@ -712,7 +719,10 @@ namespace CosmicShore.Gameplay
             // The boost driver, built against THIS vessel's bindings (null when it binds none of
             // the ability the policy drives). A re-Initialize lets go of the previous one first.
             _boostDriver?.Release();
-            _boostDriver = boostPolicy ? boostPolicy.CreateDriver(VesselStatus, actionExecutorRegistry) : null;
+            // A mode's own tuning when it has one (AIBoostPolicySO.ForMode: e.g. RhinoAIBoostPolicy_Regatta, learned from
+            // editor flights); the hull's policy otherwise.
+            var policy = gameData != null ? AIBoostPolicySO.ForMode(boostPolicy, gameData.GameMode) : boostPolicy;
+            _boostDriver = policy ? policy.CreateDriver(VesselStatus, actionExecutorRegistry) : null;
             _boostActive = false;
         }
 

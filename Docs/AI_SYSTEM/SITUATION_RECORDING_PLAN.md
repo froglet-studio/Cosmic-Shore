@@ -275,3 +275,46 @@ ring never sampled) was fixed in `HumanFlightRecorder` and `learn_from_flights.f
 5. **Difficulty from data**: Hard's reaction from the measured human lag; Easy and Medium make mistakes where people
    make them (`RACING_LINE.md` §3).
 6. Keep flying the `RACING_LINE.md` §4 captures (`rail`, `drift`, `abilities`, `hard`, other intensities).
+
+## 9. The other Regatta AIs: Rhino, Dolphin, Manta, Urchin, Stoat (2026-10-17)
+
+Yash: "move forward with doing the same for the other 5 AIs that are allocated for Regatta. I will play those as well
+and record data of their flight styles." The Squirrel learns its skim line (`learn_from_flights.py`, §8). The other
+five of `REGATTA_AI_ROADMAP.md`'s six fly the shared gate steering plus ONE drive per hull that decides when to spend
+its speed verb; **`Tools/Build/learn_drives_from_flights.py`** learns each drive's numbers from how a person spends
+the same verb, measured exactly as the AI measures it (`AIBoostContext`: the angle between the course and the target
+ring, the larger stick axis, the runway = distance / speed).
+
+| Hull | The AI decides with | What your flights teach it | Written as (Regatta only) |
+|---|---|---|---|
+| Rhino | `RhinoAIBoostPolicy` (`RampBoostAIPolicySO`) | when you start the ramp (lined up within, stick under, runway left), when you stop it, your steering while ramping, your shortest ramp and rest | `Resources/AIBoostPolicies/RhinoAIBoostPolicy_Regatta` |
+| Dolphin | `DolphinAIBoostPolicy` (`ChargeBoostAIPolicySO`) | when you discharge, and at what charge (the boost meter, newly recorded as `m0..m3` with `meterNames` and `boostMeter`) | `…/DolphinAIBoostPolicy_Regatta` |
+| Manta | `MantaAnalogTurnBoostExecutor`'s Soar bands | the stick band you Soar flat inside, the yaw band past which you split the triggers: fitted to the executor's own trigger formula | `…/MantaSoarAITuning_Regatta` (`MantaSoarAITuningSO`) |
+| Urchin | `RegattaController`'s rail riding + `UrchinAutopilotConfig` | how much of the race you ride, and on your own rail: **report only** (its Regatta riding numbers are scene fields) | nothing |
+| Stoat | its dipole autopilot | **not on the Regatta card**, so it cannot be flown there yet | nothing |
+
+**Every other mode is untouched.** A variant is looked up per mode, falling back to the hull's own asset:
+`AIBoostPolicySO.ForMode` (used by `AIPilot` where it builds the drive) and `MantaSoarAITuningSO.LoadForMode` (used by
+the Manta executor, asking `AIPilot.TryGetGameMode`). A policy variant copies the hull's asset and overrides only fields
+that asset has, so it survives either Rhino ramp drive (`cece/relaxed-hopper-r62hbd` carries a second, older
+`RampBoostAIPolicySO`; both share the six engage / release fields). Nothing is written for a hull below 3 finished
+flights; it learns from its fastest 3, like the Squirrel. Seconds the AI held your hull are measured separately as "the
+AI today", so flipping the Third Eye's You / AI to AI for a lap gives a side-by-side.
+
+**Checked:** `learn_drives_from_flights.py --self-test` (synthetic pilots with known rules: the Rhino's start / stop
+rule recovered within a degree and 0.02 stick, a random pilot rejected as a negative control, the Dolphin's spend charge
+0.80, the Manta's bands 0.50 / 0.80 exactly; under 3 finished races, unfinished races and AI-held seconds write
+nothing); `RegattaDriveTuningTests` (no variant = the hull's own policy; the Manta trigger formula). No human flight of
+these hulls exists yet: all 32 so far are Squirrel.
+
+**What to fly** (Regatta I1 first, the course the Squirrel data is on; store every race):
+
+| Hull | Races | Fly it | Also |
+|---|---:|---|---|
+| Rhino | 5+ to the finish | ramp on every straight you trust, let go before the corners | in one race, Third Eye ▸ Pilots ▸ **AI** on your hull for a lap, then back |
+| Dolphin | 5+ | drift to charge, discharge on the straights | the same AI lap |
+| Manta | 5+ | Soar on both triggers, pivot with one in the hairpins | the same AI lap |
+| Urchin | 5+ | ride your own rail as much as you can | the same AI lap |
+
+Then `python3 Tools/Build/learn_drives_from_flights.py --write` writes the variants and `LEARNED_DRIVES.md`; race the
+learned AI against the old in the editor (delete one variant asset to compare).
