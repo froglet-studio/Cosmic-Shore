@@ -242,3 +242,36 @@ near-zero lag is plausible, but one race is not a measurement. Camera flights wi
 **Not done.** V5 (an AI perception filter) waits on S5 / S6 as §7 says. A measured `ReactionSeconds` per difficulty is a
 proposal for the handicaps' owner (Garrett) once 3+ editor flights exist; nothing here changes an AI. The artifact
 replay ideas in §7 went with the page (deleted 2026-10-16).
+
+## 8. What the first 29 editor flights say (2026-10-17)
+
+Data: Yash 23 named Regatta flights at I1 (Jade and Gold lanes), `belac` 6 at I3 (Ruby); all Squirrel, Medium rivals.
+The racing line, the per-leg mistake map and the capture plan are in **`RACING_LINE.md`** (built from the same flights
+by `racing_line.py`); this section adds what the situation and rail readers found. The 23/24 recorder bug (the last
+ring never sampled) was fixed in `HumanFlightRecorder` and `learn_from_flights.finished_of` by the same session as
+`RACING_LINE.md`.
+
+| Finding | Number | What it means for the AI |
+|---|---|---|
+| **When they skim, pilots use the rail's - face**, the side every ring is on (each ring sits 22 u off every rail on that face) | 94% of skimming, every lane, both pilots; 13.6 u from the rail's centre (4.6 u outside the 9 u shell) | The Regatta Squirrel AI skims the **+ face** (`SkimHeight` +4.35, 11.9 u from the centre) and must cross the rail to reach a ring: a likely cause of its rail hits. `learn_from_flights` now learns the face as `SkimHeight`'s sign (the driver's own convention): **-6.5** |
+| **Speed is the race** | race time vs mean speed r = -0.99; vs mean skim boost r = -0.91 (about 3.0 in the fast races); vs slowed episodes r = +0.55 (17 won races) | Optimise held speed and fewer hits. How many skims are taken or skipped does not move the time (r 0.04 / 0.14) |
+| **The AI is far behind** | when Yash won, the Medium rivals had 14 of 24 rings (median, 9..21) | About 58% of a human's pace; no AI flight is recorded, so it cannot yet be compared leg by leg |
+| **Humans anticipate** | reaction lag 0.06 s (median of 24 camera flights, from the screen; fit 0.4-0.5) | Medium's 0.25 s and Easy's 0.5 s are slower than a person who knows the course (task T-20261016-f695, Garrett) |
+| **The ring is always in view** | target ring on screen 100% of the time, behind a rail at most 1% | The V3 gate rarely fires in Regatta (0-3 skips per race moved to "unseen") |
+| Commit and skim rules | commit fit hit both clamps (a 60, b 1.0; median 490 u against the AI's 420); "take a skim when the detour is <= 14 u" agrees 67% | Weak signals: below the line, the face and the speed |
+
+**The plan** (with `RACING_LINE.md` §3-4; nothing reaches the game without the owner's OK and an editor test):
+
+1. **Test the ring face first**, the cheapest likely win. **Applied 2026-10-17** (Yash: "do it"):
+   `SkimRaceAIConfig_Regatta.asset` now has `SkimHeight` -6.498 plus the learned look-ahead, mass margin and stick
+   gain (`LEARNED_FROM_FLIGHTS.md`). Waiting on the editor race against the old AI (checklist entry "Regatta Squirrel
+   AI skims the ring face").
+2. **Port the racing line** (`RACING_LINE.md` §3, task T-20261015-7fc3): the averaged faster-half line per leg as the
+   pilot's target, with the face above.
+3. **Record the AI seats too** with the same recorder, so every AI race is a flight file and the AI's speed, boost,
+   hits and leg times sit beside the human's.
+4. **Score changes offline**: extend `Tools/Build/skimrace_sim_harness` to Regatta's course (`RegattaCourse` already
+   runs headless in `regatta_course_harness`) and tune for held speed and fewer hits over hundreds of seeded races.
+5. **Difficulty from data**: Hard's reaction from the measured human lag; Easy and Medium make mistakes where people
+   make them (`RACING_LINE.md` §3).
+6. Keep flying the `RACING_LINE.md` §4 captures (`rail`, `drift`, `abilities`, `hard`, other intensities).
