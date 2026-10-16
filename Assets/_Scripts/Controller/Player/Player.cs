@@ -229,8 +229,18 @@ namespace CosmicShore.Gameplay
             }
 
             _nextPilotSwapServerTime = Time.unscaledTime + PilotSwap.CooldownSeconds * 0.8f;
+            ExecutePilotSwapServer(ai);
+        }
 
+        /// <summary>
+        /// Server: exchange hulls with <paramref name="ai"/> and apply it on every peer. The caller has already
+        /// decided the swap is allowed: <see cref="RequestPilotSwap_ServerRpc"/> through
+        /// <see cref="PilotSwap.TryValidateServer"/>, the Third Eye's dev toggle through <see cref="PilotControl"/>.
+        /// </summary>
+        internal void ExecutePilotSwapServer(Player ai)
+        {
             ulong ownHullId = Vessel.VesselNetId;
+            ulong targetHullId = ai.Vessel.VesselNetId;
             PilotSwap.TransferOwnershipServer(this, ai);
             NetVesselId.Value = targetHullId;
             ai.NetVesselId.Value = ownHullId;
@@ -684,7 +694,26 @@ namespace CosmicShore.Gameplay
         /// </summary>
         public ulong VesselNetId { get; private set; }
         public ulong OwnerClientNetId => OwnerClientId;
-        public IVessel Vessel { get; private set; }
+        IVessel _vessel;
+
+        /// <summary>
+        /// This pilot's vessel, or null once that hull has been DESTROYED.
+        ///
+        /// <para>Self-healing for the same reason as <c>GameDataSO.LocalPlayer</c>:
+        /// <see cref="IVessel"/> is an interface, so a reader's `?.` / `!= null` never reaches
+        /// <c>UnityEngine.Object</c>'s overloaded null test and a destroyed
+        /// <c>VesselController</c> reads as alive, then throws <c>MissingReferenceException</c>
+        /// on the first member access. A VESSEL SWAP is the everyday producer — the outgoing
+        /// hull is despawned and a failed swap never re-assigns — and the everyday consumer is
+        /// an objective provider running from <c>ObjectiveIndicator.LateUpdate</c>, i.e. every
+        /// frame forever. <see cref="VesselLiveness.IsAlive(IVessel)"/> is the same predicate
+        /// spelled as a caller-side check; this is it applied once, at the handle.</para>
+        /// </summary>
+        public IVessel Vessel
+        {
+            get => UnityLiveness.Alive(_vessel) ? _vessel : (_vessel = null);
+            private set => _vessel = value;
+        }
         public bool IsActive { get; private set; }
         public bool AutoPilotEnabled => Vessel.VesselStatus.AutoPilotEnabled;
         public bool IsInitializedAsAI { get; private set; }
@@ -692,10 +721,20 @@ namespace CosmicShore.Gameplay
         bool _spawnEventRaised;
 
         private InputController _inputController;
+
+        /// <summary>
+        /// This pilot's input controller, added on demand — or <c>null</c> once THIS Player has
+        /// been destroyed. The destroyed guard is not defensive noise: the lazy add reads
+        /// <c>gameObject</c>, a native-backed member that throws
+        /// <c>MissingReferenceException</c> on a destroyed component, and the reader is
+        /// routinely a per-frame loop holding a stale handle — so without it one dead Player
+        /// is an unbounded exception storm rather than a null somebody can guard.
+        /// </summary>
         public InputController InputController
         {
             get
             {
+                if (!this) return null;
                 if (!_inputController)
                     _inputController = gameObject.GetOrAdd<InputController>();
                 return _inputController;
@@ -703,18 +742,25 @@ namespace CosmicShore.Gameplay
         }
 
         private RoundStats _roundStats;
+
+        /// <summary>This pilot's RoundStats, added on demand — or <c>null</c> once THIS Player
+        /// has been destroyed, for the reason <see cref="InputController"/> gives.</summary>
         public IRoundStats RoundStats
         {
             get
             {
+                if (!this) return null;
                 if (!_roundStats)
                     _roundStats = gameObject.GetOrAdd<RoundStats>();
                 return _roundStats;
             }
         }
-        public IInputStatus InputStatus => InputController.InputStatus;
+        public IInputStatus InputStatus => InputController ? InputController.InputStatus : null;
 
-        public Transform Transform => transform;
+        /// <summary>This pilot's root transform, or <c>null</c> once destroyed — the
+        /// <c>ITransform</c> member every roster walk reads, and <c>transform</c> is
+        /// native-backed (see <see cref="InputController"/>).</summary>
+        public Transform Transform => this ? transform : null;
         public bool IsMultiplayerOwner => IsSpawned && IsOwner && !IsInitializedAsAI;
         public bool IsNetworkOwner => IsSpawned && IsOwner;
         public bool IsNetworkClient => IsSpawned && !IsOwner;
@@ -741,7 +787,7 @@ namespace CosmicShore.Gameplay
             Domain = Domains.Jade;
             Name = InitializeData.PlayerName;
             AvatarId = InitializeData.AvatarId;
-            InputController.Initialize();
+            InputController?.Initialize();
             ToggleInputPause(true);
             Vessel = vessel;
             RoundStats.Name = Name;
@@ -894,7 +940,30 @@ namespace CosmicShore.Gameplay
 
             CSDebug.LogVerbose(CSLogChannel.NetworkFlow, $"[FLOW-4] [Player] OnNetworkSpawn DONE - Name={NetName.Value}, VesselType={NetDefaultVesselType.Value}, Domain={NetDomain.Value}, IsAI={NetIsAI.Value}, SpawnEventRaised={_spawnEventRaised}");
 
-            InputController.Initialize();
+            InputController?.Initialize();
+        }
+
+        /// <summary>
+        /// Leave the roster on DESTRUCTION as well as on despawn.
+        ///
+        /// <para><see cref="OnNetworkDespawn"/> is not enough on its own: it never runs for the
+        /// non-networked single-player spawn path, nor when the GameObject is destroyed without
+        /// a despawn. A Player left in <c>GameDataSO.Players</c> after destruction is a corpse
+        /// every roster walk still visits — and those walks read <c>Vessel.Transform</c> from a
+        /// per-frame objective provider, so the corpse becomes an unbounded exception storm.
+        /// The handles self-heal (<c>LocalPlayer</c>, <c>Vessel</c>); the LIST needs telling,
+        /// and this is the one event that always fires.</para>
+        /// </summary>
+        public override void OnDestroy()
+        {
+            // NetworkBehaviour.OnDestroy is virtual and does Netcode's own teardown; a plain
+            // `void OnDestroy()` here would HIDE it and skip that cleanup.
+            if (gameData)
+            {
+                gameData.Players.Remove(this);
+                gameData.ForgetLocalPlayerIfDestroyed();
+            }
+            base.OnDestroy();
         }
 
         /// <summary>
@@ -1118,10 +1187,10 @@ namespace CosmicShore.Gameplay
             Vessel.ToggleAIPilot(toggle);
         
         void ToggleInputPause(bool toggle) => 
-            InputController.SetPause(toggle);
+            InputController?.SetPause(toggle);
 
         void ToggleInputIdle(bool toggle) =>
-            InputController.SetIdle(toggle);
+            InputController?.SetIdle(toggle);
         
         void OnNetDomainChanged(Domains previousValue, Domains newValue)
         {

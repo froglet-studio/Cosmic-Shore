@@ -341,7 +341,7 @@ GameObject, which `OnDestroy` already handles.
 5. Two-client party: plant on the remote pilot — NO indication on their screen; the bloom
    appears on both machines once (no double blast on the owner).
 6. Mass 5: hold a hard Yastri turn — outer-lane prisms visibly flared AND shielded.
-7. FrogletTools > Vessels > Audit Vessel Ability Rows / Audit Ability Lockups / Audit Vessel
+7. FrogletTools > Vessels > Audits > Audit Vessel Ability Rows / Audit Ability Lockups / Audit Vessel
    Skimmers — Manta rows green (skimmer audit: the sting container holds prism + vessel
    effects); the ability-row audit reads 3/4 upgrades (Time L5 open, by design).
 

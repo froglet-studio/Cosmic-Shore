@@ -48,7 +48,7 @@ namespace CosmicShore.Gameplay
         [Header("Skein start line")]
         [Tooltip("How far BEHIND the start collar the pilots line up. Far enough that the ring " +
                  "reads as something to fly at rather than something they are already inside.")]
-        [SerializeField, Min(1f)] float startLineStandoff = 220f;
+        [SerializeField, Min(1f)] float startLineStandoff = RaceCourseSource.DefaultStartLineStandoff;
 
         [Tooltip("Radius of the ring the pilots stand on, about the collar's axis. Must stay " +
                  "well inside the collar's own 150 u mouth: everyone threads the first gate by " +
@@ -64,122 +64,21 @@ namespace CosmicShore.Gameplay
 
         protected override string ModeName => "Skein";
 
-        public override int AuthoredGateTarget()
-        {
-            var overrides = EndConditionOverridesSO.Instance;
-            return overrides != null
-                ? overrides.GetSkeinRingTarget()
-                : EndConditionOverridesSO.DefaultSkeinRingTarget;
-        }
+        protected override RaceCourseSource CreateCourseSource() => new SkeinCourseSource();
 
         /// <summary>
-        /// The cable's rings, in cell-local coordinates.
-        ///
-        /// <para><paramref name="seed"/>, <paramref name="inner"/> and <paramref name="outer"/>
-        /// are IGNORED, and that is the design rather than an oversight: this mode's course is a
-        /// property of the arena, which is authored on the cell config, so a seed or a shell
-        /// invented here could only disagree with it. <paramref name="gateCount"/> IS honoured -
-        /// it is the authored race length, and the platform hands the same number to the
-        /// monitor. The retry mirrors
-        /// <c>SpawnableSkein.BuildEnvironment</c> exactly - same base seed, same 7919 stride,
-        /// same six attempts - because the arena takes the first seed that lays a full course and
-        /// the controller has to land on the same one.</para>
+        /// The cable's authored settings live on the cell config - the EXPECTED one, never
+        /// <c>Config</c>: both callers run during the first second, and a cell does not latch its
+        /// config until <c>Initialize</c>.
         /// </summary>
-        protected override List<RaceGate> BuildCourse(int seed, int gateCount, float inner, float outer)
+        protected override CellConfigDataSO ResolveCourseConfig()
         {
-            if (!TryResolveArena(out var arena, out string why))
-            {
-                // Reported, not logged: the platform retries this every frame, so a LogError
-                // here is a per-frame path. Until the window closes this is simply "not yet".
-                CourseFailureDetail = why;
-                return null;
-            }
-
-            // The AUTHORED target drives the course, so the finish line and the number of rings
-            // laid cannot drift - the platform reads the same number for the monitor's target.
-            //
-            // But the ARENA picks its seed with its OWN ring count (SkeinCourseSettings'), because
-            // BuildAll rejects a seed whose walk lays a different number of rings. A count edited
-            // in the End Game Conditions window must therefore not choose the seed here, or the
-            // two can land on different re-rolls and hang rings on rails the arena never laid. So
-            // the arena's count picks the seed and the authored count is walked on THAT seed. At
-            // the shipped count the two are the same number and this is the one pass it was.
-            var arenaSettings = arena.CourseSettings;
-            var settings = arenaSettings;
-            settings.GateCount = Mathf.Max(3, gateCount);
-
-            for (int attempt = 0; attempt < 6; attempt++)
-            {
-                int cableSeed = unchecked(arena.CableSeed + attempt * 7919);
-                var build = SkeinCourse.BuildAll(cableSeed, arenaSettings);
-                if (build == null) continue;
-
-                if (settings.GateCount != arenaSettings.GateCount)
-                {
-                    build = SkeinCourse.BuildAll(cableSeed, settings);
-                    if (build == null)
-                    {
-                        CourseFailureDetail =
-                            $"The arena's cable (seed {cableSeed}) cannot carry the authored " +
-                            $"{settings.GateCount}-ring course; it was built for " +
-                            $"{arenaSettings.GateCount}. Set Skein back to " +
-                            $"{arenaSettings.GateCount} in FrogletTools > Game Modes > End Game " +
-                            "Conditions, or re-measure Tools/Build/skein_budget.py at the new count.";
-                        return null;
-                    }
-                }
-
-                // The generator works about the ORIGIN and Cell parents the environment container
-                // at localPosition zero, so the cable's frame is the CELL's - not the prefab's,
-                // which is an asset and never moves.
-                var course = new List<RaceGate>(build.Gates.Count);
-                for (int i = 0; i < build.Gates.Count; i++)
-                {
-                    var g = build.Gates[i];
-                    course.Add(new RaceGate(g.Position, g.Axis, g.Radius));
-                }
-                return course;
-            }
-
-            CourseFailureDetail =
-                $"Could not lay a {settings.GateCount}-ring cable at N={settings.StrandCount} " +
-                "in six seeds - this one will not fix itself by waiting. Check " +
-                "Tools/Build/skein_budget.py against these settings.";
-            return null;
-        }
-
-        /// <summary>
-        /// The cable's authored settings, off the cell config.
-        ///
-        /// <para>ExpectedConfig, never Config: both callers run during the first second, and a
-        /// cell does not latch its config until <c>Initialize</c>. See the class remarks.</para>
-        /// </summary>
-        bool TryResolveArena(out SpawnableSkein arena, out string why)
-        {
-            arena = null;
             var cell = arenaCell != null ? arenaCell : FindAnyObjectByType<Cell>();
-            var config = cell != null ? cell.ExpectedConfig : null;
-
-            if (config == null)
-            {
-                why = "No Cell whose config is knowable - the cable's settings live on the cell " +
-                      "config. A Skein cell must be IntensityWise (its choice is derivable from " +
-                      "the intensity the server already holds); a Random multi-config cell " +
-                      "cannot answer before it rolls, by design.";
-                return false;
-            }
-
-            arena = config.EnvironmentPrefab as SpawnableSkein;
-            if (arena == null)
-            {
-                why = $"The cell config '{config.name}' authors no SpawnableSkein " +
-                      "EnvironmentPrefab, so there is no cable to hang rings on.";
-                return false;
-            }
-
-            why = null;
-            return true;
+            return cell != null ? cell.ExpectedConfig : null;
         }
+
+        bool TryResolveArena(out SpawnableSkein arena, out string why) =>
+            SkeinCourseSource.TryResolveArena(ResolveCourseConfig(), out arena, out why);
 
         /// <summary>
         /// Everyone starts just behind the start collar, aimed through it.

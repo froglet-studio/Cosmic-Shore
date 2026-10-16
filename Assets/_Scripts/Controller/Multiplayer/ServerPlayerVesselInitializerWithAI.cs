@@ -425,25 +425,22 @@ namespace CosmicShore.Gameplay
         /// <summary>
         /// The hull AI seat <paramref name="seat"/> flies, once its domain is known.
         ///
-        /// <para><b>Opponent seat</b> (a domain no human flies) on a card that pins an opponent
-        /// hull (<c>SO_ArcadeGame.OpponentAIVessel</c>): that hull, every time. It is NOT added to
+        /// <para><b>A pick first</b>: the hull picked for this seat on the launch panel
+        /// (<see cref="GameDataSO.RequestedAIVessels"/>; a teammate's for an ally, the host's for
+        /// any seat) when that hull is legal, built, and - under arena seating - still free.</para>
+        ///
+        /// <para><b>Opponent seat</b> (a domain no human flies) with no usable pick, on a card that
+        /// pins an opponent hull (<c>SO_ArcadeGame.OpponentAIVessel</c>): that hull. It is NOT added to
         /// <paramref name="hullsInUse"/> - a pinned opponent grid is exempt from arena seating
         /// and must not narrow the allies' draw.</para>
         ///
-        /// <para><b>Ally seat</b>: the hull a teammate picked for it on the launch panel
-        /// (<see cref="GameDataSO.RequestedAIVessels"/>) when that hull is legal, built, and -
-        /// under arena seating - still free; otherwise the scene template, otherwise the card's
-        /// draw. Every route ends in the same clamp the human path uses.</para>
+        /// <para>Otherwise the scene template, otherwise the card's draw. Every route ends in the
+        /// same clamp the human path uses.</para>
         /// </summary>
         VesselClassType ResolveAIVesselType(int seat, bool hasTemplate, Domains aiDomain,
                                             ICollection<Domains> humanDomains,
                                             HashSet<VesselClassType> hullsInUse)
         {
-            var opponentHull = gameData.OpponentAIVesselClass;
-            if (AIHullSeating.IsOpponentSeat(opponentHull, aiDomain, humanDomains) &&
-                vesselPrefabContainer.TryGetShipPrefab(opponentHull, out _, reportMissing: false))
-                return opponentHull;
-
             var picked = seat < gameData.RequestedAIVessels.Count
                 ? gameData.RequestedAIVessels[seat]
                 : VesselClassType.Random;
@@ -457,10 +454,15 @@ namespace CosmicShore.Gameplay
                     return picked;
                 }
 
-                CSDebug.LogWarning($"[ServerPlayerVesselInitializerWithAI] Ally AI {seat} was picked " +
+                CSDebug.LogWarning($"[ServerPlayerVesselInitializerWithAI] AI {seat} was picked " +
                                    $"{picked}, which is {(legal ? free ? "not built" : "already flown" : "not on this card")}; " +
-                                   "drawing from the card instead.");
+                                   "seating it as if nobody had picked.");
             }
+
+            var opponentHull = gameData.OpponentAIVesselClass;
+            if (AIHullSeating.IsOpponentSeat(opponentHull, aiDomain, humanDomains) &&
+                vesselPrefabContainer.TryGetShipPrefab(opponentHull, out _, reportMissing: false))
+                return opponentHull;
 
             var aiVesselType = hasTemplate ? aiInitializeDatas[seat].vesselClass : VesselClassType.Random;
             // ARENA: a hull is flown by ONE pilot, so an authored template that names a hull

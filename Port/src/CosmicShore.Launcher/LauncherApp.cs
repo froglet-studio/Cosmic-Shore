@@ -24,7 +24,7 @@ namespace CosmicShore.Launcher
     /// </summary>
     public sealed partial class LauncherApp
     {
-        enum Page { Play, Build, Project, Chat, Options, Console, Tracks, Board, Git, Editor, Time, Net, Studios }
+        enum Page { Play, Build, Project, Chat, Options, Console, Tracks, Board, Git, Editor, Time, Studios }
 
         public sealed record Args(string? Screenshot, int Frames, string? Page, bool Offline, string? Auto = null, string? UpdatedFrom = null, int Tour = -1, string? ClonePathArg = null);
 
@@ -77,7 +77,13 @@ namespace CosmicShore.Launcher
             });
             _updater = new LauncherUpdater(_s, _tools, _ws);
             // A play session that ends is folded into the tracks, and Amoebius says what it found.
-            _jobs.GameExited += () => Task.Run(async () => { await Task.Delay(2000); IngestSessions(notify: true); });
+            _jobs.GameExited += () => Task.Run(async () => { await Task.Delay(2000); IngestSessions(notify: true); OfferNetLogs(); });
+            // An online test's players each write a log as they close; once the last one has, offer to send them.
+            _jobs.SecondPlayerExited += () => Task.Run(async () => { await Task.Delay(1000); OfferNetLogs(); });
+            // The last run ended in an exception nothing caught: say what it was.
+            if (CrashLog.TakeLast(LauncherSettings.DataDir) is { } crash)
+                Notify("Amoebius closed unexpectedly last time", crash.Summary, NoteKind.Error,
+                    ("OPEN LOG", () => OpenFolder(LauncherSettings.DataDir)));
             if (args.Tour >= 0) _tour = args.Tour;
             var pageArg = args.Page?.Split(':');
             if (pageArg != null && Enum.TryParse<Page>(pageArg[0], true, out var p)) _page = p;
@@ -85,6 +91,7 @@ namespace CosmicShore.Launcher
             if (pageArg is { Length: > 2 }) _edOpen = string.Join(":", pageArg.Skip(2)); // --page editor:1:Assets/x.asset opens that file (docs screenshots)
             if (pageArg is { Length: > 1 } && pageArg[1] == "usage") _usageOpen = true; // --page chat:usage (docs screenshots)
             else if (pageArg is { Length: > 1 } && _page == Page.Studios && pageArg[1] == "artifacts") _artScrollFrames = 10; // --page studios:artifacts
+            else if (pageArg is { Length: > 1 } && _page == Page.Studios) _studioOpenAtStart = pageArg[1]; // --page studios:hub|stoat (Unity's Vessel Studio)
             else if (pageArg is { Length: > 1 }) { _open.Clear(); _open.Add(pageArg[1].ToUpperInvariant()); } // --page options:claude
             if (LauncherSettings.FirstRun) DetectExistingClone();
             for (int i = 0; i < _stars.Length; i++) _stars[i] = NewStar(randomDepth: true);
@@ -123,7 +130,7 @@ namespace CosmicShore.Launcher
             _window.Load += OnLoad;
             _window.Render += OnRender;
             _window.FramebufferResize += s => _gl?.Viewport(s);
-            _window.Closing += () => { _chats.StopAll(); _s.Save(); _imgui?.Dispose(); };
+            _window.Closing += () => { _chats.StopAll(); _jobs.StopSecondPlayer(); _s.Save(); _imgui?.Dispose(); };
             _window.Run();
             _window.Dispose();
         }
@@ -156,7 +163,7 @@ namespace CosmicShore.Launcher
                 Neon.Heading = io.Fonts.AddFontFromFileTTF(Font("Aldrich-Regular.ttf"), 24);
                 Neon.Title = io.Fonts.AddFontFromFileTTF(Font("Aldrich-Regular.ttf"), 30);
                 Neon.Hero = io.Fonts.AddFontFromFileTTF(Font("Aldrich-Regular.ttf"), 46);
-                Neon.Mono = io.Fonts.AddFontFromFileTTF(Font("RobotoMono-Regular.ttf"), 15);
+                Neon.Mono = io.Fonts.AddFontFromFileTTF(Font("RobotoMono-Regular.ttf"), 15, null, ranges);   // the studio cards' spec rows: – × ·
                 unsafe { io.NativePtr->FontDefault = Neon.Body.NativePtr; }
             });
             Neon.ApplyStyle();
@@ -232,6 +239,7 @@ namespace CosmicShore.Launcher
                 switch (_args.Auto)
                 {
                     case "play": _jobs.Play(); break;
+                    case "play-online": _jobs.Play(online: true); break;
                     case "update": _jobs.Update(); break;
                     case "android": _jobs.BuildPhone(ios: false); break;
                     case "ios": _jobs.BuildIos(); break;
@@ -311,7 +319,6 @@ namespace CosmicShore.Launcher
                 case Page.Editor: DrawEditor(contentA, contentB); break;
                 case Page.Time: DrawTime(contentA, contentB); break;
                 case Page.Studios: DrawStudios(contentA, contentB); break;
-                case Page.Net: DrawNet(contentA, contentB); break;
             }
             DrawStatusBar(size);
             ImGui.End();
@@ -417,7 +424,6 @@ namespace CosmicShore.Launcher
                 (Page.Editor, "EDITOR", IconCube),
                 (Page.Studios, "VESSEL\nSTUDIO", IconStudio),
                 (Page.Time, "TIME", IconClock),
-                (Page.Net, "NET", IconNet),
                 (Page.Tracks, "TRACKS", IconTracks),
                 (Page.Board, "BOARD", IconBoard),
                 (Page.Options, "SETTINGS", Neon.IconGear),
@@ -530,19 +536,43 @@ namespace CosmicShore.Launcher
             y += 50;
             y += DrawBehindBanner(dl, new Vector2(x0, y), colW);
 
-            // START
+            // START (offline) and START ONLINE (UGS Lobby + Relay, as the Unity build plays online)
             ImGui.SetCursorScreenPos(new Vector2(x0, y));
             bool ready = _toolsScanned && _tools.Git != null && !_jobs.Busy;
-            if (_jobs.GameRunning)
+            if (_jobs.GameRunning && _jobs.PlayingOnline)
+            {
+                // A second online player on this PC, to party up with through UGS.
+                Neon.Button("start", "ONLINE", new Vector2(colW - 300, 96), Neon.Lime, Neon.Hero, 46, enabled: false);
+                ImGui.SameLine(0, 12);
+                bool p2 = _jobs.SecondPlayerRunning;
+                if (Neon.Button("player2", p2 ? "CLOSE P2" : "+ PLAYER 2", new Vector2(138, 96), Neon.Magenta, Neon.Title, 22))
+                {
+                    if (p2) _jobs.StopSecondPlayer(); else _jobs.StartSecondPlayer();
+                }
+                Neon.Tooltip(p2 ? "Close player 2" : "Start a second online game on this PC as another UGS player (profile player2),\nto party up with and play against through UGS");
+                ImGui.SameLine(0, 12);
+                if (Neon.Button("stop", "STOP", new Vector2(138, 96), Neon.Red, Neon.Title, 30)) _jobs.StopGame();
+            }
+            else if (_jobs.GameRunning)
             {
                 Neon.Button("start", "RUNNING", new Vector2(colW - 150, 96), Neon.Lime, Neon.Hero, 46, enabled: false);
                 ImGui.SameLine(0, 12);
                 if (Neon.Button("stop", "STOP", new Vector2(138, 96), Neon.Red, Neon.Title, 30)) _jobs.StopGame();
             }
             else if (_jobs.Busy && _jobs.JobName == "Start game")
-                Neon.Button("start", "LAUNCHING", new Vector2(colW, 96), Neon.Magenta, Neon.Hero, 46, enabled: false);
-            else if (Neon.Button("start", "START", new Vector2(colW, 96), Neon.Cyan, Neon.Hero, 46, ready, hero: true, playIcon: true))
-                _jobs.Play();
+                Neon.Button("start", _jobs.PlayingOnline ? "GOING ONLINE" : "LAUNCHING", new Vector2(colW, 96), Neon.Magenta, Neon.Hero, 46, enabled: false);
+            else
+            {
+                float half = (colW - 12) / 2;
+                if (Neon.Button("start", "START", new Vector2(half, 96), Neon.Cyan, Neon.Hero, 46, ready, hero: true, playIcon: true))
+                    _jobs.Play();
+                Neon.Tooltip("Play offline, on your own");
+                ImGui.SameLine(0, 12);
+                if (Neon.Button("startonline", "START ONLINE", new Vector2(half, 96), Neon.Magenta, Neon.Title, 30, ready, playIcon: true))
+                    _jobs.Play(online: true);
+                Neon.Tooltip("Play online: signs in to Unity Gaming Services, and parties and matches\n" +
+                             "go through UGS Lobby and Relay, the way the Unity build plays online");
+            }
             y += 112;
 
             // quick toggles, one row
@@ -550,8 +580,6 @@ namespace CosmicShore.Launcher
             Toggle("Fullscreen", () => _s.Fullscreen, v => _s.Fullscreen = v);
             ImGui.SameLine(0, 26);
             Toggle("Audio", () => _s.Audio, v => _s.Audio = v);
-            ImGui.SameLine(0, 26);
-            Toggle("Online", () => _s.Network, v => _s.Network = v, "Party, Relay and cloud services");
             ImGui.SameLine(0, 26);
             Toggle("Pull first", () => _s.PullBeforePlay, v => _s.PullBeforePlay = v, "Fetch the branch's newest commit on every START");
 
@@ -1039,10 +1067,12 @@ namespace CosmicShore.Launcher
                     _s.Resolution, v => _s.Resolution = v));
                 Row("", () => Toggle("Fullscreen", () => _s.Fullscreen, v => _s.Fullscreen = v, "F11 toggles in game"));
                 Row("", () => Toggle("Audio", () => _s.Audio, v => _s.Audio = v));
-                Row("", () => Toggle("Online services", () => _s.Network, v => _s.Network = v, "Party, Relay and cloud saves"));
+                Row("", () => Toggle("Diagnostics overlay", () => _s.Diagnostics, v => _s.Diagnostics = v,
+                    "Games start with Amoebius's diagnostics shown: FPS, frame and CPU/GPU time, memory,\nscene, and online status (UGS sign-in, lobby, relay, ping, traffic). F3 toggles it in any game."));
                 Row("", () => Toggle("Pull before play", () => _s.PullBeforePlay, v => _s.PullBeforePlay = v));
                 Row("", () => Toggle("Phone render path", () => _s.MobileRenderPath, v => _s.MobileRenderPath = v, "OpenGL ES 3.0, exactly as a phone renders"));
             }
+            if (Section("ONLINE")) DrawOnlineSettings();
             if (Section("SOURCE"))
             {
                 Row("Repository", () => Text("##remote", "https://github.com/.../Cosmic-Shore.git", () => _s.RemoteUrl, v => _s.RemoteUrl = v));
@@ -1126,6 +1156,25 @@ namespace CosmicShore.Launcher
             var n = s.Replace("_Gameplay", "").Replace("Minigame", "").Replace("_", " ");
             n = System.Text.RegularExpressions.Regex.Replace(n, "(?<=[a-z])(?=[A-Z])", " ").Trim();
             return n.Length == 0 ? s : n;
+        }
+
+        /// <summary>
+        /// SETTINGS > ONLINE: the UGS environment START ONLINE signs in to, and the UGS check (sign-in and Relay, end to end).
+        /// </summary>
+        void DrawOnlineSettings()
+        {
+            Row("UGS environment", () =>
+            {
+                Text("##ugsenv", "the branch's (amoebius)", () => _s.UgsEnvironment, v => _s.UgsEnvironment = v);
+                Neon.Tooltip("The Unity Gaming Services environment START ONLINE signs in to. Empty: the branch's\n" +
+                             "(Network.UgsEnvironment in Port/ProjectSettings/AmoebiusProject.json), else \"amoebius\",\n" +
+                             "which keeps Amoebius's lobbies apart from the Unity build's. It must exist in the UGS dashboard.");
+            });
+            Row("", () =>
+            {
+                if (SmallButton("UGS CHECK", 140, !_jobs.Busy)) _jobs.RunUgsRelayCheck();
+                Neon.Tooltip("Signs two test players in to UGS and sends frames between them through UGS Relay.");
+            });
         }
 
         bool Section(string name)

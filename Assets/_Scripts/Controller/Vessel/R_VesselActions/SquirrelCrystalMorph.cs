@@ -69,6 +69,11 @@ namespace CosmicShore.Gameplay
             }
 
             var crystal = ResolveCrystal(origin);
+
+            // A bodyless crystal is not a failure: there is no cage to carry. The boost ring is
+            // still laid by the sibling effect - only this animation stands down.
+            if (crystal != null && !crystal.HasBody) return null;
+
             if (crystal == null)
             {
                 CSDebug.LogWarning($"[SquirrelCrystalMorph] no crystal with id {origin.CrystalId} on " +
@@ -252,6 +257,11 @@ namespace CosmicShore.Gameplay
             {
                 var prism = _held[i];
                 if (!prism || prism.destroyed) continue;
+                // Returned to the pool inside the ~0.37 s hold (hit, exploded, recycled): it is no
+                // longer ring mass, and completing its creation stamps growth on an inactive prism
+                // that has no render entity - the [PrismClock] STRICT MODE error (Bug Ledger
+                // E-a0e64862fc). The pool re-initializes it on its next lay.
+                if (!prism.gameObject.activeInHierarchy) continue;
 
                 // Boost prisms finish creation a frame after the lay (waitTime 0); the window here
                 // is ~0.37 s, so this only fires if the per-frame creation budget was saturated.

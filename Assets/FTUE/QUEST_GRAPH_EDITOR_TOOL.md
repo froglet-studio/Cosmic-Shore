@@ -10,16 +10,18 @@ dialogue text) is written to the assets under `Assets/FTUE/DataContainer/` and *
 
 ## 1. Opening the tool
 
-**`FrogletTools ▸ Quest Graph Editor`**
+**`FrogletTools ▸ FTUE ▸ Quest Graph Editor`**
 
-One-time setup menus (only needed on a fresh scene / fresh checkout):
+Menus:
 
 | Menu | What it does |
 |---|---|
-| `FrogletTools ▸ Quest Graph ▸ Setup Runner In Scene` | Drops/wires `QuestGraphRunner` into the open scene (Menu_Main) and auto-resolves its references |
-| `FrogletTools ▸ Quest Graph ▸ Wire Phase 0 UI (Menu_Main)` | Wires the hand-built UI: instruction sets, dialogue panel, toast notifier, nav buttons (Hangar + Profile lockable, Arcade allowed), progression service, and the **Quest Buttons** list (auto-registers the Episodes button under key `episodes`). Review the console mapping, then **save the scene** |
-| `FrogletTools ▸ Quest Graph ▸ Create Main Quest (Default Content)` | Regenerates the whole Main Quest from the design map. ⚠ Overwrites generated content — your hand-edited phase assets are the source of truth, so only use this when you deliberately want a fresh graph |
-| `FrogletTools ▸ Quest Graph ▸ Layout All Phases (Rows)` | Re-arranges **every** phase graph into venue rows (see §3) and saves. Safe to re-run any time |
+| `FrogletTools ▸ FTUE ▸ Layout All Phases (Rows)` | Re-arranges **every** phase graph into venue rows (see §3) and saves. Safe to re-run any time |
+
+The three one-shot setup tools (Setup Runner In Scene, Wire Phase 0 UI, Create Main Quest) were
+retired on 2026-10-14 once their output had shipped: `QuestGraphRunner` is wired in Menu_Main and
+`MainQuest.asset` + its six phase graphs live in `Assets/FTUE/DataContainer/`. The hand-edited
+phase assets are the source of truth; author new phases in this window.
 
 ## 2. Window tour
 
@@ -92,7 +94,7 @@ row 3  app shell  …everything that greets them on the way back… → Phase Co
 ```
 
 **Layout Rows** (toolbar) re-arranges the open phase this way — undoable, and it takes effect in
-git once you press **Save**. `FrogletTools ▸ Quest Graph ▸ Layout All Phases (Rows)` does the
+git once you press **Save**. `FrogletTools ▸ FTUE ▸ Layout All Phases (Rows)` does the
 whole quest at once. You are free to drag nodes anywhere afterwards; Layout Rows just puts the
 canonical arrangement back.
 
@@ -200,7 +202,7 @@ UGS cloud sync once the FTUE is signed off — no other changes needed.
 | Funnel the arcade for a beat | **SetArcadeConstraints** (Apply) … your beats … **SetArcadeConstraints** (Clear). Validation warns if a phase applies without clearing; PhaseEnd clears as a safety net |
 | Let a quest node enable a scene button | Register the Button on the runner's **Quest Buttons** list (or re-run the Phase 0 wirer), then use **SetButtonInteractable** with that key |
 | Rename the quest asset | QUEST section → type the name → **Rename Asset** |
-| Tidy a graph after adding beats | Toolbar **Layout Rows** → **Save**. For every phase at once: `FrogletTools ▸ Quest Graph ▸ Layout All Phases (Rows)` |
+| Tidy a graph after adding beats | Toolbar **Layout Rows** → **Save**. For every phase at once: `FrogletTools ▸ FTUE ▸ Layout All Phases (Rows)` |
 
 ## 8. Troubleshooting
 

@@ -196,8 +196,8 @@ void ChargeCrystalArcs(
 //
 // The edge effect on its own: cool halo in the crystal's own bright colour, hot near-white
 // core, and the terminal flash. Zero wherever no bolt is — including every fragment of an
-// unbaked mesh — so an ADDITIVE pass drawing only this term (the omni crystal's pentagons,
-// OmniChargeEdgesShader) adds the charge crystal's signature and nothing else.
+// unbaked mesh — so an ADDITIVE pass drawing only this term adds the charge crystal's signature and
+// nothing else (the omni's pentagons drew it that way until 2026-10-13, when the flux arcs replaced it).
 
 float3 ChargeCrystalDischarge(
     float3 bary,

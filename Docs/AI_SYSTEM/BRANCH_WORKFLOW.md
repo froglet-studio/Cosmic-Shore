@@ -20,7 +20,7 @@ python3 Tools/Build/ai_branch_sync.py --no-fetch # offline / already fetched
 
 | Branch | Owner and purpose | What `Ys-bleeding-edge` does with it |
 |---|---|---|
-| `bleeding-edge` | The team's integration branch. Everyone's PRs land here, including **new vessel AI written by other people** (Urchin rails, Scarab jukes, Grizzly bombs). | **Pull.** New AI found here is *intake* (§4). Goes back by pull request when the user decides. |
+| `bleeding-edge` | The team's integration branch. Everyone's PRs land here, including **new vessel AI written by other people** (Urchin rails, Scarab jukes, Grizzly bombs). | **Pull only.** Merge the latest `bleeding-edge` INTO `Ys-bleeding-edge` (a merge commit) before and during work. New AI found here is *intake* (§4). **Nothing goes from `Ys-bleeding-edge` to `bleeding-edge` until the user has tested it** (Yash, 2026-10-15); then by pull request, when the user decides. |
 | `Ys-bleeding-edge` | **Home.** Ys's integration branch: everything in `bleeding-edge` plus multiplayer / party / networking, and now every vessel AI (review, restructure, diagnose, test, tune). | — |
 | `perf/performance-optimization` | Performance testing: the instruments (`prof`, `diag`, `burst`, `freeze`, `ab`), allocation gates, perf fixes. | **Two-way.** Pull its tools and fixes; merge Ys into perf when an AI change needs perf testing (§3). |
 

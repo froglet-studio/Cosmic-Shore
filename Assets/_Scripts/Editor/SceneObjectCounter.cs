@@ -12,7 +12,7 @@ namespace CosmicShore.Editor
         private Dictionary<string, int> objectCounts;
         private Vector2 scrollPosition;
 
-        [MenuItem("FrogletTools/Performance/Scene Object Counter")]
+        [MenuItem("FrogletTools/Performance/Scene Object Counter", false, 192)]
         [FrogletTool(FrogletToolCategory.Performance, Importance = 3,
             Description = "Object and component census for the open scene.")]
         public static void ShowWindow()

@@ -67,7 +67,7 @@ namespace CosmicShore.Gameplay
                 CSDebug.LogError(
                     $"[{GetType().Name}] '{path}'.{containerField} is not assigned — this impactor " +
                     "dispatches no effects until it is wired (reported once; contacts are skipped, " +
-                    "not thrown). Run FrogletTools > Vessels > Audit Vessel Skimmers to see every " +
+                    "not thrown). Run FrogletTools > Vessels > Audits > Audit Vessel Skimmers to see every " +
                     "unwired skimmer.", this);
             }
             return true;
@@ -129,15 +129,26 @@ namespace CosmicShore.Gameplay
             }
             catch (System.Exception ex)
             {
-                int effectId = effect ? effect.GetInstanceID() : 0;
-                long key = ((long)effectId << 32) ^ (uint)GetType().Name.GetHashCode();
-                if (s_reportedThrowingEffects.Add(key))
-                {
-                    CSDebug.LogError(
-                        $"[{GetType().Name}] Effect '{(effect ? effect.name : "<null>")}' threw during " +
-                        $"Execute - reported once; the rest of this contact's effect list still runs.\n{ex}",
-                        effect);
-                }
+                ReportEffectThrow(ex, effect);
+            }
+        }
+
+        /// <summary>
+        /// The catch half of <see cref="RunEffectIsolated"/>, for the per-contact effect loops: write the
+        /// <c>Execute</c> call in a <c>try</c> and hand its exception here. A lambda per effect per contact
+        /// allocated a closure on every hit - the Amoebius marker run measured it as
+        /// <c>VesselImpactor.AcceptImpactee</c>'s whole 3.8 KB/frame in Skim Race (2026-10-15).
+        /// </summary>
+        protected void ReportEffectThrow(System.Exception ex, UnityEngine.Object effect)
+        {
+            int effectId = effect ? effect.GetInstanceID() : 0;
+            long key = ((long)effectId << 32) ^ (uint)GetType().Name.GetHashCode();
+            if (s_reportedThrowingEffects.Add(key))
+            {
+                CSDebug.LogError(
+                    $"[{GetType().Name}] Effect '{(effect ? effect.name : "<null>")}' threw during " +
+                    $"Execute - reported once; the rest of this contact's effect list still runs.\n{ex}",
+                    effect);
             }
         }
 

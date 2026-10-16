@@ -212,6 +212,7 @@ entries that pointed at it were deleted 2026-10 (BH-5.4).
 | `MinigameRedline` | `Redline (53)` | `RedlineController` |
 | `MinigameGrizzlyCharge` | `GrizzlyCharge (62)` | `DogFightController` |
 | `MinigameGrizzlyTime` | `GrizzlyTime (63)` | `GrizzlyTimeController` |
+| `MinigameThresherTime` | `ThresherTime (66)` | `ThresherTimeController` |
 | `ArcadeGameMultiplayer2v2CoOpVsAI` | `Multiplayer2v2CoOpVsAI (30)` | Domain games variant |
 
 All in `Assets/_Scenes/Multiplayer Scenes/`.

@@ -52,6 +52,12 @@
     {"key": "gwShake", "asset": "Assets/Resources/BlackHoleConfig.asset", "field": "gwShake"},
     {"key": "gwGlow", "asset": "Assets/Resources/BlackHoleConfig.asset", "field": "gwGlow"},
     {"key": "dieS", "asset": "Assets/_SO_Assets/VesselActions/Stoat/StoatDipoleConfig.asset", "field": "dieSeconds"},
-    {"key": "whSizeX", "asset": "Assets/_SO_Assets/VesselActions/Stoat/StoatDipoleConfig.asset", "field": "sourceSizeX"}
+    {"key": "whSizeX", "asset": "Assets/_SO_Assets/VesselActions/Stoat/StoatDipoleConfig.asset", "field": "sourceSizeX"},
+    {"key": "dpWarp", "asset": "Assets/_SO_Assets/VesselActions/Stoat/StoatSlingConfig.asset", "field": "catchWarpShare"},
+    {"key": "dpWarpHeld", "asset": "Assets/_SO_Assets/VesselActions/Stoat/StoatSlingConfig.asset", "field": "catchWarpFromPress"},
+    {"key": "dpSweetDeg", "asset": "Assets/_SO_Assets/VesselActions/Stoat/StoatSlingConfig.asset", "field": "sweetSpotDegrees"},
+    {"key": "dpSweetHalf", "asset": "Assets/_SO_Assets/VesselActions/Stoat/StoatSlingConfig.asset", "field": "sweetSpotHalfWidth"},
+    {"key": "dpSweetFall", "asset": "Assets/_SO_Assets/VesselActions/Stoat/StoatSlingConfig.asset", "field": "sweetSpotFalloff"},
+    {"key": "dpMissShare", "asset": "Assets/_SO_Assets/VesselActions/Stoat/StoatSlingConfig.asset", "field": "missKickShare"}
   ]
 }

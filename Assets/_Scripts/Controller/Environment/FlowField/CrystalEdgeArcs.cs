@@ -6,8 +6,8 @@ namespace CosmicShore.Gameplay
     /// <summary>
     /// Swaps this renderer's mesh for the crease-edge-baked twin that the charge discharge needs to
     /// run vertex to vertex (see <see cref="CrystalEdgeArcMeshBaker"/> for the channel contract).
-    /// Two shaders read it: <c>Shader Graphs/ChargeCrystal</c> on the charge crystal, and
-    /// <c>Custom/OmniChargeEdgesShader</c> on the omni crystal's pentagons.
+    /// <c>Shader Graphs/ChargeCrystal</c> reads it on the charge crystal (the omni's pentagons wore it too until
+    /// 2026-10-13, when the flux arcs of <see cref="CrystalChargeArcs"/> replaced the crawl there).
     ///
     /// The baked mesh is built once per (source mesh, plate filter) and SHARED, so a scene full of
     /// crystals pays for one bake and keeps one mesh — no per-instance geometry, no batching loss, and

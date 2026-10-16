@@ -396,7 +396,7 @@ but carrying no shell for the query to hit. `ShellOwnsContact` therefore asks
 `PrismSpatialIndex.HasShell(prism.SpatialIndexId)` before claiming an unshielded prism,
 and a prism with no box geometry falls back to the trigger path.
 
-### Measuring it — FrogletTools > Diagnostics > Prism Contact Probe
+### Measuring it — FrogletTools > Performance > Prism Contact Probe
 
 Play mode, reader only, writes no assets. **Run A/B** samples both modes for the same
 wall time and prints one block: query ms (median / p95 / max), hits and active pairs

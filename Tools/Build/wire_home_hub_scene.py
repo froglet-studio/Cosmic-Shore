@@ -284,7 +284,7 @@ def audit_group(sc, go_name, comp_id, slots, pending):
     if filled == 0:
         pending.append(f"{go_name}: the variants list is not wired yet "
                        f"({len(slots)} slots) - author the scroll view, then run "
-                       f"FrogletTools > Interface > Home Hub Wiring")
+                       f"FrogletTools > UI > Home Hub Wiring")
         return []
     return missing
 

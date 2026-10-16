@@ -308,7 +308,8 @@ It follows intensity's path exactly, because it is the same kind of fact:
 - **It is offered only where the AI reads it.** A row that changed nothing would be a promise the
   match breaks, so a mode is added to `AIDifficultyRules.IsOfferedFor` in the same change that
   teaches its pilot to read the value. Today: Skim Race (`Docs/SKIM_RACE_AI.md` §10), the gate
-  races Slingshot, Warpline and Regatta (`GateRaceHandicap`), and the Arena's Astro League, Brood
+  races Slingshot and Warpline (`GateRaceHandicap`), Regatta (Squirrels on `SkimRaceHandicap`, every
+  other hull `GateRaceHandicap`), and the Arena's Astro League, Brood
   Rush and Broadside (`AIDifficultyRules.UsesPilotBelief`: the platform autopilot flies on an
   `AIPilotBelief` - the Skim Race's late notice and misjudged target, applied to whatever point
   `AIPilot` wants to reach - installed by `ServerPlayerVesselInitializerWithAI.ConfigureAIPilotForMode`,

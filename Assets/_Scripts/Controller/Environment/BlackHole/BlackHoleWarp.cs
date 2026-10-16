@@ -84,7 +84,7 @@ namespace CosmicShore.Gameplay
                 var h = holes[i];
                 if (h == null || h.IsSmooth) continue;
                 var d = h.transform.position - position;
-                float r = Mathf.Max(d.magnitude, h.HorizonRadius, 1e-3f);
+                float r = CosmicShore.Utility.MathfNoAlloc.Max(d.magnitude, h.HorizonRadius, 1e-3f); // 3-value Mathf.Max binds to params float[] and allocates per call
                 if (r > h.WarpReach) continue;
                 float eps = Mathf.Abs(h.GM) * tau2 * h.WarpWeight / (r * r * r);
                 if (eps <= best) continue;

@@ -89,6 +89,13 @@ namespace CosmicShore.UI
 
         void Awake()
         {
+            // The browser Toybox has no online state to show and no way to go online.
+            if (WebToybox.IsBuild)
+            {
+                gameObject.SetActive(false);
+                return;
+            }
+
             _button = GetComponent<Button>();
             if (lamp == null) lamp = GetComponent<Image>();
 

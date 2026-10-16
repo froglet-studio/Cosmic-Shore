@@ -25,7 +25,7 @@ namespace CosmicShore.Utility
     ///   3. <see cref="VesselVisionDiagnostics"/> screams once, by name, for a vessel that could
     ///      not be stamped, because the failure mode is otherwise SILENT — an unmarked ship just
     ///      looks like a ship.
-    ///   4. <c>VesselVisionLawTests</c> and FrogletTools > Vessels > Validate Vessel Vision Band
+    ///   4. <c>VesselVisionLawTests</c> and FrogletTools > Vessels > Audits > Validate Vessel Vision Band
     ///      fail on a graph that has come unwired, on a hull material outside the wired shader,
     ///      and on a config authored into a state that does nothing.
     ///

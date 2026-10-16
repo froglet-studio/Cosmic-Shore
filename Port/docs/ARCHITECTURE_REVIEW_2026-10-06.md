@@ -428,6 +428,12 @@ write a general solver in-house.**
 - **Landed 2026-10-08:** `INetTransport` / `INetTransportFactory`
   (`src/CosmicShore.Engine/Networking/Wire/INetTransport.cs`), with `NetSocket` as the TCP
   implementation and `NetDriver.TransportFactory` as the one place a backend plugs in.
+- **Landed 2026-10-13:** until G2, players on different machines meet through Amoebius's own
+  online server (`src/CosmicShore.Engine/Networking/Online/`, ARCHITECTURE §8): Lobby + Relay
+  semantics, LAN discovery, `CosmicShore --server`. Its relay is a second transport behind the same
+  seam (`OnlineTransportFactory`), and its lobby is `IMultiplayerService`, so whichever backend G2
+  picks replaces those two pieces and nothing in the game. The "Lobby and Relay" row below
+  describes the state before it.
 
 The UGS boundary, stated explicitly (the G2 columns are candidates, not commitments):
 
