@@ -23,13 +23,13 @@ namespace CosmicShore.Gameplay
     {
         [Header("Cone")]
         [SerializeField, Tooltip("Reach of the claw's spray at FULL pressure (and on devices with no analog trigger). Keep it the Grizzly's shortest-range weapon.")]
-        float range = 45f;
+        float range = 55f;
         [SerializeField, Tooltip("Half-angle of the ignite cone at FULL pressure, degrees.")]
-        float coneHalfAngle = 20f;
+        float coneHalfAngle = 24f;
         [SerializeField, Tooltip("Reach of the spray at the LIGHTEST pull.")]
-        float minRange = 18f;
+        float minRange = 22f;
         [SerializeField, Tooltip("Half-angle of the cone at the LIGHTEST pull, degrees.")]
-        float minConeHalfAngle = 10f;
+        float minConeHalfAngle = 12f;
         [SerializeField, Tooltip("Ignites per second while held.")]
         float igniteTicksPerSecond = 4f;
         [SerializeField, Tooltip("Max prisms ignited per tick, per cone.")]
@@ -56,10 +56,14 @@ namespace CosmicShore.Gameplay
         [Header("Whips (the look - four per trigger, cosmetic)")]
         [SerializeField, Tooltip("Whip cords drawn per trigger, fanned across the cone.")]
         int whipsPerSide = 4;
-        [SerializeField, Tooltip("How much of the cone's half-angle the fan spans (1 = the outer whips on the cone's edge).")]
-        [Range(0f, 1f)] float whipFanFraction = 0.85f;
-        [SerializeField, Tooltip("Gap between neighbouring whip roots at the muzzle, in world units.")]
-        float whipRootSpacing = 0.6f;
+        [SerializeField, Tooltip("How far out each claw finger opens, as a fraction of the cone's half-angle (1 = on the cone's surface).")]
+        [Range(0f, 1f)] float whipFanFraction = 1f;
+        [SerializeField, Tooltip("Gap between neighbouring finger roots at the muzzle, world units. 0 = every finger starts at one point (the claw).")]
+        float whipRootSpacing = 0f;
+        [SerializeField, Tooltip("Where round the ring the first finger sits, degrees (0 = straight up). The fingers are evenly spaced from there.")]
+        float whipRingPhaseDegrees = 0f;
+        [SerializeField, Tooltip("How much each finger's tip curls back toward the claw's axis (0 = straight spikes, 1 = tips meet on the axis). Cosmetic only.")]
+        [Range(0f, 1f)] float whipCurl = 0.45f;
         [SerializeField, Tooltip("0 = the Brittle Star's loose whip, 1 = a straight saber. High on purpose: the claw's whips are 'more rigid' (design ask, 2026-10-16), so they lag a turn and shiver but stay nearly straight.")]
         [Range(0f, 1f)] float whipRigidity = 0.8f;
         [SerializeField, Tooltip("Joints per whip. More = smoother bends, more cost.")]
@@ -77,7 +81,7 @@ namespace CosmicShore.Gameplay
         [SerializeField, Tooltip("Smoothing points drawn between whip joints.")]
         int whipRenderSubdivisions = 4;
         [SerializeField, Tooltip("Whip width at the root, world units; it tapers to a fifth at the tip.")]
-        float whipWidth = 1.2f;
+        float whipWidth = 2f;
         [SerializeField, Tooltip("Fresnel tube material (the Thresher chain's). Empty = an unlit runtime fallback.")]
         Material whipMaterial;
         [SerializeField, Tooltip("The whip's dark core colour.")]
@@ -98,6 +102,8 @@ namespace CosmicShore.Gameplay
         public int WhipsPerSide => whipsPerSide;
         public float WhipFanFraction => whipFanFraction;
         public float WhipRootSpacing => whipRootSpacing;
+        public float WhipRingPhaseDegrees => whipRingPhaseDegrees;
+        public float WhipCurl => whipCurl;
         public float WhipRigidity => whipRigidity;
         public int WhipLinks => whipLinks;
         public float WhipLooseWave => whipLooseWave;

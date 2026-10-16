@@ -59,18 +59,23 @@ momentum."*
 | **Sniper** | hold = **scope**; a round fired while held takes the view with it until LT is let go | **fire** (sniper cooldown 3 s, energy 0.5) |
 
 - **Claw:** `GrizzlyFlamethrowerActionSO` — live pressure sizes the cone from `minRange` /
-  `minConeHalfAngle` (18 u / 10°) to `range` / `coneHalfAngle` (45 u / 20°); no analog = full.
+  `minConeHalfAngle` (22 u / 12°) to `range` / `coneHalfAngle` (55 u / 24°); no analog = full.
   Apexes sit `sideOffset` 6 to each side and `noseOffset` 4 ahead, each turned `splayDegrees` 6°
   outward so the two spread apart (shrunk and spread, 2026-10-16). Each cone ignites on its own.
-  45 u is the Grizzly's shortest reach on purpose.
+  55 u is still the Grizzly's shortest reach on purpose (raised from 45 with the claw look, 2026-10-16: "they
+  can be a little bigger").
 - **Claw look: four rigid red whips per side** (2026-10-16: *"the brittlestar has a whip mode that I would
   like to mimic, but have be more rigid and red with four on each side as the plasma claw… we are trying to
   enhance the visuals of it. the cones look a little plain."*). The flat cone is gone
   (`GrizzlyClawConeVisual` deleted); `GrizzlyClawWhips` draws four `BrittleStarCord`s per trigger, the Brittle
   Star's own wave-equation whip (copied verbatim from Garrett's `cece/beautiful-knuth-j3atgk`, same path and
   GUID, so the two branches merge clean), held at `whipRigidity` 0.8 so they lag a turn and shiver but stay
-  nearly straight. They fan across the cone (`whipFanFraction` 0.85, alternating a little up and down), taper
-  from `whipWidth` 1.2 to a point, and use the Thresher chain's fresnel tube material in dark red with a red
+  nearly straight. **A claw, not a fan** (2026-10-16: *"the whips come out as an X shape. I want them to start at a point and
+  cone outward like a set of claws and they can be a little bigger"*): all four fingers root at the one muzzle
+  point (`whipRootSpacing` 0), open evenly round a ring on the cone's surface (`whipFanFraction` 1,
+  `whipRingPhaseDegrees` 0 = one finger straight up), and curl back toward the axis at the tips (`whipCurl`
+  0.45, drawn only) like talons. The first cut laid them in a row alternating up and down, which read as an X
+  from the chase camera. They taper from `whipWidth` 2 to a point, and use the Thresher chain's fresnel tube material in dark red with a red
   rim that dims as the cell empties. **Gameplay is unchanged**: what burns is still the cone the whips fan
   across, with the same pressure, reach, cells and burn.
 - **Claw energy cells** (2026-10-16: *"give each of them a small energy cell that recharges when
@@ -363,7 +368,7 @@ Not run in the editor — no Unity in the authoring sessions. Steps:
 10. **Turn end** with a bomb cruising or frozen: it disappears with no blast.
 11. **X does nothing** in any mode (2026-10-16).
 11b. **Claw:** LB to PLASMA CLAW. Feather LT: a small cone from the left front; squeeze: the full
-    45 u fan of four red whips. RT the same on the right; the two splay apart. Enemy prisms in them burn. Hold
+    55 u claw of four red talons. RT the same on the right; the two splay apart. Enemy prisms in them burn. Hold
     one: its whips dim and it cuts out after ~2-3 s; let go and it refills in ~2 s.
 11c. **Sniper:** LB to SNIPER. Hold LT: the scope PiP opens. RT: a round; the PiP rides it
     while LT is held; let go and the PiP closes. RT again within 3 s does nothing.

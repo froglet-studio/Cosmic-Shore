@@ -12,10 +12,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: dbd60402e57555b42b6deb16a8ff7759, type: 3}
   m_Name: GrizzlyFlamethrowerAction
   m_EditorClassIdentifier: 
-  range: 45
-  coneHalfAngle: 20
-  minRange: 18
-  minConeHalfAngle: 10
+  range: 55
+  coneHalfAngle: 24
+  minRange: 22
+  minConeHalfAngle: 12
   igniteTicksPerSecond: 4
   ignitesPerTick: 3
   sideOffset: 6
@@ -26,8 +26,10 @@ MonoBehaviour:
   cellRechargeSeconds: 2
   cellRechargeDelay: 0.25
   whipsPerSide: 4
-  whipFanFraction: 0.85
-  whipRootSpacing: 0.6
+  whipFanFraction: 1
+  whipRootSpacing: 0
+  whipRingPhaseDegrees: 0
+  whipCurl: 0.45
   whipRigidity: 0.8
   whipLinks: 10
   whipLooseWave: 180
@@ -36,7 +38,7 @@ MonoBehaviour:
   whipRigidDamping: 14
   whipPose: 1600
   whipRenderSubdivisions: 4
-  whipWidth: 1.2
+  whipWidth: 2
   whipMaterial: {fileID: 2100000, guid: 02033cc2904f4f25bf3b6888ce3c98f9, type: 2}
   whipBodyColor: {r: 0.25, g: 0.02, b: 0.02, a: 1}
   whipRimColor: {r: 1, g: 0.12, b: 0.08, a: 1}

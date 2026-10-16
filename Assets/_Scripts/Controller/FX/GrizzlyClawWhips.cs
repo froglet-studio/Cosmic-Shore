@@ -10,7 +10,8 @@ namespace CosmicShore.Gameplay
     ///
     /// <para><b>Cosmetic only, every peer draws its own.</b> What burns is still the claw's cone
     /// (<c>GrizzlyFlamethrowerActionExecutor.IgniteCone</c>): the four cords fan across that cone's half-angle at its
-    /// reach, so they are its visible envelope and the visual does not lie about what catches fire.</para>
+    /// reach - rooted at one point, opening round a ring and curling in at the tips like a claw - so they are its
+    /// visible envelope and the visual does not lie about what catches fire.</para>
     ///
     /// <para>Drawn with the Thresher chain's fresnel tube material (one <see cref="LineRenderer"/> per cord, colours
     /// through a <see cref="MaterialPropertyBlock"/> so the shared material is never instanced). The rim dims as the
@@ -27,6 +28,8 @@ namespace CosmicShore.Gameplay
         Vector3[] _drawn;
         MaterialPropertyBlock _mpb;
         bool _visible;
+        Vector3 _apex, _axis;
+        float _length;
 
         /// <summary>Gets (or creates) the whip set called <paramref name="setName"/> hanging off this vessel.</summary>
         public static GrizzlyClawWhips EnsureFor(Transform vessel, string setName)
@@ -41,7 +44,7 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// Step and draw the cords for one frame. <paramref name="apex"/> is the claw's muzzle in world space,
+        /// Step and draw the cords for one frame: the fingers root at <paramref name="apex"/> and open round a ring. <paramref name="apex"/> is the claw's muzzle in world space,
         /// <paramref name="aim"/> the cone's axis (forward = +z), <paramref name="length"/> / <paramref name="halfAngle"/>
         /// the cone this pull makes, <paramref name="fill01"/> the cone's energy cell.
         /// </summary>
@@ -64,20 +67,26 @@ namespace CosmicShore.Gameplay
                 Pose = so.WhipPose,
             };
 
+            // A CLAW, not a fan (design ask, 2026-10-16: "the whips come out as an X shape. I want them to start at a
+            // point and cone outward like a set of claws"): every finger roots at the one muzzle point and opens
+            // outward around a ring on the cone's surface, evenly spaced; Draw then curls each tip back toward the
+            // axis, so the set reads as talons closing round what they burn. (The first cut laid the roots in a row
+            // alternating up and down, which from the chase camera read as an X.)
             int n = _cords.Length;
             Vector3 right = aim * Vector3.right;
+            float tilt = halfAngle * so.WhipFanFraction;
             for (int i = 0; i < n; i++)
             {
-                // Fan across the cone: spread side to side, alternating a little up and down, so four fingers read
-                // as a claw rather than a comb.
-                float t = n > 1 ? i / (float)(n - 1) : 0.5f;
-                float yaw = Mathf.Lerp(-halfAngle, halfAngle, t) * so.WhipFanFraction;
-                float pitch = (i % 2 == 0 ? 1f : -1f) * halfAngle * so.WhipFanFraction * 0.35f;
-                Vector3 dir = aim * (Quaternion.Euler(pitch, yaw, 0f) * Vector3.forward);
-                Vector3 anchor = apex + right * ((t - 0.5f) * so.WhipRootSpacing * (n - 1));
+                float azimuth = so.WhipRingPhaseDegrees + 360f * i / n;
+                Quaternion local = Quaternion.AngleAxis(azimuth, Vector3.forward) * Quaternion.AngleAxis(-tilt, Vector3.right);
+                Vector3 dir = aim * (local * Vector3.forward);
+                Vector3 anchor = apex + right * ((i - 0.5f * (n - 1)) * so.WhipRootSpacing);   // 0 spacing = one point
                 _cords[i].Step(anchor, dir, length, so.WhipRigidity, settings, dt);
             }
 
+            _apex = apex;
+            _axis = aim * Vector3.forward;
+            _length = length;
             Draw(so, fill01);
         }
 
@@ -119,8 +128,24 @@ namespace CosmicShore.Gameplay
                 line.SetPropertyBlock(_mpb);
                 line.startColor = line.endColor = rim;   // the vertex-colour fallback material
                 int written = ThresherChainLinks.Smooth(cord.Points, sub, _drawn);
+                Curl(so.WhipCurl, written);
                 if (line.positionCount != written) line.positionCount = written;
                 line.SetPositions(_drawn);
+            }
+        }
+
+        /// <summary>Bend each drawn finger back toward the claw's axis, more toward the tip (s squared), so a straight
+        /// cord reads as a curved talon. Cosmetic: the cord's own physics, and the cone that burns, are untouched.</summary>
+        void Curl(float curl, int count)
+        {
+            if (curl <= 0f || _length <= 1e-4f) return;
+            for (int p = 0; p < count; p++)
+            {
+                Vector3 offset = _drawn[p] - _apex;
+                float along = Vector3.Dot(offset, _axis);
+                float s = Mathf.Clamp01(along / _length);
+                Vector3 radial = offset - _axis * along;
+                _drawn[p] -= radial * (curl * s * s);
             }
         }
 
