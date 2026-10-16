@@ -15,7 +15,7 @@ namespace CosmicShore.Gameplay
     ///   A / D     left  -X / +X     XSum yaw; with ' / L → XDiff speed (A+' fast, L+D slow)
     ///   P / ;     right +Y / -Y     YDiff roll vs left Y (P+S roll left, W+; roll right)
     ///   L / '     right -X / +X     (same mix as A / D)
-    ///   Space       Button1Action   R  Button2Action   Q  Button3Action   E  FlipAction
+    ///   Space       Button1Action   R  Button2Action   Q  Button3Action   F  Button4Action   E  FlipAction
     ///               (QWER + Space — shared verbatim with SingleStickMouseInputStrategy, because
     ///                ControlGlyphSetSO authors one keyboardLabel per control)
     ///   Left Shift  left trigger analog 1, LeftStickAction / OnlyLeftStickAction
@@ -42,7 +42,7 @@ namespace CosmicShore.Gameplay
         // strategy runs: a button held as the player switched devices, or released while the
         // window was unfocused (InputController skips unfocused frames), never sent its release,
         // so the ability (the Sparrow's boost on B / R, any held face-button ability) stayed on.
-        private bool prevButton1, prevButton2, prevButton3, prevFlip;
+        private bool prevButton1, prevButton2, prevButton3, prevButton4, prevFlip;
 
         private void EdgeFire(bool isPressed, ref bool prev, InputEvents evt)
         {
@@ -56,6 +56,7 @@ namespace CosmicShore.Gameplay
             EdgeFire(false, ref prevButton1, InputEvents.Button1Action);
             EdgeFire(false, ref prevButton2, InputEvents.Button2Action);
             EdgeFire(false, ref prevButton3, InputEvents.Button3Action);
+            EdgeFire(false, ref prevButton4, InputEvents.Button4Action);
             EdgeFire(false, ref prevFlip, InputEvents.FlipAction);
         }
 
@@ -133,6 +134,7 @@ namespace CosmicShore.Gameplay
             // scheme's own WASD left stick, so the move suits both hands.
             EdgeFire(keyboard.rKey.isPressed, ref prevButton2, InputEvents.Button2Action);
             EdgeFire(keyboard.qKey.isPressed, ref prevButton3, InputEvents.Button3Action);
+            EdgeFire(keyboard.fKey.isPressed, ref prevButton4, InputEvents.Button4Action);   // the pad's Y
             EdgeFire(keyboard.eKey.isPressed, ref prevFlip, InputEvents.FlipAction);
 
             inputStatus.Throttle = keyboard.eKey.isPressed ? 1f : 0f;

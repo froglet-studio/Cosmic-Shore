@@ -398,9 +398,11 @@ namespace CosmicShore.Gameplay
                                             // NEAREST edible prism; UpdateFeeding (per-frame)
                                             // turns to face it BEFORE the suction starts and
                                             // holds facing until it's pulled all the way in.
-                                            if (sqr < bestFeedSqr)
+                                            // A painted prism ranks closer (PaintedPrey: preferred, never forced).
+                                            float rank = PaintedPrey.Rank(otherPrism, sqr);
+                                            if (rank < bestFeedSqr)
                                             {
-                                                bestFeedSqr = sqr;
+                                                bestFeedSqr = rank;
                                                 feedCandidate = otherPrism;
                                             }
                                         }

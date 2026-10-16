@@ -974,6 +974,9 @@ MonoBehaviour:
   - InputEvent: 8
     ShipActions:
     - {fileID: 11400000, guid: c329dd299612fe08ed9840cd879c0734, type: 2}
+  - InputEvent: 14
+    ShipActions:
+    - {fileID: 11400000, guid: f48cae469c285f3aa844be6e33917d48, type: 2}
   _resourceEventClassActions: []
   _touchActionOverrides: []
   _gamepadActionOverrides: []
@@ -1250,6 +1253,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   config: {fileID: 11400000, guid: 60a9824016a95b7b999271b9227189cb, type: 2}
   OnMiniGameTurnEnd: {fileID: 11400000, guid: 498a06d44bde9184f985c938c803b2a1, type: 2}
+  onCombatHitLanded: {fileID: 11400000, guid: 45fb43a0cddb5cc3cc4dc448df994152, type: 2}
 --- !u!1001 &3003162917154485572
 PrefabInstance:
   m_ObjectHideFlags: 0

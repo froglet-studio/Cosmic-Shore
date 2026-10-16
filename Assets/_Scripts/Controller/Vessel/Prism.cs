@@ -894,6 +894,7 @@ namespace CosmicShore.Gameplay
             SetSuperShieldMark(false); // nor a prior life's super-shield
             _colorShadeGain = 1f;      // nor a prior owner's colour shade (the next material sync drops it)
             _colorLift = 0f;           // nor a prior pilot's lit mark
+            PaintedPrey.Forget(this);  // nor a prior life's paint (every creature preferred it)
 
             PlayerName = playerName;
             blockCollider.enabled = false;

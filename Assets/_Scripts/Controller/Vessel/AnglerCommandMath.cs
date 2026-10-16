@@ -26,13 +26,17 @@ namespace CosmicShore.Gameplay
         public static float BrushScale(float depth, float brushMin) =>
             brushMin + (1f - brushMin) * Mathf.Clamp((depth - 0.5f) / 0.5f, 0f, 1f);
 
-        /// <summary>Is <paramref name="p"/> inside the cone from <paramref name="o"/> along the unit <paramref name="f"/>
-        /// (half-angle <paramref name="coneDeg"/>, reach <paramref name="reach"/>)? Closer than 1 u never counts.</summary>
-        public static bool InCone(Vector3 o, Vector3 f, Vector3 p, float coneDeg, float reach)
+        /// <summary>Is <paramref name="p"/> inside the brush from <paramref name="o"/> along the unit <paramref name="f"/>:
+        /// ahead of the nose, within <paramref name="reach"/> along the axis, and no further from the axis than the cone's
+        /// radius there (half-angle <paramref name="coneDeg"/>) or <paramref name="nearR"/>, whichever is wider - so
+        /// close-up prisms count.</summary>
+        public static bool InBrush(Vector3 o, Vector3 f, Vector3 p, float coneDeg, float reach, float nearR)
         {
-            float dx = p.x - o.x, dy = p.y - o.y, dz = p.z - o.z, d = Mathf.Sqrt(dx * dx + dy * dy + dz * dz);
-            if (d > reach || d < 1f) return false;
-            return (dx * f.x + dy * f.y + dz * f.z) / d > Mathf.Cos(coneDeg * Mathf.Deg2Rad);
+            float dx = p.x - o.x, dy = p.y - o.y, dz = p.z - o.z, along = dx * f.x + dy * f.y + dz * f.z;
+            if (along < 0f || along > reach) return false;
+            float perp2 = Mathf.Max(0f, dx * dx + dy * dy + dz * dz - along * along);
+            float r = Mathf.Max(nearR, along * Mathf.Tan(coneDeg * Mathf.Deg2Rad));
+            return perp2 <= r * r;
         }
 
         /// <summary>The index of the candidate nearest <paramref name="from"/>, each claim on a candidate costing
@@ -87,29 +91,20 @@ namespace CosmicShore.Gameplay
         public static Vector3 LurePoint(Vector3 p, Vector3 f, Vector3 u, float ahead) =>
             new(p.x + f.x * ahead + u.x * 2.5f, p.y + f.y * ahead + u.y * 2.5f, p.z + f.z * ahead + u.z * 2.5f);
 
-        /// <summary>The omni crystal's tame: the indices of <paramref name="points"/> within <paramref name="radius"/> of
-        /// <paramref name="from"/>, nearest first (ties by index), at most <paramref name="room"/>, written into
-        /// <paramref name="into"/> (cleared first). Returns how many.</summary>
-        public static int OmniTameOrder(Vector3 from, IReadOnlyList<Vector3> points, float radius, int room, List<int> into)
+        /// <summary>A painted order's pick, regardless of distance: the candidate with the fewest
+        /// <paramref name="claims"/>, then the most recently painted (largest <paramref name="stamps"/>), then the lowest
+        /// index - so a squad fans out over the newest paint first. -1 for an empty list.</summary>
+        public static int PickRecent(IReadOnlyList<float> stamps, IReadOnlyList<int> claims)
         {
-            into.Clear();
-            if (room <= 0) return 0;
-            float r2 = radius * radius;
-            for (int i = 0; i < points.Count; i++)
-                if (SqrDistance(from, points[i]) <= r2) into.Add(i);
-            into.Sort((a, b) =>
-            {
-                float da = SqrDistance(from, points[a]), db = SqrDistance(from, points[b]);
-                return da != db ? da.CompareTo(db) : a.CompareTo(b);
-            });
-            if (into.Count > room) into.RemoveRange(room, into.Count - room);
-            return into.Count;
+            int best = -1;
+            for (int i = 0; i < stamps.Count; i++)
+                if (best < 0 || claims[i] < claims[best] || (claims[i] == claims[best] && stamps[i] > stamps[best])) best = i;
+            return best;
         }
 
-        static float SqrDistance(Vector3 a, Vector3 b)
-        {
-            float dx = b.x - a.x, dy = b.y - a.y, dz = b.z - a.z;
-            return dx * dx + dy * dy + dz * dz;
-        }
+        /// <summary>The Time ability's landing point: <paramref name="frac"/> of the way from <paramref name="p"/> to the
+        /// school's centroid <paramref name="c"/>.</summary>
+        public static Vector3 DashPoint(Vector3 p, Vector3 c, float frac) =>
+            new(p.x + (c.x - p.x) * frac, p.y + (c.y - p.y) * frac, p.z + (c.z - p.z) * frac);
     }
 }

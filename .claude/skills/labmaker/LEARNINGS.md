@@ -915,3 +915,11 @@ Entries are grouped by family; within a family, the newest goes at the bottom.
 - Do instead: when a lab state is shown by changing an object's own look, port that look onto the object with the lab's numbers (here a per-prism lift toward white, one fading stamp per change). Then list in the verification entry what the player must SEE, not only what the code does. A world-space marker for a solid object goes on its surface or above it, never at its pivot.
 - Evidence: `AnglerCommandLab.html` `render()` (the `col.lerp(WHITE, 0.75)` line); `Prism.SetColorLift`; `ANGLER.md` §1a.
 - Promoted: no
+
+### L-STU-71 — A SHIPPED key two schemes share moves both; name the key per scheme or report both rows
+- Lab: Angler Command Lab, round 3 · Branch: `cece/zealous-feynman-po8k8d` · Date: 2026-10-16
+- What happened: the designer asked for the Sling painter's reach x20. `paintRange` is also the round-1 Spotlight's reach, and the AI commander's approach distance. Raising it moved three things: the Sling painter (85% on target, from 90%), the Spotlight (70%, from 80%), and how the scorecard's AI flies. A comparison scheme that was meant to stay put shifted with it.
+- Do instead: before changing a SHIPPED value, grep every reader (`P.<key>`): schemes, the AI commander, the renderer. Either split the key per scheme, or re-run the whole batch and report every row that moved. Here the change was meant for both painters, so both rows are reported in `ANGLER_COMMAND_LAB.md` round 3.
+- Evidence: `AnglerCommandLab.html` (`P.paintRange` in `brushStroke`, the spotlight's `aimPick`, the commander's reach); the round-3 scorecard.
+- Promoted: no
+

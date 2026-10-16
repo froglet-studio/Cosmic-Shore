@@ -30,13 +30,14 @@ WHAT IT MAKES
     KEPT FROM THE DONOR ON PURPOSE (a stand-in body until the Angler has its own, ANGLER.md §5): the Stoat's procedural
     hull (StoatHullBuilder) and its lope (StoatAnimation), the two jets, the tails, the hit box, the skimmer container
     and the shared prism / haptics effects the vessel container keeps.
-    Assets: AnglerConfig + the three control assets (VesselActions/Angler/), the camera, SO_Class_Angler, every new
+    Assets: AnglerConfig + the four control assets (VesselActions/Angler/), the camera, SO_Class_Angler, every new
     script's .meta, the doc's .meta. Registrations: Vessel Prefab Container (root TRANSFORM), DefaultNetworkPrefabs (root
     GAMEOBJECT), SO_Classlist_All / _Classes, four CrystalHullFusionConfig entries (copied from the Stoat's: same hull).
     NOT here (code, held by tests): the enum member, ToyVesselRoster.Default, EnumIntegrityTests.
-    NOT here AT ALL: Assets/Resources/ElementalAbilityMaps/Angler.asset. The element -> ability mapping is a PROPOSAL
-    awaiting the designer (ANGLER.md §3; the vessel skill's design gate forbids authoring one to fill a slot). Without it
-    every elemental multiplier is 1x and no level-5 upgrade unlocks, which is the honest state of an unapproved design.
+    THE ELEMENT MAP (Assets/Resources/ElementalAbilityMaps/Angler.asset) is owned outright since the designer approved it on
+    2026-10-16 (ANGLER.md §7): Charge = Erase / Lock-on, Mass = Lure, Tame & Grow (L5 Steal Fauna), Space = Paint (L5 Paint
+    Shields), Time = Dash to the School. Charge and Time have no level-5 upgrade yet; their labels stay empty (vessel skill
+    §3: never invent one to fill a slot). No element SCALES anything yet: every ability is at its authored number.
 
 THE CLONE IS A SPENT ONE-SHOT ONCE THE PREFAB IS COMMITTED (CLAUDE.md: "a spent one-shot must stand down, not abort").
 The prefab and the HUD variant are built ONLY while absent; --check validates the SHIPPED files' invariants. To
@@ -100,12 +101,21 @@ OMNI_EFFECT_GUID = guid_for("AnglerTameByCrystalEffect.asset")
 IMPACT_CONTAINER_GUID = guid_for("AnglerImpactorDataContainer.asset")
 STOAT_IMPACT_CONTAINER = "63a1b912028e471b9b7a2df570e90be8"     # StoatImpactorDataContainer.asset
 STOAT_OVERCLOCK = "6b508a166e124e95a6490871697185de"
-KEEPER_SPECIES = "0e87f3117e7141a7b5bce66b0385a2d0"             # Clawfish Fauna Space.asset (the lab's first species)            # StoatOverclockByCrystalEffect.asset (the Stoat's omni effect)
+KEEPER_SPECIES = "0e87f3117e7141a7b5bce66b0385a2d0"             # Clawfish Fauna Space.asset (the lab's first species)
+COMBAT_HIT_CHANNEL = "45fb43a0cddb5cc3cc4dc448df994152"         # Event_CombatHitStats.asset (StatsManager scores it)
+MAP_SCRIPT = "4b3f2a8c8f344355b16a4d4296ae3f98"                 # ElementalAbilityMapSO
+MAP_GUID = guid_for("ElementalAbilityMaps/Angler.asset")
+# The omni crystal morphs into one of these (the lab's three species, every element; non-leashable ones are skipped at
+# runtime): Clawfish, QuadFish, Tadpole x Charge / Mass / Space / Time.
+OMNI_FAUNA = ("9a71c56e49ff4ee493c70be766f1b335", "d6d14731fd184959b837ab47e378f813", "0e87f3117e7141a7b5bce66b0385a2d0",
+              "c7ff7791587d4467ba9fbe88358b2119", "4053ff006892420d8ca5efa51365570c", "5697aa8685514f2ca9b9de9638fce1a1",
+              "3107bcc776d54a74b110b883f10fba61", "414bce89d4dc495f87bbccfb02e5b847", "ede43cd3ab5943c58c646065c1f57a1f",
+              "28c9a96388684fa0b3b10b9dbea56c70", "72fa98519b534214b89e9c29c44b89da", "62a30981533145a5b66304c04e7c50e0")            # StoatOverclockByCrystalEffect.asset (the Stoat's omni effect)
 
 # (control name, AnglerControl value, InputEvents it is bound to). The InputEvents numbers: Button1=6 (A / Space),
 # Button2=7 (B / R), Button3=8 (X / Q). The triggers (RightStickAction=1, LeftStickAction=2) stay unbound: the Sling
 # painter reads their analog depth from the replicated InputStatus. LB raises no event in the game, so it is unused.
-CONTROLS = (("AnglerLure", 0, 8), ("AnglerSquad", 1, 6), ("AnglerRecall", 2, 7))
+CONTROLS = (("AnglerLure", 0, 8), ("AnglerSquad", 1, 6), ("AnglerRecall", 2, 7), ("AnglerDash", 3, 14))   # 14 = Button4Action (Y / F)
 CONTROL_GUID = {name: guid_for(name + ".asset") for name, _, _ in CONTROLS}
 
 # Every script this vessel added: (path under Assets/_Scripts, guid).
@@ -121,6 +131,7 @@ NEW_SCRIPTS = tuple((rel, guid_for(os.path.basename(rel))) for rel in (
     "UI/View/AnglerHUDView.cs",
     "Tests/Editor/AnglerCommandMathTests.cs",
     "Controller/ImpactEffects/EffectsSO/Vessel Crystal Effects/AnglerTameByCrystalEffectSO.cs",
+    "Controller/Environment/FloraAndFauna/PaintedPrey.cs",
 ))
 SCRIPT = {os.path.basename(rel)[:-3]: guid for rel, guid in NEW_SCRIPTS}
 
@@ -174,11 +185,12 @@ CRUISE, BOOST = 40, 110
 def executor_block() -> str:
     return (S.mb_header(EXECUTOR_ID, SHIP_ACTIONS_GO, SCRIPT["AnglerCommandExecutor"]) +
             f"  config: {{fileID: 11400000, guid: {CONFIG}, type: 2}}\n"
-            f"  OnMiniGameTurnEnd: {{fileID: 11400000, guid: {TURN_END_CHANNEL}, type: 2}}\n")
+            f"  OnMiniGameTurnEnd: {{fileID: 11400000, guid: {TURN_END_CHANNEL}, type: 2}}\n"
+            f"  onCombatHitLanded: {{fileID: 11400000, guid: {COMBAT_HIT_CHANNEL}, type: 2}}\n")
 
 
 def bindings() -> str:
-    """Shared (every device): the three buttons. The triggers are read as analog depth, never bound."""
+    """Shared (every device): the four buttons. The triggers are read as analog depth, never bound."""
     out = "  _inputEventShipActions:\n"
     for name, _, event in sorted(CONTROLS, key=lambda c: c[2]):
         out += f"  - InputEvent: {event}\n    ShipActions:\n    - {{fileID: 11400000, guid: {CONTROL_GUID[name]}, type: 2}}\n"
@@ -254,10 +266,17 @@ def build_prefab(donor: str) -> str:
 
 
 def patch_prefab(text: str) -> str:
-    """Idempotent edits the committed prefab takes too (the clone itself is a spent one-shot): the vessel impactor reads
-    the Angler's own container, so an omni crystal runs the Angler's mass tame rather than the Stoat's Overclock."""
-    return text.replace(f"vesselImpactorDataContainerSO: {{fileID: 11400000, guid: {STOAT_IMPACT_CONTAINER}, type: 2}}",
+    """Idempotent edits the committed prefab takes too (the clone itself is a spent one-shot):
+    - the vessel impactor reads the Angler's own container (an omni crystal runs the Angler's effect, not the Stoat's);
+    - the executor block (its wiring, the combat-hit channel included) and the four button bindings are the generator's."""
+    text = text.replace(f"vesselImpactorDataContainerSO: {{fileID: 11400000, guid: {STOAT_IMPACT_CONTAINER}, type: 2}}",
                         f"vesselImpactorDataContainerSO: {{fileID: 11400000, guid: {IMPACT_CONTAINER_GUID}, type: 2}}")
+    text = re.sub(r"  _inputEventShipActions:(?:.*\n)*?(?=  _onButtonPressed:)", lambda _: bindings(), text, count=1)
+    head, docs = S.split_docs(text)
+    if any(fid == EXECUTOR_ID for fid, _ in docs):
+        S.set_doc(docs, EXECUTOR_ID, executor_block())
+        text = S.join_docs(head, docs)
+    return text
 
 
 # ===================================================================================================== the HUD variant
@@ -290,21 +309,28 @@ def config_asset() -> str:
             "  tameTime: 2.5\n"
             "  tameDecay: 0.6\n"
             "  squadCap: 24\n"
-            "  omniTameRadius: 300\n"
             "  leashTow: 1.6\n"
             "  formBack: 6\n"
             "  tadTurn: 4\n"
             "  spareOwn: 1\n"
-            "  paintRange: 160\n"
+            "  paintRange: 3200\n"
             "  paintCone: 8\n"
             "  brushMin: 0.35\n"
             "  eraseCone: 4\n"
+            "  brushNear: 6\n"
             "  slingAhead: 12\n"
             "  slingSpeed: 150\n"
             "  homeTurn: 12\n"
             "  slingTime: 3\n"
             "  slingCatch: 8\n"
             "  slingCluster: 24\n"
+            "  dashFrac: 0.75\n"
+            "  dashTime: 0.35\n"
+            "  paintedPreference: 4\n"
+            "  plantInterval: 2\n"
+            "  lockBiteCooldown: 1\n"
+            "  lockBiteReach: 6\n"
+            "  omniFauna:\n" + "".join(f"  - {{fileID: 11400000, guid: {g}, type: 2}}\n" for g in OMNI_FAUNA) +
             f"  companionFauna: {{fileID: 11400000, guid: {KEEPER_SPECIES}, type: 2}}\n"
             "  brushInterval: 0\n")
 
@@ -319,6 +345,39 @@ def impact_container_asset() -> str:
     text = open(STOAT_IMPACT_CONTAINER_PATH, encoding="utf-8", newline="").read()
     text = S.replace_once(text, "  m_Name: StoatImpactorDataContainer\n", "  m_Name: AnglerImpactorDataContainer\n", "container name")
     return S.replace_once(text, f"guid: {STOAT_OVERCLOCK}, type: 2}}", f"guid: {OMNI_EFFECT_GUID}, type: 2}}", "the Stoat's omni effect")
+
+
+def map_asset() -> str:
+    """The element map the designer approved on 2026-10-16 (ANGLER.md §7). Charge and Time have no level-5 upgrade yet:
+    their UpgradeLabel stays empty, the honest state of an open design slot (vessel skill §3)."""
+    def entry(element, label, desc, inp, up_label, up_desc):
+        q = lambda t: "'" + t.replace("'", "''") + "'"
+        return (f"  - Element: {element}\n    AbilityLabel: {label}\n    AbilityDescription: {q(desc)}\n    Input: {inp}\n"
+                "    UnlockLevel: 5\n    RelockBelowLevel: 4\n    LatchPolicy: 0\n"
+                f"    UpgradeLabel: {up_label}\n    UpgradeDescription: {q(up_desc) if up_desc else ''}\n")
+    return (S.so_header(MAP_SCRIPT, "Angler").replace("  m_EditorClassIdentifier: \n", "  m_EditorClassIdentifier:\n") +
+            f"  vesselClass: {CLASS_ID}\n  entries:\n" +
+            entry(1, "Erase / Lock-on",
+                  "LT, held: a narrow beam from the nose unpaints prisms (an already-ordered one leaves every order). Point it "
+                  "at a rival vessel and the picked squad LOCKS ON: it hunts that hull, and each bite is a scored contact "
+                  "Strike that takes petals, until you throw a new paint, lock another vessel, or the hunters die. "
+                  "R_VesselActions/ANGLER.md.", 2, "", "") +
+            entry(2, "Lure, Tame & Grow",
+                  "X, held: the esca lights ahead of the nose and the hull slows. Wild herbivores in its reach turn to it, and "
+                  "one held in the light for the taming time joins your school. While the light is out, plants of your domain "
+                  "grow within the same reach.", 8, "Steal Fauna",
+                  "The lure takes creatures from other holders too: another Angler's tamed fauna can be lured, tamed and "
+                  "kept. Gated on IsUpgradeActive(Mass).") +
+            entry(3, "Paint",
+                  "RT, held: a beam reaching 3200 u (and close up, at the nose) paints prisms, which light up, and every "
+                  "creature prefers them; the picked squad balls up ahead. Let go: each creature flies at the most recently "
+                  "painted prisms first, at any distance, and eats them. Lit prisms stay lit until eaten or erased.", 1,
+                  "Paint Shields",
+                  "The brush paints shielded prisms too, and the squad cracks a painted prism's shield off when it arrives, "
+                  "so it can be eaten. Gated on IsUpgradeActive(Space).") +
+            entry(4, "Dash to the School",
+                  "Y (F on a keyboard): the hull dashes 75% of the way to the centre of every creature it leads, measured "
+                  "when pressed, in 0.35 s.", 14, "", ""))
 
 
 def control_asset(name: str, value: int) -> str:
@@ -413,6 +472,7 @@ def owned_files() -> "dict[str, str]":
         DOC + ".meta": text_meta(DOC_GUID),
         OMNI_EFFECT: omni_effect_asset(), OMNI_EFFECT + ".meta": S.asset_meta(OMNI_EFFECT_GUID),
         IMPACT_CONTAINER + ".meta": S.asset_meta(IMPACT_CONTAINER_GUID),
+        MAP: map_asset(), MAP + ".meta": S.asset_meta(MAP_GUID),
     }
     for name, value, _ in CONTROLS:
         path = os.path.join(ACTIONS_DIR, name + ".asset")
@@ -497,7 +557,8 @@ def check(files: "dict[str, str]") -> "list[str]":
     ex = d.get(EXECUTOR_ID, "")
     need(f"guid: {SCRIPT['AnglerCommandExecutor']}" in ex, "AnglerCommandExecutor missing")
     need(f"  - {{fileID: {EXECUTOR_ID}}}\n" in d.get(REGISTRY_ID, ""), "AnglerCommandExecutor is not in the ActionExecutorRegistry")
-    need(f"guid: {CONFIG}" in ex and TURN_END_CHANNEL in ex, "AnglerCommandExecutor is not wired (config / turn-end channel)")
+    need(f"guid: {CONFIG}" in ex and TURN_END_CHANNEL in ex and COMBAT_HIT_CHANNEL in ex,
+         "AnglerCommandExecutor is not wired (config / turn-end channel / combat-hit channel)")
     tr = d.get(TRANSFORMER_ID, "")
     need(f"guid: {SCRIPT['AnglerVesselTransformer']}" in tr, "the transformer is not AnglerVesselTransformer")
     need(f"  DefaultThrottleScaler: {CRUISE}\n" in tr and f"  MaxBoostMultiplier: {S.num(BOOST / CRUISE)}\n" in tr,
@@ -529,20 +590,25 @@ def check(files: "dict[str, str]") -> "list[str]":
         errors.append("AnglerHUDVariant.prefab is missing")
     else:
         need(f"guid: {SCRIPT['AnglerHUDView']}" in hud and S.HUD_VIEW_SCRIPT not in hud, "the HUD variant's view is not AnglerHUDView")
-        for _, field, _, _ in GAUGES:
-            need(re.search(r"  %s: \{fileID: [1-9]\d*\}" % field, hud), f"HUD view field {field} is not wired")
+        for (_, field, _, _), renamed in zip(GAUGES, ("chargeGauge", "massGauge", "spaceGauge", "timeGauge")):
+            # the round-2 key until Unity re-saves the variant, the element-named one after (FormerlySerializedAs)
+            need(re.search(r"  (%s|%s): \{fileID: [1-9]\d*\}" % (field, renamed), hud), f"HUD view field {renamed} is not wired")
         for old, new in ICON_SWAP.items():
             need(old not in hud and new in hud, f"HUD icon {new} not swapped in")
 
     for path, want in owned_files().items():
         have = files.get(path)
         need(have == want, f"{os.path.relpath(path, ROOT)} is {'missing' if have is None else 'drifted'} - run the tool")
+    cfg = files.get(CONFIG_PATH, "")
+    for key in ("brushNear", "dashFrac", "dashTime", "paintedPreference", "plantInterval", "lockBiteCooldown", "lockBiteReach"):
+        need(re.search(r"^  %s: " % key, cfg, re.M), f"AnglerConfig has no {key} (round 3; re-seed it or add the line)")
+    need(len(re.findall(r"^  - \{fileID: 11400000, guid: [0-9a-f]{32}, type: 2\}$", cfg.split("  omniFauna:")[-1].split("  companionFauna:")[0], re.M)) > 0,
+         "AnglerConfig's omniFauna is empty - an omni crystal could morph into nothing")
     for path, (_, script, name) in SEEDED.items():
         have = files.get(path) or ""
         need(f"guid: {script}, type: 3}}" in have and f"  m_Name: {name}\n" in have, f"{os.path.relpath(path, ROOT)} missing or not a {name}")
     need(re.search(r"  companionFauna: \{fileID: 11400000, guid: [0-9a-f]{32}, type: 2\}\n", files.get(CONFIG_PATH, "")),
          "AnglerConfig has no companionFauna - a cell with no leashable herbivore could never give the Angler its keeper")
-    need(MAP not in files, "ElementalAbilityMaps/Angler.asset exists - the element mapping is an unapproved PROPOSAL (ANGLER.md §3)")
 
     need(f"  - {{fileID: {ROOT_TRANSFORM_ID}, guid: {PREFAB_GUID}, type: 3}}\n" in files.get(CONTAINER, ""),
          "not registered in the Vessel Prefab Container (by its root TRANSFORM)")
@@ -592,7 +658,7 @@ def author() -> None:
         patched = patch_prefab(files[PREFAB])
         if patched != files[PREFAB]:
             write(PREFAB, patched)
-            print("patched Angler.prefab (the Angler's impactor container)")
+            print("patched Angler.prefab (impactor container, executor wiring, bindings)")
     if HUD_VARIANT_PATH not in files:
         write(HUD_VARIANT_PATH, build_hud_variant(open(HUD_DONOR, encoding="utf-8", newline="").read()))
         print("cloned StoatHUDVariant.prefab -> AnglerHUDVariant.prefab")
@@ -631,7 +697,9 @@ def self_test() -> int:
         "Lure unbound": (PREFAB, lambda t: t.replace(CONTROL_GUID["AnglerLure"], "f" * 32)),
         "fusion entries missing": (FUSION, lambda t: t.replace(f"  - vessel: {CLASS_ID}\n", "  - vessel: 99\n")),
         "roster entry missing": (os.path.join(SCRIPTS, "Controller/Toys/ToyVesselRoster.cs"), lambda t: t.replace("VesselClassType.Angler", "")),
-        "an unapproved map authored": (MAP, lambda t: "authored"),
+        "the element map drifted": (MAP, lambda t: t.replace("Input: 14", "Input: 7")),
+        "the combat-hit channel unwired": (PREFAB, lambda t: t.replace(f"  onCombatHitLanded: {{fileID: 11400000, guid: {COMBAT_HIT_CHANNEL}, type: 2}}", "  onCombatHitLanded: {fileID: 0}")),
+        "the dash unbound": (PREFAB, lambda t: t.replace("  - InputEvent: 14\n", "  - InputEvent: 13\n")),
         "no keeper species": (CONFIG_PATH, lambda t: re.sub(r"  companionFauna: .*\n", "  companionFauna: {fileID: 0}\n", t)),
         "the Stoat's impactor container back": (PREFAB, lambda t: t.replace(IMPACT_CONTAINER_GUID, STOAT_IMPACT_CONTAINER)),
         "the Stoat's Overclock on the omni list": (IMPACT_CONTAINER, lambda t: t.replace(OMNI_EFFECT_GUID, STOAT_OVERCLOCK)),

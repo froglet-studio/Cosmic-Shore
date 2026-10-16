@@ -39,11 +39,6 @@
       "field": "squadCap"
     },
     {
-      "key": "omniTameRadius",
-      "asset": "Assets/_SO_Assets/VesselActions/Angler/AnglerConfig.asset",
-      "field": "omniTameRadius"
-    },
-    {
       "key": "leashTow",
       "asset": "Assets/_SO_Assets/VesselActions/Angler/AnglerConfig.asset",
       "field": "leashTow"
@@ -84,6 +79,11 @@
       "field": "eraseCone"
     },
     {
+      "key": "brushNear",
+      "asset": "Assets/_SO_Assets/VesselActions/Angler/AnglerConfig.asset",
+      "field": "brushNear"
+    },
+    {
       "key": "slingAhead",
       "asset": "Assets/_SO_Assets/VesselActions/Angler/AnglerConfig.asset",
       "field": "slingAhead"
@@ -112,6 +112,16 @@
       "key": "slingCluster",
       "asset": "Assets/_SO_Assets/VesselActions/Angler/AnglerConfig.asset",
       "field": "slingCluster"
+    },
+    {
+      "key": "dashFrac",
+      "asset": "Assets/_SO_Assets/VesselActions/Angler/AnglerConfig.asset",
+      "field": "dashFrac"
+    },
+    {
+      "key": "dashTime",
+      "asset": "Assets/_SO_Assets/VesselActions/Angler/AnglerConfig.asset",
+      "field": "dashTime"
     },
     {
       "key": "cruise",

@@ -9,6 +9,7 @@ namespace CosmicShore.Gameplay
         Lure = 0,
         CycleSquad = 1,
         Recall = 2,
+        Dash = 3,
     }
 
     /// <summary>
@@ -16,7 +17,7 @@ namespace CosmicShore.Gameplay
     /// press goes straight to the hull's own <see cref="AnglerCommandExecutor"/>, which owns all state.
     ///
     /// <para><b>The lure is held</b> (the light is out from press to release). <b>Squad</b> and <b>Recall</b> are
-    /// press-and-forget: they have no release semantics (vessel rule 37).</para>
+    /// press-and-forget: they have no release semantics (vessel rule 37). So is the <b>Dash</b> (the Time ability).</para>
     /// </summary>
     [CreateAssetMenu(fileName = "AnglerAction", menuName = "ScriptableObjects/Vessel Actions/Angler Control")]
     public sealed class AnglerActionSO : ShipActionSO
@@ -35,12 +36,13 @@ namespace CosmicShore.Gameplay
                 case AnglerControl.Lure: angler.BeginLure(); break;
                 case AnglerControl.CycleSquad: angler.CycleSquad(); break;
                 case AnglerControl.Recall: angler.Recall(); break;
+                case AnglerControl.Dash: angler.Dash(); break;
             }
         }
 
         public override void StopAction(ActionExecutorRegistry executors, IVesselStatus vesselStatus)
         {
-            if (control != AnglerControl.Lure) return;   // a squad pick and a recall have no release
+            if (control != AnglerControl.Lure) return;   // a squad pick, a recall and a dash have no release
             var angler = executors ? executors.Get<AnglerCommandExecutor>() : null;
             if (angler) angler.EndLure();
         }

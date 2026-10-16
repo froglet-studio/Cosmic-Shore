@@ -11655,3 +11655,25 @@ The designer asked that an Angler always leads at least one creature, and that o
 - Predation, a jousting vessel, and losing the last body prism still kill a keeper. Its heart still drops and its mass is still conserved. The next creature in the school becomes the keeper, and an empty school gets a new one.
 - §0's "AUTHORIZED EXCEPTION … the Angler's KEEPER" is the record of the sign-off and the fence.
 
+
+### 61.5 Round 3 (2026-10-16): painted prey, theft, and the lure's garden
+
+The designer gave the Angler's elements their abilities (`R_VesselActions/ANGLER.md` §1c–§1g). Three of them touch the
+ecosystem:
+
+- **Every creature prefers painted prisms** (`PaintedPrey`).
+  - `LightFauna` and `Boid` rank a painted prism `paintedPreference` (4) times closer in their own nearest-edible search. That is the only reader.
+  - It is a preference inside the creature's own sensing radius, never a goal and never food. The diet still decides edibility, and shielded mass is still never food.
+  - It is a vessel's active act on the world (an ability), not an imposed rule of the food web. With nothing painted, every forager ranks exactly as before.
+  - Its static registry is fenced against the static-registry trap. Each holder unmarks what it marked (eaten, erased, turn end, disable), and `Prism.Initialize` forgets a pooled prism's marks.
+- **Theft** (Mass level 5). `Fauna.TryLeash(holder, steal: true)` moves a creature from one holder's leash to another's. The old holder is told (`Released`).
+  - A leash is still behaviour only (§61.1–61.2), so stealing changes who steers the creature and nothing else.
+- **The lure's garden** (Mass). While an Angler's lure is out, one plant of the PILOT'S domain is planted in the lure's reach every 2 s:
+  - one of the cell's own species;
+  - through `CellLifeSpawnerBase.SpawnFlora`, so it grows in;
+  - a replicated species only on the sim authority.
+
+  This is a vessel laying its own domain's mass, the same as a trail. It is not the spawner, so the "fauna spawn in the controlling colour" rule (a spawner rule) is not touched.
+
+**The Space level-5 "Paint Shields"** never makes shielded mass food. A squad member that reaches a painted shielded prism
+cracks the shield off (`Prism.DeactivateShields`, the same call a vessel's impact makes), and only then can it eat the prism.

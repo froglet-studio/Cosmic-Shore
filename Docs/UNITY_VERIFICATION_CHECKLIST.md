@@ -65,6 +65,53 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Angler round 3: the element map (Charge lock-on, Mass lure & grow, Space paint 3200 u, Time dash on Y), newest paint first, the omni creature, every creature prefers paint (`cece/zealous-feynman-po8k8d`, 2026-10-16) — NOT EDITOR-VERIFIED
+
+`R_VesselActions/ANGLER.md` §1, §1c–§1g, §7. No `unity` CLI was available, so `/verify-unity` did NOT run.
+
+Headless proof:
+
+- `unity_refcompile` player OK. Editor: only the 3 pre-existing `UgsRequestPolicyTests` errors.
+- Parity: 189 cases, 10/10 planted changes caught.
+- `author_angler_assets.py --check`, with `--self-test` 17/17.
+- `studio_to_unity`: 25 mapped, 0 drift.
+- `element_ability_table.py Angler`: 4/4 abilities; the Mass and Space level-5 gates are found.
+- The lab: `verify_lab.cjs` PASS, plus round-3 headless checks.
+
+**What landed:**
+
+- **Input:** `InputEvents.Button4Action = 14` (pad Y / keyboard F, gamepad + keyboard + single-stick-mouse strategies, hint map, glyph row).
+- **Element map:** `ElementalAbilityMaps/Angler.asset`.
+- **Fauna:** `PaintedPrey` (+ `LightFauna` / `Boid` food rank), `Fauna.TryLeash(…, steal)`.
+- **Executor:**
+  - brush 3200 u with a 6 u near radius, read as 16 spheres along the beam;
+  - `PickRecent`, and no homing give-up;
+  - shield crack;
+  - lock-on, hunt and bites;
+  - plants;
+  - dash;
+  - `OmniMorph`.
+- **Presentation:** the HUD gauges by element; four redrawn icons.
+
+1. **The map in the HUD.** Fly the Angler. The ability row reads Erase / Lock-on (LT), Lure, Tame & Grow (X), Paint (RT) and Dash to the School (Y), with a Y chip on a pad and an F chip on a keyboard. The icons are a lock ring, an esca over a sprout, the paint beam, and a hull dashing to fish.
+2. **Reach.**
+   - Squeeze RT at prisms far across the cell (well past where it used to stop): they light up.
+   - Point at prisms right in front of the nose, closer than a hull length: they light up too.
+   - LT erases at both ranges.
+3. **Newest paint first.** Paint one field, then sweep a second, far away. Let go: the squad flies at the second sweep first, however far it is, and does not give up on the way.
+4. **Everyone prefers paint.** Paint prisms near a wild herbivore school, don't throw: wild creatures in range turn to eat the lit prisms before unlit ones.
+5. **Paint Shields (Space 5).** At Space 5 (toolbox), shielded prisms light up under RT. Thrown fauna arrive, the shield breaks off, and they eat the prism. Below Space 5, shielded prisms never light.
+6. **Lure & Grow (Mass).** Hold X: every ~2 s a plant of YOUR domain grows in near the esca.
+7. **Steal Fauna (Mass 5).** Two Anglers (bots or MPPM): at Mass 5, luring near the other Angler's school takes its creatures (its leash gauge drops). Below Mass 5 they ignore your light.
+8. **Lock-on (Charge).**
+   - Hold LT on a rival vessel: a ring appears round it, and your squad chases it.
+   - Each contact takes petals (watch its flowers) and scores a Strike, at most one per second.
+   - A teammate can't be locked.
+   - Throwing a new paint, locking another vessel, or B ends the hunt.
+9. **Dash (Time).** With a school spread out, press Y (F): the hull swoops 75% of the way to the school's centre in about a third of a second, trail continuous. With no school, nothing happens.
+10. **Omni crystal.** Fly through one: a creature (Clawfish, QuadFish or Tadpole, any element) blooms where the crystal was and joins the school. The console shows no warning.
+11. **Client pilot (MPPM).** Known limit (follow-up 7): a client Angler's dash and HUD counts are empty, because its school lives on the host.
+
 ### 🔴 Angler playtest 2: the keeper (always one creature, it never starves); lit prisms stay lit until eaten or erased (`cece/zealous-feynman-po8k8d`, 2026-10-16) — NOT EDITOR-VERIFIED
 
 `R_VesselActions/ANGLER.md` §1a, §1b; the ecology exception is in `Docs/ECOSYSTEM.md` §0 and §61.4. No `unity` CLI was

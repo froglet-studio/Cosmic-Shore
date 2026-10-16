@@ -1,42 +1,42 @@
 using CosmicShore.Data;
 using UnityEngine;
+using UnityEngine.Serialization;
 using UnityEngine.UI;
 
 namespace CosmicShore.UI
 {
     /// <summary>
-    /// The Angler's HUD readouts (design: <c>R_VesselActions/ANGLER.md</c> §4). The row order is the fleet's
-    /// <b>charge · mass · space · time</b>; the Angler's PROPOSED abilities sit in it as <b>Command · Leash · Lure · Tame</b>.
-    /// The element mapping is a proposal awaiting the designer (no <c>ElementalAbilityMaps/Angler.asset</c> is authored,
-    /// vessel skill §3), so the row's order is the only place it shows.
+    /// The Angler's HUD readouts (design: <c>R_VesselActions/ANGLER.md</c> §7). The row order is the fleet's
+    /// <b>charge · mass · space · time</b>, and the approved map (2026-10-16, <c>ElementalAbilityMaps/Angler.asset</c>) fills it
+    /// as <b>Erase / Lock-on · Lure, Tame &amp; Grow · Paint · Dash to the School</b>.
     ///
     /// <para>One gauge per card:</para>
     /// <list type="number">
-    /// <item><b>Command</b> — the picked squad's share that is out hunting (thrown or eating its order); the READY colour
-    /// while RT is painting and something is painted.</item>
-    /// <item><b>Leash</b> — the school's size against the leash's capacity.</item>
-    /// <item><b>Lure</b> — the lure light, a switch eased 0..1; READY while it is out.</item>
-    /// <item><b>Tame</b> — the furthest-along taming in the light.</item>
+    /// <item><b>Charge</b> - the share of the school hunting a locked vessel; READY while LT erases.</item>
+    /// <item><b>Mass</b> - the furthest-along taming in the light; READY while the lure is out.</item>
+    /// <item><b>Space</b> - the picked squad's share out on a painted order; READY while RT paints with something painted.</item>
+    /// <item><b>Time</b> - full when the dash is ready (a school to dash to, no dash in flight); READY then.</item>
     /// </list>
-    /// Colour here is a GAUGE channel; the upgrade lives on the lockup's card, so this view only re-anchors its captured
-    /// rest scales in <see cref="SetAbilityUpgraded"/> (vessel rule 9).
+    /// The gauges are named for their element; each keeps the serialized name it had in round 2 (FormerlySerializedAs),
+    /// so the HUD prefab's wiring survives the rename. Colour here is a GAUGE channel; the upgrade lives on the lockup's
+    /// card, so this view only re-anchors its captured rest scales in <see cref="SetAbilityUpgraded"/> (vessel rule 9).
     /// </summary>
     public class AnglerHUDView : VesselHUDView
     {
         [Header("Gauges (one filled Image per card; the lockup re-homes and masks each to its plate)")]
-        [Tooltip("Charge card: Command - the picked squad's share out hunting.")]
-        [SerializeField] Image commandGauge;
-        [Tooltip("Mass card: Leash - the school against the leash's capacity.")]
-        [SerializeField] Image leashGauge;
-        [Tooltip("Space card: Lure - the light, eased on and off.")]
-        [SerializeField] Image lureGauge;
-        [Tooltip("Time card: Tame - the furthest-along taming in the light.")]
-        [SerializeField] Image tameGauge;
+        [Tooltip("Charge card: Erase / Lock-on - the share of the school hunting a locked vessel.")]
+        [SerializeField, FormerlySerializedAs("commandGauge")] Image chargeGauge;
+        [Tooltip("Mass card: Lure, Tame & Grow - the furthest-along taming in the light.")]
+        [SerializeField, FormerlySerializedAs("leashGauge")] Image massGauge;
+        [Tooltip("Space card: Paint - the picked squad's share out on a painted order.")]
+        [SerializeField, FormerlySerializedAs("lureGauge")] Image spaceGauge;
+        [Tooltip("Time card: Dash to the School - full when the dash is ready.")]
+        [SerializeField, FormerlySerializedAs("tameGauge")] Image timeGauge;
 
         [Header("Colours")]
         [Tooltip("Every gauge's resting colour.")]
         [SerializeField] Color gaugeColor = new(0.59f, 0.65f, 0.76f, 1f);
-        [Tooltip("Painting with something painted (Command) and the lure out (Lure) - the palette's CTA lime.")]
+        [Tooltip("A card's ability is live or ready (erasing, the lure out, painting, the dash ready) - the palette's CTA lime.")]
         [SerializeField] Color readyColor = new(157f / 255f, 1f, 46f / 255f, 1f);
         [Tooltip("How fast a gauge eases to its colour (1/s, exponential, unscaled time).")]
         [SerializeField, Min(0f)] float colorBlendRate = 15f;
@@ -44,10 +44,10 @@ namespace CosmicShore.UI
         /// <summary>Seat every readout at rest (nothing tamed, the light off). Idempotent: it re-runs on a swap.</summary>
         public override void Initialize()
         {
-            Seat(commandGauge);
-            Seat(leashGauge);
-            Seat(lureGauge);
-            Seat(tameGauge);
+            Seat(chargeGauge);
+            Seat(massGauge);
+            Seat(spaceGauge);
+            Seat(timeGauge);
         }
 
         void Seat(Image gauge)
@@ -57,10 +57,10 @@ namespace CosmicShore.UI
             gauge.color = gaugeColor;
         }
 
-        public void SetCommand(float hunting01, bool painting) => Push(commandGauge, hunting01, painting);
-        public void SetLeash(float school01) => Push(leashGauge, school01, false);
-        public void SetLure(float on01, bool out_) => Push(lureGauge, on01, out_);
-        public void SetTame(float tame01) => Push(tameGauge, tame01, tame01 >= 1f);
+        public void SetCharge(float hunting01, bool erasing) => Push(chargeGauge, hunting01, erasing);
+        public void SetMass(float tame01, bool luring) => Push(massGauge, tame01, luring);
+        public void SetSpace(float ordered01, bool painting) => Push(spaceGauge, ordered01, painting);
+        public void SetTime(float ready01, bool ready) => Push(timeGauge, ready01, ready);
 
         void Push(Image gauge, float fill01, bool ready)
         {
@@ -79,10 +79,10 @@ namespace CosmicShore.UI
             base.SetAbilityUpgraded(element, upgraded);
             var gauge = element switch
             {
-                Element.Charge => commandGauge,
-                Element.Mass => leashGauge,
-                Element.Space => lureGauge,
-                Element.Time => tameGauge,
+                Element.Charge => chargeGauge,
+                Element.Mass => massGauge,
+                Element.Space => spaceGauge,
+                Element.Time => timeGauge,
                 _ => null,
             };
             if (gauge) gauge.transform.localScale = AbilityIconRestScale(element);

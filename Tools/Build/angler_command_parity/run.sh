@@ -52,9 +52,11 @@ if [ "${1:-}" = "--self-test" ]; then
   plant "follow gain 1.5 -> 1.4" 's/(gap - 4f) \* 1\.5f/(gap - 4f) * 1.4f/'
   plant "the brush's threshold 0.5 -> 0.45" 's/(depth - 0\.5f) \/ 0\.5f/(depth - 0.45f) \/ 0.5f/'
   plant "the school ring 3.2 -> 3.0" 's/Mathf.Sqrt(i) \* 3\.2f/Mathf.Sqrt(i) * 3.0f/'
-  plant "the cone's 1 u floor dropped" 's/if (d > reach || d < 1f) return false;/if (d > reach) return false;/'
+  plant "the brush's near radius dropped" 's/Mathf.Max(nearR, along \* /Mathf.Max(0f, along * /'
+  plant "the brush reaches behind the nose" 's/if (along < 0f || along > reach)/if (along > reach)/'
   plant "the esca 2.5 u up -> 2 u" 's/u\.\([xyz]\) \* 2\.5f/u.\1 * 2f/g'
-  plant "the omni reach made exclusive" 's/points\[i\]) <= r2)/points[i]) < r2)/'
-  plant "the omni room ignored" 's/if (into.Count > room) into.RemoveRange/if (false) into.RemoveRange/'
-  echo "angler_command_parity --self-test: 8/8 planted changes caught"
+  plant "recency reversed (oldest first)" 's/stamps\[i\] > stamps\[best\]/stamps[i] < stamps[best]/'
+  plant "claims ignored by the recency pick" 's/claims\[i\] < claims\[best\] || (claims\[i\] == claims\[best\] \&\& /(/'
+  plant "the dash measured from the centroid" 's/p.x + (c.x - p.x) \* frac/c.x + (p.x - c.x) * frac/'
+  echo "angler_command_parity --self-test: 10/10 planted changes caught"
 fi

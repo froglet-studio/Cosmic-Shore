@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using CosmicShore.Utility;
 using UnityEngine;
 
@@ -28,8 +29,6 @@ namespace CosmicShore.Gameplay
         [SerializeField, Min(0f)] float tameDecay = 0.6f;
         [Tooltip("Leash capacity: most creatures you can lead at once.")]
         [SerializeField, Min(0)] int squadCap = 24;
-        [Tooltip("Omni tame reach (u): collecting an omni crystal tames every wild herbivore within this of the hull at once, nearest first, up to the leash capacity.")]
-        [SerializeField, Min(0f)] float omniTameRadius = 300f;
         [Tooltip("Leash tow x: a following creature may swim this many times its own max speed to keep formation. Attacks always run at the creature's own speeds.")]
         [SerializeField, Min(1f)] float leashTow = 1.6f;
         [Tooltip("School ring behind (u): where the squad's ring sits behind the hull.")]
@@ -41,25 +40,46 @@ namespace CosmicShore.Gameplay
         [Tooltip("Never target my prisms: an order's target list skips your own prisms. A mouthful can still eat them where the cell's diet allows it.")]
         [SerializeField] bool spareOwn = true;
         [Tooltip("Brush reach (u): how far the paint brush and the eraser reach.")]
-        [SerializeField, Min(1f)] float paintRange = 160f;
+        [SerializeField, Min(1f)] float paintRange = 3200f;
         [Tooltip("Brush half-angle (deg): the paint brush at a full pull of RT. A light squeeze paints a narrower line.")]
         [SerializeField, Range(0.5f, 45f)] float paintCone = 8f;
         [Tooltip("Light-squeeze brush: share of the full brush a just-past-halfway squeeze paints with (and the same for the eraser). 1 = the trigger depth does not matter.")]
         [SerializeField, Range(0.05f, 1f)] float brushMin = 0.35f;
         [Tooltip("Eraser half-angle (deg): the eraser (LT) at a full pull. Narrower than the brush, so it can pick a neighbour out.")]
         [SerializeField, Range(0.5f, 45f)] float eraseCone = 4f;
+        [Tooltip("Brush radius at the nose (u): the brush never narrows below this near the hull, so close-up prisms paint and erase too (at a full pull; a light squeeze scales it like the cone).")]
+        [SerializeField, Min(0f)] float brushNear = 6f;
         [Tooltip("Ball distance (u): while RT is held the squad balls up this far ahead.")]
         [SerializeField, Min(0f)] float slingAhead = 12f;
         [Tooltip("Throw speed (u/s): how fast the ball flies at the painted prisms.")]
         [SerializeField, Min(1f)] float slingSpeed = 150f;
         [Tooltip("Homing (/s): how sharply each thrown creature turns toward its own painted prism.")]
         [SerializeField, Min(0f)] float homeTurn = 12f;
-        [Tooltip("Throw lasts (s): a thrown creature that latches onto nothing returns after this (a homing throw gives up after twice this).")]
+        [Tooltip("Throw lasts (s): a thrown creature that latches onto nothing returns after this. A homing throw never gives up: it reaches its painted prism at any distance, limited only by speed.")]
         [SerializeField, Min(0.1f)] float slingTime = 3f;
         [Tooltip("Catch radius (u): with nothing painted, a thrown creature that passes within this of an enemy prism latches on.")]
         [SerializeField, Min(0f)] float slingCatch = 8f;
         [Tooltip("Latch cluster (u): it then eats that prism's domain within this of the latch.")]
         [SerializeField, Min(0f)] float slingCluster = 24f;
+        [Tooltip("Dash to the school (share): the Time ability. Press it and the hull dashes this share of the way to the centroid of every creature it leads, measured when pressed.")]
+        [SerializeField, Range(0f, 1f)] float dashFrac = 0.75f;
+        [Tooltip("Dash time (s): how long the dash takes.")]
+        [SerializeField, Min(0.05f)] float dashTime = 0.35f;
+
+        [Header("The abilities in the game (game only: the lab models no flora, rival vessels, wild diet or crystals)")]
+        [Tooltip("Every creature (wild ones too) ranks a painted prism this many times closer than it is when it picks its next " +
+                 "meal (PaintedPrey). Preference only: the creature's own diet still decides what is edible. 1 = no preference.")]
+        [SerializeField, Min(1f)] float paintedPreference = 4f;
+        [Tooltip("Mass: while the lure is held, one plant of the pilot's domain is planted at a random point within the lure's " +
+                 "reach every this many seconds (a species the cell itself grows). 0 = never.")]
+        [SerializeField, Min(0f)] float plantInterval = 2f;
+        [Tooltip("Charge: a squad locked on to a vessel bites it as a scored Strike (PvP is petals only) at most once per this " +
+                 "many seconds, however many creatures are on it (CombatHitDrain's per-pair latch).")]
+        [SerializeField, Min(0.1f)] float lockBiteCooldown = 1f;
+        [Tooltip("Charge: a locked creature bites when it is within this many units of the vessel, beyond its own mouth's reach.")]
+        [SerializeField, Min(0f)] float lockBiteReach = 6f;
+        [Tooltip("The omni crystal morphs into one of these, at random (a leashable herbivore species; the lab's O).")]
+        [SerializeField] List<FaunaConfigurationSO> omniFauna = new();
 
         [Header("The keeper (game only: the lab spawns its first species)")]
         [Tooltip("The species the Angler's keeper is born as when the cell offers no leashable herbivore of its own. The " +
@@ -78,7 +98,6 @@ namespace CosmicShore.Gameplay
         public float TameTime => Mathf.Max(0.01f, tameTime);
         public float TameDecay => tameDecay;
         public int SquadCap => squadCap;
-        public float OmniTameRadius => omniTameRadius;
         public FaunaConfigurationSO CompanionFauna => companionFauna;
         public float LeashTow => Mathf.Max(1f, leashTow);
         public float FormBack => formBack;
@@ -88,12 +107,20 @@ namespace CosmicShore.Gameplay
         public float PaintCone => paintCone;
         public float BrushMin => brushMin;
         public float EraseCone => eraseCone;
+        public float BrushNear => brushNear;
         public float SlingAhead => slingAhead;
         public float SlingSpeed => slingSpeed;
         public float HomeTurn => homeTurn;
         public float SlingTime => slingTime;
         public float SlingCatch => slingCatch;
         public float SlingCluster => slingCluster;
+        public float DashFrac => dashFrac;
+        public float DashTime => Mathf.Max(0.05f, dashTime);
+        public float PaintedPreference => Mathf.Max(1f, paintedPreference);
+        public float PlantInterval => plantInterval;
+        public float LockBiteCooldown => Mathf.Max(0.1f, lockBiteCooldown);
+        public float LockBiteReach => lockBiteReach;
+        public IReadOnlyList<FaunaConfigurationSO> OmniFauna => omniFauna;
         public float BrushInterval => brushInterval;
     }
 }

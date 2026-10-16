@@ -88,6 +88,7 @@ namespace UnityEngine
         public const float Rad2Deg = 180f / PI;
         public static float Sin(float v) => (float)Math.Sin(v);
         public static float Cos(float v) => (float)Math.Cos(v);
+        public static float Tan(float v) => (float)Math.Tan(v);
         public static float Atan2(float y, float x) => (float)Math.Atan2(y, x);
         public static float Sqrt(float v) => (float)Math.Sqrt(v);
         public static float Abs(float v) => Math.Abs(v);

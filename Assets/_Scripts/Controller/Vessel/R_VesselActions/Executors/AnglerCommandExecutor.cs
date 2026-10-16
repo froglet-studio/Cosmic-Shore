@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using CosmicShore.Core;
 using CosmicShore.Data;
+using CosmicShore.ScriptableObjects;
 using CosmicShore.Utility;
 using Obvious.Soap;
 using UnityEngine;
@@ -38,13 +39,16 @@ namespace CosmicShore.Gameplay
     public sealed class AnglerCommandExecutor : ShipActionExecutorBase, IFaunaLeash
     {
         /// <summary>What a creature on the leash is doing (the lab's fauna states).</summary>
-        public enum LeashOrder { Lured = 0, Follow = 1, Gather = 2, Thrown = 3, Attack = 4 }
+        public enum LeashOrder { Lured = 0, Follow = 1, Gather = 2, Thrown = 3, Attack = 4, Hunt = 5 }
 
         [Header("Wiring (serialized on the prefab so a missing wire shows in the inspector)")]
         [Tooltip("Every number this executor reads (the Angler Command Lab's, cloned by studio_to_unity.py). Wired directly (vessel rule 20).")]
         [SerializeField] AnglerConfigSO config;
         [Tooltip("The fleet's shared turn-end channel: the leash lets go of every creature and the paint is cleared.")]
         [SerializeField] ScriptableEventNoParam OnMiniGameTurnEnd;
+        [Tooltip("Drag Event_CombatHitStats.asset - the channel StatsManager listens on. A locked squad's bite on a rival vessel " +
+                 "is a scored Strike, and a scored hit and a petal theft are one event (PvP is petals only).")]
+        [SerializeField] ScriptableEventCombatHitStats onCombatHitLanded;
 
         [Header("Presentation (game only)")]
         [Tooltip("The paint brush's rim and the ball (the lab's #ffd27a).")]
@@ -73,6 +77,7 @@ namespace CosmicShore.Gameplay
             public string Species;
             public int Slot;
             public float Phase;
+            public bool Recent;    // a Sling-painter order: pick the newest paint first, regardless of distance
         }
 
         IVesselStatus _status;
@@ -85,6 +90,11 @@ namespace CosmicShore.Gameplay
         readonly List<Prism> _painted = new();
         readonly HashSet<Prism> _paintedSet = new();
         readonly HashSet<Prism> _ordered = new();            // thrown at, not yet eaten or erased: the lab's `marked`
+        readonly HashSet<Prism> _lit = new();                // painted or ordered: lit, and preferred by every creature (PaintedPrey)
+        readonly Dictionary<Prism, float> _paintStamp = new(); // when each prism was last painted (the recency pick)
+        readonly List<float> _candidateStamps = new();
+        readonly List<VesselStatus> _vessels = new();
+        uint _plantSerial, _morphSerial;
         readonly Dictionary<Prism, int> _claims = new();
         readonly List<Prism> _query = new();
         readonly List<Vector3> _candidatePositions = new();
@@ -92,9 +102,7 @@ namespace CosmicShore.Gameplay
         readonly List<Prism> _candidates = new();
         readonly List<Fauna> _scratch = new();
         readonly List<Member> _memberScratch = new();
-        readonly List<Fauna> _omniWild = new();
-        readonly List<Vector3> _omniPoints = new();
-        readonly List<int> _omniPicks = new();
+        readonly List<Prism> _scratchPrisms = new();
         AnglerWorldMarks _marks;
         int _squad = -1;           // -1 = the whole school, else an index into _species
         bool _luring;
@@ -102,6 +110,10 @@ namespace CosmicShore.Gameplay
         float _cmdDepth, _eraseDepth;
         float _brushOwed;
         float _keeperRetryAt;      // when the next keeper may be born (Time.time); +inf once the turn has ended
+        IVesselStatus _lockTarget; // Charge: the vessel the locked squad hunts (null = none)
+        float _vesselScanAt;       // when the eraser last listed the vessels it can lock on to
+        float _plantAt;            // Mass: when the lure plants its next plant
+        float _dashUntil;          // Time: a dash in flight ignores another press until it lands
         int _throwSerial;
 
         // ------------------------------------------------------------------ read by the HUD
@@ -117,7 +129,11 @@ namespace CosmicShore.Gameplay
         /// <summary>The picked squad's name ("School" for all of them).</summary>
         public string SquadName => _squad < 0 || _squad >= _species.Count ? "School" : _species[_squad];
         public int InBall => Count(LeashOrder.Gather);
-        public int Hunting => Count(LeashOrder.Attack) + Count(LeashOrder.Thrown);
+        public int Hunting => Count(LeashOrder.Attack) + Count(LeashOrder.Thrown) + Count(LeashOrder.Hunt);
+        /// <summary>True while the squad is locked on to a vessel (the Charge ability).</summary>
+        public bool LockedOn => _lockTarget != null;
+        /// <summary>True when the Time ability can dash: a school to dash toward, and no dash in flight.</summary>
+        public bool DashReady => _tamed.Count > 0 && Time.time >= _dashUntil;
         /// <summary>The furthest-along taming in the light right now, 0..1.</summary>
         public float StrongestTame01
         {
@@ -142,8 +158,13 @@ namespace CosmicShore.Gameplay
             _cmdDepth = _eraseDepth = 0f;
             _brushOwed = 0f;
             _keeperRetryAt = 0f;
+            _lockTarget = null;
+            _vesselScanAt = -1f;
+            _plantAt = 0f;
+            _dashUntil = 0f;
             _throwSerial = 0;
             _species.Clear();
+            if (config) PaintedPrey.Preference = config.PaintedPreference;
             if (!config)
                 CSDebug.LogError($"[Angler] {name}: AnglerCommandExecutor has no AnglerConfig - the Angler cannot lure, tame or " +
                                  "command. Wire Assets/_SO_Assets/VesselActions/Angler/AnglerConfig.asset.");
@@ -184,59 +205,211 @@ namespace CosmicShore.Gameplay
         /// <summary>The whole school, then each kind in the order it was first tamed, then the school again.</summary>
         public void CycleSquad() => _squad = _squad >= _species.Count - 1 ? -1 : _squad + 1;
 
-        /// <summary>The picked squad drops its order and comes back to the school.</summary>
+        /// <summary>The picked squad drops its order (a hunt included) and comes back to the school.</summary>
         public void Recall()
         {
             for (int i = 0; i < _tamed.Count; i++)
                 if (InSquad(_tamed[i])) ToFollow(_tamed[i]);
+            _lockTarget = null;
         }
 
         /// <summary>
-        /// The OMNI crystal (<see cref="AnglerTameByCrystalEffectSO"/>; the lab's <c>omniTame</c>): every wild or lured
-        /// herbivore within <c>omniTameRadius</c> of the hull is tamed at once, nearest first
-        /// (<see cref="AnglerCommandMath.OmniTameOrder"/>), up to the leash capacity. A creature can be leashed only by the
-        /// peer that simulates it (<see cref="Fauna.TryLeash"/>), so this tames on the creatures' authority and nowhere
-        /// else, exactly as the lure does. Returns how many joined the school.
+        /// The TIME ability (the lab's <c>startDash</c>): the hull dashes <c>dashFrac</c> of the way to the centroid of every
+        /// creature it leads, measured now (<see cref="AnglerCommandMath.DashPoint"/>), over <c>dashTime</c>. Moved by one
+        /// velocity displacement (<see cref="VesselTransformer.ModifyVelocity(Vector3, float, bool, float)"/>: its weight
+        /// averages exactly 1 over its life, so it carries the hull the whole distance) on the machine that owns the hull,
+        /// whose transform replicates. No school, no dash.
         /// </summary>
-        public int OmniTame()
+        public void Dash()
         {
-            if (_status == null || !config || !_status.Transform) return 0;
-            _omniWild.Clear();
-            _omniPoints.Clear();
-            var cells = Cell.ActiveCellsSnapshot;
-            for (int ci = 0; ci < cells.Count; ci++)
+            if (_status == null || !config || !_status.Transform || _tamed.Count == 0 || Time.time < _dashUntil) return;
+            if (!ElementalTransfer.IsDecidedHere(_status)) return;   // the hull's transform is its owner's to move
+            var transformer = _status.VesselTransformer;
+            if (!transformer) return;
+            Vector3 centroid = Vector3.zero;
+            int n = 0;
+            for (int i = 0; i < _tamed.Count; i++)
             {
-                var cell = cells[ci];
-                if (!cell) continue;
-                var live = cell.LiveFauna;
-                for (int i = 0; i < live.Count; i++)
-                {
-                    var f = live[i];
-                    if (!f || f.IsDying) continue;
-                    // the lab's WILD or LURED: not already in the school, and not on someone else's leash
-                    if (_members.TryGetValue(f, out var held) ? held.Order != LeashOrder.Lured : f.IsLeashed) continue;
-                    _omniWild.Add(f);
-                    _omniPoints.Add(f.transform.position);
-                }
+                var c = _tamed[i].Creature;
+                if (!c) continue;
+                centroid += c.transform.position;
+                n++;
             }
-            int n = AnglerCommandMath.OmniTameOrder(_status.Transform.position, _omniPoints, config.OmniTameRadius,
-                config.SquadCap - _tamed.Count, _omniPicks);
-            int joined = 0;
-            for (int k = 0; k < n; k++)
+            if (n == 0) return;
+            centroid /= n;
+            Vector3 from = _status.Transform.position;
+            Vector3 delta = AnglerCommandMath.DashPoint(from, centroid, config.DashFrac) - from;
+            if (delta.sqrMagnitude < 1f) return;
+            float time = config.DashTime;
+            Vector3 velocity = delta / time;
+            transformer.ModifyVelocity(velocity, time, true, velocity.magnitude * 1.6f);
+            _dashUntil = Time.time + time;
+        }
+
+        /// <summary>
+        /// The OMNI crystal (<see cref="AnglerTameByCrystalEffectSO"/>; the lab's <c>omniMorph</c>): the crystal MORPHS into a
+        /// random creature (one of <c>omniFauna</c>), born where the crystal was through the platform's fauna spawn seam (in
+        /// the cell's controlling colour, blooming in), and it joins the school, up to the leash capacity. A replicated
+        /// species is born only where the ecology is simulated, and only that peer can leash it. True when one joined.
+        /// </summary>
+        public bool OmniMorph(Vector3 at)
+        {
+            if (_status == null || !config || _tamed.Count >= config.SquadCap) return false;
+            var cell = NearestCell(at);
+            if (!cell) return false;
+            var pool = config.OmniFauna;
+            int live = 0;
+            for (int i = 0; i < pool.Count; i++) if (IsMorphable(pool[i])) live++;
+            if (live == 0) return false;
+            int pick = (int)(Hash01(++_morphSerial) * live) % live;   // vessel rule 18: a hash of a serial, not Random
+            FaunaConfigurationSO cfg = null;
+            for (int i = 0; i < pool.Count && !cfg; i++)
+                if (IsMorphable(pool[i]) && pick-- == 0) cfg = pool[i];
+            if (cfg.NetworkSynced && !FaunaNetworkSync.IsSimAuthority) return false;
+            if (cell.FaunaExclusionRadius > 0f || cell.FaunaContainmentRadius > 0f) at = cell.ClampToFaunaContainment(at, at);
+            var f = CellLifeSpawnerBase.SpawnFaunaWithDomain(cell, cfg.FaunaPrefab, at, cell.ControllingDomain, at, cfg);
+            if (!f || !f.TryLeash(this)) return false;
+            var m = new Member { Creature = f, Species = SpeciesOf(f), Phase = f.GetInstanceID() * 0.137f };
+            _members[f] = m;
+            JoinSchool(m);
+            return true;
+        }
+
+        static bool IsMorphable(FaunaConfigurationSO c) => c && c.FaunaPrefab && c.FaunaPrefab.Leashable;
+
+        /// <summary>A pure integer hash of a serial, 0..1 (vessel rule 18: no global random state; peers that agree on the
+        /// count agree on the draw).</summary>
+        static float Hash01(uint n)
+        {
+            n ^= n >> 16; n *= 0x7feb352dU; n ^= n >> 15; n *= 0x846ca68bU; n ^= n >> 16;
+            return (n & 0xFFFFFF) / 16777216f;
+        }
+
+        // ---- Charge: the eraser locks the squad on to a vessel ----
+
+        /// <summary>
+        /// While LT erases, a rival vessel inside the eraser's beam is LOCKED (the designer, 2026-10-16): the picked squad
+        /// hunts it (<see cref="LeashOrder.Hunt"/>) until a new paint is thrown, a new vessel is locked, or the hunters
+        /// die. The nearest vessel along the beam wins. Every peer runs it from the replicated trigger; the bite is decided
+        /// on one machine (<see cref="UpdateHunt"/>).
+        /// </summary>
+        void TryLockOn(float coneDeg, float nearR)
+        {
+            if (Time.time >= _vesselScanAt)
             {
-                var f = _omniWild[_omniPicks[k]];
-                if (_members.TryGetValue(f, out var m)) _lured.Remove(m);
-                else
-                {
-                    if (!f.TryLeash(this)) continue;   // a predator, a puppet on this peer
-                    m = new Member { Creature = f, Species = SpeciesOf(f), Phase = f.GetInstanceID() * 0.137f };
-                    _members[f] = m;
-                    _slipped.Remove(f);
-                }
-                JoinSchool(m);
-                joined++;
+                _vessels.Clear();
+                _vessels.AddRange(Object.FindObjectsByType<VesselStatus>(FindObjectsSortMode.None));   // once a second, not per frame
+                _vesselScanAt = Time.time + 1f;
             }
-            return joined;
+            var t = _status.Transform;
+            Vector3 o = t.position, f = t.forward;
+            var own = _status.Domain;
+            IVesselStatus best = null;
+            float bestAlong = float.PositiveInfinity;
+            for (int i = 0; i < _vessels.Count; i++)
+            {
+                var v = _vessels[i];
+                if (!v || v.transform == t || v.Player == null) continue;
+                IVesselStatus vs = v;
+                if (vs.Domain == own) continue;   // a teammate is never a target (PvP is a rival's petals)
+                Vector3 p = v.transform.position;
+                if (!AnglerCommandMath.InBrush(o, f, p, coneDeg, config.PaintRange, Mathf.Max(nearR, config.LockBiteReach))) continue;
+                float along = Vector3.Dot(p - o, f);
+                if (along < bestAlong) { bestAlong = along; best = vs; }
+            }
+            if (best == null || ReferenceEquals(best, _lockTarget)) return;
+            _lockTarget = best;
+            for (int i = 0; i < _tamed.Count; i++)
+            {
+                var m = _tamed[i];
+                if (!InSquad(m)) continue;
+                ReleaseClaim(m);
+                m.Set = null;
+                m.Recent = false;
+                m.Homing = false;
+                m.Order = LeashOrder.Hunt;
+            }
+        }
+
+        void EndHunt()
+        {
+            _lockTarget = null;
+            for (int i = 0; i < _tamed.Count; i++)
+                if (_tamed[i].Order == LeashOrder.Hunt) ToFollow(_tamed[i]);
+        }
+
+        /// <summary>
+        /// A hunter within its mouth's reach (plus <c>lockBiteReach</c>) of the locked vessel BITES it: a scored contact
+        /// Strike that takes petals (PvP is petals only, <c>Docs/claude/IMPACT_EFFECTS_AND_AUDIO.md</c>). One gate, the same
+        /// as every contact reporter: decided on the machine that owns the Angler, admitted by
+        /// <see cref="CombatHitDrain.TryAdmit"/> (a warded victim is neither scored on nor robbed; the per-pair latch makes it
+        /// at most one bite per <c>lockBiteCooldown</c> however many creatures are on the hull), taken at the Strike's
+        /// fleet price, and reported on the combat-hit channel.
+        /// </summary>
+        void UpdateHunt()
+        {
+            if (_lockTarget == null) return;
+            var victimTransform = _lockTarget.Transform;
+            if (!victimTransform) return;
+            Vector3 at = victimTransform.position;
+            for (int i = 0; i < _tamed.Count; i++)
+            {
+                var m = _tamed[i];
+                if (m.Order != LeashOrder.Hunt || !m.Creature) continue;
+                Vector3 to = at - m.Creature.transform.position;
+                if (to.sqrMagnitude > Sq(m.Creature.LeashMouthReach + config.LockBiteReach)) continue;
+                Bite(to);
+                return;
+            }
+        }
+
+        void Bite(Vector3 approach)
+        {
+            if (!ElementalTransfer.IsDecidedHere(_status)) return;
+            if (_status.Player is { IsNetworkOwner: false }) return;
+            var victim = _lockTarget;
+            if (victim.Player == null || victim.Domain == _status.Domain) return;
+            if (!CombatHitDrain.TryAdmit(victim, _status, CombatHitClass.Strike, config.LockBiteCooldown,
+                                         ElementalDebuffSources.VesselContact, out int supersededRank))
+                return;
+            CombatHitDrain.ApplyPriced(victim, _status, CombatHitClass.Strike, supersededRank,
+                                       approach.normalized * config.SlingSpeed * 0.2f, ElementalDebuffSources.VesselContact);
+            onCombatHitLanded.Raise(new CombatHitStats
+            {
+                ShooterName = _status.PlayerName,
+                VictimName = victim.PlayerName,
+                HitClass = CombatHitClass.Strike,
+                SupersededRank = supersededRank,
+            });
+        }
+
+        // ---- Mass: the lure grows the pilot's plants ----
+
+        /// <summary>
+        /// While the lure is held, one plant of the pilot's domain is planted at a point within the lure's reach every
+        /// <c>plantInterval</c> (the designer, 2026-10-16: taming "grows plants of your domain in the same range"). The
+        /// species is one the cell itself grows (its SpawnProfile), born through the platform's flora seam
+        /// (<see cref="CellLifeSpawnerBase.SpawnFlora"/>: it grows in, and a replicated species is planted only where the
+        /// ecology is simulated).
+        /// </summary>
+        void UpdatePlants()
+        {
+            if (!_luring || config.PlantInterval <= 0f || Time.time < _plantAt) return;
+            _plantAt = Time.time + config.PlantInterval;
+            var t = _status.Transform;
+            Vector3 lure = AnglerCommandMath.LurePoint(t.position, t.forward, t.up, config.LureAhead);
+            var cell = NearestCell(lure);
+            var profile = cell && cell.Config ? cell.Config.SpawnProfile : null;
+            if (!profile || profile.SupportedFloras.Count == 0) return;
+            uint serial = ++_plantSerial;
+            var cfg = profile.SupportedFloras[(int)(Hash01(serial * 4u) * profile.SupportedFloras.Count) % profile.SupportedFloras.Count];
+            if (!cfg || !cfg.FloraPrefab) return;
+            if (cfg.NetworkSynced && !FloraNetworkSync.IsSimAuthority) return;
+            // A point in the lure's ball: a direction and a cube-root radius from three hashes of the serial.
+            float u = Hash01(serial * 4u + 1u) * 2f - 1f, th = Hash01(serial * 4u + 2u) * Mathf.PI * 2f;
+            float r = Mathf.Pow(Hash01(serial * 4u + 3u), 1f / 3f) * config.LureRadius, w = Mathf.Sqrt(Mathf.Max(0f, 1f - u * u));
+            Vector3 at = lure + new Vector3(w * Mathf.Cos(th), u, w * Mathf.Sin(th)) * r;
+            CellLifeSpawnerBase.SpawnFlora(cell, cfg.FloraPrefab, null, cfg, at, domainOverride: _status.Domain);
         }
 
         /// <summary>Tamed: the creature follows the school (the lab's state IDLE) and its kind becomes a squad.</summary>
@@ -270,58 +443,100 @@ namespace CosmicShore.Gameplay
             if (_brushOwed >= config.BrushInterval)
             {
                 _brushOwed = 0f;
-                if (erasing) BrushStroke(config.EraseCone * AnglerCommandMath.BrushScale(lt, config.BrushMin), false);
-                else if (held) BrushStroke(config.PaintCone * AnglerCommandMath.BrushScale(rt, config.BrushMin), true);
+                float eraseScale = AnglerCommandMath.BrushScale(lt, config.BrushMin), paintScale = AnglerCommandMath.BrushScale(rt, config.BrushMin);
+                if (erasing) BrushStroke(config.EraseCone * eraseScale, false, config.BrushNear * eraseScale);
+                else if (held) BrushStroke(config.PaintCone * paintScale, true, config.BrushNear * paintScale);
             }
+            if (erasing) TryLockOn(config.EraseCone * AnglerCommandMath.BrushScale(lt, config.BrushMin),
+                                   config.BrushNear * AnglerCommandMath.BrushScale(lt, config.BrushMin));
             if (held)
                 for (int i = 0; i < _tamed.Count; i++)
                 {
                     var m = _tamed[i];
-                    if (InSquad(m) && (m.Order == LeashOrder.Follow || m.Order == LeashOrder.Attack)) { ReleaseClaim(m); m.Set = null; m.Order = LeashOrder.Gather; }
+                    if (InSquad(m) && (m.Order == LeashOrder.Follow || m.Order == LeashOrder.Attack || m.Order == LeashOrder.Hunt)) { ReleaseClaim(m); m.Set = null; m.Order = LeashOrder.Gather; }
                 }
             if (released) ThrowAtPaint();
 
             if (_transformer) _transformer.LureSpeedCap = _luring ? config.LureCruise : 0f;
             UpdateLure(dt);
+            UpdatePlants();
             UpdateFlights(dt);
             UpdateOrders();
+            UpdateHunt();
             AssignSlots();
             DrawMarks();
         }
 
         // ---- the brush ----
 
-        void BrushStroke(float coneDeg, bool paint)
+        /// <summary>
+        /// The brush (the lab's <c>brushStroke</c>): every prism inside <see cref="AnglerCommandMath.InBrush"/> is painted or
+        /// cleaned. The beam reaches 3200 u, so it is read as a chain of spheres along the axis (each just wide enough for
+        /// the brush there) rather than one sphere the size of the cell.
+        /// </summary>
+        void BrushStroke(float coneDeg, bool paint, float nearR)
         {
             var index = PrismSpatialIndex.EnsureInstance();
             if (index == null || !index.IsAvailable) return;
             var t = _status.Transform;
             Vector3 o = t.position, f = t.forward;
-            float reach = config.PaintRange, half = reach * 0.5f, rim = Mathf.Tan(Mathf.Clamp(coneDeg, 0f, 80f) * Mathf.Deg2Rad) * reach;
-            int found = index.QuerySphere(o + f * half, Mathf.Sqrt(half * half + rim * rim), _query);
+            float reach = config.PaintRange, tan = Mathf.Tan(Mathf.Clamp(coneDeg, 0f, 80f) * Mathf.Deg2Rad);
             var own = _status.Domain;
+            var abilities = _status.ElementalAbilityHandler;
+            bool shieldsToo = paint && abilities && abilities.IsUpgradeActive(Element.Space);   // Space 5: shielded prisms paint too
             bool removed = false;
-            for (int i = 0; i < found; i++)
+            const int Segments = 16;
+            float step = reach / Segments;
+            for (int sgi = 0; sgi < Segments; sgi++)
             {
-                var p = _query[i];
-                if (!p || p.destroyed) continue;
-                bool painted = _paintedSet.Contains(p);
-                if (paint ? painted : !(painted || _ordered.Contains(p))) continue;
-                if (paint && config.SpareOwn && p.Domain == own) continue;
-                // Game-side filters the lab's world has no use for: shielded mass is never food, and a creature's body
-                // is never a meal for another (both rejected again by every creature's own diet).
-                if (paint && (Fauna.IsShieldedMass(p) || (p is HealthPrism hp && hp.ResolveOwnerFauna()))) continue;
-                if (!AnglerCommandMath.InCone(o, f, p.transform.position, coneDeg, reach)) continue;
-                if (paint) { _paintedSet.Add(p); _painted.Add(p); if (ShowsMarks) p.SetColorLift(paintedLift, markFade); }
-                else
+                float a0 = sgi * step, a1 = a0 + step, rim = Mathf.Max(nearR, a1 * tan);
+                int found = index.QuerySphere(o + f * (a0 + step * 0.5f), Mathf.Sqrt(step * step * 0.25f + rim * rim), _query);
+                for (int i = 0; i < found; i++)
                 {
-                    _paintedSet.Remove(p);
-                    removed = true;
-                    if (_ordered.Remove(p)) StrikeFromOrders(p);
-                    Unlight(p, markFade);
+                    var p = _query[i];
+                    if (!p || p.destroyed) continue;
+                    bool painted = _paintedSet.Contains(p);
+                    if (paint ? painted : !(painted || _ordered.Contains(p))) continue;
+                    if (paint && config.SpareOwn && p.Domain == own) continue;
+                    // Game-side filters the lab's world has no use for: shielded mass is never food (only the Space upgrade
+                    // paints it, and the squad then cracks the shield off, UpdateOrders), and a creature's body is never a
+                    // meal for another (both rejected again by every creature's own diet).
+                    if (paint && ((!shieldsToo && Fauna.IsShieldedMass(p)) || (p is HealthPrism hp && hp.ResolveOwnerFauna()))) continue;
+                    if (!AnglerCommandMath.InBrush(o, f, p.transform.position, coneDeg, reach, nearR)) continue;
+                    if (paint)
+                    {
+                        _paintedSet.Add(p);
+                        _painted.Add(p);
+                        _paintStamp[p] = Time.time;
+                        Light(p);
+                    }
+                    else
+                    {
+                        _paintedSet.Remove(p);
+                        removed = true;
+                        if (_ordered.Remove(p)) StrikeFromOrders(p);
+                        Unpaint(p);
+                    }
                 }
             }
             if (removed) _painted.RemoveAll(p => !_paintedSet.Contains(p));
+        }
+
+        /// <summary>A prism this holder painted: lit for the pilot, preferred by every creature (<see cref="PaintedPrey"/>).</summary>
+        void Light(Prism p)
+        {
+            if (!_lit.Add(p)) return;
+            PaintedPrey.Mark(p);
+            if (ShowsMarks) p.SetColorLift(paintedLift, markFade);
+        }
+
+        /// <summary>Not painted by this holder any more (erased, eaten, released).</summary>
+        void Unpaint(Prism p)
+        {
+            _paintStamp.Remove(p);
+            if (!_lit.Remove(p)) return;
+            PaintedPrey.Unmark(p);
+            Unlight(p, markFade);
         }
 
         // ---- the throw (the lab's throwAtPaint) ----
@@ -333,8 +548,10 @@ namespace CosmicShore.Gameplay
                 if (_painted[i] && !_painted[i].destroyed) _candidates.Add(_painted[i]);
             _painted.Clear();
             _paintedSet.Clear();
-            // The order is given, and its prisms stay lit until they are eaten or erased (the lab's `marked`).
+            // The order is given, and its prisms stay lit until they are eaten or erased (the lab's `marked`). A throw is a
+            // new command, so a Charge lock lets go (the designer: "until you paint a new target").
             for (int i = 0; i < _candidates.Count; i++) _ordered.Add(_candidates[i]);
+            _lockTarget = null;
             if (_candidates.Count == 0) { SlingThrow(); return; }
 
             var order = new List<Prism>(_candidates);
@@ -345,6 +562,7 @@ namespace CosmicShore.Gameplay
                 bool gathered = m.Order == LeashOrder.Gather;
                 ReleaseClaim(m);
                 m.Set = order;
+                m.Recent = true;   // newest paint first, regardless of distance (the lab's f.recent)
                 m.Order = LeashOrder.Attack;
                 PickTarget(m);
                 if (m.Order != LeashOrder.Attack) continue;
@@ -394,7 +612,7 @@ namespace CosmicShore.Gameplay
                     // Its prism was eaten mid-flight: home on the next one in the order, or come home if none is left.
                     if (!m.Target || m.Target.destroyed) { PickTarget(m); if (m.Order == LeashOrder.Follow) continue; }
                     Vector3 to = m.Target.transform.position - c.transform.position;
-                    if (to.magnitude < c.LeashMouthReach || m.FlightTime > config.SlingTime * 2f)
+                    if (to.magnitude < c.LeashMouthReach)   // no give-up: any distance, limited only by speed
                     {
                         // The throw ends inside the mouth's reach: the creature lands at its own swim speed.
                         m.Order = LeashOrder.Attack;
@@ -435,6 +653,7 @@ namespace CosmicShore.Gameplay
             }
             ReleaseClaim(m);
             m.Set = cluster;
+            m.Recent = false;   // a latch's cluster is eaten nearest first
             m.Order = LeashOrder.Attack;
             PickTarget(m);
             return true;
@@ -525,9 +744,17 @@ namespace CosmicShore.Gameplay
             {
                 var m = _tamed[i];
                 if (m.Order != LeashOrder.Attack) continue;
-                if (!m.Target || m.Target.destroyed) PickTarget(m);
+                if (!m.Target || m.Target.destroyed) { PickTarget(m); continue; }
+                // Space 5 painted a SHIELDED prism: no creature eats shielded mass (LOCKED), so the squad cracks the shield
+                // off when it arrives, and the prism is then ordinary food for its own mouthful.
+                if (Fauna.IsShieldedMass(m.Target) && m.Creature
+                    && (m.Target.transform.position - m.Creature.transform.position).sqrMagnitude
+                       <= Sq(m.Creature.LeashMouthReach + config.LockBiteReach))
+                    m.Target.DeactivateShields();
             }
         }
+
+        static float Sq(float x) => x * x;
 
         void PickTarget(Member m)
         {
@@ -544,7 +771,15 @@ namespace CosmicShore.Gameplay
                     _candidatePositions.Add(p.transform.position);
                     _candidateClaims.Add(_claims.TryGetValue(p, out int n) ? n : 0);
                 }
-            int k = AnglerCommandMath.PickTarget(m.Creature.transform.position, _candidatePositions, _candidateClaims);
+            int k;
+            if (m.Recent)
+            {
+                _candidateStamps.Clear();
+                for (int i = 0; i < _candidates.Count; i++)
+                    _candidateStamps.Add(_paintStamp.TryGetValue(_candidates[i], out float st) ? st : 0f);
+                k = AnglerCommandMath.PickRecent(_candidateStamps, _candidateClaims);
+            }
+            else k = AnglerCommandMath.PickTarget(m.Creature.transform.position, _candidatePositions, _candidateClaims);
             if (k < 0) { ToFollow(m); return; }
             m.Target = _candidates[k];
             _claims[m.Target] = (_claims.TryGetValue(m.Target, out int c) ? c : 0) + 1;
@@ -564,6 +799,7 @@ namespace CosmicShore.Gameplay
         {
             ReleaseClaim(m);
             m.Set = null;
+            m.Recent = false;
             m.Homing = false;
             m.Order = LeashOrder.Follow;
         }
@@ -577,6 +813,8 @@ namespace CosmicShore.Gameplay
 
             if (_luring)
             {
+                var abilities = _status.ElementalAbilityHandler;
+                bool steal = abilities && abilities.IsUpgradeActive(Element.Mass);   // Mass 5: the lure takes other holders' creatures too
                 float reach2 = config.LureRadius * config.LureRadius;
                 var cells = Cell.ActiveCellsSnapshot;
                 for (int ci = 0; ci < cells.Count; ci++)
@@ -587,9 +825,10 @@ namespace CosmicShore.Gameplay
                     for (int i = 0; i < live.Count; i++)
                     {
                         var f = live[i];
-                        if (!f || f.IsLeashed || f.IsDying) continue;
+                        if (!f || f.IsDying || _members.ContainsKey(f)) continue;
+                        if (f.IsLeashed && !steal) continue;   // someone else's: only the Mass upgrade steals it
                         if ((f.transform.position - lure).sqrMagnitude > reach2) continue;
-                        if (!f.TryLeash(this)) continue;   // a predator, a puppet on this peer, or someone else's
+                        if (!f.TryLeash(this, steal)) continue;   // a predator, or a puppet on this peer
                         var m = new Member { Creature = f, Order = LeashOrder.Lured, Species = SpeciesOf(f), Phase = f.GetInstanceID() * 0.137f };
                         if (_slipped.TryGetValue(f, out float left)) { m.Tame = left; _slipped.Remove(f); }
                         _members[f] = m;
@@ -696,6 +935,13 @@ namespace CosmicShore.Gameplay
                     speed = top;
                     return true;
                 }
+                case LeashOrder.Hunt:
+                {
+                    if (_lockTarget == null || !_lockTarget.Transform) return false;
+                    goal = _lockTarget.Transform.position;
+                    speed = top * config.LeashTow;   // towed, or a fleeing hull outruns its hunters
+                    return true;
+                }
             }
             return false;
         }
@@ -759,7 +1005,20 @@ namespace CosmicShore.Gameplay
                 _painted.RemoveAll(p => !p || p.destroyed);
                 _paintedSet.RemoveWhere(p => !p || p.destroyed);
             }
-            if (_ordered.Count > 0) _ordered.RemoveWhere(p => !p || p.destroyed);   // eaten: its lit mark goes with it
+            if (_lit.Count > 0)
+            {
+                _scratchPrisms.Clear();
+                foreach (var p in _lit) if (!p || p.destroyed) _scratchPrisms.Add(p);
+                for (int i = 0; i < _scratchPrisms.Count; i++)   // eaten: its lit mark and its preference go with it
+                {
+                    var p = _scratchPrisms[i];
+                    _ordered.Remove(p);
+                    _lit.Remove(p);
+                    _paintStamp.Remove(p);
+                    PaintedPrey.Unmark(p);
+                }
+            }
+            if (_lockTarget != null && (!(_lockTarget is Object o) || !o || _lockTarget.Player == null)) EndHunt();
             if (_species.Count > 0 && _squad >= _species.Count) _squad = -1;
         }
 
@@ -772,11 +1031,17 @@ namespace CosmicShore.Gameplay
             _lured.Clear();
             _slipped.Clear();
             _claims.Clear();
-            for (int i = 0; i < _painted.Count; i++) Unlight(_painted[i], markFade);
-            foreach (var p in _ordered) Unlight(p, markFade);
+            foreach (var p in _lit)
+            {
+                PaintedPrey.Unmark(p);
+                Unlight(p, markFade);
+            }
+            _lit.Clear();
+            _paintStamp.Clear();
             _painted.Clear();
             _paintedSet.Clear();
             _ordered.Clear();
+            _lockTarget = null;
         }
 
         /// <summary>Only the pilot sees the paint (the marks are the pilot's instrument, and a rival's would be noise).</summary>
@@ -814,10 +1079,15 @@ namespace CosmicShore.Gameplay
                 // The brush's rim at its reach, so the pilot sees what the beam covers.
                 float cone = erasing ? config.EraseCone * AnglerCommandMath.BrushScale(_eraseDepth, config.BrushMin)
                                      : config.PaintCone * AnglerCommandMath.BrushScale(_cmdDepth, config.BrushMin);
-                float r = Mathf.Tan(cone * Mathf.Deg2Rad) * config.PaintRange;
-                _marks.Ring(t.position + t.forward * config.PaintRange, t.right, t.up, r, 32, erasing ? eraseColor : paintColor, 1f, 3f);
+                // The rim is drawn where it can be seen (60 u out), at the brush's width there; the beam itself reaches 3200 u.
+                const float RimAt = 60f;
+                float near = config.BrushNear * AnglerCommandMath.BrushScale(erasing ? _eraseDepth : _cmdDepth, config.BrushMin);
+                float r = Mathf.Max(near, Mathf.Tan(cone * Mathf.Deg2Rad) * RimAt);
+                _marks.Ring(t.position + t.forward * RimAt, t.right, t.up, r, 32, erasing ? eraseColor : paintColor, 1f, 3f);
             }
             if (_cmdHeld) _marks.Dot(t.position + t.forward * config.SlingAhead, paintColor, 1.4f, 5f);
+            if (_lockTarget != null && _lockTarget.Transform)   // the Charge lock: a ring round the hunted hull
+                _marks.Ring(_lockTarget.Transform.position, t.right, t.up, 12f, 24, eraseColor, 1.2f, 3f);
             _marks.End();
         }
 

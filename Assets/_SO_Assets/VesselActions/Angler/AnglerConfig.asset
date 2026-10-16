@@ -19,20 +19,39 @@ MonoBehaviour:
   tameTime: 2.5
   tameDecay: 0.6
   squadCap: 24
-  omniTameRadius: 300
   leashTow: 1.6
   formBack: 6
   tadTurn: 4
   spareOwn: 1
-  paintRange: 160
+  paintRange: 3200
   paintCone: 8
   brushMin: 0.35
   eraseCone: 4
+  brushNear: 6
   slingAhead: 12
   slingSpeed: 150
   homeTurn: 12
   slingTime: 3
   slingCatch: 8
   slingCluster: 24
+  dashFrac: 0.75
+  dashTime: 0.35
+  paintedPreference: 4
+  plantInterval: 2
+  lockBiteCooldown: 1
+  lockBiteReach: 6
+  omniFauna:
+  - {fileID: 11400000, guid: 9a71c56e49ff4ee493c70be766f1b335, type: 2}
+  - {fileID: 11400000, guid: d6d14731fd184959b837ab47e378f813, type: 2}
+  - {fileID: 11400000, guid: 0e87f3117e7141a7b5bce66b0385a2d0, type: 2}
+  - {fileID: 11400000, guid: c7ff7791587d4467ba9fbe88358b2119, type: 2}
+  - {fileID: 11400000, guid: 4053ff006892420d8ca5efa51365570c, type: 2}
+  - {fileID: 11400000, guid: 5697aa8685514f2ca9b9de9638fce1a1, type: 2}
+  - {fileID: 11400000, guid: 3107bcc776d54a74b110b883f10fba61, type: 2}
+  - {fileID: 11400000, guid: 414bce89d4dc495f87bbccfb02e5b847, type: 2}
+  - {fileID: 11400000, guid: ede43cd3ab5943c58c646065c1f57a1f, type: 2}
+  - {fileID: 11400000, guid: 28c9a96388684fa0b3b10b9dbea56c70, type: 2}
+  - {fileID: 11400000, guid: 72fa98519b534214b89e9c29c44b89da, type: 2}
+  - {fileID: 11400000, guid: 62a30981533145a5b66304c04e7c50e0, type: 2}
   companionFauna: {fileID: 11400000, guid: 0e87f3117e7141a7b5bce66b0385a2d0, type: 2}
   brushInterval: 0

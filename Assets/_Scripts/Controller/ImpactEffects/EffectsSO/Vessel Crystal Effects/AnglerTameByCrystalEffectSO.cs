@@ -4,14 +4,14 @@ using UnityEngine;
 namespace CosmicShore.Gameplay
 {
     /// <summary>
-    /// The Angler's omni-crystal effect — the MASS TAME (<c>R_VesselActions/ANGLER.md</c> §1; the Angler Command Lab's
-    /// <c>omniTame</c>): every wild herbivore within the config's <c>omniTameRadius</c> of the hull joins the school at
-    /// once, nearest first, up to the leash capacity (<see cref="AnglerCommandExecutor.OmniTame"/>).
+    /// The Angler's omni-crystal effect: the crystal MORPHS into a random creature that joins the school (the designer,
+    /// 2026-10-16; <c>R_VesselActions/ANGLER.md</c> §1; the Angler Command Lab's <c>omniMorph</c>), born where the crystal was
+    /// collected (<see cref="AnglerCommandExecutor.OmniMorph"/>). The asset keeps its first name (round 2 was a mass tame).
     ///
     /// Wired ONLY into <c>AnglerImpactorDataContainer.vesselCrystalEffects</c>, the list
     /// <see cref="VesselImpactor.ExecuteOmniCrystalImpact"/> runs for an OMNI crystal (elemental crystals dispatch to
-    /// the per-element lists and never reach it). That dispatch runs on every peer; a creature can be leashed only where
-    /// it is simulated, so the taming lands on the creatures' authority alone.
+    /// the per-element lists and never reach it). That dispatch runs on every peer; a replicated species is born, and any
+    /// creature leashed, only where the ecology is simulated.
     /// </summary>
     [CreateAssetMenu(fileName = "AnglerTameByCrystalEffect",
         menuName = "ScriptableObjects/Impact Effects/Vessel - Crystal/AnglerTameByCrystalEffectSO")]
@@ -29,7 +29,8 @@ namespace CosmicShore.Gameplay
                                    "AnglerCommandExecutor - is this effect wired into a non-Angler container?", vesselImpactor);
                 return;
             }
-            angler.OmniTame();
+            Vector3 at = data.Origin.Valid ? data.Origin.Pose.position : vesselImpactor.transform.position;
+            angler.OmniMorph(at);
         }
     }
 }

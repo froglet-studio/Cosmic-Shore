@@ -88,6 +88,7 @@ INPUT_EVENTS = {
     11: ("OnlyRightStickAction", "RT", "R-Shift"),
     12: ("OnlyLeftStickAction", "LT", "L-Shift"),
     13: ("BothSticksAction", "LT+RT", "Both shifts"),
+    14: ("Button4Action", "Y", "F"),
 }
 
 GUID_RE = re.compile(r"guid:\s*([0-9a-f]{32})")

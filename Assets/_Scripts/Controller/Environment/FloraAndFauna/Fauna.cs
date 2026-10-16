@@ -167,11 +167,20 @@ namespace CosmicShore.Gameplay
         public bool Leashable => CanBeLeashed;
 
         /// <summary>Put this creature on <paramref name="holder"/>'s leash. False when it cannot be leashed, is dying,
-        /// is a puppet on this peer, or another holder already has it.</summary>
-        public bool TryLeash(IFaunaLeash holder)
+        /// is a puppet on this peer, or another holder already has it - unless <paramref name="steal"/> (the Angler's
+        /// Mass level-5 upgrade, <c>R_VesselActions/ANGLER.md</c> §1d): then the other holder is told it lost the creature
+        /// (<see cref="IFaunaLeash.Released"/>) and this one takes it.</summary>
+        public bool TryLeash(IFaunaLeash holder, bool steal = false)
         {
             if (holder == null || !CanBeLeashed || !IsSimAuthority || _diedThisLife) return false;
-            if (Leash != null && !ReferenceEquals(Leash, holder)) return false;
+            if (Leash != null && !ReferenceEquals(Leash, holder))
+            {
+                if (!steal) return false;
+                var previous = Leash;
+                Leash = holder;
+                previous.Released(this);
+                return true;
+            }
             Leash = holder;
             return true;
         }

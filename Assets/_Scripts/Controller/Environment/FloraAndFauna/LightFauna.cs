@@ -682,9 +682,11 @@ namespace CosmicShore.Gameplay
                         // turns to face it, and only then starts the suction.)
                         if (diet == FaunaDiet.Herbivore && IsEdibleForHerbivore(prism))
                         {
-                            if (sqr < bestFeedSqr)
+                            // A painted prism ranks closer (PaintedPrey: an Angler's paint is preferred, never forced).
+                            float rank = PaintedPrey.Rank(prism, sqr);
+                            if (rank < bestFeedSqr)
                             {
-                                bestFeedSqr = sqr;
+                                bestFeedSqr = rank;
                                 feedCandidate = prism;
                             }
                             continue;
@@ -701,10 +703,14 @@ namespace CosmicShore.Gameplay
                     // Handle blocks (trail prisms) — same spatialized diet rule as above
                     // (plain prisms never contributed separation here, so only the
                     // feed-candidate role applies).
-                    if (diet == FaunaDiet.Herbivore && sqr < bestFeedSqr && IsEdibleForHerbivore(prism))
+                    if (diet == FaunaDiet.Herbivore)
                     {
-                        bestFeedSqr = sqr;
-                        feedCandidate = prism;
+                        float rank = PaintedPrey.Rank(prism, sqr);
+                        if (rank < bestFeedSqr && IsEdibleForHerbivore(prism))
+                        {
+                            bestFeedSqr = rank;
+                            feedCandidate = prism;
+                        }
                     }
                 }
             }

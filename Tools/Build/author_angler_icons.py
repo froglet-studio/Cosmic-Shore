@@ -61,9 +61,12 @@ def fish(d, cx, cy, s, facing=1.0, fill=255):
 
 
 # -- the four icons ----------------------------------------------------------------------------------------------
+# The element map was approved on 2026-10-16 (R_VesselActions/ANGLER.md §7): Charge = Erase / Lock-on, Mass = Lure,
+# Tame & Grow, Space = Paint, Time = Dash to the School. The FILE names are round 1's proposal's and are kept, because
+# the HUD's sprite references hold their guids (guid_for(name)); each file now draws its slot's approved ability.
 
-def command(d):
-    # The beam's cone from the nose (left) over five painted prisms; the ball (three dots) flying down its axis.
+def paint(d):
+    # Space - the beam's cone from the nose (left) over five painted prisms; the ball (three dots) flying down its axis.
     nose = (14, 64)
     poly(d, [nose, (114, 30), (114, 98)], 70)                       # the beam, faint
     line(d, [nose, (114, 30)], 4.0)
@@ -74,39 +77,48 @@ def command(d):
         circle(d, x, 64, 5.5)                                       # the ball, thrown
 
 
-def leash(d):
-    # The school: five fish on a golden-angle spiral round a hull dot.
-    circle(d, 64, 64, 9)
-    for i in range(5):
-        th = i * 2.399963 + 0.6
-        ring = 22 + math.sqrt(i) * 9
-        fish(d, 64 + math.cos(th) * ring, 64 + math.sin(th) * ring, 10, facing=1 if math.cos(th + 1.57) > 0 else -1)
+def lock_on(d):
+    # Charge - the eraser's narrow beam ending in a lock ring round a hull, two fish closing on it.
+    nose = (12, 96)
+    line(d, [nose, (78, 50)], 4.0)                                  # the beam
+    arc(d, 88, 44, 22, 0, 360, 5.0)                                 # the lock ring
+    for a in (45, 135, 225, 315):                                   # its four ticks
+        x, y = math.cos(math.radians(a)), math.sin(math.radians(a))
+        line(d, [(88 + x * 16, 44 + y * 16), (88 + x * 28, 44 + y * 28)], 4.0)
+    poly(d, [(88, 34), (98, 50), (78, 50)])                         # the hunted hull
+    fish(d, 40, 30, 11, facing=1)
+    fish(d, 104, 100, 11, facing=-1)
 
 
-def lure(d):
-    # The esca: a stalk curving up and forward from bottom-left, a bulb at its tip, rays of light round it.
-    pts = [(20 + 70 * t, 112 - 70 * math.sin(t * math.pi * 0.62) - 8 * t) for t in [i / 16 for i in range(17)]]
-    line(d, pts, 5.0)
-    bx, by = pts[-1]
-    circle(d, bx, by, 13)
+def lure_grow(d):
+    # Mass - the esca's bulb and rays above a sprouting plant: the lure that tames and grows.
+    circle(d, 80, 34, 12)
     for a in range(-90, 271, 45):
-        r0, r1 = 19, 27
-        line(d, [(bx + r0 * math.cos(math.radians(a)), by + r0 * math.sin(math.radians(a))),
-                 (bx + r1 * math.cos(math.radians(a)), by + r1 * math.sin(math.radians(a)))], 4.0)
+        r0, r1 = 18, 26
+        line(d, [(80 + r0 * math.cos(math.radians(a)), 34 + r0 * math.sin(math.radians(a))),
+                 (80 + r1 * math.cos(math.radians(a)), 34 + r1 * math.sin(math.radians(a)))], 4.0)
+    line(d, [(18, 30), (40, 18), (68, 28)], 5.0)                    # the stalk
+    line(d, [(46, 116), (46, 74)], 5.0)                             # the plant's stem
+    poly(d, [(46, 86), (24, 72), (20, 92)])                         # leaf
+    poly(d, [(46, 78), (68, 62), (72, 84)])                         # leaf
 
 
-def tame(d):
-    # A fish held in the light, the taming arc three-quarters full round it.
-    fish(d, 66, 64, 22)
-    arc(d, 64, 64, 50, -90, 180, 7.0)
-    arc(d, 64, 64, 50, 180, 268, 2.5, fill=110, cap=False)
+def dash(d):
+    # Time - the hull (left) streaking three-quarters of the way to its school's centre (right).
+    for i, (x, y) in enumerate(((96, 46), (108, 64), (96, 82), (114, 84), (112, 44))):
+        fish(d, x, y, 8, facing=-1)
+    poly(d, [(32, 64), (12, 52), (17, 64), (12, 76)])               # the hull, nose toward its school
+    for k, w in ((0, 5.0), (1, 3.0), (2, 2.0)):                     # speed lines
+        y = 56 + k * 8
+        line(d, [(38, y), (66 - k * 6, y)], w)
+    poly(d, [(70, 52), (84, 64), (70, 76)])                         # the arrowhead, at the 75% mark
 
 
 ICONS = {
-    "Angler_Command.png": command,   # Charge (proposal)
-    "Angler_Leash.png": leash,       # Mass (proposal)
-    "Angler_Lure.png": lure,         # Space (proposal)
-    "Angler_Tame.png": tame,         # Time (proposal)
+    "Angler_Command.png": lock_on,     # Charge: Erase / Lock-on
+    "Angler_Leash.png": lure_grow,     # Mass: Lure, Tame & Grow
+    "Angler_Lure.png": paint,          # Space: Paint
+    "Angler_Tame.png": dash,           # Time: Dash to the School
 }
 
 

@@ -114,6 +114,7 @@ namespace CosmicShore.Gameplay
         bool prevButton1;
         bool prevButton2;
         bool prevButton3;
+        bool prevButton4;
 
         bool fullSpeedStraightEffectsStarted;
         bool minimumSpeedStraightEffectsStarted;
@@ -404,11 +405,13 @@ namespace CosmicShore.Gameplay
             bool space = keyboard != null && keyboard.spaceKey.isPressed;
             bool rKey = keyboard != null && keyboard.rKey.isPressed;
             bool qKey = keyboard != null && keyboard.qKey.isPressed;
+            bool fKey = keyboard != null && keyboard.fKey.isPressed;
             bool eKey = keyboard != null && keyboard.eKey.isPressed;
 
             EdgeFire(space, ref prevButton1, InputEvents.Button1Action);
             EdgeFire(rKey, ref prevButton2, InputEvents.Button2Action);
             EdgeFire(qKey || mouse.middleButton.isPressed, ref prevButton3, InputEvents.Button3Action);
+            EdgeFire(fKey, ref prevButton4, InputEvents.Button4Action);   // the pad's Y, as in KeyboardInputStrategy
 
             // FlipAction has no held state to track beyond the key itself, and the manual-throttle
             // channel rides the same key, exactly as KeyboardInputStrategy wires it.
@@ -583,6 +586,7 @@ namespace CosmicShore.Gameplay
             EdgeFire(false, ref prevButton1, InputEvents.Button1Action);
             EdgeFire(false, ref prevButton2, InputEvents.Button2Action);
             EdgeFire(false, ref prevButton3, InputEvents.Button3Action);
+            EdgeFire(false, ref prevButton4, InputEvents.Button4Action);
 
             if (fullSpeedStraightEffectsStarted)
             {
@@ -609,6 +613,7 @@ namespace CosmicShore.Gameplay
             prevButton2 = keyboard != null && keyboard.rKey.isPressed;
             prevButton3 = (keyboard != null && keyboard.qKey.isPressed)
                           || (mouse != null && mouse.middleButton.isPressed);
+            prevButton4 = keyboard != null && keyboard.fKey.isPressed;
         }
 
         static void LockCursor(bool locked)
@@ -626,6 +631,7 @@ namespace CosmicShore.Gameplay
             prevButton1 = false;
             prevButton2 = false;
             prevButton3 = false;
+            prevButton4 = false;
             fullSpeedStraightEffectsStarted = false;
             minimumSpeedStraightEffectsStarted = false;
             publishedDeflection = Vector2.zero;
