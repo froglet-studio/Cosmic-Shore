@@ -142,7 +142,7 @@ it:
 - pick **Hard** rivals in the lobby for some races, and Easy for a few;
 - play some races at I2, I3 and I4.
 
-- **Store every race when Unity asks**, including the bad ones. Mistakes are measured too (they tune Easy and Medium);
+- **Every race is stored by itself when Play stops** (no question since 2026-10-16), including the bad ones. Mistakes are measured too (they tune Easy and Medium);
   they are just never averaged into the line.
 - **Rough budget:** about 100 races.
 - **Where to stop:** when adding 5 more races moves no leg's line by more than its spread, that course is learned. The

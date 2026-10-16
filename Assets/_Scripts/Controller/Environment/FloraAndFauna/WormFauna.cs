@@ -604,7 +604,7 @@ namespace CosmicShore.Gameplay
         {
             while (true)
             {
-                yield return new WaitForSeconds(
+                yield return CosmicShore.Utility.WaitCache.Seconds(
                     Mathf.Max(0.1f, config ? config.BehaviorTickSeconds : 1.5f)
                     * AggressionMultiplier(config ? config.CadenceByAggression : null));
 

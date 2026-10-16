@@ -9,14 +9,15 @@ using UnityEngine;
 namespace CosmicShore.Editor
 {
     /// <summary>
-    /// The whole Bug Hunt UI: ONE question after you stop Play.
+    /// The Bug Hunt's after-play send, with no question (Yash, 2026-10-16: "make send to Claude automatic too,
+    /// no question").
     ///
-    /// <para>If the play test that just ended logged a red error Claude does not have yet, a dialog
-    /// asks "Send to Claude?". <b>Send to Claude</b> pushes this machine's errors (plus any new
-    /// redlog, crash and perf files) to <c>bugledger/&lt;user&gt;</c> through
-    /// <see cref="BugLedgerSender"/>, which never touches your working tree or branch. <b>Not now</b>
-    /// keeps them on this machine; they go with the next send. Either way the same error is not
-    /// asked about again — only a NEW error, or one that came back after a fix, asks again.</para>
+    /// <para>When a play test ends having logged a red error Claude does not have yet, or made a new performance
+    /// capture (<see cref="PerfAutoCapture"/>), AI training record or multiplayer test log, this pushes this
+    /// machine's errors plus those files to <c>bugledger/&lt;user&gt;</c> through <see cref="BugLedgerSender"/>,
+    /// which never touches your working tree or branch, and logs one console line saying what went. The same
+    /// error is not sent again — only a NEW error, or one that came back after a fix (its fingerprint
+    /// <c>id:regressions</c>). Until 2026-10-16 this was a "Send to Claude?" dialog.</para>
     ///
     /// <para>Everything after the click is automatic: Claude fixes from that branch and marks the
     /// issue fixed there; once you pull the fix, your next clean play runs close it (the ledger
@@ -30,7 +31,8 @@ namespace CosmicShore.Editor
     [InitializeOnLoad]
     public static class BugHuntAutoSend
     {
-        const int MaxTitlesShown = 3;
+        /// <summary>What the last automatic send carried, for the Scene view badge ("" before the first).</summary>
+        public static string LastSent { get; private set; } = "";
 
         static BugHuntAutoSend()
         {
@@ -112,57 +114,21 @@ namespace CosmicShore.Editor
 
                 if (fresh.Count == 0 && newCaptures == 0 && newFlights == 0 && newNetLogs == 0) return;
 
-                // Remember them whatever the answer: "Not now" must not become "ask every run".
+                // Remember them now: each new error, capture or log is sent once, never on every run.
                 settings.SentFingerprints = string.Join("\n", asked);
                 settings.SaveNow();
 
-                var body = new StringBuilder();
-                if (fresh.Count > 0)
-                {
-                    body.Append(fresh.Count == 1
-                        ? "This play test logged a new console error:\n\n"
-                        : $"This play test logged {fresh.Count} new console errors:\n\n");
-                    for (int i = 0; i < fresh.Count && i < MaxTitlesShown; i++)
-                        body.Append("• ").Append(Shorten(fresh[i].Title)).Append('\n');
-                    if (fresh.Count > MaxTitlesShown) body.Append($"• and {fresh.Count - MaxTitlesShown} more\n");
-                    if (newCaptures > 0) body.Append($"\nPlus {newCaptures} new performance capture(s).\n");
-                    if (newNetLogs > 0) body.Append($"\nPlus the multiplayer test's logs from {Players(peers)}.\n");
-                    if (newFlights > 0)
-                        body.Append($"\nPlus {newFlights} new AI training record(s): {string.Join(", ", records)} " +
-                                    $"({HumanFlightRecorder.TrainingType}).\n");
-                    body.Append("\nSend them to Claude to fix? Nothing in your project or branch is changed.");
-                }
-                else if (newNetLogs > 0)
-                {
-                    // A multiplayer test with no new error: its logs are still what Claude reads to judge it.
-                    body.Append($"This multiplayer test saved logs from {Players(peers)}");
-                    body.Append(newNetLogs > peers.Count ? $" ({newNetLogs} files).\n" : ".\n");
-                    if (newCaptures > 0) body.Append($"Plus {newCaptures} new performance capture(s).\n");
-                    body.Append("\nSend them to Claude? Nothing in your project or branch is changed.");
-                }
-                else if (newCaptures == 0)
-                {
-                    // Only AI training records: the question is about storing them, not about bugs.
-                    body.Append(newFlights == 1 ? "New AI training record:\n\n" : $"{newFlights} new AI training records:\n\n");
-                    for (int i = 0; i < records.Count && i < MaxTitlesShown; i++)
-                        body.Append("• ").Append(records[i]).Append('\n');
-                    if (records.Count > MaxTitlesShown) body.Append($"• and {records.Count - MaxTitlesShown} more\n");
-                    body.Append($"\nTraining type: {HumanFlightRecorder.TrainingType}.\n");
-                    body.Append("\nStore it so the AI learns from how you fly? Nothing in your project or branch is changed.");
-                    if (EditorUtility.DisplayDialog("Store AI training record?", body.ToString(), "Store AI record", "Not now"))
-                        BugLedgerSender.SendInBackground();
-                    return;
-                }
-                else
-                {
-                    body.Append(newCaptures == 1
-                        ? "You made a new performance capture."
-                        : $"You made {newCaptures} new performance captures.");
-                    body.Append("\n\nSend to Claude to check for slowdowns? Nothing in your project or branch is changed.");
-                }
-
-                if (EditorUtility.DisplayDialog("Send to Claude?", body.ToString(), "Send to Claude", "Not now"))
-                    BugLedgerSender.SendInBackground();
+                // No question (Yash, 2026-10-16: "make send to Claude automatic too, no question"): whatever is new goes
+                // to bugledger/<user> at once. BugLedgerSender never touches the working tree or the current branch, and
+                // pushes nothing when the tree is unchanged, so an automatic send costs the person nothing.
+                var sent = new List<string>();
+                if (fresh.Count > 0) sent.Add(fresh.Count == 1 ? "1 new console error" : $"{fresh.Count} new console errors");
+                if (newCaptures > 0) sent.Add($"{newCaptures} performance capture(s)");
+                if (newNetLogs > 0) sent.Add($"the multiplayer test's logs from {Players(peers)}");
+                if (newFlights > 0) sent.Add($"{newFlights} AI training record(s): {string.Join(", ", records)}");
+                LastSent = string.Join("; ", sent);
+                BugLedgerSender.SendInBackground();
+                Debug.Log($"[BugLedger] Sent to Claude automatically: {LastSent}. Nothing in your project or branch changed.");
             }
             catch (Exception e)
             {
@@ -194,7 +160,5 @@ namespace CosmicShore.Editor
         }
 
         static string Fingerprint(BugLedgerIssue issue) => issue.Id + ":" + issue.Regressions;
-
-        static string Shorten(string s) => s.Length > 90 ? s.Substring(0, 87) + "..." : s;
     }
 }

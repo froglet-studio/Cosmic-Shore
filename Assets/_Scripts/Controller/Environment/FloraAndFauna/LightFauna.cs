@@ -339,7 +339,7 @@ namespace CosmicShore.Gameplay
                     yield break;
 
                 float cadence = Mathf.Max(0.05f, data.behaviorUpdateRate + Phase) * GetAggressionCadenceMultiplier();
-                yield return new WaitForSeconds(cadence);
+                yield return CosmicShore.Utility.WaitCache.About(cadence);
                 UpdateBehavior();
             }
         }

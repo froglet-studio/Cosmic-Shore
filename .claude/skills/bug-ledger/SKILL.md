@@ -5,9 +5,9 @@ description: Fix the console errors collaborators sent from Unity with the one "
 
 # Bug Ledger — fix what the play tests sent
 
-**The whole Unity UI is one question** (`BugHuntAutoSend`; Yash, 2026-10-15: "no complex UI
-toolboxes in Unity... just auto send consoles"). After a play test that logged a new red error the
-editor asks **"Send to Claude?"**; Send pushes that machine's issues (plus new redlog / crash / perf
+**There is no Unity UI at all** (`BugHuntAutoSend`; Yash, 2026-10-15: "no complex UI toolboxes in
+Unity... just auto send consoles", and 2026-10-16: "make send to Claude automatic too, no question").
+After a play test that logged a new red error the editor sends by itself: it pushes that machine's issues (plus new redlog / crash / perf
 files) to its own branch **`origin/bugledger/<user>`**, under `BugLedger/shared/`, built in a
 throwaway index so the person's working tree and branch are never touched (`BugLedgerSender`).
 There is no Bug Ledger window, no staging, no settings — never tell anyone to press buttons in one.
@@ -27,7 +27,7 @@ Report files: `git show origin/bugledger/<user>:BugLedger/shared/reports/<user>/
 **redlog** session has the full context around a ledger signature.
 
 **Nothing sent?** Fix from what the person gave you (screenshot / pasted Console text), then tell
-them in one line: after the next play test, press **Send to Claude** when Unity asks.
+them in one line: after the next play test, do nothing: after the next play test the editor sends it to Claude by itself.
 
 Kinds: `E-…` captured error (validated by play runs) · `T-…` editor-tool finding (closed only by a
 clean re-run of that tool — tell the person which) · `C-…` hand-filed (no signature).

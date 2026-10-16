@@ -190,8 +190,8 @@ def cmd_collect(args):
     tests = load(args)
     if not tests:
         print("no multiplayer test logs yet (BugLedger/shared/reports/*/net/ on any origin branch"
-              + (", or the given folders" if args.dir else "") + "). After a multiplayer play test, press "
-              "Send to Claude when Unity asks; run `git fetch origin` first.")
+              + (", or the given folders" if args.dir else "") + "). A multiplayer play test sends its logs by itself "
+              "when it stops; run `git fetch origin` first.")
         return 0
     for i, t in enumerate(tests, 1):
         branches = sorted({b for p in t["peers"] for b in p.get("branches", [])})

@@ -184,7 +184,7 @@
         "Pull Ys-bleeding-edge, open Unity, Code Optimization = Release, close the Third Eye window.",
         "Play, Cell Selector > Lattice, wait 8 minutes.",
         "Keep playing: the editor captures S2 by itself at 8 minutes (the Scene view badge counts down and says Saved).",
-        "Stop playing and press Send to Claude when Unity asks.",
+        "Stop playing: the capture goes to Claude by itself.",
         "python3 Tools/Build/perf_hunt.py sweep --write shows the capture judged against its baseline in Docs/Reports/PERFORMANCE.md."
       ]
     }

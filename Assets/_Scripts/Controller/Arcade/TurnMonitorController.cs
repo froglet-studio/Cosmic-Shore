@@ -70,7 +70,12 @@ namespace CosmicShore.Gameplay
             if (!_isRunning)
                 return;
 
-            if (!monitors.Any(m => m.CheckForEndOfTurn()))
+            // A plain loop, not LINQ Any: this runs every frame of every mode, and Any boxed the list's enumerator
+            // each frame (the first shared Unity capture, Grizzly Charge, 2026-10-16). Same short-circuit order.
+            bool ended = false;
+            for (int i = 0; i < monitors.Count; i++)
+                if (monitors[i].CheckForEndOfTurn()) { ended = true; break; }
+            if (!ended)
                 return;
 
             _isRunning = false;

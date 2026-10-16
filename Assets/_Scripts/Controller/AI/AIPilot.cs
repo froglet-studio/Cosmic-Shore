@@ -653,7 +653,7 @@ namespace CosmicShore.Gameplay
             while (AutoPilotEnabled)
             {
                 SelectClosestOpponent();
-                yield return new WaitForSeconds(
+                yield return CosmicShore.Utility.WaitCache.Seconds(
                     _targetVesselTransform != null ? playerSeekUpdateInterval : playerReacquireInterval);
             }
         }
@@ -1352,10 +1352,10 @@ namespace CosmicShore.Gameplay
             {
                 action.Ability.StartAction(actionExecutorRegistry, VesselStatus);
                 _activeAbilities.Add(action);
-                yield return new WaitForSeconds(action.Duration);
+                yield return CosmicShore.Utility.WaitCache.Seconds(action.Duration);
                 _activeAbilities.Remove(action);
                 action.Ability.StopAction(actionExecutorRegistry, VesselStatus);
-                yield return new WaitForSeconds(action.Cooldown);
+                yield return CosmicShore.Utility.WaitCache.Seconds(action.Cooldown);
             }
         }
         
@@ -1434,7 +1434,7 @@ namespace CosmicShore.Gameplay
                 {
                     _targetPosition = _crystalPosition;
                 }
-                yield return new WaitForSeconds(targetUpdateFrequencySeconds);
+                yield return CosmicShore.Utility.WaitCache.Seconds(targetUpdateFrequencySeconds);
             }
         }*/
 

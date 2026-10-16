@@ -3,7 +3,7 @@
 The agent's side of the Bug Ledger.
 
 The editor captures every console error into BugLedger/local/ (gitignored). After a play
-test that logged a new error it asks ONE question, "Send to Claude?"; Send pushes this
+test that logged a new error it sends, with no question (since 2026-10-16), this
 machine's issues and report files to its own branch, origin/bugledger/<user> (under
 BugLedger/shared/), without touching the person's working tree or branch. This script is
 how a Claude session (the /bug-ledger skill) reads those branches and hands a fix back:

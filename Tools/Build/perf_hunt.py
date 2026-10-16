@@ -354,8 +354,7 @@ def cmd_collect(args):
         if not verdicts:
             print("no shared captures yet (BugLedger/shared/reports/*/perf/capture_*.json on any branch, or a local "
                   "CosmicShore Diagnostics folder). Ask for one: play the scene in Release past its auto-capture time "
-                  "(the editor captures by itself, PerfAutoCapture), then stop Play and press Send to Claude when Unity "
-                  "asks.")
+                  "(the editor captures by itself, PerfAutoCapture), then stop Play: it goes to Claude by itself.")
     return board
 
 
@@ -503,8 +502,8 @@ def render_report(gates, gate_failures, board, amoebius, tasks_filed):
             lines.append(f"| {cell(v['key'])} | {cell(v['user'])} | {cell(v['timestamp'])} | {cell(s.get('cpuBusyMs'))} | {cell(s.get('p95Ms'))} | "
                          f"{cell(s.get('gcKB'))} | {cell(s.get('prismEnts'))} | {cell(verdict)} |")
     else:
-        lines.append("_None yet. A capture reaches this report when an editor runs FrogletTools > Performance > Capture "
-                     "Performance and then presses Send to Claude when Unity asks after the play test)._")
+        lines.append("_None yet. A capture reaches this report by itself: the editor captures in Play (PerfAutoCapture) "
+                     "and sends it to Claude after the play test (BugHuntAutoSend), with no button and no question._")
     lines.append("")
     if amoebius is not None:
         lines.append("**Amoebius marker run (allocations are the gate; milliseconds are watched):**")

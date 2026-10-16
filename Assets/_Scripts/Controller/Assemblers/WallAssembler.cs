@@ -287,7 +287,7 @@ namespace CosmicShore.Gameplay
                 {
                     if (Prism == null)
                     {
-                        yield return new WaitForSeconds(1f);
+                        yield return CosmicShore.Utility.WaitCache.Seconds(1f);
                         continue;
                     }
 
@@ -304,7 +304,7 @@ namespace CosmicShore.Gameplay
                         }
                     }
 
-                    yield return new WaitForSeconds(1f);
+                    yield return CosmicShore.Utility.WaitCache.Seconds(1f);
                     if (BottomMate.Mate == null)
                     {
                         BottomMate = FindClosestMate(globalBondSiteBottom, SiteType.Bottom);
@@ -317,7 +317,7 @@ namespace CosmicShore.Gameplay
                         }
                     }
 
-                    yield return new WaitForSeconds(1f);
+                    yield return CosmicShore.Utility.WaitCache.Seconds(1f);
                     if (TopIsBonded && BottomIsBonded)
                     {
                         StopAllCoroutines();
