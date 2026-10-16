@@ -353,7 +353,7 @@
       ai: { phiT: 0, jit: 0, extend: false, ph: rnd() * 6.283, held: true, pushDown: false, thumbUntil: -1 },
       stats: { sumV: 0, n: 0, pump: 0, scrub: 0, flyoffs: 0, lost: 0, landLoss: 0, busy: 0, minV: 1e9, strokes: 0, perfect: 0, pushes: 0, push: 0, t150: 0 },
       look: { yaw: 0, pitch: 0, dir: null }, pushPrev: false, pushCd: 0, pushLeft: 0, pushRate: 0,
-      last: { N: P.ppPull, kf: 0, lat: 0, roll: 0, crouch: 0 },
+      last: { N: P.ppPull, kf: 0, lat: 0, roll: 0, crouch: 0, gain: 0, dhRate: 0 },
       stroke: { dir: 0, dh: 0, gain: 0, s0: s0, vs: 0 },
       events: [], eventId: 0,
       lap: { idx: Math.floor(s0 / lapLength()), t0: 0, started: false, last: 0, best: 0, n: 0 },
@@ -471,6 +471,7 @@
       if (Math.abs(q) > 0.05) { st.strokes++; if (q >= 0.85) st.perfect++; pushEvent(w, { kind: 'stand', q, dv: P.ppBeatKick * q, label: rateLabel(q, false).replace('LATE', 'EARLY / LATE') }); }
     }
     w.btn = !!inp.btn;
+    w.last.gain = (w.v - v0) / dt; w.last.dhRate = dh / dt;             // what the knees are doing to speed right now (u/s²)
     st.pump += w.v - v0;                                             // pumping only; the motor and drag come after
     if (way.pump === 'work' || way.pump === 'auto') trackStroke(w, dh, w.v - v0, H);
     // ---- the push (A): a foot off the board, down the line. Strong from a stop, nothing at ppPushTop ----
@@ -783,9 +784,16 @@
     const tc = new Float32Array(TRAIL * 3); for (let i = 0; i < TRAIL; i++) { const a = 1 - i / TRAIL; tc[i * 3] = 1.0 * a; tc[i * 3 + 1] = 0.7 * a; tc[i * 3 + 2] = 0.28 * a; }
     trailGeo.setAttribute('color', new THREE.BufferAttribute(tc, 3));
     const trail = new THREE.Line(trailGeo, new THREE.LineBasicMaterial({ vertexColors: true, transparent: true, opacity: 0.9, depthWrite: false })); trail.frustumCulled = false; scene.add(trail);
+    // the curvature compass: a ring round the rail at the rider, amber on the side the rail bends TOWARD (ride
+    // there and it is a dip: extend to gain), blue on the side it bends AWAY from (a hump: contract to gain)
+    const compass = new THREE.Group();
+    const ring = new THREE.Mesh(new THREE.TorusGeometry(1, 0.035, 6, 48), new THREE.MeshBasicMaterial({ color: 0x9aa6d6, transparent: true, opacity: 0.55, depthWrite: false }));
+    const dipDot = new THREE.Mesh(new THREE.SphereGeometry(1, 12, 8), new THREE.MeshBasicMaterial({ color: 0xffb347 }));
+    const humpDot = new THREE.Mesh(new THREE.SphereGeometry(1, 12, 8), new THREE.MeshBasicMaterial({ color: 0x6680ff }));
+    compass.add(ring); scene.add(compass, dipDot, humpDot);
     const aimGeo = new THREE.BufferGeometry(); aimGeo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(6), 3));
     const aim = new THREE.Line(aimGeo, new THREE.LineBasicMaterial({ color: 0xffb347, transparent: true, opacity: 0.55, depthWrite: false })); aim.frustumCulled = false; scene.add(aim);
-    return { aim, renderer, scene, camera, glow, sky, grid, gridFine, dust, dustBase, DUST, rail, trackLine, pillars, rocks, crystals, gates, rider, trail, trailPts: [], TRAIL,
+    return { compass, ring, dipDot, humpDot, aim, renderer, scene, camera, glow, sky, grid, gridFine, dust, dustBase, DUST, rail, trackLine, pillars, rocks, crystals, gates, rider, trail, trailPts: [], TRAIL,
       scen: { key: '', slot: 0, groundY: -180 }, camPos: null, camLook: null, camUp: new THREE.Vector3(0, 1, 0), shake: 0, fov: 64, rnd: mulberry32(99) };
   }
 
@@ -905,6 +913,20 @@
     const ta = R.trail.geometry.attributes.position;
     for (let i = 0; i < R.TRAIL; i++) { const p = R.trailPts[Math.min(i, R.trailPts.length - 1)]; ta.array[i * 3] = p.x; ta.array[i * 3 + 1] = p.y; ta.array[i * 3 + 2] = p.z; }
     ta.needsUpdate = true;
+    // curvature compass at the rider
+    {
+      const show = !w.air && wayOf().pump !== 'none';
+      R.compass.visible = R.dipDot.visible = R.humpDot.visible = show;
+      if (show) {
+        const f = w.frame, rr = rideRadius(w.h) + 2.5; bend(w.s, _b);
+        const strength = clamp(Math.max(w.v, 30) ** 2 * _b.kap / P.ppPull, 0, 1.5);
+        R.compass.position.set(f.p[0], f.p[1], f.p[2]); R.compass.quaternion.setFromUnitVectors(ZAX, T.set(f.T[0], f.T[1], f.T[2])); R.compass.scale.setScalar(rr);
+        const dir = v3.add(v3.scale(f.N1, Math.cos(_b.alpha)), f.N2, Math.sin(_b.alpha)), ds = 0.35 + 1.1 * strength;
+        R.dipDot.position.set(f.p[0] + dir[0] * rr, f.p[1] + dir[1] * rr, f.p[2] + dir[2] * rr); R.dipDot.scale.setScalar(_b.kap > 1e-5 ? ds : 0.001);
+        R.humpDot.position.set(f.p[0] - dir[0] * rr, f.p[1] - dir[1] * rr, f.p[2] - dir[2] * rr); R.humpDot.scale.setScalar(_b.kap > 1e-5 ? ds : 0.001);
+        T.set(pose.T[0], pose.T[1], pose.T[2]);
+      }
+    }
     // look: where pitch and yaw point you while attached (the camera follows it; the body turns to it)
     const Rr = new THREE.Vector3().crossVectors(T, U).normalize();
     let Ld;
@@ -964,6 +986,8 @@
       if (R3) { if (ev.kind === 'land') R3.shake = 3; else if (ev.label === 'WRONG WAY') R3.shake = 1.2; }
       sound.blip(ev);
     }
+    // a backing panel under the top-left readouts so they stay legible over bright prisms
+    panel(g, 4 * dpr, 4 * dpr, (small ? 168 : 330) * dpr, (small ? 118 : 108) * dpr, '', dpr);
     // speed bar (under the DOM speed readout)
     {
       const x = pad + 2 * dpr, y = (small ? 70 : 62) * dpr, bw = (small ? 150 : 240) * dpr, bh = 6 * dpr, vmax = 600;
@@ -971,6 +995,18 @@
       g.fillStyle = '#ffb347'; g.fillRect(x, y, bw * clamp(w.v / vmax, 0, 1), bh);
       const ux = x + bw * P.FriendlyTerrainSpeed / vmax; g.fillStyle = '#13fff2'; g.fillRect(ux - dpr, y - 3 * dpr, 2 * dpr, bh + 6 * dpr);
       g.fillStyle = '#9aa6d6'; g.font = fontB(9.5 * dpr); g.fillText('Urchin grind ' + P.FriendlyTerrainSpeed, Math.min(ux + 4 * dpr, x + bw - 80 * dpr), y + bh + 12 * dpr);
+    }
+    // KNEES → SPEED: the speed your extension or contraction is making against the curvature you feel, right now
+    if (wayOf().pump === 'work' || wayOf().pump === 'auto') {
+      const x = pad + 2 * dpr, y = (small ? 92 : 84) * dpr, bw = (small ? 150 : 240) * dpr, bh = 8 * dpr, gmax = 40;
+      const gain = w.air ? 0 : w.last.gain, frac = clamp(gain / gmax, -1, 1), mid = x + bw / 2;
+      g.fillStyle = 'rgba(232,236,255,0.15)'; g.fillRect(x, y, bw, bh);
+      g.fillStyle = gain >= 0 ? '#6fe39a' : '#ff7a8a'; g.fillRect(frac >= 0 ? mid : mid + frac * bw / 2, y, Math.abs(frac) * bw / 2, bh);
+      g.fillStyle = '#e8ecff'; g.fillRect(mid - dpr / 2, y - 2 * dpr, dpr, bh + 4 * dpr);
+      const kfHere = w.last.kf, felt = Math.abs(kfHere * P.ppRollerR) < 0.08 ? 'no bend under you' : kfHere > 0 ? 'bend toward you (dip)' : 'bend away (hump)';
+      const knee = w.last.dhRate > 0.3 ? 'extending' : w.last.dhRate < -0.3 ? 'contracting' : 'holding';
+      g.fillStyle = '#9aa6d6'; g.font = fontB(9.5 * dpr);
+      g.fillText('knees → speed ' + (gain >= 0 ? '+' : '') + gain.toFixed(1) + ' u/s² · ' + knee + ', ' + felt, x, y + bh + 12 * dpr);
     }
     // lap / split panel
     {
@@ -1228,7 +1264,7 @@
   // ================= (12) RECORDS DOCK: ways, scorecard, decisions, about =================
   function waysPanel() {
     const box = document.createElement('div');
-    box.innerHTML = '<p class="law">The law every pumping way runs on: d(v²/2) = v² · bend-toward-you · d(knees). Stand up at the bottom of each dip (the load peaks), crouch at the top of each hump (the load is lightest). On a straight rail it earns nothing.</p><div class="ways"></div>';
+    box.innerHTML = '<p class="law">Your speed changes with your extension or contraction against the curvature you feel: d(v²/2) = v² · bend-toward-you · d(knees). Spin round the rail with YDiff and the same bend changes meaning: on the side it bends toward it is a dip (extend at its bottom to gain), on the opposite side a hump (contract at its top to gain), and 90° round your knees do nothing. On a straight rail pumping earns nothing. The ring round the rail at your rider shows the dip side in amber and the hump side in blue.</p><div class="ways"></div>';
     const g = box.querySelector('.ways');
     const CARDS = [
       ['Dual stick (the pick to try first)', 'The Urchin\u2019s sticks with the throttle swapped for legs. XDiff is the knees: pull the sticks apart to bend, bring them together to stand. YDiff rolls you round the rail, the sums only turn your look. A pushes you off from a stop, and pressing it takes a thumb off a stick, so your knees half-straighten while you push, as on a real board.'],

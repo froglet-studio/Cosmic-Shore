@@ -97,6 +97,31 @@ shapes (roller radius 70 u, wavelength 360 u), the per-way dials and the AI.
 
 ---
 
+## Round 2b (2026-10-16): spin round the rail; speed from knees against the curvature
+
+The designer, verbatim: *"when i move one joystick up and the other down that produces ydiff that should be
+spinning the player all the way around the trail. then they can bend and contract based on their orientation to
+the curvature."* and *"or rather their speed changes based on their extension or contraction with respect to the
+curvature."*
+
+**Both were already the model**: YDiff is a roll RATE round the rail with no limit (lean limit 180°), and the
+pumping law is `d(v²/2) = v² · κ·cos(α − φ) · d(knees)`, the curvature as felt at the rider's orientation φ. Checked
+by holding YDiff as a human (key D): the rider rolls 45° every 0.5 s and passes 360° at 4.0 s (`RollScaler` 90 °/s).
+**Decided (designer):** free roll all the way round; the deck-style lean limit is no longer a question.
+
+What round 2b adds is making the link visible while you spin:
+
+- **The curvature compass**: a ring round the rail at the rider, with an amber dot on the side the rail bends
+  toward (ride there: a dip, extend to gain) and a blue dot opposite (a hump, contract to gain), sized by how hard
+  the bend loads you at your speed.
+- **Knees → speed meter** (under the speed bar): the speed your knees are making or losing right now, in u/s², with
+  what they are doing and what bend you feel ("+19.1 u/s² · contracting, bend away (hump)" hanging under a
+  roller at 165 u/s).
+- The page's statement of the law is now in the designer's words, on the Ways tab.
+
+Checked: `verify_lab.cjs` PASS; the spin above; a screenshot under the rail (compass, meter, rider on the hump side)
+read at desktop. The meter is an observer: the batch is byte-identical before and after (`verify_lab` determinism).
+
 ## Round 2 (2026-10-16): the dual-stick scheme and the push
 
 The designer's direction, verbatim: *"two thumb controls based on sums and diffs. pitch and yaw remain the
@@ -178,6 +203,7 @@ push, but once you get pumping you wont need it."*
 
 1. **Push strength and reach**: `ppPushKick` 30 and `ppPushTop` 160 leave a slow stretch from ~120 to ~150 u/s.
 2. **Look while attached**: turns with the rail, or fixed in the world like the Urchin hull.
+   (Round 2b: free roll all the way round is DECIDED by the designer.)
 3. **Thumb off**: keep the cost (it is what a pad does), or soften it (e.g. the knees hold their last bend while
    A is down).
 
