@@ -7,7 +7,9 @@ is how we can actually train the AI, not just by input."
 
 It turns a flight Unity recorded while someone played in the editor (HumanFlightRecorder, flight/2 or flight/3) into
 situations (target, line-up, obstacles, skim, manoeuvre, race), labels (what the pilot was going for, the phase, skims
-taken and skipped, mistakes), legs, and what to learn. The definitions are in Docs/AI_SYSTEM/situation_features.json.
+taken and skipped, mistakes), legs, and what to learn. When the flight recorded the camera it also redraws the pilot's
+SCREEN (Caleb's review, plan §7): what was on screen, what a rail hid, time to contact, an 8 x 5 view grid (V2); labels
+count only what the pilot could see (V3); and it measures how late the pilot answers the ring (V4). The definitions are in Docs/AI_SYSTEM/situation_features.json.
 The ring and rail geometry comes from Tools/Build/regatta_course_harness/course.js, generated from RegattaCourse.
 (It was written as the twin of a browser page's situation.js; the page was deleted on 2026-10-16 and this is now the
 only implementation. --self-test checks it against the golden output both agreed on, with a negative control.)
@@ -19,8 +21,8 @@ only implementation. --self-test checks it against the golden output both agreed
     python3 Tools/Build/situation_features.py --self-test         # the fixture flight against its golden output
 
 Training data comes from playing in the Unity EDITOR only (Yash, 2026-10-16: "let's not use artifact to train, we will
-play in editor only for perfect training data"): the flights read here are the ones HumanFlightRecorder writes and Send to
-Claude stores.
+play in editor only for perfect training data"): the flights read here are the ones HumanFlightRecorder writes and Store AI
+record stores.
 """
 import argparse
 import json
@@ -45,6 +47,21 @@ PRISM_HALF = 3
 LEAD_CAP, LEAD_SHARE, THROUGH = 480, 0.4, 320
 MIN_FLIGHTS = 3   # editor flights of one hull before anything is learned from them
 PHASES = ["cruise", "approach", "line-up", "thread", "exit", "skim run", "boost straight", "recovery"]
+
+# The pilot's VIEW (Caleb's review, SITUATION_RECORDING_PLAN.md §7, V2-V4): what was on screen, what a rail hid, and how
+# late the pilot answered it. Only for flights that recorded the camera (HumanFlightRecorder since 2026-10-16); a flight
+# without a camera is read as ALL-SEEING, exactly as before (its labels are not gated, and the golden test holds).
+VIEW_NEAR, VIEW_RANGE = 0.5, 1500      # the camera's near plane and how far the view features look (u)
+GRID_W, GRID_H = 8, 5                  # the "compressed screenshot": 8 x 5 screen cells
+KIND_EMPTY, KIND_OWN_RAIL, KIND_RIVAL_RAIL, KIND_RING, KIND_RIVAL = 0, 1, 2, 3, 4
+RIVAL_RADIUS = 4.0                     # a hull, for its angular size and occlusion
+SAME_RAIL_SPAN = 8                     # a rail prism is not hidden by its own rail's next 8 prisms each way (64 u: the
+                                       # stretch the pilot is looking at); other rails, and the same rail further on, hide it
+SUPER_SHIELD_HALF_SCALE = 1.5          # SkimRaceShell.SuperShieldHalfScale: the contact shell is 1.5 x the prism
+MEMORY_S = 1.0                         # a target still counts this long after it left the screen
+SKIM_SEEN_S = 0.3                      # a skim counts as SKIPPED only if it was in plain view this long before the choice
+LAG_MAX_S, LAG_MIN_R = 1.0, 0.2        # the reaction-lag search window, and the weakest fit worth reporting
+DEFAULT_ASPECT = 16 / 9
 
 
 # ---------------------------------------------------------------- JavaScript's rounding and vectors
@@ -136,6 +153,27 @@ def normalize(f):
         N["p"].append([float(r[idx["x"]]), float(r[idx["y"]]), float(r[idx["z"]])])
         N["f"].append(norm([float(r[idx["fx"]]), float(r[idx["fy"]]), float(r[idx["fz"]])]))
         N["u"].append(norm([float(r[idx["ux"]]), float(r[idx["uy"]]), float(r[idx["uz"]])]))
+    N["yaw"], N["pitch"] = col("xSum", 0), col("ySum", 0)   # the sticks an AI writes too: XSum yaws, YSum pitches
+    N["rvVel"] = f.get("rivalVel")
+    shell = f.get("shellHalf") or []
+    N["occR"] = min(shell[0], shell[1]) / SUPER_SHIELD_HALF_SCALE if len(shell) >= 2 and min(shell[0], shell[1]) > 0 else PRISM_HALF
+    N["cam"] = None
+    if all(c in idx for c in ("camx", "camy", "camz", "camfx", "camfy", "camfz", "fov")):
+        cam = {"p": [], "f": [], "u": [], "fov": col("fov", 0), "aspect": col("camAspect", DEFAULT_ASPECT), "rear": col("camRear", 0), "ok": []}
+        has_up = all(c in idx for c in ("camux", "camuy", "camuz"))
+        for i, r in enumerate(rows):
+            cf = norm([float(r[idx["camfx"]]), float(r[idx["camfy"]]), float(r[idx["camfz"]])])
+            # Flights recorded before the camera's up was (2026-10-16 first cut): the hull's up, square to the camera.
+            cu = [float(r[idx["camux"]]), float(r[idx["camuy"]]), float(r[idx["camuz"]])] if has_up else N["u"][i]
+            cu = norm(sub(cu, mul(cf, dot(cu, cf))))
+            cam["p"].append([float(r[idx["camx"]]), float(r[idx["camy"]]), float(r[idx["camz"]])])
+            cam["f"].append(cf)
+            cam["u"].append(cu)
+            cam["ok"].append(cam["fov"][i] > 1 and vlen(cf) > 0.5 and vlen(cu) > 0.5)
+            if cam["aspect"][i] <= 0.1:
+                cam["aspect"][i] = DEFAULT_ASPECT
+        if any(cam["ok"]):
+            N["cam"] = cam
     return N
 
 
@@ -183,10 +221,10 @@ def features(N, C):
         r_min = v / max(1e-3, w)
         r_need = d / (2 * math.sin(min(math.pi / 2, heading_err / DEG))) if heading_err > 1 else 1e6
         gap, gap_own, ahead_n, ahead_gap, ahead_bearing = 1e6, False, 0, 1e6, 0
-        skim_detour, skim_t, skim_pt, skim_lane = 1e6, 1e6, None, -1
+        skim_detour, skim_t, skim_pt, skim_lane, skim_idx, ahead_pt, ahead_key = 1e6, 1e6, None, -1, -1, None, None
         reach, horizon = N["skimReach"], max(60, v * 2)
         for l, pts in enumerate(C["lanes"]):
-            for q in pts:
+            for k, q in enumerate(pts):
                 dx, dy, dz = q[0] - p[0], q[1] - p[1], q[2] - p[2]
                 if abs(dx) > horizon + 10 or abs(dy) > horizon + 10 or abs(dz) > horizon + 10:
                     continue
@@ -203,10 +241,11 @@ def features(N, C):
                     ahead_n += 1
                     if gq < ahead_gap:
                         ahead_gap, ahead_bearing = gq, math.atan2(dot(dq, right), fwdq) * DEG
+                        ahead_pt, ahead_key = q, f"prism:{l}:{k}"
                 if reach > 0 and ang < 35 and 15 < dd < horizon:
                     det = dd + dist(q, g["p"]) - d
                     if det < skim_detour:
-                        skim_detour, skim_t, skim_pt, skim_lane = det, dd / v, q, l
+                        skim_detour, skim_t, skim_pt, skim_lane, skim_idx = det, dd / v, q, l, k
         place, rv = 1, (N["rv"][i] if N["rv"] and i < len(N["rv"]) else None)
         if rv:
             for j in range(0, len(rv) - 3, 4):
@@ -223,10 +262,317 @@ def features(N, C):
             "skimInReach": reach > 0 and gap < reach, "skimDetour": skim_detour, "skimTime": skim_t, "skimPoint": skim_pt, "skimLane": skim_lane,
             "lap": N["rings"][i] // ng + 1, "ringsLeft": N["raceTarget"] - N["rings"][i] if N["raceTarget"] else None,
             "place": place if rv else None, "side": side, "held": N["held"][i] > 0.5,
+            "skimKey": f"prism:{skim_lane}:{skim_idx}" if skim_pt is not None else None, "aheadPoint": ahead_pt, "aheadKey": ahead_key,
         })
     for i in range(1, n):
         out[i]["turnJerk"] = (out[i]["turnRate"] - out[i - 1]["turnRate"]) * N["hz"]
     return out
+
+
+# ---------------------------------------------------------------- the pilot's VIEW (V2): the screen, redrawn offline
+
+def _rail_points(C):
+    """Every rail prism as one array, with its lane and index (the occluders and the grid's rail cells)."""
+    import numpy as np
+    pts, lane, idx = [], [], []
+    for l, lp in enumerate(C["lanes"]):
+        for k, q in enumerate(lp):
+            pts.append(q)
+            lane.append(l)
+            idx.append(k)
+    return np.array(pts, dtype=float).reshape(-1, 3), np.array(lane, dtype=int), np.array(idx, dtype=int)
+
+
+def _velocity(N, i):
+    """The pilot's velocity from its positions either side (works for every flight, camera or not)."""
+    n, a, b = N["n"], max(0, i - 1), min(N["n"] - 1, i + 1)
+    span = N["t"][b] - N["t"][a] if n > 1 else 0
+    return mul(sub(N["p"][b], N["p"][a]), 1 / span) if span > 1e-6 else [0, 0, 0]
+
+
+def _rival_velocity(N, i, j):
+    vel = N["rvVel"][i] if N["rvVel"] and i < len(N["rvVel"]) else None
+    if vel and 3 * j + 2 < len(vel):
+        return [vel[3 * j], vel[3 * j + 1], vel[3 * j + 2]]
+    rv = N["rv"]
+    a, b = max(0, i - 1), min(N["n"] - 1, i + 1)
+    if rv and b < len(rv) and rv[a] and rv[b] and 4 * j + 2 < len(rv[a]) and 4 * j + 2 < len(rv[b]) and len(rv[a]) == len(rv[b]):
+        span = N["t"][b] - N["t"][a]
+        if span > 1e-6:
+            return [(rv[b][4 * j + c] - rv[a][4 * j + c]) / span for c in range(3)]
+    return [0, 0, 0]
+
+
+class Viewer:
+    """The pilot's camera at any sample, as a question you can ask: where does this point land on screen, how big is it,
+    is a rail in front of it, how soon does it arrive. Built once per flight; each sample's rail prisms are cached."""
+
+    def __init__(self, N, C):
+        import numpy as np
+        self.np, self.N, self.cam = np, N, N["cam"]
+        self.P, self.lane_of, self.idx_of = _rail_points(C)
+        self.occ_r = N["occR"]
+        self._frames = {}
+
+    def ok(self, i):
+        return bool(self.cam) and 0 <= i < self.N["n"] and self.cam["ok"][i]
+
+    def frame(self, i):
+        fr = self._frames.get(i)
+        if fr is None:
+            np, cam = self.np, self.cam
+            cp, cf, cu = np.array(cam["p"][i]), np.array(cam["f"][i]), np.array(cam["u"][i])
+            cr = np.cross(cu, cf)               # Unity is left-handed: right = up x forward
+            cr /= max(1e-9, np.linalg.norm(cr))
+            tan_v = math.tan(cam["fov"][i] / 2 / DEG)
+            rel = self.P - cp
+            z = rel @ cf
+            d2 = np.einsum("ij,ij->i", rel, rel)
+            near = (z > VIEW_NEAR) & (d2 < VIEW_RANGE * VIEW_RANGE)
+            fr = {"cp": cp, "cf": cf, "cu": cu, "cr": cr, "tan_v": tan_v, "tan_h": tan_v * cam["aspect"][i], "near": near,
+                  "rel": rel[near], "z": z[near], "d": np.sqrt(d2[near]), "P": self.P[near], "lane": self.lane_of[near], "idx": self.idx_of[near]}
+            self._frames[i] = fr
+        return fr
+
+    def project(self, i, q):
+        fr = self.frame(i)
+        r = self.np.asarray(q, dtype=float) - fr["cp"]
+        zz = float(r @ fr["cf"])
+        if zz <= VIEW_NEAR:
+            return None, None, zz
+        return float(r @ fr["cr"]) / (zz * fr["tan_h"]), float(r @ fr["cu"]) / (zz * fr["tan_v"]), zz
+
+    def blocked(self, i, q, rad, key=None):
+        np, fr, occ_r = self.np, self.frame(i), self.occ_r
+        q = np.asarray(q, dtype=float)
+        r = q - fr["cp"]
+        dd = float(np.linalg.norm(r))
+        if dd < 1e-6 or not len(fr["P"]):
+            return False
+        t = fr["rel"] @ (r / dd)
+        perp2 = fr["d"] * fr["d"] - t * t
+        mine = np.linalg.norm(fr["P"] - q, axis=1) <= rad + occ_r   # its own prism hides nothing
+        if key and key.startswith("prism:"):
+            _, l, k = key.split(":")
+            mine |= (fr["lane"] == int(l)) & (np.abs(fr["idx"] - int(k)) <= SAME_RAIL_SPAN)
+        return bool(np.any((t > 0) & (t < dd - rad - occ_r) & (perp2 < occ_r * occ_r) & ~mine))
+
+    def look(self, i, q, rad, key=None, vo=(0, 0, 0), rim=None):
+        N, fr = self.N, self.frame(i)
+        sx, sy, _ = self.project(i, q)
+        dcam = max(1e-6, dist(q, self.cam["p"][i]))
+        ang = 2 * math.atan(rad / dcam) * DEG
+        on = False
+        if sx is not None:
+            ex, ey = math.tan(ang / 2 / DEG) / fr["tan_h"], math.tan(ang / 2 / DEG) / fr["tan_v"]
+            on = abs(sx) - ex <= 1 and abs(sy) - ey <= 1
+        hidden = self.blocked(i, q, rad, key) if rim is None else all(self.blocked(i, r_, 0) for r_ in [q] + rim)
+        to = sub(q, N["p"][i])
+        dd = vlen(to)
+        closing = dot(sub(_velocity(N, i), list(vo)), mul(to, 1 / dd)) if dd > 1e-6 else 0
+        return {"onScreen": on, "sx": r2(sx) if sx is not None else None, "sy": r2(sy) if sy is not None else None,
+                "angSize": r2(ang), "occluded": hidden, "tau": r2(dd / closing) if closing > 1 else None}
+
+    def in_plain_view(self, i, q, rad, key=None):
+        o = self.look(i, q, rad, key)
+        return o["onScreen"] and not o["occluded"]
+
+    def ring(self, i, g):
+        a, cu, cr = g["a"], list(self.frame(i)["cu"]), list(self.frame(i)["cr"])
+        e1 = norm(cross(a, cu))
+        if vlen(e1) < 0.5:
+            e1 = norm(cross(a, cr))
+        e2 = norm(cross(a, e1))
+        rim = [add(g["p"], mul(e, s_ * g["r"])) for e in (e1, e2) for s_ in (1, -1)]
+        return self.look(i, g["p"], g["r"], rim=rim), rim
+
+
+def view(N, C, F):
+    """Per sample, what the pilot's screen showed (None for a flight with no camera, or a sample without one):
+    for the target ring, the ring after it, the skim candidate, the nearest prism ahead and each rival - onScreen,
+    screen x / y (-1..1, + right / up), angular size (deg), occluded (a ray from the camera hits a rail prism first;
+    a ring is hidden only when its centre and all four rim points are), tau (time to contact = distance / closing
+    speed, which is angular size / its growth rate; None when not closing) - plus an 8 x 5 grid of the nearest thing
+    in each screen cell (kind, depth) and the things in plain view (visible)."""
+    if not N["cam"]:
+        return None
+    import numpy as np
+    vw = Viewer(N, C)
+    N["viewer"] = vw
+    G, ng = C["gates"], len(C["gates"])
+    own = C["laneDomains"].index(N["domain"]) if N["domain"] in C["laneDomains"] else -1
+    out = []
+    for i in range(N["n"]):
+        if not vw.ok(i):
+            out.append(None)
+            continue
+        fr, x = vw.frame(i), F[i]
+        objs, vis = {}, []
+        ring_now, rim_now = vw.ring(i, G[x["ring"]])
+        ring_next, rim_next = vw.ring(i, G[(x["ring"] + 1) % ng])
+        objs["ring"], objs["nextRing"] = ring_now, ring_next
+        for key, o in ((f"ring:{x['ring']}", ring_now), (f"ring:{(x['ring'] + 1) % ng}", ring_next)):
+            if o["onScreen"] and not o["occluded"]:
+                vis.append(key)
+        for name, pt, key in (("skim", x["skimPoint"], x["skimKey"]), ("ahead", x["aheadPoint"], x["aheadKey"])):
+            if pt is not None:
+                objs[name] = vw.look(i, pt, vw.occ_r, key=key)
+                if objs[name]["onScreen"] and not objs[name]["occluded"]:
+                    vis.append(key)
+        rv = N["rv"][i] if N["rv"] and i < len(N["rv"]) else None
+        rivals = []
+        if rv:
+            for j in range(0, len(rv) - 3, 4):
+                o = vw.look(i, [rv[j], rv[j + 1], rv[j + 2]], RIVAL_RADIUS, vo=_rival_velocity(N, i, j // 4))
+                rivals.append(o)
+                if o["onScreen"] and not o["occluded"]:
+                    vis.append(f"rival:{j // 4}")
+        objs["rivals"] = rivals
+
+        # The view grid: the nearest thing in each of 8 x 5 screen cells (rails, ring centres and rims, rival hulls).
+        relN, zN = fr["rel"], fr["z"]
+        X = list((relN @ fr["cr"]) / (zN * fr["tan_h"]))
+        Y = list((relN @ fr["cu"]) / (zN * fr["tan_v"]))
+        D = list(zN)
+        K = [KIND_OWN_RAIL if l == own else KIND_RIVAL_RAIL for l in fr["lane"]]
+        extra = [(q, KIND_RING) for g, rim in ((G[x["ring"]], rim_now), (G[(x["ring"] + 1) % ng], rim_next)) for q in [g["p"]] + rim]
+        if rv:
+            extra += [([rv[j], rv[j + 1], rv[j + 2]], KIND_RIVAL) for j in range(0, len(rv) - 3, 4)]
+        for q, k in extra:
+            px, py, zz = vw.project(i, q)
+            if px is not None:
+                X.append(px)
+                Y.append(py)
+                D.append(zz)
+                K.append(k)
+        X, Y, D, K = np.array(X, dtype=float), np.array(Y, dtype=float), np.array(D, dtype=float), np.array(K, dtype=int)
+        inside = (np.abs(X) < 1) & (np.abs(Y) < 1)
+        grid_kind, grid_depth = [KIND_EMPTY] * (GRID_W * GRID_H), [0] * (GRID_W * GRID_H)
+        if inside.any():
+            col = np.clip(((X[inside] + 1) / 2 * GRID_W).astype(int), 0, GRID_W - 1)
+            row = np.clip(((1 - Y[inside]) / 2 * GRID_H).astype(int), 0, GRID_H - 1)
+            cell, dd, kk = row * GRID_W + col, D[inside], K[inside]
+            order = np.lexsort((dd, cell))
+            first = np.unique(cell[order], return_index=True)[1]
+            for o_ in order[first]:
+                grid_kind[int(cell[o_])], grid_depth[int(cell[o_])] = int(kk[o_]), jsround(float(dd[o_]))
+        objs["gridKind"], objs["gridDepth"], objs["visible"] = grid_kind, grid_depth, vis
+        out.append(objs)
+    return out
+
+
+def _window(N, i, seconds):
+    return range(max(0, i - jsround(seconds * N["hz"])), i + 1)
+
+
+def _point_of(key, C):
+    if key and key.startswith("prism:"):
+        _, l, k = key.split(":")
+        return C["lanes"][int(l)][int(k)]
+    return None
+
+
+def was_seen(N, V, i, key, seconds, C=None):
+    """In plain view (on screen, not behind a rail) at some sample in the last `seconds`. A rail prism is asked about
+    ITSELF at each earlier sample, from the camera there (the skim candidate moves along the rail every sample); a ring
+    or a rival by its id. A sample without a camera counts as seen: a flight we cannot see through stays all-seeing."""
+    if key is None:
+        return False
+    q = _point_of(key, C) if C else None
+    vw = N.get("viewer")
+    for j in _window(N, i, seconds):
+        if V[j] is None:
+            return True
+        if (q is not None and vw.in_plain_view(j, q, vw.occ_r, key)) or key in V[j]["visible"]:
+            return True
+    return False
+
+
+def seen_throughout(N, V, i, key, seconds, C=None):
+    if key is None:
+        return False
+    q = _point_of(key, C) if C else None
+    vw = N.get("viewer")
+    for j in _window(N, i, seconds):
+        if V[j] is None:
+            continue
+        if not ((q is not None and vw.in_plain_view(j, q, vw.occ_r, key)) or key in V[j]["visible"]):
+            return False
+    return True
+
+
+def view_summary(N, V, skims, misses):
+    if V is None:
+        return {"known": False, "note": "no camera in this flight: read as all-seeing (labels not gated)"}
+    known = [v for v in V if v is not None]
+    return {"known": True, "samples": len(known), "share": r2(len(known) / max(1, N["n"])),
+            "ringOnScreen": r2(sum(1 for v in known if v["ring"]["onScreen"]) / max(1, len(known))),
+            "ringHidden": r2(sum(1 for v in known if v["ring"]["onScreen"] and v["ring"]["occluded"]) / max(1, len(known))),
+            "skimsSkippedSeen": len([s for s in skims if not s["taken"] and s.get("seen")]),
+            "skimsUnseen": len([s for s in skims if not s["taken"] and s.get("seen") is False]),
+            "controlMisses": len([m for m in misses if m.get("cause") == "control"]),
+            "navigationMisses": len([m for m in misses if m.get("cause") == "navigation"])}
+
+
+# ---------------------------------------------------------------- reaction lag (V4)
+
+def lag_from_signals(t_ok, sig_x, stick_x, sig_y, stick_y, hz):
+    """The shift (s) that best lines the target's position up with the sticks a moment later: for each shift k in
+    0..LAG_MAX_S, the correlation of sig(t - k) with stick(t), summed over yaw and pitch (by magnitude: the sign of a
+    stick is the hull's business). The peak is refined between samples with a parabola. None if nothing fits."""
+    n, K = len(t_ok), jsround(LAG_MAX_S * hz)
+
+    def corr(sig, stick, k):
+        xs, ys = [], []
+        for i in range(k, n):
+            if t_ok[i] and t_ok[i - k] and sig[i - k] is not None:
+                xs.append(sig[i - k])
+                ys.append(stick[i])
+        if len(xs) < 20:
+            return 0, len(xs)
+        mx, my = sum(xs) / len(xs), sum(ys) / len(ys)
+        sxy = sum((a - mx) * (b - my) for a, b in zip(xs, ys))
+        sxx = sum((a - mx) ** 2 for a in xs)
+        syy = sum((b - my) ** 2 for b in ys)
+        return (sxy / math.sqrt(sxx * syy) if sxx > 1e-9 and syy > 1e-9 else 0), len(xs)
+
+    score, pairs = [], 0
+    for k in range(K + 1):
+        rx, nx = corr(sig_x, stick_x, k)
+        ry, ny = corr(sig_y, stick_y, k)
+        score.append((abs(rx) + abs(ry)) / 2)
+        pairs = max(pairs, nx, ny)
+    best = max(range(len(score)), key=lambda k: score[k])
+    if score[best] < LAG_MIN_R:
+        return None
+    shift = float(best)
+    if 0 < best < K:
+        a, b, c = score[best - 1], score[best], score[best + 1]
+        den = a - 2 * b + c
+        if abs(den) > 1e-9:
+            shift += clamp(0.5 * (a - c) / den, -0.5, 0.5)
+    return {"lag": r2(shift / hz), "r": r2(score[best]), "pairs": pairs}
+
+
+def measure_lag(N, F, V):
+    """V4: how late this pilot answers what they see. On a flight with a camera, the target ring's SCREEN position
+    against the yaw and pitch sticks; without one, its bearing and elevation in the hull's frame (the same idea, minus
+    the camera's own lag). Samples the AI flew are left out."""
+    n = N["n"]
+    if V is not None:
+        ok = [V[i] is not None and V[i]["ring"]["sx"] is not None and not F[i]["held"] for i in range(n)]
+        sx = [V[i]["ring"]["sx"] if ok[i] else None for i in range(n)]
+        sy = [V[i]["ring"]["sy"] if ok[i] else None for i in range(n)]
+        src = "screen"
+    else:
+        ok = [not F[i]["held"] for i in range(n)]
+        sx = [math.sin(F[i]["bearing"] / DEG) for i in range(n)]
+        sy = [math.sin(F[i]["elevation"] / DEG) for i in range(n)]
+        src = "hull"
+    m = lag_from_signals(ok, sx, N["yaw"], sy, N["pitch"], N["hz"])
+    if m:
+        m["source"] = src
+    return m
 
 
 # ---------------------------------------------------------------- events, intent, labels
@@ -263,30 +609,35 @@ def candidates(N, C, F, i):
     ng = len(G)
     g = G[x["ring"]]
     in_dir = mul(g["a"], -x["side"])
+    ring_key = f"ring:{x['ring']}"
     lst = [
-        {"kind": "mouth", "at": g["p"]},
-        {"kind": "approach", "at": add(g["p"], mul(g["a"], x["side"] * x["approachLead"]))},
-        {"kind": "through", "at": add(g["p"], mul(in_dir, THROUGH))},
-        {"kind": "next ring", "at": G[(x["ring"] + 1) % ng]["p"]},
+        {"kind": "mouth", "at": g["p"], "key": ring_key},
+        {"kind": "approach", "at": add(g["p"], mul(g["a"], x["side"] * x["approachLead"])), "key": ring_key},
+        {"kind": "through", "at": add(g["p"], mul(in_dir, THROUGH)), "key": ring_key},
+        {"kind": "next ring", "at": G[(x["ring"] + 1) % ng]["p"], "key": f"ring:{(x['ring'] + 1) % ng}"},
     ]
     if x["skimPoint"] is not None and x["skimDetour"] < 40:
-        lst.append({"kind": "skim", "at": x["skimPoint"]})
+        lst.append({"kind": "skim", "at": x["skimPoint"], "key": x["skimKey"]})
     rv = N["rv"][i] if N["rv"] and i < len(N["rv"]) else None
     if rv:
-        best, bd = None, 150
+        best, bd, bj = None, 150, -1
         for j in range(0, len(rv) - 3, 4):
             q = [rv[j], rv[j + 1], rv[j + 2]]
             d = dist(q, N["p"][i])
             if d < bd:
-                bd, best = d, q
+                bd, best, bj = d, q, j // 4
         if best:
-            lst.append({"kind": "rival", "at": best})
+            lst.append({"kind": "rival", "at": best, "key": f"rival:{bj}"})
     return lst
 
 
-def intent(N, C, F, i):
+def intent(N, C, F, i, V=None):
     K = max(2, jsround(0.8 * N["hz"]))
     cands = candidates(N, C, F, i)
+    if V is not None:
+        # V3: a target counts only if the pilot could see it now or saw it within MEMORY_S (else flying blind: all count).
+        seen = [c for c in cands if was_seen(N, V, i, c["key"], MEMORY_S, C)]
+        cands = seen or cands
     scores = []
     for c in cands:
         s = m = 0
@@ -302,7 +653,7 @@ def intent(N, C, F, i):
     return {"target": cands[best]["kind"], "at": cands[best]["at"], "err": scores[best], "conf": clamp((second - scores[best]) / max(1, second), 0, 1)}
 
 
-def labels(N, C, F, ev):
+def labels(N, C, F, ev, V=None):
     n, hz = N["n"], N["hz"]
 
     def near(lst, i, before, after):
@@ -312,7 +663,7 @@ def labels(N, C, F, ev):
     miss, ring_set = set(ev["miss"]), set(ev["ring"])
     for i in range(n):
         x = F[i]
-        it = intent(N, C, F, i)
+        it = intent(N, C, F, i, V)
         if i in miss:
             recovering = True
         if i in ring_set:
@@ -362,13 +713,14 @@ def segments(N, F, L, ev):
     return out
 
 
-def legs(N, C, F, L, ev):
+def legs(N, C, F, L, ev, lag_k=0):
     out, start = [], 0
     for j in ev["ring"]:
         c = j - 1
         while c > start and L[c]["target"] != "approach":
             c -= 1
-        commit = jsround(F[c + 1]["dist"]) if start < c < j - 1 else None
+        # V4: the commit was decided a reaction lag before the target switched, so read the distance there.
+        commit = jsround(F[max(start, c + 1 - lag_k)]["dist"]) if start < c < j - 1 else None
         missed = any(start < m <= j for m in ev["miss"])
         rams = len([m for m in ev["ram"] if start < m <= j])
         out.append({"ring": N["rings"][j - 1] % len(C["gates"]), "i0": start, "i1": j, "t0": r2(N["t"][start]), "time": r2(N["t"][j] - N["t"][start]),
@@ -379,7 +731,7 @@ def legs(N, C, F, L, ev):
     return out
 
 
-def skim_choices(N, F, ev):
+def skim_choices(N, F, ev, V=None, lag_k=0, C=None):
     if not N["skimReach"] > 0:
         return []
     out, hz, prev = [], N["hz"], -1e9
@@ -389,9 +741,12 @@ def skim_choices(N, F, ev):
         if gap_t < 1.5:
             continue
         b = max(0, i - jsround(0.5 * hz))
-        x = F[b]
-        out.append({"i": b, "t": r2(N["t"][b]), "taken": True, "detour": r2(min(x["skimDetour"], 99)), "timeToMouth": r2(x["timeToMouth"]),
-                    "headingErr": r2(x["headingErr"]), "speed": jsround(x["speed"])})
+        x = F[max(0, b - lag_k)]
+        c = {"i": b, "t": r2(N["t"][b]), "taken": True, "detour": r2(min(x["skimDetour"], 99)), "timeToMouth": r2(x["timeToMouth"]),
+             "headingErr": r2(x["headingErr"]), "speed": jsround(x["speed"])}
+        if V is not None:
+            c["seen"] = True   # taken: the pilot went for it
+        out.append(c)
     last = -1e9
     for i in range(N["n"]):
         x = F[i]
@@ -400,25 +755,46 @@ def skim_choices(N, F, ev):
         if any(i < e <= i + 2 * hz for e in ev["skim"]):
             continue
         last = N["t"][i]
-        out.append({"i": i, "t": r2(N["t"][i]), "taken": False, "detour": r2(x["skimDetour"]), "timeToMouth": r2(x["timeToMouth"]),
-                    "headingErr": r2(x["headingErr"]), "speed": jsround(x["speed"])})
+        j = F[max(0, i - lag_k)]
+        c = {"i": i, "t": r2(N["t"][i]), "taken": False, "detour": r2(j["skimDetour"]), "timeToMouth": r2(j["timeToMouth"]),
+             "headingErr": r2(j["headingErr"]), "speed": jsround(j["speed"])}
+        if V is not None:
+            # V3: a skim the pilot never saw is not a skim they chose to skip. It must have been on screen and not behind
+            # a rail for SKIM_SEEN_S before the choice; otherwise it is "unseen" and the skim rule leaves it out.
+            c["seen"] = seen_throughout(N, V, i, x["skimKey"], SKIM_SEEN_S, C)
+        out.append(c)
     return sorted(out, key=lambda c: c["t"])
 
 
-def analyze(flight, course):
+def analyze(flight, course, lag=None):
+    """lag: the pilot's measured reaction lag in seconds (V4). When given, every decision is read off the situation that
+    long before the action (the commit, the skim choice, the boost); None reads them at the action, as before."""
     N = normalize(flight) if "columns" in flight else flight
     C = course
     F = features(N, C)
+    V = view(N, C, F)
     ev = events(N, C, F)
-    L = labels(N, C, F, ev)
-    segs, lg, sk = segments(N, F, L, ev), legs(N, C, F, L, ev), skim_choices(N, F, ev)
-    boosts = [{"i": i, "t": r2(N["t"][i]), "headingErr": r2(F[i]["headingErr"]), "dist": jsround(F[i]["dist"]), "timeToMouth": r2(F[i]["timeToMouth"])} for i in ev["boostPress"]]
-    mistakes = sorted([{"i": i, "t": r2(N["t"][i]), "kind": "missed mouth"} for i in ev["miss"]] + [{"i": i, "t": r2(N["t"][i]), "kind": "rail hit"} for i in ev["ram"]], key=lambda m: m["t"])
+    L = labels(N, C, F, ev, V)
+    lag_k = jsround(lag * N["hz"]) if lag else 0
+    segs, lg, sk = segments(N, F, L, ev), legs(N, C, F, L, ev, lag_k), skim_choices(N, F, ev, V, lag_k, C)
+    boosts = []
+    for i in ev["boostPress"]:
+        x = F[max(0, i - lag_k)]
+        boosts.append({"i": i, "t": r2(N["t"][i]), "headingErr": r2(x["headingErr"]), "dist": jsround(x["dist"]), "timeToMouth": r2(x["timeToMouth"])})
+    misses = []
+    for i in ev["miss"]:
+        m = {"i": i, "t": r2(N["t"][i]), "kind": "missed mouth"}
+        if V is not None:
+            # V3: the ring in view and missed is a CONTROL error; missed off screen is a NAVIGATION error.
+            m["cause"] = "control" if was_seen(N, V, i, f"ring:{N['rings'][i - 1] % len(C['gates'])}", MEMORY_S) else "navigation"
+        misses.append(m)
+    mistakes = sorted(misses + [{"i": i, "t": r2(N["t"][i]), "kind": "rail hit"} for i in ev["ram"]], key=lambda m: m["t"])
     share = {p: 0 for p in PHASES}
     for l in L:
         share[l["phase"]] = share.get(l["phase"], 0) + 1
     share = {p: r2(v / max(1, N["n"])) for p, v in share.items()}
     return {"version": VERSION, "norm": N, "feats": F, "labels": L, "events": ev, "segments": segs, "legs": lg, "skims": sk, "boosts": boosts, "mistakes": mistakes,
+            "viewFeats": V, "view": view_summary(N, V, sk, misses), "lag": measure_lag(N, F, V), "lagApplied": lag or 0,
             "summary": {"samples": N["n"], "seconds": r2(N["n"] / N["hz"]), "rings": len(ev["ring"]), "missed": len(ev["miss"]), "rams": len(ev["ram"]),
                         "skimsTaken": len([s for s in sk if s["taken"]]), "skimsSkipped": len([s for s in sk if not s["taken"]]), "boostPresses": len(boosts),
                         "meanTurnRate": r2(sum(x["turnRate"] for x in F) / max(1, N["n"])), "phaseShare": share}}
@@ -432,7 +808,7 @@ def learn(analyses, good_leg=None):
         for g in A["legs"]:
             if g["clean"] and (good_leg is None or good_leg(g, A)) and g["legLen"] > 0 and g["commitDist"] is not None and g["commitDist"] > 0:
                 pts.append([g["legLen"], g["commitDist"]])
-        sk.extend(A["skims"])
+        sk.extend(s for s in A["skims"] if s.get("seen", True))   # V3: an unseen skim was never a choice
         boost_err.extend(b["headingErr"] for b in A["boosts"])
         boost_err.extend(x["headingErr"] for x in A["feats"] if x["lt"] > 0.5 and not x["held"])
     commit = None
@@ -520,7 +896,97 @@ def self_test():
           f"{'matches' if not problems else 'DIFFERS FROM'} the golden output; negative control {'caught' if caught else 'NOT caught'})")
     for p in problems:
         print("   ", p)
-    return 0 if ok else 1
+    view_ok = view_self_test(fl, C)
+    return 0 if ok and view_ok else 1
+
+
+def _with_camera(fl, back=False, fov=60.0):
+    """The fixture with a chase camera added (30 u behind, 8 u up, smoothed like the game's 0.2 s follow); back=True
+    turns it round (it looks behind the hull), so nothing ahead is on screen."""
+    cols = fl["columns"]
+    ix = {c: i for i, c in enumerate(cols)}
+    rows, cam = [], None
+    for r in fl["samples"]:
+        p = [r[ix["x"]], r[ix["y"]], r[ix["z"]]]
+        f, u = norm([r[ix["fx"]], r[ix["fy"]], r[ix["fz"]]]), norm([r[ix["ux"]], r[ix["uy"]], r[ix["uz"]]])
+        # Look-behind mirrors the follow offset: the camera sits ahead of the hull and looks back at it.
+        want = add(add(p, mul(f, 30 if back else -30)), mul(u, 8))
+        cam = want if cam is None else add(cam, mul(sub(want, cam), 0.5))
+        cf = norm(sub(p, cam)) if back else norm(sub(add(p, mul(f, 40)), cam))
+        rows.append(list(r) + cam + cf + [fov, 0] + u + [16 / 9, 1 if back else 0])
+    out = dict(fl)
+    out["columns"] = cols + ["camx", "camy", "camz", "camfx", "camfy", "camfz", "fov", "camMode", "camux", "camuy", "camuz", "camAspect", "camRear"]
+    out["samples"] = rows
+    return out
+
+
+def view_self_test(fl, C):
+    """V2-V4 (SITUATION_RECORDING_PLAN.md §7), each with a negative control."""
+    fails = []
+
+    def check(cond, what):
+        if not cond:
+            fails.append(what)
+
+    # V2 projection and occlusion on a one-ring, one-prism course; the camera at the origin looking +z, up +y.
+    tiny = {"gates": [{"p": [0, 0, 100], "a": [0, 0, 1], "r": 20}], "lanes": [[[0, 0, 50]]], "laneDomains": ["jade"]}
+    fl0 = {"columns": ["t", "x", "y", "z", "fx", "fy", "fz", "ux", "uy", "uz", "speed", "camx", "camy", "camz", "camfx", "camfy", "camfz", "fov", "camux", "camuy", "camuz", "camAspect"],
+           "samples": [[k / 10, 0, 0, 10 * k, 0, 0, 1, 0, 1, 0, 100, 0, 0, 0, 0, 0, 1, 60, 0, 1, 0, 16 / 9] for k in range(3)], "domain": "jade", "hull": "Squirrel"}
+    N0 = normalize(fl0)
+    vw = Viewer(N0, tiny)
+    ahead, right, behind, wide = vw.look(0, [0, 0, 100], 1), vw.look(0, [50, 0, 100], 1), vw.look(0, [0, 0, -100], 1), vw.look(0, [200, 0, 100], 1)
+    check(ahead["onScreen"] and abs(ahead["sx"]) < 0.01 and abs(ahead["sy"]) < 0.01, f"straight ahead is centre screen: {ahead}")
+    check(right["onScreen"] and right["sx"] > 0.3, f"to the right is right of centre: {right}")
+    check(not behind["onScreen"] and not wide["onScreen"], f"behind and far off-axis are off screen: {behind} {wide}")
+    check(ahead["occluded"], "a rail prism on the line of sight hides what is behind it")
+    check(not vw.look(0, [20, 0, 100], 1)["occluded"], "negative control: a prism off the line of sight hides nothing")
+    check(not vw.look(0, [0, 0, 40], 1)["occluded"], "a prism behind the target hides nothing")
+    check(ahead["tau"] is not None and abs(ahead["tau"] - 1.0) < 0.05, f"time to contact = 100 u at 100 u/s: {ahead['tau']}")
+
+    # V2/V3 on the fixture: a forward camera sees the rings and the skims; the same flight with the camera looking
+    # behind sees none of them, so every skipped skim becomes "unseen" and leaves the skim fit.
+    fwd = analyze(_with_camera(fl), C)
+    back = analyze(_with_camera(fl, back=True), C)
+    blind = analyze(fl, C)
+    vf, vb = fwd["view"], back["view"]
+    check(vf["known"] and vf["ringOnScreen"] > 0.8, f"forward camera: the target ring is on screen most of the time ({vf})")
+    check(vb["ringOnScreen"] < 0.25, f"camera looking behind: the ring is off screen ({vb})")
+    skipped = blind["summary"]["skimsSkipped"]
+    check(skipped > 0 and vf["skimsSkippedSeen"] == skipped, f"forward camera: every skipped skim was seen ({vf}, {skipped} skipped)")
+    check(vb["skimsUnseen"] == len([s_ for s_ in back["skims"] if not s_["taken"]]) > 0, f"camera behind: every skipped skim is unseen ({vb})")
+    n_fit = lambda A: len([s_ for s_ in A["skims"] if s_.get("seen", True)])
+    check(n_fit(back) < n_fit(blind), "the skim fit leaves unseen skims out")
+    check(n_fit(blind) == len(blind["skims"]), "negative control: a flight with no camera is all-seeing (nothing left out)")
+    check(not blind["view"]["known"] and comparable(blind)["labels"] == comparable(analyze(fl, C))["labels"], "no camera: labels unchanged")
+    g = fwd["viewFeats"][len(fwd["viewFeats"]) // 2]
+    check(len(g["gridKind"]) == GRID_W * GRID_H and KIND_RING in g["gridKind"], f"the view grid shows the ring ({g['gridKind']})")
+
+    # V4: a stick that answers the target 0.25 s late is measured at 0.25 s; a stick that ignores it is not measured.
+    hz, n = 10.0, 600
+    sig = [math.sin(0.9 * k / hz) + 0.6 * math.sin(2.3 * k / hz + 1) + 0.3 * math.sin(4.1 * k / hz + 2) for k in range(n)]
+    late = lambda k, d: sig[k - d] if k >= d else 0
+    stick = [0.8 * (0.5 * late(k, 2) + 0.5 * late(k, 3)) for k in range(n)]   # 0.25 s: halfway between samples 2 and 3
+    m = lag_from_signals([True] * n, sig, stick, [0] * n, [0] * n, hz)
+    check(m is not None and abs(m["lag"] - 0.25) <= 0.05, f"a 0.25 s lag is measured as {m}")
+    noise = [math.sin(k * 12.9898) * 43758.5453 % 1 - 0.5 for k in range(n)]
+    check(lag_from_signals([True] * n, sig, noise, [0] * n, [0] * n, hz) is None, "negative control: a stick that ignores the target has no lag")
+    # The fixture was flown by the Medium AI, whose reaction delay is 0.25 s (SkimRaceDifficultySO.MediumReactionSeconds):
+    # the measure must find it from the hull's frame (no camera) and from the screen (the chase camera).
+    for A_, src in ((blind, "hull"), (fwd, "screen")):
+        g_ = A_["lag"]
+        check(g_ is not None and g_["source"] == src and 0.18 <= g_["lag"] <= 0.33, f"the Medium AI's 0.25 s reaction is measured from the {src}: {g_}")
+    k3 = jsround(0.3 * hz)
+    shifted = analyze(fl, C, lag=0.3)
+    check(any(a_["commitDist"] != b_["commitDist"] for a_, b_ in zip(shifted["legs"], blind["legs"])) or not any(l_["commitDist"] for l_ in blind["legs"]),
+          "a measured lag moves where the commit is read")
+    check(all(b_["headingErr"] == r2(blind["feats"][max(0, b_["i"] - k3)]["headingErr"]) for b_ in shifted["boosts"]), "boosts are read a lag earlier")
+
+    print(f"view self-test: {'OK' if not fails else 'FAILED'}  (V2 projection, occlusion, time to contact, view grid; V3 seen / unseen skims, "
+          f"no-camera flights all-seeing; V4 lag {m['lag'] if m else None} s for a 0.25 s pilot, none for noise; forward camera: ring on screen "
+          f"{round(vf['ringOnScreen'] * 100)}%, behind: {round(vb['ringOnScreen'] * 100)}%)")
+    for f_ in fails:
+        print("   ", f_)
+    return not fails
 
 
 # ---------------------------------------------------------------- report over recorded flights
@@ -537,6 +1003,23 @@ def good_legs_filter(analyses):
     return lambda g, A: g["time"] <= med.get((A["norm"]["intensity"], g["ring"]), 1e9)
 
 
+def describe_view(A):
+    v, g = A["view"], A["lag"]
+    lag = f"reaction lag {g['lag']} s (fit {g['r']}, from the {g['source']})" if g else "reaction lag not measured"
+    if not v["known"]:
+        return f"view: no camera in this flight (read as all-seeing); {lag}"
+    return (f"view: target ring on screen {round(v['ringOnScreen'] * 100)}% of the time, behind a rail {round(v['ringHidden'] * 100)}%; "
+            f"skipped skims seen {v['skimsSkippedSeen']}, unseen {v['skimsUnseen']} (left out); misses: control {v['controlMisses']}, "
+            f"navigation {v['navigationMisses']}; {lag}")
+
+
+def hull_lag(analyses):
+    lags = [A["lag"] for A in analyses if A["lag"]]
+    if not lags:
+        return None
+    return {"lag": pct([g["lag"] for g in lags], 0.5), "flights": len(lags), "source": "screen" if any(g["source"] == "screen" for g in lags) else "hull"}
+
+
 def write_learned(by_hull, n_flights):
     import datetime
     data = {"schema": "cosmic-shore.learned-situations/1", "source": "Unity editor flights (HumanFlightRecorder)", "date": datetime.date.today().isoformat(),
@@ -548,13 +1031,15 @@ def write_learned(by_hull, n_flights):
              f"Written by `python3 Tools/Build/situation_features.py --write` on {data['date']} from {n_flights} Regatta flight(s) flown in the Unity editor",
              "(training data comes from the editor only, Yash 2026-10-16). Plan: `SITUATION_RECORDING_PLAN.md`. Nothing here changes the game until",
              "the two knobs are ported to Unity's steering and a person reviews the numbers (team task T-20261015-7fc3).", "",
-             "| Hull | Flights | Good legs | Commit to the ring | When a skim is worth it | Boost within | The AI today |", "|---|---|---|---|---|---|---|"]
+             "| Hull | Flights | Good legs | Commit to the ring | When a skim is worth it | Boost within | Reaction lag | The AI today |", "|---|---|---|---|---|---|---|---|"]
     for hull, L in sorted(by_hull.items()):
         c, sk, b = L.get("commit"), L.get("skim"), L.get("boostWithin")
         lines.append(f"| {hull} | {L['flights']} | {L['goodLegs']} | "
                      + (f"{c['a']} u + {c['b']} x leg (median {c['median']} u, n {c['n']})" if c else "needs 3 good legs with an approach") + " | "
                      + (f"detour <= {sk['maxDetour']} u and >= {sk['minTimeToMouth']} s to the mouth ({round(sk['agreement'] * 100)}% of {sk['n']} choices)" if sk else "needs skims taken and skipped") + " | "
-                     + (f"{b['deg']} deg (n {b['n']})" if b else "needs boost moments") + " | commit 420 u on every leg; the Squirrel skims whenever it can |")
+                     + (f"{b['deg']} deg (n {b['n']})" if b else "needs boost moments") + " | "
+                     + (f"{L['reactionLag']['lag']} s ({L['reactionLag']['source']})" if L.get("reactionLag") else "not measured")
+                     + " | commit 420 u on every leg; the Squirrel skims whenever it can |")
     with open(LEARNED_DOC, "w", encoding="utf-8") as fh:
         fh.write("\n".join(lines) + "\n")
     print(f"\nwrote {os.path.relpath(LEARNED_JSON, REPO)} and {os.path.relpath(LEARNED_DOC, REPO)}")
@@ -576,11 +1061,13 @@ def report(sources, write=False):
             print(f"  skip {name}: intensity {d.get('intensity')} has no course")
             continue
         A = analyze(d, C)
+        A["flight"], A["course"] = d, C
         analyses.append(A)
         m = A["summary"]
         print(f"{os.path.basename(name)}: {d.get('hull')} I{d.get('intensity')}  {m['seconds']} s, {m['rings']} rings, {m['missed']} missed, "
               f"{m['rams']} rail hits, skims {m['skimsTaken']} taken / {m['skimsSkipped']} skipped, {m['boostPresses']} boost presses")
         print("   time in each phase: " + ", ".join(f"{k} {round(v * 100)}%" for k, v in sorted(m["phaseShare"].items(), key=lambda kv: -kv[1]) if v > 0))
+        print("   " + describe_view(A))
     if not analyses:
         print("No Regatta flight found. Fly a Regatta race by hand in Unity and press Store AI record, or pass --dir.")
         return 0
@@ -590,8 +1077,14 @@ def report(sources, write=False):
         if len(mine) < MIN_FLIGHTS:
             print(f"\n{hull}: {len(mine)} editor flight(s); nothing is learned below {MIN_FLIGHTS} (one race says how you flew that race, not how you fly)")
             continue
+        # V4: the hull's reaction lag is the median of its flights' measured lags; every decision is then re-read that
+        # long before the action, and the rules are fitted on those re-read flights.
+        lag = hull_lag(mine)
+        if lag:
+            mine = [dict(analyze(A["flight"], A["course"], lag=lag["lag"]), flight=A["flight"], course=A["course"]) for A in mine]
         good = good_legs_filter(mine)
         L = learn(mine, good)
+        L["reactionLag"] = lag
         L["flights"] = len(mine)
         L["goodLegs"] = sum(1 for A in mine for g in A["legs"] if g["clean"] and good(g, A))
         by_hull[hull] = L
@@ -599,6 +1092,8 @@ def report(sources, write=False):
         print("  commit to the ring:", L["commit"] or "needs 3 good legs with an approach")
         print("  when a skim is worth it:", L["skim"] or "needs skims both taken and skipped")
         print("  boost within:", L["boostWithin"] or "needs boost moments")
+        print("  reaction lag:", f"{lag['lag']} s (median of {lag['flights']} flight(s), from the {lag['source']}); proposed as a measured "
+              "ReactionSeconds for the handicap owners (Garrett), changes no AI by itself" if lag else "not measured (no flight's sticks follow the ring)")
     if write and by_hull:
         write_learned(by_hull, len(analyses))
     elif write:
@@ -619,7 +1114,7 @@ def main():
         fl = json.load(open(a.json, encoding="utf-8"))
         A = analyze(fl, course_from(load_course_js(), int(fl.get("intensity") or 1)))
         A.pop("norm", None)
-        json.dump(A, sys.stdout)
+        json.dump(A, sys.stdout, default=lambda o: None)
         return 0
     from learn_from_flights import flights_in_dir, flights_on_branches
     return report(flights_in_dir(a.dir) if a.dir else flights_on_branches(), a.write)

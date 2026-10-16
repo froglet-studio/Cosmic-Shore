@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# The gates /ys-to-bleeding-edge runs on the merged tree before the PR: the static checks
+# The gates /to-bleeding-edge runs on the merged tree before the PR: the static checks
 # bleeding-edge-guard.yml runs, every asset generator's --check, and the headless reference
 # compile (player + editor). Prints one line per check and a final verdict; exit 1 on any failure.
 # A READER script: it writes nothing into the repo.

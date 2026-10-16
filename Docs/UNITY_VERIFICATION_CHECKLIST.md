@@ -116,11 +116,16 @@ and columns; `learn_from_flights.py --self-test` skips `held` rows (negative con
 **Verify in editor:**
 1. Regatta, solo, Squirrel, with AI rivals. Fly a full race by hand; store the record when Unity asks after Play.
 2. The new `flight_Regatta_Squirrel_*.json` says `"schema":"cosmic-shore.flight/3"`, has `rivalHulls` naming the rivals and
-   `rivals`, `rivalVel` and `crystals` arrays as long as `samples`; each sample row has 44 numbers (`columns`). `rails` has
+   `rivals`, `rivalVel` and `crystals` arrays as long as `samples`; each sample row has 49 numbers (`columns`). `rails` has
    one entry per lane (3 in a three-domain race) and `ownRail` points at yours; `ringList` has the course's rings in order;
    hitting the rail adds `railEvents` rows. `camMode` is not -1 and `fov` is not 0 while you fly.
 2a. Switch the Third Eye's You / AI to AI for a few seconds mid-race, then back: those rows have `held` 1, and the record
    is still stored. No new Console warning or error while recording, and no frame-time change (`diag`).
+2b. **The camera (V1, 2026-10-16):** `camux..camuz` is a unit vector square to `camfx..camfz`, `camAspect` is your Game
+   view's width / height, `fov` your field-of-view setting, `camRear` 1 only while you hold look-behind. Then
+   `python3 Tools/Build/situation_features.py --dir <the Flights folder>` prints a `view:` line for the flight (target
+   ring on screen most of the time, skipped skims seen / unseen, misses by cause) and a `reaction lag` read "from the
+   screen".
 3. `python3 Tools/Build/situation_features.py --dir <the Flights folder>` reports it: rings, skims taken / skipped, phases.
 4. After three or more such races: `python3 Tools/Build/situation_features.py --write` learns from them (editor flights only).
 
