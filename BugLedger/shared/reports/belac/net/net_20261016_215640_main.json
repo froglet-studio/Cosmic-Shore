@@ -1,0 +1,269 @@
+{
+  "schema": "cosmicshore.nettestlog.v1",
+  "engine": "unity",
+  "peer": "main",
+  "isVirtualPlayer": false,
+  "why": "client 1 approved",
+  "user": "belac",
+  "unityVersion": "6000.3.17f1",
+  "branch": "bleeding-edge",
+  "commit": "08b058966",
+  "playStartedUtc": "2026-10-16T21:56:40.6521147Z",
+  "playEndedUtc": "2026-10-16T21:59:28.5602005Z",
+  "record": {
+    "schema": "cosmicshore.netsession.v1",
+    "startedUtc": "2026-10-16T20:05:30.2992595Z",
+    "durationSeconds": 162.56578063964845,
+    "buildGuid": "00000000000000000000000000000000",
+    "platform": "WindowsEditor",
+    "isOfflineSession": false,
+    "role": "host",
+    "counters": {
+        "requests": 327,
+        "lobbyReads": 646,
+        "retries": 3,
+        "coalesced": 0,
+        "budgetExhausted": 0,
+        "rateLimited": 3,
+        "transient": 0,
+        "benign": 0,
+        "conflict": 0,
+        "full": 0,
+        "gone": 3,
+        "fatal": 0,
+        "presenceForceReset": 1,
+        "offlineFallback": 0,
+        "lobbyReadsPerSecond": 3.97377610206604
+    },
+    "verdict": {
+        "offlineFallbacksWhileOnline": 0,
+        "forceResets": 1,
+        "budgetExhaustions": 0,
+        "rateLimited": 3
+    },
+    "lifecycle": [
+        {
+            "t": 0.000045900000259280205,
+            "e": "party",
+            "detail": "Disconnected->InPresenceLobby"
+        },
+        {
+            "t": 0.001387899974361062,
+            "e": "party",
+            "detail": "InPresenceLobby->HostingParty"
+        },
+        {
+            "t": 2.8055927753448488,
+            "e": "clientApproved",
+            "detail": "0"
+        },
+        {
+            "t": 3.856671094894409,
+            "e": "party",
+            "detail": "HostingParty->InParty"
+        },
+        {
+            "t": 26.599096298217775,
+            "e": "party",
+            "detail": "InParty->JoiningParty"
+        },
+        {
+            "t": 28.029096603393556,
+            "e": "party",
+            "detail": "JoiningParty->HostingParty"
+        },
+        {
+            "t": 30.9306640625,
+            "e": "clientApproved",
+            "detail": "0"
+        },
+        {
+            "t": 32.063167572021487,
+            "e": "party",
+            "detail": "HostingParty->InParty"
+        },
+        {
+            "t": 71.81310272216797,
+            "e": "clientApproved",
+            "detail": "1"
+        },
+        {
+            "t": 234.9394073486328,
+            "e": "readyGate",
+            "detail": "RegattaController: RedshirtBrownpants pressed Ready"
+        },
+        {
+            "t": 422.7779541015625,
+            "e": "readyGate",
+            "detail": "RegattaController: ys1 pressed Ready"
+        },
+        {
+            "t": 589.4386596679688,
+            "e": "clientLeft",
+            "detail": "1"
+        },
+        {
+            "t": 589.4406127929688,
+            "e": "leaverToAI",
+            "detail": "ys1"
+        },
+        {
+            "t": 620.711181640625,
+            "e": "party",
+            "detail": "InParty->Reconnecting"
+        },
+        {
+            "t": 2640.375732421875,
+            "e": "readyGate",
+            "detail": "RegattaController: RedshirtBrownpants pressed Ready"
+        },
+        {
+            "t": 1.8672908544540406,
+            "e": "party",
+            "detail": "Disconnected->InPresenceLobby"
+        },
+        {
+            "t": 1.8673336505889893,
+            "e": "party",
+            "detail": "InPresenceLobby->HostingParty"
+        },
+        {
+            "t": 1.8704805374145508,
+            "e": "party",
+            "detail": "HostingParty->InParty"
+        },
+        {
+            "t": 14.351709365844727,
+            "e": "party",
+            "detail": "InParty->HostingParty"
+        },
+        {
+            "t": 14.355222702026368,
+            "e": "party",
+            "detail": "HostingParty->InParty"
+        },
+        {
+            "t": 26.392663955688478,
+            "e": "party",
+            "detail": "InParty->HostingParty"
+        },
+        {
+            "t": 29.312850952148439,
+            "e": "clientApproved",
+            "detail": "0"
+        },
+        {
+            "t": 30.447935104370118,
+            "e": "party",
+            "detail": "HostingParty->InParty"
+        }
+    ],
+    "lifecycleDropped": 0
+},
+  "console": {
+    "errors": 0,
+    "warnings": 73,
+    "dropped": 0,
+    "lines": [
+      {"t": 0.935, "type": "log", "msg": "[Adaptive Performance] Only default scaler profile available. Reset all scalers to default profile."},
+      {"t": 1.012, "type": "warning", "msg": "Entities.Graphics should be used with URP Forward+. Change Rendering Path on URP_Asset_Renderer for best compatibility.", "at": "0x00007ffe48c74e2e (Unity) StackWalker::ShowCallstack"},
+      {"t": 1.025, "type": "warning", "msg": "[DeveloperUnlockGate] ALL ENTITLEMENTS OPEN - every vessel, game mode, intensity and the Vessel Hangar are unlocked, and the quest graph is stood down. This is the shipped default until the FTUE is designed. Turn it off in the Froglet Toolbox (Quest Debug or Vessel Unlock tab) to test real progression or the FTUE itself.", "at": "0x00007ffe48c74e2e (Unity) StackWalker::ShowCallstack"},
+      {"t": 1.031, "type": "log", "msg": "Root Bindings Installed from 'ContainerScope'"},
+      {"t": 1.032, "type": "log", "msg": "Root Bindings Installed from 'AppManager'"},
+      {"t": 1.032, "type": "log", "msg": "Scene (Bootstrap) Bindings Installed"},
+      {"t": 1.073, "type": "warning", "msg": "[PrismTimerManager] No instance found in scene - auto-created. Consider adding one to the scene to avoid this overhead.", "at": "0x00007ffe48c74e2e (Unity) StackWalker::ShowCallstack"},
+      {"t": 2.764, "type": "warning", "msg": "[DailyChallengeSystem] Arcade or TrainingGames not ready - daily challenge unavailable.", "at": "0x00007ffe48c74e2e (Unity) StackWalker::ShowCallstack"},
+      {"t": 2.765, "type": "log", "msg": "<color=red><b>Gamepad Detected:</b> 'Xbox Controller' ()\n<b>Controller Type:</b> Other\n<b>[Details]</b>\nName: XInputControllerWindows\nProduct: \nManufacturer: \nInterface: XInput\nUsages: \n<b>Supported Controls:</b>\n   - dpad: /XInputControllerWindows/dpad [Dpad]\n   - start: /XInputControllerWindows/start [Button]\n   - select: /XInputControllerWindows/select [Button]\n   - leftStickPress: /XInputControllerWindows/leftStickPress [Button]\n   - rightStickPress: /XInputControllerWindows/rightStickPress [Button]\n   - leftShoulder: /XInputControllerWindows/leftShoulder [Button]\n   - rightShoulder: /XInputControllerWindows/rightShoulder [Button]\n   - buttonSouth: /XInputControllerWindows/buttonSouth [Button]\n   - buttonEast: /XInputControllerWindows/buttonEast [Button]\n   - buttonWest: /XInputControllerWindows/buttonWest [Button]\n   - buttonNorth: /XInputControllerWindows/buttonNorth [Button]\n   - leftTrigger: /XInputControllerWindows/leftTrigger [Button]\n   - rightTrigger: /XInputControllerWindo..."},
+      {"t": 3.273, "type": "log", "msg": "Container Bootstrap (1575915497) disposed"},
+      {"t": 3.275, "type": "log", "msg": "Scene (Authentication) Bindings Installed"},
+      {"t": 4.136, "type": "warning", "msg": "[FriendsInitializer] Friends service did not come up; will retry on the next sign-in event.", "at": "0x00007ffe48c74e2e (Unity) StackWalker::ShowCallstack"},
+      {"t": 4.148, "type": "log", "msg": "[UGSDataService] Backend gate closed — vessel unlocks normalized to the starter set (Squirrel only)."},
+      {"t": 4.619, "type": "warning", "msg": "[AppState] Invalid transition: None → MainMenu", "at": "0x00007ffe48c74e2e (Unity) StackWalker::ShowCallstack"},
+      {"t": 4.63, "type": "log", "msg": "[UGSDataService] Backend gate closed — vessel unlocks normalized to the starter set (Squirrel only)."},
+      {"t": 4.856, "type": "warning", "msg": "[PartySessionService] UpdateLocalPlayerProperties failed (SessionException): lobby not found", "at": "0x00007ffe48c74e2e (Unity) StackWalker::ShowCallstack"},
+      {"t": 4.858, "type": "warning", "msg": "[PartySessionService] UpdateLocalPlayerProperties failed (SessionException): lobby not found", "at": "0x00007ffe48c74e2e (Unity) StackWalker::ShowCallstack"},
+      {"t": 12.306, "type": "warning", "msg": "[HostConnectionService] Party session refresh rate-limited - backing off", "at": "0x00007ffe48c74e2e (Unity) StackWalker::ShowCallstack"},
+      {"t": 19.622, "type": "warning", "msg": "[AuthScene] Relay session not ready (attempt 1/3) - retrying HCS init...", "at": "0x00007ffe48c74e2e (Unity) StackWalker::ShowCallstack"},
+      {"t": 20.006, "type": "warning", "msg": "[HostConnectionService] Party session refresh rate-limited - backing off", "at": "0x00007ffe48c74e2e (Unity) StackWalker::ShowCallstack"},
+      {"t": 31.661, "type": "warning", "msg": "[HostConnectionService] Party session gone server-side (SessionException): lobby not found - auto-recovering to solo session.", "at": "0x00007ffe48c74e2e (Unity) StackWalker::ShowCallstack"},
+      {"t": 33.782, "type": "warning", "msg": "[HostConnectionService] Rate limited during refresh - backing off", "at": "0x00007ffe48c74e2e (Unity) StackWalker::ShowCallstack"},
+      {"t": 33.948, "type": "log", "msg": "QosJob: executing job with 10000ms timeout"},
+      {"t": 33.949, "type": "log", "msg": "QosJob: send to 35.200.5.172:7778 took 0ms"},
+      {"t": 33.95, "type": "log", "msg": "QosJob: send to 34.93.31.77:7778 took 1ms"},
+      {"t": 33.95, "type": "log", "msg": "QosJob: send to 34.124.138.42:7778 took 0ms"},
+      {"t": 33.951, "type": "log", "msg": "QosJob: send to 34.151.83.253:7778 took 1ms"},
+      {"t": 33.951, "type": "log", "msg": "QosJob: send to 34.116.181.88:7778 took 0ms"},
+      {"t": 33.952, "type": "log", "msg": "QosJob: send to 34.88.79.163:7778 took 2ms"},
+      {"t": 33.952, "type": "log", "msg": "QosJob: send to 35.204.68.24:7778 took 0ms"},
+      {"t": 33.955, "type": "log", "msg": "QosJob: send to 34.95.231.177:7778 took 3ms"},
+      {"t": 33.955, "type": "log", "msg": "QosJob: send to 34.55.12.160:7778 took 0ms"},
+      {"t": 33.956, "type": "log", "msg": "QosJob: send to 34.75.250.9:7778 took 1ms"},
+      {"t": 33.956, "type": "log", "msg": "QosJob: send to 34.82.227.179:7778 took 0ms"},
+      {"t": 34.217, "type": "log", "msg": "QosJob: received 55 responses of 55/55 in 261ms waiting avg 5ms per response"},
+      {"t": 34.217, "type": "log", "msg": "QosJob: took 270ms to process 11 servers"},
+      {"t": 34.627, "type": "warning", "msg": "[AuthScene] Relay session not ready (attempt 2/3) - retrying HCS init...", "at": "0x00007ffe48c74e2e (Unity) StackWalker::ShowCallstack"},
+      {"t": 36.13, "type": "log", "msg": "Container Authentication (-980581920) disposed"},
+      {"t": 36.177, "type": "log", "msg": "Scene (Menu_Main) Bindings Installed"},
+      {"t": 37.105, "type": "warning", "msg": "GameCard: No SO_ArcadeGame found for mode BlockBandit on GameCard", "at": "0x00007ffe48c74e2e (Unity) StackWalker::ShowCallstack"},
+      {"t": 37.106, "type": "warning", "msg": "GameCard: No SO_ArcadeGame found for mode BlockBandit on GameCard (1)", "at": "0x00007ffe48c74e2e (Unity) StackWalker::ShowCallstack"},
+      {"t": 37.114, "type": "warning", "msg": "GameCard: No SO_ArcadeGame found for mode BlockBandit on GameCard (3)", "at": "0x00007ffe48c74e2e (Unity) StackWalker::ShowCallstack"},
+      {"t": 37.115, "type": "warning", "msg": "GameCard: No SO_ArcadeGame found for mode BlockBandit on GameCard", "at": "0x00007ffe48c74e2e (Unity) StackWalker::ShowCallstack"},
+      {"t": 37.115, "type": "warning", "msg": "GameCard: No SO_ArcadeGame found for mode BlockBandit on GameCard", "at": "0x00007ffe48c74e2e (Unity) StackWalker::ShowCallstack"},
+      {"t": 37.117, "type": "warning", "msg": "GameCard: No SO_ArcadeGame found for mode BlockBandit on GameCard (1)", "at": "0x00007ffe48c74e2e (Unity) StackWalker::ShowCallstack"},
+      {"t": 37.138, "type": "log", "msg": "[GameModeProgressionService] ProgressionBackendGate closed — cloud record ignored; progression is session-local and starts fresh each launch."},
+      {"t": 37.823, "type": "warning", "msg": "[CrystalMorph] [HullFusion] 'Squirrel_Charge_HullFusionBake' is STALE (the hull has 12272 vertices, the bake 12271). Solving Squirrel/Charge at runtime on a worker instead - re-run FrogletTools > Vessels > Wiring > Bake Crystal Hull Fusions and push its output.", "at": "0x00007ffe48c74e2e (Unity) StackWalker::ShowCallstack"},
+      {"t": 37.83, "type": "warning", "msg": "[CrystalMorph] [HullFusion] 'Squirrel_Mass_HullFusionBake' is STALE (the hull has 12272 vertices, the bake 12271). Solving Squirrel/Mass at runtime on a worker instead - re-run FrogletTools > Vessels > Wiring > Bake Crystal Hull Fusions and push its output.", "at": "0x00007ffe48c74e2e (Unity) StackWalker::ShowCallstack"},
+      {"t": 37.831, "type": "warning", "msg": "[CrystalMorph] [HullFusion] 'Squirrel_Space_HullFusionBake' is STALE (the hull has 12272 vertices, the bake 12271). Solving Squirrel/Space at runtime on a worker instead - re-run FrogletTools > Vessels > Wiring > Bake Crystal Hull Fusions and push its output.", "at": "0x00007ffe48c74e2e (Unity) StackWalker::ShowCallstack"},
+      {"t": 37.832, "type": "warning", "msg": "[CrystalMorph] [HullFusion] 'Squirrel_Time_HullFusionBake' is STALE (the hull has 12272 vertices, the bake 12271). Solving Squirrel/Time at runtime on a worker instead - re-run FrogletTools > Vessels > Wiring > Bake Crystal Hull Fusions and push its output.", "at": "0x00007ffe48c74e2e (Unity) StackWalker::ShowCallstack"},
+      {"t": 38.78, "type": "warning", "msg": "[FLOW-5] [ServerVesselInit] FindUnprocessedPlayerByOwnerClientId(0) returned NULL", "at": "0x00007ffe48c74e2e (Unity) StackWalker::ShowCallstack"},
+      {"t": 39.57, "type": "warning", "msg": "[PrismTimerManager] No instance found in scene - auto-created. Consider adding one to the scene to avoid this overhead.", "at": "0x00007ffe48c74e2e (Unity) StackWalker::ShowCallstack"},
+      {"t": 40.916, "type": "warning", "msg": "[HostConnectionService] Party session refresh rate-limited - backing off", "at": "0x00007ffe48c74e2e (Unity) StackWalker::ShowCallstack"},
+      {"t": 46.485, "type": "warning", "msg": "[ProximityBoostAudio] Event '{0a70c49e-da1c-4049-8e10-d6451d61f60b} (event:/SFX/Oneshots/Gameplay sfx/Skim)' has no parameter named 'Boost Amount'. Loop will play but intensity won't drive it.", "at": "0x00007ffe48c74e2e (Unity) StackWalker::ShowCallstack"},
+      {"t": 48.002, "type": "warning", "msg": "[HostConnectionService] Party session refresh rate-limited - backing off", "at": "0x00007ffe48c74e2e (Unity) StackWalker::ShowCallstack"},
+      {"t": 53.884, "type": "warning", "msg": "[ProximityBoostAudio] Event '{0a70c49e-da1c-4049-8e10-d6451d61f60b} (event:/SFX/Oneshots/Gameplay sfx/Skim)' has no parameter named 'Boost Amount'. Loop will play but intensity won't drive it.", "at": "0x00007ffe48c74e2e (Unity) StackWalker::ShowCallstack"},
+      {"t": 58.794, "type": "warning", "msg": "[NetworkSceneObjectGuard] Stripped the NetworkObject from 'MassBrittlestarFauna(Clone)' (fauna species is not network-synced). It is a prefab instance that is never network-spawned, and Netcode would have adopted it as an in-scene object at the next host start - a second instance of the same prefab then collides in the scene-object index and breaks synchronization for every joining player. If this object is MEANT to replicate, spawn it (NetworkObject.Spawn); if it is not, remove the NetworkObject from its prefab. See Docs/PartySystem/BUGS.md B16.", "at": "0x00007ffe48c74e2e (Unity) StackWalker::ShowCallstack"},
+      {"t": 58.797, "type": "warning", "msg": "[NetworkSceneObjectGuard] Stripped the NetworkObject from 'MassBrittlestarFauna(Clone)' (fauna species is not network-synced). It is a prefab instance that is never network-spawned, and Netcode would have adopted it as an in-scene object at the next host start - a second instance of the same prefab then collides in the scene-object index and breaks synchronization for every joining player. If this object is MEANT to replicate, spawn it (NetworkObject.Spawn); if it is not, remove the NetworkObject from its prefab. See Docs/PartySystem/BUGS.md B16.", "at": "0x00007ffe48c74e2e (Unity) StackWalker::ShowCallstack"},
+      {"t": 58.801, "type": "warning", "msg": "[NetworkSceneObjectGuard] Stripped the NetworkObject from 'MassBrittlestarFauna(Clone)' (fauna species is not network-synced). It is a prefab instance that is never network-spawned, and Netcode would have adopted it as an in-scene object at the next host start - a second instance of the same prefab then collides in the scene-object index and breaks synchronization for every joining player. If this object is MEANT to replicate, spawn it (NetworkObject.Spawn); if it is not, remove the NetworkObject from its prefab. See Docs/PartySystem/BUGS.md B16.", "at": "0x00007ffe48c74e2e (Unity) StackWalker::ShowCallstack"},
+      {"t": 58.802, "type": "warning", "msg": "[NetworkSceneObjectGuard] Stripped the NetworkObject from 'QuadFish(Clone)' (fauna species is not network-synced). It is a prefab instance that is never network-spawned, and Netcode would have adopted it as an in-scene object at the next host start - a second instance of the same prefab then collides in the scene-object index and breaks synchronization for every joining player. If this object is MEANT to replicate, spawn it (NetworkObject.Spawn); if it is not, remove the NetworkObject from its prefab. See Docs/PartySystem/BUGS.md B16.", "at": "0x00007ffe48c74e2e (Unity) StackWalker::ShowCallstack"},
+      {"t": 58.803, "type": "warning", "msg": "[NetworkSceneObjectGuard] Stripped the NetworkObject from 'QuadFish(Clone)' (fauna species is not network-synced). It is a prefab instance that is never network-spawned, and Netcode would have adopted it as an in-scene object at the next host start - a second instance of the same prefab then collides in the scene-object index and breaks synchronization for every joining player. If this object is MEANT to replicate, spawn it (NetworkObject.Spawn); if it is not, remove the NetworkObject from its prefab. See Docs/PartySystem/BUGS.md B16.", "at": "0x00007ffe48c74e2e (Unity) StackWalker::ShowCallstack"},
+      {"t": 58.804, "type": "warning", "msg": "[NetworkSceneObjectGuard] Stripped the NetworkObject from 'QuadFish(Clone)' (fauna species is not network-synced). It is a prefab instance that is never network-spawned, and Netcode would have adopted it as an in-scene object at the next host start - a second instance of the same prefab then collides in the scene-object index and breaks synchronization for every joining player. If this object is MEANT to replicate, spawn it (NetworkObject.Spawn); if it is not, remove the NetworkObject from its prefab. See Docs/PartySystem/BUGS.md B16.", "at": "0x00007ffe48c74e2e (Unity) StackWalker::ShowCallstack"},
+      {"t": 58.806, "type": "warning", "msg": "[NetworkSceneObjectGuard] Stripped the NetworkObject from 'QuadFish(Clone)' (fauna species is not network-synced). It is a prefab instance that is never network-spawned, and Netcode would have adopted it as an in-scene object at the next host start - a second instance of the same prefab then collides in the scene-object index and breaks synchronization for every joining player. If this object is MEANT to replicate, spawn it (NetworkObject.Spawn); if it is not, remove the NetworkObject from its prefab. See Docs/PartySystem/BUGS.md B16.", "at": "0x00007ffe48c74e2e (Unity) StackWalker::ShowCallstack"},
+      {"t": 61.145, "type": "warning", "msg": "[AudioSystem] No FMOD EventReference wired for GameplaySFXCategory.CreatureBlockHit. Wire it on the AudioSystem GameObject. (This warning fires once per category.)", "at": "0x00007ffe48c74e2e (Unity) StackWalker::ShowCallstack"},
+      {"t": 61.151, "type": "warning", "msg": "[NetworkSceneObjectGuard] Stripped the NetworkObject from 'MassBrittlestarFauna(Clone)' (fauna species is not network-synced). It is a prefab instance that is never network-spawned, and Netcode would have adopted it as an in-scene object at the next host start - a second instance of the same prefab then collides in the scene-object index and breaks synchronization for every joining player. If this object is MEANT to replicate, spawn it (NetworkObject.Spawn); if it is not, remove the NetworkObject from its prefab. See Docs/PartySystem/BUGS.md B16.", "at": "0x00007ffe48c74e2e (Unity) StackWalker::ShowCallstack"},
+      {"t": 62.605, "type": "warning", "msg": "[ProximityBoostAudio] Event '{0a70c49e-da1c-4049-8e10-d6451d61f60b} (event:/SFX/Oneshots/Gameplay sfx/Skim)' has no parameter named 'Boost Amount'. Loop will play but intensity won't drive it.", "at": "0x00007ffe48c74e2e (Unity) StackWalker::ShowCallstack"},
+      {"t": 63.075, "type": "warning", "msg": "[HostConnectionService] Party session refresh rate-limited - backing off", "at": "0x00007ffe48c74e2e (Unity) StackWalker::ShowCallstack"},
+      {"t": 63.415, "type": "warning", "msg": "[NetworkSceneObjectGuard] Stripped the NetworkObject from 'MassBrittlestarFauna(Clone)' (fauna species is not network-synced). It is a prefab instance that is never network-spawned, and Netcode would have adopted it as an in-scene object at the next host start - a second instance of the same prefab then collides in the scene-object index and breaks synchronization for every joining player. If this object is MEANT to replicate, spawn it (NetworkObject.Spawn); if it is not, remove the NetworkObject from its prefab. See Docs/PartySystem/BUGS.md B16.", "at": "0x00007ffe48c74e2e (Unity) StackWalker::ShowCallstack"},
+      {"t": 66.939, "type": "warning", "msg": "[NetworkSceneObjectGuard] Stripped the NetworkObject from 'QuadFish(Clone)' (fauna species is not network-synced). It is a prefab instance that is never network-spawned, and Netcode would have adopted it as an in-scene object at the next host start - a second instance of the same prefab then collides in the scene-object index and breaks synchronization for every joining player. If this object is MEANT to replicate, spawn it (NetworkObject.Spawn); if it is not, remove the NetworkObject from its prefab. See Docs/PartySystem/BUGS.md B16.", "at": "0x00007ffe48c74e2e (Unity) StackWalker::ShowCallstack"},
+      {"t": 67.674, "type": "warning", "msg": "[NetworkSceneObjectGuard] Stripped the NetworkObject from 'QuadFish(Clone)' (fauna species is not network-synced). It is a prefab instance that is never network-spawned, and Netcode would have adopted it as an in-scene object at the next host start - a second instance of the same prefab then collides in the scene-object index and breaks synchronization for every joining player. If this object is MEANT to replicate, spawn it (NetworkObject.Spawn); if it is not, remove the NetworkObject from its prefab. See Docs/PartySystem/BUGS.md B16.", "at": "0x00007ffe48c74e2e (Unity) StackWalker::ShowCallstack"},
+      {"t": 71.013, "type": "warning", "msg": "[HostConnectionService] Party session refresh rate-limited - backing off", "at": "0x00007ffe48c74e2e (Unity) StackWalker::ShowCallstack"},
+      {"t": 72.04, "type": "warning", "msg": "[NetworkSceneObjectGuard] Stripped the NetworkObject from 'QuadFish(Clone)' (fauna species is not network-synced). It is a prefab instance that is never network-spawned, and Netcode would have adopted it as an in-scene object at the next host start - a second instance of the same prefab then collides in the scene-object index and breaks synchronization for every joining player. If this object is MEANT to replicate, spawn it (NetworkObject.Spawn); if it is not, remove the NetworkObject from its prefab. See Docs/PartySystem/BUGS.md B16.", "at": "0x00007ffe48c74e2e (Unity) StackWalker::ShowCallstack"},
+      {"t": 73.36, "type": "warning", "msg": "[ProximityBoostAudio] Event '{0a70c49e-da1c-4049-8e10-d6451d61f60b} (event:/SFX/Oneshots/Gameplay sfx/Skim)' has no parameter named 'Boost Amount'. Loop will play but intensity won't drive it.", "at": "0x00007ffe48c74e2e (Unity) StackWalker::ShowCallstack"},
+      {"t": 73.627, "type": "warning", "msg": "[NetworkSceneObjectGuard] Stripped the NetworkObject from 'MassBrittlestarFauna(Clone)' (fauna species is not network-synced). It is a prefab instance that is never network-spawned, and Netcode would have adopted it as an in-scene object at the next host start - a second instance of the same prefab then collides in the scene-object index and breaks synchronization for every joining player. If this object is MEANT to replicate, spawn it (NetworkObject.Spawn); if it is not, remove the NetworkObject from its prefab. See Docs/PartySystem/BUGS.md B16.", "at": "0x00007ffe48c74e2e (Unity) StackWalker::ShowCallstack"},
+      {"t": 75.249, "type": "warning", "msg": "[NetworkSceneObjectGuard] Stripped the NetworkObject from 'QuadFish(Clone)' (fauna species is not network-synced). It is a prefab instance that is never network-spawned, and Netcode would have adopted it as an in-scene object at the next host start - a second instance of the same prefab then collides in the scene-object index and breaks synchronization for every joining player. If this object is MEANT to replicate, spawn it (NetworkObject.Spawn); if it is not, remove the NetworkObject from its prefab. See Docs/PartySystem/BUGS.md B16.", "at": "0x00007ffe48c74e2e (Unity) StackWalker::ShowCallstack"},
+      {"t": 78.867, "type": "warning", "msg": "[HostConnectionService] Party session refresh rate-limited - backing off", "at": "0x00007ffe48c74e2e (Unity) StackWalker::ShowCallstack"},
+      {"t": 79.769, "type": "warning", "msg": "[ProximityBoostAudio] Event '{0a70c49e-da1c-4049-8e10-d6451d61f60b} (event:/SFX/Oneshots/Gameplay sfx/Skim)' has no parameter named 'Boost Amount'. Loop will play but intensity won't drive it.", "at": "0x00007ffe48c74e2e (Unity) StackWalker::ShowCallstack"},
+      {"t": 86.733, "type": "warning", "msg": "[HostConnectionService] Party session refresh rate-limited - backing off", "at": "0x00007ffe48c74e2e (Unity) StackWalker::ShowCallstack"},
+      {"t": 90.053, "type": "warning", "msg": "[ProximityBoostAudio] Event '{0a70c49e-da1c-4049-8e10-d6451d61f60b} (event:/SFX/Oneshots/Gameplay sfx/Skim)' has no parameter named 'Boost Amount'. Loop will play but intensity won't drive it.", "at": "0x00007ffe48c74e2e (Unity) StackWalker::ShowCallstack"},
+      {"t": 96.219, "type": "warning", "msg": "[HostConnectionService] Party session refresh rate-limited - backing off", "at": "0x00007ffe48c74e2e (Unity) StackWalker::ShowCallstack"},
+      {"t": 96.244, "type": "warning", "msg": "[ProximityBoostAudio] Event '{0a70c49e-da1c-4049-8e10-d6451d61f60b} (event:/SFX/Oneshots/Gameplay sfx/Skim)' has no parameter named 'Boost Amount'. Loop will play but intensity won't drive it.", "at": "0x00007ffe48c74e2e (Unity) StackWalker::ShowCallstack"},
+      {"t": 99.802, "type": "warning", "msg": "[ProximityBoostAudio] Event '{0a70c49e-da1c-4049-8e10-d6451d61f60b} (event:/SFX/Oneshots/Gameplay sfx/Skim)' has no parameter named 'Boost Amount'. Loop will play but intensity won't drive it.", "at": "0x00007ffe48c74e2e (Unity) StackWalker::ShowCallstack"},
+      {"t": 104.086, "type": "warning", "msg": "[HostConnectionService] Party session refresh rate-limited - backing off", "at": "0x00007ffe48c74e2e (Unity) StackWalker::ShowCallstack"},
+      {"t": 108.76, "type": "warning", "msg": "[ProximityBoostAudio] Event '{0a70c49e-da1c-4049-8e10-d6451d61f60b} (event:/SFX/Oneshots/Gameplay sfx/Skim)' has no parameter named 'Boost Amount'. Loop will play but intensity won't drive it.", "at": "0x00007ffe48c74e2e (Unity) StackWalker::ShowCallstack"},
+      {"t": 112.006, "type": "warning", "msg": "[HostConnectionService] Party session refresh rate-limited - backing off", "at": "0x00007ffe48c74e2e (Unity) StackWalker::ShowCallstack"},
+      {"t": 119.683, "type": "warning", "msg": "[ProximityBoostAudio] Event '{0a70c49e-da1c-4049-8e10-d6451d61f60b} (event:/SFX/Oneshots/Gameplay sfx/Skim)' has no parameter named 'Boost Amount'. Loop will play but intensity won't drive it.", "at": "0x00007ffe48c74e2e (Unity) StackWalker::ShowCallstack"},
+      {"t": 126.229, "type": "warning", "msg": "[HostConnectionService] Party session refresh rate-limited - backing off", "at": "0x00007ffe48c74e2e (Unity) StackWalker::ShowCallstack"},
+      {"t": 127.968, "type": "warning", "msg": "[ProximityBoostAudio] Event '{0a70c49e-da1c-4049-8e10-d6451d61f60b} (event:/SFX/Oneshots/Gameplay sfx/Skim)' has no parameter named 'Boost Amount'. Loop will play but intensity won't drive it.", "at": "0x00007ffe48c74e2e (Unity) StackWalker::ShowCallstack"},
+      {"t": 134.127, "type": "warning", "msg": "[HostConnectionService] Party session refresh rate-limited - backing off", "at": "0x00007ffe48c74e2e (Unity) StackWalker::ShowCallstack"},
+      {"t": 137.61, "type": "warning", "msg": "[ProximityBoostAudio] Event '{0a70c49e-da1c-4049-8e10-d6451d61f60b} (event:/SFX/Oneshots/Gameplay sfx/Skim)' has no parameter named 'Boost Amount'. Loop will play but intensity won't drive it.", "at": "0x00007ffe48c74e2e (Unity) StackWalker::ShowCallstack"},
+      {"t": 141.523, "type": "warning", "msg": "[ProximityBoostAudio] Event '{0a70c49e-da1c-4049-8e10-d6451d61f60b} (event:/SFX/Oneshots/Gameplay sfx/Skim)' has no parameter named 'Boost Amount'. Loop will play but intensity won't drive it.", "at": "0x00007ffe48c74e2e (Unity) StackWalker::ShowCallstack"},
+      {"t": 141.83, "type": "warning", "msg": "[HostConnectionService] Party session refresh rate-limited - backing off", "at": "0x00007ffe48c74e2e (Unity) StackWalker::ShowCallstack"},
+      {"t": 149.486, "type": "warning", "msg": "[ProximityBoostAudio] Event '{0a70c49e-da1c-4049-8e10-d6451d61f60b} (event:/SFX/Oneshots/Gameplay sfx/Skim)' has no parameter named 'Boost Amount'. Loop will play but intensity won't drive it.", "at": "0x00007ffe48c74e2e (Unity) StackWalker::ShowCallstack"},
+      {"t": 149.724, "type": "warning", "msg": "[HostConnectionService] Party session refresh rate-limited - backing off", "at": "0x00007ffe48c74e2e (Unity) StackWalker::ShowCallstack"},
+      {"t": 154.164, "type": "warning", "msg": "[ProximityBoostAudio] Event '{0a70c49e-da1c-4049-8e10-d6451d61f60b} (event:/SFX/Oneshots/Gameplay sfx/Skim)' has no parameter named 'Boost Amount'. Loop will play but intensity won't drive it.", "at": "0x00007ffe48c74e2e (Unity) StackWalker::ShowCallstack"},
+      {"t": 157.746, "type": "warning", "msg": "[HostConnectionService] Party session refresh rate-limited - backing off", "at": "0x00007ffe48c74e2e (Unity) StackWalker::ShowCallstack"},
+      {"t": 161.939, "type": "warning", "msg": "[ProximityBoostAudio] Event '{0a70c49e-da1c-4049-8e10-d6451d61f60b} (event:/SFX/Oneshots/Gameplay sfx/Skim)' has no parameter named 'Boost Amount'. Loop will play but intensity won't drive it.", "at": "0x00007ffe48c74e2e (Unity) StackWalker::ShowCallstack"},
+      {"t": 163.137, "type": "warning", "msg": "[ProximityBoostAudio] Event '{0a70c49e-da1c-4049-8e10-d6451d61f60b} (event:/SFX/Oneshots/Gameplay sfx/Skim)' has no parameter named 'Boost Amount'. Loop will play but intensity won't drive it.", "at": "0x00007ffe48c74e2e (Unity) StackWalker::ShowCallstack"},
+      {"t": 167.396, "type": "warning", "msg": "[HostConnectionService] Party session refresh rate-limited - backing off", "at": "0x00007ffe48c74e2e (Unity) StackWalker::ShowCallstack"}
+    ]
+  }
+}
