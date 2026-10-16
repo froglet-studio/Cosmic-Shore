@@ -366,3 +366,10 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Who can take it:** Garrett (handicap owner)
 - **Added:** 2026-10-16 by Yash's session (`Ys-bleeding-edge`)
 - **See:** Docs/AI_SYSTEM/SITUATION_RECORDING_PLAN.md §7 Status
+
+### T-20261016-e585 · open · test · Grizzly
+- **Task:** Playtest the Grizzly trigger bombs at the new 250 u/s launch speed (grizzly-v3): fire a bomb ahead, freeze it, fly past it, release with it behind you - you should be thrown forward, and chaining bombs should carry you to top speed
+- **Done when:** A bomb frozen a moment after firing is clearly ahead of the ship, its blast no longer swallows the ship, and fly-past-then-detonate launches you forward
+- **Who can take it:** Jonathan (Grizzly design owner); Yash (offered)
+- **Added:** 2026-10-16 by a Claude session (`grizzly-v3`)
+- **See:** Assets/_Scripts/Controller/Vessel/R_VesselActions/GRIZZLY_TRIGGER_BOMBS.md

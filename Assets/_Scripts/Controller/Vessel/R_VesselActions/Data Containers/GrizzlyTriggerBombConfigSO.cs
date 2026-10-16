@@ -50,7 +50,7 @@ namespace CosmicShore.Gameplay
 
         [Header("Projectile")]
         [SerializeField, Tooltip("Muzzle speed ADDED to the hull's own velocity, u/s. The bomb then CRUISES at that velocity - no drag, no range limit - until the trigger or another vessel freezes it, so it always leaves faster than the Grizzly that fired it.")]
-        float projectileSpeed = 90f;
+        float projectileSpeed = 250f;
         [SerializeField, Tooltip("Visible bomb scale of a minimum bomb. Small on purpose: a bomb is a little hot thing that becomes a huge blast (design ask, 2026-10-08).")]
         float minProjectileScale = 2.5f;
         [SerializeField, Tooltip("Visible bomb scale of a maximum bomb - still small; the glow halo (GrizzlyBombVisual) carries the read.")]

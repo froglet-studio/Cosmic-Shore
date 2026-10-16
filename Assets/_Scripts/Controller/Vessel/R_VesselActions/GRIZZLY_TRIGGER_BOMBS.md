@@ -167,12 +167,19 @@ under 0.08 it fizzles. The HUD shows it as an orange **Ammo** bar above the Ener
 
 ## The projectile's flight
 
-Muzzle speed **90 u/s** on top of the hull's own velocity (~140 u/s from a cruising Grizzly — well
-ahead of you, easy to track), each trigger yawed **3°** off the muzzle (LT left, RT right) — and it
+Muzzle speed **250 u/s** on top of the hull's own velocity (~300 u/s from a cruising Grizzly), each trigger yawed **3°** off the muzzle (LT left, RT right) — and it
 **holds that velocity** (`Projectile.Cruises`): no `cos(πt / 2T)` ease-out (vessel contract rule 34
 no longer applies to this round), no lifetime, no range limit. It pulls away from a cruising
-Grizzly at ~90 u/s for as long as nobody stops it; a boosting or bomb-launched Grizzly can still
-catch it. The natural moves: fire and pull to freeze it where you want it, or fire it at a rival —
+Grizzly at ~250 u/s for as long as nobody stops it.
+
+**Why 250 and not 90 (2026-10-16 playtest):** at 90 u/s the bomb could never get clear of its own
+blast. A full bomb's blast has radius 100, and a bomb fired then frozen within a second sat 30-90
+u ahead, so every detonation swallowed the Grizzly. The launch is AWAY from the bomb, so a bomb
+still AHEAD of you throws you backwards. On screen that read as "the triggers explode at the
+ship". At 250 a bomb frozen half a second out is ~125 u ahead, outside even a full blast, so the
+loop the mode is built on works: fire ahead, freeze, fly past it, and release once it is behind
+you to be thrown forward. Speed is the dial here and the blast size is left alone, because a small
+bomb with a big blast is the design ask. The natural moves: fire and pull to freeze it where you want it, or fire it at a rival —
 it stops on their hull — and blow it when you choose.
 
 The gun still asks for a lifetime (`Gun.FireGun`'s `projectileTime`); the executor hands it a
@@ -242,7 +249,7 @@ Gated on the PILOT, so the menu's lava-lamp Grizzly and released companions bomb
 |---|---|---|
 | `pressureForMinBomb` / `pressureForMaxBomb` / `pressureExponent` | 0.1 / 0.95 / 1 | Pressure window → size 0..1 |
 | `ammoIndex` / `minAmmoCost` / `maxAmmoCost` | 1 / 0.08 / 0.35 | Ammo per tap / full squeeze |
-| `projectileSpeed` | 90 | Muzzle speed over the hull's; the bomb then cruises at that velocity, unlimited range |
+| `projectileSpeed` | 250 | Muzzle speed over the hull's; the bomb then cruises at that velocity, unlimited range |
 | `minProjectileScale` / `maxProjectileScale` | 2.5 / 5 | Bomb diameter — small on purpose |
 | `sideYawDegrees` | 3 | LT left / RT right |
 | `minBlastScale` / `maxBlastScale` | 50 / 200 | Blast diameter → reach (½) and launch strength |
