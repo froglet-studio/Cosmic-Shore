@@ -380,6 +380,11 @@ namespace CosmicShore.Gameplay
             }
         }
 
+        readonly Gradient _tracerGradient = new();
+        readonly GradientColorKey[] _tracerColorKeys = new GradientColorKey[2];
+        static readonly GradientAlphaKey[] TracerAlphaKeys =
+            { new GradientAlphaKey(1f, 0f), new GradientAlphaKey(0f, 1f) };
+
         void ApplyTracerColor(Color color)
         {
             if (bladeTracers == null || bladeTracers.Length == 0) return;
@@ -398,17 +403,20 @@ namespace CosmicShore.Gameplay
             _tracerMpb.SetColor(Color0Id, color);
             _tracerMpb.SetColor(Color1Id, color);
 
-            var grad = new Gradient();
-            grad.SetKeys(
-                new[] { new GradientColorKey(color, 0f), new GradientColorKey(color, 1f) },
-                new[] { new GradientAlphaKey(1f, 0f), new GradientAlphaKey(0f, 1f) });
+            // One gradient and one pair of key arrays, refilled in place. The colour moves EVERY frame
+            // through a flash decay and the energize blend, so the old new-Gradient-per-change was a
+            // per-frame allocation exactly when the screen was busiest. TrailRenderer.colorGradient
+            // copies on assignment, so reusing the instance is safe.
+            _tracerColorKeys[0] = new GradientColorKey(color, 0f);
+            _tracerColorKeys[1] = new GradientColorKey(color, 1f);
+            _tracerGradient.SetKeys(_tracerColorKeys, TracerAlphaKeys);
 
             for (int i = 0; i < bladeTracers.Length; i++)
             {
                 var tracer = bladeTracers[i];
                 if (!tracer) continue;
                 tracer.SetPropertyBlock(_tracerMpb);
-                tracer.colorGradient = grad;
+                tracer.colorGradient = _tracerGradient;
             }
         }
 

@@ -2584,7 +2584,7 @@ MonoBehaviour:
     resourceGainRate: 0
     maxAmount: 1
     initialAmount: 0
-  ChargeTestHarness: 0.5
+  ChargeTestHarness: 0
   MassTestHarness: 0
   SpaceTestHarness: 0
   TimeTestHarness: 0
@@ -13978,7 +13978,7 @@ CapsuleCollider:
     serializedVersion: 2
     m_Bits: 0
   m_LayerOverridePriority: 0
-  m_IsTrigger: 0
+  m_IsTrigger: 1
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 2

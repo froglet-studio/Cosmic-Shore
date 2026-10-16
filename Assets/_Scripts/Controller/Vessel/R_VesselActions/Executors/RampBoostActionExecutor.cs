@@ -17,14 +17,16 @@ namespace CosmicShore.Gameplay
     /// engage threshold is therefore deliberately NOT a disengagement — it is the top of the
     /// slope, and the executor owns the rest of the way down. See RHINO_RAMP_BOOST.md.</para>
     ///
-    /// <para><b>Only the machine that drives the input grades.</b> Press and release round-trip
-    /// through <c>R_VesselActionHandler</c>, so this executor is live on every peer, but a remote
-    /// replica's <c>InputStatus</c> is never written and would read as "hard over" forever. The
-    /// gate is <see cref="IPlayer.IsNetworkOwner"/> rather than <c>IsLocalUser</c>, because an AI
-    /// Rhino's input IS driven — on the server (the same distinction
-    /// <c>Player.ReportCombatHit_ServerRpc</c> records). A non-owning peer keeps the pre-grading
-    /// behaviour: full multiplier while armed, which is what its replicated transform already
-    /// implies.</para>
+    /// <para><b>Every peer grades, from the same sticks.</b> Press and release round-trip through
+    /// <c>R_VesselActionHandler</c>, so this executor is live on every peer, and the sticks it
+    /// grades by are <c>InputStatus</c>'s owner-write NetworkVariables — the owner's fingers, or an
+    /// AI's writes on the server, read identically everywhere. Until 2026-10-16 only the owner
+    /// graded and a non-owning peer kept the full multiplier "while armed". But a graded ramp is
+    /// never disarmed by an input event (the release at the engage threshold is the top of the
+    /// slope, <see cref="ReleaseGesture"/>), only by leaving the grace band in <see cref="Tick"/> —
+    /// so every replica held <c>IsBoosting</c> and the ×16.8 multiplier for the rest of the turn
+    /// after the first ramp, and every per-peer reader of either (immunity windows, telemetry, the
+    /// roll controller) read a boost that had ended seconds ago.</para>
     /// </summary>
     public sealed class RampBoostActionExecutor : ShipActionExecutorBase
     {
@@ -34,10 +36,26 @@ namespace CosmicShore.Gameplay
 
         IVesselStatus _status;
         RampBoostActionSO _activeSO;
+        RampBoostActionSO _lastSO;   // the asset that last armed us - the top-speed yardstick between ramps
         float _restingMultiplier = 1f;
-        float _timeMultiplier = 1f;
 
         public bool IsEngaged => _activeSO != null;
+
+        /// <summary>
+        /// The hull's ramp TOP SPEED, u/s: its unboosted cruise (<see cref="VesselTransformer.CruiseSpeed"/>)
+        /// times the ramp's <see cref="RampBoostActionSO.MaxBoostMultiplier"/> - 50 × 16.8 = 840 on the
+        /// Rhino. 0 until the ramp has been armed once (nothing has named the ceiling yet) or with no
+        /// transformer. The yardstick the Time level-5 ward measures "fast" against.
+        /// </summary>
+        public float TopSpeed
+        {
+            get
+            {
+                var so = _activeSO ? _activeSO : _lastSO;
+                var transformer = _status?.VesselTransformer;
+                return so && transformer ? transformer.CruiseSpeed * so.MaxBoostMultiplier : 0f;
+            }
+        }
 
         /// <summary>How much of the ramp the pilot is holding this frame, 0..1. HUD-facing.</summary>
         public float Straightness01 { get; private set; }
@@ -78,20 +96,16 @@ namespace CosmicShore.Gameplay
 
             _status = status;
             _activeSO = so;
+            _lastSO = so;
             _restingMultiplier = status.BoostMultiplier;
             status.IsBoosting = true;
             status.IsStationary = false;
-
-            // Element → parameter (Time → acceleration). Anchored at 1x at resting level;
-            // a high Time element winds the Rhino up to top speed faster. Snapshotted at engage
-            // because it is read every frame below and EvaluateLive is not free.
-            _timeMultiplier = so.TimeAccelerationMultiplier(_status);
 
             Straightness01 = 1f;
             status.BoostMultiplier = so.MaxBoostMultiplier;
             var transformer = status.VesselTransformer;
             if (transformer != null)
-                transformer.SetSpeedTrackingRate(so.AccelerationPerSecond * _timeMultiplier);
+                transformer.SetSpeedTrackingRate(ClimbRate(so));
 
             _audioSystem.PlayGameplaySFX(so.EngageSFX);
         }
@@ -141,10 +155,9 @@ namespace CosmicShore.Gameplay
             if (status == null) { End(); return; }
 
             var input = status.Player != null ? status.InputStatus : null;
-            // A peer that does not drive this vessel's input has nothing to grade with; leave it
-            // on the full multiplier it was armed with rather than reading an empty InputStatus
-            // as "hard over".
-            if (input == null || !status.Player.IsNetworkOwner) return;
+            // No input at all (a vessel with no pilot yet) has nothing to grade with; it keeps the
+            // multiplier it was armed with until the turn end or a disable ends it.
+            if (input == null) return;
 
             float deviation = StraightLineGesture.DeviationFromFullSpeedStraight(input);
             if (deviation >= so.StraightnessGraceBand) { End(); return; }
@@ -159,10 +172,20 @@ namespace CosmicShore.Gameplay
             // going to use rather than re-deriving throttle x scaler x boost + minimum here —
             // SingleStickVesselTransformer overrides that formula, and a second copy of it would
             // be wrong on whichever vessel adopts this ability next.
-            bool climbing = transformer.CurrentThrottleTarget >= status.Speed;
-            transformer.SetSpeedTrackingRate(climbing
-                ? so.AccelerationPerSecond * _timeMultiplier
-                : so.BleedPerSecond);
+            // Against the transformer's OWN tracked speed, never the published status.Speed: that
+            // one is after the impact slow, the warp field and flight time scale, so under any of
+            // them it disagreed with the number StepTowardTarget actually steps and chose the climb
+            // rate for a bleed (or the reverse).
+            bool climbing = transformer.CurrentThrottleTarget >= transformer.TrackedSpeed;
+            transformer.SetSpeedTrackingRate(climbing ? ClimbRate(so) : so.BleedPerSecond);
         }
+
+        /// <summary>
+        /// The wind-up rate, with TIME read LIVE (Time → acceleration, ×1 at rest). It used to be
+        /// snapshotted when the ramp first engaged, and a graded ramp re-arms without re-engaging
+        /// (<see cref="Begin"/>'s early return), so it can stay engaged for a whole lap: a Time level
+        /// earned mid-ramp changed nothing until the pilot let the ramp fall off completely.
+        /// </summary>
+        float ClimbRate(RampBoostActionSO so) => so.AccelerationPerSecond * so.TimeAccelerationMultiplier(_status);
     }
 }

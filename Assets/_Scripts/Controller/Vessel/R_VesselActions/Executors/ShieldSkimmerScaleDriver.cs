@@ -301,8 +301,10 @@ namespace CosmicShore.Gameplay
         void RedispatchStandingBladeContacts()
         {
             if (!_skimmerImpactor) return;
-            _skimmerImpactor.ReapplyPrismEffectsToOverlapping();
-            PrismShellContactManager.RedispatchPairsForOwner(_skimmerImpactor);
+            // Super-shielded only: the ignition buys the POP. Replaying every standing contact also
+            // cut the core of any shielded prism resting in the blade - a free Breaker.
+            _skimmerImpactor.ReapplyPrismEffectsToOverlapping(superShieldedOnly: true);
+            PrismShellContactManager.RedispatchPairsForOwner(_skimmerImpactor, superShieldedOnly: true);
         }
 
         // ── binding ───────────────────────────────────────────────────────────
