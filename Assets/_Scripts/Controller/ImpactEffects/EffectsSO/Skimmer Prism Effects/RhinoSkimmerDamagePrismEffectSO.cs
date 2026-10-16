@@ -23,8 +23,9 @@ namespace CosmicShore.Gameplay
     /// <see cref="popRequiresEnergizedBlade"/> false to pop ungated (the v2 debug behavior).</item>
     /// </list>
     /// Every prism the sword actually destroys banks energy on the per-vessel
-    /// <see cref="IRhinoSwordState"/> (read via <c>impactor.Skimmer.SwordState</c>) and kicks its
-    /// impact feedback (blade flash + contact spark). With no sword state present (a non-Rhino
+    /// <see cref="IRhinoSwordState"/> (read via <c>impactor.Skimmer.SwordState</c>) - scaled by
+    /// CHARGE (<see cref="chargeEnergyGainMultiplier"/>) - and kicks its impact feedback (blade
+    /// flash + contact spark). The sword's own AFTERIMAGES (its Mass ability) are never cut. With no sword state present (a non-Rhino
     /// skimmer reusing this asset) the blade is never energized, so super-shielded prisms always
     /// bounce; the ordinary damage behavior is identical — only the energy/FX bookkeeping is
     /// skipped.
@@ -82,6 +83,13 @@ namespace CosmicShore.Gameplay
                  "hardened targets the sword exists to cut).")]
         [SerializeField] private float energyPerSuperShieldedPrism = 0.12f;
 
+        /// <summary>CHARGE -> energy banked per kill: x1 at rest, x2 at level 10, floored at x0.5. The
+        /// Rhino's Charge row (the sword's energy economy): a charged Rhino refills the meter that
+        /// energizes - and lengthens - the blade in half the cuts. Read live on the owner, whose
+        /// energy is the replicated one (RhinoSwordNetworkRelay).</summary>
+        [SerializeField] private ElementalFloat chargeEnergyGainMultiplier =
+            ElementalFloat.Multiplier(1f, 2f, Element.Charge, 0.5f);
+
         [Header("Denied contact (super-shield touched while the blade is NOT energized)")]
         [Tooltip("OFF (shipped): the blade BINDS — no velocity change, no spin; the prism jiggles, the " +
                  "pilot feels a thud, and ShieldSkimmerScaleDriver slows the vessel's turn for as long " +
@@ -119,6 +127,10 @@ namespace CosmicShore.Gameplay
 
             var sword = impactor.Skimmer.SwordState; // null on any non-energy-sword skimmer
 
+            // The blade's own wake. Cutting it would farm energy off the sword's own afterimages and
+            // erase the Mass ability as fast as it lays.
+            if (sword != null && sword.IsOwnAfterimage(prism)) return;
+
             // The velocity of the part of the sword that actually made contact (see
             // SkimmerSwingKinematics) rather than the hull's — a tip strike mid-swipe throws mass
             // far harder than a hilt graze, along the swing tangent. Collapses to Course * Speed
@@ -154,7 +166,7 @@ namespace CosmicShore.Gameplay
                 }
 
                 PopSuperShield(impactor, status, prism, velocity);
-                sword?.AddEnergy(energyPerSuperShieldedPrism);
+                sword?.AddEnergy(energyPerSuperShieldedPrism * chargeEnergyGainMultiplier.EvaluateLive(status));
                 sword?.NotifyPrismDestroyed(superShielded: true, prism.transform.position);
                 return;
             }
@@ -185,7 +197,7 @@ namespace CosmicShore.Gameplay
             // only when this hit actually destroyed the prism.
             if (prism.destroyed && sword != null)
             {
-                sword.AddEnergy(energyPerPrism);
+                sword.AddEnergy(energyPerPrism * chargeEnergyGainMultiplier.EvaluateLive(status));
                 sword.NotifyPrismDestroyed(superShielded: false, prism.transform.position);
             }
         }

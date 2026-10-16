@@ -15,53 +15,38 @@ MonoBehaviour:
   vesselClass: 3
   entries:
   - Element: 1
-    AbilityLabel: (open design slot)
-    AbilityDescription: Charge mapping not yet designed for the Rhino.
+    AbilityLabel: 'Sword Energy'
+    AbilityDescription: 'Charge raises the energy the sword banks per cut - x1 at rest, x2 at level 10, floored at x0.5 (RhinoSkimmerDamagePrismEffectSO.chargeEnergyGainMultiplier on 0.04 per prism and 0.12 per super-shield). Energy lengthens the blade and pays for the energize (0.1 a time), so a charged Rhino refills both in half the cuts. Its own afterimages are never cut, so it cannot farm them.'
     Input: 0
     UnlockLevel: 5
     RelockBelowLevel: 4
     LatchPolicy: 0
-    UpgradeLabel: 
-    UpgradeDescription: 
+    UpgradeLabel: 'Live Wire'
+    UpgradeDescription: 'Once an energized blade''s stance is let go its 5 s tail runs out whatever the fingers do; with Live Wire every return to the chop stance re-lights it, so a blade kept coming back to the chop stays energized. ShieldSkimmerScaleConfigSO.liveWireUpgradeElement, gated on IsUpgradeActive(Charge) in ShieldSkimmerScaleDriver.'
   - Element: 2
-    AbilityLabel: Trail Slabs
-    AbilityDescription: Mass raises the grown trail slab maximum size
-      (GrowTrailActionSO.massMaxSizeMultiplier, x1 -> x1.5 at level 10 floored at
-      x0.25, so the 4-unit slab ceiling reaches 6). Note GrowTrailAction.asset also
-      carries an ENABLED maxSize ElementalFloat authored 4 -> 8 on Mass that nothing
-      evaluates - MaxSize reads its raw Value - so that second ramp has never run.
+    AbilityLabel: 'Afterimage'
+    AbilityDescription: 'When the energized blade goes out, the sword keeps leaving copies of itself - prisms in the blade''s own shape and pose - for 5 s (RhinoSwordAfterimage, RhinoSwordAfterimageConfig). An omni-crystal surge lays them for its whole length. Mass scales their VOLUME: x1 at rest, x2.5 at level 10, floored at x0.25, read at the replicated level so every peer lays the same mass.'
     Input: 0
     UnlockLevel: 5
     RelockBelowLevel: 4
     LatchPolicy: 0
-    UpgradeLabel: 
-    UpgradeDescription: 
+    UpgradeLabel: 'Danger Afterimages'
+    UpgradeDescription: 'The afterimages are laid as DANGER prisms (RhinoSwordAfterimageConfigSO.dangerUpgradeElement, gated on IsUpgradeActive(Mass), snapshotted per afterimage).'
   - Element: 3
-    AbilityLabel: (open design slot)
-    AbilityDescription: Space mapping not yet designed for the Rhino.
+    AbilityLabel: 'Blade Reach'
+    AbilityDescription: 'Space lengthens the sword: the blade''s resting length runs 30 at rest to 50 at level 10 (Skimmer.Scale on the ForceFieldSkimmer Variant, read live by ShieldSkimmerScaleDriver), and stored energy grows it on top toward 120. Reach is what the blade cuts, what it strikes an Astro League ball with at the tip, and how far the afterimages reach.'
     Input: 0
     UnlockLevel: 5
     RelockBelowLevel: 4
     LatchPolicy: 0
-    UpgradeLabel: Breaker
-    UpgradeDescription: The sword cuts a SHIELDED prism in one slice instead of two -
-      the shield sheds and the core is cut in the same hit. Super-shielded prisms
-      still need an energized blade. RhinoSkimmerDamagePrismEffectSO.breakerElement,
-      gated on IsUpgradeActive(Space).
+    UpgradeLabel: 'Breaker'
+    UpgradeDescription: 'The sword cuts a SHIELDED prism in one slice instead of two - the shield sheds and the core is cut in the same hit. Super-shielded prisms still need an energized blade. RhinoSkimmerDamagePrismEffectSO.breakerElement, gated on IsUpgradeActive(Space).'
   - Element: 4
-    AbilityLabel: Ramp Spool
-    AbilityDescription: 'Time raises how fast the ramp boost winds the Rhino up to its
-      top speed - the same 220/s the executor already scales, from 110/s at rest to
-      550/s at full (RampBoostActionSO.timeAccelerationMultiplier). It does not raise
-      the ceiling, only how long the run-up to it takes, so a Rhino that keeps the
-      stick straight arrives sooner rather than faster. That sentence was FALSE as
-      shipped until the element-scaling unification: the fleet-wide boost read in
-      VesselTransformer.CurrentBoostAmount applied this same element to the ceiling
-      too, undeclared here and unmodelled by regatta_balance.py. The ceiling is now
-      untouched by Time - BoostSpeedMultiplier is disabled on Rhino.prefab.'
+    AbilityLabel: 'Ramp Spool'
+    AbilityDescription: 'Time raises how fast the ramp boost winds the Rhino up to its top speed: 220 u/s per second at rest, 550 at level 10, 110 at the -5 floor (RampBoostActionSO.timeAccelerationMultiplier, x1 -> x2.5, floored x0.5, read live). It does not raise the ceiling - cruise 50 x maxBoostMultiplier 16.8 = 840 u/s - only how long the run-up takes. The Rhino is a bulldozer: its hull carries no prism slow, so ramming mass costs it no speed - the plough shoves what it hits aside (RhinoPloughPrismEffectSO) and the ramp keeps climbing through it.'
     Input: 0
     UnlockLevel: 5
     RelockBelowLevel: 4
     LatchPolicy: 0
-    UpgradeLabel: 
-    UpgradeDescription: 
+    UpgradeLabel: 'Momentum'
+    UpgradeDescription: 'Above 70% of top speed (588 u/s) danger prisms cannot drain the Rhino''s elements - the elemental-debuff ward scoped to DangerPrism alone, so an opposing pilot''s blast still lands (VesselElementalImmunity on the root, condition WhileAboveTopSpeedFraction, upgradeGate Time). The Time card lights while the ward is holding.'

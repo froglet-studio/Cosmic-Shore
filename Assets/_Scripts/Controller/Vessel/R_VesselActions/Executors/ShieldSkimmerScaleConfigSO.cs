@@ -1,3 +1,4 @@
+using CosmicShore.Data;
 using UnityEngine;
 
 namespace CosmicShore.Gameplay
@@ -5,7 +6,7 @@ namespace CosmicShore.Gameplay
     /// <summary>
     /// Tuning for the Rhino energy sword (RHINO_ENERGY_SWORD.md): the scale mapping the
     /// blade's resting length follows from stored energy, the energize ritual (the
-    /// supershield key), the elemental-crystal burst, and every blade-look/juice knob
+    /// supershield key, and its Live Wire level-5), the omni-crystal surge's burst, and every blade-look/juice knob
     /// (heat ramp, energized white-hot, impact flashes, crackle, camera shake).
     /// One shared asset (`_SO_Assets/VesselActions/Rhino/ShieldSkimmerScaleConfig.asset`)
     /// drives every Rhino, read by <see cref="ShieldSkimmerScaleDriver"/> and
@@ -33,13 +34,20 @@ namespace CosmicShore.Gameplay
         [SerializeField, Range(0f, 1f)] private float energizeCostFraction = 0.1f;
         [Tooltip("Seconds the lower/chop stance must be held to energize.")]
         [SerializeField] private float energizeHoldSeconds = 1f;
-        [Tooltip("Seconds the blade stays energized AFTER leaving the stance (holding the stance keeps it lit).")]
+        [Tooltip("Seconds the blade stays energized AFTER leaving the stance. Holding the stance " +
+                 "from ignition keeps it lit; once let go the tail runs out whatever the fingers do - " +
+                 "unless Live Wire (below) is active.")]
         [SerializeField] private float energizedTailSeconds = 5f;
         [Tooltip("Seconds of cooldown after the energized tail before the blade can charge again.")]
         [SerializeField] private float energizeCooldownSeconds = 5f;
 
-        [Header("Crystal Burst (all three dimensions)")]
-        [Tooltip("Uniform size factor the blade bursts to on a FULL-energy elemental-crystal hit, " +
+        [Tooltip("Element whose level-5 upgrade, LIVE WIRE, lets a return to the stance re-light the " +
+                 "energized tail - a blade kept lit for as long as the pilot keeps coming back to the " +
+                 "chop. Gated on the replicated unlock bit. None disables it.")]
+        [SerializeField] private Element liveWireUpgradeElement = Element.Charge;
+
+        [Header("Crystal Burst (all three dimensions) - the omni-crystal SURGE's look")]
+        [Tooltip("Uniform size factor the blade bursts to on a FULL-energy surge, " +
                  "applied to the authored X/Y/Z silhouette (not just length). Less energy scales " +
                  "the factor down toward 1 (no burst).")]
         [SerializeField] private float crystalBurstFactorAtFullEnergy = 4f;
@@ -162,6 +170,16 @@ namespace CosmicShore.Gameplay
         public float EnergizeHoldSeconds     => Mathf.Max(0.01f, energizeHoldSeconds);
         public float EnergizedTailSeconds    => Mathf.Max(0f, energizedTailSeconds);
         public float EnergizeCooldownSeconds => Mathf.Max(0f, energizeCooldownSeconds);
+        public Element LiveWireUpgradeElement => liveWireUpgradeElement;
+
+        /// <summary>CHARGE level-5, Live Wire: is it active on this vessel? Through the replicated unlock
+        /// bit (IsUpgradeActive), never a raw level read.</summary>
+        public bool LiveWireActive(IVesselStatus status)
+        {
+            if (liveWireUpgradeElement == Element.None) return false;
+            var abilities = status?.ElementalAbilityHandler;
+            return abilities && abilities.IsUpgradeActive(liveWireUpgradeElement);
+        }
 
         public float VisibilityMultiplier => Mathf.Max(0f, visibilityMultiplier);
         public Color RestingBladeColor    => restingBladeColor;

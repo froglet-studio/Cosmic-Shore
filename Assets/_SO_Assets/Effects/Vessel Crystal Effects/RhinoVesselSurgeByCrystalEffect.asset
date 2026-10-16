@@ -9,6 +9,9 @@ MonoBehaviour:
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 74996c3eac744015a93523dd29430ad1, type: 3}
-  m_Name: RhinoSwordCrystalBurstEffect
+  m_Script: {fileID: 11500000, guid: 1091d0d547931cdaa76216e288eb8f7e, type: 3}
+  m_Name: RhinoVesselSurgeByCrystalEffect
   m_EditorClassIdentifier: 
+  surgeSeconds: 6
+  energyFill: 1
+  elementBoost: 0.2

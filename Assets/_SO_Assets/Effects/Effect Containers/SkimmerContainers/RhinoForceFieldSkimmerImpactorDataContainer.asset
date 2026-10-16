@@ -19,5 +19,4 @@ MonoBehaviour:
   skimmerPrismEffectsSO:
   - {fileID: 11400000, guid: 5006731ea9ee63142b1a70233d4423a3, type: 2}
   - {fileID: 11400000, guid: dcce08b9351b97c4eb275508001a5b8e, type: 2}
-  skimmerCrystalEffectsSO:
-  - {fileID: 11400000, guid: 341d4ad101434eeea3071787b11dbf58, type: 2}
+  skimmerCrystalEffectsSO: []

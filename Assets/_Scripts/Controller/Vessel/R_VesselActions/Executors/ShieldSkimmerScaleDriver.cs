@@ -15,18 +15,27 @@ namespace CosmicShore.Gameplay
     ///
     /// ENERGY — the Rhino's Shield resource (<see cref="shieldIndex"/>, normalized 0..1,
     /// no passive decay: a meter you fill and spend):
-    ///  • GAIN: the prism effect banks energy per prism the sword destroys (an omni-crystal
-    ///    pickup also sets it to full via the Rhino's vessel crystal effect).
-    ///  • SPEND: energizing costs <see cref="ShieldSkimmerScaleConfigSO.EnergizeCostFraction"/>;
-    ///    an elemental-crystal hit (<see cref="TriggerCrystalBurst"/>) bursts the blade in all
-    ///    three dimensions scaled by the energy at that instant, then drains it all.
+    ///  • GAIN: the prism effect banks energy per prism the sword destroys, scaled by CHARGE
+    ///    (<c>RhinoSkimmerDamagePrismEffectSO.chargeEnergyGainMultiplier</c>).
+    ///  • SPEND: energizing costs <see cref="ShieldSkimmerScaleConfigSO.EnergizeCostFraction"/>.
+    ///  • SURGE: an omni crystal (<see cref="Surge"/>) fills it, bursts the blade in all three
+    ///    dimensions and holds it energized with no stance for the surge's length.
+    ///
+    /// AUTHORITY — energy and the energize phase are decided on the machine that OWNS the vessel
+    /// and replicated by <see cref="RhinoSwordNetworkRelay"/>; every other peer mirrors them. Each
+    /// peer's local copy used to run its own state machine off its own kills and its own clock,
+    /// and an energized blade pops super-shielded mass, so that was a divergent prismscape.
     ///
     /// ENERGIZE — the supershield key. Holding the both-triggers lower/chop stance
     /// (<see cref="SetInStance"/>, fed by <see cref="ShieldSwipeActionExecutor"/>) for
     /// <c>EnergizeHoldSeconds</c> spends the cost and ignites the blade: while
     /// <see cref="IsEnergized"/> the damage effect POPS super-shielded prisms instead of
     /// bouncing. Leaving the stance starts the <c>EnergizedTailSeconds</c> countdown, then
-    /// <c>EnergizeCooldownSeconds</c> locks re-charging. On the ignition edge the standing
+    /// <c>EnergizeCooldownSeconds</c> locks re-charging. The tail runs out once started - taking
+    /// the stance again does not re-light it - UNLESS the CHARGE level-5 upgrade, <b>Live Wire</b>,
+    /// is active: then every return to the stance holds the blade lit again (until 2026-10-16 that
+    /// refresh was ungated, so a chop every few seconds kept any blade energized forever for one
+    /// payment). On the ignition edge the standing
     /// blade contacts are RE-DISPATCHED (both the box-trigger overlaps and the shell-tier
     /// pairs) so a super-shielded prism already resting against the blade pops without
     /// needing a fresh OnTriggerEnter.
@@ -61,6 +70,22 @@ namespace CosmicShore.Gameplay
         [Header("Energy Resource Index (Shield, normalized 0..1)")]
         [SerializeField] private int shieldIndex = 1;
 
+        [Header("Network")]
+        [Tooltip("Replicates energy + energize phase from the vessel's owner. On the Rhino root. " +
+                 "Empty = this sword decides its own state locally (an un-networked vessel).")]
+        [SerializeField] private RhinoSwordNetworkRelay relay;
+
+        [Header("Mass - Afterimage")]
+        [Tooltip("The Mass ability on this GameObject: lays the blade's afterimages once the energize " +
+                 "ends (and throughout a surge). The damage effect asks it which prisms are the " +
+                 "sword's own, so the blade never cuts them.")]
+        [SerializeField] private RhinoSwordAfterimage afterimage;
+
+        /// <summary>Raised on every energize phase change, on every peer (from the replicated phase
+        /// off the owner): (from, to). The Mass afterimage opens its window on the way out of
+        /// Energized.</summary>
+        public event Action<RhinoSwordEnergizePhase, RhinoSwordEnergizePhase> EnergizePhaseChanged;
+
         /// <summary>Fires each frame with (currentWorldLength, restingLength, maxLength) — the Rhino
         /// HUD reads it as a 0..1 energy meter.</summary>
         public event Action<float, float, float> OnScaleChanged;
@@ -83,6 +108,11 @@ namespace CosmicShore.Gameplay
         float _chargeStart, _tailEnd, _cooldownEnd;
         bool _tailCounting;
         bool _inStance;
+        bool _releasedSinceIgnition;   // the stance has been let go at least once since ignition
+
+        // ── surge (omni crystal) ──
+        bool _surging;
+        float _surgeEnd;
 
         // ── binding (a non-energized blade inside super-shielded mass) ──
         readonly List<Prism> _bound = new(4);
@@ -123,14 +153,44 @@ namespace CosmicShore.Gameplay
             ? Mathf.Clamp01((Time.time - _chargeStart) / config.EnergizeHoldSeconds)
             : 0f;
 
+        /// <summary>The sword's own Skimmer (blade root), for the components that share its GameObject.</summary>
+        public Skimmer Skimmer => _skimmer;
+
+        /// <summary>The blade transform this driver scales (the skimmer root).</summary>
+        public Transform BladeRoot => skimmerRoot;
+
+        /// <summary>True where this sword's state is decided (see <see cref="RhinoSwordNetworkRelay"/>).</summary>
+        bool IsAuthority => !relay || relay.IsAuthority;
+
         // ── IRhinoSwordState ──
         public bool IsEnergized => _energize == RhinoSwordEnergizePhase.Energized;
         public float Energy01 => GetShield01();
+        public bool IsSurging => _surging;
 
         public void AddEnergy(float amount01)
         {
-            if (amount01 == 0f) return;
+            if (amount01 == 0f || !IsAuthority) return;
             SetShield01(GetShield01() + amount01);
+        }
+
+        public bool IsOwnAfterimage(Prism prism) => afterimage && afterimage.IsMine(prism);
+
+        public void Surge(float seconds, float energyFill01)
+        {
+            if (!IsAuthority || config == null || seconds <= 0f) return;
+            float now = Time.time;
+
+            SetShield01(Mathf.Max(GetShield01(), Mathf.Clamp01(energyFill01)));
+            if (_energize != RhinoSwordEnergizePhase.Energized)
+                SetEnergizePhase(RhinoSwordEnergizePhase.Energized, now);
+
+            _surgeEnd = _surging ? Mathf.Max(_surgeEnd, now + seconds) : now + seconds;
+            _surging = true;
+            // A surge is not held by the stance, so the tail rules start from "already let go".
+            _releasedSinceIgnition = true;
+            _tailCounting = false;
+
+            StartBurst();
         }
 
         public void SetInStance(bool inStance) => _inStance = inStance;
@@ -145,7 +205,11 @@ namespace CosmicShore.Gameplay
             Fx?.NotifyPopDenied(prismWorldPosition);
         }
 
-        public void TriggerCrystalBurst()
+        /// <summary>The surge's look: the blade swells in all three dimensions, scaled by the energy at
+        /// that instant, holds, and returns. Photons and reach only - it spends nothing (the burst
+        /// used to drain the whole meter on EVERY elemental crystal the sword touched, which is
+        /// every petal a Rhino collects).</summary>
+        void StartBurst()
         {
             if (config == null || !skimmerRoot) return;
             float energy = Mathf.Clamp01(GetShield01());
@@ -153,8 +217,8 @@ namespace CosmicShore.Gameplay
 
             // A burst only ever GROWS the blade: the length target starts from the authored
             // silhouette × factor but never drops below the current length (a Space-lengthened
-            // blade at low energy must not contract), and never exceeds the (debuff-aware)
-            // MaxScale unless the blade is already longer.
+            // blade at low energy must not contract), and never exceeds MaxScale unless the blade
+            // is already longer.
             float parentY = skimmerRoot.parent ? skimmerRoot.parent.lossyScale.y : 1f;
             float currentWorldY = skimmerRoot.lossyScale.y;
             float burstWorldY = Mathf.Max(currentWorldY, _authoredShape.y * parentY * factor);
@@ -167,8 +231,6 @@ namespace CosmicShore.Gameplay
             _burst = BurstPhase.Growing;
 
             Fx?.NotifyCrystalBurst(energy);
-
-            SetShield01(0f); // hitting a crystal consumes ALL energy
         }
 
         RhinoSwordFXController Fx
@@ -195,6 +257,8 @@ namespace CosmicShore.Gameplay
             skimmerRoot.TryGetComponent(out _skimmerImpactor);
             if (_skimmer) _skimmer.SwordState = this;
             _authoredShape = skimmerRoot.localScale;
+            if (!relay) relay = GetComponentInParent<RhinoSwordNetworkRelay>();
+            if (!afterimage) TryGetComponent(out afterimage);
         }
 
         void OnEnable()
@@ -213,6 +277,9 @@ namespace CosmicShore.Gameplay
             _energize = RhinoSwordEnergizePhase.Idle;
             _inStance = false;
             _tailCounting = false;
+            _releasedSinceIgnition = false;
+            _surging = false;
+            _surgeEnd = 0f;
             _cooldownEnd = 0f;
             _bindTurnMultiplier = 1f;
             _wasBound = false;
@@ -229,7 +296,16 @@ namespace CosmicShore.Gameplay
             if (!skimmerRoot || config == null) return;
             float dt = Time.deltaTime;
 
-            UpdateEnergize();
+            if (IsAuthority)
+            {
+                UpdateEnergize();
+                if (relay) relay.Publish(GetShield01(), _energize, _surging);
+            }
+            else
+            {
+                MirrorAuthority();
+            }
+
             UpdateBind(dt);
             UpdateScale(dt);
             Fx?.Tick(Mathf.Clamp01(GetShield01()), _energize, Charge01, dt);
@@ -259,16 +335,29 @@ namespace CosmicShore.Gameplay
                     break;
 
                 case RhinoSwordEnergizePhase.Energized:
-                    if (_inStance)
+                    if (_surging)
+                    {
+                        // A surge holds the blade whatever the fingers do. When it ends it hands
+                        // over to the ordinary rules with the tail already spent, so the blade
+                        // goes out next frame unless Live Wire lets the stance hold it.
+                        if (now < _surgeEnd) break;
+                        _surging = false;
+                        _tailCounting = true;
+                        _tailEnd = now;
+                        break;
+                    }
+
+                    if (_inStance && (!_releasedSinceIgnition || LiveWireActive()))
                     {
                         _tailCounting = false; // holding the stance keeps it lit
                     }
-                    else if (!_tailCounting)
+                    else if (!_inStance && !_tailCounting)
                     {
                         _tailCounting = true;
+                        _releasedSinceIgnition = true;
                         _tailEnd = now + config.EnergizedTailSeconds;
                     }
-                    else if (now >= _tailEnd)
+                    else if (_tailCounting && now >= _tailEnd)
                     {
                         _cooldownEnd = now + config.EnergizeCooldownSeconds;
                         SetEnergizePhase(RhinoSwordEnergizePhase.Cooldown, now);
@@ -282,9 +371,32 @@ namespace CosmicShore.Gameplay
             }
         }
 
+        /// <summary>CHARGE level-5, <b>Live Wire</b>: a return to the stance re-lights the tail.
+        /// Through the replicated unlock bit, though only the owner evaluates it - the phase it
+        /// decides is what replicates.</summary>
+        bool LiveWireActive() => config.LiveWireActive(_skimmer ? _skimmer.VesselStatus : null);
+
+        /// <summary>A non-owning peer: take energy, phase and surge from the owner's relay. The phase
+        /// goes through <see cref="SetEnergizePhase"/>, so the ignition re-dispatch, the FX and the
+        /// afterimage window fire here exactly as they do on the owner.</summary>
+        void MirrorAuthority()
+        {
+            if (resourceSystem && (uint)shieldIndex < (uint)resourceSystem.Resources.Count
+                && !Mathf.Approximately(resourceSystem.Resources[shieldIndex].CurrentAmount, relay.Energy01))
+                resourceSystem.SetResourceAmount(shieldIndex, relay.Energy01);
+
+            bool surging = relay.IsSurging;
+            if (surging && !_surging) StartBurst();
+            _surging = surging;
+
+            if (relay.Phase != _energize)
+                SetEnergizePhase(relay.Phase, Time.time);
+        }
+
         void SetEnergizePhase(RhinoSwordEnergizePhase phase, float now)
         {
             if (_energize == phase) return;
+            var from = _energize;
             _energize = phase;
 
             switch (phase)
@@ -294,6 +406,7 @@ namespace CosmicShore.Gameplay
                     break;
                 case RhinoSwordEnergizePhase.Energized:
                     _tailCounting = false;
+                    _releasedSinceIgnition = false;
                     // A super-shielded prism already RESTING against the blade gets no fresh
                     // OnTriggerEnter (and its shell-tier pair was dispatched once on entry),
                     // so the ignition edge re-runs the standing contacts through the same
@@ -303,6 +416,7 @@ namespace CosmicShore.Gameplay
             }
 
             Fx?.NotifyEnergizePhaseChanged(phase);
+            EnergizePhaseChanged?.Invoke(from, phase);
         }
 
         void RedispatchStandingBladeContacts()
@@ -479,7 +593,8 @@ namespace CosmicShore.Gameplay
 
         void SetShield01(float v)
         {
-            if (!resourceSystem) return;
+            // A mirror never writes its own verdict: the owner's value arrives through the relay.
+            if (!resourceSystem || !IsAuthority) return;
             if ((uint)shieldIndex >= (uint)resourceSystem.Resources.Count) return;
             resourceSystem.SetResourceAmount(shieldIndex, Mathf.Clamp01(v));
         }

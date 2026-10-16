@@ -13,6 +13,14 @@ namespace CosmicShore.UI
     /// energized, the recharge veil sweeps over it through the energize cooldown, and an authored
     /// gauge (if the row has one) fills with stored energy.</para>
     ///
+    /// <para><b>MASS card</b> - lit while the sword is laying its afterimages (the window after an
+    /// energize, and the whole of an omni-crystal surge).</para>
+    ///
+    /// <para><b>TIME card</b> - lit while the Time level-5 ward, <b>Momentum</b>, is HOLDING: the
+    /// upgrade is active and the Rhino is above 70% of its top speed, so danger prisms cannot drain
+    /// it. Lit means "you are warded right now", which is the one thing a pilot flying into danger
+    /// mass needs to know.</para>
+    ///
     /// <para>Polled rather than event-driven, deliberately: every value is a read of state the sword
     /// driver already owns, so there is no subscription to leak or double across a re-initialise -
     /// the asymmetric subscribe/unsubscribe pair this replaced did both, depending on whether the
@@ -29,11 +37,20 @@ namespace CosmicShore.UI
         [FormerlySerializedAs("growSkimmerExecutor")]
         [SerializeField] private ShieldSkimmerScaleDriver swordDriver;
 
+        [Tooltip("The Mass ability (afterimages), beside the sword driver. Found under the vessel when empty.")]
+        [SerializeField] private RhinoSwordAfterimage afterimage;
+
+        [Tooltip("The Time level-5 ward (VesselElementalImmunity on the root, above 70% of top speed). " +
+                 "Found on the vessel when empty.")]
+        [SerializeField] private VesselElementalImmunity speedWard;
+
         IVesselStatus _vesselStatus;
 
         bool _chargeLit;
         float _chargeVeil = -1f;
         float _chargeGauge = -1f;
+        bool _massLit;
+        bool _timeLit;
 
         bool IsHudAllowed => _vesselStatus is { IsInitializedAsAI: false, IsLocalUser: true };
 
@@ -45,17 +62,43 @@ namespace CosmicShore.UI
             if (!view)
                 view = View as RhinoVesselHUDView;
 
+            // Explicit Unity-null tests, not `??` (a missing component can be a fake-null object).
+            var root = vesselStatus?.ShipTransform;
+            if (!afterimage && root) afterimage = root.GetComponentInChildren<RhinoSwordAfterimage>(true);
+            if (!speedWard && root) speedWard = root.GetComponentInChildren<VesselElementalImmunity>(true);
+
             // A re-initialise (menu vessel swap, pilot swap) starts the cards from a known state so
             // the change detection below pushes everything once.
             _chargeLit = false;
             _chargeVeil = -1f;
             _chargeGauge = -1f;
-            if (view) view.SetAbilityPressed(Element.Charge, false);
+            _massLit = false;
+            _timeLit = false;
+            if (!view) return;
+            view.SetAbilityPressed(Element.Charge, false);
+            view.SetAbilityPressed(Element.Mass, false);
+            view.SetAbilityPressed(Element.Time, false);
         }
 
         void Update()
         {
-            if (!view || !swordDriver || !IsHudAllowed) return;
+            if (!view || !IsHudAllowed) return;
+
+            bool massLit = afterimage && afterimage.IsLaying;
+            if (massLit != _massLit)
+            {
+                _massLit = massLit;
+                view.SetAbilityPressed(Element.Mass, massLit);
+            }
+
+            bool timeLit = speedWard && speedWard.IsHolding;
+            if (timeLit != _timeLit)
+            {
+                _timeLit = timeLit;
+                view.SetAbilityPressed(Element.Time, timeLit);
+            }
+
+            if (!swordDriver) return;
 
             bool lit = swordDriver.IsEnergized;
             if (lit != _chargeLit)

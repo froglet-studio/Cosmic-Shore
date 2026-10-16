@@ -27,8 +27,10 @@ What this writes:
   Scarab   ScarabHUDVariant.prefab: the four icon Images' m_Sprite swapped from the Sparrow's
            art to the Scarab's own placeholders. Bindings, gauges and tints are untouched.
 
-OPEN DESIGN SLOTS are bound as an entry with `icon: {fileID: 0}` - the Rhino's Charge and
-Space (the Serpent's Mass was one until the Seed Wall, which serpent_add_slots adds). That is the contract for a slot with no ability behind it: the
+OPEN DESIGN SLOTS are bound as an entry with `icon: {fileID: 0}` (none today: the Serpent's Mass
+was one until the Seed Wall, which serpent_add_slots adds, and the Rhino's Charge and Space were
+two until 2026-10-16, which rhino_add_slots adds - the same pass swaps the retired Trail Slabs art
+on the Mass icon for the Afterimage's). That is the contract for a slot with no ability behind it: the
 lockup draws a LOCKED card (AbilityLockupView.ResolveLockedHost), and keeping the entry makes
 the list four long so ValidateAbilityIconRow checks the ORDER instead of stopping at the count.
 No icon object is created for them, so nothing about an undesigned ability is invented
@@ -223,7 +225,10 @@ RHINO_PREFAB = f"{HUD_DIR}/RhinoHUDVariant.prefab"
 RHINO_ROOT_RT = "1335802071243411841"
 RHINO_VIEW = "5161366343835098938"
 RHINO_BASE = 7720000000000003000
-RHINO_ICONS = {MASS: "Rhino_TrailSlabs-PLACEHOLDER.png", TIME: "Rhino_RampSpool-PLACEHOLDER.png"}
+RHINO_ICONS = {CHARGE: "Rhino_SwordEnergy-PLACEHOLDER.png", MASS: "Rhino_Afterimage-PLACEHOLDER.png",
+               SPACE: "Rhino_BladeReach-PLACEHOLDER.png", TIME: "Rhino_RampSpool-PLACEHOLDER.png"}
+# The Mass and Time hosts were the first pass (2026-10-06); Charge and Space were open design slots.
+RHINO_FIRST_PASS = (MASS, TIME)
 
 
 def rhino_frame(element):
@@ -241,12 +246,13 @@ def rhino(src):
         hosts.append(ids["host_rt"])
 
     out = src
-    # The root's children: append the two hosts after the shipped three.
+    # The root's children: append the hosts after whatever the root already holds. (The first pass
+    # anchored on the retired TrailContainer and the legacy press highlight, both deleted with the
+    # pre-lockup status cluster on 2026-10-16, so the anchors are the list's END and the field name.)
     s, e = component_block(out, RHINO_ROOT_RT)
     root = out[s:e]
-    new_root = replace_once(root, "  - {fileID: 5864610081205471824}\n  m_Father: {fileID: 0}\n",
-                            "  - {fileID: 5864610081205471824}\n"
-                            + "".join(f"  - {{fileID: {h}}}\n" for h in hosts)
+    new_root = replace_once(root, "  m_Father: {fileID: 0}\n",
+                            "".join(f"  - {{fileID: {h}}}\n" for h in hosts)
                             + "  m_Father: {fileID: 0}\n", "Rhino root children")
     out = out[:s] + new_root + out[e:]
 
@@ -254,11 +260,47 @@ def rhino(src):
     s, e = component_block(out, RHINO_VIEW)
     view = out[s:e]
     assert "abilityIcons" not in view, "Rhino view already serializes abilityIcons"
-    new_view = replace_once(view, "  highlights:\n  - input: 0\n    image: {fileID: 8279697361072404982}\n",
-                            "  highlights:\n  - input: 0\n    image: {fileID: 8279697361072404982}\n"
-                            + bindings(icon_ids), "Rhino view highlights")
+    new_view = re.sub(r"  highlights:.*?\n(?=  \w)", lambda m: m.group(0) + bindings(icon_ids), view,
+                      count=1, flags=re.S)
+    assert new_view != view, "Rhino view highlights"
     out = out[:s] + new_view + out[e:]
     return out.rstrip("\n") + "\n" + "".join(blocks), icon_ids
+
+
+def rhino_add_slots(src, late):
+    """The Charge and Space hosts for a row authored before they were designed, the four-entry
+    bindings re-pointed at them, and any icon still carrying a sprite its ability no longer uses
+    (the retired Trail Slabs art on the Mass icon) swapped for its own."""
+    out = src
+    hosts = []
+    blocks = []
+    for element in late:
+        ids = slot_ids(RHINO_BASE, element)
+        blocks += host_blocks(ids, element, RHINO_ROOT_RT, rhino_frame(element),
+                              sprite_guid("Rhino", RHINO_ICONS[element]))
+        hosts.append(ids["host_rt"])
+    if hosts:
+        s, e = component_block(out, RHINO_ROOT_RT)
+        root = out[s:e]
+        out = out[:s] + replace_once(root, "  m_Father: {fileID: 0}\n",
+                                     "".join(f"  - {{fileID: {h}}}\n" for h in hosts)
+                                     + "  m_Father: {fileID: 0}\n", "Rhino root children") + out[e:]
+
+    for element in RHINO_FIRST_PASS:
+        fid = slot_ids(RHINO_BASE, element)["icon_img"]
+        s, e = component_block(out, fid)
+        blk = out[s:e]
+        want = sprite_guid("Rhino", RHINO_ICONS[element])
+        new_blk = re.sub(r"(  m_Sprite: \{fileID: 21300000, guid: )[0-9a-f]{32}", rf"\g<1>{want}", blk)
+        out = out[:s] + new_blk + out[e:]
+
+    s, e = component_block(out, RHINO_VIEW)
+    view = out[s:e]
+    ids = {el: slot_ids(RHINO_BASE, el)["icon_img"] for el in RHINO_ICONS}
+    new_view = re.sub(r"  abilityIcons:\n(?:  - element: .*\n(?:    .*\n)+)+", bindings(ids), view, count=1)
+    assert new_view != view or bindings(ids) in view, "Rhino view abilityIcons"
+    out = out[:s] + new_view + out[e:]
+    return out.rstrip("\n") + "\n" + "".join(blocks)
 
 
 # -- Serpent -------------------------------------------------------------------
@@ -436,6 +478,11 @@ def main() -> int:
         for el, png in RHINO_ICONS.items():
             needles += host_blocks(slot_ids(RHINO_BASE, el), el, RHINO_ROOT_RT, rhino_frame(el),
                                    sprite_guid("Rhino", png))
+        late = [el for el in RHINO_ICONS if el not in RHINO_FIRST_PASS and f"&{ids[el]}\n" not in have]
+        stale = any(n not in have for n in needles)
+        if stale and not CHECK:
+            write(RHINO_PREFAB, rhino_add_slots(have, late)); wrote.append(RHINO_PREFAB)
+            have = read(RHINO_PREFAB)
         ok &= verify(RHINO_PREFAB, have, needles, "the Rhino row")
 
     # Serpent - the variant and the vessel move together.

@@ -24,6 +24,7 @@ MonoBehaviour:
   energizeHoldSeconds: 1
   energizedTailSeconds: 5
   energizeCooldownSeconds: 5
+  liveWireUpgradeElement: 1
   visibilityMultiplier: 1.2
   restingBladeColor: {r: 1, g: 1, b: 1, a: 1}
   fullEnergyColor: {r: 1, g: 1, b: 1, a: 1}

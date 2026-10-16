@@ -28,11 +28,15 @@ namespace CosmicShore.Gameplay
     /// after the first ramp, and every per-peer reader of either (immunity windows, telemetry, the
     /// roll controller) read a boost that had ended seconds ago.</para>
     /// </summary>
-    public sealed class RampBoostActionExecutor : ShipActionExecutorBase
+    public sealed class RampBoostActionExecutor : ShipActionExecutorBase, ITopSpeedSource
     {
         [Inject] AudioSystem _audioSystem;
 
         [SerializeField] public Obvious.Soap.ScriptableEventNoParam OnMiniGameTurnEnd;
+
+        [Tooltip("The ramp asset this hull binds - read only for TopSpeed before the ramp has been " +
+                 "armed once. Optional: once a ramp has run, the asset that armed it is used.")]
+        [SerializeField] RampBoostActionSO topSpeedAsset;
 
         IVesselStatus _status;
         RampBoostActionSO _activeSO;
@@ -42,18 +46,23 @@ namespace CosmicShore.Gameplay
         public bool IsEngaged => _activeSO != null;
 
         /// <summary>
-        /// The hull's ramp TOP SPEED, u/s: its unboosted cruise (<see cref="VesselTransformer.CruiseSpeed"/>)
-        /// times the ramp's <see cref="RampBoostActionSO.MaxBoostMultiplier"/> - 50 × 16.8 = 840 on the
-        /// Rhino. 0 until the ramp has been armed once (nothing has named the ceiling yet) or with no
-        /// transformer. The yardstick the Time level-5 ward measures "fast" against.
+        /// The hull's ramp TOP SPEED, u/s: its AUTHORED unboosted cruise (<c>DefaultMinimumSpeed +
+        /// DefaultThrottleScaler</c> - not the runtime mirrors, which read 0 on a replica whose
+        /// transformer never reset) times the ramp's <see cref="RampBoostActionSO.MaxBoostMultiplier"/>:
+        /// (0 + 50) × 16.8 = 840 on the Rhino. 0 with no ramp asset or no transformer. The yardstick
+        /// the Time level-5 ward measures "fast" against.
+        /// <para>Before the first ramp it falls back to the asset serialized here, so a ward reads a
+        /// real ceiling from the first frame rather than "unknown".</para>
         /// </summary>
         public float TopSpeed
         {
             get
             {
-                var so = _activeSO ? _activeSO : _lastSO;
+                var so = _activeSO ? _activeSO : _lastSO ? _lastSO : topSpeedAsset;
                 var transformer = _status?.VesselTransformer;
-                return so && transformer ? transformer.CruiseSpeed * so.MaxBoostMultiplier : 0f;
+                if (!so || !transformer) return 0f;
+                float cruise = Mathf.Max(0f, transformer.DefaultMinimumSpeed) + Mathf.Max(0f, transformer.DefaultThrottleScaler);
+                return cruise * so.MaxBoostMultiplier;
             }
         }
 
