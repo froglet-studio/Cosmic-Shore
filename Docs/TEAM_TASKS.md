@@ -396,3 +396,10 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Who can take it:** Yash with Garrett (Stoat and Rhino owner sessions)
 - **Added:** 2026-10-16 by Yash's session (`Ys-bleeding-edge`)
 - **See:** Docs/AI_SYSTEM/SITUATION_RECORDING_PLAN.md §9
+
+### T-20261016-2292 · open · test · Arena launch
+- **Task:** Open Menu > Arena in the editor and look at the AI Difficulty row and the re-fitted vessel carousel on all four cards (Astro League, Brood Rush, Regatta, Broadside)
+- **Done when:** Row sits under the intensity row like Arcade's Skim Race; icon, arrows and SELECT VESSEL fit inside the carousel frame; Easy/Medium/Hard light and step with the pad
+- **Who can take it:** Yash (offered); Shombith owns Menu_Main
+- **Added:** 2026-10-16 by a Claude session (`Ys-bleeding-edge`)
+- **See:** Docs/UNITY_VERIFICATION_CHECKLIST.md (AI difficulty on every Arena card)

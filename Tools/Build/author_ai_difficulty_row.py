@@ -39,13 +39,16 @@ WHY A SCRIPT
 ARENA
 
   The Arena's window (a scene object in Menu_Main, ArenaLaunchPanel) has the same
-  ConfigurationDetailView children, but its vessel CAROUSEL (ControlsDescription) starts directly
-  under the intensity row, so a row hung there would sit on the hull icon. Its row goes in the free
-  corner instead: right edge on the Start button's, vertically centred between the domain tiles
-  (TeamHolder) and the carousel, right of the ADD AI toggle - the AI's two settings side by side.
-  Every arena card offers the difficulty (AIDifficultyRules.IsOfferedFor), so nothing moves at
-  runtime there (ArenaLaunchPanel has no controls block to fit). Same donors, same cloning, its own
-  fileID namespace; --check proves the row clears every sibling in canvas pixels.
+  ConfigurationDetailView children, and its row sits in the SAME place as the Arcade's: hung from
+  the Arena intensity row's own bottom anchor, ROW_GAP_UNDER_INTENSITY under it, spanning its width,
+  so EASY sits under 1, MEDIUM under 2 and HARD under 3. There the vessel CAROUSEL
+  (ControlsDescription) used to start, so fit_arena_carousel re-fits it once, statically (every arena
+  card offers the difficulty, and ArenaLaunchPanel has no controls block for the runtime move):
+  CAROUSEL_GAP under the row down to CAROUSEL_GAP over the ADD AI toggle, the hull icon (it preserves
+  its aspect) filling it above SELECT VESSEL, the arrows level with the icon's centre, and SELECT
+  VESSEL placed by author_arena_launch_panel_layout (called from here, so its --check agrees).
+  Same donors, same cloning, its own fileID namespace; --check proves the row and the carousel clear
+  every sibling in canvas pixels.
 """
 import argparse
 import hashlib
@@ -55,7 +58,9 @@ import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from author_toybox_layout import Scene  # noqa: E402
-from author_arena_launch_panel_layout import solve_rect, overlaps  # noqa: E402
+from author_arena_launch_panel_layout import solve_rect, overlaps, vec2  # noqa: E402
+from author_arena_launch_panel_layout import author as arena_select_layout  # noqa: E402
+from author_arena_launch_panel_layout import CONFIRM_SPRITE_SIZE, GAP_UNDER_ICON as SELECT_GAP_UNDER_ICON  # noqa: E402
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 PREFAB = os.path.join(ROOT, "Assets", "_Prefabs", "ArcadeGameConfigureModal.prefab")
@@ -128,8 +133,11 @@ ARENA = Target("Menu_Main ArenaGameConfigureModal", ARENA_SCENE, "ArenaGameConfi
                "CosmicShore/AIDifficultyRow/Arena")
 TARGETS = [ARCADE, ARENA]
 
-# Arena: the row's gap to the Start button's right edge (0 = flush with it)
-ARENA_RIGHT_INSET = 0.0
+# Arena: the vessel carousel is re-fitted under the row (fit_arena_carousel)
+CAROUSEL_GAP = 8.0                 # px between the carousel and the row above / the ADD AI toggle below
+CAROUSEL_PAD = 8.0                 # px inside the carousel above the icon and below SELECT VESSEL
+SELECT_PLATE_HEIGHT = CONFIRM_SPRITE_SIZE[1]
+MIN_ICON_HEIGHT = 150.0
 
 
 def fail(msg):
@@ -301,19 +309,75 @@ def tmp_doc(sc, donor_tmp, fid, go, text, size, h_align, wrap, spacing):
 
 
 def arena_row_rect(sc, cdv):
-    """The Arena row's rect, anchored to ConfigurationDetailView's bottom-right corner: right edge on
-    the Start button's, centred in the gap between the domain tiles and the vessel carousel."""
+    """The Arena row's rect: hung from the Arena intensity row's own bottom anchor, the same
+    ROW_GAP_UNDER_INTENSITY under it as the Arcade's, spanning the same width. Returns the rect
+    fields and the row's bottom edge in canvas px."""
     cdv_r = solve_rect(sc, cdv, CANVAS)
-    play = solve_rect(sc, go_named(sc, cdv, "Play Button"), CANVAS)
-    tiles = solve_rect(sc, go_named(sc, cdv, "TeamHolder"), CANVAS)
-    carousel = solve_rect(sc, go_named(sc, cdv, "ControlsDescription"), CANVAS)
-    right = play[0] + play[2] - ARENA_RIGHT_INSET
-    gap_bottom, gap_top = tiles[1] + tiles[3], carousel[1]
-    if gap_top - gap_bottom < ROW_HEIGHT:
-        fail(f"arena: {gap_top - gap_bottom:.1f}px between the domain tiles and the carousel, the row needs {ROW_HEIGHT:.1f}")
-    bottom = (gap_bottom + gap_top - ROW_HEIGHT) / 2
-    pos = (round(right - (cdv_r[0] + cdv_r[2]), 2), round(bottom - cdv_r[1], 2))
-    return (1, 0), (1, 0), pos, (0, ROW_HEIGHT), (1, 0)
+    intensity = go_named(sc, cdv, "Intensity")
+    if not intensity:
+        fail("arena: no Intensity row under ConfigurationDetailView")
+    ib = sc.body(sc.go_tf[intensity])
+    amin, amax = vec2(ib, "m_AnchorMin"), vec2(ib, "m_AnchorMax")
+    top = solve_rect(sc, intensity, CANVAS)[1] - ROW_GAP_UNDER_INTENSITY
+    pos_y = round(top - (cdv_r[1] + amin[1] * cdv_r[3]), 3)
+    return ((amin[0], amin[1]), (amax[0], amin[1]), (0, pos_y), (0, ROW_HEIGHT), (0.5, 1)), top - ROW_HEIGHT
+
+
+def set_y(sc, go, amin_y, amax_y, pos_y, size_y, why):
+    """Rewrite only the vertical half of a RectTransform; the horizontal layout is left as authored."""
+    rt = sc.go_tf[go]
+    b = sc.body(rt)
+    for key, v in (("m_AnchorMin", amin_y), ("m_AnchorMax", amax_y), ("m_AnchoredPosition", pos_y),
+                   ("m_SizeDelta", size_y)):
+        if v is None:
+            continue
+        b = sub1(b, r"^(  %s: \{x: [^,]+, y: )[^}]+(\})$" % key, lambda mm, v=v: mm.group(1) + fmt(v) + mm.group(2), why + " " + key)
+    sc.docs[rt][1] = b
+
+
+def fit_arena_carousel(sc, cdv, row_bottom):
+    """Make room for the row: the vessel carousel (ControlsDescription) runs from CAROUSEL_GAP under
+    the row down to CAROUSEL_GAP over the ADD AI toggle, the hull icon (aspect-preserving) fills it
+    above the SELECT VESSEL plate, and the arrows sit level with the icon's centre. SELECT VESSEL itself
+    is placed by author_arena_launch_panel_layout (under the icon), called right after this."""
+    cdv_r = solve_rect(sc, cdv, CANVAS)
+    carousel = go_named(sc, cdv, "ControlsDescription")
+    toggle = go_named(sc, cdv, "Toggle")
+    if not carousel or not toggle:
+        fail("arena: no ControlsDescription (vessel carousel) or Toggle under ConfigurationDetailView")
+    top = row_bottom - CONTROLS_GAP
+    bottom = solve_rect(sc, toggle, CANVAS)
+    bottom = bottom[1] + bottom[3] + CAROUSEL_GAP
+    cb = sc.body(sc.go_tf[carousel])
+    if vec2(cb, "m_AnchorMin")[1] != 0 or vec2(cb, "m_AnchorMax")[1] != 1 or vec2(cb, "m_Pivot")[1] != 0.5:
+        fail("arena: the carousel is no longer stretch-anchored with a centre pivot - revisit fit_arena_carousel")
+    off_min = bottom - cdv_r[1]
+    off_max = top - (cdv_r[1] + cdv_r[3])
+    set_y(sc, carousel, None, None, round((off_min + off_max) / 2, 3), round(off_max - off_min, 3), "carousel")
+    sc.rebuild_maps()
+
+    icon = the_child(sc, carousel, "VesselIcon")
+    content = sc.tf_go[sc.tf_parent[sc.go_tf[icon]]]
+    c = solve_rect(sc, content, CANVAS)
+    icon_top = top - CAROUSEL_PAD
+    icon_bottom = bottom + CAROUSEL_PAD + SELECT_PLATE_HEIGHT + SELECT_GAP_UNDER_ICON
+    if icon_top - icon_bottom < MIN_ICON_HEIGHT:
+        fail(f"arena: the hull icon would be {icon_top - icon_bottom:.0f}px tall (< {MIN_ICON_HEIGHT})")
+    set_y(sc, icon, round((icon_bottom - c[1]) / c[3], 6), round((icon_top - c[1]) / c[3], 6), 0, 0, "icon")
+    centre = (icon_top + icon_bottom) / 2 - (c[1] + c[3] / 2)
+    for name in ("PrevButton", "NextButton"):
+        set_y(sc, the_child(sc, carousel, name), None, None, round(centre, 3), None, name)
+    sc.rebuild_maps()
+    arena_select_layout(sc)
+    sc.rebuild_maps()
+    return carousel, icon
+
+
+def the_child(sc, root, name):
+    hits = [g for g in sc.subtree(root) if sc.names.get(g) == name]
+    if len(hits) != 1:
+        fail(f"arena: expected one {name} under {sc.names.get(root)}, found {len(hits)}")
+    return hits[0]
 
 
 def author(sc, mint, pguid, tg):
@@ -419,8 +483,8 @@ def author(sc, mint, pguid, tg):
 
     # -- Row ---------------------------------------------------------------------------------------
     if tg.is_arena:
-        amin, amax, pos, size, pivot = arena_row_rect(sc, cdv)
-        size = (buttons_w, size[1])
+        (amin, amax, pos, size, pivot), row_bottom = arena_row_rect(sc, cdv)
+        fit_arena_carousel(sc, cdv, row_bottom)
     else:
         row_top_offset = INTENSITY_OFFSET_Y - ROW_GAP_UNDER_INTENSITY
         amin = (INTENSITY_ANCHOR_X[0], INTENSITY_BOTTOM_ANCHOR_Y)
@@ -575,24 +639,30 @@ def validate(sc, mint, pguid, tg):
     buttons_rect = solve_rect(sc, sc.tf_go[mint.ids["buttons.rt"]], CANVAS)
     if buttons_rect[0] + buttons_rect[2] > row_rect[0] + row_rect[2] + 0.5:
         fail("the buttons overflow the row")
+    controls = the_go(sc, "ControlsDescription", tg)
+    c = solve_rect(sc, controls, CANVAS)
     if tg.is_arena:
-        # every sibling in the window, the carousel and Start included; nothing moves at runtime here
-        if row_rect[1] < cdv_rect[1] - 0.5 or row_rect[1] + row_rect[3] > cdv_rect[1] + cdv_rect[3] + 0.5:
-            fail(f"row {row_rect} leaves ConfigurationDetailView {cdv_rect} vertically")
+        # Nothing moves at runtime here: the carousel was re-fitted under the row, so every sibling
+        # in the window - the carousel and Start included - must clear the row, and the carousel
+        # must clear everything but the row's neighbours it was fitted between.
         for other in sc.children(cdv):
-            if other == row or sc.names.get(other) == "AIDifficulty":
+            if other == row:
                 continue
             if overlaps(row_rect, solve_rect(sc, other, CANVAS)):
                 fail(f"arena row {row_rect} overlaps {sc.names.get(other)}")
-        return row_rect, None, None
-    controls = the_go(sc, "ControlsDescription", tg)
-    c = solve_rect(sc, controls, CANVAS)
-    moved_top = row_rect[1] - CONTROLS_GAP
-    if moved_top - c[1] < MIN_CONTROLS_HEIGHT:
-        fail(f"the controls block would be {moved_top - c[1]:.0f}px tall under the row (< {MIN_CONTROLS_HEIGHT})")
-    if c[1] + c[3] < row_rect[1]:
-        fail("the controls block no longer starts under the intensity row - the runtime move "
-             "in MinigameLaunchPanel.FitControlsUnderDifficultyRow is unnecessary; revisit the layout")
+            if other != controls and overlaps(c, solve_rect(sc, other, CANVAS)):
+                fail(f"arena carousel {c} overlaps {sc.names.get(other)}")
+        icon = solve_rect(sc, the_child(sc, controls, "VesselIcon"), CANVAS)
+        if icon[1] < c[1] - 0.5 or icon[1] + icon[3] > c[1] + c[3] + 0.5:
+            fail(f"arena: the hull icon {icon} leaves the carousel {c}")
+        moved_top = None
+    else:
+        moved_top = row_rect[1] - CONTROLS_GAP
+        if moved_top - c[1] < MIN_CONTROLS_HEIGHT:
+            fail(f"the controls block would be {moved_top - c[1]:.0f}px tall under the row (< {MIN_CONTROLS_HEIGHT})")
+        if c[1] + c[3] < row_rect[1]:
+            fail("the controls block no longer starts under the intensity row - the runtime move "
+                 "in MinigameLaunchPanel.FitControlsUnderDifficultyRow is unnecessary; revisit the layout")
 
     # 7. every label is ASCII the UI font carries, and fits its plate
     font = open(FONT_ASSET, encoding="utf-8", errors="ignore").read()
@@ -654,7 +724,10 @@ def main():
         sc, original, authored, row_rect, controls, moved_top = build(tg)
         print(f"[{tg.name}]")
         print(f"row      L={row_rect[0]:.1f} B={row_rect[1]:.1f} W={row_rect[2]:.1f} H={row_rect[3]:.1f} (canvas px)")
-        if controls is not None:
+        if moved_top is None:
+            print(f"carousel L={controls[0]:.1f} B={controls[1]:.1f} W={controls[2]:.1f} H={controls[3]:.1f} "
+                  f"(re-fitted under the row)")
+        else:
             print(f"controls top {controls[1] + controls[3]:.1f} -> {moved_top:.1f} while the row shows "
                   f"({moved_top - controls[1]:.0f}px tall; {controls[3]:.0f}px otherwise)")
         print("negative control refused:", negative_control(tg).split(": ", 1)[-1])

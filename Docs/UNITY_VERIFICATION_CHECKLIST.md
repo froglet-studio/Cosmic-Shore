@@ -70,8 +70,9 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 **What landed:** the difficulty row only existed on the Arcade window. The headless compile is clean
 (`unity_refcompile`: player and editor configs, 0 errors in project code). `/verify-unity` was not available.
 - **UI:** `Tools/Build/author_ai_difficulty_row.py` now also authors the row into Menu_Main's
-  `ArenaGameConfigureModal` and wires `ArenaLaunchPanel.aiDifficultyPicker`. It sits in the free corner, right of the
-  ADD AI toggle and above Start (the vessel carousel occupies the space under the intensity row). `--check` holds both
+  `ArenaGameConfigureModal` and wires `ArenaLaunchPanel.aiDifficultyPicker`, in the same place as the Arcade's: under
+  the intensity row. The vessel carousel is re-fitted under it (top 8 px under the row, bottom 8 px over ADD AI; hull
+  icon 195 px tall, was 198; arrows level with the icon; SELECT VESSEL under the icon). `--check` holds both
   windows. The Arcade prefab is byte-identical.
 - **AI:** `AIDifficultyRules.IsOfferedFor` already named Regatta (2026-10-14: Squirrels on `SkimRaceHandicap`, every
   other hull `GateRaceHandicap`). It now also names Astro League / Brood Rush / Broadside (`UsesPilotBelief`). On those three, `ConfigureAIPilotForMode` gives each AI an
@@ -81,8 +82,9 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 - Not measured: how much slower or weaker Easy and Medium are in these modes. The numbers are the Skim Race's
   (`SkimRaceDifficultySO`). Regatta's Urchin rail-riding (`TryOverrideAim` while attached) does not carry the handicap.
 
-**Verify:** (1) Menu > Arena: open each of the four cards. The AI DIFFICULTY row shows beside ADD AI. It does not
-overlap the domain tiles, the carousel or Start, and Medium is lit. (2) Press Easy, then Hard. The row lights the
+**Verify:** (1) Menu > Arena: open each of the four cards. The AI DIFFICULTY row shows under the intensity row, as
+on the Arcade's Skim Race card, and Medium is lit. The vessel carousel sits under it: hull icon, arrows and SELECT
+VESSEL all inside its frame, nothing touching ADD AI. (2) Press Easy, then Hard. The row lights the
 pick, and the pad's left/right steps it. As a guest the row is greyed and shows the host's pick. (3) Launch Astro
 League on Easy with the Third Eye open (FrogletTools > AI > Third Eye). The AI's state flickers amber/ruby and it
 reaches the ball later than on Hard. On Hard the strip shows no reaction/mistake line. (4) Repeat in Broadside and

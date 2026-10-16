@@ -329,10 +329,12 @@ the next card; the block is a scroll view and only its viewport shrinks (375 -> 
 reference resolution).
 
 **The Arena's window** (`ArenaGameConfigureModal`, a scene object in Menu_Main) gets the same row
-from the same script, but not under its intensity row: its vessel carousel starts there. It sits
-in the free corner instead - right edge on Start's, centred between the domain tiles and the
-carousel, right of the ADD AI toggle (canvas px L=1411 B=242 W=461 H=113). Nothing moves at
-runtime there; `--check` proves it clears every sibling.
+from the same script, in the same place: under its intensity row (canvas px L=980 B=617 W=709 H=113),
+EASY under 1, MEDIUM under 2, HARD under 3. Its vessel carousel used to start there, so the script
+re-fits the carousel once, statically - from 8 px under the row to 8 px over ADD AI, the hull icon
+(aspect-preserving, 195 px tall) above SELECT VESSEL, the arrows level with the icon - because every
+Arena card offers the row and `ArenaLaunchPanel` has no controls block to move at runtime.
+`--check` proves the row and the carousel clear every sibling.
 
 ## 4. The controls block: the mode's abilities — and the icon animates like the game
 
