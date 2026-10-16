@@ -161,6 +161,18 @@ camera, weapons, zoom, etc. need to be aligned".
     ran.
   - In Charge mode, both reticles draw the lock cone's true angular size.
 - **Painted-target marker:** a spinning, pulsing diamond at the target's screen position.
+- **Crosshairs in both views** (Garrett, 2026-10-16: "the zoom views needs crosshairs so i know where it is aiming in
+  there"):
+  - In the eyepiece, full arms from a 10 px gap out to just inside the petal's inradius, with a centre pip.
+  - Short arms on the flight view.
+  - Each is a 2 px line in the domain colour over a darker underlay, so it reads against lit mass and empty space.
+  - The eyepiece's camera rides the nose looking down the hull's forward, so the crosshair's centre IS the weapons'
+    axis.
+  - They are plain `Image` quads on purpose. The Serpent's eyepiece showed no generated ring or post for four
+    playtests, and its reticle first appeared when plain `Image` quads were added (`SERPENT_SNIPER_SCOPE.md` rounds
+    9-11).
+  - Charge mode's lock-cone ring is still the generated `ScopeRingGraphic`; it is extra, so the crosshair does not
+    depend on it.
 
 ### 3.5 Crystals and nest flora
 
