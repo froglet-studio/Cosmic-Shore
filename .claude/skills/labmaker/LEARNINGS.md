@@ -863,3 +863,21 @@ Entries are grouped by family; within a family, the newest goes at the bottom.
   someone other than its author has run it.
 - Evidence: commit "merge the Brittle Star research and studio" (the `require` lines added).
 - Promoted: no
+
+### L-STU-79 — A free-ended cord that must whip needs a WAVE EQUATION on its link directions, not pose springs on its points
+- Lab: Brittle Star Studio · Branch: `cece/beautiful-knuth-j3atgk` · Date: 2026-10-16 · (L-STU-67 to 78 are claimed on
+  in-flight branches; this id skips them)
+- What happened: the first model for "cords like the Thresher's chain, without the weight" pulled each point toward its
+  place on a straight pose line, capped lengths with follow-the-leader and re-read velocities from the move (PBD). It
+  passed straight-line and frame-rate tests, but a node prototype showed the two things a whip needs were missing: a
+  root flick moved every link at once (no travelling wave), and 30 s of random flying pumped node speeds to 4,000 u/s
+  (FTL plus the velocity re-read injects energy).
+- Do instead: model the cord as unit link DIRECTIONS laid end to end (inextensible by construction) obeying
+  `u'' = k (u[i-1] - 2u[i] + u[i+1])`, the root direction fixed and the tip free; damping and a pose spring onto the
+  straight line are the analog "stiffen" dials. Waves then emerge and reflect off the tip with no scripting. Prototype it
+  in node first and measure three things before porting: when each link starts to move after a root flick (arrival
+  order and delay), the peak swing over a minute of random flight (bounded), and the same flick at 30 / 60 / 144 fps
+  (sub-step at a fixed h so they agree).
+- Evidence: `Assets/_Scripts/Controller/Vessel/BrittleStarCord.cs` and its tests in `BrittleStarTests` (arrival order,
+  saber straightness, no stretch, a minute bounded, 30 vs 144 fps); the studio's `cordStep` is the line-for-line port.
+- Promoted: no

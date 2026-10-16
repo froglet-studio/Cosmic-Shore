@@ -393,6 +393,19 @@ None of that is a play test. In order:
 - **F9 — profile the two costs** (measured offline only): each ring explosion runs ten `PrismSpatialIndex.QuerySphere`
   calls of up to the nucleus radius (392 u) (the knob: the sweep count in `BrittleStarExecutor.UpdateWaves`), and a Space
   Mode burst keeps ~1,100 swept rounds alive per hull (the knobs: `heatPerRound` shortens bursts, `fireRate` thins them).
+- **R1 — naming drift this branch created (inconsistency → a rename, not a redesign).** "Space Mode" is still spelled
+  `Mode.Destruction` / `BrittleStarControl.DestructionMode` / `BrittleStarDestructionMode.asset` / `Destruction01`, and the
+  HUD view's `ringGauge` is now the Charge card, `destructionGauge` the Space card — 27 occurrences over 9 files
+  (`grep -rcE 'Mode\.Destruction|DestructionMode|destructionGauge|ringGauge|Destruction01'` under `Assets`, 2026-10-16).
+  Kept so the enum values, the control asset's guid and the HUD variant's wiring did not move in the redesign. The fix:
+  rename the two view fields with `[FormerlySerializedAs]`, the enum members in code (their values are static), and
+  `git mv` the control asset (its guid survives); then `author_brittlestar_assets.py --check` and the HUD audit.
+- **R2 — a gap this branch walked past (fleet input layer).** `InputEvents` has no fourth face-button event: the gamepad
+  raises A / B / X (`Button1-3Action`) and RB (`FlipAction`) only (`GamepadInputStrategy.ProcessButtonInput`), so a
+  vessel that needs a fourth mode control must borrow `FlipAction` — which `DeviceOrientationHandler` also raises when a
+  phone is turned. Measure before acting: which vessels bind `FlipAction` today (`grep -l "InputEvent: 3" Assets/_Prefabs/Spacevessels/*.prefab`),
+  and whether a `Button4Action` (Y / a key / an on-screen button) is wanted fleet-wide (measured 2026-10-16: the
+  Brittle Star and the Grizzly bind it). Owner: the input layer.
 - **F12 — the Charge card's icon** still shows Ring Detonation (`author_brittlestar_icons.py`): Charge Mode's cords need
   their own icon; the card's gauge (the spare-ring stock) already fits the ring.
 - **F13 — replicate RT's depth** (two bytes a frame) so remote copies fire, heat and stiffen at the owner's real pull;

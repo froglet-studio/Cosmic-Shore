@@ -1048,6 +1048,18 @@ the vessel doc with the cheap knob (the fire rate) beside it, and check two side
 own rounds outruns them within T (own-domain hulls are immune, `Projectile.DisallowImpactOnVessel`), and an in-flight
 growth factor (`Gun.FireGun`'s `flightGrowthFactor`, the Sparrow's look) grows the HIT radius too.
 
+### 4.ab4 Analog-trigger-driven STATE diverges across peers; a heat limit bounds the pool
+
+The fleet's analog triggers (`InputStatus.RightTriggerAnalog`) do not replicate — the Thresher, the Manta's analog turn
+boost and the Brittle Star all read the owner's depth and fall back to "a press is a full pull" on remote copies and the
+autopilot (`ThresherExecutor.PollTriggers`). That is tolerable for something cosmetic or per-peer (a fire RATE, a cord's
+stiffness), but anything the depth ACCUMULATES into is state: the Brittle Star's gun heat runs hotter on a remote copy
+during a partial pull, so its overheat — and the danger trail it switches on — can differ by peer (vessel rule 48).
+Before keying gameplay state off an analog depth, either replicate the depth (two bytes a frame) or write down the gap in
+the vessel doc and its verification list, as `BRITTLE_STAR.md` §3.4 and follow-up F13 do. And when a gun overheats, the
+burst length — not the sustained rate — sizes its pool (4.ab3): rounds alive ≈ rate × guns × seconds-to-overheat for a
+burst that outlives its flight time, not rate × guns × T forever (the Brittle Star's five guns: ~1,100, not 4,050).
+
 ### 4.ac A per-VIEWER rule on something an ability places must fail OPEN — and must know its owner
 
 Some placed objects look different to different pilots: the Butterfly's fold wormhole first
