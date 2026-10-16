@@ -849,3 +849,10 @@ Entries are grouped by family; within a family, the newest goes at the bottom.
 - Do instead: create the mesh with its full capacity, call `setColorAt` on every slot, THEN set `count = 0`. When a tint "does nothing", read the attribute's array length before touching materials or lighting.
 - Evidence: `PumpRiderLab.html` `build3D` → `inst()`.
 - Promoted: no
+
+### L-STU-68 — Model the hand: when a button takes a thumb off a stick, the AI's sticks must pay for it too
+- Lab: Pump Rider Lab round 2 (`Docs/Studios/PumpRiderLab.html`) · Branch: `cece/charming-rubin-ro74tj` · Date: 2026-10-16
+- What happened: the designer's dual-stick scheme puts the knees on XDiff and a push on A, and pointed out that a player takes a thumb off a stick to press A. The AI writes raw sticks through the game's mix. When it also zeroes the right stick for `ppThumbOff` 0.25 s after each A press, Dual stick averages 125.4 u/s on the oval from a stop and rates 70.6% of strokes PERFECT. With the thumb-off set to 0, it scores exactly what the trigger-knees way scores (129.5, 92.9%). Started at 150 u/s, where nobody pushes, the two are identical, so the whole 4.1 u/s and 22-point gap is the hand.
+- Do instead: when a control scheme shares a hand between two inputs (a face button and a stick, a trigger and a bumper), write the conflict into the AI's INPUTS, not into the model, and give the cost its own dial with 0 as the control. Otherwise the scorecard rates the scheme as if the player had a third thumb.
+- Evidence: `PumpRiderLab.html` `aiInput` (`thumbUntil`), `simStep` (`mix`); `PUMP_RIDER_LAB.md` round 2.
+- Promoted: no

@@ -11,7 +11,7 @@ the bends and bending and extending its knees**. The question it puts to the des
   ride it with a gamepad (the claude.ai viewer can block the Gamepad API).
 - **The Urchin it borrows from:** `Assets/_Scripts/Controller/Vessel/R_VesselActions/URCHIN_TRAIL_RIDER.md`
   (the 1D grind, latching, the speed carry) and `URCHIN_TRACK_PROJECTOR.md` (the rail prism size).
-- **Gate:** `node .claude/skills/labmaker/verify_lab.cjs Docs/Studios/PumpRiderLab.html` (PASS, round 1).
+- **Gate:** `node .claude/skills/labmaker/verify_lab.cjs Docs/Studios/PumpRiderLab.html` (PASS, round 2).
 
 The stage is a **3D world** (three.js r128): the rail drawn as real 3 × 3 × 6 u prisms every 8 u
 (`UrchinTrackAction.asset`), and fixed things to read speed, height and lean against. A floor grid under the
@@ -76,6 +76,7 @@ crawls there at 20 u/s.
 
 | Way | Pilot does | Speed comes from |
 |---|---|---|
+| **Dual stick** (round 2, default) | the Urchin's two sticks: XDiff = knees (apart = bent, together = straight), YDiff = roll round the rail, XSum / YSum = look only, A = push | the law, analog knee stroke; the push from a stop |
 | **Knees** | trigger = knees (analog), stick = lean | the law, analog knee stroke |
 | **Tap** | one button: hold = crouch, let go = stand; stick = lean | the law, snapped knees (`ppTapLegs` ×) |
 | **Beat** | hold through humps, let go at the bottom of each dip; stick = lean | a kick of `ppBeatKick` × how deep in the dip you let go (no leg physics) |
@@ -86,7 +87,7 @@ crawls there at 20 u/s.
 
 ## Shipped vs lab
 
-`SHIPPED` holds the Urchin numbers this vessel would inherit, each naming its source:
+`SHIPPED` holds the Urchin numbers this vessel would inherit, each naming its source (round 2 adds `PitchScaler` / `YawScaler` / `RollScaler` 90 °/s from `Urchin.prefab`, replacing the lab's 270 °/s lean rate):
 `FriendlyTerrainSpeed` 300 / `HostileTerrainSpeed` 20 (`Urchin.prefab` `TrailFollower`),
 `speedTrackingRate` 5 (`TrailFollower` C# default), `DefaultThrottleScaler` 65 (`Urchin.prefab`,
 free-flight cruise), `rideSurfaceClearance` 1.5 (`GunVesselTransformer` C# default), `prismSpacing` 8
@@ -96,7 +97,91 @@ shapes (roller radius 70 u, wavelength 360 u), the per-way dials and the AI.
 
 ---
 
-## Round 1b (2026-10-15): fidelity — a world to ride through
+## Round 2 (2026-10-16): the dual-stick scheme and the push
+
+The designer's direction, verbatim: *"two thumb controls based on sums and diffs. pitch and yaw remain the
+same but only control look while attached. roll is also the same around the z axis of the blockscape. so
+that is just like urchin. the difference is that urchin has a throttle on the xdiff but this will have leg
+extension. so pulling your thumbsticks apart will be fully bent knees and full together (0 diff) will be
+fully straight legs. players will take their thumb off a joystick to hit the a button and that will pulse
+them down the line to build speed from a stop. this will feel like taking you foot off a skateboard to
+push, but once you get pumping you wont need it."*
+
+**Built as the new default way, Dual stick:**
+
+- **The game's mix, line for line** (`DualStickMix.Mix`, `GamepadInputStrategy`): `XSum = Ease(rx + lx)`,
+  `YSum = −Ease(ry + ly)`, `XDiff = (rx − lx + 2) / 4`, `YDiff = Ease(ry − ly)`, `Ease(x) = ±(1 − cos(x · 0.785))`.
+  Browser pads report +y down, so y is negated to Unity's +y up (L-STU-8).
+- **XDiff = knees**: knee bend = `clamp((XDiff − 0.5) × 2, 0, 1)`, so sticks fully apart = fully bent and
+  together (XDiff 0.5) = straight; pushing them past together stays straight.
+- **YDiff = roll round the rail** at `RollScaler` 90 °/s (`Urchin.prefab`); every way now rolls at the Urchin's
+  rate instead of round 1's 270 °/s.
+- **XSum / YSum only turn your look** at `YawScaler` / `PitchScaler` 90 °/s. The camera follows the look and the
+  body turns to it; an aim line shows it. Input ▸ Look: *Turns with the rail* (an offset from the rail ahead;
+  default) or *Fixed in the world* (the Urchin hull: it stays pointed where you left it, so you turn it through
+  each berm). `ppLookReturn` (0 = stays) springs it back.
+- **A = push**: one press adds `ppPushKick` 30 u/s × (1 − v / `ppPushTop` 160), delivered over 0.18 s, at most
+  once per `ppPushCooldown` 0.45 s. It helps from a stop and does nothing at 160 u/s, so pumping has to take
+  over. The back foot drops to the rail while you push.
+- **The thumb comes off a stick.** Pressing A takes the right thumb off for `ppThumbOff` 0.25 s, and the right
+  stick springs to centre: the knees half-straighten and the roll changes. A real pad does this; the AI writes it
+  into its own sticks so the scorecard pays it too. Keyboard: Space / mouse = knees bent, A / D roll, arrows
+  look, F push. Phone: each half of the view is a thumbstick (drag from where the thumb lands), plus a PUSH (A)
+  button.
+- **Runs start from a stop** (`ppStartSpeed` 0); the scorecard adds **To 150 (s)** and **Pushes /min**.
+- Instruments: a STICKS panel draws both sticks as the game reads them, with knee bend, roll, look and the
+  push cooldown. Ratings ignore strokes below 40 u/s, where they are noise.
+
+**Measured** (page `runBatch`, seeds 1–2, from a stop; noise band over 8 seeds: Dual 1.9 u/s, Knees 0.9). The oval:
+
+| Way | 20 s skilled / rookie avg | To 150 skilled / rookie (s) | Pushes /min | Perfect % | 60 s skilled / rookie avg (end) |
+|---|---|---|---|---|---|
+| Dual stick | 125.4 / 102.4 | 18.9 / — | 21 | 70.6 | 192.3 / 122.3 (332) |
+| Knees (trigger) | 129.5 / 103.2 | 17.1 / — | 21 | 92.9 | 202.3 / 124.0 (353) |
+| Tap | 131.0 / 103.6 | 15.8 / — | 21 | 92.9 | 228.4 / 128.3 (445) |
+| Beat | 127.8 / 101.2 | — / — | 24 | 83.3 | 142.8 / 113.7 (165) |
+| Lean | 119.7 / 96.8 | — / — | 24 | 0 | 131.3 / 101.0 (141) |
+| Grind + knees | 341.2 / 320.9 | 0.13 / 0.13 | 3 | 90.9 | 365.1 / 334.6 (360) |
+| Coast (no push) | 0 / 0 | — | 0 | — | 0 / 0 |
+| Urchin grind | 297.1 / 297.1 | 0.15 / 0.15 | 0 | — | 299.0 / 299.0 |
+
+(— in "To 150" = not reached in the run; in the 60 s runs the rookie reaches 150 at 52.4 s on Dual stick, 51.1 on Knees.)
+
+### What it says
+
+- **The push does what it was asked to**: from a stop, the skilled AI's pushes reach 60 u/s at 1.0 s, 100 at 2.0 s
+  and 120 at 2.95 s; then the push stops paying and pumping carries on (150 at 18.85 s). Once pumping, the skilled AI stops pressing A.
+- **The thumb coming off costs real speed.** With `ppThumbOff` 0, Dual stick scores exactly what trigger
+  Knees does (129.5 u/s, 92.9% PERFECT, to 150 in 17.1 s). With the thumb off for 0.25 s per push it loses
+  4.1 u/s, 1.8 s to 150, and 22 points of PERFECT, all of it in the pushing phase: started at 150 u/s (no
+  pushing), Dual stick and Knees are identical (180.5 / 172.0).
+- **The gap between "the push stops" and "pumping is strong" is slow.** Pumping pays with v², so from
+  ~120 u/s to 150 takes the skilled AI about 15 s and the rookie most of a minute. Either the push should
+  reach higher (`ppPushTop`), or the course should pay more at low speed (tighter rollers), or the rookie
+  needs to keep pushing longer. That is a design call.
+- **The Urchin's 90 °/s roll is enough for a skilled rider**: on the slalom from 150 u/s, Knees averages
+  196.5 at 90 °/s against 198.5 at round 1's 270 °/s (no scrub either way), because the skilled AI leans onto
+  the nearer side of each bend.
+
+### Checked (round 2)
+
+- `verify_lab.cjs` PASS (desktop and iPhone 13; determinism within a page and across loads).
+- The mix is the game's: sticks fully apart give `XDiff` 1, centred 0.5; `sticksFor` (how the AI and the keys
+  write sticks) round-trips through `mix` to 1.1e-16 over every unsaturated combination of 5 rolls × 4 bends × 3 yaws × 3 pitches.
+- A real two-finger touch on the phone (Chrome DevTools touch events): a thumb on each half, dragged 40 px
+  apart, bent the knees (h 4 → 1.1 u in 0.33 s) and handed the ride to the human.
+- Screenshots read: the oval from a stop (PUSH pops, the STICKS panel, the back foot on the rail), the slalom
+  trackside, the phone with both thumbsticks and the PUSH button.
+- Flat pump control 0.00 for every way.
+
+### Decision needed (designer, round 2)
+
+1. **Push strength and reach**: `ppPushKick` 30 and `ppPushTop` 160 leave a slow stretch from ~120 to ~150 u/s.
+2. **Look while attached**: turns with the rail, or fixed in the world like the Urchin hull.
+3. **Thumb off**: keep the cost (it is what a pad does), or soften it (e.g. the knees hold their last bend while
+   A is down).
+
+## Round 1b (2026-10-15): fidelity — a world to ride through (numbers from 150 u/s; superseded by round 2's start from a stop)
 
 The designer's verdict on round 1: *"without frames of reference this is very hard to appreciate at all.
 Increase the lab fidelity heavily so I can try to enjoy this."* Round 1 drew a 2D-canvas rail in empty
