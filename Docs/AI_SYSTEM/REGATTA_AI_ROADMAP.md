@@ -86,7 +86,7 @@ The Rhino now has a drive (`RampBoostAIPolicySO`, step 4's first cut). Nothing h
 
 **2026-10-17: the Regatta AIs learn from people's editor flights.** The Squirrel's skim line came from 29 flights
 (`SITUATION_RECORDING_PLAN.md` §8); the Rhino, Dolphin and Manta drives learn the same way through Regatta-only variants
-(`learn_drives_from_flights.py`, §9), waiting on flights of those hulls. The Stoat needs to be on the Regatta card first.
+(`learn_drives_from_flights.py`, §9), waiting on flights of those hulls. The Stoat joined the card on 2026-10-17 and learns the same way.
 
 **Decision (Yash, 2026-10-16): the Regatta AIs are tested in the Unity editor only, and the Regatta artifact is
 deleted.** "Delete the artifact, it's not needed; only tests will happen in the Unity editor itself." The loop is: change
@@ -138,9 +138,10 @@ The user's brief: **better speed control and manoeuvring with the black-hole / w
 2. **Clone to Unity** (`/artifact-to-unity`): the drive's numbers through `studio_to_unity.py`; the decision
    logic ported line for line, as the first drive in `Controller/AI/Drives/` (the fold in §2.2), with
    page-golden tests.
-3. **Put the Stoat on the Regatta card**: `author_regatta_assets.py` (the card's `Vessels`, a `StartingElements`
-   row), a Stoat row in `regatta_balance.py` (its speed is the field flight, not a ceiling, so the model needs a
-   sling term). The balance assert must still pass.
+3. **Put the Stoat on the Regatta card** - **done 2026-10-17** (Yash): `author_regatta_assets.py` lists it, and
+   `regatta_balance.py`'s Stoat row prices its warp (Time 10 at every intensity, 48.5 s at I1 beside the Squirrel and
+   the Urchin; the fleet's tuned spread unchanged at 4.13x). Its autopilot learns from editor flights through
+   `AIModeTuning` (`SITUATION_RECORDING_PLAN.md` §9).
 4. **Verify**: Third Eye in Regatta (Arcade ▸ Regatta, ally AI set to Stoat); Easy vs Hard; profile the
    pathfinder near a sink.
 

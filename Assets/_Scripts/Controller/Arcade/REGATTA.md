@@ -43,6 +43,7 @@ Measured off the shipped code and assets (the vessel-numbers pass that preceded 
 | **Serpent** | flies beside it | 4 charges × 3 s at 160 u/s, regen 3.6 s/charge | none wired |
 | **Sparrow** | flies beside it | indefinite boost 135 u/s | ram = slow |
 | **Scarab** | flies beside it | 216 u/s ceiling, ×1.5 at Time 10 | none wired |
+| **Stoat** (on the card 2026-10-17) | flies beside it; its pair's gravity **never moves a rail** (super-shielded prisms are never admitted to `BlackHoleGravityField`) | the pathfinder's WARP: the flight clock ×2.5 while its pair bends the path (Time → ×5); turns scale with it, so its 72 u turning circle holds at any warp | none wired; a vessel crossing its attractor's horizon is carried out of the repulsor |
 
 Three rails, one per domain, because `TrailFollower` keys friendly terrain on **domain**: a
 neutral rail would be hostile to every rider. In a two-domain lobby the third rail is hostile to
@@ -74,6 +75,7 @@ line, intensity 1):
 | Squirrel | none (rail) | 49 s | 49 s | — |
 | Serpent | Time → boost ×1.6, duration ×1.6 | 101 s | 58 s | Time 10 |
 | Sparrow | Time → boost ×1.5 | 108 s | 74 s | Time 10 |
+| Stoat | Time → warp ×2.5..5 | 97 s | 49 s | Time 10 |
 
 **Spread 8.7× at rest → 6.0× tuned (5.3× at intensity 4).** That residual is the finding, not
 a rounding: an element spans ~1.5× on the hulls it reaches and nothing at all on the Rhino, while
@@ -127,6 +129,15 @@ gate 0 on the pole above — a grid of hulls whose cruise speeds span 34× does 
 corner it did not ask for.
 
 ## 6. AI
+
+**The Stoat (on the card 2026-10-17, Yash).** It flies the same gate steering; its own autopilot is three executors,
+unchanged: `StoatModeExecutor` switches to Time mode when the ring is ≥ 70° off the nose (back within half of it),
+`StoatDipoleExecutor` flies Mass mode's field dipole (path-watching, one-lap cap), and `StoatSlingExecutor` slings in
+Time mode (ring ≥ 30° off, ≥ 120 u away, every 3 s). In Regatta each reads its AUTOPILOT numbers through
+`AIModeTuning` (`StoatModeAction_Regatta`, `StoatDipoleConfig_Regatta`, `StoatSlingConfig_Regatta`), which
+`Tools/Build/learn_drives_from_flights.py` writes from people's editor flights; none exists yet, so it flies its shipped
+numbers. A person flying the Stoat reads the hull's own configs. Opponent AI stay pinned to the Squirrel
+(`OpponentAIVessel`); a Stoat AI is an ally pick (the launch panel's ally chip) or your own hull on the Third Eye's AI.
 
 The platform's gate-race AI (two-waypoint approach, latched side) plus one override for the one
 hull that ATTACHES: an AI **Urchin** flies its kit through the shared `UrchinAutopilotDriver`

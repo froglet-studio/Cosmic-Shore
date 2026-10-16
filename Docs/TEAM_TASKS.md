@@ -390,12 +390,13 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Added:** 2026-10-16 by Yash's session (`Ys-bleeding-edge`)
 - **See:** Docs/AI_SYSTEM/SITUATION_RECORDING_PLAN.md §9
 
-### T-20261016-0eb3 · open · decision · Regatta AI
+### T-20261016-0eb3 · done · decision · Regatta AI
 - **Task:** Two decisions for the Regatta AIs: (1) put the Stoat on the Regatta card (it is one of the roadmap's six but cannot be flown in Regatta, so its AI cannot learn from flights); (2) cece/relaxed-hopper-r62hbd carries a second, older RampBoostAIPolicySO for the Rhino than Ys-bleeding-edge's - pick one before it merges
 - **Done when:** Both answered in Docs/AI_SYSTEM/REGATTA_AI_ROADMAP.md
 - **Who can take it:** Yash with Garrett (Stoat and Rhino owner sessions)
 - **Added:** 2026-10-16 by Yash's session (`Ys-bleeding-edge`)
 - **See:** Docs/AI_SYSTEM/SITUATION_RECORDING_PLAN.md §9
+- **Done:** 2026-10-16, (1) Yash put the Stoat on the Regatta card (2026-10-17, author_regatta_assets.py); (2) the Rhino ramp policy question moved to its own task.
 
 ### T-20261016-2292 · open · test · Arena launch
 - **Task:** Open Menu > Arena in the editor and look at the AI Difficulty row and the re-fitted vessel carousel on all four cards (Astro League, Brood Rush, Regatta, Broadside)
@@ -431,3 +432,17 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Who can take it:** anyone (icon art); Garrett to approve
 - **Added:** 2026-10-16 by Claude session cece/beautiful-knuth-j3atgk (`cece/beautiful-knuth-j3atgk`)
 - **See:** Assets/_Scripts/Controller/Vessel/R_VesselActions/BRITTLE_STAR.md 4 and follow-up F12
+
+### T-20261016-92b0 · open · decision · Regatta AI
+- **Task:** cece/relaxed-hopper-r62hbd carries a second, older RampBoostAIPolicySO for the Rhino than bleeding-edge's - pick one before it merges (learn_drives_from_flights.py writes only fields both share, so either works)
+- **Done when:** The choice is recorded in Docs/AI_SYSTEM/REGATTA_AI_ROADMAP.md and the other branch is reconciled
+- **Who can take it:** Yash with Garrett (Rhino owner sessions)
+- **Added:** 2026-10-16 by Yash's session (`Ys-bleeding-edge`)
+- **See:** Docs/AI_SYSTEM/SITUATION_RECORDING_PLAN.md §9
+
+### T-20261016-b525 · open · test · Regatta AI
+- **Task:** Fly Regatta I1 as the Stoat, 5+ finished races, storing every one: Mass mode's dipole on the straights, Time mode (B) slings into the hard corners; in one race flip Third Eye > Pilots > AI on your Stoat for a lap and back. Then ask a session to run learn_drives_from_flights.py --write (writes StoatModeAction / StoatDipoleConfig / StoatSlingConfig _Regatta)
+- **Done when:** 3+ finished Stoat Regatta flights on bugledger/<you> and the checklist entry 'The Stoat races Regatta' steps 1-4 pass
+- **Who can take it:** Yash
+- **Added:** 2026-10-16 by Yash's session (`Ys-bleeding-edge`)
+- **See:** Docs/UNITY_VERIFICATION_CHECKLIST.md; Docs/AI_SYSTEM/SITUATION_RECORDING_PLAN.md §9

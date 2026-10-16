@@ -1,5 +1,6 @@
 using CosmicShore.Data;
 using CosmicShore.Gameplay;
+using CosmicShore.ScriptableObjects;
 using NUnit.Framework;
 using UnityEngine;
 
@@ -31,6 +32,24 @@ namespace CosmicShore.Tests
         public void ForMode_NullPolicy_StaysNull()
         {
             Assert.IsNull(AIBoostPolicySO.ForMode(null, GameModes.Regatta));
+        }
+
+        [Test]
+        public void AIModeTuning_WithoutAVariant_ReturnsTheAssetItself()
+        {
+            // The Stoat's executors read their autopilot numbers through this; with no StoatSlingConfig_Regatta (or any
+            // other <name>_<mode> copy) the AI flies the hull's own config.
+            var asset = ScriptableObject.CreateInstance<StoatSlingConfigSO>();
+            asset.name = "NoSuchStoatConfigForTests";
+            try
+            {
+                Assert.AreSame(asset, AIModeTuning.For(asset, GameModes.Regatta));
+                Assert.IsNull(AIModeTuning.For<StoatSlingConfigSO>(null, GameModes.Regatta));
+            }
+            finally
+            {
+                Object.DestroyImmediate(asset);
+            }
         }
 
         [Test]

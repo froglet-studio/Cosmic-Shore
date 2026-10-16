@@ -90,6 +90,26 @@ League on Easy with the Third Eye open (FrogletTools > AI > Third Eye). The AI's
 reaches the ball later than on Hard. On Hard the strip shows no reaction/mistake line. (4) Repeat in Broadside and
 Brood Rush. (5) Regatta on Easy: the AI threads rings visibly worse than on Hard. (6) Arcade window: the row
 still sits under the intensity row on Skim Race and is still hidden on a card without it.
+### 🔴 The Stoat races Regatta: on the card, its autopilot tunable per mode (`Ys-bleeding-edge`, 2026-10-17) — NOT EDITOR-VERIFIED
+
+**What landed:** the Stoat is on `ArcadeGameRegatta` (`author_regatta_assets.py`, `--check` OK) with a Time +10 starting row
+at every intensity, from `regatta_balance.py`'s new Stoat row (its warp; 48.5 s at I1, fleet spread unchanged at 4.13x).
+`AIModeTuning` lets the three Stoat executors read their AUTOPILOT numbers from a `<config>_Regatta` copy (none exists
+yet, so the AI flies its shipped numbers); a person flying the Stoat reads the hull's own configs. `HumanFlightRecorder`
+adds `timeMode` (1 Time, 0 Mass, -1 another hull). Super-shielded rails are never pulled by the Stoat's holes
+(`BlackHoleGravityField` line 271).
+**Verified without the editor:** `author_regatta_assets.py --check`, `check_vessel_class_icons`, `check_gamelist_scenes`,
+`render_card_backgrounds --check`, `learn_drives_from_flights.py --self-test` (the Stoat's switch / sling rules recovered,
+a random slinger rejected), gates, `unity_refcompile`.
+**Verify in editor:**
+1. Arcade ▸ Regatta: the Stoat is in the vessel carousel with its own icon. Pick it and race I1: it launches, races 3
+   laps, and its HUD's Time flower shows the +10 start.
+2. Your rails stay put while you lay pairs next to them (no rail prism pulled or swallowed).
+3. Set an ally chip to the Stoat (or flip the Third Eye's You / AI to AI on your Stoat): the AI switches to Time mode
+   for the hard corners, slings, and threads rings. Watch for a stall (circling a ring) or a missed mouth at warp speed.
+4. Store the race: the file has a `timeMode` column that flips when you press B.
+5. `RegattaDriveTuningTests` (EditMode): 4 pass.
+
 ### 🔴 Regatta drive tuning per mode + resource meters in flights (`Ys-bleeding-edge`, 2026-10-17) — NOT EDITOR-VERIFIED
 
 **What landed:** `AIBoostPolicySO.ForMode` (a `Resources/AIBoostPolicies/<policy>_<mode>` variant, else the hull's own

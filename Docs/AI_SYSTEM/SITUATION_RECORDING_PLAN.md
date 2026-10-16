@@ -291,7 +291,7 @@ ring, the larger stick axis, the runway = distance / speed).
 | Dolphin | `DolphinAIBoostPolicy` (`ChargeBoostAIPolicySO`) | when you discharge, and at what charge (the boost meter, newly recorded as `m0..m3` with `meterNames` and `boostMeter`) | `…/DolphinAIBoostPolicy_Regatta` |
 | Manta | `MantaAnalogTurnBoostExecutor`'s Soar bands | the stick band you Soar flat inside, the yaw band past which you split the triggers: fitted to the executor's own trigger formula | `…/MantaSoarAITuning_Regatta` (`MantaSoarAITuningSO`) |
 | Urchin | `RegattaController`'s rail riding + `UrchinAutopilotConfig` | how much of the race you ride, and on your own rail: **report only** (its Regatta riding numbers are scene fields) | nothing |
-| Stoat | its dipole autopilot | **not on the Regatta card**, so it cannot be flown there yet | nothing |
+| Stoat (on the card 2026-10-17) | three autopilots: `StoatModeAction` (when to switch to Time mode), `StoatDipoleConfig` (Mass mode's field dipole), `StoatSlingConfig` (Time mode's catch sling) | the angle you switch to Time mode at; Mass mode: your squeeze, the ring's distance when you press, how long you hold, how often, how far round you let it carry you; Time mode: the turn and distance you sling at, how often, your squeeze, where the ring is when you let go. Needs the new `timeMode` column | `StoatModeAction_Regatta`, `StoatDipoleConfig_Regatta`, `StoatSlingConfig_Regatta` (read through `AIModeTuning`, autopilot numbers only) |
 
 **Every other mode is untouched.** A variant is looked up per mode, falling back to the hull's own asset:
 `AIBoostPolicySO.ForMode` (used by `AIPilot` where it builds the drive) and `MantaSoarAITuningSO.LoadForMode` (used by
@@ -315,6 +315,7 @@ these hulls exists yet: all 32 so far are Squirrel.
 | Dolphin | 5+ | drift to charge, discharge on the straights | the same AI lap |
 | Manta | 5+ | Soar on both triggers, pivot with one in the hairpins | the same AI lap |
 | Urchin | 5+ | ride your own rail as much as you can | the same AI lap |
+| Stoat | 5+ | race it your way: Mass mode's dipole on the straights, Time mode (B) slings into the hard corners | the same AI lap |
 
 Then `python3 Tools/Build/learn_drives_from_flights.py --write` writes the variants and `LEARNED_DRIVES.md`; race the
 learned AI against the old in the editor (delete one variant asset to compare).
