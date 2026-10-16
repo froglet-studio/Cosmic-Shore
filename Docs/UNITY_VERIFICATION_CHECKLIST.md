@@ -10401,3 +10401,17 @@ Checked offline: refcompile player + editor (no new errors), gates, `author_menu
 7. **Pilots:** the four captains (Sparrow: Feist, Shrapnel, Longshift, Flux) with portrait, line, quote and wingmate
    behaviour; the cards switch the hero. **Artifacts:** the "Undiscovered" slot.
 8. **Unlock:** the unlock button / spend-crystals popup still work as before on a locked vessel.
+
+## 🔴 2026-10-16 — Windows rev 3 layout (`claude/new-session-76hnyc`) - NOT EDITOR-VERIFIED
+
+Prefab and scene changes only (no C#). Checked offline: `--check` / `--self-test` of the arcade, arena, toybox and
+mission generators (each with a "body under the friends handle" planted defect) and of every generator that imports
+them.
+
+1. **Clear of the handle:** open Arcade, Arena, Toy Box and Mission - the friends handle on the left edge covers no card
+   or title; the header's title lines up with the cards.
+2. **Arcade:** Weekly challenge and Maelstrom are two tall cards side by side across the full width; the grid shows
+   five cards per row; every mode reachable by scrolling and pressable (the last card too).
+3. **Arena:** the four games in one row of tall cards; title, tagline, hull chips, eyebrow and domain count readable and
+   not overlapping on each; a press opens the configure window as before.
+4. **Pad:** D-pad moves across the five-wide grid and into the feature row; focus lands on a card when a window opens.

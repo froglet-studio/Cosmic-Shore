@@ -188,13 +188,13 @@ def build_view():
     root = N("root", "ToyboxView", STRETCH)
     image_node(root, "NavDim", "NavDim", R((0, 1), (1, 1), (0, 0), (0, 84), (0.5, 1)), "SurfaceBlack", alpha=0.75)
     image_node(root, "Backdrop", "Backdrop", R((0, 0), (1, 1), (0, -42), (0, -84)), "SurfaceBlack", alpha=A.WINDOW_BACKDROP_ALPHA)
-    body = root.child(N("Body", "Body", R((0, 0), (1, 1), (5, -78), (-70, -236))))
+    body = root.child(N("Body", "Body", A.WINDOW_BODY))
     body.add("hlg", 114, lambda ctx, go: K.hv_layout(False, (0, 0, 0, 0), 24, 0, (1, 1), (0, 1))(ctx, go)
              .replace("  m_ReverseArrangement: 0\n", "  m_ReverseArrangement: 1\n"))
     # Motion (section 22.8): the window's two blocks rise in on every open - the modal never
     # re-enables, so ModalWindowManager replays them (KitEntrance.ReplayUnder).
     body.add("cg", 225, M.canvas_group()).add("in", 114, M.entrance("Rise", stagger=1))
-    ex = body.child(N("Explore", "ExploreScroll", R((0, 1), None, (444, 0), (1406, 844), (0, 1))))
+    ex = body.child(N("Explore", "ExploreScroll", R((0, 1), None, (0, 0), (A.EXPLORE_W, 844), (0, 1))))
     ex.add("le", 114, le(mw=0, fw=1)).add("scroll", 114, A.scroll_rect("Explore/Viewport/Content", "Explore/Viewport"))
     vp = ex.child(N("Explore/Viewport", "Viewport", R((0, 0), (1, 1), (-5, 0), (-10, 0))))
     vp.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image((1.0, 1.0, 1.0, 0.0), raycast=True)) \
@@ -225,7 +225,7 @@ def build_view():
     label(empty.child(N("Empty/Text", "Text", STRETCH)), "No toys are standing right now.", "Body", "NeutralLightest",
           align="center")
     # Rev 3: the party panel moved to the one friends drawer on Menu_Main.
-    header = root.child(N("Header", "Header", R((0, 1), (1, 1), (0, -108), (-80, 64), (0.5, 1))))
+    header = root.child(N("Header", "Header", A.WINDOW_HEADER))
     header.add("cg", 225, M.canvas_group()).add("in", 114, M.entrance("Rise", distance=10))
     label(header.child(N("Header/Eyebrow", "Eyebrow", R((0, 1), None, (0, 0), (300, 18), (0, 1)))), "TOY BOX", "Label",
           "NeutralLightest")
@@ -420,6 +420,7 @@ def validate(files):
     for field, want in CARD_FIELDS.items():
         C.wired(card, body, field, want, "ToyCard")
     view = files[prefab_path("ToyboxView")]
+    A.check_window_inset(view, "ToyboxView")      # rev 3: clear of the friends handle
     V = K.FileIds("ToyboxView")
     _, daily = A.doc_of(view, V("Daily#daily"))
     for field, want in DAILY_FIELDS.items():
@@ -470,6 +471,8 @@ def self_test(files):
     cases = [
         ("the party panel back in the window", lambda f: f.__setitem__(view, f[view] + f"# guid: {A.asset_guid('PartyPanel')}\n")),
         ("the window's entrances stripped", lambda f: f.__setitem__(prefab_path("ToyboxView"), M.strip_entrances(f[prefab_path("ToyboxView")]))),
+        ("the body back under the friends handle", lambda f: f.__setitem__(prefab_path("ToyboxView"), A.in_one(
+            f[prefab_path("ToyboxView")], K.FileIds("ToyboxView")("Body#rt"), "m_AnchoredPosition: {x: 20", "m_AnchoredPosition: {x: -20"))),
         ("a toy card with no portrait", lambda f: f.__setitem__(card, re.sub(r"(  portrait: )\{fileID: -?\d+\}", r"\1{fileID: 0}", f[card]))),
         ("the daily card without its countdown", lambda f: f.__setitem__(view, re.sub(r"(  countdownText: )\{fileID: -?\d+\}", r"\1{fileID: 0}", f[view]))),
         ("the card prefab back on the scene template", lambda f: f.__setitem__(SCENE, f[SCENE].replace(

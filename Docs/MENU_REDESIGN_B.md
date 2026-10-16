@@ -1804,3 +1804,23 @@ ability's real effect: the real thing needs the vessel alive in a world, i.e. th
 (`ModePreviewSession` + a Barren-cell definition) - next step. Upgrades are a preview, not a purchase (no saved
 per-vessel element level exists). Pilots cannot be chosen until the Pilots system (PilotSO, branch
 `claude/modest-sagan-0ybcgo`) lands.
+
+## 32. Rev 3: the four windows use the room the friends panel gave back (built 2026-10-16, awaiting in-editor approval)
+
+The party panel left the Arcade, Arena, Toy Box and Mission windows for the one friends drawer (§30), so their explore
+scroll now fills the body. Generators: `author_menu_arcade.py` (owns the shared rects), `author_menu_arena.py`,
+`author_menu_toybox.py`, `author_menu_mission.py`.
+
+- **Shared body and header** (`WINDOW_BODY`, `WINDOW_HEADER`): 100 px in from the left so nothing sits under the friends
+  handle (76 px, drawn over every window), 60 from the right. Every window's validator checks this
+  (`check_window_inset`, with a planted defect each).
+- **Arcade** (the R3Arcade board): the two features (Weekly challenge, Maelstrom) grow to 300 tall and share the full
+  width; the grid goes to **five across**, 7 x 5 = 35 slots, which holds the whole roster with no row cloned at
+  runtime. `QuestGraphRunner.gameCards` names all 35.
+- **Arena**: the four arena games stand in **one row of tall cards** (560 tall) instead of a 2 x 2 of wide ones; each card
+  stacks its words from the bottom - hulls, tagline, title, then the eyebrow with the domain count on its right.
+- **Toy Box, Mission**: only the shared inset; their layouts are unchanged.
+
+**Not done, and why.** The board's filter chips (Racing / Combat / Collect / Favourites) need a category on
+`SO_ArcadeGame`, which does not exist, and the board's "Game of the week" and quest-track column have no data source
+on this branch; none was invented.

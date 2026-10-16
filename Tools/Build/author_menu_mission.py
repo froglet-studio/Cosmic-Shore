@@ -133,13 +133,13 @@ def build_view():
     image_node(root, "Backdrop", "Backdrop", R((0, 0), (1, 1), (0, -42), (0, -84)), "SurfaceBlack", alpha=A.WINDOW_BACKDROP_ALPHA)
 
     # Sibling order is FOCUS order (ScreenSwitcher.Refocus): the cards first, the party panel next, Back last.
-    body = root.child(N("Body", "Body", R((0, 0), (1, 1), (5, -78), (-70, -236))))
+    body = root.child(N("Body", "Body", A.WINDOW_BODY))
     body.add("hlg", 114, lambda ctx, go: K.hv_layout(False, (0, 0, 0, 0), 24, 0, (1, 1), (0, 1))(ctx, go)
              .replace("  m_ReverseArrangement: 0\n", "  m_ReverseArrangement: 1\n"))
     # Motion (section 22.8): the window's two blocks rise in on every open - the modal never
     # re-enables, so ModalWindowManager replays them (KitEntrance.ReplayUnder).
     body.add("cg", 225, M.canvas_group()).add("in", 114, M.entrance("Rise", stagger=1))
-    ex = body.child(N("Explore", "ExploreScroll", R((0, 1), None, (444, 0), (1406, 844), (0, 1))))
+    ex = body.child(N("Explore", "ExploreScroll", R((0, 1), None, (0, 0), (A.EXPLORE_W, 844), (0, 1))))
     ex.add("le", 114, le(mw=0, fw=1)).add("scroll", 114, A.scroll_rect("Explore/Viewport/Content", "Explore/Viewport"))
     vp = ex.child(N("Explore/Viewport", "Viewport", R((0, 0), (1, 1), (-5, 0), (-10, 0))))
     vp.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image((1.0, 1.0, 1.0, 0.0), raycast=True)) \
@@ -160,7 +160,7 @@ def build_view():
              "  m_Constraint: 1\n  m_ConstraintCount: 2\n"))
     # Rev 3: the party panel moved to the one friends drawer on Menu_Main.
 
-    header = root.child(N("Header", "Header", R((0, 1), (1, 1), (0, -108), (-80, 64), (0.5, 1))))
+    header = root.child(N("Header", "Header", A.WINDOW_HEADER))
     header.add("cg", 225, M.canvas_group()).add("in", 114, M.entrance("Rise", distance=10))
     label(header.child(N("Header/Eyebrow", "Eyebrow", R((0, 1), None, (0, 0), (300, 18), (0, 1)))), "MISSIONS", "Label",
           "NeutralLightest")
@@ -296,6 +296,7 @@ def validate(files):
     assert "SO_ArcadeGame" not in card and A.S["view"] not in card, "a mission card must not ride the arcade data path"
 
     view = files[prefab_path("MissionView")]
+    A.check_window_inset(view, "MissionView")      # rev 3: clear of the friends handle
     V = K.FileIds("MissionView")
     _, vbody = A.doc_of(view, V("root#view"))
     assert vbody and S["view"] in vbody, "MissionView: the root carries no MissionExploreView"
@@ -341,6 +342,8 @@ def self_test(files):
     card, view = prefab_path("MissionCard"), prefab_path("MissionView")
     cases = [
         ("the window's entrances stripped", lambda f: f.__setitem__(prefab_path("MissionView"), M.strip_entrances(f[prefab_path("MissionView")]))),
+        ("the body back under the friends handle", lambda f: f.__setitem__(prefab_path("MissionView"), A.in_one(
+            f[prefab_path("MissionView")], K.FileIds("MissionView")("Body#rt"), "m_AnchoredPosition: {x: 20", "m_AnchoredPosition: {x: -20"))),
         ("mission cards shipped Available", lambda f: f.__setitem__(card, f[card].replace("  availability: 1\n", "  availability: 0\n"))),
         ("a card with no threat count", lambda f: f.__setitem__(card, re.sub(r"(  threatsText: )\{fileID: -?\d+\}", r"\1{fileID: 0}", f[card]))),
         ("the view drawing no missions", lambda f: f.__setitem__(view, f[view].replace(

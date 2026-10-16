@@ -23,7 +23,7 @@ on the "Menu Redesign B" canvas).
         deleted; one ArcadeView instance goes under `Arcade_Panel/Explore`, whose ArcadeExploreView is KEPT (four
         scene objects reference the view) and re-pointed into the instance. The window root stretches full screen (the view draws its own nav dim), the panel's
         old gradient Image is switched off, the two OfflineUIGates gate the new party panel, and the
-        FTUE QuestGraphRunner's gameCards list names the 28 new cards.
+        FTUE QuestGraphRunner's gameCards list names the 35 cards (7 rows of 5).
 
 Built from the kit generator's node model and component bodies (author_ui_kit_prefabs.py), so every
 body is Unity's serialization and every colour a UIThemeSO token. References into nested instances
@@ -115,7 +115,9 @@ PARTY_PREFABS = ("PartySlot", "PartyRequestRow", "PartyOnlineRow", "PartyPanel")
 ARCADE_PREFABS = ("ArcadeGameCard", "ArcadeView")
 PREFABS = PARTY_PREFABS + ARCADE_PREFABS
 
-GRID_ROWS, GRID_COLS = 7, 4
+# Rev 3: five across - the friends panel gave its 444 px back. 35 slots hold the roster without a clone,
+# and every rev-2 card key (Card r_c, c <= 4) still exists, so no scene stub goes stale.
+GRID_ROWS, GRID_COLS = 7, 5
 
 
 def asset_guid(name):
@@ -651,6 +653,14 @@ PANEL_W = 420
 # "I liked the transparent backgrounds way more than the solid black backgrounds"). Shared by the
 # Arena, Toy Box and Mission windows.
 WINDOW_BACKDROP_ALPHA = 0.55
+# Rev 3: the four windows' body and header, shared. The left inset clears the friends drawer's handle
+# (author_menu_friends_drawer.HANDLE, 76 px on the left edge, drawn over every window) with 24 px of
+# air; the right keeps 60. Vertical: 196 under the top (nav + header), 40 over the bottom.
+WINDOW_LEFT, WINDOW_RIGHT = 100, 60
+WINDOW_BODY = R((0, 0), (1, 1), ((WINDOW_LEFT - WINDOW_RIGHT) / 2, -78), (-(WINDOW_LEFT + WINDOW_RIGHT), -236))
+WINDOW_HEADER = R((0, 1), (1, 1), ((WINDOW_LEFT - WINDOW_RIGHT) / 2, -108), (-(WINDOW_LEFT + WINDOW_RIGHT), 64), (0.5, 1))
+EXPLORE_W = 1920 - WINDOW_LEFT - WINDOW_RIGHT      # at the 1920 reference width
+CONTENT_W = EXPLORE_W - 10 - 12                     # viewport inset, content padding
 EMPTY_LINE = "No one else is online right now. Pilots who come online show here, ready to invite."
 
 
@@ -841,11 +851,13 @@ def build_card(placeholder_art):
 # ArcadeView.prefab
 # --------------------------------------------------------------------------------------------
 
-FEATURE_H = 232
+# Rev 3: taller - the quest-view rhythm of the R3Arcade board, two features across the full width.
+FEATURE_H = 300
+FEATURE_W = (CONTENT_W - 20) // 2
 
 
 def feature_card(parent, key, name, art, eyebrow, eyebrow_token, title, extra=None):
-    n = parent.child(N(key, name, R((0, 1), None, (0, 0), (680, FEATURE_H), (0, 1))))
+    n = parent.child(N(key, name, R((0, 1), None, (0, 0), (FEATURE_W, FEATURE_H), (0, 1))))
     ring_node(n, f"{key}/FocusRing", 14)
     fill = n.child(N(f"{key}/Fill", "Fill", STRETCH))
     fill.add("cr", 222, K.canvas_renderer()) \
@@ -855,7 +867,7 @@ def feature_card(parent, key, name, art, eyebrow, eyebrow_token, title, extra=No
         .add("img", 114, K.image((1.0, 1.0, 1.0, 1.0), K.kit_sprite("kit_sliver14_fill"), True)) \
         .add("mask", 114, mask(False)) \
         .add("cover", 114, lambda ctx, go: mono(go, S["cover"], f"  image: {ref(ctx.c(key + '/Clip/Art', 'img'))}\n"))
-    art_node(clip, f"{key}/Clip/Art", "Art", R(size=(680, 680 * 510 / 768)), art)
+    art_node(clip, f"{key}/Clip/Art", "Art", R(size=(FEATURE_W, FEATURE_W * 510 / 768)), art)
     image_node(clip, f"{key}/Clip/Scrim", "Scrim", STRETCH, "SurfaceBlack", K.kit_sprite("kit_fade_h"))
     bord = n.child(N(f"{key}/Border", "Border", STRETCH))
     bord.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("SurfaceDark"), K.kit_sprite("kit_sliver14_line1"), True))
@@ -910,14 +922,14 @@ def build_view(maelstrom_art, maelstrom_desc, weekly_art):
     # hierarchy order, so the explore scroll comes before the party panel (the Body lays them out
     # reversed, panel on the left) and the header - whose Back would close the window on the first
     # A press - comes last.
-    body = root.child(N("Body", "Body", R((0, 0), (1, 1), (5, -78), (-70, -236))))
+    body = root.child(N("Body", "Body", WINDOW_BODY))
     body.add("hlg", 114, lambda ctx, go: K.hv_layout(False, (0, 0, 0, 0), 24, 0, (1, 1), (0, 1))(ctx, go)
              .replace("  m_ReverseArrangement: 0\n", "  m_ReverseArrangement: 1\n"))
     # Motion (section 22.8): the window's two blocks rise in on every open - the modal never
     # re-enables, so ModalWindowManager replays them (KitEntrance.ReplayUnder).
     body.add("cg", 225, M.canvas_group()).add("in", 114, M.entrance("Rise", stagger=1))
 
-    ex = body.child(N("Explore", "ExploreScroll", R((0, 1), None, (444, 0), (1406, 844), (0, 1))))
+    ex = body.child(N("Explore", "ExploreScroll", R((0, 1), None, (0, 0), (EXPLORE_W, 844), (0, 1))))
     ex.add("le", 114, le(mw=0, fw=1)).add("scroll", 114, scroll_rect("Explore/Viewport/Content", "Explore/Viewport"))
     vp = ex.child(N("Explore/Viewport", "Viewport", R((0, 0), (1, 1), (-5, 0), (-10, 0))))
     vp.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image((1.0, 1.0, 1.0, 0.0), raycast=True)) \
@@ -925,7 +937,7 @@ def build_view(maelstrom_art, maelstrom_desc, weekly_art):
     content = vp.child(N("Explore/Viewport/Content", "Content", R((0, 1), (1, 1), (0, 0), (0, 0), (0.5, 1))))
     content.add("vlg", 114, K.hv_layout(True, (6, 6, 6, 6), 0, 0, (1, 1), (1, 0))).add("csf", 114, K.fitter(0, 2))
 
-    feats = content.child(N("Features", "Features", R((0, 1), None, (0, 0), (1384, FEATURE_H), (0, 1))))
+    feats = content.child(N("Features", "Features", R((0, 1), None, (0, 0), (CONTENT_W, FEATURE_H), (0, 1))))
     feats.add("hlg", 114, K.hv_layout(False, (0, 0, 0, 0), 20, 0, (1, 1), (1, 1))).add("le", 114, le(ph=FEATURE_H))
 
     def weekly_extra(n):
@@ -948,18 +960,18 @@ def build_view(maelstrom_art, maelstrom_desc, weekly_art):
            "  ObjectiveText: {fileID: 0}\n  StatusText: {fileID: 0}\n  CompletedBadge: {fileID: 0}\n"))
     feature_card(feats, "Maelstrom", "Maelstrom", maelstrom_art, "GAUNTLET", "ControlActive", "Maelstrom", mael_extra)
 
-    content.child(N("Gap1", "Gap", R((0, 1), None, (0, 0), (1384, 26), (0, 1)))).add("le", 114, le(ph=26))
-    allg = content.child(N("AllGames", "AllGames", R((0, 1), None, (0, 0), (1384, 18), (0, 1))))
+    content.child(N("Gap1", "Gap", R((0, 1), None, (0, 0), (CONTENT_W, 26), (0, 1)))).add("le", 114, le(ph=26))
+    allg = content.child(N("AllGames", "AllGames", R((0, 1), None, (0, 0), (CONTENT_W, 18), (0, 1))))
     allg.add("le", 114, le(ph=18))
     label(allg.child(N("AllGames/Label", "Label", R((0, 0), (1, 1), (0, 0), (-10, 0)))), "ALL GAMES", "Label", "TextLight")
     label(allg.child(N("AllGames/Count", "Count", R((0, 0), (1, 1), (0, 0), (-10, 0)))), "28", "Label", "NeutralLightest",
           align="right")
-    content.child(N("Gap2", "Gap", R((0, 1), None, (0, 0), (1384, 10), (0, 1)))).add("le", 114, le(ph=10))
+    content.child(N("Gap2", "Gap", R((0, 1), None, (0, 0), (CONTENT_W, 10), (0, 1)))).add("le", 114, le(ph=10))
 
-    grid = content.child(N("Grid", "GameGrid", R((0, 1), None, (0, 0), (1384, GRID_ROWS * (CARD_H + 10) - 10), (0, 1))))
+    grid = content.child(N("Grid", "GameGrid", R((0, 1), None, (0, 0), (CONTENT_W, GRID_ROWS * (CARD_H + 10) - 10), (0, 1))))
     grid.add("vlg", 114, K.hv_layout(True, (0, 0, 0, 0), 10, 0, (1, 1), (1, 0)))
     for r in range(GRID_ROWS):
-        row = grid.child(N(f"Row{r + 1}", f"GameListRow{r + 1}", R((0, 1), None, (0, -r * (CARD_H + 10)), (1384, CARD_H), (0, 1))))
+        row = grid.child(N(f"Row{r + 1}", f"GameListRow{r + 1}", R((0, 1), None, (0, -r * (CARD_H + 10)), (CONTENT_W, CARD_H), (0, 1))))
         row.add("hlg", 114, K.hv_layout(False, (0, 0, 0, 0), 10, 0, (1, 1), (1, 1))).add("le", 114, le(ph=CARD_H))
         for col in range(GRID_COLS):
             row.children.append(Inst(card_key(r, col), "ArcadeGameCard", "GameCard",
@@ -967,7 +979,7 @@ def build_view(maelstrom_art, maelstrom_desc, weekly_art):
     # Rev 3 (2026-10-16): the party panel left every window for ONE friends drawer on Menu_Main
     # (author_menu_friends_drawer.py), so the explore scroll takes the whole body.
 
-    header = root.child(N("Header", "Header", R((0, 1), (1, 1), (0, -108), (-80, 64), (0.5, 1))))
+    header = root.child(N("Header", "Header", WINDOW_HEADER))
     header.add("cg", 225, M.canvas_group()).add("in", 114, M.entrance("Rise", distance=10))
     label(header.child(N("Header/Eyebrow", "Eyebrow", R((0, 1), None, (0, 0), (300, 18), (0, 1)))), "ARCADE", "Label",
           "NeutralLightest")
@@ -1278,6 +1290,7 @@ def validate_prefabs(files, guids):
     names = [re.search(r"m_Name: (.*)", doc_of(view, re.search(r"m_GameObject: \{fileID: (-?\d+)\}", b).group(1))[1]).group(1)
              for b in order]
     assert names.index("Body") < names.index("Header"), "the header (Back) must come after the body in focus order"
+    check_window_inset(view, "ArcadeView")
     _, body_rt = doc_of(view, V("Body#rt"))
     first = re.search(r"^  - \{fileID: (-?\d+)\}", body_rt, re.M).group(1)
     assert first == str(V("Explore#rt")), "the explore scroll must be the body's first child (focus lands on a card)"
@@ -1338,7 +1351,7 @@ def validate_scene(before_text, after_text, files):
         "ArcadeView still instances the PartyPanel (rev 3 moved it to the friends drawer)"
     assert "onlineOnlyObjects: []" in sc.docs[MODAL["gate"]], "the modal's gate still names a retired object"
     cards = re.findall(r"\{fileID: (-?\d+)\}", block_fields(sc.docs[RUNNER])["gameCards"])
-    assert cards == [ids.stubs[k] for k in ids.cards], "QuestGraphRunner.gameCards does not name the 28 cards in order"
+    assert cards == [ids.stubs[k] for k in ids.cards], f"QuestGraphRunner.gameCards does not name the {GRID_ROWS * GRID_COLS} cards in order"
     assert "m_Enabled: 0" in sc.docs[PANEL["img"]], "the old Arcade_Panel gradient still draws"
     assert "m_SizeDelta: {x: 0, y: 0}" in sc.docs[MODAL["rt"]] and "m_AnchoredPosition: {x: 0, y: 0}" in sc.docs[MODAL["rt"]]
     assert sc.children(MODAL["rt"]) == [PANEL["rt"]], "ArcadeScreenModal children"
@@ -1369,6 +1382,23 @@ def block_fields(doc):
         elif key and (line.startswith("  - ") or line.startswith("    ")):
             raw[key] += " " + line.strip()
     return {k: re.sub(r"\s+", " ", v).strip() for k, v in raw.items()}
+
+
+HANDLE_CLEARANCE = 76 + 16     # the friends drawer's handle (author_menu_friends_drawer.HANDLE) plus air
+
+
+def check_window_inset(view_text, view_name):
+    """Rev 3: a window's Body and Header start right of the friends handle, which draws over every
+    window on the left edge - a card under it can be neither read nor pressed. Shared by the four
+    windows' generators."""
+    V = K.FileIds(view_name)
+    for key in ("Body#rt", "Header#rt"):
+        _, doc = doc_of(view_text, V(key))
+        x = float(re.search(r"m_AnchoredPosition: \{x: (-?[\d.e-]+)", doc).group(1))
+        w = float(re.search(r"m_SizeDelta: \{x: (-?[\d.e-]+)", doc).group(1))
+        left = x - w / 2          # stretched across the parent with a centre pivot
+        assert left >= HANDLE_CLEARANCE, \
+            f"{view_name} {key.split('#')[0]} starts {left:g} px from the left edge, under the friends handle (needs {HANDLE_CLEARANCE})"
 
 
 def drift(files):
@@ -1427,6 +1457,8 @@ def self_test(current, files, guids):
             t, K.FileIds("ArcadeView")("root#rt"),
             f"  - {{fileID: {K.FileIds('ArcadeView')('Body#rt')}}}\n  - {{fileID: {K.FileIds('ArcadeView')('Header#rt')}}}\n",
             f"  - {{fileID: {K.FileIds('ArcadeView')('Header#rt')}}}\n  - {{fileID: {K.FileIds('ArcadeView')('Body#rt')}}}\n")),
+        "the body back under the friends handle": prefab_plant(prefab_path("ArcadeView"), lambda t: in_one(
+            t, K.FileIds("ArcadeView")("Body#rt"), "m_AnchoredPosition: {x: 20", "m_AnchoredPosition: {x: -20")),
         "unrelated document edited": scene_plant(lambda s: s.replace("  m_Name: Screens\n", "  m_Name: Screenz\n", 1)),
     }
     failed = []

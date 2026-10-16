@@ -53,8 +53,13 @@ PREFABS = ("ArenaGameCard", "ArenaView")
 S = dict(card=C.script("KitArenaGameCard"), view=A.S["view"], gate=A.S["gate"], tile=A.S["tile"],
          kt=A.S["kt"], button=A.S["button"], hover=A.S["hover"], cover=A.S["cover"], close=A.S["close"])
 ARENA_GAMES = "45f4a55e49b44cc7ac47e0bf96411234"
-CARD_W, CARD_H, GAP, ROWS = 682, 372, 20, 2
-GRID_W = 2 * CARD_W + GAP
+# Rev 3: the friends panel gave its width back, so the four arena games stand in ONE row of tall
+# cards (the R3Arcade board's quest-view rhythm) instead of a 2 x 2 of wide ones. The cards flex
+# (flexibleWidth 1); these are their sizes at the 1920 reference width.
+COLS, ROWS, GAP = 4, 1, 20
+CARD_W, CARD_H = (A.CONTENT_W - (COLS - 1) * GAP) // COLS, 560
+GRID_W = COLS * CARD_W + (COLS - 1) * GAP
+TEXT_W = -52                    # stretched text: 26 px either side
 PLACEHOLDER_ART = A.sprite_guid("Assets/_SO_Assets/Games/ArcadeGameSkimRace.asset", "CardBackground")
 
 
@@ -86,7 +91,7 @@ def build_card():
         .add("mask", 114, A.mask(False)) \
         .add("cover", 114, lambda ctx, go: mono(go, S["cover"], f"  image: {ref(ctx.c('Clip/Art', 'img'))}\n"))
     art_node(clip, "Clip/Art", "Art", R(size=(CARD_W, CARD_W * 510 / 768)), PLACEHOLDER_ART)
-    image_node(clip, "Clip/Fade", "Fade", R((0, 0), (1, 0), (0, 0), (0, 200), (0.5, 0)), "SurfaceBlack",
+    image_node(clip, "Clip/Fade", "Fade", R((0, 0), (1, 0), (0, 0), (0, 320), (0.5, 0)), "SurfaceBlack",
                K.kit_sprite("kit_fade_v"))
     bord = root.child(N("Border", "Border", STRETCH))
     bord.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("SurfaceDark"), K.kit_sprite("kit_sliver14_line1"), True))
@@ -116,19 +121,21 @@ def build_card():
     pick.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image((1.0, 1.0, 1.0, 1.0), A.AVATAR_PLACEHOLDER, preserve=True)) \
         .add("cg", 225, canvas_group(False)).add("le", 114, le(pw=24, ph=24))
 
-    label(root.child(N("Eyebrow", "Eyebrow", R((0, 0), None, (26, 120), (420, 18), (0, 0)))), "Arena - 2 - 6 pilots",
+    # A tall card stacks its words up from the bottom: hulls, tagline, title, then the eyebrow with the
+    # domain count on its right.
+    label(root.child(N("Eyebrow", "Eyebrow", R((0, 0), None, (26, 180), (240, 18), (0, 0)))), "Arena - 2 - 6 pilots",
           "Label", "NeutralLightest")
-    title = root.child(N("Title", "Title", R((0, 0), None, (26, 70), (440, 46), (0, 0))))
+    title = root.child(N("Title", "Title", R((0, 0), (1, 0), (0, 128), (TEXT_W, 46), (0.5, 0))))
     title.add("cr", 222, K.canvas_renderer()).add("tmp", 114, A.ellipsis(text("Game", "H1", tok("TextLight")))) \
         .add("kt", 114, K.kit_text("H1", "TextLight", driven=True))
-    tag = root.child(N("Tagline", "Tagline", R((0, 0), None, (26, 22), (420, 42), (0, 0))))
+    tag = root.child(N("Tagline", "Tagline", R((0, 0), (1, 0), (0, 74), (TEXT_W, 42), (0.5, 0))))
     tag.add("cr", 222, K.canvas_renderer()) \
         .add("tmp", 114, text("", "BodySmall", tok("TextLight"), valign="top", wrap=True)) \
         .add("kt", 114, K.kit_text("BodySmall", "TextLight"))
-    label(root.child(N("Domains", "Domains", R((1, 0), None, (-26, 80), (220, 18), (1, 0)))), "2 domains", "Label",
+    label(root.child(N("Domains", "Domains", R((1, 0), None, (-26, 180), (120, 18), (1, 0)))), "2 domains", "Label",
           "TextLight", align="right")
-    hulls = root.child(N("Hulls", "Hulls", R((1, 0), None, (-26, 22), (440, 40), (1, 0))))
-    hulls.add("hlg", 114, K.hv_layout(False, (0, 0, 0, 0), 6, 5, (0, 0), (0, 0)))
+    hulls = root.child(N("Hulls", "Hulls", R((0, 0), (1, 0), (0, 22), (TEXT_W, 40), (0.5, 0))))
+    hulls.add("hlg", 114, K.hv_layout(False, (0, 0, 0, 0), 6, 3, (0, 0), (0, 0)))
     chip = hulls.child(N("Hulls/Chip", "HullChip", R(size=(40, 40))))
     H.framed(chip, "Hulls/Chip", 10, "SurfaceVeryDark", "SurfaceLight")
     chip.add("cg", 225, canvas_group(False)).add("le", 114, le(ignore=True, pw=40, ph=40))
@@ -181,13 +188,13 @@ def build_view():
 
     # Sibling order is FOCUS order (ScreenSwitcher.Refocus): the cards first, the party panel (laid
     # out on the left by the reversed row) next, the header's Back last - as the arcade window.
-    body = root.child(N("Body", "Body", R((0, 0), (1, 1), (5, -78), (-70, -236))))
+    body = root.child(N("Body", "Body", A.WINDOW_BODY))
     body.add("hlg", 114, lambda ctx, go: K.hv_layout(False, (0, 0, 0, 0), 24, 0, (1, 1), (0, 1))(ctx, go)
              .replace("  m_ReverseArrangement: 0\n", "  m_ReverseArrangement: 1\n"))
     # Motion (section 22.8): the window's two blocks rise in on every open - the modal never
     # re-enables, so ModalWindowManager replays them (KitEntrance.ReplayUnder).
     body.add("cg", 225, M.canvas_group()).add("in", 114, M.entrance("Rise", stagger=1))
-    ex = body.child(N("Explore", "ExploreScroll", R((0, 1), None, (444, 0), (1406, 844), (0, 1))))
+    ex = body.child(N("Explore", "ExploreScroll", R((0, 1), None, (0, 0), (A.EXPLORE_W, 844), (0, 1))))
     ex.add("le", 114, le(mw=0, fw=1)).add("scroll", 114, A.scroll_rect("Explore/Viewport/Content", "Explore/Viewport"))
     vp = ex.child(N("Explore/Viewport", "Viewport", R((0, 0), (1, 1), (-5, 0), (-10, 0))))
     vp.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image((1.0, 1.0, 1.0, 0.0), raycast=True)) \
@@ -205,12 +212,12 @@ def build_view():
     for r in range(ROWS):
         row = grid.child(N(f"Row{r + 1}", f"GameListRow{r + 1}", R((0, 1), None, (0, -r * (CARD_H + GAP)), (GRID_W, CARD_H), (0, 1))))
         row.add("hlg", 114, K.hv_layout(False, (0, 0, 0, 0), GAP, 0, (1, 1), (1, 1))).add("le", 114, le(ph=CARD_H))
-        for col in range(2):
+        for col in range(COLS):
             row.children.append(instance(card_key(r, col), "ArenaGameCard", "GameCard",
                                          R((0, 1), None, (col * (CARD_W + GAP), 0), (CARD_W, CARD_H), (0, 1))))
     # Rev 3: the party panel moved to the one friends drawer on Menu_Main; the explore scroll fills the body.
 
-    header = root.child(N("Header", "Header", R((0, 1), (1, 1), (0, -108), (-80, 64), (0.5, 1))))
+    header = root.child(N("Header", "Header", A.WINDOW_HEADER))
     header.add("cg", 225, M.canvas_group()).add("in", 114, M.entrance("Rise", distance=10))
     label(header.child(N("Header/Eyebrow", "Eyebrow", R((0, 1), None, (0, 0), (300, 18), (0, 1)))), "ARENA", "Label",
           "NeutralLightest")
@@ -400,6 +407,7 @@ def validate(files):
     chip_le = A.doc_of(card, K.FileIds("ArenaGameCard")("Hulls/Chip#le"))[1]
     assert chip_le and "  m_IgnoreLayout: 1\n" in chip_le, "the hull chip template must start out of layout (hidden)"
     view = files[prefab_path("ArenaView")]
+    A.check_window_inset(view, "ArenaView")      # rev 3: clear of the friends handle
     assert view.count(f"guid: {asset_guid('ArenaGameCard')}") >= 2 * ROWS, "ArenaView: the grid does not hold ArenaGameCards"
     assert f"guid: {A.asset_guid('PartyPanel')}" not in view, "ArenaView still instances the PartyPanel (rev 3: the friends drawer)"
     assert view.count("guid: " + S["close"]) == 1, "ArenaView: Back must close through ModalWindowCloseButton"
@@ -443,6 +451,8 @@ def self_test(files):
     cases = [
         ("the party panel back in the window", lambda f: f.__setitem__(prefab_path("ArenaView"), f[prefab_path("ArenaView")] + f"# guid: {A.asset_guid('PartyPanel')}\n")),
         ("the window's entrances stripped", lambda f: f.__setitem__(prefab_path("ArenaView"), M.strip_entrances(f[prefab_path("ArenaView")]))),
+        ("the body back under the friends handle", lambda f: f.__setitem__(prefab_path("ArenaView"), A.in_one(
+            f[prefab_path("ArenaView")], K.FileIds("ArenaView")("Body#rt"), "m_AnchoredPosition: {x: 20", "m_AnchoredPosition: {x: -20"))),
         ("a card with no hull row", lambda f: f.__setitem__(card, re.sub(r"(  hullRow: )\{fileID: -?\d+\}", r"\1{fileID: 0}", f[card]))),
         ("the hull template left in layout", lambda f: f.__setitem__(card, f[card].replace("  m_IgnoreLayout: 1\n", "  m_IgnoreLayout: 0\n"))),
         ("the roster back to the master list", lambda f: f.__setitem__(SCENE, f[SCENE].replace(
