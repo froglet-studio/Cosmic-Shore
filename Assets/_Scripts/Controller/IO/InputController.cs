@@ -41,6 +41,10 @@ namespace CosmicShore.Gameplay
         // InputDeviceActuation only answers on a real actuation, so nothing thrashes.
         private InputDeviceFamily activeDeviceFamily = InputDeviceFamily.None;
 
+        /// <summary>The device family the player is actually using (read-only; see the field).
+        /// The microgame drill reads it to name controls in the player's own device's words.</summary>
+        public InputDeviceFamily ActiveDeviceFamily => activeDeviceFamily;
+
         /// <summary>This controller's own rolling mouse-motion window - see
         /// <see cref="MouseMotionActuation"/> on why it is not shared with the chip switcher.</summary>
         private MouseMotionActuation mouseMotion;

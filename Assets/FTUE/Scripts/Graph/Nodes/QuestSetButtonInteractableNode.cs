@@ -12,6 +12,7 @@ namespace CosmicShore.Core
     public class QuestSetButtonInteractableNode : QuestNodeSO
     {
         public override QuestNodeCategory Category => QuestNodeCategory.Gameplay;
+        public override bool AppliesLock => !interactable;
         public override string TypeTooltip =>
             "Sets a runner-registered Button's interactable state by key (Quest Buttons list on the runner — e.g. 'episodes'). Use to unlock UI the FTUE gates, right before the CTA that needs it clickable.";
         public override string EditorSummary => $"'{buttonKey}' → {(interactable ? "interactable" : "disabled")}";

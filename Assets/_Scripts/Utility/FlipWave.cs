@@ -150,7 +150,8 @@ namespace CosmicShore.Utility
         static List<Vector3> Distinct(IReadOnlyList<Vector3> points)
         {
             float scale = 0f;
-            foreach (var p in points) scale = Mathf.Max(scale, Mathf.Abs(p.x), Mathf.Abs(p.y), Mathf.Abs(p.z));
+            foreach (var p in points) // nested two-value Max: the 4-value overload is params float[] and allocates per point
+                scale = Mathf.Max(Mathf.Max(scale, Mathf.Abs(p.x)), Mathf.Max(Mathf.Abs(p.y), Mathf.Abs(p.z)));
             float epsilonSqr = (1e-5f * Mathf.Max(scale, 1e-6f)) * (1e-5f * Mathf.Max(scale, 1e-6f));
 
             var distinct = new List<Vector3>(8);

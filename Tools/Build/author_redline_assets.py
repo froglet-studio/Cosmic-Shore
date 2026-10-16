@@ -405,8 +405,9 @@ if not m or int(m.group(1)) != GATE_TARGET:
     errors.append(f"EndConditionOverridesSO.DefaultRedlineGateTarget is not {GATE_TARGET}")
 
 _ctrl = read("Assets/_Scripts/Controller/Arcade/Redline/RedlineController.cs")
-m = re.search(r"int laps\s*=\s*(\d+);", _ctrl)
-if not m or int(m.group(1)) != LAPS:
+# Literal, or one hop into the course source's const (the RaceCourseSource refactor).
+_laps = aml.cs_field_default(_ctrl, "laps")
+if _laps is None or int(float(_laps)) != LAPS:
     errors.append(f"RedlineController.laps default is not {LAPS}")
 
 for field, want in (("courseOuterRadius", "1080"), ("courseInnerRadiusFallback", "480")):

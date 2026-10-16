@@ -110,6 +110,8 @@ namespace CosmicShore.Player
             _window.Update += OnUpdate;
             _window.Render += OnRender;
             _window.Run();
+            // An online test's log first, while the network still answers who this player was.
+            NetTestLog.Write("window closed");
             // The window was closed (its close button, Alt+F4, or the game's own quit): the game hears
             // OnApplicationQuit and Application.quitting once either way, as in a Unity player.
             if (_boot?.Loop != null) Application.RunQuitSequence(cancellable: false);
@@ -176,6 +178,7 @@ namespace CosmicShore.Player
             _boot = new PlayerBoot { NoScene = ModelViewer.Path != null };
             SessionReport.Log = _boot.Log;
             SessionReport.Frame = () => _frameIndex;
+            NetTestLog.Begin(_boot.Log);
             _boot.Start(_scene);
             _tmp.Fonts = _boot.Runtime.Fonts;
         }

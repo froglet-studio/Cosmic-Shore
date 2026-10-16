@@ -30,48 +30,11 @@ namespace CosmicShore.Gameplay
         [Tooltip("Where gate 1 sits, as a distance along the spawn formation's POLE. Pilots spawn " +
                  "on an equatorial ring, so a point on that ring's axis is the only place every " +
                  "pilot is equidistant from - which is what makes the start fair.")]
-        [SerializeField, Min(1f)] float firstGateDistance = 620f;
+        [SerializeField, Min(1f)] float firstGateDistance = SwitchbackCourseSource.DefaultFirstGateDistance;
 
         protected override string ModeName => "Switchback";
 
-        public override int AuthoredGateTarget()
-        {
-            var overrides = EndConditionOverridesSO.Instance;
-            return overrides != null
-                ? overrides.GetSwitchbackGateTarget()
-                : EndConditionOverridesSO.DefaultSwitchbackGateTarget;
-        }
-
-        /// <summary>
-        /// An open chain: the walk CAN fail (its constraint is reachability, and a shell too
-        /// tight for the requested gate count is a configuration fault), so this backs off -
-        /// halving the ask until the walk succeeds, floor 2 - rather than returning nothing.
-        /// Whatever comes back is then the authoritative target, so a shortened course still has
-        /// a finish line rather than an unreachable one.
-        /// </summary>
-        protected override List<RaceGate> BuildCourse(int seed, int gateCount, float inner, float outer)
-        {
-            var settings = SwitchbackCourseSettings.ForIntensity(Intensity);
-            settings.InnerRadius = inner;
-            settings.OuterRadius = outer;
-            settings.FirstGateDirection = Vector3.up;   // the equatorial spawn ring's pole
-            settings.FirstGateDistance = Mathf.Clamp(firstGateDistance, inner, outer);
-
-            int ask = Mathf.Max(2, gateCount);
-            while (ask >= 2)
-            {
-                settings.GateCount = ask;
-                var course = SwitchbackCourse.Generate(seed, settings);
-                if (course != null && course.Count >= ask) return course;
-
-                if (ask == 2) return null;
-                ask = Mathf.Max(2, ask / 2);
-                CSDebug.LogWarning(
-                    $"[Switchback] Course generation failed for {settings.GateCount} gates in shell " +
-                    $"{inner:F0}..{outer:F0} (step {settings.MinStep:F0}..{settings.MaxStep:F0}, " +
-                    $"separation {settings.MinSeparation:F0}); retrying with {ask}.");
-            }
-            return null;
-        }
+        protected override RaceCourseSource CreateCourseSource() =>
+            new SwitchbackCourseSource { FirstGateDistance = firstGateDistance };
     }
 }

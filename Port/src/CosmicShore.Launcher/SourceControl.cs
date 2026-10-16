@@ -188,17 +188,67 @@ namespace CosmicShore.Launcher
                 ? "git does not know who you are: fill in your name and email under AUTHOR." : "Commit failed: " + why;
         }, log);
 
-        /// <summary>Pushes the current branch to GitHub and sets it as its upstream.</summary>
+        /// <summary>
+        /// Pushes the current branch to GitHub and sets it as its upstream. Every other git step runs
+        /// with prompts off (GIT_TERMINAL_PROMPT=0), and Git Credential Manager honours that too. So with
+        /// no token pasted, a push GitHub refuses runs once more with prompts allowed: GCM can then open
+        /// its GitHub sign-in (browser or window) and keep the result in git's own store for next time.
+        /// </summary>
         public Task<string?> Push(LogBuffer log) => Run("Push", async l =>
         {
             var st = Last ?? await Refresh();
             if (st?.Branch == null) return "Commit to a branch first: a detached workspace has nothing to push.";
-            var r = await G(l, "push", "-u", "origin", "HEAD:refs/heads/" + st.Branch);
+            var push = new[] { "push", "-u", "origin", "HEAD:refs/heads/" + st.Branch };
+            var r = await G(l, push);
             if (r.ExitCode == 0) return null;
-            var why = Why(r);
-            return why.Contains("403") || why.Contains("Authentication") || why.Contains("could not read Username") || why.Contains("denied")
-                ? "GitHub refused the push. Paste a GitHub token with Contents: read & write in SETTINGS > SOURCE, or push from GitHub Desktop." : "Push failed: " + why;
+            if (!AuthRefused(r)) return "Push failed: " + Why(r);
+
+            bool token = !string.IsNullOrWhiteSpace(_s.GitHubToken);
+            bool helper = !token && HasCredentialHelper();
+            if (helper)
+            {
+                l.Add(LogKind.Info, "Signing in to GitHub through Git Credential Manager: finish the sign-in it opens (browser or window), then the push continues.");
+                var env = _ws.GitEnv();
+                env["GIT_TERMINAL_PROMPT"] = "1";
+                using var cts = new CancellationTokenSource(TimeSpan.FromMinutes(5));
+                try
+                {
+                    r = await ProcessRunner.Run(Git, new[] { "-C", _ws.Dir }.Concat(push), null, l, cts.Token, env, closeStdin: true);
+                }
+                catch (OperationCanceledException) { return "The GitHub sign-in did not finish within 5 minutes. Push again to retry."; }
+                if (r.ExitCode == 0) return null;
+                if (!AuthRefused(r)) return "Push failed: " + Why(r);
+            }
+            return PushRefused(token, helper, Why(r), WebUrl);
         }, log);
+
+        /// <summary>git has a credential helper configured (Git Credential Manager comes with Git for Windows).</summary>
+        bool HasCredentialHelper() =>
+            !string.IsNullOrWhiteSpace(ProcessRunner.Capture(Git, "-C", _ws.Dir, "config", "--get-all", "credential.helper"));
+
+        /// <summary>The push failed because GitHub did not accept who we are (not a conflict or a rejected ref).</summary>
+        internal static bool AuthRefused(ProcessRunner.Result r)
+        {
+            var all = r.StdErr + "\n" + r.StdOut;
+            return new[] { "403", "401", "Authentication failed", "could not read Username", "could not read Password",
+                           "terminal prompts disabled", "Permission to ", "Permission denied", "Invalid username or password" }
+                .Any(k => all.Contains(k, StringComparison.OrdinalIgnoreCase));
+        }
+
+        /// <summary>What to tell the user when GitHub refused the push, by what was tried.</summary>
+        internal static string PushRefused(bool token, bool helper, string why, string? repoUrl)
+        {
+            var repo = repoUrl is { } u ? u.Replace("https://github.com/", "") : "this repository";
+            const string Paste = "paste a GitHub token with Contents: read & write in SETTINGS > SOURCE";
+            if (token)
+                return $"GitHub refused the token in SETTINGS > SOURCE ({why}). It needs Contents: read & write on {repo}; " +
+                       "a fine-grained token must also list that repository, and the organization may have to approve it. Paste a new one there.";
+            if (helper)
+                return $"The GitHub sign-in did not finish or this account cannot push to {repo} ({why}). " +
+                       $"Push again and complete the Git Credential Manager sign-in with an account that can write to it, or {Paste}.";
+            return $"This PC's git cannot sign in to GitHub: it has no credential helper ({why}). " +
+                   $"Install Git for Windows (it includes Git Credential Manager) and push again, or {Paste}.";
+        }
 
         /// <summary>Puts one file back as HEAD has it (a new file is deleted).</summary>
         public Task<string?> Revert(Change c, LogBuffer log) => Run("Revert", async l =>

@@ -121,6 +121,17 @@ namespace CosmicShore.ScriptableObjects
         [Tooltip("Played on every peer when a release lands inside the full window. Ships empty until a sound is chosen.")]
         [SerializeField] EventReference sweetSpotEvent;
 
+        [Header("Pace (Time mode — the field's warp while the pair holds you)")]
+        [Tooltip("The studio's dpWarp (2026-10-14: \"both mechanics similarly paced\"). While a Time-mode pair is held, the hull's " +
+                 "flight clock warps exactly as the field trajectory's lime path does (StoatDipoleConfig boost, boostRise, " +
+                 "boostFadeSeconds), to this share of that boost: 1 = the same warp, 0 = none. Measured in the studio's batch race " +
+                 "at 1.15: catch-sling circuit 56 s best against the field's 60 s.")]
+        [SerializeField, Range(0f, 1.5f)] float catchWarpShare = 1.15f;
+
+        [Tooltip("The studio's dpWarpHeld: the warp starts as soon as the pair is laid and held (flying at the black hole is " +
+                 "already fast, as any bend of the field's path is). Off = only once the attractor has caught the hull.")]
+        [SerializeField] bool catchWarpFromPress = true;
+
         [Header("Life")]
         [Tooltip("How fast the two holes CLOSE on each other once let go (u/s); they annihilate where the horizons touch.")]
         [SerializeField, Range(0f, 200f)] float driftSpeed = 40f;
@@ -205,6 +216,11 @@ namespace CosmicShore.ScriptableObjects
         public float SweetSpotFalloff => Mathf.Clamp(sweetSpotFalloff, 1f, 180f);
         public float MissKickShare => Mathf.Clamp01(missKickShare);
         public EventReference SweetSpotEvent => sweetSpotEvent;
+        public float CatchWarpShare => Mathf.Clamp(catchWarpShare, 0f, 1.5f);
+        public bool CatchWarpFromPress => catchWarpFromPress;
+
+        /// <summary>The catch's warp target for the field's <paramref name="fieldBoost"/>: 1 + (boost − 1) × the share.</summary>
+        public float CatchWarpTarget(float fieldBoost) => 1f + (Mathf.Max(1f, fieldBoost) - 1f) * CatchWarpShare;
         /// <summary>How well a release after <paramref name="sweptDegrees"/> of orbit is timed, 0..1.</summary>
         public float SweetSpot(float sweptDegrees) =>
             StoatSlingMath.SweetSpot(sweptDegrees, SweetSpotDegrees, SweetSpotHalfWidth, SweetSpotFalloff);

@@ -1,8 +1,9 @@
 # Brittle Star — the five-pointed one-touch flyer
 
 **Status:** built 2026-10-14 from the Notion design document *Class - Brittle Star* (Design Documents ▸ Class Design
-Documents ▸ Sparrow Chain). `VesselClassType.BrittleStar = 16`. Compiled and statically gated offline; **not yet opened
-in Unity** — see [In-editor verification](#in-editor-verification).
+Documents ▸ Sparrow Chain). `VesselClassType.BrittleStar = 16`. Redesigned 2026-10-16 (four modes, §1 and §3) and
+**played by Garrett the same day** ("one of the most fun things we've ever made"); the step-by-step walk in
+[In-editor verification](#in-editor-verification) has not been reported item by item.
 
 > Research, the design document transcribed, the studio and its scorecards: `Docs/Studios/BRITTLE_STAR.md`. Fly it first in
 > the Vessel Studio (`Docs/Studios/VesselStudio/brittlestar.html`, the Unity build set).
@@ -325,7 +326,7 @@ identical on the Stoat and Sparrow and shared by all 16 vessel prefabs — inher
 
 ## In-editor verification
 
-Nothing here has been opened in Unity. What has been proved offline: the player and editor reference compiles
+Garrett played the 2026-10-16 build and reported it working; no step below has been reported individually. What has been proved offline: the player and editor reference compiles
 (`unity_refcompile`), the 31 edit-mode tests run against the shipped code (`brittlestar_harness`, plus three negative
 controls), the peer-press harness (0 divergences), the element table (0 disagreements), and the fleet's static gates.
 None of that is a play test. In order:

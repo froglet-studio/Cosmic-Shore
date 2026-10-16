@@ -1,0 +1,192 @@
+{
+  "comment": "Shared areas Tools/Build/team_report.py can report on (Docs/TEAM.md rule 10). One row per area: its paths, owner, who it is for, branch, artifacts, docs, how to test it, and its hand-written report. Add a row when you start a shared area; keep the report doc's top half current by hand, the generated block by `team_report.py area <key> --write`.",
+  "areas": {
+    "regatta-ai": {
+      "title": "Regatta AI",
+      "aliases": [
+        "regatta",
+        "regatta ais",
+        "racing ai",
+        "gate race ai",
+        "ai regatta",
+        "regatta ai works"
+      ],
+      "owner": "Yash",
+      "people": [
+        "Garrett"
+      ],
+      "audience": [
+        "Garrett",
+        "the core four"
+      ],
+      "branch": "Ys-bleeding-edge",
+      "branchNote": "for testing; nothing goes to bleeding-edge until Yash has tested it",
+      "summary": "Five hulls racing Regatta with working AIs (Squirrel, Manta, Rhino, Urchin, Dolphin), the host picking every AI seat's hull, the Third Eye showing each AI's path and what it is doing, and a steering fix found in a browser lab and ported to Unity. Tested in the Unity editor only (the lab artifact was deleted 2026-10-16).",
+      "paths": [
+        "Assets/_Scripts/Controller/Arcade/Regatta",
+        "Assets/_Scripts/Controller/Arcade/Racing",
+        "Assets/_Scripts/Controller/Arcade/REGATTA.md",
+        "Assets/_Scripts/Controller/AI",
+        "Assets/_Scripts/Editor/AI",
+        "Docs/AI_SYSTEM/REGATTA_AI_ROADMAP.md",
+        "Docs/AI_SYSTEM/AI_TRAINING_PLAN.md"
+      ],
+      "docs": [
+        "Assets/_Scripts/Controller/Arcade/REGATTA.md",
+        "Docs/AI_SYSTEM/REGATTA_AI_ROADMAP.md",
+        "Docs/AI_SYSTEM/AI_TRAINING_PLAN.md"
+      ],
+      "artifacts": [
+        {
+          "name": "Regatta AI Report (the page for Garrett)",
+          "url": "https://claude.ai/artifact/RmxWBLGfSsAXsUeubFXkUm"
+        }
+      ],
+      "report": "Docs/Reports/REGATTA_AI.md",
+      "taskAreas": [
+        "Regatta AI",
+        "Regatta",
+        "AI training"
+      ],
+      "test": [
+        "Pull Ys-bleeding-edge, open Unity, wait for the compile.",
+        "Arcade > Regatta, solo, Hard. Tap the AI chips to seat Squirrel, Manta, Rhino, Urchin and Dolphin. Launch.",
+        "FrogletTools > AI > Third Eye, Trails on: each AI reads Approach then Through near a ring; after a missed ring it reads break-off and comes straight back.",
+        "Every hull finishes three laps at I1; repeat at I3. Note any hull that does not, and at which ring."
+      ]
+    },
+    "ai-training": {
+      "title": "AI training",
+      "aliases": [
+        "training",
+        "ai trainer",
+        "genetic trainer",
+        "train the ai",
+        "learn from players",
+        "ai lab"
+      ],
+      "owner": "Garrett",
+      "people": [
+        "Yash",
+        "Shombith"
+      ],
+      "audience": [
+        "the core four"
+      ],
+      "branch": "Ys-bleeding-edge",
+      "summary": "Training every vessel's AI: the genetic trainer in Unity (studyholic, Garrett, Shombith), situations learned from Unity editor flights (the browser prototype was deleted 2026-10-16), and the plan to an AI Lab scene, Regatta in the trainer, a consented flight recorder and behaviour cloning.",
+      "paths": [
+        "Assets/_Scripts/Utility/AITraining",
+        "Assets/_SO_Assets/AI Training",
+        "Docs/AI_SYSTEM/AI_TRAINING_PLAN.md",
+        "Tools/Build/skimrace_sim_harness"
+      ],
+      "docs": [
+        "Docs/AI_SYSTEM/AI_TRAINING_PLAN.md",
+        "Assets/_Scripts/Utility/AITraining/README.md"
+      ],
+      "artifacts": [],
+      "report": "Docs/Reports/REGATTA_AI.md",
+      "taskAreas": [
+        "AI training",
+        "Regatta AI"
+      ],
+      "test": [
+        "Open the artifact's Training tab, pick a hull, Train, then Race trained vs untrained."
+      ]
+    },
+    "team-tools": {
+      "title": "Team tools",
+      "aliases": [
+        "team tools",
+        "session deck",
+        "deck",
+        "reports",
+        "team report",
+        "team activity"
+      ],
+      "owner": "Yash",
+      "audience": [
+        "everyone"
+      ],
+      "branch": "Ys-bleeding-edge",
+      "summary": "What every Claude session on this repo gets: the team notices and activity feed (hooks), the task board, who_works_where.py, this report system and the session deck (buttons, status line).",
+      "paths": [
+        ".claude/hooks",
+        ".claude/skills/cosmic-shore-deck",
+        "Tools/Build/team_report.py",
+        "Tools/Build/team_tasks.py",
+        "Tools/Build/who_works_where.py",
+        "Docs/TEAM.md",
+        "Docs/Reports"
+      ],
+      "docs": [
+        "Docs/TEAM.md",
+        "Docs/claude/SESSION_DECK.md",
+        "Docs/TEAM_TASKS.md"
+      ],
+      "report": "",
+      "taskAreas": [
+        "Team tools"
+      ],
+      "artifacts": []
+    },
+    "performance": {
+      "title": "Performance",
+      "aliases": [
+        "perf",
+        "performance",
+        "fps",
+        "frame rate",
+        "optimization",
+        "optimisation",
+        "perf hunt",
+        "performance sweep",
+        "prisms per frame"
+      ],
+      "owner": "Yash",
+      "people": [
+        "Garrett",
+        "Shombith"
+      ],
+      "audience": [
+        "the core four"
+      ],
+      "branch": "Ys-bleeding-edge",
+      "branchNote": "developed on perf/performance-optimization, merged into Ys-bleeding-edge on 2026-10-15; the daily check runs on bleeding-edge",
+      "summary": "The 2x plan (100k prisms at 60 fps on a phone), one-button measurement (capture: burst + diag + prof + renderers + cells + cameras as one JSON), the game's own markers measured in Amoebius with no Unity, baselines, a daily sweep that files a team task per regression, and the /perf-hunt resolve loop.",
+      "paths": [
+        "Assets/_Scripts/Utility/PerformanceBenchmark",
+        "Assets/_Scripts/Editor/Diagnostics/BugHuntPerfBadge.cs",
+        "Tools/Build/perf_hunt.py",
+        "Tools/Build/perf_capture_report.py",
+        "Tools/Build/scan_perframe_allocations.py",
+        "Tools/Build/check_mathf_params_alloc.py",
+        "Port/tools/amoebius_markers_run.py",
+        "Port/src/CosmicShore.Engine/Profiling",
+        "Docs/perf",
+        ".github/workflows/perf-daily.yml",
+        "Docs/PERFORMANCE_OPTIMIZATION.md",
+        ".claude/skills/perf-hunt"
+      ],
+      "docs": [
+        "Docs/PERFORMANCE_OPTIMIZATION.md",
+        "Docs/Reports/PERFORMANCE.md",
+        "Docs/claude/SHADERS_AND_PERFORMANCE.md",
+        ".claude/skills/perf-hunt/SKILL.md"
+      ],
+      "artifacts": [],
+      "report": "Docs/Reports/PERFORMANCE.md",
+      "taskAreas": [
+        "Performance"
+      ],
+      "test": [
+        "Pull Ys-bleeding-edge, open Unity, Code Optimization = Release, close the Third Eye window.",
+        "Play, Cell Selector > Lattice, wait 8 minutes.",
+        "Keep playing: the editor captures S2 by itself at 8 minutes (the Scene view badge counts down and says Saved).",
+        "Stop playing and press Send to Claude when Unity asks.",
+        "python3 Tools/Build/perf_hunt.py sweep --write shows the capture judged against its baseline in Docs/Reports/PERFORMANCE.md."
+      ]
+    }
+  }
+}
