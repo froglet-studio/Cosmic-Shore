@@ -124,7 +124,7 @@ is a bug, and the run's console log is what a session needs to fix it.
 
 **The logs collect themselves (2026-10-15).** Every player of a multiplayer test writes its own log when it
 stops: each MPPM virtual player and the main editor in Unity, each player of START ONLINE / + PLAYER 2 in
-Amoebius. When the test ends, ONE question asks **Send to Claude?** Press it. Do not paste consoles. Then tell
+Amoebius. When the test ends, the main editor sends every player's logs to Claude by itself (no question since 2026-10-16). Do not paste consoles. Then tell
 the session "read my multiplayer logs" and it runs `python3 Tools/Build/net_logs.py show 1`, which lines
 every player up into one timeline (`Docs/DIAGNOSTICS.md` § "Multiplayer test logs"). In Amoebius, close player 2's
 window (or press CLOSE P2) rather than killing it, or its log is lost.

@@ -5,25 +5,28 @@
       "topGameAllocators": [
         [
           "PoolRefill.Squirrel Prism",
-          8.898
+          8.908
         ],
         [
           "VesselImpactor.AcceptImpactee",
-          5.578
+          6.173
         ],
         [
           "PoolActivate.Squirrel Prism",
-          0.725
+          0.726
         ],
         [
           "PoolRefill.FastGrowPrism",
-          0.7
+          0.697
         ]
       ],
       "verdict": "REGRESSION"
     }
   ],
-  "baselines": [],
+  "baselines": [
+    "MinigameGrizzlyCharge|MinigameGrizzlyCharge",
+    "MinigameRegatta|MinigameRegatta"
+  ],
   "bugs": {
     "open": 2,
     "top": [
@@ -72,6 +75,33 @@
       "user": "local",
       "valid": false,
       "verdict": "invalid: not compared"
+    },
+    {
+      "cpuBusyMs": 8.692339897155762,
+      "gcKB": 47.01902389526367,
+      "key": "MinigameRegatta|MinigameRegatta",
+      "timestamp": "2026-10-16 11:07:58",
+      "user": "belac",
+      "valid": true,
+      "verdict": "within baseline"
+    },
+    {
+      "cpuBusyMs": 6.47861385345459,
+      "gcKB": 84.00566864013672,
+      "key": "MinigameGrizzlyCharge|MinigameGrizzlyCharge",
+      "timestamp": "2026-10-16 14:51:10",
+      "user": "mrglo",
+      "valid": true,
+      "verdict": "within baseline"
+    },
+    {
+      "cpuBusyMs": 6.011809825897217,
+      "gcKB": 96.07453918457031,
+      "key": "MinigameGrizzlyCharge|MinigameGrizzlyCharge",
+      "timestamp": "2026-10-16 15:42:28",
+      "user": "mrglo",
+      "valid": true,
+      "verdict": "REGRESSION"
     }
   ],
   "gates": [
@@ -97,11 +127,11 @@
     }
   ],
   "gatesOk": true,
-  "generatedUtc": "2026-10-15T23:50:18Z",
+  "generatedUtc": "2026-10-16T21:57:02Z",
   "next": [
-    "Resolve: Allocation regression in Amoebius SkimRace|I2|3p: VesselImpactor.AcceptImpactee allocates 3.831 -> 5.578 KB/frame (+46%)",
-    "Resolve: Allocation regression in Amoebius SkimRace|I2|3p: PoolRefill.FastGrowPrism allocates 0.526 -> 0.7 KB/frame (+33%)",
-    "Resolve: Allocation regression in Amoebius SkimRace|I2|3p: new allocating marker PoolRefill.PrismImplosion: 0.122 KB/frame",
+    "Resolve: Allocation regression in Amoebius SkimRace|I2|3p: VesselImpactor.AcceptImpactee allocates 3.831 -> 6.173 KB/frame (+61%)",
+    "Resolve: Allocation regression in Amoebius SkimRace|I2|3p: PoolRefill.FastGrowPrism allocates 0.526 -> 0.697 KB/frame (+33%)",
+    "Resolve: Allocation regression in Amoebius SkimRace|I2|3p: new allocating marker PoolRefill.PrismImplosion: 0.127 KB/frame",
     "Capture S2 Lattice in Release (no valid baseline yet): Play Menu_Main in Release, Cell Selector > Lattice, and keep playing 8 minutes: the editor captures S2 by itself [T-20261015-56dd]",
     "Capture Skim Race I2 in Release (no valid baseline yet): Play Arcade > Skim Race, intensity 2, 2 AI, in Release for 90 s: the editor captures it by itself - also proves the Burst fix [T-20261015-3e0b]",
     "Capture S5 Wildlife Liberation in Release (no valid baseline yet): Play Arcade > Wildlife Liberation in Release for 2 minutes: the editor captures S5 by itself - the L8 go/no-go [T-20261015-3972]",
@@ -116,12 +146,12 @@
     {
       "id": "T-20261015-3e0b",
       "kind": "test",
-      "task": "Skim Race I2 with 2 AI, Release: play 90 s (the editor captures SkimRace by itself), stop, then Send to Claude. This is the Burst check the 10-08 fix still owes"
+      "task": "Skim Race I2 with 2 AI, Release: play 90 s (the editor captures SkimRace by itself), then stop: it goes to Claude by itself. This is the Burst check the 10-08 f"
     },
     {
       "id": "T-20261015-3972",
       "kind": "test",
-      "task": "S5 Wildlife Liberation, Release: play two minutes into a match (the editor captures S5 by itself), stop, then Send to Claude. It is the go/no-go for lever L8 (b"
+      "task": "S5 Wildlife Liberation, Release: play two minutes into a match (the editor captures S5 by itself), then stop: it goes to Claude by itself. It is the go/no-go fo"
     },
     {
       "id": "T-20261015-72e1",
@@ -141,7 +171,7 @@
     {
       "id": "T-20261015-7edd",
       "kind": "test",
-      "task": "Confirm the lava lamp fps fix in Unity: Release, Third Eye closed, Play Menu_Main for 8 minutes (the editor captures S2 by itself), stop, Send to Claude. Then f"
+      "task": "Confirm the lava lamp fps fix in Unity: Release, Third Eye closed, Play Menu_Main for 8 minutes (the editor captures S2 by itself), then stop: it goes to Claude"
     },
     {
       "id": "T-20261015-a5a5",
@@ -175,9 +205,9 @@
     }
   ],
   "regressions": [
-    "Allocation regression in Amoebius SkimRace|I2|3p: VesselImpactor.AcceptImpactee allocates 3.831 -> 5.578 KB/frame (+46%)",
-    "Allocation regression in Amoebius SkimRace|I2|3p: PoolRefill.FastGrowPrism allocates 0.526 -> 0.7 KB/frame (+33%)",
-    "Allocation regression in Amoebius SkimRace|I2|3p: new allocating marker PoolRefill.PrismImplosion: 0.122 KB/frame"
+    "Allocation regression in Amoebius SkimRace|I2|3p: VesselImpactor.AcceptImpactee allocates 3.831 -> 6.173 KB/frame (+61%)",
+    "Allocation regression in Amoebius SkimRace|I2|3p: PoolRefill.FastGrowPrism allocates 0.526 -> 0.697 KB/frame (+33%)",
+    "Allocation regression in Amoebius SkimRace|I2|3p: new allocating marker PoolRefill.PrismImplosion: 0.127 KB/frame"
   ],
   "scenarios": [
     {

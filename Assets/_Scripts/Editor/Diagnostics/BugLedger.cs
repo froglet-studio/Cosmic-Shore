@@ -54,6 +54,10 @@ namespace CosmicShore.Editor
         const string TouchedKey = "BugLedger.TouchedThisEditorSession";
         const string PlayStartKey = "BugLedger.PlayStartUtc";
         const string EditorStartKey = "BugLedger.EditorStartUtc";
+        const string PlayRunOpenKey = "BugLedger.PlayRunOpen";
+
+        /// <summary>Cap on <c>local/validation.log</c>; past it the older half is dropped.</summary>
+        const long MaxTrailBytes = 64 * 1024;
 
         const int MaxSampleChars = 500;
         const int MaxTitleChars = 120;
@@ -169,6 +173,7 @@ namespace CosmicShore.Editor
 
             Hook();
             StartWorker();
+            Trail($"editor load: play={_inPlayMode} capture={_autoCapture} minPlay={_minPlaySeconds}s issues={Issues.Count}");
         }
 
         /// <summary>Copies settings into the plain fields the background thread reads.</summary>
@@ -314,6 +319,7 @@ namespace CosmicShore.Editor
                             issue.Regressions++;
                             issue.CleanSessions = 0;
                             WriteLocked(issue);
+                            Trail($"{issue.Id} came back while its fix was being checked: reopened (regression {issue.Regressions})");
                             Debug.LogWarning($"[BugLedger] Regression: \"{issue.Title}\" recurred while validating — reopened (regression #{issue.Regressions}).");
                         }
                         else if (firstThisSession)
@@ -382,33 +388,54 @@ namespace CosmicShore.Editor
                     _inPlayMode = true;
                     _playStartUtc = DateTime.UtcNow;
                     SessionState.SetString(PlayStartKey, Iso(_playStartUtc));
+                    SessionState.SetBool(PlayRunOpenKey, true);
                     lock (SeenLock) SeenThisPlay.Clear();
                     break;
 
                 case PlayModeStateChange.ExitingPlayMode:
-                    _inPlayMode = false;
-                    // Let the worker land anything captured this play run before judging it —
-                    // an entry still in the queue is not yet in the seen set, and crediting a
-                    // clean session over it would validate a fix the session just disproved.
-                    DrainCapturesBriefly();
-                    double seconds = (DateTime.UtcNow - _playStartUtc).TotalSeconds;
-                    HashSet<string> seen;
-                    lock (SeenLock)
-                    {
-                        seen = new HashSet<string>(SeenThisPlay, StringComparer.OrdinalIgnoreCase);
-                        SeenThisPlay.Clear();
-                    }
-                    SessionState.SetString(PlayStartKey, "");
-                    LastPlaySeen = seen;
-                    CreditCleanSessions("PlayMode", seen, qualifies: seconds >= _minPlaySeconds,
-                        why: $"{Math.Max(1, (int)seconds)}s play run");
+                    EndPlayRun("exiting play mode");
+                    break;
+
+                case PlayModeStateChange.EnteredEditMode:
+                    // Unity stops calling playModeStateChanged handlers at the first one that
+                    // throws, so another tool's ExitingPlayMode handler can starve this one. The
+                    // run is still judged here; the trail says it was.
+                    if (SessionState.GetBool(PlayRunOpenKey, false))
+                        EndPlayRun("edit mode restored (the exiting-play-mode call never arrived)");
                     break;
             }
+        }
+
+        /// <summary>The play run is over: remember what fired and credit every fix it did not disprove.</summary>
+        static void EndPlayRun(string how)
+        {
+            SessionState.SetBool(PlayRunOpenKey, false);
+            LastPlayCountedFix = false;
+            _inPlayMode = false;
+            // Let the worker land anything captured this play run before judging it —
+            // an entry still in the queue is not yet in the seen set, and crediting a
+            // clean session over it would validate a fix the session just disproved.
+            DrainCapturesBriefly();
+            double seconds = (DateTime.UtcNow - _playStartUtc).TotalSeconds;
+            HashSet<string> seen;
+            lock (SeenLock)
+            {
+                seen = new HashSet<string>(SeenThisPlay, StringComparer.OrdinalIgnoreCase);
+                SeenThisPlay.Clear();
+            }
+            SessionState.SetString(PlayStartKey, "");
+            LastPlaySeen = seen;
+            CreditCleanSessions("PlayMode", seen, qualifies: seconds >= _minPlaySeconds,
+                why: $"{Math.Max(1, (int)seconds)}s play run, {how}");
         }
 
         /// <summary>Error ids that fired during the play run that just ended — what
         /// <see cref="BugHuntAutoSend"/> asks about. Main thread only.</summary>
         public static HashSet<string> LastPlaySeen { get; private set; } = new(StringComparer.OrdinalIgnoreCase);
+
+        /// <summary>The play run that just ended counted toward (or closed) a fix — worth a silent
+        /// progress send even when nothing new fired. Main thread only.</summary>
+        public static bool LastPlayCountedFix { get; private set; }
 
         /// <summary>Bounded wait for the worker to finish the already-captured backlog. Only ever
         /// called on the main thread at a session boundary, so 400 ms is the worst-case cost of a
@@ -439,18 +466,28 @@ namespace CosmicShore.Editor
         /// </summary>
         static void CreditCleanSessions(string scope, HashSet<string> seenIds, bool qualifies, string why)
         {
-            if (!_autoCapture || !qualifies) return;
+            if (!_autoCapture || !qualifies)
+            {
+                Trail($"{scope} session ended ({why}): not counted (capture={_autoCapture}, long enough={qualifies})");
+                return;
+            }
 
             List<BugLedgerIssue> resolved = null;
+            var credited = new StringBuilder();
+            int validating = 0;
             lock (StoreLock)
             {
                 foreach (var issue in Issues.Values)
                 {
-                    if (!issue.IsValidating || issue.ValidationPaused || !issue.HasSignature) continue;
+                    if (!issue.IsValidating) continue;
+                    validating++;
+                    if (issue.ValidationPaused || !issue.HasSignature) continue;
                     if (issue.Scope != scope) continue;
                     if (seenIds.Contains(issue.Id)) continue;   // recurrence already reopened it
 
                     issue.CleanSessions++;
+                    credited.Append(' ').Append(issue.Id).Append(' ').Append(issue.CleanSessions)
+                            .Append('/').Append(issue.CleanSessionsRequired);
                     if (issue.CleanSessions >= issue.CleanSessionsRequired)
                         (resolved ??= new List<BugLedgerIssue>()).Add(issue);
                     else
@@ -462,6 +499,10 @@ namespace CosmicShore.Editor
                         ResolveLocked(issue, $"validated — silent across {issue.CleanSessionsRequired} clean {scope} sessions");
             }
 
+            if (scope == "PlayMode" && credited.Length > 0) LastPlayCountedFix = true;
+            Trail($"{scope} session ended ({why}): {validating} fix(es) waiting; counted:" +
+                  (credited.Length > 0 ? credited.ToString() : " none") +
+                  (seenIds.Count > 0 ? $"; fired: {string.Join(" ", seenIds)}" : ""));
             if (resolved == null) return;
             foreach (var issue in resolved)
                 Debug.Log($"[BugLedger] Validated & closed: \"{issue.Title}\" — silent across {issue.CleanSessionsRequired} clean {scope} sessions (last: {why}). Archived to BugLedger/resolved/.");
@@ -804,7 +845,11 @@ namespace CosmicShore.Editor
             if (!live.IsOpen && !live.IsValidating) return false;
             if (!IsNewerFix(published, live)) return false;
             if (fixInHead != null && !string.IsNullOrEmpty(published.FixCommit) && !fixInHead(published.FixCommit))
+            {
+                if (WaitingForPull.Add(live.Id + ":" + published.FixCommit))
+                    Trail($"{live.Id}: fix {Short(published.FixCommit)} is not in this checkout yet — waiting for a pull");
                 return false;
+            }
 
             live.State = BugLedgerIssueState.Validating;
             live.CleanSessions = 0;
@@ -817,6 +862,7 @@ namespace CosmicShore.Editor
                     ? published.Notes
                     : live.Notes + "\n\n" + published.Notes;
             WriteLocked(live);
+            Trail($"{live.Id}: fix {Short(published.FixCommit)} taken ({live.Scope}); needs {live.CleanSessionsRequired} clean run(s)");
             Debug.Log($"[BugLedger] Fix received from {published.FixedBy}: \"{live.Title}\" — it closes itself after " +
                       $"{live.CleanSessionsRequired} play test(s) without this error, and is sent back if it happens again.");
             return true;
@@ -1031,6 +1077,52 @@ namespace CosmicShore.Editor
             foreach (var id in stored.Split('\n'))
                 if (id.Length > 0) set.Add(id);
         }
+
+        static readonly HashSet<string> WaitingForPull = new(StringComparer.Ordinal);   // under StoreLock
+        static readonly object TrailLock = new();
+
+        /// <summary><c>local/validation.log</c>: one line per fix taken, play run judged and regression.
+        /// It rides along with every "Send to Claude" (<see cref="BugLedgerSender"/>) so the answer to
+        /// "why is this fix still at 0 of 2?" is on the branch, not on one machine.</summary>
+        public static string TrailPath => LocalDir == null ? null : Path.Combine(LocalDir, "validation.log");
+
+        static void Trail(string line)
+        {
+            try
+            {
+                var path = TrailPath;
+                if (path == null) return;
+                lock (TrailLock)
+                {
+                    Directory.CreateDirectory(LocalDir);
+                    File.AppendAllText(path, Iso(DateTime.UtcNow) + " " + line + "\n");
+                    var info = new FileInfo(path);
+                    if (info.Length <= MaxTrailBytes) return;
+                    var text = File.ReadAllText(path);
+                    int cut = text.IndexOf('\n', text.Length / 2);
+                    File.WriteAllText(path, cut < 0 ? "" : text[(cut + 1)..]);
+                }
+            }
+            catch { /* the trail is evidence, never a reason to fail */ }
+        }
+
+        /// <summary>A copy of the trail for the sender, taken under its lock; false when there is none.</summary>
+        internal static bool CopyTrail(string destination)
+        {
+            try
+            {
+                lock (TrailLock)
+                {
+                    var path = TrailPath;
+                    if (path == null || !File.Exists(path)) return false;
+                    File.Copy(path, destination, overwrite: true);
+                    return true;
+                }
+            }
+            catch { return false; }
+        }
+
+        static string Short(string sha) => string.IsNullOrEmpty(sha) ? "(no commit)" : sha.Length > 9 ? sha[..9] : sha;
 
         static string Iso(DateTime utc)
             => utc.ToString("yyyy-MM-ddTHH:mm:ss.fffZ", CultureInfo.InvariantCulture);

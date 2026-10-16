@@ -162,21 +162,21 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Done:** 2026-10-15, Fixed on perf/performance-optimization: BlackHoleWarp.cs uses MathfNoAlloc.Max, FlipWave.cs nests two-value Max. Proof: python3 Tools/Build/check_mathf_params_alloc.py -> OK (2093 files); unity_refcompile player-dev RESULT OK; Amoebius Debug build. /verify-unity unavailable in the session.
 
 ### T-20261015-56dd · open · test · Performance
-- **Task:** First editor performance capture, S2 Lattice: Code Optimization = Release, Play, Cell Selector > Lattice, keep playing 8 minutes (the editor captures S2 by itself; the Scene view badge counts down), stop playing and press Send to Claude when Unity asks (the file is one JSON holding burst, diag, prof, renderers, cells and the console; pasting it into a Claude session also works). Close the Third Eye window and any preview first: an extra camera renders the world again and the capture says so.
+- **Task:** First editor performance capture, S2 Lattice: Code Optimization = Release, Play, Cell Selector > Lattice, keep playing 8 minutes (the editor captures S2 by itself; the Scene view badge counts down), stop playing (it goes to Claude by itself) (the file is one JSON holding burst, diag, prof, renderers, cells and the console; pasting it into a Claude session also works). Close the Third Eye window and any preview first: an extra camera renders the world again and the capture says so.
 - **Done when:** A capture_Menu_Main_S2_*.json whose reader output (python3 Tools/Build/perf_capture_report.py) shows no ERROR line (Release, Burst on, no managed job time) is pasted and recorded in Docs/PERFORMANCE_OPTIMIZATION.md 2 with its numbers.
 - **Who can take it:** Yash (offered), Andrew, anyone with the Unity Editor
 - **Added:** 2026-10-15 by the performance session (perf/performance-optimization) (`perf/performance-optimization`)
 - **See:** Docs/PERFORMANCE_OPTIMIZATION.md 3.6 and 4.6; Docs/DIAGNOSTICS.md, the Bug Hunt & Performance badge
 
 ### T-20261015-3e0b · open · test · Performance
-- **Task:** Skim Race I2 with 2 AI, Release: play 90 s (the editor captures SkimRace by itself), stop, then Send to Claude. This is the Burst check the 10-08 fix still owes (burst must read BURST and the Profiler must show no managed job time) and the test of the PoolRefill.Squirrel Prism ~9 KB/frame allocation lead from the Amoebius run.
+- **Task:** Skim Race I2 with 2 AI, Release: play 90 s (the editor captures SkimRace by itself), then stop: it goes to Claude by itself. This is the Burst check the 10-08 fix still owes (burst must read BURST and the Profiler must show no managed job time) and the test of the PoolRefill.Squirrel Prism ~9 KB/frame allocation lead from the Amoebius run.
 - **Done when:** The capture is shared or pasted; its burst section reads Run() BURST, Schedule() BURST; prof.managedJobMs < 0.2; the Profiler top-allocators list confirms or clears PoolRefill.Squirrel Prism. Recorded in Docs/PERFORMANCE_OPTIMIZATION.md 2.
 - **Who can take it:** Yash (offered), Andrew, anyone with the Unity Editor
 - **Added:** 2026-10-15 by the performance session (perf/performance-optimization) (`perf/performance-optimization`)
 - **See:** Docs/PERFORMANCE_OPTIMIZATION.md 3.6 and 4.6; Docs/DIAGNOSTICS.md, the Bug Hunt & Performance badge
 
 ### T-20261015-3972 · open · test · Performance
-- **Task:** S5 Wildlife Liberation, Release: play two minutes into a match (the editor captures S5 by itself), stop, then Send to Claude. It is the go/no-go for lever L8 (batched creature body re-sync): Fauna.BodySync must average 8 ms or more for L8 to be worth building.
+- **Task:** S5 Wildlife Liberation, Release: play two minutes into a match (the editor captures S5 by itself), then stop: it goes to Claude by itself. It is the go/no-go for lever L8 (batched creature body re-sync): Fauna.BodySync must average 8 ms or more for L8 to be worth building.
 - **Done when:** The capture is shared or pasted and the Fauna.BodySync / LightFauna.Update rows are read; the L8 decision is written in Docs/PERFORMANCE_OPTIMIZATION.md 3.3.
 - **Who can take it:** Yash (offered), Andrew, anyone with the Unity Editor
 - **Added:** 2026-10-15 by the performance session (perf/performance-optimization) (`perf/performance-optimization`)
@@ -219,14 +219,14 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **See:** .github/workflows/perf-daily.yml; Docs/PERFORMANCE_OPTIMIZATION.md 3.4; /perf-hunt section 0
 
 ### T-20261015-7d29 · open · test · Performance
-- **Task:** Test the Bug Hunt & Performance badge in the Scene view: open Unity, check the card shows bugs and perf with no dialog on load, fold/unfold/hide it, press Release if shown, then Play Menu_Main past the badge's auto-capture countdown, stop, and check Unity asks Send to Claude.
+- **Task:** Test the Bug Hunt & Performance badge in the Scene view: open Unity, check the card shows bugs and perf with no dialog on load, fold/unfold/hide it, press Release if shown, then Play Menu_Main past the badge's auto-capture countdown, stop, and check the console says it was sent to Claude by itself.
 - **Done when:** Every step of the 2026-10-15 badge entry in Docs/UNITY_VERIFICATION_CHECKLIST.md passes (or the failing step is reported to a Claude session), and the entry is moved to verified.
 - **Who can take it:** Yash (offered), Andrew, anyone with the Unity Editor
 - **Added:** 2026-10-15 by the performance session (perf/performance-optimization) (`perf/performance-optimization`)
 - **See:** Docs/UNITY_VERIFICATION_CHECKLIST.md 2026-10-15; Docs/DIAGNOSTICS.md, The Bug Hunt & Performance badge
 
 ### T-20261015-0bc6 · open · test · diagnostics
-- **Task:** Test the one-button bug flow in Unity: play until a red error appears (or Debug.LogError from any script), stop Play, press Send to Claude; play and stop again with the same error
+- **Task:** Test the one-button bug flow in Unity: play until a red error appears (or Debug.LogError from any script), stop Play (it is sent by itself; the console says so); play and stop again with the same error
 - **Done when:** The dialog appears once; origin/bugledger/<you> gets BugLedger/shared/issues/E-*.bug.json; git status unchanged and you are still on your branch; the second stop shows no dialog
 - **Who can take it:** Yash, Andrew
 - **Added:** 2026-10-15 by a Claude session (`Ys-bleeding-edge`)
@@ -247,7 +247,7 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **See:** Docs/SKIM_RACE_AI.md §15; Docs/UNITY_VERIFICATION_CHECKLIST.md (Regatta Squirrel skim)
 
 ### T-20261015-7edd · open · test · Performance
-- **Task:** Confirm the lava lamp fps fix in Unity: Release, Third Eye closed, Play Menu_Main for 8 minutes (the editor captures S2 by itself), stop, Send to Claude. Then fly close to an omni and a Charge crystal and check their light looks as before.
+- **Task:** Confirm the lava lamp fps fix in Unity: Release, Third Eye closed, Play Menu_Main for 8 minutes (the editor captures S2 by itself), then stop: it goes to Claude by itself. Then fly close to an omni and a Charge crystal and check their light looks as before.
 - **Done when:** The capture reads well above the 19-30 fps reported on 10-15, and the 2026-10-15 lava-lamp entry in Docs/UNITY_VERIFICATION_CHECKLIST.md passes.
 - **Who can take it:** Yash (reported it), Andrew, anyone with the Unity Editor
 - **Added:** 2026-10-15 by the performance session (perf/performance-optimization) (`perf/performance-optimization`)
@@ -261,7 +261,7 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **See:** Docs/PERFORMANCE_OPTIMIZATION.md 2 (10-15 lava lamp row)
 
 ### T-20261015-1551 · open · test · Performance
-- **Task:** Find why Regatta runs at 10 fps in the editor: in MinigameRegatta (Release code optimization, Deep Profile off), play two sessions of 90 s or more, one with the Third Eye CLOSED and one with it OPEN (the editor captures each by itself, labelled MinigameRegatta; the capture records the open cameras), stop Play and Send to Claude each time
+- **Task:** Find why Regatta runs at 10 fps in the editor: in MinigameRegatta (Release code optimization, Deep Profile off), play two sessions of 90 s or more, one with the Third Eye CLOSED and one with it OPEN (the editor captures each by itself, labelled MinigameRegatta; the capture records the open cameras), stop Play each time (each capture goes to Claude by itself)
 - **Done when:** Both captures are on bugledger/yskha and the report names what the 10 fps is spent on (game vs Third Eye vs editor state)
 - **Who can take it:** Yash (offered), Andrew, anyone with the Unity Editor
 - **Added:** 2026-10-15 by Claude for Yash (`Ys-bleeding-edge`)
@@ -295,19 +295,21 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Added:** 2026-10-15 by the performance session (perf/performance-optimization) (`perf/performance-optimization`)
 - **See:** Docs/PERFORMANCE_OPTIMIZATION.md 1.2 and 3.3 (L1); Docs/Reports/PERFORMANCE.md, Waiting on Garrett
 
-### T-20261015-6009 · open · test · Regatta AI
+### T-20261015-6009 · done · test · Regatta AI
 - **Task:** Teach the Regatta Squirrel AI from your flying: Third Eye > Record on, fly Regatta as the Squirrel by hand 5 times to the finish, stop Play and Send to Claude; then ask a session to run learn_from_flights.py --write and test the AI
 - **Done when:** LEARNED_FROM_FLIGHTS.md lists your races and the Squirrel AI flies the learned line without striking its rail
 - **Who can take it:** Yash
 - **Added:** 2026-10-15 by Claude for Yash (`Ys-bleeding-edge`)
 - **See:** Docs/SKIM_RACE_AI.md §16
+- **Done:** 2026-10-16
 
-### T-20261015-1188 · open · test · AI / training
-- **Task:** Fly 3-5 Regatta races by hand (Squirrel first) in the Unity EDITOR (training data comes from the editor only, 2026-10-16) and store each record when Unity asks
+### T-20261015-1188 · done · test · AI / training
+- **Task:** Fly 3-5 Regatta races by hand (Squirrel first) in the Unity EDITOR (training data comes from the editor only, 2026-10-16) (each record is stored by itself when Play stops)
 - **Done when:** `python3 Tools/Build/situation_features.py --write` reads them (flight/3) and writes learned_situations.json for the hull
 - **Who can take it:** Yash
 - **Added:** 2026-10-15 by Claude (Yash's session) (`Ys-bleeding-edge`)
 - **See:** Docs/AI_SYSTEM/SITUATION_RECORDING_PLAN.md
+- **Done:** 2026-10-16
 
 ### T-20261015-7fc3 · open · dev · AI / Regatta
 - **Task:** Port the two learned knobs to Unity: the commit distance as a curve over the leg (GateRaceController aiCommitDistance -> a + b x leg) and the skim-worth rule (the Squirrel's Skim Race pilot in Regatta), behind inspector switches, off by default
@@ -324,7 +326,7 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **See:** Docs/UNITY_VERIFICATION_CHECKLIST.md
 
 ### T-20261015-ac73 · open · test · Multiplayer
-- **Task:** Check that multiplayer test logs collect themselves in Unity: an MPPM test (main + P2 + P3) leaves one Logs/NetSessions file per player, ONE 'Send to Claude?' names the players, the send lands them on bugledger/<you>, and net_logs.py show 1 prints one timeline. Solo play writes nothing. From now on, press Send to Claude after every multiplayer hand test instead of pasting consoles.
+- **Task:** Check that multiplayer test logs collect themselves in Unity: an MPPM test (main + P2 + P3) leaves one Logs/NetSessions file per player, the main editor sends them by itself (one console line names the players), the send lands them on bugledger/<you>, and net_logs.py show 1 prints one timeline. Solo play writes nothing. From now on, press Send to Claude after every multiplayer hand test instead of pasting consoles.
 - **Done when:** The six steps of the checklist entry 'Multiplayer test logs collect themselves' pass, or a failure is noted with its console
 - **Who can take it:** Andrew, Yash (offered)
 - **Added:** 2026-10-15 by Yash (`Ys-bleeding-edge`)
@@ -366,6 +368,41 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Who can take it:** Garrett (handicap owner)
 - **Added:** 2026-10-16 by Yash's session (`Ys-bleeding-edge`)
 - **See:** Docs/AI_SYSTEM/SITUATION_RECORDING_PLAN.md §7 Status
+
+### T-20261016-6695 · open · test · AI training
+- **Task:** Race the Squirrel in Regatta in the Unity editor, about 100 races (Docs/AI_SYSTEM/RACING_LINE.md §4). Nothing to type: each leg's style (rail riding, drift, abilities, boost) and the rival difficulty are read from the recording. Mix it up: ride your rail, drift, press abilities, pick Hard rivals in the lobby for some races, play I2-I4 too. Store every race, the bad ones too
+- **Done when:** about 100 stored Squirrel flights; racing_line.py reports every leg trusted and stable on each course
+- **Who can take it:** Yash
+- **Added:** 2026-10-16 by a Claude session (`Ys-bleeding-edge`)
+- **See:** Docs/AI_SYSTEM/RACING_LINE.md
+
+### T-20261016-39e6 · open · test · Regatta AI
+- **Task:** Race the Regatta Squirrel AI after its ring-face change (SkimHeight -6.5, learned from your flights): watch it in the Third Eye skim the side of the rail the rings are on; count its rail hits and its rings when you finish (old median 14/24); revert the one asset to compare with the old AI
+- **Done when:** Checklist entry 'Regatta Squirrel AI skims the ring face of the rail' passes or the failure is reported
+- **Who can take it:** Yash
+- **Added:** 2026-10-16 by Yash's session (`Ys-bleeding-edge`)
+- **See:** Docs/UNITY_VERIFICATION_CHECKLIST.md; Docs/AI_SYSTEM/SITUATION_RECORDING_PLAN.md §8
+
+### T-20261016-89ed · open · test · Regatta AI
+- **Task:** Fly Regatta I1 as the Rhino, the Dolphin, the Manta and the Urchin, 5+ finished races each, storing every one; in one race per hull flip Third Eye > Pilots > AI on your hull for a lap and back (gives the AI's numbers beside yours). Then ask a session to run learn_drives_from_flights.py --write
+- **Done when:** Each of the four hulls has 3+ finished Regatta flights on bugledger/<you>
+- **Who can take it:** Yash
+- **Added:** 2026-10-16 by Yash's session (`Ys-bleeding-edge`)
+- **See:** Docs/AI_SYSTEM/SITUATION_RECORDING_PLAN.md §9
+
+### T-20261016-0eb3 · open · decision · Regatta AI
+- **Task:** Two decisions for the Regatta AIs: (1) put the Stoat on the Regatta card (it is one of the roadmap's six but cannot be flown in Regatta, so its AI cannot learn from flights); (2) cece/relaxed-hopper-r62hbd carries a second, older RampBoostAIPolicySO for the Rhino than Ys-bleeding-edge's - pick one before it merges
+- **Done when:** Both answered in Docs/AI_SYSTEM/REGATTA_AI_ROADMAP.md
+- **Who can take it:** Yash with Garrett (Stoat and Rhino owner sessions)
+- **Added:** 2026-10-16 by Yash's session (`Ys-bleeding-edge`)
+- **See:** Docs/AI_SYSTEM/SITUATION_RECORDING_PLAN.md §9
+
+### T-20261016-2292 · open · test · Arena launch
+- **Task:** Open Menu > Arena in the editor and look at the AI Difficulty row and the re-fitted vessel carousel on all four cards (Astro League, Brood Rush, Regatta, Broadside)
+- **Done when:** Row sits under the intensity row like Arcade's Skim Race; icon, arrows and SELECT VESSEL fit inside the carousel frame; Easy/Medium/Hard light and step with the pad
+- **Who can take it:** Yash (offered); Shombith owns Menu_Main
+- **Added:** 2026-10-16 by a Claude session (`Ys-bleeding-edge`)
+- **See:** Docs/UNITY_VERIFICATION_CHECKLIST.md (AI difficulty on every Arena card)
 
 ### T-20261016-b12d · open · test · Brittle Star
 - **Task:** Walk the Brittle Star four-mode build step by step in the Editor: the danger trail when overheated in Space Mode, the spare-ring stock (LT refused with none, one per crystal, two at most, the ring regrowing), the HUD cards (Charge = spare rings, Space = heat, red when overheated), an AI seat in an arcade match, and two MPPM clients (petals only; the analog-RT gap). Garrett played it 2026-10-16 and reported it working, not step by step.

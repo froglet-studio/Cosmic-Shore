@@ -5,7 +5,7 @@
 | Tool | Question it answers | Data it writes |
 |---|---|---|
 | **Crash Detector** | *Why did my editor die?* — even when Unity itself never got to say | `Logs/CrashDetector/` (machine-local, gitignored) |
-| **Bug Ledger** (no window: one "Send to Claude?" question after a play test) | *What is broken right now, and is the fix actually proven?* | `BugLedger/local/` (gitignored live store) → sent to the sender's own `bugledger/<user>` branch |
+| **Bug Ledger** (no window, no question: new errors and captures go to Claude by themselves after a play test) | *What is broken right now, and is the fix actually proven?* | `BugLedger/local/` (gitignored live store) → sent to the sender's own `bugledger/<user>` branch |
 | **Compile Timing** | *What does an edit cost?* — compile + domain-reload seconds, and which assemblies rebuilt | `Logs/CompileTiming/` (machine-local, gitignored) |
 | **Report On-Screen UI** (menu item, not a tab) | *What is that thing covering my screen?* — every enabled `Graphic` ≥2% of the display, biggest first | nothing — console + clipboard |
 
@@ -267,11 +267,11 @@ occurrence.
 
 `BugHuntAutoSend` (editor, `[InitializeOnLoad]`). When a play test ends and it logged a red error
 Claude does not have yet (an OPEN issue seen this run whose `id:regressions` fingerprint was never
-asked about), ONE dialog: *"This play test logged N new console errors… Send them to Claude to
-fix?"* — **Send to Claude** / **Not now**. Either answer records the fingerprints
-(`BugLedgerSettings.SentFingerprints`), so the same error never asks twice; only a new error, or one
-that came BACK after a fix (its regression count moved), asks again. "Not now" errors ride along on
-the next send.
+sent), or made a new performance capture (`PerfAutoCapture`), AI training record or multiplayer
+log, it **sends at once, with no question** (Yash, 2026-10-16: "make send to Claude automatic too, no
+question"; it was a Send / Not now dialog until then) and logs one console line saying what went. The
+fingerprints are recorded (`BugLedgerSettings.SentFingerprints`), so the same error is never sent
+twice; only a new error, or one that came BACK after a fix (its regression count moved), sends again.
 
 **Send** (`BugLedgerSender`, background thread) pushes this machine's whole live ledger to its own
 branch, **`bugledger/<user>`**, containing only `BugLedger/shared/`:
@@ -282,6 +282,18 @@ branch, **`bugledger/<user>`**, containing only `BugLedger/shared/`:
   ≤ 14 days old, ≤ 512 KB, ≤ 12 per send, append-only (`BugHuntReports`).
 - `reports/<user>/net/<file>` — multiplayer test logs (`Logs/NetSessions/`, one per player; see
   "Multiplayer test logs" below).
+- `reports/<user>/ledger/validation.log` — the **validation trail** (`BugLedger/local/validation.log`,
+  ≤ 64 KB, replaced on every send): one line per editor load, fix taken (or waiting for a pull),
+  play run judged (its length, which fixes it counted and what fired) and regression. It answers
+  "why is this fix still at 0 of 2?" from the branch. Added 2026-10-16 after every fix on
+  `bugledger/yskha` sat at 0 of 2 through a day of play although the counting passes every
+  simulation off-editor.
+
+**Progress goes back without a question.** A play run that counted toward a fix but logged nothing
+new sends the issues and the trail (no report files) in the background, so a fix's k of n, or its
+closing, reaches the branch without waiting for the next error. And a play run is judged at
+`EnteredEditMode` too when the `ExitingPlayMode` call never arrived: Unity stops calling
+`playModeStateChanged` handlers at the first one that throws, so another tool can starve the ledger's.
 
 It never touches the person's work: blobs go straight into the object store (`hash-object -w`), the
 tree is built in a THROWAWAY index (`GIT_INDEX_FILE` under `Library/`), the commit is
@@ -338,9 +350,8 @@ other than its own client 0, a client left, a leaver handed to the AI, a join re
 a virtual player's editor is running. Solo online play (the presence lobby only) writes nothing.
 Virtual players run from `Library/VP/<id>/`, so they write into the MAIN project's
 `Logs/NetSessions/` (peer = the MPPM tag, e.g. `p2`, else `vp-<id>`); the main editor's file is
-`main`. The main editor waits 4 s for the virtual players' files, then asks ONE question: *"This
-multiplayer test saved logs from main, p2 and p3... Send them to Claude?"* (or adds "Plus the
-multiplayer test's logs from ..." to the error question). The virtual players never ask. **Send**
+`main`. The main editor waits 4 s for the virtual players' files, then sends them with no
+question (one console line names the players). The virtual players never send. The send
 is the same `BugLedgerSender` as above: the files go to `reports/<user>/net/` on `bugledger/<user>`.
 
 **Amoebius (START ONLINE, + PLAYER 2).** The launcher passes `COSMIC_SHORE_NET_LOG_DIR`
@@ -379,7 +390,7 @@ the bottom-left corner of every Scene view. It opens expanded once per editor st
   `capture <label> 15` by itself in Play, once per scene per session, after the scene's time from the status file
   (S2 8 min, Skim Race 90 s, S5 2 min; any other gameplay scene 90 s under its own name). It skips Debug code
   optimization, a paused editor and the boot scenes. While playing, the badge shows its countdown. A new capture
-  then asks "Send to Claude?" after Play. It costs one short hitch per scene (a 180-frame Profiler recording and a
+  then goes to Claude by itself after Play. It costs one short hitch per scene (a 180-frame Profiler recording and a
   renderer census). Turn it off on one machine with the EditorPrefs key `CosmicShore.PerfAutoCapture.Off`.
 
 It replaced the Capture Performance window. Every other question (what regressed, what to test, what to fix next) is
@@ -442,7 +453,7 @@ a clean run. Copy that shape.
 | Issue model + hand-rolled JSON | `Assets/_Scripts/Editor/Diagnostics/BugLedgerIssue.cs` |
 | Ledger settings (`ScriptableSingleton`) | `Assets/_Scripts/Editor/Diagnostics/BugLedgerSettings.cs` |
 | Agent side of the ledger (list / show / mark-fixed / collect / file) | `Tools/Build/bug_ledger.py` + `.claude/skills/bug-ledger/SKILL.md` |
-| The one UI: the after-play "Send to Claude?" question | `Assets/_Scripts/Editor/Diagnostics/BugHuntAutoSend.cs` |
+| The automatic after-play send (no question since 2026-10-16) | `Assets/_Scripts/Editor/Diagnostics/BugHuntAutoSend.cs` |
 | The one indicator: the Scene view's Bug Hunt & Performance badge (reads `Docs/perf/status.json`) | `Assets/_Scripts/Editor/Diagnostics/BugHuntPerfBadge.cs` |
 | Sender to `bugledger/<user>` + fix pickup (throwaway index, off-thread) | `Assets/_Scripts/Editor/Diagnostics/BugLedgerSender.cs` |
 | Report files that ride along (redlog / crash / perf) | `Assets/_Scripts/Editor/Diagnostics/BugHuntReports.cs` |

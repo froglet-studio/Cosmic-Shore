@@ -36,7 +36,7 @@ namespace CosmicShore.Gameplay
             var chargePeriod = .1f;
             while (ResourceSystem.Resources[EnergyResourceIndex].CurrentAmount < ResourceSystem.Resources[EnergyResourceIndex].MaxAmount)
             {
-                yield return new WaitForSeconds(chargePeriod);
+                yield return CosmicShore.Utility.WaitCache.Seconds(chargePeriod);
                 ResourceSystem.ChangeResourceAmount(EnergyResourceIndex, chargePerSecond * chargePeriod);
             }
         }

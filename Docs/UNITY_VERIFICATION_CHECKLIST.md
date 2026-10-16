@@ -65,6 +65,66 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 AI difficulty (Easy / Medium / Hard) on every Arena card (`Ys-bleeding-edge`, 2026-10-16) — NOT EDITOR-VERIFIED
+
+**What landed:** the difficulty row only existed on the Arcade window. The headless compile is clean
+(`unity_refcompile`: player and editor configs, 0 errors in project code). `/verify-unity` was not available.
+- **UI:** `Tools/Build/author_ai_difficulty_row.py` now also authors the row into Menu_Main's
+  `ArenaGameConfigureModal` and wires `ArenaLaunchPanel.aiDifficultyPicker`, in the same place as the Arcade's: under
+  the intensity row. The vessel carousel is re-fitted under it (top 8 px under the row, bottom 8 px over ADD AI; hull
+  icon 195 px tall, was 198; arrows level with the icon; SELECT VESSEL under the icon). `--check` holds both
+  windows. The Arcade prefab is byte-identical.
+- **AI:** `AIDifficultyRules.IsOfferedFor` already named Regatta (2026-10-14: Squirrels on `SkimRaceHandicap`, every
+  other hull `GateRaceHandicap`). It now also names Astro League / Brood Rush / Broadside (`UsesPilotBelief`). On those three, `ConfigureAIPilotForMode` gives each AI an
+  `AIPilotBelief`: the Skim Race's mistakes (late notice of a new or moving target, a misjudged target 30 u off the line
+  of sight) on whatever point `AIPilot` wants to reach. Hard gets none and flies exactly as before. The belief follows a
+  bot through a pilot swap (`TakeModeHooksFrom`). The Third Eye shows it (amber = not noticed, ruby = misjudged).
+- Not measured: how much slower or weaker Easy and Medium are in these modes. The numbers are the Skim Race's
+  (`SkimRaceDifficultySO`). Regatta's Urchin rail-riding (`TryOverrideAim` while attached) does not carry the handicap.
+
+**Verify:** (1) Menu > Arena: open each of the four cards. The AI DIFFICULTY row shows under the intensity row, as
+on the Arcade's Skim Race card, and Medium is lit. The vessel carousel sits under it: hull icon, arrows and SELECT
+VESSEL all inside its frame, nothing touching ADD AI. (2) Press Easy, then Hard. The row lights the
+pick, and the pad's left/right steps it. As a guest the row is greyed and shows the host's pick. (3) Launch Astro
+League on Easy with the Third Eye open (FrogletTools > AI > Third Eye). The AI's state flickers amber/ruby and it
+reaches the ball later than on Hard. On Hard the strip shows no reaction/mistake line. (4) Repeat in Broadside and
+Brood Rush. (5) Regatta on Easy: the AI threads rings visibly worse than on Hard. (6) Arcade window: the row
+still sits under the intensity row on Skim Race and is still hidden on a card without it.
+### 🔴 Regatta drive tuning per mode + resource meters in flights (`Ys-bleeding-edge`, 2026-10-17) — NOT EDITOR-VERIFIED
+
+**What landed:** `AIBoostPolicySO.ForMode` (a `Resources/AIBoostPolicies/<policy>_<mode>` variant, else the hull's own
+policy) used by `AIPilot` where it builds the drive; `MantaSoarAITuningSO` + `AIPilot.TryGetGameMode`, read once by
+`MantaAnalogTurnBoostExecutor` when its autopilot first drives; `HumanFlightRecorder` adds `m0..m3` (the hull's first four
+resource meters), `meterNames` and `boostMeter`. No variant asset exists yet, so every AI flies exactly as before.
+`Tools/Build/learn_drives_from_flights.py` writes the variants once there are 3 finished flights of a hull
+(`SITUATION_RECORDING_PLAN.md` §9).
+**Verified without the editor:** `unity_refcompile` player-dev 0 project errors, editor only the 3 known ones; gates;
+`learn_drives_from_flights.py --self-test`.
+**Verify in editor:**
+1. Run `RegattaDriveTuningTests` (Test Runner, EditMode): 3 pass.
+2. Race Regatta with AI Rhino, Dolphin and Manta: they race exactly as before (no variant yet), no new Console error.
+3. Fly a Regatta race as the Dolphin and store it: the file has `"meterNames"`, `"boostMeter"` 0 or above, and `m0..m3`
+   columns; the boost meter's column rises while you drift.
+
+### 🔴 Regatta Squirrel AI skims the ring face of the rail (`Ys-bleeding-edge`, 2026-10-17) — NOT EDITOR-VERIFIED
+
+**What landed:** `SkimRaceAIConfig_Regatta.asset`, written by `learn_from_flights.py --write` from the editor flights
+(policy `regatta-learned-20261016-3flights`, the three fastest won races): `SkimHeight` 4.346 -> **-6.498** (the minus
+puts the AI on the rail's - face, the side every ring sits on, 22 u off the rail; people skim it 94% of the time),
+`LookaheadSeconds` 1.016 -> 0.93, `LookaheadMin` 26.8 -> 60, `MassGuardMargin` 1.298 -> 1.379, `StickGainPerDegree`
+0.041 -> 0.032. No code changed (`SkimRaceDriver` already takes the face from `SkimHeight`'s sign). Why:
+`Docs/AI_SYSTEM/SITUATION_RECORDING_PLAN.md` §8; numbers: `Docs/AI_SYSTEM/LEARNED_FROM_FLIGHTS.md`.
+**Verified without the editor:** `author_skimrace_ai_config.py --check`, `learn_from_flights.py --self-test`.
+**Verify in editor:**
+1. Regatta I1, solo, Squirrel against AI Squirrels (or let the AI fly your hull: Third Eye ▸ Pilots ▸ AI). Watch an AI
+   Squirrel in the Third Eye's Chase camera: it skims on the side of the rail the rings are on, and threads rings
+   without crossing through the rail.
+2. Count its rail hits over a full race (the Third Eye readout, or its stored flight's Slowed episodes): fewer than
+   before. Its rings when you finish: more than the old median of 14 of 24.
+3. To compare with the old AI: `git revert` this commit's asset change (one file), race again, compare.
+4. Fail = it hits the rail more, stalls at a ring, or flips faces every ring. Undo: set `SkimHeight` back to 4.346 in
+   `Tools/Build/author_skimrace_ai_config.py` (`REGATTA_LEARNED`) and re-run it.
+
 ### 🔴 Multiplayer test logs collect themselves; one Send to Claude carries every player's (`Ys-bleeding-edge`, 2026-10-15) — NOT EDITOR-VERIFIED
 
 **What landed:** `NetTestLogs` (editor, `Assets/_Scripts/Editor/Diagnostics/`) keeps each editor's console from Play
@@ -95,6 +155,32 @@ and `net_logs.py show` merged it. **Not run:** the editor, MPPM, a real send.
 6. No frame-time change during Play with the F7 `diag` (the hook is one queue append per log line).
 
 ---
+
+### 🔴 AI training recorder: last ring, hull name, button presses, tags (`Ys-bleeding-edge`, 2026-10-16) — NOT EDITOR-VERIFIED
+
+**What landed:** `HumanFlightRecorder`:
+- **The last ring is counted.** It takes one last sample on the frame the race ends, so a finished race is written 24/24.
+  Before, 12 of Yash's 13 finished races read 23/24, their last sample 2–19 u short of ring 24.
+- **The hull, mode, domain, target and intensity are named when recording starts**, so a race left mid-way no longer
+  writes hull "Unknown" with raceTarget 0. A race that ends short of its target is marked `"ended":"race left before the
+  finish"`.
+- **`buttonEvents`** `[t, InputEvents value, 1 pressed / 0 released]`, with a `buttonNames` map. It holds the pilot's
+  own presses (abilities, stick actions, flip), with no IdleAction and nothing while the AI holds the hull.
+- **No labels are typed.** `racing_line.py` reads each leg's style (rail, drift, ability, boost, plain, rival
+  difficulty) from the recording.
+
+`learn_from_flights.py` counts older 23/24 flights as finished when the race ended on its own and the last sample is
+within 30 u of the last ring. `Tools/Build/racing_line.py` is new (`Docs/AI_SYSTEM/RACING_LINE.md`).
+**Verified without the editor:** `unity_refcompile` player, player-dev and editor (only the 3 known
+`AuthenticationServiceFacade` errors, none in changed files); conditional-compilation and console-logging checks;
+`racing_line.py`, `situation_features.py` and `learn_from_flights.py` self-tests.
+**Verify in editor:**
+1. Regatta, Squirrel, fly to the finish and store the record: `"rings":24`, `"finished":true`, `"ended":"race over"`.
+2. Press an ability or two mid-race: `buttonEvents` has rows for them (pressed then released). No new Console warning.
+3. Drift through a few turns and ride your own rail for a stretch: `python3 Tools/Build/racing_line.py --dir <Flights folder>`
+   shows those legs under `drift` and `rail` in its styles table.
+4. Start a race and go back to the menu mid-way: if it is stored, its hull is `Squirrel` (not Unknown), `raceTarget` is
+   24, and `ended` is `race left before the finish`.
 
 ### 🔴 AI training recorder: flight/3 records the situation (`Ys-bleeding-edge`, 2026-10-16) — NOT EDITOR-VERIFIED
 
@@ -9487,6 +9573,22 @@ What ran instead of `/verify-unity`: `unity_refcompile --config editor` (0 error
 4. Stay in the same scene longer: no second capture in that session. Re-enter Play: it captures again.
 5. Code Optimization = Debug: the badge says auto-capture is off while Debug; nothing is captured.
 6. EditorPrefs `CosmicShore.PerfAutoCapture.Off` = true: no countdown, no capture.
+
+## 🔴 2026-10-16 — Send to Claude with no question; generic per-frame fixes (unverified: no Unity CLI in the session)
+
+**Files:** `BugHuntAutoSend.cs` (no dialog: sends what is new after Play, one console line), `Utility/WaitCache.cs` (new) and
+27 coroutine timer sites, `GunTransformer.cs`, `scan_perframe_allocations.py`. What ran instead of `/verify-unity`:
+`unity_refcompile` player-dev (OK) and editor (0 errors in changed files), an Amoebius lava-lamp A/B, the gates.
+
+1. Play any scene, log a red error (or just play 90 s for an auto-capture), stop Play. Expect NO dialog, and one console
+   line "[BugLedger] Sent to Claude automatically: ...". `origin/bugledger/<you>` gets the error / capture.
+2. Stop Play again with nothing new: nothing is sent, no line.
+3. Fly the Falcon and the Shrike: the guns still fan out and track the right stick as before.
+4. Wildlife Liberation for two minutes: creatures, worms and boids still tick and feed; spawners still fill the cell; the
+   Squirrel's charge boost, a full-auto gun and the drift trail fire at their usual rates.
+5. Grizzly Charge (or any mode with a Grizzly): Scene view off, then check the capture's `cameras` line lists only the
+   player camera (no `PipCamera`); the Grizzly and Dolphin hull parts still lean and bank as before.
+6. Any mode: the turn still ends when its end condition is met (TurnMonitorController loop replaced LINQ Any).
 
 ## ⚪ Brittle Star — Destruction Mode is five CORDS (`cece/beautiful-knuth-j3atgk`, 2026-10-15) — SUPERSEDED
 

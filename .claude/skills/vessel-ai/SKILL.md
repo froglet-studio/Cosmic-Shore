@@ -78,9 +78,12 @@ Copy this list into the AI's doc and tick it.
 
 ### 3.1 Difficulty levels
 
-- **Three cards offer a difficulty** (`AIDifficultyRules.IsOfferedFor`): Skim Race (`SkimRaceHandicap` on crystals) and,
-  since 2026-10-10, Slingshot and Warpline (`GateRaceHandicap` on rings, applied by `GateRaceController`, so any
-  gate race can join by being named there). In every other mode the AI's skill follows the **intensity** (Grizzly Time: skill = intensity × 0.25, throttle
+- **Where a difficulty is offered** (`AIDifficultyRules.IsOfferedFor`): Skim Race (its own pilot), the gate
+  races Slingshot / Warpline (`GateRaceHandicap`), Regatta (Squirrels on the Skim Race pilot, every other hull
+  `GateRaceHandicap`), and the Arena's Astro League / Brood Rush /
+  Broadside (`AIDifficultyRules.UsesPilotBelief` -> `AIPilotBelief` on the platform `AIPilot`: the same two
+  mistakes on whatever point the autopilot wants; never on a mode with its own handicap). In every other
+  mode the AI's skill follows the **intensity** (Grizzly Time: skill = intensity × 0.25, throttle
   0.7 → 1.0). Say which one your AI uses.
 - **To add a difficulty to a mode**, follow Skim Race's pattern (`SKIM_RACE_AI.md` §10) and do not invent a
   second one:
