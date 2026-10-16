@@ -48,8 +48,23 @@ namespace CosmicShore.UI
         [SerializeField, Tooltip("Seconds between redraws (the countdown's resolution).")]
         float refreshSeconds = 1f;
 
-        const string NoBest = "None yet";
-        const string ReadyToClaim = "Ready to claim on your Profile";
+        [Header("Docking (rev 3)")]
+        [SerializeField, Tooltip("The weekly card's fold / close. A closed card stays hidden for the session.")]
+        HomeDockCard weeklyDock;
+        [SerializeField, Tooltip("The quest card's fold / close.")]
+        HomeDockCard questDock;
+
+        [Header("Words")]
+        [SerializeField, Tooltip("The weekly best when nothing has been played this week. Empty shows nothing.")]
+        string noBestText = "None yet";
+        [SerializeField, Tooltip("The quest line when its reward waits on the Profile.")]
+        string readyToClaimText = "Ready to claim on your Profile";
+        [SerializeField, Tooltip("The quest line for the next goal; {goal} is the quest's authored goal.")]
+        string nextGoalTemplate = "Next: {goal}";
+        [SerializeField, Tooltip("The quest line once every intensity is open.")]
+        string allUnlockedText = "Every intensity unlocked";
+        [SerializeField, Tooltip("The meter caption; {level} and {max} are filled in.")]
+        string meterTemplate = "Intensity {level} of {max}";
         float _nextRefresh;
         string _lastCountdown;
 
@@ -95,7 +110,7 @@ namespace CosmicShore.UI
         void DrawWeekly()
         {
             var service = WeeklyChallengeService.Instance;
-            bool show = service != null && service.ThisWeek.IsValid;
+            bool show = service != null && service.ThisWeek.IsValid && !(weeklyDock && weeklyDock.IsClosed);
             if (weeklyGroup) KitVisibility.SetShown(weeklyGroup, show);
             if (!show) return;
 
@@ -112,14 +127,14 @@ namespace CosmicShore.UI
                 _lastCountdown = countdown;
                 Set(weeklyCountdownText, countdown);
             }
-            Set(weeklyBestText, BestText(service.BestTimeThisWeekMs, service.BestValueThisWeek));
+            Set(weeklyBestText, BestText(service.BestTimeThisWeekMs, service.BestValueThisWeek, noBestText));
         }
 
         /// <summary>The week's best as the card shows it: a race time, else a score, else "None yet".</summary>
-        public static string BestText(long bestTimeMs, int bestValue) =>
+        public static string BestText(long bestTimeMs, int bestValue, string noBest) =>
             bestTimeMs > 0 ? WeeklyChallengeRanking.FormatSeconds(bestTimeMs / 1000.0)
             : bestValue > 0 ? bestValue.ToString()
-            : NoBest;
+            : noBest ?? string.Empty;
 
         // ── Current quest ──────────────────────────────────────────────────
 
@@ -128,7 +143,7 @@ namespace CosmicShore.UI
             var service = GameModeProgressionService.Instance;
             var list = service ? service.QuestList : null;
             int index = service && service.IsInitialized ? QuestFrontier.FrontierIndex(list, service) : -1;
-            bool show = index >= 0 && list.Quests[index];
+            bool show = index >= 0 && list.Quests[index] && !(questDock && questDock.IsClosed);
             if (questGroup) KitVisibility.SetShown(questGroup, show);
             if (!show) return;
 
@@ -139,7 +154,9 @@ namespace CosmicShore.UI
 
             Set(questTitleText, quest.DisplayName);
             Set(questNextText, NextGoal(quest, state, service.IsQuestCompleted(quest.GameMode), unlocked, maxIntensity));
-            Set(questMeterText, unlocked > 0 ? $"Intensity {unlocked} of {maxIntensity}" : string.Empty);
+            Set(questMeterText, unlocked > 0 && !string.IsNullOrEmpty(meterTemplate)
+                ? meterTemplate.Replace("{level}", unlocked.ToString()).Replace("{max}", maxIntensity.ToString())
+                : string.Empty);
             for (int i = 0; i < questMeterSegments.Length; i++)
             {
                 if (!questMeterSegments[i]) continue;
@@ -154,16 +171,18 @@ namespace CosmicShore.UI
         /// The line under the quest's name: claimable, its own objective while unfinished, else the next
         /// intensity's goal (the quest's authored Intensity 3 / 4 descriptions).
         /// </summary>
-        public static string NextGoal(SO_UnlockData quest, QuestItemState state, bool questCompleted, int unlocked, int maxIntensity)
+        string NextGoal(SO_UnlockData quest, QuestItemState state, bool questCompleted, int unlocked, int maxIntensity)
         {
-            if (state == QuestItemState.ReadyToClaim) return ReadyToClaim;
-            if (!questCompleted && !string.IsNullOrWhiteSpace(quest.Description)) return "Next: " + quest.Description;
-            if (unlocked >= maxIntensity) return "Every intensity unlocked";
+            if (state == QuestItemState.ReadyToClaim) return readyToClaimText ?? string.Empty;
+            if (!questCompleted && !string.IsNullOrWhiteSpace(quest.Description)) return Goal(quest.Description);
+            if (unlocked >= maxIntensity) return allUnlockedText ?? string.Empty;
             string goal = unlocked + 1 >= 4 ? quest.Intensity4GoalDescription
                         : unlocked + 1 == 3 ? quest.Intensity3GoalDescription
                         : quest.Description;
-            return string.IsNullOrWhiteSpace(goal) ? string.Empty : "Next: " + goal;
+            return string.IsNullOrWhiteSpace(goal) ? string.Empty : Goal(goal);
         }
+
+        string Goal(string goal) => string.IsNullOrEmpty(nextGoalTemplate) ? string.Empty : nextGoalTemplate.Replace("{goal}", goal);
 
         SO_ArcadeGame CardFor(GameModes mode)
         {

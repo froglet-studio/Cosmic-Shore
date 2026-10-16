@@ -57,7 +57,7 @@ TL, TR, ref, mono = C.TL, C.TR, C.ref, C.mono
 text, label, le = H.text, H.label, H.le
 image_node = A.image_node
 
-S = dict(kitbutton=K.kit_script("KitButton"), dismiss=C.script("DismissibleHint"), hub=C.script("MenuHubButton"), avail=C.script("MenuAvailabilityView"),
+S = dict(kitbutton=K.kit_script("KitButton"), dismiss=C.script("DismissibleHint"), dock=C.script("HomeDockCard"), hub=C.script("MenuHubButton"), avail=C.script("MenuAvailabilityView"),
          lamp=C.script("OnlineStatusIndicator"), bar=C.script("ConfirmQuestionBar"), home=C.script("HomeScreen"),
          crystals=C.script("CrystalCurrencyDisplay"), cbp=C.script("ControllerButtonPress"), button=A.BUTTON,
          upnext=C.script("HomeUpNext"), invite=C.script("PartyInviteNotificationPanel"), drain=K.kit_script("KitDrain"),
@@ -379,25 +379,32 @@ def settings_nodes():
 HINT_W, HINT_H, HINT_X = 300, 36, 28     # the fly hint, and its × (rev 3)
 
 
-def hint_close(n):
-    """The hint's × - a small KitButton with the chrome close glyph; DismissibleHint listens to it."""
-    b = n.child(N("Hint/Close", "Close", R((1, 0.5), None, (-4 - HINT_X / 2, 0), (HINT_X, HINT_X))))
-    A.ring_node(b, "Hint/Close/FocusRing", 10)
+def icon_button(parent, k, name, glyph, r, glyph_node=None):
+    """A small KitButton (Default, outline) carrying one chrome glyph: the hint's x, a card's - and x.
+    `glyph_node` draws a glyph no chrome sprite has (the minimise bar)."""
+    b = parent.child(N(k, name, r))
+    A.ring_node(b, f"{k}/FocusRing", 10)
     border, fillc, content = K.button_palette("Default", False)
-    f = b.child(N("Hint/Close/Fill", "Fill", STRETCH))
+    f = b.child(N(f"{k}/Fill", "Fill", STRETCH))
     f.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(fillc, K.kit_sprite("kit_sliver10_fill"), True, raycast=True))
-    bd = b.child(N("Hint/Close/Border", "Border", STRETCH))
+    bd = b.child(N(f"{k}/Border", "Border", STRETCH))
     bd.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(border, K.kit_sprite("kit_sliver10_line1"), True))
-    g = b.child(N("Hint/Close/Glyph", "Glyph", R(size=(14, 14))))
-    g.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(content, K.chrome_sprite("chrome_close"), preserve=True))
+    g = b.child(N(f"{k}/Glyph", "Glyph", R(size=(14, 14)) if glyph else R(size=(12, 2))))
+    g.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(content, K.chrome_sprite(glyph) if glyph else None, preserve=bool(glyph)))
     b.add("button", 114, lambda ctx, go: C.mono(go, S["kitbutton"],
-          K.SELECTABLE_FIELDS + f"  m_TargetGraphic: {C.ref(ctx.c('Hint/Close/Fill', 'img'))}\n" + A.calls([])
-          + f"  theme: {K.ref(11400000, K.THEME, 2)}\n  focusRing: {C.ref(ctx.c('Hint/Close/FocusRing', 'img'))}\n"
+          K.SELECTABLE_FIELDS + f"  m_TargetGraphic: {C.ref(ctx.c(f'{k}/Fill', 'img'))}\n" + A.calls([])
+          + f"  theme: {K.ref(11400000, K.THEME, 2)}\n  focusRing: {C.ref(ctx.c(f'{k}/FocusRing', 'img'))}\n"
           "  variant: 0\n  fill: 0\n"
-          f"  fillGraphic: {C.ref(ctx.c('Hint/Close/Fill', 'img'))}\n"
-          f"  borderGraphic: {C.ref(ctx.c('Hint/Close/Border', 'img'))}\n"
-          f"  contentGraphics:\n  - {C.ref(ctx.c('Hint/Close/Glyph', 'img'))}\n  playGradient: {{fileID: 0}}\n"))
+          f"  fillGraphic: {C.ref(ctx.c(f'{k}/Fill', 'img'))}\n"
+          f"  borderGraphic: {C.ref(ctx.c(f'{k}/Border', 'img'))}\n"
+          f"  contentGraphics:\n  - {C.ref(ctx.c(f'{k}/Glyph', 'img'))}\n  playGradient: {{fileID: 0}}\n"))
     b.add("audio", 114, A.menu_audio(11))
+    return b
+
+
+def hint_close(n):
+    """The hint's x; DismissibleHint listens to it."""
+    icon_button(n, "Hint/Close", "Close", "chrome_close", R((1, 0.5), None, (-4 - HINT_X / 2, 0), (HINT_X, HINT_X)))
 
 
 def hint_node():
@@ -505,10 +512,16 @@ def patch_header(p):
 # 6b: Up next cards (scene) and the party invite (prefab)
 # --------------------------------------------------------------------------------------------
 
+DOCK_GAP = 12                 # rev 3: the cards stack under the pilot chip
+FOLDED_H = 48                 # a folded card: its art slice and eyebrow
+DOCK_BTN = 26
+
+
 def upnext_card(key, eyebrow, eyebrow_token, border_token, x):
     k = f"UpNext/{key}"
     c = N(k, key, TL(x, 0, CARD_W, CARD_H))
-    c.add("cg", 225, H.canvas_group(True)).add("in", 114, M.entrance("Rise", by_sibling=True, distance=14))
+    c.add("cg", 225, H.canvas_group(True)).add("in", 114, M.entrance("Rise", by_sibling=True, distance=14)) \
+        .add("le", 114, le(pw=CARD_W, ph=-1))
     fill = c.child(N(f"{k}/Fill", "Fill", STRETCH))
     fill.add("cr", 222, K.canvas_renderer()) \
         .add("img", 114, K.image(tok("SurfaceVeryDark", 0.9), K.kit_sprite("kit_sliver14_fill"), True, raycast=True))
@@ -519,41 +532,54 @@ def upnext_card(key, eyebrow, eyebrow_token, border_token, x):
     A.art_node(clip, f"{k}/Clip/Art", "Art", R(size=(198, 132)), None)
     bord = c.child(N(f"{k}/Border", "Border", STRETCH))
     bord.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok(border_token), K.kit_sprite("kit_sliver14_line1"), True))
-    label(c.child(N(f"{k}/Eyebrow", "Eyebrow", TL(222, 20, 360, 16))), eyebrow, "Label", eyebrow_token)
-    t = c.child(N(f"{k}/Title", "Title", TL(222, 42, 360, 28)))
+    label(c.child(N(f"{k}/Eyebrow", "Eyebrow", TL(222, 16, 290, 16))), eyebrow, "Label", eyebrow_token)
+    # Everything under the eyebrow folds away with the card (HomeDockCard.detailGroup).
+    detail = c.child(N(f"{k}/Detail", "Detail", STRETCH))
+    detail.add("cg", 225, H.canvas_group(True))
+    t = detail.child(N(f"{k}/Title", "Title", TL(222, 42, 360, 28)))
     t.add("cr", 222, K.canvas_renderer()).add("tmp", 114, A.ellipsis(text("Mode", "H3", tok("TextLight")))) \
         .add("kt", 114, K.kit_text("H3", "TextLight"))
-    o = c.child(N(f"{k}/Line", "Line", TL(222, 72, 360, 20)))
+    o = detail.child(N(f"{k}/Line", "Line", TL(222, 72, 360, 20)))
     o.add("cr", 222, K.canvas_renderer()).add("tmp", 114, A.ellipsis(text("", "BodySmall", tok("NeutralLightest")))) \
         .add("kt", 114, K.kit_text("BodySmall", "NeutralLightest"))
     c.add("button", 114, lambda ctx, go: mono(go, A.BUTTON,
           A.selectable().replace("  m_Transition: 0\n", "  m_Transition: 1\n").replace(
               "    m_SelectedColor: {r: 0.9607843, g: 0.9607843, b: 0.9607843, a: 1}\n",
-              f"    m_SelectedColor: {K.col(tok('Cta'))}\n").replace(
+              f"    m_SelectedColor: {K.col(tok('ControlActive'))}\n").replace(
               "    m_HighlightedColor: {r: 0.9607843, g: 0.9607843, b: 0.9607843, a: 1}\n",
               f"    m_HighlightedColor: {K.col(tok('TextLight'))}\n")
           + f"  m_TargetGraphic: {ref(ctx.c(f'{k}/Border', 'img'))}\n" + A.calls([])))
     c.add("audio", 114, A.menu_audio(2))
-    return c
+    icon_button(c, f"{k}/Minimise", "Minimise", None, TR(14 + DOCK_BTN + 6, 11, DOCK_BTN, DOCK_BTN))
+    icon_button(c, f"{k}/Close", "Close", "chrome_close", TR(14, 11, DOCK_BTN, DOCK_BTN))
+    c.add("dock", 114, lambda ctx, go: mono(go, S["dock"],
+          f"  cardGroup: {ref(ctx.c(k, 'cg'))}\n  detailGroup: {ref(ctx.c(f'{k}/Detail', 'cg'))}\n"
+          f"  card: {ref(ctx.rt(k))}\n"
+          f"  minimiseButton: {ref(ctx.c(f'{k}/Minimise', 'button'))}\n  closeButton: {ref(ctx.c(f'{k}/Close', 'button'))}\n"
+          f"  expandedHeight: {CARD_H}\n  foldedHeight: {FOLDED_H}\n  foldSeconds: 0.18\n"
+          f"  foldKey: menu.home.dock.{key.lower()}.folded\n"))
+    return c, detail
 
 
 def upnext_node():
-    root = N("UpNext", "UpNext", R((0.5, 0), None, (0, 178), (2 * CARD_W + 40, CARD_H), (0.5, 0)))
-    w = upnext_card("Weekly", "Weekly challenge", "Purchase", "Purchase", 0)
-    label(w.child(N("UpNext/Weekly/EndsLabel", "EndsLabel", TL(222, 100, 64, 18))), "Ends in", "Label", "TextLight")
-    cd = w.child(N("UpNext/Weekly/Countdown", "Countdown", TL(290, 98, 110, 20)))
+    # Rev 3: docked on the left under the pilot chip, stacked; a closed card closes its gap.
+    root = N("UpNext", "UpNext", TL(CHIP["x"], CHIP["y"] + CHIP["h"] + 16, CARD_W, 2 * CARD_H + DOCK_GAP))
+    root.add("vlg", 114, K.hv_layout(True, (0, 0, 0, 0), DOCK_GAP, 0, (0, 0), (0, 0)))
+    w, wd = upnext_card("Weekly", "Weekly challenge", "Purchase", "Purchase", 0)
+    label(wd.child(N("UpNext/Weekly/EndsLabel", "EndsLabel", TL(222, 100, 64, 18))), "Ends in", "Label", "TextLight")
+    cd = wd.child(N("UpNext/Weekly/Countdown", "Countdown", TL(290, 98, 110, 20)))
     cd.add("cr", 222, K.canvas_renderer()).add("tmp", 114, text("0d 00:00", "DataSmall", tok("TextLight"))) \
         .add("kt", 114, K.kit_text("DataSmall", "TextLight"))
-    label(w.child(N("UpNext/Weekly/BestLabel", "BestLabel", TL(404, 100, 76, 18))), "Your best", "Label", "NeutralLightest")
-    b = w.child(N("UpNext/Weekly/Best", "Best", TL(484, 98, 100, 20)))
+    label(wd.child(N("UpNext/Weekly/BestLabel", "BestLabel", TL(404, 100, 76, 18))), "Your best", "Label", "NeutralLightest")
+    b = wd.child(N("UpNext/Weekly/Best", "Best", TL(484, 98, 100, 20)))
     b.add("cr", 222, K.canvas_renderer()).add("tmp", 114, text("None yet", "DataSmall", tok("TextLight"))) \
         .add("kt", 114, K.kit_text("DataSmall", "TextLight"))
     root.children.append(w)
-    q = upnext_card("Quest", "Current quest", "NeutralLightest", "TextLight", CARD_W + 40)
+    q, qd = upnext_card("Quest", "Current quest", "NeutralLightest", "TextLight", 0)
     for i, h in enumerate((13, 16, 19, 22)):
-        seg = q.child(N(f"UpNext/Quest/Meter{i + 1}", f"Meter{i + 1}", R((0, 1), None, (222 + i * 11, -120), (8, h), (0, 0))))
+        seg = qd.child(N(f"UpNext/Quest/Meter{i + 1}", f"Meter{i + 1}", R((0, 1), None, (222 + i * 11, -120), (8, h), (0, 0))))
         seg.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("SurfaceDark"))).add("th", 114, H.themed("SurfaceDark"))
-    mt = q.child(N("UpNext/Quest/MeterText", "MeterText", TL(274, 98, 300, 20)))
+    mt = qd.child(N("UpNext/Quest/MeterText", "MeterText", TL(274, 98, 300, 20)))
     mt.add("cr", 222, K.canvas_renderer()).add("tmp", 114, text("", "DataSmall", tok("TextLight"))) \
         .add("kt", 114, K.kit_text("DataSmall", "TextLight"))
     root.children.append(q)
@@ -570,6 +596,10 @@ def upnext_node():
              f"  questNextText: {ref(ctx.c('UpNext/Quest/Line', 'tmp'))}\n"
              f"  questMeterText: {ref(ctx.c('UpNext/Quest/MeterText', 'tmp'))}\n"
              + K.refs_list("questMeterSegments", [ctx.c(f"UpNext/Quest/Meter{i + 1}", "th") for i in range(4)])
+             + f"  weeklyDock: {ref(ctx.c('UpNext/Weekly', 'dock'))}\n  questDock: {ref(ctx.c('UpNext/Quest', 'dock'))}\n"
+             + "  noBestText: None yet\n  readyToClaimText: Ready to claim on your Profile\n"
+             + "  nextGoalTemplate: 'Next: {goal}'\n  allUnlockedText: Every intensity unlocked\n"
+             + "  meterTemplate: Intensity {level} of {max}\n"
              + f"  games: {K.ref(11400000, ARCADE_GAMES, 2)}\n  screenSwitcher: {ref(SWITCHER)}\n  refreshSeconds: 1\n"))
     return root
 
@@ -646,8 +676,11 @@ def patch_upnext(p):
     node = upnext_node()
     after = _last_doc(p, hint_node())
     rt = p.emit(node, I["panel_rt"], after)
+    # Docked under the pilot chip, the cards share the Go-offline question bar's spot: they draw
+    # BEFORE it, so the bar (shown only when asked) covers them rather than hiding behind them.
     kids = [k for k in p.kids(I["panel_rt"]) if k != rt]
-    p.children(I["panel_rt"], kids + [rt])
+    at = kids.index(I["bar_rt"]) if I["bar_rt"] in kids else len(kids)
+    p.children(I["panel_rt"], kids[:at] + [rt] + kids[at:])
     go = str(p.ctx.go("UpNext"))
     sw = p.doc(SWITCHER)
     m = re.search(r"^  hubCompanions:\n((?:  - .*\n)*)", sw, re.M)
@@ -755,11 +788,19 @@ def validate(files):
     assert re.search(r"  m_Calls: \[\]\n", sc.docs[I["bar_btn"]]), "the question bar still opens the display-name window"
     # 6b
     up = sc.docs[str(ctx.c("UpNext", "upnext"))]
-    for f in ("weeklyButton", "weeklyModeText", "weeklyCountdownText", "weeklyBestText", "questButton", "questTitleText", "questNextText"):
+    for f in ("weeklyButton", "weeklyModeText", "weeklyCountdownText", "weeklyBestText", "questButton", "questTitleText", "questNextText",
+              "weeklyDock", "questDock"):
         assert re.search(r"^  %s: \{fileID: [1-9]" % f, up, re.M), f"HomeUpNext.{f} is not wired"
     assert f"guid: {ARCADE_GAMES}" in up, "HomeUpNext.games is not the arcade card list"
     assert up.count("  - {fileID: ") == 4, "the quest meter needs four segments"
     assert f"  - {{fileID: {ctx.go('UpNext')}}}" in sc.docs[SWITCHER], "Up next does not fade with the hub row (hubCompanions)"
+    for key in ("Weekly", "Quest"):   # rev 3: each docked card folds and closes
+        dk = sc.docs[str(ctx.c(f"UpNext/{key}", "dock"))]
+        for f, want in (("detailGroup", ctx.c(f"UpNext/{key}/Detail", "cg")), ("minimiseButton", ctx.c(f"UpNext/{key}/Minimise", "button")),
+                        ("closeButton", ctx.c(f"UpNext/{key}/Close", "button")), ("cardGroup", ctx.c(f"UpNext/{key}", "cg"))):
+            assert f"  {f}: {{fileID: {want}}}" in dk, f"{key} card: HomeDockCard.{f} is not wired"
+        title = sc.docs[str(ctx.rt(f"UpNext/{key}/Title"))]
+        assert f"  m_Father: {{fileID: {ctx.rt(f'UpNext/{key}/Detail')}}}" in title, f"{key} card: the title does not fold with the detail"
     inst, stub, go_stub = invite_ids()
     assert not sc.has(OLD_INVITE["pi"]), "the old invite instance survives"
     assert sc_text.count(f"m_SourcePrefab: {{fileID: 100100000, guid: {P.asset_guid(INVITE)}") == 1, "Menu_Main must hold one PartyInvitePopup"
@@ -825,6 +866,7 @@ def self_test(files):
             f"guid: {S['kitbutton']}", f"guid: {S['button']}", 1))),
         ("the invite with no drain bar", lambda f: f.__setitem__(invite_path(), re.sub(
             r"(  timerBar: )\{fileID: -?\d+\}", r"\1{fileID: 0}", f[invite_path()]))),
+        ("a docked card that cannot fold", lambda f: f.__setitem__(SCENE, re.sub(r"(  minimiseButton: )\{fileID: -?\d+\}", r"\1{fileID: 0}", f[SCENE], count=1))),
         ("the fly hint's x unwired", lambda f: f.__setitem__(SCENE, re.sub(r"(  closeButton: )\{fileID: -?\d+\}", r"\1{fileID: 0}", f[SCENE], count=1))),
         ("Up next left out of the hub fade", lambda f: f.__setitem__(SCENE, f[SCENE].replace(
             f"  - {{fileID: {ctx_new().go('UpNext')}}}\n", "", 1))),

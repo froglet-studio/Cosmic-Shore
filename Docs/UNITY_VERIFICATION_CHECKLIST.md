@@ -10345,3 +10345,10 @@ gates, every `author_*.py --check`, and the changed generators' `--self-test` ne
 4. **Fly hint ×** (DismissibleHint): Home's "Tap the cell to fly" has a small × at its right end. Press it: the
    hint disappears; restart Play - it stays gone (PlayerPrefs `menu.hint.fly.closed`; delete the key to see it
    again). The × is reachable with the pad and shows the white focus ring.
+5. **Docked Home cards** (HomeDockCard, HomeUpNext): the Weekly challenge and Current quest cards sit on the LEFT
+   under the pilot chip, stacked 12 apart, each with – and × at its top right. – folds a card to a 48-tall strip
+   (art slice + eyebrow) and back in ~0.2 s; restart Play - the fold is remembered. × hides the card for the session
+   and the other card moves up into its place; it returns on the next launch. Pad focus on a card is BLUE now, not
+   green. Press "Go offline?" on the pilot chip: its question bar draws OVER the cards.
+   **Fail:** the cards overlap the pilot chip or each other, a closed card reappears within a second (HomeUpNext
+   re-showing it), or the question bar hides behind them.
