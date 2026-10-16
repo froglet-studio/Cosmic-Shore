@@ -121,6 +121,9 @@ and columns; `learn_from_flights.py --self-test` skips `held` rows (negative con
    hitting the rail adds `railEvents` rows. `camMode` is not -1 and `fov` is not 0 while you fly.
 2a. Switch the Third Eye's You / AI to AI for a few seconds mid-race, then back: those rows have `held` 1, and the record
    is still stored. No new Console warning or error while recording, and no frame-time change (`diag`).
+2c. **The final ring (2026-10-17):** win a race; the file says `"finalSample":true`, `"finished":true` and
+   `"rings":24` (files before this fix ended one ring short). Restart a race part-way: the file names the hull, not
+   "Unknown".
 2b. **The camera (V1, 2026-10-16):** `camux..camuz` is a unit vector square to `camfx..camfz`, `camAspect` is your Game
    view's width / height, `fov` your field-of-view setting, `camRear` 1 only while you hold look-behind. Then
    `python3 Tools/Build/situation_features.py --dir <the Flights folder>` prints a `view:` line for the flight (target

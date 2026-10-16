@@ -1067,6 +1067,9 @@ def report(sources, write=False):
             continue
         if d.get("mode") != "Regatta":
             continue
+        if (d.get("hull") or "Unknown") == "Unknown":
+            print(f"  skip {os.path.basename(name)}: no hull named (a race restarted part-way, recorded before 2026-10-17's fix)")
+            continue
         C = course_from(COURSE, int(d.get("intensity") or 1))
         if not C:
             print(f"  skip {name}: intensity {d.get('intensity')} has no course")

@@ -108,7 +108,24 @@ def parse(name, text):
     rows = d.get("samples") or []
     d["rows"] = [dict(zip(cols, r)) for r in rows]
     d["name"] = name
+    repair_final_ring(d)
     return d, None
+
+
+def repair_final_ring(d):
+    """Flights recorded before 2026-10-16's fix end ONE RING SHORT: the winning ring ends the turn on the frame it is
+    threaded, before the recorder's next 10 Hz sample (HumanFlightRecorder now takes a last sample; its files say
+    "finalSample"). For an older race that ended with the pilot one ring short of the target and every rival below
+    that, the pilot threaded the last ring and won: say so (finished, rings = target, "repaired"). No sample is
+    invented. A rival on the same count is ambiguous and is left as recorded."""
+    target, rows = int(d.get("raceTarget") or 0), d.get("samples") or []
+    if d.get("finalSample") or d.get("ended") != "race over" or target <= 0 or not rows or d.get("finished"):
+        return
+    rings = int(d.get("rings") or 0)
+    rv = (d.get("rivals") or [[]])[-1] or []
+    rivals = [rv[k] for k in range(3, len(rv), 4)]
+    if rings == target - 1 and all(r < target - 1 for r in rivals):
+        d["rings"], d["finished"], d["repaired"] = target, True, "final ring inferred (recorded before the last-sample fix)"
 
 
 # ---------------------------------------------------------------- the rail
@@ -216,7 +233,12 @@ def measure(f):
     # held = 1: the AI flew the hull (the Third Eye's You / AI toggle); that is not the human's flight.
     rows = [r for r in f["rows"] if r.get("speed", 0) > 5 and not r.get("held", 0) > 0.5]
     skim = [r for r in rows if 0 <= r.get("gap", -1) < SKIM_REACH]
-    line_h = statistics.median([r["height"] for r in skim]) if skim else None
+    # Which FACE of the rail the pilot skims (+ along the prisms' up axis, - the other face) and how far from its centre.
+    # The AI holds the same split: SkimHeight's sign picks the face, |SkimHeight| + the lift is the distance
+    # (SkimRaceDriver.LaneSkimHeight). Regatta's rings all sit 22 u off the rails' - face (measured 2026-10-17).
+    side_share = sum(1 for r in skim if r["height"] < 0) / len(skim) if skim else 0.0
+    line_side = -1.0 if side_share > 0.5 else 1.0
+    line_h = statistics.median([abs(r["height"]) for r in skim]) if skim else None
 
     # Look-ahead: the distance down the rail whose skim-line point the human's heading points at most nearly.
     looks = []
@@ -226,7 +248,7 @@ def measure(f):
         for L in range(20, 420, 10):
             q, up = lane.at(r["s"] + L)
             if line_h is not None:
-                q = tuple(a + b * line_h for a, b in zip(q, up))
+                q = tuple(a + b * line_side * line_h for a, b in zip(q, up))
             a = angle_deg(fwd, tuple(x - y for x, y in zip(q, pos)))
             if a < best:
                 best, best_l = a, L
@@ -241,7 +263,7 @@ def measure(f):
             L = min(max(r["speed"] * look_s, 20.0), 500.0)
             q, up = lane.at(r["s"] + L)
             if line_h is not None:
-                q = tuple(a + b * line_h for a, b in zip(q, up))
+                q = tuple(a + b * line_side * line_h for a, b in zip(q, up))
             err = angle_deg((r["fx"], r["fy"], r["fz"]), tuple(x - y for x, y in zip(q, (r["x"], r["y"], r["z"]))))
             stick = math.hypot(r["xSum"], r["ySum"])
             if 3.0 <= err <= 30.0 and stick < 0.95:
@@ -262,7 +284,7 @@ def measure(f):
         "name": os.path.basename(f["name"]), "finished": bool(f.get("finished")), "raceSeconds": f.get("raceSeconds"),
         "rings": f.get("rings"), "target": f.get("raceTarget"), "intensity": f.get("intensity"), "skimLift": f.get("skimLift", 0.0),
         "samples": len(rows), "skimShare": len(skim) / max(len(rows), 1),
-        "lineHeight": line_h, "gapP10": pct([r["gap"] for r in skim], 0.1), "gapMedian": pct([r["gap"] for r in skim], 0.5),
+        "lineHeight": line_h, "lineSide": line_side, "minusFaceShare": side_share, "gapP10": pct([r["gap"] for r in skim], 0.1), "gapMedian": pct([r["gap"] for r in skim], 0.5),
         "contactShare": sum(1 for g in gaps if g <= 0.05) / max(len(gaps), 1),
         "lookSeconds": look_s, "lookP10": pct([l for l, _ in looks], 0.1), "gain": pct(gains, 0.5),
         "turnsPerSecond": crossings / seconds, "meanStick": statistics.mean(abs(x) for x in xs) if xs else 0.0,
@@ -316,9 +338,13 @@ def learn(ms, base):
     out, notes = {}, []
     h, lift = med("lineHeight"), med("skimLift") or 0.0
     if h is not None:
-        out["SkimHeight"] = clamp("SkimHeight", h - lift)
+        minus = med("minusFaceShare") or 0.0
+        side = -1.0 if minus > 0.5 else 1.0
+        out["SkimHeight"] = round(side * clamp("SkimHeight", h - lift), 3)
+        face = "the rail's - face (the side its rings are on)" if side < 0 else "the rail's + face"
         notes.append(("SkimHeight", base.get("SkimHeight"), out["SkimHeight"],
-                      f"you skim {h:.2f} u above your rail's centre; minus the course's skim lift {lift:.2f}"))
+                      f"you skim {h:.2f} u from your rail's centre on {face} ({minus:.0%} of skimming on the - face); "
+                      f"minus the course's skim lift {lift:.2f}; the sign picks the face"))
     g = med("gapP10")
     if g is not None:
         for key in ("TrackGuardMargin", "MassGuardMargin"):
@@ -344,11 +370,11 @@ def learn(ms, base):
 
 
 def report(ms, notes, used, why_used):
-    lines = ["| Race | Finished | Time (s) | Rings | Skimming | Contact | Height above rail | Closest 10% gap | Look-ahead | Turns/s | Reaction lag |",
+    lines = ["| Race | Finished | Time (s) | Rings | Skimming | Contact | Skim height (- = ring face) | Closest 10% gap | Look-ahead | Turns/s | Reaction lag |",
              "|---|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|"]
     for m in ms:
         lines.append(f"| {m['name']} | {'yes' if m['finished'] else 'no'} | {m['raceSeconds'] or 0:.1f} | {m['rings']}/{m['target']} | "
-                     f"{m['skimShare']:.0%} | {m['contactShare']:.1%} | {fmt(m['lineHeight'])} | {fmt(m['gapP10'])} | "
+                     f"{m['skimShare']:.0%} | {m['contactShare']:.1%} | {fmt(m['lineHeight'] * m.get('lineSide', 1) if m['lineHeight'] is not None else None)} | {fmt(m['gapP10'])} | "
                      f"{fmt(m['lookSeconds'], 's')} | {m['turnsPerSecond']:.2f} | {fmt_lag(m.get('reactionLag'))} |")
     lines += ["", f"Learned from {why_used}: {', '.join(m['name'] for m in used)}.", "",
               "| Setting | Was | Learned | Why |", "|---|---:|---:|---|"]
@@ -474,6 +500,9 @@ def self_test():
             if k in learned:
                 assert lo <= learned[k] <= hi, (k, learned[k])
         # A flight inside the shell (gap 0) cannot pull the margins in, and a height below the plate is clamped.
+        under = learn([measure(parse("u", json.dumps(flight(30, True, h=-11.0)))[0])], {"TrackGuardMargin": 1.642, "MassGuardMargin": 1.3})[0]
+        assert abs(under["SkimHeight"] + 3.5) < 0.05, under              # the other face: same distance, negative sign
+        assert 0.35 <= under["LookaheadSeconds"] <= 0.65, under          # ...and the look-ahead aims at THAT face's line
         low = learn([measure(parse("x", json.dumps(flight(30, True, h=7.0)))[0])], {"TrackGuardMargin": 1.642, "MassGuardMargin": 1.3})[0]
         assert low["TrackGuardMargin"] == 1.642 and low["SkimHeight"] == BANDS["SkimHeight"][0], low
     # Format 2: the raw flight only (no rail columns); the learner measures it against the rail itself.
@@ -501,6 +530,15 @@ def self_test():
     held["columns"], held["samples"] = held["columns"][:-1], [r[:-1] for r in held["samples"]]
     m4 = measure(parse("held-dropped", json.dumps(held))[0])
     assert m4["skimShare"] < 0.6, ("negative control: the held rows should have counted", m4)
+    # A pre-fix flight one ring short with every rival behind it was won; one with a rival on the same count is left alone.
+    short = {"schema": SCHEMA, "ended": "race over", "raceTarget": 24, "rings": 23, "finished": False, "columns": ["t"], "samples": [[0]], "rivals": [[1, 2, 3, 15]]}
+    won = parse("short", json.dumps(short))[0]
+    assert won["finished"] and won["rings"] == 24 and won.get("repaired"), won
+    short["rivals"] = [[1, 2, 3, 23]]
+    tie = parse("tie", json.dumps(short))[0]
+    assert not tie["finished"] and tie["rings"] == 23, tie
+    short["finalSample"], short["rivals"] = True, [[1, 2, 3, 15]]
+    assert not parse("fixed", json.dumps(short))[0]["finished"], "a file with the last sample is never repaired"
     # The author script carries the block this writes into.
     text = open(AUTHOR, encoding="utf-8").read()
     assert BEGIN in text and END in text, "author_skimrace_ai_config.py lost its learn_from_flights block"

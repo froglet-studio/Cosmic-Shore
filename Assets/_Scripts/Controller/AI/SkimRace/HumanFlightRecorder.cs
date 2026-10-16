@@ -130,6 +130,9 @@ namespace CosmicShore.Gameplay
         int _frames, _startRings, _ownRail = -1, _courseSeed, _courseIntensity;
         bool _recording, _turnWasRunning;
         string _waiting = "waiting for a match", _railWhy = "";
+        // Named when recording starts: a race restarted part-way has no hull left by the time it is written.
+        string _hull = "Unknown", _mode = "Unknown";
+        int _target;
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
         static void Boot()
@@ -180,6 +183,9 @@ namespace CosmicShore.Gameplay
                 if (!TryFindLocalHuman()) { _waiting = "waiting for your hull (AI-only races are not recorded)"; return; }
                 _recording = true;
                 _startRings = _player.RoundStats?.SwitchesThreaded ?? 0;
+                _hull = _player.Vessel?.VesselStatus != null ? _player.Vessel.VesselStatus.VesselType.ToString() : "Unknown";
+                _mode = _gameData.GameMode.ToString();
+                _target = _gameData.SwitchTargetCount;
                 CopyCourse();
             }
 
@@ -457,6 +463,8 @@ namespace CosmicShore.Gameplay
             _ownRail = -1;
             _courseSeed = _courseIntensity = 0;
             _railWhy = "";
+            _hull = _mode = "Unknown";
+            _target = 0;
             _havePrevRot = false;
             _prevSampleT = 0f;
         }
@@ -495,6 +503,14 @@ namespace CosmicShore.Gameplay
 
         void Finish(string why)
         {
+            // The winning ring ends the turn on the frame it is threaded, before the next 10 Hz sample: take one last
+            // sample so the final ring (and the rivals' final counts) are in the file. Flights recorded before this
+            // (2026-10-16) end one ring short; learn_from_flights.parse repairs them.
+            if (_player && _player.Vessel?.VesselStatus != null)
+            {
+                try { TakeSample(Time.time); }
+                catch (Exception e) { Debug.LogWarning($"[HumanFlightRecorder] last sample not taken ({why}): {e.GetType().Name}: {e.Message}"); }
+            }
             _recording = false;
             int byHand = 0;
             for (int i = 0; i < _samples.Count; i++) if (!_samples[i].Held) byHand++;
@@ -507,8 +523,8 @@ namespace CosmicShore.Gameplay
             try
             {
                 Directory.CreateDirectory(Folder);
-                string hull = _player && _player.Vessel?.VesselStatus != null ? _player.Vessel.VesselStatus.VesselType.ToString() : "Unknown";
-                string mode = _gameData ? _gameData.GameMode.ToString() : "Unknown";
+                string hull = _player && _player.Vessel?.VesselStatus != null ? _player.Vessel.VesselStatus.VesselType.ToString() : _hull;
+                string mode = _gameData ? _gameData.GameMode.ToString() : _mode;
                 string file = Path.Combine(Folder, $"flight_{mode}_{hull}_{DateTime.Now:yyyyMMdd_HHmmss}.json");
                 File.WriteAllText(file, Serialize(hull, why));
                 LastFile = file;
@@ -535,7 +551,7 @@ namespace CosmicShore.Gameplay
             int railPrisms = 0;
             for (int r = 0; r < _rails.Count; r++) railPrisms += _rails[r].Points.Count;
             var sb = new StringBuilder(64 * 1024 + railPrisms * 60 + _samples.Count * 400 + _crystals.Count * 6);
-            int target = _gameData ? _gameData.SwitchTargetCount : 0;
+            int target = Mathf.Max(_gameData ? _gameData.SwitchTargetCount : 0, _target);
             int rings = _samples[_samples.Count - 1].Rings;
             int ringCount = _ringData.Count / 8;
             int intensity = _gameData && _gameData.SelectedIntensity != null ? _gameData.SelectedIntensity.Value : 0;
@@ -550,7 +566,7 @@ namespace CosmicShore.Gameplay
             sb.Append("\"build\":\"").Append(Esc(Application.version)).Append("\",\"unity\":\"").Append(Esc(Application.unityVersion)).Append("\",");
             sb.Append("\"courseSeed\":").Append(_courseSeed).Append(",\"courseIntensity\":").Append(_courseIntensity).Append(',');
             sb.Append("\"date\":\"").Append(DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss", c)).Append("\",");
-            sb.Append("\"ended\":\"").Append(why).Append("\",");
+            sb.Append("\"ended\":\"").Append(why).Append("\",\"finalSample\":true,");
             sb.Append("\"raceTarget\":").Append(target).Append(",\"rings\":").Append(rings).Append(',');
             sb.Append("\"laps\":").Append(target > 0 && ringCount > 0 ? Mathf.CeilToInt(target / (float)ringCount) : 0).Append(',');
             sb.Append("\"finished\":").Append(target > 0 && rings >= target ? "true" : "false").Append(',');
