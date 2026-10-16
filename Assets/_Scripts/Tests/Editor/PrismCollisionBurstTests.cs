@@ -157,7 +157,7 @@ namespace CosmicShore.Tests
             Assert.AreEqual(1000, counts[PrismCollisionBurst.Unravel], 1);
             Assert.AreEqual(1000, counts[PrismCollisionBurst.Flake], 1);
             Assert.AreEqual(0, counts[PrismCollisionBurst.Shatter] + counts[PrismCollisionBurst.Glitter] +
-                               counts[PrismCollisionBurst.Wedge], "a destruction kind is never a shed");
+                               counts[PrismCollisionBurst.Fragment], "a destruction kind is never a shed");
 
             for (int i = 0; i < 100; i++)
                 Assert.AreNotEqual(PrismCollisionBurst.Unravel, PrismCollisionBurst.PickShed(i / 100f, 1f, 0f, 1f));
@@ -188,41 +188,56 @@ namespace CosmicShore.Tests
         }
 
         [Test]
-        public void TheWedgeIsTheHlslsKindAndConstants()
+        public void TheFragmentIsTheHlslsKindAndConstants()
         {
             string hlsl = File.ReadAllText(HlslPath);
-            StringAssert.Contains($"#define PRISM_BURST_WEDGE   {PrismCollisionBurst.Wedge}.0", hlsl);
+            StringAssert.Contains($"#define PRISM_BURST_FRAGMENT {PrismCollisionBurst.Fragment}.0", hlsl);
             StringAssert.Contains("#define PRISM_BURST_PIVOT_BIAS (-0.5)", hlsl);
             StringAssert.Contains("#define PRISM_BURST_SLIDER_GAIN 0.5", hlsl);
             Assert.AreEqual(-0.5f, PrismCollisionBurst.PivotBias);
             Assert.AreEqual(0.5f, PrismCollisionBurst.SliderGain);
-            StringAssert.Contains("float slide = abs(amount * spreadPerAmount) * PRISM_BURST_SLIDER_GAIN * (1.0 + 2.0 * abs(slideNoise));", hlsl,
-                "WedgeReach is the HLSL's PrismBurstWedgeReach, which the harness proves every pose stays inside");
-            StringAssert.Contains("return 3.0 * radius + (2.0 * offset + slide) * maxScale;", hlsl,
-                "WedgeReach is the HLSL's PrismBurstWedgeReach, which the harness proves every pose stays inside");
-            Assert.AreEqual(5, PrismCollisionBurst.Wedge);
+            StringAssert.Contains(
+                "return radius * (3.0 + (s.burst + s.drift * life) * (1.0 + 6.0 * s.sizeSpeed) * (1.0 + abs(travelNoise)));", hlsl,
+                "FragmentReach is the HLSL's PrismBurstFragmentReach, which the harness proves every pose stays inside");
+            StringAssert.Contains("float size = clamp(level, 0.0, 6.0);", hlsl, "the reach's 6 is the size level's cap");
+            Assert.AreEqual(5, PrismCollisionBurst.Fragment);
         }
 
         [Test]
-        public void TheWedgeReachIsTheProvedSum()
+        public void TheFragmentReachIsTheProvedSum()
         {
-            var s = new Vector3(0.18f, 0.1f, 0.1f);
-            // offset = max |(s + 0.5) * 0.5 - 1/3| = |0.3 - 1/3| = 1/30 (the thin axes).
-            float offset = Mathf.Abs(0.3f - 1f / 3f);
-            Assert.AreEqual(3f * 2f + (2f * offset + 400f * 0.05f * 0.5f) * 6f,
-                PrismCollisionBurst.WedgeReach(2f, 6f, 400f, 0.05f, s), 1e-4f);
-            Assert.AreEqual(3f * 2f + 2f * offset * 6f, PrismCollisionBurst.WedgeReach(2f, 6f, 0f, 0.05f, s), 1e-5f,
-                "at rest the reach is the prism plus the pivot's offset");
-            // The slide noise lengthens the slide by at most 1 + 2 x its amplitude.
-            Assert.AreEqual(3f * 2f + (2f * offset + 400f * 0.05f * 0.5f * 1.3f) * 6f,
-                PrismCollisionBurst.WedgeReach(2f, 6f, 400f, 0.05f, s, 0.15f), 1e-4f);
+            var shape = new PrismCollisionBurst.FragmentShape { Burst = 1.2f, Drift = 0.35f, SizeSpeed = 0.3f };
+            Assert.AreEqual(2f * (3f + (1.2f + 0.35f * 7.5f) * 2.8f * 1.15f),
+                PrismCollisionBurst.FragmentReach(2f, 7.5f, shape, 0.15f), 1e-4f);
+            Assert.AreEqual(2f * 3f, PrismCollisionBurst.FragmentReach(2f, 7.5f, default, 0.15f), 1e-6f,
+                "a fragment that never travels stays within the prism's own 3R");
+            Assert.AreEqual(PrismCollisionBurst.FragmentReach(2f, 7.5f, shape, 0.15f),
+                PrismCollisionBurst.FragmentReach(2f, 7.5f, shape, -0.15f), 1e-6f, "the noise lengthens either way");
+        }
+
+        [Test]
+        public void TheShaderDefaultsAreTheShippedFragmentShape()
+        {
+            // The shader's defaults stand in until the runtime writes the config's values over them: the two agree.
+            var cfg = AssetDatabase.LoadAssetAtPath<PrismInteractionLodConfigSO>(LodConfigPath);
+            Assert.IsNotNull(cfg, LodConfigPath);
+            string shader = File.ReadAllText(ShaderPath);
+            var ci = System.Globalization.CultureInfo.InvariantCulture;
+            string F(float v) => v.ToString("0.####", ci);
+            void Has(string prop, float x, float y, float z, float w) =>
+                Assert.IsTrue(Regex.IsMatch(shader, $@"{prop} \(""[^""]*"", Vector\) = \({Regex.Escape($"{F(x)}, {F(y)}, {F(z)}, {F(w)}")}\)"),
+                    $"{prop} defaults to ({F(x)}, {F(y)}, {F(z)}, {F(w)})");
+            Has("_FragmentMotion", cfg.FragmentBurst, cfg.FragmentDrift, cfg.FragmentLift, cfg.FragmentAim);
+            Has("_FragmentSize", cfg.FragmentSizeSpeed, cfg.FragmentSizeSpin, cfg.FragmentSpinCap, cfg.FragmentLevelRef);
+            Has("_FragmentFade", cfg.FragmentEndSmall, cfg.FragmentEndBig, cfg.FragmentShrink, 0f);
+            Has("_FragmentNoise", cfg.FragmentSpinNoise, cfg.FragmentNoiseFrequency, cfg.FragmentTravelNoise, 0f);
         }
 
         [Test]
         public void TheBurstCarriesTheExplosionsOwnDials()
         {
             // The shader's defaults are the explosion material's values (the runtime copies the live material's
-            // over them, TryGetExplosionTuning), so even before the copy every depth moves as the explosion does.
+            // over them, TryGetExplosionTuning), so even before the copy every depth spins at the explosion's rate.
             string mat = File.ReadAllText(ExplosionMaterialPath);
             string shader = File.ReadAllText(ShaderPath);
             float Read(string key) => float.Parse(Regex.Match(mat, $@"- {key}: ([-0-9.e]+)").Groups[1].Value,
@@ -237,7 +252,6 @@ namespace CosmicShore.Tests
             Assert.AreEqual(Read("_ExplosiveRotation"), PrismCollisionBurst.ShippedExplosiveRotation, 1e-6f);
             Assert.AreEqual(Read("_ExplosiveSpead"), PrismCollisionBurst.ShippedExplosiveSpread, 1e-6f);
             string F(float v) => v.ToString("0.####", ci);
-            StringAssert.Contains($"_ExplosionSpread (\"Spread value (the explosion's _Spread)\", Vector) = ({F(shipped.x)}, {F(shipped.y)}, {F(shipped.z)}, 0)", shader);
             StringAssert.Contains($"= ({F(PrismCollisionBurst.ShippedExplosiveRotation)}, {F(PrismCollisionBurst.ShippedExplosiveSpread)}, 0, 0)", shader);
         }
 
@@ -702,16 +716,20 @@ namespace CosmicShore.Tests
             Assert.AreEqual(0f, cfg.FlakeWeight, "roll only");
             Assert.Greater(cfg.RollRadius, 0f);
             Assert.Greater(cfg.RollGap, 0f, "turns that touch would fight");
-            // Destruction is the silver gnomon cut (the designer, 2026-10-15), finer at every level, its fragments'
-            // spins a little out of step.
+            // Destruction is the silver gnomon cut (the designer, 2026-10-15), finer at every level, its fragments
+            // a little out of step; the small ones leave first (round 9).
             Assert.AreEqual(DestructionCut.SilverGnomon, cfg.Cut);
             for (int l = 2; l <= cfg.MaxDepth; l++)
                 Assert.Greater(cfg.CutDepthOf(l), cfg.CutDepthOf(l - 1), "the silver cut deepens level by level");
             Assert.LessOrEqual(cfg.CutDepthOf(cfg.MaxDepth), PrismSilverGnomonTiling.MaxDepth);
-            Assert.Greater(cfg.WedgeSpinNoise, 0f, "neighbours out of perfect step");
-            Assert.LessOrEqual(cfg.WedgeSpinNoise, 0.25f, "subtle: the order holds");
-            Assert.Greater(cfg.WedgeSlideNoise, 0f, "neighbours travel out of perfect step");
-            Assert.LessOrEqual(cfg.WedgeSlideNoise, 0.25f, "subtle: the order holds");
+            Assert.Greater(cfg.FragmentSpinNoise, 0f, "neighbours out of perfect step");
+            Assert.LessOrEqual(cfg.FragmentSpinNoise, 0.25f, "subtle: the order holds");
+            Assert.Greater(cfg.FragmentTravelNoise, 0f, "neighbours travel out of perfect step");
+            Assert.LessOrEqual(cfg.FragmentTravelNoise, 0.25f, "subtle: the order holds");
+            Assert.Less(cfg.FragmentEndSmall, cfg.FragmentEndBig, "the smallest fragments leave first");
+            Assert.LessOrEqual(cfg.FragmentEndBig, 0.95f, "every fragment gone before the entity retires");
+            Assert.Greater(cfg.FragmentBurst + cfg.FragmentDrift, 0f, "the fragments leave");
+            Assert.GreaterOrEqual(cfg.FragmentSpinCap, 1f);
             Assert.GreaterOrEqual(cfg.BloomRings, 2, "more cuts: each piece shorter than the quarter, so it curls tighter");
             Assert.Greater(cfg.PeelNoise, 0f, "every peel different");
             // Bloom pieces (and, if weighted again, ribbons and flake scales) fall on whole triangles at every
@@ -736,13 +754,16 @@ namespace CosmicShore.Tests
             StringAssert.Contains("PRISM_BURST_PROP(float4, _SlicePivot)", shader, "the inside colour");
             Assert.IsTrue(Regex.IsMatch(shader, @"UNITY_DOTS_INSTANCED_PROP\(float4, _SliceAxis\)"), "the roll's camera stamp");
             StringAssert.Contains("PRISM_BURST_PROP(float4, _SliceAxis)", shader, "the roll's camera stamp");
-            foreach (var prop in new[] { "_BurstShape", "_BurstCurl", "_BurstPeel", "_BurstRoll", "_ExplosionSpread", "_ExplosionDials", "_WedgeNoise" })
+            foreach (var prop in new[] { "_BurstShape", "_BurstCurl", "_BurstPeel", "_BurstRoll", "_ExplosionDials",
+                         "_FragmentMotion", "_FragmentSize", "_FragmentFade", "_FragmentNoise" })
             {
                 StringAssert.Contains(prop, shader);
                 Assert.IsTrue(Regex.IsMatch(shader, $@"float4 {prop};"), $"{prop} in the CBUFFER");
             }
-            StringAssert.Contains("float2 faceUV : TEXCOORD0;", shader, "the explosion's erosion reads the face coordinates");
-            StringAssert.Contains("PrismErosionFade_float(", shader, "a wedge fades on the explosion's own erosion");
+            // Round 9: a fragment shrinks away to its centre, so the explosion's erosion and its UV are gone.
+            StringAssert.DoesNotContain("PrismErosionFade_float(", shader, "a fragment shrinks instead of eroding");
+            foreach (var retired in new[] { "_ExplosionSpread", "_WedgeNoise", "faceUV", "PRISM_BURST_WEDGE" })
+                StringAssert.DoesNotContain(retired, shader, retired);
             StringAssert.Contains("#include \"PrismCollisionBurst.hlsl\"", shader);
         }
 

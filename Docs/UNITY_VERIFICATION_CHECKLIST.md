@@ -8906,6 +8906,17 @@ imports without errors (magenta = rejected), the config asset loads (not a missi
 8. **Round 8 — the slide noise**: the fragments of one wedge no longer leave as one sheet; each drifts a little off
    its neighbours while the four wedges a face still read as the explosion's. `wedgeSlideNoise` 0.15 on the config;
    nothing culled late in the 7.5 s (the widened `WedgeReach`).
+9. **Round 9 — the FRAGMENT kind (2026-10-16; supersedes the wedge motion of items 4–8)**: the shader compiles with the
+   new `_Fragment*` properties (no `_ExplosionSpread`, `_WedgeNoise` or erosion UV left) and the burst material shows
+   their defaults. A close death bursts into a FILLED cloud — big chunks near the core, fine debris flung farthest,
+   every face filling its own part of the sphere, leaning the way it was hit — tumbling at about the explosion's rate
+   with no flicker; the smallest fragments shrink away first, every fragment is gone by ~7 s of the 7.5 s life, and
+   nothing is culled while visible (`FragmentReach` bounds). `PrismInteractionLodConfig` shows the `fragment*` fields
+   (burst 0.5, drift 0.2, lift 1, aim 0.35, size speed 0.8, size spin 0.25, spin cap 1.6, smallest level 4, gone at
+   0.45 / 0.92, shrink 0.35, noise 0.15 / 3 / 0.25) — the old `wedgeSpinNoise` / `wedgeNoiseFrequency` /
+   `wedgeSlideNoise` values migrate through `FormerlySerializedAs` and the asset already carries the new keys.
+   EditMode: `TheFragmentIsTheHlslsKindAndConstants`, `TheFragmentReachIsTheProvedSum`,
+   `TheShaderDefaultsAreTheShippedFragmentShape`, `TheShaderReadsTheStampsTheCarrierWrites`.
 
 ### 🔴 The collision burst — level 1's high-res death (same branch, 2026-10-14) — NOT EDITOR-VERIFIED
 

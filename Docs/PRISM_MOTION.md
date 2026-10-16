@@ -124,6 +124,12 @@ back faces once the surface opens. Both finer levels share the explosion's ENVEL
 its palette, a prism-sized cloud (`3.5 + 1.5·spread` radii, spread capped at 1), and its linear fade — so
 squinted at, each is meant to read as the explosion.
 
+**Round 9 (the designer, 2026-10-16): the squint is retired.** The silver gnomon cut's range of sizes lets a
+far-away player take the small fragments as unseen, so a level no longer has to read as the explosion squinted at:
+every fragment bursts out on its own direction, filling the sphere, the small ones flung farthest and gone first
+(the FRAGMENT kind, `Docs/PRISM_ANIMATION.md` §4.11; measured in the Collision Burst Lab's Look scorecard). The
+squint measurements below are history.
+
 **Measured, round 5:** with the explosion's law, every depth is the explosion's size (0.99–1.02) and fade
 (0.05–0.07 of it, closer than two explosions); the squint, 0.21–0.22 against the 0.097 band, is held off by the
 brighter inside colour alone (0.13–0.14 without it). The earlier rounds' text follows.

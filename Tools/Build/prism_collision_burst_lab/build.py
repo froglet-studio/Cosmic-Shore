@@ -100,7 +100,8 @@ def burst_glsl():
     src = read(BURST_HLSL)
     for name in ("void PrismBurstPose(", "float PrismBurstProgress(", "float PrismBurstDissolveValue(",
                  "bool PrismBurstClipped(", "float PrismBurstNoise(", "void PrismBurstVoronoi(",
-                 "void PrismBurstExplosionMap(", "float3 PrismBurstWedgePivot(", "void PrismBurstWedgePose(",
+                 "void PrismBurstExplosionMap(", "float3 PrismBurstWedgePivot(", "void PrismBurstFragmentPose(",
+                 "float PrismBurstFragmentReach(", "struct PrismBurstFragmentShape",
                  "void PrismBurstRoll(", "float PrismBurstGradientNoise("):
         assert name in src, f"{name} missing from {BURST_HLSL}"
     # The HLSL's explosion constants ARE the graph's: the page's explosion runs the HLSL's map.
@@ -226,8 +227,10 @@ def config():
     out = {k: yaml_float(motion, k) for k in ("showcaseMaxMovers", "boxMaxMovers")}
     for k in ("maxLiveBursts", "maxLiveTriangles", "crowdedFill", "packedFill", "shedMinScreen", "shedFineScreen", "shedFinestScreen", "shedSubdivision", "shedFineSubdivision",
               "shedFinestSubdivision", "bloomWeight", "unravelWeight", "flakeWeight", "bloomRings", "bloomSegments",
-              "peelNoise", "rollWeight", "rollRadius", "rollGap", "destructionCut", "wedgeSpinNoise",
-              "wedgeNoiseFrequency", "wedgeSlideNoise", "shedInflate", "spread",
+              "peelNoise", "rollWeight", "rollRadius", "rollGap", "destructionCut", "fragmentBurst",
+              "fragmentDrift", "fragmentLift", "fragmentAim", "fragmentSizeSpeed", "fragmentSizeSpin", "fragmentSpinCap",
+              "fragmentLevelRef", "fragmentEndSmall", "fragmentEndBig", "fragmentShrink", "fragmentSpinNoise",
+              "fragmentNoiseFrequency", "fragmentTravelNoise", "shedInflate", "spread",
               "openSeconds", "spinPerSpeed", "bloomTurns", "unravelTurns", "ribbonsPerFace", "shardsPerFaceEdge",
               "dissolveGrain"):
         out[k] = yaml_float(lod, k)

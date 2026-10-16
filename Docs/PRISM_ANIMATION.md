@@ -2608,6 +2608,24 @@ effect) and by the shared budget (`PrismInteractionLod`, config `Resources/Prism
 | **Destruction** (every explosion death; a collision above motion level 1 asks for plain) | the EXPLOSION — depth 0 of the Sierpinski cut | DEPTH 1 (≥ 5%) → DEPTH 2 (≥ 10%) | DEPTH 3 (≥ 16%) → DEPTH 4 (≥ 24%) |
 | **Stealing** (`PrismTeamManager.Steal`) | the GRADE — the 0.8 s smoothstep colour lerp (`PrismColorLerp`) | a SHED (≥ 8%): the ROLL (round 7; bloom, unravel and flake ship at weight 0), on 12 subdivisions | the same shed on 18 (≥ 16%), then 24 (≥ 28%) subdivisions |
 
+**Round 9 (the designer, 2026-10-16) — retires the squint and supersedes the WEDGE motion below:** *"by using the silver
+gnomen cut we unsure that there are still a nice size range such that from far away a player could assume that the
+small ones are going unseen. thus we do not need to do the squint test anymore. this will allow you to create a more
+uniform effect instead of keeping things grouped ... now I just want it to look awesome"*.
+
+- **The FRAGMENT kind** (kind 5, `PrismBurstFragmentPose`, world space; config `fragment*`, shader `_Fragment*`):
+  every fragment of the cut bursts out on its OWN direction — its face's radial × how far out it sits plus the normal
+  × 1 (the cube seen from its centre: every face fills its sixth of the sphere) plus the hit × 0.35 — eased in and
+  drifting on, R × (0.5 (1 − e^(−t/τ)) + 0.2 t) × (1 + 0.8 × its size level), so big chunks stay near the core and
+  fine debris flies farthest; tumbles about its direction and cross(velocity, N) at the explosion's own capped angle ×
+  min(1 + 0.25 level, 1.6); and shrinks away to its centre (no dissolve), the smallest gone at 45% of the life, the
+  largest at 92%, all by 95%. The gradient noise still varies spin, distance and direction. CPU bounds:
+  `PrismCollisionBurst.FragmentReach` = `PrismBurstFragmentReach`, proved by the harness.
+- **Measured** (lab round 9, the Look scorecard): the travel directions fill 0.78–0.81 of the sphere's entropy
+  (256 bins; the explosion 0.32, a face leaving as one 0.53); 0–0.9% of same-size neighbours in step (noise off:
+  100%); half the area gone at 3.3–4.6 s, all at 5.5–6.6 s of the 7.5 s life.
+- The WEDGE text of rounds 5–8 below is history: the explosion's own law now draws only the explosion.
+
 **Round 7 (the designer, 2026-10-15) — supersedes the Sierpinski cut as the shipped destruction and the bloom as the
 shipped shed:** *"lets add a small amount of perlin noise ... break up the perfectly synchronized triangle rotations
 ... use this silver ratio gnomen as a way to get a range of triangle sizes"*; *"for the stealing lets use a camera

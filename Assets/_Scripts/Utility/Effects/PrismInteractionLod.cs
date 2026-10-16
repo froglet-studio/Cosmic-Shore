@@ -15,8 +15,8 @@ namespace CosmicShore.Utility
     /// (<see cref="PrismSierpinskiTiling"/>), <see cref="PrismInteractionLodConfigSO.Cut"/>. Level 0 is the ordinary
     /// EXPLOSION (its four wedges a face); a coarser level is the finer one with its smallest fragments merged back
     /// into their parents, so from far away it looks like the small ones are simply too small to see. Every fragment
-    /// moves by the explosion's own tuned law — about its root wedge's two axes, the wedge's tangent and
-    /// cross(velocity, normal) — its spin a little off its neighbours' by a continuous noise.</item>
+    /// bursts out on its own direction, tumbles about cross(velocity, normal) at the explosion's capped rate and shrinks
+    /// away at its own end, the smallest first (<see cref="PrismCollisionBurst.Fragment"/>, round 9).</item>
     /// <item><b>Stealing</b> — the GRADE (the prism's 0.8 s colour lerp) → a SHED (the roll: each face's skin rolls
     /// up away from the camera and round the prism until the prism hides it) at three mesh resolutions.</item>
     /// </list>
@@ -117,9 +117,8 @@ namespace CosmicShore.Utility
         }
 
         /// <summary>
-        /// A DESTRUCTION at its depth: the Sierpinski cut as deep as the prism's size on screen and the amount allow,
-        /// each fragment a scaled explosion wedge (the burst's WEDGE kind) on the explosion's own law, flight, palette
-        /// and fade. False means
+        /// A DESTRUCTION at its depth: the cut as deep as the prism's size on screen and the amount allow, each
+        /// fragment the burst's FRAGMENT kind on the explosion's own flight, spin rate and palette. False means
         /// depth 0 — the caller (<c>PrismFactory.SpawnExplosion</c>) draws the explosion.
         /// </summary>
         public static bool TryDestruction(Vector3 position, Quaternion rotation, Vector3 scale, Color bright, Color dark,
@@ -136,7 +135,7 @@ namespace CosmicShore.Utility
                 var mesh = MeshOfLevel(depth, cfg);
                 if (!PrismCollisionBurst.FitsTriangles(cfg, PrismCollisionBurst.TrianglesOf(mesh))) continue;
                 return PrismCollisionBurst.TryRequestDestruction(position, rotation, scale, bright, dark,
-                    impactVelocity, speedLimitOverride, tier, PrismCollisionBurst.Wedge, mesh);
+                    impactVelocity, speedLimitOverride, tier, PrismCollisionBurst.Fragment, mesh);
             }
             return false;
         }

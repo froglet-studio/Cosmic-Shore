@@ -137,8 +137,8 @@ namespace CosmicShore.Utility
         /// The DESTRUCTION's mesh at one recursion depth (<see cref="PrismSierpinskiTiling"/>): the prism cut the
         /// Sierpinski way — depth 0 the explosion's own four wedges a face, each deeper depth splitting every corner
         /// triangle into four at its edge midpoints and keeping the middle whole — every triangle owning its vertices
-        /// with <see cref="TriangleUVChannel"/> = its own centroid and its LEVEL (z), so each is one fragment that the
-        /// burst's WEDGE kind moves by the explosion's own law, as a wedge scaled by 2^-level.
+        /// with <see cref="TriangleUVChannel"/> = its own centroid and its LEVEL (z), so each is one fragment of the
+        /// burst's FRAGMENT kind (round 9: its own burst, the explosion's spin rate, its own end by its size).
         /// Depth d is depth d+1 with its finest corners merged into their parents, so every depth is the whole prism at
         /// rest. Same vertex layout as <see cref="GetUnwelded"/>; shared and cached; never mutate it.
         /// </summary>
@@ -212,8 +212,8 @@ namespace CosmicShore.Utility
                     var b = new Vector2(face[k + 2], face[k + 3]);
                     var c = new Vector2(face[k + 4], face[k + 5]);
                     Vector2 centroid = (a + b + c) / 3f;
-                    // z is the fragment's size LEVEL, log2(its wedge's size / its own): the wedge pose scales the
-                    // explosion's pivot offset by 2^-level.
+                    // z is the fragment's size LEVEL, log2(its wedge's size / its own): the smaller fly farther,
+                    // spin faster and leave first (PrismBurstFragmentPose).
                     var triangle = new Vector3(centroid.x, centroid.y, face[k + 6]);
 
                     AddVertex(a);
@@ -226,8 +226,9 @@ namespace CosmicShore.Utility
                                            + v * ((uv.y - 0.5f) * 2f * HalfExtent);
                         norms[vi] = nrm;
                         tangents[vi] = new Vector4(u.x, u.y, u.z, -1f);
-                        // UV0 is the EXPLOSION's: the wedge's own UV triangle, as Prism.asset has it, so the
-                        // explosion's erosion fades every fragment on the explosion's own pattern.
+                        // UV0 is the EXPLOSION's: the wedge's own UV triangle, as Prism.asset has it (no shader reads
+                        // it since round 9, when the fragments stopped eroding and began to shrink away; kept so
+                        // the cut stays the explosion's layout, which the lab's parity gate holds).
                         PrismSierpinskiTiling.WedgeUV(wedge, uv.x, uv.y, out float wu, out float wv);
                         uvs.Add(new Vector2(wu, wv));
                         cents.Add(centre);

@@ -21,15 +21,15 @@ Playwright + headless Chromium):
      whole surface (area 6) with the C#'s triangle count, and no triangle of the shed meshes straddles
      either face diagonal (the union-jack cut).
   3a. THE SILVER GNOMON CUT: the page's port against PrismSilverGnomonTiling.cs compiled, every depth 0-12, as float32.
-  3b. THE WEDGE (the destruction's motion, both cuts, the spin noise on): the page's WEDGE pose of every vertex against
-     the C++ EXECUTION of PrismBurstWedgePose, and depth 0 against the explosion's subgraph EVALUATED on Prism.asset,
-     triangle by triangle — the first depth of the destruction IS the explosion, on the page's GPU — and the cut's
-     depth 0 wears Prism.asset's UV0 vertex for vertex, so the explosion's erosion fades it as it fades the explosion.
+  3b. THE FRAGMENT (the destruction's motion since round 9, both cuts, the noise on and off, random rotations, scales
+     and fragment shapes): the page's FRAGMENT pose of every vertex against the C++ EXECUTION of
+     PrismBurstFragmentPose, in world space, the flight included. The cut's depth 0 still wears Prism.asset's UV0
+     vertex for vertex (no shader reads it since round 9; the mesh keeps the explosion's layout).
   NEGATIVE CONTROLS (each must FAIL):
   4. the burst compared against the NEXT kind's C++ pose;
   5. the explosion compared against the graph run with ExplosiveRotation doubled;
   6. the page's cut compared against the C#'s at the NEXT depth;
-  7. the page's wedge compared against the HLSL run with ExplosiveRotation doubled;
+  7. the page's fragment compared against the HLSL run with ExplosiveRotation doubled, and with the burst doubled;
   8. the cut's plain face coordinates (round 4's UV0) compared against Prism.asset's UVs.
 
     python3 Tools/Build/prism_collision_burst_lab/parity.py      # exit 0 = every check passed
@@ -78,7 +78,7 @@ const { chromium } = require('playwright');
     if (L.state().glError) return { error: L.state().glError };
     const tiling = [0, 1, 2, 3, 4, 5].map((d) => L.sierpinskiTriangles(d));
     const silver = Array.from({ length: 13 }, (_, d) => L.silverTriangles(d));
-    return { burst: cases.burst.map((c) => L.probeBurstCase(c)), explosion: cases.explosion.map((c) => L.probeExplosionCase(c)), wedge: cases.wedge.map((c) => L.probeWedgeCase(c)), tiling, silver, meshes: L.meshChecks(), sier0: L.sierpinskiMesh(0) };
+    return { burst: cases.burst.map((c) => L.probeBurstCase(c)), explosion: cases.explosion.map((c) => L.probeExplosionCase(c)), fragment: cases.fragment.map((c) => L.probeFragmentCase(c)), tiling, silver, meshes: L.meshChecks(), sier0: L.sierpinskiMesh(0) };
   }, cases);
   out.pageErrors = errors;
   process.stdout.write(JSON.stringify(out));
@@ -143,16 +143,16 @@ int main() {
 """
 
 
-WEDGE_MAIN = r"""#include "shipped.h"
+FRAGMENT_MAIN = r"""#include "shipped.h"
 #include <cstdio>
 #include <cmath>
 #include <vector>
-struct WVert { float3 pos, n, centroid; float level; };
 @@SILVER_CPP@@
-// Reads cases from stdin: cut (0 Sierpinski, 1 silver gnomon) depth t speed velocity(3) scale(3) spreadValue(3)
-// rotation spreadPerAmount noise(amplitude, frequency, seed). Writes the WEDGE pose (PrismBurstWedgePose, the
-// shipped HLSL executed) of every vertex of the cut at the depth, in HighPolyPrismMesh's order, in WORLD (rotation
-// identity): scale * pose + velocity * t.
+// Reads cases from stdin: cut (0 Sierpinski, 1 silver gnomon) depth t life speed velocity(3) scale(3) rot(9,
+// column-major) origin(3) rotation tau shape(burst drift lift aim sizeSpeed sizeSpin spinCap levelRef endSmall endBig
+// shrink) noise(spin amplitude, frequency, travel amplitude) seed. Writes the FRAGMENT pose (PrismBurstFragmentPose,
+// the shipped HLSL executed) of every vertex of the cut at the depth, in HighPolyPrismMesh's order, in WORLD with the
+// flight: BurstVert's own frame, as the shader builds it.
 static void split(float2 a, float2 b, float2 c, int level, int depth, std::vector<float>& out) {
     auto emit = [&](float2 x, float2 y, float2 z, int l) { float t[7] = {x.x,x.y,y.x,y.y,z.x,z.y,(float)l}; out.insert(out.end(), t, t + 7); };
     if (level >= depth) { emit(a, b, c, level); return; }
@@ -166,9 +166,15 @@ int main() {
     float3 fu[6] = {float3(0,1,0),float3(0,0,1),float3(0,0,1),float3(1,0,0),float3(1,0,0),float3(0,1,0)};
     float3 fv[6] = {float3(0,0,1),float3(0,1,0),float3(1,0,0),float3(0,0,1),float3(0,1,0),float3(1,0,0)};
     for (int c = 0; c < count; c++) {
-        float cut, depth, t, speed, v[3], sc[3], sv[3], rot, slide, nz[3];
-        scanf("%f %f %f %f %f %f %f %f %f %f %f %f %f %f %f", &cut, &depth, &t, &speed, &v[0], &v[1], &v[2], &sc[0], &sc[1], &sc[2], &sv[0], &sv[1], &sv[2], &rot, &slide);
-        scanf("%f %f %f", &nz[0], &nz[1], &nz[2]);
+        float cut, depth, t, life, speed, v[3], sc[3], r[9], o[3], rotation, tau, sh[11], nz[3], seed;
+        scanf("%f %f %f %f %f", &cut, &depth, &t, &life, &speed);
+        for (int i = 0; i < 3; i++) scanf("%f", &v[i]);
+        for (int i = 0; i < 3; i++) scanf("%f", &sc[i]);
+        for (int i = 0; i < 9; i++) scanf("%f", &r[i]);
+        for (int i = 0; i < 3; i++) scanf("%f", &o[i]);
+        scanf("%f %f", &rotation, &tau);
+        for (int i = 0; i < 11; i++) scanf("%f", &sh[i]);
+        scanf("%f %f %f %f", &nz[0], &nz[1], &nz[2], &seed);
         std::vector<float> tri;
         if (cut > 0.5f) {
             double cu[4] = {0, 1, 1, 0}, cv[4] = {0, 0, 1, 1};
@@ -185,17 +191,31 @@ int main() {
             float2 cs[4] = {float2(0,0), float2(1,0), float2(1,1), float2(0,1)};
             for (int k = 0; k < 4; k++) split(float2(0.5f,0.5f), cs[k], cs[(k+1)%4], 0, (int)depth, tri);
         }
-        float3 vel(v[0], v[1], v[2]), os(sc[0], sc[1], sc[2]), S(sv[0], sv[1], sv[2]);
+        float3 vel(v[0], v[1], v[2]), s3(sc[0], sc[1], sc[2]), org(o[0], o[1], o[2]);
+        float3 c0(r[0], r[1], r[2]), c1(r[3], r[4], r[5]), c2(r[6], r[7], r[8]);
+        auto lin = [&](float3 q) { return c0 * (q.x * s3.x) + c1 * (q.y * s3.y) + c2 * (q.z * s3.z); };
+        auto wld = [&](float3 q) { return org + lin(q); };
+        auto wnm = [&](float3 n) { return normalize(c0 * (n.x / s3.x) + c1 * (n.y / s3.y) + c2 * (n.z / s3.z)); };
+        PrismBurstFragmentShape shape;
+        shape.burst = sh[0]; shape.drift = sh[1]; shape.lift = sh[2]; shape.aim = sh[3]; shape.sizeSpeed = sh[4];
+        shape.sizeSpin = sh[5]; shape.spinCap = sh[6]; shape.levelRef = sh[7]; shape.endSmall = sh[8]; shape.endBig = sh[9];
+        shape.shrink = sh[10]; shape.tau = tau;
+        float radius = length(lin(float3(0.5f, 0.5f, 0.5f)));
         for (int f = 0; f < 6; f++)
         for (size_t i = 0; i < tri.size(); i += 7) {
             float cu = (tri[i] + tri[i+2] + tri[i+4]) / 3.0f, cv = (tri[i+1] + tri[i+3] + tri[i+5]) / 3.0f;
-            float3 cen = fn[f]*0.5f + fu[f]*(cu - 0.5f) + fv[f]*(cv - 0.5f);
+            // the shader's own centroid: normal x 0.5 + u (cu - 0.5) + v (cv - 0.5), v = cross(N, u)
+            float3 vf = cross(fn[f], fu[f]);
+            float3 cen = fn[f]*0.5f + fu[f]*(cu - 0.5f) + vf*(cv - 0.5f);
             for (int k = 0; k < 3; k++) {
                 float3 P = fn[f]*0.5f + fu[f]*(tri[i+2*k] - 0.5f) + fv[f]*(tri[i+2*k+1] - 0.5f);
                 float3 pos, nrm;
-                PrismBurstWedgePose(P, fn[f], cen, tri[i+6], os, speed * t, vel, S, rot, slide, float4(nz[0], nz[1], nz[2], nz[0]), pos, nrm);
-                float3 w = pos * os + vel * t, n = normalize(nrm / os);
-                printf("%.7g %.7g %.7g %.7g %.7g %.7g\n", w.x, w.y, w.z, n.x, n.y, n.z);
+                // length(triUV), as BurstVert passes it
+                float tu = cu * 2.0f - 1.0f, tv = cv * 2.0f - 1.0f, outward = std::sqrt(tu * tu + tv * tv);
+                PrismBurstFragmentPose(wld(P), wnm(fn[f]), wld(cen), wld(fn[f] * 0.5f), outward, cen, tri[i+6], radius, t, life,
+                                       speed * t, vel, rotation, float4(nz[0], nz[1], seed, nz[2]), shape, pos, nrm);
+                float3 w = pos + vel * t;
+                printf("%.7g %.7g %.7g %.7g %.7g %.7g\n", w.x, w.y, w.z, nrm.x, nrm.y, nrm.z);
             }
         }
     }
@@ -214,7 +234,7 @@ def rnd_rotation(rng):
     return a + d + c   # columns: a, d, c — orthonormal
 
 
-KINDS = (0, 1, 2, 3, 4, 6)   # shatter, bloom, unravel, glitter, flake, roll (the wedge has its own probe)
+KINDS = (0, 1, 2, 3, 4, 6)   # shatter, bloom, unravel, glitter, flake, roll (the fragment has its own probe)
 SHEDS = (1, 2, 4, 6)         # bloom, unravel, flake, roll — stamped with the grade's curve and life
 
 
@@ -264,26 +284,39 @@ def run_cpp(work, cases, kind_shift=0):
     return [vals[i * per:(i + 1) * per] for i in range(len(cases))]
 
 
-def wedge_cases(rng):
+SHIPPED_SHAPE = dict(burst=0.5, drift=0.2, lift=1.0, aim=0.35, sizeSpeed=0.8, sizeSpin=0.25, spinCap=1.6, levelRef=4.0,
+                     endSmall=0.45, endBig=0.92, shrink=0.35)
+SHAPE_KEYS = ("burst", "drift", "lift", "aim", "sizeSpeed", "sizeSpin", "spinCap", "levelRef", "endSmall", "endBig", "shrink")
+
+
+def fragment_cases(rng):
     cases = []
-    # depth 0 (the explosion, checked against the graph) with the noise off; finer cuts of both kinds with it on
-    for cut, depth, noise in (("sier", 0, 0.0), ("sier", 0, 0.0), ("sier", 2, 0.15), ("sier", 3, 0.15),
-                              ("silver", 4, 0.15), ("silver", 6, 0.15), ("silver", 8, 0.15)):
-        cases.append(dict(cut=cut, depth=depth, noise=noise, noiseFrequency=3.0, seed=rng.random(),
-                          t=rng.uniform(0.2, 7.0), speed=rng.uniform(10, 33),
+    # both cuts, the noise on and off, the shipped shape and random ones, random rotations and non-uniform scales
+    for cut, depth, noise in (("sier", 0, 0.0), ("sier", 2, 0.15), ("sier", 3, 0.15), ("silver", 0, 0.15),
+                              ("silver", 4, 0.0), ("silver", 6, 0.15), ("silver", 8, 0.3)):
+        shape = dict(SHIPPED_SHAPE) if not cases else dict(
+            burst=rng.uniform(0, 4), drift=rng.uniform(0, 2), lift=rng.uniform(0, 3), aim=rng.uniform(0, 2),
+            sizeSpeed=rng.uniform(0, 1), sizeSpin=rng.uniform(0, 1), spinCap=rng.uniform(1, 3), levelRef=rng.uniform(1, 6),
+            endSmall=rng.uniform(0.1, 0.5), endBig=rng.uniform(0.5, 0.95), shrink=rng.uniform(0.05, 1))
+        base = rng.uniform(0.5, 4)
+        cases.append(dict(cut=cut, depth=depth, noise=[noise, 3.0, noise], seed=rng.random(),
+                          t=rng.uniform(0.05, 7.0), life=7.5, speed=rng.uniform(10, 33), tau=0.22,
                           velocity=[rng.uniform(-30, 30) for _ in range(3)],
-                          scale=[rng.uniform(0.3, 8), rng.uniform(0.2, 3), rng.uniform(0.5, 6)],
-                          spreadValue=[0.18, 0.1, 0.1], rotation=0.0169, spreadPerAmount=0.05))
+                          scale=[base * rng.uniform(1, 8), base * rng.uniform(0.2, 3), base * rng.uniform(0.5, 6)],
+                          rot=rnd_rotation(rng), origin=[rng.uniform(-30, 30) for _ in range(3)],
+                          rotation=0.0169, shape=shape))
     return cases
 
 
-def run_wedge_cpp(work, cases, rotation_scale=1.0):
+def run_fragment_cpp(work, cases, rotation_scale=1.0, burst_scale=1.0):
     lines = [str(len(cases))]
     for c in cases:
-        lines.append(" ".join(str(x) for x in [1 if c["cut"] == "silver" else 0, c["depth"], c["t"], c["speed"]] + c["velocity"]
-                              + c["scale"] + c["spreadValue"] + [c["rotation"] * rotation_scale, c["spreadPerAmount"],
-                                                                 c["noise"], c["noiseFrequency"], c["seed"]]))
-    r = subprocess.run([os.path.join(work, "wedge_ref")], input="\n".join(lines), capture_output=True, text=True)
+        sh = dict(c["shape"]); sh["burst"] *= burst_scale
+        lines.append(" ".join(str(x) for x in [1 if c["cut"] == "silver" else 0, c["depth"], c["t"], c["life"], c["speed"]]
+                              + c["velocity"] + c["scale"] + c["rot"] + c["origin"]
+                              + [c["rotation"] * rotation_scale, c["tau"]] + [sh[k] for k in SHAPE_KEYS]
+                              + c["noise"] + [c["seed"]]))
+    r = subprocess.run([os.path.join(work, "fragment_ref")], input="\n".join(lines), capture_output=True, text=True)
     assert r.returncode == 0, r.stderr
     rows = [list(map(float, l.split())) for l in r.stdout.strip().splitlines()]
     # split by each case's own vertex count (3 x 24 x per-wedge triangles)
@@ -298,6 +331,7 @@ def run_wedge_cpp(work, cases, rotation_scale=1.0):
             return 1 if d <= 0 else 1 + 3 * per(d - 1)
         n = 3 * 24 * per(c["depth"])
         out.append(rows[i:i + n]); i += n
+    assert i == len(rows), f"the C++ wrote {len(rows)} vertices, the cases expect {i}"
     return out
 
 
@@ -305,7 +339,8 @@ def compare_rows(page, ref, cases):
     worst, bad, total = 0.0, 0, 0
     for c, (pos, nrm), rows in zip(cases, page, ref):
         radius = 0.5 * math.sqrt(sum(s * s for s in c["scale"]))
-        reach = 1 + c["speed"] * c["t"] * 0.05
+        # tolerance grows with how far the fragments are from the origin (float32 in both)
+        reach = 1 + (math.sqrt(sum(x * x for x in c.get("origin", [0, 0, 0]))) + math.sqrt(sum(v * v for v in c["velocity"])) * c["t"]) / radius * 0.05
         for i, row in enumerate(rows):
             d = max(math.dist(pos[3 * i:3 * i + 3], row[0:3]) / radius, math.dist(nrm[3 * i:3 * i + 3], row[3:6]))
             total += 1
@@ -316,46 +351,9 @@ def compare_rows(page, ref, cases):
     return bad, total, worst
 
 
-def wedge_vs_graph(page, cases):
-    """Depth 0 of the WEDGE kind against the explosion's own subgraph EVALUATED on Prism.asset, triangle by
-    triangle (matched by their rest vertices): the destruction's first depth IS the explosion."""
-    key = lambda tri: frozenset(tuple(round(x, 5) for x in v) for v in tri)
-    worst, bad, total = 0.0, 0, 0
-    for c, (pos, nrm) in zip(cases, page):
-        if c["depth"] != 0 or c["cut"] != "sier":
-            continue
-        gc = dict(c)
-        ref = graph_reference(gc)   # Prism.asset, object space
-        theirs = {}
-        for t in range(0, len(MESH) // 11, 3):
-            tri = [tuple(MESH[(t + j) * 11:(t + j) * 11 + 3]) for j in range(3)]
-            theirs[key(tri)] = {tuple(round(x, 5) for x in tri[j]): ref[t + j] for j in range(3)}
-        ours = sierpinski_rest(0)
-        radius = 0.5 * math.sqrt(sum(s * s for s in c["scale"]))
-        for t in range(0, len(ours), 3):
-            tri = ours[t:t + 3]
-            match = theirs.get(key(tri))
-            for j in range(3):
-                total += 1
-                r = match and match.get(tuple(round(x, 5) for x in tri[j]))
-                if not r:
-                    bad += 1
-                    continue
-                w = [r[k] * c["scale"][k] + c["velocity"][k] * c["t"] for k in range(3)]
-                n = [r[3 + k] / c["scale"][k] for k in range(3)]
-                ln = math.sqrt(sum(x * x for x in n)); n = [x / ln for x in n]
-                i = t + j
-                d = max(math.dist(pos[3 * i:3 * i + 3], w) / radius, math.dist(nrm[3 * i:3 * i + 3], n))
-                if d > 2e-3 * (1 + c["speed"] * c["t"] * 0.05):
-                    bad += 1
-                else:
-                    worst = max(worst, d)
-    return bad, total, worst
-
-
 def uv_vs_prism(sier0):
-    """The page's depth-0 cut wears Prism.asset's UV0 vertex for vertex (matched by triangle and position), so the
-    explosion's erosion fades the WEDGE kind exactly as it fades the explosion."""
+    """The page's depth-0 cut wears Prism.asset's UV0 vertex for vertex (matched by triangle and position): the mesh
+    keeps the explosion's layout (no shader reads it since round 9)."""
     key = lambda tri: frozenset(tuple(round(x, 5) for x in v) for v in tri)
     theirs = {}
     for t in range(0, len(MESH) // 11, 3):
@@ -523,7 +521,7 @@ def main():
     MESH = build.prism_mesh()
 
     rng = random.Random(20261014)
-    cases = {"burst": burst_cases(rng), "explosion": explosion_cases(rng), "wedge": wedge_cases(rng)}
+    cases = {"burst": burst_cases(rng), "explosion": explosion_cases(rng), "fragment": fragment_cases(rng)}
     work = tempfile.mkdtemp(prefix="burst_lab_parity_")
     try:
         with open(os.path.join(work, "shim.h"), "w") as f:
@@ -535,10 +533,10 @@ def main():
         cc = subprocess.run(["clang++", "-std=c++17", "-O1", "-ffp-contract=off", "-o", os.path.join(work, "burst_ref"),
                              os.path.join(work, "main.cpp"), "-I", work], capture_output=True, text=True)
         assert cc.returncode == 0, cc.stderr
-        with open(os.path.join(work, "wedge.cpp"), "w") as f:
-            f.write(WEDGE_MAIN.replace("@@SILVER_CPP@@", burst_verifier.SILVER_CPP))
-        cc = subprocess.run(["clang++", "-std=c++17", "-O1", "-ffp-contract=off", "-o", os.path.join(work, "wedge_ref"),
-                             os.path.join(work, "wedge.cpp"), "-I", work], capture_output=True, text=True)
+        with open(os.path.join(work, "fragment.cpp"), "w") as f:
+            f.write(FRAGMENT_MAIN.replace("@@SILVER_CPP@@", burst_verifier.SILVER_CPP))
+        cc = subprocess.run(["clang++", "-std=c++17", "-O1", "-ffp-contract=off", "-o", os.path.join(work, "fragment_ref"),
+                             os.path.join(work, "fragment.cpp"), "-I", work], capture_output=True, text=True)
         assert cc.returncode == 0, cc.stderr
         with open(os.path.join(work, "cases.json"), "w") as f:
             json.dump(cases, f)
@@ -574,22 +572,17 @@ def main():
         global CUT
         CUT = cs["cut"]
 
-        # the WEDGE kind: every depth against the shipped HLSL executed, depth 0 against the explosion's graph
-        wref = run_wedge_cpp(work, cases["wedge"])
-        wbad, wtotal, ww = compare_rows(page["wedge"], wref, cases["wedge"])
+        # the FRAGMENT kind: every depth against the shipped HLSL executed, in world space with the flight
+        fref = run_fragment_cpp(work, cases["fragment"])
+        wbad, wtotal, ww = compare_rows(page["fragment"], fref, cases["fragment"])
         wgood = wbad == 0
-        print(f"wedge: {wtotal} vertices over {len(cases['wedge'])} cases (depths 0-3) vs PrismBurstWedgePose executed; "
-              f"worst {ww:.2e}; {wbad} past tolerance -> {'PASS' if wgood else 'FAIL'}")
+        print(f"fragment: {wtotal} vertices over {len(cases['fragment'])} cases (both cuts, the noise on and off, random shapes) "
+              f"vs PrismBurstFragmentPose executed; worst {ww:.2e}; {wbad} past tolerance -> {'PASS' if wgood else 'FAIL'}")
         ok &= wgood
-        gbad, gtotal, gw = wedge_vs_graph(page["wedge"], cases["wedge"])
-        ggood = gbad == 0 and gtotal > 0
-        print(f"wedge depth 0 vs the explosion: {gtotal} vertices vs RotateFacesAlongAxis evaluated on Prism.asset, "
-              f"triangle by triangle; worst {gw:.2e}; {gbad} past tolerance -> {'PASS (the explosion)' if ggood else 'FAIL'}")
-        ok &= ggood
         ubad, utotal = uv_vs_prism(page["sier0"])
         ugood = ubad == 0 and utotal == 72
-        print(f"wedge UVs: depth 0's {utotal} vertices vs Prism.asset's UV0, triangle by triangle; {ubad} differ -> "
-              f"{'PASS (the explosion erodes them)' if ugood else 'FAIL'}")
+        print(f"cut UVs: depth 0's {utotal} vertices vs Prism.asset's UV0, triangle by triangle; {ubad} differ -> "
+              f"{'PASS (the explosion layout)' if ugood else 'FAIL'}")
         ok &= ugood
         depths = len(cs["cut"])
         tmiss = sum(not same_cut(page["tiling"][d], cs["cut"][d]) for d in range(depths))
@@ -640,7 +633,7 @@ def main():
         fired = nbad / ntotal > 0.2
         print(f"negative control [next kind]: {nbad / ntotal:.1%} of vertices differ -> {'FIRED' if fired else 'DID NOT FIRE'}")
         ok &= fired
-        # the cut's plain FACE coordinates (round 4's UV0) in place of the wedge UVs must not pass as the explosion's
+        # the cut's plain FACE coordinates (round 4's UV0) in place of the wedge UVs must not pass as Prism.asset's
         faceuv = []
         for t in range(len(page["sier0"]["pos"]) // 3):
             p3 = page["sier0"]["pos"][t * 3:t * 3 + 3]
@@ -650,11 +643,12 @@ def main():
         ffired = fbad > 0
         print(f"negative control [face coordinates as UV0]: {fbad} of {ftotal} vertices differ -> {'FIRED' if ffired else 'DID NOT FIRE'}")
         ok &= ffired
-        nwref = run_wedge_cpp(work, cases["wedge"], rotation_scale=2.0)
-        nwbad, nwtotal, _ = compare_rows(page["wedge"], nwref, cases["wedge"])
-        nwfired = nwbad / nwtotal > 0.2
-        print(f"negative control [wedge, ExplosiveRotation x2]: {nwbad / nwtotal:.1%} of vertices differ -> {'FIRED' if nwfired else 'DID NOT FIRE'}")
-        ok &= nwfired
+        for label, kw in (("fragment, ExplosiveRotation x2", dict(rotation_scale=2.0)), ("fragment, burst x2", dict(burst_scale=2.0))):
+            nwref = run_fragment_cpp(work, cases["fragment"], **kw)
+            nwbad, nwtotal, _ = compare_rows(page["fragment"], nwref, cases["fragment"])
+            nwfired = nwbad / nwtotal > 0.2
+            print(f"negative control [{label}]: {nwbad / nwtotal:.1%} of vertices differ -> {'FIRED' if nwfired else 'DID NOT FIRE'}")
+            ok &= nwfired
         xbad, xtotal, _ = compare_explosion(page["explosion"], cases["explosion"], rotation_scale=2.0)
         xfired = xbad / xtotal > 0.2
         print(f"negative control [ExplosiveRotation x2]: {xbad / xtotal:.1%} of vertices differ -> {'FIRED' if xfired else 'DID NOT FIRE'}")

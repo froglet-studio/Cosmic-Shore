@@ -680,6 +680,20 @@ Entries are grouped by family; within a family, the newest goes at the bottom.
 - Evidence: `verify_prism_collision_burst.py` test 3b
 - Promoted: no
 
+### L-STU-76 — A parametrised test must prove it built the case it names
+- Lab: Collision Burst Lab round 9 · Branch: `cece/dreamy-pascal-7xxx1m` · Date: 2026-10-16
+- What happened: rounds 7 and 8's harness chose the mesh with `cut.name[1] == 'i'` — true for both "sierpinski" and "silver" — so every "silver" case ran the Sierpinski cut and printed a pass under the silver's name for two rounds. It surfaced only because round 9's silver depth 10 took minutes (Sierpinski depth 10 is ~236k vertices).
+- Do instead: select a case by an exact comparison, and assert a property only the named case has (here the vertex count, 72 × the per-wedge count) before testing it. A runtime far off what the case should cost is a hint the case is not the one named.
+- Evidence: `verify_prism_collision_burst.py` `run_fragment_tests` (the size CHECK); `COLLISION_BURST_LAB.md` round 9 Found
+- Promoted: no
+
+### L-STU-77 — A yardstick that steered the design must go when the designer retires its goal
+- Lab: Collision Burst Lab round 9 · Branch: `cece/dreamy-pascal-7xxx1m` · Date: 2026-10-16
+- What happened: eight rounds tuned destruction to squint as the explosion, which kept fragments grouped in their wedges' sheets. The designer saw the squint steering the look away from what they wanted and retired it. The replacement Look scorecard needed a measure that could say NO to "grouped": direction entropy at 64 bins could not tell six cones from a sphere (0.787 vs 0.726), while 256 bins could (0.81 vs 0.53). The same measure found a design hole the eye had missed: one angle off every face made six hollow cones (0.71). Weighting the radial by how far out the fragment sat filled the sphere (0.83).
+- Do instead: when a goal is retired, retire its scorecard and its gates too (the squint table, the LOD-step test, the Squint button), and build the new measure with a control compiled from the shipped shader that must fail it, here `PRISM_BURST_FRAGMENT_FACE_ONLY` compiled into a page probe. Size the measure's resolution against that control before trusting it.
+- Evidence: `lab.src.html` `lookOf` / `faceOnlyProbe`; harness F9 and `ENTROPY_FLOOR`
+- Promoted: no
+
 ## NCA — swarm / neural-CA research rigs (Tools/NCA)
 
 ### L-NCA-1 — The yardstick was wrong four times before the creatures were

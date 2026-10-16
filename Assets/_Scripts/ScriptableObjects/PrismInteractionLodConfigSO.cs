@@ -1,5 +1,6 @@
 using CosmicShore.Utility;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 namespace CosmicShore.ScriptableObjects
 {
@@ -14,9 +15,10 @@ namespace CosmicShore.ScriptableObjects
     /// (<c>PrismSilverGnomonTiling</c>, round 7) or the Sierpinski cut (<c>PrismSierpinskiTiling</c>, round 4):
     /// level 0 IS the ordinary explosion (its four wedges a face — far away, off screen, over budget), and each
     /// finer level cuts the wedges deeper into a range of fragment sizes, each level the next with its finest
-    /// fragments merged into their parents. Every fragment moves by the explosion's own tuned law (its velocity
-    /// response, its root wedge's spin axes, its capped spin rate, slide and erosion fade), its spin a little off its
-    /// neighbours' by a continuous noise, so squinted at it IS the explosion.</item>
+    /// fragments merged into their parents. Every fragment bursts out on its own direction (its face's radial,
+    /// lifted, leaning along the hit), tumbles about cross(velocity, N) at the explosion's own capped rate, and shrinks
+    /// away at its own end, the smallest first — a continuous noise keeps neighbours alike and never in step (round 9:
+    /// the squint against the explosion is retired; the range of sizes lets the small ones go unseen far away).</item>
     /// <item><b>Stealing</b> is the GRADE (the 0.8 s colour lerp) far away and a SHED close up — a ROLL (the game's
     /// one shed since round 7; bloom, unravel and flake stay as weights at 0): each face's skin in the old colours
     /// rolls up away from the camera and round the prism until the prism hides it — at one of three mesh
@@ -79,18 +81,58 @@ namespace CosmicShore.ScriptableObjects
                  "at depths 4, 6, 8, 10). The Sierpinski cut's depth IS the level.")]
         [SerializeField] int[] silverDepths = { 4, 6, 8, 10 };
 
-        [Tooltip("How much each fragment's two spin angles wander from its wedge's: 1 + this x a gradient noise over " +
-                 "its position. Continuous, so neighbours keep nearly the same spin and the order holds; never equal, " +
-                 "so no two fragments of a face turn in perfect step. 0: in perfect step.")]
-        [Range(0f, 0.5f)] [SerializeField] float wedgeSpinNoise = 0.15f;
+        [Header("Destruction — how each fragment flies (round 9: \"now I just want it to look awesome\")")]
+        [Tooltip("How far each fragment bursts out, in prism radii, at the full ease (the ease's time constant is " +
+                 "openSeconds).")]
+        [Range(0f, 4f)] [SerializeField] float fragmentBurst = 0.5f;
 
-        [Tooltip("The spin noise's frequency, in cycles per prism width (object space): higher, neighbours differ more.")]
-        [Range(0.5f, 8f)] [SerializeField] float wedgeNoiseFrequency = 3f;
+        [Tooltip("And then how far it drifts on, in prism radii per second, so the cloud keeps opening while it fades.")]
+        [Range(0f, 2f)] [SerializeField] float fragmentDrift = 0.2f;
 
-        [Tooltip("How much each fragment's SLIDE wanders from its wedge's: its length x (1 + this x the same gradient " +
-                 "noise), plus half this across the wedge and off the face. Neighbours travel nearly together, never " +
-                 "in step. 0: the whole wedge slides as one.")]
-        [Range(0f, 0.5f)] [SerializeField] float wedgeSlideNoise = 0.15f;
+        [Tooltip("Its direction is its face's own radial (from the face centre to the fragment) plus the face normal " +
+                 "x this: 0 skims along the face, higher lifts the burst off it.")]
+        [Range(0f, 3f)] [SerializeField] float fragmentLift = 1f;
+
+        [Tooltip("Plus the hit's direction x this: the burst leans the way the prism was struck.")]
+        [Range(0f, 2f)] [SerializeField] float fragmentAim = 0.35f;
+
+        [Tooltip("Per size level (each level about 0.71x the size) the smaller fragments fly this much farther: " +
+                 "distance x (1 + this x level).")]
+        [Range(0f, 1f)] [SerializeField] float fragmentSizeSpeed = 0.8f;
+
+        [Tooltip("Per size level the smaller fragments spin this much faster: the explosion's angle x " +
+                 "min(1 + this x level, fragmentSpinCap).")]
+        [Range(0f, 1f)] [SerializeField] float fragmentSizeSpin = 0.25f;
+
+        [Tooltip("The most any fragment's spin rate is multiplied over the explosion's, so nothing flickers.")]
+        [Range(1f, 3f)] [SerializeField] float fragmentSpinCap = 1.6f;
+
+        [Tooltip("The size level counted as the smallest (the cut's finest, about 4 at silver depth 10).")]
+        [Range(1f, 6f)] [SerializeField] float fragmentLevelRef = 4f;
+
+        [Tooltip("The share of the explosion's life at which the SMALLEST fragments are gone: they leave first, so far " +
+                 "away they simply go unseen first.")]
+        [Range(0.1f, 0.95f)] [SerializeField] float fragmentEndSmall = 0.45f;
+
+        [Tooltip("The share of the life at which the LARGEST are gone. At least fragmentEndSmall.")]
+        [Range(0.1f, 0.95f)] [SerializeField] float fragmentEndBig = 0.92f;
+
+        [Tooltip("The share of its own life over which a fragment shrinks away to its centre (no dissolve).")]
+        [Range(0.05f, 1f)] [SerializeField] float fragmentShrink = 0.35f;
+
+        [Tooltip("How much each fragment's two spin angles wander: 1 + this x a gradient noise over its position. " +
+                 "Continuous, so neighbours turn nearly alike, never in perfect step. 0: in perfect step.")]
+        [FormerlySerializedAs("wedgeSpinNoise")]
+        [Range(0f, 0.5f)] [SerializeField] float fragmentSpinNoise = 0.15f;
+
+        [Tooltip("The noise's frequency, in cycles per prism width (object space): higher, neighbours differ more.")]
+        [FormerlySerializedAs("wedgeNoiseFrequency")]
+        [Range(0.5f, 8f)] [SerializeField] float fragmentNoiseFrequency = 3f;
+
+        [Tooltip("How much each fragment's TRAVEL wanders: its distance x (1 + this x the noise), and its direction " +
+                 "by this across and along its face. 0: a face's fragments leave on a perfect fan.")]
+        [FormerlySerializedAs("wedgeSlideNoise")]
+        [Range(0f, 0.5f)] [SerializeField] float fragmentTravelNoise = 0.25f;
 
         [Header("Stealing — the grade, or a shed at one of three resolutions")]
         [Tooltip("Off: every steal is the ordinary grade.")]
@@ -223,9 +265,20 @@ namespace CosmicShore.ScriptableObjects
         public float RollRadius => Mathf.Clamp(rollRadius, 0.01f, 0.3f);
         public float RollGap => Mathf.Clamp(rollGap, 0.001f, 0.1f);
         public DestructionCut Cut => destructionCut;
-        public float WedgeSpinNoise => Mathf.Clamp(wedgeSpinNoise, 0f, 0.5f);
-        public float WedgeNoiseFrequency => Mathf.Clamp(wedgeNoiseFrequency, 0.5f, 8f);
-        public float WedgeSlideNoise => Mathf.Clamp(wedgeSlideNoise, 0f, 0.5f);
+        public float FragmentSpinNoise => Mathf.Clamp(fragmentSpinNoise, 0f, 0.5f);
+        public float FragmentNoiseFrequency => Mathf.Clamp(fragmentNoiseFrequency, 0.5f, 8f);
+        public float FragmentTravelNoise => Mathf.Clamp(fragmentTravelNoise, 0f, 0.5f);
+        public float FragmentBurst => Mathf.Clamp(fragmentBurst, 0f, 4f);
+        public float FragmentDrift => Mathf.Clamp(fragmentDrift, 0f, 2f);
+        public float FragmentLift => Mathf.Clamp(fragmentLift, 0f, 3f);
+        public float FragmentAim => Mathf.Clamp(fragmentAim, 0f, 2f);
+        public float FragmentSizeSpeed => Mathf.Clamp01(fragmentSizeSpeed);
+        public float FragmentSizeSpin => Mathf.Clamp01(fragmentSizeSpin);
+        public float FragmentSpinCap => Mathf.Clamp(fragmentSpinCap, 1f, 3f);
+        public float FragmentLevelRef => Mathf.Clamp(fragmentLevelRef, 1f, 6f);
+        public float FragmentEndSmall => Mathf.Clamp(fragmentEndSmall, 0.1f, 0.95f);
+        public float FragmentEndBig => Mathf.Clamp(fragmentEndBig, 0.1f, 0.95f);
+        public float FragmentShrink => Mathf.Clamp(fragmentShrink, 0.05f, 1f);
         public float UnravelWeight => Mathf.Max(0f, unravelWeight);
         public float FlakeWeight => Mathf.Max(0f, flakeWeight);
         public int BloomRings => Mathf.Clamp(bloomRings, 1, 6);
@@ -282,7 +335,7 @@ namespace CosmicShore.ScriptableObjects
 
         /// <summary>
         /// The one predicate the tests and the runtime share: each ladder is ordered, the crowding steps are ordered,
-        /// a shed has a kind to pick, every bloom piece falls on whole triangles of every shed mesh, and the budget
+        /// the small fragments leave no later than the large, a shed has a kind to pick, every bloom piece falls on whole triangles of every shed mesh, and the budget
         /// is bounded and holds at least one entity of every level.
         /// </summary>
         public bool IsSane =>
@@ -292,6 +345,7 @@ namespace CosmicShore.ScriptableObjects
             CrowdedFill <= PackedFill &&
             (!ShedEnabled || BloomWeight + UnravelWeight + FlakeWeight + RollWeight > 0f) &&
             SilverDepthsAscend() &&
+            FragmentEndSmall <= FragmentEndBig &&
             (BloomWeight <= 0f || (BloomCutsFit(ShedSubdivision) && BloomCutsFit(ShedFineSubdivision) &&
                                    BloomCutsFit(ShedFinestSubdivision))) &&
             MaxLiveTriangles <= 200_000 && LargestEntityTriangles <= MaxLiveTriangles;

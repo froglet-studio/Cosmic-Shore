@@ -1,21 +1,21 @@
 # Collision Burst Lab
 
 The prism's **interaction detail levels** (`Docs/PRISM_ANIMATION.md` §4.11) side by side with the ordinary
-effects they stand in for, running the shipped shader code in WebGL2, with a measured squint scorecard and
-a shared decision log: **destruction** (the explosion → the Sierpinski cut, every fragment moved by the
-explosion's own law) and **stealing** (the grade → the bloom shed). Round 1 looked at the four level-1 collision
-bursts alone.
+effects they stand in for, running the shipped shader code in WebGL2, with a measured look scorecard and
+a shared decision log: **destruction** (the explosion → the silver gnomon cut, every fragment bursting out on its own)
+and **stealing** (the grade → the roll). Round 1 looked at the four level-1 collision bursts alone.
 
-- **Live page:** https://claude.ai/artifact/F47yG1UjBkK662rEnhk7m9 (decision log: `decisions`) — round 8
+- **Live page:** https://claude.ai/artifact/F47yG1UjBkK662rEnhk7m9 (decision log: `decisions`) — round 9
 - **Page (generated, never edit by hand):** `Docs/Studios/PrismCollisionBurstLab.html`
 - **Source:** `Tools/Build/prism_collision_burst_lab/lab.src.html`; `build.py` stamps the shipped
   numbers and shader code into it (`--check` fails when the page is stale).
 - **Parity gate:** `Tools/Build/prism_collision_burst_lab/parity.py`
 
-The question the lab exists to answer is the brief's: **spectacular when you look at it, the ordinary
-effect when you squint** — the explosion for a destruction, the grade for a steal. One column per part of
-that: size, centre, fade, colour, and the RMS of the blurred difference ("squint"), each against the
-ordinary effect on the same prism at the same moment.
+The question the lab exists to answer was the brief's: **spectacular when you look at it, the ordinary
+effect when you squint**. Since round 9 the squint is retired (the designer: the silver cut's range of sizes lets a
+far-away player take the small fragments as unseen) and the question is **does it look awesome**: the Look scorecard
+measures each level (fragments, size range, how evenly the cloud fills the sphere, how big, how fast it tumbles, how
+many neighbours move in step, when it thins). Rounds 1–8 below measured the squint.
 
 ## What the page reads (it is a reader, never an authority)
 
@@ -36,7 +36,90 @@ ordinary effect on the same prism at the same moment.
 The burst mesh is `HighPolyPrismMesh.GetUnwelded(10)` rebuilt on the page in float32 (`Math.fround`), as
 C# builds it.
 
-## Round 8 — 2026-10-15 (`cece/dreamy-pascal-7xxx1m`): the noise moves the slides too
+## Round 9 — 2026-10-16 (`cece/dreamy-pascal-7xxx1m`): the squint is retired; every fragment bursts out on its own
+
+**Your decision applied** (the designer): *"i see that the squint test was steering things to do exactly what i am
+trying to fix now. by using the silver gnomen cut we unsure that there are still a nice size range such that from far
+away a player could assume that the small ones are going unseen. thus we do not need to do the squint test anymore.
+this will allow you to create a more uniform effect instead of keeping things grouped so as to maintain squint parity
+across levels. now I just want it to look awesome"*. The shared decision log was empty at the start of the round.
+
+### What changed, in the game and in the lab
+
+The WEDGE kind (every fragment riding its root wedge's slide and spin, so the cloud stayed grouped in 24 sheets) is
+gone. Kind 5 is now **FRAGMENT** (`PrismBurstFragmentPose`, world space), tuned by fourteen new config fields
+(`PrismInteractionLodConfig` `fragment*`, the lab's new **Fragments** tab):
+
+- **Its own direction**: its face's radial × how far out on the face it sits (0 at the centre, √2 at a corner) plus
+  the face normal × `fragmentLift` (1) plus the hit × `fragmentAim` (0.35) — with lift 1 that is the cube seen from its
+  own centre, every face filling its own sixth of the sphere whatever the prism's proportions.
+- **Its own distance**: R × (`fragmentBurst` 0.5 × (1 − e^(−t/τ)) + `fragmentDrift` 0.2 × t), × (1 + `fragmentSizeSpeed`
+  0.8 × its size level): the big chunks stay near the core and the fine debris is flung farthest, so the cloud is
+  FILLED, not a hollow inflated box (the first tuning, burst 1.2 / size-speed 0.3, read as one).
+- **Its own spin**: about its direction and cross(velocity, N) — the explosion's velocity response — at the
+  explosion's own speed-capped angle (`_ExplosiveRotation`, copied at runtime) × min(1 + 0.25 × level, 1.6).
+- **Its own end**: it shrinks away to its centre (no dissolve) over the last 35% of its own life, the smallest gone at
+  45% of the explosion's life and the largest at 92% — every fragment gone by 95%, so the entity retires on nothing.
+- **The noise stays**: the gradient noise varies both spin angles (0.15), the distance and the direction (0.25), so
+  neighbours move alike and never in step.
+
+The CPU bounds (`PrismCollisionBurst.FragmentReach`) are the HLSL's `PrismBurstFragmentReach`, proved by the harness.
+`_ExplosionSpread`, `_WedgeNoise` and the erosion's UV are gone from the shader (the mesh keeps the explosion's UV0
+layout). The **squint scorecard and the LOD-step test are retired**; the **Look scorecard** measures each level on the
+page's own vertex stage through transform feedback; the Squint button is gone.
+
+### Look scorecard (shipped settings, `verify_lab.cjs` batch)
+
+| | Fragments | Size range | Spread evenness | Cloud at 2 s (R) | Tumble (rad/s) | In step | Half gone | All gone |
+|---|---|---|---|---|---|---|---|---|
+| *Explosion (the baseline)* | 24 | 1 | 0.323 | 1.78 | 0.73 | — | — | erodes to 6.38 s |
+| Level 1 | 192 | 4.5 × | 0.777 | 2.84 | 0.58 | 0% | 4.60 s | 6.63 s |
+| Level 2 | 504 | 8.2 × | 0.793 | 3.52 | 0.63 | 0.9% | 4.17 s | 6.23 s |
+| Level 3 | 1,320 | 15.2 × | 0.806 | 4.17 | 0.66 | 0.5% | 3.70 s | 5.90 s |
+| Level 4 | 3,456 | 28.1 × | **0.811** | 4.81 | 0.67 | 0.5% | 3.30 s | 5.53 s |
+| *control: noise off* | 3,456 | | 0.816 | | | **100%** — fires | | |
+| *control: a face leaves as one* (`PRISM_BURST_FRAGMENT_FACE_ONLY` compiled into the page) | 3,456 | | **0.529** — fires | | | | | |
+
+Spread evenness is the entropy of the fragments' travel directions over 256 equal bins of the sphere, as a share of
+the most there can be: the explosion's six slide directions cap it at 0.32. Finer levels thin faster (more small
+fragments, which leave first) — from far away the small ones simply go unseen.
+
+### Found
+
+- **The harness never tested the silver cut's motion in rounds 7 and 8.** `run_wedge_tests` picked the mesh with
+  `cut.name[1] == 'i'`, true for both "sierpinski" and "silver", so every "silver" case built a Sierpinski mesh (the
+  round-8 W9 slide test called `silver(7)` directly and was real). The new F tests compare names exactly and assert
+  each mesh's vertex count (72 × the per-wedge count) before testing it.
+- **`centroid` is an HLSL interpolation keyword**: a parameter of that name compiled in the C++ harness and failed
+  glslang's HLSL front end (and would have failed Unity's). Renamed `middle`.
+- **One angle off every face is six hollow cones**: a unit radial plus a constant lift sent every fragment of a face
+  off at the same angle (evenness 0.714 in the harness); weighting the radial by how far out the fragment sits filled
+  each face's sixth of the sphere (0.828).
+- **A 64-bin evenness cannot tell six cones from a sphere** (0.787 against 0.726 for lift 3): 256 bins (about 7°
+  each) separate them.
+
+### Checked
+
+`verify_prism_collision_burst.py` PASS — F1–F9 on both cuts at depths 0–10, the noise off and on, the shipped shape
+and every slider at the end of its range, random rotations and non-uniform scales: the first frame is the prism; every
+fragment rigid up to its shrink (worst 3.3e-8 of the reach); unit normals; inside `PrismBurstFragmentReach` (worst use
+0.985); never spinning faster than 2 × the explosion's angle × spinCap × (1 + the noise) (worst 0.95 of it); all gone by
+95% of the life; the smaller gone first in 492,312 of 492,312 pairs a size level apart; 5 of 2,592 same-size
+neighbours travelling in step; evenness 0.826 (floor 0.70). X: the explosion map still equals RotateFacesAlongAxis'
+closed form (2.5e-6). Controls: the noise off and a face leaving as one FIRED, the explosion's pivot and unscaled
+turn FIRED — 10 in all; glslang compiles every pass. `parity.py` PASS — the page's FRAGMENT pose against
+`PrismBurstFragmentPose` executed, 10,008 vertices over 7 cases (both cuts, noise on and off, random shapes, random
+rotations), worst 3.2e-4; 7 controls FIRED (incl. the burst doubled). `verify_lab.cjs` PASS (desktop and phone
+screenshots read); `build.py --check` OK; `unity_refcompile` player and editor 0 errors; `check_console_logging.py` 0.
+**Not run:** the editor — **NOT editor-verified** (`Docs/UNITY_VERIFICATION_CHECKLIST.md`).
+
+### Decision needed (designer)
+
+How it should FEEL in motion — the Fragments tab holds every dial (burst, drift, lift, aim, how much the smaller fly
+farther and spin faster, when the smallest and largest are gone, the shrink, the noise). The numbers above are a first
+tuning chosen from still frames.
+
+## Round 8 — 2026-10-15 (`cece/dreamy-pascal-7xxx1m`): the noise moves the slides too — superseded by round 9 (the FRAGMENT kind)
 
 **Your decision applied** (the designer): *"so the perlin noise helped with the rotations now use it for the
 displacements too"*.

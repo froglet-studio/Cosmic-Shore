@@ -29,9 +29,20 @@ MonoBehaviour:
   - 6
   - 8
   - 10
-  wedgeSpinNoise: 0.15
-  wedgeNoiseFrequency: 3
-  wedgeSlideNoise: 0.15
+  fragmentBurst: 0.5
+  fragmentDrift: 0.2
+  fragmentLift: 1
+  fragmentAim: 0.35
+  fragmentSizeSpeed: 0.8
+  fragmentSizeSpin: 0.25
+  fragmentSpinCap: 1.6
+  fragmentLevelRef: 4
+  fragmentEndSmall: 0.45
+  fragmentEndBig: 0.92
+  fragmentShrink: 0.35
+  fragmentSpinNoise: 0.15
+  fragmentNoiseFrequency: 3
+  fragmentTravelNoise: 0.25
   shedEnabled: 1
   shedMinScreen: 0.08
   shedFineScreen: 0.16

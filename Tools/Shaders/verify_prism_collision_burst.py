@@ -515,126 +515,190 @@ static void run_noise_tests() {
     CHECK(lipschitz <= 8.0f, "the gradient noise jumps (slope %g): not continuous", lipschitz);
 }
 
-static void run_wedge_tests() {
-    const float3 S(0.18f, 0.1f, 0.1f); const float ER = 0.0169f, ES = 0.05f;
-    float worstReach = 0, worstLevel0 = 0, worstSpin = 0, worstWedgeSpin = 0, worstNoisySpin = 0;
-    int pairs = 0, inStep = 0;
+// F. the FRAGMENT kind (round 9): every fragment of the cut bursts out on its own, tumbles at the explosion's
+// capped rate and shrinks away at its own end, the smallest first.
+static PrismBurstFragmentShape fragmentShape(bool extreme) {
+    PrismBurstFragmentShape s;
+    // the shipped shape (PrismInteractionLodConfig.asset), or every slider at the end of its range
+    s.burst = extreme ? 4.0f : 0.5f; s.drift = extreme ? 2.0f : 0.2f; s.lift = extreme ? 3.0f : 1.0f;
+    s.aim = extreme ? 2.0f : 0.35f; s.sizeSpeed = extreme ? 1.0f : 0.8f; s.sizeSpin = extreme ? 1.0f : 0.25f;
+    s.spinCap = extreme ? 3.0f : 1.6f; s.endSmall = extreme ? 0.1f : 0.45f; s.endBig = extreme ? 0.95f : 0.92f;
+    s.shrink = extreme ? 1.0f : 0.35f; s.tau = 0.22f; s.levelRef = extreme ? 1.0f : 4.0f;
+    return s;
+}
+struct FragFrame { float3 rest, n, centroid, faceCentre; };
+static FragFrame fragFrame(const Pose& P, const WVert& v) {
+    return FragFrame{world(P, v.pos), worldNormal(P, v.n), world(P, v.centroid), world(P, v.n * 0.5f)};
+}
+static void fragPose(const Pose& P, const WVert& v, float age, float life, float speed, float3 vel, float ER,
+                     float4 noise, const PrismBurstFragmentShape& s, float3& pos, float3& nrm) {
+    FragFrame f = fragFrame(P, v);
+    float R = length(linear(P, float3(0.5f, 0.5f, 0.5f)));
+    // how far out on its face it sits, in face half-widths: length(triUV), as BurstVert passes it
+    float outward = 2.0f * length(v.centroid - v.n * 0.5f);
+    PrismBurstFragmentPose(f.rest, f.n, f.centroid, f.faceCentre, outward, v.centroid, v.level, R, age, life, speed * age, vel, ER,
+                           noise, s, pos, nrm);
+}
+// How evenly the cloud fills the sphere of directions: the entropy of the fragments' travel directions over 256
+// near-equal-area bins (a Fibonacci sphere, each about 7 degrees across), as a share of the most there can be (log 256).
+static float directionEntropy(const std::vector<float3>& dirs) {
+    const int B = 256; float3 bins[B];
+    for (int k = 0; k < B; k++) {
+        float z = 1.0f - (2.0f * k + 1.0f) / B, r = std::sqrt(std::max(0.0f, 1.0f - z * z)), ph = k * 2.39996323f;
+        bins[k] = float3(r * std::cos(ph), r * std::sin(ph), z);
+    }
+    int count[B] = {0};
+    for (const float3& d : dirs) { int best = 0; for (int k = 1; k < B; k++) if (dot(d, bins[k]) > dot(d, bins[best])) best = k; count[best]++; }
+    double H = 0;
+    for (int k = 0; k < B; k++) if (count[k]) { double q = (double)count[k] / dirs.size(); H -= q * std::log(q); }
+    return (float)(H / std::log((double)B));
+}
+
+static void run_fragment_tests() {
+    const float ER = 0.0169f, life = 7.5f;
+    float worstReach = 0, worstSpin = 0, worstRigid = 0, leftAt95 = 0;
+    int ordered = 0, orderPairs = 0, samePairs = 0, sameStep = 0;
+    double entropySum = 0; int entropyRuns = 0;
     struct Cut { const char* name; int depth; };
-    for (Cut cut : {Cut{"sierpinski", 0}, Cut{"sierpinski", 1}, Cut{"sierpinski", 2}, Cut{"sierpinski", 3},
-                    Cut{"silver", 0}, Cut{"silver", 1}, Cut{"silver", 4}, Cut{"silver", 7}})
+    for (bool extreme : {false, true})
+    for (Cut cut : {Cut{"sierpinski", 0}, Cut{"sierpinski", 3}, Cut{"silver", 0}, Cut{"silver", 4}, Cut{"silver", 7}, Cut{"silver", 10}})
     for (float amp : {0.0f, 0.15f}) {
-        bool sier = cut.name[1] == 'i';
-        int depth = cut.depth;
-        std::vector<WVert> m = sier ? sierpinski(depth) : silver(depth);
-        for (int trial = 0; trial < 6; trial++) {
+        const PrismBurstFragmentShape s = fragmentShape(extreme);
+        bool sier = std::strcmp(cut.name, "sierpinski") == 0;
+        std::vector<WVert> m = sier ? sierpinski(cut.depth) : silver(cut.depth);
+        // the cut asked for is the cut built (rounds 7-8 tested the Sierpinski cut under the silver's name: both names
+        // have an 'i' second)
+        size_t perWedge = 1;
+        for (int d = 1, a = 1, b = 1; d <= cut.depth; d++) { int n = sier ? 0 : a + b; a = b; b = n; perWedge = sier ? perWedge * 3 + 1 : (size_t)n; }
+        CHECK(m.size() == 72 * perWedge, "fragment %s %d: %zu vertices, not 72 x %zu", cut.name, cut.depth, m.size(), perWedge);
+        for (int trial = 0; trial < 4; trial++) {
             Pose P = rndPose(); P.t = float3(0,0,0);
             float3 vel = rndDir() * rnd(5, 60);
             float speed = rnd(10, 53);
-            float seed = rnd(0, 1);
-            float4 noise(amp, 3.0f, seed, amp);
+            float4 noise(amp, 3.0f, rnd(0, 1), amp > 0 ? 0.25f : 0.0f);   // the shipped spin and travel amplitudes
             float R = length(linear(P, float3(0.5f,0.5f,0.5f)));
-            float maxScale = std::max(P.s.x, std::max(P.s.y, P.s.z));
-            for (float t : {0.0f, 0.4f, 2.0f, 7.5f}) {
-                float amount = speed * t;
+            float reach = PrismBurstFragmentReach(R, life, s, noise.w);
+            std::vector<float> gone(m.size() / 3, life);
+            for (float age : {0.0f, 0.1f, 0.4f, 2.0f, 4.0f, 0.95f * life, life}) {
                 std::vector<float3> wp(m.size()), wn(m.size());
                 for (size_t i = 0; i < m.size(); i++) {
-                    const WVert& v = m[i];
-                    float3 pos, nrm;
-                    PrismBurstWedgePose(v.pos, v.n, v.centroid, v.level, P.s, amount, vel, S, ER, ES, noise, pos, nrm);
-                    wp[i] = world(P, pos); wn[i] = nrm;
-                    // W1. the first frame is the prism
-                    if (amount == 0.0f) {
-                        CHECK(length(pos - v.pos) <= 1e-5f && length(nrm - v.n) <= 1e-5f, "wedge %s %d: amount 0 moved a vertex", cut.name, depth);
-                    }
-                    // W3. unit normals
-                    CHECK(std::fabs(length(nrm) - 1.0f) <= 1e-4f, "wedge: normal length %g", length(nrm));
-                    // W4. the reach the CPU sizes the bounds by
-                    float reach = PrismBurstWedgeReach(R, maxScale, amount, ES, S, noise.w);
+                    fragPose(P, m[i], age, life, speed, vel, ER, noise, s, wp[i], wn[i]);
+                    FragFrame f = fragFrame(P, m[i]);
+                    // F1. the first frame is the prism
+                    if (age == 0.0f)
+                        CHECK(length(wp[i] - f.rest) <= 1e-5f * R && length(wn[i] - f.n) <= 1e-5f, "fragment %s %d: age 0 moved a vertex", cut.name, cut.depth);
+                    // F3. unit normals
+                    CHECK(std::fabs(length(wn[i]) - 1.0f) <= 1e-4f, "fragment: normal length %g", length(wn[i]));
+                    // F4. within the reach the CPU sizes the bounds by
                     float r = length(wp[i]);
-                    if (r / reach > worstReach) worstReach = r / reach;
-                    CHECK(r <= reach * (1 + 1e-4f), "wedge %s %d: a vertex %.3f escapes the reach %.3f", cut.name, depth, r, reach);
-                    // W5. the spin is the explosion's, capped by its speed: never more than two turns of amount x
-                    // rotation, x (1 + the noise's amplitude)
-                    float turn = std::acos(std::min(1.0f, std::max(-1.0f, dot(nrm, v.n))));
-                    if (amount > 0) worstSpin = std::max(worstSpin, turn / (2 * amount * ER * (1 + amp)));
-                    CHECK(turn <= 2 * amount * ER * (1 + amp) + 1e-3f, "wedge: a fragment turned %g rad, more than the explosion's 2 x %g x %g", turn, amount * ER, 1 + amp);
-                    float3 off = v.centroid - v.n * dot(v.pos, v.n), a = abs(off);
-                    float3 Tw = a.x >= a.y && a.x >= a.z ? float3(off.x >= 0 ? 1.f : -1.f, 0, 0)
-                              : a.y >= a.z ? float3(0, off.y >= 0 ? 1.f : -1.f, 0) : float3(0, 0, off.z >= 0 ? 1.f : -1.f);
-                    float3 rp, rn;
-                    explosionReference(v.pos, v.n, Tw, P.s, amount, vel, S, ER, ES, rp, rn);
-                    if (amp == 0.0f) {
-                        // W7. every fragment SPINS as its root wedge does in the explosion: the same two axes (the
-                        // wedge's tangent, cross(velocity, N)) and angle, so its normal is the explosion wedge's.
-                        worstWedgeSpin = std::max(worstWedgeSpin, length(rn - nrm));
-                        CHECK(length(rn - nrm) <= 1e-4f, "wedge %s %d: a fragment turned off its root wedge's spin by %g", cut.name, depth, length(rn - nrm));
-                        // W2. level 0 IS the explosion
-                        if (v.level == 0.0f) {
-                            float err = length(world(P, rp) - world(P, pos)) / R;
-                            worstLevel0 = std::max(worstLevel0, err);
-                            CHECK(err <= 1e-4f && length(rn - nrm) <= 1e-4f, "wedge: level 0 leaves the explosion's law by %g radii", err);
-                        }
-                    } else {
-                        // W8a. with the noise, a fragment's spin stays CLOSE to its wedge's (the order holds)
-                        float off2 = std::acos(std::min(1.0f, std::max(-1.0f, dot(rn, nrm))));
-                        if (amount > 0) worstNoisySpin = std::max(worstNoisySpin, off2 / (2 * amount * ER * amp));
-                        CHECK(off2 <= 2 * amount * ER * amp + 1e-3f, "wedge: the noise turned a fragment %g rad off its wedge, more than 2 x %g x %g", off2, amount * ER, amp);
-                    }
+                    worstReach = std::max(worstReach, r / reach);
+                    CHECK(r <= reach * (1 + 1e-4f), "fragment %s %d: a vertex %.3f escapes the reach %.3f", cut.name, cut.depth, r, reach);
+                    // F5. never faster than the explosion's own spin, by at most spinCap x (1 + the noise)
+                    float turn = std::acos(std::min(1.0f, std::max(-1.0f, dot(wn[i], f.n))));
+                    float cap = 2 * speed * age * ER * s.spinCap * (1 + amp);
+                    if (age > 0) worstSpin = std::max(worstSpin, turn / cap);
+                    CHECK(turn <= cap + 1e-3f, "fragment: turned %g rad, more than 2 x %g x %g", turn, speed * age * ER, s.spinCap * (1 + amp));
                 }
-                // W6. every fragment is RIGID in the world, at every depth (the turn is done in the scaled frame)
-                for (size_t i = 0; i < m.size(); i += 3)
+                for (size_t i = 0; i < m.size(); i += 3) {
+                    // F2. RIGID up to its shrink: one scale k for all three edges, never above 1 (float32 positions
+                    // out at the reach carry about 1e-6 of it, so the tolerance is in the reach's units)
+                    float d0[3], d1[3]; int longest = 0;
                     for (int a = 0; a < 3; a++) {
                         int b = (a + 1) % 3;
-                        float d0 = length(world(P, m[i+a].pos) - world(P, m[i+b].pos)), d1 = length(wp[i+a] - wp[i+b]);
-                        CHECK(std::fabs(d0 - d1) <= 2e-4f * R, "wedge %s %d: a fragment stretched %g -> %g", cut.name, depth, d0, d1);
+                        d0[a] = length(world(P, m[i+a].pos) - world(P, m[i+b].pos)); d1[a] = length(wp[i+a] - wp[i+b]);
+                        if (d0[a] > d0[longest]) longest = a;
                     }
-                // W8b. with the noise, neighbouring fragments of one wedge are NOT in perfect step: consecutive
-                // triangles of the cut that share a wedge (same face, same root tangent) turn their normals apart
-                if (amp > 0.0f && t >= 2.0f && depth > 0)
-                    for (size_t i = 0; i + 3 < m.size(); i += 3) {
-                        const WVert& u = m[i]; const WVert& v = m[i + 3];
-                        if (length(u.n - v.n) > 0) continue;
-                        float3 ou = u.centroid - u.n * 0.5f, ov = v.centroid - v.n * 0.5f;
-                        float3 au = abs(ou), av = abs(ov);
-                        auto key = [](float3 o, float3 a) { return a.x >= a.y && a.x >= a.z ? (o.x >= 0 ? 1 : 2) : a.y >= a.z ? (o.y >= 0 ? 3 : 4) : (o.z >= 0 ? 5 : 6); };
-                        if (key(ou, au) != key(ov, av)) continue;
-                        pairs++;
-                        if (length(wn[i] - wn[i + 3]) <= 1e-4f) inStep++;
+                    float k[3] = {d1[0] / d0[0], d1[1] / d0[1], d1[2] / d0[2]}, kk = k[longest], off = 0;
+                    for (int a = 0; a < 3; a++) off = std::max(off, std::fabs(d1[a] - kk * d0[a]) / reach);
+                    worstRigid = std::max(worstRigid, off);
+                    CHECK(off <= 2e-5f && (kk - 1) * d0[longest] <= 2e-5f * reach, "fragment %s %d: a fragment deformed (%g, %g, %g)", cut.name, cut.depth, k[0], k[1], k[2]);
+                    // F6. every fragment is gone by 95% of the life: the entity retires on empty space
+                    if (age >= 0.95f * life) { leftAt95 = std::max(leftAt95, k[0]); CHECK(k[0] <= 1e-4f, "fragment %s %d: still %.3f of its size at 95%% of the life", cut.name, cut.depth, k[0]); }
+                }
+                // F9. the cloud is UNIFORM: travel directions fill the sphere (shipped shape, finest cuts, t = 2 s)
+                if (!extreme && age == 2.0f && !sier && cut.depth >= 7 && amp > 0) {
+                    std::vector<float3> dirs;
+                    for (size_t i = 0; i < m.size(); i += 3) {
+                        float3 c = (wp[i] + wp[i+1] + wp[i+2]) / 3.0f, c0 = world(P, m[i].centroid);
+                        if (length(c - c0) > 1e-6f) dirs.push_back(normalize(c - c0));
                     }
+                    entropySum += directionEntropy(dirs); entropyRuns++;
+                }
+            }
+            // F7. the SMALLEST go first: each fragment's vanishing instant, sampled finely
+            if (!extreme && !sier && cut.depth >= 4) {
+                // the shrink only ever pulls in, so the instant it is gone is found by bisection
+                for (size_t i = 0; i < m.size(); i += 3) {
+                    float lo = 0, hi = life;
+                    for (int it = 0; it < 24; it++) {
+                        float age = 0.5f * (lo + hi); float3 a, an, b, bn;
+                        fragPose(P, m[i], age, life, speed, vel, ER, noise, s, a, an);
+                        fragPose(P, m[i+1], age, life, speed, vel, ER, noise, s, b, bn);
+                        if (length(a - b) <= 1e-6f * R) hi = age; else lo = age;
+                    }
+                    gone[i / 3] = hi;
+                }
+                for (size_t i = 0; i < gone.size(); i++)
+                    for (size_t j = i + 1; j < gone.size(); j += 7) {
+                        // a size level apart, both above "the smallest" (finer ones all share its end)
+                        float li = m[3*i].level, lj = m[3*j].level;
+                        if (std::fabs(li - lj) < 1.0f || std::max(li, lj) > s.levelRef) continue;
+                        orderPairs++;
+                        if ((li > lj) == (gone[i] < gone[j])) ordered++;
+                    }
+            }
+            // F8. with the noise, same-size neighbours on one face do NOT travel or leave in perfect step
+            if (amp > 0 && !extreme && cut.depth >= 4) {
+                for (size_t i = 0; i + 3 < m.size(); i += 3) {
+                    const WVert& u = m[i]; const WVert& v = m[i + 3];
+                    if (length(u.n - v.n) > 0 || std::fabs(u.level - v.level) > 1e-4f) continue;
+                    // how far each has travelled: its centroid's displacement (the tumble and the shrink are about it)
+                    auto travel = [&](size_t at) {
+                        float3 c(0, 0, 0), n;
+                        for (int k = 0; k < 3; k++) { float3 q; fragPose(P, m[at + k], 2.0f, life, speed, vel, ER, noise, s, q, n); c = c + q / 3.0f; }
+                        return length(c - world(P, m[at].centroid));
+                    };
+                    float du = travel(i), dv = travel(i + 3);
+                    samePairs++;
+                    if (std::fabs(du - dv) <= 1e-4f * R) sameStep++;
+                }
             }
         }
     }
-    // W9. the SLIDE noise: every fragment's slide is continuous over the face (bounded slope), at most 1 + 2 x its
-    // amplitude long, and neighbouring fragments of one wedge do not slide in perfect step.
-    {
-        int sp = 0, sameSlide = 0; float slope = 0, longest = 0;
-        std::vector<WVert> m = silver(7);
-        const float amp = 0.15f;
-        for (int trial = 0; trial < 20; trial++) {
-            float4 noise(amp, 3.0f, rnd(0, 1), amp);
-            for (size_t i = 0; i + 3 < m.size(); i += 3) {
-                const WVert& u = m[i]; const WVert& v = m[i + 3];
-                if (length(u.n - v.n) > 0) continue;
-                float3 ou = u.centroid - u.n * 0.5f, ov = v.centroid - v.n * 0.5f, au = abs(ou), av = abs(ov);
-                auto tan_ = [](float3 o, float3 a) { return a.x >= a.y && a.x >= a.z ? float3(o.x >= 0 ? 1.f : -1.f, 0, 0) : a.y >= a.z ? float3(0, o.y >= 0 ? 1.f : -1.f, 0) : float3(0, 0, o.z >= 0 ? 1.f : -1.f); };
-                float3 tu = tan_(ou, au), tv = tan_(ov, av);
-                float3 su = PrismBurstWedgeSlide(u.centroid, u.n, tu, noise), sv = PrismBurstWedgeSlide(v.centroid, v.n, tv, noise);
-                longest = std::max(longest, std::max(length(su), length(sv)));
-                if (length(tu - tv) > 0) continue;   // another wedge: another tangent
-                sp++;
-                if (length(su - sv) <= 1e-5f) sameSlide++;
-                float dc = length(u.centroid - v.centroid);
-                if (dc > 0) slope = std::max(slope, length(su - sv) / dc);
-            }
+    float entropy = entropyRuns ? (float)(entropySum / entropyRuns) : 0;
+    printf("fragment: worst reach use %.3f, worst spin %.3f of the cap, worst deformation %.2g, largest left at 95%% of life %.2g; "
+           "the smaller gone first in %d of %d pairs a size level apart; %d of %d same-size neighbours travelling in perfect step; "
+           "direction entropy %.3f of the sphere's\n",
+           worstReach, worstSpin, worstRigid, leftAt95, ordered, orderPairs, sameStep, samePairs, entropy);
+    CHECK(orderPairs > 0 && ordered >= orderPairs * 97 / 100, "the smaller fragments did not leave first (%d of %d)", ordered, orderPairs);
+    CHECK(samePairs > 0 && sameStep <= samePairs / 20, "the noise left %d of %d same-size neighbours in perfect step", sameStep, samePairs);
+    CHECK(entropy >= @@ENTROPY_FLOOR@@f, "the cloud's directions cover %.3f of the sphere: grouped, not uniform", entropy);
+}
+
+// X. the explosion's own law (the lab draws the explosion with it): PrismBurstExplosionMap about the wedge's own
+// pivot equals the harness's Rodrigues statement of RotateFacesAlongAxis' closed form.
+static void run_explosion_tests() {
+    const float3 S(0.18f, 0.1f, 0.1f); const float ER = 0.0169f, ES = 0.05f;
+    float worst = 0;
+    std::vector<WVert> m = sierpinski(0);
+    for (int trial = 0; trial < 40; trial++) {
+        Pose P = rndPose(); P.t = float3(0,0,0);
+        float3 vel = rndDir() * rnd(5, 60);
+        float amount = rnd(0, 400);
+        float R = length(linear(P, float3(0.5f,0.5f,0.5f)));
+        for (const WVert& v : m) {
+            float3 off = v.centroid - v.n * dot(v.pos, v.n), a = abs(off);
+            float3 T = a.x >= a.y && a.x >= a.z ? float3(off.x >= 0 ? 1.f : -1.f, 0, 0)
+                     : a.y >= a.z ? float3(0, off.y >= 0 ? 1.f : -1.f, 0) : float3(0, 0, off.z >= 0 ? 1.f : -1.f);
+            float3 rp, rn, pos, nrm;
+            explosionReference(v.pos, v.n, T, P.s, amount, vel, S, ER, ES, rp, rn);
+            PrismBurstExplosionMap(v.pos, v.n, T, PrismBurstWedgePivot(v.pos, v.n, T, S), P.s, amount, vel, ER, ES, pos, nrm);
+            float err = std::max(length(world(P, rp) - world(P, pos)) / R, length(rn - nrm));
+            worst = std::max(worst, err);
+            CHECK(err <= 1e-4f, "the explosion map leaves RotateFacesAlongAxis' law by %g", err);
         }
-        printf("wedge slide: %d of %d neighbouring fragments slide in perfect step with the noise; steepest slope %.2f a unit; longest slide %.3f of the explosion's\n", sameSlide, sp, slope, longest);
-        CHECK(sp > 0 && sameSlide <= sp / 20, "the slide noise left %d of %d neighbouring fragments in perfect step", sameSlide, sp);
-        CHECK(longest <= 1.0f + 2.0f * amp + 1e-5f, "a slide %.3f is longer than 1 + 2 x the amplitude", longest);
-        CHECK(slope <= amp * 3.0f * 8.0f, "the slide jumps between neighbours (slope %g): not continuous", slope);
     }
-    printf("wedge: worst reach use %.3f, worst level-0 departure %.2g radii, worst spin %.3f of the cap, worst departure from the root wedge's spin %.2g (noise off), noisy spin off its wedge %.3f of 2 x amplitude; %d of %d neighbouring fragments in perfect step with the noise\n",
-           worstReach, worstLevel0, worstSpin, worstWedgeSpin, worstNoisySpin, inStep, pairs);
-    CHECK(pairs > 0 && inStep <= pairs / 20, "the noise left %d of %d neighbouring fragments in perfect step", inStep, pairs);
+    printf("explosion map: worst departure from the closed form %.2g\n", worst);
 }
 
 // R. the ROLL: it rolls the skin away from the camera and round, until its own prism hides it.
@@ -719,19 +783,29 @@ int main(int argc, char** argv) {
     bool fadeOnly = argc > 1 && std::strcmp(argv[1], "fade") == 0;
     bool bendOnly = argc > 1 && std::strcmp(argv[1], "bend") == 0;
     bool gradeOnly = argc > 1 && std::strcmp(argv[1], "grade") == 0;
-    bool wedgeOnly = argc > 1 && std::strcmp(argv[1], "wedge") == 0;
+    bool fragmentOnly = argc > 1 && std::strcmp(argv[1], "fragment") == 0;
+    bool explosionOnly = argc > 1 && std::strcmp(argv[1], "explosion") == 0;
     bool rollOnly = argc > 1 && std::strcmp(argv[1], "roll") == 0;
     if (envelopeOnly) run_pose_tests(true);
     else if (fadeOnly) run_fade_tests();
     else if (bendOnly) run_bend_tests();
     else if (gradeOnly) run_grade_tests();
-    else if (wedgeOnly) run_wedge_tests();
+    else if (fragmentOnly) run_fragment_tests();
+    else if (explosionOnly) run_explosion_tests();
     else if (rollOnly) run_roll_tests();
-    else { run_pose_tests(false); run_bend_tests(); run_fade_tests(); run_grade_tests(); run_noise_tests(); run_wedge_tests(); run_roll_tests(); run_misc_tests(); }
+    else { run_pose_tests(false); run_bend_tests(); run_fade_tests(); run_grade_tests(); run_noise_tests(); run_fragment_tests(); run_explosion_tests(); run_roll_tests(); run_misc_tests(); }
     printf("collision burst: %d failure(s)\n", failures);
     return failures ? 1 : 0;
 }
 """
+
+
+# F9's floor: the shipped cloud's travel directions must cover at least this share of the sphere's entropy (256
+# bins, each about 7 degrees across). The explosion's own law, every wedge sliding along one of the 6 face tangents,
+# can reach at most log 6 / log 256 = 0.32; a face's fragments all leaving one way (the grouped-burst control) reads
+# 0.43; the shipped burst, every face filling its own sixth of the sphere, 0.83 (round 9: 0.71 while every fragment
+# of a face left at the same angle off it, six hollow cones).
+ENTROPY_FLOOR = "0.70"
 
 
 # The silver gnomon cut, ported (shared with the lab's parity gate, which builds the same cut in C++).
@@ -759,7 +833,7 @@ static void silverG(double au, double av, double bu, double bv, double cu, doubl
     silverG(cu, cv, bu, bv, pu, pv, b - 2, out);
 }
 """
-HARNESS = HARNESS.replace("@@SILVER_CPP@@", SILVER_CPP)
+HARNESS = HARNESS.replace("@@SILVER_CPP@@", SILVER_CPP).replace("@@ENTROPY_FLOOR@@", ENTROPY_FLOOR)
 
 
 def grade_function():
@@ -779,8 +853,9 @@ def translate(src, required=True):
     out = re.sub(r"\bout float (\w+)", r"float &\1", out)
     for name in ("void PrismBurstPose(", "void PrismBurstBend(", "void PrismBurstVoronoi(",
                  "float PrismBurstEnvelope(", "float PrismBurstProgress(", "float PrismBurstDissolveValue(",
-                 "bool PrismBurstClipped(", "float PrismBurstNoise(", "void PrismBurstWedgePose(",
-                 "float PrismBurstWedgeReach(", "void PrismBurstExplosionMap(", "float3 PrismBurstWedgeSlide("):
+                 "bool PrismBurstClipped(", "float PrismBurstNoise(", "void PrismBurstFragmentPose(",
+                 "float PrismBurstFragmentReach(", "void PrismBurstExplosionMap(", "float PrismBurstFragmentEnd(",
+                 "float3 PrismBurstWedgePivot("):
         assert not required or name in out, f"{name} missing from the shipped HLSL"
     return out
 
@@ -824,11 +899,10 @@ def main():
                                  ("-DPRISM_BURST_ENVELOPE_BASE=1.0", "envelope", "envelope control"),
                                  ("-DPRISM_BURST_BEND_NORMAL=0", "bend", "cheap-normal control"),
                                  ("-DPRISM_BURST_GRADE_SMOOTH=0", "grade", "linear-shed control"),
-                                 ("-DPRISM_BURST_PIVOT_BIAS=0.0", "wedge", "wedge-pivot control"),
-                                 ("-DPRISM_BURST_WEDGE_PIVOT_UNSCALED=1", "wedge", "unscaled-turn control"),
-                                 ("-DPRISM_BURST_WEDGE_OWN_TANGENT=1", "wedge", "radial-tangent control"),
-                                 ("-DPRISM_BURST_WEDGE_NOISE_OFF=1", "wedge", "noiseless-spin control"),
-                                 ("-DPRISM_BURST_WEDGE_SLIDE_NOISE_OFF=1", "wedge", "noiseless-slide control"),
+                                 ("-DPRISM_BURST_PIVOT_BIAS=0.0", "explosion", "explosion-pivot control"),
+                                 ("-DPRISM_BURST_EXPLOSION_UNSCALED=1", "explosion", "unscaled-turn control"),
+                                 ("-DPRISM_BURST_FRAGMENT_NOISE_OFF=1", "fragment", "noiseless control"),
+                                 ("-DPRISM_BURST_FRAGMENT_FACE_ONLY=1", "fragment", "grouped-burst control"),
                                  ("-DPRISM_BURST_ROLL_TOWARD_CAMERA=1", "roll", "roll-toward-camera control")):
             rc, out = build_and_run(work, [flag], arg, label)
             fired = rc != 0
