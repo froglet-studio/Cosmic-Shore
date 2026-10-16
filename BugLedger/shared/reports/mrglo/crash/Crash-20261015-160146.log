@@ -1,0 +1,729 @@
+==== Cosmic Shore editor crash report ====
+written:        2026-10-15 16:01:46 (next editor launch after the abnormal exit)
+session:        20261003-201239832  (pid 37504, Unity 6000.3.17f1)
+started:        2026-10-03T20:12:39.839Z UTC
+last heartbeat: 2026-10-07T10:46:16.594Z UTC
+last state:     EditMode
+main thread:    responsive at the last heartbeat — the process ended abruptly (hard crash or kill)
+
+---- Captured errors (crash-detector journal) ----
+==== Cosmic Shore crash-detector journal ====
+session: 20261003-200343673
+started: 2026-10-03T20:03:43.673Z UTC
+unity:   6000.3.17f1
+pid:     37504
+Errors, exceptions and asserts land here as they happen; a background thread
+flushes after every entry so the tail survives a hard crash.
+
+[15:09:39.209] ---- entering play mode ----
+[15:09:42.927] ---- play mode running ----
+[15:11:40.908] [PlayMode] Exception: NullReferenceException: Object reference not set to an instance of an object
+        CosmicShore.UI.VolumeUI.Awake () (at Assets/_Scripts/UI/VolumeUI.cs:21)
+        UnityEngine.DebugLogHandler:LogException(Exception, Object)
+        CosmicShore.Utility.FilteringLogHandler:LogException(Exception, Object) (at Assets/_Scripts/Utility/BenignLobbyLogFilter.cs:44)
+        UnityEngine.Debug:CallOverridenDebugHandler(Exception, Object)
+[15:11:40.913] [PlayMode] Exception: NullReferenceException: Object reference not set to an instance of an object
+        CosmicShore.UI.MiniGameHUD.ToggleReadyButton (System.Boolean toggle) (at Assets/_Scripts/UI/MiniGameHUD.cs:918)
+        CosmicShore.UI.MiniGameHUD.CleanupUI () (at Assets/_Scripts/UI/MiniGameHUD.cs:903)
+        CosmicShore.UI.MiniGameHUD.OnEnable () (at Assets/_Scripts/UI/MiniGameHUD.cs:176)
+        CosmicShore.UI.MultiplayerHUD.OnEnable () (at Assets/_Scripts/UI/MultiplayerHUD.cs:56)
+        UnityEngine.DebugLogHandler:LogException(Exception, Object)
+        CosmicShore.Utility.FilteringLogHandler:LogException(Exception, Object) (at Assets/_Scripts/Utility/BenignLobbyLogFilter.cs:44)
+        UnityEngine.Debug:CallOverridenDebugHandler(Exception, Object)
+[15:11:40.921] [PlayMode] Error: Problem detected while opening the Scene file: 'Assets/_Scenes/Singleplayer Scenes/MinigameGrizzlyCharge.unity'.
+Check the following logs for more details.
+        0x00007ffee53f4e2e (Unity) StackWalker::ShowCallstack
+        0x00007ffee6c2f369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ffee6c2fbee (Unity) Stacktrace::GetStacktrace
+        0x00007ffee53a587f (Unity) DebugStringToFile
+        0x00007ffee5bd1ddb (Unity) LoadSceneOperation::CompleteAwakeSequence
+        0x00007ffee5bd4322 (Unity) LoadSceneOperation::PlayerLoadSceneFromThread
+        0x00007ffee5bd2e52 (Unity) LoadSceneOperation::IntegrateMainThread
+        0x00007ffee5bd5e8f (Unity) PreloadManager::UpdatePreloadingSingleStep
+        ...
+[15:11:40.928] [PlayMode] Error: Prefab instance problem. Missing Prefab Asset: 'TeamScorecard (Missing Prefab with guid: abd30ad4cfca9ae4a8aecfde9f650cf3)'
+        0x00007ffee53f4e2e (Unity) StackWalker::ShowCallstack
+        0x00007ffee6c2f369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ffee6c2fbee (Unity) Stacktrace::GetStacktrace
+        0x00007ffee53a587f (Unity) DebugStringToFile
+        0x00007ffee5585ae4 (Unity) ErrorsAndWarningsCapture::LogEachMessage
+        0x00007ffee5bd1e32 (Unity) LoadSceneOperation::CompleteAwakeSequence
+        0x00007ffee5bd4322 (Unity) LoadSceneOperation::PlayerLoadSceneFromThread
+        0x00007ffee5bd2e52 (Unity) LoadSceneOperation::IntegrateMainThread
+        ...
+[15:11:42.428] [PlayMode] Exception: NullReferenceException: Object reference not set to an instance of an object
+        CosmicShore.UI.MiniGameHUD.ToggleReadyButton (System.Boolean toggle) (at Assets/_Scripts/UI/MiniGameHUD.cs:918)
+        CosmicShore.UI.MiniGameHUD.CleanupUI () (at Assets/_Scripts/UI/MiniGameHUD.cs:903)
+        CosmicShore.UI.MiniGameHUD.HandleClientReady () (at Assets/_Scripts/UI/MiniGameHUD.cs:578)
+        UnityEngine.DebugLogHandler:LogException(Exception, Object)
+        CosmicShore.Utility.FilteringLogHandler:LogException(Exception, Object) (at Assets/_Scripts/Utility/BenignLobbyLogFilter.cs:44)
+        UnityEngine.Debug:LogException(Exception)
+        Cysharp.Threading.Tasks.UniTaskScheduler:PublishUnobservedTaskException(Exception) (at ./Library/PackageCache/com.cysharp.unitask@86b6e6a2e286/Runtime/UniTaskScheduler.cs:90)
+        CosmicShore.UI.<HandleClientReady>d__49:MoveNext() (at A[15:12:43.548] ---- domain reload begins (script compilation / play-mode transition) ----
+--
+[15:12:33.382] ---- edit mode restored ----
+[15:12:35.180] ---- domain reload begins (script compilation / play-mode transition) ----
+[15:12:49.998] [EditMode] Error: System.Reflection.TargetInvocationException: Exception has been thrown by the target of an invocation. ---> System.NullReferenceException: Object reference not set to an instance of an object
+  at Unity.Multiplayer.Playmode.Workflow.Editor.ProjectDataStore..ctor (System.String directory) [0x0006e] in .\Library\PackageCache\com.unity.multiplayer.playmode@3acaa705f0f9\Workflow\Editor\Configuration\ProjectDataStore.cs:55 
+  at Unity.Multiplayer.Playmode.Workflow.Editor.ProjectDataStore.GetMain () [0x00000] in .\Library\PackageCache\com.unity.multiplayer.playmode@3acaa705f0f9\Workflow\Editor\Configuration\ProjectDataStore.cs:36 
+  at Unity.Multiplayer.Playmode.Workflow.Editor.WorkflowMainEditorContext..ctor (Unity.Multiplayer.Playmode.VirtualProjects.Editor.MainEditorContext mainEditorContext) [0x0002c] in .\Library\PackageCache\com.unity.multiplayer.playmode@3acaa705f0f9\Workflow\Editor\Contexts\WorkflowMainEditorContext.cs:15 
+  at Unity.Multiplayer.Playmode.Workflow.Editor.VirtualProjectWorkflow.InitializeMPPMContexts () [0x00018] in .\Library\PackageCache\com.unity.multiplayer.playmode@3acaa705f0f9\Workflow\Editor\Workflow\VirtualProjectWorkflow.cs:204 
+  at Unity.Multiplayer.Playmode.Workflow.Editor.VirtualProjectWorkflow+<>c.<.cctor>b__22_0 () [0x00036] in .\Library\PackageCache\com.unity.multiplayer.playmode@3acaa705f0f9\Workflow\Editor\Workflow\VirtualProjectWorkflow.cs:85 
+  at Unity.Multiplayer.Playmode.VirtualProjects.Editor.EditorContexts.SendReadyEvent () [0x00038] in .\Library\PackageCache\com.unity.multiplayer.playmode@3acaa705f0f9\VirtualProjects\Editor\Contexts\EditorContexts.cs:56 
+  at (wrapper managed-to-native) System.Reflection.RuntimeMethodInfo.InternalInvoke(System.Reflection.RuntimeMethodInfo,object,object[],System.Exception&)
+  at System.Reflection.RuntimeMethodInfo.Invoke (System.Object obj, System.Reflection.BindingFlags invokeAttr, System.Reflection.Binder binder, System.Object[] parameters, System.Globalization.CultureInfo culture) [0x0006a] in <41d29b352f6a475ab1bf7c6628b82790>:0 
+   --- End of inner exception stack trace ---
+  at System.Reflection.RuntimeMethodInfo.Invoke (System.Object obj, System.Reflection.BindingFlags invokeAttr, System.Reflection.Binder binder, System.Object[] parameters, System.Globalization.CultureInfo culture) [0x00083] in <41d29b352f6a475ab1bf7c6628b82790>:0 
+  at System.Reflection.MethodBase.Invoke (System.Object obj, System.Object[] parameters) [0x00000] in <41d29b352f6a475ab1bf7c6628b82790>:0 
+  at UnityEditor.EditorAssemblies.ProcessInitializeOnLoadMethodAttributes () [0x00087] in <8740d1a42447456fb4d6b16f148b70d3>:0 
+        0x00007ffee53f4e2e (Unity) StackWalker::ShowCallstack
+        0x00007ffee6c2f369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ffee6c2fbee (Unity) Stacktrace::GetStacktrace
+        0x00007ffee53a587f (Unity) DebugStringToFile
+        0x00007ffee5261b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x000001b8349c3f6d (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x000001b8349c3e23 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x000001b8349c3a3b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[15:13:33.440] ---- main thread unresponsive ~45s — wrote hang dump: C:\Users\mrglo\Documents\GitHub\Cosmic-Shore\Logs\CrashDetector\HangDump-20261003-201247851.dmp (open in Visual Studio or WinDbg; the main thread's stack names the deadlock) ----
+
+---- Tail of Unity's own log (Editor-prev.log) ----
+(...truncated...)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Successfully resolved entitlement details
+Scanning for USB devices : 23.810ms
+Scanning for USB devices : 21.627ms
+Scanning for USB devices : 24.755ms
+Scanning for USB devices : 23.037ms
+Scanning for USB devices : 24.548ms
+Scanning for USB devices : 24.928ms
+Scanning for USB devices : 22.160ms
+Scanning for USB devices : 26.539ms
+Scanning for USB devices : 22.522ms
+Scanning for USB devices : 23.625ms
+Scanning for USB devices : 24.649ms
+Scanning for USB devices : 27.037ms
+Scanning for USB devices : 23.411ms
+Scanning for USB devices : 24.038ms
+Scanning for USB devices : 26.969ms
+Scanning for USB devices : 26.716ms
+[Licensing::Client] Successfully resolved entitlement details
+Scanning for USB devices : 24.545ms
+Scanning for USB devices : 22.507ms
+Scanning for USB devices : 26.053ms
+Scanning for USB devices : 25.806ms
+Scanning for USB devices : 25.788ms
+Scanning for USB devices : 24.773ms
+Scanning for USB devices : 21.664ms
+Scanning for USB devices : 22.851ms
+Scanning for USB devices : 23.619ms
+Scanning for USB devices : 22.644ms
+Scanning for USB devices : 21.783ms
+Scanning for USB devices : 23.662ms
+Project ID request failed, Reason: The requested URL returned error: 403 (403).
+Unknown Unity Connect error (400). Please contact support at support@unity.com while processing request "https://services.unity.com/api/unity/legacy/v1/projects/3030fd69-28ab-433f-b4bd-22b9b93c5118", HTTP error code 403
+.[Licensing::Client] Successfully updated the access token
+[Licensing::Module] Successfully updated access token: "W3v1bfBB"... (expires: 2026-10-06T16:02:43Z)
+Project ID request failed, Reason: The requested URL returned error: 403 (403).
+Unknown Unity Connect error (400). Please contact support at support@unity.com while processing request "https://services.unity.com/api/unity/legacy/v1/projects/3030fd69-28ab-433f-b4bd-22b9b93c5118", HTTP error code 403
+.[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Successfully resolved entitlement details
+Scanning for USB devices : 25.021ms
+Scanning for USB devices : 23.535ms
+Scanning for USB devices : 24.004ms
+Scanning for USB devices : 23.149ms
+Scanning for USB devices : 23.855ms
+Scanning for USB devices : 24.435ms
+Scanning for USB devices : 24.578ms
+Scanning for USB devices : 24.793ms
+Scanning for USB devices : 23.132ms
+Scanning for USB devices : 22.454ms
+Scanning for USB devices : 27.416ms
+Scanning for USB devices : 23.919ms
+Scanning for USB devices : 28.165ms
+Scanning for USB devices : 26.469ms
+Scanning for USB devices : 24.310ms
+Scanning for USB devices : 22.378ms
+[Licensing::Client] Successfully resolved entitlement details
+Scanning for USB devices : 23.421ms
+Scanning for USB devices : 23.546ms
+Scanning for USB devices : 26.915ms
+Scanning for USB devices : 24.341ms
+Scanning for USB devices : 24.275ms
+Scanning for USB devices : 25.774ms
+Scanning for USB devices : 24.681ms
+Project ID request failed, Reason: The requested URL returned error: 403 (403).
+Unknown Unity Connect error (400). Please contact support at support@unity.com while processing request "https://services.unity.com/api/unity/legacy/v1/projects/3030fd69-28ab-433f-b4bd-22b9b93c5118", HTTP error code 403
+.[Licensing::Client] Successfully updated the access token
+[Licensing::Module] Successfully updated access token: "19GPYwhf"... (expires: 2026-10-06T18:02:05Z)
+Project ID request failed, Reason: The requested URL returned error: 403 (403).
+Unknown Unity Connect error (400). Please contact support at support@unity.com while processing request "https://services.unity.com/api/unity/legacy/v1/projects/3030fd69-28ab-433f-b4bd-22b9b93c5118", HTTP error code 403
+.[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Successfully resolved entitlement details
+Scanning for USB devices : 22.407ms
+Scanning for USB devices : 22.416ms
+Scanning for USB devices : 24.731ms
+Scanning for USB devices : 26.463ms
+Scanning for USB devices : 25.280ms
+Scanning for USB devices : 23.696ms
+Scanning for USB devices : 22.187ms
+Scanning for USB devices : 24.545ms
+Scanning for USB devices : 23.672ms
+Scanning for USB devices : 24.248ms
+Scanning for USB devices : 23.578ms
+Scanning for USB devices : 27.321ms
+Scanning for USB devices : 25.085ms
+Scanning for USB devices : 23.262ms
+[Licensing::Client] Successfully resolved entitlement details
+Scanning for USB devices : 23.331ms
+Scanning for USB devices : 21.671ms
+Scanning for USB devices : 23.142ms
+Scanning for USB devices : 26.654ms
+Scanning for USB devices : 22.405ms
+Scanning for USB devices : 24.835ms
+Scanning for USB devices : 23.040ms
+Scanning for USB devices : 24.651ms
+Project ID request failed, Reason: The requested URL returned error: 403 (403).
+Unknown Unity Connect error (400). Please contact support at support@unity.com while processing request "https://services.unity.com/api/unity/legacy/v1/projects/3030fd69-28ab-433f-b4bd-22b9b93c5118", HTTP error code 403
+.Project ID request failed, Reason: The requested URL returned error: 403 (403).
+Unknown Unity Connect error (400). Please contact support at support@unity.com while processing request "https://services.unity.com/api/unity/legacy/v1/projects/3030fd69-28ab-433f-b4bd-22b9b93c5118", HTTP error code 403
+.[Licensing::Client] Successfully updated the access token
+[Licensing::Module] Successfully updated access token: "JvNl95gs"... (expires: 2026-10-06T20:01:19Z)
+Project ID request failed, Reason: The requested URL returned error: 403 (403).
+Unknown Unity Connect error (400). Please contact support at support@unity.com while processing request "https://services.unity.com/api/unity/legacy/v1/projects/3030fd69-28ab-433f-b4bd-22b9b93c5118", HTTP error code 403
+.Project ID request failed, Reason: The requested URL returned error: 403 (403).
+Unknown Unity Connect error (400). Please contact support at support@unity.com while processing request "https://services.unity.com/api/unity/legacy/v1/projects/3030fd69-28ab-433f-b4bd-22b9b93c5118", HTTP error code 403
+.[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Successfully resolved entitlement details
+Scanning for USB devices : 25.589ms
+Scanning for USB devices : 21.480ms
+Scanning for USB devices : 23.820ms
+Scanning for USB devices : 25.762ms
+Scanning for USB devices : 25.697ms
+Scanning for USB devices : 26.509ms
+Scanning for USB devices : 23.648ms
+Scanning for USB devices : 24.640ms
+Scanning for USB devices : 24.564ms
+Scanning for USB devices : 23.667ms
+Scanning for USB devices : 24.667ms
+Scanning for USB devices : 27.143ms
+Scanning for USB devices : 24.382ms
+[Licensing::Client] Successfully resolved entitlement details
+Scanning for USB devices : 23.093ms
+Scanning for USB devices : 23.544ms
+Scanning for USB devices : 23.349ms
+Scanning for USB devices : 23.688ms
+Scanning for USB devices : 24.815ms
+Scanning for USB devices : 25.408ms
+Scanning for USB devices : 25.807ms
+Project ID request failed, Reason: The requested URL returned error: 403 (403).
+Unknown Unity Connect error (400). Please contact support at support@unity.com while processing request "https://services.unity.com/api/unity/legacy/v1/projects/3030fd69-28ab-433f-b4bd-22b9b93c5118", HTTP error code 403
+.[Licensing::Client] Successfully updated the access token
+[Licensing::Module] Successfully updated access token: "STVmNONM"... (expires: 2026-10-06T22:00:51Z)
+Project ID request failed, Reason: The requested URL returned error: 403 (403).
+Unknown Unity Connect error (400). Please contact support at support@unity.com while processing request "https://services.unity.com/api/unity/legacy/v1/projects/3030fd69-28ab-433f-b4bd-22b9b93c5118", HTTP error code 403
+.[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Successfully resolved entitlement details
+Scanning for USB devices : 22.178ms
+Scanning for USB devices : 23.636ms
+Scanning for USB devices : 23.709ms
+Scanning for USB devices : 25.535ms
+Scanning for USB devices : 24.204ms
+Scanning for USB devices : 25.228ms
+Scanning for USB devices : 27.146ms
+Scanning for USB devices : 28.344ms
+Scanning for USB devices : 24.620ms
+[Licensing::Client] Successfully resolved entitlement details
+Scanning for USB devices : 22.725ms
+Scanning for USB devices : 21.527ms
+Scanning for USB devices : 24.039ms
+Scanning for USB devices : 23.382ms
+Scanning for USB devices : 24.147ms
+Scanning for USB devices : 26.308ms
+Scanning for USB devices : 24.262ms
+Scanning for USB devices : 22.751ms
+Scanning for USB devices : 22.462ms
+Scanning for USB devices : 23.958ms
+Scanning for USB devices : 24.805ms
+Scanning for USB devices : 23.740ms
+Scanning for USB devices : 23.389ms
+Project ID request failed, Reason: The requested URL returned error: 403 (403).
+Unknown Unity Connect error (400). Please contact support at support@unity.com while processing request "https://services.unity.com/api/unity/legacy/v1/projects/3030fd69-28ab-433f-b4bd-22b9b93c5118", HTTP error code 403
+.[Licensing::Client] Successfully updated the access token
+[Licensing::Module] Successfully updated access token: "zU2bg8uO"... (expires: 2026-10-07T00:00:04Z)
+Project ID request failed, Reason: The requested URL returned error: 403 (403).
+Unknown Unity Connect error (400). Please contact support at support@unity.com while processing request "https://services.unity.com/api/unity/legacy/v1/projects/3030fd69-28ab-433f-b4bd-22b9b93c5118", HTTP error code 403
+.[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Successfully resolved entitlement details
+Scanning for USB devices : 21.755ms
+Scanning for USB devices : 22.552ms
+Scanning for USB devices : 26.015ms
+Scanning for USB devices : 24.009ms
+Scanning for USB devices : 24.106ms
+Scanning for USB devices : 26.207ms
+Scanning for USB devices : 24.371ms
+[Licensing::Client] Successfully resolved entitlement details
+Scanning for USB devices : 23.117ms
+Scanning for USB devices : 22.526ms
+Scanning for USB devices : 25.508ms
+Scanning for USB devices : 26.536ms
+Scanning for USB devices : 24.806ms
+Scanning for USB devices : 26.662ms
+Scanning for USB devices : 23.485ms
+Scanning for USB devices : 22.456ms
+Scanning for USB devices : 22.825ms
+Scanning for USB devices : 25.496ms
+Scanning for USB devices : 23.659ms
+Scanning for USB devices : 23.060ms
+Scanning for USB devices : 27.327ms
+Scanning for USB devices : 22.527ms
+Scanning for USB devices : 24.357ms
+Project ID request failed, Reason: The requested URL returned error: 403 (403).
+Unknown Unity Connect error (400). Please contact support at support@unity.com while processing request "https://services.unity.com/api/unity/legacy/v1/projects/3030fd69-28ab-433f-b4bd-22b9b93c5118", HTTP error code 403
+.[Licensing::Client] Successfully updated the access token
+[Licensing::Module] Successfully updated access token: "n_TA8Fdi"... (expires: 2026-10-07T01:59:19Z)
+Project ID request failed, Reason: The requested URL returned error: 403 (403).
+Unknown Unity Connect error (400). Please contact support at support@unity.com while processing request "https://services.unity.com/api/unity/legacy/v1/projects/3030fd69-28ab-433f-b4bd-22b9b93c5118", HTTP error code 403
+.[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Successfully resolved entitlement details
+Scanning for USB devices : 21.799ms
+Scanning for USB devices : 23.468ms
+Scanning for USB devices : 23.924ms
+Scanning for USB devices : 24.928ms
+Scanning for USB devices : 23.532ms
+Scanning for USB devices : 24.832ms
+Scanning for USB devices : 24.475ms
+Scanning for USB devices : 23.805ms
+[Licensing::Client] Successfully resolved entitlement details
+Scanning for USB devices : 21.009ms
+Scanning for USB devices : 22.601ms
+Scanning for USB devices : 25.514ms
+Scanning for USB devices : 24.865ms
+Scanning for USB devices : 25.511ms
+Scanning for USB devices : 23.321ms
+Scanning for USB devices : 22.186ms
+Scanning for USB devices : 24.580ms
+Project ID request failed, Reason: The requested URL returned error: 403 (403).
+Unknown Unity Connect error (400). Please contact support at support@unity.com while processing request "https://services.unity.com/api/unity/legacy/v1/projects/3030fd69-28ab-433f-b4bd-22b9b93c5118", HTTP error code 403
+.Scanning for USB devices : 22.995ms
+Scanning for USB devices : 22.622ms
+Scanning for USB devices : 26.724ms
+Scanning for USB devices : 26.297ms
+Scanning for USB devices : 25.807ms
+Scanning for USB devices : 24.336ms
+[Licensing::Client] Successfully updated the access token
+[Licensing::Module] Successfully updated access token: "d5DNMKU9"... (expires: 2026-10-07T03:59:19Z)
+Project ID request failed, Reason: The requested URL returned error: 403 (403).
+Unknown Unity Connect error (400). Please contact support at support@unity.com while processing request "https://services.unity.com/api/unity/legacy/v1/projects/3030fd69-28ab-433f-b4bd-22b9b93c5118", HTTP error code 403
+.Project ID request failed, Reason: The requested URL returned error: 403 (403).
+Unknown Unity Connect error (400). Please contact support at support@unity.com while processing request "https://services.unity.com/api/unity/legacy/v1/projects/3030fd69-28ab-433f-b4bd-22b9b93c5118", HTTP error code 403
+.[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Successfully resolved entitlement details
+Scanning for USB devices : 22.087ms
+Scanning for USB devices : 24.596ms
+Scanning for USB devices : 26.810ms
+Scanning for USB devices : 23.050ms
+Scanning for USB devices : 25.709ms
+Scanning for USB devices : 22.550ms
+Scanning for USB devices : 23.237ms
+Scanning for USB devices : 24.594ms
+[Licensing::Client] Successfully resolved entitlement details
+Scanning for USB devices : 23.425ms
+Scanning for USB devices : 22.635ms
+Scanning for USB devices : 25.456ms
+Scanning for USB devices : 24.479ms
+Scanning for USB devices : 24.341ms
+Scanning for USB devices : 23.758ms
+Scanning for USB devices : 22.728ms
+Scanning for USB devices : 21.533ms
+Project ID request failed, Reason: The requested URL returned error: 403 (403).
+Unknown Unity Connect error (400). Please contact support at support@unity.com while processing request "https://services.unity.com/api/unity/legacy/v1/projects/3030fd69-28ab-433f-b4bd-22b9b93c5118", HTTP error code 403
+.Scanning for USB devices : 29.858ms
+Scanning for USB devices : 23.694ms
+Scanning for USB devices : 27.478ms
+Scanning for USB devices : 25.203ms
+Scanning for USB devices : 25.039ms
+Scanning for USB devices : 23.714ms
+[Licensing::Client] Successfully updated the access token
+[Licensing::Module] Successfully updated access token: "XuBNA0y1"... (expires: 2026-10-07T05:59:02Z)
+Project ID request failed, Reason: The requested URL returned error: 403 (403).
+Unknown Unity Connect error (400). Please contact support at support@unity.com while processing request "https://services.unity.com/api/unity/legacy/v1/projects/3030fd69-28ab-433f-b4bd-22b9b93c5118", HTTP error code 403
+.[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Successfully resolved entitlement details
+Scanning for USB devices : 22.834ms
+Scanning for USB devices : 21.549ms
+Scanning for USB devices : 25.337ms
+Scanning for USB devices : 25.287ms
+Scanning for USB devices : 24.039ms
+Scanning for USB devices : 24.682ms
+Scanning for USB devices : 23.428ms
+[Licensing::Client] Successfully resolved entitlement details
+Scanning for USB devices : 22.877ms
+Scanning for USB devices : 26.475ms
+Scanning for USB devices : 22.656ms
+Scanning for USB devices : 24.981ms
+Scanning for USB devices : 26.482ms
+Scanning for USB devices : 24.506ms
+Scanning for USB devices : 25.578ms
+Scanning for USB devices : 22.628ms
+Project ID request failed, Reason: The requested URL returned error: 403 (403).
+Unknown Unity Connect error (400). Please contact support at support@unity.com while processing request "https://services.unity.com/api/unity/legacy/v1/projects/3030fd69-28ab-433f-b4bd-22b9b93c5118", HTTP error code 403
+.[Licensing::Client] Successfully updated the access token
+[Licensing::Module] Successfully updated access token: "7WUxuBwM"... (expires: 2026-10-07T07:58:47Z)
+Project ID request failed, Reason: The requested URL returned error: 403 (403).
+Unknown Unity Connect error (400). Please contact support at support@unity.com while processing request "https://services.unity.com/api/unity/legacy/v1/projects/3030fd69-28ab-433f-b4bd-22b9b93c5118", HTTP error code 403
+.Scanning for USB devices : 23.036ms
+Scanning for USB devices : 21.572ms
+Scanning for USB devices : 24.095ms
+Scanning for USB devices : 24.883ms
+Scanning for USB devices : 24.466ms
+Scanning for USB devices : 23.440ms
+Scanning for USB devices : 62.754ms
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+Scanning for USB devices : 21.361ms
+Scanning for USB devices : 24.499ms
+[Licensing::Client] Successfully resolved entitlement details
+Scanning for USB devices : 23.634ms
+Scanning for USB devices : 23.583ms
+Scanning for USB devices : 23.077ms
+Scanning for USB devices : 24.481ms
+Scanning for USB devices : 24.049ms
+Scanning for USB devices : 22.591ms
+Scanning for USB devices : 21.566ms
+Scanning for USB devices : 22.529ms
+[Licensing::Client] Successfully resolved entitlement details
+Scanning for USB devices : 25.481ms
+Scanning for USB devices : 24.044ms
+Scanning for USB devices : 25.187ms
+Scanning for USB devices : 24.920ms
+Scanning for USB devices : 22.101ms
+Scanning for USB devices : 25.057ms
+Scanning for USB devices : 25.874ms
+Scanning for USB devices : 26.934ms
+Scanning for USB devices : 29.512ms
+Scanning for USB devices : 27.467ms
+Project ID request failed, Reason: The requested URL returned error: 403 (403).
+Unknown Unity Connect error (400). Please contact support at support@unity.com while processing request "https://services.unity.com/api/unity/legacy/v1/projects/3030fd69-28ab-433f-b4bd-22b9b93c5118", HTTP error code 403
+.[Licensing::Client] Successfully updated the access token
+[Licensing::Module] Successfully updated access token: "Pr4qrtwX"... (expires: 2026-10-07T09:58:50Z)
+Project ID request failed, Reason: The requested URL returned error: 403 (403).
+Unknown Unity Connect error (400). Please contact support at support@unity.com while processing request "https://services.unity.com/api/unity/legacy/v1/projects/3030fd69-28ab-433f-b4bd-22b9b93c5118", HTTP error code 403
+.[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Successfully resolved entitlement details
+Scanning for USB devices : 23.820ms
+Scanning for USB devices : 22.677ms
+Scanning for USB devices : 24.475ms
+Scanning for USB devices : 23.863ms
+Scanning for USB devices : 27.491ms
+Scanning for USB devices : 24.041ms
+Scanning for USB devices : 25.275ms
+Scanning for USB devices : 22.647ms
+IPCStream (hubIPCService): IPC stream failed to read (Not connected)
+[Licensing::Client] Successfully resolved entitlement details
+Scanning for USB devices : 22.837ms
+[Licensing::Client] Successfully resolved entitlement details
+Scanning for USB devices : 23.081ms
+Scanning for USB devices : 21.713ms
+Scanning for USB devices : 24.736ms
+Unexpected transport error from import worker 1 (possible crash). code=10054 error=An existing connection was forcibly closed by the remote host. -- for more information, check Logs/AssetImportWorker1.log
+0x00007ffee53f4e2e (Unity) StackWalker::ShowCallstack
+0x00007ffee6c2f369 (Unity) PlatformStacktrace::GetStacktrace
+0x00007ffee6c2fbee (Unity) Stacktrace::GetStacktrace
+0x00007ffee53a587f (Unity) DebugStringToFile
+0x00007ffee7c40ffe (Unity) WorkerManagerASIO::OnTransportError
+0x00007ffee7c4da2a (Unity) TcpMessagingSession::OnReceiveCompleted
+0x00007ffee7c10207 (Unity) asio::asio_handler_invoke<asio::detail::binder2<<lambda_e236e2fc9e7ee82e7162d86d6937b199>,std::error_code,unsigned __int64> >
+0x00007ffee7c12aea (Unity) asio::detail::executor_function::complete<asio::detail::binder2<<lambda_e236e2fc9e7ee82e7162d86d6937b199>,std::error_code,unsigned __int64>,std::allocator<void> >
+0x00007ffee7c090c9 (Unity) asio::io_context::basic_executor_type<std::allocator<void>,4>::execute<asio::detail::executor_function>
+0x00007ffee7c13f5e (Unity) asio::detail::handler_work_base<asio::any_io_executor,void,asio::io_context,asio::executor,void>::dispatch<asio::detail::binder2<<lambda_e236e2fc9e7ee82e7162d86d6937b199>,std::error_code,unsigned __int64>,<lambda_e236e2fc9e7ee82e7162d86d6937b199> >
+0x00007ffee7c20867 (Unity) asio::detail::win_iocp_socket_recv_op<asio::mutable_buffers_1,<lambda_e236e2fc9e7ee82e7162d86d6937b199>,asio::any_io_executor>::do_complete
+0x00007ffee7c0ca91 (Unity) asio::detail::win_iocp_io_context::do_one
+0x00007ffee7c0dcb4 (Unity) asio::detail::win_iocp_io_context::run
+0x00007ffee7c1d809 (Unity) IOService::Run
+0x00007ffee7c1e46b (Unity) IOService::Impl::ThreadFunction
+0x00007ffee6c22b80 (Unity) Thread::RunThreadWrapper
+0x00007ff801b3cd87 (KERNEL32) BaseThreadInitThunk
+0x00007ff8033ccaec (ntdll) RtlUserThreadStart
+
+[OnDemand] Worker 1: WorkerState(Connected), ImporterState(Idle) session transport - while handling artifactKey Guid(00000000000000000000000000000000) Importer(-2,00000000000000000000000000000000) - path  - see Logs/AssetImportWorker1.log
+Unexpected transport error from import worker 2 (possible crash). code=10054 error=An existing connection was forcibly closed by the remote host. -- for more information, check Logs/AssetImportWorker2.log
+0x00007ffee53f4e2e (Unity) StackWalker::ShowCallstack
+0x00007ffee6c2f369 (Unity) PlatformStacktrace::GetStacktrace
+0x00007ffee6c2fbee (Unity) Stacktrace::GetStacktrace
+0x00007ffee53a587f (Unity) DebugStringToFile
+0x00007ffee7c40ffe (Unity) WorkerManagerASIO::OnTransportError
+0x00007ffee7c4da2a (Unity) TcpMessagingSession::OnReceiveCompleted
+0x00007ffee7c10207 (Unity) asio::asio_handler_invoke<asio::detail::binder2<<lambda_e236e2fc9e7ee82e7162d86d6937b199>,std::error_code,unsigned __int64> >
+0x00007ffee7c12aea (Unity) asio::detail::executor_function::complete<asio::detail::binder2<<lambda_e236e2fc9e7ee82e7162d86d6937b199>,std::error_code,unsigned __int64>,std::allocator<void> >
+0x00007ffee7c090c9 (Unity) asio::io_context::basic_executor_type<std::allocator<void>,4>::execute<asio::detail::executor_function>
+0x00007ffee7c13f5e (Unity) asio::detail::handler_work_base<asio::any_io_executor,void,asio::io_context,asio::executor,void>::dispatch<asio::detail::binder2<<lambda_e236e2fc9e7ee82e7162d86d6937b199>,std::error_code,unsigned __int64>,<lambda_e236e2fc9e7ee82e7162d86d6937b199> >
+0x00007ffee7c20867 (Unity) asio::detail::win_iocp_socket_recv_op<asio::mutable_buffers_1,<lambda_e236e2fc9e7ee82e7162d86d6937b199>,asio::any_io_executor>::do_complete
+0x00007ffee7c0ca91 (Unity) asio::detail::win_iocp_io_context::do_one
+0x00007ffee7c0dcb4 (Unity) asio::detail::win_iocp_io_context::run
+0x00007ffee7c1d809 (Unity) IOService::Run
+0x00007ffee7c1e46b (Unity) IOService::Impl::ThreadFunction
+0x00007ffee6c22b80 (Unity) Thread::RunThreadWrapper
+0x00007ff801b3cd87 (KERNEL32) BaseThreadInitThunk
+0x00007ff8033ccaec (ntdll) RtlUserThreadStart
+
+[OnDemand] Worker 2: WorkerState(Connected), ImporterState(Idle) session transport - while handling artifactKey Guid(00000000000000000000000000000000) Importer(-2,00000000000000000000000000000000) - path  - see Logs/AssetImportWorker2.log
+IPCStream (Upm-37504): IPC stream failed to read (Not connected)
+[LAYOUT] About to save layout C:\Users\mrglo\Documents\GitHub\Cosmic-Shore\UserSettings\Layouts\default-6000.dwlt
+[LAYOUT] About to save layout C:/Users/mrglo/AppData/Roaming/Unity/Editor-5.x/Preferences\Layouts\current\default-6000.dwlt
+
