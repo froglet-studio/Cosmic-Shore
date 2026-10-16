@@ -65,6 +65,25 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Regatta Squirrel AI skims the ring face of the rail (`Ys-bleeding-edge`, 2026-10-17) — NOT EDITOR-VERIFIED
+
+**What landed:** `SkimRaceAIConfig_Regatta.asset`, written by `learn_from_flights.py --write` from the editor flights
+(policy `regatta-learned-20261016-3flights`, the three fastest won races): `SkimHeight` 4.346 -> **-6.498** (the minus
+puts the AI on the rail's - face, the side every ring sits on, 22 u off the rail; people skim it 94% of the time),
+`LookaheadSeconds` 1.016 -> 0.93, `LookaheadMin` 26.8 -> 60, `MassGuardMargin` 1.298 -> 1.379, `StickGainPerDegree`
+0.041 -> 0.032. No code changed (`SkimRaceDriver` already takes the face from `SkimHeight`'s sign). Why:
+`Docs/AI_SYSTEM/SITUATION_RECORDING_PLAN.md` §8; numbers: `Docs/AI_SYSTEM/LEARNED_FROM_FLIGHTS.md`.
+**Verified without the editor:** `author_skimrace_ai_config.py --check`, `learn_from_flights.py --self-test`.
+**Verify in editor:**
+1. Regatta I1, solo, Squirrel against AI Squirrels (or let the AI fly your hull: Third Eye ▸ Pilots ▸ AI). Watch an AI
+   Squirrel in the Third Eye's Chase camera: it skims on the side of the rail the rings are on, and threads rings
+   without crossing through the rail.
+2. Count its rail hits over a full race (the Third Eye readout, or its stored flight's Slowed episodes): fewer than
+   before. Its rings when you finish: more than the old median of 14 of 24.
+3. To compare with the old AI: `git revert` this commit's asset change (one file), race again, compare.
+4. Fail = it hits the rail more, stalls at a ring, or flips faces every ring. Undo: set `SkimHeight` back to 4.346 in
+   `Tools/Build/author_skimrace_ai_config.py` (`REGATTA_LEARNED`) and re-run it.
+
 ### 🔴 Multiplayer test logs collect themselves; one Send to Claude carries every player's (`Ys-bleeding-edge`, 2026-10-15) — NOT EDITOR-VERIFIED
 
 **What landed:** `NetTestLogs` (editor, `Assets/_Scripts/Editor/Diagnostics/`) keeps each editor's console from Play
