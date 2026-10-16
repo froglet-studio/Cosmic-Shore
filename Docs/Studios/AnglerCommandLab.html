@@ -167,7 +167,6 @@
     tameTime: 2.5,        // lab: seconds held to tame
     tameDecay: 0.6,       // lab: taming lost per second outside the hold
     squadCap: 24,         // lab: most creatures on the leash at once
-    omniTameRadius: 300,  // lab: an OMNI crystal tames every wild herbivore this close to the hull, nearest first, up to the leash capacity (the designer, 2026-10-15)
     leashTow: 1.6,        // lab: a FOLLOWING creature may swim this × its own max to hold formation (attacks stay at game speed)
     formBack: 6,          // lab: how far behind the hull the school's ring sits (u)
     // --- commanded behaviour ---
@@ -186,7 +185,7 @@
     // --- squad sizes (lab; the game's per-cell caps: Clawfish 6, QuadFish 8, Tadpole 6 per pod) ---
     clawN: 6, quadN: 6, tadN: 12,
     // --- the command schemes (all lab) ---
-    paintRange: 160, paintCone: 8,                  // Spotlight: reach (u), half-angle (deg)
+    paintRange: 3200, paintCone: 8,                 // Spotlight + Sling painter: reach (u, 20x round 2's 160 - the designer, 2026-10-16), half-angle (deg)
     flareSpeed: 260, flareRange: 260, flareAssist: 5, flareRadius: 24, flareCd: 0.5,   // Pheromone dart
     gazeRange: 240, gazeCone: 5, gazeDwell: 0.35,   // Gaze lock
     loopStep: 4, loopClose: 18, loopDepth: 40, loopMin: 120,   // Lasso
@@ -194,6 +193,9 @@
     // Sling painter (round 2, the designer's pick: the sling + the painter, the other trigger erases). All lab.
     brushMin: 0.35,       // a light squeeze paints with this share of the full brush; a full pull uses all of it
     eraseCone: 4,         // the eraser's half-angle at a full pull (deg); the paint brush uses paintCone
+    brushNear: 6,         // the brush's radius at the nose (u, at a full pull): close-up prisms paint and erase too (the designer, 2026-10-16)
+    dashFrac: 0.75,       // the Time ability: the hull dashes this share of the way to its school's centroid (the designer, 2026-10-16)
+    dashTime: 0.35,       // ...over this many seconds (quick, but never a pop)
     homeTurn: 12,         // how sharply a thrown creature homes on its painted prism (/s)
     aiErase: 1,           // the commander AI uses the eraser (0 = never; the eraser's own control)
     feralSense: 40,       // Feral baseline: a tamed creature attacks enemy prisms within this of itself
@@ -207,7 +209,7 @@
   const SPEC = [
     ['Command', 'spareOwn', 0, 1, 1, 'Never target my prisms', 'On: an order\'s target list skips your own prisms. A mouthful can still eat them when the cell\'s diet allows it (Cell tab).'],
     ['Command', 'urgency', 0, 2, 1, 'Commanded aggression (L0–L2)', 'The LightFauna aggression row a commanded creature runs at: speed ×1 / 1.25 / 1.6 and mouth reach ×1 / 1.4 / 1.8 (LightFauna.cs).'],
-    ['Command', 'paintRange', 40, 400, 5, 'Spotlight reach (u)', 'How far the beam paints prisms.', 'paint'],
+    ['Command', 'paintRange', 40, 4000, 20, 'Spotlight reach (u)', 'How far the beam paints prisms.', 'paint'],
     ['Command', 'paintCone', 2, 25, 0.5, 'Spotlight half-angle (°)', 'Wider paints more per sweep but also catches neighbours.', 'paint'],
     ['Command', 'flareSpeed', 60, 600, 10, 'Dart speed (u/s)', 'How fast the pheromone dart flies.', 'flare'],
     ['Command', 'flareRange', 60, 600, 10, 'Dart range (u)', 'How far it flies before it fizzles.', 'flare'],
@@ -226,7 +228,10 @@
     ['Command', 'slingCatch', 2, 30, 1, 'Catch radius (u)', 'A thrown creature that passes within this of an enemy prism latches on.', 'sling'],
     ['Command', 'slingCluster', 4, 80, 1, 'Latch cluster (u)', 'It then eats that prism\'s domain within this of the latch.', 'sling'],
     ['Command', 'slingTime', 0.5, 8, 0.1, 'Throw lasts (s)', 'A creature that latches onto nothing returns after this.', 'sling'],
-    ['Command', 'paintRange', 40, 400, 5, 'Brush reach (u)', 'How far the paint brush and the eraser reach.', 'slingpaint'],
+    ['Command', 'paintRange', 40, 4000, 20, 'Brush reach (u)', 'How far the paint brush and the eraser reach.', 'slingpaint'],
+    ['Command', 'brushNear', 0, 30, 0.5, 'Brush radius at the nose (u)', 'The brush never narrows below this near the hull, so close-up prisms paint and erase too (at a full pull; a light squeeze scales it like the cone).', 'slingpaint'],
+    ['Command', 'dashFrac', 0, 1, 0.05, 'Dash to the school (share)', 'The Time ability: press it and the hull dashes this share of the way to the centroid of every creature it leads, measured when pressed.', 'slingpaint'],
+    ['Command', 'dashTime', 0.05, 2, 0.05, 'Dash time (s)', 'How long the dash takes.', 'slingpaint'],
     ['Command', 'paintCone', 2, 25, 0.5, 'Brush half-angle (°)', 'The paint brush at a full pull of RT. A light squeeze paints a narrower line.', 'slingpaint'],
     ['Command', 'brushMin', 0.1, 1, 0.05, 'Light-squeeze brush', 'Share of the full brush a just-past-halfway squeeze paints with (and the same for the eraser). 1 = the trigger depth does not matter.', 'slingpaint'],
     ['Command', 'eraseCone', 1, 25, 0.5, 'Eraser half-angle (°)', 'The eraser (LT) at a full pull. Narrower than the brush, so it can pick a neighbour out.', 'slingpaint'],
@@ -244,7 +249,6 @@
     ['Lure', 'leashTow', 1, 4, 0.05, 'Leash tow ×', 'A following creature may swim this many times its own max speed to keep formation. 1 = no tow: at 1 the squad (32–40 u/s) cannot catch a 40 u/s hull and falls out of sight behind the chase camera. Attacks always run at the game\'s own speeds.'],
     ['Lure', 'formBack', -20, 60, 1, 'School ring behind (u)', 'Where the squad\'s ring sits behind the hull. Small values keep the school in the chase camera\'s view.'],
     ['Lure', 'squadCap', 3, 60, 1, 'Leash capacity', 'Most creatures you can lead at once.'],
-    ['Lure', 'omniTameRadius', 50, 1200, 10, 'Omni tame reach (u)', 'Collecting an omni crystal tames every wild herbivore within this of the hull at once, nearest first, up to the leash capacity. The lab has no crystals: press O for the pickup.'],
     ['Squad', 'clawN', 0, 12, 1, 'Clawfish', 'Squad size in missions.'],
     ['Squad', 'quadN', 0, 12, 1, 'QuadFish', 'Squad size in missions.'],
     ['Squad', 'tadN', 0, 30, 1, 'Tadpoles', 'Squad size in missions.'],
@@ -320,11 +324,13 @@
   const CORE = {
     // trigger depth (0.5 = the press threshold, 1 = a full pull) -> share of the full brush
     brushScale(depth, brushMin) { return brushMin + (1 - brushMin) * clamp(((depth || 0) - 0.5) / 0.5, 0, 1); },
-    // is point p inside the cone from o along unit f (half-angle coneDeg, reach)? closer than 1 u never counts
-    inCone(o, f, p, coneDeg, reach) {
-      const dx = p[0] - o[0], dy = p[1] - o[1], dz = p[2] - o[2], d = Math.hypot(dx, dy, dz);
-      if (d > reach || d < 1) return false;
-      return (dx * f[0] + dy * f[1] + dz * f[2]) / d > Math.cos(coneDeg * D2R);
+    // is point p inside the brush from o along unit f: ahead of the nose, within reach along the axis, and no further from
+    // the axis than the cone's radius there (half-angle coneDeg) or nearR, whichever is wider - so close-up prisms count
+    inBrush(o, f, p, coneDeg, reach, nearR) {
+      const dx = p[0] - o[0], dy = p[1] - o[1], dz = p[2] - o[2], along = dx * f[0] + dy * f[1] + dz * f[2];
+      if (along < 0 || along > reach) return false;
+      const perp2 = Math.max(0, dx * dx + dy * dy + dz * dz - along * along), r = Math.max(nearR, along * Math.tan(coneDeg * D2R));
+      return perp2 <= r * r;
     },
     // the candidate nearest `from`, each claim on it costing 900 (30 u squared) so a squad spreads over a set
     pickTarget(from, cands, claims) {
@@ -352,17 +358,16 @@
     tameStep(tame, inHold, dt, tameTime, decay) { return inHold ? tame + dt / tameTime : Math.max(0, tame - decay * dt); },
     // where the esca hangs
     lurePoint(p, f, u, ahead) { return [p[0] + f[0] * ahead + u[0] * 2.5, p[1] + f[1] * ahead + u[1] * 2.5, p[2] + f[2] * ahead + u[2] * 2.5]; },
-    // the omni crystal's tame: the indices of the points within radius of from, nearest first (ties by index), at most room
-    omniTameOrder(from, pts, radius, room) {
-      if (room <= 0) return [];
-      const r2 = radius * radius, near = [];
-      for (let i = 0; i < pts.length; i++) {
-        const dx = pts[i][0] - from[0], dy = pts[i][1] - from[1], dz = pts[i][2] - from[2], d2 = dx * dx + dy * dy + dz * dz;
-        if (d2 <= r2) near.push([d2, i]);
-      }
-      near.sort((a, b) => a[0] - b[0] || a[1] - b[1]);
-      return near.slice(0, room).map((n) => n[1]);
+    // a painted order's pick, regardless of distance: the candidate with the fewest claims, then the most recently
+    // painted (largest stamp), then the lowest index - so a squad fans out over the newest paint first
+    pickRecent(stamps, claims) {
+      let best = -1;
+      for (let i = 0; i < stamps.length; i++)
+        if (best < 0 || claims[i] < claims[best] || (claims[i] === claims[best] && stamps[i] > stamps[best])) best = i;
+      return best;
     },
+    // the Time ability's landing point: frac of the way from p to the school's centroid c
+    dashPoint(p, c, frac) { return [p[0] + (c[0] - p[0]) * frac, p[1] + (c[1] - p[1]) * frac, p[2] + (c[2] - p[2]) * frac]; },
   };
 
   // ===================================================================================================
@@ -457,11 +462,11 @@
     const n = SCENE.n;
     world = {
       t: 0, dt: 1 / 60, rnd, mode, scheme,
-      alive: new Uint8Array(n).fill(1), painted: new Uint8Array(n), marked: new Uint8Array(n), claims: new Uint8Array(n), ordered: new Float32Array(n),
+      alive: new Uint8Array(n).fill(1), painted: new Uint8Array(n), marked: new Uint8Array(n), paintT: new Float32Array(n), claims: new Uint8Array(n), ordered: new Float32Array(n),
       paintedList: [],
       v: { p: START_P.slice(), f: [0, 0, -1], u: [0, 1, 0], r: [1, 0, 0], speed: P.cruise },
       fauna: [], squadSel: -1, lureOn: false, L: [0, 0, 0],
-      prev: { cmd: false, squad: false, recall: false, omni: false }, lastInput: {},
+      prev: { cmd: false, squad: false, recall: false, omni: false, dash: false }, lastInput: {}, dash: null,
       cmd: { holding: false, holdT: 0, loop: [], loopLen: 0, loopShow: null, flares: [], flareCd: 0, gazeSt: -1, gazeDwell: 0, gazeLock: -1, sling: 0 },
       fx: { blooms: [] },
       task: null, taskIdx: -1, structAlive0: SCENE.structs.map((s) => s.ids.length),
@@ -533,7 +538,10 @@
   function pickTarget(w, f) {
     releaseClaim(w, f);
     const live = f.set.filter((i) => w.alive[i]);
-    const k = CORE.pickTarget([f.x, f.y, f.z], live.map(ppos), live.map((i) => w.claims[i])), best = k < 0 ? -1 : live[k];
+    // a Sling-painter order picks the newest paint first, regardless of distance (the designer, 2026-10-16); every
+    // other order (the sling's latch cluster, the round-1 schemes) picks the nearest
+    const k = f.recent ? CORE.pickRecent(live.map((i) => w.paintT[i]), live.map((i) => w.claims[i]))
+      : CORE.pickTarget([f.x, f.y, f.z], live.map(ppos), live.map((i) => w.claims[i])), best = k < 0 ? -1 : live[k];
     if (best < 0) { f.set = null; f.state = ST.IDLE; return; }
     f.target = best; w.claims[best]++;
   }
@@ -625,8 +633,8 @@
     } else if (sch === 'slingpaint') {
       // ===== SLING PAINTER (round 2): the block the Unity port copies line for line (AnglerSlingPainter.cs) =====
       const erasing = (inp.erase || 0) > 0.5;
-      if (erasing) brushStroke(w, P.eraseCone * brushScale(inp.erase), false);
-      else if (held) brushStroke(w, P.paintCone * brushScale(inp.cmd), true);
+      if (erasing) brushStroke(w, P.eraseCone * brushScale(inp.erase), false, P.brushNear * brushScale(inp.erase));
+      else if (held) brushStroke(w, P.paintCone * brushScale(inp.cmd), true, P.brushNear * brushScale(inp.cmd));
       if (held) for (const f of w.fauna) if (inSquad(w, f) && (f.state === ST.IDLE || f.state === ST.ATTACK)) { releaseClaim(w, f); f.set = null; f.state = ST.GATHER; }
       if (edgeUp) throwAtPaint(w);
     } else if (sch === 'sling') {
@@ -638,14 +646,14 @@
   // brushScale: trigger depth (0.5 = the press threshold, 1 = a full pull) -> share of the full brush.
   function brushScale(depth) { return CORE.brushScale(depth, P.brushMin); }
   // brushStroke: every alive prism inside the cone (half-angle coneDeg, reach paintRange) is painted (paint) or cleaned.
-  function brushStroke(w, coneDeg, paint) {
+  function brushStroke(w, coneDeg, paint, nearR) {
     const v = w.v;
     let removed = false;
     for (let i = 0; i < SCENE.n; i++) {
       if (!w.alive[i] || (paint ? w.painted[i] : !(w.painted[i] || w.marked[i]))) continue;
       if (paint && P.spareOwn && SCENE.dom[i] === 0) continue;
-      if (!CORE.inCone(v.p, v.f, [SCENE.px[i], SCENE.py[i], SCENE.pz[i]], coneDeg, P.paintRange)) continue;
-      if (paint) { w.painted[i] = 1; w.paintedList.push(i); }
+      if (!CORE.inBrush(v.p, v.f, [SCENE.px[i], SCENE.py[i], SCENE.pz[i]], coneDeg, P.paintRange, nearR)) continue;
+      if (paint) { w.painted[i] = 1; w.paintT[i] = w.t; w.paintedList.push(i); }
       else { w.painted[i] = 0; removed = true; if (w.marked[i]) { w.marked[i] = 0; strikeFromOrders(w, i); } }
     }
     if (removed) w.paintedList = w.paintedList.filter((i) => w.painted[i]);
@@ -670,7 +678,7 @@
     for (const f of w.fauna) {
       if (!inSquad(w, f) || f.state === ST.FLUNG || f.state === ST.WILD || f.state === ST.LURED) continue;
       const gathered = f.state === ST.GATHER;
-      releaseClaim(w, f); f.set = ids; f.hold = 0; f.focus = null; f.state = ST.ATTACK;
+      releaseClaim(w, f); f.set = ids; f.recent = true; f.hold = 0; f.focus = null; f.state = ST.ATTACK;
       pickTarget(w, f); if (f.state !== ST.ATTACK) continue;
       if (gathered) {
         f.state = ST.FLUNG; f.homing = true; f.flungT = 0; f.spd = P.slingSpeed;
@@ -808,7 +816,7 @@
         f.flungT += dt;
         if (f.target < 0 || !w.alive[f.target]) { pickTarget(w, f); if (f.state === ST.IDLE) { f.homing = false; continue; } }
         const t = f.target, d = steer(f, SCENE.px[t], SCENE.py[t], SCENE.pz[t], P.slingSpeed, P.homeTurn, dt);
-        if (d < reach || f.flungT > P.slingTime * 2) { f.state = ST.ATTACK; f.homing = false; f.spd = Math.min(f.spd, maxS * aSpd); }
+        if (d < reach) { f.state = ST.ATTACK; f.homing = false; f.spd = Math.min(f.spd, maxS * aSpd); }   // no give-up: any distance, limited only by speed
         continue;
       }
       if (f.state === ST.FLUNG) {
@@ -869,17 +877,30 @@
     return lured;
   }
 
-  // An OMNI crystal (the game's omni pickup; the lab has no crystals, so O stands in for it): every wild or lured
-  // herbivore within omniTameRadius of the hull is tamed at once, nearest first, up to the leash capacity.
-  function omniTame(w) {
-    const wild = w.fauna.filter((f) => f.state === ST.WILD || f.state === ST.LURED);
-    const picks = CORE.omniTameOrder(w.v.p, wild.map((f) => [f.x, f.y, f.z]), P.omniTameRadius, P.squadCap - schoolSize(w));
-    for (const k of picks) {
-      const f = wild[k]; f.state = ST.IDLE; f.tame = 1; w.m.tamed++;
-      if (w.m.firstTameT == null) w.m.firstTameT = w.t;
-      if (w.m.tamed >= 6 && w.m.tame6T == null) w.m.tame6T = w.t;
-    }
-    return picks.length;
+  // An OMNI crystal (the game's omni pickup; the lab has no crystals, so O stands in for it, at the hull): the crystal
+  // MORPHS into a random creature that joins the school (the designer, 2026-10-16). Up to the leash capacity.
+  function omniMorph(w) {
+    if (schoolSize(w) >= P.squadCap) return false;
+    makeFauna(w, Math.floor(w.rnd() * SPECIES.length), w.v.p.slice(), ST.IDLE);
+    w.m.morphs = (w.m.morphs || 0) + 1;
+    return true;
+  }
+
+  // The TIME ability: the hull dashes dashFrac of the way to the centroid of every creature it leads, measured at the
+  // press (the designer, 2026-10-16). No school, no dash.
+  function startDash(w) {
+    const school = w.fauna.filter((f) => f.state >= ST.IDLE);
+    if (!school.length) return false;
+    const c = [0, 0, 0];
+    for (const f of school) { c[0] += f.x / school.length; c[1] += f.y / school.length; c[2] += f.z / school.length; }
+    w.dash = { from: w.v.p.slice(), to: CORE.dashPoint(w.v.p, c, P.dashFrac), t0: w.t };
+    return true;
+  }
+  function dashStep(w) {
+    const D = w.dash; if (!D) return;
+    const k = clamp((w.t - D.t0) / Math.max(1e-3, P.dashTime), 0, 1), e = k * k * (3 - 2 * k);
+    w.v.p = [D.from[0] + (D.to[0] - D.from[0]) * e, D.from[1] + (D.to[1] - D.from[1]) * e, D.from[2] + (D.to[2] - D.from[2]) * e];
+    if (k >= 1) w.dash = null;
   }
 
   // The KEEPER (the designer, 2026-10-16): the Angler always leads at least one creature. With the school empty, one of
@@ -898,13 +919,15 @@
     const w = world; if (!w) return;
     inp = inp || {};
     const cmdHeld = (inp.cmd || 0) > 0.5, edgeDown = cmdHeld && !w.prev.cmd, edgeUp = !cmdHeld && w.prev.cmd;
-    const sqEdge = !!inp.squad && !w.prev.squad, rcEdge = !!inp.recall && !w.prev.recall, omEdge = !!inp.omni && !w.prev.omni;
+    const sqEdge = !!inp.squad && !w.prev.squad, rcEdge = !!inp.recall && !w.prev.recall, omEdge = !!inp.omni && !w.prev.omni, dsEdge = !!inp.dash && !w.prev.dash;
     if (edgeDown) { w.m.inputs++; w.m.presses++; } if (sqEdge) w.m.inputs++; if (rcEdge) w.m.inputs++;
-    w.prev.cmd = cmdHeld; w.prev.squad = !!inp.squad; w.prev.recall = !!inp.recall; w.prev.omni = !!inp.omni; w.lastInput = inp;
+    w.prev.cmd = cmdHeld; w.prev.squad = !!inp.squad; w.prev.recall = !!inp.recall; w.prev.omni = !!inp.omni; w.prev.dash = !!inp.dash; w.lastInput = inp;
     flyVessel(w, inp, dt);
+    if (dsEdge) startDash(w);
+    dashStep(w);
     if (sqEdge) w.squadSel = w.squadSel >= SPECIES.length - 1 ? -1 : w.squadSel + 1;
     if (rcEdge) for (const f of w.fauna) if (inSquad(w, f)) { releaseClaim(w, f); f.set = null; f.state = ST.IDLE; f.hold = 0; }
-    if (omEdge) omniTame(w);
+    if (omEdge) omniMorph(w);
     ensureKeeper(w);
     w.lureOn = (inp.lure || 0) > 0.5;
     w.L = CORE.lurePoint(w.v.p, w.v.f, w.v.u, P.lureAhead);
@@ -1157,7 +1180,7 @@
   let lastHumanT = -1e9;
   function easeIn(x) { return x < 0 ? Math.cos(x * Math.PI / 4) - 1 : -(Math.cos(x * Math.PI / 4) - 1); }   // InputController ease
   function humanInput() {
-    const inp = { pitch: 0, yaw: 0, boost: 0, lure: 0, cmd: 0, erase: 0, squad: false, recall: false, omni: false };
+    const inp = { pitch: 0, yaw: 0, boost: 0, lure: 0, cmd: 0, erase: 0, squad: false, recall: false, omni: false, dash: false };
     const k = (c) => keys.has(c);
     inp.yaw = (k('KeyD') || k('ArrowRight') ? 1 : 0) - (k('KeyA') || k('ArrowLeft') ? 1 : 0);
     inp.pitch = (k('KeyW') || k('ArrowUp') ? 1 : 0) - (k('KeyS') || k('ArrowDown') ? 1 : 0);
@@ -1168,6 +1191,7 @@
     inp.squad = k('KeyQ') || k('Tab');
     inp.recall = k('KeyX');
     inp.omni = k('KeyO');
+    inp.dash = k('KeyT');
     let pads = [];
     try { pads = navigator.getGamepads ? Array.from(navigator.getGamepads()).filter(Boolean) : []; } catch (e) { pads = []; }
     const g = pads[0];
@@ -1184,6 +1208,7 @@
       inp.cmd = Math.max(inp.cmd, b(7)); inp.erase = Math.max(inp.erase, b(6)); inp.lure = Math.max(inp.lure, b(2));
       inp.squad = inp.squad || b(0) > 0.5; inp.boost = Math.max(inp.boost, b(5));
       inp.recall = inp.recall || b(1) > 0.5;
+      inp.dash = inp.dash || b(3) > 0.5;   // Y: the Time ability (the game's Button4)
     }
     if (touch.stick) { inp.yaw = clamp(touch.sx, -1, 1); inp.pitch = clamp(-touch.sy, -1, 1); }
     if (touch.lure) inp.lure = 1; if (touch.cmd) inp.cmd = 1; if (touch.erase) inp.erase = 1; if (touch.squad) inp.squad = true; if (touch.boost) inp.boost = 1;
@@ -1410,7 +1435,7 @@
       el.textContent = name + ' ' + list.length + (ball ? ' · ' + ball + ' in the ball' : '') + (busy ? ' · ' + busy + ' hunting' : '');
       bar.appendChild(el);
     }
-    $('hint').textContent = PLATFORM.device === 'phone' ? '' : 'W A S D steer · Shift boost · F LURE · Space / left mouse PAINT + COMMAND · V / right mouse ERASE · Q / Tab SQUAD · X recall · O omni crystal (tames all near) · C camera · P pause · R restart. Pad (the game\'s map): two sticks fly, RT paint + command, LT erase, X lure, A squad, B recall, RB boost.';
+    $('hint').textContent = PLATFORM.device === 'phone' ? '' : 'W A S D steer · Shift boost · F LURE · Space / left mouse PAINT + COMMAND · V / right mouse ERASE · Q / Tab SQUAD · X recall · T dash to the school (Time) · O omni crystal (becomes a creature) · C camera · P pause · R restart. Pad (the game\'s map): two sticks fly, RT paint + command, LT erase, X lure, A squad, B recall, Y dash to the school, RB boost.';
   }
   function box(w, st, color, label) {
     const ids = aliveIds(w, st); if (!ids.length) return;
@@ -1589,7 +1614,7 @@
       '<li>The Angler\'s flight is a plain pitch/yaw model with the game\'s dual-stick mix on a pad, not the game\'s VesselTransformer. Its speeds are proposals.</li>' +
       '<li>No game code lets anything command a creature. Fauna.Goal is overwritten on every behaviour tick, so a port needs a persistent goal provider. Commanding here bends what a creature steers to; it still eats by its own mouthful rule.</li>' +
       '<li>Taming keeps a creature in the cell controller\'s colour with a leash, because the locked ecology rule says a cell never holds two fauna colours. Whether tamed fauna change colour is a design decision.</li>' +
-      '<li>No separation between creatures, no starvation (the keeper never starving is a game-only rule), no breeding, no predators (sharks eat creatures, never prisms), no shields, no danger prisms, no rival vessels, no network.</li>' +
+      '<li>No separation between creatures, no starvation (the keeper never starving is a game-only rule), no breeding, no flora (the Mass ability grows plants only in the game), no elements or level-5 upgrades (shielded paint, fauna theft), no wild fauna diet (in the game every creature prefers painted prisms), no predators (sharks eat creatures, never prisms), no shields, no danger prisms, no rival vessels (so no Charge lock-on), no network.</li>' +
       '<li>The battlefield is one fixed stand-in (two Ruby, two Gold and one Jade structure), not a cell from a real mode. Prism spacing is 4 u on trails.</li>' +
       '<li>The mouthful takes its neighbours nearest-first. The game takes them in its spatial index\'s order.</li>' +
       '<li>The commander AI is the lab\'s own. Its runs (approach, act, break away) are one competent style, and a better pilot could change a scheme\'s numbers.</li></ul>';

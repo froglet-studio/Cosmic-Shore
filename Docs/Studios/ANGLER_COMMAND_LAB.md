@@ -30,6 +30,34 @@ creatures, the cell and the way they eat are the game's own, read from the asset
 Everything else (the Angler's speeds, the lure, the leash, every command scheme) is lab-only and labelled
 that way in the page.
 
+## Round 3 (2026-10-16): 20x reach, newest paint first, the dash, the omni creature, and the element map
+
+The designer's third playtest asked for nine things. What the page models changed first; the rest is game-only.
+
+| Ask | Where it lives |
+|---|---|
+| Paint and erase reach **20x** (160 → 3200 u), and work **close up** | Page: `paintRange` 3200; new `brushNear` 6 u; `CORE.inBrush` replaces `inCone` (the brush never narrows below `brushNear` at the nose) |
+| Thrown fauna go for the **most recently painted** prisms, **regardless of distance**, limited only by speed | Page: `CORE.pickRecent` (fewest claims, then newest paint); a homing throw never gives up |
+| The **Time** ability: dash **75%** of the way to the school's centroid | Page: `dashFrac` 0.75, `dashTime` 0.35 s, `CORE.dashPoint`; key T, pad Y |
+| An **omni crystal morphs into a random creature** | Page: O makes a random species at the hull, joining the school (replaces round 2's mass tame and `omniTameRadius`) |
+| **Space** = paint; its L5 paints **shielded** prisms | Game only (the lab has no elements or shields) |
+| **All fauna** find painted prisms more desirable | Game only (the lab's wild fauna do not eat) |
+| **Mass** = taming, which also **grows your domain's plants** in the lure's range; its L5 **steals** fauna | Game only (no flora, no rival Anglers in the lab) |
+| **Charge** = erase; **locking on to a vessel** sends the squad at it until a new paint, a new lock or death | Game only (no rival vessels in the lab) |
+
+Scorecard (seeds 1–3, re-run on the round-3 page): the Sling painter clears in **10.0 s** (was 10.9), orders in **3.1 s** (was
+4.4), **85%** on target (was 90%; rookie 81%). The 20x beam paints more of a target's neighbours in one sweep, and the AI's
+eraser trims less of them. The round-1 Spotlight shares `paintRange` and drops to 70% on target. The lure trial tames six
+in 16.1 s.
+
+Checked headless:
+
+- `inBrush` paints a prism 3 u ahead and 4 u off-axis (the bare cone would not), and one 2500 u out. It never paints behind the nose or past reach.
+- `pickRecent([1,5,5,3], claims [0,1,0,0])` is 2.
+- One O press adds one creature.
+- The dash lands on the 75% point.
+- Parity: 189 cases, 10/10 planted changes caught.
+
 ## After the second Unity playtest (2026-10-16)
 
 The designer asked for two things:
