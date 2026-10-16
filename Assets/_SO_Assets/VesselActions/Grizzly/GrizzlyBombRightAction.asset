@@ -13,3 +13,5 @@ MonoBehaviour:
   m_Name: GrizzlyBombRightAction
   m_EditorClassIdentifier: 
   side: 1
+  claw: {fileID: 11400000, guid: a6a49ba11f7b4b04a075230bda3d3306, type: 2}
+  sniper: {fileID: 11400000, guid: 52f08890cabc4e48891138d622f0ba57, type: 2}

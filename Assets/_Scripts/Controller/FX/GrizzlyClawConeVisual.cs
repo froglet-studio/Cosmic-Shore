@@ -13,7 +13,9 @@ namespace CosmicShore.Gameplay
     /// reach is worse than one with no visual at all.
     ///
     /// Created on demand (no prefab wiring), parented to the vessel so it inherits
-    /// aim for free, and rebuilt only when the shape actually changes.
+    /// aim for free. The mesh is a UNIT cone built once; range and half-angle are its
+    /// transform's scale, so the per-frame resize a pressure-driven claw needs (LT / RT,
+    /// 2026-10-16) costs no mesh rebuild and no allocation.
     /// </summary>
     [RequireComponent(typeof(MeshFilter), typeof(MeshRenderer))]
     public sealed class GrizzlyClawConeVisual : MonoBehaviour
@@ -25,26 +27,31 @@ namespace CosmicShore.Gameplay
         Mesh _mesh;
         Material _material;
 
-        float _builtRange = -1f;
-        float _builtHalfAngle = -1f;
 
         // Hot plasma: additive, so it can only ADD light and never darkens what it sweeps.
         static readonly Color CoreColor = new Color(1f, 0.45f, 0.12f, 1f);
 
-        /// <summary>Gets (or creates) the claw cone hanging off this vessel.</summary>
-        public static GrizzlyClawConeVisual EnsureFor(Transform vessel)
+        /// <summary>Gets (or creates) the claw cone called <paramref name="coneName"/> hanging
+        /// off this vessel, its apex at <paramref name="localApex"/> in the vessel's space.</summary>
+        public static GrizzlyClawConeVisual EnsureFor(Transform vessel, string coneName, Vector3 localApex)
         {
             if (vessel == null) return null;
 
-            var existing = vessel.GetComponentInChildren<GrizzlyClawConeVisual>(true);
-            if (existing != null) return existing;
+            GrizzlyClawConeVisual cone = null;
+            foreach (var existing in vessel.GetComponentsInChildren<GrizzlyClawConeVisual>(true))
+                if (existing.name == coneName) { cone = existing; break; }
 
-            var go = new GameObject("PlasmaClawCone");
-            go.transform.SetParent(vessel, false);
-            go.transform.localPosition = Vector3.zero;
-            go.transform.localRotation = Quaternion.identity;
-            go.transform.localScale = Vector3.one;
-            return go.AddComponent<GrizzlyClawConeVisual>();
+            if (cone == null)
+            {
+                var go = new GameObject(coneName);
+                go.transform.SetParent(vessel, false);
+                go.transform.localRotation = Quaternion.identity;
+                go.transform.localScale = Vector3.one;
+                cone = go.AddComponent<GrizzlyClawConeVisual>();
+            }
+
+            cone.transform.localPosition = localApex;
+            return cone;
         }
 
         void Awake()
@@ -53,6 +60,7 @@ namespace CosmicShore.Gameplay
             _renderer = GetComponent<MeshRenderer>();
 
             _mesh = new Mesh { name = "PlasmaClawCone" };
+            BuildUnitCone();
             _filter.sharedMesh = _mesh;
 
             _material = BuildAdditiveMaterial();
@@ -68,13 +76,14 @@ namespace CosmicShore.Gameplay
         {
             if (range <= 0f || halfAngleDegrees <= 0f) return;
 
-            if (!Mathf.Approximately(range, _builtRange) ||
-                !Mathf.Approximately(halfAngleDegrees, _builtHalfAngle))
-            {
-                Rebuild(range, halfAngleDegrees);
-                _builtRange = range;
-                _builtHalfAngle = halfAngleDegrees;
-            }
+            // Unit cone (radius 1, length 1) scaled out to this reach. The parent's scale is
+            // divided out so the cone's world size is the ignite query's, whatever the hull's scale.
+            float radius = range * Mathf.Tan(halfAngleDegrees * Mathf.Deg2Rad);
+            var parentScale = transform.parent ? transform.parent.lossyScale : Vector3.one;
+            transform.localScale = new Vector3(
+                radius / Mathf.Max(1e-4f, parentScale.x),
+                radius / Mathf.Max(1e-4f, parentScale.y),
+                range / Mathf.Max(1e-4f, parentScale.z));
 
             if (_renderer) _renderer.enabled = true;
         }
@@ -86,12 +95,13 @@ namespace CosmicShore.Gameplay
 
         /// <summary>
         /// Apex at the origin, opening along local +z — the same axis the ignite query
-        /// tests against the vessel's forward. Side surface only (no base cap) and
-        /// double-sided, so the cone still reads when the camera is inside it.
+        /// tests against the vessel's forward — radius 1 at length 1. Side surface only (no
+        /// base cap) and double-sided, so the cone still reads when the camera is inside it.
         /// </summary>
-        void Rebuild(float range, float halfAngleDegrees)
+        void BuildUnitCone()
         {
-            float radius = range * Mathf.Tan(halfAngleDegrees * Mathf.Deg2Rad);
+            const float radius = 1f;
+            const float range = 1f;
 
             var verts = new Vector3[RadialSegments + 1];
             verts[0] = Vector3.zero;

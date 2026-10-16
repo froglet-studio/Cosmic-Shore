@@ -38,6 +38,37 @@ History, all at the design owner's request after playtests:
   (`ModifyThrottle`, 2 s ease) instead of a 1 s shove away from the bomb; X no longer fires the
   charged cannon in Explosives mode; **LB** cycles weapons (RB still does too).
 
+## The triggers follow the weapon (2026-10-16)
+
+*"for the plasma claw, LT fires a cone forward from the left front of the ship and RT fires a cone
+forward from the right front of the ship. Pressure determines the size of the cone, but should
+always be its most close range weapon. for the sniper rifle, the left trigger activates the scope,
+which changes to a camera on top of the bullet that travels with it as long as it is held. the
+right trigger fires the weapon. the cool down keeps it from being too rapid fire. pressure is
+irrelevant for this weapon. the bombs will be deactivated while other weapons are active and
+players will have to rely on either the B boost or switching back quickly while still holding
+momentum."*
+
+`GrizzlyBombActionSO` (one asset per trigger) routes by the active weapon
+(`GrizzlyWeaponModeExecutor`, cycled on **LB** / RB / E), captured at the press:
+
+| Weapon | LT | RT |
+|---|---|---|
+| **Explosives** | left bomb (below) | right bomb (below) |
+| **Plasma claw** | cone forward from the **left front** while held | cone forward from the **right front** while held |
+| **Sniper** | hold = **scope**; a round fired while held takes the view with it until LT is let go | **fire** (sniper cooldown 3 s, energy 0.5) |
+
+- **Claw:** `GrizzlyFlamethrowerActionSO` — live pressure sizes the cone from `minRange` /
+  `minConeHalfAngle` (25 u / 12°) to `range` / `coneHalfAngle` (60 u / 25°); no analog = full.
+  Apexes sit `sideOffset` 3 to each side and `noseOffset` 4 ahead. Each cone ignites on its own.
+  60 u is the Grizzly's shortest reach on purpose.
+- **Sniper:** pressure is ignored. The scope fills the screen while held
+  (`GrizzlyHUDView.scopeFillsScreen`; off = the old PiP). Releasing LT hands the view back to the
+  ship; the round flies on.
+- **Bombs off elsewhere:** leaving Explosives retires every live bomb silently, and the autopilot
+  bombs only in Explosives. Speed you carry is the launch's momentum (2 s) or Rush (B).
+- **X / Q / middle mouse:** unbound on `Grizzly.prefab`.
+
 ## The gesture (per trigger)
 
 | State | Pull | Release |
@@ -198,9 +229,9 @@ config's old `projectileTime` (the 3 s "throw") is retired.
 
 | Control | Does |
 |---|---|
-| LT / right mouse / L-Shift | left bomb |
-| RT / left mouse / R-Shift | right bomb |
-| X / Q / middle mouse | nothing in Explosives mode (the bombs are the triggers) / sniper / claw |
+| LT / right mouse / L-Shift | left bomb / left claw / sniper scope |
+| RT / left mouse / R-Shift | right bomb / right claw / sniper fire |
+| X / Q / middle mouse | nothing (every weapon is on the triggers) |
 | LB / RB / E | cycle weapon (LB raises `IdleAction`; `Grizzly.prefab`'s gamepad override binds it) |
 | A / Space, B / R | Dig In, Rush |
 
@@ -312,8 +343,13 @@ Not run in the editor — no Unity in the authoring sessions. Steps:
    it is knocked away.
 9. **Pressure.** Feather LT: a tiny bomb, small dip, a 25 u blast. Full squeeze: a 100 u blast.
 10. **Turn end** with a bomb cruising or frozen: it disappears with no blast.
-11. **X in Explosives mode does nothing** (2026-10-16): the old charged cannon is unbound from it.
-    Cycle with **LB** (or RB) to the sniper or the claw and X fires those.
+11. **X does nothing** in any mode (2026-10-16).
+11b. **Claw:** LB to PLASMA CLAW. Feather LT: a small cone from the left front; squeeze: the full
+    60 u cone. RT the same on the right. Both at once: two cones. Enemy prisms in them burn.
+11c. **Sniper:** LB to SNIPER. Hold LT: the scope fills the screen. RT: a round; the view rides it
+    while LT is held; let go and you are back on the ship. RT again within 3 s does nothing.
+11d. **Bombs off:** fire a bomb, switch to the claw: the bomb vanishes without a blast; the
+    triggers spray, they do not bomb.
 12. **AI** — an AI Grizzly fires, freezes, flies past and blows its bombs, lunging forward each
     time, and leaves none flying.
 13. **MPPM two clients** — each peer sees the other's bombs in their two shades, cruise, freeze

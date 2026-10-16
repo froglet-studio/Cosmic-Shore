@@ -14,5 +14,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   range: 60
   coneHalfAngle: 25
+  minRange: 25
+  minConeHalfAngle: 12
   igniteTicksPerSecond: 4
   ignitesPerTick: 3
+  sideOffset: 3
+  noseOffset: 4

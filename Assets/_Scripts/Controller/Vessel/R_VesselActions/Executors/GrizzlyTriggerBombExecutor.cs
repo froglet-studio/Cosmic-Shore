@@ -31,6 +31,9 @@ namespace CosmicShore.Gameplay
     /// trail survives it - and the executor LAUNCHES a Grizzly inside its own blast FORWARD, along
     /// its heading (<see cref="LaunchSelf"/>), strongest at the bomb and easing toward the edge,
     /// as momentum that lasts long enough to chain the next bomb (design ask, 2026-10-16).
+    /// The bombs own the triggers only in EXPLOSIVES mode: in the claw or sniper modes the triggers
+    /// drive those weapons (<see cref="GrizzlyBombActionSO"/>), presses here are ignored, and
+    /// leaving Explosives retires every live bomb without a blast.
     ///
     /// <para><b>Every peer simulates.</b> Presses and releases reach this executor on every
     /// peer (owner -> server -> all, <c>R_VesselActionHandler</c>), exactly as the cannon's do,
@@ -123,6 +126,7 @@ namespace CosmicShore.Gameplay
 
         IVesselStatus _status;
         ResourceSystem _resources;
+        GrizzlyWeaponModeExecutor _modes;
         bool _warnedAmmoIndex;
         float _aiLastFireTime = float.NegativeInfinity;
         readonly List<ShipActionSO> _bindScratch = new();
@@ -151,6 +155,14 @@ namespace CosmicShore.Gameplay
             if (gun) gun.Initialize(shipStatus);
             ResetSlots();
 
+            // The bombs are OFF while another weapon is active (design ask, 2026-10-16): the
+            // triggers belong to that weapon, and leaving Explosives retires any live bomb.
+            if (_modes != null) _modes.OnModeChanged -= HandleModeChanged;
+            _modes = TryGetComponent<ActionExecutorRegistry>(out var registry)
+                ? registry.Get<GrizzlyWeaponModeExecutor>()
+                : null;
+            if (_modes != null) _modes.OnModeChanged += HandleModeChanged;
+
             if (!config)
                 CSDebug.LogError("[GrizzlyTriggerBomb] No GrizzlyTriggerBombConfigSO wired on the executor - " +
                                  "the Grizzly's triggers do nothing. Wire it on Grizzly.prefab's " +
@@ -177,6 +189,20 @@ namespace CosmicShore.Gameplay
 
         void HandleTurnEnd() => ResetSlots();
 
+        void OnDestroy()
+        {
+            if (_modes != null) _modes.OnModeChanged -= HandleModeChanged;
+        }
+
+        void HandleModeChanged(GrizzlyWeaponModeExecutor.WeaponMode mode)
+        {
+            if (mode != GrizzlyWeaponModeExecutor.WeaponMode.Explosives) ResetSlots();
+        }
+
+        /// <summary>True while the trigger bombs own the triggers.</summary>
+        bool BombsActive => _modes == null ||
+                            _modes.CurrentMode == GrizzlyWeaponModeExecutor.WeaponMode.Explosives;
+
         // ── Pressure tracking (every peer) + autopilot (simulating machine only) ──
 
         void Update()
@@ -188,7 +214,7 @@ namespace CosmicShore.Gameplay
             Track(_slots[0], input.LeftTriggerAnalog);
             Track(_slots[1], input.RightTriggerAnalog);
 
-            if (IsAutopilotDriven && IsSimAuthority(_status))
+            if (BombsActive && IsAutopilotDriven && IsSimAuthority(_status))
                 AutopilotDrive(input);
         }
 
@@ -222,6 +248,7 @@ namespace CosmicShore.Gameplay
 
         public void OnPress(GrizzlyBombActionSO.TriggerSide side)
         {
+            if (!BombsActive) return;
             var s = _slots[(int)side];
             switch (s.State)
             {

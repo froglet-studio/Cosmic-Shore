@@ -380,3 +380,10 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Who can take it:** Grizzly driver (glory.jones1) or Yash
 - **Added:** 2026-10-16 by a Claude session (`grizzly-v3`)
 - **See:** Assets/_Scripts/Controller/Vessel/R_VesselActions/GRIZZLY_TRIGGER_BOMBS.md
+
+### T-20261016-e80b · open · test · Grizzly
+- **Task:** Playtest the Grizzly trigger layouts on grizzly-v3: LB to PLASMA CLAW (LT left-front cone, RT right-front cone, pressure sizes them), LB to SNIPER (hold LT = full-screen scope that rides the round while held, RT fires, 3 s cooldown), bombs vanish when you leave Explosives; check the full-screen scope layout on GrizzlyHUD (toggle scopeFillsScreen if it looks wrong); run GrizzlyTriggerWeaponsTests
+- **Done when:** Grizzly driver confirms both layouts feel right and the suite is green in Unity
+- **Who can take it:** Grizzly driver (glory.jones1) or Yash
+- **Added:** 2026-10-16 by a Claude session (`grizzly-v3`)
+- **See:** Assets/_Scripts/Controller/Vessel/R_VesselActions/GRIZZLY_TRIGGER_BOMBS.md

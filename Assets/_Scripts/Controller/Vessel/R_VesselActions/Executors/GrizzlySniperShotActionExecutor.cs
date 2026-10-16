@@ -6,8 +6,13 @@ using UnityEngine;
 namespace CosmicShore.Gameplay
 {
     /// <summary>
-    /// Grizzly sniper: hold to scope (PiP — the HUD listens to OnScopeChanged),
-    /// release to fire a fast precision round. The round's super-shield crack is a
+    /// Grizzly sniper. On the triggers (design ask, 2026-10-16): LT HOLDS the scope
+    /// (<see cref="BeginScope"/> / <see cref="EndScope"/> - the HUD listens to OnScopeChanged) and
+    /// RT FIRES (<see cref="Fire"/>), gated by the asset's cooldown and energy; pressure is
+    /// irrelevant. A round fired while scoped takes the view with it for as long as LT stays
+    /// held (GrizzlyHUDView). The single-button path (<see cref="OnPress"/> /
+    /// <see cref="OnRelease"/>: hold to scope, release to fire) is kept for any binding that
+    /// still uses it. The scope closes when the active weapon changes away from the sniper. The round's super-shield crack is a
     /// ProjectilePrismEffectSO on the sniper projectile's impact container
     /// (SniperCrackSuperShieldPrismEffectSO) — impact effects, not end effects,
     /// because end effects fire without an impactee.
@@ -32,6 +37,7 @@ namespace CosmicShore.Gameplay
         public event Action<float> OnCooldownStarted;
 
         IVesselStatus _status;
+        GrizzlyWeaponModeExecutor _modes;
         float _lastShotTime = float.NegativeInfinity;
         bool _scoped;
         Projectile _round;
@@ -42,9 +48,31 @@ namespace CosmicShore.Gameplay
             if (sniperGun != null)
                 sniperGun.Initialize(shipStatus);
             SetScoped(false);
+
+            if (_modes != null) _modes.OnModeChanged -= HandleModeChanged;
+            _modes = TryGetComponent<ActionExecutorRegistry>(out var registry)
+                ? registry.Get<GrizzlyWeaponModeExecutor>()
+                : null;
+            if (_modes != null) _modes.OnModeChanged += HandleModeChanged;
         }
 
         void OnDisable() => SetScoped(false);
+
+        void OnDestroy()
+        {
+            if (_modes != null) _modes.OnModeChanged -= HandleModeChanged;
+        }
+
+        void HandleModeChanged(GrizzlyWeaponModeExecutor.WeaponMode mode)
+        {
+            if (mode != GrizzlyWeaponModeExecutor.WeaponMode.Sniper) SetScoped(false);
+        }
+
+        /// <summary>LT pressed: open the scope. Aiming is free; only firing is gated.</summary>
+        public void BeginScope() => SetScoped(true);
+
+        /// <summary>LT released: close the scope, and with it any ride on a round.</summary>
+        public void EndScope() => SetScoped(false);
 
         public void OnPress(GrizzlySniperShotActionSO so, IVesselStatus status)
         {
@@ -55,7 +83,13 @@ namespace CosmicShore.Gameplay
         public void OnRelease(GrizzlySniperShotActionSO so, IVesselStatus status)
         {
             SetScoped(false);
+            Fire(so, status);
+        }
 
+        /// <summary>RT pressed (or the single-button release): fire one round if the cooldown has
+        /// run and the energy is there. Leaves the scope as it is.</summary>
+        public void Fire(GrizzlySniperShotActionSO so, IVesselStatus status)
+        {
             if (!so || status?.ResourceSystem == null || sniperGun == null) return;
             if (Time.time - _lastShotTime < so.CooldownSeconds) return;
 
