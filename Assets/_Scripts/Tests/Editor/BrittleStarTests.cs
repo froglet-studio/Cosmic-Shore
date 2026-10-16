@@ -9,16 +9,16 @@ namespace CosmicShore.Tests
 {
     /// <summary>
     /// The Brittle Star (<c>R_VesselActions/BRITTLE_STAR.md</c>): the pure hull form (parts, accents, element morphs,
-    /// winding, bounds) and the pure rules (the ring's life cycle clause by clause from the class document, mode
-    /// selection, the aim math and the deterministic spread).
+    /// winding, bounds), the pure rules (the ring's life cycle clause by clause from the class document, mode
+    /// selection and the aim math), the ring's spare stock and the guns' heat, and Charge Mode's
+    /// whip cords (<see cref="BrittleStarCord"/>).
     /// </summary>
     [TestFixture]
     public class BrittleStarTests
     {
         static readonly BrittleStarHullForm.Settings S = BrittleStarHullForm.Defaults;
         const float RebuildSeconds = 0.5f;
-        const float OverdriveSeconds = 6f;
-
+        
         // ------------------------------------------------------------------ hull form
 
         [Test]
@@ -180,81 +180,112 @@ namespace CosmicShore.Tests
                 Assert.Greater(BrittleStarHullForm.MuzzlePosition(far, i).z, BrittleStarHullForm.MuzzlePosition(S, i).z);
         }
 
-        // ------------------------------------------------------------------ the ring's life (the class document)
+        // ------------------------------------------------------------------ the ring stock (Garrett, 2026-10-16)
+
+        const int MaxSpares = 2;
 
         [Test]
-        public void Ring_StartsMounted_WithNoCharge()
+        public void Ring_StartsMounted_WithNoSpare_AndCannotBeThrown()
         {
             var ring = new BrittleStarRules.RingState();
             Assert.IsTrue(ring.Mounted);
-            Assert.AreEqual(0, ring.Charges);
+            Assert.AreEqual(0, ring.Spares);
             Assert.IsTrue(ring.ModesAvailable);
+            Assert.IsFalse(ring.CanLaunch, "'only let them shoot the ring if they have a spare one'");
+            Assert.IsFalse(ring.TryLaunch(RebuildSeconds));
+            Assert.IsTrue(ring.Mounted, "a refused throw leaves the ring where it is");
         }
 
         [Test]
-        public void Ring_LaunchWithoutACharge_LeavesTheHullRinglessAndModeless_UntilACrystal()
+        public void Ring_OneSparePerCrystal_UpToTwo()
         {
             var ring = new BrittleStarRules.RingState();
+            Assert.IsTrue(ring.CollectCrystal(MaxSpares));
+            Assert.IsTrue(ring.CollectCrystal(MaxSpares));
+            Assert.AreEqual(2, ring.Spares, "'they can store two extra rings'");
+            Assert.IsFalse(ring.CollectCrystal(MaxSpares), "a full stock takes nothing more");
+            Assert.AreEqual(2, ring.Spares);
+        }
+
+        [Test]
+        public void Ring_AThrowSpendsASpare_AndTheMountedRingRegrowsOnItsOwn()
+        {
+            var ring = new BrittleStarRules.RingState();
+            ring.CollectCrystal(MaxSpares);
+            ring.CollectCrystal(MaxSpares);
             Assert.IsTrue(ring.TryLaunch(RebuildSeconds));
+            Assert.AreEqual(1, ring.Spares);
             Assert.IsFalse(ring.Mounted);
-            Assert.IsFalse(ring.Rebuilding, "no charge: no rebuild");
-            Assert.IsFalse(ring.ModesAvailable, "'loses the access to its 3 modes entirely'");
-            ring.Tick(10f);
-            Assert.IsFalse(ring.Mounted, "time alone never rebuilds");
-            Assert.IsFalse(ring.TryLaunch(RebuildSeconds), "no ring, nothing to throw");
-
-            Assert.AreEqual(BrittleStarRules.RingState.CrystalOutcome.Rebuilt, ring.CollectCrystal(RebuildSeconds, OverdriveSeconds));
-            Assert.IsFalse(ring.Mounted, "built over rebuildSeconds, not popped");
-            Assert.IsTrue(ring.Tick(RebuildSeconds + 0.01f), "the frame the rebuild completes");
+            Assert.IsTrue(ring.Rebuilding, "'a spare one that automatically regrows'");
+            Assert.IsFalse(ring.ModesAvailable, "no modes while it regrows");
+            Assert.IsFalse(ring.CanLaunch, "nothing to throw while it regrows");
+            Assert.AreEqual(0.5f, ring.Presence01(RebuildSeconds * 2f), 1e-4f);
+            Assert.IsTrue(ring.Tick(RebuildSeconds + 0.01f), "the frame the regrowth completes");
             Assert.IsTrue(ring.Mounted);
-            Assert.AreEqual(0, ring.Charges, "the crystal was spent on the ring");
-        }
-
-        [Test]
-        public void Ring_LaunchWithACharge_RebuildsAtOnce_AndTwoRingsCanGoInRapidSuccession()
-        {
-            var ring = new BrittleStarRules.RingState();
-            ring.CollectCrystal(RebuildSeconds, OverdriveSeconds);
-            Assert.AreEqual(1, ring.Charges);
-            Assert.IsTrue(ring.TryLaunch(RebuildSeconds));
-            Assert.IsTrue(ring.Rebuilding, "'it will immediately rebuild its support ring'");
-            Assert.AreEqual(0, ring.Charges);
+            Assert.IsTrue(ring.TryLaunch(RebuildSeconds), "the second spare");
             ring.Tick(RebuildSeconds + 0.01f);
-            Assert.IsTrue(ring.TryLaunch(RebuildSeconds), "'no cooldown, it only requires the existence of a support ring'");
-            Assert.IsFalse(ring.Rebuilding, "the second ring had no charge behind it");
+            Assert.IsTrue(ring.Mounted, "it regrows even from the last spare - the hull is never ringless");
+            Assert.IsFalse(ring.TryLaunch(RebuildSeconds), "but with no spare left it cannot be thrown");
+        }
+
+        // ------------------------------------------------------------------ heat (Garrett, 2026-10-16)
+
+        [Test]
+        public void Heat_RisesWithRoundsTimesGuns_OverheatsAtFull_RecoversOnlyBelowTheMark()
+        {
+            var one = new BrittleStarRules.HeatState();
+            var five = new BrittleStarRules.HeatState();
+            one.AddRounds(1, 0.01f);
+            five.AddRounds(5, 0.01f);
+            Assert.AreEqual(5f * one.Heat01, five.Heat01, 1e-5f, "heat is proportional to the guns firing");
+
+            var heat = new BrittleStarRules.HeatState();
+            bool tripped = false;
+            for (int i = 0; i < 200 && !tripped; i++) tripped = heat.AddRounds(5, 0.0012f);
+            Assert.IsTrue(tripped && heat.Overheated);
+            Assert.AreEqual(1f, heat.Heat01, 1e-5f);
+            Assert.IsFalse(heat.AddRounds(5, 0.0012f), "overheats once, not on every round after");
+            Assert.IsFalse(heat.Cool(0.12f, 0.35f, 1f), "cooling a little is not recovering");
+            Assert.IsTrue(heat.Overheated);
+            Assert.IsTrue(heat.Cool(0.12f, 0.35f, 5f), "the frame it falls to the recovery mark");
+            Assert.IsFalse(heat.Overheated);
         }
 
         [Test]
-        public void Ring_OnlyOneChargeIsHeld_ASecondCrystalIsOverdrive()
+        public void Heat_TheCordsCoolTheGunsFaster()
         {
-            var ring = new BrittleStarRules.RingState();
-            Assert.AreEqual(BrittleStarRules.RingState.CrystalOutcome.Stored, ring.CollectCrystal(RebuildSeconds, OverdriveSeconds));
-            Assert.AreEqual(BrittleStarRules.RingState.CrystalOutcome.Overdrive, ring.CollectCrystal(RebuildSeconds, OverdriveSeconds));
-            Assert.AreEqual(1, ring.Charges, "'only one charge can be held at a time'");
-            Assert.IsTrue(ring.Overdrive);
-            ring.Tick(OverdriveSeconds * 0.5f);
-            Assert.IsTrue(ring.Overdrive);
-            ring.Tick(OverdriveSeconds);
-            Assert.IsFalse(ring.Overdrive, "'for a short time'");
+            var plain = new BrittleStarRules.HeatState();
+            var charged = new BrittleStarRules.HeatState();
+            plain.AddRounds(1000, 0.001f);
+            charged.AddRounds(1000, 0.001f);
+            float seconds = 0f;
+            while (plain.Overheated) { plain.Cool(0.12f, 0.35f, 0.1f); seconds += 0.1f; }
+            float chargedSeconds = 0f;
+            while (charged.Overheated) { charged.Cool(0.12f + 0.6f, 0.35f, 0.1f); chargedSeconds += 0.1f; }
+            Assert.Less(chargedSeconds * 4f, seconds, "'using charge lasers cools the guns'");
         }
 
+        // ------------------------------------------------------------------ modes
+
         [Test]
-        public void Modes_OverdriveTurnsAllThreeOn_AndNoRingTurnsAllOff()
+        public void Modes_OneAtATime_TheRingMustBeMounted_GunsPerMode()
         {
             var ring = new BrittleStarRules.RingState();
-            var sel = BrittleStarRules.Mode.Speed;
-            Assert.IsTrue(BrittleStarRules.IsOn(BrittleStarRules.Mode.Speed, sel, ring));
-            Assert.IsFalse(BrittleStarRules.IsOn(BrittleStarRules.Mode.Creation, sel, ring));
-
-            ring.CollectCrystal(RebuildSeconds, OverdriveSeconds);
-            ring.CollectCrystal(RebuildSeconds, OverdriveSeconds);
-            foreach (var m in new[] { BrittleStarRules.Mode.Speed, BrittleStarRules.Mode.Creation, BrittleStarRules.Mode.Destruction })
-                Assert.IsTrue(BrittleStarRules.IsOn(m, BrittleStarRules.Mode.Cruise, ring), $"{m} in Overdrive");
-
-            var ringless = new BrittleStarRules.RingState();
-            ringless.TryLaunch(RebuildSeconds);
-            Assert.IsFalse(BrittleStarRules.IsOn(BrittleStarRules.Mode.Speed, sel, ringless));
+            foreach (var sel in new[] { BrittleStarRules.Mode.Speed, BrittleStarRules.Mode.Creation,
+                                        BrittleStarRules.Mode.Destruction, BrittleStarRules.Mode.Charge })
+                foreach (var m in new[] { BrittleStarRules.Mode.Speed, BrittleStarRules.Mode.Creation,
+                                          BrittleStarRules.Mode.Destruction, BrittleStarRules.Mode.Charge })
+                    Assert.AreEqual(sel == m, BrittleStarRules.IsOn(m, sel, ring), $"{m} with {sel} selected");
             Assert.IsFalse(BrittleStarRules.IsOn(BrittleStarRules.Mode.Cruise, BrittleStarRules.Mode.Cruise, ring), "Cruise is no mode");
+
+            ring.CollectCrystal(MaxSpares);
+            ring.TryLaunch(RebuildSeconds);
+            Assert.IsFalse(BrittleStarRules.IsOn(BrittleStarRules.Mode.Speed, BrittleStarRules.Mode.Speed, ring), "regrowing: no modes");
+
+            Assert.AreEqual(5, BrittleStarRules.GunsFor(BrittleStarRules.Mode.Destruction), "Space Mode: all five guns");
+            Assert.AreEqual(0, BrittleStarRules.GunsFor(BrittleStarRules.Mode.Charge), "Charge Mode: the trigger works the cords");
+            foreach (var m in new[] { BrittleStarRules.Mode.Cruise, BrittleStarRules.Mode.Speed, BrittleStarRules.Mode.Creation })
+                Assert.AreEqual(1, BrittleStarRules.GunsFor(m), $"{m}: the one aimed turret");
         }
 
         [Test]
@@ -293,21 +324,6 @@ namespace CosmicShore.Tests
         }
 
         [Test]
-        public void Spread_IsDeterministic_AndStaysInsideTheCone()
-        {
-            var fwd = Vector3.forward;
-            for (uint s = 0; s < 500; s++)
-            {
-                var a = BrittleStarRules.Deflect(fwd, Vector3.up, 12f, s);
-                Assert.AreEqual(a, BrittleStarRules.Deflect(fwd, Vector3.up, 12f, s), "peers agreeing on the serial agree on the round");
-                Assert.LessOrEqual(Vector3.Angle(fwd, a), 12f + 1e-3f);
-                Assert.AreEqual(1f, a.magnitude, 1e-4f);
-            }
-            Assert.AreEqual(fwd, BrittleStarRules.Deflect(fwd, Vector3.up, 0f, 7u), "no spread, no deflection");
-            Assert.AreNotEqual(BrittleStarRules.Deflect(fwd, Vector3.up, 12f, 1u), BrittleStarRules.Deflect(fwd, Vector3.up, 12f, 2u));
-        }
-
-        [Test]
         public void Arms_StickIn_MeetAheadAtTheFocus_StickOut_SplayOutward()
         {
             var fwd = Vector3.forward;
@@ -338,7 +354,7 @@ namespace CosmicShore.Tests
         }
 
         [Test]
-        public void ModeSpeed_CreationIsTheSlowest_SpeedTheFastest_OverdriveGetsBoth()
+        public void ModeSpeed_CreationIsTheSlowest_SpeedTheFastest()
         {
             const float speedX = 6f, creationX = 0.5f;
             float cruise = BrittleStarRules.ModeSpeed(0f, 0f, speedX, creationX);
@@ -348,7 +364,7 @@ namespace CosmicShore.Tests
             Assert.AreEqual(6f, speed, 1e-5f, "Speed Mode is x6");
             Assert.AreEqual(0.5f, creation, 1e-5f);
             Assert.Less(creation, cruise, "Creation Mode is the slowest");
-            Assert.AreEqual(3f, BrittleStarRules.ModeSpeed(1f, 1f, speedX, creationX), 1e-5f, "Overdrive: both");
+            Assert.AreEqual(3f, BrittleStarRules.ModeSpeed(1f, 1f, speedX, creationX), 1e-5f, "a hand-over between the two: both");
             Assert.AreEqual(Mathf.Lerp(1f, 0.5f, 0.4f), BrittleStarRules.ModeSpeed(0f, 0.4f, speedX, creationX), 1e-5f,
                 "eases between");
         }
@@ -378,6 +394,150 @@ namespace CosmicShore.Tests
         public void Range_IsSpeedTimesTwoTOverPi()
         {
             Assert.AreEqual(700f * 0.6f / Mathf.PI, BrittleStarRules.RangeFor(700f, 0.3f), 1e-3f);
+        }
+
+        // ------------------------------------------------------------------ Charge Mode: the five whip cords
+
+        // The shipped dials (BrittleStarConfigSO's Charge Mode block).
+        static readonly BrittleStarCord.Settings Cord = new()
+        {
+            LooseWave = 180f, RigidWave = 2500f, LooseDamping = 0.4f, RigidDamping = 14f, Pose = 1600f,
+        };
+        const int CordLinks = 16;
+        const float SaberLength = 80f, WhipLength = 120f;
+
+        /// <summary>A ring flick: the muzzle sits 6 u out on a ring that turns 72° at 540 °/s after 0.2 s, its cord posed
+        /// splayed 25° outward. Calls <paramref name="each"/> after every step; returns the largest distance the tip strays
+        /// from its place on the pose.</summary>
+        static float Flick(float dt, float rigidity, out BrittleStarCord cord, float seconds = 5f,
+                           System.Action<float, BrittleStarCord> each = null)
+        {
+            cord = new BrittleStarCord(CordLinks);
+            float length = Mathf.Lerp(WhipLength, SaberLength, rigidity);
+            float phase = 0f, target = 72f * Mathf.Deg2Rad, worst = 0f;
+            for (float t = 0f; t < seconds; t += dt)
+            {
+                if (t > 0.2f) phase = Mathf.Min(target, phase + 540f * Mathf.Deg2Rad * dt);
+                var outward = new Vector3(Mathf.Cos(phase), Mathf.Sin(phase), 0f);
+                var dir = (Vector3.forward * Mathf.Cos(25f * Mathf.Deg2Rad) + outward * Mathf.Sin(25f * Mathf.Deg2Rad)).normalized;
+                cord.Step(outward * 6f, dir, length, rigidity, Cord, dt);
+                worst = Mathf.Max(worst, (cord.Tip - (outward * 6f + dir * length)).magnitude);
+                each?.Invoke(t, cord);
+            }
+            return worst;
+        }
+
+        [Test]
+        public void Cord_UnseededIsLaidStraightAlongItsPose()
+        {
+            var cord = new BrittleStarCord(CordLinks);
+            Assert.IsFalse(cord.Seeded);
+            cord.Step(new Vector3(6f, 0f, 0f), Vector3.forward, WhipLength, 0f, Cord, 1f / 60f);
+            Assert.IsTrue(cord.Seeded);
+            Assert.AreEqual(CordLinks + 1, cord.Count);
+            for (int i = 0; i < cord.Count; i++)
+                Assert.AreEqual(0f, (cord.Points[i] - new Vector3(6f, 0f, WhipLength * i / CordLinks)).magnitude, 1e-4f);
+            cord.Clear();
+            Assert.IsFalse(cord.Seeded, "a cleared cord is laid afresh, never resumed from where it was drawn back");
+        }
+
+        [Test]
+        public void Cord_RidesAlongWithTheHull_AtAnySpeed()
+        {
+            // Speed Mode at x6: 270 u/s straight ahead for two seconds, whip and saber alike.
+            foreach (float rigidity in new[] { 0f, 1f })
+            {
+                var cord = new BrittleStarCord(CordLinks);
+                var anchor = new Vector3(6f, 0f, 0f);
+                for (int f = 0; f < 120; f++)
+                {
+                    anchor += Vector3.forward * 270f / 60f;
+                    cord.Step(anchor, Vector3.forward, WhipLength, rigidity, Cord, 1f / 60f);
+                }
+                Assert.AreEqual(0f, (cord.Tip - (anchor + Vector3.forward * WhipLength)).magnitude, 1e-3f);
+            }
+        }
+
+        [Test]
+        public void Cord_Whip_APulseTravelsDownTheCord_AtLowSpeed_AndRingsOn()
+        {
+            // When does each link start to swing after the flick at 0.2 s? A wave reaches them in order, slowly.
+            float[] first = new float[CordLinks];
+            for (int i = 0; i < first.Length; i++) first[i] = -1f;
+            float lateStray = 0f;
+            Flick(1f / 240f, 0f, out _, 5f, (t, c) =>
+            {
+                for (int i = 0; i < CordLinks; i++)
+                    if (first[i] < 0f && t > 0.2f && c.LinkSwing(i) > 0.5f) first[i] = t;
+                if (t > 2.5f) lateStray = Mathf.Max(lateStray, c.LinkSwing(CordLinks - 1));
+            });
+            Assert.Greater(first[4], 0f);
+            Assert.Greater(first[8], first[4], "the wave reaches the middle after the root");
+            Assert.Greater(first[CordLinks - 1], first[8], "and the tip after the middle");
+            Assert.Greater(first[CordLinks - 1] - 0.2f, 0.6f, "low speed: the tip feels the flick more than half a second later");
+            Assert.Greater(lateStray, 0.1f, "high inertia: the whip is still swinging seconds after the flick");
+        }
+
+        [Test]
+        public void Cord_Saber_HoldsStraight_AndSettlesFast()
+        {
+            float whip = Flick(1f / 60f, 0f, out _);
+            float saber = Flick(1f / 60f, 1f, out var rigid);
+            Assert.Less(saber * 3f, whip, "pulled, the cord bends far less than the whip");
+            Assert.Less(saber, 15f);
+            for (int i = 0; i < CordLinks; i++)
+                Assert.Greater(Vector3.Dot(rigid.LinkDirection(i), rigid.LinkDirection(0)), 0.9999f, $"link {i}: a straight saber");
+        }
+
+        [Test]
+        public void Cord_NeverStretches_ItsLengthIsItsLinks()
+        {
+            // The worst case the hull can make: flicks of the ring while the hull yaws hard at Speed Mode's pace, whip.
+            var cord = new BrittleStarCord(CordLinks);
+            float seg = WhipLength / CordLinks, yaw = 0f, phase = 0f;
+            var pos = Vector3.zero;
+            for (int f = 0; f < 240; f++)
+            {
+                const float dt = 1f / 30f;
+                yaw += 107f * Mathf.Deg2Rad * dt;
+                phase += 540f * Mathf.Deg2Rad * dt * (f % 40 < 8 ? 1f : 0f);
+                var fwd = new Vector3(Mathf.Sin(yaw), 0f, Mathf.Cos(yaw));
+                var right = new Vector3(Mathf.Cos(yaw), 0f, -Mathf.Sin(yaw));
+                var outward = right * Mathf.Cos(phase) + Vector3.up * Mathf.Sin(phase);
+                pos += fwd * 270f * dt;
+                cord.Step(pos + outward * 6f, (fwd + outward * 0.4f).normalized, WhipLength, 0f, Cord, dt);
+                for (int i = 1; i < cord.Count; i++)
+                    Assert.AreEqual(seg, (cord.Points[i] - cord.Points[i - 1]).magnitude, 1e-3f,
+                        $"frame {f}, link {i}: a cord neither stretches nor shrinks (low elasticity)");
+            }
+        }
+
+        [Test]
+        public void Cord_StaysBounded_OverAMinuteOfFlying()
+        {
+            var cord = new BrittleStarCord(CordLinks);
+            float yaw = 0f, phase = 0f, worst = 0f;
+            var pos = Vector3.zero;
+            for (float t = 0f; t < 60f; t += 1f / 30f)
+            {
+                phase += Mathf.Sin(t * 1.7f) * 4f / 30f;
+                yaw += Mathf.Sin(t * 0.9f) * 1.5f / 30f;
+                var fwd = new Vector3(Mathf.Sin(yaw), 0f, Mathf.Cos(yaw));
+                var right = new Vector3(Mathf.Cos(yaw), 0f, -Mathf.Sin(yaw));
+                var outward = right * Mathf.Cos(phase) + Vector3.up * Mathf.Sin(phase);
+                pos += fwd * 1.5f;
+                cord.Step(pos + outward * 6f, (fwd + outward * 0.42f).normalized, WhipLength, 0f, Cord, 1f / 30f);
+                for (int i = 0; i < CordLinks; i++) worst = Mathf.Max(worst, cord.LinkSwing(i));
+            }
+            Assert.Less(worst, 20f, "a whip flown for a minute never winds itself up (rad/s)");
+        }
+
+        [Test]
+        public void Cord_WhipsAlikeAt30And144Fps()
+        {
+            float at30 = Flick(1f / 30f, 0f, out _), at60 = Flick(1f / 60f, 0f, out _), at144 = Flick(1f / 144f, 0f, out _);
+            Assert.AreEqual(at144, at30, at144 * 0.3f, "sub-stepped: a 30 fps peer sees the same whip");
+            Assert.AreEqual(at144, at60, at144 * 0.3f);
         }
     }
 }

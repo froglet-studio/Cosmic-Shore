@@ -366,3 +366,31 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Who can take it:** Garrett (handicap owner)
 - **Added:** 2026-10-16 by Yash's session (`Ys-bleeding-edge`)
 - **See:** Docs/AI_SYSTEM/SITUATION_RECORDING_PLAN.md §7 Status
+
+### T-20261016-b12d · open · test · Brittle Star
+- **Task:** Walk the Brittle Star four-mode build step by step in the Editor: the danger trail when overheated in Space Mode, the spare-ring stock (LT refused with none, one per crystal, two at most, the ring regrowing), the HUD cards (Charge = spare rings, Space = heat, red when overheated), an AI seat in an arcade match, and two MPPM clients (petals only; the analog-RT gap). Garrett played it 2026-10-16 and reported it working, not step by step.
+- **Done when:** Each step of BRITTLE_STAR.md 'In-editor verification' 2-12 is reported pass or fail; failures become dev tasks
+- **Who can take it:** Yash (offered), anyone with the Editor
+- **Added:** 2026-10-16 by Claude session cece/beautiful-knuth-j3atgk (`cece/beautiful-knuth-j3atgk`)
+- **See:** Assets/_Scripts/Controller/Vessel/R_VesselActions/BRITTLE_STAR.md (In-editor verification); Docs/UNITY_VERIFICATION_CHECKLIST.md
+
+### T-20261016-3e80 · open · decision · Brittle Star
+- **Task:** Brittle Star ring stock: should a hull start with one spare ring? With none, the studio pilot almost never throws the ring (Hard and 'Hard, no ring' are equal on every Derby row) and Derby I4's super-shielded walls are no faster with the modes than without. Also confirm retiring Overdrive (a crystal at a full stock of two now does nothing) and Charge Mode on RB / E (FlipAction; on a phone, turning it sideways raises the same event).
+- **Done when:** Garrett picks: a starting spare or not, Overdrive retired or brought back in some form, Charge Mode's binding kept or moved
+- **Who can take it:** Garrett
+- **Added:** 2026-10-16 by Claude session cece/beautiful-knuth-j3atgk (`cece/beautiful-knuth-j3atgk`)
+- **See:** Docs/Studios/BRITTLE_STAR.md 5.4; Assets/_Scripts/Controller/Vessel/R_VesselActions/BRITTLE_STAR.md 1 and 3.5
+
+### T-20261016-5ed6 · open · dev · Brittle Star
+- **Task:** Replicate the Brittle Star's analog RT depth (two bytes a frame) so remote copies fire, heat, overheat (and lay the danger trail) and stiffen the Charge cords at the owner's real pull; today a remote copy reads a press as a full pull, so its heat state can differ by peer (vessel rule 48). The Thresher has the same gap.
+- **Done when:** Two MPPM clients agree on overheat timing and the danger trail during a half pull
+- **Who can take it:** Yash (offered: party / multiplayer), Garrett
+- **Added:** 2026-10-16 by Claude session cece/beautiful-knuth-j3atgk (`cece/beautiful-knuth-j3atgk`)
+- **See:** Assets/_Scripts/Controller/Vessel/R_VesselActions/BRITTLE_STAR.md 3.4 and follow-up F13; .claude/skills/vessel/SKILL.md 4.ab4
+
+### T-20261016-12f8 · open · content · Brittle Star
+- **Task:** Draw the Brittle Star's Charge Mode icon (five whip cords / sabers) for the HUD's Charge card, which still wears the Ring Detonation icon; author it through Tools/Build/author_brittlestar_icons.py so --check holds it.
+- **Done when:** The Charge card shows the cords; author_brittlestar_icons.py --check passes
+- **Who can take it:** anyone (icon art); Garrett to approve
+- **Added:** 2026-10-16 by Claude session cece/beautiful-knuth-j3atgk (`cece/beautiful-knuth-j3atgk`)
+- **See:** Assets/_Scripts/Controller/Vessel/R_VesselActions/BRITTLE_STAR.md 4 and follow-up F12

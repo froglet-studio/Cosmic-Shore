@@ -9488,3 +9488,48 @@ What ran instead of `/verify-unity`: `unity_refcompile --config editor` (0 error
 5. Code Optimization = Debug: the badge says auto-capture is off while Debug; nothing is captured.
 6. EditorPrefs `CosmicShore.PerfAutoCapture.Off` = true: no countdown, no capture.
 
+## ⚪ Brittle Star — Destruction Mode is five CORDS (`cece/beautiful-knuth-j3atgk`, 2026-10-15) — SUPERSEDED
+
+> Superseded the next day by the four-mode redesign below: the cords moved to Charge Mode as whips / sabers and
+> Destruction became Space Mode's five guns again. Walk the entry below instead.
+
+No `unity` CLI in the session that wrote it (`/verify-unity` could not run). Proved offline: player and editor
+`unity_refcompile` (0 errors in project code; a planted typo in `BrittleStarExecutor` was caught), the 29
+`BrittleStarTests` under Roslyn (`Tools/Build/brittlestar_harness/run.sh --self-test`: three negative controls, one a
+cord that stretches), `author_brittlestar_assets.py --check` / `--self-test` (11/11), `studio_to_unity.py --vessel
+brittlestar --check` (39 mapped, 0 drift), `check_studio.cjs` on the studio page. Contract: `R_VesselActions/BRITTLE_STAR.md` §3.4.
+1. **X** (Destruction): five cords (fresnel tubes, domain-coloured rim) grow out of the five turrets, ~80 u long, tips
+   nearly meeting ahead. No rounds are fired. Console clean.
+2. **Right stick**: direction turns the ring and the cords with it, the tips whipping round after the roots; deflection
+   splays them to 25° and back. Turn hard: they bow and straighten. Speed Mode (×6) straight: they stay ahead.
+3. **Slicing**: fly them through mass — each prism touched is cut in two along the cord's sweep (the Thresher's slice
+   look), any domain (friendly fire) except trail laid in the last second; a shielded block loses its shield, then dies;
+   super-shielded refuses.
+4. **A rival**: drawn across a cord they lose petals (a Strike, at most every 0.5 s) and are not moved.
+5. **X again / ring thrown / turn end**: the cords draw back in or vanish; no leftover `BrittleStarCords::` objects
+   after the vessel is despawned.
+6. **RT** outside Destruction: unchanged (one stream). RT does nothing while the cords are out.
+7. **Profiler** with 3-4 AI Brittle Stars in Destruction Mode: 60 `QuerySegment`s a frame per hull, no rounds (the
+   turrets' pool is back to 90 / 320).
+
+## 🟡 Brittle Star — four modes, analog guns with heat, whip cords, the ring stock (`cece/beautiful-knuth-j3atgk`, 2026-10-16) — PLAYED, NOT WALKED STEP BY STEP
+
+> **Played by Garrett on 2026-10-16** ("I tested it and it is amazing. one of the most fun things we've ever made").
+> That confirms it loads and flies; the steps below were not reported one by one. Still open: the danger trail, the
+> spare-ring stock, the HUD cards, the AI, multiplayer and the touch caveat.
+
+No `unity` CLI in the session that wrote it (`/verify-unity` could not run). Proved offline: player and editor
+`unity_refcompile` (0 errors in project code; the editor config's 3 are the known `AuthenticationServiceFacade` reds),
+the 31 `BrittleStarTests` under Roslyn (`Tools/Build/brittlestar_harness/run.sh --self-test`: three negative controls),
+`author_brittlestar_assets.py --check` / `--self-test` (11/11), `element_ability_table.py BrittleStar` (0
+disagreements), `studio_to_unity.py --vessel brittlestar --check` (47 mapped, 0 drift), `check_studio.cjs`, and a
+hook-driven run of every new rule in the studio page. The full walk is `R_VesselActions/BRITTLE_STAR.md` § In-editor
+verification, steps 2-9. The short version:
+1. **RB** toggles Charge Mode (E on keyboard). Five loose 120 u cords; a stick flick sends a slow wave down them; RT
+   squeezed slowly shortens them to 80 u straight sabers (analog). They slice prisms; rivals lose petals only.
+2. **X** Space Mode: RT fires five guns at a rate set by the pull; a full pull overheats in ~2.4 s (Space card red),
+   the guns stop and the trail lays **danger prisms**; Charge Mode drains the heat in ~1 s.
+3. **Cruise / A / B**: RT fires one turret (the one the ring turned to), straight, no spread, never overheating alone.
+4. **Trails**: a smaller block (1.5 × 1.5 × 3) everywhere, the same in Creation's five lines; Speed Mode stretches them.
+5. **LT** needs a spare ring (Charge card: half per crystal, two at most); the ring regrows on its own after a throw.
+6. Touch caveat: Charge Mode is `FlipAction`, which a phone raises when turned — expect a landscape flip to toggle it.

@@ -22,7 +22,7 @@ MonoBehaviour:
     UseFloor: 1
     Floor: 4
   speedModeSpacingFollow: 1
-  creationBlockSize: {x: 2.5, y: 2.5, z: 4.5}
+  speedModeStretch: 1
   creationBlockScale:
     Enabled: 1
     Value: 1
@@ -37,14 +37,14 @@ MonoBehaviour:
   creationMaxPerFrame: 3
   creationSpeedMultiplier: 0.5
   creationWaitTime: 0.6
-  fireRate: 12
-  projectileSpeed: 70
-  projectileTime: 3
+  fireRate: 90
+  projectileSpeed: 135
+  projectileTime: 4.5
   rangeMultiplier:
     Enabled: 1
     Value: 1
     Min: 1
-    Max: 1.6
+    Max: 2
     element: 3
     UseFloor: 1
     Floor: 0.7
@@ -57,15 +57,31 @@ MonoBehaviour:
     element: 1
     UseFloor: 1
     Floor: 0.6
-  destructionFireRate: 90
-  destructionProjectileSpeed: 135
-  destructionProjectileScale: 1
   roundGrowthFactor: 3
   armFocusDistance: 120
   armSplayDegrees: 25
-  maxSpreadDegrees: 16
   aimDeadzone: 0.25
   ringTurnRate: 540
+  heatPerRound: 0.0012
+  coolRate: 0.12
+  chargeCoolRate: 0.6
+  overheatRecoverBelow: 0.35
+  cordLength: 80
+  cordLooseLengthScale: 1.5
+  cordLinks: 16
+  cordCutRadius: 0.6
+  cordLooseWave: 180
+  cordRigidWave: 2500
+  cordLooseDamping: 0.4
+  cordRigidDamping: 14
+  cordPose: 1600
+  cordRigidityRate: 12
+  cordDebrisRestitution: 0.5
+  cordDebrisSpeedLimit: 200
+  cordRenderSubdivisions: 4
+  cordColor: {r: 0.07, g: 0.065, b: 0.065, a: 1}
+  cordRimBrightness: 0.75
+  cordFallbackRim: {r: 0.3, g: 0.9, b: 0.85, a: 1}
   ringLaunchSpeed: 240
   ringFuseSeconds: 1.1
   ringContactRadiusScale: 1
@@ -81,10 +97,11 @@ MonoBehaviour:
     UseFloor: 1
     Floor: 1
   ringBlastBandWidth: 6
+  maxSpareRings: 2
   rebuildSeconds: 0.5
-  overdriveSeconds: 6
   ringBlastHitClass: 3
   ringBlastHitCooldown: 0.5
+  cordHitCooldown: 0.5
   onCombatHitLanded: {fileID: 11400000, guid: 45fb43a0cddb5cc3cc4dc448df994152, type: 2}
   aiModeIntervalSeconds: 3
   aiFireMinTargets: 2
@@ -113,6 +130,13 @@ MonoBehaviour:
       Data3: 0
       Data4: 0
     Path: 
+  chargeModeEvent:
+    Guid:
+      Data1: 0
+      Data2: 0
+      Data3: 0
+      Data4: 0
+    Path: 
   modeOffEvent:
     Guid:
       Data1: 0
@@ -121,6 +145,13 @@ MonoBehaviour:
       Data4: 0
     Path: 
   fireEvent:
+    Guid:
+      Data1: 0
+      Data2: 0
+      Data3: 0
+      Data4: 0
+    Path: 
+  cordSliceEvent:
     Guid:
       Data1: 0
       Data2: 0
@@ -155,7 +186,7 @@ MonoBehaviour:
       Data3: 0
       Data4: 0
     Path: 
-  overdriveEvent:
+  overheatEvent:
     Guid:
       Data1: 0
       Data2: 0

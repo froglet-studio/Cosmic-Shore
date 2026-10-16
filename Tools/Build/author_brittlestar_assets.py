@@ -103,9 +103,10 @@ DOC_GUID = guid_for("BRITTLE_STAR.md")
 AI_POLICY_GUID = guid_for("BrittleStarAIBoostPolicy.asset")
 
 # (control name, enum value, InputEvents it is bound to). The InputEvents numbers: RightStickAction=1 (RT / LMB /
-# Right Shift), LeftStickAction=2 (LT / RMB / Left Shift), Button1=6 (A / Space), Button2=7 (B / R), Button3=8 (X / Q).
+# Right Shift), LeftStickAction=2 (LT / RMB / Left Shift), FlipAction=3 (RB / E - the only free face control the input
+# layer raises), Button1=6 (A / Space), Button2=7 (B / R), Button3=8 (X / Q).
 CONTROLS = (("BrittleStarSpeedMode", 0, 6), ("BrittleStarCreationMode", 1, 7), ("BrittleStarDestructionMode", 2, 8),
-            ("BrittleStarFire", 3, 1), ("BrittleStarRingDetonation", 4, 2))
+            ("BrittleStarFire", 3, 1), ("BrittleStarRingDetonation", 4, 2), ("BrittleStarChargeMode", 5, 3))
 CONTROL_GUID = {name: guid_for(name + ".asset") for name, _, _ in CONTROLS}
 
 # Every script this vessel added: (path under Assets/_Scripts, guid).
@@ -113,6 +114,7 @@ NEW_SCRIPTS = tuple((rel, guid_for(os.path.basename(rel))) for rel in (
     "Controller/Vessel/BrittleStarHullForm.cs",
     "Controller/Vessel/BrittleStarHullBuilder.cs",
     "Controller/Vessel/BrittleStarRules.cs",
+    "Controller/Vessel/BrittleStarCord.cs",
     "Controller/Vessel/BrittleStarVesselTransformer.cs",
     "Controller/Vessel/BrittleStarPrismController.cs",
     "Controller/Animation/BrittleStarAnimation.cs",
@@ -170,6 +172,7 @@ POOL_SCRIPT = "b5daed71d21246db9fdb15a9d495e1ec"
 SPARROW_ROUND = "{fileID: 7632677803272750685, guid: 1bdcea9e9329dd141af7ab874a4d31a2, type: 3}"   # SparrowProjectile
 COMBAT_HIT_CHANNEL = "45fb43a0cddb5cc3cc4dc448df994152"
 TURN_END_CHANNEL = "498a06d44bde9184f985c938c803b2a1"
+CORD_MATERIAL = "02033cc2904f4f25bf3b6888ce3c98f9"         # ThresherChainMaterial: the cords are the Thresher's chain
 SO_VESSEL_SCRIPT = "0309a5343d820c14abd73b35f6fa50f1"
 MAP_SCRIPT = "4b3f2a8c8f344355b16a4d4296ae3f98"
 CAMERA_SCRIPT = "fd4e6f3597f7439ba7333b35a3a9e164"
@@ -208,7 +211,8 @@ def executor_block() -> str:
             f"  config: {{fileID: 11400000, guid: {CONFIG}, type: 2}}\n"
             f"  hull: {{fileID: {HULL_BUILDER_ID}}}\n"
             f"  gun: {{fileID: {GUN_ID}}}\n"
-            f"  OnMiniGameTurnEnd: {{fileID: 11400000, guid: {TURN_END_CHANNEL}, type: 2}}\n")
+            f"  OnMiniGameTurnEnd: {{fileID: 11400000, guid: {TURN_END_CHANNEL}, type: 2}}\n"
+            f"  cordMaterial: {{fileID: 2100000, guid: {CORD_MATERIAL}, type: 2}}\n")
 
 
 def turret_blocks() -> str:
@@ -256,8 +260,8 @@ def turret_blocks() -> str:
             f"    poolManager: {{fileID: {POOL_ID}}}\n" +
             mb(POOL_ID, TURRETS_GO, POOL_SCRIPT) +
             f"  prefab: {SPARROW_ROUND}\n"
-            # The five arms: 5 streams x 90 rounds/s x 3-4.8 s of flight (Space 0..10; slow rounds, Garrett 2026-10-14) =
-            # 1350-2160 rounds alive at once, plus RT's stream; the Sparrow's pool is 90/320 for its two.
+            # Space Mode's five guns (2026-10-16): up to 450 rounds/s at a full pull, overheating in ~2.4 s, each round
+            # flying 4.5-9 s (Space 0..10) - ~1,100 alive from one burst, plus the one turret's sustained 90/s x 9 s.
             "  defaultCapacity: 1400\n"
             "  maxSize: 2400\n"
             "  enableBufferMaintenance: 1\n"
@@ -376,7 +380,7 @@ def build_prefab(donor: str, sparrow_body: str) -> str:
     # Trail: one small block from the cockpit (the class document's "single small block"), skimmer clearance on.
     pc = S.get_doc(docs, PRISM_CONTROLLER_ID)
     pc = pc.replace("guid: 909fb5cbbca8c4549b5a9df56d837e55, type: 3}", f"guid: {SCRIPT['BrittleStarPrismController']}, type: 3}}", 1)
-    for key, value in (("BaseScale", "{x: 2.5, y: 2.5, z: 4.5}"), ("prismType", "2"), ("initialWavelength", "6"),
+    for key, value in (("BaseScale", "{x: 1.5, y: 1.5, z: 3}"), ("prismType", "2"), ("initialWavelength", "6"),
                        ("minWavelength", "6"), ("maxBlockScale", "1"), ("waitTillOutsideSkimmer", "1"),
                        ("Gap", "0"), ("MinimumGap", "0"), ("offset", "2")):
         pc = S.set_field(pc, key, value)
@@ -463,55 +467,77 @@ def ef(value, lo, hi, element, floor) -> str:
 def config_asset() -> str:
     """SEEDED once (see the module doc). Numbers = BrittleStarConfigSO's field initializers, the C# being the source."""
     g = lambda guid: f"{{fileID: 11400000, guid: {guid}, type: 2}}"
-    return (header(SCRIPT["BrittleStarConfigSO"], "BrittleStarConfig") +
-            "  modeBlendSeconds: 0.35\n"
-            "  speedModeMultiplier:\n" + ef(6, 6, 8, 4, 4) +
-            "  speedModeSpacingFollow: 1\n"
-            "  creationBlockSize: {x: 2.5, y: 2.5, z: 4.5}\n"
-            "  creationBlockScale:\n" + ef(1, 1, 1.8, 2, 0.6) +
-            "  creationSpacing: 6\n"
-            "  creationRadiusScale: 1\n"
-            "  creationOffset: 2\n"
-            "  creationMaxPerFrame: 3\n"
-            "  creationSpeedMultiplier: 0.5\n"
-            "  creationWaitTime: 0.6\n"
-            "  fireRate: 12\n"
-            "  projectileSpeed: 70\n"
-            "  projectileTime: 3\n"
-            "  rangeMultiplier:\n" + ef(1, 1, 1.6, 3, 0.7) +
-            "  projectileScale: 1\n"
-            "  projectileScaleMultiplier:\n" + ef(1, 1, 1.8, 1, 0.6) +
-            "  destructionFireRate: 90\n"
-            "  destructionProjectileSpeed: 135\n"
-            "  destructionProjectileScale: 1\n"
-            "  roundGrowthFactor: 3\n"
-            "  armFocusDistance: 120\n"
-            "  armSplayDegrees: 25\n"
-            "  maxSpreadDegrees: 16\n"
-            "  aimDeadzone: 0.25\n"
-            "  ringTurnRate: 540\n"
-            "  ringLaunchSpeed: 240\n"
-            "  ringFuseSeconds: 1.1\n"
-            "  ringContactRadiusScale: 1\n"
-            "  ringFlightSpin: 900\n"
-            "  ringBlastSeconds: 0.7\n"
-            "  ringBlastFallbackRadius: 200\n"
-            "  blastScale:\n" + ef(1, 1, 4, 1, 1) +
-            "  ringBlastBandWidth: 6\n"
-            "  rebuildSeconds: 0.5\n"
-            "  overdriveSeconds: 6\n"
-            "  ringBlastHitClass: 3\n"
-            "  ringBlastHitCooldown: 0.5\n"
-            f"  onCombatHitLanded: {g(COMBAT_HIT_CHANNEL)}\n"
-            "  aiModeIntervalSeconds: 3\n"
-            "  aiFireMinTargets: 2\n"
-            "  aiDestructionMinTargets: 8\n"
-            "  aiDetonateMinTargets: 18\n"
-            "  aiSpeedModeDegrees: 50\n"
-            "  aiTriggerMinSeconds: 0.4\n" +
-            "".join(S.empty_event(n) for n in ("speedModeEvent", "creationModeEvent", "destructionModeEvent", "modeOffEvent",
-                                               "fireEvent", "ringLaunchEvent", "ringBlastEvent", "ringRebuildEvent",
-                                               "chargeStoredEvent", "overdriveEvent")))
+    return (header(SCRIPT["BrittleStarConfigSO"], "BrittleStarConfig") + CONFIG_BODY.replace("@COMBAT@", g(COMBAT_HIT_CHANNEL)) +
+            "".join(S.empty_event(n) for n in CONFIG_EVENTS))
+
+
+CONFIG_EVENTS = ("speedModeEvent", "creationModeEvent", "destructionModeEvent", "chargeModeEvent", "modeOffEvent",
+                 "fireEvent", "cordSliceEvent", "ringLaunchEvent", "ringBlastEvent", "ringRebuildEvent",
+                 "chargeStoredEvent", "overheatEvent")
+
+CONFIG_BODY = (
+    "  modeBlendSeconds: 0.35\n"
+    "  speedModeMultiplier:\n" + ef(6, 6, 8, 4, 4) +
+    "  speedModeSpacingFollow: 1\n"
+    "  speedModeStretch: 1\n"
+    "  creationBlockScale:\n" + ef(1, 1, 1.8, 2, 0.6) +
+    "  creationSpacing: 6\n"
+    "  creationRadiusScale: 1\n"
+    "  creationOffset: 2\n"
+    "  creationMaxPerFrame: 3\n"
+    "  creationSpeedMultiplier: 0.5\n"
+    "  creationWaitTime: 0.6\n"
+    "  fireRate: 90\n"
+    "  projectileSpeed: 135\n"
+    "  projectileTime: 4.5\n"
+    "  rangeMultiplier:\n" + ef(1, 1, 2, 3, 0.7) +
+    "  projectileScale: 1\n"
+    "  projectileScaleMultiplier:\n" + ef(1, 1, 1.8, 1, 0.6) +
+    "  roundGrowthFactor: 3\n"
+    "  armFocusDistance: 120\n"
+    "  armSplayDegrees: 25\n"
+    "  aimDeadzone: 0.25\n"
+    "  ringTurnRate: 540\n"
+    "  heatPerRound: 0.0012\n"
+    "  coolRate: 0.12\n"
+    "  chargeCoolRate: 0.6\n"
+    "  overheatRecoverBelow: 0.35\n"
+    "  cordLength: 80\n"
+    "  cordLooseLengthScale: 1.5\n"
+    "  cordLinks: 16\n"
+    "  cordCutRadius: 0.6\n"
+    "  cordLooseWave: 180\n"
+    "  cordRigidWave: 2500\n"
+    "  cordLooseDamping: 0.4\n"
+    "  cordRigidDamping: 14\n"
+    "  cordPose: 1600\n"
+    "  cordRigidityRate: 12\n"
+    "  cordDebrisRestitution: 0.5\n"
+    "  cordDebrisSpeedLimit: 200\n"
+    "  cordRenderSubdivisions: 4\n"
+    "  cordColor: {r: 0.07, g: 0.065, b: 0.065, a: 1}\n"
+    "  cordRimBrightness: 0.75\n"
+    "  cordFallbackRim: {r: 0.3, g: 0.9, b: 0.85, a: 1}\n"
+    "  ringLaunchSpeed: 240\n"
+    "  ringFuseSeconds: 1.1\n"
+    "  ringContactRadiusScale: 1\n"
+    "  ringFlightSpin: 900\n"
+    "  ringBlastSeconds: 0.7\n"
+    "  ringBlastFallbackRadius: 200\n"
+    "  blastScale:\n" + ef(1, 1, 4, 1, 1) +
+    "  ringBlastBandWidth: 6\n"
+    "  maxSpareRings: 2\n"
+    "  rebuildSeconds: 0.5\n"
+    "  ringBlastHitClass: 3\n"
+    "  ringBlastHitCooldown: 0.5\n"
+    "  cordHitCooldown: 0.5\n"
+    "  onCombatHitLanded: @COMBAT@\n"
+    "  aiModeIntervalSeconds: 3\n"
+    "  aiFireMinTargets: 2\n"
+    "  aiDestructionMinTargets: 8\n"
+    "  aiDetonateMinTargets: 18\n"
+    "  aiSpeedModeDegrees: 50\n"
+    "  aiTriggerMinSeconds: 0.4\n")
 
 
 def control_asset(name: str, value: int) -> str:
@@ -578,8 +604,8 @@ def class_asset() -> str:
             f"  Class: {CLASS_ID}\n"
             "  Name: Brittle Star\n"
             "  Description: A one-touch flyer built round a cockpit and a five-pointed support ring. Swap between Speed,\n"
-            "    Creation and Destruction modes, turn the ring to bring a turret to bear, and throw the ring itself as a\n"
-            "    bomb - a crystal builds the next one.\n"
+            "    Creation, Space and Charge modes - five guns that overheat, or five cords that whip and stiffen into\n"
+            "    sabers - turn the ring to bring a turret to bear, and throw spare rings as bombs.\n"
             "  PrimaryElement: 0\n"
             "  Element: {fileID: 0}\n"
             "  InitialResourceLevels: {Mass: 0, Charge: 0, Space: 0, Time: 0}\n"
@@ -615,33 +641,34 @@ def quote(text: str) -> str:
 
 
 MAP_ENTRIES = (
-    (1, "Ring Detonation", 2,
-     "LT. Eject the support ring and throw it forward (240 u/s on top of your own speed); it blows on touching any "
-     "mass or a rival hull, or on its 1.1 s fuse, in a RING EXPLOSION: a flat disk in the ring's plane, as thick as the "
-     "ring and as wide as the cell's nucleus, sweeping out from the ring over 0.7 s. It destroys every prism it passes, "
-     "any domain (your own and your allies' too), and strips petals from every rival hull it passes (petals only - "
-     "nothing is moved). No cooldown, only a ring: with a stored crystal charge a new ring is built at once (two in "
-     "rapid succession); without one you fly ringless and modeless until a crystal builds the next. Charge is threat - "
-     "one dial: the disk's thickness x1 -> x4 at level 10 (BrittleStarConfigSO.blastScale), and the rounds' size "
-     "x1 -> x1.8 with it (projectileScaleMultiplier), the Rolling Thunder persona's two halves of one idea."),
+    (1, "Charge Mode", 3,
+     "RB. FIVE CORDS, one from each turret, slicing every prism they touch (any domain; your own fresh trail is spared) "
+     "and striking rival hulls for petals. Released, RT leaves them WHIPS at 150% length: heavy, inextensible, slow - a "
+     "turn, a ring flick or a sweep of the right stick sends a wave travelling down them that rings on for seconds. "
+     "Pulled, RT shortens them to 100% and stiffens them into five straight SABERS (analog: every depth in between). "
+     "The right stick turns them with the ring and opens them out. Using them cools the guns. "
+     "LT throws the ring - only with a SPARE ring in stock (one per crystal, two at most); the mounted ring then regrows "
+     "on its own. It blows on contact or its fuse in a disk as wide as the cell's nucleus, destroying every prism in its "
+     "plane and stripping petals from every rival hull it crosses (petals only - nothing is moved). The card shows the "
+     "spare stock. Charge is threat - one dial: the cords' cut width and the rounds' size x1 -> x1.8 at level 10 "
+     "(projectileScaleMultiplier), the disk's thickness x1 -> x4 (blastScale)."),
     (2, "Creation Mode", 7,
-     "B. A trail behind EACH of the ring's five corners instead of the single small block from the cockpit - five "
-     "lines that turn with the ring's firing rotation. The SLOWEST mode: cruise x0.5. Needs the ring. Mass is volume - one dial: the corner trails' "
-     "blocks x1 -> x1.8 at level 10 (BrittleStarConfigSO.creationBlockScale)."),
-    (3, "Destruction Mode", 8,
-     "X. The FIVE ARMS: while the mode is on, every turret fires on its own - unspread, at the Sparrow's full-auto "
-     "cadence (90 rounds/s each; slow rounds, 135 u/s, swelling as they fly) - a stream steady enough to read as five arms reaching ahead of the ring. "
-     "The right stick's direction turns the ring, and the arms with it; its deflection moves them in and out: centred "
-     "they meet 120 u ahead (the vessel a crosshair), pushed to the rim they splay 25 degrees. "
-     "Outside it, Fire on RT (held) is one stream from the turret the right stick points at (the ring turns to bring it "
-     "round) or the cockpit gun with the stick centred, the stick's deflection opening the spread. Friendly fire is on. "
-     "A round on a rival hull is a scored bullet hit (petals only). Space is reach - one dial: the rounds' flight time, "
-     "and so their range, x1 -> x1.6 at level 10 (BrittleStarConfigSO.rangeMultiplier)."),
+     "B. A trail behind EACH of the ring's five corners instead of the single small block from the cockpit - the same "
+     "small block, five lines that turn with the ring's firing rotation. The SLOWEST mode: cruise x0.5. Mass is volume - "
+     "one dial: the corner trails' blocks x1 -> x1.8 at level 10 (BrittleStarConfigSO.creationBlockScale)."),
+    (3, "Space Mode", 8,
+     "X. FIVE GUNS: RT fires every turret, its pull setting the rate (analog, up to 90 rounds/s each; the Sparrow's "
+     "round at 135 u/s, swelling as it flies, 387 u reach). The right stick's direction turns the ring, and the guns with "
+     "it; its deflection moves them in and out: centred they meet 120 u ahead (the vessel a crosshair), pushed to the rim "
+     "they splay 25 degrees. In every other mode RT fires the one turret the ring has turned to the aim, the same gun "
+     "with no spread. Every round HEATS the guns - heat per second is the pull x the guns firing - and overheated they "
+     "cannot fire until they cool; overheated in Space Mode your trail lays DANGER prisms. The card shows the heat. "
+     "Friendly fire is on. A round on a rival hull is a scored bullet hit (petals only). Space is reach - one dial: "
+     "every gun's range x1 -> x2 at level 10 (BrittleStarConfigSO.rangeMultiplier)."),
     (4, "Speed Mode", 6,
-     "A. Ignite every thruster: the hull's cruise speed x6, and the base trail's spacing stretched by the same ratio "
-     "so production per second does not rise. Needs the ring. A crystal collected with a charge already stored is "
-     "OVERDRIVE - all three modes at once for 6 s. Time is rate - one dial: Speed Mode's multiplier x6 -> x8 at "
-     "level 10 (BrittleStarConfigSO.speedModeMultiplier)."),
+     "A. Ignite every thruster: the hull's cruise speed x6, the base trail's spacing stretched by the same ratio so "
+     "production per second does not rise, and every prism stretched with it so the trail still joins up. Time is rate - "
+     "one dial: Speed Mode's multiplier x6 -> x8 at level 10 (BrittleStarConfigSO.speedModeMultiplier)."),
 )
 
 
@@ -804,6 +831,8 @@ def check(files: "dict[str, str]") -> "list[str]":
     ex = d.get(EXECUTOR_ID, "")
     need(f"guid: {CONFIG}" in ex and f"hull: {{fileID: {HULL_BUILDER_ID}}}" in ex and f"gun: {{fileID: {GUN_ID}}}" in ex
          and TURN_END_CHANNEL in ex, "BrittleStarExecutor is not wired (config / hull / gun / turn-end channel)")
+    need(f"cordMaterial: {{fileID: 2100000, guid: {CORD_MATERIAL}, type: 2}}" in ex,
+         "BrittleStarExecutor.cordMaterial is not ThresherChainMaterial (the cords would draw as flat lines)")
     need(f"projectileFactory: {{fileID: {FACTORY_ID}}}" in d.get(GUN_ID, "") and SPARROW_ROUND in d.get(POOL_ID, ""),
          "the turrets' Gun / ProjectileFactory / pool are not wired")
     need(f"guid: {SCRIPT['BrittleStarVesselTransformer']}" in d.get(TRANSFORMER_ID, "") and "vectorFlightModel: 0" in d.get(TRANSFORMER_ID, ""),
@@ -928,6 +957,7 @@ def self_test() -> int:
         "unregistered from the container": (CONTAINER, lambda t: t.replace(PREFAB_GUID, "0" * 32)),
         "the map drifted": (MAP, lambda t: t.replace("Input: 6", "Input: 0")),
         "Fire unbound": (PREFAB, lambda t: t.replace(CONTROL_GUID["BrittleStarFire"], "f" * 32)),
+        "cord material unwired": (PREFAB, lambda t: t.replace(f"guid: {CORD_MATERIAL}", "guid: " + "e" * 32)),
         "fusion entries missing": (FUSION, lambda t: t.replace(f"  - vessel: {CLASS_ID}\n", "  - vessel: 99\n")),
         "roster entry missing": (os.path.join(SCRIPTS, "Controller/Toys/ToyVesselRoster.cs"), lambda t: t.replace("VesselClassType.BrittleStar", "")),
     }
