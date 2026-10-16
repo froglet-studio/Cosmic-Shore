@@ -16,6 +16,13 @@ The Serpent's stopped stance and its cloak both grow a wall from a seed with a S
 - **Cloaking** (RT unscoped, `CloakSeedWallAction`) leaves a SUPER-shielded seed (`shieldOnSeed`)
   growing the same wall, plus an illusion of the hull frozen where it was, which reads as a Serpent
   that just stopped. The real Serpent flies on, cloaked. Everyone else sees neither the hull nor its trail.
+  "Neither the hull" means the whole vessel: every renderer under the vessel root (the
+  VesselTail, the jets, any other mesh or effect; prisms excluded) stops drawing for everyone
+  else (`forceRenderingOff`, never `enabled`, so owners that toggle their own renderers are not
+  fought) and draws again at the reveal, a TrailRenderer cleared first so it never draws the
+  route flown under the cloak. Until 2026-10-16 only the hull
+  renderer was hidden, so an "invisible" Serpent still trailed its VesselTail
+  (`Docs/VESSEL_TAIL_AND_JETS.md`).
   The pilot flying it sees their hull as a glowing outline in their domain colour
   (`CloakGhost.shader`: additive Fresnel rim, a faint fill and slow bands running nose to tail)
   and their trail as a ghost of itself, drawn through the prism dither at `pilotTrailAlpha` (0.4),

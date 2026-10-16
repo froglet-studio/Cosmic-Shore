@@ -64,6 +64,13 @@ namespace CosmicShore.Gameplay
 
         private readonly List<TrackedPrism> _cloakedPrisms = new();
 
+        // Every OTHER renderer on the vessel this cloak switched off for an observer: the TAIL (a
+        // TrailRenderer on the vessel root whose whole job is "there is a ship over there" -
+        // Docs/VESSEL_TAIL_AND_JETS.md), the JETS, and any second model. Hiding the hull alone left
+        // all of them drawing, so an "invisible" Serpent still streamed its tail across the arena.
+        private readonly List<Renderer> _hiddenVesselRenderers = new();
+        private readonly List<Renderer> _rendererScratch = new();
+
         // The seed this cloak laid: the illusion collapses into it when the cloak ends.
         private Prism _seed;
 
@@ -376,7 +383,54 @@ namespace CosmicShore.Gameplay
             {
                 // The illusion stands exactly where the hull was, so hiding it is invisible.
                 shipRenderer.enabled = false;
+                HideVesselExtras();
             }
+        }
+
+        /// <summary>
+        /// Observer side of the cloak: stop drawing every renderer under the vessel root besides
+        /// the hull (handled above) - the TAIL, the jets, any other model piece. Before
+        /// 2026-10-16 only the hull went dark, so an "invisible" Serpent still trailed its tail.
+        ///
+        /// <para>By <see cref="Renderer.forceRenderingOff"/>, never <c>enabled</c>, for the reasons
+        /// <see cref="VesselTailAndJets.HideTails"/> records: other owners (jets, ability FX) toggle
+        /// <c>enabled</c> themselves, so a cloak that wrote it would fight them and re-enable one
+        /// they had switched off; and inactive children are included, so an effect switched on
+        /// mid-cloak is already dark. A renderer something else already holds dark is left to its
+        /// holder. Laid trail prisms come from a pool and are not vessel children, but a prism is
+        /// skipped explicitly anyway: the trail has its own fade (CloakOnePrism) and conserved mass
+        /// is never this sweep's.</para>
+        /// </summary>
+        private void HideVesselExtras()
+        {
+            _hiddenVesselRenderers.Clear();
+            var root = _status?.Transform;
+            if (root == null) return;
+
+            root.GetComponentsInChildren(true, _rendererScratch);
+            for (int i = 0; i < _rendererScratch.Count; i++)
+            {
+                var r = _rendererScratch[i];
+                if (r == null || r == shipRenderer || r.forceRenderingOff) continue;
+                if (r.GetComponentInParent<Prism>(true) != null) continue;
+                r.forceRenderingOff = true;
+                _hiddenVesselRenderers.Add(r);
+            }
+            _rendererScratch.Clear();
+        }
+
+        private void RestoreVesselExtras()
+        {
+            for (int i = 0; i < _hiddenVesselRenderers.Count; i++)
+            {
+                var r = _hiddenVesselRenderers[i];
+                if (r == null) continue;
+                // The tail kept recording while it was dark, so it would draw the route flown under
+                // the cloak the moment it reappears - a line straight to the pilot. Start it fresh.
+                if (r is TrailRenderer trail) trail.Clear();
+                r.forceRenderingOff = false;
+            }
+            _hiddenVesselRenderers.Clear();
         }
 
         /// <summary>The runtime clone of the ghost material in <paramref name="slot"/>, made on
@@ -532,6 +586,7 @@ namespace CosmicShore.Gameplay
         {
             DestroySerpentGhost();
             if (_status != null) s_Cloaked.Remove(_status);
+            RestoreVesselExtras();
 
             // Only a hull this cloak changed: End() also runs at a turn end that had no cloak,
             // and must not write a never-captured "previous" state onto the hull.
