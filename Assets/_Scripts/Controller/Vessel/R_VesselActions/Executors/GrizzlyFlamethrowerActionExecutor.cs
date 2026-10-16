@@ -25,8 +25,8 @@ namespace CosmicShore.Gameplay
     /// a full cell lasts <c>cellSeconds</c> at the smallest cone and empties
     /// <c>largeFlameDrainMultiplier</c> (1.5x) faster at full pressure - and it refills while that
     /// cone is not spraying, after <c>cellRechargeDelay</c>. An empty cell cuts its cone out until
-    /// the trigger is pulled again with charge in it. The cone dims as its cell empties
-    /// (<see cref="GrizzlyClawConeVisual.SetCharge"/>); <see cref="CellFill"/> is the HUD read.
+    /// the trigger is pulled again with charge in it. The whips' glow dims as its cell empties
+    /// (<see cref="GrizzlyClawWhips"/>); <see cref="CellFill"/> is the HUD read.
     /// Simulated on every peer from the replicated presses and analog, like the spray itself.</para>
     ///
     /// <para>The two cones sit <c>sideOffset</c> to each side and are turned <c>splayDegrees</c>
@@ -42,7 +42,7 @@ namespace CosmicShore.Gameplay
         sealed class Spray
         {
             public CancellationTokenSource Cts;
-            public GrizzlyClawConeVisual Cone;
+            public GrizzlyClawWhips Whips;
             public float Fill = 1f;                 // energy cell, 0..1
             public float IdleSince = float.NegativeInfinity;
             public GrizzlyFlamethrowerActionSO Config;   // last config sprayed, for the recharge
@@ -94,7 +94,6 @@ namespace CosmicShore.Gameplay
                 if (spray.Cts != null || spray.Fill >= 1f || !spray.Config) continue;
                 if (Time.time - spray.IdleSince < spray.Config.CellRechargeDelay) continue;
                 spray.Fill = Mathf.Min(1f, spray.Fill + spray.Config.CellRechargePerSecond * dt);
-                spray.Cone?.SetCharge(spray.Fill);
             }
         }
 
@@ -109,16 +108,11 @@ namespace CosmicShore.Gameplay
             if (spray.Fill <= 0f) return;   // empty cell: nothing until it recharges
             spray.Cts = CancellationTokenSource.CreateLinkedTokenSource(this.GetCancellationTokenOnDestroy());
 
-            // Draw the reach. The cone is built from the same Range and half-angle IgniteCone
-            // filters on, so the visual cannot drift from what actually catches fire.
+            // The look: four stiff red whips fanned across the same cone IgniteCone filters on
+            // (GrizzlyClawWhips), so the visual cannot drift from what actually catches fire.
             var vesselTf = status.Transform;
             if (vesselTf != null)
-            {
-                spray.Cone = GrizzlyClawConeVisual.EnsureFor(vesselTf, ConeName(slot), LocalApex(so, slot), Yaw(so, slot));
-                spray.Cone?.SetCharge(spray.Fill);
-                float pressure = PressureOf(status, side);
-                spray.Cone?.Show(so.RangeForPressure(pressure), so.HalfAngleForPressure(pressure));
-            }
+                spray.Whips = GrizzlyClawWhips.EnsureFor(vesselTf, WhipSetName(slot));
 
             bool wasSpraying = AnySpraying(slot);
             if (!wasSpraying) OnSprayChanged?.Invoke(true);
@@ -128,7 +122,7 @@ namespace CosmicShore.Gameplay
         public void EndSpray(GrizzlyBombActionSO.TriggerSide? side)
         {
             var spray = _sprays[SlotOf(side)];
-            spray.Cone?.Hide();
+            spray.Whips?.Hide();
             if (spray.Cts == null) return;
             spray.Cts.Cancel();
             spray.Cts.Dispose();
@@ -151,11 +145,11 @@ namespace CosmicShore.Gameplay
             return false;
         }
 
-        static string ConeName(int slot) => slot switch
+        static string WhipSetName(int slot) => slot switch
         {
-            0 => "PlasmaClawCone_L",
-            1 => "PlasmaClawCone_R",
-            _ => "PlasmaClawCone",
+            0 => "PlasmaClawWhips_L",
+            1 => "PlasmaClawWhips_R",
+            _ => "PlasmaClawWhips",
         };
 
         /// <summary>The cone's apex in the hull's local space: its own side of the front.</summary>
@@ -201,11 +195,15 @@ namespace CosmicShore.Gameplay
                     float pressure = PressureOf(status, side);
                     float range = so.RangeForPressure(pressure);
                     float halfAngle = so.HalfAngleForPressure(pressure);
-                    spray.Cone?.Show(range, halfAngle);
 
                     // The cell: bigger flames burn it faster. Empty cuts the cone out.
                     spray.Fill = Mathf.Max(0f, spray.Fill - so.CellDrainPerSecond(pressure) * Time.deltaTime);
-                    spray.Cone?.SetCharge(spray.Fill);
+
+                    var vesselTf = status?.Transform;
+                    if (spray.Whips && vesselTf)
+                        spray.Whips.Show(so, vesselTf.TransformPoint(LocalApex(so, SlotOf(side))),
+                                         vesselTf.rotation * Quaternion.Euler(0f, Yaw(so, SlotOf(side)), 0f),
+                                         range, halfAngle, spray.Fill, Time.deltaTime);
                     if (spray.Fill <= 0f)
                     {
                         EndSpray(side);

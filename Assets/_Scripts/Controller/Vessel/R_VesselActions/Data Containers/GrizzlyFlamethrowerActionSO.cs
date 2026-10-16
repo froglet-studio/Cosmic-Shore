@@ -13,6 +13,10 @@ namespace CosmicShore.Gameplay
     /// from the RIGHT front, each forward, and the trigger's live PRESSURE sizes its cone between
     /// the Min and Max values below. The Max range must stay the Grizzly's shortest reach - the
     /// claw is always its closest-range weapon.
+    ///
+    /// <para><b>The look</b> (2026-10-16): four stiff RED whip cords per trigger
+    /// (<see cref="GrizzlyClawWhips"/>), the Brittle Star's Charge Mode whips (<see cref="BrittleStarCord"/>) held
+    /// near-rigid and fanned across the cone. The Whips section below tunes them; nothing in it changes what burns.</para>
     /// </summary>
     [CreateAssetMenu(fileName = "GrizzlyFlamethrowerAction", menuName = "ScriptableObjects/Vessel Actions/Grizzly Flamethrower")]
     public class GrizzlyFlamethrowerActionSO : ShipActionSO
@@ -49,6 +53,40 @@ namespace CosmicShore.Gameplay
         [SerializeField, Tooltip("Seconds after a cone stops spraying before its cell starts refilling.")]
         float cellRechargeDelay = 0.25f;
 
+        [Header("Whips (the look - four per trigger, cosmetic)")]
+        [SerializeField, Tooltip("Whip cords drawn per trigger, fanned across the cone.")]
+        int whipsPerSide = 4;
+        [SerializeField, Tooltip("How much of the cone's half-angle the fan spans (1 = the outer whips on the cone's edge).")]
+        [Range(0f, 1f)] float whipFanFraction = 0.85f;
+        [SerializeField, Tooltip("Gap between neighbouring whip roots at the muzzle, in world units.")]
+        float whipRootSpacing = 0.6f;
+        [SerializeField, Tooltip("0 = the Brittle Star's loose whip, 1 = a straight saber. High on purpose: the claw's whips are 'more rigid' (design ask, 2026-10-16), so they lag a turn and shiver but stay nearly straight.")]
+        [Range(0f, 1f)] float whipRigidity = 0.8f;
+        [SerializeField, Tooltip("Joints per whip. More = smoother bends, more cost.")]
+        int whipLinks = 10;
+        [SerializeField, Tooltip("1/s^2: wave stiffness at rigidity 0 (the Brittle Star's 180).")]
+        float whipLooseWave = 180f;
+        [SerializeField, Tooltip("1/s^2: wave stiffness at rigidity 1 (the Brittle Star's 2500).")]
+        float whipRigidWave = 2500f;
+        [SerializeField, Tooltip("1/s: wave damping at rigidity 0 (the Brittle Star's 0.4).")]
+        float whipLooseDamping = 0.4f;
+        [SerializeField, Tooltip("1/s: wave damping at rigidity 1 (the Brittle Star's 14).")]
+        float whipRigidDamping = 14f;
+        [SerializeField, Tooltip("1/s^2: pull onto the straight line at full rigidity, x rigidity^2 (the Brittle Star's 1600).")]
+        float whipPose = 1600f;
+        [SerializeField, Tooltip("Smoothing points drawn between whip joints.")]
+        int whipRenderSubdivisions = 4;
+        [SerializeField, Tooltip("Whip width at the root, world units; it tapers to a fifth at the tip.")]
+        float whipWidth = 1.2f;
+        [SerializeField, Tooltip("Fresnel tube material (the Thresher chain's). Empty = an unlit runtime fallback.")]
+        Material whipMaterial;
+        [SerializeField, Tooltip("The whip's dark core colour.")]
+        Color whipBodyColor = new Color(0.25f, 0.02f, 0.02f, 1f);
+        [SerializeField, Tooltip("The whip's glowing rim colour at a full energy cell.")]
+        Color whipRimColor = new Color(1f, 0.12f, 0.08f, 1f);
+        [SerializeField, Tooltip("Rim brightness left at an EMPTY cell, as a fraction of full, so a drained claw still shows its reach.")]
+        [Range(0f, 1f)] float whipEmptyBrightness = 0.25f;
+
         public float Range => range;
         public float ConeHalfAngle => coneHalfAngle;
         public float IgniteTicksPerSecond => igniteTicksPerSecond;
@@ -57,6 +95,22 @@ namespace CosmicShore.Gameplay
         public float NoseOffset => noseOffset;
         public float SplayDegrees => splayDegrees;
         public float CellRechargeDelay => cellRechargeDelay;
+        public int WhipsPerSide => whipsPerSide;
+        public float WhipFanFraction => whipFanFraction;
+        public float WhipRootSpacing => whipRootSpacing;
+        public float WhipRigidity => whipRigidity;
+        public int WhipLinks => whipLinks;
+        public float WhipLooseWave => whipLooseWave;
+        public float WhipRigidWave => whipRigidWave;
+        public float WhipLooseDamping => whipLooseDamping;
+        public float WhipRigidDamping => whipRigidDamping;
+        public float WhipPose => whipPose;
+        public int WhipRenderSubdivisions => whipRenderSubdivisions;
+        public float WhipWidth => whipWidth;
+        public Material WhipMaterial => whipMaterial;
+        public Color WhipBodyColor => whipBodyColor;
+        public Color WhipRimColor => whipRimColor;
+        public float WhipEmptyBrightness => whipEmptyBrightness;
 
         /// <summary>Cell fraction spent per second spraying at pressure 0..1: the smallest cone
         /// empties a full cell in <c>cellSeconds</c>, the largest <c>largeFlameDrainMultiplier</c>

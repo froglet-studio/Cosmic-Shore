@@ -63,6 +63,16 @@ momentum."*
   Apexes sit `sideOffset` 6 to each side and `noseOffset` 4 ahead, each turned `splayDegrees` 6°
   outward so the two spread apart (shrunk and spread, 2026-10-16). Each cone ignites on its own.
   45 u is the Grizzly's shortest reach on purpose.
+- **Claw look: four rigid red whips per side** (2026-10-16: *"the brittlestar has a whip mode that I would
+  like to mimic, but have be more rigid and red with four on each side as the plasma claw… we are trying to
+  enhance the visuals of it. the cones look a little plain."*). The flat cone is gone
+  (`GrizzlyClawConeVisual` deleted); `GrizzlyClawWhips` draws four `BrittleStarCord`s per trigger, the Brittle
+  Star's own wave-equation whip (copied verbatim from Garrett's `cece/beautiful-knuth-j3atgk`, same path and
+  GUID, so the two branches merge clean), held at `whipRigidity` 0.8 so they lag a turn and shiver but stay
+  nearly straight. They fan across the cone (`whipFanFraction` 0.85, alternating a little up and down), taper
+  from `whipWidth` 1.2 to a point, and use the Thresher chain's fresnel tube material in dark red with a red
+  rim that dims as the cell empties. **Gameplay is unchanged**: what burns is still the cone the whips fan
+  across, with the same pressure, reach, cells and burn.
 - **Claw energy cells** (2026-10-16: *"give each of them a small energy cell that recharges when
   its not being fired and empties 1.5 times faster for larger flames"*): one cell per cone. A full
   cell lasts `cellSeconds` 3 s at the smallest cone and empties `largeFlameDrainMultiplier` 1.5×
@@ -353,8 +363,8 @@ Not run in the editor — no Unity in the authoring sessions. Steps:
 10. **Turn end** with a bomb cruising or frozen: it disappears with no blast.
 11. **X does nothing** in any mode (2026-10-16).
 11b. **Claw:** LB to PLASMA CLAW. Feather LT: a small cone from the left front; squeeze: the full
-    45 u cone. RT the same on the right; the two splay apart. Enemy prisms in them burn. Hold
-    one: it dims and cuts out after ~2-3 s; let go and it refills in ~2 s.
+    45 u fan of four red whips. RT the same on the right; the two splay apart. Enemy prisms in them burn. Hold
+    one: its whips dim and it cuts out after ~2-3 s; let go and it refills in ~2 s.
 11c. **Sniper:** LB to SNIPER. Hold LT: the scope PiP opens. RT: a round; the PiP rides it
     while LT is held; let go and the PiP closes. RT again within 3 s does nothing.
 11d. **Bombs off:** fire a bomb, switch to the claw: the bomb vanishes without a blast; the

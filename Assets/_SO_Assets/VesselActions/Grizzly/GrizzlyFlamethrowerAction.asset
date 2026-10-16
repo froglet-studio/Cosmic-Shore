@@ -25,3 +25,19 @@ MonoBehaviour:
   largeFlameDrainMultiplier: 1.5
   cellRechargeSeconds: 2
   cellRechargeDelay: 0.25
+  whipsPerSide: 4
+  whipFanFraction: 0.85
+  whipRootSpacing: 0.6
+  whipRigidity: 0.8
+  whipLinks: 10
+  whipLooseWave: 180
+  whipRigidWave: 2500
+  whipLooseDamping: 0.4
+  whipRigidDamping: 14
+  whipPose: 1600
+  whipRenderSubdivisions: 4
+  whipWidth: 1.2
+  whipMaterial: {fileID: 2100000, guid: 02033cc2904f4f25bf3b6888ce3c98f9, type: 2}
+  whipBodyColor: {r: 0.25, g: 0.02, b: 0.02, a: 1}
+  whipRimColor: {r: 1, g: 0.12, b: 0.08, a: 1}
+  whipEmptyBrightness: 0.25

@@ -70,6 +70,29 @@ namespace CosmicShore.Tests
         }
 
         [Test]
+        public void ClawIsFourRigidRedWhipsPerSide()
+        {
+            // Design ask 2026-10-16: the Brittle Star's whips, "more rigid and red with four on each side".
+            Assert.AreEqual(4, _claw.WhipsPerSide);
+            Assert.Greater(_claw.WhipRigidity, 0.5f, "the claw's whips are stiffer than the Brittle Star's loose whip");
+            var rim = _claw.WhipRimColor;
+            Assert.Greater(rim.r, 2f * Mathf.Max(rim.g, rim.b), "the whips glow RED");
+
+            // At that rigidity a whip held on a still line stays on it: a claw finger, not a rope.
+            var cord = new BrittleStarCord(_claw.WhipLinks);
+            var settings = new BrittleStarCord.Settings
+            {
+                LooseWave = _claw.WhipLooseWave, RigidWave = _claw.WhipRigidWave,
+                LooseDamping = _claw.WhipLooseDamping, RigidDamping = _claw.WhipRigidDamping, Pose = _claw.WhipPose,
+            };
+            cord.Step(Vector3.zero, Vector3.right, _claw.Range, _claw.WhipRigidity, settings, 1f / 60f);   // seeds straight
+            for (int f = 0; f < 60; f++)
+                cord.Step(Vector3.zero, Vector3.forward, _claw.Range, _claw.WhipRigidity, settings, 1f / 60f);
+            Assert.Less((cord.Tip - Vector3.forward * _claw.Range).magnitude, _claw.Range * 0.1f,
+                "a rigid claw whip must settle onto its aim within a second of a 90 degree turn");
+        }
+
+        [Test]
         public void ClawIsAlwaysTheShortestReach()
         {
             float sniperReach = _sniper.ProjectileSpeed * _sniper.ProjectileTime;
