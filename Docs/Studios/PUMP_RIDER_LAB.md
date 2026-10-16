@@ -111,6 +111,22 @@ Likely reasons, from round 2's measurements (not yet confirmed by the designer):
 - **One input, one job.** The trigger is only the knees and the stick only the lean; on Dual stick the same two
   sticks carry knees (XDiff), roll (YDiff) and look (XSum / YSum), so moving one disturbs the others.
 
+**Moving mass toward the curve** (the designer, same day: *"when you contract from one side it should be like
+extending from the other because it is all about moving mass toward the curve so it depend on whether you are spun
+to the outside or inside"*). That is the law as built: `v²·κ·cos(α − φ)·dh` is the curvature times the hips'
+movement TOWARD the curve's centre, so extending on the inside and contracting on the outside are the same stroke
+with the same gain. The page now says it that way: the pump lane marks every stroke **IN** (with "extend" or
+"contract" for the side you are on), the rail is tinted by how hard the curve loads you on either side, the compass
+dot marks the curve's centre, an arrow on the rider points the way to move, the dial is CURVE, and the meter reads
+"moving IN toward the curve, on the outside" (+28.0 u/s², hanging under a roller at 251 u/s).
+
+**The camera follows you** (the designer: *"the camera needs to follow the player"*). Two fixes. (1) Every camera
+now smooths its OFFSET from the rider, not its absolute position, which trailed by about speed / rate (40+ u at
+300 u/s). (2) The default camera is now **Chase (follows you round the rail)**: its roll chases yours as an angle,
+so it turns with you as you spin and keeps you on top of the rail while the floor, scenery and sky swing round.
+Chase (world up), Trackside and Overhead remain. Saved page options moved to a new key, so returning viewers get
+Knees and this camera.
+
 **Open:** Knees has no look input yet. If look while attached matters, the free right stick could carry it
 (the Urchin's pitch / yaw on one stick), which keeps the trigger for the knees.
 
