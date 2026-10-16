@@ -129,6 +129,8 @@ NEW_SCRIPTS = tuple((rel, guid_for(os.path.basename(rel))) for rel in (
     "Controller/ImpactEffects/EffectsSO/Vessel Crystal Effects/ShrikeCrystalEffectSO.cs",
     "UI/Controller/ShrikeHUDController.cs",
     "UI/View/ShrikeHUDView.cs",
+    "UI/View/ElementPetalGeometry.cs",
+    "UI/View/ElementPetalImage.cs",
     "Tests/Editor/ShrikeTests.cs",
     "Tests/Editor/ShrikeConfigTests.cs",
 ))
@@ -388,9 +390,11 @@ def config_asset() -> str:
             "  hullRadius: 3\n"
             "  dockBonus: 1.6\n"
             "  dockBonusShielded: 2.5\n"
-            "  zoomFieldOfView: 24\n"
-            "  zoomSeconds: 0.2\n"
-            "  dockedCameraPullBack: 1.8\n"
+            "  unscopedFieldOfView: 60\n"
+            "  zoomFieldOfView: 22\n"
+            "  zoomResponse: 12\n"
+            "  zoomDeadzone: 0.08\n"
+            "  dockedCameraPullBack: 5\n"
             "  cameraEaseRate: 4\n"
             "  dockQueryReach: 12\n"
             "  dockGraceSeconds: 0.5\n"
@@ -481,11 +485,13 @@ def skimmer_container_asset() -> str:
 
 
 def camera_asset() -> str:
-    """SEEDED once. The studio's chase: 30 u behind with a 6 u lift (shrike.html CHASE), hard-attached; the fleet's
-    12000 far plane STATED (vessel contract 1.8) - the lance reaches 2400 u."""
+    """SEEDED once. 30 u behind ON THE HULL'S AXIS (Garrett, 2026-10-16: "the camera, weapons, zoom, etc. need to be
+    aligned"): the studio's 6 u lift is gone, so the screen centre is the line the lance, the tether, the lock cone and the
+    eyepiece share (the Serpent's (0, 0, -250) rule). Hard-attached; the fleet's 12000 far plane STATED (vessel contract
+    1.8) - the lance reaches 2400 u, and docked the camera eases back to 5x."""
     return (header(CAMERA_SCRIPT, "ShrikeCameraSettingsSO") +
             "  mode: 0\n"
-            "  followOffset: {x: 0, y: 6, z: -30}\n"
+            "  followOffset: {x: 0, y: 0, z: -30}\n"
             "  lookAheadDistance: 0\n"
             "  lookAheadLift: 0\n"
             "  chaseEaseRate: 0\n"

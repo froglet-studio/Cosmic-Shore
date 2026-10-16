@@ -65,6 +65,46 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Shrike sight: the Serpent's eyepiece in the mode's petal, lit targets, one axis, sling needs an anchor (`cece/affectionate-clarke-s738vh`, 2026-10-16) — NOT EDITOR-VERIFIED
+
+**What landed:** `R_VesselActions/SHRIKE.md` §3.4 and the Void Sling bullet. **Supersedes step 2 of the entry below.**
+
+- LT is the Serpent's eyepiece (`ShrikeScopeOverlay` on `ScopePipView`), not a flight-view zoom.
+- The window is cut to the mode's element petal (`ElementPetalGeometry` / `ElementPetalImage`, new in UI/View).
+- While scoped, `PrismLit` lights the lance cylinder, the lock cone and target, or the sling's path and anchor.
+- A flight reticle sits on the hull axis and the beam is drawn from the muzzle.
+- The camera follow offset is (0, 0, −30), and docked it pulls back 5×.
+- The sling resolves its anchor at the press: no anchor means no sling and no cooldown.
+
+**Verified without the editor:**
+
+- `unity_refcompile`:
+  - `--config player`: 0 project errors.
+  - `--config editor`: 0 errors in changed files.
+- `shrike_harness --self-test`: 21/21 pass, including the petal outlines (convex, apex down, centred, aspect kept), and
+  both negative controls fire.
+- `author_shrike_assets --check` passes and `--self-test` fires 11/11.
+- `studio_to_unity --check`: 26/26 match.
+- The gates pass: shared channels, prefab container, far-clip, console logging, conditional compilation, using
+  directives, enum references (no Shrike finding).
+- Not run: Unity, Play mode.
+
+**Verify in editor** (Menu_Main ▸ Toy Box ▸ Vessel Changer ▸ Shrike):
+1. **Alignment:** fly straight. The small posts-and-dot reticle sits at screen centre, just past the nose (the camera is
+   now directly behind, with no lift). Fire the lance (X, then RT): the beam leaves the barrel and runs through the
+   reticle, and what it breaks is under the reticle.
+2. **Zoom (LT / RMB):** the flight view does NOT zoom; an eyepiece window opens top left where the Serpent's does,
+   showing the view down the nose, magnified. On a pad, LT's depth dials the magnification. The reticle in it is at the
+   window's centre, on the same line as the flight reticle.
+3. **Window shape:** X (Space): a kite. RB / E (Charge): the gem, the same as the Serpent's window. B / R (Time): a
+   tall diamond. The shape changes with the mode while scoped.
+4. **Lit:** scoped in Space mode, the mass along the beam's line glows in your colour. In Charge mode the cone ahead
+   glows faintly, and once painted the target glows strongly. In Time mode the path to the block the tether would hit,
+   and that block, glow; aimed at empty space, nothing glows.
+5. **Sling without a target (B, aim at empty space, RT):** nothing happens and the Time card's gauge stays full. Aim at
+   a block: the sling fires, the gauge empties.
+6. **Docked:** touch a block. The camera eases a long way back, about 150 u, and returns when you leave.
+
 ### 🔴 Shrike redesign: mode-driven RT, LT zoom with per-mode scopes, missile-growing flora, non-clipping nests (`cece/affectionate-clarke-s738vh`, 2026-10-15) — NOT EDITOR-VERIFIED
 
 **What landed:** Garrett's redesign of the Shrike, following the first port (the entry below). The record is

@@ -47,14 +47,18 @@ namespace CosmicShore.Gameplay
         [SerializeField, Min(0f)] float ownTrailGraceSeconds = 1f;
 
         // ------------------------------------------------------------------ lance
-        [Header("Modes and zoom (X Space, RB Charge, B Time; LT zoom)")]
-        [Tooltip("Game only: the flight view's field of view at full zoom, degrees.")]
-        [SerializeField, Range(5f, 60f)] float zoomFieldOfView = 24f;
-        [Tooltip("Game only: seconds the zoom takes to come fully in or out.")]
-        [SerializeField, Min(0.01f)] float zoomSeconds = 0.2f;
-        [Tooltip("Game only: docked, the chase camera eases back to this multiple of its authored distance (\"after " +
-                 "colliding with a prism the camera should move further away\").")]
-        [SerializeField, Min(1f)] float dockedCameraPullBack = 1.8f;
+        [Header("Modes and zoom (X Space, RB Charge, B Time; LT zoom: the Serpent's eyepiece, its window the mode's petal)")]
+        [Tooltip("Game only: the eyepiece's field of view with the zoom trigger barely pressed, degrees (the Serpent's 60).")]
+        [SerializeField, Range(10f, 90f)] float unscopedFieldOfView = 60f;
+        [Tooltip("Game only: the eyepiece's field of view with the zoom trigger fully pressed, degrees (the Serpent's 22).")]
+        [SerializeField, Range(2f, 60f)] float zoomFieldOfView = 22f;
+        [Tooltip("Game only: how fast the zoom chases the trigger's depth, per second (the Serpent's 12).")]
+        [SerializeField, Min(0.1f)] float zoomResponse = 12f;
+        [Tooltip("Game only: trigger depth below which the scope stays at its widest (the Serpent's 0.08).")]
+        [SerializeField, Range(0f, 0.5f)] float zoomDeadzone = 0.08f;
+        [Tooltip("Game only: docked, the chase camera eases back to this multiple of its authored distance (\"the " +
+                 "camera can go to 5x its normal distance when docked\").")]
+        [SerializeField, Min(1f)] float dockedCameraPullBack = 5f;
         [Tooltip("Game only: how fast the camera eases to and from the docked distance, 1/s.")]
         [SerializeField, Min(0.1f)] float cameraEaseRate = 4f;
 
@@ -179,8 +183,10 @@ namespace CosmicShore.Gameplay
         [SerializeField] EventReference missileBlastEvent;
         [SerializeField] EventReference crystalEvent;
 
+        public float UnscopedFieldOfView => unscopedFieldOfView;
         public float ZoomFieldOfView => zoomFieldOfView;
-        public float ZoomSeconds => zoomSeconds;
+        public float ZoomResponse => zoomResponse;
+        public float ZoomDeadzone => zoomDeadzone;
         public float DockedCameraPullBack => dockedCameraPullBack;
         public float CameraEaseRate => cameraEaseRate;
         public float HullRadius => hullRadius;

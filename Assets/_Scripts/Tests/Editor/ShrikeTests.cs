@@ -1,4 +1,6 @@
+using CosmicShore.Data;
 using CosmicShore.Gameplay;
+using CosmicShore.UI;
 using NUnit.Framework;
 using UnityEngine;
 
@@ -184,6 +186,44 @@ namespace CosmicShore.Tests
             Assert.IsTrue(ShrikeRules.LanceBreaks(superShielded: false, upgraded: false));
             Assert.IsFalse(ShrikeRules.LanceBreaks(superShielded: true, upgraded: false));
             Assert.IsTrue(ShrikeRules.LanceBreaks(superShielded: true, upgraded: true));
+        }
+
+        // ------------------------------------------------------------------ the eyepiece's element petals
+
+        [Test]
+        public void Petals_AreConvex_CounterClockwise_ApexDown_AndHoldTheCentre()
+        {
+            foreach (var element in new[] { Element.Charge, Element.Mass, Element.Space, Element.Time })
+            {
+                var o = ElementPetalGeometry.Outline(element);
+                Assert.GreaterOrEqual(o.Length, 3, element + " has a shape");
+                Assert.AreEqual(0.5f, o[0].x, 0.02f, element + ": the apex is centred");
+                for (int i = 1; i < o.Length; i++)
+                    Assert.Greater(o[i].y, o[0].y, element + ": the apex is the lowest corner (it points at the flower's centre)");
+                float minX = 1f, maxX = 0f, minY = 1f, maxY = 0f;
+                for (int i = 0; i < o.Length; i++)
+                {
+                    Vector2 a = o[i], b = o[(i + 1) % o.Length], c = o[(i + 2) % o.Length];
+                    float turn = (b.x - a.x) * (c.y - b.y) - (b.y - a.y) * (c.x - b.x);
+                    Assert.Greater(turn, 0f, element + $": corner {(i + 1) % o.Length} turns left (convex, counter-clockwise)");
+                    minX = Mathf.Min(minX, a.x); maxX = Mathf.Max(maxX, a.x); minY = Mathf.Min(minY, a.y); maxY = Mathf.Max(maxY, a.y);
+                }
+                // Fitted into the unit square keeping its aspect: the longer side spans it, the shorter is centred.
+                float w = maxX - minX, h = maxY - minY;
+                Assert.AreEqual(1f, Mathf.Max(w, h), 1e-4f, element + ": its longer side spans the window");
+                Assert.AreEqual(0.5f, (minX + maxX) * 0.5f, 1e-3f, element + ": centred across");
+                Assert.AreEqual(0.5f, (minY + maxY) * 0.5f, 1e-3f, element + ": centred up and down");
+                Assert.Greater(ElementPetalGeometry.Inradius01(element), 0.1f, element + ": the optical centre is well inside");
+            }
+            Assert.AreSame(ScopePetalGeometry.Outline, ElementPetalGeometry.Outline(Element.Charge), "Charge IS the Serpent's window");
+        }
+
+        [Test]
+        public void Petals_EachModeWearsItsElement()
+        {
+            Assert.AreEqual(Element.Space, ShrikeRules.ModeElement(0));
+            Assert.AreEqual(Element.Charge, ShrikeRules.ModeElement(1));
+            Assert.AreEqual(Element.Time, ShrikeRules.ModeElement(2));
         }
 
         // ------------------------------------------------------------------ the hull form

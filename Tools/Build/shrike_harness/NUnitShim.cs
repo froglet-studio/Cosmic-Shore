@@ -18,6 +18,7 @@ namespace NUnit.Framework
         public static void AreEqual(float e, float a, float d, string msg = null) { if (!(Math.Abs(e - a) <= d)) Fail($"expected {e} ± {d}, was {a}", msg); }
         public static void AreEqual(double e, double a, double d, string msg = null) { if (!(Math.Abs(e - a) <= d)) Fail($"expected {e} ± {d}, was {a}", msg); }
         public static void AreEqual(object e, object a, string msg = null) { if (!Equals(e, a)) Fail($"expected {e}, was {a}", msg); }
+        public static void AreSame(object e, object a, string msg = null) { if (!ReferenceEquals(e, a)) Fail("expected the same instance", msg); }
         public static void AreNotEqual(object e, object a, string msg = null) { if (Equals(e, a)) Fail($"expected not {e}", msg); }
         public static void Greater(double a, double b, string msg = null) { if (!(a > b)) Fail($"expected {a} > {b}", msg); }
         public static void Less(double a, double b, string msg = null) { if (!(a < b)) Fail($"expected {a} < {b}", msg); }

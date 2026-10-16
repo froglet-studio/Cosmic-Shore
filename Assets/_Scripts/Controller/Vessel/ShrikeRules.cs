@@ -1,3 +1,4 @@
+using CosmicShore.Data;
 using UnityEngine;
 
 namespace CosmicShore.Gameplay
@@ -177,6 +178,15 @@ namespace CosmicShore.Gameplay
         /// the best so far? A higher-priority class always wins; within a class, the one nearer the aim.</summary>
         public static bool BetterLock(LockClass kind, float angle, LockClass bestKind, float bestAngle)
             => kind < bestKind || kind == bestKind && angle < bestAngle;
+
+        /// <summary>The element each mode is (the eyepiece wears its petal): 0 Space (the lance), 1 Charge (the array),
+        /// 2 Time (the sling) — <c>ShrikeExecutor.Mode</c>'s order.</summary>
+        public static Element ModeElement(int mode) => mode switch
+        {
+            1 => Element.Charge,
+            2 => Element.Time,
+            _ => Element.Space,
+        };
 
         /// <summary>Does the Void Lance break this block? Every block, but super-shielded mass only with the Space
         /// upgrade (Garrett, 2026-10-15); below it, super-shielded mass lets the beam pass.</summary>

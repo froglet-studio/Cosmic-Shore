@@ -15,9 +15,11 @@ MonoBehaviour:
   hullRadius: 3
   dockBonus: 1.6
   dockBonusShielded: 2.5
-  zoomFieldOfView: 24
-  zoomSeconds: 0.2
-  dockedCameraPullBack: 1.8
+  unscopedFieldOfView: 60
+  zoomFieldOfView: 22
+  zoomResponse: 12
+  zoomDeadzone: 0.08
+  dockedCameraPullBack: 5
   cameraEaseRate: 4
   dockQueryReach: 12
   dockGraceSeconds: 0.5

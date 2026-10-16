@@ -1,48 +1,71 @@
+using CosmicShore.Data;
+using CosmicShore.UI;
+using CosmicShore.Utility;
 using UnityEngine;
 using UnityEngine.UI;
 
 namespace CosmicShore.Gameplay
 {
     /// <summary>
-    /// The Shrike's screen overlay, for the LOCAL pilot only (design: <c>R_VesselActions/SHRIKE.md</c> §3.4): the zoom's
-    /// scope, whose SHAPE is the selected mode's (Garrett, 2026-10-15: "the zoom should change shape depending on what mode
-    /// the player is in"), and the marker on the painted target ("there should be an indicator on the painted target").
+    /// The Shrike's sight, for the LOCAL pilot only (design: <c>R_VesselActions/SHRIKE.md</c> §3.4). It works like the
+    /// Serpent's scope (Garrett, 2026-10-16: "the zoom should work like the serpent's zoom"): the flight view is never
+    /// magnified; the zoom is an EYEPIECE in the top left — a second camera riding the hull's nose, rendered into a window
+    /// by the Serpent's own <see cref="ScopePipView"/> — and the trigger's depth dials its field of view.
     ///
     /// <list type="bullet">
-    /// <item><b>Space</b> (Void Lance) — a sniper's ring with a split crosshair.</item>
-    /// <item><b>Charge</b> (Targeting Array) — four lock brackets round a diamond.</item>
-    /// <item><b>Time</b> (Void Sling) — a tether line with chevrons running down it.</item>
+    /// <item><b>The window is the selected mode's ELEMENT petal</b> ("the shape of the zoom window should match the
+    /// element of the current mode"): Space mode a kite, Charge mode the gem, Time mode a diamond
+    /// (<see cref="ElementPetalGeometry"/>, traced off the element flower's sprites; the Serpent's window is the Charge
+    /// petal by the same rule).</item>
+    /// <item><b>Every mark is on the WEAPONS' axis</b> ("the camera, weapons, zoom, etc. need to be aligned"): the
+    /// eyepiece's camera looks down the hull's forward from its nose, which is the line the lance, the tether and the
+    /// lock cone all use; the flight reticle is projected at <c>hull.position + hull.forward × range</c>, which the
+    /// Shrike's on-axis chase camera puts at screen centre in the steady state, and the projection keeps it honest through
+    /// the camera's lag.</item>
+    /// <item><b>Charge mode's ring IS the lock cone</b>, its half-angle projected through each view's own field of view
+    /// (the Serpent's <c>ReticlePixels</c> law), so anything inside the ring can be painted.</item>
+    /// <item><b>The painted target carries a marker</b>: a spinning, pulsing diamond at its screen position.</item>
     /// </list>
     ///
-    /// <para>Built entirely at runtime (a screen-space canvas and three textures drawn from distance fields once per
-    /// process), so the prefab carries nothing of it and a pooled or AI-flown hull never makes one.</para>
+    /// <para>Generated at runtime: one screen-space canvas with no scaler (every number is a screen pixel), the petal
+    /// windows, the Serpent's ring and crosshair graphics, one sprite drawn once per process. Built on first use by
+    /// <see cref="ShrikeExecutor"/> and disposed with it.</para>
     /// </summary>
     public sealed class ShrikeScopeOverlay : MonoBehaviour
     {
-        public enum ScopeShape { Space = 0, Charge = 1, Time = 2 }
+        // The Serpent eyepiece's layout (SniperScopeOverlay), so the two sights sit in the same place.
+        const float PipHeightFraction = 0.5f;
+        const float PipTopMargin = 220f;
+        const float PipLeftMargin = 16f;
+        const float BorderPixels = 3f;
+        const float GraphicRectPixels = 512f;
+        const float CrossArmPixels = 16f;
+        const float CrossGapPixels = 6f;
+        const float CrossThickness = 2.5f;
+        const float RingThickness = 2f;
+        const float DotRadius = 2.5f;
+        const int MarkerTextureSize = 256;
 
-        const int TextureSize = 256;
-        static Texture2D[] _shapeTextures;
-        static Sprite[] _shapeSprites;
         static Sprite _markerSprite;
 
-        Image _scope;
+        RectTransform _pipRect;
+        ElementPetalImage _backing, _picture;
+        ScopePipView _pip;
+        ScopeCrosshairGraphic _pipCross;
+        ScopeRingGraphic _pipRing, _pipDot;
+        RectTransform _flightRect;
+        ScopeCrosshairGraphic _flightCross;
+        ScopeRingGraphic _flightRing, _flightDot;
         Image _marker;
         RectTransform _markerRect;
-        float _scopeAlpha;
         float _markerSpin;
 
-        /// <summary>Make the overlay (one per local Shrike pilot).</summary>
-        public static ShrikeScopeOverlay Create(string label)
+        public static ShrikeScopeOverlay Create()
         {
-            var go = new GameObject(label);
+            var go = new GameObject("[ShrikeScopeOverlay]");
             var canvas = go.AddComponent<Canvas>();
             canvas.renderMode = RenderMode.ScreenSpaceOverlay;
-            canvas.sortingOrder = 50;
-            var scaler = go.AddComponent<CanvasScaler>();
-            scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
-            scaler.referenceResolution = new Vector2(1920f, 1080f);
-            scaler.matchWidthOrHeight = 1f;
+            canvas.sortingOrder = 500;
             var overlay = go.AddComponent<ShrikeScopeOverlay>();
             overlay.Build();
             return overlay;
@@ -50,83 +73,230 @@ namespace CosmicShore.Gameplay
 
         void Build()
         {
-            EnsureSprites();
-            _scope = MakeImage("Scope", new Vector2(760f, 760f));
-            _scope.color = new Color(1f, 1f, 1f, 0f);
-            _marker = MakeImage("LockMarker", new Vector2(90f, 90f));
+            // The flight reticle first (the eyepiece covers it on the rare frame the aim point projects behind it).
+            var flight = new GameObject("FlightReticle", typeof(RectTransform));
+            flight.transform.SetParent(transform, false);
+            _flightRect = (RectTransform)flight.transform;
+            _flightRect.anchorMin = _flightRect.anchorMax = Vector2.zero;
+            _flightRect.pivot = new Vector2(0.5f, 0.5f);
+            _flightRect.sizeDelta = Vector2.zero;
+            _flightCross = MakeCross(_flightRect, "Posts");
+            _flightRing = MakeRing(_flightRect, "Ring", 4f, RingThickness);
+            _flightDot = MakeRing(_flightRect, "Dot", DotRadius, DotRadius * 2f);
+
+            var pip = new GameObject("Pip", typeof(RectTransform));
+            pip.transform.SetParent(transform, false);
+            _pipRect = (RectTransform)pip.transform;
+            _pipRect.anchorMin = _pipRect.anchorMax = new Vector2(0f, 1f);
+            _pipRect.pivot = new Vector2(0f, 1f);
+            _backing = MakePetal("Backing", 0f);
+            _backing.color = new Color(0.02f, 0.03f, 0.05f, 0.95f);
+            _picture = MakePetal("Picture", BorderPixels);
+            _picture.enabled = false;
+            _pipCross = MakeCross(_pipRect, "Posts");
+            _pipRing = MakeRing(_pipRect, "Ring", 30f, RingThickness);
+            _pipDot = MakeRing(_pipRect, "Dot", DotRadius, DotRadius * 2f);
+            _pip = new ScopePipView(_picture) { Label = "ShrikeScope" };
+
+            EnsureMarkerSprite();
+            var marker = new GameObject("LockMarker", typeof(RectTransform));
+            marker.transform.SetParent(transform, false);
+            _markerRect = (RectTransform)marker.transform;
+            _markerRect.anchorMin = _markerRect.anchorMax = Vector2.zero;
+            _markerRect.pivot = new Vector2(0.5f, 0.5f);
+            _markerRect.sizeDelta = new Vector2(64f, 64f);
+            _marker = marker.AddComponent<Image>();
             _marker.sprite = _markerSprite;
-            _markerRect = _marker.rectTransform;
+            _marker.raycastTarget = false;
             _marker.enabled = false;
+
+            SetScoped(false);
         }
 
-        Image MakeImage(string label, Vector2 size)
+        ElementPetalImage MakePetal(string label, float inset)
         {
             var go = new GameObject(label, typeof(RectTransform));
-            go.transform.SetParent(transform, false);
+            go.transform.SetParent(_pipRect, false);
             var rect = (RectTransform)go.transform;
-            rect.anchorMin = rect.anchorMax = new Vector2(0.5f, 0.5f);
-            rect.sizeDelta = size;
-            var image = go.AddComponent<Image>();
-            image.raycastTarget = false;
-            return image;
+            rect.anchorMin = Vector2.zero;
+            rect.anchorMax = Vector2.one;
+            rect.offsetMin = new Vector2(inset, inset);
+            rect.offsetMax = new Vector2(-inset, -inset);
+            var petal = go.AddComponent<ElementPetalImage>();
+            petal.raycastTarget = false;
+            return petal;
         }
 
-        /// <summary>Per frame from the executor: the scope fades in while zooming, in the mode's shape and colour; the
-        /// marker sits on the painted target's screen point (hidden behind the camera or with no lock).</summary>
-        public void Drive(bool zooming, ScopeShape shape, Color colour, bool hasLock, Vector3 lockWorld, Camera cam)
+        static ScopeRingGraphic MakeRing(RectTransform parent, string label, float radius, float thickness)
         {
-            float dt = Time.unscaledDeltaTime;
-            _scopeAlpha = Mathf.MoveTowards(_scopeAlpha, zooming ? 1f : 0f, dt * 6f);
-            _scope.sprite = _shapeSprites[(int)shape];
-            _scope.enabled = _scopeAlpha > 0.001f;
-            _scope.color = new Color(colour.r, colour.g, colour.b, 0.85f * _scopeAlpha);
+            var rect = Centred(parent, label);
+            var ring = rect.gameObject.AddComponent<ScopeRingGraphic>();
+            ring.raycastTarget = false;
+            ring.Radius = radius;
+            ring.Thickness = thickness;
+            return ring;
+        }
 
-            bool show = hasLock && cam;
-            if (show)
+        static ScopeCrosshairGraphic MakeCross(RectTransform parent, string label)
+        {
+            var rect = Centred(parent, label);
+            var cross = rect.gameObject.AddComponent<ScopeCrosshairGraphic>();
+            cross.raycastTarget = false;
+            cross.ArmLength = CrossArmPixels;
+            cross.Thickness = CrossThickness;
+            return cross;
+        }
+
+        static RectTransform Centred(RectTransform parent, string label)
+        {
+            var go = new GameObject(label, typeof(RectTransform));
+            go.transform.SetParent(parent, false);
+            var rect = (RectTransform)go.transform;
+            rect.anchorMin = rect.anchorMax = rect.pivot = new Vector2(0.5f, 0.5f);
+            rect.anchoredPosition = Vector2.zero;
+            rect.sizeDelta = new Vector2(GraphicRectPixels, GraphicRectPixels);
+            return rect;
+        }
+
+        void SetScoped(bool on)
+        {
+            _pipRect.gameObject.SetActive(on);
+            if (!on) _pip?.Hide();
+        }
+
+        /// <summary>
+        /// One frame of the sight.
+        /// </summary>
+        /// <param name="hull">The local pilot's hull: the eyepiece rides its nose and the reticle sits on its axis.</param>
+        /// <param name="scoped">Whether the eyepiece is up (the zoom trigger is held).</param>
+        /// <param name="fieldOfView">The eyepiece's vertical field of view this frame (the trigger's depth).</param>
+        /// <param name="element">The selected mode's element: the window's petal.</param>
+        /// <param name="colour">The pilot's domain signal colour (the lance's beam and the reticles share it).</param>
+        /// <param name="coneHalfAngleDegrees">Charge mode's lock cone (both views draw it as a ring); 0 for none.</param>
+        /// <param name="range">How far the selected weapon reaches: the point on the axis the flight reticle marks.</param>
+        /// <param name="hasLock">Whether a painted target exists.</param>
+        /// <param name="lockWorld">The painted target's world position.</param>
+        /// <param name="flightCamera">The gameplay camera.</param>
+        public void Drive(Transform hull, bool scoped, float fieldOfView, Element element, Color colour,
+            float coneHalfAngleDegrees, float range, bool hasLock, Vector3 lockWorld, Camera flightCamera)
+        {
+            if (!hull) { Hide(); return; }
+
+            // The flight reticle, on the weapons' axis.
+            bool flightShown = false;
+            if (flightCamera)
             {
-                Vector3 screen = cam.WorldToScreenPoint(lockWorld);
-                show = screen.z > 0f;
-                if (show)
+                Vector3 aim = hull.position + hull.forward * range;
+                Vector3 screen = flightCamera.WorldToScreenPoint(aim);
+                if (screen.z > 0f)
                 {
-                    var canvasRect = (RectTransform)transform;
-                    Vector2 local;
-                    RectTransformUtility.ScreenPointToLocalPointInRectangle(canvasRect, screen, null, out local);
-                    _markerRect.anchoredPosition = local;
-                    _markerSpin += dt * 90f;
-                    _markerRect.localRotation = Quaternion.Euler(0f, 0f, _markerSpin);
-                    float pulse = 1f + 0.12f * Mathf.Sin(Time.unscaledTime * 8f);
-                    _markerRect.localScale = Vector3.one * pulse;
+                    flightShown = true;
+                    _flightRect.anchoredPosition = new Vector2(screen.x, screen.y);
+                    float r = coneHalfAngleDegrees > 0f
+                        ? ReticlePixels(coneHalfAngleDegrees, flightCamera.fieldOfView, flightCamera.pixelHeight * 0.5f)
+                        : 4f;
+                    Paint(_flightCross, _flightRing, _flightDot, r, colour, coneHalfAngleDegrees > 0f);
                 }
             }
-            _marker.enabled = show;
-            _marker.color = colour;
+            _flightRect.gameObject.SetActive(flightShown);
+
+            // The eyepiece.
+            SetScoped(scoped);
+            if (scoped)
+            {
+                float side = Mathf.Max(120f, Screen.height * PipHeightFraction);
+                _pipRect.sizeDelta = new Vector2(side, side);
+                _pipRect.anchoredPosition = new Vector2(PipLeftMargin, -PipTopMargin);
+                _backing.Element = element;
+                _picture.Element = element;
+                _pip.Tick(hull, fieldOfView);
+                float budget = Mathf.Max(8f, ElementPetalGeometry.Inradius01(element) * side - BorderPixels - CrossGapPixels - CrossArmPixels);
+                float r = coneHalfAngleDegrees > 0f
+                    ? Mathf.Min(budget, ReticlePixels(coneHalfAngleDegrees, fieldOfView, side * 0.5f))
+                    : 4f;
+                Paint(_pipCross, _pipRing, _pipDot, r, colour, coneHalfAngleDegrees > 0f);
+            }
+
+            // The painted target.
+            bool markerShown = false;
+            if (hasLock && flightCamera)
+            {
+                Vector3 screen = flightCamera.WorldToScreenPoint(lockWorld);
+                if (screen.z > 0f)
+                {
+                    markerShown = true;
+                    _markerRect.anchoredPosition = new Vector2(screen.x, screen.y);
+                    _markerSpin += Time.unscaledDeltaTime * 90f;
+                    _markerRect.localRotation = Quaternion.Euler(0f, 0f, _markerSpin);
+                    _markerRect.localScale = Vector3.one * (1f + 0.12f * Mathf.Sin(Time.unscaledTime * 8f));
+                    _marker.color = colour;
+                }
+            }
+            _marker.enabled = markerShown;
         }
+
+        static void Paint(ScopeCrosshairGraphic cross, ScopeRingGraphic ring, ScopeRingGraphic dot, float radius, Color colour, bool showRing)
+        {
+            cross.Radius = radius + CrossGapPixels;
+            cross.color = colour;
+            ring.Radius = radius;
+            ring.Sweep01 = 1f;
+            ring.color = colour;
+            ring.enabled = showRing;
+            dot.Sweep01 = 1f;
+            dot.color = colour;
+        }
+
+        /// <summary>A cone's half-angle in pixels through one view (the Serpent overlay's law):
+        /// <c>r = H · tan(halfAngle) / tan(fov / 2)</c>, <c>H</c> half that view's height.</summary>
+        static float ReticlePixels(float halfAngleDegrees, float fieldOfView, float halfHeight)
+            => Mathf.Max(3f, halfHeight * Mathf.Tan(halfAngleDegrees * Mathf.Deg2Rad)
+                             / Mathf.Max(1e-4f, Mathf.Tan(Mathf.Clamp(fieldOfView, 1f, 170f) * 0.5f * Mathf.Deg2Rad)));
 
         public void Hide()
         {
-            _scopeAlpha = 0f;
-            if (_scope) _scope.enabled = false;
+            if (_flightRect) _flightRect.gameObject.SetActive(false);
+            if (_pipRect) SetScoped(false);
             if (_marker) _marker.enabled = false;
         }
 
-        // ---- the shapes: anti-aliased strokes from distance fields, white (tinted by Image.color) ----
-
-        static void EnsureSprites()
+        /// <summary>Tear down: a RenderTexture that outlives its owner is a leak nothing reports.</summary>
+        public void Dispose()
         {
-            if (_shapeSprites != null && _markerSprite) return;
-            _shapeTextures = new Texture2D[3];
-            _shapeSprites = new Sprite[3];
-            for (int s = 0; s < 3; s++)
-            {
-                _shapeTextures[s] = Draw((ScopeShape)s);
-                _shapeSprites[s] = Sprite.Create(_shapeTextures[s], new Rect(0, 0, TextureSize, TextureSize), new Vector2(0.5f, 0.5f));
-            }
-            var marker = DrawMarker();
-            _markerSprite = Sprite.Create(marker, new Rect(0, 0, TextureSize, TextureSize), new Vector2(0.5f, 0.5f));
+            _pip?.Dispose();
+            _pip = null;
+            Destroy(gameObject);
         }
 
-        /// <summary>Coverage of a stroke at distance <paramref name="d"/> from its centre line, half-width <paramref name="w"/>
-        /// (texture pixels), one pixel of anti-aliasing.</summary>
+        // The painted-target marker: a diamond outline with four ticks pointing in (anti-aliased, white, tinted).
+        static void EnsureMarkerSprite()
+        {
+            if (_markerSprite) return;
+            int n = MarkerTextureSize;
+            var tex = new Texture2D(n, n, TextureFormat.RGBA32, false)
+            {
+                name = "ShrikeLockMarker",
+                wrapMode = TextureWrapMode.Clamp,
+                filterMode = FilterMode.Bilinear,
+            };
+            var px = new Color32[n * n];
+            float c = n * 0.5f;
+            for (int y = 0; y < n; y++)
+                for (int x = 0; x < n; x++)
+                {
+                    var p = new Vector2(x + 0.5f - c, y + 0.5f - c);
+                    float diamond = Mathf.Abs(Mathf.Abs(p.x) + Mathf.Abs(p.y) - 96f) / Mathf.Sqrt(2f);
+                    float a = Stroke(diamond, 6f);
+                    float ticks = Mathf.Min(Mathf.Min(Segment(p, new Vector2(0, 120), new Vector2(0, 70)), Segment(p, new Vector2(0, -120), new Vector2(0, -70))),
+                                            Mathf.Min(Segment(p, new Vector2(120, 0), new Vector2(70, 0)), Segment(p, new Vector2(-120, 0), new Vector2(-70, 0))));
+                    a = Mathf.Max(a, Stroke(ticks, 5f));
+                    px[y * n + x] = new Color32(255, 255, 255, (byte)(Mathf.Clamp01(a) * 255f));
+                }
+            tex.SetPixels32(px);
+            tex.Apply(false, true);
+            _markerSprite = Sprite.Create(tex, new Rect(0, 0, n, n), new Vector2(0.5f, 0.5f));
+        }
+
         static float Stroke(float d, float w) => Mathf.Clamp01(w + 0.5f - Mathf.Abs(d));
 
         static float Segment(Vector2 p, Vector2 a, Vector2 b)
@@ -135,96 +305,5 @@ namespace CosmicShore.Gameplay
             float t = Mathf.Clamp01(Vector2.Dot(p - a, ab) / Mathf.Max(1e-6f, ab.sqrMagnitude));
             return (p - (a + ab * t)).magnitude;
         }
-
-        static Texture2D Draw(ScopeShape shape)
-        {
-            var tex = NewTexture();
-            var px = new Color32[TextureSize * TextureSize];
-            float c = TextureSize * 0.5f;
-            for (int y = 0; y < TextureSize; y++)
-                for (int x = 0; x < TextureSize; x++)
-                {
-                    var p = new Vector2(x + 0.5f - c, y + 0.5f - c);
-                    float a = shape switch
-                    {
-                        ScopeShape.Space => SpaceScope(p),
-                        ScopeShape.Charge => ChargeScope(p),
-                        _ => TimeScope(p),
-                    };
-                    px[y * TextureSize + x] = new Color32(255, 255, 255, (byte)(Mathf.Clamp01(a) * 255f));
-                }
-            tex.SetPixels32(px);
-            tex.Apply(false, true);
-            return tex;
-        }
-
-        // Space: the sniper's ring and a crosshair split at the centre.
-        static float SpaceScope(Vector2 p)
-        {
-            float r = p.magnitude;
-            float a = Stroke(r - 118f, 2.2f);
-            float cross = Mathf.Min(Segment(p, new Vector2(-104, 0), new Vector2(-14, 0)), Segment(p, new Vector2(14, 0), new Vector2(104, 0)));
-            cross = Mathf.Min(cross, Mathf.Min(Segment(p, new Vector2(0, -104), new Vector2(0, -14)), Segment(p, new Vector2(0, 14), new Vector2(0, 104))));
-            a = Mathf.Max(a, Stroke(cross, 1.4f));
-            return Mathf.Max(a, Stroke(r - 2.5f, 2f));
-        }
-
-        // Charge: four lock brackets round a diamond.
-        static float ChargeScope(Vector2 p)
-        {
-            float a = 0f;
-            const float k = 100f, arm = 34f;
-            for (int sx = -1; sx <= 1; sx += 2)
-                for (int sy = -1; sy <= 1; sy += 2)
-                {
-                    var corner = new Vector2(sx * k, sy * k);
-                    float d = Mathf.Min(Segment(p, corner, corner - new Vector2(sx * arm, 0)), Segment(p, corner, corner - new Vector2(0, sy * arm)));
-                    a = Mathf.Max(a, Stroke(d, 3f));
-                }
-            float diamond = Mathf.Abs(Mathf.Abs(p.x) + Mathf.Abs(p.y) - 26f) / Mathf.Sqrt(2f);
-            return Mathf.Max(a, Stroke(diamond, 2f));
-        }
-
-        // Time: the tether running up the screen, chevrons riding it.
-        static float TimeScope(Vector2 p)
-        {
-            float a = Stroke(Segment(p, new Vector2(0, -110), new Vector2(0, 110)), 1.4f);
-            for (int i = -1; i <= 2; i++)
-            {
-                float y = i * 34f;
-                float d = Mathf.Min(Segment(p, new Vector2(-30, y - 22), new Vector2(0, y)), Segment(p, new Vector2(30, y - 22), new Vector2(0, y)));
-                a = Mathf.Max(a, Stroke(d, 2.6f) * (i == 2 ? 1f : 0.55f + 0.15f * i));
-            }
-            return Mathf.Max(a, Stroke(p.magnitude - 118f, 1.2f) * 0.5f);
-        }
-
-        // The painted-target marker: a diamond outline with four ticks pointing in.
-        static Texture2D DrawMarker()
-        {
-            var tex = NewTexture();
-            var px = new Color32[TextureSize * TextureSize];
-            float c = TextureSize * 0.5f;
-            for (int y = 0; y < TextureSize; y++)
-                for (int x = 0; x < TextureSize; x++)
-                {
-                    var p = new Vector2(x + 0.5f - c, y + 0.5f - c);
-                    float diamond = Mathf.Abs(Mathf.Abs(p.x) + Mathf.Abs(p.y) - 96f) / Mathf.Sqrt(2f);
-                    float a = Stroke(diamond, 6f);
-                    float ticks = Mathf.Min(Mathf.Min(Segment(p, new Vector2(0, 120), new Vector2(0, 70)), Segment(p, new Vector2(0, -120), new Vector2(0, -70))),
-                                            Mathf.Min(Segment(p, new Vector2(120, 0), new Vector2(70, 0)), Segment(p, new Vector2(-120, 0), new Vector2(-70, 0))));
-                    a = Mathf.Max(a, Stroke(ticks, 5f));
-                    px[y * TextureSize + x] = new Color32(255, 255, 255, (byte)(Mathf.Clamp01(a) * 255f));
-                }
-            tex.SetPixels32(px);
-            tex.Apply(false, true);
-            return tex;
-        }
-
-        static Texture2D NewTexture() => new(TextureSize, TextureSize, TextureFormat.RGBA32, false)
-        {
-            name = "ShrikeScope",
-            wrapMode = TextureWrapMode.Clamp,
-            filterMode = FilterMode.Bilinear,
-        };
     }
 }

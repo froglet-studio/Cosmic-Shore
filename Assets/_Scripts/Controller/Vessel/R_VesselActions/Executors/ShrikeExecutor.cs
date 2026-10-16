@@ -107,8 +107,10 @@ namespace CosmicShore.Gameplay
 
         // Sling: the tether in flight, then the boost.
         bool _tethering;
-        Vector3 _tetherPos, _tetherDir;
-        float _tetherWent;
+        Prism _tetherAnchor;            // resolved at the press: a sling with nothing to anchor to never fires
+        float _tetherAnchorBorn;
+        Vector3 _tetherPoint;
+        float _tetherDist, _tetherWent;
         bool _slinging;
         Prism _slingAnchor;
         float _slingAnchorBorn;
@@ -140,8 +142,12 @@ namespace CosmicShore.Gameplay
         float _camWritten;
         bool _camEngaged;
         float _zoom01;
-        float _baseFov;
         ShrikeScopeOverlay _overlay;
+        bool _litPublished;
+        float _litScanAt;
+        bool _litAnchorFound;
+        Vector3 _litAnchorPoint;
+        float _litAnchorSize;
 
         // Autopilot.
         float _aiNextScan, _aiNextMode;
@@ -210,7 +216,8 @@ namespace CosmicShore.Gameplay
                 if (_flora[i].View) Destroy(_flora[i].View.gameObject);
             _flora.Clear();
             _nests.Clear();
-            if (_overlay) Destroy(_overlay.gameObject);
+            if (_overlay) _overlay.Dispose();
+            _overlay = null;
         }
 
         void OnTurnEnd() => ClearAll();
@@ -222,6 +229,7 @@ namespace CosmicShore.Gameplay
             _lock = ShrikeRules.LockClass.None;
             _lockTarget = null;
             _tethering = false;
+            _tetherAnchor = null;
             _slinging = false;
             _slingAnchor = _slingFrom = null;
             _slingTrail.Clear();
@@ -307,18 +315,59 @@ namespace CosmicShore.Gameplay
             PlayAt(config.CrystalEvent, at);
         }
 
+        /// <summary>The Void Sling: only with something to anchor to (Garrett, 2026-10-16: "when there is no target for
+        /// void sling it should not use the ability and it should not go on cooldown"). The anchor is found at the press
+        /// (<see cref="FindSlingAnchor"/>: the first block on the hull's axis within the sling's range); the tether then
+        /// flies out to it at <c>tetherSpeed</c>, and the cooldown starts only now that there is one.</summary>
         void PressSling()
         {
             if (!config || _status == null || !_status.Transform) return;
             if (_slingCd > 0f || _tethering || _slinging) return;
-            Vector3 fwd = _status.Transform.forward;
+            if (!FindSlingAnchor(out var anchor, out var point)) return;
             _tethering = true;
-            _tetherPos = HullPosition + fwd * 4f;
-            _tetherDir = fwd;
+            _tetherAnchor = anchor;
+            _tetherAnchorBorn = anchor.prismProperties.TimeCreated;
+            _tetherPoint = point;
+            _tetherDist = Vector3.Distance(AimOrigin, point);
             _tetherWent = 0f;
             _slingCd = Mathf.Max(0.05f, config.SlingCooldown.EvaluateReplicated(_status));
             PlayAt(config.TetherEvent, HullPosition);
         }
+
+        /// <summary>The first block on the weapons' axis (<see cref="AimOrigin"/> along the hull's forward) within the
+        /// sling's range that the tether may anchor to — never your own fresh trail, the block you sit on or the nest you
+        /// sit in.</summary>
+        bool FindSlingAnchor(out Prism anchor, out Vector3 point)
+        {
+            anchor = null;
+            point = default;
+            var index = PrismSpatialIndex.Instance;
+            if (!index || !index.IsAvailable) return false;
+            Vector3 o = AimOrigin, f = _status.Transform.forward;
+            float best = float.MaxValue;
+            index.QuerySegment(o, o + f * config.SlingRange, config.DockQueryReach, _candidates);
+            for (int i = 0; i < _candidates.Count; i++)
+            {
+                var prism = _candidates[i];
+                if (!prism || prism.destroyed || prism.prismProperties == null) continue;
+                if (IsOwnFreshTrail(prism)) continue;
+                if (_dock == DockKind.Block && prism == _dockPrism) continue;
+                if (_dock == DockKind.Nest && IsNestBlock(prism, out var nest) && nest == _dockNest) continue;
+                if (RayHits(prism, o, f, 0f, config.SlingRange, out float t) && t < best)
+                {
+                    best = t;
+                    anchor = prism;
+                }
+            }
+            _candidates.Clear();
+            if (!anchor) return false;
+            point = o + f * best;
+            return ShrikeRules.SlingDistance(HullPosition, point, config.HullRadius) >= 1f;
+        }
+
+        /// <summary>Where every weapon's line starts: the hull's centre, on its forward axis — the axis the on-axis chase
+        /// camera and the eyepiece look down, so the lance, the tether, the lock cone and the reticles agree.</summary>
+        Vector3 AimOrigin => HullPosition;
 
         // ------------------------------------------------------------------ the frame (page stepPilot, in its order)
 
@@ -364,10 +413,22 @@ namespace CosmicShore.Gameplay
             float dt = Time.deltaTime;
             UpdateCamera(dt);
             UpdateZoom(dt);
-            if (!_overlay) _overlay = ShrikeScopeOverlay.Create("ShrikeScope");
-            _overlay.Drive(_zoom01 > 0.05f, (ShrikeScopeOverlay.ScopeShape)(int)_mode, DomainColour(),
-                Painting && Locked, LockPosition, CameraManager.ViewCamera);
+            UpdateLit();
+            if (!_overlay) _overlay = ShrikeScopeOverlay.Create();
+            float cone = _mode == Mode.Charge ? Mathf.Max(0.5f, config.LockCone.EvaluateReplicated(_status)) : 0f;
+            _overlay.Drive(_status.Transform, _zoom01 > 0.01f, ScopeFieldOfView, ModeElement(_mode), DomainColour(),
+                cone, ModeRange(_mode), Painting && Locked, LockPosition, CameraManager.ViewCamera);
         }
+
+        /// <summary>The element whose petal the eyepiece wears in each mode.</summary>
+        public static Element ModeElement(Mode mode) => ShrikeRules.ModeElement((int)mode);
+
+        float ModeRange(Mode mode) => mode switch
+        {
+            Mode.Charge => config.LockRange,
+            Mode.Time => config.SlingRange,
+            _ => config.LanceRange,
+        };
 
         bool DockedShielded()
         {
@@ -422,30 +483,102 @@ namespace CosmicShore.Gameplay
                 _cam.SetCameraDistance(_cam.NeutralOffsetZ);
             _camEngaged = false;
             _cam = null;
-            if (_zoom01 > 0f && _status != null && _status.Transform)
-                VesselSpeedTunnel.ClearHomeFieldOfViewOverride(_status.Transform);
             _zoom01 = 0f;
+            ClearLit();
         }
 
-        /// <summary>LT narrows the flight view through the speed tunnel's home override — the gameplay camera's ONE
-        /// FOV writer (VesselSpeedTunnel) — and hands the player's own FOV back when let go.</summary>
+        /// <summary>
+        /// LT, the Serpent's zoom (Garrett, 2026-10-16: "the zoom should work like the serpent's zoom"): the flight view
+        /// is never magnified; the eyepiece's field of view follows the trigger's DEPTH (past a deadzone) through a
+        /// frame-rate independent chase, so a pad's analog trigger is the zoom dial and a mouse button's 0/1 is a ramp
+        /// (SniperScopeActionExecutor.ResolveZoomTarget, one mechanism for every device).
+        /// </summary>
         void UpdateZoom(float dt)
         {
-            var key = _status.Transform;
-            if (_zoom01 <= 0f && _zoomHeld)
+            float target = 0f;
+            if (_zoomHeld)
             {
-                var view = CameraManager.ViewCamera;
-                _baseFov = VesselSpeedTunnel.HomeFieldOfView > 1f ? VesselSpeedTunnel.HomeFieldOfView : view ? view.fieldOfView : 60f;
+                var input = _status.InputStatus;
+                float depth = input != null ? Mathf.Clamp01(input.LeftTriggerAnalog) : 1f;
+                target = depth <= config.ZoomDeadzone ? 0f : Mathf.InverseLerp(config.ZoomDeadzone, 1f, depth);
+                // A held control with no analog depth to read (a bound button) still raises the scope fully.
+                if (input == null || depth <= 0f) target = 1f;
             }
-            float step = dt / Mathf.Max(0.01f, config.ZoomSeconds);
-            _zoom01 = Mathf.MoveTowards(_zoom01, _zoomHeld ? 1f : 0f, step);
-            if (_zoom01 <= 0f)
+            _zoom01 = Mathf.MoveTowards(_zoom01, target, config.ZoomResponse * dt);
+        }
+
+        float ScopeFieldOfView => Mathf.Lerp(config.UnscopedFieldOfView, config.ZoomFieldOfView, _zoom01);
+
+        /// <summary>
+        /// "Whatever the player zooms in on should be lit based on the mode's effect" (Garrett, 2026-10-16): while the
+        /// eyepiece is up, the mass the selected mode would act on is LIT through the platform's <see cref="PrismLit"/>
+        /// (a GPU volume test on every prism, no per-prism CPU work), in the pilot's domain colour:
+        /// <list type="bullet">
+        /// <item><b>Space</b> — the Void Lance's own swept cylinder, along the axis, at its range and radius.</item>
+        /// <item><b>Charge</b> — the lock cone, and a sphere on the painted target (the missiles' blast for mass).</item>
+        /// <item><b>Time</b> — the sling's path to the anchor the tether would take, and the anchor itself; nothing when
+        /// there is nothing to anchor to (the sling would not fire).</item>
+        /// </list>
+        /// Local pilot only: it is this pilot's aiming instrument, not a sentence for rivals.
+        /// </summary>
+        void UpdateLit()
+        {
+            float strength = _zoom01;
+            if (strength <= 0.001f) { ClearLit(); return; }
+            Vector3 o = AimOrigin, f = _status.Transform.forward;
+            var domain = _status.Domain;
+            int id = GetInstanceID();
+            switch (_mode)
             {
-                VesselSpeedTunnel.ClearHomeFieldOfViewOverride(key);
-                return;
+                case Mode.Space:
+                {
+                    float r = Mathf.Max(0.1f, config.LanceRadius.EvaluateReplicated(_status));
+                    PrismLit.PublishLight(id, LitVolume.Cylinder(o, f, config.LanceRange, r, false), strength, domain);
+                    PrismLit.ClearLight(id + 1);
+                    break;
+                }
+                case Mode.Charge:
+                {
+                    float cone = Mathf.Max(0.5f, config.LockCone.EvaluateReplicated(_status)) * Mathf.Deg2Rad;
+                    PrismLit.PublishLight(id, LitVolume.Cone(o, f, _status.Transform.right, config.LockRange, Mathf.Tan(cone), 0f),
+                        strength * 0.6f, domain);
+                    if (Painting && Locked)
+                        PrismLit.PublishLight(id + 1, LitVolume.Sphere(LockPosition,
+                            _lock == ShrikeRules.LockClass.Mass ? config.MissileBlast : 10f), strength, domain);
+                    else PrismLit.ClearLight(id + 1);
+                    break;
+                }
+                default:
+                {
+                    if (Time.time >= _litScanAt)
+                    {
+                        _litScanAt = Time.time + 0.1f;
+                        _litAnchorFound = FindSlingAnchor(out var anchor, out _litAnchorPoint);
+                        _litAnchorSize = _litAnchorFound ? Half(anchor).magnitude : 0f;
+                    }
+                    if (!_litAnchorFound)
+                    {
+                        PrismLit.ClearLight(id);
+                        PrismLit.ClearLight(id + 1);
+                        break;
+                    }
+                    Vector3 to = _litAnchorPoint - o;
+                    PrismLit.PublishLight(id, LitVolume.Cylinder(o, to.normalized, to.magnitude, config.HullRadius, false),
+                        strength * 0.6f, domain);
+                    PrismLit.PublishLight(id + 1, LitVolume.Sphere(_litAnchorPoint, _litAnchorSize + 2f), strength, domain);
+                    break;
+                }
             }
-            float eased = _zoom01 * _zoom01 * (3f - 2f * _zoom01);
-            VesselSpeedTunnel.SetHomeFieldOfViewOverride(Mathf.Lerp(_baseFov, config.ZoomFieldOfView, eased), key);
+            _litPublished = true;
+        }
+
+        void ClearLit()
+        {
+            if (!_litPublished) return;
+            _litPublished = false;
+            int id = GetInstanceID();
+            PrismLit.ClearLight(id);
+            PrismLit.ClearLight(id + 1);
         }
 
         // ------------------------------------------------------------------ docking
@@ -712,7 +845,7 @@ namespace CosmicShore.Gameplay
         {
             _lanceCd = config.LanceCooldown;
             Vector3 f = _status.Transform.forward;
-            Vector3 o = HullPosition + f * 4f;
+            Vector3 o = AimOrigin;
             float r = Mathf.Max(0.1f, config.LanceRadius.EvaluateReplicated(_status));
             float len = config.LanceRange;
             bool pierce = IsPierceUnlocked;
@@ -747,7 +880,10 @@ namespace CosmicShore.Gameplay
                     if (decided) ScoreHit(victim, config.LanceHitClass, ElementalDebuffSources.Other, f * 40f);
                 }
 
-            SniperBeam.Fire(o, o + f * len, r * 2f, r * 2f, DomainColour(), config.LanceBeamSeconds, r * 3f, 0.2f, hit);
+            // Drawn from the barrel's muzzle to the point the axis reaches, so the beam leaves the gun and lands where the
+            // hit test ran (they meet at range; 0.75 u apart at the nose).
+            Vector3 from = hull && hull.Muzzle ? hull.Muzzle.position : o;
+            SniperBeam.Fire(from, o + f * len, r * 2f, r * 2f, DomainColour(), config.LanceBeamSeconds, r * 3f, 0.2f, hit);
             PlayAt(config.LanceEvent, o);
         }
 
@@ -765,59 +901,37 @@ namespace CosmicShore.Gameplay
 
         // ------------------------------------------------------------------ the Void Sling (Time)
 
-        /// <summary>Page <c>stepTether</c>: the tether flies until it meets a block (never a crystal or a vessel), then
-        /// the sling starts toward that point — speed = distance / slingSeconds.</summary>
+        /// <summary>The tether flies out to the anchor found at the press; on reaching it the sling starts toward that
+        /// point — speed = distance / slingSeconds (page <c>stepTether</c>). An anchor broken while the tether is out
+        /// gives the cooldown back: the sling never happened.</summary>
         void StepTether(float dt)
         {
             if (!_tethering) return;
-            float step = config.TetherSpeed * dt;
-            var index = PrismSpatialIndex.Instance;
-            Prism best = null;
-            float bestT = float.MaxValue;
-            if (index && index.IsAvailable)
+            _tetherWent += config.TetherSpeed * dt;
+            if (_tetherWent < _tetherDist) return;
+            _tethering = false;
+            var anchor = _tetherAnchor;
+            _tetherAnchor = null;
+            float dist = ShrikeRules.SlingDistance(HullPosition, _tetherPoint, config.HullRadius);
+            if (!PrismAlive(anchor, _tetherAnchorBorn) || dist < 1f)
             {
-                index.QuerySegment(_tetherPos, _tetherPos + _tetherDir * step, config.DockQueryReach, _candidates);
-                for (int i = 0; i < _candidates.Count; i++)
-                {
-                    var prism = _candidates[i];
-                    if (!prism || prism.destroyed || prism.prismProperties == null) continue;
-                    if (IsOwnFreshTrail(prism)) continue;
-                    if (_dock == DockKind.Block && prism == _dockPrism) continue;
-                    if (_dock == DockKind.Nest && IsNestBlock(prism, out var nest) && nest == _dockNest) continue;
-                    if (RayHits(prism, _tetherPos, _tetherDir, 0f, step, out float t) && t < bestT)
-                    {
-                        bestT = t;
-                        best = prism;
-                    }
-                }
-                _candidates.Clear();
-            }
-
-            if (best)
-            {
-                _tethering = false;
-                Vector3 x = _tetherPos + _tetherDir * bestT;
-                float dist = ShrikeRules.SlingDistance(HullPosition, x, config.HullRadius);
-                if (dist < 1f) return;
-                Prism from = _dock == DockKind.Block ? _dockPrism : null;
-                if (Docked) Undock(push: false);
-                _slinging = true;
-                _slingAnchor = best;
-                _slingAnchorBorn = best.prismProperties.TimeCreated;
-                _slingFrom = from;
-                _slingDir = (x - HullPosition).normalized;
-                _slingDist = dist;
-                _slingWent = 0f;
-                _slingSpeed = ShrikeRules.SlingSpeed(dist, config.SlingSeconds);
-                _slingTrailOwed = 0f;
-                _slingTrail.Clear();
-                Pin(true);
-                PlayAt(config.SlingEvent, HullPosition);
+                _slingCd = 0f;
                 return;
             }
-            _tetherPos += _tetherDir * step;
-            _tetherWent += step;
-            if (_tetherWent > config.SlingRange) _tethering = false;
+            Prism from = _dock == DockKind.Block ? _dockPrism : null;
+            if (Docked) Undock(push: false);
+            _slinging = true;
+            _slingAnchor = anchor;
+            _slingAnchorBorn = _tetherAnchorBorn;
+            _slingFrom = from;
+            _slingDir = (_tetherPoint - HullPosition).normalized;
+            _slingDist = dist;
+            _slingWent = 0f;
+            _slingSpeed = ShrikeRules.SlingSpeed(dist, config.SlingSeconds);
+            _slingTrailOwed = 0f;
+            _slingTrail.Clear();
+            Pin(true);
+            PlayAt(config.SlingEvent, HullPosition);
         }
 
         /// <summary>Page <c>stepSling</c> / <c>move</c>: straight at the anchor, swept, laying the thick trail; it docks
@@ -1364,7 +1478,8 @@ namespace CosmicShore.Gameplay
                     else handler.StopShipControllerActionsReplicated(trigger);
                 }
                 if (_mode == Mode.Time && !_slinging && !_tethering && _slingCd <= 0f
-                    && toTarget.magnitude >= config.AiSlingMinDistance && Vector3.Angle(fwd, toTarget) <= config.AiSlingDegrees)
+                    && toTarget.magnitude >= config.AiSlingMinDistance && Vector3.Angle(fwd, toTarget) <= config.AiSlingDegrees
+                    && FindSlingAnchor(out _, out _))   // the press does nothing without one: never spam it
                 {
                     handler.PerformShipControllerActionsReplicated(trigger);
                     handler.StopShipControllerActionsReplicated(trigger);

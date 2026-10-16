@@ -18,7 +18,8 @@ and calls missiles down from its nests' turrets.
 | `ShrikeExecutor` | The whole kit, ported from the page's `stepPilot`, `fireLance`, `stepTether`, `stepSling`, `updateLock`, `launchMissiles`, `stepMissiles`, `detonate` and `stepNests`. Also holds the input-only autopilot. |
 | `ShrikeActionSO` | The six controls: Trigger, Zoom, Mass, and the Space / Charge / Time mode buttons. |
 | `ShrikeNestFlora` / `ShrikeMeshes` | The flora that grows missiles, and the missile, bud and stem meshes. |
-| `ShrikeScopeOverlay` | The zoom's per-mode scope and the painted-target marker (local pilot only). |
+| `ShrikeScopeOverlay` | The Serpent-style eyepiece cut to the mode's petal, the flight reticle on the weapons' axis, and the painted-target marker (local pilot only). |
+| `ElementPetalGeometry` / `ElementPetalImage` (UI) | Every element petal's traced outline, and the Serpent's petal window generalised to any of them. |
 | `ShrikeConfigSO` | `ShrikeConfig.asset`. Field names are the studio's SHIPPED keys and tooltips are its labels. |
 | `ShrikePrismController` | The cruising trail. Mass shortens its wavelength. |
 | `ShrikeAnimation` | The flame, the bank and the element morphs. |
@@ -67,7 +68,7 @@ mode's action.** The three modes are picked with face and shoulder buttons. Mass
 | RB / E | **Charge mode** | RT (held) paints a target for the flora's missiles. | Space: lock cone 5° → 14° |
 | B / R | **Time mode** | RT shoots the Void Sling. | Time: cooldown 6 → 2.5 s |
 | A / Space | **Mass** | Docked: detach, leaving a nest behind. | Mass: 12 → 32 nest blocks; trail wavelength 8 → 4 |
-| LT / RMB (held) | **Zoom** | Narrows the flight view and raises a scope in the mode's shape. | none |
+| LT / RMB (held) | **Zoom** | The Serpent's eyepiece: a magnified window in the top left, cut to the mode's element petal, with the targeted mass lit. | none |
 
 The Space upgrade is the only designed level-5 upgrade. The other three slots are open.
 
@@ -76,7 +77,7 @@ The Space upgrade is the only designed level-5 upgrade. The other three slots ar
 - Your own trail younger than 1 s never docks you.
 - Docked, translation is pinned. The nose still aims, faster, because docking uses the fleet's restricted stance.
 - Docked, cooldowns run ×1.6. In a nest or on super-shielded mass they run ×2.5.
-- Docked, the local pilot's chase camera eases back to 1.8× its authored distance. It eases home on leaving.
+- Docked, the local pilot's chase camera eases back to 5× its authored distance (30 u → 150 u). It eases home on leaving.
   - The camera is written only while this hull is its follow target.
   - It is handed back only if nobody else moved it in the meantime (ThresherExecutor's rule).
 - A docked or slinging hull's spawner pen is up.
@@ -104,9 +105,13 @@ The Space upgrade is the only designed level-5 upgrade. The other three slots ar
 - A rival hull on the line is a scored petal hit.
 
 **Void Sling (Time mode, RT).**
-- The tether flies at 2400 u/s for up to 1600 u and anchors on the first block it meets.
-- The hull then flies there at distance / 1 s, swept, laying thick 2.6 u blocks.
-- It docks on the first block it touches, or on the anchor.
+- The anchor is found at the PRESS: the first block on the weapons' axis within 1600 u (never your own fresh trail,
+  the block you sit on, or the nest you sit in).
+- **No anchor, no sling** (Garrett, 2026-10-16): the press does nothing and the cooldown does not start. The AI only
+  presses when it has an anchor.
+- With an anchor, the cooldown starts, the tether flies out to it at 2400 u/s, and the hull then flies there at
+  distance / 1 s, swept, laying thick 2.6 u blocks. It docks on the first block it touches, or on the anchor.
+- An anchor broken while the tether is out gives the cooldown back.
 - A crystal resets the sling.
 
 **Targeting Array (Charge mode, RT held).**
@@ -119,21 +124,43 @@ The Space upgrade is the only designed level-5 upgrade. The other three slots ar
 - While painted, **every flora with a ready missile launches one every 0.8 s**.
 - Missiles home while you paint, swerve round blocks that are not part of the target, and blow on contact in an 18 u
   blast. A shield takes the hit first, and a rival hull inside the blast is a petal hit.
-- **Painted-target indicator:** a spinning, pulsing diamond with four ticks sits on the target's screen position.
-  It shows for the local pilot only.
+- **Painted-target indicator:** a spinning, pulsing diamond with four ticks sits on the target's screen position
+  (local pilot only; §3.4).
 
-### 3.4 Zoom and the scope
+### 3.4 Zoom, the eyepiece, and alignment
 
-- LT eases the flight view to 24° over 0.2 s, through `VesselSpeedTunnel.SetHomeFieldOfViewOverride`. That tunnel is
-  the gameplay camera's ONE FOV writer, so letting go hands the player's own FOV back.
-- A scope fades in, its shape set by the mode (`ShrikeScopeOverlay`, built at runtime, local pilot only):
-  - **Space:** a sniper's ring with a split crosshair.
-  - **Charge:** four lock brackets round a diamond.
-  - **Time:** a tether line with chevrons running up it.
-- The Serpent chose a picture-in-picture over magnifying the flight view, because a magnified flight view magnifies
-  every motion (`VesselSpeedTunnel` § the override). Garrett asked for a zoom, and the Shrike mostly zooms while docked
-  and still, so the flight view is magnified here. If it reads as nauseating in flight, the Serpent's window is the
-  fallback.
+Garrett, 2026-10-16: "the zoom should work like the serpent's zoom", "the shape of the zoom window should match the
+element of the current mode", "whatever the player zooms in on should be lit based on the mode's effect", and "the
+camera, weapons, zoom, etc. need to be aligned".
+
+- **The flight view is never magnified.** LT raises the Serpent's eyepiece (`ShrikeScopeOverlay`):
+  - a window in the top left, half the screen high, at the Serpent's margins;
+  - a second camera rides the hull's nose (`ScopePipView`, the Serpent's own renderer);
+  - the trigger's DEPTH dials its field of view, 60° → 22° past a 0.08 deadzone, chased at 12/s
+    (`SniperScopeActionExecutor`'s law). A pad's analog trigger is the dial; a mouse button ramps.
+- **The window is the selected mode's element petal**, cut by `ElementPetalImage`, a subclass of the Serpent's
+  `ScopePetalImage`, from `ElementPetalGeometry`:
+  - Space mode: the Space kite. Charge mode: the Charge gem (the Serpent's window). Time mode: the Time diamond.
+  - The outlines are traced off `Resources/ElementPetals/*_petal.png` and fitted into the square keeping each petal's
+    true aspect. `ShrikeTests.Petals_*` hold them.
+- **What the mode would act on is LIT while scoped**, through `PrismLit` (the platform's GPU volume test, no
+  per-prism CPU work), in the pilot's domain colour, its strength the zoom depth:
+  - **Space:** the lance's own swept cylinder (range 2400, the lance radius).
+  - **Charge:** the lock cone, plus a sphere on the painted target (the missile blast for mass).
+  - **Time:** the sling's path to the anchor and the anchor itself. Nothing is lit when there is no anchor, which
+    reads as "the sling would not fire".
+- **Everything is on one axis.**
+  - The lance's hit test, the tether, the lock cone, the eyepiece's camera and the lit volumes all start at the hull's
+    centre and run down its forward.
+  - The chase camera sits ON that axis: `ShrikeCameraSettingsSO` followOffset is (0, 0, −30), the studio's 6 u lift
+    removed, by the Serpent's (0, 0, −250) rule.
+  - A flight reticle (the Serpent's posts and ring graphics) is drawn at `hull + forward × the mode's range`, projected
+    through the gameplay camera, so it sits at screen centre in the steady state and stays true through the camera's
+    lag.
+  - The lance's beam is drawn from the barrel's muzzle to that point, so it leaves the gun and lands where the hit test
+    ran.
+  - In Charge mode, both reticles draw the lock cone's true angular size.
+- **Painted-target marker:** a spinning, pulsing diamond at the target's screen position.
 
 ### 3.5 Crystals and nest flora
 
