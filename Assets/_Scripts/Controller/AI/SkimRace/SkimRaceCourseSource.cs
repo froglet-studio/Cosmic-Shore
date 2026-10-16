@@ -13,10 +13,18 @@ namespace CosmicShore.Gameplay
         /// Returns false until the track has been spawned (the seed arrives over the network a
         /// moment after the scene loads), so callers simply retry.
         /// </summary>
-        public static bool TryBuildFromScene(out SkimRaceCourse course)
+        public static bool TryBuildFromScene(out SkimRaceCourse course) =>
+            TryBuildFromScene(out course, out _);
+
+        /// <summary>
+        /// As above, also handing back the track the course was read from, so a caller that caches
+        /// the course across frames can tell when that track is gone (a replay reloads the scene,
+        /// and the next match may run a different intensity's track).
+        /// </summary>
+        public static bool TryBuildFromScene(out SkimRaceCourse course, out SpawnableWaypointTrack track)
         {
             course = null;
-            var track = Object.FindAnyObjectByType<SpawnableWaypointTrack>();
+            track = Object.FindAnyObjectByType<SpawnableWaypointTrack>();
             if (track == null) return false;
 
             var trails = track.GetTrails();

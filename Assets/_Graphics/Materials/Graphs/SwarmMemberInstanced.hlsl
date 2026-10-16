@@ -1,11 +1,19 @@
-// SwarmMemberInstanced.hlsl - the pose and look of one swarm member from the per-tick instance buffer
-// (Docs/SWARM_FAUNA.md §14). Included by SwarmMemberInstanced.shader; also compiled as C++ by
+// SwarmMemberInstanced.hlsl - the pose and look of one swarm member from the per-tick instance data
+// (Docs/SWARM_FAUNA.md §14). Included by SwarmMemberInstanced.shader (SM 4.5, the instance buffer) and by
+// SwarmMemberInstancedFallback.shader (SM 3.5, per-instance constants - WebGL2 / GLES 3.0 / any device without
+// vertex-stage structured buffers, Docs/SWARM_FAUNA.md §14.8). Also compiled as C++ by
 // Tools/Shaders/verify_swarm_member_pose.py, which runs it against the C# glue's own pose rules
 // (the proxy's transform: root at the interpolated position, LookRotation(face, up), body prism at
 // (0, 0, PrismZ) x Scale under it, heart at the root x its world scale). Keep it portable: no
 // intrinsics beyond the HLSL core set the verifier shims.
-#ifndef SWARM_MEMBER_INSTANCED_INCLUDED
-#define SWARM_MEMBER_INSTANCED_INCLUDED
+//
+// TWO HALVES. Everything down to SwarmMemberShade is the CORE: the pose and look of one member from ONE
+// SwarmInstance, whoever fetched it - both member shaders run exactly this code, so the two paths cannot drift.
+// The last block is the SM 4.5 half: the StructuredBuffers and the fetch by instance id. The fallback shader
+// defines SWARM_MEMBER_INSTANCED_INCLUDED before including this file, which skips exactly that half (a
+// StructuredBuffer does not exist at SM 3.5). The include guard does this job, rather than a macro of its own,
+// because the verifier compiles this file as C++ after stripping only that guard - a second conditional here
+// would break the proof. So this file has no guard around the core: include it once per shader.
 
 // SwarmTickJob.SwarmInstance, byte for byte (80 bytes)
 struct SwarmInstance
@@ -17,12 +25,9 @@ struct SwarmInstance
     float3 Scale;    float PrismZ;
 };
 
-StructuredBuffer<SwarmInstance> _SwarmInstances;
-StructuredBuffer<uint> _SwarmHeartIdx;
-
 // per draw (MaterialPropertyBlock)
 float _SwarmPart;            // 0 body prism, 1 heart
-float _SwarmBase;            // heart draws: where this element's list starts in _SwarmHeartIdx
+float _SwarmBase;            // heart draws: where this element's list starts in _SwarmHeartIdx (SM 4.5 path only)
 float _SwarmHeartElement;    // heart draws: which element this mesh is (0 Charge .. 3 Time)
 float4x4 _SwarmMeshLocal;    // the mesh's own transform under the member root (heart: per crystal model)
 // per swarm, per frame
@@ -99,7 +104,23 @@ float3 SwarmPrismSpread(float3 positionOS, float3 normalOS, float3 tangentOS, fl
     return positionOS + (eff / scl) * normalOS + ((eff - sp) / scl) * tangentOS * 0.5;
 }
 
-SwarmMemberVertex SwarmMemberPose(uint instanceID, float3 positionOS, float3 normalOS, float3 tangentOS)
+// One SwarmInstance from the five float4 rows the SM 3.5 path carries per instance (SwarmMemberFallbackDraw.cs
+// packs them): (PrevPos, BirthTick) (CurPos, Flags) (PrevFace, PrevMolt) (CurFace, CurMolt) (Scale, PrismZ). Flags
+// travel as a float VALUE (every bit lies below 2^10, exact in a float), never as raw bits: a small integer
+// reinterpreted as a float is a denormal, which a GPU may flush to zero.
+SwarmInstance SwarmInstanceFromRows(float4 r0, float4 r1, float4 r2, float4 r3, float4 r4)
+{
+    SwarmInstance s;
+    s.PrevPos = r0.xyz;  s.BirthTick = r0.w;
+    s.CurPos = r1.xyz;   s.Flags = (uint)(max(r1.w, 0.0) + 0.5);
+    s.PrevFace = r2.xyz; s.PrevMolt = r2.w;
+    s.CurFace = r3.xyz;  s.CurMolt = r3.w;
+    s.Scale = r4.xyz;    s.PrismZ = r4.w;
+    return s;
+}
+
+// The pose and palette of ONE member (the body prism, or its heart when _SwarmPart is 1), from its instance data.
+SwarmMemberVertex SwarmMemberPoseOf(SwarmInstance s, float3 positionOS, float3 normalOS, float3 tangentOS)
 {
     SwarmMemberVertex o;
     o.visible = false;
@@ -109,8 +130,6 @@ SwarmMemberVertex SwarmMemberPose(uint instanceID, float3 positionOS, float3 nor
     o.bright = float4(0, 0, 0, 1);
 
     bool heart = _SwarmPart > 0.5;
-    uint slot = heart ? _SwarmHeartIdx[(uint)_SwarmBase + instanceID] : instanceID;
-    SwarmInstance s = _SwarmInstances[slot];
     if ((s.Flags & 1u) == 0u) return o;
 
     float a = saturate(_SwarmAlpha);
@@ -172,6 +191,20 @@ float3 SwarmMemberShade(float3 positionWS, float3 normalWS, float3 dark, float3 
     float ndv = saturate(abs(dot(normalize(normalWS), v)));
     float power = _SwarmPart > 0.5 ? 4.0 : max(_SwarmRimPower, 0.5);
     return lerp(dark, bright, pow(1.0 - ndv, power));
+}
+
+// ---- the SM 4.5 half: the per-tick instance buffer and the per-element heart lists ----------------------------
+#ifndef SWARM_MEMBER_INSTANCED_INCLUDED
+#define SWARM_MEMBER_INSTANCED_INCLUDED
+
+StructuredBuffer<SwarmInstance> _SwarmInstances;
+StructuredBuffer<uint> _SwarmHeartIdx;
+
+SwarmMemberVertex SwarmMemberPose(uint instanceID, float3 positionOS, float3 normalOS, float3 tangentOS)
+{
+    bool heart = _SwarmPart > 0.5;
+    uint slot = heart ? _SwarmHeartIdx[(uint)_SwarmBase + instanceID] : instanceID;
+    return SwarmMemberPoseOf(_SwarmInstances[slot], positionOS, normalOS, tangentOS);
 }
 
 #endif

@@ -1,0 +1,52 @@
+{
+  "schema": "cosmic-shore.situation-spec/1",
+  "plan": "Docs/AI_SYSTEM/SITUATION_RECORDING_PLAN.md",
+  "implementations": ["Tools/Build/situation_features.py"],
+  "test": "python3 Tools/Build/situation_features.py --self-test (the fixture flight against its golden output, with a negative control)",
+  "frame": "Hull-relative: forward f, up u, right = f x u. Angles in degrees, distances in u, times in s, speed in u/s. The target ring is the next one to thread (rings % ring count).",
+  "recorded": {
+    "once": ["intensity (the course is generated from RegattaCourse: Tools/Build/regatta_course_harness/course.js)", "hull", "domain", "rivalHulls", "turn {p, y, rts} when known", "skimReach (Squirrel 7.5)"],
+    "per_sample_10hz": ["t", "position", "forward", "up", "speed", "boost (skim multiplier, or 1 + charge)", "xSum ySum xDiff yDiff throttle", "lt rt", "rings threaded",
+      "skims, rams, held (the page; Unity infers skims from a boost rise and rail hits from a speed drop)", "rivals: x y z rings per other pilot"]
+  },
+  "features": [
+    { "name": "dist", "group": "target", "def": "|ring - position|" },
+    { "name": "bearing", "group": "target", "def": "atan2(rel . right, rel . f): + is the side f x u points to" },
+    { "name": "elevation", "group": "target", "def": "atan2(rel . u, horizontal length of rel)" },
+    { "name": "headingErr", "group": "line-up", "def": "angle(f, ring - position)" },
+    { "name": "axisAngle", "group": "line-up", "def": "angle(f, the ring's axis pointing through, from the side the pilot is on)" },
+    { "name": "mouthOffset", "group": "line-up", "def": "where flying straight on crosses the ring's plane, distance from the centre; -1 when it never crosses ahead" },
+    { "name": "threadsIfStraight", "group": "line-up", "def": "mouthOffset <= ring radius" },
+    { "name": "timeToMouth", "group": "target", "def": "dist / max(1, speed)" },
+    { "name": "legLen", "group": "target", "def": "|ring - previous ring|" },
+    { "name": "legTurn", "group": "target", "def": "angle(this leg, the next leg)" },
+    { "name": "approachLead", "group": "target", "def": "min(480, 0.4 x legLen): GateRaceController's approach point" },
+    { "name": "rMin", "group": "line-up", "def": "speed / turn rate; turn rate = min(p, y) + speed x rts deg/s, or (no hull numbers) the 95th percentile of the flight's own turn rate, at least 30" },
+    { "name": "rNeed", "group": "line-up", "def": "dist / (2 sin(headingErr)): the circle that reaches the ring; 1e6 when headingErr <= 1" },
+    { "name": "canTurn", "group": "line-up", "def": "rNeed >= rMin" },
+    { "name": "turnRate", "group": "manoeuvre", "def": "angle between the forward of the samples either side / their time apart" },
+    { "name": "turnJerk", "group": "manoeuvre", "def": "change of turnRate per second" },
+    { "name": "gap", "group": "obstacles", "def": "distance to the nearest rail prism centre - 3 (half a prism), any lane" },
+    { "name": "gapOwnRail", "group": "obstacles", "def": "that prism is on the pilot's own domain's lane" },
+    { "name": "aheadPrisms / aheadGap / aheadBearing", "group": "obstacles", "def": "prisms ahead within 30 deg and 160 u: count, nearest gap, its bearing" },
+    { "name": "skimInReach", "group": "skim", "def": "skimReach > 0 and gap < skimReach" },
+    { "name": "skimDetour / skimTime / skimPoint", "group": "skim", "def": "cheapest prism ahead within 35 deg, 15 u .. max(60, 2 s of flight): extra distance |p q| + |q ring| - |p ring|, time to it, where" },
+    { "name": "lap, ringsLeft, place", "group": "race", "def": "place = 1 + rivals with more rings" }
+  ],
+  "labels": {
+    "target": "for each candidate (the mouth, the approach point = ring + axis x side x approachLead, the through point = ring + 320 along the way through, the next ring, the cheapest skim if its detour < 40, the nearest rival within 150) the mean angle between the pilot's forward and the candidate over the next 0.8 s; the lowest wins; confidence = (second - best) / second",
+    "phase": "in this order: recovery (after a missed mouth until headingErr < 25), thread (1 s before a ring), exit (0.8 s after), skim run (0.5 s around a skim, or going for one), line-up (timeToMouth < 4 and turning > 25 deg/s), boost straight (boost held, turning < 12), approach (headingErr < 30, or going for the approach point or mouth), cruise",
+    "corrections": "a person's override {t0, t1, phase, target} beats the guess",
+    "skim choices": "taken: the first touch of a skim run (none in the 1.5 s before), judged 0.5 s earlier; skipped: a skim with detour <= 12 u within 2 s and no skim in the next 2 s (one per 1.5 s)",
+    "mistakes": "missed mouth: crossed the ring's plane between 1 and 3 radii from the centre; rail hit: rams went up (Unity: speed fell below 65% in one sample)",
+    "commit point": "per leg, where the target last switched away from the approach point; none when the leg had no approach"
+  },
+  "learning": {
+    "data": "Unity editor flights only (Yash, 2026-10-16); at least 3 flights of a hull before anything is learned",
+    "good legs": "clean (no missed mouth, no rail hit, no AI holding) and in the faster half of the pilot's own clean times for that ring of that intensity",
+    "commit": "least squares commitDist = a + b x legLen over the good legs (>= 3); when it explains < 20% (r2 < 0.2) the median, the same on every leg; a in 60..800, b in -0.5..1",
+    "skim": "the rule take-when (detour <= D and timeToMouth >= T), D 1..15, T 0..3 by 0.25, that agrees with the most of the pilot's choices (needs >= 4, both kinds)",
+    "boostWithin": "90th percentile of headingErr while boosting (>= 5 moments) -> the hull's drive knob (hold / pellet / scarab err, Soar full and half, Dolphin aim, Rhino maxErr)",
+    "safety": "nothing deploys itself (AI_TRAINING_PLAN.md L4): situation_features.py --write writes learned_situations.json for review; the knobs reach the game only through the reviewed Unity port, tested against today's AI in the editor"
+  }
+}

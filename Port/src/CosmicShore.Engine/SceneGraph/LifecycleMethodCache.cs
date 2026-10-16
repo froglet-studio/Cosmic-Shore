@@ -35,6 +35,10 @@ namespace CosmicShore.Engine
         public Action<MonoBehaviour, Collision> CollisionEnter;
         public Action<MonoBehaviour, Collision> CollisionStay;
         public Action<MonoBehaviour, Collision> CollisionExit;
+        // The application messages (ApplicationMessages): quitting, and the window gaining or losing focus.
+        public Action<MonoBehaviour> ApplicationQuit;
+        public Action<MonoBehaviour, bool> ApplicationFocus;
+        public Action<MonoBehaviour, bool> ApplicationPause;
         public int ExecutionOrder;
 
         static readonly ConcurrentDictionary<Type, LifecycleHooks> Cache = new();
@@ -66,6 +70,9 @@ namespace CosmicShore.Engine
                 CollisionEnter = FindCollision(type, "OnCollisionEnter"),
                 CollisionStay = FindCollision(type, "OnCollisionStay"),
                 CollisionExit = FindCollision(type, "OnCollisionExit"),
+                ApplicationQuit = Find(type, "OnApplicationQuit"),
+                ApplicationFocus = FindBool(type, "OnApplicationFocus"),
+                ApplicationPause = FindBool(type, "OnApplicationPause"),
                 // The project's Script Execution Order settings (.meta) win over the attribute.
                 ExecutionOrder = ScriptExecutionOrder.TryGet(type, out var configured) ? configured
                     : type.GetCustomAttribute<DefaultExecutionOrderAttribute>()?.order ?? 0,
@@ -110,6 +117,23 @@ namespace CosmicShore.Engine
         static Action<MonoBehaviour> BindCoroutine<T>(Func<T, System.Collections.IEnumerator> start) where T : MonoBehaviour => mb => mb.StartCoroutine(start((T)mb));
         static Action<MonoBehaviour, Collider> BindTrigger<T>(Action<T, Collider> call) where T : MonoBehaviour => (mb, other) => call((T)mb, other);
         static Action<MonoBehaviour, Collision> BindCollision<T>(Action<T, Collision> call) where T : MonoBehaviour => (mb, c) => call((T)mb, c);
+        static Action<MonoBehaviour, bool> BindBool<T>(Action<T, bool> call) where T : MonoBehaviour => (mb, b) => call((T)mb, b);
+
+        /// <summary>A message with one <see cref="bool"/> parameter (OnApplicationFocus/Pause), most-derived declaration wins.</summary>
+        static Action<MonoBehaviour, bool> FindBool(Type type, string methodName)
+        {
+            const BindingFlags flags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.DeclaredOnly;
+            for (Type t = type; t != null && t != typeof(MonoBehaviour); t = t.BaseType)
+            {
+                MethodInfo method = t.GetMethod(methodName, flags, binder: null, types: new[] { typeof(bool) }, modifiers: null);
+                if (method is null || method.IsAbstract) continue;
+                if (method.ReturnType == typeof(void))
+                    return (Action<MonoBehaviour, bool>)Generic(nameof(BindBool), t)
+                        .Invoke(null, new object[] { method.CreateDelegate(typeof(Action<,>).MakeGenericType(t, typeof(bool))) });
+                return (mb, b) => method.Invoke(mb, new object[] { b });
+            }
+            return null;
+        }
 
         /// <summary>
         /// Collision-message variant (the contact pass): one <see cref="Collision"/> parameter, or

@@ -10,14 +10,14 @@ namespace CosmicShore.ScriptableObjects
     /// an attractor–repulsor wormhole pair beside the hull. The pair itself is the black hole's
     /// (<c>Docs/BLACK_HOLE.md</c> §11) — this file only decides where, how big and how long.
     ///
-    /// <para><b>The orbit</b> (the drift pair — the playtest's design, 2026-10-09). PRESS lays the
-    /// attractor to the trigger's side, at the radius the squeeze asks for, and the repulsor mirrored on
-    /// the other side at the same distance and size. HOLD and the hull ORBITS the attractor: the squeeze
-    /// sets the radius live (harder = tighter, <see cref="OrbitRadiusWide"/> → <see cref="OrbitRadiusTight"/>),
-    /// the hole's horizon is <see cref="OrbitHorizons"/> times smaller than the radius, and its strength is
-    /// the one that makes that radius a circular orbit at the hull's speed. RELEASE and the hull slingshots
-    /// out along the tangent with a boost; the pair falls together at <see cref="DriftSpeed"/> and
-    /// annihilates where the horizons touch.</para>
+    /// <para><b>Time mode — the catch</b> (2026-10-14, the studio's dipole sling: <c>STOAT_DIPOLE.md</c> §1b). PRESS lays a
+    /// LIGHT attractor <see cref="CatchAhead"/> ahead and <see cref="CatchSide"/> to the trigger's side, the repulsor
+    /// mirrored on the other — in front of the hull, where the camera sees it. Two rings are drawn round it: the ORBIT
+    /// radius (the squeeze sets it live: harder = tighter, <see cref="OrbitRadiusWide"/> → <see cref="OrbitRadiusTight"/>)
+    /// and the DETECTION radius (<see cref="CatchReach"/> × the orbit). Fly past it and it CATCHES you onto the orbit;
+    /// hold and you go round; RELEASE and you slingshot out along the tangent, the kick timed to a quarter-turn. It cannot
+    /// suck you in: the orbit radius is many horizons wide and it catches you at it. The pair then falls together at
+    /// <see cref="DriftSpeed"/> and annihilates.</para>
     ///
     /// <para><b>The crystal style</b> (<c>BlackHoleConfig.crystalPairs</c>, §13) still lays its pair on
     /// RELEASE, sized by the squeeze between <see cref="MinStrength"/> and <see cref="MaxStrength"/>, at
@@ -36,27 +36,65 @@ namespace CosmicShore.ScriptableObjects
         [Tooltip("The autopilot writes no trigger; its every sling is this fraction of a full squeeze.")]
         [SerializeField, Range(0f, 1f)] float autopilotHold01 = 0.5f;
 
-        [Header("Orbit (drift pair: press lays it, hold orbits, release slings)")]
+        [Header("Time mode - the catch (press lays it ahead, fly past and it catches you, hold orbits, release slings)")]
+        [Tooltip("How far AHEAD of the hull the pair is laid, world units (the studio's dpAhead) - in front, where you see it.")]
+        [SerializeField, Range(20f, 400f)] float catchAhead = 150f;
+
+        [Tooltip("How far to the pressed side the attractor is laid (the repulsor the same to the other side), world units " +
+                 "(the studio's dpSide). Flying straight, about how close you pass it.")]
+        [SerializeField, Range(0f, 200f)] float catchSide = 45f;
+
+        [Tooltip("The DETECTION radius as a multiple of the orbit radius (the studio's dpCaptureX): pass inside it, with the " +
+                 "attractor off your nose by at least catchDegrees, and it catches you. Inside the orbit radius it always does.")]
+        [SerializeField, Range(1f, 3f)] float catchReach = 1.5f;
+
+        [Tooltip("It catches you only once it is at least this far off the nose (the studio's dpCatchDeg): AS you pass it, " +
+                 "not while it is still dead ahead.")]
+        [SerializeField, Range(0f, 90f)] float catchDegrees = 50f;
+
+        [Tooltip("Once caught, how fast the nose eases onto the orbit's tangent, per second (the studio's dpSettle).")]
+        [SerializeField, Range(0.1f, 20f)] float settleRate = 3f;
+
+        [Tooltip("The longest orbit, degrees round the attractor (the studio's dpMaxTurn): past it you are let go on your own.")]
+        [SerializeField, Range(90f, 1080f)] float maxOrbitDegrees = 360f;
+
         [Tooltip("Orbit radius at the lightest squeeze, world units: a wide, gentle turn.")]
         [SerializeField, Min(1f)] float orbitRadiusWide = 150f;
 
         [Tooltip("Orbit radius fully squeezed, world units: the tightest turn.")]
         [SerializeField, Min(1f)] float orbitRadiusTight = 40f;
 
-        [Tooltip("Space is reach: a multiplier on both orbit radii — more Space, the pair is laid further out and the turn is wider.")]
+        [Tooltip("Space is reach: a multiplier on both orbit radii (and so the detection radius) - more Space, wider.")]
         [SerializeField] ElementalFloat orbitReach = ElementalFloat.Multiplier(1f, 1.4f, Element.Space, 1f);
 
-        [Tooltip("How many of its own horizon radii the orbit sits out from the attractor (the repulsor matches it). " +
-                 "Floored at 3, where the Paczyński–Wiita law stops allowing a stable circular orbit.")]
-        [SerializeField, Range(3f, 20f)] float orbitHorizons = 6f;
-
-        [Tooltip("How fast the orbit radius (and the hole's size) follows a changing squeeze, per second.")]
+        [Tooltip("How fast the orbit radius follows a changing squeeze, per second.")]
         [SerializeField, Range(0.1f, 20f)] float radiusFollowRate = 3f;
 
-        [Tooltip("How hard the hull is held on the orbit's radius, per second (drift from steering and frame steps).")]
+        [Tooltip("How hard a caught hull is held on the orbit's radius, per second.")]
         [SerializeField, Range(0.1f, 20f)] float radialCorrectionRate = 5f;
 
-        [Header("Slingshot (on release)")]
+        [Header("Time mode - the poles (LIGHTER than Mass mode's)")]
+        [Tooltip("The attractor's (and repulsor's) horizon, world units. Mass mode's dipole poles are 2.1 u; Time mode's " +
+                 "pull nothing it orbits - the catch flies the orbit - so they are light (the user, 2026-10-14).")]
+        [SerializeField, Range(0.2f, 10f)] float poleHorizon = 1.6f;
+
+        [Tooltip("The poles' gravitational parameter (what prisms feel). Mass mode's are 50 000; Time mode's are lighter.")]
+        [SerializeField, Min(0f)] float poleGM = 20000f;
+
+        [Header("Time mode - the rings (drawn for the pilot in place of the path)")]
+        [Tooltip("Dots of each ring are laid this many world units apart.")]
+        [SerializeField, Range(1f, 40f)] float ringDotSpacing = 5f;
+
+        [Tooltip("Each ring dot's size, world units (never smaller on screen than the path dots' minimum).")]
+        [SerializeField, Range(0.1f, 5f)] float ringDotSize = 0.9f;
+
+        [Tooltip("The detection ring's opacity against the orbit ring's (faint: it is where it CAN catch you).")]
+        [SerializeField, Range(0f, 1f)] float detectionRingAlpha = 0.35f;
+
+        [Tooltip("The orbit ring's opacity before the catch (it brightens to full once you are on it).")]
+        [SerializeField, Range(0f, 1f)] float orbitRingAlpha = 0.6f;
+
+        [Header("Slingshot (on release - only once caught)")]
         [Tooltip("Boost on release at the lightest squeeze, as a fraction of the orbit speed.")]
         [SerializeField, Range(0f, 3f)] float slingBoostMin = 0.25f;
 
@@ -83,6 +121,17 @@ namespace CosmicShore.ScriptableObjects
         [Tooltip("Played on every peer when a release lands inside the full window. Ships empty until a sound is chosen.")]
         [SerializeField] EventReference sweetSpotEvent;
 
+        [Header("Pace (Time mode — the field's warp while the pair holds you)")]
+        [Tooltip("The studio's dpWarp (2026-10-14: \"both mechanics similarly paced\"). While a Time-mode pair is held, the hull's " +
+                 "flight clock warps exactly as the field trajectory's lime path does (StoatDipoleConfig boost, boostRise, " +
+                 "boostFadeSeconds), to this share of that boost: 1 = the same warp, 0 = none. Measured in the studio's batch race " +
+                 "at 1.15: catch-sling circuit 56 s best against the field's 60 s.")]
+        [SerializeField, Range(0f, 1.5f)] float catchWarpShare = 1.15f;
+
+        [Tooltip("The studio's dpWarpHeld: the warp starts as soon as the pair is laid and held (flying at the black hole is " +
+                 "already fast, as any bend of the field's path is). Off = only once the attractor has caught the hull.")]
+        [SerializeField] bool catchWarpFromPress = true;
+
         [Header("Life")]
         [Tooltip("How fast the two holes CLOSE on each other once let go (u/s); they annihilate where the horizons touch.")]
         [SerializeField, Range(0f, 200f)] float driftSpeed = 40f;
@@ -107,6 +156,12 @@ namespace CosmicShore.ScriptableObjects
         [Tooltip("An autopilot slings when its target is at least this many degrees off the nose, to the side it wants to turn. 0 disables the AI sling.")]
         [SerializeField, Range(0f, 180f)] float aiSlingMinTurnDegrees = 30f;
 
+        [Tooltip("Once caught, the autopilot lets go when its target is within this many degrees of the nose.")]
+        [SerializeField, Range(1f, 90f)] float aiReleaseConeDegrees = 20f;
+
+        [Tooltip("The autopilot lets go of a pair that has not caught it after this many seconds.")]
+        [SerializeField, Range(0.5f, 10f)] float aiCatchGiveUpSeconds = 4f;
+
         [Tooltip("Seconds between an autopilot's slings — one pair at a time, so roughly its lifetime.")]
         [SerializeField, Range(0.5f, 20f)] float aiSlingIntervalSeconds = 3f;
 
@@ -128,7 +183,20 @@ namespace CosmicShore.ScriptableObjects
         public float OrbitRadiusWide => Mathf.Max(1f, orbitRadiusWide);
         public float OrbitRadiusTight => Mathf.Clamp(orbitRadiusTight, 1f, OrbitRadiusWide);
         public ElementalFloat OrbitReach => orbitReach;
-        public float OrbitHorizons => Mathf.Clamp(orbitHorizons, 3f, 20f);
+        public float CatchAhead => Mathf.Clamp(catchAhead, 20f, 400f);
+        public float CatchSide => Mathf.Clamp(catchSide, 0f, 200f);
+        public float CatchReach => Mathf.Clamp(catchReach, 1f, 3f);
+        public float CatchDegrees => Mathf.Clamp(catchDegrees, 0f, 90f);
+        public float SettleRate => Mathf.Clamp(settleRate, 0.1f, 20f);
+        public float MaxOrbitDegrees => Mathf.Clamp(maxOrbitDegrees, 90f, 1080f);
+        public float PoleHorizon => Mathf.Clamp(poleHorizon, 0.2f, 10f);
+        public float PoleGM => Mathf.Max(0f, poleGM);
+        public float RingDotSpacing => Mathf.Clamp(ringDotSpacing, 1f, 40f);
+        public float RingDotSize => Mathf.Clamp(ringDotSize, 0.1f, 5f);
+        public float DetectionRingAlpha => Mathf.Clamp01(detectionRingAlpha);
+        public float OrbitRingAlpha => Mathf.Clamp01(orbitRingAlpha);
+        public float AiReleaseConeDegrees => Mathf.Clamp(aiReleaseConeDegrees, 1f, 90f);
+        public float AiCatchGiveUpSeconds => Mathf.Clamp(aiCatchGiveUpSeconds, 0.5f, 10f);
         public float RadiusFollowRate => Mathf.Clamp(radiusFollowRate, 0.1f, 20f);
         public float RadialCorrectionRate => Mathf.Clamp(radialCorrectionRate, 0.1f, 20f);
         public float SlingBoostMin => Mathf.Clamp(slingBoostMin, 0f, 3f);
@@ -148,8 +216,11 @@ namespace CosmicShore.ScriptableObjects
         public float SweetSpotFalloff => Mathf.Clamp(sweetSpotFalloff, 1f, 180f);
         public float MissKickShare => Mathf.Clamp01(missKickShare);
         public EventReference SweetSpotEvent => sweetSpotEvent;
-        /// <summary>The swept angle past which the orbit's drawn arc stops: the far edge of the falloff.</summary>
-        public float SweetSpotEndDegrees => SweetSpotDegrees + SweetSpotHalfWidth + SweetSpotFalloff;
+        public float CatchWarpShare => Mathf.Clamp(catchWarpShare, 0f, 1.5f);
+        public bool CatchWarpFromPress => catchWarpFromPress;
+
+        /// <summary>The catch's warp target for the field's <paramref name="fieldBoost"/>: 1 + (boost − 1) × the share.</summary>
+        public float CatchWarpTarget(float fieldBoost) => 1f + (Mathf.Max(1f, fieldBoost) - 1f) * CatchWarpShare;
         /// <summary>How well a release after <paramref name="sweptDegrees"/> of orbit is timed, 0..1.</summary>
         public float SweetSpot(float sweptDegrees) =>
             StoatSlingMath.SweetSpot(sweptDegrees, SweetSpotDegrees, SweetSpotHalfWidth, SweetSpotFalloff);

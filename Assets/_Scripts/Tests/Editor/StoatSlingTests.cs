@@ -2,6 +2,7 @@ using System.IO;
 using System.Text.RegularExpressions;
 using CosmicShore.Data;
 using CosmicShore.Gameplay;
+using CosmicShore.ScriptableObjects;
 using NUnit.Framework;
 using UnityEngine;
 
@@ -63,22 +64,6 @@ namespace CosmicShore.Tests
         }
 
         [Test]
-        public void OrbitHorizon_NeverInsideTheLastStableOrbit()
-        {
-            Assert.AreEqual(25f, StoatSlingMath.OrbitHorizon(150f, 6f), 1e-4f);
-            Assert.AreEqual(50f, StoatSlingMath.OrbitHorizon(150f, 1f), 1e-4f, "floored at 3 horizons (the PW ISCO)");
-        }
-
-        [Test]
-        public void CircularOrbitGM_MakesThePullExactlyTheCentripetalAcceleration()
-        {
-            const float v = 60f, r = 100f, rs = 16.6667f;
-            float gm = StoatSlingMath.CircularOrbitGM(v, r, rs);
-            float pull = gm / ((r - rs) * (r - rs));          // Paczyński–Wiita at r
-            Assert.AreEqual(v * v / r, pull, 1e-3f, "the hole's pull at the orbit radius is v²/r: a circle");
-        }
-
-        [Test]
         public void OrbitHeading_TurnsTheTangentTowardTheCentre()
         {
             var forward = new Vector3(0f, 0f, 1f);
@@ -98,8 +83,84 @@ namespace CosmicShore.Tests
         {
             Assert.AreEqual(15f, StoatSlingMath.SlingBoost(60f, 0f, 0.25f, 0.9f), 1e-4f);
             Assert.AreEqual(54f, StoatSlingMath.SlingBoost(60f, 1f, 0.25f, 0.9f), 1e-4f);
-            Assert.AreEqual(Mathf.PI, StoatSlingMath.AutopilotHoldSeconds(Mathf.PI / 2f, 50f, 100f), 1e-4f,
-                "a quarter turn on r = 100 at 50 u/s: the quarter-circle's arc (50π u) over the speed");
+        }
+
+        // ------------------------------------------------------------------ Time mode: the catch (STOAT_DIPOLE.md §1b)
+
+        [Test]
+        public void CatchPair_LaysTheAttractorAheadOnThePressedSide_TheRepulsorMirrored()
+        {
+            StoatSlingMath.CatchPair(Vector3.zero, Vector3.forward, Vector3.right, attractorLeft: true, 150f, 45f,
+                out var att, out var rep);
+            Assert.AreEqual(new Vector3(-45f, 0f, 150f), att, "left trigger: ahead and to the left");
+            Assert.AreEqual(new Vector3(45f, 0f, 150f), rep, "the repulsor mirrored");
+            StoatSlingMath.CatchPair(Vector3.zero, Vector3.forward, Vector3.right, attractorLeft: false, 150f, 45f, out att, out _);
+            Assert.AreEqual(new Vector3(45f, 0f, 150f), att, "right trigger: to the right");
+            // In front of the chase camera, never square beside the hull (the 2026-10-13 cut's invisible pole).
+            Assert.Less(Vector3.Angle(Vector3.forward, att), 30f);
+            // The registry's own placement agrees: the attractor sits at -axis × halfGap from the midpoint.
+            var axis = StoatSlingMath.PairAxis(true, Vector3.right);
+            Assert.AreEqual(new Vector3(-45f, 0f, 150f), new Vector3(0f, 0f, 150f) - axis * 45f);
+        }
+
+        [Test]
+        public void Catches_AsYouPassIt_OrInsideTheOrbit_NeverWhileStillDeadAhead()
+        {
+            var att = new Vector3(-45f, 0f, 150f);
+            Assert.IsFalse(StoatSlingMath.Catches(Vector3.zero, Vector3.forward, att, 40f, 60f, 50f), "far and ahead: not yet");
+            Assert.IsTrue(StoatSlingMath.Catches(new Vector3(0f, 0f, 113f), Vector3.forward, att, 40f, 60f, 50f),
+                "within the detection radius and 50° off the nose");
+            Assert.IsFalse(StoatSlingMath.Catches(new Vector3(0f, 0f, 112f), Vector3.forward, new Vector3(-10f, 0f, 160f), 40f, 60f, 50f),
+                "within reach but still ahead: it waits for the pass");
+            Assert.IsTrue(StoatSlingMath.Catches(new Vector3(0f, 0f, 120f), Vector3.forward, new Vector3(-10f, 0f, 160f), 50f, 75f, 50f),
+                "inside the orbit radius it always catches");
+        }
+
+        [Test]
+        public void Catches_AStraightPassAlways_AtEveryShippedSqueeze()
+        {
+            // The user's rule (2026-10-14): Time mode "always catches them". Fly straight past the shipped pair: the
+            // tightest orbit (40 u) with the 1.5× detection radius still reaches the 45 u pass by the time the
+            // attractor is 50° off the nose (45 / sin 50° = 58.7 u ≤ 60 u).
+            var att = new Vector3(-45f, 0f, 150f);
+            foreach (float r in new[] { 40f, 60f, 100f, 150f })
+            {
+                bool caught = false;
+                for (float z = 0f; z <= 300f && !caught; z += 0.5f)
+                    caught = StoatSlingMath.Catches(new Vector3(0f, 0f, z), Vector3.forward, att, r, 1.5f * r, 50f);
+                Assert.IsTrue(caught, $"orbit {r} u: a straight pass is caught");
+            }
+        }
+
+        [Test]
+        public void Ring_IsACircleOfTheRadius_InThePlaneOfThePass()
+        {
+            var points = new Vector3[96];
+            var centre = new Vector3(-45f, 0f, 150f);
+            var normal = StoatSlingMath.RingNormal(Vector3.zero, Vector3.forward, centre, Vector3.up);
+            Assert.AreEqual(1f, Mathf.Abs(Vector3.Dot(normal, Vector3.up)), 1e-4f, "a level pass draws a level ring");
+            int n = StoatSlingMath.Ring(centre, normal, 80f, 96, points);
+            Assert.AreEqual(96, n);
+            for (int i = 0; i < n; i++)
+            {
+                Assert.AreEqual(80f, Vector3.Distance(points[i], centre), 1e-3f, "every point on the ring");
+                Assert.AreEqual(0f, Vector3.Dot(points[i] - centre, normal), 1e-3f, "in the ring's plane");
+            }
+            Assert.AreEqual(Vector3.up, StoatSlingMath.RingNormal(Vector3.zero, Vector3.forward, new Vector3(0f, 0f, 50f), Vector3.up),
+                "flying straight at the centre: the fallback plane");
+            Assert.AreEqual(0, StoatSlingMath.Ring(centre, normal, 0f, 96, points), "no radius, no ring");
+        }
+
+        [Test]
+        public void SettleHeading_EasesOntoTheTangent_NeverSlowerThanTheOrbitsOwnTurn()
+        {
+            var tangent = Quaternion.Euler(0f, -60f, 0f) * Vector3.forward;
+            var h = StoatSlingMath.SettleHeading(Vector3.forward, tangent, 2f, 0.1f);
+            Assert.AreEqual(6f, Vector3.Angle(Vector3.forward, h), 1e-3f, "a tenth of the 60° miss");
+            h = StoatSlingMath.SettleHeading(Vector3.forward, tangent, 10f, 0.1f);
+            Assert.AreEqual(10f, Vector3.Angle(Vector3.forward, h), 1e-3f, "at least the orbit's own step");
+            h = StoatSlingMath.SettleHeading(Vector3.forward, Quaternion.Euler(0f, -1f, 0f) * Vector3.forward, 2f, 0.1f);
+            Assert.AreEqual(1f, Vector3.Angle(Vector3.forward, h), 1e-3f, "never past the tangent");
         }
 
         [Test]
@@ -271,6 +332,58 @@ namespace CosmicShore.Tests
             StringAssert.Contains($"  - {{fileID: {RootTransform}, guid: {PrefabGuid}, type: 3}}\n", Read(Container), "Vessel Prefab Container");
             StringAssert.Contains($"    Prefab: {{fileID: 6417075533431866457, guid: {PrefabGuid}, type: 3}}\n", Read(NetworkPrefabs), "DefaultNetworkPrefabs");
             StringAssert.Contains($"guid: {PrefabGuid}", Read(Prefab + ".meta"));
+        }
+
+        // ------------------------------------------------------------------ the catch's pace (studio dpWarp, 2026-10-14)
+
+        [Test]
+        public void CatchWarp_IsTheFieldsBoostScaledByTheShare()
+        {
+            var config = ScriptableObject.CreateInstance<StoatSlingConfigSO>();
+            try
+            {
+                // the shipped share, 1.15 (the studio's dpWarp): the field's ×3 becomes 1 + 2 × 1.15 = 3.3
+                Assert.AreEqual(3.3f, config.CatchWarpTarget(3f), 1e-4f);
+                Assert.AreEqual(1f, config.CatchWarpTarget(1f), 1e-6f, "no field boost, no catch warp");
+                Assert.AreEqual(1f, config.CatchWarpTarget(0.5f), 1e-6f, "a boost below 1 never slows the clock");
+                Assert.IsTrue(config.CatchWarpFromPress, "the warp starts at the press (studio dpWarpHeld 1)");
+            }
+            finally { Object.DestroyImmediate(config); }
+        }
+
+        [Test]
+        public void CatchWarp_RisesWhileHeldAndFadesAfter_TheFieldsOwnStep()
+        {
+            // StoatDipoleMath.StepBoost is the one rule both modes run: rise toward the target while warped, fade after.
+            float b = 1f;
+            for (int i = 0; i < 120; i++) b = StoatDipoleMath.StepBoost(b, true, 3.3f, 20f, 0.6f, 1f / 60f);
+            Assert.AreEqual(3.3f, b, 0.01f, "two seconds held reaches the catch's target");
+            for (int i = 0; i < 36; i++) b = StoatDipoleMath.StepBoost(b, false, 3.3f, 20f, 0.6f, 1f / 60f);
+            Assert.AreEqual(1f + 2.3f * Mathf.Exp(-1f), b, 0.02f, "one fade time after the release, 1/e of the warp is left");
+        }
+
+        [Test]
+        public void Asset_ShipsTheStudiosPaceAndTiming()
+        {
+            var text = Read("Assets/_SO_Assets/VesselActions/Stoat/StoatSlingConfig.asset");
+            StringAssert.Contains("  catchWarpShare: 1.15\n", text, "studio dpWarp");
+            StringAssert.Contains("  catchWarpFromPress: 1\n", text, "studio dpWarpHeld");
+            StringAssert.Contains("  sweetSpotDegrees: 90\n", text, "studio dpSweetDeg");
+            StringAssert.Contains("  missKickShare: 0.2\n", text, "studio dpMissShare");
+        }
+
+        [Test]
+        public void Keyboard_BIsT_TheStudiosKeyToo()
+        {
+            // R is the Vessel Studio's reset; the Stoat's mode switch (Button2Action, pad B) is T in both (2026-10-14).
+            foreach (var path in new[] { "Assets/_Scripts/Controller/IO/KeyboardInputStrategy.cs", "Assets/_Scripts/Controller/IO/SingleStickMouseInputStrategy.cs" })
+            {
+                var src = Read(path);
+                StringAssert.DoesNotContain("rKey", src, $"{path}: Button2 left R");
+                StringAssert.Contains("tKey", src, $"{path}: Button2 is T");
+            }
+            StringAssert.Contains("  - binding: 3\n    padGlyph: {fileID: 21300000, guid: b611b9e51b8b5f14b9d9dc8dd392fc60, type: 3}\n    padGlyphHeld: {fileID: 0}\n    keyboardLabel: T\n",
+                Read("Assets/Resources/ControlGlyphSet.asset"), "the B chip reads T");
         }
     }
 }

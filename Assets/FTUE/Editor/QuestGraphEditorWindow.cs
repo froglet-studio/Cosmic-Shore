@@ -5,12 +5,13 @@ using System.Linq;
 using CosmicShore.Core;
 using UnityEditor;
 using UnityEngine;
+using CosmicShore.Editor.Froglet;
 
 namespace CosmicShore.Editor
 {
     /// <summary>
     /// Quest Graph Editor — node/flowchart authoring for <see cref="QuestSO"/> quests and
-    /// their <see cref="QuestPhaseGraphSO"/> phases (FrogletTools ▸ Quest Graph Editor).
+    /// their <see cref="QuestPhaseGraphSO"/> phases (FrogletTools ▸ FTUE ▸ Quest Graph Editor).
     ///
     /// Built on IMGUI to match the project's editor tooling, tuned for a Shader-Graph feel:
     /// wheel zoom anchored at the cursor, middle/alt drag panning, content-sized node cards,
@@ -96,7 +97,9 @@ namespace CosmicShore.Editor
             set { if (_graph != null) _graph.canvasZoom = Mathf.Clamp(value, MinZoom, MaxZoom); }
         }
 
-        [MenuItem("FrogletTools/Quest Graph Editor")]
+        [MenuItem("FrogletTools/FTUE/Quest Graph Editor", false, 150)]
+        [FrogletTool(FrogletToolCategory.Ftue, Importance = 5,
+            Description = "Node graph authoring for the FTUE quest and its phases.")]
         public static void Open() => GetWindow<QuestGraphEditorWindow>("Quest Graph Editor");
 
         void OnEnable()
@@ -1192,6 +1195,13 @@ namespace CosmicShore.Editor
             }
         }
 
+        /// <summary>First project asset of type <typeparamref name="T"/>, or null.</summary>
+        static T FindFirstAsset<T>() where T : UnityEngine.Object
+        {
+            var guid = AssetDatabase.FindAssets($"t:{typeof(T).Name}").FirstOrDefault();
+            return guid == null ? null : AssetDatabase.LoadAssetAtPath<T>(AssetDatabase.GUIDToAssetPath(guid));
+        }
+
         /// <summary>
         /// When the ▶ NEXT node is a tier gate, spell out WHY it hasn't advanced: the authored
         /// unlock goal (stat threshold or play count), the mode's current tier, and — in Play
@@ -1204,7 +1214,7 @@ namespace CosmicShore.Editor
 
             var svc = GameModeProgressionService.Instance;
             var questList = svc != null ? svc.QuestList
-                : QuestRunnerSetup.FindAsset<CosmicShore.ScriptableObjects.SO_UnlockList>();
+                : FindFirstAsset<CosmicShore.ScriptableObjects.SO_UnlockList>();
 
             CosmicShore.ScriptableObjects.SO_UnlockData quest = null;
             if (questList != null)

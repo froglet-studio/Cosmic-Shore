@@ -93,8 +93,21 @@ CONFIGS = {
     # since --changed-base (see EDITOR_PREDEFINED). Packages stay player-compiled.
     "editor": ["ENABLE_MONO", "UNITY_EDITOR", "UNITY_EDITOR_64", "UNITY_EDITOR_WIN", "ENABLE_PROFILER",
                "UNITY_ASSERTIONS", "DEBUG", "TRACE", "ENABLE_UNITY_COLLECTIONS_CHECKS", "UNITY_INCLUDE_TESTS"],
+    # The browser Toybox (Docs/WEBGL_TOYBOX.md): Assets code compiled as the WebGL player with the
+    # toybox define, and asmdef include/exclude evaluated for "WebGL". Packages stay compiled as the
+    # Windows player (shared cache), so a package's own UNITY_WEBGL branches are NOT checked here.
+    "webgl": ["ENABLE_IL2CPP", "UNITY_WEBGL", "PLATFORM_WEBGL", "FROGLET_WEB_TOYBOX"],
 }
 PLAYER_PLATFORM = "WindowsStandalone64"
+# Per-config platform for PROJECT asmdefs and the standalone defines a config drops (packages always
+# use PLAYER_PLATFORM and the player defines).
+CONFIG_PLATFORM = {"webgl": "WebGL"}
+CONFIG_DROPS = {"webgl": {"PLATFORM_STANDALONE_WIN", "PLATFORM_STANDALONE", "UNITY_STANDALONE_WIN",
+                          "UNITY_STANDALONE", "ENABLE_OUT_OF_PROCESS_CRASH_HANDLER", "ENABLE_CLUSTER_SYNC",
+                          "ENABLE_CLUSTERINPUT", "ENABLE_MICROPHONE", "ENABLE_WEBCAM", "ENABLE_VR", "ENABLE_AR",
+                          "ENABLE_NVIDIA", "ENABLE_AMD", "PLATFORM_ARCH_64", "UNITY_64",
+                          "SENTIS_ANALYTICS_ENABLED", "APP_UI_EDITOR_ONLY"}}
+PROJECT_PLATFORM = PLAYER_PLATFORM   # set from --config in run_once
 # Unity's predefined EDITOR assemblies, for loose scripts under an Editor/ folder (Plugins/ and
 # Standard Assets/ ones go to -firstpass). They reference the runtime assemblies, never the other way
 # round. Only the editor config fills them; it gates on errors in the Editor-folder files changed
@@ -308,10 +321,11 @@ def discover(defines, pkg_defines, versions, roots):
         a.override = bool(j.get("overrideReferences"))
         a.precompiled = j.get("precompiledReferences", []) or []
         inc, exc = j.get("includePlatforms") or [], j.get("excludePlatforms") or []
-        if inc and PLAYER_PLATFORM not in inc:
+        plat = PLAYER_PLATFORM if is_pkg else PROJECT_PLATFORM
+        if inc and plat not in inc:
             a.excluded_reason = "platforms " + ",".join(inc)
-        if PLAYER_PLATFORM in exc:
-            a.excluded_reason = "excludes " + PLAYER_PLATFORM
+        if plat in exc:
+            a.excluded_reason = "excludes " + plat
         vdefs = []
         for vd in j.get("versionDefines", []) or []:
             ver = vers.get(vd.get("name"))
@@ -752,7 +766,10 @@ def run_once():
         print("ERROR: no reference cache at %s - run fetch.py first (needs network once)." % CACHE)
         return 2
 
-    defines = unity_version_defines() + COMMON + CONFIGS[args.config]
+    global PROJECT_PLATFORM
+    PROJECT_PLATFORM = CONFIG_PLATFORM.get(args.config, PLAYER_PLATFORM)
+    drops = CONFIG_DROPS.get(args.config, set())
+    defines = unity_version_defines() + [d for d in COMMON if d not in drops] + CONFIGS[args.config]
     # packages are always compiled as the player sees them (shared output, shared cache)
     pkg_defines = unity_version_defines(REFS_UNITY_VERSION) + COMMON + CONFIGS["player"]
     out_root = os.path.join(os.environ.get("TMPDIR", "/tmp"), "unity_refcompile_out")

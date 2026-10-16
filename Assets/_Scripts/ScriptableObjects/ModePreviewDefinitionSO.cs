@@ -79,6 +79,13 @@ namespace CosmicShore.ScriptableObjects
                  "Authored by Tools/Build/author_preview_tracks.py from the scenes' own spawners.")]
         public List<SpawnableBase> TrackSpawnablesByIntensity = new();
 
+        [Tooltip("OPTIONAL: a gate race's controller-built structure, hung on the preview's own " +
+                 "course before it spawns (Breakwater's stations). Point it at the SAME prefab the " +
+                 "mode's scene controller spawns - the course source poses it, so the preview flies " +
+                 "the match's stations. Built for the flight phase and retired with the arena. " +
+                 "Authored by Tools/Build/author_mode_previews.py from the scene.")]
+        public SpawnableBase CourseStructurePrefab;
+
         [Header("Preview wildlife - kill-objective modes only")]
         [Tooltip("OPTIONAL species released into the FLIGHT arena so a kill-scored objective has " +
                  "something to hunt. A preview satellite's own life spawner is deliberately " +

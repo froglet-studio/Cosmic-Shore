@@ -52,9 +52,12 @@ The two deltas that are not ~0 are both deliberate, and neither reaches a shader
     for procedural fresnel and scrolling, not to index an atlas.
   * The CYLINDERTUBE's UVs are a modelled non-uniform unwrap (its wall steps are 0.0895 / 0.1052
     / 0.1106 per equal 18 deg segment - a seamed atlas from a modelling package, not a formula).
-    It is NOT reproduced, and nothing can see that: its one consumer `oldWallFlora.prefab` wires
-    `m_Materials: [{fileID: 0}]` - a NULL material - so no shader samples it, and it also uses
-    the mesh as a non-convex `MeshCollider`, which reads positions and triangles only.
+    It is NOT reproduced, and nothing can see that: its one consumer was `oldWallFlora.prefab`,
+    which wired `m_Materials: [{fileID: 0}]` - a NULL material - so no shader sampled it, and used
+    the mesh as a non-convex `MeshCollider`, which reads positions and triangles only. That prefab
+    was deleted as unreferenced on 2026-10-14, so CylinderTube currently has NO consumer; it is
+    kept because the vendor-replacement record (Docs/THIRD_PARTY_REGISTER.md §2.1,
+    repoint_vendored_ui_assets.py) maps the retired vendor mesh's guid onto it.
 
     python3 Tools/Build/author_primitive_meshes.py                  # write the four .asset + .meta
     python3 Tools/Build/author_primitive_meshes.py --check          # fail if any drifted

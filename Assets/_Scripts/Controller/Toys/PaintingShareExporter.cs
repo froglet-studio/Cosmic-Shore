@@ -14,7 +14,7 @@ namespace CosmicShore.Gameplay
     /// Exports a finished painting as a single self-contained HTML file - an inline-WebGL prism
     /// reconstruction (no external scripts, works anywhere a browser opens it) with drag-to-orbit,
     /// pinch/wheel zoom, and a gentle auto-spin - then hands it to the platform share sheet via
-    /// NativeShare. The reconstruction uses the saved drawing state (position/orientation/size/
+    /// NativeShare (a browser download in a WebGL player). The reconstruction uses the saved drawing state (position/orientation/size/
     /// domain of every prism); paintings finished before prism capture existed fall back to boxes
     /// laid along the stroke polylines so sharing always works.
     /// </summary>
@@ -58,13 +58,26 @@ namespace CosmicShore.Gameplay
         /// <summary>
         /// Hand an exported reconstruction to the platform share sheet (mobile). The editor and
         /// desktop have no share sheet (NativeShare just logs there), so they open the viewer in
-        /// the default browser instead - flying the SHARE gate always visibly does something.
+        /// the default browser instead - flying the SHARE gate always visibly does something. A
+        /// WebGL player has neither, and its persistent data path is IndexedDB rather than a file
+        /// anyone can open, so the browser downloads the viewer (<c>FrogletDownload.jslib</c>).
         /// </summary>
         public static void Share(string filePath, string paintingName)
         {
 #if UNITY_EDITOR || UNITY_STANDALONE
             Application.OpenURL("file:///" + filePath.Replace('\\', '/'));
             CSDebug.LogVerbose(CSLogChannel.ToyBox, $"[PaintingShareExporter] Opened reconstruction in browser: {filePath}");
+#elif UNITY_WEBGL
+            try
+            {
+                if (FrogletDownloadText(Path.GetFileName(filePath), File.ReadAllText(filePath), "text/html") == 0)
+                    CSDebug.LogWarning($"[PaintingShareExporter] The browser refused the download. Reconstruction saved at: {filePath}");
+            }
+            catch (Exception e)
+            {
+                CSDebug.LogWarning($"[PaintingShareExporter] Download unavailable ({e.Message}). " +
+                                   $"Reconstruction saved at: {filePath}");
+            }
 #else
             try
             {
@@ -82,6 +95,12 @@ namespace CosmicShore.Gameplay
             }
 #endif
         }
+
+#if UNITY_WEBGL && !UNITY_EDITOR
+        // Assets/Plugins/WebGL/FrogletDownload.jslib - the one platform-only API, so the one #if.
+        [System.Runtime.InteropServices.DllImport("__Internal")]
+        static extern int FrogletDownloadText(string fileName, string text, string mimeType);
+#endif
 
         /// <summary>
         /// For paintings completed before drawing-state capture existed: approximate the artwork

@@ -80,9 +80,9 @@ over four cell configs each growing **its own anchor species — one per GROWTH 
 setting is visibly a different KIND of place rather than four sizes of one. The generator asserts
 the roster spans as many families as four intensities can and that no family takes more than an
 even share, with both bars **derived from what the project ships** (it counts the distinct `Flora`
-subclasses across the flora prefabs — which is also what excludes SeaweedFlora's `SegmentSpawner`
-and oldWallFlora's `GyroidAssembler`, two prefabs in that folder carrying components that are not
-`Flora` at all) rather than written as literals. **A lattice species keeps its own per-plant
+subclasses across the flora prefabs — which is also what excludes SeaweedFlora's `SegmentSpawner`,
+a prefab in that folder carrying a component that is not a `Flora` at all) rather than written as
+literals. **A lattice species keeps its own per-plant
 budget**: a gyroid octagon is 24 prisms around one crystal and a quasicrystal heart cell is one
 vertex's strut tree, so a cell-imposed number truncates a shape mid-figure — the same "plant COUNT
 is the only lever" rule `Docs/ECOSYSTEM.md §32.7/§36` records, met here from the arena side. Two
@@ -1350,7 +1350,7 @@ MiniGameControllerBase (abstract, NetworkBehaviour)
     │
     │
     └── MultiplayerDomainGamesController
-        ├── SkimRaceController              — crystal race, deterministic track, golf scoring
+        ├── SkimRaceController              — crystal race (crystals drawn as race rings), deterministic track, golf scoring
         ├── JoustController      — collision tracking, golf scoring
         ├── OnlineDuelForTheCellController — vessel ownership swap between rounds (mode 29 retired; CoOp Wildlife Blitz's scene runs it)
         ├── ScurryController — minimal (1 round, 1 turn)

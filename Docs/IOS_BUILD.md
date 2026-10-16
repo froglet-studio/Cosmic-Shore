@@ -274,7 +274,9 @@ which platform it runs on:
 
 - **Transport is UGS Relay over UDP/DTLS.** `MultiplayerSetup` and `PartySessionService` both
   create sessions `.WithRelayNetwork()`, and that transport runs on iOS, Android and desktop alike.
-  WebGL is the exception: it needs WebSockets and is not a target.
+  WebGL is the exception: Relay there needs WebSockets, so WebGL is not a MULTIPLAYER target. The
+  browser Toybox (`Docs/WEBGL_TOYBOX.md`) is the one WebGL build: single-player only, its offline host
+  runs in memory on NGO's `SinglePlayerTransport` and it never touches Relay or any UGS service.
 - **No networked script is platform-conditional.** Measured: none of the `NetworkBehaviour` /
   `NetworkVariable` / RPC files contains an `#if UNITY_IOS / UNITY_ANDROID / UNITY_STANDALONE`.
   So every platform serialises the same network layout.

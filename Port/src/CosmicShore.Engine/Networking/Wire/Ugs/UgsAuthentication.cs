@@ -149,5 +149,6 @@ namespace CosmicShore.Engine.Networking
     {
         public int Status { get; }
         public UgsServiceException(int status, string message) : base(message) => Status = status;
+        public UgsServiceException(int status, string message, Exception inner) : base(message, inner) => Status = status;
     }
 }

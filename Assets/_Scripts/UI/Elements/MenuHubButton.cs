@@ -31,6 +31,9 @@ namespace CosmicShore.UI
                                  "in the ScreenSwitcher's Modals list - that is how it is found.")]
         ScreenSwitcher.ModalWindows target = ScreenSwitcher.ModalWindows.ARCADE;
 
+        /// <summary>Which modal this entry opens - read by a guided path to find the Arcade entry.</summary>
+        public ScreenSwitcher.ModalWindows Target => target;
+
         [SerializeField, Tooltip("Leave empty to find the one in the scene at Start.")]
         ScreenSwitcher screenSwitcher;
 
@@ -51,6 +54,15 @@ namespace CosmicShore.UI
         {
             if (!screenSwitcher)
                 screenSwitcher = FindFirstObjectByType<ScreenSwitcher>(FindObjectsInactive.Include);
+
+            // The browser Toybox keeps the hub's layout and says what the other entries are:
+            // Locked, "In the full game" (the switcher refuses to open them as well).
+            if (WebToybox.IsBuild && !ScreenSwitcher.IsModalInWebToybox(target))
+            {
+                if (!_availability) _availability = MenuAvailabilityView.Ensure(gameObject);
+                _availability.SetLockedMessage(ScreenSwitcher.WebToyboxLockedMessage);
+                _availability.SetAvailability(MenuAvailability.Locked);
+            }
 
             _button.onClick.AddListener(HandleClick);
         }

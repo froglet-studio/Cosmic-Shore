@@ -52,14 +52,19 @@ Read from the prefab and from an in-editor probe (`SkimRaceRaceRecorder.WritePro
 - Track: 10x1x3 plates every 12 u, **super-shielded**, so the contact solid is a stella octangula of
   half-extents 15 x 1.5 x 4.5 — a slab ~3 u thick the hull must never enter, and a 2.5..9 u skim band
   above or below it.
-- Crystal pickup sphere: radius 24 (`SphereCollider`, bounds 48).
+- Crystal target: **a race ring threaded by its mouth** since 2026-10-14 (`SKIMRACE.md` §7a) — mouth
+  radius **24 / 20 / 16 / 12 u at intensity 1-4**, square across the track, tested against the hull's
+  centre point (`RaceGateRing.CrossedMouth`). It was a touched pickup sphere of radius 24 (`SphereCollider`,
+  bounds 48); that collider is now disabled. `CrystalTrackObjective.CaptureRadius` aims at 0.7 × the mouth
+  (Regatta's fraction) — 8.4 u at I4. Measurements quoted below that say "24 u capture radius" predate the
+  change, and the offline simulator still models the sphere (follow-up in §7a).
 
 ## 3. Architecture
 
 | File | Role |
 |---|---|
 | `SkimRacePilot` | MonoBehaviour on the AI vessel: lifecycle, sensing, actuation. Inactive (neutral input) until `GameDataSO.IsTurnRunning` rises; neutral again when the turn ends; stops and disables `AIPilot` while it owns the vessel |
-| `SkimRaceAIDeployment` | Installs the pilot from `ServerPlayerVesselInitializerWithAI.ConfigureAIPilot` — every Squirrel backfill seat in **Skim Race and Regatta** in normal play, no scene wiring. Skipped while `IsTraining`; `TrainingDeploymentService` defers to it for Squirrel seats. Reads the host's lobby AI difficulty (`GameDataSO.RequestedAIDifficulty`, §10) only on a card that offers the picker (`AIDifficultyRules.IsOfferedFor`: Skim Race; Regatta's AI flies with no handicap). Picks the policy (`PolicyFor`): the intensity's own file only while it fits the map in the scene, else the general one (§11) |
+| `SkimRaceAIDeployment` | Installs the pilot from `ServerPlayerVesselInitializerWithAI.ConfigureAIPilot` — every Squirrel backfill seat in **Skim Race and Regatta** in normal play, no scene wiring. Skipped while `IsTraining`; `TrainingDeploymentService` defers to it for Squirrel seats. Reads the host's lobby AI difficulty (`GameDataSO.RequestedAIDifficulty`, §10) only on a card that offers the picker (`AIDifficultyRules.IsOfferedFor`: Skim Race and, since 2026-10-14, Regatta). Picks the policy: in Skim Race `PolicyFor` (the intensity's own file only while it fits the map in the scene, else the general one, §11); in any other race (Regatta) always the general one, since the per-intensity files were tuned on Skim Race's tracks. Also installed when a pilot swap hands an AI a Squirrel (`PilotSwap`) |
 | `SkimRaceObjective` | WHAT the pilot races for — the only mode-aware part. `CrystalTrackObjective` (Skim Race: the waypoint track's ribbon, this domain's crystal, crystals collected — the pilot's Skim Race behaviour, moved out of it, team plan included (§13)) and `RegattaRingObjective` (Regatta: this domain's rail, the pilot's next ring via `GateRaceController.TryGetNextGate` at 0.7 × the mouth, gates threaded). `SkimRaceObjective.For(gameData)` picks by mode |
 | `SkimRaceTargetTracker` | Skim Race's target: a live, non-embedded crystal of this domain from `Crystal.Active` (mid-collection crystals are valid only once moved away from the pilot); nearest wins with hysteresis. The whole rule for a lone AI on its team, and the fallback for AI teammates |
 | `SkimRaceTeamPlan` / `SkimRaceTeamAssignment` | Team play (§13): when two or more AI fly for one team, one plan per team per frame gives each a DIFFERENT crystal (least total distance, kept until another plan is 15% cheaper). AI only - a human teammate is never planned for. The assignment is pure C#, shared with the simulator. Read by `CrystalTrackObjective` through its pilot (`SkimRaceObjective.Pilot`) |
@@ -1754,3 +1759,109 @@ nobody reads for them. Harmless today (a plan rebuilds only when `TargetFor` is 
 match never calls it), but it is the shape that bites when a second team-aware objective lands.
 Measure with `grep -n 'SkimRaceTeamPlan\.' Assets/_Scripts/Controller/AI/SkimRace/*.cs`. The likely fix is
 an objective hook (`OnRaceStart` / `OnRaceEnd`) that only the crystal objective implements.
+
+## 15. Regatta: skimming the braided rails (2026-10-15)
+
+**What Yash saw in Regatta:** the Squirrel AI flew through the track and hit super-shielded prisms all race,
+instead of gliding along a rail the way it skims in Skim Race. Three causes, all in the pilot's model of
+the course. Skim Race never exposed them because it lays one thin track.
+
+| Cause | Why it hit | Fix |
+|---|---|---|
+| **The skim line ran inside the rail's contact shell.** `SkimHeight` (4.35 u off the prism centre) was tuned on Skim Race's 10 x 1 x 3 plates, whose super-shield shell reaches 1.5 u along up. Regatta's rails are 6 x 6 x 8, with a shell reaching 9 u. | Every frame on the line was a strike (clearance 0, measured). | `SkimRaceCourse.SkimLift`: how much taller the course's shell is than the plate's (median, 0 within a quarter unit). The driver adds it to the skim height, so the line keeps the tuned 2.85 u gap above the shell on any course: 0 on Skim Race, 7.5 on Regatta. Still inside the 7.5 u skimmer reach, so it skims. |
+| **Rival rails were invisible.** `FillObstacles` skipped every super-shielded prism as "the track". In Regatta two of the three rails are not this pilot's course. | The mass guard never steered round them. | `SkimRaceObjective.IsCourseMass`: Regatta counts only its own lane (by domain) as course. Other super-shielded prisms reach the mass guard as boxes the size of their shell (`SkimRaceShell.SuperShieldHalfScale`). |
+| **It aimed at the ring's centre**, which sits on the braid's spine. Direct flight (boost >= 3.14) went straight there. | Both the aim and the chord cut across the rival rails. | `RegattaRingObjective.TryLaneCrossing`: aim where the pilot's OWN rail crosses the ring plane, 3 u outside its shell on the outer face. The rail runs 22 u from the centre, inside every mouth (54-110 u). `AllowsDirectFlight` is false in Regatta. |
+
+**Second round (same day, Yash: "still hitting the Regatta rails continuously", at 100 fps):**
+
+| Cause | Fix |
+|---|---|
+| **The course was sized from the rails' LIVE scale.** A laid prism grows in from zero (the continuity law), so a course built while the rails were still growing recorded them as slivers. The pilot then flew its skim line, and planned its shell clearance, inside their real shells for the whole race. | `RegattaRingObjective` sizes each rail prism from its authored `TargetScale` (through its parent's scale). |
+| **A Squirrel handed to the AI with the Third Eye's You / AI toggle never got the Skim Race pilot.** `PilotControl` armed only the platform autopilot, which flies ring waypoints straight through the braid. The Skim Race pilot also stood down on any human-owned hull. | `PilotControl.TrySetAIFlies` installs the pilot (`SkimRaceAIDeployment.TryInstall`) and sets `SkimRacePilot.FlyingForHuman`, so the pilot flies a human's hull while it is held. `IsHeldByAI` reads that flag. |
+
+**Third round, the root cause (2026-10-16, found from Yash's first recorded flight, which said "no Regatta rails in
+the scene"):** the Cell builds its environment by calling `Spawn()` on the config's `EnvironmentPrefab` ASSET. That lays
+the rail prisms into a plain container and fills the asset's own lane list, but no `SpawnableRegattaRails` ever exists
+in the scene. So `FindAnyObjectByType<SpawnableRegattaRails>()` returned null in all three of its readers:
+`RegattaRingObjective.TryBuildCourse` (the Squirrel pilot's course), `RegattaController.TryOwnLaneAhead` (the riders'
+own-lane aim) and the flight recorder. **The Squirrel AI never had a rail in Regatta**: with no course it flew from ring
+to ring straight through the braid, and none of the skim fixes above could show. `RegattaCourseSource.TryResolveLiveRails`
+asks the cells' configs for the rails asset whose lanes are laid (it still takes an authored scene instance first), and
+all three readers use it.
+
+**Skim Race is unchanged.** Its course has zero lift, every super-shielded prism is still its track, and direct
+flight stays on. The simulator gives bit-identical races before and after (I2, 2 seats, 12 races). Tests:
+`RegattaSkimTests`.
+
+**Regatta has its own policy now.** `SkimRaceAIConfig_Regatta` (`SkimRaceAIConfigSO.LoadForRegatta`) starts as a
+copy of the general policy, authored by `author_skimrace_ai_config.py`. Tuning it never moves a number Skim
+Race was calibrated on.
+
+### 15.1 Tuning the skim in Unity, watched in the Third Eye
+
+1. Open `MinigameRegatta`, put Squirrels on AI seats, and open **FrogletTools > AI > Third Eye** docked beside
+   the Game view. Press Play.
+2. Pick an AI Squirrel in the Third Eye (`[` `]` or Tab), camera **Chase** or **Follow**, Trails on.
+3. Read the third line of the info strip (the skim readout):
+   `shell gap` (distance to its own rail's contact shell: it skims below 7.5, strikes at 0),
+   `off line` (distance from its skim line), `boost`, `mass in view` (rival-rail prisms the guard is
+   steering round), `lift` (should read 7.5 on Regatta) and `direct` (should read off).
+4. Select **`Assets/Resources/SkimRaceAIConfig_Regatta.asset`** in the Project window. Its Inspector edits apply
+   **live** (the driver reads the asset every decision), so change a number and watch the next second of flight:
+
+| Knob | What it does on the rails | Watch |
+|---|---|---|
+| `SkimHeight` | Gap above the shell (minus 1.5): 4.35 means 2.85 u above it | `shell gap`: keep it between about 1.5 and 6 |
+| `HullMargin`, `TrackGuardMargin` | How close to the shell the guards let the hull get before pulling away | strikes vs skims |
+| `MassGuardSeconds`, `MassGuardMargin` | How far ahead, and how wide, it looks for rival-rail mass | `mass in view`, swerves near crossings |
+| `LookaheadSeconds` / `Min` / `Max` | How far down the rail it aims | the aim line in the view: too long cuts corners off the rail |
+| `StickGainPerDegree`, `LevelingRoll` | How hard it steers, and how much it rolls back level | wobble round the rail |
+
+5. **The Inspector edits are a change to the asset**, and they stay after Play stops. When a number is right,
+   copy it into `POLICIES["SkimRaceAIConfig_Regatta"]` in `Tools/Build/author_skimrace_ai_config.py`, bump its
+   `PolicyVersion`, and run the script. `--check` names the asset whenever an Inspector edit was not
+   recorded there. Never tune `SkimRaceAIConfig.asset` for Regatta: Skim Race I3 flies it.
+
+**Not verified in Unity yet** (no editor in the session that wrote it): `Docs/UNITY_VERIFICATION_CHECKLIST.md`.
+
+## 16. Learning from human flights (Regatta, 2026-10-15)
+
+Yash asked for this: play Regatta a few times as the Squirrel, then the AI learns from those races. It is built in
+two parts (`Docs/AI_SYSTEM/AI_TRAINING_PLAN.md` L3, steps 1 and 4A):
+
+1. **The recorder** (`HumanFlightRecorder`, editor and development builds only), now the **AI training recorder for every
+   game mode and vessel** (single player; online players later), files `flight_<Mode>_<Vessel>_<time>.json` with a
+   `training` field. After Play, Unity asks **"Store AI training record?"** and names the vessel, mode and training type. **It is automatic** (Yash,
+   2026-10-15: the Record button kept reading on with nothing saved, so it was removed). It starts when a match's turn
+   starts (Go) and stops when it ends (the Play Again menu) or when Play stops. Only the local player's own hull is
+   recorded; seconds the AI holds it (You / AI) are recorded with `held` = 1 and every learner skips them. Ten times
+   a second it records what `Docs/AI_SYSTEM/SITUATION_RECORDING_PLAN.md` §2.2 lists: position, heading and up, speed,
+   boost, the four stick axes, the throttle, both triggers, the course, rings threaded, velocity, turn rates, boost
+   charge and state bits, element levels, the camera, every rival's position, velocity and rings, and the nearest
+   crystals. When recording starts it copies the race's static world (§2.1): every ring and, in Regatta, every rail
+   (prism positions, up axes, contact shell size, owning domain; the pilot's own is `lane` / `ownRail`); rail prisms
+   destroyed or restored during the race are `railEvents`. It writes `flight_<Mode>_<hull>_<time>.json` (schema
+   `cosmic-shore.flight/3`) to `<Documents>/CosmicShore Diagnostics/Flights/`. Unity's after-play **Store AI record**
+   asks about every new flight and carries it to `BugLedger/shared/reports/<user>/flights/`. A race that cannot be saved says why in one Console
+   warning. HUD `flightrec` reports the state and the saved count.
+2. **The learner** (`python3 Tools/Build/learn_from_flights.py`) reads every flight on every origin branch, or
+   `--dir <folder>`, and measures each sample against the rail itself (arc length, height, sideways offset, gap to the
+   shell's box). It learns from the fastest three finished races, or every race when fewer than three finished:
+
+   | Measured from your flying | Sets |
+   |---|---|
+   | median height above your rail while skimming, minus the course's skim lift | `SkimHeight` |
+   | your closest 10% of skimming gaps x 0.6, **never below the current margins** | `TrackGuardMargin`, `MassGuardMargin` |
+   | the look-ahead your heading points at on your skim line (time, and the shortest distances) | `LookaheadSeconds`, `LookaheadMin` |
+   | stick deflection per degree off that aim | `StickGainPerDegree` |
+   | turns per second, mean stick, speed, boost, contact share | the report only |
+
+   Every number is clamped to a band (`BANDS`). `--write` puts the numbers in the `learn_from_flights` block of
+   `author_skimrace_ai_config.py` as overrides on the Regatta policy only, bumps its `PolicyVersion`, regenerates
+   `SkimRaceAIConfig_Regatta.asset`, and writes `Docs/AI_SYSTEM/LEARNED_FROM_FLIGHTS.md` (per race: time, rings,
+   skimming share, contact share, height, gap, look-ahead, turns; per setting: was, learned, why). `--self-test`
+   holds the maths on synthetic flights.
+
+**What it is not, yet:** behaviour cloning, meaning a network that copies the sticks (AI_TRAINING_PLAN L3 step B),
+and players' flights (that needs the consent step). It learns the AI's existing, readable numbers from your line, so
+a bad recording is easy to see and to undo (`git revert`, or an empty block).

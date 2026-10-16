@@ -100,7 +100,7 @@ namespace CosmicShore.Tests
             Assert.AreEqual(ThresherTimeCourse.GameCruise, AssetFloat(config, "gameCruise"), 1e-4f, "ThresherConfig gameCruise" + why);
             Assert.AreEqual(ThresherTimeCourse.MaxBallSandbox, AssetFloat(config, "maxBall"), 1e-4f, "ThresherConfig maxBall" + why);
             Assert.AreEqual(ThresherTimeCourse.LockMax, AssetFloat(config, "lockMax"), 1e-4f, "ThresherConfig lockMax" + why);
-            Assert.AreEqual(ThresherTimeCourse.PerfectBoost, AssetFloat(config, "perfectBoost"), 1e-4f, "ThresherConfig perfectBoost" + why);
+            Assert.AreEqual(ThresherTimeCourse.LaunchBoost, AssetFloat(config, "launchBoost"), 1e-4f, "ThresherConfig launchBoost" + why);
 
             var lerp = Regex.Match(ReadText(transformer), @"const float LERP_AMOUNT = ([0-9.]+)f;");
             Assert.IsTrue(lerp.Success, $"LERP_AMOUNT not found in {transformer}");
@@ -118,7 +118,7 @@ namespace CosmicShore.Tests
             Assert.Greater(ThresherTimeCourse.TopSpeed, ThresherTimeCourse.OrbitSpinCap,
                 "the ceiling must sit above the spin-up's own cap, or the wind-in buys nothing");
             Assert.AreEqual(154f, ThresherTimeCourse.OrbitSpinCap, 0.01f, "lockMax 2.2 x gameCruise 70");
-            Assert.AreEqual(766.3f, ThresherTimeCourse.PerfectSlingSpeed, 0.5f, "the ceiling with Time L5's Perfect Release on it");
+            Assert.AreEqual(2298.7f, ThresherTimeCourse.BoostedSlingSpeed, 0.5f, "the ceiling out of the crosshair view, x4.8");
 
             // 479 u/s over 120 deg/s: a 229 u circle at the ceiling; 125 u/s over 120: 60 u cruising.
             Assert.AreEqual(228.7f, ThresherTimeCourse.FullSlingRadius, 0.5f, "full-sling radius changed - re-derive the ladder");

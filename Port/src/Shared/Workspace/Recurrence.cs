@@ -12,7 +12,7 @@ namespace Amoebius.Workspace
     /// <c>weekly:mon,thu</c>, <c>monthly</c> (the card's day of month, clamped to short months),
     /// <c>days:N</c> and <c>weeks:N</c> (every N days or weeks from the card's date).
     /// </summary>
-    public sealed class Recurrence
+    internal sealed class Recurrence
     {
         public enum Unit { Daily, Weekdays, Weekly, Monthly, EveryDays, EveryWeeks }
 

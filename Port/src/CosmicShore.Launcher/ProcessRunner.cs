@@ -76,6 +76,19 @@ namespace CosmicShore.Launcher
 
         public sealed record Result(int ExitCode, string StdOut, string StdErr);
 
+        /// <summary>
+        /// The process is started and has not exited. Never throws: <see cref="Process.HasExited"/>
+        /// throws on a process that was never started (or whose start failed), and a UI thread that
+        /// polls it must not die of that.
+        /// </summary>
+        public static bool IsRunning(Process? p)
+        {
+            if (p == null) return false;
+            try { return !p.HasExited; }
+            catch (InvalidOperationException) { return false; }
+            catch (System.ComponentModel.Win32Exception) { return false; }
+        }
+
         public static async Task<Result> Run(string file, IEnumerable<string> args, string? workDir, LogBuffer? log,
             CancellationToken ct, IDictionary<string, string>? env = null, Action<string>? onLine = null, bool quiet = false, bool closeStdin = false)
         {

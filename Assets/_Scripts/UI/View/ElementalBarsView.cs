@@ -267,7 +267,7 @@ namespace CosmicShore.UI
                 petals[p] = img;
             }
 
-            // Authored-in-prefab is the norm (FrogletTools > Vessels > Wire Elemental Petal Bars, or
+            // Authored-in-prefab is the norm (FrogletTools > Vessels > Wiring > Wire Elemental Petal Bars, or
             // the bake-all variant). Runtime creation is a fallback so the fleet-required display
             // can never silently ship missing - but it should be loud, not invisible.
             if (runtimeCreated > 0)

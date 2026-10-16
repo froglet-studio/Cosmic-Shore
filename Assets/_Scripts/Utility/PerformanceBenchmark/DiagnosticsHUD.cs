@@ -34,7 +34,7 @@ namespace CosmicShore.Utility.PerformanceBenchmark
     /// Buttons drive everything; keyboard fallbacks exist in case the scene's EventSystem can't
     /// route clicks: F7 toggle · F6 advanced · F5 run diagnostic.
     /// </summary>
-    public class DiagnosticsHUD : MonoBehaviour
+    public partial class DiagnosticsHUD : MonoBehaviour
     {
         // ── external stats API ────────────────────────────────────────────
         // Any system (stress harness, perf probes, debug injectors) publishes rows here
@@ -242,6 +242,8 @@ namespace CosmicShore.Utility.PerformanceBenchmark
             RegisterCommand(ProfilerCapture.CommandName, HandleProfCommand);
             RegisterCommand(CellStateReport.CommandName, CellStateReport.Handle);
             RegisterCommand(BurstProbe.CommandName, BurstProbe.Handle);
+            RegisterCommand(CaptureCommand, HandleCaptureCommand);
+            RegisterCommand(TimeScaleCommand.CommandName, TimeScaleCommand.Handle);
         }
 
         void OnDestroy()
@@ -255,6 +257,8 @@ namespace CosmicShore.Utility.PerformanceBenchmark
             UnregisterCommand(ProfilerCapture.CommandName);
             UnregisterCommand(CellStateReport.CommandName);
             UnregisterCommand(BurstProbe.CommandName);
+            UnregisterCommand(CaptureCommand);
+            UnregisterCommand(TimeScaleCommand.CommandName);
             _abStopRequested = true;
 #if UNITY_EDITOR
             _profStopRequested = true;

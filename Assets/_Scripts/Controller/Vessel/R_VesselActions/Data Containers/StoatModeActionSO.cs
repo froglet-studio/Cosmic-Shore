@@ -7,7 +7,7 @@ namespace CosmicShore.ScriptableObjects
 {
     /// <summary>
     /// The Stoat's MODE switch (<c>R_VesselActions/STOAT_DIPOLE.md</c> §1a) — the B button (<c>Button2Action</c>;
-    /// R on a keyboard). Each press flips the hull between its two modes, and the triggers mean something different
+    /// T on a keyboard). Each press flips the hull between its two modes, and the triggers mean something different
     /// in each:
     /// <list type="bullet">
     /// <item><b>Mass mode</b> (the default) — the triggers lay the FIELD DIPOLE, and the trail is laid THICK:

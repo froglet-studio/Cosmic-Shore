@@ -175,6 +175,9 @@ namespace CosmicShore.Core
             GameSetting.OnChangeHapticsLevel            += v => HandleSettingChanged("haptics_level", v);
             FavoriteSystem.OnFavoriteChanged            += HandleFavoriteChanged;
             UGSCloudSaveProvider.OnSaveFailed           += HandleCloudSaveFailed;
+            FTUEEventManager.OnQuestNodeCompleted       += HandleFtueStepCompleted;
+            FTUEEventManager.OnQuestPhaseCompleted      += HandleFtuePhaseCompleted;
+            FTUEEventManager.OnQuestCompleted           += HandleFtueCompleted;
 
             // Adopt what the one-shot events have ALREADY announced. This facade is a LAZY DI
             // singleton, so it is constructed whenever something first injects it - which is
@@ -1015,6 +1018,47 @@ namespace CosmicShore.Core
                 { "game_mode", mode.ToString() },
                 { "favorited", favorited }
             });
+
+        // The quest graph (Assets/FTUE) - the top of the activation funnel. step_id is the node's
+        // stable id, so re-wording a node's display name never forks the funnel; step_name rides
+        // along so a dashboard row is readable without a lookup table.
+        void HandleFtueStepCompleted(string questId, int phaseIndex, string nodeId, string nodeName) =>
+            RecordEvent(UGSKeys.EventFtueStepCompleted, BuildFtueStepParameters(
+                questId, phaseIndex, nodeId, nodeName, SecondsSinceLaunch));
+
+        void HandleFtuePhaseCompleted(string questId, int phaseIndex) =>
+            RecordEvent(UGSKeys.EventFtuePhaseCompleted, new Dictionary<string, object>
+            {
+                { "quest_id", string.IsNullOrEmpty(questId) ? "unknown" : questId },
+                { "phase_index", phaseIndex },
+                { "seconds_since_launch", SecondsSinceLaunch }
+            });
+
+        void HandleFtueCompleted(string questId) =>
+            RecordEvent(UGSKeys.EventFtueCompleted, new Dictionary<string, object>
+            {
+                { "quest_id", string.IsNullOrEmpty(questId) ? "unknown" : questId },
+                { "seconds_since_launch", SecondsSinceLaunch }
+            });
+
+        /// <summary>
+        /// The <c>ftue_step_completed</c> payload. A node with no authored display name reports
+        /// its id as its name rather than an empty string, which a dashboard would group as one
+        /// anonymous step.
+        /// </summary>
+        internal static Dictionary<string, object> BuildFtueStepParameters(
+            string questId, int phaseIndex, string nodeId, string nodeName, int secondsSinceLaunch)
+        {
+            string stepId = string.IsNullOrEmpty(nodeId) ? "unknown" : nodeId;
+            return new Dictionary<string, object>
+            {
+                { "quest_id", string.IsNullOrEmpty(questId) ? "unknown" : questId },
+                { "phase_index", phaseIndex },
+                { "step_id", stepId },
+                { "step_name", string.IsNullOrWhiteSpace(nodeName) ? stepId : nodeName },
+                { "seconds_since_launch", secondsSinceLaunch }
+            };
+        }
 
         void HandleCloudSaveFailed(string key) =>
             RecordEvent(UGSKeys.EventCloudSaveFailed, new Dictionary<string, object>

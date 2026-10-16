@@ -12,6 +12,7 @@ else:
 |---|---|
 | Sparrow, Serpent, Grizzly, Termite, Falcon, Shrike | `SingleStickVesselTransformer` |
 | Scarab | `ScarabVesselTransformer` (single-stick steering, its own throttle integrator) |
+| Brittle Star | `BrittleStarVesselTransformer` (a `SingleStickVesselTransformer` subclass: Speed Mode's multiplier on the throttle target) |
 
 ## 1. Why these vessels needed their own scheme
 
@@ -222,11 +223,11 @@ lockup's control chips already speak.
 | **LMB** *or* Right Shift | `RightTriggerAnalog` | `RightStickAction`, `OnlyRight…`, `BothSticks…` | guns | throttle |
 | **RMB** *or* Left Shift | `LeftTriggerAnalog` | `LeftStickAction`, `OnlyLeft…`, `BothSticks…` | skybursts | drift |
 | **Space** | — | `Button1Action` (pad A) | Mass ability | place switch |
-| **R** | — | `Button2Action` (pad B) | Time ability | — |
+| **T** | — | `Button2Action` (pad B; R until 2026-10-14 — R is the Vessel Studio's reset) | Time ability | — |
 | Q *or* MMB | — | `Button3Action` (pad X) | — | — |
 | E | `Throttle` | `FlipAction` | — | — |
 
-**The keys live in the QWER + Space cluster**, so one resting left hand reaches every one of them
+**The keys live in the QWERT + Space cluster**, so one resting left hand reaches every one of them
 without the right hand leaving the mouse. They are assigned in **reverse priority order**: the two
 mouse buttons carry the highest-priority abilities, so only two more keys are needed — Space takes
 the next, R the one after. Q is last and no one-thumb vessel binds it today.
@@ -430,6 +431,7 @@ Both duplicates are excised. The roster now reads:
 |---|---|---|
 | Sparrow, Serpent, Grizzly, Termite, Falcon, Shrike | `SingleStickVesselTransformer` | ✅ |
 | Scarab | `ScarabVesselTransformer` | ✅ |
+| Brittle Star | `BrittleStarVesselTransformer` (single-stick subclass) | ✅ |
 | Dolphin, Manta, Rhino, Squirrel | `VesselTransformer` | — |
 | Urchin | `GunVesselTransformer` | — |
 

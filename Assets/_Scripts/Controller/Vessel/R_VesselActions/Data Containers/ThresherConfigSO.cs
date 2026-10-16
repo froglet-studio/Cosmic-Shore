@@ -1,6 +1,7 @@
 using CosmicShore.Data;
 using CosmicShore.ScriptableObjects;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 namespace CosmicShore.Gameplay
 {
@@ -15,7 +16,8 @@ namespace CosmicShore.Gameplay
     /// the prisms the ball lays in Mass Mode (L5 "Armoured Trail": they are laid shielded), SPACE =
     /// the largest explosion the chain's banked energy can buy (L5 "Breaker": a red ball's direct hit
     /// destroys super-shielded prisms), TIME = how fast the planted spin winds up to launch speed (L5
-    /// "Perfect Release": a release timed inside the window leaves with a boost). Every scaling is an
+    /// open since 2026-10-13: "Perfect Release" retired when EVERY aimed launch took the boost). Every
+    /// scaling is an
     /// <see cref="ElementalFloat"/> read through <c>EvaluateReplicated</c> at the point of use.
     /// </summary>
     [CreateAssetMenu(fileName = "ThresherConfig", menuName = "ScriptableObjects/Vessel Actions/Thresher Config")]
@@ -91,12 +93,17 @@ namespace CosmicShore.Gameplay
         [Tooltip("Charge L5 'Magnet': how hard the ball is drawn (u/s^2).")]
         [SerializeField, Min(0f)] float magnetAcceleration = 220f;
 
-        [Header("Perfect release (Time)")]
-        [Tooltip("A release that leaves within this many seconds of LT coming up - i.e. timed just before the launch " +
-                 "point - is PERFECT. The launch line turns lime while a release now would be perfect.")]
-        [SerializeField, Min(0f)] float perfectWindowSeconds = 0.25f;
-        [Tooltip("Time L5 'Perfect Release': a perfect launch leaves this many times faster than the orbit.")]
-        [SerializeField, Min(1f)] float perfectBoost = 1.6f;
+        [Header("Aimed launch (the crosshair)")]
+        [Tooltip("A CUE only: the launch crosshair turns lime while the ship will reach the launch point within this " +
+                 "many seconds, i.e. a release now barely waits. It pays nothing - every aimed launch takes launchBoost.")]
+        [FormerlySerializedAs("perfectWindowSeconds")]
+        [SerializeField, Min(0f)] float launchCueSeconds = 0.25f;
+        [Tooltip("EVERY launch out of the crosshair view (an aimed launch) leaves this many times faster than the " +
+                 "orbit, however long it waited for its point - aiming is rewarded, timing is not. A plain " +
+                 "release (no crosshair) leaves at the orbit's speed. Was the Time L5 'Perfect Release' x1.6 on a " +
+                 "0.25 s timing window until 2026-10-13; tripled to x4.8 then.")]
+        [FormerlySerializedAs("perfectBoost")]
+        [SerializeField, Min(1f)] float launchBoost = 4.8f;
 
         [Header("Chain cut")]
         [Tooltip("The chain's cutting half-width (world units). It cuts RIVAL prisms it touches while taut; " +
@@ -309,8 +316,8 @@ namespace CosmicShore.Gameplay
         public ScriptableEventCombatHitStats OnCombatHitLanded => onCombatHitLanded;
         public float MagnetRange => magnetRange;
         public float MagnetAcceleration => magnetAcceleration;
-        public float PerfectWindowSeconds => perfectWindowSeconds;
-        public float PerfectBoost => perfectBoost;
+        public float LaunchCueSeconds => launchCueSeconds;
+        public float LaunchBoost => launchBoost;
         public float ChainCutRadius => chainCutRadius;
         public float ChainDebrisRestitution => chainDebrisRestitution;
         public float HitStopMinSeconds => hitStopMinSeconds;

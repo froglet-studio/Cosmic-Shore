@@ -13,14 +13,15 @@ MonoBehaviour:
   m_Name: OmniCombineConfig
   m_EditorClassIdentifier: 
   combineData: {fileID: 4900000, guid: 0b6cad4b3603296b510f03b7d648822d, type: 3}
-  chargeMaterial: {fileID: 2100000, guid: b4387bb80465e9748a9fb1a58d328ad8, type: 2}
   shellMaterial: {fileID: 2100000, guid: 63ce94214497a2f466a97d10e8820e24, type: 2}
   omniMaterial: {fileID: 2100000, guid: 63ce94214497a2f466a97d10e8820e24, type: 2}
-  omniChargeEdgesMaterial: {fileID: 2100000, guid: 73cdae3c7e4f0bf3f639696f4479c9ad, type: 2}
   massMaterial: {fileID: 2100000, guid: 18f7a3895e246fc4b4c7765da0d4ddbf, type: 2}
   omniTrianglesMaterial: {fileID: 2100000, guid: 99b4e2819e8a90b9b0127553d67518b9, type: 2}
   omniTrianglesMesh: {fileID: 4300000, guid: 148e244052c4a0499c66e90863d9d5ee, type: 2}
   depthProfile: {fileID: 11400000, guid: a92a2f63c4862a0cb00ecb413644b936, type: 2}
+  cadence: {fileID: 11400000, guid: 9dc884f2725861be23f15bb77f5267e4, type: 2}
+  chargeArcs: {fileID: 11400000, guid: c737a3419ec6c52c4b723e5c6a101711, type: 2}
+  omniArcsMaterial: {fileID: 2100000, guid: df9f4366505dce6cc7b832d44a384d97, type: 2}
   lead: {x: 2.2, y: 3.2}
   spread: {x: 2.7, y: 3.3}
   layoutYawDegrees: {x: 0, y: 360}
@@ -31,6 +32,10 @@ MonoBehaviour:
   tumble: {x: 0.15, y: 0.35}
   siteSpread: {x: 0.35, y: 0.65}
   suck: {x: 0.3, y: 0.4}
+  socketSpacing: {x: 0.14, y: 0.18}
+  socketSeconds: {x: 0.8, y: 1}
+  massRaise: 0.6
+  approachAboveCameraDegrees: 0
   layout: 2
   ease: 2
   morphStart: 0.1

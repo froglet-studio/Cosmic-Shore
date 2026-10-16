@@ -30,7 +30,7 @@ namespace CosmicShore.Editor
 
         EndConditionOverridesSO _config;
 
-        [MenuItem("FrogletTools/Game Modes/End Game Conditions")]
+        [MenuItem("FrogletTools/Game Modes/End Game Conditions", false, 160)]
         [FrogletTool(FrogletToolCategory.GameModes, Importance = 5,
             Description = "The one place win conditions are authored for the domain modes.")]
         static void Open()

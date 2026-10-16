@@ -70,7 +70,9 @@ namespace CosmicShore.Engine
                 throw new InvalidOperationException(
                     "A GameLoop already exists. The engine runs exactly one loop per process — dispose the old one first.");
             Current = this;
+            Profiling.MarkerCollector.LoopThreadId = Environment.CurrentManagedThreadId;
             Time.Reset();
+            Application.ResetQuit();
             Physics.ResetSettings();
             // Fresh-world reset for static UI state (same rationale as Time.Reset):
             // loop disposal skips OnDisable, so the old world's registrations and
@@ -154,10 +156,12 @@ namespace CosmicShore.Engine
         public void Tick(float deltaTime)
         {
             _loopThreadId = Environment.CurrentManagedThreadId;
+            Profiling.MarkerCollector.LoopThreadId = _loopThreadId;
             var previousContext = SynchronizationContext.Current;
             SynchronizationContext.SetSynchronizationContext(SyncContext);
             try
             {
+                FrameTimingManager.BeginFrame(); // the wall clock, whatever step the host passes
                 long mark = PhaseTiming ? System.Diagnostics.Stopwatch.GetTimestamp() : 0;
                 if (PhaseTiming) _allocMark = GC.GetAllocatedBytesForCurrentThread();
                 Time.Advance(deltaTime);
@@ -186,6 +190,8 @@ namespace CosmicShore.Engine
                 Scheduler.RunEndOfFrame();
                 FlushDestroyQueue();
                 if (PhaseTiming) { Lap(ref mark, "destroy"); TimedFrames++; }
+                Profiling.MarkerCollector.EndFrame();
+                FrameTimingManager.EndSimulation();
             }
             finally
             {
