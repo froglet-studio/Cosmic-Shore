@@ -237,6 +237,16 @@ This is asserted, not just documented: `cleave_budget.verify` fails the build if
 shielded prism of either tier. If the mode ever wants hardened mass, it needs an AI that can
 energize first.
 
+> **2026-10-16 — the premise above no longer holds; re-measure before relying on it.** The AI can
+> now energize: `RhinoSwordAutopilot` (Rhino root) writes the trigger mirrors on the owning machine,
+> strokes at the nearest hostile prism in reach, and holds the energize stance near super-shielded
+> mass or on a ≥ 75% meter. So "an AI never pulls a trigger" — the reason both this section and
+> `cleave_budget` check 3 give — is stale. The arenas are unchanged (still no shielded prism of
+> either tier) and check 3 still passes; what is now open is whether "no shielded mass" stays a
+> *rule* or becomes a design choice. Settle that with an all-AI domain actually popping
+> super-shields in play, then update check 3's comment (or its assertion) to match — do not change
+> the arenas on this note alone.
+
 ## The envelope, per intensity
 
 Each arena is built to its own radius from `SliceArenaGeometry`'s table, and three systems are
@@ -385,7 +395,10 @@ anywhere, those two would have moved.
 **A side effect worth carrying past this mode: shrinking the prisms bought back the volume ladder's
 float32 resolution.** The Panes' baseline went 345M → **38.5M**, where float32's ulp falls from 32
 to **4** — under a Rhino trail prism's 4.5 — so that rung's volume ladder can be moved by laying
-trail again. The Swell is still over the line (103M, ulp 8). See § "Stated cost" below, which
+trail again. *(2026-10-16: 4.5 is the `BaseScale` 3 × 3 × 0.5 volume, but the Rhino lays its trail
+prism at Gap 2 as a 0.5 × 3 × 0.5 sliver — **0.75** volume — which is UNDER the Panes' ulp 4 too.
+By the laid size this rung's ladder cannot be moved one trail prism at a time either; see the
+follow-up below.)* The Swell is still over the line (103M, ulp 8). See § "Stated cost" below, which
 `cleave_budget` check 7 now measures per rung rather than asserting about the pair.
 
 **A shared prefab's scale ceiling was the only thing in the project saying the prisms had grown
@@ -407,7 +420,8 @@ between the scaled and unscaled halves are what has to be re-derived by hand.*
 `Cell.liveVolumeTotal` is a **float32 running accumulator**, so its resolution is the ulp at the
 value it holds. This was a both-open-rungs problem when prism size rode the envelope — every prism
 was **216×**, baselines reached **345M** and **898M**, and float32's ulp there is **32** and **64**
-against a Rhino trail prism's whole volume of **4.5** (`BaseScale` 3 × 3 × 0.5), so adding one was
+against a Rhino trail prism's whole volume of **4.5** (`BaseScale` 3 × 3 × 0.5 — the LAID prism is
+the 0.5 × 3 × 0.5 = **0.75** sliver, which makes the margin worse, not better), so adding one was
 a no-op and the cell stayed in Calm for the whole match on both.
 
 **The prism dial fixed half of it.** The baselines are now **38.5M** (ulp 4) and **103M** (ulp 8),
@@ -676,7 +690,10 @@ by seat so they never all raid at once.
 
 ⚠ **An AI Rhino cannot energize its blade** (no triggers), which is fine here because nothing in any
 arena is super-shielded — but it is the constraint that makes "no shielded mass" a rule rather than
-a preference. See above.
+a preference. See above. *(Stale as of 2026-10-16: `RhinoSwordAutopilot` now swings the AI's blade
+and energizes near super-shielded mass or on a ≥ 75% meter, and `RampBoostAIPolicySO` now ramps it
+on straights — before this the AI never ramped, so every transit speed this section was watched at
+was cruise. Both change AI pace; see the follow-up.)*
 
 ## End condition
 
@@ -942,7 +959,10 @@ generators, which proves what they EMIT; it proves nothing about how any of it l
   becoming a second Twistbands. Nothing asserts it — a bigger `RiseAmp` or harmonic will simply
   make the road roll, and the only signal is a playtest that says it stopped being a joy.
 - **The volume phase ladder is frozen on intensity 2** — float32 cannot register a 4.5-volume
-  trail prism against a 103M baseline (ulp 8). It used to be frozen on rung 1 as well and the prism
+  trail prism against a 103M baseline (ulp 8). *(2026-10-16: the Rhino's LAID trail prism is the
+  0.75-volume sliver, not 4.5 — `cleave_budget.RHINO_TRAIL_PRISM_VOLUME` still reads the
+  `BaseScale` product. At 0.75 the Panes' ulp 4 freezes rung 1 as well. Still harmless while the cell
+  grows nothing, but check 7 is measuring against the wrong prism; re-measure with the laid size.)* It used to be frozen on rung 1 as well and the prism
   dial fixed that one (345M → 38.5M, ulp 4). Harmless while the cell grows nothing, and gated by
   `cleave_budget` check 7 per rung so it fails loudly the day it stops being harmless. See "Stated
   cost" above.
@@ -952,6 +972,18 @@ generators, which proves what they EMIT; it proves nothing about how any of it l
   on rungs 1 or 2 has to state its prism count before it is authored, and the lever if it needs to
   come down is a road's LANE count or the Panes' `GapScaleI1`, not the prism dial (which is now
   fleet-wide across the mode).
+- **2026-10-16 Rhino kit — needs a playtest and a re-measurement.** (1) **Afterimage mass**: for
+  5 s after an energized blade goes out (and throughout a 6 s omni Surge) the sword lays prisms in
+  its own shape — up to 16 afterimages × 6 segments, i.e. ≤ 96 prisms per Rhino per window, at
+  Mass-scaled volume (×1 → ×2.5). That is new player-laid mass in a mode whose collider ladder has
+  23% headroom and whose score is destroying mass; `cleave_budget` models none of it. At Mass L5
+  they are laid as **danger** prisms, which adds to the arenas' danger traps. (2) **The AI now
+  ramps and swings**: `RampBoostAIPolicySO` arms the ramp on straights (the AI never ramped
+  before), and `RhinoSwordAutopilot` strokes at the nearest hostile prism and energizes near
+  super-shields or on a ≥ 75% meter — so AI transit speed and cut rate both change, and the
+  1,200 / 1,500 pacing flag above now has a moved baseline. (3) **"AI cannot energize, so the mode
+  has no shielded mass"** (§ "Nothing is shielded", `cleave_budget` check 3) no longer holds as a
+  premise — flagged there; numbers unchanged pending re-measurement.
 - **Toast copy is first-pass.** Since #976 (2026-10-06) `GameToastConfig_Cleave.asset` (registered
   in `GameToastLibrary`) authors the three milestone situations (50 quarter, 51 halfway, 52 lead
   change; `{0}`=domain, `{1}`=prisms destroyed, `{2}`=target), the prisms-destroyed stat toast (83)

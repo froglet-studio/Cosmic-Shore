@@ -5,9 +5,13 @@
 ## The gap
 
 `AIPilot` writes the stick and a 0.6–0.9 throttle and nothing else. A hull whose speed is an
-ABILITY needs something to press it, and before this only two had one: the Manta
-(`MantaAnalogTurnBoostExecutor`'s autopilot drive, boost = how straight the stick is) and the
-Rhino (the ramp engages off a straight stick). Everyone else raced at cruise — in Regatta an AI
+ABILITY needs something to press it, and before this only one had one: the Manta
+(`MantaAnalogTurnBoostExecutor`'s autopilot drive, boost = how straight the stick is). This doc
+originally named the Rhino as a second ("the ramp engages off a straight stick") — **that was
+wrong** (corrected 2026-10-16): the ramp is ARMED by `FullSpeedStraightAction`, a gesture only the
+human input strategies raise, and input strategies run only for a local human, so an AI Rhino
+never ramped and flew every Rhino mode at its 50 u/s cruise against a human's 840. The straight
+stick only GRADES a ramp that is already armed. Everyone else raced at cruise — in Regatta an AI
 Sparrow, Serpent, Dolphin or Scarab "finishes but never wins", and the Squirrel's AI charged its
 skim boost only inside Skim Race (`SkimRacePilot`).
 
@@ -20,6 +24,7 @@ What each hull did before, measured off the prefabs:
 | Dolphin | `ChargeBoostActionSO` on the drift control | the commit drift banks charge, but is released only once the course has LEFT the objective — the discharge was spent in the turn |
 | Squirrel | skim energy (+0.1/contact) | never flies near mass on purpose: ~no boost |
 | Scarab | throttle ceiling (autopilot = full throttle) | already at the ceiling; the Time-5 Snap Dash is a double-tap no autopilot can make |
+| Rhino | `RampBoostActionSO`, graded ramp armed by the full-speed-straight gesture | **never ramped** — nothing raises the gesture under autopilot (added 2026-10-16) |
 
 ## The shape
 
@@ -38,6 +43,15 @@ subclass per MECHANIC, never per mode:
 | `ChargeBoostAIPolicySO` | `DolphinAIBoostPolicy` | while the commit drift is held, locked on the objective, meter ≥ 0.95 and ≥ 2.5 s of runway: ask the pilot to release the drift NOW (discharge down the straight), then hold the next commit off until the discharge has run out |
 | `SkimRingAIPolicySO` | `SquirrelAIBoostPolicy` | lay the Boost Ring (`SquirrelTubeActionSO`) on a dead-straight leg (nose and course within 2.5°) while skim boost < 3 and the objective is beyond the ring, then hold the stick centred until through it — `SkimRaceDriver`'s launch-ring gates |
 | `SnapDashAIPolicySO` | `ScarabAIBoostPolicy` | fire `ScarabVesselTransformer.TryAutopilotSnapDash()` on a straight, at most every 2 s; refused below Time 5 exactly as a human's double-tap is |
+| `RampBoostAIPolicySO` | `RhinoAIBoostPolicy` | arm the ramp (`RampBoostActionSO.StartAction`) on a straight with runway; once armed it grades itself off the stick the AI writes, so the driver only **re-arms** when the grading let it fall off (at most every `minRearmSeconds` 0.5 s — each arm plays the engage sound), and calls `RampBoostActionExecutor.End()` **before** the turn, because a graded ramp's release is the top of its slope, not an end — "let go" would bleed nothing. Shipped with the base-class defaults (12° / 0.35 / 1.5 s / 0.5 s) and no disabled modes. Added 2026-10-16, not editor-verified |
+
+The Rhino's **sword** has an autopilot too, and it is deliberately **not** a boost policy:
+`RhinoSwordAutopilot` (Rhino root) writes the trigger mirrors (`InputStatus.LeftTriggerAnalog /
+RightTriggerAnalog`) on the machine that owns the AI's input, so the shipped sword code poses,
+swipes and energizes exactly as for a human and replicates the same way. Every `thinkSeconds`
+(0.15 s) it strokes at the nearest hostile prism in reach (stroke 0.3 s, rest 0.45 s), or holds the
+energize stance when the meter can pay (cost + 0.05) and super-shielded mass is near, or the meter
+is ≥ 0.75. It never steers and drives only while the autopilot is on. It never combos.
 
 The shared law (base class): **straight** = course within `alignDegrees` (12°) of the objective
 and stick within `stickBand` (0.35, the Manta drive's band); **runway** = distance / current speed

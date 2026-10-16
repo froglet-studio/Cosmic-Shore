@@ -65,6 +65,97 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Rhino deep dive: step-1 fixes, HUD vestiges, full four-row kit, replication, AI (`cece/relaxed-hopper-r62hbd`, 2026-10-16) — NOT EDITOR-VERIFIED
+
+**What landed** (three code commits; design record `_Scripts/Controller/Vessel/R_VesselActions/RHINO_SWORD_AFTERIMAGE.md`):
+
+- **`805eef12` step-1 audit fixes.** `Rhino.prefab`'s `ResourceSystem.ChargeTestHarness` 0.5 → **0**
+  (it pinned Charge at level 5 every frame on every Rhino). The ramp now grades on **every peer**
+  from `InputStatus`' replicated sticks (only the owner did, so a replica held `IsBoosting` and ×16.8
+  for the rest of the turn), reads Time live, and compares climb/bleed against the new
+  `VesselTransformer.TrackedSpeed`. Sword ignition re-dispatch replays super-shielded contacts only,
+  and the box-overlap set is keyed on `prismProperties.TimeCreated` (a recycled prism is never
+  re-cut). The overtake/steal haptic plays only where a local human is one of the two pilots. The
+  sword capsule is a **trigger** again (the #928 merge had made it a solid kinematic capsule that
+  shoved the Astro League ball). `RhinoAnimation` idles the engines.
+- **`3fa268cd` HUD vestiges.** The pre-lockup status cluster that came back when the Rhino bound its
+  first icon (#971) — skimmer-size ring, slowed counter, slow-line flash, debuff/shock timer,
+  LaserTargeting / Crystal / ForceField, `BoostContainer` / `VesselImpactCooldown` /
+  `TrailContainer` — is deleted from `RhinoHUDVariant`, `Rhino.prefab` and `RhinoVesselHUDView`;
+  `RhinoVesselHUDController`'s four SOAP channels are gone. Dead weight removed: GrowTrail /
+  GrowSkimmer / ZoomOut classes, assets and executors (GrowTrail's grow loop never ran), the orphaned
+  arch-burst asset, `EventOnSkimmerDebuffApplied` / `EventOnVesselSlowedByExplosion`, 14 inert
+  SkimmerImpactor/Skimmer overrides, `ShieldSkimmerScaleConfigSO.prismMaxScale`.
+- **`8a3b4161` the four rows.** Charge **Sword Energy** (energy per cut ×1 → ×2) + L5 **Live Wire**
+  (a return to the stance re-lights the tail; without it the tail now runs out once let go). Mass
+  **Afterimage** (for 5 s after the energized blade goes out the sword lays prisms in its own shape;
+  volume ×1 → ×2.5) + L5 **Danger Afterimages**. Space **Blade Reach** (30 → 50) + **Breaker**
+  (unchanged). Time **Ramp Spool** + L5 **Momentum** (above 70% of top speed, 588 of 840 u/s, danger
+  prisms cannot drain the Rhino). The omni crystal is now a **Surge**
+  (`RhinoVesselSurgeByCrystalEffect`); the per-petal sword crystal burst is deleted. Blade pose,
+  energy, energize phase and Surge replicate (`RhinoSwordNetworkRelay`, trigger mirrors). AI:
+  `RampBoostAIPolicySO` / `RhinoAIBoostPolicy.asset` and `RhinoSwordAutopilot`. HUD: the row binds
+  4/4 with placeholder icons; Charge lit while energized + cooldown veil, Mass lit while afterimages
+  lay, Time lit while Momentum holds.
+
+**Not opened in Unity** (no editor and no `unity` CLI in the session, so `/verify-unity` did not
+run). Offline: `Tools/Build/unity_refcompile` player + editor configs, 0 errors;
+`element_ability_table.py` Rhino 4/4 abilities, 4/4 scaling, 4/4 L5, 0 disagreements.
+
+**Verify in editor** (the QA items carry the full pass/fail wording, Block G of `Docs/QA/QA_BACKLOG.md`):
+1. `Rhino.prefab` and `RhinoHUDVariant.prefab` import with no missing-script or broken-reference
+   errors; **Audit Vessel Ability Rows** reports the Rhino 4/4 (QA-RHINO-HUD-ROW).
+2. Freestyle Rhino: the four cards read Sword Energy / Afterimage / Blade Reach / Ramp Spool and
+   nothing of the old status cluster is on screen; Charge, Mass and Time cards light in their
+   windows (QA-RHINO-HUD-ROW).
+3. `ResourceSystem` → Charge Test Harness reads 0, and Charge moves with Charge crystals
+   (QA-RHINO-CHARGE-HARNESS).
+4. Energize, release: 5 s of blade-shaped prisms; the sword never cuts its own; at Mass 5 they are
+   danger prisms (QA-RHINO-AFTERIMAGE).
+5. Below Charge 5 the energized tail runs out ~5 s after the stance is let go; at Charge 5 a return
+   to the stance relights it (QA-RHINO-LIVE-WIRE).
+6. Time 5: above ~588 u/s a danger prism does not drain elements; below it does (QA-RHINO-MOMENTUM).
+7. Omni crystal: 6 s energized with no stance, +2 levels on all four decaying, afterimages
+   throughout, blade burst, explosion unchanged; elemental petals no longer empty the meter
+   (QA-RHINO-OMNI-SURGE).
+8. MPPM two clients: a half-pull swing cuts the same prisms on both; energize and afterimages show on
+   both; a remote ramp ends (`IsBoosting` false) once its pilot steers off (QA-RHINO-TWO-PEER).
+9. AI Rhino ramps on straights, swings at prisms, energizes near super-shields; `AIPilot`'s ability
+   list is empty (QA-RHINO-AI).
+10. Astro League as the Rhino: a swung sword tip still launches the ball; a parked blade no longer
+    shoves it as a solid (QA-RHINO-ASTROLEAGUE-BLADE).
+11. Playtest Headlong, Cleave and Astro League at the new kit — afterimage mass, Momentum and a
+    ramping AI all move their numbers, which were not re-derived.
+
+**First-pass tuning** (never played — expect a balance pass):
+
+| knob | where | value |
+|---|---|---|
+| afterimage window | `RhinoSwordAfterimageConfig.asset` `windowSeconds` | 5 s |
+| lay cadence | same, `layIntervalSeconds` / `minTipTravel` | ≥ 0.3 s and ≥ 6 u of tip travel |
+| afterimages per window | same, `maxAfterimagesPerWindow` | 16 |
+| blade segments | same, `maxSegments` / `segmentLength` / `lengthCoverage` | ≤ 6 of ≤ 10 u, covering 90% |
+| segment cross-section | same, `width` × `thickness` | 2 × 0.8 (× cbrt of the Mass multiplier) |
+| collider delay | same, `colliderDelaySeconds` | 0.1 s |
+| Mass → afterimage volume | same, `massVolumeMultiplier` | ×1 → ×2.5, floor ×0.25 |
+| Surge length | `RhinoVesselSurgeByCrystalEffect.asset` `surgeSeconds` | 6 s |
+| Surge element lend | same, `elementBoost` | +0.2 (2 levels), decaying over the Surge |
+| Surge energy fill | same, `energyFill` | 1 |
+| Charge → energy per cut | `RhinoSkimmerDamagePrismEffect.asset` `chargeEnergyGainMultiplier` | ×1 → ×2, floor ×0.5 (on 0.04 / kill, 0.12 / super-shield pop) |
+| Momentum threshold | `Rhino.prefab` `VesselElementalImmunity` `topSpeedFraction` | 0.7 (588 of 840 u/s) |
+| AI ramp re-arm | `RhinoAIBoostPolicy.asset` `minRearmSeconds` | 0.5 s (base-class 12° / 0.35 / 1.5 s / 0.5 s) |
+| AI sword think | `Rhino.prefab` `RhinoSwordAutopilot` `thinkSeconds` | 0.15 s |
+| AI stroke / rest | same, `strokeSeconds` / `restSeconds` | 0.3 s / 0.45 s |
+| AI energize margin | same, `energizeMargin` | 0.05 over the 0.1 cost |
+| AI energize when full | same, `energizeWhenFull` | 0.75 |
+
+**Still open, do not fail on:** `SparrowDebuffByRhinoDangerPrismEffect` (Sparrow and Grizzly
+containers) mutes the victim's Button2 for 5 s on any danger prism, which Danger Afterimages now
+produce — raised to design, not changed. Rig swap not run; jets unsized; no `ElementalBarsView` on
+the Rhino; combos have 24 empty FMOD slots, no HUD callout, and the AI never combos.
+
+---
+
 ### 🔴 Rhino Space-5 "Breaker" — the sword cuts shielded prisms in one slice (`cece/magical-meitner-56obj5`, 2026-10-13) — NOT EDITOR-VERIFIED
 
 **What landed:** `RhinoSkimmerDamagePrismEffectSO.breakerElement` (authored `Space`). While
@@ -1241,6 +1332,12 @@ config reports 0 errors in project code.
 2. Fly through an omni crystal: the Rhino's vessel crystal blast still fires (unchanged).
 3. The inspector on `RhinoSwordCrystalBurstEffect.asset` shows no fields, and the console is clean.
 
+> **Superseded 2026-10-16 (`cece/relaxed-hopper-r62hbd`):** `RhinoSwordCrystalBurstEffectSO` and its
+> asset are DELETED — the burst drained the whole sword meter on every elemental petal the blade
+> touched. On a build carrying that branch, step 1 reads "collected, petal gained, **no** blade burst
+> and **no** meter drain", and step 3 has no asset to open. The blade-burst look moved to the omni
+> crystal's Surge (`RhinoVesselSurgeByCrystalEffect`); the vessel blast in step 2 is unchanged.
+
 ---
 
 ### 🔴 Squirrel omni-crystal morph: the crystal becomes its eight shielded ring prisms (`cece/dreamy-fermat-szo9ck`, 2026-10-08)
@@ -1865,6 +1962,11 @@ QA item: `QA-HULL-ABILITY-ROWS`.
 3. **FrogletTools > Vessels > Audit Ability Lockups**: no icon reported as not fitting its card.
 4. Rhino match: row reads LOCKED / Trail Slabs / LOCKED / Ramp Spool; the old bottom-right Rhino
    chrome stays retired; no `[VesselHUDView]` row warnings.
+   *(Superseded 2026-10-16, `cece/relaxed-hopper-r62hbd`: the Rhino binds **4/4** — Sword Energy /
+   Afterimage / Blade Reach / Ramp Spool, placeholder icons — so step 2 has no Rhino open-slot lines
+   and this step reads four live cards. The "old chrome stays retired" half did NOT hold: binding
+   this entry's first icon let the lockup spare the status cluster and it came back; that branch
+   deleted it outright.)*
 5. Serpent: Sniper Shot (RT chip) / LOCKED / Scope (LT chip) / Pellets (A chip); fire the rifle and
    the Charge card's cooldown veil sweeps over the bullet icon.
 6. Scarab: blast / ring / ball / dial icons, not Sparrow art; gauge tints still apply (blast
@@ -2578,6 +2680,13 @@ The **Rhino's energised sword** lands a Strike and drains nothing — it is now 
 verb with no drain path. Arming it is a Rhino kit decision (a skimmer drain SO on the sword's
 container), not a number, so it is reported rather than done.
 
+> **Wrong as of 2026-10-16 (re-measured on `cece/relaxed-hopper-r62hbd`):** the sword's container
+> carries `RhinoSwordStealBySkimmerEffect` (a `VesselOvertakeBySkimmerEffectSO`, landed with #928):
+> −0.08 / +0.08 per element for 3 s, cooldown 1 s, `stealScale` authored disabled (base magnitude),
+> run only for a hit `VesselCombatHitBySword` admits — i.e. the Strike price, PvP-petals-only. The
+> gap this section describes is closed; verify it as "a +8 sword hit dips the victim's four petal
+> bars".
+
 ---
 
 ### 🔴 Scarab analog juke + mirrored cavitation plate (`claude/scarab-drift-ball-mechanics-laz6dy`) — NOT EDITOR-VERIFIED
@@ -3015,6 +3124,14 @@ skimmer-size ring, laser and crystal indicators. The view still writes to them �
 switched off, not unwired — so restoring one is re-activating a branch. The rule reverses itself
 the day that vessel binds its first ability icon.
 
+> **2026-10-16 — the reversal happened, and the Rhino half of this entry is now history.** #971 bound
+> the Rhino's first icons, the reference guard came back on, and the driven cluster reappeared in the
+> row's corner. `cece/relaxed-hopper-r62hbd` deleted the cluster (readouts, view fields, the SOAP
+> channels, `BoostContainer` / `VesselImpactCooldown` / `TrailContainer`, and Rhino.prefab's added
+> LaserTargeting / Crystal / ForceField / ShockIcon objects), and the Rhino now binds **4/4**. The
+> Rhino checkbox below reads, on such a build, "four LIVE cards bottom-right and nothing else" — the
+> listed objects are not inactive, they do not exist. Manta and Serpent are unchanged by it.
+
 **Verify in editor**
 
 - [ ] **Rhino**: four LOCKED cards bottom-right and nothing else on the HUD. `BoostContainer`,
@@ -3161,7 +3278,9 @@ Four defects reported from play, four fixes, all still unverified in the Editor:
    gone entirely.
 4. **Locked slots / the Rhino.** The row is always four cards; an unbound slot draws locked.
    **Verify:** fly a **Rhino** — four cards, Mass live (Trail Slabs), three drawn locked, element
-   flowers docked above all four, and no old ability-icon UI left in the corner. Same for **Manta**
+   flowers docked above all four, and no old ability-icon UI left in the corner. *(2026-10-16: on a
+   build carrying `cece/relaxed-hopper-r62hbd` the Rhino has no locked card — all four are live —
+   so use Manta / Serpent for the locked-slot half.)* Same for **Manta**
    and **Serpent**. Confirm the locked cards are clearly quieter than a live one and are not
    clickable.
 
@@ -3203,7 +3322,7 @@ retired from the style. **Verify, per vessel:**
    on-screen ability button must still respond on a device or the simulator; raycasting uses the
    RECT, not the drawn trapezoid, so the corners are live by design.
 7. **Locked slots.** On Rhino / Manta / Serpent both plates read quieter, with the placeholder bar
-   centred in the lower one.
+   centred in the lower one. *(Rhino: no locked slot since 2026-10-16, `cece/relaxed-hopper-r62hbd`.)*
 
 Then re-run **Audit Ability Lockups** (it now reports the slant and checks the icon against the
 ability plate's NARROW edge) and `AbilityLockupStyleTests` (three new/reworked tests: the gap and
@@ -3283,7 +3402,7 @@ from the assets, per vessel:
 |---|---|---|
 | Sparrow · Scarab | `Boost Button/display`, `Ammo Count`, `ActionIconHolder`, `XBOX_Icon_Root`, `PS_Icon_Root` | the four cards |
 | Dolphin | a stray root `Image`, `XBOX_Icon_Root`, `PS_Icon_Root` | its four ability buttons (already moved into the row) |
-| Rhino | `BoostContainer` | — |
+| Rhino | `BoostContainer` *(deleted from `RhinoHUDVariant` outright on 2026-10-16, `cece/relaxed-hopper-r62hbd` — nothing left to retire)* | — |
 | Serpent · Squirrel | — | their glyph roots, because their switcher references them |
 
 **Verify:** only the four-card row remains on each vessel; the Squirrel and Serpent still show

@@ -149,6 +149,14 @@ on the server with billiard thinking:
   (`strikerRecoverDistance`, perpendicular offset) and come back onto the shot line.
 - **Kickoff hold**: while the ball is frozen, hold at the team's kickoff anchor.
 
+**2026-10-16 — the AI Rhino now has two levers this section says the AI lacks** (both vessel-side,
+not mode-side, so the "only lever" claim above still holds for the *mode*): `RampBoostAIPolicySO`
+(`RhinoAIBoostPolicy.asset`) arms the ramp on straights (the AI never ramped before — only a human
+input strategy raised the gesture), and `RhinoSwordAutopilot` swings the blade at the nearest
+hostile prism in reach and holds the energize stance near super-shielded mass — which this court's
+edge lining is. Whether the autopilot's strokes help or hurt a striker's ball contact, and whether
+it burns energize on the lining, is unplayed. Needs a playtest.
+
 Roles and the own-goal guard are **end-goal concepts** and are skipped in the central shared-goal
 layout (intensity 4), where both detectors sit at the arena centre: there is no "our end" to fall
 back to, and own-goaling is a matter of pass DIRECTION, already handled by aiming past centre.
@@ -201,8 +209,10 @@ back to, and own-goaling is a matter of pass DIRECTION, already handled by aimin
   the arcade pop's aim, the recoil, the feedback intensity) then describes the SWING rather than
   the hull. `bladeTipStrikeBonus` lerps an extra pop from hilt (1×) to tip.
   **Two traps this had to solve:**
-  1. *Reach.* The Rhino's skimmer carries TWO volumes — the sword's thin non-trigger
-     `CapsuleCollider` (~2.4 × 59 world units) and the inherited SPHERE trigger that is its skim
+  1. *Reach.* The Rhino's skimmer carries TWO volumes — the sword's thin
+     `CapsuleCollider` (~2.4 × 59 world units; **a trigger again since 2026-10-16** — the PR #928
+     merge had made it a solid kinematic capsule that physically shoved the ball, and the ball's
+     `OnTriggerEnter`/`OnTriggerStay` path already resolves blade strikes) and the inherited SPHERE trigger that is its skim
      field (radius = half the blade length, 15-60 units). Both reach the contact handler. A
      contact further than `ball radius + bladeClearRadius` from the blade CENTRELINE is the skim
      field, not the sword, and is dropped — otherwise the Rhino bats the payload from meters away
@@ -660,7 +670,12 @@ atmospheric/territorial — including the boundary surface itself — lives on t
     **Change the lining budget and these thresholds together** — the lining doubled from 240 with
     the court's size, and the floor doubled with it. Restless is also the gate that RELEASES the
     fauna into the court (see the cleanup crew above), so this is the mode's primary ecology pacing
-    dial and the first thing to move after a playtest. The **count** fields (`Restless 900`,
+    dial and the first thing to move after a playtest. **2026-10-16:** the Rhino's Mass row is now
+    **Afterimage** — for 5 s after an energized blade goes out (and through a 6 s omni Surge) the
+    sword lays blade-shaped prisms (≤ 16 afterimages × ≤ 6 segments per window, volume ×1 → ×2.5 with
+    Mass; danger prisms at Mass L5). That is Rhino mass these thresholds were not tuned against, and
+    it counts in `LiveVolume` like trail; re-measure the Restless/Frenzy window in a playtest before
+    moving it. The **count** fields (`Restless 900`,
     `Frenzy 3000`) remain the perf backstop (the volume-only lining never enters `LiveBlockCount`).
     `SpawnProfile.FaunaFoodFloor = 5` (nominal prisms → 80 prey-volume) so herbivores seed against
     the thin prey. The `DomainVolumeIndicator` hex gauge reads the same `FrenzyEnterVolume`, so a

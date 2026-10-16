@@ -173,16 +173,18 @@ which is why three separate documents (this one, CLAUDE.md, and the balance mode
 reaches nothing on the Rhino" as a measurement. It is now a real ability, **Ramp Spool** (2.5 /
 0.5), and Broadside's card starts the Rhino at **+0.5**. This is a fleet change and was accepted
 as one: Headlong's Rhino spools faster too. There is deliberately **no L5 upgrade** — the slot is
-filled, not designed.
+filled, not designed. *(Superseded 2026-10-16: Time now carries the L5 **Momentum** — above 70% of
+top speed (588 of 840 u/s) danger prisms cannot drain the Rhino. It reaches this card only if a
+Rhino climbs from +0.5 to level 5 in the match.)*
 
 > **A capability that is live in code and flat in data reads exactly like a capability that does
 > not exist**, and it will be written down as one. The Rhino's ramp took 5.2 s to climb from
-> ~50 u/s cruise to ~1200 against a 300/s bleed — which a brawl's short straights simply do not
+> ~50 u/s cruise to ~1200 (pre-2026-09-25 retune; ~3.6 s to 840 today) against a 300/s bleed — which a brawl's short straights simply do not
 > contain — so at Time rest the hull was *structurally* never fast. Before recording "element X
 > reaches nothing on hull Y", check the executor, not the map.
 
 The model converts that endpoint honestly: Time is the ramp's **wind-up rate**, not its ceiling
-(`maxBoostMultiplier` stays 24), so `rhino_speed_multiplier` integrates
+(`maxBoostMultiplier` stays 24 — **16.8** since the 2026-09-25 retune, top 840), so `rhino_speed_multiplier` integrates
 `min(top, cruise + a·t)` over a 2-second brawl straight and takes the ratio of the means — **2.22×
 at full**, not the 2.5× the acceleration row reads, and it **saturates** once the hull tops out
 inside the straight. Feeding the raw acceleration ratio in overpays the hull badly. All three
@@ -388,6 +390,21 @@ a volley, and everything about feel.
   FASTER than its victim. The blade lands a Strike and drains nothing. Arming it is a Rhino kit
   decision (a skimmer drain SO the sword's container carries), not a number — see
   *The drain follows the price*.
+  **Stale (noted 2026-10-16):** the sword DOES steal. `RhinoSwordStealBySkimmerEffect` (a
+  `VesselOvertakeBySkimmerEffectSO`, landed with #928) sits in the sword's container at the Strike
+  price — debuff −0.08 / buff +0.08 per element for 3 s, cooldown 1 s, `stealScale` authored disabled
+  (base magnitude) — and runs only for a hit `VesselCombatHitBySword` admits, so it inherits the
+  faster-than-victim gate (PvP is petals only). It is a second Strike asset; the table above does
+  not list it yet.
+- **2026-10-16 Rhino kit — needs a playtest.** The AI Rhino now ramps (`RampBoostAIPolicySO`;
+  before this only a human strategy raised the gesture, so a bot Rhino never reached the
+  faster-than-victim speed the sword now requires) and swings/energizes its blade
+  (`RhinoSwordAutopilot`), so the fleet table's "AI can fight? yes — same" is newly true in a way it
+  was not measured against. Afterimages (5 s of blade-shaped prisms after an energize; danger at
+  Mass L5) add mass to cut and, at L5, danger traps; and a Danger Afterimage triggers
+  `SparrowDebuffByRhinoDangerPrismEffect` (Sparrow and Grizzly containers — mutes Button2 for 5 s),
+  which sits against the control-theft rule and is raised to design, not changed. The omni crystal
+  is now a 6 s **Surge** (+2 levels on every element, blade held energized) rather than a meter fill.
 - **The Debuff anchor moved 4.2× lighter** and The Bends / Undertow are scored entirely on that
   drain. Their scoring is unaffected; the FEEL is not, and it wants a playtest.
 - **TWO rank->class helpers now exist, with DISAGREEING fallbacks** (refactor row, measured
