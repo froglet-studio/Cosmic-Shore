@@ -13,9 +13,9 @@ approved Toasts board on the "Menu Redesign B" canvas).
         from above; the root is the container's layout element.
 
     Assets/_Scenes/Menu_Main.unity, `Safe Area/ToastNotificationContainer`:
-        Moves from the lower-left quadrant (under the party panels) to the top centre below the nav:
-        stretched across the top, 108 down, upper-centre alignment, 10 apart, sizing its children from
-        their own layout (child control on, force expand off). Nothing else in the scene is touched.
+        Pinned top-right under the Settings hex (rev 3: "all toasts on the right, below settings"):
+        40 in from the right, 232 down, upper-right alignment, 10 apart, sizing its children from their
+        own layout (child control on, force expand off). Nothing else in the scene is touched.
 
     Assets/Resources/ToastNotificationSettings.asset:
         newestOnTop (the board stacks newest on top) and dropDistance are written explicitly. Timing, the
@@ -54,6 +54,9 @@ PAD = (22, 22, 14, 16)          # left, right, top, bottom - ToastNotificationIt
 GLYPH, GAP = 18, 14
 KIND_SPRITES = (("refusalIcon", "chrome_lock"), ("successIcon", "chrome_confirm"),
                 ("errorIcon", "chrome_diamond"), ("goalIcon", "chrome_crystal"))
+
+# The stack's place (rev 3): right edge 40 in, like the Settings hex; top just under it.
+RIGHT, TOP, WIDTH, HEIGHT = 40, 232, 720, 200
 
 # Menu_Main, measured 2026-10-15.
 CONTAINER = dict(go="4632719343361558278", rt="5804654115376219870", vlg="4206201074433312421")
@@ -135,12 +138,14 @@ def scene_transform(text_):
     assert sc.rect_of(CONTAINER["go"]) == CONTAINER["rt"], "the toast container's RectTransform moved"
     assert sc.script(CONTAINER["vlg"]) == K.VLAYOUT, "the toast container's VerticalLayoutGroup moved"
     rt = sc.docs[CONTAINER["rt"]]
-    for f, v in (("m_AnchorMin", "{x: 0, y: 1}"), ("m_AnchorMax", "{x: 1, y: 1}"), ("m_AnchoredPosition", "{x: 0, y: -108}"),
-                 ("m_SizeDelta", "{x: 0, y: 360}"), ("m_Pivot", "{x: 0.5, y: 1}")):
+    # Rev 3 (2026-10-16): every toast sits on the RIGHT, under the Settings hex (which ends 220 down),
+    # right-aligned and stacking downward; the party invite popup sits below the three visible toasts.
+    for f, v in (("m_AnchorMin", "{x: 1, y: 1}"), ("m_AnchorMax", "{x: 1, y: 1}"), ("m_AnchoredPosition", f"{{x: -{RIGHT}, y: -{TOP}}}"),
+                 ("m_SizeDelta", f"{{x: {WIDTH}, y: {HEIGHT}}}"), ("m_Pivot", "{x: 1, y: 1}")):
         rt = C.field_set(rt, f, v)
     sc.replace(CONTAINER["rt"], rt)
     vlg = sc.docs[CONTAINER["vlg"]]
-    for f, v in (("m_ChildAlignment", "1"), ("m_Spacing", "10"), ("m_ChildForceExpandWidth", "0"),
+    for f, v in (("m_ChildAlignment", "2"), ("m_Spacing", "10"), ("m_ChildForceExpandWidth", "0"),
                  ("m_ChildForceExpandHeight", "0"), ("m_ChildControlWidth", "1"), ("m_ChildControlHeight", "1")):
         vlg = C.field_set(vlg, f, v)
     sc.replace(CONTAINER["vlg"], vlg)
@@ -195,8 +200,10 @@ def validate(files):
     vlg = sc.docs[CONTAINER["vlg"]]
     assert "  m_ChildControlWidth: 1\n" in vlg and "  m_ChildControlHeight: 1\n" in vlg, \
         "the container must size toasts from their layout (the 100 x 100 square)"
-    assert "  m_ChildAlignment: 1\n" in vlg, "toasts stack at the top centre"
-    assert "  m_AnchorMin: {x: 0, y: 1}\n" in sc.docs[CONTAINER["rt"]], "the container is not across the top"
+    assert "  m_ChildAlignment: 2\n" in vlg, "toasts stack right-aligned (upper right)"
+    rt = sc.docs[CONTAINER["rt"]]
+    assert "  m_AnchorMin: {x: 1, y: 1}\n" in rt and "  m_AnchorMax: {x: 1, y: 1}\n" in rt, "the container is not pinned top-right"
+    assert f"  m_AnchoredPosition: {{x: -{RIGHT}, y: -{TOP}}}\n" in rt, "the container is not under the Settings hex"
     assert "  newestOnTop: 1\n" in files[SETTINGS], "the settings must stack newest on top"
 
 
@@ -229,6 +236,8 @@ def self_test(files):
         ("a toast with no sizing", lambda f: f.__setitem__(pf, re.sub(r"(  sizing: )\{fileID: -?\d+\}", r"\1{fileID: 0}", f[pf]))),
         ("a kind with no glyph", lambda f: f.__setitem__(pf, re.sub(r"(  errorIcon: )\{[^}]*\}", r"\1{fileID: 0}", f[pf]))),
         ("the row padding drifted", lambda f: f.__setitem__(pf, f[pf].replace("    m_Left: 22\n", "    m_Left: 30\n", 1))),
+        ("the stack back across the top", lambda f: f.__setitem__(SCENE, f[SCENE].replace(
+            f"  m_AnchoredPosition: {{x: -{RIGHT}, y: -{TOP}}}\n", "  m_AnchoredPosition: {x: 0, y: -108}\n", 1))),
         ("oldest on top", lambda f: f.__setitem__(SETTINGS, f[SETTINGS].replace("  newestOnTop: 1\n", "  newestOnTop: 0\n"))),
     ]
     ok = all(expect(l, m) for l, m in cases)

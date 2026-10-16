@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: GameToastSettings
   m_EditorClassIdentifier: 
   slideInDuration: 0.25
-  slideInOffset: -120
+  slideInOffset: 120
   slideInEase: 9
   ageAfterSeconds: 6
   agedAlpha: 0.5

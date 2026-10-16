@@ -953,7 +953,7 @@ TOAST_SETTINGS = "Assets/_SO_Assets/Game Toasts/GameToastSettings.asset"
 FD = dict(go="5396139043551737779", rt="764802058328981548", plate="6895495377854868985", item="5570562861110427101",
           content_vlg="7355427487428714261")
 FEED_H = 36
-TOAST_FIELDS = {"slideInOffset": "-120", "ageAfterSeconds": "6", "agedAlpha": "0.5"}
+TOAST_FIELDS = {"slideInOffset": "120", "ageAfterSeconds": "6", "agedAlpha": "0.5"}
 
 
 def feed_text(text_):
@@ -1069,7 +1069,30 @@ def patch_pause_instance(p):
 # --------------------------------------------------------------------------------------------
 
 TOAST_CONTAINER = "ToastNotificationContainer"   # ToastNotificationAPI finds it BY NAME
-TOAST_H = 132
+TOAST_H = 200
+TOAST_RIGHT, TOAST_TOP, TOAST_W = 40, 204, 720
+# The in-match feed (NotificationUI, nested in MiniGameHUD) joins it on the right, under the toasts.
+FEED_INST, FEED_RT, FEED_VLG = "2353765311602242758", "6510982914127131662", "7355427487428714261"
+FEED_POS = dict(amin="{x: 1, y: 1}", pos=(-40, -424), size=(520, 300))
+
+
+def set_instance_mod(p, inst, target, path, value):
+    """Rewrite one existing override value on a PrefabInstance (asserting it exists, so a renamed
+    source fails loudly instead of silently adding nothing)."""
+    pat = re.compile(r"(    - target: \{fileID: %s, guid: \w+,\s*type: 3\}\n      propertyPath: %s\n      value: ).*\n"
+                     % (target, re.escape(path)))
+    doc = p.doc(inst)
+    assert pat.search(doc), f"override {target}.{path} not found on {inst}"
+    p.replace(inst, pat.sub(lambda m: m.group(1) + str(value) + "\n", doc, count=1))
+
+
+def patch_feed_position(p):
+    for path, v in (("m_AnchorMin.x", 1), ("m_AnchorMin.y", 1), ("m_AnchorMax.x", 1), ("m_AnchorMax.y", 1),
+                    ("m_Pivot.x", 1), ("m_Pivot.y", 1), ("m_AnchoredPosition.x", FEED_POS["pos"][0]),
+                    ("m_AnchoredPosition.y", FEED_POS["pos"][1]), ("m_SizeDelta.x", FEED_POS["size"][0]),
+                    ("m_SizeDelta.y", FEED_POS["size"][1])):
+        set_instance_mod(p, FEED_INST, FEED_RT, path, v)
+    set_instance_mod(p, FEED_INST, FEED_VLG, "m_ChildAlignment", 2)   # rows right-aligned
 
 
 def canvas_root_rt(p):
@@ -1085,8 +1108,9 @@ def patch_toast_container(p):
     gets its own, bottom centre (the top is the score columns, and at the end the scoreboard's
     header), as the canvas's LAST child so it draws over the scoreboard, and never taking a click."""
     root = canvas_root_rt(p)
-    n = N("Toasts", TOAST_CONTAINER, R((0, 0), (1, 0), (0, 24), (0, TOAST_H), (0.5, 0)))
-    n.add("vlg", 114, K.hv_layout(True, (0, 0, 0, 0), 10, 7, (1, 1), (0, 0)))
+    # Rev 3 (2026-10-16): every toast on the RIGHT, under the pause hex (which ends 185 down).
+    n = N("Toasts", TOAST_CONTAINER, R((1, 1), None, (-TOAST_RIGHT, -TOAST_TOP), (TOAST_W, TOAST_H), (1, 1)))
+    n.add("vlg", 114, K.hv_layout(True, (0, 0, 0, 0), 10, 2, (1, 1), (0, 0)))
     n.add("cg", 225, lambda ctx, go: H.canvas_group(True)(ctx, go).replace("  m_Interactable: 1\n  m_BlocksRaycasts: 1\n",
                                                                            "  m_Interactable: 0\n  m_BlocksRaycasts: 0\n"))
     rt = p.emit(n, root, root)
@@ -1112,6 +1136,7 @@ def canvas_text(text_):
     p = Patch(text_, "GameCanvas/Item12")
     retire_thumb_cursors(p)
     patch_toast_container(p)
+    patch_feed_position(p)
     patch_pause_instance(p)
     prune_instance_mods(p, ENDGAME_GUID, LEGACY_REVEAL_IDS)
     patch_scoreboard(p)
@@ -1360,6 +1385,13 @@ def validate(files):
     kids = re.findall(r"\{fileID: (-?\d+)\}", re.search(r"^  m_Children:\n((?:  - .*\n)*)", docs[root_rt], re.M).group(1))
     last_go = re.search(r"m_GameObject: \{fileID: (-?\d+)\}", docs[kids[-1]]).group(1)
     assert f"  m_Name: {TOAST_CONTAINER}\n" in docs[last_go], "the toast container is not drawn last (the scoreboard would cover it)"
+    toast_rt = kids[-1]
+    assert "  m_AnchorMin: {x: 1, y: 1}\n" in docs[toast_rt] and f"  m_AnchoredPosition: {{x: -{TOAST_RIGHT}, y: -{TOAST_TOP}}}\n" in docs[toast_rt], \
+        "the in-game toasts are not on the right under the pause hex"
+    fi = docs[FEED_INST]
+    for path, v in (("m_AnchorMin.x", 1), ("m_AnchoredPosition.x", FEED_POS["pos"][0])):
+        assert re.search(r"target: \{fileID: %s, guid: \w+,\s*type: 3\}\n      propertyPath: %s\n      value: %s\n" % (FEED_RT, re.escape(path), v), fi), \
+            f"the match feed is not on the right ({path})"
 
     # 12e - feed
     fd = files[FEED]
@@ -1466,6 +1498,7 @@ def self_test(files):
             docs_of(f[sb_path(SB_PANEL)])[str(K.FileIds(SB_PANEL)("Sb/MainMenu#cbp"))],
             docs_of(f[sb_path(SB_PANEL)])[str(K.FileIds(SB_PANEL)("Sb/MainMenu#cbp"))].replace("  activationButton: 5\n", "  activationButton: 6\n")))),
         ("the scoreboard row a full team fill", sub(sb_path(SB_ROW), "  backgroundTintAlpha: 0.12\n", "  backgroundTintAlpha: 1\n")),
+        ("the match feed back bottom-left", sub(CANVAS, "      propertyPath: m_AnchoredPosition.x\n      value: -40\n", "      propertyPath: m_AnchoredPosition.x\n      value: 316.80005\n")),
         ("feed rows vanishing again", sub(TOAST_SETTINGS, "  agedAlpha: 0.5\n", "  agedAlpha: 0\n")),
         ("the feed row without its accent bar", lambda f: f.__setitem__(FEED, re.sub(
             r"(  accentImage: )\{fileID: -?\d+\}", r"\1{fileID: 0}", f[FEED]))),

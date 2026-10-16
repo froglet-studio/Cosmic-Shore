@@ -10336,3 +10336,12 @@ gates, every `author_*.py --check`, and the changed generators' `--self-test` ne
    **Fail:** a white square (sprite not imported as Sprite), an icon over the word, or tabs overlapping.
 2. **Focus ring** (KitSelectableBase.focusRingToken): move through any menu with a pad - the focus ring is WHITE, not
    green. Clicking with the mouse still hides it.
+3. **Toasts on the right** (`author_menu_toasts.py`, `author_ingame_hud.py`): in Menu_Main a toast (e.g. press a
+   locked PORT) appears top-RIGHT under the Settings hex, right-aligned, newest on top. A party invite now drops in
+   lower, under the toast stack (y 452). In a match: end-of-match quest / intensity toasts appear top-right under
+   the pause hex, and the in-match feed lines stack on the right under them, sliding in from the right.
+   **Fail:** a toast behind the Settings hex or pause hex, feed text cut off at the screen edge, or the feed
+   overlapping a vessel's ability row.
+4. **Fly hint ×** (DismissibleHint): Home's "Tap the cell to fly" has a small × at its right end. Press it: the
+   hint disappears; restart Play - it stays gone (PlayerPrefs `menu.hint.fly.closed`; delete the key to see it
+   again). The × is reachable with the pad and shows the white focus ring.

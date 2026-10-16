@@ -57,7 +57,7 @@ TL, TR, ref, mono = C.TL, C.TR, C.ref, C.mono
 text, label, le = H.text, H.label, H.le
 image_node = A.image_node
 
-S = dict(kitbutton=K.kit_script("KitButton"), hub=C.script("MenuHubButton"), avail=C.script("MenuAvailabilityView"),
+S = dict(kitbutton=K.kit_script("KitButton"), dismiss=C.script("DismissibleHint"), hub=C.script("MenuHubButton"), avail=C.script("MenuAvailabilityView"),
          lamp=C.script("OnlineStatusIndicator"), bar=C.script("ConfirmQuestionBar"), home=C.script("HomeScreen"),
          crystals=C.script("CrystalCurrencyDisplay"), cbp=C.script("ControllerButtonPress"), button=A.BUTTON,
          upnext=C.script("HomeUpNext"), invite=C.script("PartyInviteNotificationPanel"), drain=K.kit_script("KitDrain"),
@@ -95,6 +95,7 @@ HUB_PAD, HUB_MIN_W, HUB_H = (28, 28, 18, 18), 210, 66
 # 6b
 OUT_DIR = "Assets/_Prefabs/UI Elements/Main Menu Screens/Home"
 INVITE = "PartyInvitePopup"
+INVITE_TOP = 452   # rev 3: under the right-hand toast stack (author_menu_toasts.py TOP 232 + HEIGHT 200 + 20)
 ARCADE_GAMES = "402ca7eefc2aeb64baaa140c43312bcd"       # ArcadeGames.asset (SO_GameList)
 CONNECTION_DATA = "69a7bf449c11416dac2d81ebd3ff61f5"    # HostConnectionDataSO
 PROFILE_ICONS = "3e6cb5b838253c7468480627fd86af5f"      # SO_ProfileIconList
@@ -375,13 +376,41 @@ def settings_nodes():
     return [bord, gear, slot]
 
 
+HINT_W, HINT_H, HINT_X = 300, 36, 28     # the fly hint, and its × (rev 3)
+
+
+def hint_close(n):
+    """The hint's × - a small KitButton with the chrome close glyph; DismissibleHint listens to it."""
+    b = n.child(N("Hint/Close", "Close", R((1, 0.5), None, (-4 - HINT_X / 2, 0), (HINT_X, HINT_X))))
+    A.ring_node(b, "Hint/Close/FocusRing", 10)
+    border, fillc, content = K.button_palette("Default", False)
+    f = b.child(N("Hint/Close/Fill", "Fill", STRETCH))
+    f.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(fillc, K.kit_sprite("kit_sliver10_fill"), True, raycast=True))
+    bd = b.child(N("Hint/Close/Border", "Border", STRETCH))
+    bd.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(border, K.kit_sprite("kit_sliver10_line1"), True))
+    g = b.child(N("Hint/Close/Glyph", "Glyph", R(size=(14, 14))))
+    g.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(content, K.chrome_sprite("chrome_close"), preserve=True))
+    b.add("button", 114, lambda ctx, go: C.mono(go, S["kitbutton"],
+          K.SELECTABLE_FIELDS + f"  m_TargetGraphic: {C.ref(ctx.c('Hint/Close/Fill', 'img'))}\n" + A.calls([])
+          + f"  theme: {K.ref(11400000, K.THEME, 2)}\n  focusRing: {C.ref(ctx.c('Hint/Close/FocusRing', 'img'))}\n"
+          "  variant: 0\n  fill: 0\n"
+          f"  fillGraphic: {C.ref(ctx.c('Hint/Close/Fill', 'img'))}\n"
+          f"  borderGraphic: {C.ref(ctx.c('Hint/Close/Border', 'img'))}\n"
+          f"  contentGraphics:\n  - {C.ref(ctx.c('Hint/Close/Glyph', 'img'))}\n  playGradient: {{fileID: 0}}\n"))
+    b.add("audio", 114, A.menu_audio(11))
+
+
 def hint_node():
-    n = N("Hint", "FlyHint", R((0.5, 1), None, (0, -500), (260, 36), (0.5, 1)))
+    n = N("Hint", "FlyHint", R((0.5, 1), None, (0, -500), (HINT_W, HINT_H), (0.5, 1)))
     n.add("cg", 225, H.canvas_group(True)).add("breathe", 114, M.ambient("Breathe", period=3.2, amplitude=0.45))
     n.add("cr", 222, K.canvas_renderer()) \
         .add("img", 114, K.image(tok("SurfaceVeryDark", 0.6), K.kit_sprite("kit_sliver10_fill"), True))
-    lab = n.child(N("Hint/Label", "Label", STRETCH))
+    lab = n.child(N("Hint/Label", "Label", R((0, 0), (1, 1), (-(HINT_X + 8) / 2, 0), (-(HINT_X + 8), 0))))
     label(lab, "Tap the cell to fly", "Label", "TextLight", align="center")
+    hint_close(n)
+    n.add("dismiss", 114, lambda ctx, go: C.mono(go, S["dismiss"],
+          f"  group: {C.ref(ctx.c('Hint', 'cg'))}\n  closeButton: {C.ref(ctx.c('Hint/Close', 'button'))}\n"
+          "  rememberKey: menu.hint.fly.closed\n"))
     return n
 
 
@@ -546,7 +575,7 @@ def upnext_node():
 
 
 def build_invite():
-    root = N("root", INVITE, R((1, 1), None, (-40, -250), (520, 132), (1, 1)))
+    root = N("root", INVITE, R((1, 1), None, (-40, -INVITE_TOP), (520, 132), (1, 1)))
     root.add("cg", 225, lambda ctx, go: H.canvas_group(False)(ctx, go))
     # Motion (section 22.8): the popup drops in each time it appears. PartyInviteNotificationPanel
     # starts it (play on enable off) - the popup lives on an always-enabled screen.
@@ -644,7 +673,7 @@ def patch_invite(p):
             p.sc.remove(fid)
     out = []
     K.emit_instance(p.ctx, K.Instance("Invite", INVITE, P.asset_guid(INVITE), "PartyInviteNotificationPanel",
-                                      R((1, 1), None, (-40, -250), (520, 132), (1, 1)), ()), HOME_RT, out)
+                                      R((1, 1), None, (-40, -INVITE_TOP), (520, 132), (1, 1)), ()), HOME_RT, out)
     out.append(T.stub_go(go_stub, K.FileIds(INVITE)("root#go"), P.asset_guid(INVITE), inst))
     anchor = HOME_RT
     for d in (K.unity_empty_scalars(d) for d in out):
@@ -702,6 +731,10 @@ def validate(files):
     I = IDS
     assert not sc.has(I["legacy_arcade_go"]), "the legacy ArcadeButton survives"
     ctx = ctx_new()
+    # Rev 3: the fly hint closes with its own x, hidden through its group and remembered.
+    dh = sc.docs[str(ctx.c("Hint", "dismiss"))]
+    assert f"  group: {{fileID: {ctx.c('Hint', 'cg')}}}" in dh and f"  closeButton: {{fileID: {ctx.c('Hint/Close', 'button')}}}" in dh, \
+        "the fly hint's x is not wired to DismissibleHint"
     for key, go, rt, img, btn, hub, avail, lgo, lrt, ltmp, caption, glyph, variant in HUBS:
         d = sc.docs[btn]
         assert S["kitbutton"] in d, f"{key}Button is not a KitButton"
@@ -792,6 +825,7 @@ def self_test(files):
             f"guid: {S['kitbutton']}", f"guid: {S['button']}", 1))),
         ("the invite with no drain bar", lambda f: f.__setitem__(invite_path(), re.sub(
             r"(  timerBar: )\{fileID: -?\d+\}", r"\1{fileID: 0}", f[invite_path()]))),
+        ("the fly hint's x unwired", lambda f: f.__setitem__(SCENE, re.sub(r"(  closeButton: )\{fileID: -?\d+\}", r"\1{fileID: 0}", f[SCENE], count=1))),
         ("Up next left out of the hub fade", lambda f: f.__setitem__(SCENE, f[SCENE].replace(
             f"  - {{fileID: {ctx_new().go('UpNext')}}}\n", "", 1))),
     ]
