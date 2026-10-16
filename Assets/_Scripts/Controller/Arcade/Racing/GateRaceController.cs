@@ -1163,7 +1163,15 @@ namespace CosmicShore.Gameplay
                     misjudged ? AIPilot.ObjectivePhase.Misjudged
                     : approaching ? AIPilot.ObjectivePhase.Approach : AIPilot.ObjectivePhase.Through,
                     gate.Position, ringNo, lap);
-                Vector3 throughPoint = ringAt - gate.Axis * (side * aiThroughDistance);
+                // Regatta (AICommitFromApproachPoint): through the CENTRE from where the pilot is. A drifting hull locks
+                // its course on this point, and a point on the ring's axis lies off that line whenever the pilot commits
+                // off-axis - the locked line then passes beside the mouth and the drift cannot correct it (the offline
+                // models stalled every Dolphin race at I2-I4, and the Rhino's at I3-I4; on this line all of them finish:
+                // AI/AI_BOOST.md). Any crossing inside the mouth threads it, from either side.
+                Vector3 throughCentre = ringAt - self;
+                Vector3 throughPoint = AICommitFromApproachPoint && throughCentre.sqrMagnitude > 1f
+                    ? ringAt + throughCentre.normalized * aiThroughDistance
+                    : ringAt - gate.Axis * (side * aiThroughDistance);
                 if (approaching)
                 {
                     after = throughPoint;   // the corner at the approach point is the turn onto the mouth's axis

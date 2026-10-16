@@ -4,7 +4,8 @@
 A MODEL, not the game: a point mass on the Regatta course generator's rings (situation_features.course_from), steering
 proportional to the angle error at the Rhino's turn rate ((v x 0.2 + 90) deg/s at full stick), the ramp executor's rates
 (climb 220, bleed 300 while graded, coast 120 once ended; x16.8 over a 50 u/s cruise, plateau 0.3, grace band 1) and the
-gate steering's approach point / mouth / commit distance. It has no orbit break-off, so a pilot that circles a point
+gate steering's approach point / mouth (through the ring's centre, as Regatta flies it; THROUGH_CENTRE = False for
+the axis point the other gate races use) / commit distance. It has no orbit break-off, so a pilot that circles a point
 stalls here where the game would break off. Use it to compare drives and pick defaults; the editor is the measurement.
 
 The Python driver below MIRRORS RampBoostAIPolicySO.Driver.Tick: change both together.
@@ -42,8 +43,8 @@ def mult(d): return 1 + (MAXM-1)*straight01(d)
 
 class Policy:  # base AIBoostPolicySO defaults + ramp fields
     align, ralign, stick, rstick, erun, rrun = 12, 25, 0.35, 0.6, 1.5, 0.5
-    share, hold, rest, rearm, gain = 0.9, 0.5, 0.3, 0.5, 150
-    corner, mincorner, margin, lead, gshare, steerfloor, slew, crel = 600, 160, 120, 0.25, 0.9, 0.3, 4, 50
+    share, hold, rest, rearm, gain = 0.9, 0.5, 0.3, 0.5, 50
+    corner, mincorner, margin, lead, gshare, steerfloor, slew, crel = 600, 160, 120, 0.25, 0.9, 0.3, 4, 30
     def is_straight(s,c): return c['angle'] <= s.align and c['stick'] <= s.stick
     def still(s,c): return c['angle'] <= s.ralign and c['stick'] <= s.rstick
     def runway(s,c): return c['dist']/max(c['speed'],1) >= s.erun
@@ -116,6 +117,8 @@ class NewDriver:
         floor=1-max(0,GRACE*p.gshare-p.steerfloor)
         s.thr=min(1,max(floor, s.thr+(-1 if tracked>s.wanted else 1)*p.slew*dt))
 
+THROUGH_CENTRE = True   # GateRaceController in Regatta (AICommitFromApproachPoint): through the ring's centre
+
 def race(kind, intensity, use_next=True, T=400, dt=1/60, verbose=False):
     C=sf.course_from(sf.load_course_js(), intensity)
     gates=C['gates']; n=len(gates); laps=3; total=n*laps
@@ -133,7 +136,7 @@ def race(kind, intensity, use_next=True, T=400, dt=1/60, verbose=False):
         R=speed/math.radians(omega)
         commit=min(420, lead+0.5*R)
         approaching=norm(sub(ring,pos))>commit and norm(sub(add(ring, mul(ax, side*lead)),pos))>max(60,0.5*R)
-        through=sub(ring, mul(ax, side*320))
+        through=add(ring, mul(unit(sub(ring,pos)), 320)) if THROUGH_CENTRE else sub(ring, mul(ax, side*320))
         if approaching: target=add(ring, mul(ax, side*lead)); after=through
         else: target=through; after=P[(idx+1)%n] if idx+1<total else None
         to=sub(target,pos)
@@ -179,17 +182,17 @@ def race(kind, intensity, use_next=True, T=400, dt=1/60, verbose=False):
 def _sweep_one(args):
     corner, gain, crel, margin = args
     Policy.corner, Policy.gain, Policy.crel, Policy.margin = corner, gain, crel, margin
-    res = [race('new', I, T=200) for I in (1, 2, 3)]
+    res = [race('new', I, T=200) for I in (1, 2, 3, 4)]
     return sum(r[0] if r[0] else 200 + (24 - r[1]) * 10 for r in res), args, [r[0] for r in res]
 
 
 def sweep():
     import itertools
     from concurrent.futures import ProcessPoolExecutor
-    grid = list(itertools.product((260, 360, 480, 600), (50, 150, 300), (30, 50, 80), (60, 120, 250)))
+    grid = list(itertools.product((600, 900, 1300, 3000), (0, 50, 150), (30, 50, 80, 120), (0, 120)))
     with ProcessPoolExecutor() as ex:
         out = sorted(ex.map(_sweep_one, grid))
-    print("total s (I1-I3; a stall costs 200 + 10 per ring left), (cornerSpeed, minSpeedGain, cornerReleaseDegrees, brakeMarginUnits), per course")
+    print("total s (I1-I4; a stall costs 200 + 10 per ring left), (cornerSpeed, minSpeedGain, cornerReleaseDegrees, brakeMarginUnits), per course")
     for o in out[:12]:
         print(o)
 

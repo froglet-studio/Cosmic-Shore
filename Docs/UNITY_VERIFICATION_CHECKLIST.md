@@ -90,6 +90,36 @@ League on Easy with the Third Eye open (FrogletTools > AI > Third Eye). The AI's
 reaches the ball later than on Hard. On Hard the strip shows no reaction/mistake line. (4) Repeat in Broadside and
 Brood Rush. (5) Regatta on Easy: the AI threads rings visibly worse than on Hard. (6) Arcade window: the row
 still sits under the intensity row on Skim Race and is still hidden on a card without it.
+### 🔴 The Dolphin AI drifts again at the discharge's peak; Regatta AIs aim through the ring's centre (`Ys-bleeding-edge`, 2026-10-17) — NOT EDITOR-VERIFIED
+
+**What landed:**
+- `ChargeBoostAIPolicySO` holds the next commit drift off until a discharge PEAKS (speed meets the transformer's falling
+  target), so the drift freezes the top speed instead of waiting for the meter to empty. That covers its own releases
+  and the commit loop's corner releases. It spends on a straight only when the discharge can lift the speed by 30 u/s.
+- `GateRaceController` (Regatta only, `AICommitFromApproachPoint`) puts the "through" steering point on the line from
+  the pilot through the ring's CENTRE, not on the ring's axis. A drift locked on an axis point from off-axis flew beside
+  the mouth.
+- The Rhino drive was retuned under that steering (`cornerReleaseDegrees` 30, `minSpeedGain` 50).
+
+**Verified without the editor:**
+- `unity_refcompile`: player-dev clean; editor 0 errors in changed files.
+- `DolphinChargeDriveTests` and `RhinoRampDriveTests` written, NOT run.
+- `learn_drives_from_flights.py --self-test`.
+- Gates.
+- Models (`dolphin_drive_sim.py`, `rhino_drive_sim.py`; seconds for three laps):
+  - Dolphin, old → new: I1 56.9 → 54.0, I2 66.0 → 64.6, I3 80.8 → 73.1, I4 74.0 → 71.9.
+  - Rhino, old / new: I1 43.8 / 44.9, I2 58.8 / 62.9, I3 53.7 / 50.1, I4 51.8 / 55.4.
+  - With the old axis steering the Dolphin stalled on I2–I4.
+
+**Verify in editor:**
+1. Run `DolphinChargeDriveTests` and `RhinoRampDriveTests` (Test Runner, EditMode): all pass.
+2. Arcade ▸ Regatta with an AI Dolphin, Third Eye on it. After each release its line reads "discharging - drifts again
+   at the peak", then "charging in the drift" at a speed near the top (300+ u/s on a long straight), not back near 68–150.
+3. Every Regatta AI (Dolphin, Rhino, Manta, Urchin, Stoat, Squirrel) threads rings without circling them. Watch
+   for any hull that now crosses rings at a steep angle and misses.
+4. Any mode with an AI Dolphin outside Regatta (The Bends, Rampage list it as disabled; others): it still collects
+   crystals; the re-drift waits at most until the discharge peaks (about 1 s).
+
 ### 🔴 The Rhino AI brakes on the ramp to a corner speed (`Ys-bleeding-edge`, 2026-10-17) — NOT EDITOR-VERIFIED
 
 **What landed:** `RampBoostAIPolicySO` has three states (Ramp, Brake, Off; `AI/AI_BOOST.md`, the Rhino ramp section).

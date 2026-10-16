@@ -24,7 +24,7 @@ MonoBehaviour:
   minHoldSeconds: 0.5
   minRestSeconds: 0.3
   minRearmSeconds: 0.5
-  minSpeedGain: 150
+  minSpeedGain: 50
   cornerSpeed: 600
   minCornerSpeed: 160
   brakeMarginUnits: 120
@@ -32,4 +32,4 @@ MonoBehaviour:
   graceShare: 0.9
   brakeSteerFloor: 0.3
   throttleSlewPerSecond: 4
-  cornerReleaseDegrees: 50
+  cornerReleaseDegrees: 30

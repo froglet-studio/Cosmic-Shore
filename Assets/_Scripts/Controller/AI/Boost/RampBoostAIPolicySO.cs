@@ -48,7 +48,7 @@ namespace CosmicShore.Gameplay
         [SerializeField, Min(0f)] float minRearmSeconds = 0.5f;
         [Tooltip("Press the ramp only when the leg lets it climb at least this many u/s above the current speed and " +
                  "still brake back to the corner speed in time - a short leg buys a wide turn, not time.")]
-        [SerializeField, Min(0f)] float minSpeedGain = 150f;
+        [SerializeField, Min(0f)] float minSpeedGain = 50f;
 
         [Header("Corners")]
         [Tooltip("Speed to arrive at a 90-degree corner with, u/s. A turn of θ scales it by 1/tan(θ/2) (a 45° bend " +
@@ -71,7 +71,7 @@ namespace CosmicShore.Gameplay
         [SerializeField, Min(0.1f)] float throttleSlewPerSecond = 4f;
         [Tooltip("Let go of the ramp (full steering, the slow coast) once the course is this far off the objective " +
                  "and the speed is down to the corner speed.")]
-        [SerializeField, Range(0f, 180f)] float cornerReleaseDegrees = 50f;
+        [SerializeField, Range(0f, 180f)] float cornerReleaseDegrees = 30f;
 
         public float CornerSpeed => cornerSpeed;
         public float MinCornerSpeed => minCornerSpeed;

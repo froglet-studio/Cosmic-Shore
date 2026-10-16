@@ -468,3 +468,10 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Who can take it:** Yash (has offered to take tasks)
 - **Added:** 2026-10-16 by Claude session for Yash (`Ys-bleeding-edge`)
 - **See:** Docs/UNITY_VERIFICATION_CHECKLIST.md (The Rhino AI brakes on the ramp)
+
+### T-20261016-b719 · open · test · Regatta AI
+- **Task:** Run DolphinChargeDriveTests and watch an AI Dolphin race Regatta I1-I4 in the Third Eye: after each discharge it should drift again near its top speed (Third Eye: 'drifts again at the peak'), and every Regatta AI should thread rings through their centre without circling
+- **Done when:** the tests pass and the four Dolphin times are written into REGATTA_AI_ROADMAP.md
+- **Who can take it:** Yash (has offered to take tasks)
+- **Added:** 2026-10-16 by Claude session for Yash (`Ys-bleeding-edge`)
+- **See:** Docs/UNITY_VERIFICATION_CHECKLIST.md (The Dolphin AI drifts again at the discharge's peak)

@@ -18,7 +18,8 @@ verb, measured exactly as the AI measures it (AIBoostContext):
                                                    yaw band past which it splits the triggers (fitted to the executor's
                                                    own formula, MantaAnalogTurnBoostExecutor.AutopilotTriggers)
     Urchin  rail ride (state bit "attached")    -> report only: its Regatta riding numbers live in the scene
-    Stoat                                       -> not on the Regatta card yet: nothing to fly
+    Stoat   pair     (state bit "boosting")     -> StoatModeAction/StoatDipoleConfig/StoatSlingConfig_Regatta (AIModeTuning):
+                                                   when it switches to Time mode, how it presses and holds its pair
 
 Everything is written as a REGATTA-ONLY variant under Assets/Resources/AIBoostPolicies/ (AIBoostPolicySO.ForMode,
 MantaSoarAITuningSO.LoadForMode): the hull's own assets, and every other mode, are untouched. A variant copies the hull's
@@ -56,7 +57,7 @@ REPORT_DOC = os.path.join(REPO, "Docs", "AI_SYSTEM", "LEARNED_DRIVES.md")
 MODE = "Regatta"
 MIN_FINISHED = 3
 MIN_EPISODES = 6
-STATE_BOOSTING, STATE_DISCHARGING, STATE_ATTACHED = 1, 2, 16
+STATE_BOOSTING, STATE_DISCHARGING, STATE_DRIFTING, STATE_ATTACHED = 1, 2, 4, 16
 PLATEAU = 0.3   # StraightLineGesture.EngageThreshold: the Rhino ramp's full-power steering plateau
 
 HULLS = {
@@ -198,6 +199,25 @@ def measure_policy(S, bit, held=False):
 def ring_passage_speeds(S, held=False):
     """The speed at each ring a pilot threaded (the sample where the ring count goes up) - the Rhino's corner speed."""
     return [b["speed"] for a, b in zip(S, S[1:]) if b["ring"] > a["ring"] and b["held"] == held]
+
+
+def redrift_shares(S, held=False):
+    """For each discharge followed by a drift: the speed the drift froze / the top speed of that discharge. 1.0 is
+    drifting again at the PEAK (ChargeBoostAIPolicySO's rule); lower is waiting while the speed slid back."""
+    out, top, in_dis = [], 0.0, False
+    for a, b in zip(S, S[1:]):
+        if b["held"] != held:
+            in_dis, top = False, 0.0
+            continue
+        dis, drift = bool(b["state"] & STATE_DISCHARGING), bool(b["state"] & STATE_DRIFTING)
+        if dis:
+            in_dis, top = True, max(top, b["speed"])
+        elif in_dis and drift and not (a["state"] & STATE_DRIFTING) and top > 0:
+            out.append(b["speed"] / top)
+            in_dis, top = False, 0.0
+        elif not dis:
+            in_dis = in_dis and not drift
+    return out
 
 
 def measure_stoat(S, held=False):
@@ -355,6 +375,13 @@ def learn_hull(hull, flights):
             if len(ai_passes) >= MIN_EPISODES:
                 ai["cornerSpeed"] = statistics.median(ai_passes)
         if hull == "Dolphin":
+            # Report only: the AI drifts again at the discharge's peak by design (the drift freezes that speed).
+            shares = [v for _, S in used for v in redrift_shares(S)]
+            if len(shares) >= MIN_EPISODES:
+                person["redriftShareOfPeak"] = statistics.median(shares)
+            ai_shares = redrift_shares(every, held=True)
+            if len(ai_shares) >= MIN_EPISODES:
+                ai["redriftShareOfPeak"] = statistics.median(ai_shares)
             keys += ["spendAtCharge01"]   # a discharge ends itself when the bank is spent: its release is not a choice
         for k in keys:
             if person.get(k) is not None:
@@ -565,6 +592,11 @@ def self_test():
     assert rh and rh["alignDegrees"] <= 10.5 and rh["stickBand"] <= 0.31 and rh["engageRunwaySeconds"] >= 1.15, rh
     assert rh["releaseAlignDegrees"] >= rh["alignDegrees"] and rh["releaseRunwaySeconds"] <= rh["engageRunwaySeconds"], rh
     assert abs(rh["cornerSpeed"] - 200.0) < 1e-6, ("the synthetic pilot threads every ring at 200 u/s", rh)
+    # Drift -> discharge climbing 100..300 -> drift again at 300 (the peak), then a discharge sliding back to 200 first.
+    seq = [(4, 100)] + [(2, v) for v in (150, 250, 300)] + [(4, 300)] + [(2, v) for v in (320, 260, 200)] + [(4, 200)]
+    S = [{"state": st, "speed": v, "held": False} for st, v in seq]
+    shares = redrift_shares(S)
+    assert [round(x, 3) for x in shares] == [1.0, 0.625], shares
     ctrl = learned("Rhino", "random")["learned"]
     assert ctrl["alignDegrees"] > rh["alignDegrees"] + 5, ("negative control: a pilot ignoring the rule must not look lined up", ctrl)
     do = learned("Dolphin", "policy")["learned"]

@@ -60,7 +60,7 @@ namespace CosmicShore.Tests
         public void PaysBack_LongLegYes_ShortLegNo()
         {
             Assert.IsTrue(_policy.PaysBack(Context(4000f, 100f), 220f, 300f));
-            Assert.IsFalse(_policy.PaysBack(Context(200f, 100f), 220f, 300f));
+            Assert.IsFalse(_policy.PaysBack(Context(120f, 100f), 220f, 300f), "no room left past the brake margin");
         }
 
         [Test]
