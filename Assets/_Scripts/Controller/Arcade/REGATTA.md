@@ -163,7 +163,7 @@ the same lap-wrapping `RingIndexFor`) supplies the objective:
   (`UrchinRailAssessment.Scan(..., loop: Trail.IsLoop)`). Skein's and Hijack's rails are open and
   walk exactly as before; without the wrap a pilot just before a Regatta lane's seam would have read
   the ring beyond it as unreachable and slipped off its own lane.
-- **Free:** the platform's gate aiming flies it at the ring (crystal detour included), and on a
+- **Free:** the platform's gate aiming flies it at the ring (no crystal detour in Regatta, below), and on a
   long, straight, lined-up shot it lays a **Track Projector** rail at the ring (`TryProjectTrackToward`).
 
 Before this, an attached AI aimed down whatever rail it had latched — right on its own lane, but a
@@ -242,6 +242,18 @@ crystals) merges cleanly and does not change Regatta.
 (toolbar *Trails*, length in Settings), and each AI's readout names its phase (Approach / Through ring N, Crystal on
 the way, Not noticed yet, Misjudged, Riding the rail, Heading for its own rail, Finished), its lap, the ring it is
 after (the cyan ring marker), and its boost decision (the Rhino's ramp, the Dolphin's charge).
+
+**No AI targets a crystal in Regatta (2026-10-17, Yash):** *"in Regatta no AI should target an omni crystal; only
+the waypoints of the track."*
+- **The rule:** every Regatta AI steers for the course's rings, and for its rail while it rides one.
+- **How:** `RegattaController.AICrystalDetourSlack` is 0 in code. Every other gate race still lets an AI swing up to
+  `aiCrystalDetourSlack` (220 u in the scenes) for a crystal on its way, and `MinigameRegatta.unity` serializes 220
+  too. The code value wins, so no scene edit can turn the detour back on.
+- **Why:** in Yash's editor flights, rival AIs came within 20 u of crystals whenever the recording could see one (the
+  Manta, Dolphin, Sparrow and Serpent beside omni crystals; the Rhino beside others).
+- **Test:** `RegattaNoCrystalTargetTests`, with Headlong as the negative control.
+- **The Squirrel** already aimed only at rings (`RegattaRingObjective`). The Third Eye's "Crystal on the way" phase
+  no longer appears in Regatta.
 
 ## 6.5 Scoring — the team sum
 

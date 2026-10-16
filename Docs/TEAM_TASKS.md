@@ -475,3 +475,10 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Who can take it:** Yash (has offered to take tasks)
 - **Added:** 2026-10-16 by Claude session for Yash (`Ys-bleeding-edge`)
 - **See:** Docs/UNITY_VERIFICATION_CHECKLIST.md (The Dolphin AI drifts again at the discharge's peak)
+
+### T-20261016-630e · open · test · Regatta AI
+- **Task:** Check that no Regatta AI targets a crystal: run RegattaNoCrystalTargetTests (edit mode), then race Regatta with a Rhino and other AI seats in the Third Eye; no readout says 'Crystal on the way' and no AI bends toward an omni crystal
+- **Done when:** both tests pass and a full Regatta race shows every AI aiming only at rings or its rail
+- **Who can take it:** Yash, anyone with the Unity Editor
+- **Added:** 2026-10-16 by a Claude session (`Ys-bleeding-edge`)
+- **See:** Assets/_Scripts/Controller/Arcade/REGATTA.md §6

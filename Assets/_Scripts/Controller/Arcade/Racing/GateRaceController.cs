@@ -312,6 +312,13 @@ namespace CosmicShore.Gameplay
         protected virtual bool AICommitFromApproachPoint => aiCommitFromApproachPoint;
 
         /// <summary>
+        /// The extra distance an AI flies for a crystal on the way to its next ring (<see cref="aiCrystalDetourSlack"/>).
+        /// 0 means an AI never steers at a crystal in this mode: it flies the course's rings and nothing else. A mode
+        /// whose crystals are not part of the race overrides it to 0 (Regatta).
+        /// </summary>
+        protected virtual float AICrystalDetourSlack => aiCrystalDetourSlack;
+
+        /// <summary>
         /// The approach point never sits further before a ring than this share of the leg into it. Without the cap a
         /// short leg (Regatta: 461-858 u against a 480 u lead) put the approach point BEHIND the ring just threaded,
         /// often inside a fast hull's turning circle, so the AI broke orbit and flew away from the course every ring
@@ -1131,7 +1138,7 @@ namespace CosmicShore.Gameplay
                 // provider replaces AIPilot's own crystal seeking outright (the trap Bends
                 // records), so without this an AI would never collect one, never fire the
                 // blast, and the mode's interference layer would be human-only.
-                if (aiCrystalDetourSlack > 0f)
+                if (AICrystalDetourSlack > 0f)
                 {
                     if (Time.time >= nextCrystalScan)
                     {
@@ -1146,7 +1153,7 @@ namespace CosmicShore.Gameplay
                     {
                         Vector3 c = detour.transform.position;
                         if (Vector3.Distance(self, c) + Vector3.Distance(c, gate.Position)
-                            <= Vector3.Distance(self, gate.Position) + aiCrystalDetourSlack)
+                            <= Vector3.Distance(self, gate.Position) + AICrystalDetourSlack)
                         {
                             pilot.ReportObjective(AIPilot.ObjectivePhase.CrystalDetour, c, ringNo, lap);
                             return c;
@@ -1204,7 +1211,7 @@ namespace CosmicShore.Gameplay
         Crystal FindDetourCrystal(Vector3 self, Vector3 gate, Domains domain)
         {
             var crystals = Crystal.Active;
-            float budget = Vector3.Distance(self, gate) + aiCrystalDetourSlack;
+            float budget = Vector3.Distance(self, gate) + AICrystalDetourSlack;
 
             Crystal best = null;
             float bestCost = float.MaxValue;

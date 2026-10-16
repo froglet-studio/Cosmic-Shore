@@ -240,6 +240,24 @@ and `net_logs.py show` merged it. **Not run:** the editor, MPPM, a real send.
 
 ---
 
+### 🔴 Regatta: no AI targets a crystal (`Ys-bleeding-edge`, 2026-10-17) — NOT EDITOR-VERIFIED
+
+**What landed:**
+- `GateRaceController.AICrystalDetourSlack` (virtual; it defaults to the scene's `aiCrystalDetourSlack`).
+- `RegattaController` overrides it to 0. Regatta AIs fly the rings (and their rail) and never swing to a crystal, the
+  omni crystal included.
+- Other gate races are unchanged.
+
+**Verified without the editor:**
+- `unity_refcompile`: player-dev OK; editor shows only the 3 known errors, none in changed files.
+- `RegattaNoCrystalTargetTests` compiles. It has not been run.
+
+**Verify in editor:**
+1. Run `RegattaNoCrystalTargetTests` in the Test Runner (edit mode): both tests pass.
+2. Start Regatta, solo, with a Rhino and other hulls on AI seats. Open FrogletTools ▸ AI ▸ Third Eye. No AI readout
+   ever says "Crystal on the way"; each AI's aim line goes to its ring, or along its rail.
+3. Fly beside an omni crystal near the racing line: no AI bends off its line toward it.
+
 ### 🔴 AI training recorder: last ring, hull name, button presses, tags (`Ys-bleeding-edge`, 2026-10-16) — NOT EDITOR-VERIFIED
 
 **What landed:** `HumanFlightRecorder`:
