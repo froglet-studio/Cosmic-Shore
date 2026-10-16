@@ -351,3 +351,10 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Who can take it:** the owner of the files it names (who_works_where.py); Yash (offered)
 - **Added:** 2026-10-15 by perf_hunt sweep (`perf/performance-optimization`)
 - **See:** Docs/Reports/PERFORMANCE.md
+
+### T-20261016-6778 · open · test · preview
+- **Task:** Find what makes the cursor briefly reappear during one-thumb mouse flight in the Breakwater microgame window (Sparrow). Control is no longer lost, but Caleb saw the cursor pop out for a moment and suspects a particular screen position triggers it.
+- **Done when:** Steps that reproduce the cursor pop-out (screen position, window placement, pad connected or not, Editor or build) are recorded in Docs/UNITY_VERIFICATION_CHECKLIST.md under the Breakwater preview entry, or 20 minutes of flight with no pop-out is recorded.
+- **Who can take it:** Andrew (QA); Yash could also take it
+- **Added:** 2026-10-16 by Caleb (`claude/exciting-bell-69b398`)
+- **See:** Docs/UNITY_VERIFICATION_CHECKLIST.md (Breakwater preview — one-thumb flight), Assets/_Scripts/Controller/IO/ONE_THUMB_MOUSE_CONTROLS.md

@@ -9338,6 +9338,10 @@ Fixed (2026-10-16, not Editor-verified): `ModePreviewWindow.GrantFocus(mouseFlie
 hull a mouse button never releases focus; Escape and pad Start still do. Re-test: with the pad
 connected, nudge its stick, then fire LMB; the window stays focused.
 
+**Re-test (2026-10-16, Caleb): passes.** LMB never released the window. Once the cursor reappeared for a
+moment and vanished again without losing control; cause unknown (possibly a screen position). Handed
+to QA as team task T-20261016-6778.
+
 **Originally not settled.** Whether MOUSE MOVEMENT turns the ship in the preview. If it does not, the console
 carries an unconditional `[MouseFlight]` warning naming which link is dead.
 
