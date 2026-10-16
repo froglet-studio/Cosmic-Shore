@@ -776,7 +776,7 @@ MonoBehaviour:
   _onPrismSpawnedEventChannel: {fileID: 11400000, guid: 765004a68c88ffb439febbdf47d892db,
     type: 2}
   skimmer: {fileID: 708149374973573223}
-  BaseScale: {x: 2.5, y: 2.5, z: 4.5}
+  BaseScale: {x: 1.5, y: 1.5, z: 3}
   prismType: 2
   initialWavelength: 6
   minWavelength: 6
@@ -964,6 +964,9 @@ MonoBehaviour:
   - InputEvent: 2
     ShipActions:
     - {fileID: 11400000, guid: fcbf39a50ea36d566289b4d999a065fb, type: 2}
+  - InputEvent: 3
+    ShipActions:
+    - {fileID: 11400000, guid: 30193df2c492c5ba431b666c13b91521, type: 2}
   - InputEvent: 6
     ShipActions:
     - {fileID: 11400000, guid: 6e440b73dd6896a501eceda2687dde79, type: 2}
@@ -1844,10 +1847,10 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   prefab: {fileID: 7632677803272750685, guid: 1bdcea9e9329dd141af7ab874a4d31a2, type: 3}
-  defaultCapacity: 90
-  maxSize: 320
+  defaultCapacity: 1400
+  maxSize: 2400
   enableBufferMaintenance: 1
-  bufferSizeTarget: 90
-  maxInstantiateRate: 90
-  baseInstantiateRate: 30
-  maxAddsPerFrame: 24
+  bufferSizeTarget: 1400
+  maxInstantiateRate: 600
+  baseInstantiateRate: 200
+  maxAddsPerFrame: 64

@@ -3,6 +3,7 @@ using CosmicShore.ScriptableObjects;
 using CosmicShore.Utility;
 using DG.Tweening;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 namespace CosmicShore.Gameplay
 {
@@ -12,7 +13,7 @@ namespace CosmicShore.Gameplay
     /// <list type="bullet">
     /// <item><b>Thrusters.</b> "When speed mode is off, only [the] thruster on the cockpit should be engaged. The outer
     /// thrusters should only engage as the vessel banks. When speed mode is turned on, all of the thrusters should engage
-    /// at once." The pod flames on the OUTSIDE of a turn light with the stick; Speed Mode (and Overdrive) light all five.</item>
+    /// at once." The pod flames on the OUTSIDE of a turn light with the stick; Speed Mode lights all five; overheated guns flare every flame.</item>
     /// <item><b>The firing rotation.</b> The support ring turns about the nose axis to bring the aimed turret round
     /// (<see cref="BrittleStarExecutor.RingPhase"/>), and Creation Mode's five corner trails turn with it.</item>
     /// <item><b>The ring's life.</b> Thrown, it is gone from the hull; rebuilt, it blooms back out from the cockpit
@@ -39,8 +40,9 @@ namespace CosmicShore.Gameplay
         [SerializeField, Min(0f)] float emberFlame = 0.12f;
         [Tooltip("How much stick lights the outside pods fully (0..1 of a full deflection).")]
         [SerializeField, Range(0.05f, 1f)] float bankToLight = 0.6f;
-        [Tooltip("Overdrive's extra flame length, as a multiple.")]
-        [SerializeField, Min(1f)] float overdriveFlame = 1.35f;
+        [Tooltip("Extra flame length while the guns are overheated, as a multiple (the hull venting heat).")]
+        [FormerlySerializedAs("overdriveFlame")]
+        [SerializeField, Min(1f)] float overheatFlame = 1.35f;
         [Tooltip("Flicker: fraction of a flame's length it wavers by, and how fast.")]
         [SerializeField, Range(0f, 0.5f)] float flicker = 0.12f;
         [SerializeField, Min(0f)] float flickerRate = 22f;
@@ -106,12 +108,12 @@ namespace CosmicShore.Gameplay
             _hullTransform.localRotation = _hullRestRot * Quaternion.Euler(0f, 0f, -_yaw * bankDegrees);
 
             float speed01 = executor ? executor.Speed01 : 0f;
-            bool overdrive = executor && executor.Overdrive;
+            bool overheated = executor && executor.Overheated;
             var ring = _hull.Ring;
             if (ring)
             {
                 float phase = executor ? executor.RingPhase : 0f;
-                if (executor && executor.Creation01 > 0f && executor.AimedPoint < 0 && creationIdleSpin != 0f)
+                if (executor && executor.Creation01 > 0f && !executor.Aiming && creationIdleSpin != 0f)
                     phase += _clock * creationIdleSpin * Mathf.Deg2Rad;
                 ring.localRotation = Quaternion.Euler(0f, 0f, phase * Mathf.Rad2Deg);
                 // Thrown: gone. Rebuilt: blooms back out with a little overshoot.
@@ -121,7 +123,7 @@ namespace CosmicShore.Gameplay
             }
 
             // The cockpit's own thruster: always lit, longer with Speed Mode.
-            SetFlame(-1, Mathf.Lerp(cockpitFlame, litFlame, speed01), overdrive, dt);
+            SetFlame(-1, Mathf.Lerp(cockpitFlame, litFlame, speed01), overheated, dt);
 
             // The pods: an ember at rest, lit on the outside of a turn, all lit in Speed Mode.
             float ringPhase = executor ? executor.RingPhase : 0f;
@@ -131,15 +133,15 @@ namespace CosmicShore.Gameplay
                 float side = Mathf.Cos(BrittleStarHullForm.PointAngle(i) + ringPhase);
                 float bank = Mathf.Clamp01(-side * _yaw / bankToLight);
                 float lit = Mathf.Max(speed01, bank);
-                SetFlame(i, Mathf.Lerp(emberFlame, litFlame, lit), overdrive, dt);
+                SetFlame(i, Mathf.Lerp(emberFlame, litFlame, lit), overheated, dt);
             }
         }
 
-        void SetFlame(int index, float target, bool overdrive, float dt)
+        void SetFlame(int index, float target, bool overheated, float dt)
         {
             var flame = _hull.Flame(index);
             if (!flame) return;
-            if (overdrive) target *= overdriveFlame;
+            if (overheated) target *= overheatFlame;
             int slot = index + 1;
             _flameLength[slot] = Mathf.Lerp(_flameLength[slot], target, 1f - Mathf.Exp(-flameRate * dt));
             float wobble = 1f + flicker * Mathf.Sin(_clock * flickerRate + slot * 1.7f) * Mathf.Sin(_clock * flickerRate * 0.61f + slot);

@@ -2,7 +2,7 @@
 # Compile the SHIPPED pure Brittle Star code (BrittleStarHullForm, BrittleStarRules, BrittleStarCord) and its SHIPPED
 # edit-mode tests (Assets/_Scripts/Tests/Editor/BrittleStarTests.cs) against a UnityEngine math stub and an NUnit shim
 # with Roslyn, and RUN every [Test]. Exit 0 = every test passed. `--self-test` additionally plants an inside-out face, a
-# second charge and a cord that stretches past its length, and proves the tests catch each (negative controls).
+# third spare ring and a cord that stretches past its length, and proves the tests catch each (negative controls).
 # `--obj DIR` writes the shipped hull as OBJ instead (for the card).
 # Needs a .NET SDK (8+), found through DOTNET_ROOT (default ~/.dotnet).
 set -euo pipefail
@@ -43,12 +43,12 @@ if [ "${1:-}" = "--self-test" ]; then
   sed 's/if (Vector3.Dot(n, (a + b + c) \/ 3f - inside) < 0f)/if (Vector3.Dot(n, (a + b + c) \/ 3f - inside) > 0f)/' "$FORM" > "$OUT/FormFlipped.cs"
   grep -q '> 0f)' "$OUT/FormFlipped.cs"
   build_and_run "$OUT/FormFlipped.cs" "$RULES" fail "faces inside out"
-  # 2. A second crystal stores a second charge instead of Overdrive.
-  sed 's/if (Charges == 0)/if (Charges < 2)/' "$RULES" > "$OUT/RulesTwoCharges.cs"
-  grep -q 'Charges < 2' "$OUT/RulesTwoCharges.cs"
-  build_and_run "$FORM" "$OUT/RulesTwoCharges.cs" fail "two charges held"
-  # 3. The cord's follow-the-leader cap dropped: a whipping cord stretches past its length.
-  sed 's/if (len > seg \&\& len > 1e-5f)/if (false)/' "$CORD" > "$OUT/CordStretchy.cs"
-  grep -q 'if (false)' "$OUT/CordStretchy.cs"
+  # 2. A crystal past a full stock still adds a spare ring.
+  sed 's/if (Spares >= maxSpares) return false;/if (Spares > maxSpares) return false;/' "$RULES" > "$OUT/RulesThreeSpares.cs"
+  grep -q 'Spares > maxSpares' "$OUT/RulesThreeSpares.cs"
+  build_and_run "$FORM" "$OUT/RulesThreeSpares.cs" fail "three spares held"
+  # 3. The cord's links stop being renormalised: a whipping cord stretches past its length.
+  sed 's/u = u.sqrMagnitude > 1e-8f ? u.normalized : _direction\[i\];/u = u.sqrMagnitude > 1e-8f ? u : _direction[i];/' "$CORD" > "$OUT/CordStretchy.cs"
+  grep -q '? u : _direction' "$OUT/CordStretchy.cs"
   CORD_SRC="$OUT/CordStretchy.cs" build_and_run "$FORM" "$RULES" fail "cord stretches"
 fi
