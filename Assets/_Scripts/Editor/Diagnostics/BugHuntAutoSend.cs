@@ -112,7 +112,13 @@ namespace CosmicShore.Editor
                     }
                 }
 
-                if (fresh.Count == 0 && newCaptures == 0 && newFlights == 0 && newNetLogs == 0) return;
+                if (fresh.Count == 0 && newCaptures == 0 && newFlights == 0 && newNetLogs == 0)
+                {
+                    // Nothing to ask about, but a clean run counted toward a fix: tell Claude without
+                    // asking (issues and the validation trail only), so "is it fixed?" has a true answer.
+                    if (BugLedger.LastPlayCountedFix) BugLedgerSender.SendInBackground(withReports: false);
+                    return;
+                }
 
                 // Remember them now: each new error, capture or log is sent once, never on every run.
                 settings.SentFingerprints = string.Join("\n", asked);

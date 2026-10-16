@@ -282,6 +282,18 @@ branch, **`bugledger/<user>`**, containing only `BugLedger/shared/`:
   ≤ 14 days old, ≤ 512 KB, ≤ 12 per send, append-only (`BugHuntReports`).
 - `reports/<user>/net/<file>` — multiplayer test logs (`Logs/NetSessions/`, one per player; see
   "Multiplayer test logs" below).
+- `reports/<user>/ledger/validation.log` — the **validation trail** (`BugLedger/local/validation.log`,
+  ≤ 64 KB, replaced on every send): one line per editor load, fix taken (or waiting for a pull),
+  play run judged (its length, which fixes it counted and what fired) and regression. It answers
+  "why is this fix still at 0 of 2?" from the branch. Added 2026-10-16 after every fix on
+  `bugledger/yskha` sat at 0 of 2 through a day of play although the counting passes every
+  simulation off-editor.
+
+**Progress goes back without a question.** A play run that counted toward a fix but logged nothing
+new sends the issues and the trail (no report files) in the background, so a fix's k of n, or its
+closing, reaches the branch without waiting for the next error. And a play run is judged at
+`EnteredEditMode` too when the `ExitingPlayMode` call never arrived: Unity stops calling
+`playModeStateChanged` handlers at the first one that throws, so another tool can starve the ledger's.
 
 It never touches the person's work: blobs go straight into the object store (`hash-object -w`), the
 tree is built in a THROWAWAY index (`GIT_INDEX_FILE` under `Library/`), the commit is
