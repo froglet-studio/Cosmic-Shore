@@ -46,6 +46,7 @@ REPORTS_PREFIX = "BugLedger/shared/reports/"
 SCHEMA = "cosmic-shore.flight/2"
 SCHEMAS = ("cosmic-shore.flight/1", SCHEMA, "cosmic-shore.flight/3")   # /1 carried the rail measures; /2 is measured here; /3 adds the situation columns (SITUATION_RECORDING_PLAN.md)
 SKIM_REACH = 7.5              # the Squirrel's skimmer sphere (SkimRaceAIConfigSO.PlannerSkimReach)
+LAST_RING_REACH = 30.0        # u: a pre-fix flight whose last sample is this close to its last ring finished (finished_of)
 BEGIN = "# learn_from_flights:begin"
 END = "# learn_from_flights:end"
 
@@ -108,24 +109,8 @@ def parse(name, text):
     rows = d.get("samples") or []
     d["rows"] = [dict(zip(cols, r)) for r in rows]
     d["name"] = name
-    repair_final_ring(d)
     return d, None
 
-
-def repair_final_ring(d):
-    """Flights recorded before 2026-10-16's fix end ONE RING SHORT: the winning ring ends the turn on the frame it is
-    threaded, before the recorder's next 10 Hz sample (HumanFlightRecorder now takes a last sample; its files say
-    "finalSample"). For an older race that ended with the pilot one ring short of the target and every rival below
-    that, the pilot threaded the last ring and won: say so (finished, rings = target, "repaired"). No sample is
-    invented. A rival on the same count is ambiguous and is left as recorded."""
-    target, rows = int(d.get("raceTarget") or 0), d.get("samples") or []
-    if d.get("finalSample") or d.get("ended") != "race over" or target <= 0 or not rows or d.get("finished"):
-        return
-    rings = int(d.get("rings") or 0)
-    rv = (d.get("rivals") or [[]])[-1] or []
-    rivals = [rv[k] for k in range(3, len(rv), 4)]
-    if rings == target - 1 and all(r < target - 1 for r in rivals):
-        d["rings"], d["finished"], d["repaired"] = target, True, "final ring inferred (recorded before the last-sample fix)"
 
 
 # ---------------------------------------------------------------- the rail
@@ -224,6 +209,21 @@ def derive(f, lane):
         f["skimLift"] = max(0.0, hy - f.get("referenceShellHeight", 1.5))
 
 
+
+def finished_of(f):
+    """A finished race. Flights recorded before 2026-10-16's recorder fix stopped one sample before the last ring counted
+    (written 23 / 24): those count as finished when the race ended on its own and the last sample is at the last ring."""
+    if f.get("finished"):
+        return True
+    target, rings, rl = int(f.get("raceTarget") or 0), int(f.get("rings") or 0), f.get("ringList") or []
+    if f.get("ended") != "race over" or target <= 0 or rings != target - 1 or not rl or not f.get("samples"):
+        return False
+    cols = f["columns"]
+    last = f["samples"][-1]
+    ring = rl[(target - 1) % len(rl)]
+    pos = [last[cols.index(k)] for k in ("x", "y", "z")]
+    return math.dist(pos, ring[1:4]) <= LAST_RING_REACH
+
 def measure(f):
     if not f.get("lane"):
         return None
@@ -281,8 +281,8 @@ def measure(f):
     seconds = max(rows[-1]["t"] - rows[0]["t"], 1e-3) if rows else 1e-3
     gaps = [r["gap"] for r in rows if r.get("gap", -1) >= 0]
     return {
-        "name": os.path.basename(f["name"]), "finished": bool(f.get("finished")), "raceSeconds": f.get("raceSeconds"),
-        "rings": f.get("rings"), "target": f.get("raceTarget"), "intensity": f.get("intensity"), "skimLift": f.get("skimLift", 0.0),
+        "name": os.path.basename(f["name"]), "finished": finished_of(f), "raceSeconds": f.get("raceSeconds"),
+        "rings": f.get("rings") + (1 if finished_of(f) and not f.get("finished") else 0), "target": f.get("raceTarget"), "intensity": f.get("intensity"), "skimLift": f.get("skimLift", 0.0),
         "samples": len(rows), "skimShare": len(skim) / max(len(rows), 1),
         "lineHeight": line_h, "lineSide": line_side, "minusFaceShare": side_share, "gapP10": pct([r["gap"] for r in skim], 0.1), "gapMedian": pct([r["gap"] for r in skim], 0.5),
         "contactShare": sum(1 for g in gaps if g <= 0.05) / max(len(gaps), 1),
@@ -530,15 +530,6 @@ def self_test():
     held["columns"], held["samples"] = held["columns"][:-1], [r[:-1] for r in held["samples"]]
     m4 = measure(parse("held-dropped", json.dumps(held))[0])
     assert m4["skimShare"] < 0.6, ("negative control: the held rows should have counted", m4)
-    # A pre-fix flight one ring short with every rival behind it was won; one with a rival on the same count is left alone.
-    short = {"schema": SCHEMA, "ended": "race over", "raceTarget": 24, "rings": 23, "finished": False, "columns": ["t"], "samples": [[0]], "rivals": [[1, 2, 3, 15]]}
-    won = parse("short", json.dumps(short))[0]
-    assert won["finished"] and won["rings"] == 24 and won.get("repaired"), won
-    short["rivals"] = [[1, 2, 3, 23]]
-    tie = parse("tie", json.dumps(short))[0]
-    assert not tie["finished"] and tie["rings"] == 23, tie
-    short["finalSample"], short["rivals"] = True, [[1, 2, 3, 15]]
-    assert not parse("fixed", json.dumps(short))[0]["finished"], "a file with the last sample is never repaired"
     # The author script carries the block this writes into.
     text = open(AUTHOR, encoding="utf-8").read()
     assert BEGIN in text and END in text, "author_skimrace_ai_config.py lost its learn_from_flights block"
