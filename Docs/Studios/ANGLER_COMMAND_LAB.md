@@ -30,6 +30,31 @@ creatures, the cell and the way they eat are the game's own, read from the asset
 Everything else (the Angler's speeds, the lure, the leash, every command scheme) is lab-only and labelled
 that way in the page.
 
+## After the second Unity playtest (2026-10-16)
+
+The designer asked for two things:
+
+- *"if there are no fauna under the angler's control it should spawn one. there should always be at least one fauna that doesn't starve"*
+- *"the lit prism should stay lit until eaten or the lit effect is erased with LT"*
+
+The page changed first:
+
+- **The keeper** (`ensureKeeper`): an empty school gets one creature of the first species, already tamed, at the
+  school's first slot. Free play now starts with it.
+  - `m.keepers` counts it, and it is not counted in `m.tamed`, which scores the lure.
+  - The leash capacity checks now read the school's size (`schoolSize`).
+  - The lab models no starvation, so the keeper's never-starving is a game-only rule. The not-modelled list says so.
+- **Lit until eaten or erased** (`marked`): a thrown-at prism stays lit (75% toward white) until it is killed or erased.
+  The eraser now also takes a marked prism, and strikes it from every creature's order (`strikeFromOrders`). A
+  creature heading for it picks again.
+
+Checked headless:
+
+- Free play: 0 → 1 creature on the first tick, once.
+- A throw marks its prisms.
+- Erasing a marked prism unmarks it, empties it out of all 24 creatures' orders, and leaves nobody targeting it.
+- `verify_lab.cjs` PASS, with the batch identical. No scored order erases after a throw.
+
 ## After the first Unity playtest (2026-10-15)
 
 The designer flew the cloned Angler in Unity. Taming and throwing worked ("which is fun"). Painting and erasing showed

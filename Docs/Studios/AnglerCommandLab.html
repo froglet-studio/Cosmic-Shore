@@ -457,7 +457,7 @@
     const n = SCENE.n;
     world = {
       t: 0, dt: 1 / 60, rnd, mode, scheme,
-      alive: new Uint8Array(n).fill(1), painted: new Uint8Array(n), claims: new Uint8Array(n), ordered: new Float32Array(n),
+      alive: new Uint8Array(n).fill(1), painted: new Uint8Array(n), marked: new Uint8Array(n), claims: new Uint8Array(n), ordered: new Float32Array(n),
       paintedList: [],
       v: { p: START_P.slice(), f: [0, 0, -1], u: [0, 1, 0], r: [1, 0, 0], speed: P.cruise },
       fauna: [], squadSel: -1, lureOn: false, L: [0, 0, 0],
@@ -465,7 +465,7 @@
       cmd: { holding: false, holdT: 0, loop: [], loopLen: 0, loopShow: null, flares: [], flareCd: 0, gazeSt: -1, gazeDwell: 0, gazeLock: -1, sling: 0 },
       fx: { blooms: [] },
       task: null, taskIdx: -1, structAlive0: SCENE.structs.map((s) => s.ids.length),
-      m: { on: 0, off: 0, own: 0, orders: 0, inputs: 0, presses: 0, orderT: [], clearT: [], timeouts: 0, tamed: 0, firstTameT: null, tame6T: null },
+      m: { on: 0, off: 0, own: 0, orders: 0, inputs: 0, presses: 0, orderT: [], clearT: [], timeouts: 0, tamed: 0, keepers: 0, firstTameT: null, tame6T: null },
       ai: { phase: 'approach', runT: 0, pressT: 0, swept: 0, lastAng: null, noise: [0, 0, 0], plan: null, released: false, sqT: 0 },
       done: false,
     };
@@ -642,12 +642,21 @@
     const v = w.v;
     let removed = false;
     for (let i = 0; i < SCENE.n; i++) {
-      if (!w.alive[i] || (paint ? w.painted[i] : !w.painted[i])) continue;
+      if (!w.alive[i] || (paint ? w.painted[i] : !(w.painted[i] || w.marked[i]))) continue;
       if (paint && P.spareOwn && SCENE.dom[i] === 0) continue;
       if (!CORE.inCone(v.p, v.f, [SCENE.px[i], SCENE.py[i], SCENE.pz[i]], coneDeg, P.paintRange)) continue;
-      if (paint) { w.painted[i] = 1; w.paintedList.push(i); } else { w.painted[i] = 0; removed = true; }
+      if (paint) { w.painted[i] = 1; w.paintedList.push(i); }
+      else { w.painted[i] = 0; removed = true; if (w.marked[i]) { w.marked[i] = 0; strikeFromOrders(w, i); } }
     }
     if (removed) w.paintedList = w.paintedList.filter((i) => w.painted[i]);
+  }
+  // strikeFromOrders: an erased prism leaves every order it was in, and a creature heading for it picks again.
+  function strikeFromOrders(w, i) {
+    for (const f of w.fauna) {
+      if (f.set && f.set.includes(i)) f.set = f.set.filter((k) => k !== i);
+      if (f.target === i && f.state === ST.ATTACK) { f.hold = 0; f.focus = null; pickTarget(w, f); }
+      else if (f.target === i) releaseClaim(w, f);
+    }
   }
   // throwAtPaint: the release. Every gathered creature of the picked squad is thrown and homes on the painted prism
   // pickTarget gives it (nearest, spread by claims); a creature still swimming to the ball joins the order on foot.
@@ -655,6 +664,7 @@
     const ids = w.paintedList.filter((i) => w.alive[i]);
     for (const i of w.paintedList) w.painted[i] = 0;
     w.paintedList = [];
+    for (const i of ids) w.marked[i] = 1;   // the order stays lit until it is eaten or erased (the designer, 2026-10-16)
     if (!ids.length) { slingThrow(w); return; }
     let n = 0;
     for (const f of w.fauna) {
@@ -753,7 +763,7 @@
           const a = w.t * 1.3 + f.home[0];
           steer(f, w.L[0] + Math.cos(a) * 6, w.L[1] + Math.sin(a * 0.7) * 6, w.L[2] + Math.sin(a) * 6, Math.min(maxS * 1.2, Math.max(minS, dL)), turn, dt);
           f.tame = CORE.tameStep(f.tame, dL < P.tameRadius, dt, P.tameTime, P.tameDecay);
-          if (f.tame >= 1 && w.m.tamed < P.squadCap) {
+          if (f.tame >= 1 && schoolSize(w) < P.squadCap) {
             f.state = ST.IDLE; f.tame = 1; w.m.tamed++;
             if (w.m.firstTameT == null) w.m.firstTameT = w.t;
             if (w.m.tamed >= 6 && w.m.tame6T == null) w.m.tame6T = w.t;
@@ -863,13 +873,24 @@
   // herbivore within omniTameRadius of the hull is tamed at once, nearest first, up to the leash capacity.
   function omniTame(w) {
     const wild = w.fauna.filter((f) => f.state === ST.WILD || f.state === ST.LURED);
-    const picks = CORE.omniTameOrder(w.v.p, wild.map((f) => [f.x, f.y, f.z]), P.omniTameRadius, P.squadCap - w.m.tamed);
+    const picks = CORE.omniTameOrder(w.v.p, wild.map((f) => [f.x, f.y, f.z]), P.omniTameRadius, P.squadCap - schoolSize(w));
     for (const k of picks) {
       const f = wild[k]; f.state = ST.IDLE; f.tame = 1; w.m.tamed++;
       if (w.m.firstTameT == null) w.m.firstTameT = w.t;
       if (w.m.tamed >= 6 && w.m.tame6T == null) w.m.tame6T = w.t;
     }
     return picks.length;
+  }
+
+  // The KEEPER (the designer, 2026-10-16): the Angler always leads at least one creature. With the school empty, one of
+  // the first species is born at the school's first slot, already tamed. In the game that keeper never starves (the lab
+  // models no starvation, so here it is only the always-one rule). Not counted in m.tamed, which scores the lure.
+  function schoolSize(w) { let n = 0; for (const f of w.fauna) if (f.state >= ST.IDLE) n++; return n; }
+  function ensureKeeper(w) {
+    if (schoolSize(w) > 0) return false;
+    makeFauna(w, 0, CORE.formationSlot(0, w.v.p, w.v.f, w.v.r, w.v.u, P.formBack), ST.IDLE);
+    w.m.keepers++;
+    return true;
   }
 
   // ---------- the step ----------
@@ -884,6 +905,7 @@
     if (sqEdge) w.squadSel = w.squadSel >= SPECIES.length - 1 ? -1 : w.squadSel + 1;
     if (rcEdge) for (const f of w.fauna) if (inSquad(w, f)) { releaseClaim(w, f); f.set = null; f.state = ST.IDLE; f.hold = 0; }
     if (omEdge) omniTame(w);
+    ensureKeeper(w);
     w.lureOn = (inp.lure || 0) > 0.5;
     w.L = CORE.lurePoint(w.v.p, w.v.f, w.v.u, P.lureAhead);
     commandStep(w, inp, edgeDown, edgeUp, dt);
@@ -1256,7 +1278,7 @@
         mesh.setMatrixAt(s, mats[i]);
         col.setHex([DOMAIN_HEX.jade, DOMAIN_HEX.ruby, DOMAIN_HEX.gold][SCENE.dom[i]]);
         const ordered = w.ordered[i] > 0 && now - w.ordered[i] < 1.2;
-        if (w.painted[i]) col.lerp(WHITE, 0.75);
+        if (w.painted[i] || w.marked[i]) col.lerp(WHITE, 0.75);
         else if (ordered) col.lerp(WHITE, 0.5 * (1 - (now - w.ordered[i]) / 1.2));
         else if (lockSt >= 0 && SCENE.st[i] === lockSt) col.lerp(WHITE, 0.35 + 0.15 * Math.sin(now * 10));
         else col.multiplyScalar(0.7);
@@ -1567,7 +1589,7 @@
       '<li>The Angler\'s flight is a plain pitch/yaw model with the game\'s dual-stick mix on a pad, not the game\'s VesselTransformer. Its speeds are proposals.</li>' +
       '<li>No game code lets anything command a creature. Fauna.Goal is overwritten on every behaviour tick, so a port needs a persistent goal provider. Commanding here bends what a creature steers to; it still eats by its own mouthful rule.</li>' +
       '<li>Taming keeps a creature in the cell controller\'s colour with a leash, because the locked ecology rule says a cell never holds two fauna colours. Whether tamed fauna change colour is a design decision.</li>' +
-      '<li>No separation between creatures, no starvation, no breeding, no predators (sharks eat creatures, never prisms), no shields, no danger prisms, no rival vessels, no network.</li>' +
+      '<li>No separation between creatures, no starvation (the keeper never starving is a game-only rule), no breeding, no predators (sharks eat creatures, never prisms), no shields, no danger prisms, no rival vessels, no network.</li>' +
       '<li>The battlefield is one fixed stand-in (two Ruby, two Gold and one Jade structure), not a cell from a real mode. Prism spacing is 4 u on trails.</li>' +
       '<li>The mouthful takes its neighbours nearest-first. The game takes them in its spatial index\'s order.</li>' +
       '<li>The commander AI is the lab\'s own. Its runs (approach, act, break away) are one competent style, and a better pilot could change a scheme\'s numbers.</li></ul>';
