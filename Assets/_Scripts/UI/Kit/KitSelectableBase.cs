@@ -44,8 +44,11 @@ namespace CosmicShore.UI
         [Header("Kit")]
         [Tooltip("The chrome theme (Docs/STYLE_FOUNDATION.md §11). Unwired falls back to the authored §11 values.")]
         [SerializeField] protected UIThemeSO theme;
-        [Tooltip("The CTA focus ring drawn while this control has gamepad / keyboard focus. Optional.")]
+        [Tooltip("The focus ring drawn while this control has gamepad / keyboard focus. Optional.")]
         [SerializeField] protected Graphic focusRing;
+        [Tooltip("The ring's colour. White by default: selection is never the CTA green (rev 3, 2026-10-16), " +
+                 "which stays reserved for the one action a screen wants pressed.")]
+        [SerializeField] protected UIColorToken focusRingToken = UIColorToken.TextLight;
 
         private VisualState _visual;
         private bool _selected;
@@ -133,7 +136,7 @@ namespace CosmicShore.UI
             if (focusRing)
             {
                 bool ring = _selected && !_pointerSelected && _visual != VisualState.Disabled;
-                pairs.Add((focusRing, Token(UIColorToken.Cta, ring ? 1f : 0f)));
+                pairs.Add((focusRing, Token(focusRingToken, ring ? 1f : 0f)));
             }
 
             _targets.Clear();

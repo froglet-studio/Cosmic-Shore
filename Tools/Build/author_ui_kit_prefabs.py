@@ -475,6 +475,8 @@ def hover_tint(token, text_keys, graphic_keys):
 
 # A locked top-nav tab insets its word by the lock glyph's visible width plus the 8-unit gap.
 LOCK_INSET = 23
+NAV_ICON = 24        # the top-nav tab glyph (KitTopNavTab Icon children)
+NAV_ICON_GAP = 8     # between the glyph and its word
 
 
 def layout_element(ignore=False, pw=-1, ph=-1):
@@ -657,10 +659,15 @@ def build_top_nav_tab():
     # The whole tab is the hit area (labels do not raycast): an invisible Image, culled by its
     # CanvasRenderer, so the host's EventTrigger and the hover lift answer anywhere on the tab.
     root.add("cr", 222, canvas_renderer()).add("img", 114, image((1.0, 1.0, 1.0, 0.0), raycast=True)) \
-        .add("hover", 114, hover_tint("TextLight", ["InactiveImage#kt"], []))
+        .add("hover", 114, hover_tint("TextLight", ["InactiveImage#kt"], ["InactiveImage/Icon#th"]))
     inactive = root.child(Node("InactiveImage", "InactiveImage", STRETCH))
     inactive.add("cr", 222, canvas_renderer()).add("tmp", 114, tmp("TAB", "Button", tok("NeutralLightest"))) \
         .add("kt", 114, kit_text("Button", "NeutralLightest"))
+    # The tab's glyph (rev 3: the old nav's icons back beside the word). Off until a host sets its
+    # sprite and its x - the word is centred, so only the host knows where the word's left edge is.
+    iicon = inactive.child(Node("InactiveImage/Icon", "Icon", rect(size=(NAV_ICON, NAV_ICON)), active=False))
+    iicon.add("cr", 222, canvas_renderer()).add("img", 114, image(tok("NeutralLightest"), None, preserve=True)) \
+        .add("th", 114, themed("NeutralLightest"))
     # The locked look, off by default. A host's MenuAvailabilityView shows it as its lockedOverlay;
     # the host also insets InactiveImage by LOCK_INSET so the word clears the glyph. The glyph's
     # visible box is 59% x 64% of the sprite, so a 25-unit rect draws it about 15 x 16, as the board.
@@ -676,6 +683,11 @@ def build_top_nav_tab():
     under = alab.child(Node("ActiveImage/Underline", "Underline", rect((0, 0), (1, 0), (0, -6), (0, 2), (0.5, 0.5))))
     under.add("cr", 222, canvas_renderer()).add("img", 114, image(tok("ControlActive"))) \
         .add("th", 114, themed("ControlActive"))
+    # The lit glyph hangs off the word's left edge, so it follows the fitted label without a layout.
+    aicon = alab.child(Node("ActiveImage/Icon", "Icon", rect((0, 0.5), None, (-(NAV_ICON_GAP + NAV_ICON / 2), 0),
+                                                              (NAV_ICON, NAV_ICON)), active=False))
+    aicon.add("cr", 222, canvas_renderer()).add("img", 114, image(tok("TextLight"), None, preserve=True)) \
+        .add("th", 114, themed("TextLight"))
     return root
 
 

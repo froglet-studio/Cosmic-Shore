@@ -238,8 +238,16 @@ def keycap_size(key):
     return (K.label_width(key, "Label") + 24, K.line_height("Label") + 8)
 
 
+NAV_SLOT = K.NAV_ICON + K.NAV_ICON_GAP      # the glyph's share of a tab, left of the word
+
+
+def glyph_guid(i):
+    """The tab's glyph (rev 3): the old nav's icon, cut by author_nav_glyphs.py."""
+    return K.meta_guid(f"Assets/_Graphics/UI/NavGlyphs/nav_{TABS[i][0].lower()}.png")
+
+
 def tab_width(i):
-    return K.label_width(TABS[i][0], "Button") + (K.LOCK_INSET if i == PORT else 0)
+    return K.label_width(TABS[i][0], "Button") + NAV_SLOT + (K.LOCK_INSET if i == PORT else 0)
 
 
 def row():
@@ -289,14 +297,25 @@ def tab_instance(ids, i, x):
     text, link, method = TABS[i]
     t = ids.tabs[i]
     guid = K.prefab_guid(TAB_PREFAB)
+    lw = K.label_width(text, "Button")
+    glyph = K.sprite_ref(glyph_guid(i))
+    # The word's box gives up the glyph's slot (and PORT's lock inset) on its left, so the glyph +
+    # word pair stays centred on the tab; the inactive glyph sits just left of the centred word.
+    inset = NAV_SLOT + (K.LOCK_INSET if i == PORT else 0)
     mods = [("InactiveImage#tmp", "m_text", text, None), ("ActiveImage/Label#tmp", "m_text", text, None),
-            ("ActiveImage/Label#rt", "m_SizeDelta.x", K.label_width(text, "Button"), None)]
+            ("ActiveImage/Label#rt", "m_SizeDelta.x", lw, None),
+            ("ActiveImage/Label#rt", "m_AnchoredPosition.x", NAV_SLOT / 2, None),
+            ("InactiveImage#rt", "m_SizeDelta.x", -inset, None),
+            ("InactiveImage#rt", "m_AnchoredPosition.x", inset / 2, None),
+            ("InactiveImage/Icon#go", "m_IsActive", 1, None),
+            ("InactiveImage/Icon#img", "m_Sprite", None, glyph),
+            ("InactiveImage/Icon#rt", "m_AnchoredPosition.x", -(lw / 2 + K.NAV_ICON_GAP + K.NAV_ICON / 2), None),
+            ("ActiveImage/Icon#go", "m_IsActive", 1, None),
+            ("ActiveImage/Icon#img", "m_Sprite", None, glyph)]
     if i == HOME:     # the state the menu opens in, so the scene reads as it plays
         mods += [("InactiveImage#go", "m_IsActive", 0, None), ("ActiveImage#go", "m_IsActive", 1, None)]
     if i == PORT:
         mods += [("InactiveImage#kt", "colorDrivenExternally", 1, None),   # MenuAvailabilityView owns it
-                 ("InactiveImage#rt", "m_SizeDelta.x", -K.LOCK_INSET, None),
-                 ("InactiveImage#rt", "m_AnchoredPosition.x", K.LOCK_INSET / 2, None),
                  ("root#hover", "m_Enabled", 0, None)]                      # its label is not the hover's
     inst = K.Instance(f"Tab{i}", TAB_PREFAB, guid, link,
                       K.rect((0, 1), None, (x, -BAND_H / 2), (tab_width(i), BAND_H)), mods)
@@ -533,6 +552,7 @@ def validate(before_text, after_text, guids):
         assert re.search(r"propertyPath: m_Name\n      value: " + link + r"\n", inst), f"{link}: name"
         assert re.search(r"propertyPath: m_text\n      value: " + text + r"\n", inst), f"{link}: label"
         assert f"addedObject: {{fileID: {t['trigger']}}}" in inst, f"{link}: EventTrigger not added"
+        assert inst.count(f"guid: {glyph_guid(i)}, type: 3}}") == 2, f"{link}: glyph not set on both icons"
         trig = sc.docs[t["trigger"]]
         assert f"m_GameObject: {{fileID: {t['stub_go']}}}" in trig and f"m_MethodName: {method}\n" in trig \
             and f"m_Target: {{fileID: {SWITCHER}}}" in trig and "eventID: 4" in trig, f"{link}: click wiring"
@@ -595,6 +615,7 @@ def self_test(current, guids):
         "ScreenSwitcher edited outside the nav fields":
             lambda s: in_doc(s, SWITCHER, "disabledScreenMessage: Not open yet.", "disabledScreenMessage: Closed."),
         "unrelated document edited": lambda s: s.replace("  m_Name: Screens\n", "  m_Name: Screenz\n", 1),
+        "ARK lost its glyph": lambda s: s.replace(f"guid: {glyph_guid(1)}, type: 3}}", "guid: 0, type: 3}", 1),
     }
     failed = []
     for name, plant in plants.items():
